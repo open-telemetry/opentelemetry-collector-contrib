@@ -95,7 +95,7 @@ func verifyTarget1(t *testing.T, td *testData, resourceMetrics []*pdata.Resource
 	wantAttributes := td.attributes
 
 	metrics1 := m1.InstrumentationLibraryMetrics().At(0).Metrics()
-	ts1 := metrics1.At(0).Gauge().DataPoints().At(0).Timestamp()
+	ts1 := getTS(metrics1)
 	e1 := []testExpectation{
 		assertMetricPresent("go_threads",
 			compareMetricType(pdata.MetricDataTypeGauge),
@@ -157,7 +157,7 @@ func verifyTarget1(t *testing.T, td *testData, resourceMetrics []*pdata.Resource
 	assert.Equal(t, 9, metricsCount(m2))
 
 	metricsScrape2 := m2.InstrumentationLibraryMetrics().At(0).Metrics()
-	ts2 := metricsScrape2.At(0).Gauge().DataPoints().At(0).Timestamp()
+	ts2 := getTS(metricsScrape2)
 	e2 := []testExpectation{
 		assertMetricPresent("go_threads",
 			compareMetricType(pdata.MetricDataTypeGauge),
@@ -289,7 +289,7 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []*pdata.Resource
 	wantAttributes := td.attributes
 
 	metrics1 := m1.InstrumentationLibraryMetrics().At(0).Metrics()
-	ts1 := metrics1.At(0).Gauge().DataPoints().At(0).Timestamp()
+	ts1 := getTS(metrics1)
 	e1 := []testExpectation{
 		assertMetricPresent("go_threads",
 			compareMetricType(pdata.MetricDataTypeGauge),
@@ -329,7 +329,7 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []*pdata.Resource
 	assert.Equal(t, 7, metricsCount(m2))
 
 	metricsScrape2 := m2.InstrumentationLibraryMetrics().At(0).Metrics()
-	ts2 := metricsScrape2.At(0).Gauge().DataPoints().At(0).Timestamp()
+	ts2 := getTS(metricsScrape2)
 	e2 := []testExpectation{
 		assertMetricPresent("go_threads",
 			compareMetricType(pdata.MetricDataTypeGauge),
@@ -377,7 +377,7 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []*pdata.Resource
 	assert.Equal(t, 7, metricsCount(m3))
 
 	metricsScrape3 := m3.InstrumentationLibraryMetrics().At(0).Metrics()
-	ts3 := metricsScrape3.At(0).Gauge().DataPoints().At(0).Timestamp()
+	ts3 := getTS(metricsScrape3)
 	e3 := []testExpectation{
 		assertMetricPresent("go_threads",
 			compareMetricType(pdata.MetricDataTypeGauge),
@@ -425,7 +425,7 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []*pdata.Resource
 	assert.Equal(t, 7, metricsCount(m4))
 
 	metricsScrape4 := m4.InstrumentationLibraryMetrics().At(0).Metrics()
-	ts4 := metricsScrape4.At(0).Gauge().DataPoints().At(0).Timestamp()
+	ts4 := getTS(metricsScrape4)
 	e4 := []testExpectation{
 		assertMetricPresent("go_threads",
 			compareMetricType(pdata.MetricDataTypeGauge),
@@ -473,7 +473,7 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []*pdata.Resource
 	assert.Equal(t, 7, metricsCount(m5))
 
 	metricsScrape5 := m5.InstrumentationLibraryMetrics().At(0).Metrics()
-	ts5 := metricsScrape5.At(0).Gauge().DataPoints().At(0).Timestamp()
+	ts5 := getTS(metricsScrape5)
 	e5 := []testExpectation{
 		assertMetricPresent("go_threads",
 			compareMetricType(pdata.MetricDataTypeGauge),
@@ -599,7 +599,7 @@ func verifyTarget3(t *testing.T, td *testData, resourceMetrics []*pdata.Resource
 	wantAttributes := td.attributes
 
 	metrics1 := m1.InstrumentationLibraryMetrics().At(0).Metrics()
-	ts1 := metrics1.At(0).Gauge().DataPoints().At(0).Timestamp()
+	ts1 := getTS(metrics1)
 	e1 := []testExpectation{
 		assertMetricPresent("go_threads",
 			compareMetricType(pdata.MetricDataTypeGauge),
@@ -651,7 +651,7 @@ func verifyTarget3(t *testing.T, td *testData, resourceMetrics []*pdata.Resource
 	assert.Equal(t, 8, metricsCount(m2))
 
 	metricsScrape2 := m2.InstrumentationLibraryMetrics().At(0).Metrics()
-	ts2 := metricsScrape2.At(0).Gauge().DataPoints().At(0).Timestamp()
+	ts2 := getTS(metricsScrape2)
 	e2 := []testExpectation{
 		assertMetricPresent("go_threads",
 			compareMetricType(pdata.MetricDataTypeGauge),
@@ -734,7 +734,7 @@ func TestCoreMetricsEndToEnd(t *testing.T) {
 			validateFunc: verifyTarget3,
 		},
 	}
-	testComponent(t, targets, false, "", false)
+	testComponent(t, targets, false, "")
 }
 
 var startTimeMetricPage = `
@@ -781,26 +781,26 @@ func verifyStartTimeMetricPage(t *testing.T, td *testData, result []*pdata.Resou
 			case pdata.MetricDataTypeGauge:
 				timestamp = nil
 				for j := 0; j < metrics[i].Gauge().DataPoints().Len(); j++ {
-					time := timestamppb.New(metrics[i].Gauge().DataPoints().At(j).StartTimestamp().AsTime())
+					time := metrics[i].Gauge().DataPoints().At(j).StartTimestamp()
 					assert.Equal(t, timestamp.AsTime(), time.AsTime())
 					numTimeseries++
 				}
 
 			case pdata.MetricDataTypeSum:
 				for j := 0; j < metrics[i].Sum().DataPoints().Len(); j++ {
-					assert.Equal(t, timestamp.AsTime(), timestamppb.New(metrics[i].Sum().DataPoints().At(j).StartTimestamp().AsTime()).AsTime())
+					assert.Equal(t, timestamp.AsTime(), metrics[i].Sum().DataPoints().At(j).StartTimestamp().AsTime())
 					numTimeseries++
 				}
 
 			case pdata.MetricDataTypeHistogram:
 				for j := 0; j < metrics[i].Histogram().DataPoints().Len(); j++ {
-					assert.Equal(t, timestamp.AsTime(), timestamppb.New(metrics[i].Histogram().DataPoints().At(j).StartTimestamp().AsTime()).AsTime())
+					assert.Equal(t, timestamp.AsTime(), metrics[i].Histogram().DataPoints().At(j).StartTimestamp().AsTime())
 					numTimeseries++
 				}
 
 			case pdata.MetricDataTypeSummary:
 				for j := 0; j < metrics[i].Summary().DataPoints().Len(); j++ {
-					assert.Equal(t, timestamp.AsTime(), timestamppb.New(metrics[i].Summary().DataPoints().At(j).StartTimestamp().AsTime()).AsTime())
+					assert.Equal(t, timestamp.AsTime(), metrics[i].Summary().DataPoints().At(j).StartTimestamp().AsTime())
 					numTimeseries++
 				}
 			}
@@ -820,7 +820,7 @@ func TestStartTimeMetric(t *testing.T) {
 			validateFunc: verifyStartTimeMetricPage,
 		},
 	}
-	testComponent(t, targets, true, "", false)
+	testComponent(t, targets, true, "")
 }
 
 var startTimeMetricRegexPage = `
@@ -869,5 +869,5 @@ func TestStartTimeMetricRegex(t *testing.T) {
 			validateFunc: verifyStartTimeMetricPage,
 		},
 	}
-	testComponent(t, targets, true, "^(.+_)*process_start_time_seconds$", false)
+	testComponent(t, targets, true, "^(.+_)*process_start_time_seconds$")
 }

@@ -40,20 +40,20 @@ import (
 )
 
 type mockPrometheusResponse struct {
-	code int
-	data string
-}
-
-type mockPrometheus struct {
-	mu             sync.Mutex // mu protects the fields below.
-	endpoints      map[string][]mockPrometheusResponse
-	accessIndex    map[string]*int32
-	wg             *sync.WaitGroup
-	srv            *httptest.Server
+	code           int
+	data           string
 	useOpenMetrics bool
 }
 
-func newMockPrometheus(endpoints map[string][]mockPrometheusResponse, openMetricsContentType bool) *mockPrometheus {
+type mockPrometheus struct {
+	mu          sync.Mutex // mu protects the fields below.
+	endpoints   map[string][]mockPrometheusResponse
+	accessIndex map[string]*int32
+	wg          *sync.WaitGroup
+	srv         *httptest.Server
+}
+
+func newMockPrometheus(endpoints map[string][]mockPrometheusResponse) *mockPrometheus {
 	accessIndex := make(map[string]*int32)
 	wg := &sync.WaitGroup{}
 	wg.Add(len(endpoints))
@@ -62,10 +62,9 @@ func newMockPrometheus(endpoints map[string][]mockPrometheusResponse, openMetric
 		accessIndex[k] = &v
 	}
 	mp := &mockPrometheus{
-		wg:             wg,
-		accessIndex:    accessIndex,
-		endpoints:      endpoints,
-		useOpenMetrics: openMetricsContentType,
+		wg:          wg,
+		accessIndex: accessIndex,
+		endpoints:   endpoints,
 	}
 	srv := httptest.NewServer(mp)
 	mp.srv = srv
@@ -76,9 +75,6 @@ func (mp *mockPrometheus) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	mp.mu.Lock()
 	defer mp.mu.Unlock()
 
-	if mp.useOpenMetrics {
-		rw.Header().Set("Content-Type", "application/openmetrics-text")
-	}
 	iptr, ok := mp.accessIndex[req.URL.Path]
 	if !ok {
 		rw.WriteHeader(404)
@@ -93,6 +89,9 @@ func (mp *mockPrometheus) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		}
 		rw.WriteHeader(404)
 		return
+	}
+	if pages[index].useOpenMetrics {
+		rw.Header().Set("Content-Type", "application/openmetrics-text")
 	}
 	rw.WriteHeader(pages[index].code)
 	_, _ = rw.Write([]byte(pages[index].data))
@@ -111,24 +110,28 @@ var (
 )
 
 type testData struct {
-	name         string
-	pages        []mockPrometheusResponse
-	attributes   pdata.AttributeMap
-	validateFunc func(t *testing.T, td *testData, result []*pdata.ResourceMetrics)
+	name           string
+	pages          []mockPrometheusResponse
+	attributes     pdata.AttributeMap
+	useOpenMetrics bool
+	validateFunc   func(t *testing.T, td *testData, result []*pdata.ResourceMetrics)
 }
 
 // setupMockPrometheus to create a mocked prometheus based on targets, returning the server and a prometheus exporting
 // config
-func setupMockPrometheus(openMetricsContentType bool, tds ...*testData) (*mockPrometheus, *promcfg.Config, error) {
+func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *promcfg.Config, error) {
 	jobs := make([]map[string]interface{}, 0, len(tds))
 	endpoints := make(map[string][]mockPrometheusResponse)
 	metricPaths := make([]string, 0)
 	for _, t := range tds {
+		for i := range t.pages {
+			t.pages[i].useOpenMetrics = t.useOpenMetrics
+		}
 		metricPath := fmt.Sprintf("/%s/metrics", t.name)
 		endpoints[metricPath] = t.pages
 		metricPaths = append(metricPaths, metricPath)
 	}
-	mp := newMockPrometheus(endpoints, openMetricsContentType)
+	mp := newMockPrometheus(endpoints)
 	u, _ := url.Parse(mp.srv.URL)
 	for i := 0; i < len(tds); i++ {
 		job := make(map[string]interface{})
@@ -459,77 +462,102 @@ func compareSummary(count uint64, sum float64, quantiles [][]float64) summaryPoi
 	}
 }
 
-func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, startTimeMetricRegex string, useOpenMetrics bool) {
-	// 1. setup mock server
-	mp, cfg, err := setupMockPrometheus(useOpenMetrics, targets...)
-	require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
-	defer mp.Close()
+func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, startTimeMetricRegex string) {
+	for _, pdataDirect := range []bool{false, true} {
+		pipelineType := "OpenCensus"
+		if pdataDirect {
+			pipelineType = "pdata"
+		}
+		t.Run(pipelineType, func(t *testing.T) { // 1. setup mock server
+			mp, cfg, err := setupMockPrometheus(targets...)
+			require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
+			defer mp.Close()
 
-	cms := new(consumertest.MetricsSink)
-	rcvr := newPrometheusReceiver(componenttest.NewNopReceiverCreateSettings(), &Config{
-		ReceiverSettings:     config.NewReceiverSettings(config.NewComponentID(typeStr)),
-		PrometheusConfig:     cfg,
-		UseStartTimeMetric:   useStartTimeMetric,
-		StartTimeMetricRegex: startTimeMetricRegex}, cms)
+			cms := new(consumertest.MetricsSink)
+			rcvr := newPrometheusReceiver(componenttest.NewNopReceiverCreateSettings(), &Config{
+				ReceiverSettings:     config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				PrometheusConfig:     cfg,
+				UseStartTimeMetric:   useStartTimeMetric,
+				StartTimeMetricRegex: startTimeMetricRegex,
+				pdataDirect:          pdataDirect,
+			}, cms)
 
-	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()), "Failed to invoke Start: %v", err)
-	t.Cleanup(func() {
-		// verify state after shutdown is called
-		assert.Lenf(t, flattenTargets(rcvr.scrapeManager.TargetsAll()), len(targets), "expected %v targets to be running", len(targets))
-		require.NoError(t, rcvr.Shutdown(context.Background()))
-		assert.Len(t, flattenTargets(rcvr.scrapeManager.TargetsAll()), 0, "expected scrape manager to have no targets")
-	})
+			require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()), "Failed to invoke Start: %v", err)
+			t.Cleanup(func() {
+				// verify state after shutdown is called
+				assert.Lenf(t, flattenTargets(rcvr.scrapeManager.TargetsAll()), len(targets), "expected %v targets to be running", len(targets))
+				require.NoError(t, rcvr.Shutdown(context.Background()))
+				assert.Len(t, flattenTargets(rcvr.scrapeManager.TargetsAll()), 0, "expected scrape manager to have no targets")
+			})
 
-	// wait for all provided data to be scraped
-	mp.wg.Wait()
-	metrics := cms.AllMetrics()
+			// wait for all provided data to be scraped
+			mp.wg.Wait()
+			metrics := cms.AllMetrics()
 
-	// split and store results by target name
-	pResults := splitMetricsByTarget(metrics)
-	lres, lep := len(pResults), len(mp.endpoints)
-	assert.Equalf(t, lep, lres, "want %d targets, but got %v\n", lep, lres)
+			// split and store results by target name
+			pResults := splitMetricsByTarget(metrics)
+			lres, lep := len(pResults), len(mp.endpoints)
+			assert.Equalf(t, lep, lres, "want %d targets, but got %v\n", lep, lres)
 
-	// loop to validate outputs for each targets
-	for _, target := range targets {
-		t.Run(target.name, func(t *testing.T) {
-			validScrapes := pResults[target.name]
-			if !useOpenMetrics {
-				validScrapes = getValidScrapes(t, pResults[target.name])
+			// loop to validate outputs for each targets
+			for _, target := range targets {
+				t.Run(target.name, func(t *testing.T) {
+					validScrapes := pResults[target.name]
+					if !target.useOpenMetrics {
+						validScrapes = getValidScrapes(t, pResults[target.name])
+					}
+					target.validateFunc(t, target, validScrapes)
+				})
 			}
-			target.validateFunc(t, target, validScrapes)
 		})
 	}
 }
 
 // starts prometheus receiver with custom config, retrieves metrics from MetricsSink
-func testComponentCustomConfig(t *testing.T, targets []*testData, mp *mockPrometheus, cfg *promcfg.Config) {
-	ctx := context.Background()
-	defer mp.Close()
+func testComponentCustomConfig(t *testing.T, targets []*testData, cfgMut func(*promcfg.Config)) {
+	for _, pdataDirect := range []bool{false, true} {
+		pipelineType := "OpenCensus"
+		if pdataDirect {
+			pipelineType = "pdata"
+		}
+		t.Run(pipelineType, func(t *testing.T) {
+			ctx := context.Background()
+			mp, cfg, err := setupMockPrometheus(targets...)
+			cfgMut(cfg)
+			require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
+			defer mp.Close()
 
-	cms := new(consumertest.MetricsSink)
-	receiver := newPrometheusReceiver(componenttest.NewNopReceiverCreateSettings(), &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-		PrometheusConfig: cfg}, cms)
+			cms := new(consumertest.MetricsSink)
+			receiver := newPrometheusReceiver(componenttest.NewNopReceiverCreateSettings(), &Config{
+				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				PrometheusConfig: cfg,
+				pdataDirect:      pdataDirect,
+			}, cms)
 
-	require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
+			require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
 
-	// verify state after shutdown is called
-	t.Cleanup(func() { require.NoError(t, receiver.Shutdown(ctx)) })
+			// verify state after shutdown is called
+			t.Cleanup(func() { require.NoError(t, receiver.Shutdown(ctx)) })
 
-	// wait for all provided data to be scraped
-	mp.wg.Wait()
-	metrics := cms.AllMetrics()
+			// wait for all provided data to be scraped
+			mp.wg.Wait()
+			metrics := cms.AllMetrics()
 
-	// split and store results by target name
-	pResults := splitMetricsByTarget(metrics)
-	lres, lep := len(pResults), len(mp.endpoints)
-	assert.Equalf(t, lep, lres, "want %d targets, but got %v\n", lep, lres)
+			// split and store results by target name
+			pResults := splitMetricsByTarget(metrics)
+			lres, lep := len(pResults), len(mp.endpoints)
+			assert.Equalf(t, lep, lres, "want %d targets, but got %v\n", lep, lres)
 
-	// loop to validate outputs for each targets
-	for _, target := range targets {
-		t.Run(target.name, func(t *testing.T) {
-			validScrapes := getValidScrapes(t, pResults[target.name])
-			target.validateFunc(t, target, validScrapes)
+			// loop to validate outputs for each targets
+			for _, target := range targets {
+				t.Run(target.name, func(t *testing.T) {
+					validScrapes := pResults[target.name]
+					if !target.useOpenMetrics {
+						validScrapes = getValidScrapes(t, pResults[target.name])
+					}
+					target.validateFunc(t, target, validScrapes)
+				})
+			}
 		})
 	}
 }
@@ -558,4 +586,24 @@ func splitMetricsByTarget(metrics []pdata.Metrics) map[string][]*pdata.ResourceM
 		}
 	}
 	return pResults
+}
+
+func getTS(ms pdata.MetricSlice) pdata.Timestamp {
+	if ms.Len() == 0 {
+		return 0
+	}
+	m := ms.At(0)
+	switch m.DataType() {
+	case pdata.MetricDataTypeGauge:
+		return m.Gauge().DataPoints().At(0).Timestamp()
+	case pdata.MetricDataTypeSum:
+		return m.Sum().DataPoints().At(0).Timestamp()
+	case pdata.MetricDataTypeHistogram:
+		return m.Histogram().DataPoints().At(0).Timestamp()
+	case pdata.MetricDataTypeSummary:
+		return m.Summary().DataPoints().At(0).Timestamp()
+	case pdata.MetricDataTypeExponentialHistogram:
+		return m.ExponentialHistogram().DataPoints().At(0).Timestamp()
+	}
+	return 0
 }
