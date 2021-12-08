@@ -300,7 +300,9 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, de
 	defaultNotInSpanAttrVal := "defaultNotInSpanAttrVal"
 	// use size 2 for LRU cache for testing purpose
 	metricKeyToDimensions, err := NewCache(metricKeyToDimensionsCacheSize)
-	panic(err)
+	if err != nil {
+		panic(err)
+	}
 	return &processorImp{
 		logger:          zap.NewNop(),
 		metricsExporter: mexp,
