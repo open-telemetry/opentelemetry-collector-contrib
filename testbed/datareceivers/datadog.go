@@ -22,7 +22,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
