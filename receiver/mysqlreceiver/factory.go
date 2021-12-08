@@ -45,7 +45,8 @@ func createDefaultConfig() config.Receiver {
 			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			CollectionInterval: 10 * time.Second,
 		},
-		Username: "root",
+		AllowNativePasswords: true,
+		Username:             "root",
 		NetAddr: confignet.NetAddr{
 			Endpoint:  "localhost:3306",
 			Transport: "tcp",
