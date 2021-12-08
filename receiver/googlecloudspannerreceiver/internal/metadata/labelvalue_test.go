@@ -282,8 +282,11 @@ func TestNewLockRequestSliceLabelValue(t *testing.T) {
 	value := []*lockRequest{
 		{LockMode: "lockMode1", Column: "column1", TransactionTag: "tag1"},
 		{LockMode: "lockMode2", Column: "column2", TransactionTag: "tag2"},
+		{LockMode: "lockMode1", Column: "column1", TransactionTag: "tag1"},
+		{LockMode: "lockMode2", Column: "column2", TransactionTag: "tag2"},
+		{LockMode: "lockMode3", Column: "column3"},
 	}
-	expectedValue := "{lockMode1,column1,tag1},{lockMode2,column2,tag2}"
+	expectedValue := "{lockMode1,column1,tag1},{lockMode2,column2,tag2},{lockMode3,column3}"
 	valueHolder := &value
 
 	labelValue := newLockRequestSliceLabelValue(metadata, valueHolder)

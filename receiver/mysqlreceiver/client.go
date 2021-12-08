@@ -38,11 +38,12 @@ var _ client = (*mySQLClient)(nil)
 
 func newMySQLClient(conf *Config) client {
 	driverConf := mysql.Config{
-		User:   conf.Username,
-		Passwd: conf.Password,
-		Net:    conf.Transport,
-		Addr:   conf.Endpoint,
-		DBName: conf.Database,
+		User:                 conf.Username,
+		Passwd:               conf.Password,
+		Net:                  conf.Transport,
+		Addr:                 conf.Endpoint,
+		DBName:               conf.Database,
+		AllowNativePasswords: conf.AllowNativePasswords,
 	}
 	connStr := driverConf.FormatDSN()
 

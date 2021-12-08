@@ -408,24 +408,11 @@ func Test_jobGC(t *testing.T) {
 }
 
 var (
-	g1       = "gauge1"
-	gd1      = "gaugedist1"
-	c1       = "cumulative1"
-	cd1      = "cumulativedist1"
-	s1       = "summary1"
-	k1       = []string{"k1"}
-	k1k2     = []string{"k1", "k2"}
-	k1k2k3   = []string{"k1", "k2", "k3"}
-	v1v2     = []string{"v1", "v2"}
-	v10v20   = []string{"v10", "v20"}
-	v100v200 = []string{"v100", "v200"}
-	bounds0  = []float64{1, 2, 4}
-	percent0 = []float64{10, 50, 90}
-	t1Ms     = time.Unix(0, 1000000)
-	t2Ms     = time.Unix(0, 2000000)
-	t3Ms     = time.Unix(0, 3000000)
-	t4Ms     = time.Unix(0, 5000000)
-	t5Ms     = time.Unix(0, 5000000)
+	t1Ms = time.Unix(0, 1000000)
+	t2Ms = time.Unix(0, 2000000)
+	t3Ms = time.Unix(0, 3000000)
+	t4Ms = time.Unix(0, 5000000)
+	t5Ms = time.Unix(0, 5000000)
 )
 
 type metricsAdjusterTest struct {
