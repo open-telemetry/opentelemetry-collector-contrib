@@ -15,6 +15,7 @@
 package googlecloudspannerreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver"
 
 import (
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -81,7 +82,7 @@ func (config *Config) Validate() error {
 
 func (project Project) Validate() error {
 	if project.ID == "" {
-		return fmt.Errorf("field %q is required and cannot be empty for project configuration", "project_id")
+		return errors.New(`field "project_id" is required and cannot be empty for project configuration`)
 	}
 
 	if len(project.Instances) <= 0 {
