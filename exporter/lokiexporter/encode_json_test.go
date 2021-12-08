@@ -38,21 +38,17 @@ func exampleLog() (pdata.LogRecord, pdata.Resource) {
 	return buffer, resource
 }
 
-func exampleJSON() string {
-	jsonExample := `{"name":"name","body":"Example log","traceid":"01020304000000000000000000000000","spanid":"0506070800000000","severity":"error","attributes":{"attr1":"1","attr2":"2"},"resources":{"host.name":"something"}}`
-	return jsonExample
-}
+func TestConvertWithStringBody(t *testing.T) {
+	in := `{"name":"name","body":"Example log","traceid":"01020304000000000000000000000000","spanid":"0506070800000000","severity":"error","attributes":{"attr1":"1","attr2":"2"},"resources":{"host.name":"something"}}`
 
-func TestConvertString(t *testing.T) {
-	in := exampleJSON()
 	out, err := encodeJSON(exampleLog())
-	t.Log(in)
-	t.Log(out, err)
+	assert.NoError(t, err)
 	assert.Equal(t, in, out)
 }
 
-func TestConvertNonString(t *testing.T) {
-	in := exampleJSON()
+func TestConvertWithMapBody(t *testing.T) {
+	in := `{"name":"name","body":{"key1":"value","key2":"value"},"traceid":"01020304000000000000000000000000","spanid":"0506070800000000","severity":"error","attributes":{"attr1":"1","attr2":"2"},"resources":{"host.name":"something"}}`
+
 	log, resource := exampleLog()
 	mapVal := pdata.NewAttributeValueMap()
 	mapVal.MapVal().Insert("key1", pdata.NewAttributeValueString("value"))
@@ -60,7 +56,60 @@ func TestConvertNonString(t *testing.T) {
 	mapVal.CopyTo(log.Body())
 
 	out, err := encodeJSON(log, resource)
-	t.Log(in)
-	t.Log(out, err)
-	assert.EqualError(t, err, "unsuported body type to serialize")
+	assert.NoError(t, err)
+	assert.Equal(t, in, out)
+}
+
+func TestSerializeBody(t *testing.T) {
+
+	mapval := pdata.NewAttributeValueMap()
+	mapval.MapVal().InsertString("key", "val")
+
+	arrayval := pdata.NewAttributeValueArray()
+	arrayval.SliceVal().AppendEmpty().SetStringVal("a")
+	arrayval.SliceVal().AppendEmpty().SetStringVal("b")
+
+	testcases := []struct {
+		input    pdata.AttributeValue
+		expected []byte
+	}{
+		{
+			pdata.NewAttributeValueEmpty(),
+			nil,
+		},
+		{
+			pdata.NewAttributeValueString("a"),
+			[]byte(`"a"`),
+		},
+		{
+			pdata.NewAttributeValueInt(1),
+			[]byte(`1`),
+		},
+		{
+			pdata.NewAttributeValueDouble(1.1),
+			[]byte(`1.1`),
+		},
+		{
+			pdata.NewAttributeValueBool(true),
+			[]byte(`true`),
+		},
+		{
+			mapval,
+			[]byte(`{"key":"val"}`),
+		},
+		{
+			arrayval,
+			[]byte(`["a","b"]`),
+		},
+		{
+			pdata.NewAttributeValueBytes([]byte(`abc`)),
+			[]byte(`"YWJj"`),
+		},
+	}
+
+	for _, test := range testcases {
+		out, err := serializeBody(test.input)
+		assert.NoError(t, err)
+		assert.Equal(t, test.expected, out)
+	}
 }
