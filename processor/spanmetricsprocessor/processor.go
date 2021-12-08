@@ -232,6 +232,7 @@ func (p *processorImp) buildMetrics() *pdata.Metrics {
 	ilm := m.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
 	ilm.InstrumentationLibrary().SetName("spanmetricsprocessor")
 
+	// Obtain write lock to reset data
 	p.lock.Lock()
 
 	p.collectCallMetrics(ilm)
