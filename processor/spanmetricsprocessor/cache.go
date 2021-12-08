@@ -27,7 +27,7 @@ type Cache struct {
 }
 
 // NewCache create Cache
-func NewCache(size int) (c *Cache, e error) {
+func NewCache(size int) (*Cache, error) {
 	evictedItems := make(map[interface{}]interface{})
 	lruCache, err := lru.NewWithEvict(size, func(key interface{}, value interface{}) {
 		evictedItems[key] = value
@@ -48,7 +48,7 @@ func (c *Cache) RemoveEvictedItems() {
 }
 
 // Get retrieves an item from the LRU cache or evicted items.
-func (c *Cache) Get(key interface{}) (value interface{}, ok bool) {
+func (c *Cache) Get(key interface{}) (interface{}, bool) {
 	val, okay := c.Cache.Get(key)
 	if !okay {
 		val, okay = c.evictedItems[key]
