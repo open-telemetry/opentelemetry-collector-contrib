@@ -16,7 +16,6 @@ package datareceivers // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
-	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -61,10 +60,10 @@ func (dd *datadogDataReceiver) Stop() error {
 
 func (dd *datadogDataReceiver) GenConfigYAMLStr() string {
 	// Note that this generates an exporter config for agent.
-	return fmt.Sprintf(`
+	return `
   datadog:
-    endpoint: http://0.0.0.0:8126
-    `)
+    endpoint: 0.0.0.0:8126
+    `
 }
 
 func (dd *datadogDataReceiver) ProtocolName() string {
