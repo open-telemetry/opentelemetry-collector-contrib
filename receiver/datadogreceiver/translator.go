@@ -21,11 +21,10 @@ import (
 	"net/http"
 	"strings"
 
-	semconv "go.opentelemetry.io/collector/model/semconv/v1.6.1"
-
 	datadogpb "github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
 	"github.com/tinylib/msgp/msgp"
 	"go.opentelemetry.io/collector/model/pdata"
+	semconv "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 )
 
 func toTraces(traces datadogpb.Traces, req *http.Request) pdata.Traces {
