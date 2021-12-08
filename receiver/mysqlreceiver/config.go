@@ -24,5 +24,6 @@ type Config struct {
 	Username                                string `mapstructure:"username,omitempty"`
 	Password                                string `mapstructure:"password,omitempty"`
 	Database                                string `mapstructure:"database,omitempty"`
+	AllowNativePasswords                    bool   `mapstructure:"database,omitempty"`
 	confignet.NetAddr                       `mapstructure:",squash"`
 }

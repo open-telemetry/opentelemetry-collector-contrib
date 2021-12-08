@@ -43,7 +43,7 @@ func newMySQLClient(conf *Config) client {
 		Net:                  conf.Transport,
 		Addr:                 conf.Endpoint,
 		DBName:               conf.Database,
-		AllowNativePasswords: true,
+		AllowNativePasswords: conf.AllowNativePasswords,
 	}
 	connStr := driverConf.FormatDSN()
 
