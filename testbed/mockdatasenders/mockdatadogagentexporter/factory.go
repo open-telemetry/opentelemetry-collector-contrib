@@ -58,10 +58,8 @@ func CreateTracesExporter(
 		return nil, errors.New("exporter config requires a non-empty 'endpoint'")
 	}
 
-	dd, err := createExporter(c)
-	if err != nil {
-		return nil, err
-	}
+	dd := createExporter(c)
+
 	return exporterhelper.NewTracesExporter(
 		c,
 		set,

@@ -35,14 +35,14 @@ type ddExporter struct {
 	clientSettings *confighttp.HTTPClientSettings
 }
 
-func createExporter(cfg *Config) (*ddExporter, error) {
+func createExporter(cfg *Config) *ddExporter {
 	dd := &ddExporter{
 		endpoint:       cfg.Endpoint,
 		clientSettings: &cfg.HTTPClientSettings,
 		client:         nil,
 	}
 
-	return dd, nil
+	return dd
 }
 
 // start creates the http client
@@ -76,12 +76,12 @@ func (dd *ddExporter) pushTraces(ctx context.Context, td pdata.Traces) error {
 					newSpan.GetMeta()[k] = v.AsString()
 					return true
 				})
-				var traceIdBytes = span.TraceID().Bytes()
-				var spanIdBytes = span.SpanID().Bytes()
-				var parentIdBytes = span.ParentSpanID().Bytes()
-				binary.BigEndian.PutUint64(traceIdBytes[:], newSpan.TraceID)
-				binary.BigEndian.PutUint64(spanIdBytes[:], newSpan.SpanID)
-				binary.BigEndian.PutUint64(parentIdBytes[:], newSpan.ParentID)
+				var traceIDBytes = span.TraceID().Bytes()
+				var spanIDBytes = span.SpanID().Bytes()
+				var parentIDBytes = span.ParentSpanID().Bytes()
+				binary.BigEndian.PutUint64(traceIDBytes[:], newSpan.TraceID)
+				binary.BigEndian.PutUint64(spanIDBytes[:], newSpan.SpanID)
+				binary.BigEndian.PutUint64(parentIDBytes[:], newSpan.ParentID)
 				trace = append(trace, &newSpan)
 			}
 			traces = append(traces, trace)
