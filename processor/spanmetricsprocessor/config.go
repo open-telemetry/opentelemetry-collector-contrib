@@ -46,6 +46,7 @@ type Config struct {
 	// https://github.com/open-telemetry/opentelemetry-collector/blob/main/model/semconv/opentelemetry.go.
 	Dimensions []Dimension `mapstructure:"dimensions"`
 
-	// MetricKeyToDimensionsCacheSize defines the size of the LRU cache for storing MetricKeyToDimensions cache
+	// MetricKeyToDimensionsCacheSize defines the size of the LRU cache for storing MetricKeyToDimensions cache, which
+	// helps to avoid cache memory growing indefinitely over the lifetime of the collector.
 	MetricKeyToDimensionsCacheSize int `mapstructure:"metric_key_to_dimensions_cache_size"`
 }
