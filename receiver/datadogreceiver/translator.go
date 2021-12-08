@@ -68,10 +68,8 @@ func toTraces(traces datadogpb.Traces, req *http.Request) pdata.Traces {
 			switch span.Type {
 			case "web":
 				newSpan.SetKind(pdata.SpanKindServer)
-				break
 			case "custom":
 				newSpan.SetKind(pdata.SpanKindUnspecified)
-				break
 			default:
 				newSpan.SetKind(pdata.SpanKindClient)
 			}
