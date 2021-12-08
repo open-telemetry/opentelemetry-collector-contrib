@@ -100,7 +100,7 @@ func NewMetricsBuilder(config MetricsSettings, options ...metricBuilderOption) *
 // defined in metadata and user configuration, e.g. delta/cumulative translation.
 func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
 	if mb.config.SystemCPUTime.Enabled && mb.metrics.SystemCPUTime.Sum().DataPoints().Len() > 0 {
-		mb.metrics.SystemCPUTime.CopyTo(metrics.AppendEmpty())
+		mb.metrics.SystemCPUTime.MoveTo(metrics.AppendEmpty())
 	}
 
 	// Reset metric data points collection.
