@@ -51,8 +51,8 @@ exporter/sumologicexporter/                          @open-telemetry/collector-c
 exporter/tanzuobservabilityexporter/                 @open-telemetry/collector-contrib-approvers @oppegard @thepeterstone @keep94
 exporter/tencentcloudlogserviceexporter/             @open-telemetry/collector-contrib-approvers @wgliang @yiyang5055
 
-extension/awsproxy/                                  @open-telemetry/collector-contrib-approvers @anuraaga @Aneurysm9 @mxiamxia
 extension/asapauthextension                          @open-telemetry/collector-contrib-approvers @jamesmoessis @MovieStoreGuy
+extension/awsproxy/                                  @open-telemetry/collector-contrib-approvers @anuraaga @Aneurysm9 @mxiamxia
 extension/bearertokenauthextension/                  @open-telemetry/collector-contrib-approvers @jpkrohling @pavankrish123
 extension/healthcheckextension/                      @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/httpforwarder/                             @open-telemetry/collector-contrib-approvers @asuresh4
