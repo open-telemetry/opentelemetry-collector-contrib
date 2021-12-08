@@ -7,7 +7,7 @@ require (
 	github.com/prometheus/common v0.32.1
 	github.com/prometheus/prometheus v1.8.2-0.20210621150501-ff58416a0b02
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.40.1-0.20211202221455-42566a660aac
+	go.opentelemetry.io/collector v0.40.1-0.20211206203115-a06ca26079fe
 	k8s.io/client-go v0.22.4
 )
 
@@ -74,7 +74,7 @@ require (
 	github.com/miekg/dns v1.1.43 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
-	github.com/mitchellh/mapstructure v1.4.2 // indirect
+	github.com/mitchellh/mapstructure v1.4.3 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
@@ -93,7 +93,7 @@ require (
 	github.com/spf13/cast v1.4.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/model v0.40.1-0.20211202221455-42566a660aac // indirect
+	go.opentelemetry.io/collector/model v0.40.1-0.20211206203115-a06ca26079fe // indirect
 	go.opentelemetry.io/otel v1.2.0 // indirect
 	go.opentelemetry.io/otel/metric v0.25.0 // indirect
 	go.opentelemetry.io/otel/trace v1.2.0 // indirect

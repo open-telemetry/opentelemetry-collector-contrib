@@ -8,8 +8,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib v0.40.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.40.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.40.1-0.20211202221455-42566a660aac
-	go.opentelemetry.io/collector/model v0.40.1-0.20211202221455-42566a660aac
+	go.opentelemetry.io/collector v0.40.1-0.20211206203115-a06ca26079fe
+	go.opentelemetry.io/collector/model v0.40.1-0.20211206203115-a06ca26079fe
 	golang.org/x/mod v0.4.2
 )
 
@@ -169,7 +169,7 @@ require (
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/hashstructure v1.1.0 // indirect
-	github.com/mitchellh/mapstructure v1.4.2 // indirect
+	github.com/mitchellh/mapstructure v1.4.3 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/moby/sys/mountinfo v0.5.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
@@ -336,7 +336,7 @@ require (
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.7.0.20210223165440-c65ae3540d44 // indirect
 	github.com/seccomp/libseccomp-golang v0.9.1 // indirect
 	github.com/shirou/gopsutil v3.21.10+incompatible // indirect
-	github.com/shirou/gopsutil/v3 v3.21.11-0.20211128073732-aa3378b5ffc8 // indirect
+	github.com/shirou/gopsutil/v3 v3.21.11 // indirect
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.2 // indirect
 	github.com/signalfx/gohistogram v0.0.0-20160107210732-1ccfd2ff5083 // indirect
 	github.com/signalfx/golib/v3 v3.3.13 // indirect
