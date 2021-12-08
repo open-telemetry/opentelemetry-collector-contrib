@@ -31,7 +31,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
-	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"google.golang.org/grpc/metadata"
 
@@ -203,7 +202,7 @@ func TestProcessorConsumeTracesErrors(t *testing.T) {
 			tcon := &mocks.TracesConsumer{}
 			tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(tc.consumeTracesErr)
 
-			p := newProcessorImp(mexp, tcon, nil, cumulative)
+			p := newProcessorImp(mexp, tcon, nil, cumulative, t)
 
 			traces := buildSampleTrace()
 
@@ -242,7 +241,7 @@ func TestProcessorConsumeTraces(t *testing.T) {
 			// More consumptions, should accumulate additively.
 			name:                   "Test two consumptions (Cumulative).",
 			aggregationTemporality: cumulative,
-			verifier:               verifyMultipleCumulativeConsumptions,
+			verifier:               verifyMultipleCumulativeConsumptions(),
 			traces:                 []pdata.Traces{buildSampleTrace(), buildSampleTrace()},
 		},
 		{
@@ -267,7 +266,7 @@ func TestProcessorConsumeTraces(t *testing.T) {
 			tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
 
 			defaultNullValue := "defaultNullValue"
-			p := newProcessorImp(mexp, tcon, &defaultNullValue, tc.aggregationTemporality)
+			p := newProcessorImp(mexp, tcon, &defaultNullValue, tc.aggregationTemporality, t)
 
 			for _, traces := range tc.traces {
 				// Test
@@ -290,7 +289,7 @@ func TestMetricKeyCache(t *testing.T) {
 	tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
 
 	defaultNullValue := "defaultNullValue"
-	p := newProcessorImp(mexp, tcon, &defaultNullValue, cumulative)
+	p := newProcessorImp(mexp, tcon, &defaultNullValue, cumulative, t)
 
 	traces := buildSampleTrace()
 
@@ -319,7 +318,7 @@ func BenchmarkProcessorConsumeTraces(b *testing.B) {
 	tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
 
 	defaultNullValue := "defaultNullValue"
-	p := newProcessorImp(mexp, tcon, &defaultNullValue, cumulative)
+	p := newProcessorImp(mexp, tcon, &defaultNullValue, cumulative, b)
 
 	traces := buildSampleTrace()
 
@@ -330,10 +329,10 @@ func BenchmarkProcessorConsumeTraces(b *testing.B) {
 	}
 }
 
-func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, defaultNullValue *string, temporality string) *processorImp {
+func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, defaultNullValue *string, temporality string, tb testing.TB) *processorImp {
 	defaultNotInSpanAttrVal := "defaultNotInSpanAttrVal"
 	return &processorImp{
-		logger:          zap.NewNop(),
+		logger:          zaptest.NewLogger(tb),
 		config:          Config{AggregationTemporality: temporality},
 		metricsExporter: mexp,
 		nextConsumer:    tcon,
@@ -375,13 +374,14 @@ func verifyConsumeMetricsInputDelta(t testing.TB, input pdata.Metrics) bool {
 	return verifyConsumeMetricsInput(t, input, pdata.MetricAggregationTemporalityDelta, 1)
 }
 
-var numCumulativeConsumptions = 0
-
 // verifyMultipleCumulativeConsumptions expects the amount of accumulations as kept track of by numCumulativeConsumptions.
 // numCumulativeConsumptions acts as a multiplier for the values, since the cumulative metrics are additive.
-func verifyMultipleCumulativeConsumptions(t testing.TB, input pdata.Metrics) bool {
-	numCumulativeConsumptions++
-	return verifyConsumeMetricsInput(t, input, pdata.MetricAggregationTemporalityCumulative, numCumulativeConsumptions)
+func verifyMultipleCumulativeConsumptions() func(t testing.TB, input pdata.Metrics) bool {
+	numCumulativeConsumptions := 0
+	return func(t testing.TB, input pdata.Metrics) bool {
+		numCumulativeConsumptions++
+		return verifyConsumeMetricsInput(t, input, pdata.MetricAggregationTemporalityCumulative, numCumulativeConsumptions)
+	}
 }
 
 // verifyConsumeMetricsInput verifies the input of the ConsumeMetrics call from this processor.
