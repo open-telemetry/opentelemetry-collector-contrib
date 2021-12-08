@@ -1028,8 +1028,7 @@ func TestSpanResourceTranslationRpcFallback(t *testing.T) {
 // ensure that the datadog span name uses IL name +kind when available and falls back to opetelemetry + kind
 func TestSpanNameTranslation(t *testing.T) {
 	span := pdata.NewSpan()
-	spanName := "Default Name"
-	span.SetName(spanName)
+	span.SetName("Default Name")
 	span.SetKind(pdata.SpanKindServer)
 
 	ddIlTags := map[string]string{
@@ -1056,13 +1055,12 @@ func TestSpanNameTranslation(t *testing.T) {
 		"otel.library.name": "hyphenated-value",
 	}
 
-	spanNameIl := getDatadogSpanName(span, ddIlTags, false)
-	spanNameDefault := getDatadogSpanName(span, ddNoIlTags, false)
-	spanNameOld := getDatadogSpanName(span, ddIlTagsOld, false)
-	spanNameCur := getDatadogSpanName(span, ddIlTagsCur, false)
-	spanNameUnusual := getDatadogSpanName(span, ddIlTagsUnusual, false)
-	spanNameHyphen := getDatadogSpanName(span, ddIlTagsHyphen, false)
-	spanNameAsResourceName := getDatadogSpanName(span, ddIlTagsHyphen, true)
+	spanNameIl := getDatadogSpanName(span, ddIlTags)
+	spanNameDefault := getDatadogSpanName(span, ddNoIlTags)
+	spanNameOld := getDatadogSpanName(span, ddIlTagsOld)
+	spanNameCur := getDatadogSpanName(span, ddIlTagsCur)
+	spanNameUnusual := getDatadogSpanName(span, ddIlTagsUnusual)
+	spanNameHyphen := getDatadogSpanName(span, ddIlTagsHyphen)
 
 	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", "il_name", strings.TrimPrefix(pdata.SpanKindServer.String(), "SPAN_KIND_"))), spanNameIl)
 	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", "opentelemetry", strings.TrimPrefix(pdata.SpanKindServer.String(), "SPAN_KIND_"))), spanNameDefault)
@@ -1070,7 +1068,6 @@ func TestSpanNameTranslation(t *testing.T) {
 	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", "current_value", strings.TrimPrefix(pdata.SpanKindServer.String(), "SPAN_KIND_"))), spanNameCur)
 	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", "unusual_value", strings.TrimPrefix(pdata.SpanKindServer.String(), "SPAN_KIND_"))), spanNameUnusual)
 	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", "hyphenated_value", strings.TrimPrefix(pdata.SpanKindServer.String(), "SPAN_KIND_"))), spanNameHyphen)
-	assert.Equal(t, spanName, spanNameAsResourceName)
 }
 
 // ensure that the datadog span name uses IL name +kind when available and falls back to opetelemetry + kind
@@ -1531,4 +1528,33 @@ func TestSpanRateLimitTag(t *testing.T) {
 	outputTraces, _ := convertToDatadogTd(traces, "test-host", &config.Config{}, denylister, buildInfo)
 
 	assert.Equal(t, 0.5, outputTraces[0].Traces[0].Spans[0].Metrics["_sample_rate"])
+}
+
+func TestTracesSpanNamingOption(t *testing.T) {
+	hostname := "testhostname"
+	denylister := newDenylister([]string{})
+
+	// generate mock trace, span and parent span ids
+	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
+	mockSpanID := [8]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8}
+	mockParentSpanID := [8]byte{0xEF, 0xEE, 0xED, 0xEC, 0xEB, 0xEA, 0xE9, 0xE8}
+
+	mockEndTime := time.Now().Round(time.Second)
+
+	// create mock resource span data
+	// toggle on errors and custom service naming to test edge case code paths
+	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, pdata.StatusCodeUnset, false, mockEndTime)
+	
+	// start with span name as resource name set to true
+	cfgSpanNameAsResourceName := config.Config{
+		Traces: config.TracesConfig{
+			SpanNameAsResourceName: true,
+		},
+	}
+
+	// translate mocks to datadog traces
+	datadogPayloadSpanNameAsResourceName := resourceSpansToDatadogSpans(rs, hostname, &cfgSpanNameAsResourceName, denylister, map[string]string{})
+	
+	// ensure the resource name is replaced with the span name when the option is set
+	assert.Equal(t, "End-To-End Here", datadogPayloadSpanNameAsResourceName.Traces[0].Spans[0].Name)
 }
