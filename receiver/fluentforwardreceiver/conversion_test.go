@@ -57,7 +57,7 @@ func TestAttributeTypeConversion(t *testing.T) {
 	b = msgp.AppendArrayHeader(b, 3)
 	b = msgp.AppendString(b, "my-tag")
 	b = msgp.AppendInt(b, 5000)
-	b = msgp.AppendMapHeader(b, 15)
+	b = msgp.AppendMapHeader(b, 16)
 	b = msgp.AppendString(b, "a")
 	b = msgp.AppendFloat64(b, 5.0)
 	b = msgp.AppendString(b, "b")
@@ -90,6 +90,8 @@ func TestAttributeTypeConversion(t *testing.T) {
 	b = msgp.AppendString(b, "second")
 	b = msgp.AppendString(b, "o")
 	b, err := msgp.AppendIntf(b, []uint8{99, 100, 101})
+	b = msgp.AppendString(b, "p")
+	b = msgp.AppendNil(b)
 
 	require.NoError(t, err)
 
@@ -128,6 +130,7 @@ func TestAttributeTypeConversion(t *testing.T) {
 				"m":          pdata.NewAttributeValueString("\001e\002"),
 				"n":          nv,
 				"o":          pdata.NewAttributeValueString("cde"),
+				"p":          pdata.NewAttributeValueEmpty(),
 			},
 		},
 	).ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0), le)
