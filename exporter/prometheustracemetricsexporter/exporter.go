@@ -25,6 +25,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/model/otlp"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/otel/attribute"
+	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 	"go.uber.org/zap"
 )
 
@@ -35,7 +37,7 @@ type (
 
 		cfg *Config
 
-		spanCounter   prometheus.Counter
+		spanCounter   *prometheus.CounterVec
 		spanBatchSize prometheus.Gauge
 
 		marshaler pdata.TracesMarshaler
@@ -50,7 +52,10 @@ type (
 )
 
 const (
-	metricsNamespace = "promtracemetrics"
+	metricsNamespace  = "promtracemetrics"
+	tenantLabel       = "tenant"
+	serviceLabel      = "service"
+	unknownLabelValue = "unknown"
 )
 
 var (
@@ -130,23 +135,50 @@ func (e *exporter) Capabilities() consumer.Capabilities {
 }
 
 func (e *exporter) ConsumeTraces(_ context.Context, td pdata.Traces) error {
+	rSpansSlice := td.ResourceSpans()
+	for i := 0; i < rSpansSlice.Len(); i++ {
+		rSpans := rSpansSlice.At(i)
+
+		attribs := rSpans.Resource().Attributes()
+
+		tenant := unknownLabelValue
+		service := unknownLabelValue
+		attribs.Range(func(k string, v pdata.AttributeValue) bool {
+			switch attribute.Key(k) {
+			case semconv.ServiceNamespaceKey:
+				tenant = v.AsString()
+			case semconv.ServiceNameKey:
+				service = v.AsString()
+			}
+			return true
+		})
+
+		libSpans := rSpans.InstrumentationLibrarySpans()
+
+		for j := 0; j < libSpans.Len(); j++ {
+			spans := libSpans.At(j)
+
+			e.spanCounter.
+				WithLabelValues(tenant, service).
+				Add(float64(spans.Spans().Len()))
+		}
+	}
+
 	raw, err := e.marshaler.MarshalTraces(td)
 	if err != nil {
 		e.loggerSugar.Warnf("Could not marshal traces: %s", err)
-		return nil
+	} else {
+		e.spanBatchSize.Add(float64(len(raw)))
 	}
-
-	e.spanCounter.Add(float64(td.SpanCount()))
-	e.spanBatchSize.Add(float64(len(raw)))
 
 	return nil
 }
 
 func (e *exporter) createPromCounters() {
-	e.spanCounter = prometheus.NewCounter(prometheus.CounterOpts{
+	e.spanCounter = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Namespace: metricsNamespace,
 		Name:      "span_count",
-	})
+	}, []string{tenantLabel, serviceLabel})
 
 	e.spanBatchSize = prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: metricsNamespace,
