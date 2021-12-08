@@ -468,9 +468,7 @@ func getDimensionValue(d Dimension, spanAttr pdata.AttributeMap, resourceAttr pd
 // This enables a lookup of the dimension key-value map when constructing the metric like so:
 //   LabelsMap().InitFromMap(p.metricKeyToDimensions[key])
 func (p *processorImp) cache(serviceName string, span pdata.Span, k metricKey, resourceAttrs pdata.AttributeMap) {
-	if !p.metricKeyToDimensions.Contains(k) {
-		_ = p.metricKeyToDimensions.Add(k, p.buildDimensionKVs(serviceName, span, p.dimensions, resourceAttrs))
-	}
+	p.metricKeyToDimensions.ContainsOrAdd(k, p.buildDimensionKVs(serviceName, span, p.dimensions, resourceAttrs))
 }
 
 // copied from prometheus-go-metric-exporter
