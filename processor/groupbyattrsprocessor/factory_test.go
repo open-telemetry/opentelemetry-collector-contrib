@@ -45,6 +45,11 @@ func TestCreateTestProcessor(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, lp)
 	assert.Equal(t, true, lp.Capabilities().MutatesData)
+
+	mp, err := createMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
+	assert.NoError(t, err)
+	assert.NotNil(t, mp)
+	assert.Equal(t, true, mp.Capabilities().MutatesData)
 }
 
 func TestNoKeys(t *testing.T) {

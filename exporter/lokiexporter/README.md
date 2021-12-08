@@ -44,6 +44,8 @@ The following settings can be optionally configured:
 
 - `headers` (no default): Name/value pairs added to the HTTP request headers.
 
+- `format` (default = body): Set the log entry line format. This can be set to 'json' (the entire JSON encoded log record) or 'body' (the log record body field as a string).
+
 Example:
 
 ```yaml
