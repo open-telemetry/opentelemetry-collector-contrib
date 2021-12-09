@@ -45,7 +45,6 @@ require (
 	github.com/signalfx/gohistogram v0.0.0-20160107210732-1ccfd2ff5083 // indirect
 	github.com/signalfx/golib/v3 v3.3.13 // indirect
 	github.com/signalfx/sapm-proto v0.4.0 // indirect
-	github.com/smartystreets/goconvey v1.6.4 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
 	github.com/tklauser/go-sysconf v0.3.9 // indirect
 	github.com/tklauser/numcpus v0.3.0 // indirect
