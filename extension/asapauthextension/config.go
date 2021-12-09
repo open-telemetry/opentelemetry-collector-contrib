@@ -16,6 +16,7 @@ package asapauthextension // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"errors"
+	"time"
 
 	"go.opentelemetry.io/collector/config"
 	"go.uber.org/multierr"
@@ -34,7 +35,7 @@ type Config struct {
 
 	KeyID string `mapstructure:"key_id"`
 
-	TTL int `mapstructure:"ttl_seconds"`
+	TTL time.Duration `mapstructure:"ttl"`
 
 	Issuer string `mapstructure:"issuer"`
 
@@ -54,6 +55,7 @@ func (c *Config) Validate() error {
 	if len(c.Audience) == 0 {
 		errs = multierr.Append(errs, errNoAudienceProvided)
 	}
+
 	if c.Issuer == "" {
 		errs = multierr.Append(errs, errNoIssuerProvided)
 	}

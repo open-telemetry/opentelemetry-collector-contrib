@@ -17,6 +17,7 @@ package asapauthextension
 import (
 	"path"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -46,7 +47,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.NoError(t, cfg.Validate())
 
 	expected := factory.CreateDefaultConfig().(*Config)
-	expected.TTL = 60
+	expected.TTL = 60*time.Second
 	expected.Audience = []string{"test_service1", "test_service2"}
 	expected.Issuer = "test_issuer"
 	expected.KeyID = "test_issuer/test_kid"

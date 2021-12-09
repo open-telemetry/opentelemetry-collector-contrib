@@ -15,16 +15,14 @@
 package asapauthextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension"
 
 import (
+	asap "bitbucket.org/atlassian/go-asap/v2"
 	"context"
 	"fmt"
-	"net/http"
-	"time"
-
-	asap "bitbucket.org/atlassian/go-asap/v2"
 	"github.com/SermoDigital/jose/crypto"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
 	"google.golang.org/grpc/credentials"
+	"net/http"
 )
 
 // ASAPClientAuthenticator implements ClientAuthenticator
@@ -64,7 +62,7 @@ func createASAPClientAuthenticator(cfg *Config) (ASAPClientAuthenticator, error)
 
 	// Caching provisioner will only issue a new token after the current token's expiry (determined by TTL).
 	p := asap.NewCachingProvisioner(asap.NewProvisioner(
-		cfg.KeyID, time.Duration(cfg.TTL)*time.Second, cfg.Issuer, cfg.Audience, crypto.SigningMethodRS256))
+		cfg.KeyID, cfg.TTL, cfg.Issuer, cfg.Audience, crypto.SigningMethodRS256))
 
 	return ASAPClientAuthenticator{
 		provisioner: p,
