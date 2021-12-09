@@ -22,6 +22,8 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -228,29 +230,42 @@ func (l *lokiExporter) convertAttributesToLabels(attributes pdata.AttributeMap, 
 }
 
 func (l *lokiExporter) convertLogBodyToEntry(lr pdata.LogRecord, res pdata.Resource) (*logproto.Entry, error) {
-	body := lr.Body().StringVal()
+	var b strings.Builder
 
 	if len(lr.Name()) > 0 {
-		body = fmt.Sprintf("name=%s %s", lr.Name(), body)
+		b.WriteString("name=")
+		b.WriteString(lr.Name())
+		b.WriteRune(' ')
 	}
 	if len(lr.SeverityText()) > 0 {
-		body = fmt.Sprintf("severity=%s %s", lr.SeverityText(), body)
+		b.WriteString("severity=")
+		b.WriteString(lr.SeverityText())
+		b.WriteRune(' ')
 	}
 	if lr.SeverityNumber() > 0 {
-		body = fmt.Sprintf("severityN=%d %s", lr.SeverityNumber(), body)
+		b.WriteString("severityN=")
+		b.WriteString(strconv.Itoa(int(lr.SeverityNumber())))
+		b.WriteRune(' ')
 	}
 	if !lr.TraceID().IsEmpty() {
-		body = fmt.Sprintf("traceID=%s %s", lr.TraceID().HexString(), body)
+		b.WriteString("traceID=")
+		b.WriteString(lr.TraceID().HexString())
+		b.WriteRune(' ')
 	}
 	if !lr.SpanID().IsEmpty() {
-		body = fmt.Sprintf("spanID=%s %s", lr.SpanID().HexString(), body)
+		b.WriteString("spanID=")
+		b.WriteString(lr.SpanID().HexString())
+		b.WriteRune(' ')
 	}
 
 	// fields not added to the accept-list as part of the component's config
 	// are added to the body, so that they can still be seen under "detected fields"
 	lr.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 		if _, found := l.config.Labels.Attributes[k]; !found {
-			body = fmt.Sprintf("%s=%s %s", k, v.AsString(), body)
+			b.WriteString(k)
+			b.WriteString("=")
+			b.WriteString(v.AsString())
+			b.WriteRune(' ')
 		}
 		return true
 	})
@@ -259,14 +274,19 @@ func (l *lokiExporter) convertLogBodyToEntry(lr pdata.LogRecord, res pdata.Resou
 	// as part of the config, which are showing up at the top-level already
 	res.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 		if _, found := l.config.Labels.ResourceAttributes[k]; !found {
-			body = fmt.Sprintf("%s=%s %s", k, v.AsString(), body)
+			b.WriteString(k)
+			b.WriteString("=")
+			b.WriteString(v.AsString())
+			b.WriteRune(' ')
 		}
 		return true
 	})
 
+	b.WriteString(lr.Body().StringVal())
+
 	return &logproto.Entry{
 		Timestamp: time.Unix(0, int64(lr.Timestamp())),
-		Line:      body,
+		Line:      b.String(),
 	}, nil
 }
 

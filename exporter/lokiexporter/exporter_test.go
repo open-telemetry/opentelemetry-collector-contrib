@@ -499,7 +499,7 @@ func TestExporter_convertLogBodyToEntry(t *testing.T) {
 
 	expEntry := &logproto.Entry{
 		Timestamp: time.Unix(0, int64(lr.Timestamp())),
-		Line:      "host.name=something spanID=0506070800000000 traceID=01020304000000000000000000000000 severityN=5 severity=DEBUG name=Checkout Payment succeeded",
+		Line:      "name=Checkout severity=DEBUG severityN=5 traceID=01020304000000000000000000000000 spanID=0506070800000000 host.name=something Payment succeeded",
 	}
 	require.NotNil(t, entry)
 	require.Equal(t, expEntry, entry)
