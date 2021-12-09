@@ -990,6 +990,10 @@ func BenchmarkPushLogRecords(b *testing.B) {
 	}
 	state := makeBlankBufferState(4096)
 	for n := 0; n < b.N; n++ {
-		_, _ = c.pushLogRecords(context.Background(), logs.ResourceLogs(), &state, map[string]string{}, sender)
+		permanentErrs, sendingErr := c.pushLogRecords(context.Background(), logs.ResourceLogs(), &state, map[string]string{}, sender)
+		assert.NoError(b, sendingErr)
+		for _, permanentErr := range permanentErrs {
+			assert.NoError(b, permanentErr)
+		}
 	}
 }
