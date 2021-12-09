@@ -386,6 +386,14 @@ func Test_PushMetrics(t *testing.T) {
 
 	staleNaNSummaryBatch := getMetricsFromMetricList(staleNaNMetrics[staleNaNSummary])
 
+	staleNaNIntGaugeBatch := getMetricsFromMetricList(staleNaNMetrics[staleNaNIntGauge])
+
+	staleNaNDoubleGaugeBatch := getMetricsFromMetricList(staleNaNMetrics[staleNaNDoubleGauge])
+
+	staleNaNIntSumBatch := getMetricsFromMetricList(staleNaNMetrics[staleNaNIntSum])
+
+	staleNaNSumBatch := getMetricsFromMetricList(staleNaNMetrics[staleNaNSum])
+
 	checkFunc := func(t *testing.T, r *http.Request, expected int, isStaleMarker bool) {
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
@@ -533,6 +541,42 @@ func Test_PushMetrics(t *testing.T) {
 			http.StatusAccepted,
 			true,
 			false,
+		},
+		{
+			"staleNaNIntGauge_case",
+			&staleNaNIntGaugeBatch,
+			checkFunc,
+			1,
+			http.StatusAccepted,
+			false,
+			true,
+		},
+		{
+			"staleNaNDoubleGauge_case",
+			&staleNaNDoubleGaugeBatch,
+			checkFunc,
+			1,
+			http.StatusAccepted,
+			false,
+			true,
+		},
+		{
+			"staleNaNIntSum_case",
+			&staleNaNIntSumBatch,
+			checkFunc,
+			1,
+			http.StatusAccepted,
+			false,
+			true,
+		},
+		{
+			"staleNaNSum_case",
+			&staleNaNSumBatch,
+			checkFunc,
+			1,
+			http.StatusAccepted,
+			false,
+			true,
 		},
 		{
 			"staleNaNHistogram_case",

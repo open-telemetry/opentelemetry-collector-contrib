@@ -324,11 +324,16 @@ func addSingleNumberDataPoint(pt pdata.NumberDataPoint, resource pdata.Resource,
 		// convert ns to ms
 		Timestamp: convertTimeStamp(pt.Timestamp()),
 	}
-	switch pt.Type() {
-	case pdata.MetricValueTypeInt:
-		sample.Value = float64(pt.IntVal())
-	case pdata.MetricValueTypeDouble:
-		sample.Value = pt.DoubleVal()
+	// check for staleness marker flag
+	if pt.Flags().HasFlag(pdata.MetricDataPointFlagNoRecordedValue) {
+		sample.Value = math.Float64frombits(value.StaleNaN)
+	} else {
+		switch pt.Type() {
+		case pdata.MetricValueTypeInt:
+			sample.Value = float64(pt.IntVal())
+		case pdata.MetricValueTypeDouble:
+			sample.Value = pt.DoubleVal()
+		}
 	}
 	addSample(tsMap, sample, labels, metric)
 }

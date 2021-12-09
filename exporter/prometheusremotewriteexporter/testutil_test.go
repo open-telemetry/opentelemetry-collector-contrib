@@ -158,13 +158,21 @@ var (
 		emptyCumulativeSum:       getEmptyCumulativeSumMetric(emptyCumulativeSum),
 		emptyCumulativeHistogram: getEmptyCumulativeHistogramMetric(emptyCumulativeHistogram),
 	}
-	staleNaNHistogram = "staleNaNHistogram"
-	staleNaNSummary   = "staleNaNSummary"
+	staleNaNIntGauge    = "staleNaNIntGauge"
+	staleNaNDoubleGauge = "staleNaNDoubleGauge"
+	staleNaNIntSum      = "staleNaNIntSum"
+	staleNaNSum         = "staleNaNSum"
+	staleNaNHistogram   = "staleNaNHistogram"
+	staleNaNSummary     = "staleNaNSummary"
 
 	// staleNaN metrics as input should have the staleness marker flag
 	staleNaNMetrics = map[string]pdata.Metric{
-		staleNaNHistogram: getHistogramMetric(staleNaNHistogram, lbs1, time1, floatVal2, uint64(intVal2), bounds, buckets),
-		staleNaNSummary:   getSummaryMetric(staleNaNSummary, lbs2, time2, floatVal2, uint64(intVal2), quantiles),
+		staleNaNIntGauge:    getIntGaugeMetric(staleNaNIntGauge, lbs1, intVal1, time1),
+		staleNaNDoubleGauge: getDoubleGaugeMetric(staleNaNDoubleGauge, lbs1, floatVal1, time1),
+		staleNaNIntSum:      getIntSumMetric(staleNaNIntSum, lbs1, intVal1, time1),
+		staleNaNSum:         getSumMetric(staleNaNSum, lbs1, floatVal1, time1),
+		staleNaNHistogram:   getHistogramMetric(staleNaNHistogram, lbs1, time1, floatVal2, uint64(intVal2), bounds, buckets),
+		staleNaNSummary:     getSummaryMetric(staleNaNSummary, lbs2, time2, floatVal2, uint64(intVal2), quantiles),
 	}
 )
 
@@ -286,6 +294,9 @@ func getIntGaugeMetric(name string, attributes pdata.AttributeMap, value int64, 
 	metric.SetName(name)
 	metric.SetDataType(pdata.MetricDataTypeGauge)
 	dp := metric.Gauge().DataPoints().AppendEmpty()
+	if strings.HasPrefix(name, "staleNaN") {
+		dp.SetFlags(1)
+	}
 	dp.SetIntVal(value)
 	attributes.CopyTo(dp.Attributes())
 
@@ -299,6 +310,9 @@ func getDoubleGaugeMetric(name string, attributes pdata.AttributeMap, value floa
 	metric.SetName(name)
 	metric.SetDataType(pdata.MetricDataTypeGauge)
 	dp := metric.Gauge().DataPoints().AppendEmpty()
+	if strings.HasPrefix(name, "staleNaN") {
+		dp.SetFlags(1)
+	}
 	dp.SetDoubleVal(value)
 	attributes.CopyTo(dp.Attributes())
 
@@ -320,6 +334,9 @@ func getIntSumMetric(name string, attributes pdata.AttributeMap, value int64, ts
 	metric.SetDataType(pdata.MetricDataTypeSum)
 	metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 	dp := metric.Sum().DataPoints().AppendEmpty()
+	if strings.HasPrefix(name, "staleNaN") {
+		dp.SetFlags(1)
+	}
 	dp.SetIntVal(value)
 	attributes.CopyTo(dp.Attributes())
 
@@ -342,6 +359,9 @@ func getSumMetric(name string, attributes pdata.AttributeMap, value float64, ts 
 	metric.SetDataType(pdata.MetricDataTypeSum)
 	metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 	dp := metric.Sum().DataPoints().AppendEmpty()
+	if strings.HasPrefix(name, "staleNaN") {
+		dp.SetFlags(1)
+	}
 	dp.SetDoubleVal(value)
 	attributes.CopyTo(dp.Attributes())
 
