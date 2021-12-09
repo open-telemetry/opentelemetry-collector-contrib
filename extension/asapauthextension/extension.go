@@ -15,14 +15,15 @@
 package asapauthextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension"
 
 import (
-	asap "bitbucket.org/atlassian/go-asap/v2"
 	"context"
 	"fmt"
+	"net/http"
+
+	asap "bitbucket.org/atlassian/go-asap/v2"
 	"github.com/SermoDigital/jose/crypto"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
 	"google.golang.org/grpc/credentials"
-	"net/http"
 )
 
 // ASAPClientAuthenticator implements ClientAuthenticator
