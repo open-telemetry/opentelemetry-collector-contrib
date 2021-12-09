@@ -18,8 +18,6 @@ require (
 
 require go.uber.org/multierr v1.7.0
 
-require go.opentelemetry.io/otel/trace v1.2.0
-
 require (
 	github.com/cenkalti/backoff/v4 v4.1.2 // indirect
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
@@ -41,6 +39,7 @@ require (
 	go.opentelemetry.io/otel v1.2.0 // indirect
 	go.opentelemetry.io/otel/internal/metric v0.25.0 // indirect
 	go.opentelemetry.io/otel/metric v0.25.0 // indirect
+	go.opentelemetry.io/otel/trace v1.2.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	golang.org/x/net v0.0.0-20210614182718-04defd469f4e // indirect
 	golang.org/x/sys v0.0.0-20211013075003-97ac67df715c // indirect
