@@ -85,7 +85,7 @@ func TestDefaultExtensions(t *testing.T) {
 	}
 
 	// * The OIDC Auth extension requires an OIDC server to get the config from, and we don't want to spawn one here for this test.
-	assert.Equal(t, len(tests)+8 /* not tested */, len(extFactories))
+	assert.Equal(t, len(tests)+9 /* not tested */, len(extFactories))
 
 	for _, tt := range tests {
 		t.Run(string(tt.extension), func(t *testing.T) {
