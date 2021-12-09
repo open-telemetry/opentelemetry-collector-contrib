@@ -22,13 +22,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
-	"log"
-	"math"
 	"net/http"
 	"net/url"
-	"strconv"
 	"time"
 
 	"go.uber.org/zap"
@@ -60,9 +56,6 @@ type containerStatsReport struct {
 	Error string
 	Stats []containerStats
 }
-
-type Type = string
-
 type actor struct {
 	ID         string
 	Attributes map[string]string
@@ -81,15 +74,13 @@ type event struct {
 
 	Time     int64 `json:"time,omitempty"`
 	TimeNano int64 `json:"timeNano,omitempty"`
-
-	Error string
 }
 
 type clientFactory func(logger *zap.Logger, cfg *Config) (client, error)
 
 type client interface {
 	stats() ([]containerStats, error)
-	events(logger *zap.Logger, cfg *Config) (chan event, error)
+	getEventsResponse() (*http.Response, error)
 }
 
 type podmanClient struct {
@@ -150,8 +141,8 @@ func (c *podmanClient) stats() ([]containerStats, error) {
 	}
 	return report.Stats, nil
 }
-func (c *podmanClient) events(logger *zap.Logger, cfg *Config) (chan event, error) {
-	ch := make(chan event)
+
+func (c *podmanClient) getEventsResponse() (*http.Response, error) {
 	params := url.Values{}
 	params.Add("stream", "true")
 	params.Add("since", "0m")
@@ -160,42 +151,15 @@ func (c *podmanClient) events(logger *zap.Logger, cfg *Config) (chan event, erro
 	if err != nil {
 		return nil, err
 	}
-	maxRetries, err := strconv.Atoi(cfg.MaxRetries)
-	if err != nil {
-		return nil, err
+	return response, nil
+}
+
+func decodeEvents(dec *json.Decoder) (event, error) {
+	var eventToDecode event
+	if err := dec.Decode(&eventToDecode); err != nil {
+		return event{}, err
 	}
-
-	go func() {
-		dec := json.NewDecoder(response.Body)
-
-		shouldRetry := true
-		for retries := 1; retries <= int(maxRetries) && shouldRetry; retries++ {
-			if retries != 1 {
-				logger.Info("Retrying...")
-			}
-			for {
-				var event event
-				if err := dec.Decode(&event); err != nil {
-					if err == io.EOF {
-						logger.Error("Error while decoding events")
-						break
-					}
-					shouldRetry = true
-					logger.Error("Error while decoding events")
-					break
-				}
-				shouldRetry = false
-				ch <- event
-			}
-			response.Body.Close()
-			delay := math.Pow(2, float64(retries))
-			time.Sleep(time.Duration(delay) * time.Second)
-		}
-		if shouldRetry {
-			log.Fatal("Error while decoding events")
-		}
-	}()
-	return ch, nil
+	return eventToDecode, nil
 }
 
 func (c *podmanClient) ping() error {

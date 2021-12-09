@@ -31,7 +31,6 @@ type Config struct {
 	APIVersion    string `mapstructure:"api_version"`
 	SSHKey        string `mapstructure:"ssh_key"`
 	SSHPassphrase string `mapstructure:"ssh_passphrase"`
-	MaxRetries	  string `mapstructure:"max_retries"`
 }
 
 func (config Config) Validate() error {

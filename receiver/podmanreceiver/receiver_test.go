@@ -18,8 +18,12 @@
 package podmanreceiver
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
+	"io/ioutil"
+	"net/http"
 	"testing"
 	"time"
 
@@ -65,12 +69,13 @@ func TestScraperLoop(t *testing.T) {
 	cfg.CollectionInterval = 100 * time.Millisecond
 
 	client := make(mockClient)
-	consumer := make(mockConsumer)
+	consumerForMetrics := make(mockConsumer)
 
 	r, err := newReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, client.factory)
-	r.registerMetricsConsumer(consumer, componenttest.NewNopReceiverCreateSettings())
-	assert.NotNil(t, r)
 	require.NoError(t, err)
+	err = r.registerMetricsConsumer(consumerForMetrics, componenttest.NewNopReceiverCreateSettings())
+	require.NoError(t, err)
+	assert.NotNil(t, r)
 
 	go func() {
 		client <- containerStatsReport{
@@ -80,40 +85,38 @@ func TestScraperLoop(t *testing.T) {
 			Error: "",
 		}
 	}()
-	r.Start(context.Background(), componenttest.NewNopHost())
-	md := <-consumer
+	err = r.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	md := <-consumerForMetrics
 	assert.Equal(t, md.ResourceMetrics().Len(), 1)
 
-	r.Shutdown(context.Background())
+	err = r.Shutdown(context.Background())
+	require.NoError(t, err)
 }
 
 func TestLogsLoop(t *testing.T) {
 	cfg := createDefaultConfig()
 
 	client := make(mockClientLogs)
-	consumer := make(mockConsumerLogs)
+	consumerForLogs := make(mockConsumerLogs)
 
 	r, err := newReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, client.factory)
-	r.registerLogsConsumer(consumer)
+	require.NoError(t, err)
+	r.registerLogsConsumer(consumerForLogs)
 	assert.NotNil(t, r)
+
+	err = r.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	go func() {
-		client <- event{
-			Type:  "Container",
-			Error: "",
-		}
-	}()
-	r.Start(context.Background(), componenttest.NewNopHost())
-
-	md := <-consumer
+	md := <-consumerForLogs
 	assert.Equal(t, md.ResourceLogs().Len(), 1)
 
-	r.Shutdown(context.Background())
+	err = r.Shutdown(context.Background())
+	require.NoError(t, err)
 }
 
 type mockClient chan containerStatsReport
-type mockClientLogs chan event
+type mockClientLogs chan http.Response
 
 func (c mockClient) factory(logger *zap.Logger, cfg *Config) (client, error) {
 	return c, nil
@@ -132,26 +135,24 @@ func (c mockClient) stats() ([]containerStats, error) {
 }
 
 func (c mockClientLogs) stats() ([]containerStats, error) {
-	report := make([]containerStats, 1)
-	return report, nil
+	return nil, nil
 }
 
-func (c mockClient) events(logger *zap.Logger, cfg *Config) (chan event, error) {
-	ch := make(chan event)
-	return ch, nil
+func (c mockClient) getEventsResponse() (*http.Response, error) {
+	return nil, nil
 }
 
-func (c mockClientLogs) events(logger *zap.Logger, cfg *Config) (chan event, error) {
-	reportChan := make(chan event)
-	report := <-c
-	go func() {
-		reportChan <- report
-		close(reportChan)
-	}()
-	if report.Error != "" {
-		return nil, errors.New(report.Error)
+func (c mockClientLogs) getEventsResponse() (*http.Response, error) {
+	mockRes := event{
+		Type: "container",
 	}
-	return reportChan, nil
+	b, _ := json.Marshal(mockRes)
+	tempReport := &http.Response{
+		Status:     "Ok",
+		StatusCode: 200,
+		Body:       ioutil.NopCloser(bytes.NewBuffer(b)),
+	}
+	return tempReport, nil
 }
 
 type mockConsumer chan pdata.Metrics

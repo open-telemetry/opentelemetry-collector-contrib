@@ -19,12 +19,14 @@ package podmanreceiver // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"encoding/json"
+	"sync"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 )
@@ -36,9 +38,11 @@ type receiver struct {
 	client        client
 
 	metricsComponent component.MetricsReceiver
-	obsrecv          *obsreport.Receiver
 	logsConsumer     consumer.Logs
 	metricsConsumer  consumer.Metrics
+
+	isLogsShutdown bool
+	shutDownSync   sync.Mutex
 }
 
 func newReceiver(
@@ -80,26 +84,37 @@ func (r *receiver) registerLogsConsumer(lc consumer.Logs) {
 }
 
 func (r *receiver) Start(ctx context.Context, host component.Host) error {
-	if r.logsConsumer != nil {
-		go r.handleEvents(ctx)
+	// Check for logs pipeline
+	if r.logsConsumer == nil {
+		r.set.Logger.Warn("Logs receiver is not set")
+	} else {
+		eventBackoff := backoff.NewExponentialBackOff()
+		eventBackoff.InitialInterval = 2 * time.Second
+		eventBackoff.MaxInterval = 10 * time.Minute
+		eventBackoff.Multiplier = 2
+		eventBackoff.MaxElapsedTime = 0
+		r.isLogsShutdown = false
+		go func() {
+			// Retry if any errors occur while getting the events.
+			errorWhileRetry := backoff.Retry(func() error {
+				err := r.handleEvents(ctx, eventBackoff)
+				return err
+			}, eventBackoff)
+			if errorWhileRetry != nil {
+				r.set.Logger.Error("Retry failed", zap.Error(errorWhileRetry))
+			}
+		}()
 	}
-	if r.metricsConsumer != nil {
-		er := make (chan error)
+	// Check for metrics pipeline
+	if r.metricsConsumer == nil {
+		r.set.Logger.Warn("Metrics receiver is not set")
+	} else {
 		go func() {
 			err := r.metricsComponent.Start(ctx, host)
 			if err != nil {
-				er <- err
+				r.set.Logger.Error("Error starting metrics receiver", zap.Error(err))
 			}
-			close(er)
 		}()
-		error := <- er
-		return error
-	}
-	if r.logsConsumer == nil {
-		r.set.Logger.Warn("Logs Receiver is not set")
-	}
-	if r.metricsConsumer == nil {
-		r.set.Logger.Warn("Metrics Receiver is not set")
 	}
 	return nil
 }
@@ -111,7 +126,13 @@ func (r *receiver) Shutdown(ctx context.Context) error {
 			return err
 		}
 	}
+	if r.logsConsumer != nil {
+		r.shutDownSync.Lock()
+		r.isLogsShutdown = true
+		r.shutDownSync.Unlock()
+	}
 	return nil
+
 }
 
 func (r *receiver) start(context.Context, component.Host) error {
@@ -138,34 +159,51 @@ func (r *receiver) scrape(context.Context) (pdata.Metrics, error) {
 	return md, nil
 }
 
-func (r *receiver) handleEvents(ctx context.Context) {
+func (r *receiver) handleEvents(ctx context.Context, eventBackoff *backoff.ExponentialBackOff) error {
 	c, err := r.clientFactory(r.set.Logger, r.config)
-	if err == nil {
-		r.client = c
-	}
 	if err != nil {
 		r.set.Logger.Error("error fetching/processing events", zap.Error(err))
+		return err
+	}
+	r.client = c
+
+	// Fetch the response from the endpoint
+	response, fetchErr := r.client.getEventsResponse()
+	if fetchErr != nil {
+		r.set.Logger.Error("Error while fetching events", zap.Error(fetchErr))
+		return fetchErr
 	}
 
-	events, _ := r.client.events(r.set.Logger, r.config)
-	if err != nil {
-		r.set.Logger.Error("error fetching stats", zap.Error(err))
-	}
+	dec := json.NewDecoder(response.Body)
 	for {
-		select {
-		case event := <-events:
-			ld, err := traslateEventsToLogs(r.set.Logger, event)
-			if err != nil {
-				r.set.Logger.Error("Failed to translate into logs", zap.Error(err))
+		// Translate the response to the events format.
+		decodedEvent, decodeErr := decodeEvents(dec)
+		if decodeErr != nil {
+			r.set.Logger.Error("Error decoding the event", zap.Error(decodeErr))
+			if connCloseErr := response.Body.Close(); connCloseErr != nil {
+				r.set.Logger.Error("Error while closing the connection", zap.Error(connCloseErr))
+				return connCloseErr
 			}
-			decodeErr := r.logsConsumer.ConsumeLogs(ctx, ld)
-			r.obsrecv.EndLogsOp(ctx, typeStr, len(events), decodeErr)
-			if decodeErr != nil {
-				r.set.Logger.Error("Something went wrong")
-			}
-		case <-ctx.Done():
-			r.set.Logger.Info("Stopping the channel")
-			close(events)
+			return decodeErr
 		}
+
+		// Translate the events into the pdata.logs format
+		ld, translationErr := traslateEventsToLogs(r.set.Logger, decodedEvent)
+		if translationErr != nil {
+			r.set.Logger.Error("Error translating event to log", zap.Error(translationErr))
+			return translationErr
+		}
+
+		transferErr := r.logsConsumer.ConsumeLogs(ctx, ld)
+		if transferErr != nil {
+			r.set.Logger.Error("Error transferring it to the next component", zap.Error(transferErr))
+			return transferErr
+		}
+		eventBackoff.Reset()
+		r.shutDownSync.Lock()
+		if r.isLogsShutdown {
+			return nil
+		}
+		r.shutDownSync.Unlock()
 	}
 }
