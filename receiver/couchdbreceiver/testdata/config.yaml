@@ -1,0 +1,20 @@
+receivers:
+  couchdb:
+    endpoint: http://localhost:5984
+    username: otelu
+    password: $COUCHDB_PASSWORD
+    all_nodes: false
+    collection_interval: 10s
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    metrics:
+     receivers: [couchdb]
+     processors: [nop]
+     exporters: [nop]
