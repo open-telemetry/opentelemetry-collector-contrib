@@ -24,14 +24,14 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor/cache"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor/cache"
 )
 
 const (
@@ -108,11 +108,13 @@ func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer cons
 		return nil, err
 	}
 
-	metricKeyToDimensionsCacheSize := defaultMetricKeyToDimensionsCacheSize
-	if pConfig.MetricKeyToDimensionsCacheSize > 0 {
-		metricKeyToDimensionsCacheSize = pConfig.MetricKeyToDimensionsCacheSize
+	if pConfig.MetricKeyToDimensionsCacheSize <= 0 {
+		return nil, fmt.Errorf(
+			"invalid cache size: %v, the maximum number of the items in the cache should be positive",
+			pConfig.MetricKeyToDimensionsCacheSize,
+		)
 	}
-	metricKeyToDimensionsCache, err := cache.NewCache(metricKeyToDimensionsCacheSize)
+	metricKeyToDimensionsCache, err := cache.NewCache(pConfig.MetricKeyToDimensionsCacheSize)
 	if err != nil {
 		return nil, err
 	}
