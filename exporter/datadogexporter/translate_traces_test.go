@@ -1544,7 +1544,7 @@ func TestTracesSpanNamingOption(t *testing.T) {
 	// create mock resource span data
 	// toggle on errors and custom service naming to test edge case code paths
 	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, pdata.StatusCodeUnset, false, mockEndTime)
-	
+
 	// start with span name as resource name set to true
 	cfgSpanNameAsResourceName := config.Config{
 		Traces: config.TracesConfig{
@@ -1554,7 +1554,7 @@ func TestTracesSpanNamingOption(t *testing.T) {
 
 	// translate mocks to datadog traces
 	datadogPayloadSpanNameAsResourceName := resourceSpansToDatadogSpans(rs, hostname, &cfgSpanNameAsResourceName, denylister, map[string]string{})
-	
+
 	// ensure the resource name is replaced with the span name when the option is set
 	assert.Equal(t, "End-To-End Here", datadogPayloadSpanNameAsResourceName.Traces[0].Spans[0].Name)
 }
