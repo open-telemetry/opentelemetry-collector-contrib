@@ -39,13 +39,13 @@ func TestExternalLabels(t *testing.T) {
 		},
 	}
 
-	testComponentCustomConfig(t, targets, func(cfg *promcfg.Config) {
+	testComponent(t, targets, false, "", func(cfg *promcfg.Config) {
 		cfg.GlobalConfig.ExternalLabels = labels.FromStrings("key", "value")
 	})
 }
 
 func verifyExternalLabels(t *testing.T, td *testData, rms []*pdata.ResourceMetrics) {
-	verifyNumScrapeResults(t, td, rms)
+	verifyNumValidScrapeResults(t, td, rms)
 	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
 
 	wantAttributes := td.attributes
@@ -74,7 +74,7 @@ test_gauge0{label1="value1",label2="value2"} 10
 
 func verifyLabelLimitTarget1(t *testing.T, td *testData, rms []*pdata.ResourceMetrics) {
 	//each sample in the scraped metrics is within the configured label_limit, scrape should be successful
-	verifyNumScrapeResults(t, td, rms)
+	verifyNumValidScrapeResults(t, td, rms)
 	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
 
 	want := td.attributes
@@ -129,7 +129,7 @@ func TestLabelLimitConfig(t *testing.T) {
 		},
 	}
 
-	testComponentCustomConfig(t, targets, func(cfg *promcfg.Config) {
+	testComponent(t, targets, false, "", func(cfg *promcfg.Config) {
 		// set label limit in scrape_config
 		for _, scrapeCfg := range cfg.ScrapeConfigs {
 			scrapeCfg.LabelLimit = 5
@@ -165,7 +165,7 @@ test_summary0_count{label1="value1",label2="value2"} 1000
 `
 
 func verifyLabelConfigTarget1(t *testing.T, td *testData, rms []*pdata.ResourceMetrics) {
-	verifyNumScrapeResults(t, td, rms)
+	verifyNumValidScrapeResults(t, td, rms)
 	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
 
 	want := td.attributes
@@ -252,7 +252,7 @@ func TestLabelNameLimitConfig(t *testing.T) {
 		},
 	}
 
-	testComponentCustomConfig(t, targets, func(cfg *promcfg.Config) {
+	testComponent(t, targets, false, "", func(cfg *promcfg.Config) {
 		// set label limit in scrape_config
 		for _, scrapeCfg := range cfg.ScrapeConfigs {
 			scrapeCfg.LabelNameLengthLimit = 20
@@ -288,7 +288,7 @@ func TestLabelValueLimitConfig(t *testing.T) {
 		},
 	}
 
-	testComponentCustomConfig(t, targets, func(cfg *promcfg.Config) {
+	testComponent(t, targets, false, "", func(cfg *promcfg.Config) {
 		// set label name limit in scrape_config
 		for _, scrapeCfg := range cfg.ScrapeConfigs {
 			scrapeCfg.LabelValueLengthLimit = 25
@@ -550,7 +550,7 @@ func TestHonorLabelsTrueConfig(t *testing.T) {
 		},
 	}
 
-	testComponentCustomConfig(t, targets, func(cfg *promcfg.Config) {
+	testComponent(t, targets, false, "", func(cfg *promcfg.Config) {
 		// set label name limit in scrape_config
 		for _, scrapeCfg := range cfg.ScrapeConfigs {
 			scrapeCfg.HonorLabels = true
