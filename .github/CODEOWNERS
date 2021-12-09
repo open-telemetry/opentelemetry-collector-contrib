@@ -51,12 +51,14 @@ exporter/sumologicexporter/                          @open-telemetry/collector-c
 exporter/tanzuobservabilityexporter/                 @open-telemetry/collector-contrib-approvers @oppegard @thepeterstone @keep94
 exporter/tencentcloudlogserviceexporter/             @open-telemetry/collector-contrib-approvers @wgliang @yiyang5055
 
+extension/asapauthextension                          @open-telemetry/collector-contrib-approvers @jamesmoessis @MovieStoreGuy
 extension/awsproxy/                                  @open-telemetry/collector-contrib-approvers @anuraaga @Aneurysm9 @mxiamxia
 extension/bearertokenauthextension/                  @open-telemetry/collector-contrib-approvers @jpkrohling @pavankrish123
 extension/healthcheckextension/                      @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/httpforwarder/                             @open-telemetry/collector-contrib-approvers @asuresh4
 extension/oauth2clientauthextension/                 @open-telemetry/collector-contrib-approvers @jpkrohling @pavankrish123
 extension/observer/                                  @open-telemetry/collector-contrib-approvers @asuresh4 @jrcamp
+extension/observer/ecstaskobserver/                  @open-telemetry/collector-contrib-approvers @rmfitzpatrick
 extension/oidcauthextension/                         @open-telemetry/collector-contrib-approvers @jpkrohling
 
 internal/aws/                                        @open-telemetry/collector-contrib-approvers @anuraaga @mxiamxia
