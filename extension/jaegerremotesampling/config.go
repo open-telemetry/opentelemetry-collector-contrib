@@ -17,13 +17,15 @@ package jaegerremotesampling // import "github.com/open-telemetry/opentelemetry-
 import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/confighttp"
 )
 
 // Config has the configuration for the extension enabling the health check
 // extension, used to report the health status of the service.
 type Config struct {
 	config.ExtensionSettings      `mapstructure:",squash"`
-	configgrpc.GRPCServerSettings `mapstructure:",squash"`
+	confighttp.HTTPServerSettings `mapstructure:"http"`
+	configgrpc.GRPCServerSettings `mapstructure:"grpc"`
 	configgrpc.GRPCClientSettings `mapstructure:"remote"`
 
 	// StrategyFile defines the location of the strategy file to serve. Cannot be set when `Endpoint` is already set.

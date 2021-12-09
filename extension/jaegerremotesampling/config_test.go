@@ -23,6 +23,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/service/servicetest"
 )
 
@@ -40,7 +42,9 @@ func TestLoadConfig(t *testing.T) {
 	ext0 := cfg.Extensions[config.NewComponentID(typeStr)]
 	assert.Equal(t,
 		&Config{
-			ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
+			ExtensionSettings:  config.NewExtensionSettings(config.NewComponentID(typeStr)),
+			HTTPServerSettings: confighttp.HTTPServerSettings{Endpoint: ":5778"},
+			GRPCServerSettings: configgrpc.GRPCServerSettings{NetAddr: confignet.NetAddr{Endpoint: ":14250"}},
 			GRPCClientSettings: configgrpc.GRPCClientSettings{
 				Endpoint: "jaeger-collector:14250",
 			},
@@ -50,8 +54,10 @@ func TestLoadConfig(t *testing.T) {
 	ext1 := cfg.Extensions[config.NewComponentIDWithName(typeStr, "1")]
 	assert.Equal(t,
 		&Config{
-			ExtensionSettings: config.NewExtensionSettings(config.NewComponentIDWithName(typeStr, "1")),
-			StrategyFile:      "/etc/otel/sampling_strategies.json",
+			ExtensionSettings:  config.NewExtensionSettings(config.NewComponentIDWithName(typeStr, "1")),
+			HTTPServerSettings: confighttp.HTTPServerSettings{Endpoint: ":5778"},
+			GRPCServerSettings: configgrpc.GRPCServerSettings{NetAddr: confignet.NetAddr{Endpoint: ":14250"}},
+			StrategyFile:       "/etc/otel/sampling_strategies.json",
 		},
 		ext1)
 
