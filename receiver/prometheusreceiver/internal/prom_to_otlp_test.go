@@ -52,7 +52,7 @@ type jobInstanceDefinition struct {
 	job, instance, host, scheme, port string
 }
 
-func makeResourceWithJobInstanceScheme(def *jobInstanceDefinition, hasHost bool) pdata.Resource {
+func makeResourceWithJobInstanceScheme(def *jobInstanceDefinition, hasHost bool) *pdata.Resource {
 	resource := pdata.NewResource()
 	attrs := resource.Attributes()
 	// Using hardcoded values to assert on outward expectations so that
@@ -65,7 +65,7 @@ func makeResourceWithJobInstanceScheme(def *jobInstanceDefinition, hasHost bool)
 	attrs.UpsertString("instance", def.instance)
 	attrs.UpsertString("port", def.port)
 	attrs.UpsertString("scheme", def.scheme)
-	return resource
+	return &resource
 }
 
 func TestCreateNodeAndResourcePromToOTLP(t *testing.T) {
@@ -73,7 +73,7 @@ func TestCreateNodeAndResourcePromToOTLP(t *testing.T) {
 		name, job string
 		instance  string
 		scheme    string
-		want      pdata.Resource
+		want      *pdata.Resource
 	}{
 		{
 			name: "all attributes proper",

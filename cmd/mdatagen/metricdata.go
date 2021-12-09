@@ -37,7 +37,7 @@ type MetricData interface {
 type Aggregated struct {
 	// Aggregation describes if the aggregator reports delta changes
 	// since last report time, or cumulative changes since a fixed start time.
-	Aggregation string `yaml:"aggregation" validate:"oneof=delta cumulative"`
+	Aggregation string `mapstructure:"aggregation" validate:"oneof=delta cumulative"`
 }
 
 // Type gets the metric aggregation type.
@@ -55,14 +55,14 @@ func (agg Aggregated) Type() string {
 // Mono defines the metric monotonicity.
 type Mono struct {
 	// Monotonic is true if the sum is monotonic.
-	Monotonic bool `yaml:"monotonic"`
+	Monotonic bool `mapstructure:"monotonic"`
 }
 
 // NumberDataPoints defines the metric number type.
 type NumberDataPoints struct {
 	// Type is type of the metric number, options are "double", "int".
 	// TODO: Add validation once the metric number type added to all metadata files.
-	NumberType string `yaml:"number_type"`
+	NumberType string `mapstructure:"number_type"`
 }
 
 // Type returns name of the datapoint type.
@@ -103,9 +103,9 @@ func (d gauge) HasNumberDataPoints() bool {
 }
 
 type sum struct {
-	Aggregated       `yaml:",inline"`
-	Mono             `yaml:",inline"`
-	NumberDataPoints `yaml:",inline"`
+	Aggregated       `mapstructure:",squash"`
+	Mono             `mapstructure:",squash"`
+	NumberDataPoints `mapstructure:",squash"`
 }
 
 func (d sum) Type() string {
@@ -125,7 +125,7 @@ func (d sum) HasNumberDataPoints() bool {
 }
 
 type histogram struct {
-	Aggregated `yaml:",inline"`
+	Aggregated `mapstructure:",squash"`
 }
 
 func (d histogram) Type() string {
