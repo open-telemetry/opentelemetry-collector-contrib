@@ -55,7 +55,7 @@ func TestRoundTripper(t *testing.T) {
 		KeyID:      "test_issuer/test_kid",
 	}
 
-	asapAuth, err := createAsapClientAuthenticator(cfg)
+	asapAuth, err := createASAPClientAuthenticator(cfg)
 	assert.NoError(t, err)
 
 	base := &mockRoundTripper{}
@@ -82,7 +82,7 @@ func TestRPCAuth(t *testing.T) {
 		KeyID:      "test_issuer/test_kid",
 	}
 
-	asapAuth, err := createAsapClientAuthenticator(cfg)
+	asapAuth, err := createASAPClientAuthenticator(cfg)
 	assert.NoError(t, err)
 
 	// Setup credentials

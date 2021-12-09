@@ -27,36 +27,36 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
-// AsapClientAuthenticator implements ClientAuthenticator
-type AsapClientAuthenticator struct {
+// ASAPClientAuthenticator implements ClientAuthenticator
+type ASAPClientAuthenticator struct {
 	provisioner asap.Provisioner
 	privateKey  interface{}
 }
 
-var _ configauth.ClientAuthenticator = (*AsapClientAuthenticator)(nil)
+var _ configauth.ClientAuthenticator = (*ASAPClientAuthenticator)(nil)
 
-func (a AsapClientAuthenticator) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
+func (a ASAPClientAuthenticator) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
 	return asap.NewTransportDecorator(a.provisioner, a.privateKey)(base), nil
 }
 
-func (a AsapClientAuthenticator) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
+func (a ASAPClientAuthenticator) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
 	return &PerRPCAuth{
 		authenticator: a,
 	}, nil
 }
 
 // Start does nothing and returns nil
-func (a AsapClientAuthenticator) Start(_ context.Context, _ component.Host) error {
+func (a ASAPClientAuthenticator) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
 // Shutdown does nothing and returns nil
-func (a AsapClientAuthenticator) Shutdown(_ context.Context) error {
+func (a ASAPClientAuthenticator) Shutdown(_ context.Context) error {
 	return nil
 }
 
-func createAsapClientAuthenticator(cfg *Config) (AsapClientAuthenticator, error) {
-	var a AsapClientAuthenticator
+func createASAPClientAuthenticator(cfg *Config) (ASAPClientAuthenticator, error) {
+	var a ASAPClientAuthenticator
 	pk, err := asap.NewPrivateKey([]byte(cfg.PrivateKey))
 	if err != nil {
 		return a, err
@@ -66,7 +66,7 @@ func createAsapClientAuthenticator(cfg *Config) (AsapClientAuthenticator, error)
 	p := asap.NewCachingProvisioner(asap.NewProvisioner(
 		cfg.KeyID, time.Duration(cfg.TTL)*time.Second, cfg.Issuer, cfg.Audience, crypto.SigningMethodRS256))
 
-	return AsapClientAuthenticator{
+	return ASAPClientAuthenticator{
 		provisioner: p,
 		privateKey:  pk,
 	}, nil
@@ -76,7 +76,7 @@ var _ credentials.PerRPCCredentials = (*PerRPCAuth)(nil)
 
 // PerRPCAuth is a gRPC credentials.PerRPCCredentials implementation that returns an 'authorization' header.
 type PerRPCAuth struct {
-	authenticator AsapClientAuthenticator
+	authenticator ASAPClientAuthenticator
 }
 
 // GetRequestMetadata returns the request metadata to be used with the RPC.
