@@ -8,8 +8,20 @@ These are the metrics available for this scraper.
 
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
+| couchdb.average_request_time | The length of an average request. | ms | Gauge(Double) | <ul> </ul> |
+| couchdb.database.operations | The number of database operations. | {operations} | Sum(Int) | <ul> <li>operation</li> </ul> |
+| couchdb.databases.open | The number of open databases. | {databases} | Sum(Double) | <ul> </ul> |
+| couchdb.files.open | The number of open file descriptors. | {files} | Sum(Double) | <ul> </ul> |
+| couchdb.httpd.bulk_requests | The number of bulk requests. | {requests} | Sum(Int) | <ul> </ul> |
+| couchdb.httpd.requests | The number of HTTP requests by method. | {requests} | Sum(Int) | <ul> <li>http.method</li> </ul> |
+| couchdb.httpd.responses | The number of each HTTP status code. | {responses} | Sum(Int) | <ul> <li>http.status_code</li> </ul> |
+| couchdb.httpd.views | The number of views read. | {views} | Sum(Int) | <ul> </ul> |
 
 ## Attributes
 
 | Name | Description |
 | ---- | ----------- |
+| couchdb.node.name | The name of the node. |
+| http.method | An HTTP request method. |
+| http.status_code | An HTTP status code. |
+| operation | The operation type. |
