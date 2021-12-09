@@ -350,6 +350,7 @@ func (p *processorImp) resetAccumulatedMetrics() {
 	p.latencyCount = make(map[metricKey]uint64)
 	p.latencySum = make(map[metricKey]float64)
 	p.latencyBucketCounts = make(map[metricKey][]uint64)
+	p.metricKeyToDimensions = make(map[metricKey]pdata.AttributeMap)
 }
 
 // updateLatencyExemplars sets the histogram exemplars for the given metric key and append the exemplar data.
