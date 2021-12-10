@@ -40,6 +40,7 @@ type oidcExtension struct {
 	cfg               *Config
 	unaryInterceptor  configauth.GRPCUnaryInterceptorFunc
 	streamInterceptor configauth.GRPCStreamInterceptorFunc
+	httpInterceptor   configauth.HTTPInterceptorFunc
 
 	provider *oidc.Provider
 	verifier *oidc.IDTokenVerifier
@@ -155,6 +156,10 @@ func (e *oidcExtension) GRPCUnaryServerInterceptor(ctx context.Context, req inte
 // GRPCStreamServerInterceptor is a helper method to provide a gRPC-compatible StreamInterceptor, typically calling the authenticator's Authenticate method.
 func (e *oidcExtension) GRPCStreamServerInterceptor(srv interface{}, str grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 	return e.streamInterceptor(srv, str, info, handler, e.Authenticate)
+}
+
+func (e *oidcExtension) HTTPInterceptor(next http.Handler) http.Handler {
+	return e.httpInterceptor(next, e.Authenticate)
 }
 
 func getSubjectFromClaims(claims map[string]interface{}, usernameClaim string, fallback string) (string, error) {

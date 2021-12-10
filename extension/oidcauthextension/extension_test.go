@@ -26,6 +26,7 @@ import (
 	"io/ioutil"
 	"math/big"
 	"net"
+	"net/http"
 	"os"
 	"testing"
 	"time"
@@ -457,6 +458,30 @@ func TestShutdown(t *testing.T) {
 
 	// verify
 	assert.NoError(t, err)
+}
+
+func TestHTTPInterceptor(t *testing.T) {
+	// prepare
+	config := &Config{
+		Audience:  "some-audience",
+		IssuerURL: "http://example.com/",
+	}
+	p, err := newExtension(config, zap.NewNop())
+	require.NoError(t, err)
+	require.NotNil(t, p)
+
+	interceptorCalled := false
+	p.httpInterceptor = func(handler http.Handler, authenticate configauth.AuthenticateFunc) http.Handler {
+		interceptorCalled = true
+		return nil
+	}
+	// test
+	res := p.HTTPInterceptor(http.NotFoundHandler())
+
+	// verify
+	assert.NoError(t, err)
+	assert.Nil(t, res)
+	assert.True(t, interceptorCalled)
 }
 
 func TestUnaryInterceptor(t *testing.T) {

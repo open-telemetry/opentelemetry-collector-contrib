@@ -18,6 +18,9 @@ receivers:
       grpc:
         auth:
           authenticator: oidc
+      http:
+        auth:
+          authenticator: oidc
 
 processors:
 
