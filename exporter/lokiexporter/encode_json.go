@@ -25,7 +25,7 @@ import (
 
 type lokiEntry struct {
 	Name       string                 `json:"name,omitempty"`
-	Body       string                 `json:"body,omitempty"`
+	Body       json.RawMessage        `json:"body,omitempty"`
 	TraceID    string                 `json:"traceid,omitempty"`
 	SpanID     string                 `json:"spanid,omitempty"`
 	Severity   string                 `json:"severity,omitempty"`
@@ -33,12 +33,35 @@ type lokiEntry struct {
 	Resources  map[string]interface{} `json:"resources,omitempty"`
 }
 
-func serializeBody(body pdata.AttributeValue) (string, error) {
-	str := ""
+func serializeBody(body pdata.AttributeValue) ([]byte, error) {
+	var str []byte
 	var err error
-	if body.Type() == pdata.AttributeValueTypeString {
-		str = body.StringVal()
-	} else {
+	switch body.Type() {
+	case pdata.AttributeValueTypeEmpty:
+		// no body
+
+	case pdata.AttributeValueTypeString:
+		str, err = json.Marshal(body.StringVal())
+
+	case pdata.AttributeValueTypeInt:
+		str, err = json.Marshal(body.IntVal())
+
+	case pdata.AttributeValueTypeDouble:
+		str, err = json.Marshal(body.DoubleVal())
+
+	case pdata.AttributeValueTypeBool:
+		str, err = json.Marshal(body.BoolVal())
+
+	case pdata.AttributeValueTypeMap:
+		str, err = json.Marshal(body.MapVal().AsRaw())
+
+	case pdata.AttributeValueTypeArray:
+		str, err = json.Marshal(attributeValueSliceAsRaw(body.SliceVal()))
+
+	case pdata.AttributeValueTypeBytes:
+		str, err = json.Marshal(body.BytesVal())
+
+	default:
 		err = fmt.Errorf("unsuported body type to serialize")
 	}
 	return str, err
@@ -48,7 +71,7 @@ func encodeJSON(lr pdata.LogRecord, res pdata.Resource) (string, error) {
 	var logRecord lokiEntry
 	var jsonRecord []byte
 	var err error
-	var body string
+	var body []byte
 
 	body, err = serializeBody(lr.Body())
 	if err != nil {
@@ -70,4 +93,29 @@ func encodeJSON(lr pdata.LogRecord, res pdata.Resource) (string, error) {
 		return "", err
 	}
 	return string(jsonRecord), nil
+}
+
+// Copied from pdata (es AttributeValueSlice) asRaw() since its not exported
+func attributeValueSliceAsRaw(es pdata.AttributeValueSlice) []interface{} {
+	rawSlice := make([]interface{}, 0, es.Len())
+	for i := 0; i < es.Len(); i++ {
+		v := es.At(i)
+		switch v.Type() {
+		case pdata.AttributeValueTypeString:
+			rawSlice = append(rawSlice, v.StringVal())
+		case pdata.AttributeValueTypeInt:
+			rawSlice = append(rawSlice, v.IntVal())
+		case pdata.AttributeValueTypeDouble:
+			rawSlice = append(rawSlice, v.DoubleVal())
+		case pdata.AttributeValueTypeBool:
+			rawSlice = append(rawSlice, v.BoolVal())
+		case pdata.AttributeValueTypeBytes:
+			rawSlice = append(rawSlice, v.BytesVal())
+		case pdata.AttributeValueTypeEmpty:
+			rawSlice = append(rawSlice, nil)
+		default:
+			rawSlice = append(rawSlice, "<Invalid array value>")
+		}
+	}
+	return rawSlice
 }
