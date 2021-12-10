@@ -16,7 +16,6 @@ package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -78,7 +77,6 @@ func traceDataToSplunk(logger *zap.Logger, data pdata.Traces, config *Config) ([
 			switch k {
 			case hostKey:
 				host = v.StringVal()
-				commonFields[conventions.AttributeHostName] = host
 			case sourceKey:
 				source = v.StringVal()
 			case sourceTypeKey:

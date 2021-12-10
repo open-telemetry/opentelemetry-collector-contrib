@@ -94,7 +94,7 @@ func (b *metricsFromDataPointBuilder) groupAndFilter(dataPoints []*MetricsDataPo
 		groupedDataPoints[groupingKey] = append(groupedDataPoints[groupingKey], dataPoint)
 	}
 
-	// Cardinality filtering + sorting points by metric name and timestamp
+	// Cardinality filtering
 	for groupingKey, points := range groupedDataPoints {
 		filteredPoints, err := b.filter(groupingKey.MetricName, points)
 		if err != nil {
