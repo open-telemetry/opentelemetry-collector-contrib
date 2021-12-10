@@ -17,6 +17,9 @@ package components
 import (
 	"context"
 	"testing"
+	"time"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -82,10 +85,28 @@ func TestDefaultExtensions(t *testing.T) {
 				return cfg
 			},
 		},
+		{
+			extension: "asapclient",
+			getConfigFn: func() config.Extension {
+				cfg := extFactories["asapclient"].CreateDefaultConfig().(*asapauthextension.Config)
+				cfg.KeyID = "test_issuer/test_kid"
+				cfg.Issuer = "test_issuer"
+				cfg.Audience = []string{"some_service"}
+				cfg.TTL = 10 * time.Second
+				// Valid PEM data required for successful initialisation. Key not actually used anywhere.
+				cfg.PrivateKey = "data:application/pkcs8;kid=test;base64,MIIBUwIBADANBgkqhkiG9w0BAQEFAASCAT0wggE5AgE" +
+					"AAkEA0ZPr5JeyVDoB8RyZqQsx6qUD+9gMFg1/0hgdAvmytWBMXQJYdwkK2dFJwwZcWJVhJGcOJBDfB/8tcbdJd34KZQIDAQ" +
+					"ABAkBZD20tJTHJDSWKGsdJyNIbjqhUu4jXTkFFPK4Hd6jz3gV3fFvGnaolsD5Bt50dTXAiSCpFNSb9M9GY6XUAAdlBAiEA6" +
+					"MccfdZRfVapxKtAZbjXuAgMvnPtTvkVmwvhWLT5Wy0CIQDmfE8Et/pou0Jl6eM0eniT8/8oRzBWgy9ejDGfj86PGQIgWePq" +
+					"IL4OofRBgu0O5TlINI0HPtTNo12U9lbUIslgMdECICXT2RQpLcvqj+cyD7wZLZj6vrHZnTFVrnyR/cL2UyxhAiBswe/MCcD" +
+					"7T7J4QkNrCG+ceQGypc7LsxlIxQuKh5GWYA=="
+				return cfg
+			},
+		},
 	}
 
 	// * The OIDC Auth extension requires an OIDC server to get the config from, and we don't want to spawn one here for this test.
-	assert.Equal(t, len(tests)+9 /* not tested */, len(extFactories))
+	assert.Equal(t, len(tests)+8 /* not tested */, len(extFactories))
 
 	for _, tt := range tests {
 		t.Run(string(tt.extension), func(t *testing.T) {
