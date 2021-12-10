@@ -19,8 +19,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -29,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/extension/ballastextension"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension"
