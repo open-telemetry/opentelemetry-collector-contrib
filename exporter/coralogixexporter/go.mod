@@ -1,4 +1,4 @@
-module coralogixexporter
+module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter
 
 go 1.17
 
