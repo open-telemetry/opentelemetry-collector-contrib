@@ -90,7 +90,7 @@ metrics:
     unit: '%'
     gauge: {}
     attributes: [operation]
-  memcached.rusage.cpu:
+  memcached.cpu.usage:
     description: Accumulated user and system time. 
     unit: 1
     sum:

@@ -63,7 +63,7 @@ func (r *memcachedScraper) scrape(_ context.Context) (pdata.Metrics, error) {
 	ilm.InstrumentationLibrary().SetName("otelcol/memcached")
 
 	commandCount := initMetric(ilm.Metrics(), metadata.M.MemcachedCommands).Sum().DataPoints()
-	rUsage := initMetric(ilm.Metrics(), metadata.M.MemcachedRusageCPU).Sum().DataPoints()
+	rUsage := initMetric(ilm.Metrics(), metadata.M.MemcachedCPUUsage).Sum().DataPoints()
 	network := initMetric(ilm.Metrics(), metadata.M.MemcachedNetwork).Sum().DataPoints()
 	operationCount := initMetric(ilm.Metrics(), metadata.M.MemcachedOperations).Sum().DataPoints()
 	hitRatio := initMetric(ilm.Metrics(), metadata.M.MemcachedOperationHitRatio).Gauge().DataPoints()
