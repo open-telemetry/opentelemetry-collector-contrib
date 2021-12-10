@@ -48,7 +48,7 @@ func TestGetStatusCodeValFromAttr(t *testing.T) {
 	tests := []struct {
 		name string
 		attr pdata.AttributeValue
-		code int
+		code int64
 		err  error
 	}{
 		{
@@ -77,13 +77,6 @@ func TestGetStatusCodeValFromAttr(t *testing.T) {
 			attr: pdata.NewAttributeValueString("inf"),
 			code: 0,
 			err:  invalidNumErr,
-		},
-
-		{
-			name: "invalid-int",
-			attr: pdata.NewAttributeValueInt(1844674407370955),
-			code: 0,
-			err:  fmt.Errorf("invalid status code value: 1844674407370955"),
 		},
 	}
 
