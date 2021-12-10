@@ -28,12 +28,12 @@ import (
 )
 
 var (
-	errMissingClientConfigManager error = errors.New("the client config manager has not been provided")
+	errMissingClientConfigManager = errors.New("the client config manager has not been provided")
 )
 
-var _ component.Component = (*samplingHTTPServer)(nil)
+var _ component.Component = (*SamplingHTTPServer)(nil)
 
-type samplingHTTPServer struct {
+type SamplingHTTPServer struct {
 	telemetry component.TelemetrySettings
 	settings  confighttp.HTTPServerSettings
 	cfgMgr    configmanager.ClientConfigManager
@@ -43,12 +43,12 @@ type samplingHTTPServer struct {
 	shutdownWG *sync.WaitGroup
 }
 
-func NewHTTP(telemetry component.TelemetrySettings, settings confighttp.HTTPServerSettings, cfgMgr configmanager.ClientConfigManager) (*samplingHTTPServer, error) {
+func NewHTTP(telemetry component.TelemetrySettings, settings confighttp.HTTPServerSettings, cfgMgr configmanager.ClientConfigManager) (*SamplingHTTPServer, error) {
 	if cfgMgr == nil {
 		return nil, errMissingClientConfigManager
 	}
 
-	srv := &samplingHTTPServer{
+	srv := &SamplingHTTPServer{
 		telemetry: telemetry,
 		settings:  settings,
 		cfgMgr:    cfgMgr,
@@ -67,7 +67,7 @@ func NewHTTP(telemetry component.TelemetrySettings, settings confighttp.HTTPServ
 	return srv, nil
 }
 
-func (h *samplingHTTPServer) Start(_ context.Context, host component.Host) error {
+func (h *SamplingHTTPServer) Start(_ context.Context, host component.Host) error {
 	var err error
 	h.srv, err = h.settings.ToServer(host, h.telemetry, h.mux)
 	if err != nil {
@@ -86,11 +86,11 @@ func (h *samplingHTTPServer) Start(_ context.Context, host component.Host) error
 	return nil
 }
 
-func (h *samplingHTTPServer) Shutdown(ctx context.Context) error {
+func (h *SamplingHTTPServer) Shutdown(ctx context.Context) error {
 	return h.srv.Shutdown(ctx)
 }
 
-func (h *samplingHTTPServer) samplingStrategyHandler(rw http.ResponseWriter, r *http.Request) {
+func (h *SamplingHTTPServer) samplingStrategyHandler(rw http.ResponseWriter, r *http.Request) {
 	svc := r.URL.Query().Get("service")
 	if len(svc) == 0 {
 		err := errors.New("'service' parameter must be provided")
