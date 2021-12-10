@@ -62,12 +62,22 @@ func TestConvertWithMapBody(t *testing.T) {
 
 func TestSerializeBody(t *testing.T) {
 
-	mapval := pdata.NewAttributeValueMap()
-	mapval.MapVal().InsertString("key", "val")
-
 	arrayval := pdata.NewAttributeValueArray()
 	arrayval.SliceVal().AppendEmpty().SetStringVal("a")
 	arrayval.SliceVal().AppendEmpty().SetStringVal("b")
+
+	simplemap := pdata.NewAttributeValueMap()
+	simplemap.MapVal().InsertString("key", "val")
+
+	complexmap := pdata.NewAttributeValueMap()
+	complexmap.MapVal().InsertString("keystr", "val")
+	complexmap.MapVal().InsertInt("keyint", 1)
+	complexmap.MapVal().InsertDouble("keyint", 1)
+	complexmap.MapVal().InsertBool("keybool", true)
+	complexmap.MapVal().InsertNull("keynull")
+	complexmap.MapVal().Insert("keyarr", arrayval)
+	complexmap.MapVal().Insert("keymap", simplemap)
+	complexmap.MapVal().Insert("keyempty", pdata.NewAttributeValueEmpty())
 
 	testcases := []struct {
 		input    pdata.AttributeValue
@@ -94,8 +104,12 @@ func TestSerializeBody(t *testing.T) {
 			[]byte(`true`),
 		},
 		{
-			mapval,
+			simplemap,
 			[]byte(`{"key":"val"}`),
+		},
+		{
+			complexmap,
+			[]byte(`{"keyarr":["a","b"],"keybool":true,"keyempty":null,"keyint":1,"keymap":{"key":"val"},"keynull":null,"keystr":"val"}`),
 		},
 		{
 			arrayval,
