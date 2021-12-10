@@ -381,11 +381,21 @@ func getTagFromSpanKind(spanKind pdata.SpanKind) (model.KeyValue, bool) {
 }
 
 func getTagFromStatusCode(statusCode pdata.StatusCode) (model.KeyValue, bool) {
-	return model.KeyValue{
-		Key:    conventions.OtelStatusCode,
-		VInt64: int64(statusCode),
-		VType:  model.ValueType_INT64,
-	}, true
+	switch statusCode {
+	case pdata.StatusCodeError:
+		return model.KeyValue{
+			Key:   conventions.OtelStatusCode,
+			VType: model.ValueType_STRING,
+			VStr:  statusError,
+		}, true
+	case pdata.StatusCodeOk:
+		return model.KeyValue{
+			Key:   conventions.OtelStatusCode,
+			VType: model.ValueType_STRING,
+			VStr:  statusOk,
+		}, true
+	}
+	return model.KeyValue{}, false
 }
 
 func getErrorTagFromStatusCode(statusCode pdata.StatusCode) (model.KeyValue, bool) {

@@ -18,7 +18,24 @@ import (
 	"errors"
 )
 
+const (
+	// Integer types use two's complement arithmetic.
+	maxUint = ^uint(0)
+	maxInt  = int64(maxUint >> 1)
+	minInt  = -maxInt - 1
+
+	// Status tag values as defined by the OpenTelemetry specification:
+	// https://github.com/open-telemetry/opentelemetry-specification/blob/v1.8.0/specification/trace/sdk_exporters/non-otlp.md#span-status
+	statusError = "ERROR"
+	statusOk    = "OK"
+)
+
 var (
 	errZeroTraceID = errors.New("span has an all zeros trace ID")
 	errZeroSpanID  = errors.New("span has an all zeros span ID")
+
+	// errRange indicates that a value is out of range for the target type.
+	errRange = errors.New("value out of range")
+	// errType indicates that a value is not convertible to the target type.
+	errType = errors.New("invalid type")
 )
