@@ -102,18 +102,14 @@ func (d *dockerObserver) ListAndWatch(listener observer.Notify) {
 			// watchContainerEvents will only return when an error occurs, or the context is cancelled
 			lastTime, eventErr = d.watchContainerEvents(listener, cacheRefreshTicker, lastTime)
 
-			// We are only interested in re-connecting when the context hasn't been canceled
-			// since requests made with a closed context are guaranteed to fail.
-			if eventErr != nil && d.ctx.Err() == nil {
-				// Either decoding or connection error has occurred, so we should resume the event loop after
-				// waiting a moment.  In cases of extended daemon unavailability this will retry until
-				// collector teardown or background context is closed.
-				d.logger.Error("Error watching docker container events, attempting to retry", zap.Error(eventErr))
-				time.Sleep(clientReconnectTimeout)
-			} else {
-				// context was cancelled
+			if d.ctx.Err() != nil {
 				return
 			}
+			// Either decoding or connection error has occurred, so we should resume the event loop after
+			// waiting a moment.  In cases of extended daemon unavailability this will retry until
+			// collector teardown or background context is closed.
+			d.logger.Error("Error watching docker container events, attempting to retry", zap.Error(eventErr))
+			time.Sleep(clientReconnectTimeout)
 		}
 	}()
 }
