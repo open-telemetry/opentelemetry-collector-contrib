@@ -408,8 +408,8 @@ func TestReceiveLogs(t *testing.T) {
 			}(),
 			want: wantType{
 				batches: [][]string{
-					{`"otel.log.name":"0_0_0"`, `"otel.log.name":"0_0_1"`, `"otel.log.name":"0_0_5"`, `"otel.log.name":"0_0_6"`, `"otel.log.name":"0_0_7"`, `"otel.log.name":"0_0_8"`, `"otel.log.name":"0_0_9"`},
-					{`"otel.log.name":"0_0_10"`, `"otel.log.name":"0_0_11"`, `"otel.log.name":"0_0_15"`, `"otel.log.name":"0_0_16"`, `"otel.log.name":"0_0_17"`, `"otel.log.name":"0_0_18"`, `"otel.log.name":"0_0_19"`},
+					{`"otel.log.name":"0_0_0"`, `"otel.log.name":"0_0_1"`, `"otel.log.name":"0_0_5"`, `"otel.log.name":"0_0_6"`, `"otel.log.name":"0_0_7"`, `"otel.log.name":"0_0_8"`, `"otel.log.name":"0_0_9"`, `"otel.log.name":"0_0_10"`, `"otel.log.name":"0_0_11"`},
+					{`"otel.log.name":"0_0_15"`, `"otel.log.name":"0_0_16"`, `"otel.log.name":"0_0_17"`, `"otel.log.name":"0_0_18"`, `"otel.log.name":"0_0_19"`, `"otel.log.name":"0_0_20"`, `"otel.log.name":"0_0_21"`},
 				},
 				numBatches: 2,
 				compressed: true,
