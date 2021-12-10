@@ -40,7 +40,7 @@ func TestScrape(t *testing.T) {
 	}
 
 	scraper := newMySQLScraper(zap.NewNop(), cfg)
-	scraper.sqlclient = &mockClient{}
+	scraper.sqlClientFunc = newMySQLMockClient
 
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
@@ -57,6 +57,10 @@ func TestScrape(t *testing.T) {
 var _ client = (*mockClient)(nil)
 
 type mockClient struct{}
+
+func newMySQLMockClient(conf *Config) client {
+	return &mockClient{}
+}
 
 func readFile(fname string) (map[string]string, error) {
 	var stats = map[string]string{}
