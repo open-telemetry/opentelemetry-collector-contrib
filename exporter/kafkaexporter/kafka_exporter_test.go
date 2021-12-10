@@ -23,6 +23,7 @@ import (
 	"github.com/Shopify/sarama/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/model/otlp"
@@ -257,6 +258,118 @@ func TestLogsDataPusher_marshal_error(t *testing.T) {
 	err := p.logsDataPusher(context.Background(), ld)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), expErr.Error())
+}
+
+func TestTracesDataPusher_Metrics(t *testing.T) {
+	c := sarama.NewConfig()
+	producer := mocks.NewSyncProducer(t, c)
+	producer.ExpectSendMessageAndSucceed()
+
+	p := kafkaTracesProducer{
+		producer:  producer,
+		marshaler: newPdataTracesMarshaler(otlp.NewProtobufTracesMarshaler(), defaultEncoding),
+	}
+	t.Cleanup(func() {
+		require.NoError(t, p.Close(context.Background()))
+	})
+
+	// in case it haven't been registered yet
+	err := view.Register(MetricViews()...)
+	assert.NoError(t, err, "register metrics")
+
+	cnt, err := getMessageCount("traces")
+	assert.NoError(t, err, "get message count failed")
+	assert.NotEqual(t, -1, cnt, "get message count failed")
+
+	// produce one kafka message
+	err = p.tracesPusher(context.Background(), testdata.GenerateTracesTwoSpansSameResource())
+	require.NoError(t, err)
+
+	newCnt, err := getMessageCount("traces")
+	assert.NoError(t, err, "get message count failed")
+	assert.NotEqual(t, float64(-1), newCnt, "get message count failed")
+	assert.Equal(t, float64(1), newCnt-cnt)
+}
+
+func TestMetricsDataPusher_Metrics(t *testing.T) {
+	c := sarama.NewConfig()
+	producer := mocks.NewSyncProducer(t, c)
+	producer.ExpectSendMessageAndSucceed()
+
+	p := kafkaMetricsProducer{
+		producer:  producer,
+		marshaler: newPdataMetricsMarshaler(otlp.NewProtobufMetricsMarshaler(), defaultEncoding),
+	}
+	t.Cleanup(func() {
+		require.NoError(t, p.Close(context.Background()))
+	})
+
+	// in case it haven't been registered yet
+	err := view.Register(MetricViews()...)
+	assert.NoError(t, err, "register metrics")
+
+	cnt, err := getMessageCount("metrics")
+	assert.NoError(t, err, "get message count failed")
+	assert.NotEqual(t, -1, cnt, "get message count failed")
+
+	// produce one kafka message
+	err = p.metricsDataPusher(context.Background(), testdata.GenerateMetricsTwoMetrics())
+	require.NoError(t, err)
+
+	newCnt, err := getMessageCount("metrics")
+	fmt.Println(cnt, newCnt)
+	assert.NoError(t, err, "get message count failed")
+	assert.NotEqual(t, float64(-1), newCnt, "get message count failed")
+	assert.Equal(t, float64(1), newCnt-cnt)
+}
+
+func TestLogsDataPusher_Metrics(t *testing.T) {
+	c := sarama.NewConfig()
+	producer := mocks.NewSyncProducer(t, c)
+	producer.ExpectSendMessageAndSucceed()
+
+	p := kafkaLogsProducer{
+		producer:  producer,
+		marshaler: newPdataLogsMarshaler(otlp.NewProtobufLogsMarshaler(), defaultEncoding),
+	}
+	t.Cleanup(func() {
+		require.NoError(t, p.Close(context.Background()))
+	})
+
+	// in case it haven't been registered yet
+	err := view.Register(MetricViews()...)
+	assert.NoError(t, err, "register metrics")
+
+	cnt, err := getMessageCount("logs")
+	assert.NoError(t, err, "get message count failed")
+	assert.NotEqual(t, -1, cnt, "get message count failed")
+
+	// produce one kafka message
+	err = p.logsDataPusher(context.Background(), testdata.GenerateLogsManyLogRecordsSameResource(10))
+	require.NoError(t, err)
+
+	newCnt, err := getMessageCount("logs")
+	fmt.Println(cnt, newCnt)
+	assert.NoError(t, err, "get message count failed")
+	assert.NotEqual(t, float64(-1), newCnt, "get message count failed")
+	assert.Equal(t, float64(1), newCnt-cnt)
+}
+
+func getMessageCount(ty string) (float64, error) {
+	var messageCount float64 = -1
+	rows, err := view.RetrieveData(statMessageCount.Name())
+	if err != nil {
+		return -1, err
+	}
+	for _, row := range rows {
+		for _, t := range row.Tags {
+			if t.Key.Name() == "type" && t.Value == ty {
+				messageCount = row.Data.(*view.SumData).Value
+				break
+			}
+		}
+	}
+	return messageCount, nil
 }
 
 type tracesErrorMarshaler struct {
