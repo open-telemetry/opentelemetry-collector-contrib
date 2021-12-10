@@ -46,42 +46,42 @@ const (
 	zkVersionKey   = "zk_version"
 )
 
-func getOTLPInitFunc(metric string) func(metric pdata.Metric) {
+func recordDataPointsFunc(mb *metadata.MetricsBuilder, metric string) func(ts pdata.Timestamp, val int64) {
 	switch metric {
 	case followersMetricKey:
-		return metadata.Metrics.ZookeeperFollowers.Init
+		return mb.RecordZookeeperFollowersDataPoint
 	case syncedFollowersMetricKey:
-		return metadata.Metrics.ZookeeperSyncedFollowers.Init
+		return mb.RecordZookeeperSyncedFollowersDataPoint
 	case pendingSyncsMetricKey:
-		return metadata.Metrics.ZookeeperPendingSyncs.Init
+		return mb.RecordZookeeperPendingSyncsDataPoint
 	case avgLatencyMetricKey:
-		return metadata.Metrics.ZookeeperLatencyAvg.Init
+		return mb.RecordZookeeperLatencyAvgDataPoint
 	case maxLatencyMetricKey:
-		return metadata.Metrics.ZookeeperLatencyMax.Init
+		return mb.RecordZookeeperLatencyMaxDataPoint
 	case minLatencyMetricKey:
-		return metadata.Metrics.ZookeeperLatencyMin.Init
+		return mb.RecordZookeeperLatencyMinDataPoint
 	case numAliveConnectionsMetricKey:
-		return metadata.Metrics.ZookeeperConnectionsAlive.Init
+		return mb.RecordZookeeperConnectionsAliveDataPoint
 	case outstandingRequestsMetricKey:
-		return metadata.Metrics.ZookeeperOutstandingRequests.Init
+		return mb.RecordZookeeperOutstandingRequestsDataPoint
 	case zNodeCountMetricKey:
-		return metadata.Metrics.ZookeeperZnodes.Init
+		return mb.RecordZookeeperZnodesDataPoint
 	case watchCountMetricKey:
-		return metadata.Metrics.ZookeeperWatches.Init
+		return mb.RecordZookeeperWatchesDataPoint
 	case ephemeralsCountMetricKey:
-		return metadata.Metrics.ZookeeperEphemeralNodes.Init
+		return mb.RecordZookeeperEphemeralNodesDataPoint
 	case approximateDataSizeMetricKey:
-		return metadata.Metrics.ZookeeperApproximateDateSize.Init
+		return mb.RecordZookeeperApproximateDateSizeDataPoint
 	case openFileDescriptorCountMetricKey:
-		return metadata.Metrics.ZookeeperOpenFileDescriptors.Init
+		return mb.RecordZookeeperOpenFileDescriptorsDataPoint
 	case maxFileDescriptorCountMetricKey:
-		return metadata.Metrics.ZookeeperMaxFileDescriptors.Init
+		return mb.RecordZookeeperMaxFileDescriptorsDataPoint
 	case fSyncThresholdExceedCountMetricKey:
-		return metadata.Metrics.ZookeeperFsyncThresholdExceeds.Init
+		return mb.RecordZookeeperFsyncThresholdExceedsDataPoint
 	case packetsReceivedMetricKey:
-		return metadata.Metrics.ZookeeperPacketsReceived.Init
+		return mb.RecordZookeeperPacketsReceivedDataPoint
 	case packetsSentMetricKey:
-		return metadata.Metrics.ZookeeperPacketsSent.Init
+		return mb.RecordZookeeperPacketsSentDataPoint
 	}
 
 	return nil
