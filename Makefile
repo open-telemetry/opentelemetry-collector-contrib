@@ -25,7 +25,7 @@ INTEGRATION_TEST_MODULES := \
 	receiver/memcachedreceiver \
 	receiver/mysqlreceiver \
 	internal/common \
-	extension/observer/dockerobserver 
+	extension/observer/dockerobserver
 
 .DEFAULT_GOAL := all
 
