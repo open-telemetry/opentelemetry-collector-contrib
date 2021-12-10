@@ -26,9 +26,10 @@ import (
 
 func TestFactoryCreatedExtensionIsEndpointsLister(t *testing.T) {
 	etoFactory := NewFactory()
-	eto, err := etoFactory.CreateExtension(
-		context.Background(), componenttest.NewNopExtensionCreateSettings(), etoFactory.CreateDefaultConfig(),
-	)
+	cfg := etoFactory.CreateDefaultConfig()
+	cfg.(*Config).Endpoint = "http://localhost:1234/mock/endpoint"
+
+	eto, err := etoFactory.CreateExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, eto)
 	require.Implements(t, (*observer.EndpointsLister)(nil), eto)

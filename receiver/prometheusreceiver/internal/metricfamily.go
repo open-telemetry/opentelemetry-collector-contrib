@@ -32,7 +32,6 @@ import (
 // a single scrape.
 type MetricFamily interface {
 	Add(metricName string, ls labels.Labels, t int64, v float64) error
-	IsSameFamily(metricName string) bool
 	ToMetric() (*metricspb.Metric, int, int)
 }
 
@@ -123,12 +122,6 @@ func defineInternalMetric(metricName string, metadata scrape.MetricMetadata, log
 		metadata.Help = "The number of samples remaining after metric relabeling was applied"
 	}
 	return metadata
-}
-
-func (mf *metricFamily) IsSameFamily(metricName string) bool {
-	// trim known suffix if necessary
-	familyName := normalizeMetricName(metricName)
-	return mf.name == familyName || familyName != metricName && mf.name == metricName
 }
 
 // updateLabelKeys is used to store all the label keys of a same metric family in observed order. since prometheus
