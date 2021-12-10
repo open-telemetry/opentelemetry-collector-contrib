@@ -41,6 +41,7 @@ func TestScraper(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	scraper := newNginxScraper(zap.NewNop(), cfg)
+
 	err := scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 

@@ -15,8 +15,12 @@
 package mysqlreceiver
 
 import (
+	"bufio"
 	"context"
+	"os"
+	"path"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -27,25 +31,61 @@ import (
 )
 
 func TestScrape(t *testing.T) {
-	mysqlMock := fakeClient{}
-	sc := newMySQLScraper(zap.NewNop(), &Config{
+	cfg := &Config{
 		Username: "otel",
 		Password: "otel",
 		NetAddr: confignet.NetAddr{
 			Endpoint: "localhost:3306",
 		},
-	})
-	sc.sqlclient = &mysqlMock
+	}
 
-	scrapedRMS, err := sc.scrape(context.Background())
+	scraper := newMySQLScraper(zap.NewNop(), cfg)
+	scraper.sqlclient = &mockClient{}
+
+	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
+	aMetricSlice := actualMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
 	expectedFile := filepath.Join("testdata", "scraper", "expected.json")
 	expectedMetrics, err := scrapertest.ReadExpected(expectedFile)
 	require.NoError(t, err)
-
 	eMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
-	aMetricSlice := scrapedRMS.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
 	require.NoError(t, scrapertest.CompareMetricSlices(eMetricSlice, aMetricSlice))
+}
+
+var _ client = (*mockClient)(nil)
+
+type mockClient struct{}
+
+func readFile(fname string) (map[string]string, error) {
+	var stats = map[string]string{}
+	file, err := os.Open(path.Join("testdata", "scraper", fname+".txt"))
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		text := strings.Split(scanner.Text(), "\t")
+		stats[text[0]] = text[1]
+	}
+	return stats, nil
+}
+
+func (c *mockClient) Connect() error {
+	return nil
+}
+
+func (c *mockClient) getGlobalStats() (map[string]string, error) {
+	return readFile("global_stats")
+}
+
+func (c *mockClient) getInnodbStats() (map[string]string, error) {
+	return readFile("innodb_stats")
+}
+
+func (c *mockClient) Close() error {
+	return nil
 }
