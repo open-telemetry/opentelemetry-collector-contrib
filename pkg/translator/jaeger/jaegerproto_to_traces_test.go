@@ -16,7 +16,6 @@ package jaeger
 
 import (
 	"encoding/binary"
-	"fmt"
 	"strconv"
 	"testing"
 	"time"
@@ -43,15 +42,6 @@ var (
 )
 
 func TestCodeFromAttr(t *testing.T) {
-	orig := validIntRange
-	validIntRange = func(val int64) error {
-		if val > 3 || val < 0 {
-			return fmt.Errorf("%w: %d", errRange, val)
-		}
-		return nil
-	}
-	t.Cleanup(func() { validIntRange = orig })
-
 	tests := []struct {
 		name string
 		attr pdata.AttributeValue
@@ -86,14 +76,14 @@ func TestCodeFromAttr(t *testing.T) {
 
 		{
 			name: "too-large-int",
-			attr: pdata.NewAttributeValueInt(4),
+			attr: pdata.NewAttributeValueInt(1844674407370955),
 			code: 0,
 			err:  errRange,
 		},
 
 		{
 			name: "too-small-int",
-			attr: pdata.NewAttributeValueInt(-1),
+			attr: pdata.NewAttributeValueInt((-1 << 31) - 1),
 			code: 0,
 			err:  errRange,
 		},

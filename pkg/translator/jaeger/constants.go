@@ -18,14 +18,9 @@ import (
 	"errors"
 )
 
+// Status tag values as defined by the OpenTelemetry specification:
+// https://github.com/open-telemetry/opentelemetry-specification/blob/v1.8.0/specification/trace/sdk_exporters/non-otlp.md#span-status
 const (
-	// Integer types use two's complement arithmetic.
-	maxUint = ^uint(0)
-	maxInt  = int64(maxUint >> 1)
-	minInt  = -maxInt - 1
-
-	// Status tag values as defined by the OpenTelemetry specification:
-	// https://github.com/open-telemetry/opentelemetry-specification/blob/v1.8.0/specification/trace/sdk_exporters/non-otlp.md#span-status
 	statusError = "ERROR"
 	statusOk    = "OK"
 )
