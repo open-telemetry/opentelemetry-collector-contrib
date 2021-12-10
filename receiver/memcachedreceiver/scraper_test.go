@@ -35,7 +35,6 @@ func TestScraper(t *testing.T) {
 
 	ms, err := sc.scrape(context.Background())
 	require.NoError(t, err)
-
 	expectedMetrics, err := scrapertest.ReadExpected("./testdata/expected_metrics/test_scraper/expected.json")
 	require.NoError(t, err)
 
