@@ -44,6 +44,14 @@ type metrics struct {
 	SystemCPUTime pdata.Metric
 }
 
+func newMetrics(config MetricsSettings) metrics {
+	ms := metrics{}
+	if config.SystemCPUTime.Enabled {
+		ms.SystemCPUTime = pdata.NewMetric()
+	}
+	return ms
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user configuration.
 type MetricsBuilder struct {
@@ -85,13 +93,14 @@ func NewMetricsBuilder(config MetricsSettings, options ...metricBuilderOption) *
 		config:                 config,
 		startTime:              pdata.NewTimestampFromTime(time.Now()),
 		attributeStateCapacity: 8,
+		metrics:                newMetrics(config),
 	}
 
 	for _, op := range options {
 		op(mb)
 	}
 
-	mb.clearMetrics()
+	mb.initMetrics()
 	return mb
 }
 
@@ -104,7 +113,7 @@ func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
 	}
 
 	// Reset metric data points collection.
-	mb.clearMetrics()
+	mb.initMetrics()
 }
 
 // systemCPUTimeDataPointsCapacity calculates initial data points capacity for system.cpu.time metric.
@@ -112,9 +121,9 @@ func (mb *MetricsBuilder) systemCPUTimeDataPointsCapacity() int {
 	return mb.attributeCpuCapacity * mb.attributeStateCapacity
 }
 
-// systemCPUTimeMetric builds new system.cpu.time metric.
-func (mb *MetricsBuilder) systemCPUTimeMetric() pdata.Metric {
-	metric := pdata.NewMetric()
+// initSystemCPUTimeMetric builds new system.cpu.time metric.
+func (mb *MetricsBuilder) initSystemCPUTimeMetric() {
+	metric := mb.metrics.SystemCPUTime
 	metric.SetName("system.cpu.time")
 	metric.SetDescription("Total CPU seconds broken down by different states.")
 	metric.SetUnit("s")
@@ -122,15 +131,14 @@ func (mb *MetricsBuilder) systemCPUTimeMetric() pdata.Metric {
 	metric.Sum().SetIsMonotonic(true)
 	metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 	metric.Sum().DataPoints().EnsureCapacity(mb.systemCPUTimeDataPointsCapacity())
-	return metric
 }
 
-// clearMetrics clears metrics structure.
-func (mb *MetricsBuilder) clearMetrics() {
+// initMetrics initializes metrics.
+func (mb *MetricsBuilder) initMetrics() {
 	if mb.config.SystemCPUTime.Enabled {
 		// TODO: Use mb.metrics.SystemCPUTime.Sum().DataPoints().Clear() instead of rebuilding
 		// the metrics once the Clear method is available.
-		mb.metrics.SystemCPUTime = mb.systemCPUTimeMetric()
+		mb.initSystemCPUTimeMetric()
 	}
 }
 

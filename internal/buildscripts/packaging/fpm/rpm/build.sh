@@ -16,6 +16,12 @@ if [[ -z "$VERSION" ]]; then
     VERSION="${latest_tag}~post"
 fi
 
+# remap arm64 to aarch64, which is the arch used by Linux distributions
+# see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/6508
+if [[ "$ARCH" == "arm64" ]]; then
+    ARCH="aarch64"
+fi
+
 mkdir -p "$OUTPUT_DIR"
 
 fpm -s dir -t rpm -n $PKG_NAME -v ${VERSION#v} -f -p "$OUTPUT_DIR" \

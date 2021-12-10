@@ -66,10 +66,10 @@ func TestOpenMetricsPositive(t *testing.T) {
 		testData := &testData{
 			name: k,
 			pages: []mockPrometheusResponse{
-				{code: 200, data: v},
+				{code: 200, data: v, useOpenMetrics: true},
 			},
-			validateFunc:   verifyPositiveTarget,
-			useOpenMetrics: true,
+			validateFunc:    verifyPositiveTarget,
+			validateScrapes: true,
 		}
 		targets = append(targets, testData)
 	}
@@ -98,10 +98,10 @@ func TestOpenMetricsNegative(t *testing.T) {
 		testData := &testData{
 			name: k,
 			pages: []mockPrometheusResponse{
-				{code: 200, data: v},
+				{code: 200, data: v, useOpenMetrics: true},
 			},
-			validateFunc:   verifyNegativeTarget,
-			useOpenMetrics: true,
+			validateFunc:    verifyNegativeTarget,
+			validateScrapes: true,
 		}
 		targets = append(targets, testData)
 	}
