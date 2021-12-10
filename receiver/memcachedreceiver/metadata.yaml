@@ -34,84 +34,73 @@ metrics:
   memcached.bytes:
     description: Current number of bytes used by this server to store items.
     unit: By
-    data:
-      type: gauge
+    gauge: {}
     attributes: []
   memcached.current_connections:
     description: The current number of open connections.
     unit: connections
-    data:
-      type: sum
+    sum:
       monotonic: false
       aggregation: cumulative
     attributes: []
   memcached.total_connections:
     description: Total number of connections opened since the server started running.
     unit: connections
-    data:
-      type: sum
+    sum:
       monotonic: true
       aggregation: cumulative
     attributes: []
   memcached.commands:
     description: Commands executed.
     unit: 1
-    data:
-      type: sum
+    sum:
       monotonic: true
       aggregation: cumulative
     attributes: [command]
   memcached.current_items:
     description: Number of items currently stored in the cache.
     unit: 1
-    data:
-      type: sum
+    sum:
       monotonic: false
       aggregation: cumulative
     attributes: []
   memcached.evictions:
     description: Cache item evictions.
     unit: 1
-    data:
-      type: sum
+    sum:
       monotonic: true
       aggregation: cumulative
     attributes: []
   memcached.network:
     description: Bytes transferred over the network.
     unit: by
-    data:
-      type: sum
+    sum:
       monotonic: true
       aggregation: cumulative
     attributes: [direction]
   memcached.operations:
     description:  Operation counts. 
     unit: 1
-    data:
-      type: sum
+    sum:
       monotonic: true
       aggregation: cumulative
     attributes: [type,operation]
   memcached.operation_hit_ratio:
     description: Hit ratio for operations, expressed as a percentage value between 0.0 and 100.0.
     unit: '%'
-    data:
-      type: gauge
+    gauge: {}
     attributes: [operation]
   memcached.rusage:
     description: Accumulated user and system time. 
     unit: 1
-    data:
-      type: sum
+    sum:
       monotonic: true
       aggregation: cumulative
     attributes: [state]
   memcached.threads:
     description: Number of threads used by the memcached instance.
     unit: 1
-    data:
-      type: sum
+    sum:
       monotonic: false
       aggregation: cumulative
     attributes: []

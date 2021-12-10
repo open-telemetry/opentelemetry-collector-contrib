@@ -24,9 +24,11 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"regexp"
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
@@ -107,10 +109,51 @@ func TestSvcAcctClient(t *testing.T) {
 	require.Equal(t, "s3cr3t", string(cl.(*clientImpl).tok))
 }
 
-func TestDefaultEndpoint(t *testing.T) {
-	endpt, err := defaultEndpoint()
-	require.NoError(t, err)
-	require.True(t, strings.HasSuffix(endpt, ":10250"))
+func TestBuildEndpoint(t *testing.T) {
+	tests := []struct {
+		name          string
+		endpoint      string
+		useSecurePort bool
+		wantRegex     string
+	}{
+		{
+			name:          "default secure",
+			endpoint:      "",
+			useSecurePort: true,
+			wantRegex:     `^https://.+:10250$`,
+		},
+		{
+			name:          "default read only",
+			endpoint:      "",
+			useSecurePort: false,
+			wantRegex:     `^http://.+:10255$`,
+		},
+		{
+			name:          "prepended https",
+			endpoint:      "hostname:12345",
+			useSecurePort: true,
+			wantRegex:     `^https://hostname:12345$`,
+		},
+		{
+			name:          "prepended http",
+			endpoint:      "hostname:12345",
+			useSecurePort: false,
+			wantRegex:     `^http://hostname:12345$`,
+		},
+		{
+			name:          "unchanged",
+			endpoint:      "https://host.name:12345",
+			useSecurePort: true,
+			wantRegex:     `^https://host\.name:12345$`,
+		},
+	}
+	for _, tt := range tests {
+		got, err := buildEndpoint(tt.endpoint, tt.useSecurePort, zap.NewNop())
+		require.NoError(t, err)
+		matched, err := regexp.MatchString(tt.wantRegex, got)
+		require.NoError(t, err)
+		assert.True(t, matched, "endpoint %s doesn't match regexp %v", got, tt.wantRegex)
+	}
 }
 
 func TestBadAuthType(t *testing.T) {

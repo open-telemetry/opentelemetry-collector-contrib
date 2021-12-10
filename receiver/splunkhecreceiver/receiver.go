@@ -79,6 +79,7 @@ type splunkReceiver struct {
 	logsConsumer    consumer.Logs
 	metricsConsumer consumer.Metrics
 	server          *http.Server
+	shutdownWG      sync.WaitGroup
 	obsrecv         *obsreport.Receiver
 	gzipReaderPool  *sync.Pool
 }
@@ -183,15 +184,20 @@ func (r *splunkReceiver) Start(_ context.Context, host component.Host) error {
 	}
 	mx.NewRoute().HandlerFunc(r.handleReq)
 
-	r.server = r.config.HTTPServerSettings.ToServer(mx, r.settings.TelemetrySettings)
+	r.server, err = r.config.HTTPServerSettings.ToServer(host, r.settings.TelemetrySettings, mx)
+	if err != nil {
+		return err
+	}
 
 	// TODO: Evaluate what properties should be configurable, for now
 	//		set some hard-coded values.
 	r.server.ReadHeaderTimeout = defaultServerTimeout
 	r.server.WriteTimeout = defaultServerTimeout
 
+	r.shutdownWG.Add(1)
 	go func() {
-		if errHTTP := r.server.Serve(ln); errHTTP != http.ErrServerClosed {
+		defer r.shutdownWG.Done()
+		if errHTTP := r.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
 			host.ReportFatalError(errHTTP)
 		}
 	}()
@@ -202,7 +208,9 @@ func (r *splunkReceiver) Start(_ context.Context, host component.Host) error {
 // Shutdown tells the receiver that should stop reception,
 // giving it a chance to perform any necessary clean-up.
 func (r *splunkReceiver) Shutdown(context.Context) error {
-	return r.server.Close()
+	err := r.server.Close()
+	r.shutdownWG.Wait()
+	return err
 }
 
 func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Request) {

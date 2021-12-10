@@ -1,0 +1,3 @@
+# TYPE a gauge
+a 1 # {a="b"} 1
+# EOF

@@ -18,13 +18,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
+	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/correlation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
@@ -143,18 +143,8 @@ func createMetricsExporter(
 }
 
 func loadDefaultTranslationRules() ([]translation.Rule, error) {
-	cfg := Config{}
-
-	cp, err := config.NewMapFromBuffer(strings.NewReader(translation.DefaultTranslationRulesYaml))
-	if err != nil {
-		return nil, err
-	}
-
-	if err = cp.UnmarshalExact(&cfg); err != nil {
-		return nil, fmt.Errorf("failed to load default translation rules: %v", err)
-	}
-
-	return cfg.TranslationRules, nil
+	cfg, err := loadConfig([]byte(translation.DefaultTranslationRulesYaml))
+	return cfg.TranslationRules, err
 }
 
 // setDefaultExcludes appends default metrics to be excluded to the exclude_metrics option.
@@ -170,18 +160,22 @@ func setDefaultExcludes(cfg *Config) error {
 }
 
 func loadDefaultExcludes() ([]dpfilters.MetricFilter, error) {
-	cfg := Config{}
+	cfg, err := loadConfig([]byte(translation.DefaultExcludeMetricsYaml))
+	return cfg.ExcludeMetrics, err
+}
 
-	v, err := config.NewMapFromBuffer(strings.NewReader(translation.DefaultExcludeMetricsYaml))
-	if err != nil {
-		return nil, err
+func loadConfig(bytes []byte) (Config, error) {
+	var cfg Config
+	var data map[string]interface{}
+	if err := yaml.Unmarshal(bytes, &data); err != nil {
+		return cfg, err
 	}
 
-	if err = v.UnmarshalExact(&cfg); err != nil {
-		return nil, fmt.Errorf("failed to load default exclude metrics: %v", err)
+	if err := config.NewMapFromStringMap(data).UnmarshalExact(&cfg); err != nil {
+		return cfg, fmt.Errorf("failed to load default exclude metrics: %v", err)
 	}
 
-	return cfg.ExcludeMetrics, nil
+	return cfg, nil
 }
 
 func createLogsExporter(
