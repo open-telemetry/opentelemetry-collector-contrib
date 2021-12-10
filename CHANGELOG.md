@@ -8,6 +8,8 @@
 
 ## 🧰 Bug fixes 🧰
 
+- `jaeger` receiver/exporter: Parse/set Jaeger status as OTel spec defines (#6682)
+
 ## 💡 Enhancements 💡
 
 ## v0.41.0
