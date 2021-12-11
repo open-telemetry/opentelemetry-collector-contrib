@@ -11,8 +11,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.41.0
 	github.com/stretchr/testify v1.7.0
 	github.com/xdg-go/scram v1.0.2
-	go.opentelemetry.io/collector v0.41.0
-	go.opentelemetry.io/collector/model v0.41.0
+	go.opentelemetry.io/collector v0.41.1-0.20211210184707-4dcb3388a168
+	go.opentelemetry.io/collector/model v0.41.1-0.20211210184707-4dcb3388a168
 	go.uber.org/multierr v1.7.0
 	go.uber.org/zap v1.19.1
 )
@@ -24,7 +24,6 @@ require (
 	github.com/eapache/go-resiliency v1.2.0 // indirect
 	github.com/eapache/go-xerial-snappy v0.0.0-20180814174437-776d5712da21 // indirect
 	github.com/eapache/queue v1.1.0 // indirect
-	github.com/frankban/quicktest v1.14.0 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/hashicorp/go-uuid v1.0.2 // indirect
 	github.com/jcmturner/aescts/v2 v2.0.0 // indirect

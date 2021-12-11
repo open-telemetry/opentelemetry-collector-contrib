@@ -83,7 +83,7 @@ func (ndp NumberDataPoints) BasicType() string {
 }
 
 type gauge struct {
-	NumberDataPoints `yaml:",inline"`
+	NumberDataPoints `mapstructure:",squash"`
 }
 
 func (d gauge) Type() string {

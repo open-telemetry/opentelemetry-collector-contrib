@@ -45,7 +45,7 @@ func TestCodeFromAttr(t *testing.T) {
 	tests := []struct {
 		name string
 		attr pdata.AttributeValue
-		code int
+		code int64
 		err  error
 	}{
 		{
@@ -72,20 +72,6 @@ func TestCodeFromAttr(t *testing.T) {
 			attr: pdata.NewAttributeValueString("inf"),
 			code: 0,
 			err:  strconv.ErrSyntax,
-		},
-
-		{
-			name: "too-large-int",
-			attr: pdata.NewAttributeValueInt(1844674407370955),
-			code: 0,
-			err:  errRange,
-		},
-
-		{
-			name: "too-small-int",
-			attr: pdata.NewAttributeValueInt((-1 << 31) - 1),
-			code: 0,
-			err:  errRange,
 		},
 	}
 

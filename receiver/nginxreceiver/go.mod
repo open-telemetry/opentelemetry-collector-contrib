@@ -8,8 +8,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.41.0
 	github.com/stretchr/testify v1.7.0
 	github.com/testcontainers/testcontainers-go v0.12.0
-	go.opentelemetry.io/collector v0.41.0
-	go.opentelemetry.io/collector/model v0.41.0
+	go.opentelemetry.io/collector v0.41.1-0.20211210184707-4dcb3388a168
+	go.opentelemetry.io/collector/model v0.41.1-0.20211210184707-4dcb3388a168
 	go.uber.org/zap v1.19.1
 	golang.org/x/time v0.0.0-20210611083556-38a9dc6acbc6 // indirect
 
@@ -32,7 +32,9 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/uuid v1.3.0 // indirect
+	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/knadh/koanf v1.3.3 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
@@ -43,7 +45,7 @@ require (
 	github.com/moby/term v0.0.0-20201216013528-df9cb8a40635 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
-	github.com/opencontainers/runc v1.0.2 // indirect
+	github.com/opencontainers/runc v1.0.3 // indirect
 	github.com/pelletier/go-toml v1.9.3 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect

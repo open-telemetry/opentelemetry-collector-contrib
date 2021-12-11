@@ -7,8 +7,8 @@ require (
 	github.com/shirou/gopsutil/v3 v3.21.11
 	github.com/stretchr/testify v1.7.0
 	github.com/testcontainers/testcontainers-go v0.12.0
-	go.opentelemetry.io/collector v0.41.0
-	go.opentelemetry.io/collector/model v0.41.0
+	go.opentelemetry.io/collector v0.41.1-0.20211210184707-4dcb3388a168
+	go.opentelemetry.io/collector/model v0.41.1-0.20211210184707-4dcb3388a168
 	go.uber.org/atomic v1.9.0
 	go.uber.org/zap v1.19.1
 
@@ -50,7 +50,7 @@ require (
 	github.com/mostynb/go-grpc-compression v1.1.15 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
-	github.com/opencontainers/runc v1.0.2 // indirect
+	github.com/opencontainers/runc v1.0.3 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect

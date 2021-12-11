@@ -17,7 +17,6 @@ package jaeger // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"encoding/base64"
 	"fmt"
-	"math"
 	"reflect"
 	"strconv"
 	"strings"
@@ -287,18 +286,14 @@ func extractStatusDescFromAttr(attrs pdata.AttributeMap) (string, bool) {
 // codeFromAttr returns the integer code value from attrVal. An error is
 // returned if the code is not represented by an integer or string value in
 // the attrVal or the value is outside the bounds of an int representation.
-func codeFromAttr(attrVal pdata.AttributeValue) (int, error) {
-	var val int
+func codeFromAttr(attrVal pdata.AttributeValue) (int64, error) {
+	var val int64
 	switch attrVal.Type() {
 	case pdata.AttributeValueTypeInt:
-		i := attrVal.IntVal()
-		if i > math.MaxInt32 || i < math.MinInt32 {
-			return 0, fmt.Errorf("%w: %d", errRange, val)
-		}
-		val = int(i)
+		val = attrVal.IntVal()
 	case pdata.AttributeValueTypeString:
 		var err error
-		val, err = strconv.Atoi(attrVal.StringVal())
+		val, err = strconv.ParseInt(attrVal.StringVal(), 10, 0)
 		if err != nil {
 			return 0, err
 		}

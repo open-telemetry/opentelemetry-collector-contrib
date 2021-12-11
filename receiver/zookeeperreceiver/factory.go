@@ -24,6 +24,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver/internal/metadata"
 )
 
 const (
@@ -51,6 +53,7 @@ func createDefaultConfig() config.Receiver {
 			Endpoint: ":2181",
 		},
 		Timeout: defaultTimeout,
+		Metrics: metadata.DefaultMetricsSettings(),
 	}
 }
 

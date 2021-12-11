@@ -7,8 +7,8 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.41.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.41.0
-	go.opentelemetry.io/collector/model v0.41.0
+	go.opentelemetry.io/collector v0.41.1-0.20211210184707-4dcb3388a168
+	go.opentelemetry.io/collector/model v0.41.1-0.20211210184707-4dcb3388a168
 	go.uber.org/zap v1.19.1
 )
 
@@ -16,7 +16,6 @@ require (
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/cenkalti/backoff/v4 v4.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/frankban/quicktest v1.14.0 // indirect
 	github.com/go-kit/kit v0.10.0 // indirect
 	github.com/go-logfmt/logfmt v0.5.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect

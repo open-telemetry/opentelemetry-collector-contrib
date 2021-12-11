@@ -4,8 +4,8 @@ go 1.17
 
 require (
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.41.0
-	go.opentelemetry.io/collector/model v0.41.0
+	go.opentelemetry.io/collector v0.41.1-0.20211210184707-4dcb3388a168
+	go.opentelemetry.io/collector/model v0.41.1-0.20211210184707-4dcb3388a168
 )
 
 require (
@@ -16,7 +16,6 @@ require (
 )
 
 require (
-	cloud.google.com/go v0.81.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -40,10 +39,8 @@ require (
 	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/zap v1.19.1 // indirect
 	golang.org/x/net v0.0.0-20210614182718-04defd469f4e // indirect
-	golang.org/x/oauth2 v0.0.0-20210514164344-f6687ab2804c // indirect
 	golang.org/x/sys v0.0.0-20211013075003-97ac67df715c // indirect
 	golang.org/x/text v0.3.6 // indirect
-	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20210604141403-392c879c8b08 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

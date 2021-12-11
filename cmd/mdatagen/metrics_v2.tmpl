@@ -50,6 +50,16 @@ type metrics struct {
 	{{- end }}
 }
 
+func newMetrics(config MetricsSettings) metrics {
+	ms := metrics{}
+	{{- range $name, $metric := .Metrics }}
+	if config.{{ $name.Render }}.Enabled {
+		ms.{{ $name.Render }} = pdata.NewMetric()
+	}
+	{{- end }}
+	return ms
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user configuration.
 type MetricsBuilder struct {
@@ -91,13 +101,14 @@ func NewMetricsBuilder(config MetricsSettings, options ...metricBuilderOption) *
 		attribute{{ $name.Render }}Capacity: {{ len $info.Enum }},
 		{{- end }}
 		{{- end }}
+		metrics:                             newMetrics(config),
 	}
 
 	for _, op := range options {
 		op(mb)
 	}
 
-	mb.clearMetrics()
+	mb.initMetrics()
 	return mb
 }
 
@@ -112,7 +123,7 @@ func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
 	{{- end }}
 
 	// Reset metric data points collection.
-	mb.clearMetrics()
+	mb.initMetrics()
 }
 
 {{ range $name, $metric := .Metrics -}}
@@ -126,9 +137,9 @@ func (mb *MetricsBuilder) {{ $name.RenderUnexported }}DataPointsCapacity() int {
 }
 {{- end }}
 
-// {{ $name.RenderUnexported }}Metric builds new {{ $name }} metric.
-func (mb *MetricsBuilder) {{ $name.RenderUnexported }}Metric() pdata.Metric {
-	metric := pdata.NewMetric()
+// init{{ $name.Render }}Metric builds new {{ $name }} metric.
+func (mb *MetricsBuilder) init{{ $name.Render }}Metric() {
+	metric := mb.metrics.{{ $name.Render }}
 	metric.SetName("{{ $name }}")
 	metric.SetDescription("{{ $metric.Description }}")
 	metric.SetUnit("{{ $metric.Unit }}")
@@ -142,18 +153,17 @@ func (mb *MetricsBuilder) {{ $name.RenderUnexported }}Metric() pdata.Metric {
 	{{- if $metric.Attributes }}
 	metric.{{ $metric.Data.Type }}().DataPoints().EnsureCapacity(mb.{{ $name.RenderUnexported }}DataPointsCapacity())
 	{{- end }}
-	return metric
 }
 
 {{ end -}}
 
-// clearMetrics clears metrics structure.
-func (mb *MetricsBuilder) clearMetrics() {
+// initMetrics initializes metrics.
+func (mb *MetricsBuilder) initMetrics() {
 	{{- range $name, $metric := .Metrics }}
 	if mb.config.{{- $name.Render }}.Enabled {
 		// TODO: Use mb.metrics.{{ $name.Render }}.{{ $metric.Data.Type }}().DataPoints().Clear() instead of rebuilding
 		// the metrics once the Clear method is available.
-		mb.metrics.{{ $name.Render }} = mb.{{ $name.RenderUnexported }}Metric()
+		mb.init{{ $name.Render }}Metric()
 	}
 	{{- end }}
 }
