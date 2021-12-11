@@ -1,0 +1,24 @@
+receivers:
+  file:
+      # This will read pipeline data from JSON files in the folder.
+      # The data is written in Protobuf JSON encoding
+      # (https://developers.google.com/protocol-buffers/docs/proto3#json).
+      # Note that there are no compatibility guarantees for this format, since it
+      # just a dump of internal structures which can be changed over time.
+      path: /var/output/
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    traces:
+      receivers: [file]
+      processors: [nop]
+      exporters: [nop]
+    metrics:
+      receivers: [ file ]
+      exporters: [nop]
