@@ -942,6 +942,50 @@ func setQuantileValues(dataPoint pdata.SummaryDataPoint, quantileValues ...float
 	}
 }
 
+func TestExponentialHistogramConsumerSpec(t *testing.T) {
+	metric := newExponentialHistogramMetricWithDataPoints(
+		"a.metric", pdata.MetricAggregationTemporalityDelta, []uint64{4, 7, 11})
+	assert.Equal(t, pdata.MetricDataTypeExponentialHistogram, exponentialHistogram.Type())
+	aHistogram := exponentialHistogram.AsHistogram(metric)
+	assert.Equal(t, pdata.MetricAggregationTemporalityDelta, aHistogram.AggregationTemporality())
+	assert.Equal(t, 3, aHistogram.Len())
+	assert.Equal(t, uint64(4), aHistogram.At(0).Count())
+	assert.Equal(t, uint64(7), aHistogram.At(1).Count())
+	assert.Equal(t, uint64(11), aHistogram.At(2).Count())
+}
+
+func TestExponentialHistogramDataPoint(t *testing.T) {
+	dataPoint := pdata.NewExponentialHistogramDataPoint()
+	dataPoint.SetScale(1)
+	dataPoint.Negative().SetOffset(6)
+	dataPoint.Negative().SetBucketCounts([]uint64{15, 16, 17})
+	dataPoint.Positive().SetOffset(3)
+	dataPoint.Positive().SetBucketCounts([]uint64{5, 6, 7, 8})
+	dataPoint.SetZeroCount(2)
+	setTags(map[string]interface{}{"foo": "bar", "baz": "7"}, dataPoint.Attributes())
+	setDataPointTimestamp(1640198765, dataPoint)
+	h := newExponentialHistogramDataPoint(dataPoint)
+	assert.Equal(t, []uint64{0, 17, 16, 15, 2, 5, 6, 7, 8, 0}, h.BucketCounts())
+	assert.InDeltaSlice(
+		t,
+		[]float64{-22.6274, -16.0, -11.3137, -8.0, 2.8284, 4.0, 5.6569, 8.0, 11.3137},
+		h.ExplicitBounds(),
+		0.0001)
+	assert.Equal(t, map[string]string{"foo": "bar", "baz": "7"}, attributesToTags(h.Attributes()))
+	assert.Equal(t, int64(1640198765), h.Timestamp().AsTime().Unix())
+}
+
+func TestExponentialHistogramDataPoint_ZeroOnly(t *testing.T) {
+	dataPoint := pdata.NewExponentialHistogramDataPoint()
+	dataPoint.SetScale(0)
+	dataPoint.Negative().SetOffset(2)
+	dataPoint.Positive().SetOffset(1)
+	dataPoint.SetZeroCount(5)
+	h := newExponentialHistogramDataPoint(dataPoint)
+	assert.Equal(t, []uint64{0, 5, 0}, h.BucketCounts())
+	assert.InDeltaSlice(t, []float64{-4.0, 2.0}, h.ExplicitBounds(), 0.0001)
+}
+
 // Creates a histogram metric with len(countAttributeForEachDataPoint)
 // datapoints. name is the name of the histogram metric; temporality
 // is the temporality of the histogram metric;
@@ -954,6 +998,22 @@ func newHistogramMetricWithDataPoints(
 ) pdata.Metric {
 	result := newMetric(name, pdata.MetricDataTypeHistogram)
 	aHistogram := result.Histogram()
+	aHistogram.SetAggregationTemporality(temporality)
+	aHistogram.DataPoints().EnsureCapacity(len(countAttributeForEachDataPoint))
+	for _, count := range countAttributeForEachDataPoint {
+		aHistogram.DataPoints().AppendEmpty().SetCount(count)
+	}
+	return result
+}
+
+// Works like newHistogramMetricWithDataPoints but creates an exponential histogram metric
+func newExponentialHistogramMetricWithDataPoints(
+	name string,
+	temporality pdata.MetricAggregationTemporality,
+	countAttributeForEachDataPoint []uint64,
+) pdata.Metric {
+	result := newMetric(name, pdata.MetricDataTypeExponentialHistogram)
+	aHistogram := result.ExponentialHistogram()
 	aHistogram.SetAggregationTemporality(temporality)
 	aHistogram.DataPoints().EnsureCapacity(len(countAttributeForEachDataPoint))
 	for _, count := range countAttributeForEachDataPoint {

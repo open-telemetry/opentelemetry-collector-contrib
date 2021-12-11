@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"strconv"
 	"sync/atomic"
 
@@ -50,6 +51,9 @@ var (
 var (
 	// Specifies regular histogram
 	regularHistogram histogramConsumerSpec = regularHistogramConsumerSpec{}
+
+	// Specifies exponential histograms
+	exponentialHistogram histogramConsumerSpec = exponentialHistogramConsumerSpec{}
 )
 
 // metricsConsumer instances consume OTEL metrics
@@ -674,4 +678,77 @@ func (s *summaryConsumer) sendMetric(
 
 func quantileTagValue(quantile float64) string {
 	return strconv.FormatFloat(quantile, 'f', -1, 64)
+}
+
+type exponentialHistogramDataPoint struct {
+	pdata.ExponentialHistogramDataPoint
+	bucketCounts   []uint64
+	explicitBounds []float64
+}
+
+func newExponentialHistogramDataPoint(dataPoint pdata.ExponentialHistogramDataPoint) histogramDataPoint {
+	base := math.Pow(2.0, math.Pow(2.0, -float64(dataPoint.Scale())))
+	negativeBucketCounts := dataPoint.Negative().BucketCounts()
+	positiveBucketCounts := dataPoint.Positive().BucketCounts()
+	negativeBucketCountsLength := len(negativeBucketCounts)
+	numBucketCounts := 1 + negativeBucketCountsLength + 1 + len(positiveBucketCounts) + 1
+	bucketCounts := make([]uint64, numBucketCounts)
+	explicitBounds := make([]float64, numBucketCounts-1)
+	le := -math.Pow(base, float64(dataPoint.Negative().Offset()))
+	idx := negativeBucketCountsLength
+	for i := range negativeBucketCounts {
+		bucketCounts[idx] = negativeBucketCounts[i]
+		explicitBounds[idx] = le
+		le *= base
+		idx--
+	}
+	explicitBounds[idx] = le
+
+	le = math.Pow(base, float64(dataPoint.Positive().Offset()))
+	idx = negativeBucketCountsLength + 1
+	bucketCounts[idx] = dataPoint.ZeroCount()
+	explicitBounds[idx] = le
+	for range positiveBucketCounts {
+		le *= base
+		idx++
+		explicitBounds[idx] = le
+	}
+	copy(bucketCounts[negativeBucketCountsLength+2:], positiveBucketCounts)
+	return &exponentialHistogramDataPoint{
+		ExponentialHistogramDataPoint: dataPoint,
+		bucketCounts:                  bucketCounts,
+		explicitBounds:                explicitBounds,
+	}
+}
+
+func (e *exponentialHistogramDataPoint) ExplicitBounds() []float64 {
+	return e.explicitBounds
+}
+
+func (e *exponentialHistogramDataPoint) BucketCounts() []uint64 {
+	return e.bucketCounts
+}
+
+type exponentialHistogramMetric struct {
+	pdata.ExponentialHistogram
+	pdata.ExponentialHistogramDataPointSlice
+}
+
+func (e *exponentialHistogramMetric) At(i int) histogramDataPoint {
+	return newExponentialHistogramDataPoint(e.ExponentialHistogramDataPointSlice.At(i))
+}
+
+type exponentialHistogramConsumerSpec struct {
+}
+
+func (exponentialHistogramConsumerSpec) Type() pdata.MetricDataType {
+	return pdata.MetricDataTypeExponentialHistogram
+}
+
+func (exponentialHistogramConsumerSpec) AsHistogram(metric pdata.Metric) histogramMetric {
+	aHistogram := metric.ExponentialHistogram()
+	return &exponentialHistogramMetric{
+		ExponentialHistogram:               aHistogram,
+		ExponentialHistogramDataPointSlice: aHistogram.DataPoints(),
+	}
 }
