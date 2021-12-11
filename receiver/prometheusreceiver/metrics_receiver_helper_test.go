@@ -477,6 +477,13 @@ func compareDoubleValue(doubleVal float64) numberPointComparator {
 	}
 }
 
+func assertNormalNan() numberPointComparator {
+	return func(t *testing.T, numberDataPoint *pdata.NumberDataPoint) {
+		assert.True(t, math.Float64bits(numberDataPoint.DoubleVal()) == value.NormalNaN,
+			"Metric double value is not normalNaN as expected")
+	}
+}
+
 func compareHistogram(count uint64, sum float64, buckets []uint64) histogramPointComparator {
 	return func(t *testing.T, histogramDataPoint *pdata.HistogramDataPoint) {
 		assert.Equal(t, count, histogramDataPoint.Count(), "Histogram count value does not match")
