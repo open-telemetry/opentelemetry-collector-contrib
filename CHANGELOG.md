@@ -2,7 +2,8 @@
 
 # Changelog
 
-<!-- next version -->
+## Unreleased
+- `otlpjsonfilereceiver`: New otlpjsonfilereceiver component (#7840)
 
 # v0.55.0
 

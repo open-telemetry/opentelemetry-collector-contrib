@@ -206,6 +206,9 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "otlp",
 		},
 		{
+			receiver: "otlpjsonreceiver",
+		},
+		{
 			receiver:     "podman_stats",
 			skipLifecyle: true, // Requires a running podman daemon
 		},
