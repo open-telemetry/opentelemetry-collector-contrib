@@ -38,7 +38,7 @@ exporter/jaegerexporter/                             @open-telemetry/collector-c
 exporter/jaegerthrifthttpexporter/                   @open-telemetry/collector-contrib-approvers @jpkrohling @pavolloffay
 exporter/loadbalancingexporter/                      @open-telemetry/collector-contrib-approvers @jpkrohling
 exporter/logzioexporter/                             @open-telemetry/collector-contrib-approvers @jkowall @Doron-Bargo @yotamloe
-exporter/lokiexporter/                               @open-telemetry/collector-contrib-approvers @gramidt
+exporter/lokiexporter/                               @open-telemetry/collector-contrib-approvers @gramidt @jpkrohling
 exporter/newrelicexporter/                           @open-telemetry/collector-contrib-approvers @alanwest @jack-berg @nrcventura
 exporter/observiqexporter/                           @open-telemetry/collector-contrib-approvers @binaryfissiongames
 exporter/sapmexporter/                               @open-telemetry/collector-contrib-approvers @owais @dmitryax
@@ -51,6 +51,7 @@ exporter/sumologicexporter/                          @open-telemetry/collector-c
 exporter/tanzuobservabilityexporter/                 @open-telemetry/collector-contrib-approvers @oppegard @thepeterstone @keep94
 exporter/tencentcloudlogserviceexporter/             @open-telemetry/collector-contrib-approvers @wgliang @yiyang5055
 
+extension/asapauthextension                          @open-telemetry/collector-contrib-approvers @jamesmoessis @MovieStoreGuy
 extension/awsproxy/                                  @open-telemetry/collector-contrib-approvers @anuraaga @Aneurysm9 @mxiamxia
 extension/bearertokenauthextension/                  @open-telemetry/collector-contrib-approvers @jpkrohling @pavankrish123
 extension/healthcheckextension/                      @open-telemetry/collector-contrib-approvers @jpkrohling

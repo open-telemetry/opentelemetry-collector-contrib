@@ -14,18 +14,6 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "1114",
-                              "attributes": [
-                                 {
-                                    "key": "command",
-                                    "value": {
-                                       "stringValue": "touch"
-                                    }
-                                 }
-                              ],
-                              "timeUnixNano": "1637087029574938000"
-                           },
-                           {
                               "asInt": "1110",
                               "attributes": [
                                  {
@@ -35,19 +23,7 @@
                                     }
                                  }
                               ],
-                              "timeUnixNano": "1637087029574938000"
-                           },
-                           {
-                              "asInt": "1111",
-                              "attributes": [
-                                 {
-                                    "key": "command",
-                                    "value": {
-                                       "stringValue": "get"
-                                    }
-                                 }
-                              ],
-                              "timeUnixNano": "1637087029574938000"
+                              "timeUnixNano": "1639156914260161000"
                            },
                            {
                               "asInt": "1113",
@@ -59,7 +35,31 @@
                                     }
                                  }
                               ],
-                              "timeUnixNano": "1637087029574938000"
+                              "timeUnixNano": "1639156914260161000"
+                           },
+                           {
+                              "asInt": "1114",
+                              "attributes": [
+                                 {
+                                    "key": "command",
+                                    "value": {
+                                       "stringValue": "touch"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1639156914260161000"
+                           },
+                           {
+                              "asInt": "1111",
+                              "attributes": [
+                                 {
+                                    "key": "command",
+                                    "value": {
+                                       "stringValue": "get"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1639156914260161000"
                            }
                         ],
                         "isMonotonic": true
@@ -68,22 +68,10 @@
                   },
                   {
                      "description": "Accumulated user and system time.",
-                     "name": "memcached.rusage",
+                     "name": "memcached.cpu.usage",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
-                           {
-                              "asDouble": 11.1123452,
-                              "attributes": [
-                                 {
-                                    "key": "state",
-                                    "value": {
-                                       "stringValue": "system"
-                                    }
-                                 }
-                              ],
-                              "timeUnixNano": "1637087029574938000"
-                           },
                            {
                               "asDouble": 11.11331119,
                               "attributes": [
@@ -94,7 +82,19 @@
                                     }
                                  }
                               ],
-                              "timeUnixNano": "1637087029574938000"
+                              "timeUnixNano": "1639156914260161000"
+                           },
+                           {
+                              "asDouble": 11.1123452,
+                              "attributes": [
+                                 {
+                                    "key": "state",
+                                    "value": {
+                                       "stringValue": "system"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1639156914260161000"
                            }
                         ],
                         "isMonotonic": true
@@ -117,7 +117,7 @@
                                     }
                                  }
                               ],
-                              "timeUnixNano": "1637087029574938000"
+                              "timeUnixNano": "1639156914260161000"
                            },
                            {
                               "asInt": "7",
@@ -129,7 +129,7 @@
                                     }
                                  }
                               ],
-                              "timeUnixNano": "1637087029574938000"
+                              "timeUnixNano": "1639156914260161000"
                            }
                         ],
                         "isMonotonic": true
@@ -142,24 +142,6 @@
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
-                           {
-                              "asInt": "1120",
-                              "attributes": [
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "decrement"
-                                    }
-                                 },
-                                 {
-                                    "key": "type",
-                                    "value": {
-                                       "stringValue": "miss"
-                                    }
-                                 }
-                              ],
-                              "timeUnixNano": "1637087029574938000"
-                           },
                            {
                               "asInt": "1130",
                               "attributes": [
@@ -176,61 +158,7 @@
                                     }
                                  }
                               ],
-                              "timeUnixNano": "1637087029574938000"
-                           },
-                           {
-                              "asInt": "1135",
-                              "attributes": [
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "increment"
-                                    }
-                                 },
-                                 {
-                                    "key": "type",
-                                    "value": {
-                                       "stringValue": "miss"
-                                    }
-                                 }
-                              ],
-                              "timeUnixNano": "1637087029574938000"
-                           },
-                           {
-                              "asInt": "1134",
-                              "attributes": [
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "increment"
-                                    }
-                                 },
-                                 {
-                                    "key": "type",
-                                    "value": {
-                                       "stringValue": "hit"
-                                    }
-                                 }
-                              ],
-                              "timeUnixNano": "1637087029574938000"
-                           },
-                           {
-                              "asInt": "1119",
-                              "attributes": [
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "decrement"
-                                    }
-                                 },
-                                 {
-                                    "key": "type",
-                                    "value": {
-                                       "stringValue": "hit"
-                                    }
-                                 }
-                              ],
-                              "timeUnixNano": "1637087029574938000"
+                              "timeUnixNano": "1639156914260161000"
                            },
                            {
                               "asInt": "1131",
@@ -248,7 +176,79 @@
                                     }
                                  }
                               ],
-                              "timeUnixNano": "1637087029574938000"
+                              "timeUnixNano": "1639156914260161000"
+                           },
+                           {
+                              "asInt": "1120",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "decrement"
+                                    }
+                                 },
+                                 {
+                                    "key": "type",
+                                    "value": {
+                                       "stringValue": "miss"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1639156914260161000"
+                           },
+                           {
+                              "asInt": "1134",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "increment"
+                                    }
+                                 },
+                                 {
+                                    "key": "type",
+                                    "value": {
+                                       "stringValue": "hit"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1639156914260161000"
+                           },
+                           {
+                              "asInt": "1119",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "decrement"
+                                    }
+                                 },
+                                 {
+                                    "key": "type",
+                                    "value": {
+                                       "stringValue": "hit"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1639156914260161000"
+                           },
+                           {
+                              "asInt": "1135",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "increment"
+                                    }
+                                 },
+                                 {
+                                    "key": "type",
+                                    "value": {
+                                       "stringValue": "miss"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1639156914260161000"
                            }
                         ],
                         "isMonotonic": true
@@ -269,7 +269,7 @@
                                     }
                                  }
                               ],
-                              "timeUnixNano": "1637087029574938000"
+                              "timeUnixNano": "1639156914260161000"
                            },
                            {
                               "asDouble": 50.02233139794551,
@@ -281,7 +281,7 @@
                                     }
                                  }
                               ],
-                              "timeUnixNano": "1637087029574938000"
+                              "timeUnixNano": "1639156914260161000"
                            },
                            {
                               "asDouble": 50.02211410880142,
@@ -293,7 +293,7 @@
                                     }
                                  }
                               ],
-                              "timeUnixNano": "1637087029574938000"
+                              "timeUnixNano": "1639156914260161000"
                            }
                         ]
                      },
@@ -306,7 +306,7 @@
                         "dataPoints": [
                            {
                               "asInt": "15",
-                              "timeUnixNano": "1637087029574938000"
+                              "timeUnixNano": "1639156914260161000"
                            }
                         ]
                      },
@@ -315,13 +315,13 @@
                   },
                   {
                      "description": "The current number of open connections.",
-                     "name": "memcached.current_connections",
+                     "name": "memcached.connections.current",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
                               "asInt": "2",
-                              "timeUnixNano": "1637087029574938000"
+                              "timeUnixNano": "1639156914260161000"
                            }
                         ]
                      },
@@ -329,13 +329,13 @@
                   },
                   {
                      "description": "Total number of connections opened since the server started running.",
-                     "name": "memcached.total_connections",
+                     "name": "memcached.connections.total",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
                               "asInt": "4",
-                              "timeUnixNano": "1637087029574938000"
+                              "timeUnixNano": "1639156914260161000"
                            }
                         ],
                         "isMonotonic": true
@@ -350,7 +350,7 @@
                         "dataPoints": [
                            {
                               "asDouble": 1118,
-                              "timeUnixNano": "1637087029574938000"
+                              "timeUnixNano": "1639156914260161000"
                            }
                         ]
                      },
@@ -364,7 +364,7 @@
                         "dataPoints": [
                            {
                               "asDouble": 4,
-                              "timeUnixNano": "1637087029574938000"
+                              "timeUnixNano": "1639156914260161000"
                            }
                         ]
                      },
@@ -378,7 +378,7 @@
                         "dataPoints": [
                            {
                               "asInt": "1126",
-                              "timeUnixNano": "1637087029574938000"
+                              "timeUnixNano": "1639156914260161000"
                            }
                         ],
                         "isMonotonic": true

@@ -36,14 +36,14 @@ metrics:
     unit: By
     gauge: {}
     attributes: []
-  memcached.current_connections:
+  memcached.connections.current:
     description: The current number of open connections.
     unit: connections
     sum:
       monotonic: false
       aggregation: cumulative
     attributes: []
-  memcached.total_connections:
+  memcached.connections.total:
     description: Total number of connections opened since the server started running.
     unit: connections
     sum:
@@ -90,7 +90,7 @@ metrics:
     unit: '%'
     gauge: {}
     attributes: [operation]
-  memcached.rusage:
+  memcached.cpu.usage:
     description: Accumulated user and system time. 
     unit: 1
     sum:

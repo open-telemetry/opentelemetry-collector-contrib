@@ -5,14 +5,14 @@ go 1.17
 require (
 	github.com/gorilla/mux v1.8.0
 	github.com/jaegertracing/jaeger v1.29.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.40.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.40.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.40.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.41.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.41.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.41.0
 	github.com/signalfx/sapm-proto v0.7.2
 	github.com/stretchr/testify v1.7.0
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.40.1-0.20211206203115-a06ca26079fe
-	go.opentelemetry.io/collector/model v0.40.1-0.20211206203115-a06ca26079fe
+	go.opentelemetry.io/collector v0.41.1-0.20211210184707-4dcb3388a168
+	go.opentelemetry.io/collector/model v0.41.1-0.20211210184707-4dcb3388a168
 )
 
 require (
@@ -23,6 +23,8 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/golang/snappy v0.0.4 // indirect
+	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/knadh/koanf v1.3.3 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect

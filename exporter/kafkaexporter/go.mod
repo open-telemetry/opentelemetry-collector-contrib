@@ -7,12 +7,12 @@ require (
 	github.com/aws/aws-sdk-go v1.42.21
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger v1.29.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.40.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.40.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.41.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.41.0
 	github.com/stretchr/testify v1.7.0
 	github.com/xdg-go/scram v1.0.2
-	go.opentelemetry.io/collector v0.40.1-0.20211206203115-a06ca26079fe
-	go.opentelemetry.io/collector/model v0.40.1-0.20211206203115-a06ca26079fe
+	go.opentelemetry.io/collector v0.41.1-0.20211210184707-4dcb3388a168
+	go.opentelemetry.io/collector/model v0.41.1-0.20211210184707-4dcb3388a168
 	go.uber.org/multierr v1.7.0
 	go.uber.org/zap v1.19.1
 )

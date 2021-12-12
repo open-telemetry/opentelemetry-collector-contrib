@@ -25,7 +25,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -41,30 +40,33 @@ type logMsg struct {
 }
 
 func TestZookeeperMetricsScraperScrape(t *testing.T) {
-	commonMetrics := []pdata.Metric{
-		metadata.Metrics.ZookeeperLatencyAvg.New(),
-		metadata.Metrics.ZookeeperLatencyMax.New(),
-		metadata.Metrics.ZookeeperLatencyMin.New(),
-		metadata.Metrics.ZookeeperPacketsReceived.New(),
-		metadata.Metrics.ZookeeperPacketsSent.New(),
-		metadata.Metrics.ZookeeperConnectionsAlive.New(),
-		metadata.Metrics.ZookeeperOutstandingRequests.New(),
-		metadata.Metrics.ZookeeperZnodes.New(),
-		metadata.Metrics.ZookeeperWatches.New(),
-		metadata.Metrics.ZookeeperEphemeralNodes.New(),
-		metadata.Metrics.ZookeeperApproximateDateSize.New(),
-		metadata.Metrics.ZookeeperOpenFileDescriptors.New(),
-		metadata.Metrics.ZookeeperMaxFileDescriptors.New(),
+	commonMetrics := map[string]bool{
+		"zookeeper.latency.avg":           true,
+		"zookeeper.latency.max":           true,
+		"zookeeper.latency.min":           true,
+		"zookeeper.packets.received":      true,
+		"zookeeper.packets.sent":          true,
+		"zookeeper.connections_alive":     true,
+		"zookeeper.outstanding_requests":  true,
+		"zookeeper.znodes":                true,
+		"zookeeper.watches":               true,
+		"zookeeper.ephemeral_nodes":       true,
+		"zookeeper.approximate_date_size": true,
+		"zookeeper.open_file_descriptors": true,
+		"zookeeper.max_file_descriptors":  true,
 	}
 
-	var metricsV3414 []pdata.Metric
-	metricsV3414 = append(metricsV3414, commonMetrics...)
-	metricsV3414 = append(metricsV3414, metadata.Metrics.ZookeeperFsyncThresholdExceeds.New())
+	metricsV3414 := make(map[string]bool, len(commonMetrics)+1)
+	for k, v := range commonMetrics {
+		metricsV3414[k] = v
+	}
+	metricsV3414["zookeeper.fsync_threshold_exceeds"] = true
 
 	tests := []struct {
 		name                         string
-		expectedMetrics              []pdata.Metric
+		expectedMetrics              map[string]bool
 		expectedResourceAttributes   map[string]string
+		metricsSettings              func() metadata.MetricsSettings
 		mockedZKOutputSourceFilename string
 		mockZKConnectionErr          bool
 		expectedLogs                 []logMsg
@@ -87,15 +89,14 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 		{
 			name:                         "Test correctness with v3.5.5",
 			mockedZKOutputSourceFilename: "mntr-3.5.5",
-			expectedMetrics: func() []pdata.Metric {
-				out := make([]pdata.Metric, 0, len(commonMetrics)+3)
-				out = append(out, commonMetrics...)
-
-				out = append(out, []pdata.Metric{
-					metadata.Metrics.ZookeeperFollowers.New(),
-					metadata.Metrics.ZookeeperSyncedFollowers.New(),
-					metadata.Metrics.ZookeeperPendingSyncs.New(),
-				}...)
+			expectedMetrics: func() map[string]bool {
+				out := make(map[string]bool, len(commonMetrics)+3)
+				for k, v := range commonMetrics {
+					out[k] = v
+				}
+				out["zookeeper.followers"] = true
+				out["zookeeper.synced_followers"] = true
+				out["zookeeper.pending_syncs"] = true
 				return out
 			}(),
 			expectedResourceAttributes: map[string]string{
@@ -188,6 +189,28 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 				return nil, errors.New("")
 			},
 		},
+		{
+			name: "Disable zookeeper.watches metric",
+			metricsSettings: func() metadata.MetricsSettings {
+				ms := metadata.DefaultMetricsSettings()
+				ms.ZookeeperWatches.Enabled = false
+				return ms
+			},
+			mockedZKOutputSourceFilename: "mntr-3.4.14",
+			expectedMetrics: func() map[string]bool {
+				out := make(map[string]bool, len(metricsV3414))
+				for k, v := range metricsV3414 {
+					out[k] = v
+				}
+				delete(out, "zookeeper.watches")
+				return out
+			}(),
+			expectedResourceAttributes: map[string]string{
+				"server.state": "standalone",
+				"zk.version":   "3.4.14-4c25d480e66aadd371de8bd2fd8da255ac140bcf",
+			},
+			expectedNumResourceMetrics: 1,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -198,11 +221,10 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 				<-ms.ready
 			}
 
-			cfg := &Config{
-				TCPAddr: confignet.TCPAddr{
-					Endpoint: localAddr,
-				},
-				Timeout: defaultTimeout,
+			cfg := createDefaultConfig().(*Config)
+			cfg.TCPAddr.Endpoint = localAddr
+			if tt.metricsSettings != nil {
+				cfg.Metrics = tt.metricsSettings()
 			}
 
 			core, observedLogs := observer.New(zap.DebugLevel)
@@ -251,12 +273,12 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 
 				ilms := got.ResourceMetrics().At(0).InstrumentationLibraryMetrics()
 				require.Equal(t, 1, ilms.Len())
-
 				metrics := ilms.At(0).Metrics()
+
 				require.Equal(t, len(tt.expectedMetrics), metrics.Len())
 
-				for i, metric := range tt.expectedMetrics {
-					assertMetricValid(t, metrics.At(i), metric)
+				for i := 0; i < metrics.Len(); i++ {
+					assertMetricValid(t, metrics.At(i), tt.expectedMetrics)
 				}
 			}
 
@@ -265,21 +287,15 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 	}
 }
 
-func assertMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Metric) {
-	assertDescriptorEqual(t, descriptor, metric)
+func assertMetricValid(t *testing.T, metric pdata.Metric, expectedMetrics map[string]bool) {
+	ok := expectedMetrics[metric.Name()]
+	require.True(t, ok, "emitted metric %s is not expected", metric.Name())
 	switch metric.DataType() {
 	case pdata.MetricDataTypeGauge:
 		require.GreaterOrEqual(t, metric.Gauge().DataPoints().Len(), 1)
 	case pdata.MetricDataTypeSum:
 		require.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), 1)
 	}
-}
-
-func assertDescriptorEqual(t *testing.T, expected pdata.Metric, actual pdata.Metric) {
-	require.Equal(t, expected.Name(), actual.Name())
-	require.Equal(t, expected.Description(), actual.Description())
-	require.Equal(t, expected.Unit(), actual.Unit())
-	require.Equal(t, expected.DataType(), actual.DataType())
 }
 
 type mockedServer struct {

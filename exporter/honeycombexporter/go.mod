@@ -7,8 +7,8 @@ require (
 	github.com/honeycombio/libhoney-go v1.15.6
 	github.com/klauspost/compress v1.13.6
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.40.1-0.20211206203115-a06ca26079fe
-	go.opentelemetry.io/collector/model v0.40.1-0.20211206203115-a06ca26079fe
+	go.opentelemetry.io/collector v0.41.1-0.20211210184707-4dcb3388a168
+	go.opentelemetry.io/collector/model v0.41.1-0.20211210184707-4dcb3388a168
 	go.uber.org/multierr v1.7.0
 	go.uber.org/zap v1.19.1
 	google.golang.org/protobuf v1.27.1

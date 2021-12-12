@@ -5,14 +5,14 @@ go 1.17
 require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.40.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.40.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.40.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.41.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.41.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.41.0
 	github.com/rs/cors v1.8.0
 	github.com/soheilhy/cmux v0.1.5
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.40.1-0.20211206203115-a06ca26079fe
-	go.opentelemetry.io/collector/model v0.40.1-0.20211206203115-a06ca26079fe
+	go.opentelemetry.io/collector v0.41.1-0.20211210184707-4dcb3388a168
+	go.opentelemetry.io/collector/model v0.41.1-0.20211210184707-4dcb3388a168
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.27.0
 	go.opentelemetry.io/otel v1.2.0
 	go.opentelemetry.io/otel/trace v1.2.0

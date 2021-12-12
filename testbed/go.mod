@@ -4,30 +4,30 @@ go 1.17
 
 require (
 	github.com/fluent/fluent-logger-golang v1.8.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.40.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter v0.40.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.40.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.40.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.40.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.40.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.40.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.40.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.40.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.40.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver v0.40.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver v0.40.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.40.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver v0.40.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.40.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver v0.40.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.40.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatareceivers/mockawsxrayreceiver v0.40.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.41.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter v0.41.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.41.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.41.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.41.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.41.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.41.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.41.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.41.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.41.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver v0.41.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver v0.41.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.41.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver v0.41.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.41.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver v0.41.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.41.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatareceivers/mockawsxrayreceiver v0.41.0
 	github.com/prometheus/common v0.32.1
 	github.com/prometheus/prometheus v1.8.2-0.20210621150501-ff58416a0b02
 	github.com/shirou/gopsutil/v3 v3.21.11
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.40.1-0.20211206203115-a06ca26079fe
-	go.opentelemetry.io/collector/model v0.40.1-0.20211206203115-a06ca26079fe
+	go.opentelemetry.io/collector v0.41.1-0.20211210184707-4dcb3388a168
+	go.opentelemetry.io/collector/model v0.41.1-0.20211210184707-4dcb3388a168
 	go.uber.org/atomic v1.9.0
 	go.uber.org/zap v1.19.1
 	golang.org/x/text v0.3.7
@@ -122,14 +122,14 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mostynb/go-grpc-compression v1.1.15 // indirect
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.40.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.40.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.40.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.40.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.40.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.40.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.40.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.40.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.41.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.41.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.41.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.41.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.41.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.41.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.41.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.41.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
