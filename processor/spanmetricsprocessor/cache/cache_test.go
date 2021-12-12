@@ -53,7 +53,9 @@ func TestNewCache(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			_, err := NewCache(tt.args.size)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -108,7 +110,9 @@ func TestCache_Get(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			c := tt.lruCache()
 			gotValue, gotOk := c.Get(tt.key)
 			if !reflect.DeepEqual(gotValue, tt.wantValue) {
@@ -144,7 +148,9 @@ func TestCache_RemoveEvictedItems(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			cache := tt.lruCache()
 			cache.RemoveEvictedItems()
 			assert.Empty(t, cache.evictedItems)
