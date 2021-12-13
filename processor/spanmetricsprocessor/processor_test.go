@@ -715,6 +715,7 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			// Prepare
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)

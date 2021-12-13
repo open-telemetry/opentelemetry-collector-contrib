@@ -152,9 +152,9 @@ func mapDurationsToMillis(vs []time.Duration) []float64 {
 // the usage of Prometheus related exporters, we also validate the dimensions after sanitization.
 func validateDimensions(dimensions []Dimension, defaults []string) error {
 	labelNames := make(map[string]struct{})
-	for _, key := range defaults {
-		labelNames[key] = struct{}{}
-		labelNames[sanitize(key)] = struct{}{}
+	for i := 0; i < len(defaults); i++ {
+		labelNames[defaults[i]] = struct{}{}
+		labelNames[sanitize(defaults[i])] = struct{}{}
 	}
 	labelNames[operationKey] = struct{}{}
 
@@ -251,13 +251,15 @@ func (p *processorImp) buildMetrics() *pdata.Metrics {
 		resourceAttrKey := resourceKey(key)
 		resourceAttributesMap := p.resourceKeyToDimensions[resourceAttrKey]
 
-		// if the service name doesn't exist, we treat it as invalid and do not generate a trace
+		// If the service name doesn't exist, we treat it as invalid and do not generate a trace
 		if _, ok := resourceAttributesMap.Get(serviceNameKey); !ok {
+			p.lock.RUnlock()
 			continue
 		}
 
 		rm := rms.AppendEmpty()
 
+		// Iterate over `AttributeMap` structure defining resource attributes to append to the metric resource and append
 		resourceAttributesMap.Range(func(k string, v pdata.AttributeValue) bool {
 			rm.Resource().Attributes().Insert(k, v)
 			return true
