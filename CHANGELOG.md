@@ -5,6 +5,8 @@
 ## 🛑 Breaking changes 🛑
 
 - `memcachedreceiver`: Update metric names (#6594)
+- `spanmetricproccessor`: service.name attribute added as a default resource attribute instead of attribute in generated metrics (#6717)
+
 ## 🚀 New components 🚀
 
 ## 🧰 Bug fixes 🧰
