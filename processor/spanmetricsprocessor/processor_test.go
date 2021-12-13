@@ -825,6 +825,7 @@ func TestValidateDimensions(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			err := validateDimensions(tc.dimensions, []string{serviceNameKey, spanKindKey, statusCodeKey})
 			if tc.expectedErr != "" {
 				assert.EqualError(t, err, tc.expectedErr)

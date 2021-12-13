@@ -33,12 +33,13 @@ import (
 )
 
 const (
-	serviceNameKey     = conventions.AttributeServiceName
-	operationKey       = "operation"   // OpenTelemetry non-standard constant.
-	spanKindKey        = "span.kind"   // OpenTelemetry non-standard constant.
-	statusCodeKey      = "status.code" // OpenTelemetry non-standard constant.
-	metricKeySeparator = string(byte(0))
-	traceIDKey         = "trace_id"
+	serviceNameKey             = conventions.AttributeServiceName
+	instrumentationLibraryName = "spanmetricsprocessor"
+	operationKey               = "operation"   // OpenTelemetry non-standard constant.
+	spanKindKey                = "span.kind"   // OpenTelemetry non-standard constant.
+	statusCodeKey              = "status.code" // OpenTelemetry non-standard constant.
+	metricKeySeparator         = string(byte(0))
+	traceIDKey                 = "trace_id"
 )
 
 var (
@@ -266,7 +267,7 @@ func (p *processorImp) buildMetrics() *pdata.Metrics {
 		})
 
 		ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
-		ilm.InstrumentationLibrary().SetName("spanmetricsprocessor")
+		ilm.InstrumentationLibrary().SetName(instrumentationLibraryName)
 
 		// build metrics per resource
 		p.collectCallMetrics(ilm, resourceAttrKey)
@@ -381,12 +382,14 @@ func (p *processorImp) updateCallMetrics(resourceAttrKey resourceKey, mKey metri
 
 // updateLatencyExemplars sets the histogram exemplars for the given metric key and append the exemplar data.
 func (p *processorImp) updateLatencyExemplars(resourceAttrKey resourceKey, mKey metricKey, value float64, traceID pdata.TraceID) {
-	if _, ok := p.latencyExemplarsData[resourceAttrKey]; ok {
-		if _, ok := p.latencyExemplarsData[resourceAttrKey][mKey]; !ok {
-			p.latencyExemplarsData[resourceAttrKey][mKey] = []exemplarData{}
-		}
-	} else {
+	_, ok := p.latencyExemplarsData[resourceAttrKey]
+
+	if !ok {
 		p.latencyExemplarsData[resourceAttrKey] = make(map[metricKey][]exemplarData)
+		p.latencyExemplarsData[resourceAttrKey][mKey] = []exemplarData{}
+	}
+
+	if _, ok = p.latencyExemplarsData[resourceAttrKey][mKey]; !ok {
 		p.latencyExemplarsData[resourceAttrKey][mKey] = []exemplarData{}
 	}
 
@@ -406,12 +409,14 @@ func (p *processorImp) resetExemplarData() {
 
 // updateLatencyMetrics increments the histogram counts for the given metric key and bucket index.
 func (p *processorImp) updateLatencyMetrics(resourceAttrKey resourceKey, mKey metricKey, latency float64, index int) {
-	if _, ok := p.latencyBucketCounts[resourceAttrKey]; ok {
-		if _, ok := p.latencyBucketCounts[resourceAttrKey][mKey]; !ok {
-			p.latencyBucketCounts[resourceAttrKey][mKey] = make([]uint64, len(p.latencyBounds))
-		}
-	} else {
+	_, ok := p.latencyBucketCounts[resourceAttrKey]
+
+	if !ok {
 		p.latencyBucketCounts[resourceAttrKey] = make(map[metricKey][]uint64)
+		p.latencyBucketCounts[resourceAttrKey][mKey] = make([]uint64, len(p.latencyBounds))
+	}
+
+	if _, ok = p.latencyBucketCounts[resourceAttrKey][mKey]; !ok {
 		p.latencyBucketCounts[resourceAttrKey][mKey] = make([]uint64, len(p.latencyBounds))
 	}
 
