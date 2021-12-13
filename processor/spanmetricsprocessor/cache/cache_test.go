@@ -15,7 +15,6 @@
 package cache
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -115,7 +114,7 @@ func TestCache_Get(t *testing.T) {
 			t.Parallel()
 			c := tt.lruCache()
 			gotValue, gotOk := c.Get(tt.key)
-			if !reflect.DeepEqual(gotValue, tt.wantValue) {
+			if !assert.Equal(t, gotValue, tt.wantValue) {
 				t.Errorf("Get() gotValue = %v, want %v", gotValue, tt.wantValue)
 			}
 			if gotOk != tt.wantOk {
