@@ -127,22 +127,24 @@ func TestCache_Get(t *testing.T) {
 func TestCache_RemoveEvictedItems(t *testing.T) {
 	tests := []struct {
 		name     string
-		lruCache func() *Cache
+		lruCache func() (*Cache, error)
 	}{
 		{
 			name: "no panic when there is no evicted item to remove",
-			lruCache: func() *Cache {
-				cache, _ := NewCache(1)
-				return cache
+			lruCache: func() (*Cache, error) {
+				return NewCache(1)
 			},
 		},
 		{
 			name: "evicted items should be removed",
-			lruCache: func() *Cache {
-				cache, _ := NewCache(1)
+			lruCache: func() (*Cache, error) {
+				cache, err := NewCache(1)
+				if err != nil {
+					return nil, err
+				}
 				cache.evictedItems["key0"] = "val0"
 				cache.evictedItems["key1"] = "val1"
-				return cache
+				return cache, nil
 			},
 		},
 	}
@@ -150,7 +152,8 @@ func TestCache_RemoveEvictedItems(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			cache := tt.lruCache()
+			cache, err := tt.lruCache()
+			assert.NoError(t, err)
 			cache.RemoveEvictedItems()
 			assert.Empty(t, cache.evictedItems)
 		})
