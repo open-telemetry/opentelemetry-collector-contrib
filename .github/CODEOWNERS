@@ -108,6 +108,7 @@ receiver/jmxreceiver/                                @open-telemetry/collector-c
 receiver/k8sclusterreceiver/                         @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/k8seventsreceiver/                          @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/kafkametricsreceiver/                       @open-telemetry/collector-contrib-approvers @dmitryax
+receiver/kafkareceiver/                              @open-telemetry/collector-contrib-approvers @pavolloffay
 receiver/kubeletstatsreceiver/                       @open-telemetry/collector-contrib-approvers @pmcollins @dmitryax
 receiver/memcachedreceiver/                          @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/mongodbatlasreceiver/                       @open-telemetry/collector-contrib-approvers @zenmoto
