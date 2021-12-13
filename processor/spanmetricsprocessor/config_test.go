@@ -47,7 +47,8 @@ func TestLoadConfig(t *testing.T) {
 			wantMetricsExporter:                "prometheus",
 			wantMetricKeyToDimensionsCacheSize: 500,
 		},
-		{configFile: "config-3-pipelines.yaml",
+		{
+			configFile: "config-3-pipelines.yaml",
 			wantMetricsExporter:                "otlp/spanmetrics",
 			wantMetricKeyToDimensionsCacheSize: defaultMetricKeyToDimensionsCacheSize,
 		},
