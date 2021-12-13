@@ -633,7 +633,7 @@ func TestBuildKeySameServiceOperationCharSequence(t *testing.T) {
 	ilSpan0 := rSpan0.InstrumentationLibrarySpans().AppendEmpty()
 	span0 := ilSpan0.Spans().AppendEmpty()
 	span0.SetName("c")
-	k0 := buildMetricKey(span0, nil, pdata.NewAttributeMap())
+	k0 := p.buildMetricKey(span0, pdata.NewAttributeMap())
 	rk0 := p.buildResourceAttrKey("ab", rSpan0.Resource().Attributes())
 
 	trace1 := pdata.NewTraces()
@@ -641,7 +641,7 @@ func TestBuildKeySameServiceOperationCharSequence(t *testing.T) {
 	ilSpan1 := rSpan1.InstrumentationLibrarySpans().AppendEmpty()
 	span1 := ilSpan1.Spans().AppendEmpty()
 	span1.SetName("bc")
-	k1 := buildMetricKey(span1, nil, pdata.NewAttributeMap())
+	k1 := p.buildMetricKey(span1, pdata.NewAttributeMap())
 	rk1 := p.buildResourceAttrKey("a", rSpan1.Resource().Attributes())
 
 	assert.NotEqual(t, k0, k1)
@@ -713,11 +713,22 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			// Prepare
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig().(*Config)
+			// Duplicate dimension with reserved label after sanitization.
+			cfg.Dimensions = tc.optionalDims
+
+			// Test
+			next := new(consumertest.TracesSink)
+			p, err := newProcessor(zap.NewNop(), cfg, next)
+			assert.NoError(t, err)
+
 			resAttr := pdata.NewAttributeMapFromMap(tc.resourceAttrMap)
 			span0 := pdata.NewSpan()
 			pdata.NewAttributeMapFromMap(tc.spanAttrMap).CopyTo(span0.Attributes())
 			span0.SetName("c")
-			k := buildMetricKey(span0, tc.optionalDims, resAttr)
+			k := p.buildMetricKey(span0, resAttr)
 
 			assert.Equal(t, metricKey(tc.wantKey), k)
 		})

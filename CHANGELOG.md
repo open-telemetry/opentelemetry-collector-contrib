@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 💡 Enhancements 💡
+
+- `spanmetricproccessor`: Support specifying resource attributes to attach to metrics generated from traces (#6717)
+
 ## v0.40.0
 
 ## 🛑 Breaking changes 🛑
