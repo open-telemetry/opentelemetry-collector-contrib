@@ -60,6 +60,7 @@ func Test_loadConfig(t *testing.T) {
 				MaxElapsedTime:  10 * time.Minute,
 			},
 			RemoteWriteQueue: RemoteWriteQueue{
+				Enabled:      true,
 				QueueSize:    2000,
 				NumConsumers: 10,
 			},
@@ -102,4 +103,15 @@ func TestNegativeNumConsumers(t *testing.T) {
 	factories.Exporters[typeStr] = factory
 	_, err = configtest.LoadConfigAndValidate(path.Join(".", "testdata", "negative_num_consumers.yaml"), factories)
 	assert.Error(t, err)
+}
+
+func TestDisabledQueue(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Exporters[typeStr] = factory
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "disabled_queue.yaml"), factories)
+	assert.NoError(t, err)
+	assert.False(t, cfg.Exporters[config.NewComponentID(typeStr)].(*Config).RemoteWriteQueue.Enabled)
 }
