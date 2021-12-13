@@ -18,22 +18,20 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"strings"
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 )
 
-var (
-	defaultEndpoint = "http://localhost:5984"
+const defaultEndpoint = "http://localhost:5984"
 
+var (
 	// Errors for missing required config fields.
 	errMissingUsername = errors.New(`no "username" specified in config`)
 	errMissingPassword = errors.New(`no "password" specified in config`)
 
 	// Errors for invalid url components in the endpoint.
-	errInvalidScheme   = errors.New(`"endpoint" requires schema of "http" or "https"`)
 	errInvalidEndpoint = errors.New(`"endpoint" %q must be in the form of <scheme>://<hostname>:<port>`)
 	errInvalidHost     = errors.New(`"endpoint" %q requires a hostname `)
 )
@@ -49,14 +47,6 @@ type Config struct {
 
 // Validate validates missing and invalid configuration fields.
 func (cfg *Config) Validate() error {
-	if missingFields := validateNotEmpty(cfg); missingFields != nil {
-		return missingFields
-	}
-	return validateEndpoint(cfg)
-}
-
-// validateNotEmpty validates that the required fields are not empty.
-func validateNotEmpty(cfg *Config) error {
 	var err error
 	if cfg.Username == "" {
 		err = multierr.Append(err, errMissingUsername)
@@ -65,31 +55,16 @@ func validateNotEmpty(cfg *Config) error {
 		err = multierr.Append(err, errMissingPassword)
 	}
 
-	return err
-}
-
-// validateEndpoint validates the endpoint by parsing the url.
-func validateEndpoint(cfg *Config) error {
-
-	// validSchema is used because url.Parse may not return an error without a schema even though it is an invalid url.
-	if !validSchema(cfg.Endpoint) {
-		return errInvalidScheme
-	}
-
-	u, err := url.Parse(cfg.Endpoint)
-	if err != nil {
-		return fmt.Errorf(errInvalidEndpoint.Error(), cfg.Endpoint)
+	u, parseErr := url.Parse(cfg.Endpoint)
+	if parseErr != nil {
+		err = multierr.Append(err, fmt.Errorf(errInvalidEndpoint.Error(), cfg.Endpoint))
+		return err
 	}
 
 	if u.Hostname() == "" {
-		return fmt.Errorf(errInvalidHost.Error(), cfg.Endpoint)
+		err = multierr.Append(err, fmt.Errorf(errInvalidHost.Error(), cfg.Endpoint))
+		return err
 	}
 
 	return nil
-}
-
-// validSchema returns true if any http protocol is found.
-func validSchema(rawUrl string) bool {
-	lowerUrl := strings.ToLower(rawUrl)
-	return strings.HasPrefix(lowerUrl, "http://") || strings.HasPrefix(lowerUrl, "https://")
 }

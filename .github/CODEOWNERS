@@ -94,7 +94,7 @@ receiver/awsxrayreceiver/                            @open-telemetry/collector-c
 receiver/carbonreceiver/                             @open-telemetry/collector-contrib-approvers @pjanotti
 receiver/cloudfoundryreceiver/                       @open-telemetry/collector-contrib-approvers @agoallikmaa @pellared
 receiver/collectdreceiver/                           @open-telemetry/collector-contrib-approvers @owais
-receiver/couchbasereceiver/                          @open-telemetry/collector-contrib-approvers @djaglowski
+receiver/couchdbreceiver/                          @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/dockerstatsreceiver/                        @open-telemetry/collector-contrib-approvers @rmfitzpatrick
 receiver/dotnetdiagnosticsreceiver/                  @open-telemetry/collector-contrib-approvers @pmcollins @davmason
 receiver/filelogreceiver/                            @open-telemetry/collector-contrib-approvers @djaglowski

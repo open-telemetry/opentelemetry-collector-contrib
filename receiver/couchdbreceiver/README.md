@@ -13,11 +13,12 @@ This receiver supports Couchdb versions `2.3+` and `3.1+`.
 ## Configuration
 
 The following settings are required:
-- `endpoint` (default: `http://localhost:5984`): The URL of the couchdb endpoint
 - `username`
 - `password`
 
 The following settings are optional:
+- `endpoint` (default: `http://localhost:5984`): The URL of the couchdb endpoint
+
 - `all_nodes` (default: false): When `all_nodes` is false, this receiver collects a single node stats with {node-name} replaced with _local. When `all_nodes` is true, then this receiver fetches all known connected nodes using the `/_membership` [endpoint](docs.couchdb.org/en/stable/cluster/nodes.html#node-management) to then collect stats for each {node-name} found.
 
 - `collection_interval` (default = `10s`): This receiver collects metrics on an interval. This value must be a string readable by Golang's [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.

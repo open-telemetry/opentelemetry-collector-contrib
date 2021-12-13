@@ -30,23 +30,44 @@ func TestValidate(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			desc: "missing required fields",
+			desc: "missing username and password",
 			cfg:  &Config{},
 			expectedErr: multierr.Combine(
 				errMissingUsername,
 				errMissingPassword,
+				fmt.Errorf(errInvalidHost.Error(), ""),
 			),
 		},
 		{
-			desc: "missing schema",
+			desc: "missing password",
+			cfg: &Config{
+				Username: "otelu",
+			},
+			expectedErr: multierr.Combine(
+				errMissingPassword,
+				fmt.Errorf(errInvalidHost.Error(), ""),
+			),
+		},
+		{
+			desc: "missing username",
+			cfg: &Config{
+				Password: "otelp",
+			},
+			expectedErr: multierr.Combine(
+				errMissingUsername,
+				fmt.Errorf(errInvalidHost.Error(), ""),
+			),
+		},
+		{
+			desc: "invalid endpoint",
 			cfg: &Config{
 				Username: "otel",
 				Password: "otel",
 				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: "localhost:5984",
+					Endpoint: "http://localhost with a space:5984",
 				},
 			},
-			expectedErr: errInvalidScheme,
+			expectedErr: fmt.Errorf(errInvalidEndpoint.Error(), "http://localhost with a space:5984"),
 		},
 		{
 			desc: "missing hostname",
@@ -75,153 +96,6 @@ func TestValidate(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			actualErr := tc.cfg.Validate()
 			require.Equal(t, tc.expectedErr, actualErr)
-		})
-	}
-}
-
-func TestValidateNotEmpty(t *testing.T) {
-	testCases := []struct {
-		desc        string
-		cfg         *Config
-		expectedErr error
-	}{
-		{
-			desc: "missing username and password",
-			cfg:  &Config{},
-			expectedErr: multierr.Combine(
-				errMissingUsername,
-				errMissingPassword,
-			),
-		},
-		{
-			desc: "missing password",
-			cfg: &Config{
-				Username: "otelu",
-			},
-			expectedErr: multierr.Combine(
-				errMissingPassword,
-			),
-		},
-		{
-			desc: "missing username",
-			cfg: &Config{
-				Password: "otelp",
-			},
-			expectedErr: multierr.Combine(
-				errMissingUsername,
-			),
-		},
-		{
-			desc: "no error",
-			cfg: &Config{
-				Username: "otel",
-				Password: "otel",
-			},
-			expectedErr: nil,
-		},
-	}
-	for _, tc := range testCases {
-		t.Run(tc.desc, func(t *testing.T) {
-			actualErr := validateNotEmpty(tc.cfg)
-			require.Equal(t, tc.expectedErr, actualErr)
-		})
-	}
-}
-
-func TestValidateEndpointFormat(t *testing.T) {
-	testCases := []struct {
-		desc        string
-		cfg         *Config
-		expectedErr error
-	}{
-		{
-			desc: "missing schema",
-			cfg: &Config{
-				Username: "otel",
-				Password: "otel",
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: "localhost:5984",
-				},
-			},
-			expectedErr: errInvalidScheme,
-		},
-		{
-			desc: "invalid endpoint",
-			cfg: &Config{
-				Username: "otel",
-				Password: "otel",
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: "http://localhost with a space:5984",
-				},
-			},
-			expectedErr: fmt.Errorf(errInvalidEndpoint.Error(), "http://localhost with a space:5984"),
-		},
-		{
-			desc: "missing hostname",
-			cfg: &Config{
-				Username: "otel",
-				Password: "otel",
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: "http://",
-				},
-			},
-			expectedErr: fmt.Errorf(errInvalidHost.Error(), "http://"),
-		},
-		{
-			desc: "no error",
-			cfg: &Config{
-				Username: "otel",
-				Password: "otel",
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: "http://localhost:5984",
-				},
-			},
-			expectedErr: nil,
-		},
-	}
-	for _, tc := range testCases {
-		t.Run(tc.desc, func(t *testing.T) {
-			actualErr := validateEndpoint(tc.cfg)
-			require.Equal(t, tc.expectedErr, actualErr)
-		})
-	}
-}
-
-func TestValidSchema(t *testing.T) {
-	testcases := []struct {
-		desc        string
-		url         string
-		expectedErr bool
-	}{
-		{
-			desc:        "http url",
-			url:         "http://localhost",
-			expectedErr: true,
-		},
-		{
-			desc:        "https url",
-			url:         "https://localhost",
-			expectedErr: true,
-		},
-		{
-			desc:        "HTTP upper",
-			url:         "HTTP://localhost",
-			expectedErr: true,
-		},
-		{
-			desc:        "everything else",
-			url:         "ht",
-			expectedErr: false,
-		},
-		{
-			desc:        "everything else",
-			url:         "localhost",
-			expectedErr: false,
-		},
-	}
-	for _, tc := range testcases {
-		t.Run(tc.desc, func(t *testing.T) {
-			require.Equal(t, tc.expectedErr, validSchema(tc.url))
 		})
 	}
 }
