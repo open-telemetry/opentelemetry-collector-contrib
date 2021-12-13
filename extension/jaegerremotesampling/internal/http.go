@@ -87,6 +87,7 @@ func (h *SamplingHTTPServer) Start(_ context.Context, host component.Host) error
 }
 
 func (h *SamplingHTTPServer) Shutdown(ctx context.Context) error {
+	h.shutdownWG.Wait()
 	return h.srv.Shutdown(ctx)
 }
 

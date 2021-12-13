@@ -16,24 +16,15 @@ package jaegerremotesampling // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
-	"errors"
-	"sync"
 
 	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal"
 )
 
-var (
-	errAlreadyStarted = errors.New("the extension has been started already")
-	errNotYetStarted  = errors.New("the extension has not been started yet")
-)
-
 var _ component.Extension = (*jrsExtension)(nil)
 
 type jrsExtension struct {
-	started    bool
-	startedMu  sync.RWMutex
 	httpServer component.Component
 }
 
@@ -52,16 +43,6 @@ func newExtension(cfg *Config, telemetry component.TelemetrySettings) (*jrsExten
 }
 
 func (jrse *jrsExtension) Start(ctx context.Context, host component.Host) error {
-	jrse.startedMu.RLock()
-	if jrse.started {
-		return errAlreadyStarted
-	}
-	jrse.startedMu.RUnlock()
-
-	jrse.startedMu.Lock()
-	defer jrse.startedMu.Unlock()
-	jrse.started = true
-
 	// then we start our own server interfaces, starting with the HTTP one
 	err := jrse.httpServer.Start(ctx, host)
 	if err != nil {
@@ -72,12 +53,6 @@ func (jrse *jrsExtension) Start(ctx context.Context, host component.Host) error 
 }
 
 func (jrse *jrsExtension) Shutdown(ctx context.Context) error {
-	jrse.startedMu.RLock()
-	if !jrse.started {
-		return errNotYetStarted
-	}
-	jrse.startedMu.RUnlock()
-
 	err := jrse.httpServer.Shutdown(ctx)
 	if err != nil {
 		return err

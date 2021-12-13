@@ -44,18 +44,6 @@ func TestStart(t *testing.T) {
 	assert.NoError(t, e.Start(context.Background(), componenttest.NewNopHost()))
 }
 
-func TestAlreadyStarted(t *testing.T) {
-	// prepare
-	e, err := newExtension(createDefaultConfig().(*Config), componenttest.NewNopTelemetrySettings())
-	require.NotNil(t, e)
-	require.NoError(t, err)
-
-	require.NoError(t, e.Start(context.Background(), componenttest.NewNopHost()))
-
-	// test and verify
-	assert.Equal(t, errAlreadyStarted, e.Start(context.Background(), componenttest.NewNopHost()))
-}
-
 func TestShutdown(t *testing.T) {
 	// prepare
 	e, err := newExtension(createDefaultConfig().(*Config), componenttest.NewNopTelemetrySettings())
@@ -65,16 +53,6 @@ func TestShutdown(t *testing.T) {
 
 	// test and verify
 	assert.NoError(t, e.Shutdown(context.Background()))
-}
-
-func TestNotStartedYet(t *testing.T) {
-	// prepare
-	e, err := newExtension(createDefaultConfig().(*Config), componenttest.NewNopTelemetrySettings())
-	require.NotNil(t, e)
-	require.NoError(t, err)
-
-	// test and verify
-	assert.Equal(t, errNotYetStarted, e.Shutdown(context.Background()))
 }
 
 func TestFailedToStartHTTPServer(t *testing.T) {
