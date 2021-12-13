@@ -35,7 +35,7 @@ import (
 const (
 	serviceNameKey     = conventions.AttributeServiceName
 	operationKey       = "operation" // OpenTelemetry non-standard constant.
-	spanKindKey        = "span.kind"
+	spanKindKey        = "span.kind"  // OpenTelemetry non-standard constant.
 	statusCodeKey      = "status.code" // OpenTelemetry non-standard constant.
 	metricKeySeparator = string(byte(0))
 	traceIDKey         = "trace_id"
