@@ -87,6 +87,31 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 	})
+
+	// Set name
+	p4 := cfg.Processors[config.NewComponentIDWithName("span", "set_status_err")]
+	assert.Equal(t, p4, &Config{
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName("span", "set_status_err")),
+		SetStatus: &Status{
+			Code:        "Error",
+			Description: "some additional error description",
+		},
+	})
+
+	p5 := cfg.Processors[config.NewComponentIDWithName("span", "set_status_ok")]
+	assert.Equal(t, p5, &Config{
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName("span", "set_status_ok")),
+		MatchConfig: filterconfig.MatchConfig{
+			Include: &filterconfig.MatchProperties{
+				Attributes: []filterconfig.Attribute{
+					{Key: "http.status_code", Value: 400},
+				},
+			},
+		},
+		SetStatus: &Status{
+			Code: "Ok",
+		},
+	})
 }
 
 func createMatchConfig(matchType filterset.MatchType) *filterset.Config {

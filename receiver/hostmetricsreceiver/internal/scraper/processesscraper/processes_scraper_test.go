@@ -20,7 +20,8 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/shirou/gopsutil/load"
+	"github.com/shirou/gopsutil/v3/load"
+	"github.com/shirou/gopsutil/v3/process"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -171,24 +172,24 @@ var fakeData = load.MiscStat{
 }
 
 var fakeProcessesData = []proc{
-	fakeProcess("W"),
-	fakeProcess("D"), fakeProcess("D"),
-	fakeProcess("R"), fakeProcess("R"), fakeProcess("R"),
-	fakeProcess("S"), fakeProcess("S"), fakeProcess("S"), fakeProcess("S"),
-	fakeProcess("T"), fakeProcess("T"), fakeProcess("T"), fakeProcess("T"), fakeProcess("T"),
-	fakeProcess("Z"), fakeProcess("Z"), fakeProcess("Z"), fakeProcess("Z"), fakeProcess("Z"), fakeProcess("Z"),
+	fakeProcess(process.Wait),
+	fakeProcess(process.Blocked), fakeProcess(process.Blocked),
+	fakeProcess(process.Running), fakeProcess(process.Running), fakeProcess(process.Running),
+	fakeProcess(process.Sleep), fakeProcess(process.Sleep), fakeProcess(process.Sleep), fakeProcess(process.Sleep),
+	fakeProcess(process.Stop), fakeProcess(process.Stop), fakeProcess(process.Stop), fakeProcess(process.Stop), fakeProcess(process.Stop),
+	fakeProcess(process.Zombie), fakeProcess(process.Zombie), fakeProcess(process.Zombie), fakeProcess(process.Zombie), fakeProcess(process.Zombie), fakeProcess(process.Zombie),
 }
 
 type errProcess struct{}
 
-func (e errProcess) Status() (string, error) {
-	return "", errors.New("errProcess")
+func (e errProcess) Status() ([]string, error) {
+	return []string{""}, errors.New("errProcess")
 }
 
 type fakeProcess string
 
-func (f fakeProcess) Status() (string, error) {
-	return string(f), nil
+func (f fakeProcess) Status() ([]string, error) {
+	return []string{string(f)}, nil
 }
 
 func validateFakeData(t *testing.T, metrics pdata.MetricSlice) {

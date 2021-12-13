@@ -35,11 +35,10 @@ func TestScraper(t *testing.T) {
 
 	ms, err := sc.scrape(context.Background())
 	require.NoError(t, err)
-
 	expectedMetrics, err := scrapertest.ReadExpected("./testdata/expected_metrics/test_scraper/expected.json")
 	require.NoError(t, err)
 
 	eMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 	aMetricSlice := ms.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
-	require.NoError(t, scrapertest.CompareMetricSlices(eMetricSlice, aMetricSlice, true))
+	require.NoError(t, scrapertest.CompareMetricSlices(eMetricSlice, aMetricSlice))
 }

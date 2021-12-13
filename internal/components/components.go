@@ -54,6 +54,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tanzuobservabilityexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/fluentbitextension"
@@ -101,6 +102,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver"
@@ -131,6 +133,7 @@ func Components() (component.Factories, error) {
 	delete(factories.Extensions, "pprof")
 
 	extensions := []component.ExtensionFactory{
+		asapauthextension.NewFactory(),
 		awsproxy.NewFactory(),
 		bearertokenauthextension.NewFactory(),
 		filestorage.NewFactory(),
@@ -174,6 +177,7 @@ func Components() (component.Factories, error) {
 		k8sclusterreceiver.NewFactory(),
 		kubeletstatsreceiver.NewFactory(),
 		memcachedreceiver.NewFactory(),
+		mongodbatlasreceiver.NewFactory(),
 		opencensusreceiver.NewFactory(),
 		podmanreceiver.NewFactory(),
 		prometheusexecreceiver.NewFactory(),

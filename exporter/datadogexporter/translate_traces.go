@@ -233,7 +233,7 @@ func spanToDatadogSpan(s pdata.Span,
 	spanNameMap map[string]string,
 ) *pb.Span {
 	tags := aggregateSpanTags(s, datadogTags)
-	tags["otlp.trace_id"] = s.TraceID().HexString()
+	tags["otel.trace_id"] = s.TraceID().HexString()
 
 	// otel specification resource service.name takes precedence
 	// and configuration DD_SERVICE as fallback if it exists

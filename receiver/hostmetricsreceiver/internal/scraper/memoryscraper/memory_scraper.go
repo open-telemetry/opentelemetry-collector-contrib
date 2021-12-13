@@ -18,7 +18,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/shirou/gopsutil/mem"
+	"github.com/shirou/gopsutil/v3/mem"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 

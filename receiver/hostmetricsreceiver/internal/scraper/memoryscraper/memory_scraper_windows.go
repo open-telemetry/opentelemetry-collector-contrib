@@ -18,7 +18,7 @@
 package memoryscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/memoryscraper"
 
 import (
-	"github.com/shirou/gopsutil/mem"
+	"github.com/shirou/gopsutil/v3/mem"
 	"go.opentelemetry.io/collector/model/pdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/memoryscraper/internal/metadata"
