@@ -2,7 +2,6 @@
 
 ## Unreleased
 
-
 ## 🛑 Breaking changes 🛑
 
 - `memcachedreceiver`: Update metric names (#6594)
