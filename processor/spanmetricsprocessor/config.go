@@ -20,8 +20,8 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
-// KeyValuePair defines the key and optional default value if the key is missing from a span attribute.
-type KeyValuePair struct {
+// Dimension defines the key and optional default value if the key is missing from a span attribute.
+type Dimension struct {
 	Name    string  `mapstructure:"name"`
 	Default *string `mapstructure:"default"`
 }
@@ -43,12 +43,12 @@ type Config struct {
 	// - status.code
 	// The dimensions will be fetched from the span's attributes. Examples of some conventionally used attributes:
 	// https://github.com/open-telemetry/opentelemetry-collector/blob/main/model/semconv/opentelemetry.go.
-	Dimensions []KeyValuePair `mapstructure:"dimensions"`
+	Dimensions []Dimension `mapstructure:"dimensions"`
 
 	// ResourceAttributes defines the list of additional resource attributes to attach to metrics on top of the provided:
 	// - service.name
 	// These will be fetched from the span's resource attributes. For more details, see:
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/sdk.md
 	// and https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/README.md.
-	ResourceAttributes []KeyValuePair `mapstructure:"resource_attributes"`
+	ResourceAttributes []Dimension `mapstructure:"resource_attributes"`
 }

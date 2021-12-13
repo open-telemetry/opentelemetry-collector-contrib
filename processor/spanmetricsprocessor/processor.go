@@ -34,8 +34,8 @@ import (
 
 const (
 	serviceNameKey     = conventions.AttributeServiceName
-	operationKey       = "operation" // OpenTelemetry non-standard constant.
-	spanKindKey        = "span.kind"  // OpenTelemetry non-standard constant.
+	operationKey       = "operation"   // OpenTelemetry non-standard constant.
+	spanKindKey        = "span.kind"   // OpenTelemetry non-standard constant.
 	statusCodeKey      = "status.code" // OpenTelemetry non-standard constant.
 	metricKeySeparator = string(byte(0))
 	traceIDKey         = "trace_id"
@@ -67,10 +67,10 @@ type processorImp struct {
 	nextConsumer    consumer.Traces
 
 	// Additional dimensions to add to metrics.
-	dimensions []KeyValuePair
+	dimensions []Dimension
 
 	// Additional resourceAttributes to add to metrics.
-	resourceAttributes []KeyValuePair
+	resourceAttributes []Dimension
 
 	// The starting time of the data points.
 	startTime time.Time
@@ -89,9 +89,10 @@ type processorImp struct {
 	// Map structure for faster lookup.
 	resourceAttrList map[resourceKey]bool
 
-	// A cache of dimension and resource attribute key-value maps keyed by a unique identifier formed by a concatenation of its values:
+	// A cache of dimensionkey-value maps keyed by a unique identifier formed by a concatenation of its values:
 	// e.g. { "foo/barOK": { "serviceName": "foo", "operation": "/bar", "status_code": "OK" }}
-	metricKeyToDimensions   map[metricKey]pdata.AttributeMap
+	metricKeyToDimensions map[metricKey]pdata.AttributeMap
+	// A cache of resourceattributekey-value maps keyed by a unique identifier formed by a concatenation of its values.
 	resourceKeyToDimensions map[resourceKey]pdata.AttributeMap
 }
 
@@ -149,7 +150,7 @@ func mapDurationsToMillis(vs []time.Duration) []float64 {
 
 // validateDimensions checks duplicates for reserved dimensions and additional dimensions. Considering
 // the usage of Prometheus related exporters, we also validate the dimensions after sanitization.
-func validateDimensions(dimensions []KeyValuePair, defaults []string) error {
+func validateDimensions(dimensions []Dimension, defaults []string) error {
 	labelNames := make(map[string]struct{})
 	for _, key := range defaults {
 		labelNames[key] = struct{}{}
@@ -427,7 +428,7 @@ func (p *processorImp) updateLatencyMetrics(resourceAttrKey resourceKey, mKey me
 	}
 }
 
-func (p *processorImp) buildDimensionKVs(span pdata.Span, optionalDims []KeyValuePair, resourceAttrs pdata.AttributeMap) pdata.AttributeMap {
+func (p *processorImp) buildDimensionKVs(span pdata.Span, optionalDims []Dimension, resourceAttrs pdata.AttributeMap) pdata.AttributeMap {
 	dims := pdata.NewAttributeMap()
 
 	dims.UpsertString(operationKey, span.Name())
@@ -441,7 +442,7 @@ func (p *processorImp) buildDimensionKVs(span pdata.Span, optionalDims []KeyValu
 	return dims
 }
 
-func extractResourceAttrsByKeys(serviceName string, keys []KeyValuePair, resourceAttrs pdata.AttributeMap) pdata.AttributeMap {
+func extractResourceAttrsByKeys(serviceName string, keys []Dimension, resourceAttrs pdata.AttributeMap) pdata.AttributeMap {
 	dims := pdata.NewAttributeMap()
 	dims.UpsertString(serviceNameKey, serviceName)
 	for _, ra := range keys {
@@ -514,7 +515,7 @@ func (p *processorImp) buildResourceAttrKey(serviceName string, resourceAttr pda
 //
 // The ok flag indicates if a dimension value was fetched in order to differentiate
 // an empty string value from a state where no value was found.
-func getDimensionValue(d KeyValuePair, spanAttr pdata.AttributeMap, resourceAttr pdata.AttributeMap) (v pdata.AttributeValue, ok bool) {
+func getDimensionValue(d Dimension, spanAttr pdata.AttributeMap, resourceAttr pdata.AttributeMap) (v pdata.AttributeValue, ok bool) {
 	// The more specific span attribute should take precedence.
 	if attr, exists := spanAttr.Get(d.Name); exists {
 		return attr, true
