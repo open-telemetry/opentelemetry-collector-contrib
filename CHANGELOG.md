@@ -11,6 +11,8 @@
 
 ## 💡 Enhancements 💡
 
+- `spanmetricproccessor`: use an LRU cache for the cached Dimensions key-value paris (#2179)
+
 ## v0.41.0
 
 ## 🛑 Breaking changes 🛑
