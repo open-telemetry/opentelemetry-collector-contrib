@@ -50,7 +50,7 @@ const (
 	notInSpanAttrName0             = "shouldBeInMetric"
 	notInSpanAttrName1             = "shouldNotBeInMetric"
 	regionResourceAttrName         = "region"
-	metricKeyToDimensionsCacheSize = 2
+	DimensionsCacheSize = 2
 
 	sampleRegion          = "us-east-1"
 	sampleLatency         = float64(11)
@@ -264,12 +264,12 @@ func TestMetricKeyCache(t *testing.T) {
 	// Validate
 	require.NoError(t, err)
 	// 2 key was cached, 1 key was evicted and cleaned after the processing
-	assert.Len(t, p.metricKeyToDimensions.Keys(), metricKeyToDimensionsCacheSize)
+	assert.Len(t, p.metricKeyToDimensions.Keys(), DimensionsCacheSize)
 
 	// consume another batch of traces
 	err = p.ConsumeTraces(ctx, traces)
 	// 2 key was cached, other keys were evicted and cleaned after the processing
-	assert.Len(t, p.metricKeyToDimensions.Keys(), metricKeyToDimensionsCacheSize)
+	assert.Len(t, p.metricKeyToDimensions.Keys(), DimensionsCacheSize)
 
 	require.NoError(t, err)
 }
@@ -297,7 +297,7 @@ func BenchmarkProcessorConsumeTraces(b *testing.B) {
 func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, defaultNullValue *string) *processorImp {
 	defaultNotInSpanAttrVal := "defaultNotInSpanAttrVal"
 	// use size 2 for LRU cache for testing purpose
-	metricKeyToDimensions, err := cache.NewCache(metricKeyToDimensionsCacheSize)
+	metricKeyToDimensions, err := cache.NewCache(DimensionsCacheSize)
 	if err != nil {
 		panic(err)
 	}

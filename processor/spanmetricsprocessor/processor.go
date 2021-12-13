@@ -42,7 +42,7 @@ const (
 	metricKeySeparator = string(byte(0))
 	traceIDKey         = "trace_id"
 
-	defaultMetricKeyToDimensionsCacheSize = 1000
+	defaultDimensionsCacheSize = 1000
 )
 
 var (
@@ -108,13 +108,13 @@ func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer cons
 		return nil, err
 	}
 
-	if pConfig.MetricKeyToDimensionsCacheSize <= 0 {
+	if pConfig.DimensionsCacheSize <= 0 {
 		return nil, fmt.Errorf(
 			"invalid cache size: %v, the maximum number of the items in the cache should be positive",
-			pConfig.MetricKeyToDimensionsCacheSize,
+			pConfig.DimensionsCacheSize,
 		)
 	}
-	metricKeyToDimensionsCache, err := cache.NewCache(pConfig.MetricKeyToDimensionsCacheSize)
+	metricKeyToDimensionsCache, err := cache.NewCache(pConfig.DimensionsCacheSize)
 	if err != nil {
 		return nil, err
 	}

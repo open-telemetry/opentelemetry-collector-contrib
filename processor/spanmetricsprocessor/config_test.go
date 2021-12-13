@@ -40,17 +40,17 @@ func TestLoadConfig(t *testing.T) {
 		wantMetricsExporter                string
 		wantLatencyHistogramBuckets        []time.Duration
 		wantDimensions                     []Dimension
-		wantMetricKeyToDimensionsCacheSize int
+		wantDimensionsCacheSize int
 	}{
 		{
 			configFile:                         "config-2-pipelines.yaml",
 			wantMetricsExporter:                "prometheus",
-			wantMetricKeyToDimensionsCacheSize: 500,
+			wantDimensionsCacheSize: 500,
 		},
 		{
 			configFile: "config-3-pipelines.yaml",
 			wantMetricsExporter:                "otlp/spanmetrics",
-			wantMetricKeyToDimensionsCacheSize: defaultMetricKeyToDimensionsCacheSize,
+			wantDimensionsCacheSize: defaultDimensionsCacheSize,
 		},
 		{
 			configFile:          "config-full.yaml",
@@ -68,7 +68,7 @@ func TestLoadConfig(t *testing.T) {
 				{"http.method", &defaultMethod},
 				{"http.status_code", nil},
 			},
-			wantMetricKeyToDimensionsCacheSize: 1500,
+			wantDimensionsCacheSize: 1500,
 		},
 	}
 	for _, tc := range testcases {
@@ -99,7 +99,7 @@ func TestLoadConfig(t *testing.T) {
 					MetricsExporter:                tc.wantMetricsExporter,
 					LatencyHistogramBuckets:        tc.wantLatencyHistogramBuckets,
 					Dimensions:                     tc.wantDimensions,
-					MetricKeyToDimensionsCacheSize: tc.wantMetricKeyToDimensionsCacheSize,
+					DimensionsCacheSize: tc.wantDimensionsCacheSize,
 				},
 				cfg.Processors[config.NewComponentID(typeStr)],
 			)
