@@ -27,18 +27,18 @@ import (
 // batch of spans.
 type Cache struct {
 	*lru.Cache
+	rw           *sync.RWMutex
 	evictedItems map[interface{}]interface{}
-	lock         *sync.RWMutex
 }
 
 // NewCache creates a Cache.
 func NewCache(size int) (*Cache, error) {
 	evictedItems := make(map[interface{}]interface{})
-	lock := new(sync.RWMutex)
+	rw := new(sync.RWMutex)
 	lruCache, err := lru.NewWithEvict(size, func(key interface{}, value interface{}) {
-		lock.Lock()
+		rw.Lock()
 		evictedItems[key] = value
-		lock.Unlock()
+		rw.Unlock()
 	})
 	if err != nil {
 		return nil, err
@@ -47,15 +47,15 @@ func NewCache(size int) (*Cache, error) {
 	return &Cache{
 		Cache:        lruCache,
 		evictedItems: evictedItems,
-		lock:         lock,
+		rw:           rw,
 	}, nil
 }
 
 // RemoveEvictedItems cleans all the evicted items.
 func (c *Cache) RemoveEvictedItems() {
-	c.lock.Lock()
+	c.rw.Lock()
 	c.evictedItems = make(map[interface{}]interface{})
-	c.lock.Unlock()
+	c.rw.Unlock()
 }
 
 // Get retrieves an item from the LRU cache or evicted items.
@@ -63,8 +63,8 @@ func (c *Cache) Get(key interface{}) (interface{}, bool) {
 	if val, ok := c.Cache.Get(key); ok {
 		return val, ok
 	}
-	c.lock.RLock()
+	c.rw.RLock()
 	val, ok := c.evictedItems[key]
-	c.lock.RUnlock()
+	c.rw.RUnlock()
 	return val, ok
 }
