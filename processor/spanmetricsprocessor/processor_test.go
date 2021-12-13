@@ -260,7 +260,9 @@ func TestResourceCopying(t *testing.T) {
 
 		// TODO: FIX THIS
 		require.Equal(t, 4, serviceAResourceMetrics.Resource().Attributes().Len())
+		require.Equal(t, 4, serviceAResourceMetrics.InstrumentationLibraryMetrics().At(0).Metrics().Len())
 		require.Equal(t, 2, serviceBResourceMetrics.Resource().Attributes().Len())
+		require.Equal(t, 2, serviceBResourceMetrics.InstrumentationLibraryMetrics().At(0).Metrics().Len())
 
 		wantResourceAttrServiceA := map[string]string{
 			resourceAttr1:          "1",
