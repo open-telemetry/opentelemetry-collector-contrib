@@ -34,40 +34,8 @@ import (
 )
 
 func TestMySqlIntegration(t *testing.T) {
-	t.Run("Running mysql version 5.7", func(t *testing.T) {
-		container := getContainer(t, containerRequest5_7)
-		defer func() {
-			require.NoError(t, container.Terminate(context.Background()))
-		}()
-		hostname, err := container.Host(context.Background())
-		require.NoError(t, err)
-
-		f := NewFactory()
-		cfg := f.CreateDefaultConfig().(*Config)
-		cfg.Endpoint = net.JoinHostPort(hostname, "3307")
-		cfg.Username = "otel"
-		cfg.Password = "otel"
-
-		consumer := new(consumertest.MetricsSink)
-		settings := componenttest.NewNopReceiverCreateSettings()
-		rcvr, err := f.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
-		require.NoError(t, err, "failed creating metrics receiver")
-		require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
-		require.Eventuallyf(t, func() bool {
-			return len(consumer.AllMetrics()) > 0
-		}, 2*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
-
-		md := consumer.AllMetrics()[0]
-		require.Equal(t, 1, md.ResourceMetrics().Len())
-		ilms := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics()
-		require.Equal(t, 1, ilms.Len())
-		metrics := ilms.At(0).Metrics()
-		require.NoError(t, rcvr.Shutdown(context.Background()))
-
-		require.Equal(t, len(metadata.M.Names()), metrics.Len())
-	})
-
 	t.Run("Running mysql version 8.0", func(t *testing.T) {
+		t.Parallel()
 		container := getContainer(t, containerRequest8_0)
 		defer func() {
 			require.NoError(t, container.Terminate(context.Background()))
@@ -98,7 +66,40 @@ func TestMySqlIntegration(t *testing.T) {
 		require.NoError(t, rcvr.Shutdown(context.Background()))
 
 		require.Equal(t, len(metadata.M.Names()), metrics.Len())
+	})
 
+	t.Run("Running mysql version 5.7", func(t *testing.T) {
+		t.Parallel()
+		container := getContainer(t, containerRequest5_7)
+		defer func() {
+			require.NoError(t, container.Terminate(context.Background()))
+		}()
+		hostname, err := container.Host(context.Background())
+		require.NoError(t, err)
+
+		f := NewFactory()
+		cfg := f.CreateDefaultConfig().(*Config)
+		cfg.Endpoint = net.JoinHostPort(hostname, "3307")
+		cfg.Username = "otel"
+		cfg.Password = "otel"
+
+		consumer := new(consumertest.MetricsSink)
+		settings := componenttest.NewNopReceiverCreateSettings()
+		rcvr, err := f.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
+		require.NoError(t, err, "failed creating metrics receiver")
+		require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
+		require.Eventuallyf(t, func() bool {
+			return len(consumer.AllMetrics()) > 0
+		}, 2*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
+
+		md := consumer.AllMetrics()[0]
+		require.Equal(t, 1, md.ResourceMetrics().Len())
+		ilms := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics()
+		require.Equal(t, 1, ilms.Len())
+		metrics := ilms.At(0).Metrics()
+		require.NoError(t, rcvr.Shutdown(context.Background()))
+
+		require.Equal(t, len(metadata.M.Names()), metrics.Len())
 	})
 }
 
