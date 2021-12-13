@@ -30,9 +30,9 @@ func TestNewProcessor(t *testing.T) {
 		name                        string
 		metricsExporter             string
 		latencyHistogramBuckets     []time.Duration
-		dimensions                  []KeyValuePair
+		dimensions                  []Dimension
 		wantLatencyHistogramBuckets []float64
-		wantDimensions              []KeyValuePair
+		wantDimensions              []Dimension
 	}{
 		{
 			name:                        "simplest config (use defaults)",
@@ -46,12 +46,12 @@ func TestNewProcessor(t *testing.T) {
 		{
 			name:                    "full config with no catch-all bucket and check the catch-all bucket is inserted",
 			latencyHistogramBuckets: []time.Duration{2 * time.Millisecond},
-			dimensions: []KeyValuePair{
+			dimensions: []Dimension{
 				{"http.method", &defaultMethod},
 				{"http.status_code", nil},
 			},
 			wantLatencyHistogramBuckets: []float64{2, maxDurationMs},
-			wantDimensions: []KeyValuePair{
+			wantDimensions: []Dimension{
 				{"http.method", &defaultMethod},
 				{"http.status_code", nil},
 			},
