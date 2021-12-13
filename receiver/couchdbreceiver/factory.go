@@ -59,5 +59,5 @@ func createDefaultConfig() config.Receiver {
 }
 
 func createMetricsReceiver(_ context.Context, params component.ReceiverCreateSettings, rConf config.Receiver, consumer consumer.Metrics) (component.MetricsReceiver, error) {
-	return nil, nil // TODO build and return receiver in followup PR
+	return nil, nil
 }

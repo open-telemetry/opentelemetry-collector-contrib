@@ -22,7 +22,7 @@ import (
 )
 
 // Type is the component type name.
-const Type config.Type = "couchdb"
+const Type config.Type = "couchdbreceiver"
 
 // MetricIntf is an interface to generically interact with generated metric.
 type MetricIntf interface {
