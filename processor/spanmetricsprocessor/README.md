@@ -31,10 +31,12 @@ latency_bucket{http_method="GET",http_status_code="200",label1="value1",operatio
 ```
 
 Each metric will have _at least_ the following dimensions because they are common across all spans:
-- Service name
 - Operation
 - Span kind
 - Status code
+
+Each metric will have _at least_ the following resource attributes because they are common across all spans:
+- Service name
 
 This processor lets traces to continue through the pipeline unmodified.
 
@@ -54,6 +56,8 @@ The following settings can be optionally configured:
   If the `name`d attribute is missing in the span, the optional provided `default` is used.
   
   If no `default` is provided, this dimension will be **omitted** from the metric.
+
+- `resource_attributes`: the list of resource attributes to add together with the default resource attributes defined above. Each additional resource attributes is defined with a `name` which is looked up in the span's collection of resource attributes. If the `name`d resource attribute is missing in the span, the optional provided `default` is used. If no `default` is provided, this resource attribute will be **omitted** from the metric.
 
 ## Examples
 

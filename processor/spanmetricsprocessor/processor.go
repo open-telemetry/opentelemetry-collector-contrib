@@ -34,8 +34,8 @@ import (
 
 const (
 	serviceNameKey     = conventions.AttributeServiceName
-	operationKey       = "operation"   // OpenTelemetry non-standard constant.
-	spanKindKey        = "span.kind"   // OpenTelemetry non-standard constant.
+	operationKey       = "operation" // OpenTelemetry non-standard constant.
+	spanKindKey        = "span.kind"
 	statusCodeKey      = "status.code" // OpenTelemetry non-standard constant.
 	metricKeySeparator = string(byte(0))
 	traceIDKey         = "trace_id"
@@ -56,6 +56,7 @@ type exemplarData struct {
 }
 
 type metricKey string
+type resourceKey string
 
 type processorImp struct {
 	lock   sync.RWMutex
@@ -66,24 +67,32 @@ type processorImp struct {
 	nextConsumer    consumer.Traces
 
 	// Additional dimensions to add to metrics.
-	dimensions []Dimension
+	dimensions []KeyValuePair
+
+	// Additional resourceAttributes to add to metrics.
+	resourceAttributes []KeyValuePair
 
 	// The starting time of the data points.
 	startTime time.Time
 
 	// Call & Error counts.
-	callSum map[metricKey]int64
+	callSum map[resourceKey]map[metricKey]int64
 
 	// Latency histogram.
-	latencyCount         map[metricKey]uint64
-	latencySum           map[metricKey]float64
-	latencyBucketCounts  map[metricKey][]uint64
+	latencyCount         map[resourceKey]map[metricKey]uint64
+	latencySum           map[resourceKey]map[metricKey]float64
+	latencyBucketCounts  map[resourceKey]map[metricKey][]uint64
 	latencyBounds        []float64
-	latencyExemplarsData map[metricKey][]exemplarData
+	latencyExemplarsData map[resourceKey]map[metricKey][]exemplarData
 
-	// A cache of dimension key-value maps keyed by a unique identifier formed by a concatenation of its values:
+	// List of seen resource attributes.
+	// Map structure for faster lookup.
+	resourceAttrList map[resourceKey]bool
+
+	// A cache of dimension and resource attribute key-value maps keyed by a unique identifier formed by a concatenation of its values:
 	// e.g. { "foo/barOK": { "serviceName": "foo", "operation": "/bar", "status_code": "OK" }}
-	metricKeyToDimensions map[metricKey]pdata.AttributeMap
+	metricKeyToDimensions   map[metricKey]pdata.AttributeMap
+	resourceKeyToDimensions map[resourceKey]pdata.AttributeMap
 }
 
 func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer consumer.Traces) (*processorImp, error) {
@@ -100,23 +109,27 @@ func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer cons
 		}
 	}
 
-	if err := validateDimensions(pConfig.Dimensions); err != nil {
+	if err := validateDimensions(pConfig.Dimensions, []string{serviceNameKey, spanKindKey, statusCodeKey}); err != nil {
+		return nil, err
+	}
+	if err := validateDimensions(pConfig.ResourceAttributes, []string{serviceNameKey}); err != nil {
 		return nil, err
 	}
 
 	return &processorImp{
-		logger:                logger,
-		config:                *pConfig,
-		startTime:             time.Now(),
-		callSum:               make(map[metricKey]int64),
-		latencyBounds:         bounds,
-		latencySum:            make(map[metricKey]float64),
-		latencyCount:          make(map[metricKey]uint64),
-		latencyBucketCounts:   make(map[metricKey][]uint64),
-		latencyExemplarsData:  make(map[metricKey][]exemplarData),
-		nextConsumer:          nextConsumer,
-		dimensions:            pConfig.Dimensions,
-		metricKeyToDimensions: make(map[metricKey]pdata.AttributeMap),
+		logger:                  logger,
+		config:                  *pConfig,
+		startTime:               time.Now(),
+		callSum:                 make(map[resourceKey]map[metricKey]int64),
+		latencyBounds:           bounds,
+		latencySum:              make(map[resourceKey]map[metricKey]float64),
+		latencyCount:            make(map[resourceKey]map[metricKey]uint64),
+		latencyBucketCounts:     make(map[resourceKey]map[metricKey][]uint64),
+		latencyExemplarsData:    make(map[resourceKey]map[metricKey][]exemplarData),
+		nextConsumer:            nextConsumer,
+		dimensions:              pConfig.Dimensions,
+		metricKeyToDimensions:   make(map[metricKey]pdata.AttributeMap),
+		resourceKeyToDimensions: make(map[resourceKey]pdata.AttributeMap),
 	}, nil
 }
 
@@ -136,9 +149,9 @@ func mapDurationsToMillis(vs []time.Duration) []float64 {
 
 // validateDimensions checks duplicates for reserved dimensions and additional dimensions. Considering
 // the usage of Prometheus related exporters, we also validate the dimensions after sanitization.
-func validateDimensions(dimensions []Dimension) error {
+func validateDimensions(dimensions []KeyValuePair, defaults []string) error {
 	labelNames := make(map[string]struct{})
-	for _, key := range []string{serviceNameKey, spanKindKey, statusCodeKey} {
+	for _, key := range defaults {
 		labelNames[key] = struct{}{}
 		labelNames[sanitize(key)] = struct{}{}
 	}
@@ -229,21 +242,40 @@ func (p *processorImp) ConsumeTraces(ctx context.Context, traces pdata.Traces) e
 // writes the raw metrics data into the metrics object.
 func (p *processorImp) buildMetrics() *pdata.Metrics {
 	m := pdata.NewMetrics()
-	ilm := m.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName("spanmetricsprocessor")
+	rms := m.ResourceMetrics()
+	for key := range p.resourceAttrList {
+		p.lock.RLock()
+		resourceAttrKey := resourceKey(key)
+		resourceAttributesMap := p.resourceKeyToDimensions[resourceAttrKey]
 
-	p.lock.RLock()
-	p.collectCallMetrics(ilm)
-	p.collectLatencyMetrics(ilm)
-	p.lock.RUnlock()
+		// if the service name doesn't exist, we treat it as invalid and do not generate a trace
+		if _, ok := resourceAttributesMap.Get(serviceNameKey); !ok {
+			continue
+		}
+
+		rm := rms.AppendEmpty()
+
+		resourceAttributesMap.Range(func(k string, v pdata.AttributeValue) bool {
+			rm.Resource().Attributes().Insert(k, v)
+			return true
+		})
+
+		ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+		ilm.InstrumentationLibrary().SetName("spanmetricsprocessor")
+
+		// build metrics per resource
+		p.collectCallMetrics(ilm, resourceAttrKey)
+		p.collectLatencyMetrics(ilm, resourceAttrKey)
+		p.lock.RUnlock()
+	}
 
 	return &m
 }
 
 // collectLatencyMetrics collects the raw latency metrics, writing the data
 // into the given instrumentation library metrics.
-func (p *processorImp) collectLatencyMetrics(ilm pdata.InstrumentationLibraryMetrics) {
-	for key := range p.latencyCount {
+func (p *processorImp) collectLatencyMetrics(ilm pdata.InstrumentationLibraryMetrics, resAttrKey resourceKey) {
+	for mKey := range p.latencyCount[resAttrKey] {
 		mLatency := ilm.Metrics().AppendEmpty()
 		mLatency.SetDataType(pdata.MetricDataTypeHistogram)
 		mLatency.SetName("latency")
@@ -255,20 +287,20 @@ func (p *processorImp) collectLatencyMetrics(ilm pdata.InstrumentationLibraryMet
 		dpLatency.SetStartTimestamp(pdata.NewTimestampFromTime(p.startTime))
 		dpLatency.SetTimestamp(timestamp)
 		dpLatency.SetExplicitBounds(p.latencyBounds)
-		dpLatency.SetBucketCounts(p.latencyBucketCounts[key])
-		dpLatency.SetCount(p.latencyCount[key])
-		dpLatency.SetSum(p.latencySum[key])
+		dpLatency.SetBucketCounts(p.latencyBucketCounts[resAttrKey][mKey])
+		dpLatency.SetCount(p.latencyCount[resAttrKey][mKey])
+		dpLatency.SetSum(p.latencySum[resAttrKey][mKey])
 
-		setLatencyExemplars(p.latencyExemplarsData[key], timestamp, dpLatency.Exemplars())
+		setLatencyExemplars(p.latencyExemplarsData[resAttrKey][mKey], timestamp, dpLatency.Exemplars())
 
-		p.metricKeyToDimensions[key].CopyTo(dpLatency.Attributes())
+		p.metricKeyToDimensions[mKey].CopyTo(dpLatency.Attributes())
 	}
 }
 
 // collectCallMetrics collects the raw call count metrics, writing the data
 // into the given instrumentation library metrics.
-func (p *processorImp) collectCallMetrics(ilm pdata.InstrumentationLibraryMetrics) {
-	for key := range p.callSum {
+func (p *processorImp) collectCallMetrics(ilm pdata.InstrumentationLibraryMetrics, resAttrKey resourceKey) {
+	for mKey := range p.callSum[resAttrKey] {
 		mCalls := ilm.Metrics().AppendEmpty()
 		mCalls.SetDataType(pdata.MetricDataTypeSum)
 		mCalls.SetName("calls_total")
@@ -278,16 +310,16 @@ func (p *processorImp) collectCallMetrics(ilm pdata.InstrumentationLibraryMetric
 		dpCalls := mCalls.Sum().DataPoints().AppendEmpty()
 		dpCalls.SetStartTimestamp(pdata.NewTimestampFromTime(p.startTime))
 		dpCalls.SetTimestamp(pdata.NewTimestampFromTime(time.Now()))
-		dpCalls.SetIntVal(p.callSum[key])
+		dpCalls.SetIntVal(p.callSum[resAttrKey][mKey])
 
-		p.metricKeyToDimensions[key].CopyTo(dpCalls.Attributes())
+		p.metricKeyToDimensions[mKey].CopyTo(dpCalls.Attributes())
 	}
 }
 
 // aggregateMetrics aggregates the raw metrics from the input trace data.
 // Each metric is identified by a key that is built from the service name
 // and span metadata such as operation, kind, status_code and any additional
-// dimensions the user has configured.
+// dimensions and resource attributes the user has configured.
 func (p *processorImp) aggregateMetrics(traces pdata.Traces) {
 	for i := 0; i < traces.ResourceSpans().Len(); i++ {
 		rspans := traces.ResourceSpans().At(i)
@@ -320,45 +352,74 @@ func (p *processorImp) aggregateMetricsForSpan(serviceName string, span pdata.Sp
 	// Binary search to find the latencyInMilliseconds bucket index.
 	index := sort.SearchFloat64s(p.latencyBounds, latencyInMilliseconds)
 
-	key := buildKey(serviceName, span, p.dimensions, resourceAttr)
+	mKey := buildMetricKey(span, p.dimensions, resourceAttr)
+	resourceAttrKey := p.buildResourceAttrKey(serviceName, resourceAttr)
+	p.resourceAttrList[resourceAttrKey] = true
 
 	p.lock.Lock()
-	p.cache(serviceName, span, key, resourceAttr)
-	p.updateCallMetrics(key)
-	p.updateLatencyMetrics(key, latencyInMilliseconds, index)
-	p.updateLatencyExemplars(key, latencyInMilliseconds, index, span.TraceID())
+	p.cacheMetricKey(span, mKey, resourceAttr)
+	p.cacheResourceAttrKey(serviceName, resourceAttr, resourceAttrKey)
+	p.updateCallMetrics(resourceAttrKey, mKey)
+	p.updateLatencyMetrics(resourceAttrKey, mKey, latencyInMilliseconds, index)
+	p.updateLatencyExemplars(resourceAttrKey, mKey, latencyInMilliseconds, index, span.TraceID())
 	p.lock.Unlock()
 }
 
 // updateCallMetrics increments the call count for the given metric key.
-func (p *processorImp) updateCallMetrics(key metricKey) {
-	p.callSum[key]++
+func (p *processorImp) updateCallMetrics(resourceAttrKey resourceKey, mKey metricKey) {
+	if _, ok := p.callSum[resourceAttrKey]; ok {
+		p.callSum[resourceAttrKey][mKey]++
+	} else {
+		p.callSum[resourceAttrKey] = map[metricKey]int64{mKey: 1}
+	}
 }
 
-// updateLatencyExemplars sets the histogram exemplars for the given metric key and bucket index.
-func (p *processorImp) updateLatencyExemplars(key metricKey, value float64, index int, traceID pdata.TraceID) {
-	if _, ok := p.latencyExemplarsData[key]; !ok {
-		p.latencyExemplarsData[key] = make([]exemplarData, len(p.latencyBounds))
+// updateLatencyExemplars sets the histogram exemplars for the given resource key, metric key and bucket index.
+func (p *processorImp) updateLatencyExemplars(resourceAttrKey resourceKey, mKey metricKey, value float64, index int, traceID pdata.TraceID) {
+	if _, ok := p.latencyExemplarsData[resourceAttrKey]; ok {
+		if _, ok := p.latencyExemplarsData[resourceAttrKey][mKey]; !ok {
+			p.latencyExemplarsData[resourceAttrKey][mKey] = make([]exemplarData, len(p.latencyBounds))
+		}
+	} else {
+		p.latencyExemplarsData[resourceAttrKey] = make(map[metricKey][]exemplarData)
+		p.latencyExemplarsData[resourceAttrKey][mKey] = make([]exemplarData, len(p.latencyBounds))
 	}
-	p.latencyExemplarsData[key][index] = exemplarData{
+
+	p.latencyExemplarsData[resourceAttrKey][mKey][index] = exemplarData{
 		traceID: traceID,
 		value:   value,
 	}
 }
 
 // updateLatencyMetrics increments the histogram counts for the given metric key and bucket index.
-func (p *processorImp) updateLatencyMetrics(key metricKey, latency float64, index int) {
-	if _, ok := p.latencyBucketCounts[key]; !ok {
-		p.latencyBucketCounts[key] = make([]uint64, len(p.latencyBounds))
+func (p *processorImp) updateLatencyMetrics(resourceAttrKey resourceKey, mKey metricKey, latency float64, index int) {
+	if _, ok := p.latencyBucketCounts[resourceAttrKey]; ok {
+		if _, ok := p.latencyBucketCounts[resourceAttrKey][mKey]; !ok {
+			p.latencyBucketCounts[resourceAttrKey][mKey] = make([]uint64, len(p.latencyBounds))
+		}
+	} else {
+		p.latencyBucketCounts[resourceAttrKey] = make(map[metricKey][]uint64)
+		p.latencyBucketCounts[resourceAttrKey][mKey] = make([]uint64, len(p.latencyBounds))
 	}
-	p.latencySum[key] += latency
-	p.latencyCount[key]++
-	p.latencyBucketCounts[key][index]++
+
+	p.latencyBucketCounts[resourceAttrKey][mKey][index]++
+
+	if _, ok := p.latencySum[resourceAttrKey]; ok {
+		p.latencySum[resourceAttrKey][mKey] += latency
+	} else {
+		p.latencySum[resourceAttrKey] = map[metricKey]float64{mKey: latency}
+	}
+
+	if _, ok := p.latencyCount[resourceAttrKey]; ok {
+		p.latencyCount[resourceAttrKey][mKey]++
+	} else {
+		p.latencyCount[resourceAttrKey] = map[metricKey]uint64{mKey: 1}
+	}
 }
 
-func (p *processorImp) buildDimensionKVs(serviceName string, span pdata.Span, optionalDims []Dimension, resourceAttrs pdata.AttributeMap) pdata.AttributeMap {
+func (p *processorImp) buildDimensionKVs(span pdata.Span, optionalDims []KeyValuePair, resourceAttrs pdata.AttributeMap) pdata.AttributeMap {
 	dims := pdata.NewAttributeMap()
-	dims.UpsertString(serviceNameKey, serviceName)
+
 	dims.UpsertString(operationKey, span.Name())
 	dims.UpsertString(spanKindKey, span.Kind().String())
 	dims.UpsertString(statusCodeKey, span.Status().Code().String())
@@ -370,34 +431,69 @@ func (p *processorImp) buildDimensionKVs(serviceName string, span pdata.Span, op
 	return dims
 }
 
-func concatDimensionValue(metricKeyBuilder *strings.Builder, value string, prefixSep bool) {
+func extractResourceAttrsByKeys(serviceName string, keys []KeyValuePair, resourceAttrs pdata.AttributeMap) pdata.AttributeMap {
+	dims := pdata.NewAttributeMap()
+	dims.UpsertString(serviceNameKey, serviceName)
+	for _, ra := range keys {
+		if attr, ok := resourceAttrs.Get(ra.Name); ok {
+			dims.Upsert(ra.Name, attr)
+		} else if ra.Default != nil {
+			// Set the default if configured, otherwise this metric should have no value set for the resource attribute.
+			dims.Upsert(ra.Name, pdata.NewAttributeValueString(*ra.Default))
+		}
+	}
+	return dims
+}
+
+func concatDimensionValue(metricKeyBuilder *strings.Builder, value string) {
 	// It's worth noting that from pprof benchmarks, WriteString is the most expensive operation of this processor.
 	// Specifically, the need to grow the underlying []byte slice to make room for the appended string.
-	if prefixSep {
+	if metricKeyBuilder.Len() != 0 {
 		metricKeyBuilder.WriteString(metricKeySeparator)
 	}
 	metricKeyBuilder.WriteString(value)
 }
 
-// buildKey builds the metric key from the service name and span metadata such as operation, kind, status_code and
+// buildMetricKey builds the metric key from the service name and span metadata such as operation, kind, status_code and
 // will attempt to add any additional dimensions the user has configured that match the span's attributes
 // or resource attributes. If the dimension exists in both, the span's attributes, being the most specific, takes precedence.
 //
 // The metric key is a simple concatenation of dimension values, delimited by a null character.
-func buildKey(serviceName string, span pdata.Span, optionalDims []Dimension, resourceAttrs pdata.AttributeMap) metricKey {
+func buildMetricKey(span pdata.Span, optionalDims []KeyValuePair, resourceAttrs pdata.AttributeMap) metricKey {
 	var metricKeyBuilder strings.Builder
-	concatDimensionValue(&metricKeyBuilder, serviceName, false)
-	concatDimensionValue(&metricKeyBuilder, span.Name(), true)
-	concatDimensionValue(&metricKeyBuilder, span.Kind().String(), true)
-	concatDimensionValue(&metricKeyBuilder, span.Status().Code().String(), true)
+	concatDimensionValue(&metricKeyBuilder, span.Name())
+	concatDimensionValue(&metricKeyBuilder, span.Kind().String())
+	concatDimensionValue(&metricKeyBuilder, span.Status().Code().String())
 
 	for _, d := range optionalDims {
 		if v, ok := getDimensionValue(d, span.Attributes(), resourceAttrs); ok {
-			concatDimensionValue(&metricKeyBuilder, v.AsString(), true)
+			concatDimensionValue(&metricKeyBuilder, v.AsString())
 		}
 	}
 
 	k := metricKey(metricKeyBuilder.String())
+	return k
+}
+
+// buildResourceAttrKey builds the metric key from the service name and will attempt to add any additional resource attributes
+// the user has configured that match the span's attributes
+//
+// The resource attribute key is a simple concatenation of resource attribute values, delimited by a null character.
+func (p *processorImp) buildResourceAttrKey(serviceName string, resourceAttr pdata.AttributeMap) resourceKey {
+	var resourceKeyBuilder strings.Builder
+	concatDimensionValue(&resourceKeyBuilder, serviceName)
+
+	for _, ra := range p.resourceAttributes {
+		if attr, ok := resourceAttr.Get(ra.Name); ok {
+
+			concatDimensionValue(&resourceKeyBuilder, attr.AsString())
+		} else if ra.Default != nil {
+			// Set the default if configured, otherwise this metric should have no value set for the resource attribute.
+			concatDimensionValue(&resourceKeyBuilder, *ra.Default)
+		}
+	}
+
+	k := resourceKey(resourceKeyBuilder.String())
 	return k
 }
 
@@ -408,7 +504,7 @@ func buildKey(serviceName string, span pdata.Span, optionalDims []Dimension, res
 //
 // The ok flag indicates if a dimension value was fetched in order to differentiate
 // an empty string value from a state where no value was found.
-func getDimensionValue(d Dimension, spanAttr pdata.AttributeMap, resourceAttr pdata.AttributeMap) (v pdata.AttributeValue, ok bool) {
+func getDimensionValue(d KeyValuePair, spanAttr pdata.AttributeMap, resourceAttr pdata.AttributeMap) (v pdata.AttributeValue, ok bool) {
 	// The more specific span attribute should take precedence.
 	if attr, exists := spanAttr.Get(d.Name); exists {
 		return attr, true
@@ -425,10 +521,18 @@ func getDimensionValue(d Dimension, spanAttr pdata.AttributeMap, resourceAttr pd
 
 // cache the dimension key-value map for the metricKey if there is a cache miss.
 // This enables a lookup of the dimension key-value map when constructing the metric like so:
-//   LabelsMap().InitFromMap(p.metricKeyToDimensions[key])
-func (p *processorImp) cache(serviceName string, span pdata.Span, k metricKey, resourceAttrs pdata.AttributeMap) {
+// LabelsMap().InitFromMap(p.metricKeyToDimensions[key])
+func (p *processorImp) cacheMetricKey(span pdata.Span, k metricKey, resourceAttrs pdata.AttributeMap) {
 	if _, ok := p.metricKeyToDimensions[k]; !ok {
-		p.metricKeyToDimensions[k] = p.buildDimensionKVs(serviceName, span, p.dimensions, resourceAttrs)
+		p.metricKeyToDimensions[k] = p.buildDimensionKVs(span, p.dimensions, resourceAttrs)
+	}
+}
+
+// cache the dimension key-value map for the resourceAttrKey if there is a cache miss.
+// This enables a lookup of the dimension key-value map when constructing the resource.
+func (p *processorImp) cacheResourceAttrKey(serviceName string, resourceAttrs pdata.AttributeMap, k resourceKey) {
+	if _, ok := p.resourceKeyToDimensions[k]; !ok {
+		p.resourceKeyToDimensions[k] = extractResourceAttrsByKeys(serviceName, p.resourceAttributes, resourceAttrs)
 	}
 }
 

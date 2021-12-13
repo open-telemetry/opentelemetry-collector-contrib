@@ -49,6 +49,13 @@ const (
 	notInSpanAttrName1     = "shouldNotBeInMetric"
 	regionResourceAttrName = "region"
 
+	resourceAttr1          = "resourceAttr1"
+	resourceAttr2          = "resourceAttr2"
+	notInSpanResourceAttr0 = "resourceAttrShouldBeInMetric"
+	notInSpanResourceAttr1 = "resourceAttrShouldNotBeInMetric"
+
+	defaultNotInSpanAttrVal = "defaultNotInSpanAttrVal"
+
 	sampleRegion          = "us-east-1"
 	sampleLatency         = float64(11)
 	sampleLatencyDuration = time.Duration(sampleLatency) * time.Millisecond
@@ -239,6 +246,78 @@ func TestProcessorConsumeTraces(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestResourceCopying(t *testing.T) {
+	// Prepare
+	mexp := &mocks.MetricsExporter{}
+	tcon := &mocks.TracesConsumer{}
+
+	mexp.On("ConsumeMetrics", mock.Anything, mock.MatchedBy(func(input pdata.Metrics) bool {
+		rm := input.ResourceMetrics()
+		require.Equal(t, 2, rm.Len())
+
+		serviceAResourceMetrics := rm.At(0)
+		serviceBResourceMetrics := rm.At(1)
+
+		// TODO: FIX THIS
+		require.Equal(t, 4, serviceAResourceMetrics.Resource().Attributes().Len())
+		require.Equal(t, 2, serviceBResourceMetrics.Resource().Attributes().Len())
+
+		wantResourceAttrServiceA := map[string]string{
+			resourceAttr1:          "1",
+			resourceAttr2:          "2",
+			notInSpanResourceAttr0: defaultNotInSpanAttrVal,
+			serviceNameKey:         "service-a",
+		}
+		serviceAResourceMetrics.Resource().Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+			value := v.StringVal()
+			switch k {
+			case notInSpanResourceAttr1:
+				assert.Fail(t, notInSpanResourceAttr1+" should not be in this metric")
+			default:
+				assert.Equal(t, wantResourceAttrServiceA[k], value)
+				delete(wantResourceAttrServiceA, k)
+			}
+			return true
+		})
+		assert.Empty(t, wantResourceAttrServiceA, "Did not see all expected dimensions in metric. Missing: ", wantResourceAttrServiceA)
+
+		wantResourceAttrServiceB := map[string]string{
+			notInSpanResourceAttr0: defaultNotInSpanAttrVal,
+			serviceNameKey:         "service-b",
+		}
+		serviceBResourceMetrics.Resource().Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+			value := v.StringVal()
+			switch k {
+			case notInSpanResourceAttr1:
+				assert.Fail(t, notInSpanResourceAttr1+" should not be in this metric")
+			default:
+				assert.Equal(t, wantResourceAttrServiceB[k], value)
+				delete(wantResourceAttrServiceB, k)
+			}
+			return true
+		})
+		assert.Empty(t, wantResourceAttrServiceB, "Did not see all expected dimensions in metric. Missing: ", wantResourceAttrServiceB)
+
+		return true
+	})).Return(nil)
+
+	tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
+
+	defaultNullValue := "defaultNullValue"
+	p := newProcessorImp(mexp, tcon, &defaultNullValue)
+
+	traces := buildSampleTrace()
+	traces.ResourceSpans().At(0).Resource().Attributes().Insert(resourceAttr1, pdata.NewAttributeValueString("1"))
+	traces.ResourceSpans().At(0).Resource().Attributes().Insert(resourceAttr2, pdata.NewAttributeValueString("2"))
+
+	// Test
+	ctx := metadata.NewIncomingContext(context.Background(), nil)
+	err := p.ConsumeTraces(ctx, traces)
+
+	// Verify
+	assert.NoError(t, err)
+}
+
 func TestMetricKeyCache(t *testing.T) {
 	// Prepare
 	mexp := &mocks.MetricsExporter{}
@@ -289,20 +368,20 @@ func BenchmarkProcessorConsumeTraces(b *testing.B) {
 }
 
 func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, defaultNullValue *string) *processorImp {
-	defaultNotInSpanAttrVal := "defaultNotInSpanAttrVal"
+	localDefaultNotInSpanAttrVal := defaultNotInSpanAttrVal
 	return &processorImp{
 		logger:          zap.NewNop(),
 		metricsExporter: mexp,
 		nextConsumer:    tcon,
 
 		startTime:            time.Now(),
-		callSum:              make(map[metricKey]int64),
-		latencySum:           make(map[metricKey]float64),
-		latencyCount:         make(map[metricKey]uint64),
-		latencyBucketCounts:  make(map[metricKey][]uint64),
+		callSum:              make(map[resourceKey]map[metricKey]int64),
+		latencySum:           make(map[resourceKey]map[metricKey]float64),
+		latencyCount:         make(map[resourceKey]map[metricKey]uint64),
+		latencyBucketCounts:  make(map[resourceKey]map[metricKey][]uint64),
 		latencyBounds:        defaultLatencyHistogramBucketsMs,
-		latencyExemplarsData: make(map[metricKey][]exemplarData),
-		dimensions: []Dimension{
+		latencyExemplarsData: make(map[resourceKey]map[metricKey][]exemplarData),
+		dimensions: []KeyValuePair{
 			// Set nil defaults to force a lookup for the attribute in the span.
 			{stringAttrName, nil},
 			{intAttrName, nil},
@@ -312,13 +391,21 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, de
 			{arrayAttrName, nil},
 			{nullAttrName, defaultNullValue},
 			// Add a default value for an attribute that doesn't exist in a span
-			{notInSpanAttrName0, &defaultNotInSpanAttrVal},
+			{notInSpanAttrName0, &localDefaultNotInSpanAttrVal},
 			// Leave the default value unset to test that this dimension should not be added to the metric.
 			{notInSpanAttrName1, nil},
 			// Add a resource attribute to test "process" attributes like IP, host, region, cluster, etc.
 			{regionResourceAttrName, nil},
 		},
-		metricKeyToDimensions: make(map[metricKey]pdata.AttributeMap),
+		resourceAttributes: []KeyValuePair{
+			{resourceAttr1, nil},
+			{resourceAttr2, nil},
+			{notInSpanResourceAttr0, &localDefaultNotInSpanAttrVal},
+			{notInSpanResourceAttr1, nil},
+		},
+		resourceAttrList:        make(map[resourceKey]bool),
+		metricKeyToDimensions:   make(map[metricKey]pdata.AttributeMap),
+		resourceKeyToDimensions: make(map[resourceKey]pdata.AttributeMap),
 	}
 }
 
@@ -331,19 +418,32 @@ func verifyConsumeMetricsInput(input pdata.Metrics, t *testing.T) bool {
 	)
 
 	rm := input.ResourceMetrics()
-	require.Equal(t, 1, rm.Len())
+	require.Equal(t, 2, rm.Len())
 
 	ilm := rm.At(0).InstrumentationLibraryMetrics()
 	require.Equal(t, 1, ilm.Len())
 	assert.Equal(t, "spanmetricsprocessor", ilm.At(0).InstrumentationLibrary().Name())
 
+	// TODO: FIX THIS: TestProcessorConsumeTraces
 	m := ilm.At(0).Metrics()
-	require.Equal(t, 6, m.Len())
+	require.Equal(t, 4, m.Len())
 
+	ilm1 := rm.At(1).InstrumentationLibraryMetrics()
+	require.Equal(t, 1, ilm1.Len())
+	assert.Equal(t, "spanmetricsprocessor", ilm1.At(0).InstrumentationLibrary().Name())
+
+	m1 := ilm1.At(0).Metrics()
+	require.Equal(t, 2, m1.Len())
+	verifyMetrics(m1, 1, t)
+
+	return true
+}
+
+func verifyMetrics(m pdata.MetricSlice, numOfCallCounts int, t *testing.T) {
 	seenMetricIDs := make(map[metricID]bool)
 	mi := 0
-	// The first 3 metrics are for call counts.
-	for ; mi < 3; mi++ {
+	// The first <numOfCallCounts> metrics are for call counts.
+	for ; mi < numOfCallCounts; mi++ {
 		assert.Equal(t, "calls_total", m.At(mi).Name())
 
 		data := m.At(mi).Sum()
@@ -395,7 +495,6 @@ func verifyConsumeMetricsInput(input pdata.Metrics, t *testing.T) bool {
 		}
 		verifyMetricLabels(dp, t, seenMetricIDs)
 	}
-	return true
 }
 
 func verifyMetricLabels(dp metricDataPoint, t *testing.T, seenMetricIDs map[metricID]bool) {
@@ -408,13 +507,11 @@ func verifyMetricLabels(dp metricDataPoint, t *testing.T, seenMetricIDs map[metr
 		nullAttrName:           pdata.NewAttributeValueEmpty(),
 		arrayAttrName:          pdata.NewAttributeValueArray(),
 		mapAttrName:            pdata.NewAttributeValueMap(),
-		notInSpanAttrName0:     pdata.NewAttributeValueString("defaultNotInSpanAttrVal"),
+		notInSpanAttrName0:     pdata.NewAttributeValueString(defaultNotInSpanAttrVal),
 		regionResourceAttrName: pdata.NewAttributeValueString(sampleRegion),
 	}
 	dp.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 		switch k {
-		case serviceNameKey:
-			mID.service = v.StringVal()
 		case operationKey:
 			mID.operation = v.StringVal()
 		case spanKindKey:
@@ -522,69 +619,86 @@ func newOTLPExporters(t *testing.T) (*otlpexporter.Config, component.MetricsExpo
 }
 
 func TestBuildKeySameServiceOperationCharSequence(t *testing.T) {
-	span0 := pdata.NewSpan()
-	span0.SetName("c")
-	k0 := buildKey("ab", span0, nil, pdata.NewAttributeMap())
+	//setup
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	next := new(consumertest.TracesSink)
+	p, err := newProcessor(zap.NewNop(), cfg, next)
+	assert.NoError(t, err)
 
-	span1 := pdata.NewSpan()
+	trace0 := pdata.NewTraces()
+	rSpan0 := trace0.ResourceSpans().AppendEmpty()
+	ilSpan0 := rSpan0.InstrumentationLibrarySpans().AppendEmpty()
+	span0 := ilSpan0.Spans().AppendEmpty()
+	span0.SetName("c")
+	k0 := buildMetricKey(span0, nil, pdata.NewAttributeMap())
+	rk0 := p.buildResourceAttrKey("ab", rSpan0.Resource().Attributes())
+
+	trace1 := pdata.NewTraces()
+	rSpan1 := trace1.ResourceSpans().AppendEmpty()
+	ilSpan1 := rSpan1.InstrumentationLibrarySpans().AppendEmpty()
+	span1 := ilSpan1.Spans().AppendEmpty()
 	span1.SetName("bc")
-	k1 := buildKey("a", span1, nil, pdata.NewAttributeMap())
+	k1 := buildMetricKey(span1, nil, pdata.NewAttributeMap())
+	rk1 := p.buildResourceAttrKey("a", rSpan1.Resource().Attributes())
 
 	assert.NotEqual(t, k0, k1)
-	assert.Equal(t, metricKey("ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET"), k0)
-	assert.Equal(t, metricKey("a\u0000bc\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET"), k1)
+	assert.Equal(t, metricKey("c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET"), k0)
+	assert.Equal(t, metricKey("bc\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET"), k1)
+	assert.Equal(t, resourceKey("ab"), rk0)
+	assert.Equal(t, resourceKey("a"), rk1)
 }
 
 func TestBuildKeyWithDimensions(t *testing.T) {
 	defaultFoo := "bar"
 	for _, tc := range []struct {
 		name            string
-		optionalDims    []Dimension
+		optionalDims    []KeyValuePair
 		resourceAttrMap map[string]pdata.AttributeValue
 		spanAttrMap     map[string]pdata.AttributeValue
 		wantKey         string
 	}{
 		{
 			name:    "nil optionalDims",
-			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET",
+			wantKey: "c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET",
 		},
 		{
 			name: "neither span nor resource contains key, dim provides default",
-			optionalDims: []Dimension{
+			optionalDims: []KeyValuePair{
 				{Name: "foo", Default: &defaultFoo},
 			},
-			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000bar",
+			wantKey: "c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000bar",
 		},
 		{
 			name: "neither span nor resource contains key, dim provides no default",
-			optionalDims: []Dimension{
+			optionalDims: []KeyValuePair{
 				{Name: "foo"},
 			},
-			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET",
+			wantKey: "c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET",
 		},
 		{
 			name: "span attribute contains dimension",
-			optionalDims: []Dimension{
+			optionalDims: []KeyValuePair{
 				{Name: "foo"},
 			},
 			spanAttrMap: map[string]pdata.AttributeValue{
 				"foo": pdata.NewAttributeValueInt(99),
 			},
-			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u000099",
+			wantKey: "c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u000099",
 		},
 		{
 			name: "resource attribute contains dimension",
-			optionalDims: []Dimension{
+			optionalDims: []KeyValuePair{
 				{Name: "foo"},
 			},
 			resourceAttrMap: map[string]pdata.AttributeValue{
 				"foo": pdata.NewAttributeValueInt(99),
 			},
-			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u000099",
+			wantKey: "c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u000099",
 		},
 		{
 			name: "both span and resource attribute contains dimension, should prefer span attribute",
-			optionalDims: []Dimension{
+			optionalDims: []KeyValuePair{
 				{Name: "foo"},
 			},
 			spanAttrMap: map[string]pdata.AttributeValue{
@@ -593,7 +707,7 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 			resourceAttrMap: map[string]pdata.AttributeValue{
 				"foo": pdata.NewAttributeValueInt(99),
 			},
-			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000100",
+			wantKey: "c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000100",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -601,7 +715,7 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 			span0 := pdata.NewSpan()
 			pdata.NewAttributeMapFromMap(tc.spanAttrMap).CopyTo(span0.Attributes())
 			span0.SetName("c")
-			k := buildKey("ab", span0, tc.optionalDims, resAttr)
+			k := buildMetricKey(span0, tc.optionalDims, resAttr)
 
 			assert.Equal(t, metricKey(tc.wantKey), k)
 		})
@@ -613,8 +727,24 @@ func TestProcessorDuplicateDimensions(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	// Duplicate dimension with reserved label after sanitization.
-	cfg.Dimensions = []Dimension{
+	cfg.Dimensions = []KeyValuePair{
 		{Name: "status_code"},
+	}
+
+	// Test
+	next := new(consumertest.TracesSink)
+	p, err := newProcessor(zap.NewNop(), cfg, next)
+	assert.Error(t, err)
+	assert.Nil(t, p)
+}
+
+func TestProcessorDuplicateResourceAttributes(t *testing.T) {
+	// Prepare
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	// Duplicate dimension with reserved label after sanitization.
+	cfg.ResourceAttributes = []KeyValuePair{
+		{Name: "service.name"},
 	}
 
 	// Test
@@ -627,37 +757,37 @@ func TestProcessorDuplicateDimensions(t *testing.T) {
 func TestValidateDimensions(t *testing.T) {
 	for _, tc := range []struct {
 		name        string
-		dimensions  []Dimension
+		dimensions  []KeyValuePair
 		expectedErr string
 	}{
 		{
 			name:       "no additional dimensions",
-			dimensions: []Dimension{},
+			dimensions: []KeyValuePair{},
 		},
 		{
 			name: "no duplicate dimensions",
-			dimensions: []Dimension{
+			dimensions: []KeyValuePair{
 				{Name: "http.service_name"},
 				{Name: "http.status_code"},
 			},
 		},
 		{
 			name: "duplicate dimension with reserved labels",
-			dimensions: []Dimension{
+			dimensions: []KeyValuePair{
 				{Name: "service.name"},
 			},
 			expectedErr: "duplicate dimension name service.name",
 		},
 		{
 			name: "duplicate dimension with reserved labels after sanitization",
-			dimensions: []Dimension{
+			dimensions: []KeyValuePair{
 				{Name: "service_name"},
 			},
 			expectedErr: "duplicate dimension name service_name",
 		},
 		{
 			name: "duplicate additional dimensions",
-			dimensions: []Dimension{
+			dimensions: []KeyValuePair{
 				{Name: "service_name"},
 				{Name: "service_name"},
 			},
@@ -665,7 +795,7 @@ func TestValidateDimensions(t *testing.T) {
 		},
 		{
 			name: "duplicate additional dimensions after sanitization",
-			dimensions: []Dimension{
+			dimensions: []KeyValuePair{
 				{Name: "http.status_code"},
 				{Name: "http!status_code"},
 			},
@@ -673,13 +803,13 @@ func TestValidateDimensions(t *testing.T) {
 		},
 		{
 			name: "we skip the case if the dimension name is the same after sanitization",
-			dimensions: []Dimension{
+			dimensions: []KeyValuePair{
 				{Name: "http_status_code"},
 			},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			err := validateDimensions(tc.dimensions)
+			err := validateDimensions(tc.dimensions, []string{serviceNameKey, spanKindKey, statusCodeKey})
 			if tc.expectedErr != "" {
 				assert.EqualError(t, err, tc.expectedErr)
 			} else {
@@ -687,6 +817,49 @@ func TestValidateDimensions(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestTraceWithoutServiceNameDoesNotGenerateMetrics(t *testing.T) {
+	// Prepare
+	mexp := &mocks.MetricsExporter{}
+	tcon := &mocks.TracesConsumer{}
+
+	mexp.On("ConsumeMetrics", mock.Anything, mock.MatchedBy(func(input pdata.Metrics) bool {
+		require.Equal(t, 0, input.MetricCount(),
+			"Should be 0 as the trace does not have a service name and hence is skipped when building metrics",
+		)
+		return true
+	})).Return(nil)
+	tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
+
+	defaultNullValue := "defaultNullValue"
+	p := newProcessorImp(mexp, tcon, &defaultNullValue)
+
+	trace := pdata.NewTraces()
+
+	initServiceSpans(
+		serviceSpans{
+			serviceName: "",
+			spans: []span{
+				{
+					operation:  "/ping",
+					kind:       pdata.SpanKindServer,
+					statusCode: pdata.StatusCodeOk,
+				},
+				{
+					operation:  "/ping",
+					kind:       pdata.SpanKindClient,
+					statusCode: pdata.StatusCodeOk,
+				},
+			},
+		}, trace.ResourceSpans().AppendEmpty())
+
+	// Test
+	ctx := metadata.NewIncomingContext(context.Background(), nil)
+	err := p.ConsumeTraces(ctx, trace)
+
+	// Verify
+	assert.NoError(t, err)
 }
 
 func TestSanitize(t *testing.T) {
@@ -726,17 +899,18 @@ func TestProcessorUpdateLatencyExemplars(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	traces := buildSampleTrace()
 	traceID := traces.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).TraceID()
-	key := metricKey("metricKey")
+	mKey := metricKey("metricKey")
+	rKey := resourceKey("resourceKey")
 	next := new(consumertest.TracesSink)
 	p, err := newProcessor(zap.NewNop(), cfg, next)
 	value := float64(42)
 	index := 12
 
 	// ----- call -------------------------------------------------------------
-	p.updateLatencyExemplars(key, value, index, traceID)
+	p.updateLatencyExemplars(rKey, mKey, value, index, traceID)
 
 	// ----- verify -----------------------------------------------------------
 	assert.NoError(t, err)
-	assert.NotEmpty(t, p.latencyExemplarsData[key])
-	assert.Equal(t, p.latencyExemplarsData[key][index], exemplarData{traceID: traceID, value: value})
+	assert.NotEmpty(t, p.latencyExemplarsData[rKey][mKey])
+	assert.Equal(t, p.latencyExemplarsData[rKey][mKey][index], exemplarData{traceID: traceID, value: value})
 }
