@@ -17,6 +17,7 @@ package spanmetricsprocessor
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"testing"
 	"time"
 
@@ -944,4 +945,26 @@ func TestProcessorResetExemplarData(t *testing.T) {
 	// ----- verify -----------------------------------------------------------
 	assert.NoError(t, err)
 	assert.Empty(t, p.latencyExemplarsData[rKey][mKey])
+}
+
+func TestDimensionsAndResourceAttributesOrdered(t *testing.T) {
+	// Prepare
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+
+	// Test
+	next := new(consumertest.TracesSink)
+	p, err := newProcessor(zap.NewNop(), cfg, next)
+
+	// Verify
+	assert.NoError(t, err)
+
+	dimType := reflect.TypeOf(p.dimensions).Kind()
+	resourceAttrType := reflect.TypeOf(p.resourceAttributes).Kind()
+
+	// dimensions and resource attributes must be of an ordered type e.g Slice.
+	// This is because the aggregation generates a string of concatenated key value pairs
+	// and hence is dependent on the order of the keys.
+	assert.Equal(t, reflect.Slice, dimType)
+	assert.Equal(t, reflect.Slice, resourceAttrType)
 }
