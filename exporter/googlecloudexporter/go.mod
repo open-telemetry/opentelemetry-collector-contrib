@@ -12,9 +12,9 @@ require (
 	go.opencensus.io v0.23.0
 	go.opentelemetry.io/collector v0.41.1-0.20211210184707-4dcb3388a168
 	go.opentelemetry.io/collector/model v0.41.1-0.20211210184707-4dcb3388a168
-	go.opentelemetry.io/otel v1.2.0
+	go.opentelemetry.io/otel v1.3.0
 	go.opentelemetry.io/otel/sdk v1.2.0
-	go.opentelemetry.io/otel/trace v1.2.0
+	go.opentelemetry.io/otel/trace v1.3.0
 	google.golang.org/api v0.61.0
 	google.golang.org/genproto v0.0.0-20211206160659-862468c7d6e0
 	google.golang.org/grpc v1.42.0
@@ -33,6 +33,8 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/envoyproxy/go-control-plane v0.9.10-0.20210907150352-cf90f659a021 // indirect
 	github.com/envoyproxy/protoc-gen-validate v0.1.0 // indirect
+	github.com/go-logr/logr v1.2.1 // indirect
+	github.com/go-logr/stdr v1.2.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
