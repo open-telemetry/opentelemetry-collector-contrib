@@ -404,6 +404,7 @@ func TestHistogramConsumerDeltaAggregation(t *testing.T) {
 		cumulativeConsumer,
 		deltaConsumer,
 		sender,
+		regularHistogram,
 		componenttest.NewNopTelemetrySettings())
 	var errs []error
 	consumer.Consume(deltaMetric, &errs)
@@ -434,6 +435,7 @@ func TestHistogramConsumerCumulativeAggregation(t *testing.T) {
 		cumulativeConsumer,
 		deltaConsumer,
 		sender,
+		regularHistogram,
 		componenttest.NewNopTelemetrySettings())
 	var errs []error
 
@@ -467,8 +469,9 @@ func TestHistogramConsumerNoAggregation(t *testing.T) {
 	settings.Logger = zap.New(observedZapCore)
 	consumer := newHistogramConsumer(
 		&mockHistogramDataPointConsumer{},
-		nil,
+		&mockHistogramDataPointConsumer{},
 		sender,
+		regularHistogram,
 		settings,
 	)
 	assert.Equal(t, pdata.MetricDataTypeHistogram, consumer.Type())
@@ -693,6 +696,39 @@ func TestDeltaHistogramDataPointConsumer(t *testing.T) {
 	assert.Equal(t, int64(0), report.Malformed())
 }
 
+func TestDeltaHistogramDataPointConsumer_OneBucket(t *testing.T) {
+	metric := newMetric("one.bucket.delta.histogram", pdata.MetricDataTypeHistogram)
+	histogramDataPoint := pdata.NewHistogramDataPoint()
+
+	// Creates bounds of -Inf to <=2.0; >2.0 to <=5.0; >5.0 to <=10.0; >10.0 to +Inf
+	histogramDataPoint.SetExplicitBounds([]float64{})
+	histogramDataPoint.SetBucketCounts([]uint64{17})
+	setDataPointTimestamp(1641234567, histogramDataPoint)
+	sender := &mockDistributionSender{}
+	report := newHistogramReporting(componenttest.NewNopTelemetrySettings())
+	consumer := newDeltaHistogramDataPointConsumer(sender)
+	var errs []error
+
+	consumer.Consume(metric, histogramDataPoint, &errs, report)
+
+	assert.Empty(t, errs)
+
+	assert.Equal(
+		t,
+		[]tobsDistribution{
+			{
+				Name:        "one.bucket.delta.histogram",
+				Centroids:   []histogram.Centroid{{Value: 0.0, Count: 17}},
+				Granularity: allGranularity,
+				Ts:          1641234567,
+				Tags:        make(map[string]string),
+			},
+		},
+		sender.distributions,
+	)
+	assert.Equal(t, int64(0), report.Malformed())
+}
+
 func TestDeltaHistogramDataPointConsumerError(t *testing.T) {
 	metric := newMetric("a.delta.histogram", pdata.MetricDataTypeHistogram)
 	histogramDataPoint := pdata.NewHistogramDataPoint()
@@ -736,11 +772,11 @@ func newHistogramMetricWithDataPoints(
 	countAttributeForEachDataPoint []uint64,
 ) pdata.Metric {
 	result := newMetric(name, pdata.MetricDataTypeHistogram)
-	histogram := result.Histogram()
-	histogram.SetAggregationTemporality(temporality)
-	histogram.DataPoints().EnsureCapacity(len(countAttributeForEachDataPoint))
+	aHistogram := result.Histogram()
+	aHistogram.SetAggregationTemporality(temporality)
+	aHistogram.DataPoints().EnsureCapacity(len(countAttributeForEachDataPoint))
 	for _, count := range countAttributeForEachDataPoint {
-		histogram.DataPoints().AppendEmpty().SetCount(count)
+		aHistogram.DataPoints().AppendEmpty().SetCount(count)
 	}
 	return result
 }
@@ -980,7 +1016,7 @@ type mockHistogramDataPointConsumer struct {
 }
 
 func (m *mockHistogramDataPointConsumer) Consume(
-	metric pdata.Metric, h pdata.HistogramDataPoint, _ *[]error, _ *histogramReporting,
+	metric pdata.Metric, h histogramDataPoint, _ *[]error, _ *histogramReporting,
 ) {
 	m.names = append(m.names, metric.Name())
 	m.counts = append(m.counts, h.Count())
