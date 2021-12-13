@@ -36,20 +36,20 @@ import (
 func TestLoadConfig(t *testing.T) {
 	defaultMethod := "GET"
 	testcases := []struct {
-		configFile                         string
-		wantMetricsExporter                string
-		wantLatencyHistogramBuckets        []time.Duration
-		wantDimensions                     []Dimension
-		wantDimensionsCacheSize int
+		configFile                  string
+		wantMetricsExporter         string
+		wantLatencyHistogramBuckets []time.Duration
+		wantDimensions              []Dimension
+		wantDimensionsCacheSize     int
 	}{
 		{
-			configFile:                         "config-2-pipelines.yaml",
-			wantMetricsExporter:                "prometheus",
+			configFile:              "config-2-pipelines.yaml",
+			wantMetricsExporter:     "prometheus",
 			wantDimensionsCacheSize: 500,
 		},
 		{
-			configFile: "config-3-pipelines.yaml",
-			wantMetricsExporter:                "otlp/spanmetrics",
+			configFile:              "config-3-pipelines.yaml",
+			wantMetricsExporter:     "otlp/spanmetrics",
 			wantDimensionsCacheSize: defaultDimensionsCacheSize,
 		},
 		{
@@ -95,11 +95,11 @@ func TestLoadConfig(t *testing.T) {
 			require.NotNil(t, cfg)
 			assert.Equal(t,
 				&Config{
-					ProcessorSettings:              config.NewProcessorSettings(config.NewComponentID(typeStr)),
-					MetricsExporter:                tc.wantMetricsExporter,
-					LatencyHistogramBuckets:        tc.wantLatencyHistogramBuckets,
-					Dimensions:                     tc.wantDimensions,
-					DimensionsCacheSize: tc.wantDimensionsCacheSize,
+					ProcessorSettings:       config.NewProcessorSettings(config.NewComponentID(typeStr)),
+					MetricsExporter:         tc.wantMetricsExporter,
+					LatencyHistogramBuckets: tc.wantLatencyHistogramBuckets,
+					Dimensions:              tc.wantDimensions,
+					DimensionsCacheSize:     tc.wantDimensionsCacheSize,
 				},
 				cfg.Processors[config.NewComponentID(typeStr)],
 			)

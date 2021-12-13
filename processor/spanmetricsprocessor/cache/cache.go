@@ -15,8 +15,9 @@
 package cache // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor/cache"
 
 import (
-	lru "github.com/hashicorp/golang-lru"
 	"sync"
+
+	lru "github.com/hashicorp/golang-lru"
 )
 
 // Cache consists of an LRU cache and the evicted items from the LRU cache.
@@ -27,7 +28,7 @@ import (
 type Cache struct {
 	*lru.Cache
 	evictedItems map[interface{}]interface{}
-	lock sync.RWMutex
+	lock         sync.RWMutex
 }
 
 // NewCache creates a Cache.
@@ -46,7 +47,7 @@ func NewCache(size int) (*Cache, error) {
 	return &Cache{
 		Cache:        lruCache,
 		evictedItems: evictedItems,
-		lock: lock,
+		lock:         lock,
 	}, nil
 }
 

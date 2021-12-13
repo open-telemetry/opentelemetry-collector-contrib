@@ -40,17 +40,17 @@ import (
 )
 
 const (
-	stringAttrName                 = "stringAttrName"
-	intAttrName                    = "intAttrName"
-	doubleAttrName                 = "doubleAttrName"
-	boolAttrName                   = "boolAttrName"
-	nullAttrName                   = "nullAttrName"
-	mapAttrName                    = "mapAttrName"
-	arrayAttrName                  = "arrayAttrName"
-	notInSpanAttrName0             = "shouldBeInMetric"
-	notInSpanAttrName1             = "shouldNotBeInMetric"
-	regionResourceAttrName         = "region"
-	DimensionsCacheSize = 2
+	stringAttrName         = "stringAttrName"
+	intAttrName            = "intAttrName"
+	doubleAttrName         = "doubleAttrName"
+	boolAttrName           = "boolAttrName"
+	nullAttrName           = "nullAttrName"
+	mapAttrName            = "mapAttrName"
+	arrayAttrName          = "arrayAttrName"
+	notInSpanAttrName0     = "shouldBeInMetric"
+	notInSpanAttrName1     = "shouldNotBeInMetric"
+	regionResourceAttrName = "region"
+	DimensionsCacheSize    = 2
 
 	sampleRegion          = "us-east-1"
 	sampleLatency         = float64(11)

@@ -279,9 +279,13 @@ func (p *processorImp) collectLatencyMetrics(ilm pdata.InstrumentationLibraryMet
 
 		setLatencyExemplars(p.latencyExemplarsData[key], timestamp, dpLatency.Exemplars())
 
-		if dimensions, ok := p.getDimensionsByMetricKey(key); ok {
-			dimensions.CopyTo(dpLatency.Attributes())
+		dimensions, err := p.getDimensionsByMetricKey(key)
+		if err != nil {
+			p.logger.Error(err.Error())
+			continue
 		}
+
+		dimensions.CopyTo(dpLatency.Attributes())
 	}
 }
 
@@ -300,24 +304,26 @@ func (p *processorImp) collectCallMetrics(ilm pdata.InstrumentationLibraryMetric
 		dpCalls.SetTimestamp(pdata.NewTimestampFromTime(time.Now()))
 		dpCalls.SetIntVal(p.callSum[key])
 
-		if dimensions, ok := p.getDimensionsByMetricKey(key); ok {
-			dimensions.CopyTo(dpCalls.Attributes())
+		dimensions, err := p.getDimensionsByMetricKey(key)
+		if err != nil {
+			p.logger.Error(err.Error())
+			continue
 		}
+
+		dimensions.CopyTo(dpCalls.Attributes())
 	}
 }
 
 // getDimensionsByMetricKey gets dimensions from `metricKeyToDimensions` cache.
-func (p *processorImp) getDimensionsByMetricKey(k metricKey) (*pdata.AttributeMap, bool) {
+func (p *processorImp) getDimensionsByMetricKey(k metricKey) (*pdata.AttributeMap, error) {
 	if item, ok := p.metricKeyToDimensions.Get(k); ok {
 		if attributeMap, ok := item.(pdata.AttributeMap); ok {
-			return &attributeMap, true
+			return &attributeMap, nil
 		}
-		p.logger.Error("type assertion of metricKeyToDimensions attributes failed")
-		return nil, false
+		return nil, fmt.Errorf("type assertion of metricKeyToDimensions attributes failed, the key is %v", k)
 	}
 
-	p.logger.Error("value not found in metricKeyToDimensions cache")
-	return nil, false
+	return nil, fmt.Errorf("value not found in metricKeyToDimensions cache by key %v", k)
 }
 
 // aggregateMetrics aggregates the raw metrics from the input trace data.
