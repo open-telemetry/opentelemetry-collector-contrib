@@ -398,7 +398,7 @@ func (p *processorImp) updateLatencyExemplars(resourceAttrKey resourceKey, mKey 
 // the data structure. An exemplar is a punctual value that exists at specific moment in time
 // and should be not considered like a metrics that persist over time.
 func (p *processorImp) resetExemplarData() {
-	p.latencyExemplarsData = make(map[metricKey][]exemplarData)
+	p.latencyExemplarsData = make(map[resourceKey]map[metricKey][]exemplarData)
 }
 
 // updateLatencyMetrics increments the histogram counts for the given metric key and bucket index.

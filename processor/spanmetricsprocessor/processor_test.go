@@ -933,7 +933,8 @@ func TestProcessorResetExemplarData(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 
-	key := metricKey("metricKey")
+	mKey := metricKey("metricKey")
+	rKey := resourceKey("resourceKey")
 	next := new(consumertest.TracesSink)
 	p, err := newProcessor(zaptest.NewLogger(t), cfg, next)
 
@@ -942,5 +943,5 @@ func TestProcessorResetExemplarData(t *testing.T) {
 
 	// ----- verify -----------------------------------------------------------
 	assert.NoError(t, err)
-	assert.Empty(t, p.latencyExemplarsData[key])
+	assert.Empty(t, p.latencyExemplarsData[rKey][mKey])
 }
