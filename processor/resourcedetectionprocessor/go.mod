@@ -5,7 +5,7 @@ go 1.17
 require (
 	cloud.google.com/go v0.99.0
 	github.com/Showmax/go-fqdn v1.0.0
-	github.com/aws/aws-sdk-go v1.42.22
+	github.com/aws/aws-sdk-go v1.42.23
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/docker/docker v20.10.12+incompatible
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.41.0
@@ -56,7 +56,7 @@ require (
 	go.opentelemetry.io/otel/metric v0.26.0 // indirect
 	go.opentelemetry.io/otel/trace v1.3.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
-	golang.org/x/net v0.0.0-20210614182718-04defd469f4e // indirect
+	golang.org/x/net v0.0.0-20211209124913-491a49abca63 // indirect
 	golang.org/x/sys v0.0.0-20211124211545-fe61309f8881 // indirect
 	golang.org/x/text v0.3.6 // indirect
 	google.golang.org/genproto v0.0.0-20211206160659-862468c7d6e0 // indirect
