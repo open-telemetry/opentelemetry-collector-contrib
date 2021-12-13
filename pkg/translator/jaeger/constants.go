@@ -29,8 +29,6 @@ var (
 	errZeroTraceID = errors.New("span has an all zeros trace ID")
 	errZeroSpanID  = errors.New("span has an all zeros span ID")
 
-	// errRange indicates that a value is out of range for the target type.
-	errRange = errors.New("value out of range")
 	// errType indicates that a value is not convertible to the target type.
 	errType = errors.New("invalid type")
 )
