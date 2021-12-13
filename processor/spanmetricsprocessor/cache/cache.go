@@ -28,13 +28,13 @@ import (
 type Cache struct {
 	*lru.Cache
 	evictedItems map[interface{}]interface{}
-	lock         sync.RWMutex
+	lock         *sync.RWMutex
 }
 
 // NewCache creates a Cache.
 func NewCache(size int) (*Cache, error) {
 	evictedItems := make(map[interface{}]interface{})
-	var lock sync.RWMutex
+	lock := new(sync.RWMutex)
 	lruCache, err := lru.NewWithEvict(size, func(key interface{}, value interface{}) {
 		lock.Lock()
 		evictedItems[key] = value
