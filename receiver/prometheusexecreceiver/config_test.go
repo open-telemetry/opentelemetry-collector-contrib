@@ -31,6 +31,7 @@ var (
 	wantReceiver2 = &Config{
 		ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "test")),
 		ScrapeInterval:   60 * time.Second,
+		ScrapeTimeout:    10 * time.Second,
 		Port:             9104,
 		SubprocessConfig: subprocessmanager.SubprocessConfig{
 			Command: "mysqld_exporter",
@@ -41,6 +42,7 @@ var (
 	wantReceiver3 = &Config{
 		ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "test2")),
 		ScrapeInterval:   90 * time.Second,
+		ScrapeTimeout:    10 * time.Second,
 		SubprocessConfig: subprocessmanager.SubprocessConfig{
 			Command: "postgres_exporter",
 			Env:     []subprocessmanager.EnvConfig{},
@@ -50,6 +52,7 @@ var (
 	wantReceiver4 = &Config{
 		ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "end_to_end_test/1")),
 		ScrapeInterval:   1 * time.Second,
+		ScrapeTimeout:    10 * time.Second,
 		Port:             9999,
 		SubprocessConfig: subprocessmanager.SubprocessConfig{
 			Command: "go run ./testdata/end_to_end_metrics_test/test_prometheus_exporter.go {{port}}",
@@ -69,6 +72,7 @@ var (
 	wantReceiver5 = &Config{
 		ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "end_to_end_test/2")),
 		ScrapeInterval:   1 * time.Second,
+		ScrapeTimeout:    10 * time.Second,
 		SubprocessConfig: subprocessmanager.SubprocessConfig{
 			Command: "go run ./testdata/end_to_end_metrics_test/test_prometheus_exporter.go {{port}}",
 			Env:     []subprocessmanager.EnvConfig{},
