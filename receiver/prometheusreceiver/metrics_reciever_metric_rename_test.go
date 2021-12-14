@@ -209,7 +209,6 @@ func verifyRenameMetricKeepAction(t *testing.T, td *testData, resourceMetrics []
 	doCompare(t, "scrape-metricRenameKeepAction-1", wantAttributes, m1, e1)
 }
 
-
 var renamingLabel = `
 # HELP http_go_threads Number of OS threads created
 # TYPE http_go_threads gauge
