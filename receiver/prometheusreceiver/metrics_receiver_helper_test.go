@@ -429,6 +429,12 @@ func compareSummaryAttributes(attributes map[string]string) summaryPointComparat
 	}
 }
 
+func assertAttributesAbsent() numberPointComparator {
+	return func(t *testing.T, numberDataPoint *pdata.NumberDataPoint) {
+		assert.Equal(t, 0, numberDataPoint.Attributes().Len(), "Attributes length should be 0")
+	}
+}
+
 func compareHistogramAttributes(attributes map[string]string) histogramPointComparator {
 	return func(t *testing.T, histogramDataPoint *pdata.HistogramDataPoint) {
 		req := assert.Equal(t, len(attributes), histogramDataPoint.Attributes().Len(), "Histogram attributes length do not match")
