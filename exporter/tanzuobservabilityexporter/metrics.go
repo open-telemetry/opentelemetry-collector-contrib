@@ -403,7 +403,7 @@ func (r *histogramReporting) LogNoAggregationTemporality(metric pdata.Metric) {
 	r.noAggregationTemporality.Inc()
 }
 
-// Report sends the counts in this instancce to wavefront.
+// Report sends the counts in this instance to wavefront.
 // sender is what sends to wavefront. Any errors sending get added to errs.
 func (r *histogramReporting) Report(sender gaugeSender, errs *[]error) {
 	r.malformedHistograms.Report(malformedHistogramMetricName, nil, sender, errs)
