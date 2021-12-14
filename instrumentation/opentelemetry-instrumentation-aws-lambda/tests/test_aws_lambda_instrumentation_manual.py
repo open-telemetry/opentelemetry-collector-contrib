@@ -19,6 +19,7 @@ from opentelemetry.environment_variables import OTEL_PROPAGATORS
 from opentelemetry.instrumentation.aws_lambda import (
     _HANDLER,
     _X_AMZN_TRACE_ID,
+    OTEL_INSTRUMENTATION_AWS_LAMBDA_FLUSH_TIMEOUT,
     AwsLambdaInstrumentor,
 )
 from opentelemetry.propagate import get_global_textmap
@@ -244,5 +245,32 @@ class TestAwsLambdaInstrumentor(TestBase):
             MOCK_W3C_TRACE_STATE_VALUE,
         )
         self.assertTrue(parent_context.is_remote)
+
+        test_env_patch.stop()
+
+    def test_lambda_no_error_with_invalid_flush_timeout(self):
+
+        test_env_patch = mock.patch.dict(
+            "os.environ",
+            {
+                **os.environ,
+                # NOT Active Tracing
+                _X_AMZN_TRACE_ID: MOCK_XRAY_TRACE_CONTEXT_NOT_SAMPLED,
+                # NOT using the X-Ray Propagator
+                OTEL_PROPAGATORS: "tracecontext",
+                OTEL_INSTRUMENTATION_AWS_LAMBDA_FLUSH_TIMEOUT: "invalid-timeout-string",
+            },
+        )
+        test_env_patch.start()
+
+        AwsLambdaInstrumentor().instrument()
+
+        mock_execute_lambda()
+
+        spans = self.memory_exporter.get_finished_spans()
+
+        assert spans
+
+        self.assertEqual(len(spans), 1)
 
         test_env_patch.stop()

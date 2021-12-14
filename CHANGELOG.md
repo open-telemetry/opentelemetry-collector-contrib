@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/open-telemetry/opentelemetry-python/compare/v1.7.0-0.26b0...HEAD)
 
+### Added
+
+- `opentelemetry-instrumentation-aws-lambda` Adds support for configurable flush timeout  via `OTEL_INSTRUMENTATION_AWS_LAMBDA_FLUSH_TIMEOUT` property. ([#825](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/825))
+
 ### Fixed
 
 - `opentelemetry-exporter-richconsole` Fixed attribute error on parentless spans.

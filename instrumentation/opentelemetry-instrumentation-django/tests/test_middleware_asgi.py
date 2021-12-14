@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable=E0611
+
 from sys import modules
 from unittest.mock import Mock, patch
 

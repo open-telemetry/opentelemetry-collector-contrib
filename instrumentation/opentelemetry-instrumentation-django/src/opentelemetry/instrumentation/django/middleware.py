@@ -58,7 +58,6 @@ if DJANGO_2_0:
             response = self.get_response(request)
             return self.process_response(request, response)
 
-
 else:
     # Django versions 1.x can use `settings.MIDDLEWARE_CLASSES` and expect
     # old-style middlewares, which are created by inheriting from

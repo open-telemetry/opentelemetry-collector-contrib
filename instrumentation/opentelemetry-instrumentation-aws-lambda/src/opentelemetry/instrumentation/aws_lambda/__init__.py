@@ -97,6 +97,9 @@ logger = logging.getLogger(__name__)
 _HANDLER = "_HANDLER"
 _X_AMZN_TRACE_ID = "_X_AMZN_TRACE_ID"
 ORIG_HANDLER = "ORIG_HANDLER"
+OTEL_INSTRUMENTATION_AWS_LAMBDA_FLUSH_TIMEOUT = (
+    "OTEL_INSTRUMENTATION_AWS_LAMBDA_FLUSH_TIMEOUT"
+)
 
 
 def _default_event_context_extractor(lambda_event: Any) -> Context:
@@ -167,6 +170,7 @@ def _determine_parent_context(
 def _instrument(
     wrapped_module_name,
     wrapped_function_name,
+    flush_timeout,
     event_context_extractor: Callable[[Any], Context],
     tracer_provider: TracerProvider = None,
 ):
@@ -222,7 +226,7 @@ def _instrument(
             # NOTE: `force_flush` before function quit in case of Lambda freeze.
             # Assumes we are using the OpenTelemetry SDK implementation of the
             # `TracerProvider`.
-            _tracer_provider.force_flush()
+            _tracer_provider.force_flush(flush_timeout)
         except Exception:  # pylint: disable=broad-except
             logger.error(
                 "TracerProvider was missing `force_flush` method. This is necessary in case of a Lambda freeze and would exist in the OTel SDK implementation."
@@ -262,9 +266,22 @@ class AwsLambdaInstrumentor(BaseInstrumentor):
             self._wrapped_function_name,
         ) = lambda_handler.rsplit(".", 1)
 
+        flush_timeout_env = os.environ.get(
+            OTEL_INSTRUMENTATION_AWS_LAMBDA_FLUSH_TIMEOUT, ""
+        )
+        flush_timeout = 30000
+        try:
+            flush_timeout = int(flush_timeout_env)
+        except ValueError:
+            logger.warning(
+                "Could not convert OTEL_INSTRUMENTATION_AWS_LAMBDA_FLUSH_TIMEOUT value %s to int",
+                flush_timeout_env,
+            )
+
         _instrument(
             self._wrapped_module_name,
             self._wrapped_function_name,
+            flush_timeout,
             event_context_extractor=kwargs.get(
                 "event_context_extractor", _default_event_context_extractor
             ),
