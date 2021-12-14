@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 
@@ -40,9 +41,10 @@ func TestLoadConfig(t *testing.T) {
 		wantMetricsExporter         string
 		wantLatencyHistogramBuckets []time.Duration
 		wantDimensions              []Dimension
+		wantAggregationTemporality  string
 	}{
-		{configFile: "config-2-pipelines.yaml", wantMetricsExporter: "prometheus"},
-		{configFile: "config-3-pipelines.yaml", wantMetricsExporter: "otlp/spanmetrics"},
+		{configFile: "config-2-pipelines.yaml", wantMetricsExporter: "prometheus", wantAggregationTemporality: cumulative},
+		{configFile: "config-3-pipelines.yaml", wantMetricsExporter: "otlp/spanmetrics", wantAggregationTemporality: cumulative},
 		{
 			configFile:          "config-full.yaml",
 			wantMetricsExporter: "otlp/spanmetrics",
@@ -59,6 +61,7 @@ func TestLoadConfig(t *testing.T) {
 				{"http.method", &defaultMethod},
 				{"http.status_code", nil},
 			},
+			wantAggregationTemporality: delta,
 		},
 	}
 	for _, tc := range testcases {
@@ -89,9 +92,21 @@ func TestLoadConfig(t *testing.T) {
 					MetricsExporter:         tc.wantMetricsExporter,
 					LatencyHistogramBuckets: tc.wantLatencyHistogramBuckets,
 					Dimensions:              tc.wantDimensions,
+					AggregationTemporality:  tc.wantAggregationTemporality,
 				},
 				cfg.Processors[config.NewComponentID(typeStr)],
 			)
 		})
 	}
+}
+
+func TestGetAggregationTemporality(t *testing.T) {
+	cfg := &Config{AggregationTemporality: delta}
+	assert.Equal(t, pdata.MetricAggregationTemporalityDelta, cfg.GetAggregationTemporality())
+
+	cfg = &Config{AggregationTemporality: cumulative}
+	assert.Equal(t, pdata.MetricAggregationTemporalityCumulative, cfg.GetAggregationTemporality())
+
+	cfg = &Config{}
+	assert.Equal(t, pdata.MetricAggregationTemporalityCumulative, cfg.GetAggregationTemporality())
 }

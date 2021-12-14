@@ -33,15 +33,18 @@ const (
 	PortType EndpointType = "port"
 	// PodType is a pod endpoint.
 	PodType EndpointType = "pod"
+	// K8sNodeType is a Kubernetes Node endpoint.
+	K8sNodeType EndpointType = "k8s.node"
 	// HostPortType is a hostport endpoint.
 	HostPortType EndpointType = "hostport"
-	// Container is a container endpoint.
+	// ContainerType is a container endpoint.
 	ContainerType EndpointType = "container"
 )
 
 var (
 	_ EndpointDetails = (*Pod)(nil)
 	_ EndpointDetails = (*Port)(nil)
+	_ EndpointDetails = (*K8sNode)(nil)
 	_ EndpointDetails = (*HostPort)(nil)
 	_ EndpointDetails = (*Container)(nil)
 )
@@ -56,7 +59,7 @@ type EndpointDetails interface {
 type Endpoint struct {
 	// ID uniquely identifies this endpoint.
 	ID EndpointID
-	// Target is an IP address or hostname of the endpoint.
+	// Target is an IP address or hostname of the endpoint. It can also be a hostname/ip:port pair.
 	Target string
 	// Details contains additional context about the endpoint such as a Pod or Port.
 	Details EndpointDetails
@@ -201,4 +204,60 @@ func (c *Container) Env() EndpointEnv {
 
 func (c *Container) Type() EndpointType {
 	return ContainerType
+}
+
+// K8sNode represents a Kubernetes Node object:
+// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/k8s.md#node
+type K8sNode struct {
+	// Name is the name of the Kubernetes Node.
+	Name string
+	// UID is the unique ID for the node
+	UID string
+	// Hostname is the node hostname as reported by the status object
+	Hostname string
+	// ExternalIP is the node's external IP address as reported by the Status object
+	ExternalIP string
+	// InternalIP is the node internal IP address as reported by the Status object
+	InternalIP string
+	// ExternalDNS is the node's external DNS record as reported by the Status object
+	ExternalDNS string
+	// InternalDNS is the node's internal DNS record as reported by the Status object
+	InternalDNS string
+	// Annotations is an arbitrary key-value map of non-identifying, user-specified node metadata
+	Annotations map[string]string
+	// Labels is the map of identifying, user-specified node metadata
+	Labels map[string]string
+	// KubeletEndpointPort is the node status object's DaemonEndpoints.KubeletEndpoint.Port value
+	KubeletEndpointPort uint16
+	// Spec represents the node Spec object.
+	// It is a json object that is equivalent to the output of `kubectl get node <node> -o jsonpath='{.spec}'`
+	Spec map[string]interface{}
+	// Metadata represents the node ObjectMeta object.
+	// It is a json object that is equivalent to the output of `kubectl get node <node> -o jsonpath='{.metadata}'`
+	Metadata map[string]interface{}
+	// Status represents the node Status object.
+	// It is a json object that is equivalent to the output of `kubectl get node <node> -o jsonpath='{.status}'`
+	Status map[string]interface{}
+}
+
+func (n *K8sNode) Env() EndpointEnv {
+	return map[string]interface{}{
+		"name":                  n.Name,
+		"uid":                   n.UID,
+		"annotations":           n.Annotations,
+		"labels":                n.Labels,
+		"metadata":              n.Metadata,
+		"spec":                  n.Spec,
+		"status":                n.Status,
+		"hostname":              n.Hostname,
+		"external_ip":           n.ExternalIP,
+		"internal_ip":           n.InternalIP,
+		"external_dns":          n.ExternalDNS,
+		"internal_dns":          n.InternalDNS,
+		"kubelet_endpoint_port": n.KubeletEndpointPort,
+	}
+}
+
+func (n *K8sNode) Type() EndpointType {
+	return K8sNodeType
 }
