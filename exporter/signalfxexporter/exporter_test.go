@@ -33,6 +33,7 @@ import (
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -51,65 +52,82 @@ func TestNew(t *testing.T) {
 	tests := []struct {
 		name           string
 		config         *Config
+		me             *metricExporter
 		wantErr        bool
 		wantErrMessage string
 	}{
 		{
-			name:           "nil config fails",
+			name: "nil config fails",
+			me: &metricExporter{
+				logger: zap.NewNop(),
+			},
 			wantErr:        true,
 			wantErrMessage: "nil config",
 		},
 		{
 			name: "bad config fails",
-			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-				APIURL:           "abc",
+			me: &metricExporter{
+				logger: zap.NewNop(),
+				config: &Config{
+					ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+					APIURL:           "abc",
+				},
 			},
 			wantErr: true,
 		},
 		{
 			name: "fails to create metrics converter",
-			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-				AccessToken:      "test",
-				Realm:            "realm",
-				ExcludeMetrics:   []dpfilters.MetricFilter{{}},
+			me: &metricExporter{
+				logger: zap.NewNop(),
+				config: &Config{
+					ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+					AccessToken:      "test",
+					Realm:            "realm",
+					ExcludeMetrics:   []dpfilters.MetricFilter{{}},
+				},
 			},
 			wantErr: true,
 		},
 		{
 			name: "successfully create exporter",
-			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-				AccessToken:      "someToken",
-				Realm:            "xyz",
-				TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
-				Headers:          nil,
+			me: &metricExporter{
+				logger: zap.NewNop(),
+				config: &Config{
+					ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+					AccessToken:      "someToken",
+					Realm:            "xyz",
+					TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
+					Headers:          nil,
+				},
 			},
 		},
 		{
 			name: "create exporter with host metadata syncer",
-			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-				AccessToken:      "someToken",
-				Realm:            "xyz",
-				TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
-				Headers:          nil,
-				SyncHostMetadata: true,
+			me: &metricExporter{
+				logger: zap.NewNop(),
+				config: &Config{
+					ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+					AccessToken:      "someToken",
+					Realm:            "xyz",
+					TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
+					Headers:          nil,
+					SyncHostMetadata: true,
+				},
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newSignalFxExporter(tt.config, zap.NewNop())
+			err := tt.me.newSignalFxExporter(componenttest.NewNopHost())
 			if tt.wantErr {
 				require.Error(t, err)
 				if tt.wantErrMessage != "" {
 					require.EqualError(t, err, tt.wantErrMessage)
 				}
 			} else {
-				require.NotNil(t, got)
+				require.NotNil(t, tt.me.pushMetricsData)
+				require.NotNil(t, tt.me.pushMetadata)
 			}
 		})
 	}
@@ -233,6 +251,75 @@ func TestConsumeMetrics(t *testing.T) {
 			}
 
 			assert.NoError(t, err)
+		})
+	}
+}
+
+func TestNewSignalFxExporterFails(t *testing.T) {
+	tests := []struct {
+		name         string
+		se           *metricExporter
+		host         component.Host
+		errorMessage string
+	}{
+		{
+			name: "negative_duration",
+			se: &metricExporter{
+				logger: zap.NewNop(),
+				config: &Config{
+					ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+					AccessToken:      "testToken",
+					Realm:            "lab",
+					TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: -2 * time.Second},
+				},
+			},
+			errorMessage: "failed to process \"signalfx\" config: cannot have a negative \"timeout\"",
+		},
+		{
+			name: "empty_realm_and_urls",
+			se: &metricExporter{
+				logger: zap.NewNop(),
+				config: &Config{
+					ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+					AccessToken:      "testToken",
+				},
+			},
+			errorMessage: "failed to process \"signalfx\" config: requires a non-empty \"realm\"," +
+				" or \"ingest_url\" and \"api_url\" should be explicitly set",
+		},
+		{
+			name: "empty_realm_and_api_url",
+			se: &metricExporter{
+				logger: zap.NewNop(),
+				config: &Config{
+					ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+					AccessToken:      "testToken",
+					IngestURL:        "http://localhost:123",
+				},
+			},
+			errorMessage: "failed to process \"signalfx\" config: requires a non-empty \"realm\"," +
+				" or \"ingest_url\" and \"api_url\" should be explicitly set",
+		},
+		{
+			name: "negative_MaxConnections",
+			se: &metricExporter{
+				logger: zap.NewNop(),
+				config: &Config{
+					ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+					AccessToken:      "testToken",
+					Realm:            "lab",
+					IngestURL:        "http://localhost:123",
+					APIURL:           "https://api.us1.signalfx.com/",
+					MaxConnections:   -10,
+				},
+			},
+			errorMessage: "failed to process \"signalfx\" config: cannot have a negative \"max_connections\"",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.se.newSignalFxExporter(componenttest.NewNopHost())
+			assert.EqualError(t, err, tt.errorMessage)
 		})
 	}
 }
@@ -436,11 +523,15 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 }
 
 func TestNewEventExporter(t *testing.T) {
-	got, err := newEventExporter(nil, zap.NewNop())
+	le := &logExporter{
+		config: nil,
+		logger: zap.NewNop(),
+	}
+	err := le.newEventExporter(componenttest.NewNopHost())
 	assert.EqualError(t, err, "nil config")
-	assert.Nil(t, got)
+	assert.Nil(t, le.pushLogsData)
 
-	cfg := &Config{
+	le.config = &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		AccessToken:      "someToken",
 		IngestURL:        "asdf://:%",
@@ -448,24 +539,24 @@ func TestNewEventExporter(t *testing.T) {
 		Headers:          nil,
 	}
 
-	got, err = newEventExporter(cfg, zap.NewNop())
+	err = le.newEventExporter(componenttest.NewNopHost())
 	assert.NotNil(t, err)
-	assert.Nil(t, got)
+	assert.Nil(t, le.pushLogsData)
 
-	cfg = &Config{
+	le.config = &Config{
 		AccessToken:     "someToken",
 		Realm:           "xyz",
 		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
 		Headers:         nil,
 	}
 
-	got, err = newEventExporter(cfg, zap.NewNop())
+	err = le.newEventExporter(componenttest.NewNopHost())
 	assert.NoError(t, err)
-	require.NotNil(t, got)
+	require.NotNil(t, le.pushLogsData)
 
 	// This is expected to fail.
 	ld := makeSampleResourceLogs()
-	err = got.pushLogs(context.Background(), ld)
+	err = le.pushLogs(context.Background(), ld)
 	assert.Error(t, err)
 }
 
@@ -970,7 +1061,7 @@ func TestConsumeMetadata(t *testing.T) {
 				})
 			dimClient.Start()
 
-			se := signalfxExporter{
+			se := metricExporter{
 				pushMetadata: dimClient.PushMetadata,
 			}
 			sme := signalfMetadataExporter{

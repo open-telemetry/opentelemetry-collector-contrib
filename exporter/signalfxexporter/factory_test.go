@@ -125,63 +125,6 @@ func TestCreateMetricsExporter_CustomConfig(t *testing.T) {
 	assert.NotNil(t, te)
 }
 
-func TestFactory_CreateMetricsExporterFails(t *testing.T) {
-	tests := []struct {
-		name         string
-		config       *Config
-		errorMessage string
-	}{
-		{
-			name: "negative_duration",
-			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-				AccessToken:      "testToken",
-				Realm:            "lab",
-				TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: -2 * time.Second},
-			},
-			errorMessage: "failed to process \"signalfx\" config: cannot have a negative \"timeout\"",
-		},
-		{
-			name: "empty_realm_and_urls",
-			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-				AccessToken:      "testToken",
-			},
-			errorMessage: "failed to process \"signalfx\" config: requires a non-empty \"realm\"," +
-				" or \"ingest_url\" and \"api_url\" should be explicitly set",
-		},
-		{
-			name: "empty_realm_and_api_url",
-			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-				AccessToken:      "testToken",
-				IngestURL:        "http://localhost:123",
-			},
-			errorMessage: "failed to process \"signalfx\" config: requires a non-empty \"realm\"," +
-				" or \"ingest_url\" and \"api_url\" should be explicitly set",
-		},
-		{
-			name: "negative_MaxConnections",
-			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-				AccessToken:      "testToken",
-				Realm:            "lab",
-				IngestURL:        "http://localhost:123",
-				APIURL:           "https://api.us1.signalfx.com/",
-				MaxConnections:   -10,
-			},
-			errorMessage: "failed to process \"signalfx\" config: cannot have a negative \"max_connections\"",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			te, err := createMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), tt.config)
-			assert.EqualError(t, err, tt.errorMessage)
-			assert.Nil(t, te)
-		})
-	}
-}
-
 func TestDefaultTranslationRules(t *testing.T) {
 	rules, err := loadDefaultTranslationRules()
 	require.NoError(t, err)

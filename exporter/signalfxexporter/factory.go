@@ -109,10 +109,7 @@ func createMetricsExporter(
 		return nil, err
 	}
 
-	exp, err := newSignalFxExporter(expCfg, set.Logger)
-	if err != nil {
-		return nil, err
-	}
+	exp := newMetricExporter(expCfg, set.Logger)
 
 	me, err := exporterhelper.NewMetricsExporter(
 		expCfg,
@@ -121,7 +118,8 @@ func createMetricsExporter(
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(expCfg.RetrySettings),
-		exporterhelper.WithQueue(expCfg.QueueSettings))
+		exporterhelper.WithQueue(expCfg.QueueSettings),
+		exporterhelper.WithStart(exp.Start))
 
 	if err != nil {
 		return nil, err
@@ -185,10 +183,7 @@ func createLogsExporter(
 ) (component.LogsExporter, error) {
 	expCfg := cfg.(*Config)
 
-	exp, err := newEventExporter(expCfg, set.Logger)
-	if err != nil {
-		return nil, err
-	}
+	exp := newLogExporter(expCfg, set.Logger)
 
 	le, err := exporterhelper.NewLogsExporter(
 		expCfg,
@@ -197,7 +192,8 @@ func createLogsExporter(
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(expCfg.RetrySettings),
-		exporterhelper.WithQueue(expCfg.QueueSettings))
+		exporterhelper.WithQueue(expCfg.QueueSettings),
+		exporterhelper.WithStart(exp.Start))
 
 	if err != nil {
 		return nil, err
