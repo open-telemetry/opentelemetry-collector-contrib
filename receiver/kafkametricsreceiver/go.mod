@@ -17,7 +17,7 @@ require go.uber.org/multierr v1.7.0
 require (
 	github.com/Microsoft/go-winio v0.4.17 // indirect
 	github.com/apache/thrift v0.15.0 // indirect
-	github.com/aws/aws-sdk-go v1.42.22 // indirect
+	github.com/aws/aws-sdk-go v1.42.23 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.2 // indirect
 	github.com/containerd/containerd v1.5.8 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -69,7 +69,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.3.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	golang.org/x/crypto v0.0.0-20210920023735-84f357641f63 // indirect
-	golang.org/x/net v0.0.0-20210917221730-978cfadd31cf // indirect
+	golang.org/x/net v0.0.0-20211209124913-491a49abca63 // indirect
 	golang.org/x/sys v0.0.0-20211013075003-97ac67df715c // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/genproto v0.0.0-20210828152312-66f60bf46e71 // indirect
