@@ -54,7 +54,10 @@ func NewCache(size int) (*Cache, error) {
 // RemoveEvictedItems cleans all the evicted items.
 func (c *Cache) RemoveEvictedItems() {
 	c.rw.Lock()
-	c.evictedItems = make(map[interface{}]interface{})
+	// we need to keep the original pointer to evictedItems map as it is used in the closure of lru.NewWithEvict
+	for k := range c.evictedItems {
+		delete(c.evictedItems, k)
+	}
 	c.rw.Unlock()
 }
 
@@ -67,4 +70,10 @@ func (c *Cache) Get(key interface{}) (interface{}, bool) {
 	val, ok := c.evictedItems[key]
 	c.rw.RUnlock()
 	return val, ok
+}
+
+// Purge remove all the items from the LRU cache and evicted items.
+func (c *Cache) Purge() {
+	c.Cache.Purge()
+	c.RemoveEvictedItems()
 }

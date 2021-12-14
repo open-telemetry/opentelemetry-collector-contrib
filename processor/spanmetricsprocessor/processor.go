@@ -386,13 +386,14 @@ func (p *processorImp) updateCallMetrics(key metricKey) {
 	p.callSum[key]++
 }
 
-// resetAccumulatedMetrics resets the internal maps used to store created metric data
+// resetAccumulatedMetrics resets the internal maps used to store created metric data. Also purge the cache for
+// metricKeyToDimensions.
 func (p *processorImp) resetAccumulatedMetrics() {
 	p.callSum = make(map[metricKey]int64)
 	p.latencyCount = make(map[metricKey]uint64)
 	p.latencySum = make(map[metricKey]float64)
 	p.latencyBucketCounts = make(map[metricKey][]uint64)
-	p.metricKeyToDimensions = make(map[metricKey]pdata.AttributeMap)
+	p.metricKeyToDimensions.Purge()
 }
 
 // updateLatencyExemplars sets the histogram exemplars for the given metric key and append the exemplar data.

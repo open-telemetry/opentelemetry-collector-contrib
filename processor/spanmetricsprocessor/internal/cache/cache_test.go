@@ -159,3 +159,54 @@ func TestCache_RemoveEvictedItems(t *testing.T) {
 		})
 	}
 }
+
+func TestCache_PurgeItems(t *testing.T) {
+	tests := []struct {
+		name     string
+		lruCache func() (*Cache, error)
+	}{
+		{
+			name: "no panic when there is no item to remove",
+			lruCache: func() (*Cache, error) {
+				return NewCache(1)
+			},
+		},
+		{
+			name: "remove items from the lru cache",
+			lruCache: func() (*Cache, error) {
+				cache, err := NewCache(1)
+				if err != nil {
+					return nil, err
+				}
+				cache.evictedItems["key0"] = "val0"
+				cache.evictedItems["key1"] = "val1"
+				return cache, nil
+			},
+		},
+		{
+			name: "remove all the items from lru cache and the evicted items",
+			lruCache: func() (*Cache, error) {
+				cache, err := NewCache(10)
+				if err != nil {
+					return nil, err
+				}
+				cache.Add("key", "val")
+				cache.Add("key2", "val2")
+				cache.evictedItems["key0"] = "val0"
+				cache.evictedItems["key1"] = "val1"
+				return cache, nil
+			},
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			cache, err := tt.lruCache()
+			assert.NoError(t, err)
+			cache.Purge()
+			assert.Zero(t, cache.Len())
+			assert.Empty(t, cache.evictedItems)
+		})
+	}
+}
