@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 💡 Enhancements 💡
+
+- `prometheusremotewriteexporter`: Handling Staleness flag from OTLP (#6679)
+
 ## 🛑 Breaking changes 🛑
 
 - `memcachedreceiver`: Update metric names (#6594)
