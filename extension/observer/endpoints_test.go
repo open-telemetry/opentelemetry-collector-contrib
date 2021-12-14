@@ -160,6 +160,66 @@ func TestEndpointEnv(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "Kubernetes Node",
+			endpoint: Endpoint{
+				ID:     EndpointID("k8s_node_endpoint_id"),
+				Target: "127.0.0.1:1234",
+				Details: &K8sNode{
+					Name:        "a-k8s-node",
+					UID:         "a-k8s-node-uid",
+					Hostname:    "a-k8s-node-hostname",
+					ExternalIP:  "1.2.3.4",
+					InternalIP:  "127.0.0.1",
+					ExternalDNS: "an-external-dns",
+					InternalDNS: "an-internal-dns",
+					Annotations: map[string]string{
+						"annotation_key": "annotation_val",
+					},
+					Labels: map[string]string{
+						"label_key": "label_val",
+					},
+					KubeletEndpointPort: 1234,
+					Spec: map[string]interface{}{
+						"spec": "spec_val",
+					},
+					Metadata: map[string]interface{}{
+						"metadata": "metadata_val",
+					},
+					Status: map[string]interface{}{
+						"status": "status_val",
+					},
+				},
+			},
+			want: EndpointEnv{
+				"type":                  "k8s.node",
+				"name":                  "a-k8s-node",
+				"uid":                   "a-k8s-node-uid",
+				"hostname":              "a-k8s-node-hostname",
+				"endpoint":              "127.0.0.1:1234",
+				"external_dns":          "an-external-dns",
+				"external_ip":           "1.2.3.4",
+				"internal_dns":          "an-internal-dns",
+				"internal_ip":           "127.0.0.1",
+				"kubelet_endpoint_port": uint16(1234),
+				"annotations": map[string]string{
+					"annotation_key": "annotation_val",
+				},
+				"labels": map[string]string{
+					"label_key": "label_val",
+				},
+				"spec": map[string]interface{}{
+					"spec": "spec_val",
+				},
+				"metadata": map[string]interface{}{
+					"metadata": "metadata_val",
+				},
+				"status": map[string]interface{}{
+					"status": "status_val",
+				},
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

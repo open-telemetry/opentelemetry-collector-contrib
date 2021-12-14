@@ -58,6 +58,10 @@ processors:
       # - calls{operation="/Address",service_name="shippingservice",span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_UNSET"} 1
       - name: http.status_code
 
+    # The aggregation temporality of the generated metrics.
+    # Default: "AGGREGATION_TEMPORALITY_CUMULATIVE"
+    aggregation_temporality: "AGGREGATION_TEMPORALITY_DELTA"
+
 service:
   pipelines:
     traces:
