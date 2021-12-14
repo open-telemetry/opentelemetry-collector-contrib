@@ -167,6 +167,16 @@ func verifyNumValidScrapeResults(t *testing.T, td *testData, resourceMetrics []*
 	require.Equal(t, want, len(resourceMetrics), "want %d valid scrapes, but got %d", want, len(resourceMetrics))
 }
 
+func verifyNumTotalScrapeResults(t *testing.T, td *testData, resourceMetrics []*pdata.ResourceMetrics) {
+	want := 0
+	for _, p := range td.pages {
+		if p.code == 200 || p.code == 500 {
+			want++
+		}
+	}
+	require.Equal(t, want, len(resourceMetrics), "want %d total scrapes, but got %d", want, len(resourceMetrics))
+}
+
 func getMetrics(rm *pdata.ResourceMetrics) []*pdata.Metric {
 	metrics := make([]*pdata.Metric, 0)
 	ilms := rm.InstrumentationLibraryMetrics()
@@ -432,6 +442,27 @@ func compareHistogramAttributes(attributes map[string]string) histogramPointComp
 				}
 			}
 		}
+	}
+}
+
+func assertNumberPointFlagNoRecordedValue() numberPointComparator {
+	return func(t *testing.T, numberDataPoint *pdata.NumberDataPoint) {
+		assert.True(t, numberDataPoint.Flags().HasFlag(pdata.MetricDataPointFlagNoRecordedValue),
+			"Datapoint flag for staleness marker not found as expected")
+	}
+}
+
+func assertHistogramPointFlagNoRecordedValue() histogramPointComparator {
+	return func(t *testing.T, histogramDataPoint *pdata.HistogramDataPoint) {
+		assert.True(t, histogramDataPoint.Flags().HasFlag(pdata.MetricDataPointFlagNoRecordedValue),
+			"Datapoint flag for staleness marker not found as expected")
+	}
+}
+
+func assertSummaryPointFlagNoRecordedValue() summaryPointComparator {
+	return func(t *testing.T, summaryDataPoint *pdata.SummaryDataPoint) {
+		assert.True(t, summaryDataPoint.Flags().HasFlag(pdata.MetricDataPointFlagNoRecordedValue),
+			"Datapoint flag for staleness marker not found as expected")
 	}
 }
 

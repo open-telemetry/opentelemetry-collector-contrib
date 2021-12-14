@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 
@@ -41,15 +42,18 @@ func TestLoadConfig(t *testing.T) {
 		wantLatencyHistogramBuckets []time.Duration
 		wantDimensions              []Dimension
 		wantDimensionsCacheSize     int
+		wantAggregationTemporality  string
 	}{
 		{
-			configFile:              "config-2-pipelines.yaml",
-			wantMetricsExporter:     "prometheus",
+			configFile: "config-2-pipelines.yaml",
+			wantMetricsExporter: "prometheus",
+			wantAggregationTemporality: cumulative,
 			wantDimensionsCacheSize: 500,
 		},
 		{
-			configFile:              "config-3-pipelines.yaml",
-			wantMetricsExporter:     "otlp/spanmetrics",
+			configFile: "config-3-pipelines.yaml",
+			wantMetricsExporter: "otlp/spanmetrics",
+			wantAggregationTemporality: cumulative,
 			wantDimensionsCacheSize: defaultDimensionsCacheSize,
 		},
 		{
@@ -69,6 +73,7 @@ func TestLoadConfig(t *testing.T) {
 				{"http.status_code", nil},
 			},
 			wantDimensionsCacheSize: 1500,
+			wantAggregationTemporality: delta,
 		},
 	}
 	for _, tc := range testcases {
@@ -100,9 +105,21 @@ func TestLoadConfig(t *testing.T) {
 					LatencyHistogramBuckets: tc.wantLatencyHistogramBuckets,
 					Dimensions:              tc.wantDimensions,
 					DimensionsCacheSize:     tc.wantDimensionsCacheSize,
+					AggregationTemporality:  tc.wantAggregationTemporality,
 				},
 				cfg.Processors[config.NewComponentID(typeStr)],
 			)
 		})
 	}
+}
+
+func TestGetAggregationTemporality(t *testing.T) {
+	cfg := &Config{AggregationTemporality: delta}
+	assert.Equal(t, pdata.MetricAggregationTemporalityDelta, cfg.GetAggregationTemporality())
+
+	cfg = &Config{AggregationTemporality: cumulative}
+	assert.Equal(t, pdata.MetricAggregationTemporalityCumulative, cfg.GetAggregationTemporality())
+
+	cfg = &Config{}
+	assert.Equal(t, pdata.MetricAggregationTemporalityCumulative, cfg.GetAggregationTemporality())
 }
