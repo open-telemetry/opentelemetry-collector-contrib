@@ -381,8 +381,13 @@ func transactionFromSpan(span *sentry.Span) *sentry.Event {
 	transaction := sentry.NewEvent()
 	transaction.EventID = generateEventID()
 
-	transaction.Environment = span.Tags["environment"]
-	transaction.Release = span.Tags["release"]
+	if environment, ok := span.Tags["environment"]; ok {
+		transaction.Environment = environment
+	}
+
+	if release, ok := span.Tags["release"]; ok {
+		transaction.Release = release
+	}
 
 	transaction.Contexts["trace"] = sentry.TraceContext{
 		TraceID:      span.TraceID,
