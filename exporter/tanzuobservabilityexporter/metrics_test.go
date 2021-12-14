@@ -166,10 +166,7 @@ func TestGaugeConsumerMissingValue(t *testing.T) {
 	// Sending to tanzu observability should fail
 	sender := &mockGaugeSender{errorOnSend: true}
 	observedZapCore, observedLogs := observer.New(zap.DebugLevel)
-	consumer := newGaugeConsumer(sender, &consumerOptions{
-		Logger:                zap.New(observedZapCore),
-		ReportInternalMetrics: true,
-	})
+	consumer := newGaugeConsumer(sender, zap.New(observedZapCore))
 	var errs []error
 	expectedMissingValueCount := 2
 	for i := 0; i < expectedMissingValueCount; i++ {
@@ -370,10 +367,7 @@ func TestSumConsumerMissingValue(t *testing.T) {
 	)
 	sender := &mockSumSender{}
 	observedZapCore, observedLogs := observer.New(zap.DebugLevel)
-	consumer := newSumConsumer(sender, &consumerOptions{
-		Logger:                zap.New(observedZapCore),
-		ReportInternalMetrics: true,
-	})
+	consumer := newSumConsumer(sender, zap.New(observedZapCore))
 	var errs []error
 
 	expectedMissingValueCount := 2
@@ -456,10 +450,7 @@ func TestHistogramConsumerNoAggregation(t *testing.T) {
 		&mockHistogramDataPointConsumer{},
 		nil,
 		sender,
-		&consumerOptions{
-			Logger:                zap.New(observedZapCore),
-			ReportInternalMetrics: true,
-		},
+		zap.New(observedZapCore),
 	)
 	assert.Equal(t, pdata.MetricDataTypeHistogram, consumer.Type())
 	var errs []error

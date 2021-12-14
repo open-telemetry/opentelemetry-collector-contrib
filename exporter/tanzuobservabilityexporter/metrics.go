@@ -227,22 +227,6 @@ type gaugeSender interface {
 	SendMetric(name string, value float64, ts int64, source string, tags map[string]string) error
 }
 
-// consumerOptions is general options for consumers
-type consumerOptions struct {
-
-	// The zap logger to use, nil means no logging
-	Logger *zap.Logger
-
-	// If true, report internal metrics to wavefront
-	ReportInternalMetrics bool
-}
-
-func (c *consumerOptions) replaceZeroFieldsWithDefaults() {
-	if c.Logger == nil {
-		c.Logger = zap.NewNop()
-	}
-}
-
 type gaugeConsumer struct {
 	sender                gaugeSender
 	logger                *zap.Logger
@@ -251,17 +235,17 @@ type gaugeConsumer struct {
 }
 
 // newGaugeConsumer returns a typedMetricConsumer that consumes gauge metrics
-// by sending them to tanzu observability. Caller can pass nil for options to get the defaults.
-func newGaugeConsumer(sender gaugeSender, options *consumerOptions) typedMetricConsumer {
-	var fixedOptions consumerOptions
-	if options != nil {
-		fixedOptions = *options
+// by sending them to tanzu observability.
+func newGaugeConsumer(sender gaugeSender, logger *zap.Logger) typedMetricConsumer {
+	reportInternalMetrics := true
+	if logger == nil {
+		logger = zap.NewNop()
+		reportInternalMetrics = false
 	}
-	fixedOptions.replaceZeroFieldsWithDefaults()
 	return &gaugeConsumer{
 		sender:                sender,
-		logger:                fixedOptions.Logger,
-		reportInternalMetrics: fixedOptions.ReportInternalMetrics,
+		logger:                logger,
+		reportInternalMetrics: reportInternalMetrics,
 	}
 }
 
@@ -296,16 +280,18 @@ type sumConsumer struct {
 	reportInternalMetrics bool
 }
 
-func newSumConsumer(sender senders.MetricSender, options *consumerOptions) typedMetricConsumer {
-	var fixedOptions consumerOptions
-	if options != nil {
-		fixedOptions = *options
+// newSumConsumer returns a typedMetricConsumer that consumes sum metrics
+// by sending them to tanzu observability.
+func newSumConsumer(sender senders.MetricSender, logger *zap.Logger) typedMetricConsumer {
+	reportInternalMetrics := true
+	if logger == nil {
+		logger = zap.NewNop()
+		reportInternalMetrics = false
 	}
-	fixedOptions.replaceZeroFieldsWithDefaults()
 	return &sumConsumer{
 		sender:                sender,
-		logger:                fixedOptions.Logger,
-		reportInternalMetrics: fixedOptions.ReportInternalMetrics,
+		logger:                logger,
+		reportInternalMetrics: reportInternalMetrics,
 	}
 }
 
@@ -425,24 +411,23 @@ type histogramConsumer struct {
 
 // newHistogramConsumer returns a metricConsumer that consumes histograms.
 // cumulative and delta handle cumulative and delta histograms respectively.
-// sender sends internal metrics to wavefront. Caller can pass nil for
-// options to get the defaults.
+// sender sends internal metrics to wavefront.
 func newHistogramConsumer(
 	cumulative, delta histogramDataPointConsumer,
 	sender gaugeSender,
-	options *consumerOptions,
+	logger *zap.Logger,
 ) typedMetricConsumer {
-	var fixedOptions consumerOptions
-	if options != nil {
-		fixedOptions = *options
+	reportInternalMetrics := true
+	if logger == nil {
+		logger = zap.NewNop()
+		reportInternalMetrics = false
 	}
-	fixedOptions.replaceZeroFieldsWithDefaults()
 	return &histogramConsumer{
 		cumulative:            cumulative,
 		delta:                 delta,
 		sender:                sender,
-		reporting:             newHistogramReporting(fixedOptions.Logger),
-		reportInternalMetrics: fixedOptions.ReportInternalMetrics,
+		reporting:             newHistogramReporting(logger),
+		reportInternalMetrics: reportInternalMetrics,
 	}
 }
 
