@@ -176,7 +176,7 @@ func (mg *metricGroupPdata) toDistributionPoint(orderedLabelKeys []string, dest 
 	// The timestamp MUST be in retrieved from milliseconds and converted to nanoseconds.
 	tsNanos := pdataTimestampFromMs(mg.ts)
 	if mg.family.isCumulativeTypePdata() {
-		point.SetStartTimestamp(pdataTimestampFromMs(mg.intervalStartTimeMs))
+		point.SetStartTimestamp(pdataTimestampFromMs(mg.ts)) // metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
 	}
 	point.SetTimestamp(tsNanos)
 	populateAttributesPdata(orderedLabelKeys, mg.ls, point.Attributes())
@@ -215,7 +215,7 @@ func (mg *metricGroupPdata) toSummaryPoint(orderedLabelKeys []string, dest *pdat
 	tsNanos := pdataTimestampFromMs(mg.ts)
 	point.SetTimestamp(tsNanos)
 	if mg.family.isCumulativeTypePdata() {
-		point.SetStartTimestamp(pdataTimestampFromMs(mg.intervalStartTimeMs))
+		point.SetStartTimestamp(pdataTimestampFromMs(mg.ts)) // metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
 	}
 	point.SetSum(mg.sum)
 	point.SetCount(uint64(mg.count))
@@ -229,7 +229,7 @@ func (mg *metricGroupPdata) toNumberDataPoint(orderedLabelKeys []string, dest *p
 	tsNanos := pdataTimestampFromMs(mg.ts)
 	// gauge/undefined types have no start time.
 	if mg.family.isCumulativeTypePdata() {
-		startTsNanos = pdataTimestampFromMs(mg.intervalStartTimeMs)
+		startTsNanos = pdataTimestampFromMs(mg.ts) // metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
 	}
 
 	point := dest.AppendEmpty()

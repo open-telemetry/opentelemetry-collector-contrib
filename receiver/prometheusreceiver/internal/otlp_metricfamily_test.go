@@ -161,8 +161,8 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.0"}, {Name: "b", Value: "B"},
 					},
 					scrapes: []*scrape{
-						{at: 10, value: 10, metric: "histogram_count"},
-						{at: 10, value: 12, metric: "histogram_sum"},
+						{at: 10, value: 10, metric: "summary_count"},
+						{at: 10, value: 12, metric: "summary_sum"},
 						{at: 10, value: 8, metric: "value"},
 					},
 				},
@@ -171,8 +171,8 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.75"}, {Name: "b", Value: "B"},
 					},
 					scrapes: []*scrape{
-						{at: 11, value: 10, metric: "histogram_count"},
-						{at: 11, value: 1004.78, metric: "histogram_sum"},
+						{at: 11, value: 10, metric: "summary_count"},
+						{at: 11, value: 1004.78, metric: "summary_sum"},
 						{at: 11, value: 33.7, metric: "value"},
 					},
 				},
@@ -181,8 +181,8 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.50"}, {Name: "b", Value: "B"},
 					},
 					scrapes: []*scrape{
-						{at: 12, value: 10, metric: "histogram_count"},
-						{at: 12, value: 13, metric: "histogram_sum"},
+						{at: 12, value: 10, metric: "summary_count"},
+						{at: 12, value: 13, metric: "summary_sum"},
 						{at: 12, value: 27, metric: "value"},
 					},
 				},
@@ -191,8 +191,8 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.90"}, {Name: "b", Value: "B"},
 					},
 					scrapes: []*scrape{
-						{at: 13, value: 10, metric: "histogram_count"},
-						{at: 13, value: 14, metric: "histogram_sum"},
+						{at: 13, value: 10, metric: "summary_count"},
+						{at: 13, value: 14, metric: "summary_sum"},
 						{at: 13, value: 56, metric: "value"},
 					},
 				},
@@ -201,8 +201,8 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.99"}, {Name: "b", Value: "B"},
 					},
 					scrapes: []*scrape{
-						{at: 14, value: 10, metric: "histogram_count"},
-						{at: 14, value: 15, metric: "histogram_sum"},
+						{at: 14, value: 10, metric: "summary_count"},
+						{at: 14, value: 15, metric: "summary_sum"},
 						{at: 14, value: 82, metric: "value"},
 					},
 				},
@@ -227,8 +227,8 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 				qn99 := qtL.AppendEmpty()
 				qn99.SetQuantile(.99)
 				qn99.SetValue(82)
-				point.SetTimestamp(14 * 1e6) // the time in milliseconds -> nanoseconds.
-				point.SetStartTimestamp(10 * 1e5)
+				point.SetTimestamp(14 * 1e6)      // the time in milliseconds -> nanoseconds.
+				point.SetStartTimestamp(14 * 1e6) // the time in milliseconds -> nanoseconds
 				attributes := point.Attributes()
 				attributes.InsertString("a", "A")
 				attributes.InsertString("b", "B")
@@ -290,8 +290,8 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 			want: func() pdata.NumberDataPoint {
 				point := pdata.NewNumberDataPoint()
 				point.SetDoubleVal(33.7)
-				point.SetTimestamp(13 * 1e6) // the time in milliseconds -> nanoseconds.
-				point.SetStartTimestamp(11 * 1e6)
+				point.SetTimestamp(13 * 1e6)      // the time in milliseconds -> nanoseconds.
+				point.SetStartTimestamp(13 * 1e6) // the time in milliseconds -> nanoseconds.
 				attributes := point.Attributes()
 				attributes.InsertString("a", "A")
 				attributes.InsertString("b", "B")
@@ -309,8 +309,8 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 			want: func() pdata.NumberDataPoint {
 				point := pdata.NewNumberDataPoint()
 				point.SetDoubleVal(99.9)
-				point.SetTimestamp(28 * 1e6) // the time in milliseconds -> nanoseconds.
-				point.SetStartTimestamp(0)
+				point.SetTimestamp(28 * 1e6)      // the time in milliseconds -> nanoseconds.
+				point.SetStartTimestamp(28 * 1e6) // the time in milliseconds -> nanoseconds.
 				attributes := point.Attributes()
 				attributes.InsertString("a", "A")
 				attributes.InsertString("b", "B")
