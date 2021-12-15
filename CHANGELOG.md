@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 💡 Enhancements 💡
+
+- `prometheusremotewriteexporter`: Handling Staleness flag from OTLP (#6679)
+
 ## 🛑 Breaking changes 🛑
 
 - `memcachedreceiver`: Update metric names (#6594)
@@ -10,6 +14,8 @@
 ## 🧰 Bug fixes 🧰
 
 ## 💡 Enhancements 💡
+
+- `lokiexporter`: add complete log record to body (#6619)
 
 ## v0.41.0
 

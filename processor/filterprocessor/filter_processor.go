@@ -34,6 +34,8 @@ type filterMetricProcessor struct {
 	exclude          filtermetric.Matcher
 	excludeAttribute filtermatcher.AttributesMatcher
 	logger           *zap.Logger
+	checksMetrics    bool
+	checksResouces   bool
 }
 
 func newFilterMetricProcessor(logger *zap.Logger, cfg *Config) (*filterMetricProcessor, error) {
@@ -70,6 +72,9 @@ func newFilterMetricProcessor(logger *zap.Logger, cfg *Config) (*filterMetricPro
 		excludeResourceAttributes = cfg.Metrics.Exclude.ResourceAttributes
 	}
 
+	checksMetrics := cfg.Metrics.Exclude.ChecksMetrics() || cfg.Metrics.Include.ChecksMetrics()
+	checksResouces := cfg.Metrics.Exclude.ChecksResourceAtributes() || cfg.Metrics.Include.ChecksResourceAtributes()
+
 	logger.Info(
 		"Metric filter configured",
 		zap.String("include match_type", includeMatchType),
@@ -80,6 +85,8 @@ func newFilterMetricProcessor(logger *zap.Logger, cfg *Config) (*filterMetricPro
 		zap.Strings("exclude expressions", excludeExpressions),
 		zap.Strings("exclude metric names", excludeMetricNames),
 		zap.Any("exclude metrics with resource attributes", excludeResourceAttributes),
+		zap.Bool("checksMetrics", checksMetrics),
+		zap.Bool("checkResouces", checksResouces),
 	)
 
 	return &filterMetricProcessor{
@@ -89,6 +96,8 @@ func newFilterMetricProcessor(logger *zap.Logger, cfg *Config) (*filterMetricPro
 		exclude:          exc,
 		excludeAttribute: excludeAttr,
 		logger:           logger,
+		checksMetrics:    checksMetrics,
+		checksResouces:   checksResouces,
 	}, nil
 }
 
@@ -120,6 +129,11 @@ func (fmp *filterMetricProcessor) processMetrics(_ context.Context, pdm pdata.Me
 		if !keepMetricsForResource {
 			return true
 		}
+
+		if fmp.checksResouces && !fmp.checksMetrics {
+			return false
+		}
+
 		rm.InstrumentationLibraryMetrics().RemoveIf(func(ilm pdata.InstrumentationLibraryMetrics) bool {
 			ilm.Metrics().RemoveIf(func(m pdata.Metric) bool {
 				keep, err := fmp.shouldKeepMetric(m)

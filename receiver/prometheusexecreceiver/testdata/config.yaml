@@ -3,14 +3,17 @@ receivers:
   prometheus_exec/test:
     exec: mysqld_exporter
     port: 9104
+    scrape_timeout: 10s
   prometheus_exec/test2:
     exec: postgres_exporter
     scrape_interval: 90s
+    scrape_timeout: 10s
   prometheus_exec/end_to_end_test/1:
     exec: go run ./testdata/end_to_end_metrics_test/test_prometheus_exporter.go {{port}}
     scrape_interval: 1s
     port: 9999
-    env:
+    scrape_timeout: 10s
+    env: 
       - name: "DATA_SOURCE_NAME"
         value: user:password@(hostname:port)/dbname
       - name: SECONDARY_PORT
@@ -18,6 +21,7 @@ receivers:
   prometheus_exec/end_to_end_test/2:
     exec: go run ./testdata/end_to_end_metrics_test/test_prometheus_exporter.go {{port}}
     scrape_interval: 1s
+    scrape_timeout: 10s
 
 processors:
   nop:

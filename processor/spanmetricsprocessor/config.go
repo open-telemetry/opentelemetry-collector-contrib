@@ -18,6 +18,12 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/model/pdata"
+)
+
+const (
+	delta      = "AGGREGATION_TEMPORALITY_DELTA"
+	cumulative = "AGGREGATION_TEMPORALITY_CUMULATIVE"
 )
 
 // Dimension defines the dimension name and optional default value if the Dimension is missing from a span attribute.
@@ -45,4 +51,15 @@ type Config struct {
 	// The dimensions will be fetched from the span's attributes. Examples of some conventionally used attributes:
 	// https://github.com/open-telemetry/opentelemetry-collector/blob/main/model/semconv/opentelemetry.go.
 	Dimensions []Dimension `mapstructure:"dimensions"`
+
+	AggregationTemporality string `mapstructure:"aggregation_temporality"`
+}
+
+// GetAggregationTemporality converts the string value given in the config into a MetricAggregationTemporality.
+// Returns cumulative, unless delta is correctly specified.
+func (c Config) GetAggregationTemporality() pdata.MetricAggregationTemporality {
+	if c.AggregationTemporality == delta {
+		return pdata.MetricAggregationTemporalityDelta
+	}
+	return pdata.MetricAggregationTemporalityCumulative
 }
