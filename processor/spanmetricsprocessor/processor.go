@@ -329,7 +329,7 @@ func (p *processorImp) getDimensionsByMetricKey(k metricKey) (*pdata.AttributeMa
 		if attributeMap, ok := item.(pdata.AttributeMap); ok {
 			return &attributeMap, nil
 		}
-		return nil, fmt.Errorf("type assertion of metricKeyToDimensions attributes failed, the key is %v", k)
+		return nil, fmt.Errorf("type assertion of metricKeyToDimensions attributes failed, the key is %q", k)
 	}
 
 	return nil, fmt.Errorf("value not found in metricKeyToDimensions cache by key %q", k)
