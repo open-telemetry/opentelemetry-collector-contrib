@@ -37,7 +37,7 @@ exporter/humioexporter/                              @open-telemetry/collector-c
 exporter/influxdbexporter/                           @open-telemetry/collector-contrib-approvers @jacobmarble @8none1
 exporter/jaegerexporter/                             @open-telemetry/collector-contrib-approvers @jpkrohling
 exporter/jaegerthrifthttpexporter/                   @open-telemetry/collector-contrib-approvers @jpkrohling @pavolloffay
-exporter/kafkaexporter/                              @open-telemetry/collector-contrib-approvers @pavolloffay
+exporter/kafkaexporter/                              @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
 exporter/loadbalancingexporter/                      @open-telemetry/collector-contrib-approvers @jpkrohling
 exporter/logzioexporter/                             @open-telemetry/collector-contrib-approvers @jkowall @Doron-Bargo @yotamloe
 exporter/lokiexporter/                               @open-telemetry/collector-contrib-approvers @gramidt @jpkrohling
@@ -109,7 +109,7 @@ receiver/jmxreceiver/                                @open-telemetry/collector-c
 receiver/k8sclusterreceiver/                         @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/k8seventsreceiver/                          @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/kafkametricsreceiver/                       @open-telemetry/collector-contrib-approvers @dmitryax
-receiver/kafkareceiver/                              @open-telemetry/collector-contrib-approvers @pavolloffay
+receiver/kafkareceiver/                              @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
 receiver/kubeletstatsreceiver/                       @open-telemetry/collector-contrib-approvers @pmcollins @dmitryax
 receiver/memcachedreceiver/                          @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/mongodbatlasreceiver/                       @open-telemetry/collector-contrib-approvers @zenmoto
