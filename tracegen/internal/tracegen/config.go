@@ -36,8 +36,9 @@ type Config struct {
 	ServiceName      string
 
 	// OTLP config
-	Endpoint string
-	Insecure bool
+	Endpoint     string
+	Insecure     bool
+	HttpExp bool
 }
 
 // Flags registers config flags.
@@ -52,6 +53,7 @@ func (c *Config) Flags(fs *flag.FlagSet) {
 	// unfortunately, at this moment, the otel-go client doesn't support configuring OTLP via env vars
 	fs.StringVar(&c.Endpoint, "otlp-endpoint", "localhost:4317", "Target to which the exporter is going to send spans or metrics. This MAY be configured to include a path (e.g. example.com/v1/traces)")
 	fs.BoolVar(&c.Insecure, "otlp-insecure", false, "Whether to enable client transport security for the exporter's grpc or http connection")
+	fs.BoolVar(&c.HttpExp, "otlp-http", false, "Whether to use http exporter rather than a grpc one")
 }
 
 // Run executes the test scenario.

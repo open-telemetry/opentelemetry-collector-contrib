@@ -23,7 +23,9 @@ import (
 
 	grpcZap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
@@ -47,18 +49,27 @@ func main() {
 		zap.AddCallerSkip(3),
 	))
 
-	expOptions := []otlptracegrpc.Option{
+	grpcExpOpt := []otlptracegrpc.Option{
 		otlptracegrpc.WithEndpoint(cfg.Endpoint),
 		otlptracegrpc.WithDialOption(
 			grpc.WithBlock(),
 		),
 	}
 
-	if cfg.Insecure {
-		expOptions = append(expOptions, otlptracegrpc.WithInsecure())
+	httpExpOpt := []otlptracehttp.Option{
+		otlptracehttp.WithEndpoint(cfg.Endpoint),
 	}
 
-	exp, err := otlptracegrpc.New(context.Background(), expOptions...)
+	if cfg.Insecure {
+		grpcExpOpt = append(grpcExpOpt, otlptracegrpc.WithInsecure())
+		httpExpOpt = append(httpExpOpt, otlptracehttp.WithInsecure())
+	}
+
+	var exp *otlptrace.Exporter
+	if exp, err = otlptracegrpc.New(context.Background(), grpcExpOpt...); cfg.HttpExp {
+		exp, err = otlptracehttp.New(context.Background(), httpExpOpt...)
+	}
+
 	if err != nil {
 		logger.Error("failed to obtain OTLP exporter", zap.Error(err))
 		return
