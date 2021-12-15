@@ -1,20 +1,27 @@
 receivers:
-    otlp:
-        protocols:
-            grpc:
-            http:
+    opencensus:
 exporters:
-  coralogix:
-    # endpoint: "http://localhost:8000"
-    endpoint: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-    private_key: "xxxxxxxxxxxxxxxxxxxxxxxxxx"
-    application_name: "APP_NAME"
-    subsystem_name: "SUBSYSTEM_NAME"
+  prometheusremotewrite:
+    prometheusremotewrite:
+    # The Coralogix metrics ingress endpoint
+    endpoint: "https://api.coralogix.com"
+
+    # Your Coralogix private key (sensitive)
+    # This token identifies you into your Coralogix account. 
+    # Your Coralogix private key is sensitive!
+    headers:
+      Authorization: "Bearer <Your Private Key>"
+      
+    # Mertrics emitted by this OpenTelemetry exporter should be tagged
+    # in Coralogix with the following application and subsystem names
+    external_labels:
+      appLabelName: "MyBusinessEnvironment"
+      subSystemLabelName: "MyBusinessSystem"
 processors:
     batch:
 service:
     pipelines:
-        traces:
-            receivers: [otlp]
-            exporters: [coralogix]
+        metrics:
+            receivers: [opencensus]
+            exporters: [prometheusremotewrite]
             processors: [batch]

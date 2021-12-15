@@ -16,8 +16,10 @@ package coralogixexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"fmt"
+	"os"
 
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -32,7 +34,7 @@ type Config struct {
 	exporterhelper.RetrySettings `mapstructure:"retry_on_failure"`
 
 	// The Coralogix logs ingress endpoint
-	Endpoint string `mapstructure:"endpoint"`
+	configgrpc.GRPCClientSettings `mapstructure:",squash"`
 
 	// Your Coralogix private key (sensitive) for authentication
 	PrivateKey string `mapstructure:"private_key"`
@@ -44,8 +46,50 @@ type Config struct {
 }
 
 func (c *Config) Validate() error {
-	if c.Endpoint == "" || c.PrivateKey == "" || c.AppName == "" || c.SubSystem == "" {
-		return fmt.Errorf("One of your configureation field (endpoint, private_key, application_name, subsystem_name) is empty, please fix the configuration file")
+	// check env variables
+	endpoint := c.GRPCClientSettings.Endpoint
+	privateKey := c.PrivateKey
+	appName := c.AppName
+	subSystem := c.SubSystem
+
+	if os.Getenv("CORALOGIX_ENDPOINT") != "" {
+		endpoint = os.Getenv("CORALOGIX_ENDPOINT")
 	}
+	if os.Getenv("CORALOGIX_PRIVATE_KEY") != "" {
+		privateKey = os.Getenv("CORALOGIX_PRIVATE_KEY")
+	}
+	if os.Getenv("CORALOGIX_APPLICATION_NAME") != "" {
+		appName = os.Getenv("CORALOGIX_APPLICATION_NAME")
+	}
+	if os.Getenv("CORALOGIX_SUBSYSTEM_NAME") != "" {
+		subSystem = os.Getenv("CORALOGIX_SUBSYSTEM_NAME")
+	}
+	if endpoint == "" {
+		return fmt.Errorf("`endpoint` not specified, please fix the configuration file")
+	}
+	if privateKey == "" {
+		return fmt.Errorf("`privateKey` not specified, please fix the configuration file")
+	}
+	if appName == "" {
+		return fmt.Errorf("`appName` not specified, please fix the configuration file")
+	}
+	if subSystem == "" {
+		return fmt.Errorf("`subSystem` not specified, please fix the configuration file")
+	}
+
+	c.GRPCClientSettings.Endpoint = endpoint
+	c.PrivateKey = privateKey
+	c.AppName = appName
+	c.SubSystem = subSystem
+
+	// check if headers exists
+	if len(c.GRPCClientSettings.Headers) == 0 {
+		c.GRPCClientSettings.Headers = map[string]string{"ACCESS_TOKEN": c.PrivateKey, "appName": c.AppName, "subsystemName": c.SubSystem}
+	} else {
+		c.GRPCClientSettings.Headers["ACCESS_TOKEN"] = c.PrivateKey
+		c.GRPCClientSettings.Headers["appName"] = c.AppName
+		c.GRPCClientSettings.Headers["subsystemName"] = c.SubSystem
+	}
+
 	return nil
 }
