@@ -30,7 +30,7 @@ func TestValidate(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			desc: "missing username and password",
+			desc: "missing username, password and endpoint",
 			cfg:  &Config{},
 			expectedErr: multierr.Combine(
 				errMissingUsername,
@@ -39,7 +39,7 @@ func TestValidate(t *testing.T) {
 			),
 		},
 		{
-			desc: "missing password",
+			desc: "missing password and endpoint",
 			cfg: &Config{
 				Username: "otelu",
 			},
@@ -49,7 +49,7 @@ func TestValidate(t *testing.T) {
 			),
 		},
 		{
-			desc: "missing username",
+			desc: "missing username and endpoint",
 			cfg: &Config{
 				Password: "otelp",
 			},
