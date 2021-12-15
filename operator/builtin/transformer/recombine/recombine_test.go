@@ -203,3 +203,78 @@ func TestRecombineOperator(t *testing.T) {
 		}
 	})
 }
+
+func BenchmarkRecombine(b *testing.B) {
+	cfg := NewRecombineOperatorConfig("")
+	cfg.CombineField = entry.NewBodyField()
+	cfg.IsFirstEntry = "false"
+	cfg.OutputIDs = []string{"fake"}
+	ops, err := cfg.Build(testutil.NewBuildContext(b))
+	require.NoError(b, err)
+	recombine := ops[0].(*RecombineOperator)
+
+	fake := testutil.NewFakeOutput(b)
+	require.NoError(b, recombine.SetOutputs([]operator.Operator{fake}))
+	recombine.Start(nil)
+
+	go func() {
+		for {
+			<-fake.Received
+		}
+	}()
+
+	e := entry.New()
+	e.Timestamp = time.Now()
+	e.Body = "body"
+
+	ctx := context.Background()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		require.NoError(b, recombine.Process(ctx, e))
+		require.NoError(b, recombine.Process(ctx, e))
+		require.NoError(b, recombine.Process(ctx, e))
+		require.NoError(b, recombine.Process(ctx, e))
+		require.NoError(b, recombine.Process(ctx, e))
+		recombine.flushUncombined(ctx)
+	}
+}
+
+func TestTimeout(t *testing.T) {
+	t.Parallel()
+
+	cfg := NewRecombineOperatorConfig("")
+	cfg.CombineField = entry.NewBodyField()
+	cfg.IsFirstEntry = "false"
+	cfg.OutputIDs = []string{"fake"}
+	cfg.ForceFlushTimeout = 70 * time.Millisecond
+	ops, err := cfg.Build(testutil.NewBuildContext(t))
+	require.NoError(t, err)
+	recombine := ops[0].(*RecombineOperator)
+
+	fake := testutil.NewFakeOutput(t)
+	require.NoError(t, recombine.SetOutputs([]operator.Operator{fake}))
+	recombine.Start(nil)
+
+	e := entry.New()
+	e.Timestamp = time.Now()
+	e.Body = "body"
+
+	ctx := context.Background()
+
+	require.NoError(t, recombine.Process(ctx, e))
+	select {
+	case <-fake.Received:
+		t.Logf("We shouldn't receive an entry before timeout")
+		t.FailNow()
+	case <-time.After(50 * time.Millisecond):
+	}
+
+	select {
+	case <-fake.Received:
+	case <-time.After(5 * time.Second):
+		t.Logf("The entry should be flushed by now")
+		t.FailNow()
+	}
+
+	require.NoError(t, recombine.Stop())
+}

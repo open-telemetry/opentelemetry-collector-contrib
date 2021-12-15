@@ -40,18 +40,20 @@ func NewRecombineOperatorConfig(operatorID string) *RecombineOperatorConfig {
 		MaxBatchSize:      1000,
 		CombineWith:       "\n",
 		OverwriteWith:     "oldest",
+		ForceFlushTimeout: 5 * time.Second,
 	}
 }
 
 // RecombineOperatorConfig is the configuration of a recombine operator
 type RecombineOperatorConfig struct {
 	helper.TransformerConfig `yaml:",inline"`
-	IsFirstEntry             string      `json:"is_first_entry" yaml:"is_first_entry"`
-	IsLastEntry              string      `json:"is_last_entry"  yaml:"is_last_entry"`
-	MaxBatchSize             int         `json:"max_batch_size" yaml:"max_batch_size"`
-	CombineField             entry.Field `json:"combine_field"  yaml:"combine_field"`
-	CombineWith              string      `json:"combine_with"   yaml:"combine_with"`
-	OverwriteWith            string      `json:"overwrite_with" yaml:"overwrite_with"`
+	IsFirstEntry             string        `json:"is_first_entry"     yaml:"is_first_entry"`
+	IsLastEntry              string        `json:"is_last_entry"      yaml:"is_last_entry"`
+	MaxBatchSize             int           `json:"max_batch_size"     yaml:"max_batch_size"`
+	CombineField             entry.Field   `json:"combine_field"      yaml:"combine_field"`
+	CombineWith              string        `json:"combine_with"       yaml:"combine_with"`
+	OverwriteWith            string        `json:"overwrite_with"     yaml:"overwrite_with"`
+	ForceFlushTimeout        time.Duration `json:"force_flush_period" yaml:"force_flush_period"`
 }
 
 // Build creates a new RecombineOperator from a config
@@ -108,6 +110,9 @@ func (c *RecombineOperatorConfig) Build(bc operator.BuildContext) ([]operator.Op
 		batch:               make([]*entry.Entry, 0, c.MaxBatchSize),
 		combineField:        c.CombineField,
 		combineWith:         c.CombineWith,
+		forceFlushTimeout:   c.ForceFlushTimeout,
+		ticker:              time.NewTicker(c.ForceFlushTimeout),
+		chClose:             make(chan struct{}),
 	}
 
 	return []operator.Operator{recombine}, nil
@@ -123,13 +128,34 @@ type RecombineOperator struct {
 	overwriteWithOldest bool
 	combineField        entry.Field
 	combineWith         string
+	ticker              *time.Ticker
+	forceFlushTimeout   time.Duration
+	chClose             chan struct{}
 
 	sync.Mutex
 	batch []*entry.Entry
 }
 
 func (r *RecombineOperator) Start(_ operator.Persister) error {
+	go r.flushLoop()
+
 	return nil
+}
+
+func (r *RecombineOperator) flushLoop() {
+	for {
+		select {
+		case <-r.ticker.C:
+			r.Lock()
+			if err := r.flushCombined(); err != nil {
+				r.Errorw("Failed flushing", "error", err)
+			}
+			r.Unlock()
+		case <-r.chClose:
+			r.ticker.Stop()
+			return
+		}
+	}
 }
 
 func (r *RecombineOperator) Stop() error {
@@ -139,6 +165,9 @@ func (r *RecombineOperator) Stop() error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	r.flushUncombined(ctx)
+
+	close(r.chClose)
+
 	return nil
 }
 
@@ -217,6 +246,7 @@ func (r *RecombineOperator) flushUncombined(ctx context.Context) {
 		r.Write(ctx, entry)
 	}
 	r.batch = r.batch[:0]
+	r.ticker.Reset(r.forceFlushTimeout)
 }
 
 // flushCombined combines the entries currently in the batch into a single entry,
@@ -260,5 +290,6 @@ func (r *RecombineOperator) flushCombined() error {
 
 	r.Write(context.Background(), base)
 	r.batch = r.batch[:0]
+	r.ticker.Reset(r.forceFlushTimeout)
 	return nil
 }
