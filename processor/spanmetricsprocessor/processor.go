@@ -229,7 +229,10 @@ func (p *processorImp) Capabilities() consumer.Capabilities {
 func (p *processorImp) ConsumeTraces(ctx context.Context, traces pdata.Traces) error {
 	p.aggregateMetrics(traces)
 
-	m := p.buildMetrics()
+	m, err := p.buildMetrics()
+	if err != nil {
+		return err
+	}
 
 	// Firstly, export metrics to avoid being impacted by downstream trace processor errors/latency.
 	if err := p.metricsExporter.ConsumeMetrics(ctx, *m); err != nil {
@@ -244,7 +247,7 @@ func (p *processorImp) ConsumeTraces(ctx context.Context, traces pdata.Traces) e
 
 // buildMetrics collects the computed raw metrics data, builds the metrics object and
 // writes the raw metrics data into the metrics object.
-func (p *processorImp) buildMetrics() *pdata.Metrics {
+func (p *processorImp) buildMetrics() (*pdata.Metrics, error) {
 	m := pdata.NewMetrics()
 	ilm := m.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
 	ilm.InstrumentationLibrary().SetName("spanmetricsprocessor")
@@ -252,8 +255,16 @@ func (p *processorImp) buildMetrics() *pdata.Metrics {
 	// Obtain write lock to reset data
 	p.lock.Lock()
 
-	p.collectCallMetrics(ilm)
-	p.collectLatencyMetrics(ilm)
+	if err := p.collectCallMetrics(ilm); err != nil {
+		p.lock.Unlock()
+		return nil, err
+	}
+
+	if err := p.collectLatencyMetrics(ilm); err != nil {
+		p.lock.Unlock()
+		return nil, err
+	}
+
 	p.metricKeyToDimensions.RemoveEvictedItems()
 
 	// If delta metrics, reset accumulated data
@@ -264,12 +275,12 @@ func (p *processorImp) buildMetrics() *pdata.Metrics {
 
 	p.lock.Unlock()
 
-	return &m
+	return &m, nil
 }
 
 // collectLatencyMetrics collects the raw latency metrics, writing the data
 // into the given instrumentation library metrics.
-func (p *processorImp) collectLatencyMetrics(ilm pdata.InstrumentationLibraryMetrics) {
+func (p *processorImp) collectLatencyMetrics(ilm pdata.InstrumentationLibraryMetrics) error {
 	for key := range p.latencyCount {
 		mLatency := ilm.Metrics().AppendEmpty()
 		mLatency.SetDataType(pdata.MetricDataTypeHistogram)
@@ -291,16 +302,17 @@ func (p *processorImp) collectLatencyMetrics(ilm pdata.InstrumentationLibraryMet
 		dimensions, err := p.getDimensionsByMetricKey(key)
 		if err != nil {
 			p.logger.Error(err.Error())
-			continue
+			return err
 		}
 
 		dimensions.CopyTo(dpLatency.Attributes())
 	}
+	return nil
 }
 
 // collectCallMetrics collects the raw call count metrics, writing the data
 // into the given instrumentation library metrics.
-func (p *processorImp) collectCallMetrics(ilm pdata.InstrumentationLibraryMetrics) {
+func (p *processorImp) collectCallMetrics(ilm pdata.InstrumentationLibraryMetrics) error {
 	for key := range p.callSum {
 		mCalls := ilm.Metrics().AppendEmpty()
 		mCalls.SetDataType(pdata.MetricDataTypeSum)
@@ -316,11 +328,12 @@ func (p *processorImp) collectCallMetrics(ilm pdata.InstrumentationLibraryMetric
 		dimensions, err := p.getDimensionsByMetricKey(key)
 		if err != nil {
 			p.logger.Error(err.Error())
-			continue
+			return err
 		}
 
 		dimensions.CopyTo(dpCalls.Attributes())
 	}
+	return nil
 }
 
 // getDimensionsByMetricKey gets dimensions from `metricKeyToDimensions` cache.
