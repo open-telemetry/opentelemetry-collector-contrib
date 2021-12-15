@@ -45,16 +45,16 @@ func TestLoadConfig(t *testing.T) {
 		wantAggregationTemporality  string
 	}{
 		{
-			configFile: "config-2-pipelines.yaml",
-			wantMetricsExporter: "prometheus",
+			configFile:                 "config-2-pipelines.yaml",
+			wantMetricsExporter:        "prometheus",
 			wantAggregationTemporality: cumulative,
-			wantDimensionsCacheSize: 500,
+			wantDimensionsCacheSize:    500,
 		},
 		{
-			configFile: "config-3-pipelines.yaml",
-			wantMetricsExporter: "otlp/spanmetrics",
+			configFile:                 "config-3-pipelines.yaml",
+			wantMetricsExporter:        "otlp/spanmetrics",
 			wantAggregationTemporality: cumulative,
-			wantDimensionsCacheSize: defaultDimensionsCacheSize,
+			wantDimensionsCacheSize:    defaultDimensionsCacheSize,
 		},
 		{
 			configFile:          "config-full.yaml",
@@ -72,7 +72,7 @@ func TestLoadConfig(t *testing.T) {
 				{"http.method", &defaultMethod},
 				{"http.status_code", nil},
 			},
-			wantDimensionsCacheSize: 1500,
+			wantDimensionsCacheSize:    1500,
 			wantAggregationTemporality: delta,
 		},
 	}
