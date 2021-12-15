@@ -66,11 +66,12 @@ func main() {
 	}
 
 	var exp *otlptrace.Exporter
-	if exp, err = otlptracegrpc.New(context.Background(), grpcExpOpt...); cfg.UseHTTP {
+	if cfg.UseHTTP {
 		logger.Info("starting HTTP exporter")
 		exp, err = otlptracehttp.New(context.Background(), httpExpOpt...)
 	} else {
 		logger.Info("starting gRPC exporter")
+		exp, err = otlptracegrpc.New(context.Background(), grpcExpOpt...)
 	}
 
 	if err != nil {
