@@ -474,10 +474,6 @@ func TestHistogramReporting(t *testing.T) {
 	observedZapCore, observedLogs := observer.New(zap.DebugLevel)
 	report := newHistogramReporting(zap.New(observedZapCore))
 	metric := newMetric("a.metric", pdata.MetricDataTypeHistogram)
-	leTagInUseCount := 2
-	for i := 0; i < leTagInUseCount; i++ {
-		report.LogLeTagInUse(metric)
-	}
 	malformedCount := 3
 	for i := 0; i < malformedCount; i++ {
 		report.LogMalformed(metric)
@@ -487,12 +483,11 @@ func TestHistogramReporting(t *testing.T) {
 		report.LogNoAggregationTemporality(metric)
 	}
 
-	assert.Equal(t, int64(leTagInUseCount), report.LeTagInUse())
 	assert.Equal(t, int64(malformedCount), report.Malformed())
 	assert.Equal(t, int64(noAggregationTemporalityCount), report.NoAggregationTemporality())
 	assert.Equal(
 		t,
-		leTagInUseCount+malformedCount+noAggregationTemporalityCount,
+		malformedCount+noAggregationTemporalityCount,
 		observedLogs.Len())
 
 	sender := &mockGaugeSender{}
@@ -501,13 +496,6 @@ func TestHistogramReporting(t *testing.T) {
 	report.Report(sender, &errs)
 
 	assert.Empty(t, errs)
-	assert.Contains(
-		t,
-		sender.metrics,
-		tobsMetric{
-			Name:  leInUseMetricName,
-			Value: float64(leTagInUseCount),
-		})
 	assert.Contains(
 		t,
 		sender.metrics,
@@ -611,9 +599,22 @@ func TestCumulativeHistogramDataPointConsumerLeInUse(t *testing.T) {
 	consumer.Consume(metric, histogramDataPoint, &errs, report)
 
 	assert.Empty(t, errs)
-	assert.Empty(t, sender.metrics)
-	assert.Equal(t, int64(1), report.LeTagInUse())
-	assert.Equal(t, int64(0), report.Malformed())
+	assert.Equal(
+		t,
+		[]tobsMetric{
+			{
+				Name:  "a.metric",
+				Value: 4.0,
+				Tags:  map[string]string{"_le": "8", "le": "10"},
+			},
+			{
+				Name:  "a.metric",
+				Value: 16.0,
+				Tags:  map[string]string{"_le": "8", "le": "+Inf"},
+			},
+		},
+		sender.metrics,
+	)
 }
 
 func TestCumulativeHistogramDataPointConsumerMissingBuckets(t *testing.T) {
@@ -629,7 +630,6 @@ func TestCumulativeHistogramDataPointConsumerMissingBuckets(t *testing.T) {
 	assert.Empty(t, errs)
 	assert.Empty(t, sender.metrics)
 	assert.Equal(t, int64(1), report.Malformed())
-	assert.Equal(t, int64(0), report.LeTagInUse())
 }
 
 // Creates a histogram metric with len(countAttributeForEachDataPoint)

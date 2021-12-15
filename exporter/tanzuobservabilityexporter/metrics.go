@@ -32,7 +32,6 @@ const (
 	metricNameString                   = "metric name"
 	metricTypeString                   = "metric type"
 	malformedHistogramMetricName       = "~sdk.otel.collector.malformed_histogram"
-	leInUseMetricName                  = "~sdk.otel.collector.le_tag_in_use"
 	noAggregationTemporalityMetricName = "~sdk.otel.collector.no_aggregation_temporality"
 )
 
@@ -341,7 +340,6 @@ func (s *sumConsumer) pushNumberDataPoint(
 type histogramReporting struct {
 	logger                   *zap.Logger
 	malformedHistograms      counter
-	leInUse                  counter
 	noAggregationTemporality counter
 }
 
@@ -354,12 +352,6 @@ func newHistogramReporting(logger *zap.Logger) *histogramReporting {
 // Malformed returns the number of malformed histogram data points.
 func (r *histogramReporting) Malformed() int64 {
 	return r.malformedHistograms.Get()
-}
-
-// LeTagInUse returns the number of histogram data points already using the 'le'
-// tag.
-func (r *histogramReporting) LeTagInUse() int64 {
-	return r.leInUse.Get()
 }
 
 // NoAggregationTemporality returns the number of histogram metrics that have no
@@ -375,13 +367,6 @@ func (r *histogramReporting) LogMalformed(metric pdata.Metric) {
 	r.malformedHistograms.Inc()
 }
 
-// LogLeTagInUse logs seeing one data point using the 'le' tag
-func (r *histogramReporting) LogLeTagInUse(metric pdata.Metric) {
-	namef := zap.String(metricNameString, metric.Name())
-	r.logger.Debug("le tag already in use", namef)
-	r.leInUse.Inc()
-}
-
 // LogNoAggregationTemporality logs seeing a histogram metric with no aggregation temporality
 func (r *histogramReporting) LogNoAggregationTemporality(metric pdata.Metric) {
 	namef := zap.String(metricNameString, metric.Name())
@@ -393,7 +378,6 @@ func (r *histogramReporting) LogNoAggregationTemporality(metric pdata.Metric) {
 // sender is what sends to wavefront. Any errors sending get added to errs.
 func (r *histogramReporting) Report(sender gaugeSender, errs *[]error) {
 	r.malformedHistograms.Report(malformedHistogramMetricName, nil, sender, errs)
-	r.leInUse.Report(leInUseMetricName, nil, sender, errs)
 	r.noAggregationTemporality.Report(
 		noAggregationTemporalityMetricName,
 		typeIsHistogramTags,
@@ -498,17 +482,12 @@ func (c *cumulativeHistogramDataPointConsumer) Consume(
 	ts := h.Timestamp().AsTime().Unix()
 	explicitBounds := h.ExplicitBounds()
 	bucketCounts := h.BucketCounts()
-	var abort bool
 	if len(bucketCounts) != len(explicitBounds)+1 {
 		reporting.LogMalformed(metric)
-		abort = true
-	}
-	if _, ok := tags["le"]; ok {
-		reporting.LogLeTagInUse(metric)
-		abort = true
-	}
-	if abort {
 		return
+	}
+	if leTag, ok := tags["le"]; ok {
+		tags["_le"] = leTag
 	}
 	var leCount uint64
 	for i := range bucketCounts {
