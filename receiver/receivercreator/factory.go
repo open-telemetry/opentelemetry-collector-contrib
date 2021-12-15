@@ -58,6 +58,10 @@ func createDefaultConfig() config.Receiver {
 				conventions.AttributeContainerName:      "`name`",
 				conventions.AttributeContainerImageName: "`image`",
 			},
+			observer.K8sNodeType: map[string]string{
+				conventions.AttributeK8SNodeName: "`name`",
+				conventions.AttributeK8SNodeUID:  "`uid`",
+			},
 		},
 		receiverTemplates: map[string]receiverTemplate{},
 	}
