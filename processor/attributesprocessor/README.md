@@ -10,12 +10,12 @@ if they should be [included or excluded](#includeexclude-filtering) for specifie
 
 It takes a list of actions which are performed in order specified in the config.
 The supported actions are:
-- `insert`: Inserts a new attribute in spans where the key does not already exist.
-- `update`: Updates an attribute in spans where the key does exist.
-- `upsert`: Performs insert or update. Inserts a new attribute in spans where the
-  key does not already exist and updates an attribute in spans where the key
+- `insert`: Inserts a new attribute in spans/logs where the key does not already exist.
+- `update`: Updates an attribute in spans/logs where the key does exist.
+- `upsert`: Performs insert or update. Inserts a new attribute in spans/logs where the
+  key does not already exist and updates an attribute in spans/logs where the key
   does exist.
-- `delete`: Deletes an attribute from a span.
+- `delete`: Deletes an attribute from a span/log.
 - `hash`: Hashes (SHA1) an existing attribute value.
 - `extract`: Extracts values using a regular expression rule from the input key
   to target keys specified in the rule. If a target key already exists, it will
@@ -37,7 +37,7 @@ For the actions `insert`, `update` and `upsert`,
   # Key specifies the attribute to act upon.
 - key: <key>
   action: {insert, update, upsert}
-  # FromAttribute specifies the attribute from the span to use to populate
+  # FromAttribute specifies the attribute from the span/log to use to populate
   # the value. If the attribute doesn't exist, no action is performed.
   from_attribute: <other key>
 ```
@@ -108,17 +108,20 @@ examples on using the processor.
 
 ## Include/Exclude Filtering
 
-The [attribute processor](README.md) and the [span processor](../spanprocessor/README.md) expose
-the option to provide a set of properties of a span or log record to match against to determine
+The [attribute processor](README.md) exposes
+an option to provide a set of properties of a span or log record to match against to determine
 if the span/log should be included or excluded from the processor. To configure
-this option, under `include` and/or `exclude` at least `match_type` and one of
-`services`, `span_names` or `attributes` is required.
+this option, under `include` and/or `exclude` at least `match_type` and one of the following
+is required:
+- For spans, one of `services`, `span_names`, `attributes`, `resources`, or `libraries` must be specified with a non-empty value for a valid configuration. The `log_names` field is invalid. 
+- For logs, one of `log_names`, `attributes`, `resources`, or `libraries` must be specified with a
+non-empty value for a valid configuration. The `span_names` and `services` fields are invalid.
 
 Note: If both `include` and `exclude` are specified, the `include` properties
 are checked before the `exclude` properties.
 
 ```yaml
-{span, attributes}:
+attributes:
     # include and/or exclude can be specified. However, the include properties
     # are always checked before the exclude properties.
     {include, exclude}:
@@ -136,13 +139,25 @@ are checked before the `exclude` properties.
         # < see "Match Configuration" below >
 
       # services specify an array of items to match the service name against.
-      # A match occurs if the span service name matches at least of the items.
+      # A match occurs if the span service name matches at least one of the items.
       # This is an optional field.
       services: [<item1>, ..., <itemN>]
+
+      # resources specify an array of items to match the resources against.
+      # A match occurs if the span/log resources matches at least one of the items.
+      resources: [<item1>, ..., <itemN>]
+
+      # libraries specify an array of items to match the implementation library against.
+      # A match occurs if the span/log implementation library matches at least one of the items.
+      libraries: [<item1>, ..., <itemN>]
 
       # The span name must match at least one of the items.
       # This is an optional field.
       span_names: [<item1>, ..., <itemN>]
+
+      # The log name must match at least one of the items.
+      # This is an optional field.
+      log_names: [<item1>, ..., <itemN>]
 
       # Attributes specifies the list of attributes to match against.
       # All of these attributes must match exactly for a match to occur.
