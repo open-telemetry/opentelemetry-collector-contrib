@@ -17,10 +17,13 @@ package lokiexporter // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -30,23 +33,31 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/third_party/loki/logproto"
 )
 
 type lokiExporter struct {
-	config *Config
-	logger *zap.Logger
-	client *http.Client
-	wg     sync.WaitGroup
+	config  *Config
+	logger  *zap.Logger
+	client  *http.Client
+	wg      sync.WaitGroup
+	convert func(pdata.LogRecord, pdata.Resource) (*logproto.Entry, error)
 }
 
 func newExporter(config *Config, logger *zap.Logger) *lokiExporter {
-	return &lokiExporter{
+	lokiexporter := &lokiExporter{
 		config: config,
 		logger: logger,
 	}
+	if config.Format == "json" {
+		lokiexporter.convert = lokiexporter.convertLogToJSONEntry
+	} else {
+		lokiexporter.convert = lokiexporter.convertLogBodyToEntry
+	}
+	return lokiexporter
 }
 
 func (l *lokiExporter) pushLogData(ctx context.Context, ld pdata.Logs) error {
@@ -119,6 +130,8 @@ func (l *lokiExporter) stop(context.Context) (err error) {
 }
 
 func (l *lokiExporter) logDataToLoki(ld pdata.Logs) (pr *logproto.PushRequest, numDroppedLogs int) {
+	var errs error
+
 	streams := make(map[string]*logproto.Stream)
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
@@ -135,7 +148,24 @@ func (l *lokiExporter) logDataToLoki(ld pdata.Logs) (pr *logproto.PushRequest, n
 					continue
 				}
 				labels := mergedLabels.String()
-				entry := convertLogToLokiEntry(log)
+				var entry *logproto.Entry
+				var err error
+				entry, err = l.convert(log, resource)
+				if err != nil {
+					// Couldn't convert so dropping log.
+					numDroppedLogs++
+					errs = multierr.Append(
+						errs,
+						errors.New(
+							fmt.Sprint(
+								"failed to convert, dropping log",
+								zap.String("format", l.config.Format),
+								zap.Error(err),
+							),
+						),
+					)
+					continue
+				}
 
 				if stream, ok := streams[labels]; ok {
 					stream.Entries = append(stream.Entries, *entry)
@@ -148,6 +178,10 @@ func (l *lokiExporter) logDataToLoki(ld pdata.Logs) (pr *logproto.PushRequest, n
 				}
 			}
 		}
+	}
+
+	if errs != nil {
+		l.logger.Debug("some logs has been dropped", zap.Error(errs))
 	}
 
 	pr = &logproto.PushRequest{
@@ -195,9 +229,74 @@ func (l *lokiExporter) convertAttributesToLabels(attributes pdata.AttributeMap, 
 	return ls
 }
 
-func convertLogToLokiEntry(lr pdata.LogRecord) *logproto.Entry {
+func (l *lokiExporter) convertLogBodyToEntry(lr pdata.LogRecord, res pdata.Resource) (*logproto.Entry, error) {
+	var b strings.Builder
+
+	if len(lr.Name()) > 0 {
+		b.WriteString("name=")
+		b.WriteString(lr.Name())
+		b.WriteRune(' ')
+	}
+	if len(lr.SeverityText()) > 0 {
+		b.WriteString("severity=")
+		b.WriteString(lr.SeverityText())
+		b.WriteRune(' ')
+	}
+	if lr.SeverityNumber() > 0 {
+		b.WriteString("severityN=")
+		b.WriteString(strconv.Itoa(int(lr.SeverityNumber())))
+		b.WriteRune(' ')
+	}
+	if !lr.TraceID().IsEmpty() {
+		b.WriteString("traceID=")
+		b.WriteString(lr.TraceID().HexString())
+		b.WriteRune(' ')
+	}
+	if !lr.SpanID().IsEmpty() {
+		b.WriteString("spanID=")
+		b.WriteString(lr.SpanID().HexString())
+		b.WriteRune(' ')
+	}
+
+	// fields not added to the accept-list as part of the component's config
+	// are added to the body, so that they can still be seen under "detected fields"
+	lr.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+		if _, found := l.config.Labels.Attributes[k]; !found {
+			b.WriteString(k)
+			b.WriteString("=")
+			b.WriteString(v.AsString())
+			b.WriteRune(' ')
+		}
+		return true
+	})
+
+	// same for resources: include all, except the ones that are explicitly added
+	// as part of the config, which are showing up at the top-level already
+	res.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+		if _, found := l.config.Labels.ResourceAttributes[k]; !found {
+			b.WriteString(k)
+			b.WriteString("=")
+			b.WriteString(v.AsString())
+			b.WriteRune(' ')
+		}
+		return true
+	})
+
+	b.WriteString(lr.Body().StringVal())
+
 	return &logproto.Entry{
 		Timestamp: time.Unix(0, int64(lr.Timestamp())),
-		Line:      lr.Body().StringVal(),
+		Line:      b.String(),
+	}, nil
+}
+
+func (l *lokiExporter) convertLogToJSONEntry(lr pdata.LogRecord, res pdata.Resource) (*logproto.Entry, error) {
+	line, err := encodeJSON(lr, res)
+	if err != nil {
+		return nil, err
 	}
+	return &logproto.Entry{
+		Timestamp: time.Unix(0, int64(lr.Timestamp())),
+		Line:      line,
+	}, nil
 }

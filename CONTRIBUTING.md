@@ -47,6 +47,12 @@ contributors.
 - Add a `replace` directive at the root `go.mod` file so your component is
   included in the build of the contrib executable.
 - Add your component to `versions.yaml`.
+- All components must be included in [`internal/components/`](./internal/components) 
+  and in the respective testing harnesses. To align with the test goal of the project, 
+  components must be testable within the framework defined within the folder.
+  If a component can not be properly tested within the existing framework, 
+  it must increase the non testable components number
+  with a comment within the PR explaining as to why it can not be tested.
 
 ## General Recommendations
 Below are some recommendations that apply to typical components. These are not

@@ -25,6 +25,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
+	"github.com/prometheus/prometheus/pkg/value"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -380,7 +381,20 @@ func Test_PushMetrics(t *testing.T) {
 
 	emptySummaryBatch := getMetricsFromMetricList(invalidMetrics[emptySummary])
 
-	checkFunc := func(t *testing.T, r *http.Request, expected int) {
+	// staleNaN cases
+	staleNaNHistogramBatch := getMetricsFromMetricList(staleNaNMetrics[staleNaNHistogram])
+
+	staleNaNSummaryBatch := getMetricsFromMetricList(staleNaNMetrics[staleNaNSummary])
+
+	staleNaNIntGaugeBatch := getMetricsFromMetricList(staleNaNMetrics[staleNaNIntGauge])
+
+	staleNaNDoubleGaugeBatch := getMetricsFromMetricList(staleNaNMetrics[staleNaNDoubleGauge])
+
+	staleNaNIntSumBatch := getMetricsFromMetricList(staleNaNMetrics[staleNaNIntSum])
+
+	staleNaNSumBatch := getMetricsFromMetricList(staleNaNMetrics[staleNaNSum])
+
+	checkFunc := func(t *testing.T, r *http.Request, expected int, isStaleMarker bool) {
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			t.Fatal(err)
@@ -397,15 +411,19 @@ func Test_PushMetrics(t *testing.T) {
 		ok := proto.Unmarshal(dest, wr)
 		require.Nil(t, ok)
 		assert.EqualValues(t, expected, len(wr.Timeseries))
+		if isStaleMarker {
+			assert.True(t, value.IsStaleNaN(wr.Timeseries[0].Samples[0].Value))
+		}
 	}
 
 	tests := []struct {
 		name               string
 		md                 *pdata.Metrics
-		reqTestFunc        func(t *testing.T, r *http.Request, expected int)
+		reqTestFunc        func(t *testing.T, r *http.Request, expected int, isStaleMarker bool)
 		expectedTimeSeries int
 		httpResponseCode   int
 		returnErr          bool
+		isStaleMarker      bool
 	}{
 		{
 			"invalid_type_case",
@@ -414,6 +432,7 @@ func Test_PushMetrics(t *testing.T) {
 			0,
 			http.StatusAccepted,
 			true,
+			false,
 		},
 		{
 			"intSum_case",
@@ -421,6 +440,7 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			2,
 			http.StatusAccepted,
+			false,
 			false,
 		},
 		{
@@ -430,6 +450,7 @@ func Test_PushMetrics(t *testing.T) {
 			2,
 			http.StatusAccepted,
 			false,
+			false,
 		},
 		{
 			"doubleGauge_case",
@@ -437,6 +458,7 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			2,
 			http.StatusAccepted,
+			false,
 			false,
 		},
 		{
@@ -446,6 +468,7 @@ func Test_PushMetrics(t *testing.T) {
 			2,
 			http.StatusAccepted,
 			false,
+			false,
 		},
 		{
 			"histogram_case",
@@ -453,6 +476,7 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			12,
 			http.StatusAccepted,
+			false,
 			false,
 		},
 		{
@@ -462,6 +486,7 @@ func Test_PushMetrics(t *testing.T) {
 			10,
 			http.StatusAccepted,
 			false,
+			false,
 		},
 		{
 			"unmatchedBoundBucketHist_case",
@@ -469,6 +494,7 @@ func Test_PushMetrics(t *testing.T) {
 			checkFunc,
 			5,
 			http.StatusAccepted,
+			false,
 			false,
 		},
 		{
@@ -478,6 +504,7 @@ func Test_PushMetrics(t *testing.T) {
 			5,
 			http.StatusServiceUnavailable,
 			true,
+			false,
 		},
 		{
 			"emptyGauge_case",
@@ -486,6 +513,7 @@ func Test_PushMetrics(t *testing.T) {
 			0,
 			http.StatusAccepted,
 			true,
+			false,
 		},
 		{
 			"emptyCumulativeSum_case",
@@ -494,6 +522,7 @@ func Test_PushMetrics(t *testing.T) {
 			0,
 			http.StatusAccepted,
 			true,
+			false,
 		},
 		{
 			"emptyCumulativeHistogram_case",
@@ -502,6 +531,7 @@ func Test_PushMetrics(t *testing.T) {
 			0,
 			http.StatusAccepted,
 			true,
+			false,
 		},
 		{
 			"emptySummary_case",
@@ -510,6 +540,61 @@ func Test_PushMetrics(t *testing.T) {
 			0,
 			http.StatusAccepted,
 			true,
+			false,
+		},
+		{
+			"staleNaNIntGauge_case",
+			&staleNaNIntGaugeBatch,
+			checkFunc,
+			1,
+			http.StatusAccepted,
+			false,
+			true,
+		},
+		{
+			"staleNaNDoubleGauge_case",
+			&staleNaNDoubleGaugeBatch,
+			checkFunc,
+			1,
+			http.StatusAccepted,
+			false,
+			true,
+		},
+		{
+			"staleNaNIntSum_case",
+			&staleNaNIntSumBatch,
+			checkFunc,
+			1,
+			http.StatusAccepted,
+			false,
+			true,
+		},
+		{
+			"staleNaNSum_case",
+			&staleNaNSumBatch,
+			checkFunc,
+			1,
+			http.StatusAccepted,
+			false,
+			true,
+		},
+		{
+			"staleNaNHistogram_case",
+			&staleNaNHistogramBatch,
+			checkFunc,
+			6,
+			http.StatusAccepted,
+			false,
+			true,
+		},
+		{
+			"staleNaNSummary_case",
+			&staleNaNSummaryBatch,
+			checkFunc,
+			5,
+			http.StatusAccepted,
+			false,
+			true,
 		},
 	}
 
@@ -517,7 +602,7 @@ func Test_PushMetrics(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if tt.reqTestFunc != nil {
-					tt.reqTestFunc(t, r, tt.expectedTimeSeries)
+					tt.reqTestFunc(t, r, tt.expectedTimeSeries, tt.isStaleMarker)
 				}
 				w.WriteHeader(tt.httpResponseCode)
 			}))

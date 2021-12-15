@@ -215,11 +215,25 @@ type lockRequest struct {
 
 func newLockRequestSliceLabelValue(metadata LabelValueMetadata, valueHolder interface{}) LabelValue {
 	value := *valueHolder.(*[]*lockRequest)
-	convertedValue := make([]string, len(value))
+	// During the specifics of this label we need to take into account only distinct values
+	uniqueValueItems := make(map[string]struct{})
+	var convertedValue []string
 
-	for i, valueItem := range value {
-		convertedValue[i] = fmt.Sprintf("{%v,%v,%v}", valueItem.LockMode, valueItem.Column, valueItem.TransactionTag)
+	for _, valueItem := range value {
+		var valueItemString string
+		if valueItem.TransactionTag == "" {
+			valueItemString = fmt.Sprintf("{%v,%v}", valueItem.LockMode, valueItem.Column)
+		} else {
+			valueItemString = fmt.Sprintf("{%v,%v,%v}", valueItem.LockMode, valueItem.Column, valueItem.TransactionTag)
+		}
+
+		if _, contains := uniqueValueItems[valueItemString]; !contains {
+			uniqueValueItems[valueItemString] = struct{}{}
+			convertedValue = append(convertedValue, valueItemString)
+		}
 	}
+
+	sort.Strings(convertedValue)
 
 	constructedValue := strings.Join(convertedValue, ",")
 

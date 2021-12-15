@@ -53,12 +53,7 @@ func run(ymlPath string, useExpGen bool) error {
 
 	ymlDir := path.Dir(ymlPath)
 
-	ymlData, err := ioutil.ReadFile(filepath.Clean(ymlPath))
-	if err != nil {
-		return fmt.Errorf("unable to read file %v: %v", ymlPath, err)
-	}
-
-	md, err := loadMetadata(ymlData)
+	md, err := loadMetadata(filepath.Clean(ymlPath))
 	if err != nil {
 		return fmt.Errorf("failed loading %v: %v", ymlPath, err)
 	}

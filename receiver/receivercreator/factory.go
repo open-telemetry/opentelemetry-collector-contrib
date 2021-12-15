@@ -54,6 +54,10 @@ func createDefaultConfig() config.Receiver {
 				conventions.AttributeK8SPodUID:        "`pod.uid`",
 				conventions.AttributeK8SNamespaceName: "`pod.namespace`",
 			},
+			observer.ContainerType: map[string]string{
+				conventions.AttributeContainerName:      "`name`",
+				conventions.AttributeContainerImageName: "`image`",
+			},
 		},
 		receiverTemplates: map[string]receiverTemplate{},
 	}

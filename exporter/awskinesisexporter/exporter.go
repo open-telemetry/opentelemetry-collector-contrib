@@ -86,6 +86,10 @@ func createExporter(c config.Exporter, log *zap.Logger) (*Exporter, error) {
 		return nil, err
 	}
 
+	if conf.Encoding.Name == "otlp_json" {
+		log.Info("otlp_json is considered experimental and should not be used in a production environment")
+	}
+
 	return &Exporter{
 		producer: producer,
 		batcher:  encoder,
