@@ -20,9 +20,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension/extensionhelper"
-	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/client-go/tools/cache"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
@@ -45,6 +42,8 @@ func createDefaultConfig() config.Extension {
 	return &Config{
 		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
 		APIConfig:         k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+		ObservePods:       true,
+		ObserveNodes:      false,
 	}
 }
 
@@ -54,16 +53,5 @@ func createExtension(
 	params component.ExtensionCreateSettings,
 	cfg config.Extension,
 ) (component.Extension, error) {
-	oCfg := cfg.(*Config)
-
-	clientset, err := k8sconfig.MakeClient(oCfg.APIConfig)
-	if err != nil {
-		return nil, err
-	}
-
-	listWatch := cache.NewListWatchFromClient(
-		clientset.CoreV1().RESTClient(), "pods", v1.NamespaceAll,
-		fields.OneTermEqualSelector("spec.nodeName", oCfg.Node))
-
-	return newObserver(params.Logger, oCfg, listWatch)
+	return newObserver(cfg.(*Config), params.TelemetrySettings)
 }
