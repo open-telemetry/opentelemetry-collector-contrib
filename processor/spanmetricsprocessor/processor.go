@@ -332,7 +332,7 @@ func (p *processorImp) getDimensionsByMetricKey(k metricKey) (*pdata.AttributeMa
 		return nil, fmt.Errorf("type assertion of metricKeyToDimensions attributes failed, the key is %v", k)
 	}
 
-	return nil, fmt.Errorf("value not found in metricKeyToDimensions cache by key %v", k)
+	return nil, fmt.Errorf("value not found in metricKeyToDimensions cache by key %q", k)
 }
 
 // aggregateMetrics aggregates the raw metrics from the input trace data.
