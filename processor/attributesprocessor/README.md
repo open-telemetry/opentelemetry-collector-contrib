@@ -2,10 +2,11 @@
 
 Supported pipeline types: traces, logs.
 
-The attributes processor modifies attributes of a span. Please refer to
+The attributes processor modifies attributes of a span or log. Please refer to
 [config.go](./config.go) for the config spec.
 
-It optionally supports the ability to [include/exclude spans](#includeexclude-spans).
+This processor also supports the ability to filter and match spans/logs to determine
+if they should be [included or excluded](#includeexclude-filtering) for specified actions.
 
 It takes a list of actions which are performed in order specified in the config.
 The supported actions are:
@@ -105,11 +106,11 @@ processors:
 Refer to [config.yaml](./testdata/config.yaml) for detailed
 examples on using the processor.
 
-## Include/Exclude Spans
+## Include/Exclude Filtering
 
 The [attribute processor](README.md) and the [span processor](../spanprocessor/README.md) expose
-the option to provide a set of properties of a span to match against to determine
-if the span should be included or excluded from the processor. To configure
+the option to provide a set of properties of a span or log record to match against to determine
+if the span/log should be included or excluded from the processor. To configure
 this option, under `include` and/or `exclude` at least `match_type` and one of
 `services`, `span_names` or `attributes` is required.
 
