@@ -72,7 +72,7 @@ func (c *Cache) Get(key interface{}) (interface{}, bool) {
 	return val, ok
 }
 
-// Purge remove all the items from the LRU cache and evicted items.
+// Purge removes all the items from the LRU cache and evicted items.
 func (c *Cache) Purge() {
 	c.Cache.Purge()
 	c.RemoveEvictedItems()
