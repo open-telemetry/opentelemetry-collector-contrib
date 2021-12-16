@@ -48,6 +48,9 @@ func Test_ruleEval(t *testing.T) {
 		{"basic hostport", args{`type == "hostport" && port == 1234 && process_name == "splunk"`, hostportEndpoint}, true, false},
 		{"basic pod", args{`type == "pod" && labels["region"] == "west-1"`, podEndpoint}, true, false},
 		{"annotations", args{`type == "pod" && annotations["scrape"] == "true"`, podEndpoint}, true, false},
+		{"basic container", args{`type == "container" && labels["region"] == "east-1"`, containerEndpoint}, true, false},
+		{"from k8s.node status maps in slices", args{`type == "k8s.node" && status["images"][0]["names"][0] == "an.image:latest"`, k8sNodeEndpoint}, true, false},
+		{"from k8s.node nested status maps", args{`type == "k8s.node" && status["daemonEndpoints"]["kubeletEndpoint"]["Port"] == "10250"`, k8sNodeEndpoint}, true, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -84,7 +87,8 @@ func Test_newRule(t *testing.T) {
 		{"invalid syntax", args{"port =="}, true},
 		{"valid port", args{`type == "port" && port_name == "http"`}, false},
 		{"valid pod", args{`type=="pod" && port_name == "http"`}, false},
-		{"valid hostport", args{`type ==    "hostport" && port_name == "http"`}, false},
+		{"valid hostport", args{`type == "hostport" && port_name == "http"`}, false},
+		{"valid container", args{`type == "container" && port == 8080`}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

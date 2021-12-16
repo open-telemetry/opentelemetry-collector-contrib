@@ -38,9 +38,8 @@ func TestValidConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Username = "otel"
 	cfg.Password = "otel"
-	cfg.HTTPClientSettings = confighttp.HTTPClientSettings{
-		Endpoint: "http://localhost:5984",
-	}
+
+	require.EqualValues(t, defaultEndpoint, cfg.Endpoint)
 	require.NoError(t, cfg.Validate())
 }
 

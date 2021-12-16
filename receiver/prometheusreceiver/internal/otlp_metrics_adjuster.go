@@ -330,7 +330,9 @@ func (ma *MetricsAdjusterPdata) adjustMetricHistogram(current *pdata.Metric) (re
 		currentDist := currentPoints.At(i)
 		tsi := ma.tsm.get(current, currentDist.Attributes())
 		previous := tsi.previous
-		tsi.previous = current
+		if !currentDist.Flags().HasFlag(pdata.MetricDataPointFlagNoRecordedValue) {
+			tsi.previous = current
+		}
 		if tsi.initial == nil {
 			// initial || reset timeseries.
 			tsi.initial = current
@@ -349,7 +351,10 @@ func (ma *MetricsAdjusterPdata) adjustMetricHistogram(current *pdata.Metric) (re
 			resets++
 			continue
 		}
-
+		if currentDist.Flags().HasFlag(pdata.MetricDataPointFlagNoRecordedValue) {
+			currentDist.SetStartTimestamp(initialPoints.At(i).StartTimestamp())
+			continue
+		}
 		previousDist := previousPoints.At(i)
 		if currentDist.Count() < previousDist.Count() || currentDist.Sum() < previousDist.Sum() {
 			// reset detected
@@ -370,7 +375,9 @@ func (ma *MetricsAdjusterPdata) adjustMetricSum(current *pdata.Metric) (resets i
 		currentSum := currentPoints.At(i)
 		tsi := ma.tsm.get(current, currentSum.Attributes())
 		previous := tsi.previous
-		tsi.previous = current
+		if !currentSum.Flags().HasFlag(pdata.MetricDataPointFlagNoRecordedValue) {
+			tsi.previous = current
+		}
 		if tsi.initial == nil {
 			// initial || reset timeseries.
 			tsi.initial = current
@@ -388,7 +395,10 @@ func (ma *MetricsAdjusterPdata) adjustMetricSum(current *pdata.Metric) (resets i
 			resets++
 			continue
 		}
-
+		if currentSum.Flags().HasFlag(pdata.MetricDataPointFlagNoRecordedValue) {
+			currentSum.SetStartTimestamp(initialPoints.At(i).StartTimestamp())
+			continue
+		}
 		previousSum := previousPoints.At(i)
 		if currentSum.DoubleVal() < previousSum.DoubleVal() {
 			// reset detected
@@ -410,7 +420,9 @@ func (ma *MetricsAdjusterPdata) adjustMetricSummary(current *pdata.Metric) (rese
 		currentSummary := currentPoints.At(i)
 		tsi := ma.tsm.get(current, currentSummary.Attributes())
 		previous := tsi.previous
-		tsi.previous = current
+		if !currentSummary.Flags().HasFlag(pdata.MetricDataPointFlagNoRecordedValue) {
+			tsi.previous = current
+		}
 		if tsi.initial == nil {
 			// initial || reset timeseries.
 			tsi.initial = current
@@ -428,7 +440,10 @@ func (ma *MetricsAdjusterPdata) adjustMetricSummary(current *pdata.Metric) (rese
 			resets++
 			continue
 		}
-
+		if currentSummary.Flags().HasFlag(pdata.MetricDataPointFlagNoRecordedValue) {
+			currentSummary.SetStartTimestamp(initialPoints.At(i).StartTimestamp())
+			continue
+		}
 		previousSummary := previousPoints.At(i)
 		if (currentSummary.Count() != 0 &&
 			previousSummary.Count() != 0 &&

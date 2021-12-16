@@ -29,6 +29,13 @@ func Test_expandConfigValue(t *testing.T) {
 	}
 	localhostEnv := map[string]interface{}{
 		"endpoint": "localhost",
+		"nested": map[string]interface{}{
+			"outer": map[string]interface{}{
+				"inner": map[string]interface{}{
+					"value": 123,
+				},
+			},
+		},
 	}
 	tests := []struct {
 		name    string
@@ -54,6 +61,8 @@ func Test_expandConfigValue(t *testing.T) {
 		{"expression in middle", args{localhostEnv, "https://`endpoint`:1234"}, "https://localhost:1234", false},
 		{"expression at end", args{localhostEnv, "https://`endpoint`"}, "https://localhost", false},
 		{"extra whitespace should not impact returned type", args{nil, "`       true ==           true`"}, true, false},
+
+		{"nested map value", args{localhostEnv, "`endpoint`:`nested[\"outer\"]['inner'][\"value\"]`"}, "localhost:123", false},
 
 		// Error cases.
 		{"only backticks", args{observer.EndpointEnv{}, "``"}, nil, true},

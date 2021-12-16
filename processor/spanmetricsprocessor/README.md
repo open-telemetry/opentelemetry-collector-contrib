@@ -53,7 +53,10 @@ The following settings can be optionally configured:
   
   If the `name`d attribute is missing in the span, the optional provided `default` is used.
   
-  If no `default` is provided, this dimension will be **omitted** from the metric.
+  If no `default` is provided, this dimension will be **omitted** from the metric. 
+- `aggregation_temporality`: Defines the aggregation temporality of the generated metrics. 
+  One of either `AGGREGATION_TEMPORALITY_CUMULATIVE` or `AGGREGATION_TEMPORALITY_DELTA`.
+  - Default: `AGGREGATION_TEMPORALITY_CUMULATIVE`
 
 ## Examples
 
@@ -90,6 +93,7 @@ processors:
       - name: http.method
         default: GET
       - name: http.status_code
+    aggregation_temporality: "AGGREGATION_TEMPORALITY_DELTA"     
 
 exporters:
   jaeger:
