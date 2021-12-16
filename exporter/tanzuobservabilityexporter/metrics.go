@@ -22,6 +22,7 @@ import (
 	"sync/atomic"
 
 	"github.com/wavefronthq/wavefront-sdk-go/senders"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -43,16 +44,22 @@ var (
 
 // metricsConsumer instances consume OTEL metrics
 type metricsConsumer struct {
-	consumerMap map[pdata.MetricDataType]typedMetricConsumer
-	sender      flushCloser
+	consumerMap           map[pdata.MetricDataType]typedMetricConsumer
+	sender                flushCloser
+	reportInternalMetrics bool
 }
 
 // newMetricsConsumer returns a new metricsConsumer. consumers are the
-// consumers responsible for consuming each type metric. The Consume method
+// consumers responsible for consuming each type of metric. The Consume method
 // of returned consumer calls the Flush method on sender after consuming
 // all the metrics. Calling Close on the returned metricsConsumer calls Close
-// on sender. sender can be nil.
-func newMetricsConsumer(consumers []typedMetricConsumer, sender flushCloser) *metricsConsumer {
+// on sender. sender can be nil.  reportInternalMetrics controls whether
+// returned metricsConsumer reports internal metrics.
+func newMetricsConsumer(
+	consumers []typedMetricConsumer,
+	sender flushCloser,
+	reportInternalMetrics bool,
+) *metricsConsumer {
 	consumerMap := make(map[pdata.MetricDataType]typedMetricConsumer, len(consumers))
 	for _, consumer := range consumers {
 		if consumerMap[consumer.Type()] != nil {
@@ -61,8 +68,9 @@ func newMetricsConsumer(consumers []typedMetricConsumer, sender flushCloser) *me
 		consumerMap[consumer.Type()] = consumer
 	}
 	return &metricsConsumer{
-		consumerMap: consumerMap,
-		sender:      sender,
+		consumerMap:           consumerMap,
+		sender:                sender,
+		reportInternalMetrics: reportInternalMetrics,
 	}
 }
 
@@ -88,7 +96,9 @@ func (c *metricsConsumer) Consume(ctx context.Context, md pdata.Metrics) error {
 			}
 		}
 	}
-	c.pushInternalMetrics(&errs)
+	if c.reportInternalMetrics {
+		c.pushInternalMetrics(&errs)
+	}
 	if c.sender != nil {
 		if err := c.sender.Flush(); err != nil {
 			errs = append(errs, err)
@@ -174,12 +184,12 @@ func (c *counter) Get() int64 {
 }
 
 // logMissingValue keeps track of metrics with missing values. metric is the
-// metric with the missing value. logger is the logger. count counts
+// metric with the missing value. settings logs the missing value. count counts
 // metrics with missing values.
-func logMissingValue(metric pdata.Metric, logger *zap.Logger, count *counter) {
+func logMissingValue(metric pdata.Metric, settings component.TelemetrySettings, count *counter) {
 	namef := zap.String(metricNameString, metric.Name())
 	typef := zap.String(metricTypeString, metric.DataType().String())
-	logger.Debug("Metric missing value", namef, typef)
+	settings.Logger.Debug("Metric missing value", namef, typef)
 	count.Inc()
 }
 
@@ -198,21 +208,21 @@ func getValue(numberDataPoint pdata.NumberDataPoint) (float64, error) {
 // pushGaugeNumberDataPoint sends a metric as a gauge metric to tanzu
 // observability. metric is the metric to send. numberDataPoint is the value
 // of the metric. Any errors get appended to errs. sender is what sends the
-// gauge metric to tanzu observability. logger is the logger. missingValues
+// gauge metric to tanzu observability. settings logs problems. missingValues
 // keeps track of metrics with missing values.
 func pushGaugeNumberDataPoint(
 	metric pdata.Metric,
 	numberDataPoint pdata.NumberDataPoint,
 	errs *[]error,
 	sender gaugeSender,
-	logger *zap.Logger,
+	settings component.TelemetrySettings,
 	missingValues *counter,
 ) {
 	tags := attributesToTags(numberDataPoint.Attributes())
 	ts := numberDataPoint.Timestamp().AsTime().Unix()
 	value, err := getValue(numberDataPoint)
 	if err != nil {
-		logMissingValue(metric, logger, missingValues)
+		logMissingValue(metric, settings, missingValues)
 		return
 	}
 	err = sender.SendMetric(metric.Name(), value, ts, "", tags)
@@ -227,24 +237,18 @@ type gaugeSender interface {
 }
 
 type gaugeConsumer struct {
-	sender                gaugeSender
-	logger                *zap.Logger
-	missingValues         counter
-	reportInternalMetrics bool
+	sender        gaugeSender
+	settings      component.TelemetrySettings
+	missingValues counter
 }
 
 // newGaugeConsumer returns a typedMetricConsumer that consumes gauge metrics
 // by sending them to tanzu observability.
-func newGaugeConsumer(sender gaugeSender, logger *zap.Logger) typedMetricConsumer {
-	reportInternalMetrics := true
-	if logger == nil {
-		logger = zap.NewNop()
-		reportInternalMetrics = false
-	}
+func newGaugeConsumer(
+	sender gaugeSender, settings component.TelemetrySettings) typedMetricConsumer {
 	return &gaugeConsumer{
-		sender:                sender,
-		logger:                logger,
-		reportInternalMetrics: reportInternalMetrics,
+		sender:   sender,
+		settings: settings,
 	}
 }
 
@@ -261,36 +265,28 @@ func (g *gaugeConsumer) Consume(metric pdata.Metric, errs *[]error) {
 			numberDataPoints.At(i),
 			errs,
 			g.sender,
-			g.logger,
+			g.settings,
 			&g.missingValues)
 	}
 }
 
 func (g *gaugeConsumer) PushInternalMetrics(errs *[]error) {
-	if g.reportInternalMetrics {
-		g.missingValues.Report(missingValueMetricName, typeIsGaugeTags, g.sender, errs)
-	}
+	g.missingValues.Report(missingValueMetricName, typeIsGaugeTags, g.sender, errs)
 }
 
 type sumConsumer struct {
-	sender                senders.MetricSender
-	logger                *zap.Logger
-	missingValues         counter
-	reportInternalMetrics bool
+	sender        senders.MetricSender
+	settings      component.TelemetrySettings
+	missingValues counter
 }
 
 // newSumConsumer returns a typedMetricConsumer that consumes sum metrics
 // by sending them to tanzu observability.
-func newSumConsumer(sender senders.MetricSender, logger *zap.Logger) typedMetricConsumer {
-	reportInternalMetrics := true
-	if logger == nil {
-		logger = zap.NewNop()
-		reportInternalMetrics = false
-	}
+func newSumConsumer(
+	sender senders.MetricSender, settings component.TelemetrySettings) typedMetricConsumer {
 	return &sumConsumer{
-		sender:                sender,
-		logger:                logger,
-		reportInternalMetrics: reportInternalMetrics,
+		sender:   sender,
+		settings: settings,
 	}
 }
 
@@ -310,15 +306,13 @@ func (s *sumConsumer) Consume(metric pdata.Metric, errs *[]error) {
 			s.pushNumberDataPoint(metric, numberDataPoints.At(i), errs)
 		} else {
 			pushGaugeNumberDataPoint(
-				metric, numberDataPoints.At(i), errs, s.sender, s.logger, &s.missingValues)
+				metric, numberDataPoints.At(i), errs, s.sender, s.settings, &s.missingValues)
 		}
 	}
 }
 
 func (s *sumConsumer) PushInternalMetrics(errs *[]error) {
-	if s.reportInternalMetrics {
-		s.missingValues.Report(missingValueMetricName, typeIsSumTags, s.sender, errs)
-	}
+	s.missingValues.Report(missingValueMetricName, typeIsSumTags, s.sender, errs)
 }
 
 func (s *sumConsumer) pushNumberDataPoint(
@@ -327,7 +321,7 @@ func (s *sumConsumer) pushNumberDataPoint(
 	tags := attributesToTags(numberDataPoint.Attributes())
 	value, err := getValue(numberDataPoint)
 	if err != nil {
-		logMissingValue(metric, s.logger, &s.missingValues)
+		logMissingValue(metric, s.settings, &s.missingValues)
 		return
 	}
 	err = s.sender.SendDeltaCounter(metric.Name(), value, "", tags)
@@ -338,15 +332,14 @@ func (s *sumConsumer) pushNumberDataPoint(
 
 // histogramReporting takes care of logging and internal metrics for histograms
 type histogramReporting struct {
-	logger                   *zap.Logger
+	settings                 component.TelemetrySettings
 	malformedHistograms      counter
 	noAggregationTemporality counter
 }
 
 // newHistogramReporting returns a new histogramReporting instance.
-// log messages are sent to logger.
-func newHistogramReporting(logger *zap.Logger) *histogramReporting {
-	return &histogramReporting{logger: logger}
+func newHistogramReporting(settings component.TelemetrySettings) *histogramReporting {
+	return &histogramReporting{settings: settings}
 }
 
 // Malformed returns the number of malformed histogram data points.
@@ -363,14 +356,14 @@ func (r *histogramReporting) NoAggregationTemporality() int64 {
 // LogMalformed logs seeing one malformed data point.
 func (r *histogramReporting) LogMalformed(metric pdata.Metric) {
 	namef := zap.String(metricNameString, metric.Name())
-	r.logger.Debug("Malformed histogram", namef)
+	r.settings.Logger.Debug("Malformed histogram", namef)
 	r.malformedHistograms.Inc()
 }
 
 // LogNoAggregationTemporality logs seeing a histogram metric with no aggregation temporality
 func (r *histogramReporting) LogNoAggregationTemporality(metric pdata.Metric) {
 	namef := zap.String(metricNameString, metric.Name())
-	r.logger.Debug("histogram metric missing aggregation temporality", namef)
+	r.settings.Logger.Debug("histogram metric missing aggregation temporality", namef)
 	r.noAggregationTemporality.Inc()
 }
 
@@ -386,11 +379,10 @@ func (r *histogramReporting) Report(sender gaugeSender, errs *[]error) {
 }
 
 type histogramConsumer struct {
-	cumulative            histogramDataPointConsumer
-	delta                 histogramDataPointConsumer
-	sender                gaugeSender
-	reporting             *histogramReporting
-	reportInternalMetrics bool
+	cumulative histogramDataPointConsumer
+	delta      histogramDataPointConsumer
+	sender     gaugeSender
+	reporting  *histogramReporting
 }
 
 // newHistogramConsumer returns a metricConsumer that consumes histograms.
@@ -399,19 +391,13 @@ type histogramConsumer struct {
 func newHistogramConsumer(
 	cumulative, delta histogramDataPointConsumer,
 	sender gaugeSender,
-	logger *zap.Logger,
+	settings component.TelemetrySettings,
 ) typedMetricConsumer {
-	reportInternalMetrics := true
-	if logger == nil {
-		logger = zap.NewNop()
-		reportInternalMetrics = false
-	}
 	return &histogramConsumer{
-		cumulative:            cumulative,
-		delta:                 delta,
-		sender:                sender,
-		reporting:             newHistogramReporting(logger),
-		reportInternalMetrics: reportInternalMetrics,
+		cumulative: cumulative,
+		delta:      delta,
+		sender:     sender,
+		reporting:  newHistogramReporting(settings),
 	}
 }
 
@@ -441,9 +427,7 @@ func (h *histogramConsumer) Consume(metric pdata.Metric, errs *[]error) {
 }
 
 func (h *histogramConsumer) PushInternalMetrics(errs *[]error) {
-	if h.reportInternalMetrics {
-		h.reporting.Report(h.sender, errs)
-	}
+	h.reporting.Report(h.sender, errs)
 }
 
 // histogramDataPointConsumer consumes one histogram data point. There is one

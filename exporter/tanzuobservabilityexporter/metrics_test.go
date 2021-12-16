@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
@@ -36,7 +36,8 @@ func TestMetricsConsumerNormal(t *testing.T) {
 	mockSumConsumer := &mockTypedMetricConsumer{typ: pdata.MetricDataTypeSum}
 	sender := &mockFlushCloser{}
 	metrics := constructMetrics(gauge1, sum1, gauge2, sum2)
-	consumer := newMetricsConsumer([]typedMetricConsumer{mockGaugeConsumer, mockSumConsumer}, sender)
+	consumer := newMetricsConsumer(
+		[]typedMetricConsumer{mockGaugeConsumer, mockSumConsumer}, sender, true)
 
 	assert.NoError(t, consumer.Consume(context.Background(), metrics))
 
@@ -52,7 +53,7 @@ func TestMetricsConsumerNormal(t *testing.T) {
 }
 
 func TestMetricsConsumerNone(t *testing.T) {
-	consumer := newMetricsConsumer(nil, nil)
+	consumer := newMetricsConsumer(nil, nil, true)
 	metrics := constructMetrics()
 
 	assert.NoError(t, consumer.Consume(context.Background(), metrics))
@@ -65,14 +66,17 @@ func TestNewMetricsConsumerPanicsWithDuplicateMetricType(t *testing.T) {
 	mockGaugeConsumer2 := &mockTypedMetricConsumer{typ: pdata.MetricDataTypeGauge}
 
 	assert.Panics(t, func() {
-		newMetricsConsumer([]typedMetricConsumer{mockGaugeConsumer1, mockGaugeConsumer2}, nil)
+		newMetricsConsumer(
+			[]typedMetricConsumer{mockGaugeConsumer1, mockGaugeConsumer2},
+			nil,
+			true)
 	})
 }
 
 func TestMetricsConsumerPropagatesErrorsOnFlush(t *testing.T) {
 	sender := &mockFlushCloser{errorOnFlush: true}
 	metrics := constructMetrics()
-	consumer := newMetricsConsumer(nil, sender)
+	consumer := newMetricsConsumer(nil, sender, true)
 
 	assert.Error(t, consumer.Consume(context.Background(), metrics))
 	assert.Equal(t, 1, sender.numFlushCalls)
@@ -81,20 +85,34 @@ func TestMetricsConsumerPropagatesErrorsOnFlush(t *testing.T) {
 func TestMetricsConsumerErrorsWithUnregisteredMetricType(t *testing.T) {
 	gauge1 := newMetric("gauge1", pdata.MetricDataTypeGauge)
 	metrics := constructMetrics(gauge1)
-	consumer := newMetricsConsumer(nil, nil)
+	consumer := newMetricsConsumer(nil, nil, true)
 
 	assert.Error(t, consumer.Consume(context.Background(), metrics))
 }
 
 func TestMetricsConsumerErrorConsuming(t *testing.T) {
 	gauge1 := newMetric("gauge1", pdata.MetricDataTypeGauge)
-	mockGaugeConsumer := &mockTypedMetricConsumer{typ: pdata.MetricDataTypeGauge, errorOnConsume: true}
+	mockGaugeConsumer := &mockTypedMetricConsumer{
+		typ:            pdata.MetricDataTypeGauge,
+		errorOnConsume: true}
 	metrics := constructMetrics(gauge1)
-	consumer := newMetricsConsumer([]typedMetricConsumer{mockGaugeConsumer}, nil)
+	consumer := newMetricsConsumer(
+		[]typedMetricConsumer{mockGaugeConsumer}, nil, true)
 
 	assert.Error(t, consumer.Consume(context.Background(), metrics))
 	assert.Len(t, mockGaugeConsumer.names, 1)
 	assert.Equal(t, 1, mockGaugeConsumer.pushInternalMetricsCallCount)
+}
+
+func TestMetricsConsumerNoReportingInternalMetrics(t *testing.T) {
+	gauge1 := newMetric("gauge1", pdata.MetricDataTypeGauge)
+	mockGaugeConsumer := &mockTypedMetricConsumer{typ: pdata.MetricDataTypeGauge}
+	metrics := constructMetrics(gauge1)
+	consumer := newMetricsConsumer(
+		[]typedMetricConsumer{mockGaugeConsumer}, nil, false)
+	assert.NoError(t, consumer.Consume(context.Background(), metrics))
+	assert.Len(t, mockGaugeConsumer.names, 1)
+	assert.Equal(t, 0, mockGaugeConsumer.pushInternalMetricsCallCount)
 }
 
 func TestMetricsConsumerErrorConsumingInternal(t *testing.T) {
@@ -102,7 +120,8 @@ func TestMetricsConsumerErrorConsumingInternal(t *testing.T) {
 	mockGaugeConsumer := &mockTypedMetricConsumer{
 		typ: pdata.MetricDataTypeGauge, errorOnPushInternalMetrics: true}
 	metrics := constructMetrics(gauge1)
-	consumer := newMetricsConsumer([]typedMetricConsumer{mockGaugeConsumer}, nil)
+	consumer := newMetricsConsumer(
+		[]typedMetricConsumer{mockGaugeConsumer}, nil, true)
 
 	assert.Error(t, consumer.Consume(context.Background(), metrics))
 	assert.Len(t, mockGaugeConsumer.names, 1)
@@ -113,7 +132,8 @@ func TestMetricsConsumerRespectContext(t *testing.T) {
 	sender := &mockFlushCloser{}
 	gauge1 := newMetric("gauge1", pdata.MetricDataTypeGauge)
 	mockGaugeConsumer := &mockTypedMetricConsumer{typ: pdata.MetricDataTypeGauge}
-	consumer := newMetricsConsumer([]typedMetricConsumer{mockGaugeConsumer}, sender)
+	consumer := newMetricsConsumer(
+		[]typedMetricConsumer{mockGaugeConsumer}, sender, true)
 	ctx, cancel := context.WithCancel(context.Background())
 
 	cancel()
@@ -132,27 +152,6 @@ func TestGaugeConsumerErrorSending(t *testing.T) {
 	verifyGaugeConsumer(t, true)
 }
 
-func TestGaugeConsumerMissingValueNoLogging(t *testing.T) {
-	metric := newMetric("missing.value.metric", pdata.MetricDataTypeGauge)
-	dataPoints := metric.Gauge().DataPoints()
-	dataPoints.EnsureCapacity(1)
-	addDataPoint(
-		nil,
-		1633123456,
-		nil,
-		dataPoints,
-	)
-	sender := &mockGaugeSender{}
-	consumer := newGaugeConsumer(sender, nil)
-	var errs []error
-
-	consumer.Consume(metric, &errs)
-	consumer.PushInternalMetrics(&errs)
-
-	assert.Empty(t, errs)
-	assert.Empty(t, sender.metrics)
-}
-
 func TestGaugeConsumerMissingValue(t *testing.T) {
 	metric := newMetric("missing.value.metric", pdata.MetricDataTypeGauge)
 	dataPoints := metric.Gauge().DataPoints()
@@ -166,7 +165,9 @@ func TestGaugeConsumerMissingValue(t *testing.T) {
 	// Sending to tanzu observability should fail
 	sender := &mockGaugeSender{errorOnSend: true}
 	observedZapCore, observedLogs := observer.New(zap.DebugLevel)
-	consumer := newGaugeConsumer(sender, zap.New(observedZapCore))
+	settings := componenttest.NewNopTelemetrySettings()
+	settings.Logger = zap.New(observedZapCore)
+	consumer := newGaugeConsumer(sender, settings)
 	var errs []error
 	expectedMissingValueCount := 2
 	for i := 0; i < expectedMissingValueCount; i++ {
@@ -182,13 +183,15 @@ func TestGaugeConsumerMissingValue(t *testing.T) {
 
 	// One error from emitting the internal metric
 	assert.Len(t, errs, 1)
-	// Only the internal metric was sent
-	require.Len(t, sender.metrics, 1)
-	assert.Equal(t, tobsMetric{
-		Name:  missingValueMetricName,
-		Value: float64(expectedMissingValueCount),
-		Tags:  map[string]string{"type": "gauge"}},
-		sender.metrics[0])
+	assert.Contains(
+		t,
+		sender.metrics,
+		tobsMetric{
+			Name:  missingValueMetricName,
+			Value: float64(expectedMissingValueCount),
+			Tags:  map[string]string{"type": "gauge"},
+		},
+	)
 	allLogs := observedLogs.All()
 	assert.Len(t, allLogs, expectedMissingValueCount)
 }
@@ -218,13 +221,12 @@ func TestSumConsumerDelta(t *testing.T) {
 	)
 
 	sender := &mockSumSender{}
-	consumer := newSumConsumer(sender, nil)
+	consumer := newSumConsumer(sender, componenttest.NewNopTelemetrySettings())
 	assert.Equal(t, pdata.MetricDataTypeSum, consumer.Type())
 	var errs []error
 
 	// delta sums get treated as delta counters
 	consumer.Consume(deltaMetric, &errs)
-	consumer.PushInternalMetrics(&errs)
 
 	expected := []tobsMetric{
 		{
@@ -268,13 +270,12 @@ func TestSumConsumerErrorOnSend(t *testing.T) {
 	)
 
 	sender := &mockSumSender{errorOnSend: true}
-	consumer := newSumConsumer(sender, nil)
+	consumer := newSumConsumer(sender, componenttest.NewNopTelemetrySettings())
 	assert.Equal(t, pdata.MetricDataTypeSum, consumer.Type())
 	var errs []error
 
 	// delta sums get treated as delta counters
 	consumer.Consume(deltaMetric, &errs)
-	consumer.PushInternalMetrics(&errs)
 
 	assert.Len(t, errs, 2)
 }
@@ -295,13 +296,12 @@ func TestSumConsumerCumulative(t *testing.T) {
 		dataPoints,
 	)
 	sender := &mockSumSender{}
-	consumer := newSumConsumer(sender, nil)
+	consumer := newSumConsumer(sender, componenttest.NewNopTelemetrySettings())
 	assert.Equal(t, pdata.MetricDataTypeSum, consumer.Type())
 	var errs []error
 
 	// cumulative sums get treated as regular wavefront metrics
 	consumer.Consume(cumulativeMetric, &errs)
-	consumer.PushInternalMetrics(&errs)
 
 	expected := []tobsMetric{
 		{
@@ -332,13 +332,12 @@ func TestSumConsumerUnspecified(t *testing.T) {
 		dataPoints,
 	)
 	sender := &mockSumSender{}
-	consumer := newSumConsumer(sender, nil)
+	consumer := newSumConsumer(sender, componenttest.NewNopTelemetrySettings())
 	assert.Equal(t, pdata.MetricDataTypeSum, consumer.Type())
 	var errs []error
 
 	// unspecified sums get treated as regular wavefront metrics
 	consumer.Consume(cumulativeMetric, &errs)
-	consumer.PushInternalMetrics(&errs)
 
 	expected := []tobsMetric{
 		{
@@ -367,7 +366,9 @@ func TestSumConsumerMissingValue(t *testing.T) {
 	)
 	sender := &mockSumSender{}
 	observedZapCore, observedLogs := observer.New(zap.DebugLevel)
-	consumer := newSumConsumer(sender, zap.New(observedZapCore))
+	settings := componenttest.NewNopTelemetrySettings()
+	settings.Logger = zap.New(observedZapCore)
+	consumer := newSumConsumer(sender, settings)
 	var errs []error
 
 	expectedMissingValueCount := 2
@@ -399,11 +400,9 @@ func TestHistogramConsumerDeltaAggregation(t *testing.T) {
 	sender := &mockGaugeSender{}
 	cumulativeConsumer := &mockHistogramDataPointConsumer{}
 	consumer := newHistogramConsumer(
-		cumulativeConsumer, nil, sender, nil)
+		cumulativeConsumer, nil, sender, componenttest.NewNopTelemetrySettings())
 	var errs []error
 	consumer.Consume(deltaMetric, &errs)
-	assert.Len(t, errs, 1)
-	consumer.PushInternalMetrics(&errs)
 	assert.Len(t, errs, 1)
 }
 
@@ -418,11 +417,10 @@ func TestHistogramConsumerCumulativeAggregation(t *testing.T) {
 	sender := &mockGaugeSender{}
 	cumulativeConsumer := &mockHistogramDataPointConsumer{}
 	consumer := newHistogramConsumer(
-		cumulativeConsumer, nil, sender, nil)
+		cumulativeConsumer, nil, sender, componenttest.NewNopTelemetrySettings())
 	var errs []error
 
 	consumer.Consume(cumulativeMetric, &errs)
-	consumer.PushInternalMetrics(&errs)
 
 	assert.Empty(t, errs)
 
@@ -446,11 +444,13 @@ func TestHistogramConsumerNoAggregation(t *testing.T) {
 		nil)
 	sender := &mockGaugeSender{}
 	observedZapCore, observedLogs := observer.New(zap.DebugLevel)
+	settings := componenttest.NewNopTelemetrySettings()
+	settings.Logger = zap.New(observedZapCore)
 	consumer := newHistogramConsumer(
 		&mockHistogramDataPointConsumer{},
 		nil,
 		sender,
-		zap.New(observedZapCore),
+		settings,
 	)
 	assert.Equal(t, pdata.MetricDataTypeHistogram, consumer.Type())
 	var errs []error
@@ -472,7 +472,9 @@ func TestHistogramConsumerNoAggregation(t *testing.T) {
 
 func TestHistogramReporting(t *testing.T) {
 	observedZapCore, observedLogs := observer.New(zap.DebugLevel)
-	report := newHistogramReporting(zap.New(observedZapCore))
+	settings := componenttest.NewNopTelemetrySettings()
+	settings.Logger = zap.New(observedZapCore)
+	report := newHistogramReporting(settings)
 	metric := newMetric("a.metric", pdata.MetricDataTypeHistogram)
 	malformedCount := 3
 	for i := 0; i < malformedCount; i++ {
@@ -514,7 +516,7 @@ func TestHistogramReporting(t *testing.T) {
 }
 
 func TestHistogramReportingError(t *testing.T) {
-	report := newHistogramReporting(zap.NewNop())
+	report := newHistogramReporting(componenttest.NewNopTelemetrySettings())
 	sender := &mockGaugeSender{errorOnSend: true}
 	var errs []error
 
@@ -532,7 +534,7 @@ func TestCumulativeHistogramDataPointConsumer(t *testing.T) {
 	histogramDataPoint.SetBucketCounts([]uint64{5, 1, 3, 2})
 	setTags(map[string]interface{}{"foo": "bar"}, histogramDataPoint.Attributes())
 	sender := &mockGaugeSender{}
-	report := newHistogramReporting(zap.NewNop())
+	report := newHistogramReporting(componenttest.NewNopTelemetrySettings())
 	consumer := newCumulativeHistogramDataPointConsumer(sender)
 	var errs []error
 
@@ -575,7 +577,7 @@ func TestCumulativeHistogramDataPointConsumerError(t *testing.T) {
 	histogramDataPoint.SetExplicitBounds([]float64{2.0, 5.0, 10.0})
 	histogramDataPoint.SetBucketCounts([]uint64{5, 1, 3, 2})
 	sender := &mockGaugeSender{errorOnSend: true}
-	report := newHistogramReporting(zap.NewNop())
+	report := newHistogramReporting(componenttest.NewNopTelemetrySettings())
 	consumer := newCumulativeHistogramDataPointConsumer(sender)
 	var errs []error
 
@@ -592,7 +594,7 @@ func TestCumulativeHistogramDataPointConsumerLeInUse(t *testing.T) {
 	histogramDataPoint.SetBucketCounts([]uint64{4, 12})
 	setTags(map[string]interface{}{"le": 8}, histogramDataPoint.Attributes())
 	sender := &mockGaugeSender{}
-	report := newHistogramReporting(zap.NewNop())
+	report := newHistogramReporting(componenttest.NewNopTelemetrySettings())
 	consumer := newCumulativeHistogramDataPointConsumer(sender)
 	var errs []error
 
@@ -621,7 +623,7 @@ func TestCumulativeHistogramDataPointConsumerMissingBuckets(t *testing.T) {
 	metric := newMetric("a.metric", pdata.MetricDataTypeHistogram)
 	histogramDataPoint := pdata.NewHistogramDataPoint()
 	sender := &mockGaugeSender{}
-	report := newHistogramReporting(zap.NewNop())
+	report := newHistogramReporting(componenttest.NewNopTelemetrySettings())
 	consumer := newCumulativeHistogramDataPointConsumer(sender)
 	var errs []error
 
@@ -683,12 +685,11 @@ func verifyGaugeConsumer(t *testing.T, errorOnSend bool) {
 		},
 	}
 	sender := &mockGaugeSender{errorOnSend: errorOnSend}
-	consumer := newGaugeConsumer(sender, nil)
+	consumer := newGaugeConsumer(sender, componenttest.NewNopTelemetrySettings())
 
 	assert.Equal(t, pdata.MetricDataTypeGauge, consumer.Type())
 	var errs []error
 	consumer.Consume(metric, &errs)
-	consumer.PushInternalMetrics(&errs)
 	assert.ElementsMatch(t, expected, sender.metrics)
 	if errorOnSend {
 		assert.Len(t, errs, len(expected))
