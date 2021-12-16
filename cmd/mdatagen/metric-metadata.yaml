@@ -25,6 +25,8 @@ metrics:
     unit:
     # Required: metric type with its settings.
     <sum|gauge|histogram>:
+      # Required for sum and gauge metrics: type of number data point values.
+      value_type: # int | double
       # Required for sum metric.
       monotonic: # true | false
       # Required for int sum and histogram metrics.

@@ -14,6 +14,7 @@ metrics:
     description: Total CPU seconds broken down by different states.
     unit: s
     sum:
+      value_type: double
       aggregation: cumulative
       monotonic: true
     attributes: [state]
@@ -22,6 +23,7 @@ metrics:
     description: The amount of physical memory in use.
     unit: By
     sum:
+      value_type: int
       aggregation: cumulative
       monotonic: false
 
@@ -29,6 +31,7 @@ metrics:
     description: Virtual memory size.
     unit: By
     sum:
+      value_type: int
       aggregation: cumulative
       monotonic: false
 
@@ -36,6 +39,7 @@ metrics:
     description: Disk bytes transferred.
     unit: By
     sum:
+      value_type: int
       aggregation: cumulative
       monotonic: true
     attributes: [direction]

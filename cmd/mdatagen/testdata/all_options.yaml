@@ -17,6 +17,7 @@ metrics:
     extended_documentation: Additional information on CPU Time can be found [here](https://en.wikipedia.org/wiki/CPU_time).
     unit: s
     sum:
+      value_type: double
       monotonic: true
       aggregation: cumulative
     attributes: [freeFormAttribute, freeFormAttributeWithValue, enumAttribute]
