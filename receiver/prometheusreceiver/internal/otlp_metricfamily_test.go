@@ -16,6 +16,7 @@ package internal
 
 import (
 	"testing"
+	"time"
 
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/pkg/textparse"
@@ -103,10 +104,10 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 				point := pdata.NewHistogramDataPoint()
 				point.SetCount(10)
 				point.SetSum(1004.78)
-				point.SetTimestamp(11 * 1e6) // the time in milliseconds -> nanoseconds.
+				point.SetTimestamp(pdata.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				point.SetBucketCounts([]uint64{33})
 				point.SetExplicitBounds([]float64{})
-				point.SetStartTimestamp(11 * 1e6)
+				point.SetStartTimestamp(pdata.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				attributes := point.Attributes()
 				attributes.InsertString("a", "A")
 				attributes.InsertString("b", "B")
@@ -118,7 +119,7 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			mp := newMetricFamilyPdata(tt.metricName, mc, zap.NewNop(), tt.intervalStartTimeMs).(*metricFamilyPdata)
+			mp := newMetricFamilyPdata(tt.metricName, mc, zap.NewNop()).(*metricFamilyPdata)
 			for _, tv := range tt.scrapes {
 				require.NoError(t, mp.Add(tv.metric, tt.labels.Copy(), tv.at, tv.value))
 			}
@@ -161,8 +162,8 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.0"}, {Name: "b", Value: "B"},
 					},
 					scrapes: []*scrape{
-						{at: 10, value: 10, metric: "histogram_count"},
-						{at: 10, value: 12, metric: "histogram_sum"},
+						{at: 10, value: 10, metric: "summary_count"},
+						{at: 10, value: 12, metric: "summary_sum"},
 						{at: 10, value: 8, metric: "value"},
 					},
 				},
@@ -171,8 +172,8 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.75"}, {Name: "b", Value: "B"},
 					},
 					scrapes: []*scrape{
-						{at: 11, value: 10, metric: "histogram_count"},
-						{at: 11, value: 1004.78, metric: "histogram_sum"},
+						{at: 11, value: 10, metric: "summary_count"},
+						{at: 11, value: 1004.78, metric: "summary_sum"},
 						{at: 11, value: 33.7, metric: "value"},
 					},
 				},
@@ -181,8 +182,8 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.50"}, {Name: "b", Value: "B"},
 					},
 					scrapes: []*scrape{
-						{at: 12, value: 10, metric: "histogram_count"},
-						{at: 12, value: 13, metric: "histogram_sum"},
+						{at: 12, value: 10, metric: "summary_count"},
+						{at: 12, value: 13, metric: "summary_sum"},
 						{at: 12, value: 27, metric: "value"},
 					},
 				},
@@ -191,8 +192,8 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.90"}, {Name: "b", Value: "B"},
 					},
 					scrapes: []*scrape{
-						{at: 13, value: 10, metric: "histogram_count"},
-						{at: 13, value: 14, metric: "histogram_sum"},
+						{at: 13, value: 10, metric: "summary_count"},
+						{at: 13, value: 14, metric: "summary_sum"},
 						{at: 13, value: 56, metric: "value"},
 					},
 				},
@@ -201,8 +202,8 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.99"}, {Name: "b", Value: "B"},
 					},
 					scrapes: []*scrape{
-						{at: 14, value: 10, metric: "histogram_count"},
-						{at: 14, value: 15, metric: "histogram_sum"},
+						{at: 14, value: 10, metric: "summary_count"},
+						{at: 14, value: 15, metric: "summary_sum"},
 						{at: 14, value: 82, metric: "value"},
 					},
 				},
@@ -227,8 +228,8 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 				qn99 := qtL.AppendEmpty()
 				qn99.SetQuantile(.99)
 				qn99.SetValue(82)
-				point.SetTimestamp(14 * 1e6) // the time in milliseconds -> nanoseconds.
-				point.SetStartTimestamp(10 * 1e5)
+				point.SetTimestamp(pdata.Timestamp(14 * time.Millisecond))      // the time in milliseconds -> nanoseconds.
+				point.SetStartTimestamp(pdata.Timestamp(14 * time.Millisecond)) // the time in milliseconds -> nanoseconds
 				attributes := point.Attributes()
 				attributes.InsertString("a", "A")
 				attributes.InsertString("b", "B")
@@ -240,7 +241,7 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			mp := newMetricFamilyPdata(tt.name, mc, zap.NewNop(), 1).(*metricFamilyPdata)
+			mp := newMetricFamilyPdata(tt.name, mc, zap.NewNop()).(*metricFamilyPdata)
 			for _, lbs := range tt.labelsScrapes {
 				for _, scrape := range lbs.scrapes {
 					require.NoError(t, mp.Add(scrape.metric, lbs.labels.Copy(), scrape.at, scrape.value))
@@ -290,8 +291,8 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 			want: func() pdata.NumberDataPoint {
 				point := pdata.NewNumberDataPoint()
 				point.SetDoubleVal(33.7)
-				point.SetTimestamp(13 * 1e6) // the time in milliseconds -> nanoseconds.
-				point.SetStartTimestamp(11 * 1e6)
+				point.SetTimestamp(pdata.Timestamp(13 * time.Millisecond))      // the time in milliseconds -> nanoseconds.
+				point.SetStartTimestamp(pdata.Timestamp(13 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				attributes := point.Attributes()
 				attributes.InsertString("a", "A")
 				attributes.InsertString("b", "B")
@@ -309,8 +310,8 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 			want: func() pdata.NumberDataPoint {
 				point := pdata.NewNumberDataPoint()
 				point.SetDoubleVal(99.9)
-				point.SetTimestamp(28 * 1e6) // the time in milliseconds -> nanoseconds.
-				point.SetStartTimestamp(0)
+				point.SetTimestamp(pdata.Timestamp(28 * time.Millisecond))      // the time in milliseconds -> nanoseconds.
+				point.SetStartTimestamp(pdata.Timestamp(28 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				attributes := point.Attributes()
 				attributes.InsertString("a", "A")
 				attributes.InsertString("b", "B")
@@ -322,7 +323,7 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			mp := newMetricFamilyPdata(tt.metricKind, mc, zap.NewNop(), tt.intervalStartTimestampMs).(*metricFamilyPdata)
+			mp := newMetricFamilyPdata(tt.metricKind, mc, zap.NewNop()).(*metricFamilyPdata)
 			for _, tv := range tt.scrapes {
 				require.NoError(t, mp.Add(tv.metric, tt.labels.Copy(), tv.at, tv.value))
 			}

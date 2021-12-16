@@ -394,7 +394,7 @@ func (mg *metricGroup) toDoubleValueTimeSeries(orderedLabelKeys []string) *metri
 	var startTs *timestamppb.Timestamp
 	// gauge/undefined types has no start time
 	if mg.family.isCumulativeType() {
-		startTs = timestampFromMs(mg.intervalStartTimeMs)
+		startTs = timestampFromMs(mg.ts) // metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
 	}
 
 	return &metricspb.TimeSeries{
