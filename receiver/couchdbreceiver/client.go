@@ -1,9 +1,23 @@
-package couchdbreceiver
+// Copyright  The OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package couchdbreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver"
 
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
 
@@ -11,10 +25,11 @@ import (
 	"go.uber.org/zap"
 )
 
+const nodeNamesPath = "/_membership"
+
 // CouchDBClient defines the basic HTTP client interface.
 type CouchDBClient interface {
-	BuildReq(path string) (*http.Request, error)
-	Get(url string) ([]byte, error)
+	Get(path string) ([]byte, error)
 	GetNodeNames() ([]string, error)
 	GetStats(nodeName string) (map[string]interface{}, error)
 }
@@ -43,7 +58,7 @@ func NewCouchDBClient(cfg *Config, host component.Host, logger *zap.Logger) (Cou
 
 // Get issues an authorized Get requests to the specified url.
 func (cc *couchDBClient) Get(path string) ([]byte, error) {
-	req, err := cc.BuildReq(path)
+	req, err := cc.buildReq(path)
 	if err != nil {
 		return nil, err
 	}
@@ -59,16 +74,16 @@ func (cc *couchDBClient) Get(path string) ([]byte, error) {
 		}
 	}()
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body %w", err)
-	}
-
 	if resp.StatusCode != http.StatusOK {
 		if resp.StatusCode >= 400 {
 			cc.logger.Error("couchdb", zap.Error(err), zap.String("status_code", strconv.Itoa(resp.StatusCode)))
 		}
 		return nil, fmt.Errorf("request GET %s failed - %q", req.URL.String(), resp.Status)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body %w", err)
 	}
 
 	return body, nil
@@ -81,8 +96,7 @@ type Nodes struct {
 
 // GetNodeNames gets all known connected nodes names.
 func (cc *couchDBClient) GetNodeNames() ([]string, error) {
-	path := "/_membership"
-	body, err := cc.Get(path)
+	body, err := cc.Get(nodeNamesPath)
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +127,7 @@ func (cc *couchDBClient) GetStats(nodeName string) (map[string]interface{}, erro
 	return stats, nil
 }
 
-func (cc *couchDBClient) BuildReq(path string) (*http.Request, error) {
+func (cc *couchDBClient) buildReq(path string) (*http.Request, error) {
 	url := cc.cfg.Endpoint + path
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {

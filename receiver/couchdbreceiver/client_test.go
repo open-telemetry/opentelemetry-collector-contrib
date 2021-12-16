@@ -1,4 +1,18 @@
-package couchdbreceiver
+// Copyright  The OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package couchdbreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver"
 
 import (
 	"net/http"
@@ -147,7 +161,7 @@ func TestGetNodeNamesSingle(t *testing.T) {
 			return
 		}
 
-		if r.URL.Path == "/_membership" {
+		if r.URL.Path == nodeNamesPath {
 			w.WriteHeader(200)
 			w.Write([]byte(`{"all_nodes":["nonode@nohost"],"cluster_nodes":["nonode@nohost"]}`))
 			return
@@ -182,7 +196,7 @@ func TestGetNodeNamesSingle(t *testing.T) {
 
 func TestGetNodeNamesMultiple(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/_membership" {
+		if r.URL.Path == nodeNamesPath {
 			w.WriteHeader(200)
 			w.Write([]byte(`{"all_nodes":["couchdb@couchdb0.otel.com","couchdb@couchdb1.otel.com","couchdb@couchdb2.otel.com"],"cluster_nodes":["couchdb@couchdb0.otel.com","couchdb@couchdb1.otel.com","couchdb@couchdb2.otel.com"]}`))
 			return
@@ -241,22 +255,37 @@ func TestGetNodeStats(t *testing.T) {
 }
 
 func TestBuildReq(t *testing.T) {
-	endpoint := "http://localhost:5984"
-	path := "/_membership"
-	couchdbClient := defaultConfig(t, endpoint)
+	couchdbClient := couchDBClient{
+		client: &http.Client{},
+		cfg: &Config{
+			HTTPClientSettings: confighttp.HTTPClientSettings{
+				Endpoint: defaultEndpoint,
+			},
+			Username: "otelu",
+			Password: "otelp",
+		},
+		logger: zap.NewNop(),
+	}
 
-	req, err := couchdbClient.BuildReq(path)
+	req, err := couchdbClient.buildReq(nodeNamesPath)
 	require.NoError(t, err)
 	require.NotNil(t, req)
 	require.Equal(t, "application/json", req.Header["Content-Type"][0])
 	require.Equal(t, []string{"Basic b3RlbHU6b3RlbHA="}, req.Header["Authorization"])
-	require.Equal(t, endpoint+path, req.URL.String())
+	require.Equal(t, defaultEndpoint+nodeNamesPath, req.URL.String())
 }
 
 func TestBuildBadReq(t *testing.T) {
-	endpoint := "http://localhost:5984"
-	couchdbClient := defaultConfig(t, endpoint)
+	couchdbClient := couchDBClient{
+		client: &http.Client{},
+		cfg: &Config{
+			HTTPClientSettings: confighttp.HTTPClientSettings{
+				Endpoint: defaultEndpoint,
+			},
+		},
+		logger: zap.NewNop(),
+	}
 
-	_, err := couchdbClient.BuildReq(" ")
+	_, err := couchdbClient.buildReq(" ")
 	require.Error(t, err)
 }
