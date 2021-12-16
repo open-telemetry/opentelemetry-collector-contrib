@@ -17,7 +17,6 @@ package diskscraper
 import (
 	"context"
 	"errors"
-	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -37,40 +36,62 @@ func TestScrape(t *testing.T) {
 		bootTimeFunc      func() (uint64, error)
 		newErrRegex       string
 		initializationErr string
-		expectMetrics     bool
+		expectMetrics     int
 		expectedStartTime pdata.Timestamp
 	}
 
 	testCases := []testCase{
 		{
 			name:          "Standard",
-			expectMetrics: true,
+			config:        Config{Metrics: metadata.DefaultMetricsSettings()},
+			expectMetrics: metricsLen,
 		},
 		{
 			name:              "Validate Start Time",
+			config:            Config{Metrics: metadata.DefaultMetricsSettings()},
 			bootTimeFunc:      func() (uint64, error) { return 100, nil },
-			expectMetrics:     true,
+			expectMetrics:     metricsLen,
 			expectedStartTime: 100 * 1e9,
 		},
 		{
 			name:              "Boot Time Error",
+			config:            Config{Metrics: metadata.DefaultMetricsSettings()},
 			bootTimeFunc:      func() (uint64, error) { return 0, errors.New("err1") },
 			initializationErr: "err1",
+			expectMetrics:     metricsLen,
 		},
 		{
-			name:          "Include Filter that matches nothing",
-			config:        Config{Include: MatchConfig{filterset.Config{MatchType: "strict"}, []string{"@*^#&*$^#)"}}},
-			expectMetrics: false,
+			name: "Include Filter that matches nothing",
+			config: Config{
+				Metrics: metadata.DefaultMetricsSettings(),
+				Include: MatchConfig{filterset.Config{MatchType: "strict"}, []string{"@*^#&*$^#)"}},
+			},
+			expectMetrics: 0,
 		},
 		{
-			name:        "Invalid Include Filter",
-			config:      Config{Include: MatchConfig{Devices: []string{"test"}}},
+			name: "Invalid Include Filter",
+			config: Config{
+				Metrics: metadata.DefaultMetricsSettings(),
+				Include: MatchConfig{Devices: []string{"test"}},
+			},
 			newErrRegex: "^error creating device include filters:",
 		},
 		{
-			name:        "Invalid Exclude Filter",
-			config:      Config{Exclude: MatchConfig{Devices: []string{"test"}}},
+			name: "Invalid Exclude Filter",
+			config: Config{
+				Metrics: metadata.DefaultMetricsSettings(),
+				Exclude: MatchConfig{Devices: []string{"test"}},
+			},
 			newErrRegex: "^error creating device exclude filters:",
+		},
+		{
+			name: "Disable one metric",
+			config: (func() Config {
+				config := Config{Metrics: metadata.DefaultMetricsSettings()}
+				config.Metrics.SystemDiskIo.Enabled = false
+				return config
+			})(),
+			expectMetrics: metricsLen - 1,
 		},
 	}
 
@@ -98,23 +119,37 @@ func TestScrape(t *testing.T) {
 			md, err := scraper.scrape(context.Background())
 			require.NoError(t, err, "Failed to scrape metrics: %v", err)
 
-			if !test.expectMetrics {
-				assert.Equal(t, 0, md.MetricCount())
-				return
-			}
-
+			assert.Equal(t, test.expectMetrics, md.MetricCount())
 			metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
-			assert.Equal(t, metricsLen, metrics.Len())
+			assert.Equal(t, test.expectMetrics, metrics.Len())
 
-			assertInt64DiskMetricValid(t, metrics.At(0), metadata.Metrics.SystemDiskIo.New(), test.expectedStartTime)
-			assertInt64DiskMetricValid(t, metrics.At(1), metadata.Metrics.SystemDiskOperations.New(), test.expectedStartTime)
-			assertDoubleDiskMetricValid(t, metrics.At(2), metadata.Metrics.SystemDiskIoTime.New(), false, test.expectedStartTime)
-			assertDoubleDiskMetricValid(t, metrics.At(3), metadata.Metrics.SystemDiskOperationTime.New(), true, test.expectedStartTime)
-			assertDiskPendingOperationsMetricValid(t, metrics.At(4))
-
-			if runtime.GOOS == "linux" {
-				assertDoubleDiskMetricValid(t, metrics.At(5), metadata.Metrics.SystemDiskWeightedIoTime.New(), false, test.expectedStartTime)
-				assertInt64DiskMetricValid(t, metrics.At(6), metadata.Metrics.SystemDiskMerged.New(), test.expectedStartTime)
+			reportedMetricsCount := map[string]int{}
+			for i := 0; i < metrics.Len(); i++ {
+				metric := metrics.At(i)
+				reportedMetricsCount[metric.Name()]++
+				switch metric.Name() {
+				case "system.disk.io":
+					assertInt64DiskMetricValid(t, metric, test.expectedStartTime)
+				case "system.disk.io_time":
+					assertDoubleDiskMetricValid(t, metric, false, test.expectedStartTime)
+				case "system.disk.operation_time":
+					assertDoubleDiskMetricValid(t, metric, true, test.expectedStartTime)
+				case "system.disk.operations":
+					assertInt64DiskMetricValid(t, metric, test.expectedStartTime)
+				case "system.disk.weighted.io.time":
+					assertDoubleDiskMetricValid(t, metric, false, test.expectedStartTime)
+				case "system.disk.merged":
+					assertInt64DiskMetricValid(t, metric, test.expectedStartTime)
+				case "system.disk.pending_operations":
+					assertDiskPendingOperationsMetricValid(t, metric)
+				case "system.disk.weighted_io_time":
+					assertDoubleDiskMetricValid(t, metric, false, test.expectedStartTime)
+				default:
+					assert.Failf(t, "unexpected-metric", "metric %q is not expected", metric.Name())
+				}
+			}
+			for m, c := range reportedMetricsCount {
+				assert.Equal(t, 1, c, "metric %q reported %d times", m, c)
 			}
 
 			internal.AssertSameTimeStampForAllMetrics(t, metrics)
@@ -122,8 +157,7 @@ func TestScrape(t *testing.T) {
 	}
 }
 
-func assertInt64DiskMetricValid(t *testing.T, metric pdata.Metric, expectedDescriptor pdata.Metric, startTime pdata.Timestamp) {
-	internal.AssertDescriptorEqual(t, expectedDescriptor, metric)
+func assertInt64DiskMetricValid(t *testing.T, metric pdata.Metric, startTime pdata.Timestamp) {
 	if startTime != 0 {
 		internal.AssertSumMetricStartTimeEquals(t, metric, startTime)
 	}
@@ -135,8 +169,7 @@ func assertInt64DiskMetricValid(t *testing.T, metric pdata.Metric, expectedDescr
 	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "direction", pdata.NewAttributeValueString(metadata.AttributeDirection.Write))
 }
 
-func assertDoubleDiskMetricValid(t *testing.T, metric pdata.Metric, expectedDescriptor pdata.Metric, expectDirectionLabels bool, startTime pdata.Timestamp) {
-	internal.AssertDescriptorEqual(t, expectedDescriptor, metric)
+func assertDoubleDiskMetricValid(t *testing.T, metric pdata.Metric, expectDirectionLabels bool, startTime pdata.Timestamp) {
 	if startTime != 0 {
 		internal.AssertSumMetricStartTimeEquals(t, metric, startTime)
 	}
@@ -155,7 +188,6 @@ func assertDoubleDiskMetricValid(t *testing.T, metric pdata.Metric, expectedDesc
 }
 
 func assertDiskPendingOperationsMetricValid(t *testing.T, metric pdata.Metric) {
-	internal.AssertDescriptorEqual(t, metadata.Metrics.SystemDiskPendingOperations.New(), metric)
 	assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), 1)
 	internal.AssertSumMetricHasAttribute(t, metric, 0, "device")
 }
