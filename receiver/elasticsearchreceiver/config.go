@@ -35,11 +35,6 @@ var (
 	errEmptyEndpoint        = errors.New("endpoint must be specified")
 )
 
-var validSchemes = []string{
-	"http",
-	"https",
-}
-
 // Config is the configuration for the elasticsearch receiver
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
@@ -69,22 +64,13 @@ func (cfg *Config) Validate() error {
 		)
 	}
 
-	if !validScheme(u.Scheme) {
+	switch u.Scheme {
+	case "http", "https": // ok
+	default:
 		return multierr.Append(combinedErr, errEndpointBadScheme)
 	}
 
 	return combinedErr
-}
-
-// validScheme checks if the given scheme string is one of the valid schemes.
-func validScheme(scheme string) bool {
-	for _, s := range validSchemes {
-		if s == scheme {
-			return true
-		}
-	}
-
-	return false
 }
 
 // invalidCredentials returns true if only one username or password is not empty.
