@@ -218,6 +218,28 @@ func TestAccumulateMetrics(t *testing.T) {
 			},
 		},
 		{
+			name: "Summary",
+			metric: func(ts time.Time, v float64, metrics pdata.MetricSlice) {
+				metric := metrics.AppendEmpty()
+				metric.SetName("test_metric")
+				metric.SetDataType(pdata.MetricDataTypeSummary)
+				metric.SetDescription("test description")
+				dp := metric.Summary().DataPoints().AppendEmpty()
+				dp.SetCount(10)
+				dp.SetSum(0.012)
+				dp.SetCount(10)
+				dp.Attributes().InsertString("label_1", "1")
+				dp.Attributes().InsertString("label_2", "2")
+				dp.SetTimestamp(pdata.NewTimestampFromTime(ts))
+				fillQuantileValue := func(pN, value float64, dest pdata.ValueAtQuantile) {
+					dest.SetQuantile(pN)
+					dest.SetValue(value)
+				}
+				fillQuantileValue(0.50, 190, dp.QuantileValues().AppendEmpty())
+				fillQuantileValue(0.99, 817, dp.QuantileValues().AppendEmpty())
+			},
+		},
+		{
 			name: "StalenessMarkerGauge",
 			metric: func(ts time.Time, v float64, metrics pdata.MetricSlice) {
 				metric := metrics.AppendEmpty()
@@ -266,6 +288,29 @@ func TestAccumulateMetrics(t *testing.T) {
 				dp.Attributes().InsertString("label_2", "2")
 				dp.SetTimestamp(pdata.NewTimestampFromTime(ts))
 				dp.SetFlags(1)
+			},
+		},
+		{
+			name: "StalenessMarkerSummary",
+			metric: func(ts time.Time, v float64, metrics pdata.MetricSlice) {
+				metric := metrics.AppendEmpty()
+				metric.SetName("test_metric")
+				metric.SetDataType(pdata.MetricDataTypeSummary)
+				metric.SetDescription("test description")
+				dp := metric.Summary().DataPoints().AppendEmpty()
+				dp.SetCount(10)
+				dp.SetSum(0.012)
+				dp.SetCount(10)
+				dp.Attributes().InsertString("label_1", "1")
+				dp.Attributes().InsertString("label_2", "2")
+				dp.SetTimestamp(pdata.NewTimestampFromTime(ts))
+				dp.SetFlags(1)
+				fillQuantileValue := func(pN, value float64, dest pdata.ValueAtQuantile) {
+					dest.SetQuantile(pN)
+					dest.SetValue(value)
+				}
+				fillQuantileValue(0.50, 190, dp.QuantileValues().AppendEmpty())
+				fillQuantileValue(0.99, 817, dp.QuantileValues().AppendEmpty())
 			},
 		},
 	}
@@ -379,6 +424,10 @@ func getMetricProperties(metric pdata.Metric) (
 		value = metric.Histogram().DataPoints().At(0).Sum()
 		temporality = metric.Histogram().AggregationTemporality()
 		isMonotonic = true
+	case pdata.MetricDataTypeSummary:
+		attributes = metric.Summary().DataPoints().At(0).Attributes()
+		ts = metric.Summary().DataPoints().At(0).Timestamp().AsTime()
+		value = metric.Summary().DataPoints().At(0).Sum()
 	default:
 		log.Panicf("Invalid data type %s", metric.DataType().String())
 	}
