@@ -17,7 +17,6 @@ package jaeger // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"encoding/base64"
 	"fmt"
-	"math"
 	"reflect"
 	"strconv"
 
@@ -252,7 +251,7 @@ func setInternalSpanStatus(attrs pdata.AttributeMap, dest pdata.SpanStatus) {
 	}
 }
 
-func getStatusCodeValFromAttr(attrVal pdata.AttributeValue) (int, error) {
+func getStatusCodeValFromAttr(attrVal pdata.AttributeValue) (int64, error) {
 	var codeVal int64
 	switch attrVal.Type() {
 	case pdata.AttributeValueTypeInt:
@@ -266,10 +265,7 @@ func getStatusCodeValFromAttr(attrVal pdata.AttributeValue) (int, error) {
 	default:
 		return 0, fmt.Errorf("invalid status code attribute type: %s", attrVal.Type().String())
 	}
-	if codeVal > math.MaxInt32 || codeVal < math.MinInt32 {
-		return 0, fmt.Errorf("invalid status code value: %d", codeVal)
-	}
-	return int(codeVal), nil
+	return codeVal, nil
 }
 
 func getStatusCodeFromHTTPStatusAttr(attrVal pdata.AttributeValue) (pdata.StatusCode, error) {

@@ -40,6 +40,7 @@ type zookeeperMetricsScraper struct {
 	logger *zap.Logger
 	config *Config
 	cancel context.CancelFunc
+	mb     *metadata.MetricsBuilder
 
 	// For mocking.
 	closeConnection       func(net.Conn) error
@@ -64,6 +65,7 @@ func newZookeeperMetricsScraper(logger *zap.Logger, config *Config) (*zookeeperM
 	return &zookeeperMetricsScraper{
 		logger:                logger,
 		config:                config,
+		mb:                    metadata.NewMetricsBuilder(config.Metrics),
 		closeConnection:       closeConnection,
 		setConnectionDeadline: setConnectionDeadline,
 		sendCmd:               sendCmd,
@@ -123,7 +125,6 @@ func (z *zookeeperMetricsScraper) appendMetrics(scanner *bufio.Scanner, rms pdat
 	rm := pdata.NewResourceMetrics()
 	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
 	ilm.InstrumentationLibrary().SetName("otelcol/zookeeper")
-	keepRM := false
 	for scanner.Scan() {
 		line := scanner.Text()
 		parts := zookeeperFormatRE.FindStringSubmatch(line)
@@ -146,8 +147,8 @@ func (z *zookeeperMetricsScraper) appendMetrics(scanner *bufio.Scanner, rms pdat
 			continue
 		default:
 			// Skip metric if there is no descriptor associated with it.
-			initMetric := getOTLPInitFunc(metricKey)
-			if initMetric == nil {
+			recordDataPoints := recordDataPointsFunc(z.mb, metricKey)
+			if recordDataPoints == nil {
 				// Unexported metric, just move to the next line.
 				continue
 			}
@@ -159,22 +160,11 @@ func (z *zookeeperMetricsScraper) appendMetrics(scanner *bufio.Scanner, rms pdat
 				)
 				continue
 			}
-			metric := ilm.Metrics().AppendEmpty()
-			initMetric(metric)
-			switch metric.DataType() {
-			case pdata.MetricDataTypeGauge:
-				dp := metric.Gauge().DataPoints().AppendEmpty()
-				dp.SetTimestamp(now)
-				dp.SetIntVal(int64Val)
-			case pdata.MetricDataTypeSum:
-				dp := metric.Sum().DataPoints().AppendEmpty()
-				dp.SetTimestamp(now)
-				dp.SetIntVal(int64Val)
-			}
-			keepRM = true
+			recordDataPoints(now, int64Val)
 		}
 	}
-	if keepRM {
+	z.mb.Emit(ilm.Metrics())
+	if ilm.Metrics().Len() > 0 {
 		rm.CopyTo(rms.AppendEmpty())
 	}
 }

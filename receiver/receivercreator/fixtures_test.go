@@ -59,6 +59,27 @@ var hostportEndpoint = observer.Endpoint{
 	},
 }
 
+var container = observer.Container{
+	Name:          "otel-agent",
+	Image:         "otelcol",
+	Port:          8080,
+	AlternatePort: 80,
+	Transport:     observer.ProtocolTCP,
+	Command:       "otelcol -c",
+	Host:          "localhost",
+	ContainerID:   "abc123",
+	Labels: map[string]string{
+		"env":    "prod",
+		"region": "east-1",
+	},
+}
+
+var containerEndpoint = observer.Endpoint{
+	ID:      "container-1",
+	Target:  "localhost:1234",
+	Details: &container,
+}
+
 var unsupportedEndpoint = observer.Endpoint{
 	ID:      "endpoint-1",
 	Target:  "localhost:1234",

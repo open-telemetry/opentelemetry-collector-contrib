@@ -57,15 +57,15 @@ func (m *metricImpl) Init(metric pdata.Metric) {
 type metricStruct struct {
 	MemcachedBytes              MetricIntf
 	MemcachedCommands           MetricIntf
-	MemcachedCurrentConnections MetricIntf
+	MemcachedConnectionsCurrent MetricIntf
+	MemcachedConnectionsTotal   MetricIntf
+	MemcachedCPUUsage           MetricIntf
 	MemcachedCurrentItems       MetricIntf
 	MemcachedEvictions          MetricIntf
 	MemcachedNetwork            MetricIntf
 	MemcachedOperationHitRatio  MetricIntf
 	MemcachedOperations         MetricIntf
-	MemcachedRusage             MetricIntf
 	MemcachedThreads            MetricIntf
-	MemcachedTotalConnections   MetricIntf
 }
 
 // Names returns a list of all the metric name strings.
@@ -73,30 +73,30 @@ func (m *metricStruct) Names() []string {
 	return []string{
 		"memcached.bytes",
 		"memcached.commands",
-		"memcached.current_connections",
+		"memcached.connections.current",
+		"memcached.connections.total",
+		"memcached.cpu.usage",
 		"memcached.current_items",
 		"memcached.evictions",
 		"memcached.network",
 		"memcached.operation_hit_ratio",
 		"memcached.operations",
-		"memcached.rusage",
 		"memcached.threads",
-		"memcached.total_connections",
 	}
 }
 
 var metricsByName = map[string]MetricIntf{
 	"memcached.bytes":               Metrics.MemcachedBytes,
 	"memcached.commands":            Metrics.MemcachedCommands,
-	"memcached.current_connections": Metrics.MemcachedCurrentConnections,
+	"memcached.connections.current": Metrics.MemcachedConnectionsCurrent,
+	"memcached.connections.total":   Metrics.MemcachedConnectionsTotal,
+	"memcached.cpu.usage":           Metrics.MemcachedCPUUsage,
 	"memcached.current_items":       Metrics.MemcachedCurrentItems,
 	"memcached.evictions":           Metrics.MemcachedEvictions,
 	"memcached.network":             Metrics.MemcachedNetwork,
 	"memcached.operation_hit_ratio": Metrics.MemcachedOperationHitRatio,
 	"memcached.operations":          Metrics.MemcachedOperations,
-	"memcached.rusage":              Metrics.MemcachedRusage,
 	"memcached.threads":             Metrics.MemcachedThreads,
-	"memcached.total_connections":   Metrics.MemcachedTotalConnections,
 }
 
 func (m *metricStruct) ByName(n string) MetricIntf {
@@ -127,13 +127,35 @@ var Metrics = &metricStruct{
 		},
 	},
 	&metricImpl{
-		"memcached.current_connections",
+		"memcached.connections.current",
 		func(metric pdata.Metric) {
-			metric.SetName("memcached.current_connections")
+			metric.SetName("memcached.connections.current")
 			metric.SetDescription("The current number of open connections.")
 			metric.SetUnit("connections")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(false)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+		},
+	},
+	&metricImpl{
+		"memcached.connections.total",
+		func(metric pdata.Metric) {
+			metric.SetName("memcached.connections.total")
+			metric.SetDescription("Total number of connections opened since the server started running.")
+			metric.SetUnit("connections")
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(true)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+		},
+	},
+	&metricImpl{
+		"memcached.cpu.usage",
+		func(metric pdata.Metric) {
+			metric.SetName("memcached.cpu.usage")
+			metric.SetDescription("Accumulated user and system time.")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(true)
 			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
@@ -191,17 +213,6 @@ var Metrics = &metricStruct{
 		},
 	},
 	&metricImpl{
-		"memcached.rusage",
-		func(metric pdata.Metric) {
-			metric.SetName("memcached.rusage")
-			metric.SetDescription("Accumulated user and system time.")
-			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeSum)
-			metric.Sum().SetIsMonotonic(true)
-			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
-		},
-	},
-	&metricImpl{
 		"memcached.threads",
 		func(metric pdata.Metric) {
 			metric.SetName("memcached.threads")
@@ -209,17 +220,6 @@ var Metrics = &metricStruct{
 			metric.SetUnit("1")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(false)
-			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
-		},
-	},
-	&metricImpl{
-		"memcached.total_connections",
-		func(metric pdata.Metric) {
-			metric.SetName("memcached.total_connections")
-			metric.SetDescription("Total number of connections opened since the server started running.")
-			metric.SetUnit("connections")
-			metric.SetDataType(pdata.MetricDataTypeSum)
-			metric.Sum().SetIsMonotonic(true)
 			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},

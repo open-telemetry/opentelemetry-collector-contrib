@@ -2,6 +2,64 @@
 
 ## Unreleased
 
+## 💡 Enhancements 💡
+
+- `prometheusremotewriteexporter`: Handling Staleness flag from OTLP (#6679)
+
+## 🛑 Breaking changes 🛑
+
+- `memcachedreceiver`: Update metric names (#6594)
+## 🚀 New components 🚀
+
+## 🧰 Bug fixes 🧰
+
+## 💡 Enhancements 💡
+
+- `lokiexporter`: add complete log record to body (#6619)
+
+## v0.41.0
+
+## 🛑 Breaking changes 🛑
+
+- None
+
+## 🚀 New components 🚀
+
+- `asapauthextension` (#6627)
+- `mongodbatlasreceiver` (#6367)
+
+## 🧰 Bug fixes 🧰
+
+- `filestorageextension`: fix panic when configured directory cannot be accessed (#6103)
+- `hostmetricsreceiver`: fix set of attributes for system.cpu.time metric (#6422)
+- `k8sobserver`: only record pod endpoints for running pods (#5878)
+- `mongodbatlasreceiver`: fix attributes fields in metadata.yaml (#6440)
+- `prometheusexecreceiver`: command line processing on Windows (#6145)
+- `spanmetricsprocessor`: fix exemplars support (#6140)
+-  Remap arm64 to aarch64 on rpm/deb packages (#6635)
+
+## 💡 Enhancements 💡
+
+- `datadogexporter`: do not use attribute localhost-like hostnames (#6477)
+- `datadogexporter`: retry per network call (#6412)
+- `datadogexporter`: take hostname into account for cache (#6223)
+- `exporter/lokiexporter`: adding a feature for loki exporter to encode JSON for log entry (#5846)
+- `googlecloudspannerreceiver`: added fallback to ADC for database connections. (#6629)
+- `googlecloudspannerreceiver`: added parsing only distinct items for sample lock request label. (#6514)
+- `googlecloudspannerreceiver`: added request tag label to metadata config for top query stats. (#6475)
+- `googlecloudspannerreceiver`: added sample lock requests label to the top lock stats metrics. (#6466)
+- `googlecloudspannerreceiver`: added transaction tag label to metadata config for top transaction stats. (#6433)
+- `groupbyattrsprocessor`: added support for metrics signal (#6248)
+- `hostmetricsreceiver`: ensure SchemaURL is set (#6482)
+- `kubeletstatsreceiver`: add support for read-only kubelet endpoint (#6488)
+- `mysqlreceiver`: enable native authentication (#6628)
+- `mysqlreceiver`: remove requirement for password on MySQL (#6479)
+- `receiver/prometheusreceiver`: do not add host.name to metrics from localhost/unspecified targets (#6476)
+- `spanmetricsprocessor`: add setStatus operation (#5886)
+- `splunkhecexporter`: remove duplication of host.name attribute (#6527)
+- `tanzuobservabilityexporter`: add consumer for sum metrics. (#6385)
+- Update log-collection library to v0.23.0 (#6593)
+
 ## v0.40.0
 
 ## 🛑 Breaking changes 🛑
@@ -29,10 +87,6 @@
 - `observiqexporter`: Allow Dialer timeout to be configured (#5906)
 - `routingprocessor`: remove broken debug log fields (#6373)
 - `prometheusremotewriteexporter`: Add exemplars support (#5578) 
-
-## 🚀 New components 🚀
-
-- Add `mongodbatlasreceiver` receiver (#6367)
 
 ## v0.39.0
 

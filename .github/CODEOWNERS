@@ -24,6 +24,7 @@ exporter/awsprometheusremotewriteexporter/           @open-telemetry/collector-c
 exporter/awsxrayexporter/                            @open-telemetry/collector-contrib-approvers @kbrockhoff @anuraaga
 exporter/azuremonitorexporter/                       @open-telemetry/collector-contrib-approvers @pcwiese
 exporter/carbonexporter/                             @open-telemetry/collector-contrib-approvers @pjanotti
+exporter/coralogixexporter/                          @open-telemetry/collector-contrib-approvers @oded-dd @ofirshmuel
 exporter/datadogexporter/                            @open-telemetry/collector-contrib-approvers @KSerrania @mx-psi @gbbr @knusbaum
 exporter/dynatraceexporter/                          @open-telemetry/collector-contrib-approvers @dyladan @arminru
 exporter/elasticexporter/                            @open-telemetry/collector-contrib-approvers @axw @simitt @jalvz
@@ -36,9 +37,10 @@ exporter/humioexporter/                              @open-telemetry/collector-c
 exporter/influxdbexporter/                           @open-telemetry/collector-contrib-approvers @jacobmarble @8none1
 exporter/jaegerexporter/                             @open-telemetry/collector-contrib-approvers @jpkrohling
 exporter/jaegerthrifthttpexporter/                   @open-telemetry/collector-contrib-approvers @jpkrohling @pavolloffay
+exporter/kafkaexporter/                              @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
 exporter/loadbalancingexporter/                      @open-telemetry/collector-contrib-approvers @jpkrohling
 exporter/logzioexporter/                             @open-telemetry/collector-contrib-approvers @jkowall @Doron-Bargo @yotamloe
-exporter/lokiexporter/                               @open-telemetry/collector-contrib-approvers @gramidt
+exporter/lokiexporter/                               @open-telemetry/collector-contrib-approvers @gramidt @jpkrohling
 exporter/newrelicexporter/                           @open-telemetry/collector-contrib-approvers @alanwest @jack-berg @nrcventura
 exporter/observiqexporter/                           @open-telemetry/collector-contrib-approvers @binaryfissiongames
 exporter/sapmexporter/                               @open-telemetry/collector-contrib-approvers @owais @dmitryax
@@ -107,6 +109,7 @@ receiver/jmxreceiver/                                @open-telemetry/collector-c
 receiver/k8sclusterreceiver/                         @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/k8seventsreceiver/                          @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/kafkametricsreceiver/                       @open-telemetry/collector-contrib-approvers @dmitryax
+receiver/kafkareceiver/                              @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
 receiver/kubeletstatsreceiver/                       @open-telemetry/collector-contrib-approvers @pmcollins @dmitryax
 receiver/memcachedreceiver/                          @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/mongodbatlasreceiver/                       @open-telemetry/collector-contrib-approvers @zenmoto
