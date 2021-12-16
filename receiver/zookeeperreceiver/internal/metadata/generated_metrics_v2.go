@@ -104,78 +104,94 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
+// metric holds data for generated metric and keeps track of data points slice capacity.
+type metric struct {
+	data     pdata.Metric // data buffer for generated metric.
+	capacity int          // max observed number of data points added to the metric.
+}
+
+func (m *metric) updateCapacity(dpLen int) {
+	if dpLen > m.capacity {
+		m.capacity = dpLen
+	}
+}
+
+func newMetric() metric {
+	return metric{data: pdata.NewMetric()}
+}
+
 type metrics struct {
-	ZookeeperApproximateDateSize   pdata.Metric
-	ZookeeperConnectionsAlive      pdata.Metric
-	ZookeeperEphemeralNodes        pdata.Metric
-	ZookeeperFollowers             pdata.Metric
-	ZookeeperFsyncThresholdExceeds pdata.Metric
-	ZookeeperLatencyAvg            pdata.Metric
-	ZookeeperLatencyMax            pdata.Metric
-	ZookeeperLatencyMin            pdata.Metric
-	ZookeeperMaxFileDescriptors    pdata.Metric
-	ZookeeperOpenFileDescriptors   pdata.Metric
-	ZookeeperOutstandingRequests   pdata.Metric
-	ZookeeperPacketsReceived       pdata.Metric
-	ZookeeperPacketsSent           pdata.Metric
-	ZookeeperPendingSyncs          pdata.Metric
-	ZookeeperSyncedFollowers       pdata.Metric
-	ZookeeperWatches               pdata.Metric
-	ZookeeperZnodes                pdata.Metric
+	zookeeperApproximateDateSize   metric
+	zookeeperConnectionsAlive      metric
+	zookeeperEphemeralNodes        metric
+	zookeeperFollowers             metric
+	zookeeperFsyncThresholdExceeds metric
+	zookeeperLatencyAvg            metric
+	zookeeperLatencyMax            metric
+	zookeeperLatencyMin            metric
+	zookeeperMaxFileDescriptors    metric
+	zookeeperOpenFileDescriptors   metric
+	zookeeperOutstandingRequests   metric
+	zookeeperPacketsReceived       metric
+	zookeeperPacketsSent           metric
+	zookeeperPendingSyncs          metric
+	zookeeperSyncedFollowers       metric
+	zookeeperWatches               metric
+	zookeeperZnodes                metric
 }
 
 func newMetrics(config MetricsSettings) metrics {
 	ms := metrics{}
 	if config.ZookeeperApproximateDateSize.Enabled {
-		ms.ZookeeperApproximateDateSize = pdata.NewMetric()
+		ms.zookeeperApproximateDateSize = newMetric()
 	}
 	if config.ZookeeperConnectionsAlive.Enabled {
-		ms.ZookeeperConnectionsAlive = pdata.NewMetric()
+		ms.zookeeperConnectionsAlive = newMetric()
 	}
 	if config.ZookeeperEphemeralNodes.Enabled {
-		ms.ZookeeperEphemeralNodes = pdata.NewMetric()
+		ms.zookeeperEphemeralNodes = newMetric()
 	}
 	if config.ZookeeperFollowers.Enabled {
-		ms.ZookeeperFollowers = pdata.NewMetric()
+		ms.zookeeperFollowers = newMetric()
 	}
 	if config.ZookeeperFsyncThresholdExceeds.Enabled {
-		ms.ZookeeperFsyncThresholdExceeds = pdata.NewMetric()
+		ms.zookeeperFsyncThresholdExceeds = newMetric()
 	}
 	if config.ZookeeperLatencyAvg.Enabled {
-		ms.ZookeeperLatencyAvg = pdata.NewMetric()
+		ms.zookeeperLatencyAvg = newMetric()
 	}
 	if config.ZookeeperLatencyMax.Enabled {
-		ms.ZookeeperLatencyMax = pdata.NewMetric()
+		ms.zookeeperLatencyMax = newMetric()
 	}
 	if config.ZookeeperLatencyMin.Enabled {
-		ms.ZookeeperLatencyMin = pdata.NewMetric()
+		ms.zookeeperLatencyMin = newMetric()
 	}
 	if config.ZookeeperMaxFileDescriptors.Enabled {
-		ms.ZookeeperMaxFileDescriptors = pdata.NewMetric()
+		ms.zookeeperMaxFileDescriptors = newMetric()
 	}
 	if config.ZookeeperOpenFileDescriptors.Enabled {
-		ms.ZookeeperOpenFileDescriptors = pdata.NewMetric()
+		ms.zookeeperOpenFileDescriptors = newMetric()
 	}
 	if config.ZookeeperOutstandingRequests.Enabled {
-		ms.ZookeeperOutstandingRequests = pdata.NewMetric()
+		ms.zookeeperOutstandingRequests = newMetric()
 	}
 	if config.ZookeeperPacketsReceived.Enabled {
-		ms.ZookeeperPacketsReceived = pdata.NewMetric()
+		ms.zookeeperPacketsReceived = newMetric()
 	}
 	if config.ZookeeperPacketsSent.Enabled {
-		ms.ZookeeperPacketsSent = pdata.NewMetric()
+		ms.zookeeperPacketsSent = newMetric()
 	}
 	if config.ZookeeperPendingSyncs.Enabled {
-		ms.ZookeeperPendingSyncs = pdata.NewMetric()
+		ms.zookeeperPendingSyncs = newMetric()
 	}
 	if config.ZookeeperSyncedFollowers.Enabled {
-		ms.ZookeeperSyncedFollowers = pdata.NewMetric()
+		ms.zookeeperSyncedFollowers = newMetric()
 	}
 	if config.ZookeeperWatches.Enabled {
-		ms.ZookeeperWatches = pdata.NewMetric()
+		ms.zookeeperWatches = newMetric()
 	}
 	if config.ZookeeperZnodes.Enabled {
-		ms.ZookeeperZnodes = pdata.NewMetric()
+		ms.zookeeperZnodes = newMetric()
 	}
 	return ms
 }
@@ -183,11 +199,9 @@ func newMetrics(config MetricsSettings) metrics {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user configuration.
 type MetricsBuilder struct {
-	config                       MetricsSettings
-	startTime                    pdata.Timestamp
-	attributeServerStateCapacity int
-	attributeZkVersionCapacity   int
-	metrics                      metrics
+	config    MetricsSettings
+	startTime pdata.Timestamp
+	metrics   metrics
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -197,22 +211,6 @@ type metricBuilderOption func(*MetricsBuilder)
 func WithStartTime(startTime pdata.Timestamp) metricBuilderOption {
 	return func(mb *MetricsBuilder) {
 		mb.startTime = startTime
-	}
-}
-
-// WithAttributeServerStateCapacity sets an expected number of values of server.state attribute that will be
-// used to calculate data points capacity for each metric report.
-func WithAttributeServerStateCapacity(cap int) metricBuilderOption {
-	return func(mb *MetricsBuilder) {
-		mb.attributeServerStateCapacity = cap
-	}
-}
-
-// WithAttributeZkVersionCapacity sets an expected number of values of zk.version attribute that will be
-// used to calculate data points capacity for each metric report.
-func WithAttributeZkVersionCapacity(cap int) metricBuilderOption {
-	return func(mb *MetricsBuilder) {
-		mb.attributeZkVersionCapacity = cap
 	}
 }
 
@@ -235,56 +233,73 @@ func NewMetricsBuilder(config MetricsSettings, options ...metricBuilderOption) *
 // another set of data points. This function will be doing all transformations required to produce metric representation
 // defined in metadata and user configuration, e.g. delta/cumulative translation.
 func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
-	if mb.config.ZookeeperApproximateDateSize.Enabled && mb.metrics.ZookeeperApproximateDateSize.Gauge().DataPoints().Len() > 0 {
-		mb.metrics.ZookeeperApproximateDateSize.MoveTo(metrics.AppendEmpty())
+	if mb.config.ZookeeperApproximateDateSize.Enabled && mb.metrics.zookeeperApproximateDateSize.data.Gauge().DataPoints().Len() > 0 {
+		mb.metrics.zookeeperApproximateDateSize.updateCapacity(mb.metrics.zookeeperApproximateDateSize.data.Gauge().DataPoints().Len())
+		mb.metrics.zookeeperApproximateDateSize.data.MoveTo(metrics.AppendEmpty())
 	}
-	if mb.config.ZookeeperConnectionsAlive.Enabled && mb.metrics.ZookeeperConnectionsAlive.Gauge().DataPoints().Len() > 0 {
-		mb.metrics.ZookeeperConnectionsAlive.MoveTo(metrics.AppendEmpty())
+	if mb.config.ZookeeperConnectionsAlive.Enabled && mb.metrics.zookeeperConnectionsAlive.data.Gauge().DataPoints().Len() > 0 {
+		mb.metrics.zookeeperConnectionsAlive.updateCapacity(mb.metrics.zookeeperConnectionsAlive.data.Gauge().DataPoints().Len())
+		mb.metrics.zookeeperConnectionsAlive.data.MoveTo(metrics.AppendEmpty())
 	}
-	if mb.config.ZookeeperEphemeralNodes.Enabled && mb.metrics.ZookeeperEphemeralNodes.Gauge().DataPoints().Len() > 0 {
-		mb.metrics.ZookeeperEphemeralNodes.MoveTo(metrics.AppendEmpty())
+	if mb.config.ZookeeperEphemeralNodes.Enabled && mb.metrics.zookeeperEphemeralNodes.data.Gauge().DataPoints().Len() > 0 {
+		mb.metrics.zookeeperEphemeralNodes.updateCapacity(mb.metrics.zookeeperEphemeralNodes.data.Gauge().DataPoints().Len())
+		mb.metrics.zookeeperEphemeralNodes.data.MoveTo(metrics.AppendEmpty())
 	}
-	if mb.config.ZookeeperFollowers.Enabled && mb.metrics.ZookeeperFollowers.Gauge().DataPoints().Len() > 0 {
-		mb.metrics.ZookeeperFollowers.MoveTo(metrics.AppendEmpty())
+	if mb.config.ZookeeperFollowers.Enabled && mb.metrics.zookeeperFollowers.data.Gauge().DataPoints().Len() > 0 {
+		mb.metrics.zookeeperFollowers.updateCapacity(mb.metrics.zookeeperFollowers.data.Gauge().DataPoints().Len())
+		mb.metrics.zookeeperFollowers.data.MoveTo(metrics.AppendEmpty())
 	}
-	if mb.config.ZookeeperFsyncThresholdExceeds.Enabled && mb.metrics.ZookeeperFsyncThresholdExceeds.Sum().DataPoints().Len() > 0 {
-		mb.metrics.ZookeeperFsyncThresholdExceeds.MoveTo(metrics.AppendEmpty())
+	if mb.config.ZookeeperFsyncThresholdExceeds.Enabled && mb.metrics.zookeeperFsyncThresholdExceeds.data.Sum().DataPoints().Len() > 0 {
+		mb.metrics.zookeeperFsyncThresholdExceeds.updateCapacity(mb.metrics.zookeeperFsyncThresholdExceeds.data.Sum().DataPoints().Len())
+		mb.metrics.zookeeperFsyncThresholdExceeds.data.MoveTo(metrics.AppendEmpty())
 	}
-	if mb.config.ZookeeperLatencyAvg.Enabled && mb.metrics.ZookeeperLatencyAvg.Gauge().DataPoints().Len() > 0 {
-		mb.metrics.ZookeeperLatencyAvg.MoveTo(metrics.AppendEmpty())
+	if mb.config.ZookeeperLatencyAvg.Enabled && mb.metrics.zookeeperLatencyAvg.data.Gauge().DataPoints().Len() > 0 {
+		mb.metrics.zookeeperLatencyAvg.updateCapacity(mb.metrics.zookeeperLatencyAvg.data.Gauge().DataPoints().Len())
+		mb.metrics.zookeeperLatencyAvg.data.MoveTo(metrics.AppendEmpty())
 	}
-	if mb.config.ZookeeperLatencyMax.Enabled && mb.metrics.ZookeeperLatencyMax.Gauge().DataPoints().Len() > 0 {
-		mb.metrics.ZookeeperLatencyMax.MoveTo(metrics.AppendEmpty())
+	if mb.config.ZookeeperLatencyMax.Enabled && mb.metrics.zookeeperLatencyMax.data.Gauge().DataPoints().Len() > 0 {
+		mb.metrics.zookeeperLatencyMax.updateCapacity(mb.metrics.zookeeperLatencyMax.data.Gauge().DataPoints().Len())
+		mb.metrics.zookeeperLatencyMax.data.MoveTo(metrics.AppendEmpty())
 	}
-	if mb.config.ZookeeperLatencyMin.Enabled && mb.metrics.ZookeeperLatencyMin.Gauge().DataPoints().Len() > 0 {
-		mb.metrics.ZookeeperLatencyMin.MoveTo(metrics.AppendEmpty())
+	if mb.config.ZookeeperLatencyMin.Enabled && mb.metrics.zookeeperLatencyMin.data.Gauge().DataPoints().Len() > 0 {
+		mb.metrics.zookeeperLatencyMin.updateCapacity(mb.metrics.zookeeperLatencyMin.data.Gauge().DataPoints().Len())
+		mb.metrics.zookeeperLatencyMin.data.MoveTo(metrics.AppendEmpty())
 	}
-	if mb.config.ZookeeperMaxFileDescriptors.Enabled && mb.metrics.ZookeeperMaxFileDescriptors.Gauge().DataPoints().Len() > 0 {
-		mb.metrics.ZookeeperMaxFileDescriptors.MoveTo(metrics.AppendEmpty())
+	if mb.config.ZookeeperMaxFileDescriptors.Enabled && mb.metrics.zookeeperMaxFileDescriptors.data.Gauge().DataPoints().Len() > 0 {
+		mb.metrics.zookeeperMaxFileDescriptors.updateCapacity(mb.metrics.zookeeperMaxFileDescriptors.data.Gauge().DataPoints().Len())
+		mb.metrics.zookeeperMaxFileDescriptors.data.MoveTo(metrics.AppendEmpty())
 	}
-	if mb.config.ZookeeperOpenFileDescriptors.Enabled && mb.metrics.ZookeeperOpenFileDescriptors.Gauge().DataPoints().Len() > 0 {
-		mb.metrics.ZookeeperOpenFileDescriptors.MoveTo(metrics.AppendEmpty())
+	if mb.config.ZookeeperOpenFileDescriptors.Enabled && mb.metrics.zookeeperOpenFileDescriptors.data.Gauge().DataPoints().Len() > 0 {
+		mb.metrics.zookeeperOpenFileDescriptors.updateCapacity(mb.metrics.zookeeperOpenFileDescriptors.data.Gauge().DataPoints().Len())
+		mb.metrics.zookeeperOpenFileDescriptors.data.MoveTo(metrics.AppendEmpty())
 	}
-	if mb.config.ZookeeperOutstandingRequests.Enabled && mb.metrics.ZookeeperOutstandingRequests.Gauge().DataPoints().Len() > 0 {
-		mb.metrics.ZookeeperOutstandingRequests.MoveTo(metrics.AppendEmpty())
+	if mb.config.ZookeeperOutstandingRequests.Enabled && mb.metrics.zookeeperOutstandingRequests.data.Gauge().DataPoints().Len() > 0 {
+		mb.metrics.zookeeperOutstandingRequests.updateCapacity(mb.metrics.zookeeperOutstandingRequests.data.Gauge().DataPoints().Len())
+		mb.metrics.zookeeperOutstandingRequests.data.MoveTo(metrics.AppendEmpty())
 	}
-	if mb.config.ZookeeperPacketsReceived.Enabled && mb.metrics.ZookeeperPacketsReceived.Sum().DataPoints().Len() > 0 {
-		mb.metrics.ZookeeperPacketsReceived.MoveTo(metrics.AppendEmpty())
+	if mb.config.ZookeeperPacketsReceived.Enabled && mb.metrics.zookeeperPacketsReceived.data.Sum().DataPoints().Len() > 0 {
+		mb.metrics.zookeeperPacketsReceived.updateCapacity(mb.metrics.zookeeperPacketsReceived.data.Sum().DataPoints().Len())
+		mb.metrics.zookeeperPacketsReceived.data.MoveTo(metrics.AppendEmpty())
 	}
-	if mb.config.ZookeeperPacketsSent.Enabled && mb.metrics.ZookeeperPacketsSent.Sum().DataPoints().Len() > 0 {
-		mb.metrics.ZookeeperPacketsSent.MoveTo(metrics.AppendEmpty())
+	if mb.config.ZookeeperPacketsSent.Enabled && mb.metrics.zookeeperPacketsSent.data.Sum().DataPoints().Len() > 0 {
+		mb.metrics.zookeeperPacketsSent.updateCapacity(mb.metrics.zookeeperPacketsSent.data.Sum().DataPoints().Len())
+		mb.metrics.zookeeperPacketsSent.data.MoveTo(metrics.AppendEmpty())
 	}
-	if mb.config.ZookeeperPendingSyncs.Enabled && mb.metrics.ZookeeperPendingSyncs.Gauge().DataPoints().Len() > 0 {
-		mb.metrics.ZookeeperPendingSyncs.MoveTo(metrics.AppendEmpty())
+	if mb.config.ZookeeperPendingSyncs.Enabled && mb.metrics.zookeeperPendingSyncs.data.Gauge().DataPoints().Len() > 0 {
+		mb.metrics.zookeeperPendingSyncs.updateCapacity(mb.metrics.zookeeperPendingSyncs.data.Gauge().DataPoints().Len())
+		mb.metrics.zookeeperPendingSyncs.data.MoveTo(metrics.AppendEmpty())
 	}
-	if mb.config.ZookeeperSyncedFollowers.Enabled && mb.metrics.ZookeeperSyncedFollowers.Gauge().DataPoints().Len() > 0 {
-		mb.metrics.ZookeeperSyncedFollowers.MoveTo(metrics.AppendEmpty())
+	if mb.config.ZookeeperSyncedFollowers.Enabled && mb.metrics.zookeeperSyncedFollowers.data.Gauge().DataPoints().Len() > 0 {
+		mb.metrics.zookeeperSyncedFollowers.updateCapacity(mb.metrics.zookeeperSyncedFollowers.data.Gauge().DataPoints().Len())
+		mb.metrics.zookeeperSyncedFollowers.data.MoveTo(metrics.AppendEmpty())
 	}
-	if mb.config.ZookeeperWatches.Enabled && mb.metrics.ZookeeperWatches.Gauge().DataPoints().Len() > 0 {
-		mb.metrics.ZookeeperWatches.MoveTo(metrics.AppendEmpty())
+	if mb.config.ZookeeperWatches.Enabled && mb.metrics.zookeeperWatches.data.Gauge().DataPoints().Len() > 0 {
+		mb.metrics.zookeeperWatches.updateCapacity(mb.metrics.zookeeperWatches.data.Gauge().DataPoints().Len())
+		mb.metrics.zookeeperWatches.data.MoveTo(metrics.AppendEmpty())
 	}
-	if mb.config.ZookeeperZnodes.Enabled && mb.metrics.ZookeeperZnodes.Gauge().DataPoints().Len() > 0 {
-		mb.metrics.ZookeeperZnodes.MoveTo(metrics.AppendEmpty())
+	if mb.config.ZookeeperZnodes.Enabled && mb.metrics.zookeeperZnodes.data.Gauge().DataPoints().Len() > 0 {
+		mb.metrics.zookeeperZnodes.updateCapacity(mb.metrics.zookeeperZnodes.data.Gauge().DataPoints().Len())
+		mb.metrics.zookeeperZnodes.data.MoveTo(metrics.AppendEmpty())
 	}
 
 	// Reset metric data points collection.
@@ -293,247 +308,247 @@ func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
 
 // initZookeeperApproximateDateSizeMetric builds new zookeeper.approximate_date_size metric.
 func (mb *MetricsBuilder) initZookeeperApproximateDateSizeMetric() {
-	metric := mb.metrics.ZookeeperApproximateDateSize
-	metric.SetName("zookeeper.approximate_date_size")
-	metric.SetDescription("Size of data in bytes that a ZooKeeper server has in its data tree.")
-	metric.SetUnit("By")
-	metric.SetDataType(pdata.MetricDataTypeGauge)
+	metric := mb.metrics.zookeeperApproximateDateSize
+	metric.data.SetName("zookeeper.approximate_date_size")
+	metric.data.SetDescription("Size of data in bytes that a ZooKeeper server has in its data tree.")
+	metric.data.SetUnit("By")
+	metric.data.SetDataType(pdata.MetricDataTypeGauge)
 }
 
 // initZookeeperConnectionsAliveMetric builds new zookeeper.connections_alive metric.
 func (mb *MetricsBuilder) initZookeeperConnectionsAliveMetric() {
-	metric := mb.metrics.ZookeeperConnectionsAlive
-	metric.SetName("zookeeper.connections_alive")
-	metric.SetDescription("Number of active clients connected to a ZooKeeper server.")
-	metric.SetUnit("1")
-	metric.SetDataType(pdata.MetricDataTypeGauge)
+	metric := mb.metrics.zookeeperConnectionsAlive
+	metric.data.SetName("zookeeper.connections_alive")
+	metric.data.SetDescription("Number of active clients connected to a ZooKeeper server.")
+	metric.data.SetUnit("1")
+	metric.data.SetDataType(pdata.MetricDataTypeGauge)
 }
 
 // initZookeeperEphemeralNodesMetric builds new zookeeper.ephemeral_nodes metric.
 func (mb *MetricsBuilder) initZookeeperEphemeralNodesMetric() {
-	metric := mb.metrics.ZookeeperEphemeralNodes
-	metric.SetName("zookeeper.ephemeral_nodes")
-	metric.SetDescription("Number of ephemeral nodes that a ZooKeeper server has in its data tree.")
-	metric.SetUnit("1")
-	metric.SetDataType(pdata.MetricDataTypeGauge)
+	metric := mb.metrics.zookeeperEphemeralNodes
+	metric.data.SetName("zookeeper.ephemeral_nodes")
+	metric.data.SetDescription("Number of ephemeral nodes that a ZooKeeper server has in its data tree.")
+	metric.data.SetUnit("1")
+	metric.data.SetDataType(pdata.MetricDataTypeGauge)
 }
 
 // initZookeeperFollowersMetric builds new zookeeper.followers metric.
 func (mb *MetricsBuilder) initZookeeperFollowersMetric() {
-	metric := mb.metrics.ZookeeperFollowers
-	metric.SetName("zookeeper.followers")
-	metric.SetDescription("The number of followers in sync with the leader. Only exposed by the leader.")
-	metric.SetUnit("1")
-	metric.SetDataType(pdata.MetricDataTypeGauge)
+	metric := mb.metrics.zookeeperFollowers
+	metric.data.SetName("zookeeper.followers")
+	metric.data.SetDescription("The number of followers in sync with the leader. Only exposed by the leader.")
+	metric.data.SetUnit("1")
+	metric.data.SetDataType(pdata.MetricDataTypeGauge)
 }
 
 // initZookeeperFsyncThresholdExceedsMetric builds new zookeeper.fsync_threshold_exceeds metric.
 func (mb *MetricsBuilder) initZookeeperFsyncThresholdExceedsMetric() {
-	metric := mb.metrics.ZookeeperFsyncThresholdExceeds
-	metric.SetName("zookeeper.fsync_threshold_exceeds")
-	metric.SetDescription("Number of times fsync duration has exceeded warning threshold.")
-	metric.SetUnit("1")
-	metric.SetDataType(pdata.MetricDataTypeSum)
-	metric.Sum().SetIsMonotonic(true)
-	metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	metric := mb.metrics.zookeeperFsyncThresholdExceeds
+	metric.data.SetName("zookeeper.fsync_threshold_exceeds")
+	metric.data.SetDescription("Number of times fsync duration has exceeded warning threshold.")
+	metric.data.SetUnit("1")
+	metric.data.SetDataType(pdata.MetricDataTypeSum)
+	metric.data.Sum().SetIsMonotonic(true)
+	metric.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 }
 
 // initZookeeperLatencyAvgMetric builds new zookeeper.latency.avg metric.
 func (mb *MetricsBuilder) initZookeeperLatencyAvgMetric() {
-	metric := mb.metrics.ZookeeperLatencyAvg
-	metric.SetName("zookeeper.latency.avg")
-	metric.SetDescription("Average time in milliseconds for requests to be processed.")
-	metric.SetUnit("ms")
-	metric.SetDataType(pdata.MetricDataTypeGauge)
+	metric := mb.metrics.zookeeperLatencyAvg
+	metric.data.SetName("zookeeper.latency.avg")
+	metric.data.SetDescription("Average time in milliseconds for requests to be processed.")
+	metric.data.SetUnit("ms")
+	metric.data.SetDataType(pdata.MetricDataTypeGauge)
 }
 
 // initZookeeperLatencyMaxMetric builds new zookeeper.latency.max metric.
 func (mb *MetricsBuilder) initZookeeperLatencyMaxMetric() {
-	metric := mb.metrics.ZookeeperLatencyMax
-	metric.SetName("zookeeper.latency.max")
-	metric.SetDescription("Maximum time in milliseconds for requests to be processed.")
-	metric.SetUnit("ms")
-	metric.SetDataType(pdata.MetricDataTypeGauge)
+	metric := mb.metrics.zookeeperLatencyMax
+	metric.data.SetName("zookeeper.latency.max")
+	metric.data.SetDescription("Maximum time in milliseconds for requests to be processed.")
+	metric.data.SetUnit("ms")
+	metric.data.SetDataType(pdata.MetricDataTypeGauge)
 }
 
 // initZookeeperLatencyMinMetric builds new zookeeper.latency.min metric.
 func (mb *MetricsBuilder) initZookeeperLatencyMinMetric() {
-	metric := mb.metrics.ZookeeperLatencyMin
-	metric.SetName("zookeeper.latency.min")
-	metric.SetDescription("Minimum time in milliseconds for requests to be processed.")
-	metric.SetUnit("1")
-	metric.SetDataType(pdata.MetricDataTypeGauge)
+	metric := mb.metrics.zookeeperLatencyMin
+	metric.data.SetName("zookeeper.latency.min")
+	metric.data.SetDescription("Minimum time in milliseconds for requests to be processed.")
+	metric.data.SetUnit("1")
+	metric.data.SetDataType(pdata.MetricDataTypeGauge)
 }
 
 // initZookeeperMaxFileDescriptorsMetric builds new zookeeper.max_file_descriptors metric.
 func (mb *MetricsBuilder) initZookeeperMaxFileDescriptorsMetric() {
-	metric := mb.metrics.ZookeeperMaxFileDescriptors
-	metric.SetName("zookeeper.max_file_descriptors")
-	metric.SetDescription("Maximum number of file descriptors that a ZooKeeper server can open.")
-	metric.SetUnit("1")
-	metric.SetDataType(pdata.MetricDataTypeGauge)
+	metric := mb.metrics.zookeeperMaxFileDescriptors
+	metric.data.SetName("zookeeper.max_file_descriptors")
+	metric.data.SetDescription("Maximum number of file descriptors that a ZooKeeper server can open.")
+	metric.data.SetUnit("1")
+	metric.data.SetDataType(pdata.MetricDataTypeGauge)
 }
 
 // initZookeeperOpenFileDescriptorsMetric builds new zookeeper.open_file_descriptors metric.
 func (mb *MetricsBuilder) initZookeeperOpenFileDescriptorsMetric() {
-	metric := mb.metrics.ZookeeperOpenFileDescriptors
-	metric.SetName("zookeeper.open_file_descriptors")
-	metric.SetDescription("Number of file descriptors that a ZooKeeper server has open.")
-	metric.SetUnit("1")
-	metric.SetDataType(pdata.MetricDataTypeGauge)
+	metric := mb.metrics.zookeeperOpenFileDescriptors
+	metric.data.SetName("zookeeper.open_file_descriptors")
+	metric.data.SetDescription("Number of file descriptors that a ZooKeeper server has open.")
+	metric.data.SetUnit("1")
+	metric.data.SetDataType(pdata.MetricDataTypeGauge)
 }
 
 // initZookeeperOutstandingRequestsMetric builds new zookeeper.outstanding_requests metric.
 func (mb *MetricsBuilder) initZookeeperOutstandingRequestsMetric() {
-	metric := mb.metrics.ZookeeperOutstandingRequests
-	metric.SetName("zookeeper.outstanding_requests")
-	metric.SetDescription("Number of currently executing requests.")
-	metric.SetUnit("1")
-	metric.SetDataType(pdata.MetricDataTypeGauge)
+	metric := mb.metrics.zookeeperOutstandingRequests
+	metric.data.SetName("zookeeper.outstanding_requests")
+	metric.data.SetDescription("Number of currently executing requests.")
+	metric.data.SetUnit("1")
+	metric.data.SetDataType(pdata.MetricDataTypeGauge)
 }
 
 // initZookeeperPacketsReceivedMetric builds new zookeeper.packets.received metric.
 func (mb *MetricsBuilder) initZookeeperPacketsReceivedMetric() {
-	metric := mb.metrics.ZookeeperPacketsReceived
-	metric.SetName("zookeeper.packets.received")
-	metric.SetDescription("Number of ZooKeeper packets received by a server.")
-	metric.SetUnit("1")
-	metric.SetDataType(pdata.MetricDataTypeSum)
-	metric.Sum().SetIsMonotonic(true)
-	metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	metric := mb.metrics.zookeeperPacketsReceived
+	metric.data.SetName("zookeeper.packets.received")
+	metric.data.SetDescription("Number of ZooKeeper packets received by a server.")
+	metric.data.SetUnit("1")
+	metric.data.SetDataType(pdata.MetricDataTypeSum)
+	metric.data.Sum().SetIsMonotonic(true)
+	metric.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 }
 
 // initZookeeperPacketsSentMetric builds new zookeeper.packets.sent metric.
 func (mb *MetricsBuilder) initZookeeperPacketsSentMetric() {
-	metric := mb.metrics.ZookeeperPacketsSent
-	metric.SetName("zookeeper.packets.sent")
-	metric.SetDescription("Number of ZooKeeper packets sent by a server.")
-	metric.SetUnit("1")
-	metric.SetDataType(pdata.MetricDataTypeSum)
-	metric.Sum().SetIsMonotonic(true)
-	metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	metric := mb.metrics.zookeeperPacketsSent
+	metric.data.SetName("zookeeper.packets.sent")
+	metric.data.SetDescription("Number of ZooKeeper packets sent by a server.")
+	metric.data.SetUnit("1")
+	metric.data.SetDataType(pdata.MetricDataTypeSum)
+	metric.data.Sum().SetIsMonotonic(true)
+	metric.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 }
 
 // initZookeeperPendingSyncsMetric builds new zookeeper.pending_syncs metric.
 func (mb *MetricsBuilder) initZookeeperPendingSyncsMetric() {
-	metric := mb.metrics.ZookeeperPendingSyncs
-	metric.SetName("zookeeper.pending_syncs")
-	metric.SetDescription("The number of pending syncs from the followers. Only exposed by the leader.")
-	metric.SetUnit("1")
-	metric.SetDataType(pdata.MetricDataTypeGauge)
+	metric := mb.metrics.zookeeperPendingSyncs
+	metric.data.SetName("zookeeper.pending_syncs")
+	metric.data.SetDescription("The number of pending syncs from the followers. Only exposed by the leader.")
+	metric.data.SetUnit("1")
+	metric.data.SetDataType(pdata.MetricDataTypeGauge)
 }
 
 // initZookeeperSyncedFollowersMetric builds new zookeeper.synced_followers metric.
 func (mb *MetricsBuilder) initZookeeperSyncedFollowersMetric() {
-	metric := mb.metrics.ZookeeperSyncedFollowers
-	metric.SetName("zookeeper.synced_followers")
-	metric.SetDescription("The number of followers in sync with the leader. Only exposed by the leader.")
-	metric.SetUnit("1")
-	metric.SetDataType(pdata.MetricDataTypeGauge)
+	metric := mb.metrics.zookeeperSyncedFollowers
+	metric.data.SetName("zookeeper.synced_followers")
+	metric.data.SetDescription("The number of followers in sync with the leader. Only exposed by the leader.")
+	metric.data.SetUnit("1")
+	metric.data.SetDataType(pdata.MetricDataTypeGauge)
 }
 
 // initZookeeperWatchesMetric builds new zookeeper.watches metric.
 func (mb *MetricsBuilder) initZookeeperWatchesMetric() {
-	metric := mb.metrics.ZookeeperWatches
-	metric.SetName("zookeeper.watches")
-	metric.SetDescription("Number of watches placed on Z-Nodes on a ZooKeeper server.")
-	metric.SetUnit("1")
-	metric.SetDataType(pdata.MetricDataTypeGauge)
+	metric := mb.metrics.zookeeperWatches
+	metric.data.SetName("zookeeper.watches")
+	metric.data.SetDescription("Number of watches placed on Z-Nodes on a ZooKeeper server.")
+	metric.data.SetUnit("1")
+	metric.data.SetDataType(pdata.MetricDataTypeGauge)
 }
 
 // initZookeeperZnodesMetric builds new zookeeper.znodes metric.
 func (mb *MetricsBuilder) initZookeeperZnodesMetric() {
-	metric := mb.metrics.ZookeeperZnodes
-	metric.SetName("zookeeper.znodes")
-	metric.SetDescription("Number of z-nodes that a ZooKeeper server has in its data tree.")
-	metric.SetUnit("1")
-	metric.SetDataType(pdata.MetricDataTypeGauge)
+	metric := mb.metrics.zookeeperZnodes
+	metric.data.SetName("zookeeper.znodes")
+	metric.data.SetDescription("Number of z-nodes that a ZooKeeper server has in its data tree.")
+	metric.data.SetUnit("1")
+	metric.data.SetDataType(pdata.MetricDataTypeGauge)
 }
 
 // initMetrics initializes metrics.
 func (mb *MetricsBuilder) initMetrics() {
 	if mb.config.ZookeeperApproximateDateSize.Enabled {
-		// TODO: Use mb.metrics.ZookeeperApproximateDateSize.Gauge().DataPoints().Clear() instead of rebuilding
+		// TODO: Use metric.data.Gauge().DataPoints().Clear() instead of rebuilding
 		// the metrics once the Clear method is available.
 		mb.initZookeeperApproximateDateSizeMetric()
 	}
 	if mb.config.ZookeeperConnectionsAlive.Enabled {
-		// TODO: Use mb.metrics.ZookeeperConnectionsAlive.Gauge().DataPoints().Clear() instead of rebuilding
+		// TODO: Use metric.data.Gauge().DataPoints().Clear() instead of rebuilding
 		// the metrics once the Clear method is available.
 		mb.initZookeeperConnectionsAliveMetric()
 	}
 	if mb.config.ZookeeperEphemeralNodes.Enabled {
-		// TODO: Use mb.metrics.ZookeeperEphemeralNodes.Gauge().DataPoints().Clear() instead of rebuilding
+		// TODO: Use metric.data.Gauge().DataPoints().Clear() instead of rebuilding
 		// the metrics once the Clear method is available.
 		mb.initZookeeperEphemeralNodesMetric()
 	}
 	if mb.config.ZookeeperFollowers.Enabled {
-		// TODO: Use mb.metrics.ZookeeperFollowers.Gauge().DataPoints().Clear() instead of rebuilding
+		// TODO: Use metric.data.Gauge().DataPoints().Clear() instead of rebuilding
 		// the metrics once the Clear method is available.
 		mb.initZookeeperFollowersMetric()
 	}
 	if mb.config.ZookeeperFsyncThresholdExceeds.Enabled {
-		// TODO: Use mb.metrics.ZookeeperFsyncThresholdExceeds.Sum().DataPoints().Clear() instead of rebuilding
+		// TODO: Use metric.data.Sum().DataPoints().Clear() instead of rebuilding
 		// the metrics once the Clear method is available.
 		mb.initZookeeperFsyncThresholdExceedsMetric()
 	}
 	if mb.config.ZookeeperLatencyAvg.Enabled {
-		// TODO: Use mb.metrics.ZookeeperLatencyAvg.Gauge().DataPoints().Clear() instead of rebuilding
+		// TODO: Use metric.data.Gauge().DataPoints().Clear() instead of rebuilding
 		// the metrics once the Clear method is available.
 		mb.initZookeeperLatencyAvgMetric()
 	}
 	if mb.config.ZookeeperLatencyMax.Enabled {
-		// TODO: Use mb.metrics.ZookeeperLatencyMax.Gauge().DataPoints().Clear() instead of rebuilding
+		// TODO: Use metric.data.Gauge().DataPoints().Clear() instead of rebuilding
 		// the metrics once the Clear method is available.
 		mb.initZookeeperLatencyMaxMetric()
 	}
 	if mb.config.ZookeeperLatencyMin.Enabled {
-		// TODO: Use mb.metrics.ZookeeperLatencyMin.Gauge().DataPoints().Clear() instead of rebuilding
+		// TODO: Use metric.data.Gauge().DataPoints().Clear() instead of rebuilding
 		// the metrics once the Clear method is available.
 		mb.initZookeeperLatencyMinMetric()
 	}
 	if mb.config.ZookeeperMaxFileDescriptors.Enabled {
-		// TODO: Use mb.metrics.ZookeeperMaxFileDescriptors.Gauge().DataPoints().Clear() instead of rebuilding
+		// TODO: Use metric.data.Gauge().DataPoints().Clear() instead of rebuilding
 		// the metrics once the Clear method is available.
 		mb.initZookeeperMaxFileDescriptorsMetric()
 	}
 	if mb.config.ZookeeperOpenFileDescriptors.Enabled {
-		// TODO: Use mb.metrics.ZookeeperOpenFileDescriptors.Gauge().DataPoints().Clear() instead of rebuilding
+		// TODO: Use metric.data.Gauge().DataPoints().Clear() instead of rebuilding
 		// the metrics once the Clear method is available.
 		mb.initZookeeperOpenFileDescriptorsMetric()
 	}
 	if mb.config.ZookeeperOutstandingRequests.Enabled {
-		// TODO: Use mb.metrics.ZookeeperOutstandingRequests.Gauge().DataPoints().Clear() instead of rebuilding
+		// TODO: Use metric.data.Gauge().DataPoints().Clear() instead of rebuilding
 		// the metrics once the Clear method is available.
 		mb.initZookeeperOutstandingRequestsMetric()
 	}
 	if mb.config.ZookeeperPacketsReceived.Enabled {
-		// TODO: Use mb.metrics.ZookeeperPacketsReceived.Sum().DataPoints().Clear() instead of rebuilding
+		// TODO: Use metric.data.Sum().DataPoints().Clear() instead of rebuilding
 		// the metrics once the Clear method is available.
 		mb.initZookeeperPacketsReceivedMetric()
 	}
 	if mb.config.ZookeeperPacketsSent.Enabled {
-		// TODO: Use mb.metrics.ZookeeperPacketsSent.Sum().DataPoints().Clear() instead of rebuilding
+		// TODO: Use metric.data.Sum().DataPoints().Clear() instead of rebuilding
 		// the metrics once the Clear method is available.
 		mb.initZookeeperPacketsSentMetric()
 	}
 	if mb.config.ZookeeperPendingSyncs.Enabled {
-		// TODO: Use mb.metrics.ZookeeperPendingSyncs.Gauge().DataPoints().Clear() instead of rebuilding
+		// TODO: Use metric.data.Gauge().DataPoints().Clear() instead of rebuilding
 		// the metrics once the Clear method is available.
 		mb.initZookeeperPendingSyncsMetric()
 	}
 	if mb.config.ZookeeperSyncedFollowers.Enabled {
-		// TODO: Use mb.metrics.ZookeeperSyncedFollowers.Gauge().DataPoints().Clear() instead of rebuilding
+		// TODO: Use metric.data.Gauge().DataPoints().Clear() instead of rebuilding
 		// the metrics once the Clear method is available.
 		mb.initZookeeperSyncedFollowersMetric()
 	}
 	if mb.config.ZookeeperWatches.Enabled {
-		// TODO: Use mb.metrics.ZookeeperWatches.Gauge().DataPoints().Clear() instead of rebuilding
+		// TODO: Use metric.data.Gauge().DataPoints().Clear() instead of rebuilding
 		// the metrics once the Clear method is available.
 		mb.initZookeeperWatchesMetric()
 	}
 	if mb.config.ZookeeperZnodes.Enabled {
-		// TODO: Use mb.metrics.ZookeeperZnodes.Gauge().DataPoints().Clear() instead of rebuilding
+		// TODO: Use metric.data.Gauge().DataPoints().Clear() instead of rebuilding
 		// the metrics once the Clear method is available.
 		mb.initZookeeperZnodesMetric()
 	}
@@ -546,7 +561,7 @@ func (mb *MetricsBuilder) RecordZookeeperApproximateDateSizeDataPoint(ts pdata.T
 		return
 	}
 
-	dp := mb.metrics.ZookeeperApproximateDateSize.Gauge().DataPoints().AppendEmpty()
+	dp := mb.metrics.zookeeperApproximateDateSize.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(mb.startTime)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
@@ -559,7 +574,7 @@ func (mb *MetricsBuilder) RecordZookeeperConnectionsAliveDataPoint(ts pdata.Time
 		return
 	}
 
-	dp := mb.metrics.ZookeeperConnectionsAlive.Gauge().DataPoints().AppendEmpty()
+	dp := mb.metrics.zookeeperConnectionsAlive.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(mb.startTime)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
@@ -572,7 +587,7 @@ func (mb *MetricsBuilder) RecordZookeeperEphemeralNodesDataPoint(ts pdata.Timest
 		return
 	}
 
-	dp := mb.metrics.ZookeeperEphemeralNodes.Gauge().DataPoints().AppendEmpty()
+	dp := mb.metrics.zookeeperEphemeralNodes.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(mb.startTime)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
@@ -585,7 +600,7 @@ func (mb *MetricsBuilder) RecordZookeeperFollowersDataPoint(ts pdata.Timestamp, 
 		return
 	}
 
-	dp := mb.metrics.ZookeeperFollowers.Gauge().DataPoints().AppendEmpty()
+	dp := mb.metrics.zookeeperFollowers.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(mb.startTime)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
@@ -598,7 +613,7 @@ func (mb *MetricsBuilder) RecordZookeeperFsyncThresholdExceedsDataPoint(ts pdata
 		return
 	}
 
-	dp := mb.metrics.ZookeeperFsyncThresholdExceeds.Sum().DataPoints().AppendEmpty()
+	dp := mb.metrics.zookeeperFsyncThresholdExceeds.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(mb.startTime)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
@@ -611,7 +626,7 @@ func (mb *MetricsBuilder) RecordZookeeperLatencyAvgDataPoint(ts pdata.Timestamp,
 		return
 	}
 
-	dp := mb.metrics.ZookeeperLatencyAvg.Gauge().DataPoints().AppendEmpty()
+	dp := mb.metrics.zookeeperLatencyAvg.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(mb.startTime)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
@@ -624,7 +639,7 @@ func (mb *MetricsBuilder) RecordZookeeperLatencyMaxDataPoint(ts pdata.Timestamp,
 		return
 	}
 
-	dp := mb.metrics.ZookeeperLatencyMax.Gauge().DataPoints().AppendEmpty()
+	dp := mb.metrics.zookeeperLatencyMax.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(mb.startTime)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
@@ -637,7 +652,7 @@ func (mb *MetricsBuilder) RecordZookeeperLatencyMinDataPoint(ts pdata.Timestamp,
 		return
 	}
 
-	dp := mb.metrics.ZookeeperLatencyMin.Gauge().DataPoints().AppendEmpty()
+	dp := mb.metrics.zookeeperLatencyMin.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(mb.startTime)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
@@ -650,7 +665,7 @@ func (mb *MetricsBuilder) RecordZookeeperMaxFileDescriptorsDataPoint(ts pdata.Ti
 		return
 	}
 
-	dp := mb.metrics.ZookeeperMaxFileDescriptors.Gauge().DataPoints().AppendEmpty()
+	dp := mb.metrics.zookeeperMaxFileDescriptors.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(mb.startTime)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
@@ -663,7 +678,7 @@ func (mb *MetricsBuilder) RecordZookeeperOpenFileDescriptorsDataPoint(ts pdata.T
 		return
 	}
 
-	dp := mb.metrics.ZookeeperOpenFileDescriptors.Gauge().DataPoints().AppendEmpty()
+	dp := mb.metrics.zookeeperOpenFileDescriptors.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(mb.startTime)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
@@ -676,7 +691,7 @@ func (mb *MetricsBuilder) RecordZookeeperOutstandingRequestsDataPoint(ts pdata.T
 		return
 	}
 
-	dp := mb.metrics.ZookeeperOutstandingRequests.Gauge().DataPoints().AppendEmpty()
+	dp := mb.metrics.zookeeperOutstandingRequests.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(mb.startTime)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
@@ -689,7 +704,7 @@ func (mb *MetricsBuilder) RecordZookeeperPacketsReceivedDataPoint(ts pdata.Times
 		return
 	}
 
-	dp := mb.metrics.ZookeeperPacketsReceived.Sum().DataPoints().AppendEmpty()
+	dp := mb.metrics.zookeeperPacketsReceived.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(mb.startTime)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
@@ -702,7 +717,7 @@ func (mb *MetricsBuilder) RecordZookeeperPacketsSentDataPoint(ts pdata.Timestamp
 		return
 	}
 
-	dp := mb.metrics.ZookeeperPacketsSent.Sum().DataPoints().AppendEmpty()
+	dp := mb.metrics.zookeeperPacketsSent.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(mb.startTime)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
@@ -715,7 +730,7 @@ func (mb *MetricsBuilder) RecordZookeeperPendingSyncsDataPoint(ts pdata.Timestam
 		return
 	}
 
-	dp := mb.metrics.ZookeeperPendingSyncs.Gauge().DataPoints().AppendEmpty()
+	dp := mb.metrics.zookeeperPendingSyncs.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(mb.startTime)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
@@ -728,7 +743,7 @@ func (mb *MetricsBuilder) RecordZookeeperSyncedFollowersDataPoint(ts pdata.Times
 		return
 	}
 
-	dp := mb.metrics.ZookeeperSyncedFollowers.Gauge().DataPoints().AppendEmpty()
+	dp := mb.metrics.zookeeperSyncedFollowers.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(mb.startTime)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
@@ -741,7 +756,7 @@ func (mb *MetricsBuilder) RecordZookeeperWatchesDataPoint(ts pdata.Timestamp, va
 		return
 	}
 
-	dp := mb.metrics.ZookeeperWatches.Gauge().DataPoints().AppendEmpty()
+	dp := mb.metrics.zookeeperWatches.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(mb.startTime)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
@@ -754,7 +769,7 @@ func (mb *MetricsBuilder) RecordZookeeperZnodesDataPoint(ts pdata.Timestamp, val
 		return
 	}
 
-	dp := mb.metrics.ZookeeperZnodes.Gauge().DataPoints().AppendEmpty()
+	dp := mb.metrics.zookeeperZnodes.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(mb.startTime)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
