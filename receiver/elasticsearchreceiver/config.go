@@ -10,12 +10,14 @@ import (
 	"go.uber.org/multierr"
 )
 
+// Config is the configuration for the elasticsearch receiver
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	confighttp.HTTPClientSettings           `mapstructure:",squash"`
-
-	Password string `mapstructure:"password"`
+	// Username is the username used when making REST calls to elasticsearch. Must be specified if Password is. Not required.
 	Username string `mapstructure:"username"`
+	// Password is the password used when making REST calls to elasticsearch. Must be specified if Username is. Not required.
+	Password string `mapstructure:"password"`
 }
 
 var (
@@ -34,6 +36,7 @@ var validSchemes = []string{
 	"https",
 }
 
+// Validate validates the given config, returning an error specifying any issues with the config.
 func (cfg *Config) Validate() error {
 	var combinedErr error
 	if err := invalidCredentials(cfg.Username, cfg.Password); err != nil {
@@ -59,6 +62,7 @@ func (cfg *Config) Validate() error {
 	return combinedErr
 }
 
+// validScheme checks if the given scheme string is one of the valid schemes.
 func validScheme(scheme string) bool {
 	for _, s := range validSchemes {
 		if s == scheme {
