@@ -5,6 +5,7 @@
 ## 💡 Enhancements 💡
 
 - `prometheusremotewriteexporter`: Handling Staleness flag from OTLP (#6679)
+- `prometheusexporter`: Handling Staleness flag from OTLP (#6805)
 
 ## 🛑 Breaking changes 🛑
 
