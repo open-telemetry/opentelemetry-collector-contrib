@@ -14,6 +14,7 @@ metrics:
     description: Total number of requests made to the server since it started
     unit: requests
     sum:
+      value_type: int
       monotonic: true
       aggregation: cumulative
     attributes: []
@@ -21,6 +22,7 @@ metrics:
     description: The total number of accepted client connections
     unit: connections
     sum:
+      value_type: int
       monotonic: true
       aggregation: cumulative
     attributes: []
@@ -28,11 +30,13 @@ metrics:
     description: The total number of handled connections. Generally, the parameter value is the same as nginx.connections_accepted unless some resource limits have been reached (for example, the worker_connections limit).
     unit: connections
     sum:
+      value_type: int
       monotonic: true
       aggregation: cumulative
     attributes: []
   nginx.connections_current:
     description: The current number of nginx connections by state
     unit: connections
-    gauge: {}
+    gauge:
+      value_type: int
     attributes: [state]

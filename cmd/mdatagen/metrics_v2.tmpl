@@ -172,7 +172,7 @@ func (mb *MetricsBuilder) initMetrics() {
 // Record{{ $name.Render }}DataPoint adds a data point to {{ $name }} metric.
 // Any attribute of AttributeValueTypeEmpty type will be skipped.
 func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pdata.Timestamp
-	{{- if $metric.Data.HasNumberDataPoints}}, val {{ $metric.Data.NumberDataPoints.BasicType }}{{ end }}
+	{{- if $metric.Data.HasMetricValueType }}, val {{ $metric.Data.MetricValueType.BasicType }}{{ end }}
 	{{- range $metric.Attributes -}}, {{ . }}AttributeValue string {{ end }}) {
 	if !mb.config.{{- $name.Render }}.Enabled {
 		return
@@ -181,8 +181,8 @@ func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pdata.Timestamp
 	dp := mb.metrics.{{ $name.Render }}.{{ $metric.Data.Type }}().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(mb.startTime)
 	dp.SetTimestamp(ts)
-	{{- if $metric.Data.HasNumberDataPoints}}
-	dp.Set{{ $metric.Data.NumberDataPoints.Type }}Val(val)
+	{{- if $metric.Data.HasMetricValueType }}
+	dp.Set{{ $metric.Data.MetricValueType }}Val(val)
 	{{- end }}
 	{{ range $metric.Attributes -}}
 	dp.Attributes().Insert(A.{{ .Render }}, pdata.NewAttributeValueString({{ . }}AttributeValue))

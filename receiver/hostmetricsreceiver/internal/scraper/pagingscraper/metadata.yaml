@@ -21,6 +21,7 @@ metrics:
     description: Swap (unix) or pagefile (windows) usage.
     unit: By
     sum:
+      value_type: int
       aggregation: cumulative
       monotonic: false
     attributes: [device, state]
@@ -29,6 +30,7 @@ metrics:
     description: The number of paging operations.
     unit: "{operations}"
     sum:
+      value_type: int
       aggregation: cumulative
       monotonic: true
     attributes: [direction, type]
@@ -37,6 +39,7 @@ metrics:
     description: The number of page faults.
     unit: "{faults}"
     sum:
+      value_type: int
       aggregation: cumulative
       monotonic: true
     attributes: [type]

@@ -33,7 +33,7 @@ metrics:
     unit: s
     sum:
       aggregation: cumulative
-      number_type: double
+      value_type: double
     attributes: []
 `
 )

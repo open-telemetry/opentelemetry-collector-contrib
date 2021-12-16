@@ -21,6 +21,7 @@ metrics:
     description: The number of blocks read.
     unit: 1
     sum:
+      value_type: int
       monotonic: true
       aggregation: cumulative
     attributes: [ database, table, source ]
@@ -28,6 +29,7 @@ metrics:
     description: The number of commits.
     unit: 1
     sum:
+      value_type: int
       monotonic: true
       aggregation: cumulative
     attributes: [ database ]
@@ -35,6 +37,7 @@ metrics:
     description: The database disk usage.
     unit: By
     sum:
+      value_type: int
       monotonic: false
       aggregation: cumulative
     attributes: [ database ]
@@ -42,6 +45,7 @@ metrics:
     description: The number of backends.
     unit: 1
     sum:
+      value_type: int
       monotonic: false
       aggregation: cumulative
     attributes: [ database ]
@@ -49,6 +53,7 @@ metrics:
     description: The number of rows in the database.
     unit: 1
     sum:
+      value_type: int
       monotonic: false
       aggregation: cumulative
     attributes: [ database, table, state ]
@@ -56,6 +61,7 @@ metrics:
     description: The number of db row operations.
     unit: 1
     sum:
+      value_type: int
       monotonic: true
       aggregation: cumulative
     attributes: [ database, table, operation ]
@@ -63,6 +69,7 @@ metrics:
     description: The number of rollbacks.
     unit: 1
     sum:
+      value_type: int
       monotonic: true
       aggregation: cumulative
     attributes: [ database ]

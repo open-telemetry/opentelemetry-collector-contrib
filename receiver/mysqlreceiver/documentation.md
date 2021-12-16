@@ -8,20 +8,20 @@ These are the metrics available for this scraper.
 
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
-| mysql.buffer_pool_operations | The number of operations on the InnoDB buffer pool. | 1 | Sum | <ul> <li>buffer_pool_operations</li> </ul> |
-| mysql.buffer_pool_pages | The number of pages in the InnoDB buffer pool. | 1 | Sum | <ul> <li>buffer_pool_pages</li> </ul> |
-| mysql.buffer_pool_size | The number of bytes in the InnoDB buffer pool. | By | Sum | <ul> <li>buffer_pool_size</li> </ul> |
-| mysql.commands | The number of times each type of command has been executed. | 1 | Sum | <ul> <li>command</li> </ul> |
-| mysql.double_writes | The number of writes to the InnoDB doublewrite buffer. | 1 | Sum | <ul> <li>double_writes</li> </ul> |
-| mysql.handlers | The number of requests to various MySQL handlers. | 1 | Sum | <ul> <li>handler</li> </ul> |
-| mysql.locks | The number of MySQL locks. | 1 | Sum | <ul> <li>locks</li> </ul> |
-| mysql.log_operations | The number of InndoDB log operations. | 1 | Sum | <ul> <li>log_operations</li> </ul> |
-| mysql.operations | The number of InndoDB operations. | 1 | Sum | <ul> <li>operations</li> </ul> |
-| mysql.page_operations | The number of InndoDB page operations. | 1 | Sum | <ul> <li>page_operations</li> </ul> |
-| mysql.row_locks | The number of InndoDB row locks. | 1 | Sum | <ul> <li>row_locks</li> </ul> |
-| mysql.row_operations | The number of InndoDB row operations. | 1 | Sum | <ul> <li>row_operations</li> </ul> |
-| mysql.sorts | The number of MySQL sorts. | 1 | Sum | <ul> <li>sorts</li> </ul> |
-| mysql.threads | The state of MySQL threads. | 1 | Sum | <ul> <li>threads</li> </ul> |
+| mysql.buffer_pool_operations | The number of operations on the InnoDB buffer pool. | 1 | Sum(Int) | <ul> <li>buffer_pool_operations</li> </ul> |
+| mysql.buffer_pool_pages | The number of pages in the InnoDB buffer pool. | 1 | Sum(Double) | <ul> <li>buffer_pool_pages</li> </ul> |
+| mysql.buffer_pool_size | The number of bytes in the InnoDB buffer pool. | By | Sum(Double) | <ul> <li>buffer_pool_size</li> </ul> |
+| mysql.commands | The number of times each type of command has been executed. | 1 | Sum(Int) | <ul> <li>command</li> </ul> |
+| mysql.double_writes | The number of writes to the InnoDB doublewrite buffer. | 1 | Sum(Int) | <ul> <li>double_writes</li> </ul> |
+| mysql.handlers | The number of requests to various MySQL handlers. | 1 | Sum(Int) | <ul> <li>handler</li> </ul> |
+| mysql.locks | The number of MySQL locks. | 1 | Sum(Int) | <ul> <li>locks</li> </ul> |
+| mysql.log_operations | The number of InndoDB log operations. | 1 | Sum(Int) | <ul> <li>log_operations</li> </ul> |
+| mysql.operations | The number of InndoDB operations. | 1 | Sum(Int) | <ul> <li>operations</li> </ul> |
+| mysql.page_operations | The number of InndoDB page operations. | 1 | Sum(Int) | <ul> <li>page_operations</li> </ul> |
+| mysql.row_locks | The number of InndoDB row locks. | 1 | Sum(Int) | <ul> <li>row_locks</li> </ul> |
+| mysql.row_operations | The number of InndoDB row operations. | 1 | Sum(Int) | <ul> <li>row_operations</li> </ul> |
+| mysql.sorts | The number of MySQL sorts. | 1 | Sum(Int) | <ul> <li>sorts</li> </ul> |
+| mysql.threads | The state of MySQL threads. | 1 | Sum(Double) | <ul> <li>threads</li> </ul> |
 
 ## Attributes
 
