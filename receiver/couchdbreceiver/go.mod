@@ -9,7 +9,7 @@ require (
 
 require github.com/stretchr/testify v1.7.0
 
-require go.opentelemetry.io/collector/model v0.40.0
+require go.opentelemetry.io/collector/model v0.41.0
 
 require (
 	github.com/benbjohnson/clock v1.2.0 // indirect
