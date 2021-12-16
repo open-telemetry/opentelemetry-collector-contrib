@@ -2,7 +2,7 @@ receivers:
   couchdb:
     endpoint: http://localhost:5984
     username: otelu
-    password: $couchdb_PASSWORD
+    password: $COUCHDB_PASSWORD
     all_nodes: false
     collection_interval: 10s
 
