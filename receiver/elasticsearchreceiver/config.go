@@ -24,16 +24,6 @@ import (
 	"go.uber.org/multierr"
 )
 
-// Config is the configuration for the elasticsearch receiver
-type Config struct {
-	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	confighttp.HTTPClientSettings           `mapstructure:",squash"`
-	// Username is the username used when making REST calls to elasticsearch. Must be specified if Password is. Not required.
-	Username string `mapstructure:"username"`
-	// Password is the password used when making REST calls to elasticsearch. Must be specified if Username is. Not required.
-	Password string `mapstructure:"password"`
-}
-
 var (
 	defaultEndpoint = "http://localhost:9200"
 )
@@ -48,6 +38,16 @@ var (
 var validSchemes = []string{
 	"http",
 	"https",
+}
+
+// Config is the configuration for the elasticsearch receiver
+type Config struct {
+	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
+	confighttp.HTTPClientSettings           `mapstructure:",squash"`
+	// Username is the username used when making REST calls to elasticsearch. Must be specified if Password is. Not required.
+	Username string `mapstructure:"username"`
+	// Password is the password used when making REST calls to elasticsearch. Must be specified if Username is. Not required.
+	Password string `mapstructure:"password"`
 }
 
 // Validate validates the given config, returning an error specifying any issues with the config.
