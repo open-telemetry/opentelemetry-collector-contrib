@@ -30,32 +30,42 @@ func TestValidate(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			desc: "missing username, password and endpoint",
-			cfg:  &Config{},
+			desc: "missing username, password and invalid endpoint",
+			cfg: &Config{
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "http://localhost :5984",
+				},
+			},
 			expectedErr: multierr.Combine(
 				errMissingUsername,
 				errMissingPassword,
-				fmt.Errorf(errInvalidHost.Error(), ""),
+				fmt.Errorf(errInvalidEndpoint.Error(), "parse \"http://localhost :5984\": invalid character \" \" in host name"),
 			),
 		},
 		{
-			desc: "missing password and endpoint",
+			desc: "missing password and invalid endpoint",
 			cfg: &Config{
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "http://localhost :5984",
+				},
 				Username: "otelu",
 			},
 			expectedErr: multierr.Combine(
 				errMissingPassword,
-				fmt.Errorf(errInvalidHost.Error(), ""),
+				fmt.Errorf(errInvalidEndpoint.Error(), "parse \"http://localhost :5984\": invalid character \" \" in host name"),
 			),
 		},
 		{
-			desc: "missing username and endpoint",
+			desc: "missing username and invalid endpoint",
 			cfg: &Config{
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "http://localhost :5984",
+				},
 				Password: "otelp",
 			},
 			expectedErr: multierr.Combine(
 				errMissingUsername,
-				fmt.Errorf(errInvalidHost.Error(), ""),
+				fmt.Errorf(errInvalidEndpoint.Error(), "parse \"http://localhost :5984\": invalid character \" \" in host name"),
 			),
 		},
 		{
@@ -64,21 +74,10 @@ func TestValidate(t *testing.T) {
 				Username: "otel",
 				Password: "otel",
 				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: "http://localhost with a space:5984",
+					Endpoint: "http://localhost :5984",
 				},
 			},
-			expectedErr: fmt.Errorf(errInvalidEndpoint.Error(), "http://localhost with a space:5984"),
-		},
-		{
-			desc: "missing hostname",
-			cfg: &Config{
-				Username: "otel",
-				Password: "otel",
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: "http://:5984",
-				},
-			},
-			expectedErr: fmt.Errorf(errInvalidHost.Error(), "http://:5984"),
+			expectedErr: fmt.Errorf(errInvalidEndpoint.Error(), "parse \"http://localhost :5984\": invalid character \" \" in host name"),
 		},
 		{
 			desc: "no error",

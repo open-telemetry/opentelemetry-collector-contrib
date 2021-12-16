@@ -33,7 +33,6 @@ var (
 
 	// Errors for invalid url components in the endpoint.
 	errInvalidEndpoint = errors.New(`"endpoint" %q must be in the form of <scheme>://<hostname>:<port>`)
-	errInvalidHost     = errors.New(`"endpoint" %q requires a hostname `)
 )
 
 // Config defines the configuration for the various elements of the receiver agent.
@@ -55,16 +54,9 @@ func (cfg *Config) Validate() error {
 		err = multierr.Append(err, errMissingPassword)
 	}
 
-	u, parseErr := url.Parse(cfg.Endpoint)
+	_, parseErr := url.Parse(cfg.Endpoint)
 	if parseErr != nil {
-		err = multierr.Append(err, fmt.Errorf(errInvalidEndpoint.Error(), cfg.Endpoint))
-		return err
+		err = multierr.Append(err, fmt.Errorf(errInvalidEndpoint.Error(), parseErr))
 	}
-
-	if u.Hostname() == "" {
-		err = multierr.Append(err, fmt.Errorf(errInvalidHost.Error(), cfg.Endpoint))
-		return err
-	}
-
-	return nil
+	return err
 }
