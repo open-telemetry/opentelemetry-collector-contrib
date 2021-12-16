@@ -98,7 +98,7 @@ receiver/cloudfoundryreceiver/                       @open-telemetry/collector-c
 receiver/collectdreceiver/                           @open-telemetry/collector-contrib-approvers @owais
 receiver/dockerstatsreceiver/                        @open-telemetry/collector-contrib-approvers @rmfitzpatrick
 receiver/dotnetdiagnosticsreceiver/                  @open-telemetry/collector-contrib-approvers @pmcollins @davmason
-receiver/elasticsearch/                              @open-telemetry/collector-contrib-approvers @binaryfissiongames
+receiver/elasticsearchreceiver/                      @open-telemetry/collector-contrib-approvers @binaryfissiongames
 receiver/filelogreceiver/                            @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/fluentforwardreceiver/                      @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/googlecloudpubsubreceiver/                  @open-telemetry/collector-contrib-approvers @alexvanboxel
