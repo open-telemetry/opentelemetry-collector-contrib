@@ -89,6 +89,13 @@ Note that the backticks below are not typos--they indicate the value is set dyna
 
 None
 
+`type == "k8s.node"`
+
+| Resource Attribute | Default           |
+|--------------------|-------------------|
+| k8s.node.name      | \`name\`          |
+| k8s.node.uid       | \`uid\`           |
+
 See `redis/2` in [examples](#examples).
 
 ## Rule Expressions
@@ -148,6 +155,25 @@ targeting it will have different variables available.
 | transport      | Transport protocol used by the endpoint (TCP or UDP)              |
 | labels         | User-specified metadata labels on the container                   |
 
+### Kubernetes Node
+
+| Variable       | Description                                                       |
+|----------------|-------------------------------------------------------------------|
+| type                  | `"k8s.node"`                                                                                                           |
+| name                  | The name of the Kubernetes node                                                                                        |
+| uid                   | The unique ID for the node                                                                                             |
+| hostname              | The node's hostname as reported by its Status object                                                                   |
+| external_ip           | The node's external IP address as reported by its Status object                                                        |
+| internal_ip           | The node's internal IP address as reported by its Status object                                                        |
+| external_dns          | The node's external DNS record as reported by its Status object                                                        |
+| internal_dns          | The node's internal DNS record as reported by its Status object                                                        |
+| annotations           | A key-value map of non-identifying, user-specified node metadata                                                       |
+| labels                | A key-value map of user-specified node metadata                                                                        |
+| kubelet_endpoint_port | The node Status object's DaemonEndpoints.KubeletEndpoint.Port value                                                    |
+| spec                  | The node Spec json object that's equivalent to the output of `kubectl get node <node> -o jsonpath='{.spec}'`           |
+| metadata              | The node ObjectMeta json object that's equivalent to the output of `kubectl get node <node> -o jsonpath='{.metadata}'` |
+| status                | The node Status json object that's equivalent to the output of `kubectl get node <node> -o jsonpath='{.status}'`       |
+
 ## Examples
 
 ```yaml
@@ -175,19 +201,16 @@ receivers:
           # Static receiver-specific config.
           password: secret
           # Dynamic configuration value.
-          collection_interval: `pod.annotations["collection_interval"]`
-      resource_attributes:
-          # Dynamic configuration value.
-          service.name: `pod.labels["service_name"]`
+          collection_interval: '`pod.annotations["collection_interval"]`'
 
       redis/2:
         # Set a resource attribute based on endpoint value.
         rule: type == "port" && port == 6379
-        resource_attributes:
-          # Dynamic value.
-          app: `pod.labels["app"]`
-          # Static value.
-          source: redis
+
+      resource_attributes:
+        # Dynamic configuration values
+        service.name: '`pod.labels["service_name"]`'
+        app: '`pod.labels["app"]`'
   receiver_creator/2:
     # Name of the extensions to watch for endpoints to start and stop.
     watch_observers: [host_observer]
@@ -195,8 +218,23 @@ receivers:
       redis/on_host:
         # If this rule matches an instance of this receiver will be started.
         rule: type == "port" && port == 6379 && is_ipv6 == true
-        resource_attributes:
-          service.name: redis_on_host
+    resource_attributes:
+      service.name: redis_on_host
+  receiver_creator/3:
+    watch_observers: [k8s_observer]
+    receivers:
+      kubeletstats:
+        rule: type == "k8s.node"
+        config:
+          auth_type: serviceAccount
+          collection_interval: 10s
+          endpoint: '`endpoint`:`kubelet_endpoint_port`'
+          extra_metadata_labels:
+            - container.id
+          metric_groups:
+            - container
+            - pod
+            - node
 
 processors:
   exampleprocessor:
@@ -207,7 +245,7 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [receiver_creator/1, receiver_creator/2]
+      receivers: [receiver_creator/1, receiver_creator/2, receiver_creator/3]
       processors: [exampleprocessor]
       exporters: [exampleexporter]
   extensions: [k8s_observer, host_observer]
