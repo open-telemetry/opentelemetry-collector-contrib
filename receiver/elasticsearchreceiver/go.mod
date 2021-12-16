@@ -2,8 +2,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasti
 
 go 1.17
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest => ../../internal/scrapertest
-
 require (
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.41.0
