@@ -27,8 +27,8 @@ import (
 	"go.uber.org/zap"
 )
 
-func defaultConfig(t *testing.T, endpoint string) CouchDBClient {
-	couchdbClient, err := NewCouchDBClient(
+func defaultConfig(t *testing.T, endpoint string) client {
+	couchdbClient, err := newCouchDBClient(
 		&Config{
 			Username: "otelu",
 			Password: "otelp",
@@ -45,7 +45,7 @@ func defaultConfig(t *testing.T, endpoint string) CouchDBClient {
 
 func TestNewCouchDBClient(t *testing.T) {
 	t.Run("Invalid config", func(t *testing.T) {
-		couchdbClient, err := NewCouchDBClient(
+		couchdbClient, err := newCouchDBClient(
 			&Config{
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: defaultEndpoint,
@@ -63,7 +63,7 @@ func TestNewCouchDBClient(t *testing.T) {
 		require.Nil(t, couchdbClient)
 	})
 	t.Run("no error", func(t *testing.T) {
-		client, err := NewCouchDBClient(
+		client, err := newCouchDBClient(
 			&Config{},
 			componenttest.NewNopHost(),
 			zap.NewNop(),
@@ -127,7 +127,7 @@ func TestGet(t *testing.T) {
 	})
 	t.Run("401 Unauthorized", func(t *testing.T) {
 		url := ts.URL + "/_node/_local/_stats/couchdb"
-		couchdbClient, err := NewCouchDBClient(
+		couchdbClient, err := newCouchDBClient(
 			&Config{
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: url,

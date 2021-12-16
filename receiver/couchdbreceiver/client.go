@@ -27,14 +27,14 @@ import (
 
 const nodeNamesPath = "/_membership"
 
-// CouchDBClient defines the basic HTTP client interface.
-type CouchDBClient interface {
+// client defines the basic HTTP client interface.
+type client interface {
 	Get(path string) ([]byte, error)
 	GetNodeNames() ([]string, error)
 	GetStats(nodeName string) (map[string]interface{}, error)
 }
 
-var _ CouchDBClient = (*couchDBClient)(nil)
+var _ client = (*couchDBClient)(nil)
 
 type couchDBClient struct {
 	client *http.Client
@@ -42,8 +42,8 @@ type couchDBClient struct {
 	logger *zap.Logger
 }
 
-// NewCouchDBClient creates a new client to make requests for the CouchDB receiver.
-func NewCouchDBClient(cfg *Config, host component.Host, logger *zap.Logger) (CouchDBClient, error) {
+// newCouchDBClient creates a new client to make requests for the CouchDB receiver.
+func newCouchDBClient(cfg *Config, host component.Host, logger *zap.Logger) (client, error) {
 	client, err := cfg.ToClient(host.GetExtensions())
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTP Client: %w", err)
