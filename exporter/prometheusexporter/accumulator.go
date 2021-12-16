@@ -105,6 +105,10 @@ func (a *lastValueAccumulator) accumulateSummary(metric pdata.Metric, il pdata.I
 		ip := dps.At(i)
 
 		signature := timeseriesSignature(il.Name(), metric, ip.Attributes())
+		if ip.Flags().HasFlag(pdata.MetricDataPointFlagNoRecordedValue) {
+			a.registeredMetrics.Delete(signature)
+			return 0
+		}
 
 		v, ok := a.registeredMetrics.Load(signature)
 		stalePoint := ok &&
@@ -130,6 +134,10 @@ func (a *lastValueAccumulator) accumulateGauge(metric pdata.Metric, il pdata.Ins
 		ip := dps.At(i)
 
 		signature := timeseriesSignature(il.Name(), metric, ip.Attributes())
+		if ip.Flags().HasFlag(pdata.MetricDataPointFlagNoRecordedValue) {
+			a.registeredMetrics.Delete(signature)
+			return 0
+		}
 
 		v, ok := a.registeredMetrics.Load(signature)
 		if !ok {
@@ -167,6 +175,10 @@ func (a *lastValueAccumulator) accumulateSum(metric pdata.Metric, il pdata.Instr
 		ip := dps.At(i)
 
 		signature := timeseriesSignature(il.Name(), metric, ip.Attributes())
+		if ip.Flags().HasFlag(pdata.MetricDataPointFlagNoRecordedValue) {
+			a.registeredMetrics.Delete(signature)
+			return 0
+		}
 
 		v, ok := a.registeredMetrics.Load(signature)
 		if !ok {
@@ -208,6 +220,10 @@ func (a *lastValueAccumulator) accumulateDoubleHistogram(metric pdata.Metric, il
 		ip := dps.At(i)
 
 		signature := timeseriesSignature(il.Name(), metric, ip.Attributes())
+		if ip.Flags().HasFlag(pdata.MetricDataPointFlagNoRecordedValue) {
+			a.registeredMetrics.Delete(signature)
+			return 0
+		}
 
 		v, ok := a.registeredMetrics.Load(signature)
 		if !ok {

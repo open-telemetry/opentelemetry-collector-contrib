@@ -16,6 +16,7 @@ package prometheusexporter
 
 import (
 	"log"
+	"strings"
 	"testing"
 	"time"
 
@@ -216,6 +217,57 @@ func TestAccumulateMetrics(t *testing.T) {
 				dp.SetTimestamp(pdata.NewTimestampFromTime(ts))
 			},
 		},
+		{
+			name: "StalenessMarkerGauge",
+			metric: func(ts time.Time, v float64, metrics pdata.MetricSlice) {
+				metric := metrics.AppendEmpty()
+				metric.SetName("test_metric")
+				metric.SetDataType(pdata.MetricDataTypeGauge)
+				metric.SetDescription("test description")
+				dp := metric.Gauge().DataPoints().AppendEmpty()
+				dp.SetDoubleVal(v)
+				dp.Attributes().InsertString("label_1", "1")
+				dp.Attributes().InsertString("label_2", "2")
+				dp.SetTimestamp(pdata.NewTimestampFromTime(ts))
+				dp.SetFlags(1)
+			},
+		},
+		{
+			name: "StalenessMarkerSum",
+			metric: func(ts time.Time, v float64, metrics pdata.MetricSlice) {
+				metric := metrics.AppendEmpty()
+				metric.SetName("test_metric")
+				metric.SetDataType(pdata.MetricDataTypeSum)
+				metric.SetDescription("test description")
+				metric.Sum().SetIsMonotonic(false)
+				metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+				dp := metric.Sum().DataPoints().AppendEmpty()
+				dp.SetDoubleVal(v)
+				dp.Attributes().InsertString("label_1", "1")
+				dp.Attributes().InsertString("label_2", "2")
+				dp.SetTimestamp(pdata.NewTimestampFromTime(ts))
+				dp.SetFlags(1)
+			},
+		},
+		{
+			name: "StalenessMarkerHistogram",
+			metric: func(ts time.Time, v float64, metrics pdata.MetricSlice) {
+				metric := metrics.AppendEmpty()
+				metric.SetName("test_metric")
+				metric.SetDataType(pdata.MetricDataTypeHistogram)
+				metric.Histogram().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+				metric.SetDescription("test description")
+				dp := metric.Histogram().DataPoints().AppendEmpty()
+				dp.SetBucketCounts([]uint64{5, 2})
+				dp.SetCount(7)
+				dp.SetExplicitBounds([]float64{3.5, 10.0})
+				dp.SetSum(v)
+				dp.Attributes().InsertString("label_1", "1")
+				dp.Attributes().InsertString("label_2", "2")
+				dp.SetTimestamp(pdata.NewTimestampFromTime(ts))
+				dp.SetFlags(1)
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -235,7 +287,12 @@ func TestAccumulateMetrics(t *testing.T) {
 
 			// 2 metric arrived
 			n := a.Accumulate(resourceMetrics2)
-			require.Equal(t, 1, n)
+			if strings.HasPrefix(tt.name, "StalenessMarker") {
+				require.Equal(t, 0, n)
+				return
+			} else {
+				require.Equal(t, 1, n)
+			}
 
 			m2Labels, _, m2Value, m2Temporality, m2IsMonotonic := getMetricProperties(ilm2.Metrics().At(0))
 
