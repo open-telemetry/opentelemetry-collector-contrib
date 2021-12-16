@@ -37,9 +37,9 @@ func TestGetTagFromStatusCode(t *testing.T) {
 			name: "ok",
 			code: pdata.StatusCodeOk,
 			tag: model.KeyValue{
-				Key:    conventions.OtelStatusCode,
-				VInt64: int64(pdata.StatusCodeOk),
-				VType:  model.ValueType_INT64,
+				Key:   conventions.OtelStatusCode,
+				VType: model.ValueType_STRING,
+				VStr:  statusOk,
 			},
 		},
 
@@ -47,9 +47,9 @@ func TestGetTagFromStatusCode(t *testing.T) {
 			name: "error",
 			code: pdata.StatusCodeError,
 			tag: model.KeyValue{
-				Key:    conventions.OtelStatusCode,
-				VInt64: int64(pdata.StatusCodeError),
-				VType:  model.ValueType_INT64,
+				Key:   conventions.OtelStatusCode,
+				VType: model.ValueType_STRING,
+				VStr:  statusError,
 			},
 		},
 	}
@@ -339,9 +339,9 @@ func TestInternalTracesToJaegerProtoBatchesAndBack(t *testing.T) {
 func generateProtoChildSpanWithErrorTags() *model.Span {
 	span := generateProtoChildSpan()
 	span.Tags = append(span.Tags, model.KeyValue{
-		Key:    conventions.OtelStatusCode,
-		VType:  model.ValueType_INT64,
-		VInt64: int64(pdata.StatusCodeError),
+		Key:   conventions.OtelStatusCode,
+		VType: model.ValueType_STRING,
+		VStr:  statusError,
 	})
 	span.Tags = append(span.Tags, model.KeyValue{
 		Key:   tracetranslator.TagError,
