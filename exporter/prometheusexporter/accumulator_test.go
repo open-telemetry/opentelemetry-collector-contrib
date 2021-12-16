@@ -251,7 +251,7 @@ func TestAccumulateMetrics(t *testing.T) {
 				dp.Attributes().InsertString("label_1", "1")
 				dp.Attributes().InsertString("label_2", "2")
 				dp.SetTimestamp(pdata.NewTimestampFromTime(ts))
-				dp.SetFlags(1)
+				dp.SetFlags(pdata.MetricDataPointFlags(pdata.MetricDataPointFlagNoRecordedValue))
 			},
 		},
 		{
@@ -268,7 +268,7 @@ func TestAccumulateMetrics(t *testing.T) {
 				dp.Attributes().InsertString("label_1", "1")
 				dp.Attributes().InsertString("label_2", "2")
 				dp.SetTimestamp(pdata.NewTimestampFromTime(ts))
-				dp.SetFlags(1)
+				dp.SetFlags(pdata.MetricDataPointFlags(pdata.MetricDataPointFlagNoRecordedValue))
 			},
 		},
 		{
@@ -287,7 +287,7 @@ func TestAccumulateMetrics(t *testing.T) {
 				dp.Attributes().InsertString("label_1", "1")
 				dp.Attributes().InsertString("label_2", "2")
 				dp.SetTimestamp(pdata.NewTimestampFromTime(ts))
-				dp.SetFlags(1)
+				dp.SetFlags(pdata.MetricDataPointFlags(pdata.MetricDataPointFlagNoRecordedValue))
 			},
 		},
 		{
@@ -304,7 +304,7 @@ func TestAccumulateMetrics(t *testing.T) {
 				dp.Attributes().InsertString("label_1", "1")
 				dp.Attributes().InsertString("label_2", "2")
 				dp.SetTimestamp(pdata.NewTimestampFromTime(ts))
-				dp.SetFlags(1)
+				dp.SetFlags(pdata.MetricDataPointFlags(pdata.MetricDataPointFlagNoRecordedValue))
 				fillQuantileValue := func(pN, value float64, dest pdata.ValueAtQuantile) {
 					dest.SetQuantile(pN)
 					dest.SetValue(value)
@@ -335,9 +335,8 @@ func TestAccumulateMetrics(t *testing.T) {
 			if strings.HasPrefix(tt.name, "StalenessMarker") {
 				require.Equal(t, 0, n)
 				return
-			} else {
-				require.Equal(t, 1, n)
 			}
+			require.Equal(t, 1, n)
 
 			m2Labels, _, m2Value, m2Temporality, m2IsMonotonic := getMetricProperties(ilm2.Metrics().At(0))
 
