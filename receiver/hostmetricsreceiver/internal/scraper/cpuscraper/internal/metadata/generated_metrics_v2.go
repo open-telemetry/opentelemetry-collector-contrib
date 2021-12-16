@@ -40,14 +40,30 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
+// metric holds data for generated metric and keeps track of data points slice capacity.
+type metric struct {
+	data     pdata.Metric // data buffer for generated metric.
+	capacity int          // max observed number of data points added to the metric.
+}
+
+func (m *metric) updateCapacity(dpLen int) {
+	if dpLen > m.capacity {
+		m.capacity = dpLen
+	}
+}
+
+func newMetric() metric {
+	return metric{data: pdata.NewMetric()}
+}
+
 type metrics struct {
-	SystemCPUTime pdata.Metric
+	systemCPUTime metric
 }
 
 func newMetrics(config MetricsSettings) metrics {
 	ms := metrics{}
 	if config.SystemCPUTime.Enabled {
-		ms.SystemCPUTime = pdata.NewMetric()
+		ms.systemCPUTime = newMetric()
 	}
 	return ms
 }
@@ -55,11 +71,9 @@ func newMetrics(config MetricsSettings) metrics {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user configuration.
 type MetricsBuilder struct {
-	config                 MetricsSettings
-	startTime              pdata.Timestamp
-	attributeCpuCapacity   int
-	attributeStateCapacity int
-	metrics                metrics
+	config    MetricsSettings
+	startTime pdata.Timestamp
+	metrics   metrics
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -72,28 +86,11 @@ func WithStartTime(startTime pdata.Timestamp) metricBuilderOption {
 	}
 }
 
-// WithAttributeCpuCapacity sets an expected number of values of cpu attribute that will be
-// used to calculate data points capacity for each metric report.
-func WithAttributeCpuCapacity(cap int) metricBuilderOption {
-	return func(mb *MetricsBuilder) {
-		mb.attributeCpuCapacity = cap
-	}
-}
-
-// WithAttributeStateCapacity sets an expected number of values of state attribute that will be
-// used to calculate data points capacity for each metric report.
-func WithAttributeStateCapacity(cap int) metricBuilderOption {
-	return func(mb *MetricsBuilder) {
-		mb.attributeStateCapacity = cap
-	}
-}
-
 func NewMetricsBuilder(config MetricsSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                 config,
-		startTime:              pdata.NewTimestampFromTime(time.Now()),
-		attributeStateCapacity: 8,
-		metrics:                newMetrics(config),
+		config:    config,
+		startTime: pdata.NewTimestampFromTime(time.Now()),
+		metrics:   newMetrics(config),
 	}
 
 	for _, op := range options {
@@ -108,35 +105,31 @@ func NewMetricsBuilder(config MetricsSettings, options ...metricBuilderOption) *
 // another set of data points. This function will be doing all transformations required to produce metric representation
 // defined in metadata and user configuration, e.g. delta/cumulative translation.
 func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
-	if mb.config.SystemCPUTime.Enabled && mb.metrics.SystemCPUTime.Sum().DataPoints().Len() > 0 {
-		mb.metrics.SystemCPUTime.MoveTo(metrics.AppendEmpty())
+	if mb.config.SystemCPUTime.Enabled && mb.metrics.systemCPUTime.data.Sum().DataPoints().Len() > 0 {
+		mb.metrics.systemCPUTime.updateCapacity(mb.metrics.systemCPUTime.data.Sum().DataPoints().Len())
+		mb.metrics.systemCPUTime.data.MoveTo(metrics.AppendEmpty())
 	}
 
 	// Reset metric data points collection.
 	mb.initMetrics()
 }
 
-// systemCPUTimeDataPointsCapacity calculates initial data points capacity for system.cpu.time metric.
-func (mb *MetricsBuilder) systemCPUTimeDataPointsCapacity() int {
-	return mb.attributeCpuCapacity * mb.attributeStateCapacity
-}
-
 // initSystemCPUTimeMetric builds new system.cpu.time metric.
 func (mb *MetricsBuilder) initSystemCPUTimeMetric() {
-	metric := mb.metrics.SystemCPUTime
-	metric.SetName("system.cpu.time")
-	metric.SetDescription("Total CPU seconds broken down by different states.")
-	metric.SetUnit("s")
-	metric.SetDataType(pdata.MetricDataTypeSum)
-	metric.Sum().SetIsMonotonic(true)
-	metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
-	metric.Sum().DataPoints().EnsureCapacity(mb.systemCPUTimeDataPointsCapacity())
+	metric := mb.metrics.systemCPUTime
+	metric.data.SetName("system.cpu.time")
+	metric.data.SetDescription("Total CPU seconds broken down by different states.")
+	metric.data.SetUnit("s")
+	metric.data.SetDataType(pdata.MetricDataTypeSum)
+	metric.data.Sum().SetIsMonotonic(true)
+	metric.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	metric.data.Sum().DataPoints().EnsureCapacity(metric.capacity)
 }
 
 // initMetrics initializes metrics.
 func (mb *MetricsBuilder) initMetrics() {
 	if mb.config.SystemCPUTime.Enabled {
-		// TODO: Use mb.metrics.SystemCPUTime.Sum().DataPoints().Clear() instead of rebuilding
+		// TODO: Use metric.data.Sum().DataPoints().Clear() instead of rebuilding
 		// the metrics once the Clear method is available.
 		mb.initSystemCPUTimeMetric()
 	}
@@ -149,7 +142,7 @@ func (mb *MetricsBuilder) RecordSystemCPUTimeDataPoint(ts pdata.Timestamp, val f
 		return
 	}
 
-	dp := mb.metrics.SystemCPUTime.Sum().DataPoints().AppendEmpty()
+	dp := mb.metrics.systemCPUTime.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(mb.startTime)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
