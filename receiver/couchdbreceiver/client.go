@@ -89,8 +89,8 @@ func (cc *couchDBClient) Get(path string) ([]byte, error) {
 	return body, nil
 }
 
-// Nodes contains a list of all known connected node names.
-type Nodes struct {
+// nodes contains a list of all known connected node names.
+type nodes struct {
 	AllNodes []string `json:"all_nodes"`
 }
 
@@ -101,13 +101,13 @@ func (cc *couchDBClient) GetNodeNames() ([]string, error) {
 		return nil, err
 	}
 
-	var nodes Nodes
-	err = json.Unmarshal(body, &nodes)
+	var nodeNames nodes
+	err = json.Unmarshal(body, &nodeNames)
 	if err != nil {
 		return nil, err
 	}
 
-	return nodes.AllNodes, nil
+	return nodeNames.AllNodes, nil
 }
 
 // GetStats gets couchdb stats at a specific node name endpoint.
