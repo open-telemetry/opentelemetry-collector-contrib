@@ -1234,6 +1234,7 @@ func TestStatsAggregations(t *testing.T) {
 	statsOutput := computeAPMStats(&datadogPayload, time.Now().UTC().UnixNano())
 
 	var statsVersionTag stats.Tag
+	var httpStatusCodeTag stats.Tag
 
 	// extract the first stats.TagSet containing a stats.Tag of "version"
 	for _, countVal := range statsOutput.Stats[0].Counts {
@@ -1241,10 +1242,14 @@ func TestStatsAggregations(t *testing.T) {
 			if tagVal.Name == versionAggregationTag {
 				statsVersionTag = tagVal
 			}
+			if tagVal.Name == httpStatusCodeAggregationTag {
+				httpStatusCodeTag = tagVal
+			}
 		}
 	}
 
 	assert.Equal(t, "test-version", statsVersionTag.Value)
+	assert.Equal(t, "501", httpStatusCodeTag.Value)
 }
 
 // ensure that stats payloads get adjusted for approriate sampling weight
