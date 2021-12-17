@@ -485,7 +485,7 @@ func (mb *MetricsBuilder) initElasticsearchNodeDocumentsMetric() {
 func (mb *MetricsBuilder) initElasticsearchNodeFsDiskFreeMetric() {
 	metric := mb.metrics.elasticsearchNodeFsDiskFree
 	metric.data.SetName("elasticsearch.node.fs.disk.free")
-	metric.data.SetDescription("The amount of free disk space  that may be used by elasticsearch across all file stores for this node.")
+	metric.data.SetDescription("The amount of free disk space that may be used by elasticsearch across all file stores for this node.")
 	metric.data.SetUnit("By")
 	metric.data.SetDataType(pdata.MetricDataTypeSum)
 	metric.data.Sum().SetIsMonotonic(false)
@@ -644,7 +644,7 @@ func (mb *MetricsBuilder) initElasticsearchNodeOperationsTimeMetric() {
 func (mb *MetricsBuilder) initElasticsearchNodeShardsSizeMetric() {
 	metric := mb.metrics.elasticsearchNodeShardsSize
 	metric.data.SetName("elasticsearch.node.shards.size")
-	metric.data.SetDescription("Size in bytes of the shards assigned to this node.")
+	metric.data.SetDescription("Size of the shards assigned to this node.")
 	metric.data.SetUnit("By")
 	metric.data.SetDataType(pdata.MetricDataTypeSum)
 	metric.data.Sum().SetIsMonotonic(false)
