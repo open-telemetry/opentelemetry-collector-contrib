@@ -40,11 +40,11 @@ func (w *watcher) start() error {
 				path := event.Name
 				if event.Op == fsnotify.Write || event.Op == fsnotify.Create {
 					err := w.callback(path)
-					w.logger.Error("Error reading", zap.String("path", w.path), zap.Error(err))
+					w.logger.Error("error reading", zap.String("path", w.path), zap.Error(err))
 				}
 
 			case err := <-watcher.Errors:
-				w.logger.Error("Error watching ", zap.String("path", w.path), zap.Error(err))
+				w.logger.Error("error watching ", zap.String("path", w.path), zap.Error(err))
 			}
 		}
 	}()

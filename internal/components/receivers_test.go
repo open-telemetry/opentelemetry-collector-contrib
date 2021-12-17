@@ -91,9 +91,12 @@ func TestDefaultReceivers(t *testing.T) {
 		{
 			receiver: "zipkin",
 		},
+		{
+			receiver: "file",
+		},
 	}
 
-	assert.Equal(t, len(tests)+29 /* not tested */, len(rcvrFactories))
+	assert.Equal(t, len(tests)+28 /* not tested */, len(rcvrFactories))
 	for _, tt := range tests {
 		t.Run(string(tt.receiver), func(t *testing.T) {
 			factory, ok := rcvrFactories[tt.receiver]
