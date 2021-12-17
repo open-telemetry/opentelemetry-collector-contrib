@@ -77,6 +77,7 @@ type BasicCacheInfo struct {
 }
 
 type JVMInfo struct {
+	UptimeInMs    int64         `json:"uptime_in_millis"`
 	JVMMemoryInfo JVMMemoryInfo `json:"mem"`
 	JVMThreadInfo JVMThreadInfo `json:"threads"`
 	JVMGCInfo     JVMGCInfo     `json:"gc"`
