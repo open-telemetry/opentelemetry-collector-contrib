@@ -11,4 +11,5 @@ type ClusterHealth struct {
 	UnassignedShards   int64  `json:"unassigned_shards"`
 	NodeCount          int64  `json:"number_of_nodes"`
 	DataNodeCount      int64  `json:"number_of_data_nodes"`
+	Status             string `json:"status"`
 }
