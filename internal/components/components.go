@@ -16,7 +16,14 @@ package components // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/service/defaultcomponents"
+	"go.opentelemetry.io/collector/exporter/loggingexporter"
+	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
+	"go.opentelemetry.io/collector/extension/ballastextension"
+	"go.opentelemetry.io/collector/extension/zpagesextension"
+	"go.opentelemetry.io/collector/processor/batchprocessor"
+	"go.opentelemetry.io/collector/processor/memorylimiterprocessor"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter"
@@ -124,17 +131,12 @@ import (
 )
 
 func Components() (component.Factories, error) {
-	factories, err := defaultcomponents.Components()
-	if err != nil {
-		return component.Factories{}, err
-	}
-
-	delete(factories.Extensions, "health_check")
-	delete(factories.Extensions, "pprof")
-
+	var err error
+	factories := component.Factories{}
 	extensions := []component.ExtensionFactory{
 		asapauthextension.NewFactory(),
 		awsproxy.NewFactory(),
+		ballastextension.NewFactory(),
 		bearertokenauthextension.NewFactory(),
 		filestorage.NewFactory(),
 		fluentbitextension.NewFactory(),
@@ -145,12 +147,8 @@ func Components() (component.Factories, error) {
 		pprofextension.NewFactory(),
 		oauth2clientauthextension.NewFactory(),
 		oidcauthextension.NewFactory(),
+		zpagesextension.NewFactory(),
 	}
-
-	for _, ext := range factories.Extensions {
-		extensions = append(extensions, ext)
-	}
-
 	factories.Extensions, err = component.MakeExtensionFactoryMap(extensions...)
 	if err != nil {
 		return component.Factories{}, err
@@ -179,6 +177,7 @@ func Components() (component.Factories, error) {
 		memcachedreceiver.NewFactory(),
 		mongodbatlasreceiver.NewFactory(),
 		opencensusreceiver.NewFactory(),
+		otlpreceiver.NewFactory(),
 		podmanreceiver.NewFactory(),
 		prometheusexecreceiver.NewFactory(),
 		prometheusreceiver.NewFactory(),
@@ -197,12 +196,7 @@ func Components() (component.Factories, error) {
 		udplogreceiver.NewFactory(),
 		zipkinreceiver.NewFactory(),
 	}
-
 	receivers = append(receivers, extraReceivers()...)
-
-	for _, rcv := range factories.Receivers {
-		receivers = append(receivers, rcv)
-	}
 	factories.Receivers, err = component.MakeReceiverFactoryMap(receivers...)
 	if err != nil {
 		return component.Factories{}, err
@@ -229,10 +223,13 @@ func Components() (component.Factories, error) {
 		jaegerthrifthttpexporter.NewFactory(),
 		kafkaexporter.NewFactory(),
 		loadbalancingexporter.NewFactory(),
+		loggingexporter.NewFactory(),
 		logzioexporter.NewFactory(),
 		lokiexporter.NewFactory(),
 		newrelicexporter.NewFactory(),
 		opencensusexporter.NewFactory(),
+		otlpexporter.NewFactory(),
+		otlphttpexporter.NewFactory(),
 		prometheusexporter.NewFactory(),
 		prometheusremotewriteexporter.NewFactory(),
 		sapmexporter.NewFactory(),
@@ -246,9 +243,6 @@ func Components() (component.Factories, error) {
 		tencentcloudlogserviceexporter.NewFactory(),
 		zipkinexporter.NewFactory(),
 	}
-	for _, exp := range factories.Exporters {
-		exporters = append(exporters, exp)
-	}
 	factories.Exporters, err = component.MakeExporterFactoryMap(exporters...)
 	if err != nil {
 		return component.Factories{}, err
@@ -256,10 +250,12 @@ func Components() (component.Factories, error) {
 
 	processors := []component.ProcessorFactory{
 		attributesprocessor.NewFactory(),
+		batchprocessor.NewFactory(),
 		filterprocessor.NewFactory(),
 		groupbyattrsprocessor.NewFactory(),
 		groupbytraceprocessor.NewFactory(),
 		k8sattributesprocessor.NewFactory(),
+		memorylimiterprocessor.NewFactory(),
 		metricstransformprocessor.NewFactory(),
 		metricsgenerationprocessor.NewFactory(),
 		probabilisticsamplerprocessor.NewFactory(),
@@ -271,9 +267,6 @@ func Components() (component.Factories, error) {
 		spanprocessor.NewFactory(),
 		cumulativetodeltaprocessor.NewFactory(),
 		deltatorateprocessor.NewFactory(),
-	}
-	for _, pr := range factories.Processors {
-		processors = append(processors, pr)
 	}
 	factories.Processors, err = component.MakeProcessorFactoryMap(processors...)
 	if err != nil {
