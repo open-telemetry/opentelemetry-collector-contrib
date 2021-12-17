@@ -47,7 +47,6 @@ func newReceiver(
 }
 
 func (r *receiver) registerMetricsConsumer(mc consumer.Metrics, set component.ReceiverCreateSettings) error {
-	r.metricsConsumer = mc
 	return nil
 }
 

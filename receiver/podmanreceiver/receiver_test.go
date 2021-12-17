@@ -18,11 +18,10 @@
 package podmanreceiver
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"testing"
 	"time"
@@ -111,6 +110,9 @@ func TestLogsLoop(t *testing.T) {
 	md := <-consumerForLogs
 	assert.Equal(t, md.ResourceLogs().Len(), 1)
 
+	md = <-consumerForLogs
+	assert.Equal(t, md.ResourceLogs().Len(), 1)
+
 	err = r.Shutdown(context.Background())
 	require.NoError(t, err)
 }
@@ -143,14 +145,10 @@ func (c mockClient) getEventsResponse() (*http.Response, error) {
 }
 
 func (c mockClientLogs) getEventsResponse() (*http.Response, error) {
-	mockRes := event{
-		Type: "container",
-	}
-	b, _ := json.Marshal(mockRes)
 	tempReport := &http.Response{
 		Status:     "Ok",
 		StatusCode: 200,
-		Body:       ioutil.NopCloser(bytes.NewBuffer(b)),
+		Body:       testEventReader{},
 	}
 	return tempReport, nil
 }
@@ -173,5 +171,28 @@ func (m mockConsumer) ConsumeMetrics(ctx context.Context, md pdata.Metrics) erro
 
 func (m mockConsumerLogs) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
 	m <- ld
+	return nil
+}
+
+type testEventReader struct{}
+
+var count = 0
+
+func (t testEventReader) Read(b []byte) (int, error) {
+	mockRes := event{
+		Type: "container",
+	}
+
+	encodedResponse, _ := json.Marshal(mockRes)
+	if count == 2 {
+		return 0, io.EOF
+	}
+
+	count++
+	n := copy(b, encodedResponse)
+	return n, nil
+}
+
+func (t testEventReader) Close() error {
 	return nil
 }

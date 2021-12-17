@@ -16,6 +16,7 @@ package podmanreceiver // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -60,6 +61,8 @@ func createReceiver(
 ) (*receiver, error) {
 	podmanConfig := config.(*Config)
 	var err error
+
+	receiverLock.Lock()
 	r := receivers[podmanConfig]
 	if r == nil {
 		r, err = newReceiver(ctx, params, podmanConfig, nil)
@@ -68,6 +71,7 @@ func createReceiver(
 		}
 		receivers[podmanConfig] = r
 	}
+	receiverLock.Unlock()
 	return r, err
 }
 
@@ -102,4 +106,5 @@ func createLogsReceiver(
 	return r, nil
 }
 
+var receiverLock sync.Mutex
 var receivers = map[*Config]*receiver{}
