@@ -1,1 +1,272 @@
 name: elasticsearchreceiver
+
+attributes:
+  elasticsearch.cluster.name:
+    description: The name of the elasticsearch cluster
+  elasticsearch.node.name:
+    description: The name of the elasticsearch node
+  cache_name:
+    description: Type of cache
+    enum:
+    - fielddata
+    - query
+  fs_operation_type:
+    description: Type of file store operation
+    enum:
+    - read
+    - write
+  gc_type:
+    description: Type of garbage collection
+    enum:
+    - young
+    - old
+  memory_type:
+    description: Type of memory
+    enum:
+    - heap
+    - non-heap
+  direction:
+    description: Data direction
+    enum:
+    - received
+    - sent
+  document_type:
+    description: Type of document
+    enum:
+    - active
+    - deleted
+  shard_type:
+    description: State of the shard
+    enum:
+    - active
+    - relocating
+    - initializing
+    - unassigned
+  operation_type:
+    description: Type of operation
+    enum:
+    - index
+    - delete
+    - get
+    - query
+    - fetch
+    - scroll
+    - suggest
+    - merge
+    - refresh
+    - flush
+    - warmer
+  thread_pool_name:
+    description: Thread pool name
+  thread_state:
+    description: State of the thread
+    enum:
+    - active
+    - idle
+  task_state:
+    description: State of the task_state
+    enum:
+    - rejected
+    - completed
+metrics:
+  # these metrics are from node stats
+  elasticsearch.node.cache.memory.usage:
+    description: Size in bytes of the cache.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [cache_name]
+  elasticsearch.node.cache.evictions:
+    description: The number of evictions from the cache.
+    unit: "{evictions}"
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [cache_name]
+  elasticsearch.node.jvm.gc.collections.count:
+    description: The number of GC collections performed by the JVM.
+    unit: "{collections}"
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [gc_type]
+  elasticsearch.node.jvm.gc.collections.time:
+    description: Total time spent by the JVM running the GC.
+    unit: ms
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [gc_type]
+  elasticsearch.node.jvm.memory.usage:
+    description: Memory used by the JVM.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [memory_type]
+  elasticsearch.node.jvm.threads.count:
+    description: Number of open threads in the node's JVM process.
+    unit: "{threads}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: []
+  elasticsearch.node.jvm.threads.peak:
+    description: Maximum number of concurrently running threads in the node's JVM process.
+    unit: "{threads}"
+    gauge:
+      value_type: int
+    attributes: []
+  elasticsearch.node.fs.disk.usage:
+    description: The amount of used disk space across all file stores for this node.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: []
+  elasticsearch.node.fs.disk.free:
+    description: The amount of free disk space  that may be used by elasticsearch across all file stores for this node.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: []
+  elasticsearch.node.fs.io.operations:
+    description: The number of io operations completed by elasticsearch across all file stores. Only available on Linux nodes.
+    unit: "{operations}"
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [fs_operation_type]
+  elasticsearch.node.network.io:
+    description: Number of bytes sent and received on the network for internal cluster communication.
+    unit: By
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [direction]
+  elasticsearch.node.network.connections:
+    description: Number of open internal tcp connections for internal cluster communication
+    unit: "{connections}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: []
+  elasticsearch.node.http.connections:
+    description: Number of HTTP connections to the node.
+    unit: "{connections}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: []
+  elasticsearch.node.operations.completed:
+    description: Number of operations completed.
+    unit: "{operations}"
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [operation_type]
+  elasticsearch.node.operations.time:
+    description: Time spent on operations.
+    unit: ms
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [operation_type]
+  elasticsearch.node.shards.size:
+    description: Size in bytes of the shards assigned to this node.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: []
+  elasticsearch.node.thread_pool.threads:
+    description: Number of the threads in the thread pool.
+    unit: "{threads}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [thread_state]
+  elasticsearch.node.thread_pool.queued_tasks:
+    description: Number of queued tasks in the thread pool.
+    unit: "{tasks}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [thread_pool_name]
+  elasticsearch.node.thread_pool.finished_tasks:
+    description: Number of tasks finished by the thread pool
+    unit: "{tasks}"
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [thread_pool_name, task_state]
+  elasticsearch.node.documents:
+    description: Number of documents on the node.
+    unit: "{documents}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [document_type]
+  elasticsearch.node.open_files:
+    description: Number of open file descriptors held by the node.
+    unit: "{files}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: []
+  # these metrics are from cluster health
+  elasticsearch.cluster.shards:
+    description: Number of shards in the cluster.
+    unit: "{shards}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [shard_type]
+  elasticsearch.cluster.data_nodes:
+    description: Number of data nodes in the cluster.
+    unit: "{nodes}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: []
+  elasticsearch.cluster.nodes:
+    description: Total number of nodes in the cluster.
+    unit: "{nodes}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: []
+  elasticsearch.cluster.health:
+    description: The health of the cluster.
+    extended_documentation: 
+      Health status of the cluster, based on the state of its primary and replica shards. 
+      0 indicates green, 1 indicates yellow, and 2 indicates red.
+    unit: "{stats}"
+    gauge:
+      value_type: int
+    attributes: []

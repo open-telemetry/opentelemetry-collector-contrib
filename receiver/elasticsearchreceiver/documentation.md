@@ -8,8 +8,46 @@ These are the metrics available for this scraper.
 
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
+| elasticsearch.cluster.data_nodes | Number of data nodes in the cluster. | {nodes} | Sum(Int) | <ul> </ul> |
+| elasticsearch.cluster.health | The health of the cluster. Health status of the cluster, based on the state of its primary and replica shards. 0 indicates green, 1 indicates yellow, and 2 indicates red.  | {stats} | Gauge(Int) | <ul> </ul> |
+| elasticsearch.cluster.nodes | Total number of nodes in the cluster. | {nodes} | Sum(Int) | <ul> </ul> |
+| elasticsearch.cluster.shards | Number of shards in the cluster. | {shards} | Sum(Int) | <ul> <li>shard_type</li> </ul> |
+| elasticsearch.node.cache.evictions | The number of evictions from the cache. | {evictions} | Sum(Int) | <ul> <li>cache_name</li> </ul> |
+| elasticsearch.node.cache.memory.usage | Size in bytes of the cache. | By | Sum(Int) | <ul> <li>cache_name</li> </ul> |
+| elasticsearch.node.documents | Number of documents on the node. | {documents} | Sum(Int) | <ul> <li>document_type</li> </ul> |
+| elasticsearch.node.fs.disk.free | The amount of free disk space  that may be used by elasticsearch across all file stores for this node. | By | Sum(Int) | <ul> </ul> |
+| elasticsearch.node.fs.disk.usage | The amount of used disk space across all file stores for this node. | By | Sum(Int) | <ul> </ul> |
+| elasticsearch.node.fs.io.operations | The number of io operations completed by elasticsearch across all file stores. Only available on Linux nodes. | {operations} | Sum(Int) | <ul> <li>fs_operation_type</li> </ul> |
+| elasticsearch.node.http.connections | Number of HTTP connections to the node. | {connections} | Sum(Int) | <ul> </ul> |
+| elasticsearch.node.jvm.gc.collections.count | The number of GC collections performed by the JVM. | {collections} | Sum(Int) | <ul> <li>gc_type</li> </ul> |
+| elasticsearch.node.jvm.gc.collections.time | Total time spent by the JVM running the GC. | ms | Sum(Int) | <ul> <li>gc_type</li> </ul> |
+| elasticsearch.node.jvm.memory.usage | Memory used by the JVM. | By | Sum(Int) | <ul> <li>memory_type</li> </ul> |
+| elasticsearch.node.jvm.threads.count | Number of open threads in the node's JVM process. | {threads} | Sum(Int) | <ul> </ul> |
+| elasticsearch.node.jvm.threads.peak | Maximum number of concurrently running threads in the node's JVM process. | {threads} | Gauge(Int) | <ul> </ul> |
+| elasticsearch.node.network.connections | Number of open internal tcp connections for internal cluster communication | {connections} | Sum(Int) | <ul> </ul> |
+| elasticsearch.node.network.io | Number of bytes sent and received on the network for internal cluster communication. | By | Sum(Int) | <ul> <li>direction</li> </ul> |
+| elasticsearch.node.open_files | Number of open file descriptors held by the node. | {files} | Sum(Int) | <ul> </ul> |
+| elasticsearch.node.operations.completed | Number of operations completed. | {operations} | Sum(Int) | <ul> <li>operation_type</li> </ul> |
+| elasticsearch.node.operations.time | Time spent on operations. | ms | Sum(Int) | <ul> <li>operation_type</li> </ul> |
+| elasticsearch.node.shards.size | Size in bytes of the shards assigned to this node. | By | Sum(Int) | <ul> </ul> |
+| elasticsearch.node.thread_pool.finished_tasks | Number of tasks finished by the thread pool | {tasks} | Sum(Int) | <ul> <li>thread_pool_name</li> <li>task_state</li> </ul> |
+| elasticsearch.node.thread_pool.queued_tasks | Number of queued tasks in the thread pool. | {tasks} | Sum(Int) | <ul> <li>thread_pool_name</li> </ul> |
+| elasticsearch.node.thread_pool.threads | Number of the threads in the thread pool. | {threads} | Sum(Int) | <ul> <li>thread_state</li> </ul> |
 
 ## Attributes
 
 | Name | Description |
 | ---- | ----------- |
+| cache_name | Type of cache |
+| direction | Data direction |
+| document_type | Type of document |
+| elasticsearch.cluster.name | The name of the elasticsearch cluster |
+| elasticsearch.node.name | The name of the elasticsearch node |
+| fs_operation_type | Type of file store operation |
+| gc_type | Type of garbage collection |
+| memory_type | Type of memory |
+| operation_type | Type of operation |
+| shard_type | State of the shard |
+| task_state | State of the task_state |
+| thread_pool_name | Thread pool name |
+| thread_state | State of the thread |
