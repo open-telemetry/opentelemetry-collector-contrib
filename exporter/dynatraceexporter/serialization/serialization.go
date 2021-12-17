@@ -28,7 +28,7 @@ func SerializeMetric(logger *zap.Logger, prefix string, metric pdata.Metric, def
 	var metricLines []string
 
 	ce := logger.Check(zap.DebugLevel, "SerializeMetric")
-	points := -1
+	var points int
 
 	switch metric.DataType() {
 	case pdata.MetricDataTypeGauge:
