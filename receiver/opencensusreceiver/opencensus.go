@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver/internal/ocmetrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver/internal/octrace"
@@ -226,7 +227,7 @@ func (ocr *ocReceiver) httpServer() *http.Server {
 func (ocr *ocReceiver) startServer(host component.Host) error {
 	// Register the grpc-gateway on the HTTP server mux
 	c := context.Background()
-	opts := []grpc.DialOption{grpc.WithInsecure()}
+	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	endpoint := ocr.ln.Addr().String()
 
 	_, ok := ocr.ln.(*net.UnixListener)
