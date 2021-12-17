@@ -1,0 +1,19 @@
+{
+   "resourceMetrics": [
+      {
+         "instrumentationLibraryMetrics": [
+            {
+               "metrics": [
+                  {
+                     "name": "nonmonotonic",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "isMonotonic": false
+                     }
+                  }
+               ]
+            }
+         ]
+      }
+   ]
+}

@@ -15,33 +15,20 @@
 package scrapertest // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 
 import (
-	"encoding/json"
-	"io/ioutil"
-
-	"go.opentelemetry.io/collector/model/otlp"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
-func ReadExpected(filePath string) (pdata.Metrics, error) {
-	expectedFileBytes, err := ioutil.ReadFile(filePath)
-	if err != nil {
-		return pdata.Metrics{}, err
-	}
-	unmarshaller := otlp.NewJSONMetricsUnmarshaler()
-	return unmarshaller.UnmarshalMetrics(expectedFileBytes)
+func cloneMetricSlice(metricSlice pdata.MetricSlice) pdata.MetricSlice {
+	clone := pdata.NewMetricSlice()
+	metricSlice.CopyTo(clone)
+	return clone
 }
 
-func WriteExpected(filePath string, metrics pdata.Metrics) error {
-	bytes, err := otlp.NewJSONMetricsMarshaler().MarshalMetrics(metrics)
-	if err != nil {
-		return err
+func metricsByName(metricSlice pdata.MetricSlice) map[string]pdata.Metric {
+	byName := make(map[string]pdata.Metric, metricSlice.Len())
+	for i := 0; i < metricSlice.Len(); i++ {
+		a := metricSlice.At(i)
+		byName[a.Name()] = a
 	}
-	var jsonVal map[string]interface{}
-	json.Unmarshal(bytes, &jsonVal)
-	b, err := json.MarshalIndent(jsonVal, "", "   ")
-	if err != nil {
-		return err
-	}
-	b = append(b, []byte("\n")...)
-	return ioutil.WriteFile(filePath, b, 0600)
+	return byName
 }
