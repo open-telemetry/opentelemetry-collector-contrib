@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanm
 go 1.17
 
 require (
+	github.com/hashicorp/golang-lru v0.5.4
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter v0.41.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.41.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver v0.41.0
