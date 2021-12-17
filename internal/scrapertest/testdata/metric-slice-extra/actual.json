@@ -1,0 +1,20 @@
+{
+   "resourceMetrics": [
+      {
+         "instrumentationLibraryMetrics": [
+            {
+               "metrics": [
+                  {
+                     "name": "gauge.one",
+                     "gauge": {}
+                  },
+                  {
+                     "name": "sum.one",
+                     "sum": {}
+                  }
+               ]
+            }
+         ]
+      }
+   ]
+}
