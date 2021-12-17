@@ -217,7 +217,7 @@ func (e *exporter) sendBatch(ctx context.Context, lines []string) error {
 		responseBody := metricsResponse{}
 		if err := json.Unmarshal(bodyBytes, &responseBody); err != nil {
 			// if the response cannot be read, do not retry the batch as it may have been successful
-			e.logger.Error(fmt.Sprintf("failed to unmarshal response: %s", err.Error()))
+			e.logger.Error("failed to unmarshal response", zap.Error(err), zap.ByteString("body", bodyBytes))
 			return nil
 		}
 
@@ -273,7 +273,7 @@ type metricsResponse struct {
 }
 
 type metricsResponseError struct {
-	Code         string                            `json:"code"`
+	Code         int                               `json:"code"`
 	Message      string                            `json:"message"`
 	InvalidLines []metricsResponseErrorInvalidLine `json:"invalidLines"`
 }
