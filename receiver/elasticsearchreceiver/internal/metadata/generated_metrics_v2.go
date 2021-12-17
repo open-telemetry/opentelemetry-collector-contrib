@@ -833,7 +833,7 @@ func (mb *MetricsBuilder) RecordElasticsearchNodeCacheMemoryUsageDataPoint(ts pd
 
 // RecordElasticsearchNodeDocumentsDataPoint adds a data point to elasticsearch.node.documents metric.
 // Any attribute of AttributeValueTypeEmpty type will be skipped.
-func (mb *MetricsBuilder) RecordElasticsearchNodeDocumentsDataPoint(ts pdata.Timestamp, val int64, document_typeAttributeValue string) {
+func (mb *MetricsBuilder) RecordElasticsearchNodeDocumentsDataPoint(ts pdata.Timestamp, val int64, document_stateAttributeValue string) {
 	if !mb.config.ElasticsearchNodeDocuments.Enabled {
 		return
 	}
@@ -842,7 +842,7 @@ func (mb *MetricsBuilder) RecordElasticsearchNodeDocumentsDataPoint(ts pdata.Tim
 	dp.SetStartTimestamp(mb.startTime)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.DocumentType, pdata.NewAttributeValueString(document_typeAttributeValue))
+	dp.Attributes().Insert(A.DocumentState, pdata.NewAttributeValueString(document_stateAttributeValue))
 }
 
 // RecordElasticsearchNodeFsDiskUsageDataPoint adds a data point to elasticsearch.node.fs.disk.usage metric.
@@ -888,7 +888,7 @@ func (mb *MetricsBuilder) RecordElasticsearchNodeHTTPConnectionsDataPoint(ts pda
 
 // RecordElasticsearchNodeJvmGcCollectionsCountDataPoint adds a data point to elasticsearch.node.jvm.gc.collections.count metric.
 // Any attribute of AttributeValueTypeEmpty type will be skipped.
-func (mb *MetricsBuilder) RecordElasticsearchNodeJvmGcCollectionsCountDataPoint(ts pdata.Timestamp, val int64, gc_typeAttributeValue string) {
+func (mb *MetricsBuilder) RecordElasticsearchNodeJvmGcCollectionsCountDataPoint(ts pdata.Timestamp, val int64, generationAttributeValue string) {
 	if !mb.config.ElasticsearchNodeJvmGcCollectionsCount.Enabled {
 		return
 	}
@@ -897,12 +897,12 @@ func (mb *MetricsBuilder) RecordElasticsearchNodeJvmGcCollectionsCountDataPoint(
 	dp.SetStartTimestamp(mb.startTime)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.GcType, pdata.NewAttributeValueString(gc_typeAttributeValue))
+	dp.Attributes().Insert(A.Generation, pdata.NewAttributeValueString(generationAttributeValue))
 }
 
 // RecordElasticsearchNodeJvmGcCollectionsTimeDataPoint adds a data point to elasticsearch.node.jvm.gc.collections.time metric.
 // Any attribute of AttributeValueTypeEmpty type will be skipped.
-func (mb *MetricsBuilder) RecordElasticsearchNodeJvmGcCollectionsTimeDataPoint(ts pdata.Timestamp, val int64, gc_typeAttributeValue string) {
+func (mb *MetricsBuilder) RecordElasticsearchNodeJvmGcCollectionsTimeDataPoint(ts pdata.Timestamp, val int64, generationAttributeValue string) {
 	if !mb.config.ElasticsearchNodeJvmGcCollectionsTime.Enabled {
 		return
 	}
@@ -911,12 +911,12 @@ func (mb *MetricsBuilder) RecordElasticsearchNodeJvmGcCollectionsTimeDataPoint(t
 	dp.SetStartTimestamp(mb.startTime)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.GcType, pdata.NewAttributeValueString(gc_typeAttributeValue))
+	dp.Attributes().Insert(A.Generation, pdata.NewAttributeValueString(generationAttributeValue))
 }
 
 // RecordElasticsearchNodeJvmMemoryUsageDataPoint adds a data point to elasticsearch.node.jvm.memory.usage metric.
 // Any attribute of AttributeValueTypeEmpty type will be skipped.
-func (mb *MetricsBuilder) RecordElasticsearchNodeJvmMemoryUsageDataPoint(ts pdata.Timestamp, val int64, memory_typeAttributeValue string) {
+func (mb *MetricsBuilder) RecordElasticsearchNodeJvmMemoryUsageDataPoint(ts pdata.Timestamp, val int64, memory_segmentAttributeValue string) {
 	if !mb.config.ElasticsearchNodeJvmMemoryUsage.Enabled {
 		return
 	}
@@ -925,7 +925,7 @@ func (mb *MetricsBuilder) RecordElasticsearchNodeJvmMemoryUsageDataPoint(ts pdat
 	dp.SetStartTimestamp(mb.startTime)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.MemoryType, pdata.NewAttributeValueString(memory_typeAttributeValue))
+	dp.Attributes().Insert(A.MemorySegment, pdata.NewAttributeValueString(memory_segmentAttributeValue))
 }
 
 // RecordElasticsearchNodeJvmThreadsCountDataPoint adds a data point to elasticsearch.node.jvm.threads.count metric.
@@ -1086,18 +1086,18 @@ var Attributes = struct {
 	Direction string
 	// DiskUsageState (The state of a section of space on disk.)
 	DiskUsageState string
-	// DocumentType (The type of document.)
-	DocumentType string
+	// DocumentState (The state of the document.)
+	DocumentState string
 	// ElasticsearchClusterName (The name of the elasticsearch cluster.)
 	ElasticsearchClusterName string
 	// ElasticsearchNodeName (The name of the elasticsearch node.)
 	ElasticsearchNodeName string
 	// FsOperation (The type of file store operation.)
 	FsOperation string
-	// GcType (The type of garbage collection.)
-	GcType string
-	// MemoryType (The type of the memory.)
-	MemoryType string
+	// Generation (The generation on which garbage collection was performed.)
+	Generation string
+	// MemorySegment (The segment of memory.)
+	MemorySegment string
 	// Operation (The type of operation.)
 	Operation string
 	// ShardType (The state of the shard.)
@@ -1112,12 +1112,12 @@ var Attributes = struct {
 	"cache_name",
 	"direction",
 	"state",
-	"type",
+	"state",
 	"elasticsearch.cluster.name",
 	"elasticsearch.node.name",
 	"operation",
-	"gc_type",
-	"memory_type",
+	"generation",
+	"segment",
 	"operation",
 	"type",
 	"state",
@@ -1155,8 +1155,8 @@ var AttributeDiskUsageState = struct {
 	"free",
 }
 
-// AttributeDocumentType are the possible values that the attribute "document_type" can have.
-var AttributeDocumentType = struct {
+// AttributeDocumentState are the possible values that the attribute "document_state" can have.
+var AttributeDocumentState = struct {
 	Active  string
 	Deleted string
 }{
@@ -1173,8 +1173,8 @@ var AttributeFsOperation = struct {
 	"write",
 }
 
-// AttributeGcType are the possible values that the attribute "gc_type" can have.
-var AttributeGcType = struct {
+// AttributeGeneration are the possible values that the attribute "generation" can have.
+var AttributeGeneration = struct {
 	Young string
 	Old   string
 }{
@@ -1182,8 +1182,8 @@ var AttributeGcType = struct {
 	"old",
 }
 
-// AttributeMemoryType are the possible values that the attribute "memory_type" can have.
-var AttributeMemoryType = struct {
+// AttributeMemorySegment are the possible values that the attribute "memory_segment" can have.
+var AttributeMemorySegment = struct {
 	Heap    string
 	NonHeap string
 }{

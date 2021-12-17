@@ -16,13 +16,14 @@ attributes:
     enum:
     - read
     - write
-  gc_type:
-    description: The type of garbage collection.
+  generation:
+    description: The generation on which garbage collection was performed.
     enum:
     - young
     - old
-  memory_type:
-    description: The type of the memory.
+  memory_segment:
+    value: segment
+    description: The segment of memory.
     enum:
     - heap
     - non-heap
@@ -37,9 +38,9 @@ attributes:
     enum:
     - received
     - sent
-  document_type:
-    value: type
-    description: The type of document.
+  document_state:
+    value: state
+    description: The state of the document.
     enum:
     - active
     - deleted
@@ -105,7 +106,7 @@ metrics:
       monotonic: true
       aggregation: cumulative
       value_type: int
-    attributes: [gc_type]
+    attributes: [generation]
   elasticsearch.node.jvm.gc.collections.time:
     description: The total time spent by the JVM running the GC.
     unit: ms
@@ -113,7 +114,7 @@ metrics:
       monotonic: true
       aggregation: cumulative
       value_type: int
-    attributes: [gc_type]
+    attributes: [generation]
   elasticsearch.node.jvm.memory.usage:
     description: The memory used by the JVM.
     unit: By
@@ -121,7 +122,7 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [memory_type]
+    attributes: [memory_segment]
   elasticsearch.node.jvm.threads.count:
     description: The number of open threads in the node's JVM process.
     unit: "{threads}"
@@ -231,7 +232,7 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [document_type]
+    attributes: [document_state]
   elasticsearch.node.open_files:
     description: The number of open file descriptors held by the node.
     unit: "{files}"

@@ -13,13 +13,13 @@ These are the metrics available for this scraper.
 | elasticsearch.cluster.shards | The number of shards in the cluster. | {shards} | Sum(Int) | <ul> <li>shard_type</li> </ul> |
 | elasticsearch.node.cache.evictions | The number of evictions from the cache. | {evictions} | Sum(Int) | <ul> <li>cache_name</li> </ul> |
 | elasticsearch.node.cache.memory.usage | The size in bytes of the cache. | By | Sum(Int) | <ul> <li>cache_name</li> </ul> |
-| elasticsearch.node.documents | The number of documents on the node. | {documents} | Sum(Int) | <ul> <li>document_type</li> </ul> |
+| elasticsearch.node.documents | The number of documents on the node. | {documents} | Sum(Int) | <ul> <li>document_state</li> </ul> |
 | elasticsearch.node.fs.disk.usage | The amount of disk space across all file stores for this node. | By | Sum(Int) | <ul> <li>disk_usage_state</li> </ul> |
 | elasticsearch.node.fs.io.operations | The number of io operations completed by elasticsearch across all file stores. Only available on Linux nodes. | {operations} | Sum(Int) | <ul> <li>fs_operation</li> </ul> |
 | elasticsearch.node.http.connections | Number of HTTP connections to the node. | {connections} | Sum(Int) | <ul> </ul> |
-| elasticsearch.node.jvm.gc.collections.count | The number of garbage collections performed by the JVM. | {collections} | Sum(Int) | <ul> <li>gc_type</li> </ul> |
-| elasticsearch.node.jvm.gc.collections.time | The total time spent by the JVM running the GC. | ms | Sum(Int) | <ul> <li>gc_type</li> </ul> |
-| elasticsearch.node.jvm.memory.usage | The memory used by the JVM. | By | Sum(Int) | <ul> <li>memory_type</li> </ul> |
+| elasticsearch.node.jvm.gc.collections.count | The number of garbage collections performed by the JVM. | {collections} | Sum(Int) | <ul> <li>generation</li> </ul> |
+| elasticsearch.node.jvm.gc.collections.time | The total time spent by the JVM running the GC. | ms | Sum(Int) | <ul> <li>generation</li> </ul> |
+| elasticsearch.node.jvm.memory.usage | The memory used by the JVM. | By | Sum(Int) | <ul> <li>memory_segment</li> </ul> |
 | elasticsearch.node.jvm.threads.count | The number of open threads in the node's JVM process. | {threads} | Sum(Int) | <ul> </ul> |
 | elasticsearch.node.jvm.threads.peak | The maximum number of concurrently running threads in the node's JVM process. | {threads} | Gauge(Int) | <ul> </ul> |
 | elasticsearch.node.network.connections | Number of open tcp connections for internal cluster communication. | {connections} | Sum(Int) | <ul> </ul> |
@@ -39,12 +39,12 @@ These are the metrics available for this scraper.
 | cache_name | The name of cache. |
 | direction | The direction of network data. |
 | disk_usage_state | The state of a section of space on disk. |
-| document_type | The type of document. |
+| document_state | The state of the document. |
 | elasticsearch.cluster.name | The name of the elasticsearch cluster. |
 | elasticsearch.node.name | The name of the elasticsearch node. |
 | fs_operation | The type of file store operation. |
-| gc_type | The type of garbage collection. |
-| memory_type | The type of the memory. |
+| generation | The generation on which garbage collection was performed. |
+| memory_segment | The segment of memory. |
 | operation | The type of operation. |
 | shard_type | The state of the shard. |
 | task_state | The state of the task. |
