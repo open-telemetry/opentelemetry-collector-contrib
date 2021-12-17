@@ -10,6 +10,7 @@ metrics:
     description: Bytes of memory in use.
     unit: By
     sum:
+      value_type: int
       aggregation: cumulative
       monotonic: false
     attributes: [state]

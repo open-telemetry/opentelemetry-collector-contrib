@@ -4,6 +4,7 @@ metrics:
     description: Total CPU seconds broken down by different states.
     unit: s
     sum:
+      value_type: double
       monotonic: true
       aggregation: cumulative
     attributes: [missing]

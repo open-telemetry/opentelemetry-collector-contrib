@@ -22,6 +22,7 @@ metrics:
     description: Filesystem bytes used.
     unit: By
     sum:
+      value_type: int
       aggregation: cumulative
       monotonic: false
     attributes: [device, mode, mountpoint, type, state]
@@ -30,6 +31,7 @@ metrics:
     description: FileSystem inodes used.
     unit: "{inodes}"
     sum:
+      value_type: int
       aggregation: cumulative
       monotonic: false
     attributes: [device, mode, mountpoint, type, state]
