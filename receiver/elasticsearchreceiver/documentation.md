@@ -15,7 +15,7 @@ These are the metrics available for this scraper.
 | elasticsearch.node.cache.memory.usage | The size in bytes of the cache. | By | Sum(Int) | <ul> <li>cache_name</li> </ul> |
 | elasticsearch.node.documents | The number of documents on the node. | {documents} | Sum(Int) | <ul> <li>document_type</li> </ul> |
 | elasticsearch.node.fs.disk.usage | The amount of disk space across all file stores for this node. | By | Sum(Int) | <ul> <li>disk_usage_state</li> </ul> |
-| elasticsearch.node.fs.io.operations | The number of io operations completed by elasticsearch across all file stores. Only available on Linux nodes. | {operations} | Sum(Int) | <ul> <li>fs_operation_type</li> </ul> |
+| elasticsearch.node.fs.io.operations | The number of io operations completed by elasticsearch across all file stores. Only available on Linux nodes. | {operations} | Sum(Int) | <ul> <li>fs_operation</li> </ul> |
 | elasticsearch.node.http.connections | Number of HTTP connections to the node. | {connections} | Sum(Int) | <ul> </ul> |
 | elasticsearch.node.jvm.gc.collections.count | The number of garbage collections performed by the JVM. | {collections} | Sum(Int) | <ul> <li>gc_type</li> </ul> |
 | elasticsearch.node.jvm.gc.collections.time | The total time spent by the JVM running the GC. | ms | Sum(Int) | <ul> <li>gc_type</li> </ul> |
@@ -25,8 +25,8 @@ These are the metrics available for this scraper.
 | elasticsearch.node.network.connections | Number of open tcp connections for internal cluster communication. | {connections} | Sum(Int) | <ul> </ul> |
 | elasticsearch.node.network.io | Number of bytes sent and received on the network for internal cluster communication. | By | Sum(Int) | <ul> <li>direction</li> </ul> |
 | elasticsearch.node.open_files | The number of open file descriptors held by the node. | {files} | Sum(Int) | <ul> </ul> |
-| elasticsearch.node.operations.completed | Number of operations completed. | {operations} | Sum(Int) | <ul> <li>operation_type</li> </ul> |
-| elasticsearch.node.operations.time | Time spent on operations. | ms | Sum(Int) | <ul> <li>operation_type</li> </ul> |
+| elasticsearch.node.operations.completed | Number of operations completed. | {operations} | Sum(Int) | <ul> <li>operation</li> </ul> |
+| elasticsearch.node.operations.time | Time spent on operations. | ms | Sum(Int) | <ul> <li>operation</li> </ul> |
 | elasticsearch.node.shards.size | The total size of the shards assigned to this node. | By | Sum(Int) | <ul> </ul> |
 | elasticsearch.node.thread_pool.tasks.finished | The number of tasks finished by the thread pool. | {tasks} | Sum(Int) | <ul> <li>thread_pool_name</li> <li>task_state</li> </ul> |
 | elasticsearch.node.thread_pool.tasks.queued | The number of queued tasks in the thread pool. | {tasks} | Sum(Int) | <ul> <li>thread_pool_name</li> </ul> |
@@ -36,16 +36,16 @@ These are the metrics available for this scraper.
 
 | Name | Description |
 | ---- | ----------- |
-| cache_name | The type of cache. |
+| cache_name | The name of cache. |
 | direction | The direction of network data. |
 | disk_usage_state | The state of a section of space on disk. |
 | document_type | The type of document. |
 | elasticsearch.cluster.name | The name of the elasticsearch cluster. |
 | elasticsearch.node.name | The name of the elasticsearch node. |
-| fs_operation_type | The type of file store operation. |
+| fs_operation | The type of file store operation. |
 | gc_type | The type of garbage collection. |
 | memory_type | The type of the memory. |
-| operation_type | The type of operation. |
+| operation | The type of operation. |
 | shard_type | The state of the shard. |
 | task_state | The state of the task. |
 | thread_pool_name | The name of the thread pool. |

@@ -861,7 +861,7 @@ func (mb *MetricsBuilder) RecordElasticsearchNodeFsDiskUsageDataPoint(ts pdata.T
 
 // RecordElasticsearchNodeFsIoOperationsDataPoint adds a data point to elasticsearch.node.fs.io.operations metric.
 // Any attribute of AttributeValueTypeEmpty type will be skipped.
-func (mb *MetricsBuilder) RecordElasticsearchNodeFsIoOperationsDataPoint(ts pdata.Timestamp, val int64, fs_operation_typeAttributeValue string) {
+func (mb *MetricsBuilder) RecordElasticsearchNodeFsIoOperationsDataPoint(ts pdata.Timestamp, val int64, fs_operationAttributeValue string) {
 	if !mb.config.ElasticsearchNodeFsIoOperations.Enabled {
 		return
 	}
@@ -870,7 +870,7 @@ func (mb *MetricsBuilder) RecordElasticsearchNodeFsIoOperationsDataPoint(ts pdat
 	dp.SetStartTimestamp(mb.startTime)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.FsOperationType, pdata.NewAttributeValueString(fs_operation_typeAttributeValue))
+	dp.Attributes().Insert(A.FsOperation, pdata.NewAttributeValueString(fs_operationAttributeValue))
 }
 
 // RecordElasticsearchNodeHTTPConnectionsDataPoint adds a data point to elasticsearch.node.http.connections metric.
@@ -996,7 +996,7 @@ func (mb *MetricsBuilder) RecordElasticsearchNodeOpenFilesDataPoint(ts pdata.Tim
 
 // RecordElasticsearchNodeOperationsCompletedDataPoint adds a data point to elasticsearch.node.operations.completed metric.
 // Any attribute of AttributeValueTypeEmpty type will be skipped.
-func (mb *MetricsBuilder) RecordElasticsearchNodeOperationsCompletedDataPoint(ts pdata.Timestamp, val int64, operation_typeAttributeValue string) {
+func (mb *MetricsBuilder) RecordElasticsearchNodeOperationsCompletedDataPoint(ts pdata.Timestamp, val int64, operationAttributeValue string) {
 	if !mb.config.ElasticsearchNodeOperationsCompleted.Enabled {
 		return
 	}
@@ -1005,12 +1005,12 @@ func (mb *MetricsBuilder) RecordElasticsearchNodeOperationsCompletedDataPoint(ts
 	dp.SetStartTimestamp(mb.startTime)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.OperationType, pdata.NewAttributeValueString(operation_typeAttributeValue))
+	dp.Attributes().Insert(A.Operation, pdata.NewAttributeValueString(operationAttributeValue))
 }
 
 // RecordElasticsearchNodeOperationsTimeDataPoint adds a data point to elasticsearch.node.operations.time metric.
 // Any attribute of AttributeValueTypeEmpty type will be skipped.
-func (mb *MetricsBuilder) RecordElasticsearchNodeOperationsTimeDataPoint(ts pdata.Timestamp, val int64, operation_typeAttributeValue string) {
+func (mb *MetricsBuilder) RecordElasticsearchNodeOperationsTimeDataPoint(ts pdata.Timestamp, val int64, operationAttributeValue string) {
 	if !mb.config.ElasticsearchNodeOperationsTime.Enabled {
 		return
 	}
@@ -1019,7 +1019,7 @@ func (mb *MetricsBuilder) RecordElasticsearchNodeOperationsTimeDataPoint(ts pdat
 	dp.SetStartTimestamp(mb.startTime)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.OperationType, pdata.NewAttributeValueString(operation_typeAttributeValue))
+	dp.Attributes().Insert(A.Operation, pdata.NewAttributeValueString(operationAttributeValue))
 }
 
 // RecordElasticsearchNodeShardsSizeDataPoint adds a data point to elasticsearch.node.shards.size metric.
@@ -1080,7 +1080,7 @@ func (mb *MetricsBuilder) RecordElasticsearchNodeThreadPoolThreadsDataPoint(ts p
 
 // Attributes contains the possible metric attributes that can be used.
 var Attributes = struct {
-	// CacheName (The type of cache.)
+	// CacheName (The name of cache.)
 	CacheName string
 	// Direction (The direction of network data.)
 	Direction string
@@ -1092,14 +1092,14 @@ var Attributes = struct {
 	ElasticsearchClusterName string
 	// ElasticsearchNodeName (The name of the elasticsearch node.)
 	ElasticsearchNodeName string
-	// FsOperationType (The type of file store operation.)
-	FsOperationType string
+	// FsOperation (The type of file store operation.)
+	FsOperation string
 	// GcType (The type of garbage collection.)
 	GcType string
 	// MemoryType (The type of the memory.)
 	MemoryType string
-	// OperationType (The type of operation.)
-	OperationType string
+	// Operation (The type of operation.)
+	Operation string
 	// ShardType (The state of the shard.)
 	ShardType string
 	// TaskState (The state of the task.)
@@ -1111,18 +1111,18 @@ var Attributes = struct {
 }{
 	"cache_name",
 	"direction",
-	"disk_usage_state",
-	"document_type",
+	"state",
+	"type",
 	"elasticsearch.cluster.name",
 	"elasticsearch.node.name",
-	"fs_operation_type",
+	"operation",
 	"gc_type",
 	"memory_type",
-	"operation_type",
-	"shard_type",
-	"task_state",
+	"operation",
+	"type",
+	"state",
 	"thread_pool_name",
-	"thread_state",
+	"state",
 }
 
 // A is an alias for Attributes.
@@ -1164,8 +1164,8 @@ var AttributeDocumentType = struct {
 	"deleted",
 }
 
-// AttributeFsOperationType are the possible values that the attribute "fs_operation_type" can have.
-var AttributeFsOperationType = struct {
+// AttributeFsOperation are the possible values that the attribute "fs_operation" can have.
+var AttributeFsOperation = struct {
 	Read  string
 	Write string
 }{
@@ -1191,8 +1191,8 @@ var AttributeMemoryType = struct {
 	"non-heap",
 }
 
-// AttributeOperationType are the possible values that the attribute "operation_type" can have.
-var AttributeOperationType = struct {
+// AttributeOperation are the possible values that the attribute "operation" can have.
+var AttributeOperation = struct {
 	Index   string
 	Delete  string
 	Get     string

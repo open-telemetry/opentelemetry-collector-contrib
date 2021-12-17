@@ -6,11 +6,12 @@ attributes:
   elasticsearch.node.name:
     description: The name of the elasticsearch node.
   cache_name:
-    description: The type of cache.
+    description: The name of cache.
     enum:
     - fielddata
     - query
-  fs_operation_type:
+  fs_operation:
+    value: operation
     description: The type of file store operation.
     enum:
     - read
@@ -26,6 +27,7 @@ attributes:
     - heap
     - non-heap
   disk_usage_state:
+    value: state
     description: The state of a section of space on disk.
     enum:
     - used
@@ -36,18 +38,21 @@ attributes:
     - received
     - sent
   document_type:
+    value: type
     description: The type of document.
     enum:
     - active
     - deleted
   shard_type:
+    value: type
     description: The state of the shard.
     enum:
     - active
     - relocating
     - initializing
     - unassigned
-  operation_type:
+  operation:
+    value: operation
     description: The type of operation.
     enum:
     - index
@@ -64,11 +69,13 @@ attributes:
   thread_pool_name:
     description: The name of the thread pool.
   thread_state:
+    value: state
     description: The state of the thread.
     enum:
     - active
     - idle
   task_state:
+    value: state
     description: The state of the task.
     enum:
     - rejected
@@ -144,7 +151,7 @@ metrics:
       monotonic: true
       aggregation: cumulative
       value_type: int
-    attributes: [fs_operation_type]
+    attributes: [fs_operation]
   elasticsearch.node.network.io:
     description: Number of bytes sent and received on the network for internal cluster communication.
     unit: By
@@ -176,7 +183,7 @@ metrics:
       monotonic: true
       aggregation: cumulative
       value_type: int
-    attributes: [operation_type]
+    attributes: [operation]
   elasticsearch.node.operations.time:
     description: Time spent on operations.
     unit: ms
@@ -184,7 +191,7 @@ metrics:
       monotonic: true
       aggregation: cumulative
       value_type: int
-    attributes: [operation_type]
+    attributes: [operation]
   elasticsearch.node.shards.size:
     description: The total size of the shards assigned to this node.
     unit: By
