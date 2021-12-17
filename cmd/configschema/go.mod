@@ -229,6 +229,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder v0.41.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension v0.41.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.41.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver v0.41.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver v0.41.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver v0.41.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension v0.41.0 // indirect
@@ -552,6 +553,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/http
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension => ../../extension/oauth2clientauthextension
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer => ../../extension/observer
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver => ../../extension/observer/ecstaskobserver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver => ../../extension/observer/hostobserver
 
