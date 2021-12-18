@@ -143,16 +143,6 @@ func TestClientHandlesSimpleCases(t *testing.T) {
 
 }
 
-func TestNewExtensionErrorsOnMissingDirectory(t *testing.T) {
-	f := NewFactory()
-	cfg := f.CreateDefaultConfig().(*Config)
-	cfg.Directory = "/not/a/dir"
-
-	extension, err := f.CreateExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)
-	require.Error(t, err)
-	require.Nil(t, extension)
-}
-
 func TestTwoClientsWithDifferentNames(t *testing.T) {
 	ctx := context.Background()
 	se := newTestExtension(t)

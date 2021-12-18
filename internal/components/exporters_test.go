@@ -37,6 +37,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
 )
@@ -134,6 +137,33 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "prometheusremotewrite",
 		},
 		{
+			exporter: "sapm",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["sapm"].CreateDefaultConfig().(*sapmexporter.Config)
+				cfg.Endpoint = "http://" + endpoint
+				return cfg
+			},
+		},
+		{
+			exporter: "signalfx",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["signalfx"].CreateDefaultConfig().(*signalfxexporter.Config)
+				cfg.AccessToken = "my_fake_token"
+				cfg.IngestURL = "http://" + endpoint
+				cfg.APIURL = "http://" + endpoint
+				return cfg
+			},
+		},
+		{
+			exporter: "splunk_hec",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["splunk_hec"].CreateDefaultConfig().(*splunkhecexporter.Config)
+				cfg.Token = "my_fake_token"
+				cfg.Endpoint = "http://" + endpoint
+				return cfg
+			},
+		},
+		{
 			exporter: "zipkin",
 			getConfigFn: func() config.Exporter {
 				cfg := expFactories["zipkin"].CreateDefaultConfig().(*zipkinexporter.Config)
@@ -143,7 +173,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, len(tests)+28 /* not tested */, len(expFactories))
+	assert.Equal(t, len(tests)+25 /* not tested */, len(expFactories))
 	for _, tt := range tests {
 		t.Run(string(tt.exporter), func(t *testing.T) {
 			factory, ok := expFactories[tt.exporter]

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package mysqlreceiver
+package mysqlreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver"
 
 //go:generate mdatagen metadata.yaml
 
@@ -45,6 +45,8 @@ func createDefaultConfig() config.Receiver {
 			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			CollectionInterval: 10 * time.Second,
 		},
+		AllowNativePasswords: true,
+		Username:             "root",
 		NetAddr: confignet.NetAddr{
 			Endpoint:  "localhost:3306",
 			Transport: "tcp",

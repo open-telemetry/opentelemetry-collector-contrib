@@ -19,8 +19,8 @@ metrics:
   system.network.packets:
     description: The number of packets transferred.
     unit: "{packets}"
-    data:
-      type: sum
+    sum:
+      value_type: int
       aggregation: cumulative
       monotonic: true
     attributes: [device, direction]
@@ -28,8 +28,8 @@ metrics:
   system.network.dropped:
     description: The number of packets dropped.
     unit: "{packets}"
-    data:
-      type: sum
+    sum:
+      value_type: int
       aggregation: cumulative
       monotonic: true
     attributes: [device, direction]
@@ -37,8 +37,8 @@ metrics:
   system.network.errors:
     description: The number of errors encountered.
     unit: "{errors}"
-    data:
-      type: sum
+    sum:
+      value_type: int
       aggregation: cumulative
       monotonic: true
     attributes: [device, direction]
@@ -46,8 +46,8 @@ metrics:
   system.network.io:
     description: The number of bytes transmitted and received.
     unit: "By"
-    data:
-      type: sum
+    sum:
+      value_type: int
       aggregation: cumulative
       monotonic: true
     attributes: [device, direction]
@@ -55,8 +55,8 @@ metrics:
   system.network.connections:
     description: The number of connections.
     unit: "{connections}"
-    data:
-      type: sum
+    sum:
+      value_type: int
       aggregation: cumulative
       monotonic: false
     attributes: [protocol, state]

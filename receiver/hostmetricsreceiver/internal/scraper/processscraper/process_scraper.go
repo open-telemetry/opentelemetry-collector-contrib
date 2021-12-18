@@ -12,18 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package processscraper
+package processscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
 
 import (
 	"context"
 	"fmt"
 	"time"
 
-	"github.com/shirou/gopsutil/cpu"
-	"github.com/shirou/gopsutil/host"
-	"github.com/shirou/gopsutil/process"
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/host"
+	"github.com/shirou/gopsutil/v3/process"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
@@ -102,6 +103,7 @@ func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 	rms.EnsureCapacity(len(metadata))
 	for _, md := range metadata {
 		rm := rms.AppendEmpty()
+		rm.SetSchemaUrl(conventions.SchemaURL)
 		md.initializeResource(rm.Resource())
 		metrics := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics()
 

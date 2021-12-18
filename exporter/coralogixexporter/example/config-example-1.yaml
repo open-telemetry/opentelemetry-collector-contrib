@@ -1,0 +1,20 @@
+receivers:
+    otlp:
+        protocols:
+            grpc:
+            http:
+exporters:
+  coralogix:
+    # endpoint: "http://localhost:8000"
+    endpoint: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    private_key: "xxxxxxxxxxxxxxxxxxxxxxxxxx"
+    application_name: "APP_NAME"
+    subsystem_name: "SUBSYSTEM_NAME"
+processors:
+    batch:
+service:
+    pipelines:
+        traces:
+            receivers: [otlp]
+            exporters: [coralogix]
+            processors: [batch]

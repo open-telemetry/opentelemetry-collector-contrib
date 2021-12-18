@@ -8,13 +8,24 @@ These are the metrics available for this scraper.
 
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
-| memcached.bytes | Current number of bytes used by this server to store items | By | Gauge | <ul> </ul> |
-| memcached.current_connections | The current number of open connections | connections | Gauge | <ul> </ul> |
-| memcached.get_hits | Number of keys that have been requested and found present | connections | Sum | <ul> </ul> |
-| memcached.get_misses | Number of items that have been requested and not found | connections | Sum | <ul> </ul> |
-| memcached.total_connections | Total number of connections opened since the server started running | connections | Sum | <ul> </ul> |
+| memcached.bytes | Current number of bytes used by this server to store items. | By | Gauge(Int) | <ul> </ul> |
+| memcached.commands | Commands executed. | 1 | Sum(Int) | <ul> <li>command</li> </ul> |
+| memcached.connections.current | The current number of open connections. | connections | Sum(Int) | <ul> </ul> |
+| memcached.connections.total | Total number of connections opened since the server started running. | connections | Sum(Int) | <ul> </ul> |
+| memcached.cpu.usage | Accumulated user and system time. | 1 | Sum(Double) | <ul> <li>state</li> </ul> |
+| memcached.current_items | Number of items currently stored in the cache. | 1 | Sum(Double) | <ul> </ul> |
+| memcached.evictions | Cache item evictions. | 1 | Sum(Int) | <ul> </ul> |
+| memcached.network | Bytes transferred over the network. | by | Sum(Int) | <ul> <li>direction</li> </ul> |
+| memcached.operation_hit_ratio | Hit ratio for operations, expressed as a percentage value between 0.0 and 100.0. | % | Gauge(Double) | <ul> <li>operation</li> </ul> |
+| memcached.operations | Operation counts. | 1 | Sum(Int) | <ul> <li>type</li> <li>operation</li> </ul> |
+| memcached.threads | Number of threads used by the memcached instance. | 1 | Sum(Double) | <ul> </ul> |
 
 ## Attributes
 
 | Name | Description |
 | ---- | ----------- |
+| command | The type of command. |
+| direction | Direction of data flow. |
+| operation | The type of operation. |
+| state | The type of CPU usage. |
+| type | Result of cache request. |

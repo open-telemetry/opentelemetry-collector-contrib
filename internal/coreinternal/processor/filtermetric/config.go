@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package filtermetric
+package filtermetric // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filtermetric"
 
 import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
@@ -54,4 +54,25 @@ type MatchProperties struct {
 	// ResourceAttributes defines a list of possible resource attributes to match metrics against.
 	// A match occurs if any resource attribute matches all expressions in this given list.
 	ResourceAttributes []filterconfig.Attribute `mapstructure:"resource_attributes"`
+}
+
+// ChecksMetrics returns whether or not the check should iterate through all the metrics
+func (mp *MatchProperties) ChecksMetrics() bool {
+	if mp == nil {
+		return false
+	}
+
+	if mp.MatchType == Expr {
+		return len(mp.Expressions) > 0
+	}
+	return len(mp.MetricNames) > 0
+}
+
+// ChecksResourceAtributes returns whether or not it checks the resource_attributes
+func (mp *MatchProperties) ChecksResourceAtributes() bool {
+	if mp == nil {
+		return false
+	}
+
+	return len(mp.ResourceAttributes) > 0
 }

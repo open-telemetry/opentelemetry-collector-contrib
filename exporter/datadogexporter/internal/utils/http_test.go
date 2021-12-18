@@ -15,12 +15,10 @@
 package utils
 
 import (
-	"errors"
 	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 )
 
@@ -43,13 +41,4 @@ func TestDDHeaders(t *testing.T) {
 	assert.Equal(t, header.Get("DD-Api-Key"), apiKey)
 	assert.Equal(t, header.Get("USer-Agent"), "otelcontribcol/1.0")
 
-}
-
-func TestDoWithRetries(t *testing.T) {
-	i, err := DoWithRetries(3, func() error { return nil })
-	require.NoError(t, err)
-	assert.Equal(t, i, 0)
-
-	_, err = DoWithRetries(1, func() error { return errors.New("action failed") })
-	require.Error(t, err)
 }

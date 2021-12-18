@@ -19,14 +19,16 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
 )
 
 func TestMetadata_ToLabelValuesMetadata(t *testing.T) {
 	testCases := map[string]struct {
-		valueType   string
+		valueType   metadata.ValueType
 		expectError bool
 	}{
-		"Happy path": {labelValueTypeString, false},
+		"Happy path": {metadata.StringValueType, false},
 		"With error": {"unknown", true},
 	}
 
@@ -58,12 +60,12 @@ func TestMetadata_ToLabelValuesMetadata(t *testing.T) {
 
 func TestMetadata_ToMetricValuesMetadata(t *testing.T) {
 	testCases := map[string]struct {
-		valueType   string
+		valueType   metadata.ValueType
 		dataType    MetricType
 		expectError bool
 	}{
-		"Happy path": {metricValueTypeInt, MetricType{DataType: GaugeMetricDataType}, false},
-		"With error": {"unknown", MetricType{DataType: GaugeMetricDataType}, true},
+		"Happy path": {metadata.IntValueType, MetricType{DataType: GaugeMetricDataType}, false},
+		"With error": {metadata.UnknownValueType, MetricType{DataType: GaugeMetricDataType}, true},
 	}
 
 	for name, testCase := range testCases {
@@ -97,14 +99,14 @@ func TestMetadata_ToMetricValuesMetadata(t *testing.T) {
 
 func TestMetadata_MetricsMetadata(t *testing.T) {
 	testCases := map[string]struct {
-		labelValueType  string
-		metricValueType string
+		labelValueType  metadata.ValueType
+		metricValueType metadata.ValueType
 		dataType        MetricType
 		expectError     bool
 	}{
-		"Happy path":        {labelValueTypeInt, metricValueTypeInt, MetricType{DataType: GaugeMetricDataType}, false},
-		"With label error":  {"unknown", metricValueTypeInt, MetricType{DataType: GaugeMetricDataType}, true},
-		"With metric error": {labelValueTypeInt, "unknown", MetricType{DataType: GaugeMetricDataType}, true},
+		"Happy path":        {metadata.IntValueType, metadata.IntValueType, MetricType{DataType: GaugeMetricDataType}, false},
+		"With label error":  {metadata.UnknownValueType, metadata.IntValueType, MetricType{DataType: GaugeMetricDataType}, true},
+		"With metric error": {metadata.IntValueType, metadata.UnknownValueType, MetricType{DataType: GaugeMetricDataType}, true},
 	}
 
 	for name, testCase := range testCases {

@@ -422,11 +422,19 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/receiver/couchdbreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/receiver/dockerstatsreceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/receiver/dotnetdiagnosticsreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/elasticsearchreceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"

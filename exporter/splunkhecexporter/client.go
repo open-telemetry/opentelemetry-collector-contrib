@@ -12,13 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package splunkhecexporter
+package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 
 import (
 	"bytes"
 	"compress/gzip"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -26,6 +25,7 @@ import (
 	"net/url"
 	"sync"
 
+	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -49,7 +49,6 @@ type client struct {
 // bufferState encapsulates intermediate buffer state when pushing log data
 type bufferState struct {
 	buf      *bytes.Buffer
-	encoder  *json.Encoder
 	tmpBuf   *bytes.Buffer
 	bufFront *logIndex
 	bufLen   int
@@ -88,6 +87,13 @@ func (c *client) pushMetricsData(
 
 	if compressed {
 		req.Header.Set("Content-Encoding", "gzip")
+	}
+
+	if md.ResourceMetrics().Len() != 0 {
+		accessToken, found := md.ResourceMetrics().At(0).Resource().Attributes().Get(splunk.HecTokenLabel)
+		if found {
+			req.Header.Set("Authorization", splunk.HECTokenHeader+" "+accessToken.StringVal())
+		}
 	}
 
 	resp, err := c.client.Do(req)
@@ -136,6 +142,18 @@ func (c *client) pushLogData(ctx context.Context, ld pdata.Logs) error {
 
 	// Callback when each batch is to be sent.
 	send := func(ctx context.Context, buf *bytes.Buffer, headers map[string]string) (err error) {
+		localHeaders := headers
+		if ld.ResourceLogs().Len() != 0 {
+			accessToken, found := ld.ResourceLogs().At(0).Resource().Attributes().Get(splunk.HecTokenLabel)
+			if found {
+				localHeaders = map[string]string{}
+				for k, v := range headers {
+					localHeaders[k] = v
+				}
+				localHeaders["Authorization"] = splunk.HECTokenHeader + " " + accessToken.StringVal()
+			}
+		}
+
 		shouldCompress := buf.Len() >= minCompressionLen && !c.config.DisableCompression
 
 		if shouldCompress {
@@ -150,10 +168,10 @@ func (c *client) pushLogData(ctx context.Context, ld pdata.Logs) error {
 				return fmt.Errorf("failed flushing compressed data to gzip writer: %v", err)
 			}
 
-			return c.postEvents(ctx, gzipBuffer, headers, shouldCompress)
+			return c.postEvents(ctx, gzipBuffer, localHeaders, shouldCompress)
 		}
 
-		return c.postEvents(ctx, buf, headers, shouldCompress)
+		return c.postEvents(ctx, buf, localHeaders, shouldCompress)
 	}
 
 	return c.pushLogDataInBatches(ctx, ld, send)
@@ -176,14 +194,12 @@ func isProfilingData(ill pdata.InstrumentationLibraryLogs) bool {
 func makeBlankBufferState(bufCap uint) bufferState {
 	// Buffer of JSON encoded Splunk events, last record is expected to overflow bufCap, hence the padding
 	var buf = bytes.NewBuffer(make([]byte, 0, bufCap+bufCapPadding))
-	var encoder = json.NewEncoder(buf)
 
 	// Buffer for overflown records that do not fit in the main buffer
 	var tmpBuf = bytes.NewBuffer(make([]byte, 0, bufCapPadding))
 
 	return bufferState{
 		buf:      buf,
-		encoder:  encoder,
 		tmpBuf:   tmpBuf,
 		bufFront: nil, // Index of the log record of the first unsent event in buffer.
 		bufLen:   0,   // Length of data in buffer excluding the last record if it overflows bufCap
@@ -256,10 +272,12 @@ func (c *client) pushLogRecords(ctx context.Context, lds pdata.ResourceLogsSlice
 		// Parsing log record to Splunk event.
 		event := mapLogRecordToSplunkEvent(res.Resource(), logs.At(k), c.config, c.logger)
 		// JSON encoding event and writing to buffer.
-		if err := state.encoder.Encode(event); err != nil {
+		b, err := jsoniter.Marshal(event)
+		if err != nil {
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("dropped log event: %v, error: %v", event, err)))
 			continue
 		}
+		state.buf.Write(b)
 
 		// Continue adding events to buffer up to capacity.
 		// 0 capacity is interpreted as unknown/unbound consistent with ContentLength in http.Request.
@@ -402,12 +420,12 @@ func subLogsByType(src *pdata.Logs, from *logIndex, dst *pdata.Logs, profiling b
 
 func encodeBodyEvents(zippers *sync.Pool, evs []*splunk.Event, disableCompression bool) (bodyReader io.Reader, compressed bool, err error) {
 	buf := new(bytes.Buffer)
-	encoder := json.NewEncoder(buf)
 	for _, e := range evs {
-		err := encoder.Encode(e)
+		b, err := jsoniter.Marshal(e)
 		if err != nil {
 			return nil, false, err
 		}
+		buf.Write(b)
 	}
 	return getReader(zippers, buf, disableCompression)
 }

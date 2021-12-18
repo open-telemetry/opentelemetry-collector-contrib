@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package kafkareceiver
+package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver"
 
 import (
 	"context"
 	"time"
 
+	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
@@ -80,6 +81,8 @@ func WithLogsUnmarshalers(logsUnmarshalers ...LogsUnmarshaler) FactoryOption {
 
 // NewFactory creates Kafka receiver factory.
 func NewFactory(options ...FactoryOption) component.ReceiverFactory {
+	_ = view.Register(MetricViews()...)
+
 	f := &kafkaReceiverFactory{
 		tracesUnmarshalers:  defaultTracesUnmarshalers(),
 		metricsUnmarshalers: defaultMetricsUnmarshalers(),

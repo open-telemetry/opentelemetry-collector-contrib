@@ -51,20 +51,6 @@ func TestFactory(t *testing.T) {
 		wantErrMessage string
 	}{
 		{
-			name:           "Default",
-			config:         cfg,
-			wantErr:        true,
-			wantErrMessage: "directory must exist",
-		},
-		{
-			name: "Invalid directory",
-			config: &Config{
-				Directory: "/not/very/likely/a/real/dir",
-			},
-			wantErr:        true,
-			wantErrMessage: "directory must exist",
-		},
-		{
 			name: "Default",
 			config: func() *Config {
 				tempDir, _ := ioutil.TempDir("", "")
@@ -83,10 +69,10 @@ func TestFactory(t *testing.T) {
 				test.config,
 			)
 			if test.wantErr {
+				require.Error(t, err)
 				if test.wantErrMessage != "" {
 					require.True(t, strings.HasPrefix(err.Error(), test.wantErrMessage))
 				}
-				require.Error(t, err)
 				require.Nil(t, e)
 			} else {
 				require.NoError(t, err)

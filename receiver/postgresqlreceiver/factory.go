@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package postgresqlreceiver
+package postgresqlreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver"
 
 //go:generate mdatagen metadata.yaml
 
@@ -64,5 +64,16 @@ func createMetricsReceiver(
 	rConf config.Receiver,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
-	return nil, nil // TODO build and return receiver in next PR
+	cfg := rConf.(*Config)
+
+	ns := newPostgreSQLScraper(params.Logger, cfg, &defaultClientFactory{})
+	scraper, err := scraperhelper.NewScraper(typeStr, ns.scrape)
+	if err != nil {
+		return nil, err
+	}
+
+	return scraperhelper.NewScraperControllerReceiver(
+		&cfg.ScraperControllerSettings, params, consumer,
+		scraperhelper.AddScraper(scraper),
+	)
 }

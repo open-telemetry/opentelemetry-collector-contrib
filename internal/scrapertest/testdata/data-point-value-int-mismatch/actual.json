@@ -1,0 +1,22 @@
+{
+   "resourceMetrics": [
+      {
+         "instrumentationLibraryMetrics": [
+            {
+               "metrics": [
+                  {
+                     "name": "sum.one",
+                     "sum": {
+                        "dataPoints": [
+                           {
+                              "asInt": 654
+                           }
+                        ]
+                     }
+                  }
+               ]
+            }
+         ]
+      }
+   ]
+}

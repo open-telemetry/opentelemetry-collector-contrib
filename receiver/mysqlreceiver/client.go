@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package mysqlreceiver
+package mysqlreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver"
 
 import (
 	"database/sql"
 	"fmt"
 
 	// registers the mysql driver
-	_ "github.com/go-sql-driver/mysql"
+	"github.com/go-sql-driver/mysql"
 )
 
 type client interface {
@@ -37,7 +37,15 @@ type mySQLClient struct {
 var _ client = (*mySQLClient)(nil)
 
 func newMySQLClient(conf *Config) client {
-	connStr := fmt.Sprintf("%s:%s@%s(%s)/%s", conf.Username, conf.Password, conf.Transport, conf.Endpoint, conf.Database)
+	driverConf := mysql.Config{
+		User:                 conf.Username,
+		Passwd:               conf.Password,
+		Net:                  conf.Transport,
+		Addr:                 conf.Endpoint,
+		DBName:               conf.Database,
+		AllowNativePasswords: conf.AllowNativePasswords,
+	}
+	connStr := driverConf.FormatDSN()
 
 	return &mySQLClient{
 		connStr: connStr,

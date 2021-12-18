@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package humioexporter
+package humioexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/humioexporter"
 
 // Definition of tagging strategies
 type tag string

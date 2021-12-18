@@ -12,13 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package splunkhecexporter
+package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 
 import (
 	"time"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -75,13 +74,14 @@ func mapLogRecordToSplunkEvent(res pdata.Resource, lr pdata.LogRecord, config *C
 		switch k {
 		case hostKey:
 			host = v.StringVal()
-			fields[conventions.AttributeHostName] = v.StringVal()
 		case sourceKey:
 			source = v.StringVal()
 		case sourceTypeKey:
 			sourcetype = v.StringVal()
 		case indexKey:
 			index = v.StringVal()
+		case splunk.HecTokenLabel:
+			// ignore
 		default:
 			fields[k] = convertAttributeValue(v, logger)
 		}
@@ -91,13 +91,14 @@ func mapLogRecordToSplunkEvent(res pdata.Resource, lr pdata.LogRecord, config *C
 		switch k {
 		case hostKey:
 			host = v.StringVal()
-			fields[conventions.AttributeHostName] = v.StringVal()
 		case sourceKey:
 			source = v.StringVal()
 		case sourceTypeKey:
 			sourcetype = v.StringVal()
 		case indexKey:
 			index = v.StringVal()
+		case splunk.HecTokenLabel:
+			// ignore
 		default:
 			fields[k] = convertAttributeValue(v, logger)
 		}

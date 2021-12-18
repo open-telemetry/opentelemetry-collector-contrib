@@ -56,7 +56,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				return config
 			},
 			wantSplunkEvents: []*splunk.Event{
-				commonLogSplunkEvent("mylog", ts, map[string]interface{}{"custom": "custom", "host.name": "myhost"},
+				commonLogSplunkEvent("mylog", ts, map[string]interface{}{"custom": "custom"},
 					"myhost", "myapp", "myapp-type"),
 			},
 		},
@@ -81,8 +81,29 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				return config
 			},
 			wantSplunkEvents: []*splunk.Event{
-				commonLogSplunkEvent("mylog", ts, map[string]interface{}{"custom": "custom", "host.name": "myhost", "otel.log.name": "my very own name"},
+				commonLogSplunkEvent("mylog", ts, map[string]interface{}{"custom": "custom", "otel.log.name": "my very own name"},
 					"myhost", "myapp", "myapp-type"),
+			},
+		},
+		{
+			name: "with_hec_token",
+			logRecordFn: func() pdata.LogRecord {
+				logRecord := pdata.NewLogRecord()
+				logRecord.Body().SetStringVal("mylog")
+				logRecord.Attributes().InsertString(splunk.HecTokenLabel, "mytoken")
+				logRecord.SetTimestamp(ts)
+				return logRecord
+			},
+			logResourceFn: pdata.NewResource,
+			configDataFn: func() *Config {
+				config := createDefaultConfig().(*Config)
+				config.Source = "source"
+				config.SourceType = "sourcetype"
+				return config
+			},
+			wantSplunkEvents: []*splunk.Event{
+				commonLogSplunkEvent("mylog", ts, map[string]interface{}{},
+					"unknown", "source", "sourcetype"),
 			},
 		},
 		{
@@ -105,7 +126,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				return config
 			},
 			wantSplunkEvents: []*splunk.Event{
-				commonLogSplunkEvent("mylog", ts, map[string]interface{}{"foo": float64(123), "host.name": "myhost"}, "myhost", "myapp", "myapp-type"),
+				commonLogSplunkEvent("mylog", ts, map[string]interface{}{"foo": float64(123)}, "myhost", "myapp", "myapp-type"),
 			},
 		},
 		{
@@ -160,7 +181,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 			},
 			wantSplunkEvents: []*splunk.Event{
 				func() *splunk.Event {
-					event := commonLogSplunkEvent("mylog", ts, map[string]interface{}{"custom": "custom", "host.name": "myhost", "myseverity": "DEBUG", "myseveritynum": pdata.SeverityNumber(5)}, "myhost", "mysource", "mysourcetype")
+					event := commonLogSplunkEvent("mylog", ts, map[string]interface{}{"custom": "custom", "myseverity": "DEBUG", "myseveritynum": pdata.SeverityNumber(5)}, "myhost", "mysource", "mysourcetype")
 					event.Index = "myindex"
 					return event
 				}(),
@@ -225,7 +246,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				return config
 			},
 			wantSplunkEvents: []*splunk.Event{
-				commonLogSplunkEvent(float64(42), ts, map[string]interface{}{"custom": "custom", "host.name": "myhost"}, "myhost", "myapp", "myapp-type"),
+				commonLogSplunkEvent(float64(42), ts, map[string]interface{}{"custom": "custom"}, "myhost", "myapp", "myapp-type"),
 			},
 		},
 		{
@@ -248,7 +269,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				return config
 			},
 			wantSplunkEvents: []*splunk.Event{
-				commonLogSplunkEvent(int64(42), ts, map[string]interface{}{"custom": "custom", "host.name": "myhost"}, "myhost", "myapp", "myapp-type"),
+				commonLogSplunkEvent(int64(42), ts, map[string]interface{}{"custom": "custom"}, "myhost", "myapp", "myapp-type"),
 			},
 		},
 		{
@@ -271,7 +292,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				return config
 			},
 			wantSplunkEvents: []*splunk.Event{
-				commonLogSplunkEvent(true, ts, map[string]interface{}{"custom": "custom", "host.name": "myhost"}, "myhost", "myapp", "myapp-type"),
+				commonLogSplunkEvent(true, ts, map[string]interface{}{"custom": "custom"}, "myhost", "myapp", "myapp-type"),
 			},
 		},
 		{
@@ -299,7 +320,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 			},
 			wantSplunkEvents: []*splunk.Event{
 				commonLogSplunkEvent(map[string]interface{}{"23": float64(45), "foo": "bar"}, ts,
-					map[string]interface{}{"custom": "custom", "host.name": "myhost"},
+					map[string]interface{}{"custom": "custom"},
 					"myhost", "myapp", "myapp-type"),
 			},
 		},
@@ -322,7 +343,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				return config
 			},
 			wantSplunkEvents: []*splunk.Event{
-				commonLogSplunkEvent(nil, ts, map[string]interface{}{"custom": "custom", "host.name": "myhost"},
+				commonLogSplunkEvent(nil, ts, map[string]interface{}{"custom": "custom"},
 					"myhost", "myapp", "myapp-type"),
 			},
 		},
@@ -349,7 +370,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				return config
 			},
 			wantSplunkEvents: []*splunk.Event{
-				commonLogSplunkEvent([]interface{}{"foo"}, ts, map[string]interface{}{"custom": "custom", "host.name": "myhost"},
+				commonLogSplunkEvent([]interface{}{"foo"}, ts, map[string]interface{}{"custom": "custom"},
 					"myhost", "myapp", "myapp-type"),
 			},
 		},
@@ -362,15 +383,12 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				return logRecord
 			},
 			logResourceFn: func() pdata.Resource {
-				attr := map[string]pdata.AttributeValue{
-					"resourceAttr1":               pdata.NewAttributeValueString("some_string"),
-					splunk.DefaultSourceTypeLabel: pdata.NewAttributeValueString("myapp-type-from-resource-attr"),
-					splunk.DefaultIndexLabel:      pdata.NewAttributeValueString("index-resource"),
-					splunk.DefaultSourceLabel:     pdata.NewAttributeValueString("myapp-resource"),
-					conventions.AttributeHostName: pdata.NewAttributeValueString("myhost-resource"),
-				}
 				resource := pdata.NewResource()
-				resource.Attributes().InitFromMap(attr)
+				resource.Attributes().InsertString("resourceAttr1", "some_string")
+				resource.Attributes().InsertString(splunk.DefaultSourceTypeLabel, "myapp-type-from-resource-attr")
+				resource.Attributes().InsertString(splunk.DefaultIndexLabel, "index-resource")
+				resource.Attributes().InsertString(splunk.DefaultSourceLabel, "myapp-resource")
+				resource.Attributes().InsertString(conventions.AttributeHostName, "myhost-resource")
 				return resource
 			},
 			configDataFn: func() *Config {
@@ -378,7 +396,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 			},
 			wantSplunkEvents: func() []*splunk.Event {
 				event := commonLogSplunkEvent("mylog", ts, map[string]interface{}{
-					"host.name": "myhost-resource", "resourceAttr1": "some_string",
+					"resourceAttr1": "some_string",
 				}, "myhost-resource", "myapp-resource", "myapp-type-from-resource-attr")
 				event.Index = "index-resource"
 				return []*splunk.Event{
@@ -408,7 +426,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				return config
 			},
 			wantSplunkEvents: []*splunk.Event{
-				commonLogSplunkEvent("mylog", ts, map[string]interface{}{"custom": "custom", "host.name": "myhost", "otel.log.severity.number": pdata.SeverityNumberDEBUG, "otel.log.severity.text": "DEBUG"},
+				commonLogSplunkEvent("mylog", ts, map[string]interface{}{"custom": "custom", "otel.log.severity.number": pdata.SeverityNumberDEBUG, "otel.log.severity.text": "DEBUG"},
 					"myhost", "myapp", "myapp-type"),
 			},
 		},

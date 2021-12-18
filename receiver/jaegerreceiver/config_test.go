@@ -17,6 +17,7 @@ package jaegerreceiver
 import (
 	"path"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -80,7 +81,8 @@ func TestLoadConfig(t *testing.T) {
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint: "jaeger-collector:1234",
 				},
-				StrategyFile: "/etc/strategies.json",
+				StrategyFile:               "/etc/strategies.json",
+				StrategyFileReloadInterval: time.Second * 10,
 			},
 		})
 
@@ -254,6 +256,23 @@ func TestInvalidConfig(t *testing.T) {
 				}
 			},
 			err: "receiver creation without gRPC and with remote sampling config",
+		},
+		{
+			desc: "reload-interval-outside-of-range",
+			apply: func(cfg *Config) {
+				cfg.Protocols.GRPC = &configgrpc.GRPCServerSettings{
+					NetAddr: confignet.NetAddr{
+						Endpoint:  "1234",
+						Transport: "tcp",
+					},
+				}
+				cfg.RemoteSampling = &RemoteSamplingConfig{
+					HostEndpoint:               "localhost:5778",
+					StrategyFile:               "strategies.json",
+					StrategyFileReloadInterval: -time.Second,
+				}
+			},
+			err: "strategy file reload interval should be great zero",
 		},
 	}
 	for _, tC := range testCases {

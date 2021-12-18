@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awskinesisexporter
+package awskinesisexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter"
 
 import (
 	"context"
@@ -84,6 +84,10 @@ func createExporter(c config.Exporter, log *zap.Logger) (*Exporter, error) {
 
 	if err != nil {
 		return nil, err
+	}
+
+	if conf.Encoding.Name == "otlp_json" {
+		log.Info("otlp_json is considered experimental and should not be used in a production environment")
 	}
 
 	return &Exporter{

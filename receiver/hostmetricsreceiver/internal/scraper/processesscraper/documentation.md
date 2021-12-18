@@ -8,8 +8,8 @@ These are the metrics available for this scraper.
 
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
-| system.processes.count | Total number of processes in each state. | {processes} | Sum | <ul> <li>status</li> </ul> |
-| system.processes.created | Total number of created processes. | {processes} | Sum | <ul> </ul> |
+| system.processes.count | Total number of processes in each state. | {processes} | Sum(Int) | <ul> <li>status</li> </ul> |
+| system.processes.created | Total number of created processes. | {processes} | Sum(Int) | <ul> </ul> |
 
 ## Attributes
 

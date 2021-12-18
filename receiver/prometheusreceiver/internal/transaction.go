@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internal
+package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
 
 import (
 	"context"
@@ -242,12 +242,17 @@ func createNodeAndResource(job, instance, scheme string) (*commonpb.Node, *resou
 	if err != nil {
 		host = instance
 	}
+
 	node := &commonpb.Node{
 		ServiceInfo: &commonpb.ServiceInfo{Name: job},
-		Identifier: &commonpb.ProcessIdentifier{
-			HostName: host,
-		},
 	}
+
+	if isDiscernibleHost(host) {
+		node.Identifier = &commonpb.ProcessIdentifier{
+			HostName: host,
+		}
+	}
+
 	resource := &resourcepb.Resource{
 		Labels: map[string]string{
 			jobAttr:      job,

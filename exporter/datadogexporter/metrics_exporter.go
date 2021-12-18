@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package datadogexporter
+package datadogexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 
 import (
 	"bytes"
@@ -23,6 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
@@ -42,6 +43,7 @@ type metricsExporter struct {
 	client   *datadog.Client
 	tr       *translator.Translator
 	scrubber scrub.Scrubber
+	retrier  *utils.Retrier
 }
 
 // assert `hostProvider` implements HostnameProvider interface
@@ -95,7 +97,7 @@ func translatorFromConfig(logger *zap.Logger, cfg *config.Config) (*translator.T
 func newMetricsExporter(ctx context.Context, params component.ExporterCreateSettings, cfg *config.Config) (*metricsExporter, error) {
 	client := utils.CreateClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
 	client.ExtraHeader["User-Agent"] = utils.UserAgent(params.BuildInfo)
-	client.HttpClient = utils.NewHTTPClient(10 * time.Second)
+	client.HttpClient = utils.NewHTTPClient(cfg.TimeoutSettings)
 
 	utils.ValidateAPIKey(params.Logger, client)
 
@@ -104,13 +106,15 @@ func newMetricsExporter(ctx context.Context, params component.ExporterCreateSett
 		return nil, err
 	}
 
+	scrubber := scrub.NewScrubber()
 	return &metricsExporter{
 		params:   params,
 		cfg:      cfg,
 		ctx:      ctx,
 		client:   client,
 		tr:       tr,
-		scrubber: scrub.NewScrubber(),
+		scrubber: scrubber,
+		retrier:  utils.NewRetrier(params.Logger, cfg.RetrySettings, scrubber),
 	}, nil
 }
 
@@ -173,17 +177,24 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metric
 	ms, sl := consumer.All(pushTime, exp.params.BuildInfo)
 	metrics.ProcessMetrics(ms, exp.cfg)
 
+	err = nil
 	if len(ms) > 0 {
-		if err := exp.client.PostMetrics(ms); err != nil {
-			return err
-		}
+		err = multierr.Append(
+			err,
+			exp.retrier.DoWithRetries(ctx, func(context.Context) error {
+				return exp.client.PostMetrics(ms)
+			}),
+		)
 	}
 
 	if len(sl) > 0 {
-		if err := exp.pushSketches(ctx, sl); err != nil {
-			return err
-		}
+		err = multierr.Append(
+			err,
+			exp.retrier.DoWithRetries(ctx, func(ctx context.Context) error {
+				return exp.pushSketches(ctx, sl)
+			}),
+		)
 	}
 
-	return nil
+	return err
 }

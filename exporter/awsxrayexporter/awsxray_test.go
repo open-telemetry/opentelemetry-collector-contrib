@@ -26,8 +26,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
@@ -42,6 +44,34 @@ func TestTraceExport(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+func TestXraySpanTraceResourceExtraction(t *testing.T) {
+	td := constructSpanData()
+	logger, _ := zap.NewProduction()
+	assert.Len(t, extractResourceSpans(generateConfig(), logger, td), 2, "2 spans have xay trace id")
+}
+
+func TestXrayAndW3CSpanTraceExport(t *testing.T) {
+	traceExporter := initializeTracesExporter()
+	ctx := context.Background()
+	td := constructXrayAndW3CSpanData()
+	err := traceExporter.ConsumeTraces(ctx, td)
+	assert.NotNil(t, err)
+	err = traceExporter.Shutdown(ctx)
+	assert.Nil(t, err)
+}
+
+func TestXrayAndW3CSpanTraceResourceExtraction(t *testing.T) {
+	td := constructXrayAndW3CSpanData()
+	logger, _ := zap.NewProduction()
+	assert.Len(t, extractResourceSpans(generateConfig(), logger, td), 2, "2 spans have xay trace id")
+}
+
+func TestW3CSpanTraceResourceExtraction(t *testing.T) {
+	td := constructW3CSpanData()
+	logger, _ := zap.NewProduction()
+	assert.Len(t, extractResourceSpans(generateConfig(), logger, td), 0, "0 spans have xray trace id")
+}
+
 func BenchmarkForTracesExporter(b *testing.B) {
 	traceExporter := initializeTracesExporter()
 	for i := 0; i < b.N; i++ {
@@ -54,20 +84,25 @@ func BenchmarkForTracesExporter(b *testing.B) {
 }
 
 func initializeTracesExporter() component.TracesExporter {
+	exporterConfig := generateConfig()
+	mconn := new(awsutil.Conn)
+	traceExporter, err := newTracesExporter(exporterConfig, componenttest.NewNopExporterCreateSettings(), mconn)
+	if err != nil {
+		panic(err)
+	}
+	return traceExporter
+}
+
+func generateConfig() config.Exporter {
 	os.Setenv("AWS_ACCESS_KEY_ID", "AKIASSWVJUY4PZXXXXXX")
 	os.Setenv("AWS_SECRET_ACCESS_KEY", "XYrudg2H87u+ADAAq19Wqx3D41a09RsTXXXXXXXX")
 	os.Setenv("AWS_DEFAULT_REGION", "us-east-1")
 	os.Setenv("AWS_REGION", "us-east-1")
 	factory := NewFactory()
-	config := factory.CreateDefaultConfig()
-	config.(*Config).Region = "us-east-1"
-	config.(*Config).LocalMode = true
-	mconn := new(awsutil.Conn)
-	traceExporter, err := newTracesExporter(config, componenttest.NewNopExporterCreateSettings(), mconn)
-	if err != nil {
-		panic(err)
-	}
-	return traceExporter
+	exporterConfig := factory.CreateDefaultConfig()
+	exporterConfig.(*Config).Region = "us-east-1"
+	exporterConfig.(*Config).LocalMode = true
+	return exporterConfig
 }
 
 func constructSpanData() pdata.Traces {
@@ -77,9 +112,39 @@ func constructSpanData() pdata.Traces {
 	rspans := traces.ResourceSpans().AppendEmpty()
 	resource.CopyTo(rspans.Resource())
 	ispans := rspans.InstrumentationLibrarySpans().AppendEmpty()
-	constructHTTPClientSpan().CopyTo(ispans.Spans().AppendEmpty())
-	constructHTTPServerSpan().CopyTo(ispans.Spans().AppendEmpty())
+	constructXrayTraceSpanData(ispans)
 	return traces
+}
+
+func constructW3CSpanData() pdata.Traces {
+	resource := constructResource()
+	traces := pdata.NewTraces()
+	rspans := traces.ResourceSpans().AppendEmpty()
+	resource.CopyTo(rspans.Resource())
+	ispans := rspans.InstrumentationLibrarySpans().AppendEmpty()
+	constructW3CFormatTraceSpanData(ispans)
+	return traces
+}
+
+func constructXrayAndW3CSpanData() pdata.Traces {
+	resource := constructResource()
+	traces := pdata.NewTraces()
+	rspans := traces.ResourceSpans().AppendEmpty()
+	resource.CopyTo(rspans.Resource())
+	ispans := rspans.InstrumentationLibrarySpans().AppendEmpty()
+	constructXrayTraceSpanData(ispans)
+	constructW3CFormatTraceSpanData(ispans)
+	return traces
+}
+
+func constructXrayTraceSpanData(ispans pdata.InstrumentationLibrarySpans) {
+	constructHTTPClientSpan(newTraceID()).CopyTo(ispans.Spans().AppendEmpty())
+	constructHTTPServerSpan(newTraceID()).CopyTo(ispans.Spans().AppendEmpty())
+}
+
+func constructW3CFormatTraceSpanData(ispans pdata.InstrumentationLibrarySpans) {
+	constructHTTPClientSpan(constructW3CTraceID()).CopyTo(ispans.Spans().AppendEmpty())
+	constructHTTPServerSpan(constructW3CTraceID()).CopyTo(ispans.Spans().AppendEmpty())
 }
 
 func constructResource() pdata.Resource {
@@ -97,7 +162,7 @@ func constructResource() pdata.Resource {
 	return resource
 }
 
-func constructHTTPClientSpan() pdata.Span {
+func constructHTTPClientSpan(traceID pdata.TraceID) pdata.Span {
 	attributes := make(map[string]interface{})
 	attributes[conventions.AttributeHTTPMethod] = "GET"
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
@@ -107,7 +172,7 @@ func constructHTTPClientSpan() pdata.Span {
 	spanAttributes := constructSpanAttributes(attributes)
 
 	span := pdata.NewSpan()
-	span.SetTraceID(newTraceID())
+	span.SetTraceID(traceID)
 	span.SetSpanID(newSegmentID())
 	span.SetParentSpanID(newSegmentID())
 	span.SetName("/users/junit")
@@ -124,7 +189,7 @@ func constructHTTPClientSpan() pdata.Span {
 	return span
 }
 
-func constructHTTPServerSpan() pdata.Span {
+func constructHTTPServerSpan(traceID pdata.TraceID) pdata.Span {
 	attributes := make(map[string]interface{})
 	attributes[conventions.AttributeHTTPMethod] = "GET"
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
@@ -135,7 +200,7 @@ func constructHTTPServerSpan() pdata.Span {
 	spanAttributes := constructSpanAttributes(attributes)
 
 	span := pdata.NewSpan()
-	span.SetTraceID(newTraceID())
+	span.SetTraceID(traceID)
 	span.SetSpanID(newSegmentID())
 	span.SetParentSpanID(newSegmentID())
 	span.SetName("/users/junit")
@@ -173,6 +238,14 @@ func newTraceID() pdata.TraceID {
 	_, err := rand.Read(r[4:])
 	if err != nil {
 		panic(err)
+	}
+	return pdata.NewTraceID(r)
+}
+
+func constructW3CTraceID() pdata.TraceID {
+	var r [16]byte
+	for i := range r {
+		r[i] = byte(rand.Intn(128))
 	}
 	return pdata.NewTraceID(r)
 }

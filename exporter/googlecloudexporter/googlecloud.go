@@ -14,7 +14,7 @@
 
 // Package googlecloudexporter contains the wrapper for OpenTelemetry-GoogleCloud
 // exporter to be used in opentelemetry-collector.
-package googlecloudexporter
+package googlecloudexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter"
 
 import (
 	"context"
@@ -32,6 +32,7 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
@@ -74,7 +75,7 @@ func generateClientOptions(cfg *Config) ([]option.ClientOption, error) {
 			if cfg.UserAgent != "" {
 				dialOpts = append(dialOpts, grpc.WithUserAgent(cfg.UserAgent))
 			}
-			conn, err := grpc.Dial(cfg.Endpoint, append(dialOpts, grpc.WithInsecure())...)
+			conn, err := grpc.Dial(cfg.Endpoint, append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))...)
 			if err != nil {
 				return nil, fmt.Errorf("cannot configure grpc conn: %w", err)
 			}

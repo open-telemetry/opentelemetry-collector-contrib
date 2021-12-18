@@ -29,6 +29,7 @@ import (
 	"google.golang.org/api/option"
 	databasepb "google.golang.org/genproto/googleapis/spanner/admin/database/v1"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/datasource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
@@ -44,17 +45,17 @@ func createMetricsMetadata(query string) *metadata.MetricsMetadata {
 }
 
 func createMetricsMetadataFromTimestampColumn(query string, timestampColumn string) *metadata.MetricsMetadata {
+	labelValueMetadata, _ := metadata.NewLabelValueMetadata("metric_label", "METRIC_LABEL",
+		metadata.StringValueType)
 	// Labels
-	queryLabelValuesMetadata := []metadata.LabelValueMetadata{
-		metadata.NewStringLabelValueMetadata("metric_label", "METRIC_LABEL"),
-	}
+	queryLabelValuesMetadata := []metadata.LabelValueMetadata{labelValueMetadata}
 
 	metricDataType := metadata.NewMetricDataType(pdata.MetricDataTypeGauge, pdata.MetricAggregationTemporalityUnspecified, false)
 
+	metricValueMetadata, _ := metadata.NewMetricValueMetadata("metric_value", "METRIC_VALUE", metricDataType, "unit",
+		metadata.IntValueType)
 	// Metrics
-	queryMetricValuesMetadata := []metadata.MetricValueMetadata{
-		metadata.NewInt64MetricValueMetadata("metric_value", "METRIC_VALUE", metricDataType, "unit"),
-	}
+	queryMetricValuesMetadata := []metadata.MetricValueMetadata{metricValueMetadata}
 
 	return &metadata.MetricsMetadata{
 		Name:                      "test stats",
@@ -136,7 +137,7 @@ func TestStatsReaders_Read(t *testing.T) {
 	require.NoError(t, err)
 	defer server.Close()
 
-	conn, err := grpc.Dial(server.Addr, grpc.WithInsecure())
+	conn, err := grpc.Dial(server.Addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 
 	databaseAdminClient, err := database.NewDatabaseAdminClient(ctx, option.WithGRPCConn(conn))

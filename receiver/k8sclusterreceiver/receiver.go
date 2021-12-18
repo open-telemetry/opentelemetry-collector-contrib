@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package k8sclusterreceiver
+package k8sclusterreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver"
 
 import (
 	"context"
@@ -115,7 +115,7 @@ func (kr *kubernetesReceiver) dispatchMetrics(ctx context.Context) {
 func newReceiver(
 	set component.ReceiverCreateSettings, config *Config, consumer consumer.Metrics,
 	client kubernetes.Interface, osQuotaClient quotaclientset.Interface) (component.MetricsReceiver, error) {
-	resourceWatcher := newResourceWatcher(set.Logger, client, osQuotaClient, config.NodeConditionTypesToReport, defaultInitialSyncTimeout)
+	resourceWatcher := newResourceWatcher(set.Logger, client, osQuotaClient, config.NodeConditionTypesToReport, config.AllocatableTypesToReport, defaultInitialSyncTimeout)
 
 	return &kubernetesReceiver{
 		resourceWatcher: resourceWatcher,

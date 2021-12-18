@@ -108,11 +108,28 @@ func runBuilderTests(t *testing.T, tests []buildTestData) {
 				}
 				metrics, _, _, err := b.Build()
 				assert.NoError(t, err)
-				assert.EqualValues(t, tt.wants[i], metrics)
+				assertEquivalentMetrics(t, tt.wants[i], metrics)
 				st += interval
 			}
 		})
 	}
+}
+
+func assertEquivalentMetrics(t *testing.T, want, got []*metricspb.Metric) {
+	if !assert.Equal(t, len(want), len(got)) {
+		return
+	}
+	wmap := map[string]*metricspb.Metric{}
+	gmap := map[string]*metricspb.Metric{}
+
+	for i := 0; i < len(want); i++ {
+		wi := want[i]
+		wmap[wi.GetMetricDescriptor().GetName()] = wi
+		gi := got[i]
+		gmap[gi.GetMetricDescriptor().GetName()] = gi
+	}
+
+	assert.EqualValues(t, wmap, gmap)
 }
 
 func runBuilderStartTimeTests(t *testing.T, tests []buildTestData,
@@ -1298,10 +1315,10 @@ func Test_isUsefulLabel(t *testing.T) {
 
 func Benchmark_dpgSignature(b *testing.B) {
 	knownLabelKeys := []string{"a", "b"}
-	labels := labels.FromStrings("a", "va", "b", "vb", "x", "xa")
+	ls := labels.FromStrings("a", "va", "b", "vb", "x", "xa")
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		runtime.KeepAlive(dpgSignature(knownLabelKeys, labels))
+		runtime.KeepAlive(dpgSignature(knownLabelKeys, ls))
 	}
 }
 

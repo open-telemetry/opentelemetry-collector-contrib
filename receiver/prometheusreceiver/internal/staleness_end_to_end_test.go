@@ -176,22 +176,17 @@ service:
 			t.Error(err)
 		}
 	}()
+	defer app.Shutdown()
 
 	// Wait until the collector has actually started.
-	stateChannel := app.GetStateChannel()
 	for notYetStarted := true; notYetStarted; {
-		switch state := <-stateChannel; state {
+		state := app.GetState()
+		switch state {
 		case service.Running, service.Closed, service.Closing:
 			notYetStarted = false
 		}
+		time.Sleep(10 * time.Millisecond)
 	}
-
-	// The OpenTelemetry collector has a data race because it closes
-	// a channel while
-	if false {
-		defer app.Shutdown()
-	}
-	time.Sleep(60 * time.Second)
 
 	// 5. Let's wait on 10 fetches.
 	var wReqL []*prompb.WriteRequest
@@ -203,6 +198,7 @@ service:
 	// 6. Assert that we encounter the stale markers aka special NaNs for the various time series.
 	staleMarkerCount := 0
 	totalSamples := 0
+	require.True(t, len(wReqL) > 0, "Expecting at least one WriteRequest")
 	for i, wReq := range wReqL {
 		name := fmt.Sprintf("WriteRequest#%d", i)
 		require.True(t, len(wReq.Timeseries) > 0, "Expecting at least 1 timeSeries for:: "+name)

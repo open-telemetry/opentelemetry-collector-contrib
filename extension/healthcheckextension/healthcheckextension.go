@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package healthcheckextension
+package healthcheckextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
 
 import (
 	"context"
+	"errors"
 	"net"
 	"net/http"
 	"strconv"
@@ -60,13 +61,15 @@ func (hc *healthCheckExtension) Start(_ context.Context, host component.Host) er
 
 	if !hc.config.CheckCollectorPipeline.Enabled {
 		// Mount HC handler
-		hc.server.Handler = hc.state.Handler()
+		mux := http.NewServeMux()
+		mux.Handle(hc.config.Path, hc.state.Handler())
+		hc.server.Handler = mux
 		hc.stopCh = make(chan struct{})
 		go func() {
 			defer close(hc.stopCh)
 
 			// The listener ownership goes to the server.
-			if err = hc.server.Serve(ln); err != http.ErrServerClosed && err != nil {
+			if err = hc.server.Serve(ln); !errors.Is(err, http.ErrServerClosed) && err != nil {
 				host.ReportFatalError(err)
 			}
 		}()
@@ -83,7 +86,9 @@ func (hc *healthCheckExtension) Start(_ context.Context, host component.Host) er
 		// ticker used by collector pipeline health check for rotation
 		ticker := time.NewTicker(time.Second)
 
-		hc.server.Handler = hc.handler()
+		mux := http.NewServeMux()
+		mux.Handle(hc.config.Path, hc.handler())
+		hc.server.Handler = mux
 		hc.stopCh = make(chan struct{})
 		go func() {
 			defer close(hc.stopCh)
@@ -100,8 +105,8 @@ func (hc *healthCheckExtension) Start(_ context.Context, host component.Host) er
 				}
 			}()
 
-			if err = hc.server.Serve(ln); err != http.ErrServerClosed && err != nil {
-				host.ReportFatalError(err)
+			if errHTTP := hc.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
+				host.ReportFatalError(errHTTP)
 			}
 
 		}()
