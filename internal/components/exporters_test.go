@@ -17,6 +17,7 @@ package components
 import (
 	"context"
 	"errors"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parquetexporter"
 	"io/ioutil"
 	"runtime"
 	"testing"
@@ -122,6 +123,14 @@ func TestDefaultExporters(t *testing.T) {
 			getConfigFn: func() config.Exporter {
 				cfg := expFactories["otlphttp"].CreateDefaultConfig().(*otlphttpexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
+				return cfg
+			},
+		},
+		{
+			exporter: "parquet",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["parquet"].CreateDefaultConfig().(*parquetexporter.Config)
+				cfg.Path, _ = ioutil.TempDir("", "*")
 				return cfg
 			},
 		},
