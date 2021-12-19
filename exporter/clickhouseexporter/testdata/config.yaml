@@ -1,0 +1,23 @@
+receivers:
+  nop:
+
+processors:
+  nop:
+
+exporters:
+  clickhouse:
+    address: tcp://127.0.0.1:9000
+  clickhouse/customname:
+    address: tcp://127.0.0.1:9000
+    database: default
+    username: username
+    password: password
+    ca_file: ca_file
+    ttl: 3
+
+service:
+  pipelines:
+    logs:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [clickhouse]
