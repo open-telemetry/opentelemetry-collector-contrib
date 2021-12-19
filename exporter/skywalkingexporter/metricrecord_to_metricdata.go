@@ -15,6 +15,7 @@
 package skywalkingexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/skywalkingexporter"
 
 import (
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"strconv"
 
 	"go.opentelemetry.io/collector/model/pdata"
@@ -37,6 +38,21 @@ func resourceToMetricLabels(resource pdata.Resource) []*metricpb.Label {
 		return true
 	})
 	return labels
+}
+
+func resourceToServiceInfo(resource pdata.Resource) (service string, serviceInstance string) {
+	attrs := resource.Attributes()
+	if serviceName, ok := attrs.Get(conventions.AttributeServiceName); ok {
+		service = serviceName.AsString()
+	} else {
+		service = defaultServiceName
+	}
+	if serviceInstanceID, ok := attrs.Get(conventions.AttributeServiceInstanceID); ok {
+		serviceInstance = serviceInstanceID.AsString()
+	} else {
+		serviceInstance = defaultServiceInstance
+	}
+	return service, serviceInstance
 }
 
 func numberMetricsToData(name string, data pdata.NumberDataPointSlice, defaultLabels []*metricpb.Label) (metrics []*metricpb.MeterData) {
@@ -65,8 +81,6 @@ func numberMetricsToData(name string, data pdata.NumberDataPointSlice, defaultLa
 			sv.SingleValue.Value = dataPoint.DoubleVal()
 		}
 		meterData.Metric = sv
-		meterData.Service = defaultServiceName
-		meterData.ServiceInstance = defaultServiceInstance
 		metrics = append(metrics, meterData)
 	}
 	return metrics
@@ -102,8 +116,6 @@ func doubleHistogramMetricsToData(name string, data pdata.HistogramDataPointSlic
 		}
 
 		meterData.Metric = hg
-		meterData.Service = defaultServiceName
-		meterData.ServiceInstance = defaultServiceInstance
 		meterData.Timestamp = dataPoint.Timestamp().AsTime().UnixMilli()
 		metrics = append(metrics, meterData)
 
@@ -114,8 +126,6 @@ func doubleHistogramMetricsToData(name string, data pdata.HistogramDataPointSlic
 		svs.SingleValue.Value = dataPoint.Sum()
 		meterDataSum.Metric = svs
 		meterDataSum.Timestamp = dataPoint.Timestamp().AsTime().UnixMilli()
-		meterDataSum.Service = defaultServiceName
-		meterDataSum.ServiceInstance = defaultServiceInstance
 		metrics = append(metrics, meterDataSum)
 
 		meterDataCount := &metricpb.MeterData{}
@@ -125,8 +135,6 @@ func doubleHistogramMetricsToData(name string, data pdata.HistogramDataPointSlic
 		svc.SingleValue.Name = name + "_count"
 		svc.SingleValue.Value = float64(dataPoint.Count())
 		meterDataCount.Metric = svc
-		meterDataCount.Service = defaultServiceName
-		meterDataCount.ServiceInstance = defaultServiceInstance
 		metrics = append(metrics, meterDataCount)
 	}
 	return metrics
@@ -160,8 +168,6 @@ func doubleSummaryMetricsToData(name string, data pdata.SummaryDataPointSlice, d
 			sv.SingleValue.Name = name
 			sv.SingleValue.Value = value.Value()
 			meterData.Metric = sv
-			meterData.Service = defaultServiceName
-			meterData.ServiceInstance = defaultServiceInstance
 			metrics = append(metrics, meterData)
 		}
 
@@ -172,8 +178,6 @@ func doubleSummaryMetricsToData(name string, data pdata.SummaryDataPointSlice, d
 		svs.SingleValue.Value = dataPoint.Sum()
 		meterDataSum.Metric = svs
 		meterDataSum.Timestamp = dataPoint.Timestamp().AsTime().UnixMilli()
-		meterDataSum.Service = defaultServiceName
-		meterDataSum.ServiceInstance = defaultServiceInstance
 		metrics = append(metrics, meterDataSum)
 
 		meterDataCount := &metricpb.MeterData{}
@@ -183,14 +187,12 @@ func doubleSummaryMetricsToData(name string, data pdata.SummaryDataPointSlice, d
 		svc.SingleValue.Name = name + "_count"
 		svc.SingleValue.Value = float64(dataPoint.Count())
 		meterDataCount.Metric = svc
-		meterDataCount.Service = defaultServiceName
-		meterDataCount.ServiceInstance = defaultServiceInstance
 		metrics = append(metrics, meterDataCount)
 	}
 	return metrics
 }
 
-func metricDataToMetricData(md pdata.Metric, defaultLabels []*metricpb.Label) (metrics []*metricpb.MeterData) {
+func metricDataToSwMetricData(md pdata.Metric, defaultLabels []*metricpb.Label) (metrics []*metricpb.MeterData) {
 	switch md.DataType() {
 	case pdata.MetricDataTypeNone:
 		break
@@ -213,6 +215,7 @@ func metricsRecordToMetricData(
 	for i := 0; i < resMetrics.Len(); i++ {
 		resMetricSlice := resMetrics.At(i)
 		labels := resourceToMetricLabels(resMetricSlice.Resource())
+		service, serviceInstance := resourceToServiceInfo(resMetricSlice.Resource())
 		insMetricSlice := resMetricSlice.InstrumentationLibraryMetrics()
 		metrics = &metricpb.MeterDataCollection{}
 		metrics.MeterData = make([]*metricpb.MeterData, 0)
@@ -222,9 +225,13 @@ func metricsRecordToMetricData(
 			metricSlice := insMetrics.Metrics()
 			for k := 0; k < metricSlice.Len(); k++ {
 				oneMetric := metricSlice.At(k)
-				ms := metricDataToMetricData(oneMetric, labels)
+				ms := metricDataToSwMetricData(oneMetric, labels)
 				if ms == nil {
 					continue
+				}
+				for _, m := range ms {
+					m.Service = service
+					m.ServiceInstance = serviceInstance
 				}
 				metrics.MeterData = append(metrics.MeterData, ms...)
 			}
