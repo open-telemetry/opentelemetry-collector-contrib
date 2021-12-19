@@ -231,10 +231,7 @@ func verifyHonorTimeStampsTrue(t *testing.T, td *testData, resourceMetrics []*pd
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
-						// For initial scrape, Start_timestamp is same as point timestamp,
-						// read from the explicit timestamp given to the datapoint in the testdata.
-						// TODO: #6405 Correctly adjust start_timestamp for counter metrics with honor_timestamps
-						//compareStartTimestamp(pdata.NewTimestampFromTime(time.UnixMilli(ts2))),
+						compareStartTimestamp(pdata.NewTimestampFromTime(time.UnixMilli(ts2))),
 						compareTimestamp(pdata.NewTimestampFromTime(time.UnixMilli(ts2))),
 						compareDoubleValue(100),
 						compareAttributes(map[string]string{"method": "post", "code": "200"}),
@@ -242,10 +239,7 @@ func verifyHonorTimeStampsTrue(t *testing.T, td *testData, resourceMetrics []*pd
 				},
 				{
 					numberPointComparator: []numberPointComparator{
-						// For initial scrape, Start_timestamp is same as point timestamp,
-						// read from the explicit timestamp given to the datapoint in the testdata.
-						// TODO: #6405 Correctly adjust start_timestamp for counter metrics with honor_timestamps
-						//compareStartTimestamp(pdata.NewTimestampFromTime(time.UnixMilli(ts3))),
+						compareStartTimestamp(pdata.NewTimestampFromTime(time.UnixMilli(ts3))),
 						compareTimestamp(pdata.NewTimestampFromTime(time.UnixMilli(ts3))),
 						compareDoubleValue(5),
 						compareAttributes(map[string]string{"method": "post", "code": "400"}),
@@ -257,8 +251,7 @@ func verifyHonorTimeStampsTrue(t *testing.T, td *testData, resourceMetrics []*pd
 			[]dataPointExpectation{
 				{
 					histogramPointComparator: []histogramPointComparator{
-						// TODO: #6405 Correctly adjust start_timestamp for histogram metrics with honor_timestamps (only for pdata)
-						// compareHistogramStartTimestamp(pdata.NewTimestampFromTime(time.UnixMilli(ts4))),
+						compareHistogramStartTimestamp(pdata.NewTimestampFromTime(time.UnixMilli(ts4))),
 						compareHistogramTimestamp(pdata.NewTimestampFromTime(time.UnixMilli(ts4))),
 						compareHistogram(2500, 5000, []uint64{1000, 500, 500, 500}),
 					},
@@ -269,8 +262,7 @@ func verifyHonorTimeStampsTrue(t *testing.T, td *testData, resourceMetrics []*pd
 			[]dataPointExpectation{
 				{
 					summaryPointComparator: []summaryPointComparator{
-						// TODO: #6405 Correctly adjust start_timestamp for summary metrics with honor_timestamps (only for pdata)
-						//compareSummaryStartTimestamp(pdata.NewTimestampFromTime(time.UnixMilli(ts5))),
+						compareSummaryStartTimestamp(pdata.NewTimestampFromTime(time.UnixMilli(ts5))),
 						compareSummaryTimestamp(pdata.NewTimestampFromTime(time.UnixMilli(ts5))),
 						compareSummary(1000, 5000, [][]float64{{0.01, 1}, {0.9, 5}, {0.99, 8}}),
 					},
@@ -299,11 +291,7 @@ func verifyHonorTimeStampsTrue(t *testing.T, td *testData, resourceMetrics []*pd
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
-						// start_timestamp should be the explicit timestamp of first-time
-						// you see a particular metric but in this case the value of the counter
-						// is lower in this scrape then previous and hence start_timestamp should get reset
-						// TODO: #6405 Correctly adjust start_timestamp for counter metrics with honor_timestamps
-						//compareStartTimestamp(pdata.NewTimestampFromTime(time.UnixMilli(ts7))),
+						compareStartTimestamp(pdata.NewTimestampFromTime(time.UnixMilli(ts7))),
 						compareTimestamp(pdata.NewTimestampFromTime(time.UnixMilli(ts7))),
 						compareDoubleValue(99),
 						compareAttributes(map[string]string{"method": "post", "code": "200"}),
@@ -311,11 +299,7 @@ func verifyHonorTimeStampsTrue(t *testing.T, td *testData, resourceMetrics []*pd
 				},
 				{
 					numberPointComparator: []numberPointComparator{
-						// start_timestamp should be the explicit timestamp of first-time
-						// you see a particular metric but in this case the value of the counter
-						// is lower in this scrape then previous and hence start_timestamp should get reset
-						// TODO: #6405 Correctly adjust start_timestamp for counter metrics with honor_timestamps
-						//compareStartTimestamp(pdata.NewTimestampFromTime(time.UnixMilli(ts8))),
+						compareStartTimestamp(pdata.NewTimestampFromTime(time.UnixMilli(ts8))),
 						compareTimestamp(pdata.NewTimestampFromTime(time.UnixMilli(ts8))),
 						compareDoubleValue(3),
 						compareAttributes(map[string]string{"method": "post", "code": "400"}),
@@ -327,11 +311,7 @@ func verifyHonorTimeStampsTrue(t *testing.T, td *testData, resourceMetrics []*pd
 			[]dataPointExpectation{
 				{
 					histogramPointComparator: []histogramPointComparator{
-						// start_timestamp should be the explicit timestamp of first-time
-						// you see a particular metric but in this case the value of the histogram
-						// is lower in this scrape then previous and hence start_timestamp should get reset
-						// TODO: #6405 Correctly adjust start_timestamp for histogram metrics with honor_timestamps (only for pdata)
-						//compareHistogramStartTimestamp(pdata.NewTimestampFromTime(time.UnixMilli(ts9))),
+						compareHistogramStartTimestamp(pdata.NewTimestampFromTime(time.UnixMilli(ts9))),
 						compareHistogramTimestamp(pdata.NewTimestampFromTime(time.UnixMilli(ts9))),
 						compareHistogram(2400, 4950, []uint64{900, 500, 500, 500}),
 					},
@@ -342,11 +322,7 @@ func verifyHonorTimeStampsTrue(t *testing.T, td *testData, resourceMetrics []*pd
 			[]dataPointExpectation{
 				{
 					summaryPointComparator: []summaryPointComparator{
-						// start_timestamp should be the explicit timestamp of first-time
-						// you see a particular metric but in this case the value of the summary
-						// is lower in this scrape then previous and hence start_timestamp should get reset
-						// TODO: #6405 Correctly adjust start_timestamp for summary metrics with honor_timestamps (only for pdata)
-						//compareSummaryStartTimestamp(pdata.NewTimestampFromTime(time.UnixMilli(ts10))),
+						compareSummaryStartTimestamp(pdata.NewTimestampFromTime(time.UnixMilli(ts10))),
 						compareSummaryTimestamp(pdata.NewTimestampFromTime(time.UnixMilli(ts10))),
 						compareSummary(900, 4980, [][]float64{{0.01, 1}, {0.9, 6}, {0.99, 8}}),
 					},
@@ -375,10 +351,7 @@ func verifyHonorTimeStampsTrue(t *testing.T, td *testData, resourceMetrics []*pd
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
-						// because counter value is greater than previous scrape so start_timestamp
-						// should not reset and start_timestamp should remain of the initial scrape
-						// TODO: #6405 Correctly adjust start_timestamp for counter metrics with honor_timestamps
-						//compareStartTimestamp(pdata.NewTimestampFromTime(time.UnixMilli(ts7))),
+						compareStartTimestamp(pdata.NewTimestampFromTime(time.UnixMilli(ts7))),
 						compareTimestamp(pdata.NewTimestampFromTime(time.UnixMilli(ts12))),
 						compareDoubleValue(100),
 						compareAttributes(map[string]string{"method": "post", "code": "200"}),
@@ -386,10 +359,7 @@ func verifyHonorTimeStampsTrue(t *testing.T, td *testData, resourceMetrics []*pd
 				},
 				{
 					numberPointComparator: []numberPointComparator{
-						// because counter value is greater than previous scrape so start_timestamp
-						// should not reset and start_timestamp should remain of the initial scrape
-						// TODO: #6405 Correctly adjust start_timestamp for counter metrics with honor_timestamps
-						//compareStartTimestamp(pdata.NewTimestampFromTime(time.UnixMilli(ts8))),
+						compareStartTimestamp(pdata.NewTimestampFromTime(time.UnixMilli(ts8))),
 						compareTimestamp(pdata.NewTimestampFromTime(time.UnixMilli(ts13))),
 						compareDoubleValue(5),
 						compareAttributes(map[string]string{"method": "post", "code": "400"}),
@@ -401,11 +371,7 @@ func verifyHonorTimeStampsTrue(t *testing.T, td *testData, resourceMetrics []*pd
 			[]dataPointExpectation{
 				{
 					histogramPointComparator: []histogramPointComparator{
-						// because histogram value is greater than previous scrape so start_timestamp
-						// should not reset and start_timestamp should remain of the initial scrape
-						// Prometheus scrape loop does not emit staleness markers for honor_timestamp
-						// TODO: #6405 Correctly adjust start_timestamp for histogram metrics with honor_timestamps (only for pdata)
-						//compareHistogramStartTimestamp(pdata.NewTimestampFromTime(time.UnixMilli(ts9))),
+						compareHistogramStartTimestamp(pdata.NewTimestampFromTime(time.UnixMilli(ts9))),
 						compareHistogramTimestamp(pdata.NewTimestampFromTime(time.UnixMilli(ts14))),
 						compareHistogram(2500, 5000, []uint64{1000, 500, 500, 500}),
 					},
@@ -416,10 +382,7 @@ func verifyHonorTimeStampsTrue(t *testing.T, td *testData, resourceMetrics []*pd
 			[]dataPointExpectation{
 				{
 					summaryPointComparator: []summaryPointComparator{
-						// because summary value is greater than previous scrape so start_timestamp
-						// should not reset and start_timestamp should remain of the initial scrape
-						// TODO: #6405 Correctly adjust start_timestamp for summary metrics with honor_timestamps (only for pdata)
-						//compareSummaryStartTimestamp(pdata.NewTimestampFromTime(time.UnixMilli(ts10))),
+						compareSummaryStartTimestamp(pdata.NewTimestampFromTime(time.UnixMilli(ts10))),
 						compareSummaryTimestamp(pdata.NewTimestampFromTime(time.UnixMilli(ts15))),
 						compareSummary(1000, 5000, [][]float64{{0.01, 1}, {0.9, 5}, {0.99, 8}}),
 					},

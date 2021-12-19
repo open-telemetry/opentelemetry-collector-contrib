@@ -12,64 +12,76 @@ metrics:
   cpu.utilization:
     description: "CPU utilization"
     unit: 1
-    gauge: {}
+    gauge:
+      value_type: double
     attributes: []
   cpu.time:
     description: "CPU time"
     unit: s
     sum:
+      value_type: double
       monotonic: true
       aggregation: cumulative
     attributes: []
   memory.available:
     description: "Memory available"
     unit: By
-    gauge: {}
+    gauge:
+      value_type: int
     attributes: []
   memory.usage:
     description: "Memory usage"
     unit: By
-    gauge: {}
+    gauge:
+      value_type: int
     attributes: []
   memory.rss:
     description: "Memory rss"
     unit: By
-    gauge: {}
+    gauge:
+      value_type: int
     attributes: []
   memory.working_set:
     description: "Memory working_set"
     unit: By
-    gauge: {}
+    gauge:
+      value_type: int
     attributes: []
   memory.page_faults:
     description: "Memory page_faults"
     unit: 1
-    gauge: {}
+    gauge:
+      value_type: int
     attributes: []
   memory.major_page_faults:
     description: "Memory major_page_faults"
     unit: 1
-    gauge: {}
+    gauge:
+      value_type: int
     attributes: []
   filesystem.available:
     description: "Filesystem available"
     unit: By
-    gauge: {}
+    gauge:
+      value_type: int
     attributes: []
   filesystem.capacity:
     description: "Filesystem capacity"
     unit: By
-    gauge: {}
+    gauge:
+      value_type: int
     attributes: []
   filesystem.usage:
     description: "Filesystem usage"
     unit: By
-    gauge: {}
+    gauge:
+      value_type: int
     attributes: []
   network.io:
     description: "Network IO"
     unit: By
     sum:
+      value_type: int
       monotonic: true
       aggregation: cumulative
     attributes: ["interface", "direction"]
@@ -77,31 +89,37 @@ metrics:
     description: "Network errors"
     unit: 1
     sum:
+      value_type: int
       monotonic: true
       aggregation: cumulative
     attributes: ["interface", "direction"]
   volume.available:
     description: "The number of available bytes in the volume."
     unit: By
-    gauge: {}
+    gauge:
+      value_type: int
     attributes: []
   volume.capacity:
     description: "The total capacity in bytes of the volume."
     unit: By
-    gauge: {}
+    gauge:
+      value_type: int
     attributes: []
   volume.inodes:
     description: "The total inodes in the filesystem."
     unit: 1
-    gauge: {}
+    gauge:
+      value_type: int
     attributes: []
   volume.inodes.free:
     description: "The free inodes in the filesystem."
     unit: 1
-    gauge: {}
+    gauge:
+      value_type: int
     attributes: []
   volume.inodes.used:
     description: "The inodes used by the filesystem. This may not equal inodes - free because filesystem may share inodes with other filesystems."
     unit: 1
-    gauge: {}
+    gauge:
+      value_type: int
     attributes: []

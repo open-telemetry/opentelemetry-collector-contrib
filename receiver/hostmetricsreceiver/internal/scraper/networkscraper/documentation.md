@@ -8,11 +8,11 @@ These are the metrics available for this scraper.
 
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
-| system.network.connections | The number of connections. | {connections} | Sum | <ul> <li>protocol</li> <li>state</li> </ul> |
-| system.network.dropped | The number of packets dropped. | {packets} | Sum | <ul> <li>device</li> <li>direction</li> </ul> |
-| system.network.errors | The number of errors encountered. | {errors} | Sum | <ul> <li>device</li> <li>direction</li> </ul> |
-| system.network.io | The number of bytes transmitted and received. | By | Sum | <ul> <li>device</li> <li>direction</li> </ul> |
-| system.network.packets | The number of packets transferred. | {packets} | Sum | <ul> <li>device</li> <li>direction</li> </ul> |
+| system.network.connections | The number of connections. | {connections} | Sum(Int) | <ul> <li>protocol</li> <li>state</li> </ul> |
+| system.network.dropped | The number of packets dropped. | {packets} | Sum(Int) | <ul> <li>device</li> <li>direction</li> </ul> |
+| system.network.errors | The number of errors encountered. | {errors} | Sum(Int) | <ul> <li>device</li> <li>direction</li> </ul> |
+| system.network.io | The number of bytes transmitted and received. | By | Sum(Int) | <ul> <li>device</li> <li>direction</li> </ul> |
+| system.network.packets | The number of packets transferred. | {packets} | Sum(Int) | <ul> <li>device</li> <li>direction</li> </ul> |
 
 ## Attributes
 

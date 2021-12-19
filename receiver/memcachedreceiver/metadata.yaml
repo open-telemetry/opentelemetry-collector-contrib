@@ -34,12 +34,14 @@ metrics:
   memcached.bytes:
     description: Current number of bytes used by this server to store items.
     unit: By
-    gauge: {}
+    gauge:
+      value_type: int
     attributes: []
   memcached.connections.current:
     description: The current number of open connections.
     unit: connections
     sum:
+      value_type: int
       monotonic: false
       aggregation: cumulative
     attributes: []
@@ -47,6 +49,7 @@ metrics:
     description: Total number of connections opened since the server started running.
     unit: connections
     sum:
+      value_type: int
       monotonic: true
       aggregation: cumulative
     attributes: []
@@ -54,6 +57,7 @@ metrics:
     description: Commands executed.
     unit: 1
     sum:
+      value_type: int
       monotonic: true
       aggregation: cumulative
     attributes: [command]
@@ -61,6 +65,7 @@ metrics:
     description: Number of items currently stored in the cache.
     unit: 1
     sum:
+      value_type: double
       monotonic: false
       aggregation: cumulative
     attributes: []
@@ -68,6 +73,7 @@ metrics:
     description: Cache item evictions.
     unit: 1
     sum:
+      value_type: int
       monotonic: true
       aggregation: cumulative
     attributes: []
@@ -75,6 +81,7 @@ metrics:
     description: Bytes transferred over the network.
     unit: by
     sum:
+      value_type: int
       monotonic: true
       aggregation: cumulative
     attributes: [direction]
@@ -82,18 +89,21 @@ metrics:
     description:  Operation counts. 
     unit: 1
     sum:
+      value_type: int
       monotonic: true
       aggregation: cumulative
     attributes: [type,operation]
   memcached.operation_hit_ratio:
     description: Hit ratio for operations, expressed as a percentage value between 0.0 and 100.0.
     unit: '%'
-    gauge: {}
+    gauge:
+      value_type: double
     attributes: [operation]
   memcached.cpu.usage:
     description: Accumulated user and system time. 
     unit: 1
     sum:
+      value_type: double
       monotonic: true
       aggregation: cumulative
     attributes: [state]
@@ -101,6 +111,7 @@ metrics:
     description: Number of threads used by the memcached instance.
     unit: 1
     sum:
+      value_type: double
       monotonic: false
       aggregation: cumulative
     attributes: []

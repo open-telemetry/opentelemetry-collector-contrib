@@ -178,7 +178,7 @@ func (b *metricBuilderPdata) AddDataPoint(ls labels.Labels, t int64, v float64) 
 		if mf, ok := b.families[metricName]; ok {
 			curMF = mf
 		} else {
-			curMF = newMetricFamilyPdata(metricName, b.mc, b.logger, b.intervalStartTimeMs)
+			curMF = newMetricFamilyPdata(metricName, b.mc, b.logger)
 			b.families[familyName] = curMF
 		}
 	}

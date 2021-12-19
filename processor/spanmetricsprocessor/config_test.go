@@ -41,10 +41,21 @@ func TestLoadConfig(t *testing.T) {
 		wantMetricsExporter         string
 		wantLatencyHistogramBuckets []time.Duration
 		wantDimensions              []Dimension
+		wantDimensionsCacheSize     int
 		wantAggregationTemporality  string
 	}{
-		{configFile: "config-2-pipelines.yaml", wantMetricsExporter: "prometheus", wantAggregationTemporality: cumulative},
-		{configFile: "config-3-pipelines.yaml", wantMetricsExporter: "otlp/spanmetrics", wantAggregationTemporality: cumulative},
+		{
+			configFile:                 "config-2-pipelines.yaml",
+			wantMetricsExporter:        "prometheus",
+			wantAggregationTemporality: cumulative,
+			wantDimensionsCacheSize:    500,
+		},
+		{
+			configFile:                 "config-3-pipelines.yaml",
+			wantMetricsExporter:        "otlp/spanmetrics",
+			wantAggregationTemporality: cumulative,
+			wantDimensionsCacheSize:    defaultDimensionsCacheSize,
+		},
 		{
 			configFile:          "config-full.yaml",
 			wantMetricsExporter: "otlp/spanmetrics",
@@ -61,6 +72,7 @@ func TestLoadConfig(t *testing.T) {
 				{"http.method", &defaultMethod},
 				{"http.status_code", nil},
 			},
+			wantDimensionsCacheSize:    1500,
 			wantAggregationTemporality: delta,
 		},
 	}
@@ -92,6 +104,7 @@ func TestLoadConfig(t *testing.T) {
 					MetricsExporter:         tc.wantMetricsExporter,
 					LatencyHistogramBuckets: tc.wantLatencyHistogramBuckets,
 					Dimensions:              tc.wantDimensions,
+					DimensionsCacheSize:     tc.wantDimensionsCacheSize,
 					AggregationTemporality:  tc.wantAggregationTemporality,
 				},
 				cfg.Processors[config.NewComponentID(typeStr)],

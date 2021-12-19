@@ -23,6 +23,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
 )
 
 func TestScraper(t *testing.T) {
@@ -35,7 +36,8 @@ func TestScraper(t *testing.T) {
 
 	ms, err := sc.scrape(context.Background())
 	require.NoError(t, err)
-	expectedMetrics, err := scrapertest.ReadExpected("./testdata/expected_metrics/test_scraper/expected.json")
+
+	expectedMetrics, err := golden.ReadMetrics("./testdata/expected_metrics/test_scraper/expected.json")
 	require.NoError(t, err)
 
 	eMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()

@@ -35,35 +35,33 @@ type MetricFamilyPdata interface {
 }
 
 type metricFamilyPdata struct {
-	mtype               pdata.MetricDataType
-	groups              map[string]*metricGroupPdata
-	name                string
-	mc                  MetadataCache
-	droppedTimeseries   int
-	labelKeys           map[string]bool
-	labelKeysOrdered    []string
-	metadata            *scrape.MetricMetadata
-	groupOrders         map[string]int
-	intervalStartTimeMs int64
+	mtype             pdata.MetricDataType
+	groups            map[string]*metricGroupPdata
+	name              string
+	mc                MetadataCache
+	droppedTimeseries int
+	labelKeys         map[string]bool
+	labelKeysOrdered  []string
+	metadata          *scrape.MetricMetadata
+	groupOrders       map[string]int
 }
 
 // metricGroupPdata, represents a single metric of a metric family. for example a histogram metric is usually represent by
 // a couple data complexValue (buckets and count/sum), a group of a metric family always share a same set of tags. for
 // simple types like counter and gauge, each data point is a group of itself
 type metricGroupPdata struct {
-	family              *metricFamilyPdata
-	ts                  int64
-	ls                  labels.Labels
-	count               float64
-	hasCount            bool
-	sum                 float64
-	hasSum              bool
-	value               float64
-	complexValue        []*dataPoint
-	intervalStartTimeMs int64
+	family       *metricFamilyPdata
+	ts           int64
+	ls           labels.Labels
+	count        float64
+	hasCount     bool
+	sum          float64
+	hasSum       bool
+	value        float64
+	complexValue []*dataPoint
 }
 
-func newMetricFamilyPdata(metricName string, mc MetadataCache, logger *zap.Logger, intervalStartTimeMs int64) MetricFamilyPdata {
+func newMetricFamilyPdata(metricName string, mc MetadataCache, logger *zap.Logger) MetricFamilyPdata {
 	familyName := normalizeMetricName(metricName)
 
 	// lookup metadata based on familyName
@@ -101,16 +99,15 @@ func newMetricFamilyPdata(metricName string, mc MetadataCache, logger *zap.Logge
 	}
 
 	return &metricFamilyPdata{
-		mtype:               mtype,
-		groups:              make(map[string]*metricGroupPdata),
-		name:                familyName,
-		mc:                  mc,
-		droppedTimeseries:   0,
-		labelKeys:           make(map[string]bool),
-		labelKeysOrdered:    make([]string, 0),
-		metadata:            &metadata,
-		groupOrders:         make(map[string]int),
-		intervalStartTimeMs: intervalStartTimeMs,
+		mtype:             mtype,
+		groups:            make(map[string]*metricGroupPdata),
+		name:              familyName,
+		mc:                mc,
+		droppedTimeseries: 0,
+		labelKeys:         make(map[string]bool),
+		labelKeysOrdered:  make([]string, 0),
+		metadata:          &metadata,
+		groupOrders:       make(map[string]int),
 	}
 }
 
@@ -176,7 +173,7 @@ func (mg *metricGroupPdata) toDistributionPoint(orderedLabelKeys []string, dest 
 	// The timestamp MUST be in retrieved from milliseconds and converted to nanoseconds.
 	tsNanos := pdataTimestampFromMs(mg.ts)
 	if mg.family.isCumulativeTypePdata() {
-		point.SetStartTimestamp(pdataTimestampFromMs(mg.intervalStartTimeMs))
+		point.SetStartTimestamp(tsNanos) // metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
 	}
 	point.SetTimestamp(tsNanos)
 	populateAttributesPdata(orderedLabelKeys, mg.ls, point.Attributes())
@@ -215,7 +212,7 @@ func (mg *metricGroupPdata) toSummaryPoint(orderedLabelKeys []string, dest *pdat
 	tsNanos := pdataTimestampFromMs(mg.ts)
 	point.SetTimestamp(tsNanos)
 	if mg.family.isCumulativeTypePdata() {
-		point.SetStartTimestamp(pdataTimestampFromMs(mg.intervalStartTimeMs))
+		point.SetStartTimestamp(tsNanos) // metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
 	}
 	point.SetSum(mg.sum)
 	point.SetCount(uint64(mg.count))
@@ -229,7 +226,7 @@ func (mg *metricGroupPdata) toNumberDataPoint(orderedLabelKeys []string, dest *p
 	tsNanos := pdataTimestampFromMs(mg.ts)
 	// gauge/undefined types have no start time.
 	if mg.family.isCumulativeTypePdata() {
-		startTsNanos = pdataTimestampFromMs(mg.intervalStartTimeMs)
+		startTsNanos = tsNanos // metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
 	}
 
 	point := dest.AppendEmpty()
@@ -265,11 +262,10 @@ func (mf *metricFamilyPdata) loadMetricGroupOrCreate(groupKey string, ls labels.
 	mg, ok := mf.groups[groupKey]
 	if !ok {
 		mg = &metricGroupPdata{
-			family:              mf,
-			ts:                  ts,
-			ls:                  ls,
-			complexValue:        make([]*dataPoint, 0),
-			intervalStartTimeMs: mf.intervalStartTimeMs,
+			family:       mf,
+			ts:           ts,
+			ls:           ls,
+			complexValue: make([]*dataPoint, 0),
 		}
 		mf.groups[groupKey] = mg
 		// maintaining data insertion order is helpful to generate stable/reproducible metric output
