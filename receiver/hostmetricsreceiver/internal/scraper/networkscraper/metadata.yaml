@@ -20,6 +20,7 @@ metrics:
     description: The number of packets transferred.
     unit: "{packets}"
     sum:
+      value_type: int
       aggregation: cumulative
       monotonic: true
     attributes: [device, direction]
@@ -28,6 +29,7 @@ metrics:
     description: The number of packets dropped.
     unit: "{packets}"
     sum:
+      value_type: int
       aggregation: cumulative
       monotonic: true
     attributes: [device, direction]
@@ -36,6 +38,7 @@ metrics:
     description: The number of errors encountered.
     unit: "{errors}"
     sum:
+      value_type: int
       aggregation: cumulative
       monotonic: true
     attributes: [device, direction]
@@ -44,6 +47,7 @@ metrics:
     description: The number of bytes transmitted and received.
     unit: "By"
     sum:
+      value_type: int
       aggregation: cumulative
       monotonic: true
     attributes: [device, direction]
@@ -52,6 +56,7 @@ metrics:
     description: The number of connections.
     unit: "{connections}"
     sum:
+      value_type: int
       aggregation: cumulative
       monotonic: false
     attributes: [protocol, state]

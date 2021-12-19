@@ -53,7 +53,9 @@ The following settings can be optionally configured:
   
   If the `name`d attribute is missing in the span, the optional provided `default` is used.
   
-  If no `default` is provided, this dimension will be **omitted** from the metric. 
+  If no `default` is provided, this dimension will be **omitted** from the metric.
+- `dimensions_cache_size`: the max items number of `metric_key_to_dimensions_cache`. If not provided, will
+  use default value size `1000`.
 - `aggregation_temporality`: Defines the aggregation temporality of the generated metrics. 
   One of either `AGGREGATION_TEMPORALITY_CUMULATIVE` or `AGGREGATION_TEMPORALITY_DELTA`.
   - Default: `AGGREGATION_TEMPORALITY_CUMULATIVE`
@@ -93,6 +95,7 @@ processors:
       - name: http.method
         default: GET
       - name: http.status_code
+    dimensions_cache_size: 1000
     aggregation_temporality: "AGGREGATION_TEMPORALITY_DELTA"     
 
 exporters:

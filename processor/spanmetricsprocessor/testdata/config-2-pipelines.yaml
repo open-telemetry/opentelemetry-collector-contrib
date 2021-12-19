@@ -27,7 +27,7 @@ processors:
   batch:
   spanmetrics:
     metrics_exporter: prometheus
-
+    dimensions_cache_size: 500
 service:
   pipelines:
     traces:

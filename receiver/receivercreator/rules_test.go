@@ -49,6 +49,8 @@ func Test_ruleEval(t *testing.T) {
 		{"basic pod", args{`type == "pod" && labels["region"] == "west-1"`, podEndpoint}, true, false},
 		{"annotations", args{`type == "pod" && annotations["scrape"] == "true"`, podEndpoint}, true, false},
 		{"basic container", args{`type == "container" && labels["region"] == "east-1"`, containerEndpoint}, true, false},
+		{"from k8s.node status maps in slices", args{`type == "k8s.node" && status["images"][0]["names"][0] == "an.image:latest"`, k8sNodeEndpoint}, true, false},
+		{"from k8s.node nested status maps", args{`type == "k8s.node" && status["daemonEndpoints"]["kubeletEndpoint"]["Port"] == "10250"`, k8sNodeEndpoint}, true, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

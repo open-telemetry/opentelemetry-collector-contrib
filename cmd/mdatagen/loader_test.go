@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func Test_loadMetadata(t *testing.T) {
@@ -50,8 +51,9 @@ func Test_loadMetadata(t *testing.T) {
 						ExtendedDocumentation: "Additional information on CPU Time can be found [here](https://en.wikipedia.org/wiki/CPU_time).",
 						Unit:                  "s",
 						Sum: &sum{
-							Aggregated: Aggregated{Aggregation: "cumulative"},
-							Mono:       Mono{Monotonic: true},
+							MetricValueType: MetricValueType{pdata.MetricValueTypeDouble},
+							Aggregated:      Aggregated{Aggregation: "cumulative"},
+							Mono:            Mono{Monotonic: true},
 						},
 						// YmlData: nil,
 						Attributes: []attributeName{"freeFormAttribute", "freeFormAttributeWithValue",
@@ -78,6 +80,13 @@ func Test_loadMetadata(t *testing.T) {
 			want: metadata{},
 			wantErr: "metric system.cpu.time has more than one metric type keys, " +
 				"only one of the following has to be specified: sum, gauge, histogram",
+		},
+		{
+			name: "no number types",
+			yml:  "no_value_type.yaml",
+			want: metadata{},
+			wantErr: "error validating struct:\n\tmetadata.Metrics[system.cpu.time].Sum.MetricValueType.ValueType: " +
+				"ValueType is a required field\n",
 		},
 	}
 	for _, tt := range tests {

@@ -44,9 +44,25 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
+// metric holds data for generated metric and keeps track of data points slice capacity.
+type metric struct {
+	data     pdata.Metric // data buffer for generated metric.
+	capacity int          // max observed number of data points added to the metric.
+}
+
+func (m *metric) updateCapacity(dpLen int) {
+	if dpLen > m.capacity {
+		m.capacity = dpLen
+	}
+}
+
+func newMetric() metric {
+	return metric{data: pdata.NewMetric()}
+}
+
 type metrics struct {
 	{{- range $name, $metric := .Metrics }}
-	{{ $name.Render }} pdata.Metric
+	{{ $name.RenderUnexported }} metric
 	{{- end }}
 }
 
@@ -54,7 +70,7 @@ func newMetrics(config MetricsSettings) metrics {
 	ms := metrics{}
 	{{- range $name, $metric := .Metrics }}
 	if config.{{ $name.Render }}.Enabled {
-		ms.{{ $name.Render }} = pdata.NewMetric()
+		ms.{{ $name.RenderUnexported }} = newMetric()
 	}
 	{{- end }}
 	return ms
@@ -63,12 +79,9 @@ func newMetrics(config MetricsSettings) metrics {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user configuration.
 type MetricsBuilder struct {
-	config                              MetricsSettings
-	startTime                           pdata.Timestamp
-	{{ range $attr, $_ := .Attributes -}}
-	attribute{{ $attr.Render }}Capacity int
-	{{ end -}}
-	metrics                             metrics
+	config    MetricsSettings
+	startTime pdata.Timestamp
+	metrics   metrics
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -81,27 +94,11 @@ func WithStartTime(startTime pdata.Timestamp) metricBuilderOption {
 	}
 }
 
-{{ range $attr, $_ := .Attributes -}}
-// WithAttribute{{ $attr.Render }}Capacity sets an expected number of values of {{ $attr }} attribute that will be
-// used to calculate data points capacity for each metric report.
-func WithAttribute{{ $attr.Render }}Capacity(cap int) metricBuilderOption {
-	return func(mb *MetricsBuilder) {
-		mb.attribute{{ $attr.Render }}Capacity = cap
-	}
-}
-
-{{ end -}}
-
 func NewMetricsBuilder(config MetricsSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                              config,
-		startTime:                           pdata.NewTimestampFromTime(time.Now()),
-		{{- range $name, $info := .Attributes }}
-		{{- if $info.Enum }}
-		attribute{{ $name.Render }}Capacity: {{ len $info.Enum }},
-		{{- end }}
-		{{- end }}
-		metrics:                             newMetrics(config),
+		config:    config,
+		startTime: pdata.NewTimestampFromTime(time.Now()),
+		metrics:   newMetrics(config),
 	}
 
 	for _, op := range options {
@@ -117,8 +114,9 @@ func NewMetricsBuilder(config MetricsSettings, options ...metricBuilderOption) *
 // defined in metadata and user configuration, e.g. delta/cumulative translation.
 func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
 	{{- range $name, $metric := .Metrics }}
-	if mb.config.{{ $name.Render }}.Enabled && mb.metrics.{{ $name.Render }}.{{ $metric.Data.Type }}().DataPoints().Len() > 0 {
-		mb.metrics.{{- $name.Render }}.MoveTo(metrics.AppendEmpty())
+	if mb.config.{{ $name.Render }}.Enabled && mb.metrics.{{ $name.RenderUnexported }}.data.{{ $metric.Data.Type }}().DataPoints().Len() > 0 {
+		mb.metrics.{{- $name.RenderUnexported }}.updateCapacity(mb.metrics.{{ $name.RenderUnexported }}.data.{{ $metric.Data.Type }}().DataPoints().Len())
+		mb.metrics.{{- $name.RenderUnexported }}.data.MoveTo(metrics.AppendEmpty())
 	}
 	{{- end }}
 
@@ -127,31 +125,21 @@ func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
 }
 
 {{ range $name, $metric := .Metrics -}}
-{{ if $metric.Attributes -}}
-// {{ $name.RenderUnexported }}DataPointsCapacity calculates initial data points capacity for {{ $name }} metric.
-func (mb *MetricsBuilder) {{ $name.RenderUnexported }}DataPointsCapacity() int {
-	return {{ range $idx, $attr := $metric.Attributes -}}
-	{{- if $idx }} * {{ end -}}
-	mb.attribute{{ $attr.Render }}Capacity
-	{{- end }}
-}
-{{- end }}
-
 // init{{ $name.Render }}Metric builds new {{ $name }} metric.
 func (mb *MetricsBuilder) init{{ $name.Render }}Metric() {
-	metric := mb.metrics.{{ $name.Render }}
-	metric.SetName("{{ $name }}")
-	metric.SetDescription("{{ $metric.Description }}")
-	metric.SetUnit("{{ $metric.Unit }}")
-	metric.SetDataType(pdata.MetricDataType{{ $metric.Data.Type }})
+	metric := mb.metrics.{{ $name.RenderUnexported }}
+	metric.data.SetName("{{ $name }}")
+	metric.data.SetDescription("{{ $metric.Description }}")
+	metric.data.SetUnit("{{ $metric.Unit }}")
+	metric.data.SetDataType(pdata.MetricDataType{{ $metric.Data.Type }})
 	{{- if $metric.Data.HasMonotonic }}
-	metric.{{ $metric.Data.Type }}().SetIsMonotonic({{ $metric.Data.Monotonic }})
+	metric.data.{{ $metric.Data.Type }}().SetIsMonotonic({{ $metric.Data.Monotonic }})
 	{{- end }}
 	{{- if $metric.Data.HasAggregated }}
-	metric.{{ $metric.Data.Type }}().SetAggregationTemporality({{ $metric.Data.Aggregated.Type }})
+	metric.data.{{ $metric.Data.Type }}().SetAggregationTemporality({{ $metric.Data.Aggregated.Type }})
 	{{- end }}
 	{{- if $metric.Attributes }}
-	metric.{{ $metric.Data.Type }}().DataPoints().EnsureCapacity(mb.{{ $name.RenderUnexported }}DataPointsCapacity())
+	metric.data.{{ $metric.Data.Type }}().DataPoints().EnsureCapacity(metric.capacity)
 	{{- end }}
 }
 
@@ -161,7 +149,7 @@ func (mb *MetricsBuilder) init{{ $name.Render }}Metric() {
 func (mb *MetricsBuilder) initMetrics() {
 	{{- range $name, $metric := .Metrics }}
 	if mb.config.{{- $name.Render }}.Enabled {
-		// TODO: Use mb.metrics.{{ $name.Render }}.{{ $metric.Data.Type }}().DataPoints().Clear() instead of rebuilding
+		// TODO: Use metric.data.{{ $metric.Data.Type }}().DataPoints().Clear() instead of rebuilding
 		// the metrics once the Clear method is available.
 		mb.init{{ $name.Render }}Metric()
 	}
@@ -172,17 +160,17 @@ func (mb *MetricsBuilder) initMetrics() {
 // Record{{ $name.Render }}DataPoint adds a data point to {{ $name }} metric.
 // Any attribute of AttributeValueTypeEmpty type will be skipped.
 func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pdata.Timestamp
-	{{- if $metric.Data.HasNumberDataPoints}}, val {{ $metric.Data.NumberDataPoints.BasicType }}{{ end }}
+	{{- if $metric.Data.HasMetricValueType }}, val {{ $metric.Data.MetricValueType.BasicType }}{{ end }}
 	{{- range $metric.Attributes -}}, {{ . }}AttributeValue string {{ end }}) {
 	if !mb.config.{{- $name.Render }}.Enabled {
 		return
 	}
 
-	dp := mb.metrics.{{ $name.Render }}.{{ $metric.Data.Type }}().DataPoints().AppendEmpty()
+	dp := mb.metrics.{{ $name.RenderUnexported }}.data.{{ $metric.Data.Type }}().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(mb.startTime)
 	dp.SetTimestamp(ts)
-	{{- if $metric.Data.HasNumberDataPoints}}
-	dp.Set{{ $metric.Data.NumberDataPoints.Type }}Val(val)
+	{{- if $metric.Data.HasMetricValueType }}
+	dp.Set{{ $metric.Data.MetricValueType }}Val(val)
 	{{- end }}
 	{{ range $metric.Attributes -}}
 	dp.Attributes().Insert(A.{{ .Render }}, pdata.NewAttributeValueString({{ . }}AttributeValue))

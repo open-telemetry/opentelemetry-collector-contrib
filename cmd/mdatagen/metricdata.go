@@ -16,7 +16,8 @@ package main
 
 import (
 	"fmt"
-	"strings"
+
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 var (
@@ -30,7 +31,7 @@ type MetricData interface {
 	Type() string
 	HasMonotonic() bool
 	HasAggregated() bool
-	HasNumberDataPoints() bool
+	HasMetricValueType() bool
 }
 
 // Aggregated defines a metric aggregation type.
@@ -58,32 +59,44 @@ type Mono struct {
 	Monotonic bool `mapstructure:"monotonic"`
 }
 
-// NumberDataPoints defines the metric number type.
-type NumberDataPoints struct {
-	// Type is type of the metric number, options are "double", "int".
-	// TODO: Add validation once the metric number type added to all metadata files.
-	NumberType string `mapstructure:"number_type"`
+// MetricValueType defines the metric number type.
+type MetricValueType struct {
+	// ValueType is type of the metric number, options are "double", "int".
+	ValueType pdata.MetricValueType `validate:"required"`
+}
+
+// UnmarshalText implements the encoding.TextUnmarshaler interface.
+func (mvt *MetricValueType) UnmarshalText(text []byte) error {
+	switch vtStr := string(text); vtStr {
+	case "int":
+		mvt.ValueType = pdata.MetricValueTypeInt
+	case "double":
+		mvt.ValueType = pdata.MetricValueTypeDouble
+	default:
+		return fmt.Errorf("invalid value_type: %q", vtStr)
+	}
+	return nil
 }
 
 // Type returns name of the datapoint type.
-func (ndp NumberDataPoints) Type() string {
-	return strings.Title(ndp.NumberType)
+func (mvt MetricValueType) String() string {
+	return mvt.ValueType.String()
 }
 
 // BasicType returns name of a golang basic type for the datapoint type.
-func (ndp NumberDataPoints) BasicType() string {
-	switch ndp.NumberType {
-	case "int":
+func (mvt MetricValueType) BasicType() string {
+	switch mvt.ValueType {
+	case pdata.MetricValueTypeInt:
 		return "int64"
-	case "double":
+	case pdata.MetricValueTypeDouble:
 		return "float64"
 	default:
-		panic(fmt.Sprintf("unknown number data point type: %v", ndp.NumberType))
+		return ""
 	}
 }
 
 type gauge struct {
-	NumberDataPoints `mapstructure:",squash"`
+	MetricValueType `mapstructure:"value_type"`
 }
 
 func (d gauge) Type() string {
@@ -98,14 +111,14 @@ func (d gauge) HasAggregated() bool {
 	return false
 }
 
-func (d gauge) HasNumberDataPoints() bool {
+func (d gauge) HasMetricValueType() bool {
 	return true
 }
 
 type sum struct {
-	Aggregated       `mapstructure:",squash"`
-	Mono             `mapstructure:",squash"`
-	NumberDataPoints `mapstructure:",squash"`
+	Aggregated      `mapstructure:",squash"`
+	Mono            `mapstructure:",squash"`
+	MetricValueType `mapstructure:"value_type"`
 }
 
 func (d sum) Type() string {
@@ -120,7 +133,7 @@ func (d sum) HasAggregated() bool {
 	return true
 }
 
-func (d sum) HasNumberDataPoints() bool {
+func (d sum) HasMetricValueType() bool {
 	return true
 }
 
@@ -140,6 +153,6 @@ func (d histogram) HasAggregated() bool {
 	return true
 }
 
-func (d histogram) HasNumberDataPoints() bool {
+func (d histogram) HasMetricValueType() bool {
 	return false
 }

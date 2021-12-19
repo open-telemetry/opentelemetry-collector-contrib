@@ -12,18 +12,65 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package scrapertest
+package golden
 
 import (
+	"io/ioutil"
+	"path/filepath"
+	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
-func baseTestMetrics() pdata.MetricSlice {
+func TestWriteMetrics(t *testing.T) {
+	metricslice := testMetrics()
+	metrics := pdata.NewMetrics()
+	metricslice.CopyTo(metrics.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics())
+
+	tempDir := filepath.Join(t.TempDir(), "metrics.json")
+	WriteMetrics(tempDir, metrics)
+
+	actualBytes, err := ioutil.ReadFile(tempDir)
+	require.NoError(t, err)
+
+	expectedFile := filepath.Join("testdata", "roundtrip", "expected.json")
+	expectedBytes, err := ioutil.ReadFile(expectedFile)
+	require.NoError(t, err)
+
+	require.Equal(t, expectedBytes, actualBytes)
+}
+
+func TestReadMetrics(t *testing.T) {
+	metricslice := testMetrics()
+	expectedMetrics := pdata.NewMetrics()
+	metricslice.CopyTo(expectedMetrics.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics())
+
+	expectedFile := filepath.Join("testdata", "roundtrip", "expected.json")
+	actualMetrics, err := ReadMetrics(expectedFile)
+	require.NoError(t, err)
+	require.Equal(t, expectedMetrics, actualMetrics)
+}
+
+func TestRoundTrip(t *testing.T) {
+	metricslice := testMetrics()
+	expectedMetrics := pdata.NewMetrics()
+	metricslice.CopyTo(expectedMetrics.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics())
+
+	tempDir := filepath.Join(t.TempDir(), "metrics.json")
+	err := WriteMetrics(tempDir, expectedMetrics)
+	require.NoError(t, err)
+
+	actualMetrics, err := ReadMetrics(tempDir)
+	require.NoError(t, err)
+	require.Equal(t, expectedMetrics, actualMetrics)
+}
+
+func testMetrics() pdata.MetricSlice {
 	slice := pdata.NewMetricSlice()
 
-	// set Gauge with two double dps
+	// Gauge with two double dps
 	metric := slice.AppendEmpty()
 	initGauge(metric, "test gauge multi", "multi gauge", "1")
 	dps := metric.Gauge().DataPoints()
@@ -40,7 +87,7 @@ func baseTestMetrics() pdata.MetricSlice {
 	attributes.Insert("testKey2", pdata.NewAttributeValueString("testvalue2"))
 	setDPDoubleVal(dp, 2, attributes, time.Time{})
 
-	// set Gauge with one int dp
+	// Gauge with one int dp
 	metric = slice.AppendEmpty()
 	initGauge(metric, "test gauge single", "single gauge", "By")
 	dps = metric.Gauge().DataPoints()
@@ -50,7 +97,7 @@ func baseTestMetrics() pdata.MetricSlice {
 	attributes.Insert("testKey2", pdata.NewAttributeValueString("teststringvalue2"))
 	setDPIntVal(dp, 2, attributes, time.Time{})
 
-	// set Delta Sum with two int dps
+	// Delta Sum with two int dps
 	metric = slice.AppendEmpty()
 	initSum(metric, "test delta sum multi", "multi sum", "s", pdata.MetricAggregationTemporalityDelta, false)
 	dps = metric.Sum().DataPoints()
@@ -65,7 +112,7 @@ func baseTestMetrics() pdata.MetricSlice {
 	attributes.Insert("testKey2", pdata.NewAttributeValueString("teststringvalue2"))
 	setDPIntVal(dp, 2, attributes, time.Time{})
 
-	// set Cumulative Sum with one double dp
+	// Cumulative Sum with one double dp
 	metric = slice.AppendEmpty()
 	initSum(metric, "test cumulative sum single", "single sum", "1/s", pdata.MetricAggregationTemporalityCumulative, true)
 	dps = metric.Sum().DataPoints()
@@ -103,3 +150,5 @@ func initSum(metric pdata.Metric, name, desc, unit string, aggr pdata.MetricAggr
 	metric.SetName(name)
 	metric.SetUnit(unit)
 }
+
+// TODO test Read/WriteMetricSlice
