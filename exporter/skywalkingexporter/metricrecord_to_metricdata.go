@@ -15,10 +15,10 @@
 package skywalkingexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/skywalkingexporter"
 
 import (
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"strconv"
 
 	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	metricpb "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
 )
 
