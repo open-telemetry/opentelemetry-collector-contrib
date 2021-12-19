@@ -47,6 +47,7 @@ func Test_loadMetadata(t *testing.T) {
 						Value:       "state"}},
 				Metrics: map[metricName]metric{
 					"system.cpu.time": {
+						Enabled:               true,
 						Description:           "Total CPU seconds broken down by different states.",
 						ExtendedDocumentation: "Additional information on CPU Time can be found [here](https://en.wikipedia.org/wiki/CPU_time).",
 						Unit:                  "s",
@@ -73,6 +74,12 @@ func Test_loadMetadata(t *testing.T) {
 			want: metadata{},
 			wantErr: "metric system.cpu.time doesn't have a metric type key, " +
 				"one of the following has to be specified: sum, gauge, histogram",
+		},
+		{
+			name:    "no enabled",
+			yml:     "no_enabled.yaml",
+			want:    metadata{},
+			wantErr: "error validating struct:\n\tmetadata.Metrics[system.cpu.time].Enabled: Enabled is a required field\n",
 		},
 		{
 			name: "two metric types",
