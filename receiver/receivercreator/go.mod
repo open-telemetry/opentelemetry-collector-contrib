@@ -14,7 +14,7 @@ require (
 	go.uber.org/zap v1.19.1
 )
 
-require github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.0.0-00010101000000-000000000000
+require github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.41.0
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect

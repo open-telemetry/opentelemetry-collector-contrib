@@ -18,8 +18,8 @@ require (
 )
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.0.0-00010101000000-000000000000
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.41.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.41.0
 )
 
 require (

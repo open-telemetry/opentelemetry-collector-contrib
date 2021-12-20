@@ -13,7 +13,7 @@ require (
 	google.golang.org/grpc v1.43.0
 )
 
-require github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver v0.0.0-00010101000000-000000000000
+require github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver v0.41.0
 
 require (
 	github.com/apache/thrift v0.15.0 // indirect
@@ -42,7 +42,7 @@ require (
 	github.com/mostynb/go-grpc-compression v1.1.15 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.41.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.41.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.0.0-00010101000000-000000000000 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.41.0 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
