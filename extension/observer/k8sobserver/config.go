@@ -15,6 +15,8 @@
 package k8sobserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver"
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/config"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -50,5 +52,8 @@ type Config struct {
 
 // Validate checks if the extension configuration is valid
 func (cfg *Config) Validate() error {
+	if !cfg.ObservePods && !cfg.ObserveNodes {
+		return fmt.Errorf("one of observe_pods and observe_nodes must be true")
+	}
 	return cfg.APIConfig.Validate()
 }
