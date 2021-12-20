@@ -23,6 +23,7 @@ from opentelemetry.instrumentation.propagators import (
     get_global_response_propagator,
     set_global_response_propagator,
 )
+from opentelemetry.instrumentation.wsgi import OpenTelemetryMiddleware
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.test.test_base import TestBase
@@ -412,4 +413,32 @@ class TestProgrammaticCustomTracerProviderWithoutApp(
         self.assertEqual(
             span_list[0].resource.attributes["service.name"],
             "flask-api-no-app",
+        )
+
+
+class TestProgrammaticWrappedWithOtherFramework(
+    InstrumentationTest, TestBase, WsgiTestBase
+):
+    def setUp(self):
+        super().setUp()
+
+        self.app = Flask(__name__)
+        self.app.wsgi_app = OpenTelemetryMiddleware(self.app.wsgi_app)
+        FlaskInstrumentor().instrument_app(self.app)
+        self._common_initialization()
+
+    def tearDown(self) -> None:
+        super().tearDown()
+        with self.disable_logging():
+            FlaskInstrumentor().uninstrument_app(self.app)
+
+    def test_mark_span_internal_in_presence_of_span_from_other_framework(self):
+        resp = self.client.get("/hello/123")
+        self.assertEqual(200, resp.status_code)
+        resp.get_data()
+        span_list = self.memory_exporter.get_finished_spans()
+        self.assertEqual(trace.SpanKind.INTERNAL, span_list[0].kind)
+        self.assertEqual(trace.SpanKind.SERVER, span_list[1].kind)
+        self.assertEqual(
+            span_list[0].parent.span_id, span_list[1].context.span_id
         )

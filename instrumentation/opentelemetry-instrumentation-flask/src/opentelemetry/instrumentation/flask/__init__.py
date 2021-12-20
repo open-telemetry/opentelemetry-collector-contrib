@@ -176,15 +176,24 @@ def _wrapped_before_request(
             return
         flask_request_environ = flask.request.environ
         span_name = get_default_span_name()
-        token = context.attach(
-            extract(flask_request_environ, getter=otel_wsgi.wsgi_getter)
-        )
+
+        token = ctx = span_kind = None
+
+        if trace.get_current_span() is trace.INVALID_SPAN:
+            ctx = extract(flask_request_environ, getter=otel_wsgi.wsgi_getter)
+            token = context.attach(ctx)
+            span_kind = trace.SpanKind.SERVER
+        else:
+            ctx = context.get_current()
+            span_kind = trace.SpanKind.INTERNAL
 
         span = tracer.start_span(
             span_name,
-            kind=trace.SpanKind.SERVER,
+            ctx,
+            kind=span_kind,
             start_time=flask_request_environ.get(_ENVIRON_STARTTIME_KEY),
         )
+
         if request_hook:
             request_hook(span, flask_request_environ)
 
@@ -229,7 +238,9 @@ def _wrapped_teardown_request(excluded_urls=None):
             activation.__exit__(
                 type(exc), exc, getattr(exc, "__traceback__", None)
             )
-        context.detach(flask.request.environ.get(_ENVIRON_TOKEN))
+
+        if flask.request.environ.get(_ENVIRON_TOKEN, None):
+            context.detach(flask.request.environ.get(_ENVIRON_TOKEN))
 
     return _teardown_request
 
