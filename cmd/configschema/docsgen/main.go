@@ -15,14 +15,13 @@
 package main
 
 import (
-	"go.opentelemetry.io/collector/service/defaultcomponents"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema/docsgen/docsgen"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/components"
 )
 
 func main() {
-	cmps, err := defaultcomponents.Components()
+	cmps, err := components.Components()
 	if err != nil {
 		panic(err)
 	}

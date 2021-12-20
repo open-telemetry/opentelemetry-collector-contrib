@@ -19,12 +19,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/service/defaultcomponents"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/correctnesstests"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 )
 
 type correctnessTestCase struct {
@@ -105,7 +103,7 @@ func (tc *correctnessTestCase) waitForAllMetrics() {
 }
 
 func componentFactories(t *testing.T) component.Factories {
-	factories, err := defaultcomponents.Components()
+	factories, err := testbed.Components()
 	require.NoError(t, err)
 	return factories
 }
