@@ -29,7 +29,7 @@ type Config struct {
 	confighttp.HTTPServerSettings `mapstructure:"http"`
 	configgrpc.GRPCServerSettings `mapstructure:"grpc"`
 
-	// Source configures the source for the stratagies file
+	// Source configures the source for the strategies file
 	Source Source `mapstructure:"source"`
 }
 
