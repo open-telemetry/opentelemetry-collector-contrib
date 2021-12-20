@@ -51,7 +51,7 @@ func TestCSVParserBuildFailureInvalidDelimiter(t *testing.T) {
 	cfg.FieldDelimiter = ";;"
 	_, err := cfg.Build(testutil.NewBuildContext(t))
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "Invalid 'delimiter': ';;'")
+	require.Contains(t, err.Error(), "invalid 'delimiter': ';;'")
 }
 
 func TestCSVParserByteFailure(t *testing.T) {
