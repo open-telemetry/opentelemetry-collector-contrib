@@ -6,6 +6,7 @@
 
 - `prometheusremotewriteexporter`: Handling Staleness flag from OTLP (#6679)
 - `datadogexporter`: Add compatibility with ECS Fargate semantic conventions (#6670)
+- `k8s_observer`: discover k8s.node endpoints (#6820)
 
 ## 🛑 Breaking changes 🛑
 

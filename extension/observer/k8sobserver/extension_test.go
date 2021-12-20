@@ -152,62 +152,6 @@ func TestExtensionObserveNodes(t *testing.T) {
 			ExternalIP:          "externalIP",
 			ExternalDNS:         "externalDNS",
 			KubeletEndpointPort: 1234,
-			Metadata: map[string]interface{}{
-				"annotations": map[string]interface{}{
-					"annotation-key": "annotation-value",
-				},
-				"creationTimestamp": nil,
-				"labels": map[string]interface{}{
-					"label-key": "label-value",
-				},
-				"name":      "node1",
-				"namespace": "namespace",
-				"uid":       "uid",
-			},
-			Spec: map[string]interface{}{},
-			Status: map[string]interface{}{
-				"addresses": []interface{}{
-					map[string]interface{}{
-						"address": "localhost",
-						"type":    "Hostname",
-					},
-					map[string]interface{}{
-						"address": "externalDNS",
-						"type":    "ExternalDNS",
-					},
-					map[string]interface{}{
-						"address": "externalIP",
-						"type":    "ExternalIP",
-					},
-					map[string]interface{}{
-						"address": "internalDNS",
-						"type":    "InternalDNS",
-					},
-					map[string]interface{}{
-						"address": "internalIP",
-						"type":    "InternalIP",
-					},
-				},
-				"daemonEndpoints": map[string]interface{}{
-					"kubeletEndpoint": map[string]interface{}{
-						// float64 is a product of json unmarshalling
-						"Port": float64(1234),
-					},
-				},
-				"nodeInfo": map[string]interface{}{
-					"architecture":            "architecture",
-					"bootID":                  "boot-id",
-					"containerRuntimeVersion": "runtime-version",
-					"kernelVersion":           "kernel-version",
-					"kubeProxyVersion":        "kube-proxy-version",
-					"kubeletVersion":          "kubelet-version",
-					"machineID":               "machine-id",
-					"operatingSystem":         "operating-system",
-					"osImage":                 "os-image",
-					"systemUUID":              "system-uuid",
-				},
-				"phase": "Running",
-			},
 		},
 	}, sink.added[0])
 
@@ -234,63 +178,6 @@ func TestExtensionObserveNodes(t *testing.T) {
 			ExternalIP:          "externalIP",
 			ExternalDNS:         "externalDNS",
 			KubeletEndpointPort: 1234,
-			Metadata: map[string]interface{}{
-				"annotations": map[string]interface{}{
-					"annotation-key": "annotation-value",
-				},
-				"creationTimestamp": nil,
-				"labels": map[string]interface{}{
-					"label-key":    "label-value",
-					"node-version": "2",
-				},
-				"name":      "node1",
-				"namespace": "namespace",
-				"uid":       "uid",
-			},
-			Spec: map[string]interface{}{},
-			Status: map[string]interface{}{
-				"addresses": []interface{}{
-					map[string]interface{}{
-						"address": "localhost",
-						"type":    "Hostname",
-					},
-					map[string]interface{}{
-						"address": "externalDNS",
-						"type":    "ExternalDNS",
-					},
-					map[string]interface{}{
-						"address": "externalIP",
-						"type":    "ExternalIP",
-					},
-					map[string]interface{}{
-						"address": "internalDNS",
-						"type":    "InternalDNS",
-					},
-					map[string]interface{}{
-						"address": "internalIP",
-						"type":    "InternalIP",
-					},
-				},
-				"daemonEndpoints": map[string]interface{}{
-					"kubeletEndpoint": map[string]interface{}{
-						// float64 is a product of json unmarshalling
-						"Port": float64(1234),
-					},
-				},
-				"nodeInfo": map[string]interface{}{
-					"architecture":            "architecture",
-					"bootID":                  "boot-id",
-					"containerRuntimeVersion": "runtime-version",
-					"kernelVersion":           "kernel-version",
-					"kubeProxyVersion":        "kube-proxy-version",
-					"kubeletVersion":          "kubelet-version",
-					"machineID":               "machine-id",
-					"operatingSystem":         "operating-system",
-					"osImage":                 "os-image",
-					"systemUUID":              "system-uuid",
-				},
-				"phase": "Running",
-			},
 		},
 	}, sink.removed[0])
 

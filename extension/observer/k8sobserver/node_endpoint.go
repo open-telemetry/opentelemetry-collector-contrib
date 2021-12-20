@@ -15,12 +15,9 @@
 package k8sobserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver"
 
 import (
-	"encoding/json"
 	"fmt"
 
-	"go.opentelemetry.io/collector/config"
 	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
@@ -56,32 +53,6 @@ func convertNodeToEndpoint(idNamespace string, node *v1.Node) observer.Endpoint 
 		}
 	}
 
-	// These fields are cleared to prevent excessive endpoint churn/receiver cycling
-	node.ResourceVersion = ""
-	for i := range node.Status.Conditions {
-		node.Status.Conditions[i].LastHeartbeatTime = metav1.Time{}
-		node.Status.Conditions[i].LastTransitionTime = metav1.Time{}
-	}
-
-	var metadata, spec, status map[string]interface{}
-	for _, item := range []struct {
-		src interface{}
-		tgt *map[string]interface{}
-	}{
-		{node.ObjectMeta, &metadata}, {node.Spec, &spec}, {node.Status, &status},
-	} {
-		var jsonMap map[string]interface{}
-		if marshaled, err := json.Marshal(item.src); err == nil {
-			if err := json.Unmarshal(marshaled, &jsonMap); err == nil {
-				configMap := config.NewMap()
-				for k, v := range jsonMap {
-					configMap.Set(k, v)
-				}
-				*(item.tgt) = configMap.ToStringMap()
-			}
-		}
-	}
-
 	nodeDetails := observer.K8sNode{
 		UID:                 string(node.UID),
 		Annotations:         node.Annotations,
@@ -93,9 +64,6 @@ func convertNodeToEndpoint(idNamespace string, node *v1.Node) observer.Endpoint 
 		ExternalIP:          externalIP,
 		ExternalDNS:         externalDNS,
 		KubeletEndpointPort: uint16(node.Status.DaemonEndpoints.KubeletEndpoint.Port),
-		Metadata:            metadata,
-		Spec:                spec,
-		Status:              status,
 	}
 
 	return observer.Endpoint{
