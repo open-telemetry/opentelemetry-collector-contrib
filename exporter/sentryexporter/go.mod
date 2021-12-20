@@ -6,12 +6,12 @@ require (
 	github.com/getsentry/sentry-go v0.11.0
 	github.com/google/go-cmp v0.5.6
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.41.0
-	go.opentelemetry.io/collector/model v0.41.0
+	go.opentelemetry.io/collector v0.41.1-0.20211218195202-81ab024486f0
+	go.opentelemetry.io/collector/model v0.41.1-0.20211218195202-81ab024486f0
 )
 
 require (
-	github.com/benbjohnson/clock v1.2.0 // indirect
+	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect

@@ -12,8 +12,8 @@ require (
 	github.com/prometheus/common v0.32.1
 	github.com/prometheus/prometheus v1.8.2-0.20210621150501-ff58416a0b02
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.41.0
-	go.opentelemetry.io/collector/model v0.41.0
+	go.opentelemetry.io/collector v0.41.1-0.20211218195202-81ab024486f0
+	go.opentelemetry.io/collector/model v0.41.1-0.20211218195202-81ab024486f0
 	go.uber.org/zap v1.19.1
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/yaml.v2 v2.4.0
@@ -67,6 +67,7 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
+	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/knadh/koanf v1.3.3 // indirect
 	github.com/linode/linodego v0.28.5 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
@@ -102,8 +103,9 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.28.0 // indirect
-	go.opentelemetry.io/contrib/zpages v0.27.0 // indirect
+	go.opentelemetry.io/contrib/zpages v0.28.0 // indirect
 	go.opentelemetry.io/otel v1.3.0 // indirect
+	go.opentelemetry.io/otel/exporters/prometheus v0.26.0 // indirect
 	go.opentelemetry.io/otel/internal/metric v0.26.0 // indirect
 	go.opentelemetry.io/otel/metric v0.26.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.3.0 // indirect
@@ -153,7 +155,6 @@ require (
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
-	go.opentelemetry.io/otel/exporters/prometheus v0.26.0 // indirect
 	golang.org/x/crypto v0.0.0-20210915214749-c084706c2272 // indirect
 	google.golang.org/api v0.63.0 // indirect
 	k8s.io/client-go v0.23.1 // indirect

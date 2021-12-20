@@ -7,8 +7,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter v0.41.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.41.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.41.0
-	go.opentelemetry.io/collector/model v0.41.0
+	go.opentelemetry.io/collector v0.41.1-0.20211218195202-81ab024486f0
+	go.opentelemetry.io/collector/model v0.41.1-0.20211218195202-81ab024486f0
 	go.uber.org/zap v1.19.1
 	google.golang.org/grpc v1.43.0
 )
@@ -17,7 +17,6 @@ require github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaege
 
 require (
 	github.com/apache/thrift v0.15.0 // indirect
-	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.2 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
@@ -67,7 +66,6 @@ require (
 	go.opentelemetry.io/otel v1.3.0 // indirect
 	go.opentelemetry.io/otel/internal/metric v0.26.0 // indirect
 	go.opentelemetry.io/otel/metric v0.26.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.3.0 // indirect
 	go.opentelemetry.io/otel/trace v1.3.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect

@@ -7,12 +7,12 @@ require (
 	github.com/go-playground/universal-translator v0.18.0
 	github.com/go-playground/validator/v10 v10.9.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.41.0
-	go.opentelemetry.io/collector/model v0.41.0
+	go.opentelemetry.io/collector v0.41.1-0.20211218195202-81ab024486f0
+	go.opentelemetry.io/collector/model v0.41.1-0.20211218195202-81ab024486f0
 )
 
 require (
-	github.com/benbjohnson/clock v1.2.0 // indirect
+	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/knadh/koanf v1.3.3 // indirect

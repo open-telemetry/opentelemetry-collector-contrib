@@ -6,8 +6,8 @@ require (
 	github.com/aliyun/aliyun-log-go-sdk v0.1.27
 	github.com/gogo/protobuf v1.3.2
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.41.0
-	go.opentelemetry.io/collector/model v0.41.0
+	go.opentelemetry.io/collector v0.41.1-0.20211218195202-81ab024486f0
+	go.opentelemetry.io/collector/model v0.41.1-0.20211218195202-81ab024486f0
 	go.uber.org/zap v1.19.1
 )
 

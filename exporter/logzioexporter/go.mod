@@ -7,8 +7,8 @@ require (
 	github.com/jaegertracing/jaeger v1.29.0
 	github.com/logzio/jaeger-logzio v1.0.4
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.41.0
-	go.opentelemetry.io/collector/model v0.41.0
+	go.opentelemetry.io/collector v0.41.1-0.20211218195202-81ab024486f0
+	go.opentelemetry.io/collector/model v0.41.1-0.20211218195202-81ab024486f0
 	go.uber.org/zap v1.19.1
 )
 
