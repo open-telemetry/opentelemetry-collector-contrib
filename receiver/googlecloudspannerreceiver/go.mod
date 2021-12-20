@@ -19,7 +19,7 @@ require (
 )
 
 require (
-	github.com/ReneKroon/ttlcache/v2 v2.10.0
+	github.com/ReneKroon/ttlcache/v2 v2.11.0
 	github.com/mitchellh/hashstructure v1.1.0
 )
 
