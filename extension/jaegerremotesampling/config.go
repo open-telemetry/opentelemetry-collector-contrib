@@ -15,6 +15,8 @@
 package jaegerremotesampling // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling"
 
 import (
+	"time"
+
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -26,10 +28,20 @@ type Config struct {
 	config.ExtensionSettings      `mapstructure:",squash"`
 	confighttp.HTTPServerSettings `mapstructure:"http"`
 	configgrpc.GRPCServerSettings `mapstructure:"grpc"`
-	configgrpc.GRPCClientSettings `mapstructure:"remote"`
 
-	// StrategyFile defines the location of the strategy file to serve. Cannot be set when `Endpoint` is already set.
-	StrategyFile string `mapstructure:"strategy_file"`
+	// Source configures the source for the stratagies file
+	Source Source `mapstructure:"source"`
+}
+
+type Source struct {
+	// Remote defines the remote location for the file
+	Remote configgrpc.GRPCClientSettings `mapstructure:"remote"`
+
+	// File specifies a local file as the strategies source
+	File string `mapstructure:"file"`
+
+	// ReloadInterval determines the periodicity to refresh the strategies
+	ReloadInterval time.Duration `mapstructure:"reload_interval"`
 }
 
 var _ config.Extension = (*Config)(nil)

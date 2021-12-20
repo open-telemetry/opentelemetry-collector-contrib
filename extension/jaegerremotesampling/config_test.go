@@ -45,8 +45,10 @@ func TestLoadConfig(t *testing.T) {
 			ExtensionSettings:  config.NewExtensionSettings(config.NewComponentID(typeStr)),
 			HTTPServerSettings: confighttp.HTTPServerSettings{Endpoint: ":5778"},
 			GRPCServerSettings: configgrpc.GRPCServerSettings{NetAddr: confignet.NetAddr{Endpoint: ":14250"}},
-			GRPCClientSettings: configgrpc.GRPCClientSettings{
-				Endpoint: "jaeger-collector:14250",
+			Source: Source{
+				Remote: configgrpc.GRPCClientSettings{
+					Endpoint: "jaeger-collector:14250",
+				},
 			},
 		},
 		ext0)
@@ -57,10 +59,11 @@ func TestLoadConfig(t *testing.T) {
 			ExtensionSettings:  config.NewExtensionSettings(config.NewComponentIDWithName(typeStr, "1")),
 			HTTPServerSettings: confighttp.HTTPServerSettings{Endpoint: ":5778"},
 			GRPCServerSettings: configgrpc.GRPCServerSettings{NetAddr: confignet.NetAddr{Endpoint: ":14250"}},
-			StrategyFile:       "/etc/otel/sampling_strategies.json",
+			Source: Source{
+				File: "/etc/otel/sampling_strategies.json",
+			},
 		},
 		ext1)
-
 	assert.Equal(t, 1, len(cfg.Service.Extensions))
 	assert.Equal(t, config.NewComponentIDWithName(typeStr, "1"), cfg.Service.Extensions[0])
 }
