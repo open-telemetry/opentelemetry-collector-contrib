@@ -6,12 +6,13 @@ require (
 	github.com/hashicorp/go-hclog v1.0.0
 	github.com/jaegertracing/jaeger v1.29.0
 	github.com/logzio/jaeger-logzio v1.0.4
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.41.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.41.1-0.20211210184707-4dcb3388a168
-	go.opentelemetry.io/collector/model v0.41.1-0.20211210184707-4dcb3388a168
+	go.opentelemetry.io/collector v0.41.0
+	go.opentelemetry.io/collector/model v0.41.0
 	go.uber.org/zap v1.19.1
 )
+
+require github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.0.0-00010101000000-000000000000
 
 require (
 	github.com/apache/thrift v0.15.0 // indirect
