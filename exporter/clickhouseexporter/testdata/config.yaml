@@ -7,6 +7,7 @@ processors:
 exporters:
   clickhouse:
     address: tcp://127.0.0.1:9000
+    database: default
   clickhouse/customname:
     address: tcp://127.0.0.1:9000
     database: default
@@ -14,6 +15,12 @@ exporters:
     password: password
     ca_file: ca_file
     ttl: 3
+    timeout: 5s
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
 
 service:
   pipelines:

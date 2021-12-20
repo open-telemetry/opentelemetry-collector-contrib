@@ -16,12 +16,11 @@ package clickhouseexporter
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest"
 )
 
 func TestExporter_New(t *testing.T) {
@@ -36,7 +35,7 @@ func TestExporter_New(t *testing.T) {
 		return func(t *testing.T, exporter *clickhouseExporter, err error) {
 			require.Nil(t, exporter)
 			require.NotNil(t, err)
-			if !errors.Is(err, want) {
+			if err.Error() != want.Error() {
 				t.Fatalf("Expected error '%v', but got '%v'", want, err)
 			}
 		}
@@ -50,8 +49,9 @@ func TestExporter_New(t *testing.T) {
 		"no address": {
 			config: withDefaultConfig(func(cfg *Config) {
 				cfg.Address = ""
+				cfg.Database = ""
 			}),
-			want: failWith(errConfigNoAddress),
+			want: failWith(multierr.Append(errConfigNoAddress, errConfigNoDatabase)),
 		},
 		"no database": {
 			config: withDefaultConfig(func(cfg *Config) {
@@ -61,8 +61,10 @@ func TestExporter_New(t *testing.T) {
 			want: failWith(errConfigNoDatabase),
 		},
 		"valid": {
-			config: withDefaultConfig(),
-			want:   success,
+			config: withDefaultConfig(func(cfg *Config) {
+				cfg.Address = "tcp://127.0.0.1:9000"
+			}),
+			want: success,
 		},
 	}
 
@@ -77,26 +79,5 @@ func TestExporter_New(t *testing.T) {
 
 			test.want(t, exporter, err)
 		})
-	}
-}
-
-func TestExporter_PushEvent(t *testing.T) {
-}
-
-func newTestExporter(t *testing.T, address string, fns ...func(*Config)) *clickhouseExporter {
-	exporter, err := newExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(address))
-	require.NoError(t, err)
-
-	t.Cleanup(func() { exporter.Shutdown(context.TODO()) })
-	return exporter
-}
-
-func withTestExporterConfig(fns ...func(*Config)) func(string) *Config {
-	return func(url string) *Config {
-		var configMods []func(*Config)
-		configMods = append(configMods, func(cfg *Config) {
-		})
-		configMods = append(configMods, fns...)
-		return withDefaultConfig(configMods...)
 	}
 }

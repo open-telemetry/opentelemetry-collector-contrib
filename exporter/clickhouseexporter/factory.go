@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 
-	_ "github.com/ClickHouse/clickhouse-go"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -41,20 +40,21 @@ func NewFactory() component.ExporterFactory {
 func createDefaultConfig() config.Exporter {
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		Address:          "tcp://127.0.0.1:9000",
+		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
+		RetrySettings:    exporterhelper.DefaultRetrySettings(),
 		Database:         "default",
 	}
 }
 
 // createLogsExporter creates a new exporter for logs.
-//
-// Logs are directly indexed into clickhouse.
+// Logs are directly insert into clickhouse.
 func createLogsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.LogsExporter, error) {
-	exporter, err := newExporter(set.Logger, cfg.(*Config))
+	c := cfg.(*Config)
+	exporter, err := newExporter(set.Logger, c)
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure clickhouse logs exporter: %w", err)
 	}
@@ -64,5 +64,7 @@ func createLogsExporter(
 		set,
 		exporter.pushLogsData,
 		exporterhelper.WithShutdown(exporter.Shutdown),
+		exporterhelper.WithTimeout(c.TimeoutSettings),
+		exporterhelper.WithRetry(c.RetrySettings),
 	)
 }

@@ -17,12 +17,14 @@ package clickhouseexporter
 import (
 	"path"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -45,12 +47,21 @@ func TestLoadConfig(t *testing.T) {
 	r1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "customname")].(*Config)
 	assert.Equal(t, r1, &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "customname")),
-		Address:          "tcp://127.0.0.1:9000",
-		Database:         "default",
-		Username:         "username",
-		Password:         "password",
-		CaFile:           "ca_file",
-		TTLDays:          3,
+		TimeoutSettings: exporterhelper.TimeoutSettings{
+			Timeout: 5 * time.Second,
+		},
+		RetrySettings: exporterhelper.RetrySettings{
+			Enabled:         true,
+			InitialInterval: 5 * time.Second,
+			MaxInterval:     30 * time.Second,
+			MaxElapsedTime:  5 * time.Minute,
+		},
+		Address:  "tcp://127.0.0.1:9000",
+		Database: "default",
+		Username: "username",
+		Password: "password",
+		CaFile:   "ca_file",
+		TTLDays:  3,
 	})
 }
 

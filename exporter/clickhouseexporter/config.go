@@ -18,23 +18,27 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.uber.org/multierr"
 )
 
 // Config defines configuration for Elastic exporter.
 type Config struct {
-	config.ExporterSettings `mapstructure:",squash"`
+	config.ExporterSettings        `mapstructure:",squash"`
+	exporterhelper.TimeoutSettings `mapstructure:",squash"`
+	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
 
 	// Address is the ClickHouse server address.
 	Address string `mapstructure:"address"`
 	// Database is the database name write data.
 	Database string `mapstructure:"database"`
-	// Username is the username connect to ClickHouse.
+	// Username is the username to connect ClickHouse.
 	Username string `mapstructure:"username"`
-	// Password is the password connect to ClickHouse.
+	// Password is the password to connect ClickHouse.
 	Password string `mapstructure:"password"`
-	// CaFile is the ca_file connect to ClickHouse.
+	// CaFile is the cert file path to connect ClickHouse.
 	CaFile string `mapstructure:"ca_file"`
-	// TTLDays is the data ttl days.
+	// TTLDays is The data time-to-live in days, 0 means no ttl.
 	TTLDays uint `mapstructure:"ttl"`
 }
 
@@ -44,12 +48,12 @@ var (
 )
 
 // Validate validates the clickhouse server configuration.
-func (cfg *Config) Validate() error {
+func (cfg *Config) Validate() (err error) {
 	if cfg.Address == "" {
-		return errConfigNoAddress
+		err = multierr.Append(err, errConfigNoAddress)
 	}
 	if cfg.Database == "" {
-		return errConfigNoDatabase
+		err = multierr.Append(err, errConfigNoDatabase)
 	}
-	return nil
+	return err
 }
