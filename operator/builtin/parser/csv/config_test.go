@@ -33,6 +33,16 @@ func TestJSONParserConfig(t *testing.T) {
 			}(),
 		},
 		{
+			Name: "lazy_quotes",
+			Expect: func() *CSVParserConfig {
+				p := defaultCfg()
+				p.Header = "id,severity,message"
+				p.LazyQuotes = true
+				p.ParseFrom = entry.NewBodyField("message")
+				return p
+			}(),
+		},
+		{
 			Name: "delimiter",
 			Expect: func() *CSVParserConfig {
 				p := defaultCfg()
