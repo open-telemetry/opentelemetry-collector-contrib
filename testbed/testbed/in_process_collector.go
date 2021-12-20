@@ -17,7 +17,6 @@ package testbed // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/shirou/gopsutil/v3/process"
@@ -55,7 +54,7 @@ func (ipp *inProcessCollector) Start(args StartParams) error {
 	settings := service.CollectorSettings{
 		BuildInfo:         component.NewDefaultBuildInfo(),
 		Factories:         ipp.factories,
-		ConfigMapProvider: configmapprovider.NewInMemory(strings.NewReader(ipp.configStr)),
+		ConfigMapProvider: configmapprovider.NewFile(ipp.configStr),
 	}
 	var err error
 	ipp.svc, err = service.New(settings)
