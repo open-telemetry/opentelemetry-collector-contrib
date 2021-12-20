@@ -190,6 +190,21 @@ func TestParserCSV(t *testing.T) {
 				"position": "agent",
 			},
 		},
+		{
+			"parse-with-lazy-quotes",
+			func(p *CSVParserConfig) {
+				p.Header = "name,age,height,number"
+				p.FieldDelimiter = ","
+				p.LazyQuotes = true
+			},
+			`stanza "log parser",1,6ft,5`,
+			map[string]interface{}{
+				"name":   `stanza "log parser"`,
+				"age":    "1",
+				"height": "6ft",
+				"number": "5",
+			},
+		},
 	}
 
 	for _, tc := range cases {
@@ -218,7 +233,7 @@ func TestParserCSV(t *testing.T) {
 	}
 }
 
-func TestParserCSVMultipleBodys(t *testing.T) {
+func TestParserCSVMultipleBodies(t *testing.T) {
 	t.Run("basic", func(t *testing.T) {
 		cfg := NewCSVParserConfig("test")
 		cfg.OutputIDs = []string{"fake"}

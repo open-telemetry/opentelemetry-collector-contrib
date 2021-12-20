@@ -41,6 +41,7 @@ type CSVParserConfig struct {
 
 	Header         string `json:"header" yaml:"header"`
 	FieldDelimiter string `json:"delimiter,omitempty" yaml:"delimiter,omitempty"`
+	LazyQuotes     bool   `json:"lazy_quotes,omitempty" yaml:"lazy_quotes,omitempty"`
 }
 
 // Build will build a csv parser operator.
@@ -76,6 +77,7 @@ func (c CSVParserConfig) Build(context operator.BuildContext) ([]operator.Operat
 		header:         strings.Split(c.Header, delimiterStr),
 		fieldDelimiter: fieldDelimiter,
 		numFields:      numFields,
+		lazyQuotes:     c.LazyQuotes,
 	}
 
 	return []operator.Operator{csvParser}, nil
@@ -87,6 +89,7 @@ type CSVParser struct {
 	header         []string
 	fieldDelimiter rune
 	numFields      int
+	lazyQuotes     bool
 }
 
 // Process will parse an entry for csv.
@@ -107,6 +110,7 @@ func (r *CSVParser) parse(value interface{}) (interface{}, error) {
 	reader := csvparser.NewReader(strings.NewReader(csvLine))
 	reader.Comma = r.fieldDelimiter
 	reader.FieldsPerRecord = r.numFields
+	reader.LazyQuotes = r.lazyQuotes
 	parsedValues := make(map[string]interface{})
 
 	record, err := reader.Read()

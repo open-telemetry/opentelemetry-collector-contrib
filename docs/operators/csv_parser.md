@@ -10,6 +10,7 @@ The `csv_parser` operator parses the string-type field selected by `parse_from` 
 | `output`      | Next in pipeline | The connected operator(s) that will receive all outbound entries. |
 | `header`      | required         | A string of delimited field names. The values in the delimited header will be used as keys. |
 | `delimiter`   | `,`              | A character that will be used as a delimiter. Values `\r` and `\n` cannot be used as a delimiter. |
+| `lazy_quotes` | `false`          | If true, a quote may appear in an unquoted field and a non-doubled quote may appear in a quoted field. |
 | `parse_from`  | $body            | The [field](/docs/types/field.md) from which the value will be parsed. |
 | `parse_to`    | $body            | The [field](/docs/types/field.md) to which the value will be parsed. |
 | `preserve_to` |                  | Preserves the unparsed value at the specified [field](/docs/types/field.md). |
