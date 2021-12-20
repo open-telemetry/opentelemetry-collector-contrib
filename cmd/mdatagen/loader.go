@@ -44,6 +44,10 @@ func (mn attributeName) Render() (string, error) {
 	return formatIdentifier(string(mn), true)
 }
 
+func (mn attributeName) RenderUnexported() (string, error) {
+	return formatIdentifier(string(mn), false)
+}
+
 type metric struct {
 	// Enabled defines whether the metric is enabled by default.
 	Enabled bool `yaml:"enabled"`
