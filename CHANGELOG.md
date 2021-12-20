@@ -5,6 +5,8 @@
 ## 💡 Enhancements 💡
 
 - `prometheusremotewriteexporter`: Handling Staleness flag from OTLP (#6679)
+- `mysqlreceiver`: Add Integration test (#6916)
+
 
 ## 🛑 Breaking changes 🛑
 
