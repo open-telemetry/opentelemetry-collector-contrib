@@ -27,6 +27,7 @@ attributes:
 
 metrics:
   apache.uptime:
+    enabled: true
     description: The amount of time that the server has been running in seconds.
     unit: s
     sum:
@@ -35,6 +36,7 @@ metrics:
       aggregation: cumulative
     attributes: [ server_name ]
   apache.current_connections:
+    enabled: true
     description: The number of active connections currently attached to the HTTP server.
     unit: connections
     sum:
@@ -43,6 +45,7 @@ metrics:
       aggregation: cumulative
     attributes: [ server_name ]
   apache.workers:
+    enabled: true
     description: The number of workers currently attached to the HTTP server.
     unit: connections
     sum:
@@ -51,6 +54,7 @@ metrics:
       aggregation: cumulative
     attributes: [ server_name, workers_state]
   apache.requests:
+    enabled: true
     description: The number of requests serviced by the HTTP server per second.
     unit: 1
     sum:
@@ -59,6 +63,7 @@ metrics:
       aggregation: cumulative
     attributes: [ server_name ]
   apache.traffic:
+    enabled: true
     description: Total HTTP server traffic.
     unit: By
     sum:
@@ -67,6 +72,7 @@ metrics:
       aggregation: cumulative
     attributes: [ server_name ]
   apache.scoreboard:
+    enabled: true
     description: The number of connections in each state.
     extended_documentation: >
       The apache scoreboard is an encoded representation of the state of all the server's workers.
