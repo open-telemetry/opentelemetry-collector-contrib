@@ -11,36 +11,42 @@ attributes:
 metrics:
 #  brokers scraper
   kafka.brokers:
+    enabled: true
     description: Number of brokers in the cluster.
     unit: "{brokers}"
     gauge:
       value_type: int
 #  topics scraper
   kafka.topic.partitions:
+    enabled: true
     description: Number of partitions in topic.
     unit: "{partitions}"
     gauge:
       value_type: int
     attributes: [topic]
   kafka.partition.current_offset:
+    enabled: true
     description: Current offset of partition of topic.
     unit: 1
     gauge:
       value_type: int
     attributes: [topic, partition]
   kafka.partition.oldest_offset:
+    enabled: true
     description: Oldest offset of partition of topic
     unit: 1
     gauge:
       value_type: int
     attributes: [topic, partition]
   kafka.partition.replicas:
+    enabled: true
     description: Number of replicas for partition of topic
     unit: "{replicas}"
     gauge:
       value_type: int
     attributes: [topic, partition]
   kafka.partition.replicas_in_sync:
+    enabled: true
     description: Number of synchronized replicas of partition
     unit: "{replicas}"
     gauge:
@@ -48,30 +54,35 @@ metrics:
     attributes: [topic, partition]
 #  consumers scraper
   kafka.consumer_group.members:
+    enabled: true
     description: Count of members in the consumer group
     unit: "{members}"
     gauge:
       value_type: int
     attributes: [group]
   kafka.consumer_group.offset:
+    enabled: true
     description: Current offset of the consumer group at partition of topic
     unit: 1
     gauge:
       value_type: int
     attributes: [group, topic, partition]
   kafka.consumer_group.offset_sum:
+    enabled: true
     description: Sum of consumer group offset across partitions of topic
     unit: 1
     gauge:
       value_type: int
     attributes: [group, topic]
   kafka.consumer_group.lag:
+    enabled: true
     description: Current approximate lag of consumer group at partition of topic
     unit: 1
     gauge:
       value_type: int
     attributes: [group, topic, partition]
   kafka.consumer_group.lag_sum:
+    enabled: true
     description: Current approximate sum of consumer group lag across all partitions of topic
     unit: 1
     gauge:
