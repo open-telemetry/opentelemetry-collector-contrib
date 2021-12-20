@@ -16,6 +16,7 @@ package filterspan // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"fmt"
+	"regexp"
 
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
@@ -105,6 +106,23 @@ func SkipSpan(include Matcher, exclude Matcher, span pdata.Span, resource pdata.
 
 	return false
 }
+
+// SkipSpanWithoutAttrs firstly skips spans without the provided attributes
+// then calls SkipSpan and returns it`s value.
+func SkipSpanWithoutAttrs(attrs []string, include Matcher, exclude Matcher, span pdata.Span,
+	resource pdata.Resource, library pdata.InstrumentationLibrary) bool {
+
+	for _, attr := range attrs {
+		value, found := span.Attributes().Get(attr)
+		if !found || !notBlankRe.MatchString(value.StringVal()) {
+			return true
+		}
+	}
+
+	return SkipSpan(include, exclude, span, resource, library)
+}
+
+var notBlankRe = regexp.MustCompile(`[^\s]+`)
 
 // MatchSpan matches a span and service to a set of properties.
 // see filterconfig.MatchProperties for more details

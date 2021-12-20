@@ -70,9 +70,11 @@ func createTracesProcessor(
 	if err != nil {
 		return nil, err
 	}
+	tcsSp := newTCSSpanProcessor(sp)
+
 	return processorhelper.NewTracesProcessor(
 		cfg,
 		nextConsumer,
-		sp.processTraces,
+		tcsSp.processTraces,
 		processorhelper.WithCapabilities(processorCapabilities))
 }
