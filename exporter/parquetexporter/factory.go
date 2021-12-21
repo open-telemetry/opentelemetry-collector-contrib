@@ -32,7 +32,7 @@ type Config struct {
 	Path string
 }
 
-// NewFactory creates a factory for OTLP exporter.
+// NewFactory creates a factory for the Parquet exporter.
 func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		typeStr,
@@ -57,9 +57,9 @@ func createTracesExporter(
 	return exporterhelper.NewTracesExporter(
 		cfg,
 		set,
-		fe.ConsumeTraces,
-		exporterhelper.WithStart(fe.Start),
-		exporterhelper.WithShutdown(fe.Shutdown),
+		fe.consumeTraces,
+		exporterhelper.WithStart(fe.start),
+		exporterhelper.WithShutdown(fe.shutdown),
 	)
 }
 
@@ -72,9 +72,9 @@ func createMetricsExporter(
 	return exporterhelper.NewMetricsExporter(
 		cfg,
 		set,
-		fe.ConsumeMetrics,
-		exporterhelper.WithStart(fe.Start),
-		exporterhelper.WithShutdown(fe.Shutdown),
+		fe.consumeMetrics,
+		exporterhelper.WithStart(fe.start),
+		exporterhelper.WithShutdown(fe.shutdown),
 	)
 }
 
@@ -87,8 +87,8 @@ func createLogsExporter(
 	return exporterhelper.NewLogsExporter(
 		cfg,
 		set,
-		fe.ConsumeLogs,
-		exporterhelper.WithStart(fe.Start),
-		exporterhelper.WithShutdown(fe.Shutdown),
+		fe.consumeLogs,
+		exporterhelper.WithStart(fe.start),
+		exporterhelper.WithShutdown(fe.shutdown),
 	)
 }

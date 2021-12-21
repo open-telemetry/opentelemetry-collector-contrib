@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package parquetexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parquetexporter"
+
 import (
 	"context"
 
@@ -24,22 +25,22 @@ type parquetExporter struct {
 	path string
 }
 
-func (e parquetExporter) Start(ctx context.Context, host component.Host) error {
+func (e parquetExporter) start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-func (e parquetExporter) Shutdown(ctx context.Context) error {
+func (e parquetExporter) shutdown(ctx context.Context) error {
 	return nil
 }
 
-func (e parquetExporter) ConsumeMetrics(ctx context.Context, ld pdata.Metrics) error {
+func (e parquetExporter) consumeMetrics(ctx context.Context, ld pdata.Metrics) error {
 	return nil
 }
 
-func (e parquetExporter) ConsumeTraces(ctx context.Context, ld pdata.Traces) error {
+func (e parquetExporter) consumeTraces(ctx context.Context, ld pdata.Traces) error {
 	return nil
 }
 
-func (e parquetExporter) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
+func (e parquetExporter) consumeLogs(ctx context.Context, ld pdata.Logs) error {
 	return nil
 }
