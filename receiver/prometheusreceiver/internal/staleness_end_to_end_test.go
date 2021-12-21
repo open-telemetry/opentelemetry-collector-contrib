@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -138,6 +139,11 @@ service:
       processors: [batch]
       exporters: [prometheusremotewrite]`, serverURL.Host, prweServer.URL)
 
+	confFile, err := ioutil.TempFile(os.TempDir(), "conf-")
+	require.Nil(t, err)
+	defer os.Remove(confFile.Name())
+	_, err = confFile.Write([]byte(config))
+	require.Nil(t, err)
 	// 4. Run the OpenTelemetry Collector.
 	receivers, err := component.MakeReceiverFactoryMap(prometheusreceiver.NewFactory())
 	require.Nil(t, err)
@@ -154,7 +160,7 @@ service:
 
 	appSettings := service.CollectorSettings{
 		Factories:         factories,
-		ConfigMapProvider: configmapprovider.NewInMemory(strings.NewReader(config)),
+		ConfigMapProvider: configmapprovider.NewFile(confFile.Name()),
 		BuildInfo: component.BuildInfo{
 			Command:     "otelcol",
 			Description: "OpenTelemetry Collector",

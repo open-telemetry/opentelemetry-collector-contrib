@@ -17,7 +17,8 @@ package testbed // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"context"
 	"fmt"
-	"strings"
+	"io/ioutil"
+	"os"
 	"time"
 
 	"github.com/shirou/gopsutil/v3/process"
@@ -29,11 +30,12 @@ import (
 // inProcessCollector implements the OtelcolRunner interfaces running a single otelcol as a go routine within the
 // same process as the test executor.
 type inProcessCollector struct {
-	factories component.Factories
-	configStr string
-	svc       *service.Collector
-	appDone   chan struct{}
-	stopped   bool
+	factories  component.Factories
+	configStr  string
+	svc        *service.Collector
+	appDone    chan struct{}
+	stopped    bool
+	configFile string
 }
 
 // NewInProcessCollector creates a new inProcessCollector using the supplied component factories.
@@ -52,12 +54,25 @@ func (ipp *inProcessCollector) PrepareConfig(configStr string) (configCleanup fu
 }
 
 func (ipp *inProcessCollector) Start(args StartParams) error {
+	var err error
+
+	confFile, err := ioutil.TempFile(os.TempDir(), "conf-")
+	if err != nil {
+		return err
+	}
+
+	if _, err := confFile.Write([]byte(ipp.configStr)); err != nil {
+		os.Remove(confFile.Name())
+		return err
+	}
+	ipp.configFile = confFile.Name()
+
 	settings := service.CollectorSettings{
 		BuildInfo:         component.NewDefaultBuildInfo(),
 		Factories:         ipp.factories,
-		ConfigMapProvider: configmapprovider.NewInMemory(strings.NewReader(ipp.configStr)),
+		ConfigMapProvider: configmapprovider.NewFile(ipp.configFile),
 	}
-	var err error
+
 	ipp.svc, err = service.New(settings)
 	if err != nil {
 		return err
@@ -87,6 +102,7 @@ func (ipp *inProcessCollector) Stop() (stopped bool, err error) {
 	if !ipp.stopped {
 		ipp.stopped = true
 		ipp.svc.Shutdown()
+		os.Remove(ipp.configFile)
 	}
 	<-ipp.appDone
 	stopped = ipp.stopped
