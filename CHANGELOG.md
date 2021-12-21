@@ -52,6 +52,7 @@
 - `resourcedetectionprocessor`: Update `os.type` attribute values according to semantic conventions (#7544)
 
 ## 🚀 New components 🚀
+- `clickhouse` exporter: Add ClickHouse Exporter (#6907)
 
 ## 🧰 Bug fixes 🧰
 
