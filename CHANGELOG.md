@@ -14,6 +14,8 @@
 
 ## 🚀 New components 🚀
 
+- `ecs_task_observer`: Discover running containers in AWS ECS tasks (#6894)
+
 ## 🧰 Bug fixes 🧰
 
 ## 💡 Enhancements 💡
