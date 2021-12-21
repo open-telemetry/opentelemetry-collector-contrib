@@ -386,9 +386,19 @@ func (t *Translator) MapMetrics(ctx context.Context, md pdata.Metrics, consumer 
 			}
 		}
 
-		// Track hosts if the consumer is a HostConsumer.
-		if c, ok := consumer.(HostConsumer); ok {
-			c.ConsumeHost(host)
+		if host != "" {
+			// Track hosts if the consumer is a HostConsumer.
+			if c, ok := consumer.(HostConsumer); ok {
+				c.ConsumeHost(host)
+			}
+		} else {
+			// Track task ARN if the consumer is a TagsConsumer.
+			if c, ok := consumer.(TagsConsumer); ok {
+				tags := attributes.RunningTagsFromAttributes(rm.Resource().Attributes())
+				for _, tag := range tags {
+					c.ConsumeTag(tag)
+				}
+			}
 		}
 
 		ilms := rm.InstrumentationLibraryMetrics()
