@@ -33,7 +33,7 @@ func createDefaultConfig() config.Receiver {
 			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			CollectionInterval: 60 * time.Second,
 		},
-		Timeout: 10 * time.Second,
+		Timeout: 1 * time.Minute,
 		TCPAddr: confignet.TCPAddr{
 			Endpoint: "localhost:27017",
 		},

@@ -31,7 +31,7 @@ receivers:
     endpoint: localhost:27017
     username: otel
     password: $MONGODB_PASSWORD
-    collection_interval: 10s
+    collection_interval: 60s
     tls:
       insecure: true
       insecure_skip_verify: true
