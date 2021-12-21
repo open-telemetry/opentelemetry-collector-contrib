@@ -24,5 +24,5 @@ import (
 
 const systemSpecificMetricsLen = 0
 
-func appendSystemSpecificMetrics(metrics pdata.MetricSlice, startTime, now pdata.Timestamp, ioCounters map[string]disk.IOCountersStat) {
+func (s *scraper) recordSystemSpecificDataPoints(now pdata.Timestamp, ioCounters map[string]disk.IOCountersStat) {
 }

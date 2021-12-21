@@ -32,52 +32,59 @@ attributes:
 
 metrics:
   memcached.bytes:
+    enabled: true
     description: Current number of bytes used by this server to store items.
     unit: By
     gauge:
       value_type: int
     attributes: []
   memcached.connections.current:
+    enabled: true
     description: The current number of open connections.
-    unit: connections
+    unit: "{connections}"
     sum:
       value_type: int
       monotonic: false
       aggregation: cumulative
     attributes: []
   memcached.connections.total:
+    enabled: true
     description: Total number of connections opened since the server started running.
-    unit: connections
+    unit: "{connections}"
     sum:
       value_type: int
       monotonic: true
       aggregation: cumulative
     attributes: []
   memcached.commands:
+    enabled: true
     description: Commands executed.
-    unit: 1
+    unit: "{commands}"
     sum:
       value_type: int
       monotonic: true
       aggregation: cumulative
     attributes: [command]
   memcached.current_items:
+    enabled: true
     description: Number of items currently stored in the cache.
-    unit: 1
+    unit: "{items}"
     sum:
-      value_type: double
+      value_type: int
       monotonic: false
       aggregation: cumulative
     attributes: []
   memcached.evictions:
+    enabled: true
     description: Cache item evictions.
-    unit: 1
+    unit: "{evictions}"
     sum:
       value_type: int
       monotonic: true
       aggregation: cumulative
     attributes: []
   memcached.network:
+    enabled: true
     description: Bytes transferred over the network.
     unit: by
     sum:
@@ -86,32 +93,36 @@ metrics:
       aggregation: cumulative
     attributes: [direction]
   memcached.operations:
-    description:  Operation counts. 
-    unit: 1
+    enabled: true
+    description:  Operation counts.
+    unit: "{operations}"
     sum:
       value_type: int
       monotonic: true
       aggregation: cumulative
     attributes: [type,operation]
   memcached.operation_hit_ratio:
+    enabled: true
     description: Hit ratio for operations, expressed as a percentage value between 0.0 and 100.0.
     unit: '%'
     gauge:
       value_type: double
     attributes: [operation]
   memcached.cpu.usage:
-    description: Accumulated user and system time. 
-    unit: 1
+    enabled: true
+    description: Accumulated user and system time.
+    unit: s
     sum:
       value_type: double
       monotonic: true
       aggregation: cumulative
     attributes: [state]
   memcached.threads:
+    enabled: true
     description: Number of threads used by the memcached instance.
-    unit: 1
+    unit: "{threads}"
     sum:
-      value_type: double
+      value_type: int
       monotonic: false
       aggregation: cumulative
     attributes: []
