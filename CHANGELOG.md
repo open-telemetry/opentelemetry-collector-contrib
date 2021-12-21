@@ -5,6 +5,7 @@
 ## 💡 Enhancements 💡
 
 - `prometheusremotewriteexporter`: Handling Staleness flag from OTLP (#6679)
+- `datadogexporter`: Add compatibility with ECS Fargate semantic conventions (#6670)
 
 ## 🛑 Breaking changes 🛑
 
