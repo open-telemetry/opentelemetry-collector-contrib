@@ -22,9 +22,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/attributes"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/translator"
 )
 
@@ -81,4 +83,49 @@ func TestRunningMetrics(t *testing.T) {
 		[]string{"fallbackHostname", "resource-hostname-1", "resource-hostname-2"},
 	)
 
+}
+
+func TestTagsMetrics(t *testing.T) {
+	ms := pdata.NewMetrics()
+	rms := ms.ResourceMetrics()
+
+	rm := rms.AppendEmpty()
+	baseAttrs := testutils.NewAttributeMap(map[string]string{
+		conventions.AttributeCloudProvider:      conventions.AttributeCloudProviderAWS,
+		conventions.AttributeCloudPlatform:      conventions.AttributeCloudPlatformAWSECS,
+		conventions.AttributeAWSECSTaskFamily:   "example-task-family",
+		conventions.AttributeAWSECSTaskRevision: "example-task-revision",
+		conventions.AttributeAWSECSLaunchtype:   conventions.AttributeAWSECSLaunchtypeFargate,
+	})
+	baseAttrs.CopyTo(rm.Resource().Attributes())
+	rm.Resource().Attributes().InsertString(conventions.AttributeAWSECSTaskARN, "task-arn-1")
+
+	rm = rms.AppendEmpty()
+	baseAttrs.CopyTo(rm.Resource().Attributes())
+	rm.Resource().Attributes().InsertString(conventions.AttributeAWSECSTaskARN, "task-arn-2")
+
+	rm = rms.AppendEmpty()
+	baseAttrs.CopyTo(rm.Resource().Attributes())
+	rm.Resource().Attributes().InsertString(conventions.AttributeAWSECSTaskARN, "task-arn-3")
+
+	logger, _ := zap.NewProduction()
+	tr := newTranslator(t, logger)
+
+	ctx := context.Background()
+	consumer := NewConsumer()
+	tr.MapMetrics(ctx, ms, consumer)
+
+	runningMetrics := consumer.runningMetrics(0, component.BuildInfo{})
+	runningTags := []string{}
+	runningHostnames := []string{}
+	for _, metric := range runningMetrics {
+		runningTags = append(runningTags, metric.Tags...)
+		if metric.Host != nil {
+			runningHostnames = append(runningHostnames, *metric.Host)
+		}
+	}
+
+	assert.ElementsMatch(t, runningHostnames, []string{"", "", ""})
+	assert.Len(t, runningMetrics, 3)
+	assert.ElementsMatch(t, runningTags, []string{"task_arn:task-arn-1", "task_arn:task-arn-2", "task_arn:task-arn-3"})
 }
