@@ -50,7 +50,7 @@ var _ oauth2.TokenSource = (*errorWrappingTokenSource)(nil)
 // FailedToGetSecurityToken indicates a problem communicating with OAuth2 server.
 // We support Unwrap() instead of using `%w` so that we can customize the error message
 // to include both the wrapped error and information from the configuration.
-type ErrFailedToGetSecurityToken struct {
+type FailedToGetSecurityTokenError struct {
 	inner  error
 	config *clientcredentials.Config
 }
@@ -102,7 +102,7 @@ func (o *ClientCredentialsAuthenticator) Shutdown(_ context.Context) error {
 func (ewts errorWrappingTokenSource) Token() (*oauth2.Token, error) {
 	tok, err := ewts.ts.Token()
 	if err != nil {
-		err = ErrFailedToGetSecurityToken{
+		err = FailedToGetSecurityTokenError{
 			inner:  err,
 			config: ewts.config,
 		}
@@ -136,7 +136,7 @@ func (o *ClientCredentialsAuthenticator) PerRPCCredentials() (credentials.PerRPC
 }
 
 // Error() marks ErrFailedToGetSecurityToken as an `error` type
-func (e ErrFailedToGetSecurityToken) Error() string {
+func (e FailedToGetSecurityTokenError) Error() string {
 	if e.config == nil {
 		return "unconfigured ErrFailedToGetSecurityToken"
 	}
@@ -145,6 +145,6 @@ func (e ErrFailedToGetSecurityToken) Error() string {
 }
 
 // Unwrap() lets ErrFailedToGetSecurityToken work with errors.Is() and errors.As()
-func (e ErrFailedToGetSecurityToken) Unwrap() error {
+func (e FailedToGetSecurityTokenError) Unwrap() error {
 	return e.inner
 }

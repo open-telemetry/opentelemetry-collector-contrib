@@ -298,7 +298,7 @@ func TestFailContactingOAuth(t *testing.T) {
 	assert.Nil(t, err)
 
 	_, err = credential.GetRequestMetadata(context.Background())
-	assert.ErrorAs(t, err, &ErrFailedToGetSecurityToken{})
+	assert.ErrorAs(t, err, &FailedToGetSecurityTokenError{})
 	assert.Contains(t, err.Error(), "failed to get security token from token endpoint")
 }
 
@@ -330,6 +330,6 @@ func TestFailContactingOAuthViaHttp(t *testing.T) {
 	req, err := http.NewRequest("POST", setting.Endpoint, nil)
 	assert.NoError(t, err)
 	_, err = client.Do(req)
-	assert.ErrorAs(t, err, &ErrFailedToGetSecurityToken{})
+	assert.ErrorAs(t, err, &FailedToGetSecurityTokenError{})
 	assert.Contains(t, err.Error(), "failed to get security token from token endpoint")
 }
