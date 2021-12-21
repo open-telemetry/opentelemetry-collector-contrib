@@ -23,6 +23,7 @@ import (
 	"time"
 
 	dtypes "github.com/docker/docker/api/types"
+	dfilters "github.com/docker/docker/api/types/filters"
 	"github.com/docker/go-connections/nat"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
@@ -37,6 +38,7 @@ var _ observer.Observable = (*dockerObserver)(nil)
 const (
 	defaultDockerAPIVersion         = 1.22
 	minimalRequiredDockerAPIVersion = 1.22
+	clientReconnectTimeout          = 3 * time.Second
 )
 
 type dockerObserver struct {
@@ -84,29 +86,83 @@ func (d *dockerObserver) Shutdown(ctx context.Context) error {
 
 // ListAndWatch provides initial state sync as well as change notification.
 // Emits initial list of endpoints loaded upon extension Start. It then goes into
-// a loop to sync the container cache periodically and change endpoints.
-// TODO: Watch docker events to notify listener of changed endpoints as
-// events stream
+// a loop to sync the container cache periodically, watch for docker events,
+// and notify the observer listener of endpoint changes.
 func (d *dockerObserver) ListAndWatch(listener observer.Notify) {
 	d.emitContainerEndpoints(listener)
-
 	go func() {
-		ticker := time.NewTicker(d.config.CacheSyncInterval)
-		defer ticker.Stop()
+		cacheRefreshTicker := time.NewTicker(d.config.CacheSyncInterval)
+		defer cacheRefreshTicker.Stop()
+		// timestamp to begin looking back for events
+		lastTime := time.Now()
+		var eventErr error
+
+		// loop for re-connecting to events channel if a client error occurs
 		for {
-			select {
-			case <-d.ctx.Done():
+			// watchContainerEvents will only return when an error occurs, or the context is cancelled
+			lastTime, eventErr = d.watchContainerEvents(listener, cacheRefreshTicker, lastTime)
+
+			if d.ctx.Err() != nil {
 				return
-			case <-ticker.C:
-				err := d.syncContainerList(listener)
-				if err != nil {
-					d.logger.Error("Could not sync container cache", zap.Error(err))
+			}
+			// Either decoding or connection error has occurred, so we should resume the event loop after
+			// waiting a moment.  In cases of extended daemon unavailability this will retry until
+			// collector teardown or background context is closed.
+			d.logger.Error("Error watching docker container events, attempting to retry", zap.Error(eventErr))
+			time.Sleep(clientReconnectTimeout)
+		}
+	}()
+}
+
+func (d *dockerObserver) watchContainerEvents(listener observer.Notify, cacheRefreshTicker *time.Ticker, lastEventTime time.Time) (time.Time, error) {
+	// build filter list for container events
+	filters := dfilters.NewArgs([]dfilters.KeyValuePair{
+		{Key: "type", Value: "container"},
+		{Key: "event", Value: "destroy"},
+		{Key: "event", Value: "die"},
+		{Key: "event", Value: "pause"},
+		{Key: "event", Value: "rename"},
+		{Key: "event", Value: "stop"},
+		{Key: "event", Value: "start"},
+		{Key: "event", Value: "unpause"},
+		{Key: "event", Value: "update"},
+	}...)
+
+	opts := dtypes.EventsOptions{
+		Filters: filters,
+		Since:   lastEventTime.Format(time.RFC3339Nano),
+	}
+
+	eventsCh, errCh := d.dClient.Events(d.ctx, opts)
+
+	for {
+		select {
+		case <-d.ctx.Done():
+			return lastEventTime, nil
+		case <-cacheRefreshTicker.C:
+			err := d.syncContainerList(listener)
+			if err != nil {
+				d.logger.Error("Could not sync container cache", zap.Error(err))
+			}
+		case event := <-eventsCh:
+			switch event.Action {
+			case "destroy":
+				d.updateEndpointsByContainerID(listener, event.ID, nil)
+				d.dClient.RemoveContainer(event.ID)
+			default:
+				if c, ok := d.dClient.InspectAndPersistContainer(d.ctx, event.ID); ok {
+					endpointsMap := d.endpointsForContainer(c)
+					d.updateEndpointsByContainerID(listener, c.ID, endpointsMap)
 				}
 			}
+			if event.TimeNano > lastEventTime.UnixNano() {
+				lastEventTime = time.Unix(0, event.TimeNano)
+			}
+
+		case err := <-errCh:
+			return lastEventTime, err
 		}
-		// TODO: Implement event loop to watch container events to add/remove/update
-		//       endpoints as they occur.
-	}()
+	}
 }
 
 // emitContainerEndpoints notifies the listener of all changes
@@ -253,7 +309,7 @@ func (d *dockerObserver) endpointForPort(portObj nat.Port, c *dtypes.ContainerJS
 	}
 
 	details := &observer.Container{
-		Name:        c.Name,
+		Name:        strings.TrimPrefix(c.Name, "/"),
 		Image:       c.Config.Image,
 		Command:     strings.Join(c.Config.Cmd, " "),
 		ContainerID: c.ID,

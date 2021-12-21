@@ -17,6 +17,7 @@ package components
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -26,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/extension/ballastextension"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension"
@@ -79,6 +81,24 @@ func TestDefaultExtensions(t *testing.T) {
 			extension: "memory_ballast",
 			getConfigFn: func() config.Extension {
 				cfg := extFactories["memory_ballast"].CreateDefaultConfig().(*ballastextension.Config)
+				return cfg
+			},
+		},
+		{
+			extension: "asapclient",
+			getConfigFn: func() config.Extension {
+				cfg := extFactories["asapclient"].CreateDefaultConfig().(*asapauthextension.Config)
+				cfg.KeyID = "test_issuer/test_kid"
+				cfg.Issuer = "test_issuer"
+				cfg.Audience = []string{"some_service"}
+				cfg.TTL = 10 * time.Second
+				// Valid PEM data required for successful initialisation. Key not actually used anywhere.
+				cfg.PrivateKey = "data:application/pkcs8;kid=test;base64,MIIBUwIBADANBgkqhkiG9w0BAQEFAASCAT0wggE5AgE" +
+					"AAkEA0ZPr5JeyVDoB8RyZqQsx6qUD+9gMFg1/0hgdAvmytWBMXQJYdwkK2dFJwwZcWJVhJGcOJBDfB/8tcbdJd34KZQIDAQ" +
+					"ABAkBZD20tJTHJDSWKGsdJyNIbjqhUu4jXTkFFPK4Hd6jz3gV3fFvGnaolsD5Bt50dTXAiSCpFNSb9M9GY6XUAAdlBAiEA6" +
+					"MccfdZRfVapxKtAZbjXuAgMvnPtTvkVmwvhWLT5Wy0CIQDmfE8Et/pou0Jl6eM0eniT8/8oRzBWgy9ejDGfj86PGQIgWePq" +
+					"IL4OofRBgu0O5TlINI0HPtTNo12U9lbUIslgMdECICXT2RQpLcvqj+cyD7wZLZj6vrHZnTFVrnyR/cL2UyxhAiBswe/MCcD" +
+					"7T7J4QkNrCG+ceQGypc7LsxlIxQuKh5GWYA=="
 				return cfg
 			},
 		},

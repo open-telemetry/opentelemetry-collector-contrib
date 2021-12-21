@@ -25,22 +25,23 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
 )
 
 func TestScraper(t *testing.T) {
 	factory := new(mockClientFactory)
 	factory.initMocks([]string{"otel"})
-	sc := newPostgreSQLScraper(zap.NewNop(), &Config{Databases: []string{"otel"}}, factory)
 
-	scrapedRMS, err := sc.scrape(context.Background())
+	scraper := newPostgreSQLScraper(zap.NewNop(), &Config{Databases: []string{"otel"}}, factory)
+
+	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
+	aMetricSlice := actualMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
 	expectedFile := filepath.Join("testdata", "scraper", "otel", "expected.json")
-	expectedMetrics, err := scrapertest.ReadExpected(expectedFile)
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
-
 	eMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
-	aMetricSlice := scrapedRMS.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
 	require.NoError(t, scrapertest.CompareMetricSlices(eMetricSlice, aMetricSlice))
 }
@@ -48,17 +49,17 @@ func TestScraper(t *testing.T) {
 func TestScraperNoDatabaseSingle(t *testing.T) {
 	factory := new(mockClientFactory)
 	factory.initMocks([]string{"otel"})
-	sc := newPostgreSQLScraper(zap.NewNop(), &Config{}, factory)
 
-	scrapedRMS, err := sc.scrape(context.Background())
+	scraper := newPostgreSQLScraper(zap.NewNop(), &Config{}, factory)
+
+	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
+	aMetricSlice := actualMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
 	expectedFile := filepath.Join("testdata", "scraper", "otel", "expected.json")
-	expectedMetrics, err := scrapertest.ReadExpected(expectedFile)
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
-
 	eMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
-	aMetricSlice := scrapedRMS.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
 	require.NoError(t, scrapertest.CompareMetricSlices(eMetricSlice, aMetricSlice))
 }
@@ -66,17 +67,17 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 func TestScraperNoDatabaseMultiple(t *testing.T) {
 	factory := mockClientFactory{}
 	factory.initMocks([]string{"otel", "open", "telemetry"})
-	sc := newPostgreSQLScraper(zap.NewNop(), &Config{}, &factory)
 
-	scrapedRMS, err := sc.scrape(context.Background())
+	scraper := newPostgreSQLScraper(zap.NewNop(), &Config{}, &factory)
+
+	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
+	aMetricSlice := actualMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
 	expectedFile := filepath.Join("testdata", "scraper", "multiple", "expected.json")
-	expectedMetrics, err := scrapertest.ReadExpected(expectedFile)
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
-
 	eMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
-	aMetricSlice := scrapedRMS.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
 	require.NoError(t, scrapertest.CompareMetricSlices(eMetricSlice, aMetricSlice))
 }

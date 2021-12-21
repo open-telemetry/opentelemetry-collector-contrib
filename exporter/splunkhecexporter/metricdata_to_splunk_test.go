@@ -263,8 +263,8 @@ func Test_metricDataToSplunk(t *testing.T) {
 				return metrics
 			},
 			wantSplunkMetrics: []*splunk.Event{
-				commonSplunkMetric("gauge_double_with_dims", tsMSecs, []string{"host.name", "k0", "k1", "metric_type"}, []interface{}{"myhost", "v0", "v1", "Gauge"}, doubleVal, "mysource", "mysourcetype", "myindex", "myhost"),
-				commonSplunkMetric("gauge_int_with_dims", tsMSecs, []string{"host.name", "k0", "k1", "metric_type"}, []interface{}{"myhost", "v0", "v1", "Gauge"}, int64Val, "mysource", "mysourcetype", "myindex", "myhost"),
+				commonSplunkMetric("gauge_double_with_dims", tsMSecs, []string{"k0", "k1", "metric_type"}, []interface{}{"v0", "v1", "Gauge"}, doubleVal, "mysource", "mysourcetype", "myindex", "myhost"),
+				commonSplunkMetric("gauge_int_with_dims", tsMSecs, []string{"k0", "k1", "metric_type"}, []interface{}{"v0", "v1", "Gauge"}, int64Val, "mysource", "mysourcetype", "myindex", "myhost"),
 			},
 			configFn: func() *Config {
 				return createDefaultConfig().(*Config)
@@ -589,8 +589,8 @@ func Test_metricDataToSplunk(t *testing.T) {
 				return metrics
 			},
 			wantSplunkMetrics: []*splunk.Event{
-				commonSplunkMetric("gauge_double_with_dims", tsMSecs, []string{"host.name", "k0", "k1", "metric_type"}, []interface{}{"myhost2", "v0", "v1", "Gauge"}, doubleVal, "mysource2", "mysourcetype2", "myindex2", "myhost2"),
-				commonSplunkMetric("gauge_int_with_dims", tsMSecs, []string{"host.name", "k0", "k1", "metric_type"}, []interface{}{"myhost2", "v0", "v1", "Gauge"}, int64Val, "mysource2", "mysourcetype2", "myindex2", "myhost2"),
+				commonSplunkMetric("gauge_double_with_dims", tsMSecs, []string{"k0", "k1", "metric_type"}, []interface{}{"v0", "v1", "Gauge"}, doubleVal, "mysource2", "mysourcetype2", "myindex2", "myhost2"),
+				commonSplunkMetric("gauge_int_with_dims", tsMSecs, []string{"k0", "k1", "metric_type"}, []interface{}{"v0", "v1", "Gauge"}, int64Val, "mysource2", "mysourcetype2", "myindex2", "myhost2"),
 			},
 			configFn: func() *Config {
 				cfg := createDefaultConfig().(*Config)

@@ -26,30 +26,20 @@ import (
 
 const systemSpecificMetricsLen = 2
 
-func appendSystemSpecificMetrics(metrics pdata.MetricSlice, startTime, now pdata.Timestamp, ioCounters map[string]disk.IOCountersStat) {
-	initializeDiskWeightedIOTimeMetric(metrics.AppendEmpty(), startTime, now, ioCounters)
-	initializeDiskMergedMetric(metrics.AppendEmpty(), startTime, now, ioCounters)
+func (s *scraper) recordSystemSpecificDataPoints(now pdata.Timestamp, ioCounters map[string]disk.IOCountersStat) {
+	s.recordDiskWeightedIOTimeMetric(now, ioCounters)
+	s.recordDiskMergedMetric(now, ioCounters)
 }
 
-func initializeDiskWeightedIOTimeMetric(metric pdata.Metric, startTime, now pdata.Timestamp, ioCounters map[string]disk.IOCountersStat) {
-	metadata.Metrics.SystemDiskWeightedIoTime.Init(metric)
-
-	ddps := metric.Sum().DataPoints()
-	ddps.EnsureCapacity(len(ioCounters))
-
+func (s *scraper) recordDiskWeightedIOTimeMetric(now pdata.Timestamp, ioCounters map[string]disk.IOCountersStat) {
 	for device, ioCounter := range ioCounters {
-		initializeNumberDataPointAsDouble(ddps.AppendEmpty(), startTime, now, device, "", float64(ioCounter.WeightedIO)/1e3)
+		s.mb.RecordSystemDiskWeightedIoTimeDataPoint(now, float64(ioCounter.WeightedIO)/1e3, device)
 	}
 }
 
-func initializeDiskMergedMetric(metric pdata.Metric, startTime, now pdata.Timestamp, ioCounters map[string]disk.IOCountersStat) {
-	metadata.Metrics.SystemDiskMerged.Init(metric)
-
-	idps := metric.Sum().DataPoints()
-	idps.EnsureCapacity(2 * len(ioCounters))
-
+func (s *scraper) recordDiskMergedMetric(now pdata.Timestamp, ioCounters map[string]disk.IOCountersStat) {
 	for device, ioCounter := range ioCounters {
-		initializeNumberDataPointAsInt(idps.AppendEmpty(), startTime, now, device, metadata.AttributeDirection.Read, int64(ioCounter.MergedReadCount))
-		initializeNumberDataPointAsInt(idps.AppendEmpty(), startTime, now, device, metadata.AttributeDirection.Write, int64(ioCounter.MergedWriteCount))
+		s.mb.RecordSystemDiskMergedDataPoint(now, int64(ioCounter.MergedReadCount), device, metadata.AttributeDirection.Read)
+		s.mb.RecordSystemDiskMergedDataPoint(now, int64(ioCounter.MergedWriteCount), device, metadata.AttributeDirection.Write)
 	}
 }

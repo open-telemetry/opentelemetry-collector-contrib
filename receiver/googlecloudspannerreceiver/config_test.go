@@ -123,7 +123,7 @@ func TestValidateProject(t *testing.T) {
 	}{
 		"All required fields are populated": {"id", "key", []Instance{instance}, false},
 		"No id":                             {"", "key", []Instance{instance}, true},
-		"No service account key":            {"id", "", []Instance{instance}, true},
+		"No service account key":            {"id", "", []Instance{instance}, false},
 		"No instances":                      {"id", "key", nil, true},
 		"Invalid instance in instances":     {"id", "key", []Instance{{}}, true},
 	}

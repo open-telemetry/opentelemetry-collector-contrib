@@ -16,7 +16,6 @@ package prometheusreceiver // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
-	"time"
 
 	"github.com/prometheus/prometheus/discovery"
 	"github.com/prometheus/prometheus/scrape"
@@ -71,21 +70,17 @@ func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 		}
 	}()
 
-	var jobsMap *internal.JobsMap
-	if !r.cfg.UseStartTimeMetric {
-		jobsMap = internal.NewJobsMap(2 * time.Minute)
-	}
 	// Per component.Component Start instructions, for async operations we should not use the
 	// incoming context, it may get cancelled.
 	r.ocaStore = internal.NewOcaStore(
 		context.Background(),
 		r.consumer,
 		r.settings,
-		jobsMap,
 		r.cfg.UseStartTimeMetric,
 		r.cfg.StartTimeMetricRegex,
 		r.cfg.ID(),
 		r.cfg.PrometheusConfig.GlobalConfig.ExternalLabels,
+		r.cfg.pdataDirect,
 	)
 	r.scrapeManager = scrape.NewManager(logger, r.ocaStore)
 	r.ocaStore.SetScrapeManager(r.scrapeManager)

@@ -29,7 +29,6 @@ import (
 	"github.com/signalfx/sapm-proto/sapmprotocol"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opencensus.io/trace"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -63,9 +62,7 @@ func expectedTraceData(t1, t2, t3 time.Time) pdata.Traces {
 	span0.SetName("DBSearch")
 	span0.SetStartTimestamp(pdata.NewTimestampFromTime(t1))
 	span0.SetEndTimestamp(pdata.NewTimestampFromTime(t2))
-	// Set invalid status code that is not with the valid list of value.
-	// This will be set from incoming invalid code.
-	span0.Status().SetCode(trace.StatusCodeNotFound)
+	span0.Status().SetCode(pdata.StatusCodeError)
 	span0.Status().SetMessage("Stale indices")
 
 	span1 := spans.AppendEmpty()
@@ -74,9 +71,7 @@ func expectedTraceData(t1, t2, t3 time.Time) pdata.Traces {
 	span1.SetName("ProxyFetch")
 	span1.SetStartTimestamp(pdata.NewTimestampFromTime(t2))
 	span1.SetEndTimestamp(pdata.NewTimestampFromTime(t3))
-	// Set invalid status code that is not with the valid list of value.
-	// This will be set from incoming invalid code.
-	span1.Status().SetCode(trace.StatusCodeInternal)
+	span1.Status().SetCode(pdata.StatusCodeError)
 	span1.Status().SetMessage("Frontend crash")
 
 	return traces
@@ -106,7 +101,7 @@ func grpcFixture(t1 time.Time) *model.Batch {
 				Duration:      10 * time.Minute,
 				Tags: []model.KeyValue{
 					model.String(conventions.OtelStatusDescription, "Stale indices"),
-					model.Int64(conventions.OtelStatusCode, trace.StatusCodeNotFound),
+					model.String(conventions.OtelStatusCode, "ERROR"),
 					model.Bool("error", true),
 				},
 				References: []model.SpanRef{
@@ -125,7 +120,7 @@ func grpcFixture(t1 time.Time) *model.Batch {
 				Duration:      2 * time.Second,
 				Tags: []model.KeyValue{
 					model.String(conventions.OtelStatusDescription, "Frontend crash"),
-					model.Int64(conventions.OtelStatusCode, trace.StatusCodeInternal),
+					model.String(conventions.OtelStatusCode, "ERROR"),
 					model.Bool("error", true),
 				},
 			},
