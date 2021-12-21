@@ -1,0 +1,440 @@
+{
+    "resourceMetrics": [
+        {
+            "resource": {},
+            "instrumentationLibraryMetrics": [
+                {
+                    "instrumentationLibrary": {
+                        "name": "otelcol/mongodb"
+                    },
+                    "metrics": [
+                        {
+                            "name": "mongodb.collections",
+                            "description": "The number of collections.",
+                            "unit": "1",
+                            "gauge": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "fakedatabase"
+                                                }
+                                            }
+                                        ],
+                                        "timeUnixNano": "1638298366139952000",
+                                        "asInt": "1"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "name": "mongodb.data.size",
+                            "description": "The size in bytes of the collection. Data compression does not affect this value.",
+                            "unit": "By",
+                            "gauge": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "fakedatabase"
+                                                }
+                                            }
+                                        ],
+                                        "timeUnixNano": "1638298366139952000",
+                                        "asDouble": 3141
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "name": "mongodb.extents",
+                            "description": "The number of extents.",
+                            "unit": "1",
+                            "gauge": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "fakedatabase"
+                                                }
+                                            }
+                                        ],
+                                        "timeUnixNano": "1638298366139952000",
+                                        "asInt": "0"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "name": "mongodb.index.size",
+                            "description": "Sum of the space allocated to all indexes in the database, including free index space.",
+                            "unit": "1",
+                            "gauge": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "fakedatabase"
+                                                }
+                                            }
+                                        ],
+                                        "timeUnixNano": "1638298366139952000",
+                                        "asDouble": 16384
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "name": "mongodb.index.count",
+                            "description": "The number of indexes.",
+                            "unit": "1",
+                            "gauge": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "fakedatabase"
+                                                }
+                                            }
+                                        ],
+                                        "timeUnixNano": "1638298366139952000",
+                                        "asInt": "1"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "name": "mongodb.objects",
+                            "description": "The number of objects.",
+                            "unit": "1",
+                            "gauge": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "fakedatabase"
+                                                }
+                                            }
+                                        ],
+                                        "timeUnixNano": "1638298366139952000",
+                                        "asInt": "2"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "name": "mongodb.storage.size",
+                            "description": "The total amount of storage in bytes allocated to this collection for document storage. If collection data is compressed it reflects the compressed size.",
+                            "unit": "By",
+                            "gauge": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "fakedatabase"
+                                                }
+                                            }
+                                        ],
+                                        "timeUnixNano": "1638298366139952000",
+                                        "asDouble": 16384
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "name": "mongodb.global_lock.hold",
+                            "description": "The time the global lock has been held.",
+                            "unit": "ms",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "timeUnixNano": "1638298366139952000",
+                                        "asInt": "58964000"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        },
+                        {
+                            "name": "mongodb.cache.operations",
+                            "description": "The number of cache operations of the instance.",
+                            "unit": "1",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "misses"
+                                                }
+                                            }
+                                        ],
+                                        "timeUnixNano": "1638298366139952000",
+                                        "asInt": "18"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "hits"
+                                                }
+                                            }
+                                        ],
+                                        "timeUnixNano": "1638298366139952000",
+                                        "asInt": "197"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        },
+                        {
+                            "name": "mongodb.operations",
+                            "description": "The number of operations executed.",
+                            "unit": "1",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "operation",
+                                                "value": {
+                                                    "stringValue": "insert"
+                                                }
+                                            }
+                                        ],
+                                        "timeUnixNano": "1638298366139952000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "operation",
+                                                "value": {
+                                                    "stringValue": "query"
+                                                }
+                                            }
+                                        ],
+                                        "timeUnixNano": "1638298366139952000",
+                                        "asInt": "2"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "operation",
+                                                "value": {
+                                                    "stringValue": "update"
+                                                }
+                                            }
+                                        ],
+                                        "timeUnixNano": "1638298366139952000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "operation",
+                                                "value": {
+                                                    "stringValue": "delete"
+                                                }
+                                            }
+                                        ],
+                                        "timeUnixNano": "1638298366139952000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "operation",
+                                                "value": {
+                                                    "stringValue": "getmore"
+                                                }
+                                            }
+                                        ],
+                                        "timeUnixNano": "1638298366139952000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "operation",
+                                                "value": {
+                                                    "stringValue": "command"
+                                                }
+                                            }
+                                        ],
+                                        "timeUnixNano": "1638298366139952000",
+                                        "asInt": "20"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        },
+                        {
+                            "name": "mongodb.connections",
+                            "description": "The number of connections.",
+                            "unit": "1",
+                            "gauge": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "fakedatabase"
+                                                }
+                                            },
+                                            {
+                                                "key": "connection_type",
+                                                "value": {
+                                                    "stringValue": "active"
+                                                }
+                                            }
+                                        ],
+                                        "timeUnixNano": "1638298366139952000",
+                                        "asInt": "1"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "fakedatabase"
+                                                }
+                                            },
+                                            {
+                                                "key": "connection_type",
+                                                "value": {
+                                                    "stringValue": "available"
+                                                }
+                                            }
+                                        ],
+                                        "timeUnixNano": "1638298366139952000",
+                                        "asInt": "838857"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "fakedatabase"
+                                                }
+                                            },
+                                            {
+                                                "key": "connection_type",
+                                                "value": {
+                                                    "stringValue": "current"
+                                                }
+                                            }
+                                        ],
+                                        "timeUnixNano": "1638298366139952000",
+                                        "asInt": "3"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "name": "mongodb.memory.usage",
+                            "description": "The amount of memory used.",
+                            "unit": "By",
+                            "gauge": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "fakedatabase"
+                                                }
+                                            },
+                                            {
+                                                "key": "memory_type",
+                                                "value": {
+                                                    "stringValue": "resident"
+                                                }
+                                            }
+                                        ],
+                                        "timeUnixNano": "1638298366139952000",
+                                        "asInt": "79"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "fakedatabase"
+                                                }
+                                            },
+                                            {
+                                                "key": "memory_type",
+                                                "value": {
+                                                    "stringValue": "virtual"
+                                                }
+                                            }
+                                        ],
+                                        "timeUnixNano": "1638298366139952000",
+                                        "asInt": "1089"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "fakedatabase"
+                                                }
+                                            },
+                                            {
+                                                "key": "memory_type",
+                                                "value": {
+                                                    "stringValue": "mapped"
+                                                }
+                                            }
+                                        ],
+                                        "timeUnixNano": "1638298366139952000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "fakedatabase"
+                                                }
+                                            },
+                                            {
+                                                "key": "memory_type",
+                                                "value": {
+                                                    "stringValue": "mappedWithJournal"
+                                                }
+                                            }
+                                        ],
+                                        "timeUnixNano": "1638298366139952000",
+                                        "asInt": "0"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

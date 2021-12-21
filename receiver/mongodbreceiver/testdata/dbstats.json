@@ -1,0 +1,39 @@
+{
+	"avgObjSize": {
+		"$numberDouble": "1570.5"
+	},
+	"collections": {
+		"$numberInt": "1"
+	},
+	"dataSize": {
+		"$numberDouble": "3141.0"
+	},
+	"db": "local",
+	"fsTotalSize": {
+		"$numberDouble": "6.7371577344E+10"
+	},
+	"fsUsedSize": {
+		"$numberDouble": "5.6814186496E+10"
+	},
+	"indexSize": {
+		"$numberDouble": "16384.0"
+	},
+	"indexes": {
+		"$numberInt": "1"
+	},
+	"numExtents": {
+		"$numberInt": "0"
+	},
+	"objects": {
+		"$numberInt": "2"
+	},
+	"ok": {
+		"$numberDouble": "1.0"
+	},
+	"storageSize": {
+		"$numberDouble": "16384.0"
+	},
+	"views": {
+		"$numberInt": "0"
+	}
+}

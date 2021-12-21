@@ -1,0 +1,113 @@
+name: mongodbreceiver
+
+attributes:
+  database:
+    description: The name of a database.
+  memory_type:
+    description: The type of memory used.
+    enum:
+      - resident
+      - virtual
+      - mapped
+      - mappedWithJournal
+  operation:
+    description: The mongoDB operation being counted.
+    enum:
+      - insert
+      - query
+      - update
+      - delete
+      - getmore
+      - command
+  connection_type:
+    description: The status of the connection.
+    enum:
+      - active
+      - available
+      - current
+  type:
+    description: The result of a cache request.
+    enum:
+      - hit
+      - miss
+
+metrics:
+  mongodb.cache.operations:
+    description: The number of cache operations of the instance.
+    unit: 1{.operations}
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation: cumulative
+    attributes: [type]
+  mongodb.collections:
+    description: The number of collections.
+    unit: 1
+    gauge:
+      value_type: double
+    attributes: [database]
+  mongodb.data.size:
+    description: The size in bytes of the collection. Data compression does not affect this value.
+    unit: By
+    gauge:
+      value_type: double
+    attributes: [database]
+  mongodb.connections:
+    description: The number of connections. 
+    unit: 1
+    gauge:
+      value_type: double
+    attributes: [database, connection_type]
+  mongodb.extents:
+    description: The number of extents.
+    unit: 1
+    gauge:
+      value_type: double
+    attributes: [database]
+  mongodb.global_lock.hold:
+    description: The time the global lock has been held.
+    unit: ms
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation: cumulative
+    attributes: []
+  mongodb.index.count:
+    description: The number of indexes.
+    unit: 1
+    gauge:
+      value_type: double
+    attributes: [database]
+  mongodb.index.size:
+    description: Sum of the space allocated to all indexes in the database, including free index space.
+    unit: 1
+    gauge:
+      value_type: double
+    attributes: [database]
+  mongodb.memory.usage:
+    description: The amount of memory used.
+    unit: By
+    gauge:
+      value_type: double
+    attributes: [database, memory_type]
+  mongodb.objects:
+    description: The number of objects.
+    unit: 1
+    gauge:
+      value_type: double
+    attributes: [database]
+  mongodb.operations:
+    description: The number of operations executed.
+    unit: 1
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation: cumulative
+    attributes: [operation]
+  mongodb.storage.size:
+    description: The total amount of storage in bytes allocated to this collection for document storage. If collection data is compressed it reflects the compressed size.
+    unit: By
+    gauge:
+      value_type: double
+    attributes: [database]
+
