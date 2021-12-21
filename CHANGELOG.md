@@ -4,7 +4,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.23.0] - 2020-11-30
+## [0.24.0] - 2021-12-21
+
+### Added
+- `force_flush_period` setting to `recombine` operator, to prevent recombine taking to long to process ([PR325](https://github.com/open-telemetry/opentelemetry-log-collection/pull/325))
+- `lazy_quotes` setting to `csv` parser operator. When enabled will preserve internal quotes in a csv field ([PR324](https://github.com/open-telemetry/opentelemetry-log-collection/pull/324))
+- `header_attribute` setting to `csv` parser operator. When set will dynamically parse the csv headers from the specified attribute on a log entry. ([PR335](https://github.com/open-telemetry/opentelemetry-log-collection/pull/335))
+
+### Changed
+- Updated CSV Parser to use idiomatic Go errors ([PR323](https://github.com/open-telemetry/opentelemetry-log-collection/pull/323))
+
+## [0.23.0] - 2021-11-30
 
 
 ### Added
@@ -19,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
-## [0.22.0] - 2020-10-05
+## [0.22.0] - 2021-10-05
 
 ### Fixed
 - Issue in `file_input` where doublestar globbing could only be used at a single level ([PR268](https://github.com/open-telemetry/opentelemetry-log-collection/pull/268))
@@ -29,7 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - `file_input` will now emit bytes when `encoding = nop` ([PR262](https://github.com/open-telemetry/opentelemetry-log-collection/pull/262))
 
-## [0.21.0] - 2020-09-09
+## [0.21.0] - 2021-09-09
 
 ### Added
 - The `timestamp` operator can now parse timestamps that use a comma separator ([Go v1.17](https://golang.org/doc/go1.17#time))
@@ -43,7 +53,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - `file_input`'s `force_flush_period` now defaults to `500ms`, ensuring that the use of `multiline.line_start_regex` does not cause ommision of the last line of each file ([PR261](https://github.com/open-telemetry/opentelemetry-log-collection/pull/261))
 
-## [0.20.0] - 2020-07-27
+## [0.20.0] - 2021-07-27
 
 ### Added
 - `file_input` operator can now be configured to flush incomplete logs, using the `force_flush_period` setting ([PR216](https://github.com/open-telemetry/opentelemetry-log-collection/pull/216))
@@ -55,7 +65,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `windows_eventlog_input` log input now gives a helpful error message when a metadata request fails ([PR206](https://github.com/open-telemetry/opentelemetry-log-collection/pull/206))
 
 
-## [0.19.0] - 2020-06-22
+## [0.19.0] - 2021-06-22
 
 ### Added
 - `csv_parser` ([PR123](https://github.com/open-telemetry/opentelemetry-log-collection/pull/123))
@@ -76,7 +86,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - Parsers will no longer process `[]byte` data type ([PR149](https://github.com/open-telemetry/opentelemetry-log-collection/pull/149))
 
-## [0.18.0] - 2020-05-11
+## [0.18.0] - 2021-05-11
 
 ### Added
 - `file_input` now supports multi-level directory globs (i.e. `/var/**/logs/**/*.log`) ([PR97](https://github.com/open-telemetry/opentelemetry-log-collection/pull/97))
@@ -90,7 +100,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Issue where `tcp_input` could panic or spam logs ([PR130](https://github.com/open-telemetry/opentelemetry-log-collection/pull/130))
 
-## [0.17.0] - 2020-04-07
+## [0.17.0] - 2021-04-07
 
 ### Added
 - Trace fields added to `entry.Entry`, and an accompanying `trace` parser ([PR76](https://github.com/open-telemetry/opentelemetry-log-collection/pull/76))
@@ -99,7 +109,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Rename `entry.Record` to `entry.Body` ([PR88](https://github.com/open-telemetry/opentelemetry-log-collection/pull/88))
-## [0.16.0] - 2020-03-08
+## [0.16.0] - 2021-03-08
 
 ### Changed
 - `syslog_input` config embeds `syslog_parser` at the top level, rather than under a `syslog` key ([PR43](https://github.com/open-telemetry/opentelemetry-log-collection/pull/43))
@@ -108,7 +118,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - Several unused packages, including `flusher`, `buffer`, `k8smetadata`, `hostmetadata`, and `ratelimit` ([PR53](https://github.com/open-telemetry/opentelemetry-log-collection/pull/53))
 
-## [0.15.1] - 2020-03-01
+## [0.15.1] - 2021-03-01
 
 ### Added
 - Optional `max_buffer_size` parameter to `tcp_input` operator ([PR35](https://github.com/open-telemetry/opentelemetry-log-collection/pull/35))
@@ -118,7 +128,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Data race in syslog parser ([PR32](https://github.com/open-telemetry/opentelemetry-log-collection/pull/32))
 
 
-## [0.15.0] - 2020-02-25
+## [0.15.0] - 2021-02-25
 
 ### Added
 - `syslog_input` operator, which combines `tcp_input`, `udp_input`, and `syslog_parser` into a single operator. ([PR24](https://github.com/open-telemetry/opentelemetry-log-collection/pull/24))
@@ -128,7 +138,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - `forward_input` and `forward_output`, which were previously intended for use in the standalone agent ([PR27](https://github.com/open-telemetry/opentelemetry-log-collection/pull/27))
 
-## [0.14.0] - 2020-02-02
+## [0.14.0] - 2021-02-02
 
 ### Changed
 - Remove standalone agent functionality
@@ -137,22 +147,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Removes output operators that were previously separate modules
   - Leaves `input/k8sevent` and `transformer/k8smetadata` as separate modules for now. These two have extensive dependencies and their usefulness in the collector needs to be discussed before merging or removing.
 
-## [0.13.12] - 2020-01-26
+## [0.13.12] - 2021-01-26
 
 ### Changed
 - Allow plugin parameters to have a default value even if they are required
 
-## [0.13.11] - 2020-01-15
+## [0.13.11] - 2021-01-15
 
 ### Changed
 - Updated version of stanza used in several isolated modules
 
-## [0.13.10] - 2020-01-15
+## [0.13.10] - 2021-01-15
 
 ### Added
 - `timestamp` parser now supports a `location` parameter
 
-## [0.13.9] - 2020-01-04
+## [0.13.9] - 2021-01-04
 
 ### Fixed
 - `k8s_metadata_decorator` using a proxy causes internal API timeout
