@@ -62,11 +62,9 @@ func (c *Consumer) toDataType(dt translator.MetricDataType) (out MetricDataType)
 // runningMetrics gets the running metrics for the exporter.
 func (c *Consumer) runningMetrics(timestamp uint64, buildInfo component.BuildInfo) (series []datadog.Metric) {
 	for host := range c.seenHosts {
-		if host != "" {
-			// Report the host as running
-			runningMetric := DefaultMetrics("metrics", host, timestamp, buildInfo)
-			series = append(series, runningMetric...)
-		}
+		// Report the host as running
+		runningMetric := DefaultMetrics("metrics", host, timestamp, buildInfo)
+		series = append(series, runningMetric...)
 	}
 
 	for tag := range c.seenTags {
