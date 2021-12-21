@@ -229,15 +229,6 @@ type K8sNode struct {
 	Labels map[string]string
 	// KubeletEndpointPort is the node status object's DaemonEndpoints.KubeletEndpoint.Port value
 	KubeletEndpointPort uint16
-	// Spec represents the node Spec object.
-	// It is a json object that is equivalent to the output of `kubectl get node <node> -o jsonpath='{.spec}'`
-	Spec map[string]interface{}
-	// Metadata represents the node ObjectMeta object.
-	// It is a json object that is equivalent to the output of `kubectl get node <node> -o jsonpath='{.metadata}'`
-	Metadata map[string]interface{}
-	// Status represents the node Status object.
-	// It is a json object that is equivalent to the output of `kubectl get node <node> -o jsonpath='{.status}'`
-	Status map[string]interface{}
 }
 
 func (n *K8sNode) Env() EndpointEnv {
@@ -246,9 +237,6 @@ func (n *K8sNode) Env() EndpointEnv {
 		"uid":                   n.UID,
 		"annotations":           n.Annotations,
 		"labels":                n.Labels,
-		"metadata":              n.Metadata,
-		"spec":                  n.Spec,
-		"status":                n.Status,
 		"hostname":              n.Hostname,
 		"external_ip":           n.ExternalIP,
 		"internal_ip":           n.InternalIP,
