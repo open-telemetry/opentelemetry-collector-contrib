@@ -41,7 +41,7 @@ metrics:
   memcached.connections.current:
     enabled: true
     description: The current number of open connections.
-    unit: connections
+    unit: "{connections}"
     sum:
       value_type: int
       monotonic: false
@@ -50,7 +50,7 @@ metrics:
   memcached.connections.total:
     enabled: true
     description: Total number of connections opened since the server started running.
-    unit: connections
+    unit: "{connections}"
     sum:
       value_type: int
       monotonic: true
@@ -59,7 +59,7 @@ metrics:
   memcached.commands:
     enabled: true
     description: Commands executed.
-    unit: 1
+    unit: "{commands}"
     sum:
       value_type: int
       monotonic: true
@@ -68,16 +68,16 @@ metrics:
   memcached.current_items:
     enabled: true
     description: Number of items currently stored in the cache.
-    unit: 1
+    unit: "{items}"
     sum:
-      value_type: double
+      value_type: int
       monotonic: false
       aggregation: cumulative
     attributes: []
   memcached.evictions:
     enabled: true
     description: Cache item evictions.
-    unit: 1
+    unit: "{evictions}"
     sum:
       value_type: int
       monotonic: true
@@ -95,7 +95,7 @@ metrics:
   memcached.operations:
     enabled: true
     description:  Operation counts.
-    unit: 1
+    unit: "{operations}"
     sum:
       value_type: int
       monotonic: true
@@ -111,7 +111,7 @@ metrics:
   memcached.cpu.usage:
     enabled: true
     description: Accumulated user and system time.
-    unit: 1
+    unit: s
     sum:
       value_type: double
       monotonic: true
@@ -120,9 +120,9 @@ metrics:
   memcached.threads:
     enabled: true
     description: Number of threads used by the memcached instance.
-    unit: 1
+    unit: "{threads}"
     sum:
-      value_type: double
+      value_type: int
       monotonic: false
       aggregation: cumulative
     attributes: []

@@ -42,10 +42,10 @@ dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/DATA-DOG/go-sqlmock v1.3.3/go.mod h1:f/Ixk793poVmq4qj/V1dPUg2JEAKC73Q5eFN3EC/SaM=
-github.com/DataDog/agent-payload/v5 v5.0.5 h1:YS2N5KRIPACpoN2WWqC2tvEf82A4MSYP0BBJUjrWSRU=
-github.com/DataDog/agent-payload/v5 v5.0.5/go.mod h1:2gapp8p4Vd548JI+axD8kCExklNvVI6AMF5/+IfN/4g=
-github.com/DataDog/datadog-agent/pkg/quantile v0.32.2 h1:v7+E5TV/fKYIKWAv8SaNz1Ph2QWUqb1nc/qXB4xBhFM=
-github.com/DataDog/datadog-agent/pkg/quantile v0.32.2/go.mod h1:AJEOJwqKBG7f1e3/jtxjb1tUdW4RG30PhllTgKg1fDc=
+github.com/DataDog/agent-payload/v5 v5.0.7 h1:tQIPBw6i9A7TGiY63KSiUqMHfBHubpq5/leGoRidG9E=
+github.com/DataDog/agent-payload/v5 v5.0.7/go.mod h1:2gapp8p4Vd548JI+axD8kCExklNvVI6AMF5/+IfN/4g=
+github.com/DataDog/datadog-agent/pkg/quantile v0.32.3 h1:mRCIMXYqkCPn5rsKZZoDxmjIt7WSUoEMTfsJVDXA1pY=
+github.com/DataDog/datadog-agent/pkg/quantile v0.32.3/go.mod h1:AJEOJwqKBG7f1e3/jtxjb1tUdW4RG30PhllTgKg1fDc=
 github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02 h1:N2BRKjJ/c+ipDwt5b+ijqEc2EsmK3zXq2lNeIPnSwMI=
 github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02/go.mod h1:EalMiS87Guu6PkLdxz7gmWqi+dRs9sjYLTOyTrM/aVU=
 github.com/DataDog/datadog-agent/pkg/util/log v0.0.0-20201009091607-ce4e57cdf8f4/go.mod h1:cRy7lwapA3jcjnX74kU6NFkXaRGQyB0l/QZA0IwYGEQ=

@@ -64,6 +64,7 @@ func TestLoadConfig(t *testing.T) {
 				MaxElapsedTime:  10 * time.Minute,
 			},
 			RemoteWriteQueue: prw.RemoteWriteQueue{
+				Enabled:      true,
 				QueueSize:    10000,
 				NumConsumers: 5,
 			},
