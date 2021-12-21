@@ -28,32 +28,22 @@ type Config struct {
 	exporterhelper.TimeoutSettings `mapstructure:",squash"`
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
 
-	// Address is the ClickHouse server address.
-	Address string `mapstructure:"address"`
-	// Database is the database name write data.
-	Database string `mapstructure:"database"`
-	// Username is the username to connect ClickHouse.
-	Username string `mapstructure:"username"`
-	// Password is the password to connect ClickHouse.
-	Password string `mapstructure:"password"`
-	// CaFile is the cert file path to connect ClickHouse.
-	CaFile string `mapstructure:"ca_file"`
+	// DSN is the ClickHouse server Data Source Name.
+	// For tcp protocol reference: [ClickHouse/clickhouse-go#dsn](https://github.com/ClickHouse/clickhouse-go#dsn).
+	// For http protocol reference: [mailru/go-clickhouse/#dsn](https://github.com/mailru/go-clickhouse/#dsn).
+	DSN string `mapstructure:"dsn"`
 	// TTLDays is The data time-to-live in days, 0 means no ttl.
-	TTLDays uint `mapstructure:"ttl"`
+	TTLDays uint `mapstructure:"ttl_days"`
 }
 
 var (
-	errConfigNoAddress  = errors.New("address must be specified")
-	errConfigNoDatabase = errors.New("database must be specified")
+	errConfigNoDSN = errors.New("dsn must be specified")
 )
 
 // Validate validates the clickhouse server configuration.
 func (cfg *Config) Validate() (err error) {
-	if cfg.Address == "" {
-		err = multierr.Append(err, errConfigNoAddress)
-	}
-	if cfg.Database == "" {
-		err = multierr.Append(err, errConfigNoDatabase)
+	if cfg.DSN == "" {
+		err = multierr.Append(err, errConfigNoDSN)
 	}
 	return err
 }

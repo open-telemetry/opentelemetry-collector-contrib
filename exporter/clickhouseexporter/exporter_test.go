@@ -19,7 +19,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -48,21 +47,13 @@ func TestExporter_New(t *testing.T) {
 	}{
 		"no address": {
 			config: withDefaultConfig(func(cfg *Config) {
-				cfg.Address = ""
-				cfg.Database = ""
+				cfg.DSN = ""
 			}),
-			want: failWith(multierr.Append(errConfigNoAddress, errConfigNoDatabase)),
-		},
-		"no database": {
-			config: withDefaultConfig(func(cfg *Config) {
-				cfg.Address = "tcp://127.0.0.1:9000"
-				cfg.Database = ""
-			}),
-			want: failWith(errConfigNoDatabase),
+			want: failWith(errConfigNoDSN),
 		},
 		"valid": {
 			config: withDefaultConfig(func(cfg *Config) {
-				cfg.Address = "tcp://127.0.0.1:9000"
+				cfg.DSN = "tcp://127.0.0.1:9000"
 			}),
 			want: success,
 		},

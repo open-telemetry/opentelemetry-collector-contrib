@@ -40,13 +40,13 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, len(cfg.Exporters), 2)
 
 	defaultCfg := factory.CreateDefaultConfig()
-	defaultCfg.(*Config).Address = "tcp://127.0.0.1:9000"
+	defaultCfg.(*Config).DSN = "tcp://127.0.0.1:9000?database=default"
 	r0 := cfg.Exporters[config.NewComponentID(typeStr)]
 	assert.Equal(t, r0, defaultCfg)
 
-	r1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "customname")].(*Config)
+	r1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "full")].(*Config)
 	assert.Equal(t, r1, &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "customname")),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "full")),
 		TimeoutSettings: exporterhelper.TimeoutSettings{
 			Timeout: 5 * time.Second,
 		},
@@ -56,12 +56,8 @@ func TestLoadConfig(t *testing.T) {
 			MaxInterval:     30 * time.Second,
 			MaxElapsedTime:  5 * time.Minute,
 		},
-		Address:  "tcp://127.0.0.1:9000",
-		Database: "default",
-		Username: "username",
-		Password: "password",
-		CaFile:   "ca_file",
-		TTLDays:  3,
+		DSN:     "tcp://127.0.0.1:9000?database=default",
+		TTLDays: 3,
 	})
 }
 

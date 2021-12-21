@@ -34,7 +34,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestFactory_CreateLogsExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := withDefaultConfig(func(cfg *Config) {
-		cfg.Address = "tcp://127.0.0.1:9000"
+		cfg.DSN = "tcp://127.0.0.1:9000"
 	})
 	params := componenttest.NewNopExporterCreateSettings()
 	exporter, err := factory.CreateLogsExporter(context.Background(), params, cfg)

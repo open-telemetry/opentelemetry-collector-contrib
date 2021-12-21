@@ -1,26 +1,26 @@
 # ClickHouse Exporter
 
 **Status: experimental**
+
 Supported pipeline types: logs.
 
-This exporter supports sending OpenTelemetry logs to [ClickHouse](https://clickhouse.com/).
+This exporter supports sending OpenTelemetry logs to [ClickHouse](https://clickhouse.com/). It will also support spans and metrics in the future.
 
 Note:
-Always add [batchprocessor](https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/batchprocessor) to collector pipeline, as Clickhouse [recommend](https://clickhouse.com/docs/en/introduction/performance/#performance-when-inserting-data ) inserting data in packets of at least 1000 rows, or no more than a single request per second.
+Always add [batch-processor](https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/batchprocessor) to collector pipeline, as [ClickHouse document says:](https://clickhouse.com/docs/en/introduction/performance/#performance-when-inserting-data) 
+> We recommend inserting data in packets of at least 1000 rows, or no more than a single request per second. When inserting to a MergeTree table from a tab-separated dump, the insertion speed can be from 50 to 200 MB/s.
 
 ## Configuration options
 
 The following settings are required:
 
-- `address` (no default): The ClickHouse server address.
-- `database` (default="default"): is the database name write data.
+- `dsn` (no default): The ClickHouse server DSN (Data Source Name), for example `tcp://127.0.0.1:9000?username=user&password=qwerty&database=default`
+   For tcp protocol reference: [ClickHouse/clickhouse-go#dsn](https://github.com/ClickHouse/clickhouse-go#dsn).
+   For http protocol reference: [mailru/go-clickhouse/#dsn](https://github.com/mailru/go-clickhouse/#dsn).
 
 The following settings can be optionally configured:
 
-- `username` (default=""): The username to connect ClickHouse.
-- `password` (default=""): The password to connect ClickHouse.
-- `ca_file` (default=""): the cert file path to connect ClickHouse.
-- `ttl` (default=0): The data time-to-live in days, 0 means no ttl.
+- `ttl_days` (default=0): The data time-to-live in days, 0 means no ttl.
 - `timeout` (default = 5s): The timeout for every attempt to send data to the backend.
 - `retry_on_failure`
     - `enabled` (default = true)
@@ -38,12 +38,8 @@ processors:
     timeout: 10s
 exporters:
   clickhouse:
-    address: tcp://127.0.0.1:9000
-    database: default
-    username: username
-    password: password
-    ca_file: ca_file
-    ttl: 3
+    dsn: tcp://127.0.0.1:9000?database=default
+    ttl_days: 3
     timeout: 5s
     retry_on_failure:
       enabled: true
@@ -58,7 +54,7 @@ service:
       exporters: [clickhouse]
 ```
 
-## table schema
+## Schema
 
 ```clickhouse
 CREATE TABLE IF NOT EXISTS logs (
@@ -86,5 +82,4 @@ CREATE TABLE IF NOT EXISTS logs (
 TTL timestamp + INTERVAL 3 DAY
 PARTITION BY toDate(timestamp)
 ORDER BY (Name, -toUnixTimestamp(timestamp))
-SETTINGS index_granularity=1024
 ```
