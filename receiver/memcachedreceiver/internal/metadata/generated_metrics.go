@@ -106,7 +106,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("memcached.commands")
 			metric.SetDescription("Commands executed.")
-			metric.SetUnit("1")
+			metric.SetUnit("{commands}")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(true)
 			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
@@ -117,7 +117,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("memcached.connections.current")
 			metric.SetDescription("The current number of open connections.")
-			metric.SetUnit("connections")
+			metric.SetUnit("{connections}")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(false)
 			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
@@ -128,7 +128,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("memcached.connections.total")
 			metric.SetDescription("Total number of connections opened since the server started running.")
-			metric.SetUnit("connections")
+			metric.SetUnit("{connections}")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(true)
 			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
@@ -139,7 +139,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("memcached.cpu.usage")
 			metric.SetDescription("Accumulated user and system time.")
-			metric.SetUnit("1")
+			metric.SetUnit("s")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(true)
 			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
@@ -150,7 +150,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("memcached.current_items")
 			metric.SetDescription("Number of items currently stored in the cache.")
-			metric.SetUnit("1")
+			metric.SetUnit("{items}")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(false)
 			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
@@ -161,7 +161,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("memcached.evictions")
 			metric.SetDescription("Cache item evictions.")
-			metric.SetUnit("1")
+			metric.SetUnit("{evictions}")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(true)
 			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
@@ -192,7 +192,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("memcached.operations")
 			metric.SetDescription("Operation counts.")
-			metric.SetUnit("1")
+			metric.SetUnit("{operations}")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(true)
 			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
@@ -203,7 +203,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("memcached.threads")
 			metric.SetDescription("Number of threads used by the memcached instance.")
-			metric.SetUnit("1")
+			metric.SetUnit("{threads}")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(false)
 			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
