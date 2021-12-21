@@ -28,8 +28,8 @@ const (
 )
 
 type Config struct {
-	config.ExporterSettings
-	Path string
+	config.ExporterSettings `mapstructure:",squash"`
+	Path                    string `mapstructure:"path"`
 }
 
 // NewFactory creates a factory for the Parquet exporter.
