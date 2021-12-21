@@ -34,7 +34,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmapprovider"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/service"
 	"go.uber.org/zap"
@@ -159,8 +158,8 @@ service:
 	}
 
 	appSettings := service.CollectorSettings{
-		Factories:         factories,
-		ConfigMapProvider: configmapprovider.NewFile(confFile.Name()),
+		Factories:      factories,
+		ConfigProvider: service.NewDefaultConfigProvider(confFile.Name(), nil),
 		BuildInfo: component.BuildInfo{
 			Command:     "otelcol",
 			Description: "OpenTelemetry Collector",
