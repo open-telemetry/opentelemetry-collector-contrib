@@ -7,9 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/open-telemetry/opentelemetry-python/compare/v1.8.0-0.27b0...HEAD)
 
+### Fixed
+
+- `opentelemetry-instrumentation-flask` Flask: Conditionally create SERVER spans
+  ([#828](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/828))
+
 ## [1.8.0-0.27b0](https://github.com/open-telemetry/opentelemetry-python/releases/tag/v1.8.0-0.27b0) - 2021-12-17
-
-
 
 ### Added
 
@@ -23,9 +26,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `opentelemetry-instrumentation-tornado` Add support instrumentation for Tornado 5.1.1
   ([#812](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/812))
 
-- `opentelemetry-instrumentation-flask` Flask: Conditionally create SERVER spans
-  ([#828](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/828))
-  
 ## [1.7.1-0.26b1](https://github.com/open-telemetry/opentelemetry-python/releases/tag/v1.7.0-0.26b0) - 2021-11-11
 
 - `opentelemetry-instrumentation-aws-lambda` Add instrumentation for AWS Lambda Service - pkg metadata files (Part 1/2)
