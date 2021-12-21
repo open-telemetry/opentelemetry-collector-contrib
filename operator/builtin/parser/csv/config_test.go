@@ -53,6 +53,16 @@ func TestJSONParserConfig(t *testing.T) {
 			}(),
 		},
 		{
+			Name: "header_attribute",
+			Expect: func() *CSVParserConfig {
+				p := defaultCfg()
+				p.HeaderAttribute = "header_field"
+				p.ParseFrom = entry.NewBodyField("message")
+				p.FieldDelimiter = "\t"
+				return p
+			}(),
+		},
+		{
 			Name: "timestamp",
 			Expect: func() *CSVParserConfig {
 				p := defaultCfg()
