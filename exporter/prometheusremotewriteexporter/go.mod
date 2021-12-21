@@ -11,7 +11,7 @@ require (
 	github.com/prometheus/prometheus v1.8.2-0.20210621150501-ff58416a0b02
 	github.com/stretchr/testify v1.7.0
 	github.com/tidwall/wal v1.1.7
-	go.opentelemetry.io/collector v0.41.1-0.20211220220048-babb2d26d6a9
+	go.opentelemetry.io/collector v0.41.1-0.20211221183212-22c010d4446c
 	go.opentelemetry.io/collector/model v0.41.1-0.20211220220048-babb2d26d6a9
 	go.uber.org/multierr v1.7.0
 )
