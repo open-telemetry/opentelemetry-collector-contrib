@@ -140,11 +140,11 @@ func (c mockClientLogs) stats() ([]containerStats, error) {
 	return nil, nil
 }
 
-func (c mockClient) getEventsResponse() (*http.Response, error) {
+func (c mockClient) getEventsResponse(ctx context.Context) (*http.Response, error) {
 	return nil, nil
 }
 
-func (c mockClientLogs) getEventsResponse() (*http.Response, error) {
+func (c mockClientLogs) getEventsResponse(ctx context.Context) (*http.Response, error) {
 	tempReport := &http.Response{
 		Status:     "Ok",
 		StatusCode: 200,

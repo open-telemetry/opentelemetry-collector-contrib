@@ -63,6 +63,7 @@ func createReceiver(
 	var err error
 
 	receiverLock.Lock()
+	defer receiverLock.Unlock()
 	r := receivers[podmanConfig]
 	if r == nil {
 		r, err = newReceiver(ctx, params, podmanConfig, nil)
@@ -71,7 +72,6 @@ func createReceiver(
 		}
 		receivers[podmanConfig] = r
 	}
-	receiverLock.Unlock()
 	return r, err
 }
 
