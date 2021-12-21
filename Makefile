@@ -23,6 +23,7 @@ INTEGRATION_TEST_MODULES := \
 	receiver/kafkametricsreceiver \
 	receiver/nginxreceiver \
 	receiver/memcachedreceiver \
+	receiver/mysqlreceiver \
 	internal/common \
 	extension/observer/dockerobserver
 
