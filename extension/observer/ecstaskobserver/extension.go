@@ -97,20 +97,15 @@ func (e *ecsTaskObserver) endpointsFromTaskMetadata(taskMetadata *ecsutil.TaskMe
 
 // portFromLabels will iterate the PortLabels config option and return the first valid port match
 func (e *ecsTaskObserver) portFromLabels(labels map[string]string) uint16 {
-	var port uint16
 	for _, portLabel := range e.config.PortLabels {
 		if p, ok := labels[portLabel]; ok {
-			if pint, err := strconv.Atoi(p); err != nil {
+			if port, err := strconv.ParseUint(p, 10, 16); err != nil {
 				e.telemetry.Logger.Warn("failed parsing port label", zap.String("label", portLabel), zap.Error(err))
 				continue
-			} else if pint < 0 || pint > 65535 {
-				e.telemetry.Logger.Warn("port label value invalid for port usage", zap.String("label", portLabel), zap.Int("value", pint))
-				continue
 			} else {
-				port = uint16(pint)
-				break
+				return uint16(port)
 			}
 		}
 	}
-	return port
+	return 0
 }
