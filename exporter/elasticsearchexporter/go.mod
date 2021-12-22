@@ -7,8 +7,8 @@ require (
 	github.com/elastic/go-elasticsearch/v7 v7.16.0
 	github.com/elastic/go-structform v0.0.9
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.41.1-0.20211221183212-22c010d4446c
-	go.opentelemetry.io/collector/model v0.41.1-0.20211220220048-babb2d26d6a9
+	go.opentelemetry.io/collector v0.41.1-0.20211222180302-3db1d1146483
+	go.opentelemetry.io/collector/model v0.41.1-0.20211222180302-3db1d1146483
 	go.uber.org/multierr v1.7.0
 	go.uber.org/zap v1.19.1
 

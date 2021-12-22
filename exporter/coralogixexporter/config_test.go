@@ -22,8 +22,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -31,7 +31,7 @@ func TestLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	factories.Exporters[typestr] = factory
 	// t.Log("new exporter " + typestr)
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "example", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "example", "config.yaml"), factories)
 	require.NoError(t, err)
 	apiConfig := cfg.Exporters[config.NewComponentID(typestr)].(*Config)
 	err = apiConfig.Validate()
