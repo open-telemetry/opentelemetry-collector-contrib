@@ -45,6 +45,7 @@
 - `skywalkingexporter`: add skywalking metrics exporter (#6528)
 - `deltatorateprocessor`: add int counter support (#6982)
 - `filestorageextension`: document default values (#7022)
+- `redisreceiver`: Migrate the scraper to the mdatagen metrics builder (#6938)  
 
 ## v0.41.0
 
