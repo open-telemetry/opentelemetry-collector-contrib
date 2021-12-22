@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package testbed // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 
 import (
 	"go.opentelemetry.io/collector/component"
@@ -25,12 +25,13 @@ import (
 	"go.opentelemetry.io/collector/processor/memorylimiterprocessor"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.uber.org/multierr"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema/docsgen/docsgen"
 )
 
-func main() {
+// Components returns the set of components for tests
+func Components() (
+	component.Factories,
+	error,
+) {
 	var errs error
 
 	extensions, err := component.MakeExtensionFactoryMap(
@@ -57,15 +58,12 @@ func main() {
 	)
 	errs = multierr.Append(errs, err)
 
-	cmps := component.Factories{
+	factories := component.Factories{
 		Extensions: extensions,
 		Receivers:  receivers,
 		Processors: processors,
 		Exporters:  exporters,
 	}
-	if errs != nil {
-		panic(errs)
-	}
-	dr := configschema.NewDefaultDirResolver()
-	docsgen.CLI(cmps, dr)
+
+	return factories, errs
 }
