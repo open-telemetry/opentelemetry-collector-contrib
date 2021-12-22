@@ -26,8 +26,8 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -36,7 +36,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -160,16 +160,16 @@ func TestFailedLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	_, err = configtest.LoadConfigAndValidate(path.Join(".", "testdata", "bad_typo_default_proto_config.yaml"), factories)
+	_, err = servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "bad_typo_default_proto_config.yaml"), factories)
 	assert.EqualError(t, err, "error reading receivers configuration for \"jaeger\": 1 error(s) decoding:\n\n* 'protocols' has invalid keys: thrift_htttp")
 
-	_, err = configtest.LoadConfigAndValidate(path.Join(".", "testdata", "bad_proto_config.yaml"), factories)
+	_, err = servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "bad_proto_config.yaml"), factories)
 	assert.EqualError(t, err, "error reading receivers configuration for \"jaeger\": 1 error(s) decoding:\n\n* 'protocols' has invalid keys: thrift_htttp")
 
-	_, err = configtest.LoadConfigAndValidate(path.Join(".", "testdata", "bad_no_proto_config.yaml"), factories)
+	_, err = servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "bad_no_proto_config.yaml"), factories)
 	assert.EqualError(t, err, "receiver \"jaeger\" has invalid configuration: must specify at least one protocol when using the Jaeger receiver")
 
-	_, err = configtest.LoadConfigAndValidate(path.Join(".", "testdata", "bad_empty_config.yaml"), factories)
+	_, err = servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "bad_empty_config.yaml"), factories)
 	assert.EqualError(t, err, "error reading receivers configuration for \"jaeger\": empty config for Jaeger receiver")
 }
 
