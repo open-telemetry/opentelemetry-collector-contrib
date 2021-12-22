@@ -91,8 +91,8 @@ func TestTemporaryFile(t *testing.T) {
 	assert.ErrorIs(t, err, os.ErrNotExist)
 }
 
-func TestTemporaryDirectory(t *testing.T)  {
-	var tmp string 
+func TestTemporaryDirectory(t *testing.T) {
+	var tmp string
 
 	t.Run("scoped lifetime", func(t *testing.T) {
 		tmp = NewTemporaryDirectory(t)
@@ -101,7 +101,7 @@ func TestTemporaryDirectory(t *testing.T)  {
 		assert.NoError(t, err)
 		assert.True(t, stat.IsDir(), "Must have the directory permissions set")
 	})
-	
+
 	_, err := os.Stat(tmp)
 	assert.ErrorIs(t, err, os.ErrNotExist)
 }

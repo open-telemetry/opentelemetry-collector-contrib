@@ -396,7 +396,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, len(tests)+0 /* not tested */, len(expFactories))
+	assert.Equal(t, len(tests), len(expFactories), "All user configureable components must be added to the lifecycle test")
 	for _, tt := range tests {
 		t.Run(string(tt.exporter), func(t *testing.T) {
 			t.Parallel()
