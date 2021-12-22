@@ -18,7 +18,6 @@ import (
 	"context"
 	"database/sql"
 
-	_ "github.com/ClickHouse/clickhouse-go" // import for register db
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 )

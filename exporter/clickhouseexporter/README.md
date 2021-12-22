@@ -5,10 +5,37 @@
 Supported pipeline types: logs.
 
 This exporter supports sending OpenTelemetry logs to [ClickHouse](https://clickhouse.com/). It will also support spans and metrics in the future.
+> ClickHouse is an open-source, high performance columnar OLAP database management system for real-time analytics using SQL.
+> Throughput can be measured in rows per second or megabytes per second. 
+> If the data is placed in the page cache, a query that is not too complex is processed on modern hardware at a speed of approximately 2-10 GB/s of uncompressed data on a single server.
+> If 10 bytes of columns are extracted, the speed is expected to be around 100-200 million rows per second.
 
 Note:
 Always add [batch-processor](https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/batchprocessor) to collector pipeline, as [ClickHouse document says:](https://clickhouse.com/docs/en/introduction/performance/#performance-when-inserting-data) 
 > We recommend inserting data in packets of at least 1000 rows, or no more than a single request per second. When inserting to a MergeTree table from a tab-separated dump, the insertion speed can be from 50 to 200 MB/s.
+
+## User Cases
+
+1. Use [Grafana Clickhouse datasource](https://grafana.com/grafana/plugins/grafana-clickhouse-datasource/) or
+[vertamedia-clickhouse-datasource](https://grafana.com/grafana/plugins/vertamedia-clickhouse-datasource/) to make dashboard.
+Support time-series graph, table and logs.
+
+2. Analyze logs via powerful clickhouse SQL.
+
+```clickhouse
+/* get error count about my service last 1 hour.*/
+SELECT count(*)
+FROM logs
+WHERE SeverityText="ERROR" AND timestamp >= NOW() - INTERVAL 1 HOUR;
+/* find error log.*/
+SELECT * 
+FROM logs 
+WHERE SeverityText="ERROR" AND timestamp >= NOW() - INTERVAL 1 HOUR;
+/* find log with specific attribute .*/
+SELECT Body
+FROM logs 
+WHERE Attributes.value[indexOf(Attributes.key, 'http.method')] = 'post' AND timestamp >= NOW() - INTERVAL 1 HOUR;
+```
 
 ## Configuration options
 
