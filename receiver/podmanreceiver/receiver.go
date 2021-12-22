@@ -208,7 +208,7 @@ func (r *receiver) handleEvents(ctx context.Context, eventBackoff *backoff.Expon
 			}
 
 			// Translate the events into the pdata.logs format
-			ld, err := traslateEventsToLogs(r.set.Logger, decodedEvent)
+			ld, err := translateEventsToLogs(r.set.Logger, decodedEvent)
 			if err != nil {
 				r.set.Logger.Error("error translating event to log", zap.Error(err))
 				return err
