@@ -18,39 +18,98 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
+var _ component.Extension = (*k8sObserver)(nil)
+var _ observer.Observable = (*k8sObserver)(nil)
+
 type k8sObserver struct {
-	logger   *zap.Logger
-	informer cache.SharedInformer
-	stop     chan struct{}
-	config   *Config
+	telemetry         component.TelemetrySettings
+	podInformer       cache.SharedInformer
+	podListerWatcher  cache.ListerWatcher
+	nodeInformer      cache.SharedInformer
+	nodeListerWatcher cache.ListerWatcher
+	stop              chan struct{}
+	config            *Config
 }
 
+// Start will populate the cache.SharedInformers for pods and nodes as configured and run them as goroutines.
 func (k *k8sObserver) Start(ctx context.Context, host component.Host) error {
-	go k.informer.Run(k.stop)
+	if k.podListerWatcher != nil && k.podInformer == nil {
+		k.telemetry.Logger.Debug("creating and starting pod informer")
+		k.podInformer = cache.NewSharedInformer(k.podListerWatcher, &v1.Pod{}, 0)
+		go k.podInformer.Run(k.stop)
+	}
+	if k.nodeListerWatcher != nil && k.nodeInformer == nil {
+		k.telemetry.Logger.Debug("creating and starting node informer")
+		k.nodeInformer = cache.NewSharedInformer(k.nodeListerWatcher, &v1.Node{}, 0)
+		go k.nodeInformer.Run(k.stop)
+	}
 	return nil
 }
 
+// Shutdown tells any cache.SharedInformers to stop running.
 func (k *k8sObserver) Shutdown(ctx context.Context) error {
 	close(k.stop)
 	return nil
 }
 
-var _ (component.Extension) = (*k8sObserver)(nil)
-
-// ListAndWatch notifies watcher with the current state and sends subsequent state changes.
+// ListAndWatch sets the respective cache.SharedInformer event handlers to inform the
+// provided observer.Notify listener of pod and node entity updates
 func (k *k8sObserver) ListAndWatch(listener observer.Notify) {
-	k.informer.AddEventHandler(&handler{watcher: listener, idNamespace: k.config.ID().String()})
+	if k.podInformer != nil {
+		k.podInformer.AddEventHandler(&handler{listener: listener, idNamespace: k.config.ID().String(), logger: k.telemetry.Logger})
+	}
+	if k.nodeInformer != nil {
+		k.nodeInformer.AddEventHandler(&handler{listener: listener, idNamespace: k.config.ID().String(), logger: k.telemetry.Logger})
+	}
 }
 
 // newObserver creates a new k8s observer extension.
-func newObserver(logger *zap.Logger, config *Config, listWatch cache.ListerWatcher) (component.Extension, error) {
-	informer := cache.NewSharedInformer(listWatch, &v1.Pod{}, 0)
-	return &k8sObserver{logger: logger, informer: informer, stop: make(chan struct{}), config: config}, nil
+func newObserver(config *Config, telemetrySettings component.TelemetrySettings) (component.Extension, error) {
+	client, err := k8sconfig.MakeClient(config.APIConfig)
+	if err != nil {
+		return nil, err
+	}
+	restClient := client.CoreV1().RESTClient()
+
+	var podListerWatcher cache.ListerWatcher
+	if config.ObservePods {
+		var podSelector fields.Selector
+		if config.Node == "" {
+			podSelector = fields.Everything()
+		} else {
+			podSelector = fields.OneTermEqualSelector("spec.nodeName", config.Node)
+		}
+		telemetrySettings.Logger.Debug("observing pods")
+		podListerWatcher = cache.NewListWatchFromClient(restClient, "pods", v1.NamespaceAll, podSelector)
+	}
+
+	var nodeListerWatcher cache.ListerWatcher
+	if config.ObserveNodes {
+		var nodeSelector fields.Selector
+		if config.Node == "" {
+			nodeSelector = fields.Everything()
+		} else {
+			nodeSelector = fields.OneTermEqualSelector("metadata.name", config.Node)
+		}
+		telemetrySettings.Logger.Debug("observing nodes")
+		nodeListerWatcher = cache.NewListWatchFromClient(restClient, "nodes", v1.NamespaceAll, nodeSelector)
+	}
+
+	obs := &k8sObserver{
+		telemetry:         telemetrySettings,
+		podListerWatcher:  podListerWatcher,
+		nodeListerWatcher: nodeListerWatcher,
+		stop:              make(chan struct{}),
+		config:            config,
+	}
+
+	return obs, nil
 }

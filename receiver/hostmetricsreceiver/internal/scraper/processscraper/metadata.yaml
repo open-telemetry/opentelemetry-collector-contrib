@@ -11,6 +11,7 @@ attributes:
 
 metrics:
   process.cpu.time:
+    enabled: true
     description: Total CPU seconds broken down by different states.
     unit: s
     sum:
@@ -20,6 +21,7 @@ metrics:
     attributes: [state]
 
   process.memory.physical_usage:
+    enabled: true
     description: The amount of physical memory in use.
     unit: By
     sum:
@@ -28,6 +30,7 @@ metrics:
       monotonic: false
 
   process.memory.virtual_usage:
+    enabled: true
     description: Virtual memory size.
     unit: By
     sum:
@@ -36,6 +39,7 @@ metrics:
       monotonic: false
 
   process.disk.io:
+    enabled: true
     description: Disk bytes transferred.
     unit: By
     sum:
