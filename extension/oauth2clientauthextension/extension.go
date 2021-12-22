@@ -21,6 +21,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
@@ -47,13 +48,8 @@ type errorWrappingTokenSource struct {
 // errorWrappingTokenSource implements TokenSource
 var _ oauth2.TokenSource = (*errorWrappingTokenSource)(nil)
 
-// FailedToGetSecurityToken indicates a problem communicating with OAuth2 server.
-// We support Unwrap() instead of using `%w` so that we can customize the error message
-// to include both the wrapped error and information from the configuration.
-type FailedToGetSecurityTokenError struct {
-	inner  error
-	config *clientcredentials.Config
-}
+// ErrFailedToGetSecurityToken indicates a problem communicating with OAuth2 server.
+var ErrFailedToGetSecurityToken = fmt.Errorf("failed to get security token from token endpoint")
 
 func newClientCredentialsExtension(cfg *Config, logger *zap.Logger) (*ClientCredentialsAuthenticator, error) {
 	if cfg.ClientID == "" {
@@ -102,10 +98,10 @@ func (o *ClientCredentialsAuthenticator) Shutdown(_ context.Context) error {
 func (ewts errorWrappingTokenSource) Token() (*oauth2.Token, error) {
 	tok, err := ewts.ts.Token()
 	if err != nil {
-		err = FailedToGetSecurityTokenError{
-			inner:  err,
-			config: ewts.config,
-		}
+		var errs error
+		errs = multierr.Append(errs, fmt.Errorf("%w (endpoint %q)", ErrFailedToGetSecurityToken, ewts.config.TokenURL))
+		errs = multierr.Append(errs, err)
+		return tok, errs
 	}
 	return tok, err
 }
@@ -133,18 +129,4 @@ func (o *ClientCredentialsAuthenticator) PerRPCCredentials() (credentials.PerRPC
 			config: o.clientCredentials,
 		},
 	}, nil
-}
-
-// Error() marks ErrFailedToGetSecurityToken as an `error` type
-func (e FailedToGetSecurityTokenError) Error() string {
-	if e.config == nil {
-		return "unconfigured ErrFailedToGetSecurityToken"
-	}
-
-	return fmt.Sprintf("failed to get security token from token endpoint %q: %v", e.config.TokenURL, e.inner)
-}
-
-// Unwrap() lets ErrFailedToGetSecurityToken work with errors.Is() and errors.As()
-func (e FailedToGetSecurityTokenError) Unwrap() error {
-	return e.inner
 }

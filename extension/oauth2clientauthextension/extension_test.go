@@ -294,31 +294,15 @@ func TestFailContactingOAuth(t *testing.T) {
 	}, zap.NewNop())
 	assert.Nil(t, err)
 
+	// Test for gRPC connections
 	credential, err := oauth2Authenticator.PerRPCCredentials()
 	assert.Nil(t, err)
 
 	_, err = credential.GetRequestMetadata(context.Background())
-	assert.ErrorAs(t, err, &FailedToGetSecurityTokenError{})
+	assert.ErrorIs(t, err, ErrFailedToGetSecurityToken)
 	assert.Contains(t, err.Error(), "failed to get security token from token endpoint")
-}
 
-func TestFailContactingOAuthViaHttp(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(200)
-		w.Write([]byte("not-json"))
-	}))
-	defer server.Close()
-
-	serverURL, err := url.Parse(server.URL)
-	assert.NoError(t, err)
-
-	oauth2Authenticator, err := newClientCredentialsExtension(&Config{
-		ClientID:     "dummy",
-		ClientSecret: "ABC",
-		TokenURL:     serverURL.String(),
-	}, zap.NewNop())
-	assert.Nil(t, err)
-
+	// Test for HTTP connections
 	setting := confighttp.HTTPClientSettings{
 		Endpoint: "http://example.com/",
 		CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) {
@@ -330,6 +314,6 @@ func TestFailContactingOAuthViaHttp(t *testing.T) {
 	req, err := http.NewRequest("POST", setting.Endpoint, nil)
 	assert.NoError(t, err)
 	_, err = client.Do(req)
-	assert.ErrorAs(t, err, &FailedToGetSecurityTokenError{})
+	assert.ErrorIs(t, err, ErrFailedToGetSecurityToken)
 	assert.Contains(t, err.Error(), "failed to get security token from token endpoint")
 }
