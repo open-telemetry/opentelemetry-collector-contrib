@@ -416,7 +416,7 @@ func TestDefaultExporters(t *testing.T) {
 			assert.Equal(t, config.NewComponentID(tt.exporter), factory.CreateDefaultConfig().ID())
 
 			if tt.skipLifecycle {
-				t.Log("Skipping lifecycle test", tt.exporter)
+				t.Skip("Skipping lifecycle test", tt.exporter)
 				return
 			}
 
