@@ -31,11 +31,11 @@ import (
 	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/service/servicetest"
 	"go.uber.org/zap"
 )
 
@@ -229,7 +229,7 @@ func TestBuildExporterConfig(t *testing.T) {
 
 	factories.Exporters[typeStr] = NewFactory()
 
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "test-build-exporter-config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "test-build-exporter-config.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
