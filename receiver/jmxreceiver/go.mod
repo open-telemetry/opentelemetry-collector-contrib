@@ -7,8 +7,8 @@ require (
 	github.com/shirou/gopsutil/v3 v3.21.11
 	github.com/stretchr/testify v1.7.0
 	github.com/testcontainers/testcontainers-go v0.12.0
-	go.opentelemetry.io/collector v0.41.1-0.20211210184707-4dcb3388a168
-	go.opentelemetry.io/collector/model v0.41.1-0.20211210184707-4dcb3388a168
+	go.opentelemetry.io/collector v0.41.1-0.20211221183212-22c010d4446c
+	go.opentelemetry.io/collector/model v0.41.1-0.20211220220048-babb2d26d6a9
 	go.uber.org/atomic v1.9.0
 	go.uber.org/zap v1.19.1
 
@@ -73,10 +73,10 @@ require (
 	go.uber.org/multierr v1.7.0 // indirect
 	golang.org/x/net v0.0.0-20211108170745-6635138e15ea // indirect
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
-	golang.org/x/sys v0.0.0-20211124211545-fe61309f8881 // indirect
-	golang.org/x/text v0.3.6 // indirect
+	golang.org/x/sys v0.0.0-20211205182925-97ca703d548d // indirect
+	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20211206160659-862468c7d6e0 // indirect
+	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa // indirect
 	google.golang.org/grpc v1.43.0 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

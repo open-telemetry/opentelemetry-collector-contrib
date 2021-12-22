@@ -168,7 +168,6 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metric
 	}
 
 	consumer := metrics.NewConsumer()
-	consumer.ConsumeHost(metadata.GetHost(exp.params.Logger, exp.cfg))
 	pushTime := uint64(time.Now().UTC().UnixNano())
 	err := exp.tr.MapMetrics(ctx, md, consumer)
 	if err != nil {

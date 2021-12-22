@@ -81,6 +81,11 @@ func unsanitizedHostnameFromAttributes(attrs pdata.AttributeMap) (string, bool) 
 		return customHostname.StringVal(), true
 	}
 
+	if launchType, ok := attrs.Get(conventions.AttributeAWSECSLaunchtype); ok && launchType.StringVal() == conventions.AttributeAWSECSLaunchtypeFargate {
+		// If on AWS ECS Fargate, return a valid but empty hostname
+		return "", true
+	}
+
 	// Kubernetes: node-cluster if cluster name is available, else node
 	if k8sNodeName, ok := attrs.Get(AttributeK8sNodeName); ok {
 		if k8sClusterName, ok := getClusterName(attrs); ok {

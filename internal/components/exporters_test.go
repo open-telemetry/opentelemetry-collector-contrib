@@ -53,6 +53,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/newrelicexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parquetexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter"
@@ -143,6 +144,14 @@ func TestDefaultExporters(t *testing.T) {
 			getConfigFn: func() config.Exporter {
 				cfg := expFactories["otlphttp"].CreateDefaultConfig().(*otlphttpexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
+				return cfg
+			},
+		},
+		{
+			exporter: "parquet",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["parquet"].CreateDefaultConfig().(*parquetexporter.Config)
+				cfg.Path = testutil.NewTemporaryDirectory(t)
 				return cfg
 			},
 		},
