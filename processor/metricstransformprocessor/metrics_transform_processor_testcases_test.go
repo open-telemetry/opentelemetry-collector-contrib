@@ -50,6 +50,24 @@ var (
 			},
 		},
 		{
+			name: "metric_name_update_double",
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+					Action:              Update,
+					NewName:             "new/metric1",
+				},
+			},
+			in: []*metricspb.Metric{
+				metricBuilder().setName("metric1").
+					setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).build(),
+			},
+			out: []*metricspb.Metric{
+				metricBuilder().setName("new/metric1").
+					setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).build(),
+			},
+		},
+		{
 			name: "metric_name_update_chained",
 			transforms: []internalTransform{
 				{
