@@ -22,6 +22,8 @@
 
 ## 🧰 Bug fixes 🧰
 
+- `ecstaskobserver`: Fix "Incorrect conversion between integer types" security issue (#6939)
+
 ## 💡 Enhancements 💡
 
 - `lokiexporter`: add complete log record to body (#6619)
