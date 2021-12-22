@@ -28,6 +28,8 @@
 
 - `spanmetricproccessor`: use an LRU cache for the cached Dimensions key-value pairs (#2179)
 
+- `skywalkingexporter`: add skywalking metrics exporter (#6528)
+
 ## v0.41.0
 
 ## 🛑 Breaking changes 🛑
