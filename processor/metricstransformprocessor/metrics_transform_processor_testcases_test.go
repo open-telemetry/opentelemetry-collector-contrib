@@ -68,6 +68,30 @@ var (
 			},
 		},
 		{
+			name: "metric_name_update_double_with_value",
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+					Action:              Update,
+					NewName:             "new/metric1",
+				},
+			},
+			in: []*metricspb.Metric{
+				metricBuilder().setName("metric1").
+					setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
+					setLabels([]string{"label1"}).
+					addTimeseries(1, []string{"value1"}).
+					addDoublePoint(0, 0, 2).build(),
+			},
+			out: []*metricspb.Metric{
+				metricBuilder().setName("new/metric1").
+					setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
+					setLabels([]string{"label1"}).
+					addTimeseries(1, []string{"value1"}).
+					addDoublePoint(0, 0, 2).build(),
+			},
+		},
+		{
 			name: "metric_name_update_chained",
 			transforms: []internalTransform{
 				{
