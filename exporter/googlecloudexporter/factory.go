@@ -16,6 +16,7 @@ package googlecloudexporter // import "github.com/open-telemetry/opentelemetry-c
 
 import (
 	"context"
+	"log"
 	"sync"
 	"time"
         
