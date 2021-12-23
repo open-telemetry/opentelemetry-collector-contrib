@@ -64,7 +64,7 @@ func TestLoadInvalidConfig(t *testing.T) {
 	factory := NewFactory()
 	receiverType := "k8s_events"
 	factories.Receivers[config.Type(receiverType)] = factory
-	_, err = configtest.LoadConfigAndValidate(path.Join(".", "testdata", "invalid_config.yaml"), factories)
+	_, err = servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "invalid_config.yaml"), factories)
 
 	assert.Error(t, err)
 }
