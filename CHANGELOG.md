@@ -21,6 +21,7 @@
 - `mongodbreceiver`: Add metric scraping (#7175)
 - `postgresqlreceiver`: add the receiver to available components (#7079)
 - `tanzuobservability exporter`: Support summary metrics (#7121)
+- `mongodbatlasreceiver`: Add retry and backoff to HTTP client (#6943)
 - Use Jaeger gRPC instead of Thrift in the docker-compose example (#7243)
 - `tanzuobservabilityexporter`: Support exponential histograms (#7127)
 - `receiver_creator`: Log added and removed endpoint env structs (#7248)
