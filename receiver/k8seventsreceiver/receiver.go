@@ -33,6 +33,7 @@ type k8seventsReceiver struct {
 	client          k8s.Interface
 	logsConsumer    consumer.Logs
 	stopperChanList []chan struct{}
+	startTime       time.Time
 	ctx             context.Context
 	cancel          context.CancelFunc
 	obsrecv         *obsreport.Receiver
@@ -52,6 +53,7 @@ func newReceiver(
 		config:       config,
 		client:       client,
 		logsConsumer: consumer,
+		startTime:    time.Now(),
 		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
 			ReceiverID:             config.ID(),
 			Transport:              transport,
@@ -125,11 +127,11 @@ func (kr *k8seventsReceiver) startWatchingNamespace(
 }
 
 // Allow events with eventTimestamp(EventTime/LastTimestamp/FirstTimestamp)
-// not older than the current time by 'InitialLookback' so that
+// not older than the receiver start time by 'InitialLookback' so that
 // event flood can be avoided upon startup.
 func (kr *k8seventsReceiver) allowEvent(ev *corev1.Event) bool {
 	eventTimestamp := getEventTimestamp(ev)
-	return !eventTimestamp.Before(time.Now().Add(-kr.config.InitialLookback))
+	return !eventTimestamp.Before(kr.startTime.Add(-kr.config.InitialLookback))
 }
 
 // Return the EventTimestamp based on the populated k8s event timestamps.
