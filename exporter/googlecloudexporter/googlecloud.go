@@ -20,7 +20,8 @@ import (
 	"context"
 	"fmt"
 	"strings"
-
+	
+        "go.opencensus.io/plugin/ocgrpc"
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	cloudtrace "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace"
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
@@ -75,7 +76,7 @@ func generateClientOptions(cfg *Config) ([]option.ClientOption, error) {
 			if cfg.UserAgent != "" {
 				dialOpts = append(dialOpts, grpc.WithUserAgent(cfg.UserAgent))
 			}
-			conn, err := grpc.Dial(cfg.Endpoint, append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))...)
+			conn, err := grpc.Dial(cfg.Endpoint, append(dialOpts, grpc.WithStatsHandler(&ocgrpc.ClientHandler{}), grpc.WithTransportCredentials(insecure.NewCredentials()))...)
 			if err != nil {
 				return nil, fmt.Errorf("cannot configure grpc conn: %w", err)
 			}

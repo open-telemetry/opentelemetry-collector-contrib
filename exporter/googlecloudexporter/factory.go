@@ -18,7 +18,8 @@ import (
 	"context"
 	"sync"
 	"time"
-
+        
+	"go.opencensus.io/plugin/ocgrpc"
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -38,6 +39,10 @@ func NewFactory() component.ExporterFactory {
 	// register view for self-observability
 	once.Do(func() {
 		view.Register(viewPointCount)
+		// Register views to collect data. 
+                if err := view.Register(ocgrpc.DefaultClientViews...); err != nil { 
+                        log.Fatal(err) 
+                } 
 	})
 
 	return exporterhelper.NewFactory(
