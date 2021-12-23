@@ -42,7 +42,7 @@ type timeconstraints struct {
 }
 
 func newMongoDBAtlasScraper(log *zap.Logger, cfg *Config) (scraperhelper.Scraper, error) {
-	client, err := internal.NewMongoDBAtlasClient(cfg.PublicKey, cfg.PrivateKey, log)
+	client, err := internal.NewMongoDBAtlasClient(cfg.PublicKey, cfg.PrivateKey, cfg.RetryAttempts, cfg.RetryInterval, log)
 	if err != nil {
 		return nil, err
 	}

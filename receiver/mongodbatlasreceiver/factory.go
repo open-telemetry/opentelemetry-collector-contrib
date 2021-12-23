@@ -26,8 +26,10 @@ import (
 )
 
 const (
-	typeStr            = "mongodbatlas"
-	defaultGranularity = "PT1M" // 1-minute, as per https://docs.atlas.mongodb.com/reference/api/process-measurements/
+	typeStr              = "mongodbatlas"
+	defaultGranularity   = "PT1M" // 1-minute, as per https://docs.atlas.mongodb.com/reference/api/process-measurements/
+	defaultRetryInterval = 750    // milliseconds
+	defaultRetryAttempts = 5      // interval doubles with each attempt for a request
 )
 
 // NewFactory creates a factory for MongoDB Atlas receiver
@@ -57,5 +59,7 @@ func createDefaultConfig() config.Receiver {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.DefaultScraperControllerSettings(typeStr),
 		Granularity:               defaultGranularity,
+		RetryAttempts:             defaultRetryAttempts,
+		RetryInterval:             defaultRetryInterval,
 	}
 }

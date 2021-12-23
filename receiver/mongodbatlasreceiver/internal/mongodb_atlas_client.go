@@ -17,6 +17,8 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"time"
 
 	"github.com/mongodb-forks/digest"
 	"github.com/pkg/errors"
@@ -24,6 +26,38 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 )
+
+type RetryBackoffRoundTripper struct {
+	originalTransport http.RoundTripper
+	log               *zap.Logger
+	Attempts          int
+	RetryDelay        int // In ms
+}
+
+func (rt *RetryBackoffRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
+
+	resp, err := rt.originalTransport.RoundTrip(r)
+	if err != nil {
+		return nil, err // Can't do anything
+	}
+	if resp.StatusCode == 429 {
+		for i := 0; i < rt.Attempts; i++ {
+			delay := rt.RetryDelay << i
+			time.Sleep(time.Duration(delay) * time.Millisecond)
+			rt.log.Warn("server busy, retrying request",
+				zap.Int("attempts", i+1),
+				zap.Int("delay", delay))
+			resp, err = rt.originalTransport.RoundTrip(r)
+			if err != nil {
+				return nil, err
+			}
+			if resp.StatusCode != 429 {
+				break
+			}
+		}
+	}
+	return resp, err
+}
 
 // MongoDBAtlasClient wraps the official MongoDB Atlas client to manage pagination
 // and mapping to OpenTelmetry metric and log structures.
@@ -36,13 +70,18 @@ type MongoDBAtlasClient struct {
 func NewMongoDBAtlasClient(
 	publicKey string,
 	privateKey string,
+	retryAttempts int,
+	retryInterval int,
 	log *zap.Logger,
 ) (*MongoDBAtlasClient, error) {
 	t := digest.NewTransport(publicKey, privateKey)
-	tc, err := t.Client()
-	if err != nil {
-		return nil, fmt.Errorf("could not create MongoDB Atlas transport HTTP client: %w", err)
+	retry := &RetryBackoffRoundTripper{
+		originalTransport: t,
+		log:               log,
+		Attempts:          retryAttempts,
+		RetryDelay:        retryInterval,
 	}
+	tc := &http.Client{Transport: retry}
 	client := mongodbatlas.NewClient(tc)
 	return &MongoDBAtlasClient{
 		log,
