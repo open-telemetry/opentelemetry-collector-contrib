@@ -300,7 +300,7 @@ func TestFailContactingOAuth(t *testing.T) {
 
 	_, err = credential.GetRequestMetadata(context.Background())
 	assert.ErrorIs(t, err, errFailedToGetSecurityToken)
-	assert.Contains(t, err.Error(), "failed to get security token from token endpoint")
+	assert.Contains(t, err.Error(), serverURL.String())
 
 	// Test for HTTP connections
 	setting := confighttp.HTTPClientSettings{
@@ -315,5 +315,5 @@ func TestFailContactingOAuth(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = client.Do(req)
 	assert.ErrorIs(t, err, errFailedToGetSecurityToken)
-	assert.Contains(t, err.Error(), "failed to get security token from token endpoint")
+	assert.Contains(t, err.Error(), serverURL.String())
 }
