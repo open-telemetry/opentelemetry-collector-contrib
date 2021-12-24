@@ -40,12 +40,20 @@ type ClientCredentialsAuthenticator struct {
 var _ configauth.ClientAuthenticator = (*ClientCredentialsAuthenticator)(nil)
 
 type errorWrappingTokenSource struct {
-	ts      oauth2.TokenSource
-	wrapper string
+	ts     oauth2.TokenSource
+	config *clientcredentials.Config
 }
 
 // errorWrappingTokenSource implements TokenSource
 var _ oauth2.TokenSource = (*errorWrappingTokenSource)(nil)
+
+// FailedToGetSecurityToken indicates a problem communicating with OAuth2 server.
+// We support Unwrap() instead of using `%w` so that we can customize the error message
+// to include both the wrapped error and information from the configuration.
+type ErrFailedToGetSecurityToken struct {
+	inner  error
+	config *clientcredentials.Config
+}
 
 func newClientCredentialsExtension(cfg *Config, logger *zap.Logger) (*ClientCredentialsAuthenticator, error) {
 	if cfg.ClientID == "" {
@@ -94,7 +102,10 @@ func (o *ClientCredentialsAuthenticator) Shutdown(_ context.Context) error {
 func (ewts errorWrappingTokenSource) Token() (*oauth2.Token, error) {
 	tok, err := ewts.ts.Token()
 	if err != nil {
-		err = fmt.Errorf(ewts.wrapper, err)
+		err = ErrFailedToGetSecurityToken{
+			inner:  err,
+			config: ewts.config,
+		}
 	}
 	return tok, err
 }
@@ -105,8 +116,8 @@ func (o *ClientCredentialsAuthenticator) RoundTripper(base http.RoundTripper) (h
 	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, o.client)
 	return &oauth2.Transport{
 		Source: errorWrappingTokenSource{
-			o.clientCredentials.TokenSource(ctx),
-			fmt.Sprintf("failed to get security token from token endpoint %q: %%w", o.clientCredentials.TokenURL),
+			ts:     o.clientCredentials.TokenSource(ctx),
+			config: o.clientCredentials,
 		},
 		Base: base,
 	}, nil
@@ -117,6 +128,23 @@ func (o *ClientCredentialsAuthenticator) RoundTripper(base http.RoundTripper) (h
 func (o *ClientCredentialsAuthenticator) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
 	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, o.client)
 	return grpcOAuth.TokenSource{
-		TokenSource: o.clientCredentials.TokenSource(ctx),
+		TokenSource: errorWrappingTokenSource{
+			ts:     o.clientCredentials.TokenSource(ctx),
+			config: o.clientCredentials,
+		},
 	}, nil
+}
+
+// Error() marks ErrFailedToGetSecurityToken as an `error` type
+func (e ErrFailedToGetSecurityToken) Error() string {
+	if e.config == nil {
+		return "unconfigured ErrFailedToGetSecurityToken"
+	}
+
+	return fmt.Sprintf("failed to get security token from token endpoint %q: %v", e.config.TokenURL, e.inner)
+}
+
+// Unwrap() lets ErrFailedToGetSecurityToken work with errors.Is() and errors.As()
+func (e ErrFailedToGetSecurityToken) Unwrap() error {
+	return e.inner
 }

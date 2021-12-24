@@ -17,9 +17,13 @@ package oauth2clientauthextension
 import (
 	"context"
 	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
@@ -271,4 +275,61 @@ func TestOAuthExtensionShutdown(t *testing.T) {
 		}, nil)
 	assert.Nil(t, err)
 	assert.Nil(t, oAuthExtensionAuth.Shutdown(context.Background()))
+}
+
+func TestFailContactingOAuth(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		w.Write([]byte("not-json"))
+	}))
+	defer server.Close()
+
+	serverURL, err := url.Parse(server.URL)
+	assert.NoError(t, err)
+
+	oauth2Authenticator, err := newClientCredentialsExtension(&Config{
+		ClientID:     "dummy",
+		ClientSecret: "ABC",
+		TokenURL:     serverURL.String(),
+	}, zap.NewNop())
+	assert.Nil(t, err)
+
+	credential, err := oauth2Authenticator.PerRPCCredentials()
+	assert.Nil(t, err)
+
+	_, err = credential.GetRequestMetadata(context.Background())
+	assert.ErrorAs(t, err, &ErrFailedToGetSecurityToken{})
+	assert.Contains(t, err.Error(), "failed to get security token from token endpoint")
+}
+
+func TestFailContactingOAuthViaHttp(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		w.Write([]byte("not-json"))
+	}))
+	defer server.Close()
+
+	serverURL, err := url.Parse(server.URL)
+	assert.NoError(t, err)
+
+	oauth2Authenticator, err := newClientCredentialsExtension(&Config{
+		ClientID:     "dummy",
+		ClientSecret: "ABC",
+		TokenURL:     serverURL.String(),
+	}, zap.NewNop())
+	assert.Nil(t, err)
+
+	setting := confighttp.HTTPClientSettings{
+		Endpoint: "http://example.com/",
+		CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) {
+			return oauth2Authenticator.RoundTripper(next)
+		},
+	}
+
+	client, _ := setting.ToClient(componenttest.NewNopHost().GetExtensions())
+	req, err := http.NewRequest("POST", setting.Endpoint, nil)
+	assert.NoError(t, err)
+	_, err = client.Do(req)
+	assert.ErrorAs(t, err, &ErrFailedToGetSecurityToken{})
+	assert.Contains(t, err.Error(), "failed to get security token from token endpoint")
 }
