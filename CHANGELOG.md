@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/open-telemetry/opentelemetry-python/compare/v1.8.0-0.27b0...HEAD)
 
+### Added
+
+- `opentelemetry-instrumentation-asgi` now returns a `traceresponse` response header.
+  ([#817](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/817))
+
 ### Fixed
 
 - `opentelemetry-instrumentation-flask` Flask: Conditionally create SERVER spans
@@ -28,6 +33,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#812](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/812))
 
 ## [1.7.1-0.26b1](https://github.com/open-telemetry/opentelemetry-python/releases/tag/v1.7.0-0.26b0) - 2021-11-11
+
+### Added
 
 - `opentelemetry-instrumentation-aws-lambda` Add instrumentation for AWS Lambda Service - pkg metadata files (Part 1/2)
   ([#739](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/739))
