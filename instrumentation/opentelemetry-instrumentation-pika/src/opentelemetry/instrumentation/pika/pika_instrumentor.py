@@ -14,7 +14,9 @@
 from logging import getLogger
 from typing import Any, Collection, Dict, Optional
 
+import pika
 import wrapt
+from packaging import version
 from pika.adapters import BlockingConnection
 from pika.adapters.blocking_connection import BlockingChannel
 
@@ -32,7 +34,18 @@ _CTX_KEY = "__otel_task_span"
 _FUNCTIONS_TO_UNINSTRUMENT = ["basic_publish"]
 
 
+def _consumer_callback_attribute_name() -> str:
+    pika_version = version.parse(pika.__version__)
+    return (
+        "on_message_callback"
+        if pika_version >= version.parse("1.0.0")
+        else "consumer_cb"
+    )
+
+
 class PikaInstrumentor(BaseInstrumentor):  # type: ignore
+    CONSUMER_CALLBACK_ATTR = _consumer_callback_attribute_name()
+
     # pylint: disable=attribute-defined-outside-init
     @staticmethod
     def _instrument_blocking_channel_consumers(
@@ -41,8 +54,12 @@ class PikaInstrumentor(BaseInstrumentor):  # type: ignore
         consume_hook: utils.HookT = utils.dummy_callback,
     ) -> Any:
         for consumer_tag, consumer_info in channel._consumer_infos.items():
+            callback_attr = PikaInstrumentor.CONSUMER_CALLBACK_ATTR
+            consumer_callback = getattr(consumer_info, callback_attr, None)
+            if consumer_callback is None:
+                continue
             decorated_callback = utils._decorate_callback(
-                consumer_info.on_message_callback,
+                consumer_callback,
                 tracer,
                 consumer_tag,
                 consume_hook,
@@ -51,9 +68,9 @@ class PikaInstrumentor(BaseInstrumentor):  # type: ignore
             setattr(
                 decorated_callback,
                 "_original_callback",
-                consumer_info.on_message_callback,
+                consumer_callback,
             )
-            consumer_info.on_message_callback = decorated_callback
+            setattr(consumer_info, callback_attr, decorated_callback)
 
     @staticmethod
     def _instrument_basic_publish(
@@ -126,10 +143,12 @@ class PikaInstrumentor(BaseInstrumentor):  # type: ignore
             return
 
         for consumers_tag, client_info in channel._consumer_infos.items():
-            if hasattr(client_info.on_message_callback, "_original_callback"):
+            callback_attr = PikaInstrumentor.CONSUMER_CALLBACK_ATTR
+            consumer_callback = getattr(client_info, callback_attr, None)
+            if hasattr(consumer_callback, "_original_callback"):
                 channel._consumer_infos[
                     consumers_tag
-                ] = client_info.on_message_callback._original_callback
+                ] = consumer_callback._original_callback
         PikaInstrumentor._uninstrument_channel_functions(channel)
 
     def _decorate_channel_function(

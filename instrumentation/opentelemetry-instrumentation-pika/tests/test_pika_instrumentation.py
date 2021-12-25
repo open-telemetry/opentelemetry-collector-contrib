@@ -18,6 +18,9 @@ from pika.channel import Channel
 from wrapt import BoundFunctionWrapper
 
 from opentelemetry.instrumentation.pika import PikaInstrumentor
+from opentelemetry.instrumentation.pika.pika_instrumentor import (
+    _consumer_callback_attribute_name,
+)
 from opentelemetry.instrumentation.pika.utils import dummy_callback
 from opentelemetry.trace import Tracer
 
@@ -26,7 +29,8 @@ class TestPika(TestCase):
     def setUp(self) -> None:
         self.channel = mock.MagicMock(spec=Channel)
         consumer_info = mock.MagicMock()
-        consumer_info.on_message_callback = mock.MagicMock()
+        callback_attr = PikaInstrumentor.CONSUMER_CALLBACK_ATTR
+        setattr(consumer_info, callback_attr, mock.MagicMock())
         self.channel._consumer_infos = {"consumer-tag": consumer_info}
         self.mock_callback = mock.MagicMock()
 
@@ -72,8 +76,11 @@ class TestPika(TestCase):
         self, decorate_callback: mock.MagicMock
     ) -> None:
         tracer = mock.MagicMock(spec=Tracer)
+        callback_attr = PikaInstrumentor.CONSUMER_CALLBACK_ATTR
         expected_decoration_calls = [
-            mock.call(value.on_message_callback, tracer, key, dummy_callback)
+            mock.call(
+                getattr(value, callback_attr), tracer, key, dummy_callback
+            )
             for key, value in self.channel._consumer_infos.items()
         ]
         PikaInstrumentor._instrument_blocking_channel_consumers(
@@ -109,3 +116,13 @@ class TestPika(TestCase):
         self.channel.basic_publish._original_function = original_function
         PikaInstrumentor._uninstrument_channel_functions(self.channel)
         self.assertEqual(self.channel.basic_publish, original_function)
+
+    def test_consumer_callback_attribute_name(self) -> None:
+        with mock.patch("pika.__version__", "1.0.0"):
+            self.assertEqual(
+                _consumer_callback_attribute_name(), "on_message_callback"
+            )
+        with mock.patch("pika.__version__", "0.12.0"):
+            self.assertEqual(
+                _consumer_callback_attribute_name(), "consumer_cb"
+            )

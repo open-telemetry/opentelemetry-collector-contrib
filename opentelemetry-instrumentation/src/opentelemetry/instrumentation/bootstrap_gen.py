@@ -81,7 +81,7 @@ libraries = {
         "instrumentation": "opentelemetry-instrumentation-mysql==0.27b0",
     },
     "pika": {
-        "library": "pika >= 1.1.0",
+        "library": "pika >= 0.12.0",
         "instrumentation": "opentelemetry-instrumentation-pika==0.27b0",
     },
     "psycopg2": {
