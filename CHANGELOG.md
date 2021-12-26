@@ -24,6 +24,7 @@
 ## 🧰 Bug fixes 🧰
 
 - `ecstaskobserver`: Fix "Incorrect conversion between integer types" security issue (#6939)
+- Fix typo in "direction" metrics attribute description (#6949)
 
 ## 💡 Enhancements 💡
 

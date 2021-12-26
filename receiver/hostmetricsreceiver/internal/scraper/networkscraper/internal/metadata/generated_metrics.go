@@ -139,7 +139,7 @@ var M = Metrics
 var Attributes = struct {
 	// Device (Name of the network interface.)
 	Device string
-	// Direction (Direction of flow of bytes/opertations (receive or transmit).)
+	// Direction (Direction of flow of bytes/operations (receive or transmit).)
 	Direction string
 	// Protocol (Network protocol, e.g. TCP or UDP.)
 	Protocol string

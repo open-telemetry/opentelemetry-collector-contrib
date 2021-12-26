@@ -5,7 +5,7 @@ attributes:
     description: Name of the network interface.
 
   direction:
-    description: Direction of flow of bytes/opertations (receive or transmit).
+    description: Direction of flow of bytes/operations (receive or transmit).
     enum: [receive, transmit]
 
 metrics:

@@ -21,4 +21,4 @@ These are the metrics available for this scraper.
 | Name | Description |
 | ---- | ----------- |
 | device | Name of the disk. |
-| direction | Direction of flow of bytes/opertations (read or write). |
+| direction | Direction of flow of bytes/operations (read or write). |
