@@ -14,8 +14,6 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
-	"github.com/hashicorp/go-version"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
 )
 
@@ -24,22 +22,6 @@ type mongodbScraper struct {
 	config    *Config
 	client    Client
 	extractor *extractor
-}
-
-type numberType int
-
-const (
-	integer numberType = iota
-	double
-)
-
-type mongoMetric struct {
-	metricDef        metadata.MetricIntf
-	path             []string
-	staticAttributes map[string]string
-	dataPointType    numberType
-	minMongoVersion  *version.Version
-	maxMongoVersion  *version.Version
 }
 
 func newMongodbScraper(logger *zap.Logger, config *Config) (*mongodbScraper, error) {
@@ -136,14 +118,14 @@ func (s *mongodbScraper) collectDatabase(ctx context.Context, wg *sync.WaitGroup
 	if err != nil {
 		s.logger.Error("Failed to collect dbStats metric", zap.Error(err), zap.String("database", databaseName))
 	} else {
-		s.extractor.Extract(dbStats, mm, databaseName, NormalDBStats)
+		s.extractor.Extract(dbStats, mm, databaseName, normalDBStats)
 	}
 
 	serverStatus, err := client.Query(ctx, databaseName, bson.M{"serverStatus": 1})
 	if err != nil {
 		s.logger.Error("Failed to collect serverStatus metric", zap.Error(err), zap.String("database", databaseName))
 	} else {
-		s.extractor.Extract(serverStatus, mm, databaseName, NormalServerStats)
+		s.extractor.Extract(serverStatus, mm, databaseName, normalServerStats)
 	}
 }
 
@@ -153,7 +135,7 @@ func (s *mongodbScraper) collectAdminDatabase(ctx context.Context, wg *sync.Wait
 	if err != nil {
 		s.logger.Error("Failed to query serverStatus in admin", zap.Error(err))
 	} else {
-		s.extractor.Extract(serverStatus, mm, "admin", AdminServerStats)
+		s.extractor.Extract(serverStatus, mm, "admin", adminServerStats)
 	}
 }
 

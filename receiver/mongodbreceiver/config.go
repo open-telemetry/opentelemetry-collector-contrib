@@ -15,15 +15,21 @@ import (
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	configtls.TLSClientSetting              `mapstructure:"tls,omitempty"`
+
 	// Hosts are a list of <host>:<port>
 	// for standalone deployments, use the hostname and port of the mongod instance
 	// for sharded deployments it is the list of mongos instances
+	// for replica set deployments
 	Hosts []confignet.TCPAddr `mapstructure:"hosts"`
 	// Username to use for authentication; optional
 	Username string `mapstructure:"username"`
 	// Password to use for authentication; required if Username is present
-	Password string        `mapstructure:"password"`
-	Timeout  time.Duration `mapstructure:"timeout"`
+	Password string `mapstructure:"password"`
+	// ReplicaSet is an optional parameter that if supplied will allow autodiscovery of
+	// any replica set members when given the address of any one valid member
+	ReplicaSet string `mapstructure:"replica_set,omitempty"`
+
+	Timeout time.Duration `mapstructure:"timeout"`
 }
 
 func (c *Config) Validate() error {

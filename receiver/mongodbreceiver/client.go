@@ -38,14 +38,15 @@ type driver interface {
 
 // mongodbClient is a mongodb metric scraper client
 type mongodbClient struct {
-	// underlying mongo driver client
-	driver    driver
-	username  string
-	password  string
-	hosts     []string
-	logger    *zap.Logger
-	timeout   time.Duration
-	tlsConfig *tls.Config
+	// underlying mongo client driver
+	driver         driver
+	username       string
+	password       string
+	hosts          []string
+	replicaSetName string
+	logger         *zap.Logger
+	timeout        time.Duration
+	tlsConfig      *tls.Config
 }
 
 // NewClient creates a new client to connect and query mongo for the
@@ -61,12 +62,13 @@ func NewClient(config *Config, logger *zap.Logger) (Client, error) {
 	}
 
 	return &mongodbClient{
-		hosts:     hosts,
-		username:  config.Username,
-		password:  config.Password,
-		timeout:   config.Timeout,
-		logger:    logger,
-		tlsConfig: tlsConfig,
+		hosts:          hosts,
+		username:       config.Username,
+		password:       config.Password,
+		replicaSetName: config.ReplicaSet,
+		timeout:        config.Timeout,
+		logger:         logger,
+		tlsConfig:      tlsConfig,
 	}, nil
 }
 
@@ -147,7 +149,7 @@ func (c *mongodbClient) ensureClient(ctx context.Context) error {
 			return fmt.Errorf("could not connect to hosts %v: %w", c.hosts, err)
 		}
 
-		c.logger.Info(fmt.Sprintf("Mongo connection established to: %s", strings.Join(c.hosts, ", ")))
+		c.logger.Info(fmt.Sprintf("Mongo connection established to hosts: %s", strings.Join(c.hosts, ", ")))
 		c.driver = driver
 	}
 	return nil
@@ -161,6 +163,10 @@ func (c *mongodbClient) authOptions() *options.ClientOptions {
 
 	if c.tlsConfig != nil {
 		authOptions.SetTLSConfig(c.tlsConfig)
+	}
+
+	if c.replicaSetName != "" {
+		authOptions.SetReplicaSet(c.replicaSetName)
 	}
 
 	return authOptions

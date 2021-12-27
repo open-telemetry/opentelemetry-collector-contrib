@@ -14,6 +14,47 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
 )
 
+type numberType int
+
+const (
+	integer numberType = iota
+	double
+)
+
+type mongoMetric struct {
+	metricDef        metadata.MetricIntf
+	path             []string
+	staticAttributes map[string]string
+	dataPointType    numberType
+	minMongoVersion  *version.Version
+	maxMongoVersion  *version.Version
+	conversionFactor int
+}
+
+// convertToAppropriateValue allows for definitions of metrics to be scaled to appropriate units,
+// example Megabytes to Bytes etc.
+func (mm *mongoMetric) convertToAppropriateValue(value interface{}) interface{} {
+	if mm.conversionFactor == 0 {
+		return value
+	}
+
+	switch mm.dataPointType {
+	case integer:
+		v, _ := value.(int64)
+		return v * int64(mm.conversionFactor)
+	case double:
+		v, _ := value.(float64)
+		return v * float64(mm.conversionFactor)
+	}
+
+	return value
+}
+
+const (
+	mebibytesToBytes = 1.049e+6
+	megabytesToBytes = 1e+6
+)
+
 type extractor struct {
 	version *version.Version
 	logger  *zap.Logger
@@ -82,40 +123,47 @@ var serverStatusMetrics = []mongoMetric{
 		path:             []string{"mem", "resident"},
 		staticAttributes: map[string]string{metadata.A.MemoryType: metadata.AttributeMemoryType.Resident},
 		dataPointType:    integer,
+		// reported value is Mebibytes, want to convert to bytes
+		// https://docs.mongodb.com/manual/reference/command/serverStatus/#mongodb-serverstatus-serverstatus.mem.resident
+		conversionFactor: mebibytesToBytes,
 	},
 	{
 		metricDef:        metadata.M.MongodbMemoryUsage,
 		path:             []string{"mem", "virtual"},
 		staticAttributes: map[string]string{metadata.A.MemoryType: metadata.AttributeMemoryType.Virtual},
 		dataPointType:    integer,
+		// https://docs.mongodb.com/manual/reference/command/serverStatus/#mongodb-serverstatus-serverstatus.mem.virtual
+		conversionFactor: mebibytesToBytes,
 	},
 	{
 		metricDef:        metadata.M.MongodbMemoryUsage,
 		path:             []string{"mem", "mapped"},
 		staticAttributes: map[string]string{metadata.A.MemoryType: metadata.AttributeMemoryType.Mapped},
 		dataPointType:    integer,
-		// removed in 4.4 https://docs.mongodb.com/v4.4/reference/command/serverStatus/
-		maxMongoVersion: Mongo42,
+		// removed in 4.2 https://docs.mongodb.com/v4.2/reference/command/serverStatus/
+		maxMongoVersion:  Mongo40,
+		conversionFactor: megabytesToBytes,
 	},
 	{
 		metricDef:        metadata.M.MongodbMemoryUsage,
 		path:             []string{"mem", "mappedWithJournal"},
 		staticAttributes: map[string]string{metadata.A.MemoryType: metadata.AttributeMemoryType.MappedWithJournal},
 		dataPointType:    integer,
-		// removed in 4.4 https://docs.mongodb.com/v4.4/reference/command/serverStatus/
-		maxMongoVersion: Mongo42,
+		// removed in 4.2 https://docs.mongodb.com/v4.2/reference/command/serverStatus/
+		maxMongoVersion:  Mongo40,
+		conversionFactor: megabytesToBytes,
 	},
 }
 
 type extractType = int
 
 const (
-	AdminServerStats extractType = iota
-	NormalDBStats
-	NormalServerStats
+	adminServerStats extractType = iota
+	normalDBStats
+	normalServerStats
 )
 
-// Mongo30 is a version representation of mongo 2.6
+// Mongo26 is a version representation of mongo 2.6
 var Mongo26, _ = version.NewVersion("2.6")
 
 // Mongo30 is a version representation of mongo 3.0
@@ -148,11 +196,11 @@ func newExtractor(mongoVersion string, logger *zap.Logger) (*extractor, error) {
 
 func (e *extractor) Extract(document bson.M, mm *metricManager, dbName string, et extractType) {
 	switch et {
-	case NormalDBStats:
+	case normalDBStats:
 		e.extractStats(document, mm, dbName, dbStatsMetrics)
-	case NormalServerStats:
+	case normalServerStats:
 		e.extractStats(document, mm, dbName, serverStatusMetrics)
-	case AdminServerStats:
+	case adminServerStats:
 		e.extractAdminStats(document, mm)
 	}
 }
@@ -175,6 +223,8 @@ func (e *extractor) extractStats(document bson.M, mm *metricManager, dbName stri
 					zap.Error(err))
 				continue
 			}
+			value = metric.convertToAppropriateValue(value)
+
 			mm.addDataPoint(metric.metricDef, value, attributes)
 		}
 	}

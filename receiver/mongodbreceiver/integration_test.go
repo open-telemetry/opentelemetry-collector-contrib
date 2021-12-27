@@ -28,6 +28,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
 
@@ -44,7 +45,9 @@ func TestMongoDBIntegration(t *testing.T) {
 
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = net.JoinHostPort(hostname, "37017")
+	cfg.Hosts = []confignet.TCPAddr{{
+		net.JoinHostPort(hostname, "37017"),
+	}}
 	cfg.Username = "otel"
 	cfg.Password = "otel"
 	cfg.Insecure = true
