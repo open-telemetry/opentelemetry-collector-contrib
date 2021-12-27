@@ -1,4 +1,4 @@
-name: postgresql
+name: postgresqlreceiver
 
 attributes:
   database:
@@ -18,51 +18,65 @@ attributes:
 
 metrics:
   postgresql.blocks_read:
+    enabled: true
     description: The number of blocks read.
     unit: 1
     sum:
+      value_type: int
       monotonic: true
       aggregation: cumulative
     attributes: [ database, table, source ]
   postgresql.commits:
+    enabled: true
     description: The number of commits.
     unit: 1
     sum:
+      value_type: int
       monotonic: true
       aggregation: cumulative
     attributes: [ database ]
   postgresql.db_size:
+    enabled: true
     description: The database disk usage.
     unit: By
     sum:
+      value_type: int
       monotonic: false
       aggregation: cumulative
     attributes: [ database ]
   postgresql.backends:
+    enabled: true
     description: The number of backends.
     unit: 1
     sum:
+      value_type: int
       monotonic: false
       aggregation: cumulative
     attributes: [ database ]
   postgresql.rows:
+    enabled: true
     description: The number of rows in the database.
     unit: 1
     sum:
+      value_type: int
       monotonic: false
       aggregation: cumulative
     attributes: [ database, table, state ]
   postgresql.operations:
+    enabled: true
     description: The number of db row operations.
     unit: 1
     sum:
+      value_type: int
       monotonic: true
       aggregation: cumulative
     attributes: [ database, table, operation ]
   postgresql.rollbacks:
+    enabled: true
     description: The number of rollbacks.
     unit: 1
     sum:
+      value_type: int
       monotonic: true
       aggregation: cumulative
     attributes: [ database ]

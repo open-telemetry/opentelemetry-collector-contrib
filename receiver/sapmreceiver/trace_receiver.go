@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -43,9 +44,10 @@ var gzipWriterPool = &sync.Pool{
 // sapmReceiver receives spans in the Splunk SAPM format over HTTP
 type sapmReceiver struct {
 	settings component.TelemetrySettings
+	config   *Config
 
-	config *Config
-	server *http.Server
+	server     *http.Server
+	shutdownWG sync.WaitGroup
 
 	nextConsumer consumer.Traces
 
@@ -161,11 +163,16 @@ func (sr *sapmReceiver) Start(_ context.Context, host component.Host) error {
 	nr.HandleFunc(sapmprotocol.TraceEndpointV2, sr.HTTPHandlerFunc)
 
 	// create a server with the handler
-	sr.server = sr.config.HTTPServerSettings.ToServer(nr, sr.settings)
+	sr.server, err = sr.config.HTTPServerSettings.ToServer(host, sr.settings, nr)
+	if err != nil {
+		return err
+	}
 
+	sr.shutdownWG.Add(1)
 	// run the server on a routine
 	go func() {
-		if errHTTP := sr.server.Serve(ln); errHTTP != http.ErrServerClosed {
+		defer sr.shutdownWG.Done()
+		if errHTTP := sr.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
 			host.ReportFatalError(errHTTP)
 		}
 	}()
@@ -174,7 +181,9 @@ func (sr *sapmReceiver) Start(_ context.Context, host component.Host) error {
 
 // Shutdown stops the the sapmReceiver's server.
 func (sr *sapmReceiver) Shutdown(context.Context) error {
-	return sr.server.Close()
+	err := sr.server.Close()
+	sr.shutdownWG.Wait()
+	return err
 }
 
 // this validates at compile time that sapmReceiver implements the component.TracesReceiver interface

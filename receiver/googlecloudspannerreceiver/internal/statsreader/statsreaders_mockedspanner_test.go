@@ -29,6 +29,7 @@ import (
 	"google.golang.org/api/option"
 	databasepb "google.golang.org/genproto/googleapis/spanner/admin/database/v1"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/datasource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
@@ -136,7 +137,7 @@ func TestStatsReaders_Read(t *testing.T) {
 	require.NoError(t, err)
 	defer server.Close()
 
-	conn, err := grpc.Dial(server.Addr, grpc.WithInsecure())
+	conn, err := grpc.Dial(server.Addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 
 	databaseAdminClient, err := database.NewDatabaseAdminClient(ctx, option.WithGRPCConn(conn))

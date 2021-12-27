@@ -15,10 +15,11 @@
 package main
 
 import (
-	"os"
+	"path"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func Test_loadMetadata(t *testing.T) {
@@ -30,7 +31,7 @@ func Test_loadMetadata(t *testing.T) {
 	}{
 		{
 			name: "all options",
-			yml:  "testdata/all_options.yaml",
+			yml:  "all_options.yaml",
 			want: metadata{
 				Name: "metricreceiver",
 				Attributes: map[attributeName]attribute{
@@ -46,12 +47,14 @@ func Test_loadMetadata(t *testing.T) {
 						Value:       "state"}},
 				Metrics: map[metricName]metric{
 					"system.cpu.time": {
+						Enabled:               true,
 						Description:           "Total CPU seconds broken down by different states.",
 						ExtendedDocumentation: "Additional information on CPU Time can be found [here](https://en.wikipedia.org/wiki/CPU_time).",
 						Unit:                  "s",
 						Sum: &sum{
-							Aggregated: Aggregated{Aggregation: "cumulative"},
-							Mono:       Mono{Monotonic: true},
+							MetricValueType: MetricValueType{pdata.MetricValueTypeDouble},
+							Aggregated:      Aggregated{Aggregation: "cumulative"},
+							Mono:            Mono{Monotonic: true},
 						},
 						// YmlData: nil,
 						Attributes: []attributeName{"freeFormAttribute", "freeFormAttributeWithValue",
@@ -60,31 +63,42 @@ func Test_loadMetadata(t *testing.T) {
 		},
 		{
 			name: "unknown metric attribute",
-			yml:  "testdata/unknown_metric_attribute.yaml",
+			yml:  "unknown_metric_attribute.yaml",
 			want: metadata{},
 			wantErr: "error validating struct:\n\tmetadata.Metrics[system.cpu.time]." +
 				"Attributes[missing]: unknown attribute value\n",
 		},
 		{
 			name: "no metric type",
-			yml:  "testdata/no_metric_type.yaml",
+			yml:  "no_metric_type.yaml",
 			want: metadata{},
 			wantErr: "metric system.cpu.time doesn't have a metric type key, " +
 				"one of the following has to be specified: sum, gauge, histogram",
 		},
 		{
+			name:    "no enabled",
+			yml:     "no_enabled.yaml",
+			want:    metadata{},
+			wantErr: "error validating struct:\n\tmetadata.Metrics[system.cpu.time].Enabled: Enabled is a required field\n",
+		},
+		{
 			name: "two metric types",
-			yml:  "testdata/two_metric_types.yaml",
+			yml:  "two_metric_types.yaml",
 			want: metadata{},
 			wantErr: "metric system.cpu.time has more than one metric type keys, " +
 				"only one of the following has to be specified: sum, gauge, histogram",
 		},
+		{
+			name: "no number types",
+			yml:  "no_value_type.yaml",
+			want: metadata{},
+			wantErr: "error validating struct:\n\tmetadata.Metrics[system.cpu.time].Sum.MetricValueType.ValueType: " +
+				"ValueType is a required field\n",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ymlData, err := os.ReadFile(tt.yml)
-			require.NoError(t, err)
-			got, err := loadMetadata(ymlData)
+			got, err := loadMetadata(path.Join("testdata", tt.yml))
 			if tt.wantErr != "" {
 				require.Error(t, err)
 				require.EqualError(t, err, tt.wantErr)

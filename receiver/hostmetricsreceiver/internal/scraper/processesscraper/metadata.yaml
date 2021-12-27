@@ -7,16 +7,20 @@ attributes:
 
 metrics:
   system.processes.created:
+    enabled: true
     description: Total number of created processes.
     unit: "{processes}"
     sum:
+      value_type: int
       aggregation: cumulative
       monotonic: true
 
   system.processes.count:
+    enabled: true
     description: Total number of processes in each state.
     unit: "{processes}"
     sum:
+      value_type: int
       aggregation: cumulative
       monotonic: false
     attributes: [status]

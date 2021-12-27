@@ -51,10 +51,14 @@ func (h *httpForwarder) Start(_ context.Context, host component.Host) error {
 	handler := http.NewServeMux()
 	handler.HandleFunc("/", h.forwardRequest)
 
-	h.server = h.config.Ingress.ToServer(handler, h.settings)
+	h.server, err = h.config.Ingress.ToServer(host, h.settings, handler)
+	if err != nil {
+		return fmt.Errorf("failed to create HTTP Client: %w", err)
+	}
+
 	go func() {
-		if err := h.server.Serve(listener); err != http.ErrServerClosed {
-			host.ReportFatalError(err)
+		if errHTTP := h.server.Serve(listener); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
+			host.ReportFatalError(errHTTP)
 		}
 	}()
 

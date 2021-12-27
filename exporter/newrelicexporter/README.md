@@ -1,6 +1,6 @@
 # New Relic Exporter
 
-:sparkles: **[New Relic offers OTLP (OpenTelemetry Protocol) Ingest as a pre-release! To sign up, click here!](https://forms.gle/fa2pWcQxgVQYMggEA)** :sparkles:
+:sparkles: **[Our OTLP (OpenTelemetry Protocol) endpoint is now available](https://docs.newrelic.com/docs/more-integrations/open-source-telemetry-integrations/opentelemetry/opentelemetry-quick-start/#collector)** :sparkles:
 
 This means you can use an [OTLP](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/otlpexporter) exporter and no longer need this exporter to send data to New Relic.
 

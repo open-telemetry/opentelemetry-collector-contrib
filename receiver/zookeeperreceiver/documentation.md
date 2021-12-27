@@ -8,23 +8,23 @@ These are the metrics available for this scraper.
 
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
-| zookeeper.approximate_date_size | Size of data in bytes that a ZooKeeper server has in its data tree. | By | Gauge | <ul> </ul> |
-| zookeeper.connections_alive | Number of active clients connected to a ZooKeeper server. | 1 | Gauge | <ul> </ul> |
-| zookeeper.ephemeral_nodes | Number of ephemeral nodes that a ZooKeeper server has in its data tree. | 1 | Gauge | <ul> </ul> |
-| zookeeper.followers | The number of followers in sync with the leader. Only exposed by the leader. | 1 | Gauge | <ul> </ul> |
-| zookeeper.fsync_threshold_exceeds | Number of times fsync duration has exceeded warning threshold. | 1 | Sum | <ul> </ul> |
-| zookeeper.latency.avg | Average time in milliseconds for requests to be processed. | ms | Gauge | <ul> </ul> |
-| zookeeper.latency.max | Maximum time in milliseconds for requests to be processed. | ms | Gauge | <ul> </ul> |
-| zookeeper.latency.min | Minimum time in milliseconds for requests to be processed. | 1 | Gauge | <ul> </ul> |
-| zookeeper.max_file_descriptors | Maximum number of file descriptors that a ZooKeeper server can open. | 1 | Gauge | <ul> </ul> |
-| zookeeper.open_file_descriptors | Number of file descriptors that a ZooKeeper server has open. | 1 | Gauge | <ul> </ul> |
-| zookeeper.outstanding_requests | Number of currently executing requests. | 1 | Gauge | <ul> </ul> |
-| zookeeper.packets.received | Number of ZooKeeper packets received by a server. | 1 | Sum | <ul> </ul> |
-| zookeeper.packets.sent | Number of ZooKeeper packets sent by a server. | 1 | Sum | <ul> </ul> |
-| zookeeper.pending_syncs | The number of pending syncs from the followers. Only exposed by the leader. | 1 | Gauge | <ul> </ul> |
-| zookeeper.synced_followers | The number of followers in sync with the leader. Only exposed by the leader. | 1 | Gauge | <ul> </ul> |
-| zookeeper.watches | Number of watches placed on Z-Nodes on a ZooKeeper server. | 1 | Gauge | <ul> </ul> |
-| zookeeper.znodes | Number of z-nodes that a ZooKeeper server has in its data tree. | 1 | Gauge | <ul> </ul> |
+| zookeeper.approximate_date_size | Size of data in bytes that a ZooKeeper server has in its data tree. | By | Gauge(Int) | <ul> </ul> |
+| zookeeper.connections_alive | Number of active clients connected to a ZooKeeper server. | 1 | Gauge(Int) | <ul> </ul> |
+| zookeeper.ephemeral_nodes | Number of ephemeral nodes that a ZooKeeper server has in its data tree. | 1 | Gauge(Int) | <ul> </ul> |
+| zookeeper.followers | The number of followers in sync with the leader. Only exposed by the leader. | 1 | Gauge(Int) | <ul> </ul> |
+| zookeeper.fsync_threshold_exceeds | Number of times fsync duration has exceeded warning threshold. | 1 | Sum(Int) | <ul> </ul> |
+| zookeeper.latency.avg | Average time in milliseconds for requests to be processed. | ms | Gauge(Int) | <ul> </ul> |
+| zookeeper.latency.max | Maximum time in milliseconds for requests to be processed. | ms | Gauge(Int) | <ul> </ul> |
+| zookeeper.latency.min | Minimum time in milliseconds for requests to be processed. | 1 | Gauge(Int) | <ul> </ul> |
+| zookeeper.max_file_descriptors | Maximum number of file descriptors that a ZooKeeper server can open. | 1 | Gauge(Int) | <ul> </ul> |
+| zookeeper.open_file_descriptors | Number of file descriptors that a ZooKeeper server has open. | 1 | Gauge(Int) | <ul> </ul> |
+| zookeeper.outstanding_requests | Number of currently executing requests. | 1 | Gauge(Int) | <ul> </ul> |
+| zookeeper.packets.received | Number of ZooKeeper packets received by a server. | 1 | Sum(Int) | <ul> </ul> |
+| zookeeper.packets.sent | Number of ZooKeeper packets sent by a server. | 1 | Sum(Int) | <ul> </ul> |
+| zookeeper.pending_syncs | The number of pending syncs from the followers. Only exposed by the leader. | 1 | Gauge(Int) | <ul> </ul> |
+| zookeeper.synced_followers | The number of followers in sync with the leader. Only exposed by the leader. | 1 | Gauge(Int) | <ul> </ul> |
+| zookeeper.watches | Number of watches placed on Z-Nodes on a ZooKeeper server. | 1 | Gauge(Int) | <ul> </ul> |
+| zookeeper.znodes | Number of z-nodes that a ZooKeeper server has in its data tree. | 1 | Gauge(Int) | <ul> </ul> |
 
 ## Attributes
 

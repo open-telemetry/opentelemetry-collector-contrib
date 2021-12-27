@@ -66,14 +66,15 @@ func TestOpenMetricsPositive(t *testing.T) {
 		testData := &testData{
 			name: k,
 			pages: []mockPrometheusResponse{
-				{code: 200, data: v},
+				{code: 200, data: v, useOpenMetrics: true},
 			},
-			validateFunc: verifyPositiveTarget,
+			validateFunc:    verifyPositiveTarget,
+			validateScrapes: true,
 		}
 		targets = append(targets, testData)
 	}
 
-	testComponent(t, targets, false, "", true)
+	testComponent(t, targets, false, "")
 }
 
 func verifyNegativeTarget(t *testing.T, td *testData, mds []*pdata.ResourceMetrics) {
@@ -97,14 +98,15 @@ func TestOpenMetricsNegative(t *testing.T) {
 		testData := &testData{
 			name: k,
 			pages: []mockPrometheusResponse{
-				{code: 200, data: v},
+				{code: 200, data: v, useOpenMetrics: true},
 			},
-			validateFunc: verifyNegativeTarget,
+			validateFunc:    verifyNegativeTarget,
+			validateScrapes: true,
 		}
 		targets = append(targets, testData)
 	}
 
-	testComponent(t, targets, false, "", true)
+	testComponent(t, targets, false, "")
 }
 
 //reads test data from testdata/openmetrics directory

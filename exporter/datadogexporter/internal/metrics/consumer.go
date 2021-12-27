@@ -27,18 +27,21 @@ import (
 
 var _ translator.Consumer = (*Consumer)(nil)
 var _ translator.HostConsumer = (*Consumer)(nil)
+var _ translator.TagsConsumer = (*Consumer)(nil)
 
 // Consumer is the metrics Consumer.
 type Consumer struct {
 	ms        []datadog.Metric
 	sl        sketches.SketchSeriesList
 	seenHosts map[string]struct{}
+	seenTags  map[string]struct{}
 }
 
 // NewConsumer creates a new zorkian consumer.
 func NewConsumer() *Consumer {
 	return &Consumer{
 		seenHosts: make(map[string]struct{}),
+		seenTags:  make(map[string]struct{}),
 	}
 }
 
@@ -62,6 +65,14 @@ func (c *Consumer) runningMetrics(timestamp uint64, buildInfo component.BuildInf
 		// Report the host as running
 		runningMetric := DefaultMetrics("metrics", host, timestamp, buildInfo)
 		series = append(series, runningMetric...)
+	}
+
+	for tag := range c.seenTags {
+		runningMetrics := DefaultMetrics("metrics", "", timestamp, buildInfo)
+		for i := range runningMetrics {
+			runningMetrics[i].Tags = append(runningMetrics[i].Tags, tag)
+		}
+		series = append(series, runningMetrics...)
 	}
 
 	return
@@ -114,4 +125,9 @@ func (c *Consumer) ConsumeSketch(
 // ConsumeHost implements the translator.HostConsumer interface.
 func (c *Consumer) ConsumeHost(host string) {
 	c.seenHosts[host] = struct{}{}
+}
+
+// ConsumeTag implements the translator.TagsConsumer interface.
+func (c *Consumer) ConsumeTag(tag string) {
+	c.seenTags[tag] = struct{}{}
 }
