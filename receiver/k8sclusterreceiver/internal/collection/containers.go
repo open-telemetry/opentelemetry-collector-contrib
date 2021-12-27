@@ -146,7 +146,7 @@ func getResourceForContainer(labels map[string]string) *resourcepb.Resource {
 func getAllContainerLabels(cs corev1.ContainerStatus,
 	dims map[string]string, logger *zap.Logger) map[string]string {
 
-	repository, tag, err := docker.ParseImageName(cs.Image)
+	image, err := docker.ParseImageName(cs.Image)
 	if err != nil {
 		docker.LogParseError(err, cs.Image, logger)
 	}
@@ -155,8 +155,8 @@ func getAllContainerLabels(cs corev1.ContainerStatus,
 
 	out[conventions.AttributeContainerID] = utils.StripContainerID(cs.ContainerID)
 	out[conventions.AttributeK8SContainerName] = cs.Name
-	out[conventions.AttributeContainerImageName] = repository
-	out[conventions.AttributeContainerImageTag] = tag
+	out[conventions.AttributeContainerImageName] = image.Repository
+	out[conventions.AttributeContainerImageTag] = image.Tag
 
 	return out
 }

@@ -25,16 +25,21 @@ var (
 	extractImageRegexp = regexp.MustCompile(`^(?P<repository>([^/\s]+/)?([^:\s]+))(:(?P<tag>[^@\s]+))?(@sha256:\d+)?$`)
 )
 
+type ImageRef struct {
+	Repository string
+	Tag        string
+}
+
 // ParseImageName extracts image repository and tag from a combined image reference
 // e.g. example.com:5000/alpine/alpine:test --> `example.com:5000/alpine/alpine` and `test`
-func ParseImageName(image string) (string, string, error) {
+func ParseImageName(image string) (ImageRef, error) {
 	if image == "" {
-		return "", "", fmt.Errorf("empty image")
+		return ImageRef{}, fmt.Errorf("empty image")
 	}
 
 	match := extractImageRegexp.FindStringSubmatch(image)
 	if len(match) == 0 {
-		return "", "", fmt.Errorf("failed to match regex against image")
+		return ImageRef{}, fmt.Errorf("failed to match regex against image")
 	}
 
 	tag := "latest"
@@ -44,7 +49,10 @@ func ParseImageName(image string) (string, string, error) {
 
 	repository := match[extractImageRegexp.SubexpIndex("repository")]
 
-	return repository, tag, nil
+	return ImageRef{
+		Repository: repository,
+		Tag:        tag,
+	}, nil
 }
 
 func LogParseError(err error, image string, logger *zap.Logger) {

@@ -131,16 +131,16 @@ func TestDockerImageToElements(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			repository, tag, err := ParseImageName(tt.args.image)
+			image, err := ParseImageName(tt.args.image)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ParseImageName() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if repository != tt.wantRepository {
-				t.Errorf("ParseImageName() repository = %v, want %v", repository, tt.wantRepository)
+			if image.Repository != tt.wantRepository {
+				t.Errorf("ParseImageName() repository = %v, want %v", image.Repository, tt.wantRepository)
 			}
-			if tag != tt.wantTag {
-				t.Errorf("ParseImageName() tag = %v, want %v", tag, tt.wantTag)
+			if image.Tag != tt.wantTag {
+				t.Errorf("ParseImageName() tag = %v, want %v", image.Tag, tt.wantTag)
 			}
 		})
 	}

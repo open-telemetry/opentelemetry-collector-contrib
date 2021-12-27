@@ -28,7 +28,7 @@ import (
 func containerResource(cm ecsutil.ContainerMetadata, logger *zap.Logger) pdata.Resource {
 	resource := pdata.NewResource()
 
-	imageName, imageTag, err := docker.ParseImageName(cm.Image)
+	image, err := docker.ParseImageName(cm.Image)
 	if err != nil {
 		docker.LogParseError(err, cm.Image, logger)
 	}
@@ -36,9 +36,9 @@ func containerResource(cm ecsutil.ContainerMetadata, logger *zap.Logger) pdata.R
 	resource.Attributes().UpsertString(conventions.AttributeContainerName, cm.ContainerName)
 	resource.Attributes().UpsertString(conventions.AttributeContainerID, cm.DockerID)
 	resource.Attributes().UpsertString(attributeECSDockerName, cm.DockerName)
-	resource.Attributes().UpsertString(conventions.AttributeContainerImageName, imageName)
+	resource.Attributes().UpsertString(conventions.AttributeContainerImageName, image.Repository)
 	resource.Attributes().UpsertString(attributeContainerImageID, cm.ImageID)
-	resource.Attributes().UpsertString(conventions.AttributeContainerImageTag, imageTag)
+	resource.Attributes().UpsertString(conventions.AttributeContainerImageTag, image.Tag)
 	resource.Attributes().UpsertString(attributeContainerCreatedAt, cm.CreatedAt)
 	resource.Attributes().UpsertString(attributeContainerStartedAt, cm.StartedAt)
 	if cm.FinishedAt != "" {
