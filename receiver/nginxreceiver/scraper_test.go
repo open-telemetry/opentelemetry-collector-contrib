@@ -29,6 +29,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
 )
 
 func TestScraper(t *testing.T) {
@@ -41,6 +42,7 @@ func TestScraper(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	scraper := newNginxScraper(zap.NewNop(), cfg)
+
 	err := scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
@@ -49,7 +51,7 @@ func TestScraper(t *testing.T) {
 	aMetricSlice := actualMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
 	expectedFile := filepath.Join("testdata", "scraper", "expected.json")
-	expectedMetrics, err := scrapertest.ReadExpected(expectedFile)
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 	eMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 

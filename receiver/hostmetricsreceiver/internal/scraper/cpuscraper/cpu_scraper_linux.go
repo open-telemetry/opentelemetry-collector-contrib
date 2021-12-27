@@ -24,8 +24,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/internal/metadata"
 )
 
-const cpuStatesLen = 8
-
 func (s *scraper) recordCPUTimeStateDataPoints(now pdata.Timestamp, cpuTime cpu.TimesStat) {
 	s.mb.RecordSystemCPUTimeDataPoint(now, cpuTime.User, cpuTime.CPU, metadata.AttributeState.User)
 	s.mb.RecordSystemCPUTimeDataPoint(now, cpuTime.System, cpuTime.CPU, metadata.AttributeState.System)

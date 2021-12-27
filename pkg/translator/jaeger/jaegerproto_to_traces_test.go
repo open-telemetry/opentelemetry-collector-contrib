@@ -16,7 +16,6 @@ package jaeger
 
 import (
 	"encoding/binary"
-	"fmt"
 	"strconv"
 	"testing"
 	"time"
@@ -42,55 +41,48 @@ var (
 	testSpanEndTimestamp   = pdata.NewTimestampFromTime(testSpanEndTime)
 )
 
-func TestGetStatusCodeValFromAttr(t *testing.T) {
-	_, invalidNumErr := strconv.Atoi("inf")
-
+func TestCodeFromAttr(t *testing.T) {
 	tests := []struct {
 		name string
 		attr pdata.AttributeValue
-		code int
+		code int64
 		err  error
 	}{
 		{
 			name: "ok-string",
 			attr: pdata.NewAttributeValueString("0"),
 			code: 0,
-			err:  nil,
 		},
 
 		{
 			name: "ok-int",
 			attr: pdata.NewAttributeValueInt(1),
 			code: 1,
-			err:  nil,
 		},
 
 		{
 			name: "wrong-type",
 			attr: pdata.NewAttributeValueBool(true),
 			code: 0,
-			err:  fmt.Errorf("invalid status code attribute type: BOOL"),
+			err:  errType,
 		},
 
 		{
 			name: "invalid-string",
 			attr: pdata.NewAttributeValueString("inf"),
 			code: 0,
-			err:  invalidNumErr,
-		},
-
-		{
-			name: "invalid-int",
-			attr: pdata.NewAttributeValueInt(1844674407370955),
-			code: 0,
-			err:  fmt.Errorf("invalid status code value: 1844674407370955"),
+			err:  strconv.ErrSyntax,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			code, err := getStatusCodeValFromAttr(test.attr)
-			assert.EqualValues(t, test.err, err)
+			code, err := codeFromAttr(test.attr)
+			if test.err != nil {
+				assert.ErrorIs(t, err, test.err)
+			} else {
+				assert.NoError(t, err)
+			}
 			assert.Equal(t, test.code, code)
 		})
 	}
@@ -363,9 +355,9 @@ func TestSetInternalSpanStatus(t *testing.T) {
 			attrsModifiedLen: 0,
 		},
 		{
-			name: "status.code is set as int",
+			name: "status.code is set as string",
 			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
-				conventions.OtelStatusCode: pdata.NewAttributeValueInt(1),
+				conventions.OtelStatusCode: pdata.NewAttributeValueString(statusOk),
 			}),
 			status:           okStatus,
 			attrsModifiedLen: 0,
@@ -374,7 +366,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 			name: "status.code, status.message and error tags are set",
 			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
 				tracetranslator.TagError:          pdata.NewAttributeValueBool(true),
-				conventions.OtelStatusCode:        pdata.NewAttributeValueInt(int64(pdata.StatusCodeError)),
+				conventions.OtelStatusCode:        pdata.NewAttributeValueString(statusError),
 				conventions.OtelStatusDescription: pdata.NewAttributeValueString("Error: Invalid argument"),
 			}),
 			status:           errorStatusWithMessage,
@@ -401,7 +393,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 		{
 			name: "status.code has precedence over http.status_code.",
 			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
-				conventions.OtelStatusCode:          pdata.NewAttributeValueInt(1),
+				conventions.OtelStatusCode:          pdata.NewAttributeValueString(statusOk),
 				conventions.AttributeHTTPStatusCode: pdata.NewAttributeValueInt(500),
 				tracetranslator.TagHTTPStatusMsg:    pdata.NewAttributeValueString("Server Error"),
 			}),
@@ -604,9 +596,9 @@ func generateProtoSpan() *model.Span {
 				VStr:  string(tracetranslator.OpenTracingSpanKindClient),
 			},
 			{
-				Key:    conventions.OtelStatusCode,
-				VType:  model.ValueType_INT64,
-				VInt64: int64(pdata.StatusCodeError),
+				Key:   conventions.OtelStatusCode,
+				VType: model.ValueType_STRING,
+				VStr:  statusError,
 			},
 			{
 				Key:   tracetranslator.TagError,
@@ -682,9 +674,9 @@ func generateProtoSpanWithTraceState() *model.Span {
 				VStr:  string(tracetranslator.OpenTracingSpanKindClient),
 			},
 			{
-				Key:    conventions.OtelStatusCode,
-				VType:  model.ValueType_INT64,
-				VInt64: int64(pdata.StatusCodeError),
+				Key:   conventions.OtelStatusCode,
+				VType: model.ValueType_STRING,
+				VStr:  statusError,
 			},
 			{
 				Key:   tracetranslator.TagError,
@@ -792,9 +784,9 @@ func generateProtoFollowerSpan() *model.Span {
 				VStr:  string(tracetranslator.OpenTracingSpanKindConsumer),
 			},
 			{
-				Key:    conventions.OtelStatusCode,
-				VType:  model.ValueType_INT64,
-				VInt64: int64(pdata.StatusCodeOk),
+				Key:   conventions.OtelStatusCode,
+				VType: model.ValueType_STRING,
+				VStr:  statusOk,
 			},
 			{
 				Key:   conventions.OtelStatusDescription,
