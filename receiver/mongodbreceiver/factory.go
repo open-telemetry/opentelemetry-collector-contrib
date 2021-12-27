@@ -34,12 +34,14 @@ func createDefaultConfig() config.Receiver {
 			CollectionInterval: 60 * time.Second,
 		},
 		Timeout: 1 * time.Minute,
-		TCPAddr: confignet.TCPAddr{
-			Endpoint: "localhost:27017",
+		Hosts: []confignet.TCPAddr{
+			{
+				Endpoint: "localhost:27017",
+			},
 		},
 		TLSClientSetting: configtls.TLSClientSetting{
-			Insecure:           false,
-			InsecureSkipVerify: true,
+			Insecure:           true,
+			InsecureSkipVerify: false,
 		},
 	}
 }

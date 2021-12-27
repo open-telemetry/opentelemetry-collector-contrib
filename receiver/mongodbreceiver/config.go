@@ -14,32 +14,39 @@ import (
 
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	confignet.TCPAddr                       `mapstructure:",squash"`
 	configtls.TLSClientSetting              `mapstructure:"tls,omitempty"`
-	Username                                string        `mapstructure:"username"`
-	Password                                string        `mapstructure:"password"`
-	Timeout                                 time.Duration `mapstructure:"timeout"`
+	// Hosts are a list of <host>:<port>
+	// for standalone deployments, use the hostname and port of the mongod instance
+	// for sharded deployments it is the list of mongos instances
+	Hosts []confignet.TCPAddr `mapstructure:"hosts"`
+	// Username to use for authentication; optional
+	Username string `mapstructure:"username"`
+	// Password to use for authentication; required if Username is present
+	Password string        `mapstructure:"password"`
+	Timeout  time.Duration `mapstructure:"timeout"`
 }
 
 func (c *Config) Validate() error {
+	if len(c.Hosts) == 0 {
+		return errors.New("no hosts were specified in the config")
+	}
+
 	var err error
-	if c.Endpoint == "" {
-		err = multierr.Append(err, errors.New("no endpoint specified"))
-	} else {
-		_, _, hpErr := net.SplitHostPort(c.Endpoint)
+	for _, host := range c.Hosts {
+		_, _, hpErr := net.SplitHostPort(host.Endpoint)
 		if hpErr != nil {
-			err = multierr.Append(err, fmt.Errorf("endpoint does not match format of 'host:port': %w", hpErr))
+			err = multierr.Append(err, fmt.Errorf("endpoint '%s' does not match format of '<host>:<port>': %w", host.Endpoint, hpErr))
 		}
 	}
 
 	if c.Username != "" && c.Password == "" {
-		err = multierr.Append(err, errors.New("user provided without password"))
+		err = multierr.Append(err, errors.New("username provided without password"))
 	} else if c.Username == "" && c.Password != "" {
 		err = multierr.Append(err, errors.New("password provided without user"))
 	}
 
 	if _, tlsErr := c.LoadTLSConfig(); tlsErr != nil {
-		err = multierr.Append(err, fmt.Errorf("error loading tls config: %w", tlsErr))
+		err = multierr.Append(err, fmt.Errorf("error loading tls configuration: %w", tlsErr))
 	}
 
 	return err

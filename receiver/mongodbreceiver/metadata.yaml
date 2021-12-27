@@ -98,7 +98,7 @@ metrics:
     attributes: [database]
   mongodb.operations:
     description: The number of operations executed.
-    unit: 1
+    unit: 1{.operations}
     sum:
       value_type: int
       monotonic: true

@@ -64,8 +64,10 @@ func TestValidClient(t *testing.T) {
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			CollectionInterval: 10 * time.Second,
 		},
-		TCPAddr: confignet.TCPAddr{
-			Endpoint: "localhost:27017",
+		Hosts: []confignet.TCPAddr{
+			{
+				Endpoint: "localhost:27017",
+			},
 		},
 		Username: "username",
 		Password: "password",
@@ -81,8 +83,10 @@ func TestBadTLSClient(t *testing.T) {
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			CollectionInterval: 10 * time.Second,
 		},
-		TCPAddr: confignet.TCPAddr{
-			Endpoint: "localhost:27017",
+		Hosts: []confignet.TCPAddr{
+			{
+				Endpoint: "localhost:27017",
+			},
 		},
 		TLSClientSetting: configtls.TLSClientSetting{
 			TLSSetting: configtls.TLSSetting{
@@ -105,8 +109,10 @@ func TestBadClientNonTCPAddr(t *testing.T) {
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			CollectionInterval: 10 * time.Second,
 		},
-		TCPAddr: confignet.TCPAddr{
-			Endpoint: "/dev/null",
+		Hosts: []confignet.TCPAddr{
+			{
+				Endpoint: "/dev/null",
+			},
 		},
 		Timeout: 1 * time.Second,
 	}, zap.NewNop())
@@ -124,7 +130,7 @@ func TestInitClientBadEndpoint(t *testing.T) {
 	client := mongodbClient{
 		username: "admin",
 		password: "password",
-		endpoint: "x:localhost:27017:another_uri",
+		hosts:    []string{"x:localhost:27017:an_invalid_tcp_addr"},
 		logger:   zap.NewNop(),
 	}
 

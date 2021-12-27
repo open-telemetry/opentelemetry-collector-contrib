@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -15,7 +16,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// Client is an interface that exposes functionality towards a mongodb server instance
+// Client is an interface that exposes functionality towards a mongo environment
 type Client interface {
 	ListDatabaseNames(ctx context.Context, filters interface{}, opts ...*options.ListDatabasesOptions) ([]string, error)
 	Disconnect(context.Context) error
@@ -41,7 +42,7 @@ type mongodbClient struct {
 	driver    driver
 	username  string
 	password  string
-	endpoint  string
+	hosts     []string
 	logger    *zap.Logger
 	timeout   time.Duration
 	tlsConfig *tls.Config
@@ -54,8 +55,13 @@ func NewClient(config *Config, logger *zap.Logger) (Client, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid tls configuration: %w", err)
 	}
+	hosts := []string{}
+	for _, ep := range config.Hosts {
+		hosts = append(hosts, ep.Endpoint)
+	}
+
 	return &mongodbClient{
-		endpoint:  config.Endpoint,
+		hosts:     hosts,
 		username:  config.Username,
 		password:  config.Password,
 		timeout:   config.Timeout,
@@ -75,7 +81,7 @@ func (c *mongodbClient) Connect(ctx context.Context) error {
 // Disconnect closes attempts to close any open connections
 func (c *mongodbClient) Disconnect(ctx context.Context) error {
 	if c.isConnected(ctx) {
-		c.logger.Info(fmt.Sprintf("disconnecting from mongo server at: %s", c.endpoint))
+		c.logger.Info(fmt.Sprintf("disconnecting from mongo connection for host(s): %v", c.hosts))
 		return c.driver.Disconnect(ctx)
 	}
 	return nil
@@ -107,6 +113,8 @@ type MongoTestConnectionResponse struct {
 	Version string
 }
 
+// TestConnection validates the underlying connection of the client and returns a result of the
+// version of mongo the client is connected to
 func (c *mongodbClient) TestConnection(ctx context.Context) (*MongoTestConnectionResponse, error) {
 	if err := c.Connect(ctx); err != nil {
 		return nil, fmt.Errorf("unable to connect: %w", err)
@@ -136,10 +144,10 @@ func (c *mongodbClient) ensureClient(ctx context.Context) error {
 		}
 
 		if err := driver.Ping(ctx, nil); err != nil {
-			return fmt.Errorf("could not connect to %s: %w", c.endpoint, err)
+			return fmt.Errorf("could not connect to hosts %v: %w", c.hosts, err)
 		}
 
-		c.logger.Info(fmt.Sprintf("Mongo connection established to: %s", c.endpoint))
+		c.logger.Info(fmt.Sprintf("Mongo connection established to: %s", strings.Join(c.hosts, ", ")))
 		c.driver = driver
 	}
 	return nil
@@ -148,7 +156,7 @@ func (c *mongodbClient) ensureClient(ctx context.Context) error {
 func (c *mongodbClient) authOptions() *options.ClientOptions {
 	authOptions := options.Client()
 	if c.username != "" && c.password != "" {
-		authOptions.ApplyURI(uri(c.username, c.password, c.endpoint))
+		authOptions.ApplyURI(c.connectionString())
 	}
 
 	if c.tlsConfig != nil {
@@ -170,10 +178,15 @@ func (c *mongodbClient) isConnected(ctx context.Context) bool {
 	return true
 }
 
-func uri(username, password, endpoint string) string {
-	return fmt.Sprintf("mongodb://%s%s", authenticationString(username, password), endpoint)
+// for a full list of https://docs.mongodb.com/manual/reference/connection-string/#connections-connection-options
+func (c *mongodbClient) connectionString() string {
+	return fmt.Sprintf("mongodb://%s%s",
+		authenticationString(c.username, c.password),
+		strings.Join(c.hosts, ","))
 }
 
+// if username based authentication is configured we should add this to connection string
+// https://docs.mongodb.com/manual/reference/connection-string/#components
 func authenticationString(username, password string) string {
 	if username != "" && password != "" {
 		return fmt.Sprintf("%s:%s@", username, password)

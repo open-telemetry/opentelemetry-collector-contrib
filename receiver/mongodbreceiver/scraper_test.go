@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
 
@@ -35,7 +36,11 @@ import (
 func TestScrape(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = net.JoinHostPort("localhost", "37017")
+	cfg.Hosts = []confignet.TCPAddr{
+		{
+			Endpoint: net.JoinHostPort("localhost", "37017"),
+		},
+	}
 	cfg.Username = "otel"
 	cfg.Password = "otel"
 	databaseList := []string{"fakedatabase"}
@@ -84,7 +89,11 @@ func TestScrape(t *testing.T) {
 func TestCreateNewScraper(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = net.JoinHostPort("localhost", "37017")
+	cfg.Hosts = []confignet.TCPAddr{
+		{
+			Endpoint: net.JoinHostPort("localhost", "37017"),
+		},
+	}
 	cfg.Username = "otel"
 	cfg.Password = "otel"
 	cfg.TLSClientSetting = configtls.TLSClientSetting{
@@ -113,7 +122,11 @@ func TestCreateNewScraper(t *testing.T) {
 func TestScraperNoClient(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = net.JoinHostPort("localhost", "37017")
+	cfg.Hosts = []confignet.TCPAddr{
+		{
+			Endpoint: net.JoinHostPort("localhost", "37017"),
+		},
+	}
 	cfg.Username = "otel"
 	cfg.Password = "otel"
 
@@ -136,7 +149,11 @@ func TestScraperNoClient(t *testing.T) {
 func TestScrapeClientConnectionFailure(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = net.JoinHostPort("localhost", "37017")
+	cfg.Hosts = []confignet.TCPAddr{
+		{
+			Endpoint: net.JoinHostPort("localhost", "37017"),
+		},
+	}
 	cfg.Username = "otel"
 	cfg.Password = "otel"
 
@@ -161,7 +178,11 @@ func TestScrapeClientConnectionFailure(t *testing.T) {
 func TestScrapeClientPingFailure(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = net.JoinHostPort("localhost", "37017")
+	cfg.Hosts = []confignet.TCPAddr{
+		{
+			Endpoint: net.JoinHostPort("localhost", "37017"),
+		},
+	}
 	cfg.Username = "otel"
 	cfg.Password = "otel"
 
@@ -187,7 +208,11 @@ func TestScrapeClientPingFailure(t *testing.T) {
 func TestStart(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = net.JoinHostPort("localhost", "37017")
+	cfg.Hosts = []confignet.TCPAddr{
+		{
+			Endpoint: net.JoinHostPort("localhost", "37017"),
+		},
+	}
 	cfg.Username = "otel"
 	cfg.Password = "otel"
 }
@@ -195,7 +220,11 @@ func TestStart(t *testing.T) {
 func BenchmarkScrape(b *testing.B) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = net.JoinHostPort("localhost", "37017")
+	cfg.Hosts = []confignet.TCPAddr{
+		{
+			Endpoint: net.JoinHostPort("localhost", "37017"),
+		},
+	}
 	cfg.Username = "otel"
 	cfg.Password = "otel"
 

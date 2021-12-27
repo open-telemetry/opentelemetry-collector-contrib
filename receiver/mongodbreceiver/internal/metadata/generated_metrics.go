@@ -208,7 +208,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("mongodb.operations")
 			metric.SetDescription("The number of operations executed.")
-			metric.SetUnit("1")
+			metric.SetUnit("1{.operations}")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(true)
 			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)

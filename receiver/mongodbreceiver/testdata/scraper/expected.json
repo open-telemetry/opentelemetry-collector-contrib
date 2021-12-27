@@ -173,7 +173,7 @@
                         {
                             "name": "mongodb.cache.operations",
                             "description": "The number of cache operations of the instance.",
-                            "unit": "1",
+                            "unit": "1{.operations}",
                             "sum": {
                                 "dataPoints": [
                                     {
@@ -208,7 +208,7 @@
                         {
                             "name": "mongodb.operations",
                             "description": "The number of operations executed.",
-                            "unit": "1",
+                            "unit": "1{.operations}",
                             "sum": {
                                 "dataPoints": [
                                     {

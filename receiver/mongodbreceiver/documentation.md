@@ -18,7 +18,7 @@ These are the metrics available for this scraper.
 | mongodb.index.size | Sum of the space allocated to all indexes in the database, including free index space. | 1 | Gauge(Double) | <ul> <li>database</li> </ul> |
 | mongodb.memory.usage | The amount of memory used. | By | Gauge(Double) | <ul> <li>database</li> <li>memory_type</li> </ul> |
 | mongodb.objects | The number of objects. | 1 | Gauge(Double) | <ul> <li>database</li> </ul> |
-| mongodb.operations | The number of operations executed. | 1 | Sum(Int) | <ul> <li>operation</li> </ul> |
+| mongodb.operations | The number of operations executed. | 1{.operations} | Sum(Int) | <ul> <li>operation</li> </ul> |
 | mongodb.storage.size | The total amount of storage in bytes allocated to this collection for document storage. If collection data is compressed it reflects the compressed size. | By | Gauge(Double) | <ul> <li>database</li> </ul> |
 
 ## Attributes
