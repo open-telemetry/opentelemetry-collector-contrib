@@ -15,7 +15,7 @@
 package docker // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/docker"
 
 import (
-	"fmt"
+	"errors"
 	"regexp"
 
 	"go.uber.org/zap"
@@ -28,19 +28,19 @@ var (
 type ImageRef struct {
 	Repository string
 	Tag        string
-	Sha256     string
+	SHA256     string
 }
 
 // ParseImageName extracts image repository and tag from a combined image reference
 // e.g. example.com:5000/alpine/alpine:test --> `example.com:5000/alpine/alpine` and `test`
 func ParseImageName(image string) (ImageRef, error) {
 	if image == "" {
-		return ImageRef{}, fmt.Errorf("empty image")
+		return ImageRef{}, errors.New("empty image")
 	}
 
 	match := extractImageRegexp.FindStringSubmatch(image)
 	if len(match) == 0 {
-		return ImageRef{}, fmt.Errorf("failed to match regex against image")
+		return ImageRef{}, errors.New("failed to match regex against image")
 	}
 
 	tag := "latest"
@@ -55,7 +55,7 @@ func ParseImageName(image string) (ImageRef, error) {
 	return ImageRef{
 		Repository: repository,
 		Tag:        tag,
-		Sha256:     hash,
+		SHA256:     hash,
 	}, nil
 }
 

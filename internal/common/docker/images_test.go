@@ -27,7 +27,7 @@ func TestDockerImageToElements(t *testing.T) {
 		args           args
 		wantRepository string
 		wantTag        string
-		wantSha256     string
+		wantSHA256     string
 		wantErr        bool
 	}{
 		{
@@ -37,7 +37,7 @@ func TestDockerImageToElements(t *testing.T) {
 			},
 			wantRepository: "",
 			wantTag:        "",
-			wantSha256:     "",
+			wantSHA256:     "",
 			wantErr:        true,
 		},
 		{
@@ -47,7 +47,7 @@ func TestDockerImageToElements(t *testing.T) {
 			},
 			wantRepository: "",
 			wantTag:        "",
-			wantSha256:     "",
+			wantSHA256:     "",
 			wantErr:        true,
 		},
 		{
@@ -57,7 +57,7 @@ func TestDockerImageToElements(t *testing.T) {
 			},
 			wantRepository: "alpine",
 			wantTag:        "test",
-			wantSha256:     "00000000000000",
+			wantSHA256:     "00000000000000",
 			wantErr:        false,
 		},
 		{
@@ -67,7 +67,7 @@ func TestDockerImageToElements(t *testing.T) {
 			},
 			wantRepository: "alpine",
 			wantTag:        "latest",
-			wantSha256:     "",
+			wantSHA256:     "",
 			wantErr:        false,
 		},
 		{
@@ -77,7 +77,7 @@ func TestDockerImageToElements(t *testing.T) {
 			},
 			wantRepository: "alpine",
 			wantTag:        "v1.0.0",
-			wantSha256:     "",
+			wantSHA256:     "",
 			wantErr:        false,
 		},
 		{
@@ -87,7 +87,7 @@ func TestDockerImageToElements(t *testing.T) {
 			},
 			wantRepository: "alpine/alpine",
 			wantTag:        "latest",
-			wantSha256:     "",
+			wantSHA256:     "",
 			wantErr:        false,
 		},
 		{
@@ -97,7 +97,7 @@ func TestDockerImageToElements(t *testing.T) {
 			},
 			wantRepository: "alpine/alpine",
 			wantTag:        "2.0.0",
-			wantSha256:     "",
+			wantSHA256:     "",
 			wantErr:        false,
 		},
 		{
@@ -107,7 +107,7 @@ func TestDockerImageToElements(t *testing.T) {
 			},
 			wantRepository: "example.com/alpine/alpine",
 			wantTag:        "latest",
-			wantSha256:     "",
+			wantSHA256:     "",
 			wantErr:        false,
 		},
 		{
@@ -117,7 +117,7 @@ func TestDockerImageToElements(t *testing.T) {
 			},
 			wantRepository: "example.com/alpine/alpine",
 			wantTag:        "1",
-			wantSha256:     "",
+			wantSHA256:     "",
 			wantErr:        false,
 		},
 		{
@@ -127,7 +127,7 @@ func TestDockerImageToElements(t *testing.T) {
 			},
 			wantRepository: "example.com:3000/alpine/alpine",
 			wantTag:        "latest",
-			wantSha256:     "",
+			wantSHA256:     "",
 			wantErr:        false,
 		},
 		{
@@ -137,7 +137,7 @@ func TestDockerImageToElements(t *testing.T) {
 			},
 			wantRepository: "example.com:3000/alpine/alpine",
 			wantTag:        "test",
-			wantSha256:     "",
+			wantSHA256:     "",
 			wantErr:        false,
 		},
 	}
@@ -154,8 +154,8 @@ func TestDockerImageToElements(t *testing.T) {
 			if image.Tag != tt.wantTag {
 				t.Errorf("ParseImageName() tag = %v, want %v", image.Tag, tt.wantTag)
 			}
-			if image.Sha256 != tt.wantSha256 {
-				t.Errorf("ParseImageName() hash = %v, want %v", image.Sha256, tt.wantSha256)
+			if image.SHA256 != tt.wantSHA256 {
+				t.Errorf("ParseImageName() hash = %v, want %v", image.SHA256, tt.wantSHA256)
 			}
 		})
 	}
