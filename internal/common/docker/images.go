@@ -22,12 +22,13 @@ import (
 )
 
 var (
-	extractImageRegexp = regexp.MustCompile(`^(?P<repository>([^/\s]+/)?([^:\s]+))(:(?P<tag>[^@\s]+))?(@sha256:\d+)?$`)
+	extractImageRegexp = regexp.MustCompile(`^(?P<repository>([^/\s]+/)?([^:\s]+))(:(?P<tag>[^@\s]+))?(@sha256:(?P<sha256>\d+))?$`)
 )
 
 type ImageRef struct {
 	Repository string
 	Tag        string
+	Sha256     string
 }
 
 // ParseImageName extracts image repository and tag from a combined image reference
@@ -49,9 +50,12 @@ func ParseImageName(image string) (ImageRef, error) {
 
 	repository := match[extractImageRegexp.SubexpIndex("repository")]
 
+	hash := match[extractImageRegexp.SubexpIndex("sha256")]
+
 	return ImageRef{
 		Repository: repository,
 		Tag:        tag,
+		Sha256:     hash,
 	}, nil
 }
 
