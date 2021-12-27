@@ -19,6 +19,6 @@ These are the metrics available for this scraper.
 | Name | Description |
 | ---- | ----------- |
 | device | Name of the network interface. |
-| direction | Direction of flow of bytes/opertations (receive or transmit). |
+| direction | Direction of flow of bytes/operations (receive or transmit). |
 | protocol | Network protocol, e.g. TCP or UDP. |
 | state | State of the network connection. |

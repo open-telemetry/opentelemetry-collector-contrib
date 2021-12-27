@@ -5,7 +5,7 @@ attributes:
     description: Name of the disk.
 
   direction:
-    description: Direction of flow of bytes/opertations (read or write).
+    description: Direction of flow of bytes/operations (read or write).
     enum: [read, write]
 
 metrics:
