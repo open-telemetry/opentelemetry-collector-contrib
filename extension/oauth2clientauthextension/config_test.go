@@ -23,8 +23,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -33,7 +33,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Extensions[typeStr] = factory
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -66,7 +66,7 @@ func TestConfigTLSSettings(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Extensions[typeStr] = factory
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -110,7 +110,7 @@ func TestLoadConfigError(t *testing.T) {
 	for _, tt := range tests {
 		factory := NewFactory()
 		factories.Extensions[typeStr] = factory
-		cfg, _ := configtest.LoadConfig(path.Join(".", "testdata", "config_bad.yaml"), factories)
+		cfg, _ := servicetest.LoadConfig(path.Join(".", "testdata", "config_bad.yaml"), factories)
 		extension := cfg.Extensions[config.NewComponentIDWithName(typeStr, tt.configName)]
 		verr := extension.Validate()
 		require.ErrorIs(t, verr, tt.expectedErr)

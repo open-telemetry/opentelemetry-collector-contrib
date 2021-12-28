@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
@@ -36,7 +36,7 @@ func TestLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	factories.Processors[typeStr] = factory
 
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 	assert.NoError(t, err)
 	assert.NotNil(t, cfg)
 
@@ -85,7 +85,7 @@ func TestLoadInvalidConfig(t *testing.T) {
 	factory := NewFactory()
 	factories.Processors[typeStr] = factory
 
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "invalid_config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "invalid_config.yaml"), factories)
 	assert.Error(t, err)
 	assert.NotNil(t, cfg)
 }

@@ -16,7 +16,6 @@ package cpuscraper // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"context"
-	"runtime"
 	"time"
 
 	"github.com/shirou/gopsutil/v3/cpu"
@@ -50,11 +49,7 @@ func (s *scraper) start(context.Context, component.Host) error {
 	if err != nil {
 		return err
 	}
-	s.mb = metadata.NewMetricsBuilder(
-		s.config.Metrics,
-		metadata.WithStartTime(pdata.Timestamp(bootTime*1e9)),
-		metadata.WithAttributeStateCapacity(cpuStatesLen),
-		metadata.WithAttributeCpuCapacity(runtime.NumCPU()))
+	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, metadata.WithStartTime(pdata.Timestamp(bootTime*1e9)))
 	return nil
 }
 

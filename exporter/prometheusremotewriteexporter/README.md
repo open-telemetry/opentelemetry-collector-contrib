@@ -39,7 +39,8 @@ The following settings can be optionally configured:
   - *Note the following headers cannot be changed: `Content-Encoding`, `Content-Type`, `X-Prometheus-Remote-Write-Version`, and `User-Agent`.*
 - `namespace`: prefix attached to each exported metric name.
 - `remote_write_queue`: fine tuning for queueing and sending of the outgoing remote writes.
-  - `queue_size`: number of OTLP metrics that can be queued.
+  - `enabled`: enable the sending queue
+  - `queue_size`: number of OTLP metrics that can be queued. Ignored if `enabled` is `false`
   - `num_consumers`: minimum number of workers to use to fan out the outgoing requests.
 
 Example:

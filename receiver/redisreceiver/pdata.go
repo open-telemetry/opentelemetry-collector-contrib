@@ -32,6 +32,7 @@ func initKeyspaceKeysMetric(k *keyspace, t *timeBundle, dest pdata.Metric) {
 		name:   "redis.db.keys",
 		labels: map[string]pdata.AttributeValue{"db": pdata.NewAttributeValueString(k.db)},
 		pdType: pdata.MetricDataTypeGauge,
+		desc:   "Number of keyspace keys",
 	}
 	initIntMetric(m, int64(k.keys), t, dest)
 }
@@ -41,6 +42,7 @@ func initKeyspaceExpiresMetric(k *keyspace, t *timeBundle, dest pdata.Metric) {
 		name:   "redis.db.expires",
 		labels: map[string]pdata.AttributeValue{"db": pdata.NewAttributeValueString(k.db)},
 		pdType: pdata.MetricDataTypeGauge,
+		desc:   "Number of keyspace keys with an expiration",
 	}
 	initIntMetric(m, int64(k.expires), t, dest)
 }
@@ -51,6 +53,7 @@ func initKeyspaceTTLMetric(k *keyspace, t *timeBundle, dest pdata.Metric) {
 		units:  "ms",
 		labels: map[string]pdata.AttributeValue{"db": pdata.NewAttributeValueString(k.db)},
 		pdType: pdata.MetricDataTypeGauge,
+		desc:   "Average keyspace keys TTL",
 	}
 	initIntMetric(m, int64(k.avgTTL), t, dest)
 }

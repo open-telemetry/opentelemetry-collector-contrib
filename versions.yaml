@@ -50,6 +50,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/newrelicexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/observiqexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter
+      - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parquetexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter
@@ -128,16 +129,18 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver
-      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver
-      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver
-      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver
-      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver 
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver 
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver 
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver 
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influxdbreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver
-      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver 
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver

@@ -26,7 +26,7 @@ import (
 
 	awsP "github.com/aws/aws-sdk-go/aws"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.8.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
@@ -234,8 +234,7 @@ func determineAwsOrigin(resource pdata.Resource) string {
 
 	if is, present := resource.Attributes().Get(conventions.AttributeCloudPlatform); present {
 		switch is.StringVal() {
-		// TODO: Replace with semantic convention const when aws_app_runner is included in an official semconv release
-		case "aws_app_runner":
+		case conventions.AttributeCloudPlatformAWSAppRunner:
 			return OriginAppRunner
 		case conventions.AttributeCloudPlatformAWSEKS:
 			return OriginEKS

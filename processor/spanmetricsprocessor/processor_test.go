@@ -34,6 +34,7 @@ import (
 	"go.uber.org/zap/zaptest"
 	"google.golang.org/grpc/metadata"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor/internal/cache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor/mocks"
 )
 
@@ -48,6 +49,7 @@ const (
 	notInSpanAttrName0     = "shouldBeInMetric"
 	notInSpanAttrName1     = "shouldNotBeInMetric"
 	regionResourceAttrName = "region"
+	DimensionsCacheSize    = 2
 
 	sampleRegion          = "us-east-1"
 	sampleLatency         = float64(11)
@@ -281,7 +283,6 @@ func TestProcessorConsumeTraces(t *testing.T) {
 }
 
 func TestMetricKeyCache(t *testing.T) {
-	// Prepare
 	mexp := &mocks.MetricsExporter{}
 	tcon := &mocks.TracesConsumer{}
 
@@ -295,18 +296,22 @@ func TestMetricKeyCache(t *testing.T) {
 
 	// Test
 	ctx := metadata.NewIncomingContext(context.Background(), nil)
-	err := p.ConsumeTraces(ctx, traces)
 
+	// 0 key was cached at beginning
+	assert.Empty(t, p.metricKeyToDimensions.Keys())
+
+	err := p.ConsumeTraces(ctx, traces)
 	// Validate
 	require.NoError(t, err)
+	// 2 key was cached, 1 key was evicted and cleaned after the processing
+	assert.Len(t, p.metricKeyToDimensions.Keys(), DimensionsCacheSize)
 
-	origKeyCache := make(map[metricKey]pdata.AttributeMap)
-	for k, v := range p.metricKeyToDimensions {
-		origKeyCache[k] = v
-	}
+	// consume another batch of traces
 	err = p.ConsumeTraces(ctx, traces)
+	// 2 key was cached, other keys were evicted and cleaned after the processing
+	assert.Len(t, p.metricKeyToDimensions.Keys(), DimensionsCacheSize)
+
 	require.NoError(t, err)
-	assert.Equal(t, origKeyCache, p.metricKeyToDimensions)
 }
 
 func BenchmarkProcessorConsumeTraces(b *testing.B) {
@@ -331,6 +336,11 @@ func BenchmarkProcessorConsumeTraces(b *testing.B) {
 
 func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, defaultNullValue *string, temporality string, tb testing.TB) *processorImp {
 	defaultNotInSpanAttrVal := "defaultNotInSpanAttrVal"
+	// use size 2 for LRU cache for testing purpose
+	metricKeyToDimensions, err := cache.NewCache(DimensionsCacheSize)
+	if err != nil {
+		panic(err)
+	}
 	return &processorImp{
 		logger:          zaptest.NewLogger(tb),
 		config:          Config{AggregationTemporality: temporality},
@@ -360,7 +370,7 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, de
 			// Add a resource attribute to test "process" attributes like IP, host, region, cluster, etc.
 			{regionResourceAttrName, nil},
 		},
-		metricKeyToDimensions: make(map[metricKey]pdata.AttributeMap),
+		metricKeyToDimensions: metricKeyToDimensions,
 	}
 }
 

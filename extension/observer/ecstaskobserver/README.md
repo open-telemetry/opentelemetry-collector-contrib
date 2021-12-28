@@ -11,6 +11,8 @@ value will be attempted to be parsed for each reported container by default.
 
 **An instance of the Collector must be running in the ECS task from which you want to detect containers.**
 
+> :construction: This extension is in alpha and configuration fields are subject to change.
+
 ## Example Config
 
 ```yaml

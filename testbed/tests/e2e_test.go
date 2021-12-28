@@ -73,9 +73,9 @@ func TestBallastMemory(t *testing.T) {
 		ballastSize uint32
 		maxRSS      uint32
 	}{
-		{100, 70},
-		{500, 90},
-		{1000, 110},
+		{100, 80},
+		{500, 100},
+		{1000, 120},
 	}
 
 	resultDir, err := filepath.Abs(path.Join("results", t.Name()))

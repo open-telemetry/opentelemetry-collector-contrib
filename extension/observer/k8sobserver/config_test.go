@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
@@ -33,37 +33,57 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Extensions[typeStr] = factory
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	require.Len(t, cfg.Extensions, 2)
+	require.Len(t, cfg.Extensions, 3)
 
-	ext0 := cfg.Extensions[config.NewComponentID(typeStr)]
-	assert.EqualValues(t, factory.CreateDefaultConfig(), ext0)
+	defaultConfig := cfg.Extensions[config.NewComponentID(typeStr)]
+	assert.EqualValues(t, factory.CreateDefaultConfig(), defaultConfig)
 
-	ext1 := cfg.Extensions[config.NewComponentIDWithName(typeStr, "1")]
+	ownNodeOnly := cfg.Extensions[config.NewComponentIDWithName(typeStr, "own-node-only")]
 	assert.EqualValues(t,
 		&Config{
-			ExtensionSettings: config.NewExtensionSettings(config.NewComponentIDWithName(typeStr, "1")),
+			ExtensionSettings: config.NewExtensionSettings(config.NewComponentIDWithName(typeStr, "own-node-only")),
 			Node:              "node-1",
 			APIConfig:         k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
+			ObservePods:       true,
 		},
-		ext1)
+		ownNodeOnly)
+
+	observeAll := cfg.Extensions[config.NewComponentIDWithName(typeStr, "observe-all")]
+	assert.EqualValues(t,
+		&Config{
+			ExtensionSettings: config.NewExtensionSettings(config.NewComponentIDWithName(typeStr, "observe-all")),
+			Node:              "",
+			APIConfig:         k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone},
+			ObservePods:       true,
+			ObserveNodes:      true,
+		},
+		observeAll)
+
 }
 
-func TestValidate(t *testing.T) {
-	cfg := &Config{
-		ExtensionSettings: config.NewExtensionSettings(config.NewComponentIDWithName(typeStr, "1")),
-		Node:              "node-1",
-		APIConfig:         k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
-	}
+func TestInvalidAuth(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
 
-	err := cfg.Validate()
-	require.Nil(t, err)
+	factory := NewFactory()
+	factories.Extensions[typeStr] = factory
+	cfg, err := servicetest.LoadConfigAndValidate(path.Join("testdata/invalid_auth.yaml"), factories)
+	require.NotNil(t, cfg)
+	require.EqualError(t, err, `extension "k8s_observer" has invalid configuration: invalid authType for kubernetes: not a real auth type`)
+}
 
-	cfg.APIConfig.AuthType = "invalid"
-	err = cfg.Validate()
-	require.NotNil(t, err)
+func TestInvalidNoObserving(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Extensions[typeStr] = factory
+	cfg, err := servicetest.LoadConfigAndValidate(path.Join("testdata/invalid_no_observing.yaml"), factories)
+	require.NotNil(t, cfg)
+	require.EqualError(t, err, `extension "k8s_observer" has invalid configuration: one of observe_pods and observe_nodes must be true`)
 }

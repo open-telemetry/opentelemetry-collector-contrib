@@ -180,15 +180,6 @@ func TestEndpointEnv(t *testing.T) {
 						"label_key": "label_val",
 					},
 					KubeletEndpointPort: 1234,
-					Spec: map[string]interface{}{
-						"spec": "spec_val",
-					},
-					Metadata: map[string]interface{}{
-						"metadata": "metadata_val",
-					},
-					Status: map[string]interface{}{
-						"status": "status_val",
-					},
 				},
 			},
 			want: EndpointEnv{
@@ -207,15 +198,6 @@ func TestEndpointEnv(t *testing.T) {
 				},
 				"labels": map[string]string{
 					"label_key": "label_val",
-				},
-				"spec": map[string]interface{}{
-					"spec": "spec_val",
-				},
-				"metadata": map[string]interface{}{
-					"metadata": "metadata_val",
-				},
-				"status": map[string]interface{}{
-					"status": "status_val",
 				},
 			},
 			wantErr: false,

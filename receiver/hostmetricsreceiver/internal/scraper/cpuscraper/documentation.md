@@ -8,7 +8,7 @@ These are the metrics available for this scraper.
 
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
-| system.cpu.time | Total CPU seconds broken down by different states. | s | Sum | <ul> <li>cpu</li> <li>state</li> </ul> |
+| system.cpu.time | Total CPU seconds broken down by different states. | s | Sum(Double) | <ul> <li>cpu</li> <li>state</li> </ul> |
 
 ## Attributes
 

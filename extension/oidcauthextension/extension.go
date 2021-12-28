@@ -33,14 +33,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.uber.org/zap"
-	"google.golang.org/grpc"
 )
 
 type oidcExtension struct {
-	cfg               *Config
-	unaryInterceptor  configauth.GRPCUnaryInterceptorFunc
-	streamInterceptor configauth.GRPCStreamInterceptorFunc
-	httpInterceptor   configauth.HTTPInterceptorFunc
+	cfg *Config
 
 	provider *oidc.Provider
 	verifier *oidc.IDTokenVerifier
@@ -74,11 +70,8 @@ func newExtension(cfg *Config, logger *zap.Logger) (*oidcExtension, error) {
 	}
 
 	return &oidcExtension{
-		cfg:               cfg,
-		logger:            logger,
-		unaryInterceptor:  configauth.DefaultGRPCUnaryServerInterceptor,
-		streamInterceptor: configauth.DefaultGRPCStreamServerInterceptor,
-		httpInterceptor:   configauth.DefaultHTTPInterceptor,
+		cfg:    cfg,
+		logger: logger,
 	}, nil
 }
 
@@ -147,21 +140,6 @@ func (e *oidcExtension) Authenticate(ctx context.Context, headers map[string][]s
 		membership: membership,
 	}
 	return client.NewContext(ctx, cl), nil
-}
-
-// GRPCUnaryServerInterceptor is a helper method to provide a gRPC-compatible UnaryInterceptor, typically calling the authenticator's Authenticate method.
-func (e *oidcExtension) GRPCUnaryServerInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-	return e.unaryInterceptor(ctx, req, info, handler, e.Authenticate)
-}
-
-// GRPCStreamServerInterceptor is a helper method to provide a gRPC-compatible StreamInterceptor, typically calling the authenticator's Authenticate method.
-func (e *oidcExtension) GRPCStreamServerInterceptor(srv interface{}, str grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-	return e.streamInterceptor(srv, str, info, handler, e.Authenticate)
-}
-
-// GRPCStreamServerInterceptor is a helper method to provide a gRPC-compatible StreamInterceptor, typically calling the authenticator's Authenticate method.
-func (e *oidcExtension) HTTPInterceptor(next http.Handler) http.Handler {
-	return e.httpInterceptor(next, e.Authenticate)
 }
 
 func getSubjectFromClaims(claims map[string]interface{}, usernameClaim string, fallback string) (string, error) {
