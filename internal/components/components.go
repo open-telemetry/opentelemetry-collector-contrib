@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/service/defaultcomponents"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsprometheusremotewriteexporter"
@@ -199,6 +200,7 @@ func Components() (component.Factories, error) {
 
 	exporters := []component.ExporterFactory{
 		alibabacloudlogserviceexporter.NewFactory(),
+		awscloudwatchlogsexporter.NewFactory(),
 		awsemfexporter.NewFactory(),
 		awskinesisexporter.NewFactory(),
 		awsprometheusremotewriteexporter.NewFactory(),

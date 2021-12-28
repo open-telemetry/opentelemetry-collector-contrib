@@ -15,6 +15,7 @@
 package awscloudwatchlogsexporter
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 	"path"
 	"testing"
 
@@ -51,6 +52,7 @@ func TestLoadConfig(t *testing.T) {
 			LogStreamName:    "testing",
 			Region:           "",
 			Endpoint:         "",
+			AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
 			QueueSettings: QueueSettings{
 				QueueSize: exporterhelper.DefaultQueueSettings().QueueSize,
 			},
@@ -69,6 +71,7 @@ func TestLoadConfig(t *testing.T) {
 				MaxInterval:     defaultRetrySettings.MaxInterval,
 				MaxElapsedTime:  defaultRetrySettings.MaxElapsedTime,
 			},
+			AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
 			LogGroupName:  "test-2",
 			LogStreamName: "testing",
 			QueueSettings: QueueSettings{

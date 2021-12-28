@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.37.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter v0.37.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter v0.37.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter v0.37.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsprometheusremotewriteexporter v0.37.1
@@ -256,6 +257,7 @@ require (
 	github.com/olivere/elastic v6.2.37+incompatible // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.37.1 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.37.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cloudwatch v0.37.1 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.37.1 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy v0.37.1 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.37.1 // indirect
@@ -408,6 +410,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/x
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil => ./internal/aws/awsutil
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cloudwatch => ./internal/aws/cloudwatch
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza => ./internal/stanza
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker => ./internal/docker
@@ -415,6 +419,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/docke
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter => ./exporter/alibabacloudlogserviceexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsprometheusremotewriteexporter => ./exporter/awsprometheusremotewriteexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter => ./exporter/awscloudwatchlogsexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter => ./exporter/awsemfexporter
 

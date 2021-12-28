@@ -16,6 +16,8 @@ package awscloudwatchlogsexporter
 
 import (
 	"errors"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -27,6 +29,7 @@ type Config struct {
 
 	exporterhelper.RetrySettings `mapstructure:"retry_on_failure"`
 
+	awsutil.AWSSessionSettings `mapstructure:",squash"`
 	// LogGroupName is the name of CloudWatch log group which defines group of log streams
 	// that share the same retention, monitoring, and access control settings.
 	LogGroupName string `mapstructure:"log_group_name"`
@@ -48,6 +51,8 @@ type Config struct {
 	// QueueSettings is a subset of exporterhelper.QueueSettings,
 	// because only QueueSize is user-settable due to how AWS CloudWatch API works
 	QueueSettings QueueSettings `mapstructure:"sending_queue"`
+
+	logger *zap.Logger
 }
 
 type QueueSettings struct {

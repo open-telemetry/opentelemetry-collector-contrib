@@ -12,25 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awscloudwatchlogsexporter
+package handler
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
+	"net/http"
 	"testing"
 
+	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
-func TestDefaultConfig_exporterSettings(t *testing.T) {
-	want := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		RetrySettings:    exporterhelper.DefaultRetrySettings(),
-		AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
-		QueueSettings: QueueSettings{
-			QueueSize: exporterhelper.DefaultQueueSettings().QueueSize,
-		},
+func TestAddUserAgentCWAgent(t *testing.T) {
+	httpReq, _ := http.NewRequest("POST", "", nil)
+	r := &request.Request{
+		HTTPRequest: httpReq,
+		Body:        nil,
 	}
-	assert.Equal(t, want, createDefaultConfig())
+	r.SetBufferBody([]byte{})
+
+	AddStructuredLogHeader(r)
+
+	structuredLogHeader := r.HTTPRequest.Header.Get("x-amzn-logs-format")
+	assert.Equal(t, "json/emf", structuredLogHeader)
 }
