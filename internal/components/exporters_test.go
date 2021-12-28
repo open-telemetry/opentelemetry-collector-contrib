@@ -17,6 +17,7 @@ package components
 import (
 	"context"
 	"errors"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter"
 	"runtime"
 	"testing"
 
@@ -231,6 +232,15 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "awsemf",
 			getConfigFn: func() config.Exporter {
 				cfg := expFactories["awsemf"].CreateDefaultConfig().(*awsemfexporter.Config)
+				cfg.Endpoint = "http://" + endpoint
+				cfg.Region = "local"
+				return cfg
+			},
+		},
+		{
+			exporter: "awscloudwtchlogs",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["awscloudwatchlogs"].CreateDefaultConfig().(*awscloudwatchlogsexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
 				cfg.Region = "local"
 				return cfg
