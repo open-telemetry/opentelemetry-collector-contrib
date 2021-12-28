@@ -226,11 +226,6 @@ func isFirstFailedScrape(t *testing.T, metrics []*pdata.Metric) bool {
 			}
 		}
 	}
-	// TODO: Issue #6376. Remove this skip once OTLP format is directly used in Prometheus Receiver.
-	if true {
-		t.Log(`Skipping the datapoint flag check for staleness markers, as the current receiver doesnt yet set the flag true for staleNaNs`)
-		return true
-	}
 
 	for _, m := range metrics {
 		switch m.Name() {

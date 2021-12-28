@@ -977,7 +977,7 @@ func runScriptPdata(t *testing.T, tsm *timeseriesMapPdata, script []*metricsAdju
 
 	for _, test := range script {
 		expectedResets := test.resets
-		resets := ma.AdjustMetrics(test.metrics)
+		resets := ma.AdjustMetricSlice(test.metrics)
 		adjusted := test.metrics
 		assert.EqualValuesf(t, test.adjusted, adjusted, "Test: %v - expected: %v, actual: %v", test.description, test.adjusted, adjusted)
 		assert.Equalf(t, expectedResets, resets, "Test: %v", test.description)
