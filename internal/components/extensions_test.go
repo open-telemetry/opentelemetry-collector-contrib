@@ -156,7 +156,7 @@ func TestDefaultExtensions(t *testing.T) {
 			extension: "file_storage",
 			getConfigFn: func() config.Extension {
 				cfg := extFactories["file_storage"].CreateDefaultConfig().(*filestorage.Config)
-				cfg.Directory = "/tmp" // Need to change to testutil.NewTemporaryDirectory once merged
+				cfg.Directory = testutil.NewTemporaryDirectory(t)
 				return cfg
 			},
 		},
@@ -173,7 +173,7 @@ func TestDefaultExtensions(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, len(tests), len(extFactories), "All extensions must be added to the lifecycle tests")
+	assert.Len(t, tests, len(extFactories), "All extensions must be added to the lifecycle tests")
 	for _, tt := range tests {
 		t.Run(string(tt.extension), func(t *testing.T) {
 			factory, ok := extFactories[tt.extension]
