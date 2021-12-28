@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package prometheusreceiver
+package prometheusreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 
 import (
 	"context"
@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/service/featuregate"
 )
 
 // This file implements config for Prometheus receiver.
@@ -44,6 +45,7 @@ func NewFactory() component.ReceiverFactory {
 func createDefaultConfig() config.Receiver {
 	return &Config{
 		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+		pdataDirect:      featuregate.IsEnabled(pdataPipelineGate.ID),
 	}
 }
 

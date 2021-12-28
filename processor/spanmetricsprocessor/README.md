@@ -8,25 +8,25 @@ Aggregates Request, Error and Duration (R.E.D) metrics from span data.
 **Request** counts are computed as the number of spans seen per unique set of dimensions, including Errors.
 For example, the following metric shows 142 calls:
 ```
-promexample_calls{http_method="GET",http_status_code="200",operation="/Address",service_name="shippingservice",span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_UNSET"} 142
+calls{http_method="GET",http_status_code="200",operation="/Address",service_name="shippingservice",span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_UNSET"} 142
 ```
 Multiple metrics can be aggregated if, for instance, a user wishes to view call counts just on `service_name` and `operation`.
 
 **Error** counts are computed from the Request counts which have an "Error" Status Code metric dimension.
 For example, the following metric indicates 220 errors:
 ```
-promexample_calls{http_method="GET",http_status_code="503",operation="/checkout",service_name="frontend",span_kind="SPAN_KIND_CLIENT",status_code="STATUS_CODE_ERROR"} 220
+calls{http_method="GET",http_status_code="503",operation="/checkout",service_name="frontend",span_kind="SPAN_KIND_CLIENT",status_code="STATUS_CODE_ERROR"} 220
 ```
 
 **Duration** is computed from the difference between the span start and end times and inserted into the
 relevant latency histogram time bucket for each unique set dimensions.
 For example, the following latency buckets indicate the vast majority of spans (9K) have a 100ms latency:
 ```
-promexample_latency_bucket{http_method="GET",http_status_code="200",label1="value1",operation="/Address",service_name="shippingservice",span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_UNSET",le="2"} 327
-promexample_latency_bucket{http_method="GET",http_status_code="200",label1="value1",operation="/Address",service_name="shippingservice",span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_UNSET",le="6"} 751
-promexample_latency_bucket{http_method="GET",http_status_code="200",label1="value1",operation="/Address",service_name="shippingservice",span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_UNSET",le="10"} 1195
-promexample_latency_bucket{http_method="GET",http_status_code="200",label1="value1",operation="/Address",service_name="shippingservice",span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_UNSET",le="100"} 10180
-promexample_latency_bucket{http_method="GET",http_status_code="200",label1="value1",operation="/Address",service_name="shippingservice",span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_UNSET",le="250"} 10180
+latency_bucket{http_method="GET",http_status_code="200",label1="value1",operation="/Address",service_name="shippingservice",span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_UNSET",le="2"} 327
+latency_bucket{http_method="GET",http_status_code="200",label1="value1",operation="/Address",service_name="shippingservice",span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_UNSET",le="6"} 751
+latency_bucket{http_method="GET",http_status_code="200",label1="value1",operation="/Address",service_name="shippingservice",span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_UNSET",le="10"} 1195
+latency_bucket{http_method="GET",http_status_code="200",label1="value1",operation="/Address",service_name="shippingservice",span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_UNSET",le="100"} 10180
+latency_bucket{http_method="GET",http_status_code="200",label1="value1",operation="/Address",service_name="shippingservice",span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_UNSET",le="250"} 10180
 ...
 ```
 
@@ -54,6 +54,11 @@ The following settings can be optionally configured:
   If the `name`d attribute is missing in the span, the optional provided `default` is used.
   
   If no `default` is provided, this dimension will be **omitted** from the metric.
+- `dimensions_cache_size`: the max items number of `metric_key_to_dimensions_cache`. If not provided, will
+  use default value size `1000`.
+- `aggregation_temporality`: Defines the aggregation temporality of the generated metrics. 
+  One of either `AGGREGATION_TEMPORALITY_CUMULATIVE` or `AGGREGATION_TEMPORALITY_DELTA`.
+  - Default: `AGGREGATION_TEMPORALITY_CUMULATIVE`
 
 ## Examples
 
@@ -90,6 +95,8 @@ processors:
       - name: http.method
         default: GET
       - name: http.status_code
+    dimensions_cache_size: 1000
+    aggregation_temporality: "AGGREGATION_TEMPORALITY_DELTA"     
 
 exporters:
   jaeger:
@@ -102,7 +109,6 @@ exporters:
 
   prometheus:
     endpoint: "0.0.0.0:8889"
-    namespace: promexample
 
 service:
   pipelines:

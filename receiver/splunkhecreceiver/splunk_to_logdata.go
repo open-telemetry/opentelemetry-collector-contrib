@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package splunkhecreceiver
+package splunkhecreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver"
 
 import (
 	"errors"
@@ -101,7 +101,7 @@ func convertInterfaceToAttributeValue(logger *zap.Logger, originalValue interfac
 		}
 		return mapValue, nil
 	} else if value, ok := originalValue.([]interface{}); ok {
-		arrValue, err := convertToArrayVal(logger, value)
+		arrValue, err := convertToSliceVal(logger, value)
 		if err != nil {
 			return pdata.NewAttributeValueEmpty(), err
 		}
@@ -112,9 +112,9 @@ func convertInterfaceToAttributeValue(logger *zap.Logger, originalValue interfac
 	}
 }
 
-func convertToArrayVal(logger *zap.Logger, value []interface{}) (pdata.AttributeValue, error) {
+func convertToSliceVal(logger *zap.Logger, value []interface{}) (pdata.AttributeValue, error) {
 	attrVal := pdata.NewAttributeValueArray()
-	arr := attrVal.ArrayVal()
+	arr := attrVal.SliceVal()
 	for _, elt := range value {
 		translatedElt, err := convertInterfaceToAttributeValue(logger, elt)
 		if err != nil {

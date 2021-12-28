@@ -24,9 +24,9 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -35,7 +35,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfig(path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -83,5 +83,27 @@ func TestLoadConfig(t *testing.T) {
 				WriteBufferSize: 512 * 1024,
 				BalancerName:    "round_robin",
 			},
+			NumStreams: 233,
 		})
+}
+
+func TestValidate(t *testing.T) {
+	c1 := &Config{
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		GRPCClientSettings: configgrpc.GRPCClientSettings{
+			Endpoint: "",
+		},
+		NumStreams: 3,
+	}
+	err := c1.Validate()
+	assert.Error(t, err)
+	c2 := &Config{
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		GRPCClientSettings: configgrpc.GRPCClientSettings{
+			Endpoint: "",
+		},
+		NumStreams: 0,
+	}
+	err2 := c2.Validate()
+	assert.Error(t, err2)
 }

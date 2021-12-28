@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package lokiexporter
+package lokiexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter"
 
 import (
 	"context"
@@ -48,6 +48,7 @@ func createDefaultConfig() config.Exporter {
 		RetrySettings: exporterhelper.DefaultRetrySettings(),
 		QueueSettings: exporterhelper.DefaultQueueSettings(),
 		TenantID:      "",
+		Format:        "body",
 		Labels: LabelsConfig{
 			Attributes:         map[string]string{},
 			ResourceAttributes: map[string]string{},

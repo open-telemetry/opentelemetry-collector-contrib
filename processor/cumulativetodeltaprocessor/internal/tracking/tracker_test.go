@@ -17,6 +17,7 @@ package tracking
 import (
 	"context"
 	"reflect"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -189,7 +190,7 @@ func Test_metricTracker_removeStale(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tr := &metricTracker{
+			tr := &MetricTracker{
 				logger:       zap.NewNop(),
 				maxStaleness: tt.fields.MaxStaleness,
 			}
@@ -214,13 +215,13 @@ func Test_metricTracker_removeStale(t *testing.T) {
 func Test_metricTracker_sweeper(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	sweepEvent := make(chan pdata.Timestamp)
-	closed := false
+	closed := int32(0)
 
 	onSweep := func(staleBefore pdata.Timestamp) {
 		sweepEvent <- staleBefore
 	}
 
-	tr := &metricTracker{
+	tr := &MetricTracker{
 		logger:       zap.NewNop(),
 		maxStaleness: 1 * time.Millisecond,
 	}
@@ -228,14 +229,14 @@ func Test_metricTracker_sweeper(t *testing.T) {
 	start := time.Now()
 	go func() {
 		tr.sweeper(ctx, onSweep)
-		closed = true
+		atomic.StoreInt32(&closed, 1)
 		close(sweepEvent)
 	}()
 
 	for i := 1; i <= 2; i++ {
 		staleBefore := <-sweepEvent
 		tickTime := time.Since(start) + tr.maxStaleness*time.Duration(i)
-		if closed {
+		if atomic.LoadInt32(&closed) == 1 {
 			t.Fatalf("Sweeper returned prematurely.")
 		}
 
@@ -250,7 +251,7 @@ func Test_metricTracker_sweeper(t *testing.T) {
 	}
 	cancel()
 	<-sweepEvent
-	if !closed {
+	if atomic.LoadInt32(&closed) == 0 {
 		t.Errorf("Sweeper did not terminate.")
 	}
 }

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jaegerreceiver
+package jaegerreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver"
 
 // This file implements factory for Jaeger receiver.
 
@@ -134,6 +134,7 @@ func createTracesReceiver(
 		// strategies are served over grpc so if grpc is not enabled and strategies are present return an error
 		if len(remoteSamplingConfig.StrategyFile) != 0 {
 			config.RemoteSamplingStrategyFile = remoteSamplingConfig.StrategyFile
+			config.RemoteSamplingStrategyFileReloadInterval = remoteSamplingConfig.StrategyFileReloadInterval
 		}
 	}
 

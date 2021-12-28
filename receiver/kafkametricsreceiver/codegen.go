@@ -17,4 +17,4 @@
 
 //go:generate mdatagen metadata.yaml
 
-package kafkametricsreceiver
+package kafkametricsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver"

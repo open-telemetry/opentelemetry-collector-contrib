@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
@@ -35,7 +35,7 @@ func TestLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	receiverType := "k8s_cluster"
 	factories.Receivers[config.Type(receiverType)] = factory
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -52,6 +52,7 @@ func TestLoadConfig(t *testing.T) {
 			Distribution:               distributionKubernetes,
 			CollectionInterval:         30 * time.Second,
 			NodeConditionTypesToReport: []string{"Ready", "MemoryPressure"},
+			AllocatableTypesToReport:   []string{"cpu", "memory"},
 			MetadataExporters:          []string{"nop"},
 			APIConfig: k8sconfig.APIConfig{
 				AuthType: k8sconfig.AuthTypeServiceAccount,

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package prometheusexecreceiver
+package prometheusexecreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver"
 
 import (
 	"time"
@@ -28,6 +28,8 @@ type Config struct {
 	config.ReceiverSettings `mapstructure:",squash"`
 	// ScrapeInterval is the time between each scrape completed by the Receiver
 	ScrapeInterval time.Duration `mapstructure:"scrape_interval,omitempty"`
+	// ScrapeTimeout is the time to wait before throttling a scrape request
+	ScrapeTimeout time.Duration `mapstructure:"scrape_timeout"`
 	// Port is the port assigned to the Receiver, and to the {{port}} template variables
 	Port int `mapstructure:"port"`
 	// SubprocessConfig is the configuration needed for the subprocess

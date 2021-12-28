@@ -22,9 +22,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 func TestValidateConfig(t *testing.T) {
@@ -110,7 +110,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
@@ -128,10 +128,11 @@ func TestLoadConfig(t *testing.T) {
 		APIKey:           "11111111-2222-3333-4444-555555555555",
 		Endpoint:         "https://sometest.endpoint",
 		TimeoutSettings: exporterhelper.TimeoutSettings{
-			Timeout: 10 * time.Second,
+			Timeout: 100 * time.Second,
 		},
-		AgentID:   "08e097a6-8580-43f6-b4f5-9d3b4eb2d962",
-		AgentName: "otel-collector-1",
+		DialerTimeout: 30 * time.Second,
+		AgentID:       "08e097a6-8580-43f6-b4f5-9d3b4eb2d962",
+		AgentName:     "otel-collector-1",
 		TLSSetting: configtls.TLSClientSetting{
 			TLSSetting: configtls.TLSSetting{
 				CAFile:   "",

@@ -12,22 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package splunkhecreceiver
+package splunkhecreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver"
 
 import (
 	"bufio"
 	"compress/gzip"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/gorilla/mux"
+	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -78,6 +79,7 @@ type splunkReceiver struct {
 	logsConsumer    consumer.Logs
 	metricsConsumer consumer.Metrics
 	server          *http.Server
+	shutdownWG      sync.WaitGroup
 	obsrecv         *obsreport.Receiver
 	gzipReaderPool  *sync.Pool
 }
@@ -182,15 +184,20 @@ func (r *splunkReceiver) Start(_ context.Context, host component.Host) error {
 	}
 	mx.NewRoute().HandlerFunc(r.handleReq)
 
-	r.server = r.config.HTTPServerSettings.ToServer(mx, r.settings.TelemetrySettings)
+	r.server, err = r.config.HTTPServerSettings.ToServer(host, r.settings.TelemetrySettings, mx)
+	if err != nil {
+		return err
+	}
 
 	// TODO: Evaluate what properties should be configurable, for now
 	//		set some hard-coded values.
 	r.server.ReadHeaderTimeout = defaultServerTimeout
 	r.server.WriteTimeout = defaultServerTimeout
 
+	r.shutdownWG.Add(1)
 	go func() {
-		if errHTTP := r.server.Serve(ln); errHTTP != http.ErrServerClosed {
+		defer r.shutdownWG.Done()
+		if errHTTP := r.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
 			host.ReportFatalError(errHTTP)
 		}
 	}()
@@ -201,7 +208,9 @@ func (r *splunkReceiver) Start(_ context.Context, host component.Host) error {
 // Shutdown tells the receiver that should stop reception,
 // giving it a chance to perform any necessary clean-up.
 func (r *splunkReceiver) Shutdown(context.Context) error {
-	return r.server.Close()
+	err := r.server.Close()
+	r.shutdownWG.Wait()
+	return err
 }
 
 func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Request) {
@@ -302,7 +311,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	dec := json.NewDecoder(bodyReader)
+	dec := jsoniter.NewDecoder(bodyReader)
 
 	var events []*splunk.Event
 
@@ -367,10 +376,11 @@ func (r *splunkReceiver) consumeLogs(ctx context.Context, events []*splunk.Event
 
 func (r *splunkReceiver) createResourceCustomizer(req *http.Request) func(resource pdata.Resource) {
 	if r.config.AccessTokenPassthrough {
-		accessToken := req.Header.Get(splunk.HECTokenHeader)
-		if accessToken != "" {
+		accessToken := req.Header.Get("Authorization")
+		if strings.HasPrefix(accessToken, splunk.HECTokenHeader+" ") {
+			accessTokenValue := accessToken[len(splunk.HECTokenHeader)+1:]
 			return func(resource pdata.Resource) {
-				resource.Attributes().InsertString(splunk.HecTokenLabel, accessToken)
+				resource.Attributes().InsertString(splunk.HecTokenLabel, accessTokenValue)
 			}
 		}
 	}
@@ -413,7 +423,7 @@ func (r *splunkReceiver) failRequest(
 }
 
 func initJSONResponse(s string) []byte {
-	respBody, err := json.Marshal(s)
+	respBody, err := jsoniter.Marshal(s)
 	if err != nil {
 		// This is to be used in initialization so panic here is fine.
 		panic(err)

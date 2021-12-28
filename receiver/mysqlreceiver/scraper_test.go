@@ -15,120 +15,78 @@
 package mysqlreceiver
 
 import (
+	"bufio"
 	"context"
-	"fmt"
-	"io/ioutil"
+	"os"
+	"path"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/otlp"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
 )
 
 func TestScrape(t *testing.T) {
-	mysqlMock := fakeClient{}
-	sc := newMySQLScraper(zap.NewNop(), &Config{
+	cfg := &Config{
 		Username: "otel",
 		Password: "otel",
-		Endpoint: "localhost:3306",
-	})
-	sc.client = &mysqlMock
+		NetAddr: confignet.NetAddr{
+			Endpoint: "localhost:3306",
+		},
+	}
 
-	actualMetrics, err := sc.scrape(context.Background())
-	require.NoError(t, err)
+	scraper := newMySQLScraper(zap.NewNop(), cfg)
+	scraper.sqlclient = &mockClient{}
 
-	expectedFileBytes, err := ioutil.ReadFile("./testdata/scraper/expected.json")
+	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
-	unmarshaller := otlp.NewJSONMetricsUnmarshaler()
-	expectedMetrics, err := unmarshaller.UnmarshalMetrics(expectedFileBytes)
-	require.NoError(t, err)
-
-	eMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 	aMetricSlice := actualMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
-	require.NoError(t, compareMetrics(eMetricSlice, aMetricSlice))
+	expectedFile := filepath.Join("testdata", "scraper", "expected.json")
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+	eMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+
+	require.NoError(t, scrapertest.CompareMetricSlices(eMetricSlice, aMetricSlice))
 }
 
-func compareMetrics(expectedAll, actualAll pdata.MetricSlice) error {
-	if actualAll.Len() != expectedAll.Len() {
-		return fmt.Errorf("metrics not of same length")
+var _ client = (*mockClient)(nil)
+
+type mockClient struct{}
+
+func readFile(fname string) (map[string]string, error) {
+	var stats = map[string]string{}
+	file, err := os.Open(path.Join("testdata", "scraper", fname+".txt"))
+	if err != nil {
+		return nil, err
 	}
+	defer file.Close()
 
-	lessFunc := func(a, b pdata.Metric) bool {
-		return a.Name() < b.Name()
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		text := strings.Split(scanner.Text(), "\t")
+		stats[text[0]] = text[1]
 	}
+	return stats, nil
+}
 
-	actualMetrics := actualAll.Sort(lessFunc)
-	expectedMetrics := expectedAll.Sort(lessFunc)
+func (c *mockClient) Connect() error {
+	return nil
+}
 
-	for i := 0; i < actualMetrics.Len(); i++ {
-		actual := actualMetrics.At(i)
-		expected := expectedMetrics.At(i)
+func (c *mockClient) getGlobalStats() (map[string]string, error) {
+	return readFile("global_stats")
+}
 
-		if actual.Name() != expected.Name() {
-			return fmt.Errorf("metric name does not match expected: %s, actual: %s", expected.Name(), actual.Name())
-		}
-		if actual.DataType() != expected.DataType() {
-			return fmt.Errorf("metric datatype does not match expected: %s, actual: %s", expected.DataType(), actual.DataType())
-		}
-		if actual.Description() != expected.Description() {
-			return fmt.Errorf("metric description does not match expected: %s, actual: %s", expected.Description(), actual.Description())
-		}
-		if actual.Unit() != expected.Unit() {
-			return fmt.Errorf("metric Unit does not match expected: %s, actual: %s", expected.Unit(), actual.Unit())
-		}
+func (c *mockClient) getInnodbStats() (map[string]string, error) {
+	return readFile("innodb_stats")
+}
 
-		var actualDataPoints pdata.NumberDataPointSlice
-		var expectedDataPoints pdata.NumberDataPointSlice
-
-		if actual.Sum().AggregationTemporality() != expected.Sum().AggregationTemporality() {
-			return fmt.Errorf("metric AggregationTemporality does not match expected: %s, actual: %s", expected.Sum().AggregationTemporality(), actual.Sum().AggregationTemporality())
-		}
-		if actual.Sum().IsMonotonic() != expected.Sum().IsMonotonic() {
-			return fmt.Errorf("metric IsMonotonic does not match expected: %t, actual: %t", expected.Sum().IsMonotonic(), actual.Sum().IsMonotonic())
-		}
-		actualDataPoints = actual.Sum().DataPoints()
-		expectedDataPoints = expected.Sum().DataPoints()
-
-		if actualDataPoints.Len() != expectedDataPoints.Len() {
-			return fmt.Errorf("length of datapoints don't match")
-		}
-
-		dataPointMatches := 0
-		for j := 0; j < expectedDataPoints.Len(); j++ {
-			edp := expectedDataPoints.At(j)
-			for k := 0; k < actualDataPoints.Len(); k++ {
-				adp := actualDataPoints.At(k)
-				adpAttributes := adp.Attributes()
-				labelMatches := true
-
-				if edp.Attributes().Len() != adpAttributes.Len() {
-					break
-				}
-				edp.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
-					if attributeVal, ok := adpAttributes.Get(k); ok && attributeVal.StringVal() == v.StringVal() {
-						return true
-					}
-					labelMatches = false
-					return false
-				})
-				if !labelMatches {
-					continue
-				}
-				if edp.IntVal() != adp.IntVal() {
-					return fmt.Errorf("metric datapoint IntVal doesn't match expected: %d, actual: %d", edp.IntVal(), adp.IntVal())
-				}
-				if edp.DoubleVal() != adp.DoubleVal() {
-					return fmt.Errorf("metric datapoint DoubleVal doesn't match expected: %f, actual: %f", edp.DoubleVal(), adp.DoubleVal())
-				}
-				dataPointMatches++
-				break
-			}
-		}
-		if dataPointMatches != expectedDataPoints.Len() {
-			return fmt.Errorf("missing Datapoints")
-		}
-	}
+func (c *mockClient) Close() error {
 	return nil
 }

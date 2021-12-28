@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package redisreceiver
+package redisreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
 
 import (
 	"go.opentelemetry.io/collector/model/pdata"
@@ -32,6 +32,7 @@ func initKeyspaceKeysMetric(k *keyspace, t *timeBundle, dest pdata.Metric) {
 		name:   "redis.db.keys",
 		labels: map[string]pdata.AttributeValue{"db": pdata.NewAttributeValueString(k.db)},
 		pdType: pdata.MetricDataTypeGauge,
+		desc:   "Number of keyspace keys",
 	}
 	initIntMetric(m, int64(k.keys), t, dest)
 }
@@ -41,6 +42,7 @@ func initKeyspaceExpiresMetric(k *keyspace, t *timeBundle, dest pdata.Metric) {
 		name:   "redis.db.expires",
 		labels: map[string]pdata.AttributeValue{"db": pdata.NewAttributeValueString(k.db)},
 		pdType: pdata.MetricDataTypeGauge,
+		desc:   "Number of keyspace keys with an expiration",
 	}
 	initIntMetric(m, int64(k.expires), t, dest)
 }
@@ -51,6 +53,7 @@ func initKeyspaceTTLMetric(k *keyspace, t *timeBundle, dest pdata.Metric) {
 		units:  "ms",
 		labels: map[string]pdata.AttributeValue{"db": pdata.NewAttributeValueString(k.db)},
 		pdType: pdata.MetricDataTypeGauge,
+		desc:   "Average keyspace keys TTL",
 	}
 	initIntMetric(m, int64(k.avgTTL), t, dest)
 }
@@ -70,7 +73,7 @@ func initIntMetric(m *redisMetric, value int64, t *timeBundle, dest pdata.Metric
 	}
 	pt.SetIntVal(value)
 	pt.SetTimestamp(pdata.NewTimestampFromTime(t.current))
-	pt.Attributes().InitFromMap(m.labels)
+	pdata.NewAttributeMapFromMap(m.labels).CopyTo(pt.Attributes())
 }
 
 func initDoubleMetric(m *redisMetric, value float64, t *timeBundle, dest pdata.Metric) {
@@ -88,7 +91,7 @@ func initDoubleMetric(m *redisMetric, value float64, t *timeBundle, dest pdata.M
 	}
 	pt.SetDoubleVal(value)
 	pt.SetTimestamp(pdata.NewTimestampFromTime(t.current))
-	pt.Attributes().InitFromMap(m.labels)
+	pdata.NewAttributeMapFromMap(m.labels).CopyTo(pt.Attributes())
 }
 
 func redisMetricToPDM(m *redisMetric, dest pdata.Metric) {

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dotnet
+package dotnet // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver/dotnet"
 
 // Metric is a map containing all of the keys and values for a Metric extracted
 // from the event parser. Most metrics will have some subset of the keys defined

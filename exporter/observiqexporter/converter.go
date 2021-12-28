@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package observiqexporter
+package observiqexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/observiqexporter"
 
 import (
 	"encoding/hex"
@@ -222,7 +222,7 @@ func attributeValueToBaseType(attrib pdata.AttributeValue) interface{} {
 		attribMap := attrib.MapVal()
 		return attributeMapToBaseType(attribMap)
 	case pdata.AttributeValueTypeArray:
-		arrayVal := attrib.ArrayVal()
+		arrayVal := attrib.SliceVal()
 		slice := make([]interface{}, 0, arrayVal.Len())
 		for i := 0; i < arrayVal.Len(); i++ {
 			val := attributeValueToBaseType(arrayVal.At(i))

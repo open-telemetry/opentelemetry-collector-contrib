@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
@@ -90,15 +91,11 @@ var factories = map[string]internal.ScraperFactory{
 	networkscraper.TypeStr:    &networkscraper.Factory{},
 	pagingscraper.TypeStr:     &pagingscraper.Factory{},
 	processesscraper.TypeStr:  &processesscraper.Factory{},
-}
-
-var resourceFactories = map[string]internal.ResourceScraperFactory{
-	processscraper.TypeStr: &processscraper.Factory{},
+	processscraper.TypeStr:    &processscraper.Factory{},
 }
 
 func TestGatherMetrics_EndToEnd(t *testing.T) {
 	scraperFactories = factories
-	resourceScraperFactories = resourceFactories
 
 	sink := new(consumertest.MetricsSink)
 
@@ -108,8 +105,8 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 			CollectionInterval: 100 * time.Millisecond,
 		},
 		Scrapers: map[string]internal.Config{
-			cpuscraper.TypeStr:        &cpuscraper.Config{},
-			diskscraper.TypeStr:       &diskscraper.Config{},
+			cpuscraper.TypeStr:        scraperFactories[cpuscraper.TypeStr].CreateDefaultConfig(),
+			diskscraper.TypeStr:       scraperFactories[diskscraper.TypeStr].CreateDefaultConfig(),
 			filesystemscraper.TypeStr: &filesystemscraper.Config{},
 			loadscraper.TypeStr:       &loadscraper.Config{},
 			memoryscraper.TypeStr:     &memoryscraper.Config{},
@@ -157,6 +154,8 @@ func assertIncludesExpectedMetrics(t *testing.T, got pdata.Metrics) {
 		rm := rms.At(i)
 		metrics := getMetricSlice(t, rm)
 		returnedMetricNames := getReturnedMetricNames(metrics)
+		assert.EqualValues(t, conventions.SchemaURL, rm.SchemaUrl(),
+			"SchemaURL is incorrect for metrics: %v", returnedMetricNames)
 		if rm.Resource().Attributes().Len() == 0 {
 			appendMapInto(returnedMetrics, returnedMetricNames)
 		} else {
@@ -205,7 +204,6 @@ func appendMapInto(m1 map[string]struct{}, m2 map[string]struct{}) {
 }
 
 const mockTypeStr = "mock"
-const mockResourceTypeStr = "mockresource"
 
 type mockConfig struct{}
 
@@ -225,25 +223,8 @@ func (m *mockScraper) Scrape(context.Context) (pdata.Metrics, error) {
 	return pdata.NewMetrics(), errors.New("err1")
 }
 
-type mockResourceFactory struct{ mock.Mock }
-type mockResourceScraper struct{ mock.Mock }
-
-func (m *mockResourceFactory) CreateDefaultConfig() internal.Config { return &mockConfig{} }
-func (m *mockResourceFactory) CreateResourceMetricsScraper(context.Context, *zap.Logger, internal.Config) (scraperhelper.Scraper, error) {
-	args := m.MethodCalled("CreateResourceMetricsScraper")
-	return args.Get(0).(scraperhelper.Scraper), args.Error(1)
-}
-
-func (m *mockResourceScraper) ID() config.ComponentID                      { return config.NewComponentID("") }
-func (m *mockResourceScraper) Start(context.Context, component.Host) error { return nil }
-func (m *mockResourceScraper) Shutdown(context.Context) error              { return nil }
-func (m *mockResourceScraper) Scrape(context.Context) (pdata.Metrics, error) {
-	return pdata.NewMetrics(), errors.New("err2")
-}
-
 func TestGatherMetrics_ScraperKeyConfigError(t *testing.T) {
 	scraperFactories = map[string]internal.ScraperFactory{}
-	resourceScraperFactories = map[string]internal.ResourceScraperFactory{}
 
 	sink := new(consumertest.MetricsSink)
 	cfg := &Config{Scrapers: map[string]internal.Config{"error": &mockConfig{}}}
@@ -255,22 +236,9 @@ func TestGatherMetrics_CreateMetricsScraperError(t *testing.T) {
 	mFactory := &mockFactory{}
 	mFactory.On("CreateMetricsScraper").Return(&mockScraper{}, errors.New("err1"))
 	scraperFactories = map[string]internal.ScraperFactory{mockTypeStr: mFactory}
-	resourceScraperFactories = map[string]internal.ResourceScraperFactory{}
 
 	sink := new(consumertest.MetricsSink)
 	cfg := &Config{Scrapers: map[string]internal.Config{mockTypeStr: &mockConfig{}}}
-	_, err := NewFactory().CreateMetricsReceiver(context.Background(), creationSet, cfg, sink)
-	require.Error(t, err)
-}
-
-func TestGatherMetrics_CreateMetricsResourceScraperError(t *testing.T) {
-	mResourceFactory := &mockResourceFactory{}
-	mResourceFactory.On("CreateResourceMetricsScraper").Return(&mockResourceScraper{}, errors.New("err1"))
-	scraperFactories = map[string]internal.ScraperFactory{}
-	resourceScraperFactories = map[string]internal.ResourceScraperFactory{mockResourceTypeStr: mResourceFactory}
-
-	sink := new(consumertest.MetricsSink)
-	cfg := &Config{Scrapers: map[string]internal.Config{mockResourceTypeStr: &mockConfig{}}}
 	_, err := NewFactory().CreateMetricsReceiver(context.Background(), creationSet, cfg, sink)
 	require.Error(t, err)
 }
@@ -297,12 +265,11 @@ func (s *notifyingSink) ConsumeMetrics(_ context.Context, md pdata.Metrics) erro
 
 func benchmarkScrapeMetrics(b *testing.B, cfg *Config) {
 	scraperFactories = factories
-	resourceScraperFactories = resourceFactories
 
 	sink := &notifyingSink{ch: make(chan int, 10)}
 	tickerCh := make(chan time.Time)
 
-	options, err := createAddScraperOptions(context.Background(), zap.NewNop(), cfg, scraperFactories, resourceScraperFactories)
+	options, err := createAddScraperOptions(context.Background(), zap.NewNop(), cfg, scraperFactories)
 	require.NoError(b, err)
 	options = append(options, scraperhelper.WithTickerChannel(tickerCh))
 

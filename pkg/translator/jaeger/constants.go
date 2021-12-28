@@ -12,13 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jaeger
+package jaeger // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 
 import (
 	"errors"
 )
 
+// Status tag values as defined by the OpenTelemetry specification:
+// https://github.com/open-telemetry/opentelemetry-specification/blob/v1.8.0/specification/trace/sdk_exporters/non-otlp.md#span-status
+const (
+	statusError = "ERROR"
+	statusOk    = "OK"
+)
+
 var (
 	errZeroTraceID = errors.New("span has an all zeros trace ID")
 	errZeroSpanID  = errors.New("span has an all zeros span ID")
+
+	// errType indicates that a value is not convertible to the target type.
+	errType = errors.New("invalid type")
 )

@@ -23,8 +23,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/service/servicetest"
+)
+
+const (
+	cardinalityLimit = 200_000
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -33,7 +37,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -119,7 +123,7 @@ func TestValidateProject(t *testing.T) {
 	}{
 		"All required fields are populated": {"id", "key", []Instance{instance}, false},
 		"No id":                             {"", "key", []Instance{instance}, true},
-		"No service account key":            {"id", "", []Instance{instance}, true},
+		"No service account key":            {"id", "", []Instance{instance}, false},
 		"No instances":                      {"id", "key", nil, true},
 		"Invalid instance in instances":     {"id", "key", []Instance{{}}, true},
 	}
@@ -156,17 +160,20 @@ func TestValidateConfig(t *testing.T) {
 	}
 
 	testCases := map[string]struct {
-		collectionInterval     time.Duration
-		topMetricsQueryMaxRows int
-		projects               []Project
-		requireError           bool
+		collectionInterval      time.Duration
+		topMetricsQueryMaxRows  int
+		cardinalityOverallLimit int
+		projects                []Project
+		requireError            bool
 	}{
-		"All required fields are populated":                   {defaultCollectionInterval, defaultTopMetricsQueryMaxRows, []Project{project}, false},
-		"Invalid collection interval":                         {-1, defaultTopMetricsQueryMaxRows, []Project{project}, true},
-		"Invalid top metrics query max rows":                  {defaultCollectionInterval, -1, []Project{project}, true},
-		"Top metrics query max rows greater than max allowed": {defaultCollectionInterval, defaultTopMetricsQueryMaxRows + 1, []Project{project}, true},
-		"No projects":                 {defaultCollectionInterval, defaultTopMetricsQueryMaxRows, nil, true},
-		"Invalid project in projects": {defaultCollectionInterval, defaultTopMetricsQueryMaxRows, []Project{{}}, true},
+		"All required fields are populated":                   {defaultCollectionInterval, defaultTopMetricsQueryMaxRows, cardinalityLimit, []Project{project}, false},
+		"Invalid collection interval":                         {-1, defaultTopMetricsQueryMaxRows, cardinalityLimit, []Project{project}, true},
+		"Invalid top metrics query max rows":                  {defaultCollectionInterval, -1, cardinalityLimit, []Project{project}, true},
+		"Top metrics query max rows greater than max allowed": {defaultCollectionInterval, defaultTopMetricsQueryMaxRows + 1, cardinalityLimit, []Project{project}, true},
+		"No projects":                           {defaultCollectionInterval, defaultTopMetricsQueryMaxRows, cardinalityLimit, nil, true},
+		"Invalid project in projects":           {defaultCollectionInterval, defaultTopMetricsQueryMaxRows, cardinalityLimit, []Project{{}}, true},
+		"Cardinality overall limit is zero":     {defaultCollectionInterval, defaultTopMetricsQueryMaxRows, 0, []Project{project}, false},
+		"Cardinality overall limit is negative": {defaultCollectionInterval, defaultTopMetricsQueryMaxRows, -cardinalityLimit, []Project{project}, true},
 	}
 
 	for name, testCase := range testCases {
@@ -177,6 +184,7 @@ func TestValidateConfig(t *testing.T) {
 					CollectionInterval: testCase.collectionInterval,
 				},
 				TopMetricsQueryMaxRows: testCase.topMetricsQueryMaxRows,
+				CardinalityTotalLimit:  testCase.cardinalityOverallLimit,
 				Projects:               testCase.projects,
 			}
 

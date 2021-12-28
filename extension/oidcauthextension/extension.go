@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package oidcauthextension
+package oidcauthextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension"
 
 import (
 	"context"
@@ -29,16 +29,14 @@ import (
 	"time"
 
 	"github.com/coreos/go-oidc"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.uber.org/zap"
-	"google.golang.org/grpc"
 )
 
 type oidcExtension struct {
-	cfg               *Config
-	unaryInterceptor  configauth.GRPCUnaryInterceptorFunc
-	streamInterceptor configauth.GRPCStreamInterceptorFunc
+	cfg *Config
 
 	provider *oidc.Provider
 	verifier *oidc.IDTokenVerifier
@@ -72,10 +70,8 @@ func newExtension(cfg *Config, logger *zap.Logger) (*oidcExtension, error) {
 	}
 
 	return &oidcExtension{
-		cfg:               cfg,
-		logger:            logger,
-		unaryInterceptor:  configauth.DefaultGRPCUnaryServerInterceptor,
-		streamInterceptor: configauth.DefaultGRPCStreamServerInterceptor,
+		cfg:    cfg,
+		logger: logger,
 	}, nil
 }
 
@@ -111,7 +107,8 @@ func (e *oidcExtension) Authenticate(ctx context.Context, headers map[string][]s
 		return ctx, errInvalidAuthenticationHeaderFormat
 	}
 
-	idToken, err := e.verifier.Verify(ctx, parts[1])
+	raw := parts[1]
+	idToken, err := e.verifier.Verify(ctx, raw)
 	if err != nil {
 		return ctx, fmt.Errorf("failed to verify token: %w", err)
 	}
@@ -127,29 +124,22 @@ func (e *oidcExtension) Authenticate(ctx context.Context, headers map[string][]s
 		return ctx, errFailedToObtainClaimsFromToken
 	}
 
-	_, err = getSubjectFromClaims(claims, e.cfg.UsernameClaim, idToken.Subject)
+	subject, err := getSubjectFromClaims(claims, e.cfg.UsernameClaim, idToken.Subject)
 	if err != nil {
 		return ctx, fmt.Errorf("failed to get subject from claims in the token: %w", err)
 	}
-
-	_, err = getGroupsFromClaims(claims, e.cfg.GroupsClaim)
+	membership, err := getGroupsFromClaims(claims, e.cfg.GroupsClaim)
 	if err != nil {
 		return ctx, fmt.Errorf("failed to get groups from claims in the token: %w", err)
 	}
 
-	// TODO: once the design for #2734 is determined, we will probably need to add the auth data to the context
-	// https://github.com/open-telemetry/opentelemetry-collector/issues/2734
-	return ctx, nil
-}
-
-// GRPCUnaryServerInterceptor is a helper method to provide a gRPC-compatible UnaryInterceptor, typically calling the authenticator's Authenticate method.
-func (e *oidcExtension) GRPCUnaryServerInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-	return e.unaryInterceptor(ctx, req, info, handler, e.Authenticate)
-}
-
-// GRPCStreamServerInterceptor is a helper method to provide a gRPC-compatible StreamInterceptor, typically calling the authenticator's Authenticate method.
-func (e *oidcExtension) GRPCStreamServerInterceptor(srv interface{}, str grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-	return e.streamInterceptor(srv, str, info, handler, e.Authenticate)
+	cl := client.FromContext(ctx)
+	cl.Auth = &authData{
+		raw:        raw,
+		subject:    subject,
+		membership: membership,
+	}
+	return client.NewContext(ctx, cl), nil
 }
 
 func getSubjectFromClaims(claims map[string]interface{}, usernameClaim string, fallback string) (string, error) {

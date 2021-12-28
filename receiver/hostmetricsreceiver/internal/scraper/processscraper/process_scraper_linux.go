@@ -15,10 +15,10 @@
 //go:build linux
 // +build linux
 
-package processscraper
+package processscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
 
 import (
-	"github.com/shirou/gopsutil/cpu"
+	"github.com/shirou/gopsutil/v3/cpu"
 	"go.opentelemetry.io/collector/model/pdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
@@ -27,13 +27,13 @@ import (
 const cpuStatesLen = 3
 
 func appendCPUTimeStateDataPoints(ddps pdata.NumberDataPointSlice, startTime, now pdata.Timestamp, cpuTime *cpu.TimesStat) {
-	initializeCPUTimeDataPoint(ddps.AppendEmpty(), startTime, now, cpuTime.User, metadata.LabelState.User)
-	initializeCPUTimeDataPoint(ddps.AppendEmpty(), startTime, now, cpuTime.System, metadata.LabelState.System)
-	initializeCPUTimeDataPoint(ddps.AppendEmpty(), startTime, now, cpuTime.Iowait, metadata.LabelState.Wait)
+	initializeCPUTimeDataPoint(ddps.AppendEmpty(), startTime, now, cpuTime.User, metadata.AttributeState.User)
+	initializeCPUTimeDataPoint(ddps.AppendEmpty(), startTime, now, cpuTime.System, metadata.AttributeState.System)
+	initializeCPUTimeDataPoint(ddps.AppendEmpty(), startTime, now, cpuTime.Iowait, metadata.AttributeState.Wait)
 }
 
 func initializeCPUTimeDataPoint(dataPoint pdata.NumberDataPoint, startTime, now pdata.Timestamp, value float64, stateLabel string) {
-	dataPoint.Attributes().InsertString(metadata.Labels.State, stateLabel)
+	dataPoint.Attributes().InsertString(metadata.Attributes.State, stateLabel)
 	dataPoint.SetStartTimestamp(startTime)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetDoubleVal(value)

@@ -12,13 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cumulativetodeltaprocessor
+package cumulativetodeltaprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor"
 
 import (
 	"context"
 	"math"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
@@ -28,7 +27,7 @@ import (
 type cumulativeToDeltaProcessor struct {
 	metrics         map[string]struct{}
 	logger          *zap.Logger
-	deltaCalculator tracking.MetricTracker
+	deltaCalculator *tracking.MetricTracker
 	cancelFunc      context.CancelFunc
 }
 
@@ -46,11 +45,6 @@ func newCumulativeToDeltaProcessor(config *Config, logger *zap.Logger) *cumulati
 		}
 	}
 	return p
-}
-
-// Start is invoked during service startup.
-func (ctdp *cumulativeToDeltaProcessor) Start(context.Context, component.Host) error {
-	return nil
 }
 
 // processMetrics implements the ProcessMetricsFunc type.
@@ -98,8 +92,7 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pda
 	return md, nil
 }
 
-// Shutdown is invoked during service shutdown.
-func (ctdp *cumulativeToDeltaProcessor) Shutdown(context.Context) error {
+func (ctdp *cumulativeToDeltaProcessor) shutdown(context.Context) error {
 	ctdp.cancelFunc()
 	return nil
 }

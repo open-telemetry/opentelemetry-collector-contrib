@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package healthcheckextension
+package healthcheckextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
 
 import (
 	"context"
@@ -46,6 +46,8 @@ func createDefaultConfig() config.Extension {
 		TCPAddr: confignet.TCPAddr{
 			Endpoint: defaultEndpoint,
 		},
+		CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
+		Path:                   "/",
 	}
 }
 
@@ -53,4 +55,13 @@ func createExtension(_ context.Context, set component.ExtensionCreateSettings, c
 	config := cfg.(*Config)
 
 	return newServer(*config, set.Logger), nil
+}
+
+// defaultCheckCollectorPipelineSettings returns the default settings for CheckCollectorPipeline.
+func defaultCheckCollectorPipelineSettings() checkCollectorPipelineSettings {
+	return checkCollectorPipelineSettings{
+		Enabled:                  false,
+		Interval:                 "5m",
+		ExporterFailureThreshold: 5,
+	}
 }

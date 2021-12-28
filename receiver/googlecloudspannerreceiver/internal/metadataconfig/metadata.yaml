@@ -5,6 +5,7 @@ metadata:
   - name: "active queries summary"
     query: "SELECT * FROM SPANNER_SYS.ACTIVE_QUERIES_SUMMARY"
     metric_name_prefix: "database/spanner/active_queries_summary/"
+    high_cardinality: false
     metrics:
       - name: "active_count"
         column_name: "ACTIVE_COUNT"
@@ -37,10 +38,14 @@ metadata:
     query: "SELECT * FROM SPANNER_SYS.LOCK_STATS_TOP_MINUTE WHERE INTERVAL_END = @pullTimestamp ORDER BY INTERVAL_END DESC, LOCK_WAIT_SECONDS DESC"
     metric_name_prefix: "database/spanner/lock_stats/top/"
     timestamp_column_name: "INTERVAL_END"
+    high_cardinality: true
     labels:
       - name: "row_range_start_key"
         column_name: "ROW_RANGE_START_KEY"
         value_type: "byte_slice"
+      - name: "sample_lock_requests"
+        column_name: "SAMPLE_LOCK_REQUESTS"
+        value_type: "lock_request_slice"
     metrics:
       - name: "lock_wait_seconds"
         column_name: "LOCK_WAIT_SECONDS"
@@ -53,6 +58,7 @@ metadata:
     query: "SELECT * FROM SPANNER_SYS.LOCK_STATS_TOTAL_MINUTE WHERE INTERVAL_END = @pullTimestamp"
     metric_name_prefix: "database/spanner/lock_stats/total/"
     timestamp_column_name: "INTERVAL_END"
+    high_cardinality: false
     metrics:
       - name: "total_lock_wait_seconds"
         column_name: "TOTAL_LOCK_WAIT_SECONDS"
@@ -67,9 +73,13 @@ metadata:
     query: "SELECT * FROM SPANNER_SYS.QUERY_STATS_TOP_MINUTE WHERE INTERVAL_END = @pullTimestamp ORDER BY INTERVAL_END DESC, EXECUTION_COUNT * AVG_CPU_SECONDS DESC"
     metric_name_prefix: "database/spanner/query_stats/top/"
     timestamp_column_name: "INTERVAL_END"
+    high_cardinality: true
     labels:
       - name: "query_text"
         column_name: "TEXT"
+        value_type: "string"
+      - name: "request_tag"
+        column_name: "REQUEST_TAG"
         value_type: "string"
       - name: "query_text_truncated"
         column_name: "TEXT_TRUNCATED"
@@ -142,6 +152,7 @@ metadata:
     query: "SELECT * FROM SPANNER_SYS.QUERY_STATS_TOTAL_MINUTE WHERE INTERVAL_END = @pullTimestamp"
     metric_name_prefix: "database/spanner/query_stats/total/"
     timestamp_column_name: "INTERVAL_END"
+    high_cardinality: false
     metrics:
       - name: "execution_count"
         column_name: "EXECUTION_COUNT"
@@ -210,6 +221,7 @@ metadata:
     query: "SELECT * FROM SPANNER_SYS.READ_STATS_TOP_MINUTE WHERE INTERVAL_END = @pullTimestamp ORDER BY INTERVAL_END DESC, EXECUTION_COUNT * AVG_CPU_SECONDS DESC"
     metric_name_prefix: "database/spanner/read_stats/top/"
     timestamp_column_name: "INTERVAL_END"
+    high_cardinality: true
     labels:
       - name: "read_columns"
         column_name: "READ_COLUMNS"
@@ -264,6 +276,7 @@ metadata:
     query: "SELECT * FROM SPANNER_SYS.READ_STATS_TOTAL_MINUTE WHERE INTERVAL_END = @pullTimestamp"
     metric_name_prefix: "database/spanner/read_stats/total/"
     timestamp_column_name: "INTERVAL_END"
+    high_cardinality: false
     metrics:
       - name: "execution_count"
         column_name: "EXECUTION_COUNT"
@@ -314,10 +327,14 @@ metadata:
     query: "SELECT * FROM SPANNER_SYS.TXN_STATS_TOP_MINUTE WHERE INTERVAL_END = @pullTimestamp ORDER BY INTERVAL_END DESC, AVG_COMMIT_LATENCY_SECONDS DESC, COMMIT_ATTEMPT_COUNT DESC, AVG_BYTES DESC"
     metric_name_prefix: "database/spanner/txn_stats/top/"
     timestamp_column_name: "INTERVAL_END"
+    high_cardinality: true
     labels:
       - name: "fingerprint"
         column_name: "FPRINT"
         value_type: "int"
+      - name: "transaction_tag"
+        column_name: "TRANSACTION_TAG"
+        value_type: "string"
       - name: "read_columns"
         column_name: "READ_COLUMNS"
         value_type: "string_slice"
@@ -380,6 +397,7 @@ metadata:
     query: "SELECT * FROM SPANNER_SYS.TXN_STATS_TOTAL_MINUTE WHERE INTERVAL_END = @pullTimestamp"
     metric_name_prefix: "database/spanner/txn_stats/total/"
     timestamp_column_name: "INTERVAL_END"
+    high_cardinality: false
     metrics:
       - name: "commit_attempt_count"
         column_name: "COMMIT_ATTEMPT_COUNT"

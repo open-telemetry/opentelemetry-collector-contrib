@@ -12,23 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package serialization
+package serialization // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/serialization"
 
 import (
 	"fmt"
 
 	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/dimensions"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 )
 
-func SerializeMetric(prefix string, metric pdata.Metric, defaultDimensions, staticDimensions dimensions.NormalizedDimensionList, prev *ttlmap.TTLMap) ([]string, error) {
+func SerializeMetric(logger *zap.Logger, prefix string, metric pdata.Metric, defaultDimensions, staticDimensions dimensions.NormalizedDimensionList, prev *ttlmap.TTLMap) ([]string, error) {
 	var metricLines []string
+
+	ce := logger.Check(zap.DebugLevel, "SerializeMetric")
+	var points int
+
 	switch metric.DataType() {
-	case pdata.MetricDataTypeNone:
-		return nil, fmt.Errorf("MetricDataTypeNone not supported")
 	case pdata.MetricDataTypeGauge:
+		points = metric.Gauge().DataPoints().Len()
 		for i := 0; i < metric.Gauge().DataPoints().Len(); i++ {
 			dp := metric.Gauge().DataPoints().At(i)
 
@@ -48,6 +52,7 @@ func SerializeMetric(prefix string, metric pdata.Metric, defaultDimensions, stat
 			}
 		}
 	case pdata.MetricDataTypeSum:
+		points = metric.Sum().DataPoints().Len()
 		for i := 0; i < metric.Sum().DataPoints().Len(); i++ {
 			dp := metric.Sum().DataPoints().At(i)
 
@@ -69,6 +74,7 @@ func SerializeMetric(prefix string, metric pdata.Metric, defaultDimensions, stat
 			}
 		}
 	case pdata.MetricDataTypeHistogram:
+		points = metric.Histogram().DataPoints().Len()
 		for i := 0; i < metric.Histogram().DataPoints().Len(); i++ {
 			dp := metric.Histogram().DataPoints().At(i)
 
@@ -88,7 +94,14 @@ func SerializeMetric(prefix string, metric pdata.Metric, defaultDimensions, stat
 				metricLines = append(metricLines, line)
 			}
 		}
+	default:
+		return nil, fmt.Errorf("metric type %s unsupported", metric.DataType().String())
 	}
+
+	if ce != nil {
+		ce.Write(zap.String("DataType", metric.DataType().String()), zap.Int("points", points))
+	}
+
 	return metricLines, nil
 }
 

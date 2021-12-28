@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package prometheusremotewriteexporter
+package prometheusremotewriteexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter"
 
 import (
 	"context"
@@ -65,7 +65,7 @@ func createMetricsExporter(_ context.Context, set component.ExporterCreateSettin
 		prwe.PushMetrics,
 		exporterhelper.WithTimeout(prwCfg.TimeoutSettings),
 		exporterhelper.WithQueue(exporterhelper.QueueSettings{
-			Enabled:      true,
+			Enabled:      prwCfg.RemoteWriteQueue.Enabled,
 			NumConsumers: 1,
 			QueueSize:    prwCfg.RemoteWriteQueue.QueueSize,
 		}),
@@ -101,6 +101,7 @@ func createDefaultConfig() config.Exporter {
 		},
 		// TODO(jbd): Adjust the default queue size.
 		RemoteWriteQueue: RemoteWriteQueue{
+			Enabled:      true,
 			QueueSize:    10000,
 			NumConsumers: 5,
 		},

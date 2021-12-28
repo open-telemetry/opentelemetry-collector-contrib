@@ -21,42 +21,41 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil/ecsutiltest"
 )
 
 type testRestClient struct {
-	fail                bool
-	invalidJSON         bool
-	invalidTaskMetadata bool
+	*testing.T
+	fail        bool
+	invalidJSON bool
 }
 
-func (f testRestClient) EndpointResponse() ([]byte, []byte, error) {
+func (f testRestClient) GetResponse(path string) ([]byte, error) {
+	if body, err := ecsutiltest.GetTestdataResponseByPath(f.T, path); body != nil || err != nil {
+		return body, err
+	}
+
 	if f.fail {
-		return []byte{}, []byte{}, fmt.Errorf("failed")
+		return []byte{}, fmt.Errorf("failed")
 	}
 	if f.invalidJSON {
-		return []byte("wrong-json-body"), []byte("wrong-json-body"), nil
+		return []byte("wrong-json-body"), nil
 	}
 
-	taskStats, _ := ioutil.ReadFile("../../testdata/task_stats.json")
-	if f.invalidTaskMetadata {
-		return taskStats, []byte("wrong-json-body"), nil
+	if path == TaskStatsPath {
+		return ioutil.ReadFile("../../testdata/task_stats.json")
 	}
 
-	taskStats, err := ioutil.ReadFile("../../testdata/task_stats.json")
-	if err != nil {
-		return nil, nil, err
-	}
-	taskMetadata, err := ioutil.ReadFile("../../testdata/task_metadata.json")
-	if err != nil {
-		return nil, nil, err
-	}
-	return taskStats, taskMetadata, nil
+	return nil, nil
 }
 
 func TestGetStats(t *testing.T) {
 	tests := []struct {
 		name      string
-		client    RestClient
+		client    ecsutil.RestClient
 		wantError string
 	}{
 		{
@@ -74,15 +73,10 @@ func TestGetStats(t *testing.T) {
 			client:    &testRestClient{invalidJSON: true},
 			wantError: "cannot unmarshall task stats: invalid character 'w' looking for beginning of value",
 		},
-		{
-			name:      "invalid-task-metadata",
-			client:    &testRestClient{invalidTaskMetadata: true},
-			wantError: "cannot unmarshall task metadata: invalid character 'w' looking for beginning of value",
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			provider := NewStatsProvider(tt.client)
+			provider := NewStatsProvider(tt.client, zap.NewNop())
 			stats, metadata, err := provider.GetStats()
 			if tt.wantError == "" {
 				require.NoError(t, err)

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package k8sclusterreceiver
+package k8sclusterreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver"
 
 import (
 	"time"
@@ -35,6 +35,9 @@ type Config struct {
 	// Node condition types to report. See all condition types, see
 	// here: https://kubernetes.io/docs/concepts/architecture/nodes/#condition.
 	NodeConditionTypesToReport []string `mapstructure:"node_conditions_to_report"`
+	// Allocate resource types to report. See all resource types, see
+	// here: https://kubernetes.io/docs/concepts/architecture/nodes/#capacity
+	AllocatableTypesToReport []string `mapstructure:"allocatable_types_to_report"`
 	// List of exporters to which metadata from this receiver should be forwarded to.
 	MetadataExporters []string `mapstructure:"metadata_exporters"`
 

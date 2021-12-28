@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package kube
+package kube // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/kube"
 
 import (
 	"fmt"
@@ -313,7 +313,14 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	for _, r := range c.Rules.Labels {
 		// By default if the From field is not set for labels and annotations we want to extract them from pod
 		if r.From == MetadataFromPod || r.From == "" {
-			if v, ok := pod.Labels[r.Key]; ok {
+			if r.KeyRegex != nil {
+				for k, v := range pod.Labels {
+					if r.KeyRegex.MatchString(k) && v != "" {
+						name := fmt.Sprintf("k8s.pod.labels.%s", k)
+						tags[name] = v
+					}
+				}
+			} else if v, ok := pod.Labels[r.Key]; ok {
 				tags[r.Name] = c.extractField(v, r)
 			}
 		}
@@ -322,7 +329,14 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	for _, r := range c.Rules.Annotations {
 		// By default if the From field is not set for labels and annotations we want to extract them from pod
 		if r.From == MetadataFromPod || r.From == "" {
-			if v, ok := pod.Annotations[r.Key]; ok {
+			if r.KeyRegex != nil {
+				for k, v := range pod.Annotations {
+					if r.KeyRegex.MatchString(k) && v != "" {
+						name := fmt.Sprintf("k8s.pod.annotations.%s", k)
+						tags[name] = v
+					}
+				}
+			} else if v, ok := pod.Annotations[r.Key]; ok {
 				tags[r.Name] = c.extractField(v, r)
 			}
 		}
@@ -377,7 +391,14 @@ func (c *WatchClient) extractNamespaceAttributes(namespace *api_v1.Namespace) ma
 
 	for _, r := range c.Rules.Labels {
 		if r.From == MetadataFromNamespace {
-			if v, ok := namespace.Labels[r.Key]; ok {
+			if r.KeyRegex != nil {
+				for k, v := range namespace.Labels {
+					if r.KeyRegex.MatchString(k) && v != "" {
+						name := fmt.Sprintf("k8s.namespace.labels.%s", k)
+						tags[name] = v
+					}
+				}
+			} else if v, ok := namespace.Labels[r.Key]; ok {
 				tags[r.Name] = c.extractField(v, r)
 			}
 		}
@@ -385,11 +406,19 @@ func (c *WatchClient) extractNamespaceAttributes(namespace *api_v1.Namespace) ma
 
 	for _, r := range c.Rules.Annotations {
 		if r.From == MetadataFromNamespace {
-			if v, ok := namespace.Annotations[r.Key]; ok {
+			if r.KeyRegex != nil {
+				for k, v := range namespace.Annotations {
+					if r.KeyRegex.MatchString(k) && v != "" {
+						name := fmt.Sprintf("k8s.namespace.annotations.%s", k)
+						tags[name] = v
+					}
+				}
+			} else if v, ok := namespace.Annotations[r.Key]; ok {
 				tags[r.Name] = c.extractField(v, r)
 			}
 		}
 	}
+
 	return tags
 }
 

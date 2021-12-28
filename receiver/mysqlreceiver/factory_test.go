@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
@@ -53,7 +54,9 @@ func TestCreateMetricsReceiver(t *testing.T) {
 			},
 			Username: "otel",
 			Password: "otel",
-			Endpoint: "localhost:3306",
+			NetAddr: confignet.NetAddr{
+				Endpoint: "localhost:3306",
+			},
 		},
 		consumertest.NewNop(),
 	)

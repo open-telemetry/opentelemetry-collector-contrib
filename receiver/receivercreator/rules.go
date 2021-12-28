@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package receivercreator
+package receivercreator // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator"
 
 import (
 	"errors"
+	"fmt"
 	"regexp"
 
 	"github.com/antonmedv/expr"
@@ -30,7 +31,9 @@ type rule struct {
 }
 
 // ruleRe is used to verify the rule starts type check.
-var ruleRe = regexp.MustCompile(`^type\s*==\s*("pod"|"port"|"hostport")`)
+var ruleRe = regexp.MustCompile(
+	fmt.Sprintf(`^type\s*==\s*(%q|%q|%q|%q|%q)`, observer.PodType, observer.PortType, observer.HostPortType, observer.ContainerType, observer.K8sNodeType),
+)
 
 // newRule creates a new rule instance.
 func newRule(ruleStr string) (rule, error) {

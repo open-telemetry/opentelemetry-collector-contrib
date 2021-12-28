@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -32,7 +32,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Extensions[typeStr] = factory
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
@@ -47,9 +47,42 @@ func TestLoadConfig(t *testing.T) {
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "localhost:13",
 			},
+			CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
+			Path:                   "/",
 		},
 		ext1)
 
 	assert.Equal(t, 1, len(cfg.Service.Extensions))
 	assert.Equal(t, config.NewComponentIDWithName(typeStr, "1"), cfg.Service.Extensions[0])
+}
+
+func TestLoadConfigError(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	tests := []struct {
+		configName  string
+		expectedErr error
+	}{
+		{
+			"missingendpoint",
+			errNoEndpointProvided,
+		},
+		{
+			"invalidthreshold",
+			errInvalidExporterFailureThresholdProvided,
+		},
+		{
+			"invalidpath",
+			errInvalidPath,
+		},
+	}
+	for _, tt := range tests {
+		factory := NewFactory()
+		factories.Extensions[typeStr] = factory
+		cfg, _ := servicetest.LoadConfig(path.Join(".", "testdata", "config_bad.yaml"), factories)
+		extension := cfg.Extensions[config.NewComponentIDWithName(typeStr, tt.configName)]
+		err := extension.Validate()
+		require.ErrorIs(t, err, tt.expectedErr)
+	}
 }

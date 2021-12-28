@@ -150,8 +150,8 @@ func initSpan(name string, ts *pdata.Timestamp, span pdata.Span) {
 	spanLink.Attributes().InsertInt("foo", 1)
 	spanLink.Attributes().InsertBool("bar", false)
 	foobarContents := pdata.NewAttributeValueArray()
-	foobarContents.ArrayVal().AppendEmpty().SetStringVal("a")
-	foobarContents.ArrayVal().AppendEmpty().SetStringVal("b")
+	foobarContents.SliceVal().AppendEmpty().SetStringVal("a")
+	foobarContents.SliceVal().AppendEmpty().SetStringVal("b")
 	spanLink.Attributes().Insert("foobar", foobarContents)
 
 	spanEvent := span.Events().AppendEmpty()
@@ -198,8 +198,6 @@ func commonSplunkEvent(
 				},
 			},
 		},
-		Fields: map[string]interface{}{
-			"host.name": "myhost",
-		},
+		Fields: map[string]interface{}{},
 	}
 }

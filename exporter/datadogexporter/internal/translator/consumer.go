@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package translator
+package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/translator"
 
 import (
 	"context"
@@ -68,4 +68,13 @@ type Consumer interface {
 type HostConsumer interface {
 	// ConsumeHost consumes a hostname.
 	ConsumeHost(host string)
+}
+
+// TagsConsumer is a tags consumer.
+// It is an optional interface that can be implemented by a Consumer.
+// Consumed tags are used for running metrics, and should represent
+// some resource running a Collector (e.g. Fargate task).
+type TagsConsumer interface {
+	// ConsumeTag consumes a tag
+	ConsumeTag(tag string)
 }

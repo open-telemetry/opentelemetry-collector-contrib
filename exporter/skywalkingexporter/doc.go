@@ -13,4 +13,4 @@
 // limitations under the License.
 
 // Package skywalkingexporter exports data by using SkyWalking data collect protocol to a gPRC endpoint.
-package skywalkingexporter
+package skywalkingexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/skywalkingexporter"

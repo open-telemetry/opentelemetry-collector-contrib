@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package receivercreator
+package receivercreator // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator"
 
 import (
 	"context"
@@ -53,6 +53,14 @@ func createDefaultConfig() config.Receiver {
 				conventions.AttributeK8SPodName:       "`pod.name`",
 				conventions.AttributeK8SPodUID:        "`pod.uid`",
 				conventions.AttributeK8SNamespaceName: "`pod.namespace`",
+			},
+			observer.ContainerType: map[string]string{
+				conventions.AttributeContainerName:      "`name`",
+				conventions.AttributeContainerImageName: "`image`",
+			},
+			observer.K8sNodeType: map[string]string{
+				conventions.AttributeK8SNodeName: "`name`",
+				conventions.AttributeK8SNodeUID:  "`uid`",
 			},
 		},
 		receiverTemplates: map[string]receiverTemplate{},

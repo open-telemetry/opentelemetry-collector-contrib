@@ -12,11 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package statsdreceiver
+package statsdreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver"
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net"
 	"strings"
 	"time"
 
@@ -91,7 +93,9 @@ func (r *statsdReceiver) Start(ctx context.Context, host component.Host) error {
 	r.parser.Initialize(r.config.EnableMetricType, r.config.IsMonotonicCounter, r.config.TimerHistogramMapping)
 	go func() {
 		if err := r.server.ListenAndServe(r.parser, r.nextConsumer, r.reporter, transferChan); err != nil {
-			host.ReportFatalError(err)
+			if !errors.Is(err, net.ErrClosed) {
+				host.ReportFatalError(err)
+			}
 		}
 	}()
 	go func() {

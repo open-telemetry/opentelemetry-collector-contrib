@@ -15,6 +15,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -24,7 +25,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/go-playground/validator/v10/non-standard/validators"
 	en_translations "github.com/go-playground/validator/v10/translations/en"
-	"gopkg.in/yaml.v2"
+	"go.opentelemetry.io/collector/config/configmapprovider"
 )
 
 type metricName string
@@ -33,48 +34,74 @@ func (mn metricName) Render() (string, error) {
 	return formatIdentifier(string(mn), true)
 }
 
-type labelName string
+func (mn metricName) RenderUnexported() (string, error) {
+	return formatIdentifier(string(mn), false)
+}
 
-func (mn labelName) Render() (string, error) {
+type attributeName string
+
+func (mn attributeName) Render() (string, error) {
 	return formatIdentifier(string(mn), true)
 }
 
+func (mn attributeName) RenderUnexported() (string, error) {
+	return formatIdentifier(string(mn), false)
+}
+
 type metric struct {
+	// Enabled defines whether the metric is enabled by default.
+	Enabled bool `yaml:"enabled" validate:"required"`
+
 	// Description of the metric.
 	Description string `validate:"required,notblank"`
 
 	// ExtendedDocumentation of the metric. If specified, this will
 	// be appended to the description used in generated documentation.
-	ExtendedDocumentation string `yaml:"extended_documentation"`
+	ExtendedDocumentation string `mapstructure:"extended_documentation"`
 
 	// Unit of the metric.
-	Unit string `yaml:"unit"`
+	Unit string `mapstructure:"unit"`
 
-	// Raw data that is used to set Data interface below.
-	YmlData *ymlMetricData `yaml:"data" validate:"required"`
-	// Date is set to generic metric data interface after validating.
-	Data MetricData `yaml:"-"`
+	// Sum stores metadata for sum metric type
+	Sum *sum `yaml:"sum"`
+	// Gauge stores metadata for gauge metric type
+	Gauge *gauge `yaml:"gauge"`
+	// Histogram stores metadata for histogram metric type
+	Histogram *histogram `yaml:"histogram"`
 
-	// Labels is the list of labels that the metric emits.
-	Labels []labelName
+	// Attributes is the list of attributes that the metric emits.
+	Attributes []attributeName
 }
 
-type label struct {
-	// Description describes the purpose of the label.
+func (m metric) Data() MetricData {
+	if m.Sum != nil {
+		return m.Sum
+	}
+	if m.Gauge != nil {
+		return m.Gauge
+	}
+	if m.Histogram != nil {
+		return m.Histogram
+	}
+	return nil
+}
+
+type attribute struct {
+	// Description describes the purpose of the attribute.
 	Description string `validate:"notblank"`
-	// Value can optionally specify the value this label will have.
-	// For example, the label may have the identifier `MemState` to its
+	// Value can optionally specify the value this attribute will have.
+	// For example, the attribute may have the identifier `MemState` to its
 	// value may be `state` when used.
 	Value string
-	// Enum can optionally describe the set of values to which the label can belong.
+	// Enum can optionally describe the set of values to which the attribute can belong.
 	Enum []string
 }
 
 type metadata struct {
 	// Name of the component.
 	Name string `validate:"notblank"`
-	// Labels emitted by one or more metrics.
-	Labels map[labelName]label `validate:"dive"`
+	// Attributes emitted by one or more metrics.
+	Attributes map[attributeName]attribute `validate:"dive"`
 	// Metrics that can be emitted by the component.
 	Metrics map[metricName]metric `validate:"dive"`
 }
@@ -83,22 +110,30 @@ type templateContext struct {
 	metadata
 	// Package name for generated code.
 	Package string
+	// ExpFileNote contains a note about experimental metrics builder.
+	ExpFileNote string
 }
 
-func loadMetadata(ymlData []byte) (metadata, error) {
-	var out metadata
-
-	// Unmarshal metadata.
-	if err := yaml.Unmarshal(ymlData, &out); err != nil {
-		return metadata{}, fmt.Errorf("unable to unmarshal yaml: %v", err)
+func loadMetadata(filePath string) (metadata, error) {
+	cp, err := configmapprovider.NewFile(filePath).Retrieve(context.Background(), nil)
+	if err != nil {
+		return metadata{}, err
 	}
-
-	// Validate metadata.
-	if err := validateMetadata(out); err != nil {
+	mdMap, err := cp.Get(context.Background())
+	if err != nil {
 		return metadata{}, err
 	}
 
-	return out, nil
+	var md metadata
+	if err := mdMap.UnmarshalExact(&md); err != nil {
+		return metadata{}, err
+	}
+
+	if err := validateMetadata(md); err != nil {
+		return md, err
+	}
+
+	return md, nil
 }
 
 func validateMetadata(out metadata) error {
@@ -120,13 +155,13 @@ func validateMetadata(out metadata) error {
 		return fmt.Errorf("failed registering translations: %v", err)
 	}
 
-	if err := v.RegisterTranslation("nosuchlabel", tr, func(ut ut.Translator) error {
-		return ut.Add("nosuchlabel", "unknown label value", true) // see universal-translator for details
+	if err := v.RegisterTranslation("nosuchattribute", tr, func(ut ut.Translator) error {
+		return ut.Add("nosuchattribute", "unknown attribute value", true) // see universal-translator for details
 	}, func(ut ut.Translator, fe validator.FieldError) string {
-		t, _ := ut.T("nosuchlabel", fe.Field())
+		t, _ := ut.T("nosuchattribute", fe.Field())
 		return t
 	}); err != nil {
-		return fmt.Errorf("failed registering nosuchlabel: %v", err)
+		return fmt.Errorf("failed registering nosuchattribute: %v", err)
 	}
 
 	v.RegisterStructValidation(metricValidation, metric{})
@@ -146,9 +181,24 @@ func validateMetadata(out metadata) error {
 
 	// Set metric data interface.
 	for k, v := range out.Metrics {
-		v.Data = v.YmlData.MetricData
-		v.YmlData = nil
-		out.Metrics[k] = v
+		dataTypesSet := 0
+		if v.Sum != nil {
+			dataTypesSet++
+		}
+		if v.Gauge != nil {
+			dataTypesSet++
+		}
+		if v.Histogram != nil {
+			dataTypesSet++
+		}
+		if dataTypesSet == 0 {
+			return fmt.Errorf("metric %v doesn't have a metric type key, "+
+				"one of the following has to be specified: sum, gauge, histogram", k)
+		}
+		if dataTypesSet > 1 {
+			return fmt.Errorf("metric %v has more than one metric type keys, "+
+				"only one of the following has to be specified: sum, gauge, histogram", k)
+		}
 	}
 
 	return nil
@@ -156,13 +206,14 @@ func validateMetadata(out metadata) error {
 
 // metricValidation validates metric structs.
 func metricValidation(sl validator.StructLevel) {
-	// Make sure that the labels are valid.
+	// Make sure that the attributes are valid.
 	md := sl.Top().Interface().(*metadata)
 	cur := sl.Current().Interface().(metric)
 
-	for _, l := range cur.Labels {
-		if _, ok := md.Labels[l]; !ok {
-			sl.ReportError(cur.Labels, fmt.Sprintf("Labels[%s]", string(l)), "Labels", "nosuchlabel", "")
+	for _, l := range cur.Attributes {
+		if _, ok := md.Attributes[l]; !ok {
+			sl.ReportError(cur.Attributes, fmt.Sprintf("Attributes[%s]", string(l)), "Attributes", "nosuchattribute",
+				"")
 		}
 	}
 }

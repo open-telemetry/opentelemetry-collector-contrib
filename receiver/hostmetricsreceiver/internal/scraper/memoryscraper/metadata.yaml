@@ -1,16 +1,17 @@
 name: memory
 
-labels:
+attributes:
   state:
     description: Breakdown of memory usage by type.
     enum: [buffered, cached, inactive, free, slab_reclaimable, slab_unreclaimable, used]
 
 metrics:
   system.memory.usage:
+    enabled: true
     description: Bytes of memory in use.
     unit: By
-    data:
-      type: sum
+    sum:
+      value_type: int
       aggregation: cumulative
       monotonic: false
-    labels: [state]
+    attributes: [state]

@@ -1,0 +1,16 @@
+{
+   "resourceMetrics": [
+      {
+         "instrumentationLibraryMetrics": [
+            {
+               "metrics": [
+                  {
+                     "name": "should.be.sum",
+                     "sum": {}
+                  }
+               ]
+            }
+         ]
+      }
+   ]
+}

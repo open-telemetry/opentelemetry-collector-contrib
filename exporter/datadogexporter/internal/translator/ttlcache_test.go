@@ -24,52 +24,91 @@ func newTestCache() *ttlCache {
 	cache := newTTLCache(1800, 3600)
 	return cache
 }
-func TestPutAndGetDiff(t *testing.T) {
+
+var dims metricsDimensions = metricsDimensions{name: "test"}
+
+func TestMonotonicDiffUnknownStart(t *testing.T) {
+	startTs := uint64(0) // equivalent to start being unset
 	prevPts := newTestCache()
-	_, ok := prevPts.putAndGetDiff("test", []string{}, 1, 5)
-	// no diff since it is the first point
-	assert.False(t, ok)
-	_, ok = prevPts.putAndGetDiff("test", []string{}, 0, 0)
-	// no diff since ts is lower than the stored point
-	assert.False(t, ok)
-	_, ok = prevPts.putAndGetDiff("test", []string{}, 2, 2)
-	// no diff since the value is lower than the stored value
-	assert.False(t, ok)
-	dx, ok := prevPts.putAndGetDiff("test", []string{}, 3, 4)
-	// diff with the most recent point (2,2)
-	assert.True(t, ok)
-	assert.Equal(t, 2.0, dx)
+	_, ok := prevPts.MonotonicDiff(dims, startTs, 1, 5)
+	assert.False(t, ok, "expected no diff: first point")
+	_, ok = prevPts.MonotonicDiff(dims, startTs, 0, 0)
+	assert.False(t, ok, "expected no diff: old point")
+	_, ok = prevPts.MonotonicDiff(dims, startTs, 2, 2)
+	assert.False(t, ok, "expected no diff: new < old")
+	dx, ok := prevPts.MonotonicDiff(dims, startTs, 3, 4)
+	assert.True(t, ok, "expected diff: no startTs, old >= new")
+	assert.Equal(t, 2.0, dx, "expected diff 2.0 with (0,2,2) value")
 }
 
-func TestMetricDimensionsToMapKey(t *testing.T) {
-	metricName := "metric.name"
-	c := newTestCache()
-	noTags := c.metricDimensionsToMapKey(metricName, []string{})
-	someTags := c.metricDimensionsToMapKey(metricName, []string{"key1:val1", "key2:val2"})
-	sameTags := c.metricDimensionsToMapKey(metricName, []string{"key2:val2", "key1:val1"})
-	diffTags := c.metricDimensionsToMapKey(metricName, []string{"key3:val3"})
-
-	assert.NotEqual(t, noTags, someTags)
-	assert.NotEqual(t, someTags, diffTags)
-	assert.Equal(t, someTags, sameTags)
+func TestDiffUnknownStart(t *testing.T) {
+	startTs := uint64(0) // equivalent to start being unset
+	prevPts := newTestCache()
+	_, ok := prevPts.Diff(dims, startTs, 1, 5)
+	assert.False(t, ok, "expected no diff: first point")
+	_, ok = prevPts.Diff(dims, startTs, 0, 0)
+	assert.False(t, ok, "expected no diff: old point")
+	dx, ok := prevPts.Diff(dims, startTs, 2, 2)
+	assert.True(t, ok, "expected diff: no startTs, not monotonic")
+	assert.Equal(t, -3.0, dx, "expected diff -3.0 with (0,1,5) value")
+	dx, ok = prevPts.Diff(dims, startTs, 3, 4)
+	assert.True(t, ok, "expected diff: no startTs, old >= new")
+	assert.Equal(t, 2.0, dx, "expected diff 2.0 with (0,2,2) value")
 }
 
-func TestMetricDimensionsToMapKeyNoTagsChange(t *testing.T) {
-	// The original metricDimensionsToMapKey had an issue where:
-	// - if the capacity of the tags array passed to it was higher than its length
-	// - and the metric name is earlier (in alphabetical order) than one of the tags
-	// then the original tag array would be modified (without a reallocation, since there is enough capacity),
-	// and would contain a tag labeled as the metric name, while the final tag (in alphabetical order)
-	// would get left out.
-	// This test checks that this doesn't happen anymore.
+func TestMonotonicDiffKnownStart(t *testing.T) {
+	startTs := uint64(1)
+	prevPts := newTestCache()
+	_, ok := prevPts.MonotonicDiff(dims, startTs, 1, 5)
+	assert.False(t, ok, "expected no diff: first point")
+	_, ok = prevPts.MonotonicDiff(dims, startTs, 0, 0)
+	assert.False(t, ok, "expected no diff: old point")
+	_, ok = prevPts.MonotonicDiff(dims, startTs, 2, 2)
+	assert.False(t, ok, "expected no diff: new < old")
+	dx, ok := prevPts.MonotonicDiff(dims, startTs, 3, 4)
+	assert.True(t, ok, "expected diff: same startTs, old >= new")
+	assert.Equal(t, 2.0, dx, "expected diff 2.0 with (0,2,2) value")
 
-	metricName := "a.metric.name"
-	c := newTestCache()
+	startTs = uint64(4) // simulate reset with startTs = ts
+	_, ok = prevPts.MonotonicDiff(dims, startTs, startTs, 8)
+	assert.False(t, ok, "expected no diff: reset with unknown start")
+	dx, ok = prevPts.MonotonicDiff(dims, startTs, 5, 9)
+	assert.True(t, ok, "expected diff: same startTs, old >= new")
+	assert.Equal(t, 1.0, dx, "expected diff 1.0 with (4,4,8) value")
 
-	originalTags := make([]string, 2, 3)
-	originalTags[0] = "key1:val1"
-	originalTags[1] = "key2:val2"
-	c.metricDimensionsToMapKey(metricName, originalTags)
-	assert.Equal(t, []string{"key1:val1", "key2:val2"}, originalTags)
+	startTs = uint64(6)
+	_, ok = prevPts.MonotonicDiff(dims, startTs, 7, 1)
+	assert.False(t, ok, "expected no diff: reset with known start")
+	dx, ok = prevPts.MonotonicDiff(dims, startTs, 8, 10)
+	assert.True(t, ok, "expected diff: same startTs, old >= new")
+	assert.Equal(t, 9.0, dx, "expected diff 9.0 with (6,7,1) value")
+}
 
+func TestDiffKnownStart(t *testing.T) {
+	startTs := uint64(1)
+	prevPts := newTestCache()
+	_, ok := prevPts.Diff(dims, startTs, 1, 5)
+	assert.False(t, ok, "expected no diff: first point")
+	_, ok = prevPts.Diff(dims, startTs, 0, 0)
+	assert.False(t, ok, "expected no diff: old point")
+	dx, ok := prevPts.Diff(dims, startTs, 2, 2)
+	assert.True(t, ok, "expected diff: same startTs, not monotonic")
+	assert.Equal(t, -3.0, dx, "expected diff -3.0 with (1,1,5) point")
+	dx, ok = prevPts.Diff(dims, startTs, 3, 4)
+	assert.True(t, ok, "expected diff: same startTs, not monotonic")
+	assert.Equal(t, 2.0, dx, "expected diff 2.0 with (0,2,2) value")
+
+	startTs = uint64(4) // simulate reset with startTs = ts
+	_, ok = prevPts.Diff(dims, startTs, startTs, 8)
+	assert.False(t, ok, "expected no diff: reset with unknown start")
+	dx, ok = prevPts.Diff(dims, startTs, 5, 9)
+	assert.True(t, ok, "expected diff: same startTs, not monotonic")
+	assert.Equal(t, 1.0, dx, "expected diff 1.0 with (4,4,8) value")
+
+	startTs = uint64(6)
+	_, ok = prevPts.Diff(dims, startTs, 7, 1)
+	assert.False(t, ok, "expected no diff: reset with known start")
+	dx, ok = prevPts.Diff(dims, startTs, 8, 10)
+	assert.True(t, ok, "expected diff: same startTs, not monotonic")
+	assert.Equal(t, 9.0, dx, "expected diff 9.0 with (6,7,1) value")
 }
