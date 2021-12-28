@@ -62,6 +62,9 @@ The following settings can be optionally configured:
   User should calculate this as `num_seconds * requests_per_second` where:
     - `num_seconds` is the number of seconds to buffer in case of a backend outage
     - `requests_per_second` is the average number of requests per seconds.
+- `producer`
+  - `max_message_bytes` (default = 1000000) the maximum permitted size of a message in bytes
+  - `required_acks` (default = 1) controls when a message is regarded as transmitted.   https://pkg.go.dev/github.com/Shopify/sarama@v1.30.0#RequiredAcks
 
 Example configuration:
 
