@@ -5,6 +5,7 @@
 ## 💡 Enhancements 💡
 
 - `prometheusremotewriteexporter`: Handling Staleness flag from OTLP (#6679)
+- `prometheusexporter`: Handling Staleness flag from OTLP (#6805)
 - `mysqlreceiver`: Add Integration test (#6916)
 - `datadogexporter`: Add compatibility with ECS Fargate semantic conventions (#6670)
 - `k8s_observer`: discover k8s.node endpoints (#6820)
