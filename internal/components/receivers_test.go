@@ -17,6 +17,7 @@ package components
 import (
 	"context"
 	"errors"
+	"runtime"
 	"testing"
 
 	promconfig "github.com/prometheus/prometheus/config"
@@ -28,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 )
 
@@ -48,14 +50,68 @@ func TestDefaultReceivers(t *testing.T) {
 			skipLifecyle: true,
 		},
 		{
+			receiver: "awsecscontainermetrics",
+		},
+		{
+			receiver: "awsxray",
+		},
+		{
+			receiver: "carbon",
+			getConfigFn: func() config.Receiver {
+				cfg := rcvrFactories["carbon"].CreateDefaultConfig().(*carbonreceiver.Config)
+				cfg.Endpoint = "0.0.0.0:0"
+				return cfg
+			},
+			skipLifecyle: true, // Panics after test have completed, requires a wait group
+		},
+		{
+			receiver: "collectd",
+		},
+		{
+			receiver: "dockerstats",
+		},
+		{
+			receiver: "dotnet_diagnostics",
+		},
+		{
+			receiver: "filelog",
+		},
+		{
+			receiver: "fluentd",
+		},
+		{
+			receiver: "googlecloudspanner",
+		},
+		{
 			receiver: "hostmetrics",
+		},
+		{
+			receiver: "influxdb",
 		},
 		{
 			receiver: "jaeger",
 		},
 		{
+			receiver: "jmx",
+		},
+		{
+			receiver: "journald",
+		},
+		{
 			receiver:     "kafka",
 			skipLifecyle: true, // TODO: It needs access to internals to successful start.
+		},
+		{
+			receiver: "kafkametrics",
+		},
+		{
+			receiver: "k8s_cluster",
+		},
+		{
+			receiver: "kubeletstats",
+		},
+		{
+			receiver: "memcached",
 		},
 		{
 			receiver: "mongodbatlas",
@@ -66,6 +122,9 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver: "otlp",
+		},
+		{
+			receiver: "podman",
 		},
 		{
 			receiver: "prometheus",
@@ -80,20 +139,56 @@ func TestDefaultReceivers(t *testing.T) {
 			},
 		},
 		{
+			receiver: "prometheus_exec",
+		},
+		{
+			receiver: "receiver_creator",
+		},
+		{
+			receiver: "redis",
+		},
+		{
 			receiver: "sapm",
 		},
 		{
 			receiver: "signalfx",
 		},
 		{
+			receiver: "prometheus_simple",
+		},
+		{
 			receiver: "splunk_hec",
+		},
+		{
+			receiver: "statsd",
+		},
+		{
+			receiver:     "wavefront",
+			skipLifecyle: true, // Depends on carbon receiver to be running correctly
+		},
+		{
+			receiver:     "windowsperfcounters",
+			skipLifecyle: runtime.GOOS != "windows", // Only works on windows based machines
 		},
 		{
 			receiver: "zipkin",
 		},
+		{
+			receiver:     "zookeeper",
+			skipLifecyle: true, // Panics on shutdown with the default configuration
+		},
+		{
+			receiver: "syslog",
+		},
+		{
+			receiver: "tcplog",
+		},
+		{
+			receiver: "udplog",
+		},
 	}
 
-	assert.Equal(t, len(tests)+28 /* not tested */, len(rcvrFactories))
+	assert.Len(t, tests, len(rcvrFactories), "All receivers must be added to the lifecycle suite")
 	for _, tt := range tests {
 		t.Run(string(tt.receiver), func(t *testing.T) {
 			factory, ok := rcvrFactories[tt.receiver]
@@ -102,7 +197,7 @@ func TestDefaultReceivers(t *testing.T) {
 			assert.Equal(t, config.NewComponentID(tt.receiver), factory.CreateDefaultConfig().ID())
 
 			if tt.skipLifecyle {
-				t.Log("Skipping lifecycle test", tt.receiver)
+				t.Skip("Skipping lifecycle test", tt.receiver)
 				return
 			}
 
