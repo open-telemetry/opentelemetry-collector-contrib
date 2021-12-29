@@ -17,6 +17,7 @@ package components
 import (
 	"context"
 	"errors"
+	"path"
 	"runtime"
 	"testing"
 
@@ -29,8 +30,14 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver"
 )
 
 func TestDefaultReceivers(t *testing.T) {
@@ -50,10 +57,12 @@ func TestDefaultReceivers(t *testing.T) {
 			skipLifecyle: true,
 		},
 		{
-			receiver: "awsecscontainermetrics",
+			receiver:     "awsecscontainermetrics",
+			skipLifecyle: true, // Requires container metaendpoint to be running
 		},
 		{
-			receiver: "awsxray",
+			receiver:     "awsxray",
+			skipLifecyle: true, // Requires AWS endpoint to check identity to run
 		},
 		{
 			receiver: "carbon",
@@ -68,16 +77,26 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "collectd",
 		},
 		{
-			receiver: "dockerstats",
+			receiver: "docker_stats",
 		},
 		{
-			receiver: "dotnet_diagnostics",
+			receiver:     "dotnet_diagnostics",
+			skipLifecyle: true, // Requires a running .NET process to examine
 		},
 		{
 			receiver: "filelog",
+			getConfigFn: func() config.Receiver {
+				cfg := rcvrFactories["filelog"].CreateDefaultConfig().(*filelogreceiver.FileLogConfig)
+				cfg.Input = stanza.InputConfig{
+					"include": []string{
+						path.Join(testutil.NewTemporaryDirectory(t), "*"),
+					},
+				}
+				return cfg
+			},
 		},
 		{
-			receiver: "fluentd",
+			receiver: "fluentforward",
 		},
 		{
 			receiver: "googlecloudspanner",
@@ -92,10 +111,12 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "jaeger",
 		},
 		{
-			receiver: "jmx",
+			receiver:     "jmx",
+			skipLifecyle: true, // Requires a running instance with JMX
 		},
 		{
-			receiver: "journald",
+			receiver:     "journald",
+			skipLifecyle: runtime.GOOS != "linux",
 		},
 		{
 			receiver:     "kafka",
@@ -105,10 +126,12 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "kafkametrics",
 		},
 		{
-			receiver: "k8s_cluster",
+			receiver:     "k8s_cluster",
+			skipLifecyle: true, // Requires access to the k8s host and port in order to run
 		},
 		{
-			receiver: "kubeletstats",
+			receiver:     "kubeletstats",
+			skipLifecyle: true, // Requires access to certificates to auth against kubelet
 		},
 		{
 			receiver: "memcached",
@@ -124,7 +147,8 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "otlp",
 		},
 		{
-			receiver: "podman",
+			receiver:     "podman_stats",
+			skipLifecyle: true, // Requires a running podman daemon
 		},
 		{
 			receiver: "prometheus",
@@ -139,7 +163,8 @@ func TestDefaultReceivers(t *testing.T) {
 			},
 		},
 		{
-			receiver: "prometheus_exec",
+			receiver:     "prometheus_exec",
+			skipLifecyle: true, // Requires running a subproccess that can not be easily set across platforms
 		},
 		{
 			receiver: "receiver_creator",
@@ -175,16 +200,40 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver:     "zookeeper",
-			skipLifecyle: true, // Panics on shutdown with the default configuration
+			skipLifecyle: true, // Panics due to nil pointer on shutdown with the default configuration
 		},
 		{
 			receiver: "syslog",
+			getConfigFn: func() config.Receiver {
+				cfg := rcvrFactories["syslog"].CreateDefaultConfig().(*syslogreceiver.SysLogConfig)
+				cfg.Input = stanza.InputConfig{
+					"tcp": map[string]interface{}{
+						"listen_address": "0.0.0.0:0",
+					},
+					"protocol": "rfc5424",
+				}
+				return cfg
+			},
 		},
 		{
 			receiver: "tcplog",
+			getConfigFn: func() config.Receiver {
+				cfg := rcvrFactories["tcplog"].CreateDefaultConfig().(*tcplogreceiver.TCPLogConfig)
+				cfg.Input = stanza.InputConfig{
+					"listen_address": "0.0.0.0:0",
+				}
+				return cfg
+			},
 		},
 		{
 			receiver: "udplog",
+			getConfigFn: func() config.Receiver {
+				cfg := rcvrFactories["udplog"].CreateDefaultConfig().(*udplogreceiver.UDPLogConfig)
+				cfg.Input = stanza.InputConfig{
+					"listen_address": "0.0.0.0:0",
+				}
+				return cfg
+			},
 		},
 	}
 
