@@ -193,7 +193,7 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver:     "windowsperfcounters",
-			skipLifecyle: runtime.GOOS != "windows", // Only works on windows based machines
+			skipLifecyle: true, // Requires a running windows process
 		},
 		{
 			receiver: "zipkin",
