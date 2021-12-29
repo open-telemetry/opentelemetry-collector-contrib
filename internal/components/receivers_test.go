@@ -77,7 +77,8 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "collectd",
 		},
 		{
-			receiver: "docker_stats",
+			receiver:     "docker_stats",
+			skipLifecyle: runtime.GOOS == "windows", // Unable to start docker client on windows
 		},
 		{
 			receiver:     "dotnet_diagnostics",
