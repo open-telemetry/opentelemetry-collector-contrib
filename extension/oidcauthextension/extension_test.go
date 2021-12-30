@@ -33,9 +33,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configauth"
 	"go.uber.org/zap"
-	"google.golang.org/grpc"
 )
 
 func TestOIDCAuthenticationSucceeded(t *testing.T) {
@@ -457,71 +455,4 @@ func TestShutdown(t *testing.T) {
 
 	// verify
 	assert.NoError(t, err)
-}
-
-func TestUnaryInterceptor(t *testing.T) {
-	// prepare
-	config := &Config{
-		Audience:  "some-audience",
-		IssuerURL: "http://example.com/",
-	}
-	p, err := newExtension(config, zap.NewNop())
-	require.NoError(t, err)
-	require.NotNil(t, p)
-
-	interceptorCalled := false
-	p.unaryInterceptor = func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler, authenticate configauth.AuthenticateFunc) (interface{}, error) {
-		interceptorCalled = true
-		return nil, nil
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return nil, nil
-	}
-
-	// test
-	res, err := p.GRPCUnaryServerInterceptor(context.Background(), nil, &grpc.UnaryServerInfo{}, handler)
-
-	// verify
-	assert.NoError(t, err)
-	assert.Nil(t, res)
-	assert.True(t, interceptorCalled)
-}
-
-func TestStreamInterceptor(t *testing.T) {
-	// prepare
-	config := &Config{
-		Audience:  "some-audience",
-		IssuerURL: "http://example.com/",
-	}
-	p, err := newExtension(config, zap.NewNop())
-	require.NoError(t, err)
-	require.NotNil(t, p)
-
-	interceptorCalled := false
-	p.streamInterceptor = func(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler, authenticate configauth.AuthenticateFunc) error {
-		interceptorCalled = true
-		return nil
-	}
-	handler := func(srv interface{}, stream grpc.ServerStream) error {
-		return nil
-	}
-	streamServer := &mockServerStream{
-		ctx: context.Background(),
-	}
-
-	// test
-	err = p.GRPCStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler)
-
-	// verify
-	assert.NoError(t, err)
-	assert.True(t, interceptorCalled)
-}
-
-type mockServerStream struct {
-	grpc.ServerStream
-	ctx context.Context
-}
-
-func (m *mockServerStream) Context() context.Context {
-	return m.ctx
 }

@@ -18,6 +18,7 @@ attributes:
 
 metrics:
   system.paging.usage:
+    enabled: true
     description: Swap (unix) or pagefile (windows) usage.
     unit: By
     sum:
@@ -27,6 +28,7 @@ metrics:
     attributes: [device, state]
 
   system.paging.operations:
+    enabled: true
     description: The number of paging operations.
     unit: "{operations}"
     sum:
@@ -36,6 +38,7 @@ metrics:
     attributes: [direction, type]
 
   system.paging.faults:
+    enabled: true
     description: The number of page faults.
     unit: "{faults}"
     sum:

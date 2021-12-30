@@ -7,6 +7,7 @@ attributes:
 
 metrics:
   system.processes.created:
+    enabled: true
     description: Total number of created processes.
     unit: "{processes}"
     sum:
@@ -15,6 +16,7 @@ metrics:
       monotonic: true
 
   system.processes.count:
+    enabled: true
     description: Total number of processes in each state.
     unit: "{processes}"
     sum:

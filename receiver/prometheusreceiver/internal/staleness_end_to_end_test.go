@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -33,7 +34,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmapprovider"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/service"
 	"go.uber.org/zap"
@@ -138,6 +138,11 @@ service:
       processors: [batch]
       exporters: [prometheusremotewrite]`, serverURL.Host, prweServer.URL)
 
+	confFile, err := ioutil.TempFile(os.TempDir(), "conf-")
+	require.Nil(t, err)
+	defer os.Remove(confFile.Name())
+	_, err = confFile.Write([]byte(config))
+	require.Nil(t, err)
 	// 4. Run the OpenTelemetry Collector.
 	receivers, err := component.MakeReceiverFactoryMap(prometheusreceiver.NewFactory())
 	require.Nil(t, err)
@@ -153,8 +158,8 @@ service:
 	}
 
 	appSettings := service.CollectorSettings{
-		Factories:         factories,
-		ConfigMapProvider: configmapprovider.NewInMemory(strings.NewReader(config)),
+		Factories:      factories,
+		ConfigProvider: service.NewDefaultConfigProvider(confFile.Name(), nil),
 		BuildInfo: component.BuildInfo{
 			Command:     "otelcol",
 			Description: "OpenTelemetry Collector",

@@ -170,9 +170,6 @@ targeting it will have different variables available.
 | annotations           | A key-value map of non-identifying, user-specified node metadata                                                       |
 | labels                | A key-value map of user-specified node metadata                                                                        |
 | kubelet_endpoint_port | The node Status object's DaemonEndpoints.KubeletEndpoint.Port value                                                    |
-| spec                  | The node Spec json object that's equivalent to the output of `kubectl get node <node> -o jsonpath='{.spec}'`           |
-| metadata              | The node ObjectMeta json object that's equivalent to the output of `kubectl get node <node> -o jsonpath='{.metadata}'` |
-| status                | The node Status json object that's equivalent to the output of `kubectl get node <node> -o jsonpath='{.status}'`       |
 
 ## Examples
 

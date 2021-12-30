@@ -15,9 +15,10 @@
 package k8sobserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver"
 
 import (
-	"fmt"
+	"encoding/json"
 	"reflect"
 
+	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/cache"
 
@@ -28,112 +29,64 @@ import (
 type handler struct {
 	// idNamespace should be some unique token to distinguish multiple handler instances.
 	idNamespace string
-	// watcher is the callback for discovered endpoints.
-	watcher observer.Notify
+	// listener is the callback for discovered endpoints.
+	listener observer.Notify
+	logger   *zap.Logger
 }
 
-// OnAdd is called in response to a pod being added.
-func (h *handler) OnAdd(obj interface{}) {
-	pod, ok := obj.(*v1.Pod)
-	if !ok {
-		return
-	}
-	h.watcher.OnAdd(h.convertPodToEndpoints(pod))
-}
+// OnAdd is called in response to a new pod or node being detected.
+func (h *handler) OnAdd(objectInterface interface{}) {
+	var endpoints []observer.Endpoint
 
-// convertPodToEndpoints converts a pod instance into a slice of endpoints. The endpoints
-// include the pod itself as well as an endpoint for each container port that is mapped
-// to a container that is in a running state.
-func (h *handler) convertPodToEndpoints(pod *v1.Pod) []observer.Endpoint {
-	podID := observer.EndpointID(fmt.Sprintf("%s/%s", h.idNamespace, pod.UID))
-	podIP := pod.Status.PodIP
-
-	podDetails := observer.Pod{
-		UID:         string(pod.UID),
-		Annotations: pod.Annotations,
-		Labels:      pod.Labels,
-		Name:        pod.Name,
-		Namespace:   pod.Namespace,
-	}
-
-	// Return no endpoints if the Pod is not running
-	if pod.Status.Phase != v1.PodRunning {
-		return nil
-	}
-
-	endpoints := []observer.Endpoint{{
-		ID:      podID,
-		Target:  podIP,
-		Details: &podDetails,
-	}}
-
-	// Map of running containers by name.
-	containerRunning := map[string]bool{}
-
-	for _, container := range pod.Status.ContainerStatuses {
-		if container.State.Running != nil {
-			containerRunning[container.Name] = true
-		}
-	}
-
-	// Create endpoint for each named container port.
-	for _, container := range pod.Spec.Containers {
-		if !containerRunning[container.Name] {
-			continue
-		}
-
-		for _, port := range container.Ports {
-			endpointID := observer.EndpointID(
-				fmt.Sprintf(
-					"%s/%s(%d)", podID, port.Name, port.ContainerPort,
-				),
-			)
-			endpoints = append(endpoints, observer.Endpoint{
-				ID:     endpointID,
-				Target: fmt.Sprintf("%s:%d", podIP, port.ContainerPort),
-				Details: &observer.Port{
-					Pod:       podDetails,
-					Name:      port.Name,
-					Port:      uint16(port.ContainerPort),
-					Transport: getTransport(port.Protocol),
-				},
-			})
-		}
-	}
-
-	return endpoints
-}
-
-func getTransport(protocol v1.Protocol) observer.Transport {
-	switch protocol {
-	case v1.ProtocolTCP:
-		return observer.ProtocolTCP
-	case v1.ProtocolUDP:
-		return observer.ProtocolUDP
-	}
-	return observer.ProtocolUnknown
-}
-
-// OnUpdate is called in response to an existing pod changing.
-func (h *handler) OnUpdate(oldObj, newObj interface{}) {
-	oldPod, ok := oldObj.(*v1.Pod)
-	if !ok {
-		return
-	}
-	newPod, ok := newObj.(*v1.Pod)
-	if !ok {
+	switch object := objectInterface.(type) {
+	case *v1.Pod:
+		endpoints = convertPodToEndpoints(h.idNamespace, object)
+	case *v1.Node:
+		endpoints = append(endpoints, convertNodeToEndpoint(h.idNamespace, object))
+	default: // unsupported
 		return
 	}
 
+	for _, endpoint := range endpoints {
+		if env, err := endpoint.Env(); err == nil {
+			if marshaled, err := json.Marshal(env); err == nil {
+				h.logger.Debug("endpoint added", zap.String("env", string(marshaled)))
+			}
+		}
+	}
+
+	h.listener.OnAdd(endpoints)
+}
+
+// OnUpdate is called in response to an existing pod or node changing.
+func (h *handler) OnUpdate(oldObjectInterface, newObjectInterface interface{}) {
 	oldEndpoints := map[observer.EndpointID]observer.Endpoint{}
 	newEndpoints := map[observer.EndpointID]observer.Endpoint{}
 
-	// Convert pods to endpoints and map by ID for easier lookup.
-	for _, e := range h.convertPodToEndpoints(oldPod) {
-		oldEndpoints[e.ID] = e
-	}
-	for _, e := range h.convertPodToEndpoints(newPod) {
-		newEndpoints[e.ID] = e
+	switch oldObject := oldObjectInterface.(type) {
+	case *v1.Pod:
+		newPod, ok := newObjectInterface.(*v1.Pod)
+		if !ok {
+			return
+		}
+		for _, e := range convertPodToEndpoints(h.idNamespace, oldObject) {
+			oldEndpoints[e.ID] = e
+		}
+		for _, e := range convertPodToEndpoints(h.idNamespace, newPod) {
+			newEndpoints[e.ID] = e
+		}
+
+	case *v1.Node:
+		newNode, ok := newObjectInterface.(*v1.Node)
+		if !ok {
+			return
+		}
+		oldEndpoint := convertNodeToEndpoint(h.idNamespace, oldObject)
+		oldEndpoints[oldEndpoint.ID] = oldEndpoint
+		newEndpoint := convertNodeToEndpoint(h.idNamespace, newNode)
+		newEndpoints[newEndpoint.ID] = newEndpoint
+	default: // unsupported
+		return
 	}
 
 	var removedEndpoints, updatedEndpoints, addedEndpoints []observer.Endpoint
@@ -159,15 +112,36 @@ func (h *handler) OnUpdate(oldObj, newObj interface{}) {
 	}
 
 	if len(removedEndpoints) > 0 {
-		h.watcher.OnRemove(removedEndpoints)
+		for _, endpoint := range removedEndpoints {
+			if env, err := endpoint.Env(); err == nil {
+				if marshaled, err := json.Marshal(env); err == nil {
+					h.logger.Debug("endpoint removed (via update)", zap.String("env", string(marshaled)))
+				}
+			}
+		}
+		h.listener.OnRemove(removedEndpoints)
 	}
 
 	if len(updatedEndpoints) > 0 {
-		h.watcher.OnChange(updatedEndpoints)
+		for _, endpoint := range updatedEndpoints {
+			if env, err := endpoint.Env(); err == nil {
+				if marshaled, err := json.Marshal(env); err == nil {
+					h.logger.Debug("endpoint changed (via update)", zap.String("env", string(marshaled)))
+				}
+			}
+		}
+		h.listener.OnChange(updatedEndpoints)
 	}
 
 	if len(addedEndpoints) > 0 {
-		h.watcher.OnAdd(addedEndpoints)
+		for _, endpoint := range addedEndpoints {
+			if env, err := endpoint.Env(); err == nil {
+				if marshaled, err := json.Marshal(env); err == nil {
+					h.logger.Debug("endpoint added (via update)", zap.String("env", string(marshaled)))
+				}
+			}
+		}
+		h.listener.OnAdd(addedEndpoints)
 	}
 
 	// TODO: can changes be missed where a pod is deleted but we don't
@@ -176,19 +150,35 @@ func (h *handler) OnUpdate(oldObj, newObj interface{}) {
 	// they are all cleaned up.
 }
 
-// OnDelete is called in response to a pod being deleted.
-func (h *handler) OnDelete(obj interface{}) {
-	var pod *v1.Pod
-	switch o := obj.(type) {
+// OnDelete is called in response to a pod or node being deleted.
+func (h *handler) OnDelete(objectInterface interface{}) {
+	var endpoints []observer.Endpoint
+
+	switch object := objectInterface.(type) {
 	case *cache.DeletedFinalStateUnknown:
 		// Assuming we never saw the pod state where new endpoints would have been created
 		// to begin with it seems that we can't leak endpoints here.
-		pod = o.Obj.(*v1.Pod)
+		h.OnDelete(object.Obj)
+		return
 	case *v1.Pod:
-		pod = o
-	}
-	if pod == nil {
+		if object != nil {
+			endpoints = convertPodToEndpoints(h.idNamespace, object)
+		}
+	case *v1.Node:
+		if object != nil {
+			endpoints = append(endpoints, convertNodeToEndpoint(h.idNamespace, object))
+		}
+	default: // unsupported
 		return
 	}
-	h.watcher.OnRemove(h.convertPodToEndpoints(pod))
+	if len(endpoints) != 0 {
+		for _, endpoint := range endpoints {
+			if env, err := endpoint.Env(); err == nil {
+				if marshaled, err := json.Marshal(env); err == nil {
+					h.logger.Debug("endpoint deleted", zap.String("env", string(marshaled)))
+				}
+			}
+		}
+		h.listener.OnRemove(endpoints)
+	}
 }

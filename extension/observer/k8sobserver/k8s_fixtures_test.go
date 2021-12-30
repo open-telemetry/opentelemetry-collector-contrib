@@ -114,3 +114,53 @@ var podWithNamedPorts = func() *v1.Pod {
 func pointerBool(val bool) *bool {
 	return &val
 }
+
+// NewNode is a helper function for creating Nodes for testing.
+func NewNode(name, hostname string) *v1.Node {
+	return &v1.Node{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "namespace",
+			Name:      name,
+			UID:       "uid",
+			Labels: map[string]string{
+				"label-key": "label-value",
+			},
+			Annotations: map[string]string{
+				"annotation-key": "annotation-value",
+			},
+		},
+		Spec: v1.NodeSpec{
+			Taints: []v1.Taint{},
+		},
+		Status: v1.NodeStatus{
+			Phase: v1.NodeRunning,
+			Addresses: []v1.NodeAddress{
+				{Type: v1.NodeHostName, Address: hostname},
+				{Type: v1.NodeExternalDNS, Address: "externalDNS"},
+				{Type: v1.NodeExternalIP, Address: "externalIP"},
+				{Type: v1.NodeInternalDNS, Address: "internalDNS"},
+				{Type: v1.NodeInternalIP, Address: "internalIP"},
+			},
+			DaemonEndpoints: v1.NodeDaemonEndpoints{KubeletEndpoint: v1.DaemonEndpoint{Port: 1234}},
+			NodeInfo: v1.NodeSystemInfo{
+				Architecture:            "architecture",
+				BootID:                  "boot-id",
+				ContainerRuntimeVersion: "runtime-version",
+				KernelVersion:           "kernel-version",
+				KubeProxyVersion:        "kube-proxy-version",
+				KubeletVersion:          "kubelet-version",
+				MachineID:               "machine-id",
+				OperatingSystem:         "operating-system",
+				OSImage:                 "os-image",
+				SystemUUID:              "system-uuid",
+			},
+		},
+	}
+}
+
+var node1V1 = NewNode("node1", "localhost")
+var node1V2 = func() *v1.Node {
+	node := node1V1.DeepCopy()
+	node.Labels["node-version"] = "2"
+	return node
+}()

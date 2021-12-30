@@ -111,13 +111,13 @@ func (r *memcachedScraper) scrape(_ context.Context) (pdata.Metrics, error) {
 					r.addToIntMetric(commandCount, attributes, parsedV, now)
 				}
 			case "curr_items":
-				if parsedV, ok := r.parseFloat(k, v); ok {
-					r.addToDoubleMetric(currItems, attributes, parsedV, now)
+				if parsedV, ok := r.parseInt(k, v); ok {
+					r.addToIntMetric(currItems, attributes, parsedV, now)
 				}
 
 			case "threads":
-				if parsedV, ok := r.parseFloat(k, v); ok {
-					r.addToDoubleMetric(threads, attributes, parsedV, now)
+				if parsedV, ok := r.parseInt(k, v); ok {
+					r.addToIntMetric(threads, attributes, parsedV, now)
 				}
 
 			case "evictions":
