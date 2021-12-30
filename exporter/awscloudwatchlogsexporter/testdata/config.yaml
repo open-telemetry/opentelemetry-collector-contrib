@@ -1,5 +1,5 @@
 receivers:
-  nop: {}
+  nop: { }
 
 exporters:
   awscloudwatchlogs/e1-defaults:
@@ -16,7 +16,7 @@ exporters:
 service:
   pipelines:
     logs:
-      receivers: [nop]
+      receivers: [ nop ]
       exporters:
-      - awscloudwatchlogs/e1-defaults
-      - awscloudwatchlogs/e2-no-retries-short-queue
+        - awscloudwatchlogs/e1-defaults
+        - awscloudwatchlogs/e2-no-retries-short-queue

@@ -291,11 +291,8 @@ func (p *logPusher) pushLogEventBatch(req interface{}) error {
 
 	var tmpToken *string
 	var err error
-	p.logger.Info("PUTTING LOG EVENTS")
 
 	tmpToken, err = p.svcStructuredLog.PutLogEvents(putLogEventsInput, p.retryCnt)
-
-	p.logger.Info("tmp token is %v", zap.String("tmpToken", *tmpToken))
 
 	if err != nil {
 		return err

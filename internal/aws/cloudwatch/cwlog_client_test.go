@@ -435,7 +435,7 @@ func TestLogUnknownError(t *testing.T) {
 		otherField: "otherFieldValue",
 	}
 	actualLog := fmt.Sprintf("E! cloudwatchlogs: code: %s, message: %s, original error: %+v, %#v", err.Code(), err.Message(), err.OrigErr(), err)
-	expectedLog := "E! cloudwatchlogs: code: Code, message: Message, original error: OrigErr, &awsemfexporter.UnknownError{otherField:\"otherFieldValue\"}"
+	expectedLog := "E! cloudwatchlogs: code: Code, message: Message, original error: OrigErr, &cloudwatch.UnknownError{otherField:\"otherFieldValue\"}"
 	assert.Equal(t, expectedLog, actualLog)
 }
 

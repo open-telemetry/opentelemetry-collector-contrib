@@ -16,16 +16,18 @@ package cloudwatch
 
 import (
 	"fmt"
+	"regexp"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs/cloudwatchlogsiface"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cloudwatch/handler"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
-	"regexp"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cloudwatch/handler"
 )
 
 var collectorDistribution = "opentelemetry-collector-contrib"

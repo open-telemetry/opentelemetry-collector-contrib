@@ -9,6 +9,13 @@ require (
 )
 
 require (
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.41.0
+	github.com/rogpeppe/go-internal v1.8.0 // indirect
+	google.golang.org/grpc v1.43.0
+	skywalking.apache.org/repo/goapi v0.0.0-20210820070710-e10b78bbf481
+)
+
+require (
 	github.com/cenkalti/backoff/v4 v4.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-logr/logr v1.2.1 // indirect
@@ -40,13 +47,6 @@ require (
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
-)
-
-require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.41.0
-	github.com/rogpeppe/go-internal v1.8.0 // indirect
-	google.golang.org/grpc v1.43.0
-	skywalking.apache.org/repo/goapi v0.0.0-20210820070710-e10b78bbf481
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal

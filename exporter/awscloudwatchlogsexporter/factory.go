@@ -19,10 +19,12 @@ package awscloudwatchlogsexporter // import "github.com/open-telemetry/opentelem
 import (
 	"context"
 	"errors"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
 
 const typeStr = "awscloudwatchlogs"
@@ -36,11 +38,11 @@ func NewFactory() component.ExporterFactory {
 
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		RetrySettings:    exporterhelper.DefaultRetrySettings(),
+		ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
+		RetrySettings:      exporterhelper.DefaultRetrySettings(),
 		AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
-		LogGroupName:                    "",
-		LogStreamName:                   "",
+		LogGroupName:       "",
+		LogStreamName:      "",
 		QueueSettings: QueueSettings{
 			QueueSize: exporterhelper.DefaultQueueSettings().QueueSize,
 		},

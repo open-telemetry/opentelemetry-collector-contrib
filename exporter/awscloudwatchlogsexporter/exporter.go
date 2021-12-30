@@ -18,63 +18,64 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/google/uuid"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
-	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"sync"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cloudwatch"
+	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
-	"sync"
-	"time"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cloudwatch"
 )
 
 type exporter struct {
-	config config.Exporter
-	logger *zap.Logger
-	retryCnt      int
-	collectorID   string
-	startOnce sync.Once
-	client    *cloudwatchlogs.CloudWatchLogs // available after startOnce
-	svcStructuredLog       *cloudwatch.CloudWatchLogClient
-	seqTokenMu sync.Mutex
-	seqToken   string
+	config           config.Exporter
+	logger           *zap.Logger
+	retryCount       int
+	collectorID      string
+	svcStructuredLog *cloudwatch.CloudWatchLogClient
+	seqTokenMu       sync.Mutex
+	// Keep track of all pushers created
+	// For every log group exists multiple log streams, for every log stream exists a Pusher
 	groupStreamToPusherMap map[string]map[string]cloudwatch.Pusher
-
 }
 
-
-func newCwLogsExporter(config config.Exporter, params component.ExporterCreateSettings) (component.LogsExporter, error){
+func newCwLogsExporter(config config.Exporter, params component.ExporterCreateSettings) (component.LogsExporter, error) {
 	if config == nil {
 		return nil, errors.New("emf exporter config is nil")
 	}
 
-	logger := params.Logger
 	expConfig := config.(*Config)
-	expConfig.logger = logger
+	expConfig.logger = params.Logger
 
 	// create AWS session
-	awsConfig, session, err := awsutil.GetAWSConfigSession(logger, &awsutil.Conn{}, &expConfig.AWSSessionSettings)
+	awsConfig, session, err := awsutil.GetAWSConfigSession(params.Logger, &awsutil.Conn{}, &expConfig.AWSSessionSettings)
 	if err != nil {
 		return nil, err
 	}
 
 	// create CWLogs client with aws session config
-	svcStructuredLog := cloudwatch.NewCloudWatchLogsClient(logger, awsConfig, params.BuildInfo, expConfig.LogGroupName, session)
-	collectorIdentifier, _ := uuid.NewRandom()
+	svcStructuredLog := cloudwatch.NewCloudWatchLogsClient(params.Logger, awsConfig, params.BuildInfo, expConfig.LogGroupName, session)
+	collectorIdentifier, err := uuid.NewRandom()
+
+	if err != nil {
+		return nil, err
+	}
 
 	expConfig.Validate()
 
 	logsExporter := &exporter{
 		svcStructuredLog: svcStructuredLog,
 		config:           config,
-		logger:           logger,
-		retryCnt:         *awsConfig.MaxRetries,
+		logger:           params.Logger,
+		retryCount:       *awsConfig.MaxRetries,
 		collectorID:      collectorIdentifier.String(),
 	}
 	logsExporter.groupStreamToPusherMap = map[string]map[string]cloudwatch.Pusher{}
@@ -106,21 +107,19 @@ func (e *exporter) PushLogs(ctx context.Context, ld pdata.Logs) error {
 
 	for _, logEvent := range logEvents {
 		logEvent := &cloudwatch.LogEvent{
-			InputLogEvent: logEvent,
+			InputLogEvent:    logEvent,
 			LogGeneratedTime: time.Now(),
 		}
 		e.logger.Debug("Adding log event", zap.Any("event", logEvent))
-		 err := cwLogsPusher.AddLogEntry(logEvent)
-		if err != nil{
+		err := cwLogsPusher.AddLogEntry(logEvent)
+		if err != nil {
 			e.logger.Error("Failed ", zap.Int("num_of_events", len(logEvents)))
 		}
 	}
 	e.logger.Debug("Log events are successfully put")
 	flushErr := cwLogsPusher.ForceFlush()
 	if flushErr != nil {
-		if flushErr != nil {
-			e.logger.Error("Error force flushing logs. Skipping to next logPusher.", zap.Error(flushErr))
-		}
+		e.logger.Error("Error force flushing logs. Skipping to next logPusher.", zap.Error(flushErr))
 		return flushErr
 	}
 	return nil
@@ -155,13 +154,12 @@ func (e *exporter) getLogPusher(logGroup, logStream string) cloudwatch.Pusher {
 
 	var logPusher cloudwatch.Pusher
 	if logPusher, ok = streamToPusherMap[logStream]; !ok {
-		logPusher = cloudwatch.NewPusher(aws.String(logGroup), aws.String(logStream), e.retryCnt, *e.svcStructuredLog, e.logger)
+		logPusher = cloudwatch.NewPusher(aws.String(logGroup), aws.String(logStream), e.retryCount, *e.svcStructuredLog, e.logger)
 		streamToPusherMap[logStream] = logPusher
 	}
 	return logPusher
 
 }
-
 
 func logsToCWLogs(logger *zap.Logger, ld pdata.Logs) ([]*cloudwatchlogs.InputLogEvent, int) {
 	n := ld.ResourceLogs().Len()
