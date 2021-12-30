@@ -1,5 +1,5 @@
 receivers:
-  nop: { }
+  nop: {}
 
 exporters:
   awscloudwatchlogs:
@@ -11,5 +11,5 @@ exporters:
 service:
   pipelines:
     logs:
-      receivers: [ nop ]
-      exporters: [ awscloudwatchlogs ]
+      receivers: [nop]
+      exporters: [awscloudwatchlogs]
