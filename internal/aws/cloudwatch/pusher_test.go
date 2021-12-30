@@ -174,7 +174,7 @@ func TestLogEventBatch_sortLogEvents(t *testing.T) {
 //
 
 // Need to remove the tmp state folder after testing.
-func newMockPusher() (*logPusher, string) {
+func newMockPusher() (*LogPusher, string) {
 	logger := zap.NewNop()
 	tmpfolder, _ := ioutil.TempDir("", "")
 	svc := newAlwaysPassMockLogClient(func(args mock.Arguments) {})

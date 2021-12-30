@@ -40,7 +40,7 @@ type exporter struct {
 	logger           *zap.Logger
 	retryCount       int
 	collectorID      string
-	svcStructuredLog *cloudwatch.CloudWatchLogClient
+	svcStructuredLog *cloudwatch.CWLogClient
 	seqTokenMu       sync.Mutex
 	// Keep track of all pushers created
 	// For every log group exists multiple log streams, for every log stream exists a Pusher

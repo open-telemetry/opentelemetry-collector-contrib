@@ -40,20 +40,20 @@ const (
 
 // Possible exceptions are combination of common errors (https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/CommonErrors.html)
 // and API specific erros (e.g. https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html#API_PutLogEvents_Errors)
-type CloudWatchLogClient struct {
+type CWLogClient struct {
 	svc    cloudwatchlogsiface.CloudWatchLogsAPI
 	logger *zap.Logger
 }
 
 //Create a log client based on the actual cloudwatch logs client.
-func NewCloudWatchLogClient(svc cloudwatchlogsiface.CloudWatchLogsAPI, logger *zap.Logger) *CloudWatchLogClient {
-	logClient := &CloudWatchLogClient{svc: svc,
+func NewCloudWatchLogClient(svc cloudwatchlogsiface.CloudWatchLogsAPI, logger *zap.Logger) *CWLogClient {
+	logClient := &CWLogClient{svc: svc,
 		logger: logger}
 	return logClient
 }
 
 // newCloudWatchLogsClient create cloudWatchLogClient
-func NewCloudWatchLogsClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.BuildInfo, logGroupName string, sess *session.Session) *CloudWatchLogClient {
+func NewCloudWatchLogsClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.BuildInfo, logGroupName string, sess *session.Session) *CWLogClient {
 	client := cloudwatchlogs.New(sess, awsConfig)
 	client.Handlers.Build.PushBackNamed(handler.RequestStructuredLogHandler)
 	client.Handlers.Build.PushFrontNamed(newCollectorUserAgentHandler(buildInfo, logGroupName))
@@ -62,12 +62,12 @@ func NewCloudWatchLogsClient(logger *zap.Logger, awsConfig *aws.Config, buildInf
 
 //Put log events. The method mainly handles different possible error could be returned from server side, and retries them
 //if necessary.
-func (client *CloudWatchLogClient) PutLogEvents(input *cloudwatchlogs.PutLogEventsInput, retryCnt int) (*string, error) {
+func (client *CWLogClient) PutLogEvents(input *cloudwatchlogs.PutLogEventsInput, retryCount int) (*string, error) {
 	var response *cloudwatchlogs.PutLogEventsOutput
 	var err error
 	var token = input.SequenceToken
 
-	for i := 0; i <= retryCnt; i++ {
+	for i := 0; i <= retryCount; i++ {
 		input.SequenceToken = token
 		response, err = client.svc.PutLogEvents(input)
 		if err != nil {
@@ -143,7 +143,7 @@ func (client *CloudWatchLogClient) PutLogEvents(input *cloudwatchlogs.PutLogEven
 }
 
 //Prepare the readiness for the log group and log stream.
-func (client *CloudWatchLogClient) CreateStream(logGroup, streamName *string) (token string, e error) {
+func (client *CWLogClient) CreateStream(logGroup, streamName *string) (token string, e error) {
 	//CreateLogStream / CreateLogGroup
 	_, err := client.svc.CreateLogStream(&cloudwatchlogs.CreateLogStreamInput{
 		LogGroupName:  logGroup,

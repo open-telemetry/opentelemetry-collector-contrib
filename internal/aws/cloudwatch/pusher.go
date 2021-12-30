@@ -184,7 +184,7 @@ type Pusher interface {
 }
 
 // Struct of logPusher implemented pusher interface.
-type logPusher struct {
+type LogPusher struct {
 	logger *zap.Logger
 	// log group name of the current logPusher
 	logGroupName *string
@@ -196,13 +196,13 @@ type logPusher struct {
 
 	pushLock         sync.Mutex
 	streamToken      string // no init value
-	svcStructuredLog CloudWatchLogClient
+	svcStructuredLog CWLogClient
 	retryCnt         int
 }
 
 // NewPusher creates a logPusher instance
 func NewPusher(logGroupName, logStreamName *string, retryCnt int,
-	svcStructuredLog CloudWatchLogClient, logger *zap.Logger) Pusher {
+	svcStructuredLog CWLogClient, logger *zap.Logger) Pusher {
 
 	pusher := NewLogPusher(logGroupName, logStreamName, svcStructuredLog, logger)
 
@@ -216,8 +216,8 @@ func NewPusher(logGroupName, logStreamName *string, retryCnt int,
 
 // NewLogPusher only creates a logPusher, but not start the instance.
 func NewLogPusher(logGroupName, logStreamName *string,
-	svcStructuredLog CloudWatchLogClient, logger *zap.Logger) *logPusher {
-	pusher := &logPusher{
+	svcStructuredLog CWLogClient, logger *zap.Logger) *LogPusher {
+	pusher := &LogPusher{
 		logGroupName:     logGroupName,
 		logStreamName:    logStreamName,
 		svcStructuredLog: svcStructuredLog,
@@ -234,7 +234,7 @@ func NewLogPusher(logGroupName, logStreamName *string,
 // Need to pay attention to the below 2 limits:
 // Event size 256 KB (maximum). This limit cannot be changed.
 // Batch size 1 MB (maximum). This limit cannot be changed.
-func (p *logPusher) AddLogEntry(logEvent *LogEvent) error {
+func (p *LogPusher) AddLogEntry(logEvent *LogEvent) error {
 	var err error
 	if logEvent != nil {
 		err = logEvent.Validate(p.logger)
@@ -249,7 +249,7 @@ func (p *logPusher) AddLogEntry(logEvent *LogEvent) error {
 	return err
 }
 
-func (p *logPusher) ForceFlush() error {
+func (p *LogPusher) ForceFlush() error {
 	prevBatch := p.renewLogEventBatch()
 	if prevBatch != nil {
 		return p.pushLogEventBatch(prevBatch)
@@ -257,7 +257,7 @@ func (p *logPusher) ForceFlush() error {
 	return nil
 }
 
-func (p *logPusher) pushLogEventBatch(req interface{}) error {
+func (p *LogPusher) pushLogEventBatch(req interface{}) error {
 	p.pushLock.Lock()
 	defer p.pushLock.Unlock()
 
@@ -313,7 +313,7 @@ func (p *logPusher) pushLogEventBatch(req interface{}) error {
 	return nil
 }
 
-func (p *logPusher) addLogEvent(logEvent *LogEvent) *logEventBatch {
+func (p *LogPusher) addLogEvent(logEvent *LogEvent) *logEventBatch {
 	if logEvent == nil {
 		return nil
 	}
@@ -333,7 +333,7 @@ func (p *logPusher) addLogEvent(logEvent *LogEvent) *logEventBatch {
 	return prevBatch
 }
 
-func (p *logPusher) renewLogEventBatch() *logEventBatch {
+func (p *LogPusher) renewLogEventBatch() *logEventBatch {
 	p.batchUpdateLock.Lock()
 	defer p.batchUpdateLock.Unlock()
 

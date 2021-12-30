@@ -32,7 +32,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func newAlwaysPassMockLogClient(putLogEventsFunc func(args mock.Arguments)) *CloudWatchLogClient {
+func newAlwaysPassMockLogClient(putLogEventsFunc func(args mock.Arguments)) *CWLogClient {
 	logger := zap.NewNop()
 	svc := new(mockCloudWatchLogsClient)
 
