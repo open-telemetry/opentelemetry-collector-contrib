@@ -52,7 +52,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join(testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 	require.NoError(t, err)
 
 	params := componenttest.NewNopExporterCreateSettings()

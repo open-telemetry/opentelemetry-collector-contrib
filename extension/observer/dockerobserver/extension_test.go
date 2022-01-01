@@ -112,7 +112,7 @@ func TestCollectEndpointsAllConfigSettings(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Extensions[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join(testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
@@ -160,7 +160,7 @@ func TestCollectEndpointsUseHostnameIfPresent(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Extensions[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join(testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
@@ -208,7 +208,7 @@ func TestCollectEndpointsUseHostBindings(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Extensions[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join(testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
@@ -256,7 +256,7 @@ func TestCollectEndpointsIgnoreNonHostBindings(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Extensions[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join(testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
 	require.Nil(t, err)
 	require.NotNil(t, cfg)

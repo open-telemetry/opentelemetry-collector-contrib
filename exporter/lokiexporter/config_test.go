@@ -98,7 +98,7 @@ func TestJSONLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[config.Type(typeStr)] = factory
-	cfg, err := servicetest.LoadConfig(filepath.Join(testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfig(filepath.Join("testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
