@@ -74,8 +74,14 @@ func (dtrp *deltaToRateProcessor) processMetrics(_ context.Context, md pdata.Met
 					fromDataPoint.CopyTo(newDp)
 
 					durationNanos := time.Duration(fromDataPoint.Timestamp() - fromDataPoint.StartTimestamp())
-					rate := calculateRate(fromDataPoint.DoubleVal(), durationNanos)
-					newDp.SetDoubleVal(rate)
+					switch fromDataPoint.Type() {
+					case pdata.MetricValueTypeDouble:
+						rate := calculateRate(fromDataPoint.DoubleVal(), durationNanos)
+						newDp.SetDoubleVal(rate)
+					case pdata.MetricValueTypeInt:
+						rate := calculateRate(float64(fromDataPoint.IntVal()), durationNanos)
+						newDp.SetDoubleVal(rate)
+					}
 				}
 
 				metric.SetDataType(pdata.MetricDataTypeGauge)
