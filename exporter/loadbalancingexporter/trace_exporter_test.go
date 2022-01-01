@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net"
-	"path"
+	"path/filepath"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -229,7 +229,7 @@ func TestBuildExporterConfig(t *testing.T) {
 
 	factories.Exporters[typeStr] = NewFactory()
 
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "test-build-exporter-config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "test-build-exporter-config.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 

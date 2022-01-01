@@ -15,8 +15,7 @@
 package coralogixexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter"
 
 import (
-	"context"
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -34,7 +33,8 @@ func TestLoadConfig(t *testing.T) {
 	factories, _ := componenttest.NopFactories()
 	factory := NewFactory()
 	factories.Exporters[typestr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "example", "config.yaml"), factories)
+	// t.Log("new exporter " + typestr)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("example", "config.yaml"), factories)
 	require.NoError(t, err)
 	apiConfig := cfg.Exporters[config.NewComponentID(typestr)].(*Config)
 	err = apiConfig.Validate()

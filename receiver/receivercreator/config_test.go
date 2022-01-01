@@ -62,7 +62,7 @@ func exampleCreatorFactory(t *testing.T) (*mockHostFactories, *config.Config) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
