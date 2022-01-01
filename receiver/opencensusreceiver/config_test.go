@@ -15,7 +15,7 @@
 package opencensusreceiver
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 

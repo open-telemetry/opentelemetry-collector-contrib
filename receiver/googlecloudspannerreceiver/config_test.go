@@ -15,7 +15,7 @@
 package googlecloudspannerreceiver
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 

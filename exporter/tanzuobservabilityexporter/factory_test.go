@@ -16,7 +16,7 @@ package tanzuobservabilityexporter
 
 import (
 	"context"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 

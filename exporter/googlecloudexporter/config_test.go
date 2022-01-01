@@ -15,7 +15,7 @@
 package googlecloudexporter
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 

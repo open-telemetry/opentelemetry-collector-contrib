@@ -15,7 +15,7 @@
 package sapmexporter
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 

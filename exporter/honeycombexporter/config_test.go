@@ -15,7 +15,7 @@
 package honeycombexporter
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 

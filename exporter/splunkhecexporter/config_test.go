@@ -17,7 +17,7 @@ package splunkhecexporter
 import (
 	"context"
 	"net/url"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 

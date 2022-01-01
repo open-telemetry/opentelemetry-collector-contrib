@@ -15,7 +15,7 @@
 package dockerstatsreceiver
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 

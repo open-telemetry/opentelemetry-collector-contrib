@@ -15,7 +15,7 @@
 package collectdreceiver
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 

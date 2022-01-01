@@ -15,7 +15,7 @@
 package influxdbexporter
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 

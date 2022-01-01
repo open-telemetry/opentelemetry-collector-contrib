@@ -15,7 +15,7 @@
 package googlecloudpubsubexporter
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 

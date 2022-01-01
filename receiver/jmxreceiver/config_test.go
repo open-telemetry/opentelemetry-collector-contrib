@@ -15,8 +15,7 @@
 package jmxreceiver
 
 import (
-	"os"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 

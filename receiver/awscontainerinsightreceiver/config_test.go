@@ -15,7 +15,7 @@
 package awscontainerinsightreceiver
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 

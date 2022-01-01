@@ -16,7 +16,7 @@ package statsdreceiver
 
 import (
 	"fmt"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 

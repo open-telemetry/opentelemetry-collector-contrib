@@ -15,7 +15,7 @@
 package wavefrontreceiver
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 

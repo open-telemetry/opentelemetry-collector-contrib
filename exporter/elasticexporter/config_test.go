@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"

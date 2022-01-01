@@ -15,7 +15,7 @@
 package newrelicexporter
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 

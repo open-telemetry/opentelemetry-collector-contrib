@@ -15,7 +15,7 @@
 package opencensusexporter
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 

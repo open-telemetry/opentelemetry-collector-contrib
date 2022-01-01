@@ -15,7 +15,7 @@
 package dockerobserver
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 

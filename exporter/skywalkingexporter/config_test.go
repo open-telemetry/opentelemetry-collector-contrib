@@ -15,7 +15,7 @@
 package skywalkingexporter
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 

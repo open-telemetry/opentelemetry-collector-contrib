@@ -15,7 +15,7 @@
 package k8sclusterreceiver
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 

@@ -15,7 +15,7 @@
 package prometheusexporter
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 

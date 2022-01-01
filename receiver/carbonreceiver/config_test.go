@@ -15,7 +15,7 @@
 package carbonreceiver
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 

@@ -15,7 +15,7 @@
 package fileexporter
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"

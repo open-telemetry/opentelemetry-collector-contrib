@@ -15,7 +15,7 @@
 package kubeletstatsreceiver
 
 import (
-	"path"
+	"path/filepath"
 	"reflect"
 	"testing"
 	"time"

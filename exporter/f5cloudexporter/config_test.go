@@ -15,7 +15,7 @@
 package f5cloudexporter
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 

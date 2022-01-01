@@ -16,7 +16,7 @@ package simpleprometheusreceiver
 
 import (
 	"net/url"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 

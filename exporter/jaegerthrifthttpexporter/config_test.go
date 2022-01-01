@@ -16,7 +16,7 @@ package jaegerthrifthttpexporter
 
 import (
 	"context"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 

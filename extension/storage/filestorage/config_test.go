@@ -16,7 +16,7 @@ package filestorage
 
 import (
 	"os"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 

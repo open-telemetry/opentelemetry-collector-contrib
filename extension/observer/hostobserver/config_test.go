@@ -15,7 +15,7 @@
 package hostobserver
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 

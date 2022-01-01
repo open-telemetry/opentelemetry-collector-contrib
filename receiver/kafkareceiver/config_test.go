@@ -15,7 +15,7 @@
 package kafkareceiver
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 

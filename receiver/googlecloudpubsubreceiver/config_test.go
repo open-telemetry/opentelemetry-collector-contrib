@@ -15,7 +15,7 @@
 package googlecloudpubsubreceiver
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 

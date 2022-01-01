@@ -16,7 +16,7 @@ package jaegerexporter
 
 import (
 	"context"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 

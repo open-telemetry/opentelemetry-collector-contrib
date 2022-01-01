@@ -15,7 +15,7 @@
 package awsecscontainermetricsreceiver
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 

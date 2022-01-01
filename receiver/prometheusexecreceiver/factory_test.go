@@ -16,7 +16,7 @@ package prometheusexecreceiver
 
 import (
 	"context"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 

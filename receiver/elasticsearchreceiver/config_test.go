@@ -15,7 +15,7 @@
 package elasticsearchreceiver
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 

@@ -15,7 +15,7 @@
 package podmanreceiver
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 

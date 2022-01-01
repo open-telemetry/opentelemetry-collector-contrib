@@ -15,7 +15,7 @@
 package kafkaexporter
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 

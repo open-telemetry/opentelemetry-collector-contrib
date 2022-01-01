@@ -15,7 +15,7 @@
 package observiqexporter
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 

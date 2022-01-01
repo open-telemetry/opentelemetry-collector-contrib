@@ -17,7 +17,7 @@ package jaegerreceiver
 import (
 	"context"
 	"fmt"
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
