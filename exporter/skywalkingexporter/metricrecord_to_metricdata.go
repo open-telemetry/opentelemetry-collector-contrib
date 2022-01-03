@@ -160,7 +160,7 @@ func doubleSummaryMetricsToData(name string, data pdata.SummaryDataPointSlice, d
 			value := values.At(i)
 			meterData := &metricpb.MeterData{}
 			sv := &metricpb.MeterData_SingleValue{SingleValue: &metricpb.MeterSingleValue{}}
-			svLabels := make([]*metricpb.Label, 0, len(labels))
+			svLabels := make([]*metricpb.Label, 0, len(labels)+1)
 			svLabels = append(svLabels, labels...)
 			svLabels = append(svLabels, &metricpb.Label{Name: "quantile", Value: strconv.FormatFloat(value.Quantile(), 'g', -1, 64)})
 			sv.SingleValue.Labels = svLabels
