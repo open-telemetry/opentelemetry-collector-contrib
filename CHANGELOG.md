@@ -17,6 +17,8 @@
 - `memcachedreceiver`: Fix some metric units and value types (#6895)
 - `sapm` receiver: Use Jaeger status values instead of OpenCensus (#6682)
 - `jaeger` receiver/exporter: Parse/set Jaeger status with OTel spec values (#6682)
+- `awsecscontainermetricsreceiver`: remove tag from `container.image.name` (#6436)
+- `k8sclusterreceiver`: remove tag from `container.image.name` (#6436)
 
 ## 🚀 New components 🚀
 
@@ -30,7 +32,7 @@
 ## 💡 Enhancements 💡
 
 - `lokiexporter`: add complete log record to body (#6619)
-
+- `k8sclusterreceiver` add `container.image.tag` attribute (#6436)
 - `spanmetricproccessor`: use an LRU cache for the cached Dimensions key-value pairs (#2179)
 
 ## v0.41.0
