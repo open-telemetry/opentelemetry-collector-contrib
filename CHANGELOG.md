@@ -35,6 +35,8 @@
 - `k8sclusterreceiver` add `container.image.tag` attribute (#6436)
 - `spanmetricproccessor`: use an LRU cache for the cached Dimensions key-value pairs (#2179)
 
+- `skywalkingexporter`: add skywalking metrics exporter (#6528)
+
 ## v0.41.0
 
 ## 🛑 Breaking changes 🛑
