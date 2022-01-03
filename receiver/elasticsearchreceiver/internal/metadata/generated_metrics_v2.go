@@ -34,17 +34,19 @@ type MetricsSettings struct {
 	ElasticsearchClusterShards               MetricSettings `mapstructure:"elasticsearch.cluster.shards"`
 	ElasticsearchNodeCacheEvictions          MetricSettings `mapstructure:"elasticsearch.node.cache.evictions"`
 	ElasticsearchNodeCacheMemoryUsage        MetricSettings `mapstructure:"elasticsearch.node.cache.memory.usage"`
+	ElasticsearchNodeClusterConnections      MetricSettings `mapstructure:"elasticsearch.node.cluster.connections"`
+	ElasticsearchNodeClusterIo               MetricSettings `mapstructure:"elasticsearch.node.cluster.io"`
 	ElasticsearchNodeDocuments               MetricSettings `mapstructure:"elasticsearch.node.documents"`
-	ElasticsearchNodeFsDiskUsage             MetricSettings `mapstructure:"elasticsearch.node.fs.disk.usage"`
+	ElasticsearchNodeFsDiskAvailable         MetricSettings `mapstructure:"elasticsearch.node.fs.disk.available"`
 	ElasticsearchNodeFsIoOperations          MetricSettings `mapstructure:"elasticsearch.node.fs.io.operations"`
 	ElasticsearchNodeHTTPConnections         MetricSettings `mapstructure:"elasticsearch.node.http.connections"`
 	ElasticsearchNodeJvmGcCollectionsCount   MetricSettings `mapstructure:"elasticsearch.node.jvm.gc.collections.count"`
-	ElasticsearchNodeJvmGcCollectionsTime    MetricSettings `mapstructure:"elasticsearch.node.jvm.gc.collections.time"`
-	ElasticsearchNodeJvmMemoryUsage          MetricSettings `mapstructure:"elasticsearch.node.jvm.memory.usage"`
+	ElasticsearchNodeJvmGcCollectionsElapsed MetricSettings `mapstructure:"elasticsearch.node.jvm.gc.collections.elapsed"`
+	ElasticsearchNodeJvmMemoryHeapMax        MetricSettings `mapstructure:"elasticsearch.node.jvm.memory.heap.max"`
+	ElasticsearchNodeJvmMemoryHeapUsed       MetricSettings `mapstructure:"elasticsearch.node.jvm.memory.heap.used"`
+	ElasticsearchNodeJvmMemoryNonheapUsed    MetricSettings `mapstructure:"elasticsearch.node.jvm.memory.nonheap.used"`
 	ElasticsearchNodeJvmThreadsCount         MetricSettings `mapstructure:"elasticsearch.node.jvm.threads.count"`
 	ElasticsearchNodeJvmThreadsPeak          MetricSettings `mapstructure:"elasticsearch.node.jvm.threads.peak"`
-	ElasticsearchNodeNetworkConnections      MetricSettings `mapstructure:"elasticsearch.node.network.connections"`
-	ElasticsearchNodeNetworkIo               MetricSettings `mapstructure:"elasticsearch.node.network.io"`
 	ElasticsearchNodeOpenFiles               MetricSettings `mapstructure:"elasticsearch.node.open_files"`
 	ElasticsearchNodeOperationsCompleted     MetricSettings `mapstructure:"elasticsearch.node.operations.completed"`
 	ElasticsearchNodeOperationsTime          MetricSettings `mapstructure:"elasticsearch.node.operations.time"`
@@ -71,10 +73,16 @@ func DefaultMetricsSettings() MetricsSettings {
 		ElasticsearchNodeCacheMemoryUsage: MetricSettings{
 			Enabled: false,
 		},
+		ElasticsearchNodeClusterConnections: MetricSettings{
+			Enabled: false,
+		},
+		ElasticsearchNodeClusterIo: MetricSettings{
+			Enabled: false,
+		},
 		ElasticsearchNodeDocuments: MetricSettings{
 			Enabled: false,
 		},
-		ElasticsearchNodeFsDiskUsage: MetricSettings{
+		ElasticsearchNodeFsDiskAvailable: MetricSettings{
 			Enabled: false,
 		},
 		ElasticsearchNodeFsIoOperations: MetricSettings{
@@ -86,22 +94,22 @@ func DefaultMetricsSettings() MetricsSettings {
 		ElasticsearchNodeJvmGcCollectionsCount: MetricSettings{
 			Enabled: false,
 		},
-		ElasticsearchNodeJvmGcCollectionsTime: MetricSettings{
+		ElasticsearchNodeJvmGcCollectionsElapsed: MetricSettings{
 			Enabled: false,
 		},
-		ElasticsearchNodeJvmMemoryUsage: MetricSettings{
+		ElasticsearchNodeJvmMemoryHeapMax: MetricSettings{
+			Enabled: false,
+		},
+		ElasticsearchNodeJvmMemoryHeapUsed: MetricSettings{
+			Enabled: false,
+		},
+		ElasticsearchNodeJvmMemoryNonheapUsed: MetricSettings{
 			Enabled: false,
 		},
 		ElasticsearchNodeJvmThreadsCount: MetricSettings{
 			Enabled: false,
 		},
 		ElasticsearchNodeJvmThreadsPeak: MetricSettings{
-			Enabled: false,
-		},
-		ElasticsearchNodeNetworkConnections: MetricSettings{
-			Enabled: false,
-		},
-		ElasticsearchNodeNetworkIo: MetricSettings{
 			Enabled: false,
 		},
 		ElasticsearchNodeOpenFiles: MetricSettings{
@@ -150,17 +158,19 @@ type metrics struct {
 	elasticsearchClusterShards               metric
 	elasticsearchNodeCacheEvictions          metric
 	elasticsearchNodeCacheMemoryUsage        metric
+	elasticsearchNodeClusterConnections      metric
+	elasticsearchNodeClusterIo               metric
 	elasticsearchNodeDocuments               metric
-	elasticsearchNodeFsDiskUsage             metric
+	elasticsearchNodeFsDiskAvailable         metric
 	elasticsearchNodeFsIoOperations          metric
 	elasticsearchNodeHTTPConnections         metric
 	elasticsearchNodeJvmGcCollectionsCount   metric
-	elasticsearchNodeJvmGcCollectionsTime    metric
-	elasticsearchNodeJvmMemoryUsage          metric
+	elasticsearchNodeJvmGcCollectionsElapsed metric
+	elasticsearchNodeJvmMemoryHeapMax        metric
+	elasticsearchNodeJvmMemoryHeapUsed       metric
+	elasticsearchNodeJvmMemoryNonheapUsed    metric
 	elasticsearchNodeJvmThreadsCount         metric
 	elasticsearchNodeJvmThreadsPeak          metric
-	elasticsearchNodeNetworkConnections      metric
-	elasticsearchNodeNetworkIo               metric
 	elasticsearchNodeOpenFiles               metric
 	elasticsearchNodeOperationsCompleted     metric
 	elasticsearchNodeOperationsTime          metric
@@ -187,11 +197,17 @@ func newMetrics(config MetricsSettings) metrics {
 	if config.ElasticsearchNodeCacheMemoryUsage.Enabled {
 		ms.elasticsearchNodeCacheMemoryUsage = newMetric()
 	}
+	if config.ElasticsearchNodeClusterConnections.Enabled {
+		ms.elasticsearchNodeClusterConnections = newMetric()
+	}
+	if config.ElasticsearchNodeClusterIo.Enabled {
+		ms.elasticsearchNodeClusterIo = newMetric()
+	}
 	if config.ElasticsearchNodeDocuments.Enabled {
 		ms.elasticsearchNodeDocuments = newMetric()
 	}
-	if config.ElasticsearchNodeFsDiskUsage.Enabled {
-		ms.elasticsearchNodeFsDiskUsage = newMetric()
+	if config.ElasticsearchNodeFsDiskAvailable.Enabled {
+		ms.elasticsearchNodeFsDiskAvailable = newMetric()
 	}
 	if config.ElasticsearchNodeFsIoOperations.Enabled {
 		ms.elasticsearchNodeFsIoOperations = newMetric()
@@ -202,23 +218,23 @@ func newMetrics(config MetricsSettings) metrics {
 	if config.ElasticsearchNodeJvmGcCollectionsCount.Enabled {
 		ms.elasticsearchNodeJvmGcCollectionsCount = newMetric()
 	}
-	if config.ElasticsearchNodeJvmGcCollectionsTime.Enabled {
-		ms.elasticsearchNodeJvmGcCollectionsTime = newMetric()
+	if config.ElasticsearchNodeJvmGcCollectionsElapsed.Enabled {
+		ms.elasticsearchNodeJvmGcCollectionsElapsed = newMetric()
 	}
-	if config.ElasticsearchNodeJvmMemoryUsage.Enabled {
-		ms.elasticsearchNodeJvmMemoryUsage = newMetric()
+	if config.ElasticsearchNodeJvmMemoryHeapMax.Enabled {
+		ms.elasticsearchNodeJvmMemoryHeapMax = newMetric()
+	}
+	if config.ElasticsearchNodeJvmMemoryHeapUsed.Enabled {
+		ms.elasticsearchNodeJvmMemoryHeapUsed = newMetric()
+	}
+	if config.ElasticsearchNodeJvmMemoryNonheapUsed.Enabled {
+		ms.elasticsearchNodeJvmMemoryNonheapUsed = newMetric()
 	}
 	if config.ElasticsearchNodeJvmThreadsCount.Enabled {
 		ms.elasticsearchNodeJvmThreadsCount = newMetric()
 	}
 	if config.ElasticsearchNodeJvmThreadsPeak.Enabled {
 		ms.elasticsearchNodeJvmThreadsPeak = newMetric()
-	}
-	if config.ElasticsearchNodeNetworkConnections.Enabled {
-		ms.elasticsearchNodeNetworkConnections = newMetric()
-	}
-	if config.ElasticsearchNodeNetworkIo.Enabled {
-		ms.elasticsearchNodeNetworkIo = newMetric()
 	}
 	if config.ElasticsearchNodeOpenFiles.Enabled {
 		ms.elasticsearchNodeOpenFiles = newMetric()
@@ -301,13 +317,21 @@ func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
 		mb.metrics.elasticsearchNodeCacheMemoryUsage.updateCapacity(mb.metrics.elasticsearchNodeCacheMemoryUsage.data.Sum().DataPoints().Len())
 		mb.metrics.elasticsearchNodeCacheMemoryUsage.data.MoveTo(metrics.AppendEmpty())
 	}
+	if mb.config.ElasticsearchNodeClusterConnections.Enabled && mb.metrics.elasticsearchNodeClusterConnections.data.Sum().DataPoints().Len() > 0 {
+		mb.metrics.elasticsearchNodeClusterConnections.updateCapacity(mb.metrics.elasticsearchNodeClusterConnections.data.Sum().DataPoints().Len())
+		mb.metrics.elasticsearchNodeClusterConnections.data.MoveTo(metrics.AppendEmpty())
+	}
+	if mb.config.ElasticsearchNodeClusterIo.Enabled && mb.metrics.elasticsearchNodeClusterIo.data.Sum().DataPoints().Len() > 0 {
+		mb.metrics.elasticsearchNodeClusterIo.updateCapacity(mb.metrics.elasticsearchNodeClusterIo.data.Sum().DataPoints().Len())
+		mb.metrics.elasticsearchNodeClusterIo.data.MoveTo(metrics.AppendEmpty())
+	}
 	if mb.config.ElasticsearchNodeDocuments.Enabled && mb.metrics.elasticsearchNodeDocuments.data.Sum().DataPoints().Len() > 0 {
 		mb.metrics.elasticsearchNodeDocuments.updateCapacity(mb.metrics.elasticsearchNodeDocuments.data.Sum().DataPoints().Len())
 		mb.metrics.elasticsearchNodeDocuments.data.MoveTo(metrics.AppendEmpty())
 	}
-	if mb.config.ElasticsearchNodeFsDiskUsage.Enabled && mb.metrics.elasticsearchNodeFsDiskUsage.data.Sum().DataPoints().Len() > 0 {
-		mb.metrics.elasticsearchNodeFsDiskUsage.updateCapacity(mb.metrics.elasticsearchNodeFsDiskUsage.data.Sum().DataPoints().Len())
-		mb.metrics.elasticsearchNodeFsDiskUsage.data.MoveTo(metrics.AppendEmpty())
+	if mb.config.ElasticsearchNodeFsDiskAvailable.Enabled && mb.metrics.elasticsearchNodeFsDiskAvailable.data.Sum().DataPoints().Len() > 0 {
+		mb.metrics.elasticsearchNodeFsDiskAvailable.updateCapacity(mb.metrics.elasticsearchNodeFsDiskAvailable.data.Sum().DataPoints().Len())
+		mb.metrics.elasticsearchNodeFsDiskAvailable.data.MoveTo(metrics.AppendEmpty())
 	}
 	if mb.config.ElasticsearchNodeFsIoOperations.Enabled && mb.metrics.elasticsearchNodeFsIoOperations.data.Sum().DataPoints().Len() > 0 {
 		mb.metrics.elasticsearchNodeFsIoOperations.updateCapacity(mb.metrics.elasticsearchNodeFsIoOperations.data.Sum().DataPoints().Len())
@@ -321,13 +345,21 @@ func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
 		mb.metrics.elasticsearchNodeJvmGcCollectionsCount.updateCapacity(mb.metrics.elasticsearchNodeJvmGcCollectionsCount.data.Sum().DataPoints().Len())
 		mb.metrics.elasticsearchNodeJvmGcCollectionsCount.data.MoveTo(metrics.AppendEmpty())
 	}
-	if mb.config.ElasticsearchNodeJvmGcCollectionsTime.Enabled && mb.metrics.elasticsearchNodeJvmGcCollectionsTime.data.Sum().DataPoints().Len() > 0 {
-		mb.metrics.elasticsearchNodeJvmGcCollectionsTime.updateCapacity(mb.metrics.elasticsearchNodeJvmGcCollectionsTime.data.Sum().DataPoints().Len())
-		mb.metrics.elasticsearchNodeJvmGcCollectionsTime.data.MoveTo(metrics.AppendEmpty())
+	if mb.config.ElasticsearchNodeJvmGcCollectionsElapsed.Enabled && mb.metrics.elasticsearchNodeJvmGcCollectionsElapsed.data.Sum().DataPoints().Len() > 0 {
+		mb.metrics.elasticsearchNodeJvmGcCollectionsElapsed.updateCapacity(mb.metrics.elasticsearchNodeJvmGcCollectionsElapsed.data.Sum().DataPoints().Len())
+		mb.metrics.elasticsearchNodeJvmGcCollectionsElapsed.data.MoveTo(metrics.AppendEmpty())
 	}
-	if mb.config.ElasticsearchNodeJvmMemoryUsage.Enabled && mb.metrics.elasticsearchNodeJvmMemoryUsage.data.Sum().DataPoints().Len() > 0 {
-		mb.metrics.elasticsearchNodeJvmMemoryUsage.updateCapacity(mb.metrics.elasticsearchNodeJvmMemoryUsage.data.Sum().DataPoints().Len())
-		mb.metrics.elasticsearchNodeJvmMemoryUsage.data.MoveTo(metrics.AppendEmpty())
+	if mb.config.ElasticsearchNodeJvmMemoryHeapMax.Enabled && mb.metrics.elasticsearchNodeJvmMemoryHeapMax.data.Sum().DataPoints().Len() > 0 {
+		mb.metrics.elasticsearchNodeJvmMemoryHeapMax.updateCapacity(mb.metrics.elasticsearchNodeJvmMemoryHeapMax.data.Sum().DataPoints().Len())
+		mb.metrics.elasticsearchNodeJvmMemoryHeapMax.data.MoveTo(metrics.AppendEmpty())
+	}
+	if mb.config.ElasticsearchNodeJvmMemoryHeapUsed.Enabled && mb.metrics.elasticsearchNodeJvmMemoryHeapUsed.data.Sum().DataPoints().Len() > 0 {
+		mb.metrics.elasticsearchNodeJvmMemoryHeapUsed.updateCapacity(mb.metrics.elasticsearchNodeJvmMemoryHeapUsed.data.Sum().DataPoints().Len())
+		mb.metrics.elasticsearchNodeJvmMemoryHeapUsed.data.MoveTo(metrics.AppendEmpty())
+	}
+	if mb.config.ElasticsearchNodeJvmMemoryNonheapUsed.Enabled && mb.metrics.elasticsearchNodeJvmMemoryNonheapUsed.data.Gauge().DataPoints().Len() > 0 {
+		mb.metrics.elasticsearchNodeJvmMemoryNonheapUsed.updateCapacity(mb.metrics.elasticsearchNodeJvmMemoryNonheapUsed.data.Gauge().DataPoints().Len())
+		mb.metrics.elasticsearchNodeJvmMemoryNonheapUsed.data.MoveTo(metrics.AppendEmpty())
 	}
 	if mb.config.ElasticsearchNodeJvmThreadsCount.Enabled && mb.metrics.elasticsearchNodeJvmThreadsCount.data.Sum().DataPoints().Len() > 0 {
 		mb.metrics.elasticsearchNodeJvmThreadsCount.updateCapacity(mb.metrics.elasticsearchNodeJvmThreadsCount.data.Sum().DataPoints().Len())
@@ -336,14 +368,6 @@ func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
 	if mb.config.ElasticsearchNodeJvmThreadsPeak.Enabled && mb.metrics.elasticsearchNodeJvmThreadsPeak.data.Gauge().DataPoints().Len() > 0 {
 		mb.metrics.elasticsearchNodeJvmThreadsPeak.updateCapacity(mb.metrics.elasticsearchNodeJvmThreadsPeak.data.Gauge().DataPoints().Len())
 		mb.metrics.elasticsearchNodeJvmThreadsPeak.data.MoveTo(metrics.AppendEmpty())
-	}
-	if mb.config.ElasticsearchNodeNetworkConnections.Enabled && mb.metrics.elasticsearchNodeNetworkConnections.data.Sum().DataPoints().Len() > 0 {
-		mb.metrics.elasticsearchNodeNetworkConnections.updateCapacity(mb.metrics.elasticsearchNodeNetworkConnections.data.Sum().DataPoints().Len())
-		mb.metrics.elasticsearchNodeNetworkConnections.data.MoveTo(metrics.AppendEmpty())
-	}
-	if mb.config.ElasticsearchNodeNetworkIo.Enabled && mb.metrics.elasticsearchNodeNetworkIo.data.Sum().DataPoints().Len() > 0 {
-		mb.metrics.elasticsearchNodeNetworkIo.updateCapacity(mb.metrics.elasticsearchNodeNetworkIo.data.Sum().DataPoints().Len())
-		mb.metrics.elasticsearchNodeNetworkIo.data.MoveTo(metrics.AppendEmpty())
 	}
 	if mb.config.ElasticsearchNodeOpenFiles.Enabled && mb.metrics.elasticsearchNodeOpenFiles.data.Sum().DataPoints().Len() > 0 {
 		mb.metrics.elasticsearchNodeOpenFiles.updateCapacity(mb.metrics.elasticsearchNodeOpenFiles.data.Sum().DataPoints().Len())
@@ -436,6 +460,29 @@ func (mb *MetricsBuilder) initElasticsearchNodeCacheMemoryUsageMetric() {
 	metric.data.Sum().DataPoints().EnsureCapacity(metric.capacity)
 }
 
+// initElasticsearchNodeClusterConnectionsMetric builds new elasticsearch.node.cluster.connections metric.
+func (mb *MetricsBuilder) initElasticsearchNodeClusterConnectionsMetric() {
+	metric := mb.metrics.elasticsearchNodeClusterConnections
+	metric.data.SetName("elasticsearch.node.cluster.connections")
+	metric.data.SetDescription("Number of open tcp connections for internal cluster communication.")
+	metric.data.SetUnit("{connections}")
+	metric.data.SetDataType(pdata.MetricDataTypeSum)
+	metric.data.Sum().SetIsMonotonic(false)
+	metric.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+}
+
+// initElasticsearchNodeClusterIoMetric builds new elasticsearch.node.cluster.io metric.
+func (mb *MetricsBuilder) initElasticsearchNodeClusterIoMetric() {
+	metric := mb.metrics.elasticsearchNodeClusterIo
+	metric.data.SetName("elasticsearch.node.cluster.io")
+	metric.data.SetDescription("Number of bytes sent and received on the network for internal cluster communication.")
+	metric.data.SetUnit("By")
+	metric.data.SetDataType(pdata.MetricDataTypeSum)
+	metric.data.Sum().SetIsMonotonic(true)
+	metric.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	metric.data.Sum().DataPoints().EnsureCapacity(metric.capacity)
+}
+
 // initElasticsearchNodeDocumentsMetric builds new elasticsearch.node.documents metric.
 func (mb *MetricsBuilder) initElasticsearchNodeDocumentsMetric() {
 	metric := mb.metrics.elasticsearchNodeDocuments
@@ -448,23 +495,22 @@ func (mb *MetricsBuilder) initElasticsearchNodeDocumentsMetric() {
 	metric.data.Sum().DataPoints().EnsureCapacity(metric.capacity)
 }
 
-// initElasticsearchNodeFsDiskUsageMetric builds new elasticsearch.node.fs.disk.usage metric.
-func (mb *MetricsBuilder) initElasticsearchNodeFsDiskUsageMetric() {
-	metric := mb.metrics.elasticsearchNodeFsDiskUsage
-	metric.data.SetName("elasticsearch.node.fs.disk.usage")
-	metric.data.SetDescription("The amount of disk space across all file stores for this node.")
+// initElasticsearchNodeFsDiskAvailableMetric builds new elasticsearch.node.fs.disk.available metric.
+func (mb *MetricsBuilder) initElasticsearchNodeFsDiskAvailableMetric() {
+	metric := mb.metrics.elasticsearchNodeFsDiskAvailable
+	metric.data.SetName("elasticsearch.node.fs.disk.available")
+	metric.data.SetDescription("The amount of disk space available across all file stores for this node.")
 	metric.data.SetUnit("By")
 	metric.data.SetDataType(pdata.MetricDataTypeSum)
 	metric.data.Sum().SetIsMonotonic(false)
 	metric.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
-	metric.data.Sum().DataPoints().EnsureCapacity(metric.capacity)
 }
 
 // initElasticsearchNodeFsIoOperationsMetric builds new elasticsearch.node.fs.io.operations metric.
 func (mb *MetricsBuilder) initElasticsearchNodeFsIoOperationsMetric() {
 	metric := mb.metrics.elasticsearchNodeFsIoOperations
 	metric.data.SetName("elasticsearch.node.fs.io.operations")
-	metric.data.SetDescription("The number of io operations completed by elasticsearch across all file stores. Only available on Linux nodes.")
+	metric.data.SetDescription("The number of io operations completed across all file stores since starting Elasticsearch. Only available on Linux nodes.")
 	metric.data.SetUnit("{operations}")
 	metric.data.SetDataType(pdata.MetricDataTypeSum)
 	metric.data.Sum().SetIsMonotonic(true)
@@ -495,10 +541,10 @@ func (mb *MetricsBuilder) initElasticsearchNodeJvmGcCollectionsCountMetric() {
 	metric.data.Sum().DataPoints().EnsureCapacity(metric.capacity)
 }
 
-// initElasticsearchNodeJvmGcCollectionsTimeMetric builds new elasticsearch.node.jvm.gc.collections.time metric.
-func (mb *MetricsBuilder) initElasticsearchNodeJvmGcCollectionsTimeMetric() {
-	metric := mb.metrics.elasticsearchNodeJvmGcCollectionsTime
-	metric.data.SetName("elasticsearch.node.jvm.gc.collections.time")
+// initElasticsearchNodeJvmGcCollectionsElapsedMetric builds new elasticsearch.node.jvm.gc.collections.elapsed metric.
+func (mb *MetricsBuilder) initElasticsearchNodeJvmGcCollectionsElapsedMetric() {
+	metric := mb.metrics.elasticsearchNodeJvmGcCollectionsElapsed
+	metric.data.SetName("elasticsearch.node.jvm.gc.collections.elapsed")
 	metric.data.SetDescription("The total time spent by the JVM running the GC.")
 	metric.data.SetUnit("ms")
 	metric.data.SetDataType(pdata.MetricDataTypeSum)
@@ -507,16 +553,35 @@ func (mb *MetricsBuilder) initElasticsearchNodeJvmGcCollectionsTimeMetric() {
 	metric.data.Sum().DataPoints().EnsureCapacity(metric.capacity)
 }
 
-// initElasticsearchNodeJvmMemoryUsageMetric builds new elasticsearch.node.jvm.memory.usage metric.
-func (mb *MetricsBuilder) initElasticsearchNodeJvmMemoryUsageMetric() {
-	metric := mb.metrics.elasticsearchNodeJvmMemoryUsage
-	metric.data.SetName("elasticsearch.node.jvm.memory.usage")
-	metric.data.SetDescription("The memory used by the JVM.")
+// initElasticsearchNodeJvmMemoryHeapMaxMetric builds new elasticsearch.node.jvm.memory.heap.max metric.
+func (mb *MetricsBuilder) initElasticsearchNodeJvmMemoryHeapMaxMetric() {
+	metric := mb.metrics.elasticsearchNodeJvmMemoryHeapMax
+	metric.data.SetName("elasticsearch.node.jvm.memory.heap.max")
+	metric.data.SetDescription("The max memory used by the JVM.")
 	metric.data.SetUnit("By")
 	metric.data.SetDataType(pdata.MetricDataTypeSum)
 	metric.data.Sum().SetIsMonotonic(false)
 	metric.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
-	metric.data.Sum().DataPoints().EnsureCapacity(metric.capacity)
+}
+
+// initElasticsearchNodeJvmMemoryHeapUsedMetric builds new elasticsearch.node.jvm.memory.heap.used metric.
+func (mb *MetricsBuilder) initElasticsearchNodeJvmMemoryHeapUsedMetric() {
+	metric := mb.metrics.elasticsearchNodeJvmMemoryHeapUsed
+	metric.data.SetName("elasticsearch.node.jvm.memory.heap.used")
+	metric.data.SetDescription("The current heap memory in use by the JVM.")
+	metric.data.SetUnit("By")
+	metric.data.SetDataType(pdata.MetricDataTypeSum)
+	metric.data.Sum().SetIsMonotonic(false)
+	metric.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+}
+
+// initElasticsearchNodeJvmMemoryNonheapUsedMetric builds new elasticsearch.node.jvm.memory.nonheap.used metric.
+func (mb *MetricsBuilder) initElasticsearchNodeJvmMemoryNonheapUsedMetric() {
+	metric := mb.metrics.elasticsearchNodeJvmMemoryNonheapUsed
+	metric.data.SetName("elasticsearch.node.jvm.memory.nonheap.used")
+	metric.data.SetDescription("The current nonheap memory in use by the JVM.")
+	metric.data.SetUnit("By")
+	metric.data.SetDataType(pdata.MetricDataTypeGauge)
 }
 
 // initElasticsearchNodeJvmThreadsCountMetric builds new elasticsearch.node.jvm.threads.count metric.
@@ -537,29 +602,6 @@ func (mb *MetricsBuilder) initElasticsearchNodeJvmThreadsPeakMetric() {
 	metric.data.SetDescription("The maximum number of concurrently running threads in the node's JVM process.")
 	metric.data.SetUnit("{threads}")
 	metric.data.SetDataType(pdata.MetricDataTypeGauge)
-}
-
-// initElasticsearchNodeNetworkConnectionsMetric builds new elasticsearch.node.network.connections metric.
-func (mb *MetricsBuilder) initElasticsearchNodeNetworkConnectionsMetric() {
-	metric := mb.metrics.elasticsearchNodeNetworkConnections
-	metric.data.SetName("elasticsearch.node.network.connections")
-	metric.data.SetDescription("Number of open tcp connections for internal cluster communication.")
-	metric.data.SetUnit("{connections}")
-	metric.data.SetDataType(pdata.MetricDataTypeSum)
-	metric.data.Sum().SetIsMonotonic(false)
-	metric.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
-}
-
-// initElasticsearchNodeNetworkIoMetric builds new elasticsearch.node.network.io metric.
-func (mb *MetricsBuilder) initElasticsearchNodeNetworkIoMetric() {
-	metric := mb.metrics.elasticsearchNodeNetworkIo
-	metric.data.SetName("elasticsearch.node.network.io")
-	metric.data.SetDescription("Number of bytes sent and received on the network for internal cluster communication.")
-	metric.data.SetUnit("By")
-	metric.data.SetDataType(pdata.MetricDataTypeSum)
-	metric.data.Sum().SetIsMonotonic(true)
-	metric.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
-	metric.data.Sum().DataPoints().EnsureCapacity(metric.capacity)
 }
 
 // initElasticsearchNodeOpenFilesMetric builds new elasticsearch.node.open_files metric.
@@ -671,15 +713,25 @@ func (mb *MetricsBuilder) initMetrics() {
 		// the metrics once the Clear method is available.
 		mb.initElasticsearchNodeCacheMemoryUsageMetric()
 	}
+	if mb.config.ElasticsearchNodeClusterConnections.Enabled {
+		// TODO: Use metric.data.Sum().DataPoints().Clear() instead of rebuilding
+		// the metrics once the Clear method is available.
+		mb.initElasticsearchNodeClusterConnectionsMetric()
+	}
+	if mb.config.ElasticsearchNodeClusterIo.Enabled {
+		// TODO: Use metric.data.Sum().DataPoints().Clear() instead of rebuilding
+		// the metrics once the Clear method is available.
+		mb.initElasticsearchNodeClusterIoMetric()
+	}
 	if mb.config.ElasticsearchNodeDocuments.Enabled {
 		// TODO: Use metric.data.Sum().DataPoints().Clear() instead of rebuilding
 		// the metrics once the Clear method is available.
 		mb.initElasticsearchNodeDocumentsMetric()
 	}
-	if mb.config.ElasticsearchNodeFsDiskUsage.Enabled {
+	if mb.config.ElasticsearchNodeFsDiskAvailable.Enabled {
 		// TODO: Use metric.data.Sum().DataPoints().Clear() instead of rebuilding
 		// the metrics once the Clear method is available.
-		mb.initElasticsearchNodeFsDiskUsageMetric()
+		mb.initElasticsearchNodeFsDiskAvailableMetric()
 	}
 	if mb.config.ElasticsearchNodeFsIoOperations.Enabled {
 		// TODO: Use metric.data.Sum().DataPoints().Clear() instead of rebuilding
@@ -696,15 +748,25 @@ func (mb *MetricsBuilder) initMetrics() {
 		// the metrics once the Clear method is available.
 		mb.initElasticsearchNodeJvmGcCollectionsCountMetric()
 	}
-	if mb.config.ElasticsearchNodeJvmGcCollectionsTime.Enabled {
+	if mb.config.ElasticsearchNodeJvmGcCollectionsElapsed.Enabled {
 		// TODO: Use metric.data.Sum().DataPoints().Clear() instead of rebuilding
 		// the metrics once the Clear method is available.
-		mb.initElasticsearchNodeJvmGcCollectionsTimeMetric()
+		mb.initElasticsearchNodeJvmGcCollectionsElapsedMetric()
 	}
-	if mb.config.ElasticsearchNodeJvmMemoryUsage.Enabled {
+	if mb.config.ElasticsearchNodeJvmMemoryHeapMax.Enabled {
 		// TODO: Use metric.data.Sum().DataPoints().Clear() instead of rebuilding
 		// the metrics once the Clear method is available.
-		mb.initElasticsearchNodeJvmMemoryUsageMetric()
+		mb.initElasticsearchNodeJvmMemoryHeapMaxMetric()
+	}
+	if mb.config.ElasticsearchNodeJvmMemoryHeapUsed.Enabled {
+		// TODO: Use metric.data.Sum().DataPoints().Clear() instead of rebuilding
+		// the metrics once the Clear method is available.
+		mb.initElasticsearchNodeJvmMemoryHeapUsedMetric()
+	}
+	if mb.config.ElasticsearchNodeJvmMemoryNonheapUsed.Enabled {
+		// TODO: Use metric.data.Gauge().DataPoints().Clear() instead of rebuilding
+		// the metrics once the Clear method is available.
+		mb.initElasticsearchNodeJvmMemoryNonheapUsedMetric()
 	}
 	if mb.config.ElasticsearchNodeJvmThreadsCount.Enabled {
 		// TODO: Use metric.data.Sum().DataPoints().Clear() instead of rebuilding
@@ -715,16 +777,6 @@ func (mb *MetricsBuilder) initMetrics() {
 		// TODO: Use metric.data.Gauge().DataPoints().Clear() instead of rebuilding
 		// the metrics once the Clear method is available.
 		mb.initElasticsearchNodeJvmThreadsPeakMetric()
-	}
-	if mb.config.ElasticsearchNodeNetworkConnections.Enabled {
-		// TODO: Use metric.data.Sum().DataPoints().Clear() instead of rebuilding
-		// the metrics once the Clear method is available.
-		mb.initElasticsearchNodeNetworkConnectionsMetric()
-	}
-	if mb.config.ElasticsearchNodeNetworkIo.Enabled {
-		// TODO: Use metric.data.Sum().DataPoints().Clear() instead of rebuilding
-		// the metrics once the Clear method is available.
-		mb.initElasticsearchNodeNetworkIoMetric()
 	}
 	if mb.config.ElasticsearchNodeOpenFiles.Enabled {
 		// TODO: Use metric.data.Sum().DataPoints().Clear() instead of rebuilding
@@ -831,6 +883,33 @@ func (mb *MetricsBuilder) RecordElasticsearchNodeCacheMemoryUsageDataPoint(ts pd
 	dp.Attributes().Insert(A.CacheName, pdata.NewAttributeValueString(cache_nameAttributeValue))
 }
 
+// RecordElasticsearchNodeClusterConnectionsDataPoint adds a data point to elasticsearch.node.cluster.connections metric.
+// Any attribute of AttributeValueTypeEmpty type will be skipped.
+func (mb *MetricsBuilder) RecordElasticsearchNodeClusterConnectionsDataPoint(ts pdata.Timestamp, val int64) {
+	if !mb.config.ElasticsearchNodeClusterConnections.Enabled {
+		return
+	}
+
+	dp := mb.metrics.elasticsearchNodeClusterConnections.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(mb.startTime)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+}
+
+// RecordElasticsearchNodeClusterIoDataPoint adds a data point to elasticsearch.node.cluster.io metric.
+// Any attribute of AttributeValueTypeEmpty type will be skipped.
+func (mb *MetricsBuilder) RecordElasticsearchNodeClusterIoDataPoint(ts pdata.Timestamp, val int64, directionAttributeValue string) {
+	if !mb.config.ElasticsearchNodeClusterIo.Enabled {
+		return
+	}
+
+	dp := mb.metrics.elasticsearchNodeClusterIo.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(mb.startTime)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+	dp.Attributes().Insert(A.Direction, pdata.NewAttributeValueString(directionAttributeValue))
+}
+
 // RecordElasticsearchNodeDocumentsDataPoint adds a data point to elasticsearch.node.documents metric.
 // Any attribute of AttributeValueTypeEmpty type will be skipped.
 func (mb *MetricsBuilder) RecordElasticsearchNodeDocumentsDataPoint(ts pdata.Timestamp, val int64, document_stateAttributeValue string) {
@@ -845,23 +924,22 @@ func (mb *MetricsBuilder) RecordElasticsearchNodeDocumentsDataPoint(ts pdata.Tim
 	dp.Attributes().Insert(A.DocumentState, pdata.NewAttributeValueString(document_stateAttributeValue))
 }
 
-// RecordElasticsearchNodeFsDiskUsageDataPoint adds a data point to elasticsearch.node.fs.disk.usage metric.
+// RecordElasticsearchNodeFsDiskAvailableDataPoint adds a data point to elasticsearch.node.fs.disk.available metric.
 // Any attribute of AttributeValueTypeEmpty type will be skipped.
-func (mb *MetricsBuilder) RecordElasticsearchNodeFsDiskUsageDataPoint(ts pdata.Timestamp, val int64, disk_usage_stateAttributeValue string) {
-	if !mb.config.ElasticsearchNodeFsDiskUsage.Enabled {
+func (mb *MetricsBuilder) RecordElasticsearchNodeFsDiskAvailableDataPoint(ts pdata.Timestamp, val int64) {
+	if !mb.config.ElasticsearchNodeFsDiskAvailable.Enabled {
 		return
 	}
 
-	dp := mb.metrics.elasticsearchNodeFsDiskUsage.data.Sum().DataPoints().AppendEmpty()
+	dp := mb.metrics.elasticsearchNodeFsDiskAvailable.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(mb.startTime)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.DiskUsageState, pdata.NewAttributeValueString(disk_usage_stateAttributeValue))
 }
 
 // RecordElasticsearchNodeFsIoOperationsDataPoint adds a data point to elasticsearch.node.fs.io.operations metric.
 // Any attribute of AttributeValueTypeEmpty type will be skipped.
-func (mb *MetricsBuilder) RecordElasticsearchNodeFsIoOperationsDataPoint(ts pdata.Timestamp, val int64, fs_operationAttributeValue string) {
+func (mb *MetricsBuilder) RecordElasticsearchNodeFsIoOperationsDataPoint(ts pdata.Timestamp, val int64, fs_directionAttributeValue string) {
 	if !mb.config.ElasticsearchNodeFsIoOperations.Enabled {
 		return
 	}
@@ -870,7 +948,7 @@ func (mb *MetricsBuilder) RecordElasticsearchNodeFsIoOperationsDataPoint(ts pdat
 	dp.SetStartTimestamp(mb.startTime)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.FsOperation, pdata.NewAttributeValueString(fs_operationAttributeValue))
+	dp.Attributes().Insert(A.FsDirection, pdata.NewAttributeValueString(fs_directionAttributeValue))
 }
 
 // RecordElasticsearchNodeHTTPConnectionsDataPoint adds a data point to elasticsearch.node.http.connections metric.
@@ -900,32 +978,57 @@ func (mb *MetricsBuilder) RecordElasticsearchNodeJvmGcCollectionsCountDataPoint(
 	dp.Attributes().Insert(A.Generation, pdata.NewAttributeValueString(generationAttributeValue))
 }
 
-// RecordElasticsearchNodeJvmGcCollectionsTimeDataPoint adds a data point to elasticsearch.node.jvm.gc.collections.time metric.
+// RecordElasticsearchNodeJvmGcCollectionsElapsedDataPoint adds a data point to elasticsearch.node.jvm.gc.collections.elapsed metric.
 // Any attribute of AttributeValueTypeEmpty type will be skipped.
-func (mb *MetricsBuilder) RecordElasticsearchNodeJvmGcCollectionsTimeDataPoint(ts pdata.Timestamp, val int64, generationAttributeValue string) {
-	if !mb.config.ElasticsearchNodeJvmGcCollectionsTime.Enabled {
+func (mb *MetricsBuilder) RecordElasticsearchNodeJvmGcCollectionsElapsedDataPoint(ts pdata.Timestamp, val int64, generationAttributeValue string) {
+	if !mb.config.ElasticsearchNodeJvmGcCollectionsElapsed.Enabled {
 		return
 	}
 
-	dp := mb.metrics.elasticsearchNodeJvmGcCollectionsTime.data.Sum().DataPoints().AppendEmpty()
+	dp := mb.metrics.elasticsearchNodeJvmGcCollectionsElapsed.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(mb.startTime)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
 	dp.Attributes().Insert(A.Generation, pdata.NewAttributeValueString(generationAttributeValue))
 }
 
-// RecordElasticsearchNodeJvmMemoryUsageDataPoint adds a data point to elasticsearch.node.jvm.memory.usage metric.
+// RecordElasticsearchNodeJvmMemoryHeapMaxDataPoint adds a data point to elasticsearch.node.jvm.memory.heap.max metric.
 // Any attribute of AttributeValueTypeEmpty type will be skipped.
-func (mb *MetricsBuilder) RecordElasticsearchNodeJvmMemoryUsageDataPoint(ts pdata.Timestamp, val int64, memory_segmentAttributeValue string) {
-	if !mb.config.ElasticsearchNodeJvmMemoryUsage.Enabled {
+func (mb *MetricsBuilder) RecordElasticsearchNodeJvmMemoryHeapMaxDataPoint(ts pdata.Timestamp, val int64) {
+	if !mb.config.ElasticsearchNodeJvmMemoryHeapMax.Enabled {
 		return
 	}
 
-	dp := mb.metrics.elasticsearchNodeJvmMemoryUsage.data.Sum().DataPoints().AppendEmpty()
+	dp := mb.metrics.elasticsearchNodeJvmMemoryHeapMax.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(mb.startTime)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.MemorySegment, pdata.NewAttributeValueString(memory_segmentAttributeValue))
+}
+
+// RecordElasticsearchNodeJvmMemoryHeapUsedDataPoint adds a data point to elasticsearch.node.jvm.memory.heap.used metric.
+// Any attribute of AttributeValueTypeEmpty type will be skipped.
+func (mb *MetricsBuilder) RecordElasticsearchNodeJvmMemoryHeapUsedDataPoint(ts pdata.Timestamp, val int64) {
+	if !mb.config.ElasticsearchNodeJvmMemoryHeapUsed.Enabled {
+		return
+	}
+
+	dp := mb.metrics.elasticsearchNodeJvmMemoryHeapUsed.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(mb.startTime)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+}
+
+// RecordElasticsearchNodeJvmMemoryNonheapUsedDataPoint adds a data point to elasticsearch.node.jvm.memory.nonheap.used metric.
+// Any attribute of AttributeValueTypeEmpty type will be skipped.
+func (mb *MetricsBuilder) RecordElasticsearchNodeJvmMemoryNonheapUsedDataPoint(ts pdata.Timestamp, val int64) {
+	if !mb.config.ElasticsearchNodeJvmMemoryNonheapUsed.Enabled {
+		return
+	}
+
+	dp := mb.metrics.elasticsearchNodeJvmMemoryNonheapUsed.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(mb.startTime)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
 }
 
 // RecordElasticsearchNodeJvmThreadsCountDataPoint adds a data point to elasticsearch.node.jvm.threads.count metric.
@@ -952,33 +1055,6 @@ func (mb *MetricsBuilder) RecordElasticsearchNodeJvmThreadsPeakDataPoint(ts pdat
 	dp.SetStartTimestamp(mb.startTime)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-}
-
-// RecordElasticsearchNodeNetworkConnectionsDataPoint adds a data point to elasticsearch.node.network.connections metric.
-// Any attribute of AttributeValueTypeEmpty type will be skipped.
-func (mb *MetricsBuilder) RecordElasticsearchNodeNetworkConnectionsDataPoint(ts pdata.Timestamp, val int64) {
-	if !mb.config.ElasticsearchNodeNetworkConnections.Enabled {
-		return
-	}
-
-	dp := mb.metrics.elasticsearchNodeNetworkConnections.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(mb.startTime)
-	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-}
-
-// RecordElasticsearchNodeNetworkIoDataPoint adds a data point to elasticsearch.node.network.io metric.
-// Any attribute of AttributeValueTypeEmpty type will be skipped.
-func (mb *MetricsBuilder) RecordElasticsearchNodeNetworkIoDataPoint(ts pdata.Timestamp, val int64, directionAttributeValue string) {
-	if !mb.config.ElasticsearchNodeNetworkIo.Enabled {
-		return
-	}
-
-	dp := mb.metrics.elasticsearchNodeNetworkIo.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(mb.startTime)
-	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Direction, pdata.NewAttributeValueString(directionAttributeValue))
 }
 
 // RecordElasticsearchNodeOpenFilesDataPoint adds a data point to elasticsearch.node.open_files metric.
@@ -1092,12 +1168,10 @@ var Attributes = struct {
 	ElasticsearchClusterName string
 	// ElasticsearchNodeName (The name of the elasticsearch node.)
 	ElasticsearchNodeName string
-	// FsOperation (The type of file store operation.)
-	FsOperation string
+	// FsDirection (The direction of filesystem IO.)
+	FsDirection string
 	// Generation (The generation on which garbage collection was performed.)
 	Generation string
-	// MemorySegment (The segment of memory.)
-	MemorySegment string
 	// Operation (The type of operation.)
 	Operation string
 	// ShardType (The state of the shard.)
@@ -1115,9 +1189,8 @@ var Attributes = struct {
 	"state",
 	"elasticsearch.cluster.name",
 	"elasticsearch.node.name",
-	"operation",
+	"direction",
 	"generation",
-	"segment",
 	"operation",
 	"type",
 	"state",
@@ -1164,8 +1237,8 @@ var AttributeDocumentState = struct {
 	"deleted",
 }
 
-// AttributeFsOperation are the possible values that the attribute "fs_operation" can have.
-var AttributeFsOperation = struct {
+// AttributeFsDirection are the possible values that the attribute "fs_direction" can have.
+var AttributeFsDirection = struct {
 	Read  string
 	Write string
 }{
@@ -1180,15 +1253,6 @@ var AttributeGeneration = struct {
 }{
 	"young",
 	"old",
-}
-
-// AttributeMemorySegment are the possible values that the attribute "memory_segment" can have.
-var AttributeMemorySegment = struct {
-	Heap    string
-	NonHeap string
-}{
-	"heap",
-	"non-heap",
 }
 
 // AttributeOperation are the possible values that the attribute "operation" can have.

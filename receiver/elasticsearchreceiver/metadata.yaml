@@ -10,9 +10,9 @@ attributes:
     enum:
     - fielddata
     - query
-  fs_operation:
-    value: operation
-    description: The type of file store operation.
+  fs_direction:
+    value: direction
+    description: The direction of filesystem IO.
     enum:
     - read
     - write
@@ -21,12 +21,6 @@ attributes:
     enum:
     - young
     - old
-  memory_segment:
-    value: segment
-    description: The segment of memory.
-    enum:
-    - heap
-    - non-heap
   disk_usage_state:
     value: state
     description: The state of a section of space on disk.
@@ -107,7 +101,7 @@ metrics:
       aggregation: cumulative
       value_type: int
     attributes: [generation]
-  elasticsearch.node.jvm.gc.collections.time:
+  elasticsearch.node.jvm.gc.collections.elapsed:
     description: The total time spent by the JVM running the GC.
     unit: ms
     sum:
@@ -115,14 +109,28 @@ metrics:
       aggregation: cumulative
       value_type: int
     attributes: [generation]
-  elasticsearch.node.jvm.memory.usage:
-    description: The memory used by the JVM.
+  elasticsearch.node.jvm.memory.heap.used:
+    description: The current heap memory in use by the JVM.
     unit: By
     sum:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [memory_segment]
+    attributes: []
+  elasticsearch.node.jvm.memory.heap.max:
+    description: The max memory used by the JVM.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: []
+  elasticsearch.node.jvm.memory.nonheap.used:
+    description: The current nonheap memory in use by the JVM.
+    unit: By
+    gauge:
+      value_type: int
+    attributes: []
   elasticsearch.node.jvm.threads.count:
     description: The number of open threads in the node's JVM process.
     unit: "{threads}"
@@ -137,23 +145,23 @@ metrics:
     gauge:
       value_type: int
     attributes: []
-  elasticsearch.node.fs.disk.usage:
-    description: The amount of disk space across all file stores for this node.
+  elasticsearch.node.fs.disk.available:
+    description: The amount of disk space available across all file stores for this node.
     unit: By
     sum:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [disk_usage_state]
+    attributes: []
   elasticsearch.node.fs.io.operations:
-    description: The number of io operations completed by elasticsearch across all file stores. Only available on Linux nodes.
+    description: The number of io operations completed across all file stores since starting Elasticsearch. Only available on Linux nodes.
     unit: "{operations}"
     sum:
       monotonic: true
       aggregation: cumulative
       value_type: int
-    attributes: [fs_operation]
-  elasticsearch.node.network.io:
+    attributes: [fs_direction]
+  elasticsearch.node.cluster.io:
     description: Number of bytes sent and received on the network for internal cluster communication.
     unit: By
     sum:
@@ -161,7 +169,7 @@ metrics:
       aggregation: cumulative
       value_type: int
     attributes: [direction]
-  elasticsearch.node.network.connections:
+  elasticsearch.node.cluster.connections:
     description: Number of open tcp connections for internal cluster communication.
     unit: "{connections}"
     sum:
