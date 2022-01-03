@@ -10,6 +10,7 @@ require (
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.41.1-0.20211222180302-3db1d1146483
 	go.opentelemetry.io/collector/model v0.41.1-0.20211222180302-3db1d1146483
+	go.uber.org/multierr v1.7.0
 	golang.org/x/mod v0.5.1
 )
 
@@ -124,7 +125,7 @@ require (
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/grobie/gomemcache v0.0.0-20180201122607-1f779c573665 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
-	github.com/hashicorp/consul/api v1.11.0 // indirect
+	github.com/hashicorp/consul/api v1.12.0 // indirect
 	github.com/hashicorp/errwrap v1.0.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-hclog v1.0.0 // indirect
