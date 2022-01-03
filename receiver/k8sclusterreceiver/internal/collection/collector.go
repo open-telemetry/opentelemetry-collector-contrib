@@ -127,7 +127,7 @@ func (dc *DataCollector) SyncMetrics(obj interface{}) {
 
 	switch o := obj.(type) {
 	case *corev1.Pod:
-		rm = getMetricsForPod(o)
+		rm = getMetricsForPod(o, dc.logger)
 	case *corev1.Node:
 		rm = getMetricsForNode(o, dc.nodeConditionsToReport, dc.allocatableTypesToReport, dc.logger)
 	case *corev1.Namespace:
