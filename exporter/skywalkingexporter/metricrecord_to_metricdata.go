@@ -28,7 +28,7 @@ const (
 
 func resourceToMetricLabels(resource pdata.Resource) []*metricpb.Label {
 	attrs := resource.Attributes()
-	labels := make([]*metricpb.Label, 0)
+	labels := make([]*metricpb.Label, 0, attrs.Len())
 	attrs.Range(func(k string, v pdata.AttributeValue) bool {
 		labels = append(labels,
 			&metricpb.Label{
@@ -60,7 +60,7 @@ func numberMetricsToData(name string, data pdata.NumberDataPointSlice, defaultLa
 	for i := 0; i < data.Len(); i++ {
 		dataPoint := data.At(i)
 		attributeMap := dataPoint.Attributes()
-		labels := make([]*metricpb.Label, 0)
+		labels := make([]*metricpb.Label, 0, attributeMap.Len()+len(defaultLabels))
 		attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
 			labels = append(labels, &metricpb.Label{Name: k, Value: v.AsString()})
 			return true
@@ -91,7 +91,7 @@ func doubleHistogramMetricsToData(name string, data pdata.HistogramDataPointSlic
 	for i := 0; i < data.Len(); i++ {
 		dataPoint := data.At(i)
 		attributeMap := dataPoint.Attributes()
-		labels := make([]*metricpb.Label, 0)
+		labels := make([]*metricpb.Label, 0, attributeMap.Len()+len(defaultLabels))
 		attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
 			labels = append(labels, &metricpb.Label{Name: k, Value: v.AsString()})
 			return true
@@ -145,7 +145,7 @@ func doubleSummaryMetricsToData(name string, data pdata.SummaryDataPointSlice, d
 	for i := 0; i < data.Len(); i++ {
 		dataPoint := data.At(i)
 		attributeMap := dataPoint.Attributes()
-		labels := make([]*metricpb.Label, 0)
+		labels := make([]*metricpb.Label, 0, attributeMap.Len()+len(defaultLabels))
 		attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
 			labels = append(labels, &metricpb.Label{Name: k, Value: v.AsString()})
 			return true
@@ -160,7 +160,7 @@ func doubleSummaryMetricsToData(name string, data pdata.SummaryDataPointSlice, d
 			value := values.At(i)
 			meterData := &metricpb.MeterData{}
 			sv := &metricpb.MeterData_SingleValue{SingleValue: &metricpb.MeterSingleValue{}}
-			svLabels := make([]*metricpb.Label, 0)
+			svLabels := make([]*metricpb.Label, 0, len(labels))
 			svLabels = append(svLabels, labels...)
 			svLabels = append(svLabels, &metricpb.Label{Name: "quantile", Value: strconv.FormatFloat(value.Quantile(), 'g', -1, 64)})
 			sv.SingleValue.Labels = svLabels
