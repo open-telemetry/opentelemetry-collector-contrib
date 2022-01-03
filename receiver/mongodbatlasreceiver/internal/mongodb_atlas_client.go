@@ -31,7 +31,7 @@ type RetryBackoffRoundTripper struct {
 	originalTransport http.RoundTripper
 	log               *zap.Logger
 	Attempts          int
-	RetryDelay        int // In ms
+	RetryDelay        time.Duration
 }
 
 func (rt *RetryBackoffRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
@@ -43,10 +43,10 @@ func (rt *RetryBackoffRoundTripper) RoundTrip(r *http.Request) (*http.Response, 
 	if resp.StatusCode == 429 {
 		for i := 0; i < rt.Attempts; i++ {
 			delay := rt.RetryDelay << i
-			time.Sleep(time.Duration(delay) * time.Millisecond)
+			time.Sleep(delay)
 			rt.log.Warn("server busy, retrying request",
 				zap.Int("attempts", i+1),
-				zap.Int("delay", delay))
+				zap.Duration("delay", delay))
 			resp, err = rt.originalTransport.RoundTrip(r)
 			if err != nil {
 				return nil, err
@@ -71,7 +71,7 @@ func NewMongoDBAtlasClient(
 	publicKey string,
 	privateKey string,
 	retryAttempts int,
-	retryInterval int,
+	retryInterval time.Duration,
 	log *zap.Logger,
 ) (*MongoDBAtlasClient, error) {
 	t := digest.NewTransport(publicKey, privateKey)

@@ -15,6 +15,8 @@
 package mongodbatlasreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
 
 import (
+	"time"
+
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
@@ -23,9 +25,9 @@ var _ config.Receiver = (*Config)(nil)
 
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	PublicKey                               string `mapstructure:"public_key"`
-	PrivateKey                              string `mapstructure:"private_key"`
-	Granularity                             string `mapstructure:"granularity"`
-	RetryAttempts                           int    `mapstructure:"retry_attempts"`
-	RetryInterval                           int    `mapstructure:"retry_interval"`
+	PublicKey                               string        `mapstructure:"public_key"`
+	PrivateKey                              string        `mapstructure:"private_key"`
+	Granularity                             string        `mapstructure:"granularity"`
+	RetryAttempts                           int           `mapstructure:"retry_attempts"`
+	RetryInterval                           time.Duration `mapstructure:"retry_interval"`
 }
