@@ -407,7 +407,7 @@ func (mb *MetricsBuilder) initElasticsearchClusterDataNodesMetric() {
 	metric := mb.metrics.elasticsearchClusterDataNodes
 	metric.data.SetName("elasticsearch.cluster.data_nodes")
 	metric.data.SetDescription("The number of data nodes in the cluster.")
-	metric.data.SetUnit("{nodes}")
+	metric.data.SetUnit("{node}")
 	metric.data.SetDataType(pdata.MetricDataTypeSum)
 	metric.data.Sum().SetIsMonotonic(false)
 	metric.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
@@ -418,7 +418,7 @@ func (mb *MetricsBuilder) initElasticsearchClusterNodesMetric() {
 	metric := mb.metrics.elasticsearchClusterNodes
 	metric.data.SetName("elasticsearch.cluster.nodes")
 	metric.data.SetDescription("The total number of nodes in the cluster.")
-	metric.data.SetUnit("{nodes}")
+	metric.data.SetUnit("{node}")
 	metric.data.SetDataType(pdata.MetricDataTypeSum)
 	metric.data.Sum().SetIsMonotonic(false)
 	metric.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
@@ -429,7 +429,7 @@ func (mb *MetricsBuilder) initElasticsearchClusterShardsMetric() {
 	metric := mb.metrics.elasticsearchClusterShards
 	metric.data.SetName("elasticsearch.cluster.shards")
 	metric.data.SetDescription("The number of shards in the cluster.")
-	metric.data.SetUnit("{shards}")
+	metric.data.SetUnit("{shard}")
 	metric.data.SetDataType(pdata.MetricDataTypeSum)
 	metric.data.Sum().SetIsMonotonic(false)
 	metric.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
@@ -465,7 +465,7 @@ func (mb *MetricsBuilder) initElasticsearchNodeClusterConnectionsMetric() {
 	metric := mb.metrics.elasticsearchNodeClusterConnections
 	metric.data.SetName("elasticsearch.node.cluster.connections")
 	metric.data.SetDescription("Number of open tcp connections for internal cluster communication.")
-	metric.data.SetUnit("{connections}")
+	metric.data.SetUnit("{connection}")
 	metric.data.SetDataType(pdata.MetricDataTypeSum)
 	metric.data.Sum().SetIsMonotonic(false)
 	metric.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
@@ -488,7 +488,7 @@ func (mb *MetricsBuilder) initElasticsearchNodeDocumentsMetric() {
 	metric := mb.metrics.elasticsearchNodeDocuments
 	metric.data.SetName("elasticsearch.node.documents")
 	metric.data.SetDescription("The number of documents on the node.")
-	metric.data.SetUnit("{documents}")
+	metric.data.SetUnit("{document}")
 	metric.data.SetDataType(pdata.MetricDataTypeSum)
 	metric.data.Sum().SetIsMonotonic(false)
 	metric.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
@@ -523,7 +523,7 @@ func (mb *MetricsBuilder) initElasticsearchNodeHTTPConnectionsMetric() {
 	metric := mb.metrics.elasticsearchNodeHTTPConnections
 	metric.data.SetName("elasticsearch.node.http.connections")
 	metric.data.SetDescription("Number of HTTP connections to the node.")
-	metric.data.SetUnit("{connections}")
+	metric.data.SetUnit("{connection}")
 	metric.data.SetDataType(pdata.MetricDataTypeSum)
 	metric.data.Sum().SetIsMonotonic(false)
 	metric.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
@@ -534,7 +534,7 @@ func (mb *MetricsBuilder) initElasticsearchNodeJvmGcCollectionsCountMetric() {
 	metric := mb.metrics.elasticsearchNodeJvmGcCollectionsCount
 	metric.data.SetName("elasticsearch.node.jvm.gc.collections.count")
 	metric.data.SetDescription("The number of garbage collections performed by the JVM.")
-	metric.data.SetUnit("{collections}")
+	metric.data.SetUnit("{collection}")
 	metric.data.SetDataType(pdata.MetricDataTypeSum)
 	metric.data.Sum().SetIsMonotonic(true)
 	metric.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
@@ -589,7 +589,7 @@ func (mb *MetricsBuilder) initElasticsearchNodeJvmThreadsCountMetric() {
 	metric := mb.metrics.elasticsearchNodeJvmThreadsCount
 	metric.data.SetName("elasticsearch.node.jvm.threads.count")
 	metric.data.SetDescription("The number of open threads in the node's JVM process.")
-	metric.data.SetUnit("{threads}")
+	metric.data.SetUnit("{thread}")
 	metric.data.SetDataType(pdata.MetricDataTypeSum)
 	metric.data.Sum().SetIsMonotonic(false)
 	metric.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
@@ -600,7 +600,7 @@ func (mb *MetricsBuilder) initElasticsearchNodeJvmThreadsPeakMetric() {
 	metric := mb.metrics.elasticsearchNodeJvmThreadsPeak
 	metric.data.SetName("elasticsearch.node.jvm.threads.peak")
 	metric.data.SetDescription("The maximum number of concurrently running threads in the node's JVM process.")
-	metric.data.SetUnit("{threads}")
+	metric.data.SetUnit("{thread}")
 	metric.data.SetDataType(pdata.MetricDataTypeGauge)
 }
 
@@ -609,7 +609,7 @@ func (mb *MetricsBuilder) initElasticsearchNodeOpenFilesMetric() {
 	metric := mb.metrics.elasticsearchNodeOpenFiles
 	metric.data.SetName("elasticsearch.node.open_files")
 	metric.data.SetDescription("The number of open file descriptors held by the node.")
-	metric.data.SetUnit("{files}")
+	metric.data.SetUnit("{file}")
 	metric.data.SetDataType(pdata.MetricDataTypeSum)
 	metric.data.Sum().SetIsMonotonic(false)
 	metric.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
@@ -620,7 +620,7 @@ func (mb *MetricsBuilder) initElasticsearchNodeOperationsCompletedMetric() {
 	metric := mb.metrics.elasticsearchNodeOperationsCompleted
 	metric.data.SetName("elasticsearch.node.operations.completed")
 	metric.data.SetDescription("Number of operations completed.")
-	metric.data.SetUnit("{operations}")
+	metric.data.SetUnit("{operation}")
 	metric.data.SetDataType(pdata.MetricDataTypeSum)
 	metric.data.Sum().SetIsMonotonic(true)
 	metric.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
