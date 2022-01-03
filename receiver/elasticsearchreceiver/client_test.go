@@ -30,7 +30,7 @@ func TestNodeStatsNoPassword(t *testing.T) {
 
 	client := newElasticsearchClient(zap.NewNop(), http.DefaultClient, url, "", "")
 	ctx := context.Background()
-	nodeStats, err := client.NodeStats(ctx)
+	nodeStats, err := client.NodeStats(ctx, []string{"_all"})
 	require.NoError(t, err)
 
 	require.Equal(t, &actualNodeStats, nodeStats)
@@ -54,7 +54,7 @@ func TestNodeStatsAuthentication(t *testing.T) {
 
 	client := newElasticsearchClient(zap.NewNop(), http.DefaultClient, url, username, password)
 	ctx := context.Background()
-	nodeStats, err := client.NodeStats(ctx)
+	nodeStats, err := client.NodeStats(ctx, []string{"_all"})
 	require.NoError(t, err)
 
 	require.Equal(t, &actualNodeStats, nodeStats)
@@ -69,7 +69,7 @@ func TestNodeStatsNoAuthentication(t *testing.T) {
 
 	client := newElasticsearchClient(zap.NewNop(), http.DefaultClient, url, "", "")
 	ctx := context.Background()
-	_, err = client.NodeStats(ctx)
+	_, err = client.NodeStats(ctx, []string{"_all"})
 	require.ErrorIs(t, err, errUnauthenticated)
 }
 
@@ -82,7 +82,7 @@ func TestNodeStatsBadAuthentication(t *testing.T) {
 
 	client := newElasticsearchClient(zap.NewNop(), http.DefaultClient, url, "unauthorized_user", "password")
 	ctx := context.Background()
-	_, err = client.NodeStats(ctx)
+	_, err = client.NodeStats(ctx, []string{"_all"})
 	require.ErrorIs(t, err, errUnauthorized)
 }
 
@@ -158,7 +158,7 @@ func TestClusterHealthNoAuthorization(t *testing.T) {
 }
 
 func TestDoRequestBadPath(t *testing.T) {
-	url, err := url.Parse("http://example.local:9200")
+	url, err := url.Parse("http://example.localhost:9200")
 	require.NoError(t, err)
 
 	client := newElasticsearchClient(zap.NewNop(), http.DefaultClient, url, "bad_username", "bad_password")
@@ -167,7 +167,7 @@ func TestDoRequestBadPath(t *testing.T) {
 }
 
 func TestDoRequestClientTimeout(t *testing.T) {
-	url, err := url.Parse("http://example.local:9200")
+	url, err := url.Parse("http://example.localhost:9200")
 	require.NoError(t, err)
 
 	client := newElasticsearchClient(zap.NewNop(), http.DefaultClient, url, "bad_username", "bad_password")
@@ -213,7 +213,7 @@ func mockServer(t *testing.T, username, password string) *httptest.Server {
 			}
 		}
 
-		if strings.HasPrefix(req.URL.Path, "/_nodes/stats") {
+		if strings.HasPrefix(req.URL.Path, "/_nodes/_all/stats") {
 			rw.WriteHeader(200)
 			_, err = rw.Write(nodes)
 			require.NoError(t, err)

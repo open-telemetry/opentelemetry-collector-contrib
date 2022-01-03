@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/model"
 	"go.uber.org/zap"
@@ -21,11 +22,11 @@ var (
 
 // elasticsearchClient defines the interface to retreive metrics from an Elasticsearch cluster.
 type elasticsearchClient interface {
-	NodeStats(ctx context.Context) (*model.NodeStats, error)
+	NodeStats(ctx context.Context, nodes []string) (*model.NodeStats, error)
 	ClusterHealth(ctx context.Context) (*model.ClusterHealth, error)
 }
 
-// defaultElasticsearchClient is the main implementation of elastisearchClient.
+// defaultElasticsearchClient is the main implementation of elasticsearchClient.
 // It retrieves the required metrics from Elasticsearch's REST api.
 type defaultElasticsearchClient struct {
 	client     *http.Client
@@ -60,8 +61,9 @@ const nodeStatsMetrics = "indices,process,jvm,thread_pool,transport,http,fs"
 // nodeStatsIndexMetrics is a comma separated list of index metrics that will be gathered from NodeStats.
 const nodeStatsIndexMetrics = "store,docs,indexing,get,search,merge,refresh,flush,warmer,query_cache,fielddata"
 
-func (c defaultElasticsearchClient) NodeStats(ctx context.Context) (*model.NodeStats, error) {
-	nodeStatsPath := fmt.Sprintf("_nodes/stats/%s/%s", nodeStatsMetrics, nodeStatsIndexMetrics)
+func (c defaultElasticsearchClient) NodeStats(ctx context.Context, nodes []string) (*model.NodeStats, error) {
+	nodeSpec := strings.Join(nodes, ",")
+	nodeStatsPath := fmt.Sprintf("_nodes/%s/stats/%s/%s", nodeSpec, nodeStatsMetrics, nodeStatsIndexMetrics)
 
 	body, err := c.doRequest(ctx, nodeStatsPath)
 	if err != nil {
