@@ -17,7 +17,6 @@ package components
 import (
 	"context"
 	"errors"
-	"io/ioutil"
 	"runtime"
 	"testing"
 
@@ -31,15 +30,39 @@ import (
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsprometheusremotewriteexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter"
+	ddconf "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
+	dtconf "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/humioexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/newrelicexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parquetexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/skywalkingexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tanzuobservabilityexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
 )
@@ -60,8 +83,7 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "file",
 			getConfigFn: func() config.Exporter {
 				cfg := expFactories["file"].CreateDefaultConfig().(*fileexporter.Config)
-				f, err := ioutil.TempFile("", "otelcol_defaults_file_exporter_test*.tmp")
-				require.NoError(t, err)
+				f := testutil.NewTemporaryFile(t)
 				assert.NoError(t, f.Close())
 				cfg.Path = f.Name()
 				return cfg
@@ -126,6 +148,14 @@ func TestDefaultExporters(t *testing.T) {
 			},
 		},
 		{
+			exporter: "parquet",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["parquet"].CreateDefaultConfig().(*parquetexporter.Config)
+				cfg.Path = testutil.NewTemporaryDirectory(t)
+				return cfg
+			},
+		},
+		{
 			exporter: "prometheus",
 			getConfigFn: func() config.Exporter {
 				cfg := expFactories["prometheus"].CreateDefaultConfig().(*prometheusexporter.Config)
@@ -171,18 +201,222 @@ func TestDefaultExporters(t *testing.T) {
 				return cfg
 			},
 		},
+		{
+			exporter: "awskinesis",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["awskinesis"].CreateDefaultConfig().(*awskinesisexporter.Config)
+				cfg.AWS.KinesisEndpoint = endpoint
+				return cfg
+			},
+		},
+		{
+			exporter: "awsprometheusremotewrite",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["awsprometheusremotewrite"].CreateDefaultConfig().(*awsprometheusremotewriteexporter.Config)
+				cfg.HTTPClientSettings.Endpoint = "http://" + endpoint
+				return cfg
+			},
+		},
+		{
+			exporter: "alibabacloud_logservice",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["alibabacloud_logservice"].CreateDefaultConfig().(*alibabacloudlogserviceexporter.Config)
+				cfg.Endpoint = "http://" + endpoint
+				cfg.Project = "otel-testing"
+				cfg.Logstore = "otel-data"
+				return cfg
+			},
+		},
+		{
+			exporter: "awsemf",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["awsemf"].CreateDefaultConfig().(*awsemfexporter.Config)
+				cfg.Endpoint = "http://" + endpoint
+				cfg.Region = "local"
+				return cfg
+			},
+		},
+		{
+			exporter: "awsxray",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["awsxray"].CreateDefaultConfig().(*awsxrayexporter.Config)
+				cfg.Endpoint = "http://" + endpoint
+				cfg.Region = "local"
+				return cfg
+			},
+		},
+		{
+			exporter: "azuremonitor",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["azuremonitor"].CreateDefaultConfig().(*azuremonitorexporter.Config)
+				cfg.Endpoint = "http://" + endpoint
+
+				return cfg
+			},
+		},
+		{
+			exporter: "carbon",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["carbon"].CreateDefaultConfig().(*carbonexporter.Config)
+				cfg.Endpoint = "http://" + endpoint
+				return cfg
+			},
+		},
+		{
+			exporter: "datadog",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["datadog"].CreateDefaultConfig().(*ddconf.Config)
+				cfg.API.Key = "cutedogsgotoheaven"
+				return cfg
+			},
+		},
+		{
+			exporter: "dynatrace",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["dynatrace"].CreateDefaultConfig().(*dtconf.Config)
+				cfg.Endpoint = "http://" + endpoint
+				cfg.APIToken = "dynamictracing"
+				return cfg
+			},
+		},
+		{
+			exporter: "elastic",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["elastic"].CreateDefaultConfig().(*elasticexporter.Config)
+				cfg.APMServerURL = "http://" + endpoint
+				return cfg
+			},
+		},
+		{
+			exporter: "f5cloud",
+			getConfigFn: func() config.Exporter {
+				f := testutil.NewTemporaryFile(t)
+
+				cfg := expFactories["f5cloud"].CreateDefaultConfig().(*f5cloudexporter.Config)
+				cfg.Endpoint = "http://" + endpoint
+				cfg.Source = "magic-source"
+				cfg.AuthConfig.CredentialFile = f.Name()
+
+				return cfg
+			},
+		},
+		{
+			exporter:      "googlecloud",
+			skipLifecycle: true, // Requires credentials to be able to successfully load the exporter
+		},
+		{
+			exporter: "honeycomb",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["honeycomb"].CreateDefaultConfig().(*honeycombexporter.Config)
+				cfg.APIURL = "http://" + endpoint
+				cfg.APIKey = "busybeesworking"
+				return cfg
+			},
+		},
+		{
+			exporter: "humio",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["humio"].CreateDefaultConfig().(*humioexporter.Config)
+				cfg.Endpoint = "http://" + endpoint
+				return cfg
+			},
+		},
+		{
+			exporter: "influxdb",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["influxdb"].CreateDefaultConfig().(*influxdbexporter.Config)
+				cfg.Endpoint = "http://" + endpoint
+				return cfg
+			},
+		},
+		{
+			exporter: "loadbalancing",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["loadbalancing"].CreateDefaultConfig().(*loadbalancingexporter.Config)
+				return cfg
+			},
+		},
+		{
+			exporter: "logzio",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["logzio"].CreateDefaultConfig().(*logzioexporter.Config)
+				cfg.CustomEndpoint = "http://" + endpoint
+				return cfg
+			},
+		},
+		{
+			exporter: "loki",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["loki"].CreateDefaultConfig().(*lokiexporter.Config)
+				cfg.Endpoint = "http://" + endpoint
+				return cfg
+			},
+		},
+		{
+			exporter: "newrelic",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["newrelic"].CreateDefaultConfig().(*newrelicexporter.Config)
+				cfg.CommonConfig.HostOverride = "http://" + endpoint
+				return cfg
+			},
+		},
+		{
+			exporter: "sentry",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["sentry"].CreateDefaultConfig().(*sentryexporter.Config)
+				return cfg
+			},
+		},
+		{
+			exporter: "skywalking",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["skywalking"].CreateDefaultConfig().(*skywalkingexporter.Config)
+				return cfg
+			},
+		},
+		{
+			exporter:      "stackdriver",
+			skipLifecycle: true, // Is a deprecated exporter that has moved to google cloud exporter
+		},
+		{
+			exporter: "sumologic",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["sumologic"].CreateDefaultConfig().(*sumologicexporter.Config)
+				cfg.Endpoint = "http://" + endpoint
+
+				return cfg
+			},
+		},
+		{
+			exporter: "tanzuobservability",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["tanzuobservability"].CreateDefaultConfig().(*tanzuobservabilityexporter.Config)
+				cfg.Traces.Endpoint = "http://" + endpoint
+				return cfg
+			},
+		},
+		{
+			exporter: "tencentcloud_logservice",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["tencentcloud_logservice"].CreateDefaultConfig().(*tencentcloudlogserviceexporter.Config)
+
+				return cfg
+			},
+		},
 	}
 
-	assert.Equal(t, len(tests)+25 /* not tested */, len(expFactories))
+	assert.Len(t, tests, len(expFactories), "All user configurable components must be added to the lifecycle test")
 	for _, tt := range tests {
 		t.Run(string(tt.exporter), func(t *testing.T) {
+			t.Parallel()
+
 			factory, ok := expFactories[tt.exporter]
 			require.True(t, ok)
 			assert.Equal(t, tt.exporter, factory.Type())
 			assert.Equal(t, config.NewComponentID(tt.exporter), factory.CreateDefaultConfig().ID())
 
 			if tt.skipLifecycle {
-				t.Log("Skipping lifecycle test", tt.exporter)
+				t.Skip("Skipping lifecycle test", tt.exporter)
 				return
 			}
 

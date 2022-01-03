@@ -69,3 +69,12 @@ type HostConsumer interface {
 	// ConsumeHost consumes a hostname.
 	ConsumeHost(host string)
 }
+
+// TagsConsumer is a tags consumer.
+// It is an optional interface that can be implemented by a Consumer.
+// Consumed tags are used for running metrics, and should represent
+// some resource running a Collector (e.g. Fargate task).
+type TagsConsumer interface {
+	// ConsumeTag consumes a tag
+	ConsumeTag(tag string)
+}

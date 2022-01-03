@@ -36,6 +36,7 @@ processors:
   spanmetrics:
     metrics_exporter: otlp/spanmetrics
     latency_histogram_buckets: [100us, 1ms, 2ms, 6ms, 10ms, 100ms, 250ms]
+    dimensions_cache_size: 1500
 
     # Additional list of dimensions on top of:
     # - service.name

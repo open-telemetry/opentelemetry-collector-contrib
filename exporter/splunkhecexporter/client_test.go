@@ -34,6 +34,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -309,17 +310,14 @@ func TestReceiveTraces(t *testing.T) {
 	actual, err := runTraceExport(true, 3, t)
 	assert.NoError(t, err)
 	expected := `{"time":1,"host":"unknown","event":{"trace_id":"01010101010101010101010101010101","span_id":"0000000000000001","parent_span_id":"0102030405060708","name":"root","end_time":2000000000,"kind":"SPAN_KIND_UNSPECIFIED","status":{"message":"ok","code":"STATUS_CODE_OK"},"start_time":1000000000},"fields":{"resource":"R1"}}`
-	expected += "\n"
 	expected += `{"time":2,"host":"unknown","event":{"trace_id":"01010101010101010101010101010101","span_id":"0000000000000001","parent_span_id":"","name":"root","end_time":3000000000,"kind":"SPAN_KIND_UNSPECIFIED","status":{"message":"","code":"STATUS_CODE_UNSET"},"start_time":2000000000},"fields":{"resource":"R1"}}`
-	expected += "\n"
 	expected += `{"time":3,"host":"unknown","event":{"trace_id":"01010101010101010101010101010101","span_id":"0000000000000001","parent_span_id":"0102030405060708","name":"root","end_time":4000000000,"kind":"SPAN_KIND_UNSPECIFIED","status":{"message":"ok","code":"STATUS_CODE_OK"},"start_time":3000000000},"fields":{"resource":"R1"}}`
-	expected += "\n"
 	assert.Equal(t, expected, actual)
 }
 
 func TestReceiveLogs(t *testing.T) {
 	type wantType struct {
-		batches    []string
+		batches    [][]string
 		numBatches int
 		compressed bool
 	}
@@ -343,11 +341,11 @@ func TestReceiveLogs(t *testing.T) {
 				return cfg
 			}(),
 			want: wantType{
-				batches: []string{
-					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","otel.log.name":"0_0_0"}}` + "\n" +
-						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","otel.log.name":"0_0_1"}}` + "\n" +
-						`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","otel.log.name":"0_0_2"}}` + "\n" +
-						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","otel.log.name":"0_0_3"}}` + "\n",
+				batches: [][]string{
+					{`"otel.log.name":"0_0_0"`,
+						`"otel.log.name":"0_0_1"`,
+						`otel.log.name":"0_0_2`,
+						`otel.log.name":"0_0_3`},
 				},
 				numBatches: 1,
 			},
@@ -361,11 +359,11 @@ func TestReceiveLogs(t *testing.T) {
 				return cfg
 			}(),
 			want: wantType{
-				batches: []string{
-					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","otel.log.name":"0_0_0"}}` + "\n",
-					`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","otel.log.name":"0_0_1"}}` + "\n",
-					`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","otel.log.name":"0_0_2"}}` + "\n",
-					`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","otel.log.name":"0_0_3"}}` + "\n",
+				batches: [][]string{
+					{`"otel.log.name":"0_0_0"`},
+					{`"otel.log.name":"0_0_1"`},
+					{`"otel.log.name":"0_0_2"`},
+					{`"otel.log.name":"0_0_3"`},
 				},
 				numBatches: 4,
 			},
@@ -379,11 +377,9 @@ func TestReceiveLogs(t *testing.T) {
 				return cfg
 			}(),
 			want: wantType{
-				batches: []string{
-					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","otel.log.name":"0_0_0"}}` + "\n" +
-						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","otel.log.name":"0_0_1"}}` + "\n",
-					`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","otel.log.name":"0_0_2"}}` + "\n" +
-						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","otel.log.name":"0_0_3"}}` + "\n",
+				batches: [][]string{
+					{`"otel.log.name":"0_0_0"`, `"otel.log.name":"0_0_1"`},
+					{`"otel.log.name":"0_0_2"`, `"otel.log.name":"0_0_3"`},
 				},
 				numBatches: 2,
 			},
@@ -395,17 +391,8 @@ func TestReceiveLogs(t *testing.T) {
 				return NewFactory().CreateDefaultConfig().(*Config)
 			}(),
 			want: wantType{
-				batches: []string{
-					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","otel.log.name":"0_0_0"}}` + "\n" +
-						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","otel.log.name":"0_0_1"}}` + "\n" +
-						`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","otel.log.name":"0_0_2"}}` + "\n" +
-						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","otel.log.name":"0_0_3"}}` + "\n" +
-						`{"time":0.004,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","otel.log.name":"0_0_4"}}` + "\n" +
-						`{"time":0.005,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","otel.log.name":"0_0_5"}}` + "\n" +
-						`{"time":0.006,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","otel.log.name":"0_0_6"}}` + "\n" +
-						`{"time":0.007,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","otel.log.name":"0_0_7"}}` + "\n" +
-						`{"time":0.008,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","otel.log.name":"0_0_8"}}` + "\n" +
-						`{"time":0.009,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","otel.log.name":"0_0_9"}}` + "\n",
+				batches: [][]string{
+					{`"otel.log.name":"0_0_0"`, `"otel.log.name":"0_0_1"`, `"otel.log.name":"0_0_5"`, `"otel.log.name":"0_0_6"`, `"otel.log.name":"0_0_7"`, `"otel.log.name":"0_0_8"`, `"otel.log.name":"0_0_9"`},
 				},
 				numBatches: 1,
 				compressed: true,
@@ -420,29 +407,9 @@ func TestReceiveLogs(t *testing.T) {
 				return cfg
 			}(),
 			want: wantType{
-				batches: []string{
-					`{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","otel.log.name":"0_0_0"}}` + "\n" +
-						`{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","otel.log.name":"0_0_1"}}` + "\n" +
-						`{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","otel.log.name":"0_0_2"}}` + "\n" +
-						`{"time":0.003,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","otel.log.name":"0_0_3"}}` + "\n" +
-						`{"time":0.004,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","otel.log.name":"0_0_4"}}` + "\n" +
-						`{"time":0.005,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","otel.log.name":"0_0_5"}}` + "\n" +
-						`{"time":0.006,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","otel.log.name":"0_0_6"}}` + "\n" +
-						`{"time":0.007,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","otel.log.name":"0_0_7"}}` + "\n" +
-						`{"time":0.008,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","otel.log.name":"0_0_8"}}` + "\n" +
-						`{"time":0.009,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","otel.log.name":"0_0_9"}}` + "\n" +
-						`{"time":0.01,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","otel.log.name":"0_0_10"}}` + "\n",
-					`{"time":0.011,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","otel.log.name":"0_0_11"}}` + "\n" +
-						`{"time":0.012,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","otel.log.name":"0_0_12"}}` + "\n" +
-						`{"time":0.013,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","otel.log.name":"0_0_13"}}` + "\n" +
-						`{"time":0.014,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","otel.log.name":"0_0_14"}}` + "\n" +
-						`{"time":0.015,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","otel.log.name":"0_0_15"}}` + "\n" +
-						`{"time":0.016,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","otel.log.name":"0_0_16"}}` + "\n" +
-						`{"time":0.017,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","otel.log.name":"0_0_17"}}` + "\n" +
-						`{"time":0.018,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","otel.log.name":"0_0_18"}}` + "\n" +
-						`{"time":0.019,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","otel.log.name":"0_0_19"}}` + "\n" +
-						`{"time":0.02,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","otel.log.name":"0_0_20"}}` + "\n" +
-						`{"time":0.021,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom","otel.log.name":"0_0_21"}}` + "\n",
+				batches: [][]string{
+					{`"otel.log.name":"0_0_0"`, `"otel.log.name":"0_0_1"`, `"otel.log.name":"0_0_5"`, `"otel.log.name":"0_0_6"`, `"otel.log.name":"0_0_7"`, `"otel.log.name":"0_0_8"`, `"otel.log.name":"0_0_9"`, `"otel.log.name":"0_0_10"`, `"otel.log.name":"0_0_11"`},
+					{`"otel.log.name":"0_0_15"`, `"otel.log.name":"0_0_16"`, `"otel.log.name":"0_0_17"`, `"otel.log.name":"0_0_18"`, `"otel.log.name":"0_0_19"`, `"otel.log.name":"0_0_20"`, `"otel.log.name":"0_0_21"`},
 				},
 				numBatches: 2,
 				compressed: true,
@@ -460,11 +427,12 @@ func TestReceiveLogs(t *testing.T) {
 			for i := 0; i < test.want.numBatches; i++ {
 				require.NotZero(t, got[i])
 				if test.want.compressed {
-					validateCompressedEqual(t, test.want.batches[i], got[i])
+					validateCompressedContains(t, test.want.batches[i], got[i])
 				} else {
-					assert.Equal(t, test.want.batches[i], string(got[i]))
+					for _, expected := range test.want.batches[i] {
+						assert.Contains(t, string(got[i]), expected)
+					}
 				}
-
 			}
 		})
 	}
@@ -473,13 +441,9 @@ func TestReceiveLogs(t *testing.T) {
 func TestReceiveMetrics(t *testing.T) {
 	actual, err := runMetricsExport(true, 3, t)
 	assert.NoError(t, err)
-	expected := `{"host":"unknown","event":"metric","fields":{"k/n0":"vn0","k/n1":"vn1","k/r0":"vr0","k/r1":"vr1","k0":"v0","k1":"v1","metric_name:gauge_double_with_dims":1234.5678,"metric_type":"Gauge"}}`
-	expected += "\n"
-	expected += `{"time":1.001,"host":"unknown","event":"metric","fields":{"k/n0":"vn0","k/n1":"vn1","k/r0":"vr0","k/r1":"vr1","k0":"v0","k1":"v1","metric_name:gauge_double_with_dims":1234.5678,"metric_type":"Gauge"}}`
-	expected += "\n"
-	expected += `{"time":2.002,"host":"unknown","event":"metric","fields":{"k/n0":"vn0","k/n1":"vn1","k/r0":"vr0","k/r1":"vr1","k0":"v0","k1":"v1","metric_name:gauge_double_with_dims":1234.5678,"metric_type":"Gauge"}}`
-	expected += "\n"
-	assert.Equal(t, expected, actual)
+	assert.Contains(t, actual, "\"event\":\"metric\"")
+	assert.Contains(t, actual, "\"time\":1.001")
+	assert.Contains(t, actual, "\"time\":2.002")
 }
 
 func TestReceiveTracesWithCompression(t *testing.T) {
@@ -620,7 +584,7 @@ func TestInvalidJsonClient(t *testing.T) {
 		config: &Config{},
 	}
 	err := c.sendSplunkEvents(context.Background(), evs)
-	assert.EqualError(t, err, "Permanent error: json: unsupported value: +Inf")
+	assert.EqualError(t, err, "Permanent error: splunk.Event.Event: splunkhecexporter.badJSON.Foo: unsupported value: +Inf")
 }
 
 func TestInvalidURLClient(t *testing.T) {
@@ -717,7 +681,7 @@ func Test_pushLogData_InvalidLog(t *testing.T) {
 
 	err := c.pushLogData(context.Background(), logs)
 
-	assert.Contains(t, err.Error(), "json: unsupported value: +Inf")
+	assert.Contains(t, err.Error(), "Permanent error: dropped log event: &{<nil> unknown    +Inf map[]}, error: splunk.Event.Event: unsupported value: +Inf")
 }
 
 func Test_pushLogData_PostError(t *testing.T) {
@@ -996,8 +960,8 @@ func TestSubLogs(t *testing.T) {
 	assert.Equal(t, "1_1_9", got.ResourceLogs().At(2).InstrumentationLibraryLogs().At(0).Logs().At(9).Name())
 }
 
-// validateCompressedEqual validates that GZipped `got` contains `expected` string
-func validateCompressedEqual(t *testing.T, expected string, got []byte) {
+// validateCompressedEqual validates that GZipped `got` contains `expected` strings
+func validateCompressedContains(t *testing.T, expected []string, got []byte) {
 	z, err := gzip.NewReader(bytes.NewReader(got))
 	require.NoError(t, err)
 	defer z.Close()
@@ -1005,5 +969,31 @@ func validateCompressedEqual(t *testing.T, expected string, got []byte) {
 	p, err := ioutil.ReadAll(z)
 	require.NoError(t, err)
 
-	assert.Equal(t, expected, string(p))
+	for _, e := range expected {
+		assert.Contains(t, string(p), e)
+	}
+
+}
+
+func BenchmarkPushLogRecords(b *testing.B) {
+	logs := createLogData(1, 1, 1)
+	c := client{
+		url: &url.URL{Scheme: "http", Host: "splunk"},
+		zippers: sync.Pool{New: func() interface{} {
+			return gzip.NewWriter(nil)
+		}},
+		config: NewFactory().CreateDefaultConfig().(*Config),
+		logger: zap.NewNop(),
+	}
+	sender := func(ctx context.Context, buffer *bytes.Buffer, headers map[string]string) error {
+		return nil
+	}
+	state := makeBlankBufferState(4096)
+	for n := 0; n < b.N; n++ {
+		permanentErrs, sendingErr := c.pushLogRecords(context.Background(), logs.ResourceLogs(), &state, map[string]string{}, sender)
+		assert.NoError(b, sendingErr)
+		for _, permanentErr := range permanentErrs {
+			assert.NoError(b, permanentErr)
+		}
+	}
 }

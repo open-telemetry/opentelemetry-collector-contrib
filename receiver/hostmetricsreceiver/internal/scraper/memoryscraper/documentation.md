@@ -8,7 +8,7 @@ These are the metrics available for this scraper.
 
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
-| system.memory.usage | Bytes of memory in use. | By | Sum | <ul> <li>state</li> </ul> |
+| system.memory.usage | Bytes of memory in use. | By | Sum(Int) | <ul> <li>state</li> </ul> |
 
 ## Attributes
 

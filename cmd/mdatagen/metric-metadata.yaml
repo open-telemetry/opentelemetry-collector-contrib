@@ -17,6 +17,8 @@ attributes:
 # being described below.
 metrics:
   <metric.name>:
+    # Required: whether the metric is collected by default. Takes effect only with "--experimental-gen" mdatagen flag.
+    enabled: # true | false
     # Required: metric description.
     description:
     # Optional: extended documentation of the metric.
@@ -25,9 +27,12 @@ metrics:
     unit:
     # Required: metric type with its settings.
     <sum|gauge|histogram>:
-      # Required for sum metric.
+      # Required for sum and gauge metrics: type of number data point values.
+      value_type: # int | double
+      # Required for sum metric: whether the metric is monotonic (no negative delta values).
       monotonic: # true | false
-      # Required for int sum and histogram metrics.
+      # Required for sum and histogram metrics: whether reported values incorporate previous measurements
+      # (cumulative) or not (delta).
       aggregation: # delta | cumulative
     # Optional: array of attributes that were defined in the attributes section that are emitted by this metric.
     attributes:

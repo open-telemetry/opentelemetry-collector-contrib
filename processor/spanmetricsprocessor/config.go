@@ -52,6 +52,11 @@ type Config struct {
 	// https://github.com/open-telemetry/opentelemetry-collector/blob/main/model/semconv/opentelemetry.go.
 	Dimensions []Dimension `mapstructure:"dimensions"`
 
+	// DimensionsCacheSize defines the size of cache for storing Dimensions, which helps to avoid cache memory growing
+	// indefinitely over the lifetime of the collector.
+	// Optional. See defaultDimensionsCacheSize in processor.go for the default value.
+	DimensionsCacheSize int `mapstructure:"dimensions_cache_size"`
+
 	AggregationTemporality string `mapstructure:"aggregation_temporality"`
 }
 

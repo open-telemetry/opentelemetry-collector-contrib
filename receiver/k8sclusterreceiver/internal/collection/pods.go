@@ -47,7 +47,7 @@ var podPhaseMetric = &metricspb.MetricDescriptor{
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 }
 
-func getMetricsForPod(pod *corev1.Pod) []*resourceMetrics {
+func getMetricsForPod(pod *corev1.Pod, logger *zap.Logger) []*resourceMetrics {
 	metrics := []*metricspb.Metric{
 		{
 			MetricDescriptor: podPhaseMetric,
@@ -66,7 +66,7 @@ func getMetricsForPod(pod *corev1.Pod) []*resourceMetrics {
 			continue
 		}
 
-		contLabels := getAllContainerLabels(cs, podRes.Labels)
+		contLabels := getAllContainerLabels(cs, podRes.Labels, logger)
 		containerResByName[cs.Name] = &resourceMetrics{resource: getResourceForContainer(contLabels)}
 
 		containerResByName[cs.Name].metrics = getStatusMetricsForContainer(cs)

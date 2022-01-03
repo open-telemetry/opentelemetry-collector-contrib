@@ -20,6 +20,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
 )
@@ -36,7 +37,7 @@ func TestContainerResource(t *testing.T) {
 		KnownStatus:   "RUNNING",
 	}
 
-	r := containerResource(cm)
+	r := containerResource(cm, zap.NewNop())
 	require.NotNil(t, r)
 	attrMap := r.Attributes()
 	require.EqualValues(t, 9, attrMap.Len())
@@ -44,7 +45,7 @@ func TestContainerResource(t *testing.T) {
 		conventions.AttributeContainerName:      "container-1",
 		conventions.AttributeContainerID:        "001",
 		attributeECSDockerName:                  "docker-container-1",
-		conventions.AttributeContainerImageName: "nginx:v1.0",
+		conventions.AttributeContainerImageName: "nginx",
 		attributeContainerImageID:               "sha256:8cf1bfb43ff5d9b05af9b6b63983440f137",
 		conventions.AttributeContainerImageTag:  "v1.0",
 		attributeContainerCreatedAt:             "2020-07-30T22:12:29.837074927Z",
@@ -70,7 +71,7 @@ func TestContainerResourceForStoppedContainer(t *testing.T) {
 		ExitCode:      &exitCode,
 	}
 
-	r := containerResource(cm)
+	r := containerResource(cm, zap.NewNop())
 	require.NotNil(t, r)
 	attrMap := r.Attributes()
 	getExitCodeAd, found := attrMap.Get(attributeContainerExitCode)
@@ -81,7 +82,7 @@ func TestContainerResourceForStoppedContainer(t *testing.T) {
 		conventions.AttributeContainerName:      "container-1",
 		conventions.AttributeContainerID:        "001",
 		attributeECSDockerName:                  "docker-container-1",
-		conventions.AttributeContainerImageName: "nginx:v1.0",
+		conventions.AttributeContainerImageName: "nginx",
 		attributeContainerImageID:               "sha256:8cf1bfb43ff5d9b05af9b6b63983440f137",
 		conventions.AttributeContainerImageTag:  "v1.0",
 		attributeContainerCreatedAt:             "2020-07-30T22:12:29.837074927Z",
@@ -186,15 +187,6 @@ func TestGetResourceFromARN(t *testing.T) {
 	require.LessOrEqual(t, 0, len(region))
 	require.LessOrEqual(t, 0, len(accountID))
 	require.LessOrEqual(t, 0, len(taskID))
-}
-
-func TestGetVersionFromImage(t *testing.T) {
-	version := getVersionFromIamge("docker-Im.age:v1.0")
-	require.EqualValues(t, "v1.0", version)
-	version = getVersionFromIamge("dockerIm-agev1.0")
-	require.EqualValues(t, "latest", version)
-	version = getVersionFromIamge("")
-	require.LessOrEqual(t, 0, len(version))
 }
 
 func TestGetNameFromCluster(t *testing.T) {

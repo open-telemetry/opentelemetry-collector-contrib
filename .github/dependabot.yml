@@ -10,6 +10,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/cmd/configschema"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/cmd/mdatagen"
     schedule:
       interval: "weekly"
@@ -51,6 +55,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/exporter/carbonexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/coralogixexporter"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -182,6 +190,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/extension/asapauthextension"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/extension/awsproxy"
     schedule:
       interval: "weekly"
@@ -202,6 +214,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/extension/jaegerremotesampling"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/extension/oauth2clientauthextension"
     schedule:
       interval: "weekly"
@@ -215,6 +231,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/extension/observer/ecsobserver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/extension/observer/ecstaskobserver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -243,6 +263,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/internal/aws/containerinsight"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/internal/aws/ecsutil"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -282,15 +306,19 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/internal/interval"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
     directory: "/internal/k8sconfig"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/internal/kubelet"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/internal/scrapertest"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/internal/sharedcomponent"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -374,6 +402,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/processor/redactionprocessor"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/processor/resourcedetectionprocessor"
     schedule:
       interval: "weekly"
@@ -395,6 +427,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/processor/tailsamplingprocessor"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/apachereceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -434,6 +470,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/receiver/elasticsearchreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/receiver/filelogreceiver"
     schedule:
       interval: "weekly"
@@ -451,10 +491,6 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/receiver/hostmetricsreceiver"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/receiver/httpdreceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -539,10 +575,6 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/receiver/sapmreceiver"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/receiver/scraperhelper"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
