@@ -20,6 +20,10 @@
 - `tanzuobservabilityexporter`: Use semantic conventions for status.message (#7126) 
 - `k8sattributesprocessor`: Move `kube` and `observability` packages to `internal` folder (#7159)
 
+## 🧰 Bug fixes 🧰
+
+- `k8clusterreceiver` fix flaking tests
+
 ## v0.42.0
 
 ## 💡 Enhancements 💡

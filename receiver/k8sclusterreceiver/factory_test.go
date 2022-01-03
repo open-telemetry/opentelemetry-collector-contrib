@@ -16,6 +16,7 @@ package k8sclusterreceiver
 
 import (
 	"context"
+	"runtime/debug"
 	"testing"
 	"time"
 
@@ -32,6 +33,12 @@ import (
 )
 
 func TestFactory(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("k8sclusterreceiver: stacktrace from panic: \n %s", string(debug.Stack()))
+		}
+	}()
+
 	f := NewFactory()
 	require.Equal(t, config.Type("k8s_cluster"), f.Type())
 
