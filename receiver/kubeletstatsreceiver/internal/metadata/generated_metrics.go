@@ -289,7 +289,7 @@ var M = Metrics
 
 // Attributes contains the possible metric attributes that can be used.
 var Attributes = struct {
-	// Direction (Direction of flow of bytes/opertations (receive or transmit).)
+	// Direction (Direction of flow of bytes/operations (receive or transmit).)
 	Direction string
 	// Interface (Name of the network interface.)
 	Interface string

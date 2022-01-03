@@ -27,7 +27,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -36,7 +36,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
@@ -63,7 +63,7 @@ func TestLoadConfigWithEnvVar(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config_env.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config_env.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
@@ -84,7 +84,7 @@ func TestLoadConfigK8s(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config_k8s.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config_k8s.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
@@ -107,7 +107,7 @@ func TestLoadConfigFailsOnUnknownSection(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfig(path.Join(".", "testdata", "invalid-config-section.yaml"), factories)
+	cfg, err := servicetest.LoadConfig(path.Join(".", "testdata", "invalid-config-section.yaml"), factories)
 	assert.Error(t, err)
 	assert.Nil(t, cfg)
 }
@@ -121,7 +121,7 @@ func TestLoadConfigFailsOnUnknownPrometheusSection(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfig(path.Join(".", "testdata", "invalid-config-prometheus-section.yaml"), factories)
+	cfg, err := servicetest.LoadConfig(path.Join(".", "testdata", "invalid-config-prometheus-section.yaml"), factories)
 	assert.Error(t, err)
 	assert.Nil(t, cfg)
 }
@@ -133,7 +133,7 @@ func TestLoadConfigFailsOnRenameDisallowed(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "invalid-config-prometheus-relabel.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "invalid-config-prometheus-relabel.yaml"), factories)
 	assert.Error(t, err)
 	assert.NotNil(t, cfg)
 }
@@ -144,7 +144,7 @@ func TestRejectUnsupportedPrometheusFeatures(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfig(path.Join(".", "testdata", "invalid-config-prometheus-unsupported-features.yaml"), factories)
+	cfg, err := servicetest.LoadConfig(path.Join(".", "testdata", "invalid-config-prometheus-unsupported-features.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 	err = cfg.Validate()
@@ -168,7 +168,7 @@ func TestNonExistentAuthCredentialsFile(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfig(path.Join(".", "testdata", "invalid-config-prometheus-non-existent-auth-credentials-file.yaml"), factories)
+	cfg, err := servicetest.LoadConfig(path.Join(".", "testdata", "invalid-config-prometheus-non-existent-auth-credentials-file.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 	err = cfg.Validate()
@@ -186,7 +186,7 @@ func TestTLSConfigNonExistentCertFile(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfig(path.Join(".", "testdata", "invalid-config-prometheus-non-existent-cert-file.yaml"), factories)
+	cfg, err := servicetest.LoadConfig(path.Join(".", "testdata", "invalid-config-prometheus-non-existent-cert-file.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 	err = cfg.Validate()
@@ -204,7 +204,7 @@ func TestTLSConfigNonExistentKeyFile(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfig(path.Join(".", "testdata", "invalid-config-prometheus-non-existent-key-file.yaml"), factories)
+	cfg, err := servicetest.LoadConfig(path.Join(".", "testdata", "invalid-config-prometheus-non-existent-key-file.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 	err = cfg.Validate()
@@ -222,7 +222,7 @@ func TestTLSConfigCertFileWithoutKeyFile(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfig(path.Join(".", "testdata", "invalid-config-prometheus-cert-file-without-key-file.yaml"), factories)
+	cfg, err := servicetest.LoadConfig(path.Join(".", "testdata", "invalid-config-prometheus-cert-file-without-key-file.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 	err = cfg.Validate()
@@ -240,7 +240,7 @@ func TestTLSConfigKeyFileWithoutCertFile(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfig(path.Join(".", "testdata", "invalid-config-prometheus-key-file-without-cert-file.yaml"), factories)
+	cfg, err := servicetest.LoadConfig(path.Join(".", "testdata", "invalid-config-prometheus-key-file-without-cert-file.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 	err = cfg.Validate()
@@ -258,7 +258,7 @@ func TestKubernetesSDConfigWithoutKeyFile(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfig(path.Join(".", "testdata", "invalid-config-prometheus-kubernetes-sd-config.yaml"), factories)
+	cfg, err := servicetest.LoadConfig(path.Join(".", "testdata", "invalid-config-prometheus-kubernetes-sd-config.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 	err = cfg.Validate()
@@ -276,7 +276,7 @@ func TestFileSDConfigJsonNilTargetGroup(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfig(path.Join(".", "testdata", "invalid-config-prometheus-file-sd-config-json.yaml"), factories)
+	cfg, err := servicetest.LoadConfig(path.Join(".", "testdata", "invalid-config-prometheus-file-sd-config-json.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 	err = cfg.Validate()
@@ -294,7 +294,7 @@ func TestFileSDConfigYamlNilTargetGroup(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfig(path.Join(".", "testdata", "invalid-config-prometheus-file-sd-config-yaml.yaml"), factories)
+	cfg, err := servicetest.LoadConfig(path.Join(".", "testdata", "invalid-config-prometheus-file-sd-config-yaml.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 	err = cfg.Validate()

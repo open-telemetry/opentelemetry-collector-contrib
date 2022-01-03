@@ -13,8 +13,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.41.0
 	github.com/shirou/gopsutil/v3 v3.21.11
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.41.1-0.20211221183212-22c010d4446c
-	go.opentelemetry.io/collector/model v0.41.1-0.20211220220048-babb2d26d6a9
+	go.opentelemetry.io/collector v0.41.1-0.20211222180302-3db1d1146483
+	go.opentelemetry.io/collector/model v0.41.1-0.20211222180302-3db1d1146483
 	go.uber.org/zap v1.19.1
 	k8s.io/api v0.23.1
 	k8s.io/apimachinery v0.23.1
@@ -85,7 +85,7 @@ require (
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.32.1 // indirect
-	github.com/rs/cors v1.8.0 // indirect
+	github.com/rs/cors v1.8.2 // indirect
 	github.com/seccomp/libseccomp-golang v0.9.1 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/spf13/cast v1.4.1 // indirect

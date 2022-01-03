@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 // Test keys. Not for use anywhere but these tests.
@@ -41,7 +41,7 @@ func TestLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	factories.Extensions[typeStr] = factory
 
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 	assert.NotNil(t, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, cfg.Validate())
@@ -85,7 +85,7 @@ func TestLoadBadConfig(t *testing.T) {
 	for _, tt := range tests {
 		factory := NewFactory()
 		factories.Extensions[typeStr] = factory
-		cfg, err := configtest.LoadConfig(path.Join(".", "testdata", "config_bad.yaml"), factories)
+		cfg, err := servicetest.LoadConfig(path.Join(".", "testdata", "config_bad.yaml"), factories)
 		assert.NoError(t, err)
 		extension := cfg.Extensions[config.NewComponentIDWithName(typeStr, tt.configName)]
 		verr := extension.Validate()

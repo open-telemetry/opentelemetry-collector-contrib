@@ -13,8 +13,8 @@ require (
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.2
 	github.com/signalfx/signalfx-agent/pkg/apm v0.0.0-20201202163743-65b4fa925fc8
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.41.1-0.20211221183212-22c010d4446c
-	go.opentelemetry.io/collector/model v0.41.1-0.20211220220048-babb2d26d6a9
+	go.opentelemetry.io/collector v0.41.1-0.20211222180302-3db1d1146483
+	go.opentelemetry.io/collector/model v0.41.1-0.20211222180302-3db1d1146483
 	go.uber.org/multierr v1.7.0
 	go.uber.org/zap v1.19.1
 )
@@ -45,7 +45,7 @@ require (
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
-	github.com/rs/cors v1.8.0 // indirect
+	github.com/rs/cors v1.8.2 // indirect
 	github.com/signalfx/gohistogram v0.0.0-20160107210732-1ccfd2ff5083 // indirect
 	github.com/signalfx/golib/v3 v3.3.13 // indirect
 	github.com/signalfx/sapm-proto v0.4.0 // indirect

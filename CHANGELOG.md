@@ -8,6 +8,8 @@
 - `mysqlreceiver`: Add Integration test (#6916)
 - `datadogexporter`: Add compatibility with ECS Fargate semantic conventions (#6670)
 - `k8s_observer`: discover k8s.node endpoints (#6820)
+- `redisreceiver`: Add missing description fields to keyspace metrics (#6940)
+- `kafkaexporter`: Allow controlling Kafka acknowledgment behaviour  (#6301)
 
 ## 🛑 Breaking changes 🛑
 
@@ -21,6 +23,9 @@
 - `ecs_task_observer`: Discover running containers in AWS ECS tasks (#6894)
 
 ## 🧰 Bug fixes 🧰
+
+- `ecstaskobserver`: Fix "Incorrect conversion between integer types" security issue (#6939)
+- Fix typo in "direction" metrics attribute description (#6949)
 
 ## 💡 Enhancements 💡
 
