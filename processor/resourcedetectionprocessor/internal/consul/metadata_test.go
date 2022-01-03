@@ -52,9 +52,7 @@ func TestConsulHappyPath(t *testing.T) {
 	}
 	client, err := api.NewClient(config)
 	require.NoError(t, err)
-	provider, err := newConsulMetadata(client, allowedLabels)
-	require.NoError(t, err)
-
+	provider := newConsulMetadata(client, allowedLabels)
 	meta, err := provider.Metadata(context.TODO())
 	assert.NoError(t, err)
 	assert.Equal(t, "hostname", meta.hostName)

@@ -37,8 +37,8 @@ type consulMetadata struct {
 	hostMetadata map[string]string
 }
 
-func newConsulMetadata(client *api.Client, allowedLabels map[string]interface{}) (consulMetadataCollector, error) {
-	return &consulMetadataImpl{consulClient: client, allowedLabels: allowedLabels}, nil
+func newConsulMetadata(client *api.Client, allowedLabels map[string]interface{}) consulMetadataCollector {
+	return &consulMetadataImpl{consulClient: client, allowedLabels: allowedLabels}
 }
 
 func (d *consulMetadataImpl) Metadata(ctx context.Context) (*consulMetadata, error) {

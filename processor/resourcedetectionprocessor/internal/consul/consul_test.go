@@ -31,16 +31,16 @@ type mockMetadata struct {
 	mock.Mock
 }
 
-func (m *mockMetadata) Metadata(context.Context) (*ConsulMetadata, error) {
+func (m *mockMetadata) Metadata(context.Context) (*consulMetadata, error) {
 	args := m.MethodCalled("Metadata")
 
-	return args.Get(0).(*ConsulMetadata), args.Error(1)
+	return args.Get(0).(*consulMetadata), args.Error(1)
 }
 
 func TestDetect(t *testing.T) {
 	md := &mockMetadata{}
 	md.On("Metadata").Return(
-		&ConsulMetadata{
+		&consulMetadata{
 			hostName:     "hostname",
 			datacenter:   "dc1",
 			nodeID:       "00000000-0000-0000-0000-000000000000",

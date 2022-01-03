@@ -66,11 +66,7 @@ func NewDetector(p component.ProcessorCreateSettings, dcfg internal.DetectorConf
 		return nil, fmt.Errorf("failed creating consul client: %w", err)
 	}
 
-	provider, err := newConsulMetadata(client, userCfg.MetaLabels)
-	if err != nil {
-		return nil, fmt.Errorf("failed creating consul metadata provider: %w", err)
-	}
-
+	provider := newConsulMetadata(client, userCfg.MetaLabels)
 	return &Detector{provider: provider, logger: p.Logger}, nil
 }
 
