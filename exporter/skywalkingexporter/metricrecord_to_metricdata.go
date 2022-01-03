@@ -27,8 +27,8 @@ const (
 )
 
 func resourceToMetricLabels(resource pdata.Resource) []*metricpb.Label {
-	labels := make([]*metricpb.Label, 0)
 	attrs := resource.Attributes()
+	labels := make([]*metricpb.Label, attrs.Len())
 	attrs.Range(func(k string, v pdata.AttributeValue) bool {
 		labels = append(labels,
 			&metricpb.Label{
@@ -56,11 +56,11 @@ func resourceToServiceInfo(resource pdata.Resource) (service string, serviceInst
 }
 
 func numberMetricsToData(name string, data pdata.NumberDataPointSlice, defaultLabels []*metricpb.Label) (metrics []*metricpb.MeterData) {
-	metrics = make([]*metricpb.MeterData, 0)
+	metrics = make([]*metricpb.MeterData, data.Len())
 	for i := 0; i < data.Len(); i++ {
 		dataPoint := data.At(i)
 		attributeMap := dataPoint.Attributes()
-		labels := make([]*metricpb.Label, 0)
+		labels := make([]*metricpb.Label, attributeMap.Len())
 		attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
 			labels = append(labels, &metricpb.Label{Name: k, Value: v.AsString()})
 			return true
@@ -87,11 +87,11 @@ func numberMetricsToData(name string, data pdata.NumberDataPointSlice, defaultLa
 }
 
 func doubleHistogramMetricsToData(name string, data pdata.HistogramDataPointSlice, defaultLabels []*metricpb.Label) (metrics []*metricpb.MeterData) {
-	metrics = make([]*metricpb.MeterData, 0)
+	metrics = make([]*metricpb.MeterData, 3*data.Len())
 	for i := 0; i < data.Len(); i++ {
 		dataPoint := data.At(i)
 		attributeMap := dataPoint.Attributes()
-		labels := make([]*metricpb.Label, 0)
+		labels := make([]*metricpb.Label, attributeMap.Len())
 		attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
 			labels = append(labels, &metricpb.Label{Name: k, Value: v.AsString()})
 			return true
@@ -141,11 +141,11 @@ func doubleHistogramMetricsToData(name string, data pdata.HistogramDataPointSlic
 }
 
 func doubleSummaryMetricsToData(name string, data pdata.SummaryDataPointSlice, defaultLabels []*metricpb.Label) (metrics []*metricpb.MeterData) {
-	metrics = make([]*metricpb.MeterData, 0)
+	metrics = make([]*metricpb.MeterData, 3*data.Len())
 	for i := 0; i < data.Len(); i++ {
 		dataPoint := data.At(i)
 		attributeMap := dataPoint.Attributes()
-		labels := make([]*metricpb.Label, 0)
+		labels := make([]*metricpb.Label, attributeMap.Len())
 		attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
 			labels = append(labels, &metricpb.Label{Name: k, Value: v.AsString()})
 			return true
