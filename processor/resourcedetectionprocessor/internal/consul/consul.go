@@ -36,7 +36,7 @@ var _ internal.Detector = (*Detector)(nil)
 
 // Detector is a system metadata detector
 type Detector struct {
-	provider consulMetadata
+	provider consulMetadataCollector
 	logger   *zap.Logger
 }
 

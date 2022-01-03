@@ -21,8 +21,8 @@ import (
 	"github.com/hashicorp/consul/api"
 )
 
-type consulMetadata interface {
-	Metadata(context.Context) (*ConsulMetadata, error)
+type consulMetadataCollector interface {
+	Metadata(context.Context) (*consulMetadata, error)
 }
 
 type consulMetadataImpl struct {
@@ -30,19 +30,19 @@ type consulMetadataImpl struct {
 	allowedLabels map[string]interface{}
 }
 
-type ConsulMetadata struct {
+type consulMetadata struct {
 	nodeID       string
 	hostName     string
 	datacenter   string
 	hostMetadata map[string]string
 }
 
-func newConsulMetadata(client *api.Client, allowedLabels map[string]interface{}) (consulMetadata, error) {
+func newConsulMetadata(client *api.Client, allowedLabels map[string]interface{}) (consulMetadataCollector, error) {
 	return &consulMetadataImpl{consulClient: client, allowedLabels: allowedLabels}, nil
 }
 
-func (d *consulMetadataImpl) Metadata(ctx context.Context) (*ConsulMetadata, error) {
-	var metadata ConsulMetadata
+func (d *consulMetadataImpl) Metadata(ctx context.Context) (*consulMetadata, error) {
+	var metadata consulMetadata
 	self, err := d.consulClient.Agent().Self()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get local agent information: %w", err)
