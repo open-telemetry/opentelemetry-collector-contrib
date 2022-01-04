@@ -20,12 +20,12 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/sanitize"
-
 	"go.opentelemetry.io/collector/component"
 	cconfig "go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/sanitize"
 )
 
 // Client defines the basic HTTP client interface with GET response validation and content parsing
