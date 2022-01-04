@@ -85,6 +85,7 @@ metrics:
       aggregation: cumulative
       value_type: int
     attributes: [cache_name]
+    enabled: true
   elasticsearch.node.cache.evictions:
     description: The number of evictions from the cache.
     unit: "{evictions}"
@@ -93,6 +94,7 @@ metrics:
       aggregation: cumulative
       value_type: int
     attributes: [cache_name]
+    enabled: true
   elasticsearch.node.jvm.gc.collections.count:
     description: The number of garbage collections performed by the JVM.
     unit: "{collections}"
@@ -101,6 +103,7 @@ metrics:
       aggregation: cumulative
       value_type: int
     attributes: [generation]
+    enabled: true
   elasticsearch.node.jvm.gc.collections.elapsed:
     description: The total time spent by the JVM running the GC.
     unit: ms
@@ -109,6 +112,7 @@ metrics:
       aggregation: cumulative
       value_type: int
     attributes: [generation]
+    enabled: true
   elasticsearch.node.jvm.memory.heap.used:
     description: The current heap memory in use by the JVM.
     unit: By
@@ -117,6 +121,7 @@ metrics:
       aggregation: cumulative
       value_type: int
     attributes: []
+    enabled: true
   elasticsearch.node.jvm.memory.heap.max:
     description: The max memory used by the JVM.
     unit: By
@@ -125,12 +130,14 @@ metrics:
       aggregation: cumulative
       value_type: int
     attributes: []
+    enabled: true
   elasticsearch.node.jvm.memory.nonheap.used:
     description: The current nonheap memory in use by the JVM.
     unit: By
     gauge:
       value_type: int
     attributes: []
+    enabled: true
   elasticsearch.node.jvm.threads.count:
     description: The number of open threads in the node's JVM process.
     unit: "{threads}"
@@ -139,12 +146,14 @@ metrics:
       aggregation: cumulative
       value_type: int
     attributes: []
+    enabled: true
   elasticsearch.node.jvm.threads.peak:
     description: The maximum number of concurrently running threads in the node's JVM process.
     unit: "{threads}"
     gauge:
       value_type: int
     attributes: []
+    enabled: true
   elasticsearch.node.fs.disk.available:
     description: The amount of disk space available across all file stores for this node.
     unit: By
@@ -153,6 +162,7 @@ metrics:
       aggregation: cumulative
       value_type: int
     attributes: []
+    enabled: true
   elasticsearch.node.fs.io.operations:
     description: The number of io operations completed across all file stores since starting Elasticsearch. Only available on Linux nodes.
     unit: "{operations}"
@@ -161,6 +171,7 @@ metrics:
       aggregation: cumulative
       value_type: int
     attributes: [fs_direction]
+    enabled: true
   elasticsearch.node.cluster.io:
     description: Number of bytes sent and received on the network for internal cluster communication.
     unit: By
@@ -169,6 +180,7 @@ metrics:
       aggregation: cumulative
       value_type: int
     attributes: [direction]
+    enabled: true
   elasticsearch.node.cluster.connections:
     description: Number of open tcp connections for internal cluster communication.
     unit: "{connections}"
@@ -177,6 +189,7 @@ metrics:
       aggregation: cumulative
       value_type: int
     attributes: []
+    enabled: true
   elasticsearch.node.http.connections:
     description: Number of HTTP connections to the node.
     unit: "{connections}"
@@ -185,6 +198,7 @@ metrics:
       aggregation: cumulative
       value_type: int
     attributes: []
+    enabled: true
   elasticsearch.node.operations.completed:
     description: Number of operations completed.
     unit: "{operations}"
@@ -193,6 +207,7 @@ metrics:
       aggregation: cumulative
       value_type: int
     attributes: [operation]
+    enabled: true
   elasticsearch.node.operations.time:
     description: Time spent on operations.
     unit: ms
@@ -201,6 +216,7 @@ metrics:
       aggregation: cumulative
       value_type: int
     attributes: [operation]
+    enabled: true
   elasticsearch.node.shards.size:
     description: The total size of the shards assigned to this node.
     unit: By
@@ -209,6 +225,7 @@ metrics:
       aggregation: cumulative
       value_type: int
     attributes: []
+    enabled: true
   elasticsearch.node.thread_pool.threads:
     description: The number of threads in the thread pool.
     unit: "{threads}"
@@ -217,6 +234,7 @@ metrics:
       aggregation: cumulative
       value_type: int
     attributes: [thread_state]
+    enabled: true
   elasticsearch.node.thread_pool.tasks.queued:
     description: The number of queued tasks in the thread pool.
     unit: "{tasks}"
@@ -225,6 +243,7 @@ metrics:
       aggregation: cumulative
       value_type: int
     attributes: [thread_pool_name]
+    enabled: true
   elasticsearch.node.thread_pool.tasks.finished:
     description: The number of tasks finished by the thread pool.
     unit: "{tasks}"
@@ -233,6 +252,7 @@ metrics:
       aggregation: cumulative
       value_type: int
     attributes: [thread_pool_name, task_state]
+    enabled: true
   elasticsearch.node.documents:
     description: The number of documents on the node.
     unit: "{documents}"
@@ -241,6 +261,7 @@ metrics:
       aggregation: cumulative
       value_type: int
     attributes: [document_state]
+    enabled: true
   elasticsearch.node.open_files:
     description: The number of open file descriptors held by the node.
     unit: "{files}"
@@ -249,6 +270,7 @@ metrics:
       aggregation: cumulative
       value_type: int
     attributes: []
+    enabled: true
   # these metrics are from /_cluster/health, and are cluster level metrics
   elasticsearch.cluster.shards:
     description: The number of shards in the cluster.
@@ -258,6 +280,7 @@ metrics:
       aggregation: cumulative
       value_type: int
     attributes: [shard_type]
+    enabled: true
   elasticsearch.cluster.data_nodes:
     description: The number of data nodes in the cluster.
     unit: "{nodes}"
@@ -266,6 +289,7 @@ metrics:
       aggregation: cumulative
       value_type: int
     attributes: []
+    enabled: true
   elasticsearch.cluster.nodes:
     description: The total number of nodes in the cluster.
     unit: "{nodes}"
@@ -274,3 +298,4 @@ metrics:
       aggregation: cumulative
       value_type: int
     attributes: []
+    enabled: true
