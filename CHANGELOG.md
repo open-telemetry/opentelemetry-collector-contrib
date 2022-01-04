@@ -5,6 +5,7 @@
 ## 💡 Enhancements 💡
 
 - `couchdbreceiver`: Add couchdb client (#6880)
+- `elasticsearchreceiver`: Implement scraper client (#7019)
 - `prometheusremotewriteexporter`: Handling Staleness flag from OTLP (#6679)
 - `prometheusexporter`: Handling Staleness flag from OTLP (#6805)
 - `prometheusreceiver`: Set OTLP no-data-present flag for stale scraped metrics. (#7043)
