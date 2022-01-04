@@ -24,7 +24,7 @@ type MetricsSettings struct {
 	ElasticsearchNodeClusterIo               MetricSettings `mapstructure:"elasticsearch.node.cluster.io"`
 	ElasticsearchNodeDocuments               MetricSettings `mapstructure:"elasticsearch.node.documents"`
 	ElasticsearchNodeFsDiskAvailable         MetricSettings `mapstructure:"elasticsearch.node.fs.disk.available"`
-	ElasticsearchNodeFsIoOperations          MetricSettings `mapstructure:"elasticsearch.node.fs.io.operations"`
+	ElasticsearchNodeFsOperations            MetricSettings `mapstructure:"elasticsearch.node.fs.operations"`
 	ElasticsearchNodeHTTPConnections         MetricSettings `mapstructure:"elasticsearch.node.http.connections"`
 	ElasticsearchNodeJvmGcCollectionsCount   MetricSettings `mapstructure:"elasticsearch.node.jvm.gc.collections.count"`
 	ElasticsearchNodeJvmGcCollectionsElapsed MetricSettings `mapstructure:"elasticsearch.node.jvm.gc.collections.elapsed"`
@@ -71,7 +71,7 @@ func DefaultMetricsSettings() MetricsSettings {
 		ElasticsearchNodeFsDiskAvailable: MetricSettings{
 			Enabled: true,
 		},
-		ElasticsearchNodeFsIoOperations: MetricSettings{
+		ElasticsearchNodeFsOperations: MetricSettings{
 			Enabled: true,
 		},
 		ElasticsearchNodeHTTPConnections: MetricSettings{
@@ -241,7 +241,7 @@ func (m *metricElasticsearchClusterShards) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricElasticsearchClusterShards) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, shardTypeAttributeValue string) {
+func (m *metricElasticsearchClusterShards) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, shardStateAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -249,7 +249,7 @@ func (m *metricElasticsearchClusterShards) recordDataPoint(start pdata.Timestamp
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.ShardType, pdata.NewAttributeValueString(shardTypeAttributeValue))
+	dp.Attributes().Insert(A.ShardState, pdata.NewAttributeValueString(shardStateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -392,7 +392,7 @@ type metricElasticsearchNodeClusterConnections struct {
 // init fills elasticsearch.node.cluster.connections metric with initial data.
 func (m *metricElasticsearchNodeClusterConnections) init() {
 	m.data.SetName("elasticsearch.node.cluster.connections")
-	m.data.SetDescription("Number of open tcp connections for internal cluster communication.")
+	m.data.SetDescription("The number of open tcp connections for internal cluster communication.")
 	m.data.SetUnit("{connections}")
 	m.data.SetDataType(pdata.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
@@ -443,7 +443,7 @@ type metricElasticsearchNodeClusterIo struct {
 // init fills elasticsearch.node.cluster.io metric with initial data.
 func (m *metricElasticsearchNodeClusterIo) init() {
 	m.data.SetName("elasticsearch.node.cluster.io")
-	m.data.SetDescription("Number of bytes sent and received on the network for internal cluster communication.")
+	m.data.SetDescription("The number of bytes sent and received on the network for internal cluster communication.")
 	m.data.SetUnit("By")
 	m.data.SetDataType(pdata.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
@@ -591,16 +591,16 @@ func newMetricElasticsearchNodeFsDiskAvailable(settings MetricSettings) metricEl
 	return m
 }
 
-type metricElasticsearchNodeFsIoOperations struct {
+type metricElasticsearchNodeFsOperations struct {
 	data     pdata.Metric   // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills elasticsearch.node.fs.io.operations metric with initial data.
-func (m *metricElasticsearchNodeFsIoOperations) init() {
-	m.data.SetName("elasticsearch.node.fs.io.operations")
-	m.data.SetDescription("The number of io operations completed across all file stores since starting Elasticsearch. Only available on Linux nodes.")
+// init fills elasticsearch.node.fs.operations metric with initial data.
+func (m *metricElasticsearchNodeFsOperations) init() {
+	m.data.SetName("elasticsearch.node.fs.operations")
+	m.data.SetDescription("The number of IO operations completed across all file stores since starting Elasticsearch. Only available on Linux nodes.")
 	m.data.SetUnit("{operations}")
 	m.data.SetDataType(pdata.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
@@ -608,7 +608,7 @@ func (m *metricElasticsearchNodeFsIoOperations) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricElasticsearchNodeFsIoOperations) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, fsDirectionAttributeValue string) {
+func (m *metricElasticsearchNodeFsOperations) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, fsDirectionAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -620,14 +620,14 @@ func (m *metricElasticsearchNodeFsIoOperations) recordDataPoint(start pdata.Time
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricElasticsearchNodeFsIoOperations) updateCapacity() {
+func (m *metricElasticsearchNodeFsOperations) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricElasticsearchNodeFsIoOperations) emit(metrics pdata.MetricSlice) {
+func (m *metricElasticsearchNodeFsOperations) emit(metrics pdata.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -635,8 +635,8 @@ func (m *metricElasticsearchNodeFsIoOperations) emit(metrics pdata.MetricSlice) 
 	}
 }
 
-func newMetricElasticsearchNodeFsIoOperations(settings MetricSettings) metricElasticsearchNodeFsIoOperations {
-	m := metricElasticsearchNodeFsIoOperations{settings: settings}
+func newMetricElasticsearchNodeFsOperations(settings MetricSettings) metricElasticsearchNodeFsOperations {
+	m := metricElasticsearchNodeFsOperations{settings: settings}
 	if settings.Enabled {
 		m.data = pdata.NewMetric()
 		m.init()
@@ -653,7 +653,7 @@ type metricElasticsearchNodeHTTPConnections struct {
 // init fills elasticsearch.node.http.connections metric with initial data.
 func (m *metricElasticsearchNodeHTTPConnections) init() {
 	m.data.SetName("elasticsearch.node.http.connections")
-	m.data.SetDescription("Number of HTTP connections to the node.")
+	m.data.SetDescription("The number of HTTP connections to the node.")
 	m.data.SetUnit("{connections}")
 	m.data.SetDataType(pdata.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
@@ -810,7 +810,7 @@ type metricElasticsearchNodeJvmMemoryHeapMax struct {
 // init fills elasticsearch.node.jvm.memory.heap.max metric with initial data.
 func (m *metricElasticsearchNodeJvmMemoryHeapMax) init() {
 	m.data.SetName("elasticsearch.node.jvm.memory.heap.max")
-	m.data.SetDescription("The max memory used by the JVM.")
+	m.data.SetDescription("The max heap memory used by the JVM.")
 	m.data.SetUnit("By")
 	m.data.SetDataType(pdata.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
@@ -1112,7 +1112,7 @@ type metricElasticsearchNodeOperationsCompleted struct {
 // init fills elasticsearch.node.operations.completed metric with initial data.
 func (m *metricElasticsearchNodeOperationsCompleted) init() {
 	m.data.SetName("elasticsearch.node.operations.completed")
-	m.data.SetDescription("Number of operations completed.")
+	m.data.SetDescription("The number of operations completed.")
 	m.data.SetUnit("{operations}")
 	m.data.SetDataType(pdata.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
@@ -1218,7 +1218,7 @@ type metricElasticsearchNodeShardsSize struct {
 // init fills elasticsearch.node.shards.size metric with initial data.
 func (m *metricElasticsearchNodeShardsSize) init() {
 	m.data.SetName("elasticsearch.node.shards.size")
-	m.data.SetDescription("The total size of the shards assigned to this node.")
+	m.data.SetDescription("The size of the shards assigned to this node.")
 	m.data.SetUnit("By")
 	m.data.SetDataType(pdata.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
@@ -1433,7 +1433,7 @@ type MetricsBuilder struct {
 	metricElasticsearchNodeClusterIo               metricElasticsearchNodeClusterIo
 	metricElasticsearchNodeDocuments               metricElasticsearchNodeDocuments
 	metricElasticsearchNodeFsDiskAvailable         metricElasticsearchNodeFsDiskAvailable
-	metricElasticsearchNodeFsIoOperations          metricElasticsearchNodeFsIoOperations
+	metricElasticsearchNodeFsOperations            metricElasticsearchNodeFsOperations
 	metricElasticsearchNodeHTTPConnections         metricElasticsearchNodeHTTPConnections
 	metricElasticsearchNodeJvmGcCollectionsCount   metricElasticsearchNodeJvmGcCollectionsCount
 	metricElasticsearchNodeJvmGcCollectionsElapsed metricElasticsearchNodeJvmGcCollectionsElapsed
@@ -1473,7 +1473,7 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 		metricElasticsearchNodeClusterIo:               newMetricElasticsearchNodeClusterIo(settings.ElasticsearchNodeClusterIo),
 		metricElasticsearchNodeDocuments:               newMetricElasticsearchNodeDocuments(settings.ElasticsearchNodeDocuments),
 		metricElasticsearchNodeFsDiskAvailable:         newMetricElasticsearchNodeFsDiskAvailable(settings.ElasticsearchNodeFsDiskAvailable),
-		metricElasticsearchNodeFsIoOperations:          newMetricElasticsearchNodeFsIoOperations(settings.ElasticsearchNodeFsIoOperations),
+		metricElasticsearchNodeFsOperations:            newMetricElasticsearchNodeFsOperations(settings.ElasticsearchNodeFsOperations),
 		metricElasticsearchNodeHTTPConnections:         newMetricElasticsearchNodeHTTPConnections(settings.ElasticsearchNodeHTTPConnections),
 		metricElasticsearchNodeJvmGcCollectionsCount:   newMetricElasticsearchNodeJvmGcCollectionsCount(settings.ElasticsearchNodeJvmGcCollectionsCount),
 		metricElasticsearchNodeJvmGcCollectionsElapsed: newMetricElasticsearchNodeJvmGcCollectionsElapsed(settings.ElasticsearchNodeJvmGcCollectionsElapsed),
@@ -1509,7 +1509,7 @@ func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
 	mb.metricElasticsearchNodeClusterIo.emit(metrics)
 	mb.metricElasticsearchNodeDocuments.emit(metrics)
 	mb.metricElasticsearchNodeFsDiskAvailable.emit(metrics)
-	mb.metricElasticsearchNodeFsIoOperations.emit(metrics)
+	mb.metricElasticsearchNodeFsOperations.emit(metrics)
 	mb.metricElasticsearchNodeHTTPConnections.emit(metrics)
 	mb.metricElasticsearchNodeJvmGcCollectionsCount.emit(metrics)
 	mb.metricElasticsearchNodeJvmGcCollectionsElapsed.emit(metrics)
@@ -1538,8 +1538,8 @@ func (mb *MetricsBuilder) RecordElasticsearchClusterNodesDataPoint(ts pdata.Time
 }
 
 // RecordElasticsearchClusterShardsDataPoint adds a data point to elasticsearch.cluster.shards metric.
-func (mb *MetricsBuilder) RecordElasticsearchClusterShardsDataPoint(ts pdata.Timestamp, val int64, shardTypeAttributeValue string) {
-	mb.metricElasticsearchClusterShards.recordDataPoint(mb.startTime, ts, val, shardTypeAttributeValue)
+func (mb *MetricsBuilder) RecordElasticsearchClusterShardsDataPoint(ts pdata.Timestamp, val int64, shardStateAttributeValue string) {
+	mb.metricElasticsearchClusterShards.recordDataPoint(mb.startTime, ts, val, shardStateAttributeValue)
 }
 
 // RecordElasticsearchNodeCacheEvictionsDataPoint adds a data point to elasticsearch.node.cache.evictions metric.
@@ -1572,9 +1572,9 @@ func (mb *MetricsBuilder) RecordElasticsearchNodeFsDiskAvailableDataPoint(ts pda
 	mb.metricElasticsearchNodeFsDiskAvailable.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordElasticsearchNodeFsIoOperationsDataPoint adds a data point to elasticsearch.node.fs.io.operations metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeFsIoOperationsDataPoint(ts pdata.Timestamp, val int64, fsDirectionAttributeValue string) {
-	mb.metricElasticsearchNodeFsIoOperations.recordDataPoint(mb.startTime, ts, val, fsDirectionAttributeValue)
+// RecordElasticsearchNodeFsOperationsDataPoint adds a data point to elasticsearch.node.fs.operations metric.
+func (mb *MetricsBuilder) RecordElasticsearchNodeFsOperationsDataPoint(ts pdata.Timestamp, val int64, fsDirectionAttributeValue string) {
+	mb.metricElasticsearchNodeFsOperations.recordDataPoint(mb.startTime, ts, val, fsDirectionAttributeValue)
 }
 
 // RecordElasticsearchNodeHTTPConnectionsDataPoint adds a data point to elasticsearch.node.http.connections metric.
@@ -1672,8 +1672,8 @@ var Attributes = struct {
 	Generation string
 	// Operation (The type of operation.)
 	Operation string
-	// ShardType (The state of the shard.)
-	ShardType string
+	// ShardState (The state of the shard.)
+	ShardState string
 	// TaskState (The state of the task.)
 	TaskState string
 	// ThreadPoolName (The name of the thread pool.)
@@ -1690,7 +1690,7 @@ var Attributes = struct {
 	"direction",
 	"generation",
 	"operation",
-	"type",
+	"state",
 	"state",
 	"thread_pool_name",
 	"state",
@@ -1780,8 +1780,8 @@ var AttributeOperation = struct {
 	"warmer",
 }
 
-// AttributeShardType are the possible values that the attribute "shard_type" can have.
-var AttributeShardType = struct {
+// AttributeShardState are the possible values that the attribute "shard_state" can have.
+var AttributeShardState = struct {
 	Active       string
 	Relocating   string
 	Initializing string

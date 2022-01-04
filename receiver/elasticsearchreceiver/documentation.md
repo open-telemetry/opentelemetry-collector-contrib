@@ -10,26 +10,26 @@ These are the metrics available for this scraper.
 | ---- | ----------- | ---- | ---- | ---------- |
 | elasticsearch.cluster.data_nodes | The number of data nodes in the cluster. | {nodes} | Sum(Int) | <ul> </ul> |
 | elasticsearch.cluster.nodes | The total number of nodes in the cluster. | {nodes} | Sum(Int) | <ul> </ul> |
-| elasticsearch.cluster.shards | The number of shards in the cluster. | {shards} | Sum(Int) | <ul> <li>shard_type</li> </ul> |
+| elasticsearch.cluster.shards | The number of shards in the cluster. | {shards} | Sum(Int) | <ul> <li>shard_state</li> </ul> |
 | elasticsearch.node.cache.evictions | The number of evictions from the cache. | {evictions} | Sum(Int) | <ul> <li>cache_name</li> </ul> |
 | elasticsearch.node.cache.memory.usage | The size in bytes of the cache. | By | Sum(Int) | <ul> <li>cache_name</li> </ul> |
-| elasticsearch.node.cluster.connections | Number of open tcp connections for internal cluster communication. | {connections} | Sum(Int) | <ul> </ul> |
-| elasticsearch.node.cluster.io | Number of bytes sent and received on the network for internal cluster communication. | By | Sum(Int) | <ul> <li>direction</li> </ul> |
+| elasticsearch.node.cluster.connections | The number of open tcp connections for internal cluster communication. | {connections} | Sum(Int) | <ul> </ul> |
+| elasticsearch.node.cluster.io | The number of bytes sent and received on the network for internal cluster communication. | By | Sum(Int) | <ul> <li>direction</li> </ul> |
 | elasticsearch.node.documents | The number of documents on the node. | {documents} | Sum(Int) | <ul> <li>document_state</li> </ul> |
 | elasticsearch.node.fs.disk.available | The amount of disk space available across all file stores for this node. | By | Sum(Int) | <ul> </ul> |
-| elasticsearch.node.fs.io.operations | The number of io operations completed across all file stores since starting Elasticsearch. Only available on Linux nodes. | {operations} | Sum(Int) | <ul> <li>fs_direction</li> </ul> |
-| elasticsearch.node.http.connections | Number of HTTP connections to the node. | {connections} | Sum(Int) | <ul> </ul> |
+| elasticsearch.node.fs.operations | The number of IO operations completed across all file stores since starting Elasticsearch. Only available on Linux nodes. | {operations} | Sum(Int) | <ul> <li>fs_direction</li> </ul> |
+| elasticsearch.node.http.connections | The number of HTTP connections to the node. | {connections} | Sum(Int) | <ul> </ul> |
 | elasticsearch.node.jvm.gc.collections.count | The number of garbage collections performed by the JVM. | {collections} | Sum(Int) | <ul> <li>generation</li> </ul> |
 | elasticsearch.node.jvm.gc.collections.elapsed | The total time spent by the JVM running the GC. | ms | Sum(Int) | <ul> <li>generation</li> </ul> |
-| elasticsearch.node.jvm.memory.heap.max | The max memory used by the JVM. | By | Sum(Int) | <ul> </ul> |
+| elasticsearch.node.jvm.memory.heap.max | The max heap memory used by the JVM. | By | Sum(Int) | <ul> </ul> |
 | elasticsearch.node.jvm.memory.heap.used | The current heap memory in use by the JVM. | By | Sum(Int) | <ul> </ul> |
 | elasticsearch.node.jvm.memory.nonheap.used | The current nonheap memory in use by the JVM. | By | Gauge(Int) | <ul> </ul> |
 | elasticsearch.node.jvm.threads.count | The number of open threads in the node's JVM process. | {threads} | Sum(Int) | <ul> </ul> |
 | elasticsearch.node.jvm.threads.peak | The maximum number of concurrently running threads in the node's JVM process. | {threads} | Gauge(Int) | <ul> </ul> |
 | elasticsearch.node.open_files | The number of open file descriptors held by the node. | {files} | Sum(Int) | <ul> </ul> |
-| elasticsearch.node.operations.completed | Number of operations completed. | {operations} | Sum(Int) | <ul> <li>operation</li> </ul> |
+| elasticsearch.node.operations.completed | The number of operations completed. | {operations} | Sum(Int) | <ul> <li>operation</li> </ul> |
 | elasticsearch.node.operations.time | Time spent on operations. | ms | Sum(Int) | <ul> <li>operation</li> </ul> |
-| elasticsearch.node.shards.size | The total size of the shards assigned to this node. | By | Sum(Int) | <ul> </ul> |
+| elasticsearch.node.shards.size | The size of the shards assigned to this node. | By | Sum(Int) | <ul> </ul> |
 | elasticsearch.node.thread_pool.tasks.finished | The number of tasks finished by the thread pool. | {tasks} | Sum(Int) | <ul> <li>thread_pool_name</li> <li>task_state</li> </ul> |
 | elasticsearch.node.thread_pool.tasks.queued | The number of queued tasks in the thread pool. | {tasks} | Sum(Int) | <ul> <li>thread_pool_name</li> </ul> |
 | elasticsearch.node.thread_pool.threads | The number of threads in the thread pool. | {threads} | Sum(Int) | <ul> <li>thread_state</li> </ul> |
@@ -47,7 +47,7 @@ These are the metrics available for this scraper.
 | fs_direction | The direction of filesystem IO. |
 | generation | The generation on which garbage collection was performed. |
 | operation | The type of operation. |
-| shard_type | The state of the shard. |
+| shard_state | The state of the shard. |
 | task_state | The state of the task. |
 | thread_pool_name | The name of the thread pool. |
 | thread_state | The state of the thread. |
