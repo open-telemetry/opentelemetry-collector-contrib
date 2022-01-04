@@ -63,7 +63,7 @@ type metricCouchdbAverageRequestTime struct {
 // init fills couchdb.average_request_time metric with initial data.
 func (m *metricCouchdbAverageRequestTime) init() {
 	m.data.SetName("couchdb.average_request_time")
-	m.data.SetDescription("The length of an average request.")
+	m.data.SetDescription("The average duration of a served request.")
 	m.data.SetUnit("ms")
 	m.data.SetDataType(pdata.MetricDataTypeGauge)
 }

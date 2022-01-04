@@ -15,7 +15,7 @@ attributes:
 metrics:
   couchdb.average_request_time:
     enabled: true
-    description: The length of an average request.
+    description: The average duration of a served request.
     unit: ms
     gauge:
       value_type: double
