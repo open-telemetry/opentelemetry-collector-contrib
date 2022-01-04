@@ -11,6 +11,7 @@
 - `k8s_observer`: discover k8s.node endpoints (#6820)
 - `redisreceiver`: Add missing description fields to keyspace metrics (#6940)
 - `kafkaexporter`: Allow controlling Kafka acknowledgment behaviour  (#6301)
+- `lokiexporter`: Log the first part of the http body on failed pushes to loki (#6946)
 
 ## 🛑 Breaking changes 🛑
 
