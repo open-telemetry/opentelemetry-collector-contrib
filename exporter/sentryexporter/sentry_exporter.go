@@ -21,7 +21,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -444,7 +443,7 @@ func CreateSentryExporter(config *Config, set component.ExporterCreateSettings) 
 			allEventsFlushed := transport.Flush(ctx)
 
 			if !allEventsFlushed {
-				log.Print("Could not flush all events, reached timeout")
+				set.Logger.Warn("Could not flush all events, reached timeout")
 			}
 
 			return nil

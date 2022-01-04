@@ -31,5 +31,5 @@ These are the metrics available for this scraper.
 
 | Name | Description |
 | ---- | ----------- |
-| direction | Direction of flow of bytes/opertations (receive or transmit). |
+| direction | Direction of flow of bytes/operations (receive or transmit). |
 | interface | Name of the network interface. |
