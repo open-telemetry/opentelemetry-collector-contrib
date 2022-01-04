@@ -86,6 +86,7 @@ type JVMInfo struct {
 type JVMMemoryInfo struct {
 	HeapUsedInBy    int64 `json:"heap_used_in_bytes"`
 	NonHeapUsedInBy int64 `json:"non_heap_used_in_bytes"`
+	MaxHeapInBy     int64 `json:"heap_max_in_bytes"`
 }
 
 type JVMThreadInfo struct {
