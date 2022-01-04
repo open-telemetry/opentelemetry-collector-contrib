@@ -37,6 +37,7 @@
 - `spanmetricproccessor`: use an LRU cache for the cached Dimensions key-value pairs (#2179)
 - `skywalkingexporter`: add skywalking metrics exporter (#6528)
 - `deltatorateprocessor`: add int counter support (#6982)
+- `filestorageextension`: document default values (#7022)
 
 ## v0.41.0
 
