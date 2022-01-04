@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskin
 go 1.17
 
 require (
-	github.com/aws/aws-sdk-go v1.42.23
+	github.com/aws/aws-sdk-go v1.42.25
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.41.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.41.0
 	github.com/stretchr/testify v1.7.0
