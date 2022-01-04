@@ -67,17 +67,22 @@ func TestValidate(t *testing.T) {
 			expected: errors.New("no hosts were specified in the config"),
 		},
 		{
+			desc:      "valid hostname",
+			endpoints: []string{"localhost"},
+			expected:  nil,
+		},
+		{
 			desc:      "empty host",
 			username:  "user",
 			endpoints: []string{""},
-			expected:  errors.New("does not match format of '<host>:<port>"),
+			expected:  errors.New("unknown host format for host : missing port in address"),
 		},
 		{
 			desc:      "bad endpoint format",
 			endpoints: []string{"localhost;27017]"},
 			username:  "user",
 			password:  "pass",
-			expected:  errors.New("does not match format of '<host>:<port>'"),
+			expected:  errors.New("unknown host format for host localhost;27017"),
 		},
 	}
 	for _, tc := range testCases {

@@ -29,21 +29,11 @@ import (
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	configtls.TLSClientSetting              `mapstructure:"tls,omitempty"`
-
-	// Hosts are a list of <host>:<port> or unix domain sockets
-	// for standalone deployments, use the hostname and port of the mongod instance
-	// for sharded deployments it is the list of mongos instances
-	// for replica set deployments
-	Hosts []confignet.NetAddr `mapstructure:"hosts"`
-	// Username to use for authentication; optional
-	Username string `mapstructure:"username"`
-	// Password to use for authentication; required if Username is present
-	Password string `mapstructure:"password"`
-	// ReplicaSet if supplied will allow autodiscovery of
-	// any replica set members when given the address of any one valid member; optional
-	ReplicaSet string `mapstructure:"replica_set,omitempty"`
-
-	Timeout time.Duration `mapstructure:"timeout"`
+	Hosts                                   []confignet.NetAddr `mapstructure:"hosts"`
+	Username                                string              `mapstructure:"username"`
+	Password                                string              `mapstructure:"password"`
+	ReplicaSet                              string              `mapstructure:"replica_set,omitempty"`
+	Timeout                                 time.Duration       `mapstructure:"timeout"`
 }
 
 func (c *Config) Validate() error {
@@ -53,9 +43,17 @@ func (c *Config) Validate() error {
 
 	var err error
 	for _, host := range c.Hosts {
-		_, _, hostPortErr := net.SplitHostPort(host.Endpoint)
-		if hostPortErr != nil && host.Transport != "unix" {
-			err = multierr.Append(err, fmt.Errorf("endpoint '%s' does not match format of '<host>:<port>': %w", host.Endpoint, isHostnameErr))
+		if host.Transport != "unix" {
+			// valid hostnames will use default port of 27017
+			_, hostNameErr := net.LookupHost(host.Endpoint)
+			if hostNameErr == nil {
+				continue
+			}
+			// check host:port based endpoints
+			_, _, hpErr := net.SplitHostPort(host.Endpoint)
+			if hpErr != nil {
+				err = multierr.Append(err, fmt.Errorf("unknown host format for host %s: %w", host.Endpoint, hpErr))
+			}
 		}
 	}
 
@@ -70,12 +68,4 @@ func (c *Config) Validate() error {
 	}
 
 	return err
-}
-
-func isHostnamePort(s string) error {
-	_, _, err := net.SplitHostPort(s)
-	if err != nil {
-		return err
-	}
-	return nil
 }
