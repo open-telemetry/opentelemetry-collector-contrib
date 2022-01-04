@@ -54,7 +54,7 @@ func newElasticsearchClient(logger *zap.Logger, client *http.Client, endpoint *u
 }
 
 // nodeStatsMetrics is a comma separated list of metrics that will be gathered from NodeStats.
-// The available metrics are documented here for elasticsearch 7.9:
+// The available metrics are documented here for Elasticsearch 7.9:
 // https://www.elastic.co/guide/en/elasticsearch/reference/7.9/cluster-nodes-stats.html#cluster-nodes-stats-api-path-params
 const nodeStatsMetrics = "indices,process,jvm,thread_pool,transport,http,fs"
 
@@ -116,7 +116,7 @@ func (c defaultElasticsearchClient) doRequest(ctx context.Context, path string) 
 	if resp.StatusCode != 200 {
 		body, err := io.ReadAll(resp.Body)
 		c.logger.Debug(
-			"Request returned bad status code; Couldn't read request body.",
+			"Failed to make request to Elasticsearch",
 			zap.String("path", path),
 			zap.Int("status_code", resp.StatusCode),
 			zap.ByteString("body", body),
