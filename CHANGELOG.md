@@ -29,6 +29,7 @@
 
 - `ecstaskobserver`: Fix "Incorrect conversion between integer types" security issue (#6939)
 - Fix typo in "direction" metrics attribute description (#6949)
+- Sanitize URLs being logged (#7021)
 
 ## 💡 Enhancements 💡
 

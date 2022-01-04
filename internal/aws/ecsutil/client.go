@@ -21,6 +21,7 @@ import (
 	"net/url"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/sanitize"
+
 	"go.opentelemetry.io/collector/component"
 	cconfig "go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
