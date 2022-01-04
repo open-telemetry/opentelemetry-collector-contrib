@@ -34,8 +34,8 @@
 - `lokiexporter`: add complete log record to body (#6619)
 - `k8sclusterreceiver` add `container.image.tag` attribute (#6436)
 - `spanmetricproccessor`: use an LRU cache for the cached Dimensions key-value pairs (#2179)
-
 - `skywalkingexporter`: add skywalking metrics exporter (#6528)
+- `deltatorateprocessor`: add int counter support (#6982)
 
 ## v0.41.0
 
