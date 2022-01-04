@@ -18,13 +18,12 @@ import (
 	"context"
 	"testing"
 
-	"go.opentelemetry.io/collector/model/pdata"
-
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func TestFactory_Type(t *testing.T) {

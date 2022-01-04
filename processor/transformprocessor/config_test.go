@@ -18,9 +18,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"go.opentelemetry.io/collector/service/servicetest"
-
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
