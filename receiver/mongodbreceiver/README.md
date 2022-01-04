@@ -23,7 +23,7 @@ The following settings are required:
 
 - `hosts` (default: [`localhost:27017`]): list of `host:port` or unix domain socket endpoints.
   - For standalone MongoDB deployments this is the hostname and port of the mongod instance
-  - For replica sets specify the hostnames and ports of the mongod instances that are in the replica set configuration. Another requirement is that the `replica_set` field must also be set with the name of the replica set for autodiscovery to work.
+  - For replica sets specify the hostnames and ports of the mongod instances that are in the replica set configuration. If the `replica_set` field is specified, nodes will be autodiscovered.
   - For a sharded MongoDB deployment, please specify a list of the `mongos` hosts.
 
 The following settings are optional:

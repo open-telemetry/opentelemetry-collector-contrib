@@ -53,9 +53,8 @@ func (c *Config) Validate() error {
 
 	var err error
 	for _, host := range c.Hosts {
-		isHostnameErr := isHostnamePort(host.Endpoint)
-		isHostname := isHostnameErr != nil
-		if !isHostname && host.Transport != "unix" {
+		_, _, hostPortErr := net.SplitHostPort(host.Endpoint)
+		if hostPortErr != nil && host.Transport != "unix" {
 			err = multierr.Append(err, fmt.Errorf("endpoint '%s' does not match format of '<host>:<port>': %w", host.Endpoint, isHostnameErr))
 		}
 	}
