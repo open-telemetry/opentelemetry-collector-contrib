@@ -38,8 +38,8 @@ attributes:
     enum:
     - active
     - deleted
-  shard_type:
-    value: type
+  shard_state:
+    value: state
     description: The state of the shard.
     enum:
     - active
@@ -279,7 +279,7 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [shard_type]
+    attributes: [shard_state]
     enabled: true
   elasticsearch.cluster.data_nodes:
     description: The number of data nodes in the cluster.
