@@ -71,6 +71,7 @@ func TestPodAndContainerMetrics(t *testing.T) {
 			"container.id":         "container-id",
 			"k8s.container.name":   "container-name",
 			"container.image.name": "container-image-name",
+			"container.image.tag":  "latest",
 			"k8s.pod.uid":          "test-pod-1-uid",
 			"k8s.pod.name":         "test-pod-1",
 			"k8s.node.name":        "test-node",
