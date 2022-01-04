@@ -25,7 +25,7 @@ be configured:
 ```yaml
 windowsperfcounters:
   collection_interval: <duration> # default = "1m"
-  counters:
+  perfcounters:
     - object: <object name>
       instances: [<instance name>]*
       counters:
@@ -54,14 +54,14 @@ you can configure multiple `windowsperfcounters` receivers with different
 receivers:
   windowsperfcounters/memory:
     collection_interval: 30s
-    counters:
+    perfcounters:
       - object: Memory
         counters:
           - Committed Bytes
 
   windowsperfcounters/processor:
     collection_interval: 1m
-    counters:
+    perfcounters:
       - object: "Processor"
         instances: "*"
         counters:
@@ -90,7 +90,7 @@ e.g. To output the `Memory/Committed Bytes` counter as a metric with the name
 receivers:
   windowsperfcounters:
     collection_interval: 30s
-    counters:
+    perfcounters:
     - object: Memory
       counters:
         - Committed Bytes
