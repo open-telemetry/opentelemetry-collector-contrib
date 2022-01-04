@@ -172,14 +172,14 @@ func (m *metricCouchdbDatabasesOpen) init() {
 	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 }
 
-func (m *metricCouchdbDatabasesOpen) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val float64) {
+func (m *metricCouchdbDatabasesOpen) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetIntVal(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -223,14 +223,14 @@ func (m *metricCouchdbFilesOpen) init() {
 	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 }
 
-func (m *metricCouchdbFilesOpen) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val float64) {
+func (m *metricCouchdbFilesOpen) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetIntVal(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -533,12 +533,12 @@ func (mb *MetricsBuilder) RecordCouchdbDatabaseOperationsDataPoint(ts pdata.Time
 }
 
 // RecordCouchdbDatabasesOpenDataPoint adds a data point to couchdb.databases.open metric.
-func (mb *MetricsBuilder) RecordCouchdbDatabasesOpenDataPoint(ts pdata.Timestamp, val float64) {
+func (mb *MetricsBuilder) RecordCouchdbDatabasesOpenDataPoint(ts pdata.Timestamp, val int64) {
 	mb.metricCouchdbDatabasesOpen.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordCouchdbFilesOpenDataPoint adds a data point to couchdb.files.open metric.
-func (mb *MetricsBuilder) RecordCouchdbFilesOpenDataPoint(ts pdata.Timestamp, val float64) {
+func (mb *MetricsBuilder) RecordCouchdbFilesOpenDataPoint(ts pdata.Timestamp, val int64) {
 	mb.metricCouchdbFilesOpen.recordDataPoint(mb.startTime, ts, val)
 }
 
