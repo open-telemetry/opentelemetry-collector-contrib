@@ -57,26 +57,26 @@ func newCouchDBClient(cfg *Config, host component.Host, logger *zap.Logger) (cli
 }
 
 // Get issues an authorized Get requests to the specified url.
-func (cc *couchDBClient) Get(path string) ([]byte, error) {
-	req, err := cc.buildReq(path)
+func (c *couchDBClient) Get(path string) ([]byte, error) {
+	req, err := c.buildReq(path)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := cc.client.Do(req)
+	resp, err := c.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
 
 	defer func() {
 		if err = resp.Body.Close(); err != nil {
-			cc.logger.Warn("failed to close response body", zap.Error(err))
+			c.logger.Warn("failed to close response body", zap.Error(err))
 		}
 	}()
 
 	if resp.StatusCode != http.StatusOK {
 		if resp.StatusCode >= 400 {
-			cc.logger.Error("couchdb", zap.Error(err), zap.String("status_code", strconv.Itoa(resp.StatusCode)))
+			c.logger.Error("couchdb", zap.Error(err), zap.String("status_code", strconv.Itoa(resp.StatusCode)))
 		}
 		return nil, fmt.Errorf("request GET %s failed - %q", req.URL.String(), resp.Status)
 	}
@@ -95,8 +95,8 @@ type nodes struct {
 }
 
 // GetNodeNames gets all known connected nodes names.
-func (cc *couchDBClient) GetNodeNames() ([]string, error) {
-	body, err := cc.Get(nodeNamesPath)
+func (c *couchDBClient) GetNodeNames() ([]string, error) {
+	body, err := c.Get(nodeNamesPath)
 	if err != nil {
 		return nil, err
 	}
@@ -111,9 +111,9 @@ func (cc *couchDBClient) GetNodeNames() ([]string, error) {
 }
 
 // GetStats gets couchdb stats at a specific node name endpoint.
-func (cc *couchDBClient) GetStats(nodeName string) (map[string]interface{}, error) {
+func (c *couchDBClient) GetStats(nodeName string) (map[string]interface{}, error) {
 	path := fmt.Sprintf("/_node/%s/_stats/couchdb", nodeName)
-	body, err := cc.Get(path)
+	body, err := c.Get(path)
 	if err != nil {
 		return nil, err
 	}
@@ -127,13 +127,13 @@ func (cc *couchDBClient) GetStats(nodeName string) (map[string]interface{}, erro
 	return stats, nil
 }
 
-func (cc *couchDBClient) buildReq(path string) (*http.Request, error) {
-	url := cc.cfg.Endpoint + path
+func (c *couchDBClient) buildReq(path string) (*http.Request, error) {
+	url := c.cfg.Endpoint + path
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(cc.cfg.Username, cc.cfg.Password)
+	req.SetBasicAuth(c.cfg.Username, c.cfg.Password)
 	return req, nil
 }

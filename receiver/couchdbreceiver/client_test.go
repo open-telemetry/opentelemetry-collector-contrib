@@ -27,15 +27,12 @@ import (
 	"go.uber.org/zap"
 )
 
-func defaultConfig(t *testing.T, endpoint string) client {
+func defaultClient(t *testing.T, endpoint string) client {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Endpoint = endpoint
+
 	couchdbClient, err := newCouchDBClient(
-		&Config{
-			Username: "otelu",
-			Password: "otelp",
-			HTTPClientSettings: confighttp.HTTPClientSettings{
-				Endpoint: endpoint,
-			},
-		},
+		cfg,
 		componenttest.NewNopHost(),
 		zap.NewNop())
 	require.Nil(t, err)
@@ -63,13 +60,7 @@ func TestNewCouchDBClient(t *testing.T) {
 		require.Nil(t, couchdbClient)
 	})
 	t.Run("no error", func(t *testing.T) {
-		client, err := newCouchDBClient(
-			&Config{},
-			componenttest.NewNopHost(),
-			zap.NewNop(),
-		)
-
-		require.NoError(t, err)
+		client := defaultClient(t, defaultEndpoint)
 		require.NotNil(t, client)
 	})
 }
@@ -77,7 +68,7 @@ func TestNewCouchDBClient(t *testing.T) {
 func TestGet(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		u, p, _ := r.BasicAuth()
-		if u == "" || p == "" {
+		if u == "unauthorized" || p == "unauthorized" {
 			w.WriteHeader(401)
 			return
 		}
@@ -100,7 +91,7 @@ func TestGet(t *testing.T) {
 
 	t.Run("invalid url request", func(t *testing.T) {
 		url := ts.URL + " /space"
-		couchdbClient := defaultConfig(t, url)
+		couchdbClient := defaultClient(t, url)
 
 		result, err := couchdbClient.Get(url)
 		require.NotNil(t, err)
@@ -109,7 +100,7 @@ func TestGet(t *testing.T) {
 	})
 	t.Run("invalid endpoint", func(t *testing.T) {
 		url := ts.URL + "/invalid_endpoint"
-		couchdbClient := defaultConfig(t, url)
+		couchdbClient := defaultClient(t, url)
 
 		result, err := couchdbClient.Get(url)
 		require.NotNil(t, err)
@@ -118,7 +109,7 @@ func TestGet(t *testing.T) {
 	})
 	t.Run("invalid body", func(t *testing.T) {
 		url := ts.URL + "/invalid_body"
-		couchdbClient := defaultConfig(t, url)
+		couchdbClient := defaultClient(t, url)
 
 		result, err := couchdbClient.Get(url)
 		require.NotNil(t, err)
@@ -132,6 +123,8 @@ func TestGet(t *testing.T) {
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: url,
 				},
+				Username: "unauthorized",
+				Password: "unauthorized",
 			},
 			componenttest.NewNopHost(),
 			zap.NewNop())
@@ -145,7 +138,7 @@ func TestGet(t *testing.T) {
 	})
 	t.Run("no error", func(t *testing.T) {
 		url := ts.URL + "/_node/_local/_stats/couchdb"
-		couchdbClient := defaultConfig(t, url)
+		couchdbClient := defaultClient(t, url)
 
 		result, err := couchdbClient.Get(url)
 		require.Nil(t, err)
@@ -157,7 +150,7 @@ func TestGetNodeNamesSingle(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.Contains(r.URL.Path, "/invalid_json") {
 			w.WriteHeader(200)
-			_, _ = w.Write([]byte(`{"}`))
+			w.Write([]byte(`{"}`))
 			return
 		}
 
@@ -171,14 +164,14 @@ func TestGetNodeNamesSingle(t *testing.T) {
 	defer ts.Close()
 
 	t.Run("invalid endpoint", func(t *testing.T) {
-		couchdbClient := defaultConfig(t, "invalid")
+		couchdbClient := defaultClient(t, "invalid")
 
 		actualNodeNames, err := couchdbClient.GetNodeNames()
 		require.NotNil(t, err)
 		require.Nil(t, actualNodeNames)
 	})
 	t.Run("invalid json", func(t *testing.T) {
-		couchdbClient := defaultConfig(t, ts.URL+"/invalid_json")
+		couchdbClient := defaultClient(t, ts.URL+"/invalid_json")
 
 		actualNodeNames, err := couchdbClient.GetNodeNames()
 		require.NotNil(t, err)
@@ -186,7 +179,7 @@ func TestGetNodeNamesSingle(t *testing.T) {
 	})
 	t.Run("no error", func(t *testing.T) {
 		expectedNodeNames := []string{"nonode@nohost"}
-		couchdbClient := defaultConfig(t, ts.URL)
+		couchdbClient := defaultClient(t, ts.URL)
 
 		actualNodeNames, err := couchdbClient.GetNodeNames()
 		require.Nil(t, err)
@@ -206,7 +199,7 @@ func TestGetNodeNamesMultiple(t *testing.T) {
 	defer ts.Close()
 
 	expectedNodeNames := []string{"couchdb@couchdb0.otel.com", "couchdb@couchdb1.otel.com", "couchdb@couchdb2.otel.com"}
-	couchdbClient := defaultConfig(t, ts.URL)
+	couchdbClient := defaultClient(t, ts.URL)
 
 	actualNodeNames, err := couchdbClient.GetNodeNames()
 	require.Nil(t, err)
@@ -218,7 +211,7 @@ func TestGetNodeStats(t *testing.T) {
 
 		if strings.Contains(r.URL.Path, "/invalid_json") {
 			w.WriteHeader(200)
-			_, _ = w.Write([]byte(`{"}`))
+			w.Write([]byte(`{"}`))
 			return
 		}
 		if strings.Contains(r.URL.Path, "/_stats/couchdb") {
@@ -231,14 +224,14 @@ func TestGetNodeStats(t *testing.T) {
 	defer ts.Close()
 
 	t.Run("invalid endpoint", func(t *testing.T) {
-		couchdbClient := defaultConfig(t, "invalid")
+		couchdbClient := defaultClient(t, "invalid")
 
 		actualStats, err := couchdbClient.GetStats("_local")
 		require.NotNil(t, err)
 		require.Nil(t, actualStats)
 	})
 	t.Run("invalid json", func(t *testing.T) {
-		couchdbClient := defaultConfig(t, ts.URL+"/invalid_json")
+		couchdbClient := defaultClient(t, ts.URL+"/invalid_json")
 
 		actualStats, err := couchdbClient.GetStats("_local")
 		require.NotNil(t, err)
@@ -246,7 +239,7 @@ func TestGetNodeStats(t *testing.T) {
 	})
 	t.Run("no error", func(t *testing.T) {
 		expectedStats := map[string]interface{}{"key": []interface{}{"value"}}
-		couchdbClient := defaultConfig(t, ts.URL)
+		couchdbClient := defaultClient(t, ts.URL)
 
 		actualStats, err := couchdbClient.GetStats("_local")
 		require.Nil(t, err)
