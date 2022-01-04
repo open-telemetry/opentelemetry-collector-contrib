@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 )
@@ -81,6 +82,7 @@ func (dtrp *deltaToRateProcessor) processMetrics(_ context.Context, md pdata.Met
 					case pdata.MetricValueTypeInt:
 						rate = calculateRate(float64(fromDataPoint.IntVal()), durationNanos)
 					default:
+						return md, consumererror.NewPermanent(fmt.Errorf("invalid data point type:%d", fromDataPoint.Type()))
 					}
 					newDp.SetDoubleVal(rate)
 				}
