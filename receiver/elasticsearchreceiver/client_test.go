@@ -36,6 +36,27 @@ func TestNodeStatsNoPassword(t *testing.T) {
 	require.Equal(t, &actualNodeStats, nodeStats)
 }
 
+func TestNodeStatsNilNodes(t *testing.T) {
+	nodeJson, err := ioutil.ReadFile("./testdata/sample_payloads/nodes_linux.json")
+	require.NoError(t, err)
+
+	actualNodeStats := model.NodeStats{}
+	require.NoError(t, json.Unmarshal(nodeJson, &actualNodeStats))
+
+	elasticsearchMock := mockServer(t, "", "")
+	defer elasticsearchMock.Close()
+
+	url, err := url.Parse(elasticsearchMock.URL)
+	require.NoError(t, err)
+
+	client := newElasticsearchClient(zap.NewNop(), http.DefaultClient, url, "", "")
+	ctx := context.Background()
+	nodeStats, err := client.NodeStats(ctx, nil)
+	require.NoError(t, err)
+
+	require.Equal(t, &actualNodeStats, nodeStats)
+}
+
 func TestNodeStatsAuthentication(t *testing.T) {
 	nodeJson, err := ioutil.ReadFile("./testdata/sample_payloads/nodes_linux.json")
 	require.NoError(t, err)

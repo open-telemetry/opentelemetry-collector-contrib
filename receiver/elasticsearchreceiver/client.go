@@ -62,7 +62,13 @@ const nodeStatsMetrics = "indices,process,jvm,thread_pool,transport,http,fs"
 const nodeStatsIndexMetrics = "store,docs,indexing,get,search,merge,refresh,flush,warmer,query_cache,fielddata"
 
 func (c defaultElasticsearchClient) NodeStats(ctx context.Context, nodes []string) (*model.NodeStats, error) {
-	nodeSpec := strings.Join(nodes, ",")
+	var nodeSpec string
+	if len(nodes) > 0 {
+		nodeSpec = strings.Join(nodes, ",")
+	} else {
+		nodeSpec = "_all"
+	}
+
 	nodeStatsPath := fmt.Sprintf("_nodes/%s/stats/%s/%s", nodeSpec, nodeStatsMetrics, nodeStatsIndexMetrics)
 
 	body, err := c.doRequest(ctx, nodeStatsPath)
