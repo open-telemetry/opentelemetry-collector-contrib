@@ -9,6 +9,7 @@ Queries are composed of the following parts
 - Path expressions: Fields within the incoming data can be referenced using expressions composed of the names as defined
 in the OTLP protobuf definition. e.g., `status.code`, `attributes["http.method"]`. If the path expression begins with
 `resource.` or `instrumentation_library.`, it will reference those values.
+  - The name `instrumentation_library` within OpenTelemetry is currently under discussion and may be changed in the future.
 - Literals: Strings, ints, and floats can be referenced as literal values
 - Function invocations: Functions can be invoked with arguments matching the function's expected arguments
 - Where clause: Telemetry to modify can be filtered by appending `where a <op> b`, with `a` and `b` being any of the above.
