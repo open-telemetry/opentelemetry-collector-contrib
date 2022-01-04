@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/model"
+
 	"go.uber.org/zap"
 )
 
@@ -20,7 +21,7 @@ var (
 	errUnauthorized    = errors.New("status 403, unauthorized")
 )
 
-// elasticsearchClient defines the interface to retreive metrics from an Elasticsearch cluster.
+// elasticsearchClient defines the interface to retrieve metrics from an Elasticsearch cluster.
 type elasticsearchClient interface {
 	NodeStats(ctx context.Context, nodes []string) (*model.NodeStats, error)
 	ClusterHealth(ctx context.Context) (*model.ClusterHealth, error)

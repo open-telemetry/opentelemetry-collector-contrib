@@ -11,16 +11,17 @@ import (
 	"testing"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/model"
+
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
 
 func TestNodeStatsNoPassword(t *testing.T) {
-	nodeJson, err := ioutil.ReadFile("./testdata/sample_payloads/nodes_linux.json")
+	nodeJSON, err := ioutil.ReadFile("./testdata/sample_payloads/nodes_linux.json")
 	require.NoError(t, err)
 
 	actualNodeStats := model.NodeStats{}
-	require.NoError(t, json.Unmarshal(nodeJson, &actualNodeStats))
+	require.NoError(t, json.Unmarshal(nodeJSON, &actualNodeStats))
 
 	elasticsearchMock := mockServer(t, "", "")
 	defer elasticsearchMock.Close()
@@ -37,11 +38,11 @@ func TestNodeStatsNoPassword(t *testing.T) {
 }
 
 func TestNodeStatsNilNodes(t *testing.T) {
-	nodeJson, err := ioutil.ReadFile("./testdata/sample_payloads/nodes_linux.json")
+	nodeJSON, err := ioutil.ReadFile("./testdata/sample_payloads/nodes_linux.json")
 	require.NoError(t, err)
 
 	actualNodeStats := model.NodeStats{}
-	require.NoError(t, json.Unmarshal(nodeJson, &actualNodeStats))
+	require.NoError(t, json.Unmarshal(nodeJSON, &actualNodeStats))
 
 	elasticsearchMock := mockServer(t, "", "")
 	defer elasticsearchMock.Close()
@@ -58,11 +59,11 @@ func TestNodeStatsNilNodes(t *testing.T) {
 }
 
 func TestNodeStatsAuthentication(t *testing.T) {
-	nodeJson, err := ioutil.ReadFile("./testdata/sample_payloads/nodes_linux.json")
+	nodeJSON, err := ioutil.ReadFile("./testdata/sample_payloads/nodes_linux.json")
 	require.NoError(t, err)
 
 	actualNodeStats := model.NodeStats{}
-	require.NoError(t, json.Unmarshal(nodeJson, &actualNodeStats))
+	require.NoError(t, json.Unmarshal(nodeJSON, &actualNodeStats))
 
 	username := "user"
 	password := "pass"
@@ -108,11 +109,11 @@ func TestNodeStatsBadAuthentication(t *testing.T) {
 }
 
 func TestClusterHealthNoPassword(t *testing.T) {
-	healthJson, err := ioutil.ReadFile("./testdata/sample_payloads/health.json")
+	healthJSON, err := ioutil.ReadFile("./testdata/sample_payloads/health.json")
 	require.NoError(t, err)
 
 	actualClusterHealth := model.ClusterHealth{}
-	require.NoError(t, json.Unmarshal(healthJson, &actualClusterHealth))
+	require.NoError(t, json.Unmarshal(healthJSON, &actualClusterHealth))
 
 	elasticsearchMock := mockServer(t, "", "")
 	defer elasticsearchMock.Close()
@@ -129,11 +130,11 @@ func TestClusterHealthNoPassword(t *testing.T) {
 }
 
 func TestClusterHealthAuthentication(t *testing.T) {
-	healthJson, err := ioutil.ReadFile("./testdata/sample_payloads/health.json")
+	healthJSON, err := ioutil.ReadFile("./testdata/sample_payloads/health.json")
 	require.NoError(t, err)
 
 	actualClusterHealth := model.ClusterHealth{}
-	require.NoError(t, json.Unmarshal(healthJson, &actualClusterHealth))
+	require.NoError(t, json.Unmarshal(healthJSON, &actualClusterHealth))
 
 	username := "user"
 	password := "pass"
