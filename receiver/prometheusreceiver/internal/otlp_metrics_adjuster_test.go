@@ -288,6 +288,40 @@ func Test_cumulative_pdata(t *testing.T) {
 			}(),
 			0,
 		},
+		{
+			"Cumulative: round 5 - instance adjusted based on round 4",
+			func() *pdata.MetricSlice {
+				mL := pdata.NewMetricSlice()
+				m0 := mL.AppendEmpty()
+				m0.SetDataType(pdata.MetricDataTypeSum)
+				m0.SetName("cumulative1")
+				g0 := m0.Sum()
+				pt0 := g0.DataPoints().AppendEmpty()
+				pt0.SetStartTimestamp(pdt5Ms)
+				pt0.Attributes().InsertString("k1", "v1")
+				pt0.Attributes().InsertString("k2", "v2")
+				pt0.SetTimestamp(pdt5Ms)
+				pt0.SetFlags(1)
+
+				return &mL
+			}(),
+			func() *pdata.MetricSlice {
+				mL := pdata.NewMetricSlice()
+				m0 := mL.AppendEmpty()
+				m0.SetDataType(pdata.MetricDataTypeSum)
+				m0.SetName("cumulative1")
+				g0 := m0.Sum()
+				pt0 := g0.DataPoints().AppendEmpty()
+				pt0.SetStartTimestamp(pdt3Ms)
+				pt0.Attributes().InsertString("k1", "v1")
+				pt0.Attributes().InsertString("k2", "v2")
+				pt0.SetTimestamp(pdt5Ms)
+				pt0.SetFlags(1)
+
+				return &mL
+			}(),
+			0,
+		},
 	}
 	runScriptPdata(t, NewJobsMapPdata(time.Minute).get("job", "0"), script)
 }
@@ -416,6 +450,73 @@ func Test_summary_no_count_pdata(t *testing.T) {
 	runScriptPdata(t, NewJobsMapPdata(time.Minute).get("job", "0"), script)
 }
 
+func Test_summary_flag_norecordedvalue(t *testing.T) {
+	script := []*metricsAdjusterTestPdata{
+		{
+			"Summary No Count: round 1 - initial instance, start time is established",
+			func() *pdata.MetricSlice {
+				mL := pdata.NewMetricSlice()
+				m0 := mL.AppendEmpty()
+				m0.SetDataType(pdata.MetricDataTypeSummary)
+				m0.SetName("summary1")
+				s0 := m0.Summary()
+				pt0 := s0.DataPoints().AppendEmpty()
+				pt0.Attributes().InsertString("v1", "v2")
+				pt0.SetStartTimestamp(pdt1Ms)
+				pt0.SetTimestamp(pdt1Ms)
+				populateSummary(&pt0, pdt1Ms, 10, 40, percent0, []float64{1, 5, 8})
+				return &mL
+			}(),
+			func() *pdata.MetricSlice {
+				mL := pdata.NewMetricSlice()
+				m0 := mL.AppendEmpty()
+				m0.SetDataType(pdata.MetricDataTypeSummary)
+				m0.SetName("summary1")
+				s0 := m0.Summary()
+				pt0 := s0.DataPoints().AppendEmpty()
+				pt0.Attributes().InsertString("v1", "v2")
+				pt0.SetStartTimestamp(pdt1Ms)
+				pt0.SetTimestamp(pdt1Ms)
+				populateSummary(&pt0, pdt1Ms, 10, 40, percent0, []float64{1, 5, 8})
+				return &mL
+			}(),
+			1,
+		},
+		{
+			"Summary Flag NoRecordedValue: round 2 - instance adjusted based on round 1",
+			func() *pdata.MetricSlice {
+				mL := pdata.NewMetricSlice()
+				m0 := mL.AppendEmpty()
+				m0.SetDataType(pdata.MetricDataTypeSummary)
+				m0.SetName("summary1")
+				s0 := m0.Summary()
+				pt0 := s0.DataPoints().AppendEmpty()
+				pt0.Attributes().InsertString("v1", "v2")
+				pt0.SetStartTimestamp(pdt2Ms)
+				pt0.SetTimestamp(pdt2Ms)
+				pt0.SetFlags(1)
+				return &mL
+			}(),
+			func() *pdata.MetricSlice {
+				mL := pdata.NewMetricSlice()
+				m0 := mL.AppendEmpty()
+				m0.SetDataType(pdata.MetricDataTypeSummary)
+				m0.SetName("summary1")
+				s0 := m0.Summary()
+				pt0 := s0.DataPoints().AppendEmpty()
+				pt0.Attributes().InsertString("v1", "v2")
+				pt0.SetStartTimestamp(pdt1Ms)
+				pt0.SetTimestamp(pdt2Ms)
+				pt0.SetFlags(1)
+				return &mL
+			}(),
+			0,
+		},
+	}
+
+	runScriptPdata(t, NewJobsMapPdata(time.Minute).get("job", "0"), script)
+}
+
 func Test_summary_pdata(t *testing.T) {
 	script := []*metricsAdjusterTestPdata{
 		{
@@ -523,6 +624,47 @@ func Test_cumulativeDistribution_pdata(t *testing.T) {
 			0,
 		},
 	}
+	runScriptPdata(t, NewJobsMapPdata(time.Minute).get("job", "0"), script)
+}
+
+func Test_histogram_flag_norecordedvalue(t *testing.T) {
+	script := []*metricsAdjusterTestPdata{
+		{
+			"Histogram: round 1 - initial instance, start time is established",
+			metricSlice(histogramMetric(cd1, k1v1k2v2, pdt1Ms, distPoint(pdt1Ms, bounds0, []uint64{7, 4, 2, 12}))),
+			metricSlice(histogramMetric(cd1, k1v1k2v2, pdt1Ms, distPoint(pdt1Ms, bounds0, []uint64{7, 4, 2, 12}))),
+			1,
+		},
+		{
+			"Histogram: round 2 - instance adjusted based on round 1",
+			func() *pdata.MetricSlice {
+				metric := pdata.NewMetric()
+				metric.SetName(cd1)
+				metric.SetDataType(pdata.MetricDataTypeHistogram)
+				histogram := metric.Histogram()
+				histogram.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+				destPointL := histogram.DataPoints()
+				dp := destPointL.AppendEmpty()
+				dp.SetTimestamp(pdt2Ms)
+				dp.SetFlags(1)
+				return metricSlice(histogramMetric(cd1, k1v1k2v2, pdt2Ms, &dp))
+			}(),
+			func() *pdata.MetricSlice {
+				metric := pdata.NewMetric()
+				metric.SetName(cd1)
+				metric.SetDataType(pdata.MetricDataTypeHistogram)
+				histogram := metric.Histogram()
+				histogram.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+				destPointL := histogram.DataPoints()
+				dp := destPointL.AppendEmpty()
+				dp.SetTimestamp(pdt2Ms)
+				dp.SetFlags(1)
+				return metricSlice(histogramMetric(cd1, k1v1k2v2, pdt1Ms, &dp))
+			}(),
+			0,
+		},
+	}
+
 	runScriptPdata(t, NewJobsMapPdata(time.Minute).get("job", "0"), script)
 }
 

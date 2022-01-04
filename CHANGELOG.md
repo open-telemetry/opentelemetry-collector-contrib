@@ -2,17 +2,41 @@
 
 ## Unreleased
 
+## 💡 Enhancements 💡
+
+- `prometheusremotewriteexporter`: Handling Staleness flag from OTLP (#6679)
+- `mysqlreceiver`: Add Integration test (#6916)
+- `datadogexporter`: Add compatibility with ECS Fargate semantic conventions (#6670)
+- `k8s_observer`: discover k8s.node endpoints (#6820)
+- `redisreceiver`: Add missing description fields to keyspace metrics (#6940)
+- `kafkaexporter`: Allow controlling Kafka acknowledgment behaviour  (#6301)
+
 ## 🛑 Breaking changes 🛑
 
 - `memcachedreceiver`: Update metric names (#6594)
+- `memcachedreceiver`: Fix some metric units and value types (#6895)
+- `sapm` receiver: Use Jaeger status values instead of OpenCensus (#6682)
+- `jaeger` receiver/exporter: Parse/set Jaeger status with OTel spec values (#6682)
+- `awsecscontainermetricsreceiver`: remove tag from `container.image.name` (#6436)
+- `k8sclusterreceiver`: remove tag from `container.image.name` (#6436)
 - `spanmetricproccessor`: service.name attribute added as a default resource attribute instead of attribute in generated metrics (#6717)
 
 ## 🚀 New components 🚀
 
+- `ecs_task_observer`: Discover running containers in AWS ECS tasks (#6894)
+
 ## 🧰 Bug fixes 🧰
+
+- `ecstaskobserver`: Fix "Incorrect conversion between integer types" security issue (#6939)
+- Fix typo in "direction" metrics attribute description (#6949)
 
 ## 💡 Enhancements 💡
 
+- `lokiexporter`: add complete log record to body (#6619)
+- `k8sclusterreceiver` add `container.image.tag` attribute (#6436)
+- `spanmetricproccessor`: use an LRU cache for the cached Dimensions key-value pairs (#2179)
+
+- `skywalkingexporter`: add skywalking metrics exporter (#6528)
 - `spanmetricproccessor`: Support specifying resource attributes to attach to metrics generated from traces (#6717)
 
 ## v0.41.0

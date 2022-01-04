@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"strings"
 
 	"github.com/jaegertracing/jaeger/model"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -217,25 +218,43 @@ func setInternalSpanStatus(attrs pdata.AttributeMap, dest pdata.SpanStatus) {
 			statusCode = pdata.StatusCodeError
 			attrs.Delete(tracetranslator.TagError)
 			statusExists = true
+
+			if desc, ok := extractStatusDescFromAttr(attrs); ok {
+				statusMessage = desc
+			} else if descAttr, ok := attrs.Get(tracetranslator.TagHTTPStatusMsg); ok {
+				statusMessage = descAttr.StringVal()
+			}
 		}
 	}
 
 	if codeAttr, ok := attrs.Get(conventions.OtelStatusCode); ok {
-		statusExists = true
-		if code, err := getStatusCodeValFromAttr(codeAttr); err == nil {
-			statusCode = pdata.StatusCode(code)
-			attrs.Delete(conventions.OtelStatusCode)
-		}
-		if msgAttr, ok := attrs.Get(conventions.OtelStatusDescription); ok {
-			statusMessage = msgAttr.StringVal()
-			attrs.Delete(conventions.OtelStatusDescription)
-		}
-	} else if httpCodeAttr, ok := attrs.Get(conventions.AttributeHTTPStatusCode); ok {
-		statusExists = true
-		if code, err := getStatusCodeFromHTTPStatusAttr(httpCodeAttr); err == nil {
+		if !statusExists {
+			// The error tag is the ultimate truth for a Jaeger spans' error
+			// status. Only parse the otel.status_code tag if the error tag is
+			// not set to true.
+			statusExists = true
+			switch strings.ToUpper(codeAttr.StringVal()) {
+			case statusOk:
+				statusCode = pdata.StatusCodeOk
+			case statusError:
+				statusCode = pdata.StatusCodeError
+			}
 
-			// Do not set status code in case it was set to Unset.
+			if desc, ok := extractStatusDescFromAttr(attrs); ok {
+				statusMessage = desc
+			}
+		}
+		// Regardless of error tag value, remove the otel.status_code tag. The
+		// otel.status_message tag will have already been removed if
+		// statusExists is true.
+		attrs.Delete(conventions.OtelStatusCode)
+	} else if httpCodeAttr, ok := attrs.Get(conventions.AttributeHTTPStatusCode); !statusExists && ok {
+		// Fallback to introspecting if this span represents a failed HTTP
+		// request or response, but again, only do so if the `error` tag was
+		// not set to true and no explicit status was sent.
+		if code, err := getStatusCodeFromHTTPStatusAttr(httpCodeAttr); err == nil {
 			if code != pdata.StatusCodeUnset {
+				statusExists = true
 				statusCode = code
 			}
 
@@ -251,27 +270,43 @@ func setInternalSpanStatus(attrs pdata.AttributeMap, dest pdata.SpanStatus) {
 	}
 }
 
-func getStatusCodeValFromAttr(attrVal pdata.AttributeValue) (int64, error) {
-	var codeVal int64
+// extractStatusDescFromAttr returns the OTel status description from attrs
+// along with true if it is set. Otherwise, an empty string and false are
+// returned. The OTel status description attribute is deleted from attrs in
+// the process.
+func extractStatusDescFromAttr(attrs pdata.AttributeMap) (string, bool) {
+	if msgAttr, ok := attrs.Get(conventions.OtelStatusDescription); ok {
+		msg := msgAttr.StringVal()
+		attrs.Delete(conventions.OtelStatusDescription)
+		return msg, true
+	}
+	return "", false
+}
+
+// codeFromAttr returns the integer code value from attrVal. An error is
+// returned if the code is not represented by an integer or string value in
+// the attrVal or the value is outside the bounds of an int representation.
+func codeFromAttr(attrVal pdata.AttributeValue) (int64, error) {
+	var val int64
 	switch attrVal.Type() {
 	case pdata.AttributeValueTypeInt:
-		codeVal = attrVal.IntVal()
+		val = attrVal.IntVal()
 	case pdata.AttributeValueTypeString:
-		i, err := strconv.Atoi(attrVal.StringVal())
+		var err error
+		val, err = strconv.ParseInt(attrVal.StringVal(), 10, 0)
 		if err != nil {
 			return 0, err
 		}
-		codeVal = int64(i)
 	default:
-		return 0, fmt.Errorf("invalid status code attribute type: %s", attrVal.Type().String())
+		return 0, fmt.Errorf("%w: %s", errType, attrVal.Type().String())
 	}
-	return codeVal, nil
+	return val, nil
 }
 
 func getStatusCodeFromHTTPStatusAttr(attrVal pdata.AttributeValue) (pdata.StatusCode, error) {
-	statusCode, err := getStatusCodeValFromAttr(attrVal)
+	statusCode, err := codeFromAttr(attrVal)
 	if err != nil {
-		return pdata.StatusCodeOk, err
+		return pdata.StatusCodeUnset, err
 	}
 
 	return tracetranslator.StatusCodeFromHTTP(statusCode), nil

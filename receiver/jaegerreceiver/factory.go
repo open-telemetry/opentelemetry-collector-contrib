@@ -134,6 +134,7 @@ func createTracesReceiver(
 		// strategies are served over grpc so if grpc is not enabled and strategies are present return an error
 		if len(remoteSamplingConfig.StrategyFile) != 0 {
 			config.RemoteSamplingStrategyFile = remoteSamplingConfig.StrategyFile
+			config.RemoteSamplingStrategyFileReloadInterval = remoteSamplingConfig.StrategyFileReloadInterval
 		}
 	}
 

@@ -279,15 +279,50 @@ var (
 			inc: &filtermetric.MatchProperties{
 				MatchType: filtermetric.Regexp,
 				MetricNames: []string{
-					"metric1",
-					"metric3",
+					".*",
 				},
-				ResourceAttributes: []filterconfig.Attribute{{Key: "attr1", Value: "(attr1/val1|attr1/val2)"}},
+				ResourceAttributes: []filterconfig.Attribute{{Key: "attr1", Value: "attr1/val1"}},
 			},
 			inMetrics: testResourceMetrics(inMetricForTwoResource),
 			outMN: [][]string{
-				{"metric1"},
-				{"metric3"},
+				{"metric1", "metric2"},
+			},
+		},
+		{
+			name: "includeWithRegexResourceAttributesOnly",
+			inc: &filtermetric.MatchProperties{
+				MatchType:          filtermetric.Regexp,
+				ResourceAttributes: []filterconfig.Attribute{{Key: "attr1", Value: "attr1/val1"}},
+			},
+			inMetrics: testResourceMetrics(inMetricForTwoResource),
+			outMN: [][]string{
+				{"metric1", "metric2"},
+			},
+		},
+		{
+			name: "includeWithStrictResourceAttributes",
+			inc: &filtermetric.MatchProperties{
+				MatchType: filtermetric.Strict,
+				MetricNames: []string{
+					"metric1",
+					"metric2",
+				},
+				ResourceAttributes: []filterconfig.Attribute{{Key: "attr1", Value: "attr1/val1"}},
+			},
+			inMetrics: testResourceMetrics(inMetricForTwoResource),
+			outMN: [][]string{
+				{"metric1", "metric2"},
+			},
+		},
+		{
+			name: "includeWithStrictResourceAttributesOnly",
+			inc: &filtermetric.MatchProperties{
+				MatchType:          filtermetric.Strict,
+				ResourceAttributes: []filterconfig.Attribute{{Key: "attr1", Value: "attr1/val1"}},
+			},
+			inMetrics: testResourceMetrics(inMetricForTwoResource),
+			outMN: [][]string{
+				{"metric1", "metric2"},
 			},
 		},
 	}

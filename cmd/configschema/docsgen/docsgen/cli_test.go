@@ -24,8 +24,15 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter/loggingexporter"
+	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
+	"go.opentelemetry.io/collector/extension/ballastextension"
+	"go.opentelemetry.io/collector/extension/zpagesextension"
+	"go.opentelemetry.io/collector/processor/batchprocessor"
+	"go.opentelemetry.io/collector/processor/memorylimiterprocessor"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
-	"go.opentelemetry.io/collector/service/defaultcomponents"
+	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
 )
@@ -98,8 +105,39 @@ func testHandleCLI(t *testing.T, cs component.Factories, wr *fakeFilesystemWrite
 }
 
 func defaultComponents(t *testing.T) component.Factories {
-	cmps, err := defaultcomponents.Components()
-	require.NoError(t, err)
+	var errs error
+
+	extensions, err := component.MakeExtensionFactoryMap(
+		zpagesextension.NewFactory(),
+		ballastextension.NewFactory(),
+	)
+	errs = multierr.Append(errs, err)
+
+	receivers, err := component.MakeReceiverFactoryMap(
+		otlpreceiver.NewFactory(),
+	)
+	errs = multierr.Append(errs, err)
+
+	exporters, err := component.MakeExporterFactoryMap(
+		loggingexporter.NewFactory(),
+		otlpexporter.NewFactory(),
+		otlphttpexporter.NewFactory(),
+	)
+	errs = multierr.Append(errs, err)
+
+	processors, err := component.MakeProcessorFactoryMap(
+		batchprocessor.NewFactory(),
+		memorylimiterprocessor.NewFactory(),
+	)
+	errs = multierr.Append(errs, err)
+
+	cmps := component.Factories{
+		Extensions: extensions,
+		Receivers:  receivers,
+		Processors: processors,
+		Exporters:  exporters,
+	}
+	require.NoError(t, errs)
 	return cmps
 }
 
