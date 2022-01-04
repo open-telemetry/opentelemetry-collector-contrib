@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package model
+package model // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/model"
 
 // ClusterHealth represents a response from elasticsearch's /_cluster/health endpoint.
 // The struct is not exhaustive; It does not provide all values returned by elasticsearch,
