@@ -123,7 +123,7 @@ metrics:
     attributes: []
     enabled: true
   elasticsearch.node.jvm.memory.heap.max:
-    description: The max memory used by the JVM.
+    description: The max heap memory used by the JVM.
     unit: By
     sum:
       monotonic: false
@@ -164,7 +164,7 @@ metrics:
     attributes: []
     enabled: true
   elasticsearch.node.fs.operations:
-    description: The number of io operations completed across all file stores since starting Elasticsearch. Only available on Linux nodes.
+    description: The number of IO operations completed across all file stores since starting Elasticsearch. Only available on Linux nodes.
     unit: "{operations}"
     sum:
       monotonic: true
@@ -173,7 +173,7 @@ metrics:
     attributes: [fs_direction]
     enabled: true
   elasticsearch.node.cluster.io:
-    description: Number of bytes sent and received on the network for internal cluster communication.
+    description: The number of bytes sent and received on the network for internal cluster communication.
     unit: By
     sum:
       monotonic: true
@@ -182,7 +182,7 @@ metrics:
     attributes: [direction]
     enabled: true
   elasticsearch.node.cluster.connections:
-    description: Number of open tcp connections for internal cluster communication.
+    description: The number of open tcp connections for internal cluster communication.
     unit: "{connections}"
     sum:
       monotonic: false
@@ -191,7 +191,7 @@ metrics:
     attributes: []
     enabled: true
   elasticsearch.node.http.connections:
-    description: Number of HTTP connections to the node.
+    description: The number of HTTP connections to the node.
     unit: "{connections}"
     sum:
       monotonic: false
@@ -200,7 +200,7 @@ metrics:
     attributes: []
     enabled: true
   elasticsearch.node.operations.completed:
-    description: Number of operations completed.
+    description: The number of operations completed.
     unit: "{operations}"
     sum:
       monotonic: true
@@ -218,7 +218,7 @@ metrics:
     attributes: [operation]
     enabled: true
   elasticsearch.node.shards.size:
-    description: The total size of the shards assigned to this node.
+    description: The size of the shards assigned to this node.
     unit: By
     sum:
       monotonic: false
