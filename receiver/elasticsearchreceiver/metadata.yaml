@@ -163,7 +163,7 @@ metrics:
       value_type: int
     attributes: []
     enabled: true
-  elasticsearch.node.fs.io.operations:
+  elasticsearch.node.fs.operations:
     description: The number of io operations completed across all file stores since starting Elasticsearch. Only available on Linux nodes.
     unit: "{operations}"
     sum:
