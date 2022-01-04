@@ -95,7 +95,7 @@ metrics:
     attributes: [cache_name]
   elasticsearch.node.jvm.gc.collections.count:
     description: The number of garbage collections performed by the JVM.
-    unit: "{collection}"
+    unit: "{collections}"
     sum:
       monotonic: true
       aggregation: cumulative
@@ -133,7 +133,7 @@ metrics:
     attributes: []
   elasticsearch.node.jvm.threads.count:
     description: The number of open threads in the node's JVM process.
-    unit: "{thread}"
+    unit: "{threads}"
     sum:
       monotonic: false
       aggregation: cumulative
@@ -141,7 +141,7 @@ metrics:
     attributes: []
   elasticsearch.node.jvm.threads.peak:
     description: The maximum number of concurrently running threads in the node's JVM process.
-    unit: "{thread}"
+    unit: "{threads}"
     gauge:
       value_type: int
     attributes: []
@@ -155,7 +155,7 @@ metrics:
     attributes: []
   elasticsearch.node.fs.io.operations:
     description: The number of io operations completed across all file stores since starting Elasticsearch. Only available on Linux nodes.
-    unit: "{operation}"
+    unit: "{operations}"
     sum:
       monotonic: true
       aggregation: cumulative
@@ -171,7 +171,7 @@ metrics:
     attributes: [direction]
   elasticsearch.node.cluster.connections:
     description: Number of open tcp connections for internal cluster communication.
-    unit: "{connection}"
+    unit: "{connections}"
     sum:
       monotonic: false
       aggregation: cumulative
@@ -179,7 +179,7 @@ metrics:
     attributes: []
   elasticsearch.node.http.connections:
     description: Number of HTTP connections to the node.
-    unit: "{connection}"
+    unit: "{connections}"
     sum:
       monotonic: false
       aggregation: cumulative
@@ -187,7 +187,7 @@ metrics:
     attributes: []
   elasticsearch.node.operations.completed:
     description: Number of operations completed.
-    unit: "{operation}"
+    unit: "{operations}"
     sum:
       monotonic: true
       aggregation: cumulative
@@ -235,7 +235,7 @@ metrics:
     attributes: [thread_pool_name, task_state]
   elasticsearch.node.documents:
     description: The number of documents on the node.
-    unit: "{document}"
+    unit: "{documents}"
     sum:
       monotonic: false
       aggregation: cumulative
@@ -243,7 +243,7 @@ metrics:
     attributes: [document_state]
   elasticsearch.node.open_files:
     description: The number of open file descriptors held by the node.
-    unit: "{file}"
+    unit: "{files}"
     sum:
       monotonic: false
       aggregation: cumulative
@@ -252,7 +252,7 @@ metrics:
   # these metrics are from /_cluster/health, and are cluster level metrics
   elasticsearch.cluster.shards:
     description: The number of shards in the cluster.
-    unit: "{shard}"
+    unit: "{shards}"
     sum:
       monotonic: false
       aggregation: cumulative
@@ -260,7 +260,7 @@ metrics:
     attributes: [shard_type]
   elasticsearch.cluster.data_nodes:
     description: The number of data nodes in the cluster.
-    unit: "{node}"
+    unit: "{nodes}"
     sum:
       monotonic: false
       aggregation: cumulative
@@ -268,7 +268,7 @@ metrics:
     attributes: []
   elasticsearch.cluster.nodes:
     description: The total number of nodes in the cluster.
-    unit: "{node}"
+    unit: "{nodes}"
     sum:
       monotonic: false
       aggregation: cumulative
