@@ -81,6 +81,8 @@ type processorImp struct {
 	startTime time.Time
 
 	// Call & Error counts.
+	// todo do we need to use metricKey(actually conccated attrs), or we can use serviceName instead?
+	// i.e. Should we put datapoints with different attributes under the same metrics or not?
 	callSum map[resourceKey]map[metricKey]int64
 
 	// Latency histogram.
