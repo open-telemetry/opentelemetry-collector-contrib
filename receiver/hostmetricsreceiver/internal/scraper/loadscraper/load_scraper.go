@@ -65,7 +65,7 @@ func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 		return md, scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
-	if s.config.PerCPU {
+	if s.config.CPUAverage {
 		divisor := float64(runtime.NumCPU())
 		avgLoadValues.Load1 = avgLoadValues.Load1 / divisor
 		avgLoadValues.Load5 = avgLoadValues.Load1 / divisor

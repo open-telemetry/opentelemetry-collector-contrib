@@ -66,11 +66,11 @@ filesystem:
 
 ### Load
 
-`per_cpu` divides the average load per CPU (default: `false`).
+`cpu_average` specifies whether to divide the average load by the reported number of logical CPUs (default: `false`).
 
 ```yaml
 load:
-  per_cpu: <false|true>
+  cpu_average: <false|true>
 ```
 
 ### Network

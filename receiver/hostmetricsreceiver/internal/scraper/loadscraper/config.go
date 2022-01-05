@@ -21,5 +21,5 @@ type Config struct {
 	internal.ConfigSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// If true, metrics will be average load per cpu
-	PerCPU bool `mapstructure:"per_cpu"`
+	CPUAverage bool `mapstructure:"cpu_average"`
 }
