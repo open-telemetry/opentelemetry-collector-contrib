@@ -15,7 +15,7 @@
 package elasticsearchexporter
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
