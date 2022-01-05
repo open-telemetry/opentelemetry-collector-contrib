@@ -146,7 +146,7 @@ type HTTPStats struct {
 
 type FSStats struct {
 	Total   FSTotalStats `json:"total"`
-	IOStats *IOStats     `json:"io_stats"`
+	IOStats *IOStats     `json:"io_stats,omitempty"`
 }
 
 type FSTotalStats struct {
