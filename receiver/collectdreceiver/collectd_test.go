@@ -486,7 +486,7 @@ func TestStartTimestamp(t *testing.T) {
 			},
 		},
 		{
-			name: "non-cumulative gauge distribution metric type",
+			name: "metric type non-cumulative gauge distribution",
 			record: collectDRecord{
 				Time:     createPtrFloat64(0),
 				Interval: createPtrFloat64(0),
@@ -495,7 +495,7 @@ func TestStartTimestamp(t *testing.T) {
 			wantStartTimestamp:   nil,
 		},
 		{
-			name: " metric type non-cumulative gauge int64",
+			name: "metric type non-cumulative gauge int64",
 			record: collectDRecord{
 				Time:     createPtrFloat64(0),
 				Interval: createPtrFloat64(0),
@@ -504,7 +504,7 @@ func TestStartTimestamp(t *testing.T) {
 			wantStartTimestamp:   nil,
 		},
 		{
-			name: " metric type non-cumulativegauge double",
+			name: "metric type non-cumulativegauge double",
 			record: collectDRecord{
 				Time:     createPtrFloat64(0),
 				Interval: createPtrFloat64(0),
@@ -516,7 +516,6 @@ func TestStartTimestamp(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			gotStartTimestamp := tc.record.startTimestamp(tc.metricDescriptorType)
-			println(gotStartTimestamp)
 			assert.Equal(t, tc.wantStartTimestamp, gotStartTimestamp)
 		})
 	}
