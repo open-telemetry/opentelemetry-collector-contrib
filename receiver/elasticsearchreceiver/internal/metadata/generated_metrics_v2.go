@@ -24,7 +24,6 @@ type MetricsSettings struct {
 	ElasticsearchNodeClusterIo               MetricSettings `mapstructure:"elasticsearch.node.cluster.io"`
 	ElasticsearchNodeDocuments               MetricSettings `mapstructure:"elasticsearch.node.documents"`
 	ElasticsearchNodeFsDiskAvailable         MetricSettings `mapstructure:"elasticsearch.node.fs.disk.available"`
-	ElasticsearchNodeFsOperations            MetricSettings `mapstructure:"elasticsearch.node.fs.operations"`
 	ElasticsearchNodeHTTPConnections         MetricSettings `mapstructure:"elasticsearch.node.http.connections"`
 	ElasticsearchNodeJvmGcCollectionsCount   MetricSettings `mapstructure:"elasticsearch.node.jvm.gc.collections.count"`
 	ElasticsearchNodeJvmGcCollectionsTime    MetricSettings `mapstructure:"elasticsearch.node.jvm.gc.collections.time"`
@@ -68,9 +67,6 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		ElasticsearchNodeFsDiskAvailable: MetricSettings{
-			Enabled: true,
-		},
-		ElasticsearchNodeFsOperations: MetricSettings{
 			Enabled: true,
 		},
 		ElasticsearchNodeHTTPConnections: MetricSettings{
@@ -580,59 +576,6 @@ func (m *metricElasticsearchNodeFsDiskAvailable) emit(metrics pdata.MetricSlice)
 
 func newMetricElasticsearchNodeFsDiskAvailable(settings MetricSettings) metricElasticsearchNodeFsDiskAvailable {
 	m := metricElasticsearchNodeFsDiskAvailable{settings: settings}
-	if settings.Enabled {
-		m.data = pdata.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricElasticsearchNodeFsOperations struct {
-	data     pdata.Metric   // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills elasticsearch.node.fs.operations metric with initial data.
-func (m *metricElasticsearchNodeFsOperations) init() {
-	m.data.SetName("elasticsearch.node.fs.operations")
-	m.data.SetDescription("The number of IO operations completed across all file stores since starting Elasticsearch. Only available on Linux nodes.")
-	m.data.SetUnit("{operations}")
-	m.data.SetDataType(pdata.MetricDataTypeSum)
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricElasticsearchNodeFsOperations) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, fsDirectionAttributeValue string) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.FsDirection, pdata.NewAttributeValueString(fsDirectionAttributeValue))
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricElasticsearchNodeFsOperations) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricElasticsearchNodeFsOperations) emit(metrics pdata.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricElasticsearchNodeFsOperations(settings MetricSettings) metricElasticsearchNodeFsOperations {
-	m := metricElasticsearchNodeFsOperations{settings: settings}
 	if settings.Enabled {
 		m.data = pdata.NewMetric()
 		m.init()
@@ -1380,7 +1323,6 @@ type MetricsBuilder struct {
 	metricElasticsearchNodeClusterIo               metricElasticsearchNodeClusterIo
 	metricElasticsearchNodeDocuments               metricElasticsearchNodeDocuments
 	metricElasticsearchNodeFsDiskAvailable         metricElasticsearchNodeFsDiskAvailable
-	metricElasticsearchNodeFsOperations            metricElasticsearchNodeFsOperations
 	metricElasticsearchNodeHTTPConnections         metricElasticsearchNodeHTTPConnections
 	metricElasticsearchNodeJvmGcCollectionsCount   metricElasticsearchNodeJvmGcCollectionsCount
 	metricElasticsearchNodeJvmGcCollectionsTime    metricElasticsearchNodeJvmGcCollectionsTime
@@ -1419,7 +1361,6 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 		metricElasticsearchNodeClusterIo:               newMetricElasticsearchNodeClusterIo(settings.ElasticsearchNodeClusterIo),
 		metricElasticsearchNodeDocuments:               newMetricElasticsearchNodeDocuments(settings.ElasticsearchNodeDocuments),
 		metricElasticsearchNodeFsDiskAvailable:         newMetricElasticsearchNodeFsDiskAvailable(settings.ElasticsearchNodeFsDiskAvailable),
-		metricElasticsearchNodeFsOperations:            newMetricElasticsearchNodeFsOperations(settings.ElasticsearchNodeFsOperations),
 		metricElasticsearchNodeHTTPConnections:         newMetricElasticsearchNodeHTTPConnections(settings.ElasticsearchNodeHTTPConnections),
 		metricElasticsearchNodeJvmGcCollectionsCount:   newMetricElasticsearchNodeJvmGcCollectionsCount(settings.ElasticsearchNodeJvmGcCollectionsCount),
 		metricElasticsearchNodeJvmGcCollectionsTime:    newMetricElasticsearchNodeJvmGcCollectionsTime(settings.ElasticsearchNodeJvmGcCollectionsTime),
@@ -1454,7 +1395,6 @@ func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
 	mb.metricElasticsearchNodeClusterIo.emit(metrics)
 	mb.metricElasticsearchNodeDocuments.emit(metrics)
 	mb.metricElasticsearchNodeFsDiskAvailable.emit(metrics)
-	mb.metricElasticsearchNodeFsOperations.emit(metrics)
 	mb.metricElasticsearchNodeHTTPConnections.emit(metrics)
 	mb.metricElasticsearchNodeJvmGcCollectionsCount.emit(metrics)
 	mb.metricElasticsearchNodeJvmGcCollectionsTime.emit(metrics)
@@ -1514,11 +1454,6 @@ func (mb *MetricsBuilder) RecordElasticsearchNodeDocumentsDataPoint(ts pdata.Tim
 // RecordElasticsearchNodeFsDiskAvailableDataPoint adds a data point to elasticsearch.node.fs.disk.available metric.
 func (mb *MetricsBuilder) RecordElasticsearchNodeFsDiskAvailableDataPoint(ts pdata.Timestamp, val int64) {
 	mb.metricElasticsearchNodeFsDiskAvailable.recordDataPoint(mb.startTime, ts, val)
-}
-
-// RecordElasticsearchNodeFsOperationsDataPoint adds a data point to elasticsearch.node.fs.operations metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeFsOperationsDataPoint(ts pdata.Timestamp, val int64, fsDirectionAttributeValue string) {
-	mb.metricElasticsearchNodeFsOperations.recordDataPoint(mb.startTime, ts, val, fsDirectionAttributeValue)
 }
 
 // RecordElasticsearchNodeHTTPConnectionsDataPoint adds a data point to elasticsearch.node.http.connections metric.

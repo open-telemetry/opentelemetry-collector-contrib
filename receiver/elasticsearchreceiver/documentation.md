@@ -17,7 +17,6 @@ These are the metrics available for this scraper.
 | elasticsearch.node.cluster.io | The number of bytes sent and received on the network for internal cluster communication. | By | Sum(Int) | <ul> <li>direction</li> </ul> |
 | elasticsearch.node.documents | The number of documents on the node. | {documents} | Sum(Int) | <ul> <li>document_state</li> </ul> |
 | elasticsearch.node.fs.disk.available | The amount of disk space available across all file stores for this node. | By | Sum(Int) | <ul> </ul> |
-| elasticsearch.node.fs.operations | The number of IO operations completed across all file stores since starting Elasticsearch. Only available on Linux nodes. | {operations} | Sum(Int) | <ul> <li>fs_direction</li> </ul> |
 | elasticsearch.node.http.connections | The number of HTTP connections to the node. | {connections} | Sum(Int) | <ul> </ul> |
 | elasticsearch.node.jvm.gc.collections.count | The number of garbage collections performed by the JVM. | {collections} | Sum(Int) | <ul> <li>generation</li> </ul> |
 | elasticsearch.node.jvm.gc.collections.time | The total time spent by the JVM running the GC. | ms | Sum(Int) | <ul> <li>generation</li> </ul> |

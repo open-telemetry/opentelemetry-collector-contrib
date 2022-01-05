@@ -159,15 +159,6 @@ metrics:
       value_type: int
     attributes: []
     enabled: true
-  elasticsearch.node.fs.operations:
-    description: The number of IO operations completed across all file stores since starting Elasticsearch. Only available on Linux nodes.
-    unit: "{operations}"
-    sum:
-      monotonic: true
-      aggregation: cumulative
-      value_type: int
-    attributes: [fs_direction]
-    enabled: true
   elasticsearch.node.cluster.io:
     description: The number of bytes sent and received on the network for internal cluster communication.
     unit: By
