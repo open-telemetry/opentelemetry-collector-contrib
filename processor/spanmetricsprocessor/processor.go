@@ -92,12 +92,14 @@ type processorImp struct {
 
 	// List of seen resource attributes.
 	// Map structure for faster lookup.
+	// todo - check if this can be removed
 	resourceAttrList map[resourceKey]bool
 
 	// An LRU cache of dimension key-value maps keyed by a unique identifier formed by a concatenation of its values:
 	// e.g. { "foo/barOK": { "serviceName": "foo", "operation": "/bar", "status_code": "OK" }}
 	metricKeyToDimensions *cache.Cache
 	// A cache of resourceattributekey-value maps keyed by a unique identifier formed by a concatenation of its values.
+	// todo - move to use the internal LRU cache
 	resourceKeyToDimensions map[resourceKey]pdata.AttributeMap
 }
 
