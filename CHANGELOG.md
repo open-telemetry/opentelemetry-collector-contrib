@@ -34,6 +34,7 @@
 - Fix typo in "direction" metrics attribute description (#6949)
 - `zookeeperreceiver`: Fix issue where receiver could panic during shutdown (#7020)
 - `prometheusreceiver`: Fix metadata fetching when metrics differ by trimmable suffixes (#6932)
+- Sanitize URLs being logged (#7021)
 
 ## 💡 Enhancements 💡
 
