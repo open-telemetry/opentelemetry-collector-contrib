@@ -7,10 +7,33 @@ attributes. It also masks span attribute values that match a blocked value
 list. Span attributes that aren't on the allowed list are removed before any
 value checks are done.
 
+## Use Cases
+
 Typical use-cases:
 
 * Prevent sensitive fields from accidentally leaking into traces
 * Ensure compliance with legal, privacy, or security requirements
+
+For example:
+
+* EU General Data Protection Regulation (GDPR) prohibits the transfer of any
+  personal data like birthdates, addresses, or ip addresses across borders
+  without explicit consent from the data subject. Popular trace aggregation
+  services are located in US, not in EU. You can use the redaction processor
+  to scrub personal data from your data.
+* PRC legislation prohibits the transfer of geographic coordinates outside of
+  the PRC. Popular trace aggregation services are located in US, not in the
+  PRC. You can use the redaction processor to scrub geographic coordinates
+  from your data.
+* Payment Card Industry (PCI) Data Security Standards prohibit logging certain
+  things or storing them unencrypted. You can use the redaction processor to
+  scrub them from your traces.
+
+The above is written by an engineer, not a lawyer. The redaction processor is
+intended as one line of defence rather than the only compliance measure in
+place.
+
+## Processor Configuration
 
 Please refer to [config.go](./config.go) for the config spec.
 
@@ -45,10 +68,8 @@ processors:
     summary: debug
 ```
 
-## Configuration
-
-Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using
-the processor.
+Refer to [config.yaml](./testdata/config.yaml) for how to fit the configuration
+into an OpenTelemetry Collector pipeline definition.
 
 Only span attributes included on the list of allowed keys list are retained.
 If `allowed_keys` is empty, then no span attributes are allowed. All span
