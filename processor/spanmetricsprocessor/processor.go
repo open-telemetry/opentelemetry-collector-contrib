@@ -434,11 +434,17 @@ func (p *processorImp) aggregateMetricsForSpan(serviceName string, span pdata.Sp
 
 // updateCallMetrics increments the call count for the given metric key.
 func (p *processorImp) updateCallMetrics(resourceAttrKey resourceKey, mKey metricKey) {
-	if _, ok := p.callSum[resourceAttrKey]; ok {
-		p.callSum[resourceAttrKey][mKey]++
-	} else {
+	if _, ok := p.callSum[resourceAttrKey]; !ok {
 		p.callSum[resourceAttrKey] = map[metricKey]int64{mKey: 1}
+		return
 	}
+
+	if _, ok := p.callSum[resourceAttrKey][mKey]; !ok {
+		p.callSum[resourceAttrKey][mKey] = 1
+		return
+	}
+
+	p.callSum[resourceAttrKey][mKey]++
 }
 
 // resetAccumulatedMetrics resets the internal maps used to store created metric data. Also purge the cache for
@@ -569,7 +575,8 @@ func (p *processorImp) buildMetricKey(span pdata.Span, resourceAttrs pdata.Attri
 // buildResourceAttrKey builds the metric key from the service name and will attempt to add any additional resource attributes
 // the user has configured that match the span's attributes
 //
-// The resource attribute key is a simple concatenation of resource attribute values, delimited by a null character.
+// The resource attribute key is a simple concatenation of the service name and the other specified resource attribute
+// values, delimited by a null character.
 func (p *processorImp) buildResourceAttrKey(serviceName string, resourceAttr pdata.AttributeMap) resourceKey {
 	var resourceKeyBuilder strings.Builder
 	concatDimensionValue(&resourceKeyBuilder, serviceName)
@@ -595,6 +602,8 @@ func (p *processorImp) buildResourceAttrKey(serviceName string, resourceAttr pda
 //
 // The ok flag indicates if a dimension value was fetched in order to differentiate
 // an empty string value from a state where no value was found.
+// todo - consider this: Given we are building resource attributes for the metrics, does that make sense to search from
+// resource attributes anymore?
 func getDimensionValue(d Dimension, spanAttr pdata.AttributeMap, resourceAttr pdata.AttributeMap) (v pdata.AttributeValue, ok bool) {
 	// The more specific span attribute should take precedence.
 	if attr, exists := spanAttr.Get(d.Name); exists {
