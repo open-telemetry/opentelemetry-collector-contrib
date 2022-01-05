@@ -348,6 +348,7 @@
 - `mongodbreceiver`: Establish codebase for MongoDB metrics receiver (#6972)
 - `couchbasereceiver`: Establish codebase for Couchbase metrics receiver (#7046)
 - `dbstorage`: New experimental dbstorage extension (#7061)
+- `redactionprcessor`: Remove sensitive data from traces (#6495)
 
 ### 🧰 Bug fixes 🧰
 
