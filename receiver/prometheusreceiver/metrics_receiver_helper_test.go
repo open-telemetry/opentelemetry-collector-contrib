@@ -206,7 +206,7 @@ func getValidScrapes(t *testing.T, rms []*pdata.ResourceMetrics) []*pdata.Resour
 	for i := 0; i < len(rms); i++ {
 		allMetrics := getMetrics(rms[i])
 		if expectedScrapeMetricCount < len(allMetrics) && countScrapeMetrics(allMetrics) == expectedScrapeMetricCount {
-			if isFirstFailedScrape(t, allMetrics) {
+			if isFirstFailedScrape(allMetrics) {
 				continue
 			}
 			assertUp(t, 1, allMetrics)
@@ -218,7 +218,7 @@ func getValidScrapes(t *testing.T, rms []*pdata.ResourceMetrics) []*pdata.Resour
 	return out
 }
 
-func isFirstFailedScrape(t *testing.T, metrics []*pdata.Metric) bool {
+func isFirstFailedScrape(metrics []*pdata.Metric) bool {
 	for _, m := range metrics {
 		if m.Name() == "up" {
 			if m.Gauge().DataPoints().At(0).DoubleVal() == 1 { // assumed up will not have multiple datapoints
