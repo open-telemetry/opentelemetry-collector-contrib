@@ -15,13 +15,15 @@
 package lokiexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter"
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -35,6 +37,10 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/third_party/loki/logproto"
+)
+
+const (
+	maxErrMsgLen = 1024
 )
 
 type lokiExporter struct {
@@ -51,9 +57,9 @@ func newExporter(config *Config, logger *zap.Logger) *lokiExporter {
 		logger: logger,
 	}
 	if config.Format == "json" {
-		lokiexporter.convert = convertLogToJSONEntry
+		lokiexporter.convert = lokiexporter.convertLogToJSONEntry
 	} else {
-		lokiexporter.convert = convertLogBodyToEntry
+		lokiexporter.convert = lokiexporter.convertLogBodyToEntry
 	}
 	return lokiexporter
 }
@@ -91,11 +97,18 @@ func (l *lokiExporter) pushLogData(ctx context.Context, ld pdata.Logs) error {
 		return consumererror.NewLogs(err, ld)
 	}
 
-	_, _ = io.Copy(ioutil.Discard, resp.Body)
-	_ = resp.Body.Close()
+	defer func() {
+		_, _ = io.Copy(io.Discard, resp.Body)
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
-		err = fmt.Errorf("HTTP %d %q", resp.StatusCode, http.StatusText(resp.StatusCode))
+		scanner := bufio.NewScanner(io.LimitReader(resp.Body, maxErrMsgLen))
+		line := ""
+		if scanner.Scan() {
+			line = scanner.Text()
+		}
+		err = fmt.Errorf("HTTP %d %q: %s", resp.StatusCode, http.StatusText(resp.StatusCode), line)
 		return consumererror.NewLogs(err, ld)
 	}
 
@@ -227,14 +240,68 @@ func (l *lokiExporter) convertAttributesToLabels(attributes pdata.AttributeMap, 
 	return ls
 }
 
-func convertLogBodyToEntry(lr pdata.LogRecord, res pdata.Resource) (*logproto.Entry, error) {
+func (l *lokiExporter) convertLogBodyToEntry(lr pdata.LogRecord, res pdata.Resource) (*logproto.Entry, error) {
+	var b strings.Builder
+
+	if len(lr.Name()) > 0 {
+		b.WriteString("name=")
+		b.WriteString(lr.Name())
+		b.WriteRune(' ')
+	}
+	if len(lr.SeverityText()) > 0 {
+		b.WriteString("severity=")
+		b.WriteString(lr.SeverityText())
+		b.WriteRune(' ')
+	}
+	if lr.SeverityNumber() > 0 {
+		b.WriteString("severityN=")
+		b.WriteString(strconv.Itoa(int(lr.SeverityNumber())))
+		b.WriteRune(' ')
+	}
+	if !lr.TraceID().IsEmpty() {
+		b.WriteString("traceID=")
+		b.WriteString(lr.TraceID().HexString())
+		b.WriteRune(' ')
+	}
+	if !lr.SpanID().IsEmpty() {
+		b.WriteString("spanID=")
+		b.WriteString(lr.SpanID().HexString())
+		b.WriteRune(' ')
+	}
+
+	// fields not added to the accept-list as part of the component's config
+	// are added to the body, so that they can still be seen under "detected fields"
+	lr.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+		if _, found := l.config.Labels.Attributes[k]; !found {
+			b.WriteString(k)
+			b.WriteString("=")
+			b.WriteString(v.AsString())
+			b.WriteRune(' ')
+		}
+		return true
+	})
+
+	// same for resources: include all, except the ones that are explicitly added
+	// as part of the config, which are showing up at the top-level already
+	res.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+		if _, found := l.config.Labels.ResourceAttributes[k]; !found {
+			b.WriteString(k)
+			b.WriteString("=")
+			b.WriteString(v.AsString())
+			b.WriteRune(' ')
+		}
+		return true
+	})
+
+	b.WriteString(lr.Body().StringVal())
+
 	return &logproto.Entry{
 		Timestamp: time.Unix(0, int64(lr.Timestamp())),
-		Line:      lr.Body().StringVal(),
+		Line:      b.String(),
 	}, nil
 }
 
-func convertLogToJSONEntry(lr pdata.LogRecord, res pdata.Resource) (*logproto.Entry, error) {
+func (l *lokiExporter) convertLogToJSONEntry(lr pdata.LogRecord, res pdata.Resource) (*logproto.Entry, error) {
 	line, err := encodeJSON(lr, res)
 	if err != nil {
 		return nil, err

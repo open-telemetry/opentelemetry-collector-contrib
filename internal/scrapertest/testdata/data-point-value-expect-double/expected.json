@@ -1,0 +1,22 @@
+{
+   "resourceMetrics": [
+      {
+         "instrumentationLibraryMetrics": [
+            {
+               "metrics": [
+                  {
+                     "name": "gauge.one",
+                     "gauge": {
+                        "dataPoints": [
+                           {
+                              "asDouble": 123
+                           }
+                        ]
+                     }
+                  }
+               ]
+            }
+         ]
+      }
+   ]
+}

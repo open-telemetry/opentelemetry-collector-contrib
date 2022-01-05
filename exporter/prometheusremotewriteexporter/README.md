@@ -34,12 +34,13 @@ As a result, the following parameters are also required under `tls:`:
 
 The following settings can be optionally configured:
 
-- `external_labels`: list of labels to be attached to each metric data point
+- `external_labels`: map of labels names and values to be attached to each metric data point
 - `headers`: additional headers attached to each HTTP request. 
   - *Note the following headers cannot be changed: `Content-Encoding`, `Content-Type`, `X-Prometheus-Remote-Write-Version`, and `User-Agent`.*
 - `namespace`: prefix attached to each exported metric name.
 - `remote_write_queue`: fine tuning for queueing and sending of the outgoing remote writes.
-  - `queue_size`: number of OTLP metrics that can be queued.
+  - `enabled`: enable the sending queue
+  - `queue_size`: number of OTLP metrics that can be queued. Ignored if `enabled` is `false`
   - `num_consumers`: minimum number of workers to use to fan out the outgoing requests.
 
 Example:
@@ -48,6 +49,17 @@ Example:
 exporters:
   prometheusremotewrite:
     endpoint: "https://my-cortex:7900/api/v1/push"
+```
+
+Example:
+
+```yaml
+exporters:
+  prometheusremotewrite:
+    endpoint: "https://my-cortex:7900/api/v1/push"
+    external_labels:
+      label_name1: label_value1
+      label_name2: label_value2      
 ```
 
 ## Advanced Configuration

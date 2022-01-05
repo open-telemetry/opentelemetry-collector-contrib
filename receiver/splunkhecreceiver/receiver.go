@@ -18,7 +18,6 @@ import (
 	"bufio"
 	"compress/gzip"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -29,6 +28,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -311,7 +311,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	dec := json.NewDecoder(bodyReader)
+	dec := jsoniter.NewDecoder(bodyReader)
 
 	var events []*splunk.Event
 
@@ -423,7 +423,7 @@ func (r *splunkReceiver) failRequest(
 }
 
 func initJSONResponse(s string) []byte {
-	respBody, err := json.Marshal(s)
+	respBody, err := jsoniter.Marshal(s)
 	if err != nil {
 		// This is to be used in initialization so panic here is fine.
 		panic(err)

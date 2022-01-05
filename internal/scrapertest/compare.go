@@ -32,11 +32,7 @@ type CompareOption interface {
 // an error if they don't match. The error describes what didn't match. The
 // expected and actual values are clones before options are applied.
 func CompareMetricSlices(expected, actual pdata.MetricSlice, options ...CompareOption) error {
-	expClone := pdata.NewMetricSlice()
-	expected.CopyTo(expClone)
-	actClone := pdata.NewMetricSlice()
-	actual.CopyTo(actClone)
-	expected, actual = expClone, actClone
+	expected, actual = cloneMetricSlice(expected), cloneMetricSlice(actual)
 
 	for _, option := range options {
 		option.apply(expected, actual)
@@ -46,28 +42,18 @@ func CompareMetricSlices(expected, actual pdata.MetricSlice, options ...CompareO
 		return fmt.Errorf("metric slices not of same length")
 	}
 
-	actualByName := make(map[string]pdata.Metric, actual.Len())
-	for i := 0; i < actual.Len(); i++ {
-		a := actual.At(i)
-		actualByName[a.Name()] = a
-	}
-
-	expectedByName := make(map[string]pdata.Metric, expected.Len())
-	for i := 0; i < expected.Len(); i++ {
-		e := expected.At(i)
-		expectedByName[e.Name()] = e
-	}
+	expectedByName, actualByName := metricsByName(expected), metricsByName(actual)
 
 	var errs error
 	for name := range actualByName {
 		_, ok := expectedByName[name]
 		if !ok {
-			errs = multierr.Append(errs, fmt.Errorf("unexpected metric %s", name))
+			errs = multierr.Append(errs, fmt.Errorf("unexpected metric: %s", name))
 		}
 	}
 	for name := range expectedByName {
 		if _, ok := actualByName[name]; !ok {
-			errs = multierr.Append(errs, fmt.Errorf("missing expected metric %s", name))
+			errs = multierr.Append(errs, fmt.Errorf("missing expected metric: %s", name))
 		}
 	}
 
@@ -76,27 +62,24 @@ func CompareMetricSlices(expected, actual pdata.MetricSlice, options ...CompareO
 	}
 
 	for name, actualMetric := range actualByName {
-		expectedMetric, ok := expectedByName[name]
-		if !ok {
-			return fmt.Errorf("metric name does not match expected: %s, actual: %s", expectedMetric.Name(), actualMetric.Name())
-		}
+		expectedMetric := expectedByName[name]
 		if actualMetric.Description() != expectedMetric.Description() {
-			return fmt.Errorf("metric description does not match expected: %s, actual: %s", expectedMetric.Description(), actualMetric.Description())
+			return fmt.Errorf("metric Description does not match expected: %s, actual: %s", expectedMetric.Description(), actualMetric.Description())
 		}
 		if actualMetric.Unit() != expectedMetric.Unit() {
 			return fmt.Errorf("metric Unit does not match expected: %s, actual: %s", expectedMetric.Unit(), actualMetric.Unit())
 		}
 		if actualMetric.DataType() != expectedMetric.DataType() {
-			return fmt.Errorf("metric datatype does not match expected: %s, actual: %s", expectedMetric.DataType(), actualMetric.DataType())
+			return fmt.Errorf("metric DataType does not match expected: %s, actual: %s", expectedMetric.DataType(), actualMetric.DataType())
 		}
 
-		var actualDataPoints pdata.NumberDataPointSlice
 		var expectedDataPoints pdata.NumberDataPointSlice
+		var actualDataPoints pdata.NumberDataPointSlice
 
 		switch actualMetric.DataType() {
 		case pdata.MetricDataTypeGauge:
-			actualDataPoints = actualMetric.Gauge().DataPoints()
 			expectedDataPoints = expectedMetric.Gauge().DataPoints()
+			actualDataPoints = actualMetric.Gauge().DataPoints()
 		case pdata.MetricDataTypeSum:
 			if actualMetric.Sum().AggregationTemporality() != expectedMetric.Sum().AggregationTemporality() {
 				return fmt.Errorf("metric AggregationTemporality does not match expected: %s, actual: %s", expectedMetric.Sum().AggregationTemporality(), actualMetric.Sum().AggregationTemporality())
@@ -104,11 +87,11 @@ func CompareMetricSlices(expected, actual pdata.MetricSlice, options ...CompareO
 			if actualMetric.Sum().IsMonotonic() != expectedMetric.Sum().IsMonotonic() {
 				return fmt.Errorf("metric IsMonotonic does not match expected: %t, actual: %t", expectedMetric.Sum().IsMonotonic(), actualMetric.Sum().IsMonotonic())
 			}
-			actualDataPoints = actualMetric.Sum().DataPoints()
 			expectedDataPoints = expectedMetric.Sum().DataPoints()
+			actualDataPoints = actualMetric.Sum().DataPoints()
 		}
 
-		if err := CompareNumberDataPointSlices(actualDataPoints, expectedDataPoints); err != nil {
+		if err := CompareNumberDataPointSlices(expectedDataPoints, actualDataPoints); err != nil {
 			return multierr.Combine(fmt.Errorf("datapoints for metric: `%s`, do not match expected", actualMetric.Name()), err)
 		}
 	}
@@ -117,8 +100,8 @@ func CompareMetricSlices(expected, actual pdata.MetricSlice, options ...CompareO
 
 // CompareNumberDataPointSlices compares each part of two given NumberDataPointSlices and returns
 // an error if they don't match. The error describes what didn't match.
-func CompareNumberDataPointSlices(actual, expected pdata.NumberDataPointSlice) error {
-	if actual.Len() != expected.Len() {
+func CompareNumberDataPointSlices(expected, actual pdata.NumberDataPointSlice) error {
+	if expected.Len() != actual.Len() {
 		return fmt.Errorf("length of datapoints don't match")
 	}
 
@@ -128,14 +111,14 @@ func CompareNumberDataPointSlices(actual, expected pdata.NumberDataPointSlice) e
 		var foundMatch bool
 		for k := 0; k < actual.Len(); k++ {
 			adp := actual.At(k)
-			if reflect.DeepEqual(adp.Attributes().Sort().AsRaw(), edp.Attributes().Sort().AsRaw()) {
+			if reflect.DeepEqual(edp.Attributes().Sort().AsRaw(), adp.Attributes().Sort().AsRaw()) {
 				foundMatch = true
 				break
 			}
 		}
 
 		if !foundMatch {
-			errs = multierr.Append(errs, fmt.Errorf("metric missing expected data point: Labels: %v", edp.Attributes().AsRaw()))
+			errs = multierr.Append(errs, fmt.Errorf("metric missing expected datapoint with attributes: %v", edp.Attributes().AsRaw()))
 		}
 	}
 
@@ -153,7 +136,7 @@ func CompareNumberDataPointSlices(actual, expected pdata.NumberDataPointSlice) e
 		}
 
 		if !foundMatch {
-			errs = multierr.Append(errs, fmt.Errorf("metric has extra data point: Labels: %v", adp.Attributes().AsRaw()))
+			errs = multierr.Append(errs, fmt.Errorf("metric has extra datapoint with attributes: %v", adp.Attributes().AsRaw()))
 		}
 	}
 
@@ -162,8 +145,8 @@ func CompareNumberDataPointSlices(actual, expected pdata.NumberDataPointSlice) e
 	}
 
 	for adp, edp := range matchingDPS {
-		if err := CompareNumberDataPoints(adp, edp); err != nil {
-			return multierr.Combine(fmt.Errorf("datapoint with label(s): %v, does not match expected", adp.Attributes().AsRaw()), err)
+		if err := CompareNumberDataPoints(edp, adp); err != nil {
+			return multierr.Combine(fmt.Errorf("datapoint with attributes: %v, does not match expected", adp.Attributes().AsRaw()), err)
 		}
 	}
 	return nil
@@ -171,9 +154,9 @@ func CompareNumberDataPointSlices(actual, expected pdata.NumberDataPointSlice) e
 
 // CompareNumberDataPoints compares each part of two given NumberDataPoints and returns
 // an error if they don't match. The error describes what didn't match.
-func CompareNumberDataPoints(actual, expected pdata.NumberDataPoint) error {
+func CompareNumberDataPoints(expected, actual pdata.NumberDataPoint) error {
 	if expected.Type() != actual.Type() {
-		return fmt.Errorf("metric datapoint types don't match: expected type: %v, actual type: %v", expected.Type(), actual.Type())
+		return fmt.Errorf("metric datapoint types don't match: expected type: %s, actual type: %s", numberTypeToString(expected.Type()), numberTypeToString(actual.Type()))
 	}
 	if expected.IntVal() != actual.IntVal() {
 		return fmt.Errorf("metric datapoint IntVal doesn't match expected: %d, actual: %d", expected.IntVal(), actual.IntVal())
@@ -182,4 +165,15 @@ func CompareNumberDataPoints(actual, expected pdata.NumberDataPoint) error {
 		return fmt.Errorf("metric datapoint DoubleVal doesn't match expected: %f, actual: %f", expected.DoubleVal(), actual.DoubleVal())
 	}
 	return nil
+}
+
+func numberTypeToString(t pdata.MetricValueType) string {
+	switch t {
+	case pdata.MetricValueTypeInt:
+		return "int"
+	case pdata.MetricValueTypeDouble:
+		return "double"
+	default:
+		return "none"
+	}
 }

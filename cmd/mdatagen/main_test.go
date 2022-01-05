@@ -28,12 +28,13 @@ const (
 name: metricreceiver
 metrics:
   system.cpu.time:
+    enabled: true
     description: Total CPU seconds broken down by different states.
     extended_documentation: Additional information on CPU Time can be found [here](https://en.wikipedia.org/wiki/CPU_time).
     unit: s
     sum:
       aggregation: cumulative
-      number_type: double
+      value_type: double
     attributes: []
 `
 )

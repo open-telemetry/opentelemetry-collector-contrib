@@ -63,7 +63,7 @@ func TestMarshalEncoder_Metrics(t *testing.T) {
 			expectedError: true,
 		},
 		{
-			scenario:      "valid zipkin json encoder, does not implement metrics",
+			scenario:      "valid zipkin JSON encoder, does not implement metrics",
 			encoding:      "zipkin_json",
 			batchSize:     10,
 			recordSize:    1000,
@@ -82,7 +82,7 @@ func TestMarshalEncoder_Metrics(t *testing.T) {
 			expectedChunks: 2,
 		},
 		{
-			scenario:       "valid otlp json encoder that implements metrics",
+			scenario:       "valid otlp JSON encoder that implements metrics",
 			encoding:       "otlp_json",
 			batchSize:      10,
 			recordSize:     100000,
@@ -158,7 +158,7 @@ func TestMarshalEncoder_Traces(t *testing.T) {
 			expectedChunks: 1,
 		},
 		{
-			scenario:       "valid zipkin json encoder",
+			scenario:       "valid zipkin JSON encoder",
 			encoding:       "zipkin_json",
 			batchSize:      10,
 			recordSize:     1000,
@@ -176,7 +176,7 @@ func TestMarshalEncoder_Traces(t *testing.T) {
 			expectedChunks: 2,
 		},
 		{
-			scenario:       "valid otlp json encoder",
+			scenario:       "valid otlp JSON encoder",
 			encoding:       "otlp_json",
 			batchSize:      10,
 			recordSize:     100000,
@@ -248,7 +248,7 @@ func TestMarshalEncoder_Logs(t *testing.T) {
 			expectedError: true,
 		},
 		{
-			scenario:      "valid zipkin json encoder, does not implement logs",
+			scenario:      "valid zipkin JSON encoder, does not implement logs",
 			encoding:      "zipkin_json",
 			batchSize:     10,
 			recordSize:    1000,
@@ -267,7 +267,7 @@ func TestMarshalEncoder_Logs(t *testing.T) {
 			expectedChunks: 2,
 		},
 		{
-			scenario:       "valid otlp json encoder that implements logs",
+			scenario:       "valid otlp JSON encoder that implements logs",
 			encoding:       "otlp_json",
 			batchSize:      10,
 			recordSize:     100000,
