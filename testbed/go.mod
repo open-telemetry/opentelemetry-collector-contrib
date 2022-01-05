@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/testbed
 go 1.17
 
 require (
-	github.com/fluent/fluent-logger-golang v1.8.0
+	github.com/fluent/fluent-logger-golang v1.9.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.41.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter v0.41.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.41.0
@@ -49,7 +49,7 @@ require (
 	github.com/alecthomas/units v0.0.0-20210208195552-ff826a37aa15 // indirect
 	github.com/apache/thrift v0.15.0 // indirect
 	github.com/armon/go-metrics v0.3.10 // indirect
-	github.com/aws/aws-sdk-go v1.42.25 // indirect
+	github.com/aws/aws-sdk-go v1.42.26 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.2 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.3.0 // indirect
