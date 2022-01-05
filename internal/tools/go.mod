@@ -171,7 +171,7 @@ require (
 	github.com/yeya24/promlinter v0.1.0 // indirect
 	go.opentelemetry.io/build-tools v0.0.0-20210719163622-92017e64f35b // indirect
 	go.uber.org/multierr v1.6.0 // indirect
-	go.uber.org/zap v1.19.1 // indirect
+	go.uber.org/zap v1.20.0 // indirect
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
 	golang.org/x/mod v0.5.1 // indirect
 	golang.org/x/net v0.0.0-20211015210444-4f30a5c0130f // indirect
