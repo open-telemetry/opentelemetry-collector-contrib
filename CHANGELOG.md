@@ -7,6 +7,7 @@
 - `prometheusremotewriteexporter`: Handling Staleness flag from OTLP (#6679)
 - `mysqlreceiver`: Add Integration test (#6916)
 - `datadogexporter`: Add compatibility with ECS Fargate semantic conventions (#6670)
+- `datadogexporter`: Add configuration option to use OTel span name into the Datatog resource name (#6611)
 - `k8s_observer`: discover k8s.node endpoints (#6820)
 - `redisreceiver`: Add missing description fields to keyspace metrics (#6940)
 - `kafkaexporter`: Allow controlling Kafka acknowledgment behaviour  (#6301)
