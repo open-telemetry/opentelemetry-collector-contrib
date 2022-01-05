@@ -4,6 +4,7 @@
 
 ## 💡 Enhancements 💡
 
+- `couchdbreceiver`: Add couchdb client (#6880)
 - `prometheusremotewriteexporter`: Handling Staleness flag from OTLP (#6679)
 - `prometheusexporter`: Handling Staleness flag from OTLP (#6805)
 - `mysqlreceiver`: Add Integration test (#6916)
