@@ -213,6 +213,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			}
 
 			got, err := z.scrape(ctx)
+			require.NoError(t, z.shutdown(ctx))
 
 			require.Equal(t, len(tt.expectedLogs), observedLogs.Len())
 			for i, log := range tt.expectedLogs {
@@ -239,6 +240,13 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			require.NoError(t, scrapertest.CompareMetricSlices(eMetricSlice, aMetricSlice))
 		})
 	}
+}
+
+func TestZookeeperShutdownBeforeScrape(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	z, err := newZookeeperMetricsScraper(zap.NewNop(), cfg)
+	require.NoError(t, err)
+	require.NoError(t, z.shutdown(context.Background()))
 }
 
 type mockedServer struct {

@@ -9,7 +9,10 @@ require (
 
 require github.com/stretchr/testify v1.7.0
 
-require go.opentelemetry.io/collector/model v0.41.1-0.20211222180302-3db1d1146483
+require (
+	go.opentelemetry.io/collector/model v0.41.0
+	go.uber.org/zap v1.20.0
+)
 
 require (
 	github.com/benbjohnson/clock v1.3.0 // indirect
@@ -39,7 +42,6 @@ require (
 	go.opentelemetry.io/otel/metric v0.26.0 // indirect
 	go.opentelemetry.io/otel/trace v1.3.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
-	go.uber.org/zap v1.19.1 // indirect
 	golang.org/x/net v0.0.0-20210813160813-60bc85c4be6d // indirect
 	golang.org/x/sys v0.0.0-20211205182925-97ca703d548d // indirect
 	golang.org/x/text v0.3.7 // indirect
