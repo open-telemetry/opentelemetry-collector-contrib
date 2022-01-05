@@ -11,9 +11,9 @@ receivers:
       filesystem:
       memory:
       network:
-        include:
-          interfaces: ["test1"]
-          match_type: "strict"
+      #        include:
+      #          interfaces: ["test1"]
+      #          match_type: "strict"
       paging:
       processes:
       process:

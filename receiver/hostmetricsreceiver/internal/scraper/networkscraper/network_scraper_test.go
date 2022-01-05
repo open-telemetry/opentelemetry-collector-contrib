@@ -48,28 +48,43 @@ func TestScrape(t *testing.T) {
 
 	testCases := []testCase{
 		{
-			name:                 "Standard",
+			name: "Standard",
+			config: Config{
+				Metrics: metadata.DefaultMetricsSettings(),
+			},
 			expectNetworkMetrics: true,
 		},
 		{
-			name:                 "Validate Start Time",
+			name: "Validate Start Time",
+			config: Config{
+				Metrics: metadata.DefaultMetricsSettings(),
+			},
 			bootTimeFunc:         func() (uint64, error) { return 100, nil },
 			expectNetworkMetrics: true,
 			expectedStartTime:    100 * 1e9,
 		},
 		{
-			name:                 "Include Filter that matches nothing",
-			config:               Config{Include: MatchConfig{filterset.Config{MatchType: "strict"}, []string{"@*^#&*$^#)"}}},
+			name: "Include Filter that matches nothing",
+			config: Config{
+				Metrics: metadata.DefaultMetricsSettings(),
+				Include: MatchConfig{filterset.Config{MatchType: "strict"}, []string{"@*^#&*$^#)"}},
+			},
 			expectNetworkMetrics: false,
 		},
 		{
-			name:        "Invalid Include Filter",
-			config:      Config{Include: MatchConfig{Interfaces: []string{"test"}}},
+			name: "Invalid Include Filter",
+			config: Config{
+				Metrics: metadata.DefaultMetricsSettings(),
+				Include: MatchConfig{Interfaces: []string{"test"}},
+			},
 			newErrRegex: "^error creating network interface include filters:",
 		},
 		{
-			name:        "Invalid Exclude Filter",
-			config:      Config{Exclude: MatchConfig{Interfaces: []string{"test"}}},
+			name: "Invalid Exclude Filter",
+			config: Config{
+				Metrics: metadata.DefaultMetricsSettings(),
+				Exclude: MatchConfig{Interfaces: []string{"test"}},
+			},
 			newErrRegex: "^error creating network interface exclude filters:",
 		},
 		{
@@ -141,10 +156,10 @@ func TestScrape(t *testing.T) {
 			metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 			idx := 0
 			if test.expectNetworkMetrics {
-				assertNetworkIOMetricValid(t, metrics.At(idx+0), metadata.Metrics.SystemNetworkPackets.New(), test.expectedStartTime)
-				assertNetworkIOMetricValid(t, metrics.At(idx+1), metadata.Metrics.SystemNetworkDropped.New(), test.expectedStartTime)
-				assertNetworkIOMetricValid(t, metrics.At(idx+2), metadata.Metrics.SystemNetworkErrors.New(), test.expectedStartTime)
-				assertNetworkIOMetricValid(t, metrics.At(idx+3), metadata.Metrics.SystemNetworkIo.New(), test.expectedStartTime)
+				assertNetworkIOMetricValid(t, metrics.At(idx+0), test.expectedStartTime)
+				assertNetworkIOMetricValid(t, metrics.At(idx+1), test.expectedStartTime)
+				assertNetworkIOMetricValid(t, metrics.At(idx+2), test.expectedStartTime)
+				assertNetworkIOMetricValid(t, metrics.At(idx+3), test.expectedStartTime)
 				internal.AssertSameTimeStampForMetrics(t, metrics, 0, 4)
 				idx += 4
 			}
@@ -155,8 +170,7 @@ func TestScrape(t *testing.T) {
 	}
 }
 
-func assertNetworkIOMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Metric, startTime pdata.Timestamp) {
-	internal.AssertDescriptorEqual(t, descriptor, metric)
+func assertNetworkIOMetricValid(t *testing.T, metric pdata.Metric, startTime pdata.Timestamp) {
 	if startTime != 0 {
 		internal.AssertSumMetricStartTimeEquals(t, metric, startTime)
 	}
@@ -167,7 +181,6 @@ func assertNetworkIOMetricValid(t *testing.T, metric pdata.Metric, descriptor pd
 }
 
 func assertNetworkConnectionsMetricValid(t *testing.T, metric pdata.Metric) {
-	internal.AssertDescriptorEqual(t, metadata.Metrics.SystemNetworkConnections.New(), metric)
 	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "protocol", pdata.NewAttributeValueString(metadata.AttributeProtocol.Tcp))
 	internal.AssertSumMetricHasAttribute(t, metric, 0, "state")
 	assert.Equal(t, 12, metric.Sum().DataPoints().Len())
