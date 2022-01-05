@@ -82,7 +82,7 @@ func convToPdataMetricType(metricType textparse.MetricType) pdata.MetricDataType
 
 type metricBuilderPdata struct {
 	metrics              pdata.MetricSlice
-	families             map[string]MetricFamilyPdata
+	families             map[string]*metricFamilyPdata
 	hasData              bool
 	hasInternalMetric    bool
 	mc                   MetadataCache
@@ -105,7 +105,7 @@ func newMetricBuilderPdata(mc MetadataCache, useStartTimeMetric bool, startTimeM
 	}
 	return &metricBuilderPdata{
 		metrics:              pdata.NewMetricSlice(),
-		families:             map[string]MetricFamilyPdata{},
+		families:             map[string]*metricFamilyPdata{},
 		mc:                   mc,
 		logger:               logger,
 		numTimeseries:        0,
@@ -172,14 +172,14 @@ func (b *metricBuilderPdata) AddDataPoint(ls labels.Labels, t int64, v float64) 
 
 	b.hasData = true
 
-	familyName := normalizeMetricName(metricName)
-	curMF, ok := b.families[familyName]
+	curMF, ok := b.families[metricName]
 	if !ok {
-		if mf, ok := b.families[metricName]; ok {
+		familyName := normalizeMetricName(metricName)
+		if mf, ok := b.families[familyName]; ok && mf.includesMetric(metricName) {
 			curMF = mf
 		} else {
 			curMF = newMetricFamilyPdata(metricName, b.mc, b.logger)
-			b.families[familyName] = curMF
+			b.families[curMF.name] = curMF
 		}
 	}
 

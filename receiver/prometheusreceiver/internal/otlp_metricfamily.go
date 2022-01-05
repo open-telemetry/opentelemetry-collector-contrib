@@ -21,18 +21,10 @@ import (
 	"time"
 
 	"github.com/prometheus/prometheus/pkg/labels"
-	"github.com/prometheus/prometheus/pkg/textparse"
 	"github.com/prometheus/prometheus/scrape"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 )
-
-// MetricFamilyPdata is unit which is corresponding to the metrics items which shared the same TYPE/UNIT/... metadata from
-// a single scrape.
-type MetricFamilyPdata interface {
-	Add(metricName string, ls labels.Labels, t int64, v float64) error
-	ToMetricPdata(metrics *pdata.MetricSlice) (int, int)
-}
 
 type metricFamilyPdata struct {
 	mtype             pdata.MetricDataType
@@ -61,41 +53,11 @@ type metricGroupPdata struct {
 	complexValue []*dataPoint
 }
 
-func newMetricFamilyPdata(metricName string, mc MetadataCache, logger *zap.Logger) MetricFamilyPdata {
-	familyName := normalizeMetricName(metricName)
-
-	// lookup metadata based on familyName
-	metadata, ok := mc.Metadata(familyName)
-	if !ok && metricName != familyName {
-		// use the original metricName as metricFamily
-		familyName = metricName
-		// perform a 2nd lookup with the original metric name. it can happen if there's a metric which is not histogram
-		// or summary, but ends with one of those _count/_sum suffixes
-		metadata, ok = mc.Metadata(metricName)
-		// still not found, this can happen when metric has no TYPE HINT
-		if !ok {
-			metadata.Metric = familyName
-			metadata.Type = textparse.MetricTypeUnknown
-		}
-	} else if !ok {
-		if isInternalMetric(metricName) {
-			metadata = defineInternalMetric(metricName, metadata, logger)
-		} else {
-			// Prometheus sends metrics without a type hint as gauges.
-			// MetricTypeUnknown is converted to a gauge in convToOCAMetricType()
-			metadata.Type = textparse.MetricTypeUnknown
-		}
-	}
-
+func newMetricFamilyPdata(metricName string, mc MetadataCache, logger *zap.Logger) *metricFamilyPdata {
+	metadata, familyName := metadataForMetric(metricName, mc)
 	mtype := convToPdataMetricType(metadata.Type)
 	if mtype == pdata.MetricDataTypeNone {
-		logger.Debug(fmt.Sprintf("Invalid metric : %s %+v", metricName, metadata))
-	}
-
-	// If a counter has a _total suffix but metadata is stored without it, keep _total suffix as the name otherwise
-	// the metric sent won't have the suffix
-	if mtype == pdata.MetricDataTypeSum && strings.HasSuffix(metricName, metricSuffixTotal) {
-		familyName = metricName
+		logger.Debug(fmt.Sprintf("Unknown-typed metric : %s %+v", metricName, metadata))
 	}
 
 	return &metricFamilyPdata{
@@ -106,7 +68,7 @@ func newMetricFamilyPdata(metricName string, mc MetadataCache, logger *zap.Logge
 		droppedTimeseries: 0,
 		labelKeys:         make(map[string]bool),
 		labelKeysOrdered:  make([]string, 0),
-		metadata:          &metadata,
+		metadata:          metadata,
 		groupOrders:       make(map[string]int),
 	}
 }
@@ -128,6 +90,18 @@ func (mf *metricFamilyPdata) updateLabelKeys(ls labels.Labels) {
 			}
 		}
 	}
+}
+
+// includesMetric returns true if the metric is part of the family
+func (mf *metricFamilyPdata) includesMetric(metricName string) bool {
+	if mf.isCumulativeTypePdata() {
+		// If it is a merged family type, then it should match the
+		// family name when suffixes are trimmed.
+		return normalizeMetricName(metricName) == mf.name
+	}
+	// If it isn't a merged type, the metricName and family name
+	// should match
+	return metricName == mf.name
 }
 
 func (mf *metricFamilyPdata) getGroupKey(ls labels.Labels) string {
