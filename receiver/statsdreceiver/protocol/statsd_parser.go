@@ -17,12 +17,14 @@ package protocol // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"context"
 	"errors"
-	"fmt"
 	"math"
+	"fmt"
+	"encoding/json"
 	"strconv"
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/collector/model/otlp"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/otel/attribute"
 
@@ -177,7 +179,7 @@ func (p *StatsDParser) Initialize(enableMetricType bool, isMonotonicCounter bool
 
 func expoHistogramOptions(opts HistogramOptions) []exponential.Option {
 	var r []exponential.Option
-	if opts.MaxSize >= exponential.MinimumSize {
+	if opts.MaxSize >= exponential.MinSize {
 		r = append(r, exponential.WithMaxSize(int32(opts.MaxSize)))
 	}
 	posReal := func(x float64) float64 {
@@ -237,6 +239,15 @@ func (p *StatsDParser) GetMetrics() pdata.Metrics {
 	}
 
 	p.resetState(now)
+	{
+		m := otlp.NewJSONMetricsMarshaler()
+		d, _ := m.MarshalMetrics(metrics)
+		var v interface{}
+		_ = json.Unmarshal(d, &v)
+		d, _ = json.MarshalIndent(v, "", "\t")
+		
+		fmt.Println("JSON: ", string(d))
+	}
 	return metrics
 }
 
