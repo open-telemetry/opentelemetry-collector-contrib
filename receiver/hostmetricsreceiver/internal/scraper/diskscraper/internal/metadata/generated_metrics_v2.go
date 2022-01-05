@@ -517,7 +517,7 @@ func (mb *MetricsBuilder) RecordSystemDiskWeightedIoTimeDataPoint(ts pdata.Times
 var Attributes = struct {
 	// Device (Name of the disk.)
 	Device string
-	// Direction (Direction of flow of bytes/opertations (read or write).)
+	// Direction (Direction of flow of bytes/operations (read or write).)
 	Direction string
 }{
 	"device",

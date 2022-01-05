@@ -29,9 +29,14 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/fluentbitextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
 )
 
@@ -43,8 +48,9 @@ func TestDefaultExtensions(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
 
 	tests := []struct {
-		extension   config.Type
-		getConfigFn getExtensionConfigFn
+		extension     config.Type
+		getConfigFn   getExtensionConfigFn
+		skipLifecycle bool
 	}{
 		{
 			extension: "health_check",
@@ -111,17 +117,74 @@ func TestDefaultExtensions(t *testing.T) {
 				return cfg
 			},
 		},
+		{
+			extension:     "awsproxy",
+			skipLifecycle: true, // Requires EC2 metadata service to be running
+		},
+		{
+			extension: "fluentbit",
+			getConfigFn: func() config.Extension {
+				cfg := extFactories["fluentbit"].CreateDefaultConfig().(*fluentbitextension.Config)
+				cfg.TCPEndpoint = "http://" + endpoint
+				return cfg
+			},
+		},
+		{
+			extension: "http_forwarder",
+			getConfigFn: func() config.Extension {
+				cfg := extFactories["http_forwarder"].CreateDefaultConfig().(*httpforwarder.Config)
+				cfg.Egress.Endpoint = "http://" + endpoint
+				cfg.Ingress.Endpoint = testutil.GetAvailableLocalAddress(t)
+				return cfg
+			},
+		},
+		{
+			extension: "oauth2client",
+			getConfigFn: func() config.Extension {
+				cfg := extFactories["oauth2client"].CreateDefaultConfig().(*oauth2clientauthextension.Config)
+				cfg.ClientID = "otel-extension"
+				cfg.ClientSecret = "testsarehard"
+				cfg.TokenURL = "http://" + endpoint
+				return cfg
+			},
+		},
+		{
+			extension:     "oidc",
+			skipLifecycle: true, // Requires a running OIDC server in order to complete life cycle testing
+		},
+		{
+			extension: "file_storage",
+			getConfigFn: func() config.Extension {
+				cfg := extFactories["file_storage"].CreateDefaultConfig().(*filestorage.Config)
+				cfg.Directory = testutil.NewTemporaryDirectory(t)
+				return cfg
+			},
+		},
+		{
+			extension: "host_observer",
+			getConfigFn: func() config.Extension {
+				cfg := extFactories["host_observer"].CreateDefaultConfig().(*hostobserver.Config)
+				return cfg
+			},
+		},
+		{
+			extension:     "k8s_observer",
+			skipLifecycle: true, // Requires a K8s api to interfact with and validate
+		},
 	}
 
-	// * The OIDC Auth extension requires an OIDC server to get the config from, and we don't want to spawn one here for this test.
-	assert.Equal(t, len(tests)+8 /* not tested */, len(extFactories))
-
+	assert.Len(t, tests, len(extFactories), "All extensions must be added to the lifecycle tests")
 	for _, tt := range tests {
 		t.Run(string(tt.extension), func(t *testing.T) {
 			factory, ok := extFactories[tt.extension]
 			require.True(t, ok)
 			assert.Equal(t, tt.extension, factory.Type())
 			assert.Equal(t, config.NewComponentID(tt.extension), factory.CreateDefaultConfig().ID())
+
+			if tt.skipLifecycle {
+				t.Skip("Skipping lifecycle test for ", tt.extension)
+				return
+			}
 
 			verifyExtensionLifecycle(t, factory, tt.getConfigFn)
 		})

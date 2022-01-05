@@ -25,9 +25,9 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 // Helper method to handle boilerplate of loading configuration from file
@@ -40,7 +40,7 @@ func loadConfig(t *testing.T, file string) (*config.Config, error) {
 	factories.Exporters[typeStr] = factory
 
 	// Load configurations
-	return configtest.LoadConfigAndValidate(path.Join(".", "testdata", file), factories)
+	return servicetest.LoadConfigAndValidate(path.Join(".", "testdata", file), factories)
 }
 
 // Helper method to handle boilerplate of loading exporter configuration from file
@@ -53,7 +53,7 @@ func loadExporterConfig(t *testing.T, file string, id config.ComponentID) (confi
 	factories.Exporters[typeStr] = factory
 
 	// Load configurations
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", file), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", file), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 	actual := cfg.Exporters[id]
