@@ -9,7 +9,7 @@ exporters:
   skywalking:
   skywalking/2:
     endpoint: "1.2.3.4:11800"
-    compression: "on"
+    compression: "gzip"
     num_streams: 233
     tls:
       ca_file: /var/lib/mycert.pem

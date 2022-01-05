@@ -38,7 +38,7 @@ exporters:
     num_streams: 5  
   skywalking/2:
     endpoint: "10.18.7.4:11800"
-    compression: "on"
+    compression: "gzip"
     tls:
       cert_file: file.cert
       key_file: file.key
