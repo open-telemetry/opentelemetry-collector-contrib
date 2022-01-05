@@ -7,7 +7,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/quantile v0.32.4
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02
 	github.com/Microsoft/go-winio v0.5.0 // indirect
-	github.com/aws/aws-sdk-go v1.42.26
+	github.com/aws/aws-sdk-go v1.42.27
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/gogo/protobuf v1.3.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.41.0
@@ -18,7 +18,7 @@ require (
 	github.com/zorkian/go-datadog-api v2.29.0+incompatible // indirect
 	go.opentelemetry.io/collector v0.41.1-0.20211222180302-3db1d1146483
 	go.opentelemetry.io/collector/model v0.41.1-0.20211222180302-3db1d1146483
-	go.uber.org/zap v1.19.1
+	go.uber.org/zap v1.20.0
 	gopkg.in/DataDog/dd-trace-go.v1 v1.34.0
 	gopkg.in/zorkian/go-datadog-api.v2 v2.30.0
 )
