@@ -228,8 +228,6 @@ func TestProcessorConsumeTracesErrors(t *testing.T) {
 }
 
 func TestProcessorConsumeTraces(t *testing.T) {
-	t.Parallel()
-
 	testcases := []struct {
 		name                   string
 		aggregationTemporality string
@@ -265,7 +263,9 @@ func TestProcessorConsumeTraces(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			// Prepare
 			mexp := &mocks.MetricsExporter{}
 			tcon := &mocks.TracesConsumer{}
@@ -300,14 +300,24 @@ func TestResourceCopying(t *testing.T) {
 		rm := input.ResourceMetrics()
 		require.Equal(t, 2, rm.Len())
 
-		serviceAResourceMetrics := rm.At(0)
-		serviceBResourceMetrics := rm.At(1)
+		var rmA, rmB pdata.ResourceMetrics
+		rm0 := rm.At(0)
+		rm1 := rm.At(1)
+		serviceName, ok := getServiceName(rm0)
+		assert.True(t, ok, "should get service name from resourceMetric")
 
-		// TODO: FIX THIS
-		require.Equal(t, 4, serviceAResourceMetrics.Resource().Attributes().Len())
-		require.Equal(t, 4, serviceAResourceMetrics.InstrumentationLibraryMetrics().At(0).Metrics().Len())
-		require.Equal(t, 2, serviceBResourceMetrics.Resource().Attributes().Len())
-		require.Equal(t, 2, serviceBResourceMetrics.InstrumentationLibraryMetrics().At(0).Metrics().Len())
+		if serviceName == "service-a" {
+			rmA = rm0
+			rmB = rm1
+		} else {
+			rmB = rm0
+			rmA = rm1
+		}
+
+		require.Equal(t, 4, rmA.Resource().Attributes().Len())
+		require.Equal(t, 4, rmA.InstrumentationLibraryMetrics().At(0).Metrics().Len())
+		require.Equal(t, 2, rmB.Resource().Attributes().Len())
+		require.Equal(t, 2, rmB.InstrumentationLibraryMetrics().At(0).Metrics().Len())
 
 		wantResourceAttrServiceA := map[string]string{
 			resourceAttr1:          "1",
@@ -315,7 +325,7 @@ func TestResourceCopying(t *testing.T) {
 			notInSpanResourceAttr0: defaultNotInSpanAttrVal,
 			serviceNameKey:         "service-a",
 		}
-		serviceAResourceMetrics.Resource().Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+		rmA.Resource().Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 			value := v.StringVal()
 			switch k {
 			case notInSpanResourceAttr1:
@@ -332,7 +342,7 @@ func TestResourceCopying(t *testing.T) {
 			notInSpanResourceAttr0: defaultNotInSpanAttrVal,
 			serviceNameKey:         "service-b",
 		}
-		serviceBResourceMetrics.Resource().Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+		rmB.Resource().Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 			value := v.StringVal()
 			switch k {
 			case notInSpanResourceAttr1:
@@ -496,23 +506,47 @@ func verifyConsumeMetricsInput(t testing.TB, input pdata.Metrics, expectedTempor
 	rm := input.ResourceMetrics()
 	require.Equal(t, 2, rm.Len())
 
-	ilm := rm.At(0).InstrumentationLibraryMetrics()
-	require.Equal(t, 1, ilm.Len())
-	assert.Equal(t, instrumentationLibraryName, ilm.At(0).InstrumentationLibrary().Name())
+	var rmA, rmB *pdata.ResourceMetrics
+	rm0 := rm.At(0)
+	rm1 := rm.At(1)
+	name, ok := getServiceName(rm0)
+	assert.True(t, ok, "should get service name from resourceMetric")
 
-	// TODO: FIX THIS: TestProcessorConsumeTraces
-	m := ilm.At(0).Metrics()
-	require.Equal(t, 4, m.Len())
+	if name == "service-a" {
+		rmA = &rm0
+		rmB = &rm1
+	} else {
+		rmA = &rm1
+		rmB = &rm0
+	}
 
-	ilm1 := rm.At(1).InstrumentationLibraryMetrics()
-	require.Equal(t, 1, ilm1.Len())
-	assert.Equal(t, instrumentationLibraryName, ilm1.At(0).InstrumentationLibrary().Name())
+	ilmA := rmA.InstrumentationLibraryMetrics()
 
-	m1 := ilm1.At(0).Metrics()
-	require.Equal(t, 2, m1.Len())
-	verifyMetrics(m1, expectedTemporality, numCumulativeConsumptions, 1, t)
+	require.Equal(t, 1, ilmA.Len())
+	assert.Equal(t, instrumentationLibraryName, ilmA.At(0).InstrumentationLibrary().Name())
+
+	mA := ilmA.At(0).Metrics()
+	require.Equal(t, 4, mA.Len())
+
+	ilmB := rmB.InstrumentationLibraryMetrics()
+	require.Equal(t, 1, ilmB.Len())
+	assert.Equal(t, instrumentationLibraryName, ilmB.At(0).InstrumentationLibrary().Name())
+
+	mB := ilmB.At(0).Metrics()
+	require.Equal(t, 2, mB.Len())
+
+	verifyMetrics(mA, expectedTemporality, numCumulativeConsumptions, 2, t)
+	verifyMetrics(mB, expectedTemporality, numCumulativeConsumptions, 1, t)
 
 	return true
+}
+
+func getServiceName(m pdata.ResourceMetrics) (string, bool) {
+	if val, ok := m.Resource().Attributes().Get(serviceNameKey); ok {
+		return val.AsString(), true
+	}
+
+	return "", false
 }
 
 func verifyMetrics(m pdata.MetricSlice, expectedTemporality pdata.MetricAggregationTemporality, numCumulativeConsumptions int, numOfCallCounts int, t testing.TB) {
@@ -543,13 +577,19 @@ func verifyMetrics(m pdata.MetricSlice, expectedTemporality pdata.MetricAggregat
 		assert.Equal(t, "latency", m.At(mi).Name())
 
 		data := m.At(mi).Histogram()
-		assert.Equal(t, pdata.MetricAggregationTemporalityCumulative, data.AggregationTemporality())
+		assert.Equal(t, expectedTemporality, data.AggregationTemporality())
 
 		dps := data.DataPoints()
 		require.Equal(t, 1, dps.Len())
 
 		dp := dps.At(0)
-		assert.Equal(t, sampleLatency, dp.Sum(), "Should be a single 11ms latency measurement")
+
+		if expectedTemporality == pdata.MetricAggregationTemporalityDelta {
+			assert.Equal(t, sampleLatency, dp.Sum(), "Should be a single 11ms latency measurement")
+		} else {
+			assert.Equal(t, sampleLatency * float64(numCumulativeConsumptions) , dp.Sum(), "Should be cumulative latency measurement")
+		}
+
 		assert.NotZero(t, dp.Timestamp(), "Timestamp should be set")
 
 		// Verify bucket counts. Firstly, find the bucket index where the 11ms latency should belong in.
@@ -565,7 +605,11 @@ func verifyMetrics(m pdata.MetricSlice, expectedTemporality pdata.MetricAggregat
 		for bi := 0; bi < len(dp.BucketCounts()); bi++ {
 			wantBucketCount = 0
 			if bi == foundLatencyIndex {
-				wantBucketCount = 1
+				if expectedTemporality == pdata.MetricAggregationTemporalityDelta {
+					wantBucketCount = 1
+				} else {
+					wantBucketCount = uint64(1 * numCumulativeConsumptions)
+				}
 			}
 			assert.Equal(t, wantBucketCount, dp.BucketCounts()[bi])
 		}
@@ -786,6 +830,7 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 			wantKey: "c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000100",
 		},
 	} {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			// Prepare
@@ -896,6 +941,7 @@ func TestValidateDimensions(t *testing.T) {
 			},
 		},
 	} {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			err := validateDimensions(tc.dimensions, []string{serviceNameKey, spanKindKey, statusCodeKey})
