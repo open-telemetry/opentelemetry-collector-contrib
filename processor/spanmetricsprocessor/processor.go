@@ -92,11 +92,6 @@ type processorImp struct {
 	latencyBounds        []float64
 	latencyExemplarsData map[resourceKey]map[metricKey][]exemplarData
 
-	// List of seen resource attributes.
-	// Map structure for faster lookup.
-	// todo - check if this can be removed
-	resourceAttrList map[resourceKey]bool
-
 	// An LRU cache of dimension key-value maps keyed by a unique identifier formed by a concatenation of its values:
 	// e.g. { "foo/barOK": { "serviceName": "foo", "operation": "/bar", "status_code": "OK" }}
 	metricKeyToDimensions *cache.Cache
@@ -269,10 +264,10 @@ func (p *processorImp) ConsumeTraces(ctx context.Context, traces pdata.Traces) e
 func (p *processorImp) buildMetrics() (*pdata.Metrics, error) {
 	m := pdata.NewMetrics()
 	rms := m.ResourceMetrics()
-	for key := range p.resourceAttrList {
+	for key, val := range p.resourceKeyToDimensions {
 		p.lock.Lock()
 		resourceAttrKey := key
-		resourceAttributesMap := p.resourceKeyToDimensions[resourceAttrKey]
+		resourceAttributesMap := val
 
 		// If the service name doesn't exist, we treat it as invalid and do not generate a trace
 		if _, ok := resourceAttributesMap.Get(serviceNameKey); !ok {
@@ -424,7 +419,6 @@ func (p *processorImp) aggregateMetricsForSpan(serviceName string, span pdata.Sp
 
 	mKey := p.buildMetricKey(span, resourceAttr)
 	resourceAttrKey := p.buildResourceAttrKey(serviceName, resourceAttr)
-	p.resourceAttrList[resourceAttrKey] = true
 
 	p.lock.Lock()
 	p.cacheMetricKey(span, mKey, resourceAttr)
@@ -459,7 +453,6 @@ func (p *processorImp) resetAccumulatedMetrics() {
 	p.latencyBucketCounts = make(map[resourceKey]map[metricKey][]uint64)
 	p.metricKeyToDimensions.Purge()
 	p.resourceKeyToDimensions = make(map[resourceKey]pdata.AttributeMap)
-	p.resourceAttrList = make(map[resourceKey]bool)
 }
 
 // updateLatencyExemplars sets the histogram exemplars for the given metric key and append the exemplar data.

@@ -468,7 +468,6 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, de
 			{notInSpanResourceAttr0, &localDefaultNotInSpanAttrVal},
 			{notInSpanResourceAttr1, nil},
 		},
-		resourceAttrList:        make(map[resourceKey]bool),
 		resourceKeyToDimensions: make(map[resourceKey]pdata.AttributeMap),
 		metricKeyToDimensions:   metricKeyToDimensions,
 	}
