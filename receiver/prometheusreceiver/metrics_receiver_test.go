@@ -16,7 +16,10 @@ package prometheusreceiver
 
 import (
 	"testing"
+	"time"
 
+	"github.com/prometheus/common/model"
+	"github.com/prometheus/prometheus/config"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -1045,4 +1048,45 @@ func verifyUntypedMetrics(t *testing.T, td *testData, resourceMetrics []*pdata.R
 			}),
 	}
 	doCompare(t, "scrape-untypedMetric-1", wantAttributes, m1, e1)
+}
+
+func TestGCInterval(t *testing.T) {
+	for _, tc := range []struct {
+		desc  string
+		input *config.Config
+		want  time.Duration
+	}{
+		{
+			desc:  "default",
+			input: &config.Config{},
+			want:  defaultGCInterval,
+		},
+		{
+			desc: "global override",
+			input: &config.Config{
+				GlobalConfig: config.GlobalConfig{
+					ScrapeInterval: model.Duration(10 * time.Minute),
+				},
+			},
+			want: 11 * time.Minute,
+		},
+		{
+			desc: "scrape config override",
+			input: &config.Config{
+				ScrapeConfigs: []*config.ScrapeConfig{
+					{
+						ScrapeInterval: model.Duration(10 * time.Minute),
+					},
+				},
+			},
+			want: 11 * time.Minute,
+		},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			got := gcInterval(tc.input)
+			if got != tc.want {
+				t.Errorf("gcInterval(%+v) = %v, want %v", tc.input, got, tc.want)
+			}
+		})
+	}
 }
