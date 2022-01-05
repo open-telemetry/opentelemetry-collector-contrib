@@ -133,6 +133,10 @@ func (c defaultElasticsearchClient) doRequest(ctx context.Context, path string) 
 		req.Header.Add("Authorization", c.authHeader)
 	}
 
+	// See https://www.elastic.co/guide/en/elasticsearch/reference/8.0/api-conventions.html#api-compatibility
+	// the compatible-with=7 should signal to newer version of Elasticsearch to use the v7.x API format
+	req.Header.Add("Accept", "application/vnd.elasticsearch+json; compatible-with=7")
+
 	resp, err := c.client.Do(req)
 	if err != nil {
 		return nil, err
