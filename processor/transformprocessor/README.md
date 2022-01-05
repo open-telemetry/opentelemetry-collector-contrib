@@ -19,8 +19,8 @@ Supported functions:
 e.g., `set(attributes["http.path"], "/foo")`, `set(name, attributes["http.route"])`. If `value` resolves to `nil`, e.g.
 it references an unset map value, there will be no action.
 
-- `keep(target, string...)` - `target` is a path expression to a map type field. The map will be mutated to only contain
-the fields specified by the list of strings. e.g., `keep(attributes, "http.method")`, `keep(attributes, "http.method", "http.route")`
+- `keep_keys(target, string...)` - `target` is a path expression to a map type field. The map will be mutated to only contain
+the fields specified by the list of strings. e.g., `keep_keys(attributes, "http.method")`, `keep_keys(attributes, "http.method", "http.route")`
 
 Supported where operations:
 - `==` - matches telemetry where the values are equal to each other
@@ -40,7 +40,7 @@ processors:
   transform:
     queries:
       - set(status.code, 1) where attributes["http.path"] == "/health"
-      - keep(resource.attributes, "service.name", "service.namespace", "cloud.region")
+      - keep_keys(resource.attributes, "service.name", "service.namespace", "cloud.region")
       - set(name, attributes["http.route"])
 service:
   pipelines:
