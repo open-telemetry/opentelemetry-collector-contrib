@@ -28,16 +28,30 @@ Supported where operations:
 
 Example configuration:
 ```yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+
+exporters:
+  nop
+
 processors:
   transform:
     queries:
       - set(status.code, 1) where attributes["http.path"] == "/health"
       - keep(resource.attributes, "service.name", "service.namespace", "cloud.region")
       - set(name, attributes["http.route"])
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [transform]
+      exporters: [nop]
 ```
 
-This processor will perform the operations in order
+This processor will perform the operations in order for all spans
 
-1) Set status code to OK for all spans with a path `/health`
+1) Set status code to OK with a path `/health`
 2) Keep only `service.name`, `service.namespace`, `cloud.region` resource attributes
-3) Set `name` to the `http.route` attribute if it is set.
+3) Set `name` to the `http.route` attribute if it is set
