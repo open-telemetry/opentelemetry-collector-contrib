@@ -72,7 +72,7 @@ func newReceiver(
 
 func (r *receiver) registerMetricsConsumer(mc consumer.Metrics, set component.ReceiverCreateSettings) error {
 	r.metricsConsumer = mc
-	scrp, err := scraperhelper.NewScraper(typeStr, r.scrape, scraperhelper.WithStart(r.start))
+	scrp, err := scraperhelper.NewScraper(typeStr, r.scrape)
 	if err != nil {
 		return err
 	}
@@ -87,7 +87,7 @@ func (r *receiver) registerLogsConsumer(lc consumer.Logs) {
 func (r *receiver) Start(ctx context.Context, host component.Host) error {
 	// Check for logs pipeline
 	if r.logsConsumer == nil {
-		r.set.Logger.Info("logs receiver is not set")
+		r.set.Logger.Debug("logs receiver is not set")
 	} else {
 		eventBackoff := backoff.NewExponentialBackOff()
 		eventBackoff.InitialInterval = 2 * time.Second
@@ -120,10 +120,16 @@ func (r *receiver) Start(ctx context.Context, host component.Host) error {
 
 	// Check for metrics pipeline
 	if r.metricsConsumer == nil {
-		r.set.Logger.Info("metrics receiver is not set")
+		r.set.Logger.Debug("metrics receiver is not set")
 	} else {
+		c, err := r.clientFactory(r.set.Logger, r.config)
+		if err != nil {
+			r.set.Logger.Error("error setting up client", zap.Error(err))
+		} else {
+			r.client = c
+		}
 		go func() {
-			err := r.metricsComponent.Start(ctx, host)
+			err = r.metricsComponent.Start(ctx, host)
 			if err != nil {
 				r.set.Logger.Error("error starting metrics receiver", zap.Error(err))
 			}
@@ -145,14 +151,6 @@ func (r *receiver) Shutdown(ctx context.Context) error {
 	}
 	return nil
 
-}
-
-func (r *receiver) start(context.Context, component.Host) error {
-	c, err := r.clientFactory(r.set.Logger, r.config)
-	if err == nil {
-		r.client = c
-	}
-	return err
 }
 
 func (r *receiver) scrape(context.Context) (pdata.Metrics, error) {
