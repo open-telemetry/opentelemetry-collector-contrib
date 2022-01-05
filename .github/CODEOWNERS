@@ -89,6 +89,7 @@ processor/routingprocessor/                          @open-telemetry/collector-c
 processor/spanmetricsprocessor/                      @open-telemetry/collector-contrib-approvers @albertteoh
 processor/spanprocessor/                             @open-telemetry/collector-contrib-approvers @boostchicken
 processor/tailsamplingprocessor/                     @open-telemetry/collector-contrib-approvers @jpkrohling
+processor/transformprocessor/                        @open-telemetry/collector-contrib-approvers @anuraaga @bogdandrutu
 
 receiver/apachereceiver/                             @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/awscontainerinsightreceiver/                @open-telemetry/collector-contrib-approvers @Aneurysm9 @pxaws
