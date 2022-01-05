@@ -16,6 +16,11 @@ attributes:
     enum:
     - read
     - write
+  segment:
+    description: The segment of JVM memory.
+    enum:
+    - heap
+    - nonheap
   generation:
     description: The generation on which garbage collection was performed.
     enum:
@@ -104,7 +109,7 @@ metrics:
       value_type: int
     attributes: [generation]
     enabled: true
-  elasticsearch.node.jvm.gc.collections.elapsed:
+  elasticsearch.node.jvm.gc.collections.time:
     description: The total time spent by the JVM running the GC.
     unit: ms
     sum:
@@ -113,26 +118,17 @@ metrics:
       value_type: int
     attributes: [generation]
     enabled: true
-  elasticsearch.node.jvm.memory.heap.used:
-    description: The current heap memory in use by the JVM.
+  elasticsearch.node.jvm.memory.usage:
+    description: The current memory in use by the JVM.
     unit: By
     sum:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: []
+    attributes: [segment]
     enabled: true
-  elasticsearch.node.jvm.memory.heap.max:
+  elasticsearch.node.jvm.memory.heap.limit:
     description: The max heap memory used by the JVM.
-    unit: By
-    sum:
-      monotonic: false
-      aggregation: cumulative
-      value_type: int
-    attributes: []
-    enabled: true
-  elasticsearch.node.jvm.memory.nonheap.used:
-    description: The current nonheap memory in use by the JVM.
     unit: By
     gauge:
       value_type: int

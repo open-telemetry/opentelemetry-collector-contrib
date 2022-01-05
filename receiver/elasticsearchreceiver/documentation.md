@@ -20,10 +20,9 @@ These are the metrics available for this scraper.
 | elasticsearch.node.fs.operations | The number of IO operations completed across all file stores since starting Elasticsearch. Only available on Linux nodes. | {operations} | Sum(Int) | <ul> <li>fs_direction</li> </ul> |
 | elasticsearch.node.http.connections | The number of HTTP connections to the node. | {connections} | Sum(Int) | <ul> </ul> |
 | elasticsearch.node.jvm.gc.collections.count | The number of garbage collections performed by the JVM. | {collections} | Sum(Int) | <ul> <li>generation</li> </ul> |
-| elasticsearch.node.jvm.gc.collections.elapsed | The total time spent by the JVM running the GC. | ms | Sum(Int) | <ul> <li>generation</li> </ul> |
-| elasticsearch.node.jvm.memory.heap.max | The max heap memory used by the JVM. | By | Sum(Int) | <ul> </ul> |
-| elasticsearch.node.jvm.memory.heap.used | The current heap memory in use by the JVM. | By | Sum(Int) | <ul> </ul> |
-| elasticsearch.node.jvm.memory.nonheap.used | The current nonheap memory in use by the JVM. | By | Gauge(Int) | <ul> </ul> |
+| elasticsearch.node.jvm.gc.collections.time | The total time spent by the JVM running the GC. | ms | Sum(Int) | <ul> <li>generation</li> </ul> |
+| elasticsearch.node.jvm.memory.heap.limit | The max heap memory used by the JVM. | By | Gauge(Int) | <ul> </ul> |
+| elasticsearch.node.jvm.memory.usage | The current memory in use by the JVM. | By | Sum(Int) | <ul> <li>segment</li> </ul> |
 | elasticsearch.node.jvm.threads.count | The number of open threads in the node's JVM process. | {threads} | Sum(Int) | <ul> </ul> |
 | elasticsearch.node.jvm.threads.peak | The maximum number of concurrently running threads in the node's JVM process. | {threads} | Gauge(Int) | <ul> </ul> |
 | elasticsearch.node.open_files | The number of open file descriptors held by the node. | {files} | Sum(Int) | <ul> </ul> |
@@ -47,6 +46,7 @@ These are the metrics available for this scraper.
 | fs_direction | The direction of filesystem IO. |
 | generation | The generation on which garbage collection was performed. |
 | operation | The type of operation. |
+| segment | The segment of JVM memory. |
 | shard_state | The state of the shard. |
 | task_state | The state of the task. |
 | thread_pool_name | The name of the thread pool. |
