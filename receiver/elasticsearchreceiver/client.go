@@ -25,6 +25,7 @@ import (
 	"net/url"
 	"strings"
 
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/model"
@@ -52,10 +53,20 @@ type defaultElasticsearchClient struct {
 
 var _ elasticsearchClient = (*defaultElasticsearchClient)(nil)
 
-func newElasticsearchClient(logger *zap.Logger, client *http.Client, endpoint *url.URL, username, password string) *defaultElasticsearchClient {
+func newElasticsearchClient(logger *zap.Logger, c Config, h component.Host) (*defaultElasticsearchClient, error) {
+	client, err := c.HTTPClientSettings.ToClient(h.GetExtensions())
+	if err != nil {
+		return nil, err
+	}
+
+	endpoint, err := url.Parse(c.Endpoint)
+	if err != nil {
+		return nil, err
+	}
+
 	var authHeader string
-	if username != "" && password != "" {
-		userPass := fmt.Sprintf("%s:%s", username, password)
+	if c.Username != "" && c.Password != "" {
+		userPass := fmt.Sprintf("%s:%s", c.Username, c.Password)
 		authb64 := base64.StdEncoding.EncodeToString([]byte(userPass))
 		authHeader = fmt.Sprintf("Basic %s", authb64)
 	}
@@ -65,7 +76,7 @@ func newElasticsearchClient(logger *zap.Logger, client *http.Client, endpoint *u
 		authHeader: authHeader,
 		endpoint:   endpoint,
 		logger:     logger,
-	}
+	}, nil
 }
 
 // nodeStatsMetrics is a comma separated list of metrics that will be gathered from NodeStats.

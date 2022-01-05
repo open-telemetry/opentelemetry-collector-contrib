@@ -20,15 +20,25 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/model"
 )
+
+func TestCreateClientInvalidEndpoint(t *testing.T) {
+	_, err := newElasticsearchClient(zap.NewNop(), Config{
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: "http://\x00",
+		},
+	}, componenttest.NewNopHost())
+	require.Error(t, err)
+}
 
 func TestNodeStatsNoPassword(t *testing.T) {
 	nodeJSON, err := ioutil.ReadFile("./testdata/sample_payloads/nodes_linux.json")
@@ -40,10 +50,12 @@ func TestNodeStatsNoPassword(t *testing.T) {
 	elasticsearchMock := mockServer(t, "", "")
 	defer elasticsearchMock.Close()
 
-	url, err := url.Parse(elasticsearchMock.URL)
+	client, err := newElasticsearchClient(zap.NewNop(), Config{
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: elasticsearchMock.URL,
+		},
+	}, componenttest.NewNopHost())
 	require.NoError(t, err)
-
-	client := newElasticsearchClient(zap.NewNop(), http.DefaultClient, url, "", "")
 	ctx := context.Background()
 	nodeStats, err := client.NodeStats(ctx, []string{"_all"})
 	require.NoError(t, err)
@@ -61,10 +73,13 @@ func TestNodeStatsNilNodes(t *testing.T) {
 	elasticsearchMock := mockServer(t, "", "")
 	defer elasticsearchMock.Close()
 
-	url, err := url.Parse(elasticsearchMock.URL)
+	client, err := newElasticsearchClient(zap.NewNop(), Config{
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: elasticsearchMock.URL,
+		},
+	}, componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	client := newElasticsearchClient(zap.NewNop(), http.DefaultClient, url, "", "")
 	ctx := context.Background()
 	nodeStats, err := client.NodeStats(ctx, nil)
 	require.NoError(t, err)
@@ -85,10 +100,15 @@ func TestNodeStatsAuthentication(t *testing.T) {
 	elasticsearchMock := mockServer(t, username, password)
 	defer elasticsearchMock.Close()
 
-	url, err := url.Parse(elasticsearchMock.URL)
+	client, err := newElasticsearchClient(zap.NewNop(), Config{
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: elasticsearchMock.URL,
+		},
+		Username: username,
+		Password: password,
+	}, componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	client := newElasticsearchClient(zap.NewNop(), http.DefaultClient, url, username, password)
 	ctx := context.Background()
 	nodeStats, err := client.NodeStats(ctx, []string{"_all"})
 	require.NoError(t, err)
@@ -100,10 +120,13 @@ func TestNodeStatsNoAuthentication(t *testing.T) {
 	elasticsearchMock := mockServer(t, "user", "pass")
 	defer elasticsearchMock.Close()
 
-	url, err := url.Parse(elasticsearchMock.URL)
+	client, err := newElasticsearchClient(zap.NewNop(), Config{
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: elasticsearchMock.URL,
+		},
+	}, componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	client := newElasticsearchClient(zap.NewNop(), http.DefaultClient, url, "", "")
 	ctx := context.Background()
 	_, err = client.NodeStats(ctx, []string{"_all"})
 	require.ErrorIs(t, err, errUnauthenticated)
@@ -113,10 +136,15 @@ func TestNodeStatsBadAuthentication(t *testing.T) {
 	elasticsearchMock := mockServer(t, "user", "pass")
 	defer elasticsearchMock.Close()
 
-	url, err := url.Parse(elasticsearchMock.URL)
+	client, err := newElasticsearchClient(zap.NewNop(), Config{
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: elasticsearchMock.URL,
+		},
+		Username: "bad_user",
+		Password: "bad_pass",
+	}, componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	client := newElasticsearchClient(zap.NewNop(), http.DefaultClient, url, "unauthorized_user", "password")
 	ctx := context.Background()
 	_, err = client.NodeStats(ctx, []string{"_all"})
 	require.ErrorIs(t, err, errUnauthorized)
@@ -132,10 +160,13 @@ func TestClusterHealthNoPassword(t *testing.T) {
 	elasticsearchMock := mockServer(t, "", "")
 	defer elasticsearchMock.Close()
 
-	url, err := url.Parse(elasticsearchMock.URL)
+	client, err := newElasticsearchClient(zap.NewNop(), Config{
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: elasticsearchMock.URL,
+		},
+	}, componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	client := newElasticsearchClient(zap.NewNop(), http.DefaultClient, url, "", "")
 	ctx := context.Background()
 	nodeStats, err := client.ClusterHealth(ctx)
 	require.NoError(t, err)
@@ -156,10 +187,15 @@ func TestClusterHealthAuthentication(t *testing.T) {
 	elasticsearchMock := mockServer(t, username, password)
 	defer elasticsearchMock.Close()
 
-	url, err := url.Parse(elasticsearchMock.URL)
+	client, err := newElasticsearchClient(zap.NewNop(), Config{
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: elasticsearchMock.URL,
+		},
+		Username: username,
+		Password: password,
+	}, componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	client := newElasticsearchClient(zap.NewNop(), http.DefaultClient, url, username, password)
 	ctx := context.Background()
 	nodeStats, err := client.ClusterHealth(ctx)
 	require.NoError(t, err)
@@ -171,10 +207,13 @@ func TestClusterHealthNoAuthentication(t *testing.T) {
 	elasticsearchMock := mockServer(t, "user", "pass")
 	defer elasticsearchMock.Close()
 
-	url, err := url.Parse(elasticsearchMock.URL)
+	client, err := newElasticsearchClient(zap.NewNop(), Config{
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: elasticsearchMock.URL,
+		},
+	}, componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	client := newElasticsearchClient(zap.NewNop(), http.DefaultClient, url, "", "")
 	ctx := context.Background()
 	_, err = client.ClusterHealth(ctx)
 	require.ErrorIs(t, err, errUnauthenticated)
@@ -184,29 +223,39 @@ func TestClusterHealthNoAuthorization(t *testing.T) {
 	elasticsearchMock := mockServer(t, "user", "pass")
 	defer elasticsearchMock.Close()
 
-	url, err := url.Parse(elasticsearchMock.URL)
+	client, err := newElasticsearchClient(zap.NewNop(), Config{
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: elasticsearchMock.URL,
+		},
+		Username: "bad_user",
+		Password: "bad_pass",
+	}, componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	client := newElasticsearchClient(zap.NewNop(), http.DefaultClient, url, "unauthorized_user", "password")
 	ctx := context.Background()
 	_, err = client.ClusterHealth(ctx)
 	require.ErrorIs(t, err, errUnauthorized)
 }
 
 func TestDoRequestBadPath(t *testing.T) {
-	url, err := url.Parse("http://example.localhost:9200")
+	client, err := newElasticsearchClient(zap.NewNop(), Config{
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: "http://example.localhost:9200",
+		},
+	}, componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	client := newElasticsearchClient(zap.NewNop(), http.DefaultClient, url, "bad_username", "bad_password")
 	_, err = client.doRequest(context.Background(), "\x7f")
 	require.Error(t, err)
 }
 
 func TestDoRequestClientTimeout(t *testing.T) {
-	url, err := url.Parse("http://example.localhost:9200")
+	client, err := newElasticsearchClient(zap.NewNop(), Config{
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: "http://example.localhost:9200",
+		},
+	}, componenttest.NewNopHost())
 	require.NoError(t, err)
-
-	client := newElasticsearchClient(zap.NewNop(), http.DefaultClient, url, "bad_username", "bad_password")
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
@@ -219,10 +268,12 @@ func TestDoRequest404(t *testing.T) {
 	elasticsearchMock := mockServer(t, "", "")
 	defer elasticsearchMock.Close()
 
-	url, err := url.Parse(elasticsearchMock.URL)
+	client, err := newElasticsearchClient(zap.NewNop(), Config{
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: elasticsearchMock.URL,
+		},
+	}, componenttest.NewNopHost())
 	require.NoError(t, err)
-
-	client := newElasticsearchClient(zap.NewNop(), http.DefaultClient, url, "", "")
 
 	_, err = client.doRequest(context.Background(), "invalid_path")
 	require.Error(t, err)
