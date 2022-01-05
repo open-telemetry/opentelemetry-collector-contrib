@@ -35,13 +35,13 @@ import (
 )
 
 const (
-	serviceNameKey     = conventions.AttributeServiceName
+	serviceNameKey             = conventions.AttributeServiceName
 	instrumentationLibraryName = "spanmetricsprocessor"
-	operationKey       = "operation"   // OpenTelemetry non-standard constant.
-	spanKindKey        = "span.kind"   // OpenTelemetry non-standard constant.
-	statusCodeKey      = "status.code" // OpenTelemetry non-standard constant.
-	metricKeySeparator = string(byte(0))
-	traceIDKey         = "trace_id"
+	operationKey               = "operation"   // OpenTelemetry non-standard constant.
+	spanKindKey                = "span.kind"   // OpenTelemetry non-standard constant.
+	statusCodeKey              = "status.code" // OpenTelemetry non-standard constant.
+	metricKeySeparator         = string(byte(0))
+	traceIDKey                 = "trace_id"
 
 	defaultDimensionsCacheSize = 1000
 )
@@ -271,7 +271,7 @@ func (p *processorImp) buildMetrics() (*pdata.Metrics, error) {
 	rms := m.ResourceMetrics()
 	for key := range p.resourceAttrList {
 		p.lock.Lock()
-		resourceAttrKey := resourceKey(key)
+		resourceAttrKey := key
 		resourceAttributesMap := p.resourceKeyToDimensions[resourceAttrKey]
 
 		// If the service name doesn't exist, we treat it as invalid and do not generate a trace
@@ -305,7 +305,6 @@ func (p *processorImp) buildMetrics() (*pdata.Metrics, error) {
 		p.lock.Unlock()
 	}
 
-
 	p.metricKeyToDimensions.RemoveEvictedItems()
 
 	// If delta metrics, reset accumulated data
@@ -319,7 +318,7 @@ func (p *processorImp) buildMetrics() (*pdata.Metrics, error) {
 
 // collectLatencyMetrics collects the raw latency metrics, writing the data
 // into the given instrumentation library metrics.
-func (p *processorImp) collectLatencyMetrics(ilm pdata.InstrumentationLibraryMetrics, resAttrKey resourceKey) error{
+func (p *processorImp) collectLatencyMetrics(ilm pdata.InstrumentationLibraryMetrics, resAttrKey resourceKey) error {
 	for mKey := range p.latencyCount[resAttrKey] {
 		mLatency := ilm.Metrics().AppendEmpty()
 		mLatency.SetDataType(pdata.MetricDataTypeHistogram)
@@ -455,7 +454,7 @@ func (p *processorImp) updateCallMetrics(resourceAttrKey resourceKey, mKey metri
 // metricKeyToDimensions.
 func (p *processorImp) resetAccumulatedMetrics() {
 	p.callSum = make(map[resourceKey]map[metricKey]int64)
-	p.latencyCount =  make(map[resourceKey]map[metricKey]uint64)
+	p.latencyCount = make(map[resourceKey]map[metricKey]uint64)
 	p.latencySum = make(map[resourceKey]map[metricKey]float64)
 	p.latencyBucketCounts = make(map[resourceKey]map[metricKey][]uint64)
 	p.metricKeyToDimensions.Purge()

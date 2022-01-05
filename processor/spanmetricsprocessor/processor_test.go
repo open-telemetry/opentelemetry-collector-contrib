@@ -17,10 +17,11 @@ package spanmetricsprocessor
 import (
 	"context"
 	"fmt"
-	"go.uber.org/zap"
 	"reflect"
 	"testing"
 	"time"
+
+	"go.uber.org/zap"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -67,7 +68,6 @@ const (
 
 // metricID represents the minimum attributes that uniquely identifies a metric in our tests.
 type metricID struct {
-	service    string
 	operation  string
 	kind       string
 	statusCode string
@@ -587,7 +587,7 @@ func verifyMetrics(m pdata.MetricSlice, expectedTemporality pdata.MetricAggregat
 		if expectedTemporality == pdata.MetricAggregationTemporalityDelta {
 			assert.Equal(t, sampleLatency, dp.Sum(), "Should be a single 11ms latency measurement")
 		} else {
-			assert.Equal(t, sampleLatency * float64(numCumulativeConsumptions) , dp.Sum(), "Should be cumulative latency measurement")
+			assert.Equal(t, sampleLatency*float64(numCumulativeConsumptions), dp.Sum(), "Should be cumulative latency measurement")
 		}
 
 		assert.NotZero(t, dp.Timestamp(), "Timestamp should be set")
