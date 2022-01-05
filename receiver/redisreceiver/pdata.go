@@ -69,9 +69,9 @@ func initIntMetric(m *redisMetric, value int64, t *timeBundle, dest pdata.Metric
 		sum.SetIsMonotonic(m.isMonotonic)
 		sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		pt = sum.DataPoints().AppendEmpty()
-		pt.SetStartTimestamp(pdata.NewTimestampFromTime(t.serverStart))
 	}
 	pt.SetIntVal(value)
+	pt.SetStartTimestamp(pdata.NewTimestampFromTime(t.serverStart))
 	pt.SetTimestamp(pdata.NewTimestampFromTime(t.current))
 	pdata.NewAttributeMapFromMap(m.labels).CopyTo(pt.Attributes())
 }
@@ -87,9 +87,9 @@ func initDoubleMetric(m *redisMetric, value float64, t *timeBundle, dest pdata.M
 		sum.SetIsMonotonic(m.isMonotonic)
 		sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		pt = sum.DataPoints().AppendEmpty()
-		pt.SetStartTimestamp(pdata.NewTimestampFromTime(t.serverStart))
 	}
 	pt.SetDoubleVal(value)
+	pt.SetStartTimestamp(pdata.NewTimestampFromTime(t.serverStart))
 	pt.SetTimestamp(pdata.NewTimestampFromTime(t.current))
 	pdata.NewAttributeMapFromMap(m.labels).CopyTo(pt.Attributes())
 }

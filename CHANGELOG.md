@@ -4,6 +4,7 @@
 
 ## 💡 Enhancements 💡
 
+- `couchdbreceiver`: Add couchdb client (#6880)
 - `prometheusremotewriteexporter`: Handling Staleness flag from OTLP (#6679)
 - `prometheusexporter`: Handling Staleness flag from OTLP (#6805)
 - `prometheusreceiver`: Set OTLP no-data-present flag for stale scraped metrics. (#7043)
@@ -11,6 +12,7 @@
 - `datadogexporter`: Add compatibility with ECS Fargate semantic conventions (#6670)
 - `k8s_observer`: discover k8s.node endpoints (#6820)
 - `redisreceiver`: Add missing description fields to keyspace metrics (#6940)
+- `redisreceiver`: Set start timestamp uniformly for gauge and sum metrics (#6941)
 - `kafkaexporter`: Allow controlling Kafka acknowledgment behaviour  (#6301)
 - `lokiexporter`: Log the first part of the http body on failed pushes to loki (#6946)
 
@@ -32,6 +34,8 @@
 - `ecstaskobserver`: Fix "Incorrect conversion between integer types" security issue (#6939)
 - Fix typo in "direction" metrics attribute description (#6949)
 - `zookeeperreceiver`: Fix issue where receiver could panic during shutdown (#7020)
+- `prometheusreceiver`: Fix metadata fetching when metrics differ by trimmable suffixes (#6932)
+- Sanitize URLs being logged (#7021)
 
 ## 💡 Enhancements 💡
 

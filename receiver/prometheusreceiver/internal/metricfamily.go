@@ -28,13 +28,6 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
-// MetricFamily is unit which is corresponding to the metrics items which shared the same TYPE/UNIT/... metadata from
-// a single scrape.
-type MetricFamily interface {
-	Add(metricName string, ls labels.Labels, t int64, v float64) error
-	ToMetric() (*metricspb.Metric, int, int)
-}
-
 type metricFamily struct {
 	name                string
 	mtype               metricspb.MetricDescriptor_Type
@@ -48,37 +41,35 @@ type metricFamily struct {
 	intervalStartTimeMs int64
 }
 
-func newMetricFamily(metricName string, mc MetadataCache, logger *zap.Logger, intervalStartTimeMs int64) MetricFamily {
-	familyName := normalizeMetricName(metricName)
-
-	// lookup metadata based on familyName
-	metadata, ok := mc.Metadata(familyName)
-	if !ok && metricName != familyName {
-		// use the original metricName as metricFamily
-		familyName = metricName
-		// perform a 2nd lookup with the original metric name. it can happen if there's a metric which is not histogram
-		// or summary, but ends with one of those _count/_sum suffixes
-		metadata, ok = mc.Metadata(metricName)
-		// still not found, this can happen when metric has no TYPE HINT
-		if !ok {
-			metadata.Metric = familyName
-			metadata.Type = textparse.MetricTypeUnknown
-		}
-	} else if !ok && isInternalMetric(metricName) {
-		metadata = defineInternalMetric(metricName, metadata, logger)
-	} else if !ok {
-		// Prometheus sends metrics without a type hint as gauges.
-		// MetricTypeUnknown is converted to a gauge in convToOCAMetricType()
-		metadata.Type = textparse.MetricTypeUnknown
+func metadataForMetric(metricName string, mc MetadataCache) (*scrape.MetricMetadata, string) {
+	if metadata, ok := internalMetricMetadata[metricName]; ok {
+		return metadata, metricName
 	}
+	if metadata, ok := mc.Metadata(metricName); ok {
+		return &metadata, metricName
+	}
+	// If we didn't find metadata with the original name,
+	// try with suffixes trimmed, in-case it is a "merged" metric type.
+	normalizedName := normalizeMetricName(metricName)
+	if metadata, ok := mc.Metadata(normalizedName); ok {
+		if metadata.Type == textparse.MetricTypeCounter {
+			return &metadata, metricName
+		}
+		return &metadata, normalizedName
+	}
+	// Otherwise, the metric is unknown
+	return &scrape.MetricMetadata{
+		Metric: metricName,
+		Type:   textparse.MetricTypeUnknown,
+	}, metricName
+}
+
+func newMetricFamily(metricName string, mc MetadataCache, logger *zap.Logger, intervalStartTimeMs int64) *metricFamily {
+	metadata, familyName := metadataForMetric(metricName, mc)
 	ocaMetricType := convToOCAMetricType(metadata.Type)
 
-	// If a counter has a _total suffix but metadata is stored without it, keep _total suffix as the name otherwise
-	// the metric sent won't have the suffix
-	if ocaMetricType == metricspb.MetricDescriptor_CUMULATIVE_DOUBLE && strings.HasSuffix(metricName, metricSuffixTotal) {
-		familyName = metricName
-	} else if ocaMetricType == metricspb.MetricDescriptor_UNSPECIFIED {
-		logger.Debug(fmt.Sprintf("Invalid metric : %s %+v", metricName, metadata))
+	if ocaMetricType == metricspb.MetricDescriptor_UNSPECIFIED {
+		logger.Debug(fmt.Sprintf("Unknown-typed metric : %s %+v", metricName, metadata))
 	}
 
 	return &metricFamily{
@@ -88,40 +79,41 @@ func newMetricFamily(metricName string, mc MetadataCache, logger *zap.Logger, in
 		droppedTimeseries:   0,
 		labelKeys:           make(map[string]bool),
 		labelKeysOrdered:    make([]string, 0),
-		metadata:            &metadata,
+		metadata:            metadata,
 		groupOrders:         make(map[string]int),
 		groups:              make(map[string]*metricGroup),
 		intervalStartTimeMs: intervalStartTimeMs,
 	}
 }
 
-// Define manually the metadata of prometheus scrapper internal metrics
-func defineInternalMetric(metricName string, metadata scrape.MetricMetadata, logger *zap.Logger) scrape.MetricMetadata {
-	if metadata.Metric != "" && metadata.Type != "" && metadata.Help != "" {
-		logger.Debug("Internal metric seems already fully defined")
-		return metadata
-	}
-	metadata.Metric = metricName
-
-	switch metricName {
-	case scrapeUpMetricName:
-		metadata.Type = textparse.MetricTypeGauge
-		metadata.Help = "The scraping was successful"
-	case "scrape_duration_seconds":
-		metadata.Unit = "seconds"
-		metadata.Type = textparse.MetricTypeGauge
-		metadata.Help = "Duration of the scrape"
-	case "scrape_samples_scraped":
-		metadata.Type = textparse.MetricTypeGauge
-		metadata.Help = "The number of samples the target exposed"
-	case "scrape_series_added":
-		metadata.Type = textparse.MetricTypeGauge
-		metadata.Help = "The approximate number of new series in this scrape"
-	case "scrape_samples_post_metric_relabeling":
-		metadata.Type = textparse.MetricTypeGauge
-		metadata.Help = "The number of samples remaining after metric relabeling was applied"
-	}
-	return metadata
+// internalMetricMetadata allows looking up metadata for internal scrape metrics
+var internalMetricMetadata = map[string]*scrape.MetricMetadata{
+	scrapeUpMetricName: {
+		Metric: scrapeUpMetricName,
+		Type:   textparse.MetricTypeGauge,
+		Help:   "The scraping was successful",
+	},
+	"scrape_duration_seconds": {
+		Metric: "scrape_duration_seconds",
+		Unit:   "seconds",
+		Type:   textparse.MetricTypeGauge,
+		Help:   "Duration of the scrape",
+	},
+	"scrape_samples_scraped": {
+		Metric: "scrape_samples_scraped",
+		Type:   textparse.MetricTypeGauge,
+		Help:   "The number of samples the target exposed",
+	},
+	"scrape_series_added": {
+		Metric: "scrape_series_added",
+		Type:   textparse.MetricTypeGauge,
+		Help:   "The approximate number of new series in this scrape",
+	},
+	"scrape_samples_post_metric_relabeling": {
+		Metric: "scrape_samples_post_metric_relabeling",
+		Type:   textparse.MetricTypeGauge,
+		Help:   "The number of samples remaining after metric relabeling was applied",
+	},
 }
 
 // updateLabelKeys is used to store all the label keys of a same metric family in observed order. since prometheus
@@ -140,6 +132,18 @@ func (mf *metricFamily) updateLabelKeys(ls labels.Labels) {
 			}
 		}
 	}
+}
+
+// includesMetric returns true if the metric is part of the family
+func (mf *metricFamily) includesMetric(metricName string) bool {
+	if mf.isCumulativeType() || mf.mtype == metricspb.MetricDescriptor_GAUGE_DISTRIBUTION {
+		// If it is a type that can have suffixes removed, then the metric should match the
+		// family name when suffixes are trimmed.
+		return normalizeMetricName(metricName) == mf.name
+	}
+	// If it isn't a merged type, the metricName and family name
+	// should match
+	return metricName == mf.name
 }
 
 func (mf *metricFamily) isCumulativeType() bool {
