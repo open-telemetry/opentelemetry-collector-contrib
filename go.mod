@@ -133,8 +133,8 @@ require (
 	github.com/Azure/go-autorest/autorest/validation v0.3.1 // indirect
 	github.com/Azure/go-autorest/logger v0.2.1 // indirect
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
-	github.com/DataDog/agent-payload/v5 v5.0.7 // indirect
-	github.com/DataDog/datadog-agent/pkg/quantile v0.32.3 // indirect
+	github.com/DataDog/agent-payload/v5 v5.0.8 // indirect
+	github.com/DataDog/datadog-agent/pkg/quantile v0.32.4 // indirect
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/log v0.0.0-20201009092105-58e18918b2db // indirect
 	github.com/DataDog/datadog-go v4.4.0+incompatible // indirect
@@ -151,7 +151,7 @@ require (
 	github.com/apache/thrift v0.15.0 // indirect
 	github.com/armon/go-metrics v0.3.10 // indirect
 	github.com/avast/retry-go v3.0.0+incompatible // indirect
-	github.com/aws/aws-sdk-go v1.42.23 // indirect
+	github.com/aws/aws-sdk-go v1.42.26 // indirect
 	github.com/beeker1121/goque v2.1.0+incompatible // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bits-and-blooms/bitset v1.2.0 // indirect
@@ -195,7 +195,7 @@ require (
 	github.com/felixge/httpsnoop v1.0.2 // indirect
 	github.com/form3tech-oss/jwt-go v3.2.3+incompatible // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
-	github.com/getsentry/sentry-go v0.11.0 // indirect
+	github.com/getsentry/sentry-go v0.12.0 // indirect
 	github.com/go-kit/kit v0.11.0 // indirect
 	github.com/go-kit/log v0.2.0 // indirect
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
@@ -304,7 +304,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.41.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.41.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.41.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza v0.41.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.41.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.41.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.41.0 // indirect
@@ -312,7 +311,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.41.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.41.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.41.0 // indirect
-	github.com/open-telemetry/opentelemetry-log-collection v0.23.0 // indirect
+	github.com/open-telemetry/opentelemetry-log-collection v0.24.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/opencontainers/runc v1.0.3 // indirect
@@ -341,8 +340,7 @@ require (
 	github.com/santhosh-tekuri/jsonschema v1.2.4 // indirect
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.7.0.20210223165440-c65ae3540d44 // indirect
 	github.com/seccomp/libseccomp-golang v0.9.1 // indirect
-	github.com/shirou/gopsutil v3.21.10+incompatible // indirect
-	github.com/shirou/gopsutil/v3 v3.21.11 // indirect
+	github.com/shirou/gopsutil/v3 v3.21.12 // indirect
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.2 // indirect
 	github.com/signalfx/gohistogram v0.0.0-20160107210732-1ccfd2ff5083 // indirect
 	github.com/signalfx/golib/v3 v3.3.13 // indirect
@@ -360,7 +358,7 @@ require (
 	github.com/subosito/gotenv v1.2.0 // indirect
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635 // indirect
 	github.com/syndtr/goleveldb v1.0.0 // indirect
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.316 // indirect
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.323 // indirect
 	github.com/tidwall/gjson v1.10.2 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
@@ -401,7 +399,7 @@ require (
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/zap v1.19.1 // indirect
-	golang.org/x/crypto v0.0.0-20210920023735-84f357641f63 // indirect
+	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
 	golang.org/x/net v0.0.0-20211209124913-491a49abca63 // indirect
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
@@ -437,6 +435,11 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.1.2 // indirect
 	sigs.k8s.io/yaml v1.2.0 // indirect
 	skywalking.apache.org/repo/goapi v0.0.0-20211122071111-ffc517fbfe21 // indirect
+)
+
+require (
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza v0.41.0
+	github.com/shirou/gopsutil v3.21.10+incompatible // indirect
 )
 
 // Replace references to modules that are in this repository with their relateive paths

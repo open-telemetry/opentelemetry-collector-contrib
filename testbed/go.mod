@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/testbed
 go 1.17
 
 require (
-	github.com/fluent/fluent-logger-golang v1.8.0
+	github.com/fluent/fluent-logger-golang v1.9.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.41.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter v0.41.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.41.0
@@ -24,7 +24,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatareceivers/mockawsxrayreceiver v0.41.0
 	github.com/prometheus/common v0.32.1
 	github.com/prometheus/prometheus v1.8.2-0.20210621150501-ff58416a0b02
-	github.com/shirou/gopsutil/v3 v3.21.11
+	github.com/shirou/gopsutil/v3 v3.21.12
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.41.1-0.20211222180302-3db1d1146483
 	go.opentelemetry.io/collector/model v0.41.1-0.20211222180302-3db1d1146483
@@ -49,7 +49,7 @@ require (
 	github.com/alecthomas/units v0.0.0-20210208195552-ff826a37aa15 // indirect
 	github.com/apache/thrift v0.15.0 // indirect
 	github.com/armon/go-metrics v0.3.10 // indirect
-	github.com/aws/aws-sdk-go v1.42.23 // indirect
+	github.com/aws/aws-sdk-go v1.42.26 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.2 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.3.0 // indirect
@@ -65,7 +65,6 @@ require (
 	github.com/felixge/httpsnoop v1.0.2 // indirect
 	github.com/form3tech-oss/jwt-go v3.2.3+incompatible // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
-	github.com/go-kit/kit v0.12.0 // indirect
 	github.com/go-kit/log v0.2.0 // indirect
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
 	github.com/go-logr/logr v1.2.1 // indirect
@@ -178,7 +177,6 @@ require (
 	go.opentelemetry.io/otel/sdk/export/metric v0.26.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v0.26.0 // indirect
 	go.opentelemetry.io/otel/trace v1.3.0 // indirect
-	go.uber.org/multierr v1.7.0 // indirect
 	golang.org/x/crypto v0.0.0-20210920023735-84f357641f63 // indirect
 	golang.org/x/net v0.0.0-20211209124913-491a49abca63 // indirect
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
@@ -204,6 +202,11 @@ require (
 	sigs.k8s.io/json v0.0.0-20211020170558-c049b76a60c6 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.1.2 // indirect
 	sigs.k8s.io/yaml v1.2.0 // indirect
+)
+
+require (
+	github.com/go-kit/kit v0.12.0 // indirect
+	go.uber.org/multierr v1.7.0
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter => ../exporter/carbonexporter

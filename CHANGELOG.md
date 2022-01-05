@@ -5,11 +5,13 @@
 ## 💡 Enhancements 💡
 
 - `prometheusremotewriteexporter`: Handling Staleness flag from OTLP (#6679)
+- `prometheusexporter`: Handling Staleness flag from OTLP (#6805)
 - `mysqlreceiver`: Add Integration test (#6916)
 - `datadogexporter`: Add compatibility with ECS Fargate semantic conventions (#6670)
 - `k8s_observer`: discover k8s.node endpoints (#6820)
 - `redisreceiver`: Add missing description fields to keyspace metrics (#6940)
 - `kafkaexporter`: Allow controlling Kafka acknowledgment behaviour  (#6301)
+- `lokiexporter`: Log the first part of the http body on failed pushes to loki (#6946)
 
 ## 🛑 Breaking changes 🛑
 
@@ -29,14 +31,16 @@
 
 - `ecstaskobserver`: Fix "Incorrect conversion between integer types" security issue (#6939)
 - Fix typo in "direction" metrics attribute description (#6949)
+- `zookeeperreceiver`: Fix issue where receiver could panic during shutdown (#7020)
 
 ## 💡 Enhancements 💡
 
 - `lokiexporter`: add complete log record to body (#6619)
 - `k8sclusterreceiver` add `container.image.tag` attribute (#6436)
 - `spanmetricproccessor`: use an LRU cache for the cached Dimensions key-value pairs (#2179)
-
 - `skywalkingexporter`: add skywalking metrics exporter (#6528)
+- `deltatorateprocessor`: add int counter support (#6982)
+- `filestorageextension`: document default values (#7022)
 - `spanmetricproccessor`: Support specifying resource attributes to attach to metrics generated from traces (#6717)
 
 ## v0.41.0
