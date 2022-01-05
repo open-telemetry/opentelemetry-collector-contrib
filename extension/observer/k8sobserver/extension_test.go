@@ -16,41 +16,65 @@ package k8sobserver
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.uber.org/zap"
 	framework "k8s.io/client-go/tools/cache/testing"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
+const (
+	serviceHostEnv = "KUBERNETES_SERVICE_HOST"
+	servicePortEnv = "KUBERNETES_SERVICE_PORT"
+)
+
+func mockServiceHost(c *Config) func() {
+	c.AuthType = k8sconfig.AuthTypeNone
+	host, port := os.Getenv(serviceHostEnv), os.Getenv(servicePortEnv)
+	os.Setenv(serviceHostEnv, "mock")
+	os.Setenv(servicePortEnv, "12345")
+	return func() {
+		os.Setenv(serviceHostEnv, host)
+		os.Setenv(servicePortEnv, port)
+	}
+}
+
 func TestNewExtension(t *testing.T) {
-	listWatch := framework.NewFakeControllerSource()
 	factory := NewFactory()
-	ext, err := newObserver(zap.NewNop(), factory.CreateDefaultConfig().(*Config), listWatch)
+	config := factory.CreateDefaultConfig().(*Config)
+	defer mockServiceHost(config)()
+
+	ext, err := newObserver(config, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 }
 
-func TestExtensionObserve(t *testing.T) {
-	listWatch := framework.NewFakeControllerSource()
+func TestExtensionObservePods(t *testing.T) {
 	factory := NewFactory()
-	ext, err := newObserver(zap.NewNop(), factory.CreateDefaultConfig().(*Config), listWatch)
+	config := factory.CreateDefaultConfig().(*Config)
+	defer mockServiceHost(config)()
+
+	ext, err := newObserver(config, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 	require.NotNil(t, ext)
-	obs := ext.(*k8sObserver)
 
-	listWatch.Add(pod1V1)
+	obs := ext.(*k8sObserver)
+	podListerWatcher := framework.NewFakeControllerSource()
+	obs.podListerWatcher = podListerWatcher
+
+	podListerWatcher.Add(pod1V1)
 
 	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
 
 	sink := &endpointSink{}
 	obs.ListAndWatch(sink)
 
-	assertSink(t, sink, func() bool {
+	requireSink(t, sink, func() bool {
 		return len(sink.added) == 1
 	})
 
@@ -67,9 +91,9 @@ func TestExtensionObserve(t *testing.T) {
 		},
 	}, sink.added[0])
 
-	listWatch.Delete(pod1V2)
+	podListerWatcher.Delete(pod1V2)
 
-	assertSink(t, sink, func() bool {
+	requireSink(t, sink, func() bool {
 		return len(sink.removed) == 1
 	})
 
@@ -84,6 +108,76 @@ func TestExtensionObserve(t *testing.T) {
 				"env":         "prod",
 				"pod-version": "2",
 			},
+		},
+	}, sink.removed[0])
+
+	require.NoError(t, ext.Shutdown(context.Background()))
+}
+
+func TestExtensionObserveNodes(t *testing.T) {
+	factory := NewFactory()
+	config := factory.CreateDefaultConfig().(*Config)
+	defer mockServiceHost(config)()
+
+	ext, err := newObserver(config, componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+	require.NotNil(t, ext)
+
+	obs := ext.(*k8sObserver)
+	nodeListerWatcher := framework.NewFakeControllerSource()
+	obs.nodeListerWatcher = nodeListerWatcher
+
+	nodeListerWatcher.Add(node1V1)
+
+	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+
+	sink := &endpointSink{}
+	obs.ListAndWatch(sink)
+
+	requireSink(t, sink, func() bool {
+		return len(sink.added) == 1
+	})
+
+	assert.Equal(t, observer.Endpoint{
+		ID:     "k8s_observer/node1-uid",
+		Target: "internalIP",
+		Details: &observer.K8sNode{
+			UID:                 "uid",
+			Annotations:         map[string]string{"annotation-key": "annotation-value"},
+			Labels:              map[string]string{"label-key": "label-value"},
+			Name:                "node1",
+			InternalIP:          "internalIP",
+			InternalDNS:         "internalDNS",
+			Hostname:            "localhost",
+			ExternalIP:          "externalIP",
+			ExternalDNS:         "externalDNS",
+			KubeletEndpointPort: 1234,
+		},
+	}, sink.added[0])
+
+	nodeListerWatcher.Delete(node1V2)
+
+	requireSink(t, sink, func() bool {
+		return len(sink.removed) == 1
+	})
+
+	assert.Equal(t, observer.Endpoint{
+		ID:     "k8s_observer/node1-uid",
+		Target: "internalIP",
+		Details: &observer.K8sNode{
+			UID:         "uid",
+			Annotations: map[string]string{"annotation-key": "annotation-value"},
+			Labels: map[string]string{
+				"label-key":    "label-value",
+				"node-version": "2",
+			},
+			Name:                "node1",
+			InternalIP:          "internalIP",
+			InternalDNS:         "internalDNS",
+			Hostname:            "localhost",
+			ExternalIP:          "externalIP",
+			ExternalDNS:         "externalDNS",
+			KubeletEndpointPort: 1234,
 		},
 	}, sink.removed[0])
 

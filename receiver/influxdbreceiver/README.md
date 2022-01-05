@@ -9,7 +9,7 @@ Write query parameters `db`/`rp` (InfluxDB 1.x) and `org`/`bucket` (InfluxDB 2.x
 Write query parameter `precision` is optional, defaults to `ns`.
 
 Write responses:
-- 202: write accepted
+- 204: success, no further response needed (no content)
 - 400: permanent failure; check response body for details
 - 500: retryable error; check response body for details
 

@@ -1,0 +1,17 @@
+{
+   "resourceMetrics": [
+      {
+         "instrumentationLibraryMetrics": [
+            {
+               "metrics": [
+                  {
+                     "description": "Gauge One",
+                     "gauge": {},
+                     "name": "gauge.one"
+                  }
+               ]
+            }
+         ]
+      }
+   ]
+}

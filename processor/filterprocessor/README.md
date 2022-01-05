@@ -202,3 +202,5 @@ processors:
           - Key: container.name
             Value: (app_container_1|app_container_1)
 ```
+
+In case the no metric names are provided, `matric_names` being empty, the filtering is only done at resource level.

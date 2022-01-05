@@ -63,7 +63,7 @@ func initProvider() func() {
 
 	pusher := controller.New(
 		processor.NewFactory(
-			simple.NewWithExactDistribution(),
+			simple.NewWithHistogramDistribution(),
 			metricExp,
 		),
 		controller.WithExporter(metricExp),

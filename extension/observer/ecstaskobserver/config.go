@@ -15,6 +15,8 @@
 package ecstaskobserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver"
 
 import (
+	"fmt"
+	"net/url"
 	"time"
 
 	"go.opentelemetry.io/collector/config"
@@ -30,7 +32,7 @@ type Config struct {
 	config.ExtensionSettings      `mapstructure:",squash"`
 	confighttp.HTTPClientSettings `mapstructure:",squash"`
 
-	// RefreshInterval determines how frequency at which the observer
+	// RefreshInterval determines the frequency at which the observer
 	// needs to poll for collecting new information about task containers.
 	RefreshInterval time.Duration `mapstructure:"refresh_interval" yaml:"refresh_interval"`
 
@@ -41,6 +43,11 @@ type Config struct {
 }
 
 func (c Config) Validate() error {
+	if c.Endpoint != "" {
+		if _, err := url.Parse(c.Endpoint); err != nil {
+			return fmt.Errorf("failed to parse ecs task metadata endpoint %q: %w", c.Endpoint, err)
+		}
+	}
 	return nil
 }
 

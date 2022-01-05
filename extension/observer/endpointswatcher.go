@@ -105,7 +105,9 @@ func (ew *EndpointsWatcher) refreshEndpoints(listener Notify) {
 
 // StopListAndWatch polling the ListEndpoints.
 func (ew *EndpointsWatcher) StopListAndWatch() {
-	close(ew.stop)
+	if ew.stop != nil {
+		close(ew.stop)
+	}
 }
 
 // EndpointsLister that provides a list of endpoints.

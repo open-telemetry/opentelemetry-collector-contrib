@@ -1,11 +1,18 @@
 extensions:
   k8s_observer:
-  k8s_observer/1:
+  k8s_observer/own-node-only:
     node: node-1
     auth_type: kubeConfig
+  k8s_observer/observe-all:
+    auth_type: none
+    observe_nodes: true
+    observe_pods: true
 
 service:
-  extensions: [k8s_observer, k8s_observer/1]
+  extensions:
+    - k8s_observer
+    - k8s_observer/own-node-only
+    - k8s_observer/observe-all
   pipelines:
     traces:
       receivers: [nop]

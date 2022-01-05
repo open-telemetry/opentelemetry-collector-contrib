@@ -127,6 +127,7 @@ func TestTracesReceiver_error(t *testing.T) {
 }
 
 func TestTracesConsumerGroupHandler(t *testing.T) {
+	view.Unregister(MetricViews()...)
 	views := MetricViews()
 	require.NoError(t, view.Register(views...))
 	defer view.Unregister(views...)
@@ -314,6 +315,7 @@ func TestMetricsReceiver_error(t *testing.T) {
 }
 
 func TestMetricsConsumerGroupHandler(t *testing.T) {
+	view.Unregister(MetricViews()...)
 	views := MetricViews()
 	require.NoError(t, view.Register(views...))
 	defer view.Unregister(views...)
@@ -500,6 +502,7 @@ func TestLogsReceiver_error(t *testing.T) {
 }
 
 func TestLogsConsumerGroupHandler(t *testing.T) {
+	view.Unregister(MetricViews()...)
 	views := MetricViews()
 	require.NoError(t, view.Register(views...))
 	defer view.Unregister(views...)

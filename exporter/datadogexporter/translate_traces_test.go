@@ -35,6 +35,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/attributes"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils"
 )
 
@@ -148,7 +149,7 @@ func TestConvertToDatadogTdNoResourceSpans(t *testing.T) {
 	outputTraces, runningMetrics := convertToDatadogTd(traces, "test-host", &config.Config{}, denylister, buildInfo)
 
 	assert.Equal(t, 0, len(outputTraces))
-	assert.Equal(t, 1, len(runningMetrics))
+	assert.Equal(t, 0, len(runningMetrics))
 }
 
 func TestRunningTraces(t *testing.T) {
@@ -187,6 +188,47 @@ func TestRunningTraces(t *testing.T) {
 		runningHostnames,
 		[]string{"resource-hostname-1", "resource-hostname-2", "fallbackHost"},
 	)
+}
+
+func TestRunningTracesARN(t *testing.T) {
+	td := pdata.NewTraces()
+	rts := td.ResourceSpans()
+
+	rm := rts.AppendEmpty()
+	baseAttrs := testutils.NewAttributeMap(map[string]string{
+		conventions.AttributeCloudProvider:      conventions.AttributeCloudProviderAWS,
+		conventions.AttributeCloudPlatform:      conventions.AttributeCloudPlatformAWSECS,
+		conventions.AttributeAWSECSTaskFamily:   "example-task-family",
+		conventions.AttributeAWSECSTaskRevision: "example-task-revision",
+		conventions.AttributeAWSECSLaunchtype:   conventions.AttributeAWSECSLaunchtypeFargate,
+	})
+	baseAttrs.CopyTo(rm.Resource().Attributes())
+	rm.Resource().Attributes().InsertString(conventions.AttributeAWSECSTaskARN, "task-arn-1")
+
+	rm = rts.AppendEmpty()
+	baseAttrs.CopyTo(rm.Resource().Attributes())
+	rm.Resource().Attributes().InsertString(conventions.AttributeAWSECSTaskARN, "task-arn-2")
+
+	rm = rts.AppendEmpty()
+	baseAttrs.CopyTo(rm.Resource().Attributes())
+	rm.Resource().Attributes().InsertString(conventions.AttributeAWSECSTaskARN, "task-arn-3")
+
+	buildInfo := component.BuildInfo{}
+
+	_, runningMetrics := convertToDatadogTd(td, "fallbackHost", &config.Config{}, newDenylister([]string{}), buildInfo)
+
+	runningHostnames := []string{}
+	runningTags := []string{}
+	for _, metric := range runningMetrics {
+		require.Equal(t, *metric.Metric, "otel.datadog_exporter.traces.running")
+		require.NotNil(t, metric.Host)
+		runningHostnames = append(runningHostnames, *metric.Host)
+		runningTags = append(runningTags, metric.Tags...)
+	}
+
+	assert.ElementsMatch(t, runningHostnames, []string{"", "", ""})
+	assert.Len(t, runningMetrics, 3)
+	assert.ElementsMatch(t, runningTags, []string{"task_arn:task-arn-1", "task_arn:task-arn-2", "task_arn:task-arn-3"})
 }
 
 func TestObfuscation(t *testing.T) {

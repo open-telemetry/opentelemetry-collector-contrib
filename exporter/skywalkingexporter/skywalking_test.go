@@ -31,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"google.golang.org/grpc"
 	v3 "skywalking.apache.org/repo/goapi/collect/common/v3"
+	metricpb "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
 	logpb "skywalking.apache.org/repo/goapi/collect/logging/v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
@@ -49,7 +50,7 @@ func TestSwExporter(t *testing.T) {
 		},
 	}
 
-	oce := newExporter(context.Background(), tt, componenttest.NewNopTelemetrySettings())
+	oce := newLogsExporter(context.Background(), tt, componenttest.NewNopTelemetrySettings())
 	got, err := exporterhelper.NewLogsExporter(
 		tt,
 		componenttest.NewNopExporterCreateSettings(),
@@ -109,6 +110,76 @@ func TestSwExporter(t *testing.T) {
 	}
 	w2.Wait()
 	assert.Equal(t, 10, len(oce.logsClients))
+
+	server, addr, handler2 := initializeGRPCTestServerMetric(t, grpc.MaxConcurrentStreams(10))
+	tt = &Config{
+		NumStreams:       10,
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		GRPCClientSettings: configgrpc.GRPCClientSettings{
+			Endpoint: addr.String(),
+			TLSSetting: configtls.TLSClientSetting{
+				Insecure: true,
+			},
+		},
+	}
+
+	oce = newMetricsExporter(context.Background(), tt, componenttest.NewNopTelemetrySettings())
+	got2, err2 := exporterhelper.NewMetricsExporter(
+		tt,
+		componenttest.NewNopExporterCreateSettings(),
+		oce.pushMetrics,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		exporterhelper.WithRetry(tt.RetrySettings),
+		exporterhelper.WithQueue(tt.QueueSettings),
+		exporterhelper.WithTimeout(tt.TimeoutSettings),
+		exporterhelper.WithStart(oce.start),
+		exporterhelper.WithShutdown(oce.shutdown),
+	)
+	assert.NoError(t, err2)
+	assert.NotNil(t, got2)
+
+	t.Cleanup(func() {
+		require.NoError(t, got2.Shutdown(context.Background()))
+	})
+
+	err = got2.Start(context.Background(), componenttest.NewNopHost())
+
+	assert.NoError(t, err)
+
+	w1 = &sync.WaitGroup{}
+	for i = 0; i < 200; i++ {
+		w1.Add(1)
+		go func() {
+			defer w1.Done()
+			l := testdata.GenerateMetricsOneMetric()
+			e := got2.ConsumeMetrics(context.Background(), l)
+			assert.NoError(t, e)
+		}()
+	}
+	w1.Wait()
+	metrics := make([]*metricpb.MeterDataCollection, 0)
+	for i := 0; i < 200; i++ {
+		metrics = append(metrics, <-handler2.metricChan)
+	}
+	assert.Equal(t, 200, len(metrics))
+	assert.Equal(t, 10, len(oce.metricsClients))
+
+	//when grpc server stops
+	server.Stop()
+	w3 := &sync.WaitGroup{}
+	for i = 0; i < 200; i++ {
+		w3.Add(1)
+		go func() {
+			defer w3.Done()
+			l := testdata.GenerateMetricsOneMetric()
+			e := got2.ConsumeMetrics(context.Background(), l)
+			if e != nil {
+				return
+			}
+		}()
+	}
+	w3.Wait()
+	assert.Equal(t, 10, len(oce.metricsClients))
 }
 
 func initializeGRPCTestServer(t *testing.T, opts ...grpc.ServerOption) (*grpc.Server, net.Addr, *mockLogHandler) {
@@ -119,6 +190,23 @@ func initializeGRPCTestServer(t *testing.T, opts ...grpc.ServerOption) (*grpc.Se
 		logChan: make(chan *logpb.LogData, 200),
 	}
 	logpb.RegisterLogReportServiceServer(
+		server,
+		m,
+	)
+	go func() {
+		require.NoError(t, server.Serve(lis))
+	}()
+	return server, lis.Addr(), m
+}
+
+func initializeGRPCTestServerMetric(t *testing.T, opts ...grpc.ServerOption) (*grpc.Server, net.Addr, *mockMetricHandler) {
+	server := grpc.NewServer(opts...)
+	lis, err := net.Listen("tcp", "localhost:0")
+	require.NoError(t, err)
+	m := &mockMetricHandler{
+		metricChan: make(chan *metricpb.MeterDataCollection, 200),
+	}
+	metricpb.RegisterMeterReportServiceServer(
 		server,
 		m,
 	)
@@ -141,6 +229,23 @@ func (h *mockLogHandler) Collect(stream logpb.LogReportService_CollectServer) er
 		}
 		if err == nil {
 			h.logChan <- r
+		}
+	}
+}
+
+type mockMetricHandler struct {
+	metricChan chan *metricpb.MeterDataCollection
+	metricpb.UnimplementedMeterReportServiceServer
+}
+
+func (h *mockMetricHandler) CollectBatch(stream metricpb.MeterReportService_CollectBatchServer) error {
+	for {
+		r, err := stream.Recv()
+		if err == io.EOF {
+			return stream.SendAndClose(&v3.Commands{})
+		}
+		if err == nil {
+			h.metricChan <- r
 		}
 	}
 }

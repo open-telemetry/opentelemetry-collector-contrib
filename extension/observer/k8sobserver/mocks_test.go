@@ -19,7 +19,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
@@ -51,8 +51,8 @@ func (e *endpointSink) OnChange(changed []observer.Endpoint) {
 
 var _ observer.Notify = (*endpointSink)(nil)
 
-func assertSink(t *testing.T, sink *endpointSink, f func() bool) {
-	assert.Eventually(t, func() bool {
+func requireSink(t *testing.T, sink *endpointSink, f func() bool) {
+	require.Eventually(t, func() bool {
 		sink.Lock()
 		defer sink.Unlock()
 		return f()
