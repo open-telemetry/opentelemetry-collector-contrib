@@ -128,19 +128,20 @@ func (c defaultElasticsearchClient) doRequest(ctx context.Context, path string) 
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
-		body, err := io.ReadAll(resp.Body)
-		c.logger.Debug(
-			"Failed to make request to Elasticsearch",
-			zap.String("path", path),
-			zap.Int("status_code", resp.StatusCode),
-			zap.ByteString("body", body),
-			zap.NamedError("body_read_error", err),
-		)
+	if resp.StatusCode == 200 {
+		return io.ReadAll(resp.Body)
 	}
 
+	body, err := io.ReadAll(resp.Body)
+	c.logger.Debug(
+		"Failed to make request to Elasticsearch",
+		zap.String("path", path),
+		zap.Int("status_code", resp.StatusCode),
+		zap.ByteString("body", body),
+		zap.NamedError("body_read_error", err),
+	)
+
 	switch resp.StatusCode {
-	case 200: // OK
 	case 401:
 		return nil, errUnauthenticated
 	case 403:
@@ -148,6 +149,4 @@ func (c defaultElasticsearchClient) doRequest(ctx context.Context, path string) 
 	default:
 		return nil, fmt.Errorf("got non 200 status code %d", resp.StatusCode)
 	}
-
-	return io.ReadAll(resp.Body)
 }
