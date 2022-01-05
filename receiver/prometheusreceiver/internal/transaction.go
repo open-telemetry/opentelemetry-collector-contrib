@@ -206,8 +206,6 @@ func (tr *transaction) Commit() error {
 	}
 
 	if !tr.useStartTimeMetric {
-		// AdjustMetricSlice - jobsMap has to be non-nil in this case.
-		// Note: metrics could be empty after adjustment, which needs to be checked before passing it on to ConsumeMetrics()
 		_ = NewMetricsAdjusterPdata(tr.jobsMap.get(tr.job, tr.instance), tr.logger).AdjustMetrics(&md)
 	}
 
