@@ -18,11 +18,12 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.uber.org/zap"
-	"strings"
 )
 
 type databaseStorage struct {
@@ -70,7 +71,7 @@ func (ds *databaseStorage) GetClient(ctx context.Context, kind component.Kind, e
 	} else {
 		fullName = fmt.Sprintf("%s_%s_%s_%s", kindString(kind), ent.Type(), ent.Name(), name)
 	}
-	strings.ReplaceAll(" ", fullName, fullName)
+	fullName = strings.ReplaceAll(fullName, " ", "")
 	return newClient(ctx, ds.db, fullName)
 }
 

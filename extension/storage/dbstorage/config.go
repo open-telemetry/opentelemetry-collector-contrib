@@ -16,6 +16,7 @@ package dbstorage // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"fmt"
+
 	"go.opentelemetry.io/collector/config"
 )
 

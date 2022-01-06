@@ -20,7 +20,9 @@ import (
 	"errors"
 	"fmt"
 
+	// Postgres driver
 	_ "github.com/jackc/pgx/v4/stdlib"
+	// SQLite driver
 	_ "github.com/mattn/go-sqlite3"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 )
@@ -40,14 +42,24 @@ type dbStorageClient struct {
 }
 
 func newClient(ctx context.Context, db *sql.DB, tableName string) (*dbStorageClient, error) {
-	_, err := db.ExecContext(ctx, fmt.Sprintf(createTable, tableName))
+	var err error
+	_, err = db.ExecContext(ctx, fmt.Sprintf(createTable, tableName))
 	if err != nil {
 		return nil, err
 	}
 
 	selectQuery, err := db.PrepareContext(ctx, fmt.Sprintf(getQueryText, tableName))
+	if err != nil {
+		return nil, err
+	}
 	setQuery, err := db.PrepareContext(ctx, fmt.Sprintf(setQueryText, tableName))
+	if err != nil {
+		return nil, err
+	}
 	deleteQuery, err := db.PrepareContext(ctx, fmt.Sprintf(deleteQueryText, tableName))
+	if err != nil {
+		return nil, err
+	}
 	return &dbStorageClient{db, selectQuery, setQuery, deleteQuery}, nil
 }
 
