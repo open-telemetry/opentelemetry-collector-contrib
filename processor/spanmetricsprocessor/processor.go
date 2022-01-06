@@ -254,8 +254,6 @@ func (p *processorImp) ConsumeTraces(ctx context.Context, traces pdata.Traces) e
 		return err
 	}
 
-	p.resetExemplarData()
-
 	// Forward trace data unmodified.
 	return p.nextConsumer.ConsumeTraces(ctx, traces)
 }
