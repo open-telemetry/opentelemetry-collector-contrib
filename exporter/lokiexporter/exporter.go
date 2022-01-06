@@ -15,12 +15,12 @@
 package lokiexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter"
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
@@ -37,6 +37,10 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/third_party/loki/logproto"
+)
+
+const (
+	maxErrMsgLen = 1024
 )
 
 type lokiExporter struct {
@@ -93,11 +97,18 @@ func (l *lokiExporter) pushLogData(ctx context.Context, ld pdata.Logs) error {
 		return consumererror.NewLogs(err, ld)
 	}
 
-	_, _ = io.Copy(ioutil.Discard, resp.Body)
-	_ = resp.Body.Close()
+	defer func() {
+		_, _ = io.Copy(io.Discard, resp.Body)
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
-		err = fmt.Errorf("HTTP %d %q", resp.StatusCode, http.StatusText(resp.StatusCode))
+		scanner := bufio.NewScanner(io.LimitReader(resp.Body, maxErrMsgLen))
+		line := ""
+		if scanner.Scan() {
+			line = scanner.Text()
+		}
+		err = fmt.Errorf("HTTP %d %q: %s", resp.StatusCode, http.StatusText(resp.StatusCode), line)
 		return consumererror.NewLogs(err, ld)
 	}
 

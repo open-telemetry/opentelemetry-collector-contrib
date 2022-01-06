@@ -181,5 +181,5 @@ func (r *metricsReceiver) handleWrite(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	w.WriteHeader(http.StatusAccepted)
+	w.WriteHeader(http.StatusNoContent)
 }

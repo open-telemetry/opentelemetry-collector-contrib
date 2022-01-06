@@ -73,7 +73,10 @@ func newZookeeperMetricsScraper(logger *zap.Logger, config *Config) (*zookeeperM
 }
 
 func (z *zookeeperMetricsScraper) shutdown(_ context.Context) error {
-	z.cancel()
+	if z.cancel != nil {
+		z.cancel()
+		z.cancel = nil
+	}
 	return nil
 }
 

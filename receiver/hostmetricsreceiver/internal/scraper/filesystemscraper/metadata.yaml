@@ -19,6 +19,7 @@ attributes:
 
 metrics:
   system.filesystem.usage:
+    enabled: true
     description: Filesystem bytes used.
     unit: By
     sum:
@@ -28,6 +29,7 @@ metrics:
     attributes: [device, mode, mountpoint, type, state]
 
   system.filesystem.inodes.usage:
+    enabled: true
     description: FileSystem inodes used.
     unit: "{inodes}"
     sum:

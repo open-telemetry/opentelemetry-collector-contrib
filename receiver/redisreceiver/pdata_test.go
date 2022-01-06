@@ -149,7 +149,7 @@ func TestNewPDM(t *testing.T) {
 
 	pdm := pdata.NewMetric()
 	initIntMetric(&redisMetric{pdType: pdata.MetricDataTypeGauge}, 0, tb, pdm)
-	assert.Equal(t, pdata.Timestamp(0), pdm.Gauge().DataPoints().At(0).StartTimestamp())
+	assert.Equal(t, serverStartTime, pdm.Gauge().DataPoints().At(0).StartTimestamp())
 
 	pdm = pdata.NewMetric()
 	initIntMetric(&redisMetric{pdType: pdata.MetricDataTypeSum}, 0, tb, pdm)
@@ -157,7 +157,7 @@ func TestNewPDM(t *testing.T) {
 
 	pdm = pdata.NewMetric()
 	initDoubleMetric(&redisMetric{pdType: pdata.MetricDataTypeGauge}, 0, tb, pdm)
-	assert.Equal(t, pdata.Timestamp(0), pdm.Gauge().DataPoints().At(0).StartTimestamp())
+	assert.Equal(t, serverStartTime, pdm.Gauge().DataPoints().At(0).StartTimestamp())
 
 	pdm = pdata.NewMetric()
 	initDoubleMetric(&redisMetric{pdType: pdata.MetricDataTypeSum}, 0, tb, pdm)

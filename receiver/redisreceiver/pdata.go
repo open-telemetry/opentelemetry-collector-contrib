@@ -32,6 +32,7 @@ func initKeyspaceKeysMetric(k *keyspace, t *timeBundle, dest pdata.Metric) {
 		name:   "redis.db.keys",
 		labels: map[string]pdata.AttributeValue{"db": pdata.NewAttributeValueString(k.db)},
 		pdType: pdata.MetricDataTypeGauge,
+		desc:   "Number of keyspace keys",
 	}
 	initIntMetric(m, int64(k.keys), t, dest)
 }
@@ -41,6 +42,7 @@ func initKeyspaceExpiresMetric(k *keyspace, t *timeBundle, dest pdata.Metric) {
 		name:   "redis.db.expires",
 		labels: map[string]pdata.AttributeValue{"db": pdata.NewAttributeValueString(k.db)},
 		pdType: pdata.MetricDataTypeGauge,
+		desc:   "Number of keyspace keys with an expiration",
 	}
 	initIntMetric(m, int64(k.expires), t, dest)
 }
@@ -51,6 +53,7 @@ func initKeyspaceTTLMetric(k *keyspace, t *timeBundle, dest pdata.Metric) {
 		units:  "ms",
 		labels: map[string]pdata.AttributeValue{"db": pdata.NewAttributeValueString(k.db)},
 		pdType: pdata.MetricDataTypeGauge,
+		desc:   "Average keyspace keys TTL",
 	}
 	initIntMetric(m, int64(k.avgTTL), t, dest)
 }
@@ -66,9 +69,9 @@ func initIntMetric(m *redisMetric, value int64, t *timeBundle, dest pdata.Metric
 		sum.SetIsMonotonic(m.isMonotonic)
 		sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		pt = sum.DataPoints().AppendEmpty()
-		pt.SetStartTimestamp(pdata.NewTimestampFromTime(t.serverStart))
 	}
 	pt.SetIntVal(value)
+	pt.SetStartTimestamp(pdata.NewTimestampFromTime(t.serverStart))
 	pt.SetTimestamp(pdata.NewTimestampFromTime(t.current))
 	pdata.NewAttributeMapFromMap(m.labels).CopyTo(pt.Attributes())
 }
@@ -84,9 +87,9 @@ func initDoubleMetric(m *redisMetric, value float64, t *timeBundle, dest pdata.M
 		sum.SetIsMonotonic(m.isMonotonic)
 		sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		pt = sum.DataPoints().AppendEmpty()
-		pt.SetStartTimestamp(pdata.NewTimestampFromTime(t.serverStart))
 	}
 	pt.SetDoubleVal(value)
+	pt.SetStartTimestamp(pdata.NewTimestampFromTime(t.serverStart))
 	pt.SetTimestamp(pdata.NewTimestampFromTime(t.current))
 	pdata.NewAttributeMapFromMap(m.labels).CopyTo(pt.Attributes())
 }

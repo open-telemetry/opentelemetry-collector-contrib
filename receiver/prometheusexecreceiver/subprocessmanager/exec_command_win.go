@@ -13,6 +13,7 @@
 // limitations under the License.
 
 //go:build windows
+// +build windows
 
 package subprocessmanager // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver/subprocessmanager"
 
