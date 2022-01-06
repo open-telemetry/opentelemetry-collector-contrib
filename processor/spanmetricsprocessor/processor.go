@@ -18,13 +18,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor/keybuilder"
 	"math"
 	"sort"
 	"strings"
 	"sync"
 	"time"
 	"unicode"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor/keybuilder"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -42,7 +43,6 @@ const (
 	operationKey               = "operation"   // OpenTelemetry non-standard constant.
 	spanKindKey                = "span.kind"   // OpenTelemetry non-standard constant.
 	statusCodeKey              = "status.code" // OpenTelemetry non-standard constant.
-	metricKeySeparator         = string(byte(0))
 	traceIDKey                 = "trace_id"
 
 	defaultDimensionsCacheSize         = 1000
@@ -242,14 +242,16 @@ func (p *processorImp) Capabilities() consumer.Capabilities {
 // It aggregates the trace data to generate metrics, forwarding these metrics to the discovered metrics exporter.
 // The original input trace data will be forwarded to the next consumer, unmodified.
 func (p *processorImp) ConsumeTraces(ctx context.Context, traces pdata.Traces) error {
+	defer func() {
+		p.reset()
+	}()
+
 	p.aggregateMetrics(traces)
 
 	m, err := p.buildMetrics()
 	if err != nil {
 		return err
 	}
-
-	p.reset()
 
 	// Firstly, export metrics to avoid being impacted by downstream trace processor errors/latency.
 	if err := p.metricsExporter.ConsumeMetrics(ctx, *m); err != nil {
