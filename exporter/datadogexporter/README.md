@@ -28,7 +28,7 @@ datadog:
     site: datadoghq.eu
 ```
 
- If you want to use the OpenTelemetry Span Name as the Datadog Resource Name you can set the `span_name_as_resource_name` variable to `true` (default is `false`). For more info on the downsides of this option check [this](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/1909) issue.
+ If you want to use the OpenTelemetry Span Name as the Datadog Resource Name you can set the `span_name_as_resource_name` configuration option to `true` (default is `false`). For more info on the downsides of this option check [this](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/1909) issue.
 
  ```yaml
 datadog:
