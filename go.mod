@@ -466,6 +466,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/x
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil => ./internal/aws/awsutil
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cloudwatch => ./internal/aws/cloudwatch
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight => ./internal/aws/containerinsight
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil => ./internal/aws/ecsutil

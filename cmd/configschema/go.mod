@@ -239,6 +239,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.41.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.41.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.41.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cloudwatch v0.41.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.41.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.41.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s v0.41.0 // indirect
@@ -461,6 +462,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/p
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray => ../../internal/aws/xray
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil => ../../internal/aws/awsutil
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cloudwatch => ../../internal/aws/cloudwatch
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight => ../../internal/aws/containerinsight
 

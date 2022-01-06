@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awsemfexporter
+package cloudwatch
 
 import (
 	"errors"
@@ -32,7 +32,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func newAlwaysPassMockLogClient(putLogEventsFunc func(args mock.Arguments)) *cloudWatchLogClient {
+func newAlwaysPassMockLogClient(putLogEventsFunc func(args mock.Arguments)) *CWLogClient {
 	logger := zap.NewNop()
 	svc := new(mockCloudWatchLogsClient)
 
@@ -483,7 +483,7 @@ func TestUserAgent(t *testing.T) {
 	session, _ := session.NewSession()
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			cwlog := newCloudWatchLogsClient(logger, &aws.Config{}, tc.buildInfo, tc.logGroupName, session)
+			cwlog := NewCWLogsClient(logger, &aws.Config{}, tc.buildInfo, tc.logGroupName, session)
 			logClient := cwlog.svc.(*cloudwatchlogs.CloudWatchLogs)
 
 			req := request.New(aws.Config{}, metadata.ClientInfo{}, logClient.Handlers, nil, &request.Operation{

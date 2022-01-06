@@ -8,6 +8,7 @@ require (
 	github.com/golang/protobuf v1.5.2
 	github.com/google/uuid v1.3.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.41.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cloudwatch v0.41.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.41.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.41.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.41.0
@@ -52,6 +53,8 @@ require (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics => ./../../internal/aws/metrics
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil => ./../../internal/aws/awsutil
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cloudwatch => ./../../internal/aws/cloudwatch
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 

@@ -17,6 +17,7 @@ package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cloudwatch"
 	"reflect"
 	"time"
 
@@ -337,7 +338,7 @@ func groupedMetricToCWMeasurementsWithFilters(groupedMetric *groupedMetric, conf
 }
 
 // translateCWMetricToEMF converts CloudWatch Metric format to EMF.
-func translateCWMetricToEMF(cWMetric *cWMetrics, config *Config) *logEvent {
+func translateCWMetricToEMF(cWMetric *cWMetrics, config *Config) *cloudwatch.LogEvent {
 	// convert CWMetric into map format for compatible with PLE input
 	cWMetricMap := make(map[string]interface{})
 	fieldMap := cWMetric.fields
@@ -384,11 +385,11 @@ func translateCWMetricToEMF(cWMetric *cWMetrics, config *Config) *logEvent {
 	}
 
 	metricCreationTime := cWMetric.timestampMs
-	logEvent := newLogEvent(
+	logEvent := cloudwatch.NewLogEvent(
 		metricCreationTime,
 		string(pleMsg),
 	)
-	logEvent.logGeneratedTime = time.Unix(0, metricCreationTime*int64(time.Millisecond))
+	logEvent.LogGeneratedTime = time.Unix(0, metricCreationTime*int64(time.Millisecond))
 
 	return logEvent
 }
