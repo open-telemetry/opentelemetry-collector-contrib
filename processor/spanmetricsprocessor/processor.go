@@ -98,8 +98,7 @@ type processorImp struct {
 	// An LRU cache of dimension key-value maps keyed by a unique identifier formed by a concatenation of its values:
 	// e.g. { "foo/barOK": { "serviceName": "foo", "operation": "/bar", "status_code": "OK" }}
 	metricKeyToDimensions *cache.Cache
-	// A cache of resourceattributekey-value maps keyed by a unique identifier formed by a concatenation of its values.
-	// todo - move to use the internal LRU cache
+	// An LRU cache of resourceattributekey-value maps keyed by a unique identifier formed by a concatenation of its values.
 	resourceKeyToDimensions *cache.Cache
 }
 
