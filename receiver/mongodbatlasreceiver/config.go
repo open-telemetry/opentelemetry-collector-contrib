@@ -28,6 +28,6 @@ type Config struct {
 	PublicKey                               string        `mapstructure:"public_key"`
 	PrivateKey                              string        `mapstructure:"private_key"`
 	Granularity                             string        `mapstructure:"granularity"`
-	RetryAttempts                           int           `mapstructure:"retry_attempts"`
+	RetryAttempts                           uint64        `mapstructure:"retry_attempts"`
 	RetryInterval                           time.Duration `mapstructure:"retry_interval"`
 }

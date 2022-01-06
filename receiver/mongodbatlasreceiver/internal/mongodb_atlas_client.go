@@ -20,6 +20,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/mongodb-forks/digest"
 	"github.com/pkg/errors"
 	"go.mongodb.org/atlas/mongodbatlas"
@@ -30,7 +31,7 @@ import (
 type RetryBackoffRoundTripper struct {
 	originalTransport http.RoundTripper
 	log               *zap.Logger
-	Attempts          int
+	Attempts          uint64
 	RetryDelay        time.Duration
 }
 
@@ -40,13 +41,31 @@ func (rt *RetryBackoffRoundTripper) RoundTrip(r *http.Request) (*http.Response, 
 	if err != nil {
 		return nil, err // Can't do anything
 	}
+
 	if resp.StatusCode == 429 {
-		for i := 0; i < rt.Attempts; i++ {
-			delay := rt.RetryDelay << i
-			time.Sleep(delay)
+		expBackoff := &backoff.ExponentialBackOff{
+			InitialInterval:     rt.RetryDelay,
+			RandomizationFactor: backoff.DefaultRandomizationFactor,
+			Multiplier:          backoff.DefaultMultiplier,
+			MaxInterval:         backoff.DefaultMaxInterval,
+			MaxElapsedTime:      backoff.DefaultMaxElapsedTime,
+			Stop:                backoff.Stop,
+			Clock:               backoff.SystemClock,
+		}
+		withRetries := backoff.WithMaxRetries(expBackoff, uint64(rt.Attempts))
+		withRetries.Reset()
+		attempts := 0
+		for {
+			attempts += 1
+			delay := expBackoff.NextBackOff()
+			if delay == backoff.Stop {
+				return resp, err
+			}
 			rt.log.Warn("server busy, retrying request",
-				zap.Int("attempts", i+1),
+				zap.Int("attempts", attempts),
 				zap.Duration("delay", delay))
+			time.Sleep(delay)
+
 			resp, err = rt.originalTransport.RoundTrip(r)
 			if err != nil {
 				return nil, err
@@ -70,7 +89,7 @@ type MongoDBAtlasClient struct {
 func NewMongoDBAtlasClient(
 	publicKey string,
 	privateKey string,
-	retryAttempts int,
+	retryAttempts uint64,
 	retryInterval time.Duration,
 	log *zap.Logger,
 ) (*MongoDBAtlasClient, error) {
