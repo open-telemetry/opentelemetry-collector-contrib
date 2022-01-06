@@ -429,9 +429,10 @@ func (m *metricCouchdbHttpdViews) init() {
 	m.data.SetDataType(pdata.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricCouchdbHttpdViews) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64) {
+func (m *metricCouchdbHttpdViews) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, viewAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -439,6 +440,7 @@ func (m *metricCouchdbHttpdViews) recordDataPoint(start pdata.Timestamp, ts pdat
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
+	dp.Attributes().Insert(A.View, pdata.NewAttributeValueString(viewAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -558,8 +560,17 @@ func (mb *MetricsBuilder) RecordCouchdbHttpdResponsesDataPoint(ts pdata.Timestam
 }
 
 // RecordCouchdbHttpdViewsDataPoint adds a data point to couchdb.httpd.views metric.
-func (mb *MetricsBuilder) RecordCouchdbHttpdViewsDataPoint(ts pdata.Timestamp, val int64) {
-	mb.metricCouchdbHttpdViews.recordDataPoint(mb.startTime, ts, val)
+func (mb *MetricsBuilder) RecordCouchdbHttpdViewsDataPoint(ts pdata.Timestamp, val int64, viewAttributeValue string) {
+	mb.metricCouchdbHttpdViews.recordDataPoint(mb.startTime, ts, val, viewAttributeValue)
+}
+
+// Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
+// and metrics builder should update its startTime and reset it's internal state accordingly.
+func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
+	mb.startTime = pdata.NewTimestampFromTime(time.Now())
+	for _, op := range options {
+		op(mb)
+	}
 }
 
 // Attributes contains the possible metric attributes that can be used.
@@ -572,11 +583,14 @@ var Attributes = struct {
 	HTTPStatusCode string
 	// Operation (The operation type.)
 	Operation string
+	// View (The view type.)
+	View string
 }{
 	"couchdb.node.name",
 	"http.method",
 	"http.status_code",
 	"operation",
+	"view",
 }
 
 // A is an alias for Attributes.
@@ -608,4 +622,13 @@ var AttributeOperation = struct {
 }{
 	"writes",
 	"reads",
+}
+
+// AttributeView are the possible values that the attribute "view" can have.
+var AttributeView = struct {
+	TemporaryViewReads string
+	ViewReads          string
+}{
+	"temporary_view_reads",
+	"view_reads",
 }

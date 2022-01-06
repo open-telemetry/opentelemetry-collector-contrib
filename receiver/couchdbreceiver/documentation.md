@@ -15,7 +15,7 @@ These are the metrics available for this scraper.
 | couchdb.httpd.bulk_requests | The number of bulk requests. | {requests} | Sum(Int) | <ul> </ul> |
 | couchdb.httpd.requests | The number of HTTP requests by method. | {requests} | Sum(Int) | <ul> <li>http.method</li> </ul> |
 | couchdb.httpd.responses | The number of each HTTP status code. | {responses} | Sum(Int) | <ul> <li>http.status_code</li> </ul> |
-| couchdb.httpd.views | The number of views read. | {views} | Sum(Int) | <ul> </ul> |
+| couchdb.httpd.views | The number of views read. | {views} | Sum(Int) | <ul> <li>view</li> </ul> |
 
 ## Attributes
 
@@ -25,3 +25,4 @@ These are the metrics available for this scraper.
 | http.method | An HTTP request method. |
 | http.status_code | An HTTP status code. |
 | operation | The operation type. |
+| view | The view type. |
