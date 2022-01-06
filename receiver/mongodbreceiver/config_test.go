@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
-	"gotest.tools/assert"
 )
 
 func TestValidate(t *testing.T) {
@@ -75,14 +74,7 @@ func TestValidate(t *testing.T) {
 			desc:      "empty host",
 			username:  "user",
 			endpoints: []string{""},
-			expected:  errors.New("unknown host format for host : missing port in address"),
-		},
-		{
-			desc:      "bad endpoint format",
-			endpoints: []string{"localhost;27017]"},
-			username:  "user",
-			password:  "pass",
-			expected:  errors.New("unknown host format for host localhost;27017"),
+			expected:  errors.New("no endpoint specified for one of the hosts"),
 		},
 	}
 	for _, tc := range testCases {
@@ -104,7 +96,7 @@ func TestValidate(t *testing.T) {
 			if tc.expected == nil {
 				require.Nil(t, err)
 			} else {
-				assert.ErrorContains(t, err, tc.expected.Error())
+				require.Contains(t, err.Error(), tc.expected.Error())
 			}
 		})
 	}

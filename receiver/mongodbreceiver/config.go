@@ -17,7 +17,6 @@ package mongodbreceiver
 import (
 	"errors"
 	"fmt"
-	"net"
 	"time"
 
 	"go.opentelemetry.io/collector/config/confignet"
@@ -43,17 +42,8 @@ func (c *Config) Validate() error {
 
 	var err error
 	for _, host := range c.Hosts {
-		if host.Transport != "unix" {
-			// valid hostnames will use default port of 27017
-			_, hostNameErr := net.LookupHost(host.Endpoint)
-			if hostNameErr == nil {
-				continue
-			}
-			// check host:port based endpoints
-			_, _, hpErr := net.SplitHostPort(host.Endpoint)
-			if hpErr != nil {
-				err = multierr.Append(err, fmt.Errorf("unknown host format for host %s: %w", host.Endpoint, hpErr))
-			}
+		if host.Endpoint == "" {
+			err = multierr.Append(err, errors.New("no endpoint specified for one of the hosts"))
 		}
 	}
 
