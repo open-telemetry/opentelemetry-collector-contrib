@@ -1,7 +1,7 @@
 receivers:
   mongodb:
     hosts:
-      - localhost:27017
+      - endpoint: localhost:27017
     username: otel
     password: $MONGO_PASSWORD
     collection_interval: 60s
