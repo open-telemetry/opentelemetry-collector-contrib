@@ -17,7 +17,7 @@ package dockerstatsreceiver
 import (
 	"encoding/json"
 	"io/ioutil"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 

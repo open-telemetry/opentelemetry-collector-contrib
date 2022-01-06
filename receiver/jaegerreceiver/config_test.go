@@ -15,7 +15,7 @@
 package jaegerreceiver
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 

@@ -16,7 +16,7 @@ package prometheusreceiver
 
 import (
 	"context"
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
