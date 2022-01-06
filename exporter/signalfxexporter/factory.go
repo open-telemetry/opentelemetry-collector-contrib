@@ -22,6 +22,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v2"
@@ -52,18 +53,21 @@ func NewFactory() component.ExporterFactory {
 }
 
 func createDefaultConfig() config.Exporter {
+	var defaultIdleConnTimeout = 30 * time.Second
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: defaultHTTPTimeout},
-		RetrySettings:    exporterhelper.DefaultRetrySettings(),
-		QueueSettings:    exporterhelper.DefaultQueueSettings(),
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Timeout:         defaultHTTPTimeout,
+			IdleConnTimeout: &defaultIdleConnTimeout,
+		},
+		RetrySettings: exporterhelper.DefaultRetrySettings(),
+		QueueSettings: exporterhelper.DefaultQueueSettings(),
 		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 			AccessTokenPassthrough: true,
 		},
 		DeltaTranslationTTL:           3600,
 		Correlation:                   correlation.DefaultConfig(),
 		NonAlphanumericDimensionChars: "_-.",
-		MaxConnections:                100,
 	}
 }
 
@@ -109,7 +113,10 @@ func createMetricsExporter(
 		return nil, err
 	}
 
-	exp := newMetricExporter(expCfg, set.Logger)
+	exp, err := newSignalFxExporter(expCfg, set.Logger)
+	if err != nil {
+		return nil, err
+	}
 
 	me, err := exporterhelper.NewMetricsExporter(
 		expCfg,
@@ -118,8 +125,7 @@ func createMetricsExporter(
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(expCfg.RetrySettings),
-		exporterhelper.WithQueue(expCfg.QueueSettings),
-		exporterhelper.WithStart(exp.Start))
+		exporterhelper.WithQueue(expCfg.QueueSettings))
 
 	if err != nil {
 		return nil, err
@@ -183,7 +189,10 @@ func createLogsExporter(
 ) (component.LogsExporter, error) {
 	expCfg := cfg.(*Config)
 
-	exp := newLogExporter(expCfg, set.Logger)
+	exp, err := newEventExporter(expCfg, set.Logger)
+	if err != nil {
+		return nil, err
+	}
 
 	le, err := exporterhelper.NewLogsExporter(
 		expCfg,
@@ -192,8 +201,7 @@ func createLogsExporter(
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(expCfg.RetrySettings),
-		exporterhelper.WithQueue(expCfg.QueueSettings),
-		exporterhelper.WithStart(exp.Start))
+		exporterhelper.WithQueue(expCfg.QueueSettings))
 
 	if err != nil {
 		return nil, err

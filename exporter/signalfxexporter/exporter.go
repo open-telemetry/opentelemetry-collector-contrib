@@ -19,12 +19,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
@@ -56,18 +56,11 @@ func (sme *signalfMetadataExporter) ConsumeMetadata(metadata []*metadata.Metadat
 	return sme.pushMetadata(metadata)
 }
 
-type metricExporter struct {
+type signalfxExporter struct {
 	pushMetricsData    func(ctx context.Context, md pdata.Metrics) (droppedTimeSeries int, err error)
 	pushMetadata       func(metadata []*metadata.MetadataUpdate) error
+	pushLogsData       func(ctx context.Context, ld pdata.Logs) (droppedLogRecords int, err error)
 	hostMetadataSyncer *hostmetadata.Syncer
-	config             *Config
-	logger             *zap.Logger
-}
-
-type logExporter struct {
-	pushLogsData func(ctx context.Context, ld pdata.Logs) (droppedLogRecords int, err error)
-	config       *Config
-	logger       *zap.Logger
 }
 
 type exporterOptions struct {
@@ -80,45 +73,31 @@ type exporterOptions struct {
 	metricTranslator *translation.MetricTranslator
 }
 
-func newMetricExporter(config *Config, logger *zap.Logger) *metricExporter {
-	return &metricExporter{
-		config: config,
-		logger: logger,
-	}
-}
-
-func (me *metricExporter) Start(_ context.Context, host component.Host) (err error) {
-	return me.newSignalFxExporter(host)
-}
-
-// newSignalFxExporter initializes a new SignalFx exporter.
-func (me *metricExporter) newSignalFxExporter(host component.Host) error {
-	if me.config == nil {
-		return errors.New("nil config")
+// newSignalFxExporter returns a new SignalFx exporter.
+func newSignalFxExporter(
+	config *Config,
+	logger *zap.Logger,
+) (*signalfxExporter, error) {
+	if config == nil {
+		return nil, errors.New("nil config")
 	}
 
-	options, err := me.config.getOptionsFromConfig()
+	options, err := config.getOptionsFromConfig()
 	if err != nil {
-		return fmt.Errorf("failed to process %q config: %v", me.config.ID().String(), err)
+		return nil,
+			fmt.Errorf("failed to process %q config: %v", config.ID().String(), err)
 	}
 
-	headers := buildHeaders(me.config)
-	converter, err := translation.NewMetricsConverter(me.logger, options.metricTranslator, me.config.ExcludeMetrics, me.config.IncludeMetrics, me.config.NonAlphanumericDimensionChars)
+	headers := buildHeaders(config)
+
+	converter, err := translation.NewMetricsConverter(logger, options.metricTranslator, config.ExcludeMetrics, config.IncludeMetrics, config.NonAlphanumericDimensionChars)
 	if err != nil {
-		return fmt.Errorf("failed to create metric converter: %v", err)
+		return nil, fmt.Errorf("failed to create metric converter: %v", err)
 	}
 
-	defaultIdleConnTimeout := 30 * time.Second
-	httpClient := confighttp.HTTPClientSettings{
-		MaxIdleConns:        &me.config.MaxConnections,
-		MaxIdleConnsPerHost: &me.config.MaxConnections,
-		IdleConnTimeout:     &defaultIdleConnTimeout,
-		Timeout:             me.config.Timeout,
-	}
-
-	client, err := httpClient.ToClient(host.GetExtensions())
+	client, err := getHTTPClient(config)
 	if err != nil {
-		return fmt.Errorf("failed to create http client: %v", err)
+		return nil, fmt.Errorf("failed to create http client: %v", err)
 	}
 
 	dpClient := &sfxDPClient{
@@ -129,8 +108,8 @@ func (me *metricExporter) newSignalFxExporter(host component.Host) error {
 			zippers:   newGzipPool(),
 		},
 		logDataPoints:          options.logDataPoints,
-		logger:                 me.logger,
-		accessTokenPassthrough: me.config.AccessTokenPassthrough,
+		logger:                 logger,
+		accessTokenPassthrough: config.AccessTokenPassthrough,
 		converter:              converter,
 	}
 
@@ -140,7 +119,7 @@ func (me *metricExporter) newSignalFxExporter(host component.Host) error {
 			Token:      options.token,
 			APIURL:     options.apiURL,
 			LogUpdates: options.logDimUpdate,
-			Logger:     me.logger,
+			Logger:     logger,
 			// Duration to wait between property updates. This might be worth
 			// being made configurable.
 			SendDelay: 10,
@@ -153,15 +132,38 @@ func (me *metricExporter) newSignalFxExporter(host component.Host) error {
 	dimClient.Start()
 
 	var hms *hostmetadata.Syncer
-	if me.config.SyncHostMetadata {
-		hms = hostmetadata.NewSyncer(me.logger, dimClient)
+	if config.SyncHostMetadata {
+		hms = hostmetadata.NewSyncer(logger, dimClient)
 	}
 
-	me.pushMetricsData = dpClient.pushMetricsData
-	me.pushMetadata = dimClient.PushMetadata
-	me.hostMetadataSyncer = hms
+	return &signalfxExporter{
+		pushMetricsData:    dpClient.pushMetricsData,
+		pushMetadata:       dimClient.PushMetadata,
+		hostMetadataSyncer: hms,
+	}, nil
+}
 
-	return nil
+func getHTTPClient(config *Config) (*http.Client, error) {
+	defaultMaxConns := 100
+	if config.MaxIdleConns == nil {
+		if config.MaxConnections != nil {
+			config.MaxIdleConns = config.MaxConnections
+		} else {
+			config.MaxIdleConns = &defaultMaxConns
+		}
+	}
+	if config.MaxIdleConnsPerHost == nil {
+		if config.MaxConnections != nil {
+			config.MaxIdleConnsPerHost = config.MaxConnections
+		} else {
+			config.MaxIdleConnsPerHost = &defaultMaxConns
+		}
+	}
+	// To avoid overriding client headers to request header storing access_token
+	// when access_token_passthrough is true.
+	config.HTTPClientSettings.Headers = map[string]string{}
+
+	return config.HTTPClientSettings.ToClient(nil)
 }
 
 func newGzipPool() sync.Pool {
@@ -170,40 +172,22 @@ func newGzipPool() sync.Pool {
 	}}
 }
 
-func newLogExporter(config *Config, logger *zap.Logger) *logExporter {
-	return &logExporter{
-		config: config,
-		logger: logger,
-	}
-}
-
-func (le *logExporter) Start(_ context.Context, host component.Host) (err error) {
-	return le.newEventExporter(host)
-}
-
-func (le *logExporter) newEventExporter(host component.Host) error {
-	if le.config == nil {
-		return errors.New("nil config")
+func newEventExporter(config *Config, logger *zap.Logger) (*signalfxExporter, error) {
+	if config == nil {
+		return nil, errors.New("nil config")
 	}
 
-	options, err := le.config.getOptionsFromConfig()
+	options, err := config.getOptionsFromConfig()
 	if err != nil {
-		return fmt.Errorf("failed to process %q config: %v", le.config.ID().String(), err)
+		return nil,
+			fmt.Errorf("failed to process %q config: %v", config.ID().String(), err)
 	}
 
-	headers := buildHeaders(le.config)
+	headers := buildHeaders(config)
 
-	defaultIdleConnTimeout := 30 * time.Second
-	httpClient := confighttp.HTTPClientSettings{
-		MaxIdleConns:        &le.config.MaxConnections,
-		MaxIdleConnsPerHost: &le.config.MaxConnections,
-		IdleConnTimeout:     &defaultIdleConnTimeout,
-		Timeout:             le.config.Timeout,
-	}
-
-	client, err := httpClient.ToClient(host.GetExtensions())
+	client, err := getHTTPClient(config)
 	if err != nil {
-		return fmt.Errorf("failed to create http client: %v", err)
+		return nil, fmt.Errorf("failed to create http client: %v", err)
 	}
 
 	eventClient := &sfxEventClient{
@@ -213,23 +197,24 @@ func (le *logExporter) newEventExporter(host component.Host) error {
 			client:    client,
 			zippers:   newGzipPool(),
 		},
-		logger:                 le.logger,
-		accessTokenPassthrough: le.config.AccessTokenPassthrough,
+		logger:                 logger,
+		accessTokenPassthrough: config.AccessTokenPassthrough,
 	}
 
-	le.pushLogsData = eventClient.pushLogsData
-	return nil
+	return &signalfxExporter{
+		pushLogsData: eventClient.pushLogsData,
+	}, nil
 }
 
-func (me *metricExporter) pushMetrics(ctx context.Context, md pdata.Metrics) error {
-	_, err := me.pushMetricsData(ctx, md)
-	if err == nil && me.hostMetadataSyncer != nil {
-		me.hostMetadataSyncer.Sync(md)
+func (se *signalfxExporter) pushMetrics(ctx context.Context, md pdata.Metrics) error {
+	_, err := se.pushMetricsData(ctx, md)
+	if err == nil && se.hostMetadataSyncer != nil {
+		se.hostMetadataSyncer.Sync(md)
 	}
 	return err
 }
 
-func (le *logExporter) pushLogs(ctx context.Context, ld pdata.Logs) error {
-	_, err := le.pushLogsData(ctx, ld)
+func (se *signalfxExporter) pushLogs(ctx context.Context, ld pdata.Logs) error {
+	_, err := se.pushLogsData(ctx, ld)
 	return err
 }

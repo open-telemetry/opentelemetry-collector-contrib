@@ -58,17 +58,28 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, defaultCfg, e0)
 
 	e1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "allsettings")]
+	maxConnections := 70
+	maxIdleConns := 300
+	maxIdleConnsPerHost := 500
+	idleConnTimeout := 15 * time.Second
 	expectedCfg := Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "allsettings")),
 		AccessToken:      "testToken",
 		Realm:            "us1",
-		MaxConnections:   70,
+		MaxConnections:   &maxConnections,
 		Headers: map[string]string{
 			"added-entry": "added value",
 			"dot.test":    "test",
 		},
-		TimeoutSettings: exporterhelper.TimeoutSettings{
+		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Timeout: 2 * time.Second,
+			Headers: map[string]string{
+				"added-entry": "added value",
+				"dot.test":    "test",
+			},
+			MaxIdleConns:        &maxIdleConns,
+			MaxIdleConnsPerHost: &maxIdleConnsPerHost,
+			IdleConnTimeout:     &idleConnTimeout,
 		},
 		RetrySettings: exporterhelper.RetrySettings{
 			Enabled:         true,
@@ -315,7 +326,7 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 				Realm:            tt.fields.Realm,
 				IngestURL:        tt.fields.IngestURL,
 				APIURL:           tt.fields.APIURL,
-				TimeoutSettings: exporterhelper.TimeoutSettings{
+				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Timeout: tt.fields.Timeout,
 				},
 				Headers:             tt.fields.Headers,

@@ -28,8 +28,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtest"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
@@ -117,12 +117,70 @@ func TestCreateMetricsExporter_CustomConfig(t *testing.T) {
 			"added-entry": "added value",
 			"dot.test":    "test",
 		},
-		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: 2 * time.Second},
+		HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 2 * time.Second},
 	}
 
 	te, err := createMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), config)
 	assert.NoError(t, err)
 	assert.NotNil(t, te)
+}
+
+func TestFactory_CreateMetricsExporterFails(t *testing.T) {
+	maxConnections := -10
+	tests := []struct {
+		name         string
+		config       *Config
+		errorMessage string
+	}{
+		{
+			name: "negative_duration",
+			config: &Config{
+				ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
+				AccessToken:        "testToken",
+				Realm:              "lab",
+				HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: -2 * time.Second},
+			},
+			errorMessage: "failed to process \"signalfx\" config: cannot have a negative \"timeout\"",
+		},
+		{
+			name: "empty_realm_and_urls",
+			config: &Config{
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				AccessToken:      "testToken",
+			},
+			errorMessage: "failed to process \"signalfx\" config: requires a non-empty \"realm\"," +
+				" or \"ingest_url\" and \"api_url\" should be explicitly set",
+		},
+		{
+			name: "empty_realm_and_api_url",
+			config: &Config{
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				AccessToken:      "testToken",
+				IngestURL:        "http://localhost:123",
+			},
+			errorMessage: "failed to process \"signalfx\" config: requires a non-empty \"realm\"," +
+				" or \"ingest_url\" and \"api_url\" should be explicitly set",
+		},
+		{
+			name: "negative_MaxConnections",
+			config: &Config{
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				AccessToken:      "testToken",
+				Realm:            "lab",
+				IngestURL:        "http://localhost:123",
+				APIURL:           "https://api.us1.signalfx.com/",
+				MaxConnections:   &maxConnections,
+			},
+			errorMessage: "failed to process \"signalfx\" config: cannot have a negative \"max_connections\"",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			te, err := createMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), tt.config)
+			assert.EqualError(t, err, tt.errorMessage)
+			assert.Nil(t, te)
+		})
+	}
 }
 
 func TestDefaultTranslationRules(t *testing.T) {

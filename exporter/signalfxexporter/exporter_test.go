@@ -33,9 +33,9 @@ import (
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -52,82 +52,65 @@ func TestNew(t *testing.T) {
 	tests := []struct {
 		name           string
 		config         *Config
-		me             *metricExporter
 		wantErr        bool
 		wantErrMessage string
 	}{
 		{
-			name: "nil config fails",
-			me: &metricExporter{
-				logger: zap.NewNop(),
-			},
+			name:           "nil config fails",
 			wantErr:        true,
 			wantErrMessage: "nil config",
 		},
 		{
 			name: "bad config fails",
-			me: &metricExporter{
-				logger: zap.NewNop(),
-				config: &Config{
-					ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-					APIURL:           "abc",
-				},
+			config: &Config{
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				APIURL:           "abc",
 			},
 			wantErr: true,
 		},
 		{
 			name: "fails to create metrics converter",
-			me: &metricExporter{
-				logger: zap.NewNop(),
-				config: &Config{
-					ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-					AccessToken:      "test",
-					Realm:            "realm",
-					ExcludeMetrics:   []dpfilters.MetricFilter{{}},
-				},
+			config: &Config{
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+				AccessToken:      "test",
+				Realm:            "realm",
+				ExcludeMetrics:   []dpfilters.MetricFilter{{}},
 			},
 			wantErr: true,
 		},
 		{
 			name: "successfully create exporter",
-			me: &metricExporter{
-				logger: zap.NewNop(),
-				config: &Config{
-					ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-					AccessToken:      "someToken",
-					Realm:            "xyz",
-					TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
-					Headers:          nil,
-				},
+			config: &Config{
+				ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
+				AccessToken:        "someToken",
+				Realm:              "xyz",
+				HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 1 * time.Second},
+				Headers:            nil,
 			},
 		},
 		{
 			name: "create exporter with host metadata syncer",
-			me: &metricExporter{
-				logger: zap.NewNop(),
-				config: &Config{
-					ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-					AccessToken:      "someToken",
-					Realm:            "xyz",
-					TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
-					Headers:          nil,
-					SyncHostMetadata: true,
-				},
+			config: &Config{
+				ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
+				AccessToken:        "someToken",
+				Realm:              "xyz",
+				HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 1 * time.Second},
+				Headers:            nil,
+				SyncHostMetadata:   true,
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.me.newSignalFxExporter(componenttest.NewNopHost())
+			got, err := newSignalFxExporter(tt.config, zap.NewNop())
 			if tt.wantErr {
 				require.Error(t, err)
 				if tt.wantErrMessage != "" {
 					require.EqualError(t, err, tt.wantErrMessage)
 				}
 			} else {
-				require.NotNil(t, tt.me.pushMetricsData)
-				require.NotNil(t, tt.me.pushMetadata)
+				require.NotNil(t, got)
 			}
 		})
 	}
@@ -251,75 +234,6 @@ func TestConsumeMetrics(t *testing.T) {
 			}
 
 			assert.NoError(t, err)
-		})
-	}
-}
-
-func TestNewSignalFxExporterFails(t *testing.T) {
-	tests := []struct {
-		name         string
-		se           *metricExporter
-		host         component.Host
-		errorMessage string
-	}{
-		{
-			name: "negative_duration",
-			se: &metricExporter{
-				logger: zap.NewNop(),
-				config: &Config{
-					ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-					AccessToken:      "testToken",
-					Realm:            "lab",
-					TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: -2 * time.Second},
-				},
-			},
-			errorMessage: "failed to process \"signalfx\" config: cannot have a negative \"timeout\"",
-		},
-		{
-			name: "empty_realm_and_urls",
-			se: &metricExporter{
-				logger: zap.NewNop(),
-				config: &Config{
-					ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-					AccessToken:      "testToken",
-				},
-			},
-			errorMessage: "failed to process \"signalfx\" config: requires a non-empty \"realm\"," +
-				" or \"ingest_url\" and \"api_url\" should be explicitly set",
-		},
-		{
-			name: "empty_realm_and_api_url",
-			se: &metricExporter{
-				logger: zap.NewNop(),
-				config: &Config{
-					ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-					AccessToken:      "testToken",
-					IngestURL:        "http://localhost:123",
-				},
-			},
-			errorMessage: "failed to process \"signalfx\" config: requires a non-empty \"realm\"," +
-				" or \"ingest_url\" and \"api_url\" should be explicitly set",
-		},
-		{
-			name: "negative_MaxConnections",
-			se: &metricExporter{
-				logger: zap.NewNop(),
-				config: &Config{
-					ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-					AccessToken:      "testToken",
-					Realm:            "lab",
-					IngestURL:        "http://localhost:123",
-					APIURL:           "https://api.us1.signalfx.com/",
-					MaxConnections:   -10,
-				},
-			},
-			errorMessage: "failed to process \"signalfx\" config: cannot have a negative \"max_connections\"",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := tt.se.newSignalFxExporter(componenttest.NewNopHost())
-			assert.EqualError(t, err, tt.errorMessage)
 		})
 	}
 }
@@ -523,40 +437,36 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 }
 
 func TestNewEventExporter(t *testing.T) {
-	le := &logExporter{
-		config: nil,
-		logger: zap.NewNop(),
-	}
-	err := le.newEventExporter(componenttest.NewNopHost())
+	got, err := newEventExporter(nil, zap.NewNop())
 	assert.EqualError(t, err, "nil config")
-	assert.Nil(t, le.pushLogsData)
+	assert.Nil(t, got)
 
-	le.config = &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		AccessToken:      "someToken",
-		IngestURL:        "asdf://:%",
-		TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
-		Headers:          nil,
+	cfg := &Config{
+		ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
+		AccessToken:        "someToken",
+		IngestURL:          "asdf://:%",
+		HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 1 * time.Second},
+		Headers:            nil,
 	}
 
-	err = le.newEventExporter(componenttest.NewNopHost())
+	got, err = newEventExporter(cfg, zap.NewNop())
 	assert.NotNil(t, err)
-	assert.Nil(t, le.pushLogsData)
+	assert.Nil(t, got)
 
-	le.config = &Config{
-		AccessToken:     "someToken",
-		Realm:           "xyz",
-		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
-		Headers:         nil,
+	cfg = &Config{
+		AccessToken:        "someToken",
+		Realm:              "xyz",
+		HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 1 * time.Second},
+		Headers:            nil,
 	}
 
-	err = le.newEventExporter(componenttest.NewNopHost())
+	got, err = newEventExporter(cfg, zap.NewNop())
 	assert.NoError(t, err)
-	require.NotNil(t, le.pushLogsData)
+	require.NotNil(t, got)
 
 	// This is expected to fail.
 	ld := makeSampleResourceLogs()
-	err = le.pushLogs(context.Background(), ld)
+	err = got.pushLogs(context.Background(), ld)
 	assert.Error(t, err)
 }
 
@@ -1061,7 +971,7 @@ func TestConsumeMetadata(t *testing.T) {
 				})
 			dimClient.Start()
 
-			se := metricExporter{
+			se := signalfxExporter{
 				pushMetadata: dimClient.PushMetadata,
 			}
 			sme := signalfMetadataExporter{
@@ -1130,4 +1040,82 @@ func TestSignalFxExporterConsumeMetadata(t *testing.T) {
 	kme, ok := exp.(metadata.MetadataExporter)
 	require.True(t, ok, "SignalFx exporter does not implement metadata.MetadataExporter")
 	require.NotNil(t, kme)
+}
+
+func TestGetHTTPClient(t *testing.T) {
+	maxConnections := 50
+	maxIdleConns := 200
+	maxIdleConnsPerHost := 300
+	type args struct {
+		config *Config
+	}
+	tests := []struct {
+		name                string
+		args                args
+		maxIdleConns        int
+		maxIdleConnsPerHost int
+	}{
+		{
+			name: "default value",
+			args: args{
+				config: &Config{
+					ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
+					AccessToken:        "someToken",
+					Realm:              "xyz",
+					HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 1 * time.Second},
+					Headers:            nil,
+					SyncHostMetadata:   true,
+				},
+			},
+			maxIdleConns:        100,
+			maxIdleConnsPerHost: 100,
+		},
+		{
+			name: "ignoring max_connections value",
+			args: args{
+				config: &Config{
+					ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+					AccessToken:      "someToken",
+					Realm:            "xyz",
+					HTTPClientSettings: confighttp.HTTPClientSettings{
+						Timeout:             1 * time.Second,
+						MaxIdleConns:        &maxIdleConns,
+						MaxIdleConnsPerHost: &maxIdleConnsPerHost,
+					},
+					Headers:          nil,
+					SyncHostMetadata: true,
+					MaxConnections:   &maxConnections,
+				},
+			},
+			maxIdleConns:        200,
+			maxIdleConnsPerHost: 300,
+		},
+		{
+			name: "assigning max_connections value",
+			args: args{
+				config: &Config{
+					ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+					AccessToken:      "someToken",
+					Realm:            "xyz",
+					HTTPClientSettings: confighttp.HTTPClientSettings{
+						Timeout: 1 * time.Second,
+					},
+					Headers:          nil,
+					SyncHostMetadata: true,
+					MaxConnections:   &maxConnections,
+				},
+			},
+			maxIdleConns:        50,
+			maxIdleConnsPerHost: 50,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client, err := getHTTPClient(tt.args.config)
+			require.NoError(t, err)
+			transport := client.Transport.(*http.Transport)
+			assert.Equal(t, tt.maxIdleConns, transport.MaxIdleConns)
+			assert.Equal(t, tt.maxIdleConnsPerHost, transport.MaxIdleConnsPerHost)
+		})
+	}
 }

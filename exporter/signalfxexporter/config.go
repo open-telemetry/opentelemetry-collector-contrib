@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/correlation"
@@ -37,10 +38,10 @@ var _ config.Unmarshallable = (*Config)(nil)
 
 // Config defines configuration for SignalFx exporter.
 type Config struct {
-	config.ExporterSettings        `mapstructure:",squash"`
-	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
-	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
+	config.ExporterSettings       `mapstructure:",squash"`
+	exporterhelper.QueueSettings  `mapstructure:"sending_queue"`
+	exporterhelper.RetrySettings  `mapstructure:"retry_on_failure"`
+	confighttp.HTTPClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
 	// AccessToken is the authentication token provided by SignalFx.
 	AccessToken string `mapstructure:"access_token"`
@@ -107,8 +108,9 @@ type Config struct {
 	// to be used in a dimension key.
 	NonAlphanumericDimensionChars string `mapstructure:"nonalphanumeric_dimension_chars"`
 
-	// MaxConnections is used to set a limit to the maximum idle HTTP connection the exporter can keep open.
-	MaxConnections int `mapstructure:"max_connections"`
+	// Deprecated: MaxConnections is used to set a limit to the maximum idle HTTP connection the exporter can keep open.
+	// Using pointer to check if the user has provided input or not.
+	MaxConnections *int `mapstructure:"max_connections"`
 }
 
 func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
@@ -160,7 +162,7 @@ func (cfg *Config) validateConfig() error {
 		return errors.New(`cannot have a negative "timeout"`)
 	}
 
-	if cfg.MaxConnections < 0 {
+	if cfg.MaxConnections != nil && *cfg.MaxConnections < 0 {
 		return errors.New(`cannot have a negative "max_connections"`)
 	}
 

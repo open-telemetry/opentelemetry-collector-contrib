@@ -85,7 +85,9 @@ The following configuration options can also be configured:
 that are allowed to be used as a dimension key in addition to alphanumeric 
 characters. Each nonalphanumeric dimension key character that isn't in this string 
 will be replaced with a `_`.
-- `max_connections` (default = 100):  The maximum number of idle HTTP connection the exporter can keep open.
+- `max_connections` (no default):  The maximum number of idle HTTP connection the exporter can keep open. This is deprecated, use `max_idle_conns` or `max_idle_conns_per_host` instead.
+- `max_idle_conns` (default = 100): The maximum number of idle HTTP connection the client can keep open.
+- `max_idle_conns_per_host` (default = 100): The maximum number of idle HTTP connection the host can keep open.
 
 In addition, this exporter offers queued retry which is enabled by default.
 Information about queued retry configuration parameters can be found
