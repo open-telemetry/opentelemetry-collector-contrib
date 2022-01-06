@@ -20,12 +20,12 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	
-        "go.opencensus.io/plugin/ocgrpc"
+
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	cloudtrace "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace"
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"go.opencensus.io/plugin/ocgrpc"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/model/pdata"

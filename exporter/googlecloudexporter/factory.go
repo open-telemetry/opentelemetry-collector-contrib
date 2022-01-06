@@ -16,7 +16,6 @@ package googlecloudexporter // import "github.com/open-telemetry/opentelemetry-c
 
 import (
 	"context"
-	"log"
 	"sync"
 	"time"
 
@@ -40,10 +39,7 @@ func NewFactory() component.ExporterFactory {
 	// register view for self-observability
 	once.Do(func() {
 		view.Register(viewPointCount)
-		// Register views to collect data.
-		if err := view.Register(ocgrpc.DefaultClientViews...); err != nil {
-			log.Fatal(err)
-		}
+		view.Register(ocgrpc.DefaultClientViews...)
 	})
 
 	return exporterhelper.NewFactory(
