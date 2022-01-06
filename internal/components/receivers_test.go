@@ -138,6 +138,10 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "memcached",
 		},
 		{
+			receiver:     "mongodb",
+			skipLifecyle: true, // TODO: Only scaffolding in place, only nil is returned atm
+		},
+		{
 			receiver: "mongodbatlas",
 		},
 		{
