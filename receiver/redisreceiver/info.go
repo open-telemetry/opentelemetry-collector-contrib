@@ -16,69 +16,22 @@ package redisreceiver // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"errors"
-	"fmt"
 	"strconv"
-
-	"go.opentelemetry.io/collector/model/pdata"
+	"time"
 )
 
 // A map of the INFO data returned from Redis.
 type info map[string]string
 
-// Builds metrics from the combination of a metrics map
-// (INFO from Redis) and redisMetrics (built at startup). These are the fixed,
-// non keyspace metrics. Returns a list of parsing errors, which can be treated
-// like warnings.
-func (i info) buildFixedMetrics(metrics []*redisMetric, t *timeBundle) (pdms pdata.MetricSlice, warnings []error) {
-	pdms = pdata.NewMetricSlice()
-	for _, redisMetric := range metrics {
-		strVal, ok := i[redisMetric.key]
-		if !ok {
-			warnings = append(warnings, fmt.Errorf("info key not found: %v", redisMetric.key))
-			continue
-		}
-		if strVal == "" {
-			continue
-		}
-		pdm, parsingError := redisMetric.parseMetric(strVal, t)
-		if parsingError != nil {
-			warnings = append(warnings, parsingError)
-			continue
-		}
-		tgt := pdms.AppendEmpty()
-		pdm.CopyTo(tgt)
-	}
-	return pdms, warnings
-}
-
-// Builds metrics from any 'keyspace' metrics in Redis INFO:
-// e.g. "db0:keys=1,expires=2, avg_ttl=3". Returns metrics and parsing
-// errors, to be treated as warnings, if there were any.
-func (i info) buildKeyspaceMetrics(t *timeBundle) (outMS pdata.MetricSlice, warnings []error) {
-	outMS = pdata.NewMetricSlice()
-	const RedisMaxDbs = 16
-	for db := 0; db < RedisMaxDbs; db++ {
-		key := "db" + strconv.Itoa(db)
-		str, ok := i[key]
-		if !ok {
-			break
-		}
-		keyspace, parsingError := parseKeyspaceString(db, str)
-		if parsingError != nil {
-			warnings = append(warnings, parsingError)
-			continue
-		}
-		ms := buildKeyspaceTriplet(keyspace, t)
-		ms.MoveAndAppendTo(outMS)
-	}
-	return outMS, warnings
-}
-
-func (i info) getUptimeInSeconds() (int, error) {
+func (i info) getUptimeInSeconds() (time.Duration, error) {
 	const uptimeKey = "uptime_in_seconds"
 	uptimeStr, ok := i[uptimeKey]
 	if !ok {
 		return 0, errors.New(uptimeKey + " missing from redis info")
 	}
-	return strconv.Atoi(uptimeStr)
+	sec, err := strconv.Atoi(uptimeStr)
+	if err != nil {
+		return time.Duration(0), err
+	}
+	return time.Duration(sec) * time.Second, nil
 }

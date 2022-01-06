@@ -23,18 +23,22 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver/internal/metadata"
 )
 
 func TestRedisRunnable(t *testing.T) {
 	logger, _ := zap.NewDevelopment()
 	settings := componenttest.NewNopReceiverCreateSettings()
 	settings.Logger = logger
-	runner, err := newRedisScraperWithClient(newFakeClient(), settings)
+	cfg := createDefaultConfig().(*Config)
+	rs := &redisScraper{mb: metadata.NewMetricsBuilder(cfg.Metrics)}
+	runner, err := newRedisScraperWithClient(newFakeClient(), settings, cfg)
 	require.NoError(t, err)
 	md, err := runner.Scrape(context.Background())
 	require.NoError(t, err)
 	// + 6 because there are two keyspace entries each of which has three metrics
-	assert.Equal(t, len(getDefaultRedisMetrics())+6, md.DataPointCount())
+	assert.Equal(t, len(rs.dataPointRecorders())+6, md.DataPointCount())
 	rm := md.ResourceMetrics().At(0)
 	ilm := rm.InstrumentationLibraryMetrics().At(0)
 	il := ilm.InstrumentationLibrary()
