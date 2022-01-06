@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor/keybuilder"
 	"math"
 	"sort"
 	"strings"
@@ -267,7 +268,6 @@ func (p *processorImp) buildMetrics() (*pdata.Metrics, error) {
 	rms := m.ResourceMetrics()
 	for _, key := range p.resourceKeyToDimensions.Keys() {
 		p.lock.Lock()
-		//resourceAttrKey := key
 		cachedResourceAttributesMap, ok := p.resourceKeyToDimensions.Get(key)
 		if !ok {
 			p.lock.Unlock()
@@ -558,33 +558,26 @@ func extractResourceAttrsByKeys(serviceName string, keys []Dimension, resourceAt
 	return dims
 }
 
-func concatDimensionValue(metricKeyBuilder *strings.Builder, value string) {
-	// It's worth noting that from pprof benchmarks, WriteString is the most expensive operation of this processor.
-	// Specifically, the need to grow the underlying []byte slice to make room for the appended string.
-	if metricKeyBuilder.Len() != 0 {
-		metricKeyBuilder.WriteString(metricKeySeparator)
-	}
-	metricKeyBuilder.WriteString(value)
-}
-
 // buildMetricKey builds the metric key from the service name and span metadata such as operation, kind, status_code and
 // will attempt to add any additional dimensions the user has configured that match the span's attributes
 // or resource attributes. If the dimension exists in both, the span's attributes, being the most specific, takes precedence.
 //
 // The metric key is a simple concatenation of dimension values, delimited by a null character.
 func (p *processorImp) buildMetricKey(span pdata.Span, resourceAttrs pdata.AttributeMap) metricKey {
-	var metricKeyBuilder strings.Builder
-	concatDimensionValue(&metricKeyBuilder, span.Name())
-	concatDimensionValue(&metricKeyBuilder, span.Kind().String())
-	concatDimensionValue(&metricKeyBuilder, span.Status().Code().String())
+	mkb := keybuilder.New()
+	mkb.Append(
+		span.Name(),
+		span.Kind().String(),
+		span.Status().Code().String(),
+	)
 
 	for _, d := range p.dimensions {
 		if v, ok := getDimensionValue(d, span.Attributes(), resourceAttrs); ok {
-			concatDimensionValue(&metricKeyBuilder, v.AsString())
+			mkb.Append(v.AsString())
 		}
 	}
 
-	k := metricKey(metricKeyBuilder.String())
+	k := metricKey(mkb.String())
 	return k
 }
 
@@ -594,20 +587,19 @@ func (p *processorImp) buildMetricKey(span pdata.Span, resourceAttrs pdata.Attri
 // The resource attribute key is a simple concatenation of the service name and the other specified resource attribute
 // values, delimited by a null character.
 func (p *processorImp) buildResourceAttrKey(serviceName string, resourceAttr pdata.AttributeMap) resourceKey {
-	var resourceKeyBuilder strings.Builder
-	concatDimensionValue(&resourceKeyBuilder, serviceName)
+	rkb := keybuilder.New()
+	rkb.Append(serviceName)
 
 	for _, ra := range p.resourceAttributes {
 		if attr, ok := resourceAttr.Get(ra.Name); ok {
-
-			concatDimensionValue(&resourceKeyBuilder, attr.AsString())
+			rkb.Append(attr.AsString())
 		} else if ra.Default != nil {
 			// Set the default if configured, otherwise this metric should have no value set for the resource attribute.
-			concatDimensionValue(&resourceKeyBuilder, *ra.Default)
+			rkb.Append(*ra.Default)
 		}
 	}
 
-	k := resourceKey(resourceKeyBuilder.String())
+	k := resourceKey(rkb.String())
 	return k
 }
 
