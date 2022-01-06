@@ -53,7 +53,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation: cumulative
-  couchdb.databases.open:
+  couchdb.database.open:
     enabled: true
     description: The number of open databases.
     unit: "{databases}"
@@ -61,7 +61,7 @@ metrics:
       value_type: int
       monotonic: false
       aggregation: cumulative
-  couchdb.files.open:
+  couchdb.file_descriptor.open:
     enabled: true
     description: The number of open file descriptors.
     unit: "{files}"

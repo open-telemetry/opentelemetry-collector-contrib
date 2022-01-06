@@ -9,9 +9,9 @@ These are the metrics available for this scraper.
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
 | couchdb.average_request_time | The average duration of a served request. | ms | Gauge(Double) | <ul> </ul> |
+| couchdb.database.open | The number of open databases. | {databases} | Sum(Int) | <ul> </ul> |
 | couchdb.database.operations | The number of database operations. | {operations} | Sum(Int) | <ul> <li>operation</li> </ul> |
-| couchdb.databases.open | The number of open databases. | {databases} | Sum(Int) | <ul> </ul> |
-| couchdb.files.open | The number of open file descriptors. | {files} | Sum(Int) | <ul> </ul> |
+| couchdb.file_descriptor.open | The number of open file descriptors. | {files} | Sum(Int) | <ul> </ul> |
 | couchdb.httpd.bulk_requests | The number of bulk requests. | {requests} | Sum(Int) | <ul> </ul> |
 | couchdb.httpd.requests | The number of HTTP requests by method. | {requests} | Sum(Int) | <ul> <li>http.method</li> </ul> |
 | couchdb.httpd.responses | The number of each HTTP status code. | {responses} | Sum(Int) | <ul> <li>http.status_code</li> </ul> |

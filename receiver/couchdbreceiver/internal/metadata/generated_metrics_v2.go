@@ -16,9 +16,9 @@ type MetricSettings struct {
 // MetricsSettings provides settings for couchdbreceiver metrics.
 type MetricsSettings struct {
 	CouchdbAverageRequestTime MetricSettings `mapstructure:"couchdb.average_request_time"`
+	CouchdbDatabaseOpen       MetricSettings `mapstructure:"couchdb.database.open"`
 	CouchdbDatabaseOperations MetricSettings `mapstructure:"couchdb.database.operations"`
-	CouchdbDatabasesOpen      MetricSettings `mapstructure:"couchdb.databases.open"`
-	CouchdbFilesOpen          MetricSettings `mapstructure:"couchdb.files.open"`
+	CouchdbFileDescriptorOpen MetricSettings `mapstructure:"couchdb.file_descriptor.open"`
 	CouchdbHttpdBulkRequests  MetricSettings `mapstructure:"couchdb.httpd.bulk_requests"`
 	CouchdbHttpdRequests      MetricSettings `mapstructure:"couchdb.httpd.requests"`
 	CouchdbHttpdResponses     MetricSettings `mapstructure:"couchdb.httpd.responses"`
@@ -30,13 +30,13 @@ func DefaultMetricsSettings() MetricsSettings {
 		CouchdbAverageRequestTime: MetricSettings{
 			Enabled: true,
 		},
+		CouchdbDatabaseOpen: MetricSettings{
+			Enabled: true,
+		},
 		CouchdbDatabaseOperations: MetricSettings{
 			Enabled: true,
 		},
-		CouchdbDatabasesOpen: MetricSettings{
-			Enabled: true,
-		},
-		CouchdbFilesOpen: MetricSettings{
+		CouchdbFileDescriptorOpen: MetricSettings{
 			Enabled: true,
 		},
 		CouchdbHttpdBulkRequests: MetricSettings{
@@ -103,6 +103,57 @@ func newMetricCouchdbAverageRequestTime(settings MetricSettings) metricCouchdbAv
 	return m
 }
 
+type metricCouchdbDatabaseOpen struct {
+	data     pdata.Metric   // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills couchdb.database.open metric with initial data.
+func (m *metricCouchdbDatabaseOpen) init() {
+	m.data.SetName("couchdb.database.open")
+	m.data.SetDescription("The number of open databases.")
+	m.data.SetUnit("{databases}")
+	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+}
+
+func (m *metricCouchdbDatabaseOpen) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricCouchdbDatabaseOpen) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricCouchdbDatabaseOpen) emit(metrics pdata.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricCouchdbDatabaseOpen(settings MetricSettings) metricCouchdbDatabaseOpen {
+	m := metricCouchdbDatabaseOpen{settings: settings}
+	if settings.Enabled {
+		m.data = pdata.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricCouchdbDatabaseOperations struct {
 	data     pdata.Metric   // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -156,66 +207,15 @@ func newMetricCouchdbDatabaseOperations(settings MetricSettings) metricCouchdbDa
 	return m
 }
 
-type metricCouchdbDatabasesOpen struct {
+type metricCouchdbFileDescriptorOpen struct {
 	data     pdata.Metric   // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills couchdb.databases.open metric with initial data.
-func (m *metricCouchdbDatabasesOpen) init() {
-	m.data.SetName("couchdb.databases.open")
-	m.data.SetDescription("The number of open databases.")
-	m.data.SetUnit("{databases}")
-	m.data.SetDataType(pdata.MetricDataTypeSum)
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
-}
-
-func (m *metricCouchdbDatabasesOpen) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricCouchdbDatabasesOpen) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricCouchdbDatabasesOpen) emit(metrics pdata.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricCouchdbDatabasesOpen(settings MetricSettings) metricCouchdbDatabasesOpen {
-	m := metricCouchdbDatabasesOpen{settings: settings}
-	if settings.Enabled {
-		m.data = pdata.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricCouchdbFilesOpen struct {
-	data     pdata.Metric   // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills couchdb.files.open metric with initial data.
-func (m *metricCouchdbFilesOpen) init() {
-	m.data.SetName("couchdb.files.open")
+// init fills couchdb.file_descriptor.open metric with initial data.
+func (m *metricCouchdbFileDescriptorOpen) init() {
+	m.data.SetName("couchdb.file_descriptor.open")
 	m.data.SetDescription("The number of open file descriptors.")
 	m.data.SetUnit("{files}")
 	m.data.SetDataType(pdata.MetricDataTypeSum)
@@ -223,7 +223,7 @@ func (m *metricCouchdbFilesOpen) init() {
 	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 }
 
-func (m *metricCouchdbFilesOpen) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64) {
+func (m *metricCouchdbFileDescriptorOpen) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -234,14 +234,14 @@ func (m *metricCouchdbFilesOpen) recordDataPoint(start pdata.Timestamp, ts pdata
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricCouchdbFilesOpen) updateCapacity() {
+func (m *metricCouchdbFileDescriptorOpen) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricCouchdbFilesOpen) emit(metrics pdata.MetricSlice) {
+func (m *metricCouchdbFileDescriptorOpen) emit(metrics pdata.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -249,8 +249,8 @@ func (m *metricCouchdbFilesOpen) emit(metrics pdata.MetricSlice) {
 	}
 }
 
-func newMetricCouchdbFilesOpen(settings MetricSettings) metricCouchdbFilesOpen {
-	m := metricCouchdbFilesOpen{settings: settings}
+func newMetricCouchdbFileDescriptorOpen(settings MetricSettings) metricCouchdbFileDescriptorOpen {
+	m := metricCouchdbFileDescriptorOpen{settings: settings}
 	if settings.Enabled {
 		m.data = pdata.NewMetric()
 		m.init()
@@ -471,9 +471,9 @@ func newMetricCouchdbHttpdViews(settings MetricSettings) metricCouchdbHttpdViews
 type MetricsBuilder struct {
 	startTime                       pdata.Timestamp
 	metricCouchdbAverageRequestTime metricCouchdbAverageRequestTime
+	metricCouchdbDatabaseOpen       metricCouchdbDatabaseOpen
 	metricCouchdbDatabaseOperations metricCouchdbDatabaseOperations
-	metricCouchdbDatabasesOpen      metricCouchdbDatabasesOpen
-	metricCouchdbFilesOpen          metricCouchdbFilesOpen
+	metricCouchdbFileDescriptorOpen metricCouchdbFileDescriptorOpen
 	metricCouchdbHttpdBulkRequests  metricCouchdbHttpdBulkRequests
 	metricCouchdbHttpdRequests      metricCouchdbHttpdRequests
 	metricCouchdbHttpdResponses     metricCouchdbHttpdResponses
@@ -494,9 +494,9 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 	mb := &MetricsBuilder{
 		startTime:                       pdata.NewTimestampFromTime(time.Now()),
 		metricCouchdbAverageRequestTime: newMetricCouchdbAverageRequestTime(settings.CouchdbAverageRequestTime),
+		metricCouchdbDatabaseOpen:       newMetricCouchdbDatabaseOpen(settings.CouchdbDatabaseOpen),
 		metricCouchdbDatabaseOperations: newMetricCouchdbDatabaseOperations(settings.CouchdbDatabaseOperations),
-		metricCouchdbDatabasesOpen:      newMetricCouchdbDatabasesOpen(settings.CouchdbDatabasesOpen),
-		metricCouchdbFilesOpen:          newMetricCouchdbFilesOpen(settings.CouchdbFilesOpen),
+		metricCouchdbFileDescriptorOpen: newMetricCouchdbFileDescriptorOpen(settings.CouchdbFileDescriptorOpen),
 		metricCouchdbHttpdBulkRequests:  newMetricCouchdbHttpdBulkRequests(settings.CouchdbHttpdBulkRequests),
 		metricCouchdbHttpdRequests:      newMetricCouchdbHttpdRequests(settings.CouchdbHttpdRequests),
 		metricCouchdbHttpdResponses:     newMetricCouchdbHttpdResponses(settings.CouchdbHttpdResponses),
@@ -513,9 +513,9 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 // defined in metadata and user settings, e.g. delta/cumulative translation.
 func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
 	mb.metricCouchdbAverageRequestTime.emit(metrics)
+	mb.metricCouchdbDatabaseOpen.emit(metrics)
 	mb.metricCouchdbDatabaseOperations.emit(metrics)
-	mb.metricCouchdbDatabasesOpen.emit(metrics)
-	mb.metricCouchdbFilesOpen.emit(metrics)
+	mb.metricCouchdbFileDescriptorOpen.emit(metrics)
 	mb.metricCouchdbHttpdBulkRequests.emit(metrics)
 	mb.metricCouchdbHttpdRequests.emit(metrics)
 	mb.metricCouchdbHttpdResponses.emit(metrics)
@@ -527,19 +527,19 @@ func (mb *MetricsBuilder) RecordCouchdbAverageRequestTimeDataPoint(ts pdata.Time
 	mb.metricCouchdbAverageRequestTime.recordDataPoint(mb.startTime, ts, val)
 }
 
+// RecordCouchdbDatabaseOpenDataPoint adds a data point to couchdb.database.open metric.
+func (mb *MetricsBuilder) RecordCouchdbDatabaseOpenDataPoint(ts pdata.Timestamp, val int64) {
+	mb.metricCouchdbDatabaseOpen.recordDataPoint(mb.startTime, ts, val)
+}
+
 // RecordCouchdbDatabaseOperationsDataPoint adds a data point to couchdb.database.operations metric.
 func (mb *MetricsBuilder) RecordCouchdbDatabaseOperationsDataPoint(ts pdata.Timestamp, val int64, operationAttributeValue string) {
 	mb.metricCouchdbDatabaseOperations.recordDataPoint(mb.startTime, ts, val, operationAttributeValue)
 }
 
-// RecordCouchdbDatabasesOpenDataPoint adds a data point to couchdb.databases.open metric.
-func (mb *MetricsBuilder) RecordCouchdbDatabasesOpenDataPoint(ts pdata.Timestamp, val int64) {
-	mb.metricCouchdbDatabasesOpen.recordDataPoint(mb.startTime, ts, val)
-}
-
-// RecordCouchdbFilesOpenDataPoint adds a data point to couchdb.files.open metric.
-func (mb *MetricsBuilder) RecordCouchdbFilesOpenDataPoint(ts pdata.Timestamp, val int64) {
-	mb.metricCouchdbFilesOpen.recordDataPoint(mb.startTime, ts, val)
+// RecordCouchdbFileDescriptorOpenDataPoint adds a data point to couchdb.file_descriptor.open metric.
+func (mb *MetricsBuilder) RecordCouchdbFileDescriptorOpenDataPoint(ts pdata.Timestamp, val int64) {
+	mb.metricCouchdbFileDescriptorOpen.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordCouchdbHttpdBulkRequestsDataPoint adds a data point to couchdb.httpd.bulk_requests metric.
