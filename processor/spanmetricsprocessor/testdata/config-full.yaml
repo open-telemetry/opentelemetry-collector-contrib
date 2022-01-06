@@ -59,6 +59,12 @@ processors:
       # - calls{operation="/Address",service_name="shippingservice",span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_UNSET"} 1
       - name: http.status_code
 
+
+    resource_attributes_cache_size: 3000
+    resource_attributes:
+      - name: region
+        default: us-east-1
+      - name: host_id
     # The aggregation temporality of the generated metrics.
     # Default: "AGGREGATION_TEMPORALITY_CUMULATIVE"
     aggregation_temporality: "AGGREGATION_TEMPORALITY_DELTA"

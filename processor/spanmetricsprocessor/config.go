@@ -64,6 +64,11 @@ type Config struct {
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/sdk.md
 	// and https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/README.md.
 	ResourceAttributes []Dimension `mapstructure:"resource_attributes"`
+
+	// ResourceAttributesCacheSize defines the size of cache for storing Resource_Attributes, which helps to avoid cache
+	// memory growing indefinitely over the lifetime of the collector.
+	// Optional. See defaultResourceAttributesCacheSize in processor.go for the default value.
+	ResourceAttributesCacheSize int `mapstructure:"resource_attributes_cache_size"`
 }
 
 // GetAggregationTemporality converts the string value given in the config into a MetricAggregationTemporality.

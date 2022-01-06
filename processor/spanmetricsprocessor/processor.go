@@ -16,6 +16,7 @@ package spanmetricsprocessor // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"sort"
@@ -43,7 +44,8 @@ const (
 	metricKeySeparator         = string(byte(0))
 	traceIDKey                 = "trace_id"
 
-	defaultDimensionsCacheSize = 1000
+	defaultDimensionsCacheSize         = 1000
+	defaultResourceAttributesCacheSize = 1000
 )
 
 var (
@@ -97,7 +99,7 @@ type processorImp struct {
 	metricKeyToDimensions *cache.Cache
 	// A cache of resourceattributekey-value maps keyed by a unique identifier formed by a concatenation of its values.
 	// todo - move to use the internal LRU cache
-	resourceKeyToDimensions map[resourceKey]pdata.AttributeMap
+	resourceKeyToDimensions *cache.Cache
 }
 
 func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer consumer.Traces) (*processorImp, error) {
@@ -121,13 +123,12 @@ func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer cons
 		return nil, err
 	}
 
-	if pConfig.DimensionsCacheSize <= 0 {
-		return nil, fmt.Errorf(
-			"invalid cache size: %v, the maximum number of the items in the cache should be positive",
-			pConfig.DimensionsCacheSize,
-		)
-	}
 	metricKeyToDimensionsCache, err := cache.NewCache(pConfig.DimensionsCacheSize)
+	if err != nil {
+		return nil, err
+	}
+
+	resourceKeyToDimensionsCache, err := cache.NewCache(pConfig.ResourceAttributesCacheSize)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +145,7 @@ func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer cons
 		latencyExemplarsData:    make(map[resourceKey]map[metricKey][]exemplarData),
 		nextConsumer:            nextConsumer,
 		dimensions:              pConfig.Dimensions,
-		resourceKeyToDimensions: make(map[resourceKey]pdata.AttributeMap),
+		resourceKeyToDimensions: resourceKeyToDimensionsCache,
 		metricKeyToDimensions:   metricKeyToDimensionsCache,
 	}, nil
 }
@@ -264,10 +265,20 @@ func (p *processorImp) ConsumeTraces(ctx context.Context, traces pdata.Traces) e
 func (p *processorImp) buildMetrics() (*pdata.Metrics, error) {
 	m := pdata.NewMetrics()
 	rms := m.ResourceMetrics()
-	for key, val := range p.resourceKeyToDimensions {
+	for _, key := range p.resourceKeyToDimensions.Keys() {
 		p.lock.Lock()
-		resourceAttrKey := key
-		resourceAttributesMap := val
+		//resourceAttrKey := key
+		cachedResourceAttributesMap, ok := p.resourceKeyToDimensions.Get(key)
+		if !ok {
+			p.lock.Unlock()
+			return nil, errors.New("expected cached resource attributes not found")
+		}
+
+		resourceAttributesMap, ok := cachedResourceAttributesMap.(pdata.AttributeMap)
+		if !ok {
+			p.lock.Unlock()
+			return nil, errors.New("expected cached resource attributes type assertion failed")
+		}
 
 		// If the service name doesn't exist, we treat it as invalid and do not generate a trace
 		if _, ok := resourceAttributesMap.Get(serviceNameKey); !ok {
@@ -287,6 +298,12 @@ func (p *processorImp) buildMetrics() (*pdata.Metrics, error) {
 		ilm.InstrumentationLibrary().SetName(instrumentationLibraryName)
 
 		// build metrics per resource
+		resourceAttrKey, ok := key.(resourceKey)
+		if !ok {
+			p.lock.Unlock()
+			return nil, errors.New("resource key type assertion failed")
+		}
+
 		if err := p.collectCallMetrics(ilm, resourceAttrKey); err != nil {
 			p.lock.Unlock()
 			return nil, err
@@ -301,6 +318,7 @@ func (p *processorImp) buildMetrics() (*pdata.Metrics, error) {
 	}
 
 	p.metricKeyToDimensions.RemoveEvictedItems()
+	p.resourceKeyToDimensions.RemoveEvictedItems()
 
 	// If delta metrics, reset accumulated data
 	if p.config.GetAggregationTemporality() == pdata.MetricAggregationTemporalityDelta {
@@ -452,7 +470,7 @@ func (p *processorImp) resetAccumulatedMetrics() {
 	p.latencySum = make(map[resourceKey]map[metricKey]float64)
 	p.latencyBucketCounts = make(map[resourceKey]map[metricKey][]uint64)
 	p.metricKeyToDimensions.Purge()
-	p.resourceKeyToDimensions = make(map[resourceKey]pdata.AttributeMap)
+	p.resourceKeyToDimensions.Purge()
 }
 
 // updateLatencyExemplars sets the histogram exemplars for the given metric key and append the exemplar data.
@@ -625,9 +643,7 @@ func (p *processorImp) cacheMetricKey(span pdata.Span, k metricKey, resourceAttr
 // cache the dimension key-value map for the resourceAttrKey if there is a cache miss.
 // This enables a lookup of the dimension key-value map when constructing the resource.
 func (p *processorImp) cacheResourceAttrKey(serviceName string, resourceAttrs pdata.AttributeMap, k resourceKey) {
-	if _, ok := p.resourceKeyToDimensions[k]; !ok {
-		p.resourceKeyToDimensions[k] = extractResourceAttrsByKeys(serviceName, p.resourceAttributes, resourceAttrs)
-	}
+	p.resourceKeyToDimensions.ContainsOrAdd(k, extractResourceAttrsByKeys(serviceName, p.resourceAttributes, resourceAttrs))
 }
 
 // copied from prometheus-go-metric-exporter

@@ -39,9 +39,10 @@ func NewFactory() component.ProcessorFactory {
 
 func createDefaultConfig() config.Processor {
 	return &Config{
-		ProcessorSettings:      config.NewProcessorSettings(config.NewComponentID(typeStr)),
-		AggregationTemporality: "AGGREGATION_TEMPORALITY_CUMULATIVE",
-		DimensionsCacheSize:    defaultDimensionsCacheSize,
+		ProcessorSettings:           config.NewProcessorSettings(config.NewComponentID(typeStr)),
+		AggregationTemporality:      "AGGREGATION_TEMPORALITY_CUMULATIVE",
+		DimensionsCacheSize:         defaultDimensionsCacheSize,
+		ResourceAttributesCacheSize: defaultResourceAttributesCacheSize,
 	}
 }
 

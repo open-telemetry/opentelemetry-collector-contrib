@@ -41,17 +41,18 @@ import (
 )
 
 const (
-	stringAttrName         = "stringAttrName"
-	intAttrName            = "intAttrName"
-	doubleAttrName         = "doubleAttrName"
-	boolAttrName           = "boolAttrName"
-	nullAttrName           = "nullAttrName"
-	mapAttrName            = "mapAttrName"
-	arrayAttrName          = "arrayAttrName"
-	notInSpanAttrName0     = "shouldBeInMetric"
-	notInSpanAttrName1     = "shouldNotBeInMetric"
-	regionResourceAttrName = "region"
-	DimensionsCacheSize    = 2
+	stringAttrName              = "stringAttrName"
+	intAttrName                 = "intAttrName"
+	doubleAttrName              = "doubleAttrName"
+	boolAttrName                = "boolAttrName"
+	nullAttrName                = "nullAttrName"
+	mapAttrName                 = "mapAttrName"
+	arrayAttrName               = "arrayAttrName"
+	notInSpanAttrName0          = "shouldBeInMetric"
+	notInSpanAttrName1          = "shouldNotBeInMetric"
+	regionResourceAttrName      = "region"
+	DimensionsCacheSize         = 2
+	ResourceAttributesCacheSize = 2
 
 	resourceAttr1          = "resourceAttr1"
 	resourceAttr2          = "resourceAttr2"
@@ -433,6 +434,12 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, de
 	if err != nil {
 		panic(err)
 	}
+
+	resourceKeyToDimensions, err := cache.NewCache(ResourceAttributesCacheSize)
+	if err != nil {
+		panic(err)
+	}
+
 	return &processorImp{
 		logger:          zaptest.NewLogger(tb),
 		config:          Config{AggregationTemporality: temporality},
@@ -468,7 +475,7 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, de
 			{notInSpanResourceAttr0, &localDefaultNotInSpanAttrVal},
 			{notInSpanResourceAttr1, nil},
 		},
-		resourceKeyToDimensions: make(map[resourceKey]pdata.AttributeMap),
+		resourceKeyToDimensions: resourceKeyToDimensions,
 		metricKeyToDimensions:   metricKeyToDimensions,
 	}
 }

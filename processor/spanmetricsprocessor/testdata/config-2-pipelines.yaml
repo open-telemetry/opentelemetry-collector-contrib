@@ -28,6 +28,7 @@ processors:
   spanmetrics:
     metrics_exporter: prometheus
     dimensions_cache_size: 500
+    resource_attributes_cache_size: 300
 service:
   pipelines:
     traces:
