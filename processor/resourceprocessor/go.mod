@@ -5,14 +5,14 @@ go 1.17
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.41.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.41.1-0.20211222180302-3db1d1146483
-	go.opentelemetry.io/collector/model v0.41.1-0.20211222180302-3db1d1146483
+	go.opentelemetry.io/collector v0.41.1-0.20220105191026-60823e25df1c
+	go.opentelemetry.io/collector/model v0.41.1-0.20220105191026-60823e25df1c
 )
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/knadh/koanf v1.3.3 // indirect
+	github.com/knadh/koanf v1.4.0 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
