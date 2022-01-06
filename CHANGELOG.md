@@ -37,6 +37,7 @@
 - `prometheusreceiver`: Fix metadata fetching when metrics differ by trimmable suffixes (#6932)
 - Sanitize URLs being logged (#7021)
 - `prometheusreceiver`: Fix start time tracking for long scrape intervals (#7053)
+- `signalfxexporter`: Don't use syscall to avoid compilation errors on some platforms (#7062)
 
 ## 💡 Enhancements 💡
 
