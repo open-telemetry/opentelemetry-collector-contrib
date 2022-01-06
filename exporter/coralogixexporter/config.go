@@ -16,7 +16,6 @@ package coralogixexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"fmt"
-	"os"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -46,41 +45,19 @@ type Config struct {
 }
 
 func (c *Config) Validate() error {
-	// check env variables
-	endpoint := c.GRPCClientSettings.Endpoint
-	privateKey := c.PrivateKey
-	appName := c.AppName
-	subSystem := c.SubSystem
-
-	if os.Getenv("CORALOGIX_ENDPOINT") != "" {
-		endpoint = os.Getenv("CORALOGIX_ENDPOINT")
-	}
-	if os.Getenv("CORALOGIX_PRIVATE_KEY") != "" {
-		privateKey = os.Getenv("CORALOGIX_PRIVATE_KEY")
-	}
-	if os.Getenv("CORALOGIX_APPLICATION_NAME") != "" {
-		appName = os.Getenv("CORALOGIX_APPLICATION_NAME")
-	}
-	if os.Getenv("CORALOGIX_SUBSYSTEM_NAME") != "" {
-		subSystem = os.Getenv("CORALOGIX_SUBSYSTEM_NAME")
-	}
-	if endpoint == "" {
+	// validate each parameter and return specific error
+	if c.GRPCClientSettings.Endpoint == "" {
 		return fmt.Errorf("`endpoint` not specified, please fix the configuration file")
 	}
-	if privateKey == "" {
+	if c.PrivateKey == "" {
 		return fmt.Errorf("`privateKey` not specified, please fix the configuration file")
 	}
-	if appName == "" {
+	if c.AppName == "" {
 		return fmt.Errorf("`appName` not specified, please fix the configuration file")
 	}
-	if subSystem == "" {
+	if c.SubSystem == "" {
 		return fmt.Errorf("`subSystem` not specified, please fix the configuration file")
 	}
-
-	c.GRPCClientSettings.Endpoint = endpoint
-	c.PrivateKey = privateKey
-	c.AppName = appName
-	c.SubSystem = subSystem
 
 	// check if headers exists
 	if len(c.GRPCClientSettings.Headers) == 0 {
@@ -90,6 +67,5 @@ func (c *Config) Validate() error {
 		c.GRPCClientSettings.Headers["appName"] = c.AppName
 		c.GRPCClientSettings.Headers["subsystemName"] = c.SubSystem
 	}
-
 	return nil
 }

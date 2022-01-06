@@ -17,19 +17,15 @@ Example configuration:
 exporters:
   coralogix:
     # The Coralogix traces ingress endpoint
-    # May also be specified with the CORALOGIX_ENDPOINT environment variable
     endpoint: "https://api.coralogix.com"
 
     # Your Coralogix private key (sensitive)
-    # May also be specified with the CORALOGIX_PRIVATE_KEY environment variable
-    # Your Coralogix private key is sensitive - you shouldn't define this in the configuration file!
+    # Your Coralogix private key is sensitive
     private_key: "xxx"
 
     # Traces emitted by this OpenTelemetry exporter should be tagged
     # in Coralogix with the following application and subsystem names
-    # May also be specified with the CORALOGIX_APPLICATION_NAME environment variable
     application_name: "MyBusinessEnvironment"
-    # May also be specified with the CORALOGIX_SUBSYSTEM_NAME environment variable
     subsystem_name: "MyBusinessSystem"
 ```
 
