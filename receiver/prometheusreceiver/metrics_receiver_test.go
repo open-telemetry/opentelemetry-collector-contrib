@@ -223,7 +223,7 @@ func verifyTarget1(t *testing.T, td *testData, resourceMetrics []*pdata.Resource
 				{
 					histogramPointComparator: []histogramPointComparator{
 						// TODO: Prometheus Receiver Issue- start_timestamp are incorrect for Summary and Histogram metrics after a failed scrape (issue not yet posted on collector-contrib repo)
-						//compareHistogramStartTimestamp(ts1),
+						compareHistogramStartTimestamp(ts1),
 						compareHistogramTimestamp(ts2),
 						compareHistogram(2600, 5050, []uint64{1100, 500, 500, 500}),
 					},
@@ -235,7 +235,7 @@ func verifyTarget1(t *testing.T, td *testData, resourceMetrics []*pdata.Resource
 				{
 					summaryPointComparator: []summaryPointComparator{
 						// TODO: Prometheus Receiver Issue- start_timestamp are incorrect for Summary and Histogram metrics after a failed scrape (issue not yet posted on collector-contrib repo)
-						//compareSummaryStartTimestamp(ts1),
+						compareSummaryStartTimestamp(ts1),
 						compareSummaryTimestamp(ts2),
 						compareSummary(1001, 5002, [][]float64{{0.01, 1}, {0.9, 6}, {0.99, 8}}),
 					},
@@ -266,7 +266,7 @@ func verifyTarget1(t *testing.T, td *testData, resourceMetrics []*pdata.Resource
 				{
 					numberPointComparator: []numberPointComparator{
 						// TODO: #6360 Prometheus Receiver Issue- start_timestamp should reset if the prior scrape had higher value
-						//compareStartTimestamp(ts3),
+						compareStartTimestamp(ts3),
 						compareTimestamp(ts3),
 						compareDoubleValue(99),
 						compareAttributes(map[string]string{"method": "post", "code": "200"}),
@@ -275,7 +275,7 @@ func verifyTarget1(t *testing.T, td *testData, resourceMetrics []*pdata.Resource
 				{
 					numberPointComparator: []numberPointComparator{
 						// TODO: #6360 Prometheus Receiver Issue- start_timestamp should reset if the prior scrape had higher value
-						//compareStartTimestamp(ts3),
+						compareStartTimestamp(ts3),
 						compareTimestamp(ts3),
 						compareDoubleValue(3),
 						compareAttributes(map[string]string{"method": "post", "code": "400"}),
@@ -288,7 +288,7 @@ func verifyTarget1(t *testing.T, td *testData, resourceMetrics []*pdata.Resource
 				{
 					histogramPointComparator: []histogramPointComparator{
 						// TODO: #6360 Prometheus Receiver Issue- start_timestamp should reset if the prior scrape had higher value
-						//compareHistogramStartTimestamp(ts3),
+						compareHistogramStartTimestamp(ts3),
 						compareHistogramTimestamp(ts3),
 						compareHistogram(2400, 4900, []uint64{900, 500, 500, 500}),
 					},
@@ -300,7 +300,7 @@ func verifyTarget1(t *testing.T, td *testData, resourceMetrics []*pdata.Resource
 				{
 					summaryPointComparator: []summaryPointComparator{
 						// TODO: #6360 Prometheus Receiver Issue- start_timestamp should reset if the prior scrape had higher value
-						//compareSummaryStartTimestamp(ts3),
+						compareSummaryStartTimestamp(ts3),
 						compareSummaryTimestamp(ts3),
 						compareSummary(900, 4900, [][]float64{{0.01, 1}, {0.9, 4}, {0.99, 6}}),
 					},
