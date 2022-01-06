@@ -96,6 +96,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver"
@@ -163,6 +164,7 @@ func Components() (component.Factories, error) {
 		awsecscontainermetricsreceiver.NewFactory(),
 		awsxrayreceiver.NewFactory(),
 		carbonreceiver.NewFactory(),
+		cloudfoundryreceiver.NewFactory(),
 		collectdreceiver.NewFactory(),
 		dockerstatsreceiver.NewFactory(),
 		dotnetdiagnosticsreceiver.NewFactory(),
