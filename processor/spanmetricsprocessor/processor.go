@@ -243,12 +243,19 @@ func (p *processorImp) Capabilities() consumer.Capabilities {
 // The original input trace data will be forwarded to the next consumer, unmodified.
 func (p *processorImp) ConsumeTraces(ctx context.Context, traces pdata.Traces) error {
 	defer func() {
+		p.lock.Lock()
 		p.reset()
+		p.lock.Unlock()
 	}()
 
+	p.lock.Lock()
 	p.aggregateMetrics(traces)
+	p.lock.Unlock()
 
+	p.lock.RLock()
 	m, err := p.buildMetrics()
+	p.lock.RUnlock()
+
 	if err != nil {
 		return err
 	}
@@ -268,22 +275,18 @@ func (p *processorImp) buildMetrics() (*pdata.Metrics, error) {
 	m := pdata.NewMetrics()
 	rms := m.ResourceMetrics()
 	for _, key := range p.resourceKeyToDimensions.Keys() {
-		p.lock.Lock()
 		cachedResourceAttributesMap, ok := p.resourceKeyToDimensions.Get(key)
 		if !ok {
-			p.lock.Unlock()
 			return nil, errors.New("expected cached resource attributes not found")
 		}
 
 		resourceAttributesMap, ok := cachedResourceAttributesMap.(pdata.AttributeMap)
 		if !ok {
-			p.lock.Unlock()
 			return nil, errors.New("expected cached resource attributes type assertion failed")
 		}
 
 		// If the service name doesn't exist, we treat it as invalid and do not generate a trace
 		if _, exist := resourceAttributesMap.Get(serviceNameKey); !exist {
-			p.lock.Unlock()
 			continue
 		}
 
@@ -301,21 +304,17 @@ func (p *processorImp) buildMetrics() (*pdata.Metrics, error) {
 		// build metrics per resource
 		resourceAttrKey, ok := key.(resourceKey)
 		if !ok {
-			p.lock.Unlock()
 			return nil, errors.New("resource key type assertion failed")
 		}
 
 		if err := p.collectCallMetrics(ilm, resourceAttrKey); err != nil {
-			p.lock.Unlock()
 			return nil, err
 		}
 
 		if err := p.collectLatencyMetrics(ilm, resourceAttrKey); err != nil {
-			p.lock.Unlock()
 			return nil, err
 		}
 
-		p.lock.Unlock()
 	}
 	return &m, nil
 }
@@ -429,13 +428,11 @@ func (p *processorImp) aggregateMetricsForSpan(serviceName string, span pdata.Sp
 	mKey := p.buildMetricKey(span, resourceAttr)
 	resourceAttrKey := p.buildResourceAttrKey(serviceName, resourceAttr)
 
-	p.lock.Lock()
 	p.cacheMetricKey(span, mKey, resourceAttr)
 	p.cacheResourceAttrKey(serviceName, resourceAttr, resourceAttrKey)
 	p.updateCallMetrics(resourceAttrKey, mKey)
 	p.updateLatencyMetrics(resourceAttrKey, mKey, latencyInMilliseconds, index)
 	p.updateLatencyExemplars(resourceAttrKey, mKey, latencyInMilliseconds, span.TraceID())
-	p.lock.Unlock()
 }
 
 // updateCallMetrics increments the call count for the given metric key.
