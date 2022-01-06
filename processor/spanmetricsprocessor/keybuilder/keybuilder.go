@@ -17,7 +17,7 @@ package keybuilder // import "github.com/open-telemetry/opentelemetry-collector-
 import "strings"
 
 const (
-	separator = string(byte(0))
+	separator       = string(byte(0))
 	defaultCapacity = 1024
 )
 
