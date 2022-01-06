@@ -16,6 +16,7 @@ package components
 
 import (
 	"context"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage"
 	"testing"
 	"time"
 
@@ -151,6 +152,16 @@ func TestDefaultExtensions(t *testing.T) {
 		{
 			extension:     "oidc",
 			skipLifecycle: true, // Requires a running OIDC server in order to complete life cycle testing
+		},
+		{
+			extension: "db_storage",
+			getConfigFn: func() config.Extension {
+				cfg := extFactories["db_storage"].CreateDefaultConfig().(*dbstorage.Config)
+				cfg.DriverName = "sqlite3"
+				tempFolder := testutil.NewTemporaryDirectory(t)
+				cfg.DataSource = tempFolder + "/foo.db"
+				return cfg
+			},
 		},
 		{
 			extension: "file_storage",
