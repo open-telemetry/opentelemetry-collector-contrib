@@ -60,6 +60,7 @@ func NewOcaStore(
 	ctx context.Context,
 	sink consumer.Metrics,
 	set component.ReceiverCreateSettings,
+	gcInterval time.Duration,
 	useStartTimeMetric bool,
 	startTimeMetricRegex string,
 	receiverID config.ComponentID,
@@ -67,7 +68,7 @@ func NewOcaStore(
 	pdataDirect bool) *OcaStore {
 	var jobsMap *JobsMapPdata
 	if !useStartTimeMetric {
-		jobsMap = NewJobsMapPdata(2 * time.Minute)
+		jobsMap = NewJobsMapPdata(gcInterval)
 	}
 	return &OcaStore{
 		running:              runningStateInit,
