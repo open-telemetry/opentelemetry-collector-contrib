@@ -116,6 +116,11 @@ require (
 )
 
 require (
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza v0.41.0
+	github.com/shirou/gopsutil v3.21.10+incompatible // indirect
+)
+
+require (
 	bitbucket.org/atlassian/go-asap/v2 v2.6.0 // indirect
 	cloud.google.com/go v0.99.0 // indirect
 	cloud.google.com/go/monitoring v1.1.0 // indirect
@@ -292,6 +297,7 @@ require (
 	github.com/olivere/elastic v6.2.37+incompatible // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.41.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.41.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cloudwatch v0.41.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.41.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.41.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s v0.41.0 // indirect
@@ -435,11 +441,6 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.1.2 // indirect
 	sigs.k8s.io/yaml v1.2.0 // indirect
 	skywalking.apache.org/repo/goapi v0.0.0-20211122071111-ffc517fbfe21 // indirect
-)
-
-require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza v0.41.0
-	github.com/shirou/gopsutil v3.21.10+incompatible // indirect
 )
 
 // Replace references to modules that are in this repository with their relateive paths
