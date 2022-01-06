@@ -249,6 +249,8 @@ func (p *processorImp) ConsumeTraces(ctx context.Context, traces pdata.Traces) e
 		return err
 	}
 
+	p.reset()
+
 	// Firstly, export metrics to avoid being impacted by downstream trace processor errors/latency.
 	if err := p.metricsExporter.ConsumeMetrics(ctx, *m); err != nil {
 		return err
@@ -314,16 +316,6 @@ func (p *processorImp) buildMetrics() (*pdata.Metrics, error) {
 
 		p.lock.Unlock()
 	}
-
-	p.metricKeyToDimensions.RemoveEvictedItems()
-	p.resourceKeyToDimensions.RemoveEvictedItems()
-
-	// If delta metrics, reset accumulated data
-	if p.config.GetAggregationTemporality() == pdata.MetricAggregationTemporalityDelta {
-		p.resetAccumulatedMetrics()
-	}
-	p.resetExemplarData()
-
 	return &m, nil
 }
 
@@ -458,6 +450,18 @@ func (p *processorImp) updateCallMetrics(resourceAttrKey resourceKey, mKey metri
 	}
 
 	p.callSum[resourceAttrKey][mKey]++
+}
+
+func (p *processorImp) reset() {
+	// If delta metrics, reset accumulated data
+	if p.config.GetAggregationTemporality() == pdata.MetricAggregationTemporalityDelta {
+		p.resetAccumulatedMetrics()
+	} else {
+		p.metricKeyToDimensions.RemoveEvictedItems()
+		p.resourceKeyToDimensions.RemoveEvictedItems()
+	}
+
+	p.resetExemplarData()
 }
 
 // resetAccumulatedMetrics resets the internal maps used to store created metric data. Also purge the cache for
