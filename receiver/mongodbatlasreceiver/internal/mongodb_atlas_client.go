@@ -52,11 +52,11 @@ func (rt *RetryBackoffRoundTripper) RoundTrip(r *http.Request) (*http.Response, 
 			Stop:                backoff.Stop,
 			Clock:               backoff.SystemClock,
 		}
-		withRetries := backoff.WithMaxRetries(expBackoff, uint64(rt.Attempts))
+		withRetries := backoff.WithMaxRetries(expBackoff, rt.Attempts)
 		withRetries.Reset()
 		attempts := 0
 		for {
-			attempts += 1
+			attempts++
 			delay := expBackoff.NextBackOff()
 			if delay == backoff.Stop {
 				return resp, err
