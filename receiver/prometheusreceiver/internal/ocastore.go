@@ -45,8 +45,7 @@ type OcaStore struct {
 	running              int32 // access atomically
 	sink                 consumer.Metrics
 	mc                   *metadataService
-	jobsMapPdata         *JobsMapPdata
-	jobsMapOC            *JobsMap
+	jobsMap              *JobsMapPdata
 	useStartTimeMetric   bool
 	startTimeMetricRegex string
 	receiverID           config.ComponentID
@@ -61,24 +60,22 @@ func NewOcaStore(
 	ctx context.Context,
 	sink consumer.Metrics,
 	set component.ReceiverCreateSettings,
+	gcInterval time.Duration,
 	useStartTimeMetric bool,
 	startTimeMetricRegex string,
 	receiverID config.ComponentID,
 	externalLabels labels.Labels,
 	pdataDirect bool) *OcaStore {
-	var jobsMapPdata *JobsMapPdata
-	var jobsMapOC *JobsMap
+	var jobsMap *JobsMapPdata
 	if !useStartTimeMetric {
-		jobsMapPdata = NewJobsMapPdata(2 * time.Minute)
-		jobsMapOC = NewJobsMap(2 * time.Minute)
+		jobsMap = NewJobsMapPdata(gcInterval)
 	}
 	return &OcaStore{
 		running:              runningStateInit,
 		ctx:                  ctx,
 		sink:                 sink,
 		settings:             set,
-		jobsMapPdata:         jobsMapPdata,
-		jobsMapOC:            jobsMapOC,
+		jobsMap:              jobsMap,
 		useStartTimeMetric:   useStartTimeMetric,
 		startTimeMetricRegex: startTimeMetricRegex,
 		receiverID:           receiverID,
@@ -102,7 +99,7 @@ func (o *OcaStore) Appender(context.Context) storage.Appender {
 			return newTransactionPdata(
 				o.ctx,
 				&txConfig{
-					jobsMap:              o.jobsMapPdata,
+					jobsMap:              o.jobsMap,
 					useStartTimeMetric:   o.useStartTimeMetric,
 					startTimeMetricRegex: o.startTimeMetricRegex,
 					receiverID:           o.receiverID,
@@ -115,7 +112,7 @@ func (o *OcaStore) Appender(context.Context) storage.Appender {
 		}
 		return newTransaction(
 			o.ctx,
-			o.jobsMapOC,
+			o.jobsMap,
 			o.useStartTimeMetric,
 			o.startTimeMetricRegex,
 			o.receiverID,

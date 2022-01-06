@@ -34,17 +34,9 @@ var (
 	bounds0  = []float64{1, 2, 4}
 	percent0 = []float64{10, 50, 90}
 
-	g1       = "gauge1"
-	gd1      = "gaugedist1"
-	c1       = "cumulative1"
-	cd1      = "cumulativedist1"
-	s1       = "summary1"
-	k1       = []string{"k1"}
-	k1k2     = []string{"k1", "k2"}
-	k1k2k3   = []string{"k1", "k2", "k3"}
-	v1v2     = []string{"v1", "v2"}
-	v10v20   = []string{"v10", "v20"}
-	v100v200 = []string{"v100", "v200"}
+	c1  = "cumulative1"
+	cd1 = "cumulativedist1"
+	s1  = "summary1"
 )
 
 func Test_gauge_pdata(t *testing.T) {
@@ -977,7 +969,7 @@ func runScriptPdata(t *testing.T, tsm *timeseriesMapPdata, script []*metricsAdju
 
 	for _, test := range script {
 		expectedResets := test.resets
-		resets := ma.AdjustMetrics(test.metrics)
+		resets := ma.AdjustMetricSlice(test.metrics)
 		adjusted := test.metrics
 		assert.EqualValuesf(t, test.adjusted, adjusted, "Test: %v - expected: %v, actual: %v", test.description, test.adjusted, adjusted)
 		assert.Equalf(t, expectedResets, resets, "Test: %v", test.description)
