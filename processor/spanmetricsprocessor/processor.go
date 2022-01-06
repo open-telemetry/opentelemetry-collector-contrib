@@ -281,7 +281,7 @@ func (p *processorImp) buildMetrics() (*pdata.Metrics, error) {
 		}
 
 		// If the service name doesn't exist, we treat it as invalid and do not generate a trace
-		if _, ok := resourceAttributesMap.Get(serviceNameKey); !ok {
+		if _, exist := resourceAttributesMap.Get(serviceNameKey); !exist {
 			p.lock.Unlock()
 			continue
 		}
