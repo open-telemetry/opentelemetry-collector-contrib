@@ -19,24 +19,24 @@ import (
 	"go.uber.org/zap"
 )
 
-type Combined struct {
+type And struct {
 	// the subpolicy evaluators
 	subpolicies []PolicyEvaluator
 	logger      *zap.Logger
 }
 
-func NewCombined(
+func NewAnd(
 	logger *zap.Logger,
 	subpolicies []PolicyEvaluator,
 ) PolicyEvaluator {
 
-	return &Combined{
+	return &And{
 		subpolicies: subpolicies,
 		logger:      logger,
 	}
 }
 
-func (c *Combined) Evaluate(traceID pdata.TraceID, trace *TraceData) (Decision, error) {
+func (c *And) Evaluate(traceID pdata.TraceID, trace *TraceData) (Decision, error) {
 	for _, sub := range c.subpolicies {
 		decision, err := sub.Evaluate(traceID, trace)
 		if err != nil {
@@ -50,11 +50,11 @@ func (c *Combined) Evaluate(traceID pdata.TraceID, trace *TraceData) (Decision, 
 	return Sampled, nil
 }
 
-func (c *Combined) OnLateArrivingSpans(Decision, []*pdata.Span) error {
+func (c *And) OnLateArrivingSpans(Decision, []*pdata.Span) error {
 	c.logger.Debug("Spans are arriving late, decision is already made!!!")
 	return nil
 }
 
-func (c *Combined) OnDroppedSpans(pdata.TraceID, *TraceData) (Decision, error) {
+func (c *And) OnDroppedSpans(pdata.TraceID, *TraceData) (Decision, error) {
 	return Sampled, nil
 }

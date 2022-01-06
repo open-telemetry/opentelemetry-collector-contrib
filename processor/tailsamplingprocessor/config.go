@@ -42,8 +42,8 @@ const (
 	RateLimiting PolicyType = "rate_limiting"
 	// Composite allows defining a composite policy, combining the other policies in one
 	Composite PolicyType = "composite"
-	// Combined allows defining a combined policy, combining the other policies in one
-	Combined PolicyType = "combined"
+	// And allows defining a And policy, combining the other policies in one
+	And PolicyType = "and"
 )
 
 // SubPolicyCfg holds the common configuration to all policies under composite policy.
@@ -68,11 +68,11 @@ type SubPolicyCfg struct {
 	LatencyCfg LatencyCfg `mapstructure:"latency"`
 	// Configs for status code filter sampling policy evaluator.
 	StatusCodeCfg StatusCodeCfg `mapstructure:"status_code"`
-	// Configs for combined policy evaluator.
-	CombinedCfg CombinedCfg `mapstructure:"combined"`
+	// Configs for and policy evaluator.
+	AndCfg AndCfg `mapstructure:"and"`
 }
 
-type CombinedSubPolicyCfg struct {
+type AndSubPolicyCfg struct {
 	// Name given to the instance of the policy to make easy to identify it in metrics and logs.
 	Name string `mapstructure:"name"`
 	// Type of the policy this will be used to match the proper configuration of the policy.
@@ -89,8 +89,8 @@ type CombinedSubPolicyCfg struct {
 	StatusCodeCfg StatusCodeCfg `mapstructure:"status_code"`
 }
 
-type CombinedCfg struct {
-	SubPolicyCfg []CombinedSubPolicyCfg `mapstructure:"combined_sub_policy"`
+type AndCfg struct {
+	SubPolicyCfg []AndSubPolicyCfg `mapstructure:"and_sub_policy"`
 }
 
 // CompositeCfg holds the configurable settings to create a composite
@@ -128,8 +128,8 @@ type PolicyCfg struct {
 	RateLimitingCfg RateLimitingCfg `mapstructure:"rate_limiting"`
 	// Configs for defining composite policy
 	CompositeCfg CompositeCfg `mapstructure:"composite"`
-	// Configs for defining combined policy
-	CombinedCfg CombinedCfg `mapstructure:"combined"`
+	// Configs for defining and policy
+	AndCfg AndCfg `mapstructure:"and"`
 }
 
 // LatencyCfg holds the configurable settings to create a latency filter sampling policy

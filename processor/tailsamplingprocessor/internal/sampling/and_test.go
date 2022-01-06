@@ -30,7 +30,7 @@ func TestCombinedEvaluatorNotSampled(t *testing.T) {
 		t.FailNow()
 	}
 
-	combined := NewCombined(zap.NewNop(), []PolicyEvaluator{n1, n2})
+	and := NewAnd(zap.NewNop(), []PolicyEvaluator{n1, n2})
 
 	traces := pdata.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
@@ -44,8 +44,8 @@ func TestCombinedEvaluatorNotSampled(t *testing.T) {
 	trace := &TraceData{
 		ReceivedBatches: []pdata.Traces{traces},
 	}
-	decision, err := combined.Evaluate(traceID, trace)
-	require.NoError(t, err, "Failed to evaluate combined policy: %v", err)
+	decision, err := and.Evaluate(traceID, trace)
+	require.NoError(t, err, "Failed to evaluate and policy: %v", err)
 	assert.Equal(t, decision, NotSampled)
 
 }
@@ -53,9 +53,11 @@ func TestCombinedEvaluatorNotSampled(t *testing.T) {
 func TestCombinedEvaluatorSampled(t *testing.T) {
 	n1 := NewStringAttributeFilter(zap.NewNop(), "attribute_name", []string{"attribute_value"}, false, 0, false)
 	n2, err := NewStatusCodeFilter(zap.NewNop(), []string{"ERROR"})
-	require.NoError(t, err, "Failed to evaluate combined policy: %v", err)
+	if err != nil {
+		t.FailNow()
+	}
 
-	combined := NewCombined(zap.NewNop(), []PolicyEvaluator{n1, n2})
+	and := NewAnd(zap.NewNop(), []PolicyEvaluator{n1, n2})
 
 	traces := pdata.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
@@ -70,8 +72,8 @@ func TestCombinedEvaluatorSampled(t *testing.T) {
 	trace := &TraceData{
 		ReceivedBatches: []pdata.Traces{traces},
 	}
-	decision, err := combined.Evaluate(traceID, trace)
-	require.NoError(t, err, "Failed to evaluate combined policy: %v", err)
+	decision, err := and.Evaluate(traceID, trace)
+	require.NoError(t, err, "Failed to evaluate and policy: %v", err)
 	assert.Equal(t, decision, Sampled)
 
 }

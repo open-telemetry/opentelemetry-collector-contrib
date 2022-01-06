@@ -22,18 +22,18 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 )
 
-func getNewCombinedPolicy(logger *zap.Logger, config CombinedCfg) (sampling.PolicyEvaluator, error) {
+func getNewAndPolicy(logger *zap.Logger, config AndCfg) (sampling.PolicyEvaluator, error) {
 	var subPolicyEvaluators []sampling.PolicyEvaluator
 	for i := range config.SubPolicyCfg {
 		policyCfg := config.SubPolicyCfg[i]
-		policy, _ := getCombinedSubPolicyEvaluator(logger, &policyCfg)
+		policy, _ := getAndSubPolicyEvaluator(logger, &policyCfg)
 		subPolicyEvaluators = append(subPolicyEvaluators, policy)
 	}
-	return sampling.NewCombined(logger, subPolicyEvaluators), nil
+	return sampling.NewAnd(logger, subPolicyEvaluators), nil
 }
 
 // Return instance of combined sub-policy
-func getCombinedSubPolicyEvaluator(logger *zap.Logger, cfg *CombinedSubPolicyCfg) (sampling.PolicyEvaluator, error) {
+func getAndSubPolicyEvaluator(logger *zap.Logger, cfg *AndSubPolicyCfg) (sampling.PolicyEvaluator, error) {
 	switch cfg.Type {
 	case AlwaysSample:
 		return sampling.NewAlwaysSample(logger), nil

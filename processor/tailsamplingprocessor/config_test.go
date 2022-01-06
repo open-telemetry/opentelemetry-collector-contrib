@@ -79,17 +79,17 @@ func TestLoadConfig(t *testing.T) {
 					RateLimitingCfg: RateLimitingCfg{SpansPerSecond: 35},
 				},
 				{
-					Name: "combined-policy-1",
-					Type: Combined,
-					CombinedCfg: CombinedCfg{
-						SubPolicyCfg: []CombinedSubPolicyCfg{
+					Name: "and-policy-1",
+					Type: And,
+					AndCfg: AndCfg{
+						SubPolicyCfg: []AndSubPolicyCfg{
 							{
-								Name:                "test-combined-policy-1",
+								Name:                "test-and-policy-1",
 								Type:                NumericAttribute,
 								NumericAttributeCfg: NumericAttributeCfg{Key: "key1", MinValue: 50, MaxValue: 100},
 							},
 							{
-								Name:               "test-combined-policy-2",
+								Name:               "test-and-policy-2",
 								Type:               StringAttribute,
 								StringAttributeCfg: StringAttributeCfg{Key: "key2", Values: []string{"value1", "value2"}},
 							},

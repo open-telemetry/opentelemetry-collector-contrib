@@ -46,18 +46,18 @@ processors:
             rate_limiting: {spans_per_second: 35}
          },
          {
-            name: combined-policy-1,
-            type: combined,
-            combined: {
-              combined_sub_policy: 
+            name: and-policy-1,
+            type: and,
+            and: {
+              and_sub_policy: 
               [
                 {
-                  name: test-combined-policy-1,
+                  name: test-and-policy-1,
                   type: numeric_attribute,
                   numeric_attribute: { key: key1, min_value: 50, max_value: 100 }
                 },
                 {
-                    name: test-combined-policy-2,
+                    name: test-and-policy-2,
                     type: string_attribute,
                     string_attribute: { key: key2, values: [ value1, value2 ] }
                 },
