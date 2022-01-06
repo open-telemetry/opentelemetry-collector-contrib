@@ -113,11 +113,13 @@ func TestCreateMetricsExporter_CustomConfig(t *testing.T) {
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		AccessToken:      "testToken",
 		Realm:            "us1",
-		Headers: map[string]string{
-			"added-entry": "added value",
-			"dot.test":    "test",
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Timeout: 2 * time.Second,
+			Headers: map[string]string{
+				"added-entry": "added value",
+				"dot.test":    "test",
+			},
 		},
-		HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 2 * time.Second},
 	}
 
 	te, err := createMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), config)

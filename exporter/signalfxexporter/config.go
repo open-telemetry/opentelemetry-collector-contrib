@@ -59,12 +59,6 @@ type Config struct {
 	// value takes precedence over the value of Realm
 	APIURL string `mapstructure:"api_url"`
 
-	// Headers are a set of headers to be added to the HTTP request sending
-	// trace data. These can override pre-defined header values used by the
-	// exporter, eg: "User-Agent" can be set to a custom value if specified
-	// here.
-	Headers map[string]string `mapstructure:"headers"`
-
 	// Whether to log datapoints dispatched to Splunk Observability Cloud
 	LogDataPoints bool `mapstructure:"log_data_points"`
 

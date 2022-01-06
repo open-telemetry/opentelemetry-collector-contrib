@@ -67,10 +67,6 @@ func TestLoadConfig(t *testing.T) {
 		AccessToken:      "testToken",
 		Realm:            "us1",
 		MaxConnections:   &maxConnections,
-		Headers: map[string]string{
-			"added-entry": "added value",
-			"dot.test":    "test",
-		},
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Timeout: 2 * time.Second,
 			Headers: map[string]string{
@@ -328,8 +324,8 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 				APIURL:           tt.fields.APIURL,
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Timeout: tt.fields.Timeout,
+					Headers: tt.fields.Headers,
 				},
-				Headers:             tt.fields.Headers,
 				TranslationRules:    tt.fields.TranslationRules,
 				SyncHostMetadata:    tt.fields.SyncHostMetadata,
 				DeltaTranslationTTL: 3600,

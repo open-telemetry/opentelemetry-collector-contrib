@@ -84,8 +84,7 @@ func TestNew(t *testing.T) {
 				ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
 				AccessToken:        "someToken",
 				Realm:              "xyz",
-				HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 1 * time.Second},
-				Headers:            nil,
+				HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 1 * time.Second, Headers: nil},
 			},
 		},
 		{
@@ -94,8 +93,7 @@ func TestNew(t *testing.T) {
 				ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
 				AccessToken:        "someToken",
 				Realm:              "xyz",
-				HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 1 * time.Second},
-				Headers:            nil,
+				HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 1 * time.Second, Headers: nil},
 				SyncHostMetadata:   true,
 			},
 		},
@@ -445,8 +443,7 @@ func TestNewEventExporter(t *testing.T) {
 		ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
 		AccessToken:        "someToken",
 		IngestURL:          "asdf://:%",
-		HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 1 * time.Second},
-		Headers:            nil,
+		HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 1 * time.Second, Headers: nil},
 	}
 
 	got, err = newEventExporter(cfg, zap.NewNop())
@@ -456,8 +453,7 @@ func TestNewEventExporter(t *testing.T) {
 	cfg = &Config{
 		AccessToken:        "someToken",
 		Realm:              "xyz",
-		HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 1 * time.Second},
-		Headers:            nil,
+		HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 1 * time.Second, Headers: nil},
 	}
 
 	got, err = newEventExporter(cfg, zap.NewNop())
@@ -1062,8 +1058,7 @@ func TestGetHTTPClient(t *testing.T) {
 					ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
 					AccessToken:        "someToken",
 					Realm:              "xyz",
-					HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 1 * time.Second},
-					Headers:            nil,
+					HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 1 * time.Second, Headers: nil},
 					SyncHostMetadata:   true,
 				},
 			},
@@ -1081,8 +1076,8 @@ func TestGetHTTPClient(t *testing.T) {
 						Timeout:             1 * time.Second,
 						MaxIdleConns:        &maxIdleConns,
 						MaxIdleConnsPerHost: &maxIdleConnsPerHost,
+						Headers:             nil,
 					},
-					Headers:          nil,
 					SyncHostMetadata: true,
 					MaxConnections:   &maxConnections,
 				},
@@ -1099,8 +1094,8 @@ func TestGetHTTPClient(t *testing.T) {
 					Realm:            "xyz",
 					HTTPClientSettings: confighttp.HTTPClientSettings{
 						Timeout: 1 * time.Second,
+						Headers: nil,
 					},
-					Headers:          nil,
 					SyncHostMetadata: true,
 					MaxConnections:   &maxConnections,
 				},
