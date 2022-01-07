@@ -32,9 +32,10 @@ The following settings are optional:
   - For a sharded MongoDB deployment, please specify a list of the `mongos` hosts.
 - `username`: If authentication is required, the user can with `clusterMonitor` permissions can be provided here.
 - `password`: If authentication is required, the password can be provided here.
-- `collection_interval` (default = `60s`): This receiver collects metrics on an interval. This value must be a string readable by Golang's [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
+- `collection_interval`: (default = `1m`): This receiver collects metrics on an interval. This value must be a string readable by Golang's [time.ParseDuration](https://pkg.go.dev/time#ParseDuration). Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
 - `replica_set`: If the deployment of MongoDB is a replica set then this allows users to specify the replica set name which allows for autodiscovery of other nodes in the replica set.
-- `tls` (defaults defined [here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md)): TLS control. By default insecure settings are rejected and certificate verification is on.
+- `timeout`: (default = `1m`) The timeout of running commands against mongo.
+- `tls`: (defaults defined [here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md)): TLS control. By default insecure settings are rejected and certificate verification is on.
 
 ### Example Configuration
 

@@ -45,9 +45,9 @@ func createDefaultConfig() config.Receiver {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			CollectionInterval: 60 * time.Second,
+			CollectionInterval: time.Minute,
 		},
-		Timeout: 1 * time.Minute,
+		Timeout: time.Minute,
 		Hosts: []confignet.NetAddr{
 			{
 				Endpoint: "localhost:27017",
