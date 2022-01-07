@@ -44,12 +44,9 @@ func createDefaultConfig() config.Receiver {
 			CollectionInterval: 10 * time.Second,
 		},
 		HTTPClientSettings: confighttp.HTTPClientSettings{
-			TLSSetting: configtls.TLSClientSetting{
-				Insecure:           false,
-				InsecureSkipVerify: true,
-			},
-			Endpoint: defaultEndpoint,
-			Timeout:  10 * time.Second,
+			TLSSetting: configtls.TLSClientSetting{},
+			Endpoint:   defaultEndpoint,
+			Timeout:    10 * time.Second,
 		},
 	}
 }
