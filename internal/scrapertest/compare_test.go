@@ -16,140 +16,240 @@ package scrapertest
 
 import (
 	"errors"
-	"fmt"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
 )
 
-// TestCompareMetrics tests the ability of comparing one metric slice to another
-func TestCompareMetrics(t *testing.T) {
+type expectation struct {
+	err    error
+	reason string
+}
+
+func (e expectation) validate(t *testing.T, err error) {
+	if e.err == nil {
+		require.NoError(t, err, e.reason)
+		return
+	}
+	require.Equal(t, e.err, err, e.reason)
+}
+
+func TestCompareMetricSlices(t *testing.T) {
 	tcs := []struct {
-		name          string
-		expectedError error
+		name           string
+		compareOptions []CompareOption // when no options are used
+		withoutOptions expectation
+		withOptions    expectation
 	}{
 		{
 			name: "equal",
 		},
 		{
-			name:          "metric-slice-extra",
-			expectedError: errors.New("metric slices not of same length"),
+			name: "metric-slice-extra",
+			withoutOptions: expectation{
+				err:    errors.New("metric slices not of same length"),
+				reason: "A metric slice with an extra metric should cause a failure.",
+			},
 		},
 		{
-			name:          "metric-slice-missing",
-			expectedError: errors.New("metric slices not of same length"),
+			name: "metric-slice-missing",
+			withoutOptions: expectation{
+				err:    errors.New("metric slices not of same length"),
+				reason: "A metric slice with a missing metric should cause a failure.",
+			},
 		},
 		{
-			name:          "metric-type-expect-gauge",
-			expectedError: errors.New("metric DataType does not match expected: Gauge, actual: Sum"),
+			name: "metric-type-expect-gauge",
+			withoutOptions: expectation{
+				err:    errors.New("metric DataType does not match expected: Gauge, actual: Sum"),
+				reason: "A metric with the wrong instrument type should cause a failure.",
+			},
 		},
 		{
-			name:          "metric-type-expect-sum",
-			expectedError: errors.New("metric DataType does not match expected: Sum, actual: Gauge"),
+			name: "metric-type-expect-sum",
+			withoutOptions: expectation{
+				err:    errors.New("metric DataType does not match expected: Sum, actual: Gauge"),
+				reason: "A metric with the wrong instrument type should cause a failure.",
+			},
 		},
 		{
 			name: "metric-name-mismatch",
-			expectedError: multierr.Combine(
-				errors.New("unexpected metric: wrong.name"),
-				errors.New("missing expected metric: expected.name"),
-			),
+			withoutOptions: expectation{
+				err: multierr.Combine(
+					errors.New("unexpected metric: wrong.name"),
+					errors.New("missing expected metric: expected.name"),
+				),
+				reason: "A metric with a different name is a different (extra) metric. The expected metric is missing.",
+			},
 		},
 		{
-			name:          "metric-description-mismatch",
-			expectedError: errors.New("metric Description does not match expected: Gauge One, actual: Gauge Two"),
+			name: "metric-description-mismatch",
+			withoutOptions: expectation{
+				err:    errors.New("metric Description does not match expected: Gauge One, actual: Gauge Two"),
+				reason: "A metric with the wrong description should cause a failure.",
+			},
 		},
 		{
-			name:          "metric-unit-mismatch",
-			expectedError: errors.New("metric Unit does not match expected: By, actual: 1"),
-		},
-		{
-			name: "data-point-value-double-mismatch",
-			expectedError: multierr.Combine(
-				errors.New("datapoints for metric: `gauge.one`, do not match expected"),
-				errors.New("datapoint with attributes: map[], does not match expected"),
-				errors.New("metric datapoint DoubleVal doesn't match expected: 123.456000, actual: 654.321000"),
-			),
-		},
-		{
-			name: "data-point-value-int-mismatch",
-			expectedError: multierr.Combine(
-				errors.New("datapoints for metric: `sum.one`, do not match expected"),
-				errors.New("datapoint with attributes: map[], does not match expected"),
-				errors.New("metric datapoint IntVal doesn't match expected: 123, actual: 654"),
-			),
+			name: "metric-unit-mismatch",
+			withoutOptions: expectation{
+				err:    errors.New("metric Unit does not match expected: By, actual: 1"),
+				reason: "A metric with the wrong unit should cause a failure.",
+			},
 		},
 		{
 			name: "data-point-attribute-extra",
-			expectedError: multierr.Combine(
-				errors.New("datapoints for metric: `gauge.one`, do not match expected"),
-				errors.New("metric missing expected datapoint with attributes: map[attribute.one:one]"),
-				errors.New("metric has extra datapoint with attributes: map[attribute.one:one attribute.two:two]"),
-			),
+			withoutOptions: expectation{
+				err: multierr.Combine(
+					errors.New("datapoints for metric: `gauge.one`, do not match expected"),
+					errors.New("metric missing expected datapoint with attributes: map[attribute.one:one]"),
+					errors.New("metric has extra datapoint with attributes: map[attribute.one:one attribute.two:two]"),
+				),
+				reason: "A data point with an extra attribute is a different (extra) data point. The expected data point is missing.",
+			},
 		},
 		{
 			name: "data-point-attribute-missing",
-			expectedError: multierr.Combine(
-				errors.New("datapoints for metric: `sum.one`, do not match expected"),
-				errors.New("metric missing expected datapoint with attributes: map[attribute.one:one attribute.two:two]"),
-				errors.New("metric has extra datapoint with attributes: map[attribute.two:two]"),
-			),
+			withoutOptions: expectation{
+				err: multierr.Combine(
+					errors.New("datapoints for metric: `sum.one`, do not match expected"),
+					errors.New("metric missing expected datapoint with attributes: map[attribute.one:one attribute.two:two]"),
+					errors.New("metric has extra datapoint with attributes: map[attribute.two:two]"),
+				),
+				reason: "A data point with a missing attribute is a different (extra) data point. The expected data point is missing.",
+			},
 		},
 		{
 			name: "data-point-attribute-key",
-			expectedError: multierr.Combine(
-				errors.New("datapoints for metric: `sum.one`, do not match expected"),
-				errors.New("metric missing expected datapoint with attributes: map[attribute.one:one]"),
-				errors.New("metric has extra datapoint with attributes: map[attribute.two:one]"),
-			),
+			withoutOptions: expectation{
+				err: multierr.Combine(
+					errors.New("datapoints for metric: `sum.one`, do not match expected"),
+					errors.New("metric missing expected datapoint with attributes: map[attribute.one:one]"),
+					errors.New("metric has extra datapoint with attributes: map[attribute.two:one]"),
+				),
+				reason: "A data point with the wrong attribute key is a different (extra) data point. The expected data point is missing.",
+			},
 		},
 		{
 			name: "data-point-attribute-value",
-			expectedError: multierr.Combine(
-				errors.New("datapoints for metric: `gauge.one`, do not match expected"),
-				errors.New("metric missing expected datapoint with attributes: map[attribute.one:one]"),
-				errors.New("metric has extra datapoint with attributes: map[attribute.one:two]"),
-			),
+			withoutOptions: expectation{
+				err: multierr.Combine(
+					errors.New("datapoints for metric: `gauge.one`, do not match expected"),
+					errors.New("metric missing expected datapoint with attributes: map[attribute.one:one]"),
+					errors.New("metric has extra datapoint with attributes: map[attribute.one:two]"),
+				),
+				reason: "A data point with the wrong attribute value is a different (extra) data point. The expected data point is missing.",
+			},
 		},
 		{
-			name:          "data-point-aggregation-expect-delta",
-			expectedError: errors.New("metric AggregationTemporality does not match expected: AGGREGATION_TEMPORALITY_DELTA, actual: AGGREGATION_TEMPORALITY_CUMULATIVE"),
+			name: "data-point-aggregation-expect-delta",
+			withoutOptions: expectation{
+				err:    errors.New("metric AggregationTemporality does not match expected: AGGREGATION_TEMPORALITY_DELTA, actual: AGGREGATION_TEMPORALITY_CUMULATIVE"),
+				reason: "A data point with the wrong aggregation temporality should cause a failure.",
+			},
 		},
 		{
-			name:          "data-point-aggregation-expect-cumulative",
-			expectedError: errors.New("metric AggregationTemporality does not match expected: AGGREGATION_TEMPORALITY_CUMULATIVE, actual: AGGREGATION_TEMPORALITY_DELTA"),
+			name: "data-point-aggregation-expect-cumulative",
+			withoutOptions: expectation{
+				err:    errors.New("metric AggregationTemporality does not match expected: AGGREGATION_TEMPORALITY_CUMULATIVE, actual: AGGREGATION_TEMPORALITY_DELTA"),
+				reason: "A data point with the wrong aggregation temporality should cause a failure.",
+			},
 		},
 		{
-			name:          "data-point-monotonic-expect-true",
-			expectedError: errors.New("metric IsMonotonic does not match expected: true, actual: false"),
+			name: "data-point-monotonic-expect-true",
+			withoutOptions: expectation{
+				err:    errors.New("metric IsMonotonic does not match expected: true, actual: false"),
+				reason: "A data point with the wrong monoticity should cause a failure.",
+			},
 		},
 		{
-			name:          "data-point-monotonic-expect-false",
-			expectedError: errors.New("metric IsMonotonic does not match expected: false, actual: true"),
+			name: "data-point-monotonic-expect-false",
+			withoutOptions: expectation{
+				err:    errors.New("metric IsMonotonic does not match expected: false, actual: true"),
+				reason: "A data point with the wrong monoticity should cause a failure.",
+			},
+		},
+		{
+			name: "data-point-value-double-mismatch",
+			withoutOptions: expectation{
+				err: multierr.Combine(
+					errors.New("datapoints for metric: `gauge.one`, do not match expected"),
+					errors.New("datapoint with attributes: map[], does not match expected"),
+					errors.New("metric datapoint DoubleVal doesn't match expected: 123.456000, actual: 654.321000"),
+				),
+				reason: "A data point with the wrong value should cause a failure.",
+			},
+		},
+		{
+			name: "data-point-value-int-mismatch",
+			withoutOptions: expectation{
+				err: multierr.Combine(
+					errors.New("datapoints for metric: `sum.one`, do not match expected"),
+					errors.New("datapoint with attributes: map[], does not match expected"),
+					errors.New("metric datapoint IntVal doesn't match expected: 123, actual: 654"),
+				),
+				reason: "A data point with the wrong value should cause a failure.",
+			},
 		},
 		{
 			name: "data-point-value-expect-int",
-			expectedError: multierr.Combine(
-				errors.New("datapoints for metric: `gauge.one`, do not match expected"),
-				errors.New("datapoint with attributes: map[], does not match expected"),
-				errors.New("metric datapoint types don't match: expected type: int, actual type: double"),
-			),
+			withoutOptions: expectation{
+				err: multierr.Combine(
+					errors.New("datapoints for metric: `gauge.one`, do not match expected"),
+					errors.New("datapoint with attributes: map[], does not match expected"),
+					errors.New("metric datapoint types don't match: expected type: int, actual type: double"),
+				),
+				reason: "A data point with the wrong type of value should cause a failure.",
+			},
 		},
 		{
 			name: "data-point-value-expect-double",
-			expectedError: multierr.Combine(
-				errors.New("datapoints for metric: `gauge.one`, do not match expected"),
-				errors.New("datapoint with attributes: map[], does not match expected"),
-				errors.New("metric datapoint types don't match: expected type: double, actual type: int"),
-			),
+			withoutOptions: expectation{
+				err: multierr.Combine(
+					errors.New("datapoints for metric: `gauge.one`, do not match expected"),
+					errors.New("datapoint with attributes: map[], does not match expected"),
+					errors.New("metric datapoint types don't match: expected type: double, actual type: int"),
+				),
+				reason: "A data point with the wrong type of value should cause a failure.",
+			},
 		},
 		{
 			name: "ignore-timestamp",
-			// Timestamps aren't checked so no error is expected.
+			withoutOptions: expectation{
+				err:    nil,
+				reason: "Timestamps are always ignored, so no error is expected.",
+			},
+		},
+		{
+			name: "ignore-data-point-value-double-mismatch",
+			compareOptions: []CompareOption{
+				IgnoreValues(),
+			},
+			withoutOptions: expectation{
+				err: multierr.Combine(
+					errors.New("datapoints for metric: `gauge.one`, do not match expected"),
+					errors.New("datapoint with attributes: map[], does not match expected"),
+					errors.New("metric datapoint DoubleVal doesn't match expected: 123.456000, actual: 654.321000"),
+				),
+				reason: "An unpredictable data point value will cause failures if not ignored.",
+			},
+		},
+		{
+			name: "ignore-data-point-value-int-mismatch",
+			compareOptions: []CompareOption{
+				IgnoreValues(),
+			},
+			withoutOptions: expectation{
+				err: multierr.Combine(
+					errors.New("datapoints for metric: `sum.one`, do not match expected"),
+					errors.New("datapoint with attributes: map[], does not match expected"),
+					errors.New("metric datapoint IntVal doesn't match expected: 123, actual: 654"),
+				),
+				reason: "An unpredictable data point value will cause failures if not ignored.",
+			},
 		},
 	}
 
@@ -162,44 +262,14 @@ func TestCompareMetrics(t *testing.T) {
 			require.NoError(t, err)
 
 			err = CompareMetricSlices(expected, actual)
-			if tc.expectedError != nil {
-				require.Equal(t, tc.expectedError, err)
-			} else {
-				require.NoError(t, err)
+			tc.withoutOptions.validate(t, err)
+
+			if tc.compareOptions == nil {
+				return
 			}
-		})
-	}
-}
 
-func TestIgnoreValues(t *testing.T) {
-	tcs := []struct {
-		name          string
-		expected      pdata.MetricSlice
-		actual        pdata.MetricSlice
-		unmaskedError string
-	}{
-		{
-			name:          "data-point-value-double-mismatch",
-			unmaskedError: `metric datapoint DoubleVal doesn't match expected`,
-		},
-		{
-			name:          "data-point-value-int-mismatch",
-			unmaskedError: `metric datapoint IntVal doesn't match expected`,
-		},
-	}
-
-	for _, tc := range tcs {
-		t.Run(fmt.Sprintf("ignore-%s", tc.name), func(t *testing.T) {
-			expected, err := golden.ReadMetricSlice(filepath.Join("testdata", tc.name, "expected.json"))
-			require.NoError(t, err)
-
-			actual, err := golden.ReadMetricSlice(filepath.Join("testdata", tc.name, "actual.json"))
-			require.NoError(t, err)
-
-			err = CompareMetricSlices(expected, actual)
-			require.Error(t, err)
-			require.Contains(t, err.Error(), tc.unmaskedError)
-			require.NoError(t, CompareMetricSlices(expected, actual, IgnoreValues()))
+			err = CompareMetricSlices(expected, actual, tc.compareOptions...)
+			tc.withOptions.validate(t, err)
 		})
 	}
 }
