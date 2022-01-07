@@ -231,7 +231,6 @@ func TestProcessorConsumeTracesConcurrentSafe(t *testing.T) {
 	testcases := []struct {
 		name                   string
 		aggregationTemporality string
-		verifier               func(t testing.TB, input pdata.Metrics) bool
 		traces                 []pdata.Traces
 	}{
 		{
@@ -274,7 +273,7 @@ func TestProcessorConsumeTracesConcurrentSafe(t *testing.T) {
 
 			for _, traces := range tc.traces {
 				// Test
-				traces :=  traces
+				traces := traces
 				// create an excessive concurrent usage. The processor will not be used in this way practically.
 				// Run the test to make sure this public function can pass the test via `go test -race`.
 				go func() {
