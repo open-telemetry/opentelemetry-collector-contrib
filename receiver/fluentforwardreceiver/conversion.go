@@ -127,6 +127,8 @@ func parseToAttributeValue(val interface{}) pdata.AttributeValue {
 		return pdata.NewAttributeValueDouble(float64(r))
 	case float64:
 		return pdata.NewAttributeValueDouble(r)
+	case nil:
+		return pdata.NewAttributeValueEmpty()
 	default:
 		return pdata.NewAttributeValueString(fmt.Sprintf("%v", val))
 	}
