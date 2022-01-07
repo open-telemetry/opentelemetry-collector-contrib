@@ -66,7 +66,7 @@ type metricKey string
 type resourceKey string
 
 type processorImp struct {
-	lock   sync.RWMutex
+	lock   sync.Mutex
 	logger *zap.Logger
 	config Config
 
@@ -241,19 +241,15 @@ func (p *processorImp) Capabilities() consumer.Capabilities {
 // It aggregates the trace data to generate metrics, forwarding these metrics to the discovered metrics exporter.
 // The original input trace data will be forwarded to the next consumer, unmodified.
 func (p *processorImp) ConsumeTraces(ctx context.Context, traces pdata.Traces) error {
+	p.lock.Lock()
 	defer func() {
-		p.lock.Lock()
 		p.reset()
 		p.lock.Unlock()
 	}()
 
-	p.lock.Lock()
 	p.aggregateMetrics(traces)
-	p.lock.Unlock()
 
-	p.lock.RLock()
 	m, err := p.buildMetrics()
-	p.lock.RUnlock()
 
 	if err != nil {
 		return err
