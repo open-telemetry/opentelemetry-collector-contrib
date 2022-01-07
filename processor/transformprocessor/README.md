@@ -38,10 +38,11 @@ exporters:
 
 processors:
   transform:
-    queries:
-      - set(status.code, 1) where attributes["http.path"] == "/health"
-      - keep_keys(resource.attributes, "service.name", "service.namespace", "cloud.region")
-      - set(name, attributes["http.route"])
+    traces:
+      queries:
+        - set(status.code, 1) where attributes["http.path"] == "/health"
+        - keep_keys(resource.attributes, "service.name", "service.namespace", "cloud.region")
+        - set(name, attributes["http.route"])
 service:
   pipelines:
     traces:

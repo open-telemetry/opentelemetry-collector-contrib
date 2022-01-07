@@ -38,9 +38,11 @@ func TestLoadingConfig(t *testing.T) {
 	p0 := cfg.Processors[config.NewComponentID(typeStr)]
 	assert.Equal(t, p0, &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-		Queries: []string{
-			`set(name, "bear") where attributes["http.path"] == "/animal"`,
-			`keep(attributes, "http.method", "http.path")`,
+		Traces: TracesConfig{
+			Queries: []string{
+				`set(name, "bear") where attributes["http.path"] == "/animal"`,
+				`keep(attributes, "http.method", "http.path")`,
+			},
 		},
 	})
 }

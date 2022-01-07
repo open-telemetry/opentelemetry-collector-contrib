@@ -18,10 +18,14 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
+type TracesConfig struct {
+	Queries []string `mapstructure:"queries"`
+}
+
 type Config struct {
 	config.ProcessorSettings `mapstructure:",squash"`
 
-	Queries []string `mapstructure:"queries"`
+	Traces TracesConfig `mapstructure:"traces"`
 }
 
 var _ config.Processor = (*Config)(nil)
