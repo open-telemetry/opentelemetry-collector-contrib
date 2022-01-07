@@ -44,8 +44,8 @@ var testMetadata = map[string]scrape.MetricMetadata{
 	"summary_test":    {Metric: "summary_test", Type: textparse.MetricTypeSummary, Help: "", Unit: ""},
 	"summary_test2":   {Metric: "summary_test2", Type: textparse.MetricTypeSummary, Help: "", Unit: ""},
 	"unknown_test":    {Metric: "unknown_test", Type: textparse.MetricTypeUnknown, Help: "", Unit: ""},
+	"poor_name":       {Metric: "poor_name", Type: textparse.MetricTypeGauge, Help: "", Unit: ""},
 	"poor_name_count": {Metric: "poor_name_count", Type: textparse.MetricTypeCounter, Help: "", Unit: ""},
-	"up":              {Metric: "up", Type: textparse.MetricTypeCounter, Help: "", Unit: ""},
 	"scrape_foo":      {Metric: "scrape_foo", Type: textparse.MetricTypeCounter, Help: "", Unit: ""},
 	"example_process_start_time_seconds": {Metric: "example_process_start_time_seconds",
 		Type: textparse.MetricTypeGauge, Help: "", Unit: ""},
@@ -242,10 +242,8 @@ func Test_metricBuilder_counters(t *testing.T) {
 				},
 			},
 		},
-		// Some counters such as "python_gc_collections_total" have metadata key as "python_gc_collections" but still need
-		// to be converted using full metric name as "python_gc_collections_total" to match Prometheus functionality
 		{
-			name: "counter-with-metadata-without-total-suffix",
+			name: "counter-with-total-suffix",
 			inputs: []*testScrapedPage{
 				{
 					pts: []*testDataPoint{

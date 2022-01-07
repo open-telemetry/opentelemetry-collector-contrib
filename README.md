@@ -71,7 +71,6 @@ Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs
 - [Daniel Jaglowski](https://github.com/djaglowski), observIQ
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
 - [Pablo Baeyens](https://github.com/mx-psi), DataDog
-- [Owais Lone](https://github.com/owais), Splunk
 
 Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/orgs/open-telemetry/teams/collector-contrib-maintainer)):
 

@@ -18,7 +18,6 @@
 package hostmetadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/hostmetadata"
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"io/ioutil"
@@ -127,15 +126,6 @@ func (o *hostOS) toStringMap() map[string]string {
 		"host_os_name":        o.HostOSName,
 		"host_linux_version":  o.HostLinuxVersion,
 	}
-}
-
-// int8ArrayToByteArray converts an []int8 to []byte
-func int8ArrayToByteArray(in []int8) []byte {
-	bts := make([]byte, len(in))
-	for i, c := range in {
-		bts[i] = byte(c)
-	}
-	return bytes.Trim(bts, "\x00")
 }
 
 // getOS returns a struct with information about the host os

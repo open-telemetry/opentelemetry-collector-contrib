@@ -26,10 +26,12 @@ import (
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/pkg/exemplar"
 	"github.com/prometheus/prometheus/pkg/labels"
+	"github.com/prometheus/prometheus/pkg/value"
 	"github.com/prometheus/prometheus/storage"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -65,7 +67,7 @@ type transaction struct {
 	sink                 consumer.Metrics
 	job                  string
 	instance             string
-	jobsMap              *JobsMap
+	jobsMap              *JobsMapPdata
 	useStartTimeMetric   bool
 	startTimeMetricRegex string
 	ms                   *metadataService
@@ -80,7 +82,7 @@ type transaction struct {
 
 func newTransaction(
 	ctx context.Context,
-	jobsMap *JobsMap,
+	jobsMap *JobsMapPdata,
 	useStartTimeMetric bool,
 	startTimeMetricRegex string,
 	receiverID config.ComponentID,
@@ -193,16 +195,21 @@ func (tr *transaction) Commit() error {
 		}
 
 		adjustStartTimestamp(tr.metricBuilder.startTime, metrics)
-	} else {
-		// AdjustMetrics - jobsMap has to be non-nil in this case.
-		// Note: metrics could be empty after adjustment, which needs to be checked before passing it on to ConsumeMetrics()
-		metrics, _ = NewMetricsAdjuster(tr.jobsMap.get(tr.job, tr.instance), tr.logger).AdjustMetrics(metrics)
 	}
 
 	numPoints := 0
+	var md pdata.Metrics
 	if len(metrics) > 0 {
-		md := opencensus.OCToMetrics(tr.node, tr.resource, metrics)
+		md = opencensus.OCToMetrics(tr.node, tr.resource, metrics)
+		fixStaleMetrics(&md)
 		numPoints = md.DataPointCount()
+	}
+
+	if !tr.useStartTimeMetric {
+		_ = NewMetricsAdjusterPdata(tr.jobsMap.get(tr.job, tr.instance), tr.logger).AdjustMetrics(&md)
+	}
+
+	if numPoints > 0 {
 		err = tr.sink.ConsumeMetrics(ctx, md)
 	}
 	tr.obsrecv.EndMetricsOp(ctx, dataformat, numPoints, err)
@@ -262,4 +269,73 @@ func createNodeAndResource(job, instance, scheme string) (*commonpb.Node, *resou
 		},
 	}
 	return node, resource
+}
+
+func fixStaleMetrics(md *pdata.Metrics) {
+	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+		rm := md.ResourceMetrics().At(i)
+		for j := 0; j < rm.InstrumentationLibraryMetrics().Len(); j++ {
+			ilm := rm.InstrumentationLibraryMetrics().At(j)
+			for k := 0; k < ilm.Metrics().Len(); k++ {
+				metric := ilm.Metrics().At(k)
+				switch metric.DataType() {
+				case pdata.MetricDataTypeHistogram:
+					fixStaleHistogram(metric.Histogram())
+				case pdata.MetricDataTypeSummary:
+					fixStaleSummary(metric.Summary())
+				case pdata.MetricDataTypeSum:
+					fixStaleSum(metric.Sum())
+				case pdata.MetricDataTypeGauge:
+					fixStaleGauge(metric.Gauge())
+				}
+			}
+		}
+	}
+}
+
+func fixStaleHistogram(hist pdata.Histogram) {
+	for i := 0; i < hist.DataPoints().Len(); i++ {
+		dp := hist.DataPoints().At(i)
+		if value.IsStaleNaN(dp.Sum()) {
+			dp.SetFlags(pdataStaleFlags)
+			dp.SetCount(0)
+			dp.SetSum(0)
+			dp.SetBucketCounts([]uint64{})
+			dp.SetExplicitBounds([]float64{})
+		}
+	}
+}
+
+func fixStaleSummary(sum pdata.Summary) {
+	for i := 0; i < sum.DataPoints().Len(); i++ {
+		dp := sum.DataPoints().At(i)
+		if value.IsStaleNaN(dp.Sum()) {
+			dp.SetFlags(pdataStaleFlags)
+			dp.SetCount(0)
+			dp.SetSum(0)
+			dp.QuantileValues().RemoveIf(func(_ pdata.ValueAtQuantile) bool {
+				return true
+			})
+		}
+	}
+}
+
+func fixStaleSum(sum pdata.Sum) {
+	for i := 0; i < sum.DataPoints().Len(); i++ {
+		dp := sum.DataPoints().At(i)
+		if value.IsStaleNaN(dp.DoubleVal()) {
+			dp.SetFlags(pdataStaleFlags)
+			dp.SetDoubleVal(0)
+		}
+	}
+}
+
+func fixStaleGauge(gauge pdata.Gauge) {
+	for i := 0; i < gauge.DataPoints().Len(); i++ {
+		dp := gauge.DataPoints().At(i)
+		if value.IsStaleNaN(dp.DoubleVal()) {
+			dp.SetFlags(pdataStaleFlags)
+			dp.SetDoubleVal(0)
+		}
+	}
 }

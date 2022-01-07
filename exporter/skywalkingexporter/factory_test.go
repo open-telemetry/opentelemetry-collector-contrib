@@ -79,7 +79,7 @@ func TestCreateTracesExporter(t *testing.T) {
 				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint:    endpoint,
-					Compression: configgrpc.CompressionGzip,
+					Compression: "gzip",
 				},
 				NumStreams: 3,
 			},

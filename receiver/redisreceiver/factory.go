@@ -25,6 +25,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver/internal/metadata"
 )
 
 const (
@@ -50,6 +52,7 @@ func createDefaultConfig() config.Receiver {
 			Insecure: true,
 		},
 		ScraperControllerSettings: scs,
+		Metrics:                   metadata.DefaultMetricsSettings(),
 	}
 }
 
@@ -61,7 +64,7 @@ func createMetricsReceiver(
 ) (component.MetricsReceiver, error) {
 	oCfg := cfg.(*Config)
 
-	scrp, err := newRedisScraper(*oCfg, set)
+	scrp, err := newRedisScraper(oCfg, set)
 	if err != nil {
 		return nil, err
 	}

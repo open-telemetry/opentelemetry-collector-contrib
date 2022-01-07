@@ -119,7 +119,7 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			mp := newMetricFamilyPdata(tt.metricName, mc, zap.NewNop()).(*metricFamilyPdata)
+			mp := newMetricFamilyPdata(tt.metricName, mc, zap.NewNop())
 			for _, tv := range tt.scrapes {
 				require.NoError(t, mp.Add(tv.metric, tt.labels.Copy(), tv.at, tv.value))
 			}
@@ -241,7 +241,7 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			mp := newMetricFamilyPdata(tt.name, mc, zap.NewNop()).(*metricFamilyPdata)
+			mp := newMetricFamilyPdata(tt.name, mc, zap.NewNop())
 			for _, lbs := range tt.labelsScrapes {
 				for _, scrape := range lbs.scrapes {
 					require.NoError(t, mp.Add(scrape.metric, lbs.labels.Copy(), scrape.at, scrape.value))
@@ -323,7 +323,7 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			mp := newMetricFamilyPdata(tt.metricKind, mc, zap.NewNop()).(*metricFamilyPdata)
+			mp := newMetricFamilyPdata(tt.metricKind, mc, zap.NewNop())
 			for _, tv := range tt.scrapes {
 				require.NoError(t, mp.Add(tv.metric, tt.labels.Copy(), tv.at, tv.value))
 			}

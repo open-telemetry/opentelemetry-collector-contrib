@@ -16,7 +16,9 @@ package prometheusreceiver // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
+	"time"
 
+	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
 	"github.com/prometheus/prometheus/scrape"
 	"go.opentelemetry.io/collector/component"
@@ -24,6 +26,11 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
+)
+
+const (
+	defaultGCInterval = 2 * time.Minute
+	gcIntervalDelta   = 1 * time.Minute
 )
 
 // pReceiver is the type that provides Prometheus scraper/receiver functionality.
@@ -76,6 +83,7 @@ func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 		context.Background(),
 		r.consumer,
 		r.settings,
+		gcInterval(r.cfg.PrometheusConfig),
 		r.cfg.UseStartTimeMetric,
 		r.cfg.StartTimeMetricRegex,
 		r.cfg.ID(),
@@ -94,6 +102,22 @@ func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 		}
 	}()
 	return nil
+}
+
+// gcInterval returns the longest scrape interval used by a scrape config,
+// plus a delta to prevent race conditions.
+// This ensures jobs are not garbage collected between scrapes.
+func gcInterval(cfg *config.Config) time.Duration {
+	gcInterval := defaultGCInterval
+	if time.Duration(cfg.GlobalConfig.ScrapeInterval)+gcIntervalDelta > gcInterval {
+		gcInterval = time.Duration(cfg.GlobalConfig.ScrapeInterval) + gcIntervalDelta
+	}
+	for _, scrapeConfig := range cfg.ScrapeConfigs {
+		if time.Duration(scrapeConfig.ScrapeInterval)+gcIntervalDelta > gcInterval {
+			gcInterval = time.Duration(scrapeConfig.ScrapeInterval) + gcIntervalDelta
+		}
+	}
+	return gcInterval
 }
 
 // Shutdown stops and cancels the underlying Prometheus scrapers.
