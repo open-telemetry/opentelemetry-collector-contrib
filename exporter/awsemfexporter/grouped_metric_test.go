@@ -33,6 +33,7 @@ import (
 
 	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
+
 var previousSequenceToken = "0000"
 var expectedNextSequenceToken = "1111"
 var logGroup = "logGroup"
