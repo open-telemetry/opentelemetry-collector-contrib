@@ -3,10 +3,10 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/obser
 go 1.17
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.41.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.41.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.42.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.42.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.41.1-0.20220106194528-7c9326f57bc2
+	go.opentelemetry.io/collector v0.42.0
 	go.uber.org/zap v1.20.0
 	k8s.io/api v0.23.1
 	k8s.io/apimachinery v0.23.1
@@ -38,7 +38,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	go.opentelemetry.io/collector/model v0.41.1-0.20220106194528-7c9326f57bc2 // indirect
+	go.opentelemetry.io/collector/model v0.42.0 // indirect
 	go.opentelemetry.io/otel v1.3.0 // indirect
 	go.opentelemetry.io/otel/metric v0.26.0 // indirect
 	go.opentelemetry.io/otel/trace v1.3.0 // indirect
