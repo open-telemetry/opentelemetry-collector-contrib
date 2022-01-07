@@ -29,6 +29,7 @@
 ## 🚀 New components 🚀
 
 - `ecs_task_observer`: Discover running containers in AWS ECS tasks (#6894)
+- `mongodbreceiver`: Establish codebase for MongoDB metrics receiver (#6972)
 
 ## 🧰 Bug fixes 🧰
 
