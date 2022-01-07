@@ -599,11 +599,11 @@ func (r *regularHistogramMetric) At(i int) histogramDataPoint {
 type regularHistogramConsumerSpec struct {
 }
 
-func (_ regularHistogramConsumerSpec) Type() pdata.MetricDataType {
+func (regularHistogramConsumerSpec) Type() pdata.MetricDataType {
 	return pdata.MetricDataTypeHistogram
 }
 
-func (_ regularHistogramConsumerSpec) AsHistogram(metric pdata.Metric) histogramMetric {
+func (regularHistogramConsumerSpec) AsHistogram(metric pdata.Metric) histogramMetric {
 	aHistogram := metric.Histogram()
 	return &regularHistogramMetric{
 		Histogram:               aHistogram,
