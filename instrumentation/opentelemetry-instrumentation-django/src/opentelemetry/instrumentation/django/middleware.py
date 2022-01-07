@@ -32,7 +32,13 @@ from opentelemetry.instrumentation.wsgi import (
 from opentelemetry.instrumentation.wsgi import wsgi_getter
 from opentelemetry.propagate import extract
 from opentelemetry.semconv.trace import SpanAttributes
-from opentelemetry.trace import Span, SpanKind, use_span
+from opentelemetry.trace import (
+    INVALID_SPAN,
+    Span,
+    SpanKind,
+    get_current_span,
+    use_span,
+)
 from opentelemetry.util.http import get_excluded_urls, get_traced_request_attrs
 
 try:
@@ -183,11 +189,16 @@ class _DjangoMiddleware(MiddlewareMixin):
             carrier_getter = wsgi_getter
             collect_request_attributes = wsgi_collect_request_attributes
 
-        token = attach(extract(carrier, getter=carrier_getter))
-
+        token = context = None
+        span_kind = SpanKind.INTERNAL
+        if get_current_span() is INVALID_SPAN:
+            context = extract(carrier, getter=carrier_getter)
+            token = attach(context)
+            span_kind = SpanKind.SERVER
         span = self._tracer.start_span(
             self._get_span_name(request),
-            kind=SpanKind.SERVER,
+            context,
+            kind=span_kind,
             start_time=request_meta.get(
                 "opentelemetry-instrumentor-django.starttime_key"
             ),
@@ -220,7 +231,8 @@ class _DjangoMiddleware(MiddlewareMixin):
 
         request.META[self._environ_activation_key] = activation
         request.META[self._environ_span_key] = span
-        request.META[self._environ_token] = token
+        if token:
+            request.META[self._environ_token] = token
 
         if _DjangoMiddleware._otel_request_hook:
             _DjangoMiddleware._otel_request_hook(  # pylint: disable=not-callable
@@ -295,7 +307,7 @@ class _DjangoMiddleware(MiddlewareMixin):
             else:
                 activation.__exit__(None, None, None)
 
-        if self._environ_token in request.META.keys():
+        if request.META.get(self._environ_token, None) is not None:
             detach(request.META.get(self._environ_token))
             request.META.pop(self._environ_token)
 
