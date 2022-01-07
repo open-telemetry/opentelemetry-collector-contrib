@@ -227,6 +227,66 @@ func TestProcessorConsumeTracesErrors(t *testing.T) {
 	}
 }
 
+func TestProcessorConsumeTracesConcurrentSafe(t *testing.T) {
+	testcases := []struct {
+		name                   string
+		aggregationTemporality string
+		verifier               func(t testing.TB, input pdata.Metrics) bool
+		traces                 []pdata.Traces
+	}{
+		{
+			name:                   "Test single consumption, three spans (Cumulative).",
+			aggregationTemporality: cumulative,
+			traces:                 []pdata.Traces{buildSampleTrace()},
+		},
+		{
+			name:                   "Test single consumption, three spans (Delta).",
+			aggregationTemporality: delta,
+			traces:                 []pdata.Traces{buildSampleTrace()},
+		},
+		{
+			// More consumptions, should accumulate additively.
+			name:                   "Test two consumptions (Cumulative).",
+			aggregationTemporality: cumulative,
+			traces:                 []pdata.Traces{buildSampleTrace(), buildSampleTrace()},
+		},
+		{
+			// More consumptions, should not accumulate. Therefore, end state should be the same as single consumption case.
+			name:                   "Test two consumptions (Delta).",
+			aggregationTemporality: delta,
+			traces:                 []pdata.Traces{buildSampleTrace(), buildSampleTrace()},
+		},
+	}
+
+	for _, tc := range testcases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			// Prepare
+			mexp := &mocks.MetricsExporter{}
+			tcon := &mocks.TracesConsumer{}
+
+			mexp.On("ConsumeMetrics", mock.Anything, mock.Anything).Return(nil)
+			tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
+
+			defaultNullValue := "defaultNullValue"
+			p := newProcessorImp(mexp, tcon, &defaultNullValue, tc.aggregationTemporality, t)
+
+			for _, traces := range tc.traces {
+				// Test
+				traces :=  traces
+				// create an excessive concurrent usage. The processor will not be used in this way practically.
+				// Run the test to make sure this public function can pass the test via `go test -race`.
+				go func() {
+					ctx := metadata.NewIncomingContext(context.Background(), nil)
+					err := p.ConsumeTraces(ctx, traces)
+					assert.NoError(t, err)
+				}()
+			}
+		})
+	}
+}
+
 func TestProcessorConsumeTraces(t *testing.T) {
 	testcases := []struct {
 		name                   string
