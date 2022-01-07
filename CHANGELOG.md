@@ -35,6 +35,7 @@
 - `hostmetricsreceiver`: Add MuteProcessNameError config flag to mute specific error reading process executable (#7176)
 - `scrapertest`: Improve comparison logic (#7305)
 - `hostmetricsreceiver`: add `cpu_average` option for load scraper to report the average cpu load (#6999)
+- `scrapertest`: Add comparison option to ignore specific attributes (#6519)
 
 ## 🛑 Breaking changes 🛑
 
