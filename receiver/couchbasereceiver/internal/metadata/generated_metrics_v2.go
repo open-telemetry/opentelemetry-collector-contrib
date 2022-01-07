@@ -53,6 +53,15 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
 }
 
+// Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
+// and metrics builder should update its startTime and reset it's internal state accordingly.
+func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
+	mb.startTime = pdata.NewTimestampFromTime(time.Now())
+	for _, op := range options {
+		op(mb)
+	}
+}
+
 // Attributes contains the possible metric attributes that can be used.
 var Attributes = struct {
 }{}
