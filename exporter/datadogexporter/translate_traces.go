@@ -304,10 +304,15 @@ func spanToDatadogSpan(s pdata.Span,
 
 	resourceName := getDatadogResourceName(s, tags)
 
+	name := s.Name()
+	if !cfg.Traces.SpanNameAsResourceName {
+		name = getDatadogSpanName(s, tags)
+	}
+
 	span := &pb.Span{
 		TraceID:  decodeAPMTraceID(s.TraceID().Bytes()),
 		SpanID:   decodeAPMSpanID(s.SpanID().Bytes()),
-		Name:     remapDatadogSpanName(getDatadogSpanName(s, tags), spanNameMap),
+		Name:     remapDatadogSpanName(name, spanNameMap),
 		Resource: resourceName,
 		Service:  normalizedServiceName,
 		Start:    int64(startTime),

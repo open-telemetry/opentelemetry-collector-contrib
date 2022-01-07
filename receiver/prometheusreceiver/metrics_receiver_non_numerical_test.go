@@ -170,11 +170,6 @@ func verifyStaleNanPage1FirstFailedScrape(t *testing.T, td *testData, resourceMe
 	allMetrics := getMetrics(resourceMetric)
 	assertUp(t, 0, allMetrics)
 
-	// TODO: Issue #6376. Remove this skip once OTLP format is directly used in Prometheus Receiver Metric Builder.
-	if true {
-		t.Log(`Skipping the datapoint flag check for staleness markers, as the current receiver doesnt yet set the flag true for staleNaNs`)
-		return
-	}
 	metrics1 := resourceMetric.InstrumentationLibraryMetrics().At(0).Metrics()
 	ts1 := getTS(metrics1)
 	e1 := []testExpectation{
