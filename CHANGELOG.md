@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.42.0
+
 ## 💡 Enhancements 💡
 
 - `couchdbreceiver`: Add couchdb client (#6880)
