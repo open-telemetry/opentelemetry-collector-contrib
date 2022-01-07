@@ -217,7 +217,7 @@ func Test_createLabelSet(t *testing.T) {
 			lbs1Dirty,
 			map[string]string{},
 			[]string{label31 + dirty1, value31, label32, value32},
-			getPromLabels(label11+"_", value11, label12, value12, label31+"_", value31, label32, value32),
+			getPromLabels(label11+"_", value11, "_"+label12, value12, label31+"_", value31, label32, value32),
 		},
 		{
 			"no_original_case",
