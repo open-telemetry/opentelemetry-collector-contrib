@@ -53,6 +53,6 @@ service:
 
 This processor will perform the operations in order for all spans
 
-1) Set status code to OK with a path `/health`
+1) Set status code to OK for all spans with a path `/health`
 2) Keep only `service.name`, `service.namespace`, `cloud.region` resource attributes
 3) Set `name` to the `http.route` attribute if it is set
