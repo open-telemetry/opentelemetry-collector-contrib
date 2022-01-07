@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# pylint: disable=too-many-locals
 
 """
 The opentelemetry-instrumentation-asgi package provides an ASGI middleware that can be used
@@ -110,7 +111,12 @@ from opentelemetry.instrumentation.utils import http_status_to_status_code
 from opentelemetry.propagate import extract
 from opentelemetry.propagators.textmap import Getter, Setter
 from opentelemetry.semconv.trace import SpanAttributes
-from opentelemetry.trace import Span, set_span_in_context
+from opentelemetry.trace import (
+    INVALID_SPAN,
+    Span,
+    SpanKind,
+    set_span_in_context,
+)
 from opentelemetry.trace.status import Status, StatusCode
 from opentelemetry.util.http import remove_url_credentials
 
@@ -321,39 +327,48 @@ class OpenTelemetryMiddleware:
         if self.excluded_urls and self.excluded_urls.url_disabled(url):
             return await self.app(scope, receive, send)
 
-        token = context.attach(extract(scope, getter=asgi_getter))
-        server_span_name, additional_attributes = self.default_span_details(
-            scope
-        )
+        token = ctx = span_kind = None
+
+        if trace.get_current_span() is INVALID_SPAN:
+            ctx = extract(scope, getter=asgi_getter)
+            token = context.attach(ctx)
+            span_kind = SpanKind.SERVER
+        else:
+            ctx = context.get_current()
+            span_kind = SpanKind.INTERNAL
+
+        span_name, additional_attributes = self.default_span_details(scope)
 
         try:
             with self.tracer.start_as_current_span(
-                server_span_name,
-                kind=trace.SpanKind.SERVER,
-            ) as server_span:
-                if server_span.is_recording():
+                span_name,
+                context=ctx,
+                kind=span_kind,
+            ) as current_span:
+                if current_span.is_recording():
                     attributes = collect_request_attributes(scope)
                     attributes.update(additional_attributes)
                     for key, value in attributes.items():
-                        server_span.set_attribute(key, value)
+                        current_span.set_attribute(key, value)
 
                 if callable(self.server_request_hook):
-                    self.server_request_hook(server_span, scope)
+                    self.server_request_hook(current_span, scope)
 
                 otel_receive = self._get_otel_receive(
-                    server_span_name, scope, receive
+                    span_name, scope, receive
                 )
 
                 otel_send = self._get_otel_send(
-                    server_span,
-                    server_span_name,
+                    current_span,
+                    span_name,
                     scope,
                     send,
                 )
 
                 await self.app(scope, otel_receive, otel_send)
         finally:
-            context.detach(token)
+            if token:
+                context.detach(token)
 
     def _get_otel_receive(self, server_span_name, scope, receive):
         @wraps(receive)
