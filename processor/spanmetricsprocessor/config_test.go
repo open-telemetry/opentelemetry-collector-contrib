@@ -34,7 +34,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver"
 )
 
-// todo - cover resource-attributes
 func TestLoadConfig(t *testing.T) {
 	defaultMethod := "GET"
 	defaultRegion := "us-east-1"

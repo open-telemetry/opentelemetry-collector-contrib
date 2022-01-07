@@ -275,7 +275,7 @@ func TestProcessorConsumeTracesConcurrentSafe(t *testing.T) {
 				// Test
 				traces := traces
 				// create an excessive concurrent usage. The processor will not be used in this way practically.
-				// Run the test to make sure this public function can pass the test via `go test -race`.
+				// Run the test to verify this public function ConsumeTraces() doesn't cause race conditions.
 				go func() {
 					ctx := metadata.NewIncomingContext(context.Background(), nil)
 					err := p.ConsumeTraces(ctx, traces)

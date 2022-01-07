@@ -67,7 +67,7 @@ type resourceKey string
 
 type processorImp struct {
 	// Based on OTEL Collector design, each pipeline will always get its own instance of the processor. ConsumeTraces()
-	// of each instance should never be called concurrently in practise.
+	// of each instance should never be called concurrently in practice.
 	// This processor is stateful. Due to the nature of its logic, the concurrent executions of ConsumeTraces() will
 	// output incorrect data. This lock forces the ConsumeTraces() can only execute in serial.
 	lock   sync.Mutex
@@ -87,8 +87,6 @@ type processorImp struct {
 	startTime time.Time
 
 	// Call & Error counts.
-	// todo - do we need to use metricKey(actually concated attrs), or we can use serviceName instead?
-	// i.e. Should we put datapoints with different attributes under the same metrics or not?
 	callSum map[resourceKey]map[metricKey]int64
 
 	// Latency histogram.
@@ -608,8 +606,8 @@ func (p *processorImp) buildResourceAttrKey(serviceName string, resourceAttr pda
 //
 // The ok flag indicates if a dimension value was fetched in order to differentiate
 // an empty string value from a state where no value was found.
-// todo - consider this: Given we are building resource attributes for the metrics, does that make sense to search from
-// resource attributes anymore?
+// todo - consider this: Given we are building resource attributes for the metrics, does that make sense to fallback the
+// search from resource attributes anymore?
 func getDimensionValue(d Dimension, spanAttr pdata.AttributeMap, resourceAttr pdata.AttributeMap) (v pdata.AttributeValue, ok bool) {
 	// The more specific span attribute should take precedence.
 	if attr, exists := spanAttr.Get(d.Name); exists {
