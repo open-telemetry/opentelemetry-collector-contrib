@@ -17,12 +17,13 @@ package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cloudwatch"
 	"reflect"
 	"time"
 
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cloudwatch"
 )
 
 const (
