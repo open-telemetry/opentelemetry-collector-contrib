@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
@@ -51,18 +50,8 @@ func TestNewFactory(t *testing.T) {
 						CollectionInterval: 10 * time.Second,
 					},
 					HTTPClientSettings: confighttp.HTTPClientSettings{
-<<<<<<< HEAD
-						TLSSetting: configtls.TLSClientSetting{},
-						Endpoint:   defaultEndpoint,
-						Timeout:    10 * time.Second,
-=======
-						TLSSetting: configtls.TLSClientSetting{
-							Insecure:           false,
-							InsecureSkipVerify: true,
-						},
 						Endpoint: defaultEndpoint,
 						Timeout:  10 * time.Second,
->>>>>>> ac807f85e (Established couchbase metric receiver codebase)
 					},
 				}
 

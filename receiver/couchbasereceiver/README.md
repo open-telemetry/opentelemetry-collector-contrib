@@ -1,4 +1,4 @@
-# CouchDB Receiver
+# Couchbase Receiver
 
 This receiver fetches stats from a couchbase cluster using the following endpoints:
 - `/pools/default` [endpoint](https://docs.couchbase.com/server/6.5/rest-api/rest-cluster-details.html)

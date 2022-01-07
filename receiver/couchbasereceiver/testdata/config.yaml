@@ -14,6 +14,6 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [couchdb]
+      receivers: [couchbase]
       processors: [nop]
       exporters: [nop]
