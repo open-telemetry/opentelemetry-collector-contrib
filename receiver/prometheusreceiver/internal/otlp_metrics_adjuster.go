@@ -54,7 +54,7 @@ import (
 //    adds more contention and latency to each scrape so the current approach is used. Note that
 //    the go routine will need to be cancelled upon Shutdown().
 // 2. If the gc of each timeseriesMap during the gc of the JobsMap causes too much contention,
-//    the gc of timeseriesMaps can be moved to the end of MetricsAdjuster().AdjustMetrics(). This
+//    the gc of timeseriesMaps can be moved to the end of MetricsAdjuster().AdjustMetricSlice(). This
 //    approach requires adding 'lastGC' Time and (potentially) a gcInterval duration to
 //    timeseriesMap so the current approach is used instead.
 
@@ -71,7 +71,7 @@ type timeseriesinfoPdata struct {
 type timeseriesMapPdata struct {
 	sync.RWMutex
 	// The mutex is used to protect access to the member fields. It is acquired for the entirety of
-	// AdjustMetrics() and also acquired by gc().
+	// AdjustMetricSlice() and also acquired by gc().
 
 	mark   bool
 	tsiMap map[string]*timeseriesinfoPdata
@@ -79,7 +79,7 @@ type timeseriesMapPdata struct {
 
 // Get the timeseriesinfo for the timeseries associated with the metric and label values.
 func (tsm *timeseriesMapPdata) get(metric *pdata.Metric, kv pdata.AttributeMap) *timeseriesinfoPdata {
-	// This should only be invoked be functions called (directly or indirectly) by AdjustMetrics().
+	// This should only be invoked be functions called (directly or indirectly) by AdjustMetricSlice().
 	// The lock protecting tsm.tsiMap is acquired there.
 	name := metric.Name()
 	sig := getTimeseriesSignaturePdata(name, kv)
@@ -206,7 +206,7 @@ func (jm *JobsMapPdata) get(job, instance string) *timeseriesMapPdata {
 }
 
 // MetricsAdjusterPdata takes a map from a metric instance to the initial point in the metrics instance
-// and provides AdjustMetrics, which takes a sequence of metrics and adjust their start times based on
+// and provides AdjustMetricSlice, which takes a sequence of metrics and adjust their start times based on
 // the initial points.
 type MetricsAdjusterPdata struct {
 	tsm    *timeseriesMapPdata
@@ -221,10 +221,10 @@ func NewMetricsAdjusterPdata(tsm *timeseriesMapPdata, logger *zap.Logger) *Metri
 	}
 }
 
-// AdjustMetrics takes a sequence of metrics and adjust their start times based on the initial and
+// AdjustMetricSlice takes a sequence of metrics and adjust their start times based on the initial and
 // previous points in the timeseriesMap.
 // Returns the total number of timeseries that had reset start times.
-func (ma *MetricsAdjusterPdata) AdjustMetrics(metricL *pdata.MetricSlice) int {
+func (ma *MetricsAdjusterPdata) AdjustMetricSlice(metricL *pdata.MetricSlice) int {
 	resets := 0
 	// The lock on the relevant timeseriesMap is held throughout the adjustment process to ensure that
 	// nothing else can modify the data used for adjustment.
@@ -233,6 +233,28 @@ func (ma *MetricsAdjusterPdata) AdjustMetrics(metricL *pdata.MetricSlice) int {
 	for i := 0; i < metricL.Len(); i++ {
 		metric := metricL.At(i)
 		resets += ma.adjustMetric(&metric)
+	}
+	return resets
+}
+
+// AdjustMetrics takes a sequence of metrics and adjust their start times based on the initial and
+// previous points in the timeseriesMap.
+// Returns the total number of timeseries that had reset start times.
+func (ma *MetricsAdjusterPdata) AdjustMetrics(metrics *pdata.Metrics) int {
+	resets := 0
+	// The lock on the relevant timeseriesMap is held throughout the adjustment process to ensure that
+	// nothing else can modify the data used for adjustment.
+	ma.tsm.Lock()
+	defer ma.tsm.Unlock()
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		rm := metrics.ResourceMetrics().At(i)
+		for j := 0; j < rm.InstrumentationLibraryMetrics().Len(); j++ {
+			ilm := rm.InstrumentationLibraryMetrics().At(j)
+			for k := 0; k < ilm.Metrics().Len(); k++ {
+				metric := ilm.Metrics().At(k)
+				resets += ma.adjustMetric(&metric)
+			}
+		}
 	}
 	return resets
 }

@@ -16,6 +16,7 @@ package redisreceiver // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"strconv"
 	"time"
 
 	"github.com/go-redis/redis/v7"
@@ -23,18 +24,22 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver/internal/metadata"
 )
 
 // Runs intermittently, fetching info from Redis, creating metrics/datapoints,
 // and feeding them to a metricsConsumer.
 type redisScraper struct {
-	redisSvc     *redisSvc
-	redisMetrics []*redisMetric
-	settings     component.ReceiverCreateSettings
-	timeBundle   *timeBundle
+	redisSvc *redisSvc
+	settings component.ReceiverCreateSettings
+	mb       *metadata.MetricsBuilder
+	uptime   time.Duration
 }
 
-func newRedisScraper(cfg Config, settings component.ReceiverCreateSettings) (scraperhelper.Scraper, error) {
+const redisMaxDbs = 16 // Maximum possible number of redis databases
+
+func newRedisScraper(cfg *Config, settings component.ReceiverCreateSettings) (scraperhelper.Scraper, error) {
 	opts := &redis.Options{
 		Addr:     cfg.Endpoint,
 		Password: cfg.Password,
@@ -45,14 +50,14 @@ func newRedisScraper(cfg Config, settings component.ReceiverCreateSettings) (scr
 	if opts.TLSConfig, err = cfg.TLS.LoadTLSConfig(); err != nil {
 		return nil, err
 	}
-	return newRedisScraperWithClient(newRedisClient(opts), settings)
+	return newRedisScraperWithClient(newRedisClient(opts), settings, cfg)
 }
 
-func newRedisScraperWithClient(client client, settings component.ReceiverCreateSettings) (scraperhelper.Scraper, error) {
+func newRedisScraperWithClient(client client, settings component.ReceiverCreateSettings, cfg *Config) (scraperhelper.Scraper, error) {
 	rs := &redisScraper{
-		redisSvc:     newRedisSvc(client),
-		redisMetrics: getDefaultRedisMetrics(),
-		settings:     settings,
+		redisSvc: newRedisSvc(client),
+		settings: settings,
+		mb:       metadata.NewMetricsBuilder(cfg.Metrics),
 	}
 	return scraperhelper.NewScraper(typeStr, rs.Scrape)
 }
@@ -62,44 +67,81 @@ func newRedisScraperWithClient(client client, settings component.ReceiverCreateS
 // defined at startup time. Then builds 'keyspace' metrics if there are any
 // keyspace lines returned by Redis. There should be one keyspace line per
 // active Redis database, of which there can be 16.
-func (r *redisScraper) Scrape(context.Context) (pdata.Metrics, error) {
-	inf, err := r.redisSvc.info()
+func (rs *redisScraper) Scrape(context.Context) (pdata.Metrics, error) {
+	inf, err := rs.redisSvc.info()
 	if err != nil {
 		return pdata.Metrics{}, err
 	}
 
-	uptime, err := inf.getUptimeInSeconds()
+	now := pdata.NewTimestampFromTime(time.Now())
+	currentUptime, err := inf.getUptimeInSeconds()
 	if err != nil {
 		return pdata.Metrics{}, err
 	}
 
-	if r.timeBundle == nil {
-		r.timeBundle = newTimeBundle(time.Now(), uptime)
-	} else {
-		r.timeBundle.update(time.Now(), uptime)
+	if rs.uptime == time.Duration(0) || rs.uptime > currentUptime {
+		rs.mb.Reset(metadata.WithStartTime(pdata.NewTimestampFromTime(now.AsTime().Add(-currentUptime))))
 	}
+	rs.uptime = currentUptime
 
 	pdm := pdata.NewMetrics()
 	rm := pdm.ResourceMetrics().AppendEmpty()
 	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
 	ilm.InstrumentationLibrary().SetName("otelcol/" + typeStr)
-	fixedMS, warnings := inf.buildFixedMetrics(r.redisMetrics, r.timeBundle)
-	fixedMS.MoveAndAppendTo(ilm.Metrics())
-	if warnings != nil {
-		r.settings.Logger.Warn(
-			"errors parsing redis string",
-			zap.Errors("parsing errors", warnings),
-		)
-	}
 
-	keyspaceMS, warnings := inf.buildKeyspaceMetrics(r.timeBundle)
-	if warnings != nil {
-		r.settings.Logger.Warn(
-			"errors parsing keyspace string",
-			zap.Errors("parsing errors", warnings),
-		)
-	}
-	keyspaceMS.MoveAndAppendTo(ilm.Metrics())
+	rs.recordCommonMetrics(now, inf)
+	rs.recordKeyspaceMetrics(now, inf)
+
+	rs.mb.Emit(ilm.Metrics())
 
 	return pdm, nil
+}
+
+// recordCommonMetrics records metrics from Redis info key-value pairs.
+func (rs *redisScraper) recordCommonMetrics(ts pdata.Timestamp, inf info) {
+	recorders := rs.dataPointRecorders()
+	for infoKey, infoVal := range inf {
+		recorder, ok := recorders[infoKey]
+		if !ok {
+			// Skip unregistered metric.
+			continue
+		}
+		switch recordDataPoint := recorder.(type) {
+		case func(pdata.Timestamp, int64):
+			val, err := strconv.ParseInt(infoVal, 10, 64)
+			if err != nil {
+				rs.settings.Logger.Warn("failed to parse info int val", zap.String("key", infoKey),
+					zap.String("val", infoVal), zap.Error(err))
+			}
+			recordDataPoint(ts, val)
+		case func(pdata.Timestamp, float64):
+			val, err := strconv.ParseFloat(infoVal, 64)
+			if err != nil {
+				rs.settings.Logger.Warn("failed to parse info float val", zap.String("key", infoKey),
+					zap.String("val", infoVal), zap.Error(err))
+			}
+			recordDataPoint(ts, val)
+		}
+	}
+}
+
+// recordKeyspaceMetrics records metrics from 'keyspace' Redis info key-value pairs,
+// e.g. "db0: keys=1,expires=2,avg_ttl=3".
+func (rs *redisScraper) recordKeyspaceMetrics(ts pdata.Timestamp, inf info) {
+	for db := 0; db < redisMaxDbs; db++ {
+		key := "db" + strconv.Itoa(db)
+		str, ok := inf[key]
+		if !ok {
+			break
+		}
+		keyspace, parsingError := parseKeyspaceString(db, str)
+		if parsingError != nil {
+			rs.settings.Logger.Warn("failed to parse keyspace string", zap.String("key", key),
+				zap.String("val", str), zap.Error(parsingError))
+			continue
+		}
+		rs.mb.RecordRedisDbKeysDataPoint(ts, int64(keyspace.keys), keyspace.db)
+		rs.mb.RecordRedisDbExpiresDataPoint(ts, int64(keyspace.expires), keyspace.db)
+		rs.mb.RecordRedisDbAvgTTLDataPoint(ts, int64(keyspace.avgTTL), keyspace.db)
+	}
 }

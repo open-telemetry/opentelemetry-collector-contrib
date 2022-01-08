@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/prometheus/prometheus/pkg/labels"
+	"github.com/prometheus/prometheus/pkg/value"
 	"github.com/prometheus/prometheus/scrape"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
@@ -52,6 +53,8 @@ type metricGroupPdata struct {
 	value        float64
 	complexValue []*dataPoint
 }
+
+var pdataStaleFlags = pdata.NewMetricDataPointFlags(pdata.MetricDataPointFlagNoRecordedValue)
 
 func newMetricFamilyPdata(metricName string, mc MetadataCache, logger *zap.Logger) *metricFamilyPdata {
 	metadata, familyName := metadataForMetric(metricName, mc)
@@ -140,10 +143,16 @@ func (mg *metricGroupPdata) toDistributionPoint(orderedLabelKeys []string, dest 
 	}
 
 	point := dest.AppendEmpty()
-	point.SetExplicitBounds(bounds)
-	point.SetCount(uint64(mg.count))
-	point.SetSum(mg.sum)
-	point.SetBucketCounts(bucketCounts)
+
+	if value.IsStaleNaN(mg.sum) || value.IsStaleNaN(mg.count) {
+		point.SetFlags(pdataStaleFlags)
+	} else {
+		point.SetExplicitBounds(bounds)
+		point.SetCount(uint64(mg.count))
+		point.SetSum(mg.sum)
+		point.SetBucketCounts(bucketCounts)
+	}
+
 	// The timestamp MUST be in retrieved from milliseconds and converted to nanoseconds.
 	tsNanos := pdataTimestampFromMs(mg.ts)
 	if mg.family.isCumulativeTypePdata() {
@@ -171,11 +180,17 @@ func (mg *metricGroupPdata) toSummaryPoint(orderedLabelKeys []string, dest *pdat
 	mg.sortPoints()
 
 	point := dest.AppendEmpty()
-	quantileValues := point.QuantileValues()
-	for _, p := range mg.complexValue {
-		quantile := quantileValues.AppendEmpty()
-		quantile.SetValue(p.value)
-		quantile.SetQuantile(p.boundary)
+	if value.IsStaleNaN(mg.sum) || value.IsStaleNaN(mg.count) {
+		point.SetFlags(pdataStaleFlags)
+	} else {
+		quantileValues := point.QuantileValues()
+		for _, p := range mg.complexValue {
+			quantile := quantileValues.AppendEmpty()
+			quantile.SetValue(p.value)
+			quantile.SetQuantile(p.boundary)
+		}
+		point.SetSum(mg.sum)
+		point.SetCount(uint64(mg.count))
 	}
 
 	// Based on the summary description from https://prometheus.io/docs/concepts/metric_types/#summary
@@ -188,8 +203,6 @@ func (mg *metricGroupPdata) toSummaryPoint(orderedLabelKeys []string, dest *pdat
 	if mg.family.isCumulativeTypePdata() {
 		point.SetStartTimestamp(tsNanos) // metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
 	}
-	point.SetSum(mg.sum)
-	point.SetCount(uint64(mg.count))
 	populateAttributesPdata(orderedLabelKeys, mg.ls, point.Attributes())
 
 	return true
@@ -206,7 +219,11 @@ func (mg *metricGroupPdata) toNumberDataPoint(orderedLabelKeys []string, dest *p
 	point := dest.AppendEmpty()
 	point.SetStartTimestamp(startTsNanos)
 	point.SetTimestamp(tsNanos)
-	point.SetDoubleVal(mg.value)
+	if value.IsStaleNaN(mg.value) {
+		point.SetFlags(pdataStaleFlags)
+	} else {
+		point.SetDoubleVal(mg.value)
+	}
 	populateAttributesPdata(orderedLabelKeys, mg.ls, point.Attributes())
 
 	return true
