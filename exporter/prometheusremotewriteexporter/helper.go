@@ -297,7 +297,7 @@ func sanitize(s string) string {
 	if unicode.IsDigit(rune(s[0])) {
 		s = keyStr + "_" + s
 	}
-	if s[0] == '_' {
+	if s[0] == '_' && s[1] == '_'{
 		s = keyStr + s
 	}
 	return s
