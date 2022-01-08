@@ -16,6 +16,7 @@ package prometheusremotewriteexporter // import "github.com/open-telemetry/opent
 
 import (
 	"fmt"
+	"go.opentelemetry.io/collector/service/featuregate"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -29,6 +30,7 @@ type Config struct {
 	config.ExporterSettings        `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
+	sanitizeLabel                  bool
 
 	// prefix attached to each exported metric name
 	// See: https://prometheus.io/docs/practices/naming/#metric-names
@@ -62,6 +64,16 @@ type RemoteWriteQueue struct {
 	// NumWorkers configures the number of workers used by
 	// the collector to fan out remote write requests.
 	NumConsumers int `mapstructure:"num_consumers"`
+}
+
+var dropSanitizationGate = featuregate.Gate{
+	ID:          "exporter.prometheusremotewrite.PermissiveLabelSanitization",
+	Enabled:     false,
+	Description: "Controls whether to change labels starting with '_' to 'key_'",
+}
+
+func init() {
+	featuregate.Register(dropSanitizationGate)
 }
 
 // TODO(jbd): Add capacity, max_samples_per_send to QueueConfig.
