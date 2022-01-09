@@ -32,7 +32,7 @@ func getNewAndPolicy(logger *zap.Logger, config AndCfg) (sampling.PolicyEvaluato
 	return sampling.NewAnd(logger, subPolicyEvaluators), nil
 }
 
-// Return instance of combined sub-policy
+// Return instance of and sub-policy
 func getAndSubPolicyEvaluator(logger *zap.Logger, cfg *AndSubPolicyCfg) (sampling.PolicyEvaluator, error) {
 	switch cfg.Type {
 	case AlwaysSample:
