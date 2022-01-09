@@ -58,7 +58,7 @@ type metricBuilder struct {
 	startTime            float64
 	intervalStartTimeMs  int64
 	logger               *zap.Logger
-	families             map[string]MetricFamily
+	families             map[string]*metricFamily
 }
 
 // newMetricBuilder creates a MetricBuilder which is allowed to feed all the datapoints from a single prometheus
@@ -72,7 +72,7 @@ func newMetricBuilder(mc MetadataCache, useStartTimeMetric bool, startTimeMetric
 	return &metricBuilder{
 		mc:                   mc,
 		metrics:              make([]*metricspb.Metric, 0),
-		families:             map[string]MetricFamily{},
+		families:             map[string]*metricFamily{},
 		logger:               logger,
 		numTimeseries:        0,
 		droppedTimeseries:    0,
@@ -138,14 +138,14 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 
 	b.hasData = true
 
-	familyName := normalizeMetricName(metricName)
-	curMF, ok := b.families[familyName]
+	curMF, ok := b.families[metricName]
 	if !ok {
-		if mf, ok := b.families[metricName]; ok {
+		familyName := normalizeMetricName(metricName)
+		if mf, ok := b.families[familyName]; ok && mf.includesMetric(metricName) {
 			curMF = mf
 		} else {
 			curMF = newMetricFamily(metricName, b.mc, b.logger, b.intervalStartTimeMs)
-			b.families[familyName] = curMF
+			b.families[curMF.name] = curMF
 		}
 	}
 

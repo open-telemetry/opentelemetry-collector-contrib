@@ -25,6 +25,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/sanitize"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
@@ -231,7 +232,7 @@ func (c *clientImpl) Get(path string) ([]byte, error) {
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("kubelet request GET %s failed - %q, response: %q",
-			req.URL.String(), resp.Status, string(body))
+			sanitize.URL(req.URL), resp.Status, string(body))
 	}
 
 	return body, nil

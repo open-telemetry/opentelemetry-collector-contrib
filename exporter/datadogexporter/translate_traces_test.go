@@ -1571,3 +1571,32 @@ func TestSpanRateLimitTag(t *testing.T) {
 
 	assert.Equal(t, 0.5, outputTraces[0].Traces[0].Spans[0].Metrics["_sample_rate"])
 }
+
+func TestTracesSpanNamingOption(t *testing.T) {
+	hostname := "testhostname"
+	denylister := newDenylister([]string{})
+
+	// generate mock trace, span and parent span ids
+	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
+	mockSpanID := [8]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8}
+	mockParentSpanID := [8]byte{0xEF, 0xEE, 0xED, 0xEC, 0xEB, 0xEA, 0xE9, 0xE8}
+
+	mockEndTime := time.Now().Round(time.Second)
+
+	// create mock resource span data
+	// toggle on errors and custom service naming to test edge case code paths
+	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, pdata.StatusCodeUnset, false, mockEndTime)
+
+	// start with span name as resource name set to true
+	cfgSpanNameAsResourceName := config.Config{
+		Traces: config.TracesConfig{
+			SpanNameAsResourceName: true,
+		},
+	}
+
+	// translate mocks to datadog traces
+	datadogPayloadSpanNameAsResourceName := resourceSpansToDatadogSpans(rs, hostname, &cfgSpanNameAsResourceName, denylister, map[string]string{})
+
+	// ensure the resource name is replaced with the span name when the option is set
+	assert.Equal(t, "End-To-End Here", datadogPayloadSpanNameAsResourceName.Traces[0].Spans[0].Name)
+}

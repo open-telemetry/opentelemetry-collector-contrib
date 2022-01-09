@@ -4,19 +4,18 @@ go 1.17
 
 require (
 	github.com/grobie/gomemcache v0.0.0-20180201122607-1f779c573665
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.41.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.41.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.42.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.42.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.41.1-0.20211222180302-3db1d1146483
-	go.opentelemetry.io/collector/model v0.41.1-0.20211222180302-3db1d1146483
-	go.uber.org/zap v1.19.1
+	go.opentelemetry.io/collector v0.42.0
+	go.opentelemetry.io/collector/model v0.42.0
+	go.uber.org/zap v1.20.0
 )
 
 require (
 	github.com/Microsoft/go-winio v0.4.17 // indirect
-	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.2 // indirect
-	github.com/containerd/containerd v1.5.8 // indirect
+	github.com/containerd/containerd v1.5.9 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.7.1+incompatible // indirect
 	github.com/docker/docker v20.10.12+incompatible // indirect
@@ -25,7 +24,7 @@ require (
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
-	github.com/knadh/koanf v1.3.3 // indirect
+	github.com/knadh/koanf v1.4.0 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.3 // indirect

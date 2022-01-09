@@ -79,7 +79,7 @@ func TestCreateTracesExporter(t *testing.T) {
 				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				GRPCClientSettings: configgrpc.GRPCClientSettings{
 					Endpoint:    endpoint,
-					Compression: configgrpc.CompressionGzip,
+					Compression: "gzip",
 				},
 				NumStreams: 3,
 			},
@@ -151,6 +151,8 @@ func TestCreateTracesExporter(t *testing.T) {
 			set := componenttest.NewNopExporterCreateSettings()
 			tExporter, tErr := createLogsExporter(context.Background(), set, &tt.config)
 			checkErrorsAndStartAndShutdown(t, tExporter, tErr, tt.mustFailOnCreate, tt.mustFailOnStart)
+			tExporter2, tErr2 := createMetricsExporter(context.Background(), set, &tt.config)
+			checkErrorsAndStartAndShutdown(t, tExporter2, tErr2, tt.mustFailOnCreate, tt.mustFailOnStart)
 		})
 	}
 }

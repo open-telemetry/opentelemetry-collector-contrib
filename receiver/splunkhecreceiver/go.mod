@@ -5,13 +5,13 @@ go 1.17
 require (
 	github.com/gorilla/mux v1.8.0
 	github.com/json-iterator/go v1.1.12
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter v0.41.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.41.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.41.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter v0.42.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.42.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.42.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.41.1-0.20211222180302-3db1d1146483
-	go.opentelemetry.io/collector/model v0.41.1-0.20211222180302-3db1d1146483
-	go.uber.org/zap v1.19.1
+	go.opentelemetry.io/collector v0.42.0
+	go.opentelemetry.io/collector/model v0.42.0
+	go.uber.org/zap v1.20.0
 )
 
 require (
@@ -24,14 +24,14 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/klauspost/compress v1.13.6 // indirect
-	github.com/knadh/koanf v1.3.3 // indirect
+	github.com/knadh/koanf v1.4.0 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.41.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.42.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.6.1 // indirect
 	github.com/rs/cors v1.8.2 // indirect

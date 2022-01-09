@@ -28,6 +28,16 @@ datadog:
     site: datadoghq.eu
 ```
 
+ If you want to use the OpenTelemetry Span Name as the Datadog Resource Name you can set the `span_name_as_resource_name` configuration option to `true` (default is `false`). For more info on the downsides of this option check [this](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/1909) issue.
+
+ ```yaml
+datadog:
+  api:
+    key: "<API key>"
+    traces:
+      span_name_as_resource_name: true
+```
+
 The hostname, environment, service and version can be set in the configuration for unified service tagging.
 The exporter will try to retrieve a hostname following the OpenTelemetry semantic conventions if there is one available.
 

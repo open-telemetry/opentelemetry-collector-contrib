@@ -40,6 +40,7 @@ import (
 	ddconf "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	dtconf "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombexporter"
@@ -288,6 +289,14 @@ func TestDefaultExporters(t *testing.T) {
 			},
 		},
 		{
+			exporter: "elasticsearch",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["elasticsearch"].CreateDefaultConfig().(*elasticsearchexporter.Config)
+				cfg.Endpoints = []string{"http://" + endpoint}
+				return cfg
+			},
+		},
+		{
 			exporter: "f5cloud",
 			getConfigFn: func() config.Exporter {
 				f := testutil.NewTemporaryFile(t)
@@ -405,7 +414,7 @@ func TestDefaultExporters(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, len(tests), len(expFactories), "All user configurable components must be added to the lifecycle test")
+	assert.Len(t, tests, len(expFactories), "All user configurable components must be added to the lifecycle test")
 	for _, tt := range tests {
 		t.Run(string(tt.exporter), func(t *testing.T) {
 			t.Parallel()
@@ -416,7 +425,7 @@ func TestDefaultExporters(t *testing.T) {
 			assert.Equal(t, config.NewComponentID(tt.exporter), factory.CreateDefaultConfig().ID())
 
 			if tt.skipLifecycle {
-				t.Log("Skipping lifecycle test", tt.exporter)
+				t.Skip("Skipping lifecycle test", tt.exporter)
 				return
 			}
 
