@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
 )
@@ -35,7 +36,7 @@ func TestDefaultConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[factory.Type()] = factory
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "default.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "default.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
@@ -66,7 +67,7 @@ func TestConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[factory.Type()] = factory
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)

@@ -75,7 +75,8 @@ func appendCloudVMAttributes(attrMap pdata.AttributeMap) {
 
 func appendOnpremK8sAttributes(attrMap pdata.AttributeMap) {
 	attrMap.UpsertString(conventions.AttributeContainerName, "cert-manager")
-	attrMap.UpsertString(conventions.AttributeContainerImageName, "quay.io/jetstack/cert-manager-controller:v0.14.2")
+	attrMap.UpsertString(conventions.AttributeContainerImageName, "quay.io/jetstack/cert-manager-controller")
+	attrMap.UpsertString(conventions.AttributeContainerImageTag, "v0.14.2")
 	attrMap.UpsertString(conventions.AttributeK8SClusterName, "docker-desktop")
 	attrMap.UpsertString(conventions.AttributeK8SNamespaceName, "cert-manager")
 	attrMap.UpsertString(conventions.AttributeK8SDeploymentName, "cm-1-cert-manager")

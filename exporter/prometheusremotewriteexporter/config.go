@@ -51,8 +51,12 @@ type Config struct {
 
 // RemoteWriteQueue allows to configure the remote write queue.
 type RemoteWriteQueue struct {
+	// Enabled if false the queue is not enabled, the export requests
+	// are executed synchronously.
+	Enabled bool `mapstructure:"enabled"`
+
 	// QueueSize is the maximum number of OTLP metric batches allowed
-	// in the queue at a given time.
+	// in the queue at a given time. Ignored if Enabled is false.
 	QueueSize int `mapstructure:"queue_size"`
 
 	// NumWorkers configures the number of workers used by
@@ -69,6 +73,11 @@ func (cfg *Config) Validate() error {
 	if cfg.RemoteWriteQueue.QueueSize < 0 {
 		return fmt.Errorf("remote write queue size can't be negative")
 	}
+
+	if cfg.RemoteWriteQueue.Enabled && cfg.RemoteWriteQueue.QueueSize == 0 {
+		return fmt.Errorf("a 0 size queue will drop all the data")
+	}
+
 	if cfg.RemoteWriteQueue.NumConsumers < 0 {
 		return fmt.Errorf("remote write consumer number can't be negative")
 	}

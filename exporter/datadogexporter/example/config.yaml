@@ -148,6 +148,13 @@ exporters:
       #   instrumentation:express.server: express
       #   go.opentelemetry.io_contrib_instrumentation_net_http_otelhttp.client: http.client
 
+      ## @param span_name_as_resource_name - use OpenTelemetry semantic convention for span naming - optional
+      ## Option created to maintain similarity with the OpenTelemetry semantic conventions as discussed in the issue below.
+      ## https://github.com/open-telemetry/opentelemetry-specification/tree/main/specification/trace/semantic_conventions
+      ## https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/1909
+      #
+      # span_name_as_resource_name: true
+
 
 service:
   pipelines:

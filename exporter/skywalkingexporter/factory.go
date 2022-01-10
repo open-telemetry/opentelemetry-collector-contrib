@@ -34,7 +34,8 @@ func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithLogs(createLogsExporter))
+		exporterhelper.WithLogs(createLogsExporter),
+		exporterhelper.WithMetrics(createMetricsExporter))
 }
 
 func createDefaultConfig() config.Exporter {
@@ -58,7 +59,7 @@ func createLogsExporter(
 	cfg config.Exporter,
 ) (component.LogsExporter, error) {
 	oCfg := cfg.(*Config)
-	oce := newExporter(ctx, oCfg, set.TelemetrySettings)
+	oce := newLogsExporter(ctx, oCfg, set.TelemetrySettings)
 	return exporterhelper.NewLogsExporter(
 		cfg,
 		set,
@@ -70,4 +71,19 @@ func createLogsExporter(
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
 	)
+}
+
+func createMetricsExporter(ctx context.Context, set component.ExporterCreateSettings, cfg config.Exporter) (component.MetricsExporter, error) {
+	oCfg := cfg.(*Config)
+	oce := newMetricsExporter(ctx, oCfg, set.TelemetrySettings)
+	return exporterhelper.NewMetricsExporter(
+		cfg,
+		set,
+		oce.pushMetrics,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		exporterhelper.WithRetry(oCfg.RetrySettings),
+		exporterhelper.WithQueue(oCfg.QueueSettings),
+		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
+		exporterhelper.WithStart(oce.start),
+		exporterhelper.WithShutdown(oce.shutdown))
 }

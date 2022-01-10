@@ -153,6 +153,11 @@ type TracesConfig struct {
 	//   instrumentation:express.server: express
 	//   go.opentelemetry.io_contrib_instrumentation_net_http_otelhttp.client: http.client
 	SpanNameRemappings map[string]string `mapstructure:"span_name_remappings"`
+
+	// If set to true the OpenTelemetry span name will used in the Datadog resource name.
+	// If set to false the resource name will be filled with the instrumentation library name + span kind.
+	// The default value is `false`.
+	SpanNameAsResourceName bool `mapstructure:"span_name_as_resource_name"`
 }
 
 // TagsConfig defines the tag-related configuration

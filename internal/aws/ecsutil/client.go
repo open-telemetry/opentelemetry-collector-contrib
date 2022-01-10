@@ -24,6 +24,8 @@ import (
 	cconfig "go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/sanitize"
 )
 
 // Client defines the basic HTTP client interface with GET response validation and content parsing
@@ -107,7 +109,7 @@ func (c *clientImpl) Get(path string) ([]byte, error) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("request GET %s failed - %q", req.URL.String(), resp.Status)
+		return nil, fmt.Errorf("request GET %s failed - %q", sanitize.URL(req.URL), resp.Status)
 	}
 	return body, nil
 }
