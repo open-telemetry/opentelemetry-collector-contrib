@@ -2,12 +2,19 @@
 
 ## Unreleased
 
+## 💡 Enhancements 💡
+
+- `elasticsearchexporter`: add elasticsearchexporter to the components exporter list (#6002)
+- `datadogexporter`: Add http.status_code tag to trace stats (#6889)
+- `tanzuobservabilityexporter`: Support delta histograms (#6897)
+
 ## v0.42.0
 
 ## 💡 Enhancements 💡
 
 - `couchdbreceiver`: Add couchdb client (#6880)
 - `elasticsearchreceiver`: Implement scraper client (#7019)
+- `couchdbreceiver`: Add metadata metrics (#6878)
 - `prometheusremotewriteexporter`: Handling Staleness flag from OTLP (#6679)
 - `prometheusexporter`: Handling Staleness flag from OTLP (#6805)
 - `prometheusreceiver`: Set OTLP no-data-present flag for stale scraped metrics. (#7043)
@@ -19,7 +26,7 @@
 - `redisreceiver`: Set start timestamp uniformly for gauge and sum metrics (#6941)
 - `kafkaexporter`: Allow controlling Kafka acknowledgment behaviour  (#6301)
 - `lokiexporter`: Log the first part of the http body on failed pushes to loki (#6946)
-- `tanzuobservabilityexporter`: Support delta histograms (#6897)
+- `resourcedetectionprocessor`: add the [consul](https://www.consul.io/) detector (#6382)
 
 ## 🛑 Breaking changes 🛑
 
@@ -33,6 +40,8 @@
 ## 🚀 New components 🚀
 
 - `ecs_task_observer`: Discover running containers in AWS ECS tasks (#6894)
+- `mongodbreceiver`: Establish codebase for MongoDB metrics receiver (#6972)
+- `couchbasereceiver`: Establish codebase for Couchbase metrics receiver (#7046)
 
 ## 🧰 Bug fixes 🧰
 
@@ -124,6 +133,7 @@
 - `observiqexporter`: Allow Dialer timeout to be configured (#5906)
 - `routingprocessor`: remove broken debug log fields (#6373)
 - `prometheusremotewriteexporter`: Add exemplars support (#5578) 
+- `fluentforwardreceiver`: Convert attributes with nil value to AttributeValueTypeEmpty (#6630)
 
 ## v0.39.0
 

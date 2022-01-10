@@ -14,8 +14,6 @@
 
 package couchdbreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver"
 
-//go:generate mdatagen metadata.yaml
-
 import (
 	"context"
 	"time"
