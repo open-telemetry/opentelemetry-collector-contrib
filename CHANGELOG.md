@@ -6,6 +6,7 @@
 
 - `elasticsearchexporter`: add elasticsearchexporter to the components exporter list (#6002)
 - `datadogexporter`: Add http.status_code tag to trace stats (#6889)
+- `tanzuobservabilityexporter`: Support delta histograms (#6897)
 
 ## v0.42.0
 
