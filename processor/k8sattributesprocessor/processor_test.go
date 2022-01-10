@@ -349,6 +349,33 @@ func TestIPDetectionFromTCPContext(t *testing.T) {
 
 }
 
+func TestIPDetectionFromUDPContext(t *testing.T) {
+	m := newMultiTest(t, NewFactory().CreateDefaultConfig(), nil)
+
+	udpCtx := client.NewContext(context.Background(), client.Info{
+		Addr: &net.UDPAddr{
+			IP: net.IPv4(1, 1, 1, 1),
+			Port: 3200,
+		},
+	})
+	m.testConsume(
+		udpCtx,
+		generateTraces(),
+		generateMetrics(),
+		generateLogs(),
+		func(err error) {
+			assert.NoError(t, err)
+		})
+
+	m.assertBatchesLen(1)
+	m.assertResourceObjectLen(0)
+	m.assertResource(0, func(r pdata.Resource) {
+		require.Greater(t, r.Attributes().Len(), 0)
+		assertResourceHasStringAttribute(t, r, "k8s.pod.ip", "1.1.1.1")
+	})
+
+}
+
 func TestNilBatch(t *testing.T) {
 	m := newMultiTest(t, NewFactory().CreateDefaultConfig(), nil)
 	m.testConsume(
