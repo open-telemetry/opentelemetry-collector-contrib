@@ -1,0 +1,3628 @@
+{
+	"asserts": {
+		"msg": {
+			"$numberInt": "0"
+		},
+		"regular": {
+			"$numberInt": "0"
+		},
+		"rollovers": {
+			"$numberInt": "0"
+		},
+		"user": {
+			"$numberInt": "0"
+		},
+		"warning": {
+			"$numberInt": "0"
+		}
+	},
+	"connections": {
+		"active": {
+			"$numberInt": "1"
+		},
+		"available": {
+			"$numberInt": "838857"
+		},
+		"current": {
+			"$numberInt": "3"
+		},
+		"totalCreated": {
+			"$numberInt": "3"
+		}
+	},
+	"electionMetrics": {
+		"averageCatchUpOps": {
+			"$numberDouble": "0.0"
+		},
+		"catchUpTakeover": {
+			"called": {
+				"$numberLong": "0"
+			},
+			"successful": {
+				"$numberLong": "0"
+			}
+		},
+		"electionTimeout": {
+			"called": {
+				"$numberLong": "0"
+			},
+			"successful": {
+				"$numberLong": "0"
+			}
+		},
+		"freezeTimeout": {
+			"called": {
+				"$numberLong": "0"
+			},
+			"successful": {
+				"$numberLong": "0"
+			}
+		},
+		"numCatchUps": {
+			"$numberLong": "0"
+		},
+		"numCatchUpsAlreadyCaughtUp": {
+			"$numberLong": "0"
+		},
+		"numCatchUpsFailedWithError": {
+			"$numberLong": "0"
+		},
+		"numCatchUpsFailedWithNewTerm": {
+			"$numberLong": "0"
+		},
+		"numCatchUpsFailedWithReplSetAbortPrimaryCatchUpCmd": {
+			"$numberLong": "0"
+		},
+		"numCatchUpsSkipped": {
+			"$numberLong": "0"
+		},
+		"numCatchUpsSucceeded": {
+			"$numberLong": "0"
+		},
+		"numCatchUpsTimedOut": {
+			"$numberLong": "0"
+		},
+		"numStepDownsCausedByHigherTerm": {
+			"$numberLong": "0"
+		},
+		"priorityTakeover": {
+			"called": {
+				"$numberLong": "0"
+			},
+			"successful": {
+				"$numberLong": "0"
+			}
+		},
+		"stepUpCmd": {
+			"called": {
+				"$numberLong": "0"
+			},
+			"successful": {
+				"$numberLong": "0"
+			}
+		}
+	},
+	"extra_info": {
+		"note": "fields vary by platform",
+		"page_faults": {
+			"$numberInt": "0"
+		}
+	},
+	"freeMonitoring": {
+		"state": "undecided"
+	},
+	"globalLock": {
+		"activeClients": {
+			"readers": {
+				"$numberInt": "0"
+			},
+			"total": {
+				"$numberInt": "16"
+			},
+			"writers": {
+				"$numberInt": "0"
+			}
+		},
+		"currentQueue": {
+			"readers": {
+				"$numberInt": "0"
+			},
+			"total": {
+				"$numberInt": "0"
+			},
+			"writers": {
+				"$numberInt": "0"
+			}
+		},
+		"totalTime": {
+			"$numberLong": "58889000"
+		}
+	},
+	"host": "7ef1eab6bba0",
+	"localTime": {
+		"$date": {
+			"$numberLong": "1629307937965"
+		}
+	},
+	"locks": {
+		"Collection": {
+			"acquireCount": {
+				"r": {
+					"$numberLong": "89"
+				}
+			}
+		},
+		"Database": {
+			"acquireCount": {
+				"R": {
+					"$numberLong": "3"
+				},
+				"W": {
+					"$numberLong": "7"
+				},
+				"r": {
+					"$numberLong": "149"
+				}
+			},
+			"acquireWaitCount": {
+				"W": {
+					"$numberLong": "1"
+				},
+				"r": {
+					"$numberLong": "2"
+				}
+			},
+			"timeAcquiringMicros": {
+				"W": {
+					"$numberLong": "274"
+				},
+				"r": {
+					"$numberLong": "250"
+				}
+			}
+		},
+		"Global": {
+			"acquireCount": {
+				"W": {
+					"$numberLong": "5"
+				},
+				"r": {
+					"$numberLong": "307"
+				},
+				"w": {
+					"$numberLong": "7"
+				}
+			}
+		},
+		"oplog": {
+			"acquireCount": {
+				"r": {
+					"$numberLong": "61"
+				}
+			}
+		}
+	},
+	"logicalSessionRecordCache": {
+		"activeSessionsCount": {
+			"$numberInt": "1"
+		},
+		"lastSessionsCollectionJobCursorsClosed": {
+			"$numberInt": "0"
+		},
+		"lastSessionsCollectionJobDurationMillis": {
+			"$numberInt": "0"
+		},
+		"lastSessionsCollectionJobEntriesEnded": {
+			"$numberInt": "0"
+		},
+		"lastSessionsCollectionJobEntriesRefreshed": {
+			"$numberInt": "0"
+		},
+		"lastSessionsCollectionJobTimestamp": {
+			"$date": {
+				"$numberLong": "1629307879877"
+			}
+		},
+		"lastTransactionReaperJobDurationMillis": {
+			"$numberInt": "0"
+		},
+		"lastTransactionReaperJobEntriesCleanedUp": {
+			"$numberInt": "0"
+		},
+		"lastTransactionReaperJobTimestamp": {
+			"$date": {
+				"$numberLong": "1629307879877"
+			}
+		},
+		"sessionCatalogSize": {
+			"$numberInt": "0"
+		},
+		"sessionsCollectionJobCount": {
+			"$numberInt": "1"
+		},
+		"transactionReaperJobCount": {
+			"$numberInt": "1"
+		}
+	},
+	"mem": {
+		"bits": {
+			"$numberInt": "64"
+		},
+		"mapped": {
+			"$numberInt": "0"
+		},
+		"mappedWithJournal": {
+			"$numberInt": "0"
+		},
+		"resident": {
+			"$numberInt": "79"
+		},
+		"supported": true,
+		"virtual": {
+			"$numberInt": "1089"
+		}
+	},
+	"metrics": {
+		"aggStageCounters": {
+			"$_internalInhibitOptimization": {
+				"$numberLong": "0"
+			},
+			"$_internalSplitPipeline": {
+				"$numberLong": "0"
+			},
+			"$addFields": {
+				"$numberLong": "0"
+			},
+			"$bucket": {
+				"$numberLong": "0"
+			},
+			"$bucketAuto": {
+				"$numberLong": "0"
+			},
+			"$changeStream": {
+				"$numberLong": "0"
+			},
+			"$collStats": {
+				"$numberLong": "0"
+			},
+			"$count": {
+				"$numberLong": "0"
+			},
+			"$currentOp": {
+				"$numberLong": "0"
+			},
+			"$facet": {
+				"$numberLong": "0"
+			},
+			"$geoNear": {
+				"$numberLong": "0"
+			},
+			"$graphLookup": {
+				"$numberLong": "0"
+			},
+			"$group": {
+				"$numberLong": "0"
+			},
+			"$indexStats": {
+				"$numberLong": "0"
+			},
+			"$limit": {
+				"$numberLong": "0"
+			},
+			"$listLocalSessions": {
+				"$numberLong": "0"
+			},
+			"$listSessions": {
+				"$numberLong": "0"
+			},
+			"$lookup": {
+				"$numberLong": "0"
+			},
+			"$match": {
+				"$numberLong": "0"
+			},
+			"$mergeCursors": {
+				"$numberLong": "0"
+			},
+			"$out": {
+				"$numberLong": "0"
+			},
+			"$project": {
+				"$numberLong": "0"
+			},
+			"$redact": {
+				"$numberLong": "0"
+			},
+			"$replaceRoot": {
+				"$numberLong": "0"
+			},
+			"$sample": {
+				"$numberLong": "0"
+			},
+			"$skip": {
+				"$numberLong": "0"
+			},
+			"$sort": {
+				"$numberLong": "0"
+			},
+			"$sortByCount": {
+				"$numberLong": "0"
+			},
+			"$unwind": {
+				"$numberLong": "0"
+			}
+		},
+		"commands": {
+			"\u003cUNKNOWN\u003e": {
+				"$numberLong": "0"
+			},
+			"_cloneCatalogData": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"_cloneCollectionOptionsFromPrimaryShard": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"_configsvrAddShard": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"_configsvrAddShardToZone": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"_configsvrBalancerStart": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"_configsvrBalancerStatus": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"_configsvrBalancerStop": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"_configsvrClearJumboFlag": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"_configsvrCommitChunkMerge": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"_configsvrCommitChunkMigration": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"_configsvrCommitChunkSplit": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"_configsvrCommitMovePrimary": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"_configsvrCreateCollection": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"_configsvrCreateDatabase": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"_configsvrDropCollection": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"_configsvrDropDatabase": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"_configsvrEnableSharding": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"_configsvrMoveChunk": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"_configsvrMovePrimary": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"_configsvrRemoveShard": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"_configsvrRemoveShardFromZone": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"_configsvrShardCollection": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"_configsvrUpdateZoneKeyRange": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"_flushDatabaseCacheUpdates": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"_flushRoutingTableCacheUpdates": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"_getNextSessionMods": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"_getUserCacheGeneration": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"_isSelf": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"_mergeAuthzCollections": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"_migrateClone": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"_movePrimary": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"_recvChunkAbort": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"_recvChunkCommit": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"_recvChunkStart": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"_recvChunkStatus": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"_shardsvrShardCollection": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"_transferMods": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"abortTransaction": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"aggregate": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"appendOplogNote": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"applyOps": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"authenticate": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"availableQueryOptions": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"buildInfo": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"checkShardingIndex": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"cleanupOrphaned": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"clone": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"cloneCollection": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"cloneCollectionAsCapped": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"collMod": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"collStats": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"commitTransaction": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"compact": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"connPoolStats": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"connPoolSync": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"connectionStatus": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"convertToCapped": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"copydb": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"copydbsaslstart": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"count": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"create": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"createIndexes": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"createRole": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"createUser": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"currentOp": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"dataSize": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"dbHash": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"dbStats": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "3"
+				}
+			},
+			"delete": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"distinct": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"driverOIDTest": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"drop": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"dropAllRolesFromDatabase": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"dropAllUsersFromDatabase": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"dropDatabase": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"dropIndexes": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"dropRole": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"dropUser": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"endSessions": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"eval": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"explain": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"features": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"filemd5": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"find": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "2"
+				}
+			},
+			"findAndModify": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"flushRouterConfig": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"fsync": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"fsyncUnlock": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"geoNear": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"geoSearch": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"getCmdLineOpts": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"getDatabaseVersion": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"getDiagnosticData": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"getFreeMonitoringStatus": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"getLastError": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"getLog": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"getMore": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"getParameter": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"getPrevError": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"getShardMap": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"getShardVersion": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"getnonce": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"grantPrivilegesToRole": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"grantRolesToRole": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"grantRolesToUser": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"group": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"hello": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"hostInfo": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"insert": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"invalidateUserCache": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"isMaster": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "13"
+				}
+			},
+			"killAllSessions": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"killAllSessionsByPattern": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"killCursors": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"killOp": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"killSessions": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"listCollections": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"listCommands": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"listDatabases": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "1"
+				}
+			},
+			"listIndexes": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "2"
+				}
+			},
+			"lockInfo": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"logRotate": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"logout": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"mapReduce": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"mapreduce": {
+				"shardedfinish": {
+					"failed": {
+						"$numberLong": "0"
+					},
+					"total": {
+						"$numberLong": "0"
+					}
+				}
+			},
+			"mergeChunks": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"moveChunk": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"parallelCollectionScan": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"ping": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"planCacheClear": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"planCacheClearFilters": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"planCacheListFilters": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"planCacheListPlans": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"planCacheListQueryShapes": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"planCacheSetFilter": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"profile": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"reIndex": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"refreshSessions": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"refreshSessionsInternal": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"renameCollection": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"repairCursor": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"repairDatabase": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"replSetAbortPrimaryCatchUp": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"replSetElect": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"replSetFreeze": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"replSetFresh": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"replSetGetConfig": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"replSetGetRBID": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"replSetGetStatus": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"replSetHeartbeat": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"replSetInitiate": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"replSetMaintenance": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"replSetReconfig": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"replSetRequestVotes": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"replSetResizeOplog": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"replSetStepDown": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"replSetStepDownWithForce": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"replSetStepUp": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"replSetSyncFrom": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"replSetUpdatePosition": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"resetError": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"revokePrivilegesFromRole": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"revokeRolesFromRole": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"revokeRolesFromUser": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"rolesInfo": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"saslContinue": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "2"
+				}
+			},
+			"saslStart": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "1"
+				}
+			},
+			"serverStatus": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "4"
+				}
+			},
+			"setFeatureCompatibilityVersion": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"setFreeMonitoring": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"setParameter": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"setShardVersion": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"shardConnPoolStats": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"shardingState": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"shutdown": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"splitChunk": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"splitVector": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"startSession": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"top": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"touch": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"unsetSharding": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"update": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"updateRole": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"updateUser": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"usersInfo": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"validate": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"whatsmyuri": {
+				"failed": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			}
+		},
+		"cursor": {
+			"open": {
+				"noTimeout": {
+					"$numberLong": "0"
+				},
+				"pinned": {
+					"$numberLong": "0"
+				},
+				"total": {
+					"$numberLong": "0"
+				}
+			},
+			"timedOut": {
+				"$numberLong": "0"
+			}
+		},
+		"document": {
+			"deleted": {
+				"$numberLong": "0"
+			},
+			"inserted": {
+				"$numberLong": "0"
+			},
+			"returned": {
+				"$numberLong": "0"
+			},
+			"updated": {
+				"$numberLong": "0"
+			}
+		},
+		"getLastError": {
+			"wtime": {
+				"num": {
+					"$numberInt": "0"
+				},
+				"totalMillis": {
+					"$numberInt": "0"
+				}
+			},
+			"wtimeouts": {
+				"$numberLong": "0"
+			}
+		},
+		"operation": {
+			"scanAndOrder": {
+				"$numberLong": "0"
+			},
+			"writeConflicts": {
+				"$numberLong": "0"
+			}
+		},
+		"query": {
+			"planCacheTotalSizeEstimateBytes": {
+				"$numberLong": "0"
+			},
+			"updateOneOpStyleBroadcastWithExactIDCount": {
+				"$numberLong": "0"
+			},
+			"upsertReplacementCannotTargetByQueryCount": {
+				"$numberLong": "0"
+			}
+		},
+		"queryExecutor": {
+			"scanned": {
+				"$numberLong": "0"
+			},
+			"scannedObjects": {
+				"$numberLong": "0"
+			}
+		},
+		"record": {
+			"moves": {
+				"$numberLong": "0"
+			}
+		},
+		"repl": {
+			"apply": {
+				"attemptsToBecomeSecondary": {
+					"$numberLong": "0"
+				},
+				"batchSize": {
+					"$numberLong": "0"
+				},
+				"batches": {
+					"num": {
+						"$numberInt": "0"
+					},
+					"totalMillis": {
+						"$numberInt": "0"
+					}
+				},
+				"ops": {
+					"$numberLong": "0"
+				}
+			},
+			"buffer": {
+				"count": {
+					"$numberLong": "0"
+				},
+				"maxSizeBytes": {
+					"$numberLong": "0"
+				},
+				"sizeBytes": {
+					"$numberLong": "0"
+				}
+			},
+			"executor": {
+				"networkInterface": "DEPRECATED: getDiagnosticString is deprecated in NetworkInterfaceTL",
+				"pool": {
+					"inProgressCount": {
+						"$numberInt": "0"
+					}
+				},
+				"queues": {
+					"networkInProgress": {
+						"$numberInt": "0"
+					},
+					"sleepers": {
+						"$numberInt": "0"
+					}
+				},
+				"shuttingDown": false,
+				"unsignaledEvents": {
+					"$numberInt": "0"
+				}
+			},
+			"initialSync": {
+				"completed": {
+					"$numberLong": "0"
+				},
+				"failedAttempts": {
+					"$numberLong": "0"
+				},
+				"failures": {
+					"$numberLong": "0"
+				}
+			},
+			"network": {
+				"bytes": {
+					"$numberLong": "0"
+				},
+				"getmores": {
+					"num": {
+						"$numberInt": "0"
+					},
+					"totalMillis": {
+						"$numberInt": "0"
+					}
+				},
+				"ops": {
+					"$numberLong": "0"
+				},
+				"readersCreated": {
+					"$numberLong": "0"
+				}
+			},
+			"preload": {
+				"docs": {
+					"num": {
+						"$numberInt": "0"
+					},
+					"totalMillis": {
+						"$numberInt": "0"
+					}
+				},
+				"indexes": {
+					"num": {
+						"$numberInt": "0"
+					},
+					"totalMillis": {
+						"$numberInt": "0"
+					}
+				}
+			}
+		},
+		"storage": {
+			"freelist": {
+				"search": {
+					"bucketExhausted": {
+						"$numberLong": "0"
+					},
+					"requests": {
+						"$numberLong": "0"
+					},
+					"scanned": {
+						"$numberLong": "0"
+					}
+				}
+			}
+		},
+		"ttl": {
+			"deletedDocuments": {
+				"$numberLong": "0"
+			},
+			"passes": {
+				"$numberLong": "0"
+			}
+		}
+	},
+	"network": {
+		"bytesIn": {
+			"$numberLong": "2683"
+		},
+		"bytesOut": {
+			"$numberLong": "110248"
+		},
+		"compression": {
+			"snappy": {
+				"compressor": {
+					"bytesIn": {
+						"$numberLong": "0"
+					},
+					"bytesOut": {
+						"$numberLong": "0"
+					}
+				},
+				"decompressor": {
+					"bytesIn": {
+						"$numberLong": "0"
+					},
+					"bytesOut": {
+						"$numberLong": "0"
+					}
+				}
+			}
+		},
+		"numRequests": {
+			"$numberLong": "24"
+		},
+		"physicalBytesIn": {
+			"$numberLong": "2683"
+		},
+		"physicalBytesOut": {
+			"$numberLong": "110248"
+		},
+		"serviceExecutorTaskStats": {
+			"executor": "passthrough",
+			"threadsRunning": {
+				"$numberInt": "3"
+			}
+		}
+	},
+	"ok": {
+		"$numberDouble": "1.0"
+	},
+	"opLatencies": {
+		"commands": {
+			"latency": {
+				"$numberLong": "8631"
+			},
+			"ops": {
+				"$numberLong": "23"
+			}
+		},
+		"reads": {
+			"latency": {
+				"$numberLong": "0"
+			},
+			"ops": {
+				"$numberLong": "0"
+			}
+		},
+		"transactions": {
+			"latency": {
+				"$numberLong": "0"
+			},
+			"ops": {
+				"$numberLong": "0"
+			}
+		},
+		"writes": {
+			"latency": {
+				"$numberLong": "0"
+			},
+			"ops": {
+				"$numberLong": "0"
+			}
+		}
+	},
+	"opReadConcernCounters": {
+		"available": {
+			"$numberLong": "0"
+		},
+		"linearizable": {
+			"$numberLong": "0"
+		},
+		"local": {
+			"$numberLong": "0"
+		},
+		"majority": {
+			"$numberLong": "0"
+		},
+		"none": {
+			"$numberLong": "2"
+		},
+		"snapshot": {
+			"$numberLong": "0"
+		}
+	},
+	"opcounters": {
+		"command": {
+			"$numberInt": "26"
+		},
+		"delete": {
+			"$numberInt": "0"
+		},
+		"getmore": {
+			"$numberInt": "0"
+		},
+		"insert": {
+			"$numberInt": "0"
+		},
+		"query": {
+			"$numberInt": "2"
+		},
+		"update": {
+			"$numberInt": "0"
+		}
+	},
+	"opcountersRepl": {
+		"command": {
+			"$numberInt": "0"
+		},
+		"delete": {
+			"$numberInt": "0"
+		},
+		"getmore": {
+			"$numberInt": "0"
+		},
+		"insert": {
+			"$numberInt": "0"
+		},
+		"query": {
+			"$numberInt": "0"
+		},
+		"update": {
+			"$numberInt": "0"
+		}
+	},
+	"pid": {
+		"$numberLong": "1"
+	},
+	"process": "mongod",
+	"storageEngine": {
+		"name": "wiredTiger",
+		"persistent": true,
+		"readOnly": false,
+		"supportsCommittedReads": true,
+		"supportsSnapshotReadConcern": true
+	},
+	"tcmalloc": {
+		"generic": {
+			"current_allocated_bytes": {
+				"$numberInt": "74914048"
+			},
+			"heap_size": {
+				"$numberInt": "79032320"
+			}
+		},
+		"tcmalloc": {
+			"aggressive_memory_decommit": {
+				"$numberInt": "0"
+			},
+			"central_cache_free_bytes": {
+				"$numberInt": "205608"
+			},
+			"current_total_thread_cache_bytes": {
+				"$numberInt": "607448"
+			},
+			"formattedString": "------------------------------------------------\nMALLOC:       74914624 (   71.4 MiB) Bytes in use by application\nMALLOC: +      3035136 (    2.9 MiB) Bytes in page heap freelist\nMALLOC: +       205608 (    0.2 MiB) Bytes in central cache freelist\nMALLOC: +       270080 (    0.3 MiB) Bytes in transfer cache freelist\nMALLOC: +       606872 (    0.6 MiB) Bytes in thread cache freelists\nMALLOC: +      1335552 (    1.3 MiB) Bytes in malloc metadata\nMALLOC:   ------------\nMALLOC: =     80367872 (   76.6 MiB) Actual memory used (physical + swap)\nMALLOC: +            0 (    0.0 MiB) Bytes released to OS (aka unmapped)\nMALLOC:   ------------\nMALLOC: =     80367872 (   76.6 MiB) Virtual address space used\nMALLOC:\nMALLOC:            620              Spans in use\nMALLOC:             24              Thread heaps in use\nMALLOC:           4096              Tcmalloc page size\n------------------------------------------------\nCall ReleaseFreeMemory() to release freelist memory to the OS (via madvise()).\nBytes released to the OS take up virtual address space but no physical memory.\n",
+			"max_total_thread_cache_bytes": {
+				"$numberInt": "745537536"
+			},
+			"pageheap_commit_count": {
+				"$numberInt": "47"
+			},
+			"pageheap_committed_bytes": {
+				"$numberInt": "79032320"
+			},
+			"pageheap_decommit_count": {
+				"$numberInt": "0"
+			},
+			"pageheap_free_bytes": {
+				"$numberInt": "3035136"
+			},
+			"pageheap_reserve_count": {
+				"$numberInt": "47"
+			},
+			"pageheap_scavenge_count": {
+				"$numberInt": "0"
+			},
+			"pageheap_total_commit_bytes": {
+				"$numberInt": "79032320"
+			},
+			"pageheap_total_decommit_bytes": {
+				"$numberInt": "0"
+			},
+			"pageheap_total_reserve_bytes": {
+				"$numberInt": "79032320"
+			},
+			"pageheap_unmapped_bytes": {
+				"$numberInt": "0"
+			},
+			"release_rate": {
+				"$numberDouble": "1.0"
+			},
+			"spinlock_total_delay_ns": {
+				"$numberInt": "0"
+			},
+			"thread_cache_free_bytes": {
+				"$numberInt": "607448"
+			},
+			"total_free_bytes": {
+				"$numberInt": "1083136"
+			},
+			"transfer_cache_free_bytes": {
+				"$numberInt": "270080"
+			}
+		}
+	},
+	"transactions": {
+		"currentActive": {
+			"$numberLong": "0"
+		},
+		"currentInactive": {
+			"$numberLong": "0"
+		},
+		"currentOpen": {
+			"$numberLong": "0"
+		},
+		"retriedCommandsCount": {
+			"$numberLong": "0"
+		},
+		"retriedStatementsCount": {
+			"$numberLong": "0"
+		},
+		"totalAborted": {
+			"$numberLong": "0"
+		},
+		"totalCommitted": {
+			"$numberLong": "0"
+		},
+		"totalStarted": {
+			"$numberLong": "0"
+		},
+		"transactionsCollectionWriteCount": {
+			"$numberLong": "0"
+		}
+	},
+	"transportSecurity": {
+		"1.0": {
+			"$numberLong": "0"
+		},
+		"1.1": {
+			"$numberLong": "0"
+		},
+		"1.2": {
+			"$numberLong": "0"
+		},
+		"1.3": {
+			"$numberLong": "0"
+		},
+		"unknown": {
+			"$numberLong": "0"
+		}
+	},
+	"uptime": {
+		"$numberDouble": "58.0"
+	},
+	"uptimeEstimate": {
+		"$numberLong": "58"
+	},
+	"uptimeMillis": {
+		"$numberLong": "58891"
+	},
+	"version": "4.0.25",
+	"wiredTiger": {
+		"LSM": {
+			"application work units currently queued": {
+				"$numberInt": "0"
+			},
+			"merge work units currently queued": {
+				"$numberInt": "0"
+			},
+			"rows merged in an LSM tree": {
+				"$numberInt": "0"
+			},
+			"sleep for LSM checkpoint throttle": {
+				"$numberInt": "0"
+			},
+			"sleep for LSM merge throttle": {
+				"$numberInt": "0"
+			},
+			"switch work units currently queued": {
+				"$numberInt": "0"
+			},
+			"tree maintenance operations discarded": {
+				"$numberInt": "0"
+			},
+			"tree maintenance operations executed": {
+				"$numberInt": "0"
+			},
+			"tree maintenance operations scheduled": {
+				"$numberInt": "0"
+			},
+			"tree queue hit maximum": {
+				"$numberInt": "0"
+			}
+		},
+		"async": {
+			"current work queue length": {
+				"$numberInt": "0"
+			},
+			"maximum work queue length": {
+				"$numberInt": "0"
+			},
+			"number of allocation state races": {
+				"$numberInt": "0"
+			},
+			"number of flush calls": {
+				"$numberInt": "0"
+			},
+			"number of operation slots viewed for allocation": {
+				"$numberInt": "0"
+			},
+			"number of times operation allocation failed": {
+				"$numberInt": "0"
+			},
+			"number of times worker found no work": {
+				"$numberInt": "0"
+			},
+			"total allocations": {
+				"$numberInt": "0"
+			},
+			"total compact calls": {
+				"$numberInt": "0"
+			},
+			"total insert calls": {
+				"$numberInt": "0"
+			},
+			"total remove calls": {
+				"$numberInt": "0"
+			},
+			"total search calls": {
+				"$numberInt": "0"
+			},
+			"total update calls": {
+				"$numberInt": "0"
+			}
+		},
+		"block-manager": {
+			"blocks pre-loaded": {
+				"$numberInt": "9"
+			},
+			"blocks read": {
+				"$numberInt": "20"
+			},
+			"blocks written": {
+				"$numberInt": "3"
+			},
+			"bytes read": {
+				"$numberInt": "98304"
+			},
+			"bytes written": {
+				"$numberInt": "12288"
+			},
+			"bytes written for checkpoint": {
+				"$numberInt": "12288"
+			},
+			"mapped blocks read": {
+				"$numberInt": "0"
+			},
+			"mapped bytes read": {
+				"$numberInt": "0"
+			}
+		},
+		"cache": {
+			"application threads page read from disk to cache count": {
+				"$numberInt": "8"
+			},
+			"application threads page read from disk to cache time (usecs)": {
+				"$numberInt": "30"
+			},
+			"application threads page write from cache to disk count": {
+				"$numberInt": "0"
+			},
+			"application threads page write from cache to disk time (usecs)": {
+				"$numberInt": "0"
+			},
+			"bytes belonging to page images in the cache": {
+				"$numberInt": "25341"
+			},
+			"bytes belonging to the cache overflow table in the cache": {
+				"$numberInt": "182"
+			},
+			"bytes currently in the cache": {
+				"$numberInt": "32882"
+			},
+			"bytes dirty in the cache cumulative": {
+				"$numberInt": "25359"
+			},
+			"bytes not belonging to page images in the cache": {
+				"$numberInt": "7541"
+			},
+			"bytes read into cache": {
+				"$numberInt": "23464"
+			},
+			"bytes written from cache": {
+				"$numberInt": "51"
+			},
+			"cache overflow cursor application thread wait time (usecs)": {
+				"$numberInt": "0"
+			},
+			"cache overflow cursor internal thread wait time (usecs)": {
+				"$numberInt": "0"
+			},
+			"cache overflow score": {
+				"$numberInt": "0"
+			},
+			"cache overflow table entries": {
+				"$numberInt": "0"
+			},
+			"cache overflow table insert calls": {
+				"$numberInt": "0"
+			},
+			"cache overflow table max on-disk size": {
+				"$numberInt": "0"
+			},
+			"cache overflow table on-disk size": {
+				"$numberInt": "0"
+			},
+			"cache overflow table remove calls": {
+				"$numberInt": "0"
+			},
+			"checkpoint blocked page eviction": {
+				"$numberInt": "0"
+			},
+			"eviction calls to get a page": {
+				"$numberInt": "1"
+			},
+			"eviction calls to get a page found queue empty": {
+				"$numberInt": "1"
+			},
+			"eviction calls to get a page found queue empty after locking": {
+				"$numberInt": "0"
+			},
+			"eviction currently operating in aggressive mode": {
+				"$numberInt": "0"
+			},
+			"eviction empty score": {
+				"$numberInt": "0"
+			},
+			"eviction passes of a file": {
+				"$numberInt": "0"
+			},
+			"eviction server candidate queue empty when topping up": {
+				"$numberInt": "0"
+			},
+			"eviction server candidate queue not empty when topping up": {
+				"$numberInt": "0"
+			},
+			"eviction server evicting pages": {
+				"$numberInt": "0"
+			},
+			"eviction server slept, because we did not make progress with eviction": {
+				"$numberInt": "0"
+			},
+			"eviction server unable to reach eviction goal": {
+				"$numberInt": "0"
+			},
+			"eviction server waiting for a leaf page": {
+				"$numberInt": "0"
+			},
+			"eviction server waiting for an internal page sleep (usec)": {
+				"$numberInt": "0"
+			},
+			"eviction server waiting for an internal page yields": {
+				"$numberInt": "0"
+			},
+			"eviction state": {
+				"$numberInt": "128"
+			},
+			"eviction walk target pages histogram - 0-9": {
+				"$numberInt": "0"
+			},
+			"eviction walk target pages histogram - 10-31": {
+				"$numberInt": "0"
+			},
+			"eviction walk target pages histogram - 128 and higher": {
+				"$numberInt": "0"
+			},
+			"eviction walk target pages histogram - 32-63": {
+				"$numberInt": "0"
+			},
+			"eviction walk target pages histogram - 64-128": {
+				"$numberInt": "0"
+			},
+			"eviction walk target strategy both clean and dirty pages": {
+				"$numberInt": "0"
+			},
+			"eviction walk target strategy only clean pages": {
+				"$numberInt": "0"
+			},
+			"eviction walk target strategy only dirty pages": {
+				"$numberInt": "0"
+			},
+			"eviction walks abandoned": {
+				"$numberInt": "0"
+			},
+			"eviction walks gave up because they restarted their walk twice": {
+				"$numberInt": "0"
+			},
+			"eviction walks gave up because they saw too many pages and found no candidates": {
+				"$numberInt": "0"
+			},
+			"eviction walks gave up because they saw too many pages and found too few candidates": {
+				"$numberInt": "0"
+			},
+			"eviction walks reached end of tree": {
+				"$numberInt": "0"
+			},
+			"eviction walks started from root of tree": {
+				"$numberInt": "0"
+			},
+			"eviction walks started from saved location in tree": {
+				"$numberInt": "0"
+			},
+			"eviction worker thread active": {
+				"$numberInt": "4"
+			},
+			"eviction worker thread created": {
+				"$numberInt": "0"
+			},
+			"eviction worker thread evicting pages": {
+				"$numberInt": "0"
+			},
+			"eviction worker thread removed": {
+				"$numberInt": "0"
+			},
+			"eviction worker thread stable number": {
+				"$numberInt": "0"
+			},
+			"files with active eviction walks": {
+				"$numberInt": "0"
+			},
+			"files with new eviction walks started": {
+				"$numberInt": "0"
+			},
+			"force re-tuning of eviction workers once in a while": {
+				"$numberInt": "0"
+			},
+			"forced eviction - pages evicted that were clean count": {
+				"$numberInt": "0"
+			},
+			"forced eviction - pages evicted that were clean time (usecs)": {
+				"$numberInt": "0"
+			},
+			"forced eviction - pages evicted that were dirty count": {
+				"$numberInt": "0"
+			},
+			"forced eviction - pages evicted that were dirty time (usecs)": {
+				"$numberInt": "0"
+			},
+			"forced eviction - pages selected because of too many deleted items count": {
+				"$numberInt": "0"
+			},
+			"forced eviction - pages selected count": {
+				"$numberInt": "0"
+			},
+			"forced eviction - pages selected unable to be evicted count": {
+				"$numberInt": "0"
+			},
+			"forced eviction - pages selected unable to be evicted time": {
+				"$numberInt": "0"
+			},
+			"hazard pointer blocked page eviction": {
+				"$numberInt": "0"
+			},
+			"hazard pointer check calls": {
+				"$numberInt": "0"
+			},
+			"hazard pointer check entries walked": {
+				"$numberInt": "0"
+			},
+			"hazard pointer maximum array length": {
+				"$numberInt": "0"
+			},
+			"in-memory page passed criteria to be split": {
+				"$numberInt": "0"
+			},
+			"in-memory page splits": {
+				"$numberInt": "0"
+			},
+			"internal pages evicted": {
+				"$numberInt": "0"
+			},
+			"internal pages queued for eviction": {
+				"$numberInt": "0"
+			},
+			"internal pages seen by eviction walk": {
+				"$numberInt": "0"
+			},
+			"internal pages seen by eviction walk that are already queued": {
+				"$numberInt": "0"
+			},
+			"internal pages split during eviction": {
+				"$numberInt": "0"
+			},
+			"leaf pages split during eviction": {
+				"$numberInt": "0"
+			},
+			"maximum bytes configured": {
+				"$numberDouble": "2.447376384E+09"
+			},
+			"maximum page size at eviction": {
+				"$numberInt": "0"
+			},
+			"modified pages evicted": {
+				"$numberInt": "0"
+			},
+			"modified pages evicted by application threads": {
+				"$numberInt": "0"
+			},
+			"operations timed out waiting for space in cache": {
+				"$numberInt": "0"
+			},
+			"overflow pages read into cache": {
+				"$numberInt": "0"
+			},
+			"page split during eviction deepened the tree": {
+				"$numberInt": "0"
+			},
+			"page written requiring cache overflow records": {
+				"$numberInt": "0"
+			},
+			"pages currently held in the cache": {
+				"$numberInt": "19"
+			},
+			"pages evicted by application threads": {
+				"$numberInt": "0"
+			},
+			"pages queued for eviction": {
+				"$numberInt": "0"
+			},
+			"pages queued for eviction post lru sorting": {
+				"$numberInt": "0"
+			},
+			"pages queued for urgent eviction": {
+				"$numberInt": "0"
+			},
+			"pages queued for urgent eviction during walk": {
+				"$numberInt": "0"
+			},
+			"pages read into cache": {
+				"$numberInt": "18"
+			},
+			"pages read into cache after truncate": {
+				"$numberInt": "0"
+			},
+			"pages read into cache after truncate in prepare state": {
+				"$numberInt": "0"
+			},
+			"pages read into cache requiring cache overflow entries": {
+				"$numberInt": "0"
+			},
+			"pages read into cache requiring cache overflow for checkpoint": {
+				"$numberInt": "0"
+			},
+			"pages read into cache skipping older cache overflow entries": {
+				"$numberInt": "0"
+			},
+			"pages read into cache with skipped cache overflow entries needed later": {
+				"$numberInt": "0"
+			},
+			"pages read into cache with skipped cache overflow entries needed later by checkpoint": {
+				"$numberInt": "0"
+			},
+			"pages requested from the cache": {
+				"$numberInt": "225"
+			},
+			"pages seen by eviction walk": {
+				"$numberInt": "0"
+			},
+			"pages seen by eviction walk that are already queued": {
+				"$numberInt": "0"
+			},
+			"pages selected for eviction unable to be evicted": {
+				"$numberInt": "0"
+			},
+			"pages selected for eviction unable to be evicted as the parent page has overflow items": {
+				"$numberInt": "0"
+			},
+			"pages selected for eviction unable to be evicted because of active children on an internal page": {
+				"$numberInt": "0"
+			},
+			"pages selected for eviction unable to be evicted because of failure in reconciliation": {
+				"$numberInt": "0"
+			},
+			"pages selected for eviction unable to be evicted due to newer modifications on a clean page": {
+				"$numberInt": "0"
+			},
+			"pages walked for eviction": {
+				"$numberInt": "0"
+			},
+			"pages written from cache": {
+				"$numberInt": "1"
+			},
+			"pages written requiring in-memory restoration": {
+				"$numberInt": "0"
+			},
+			"percentage overhead": {
+				"$numberInt": "8"
+			},
+			"tracked bytes belonging to internal pages in the cache": {
+				"$numberInt": "2324"
+			},
+			"tracked bytes belonging to leaf pages in the cache": {
+				"$numberInt": "30558"
+			},
+			"tracked dirty bytes in the cache": {
+				"$numberInt": "25788"
+			},
+			"tracked dirty pages in the cache": {
+				"$numberInt": "3"
+			},
+			"unmodified pages evicted": {
+				"$numberInt": "0"
+			}
+		},
+		"capacity": {
+			"background fsync file handles considered": {
+				"$numberInt": "0"
+			},
+			"background fsync file handles synced": {
+				"$numberInt": "0"
+			},
+			"background fsync time (msecs)": {
+				"$numberInt": "0"
+			},
+			"threshold to call fsync": {
+				"$numberInt": "0"
+			},
+			"throttled bytes read": {
+				"$numberInt": "0"
+			},
+			"throttled bytes written for checkpoint": {
+				"$numberInt": "0"
+			},
+			"throttled bytes written for eviction": {
+				"$numberInt": "0"
+			},
+			"throttled bytes written for log": {
+				"$numberInt": "0"
+			},
+			"throttled bytes written total": {
+				"$numberInt": "0"
+			},
+			"time waiting due to total capacity (usecs)": {
+				"$numberInt": "0"
+			},
+			"time waiting during checkpoint (usecs)": {
+				"$numberInt": "0"
+			},
+			"time waiting during eviction (usecs)": {
+				"$numberInt": "0"
+			},
+			"time waiting during logging (usecs)": {
+				"$numberInt": "0"
+			},
+			"time waiting during read (usecs)": {
+				"$numberInt": "0"
+			}
+		},
+		"concurrentTransactions": {
+			"read": {
+				"available": {
+					"$numberInt": "127"
+				},
+				"out": {
+					"$numberInt": "1"
+				},
+				"totalTickets": {
+					"$numberInt": "128"
+				}
+			},
+			"write": {
+				"available": {
+					"$numberInt": "128"
+				},
+				"out": {
+					"$numberInt": "0"
+				},
+				"totalTickets": {
+					"$numberInt": "128"
+				}
+			}
+		},
+		"connection": {
+			"auto adjusting condition resets": {
+				"$numberInt": "8"
+			},
+			"auto adjusting condition wait calls": {
+				"$numberInt": "373"
+			},
+			"detected system time went backwards": {
+				"$numberInt": "0"
+			},
+			"files currently open": {
+				"$numberInt": "13"
+			},
+			"hash bucket array size for data handles": {
+				"$numberInt": "512"
+			},
+			"hash bucket array size general": {
+				"$numberInt": "512"
+			},
+			"memory allocations": {
+				"$numberInt": "3879"
+			},
+			"memory frees": {
+				"$numberInt": "3052"
+			},
+			"memory re-allocations": {
+				"$numberInt": "394"
+			},
+			"pthread mutex condition wait calls": {
+				"$numberInt": "984"
+			},
+			"pthread mutex shared lock read-lock calls": {
+				"$numberInt": "571"
+			},
+			"pthread mutex shared lock write-lock calls": {
+				"$numberInt": "132"
+			},
+			"total fsync I/Os": {
+				"$numberInt": "17"
+			},
+			"total read I/Os": {
+				"$numberInt": "1274"
+			},
+			"total write I/Os": {
+				"$numberInt": "13"
+			}
+		},
+		"cursor": {
+			"cached cursor count": {
+				"$numberInt": "11"
+			},
+			"cursor close calls that result in cache": {
+				"$numberInt": "17"
+			},
+			"cursor create calls": {
+				"$numberInt": "72"
+			},
+			"cursor insert calls": {
+				"$numberInt": "3"
+			},
+			"cursor modify calls": {
+				"$numberInt": "0"
+			},
+			"cursor next calls": {
+				"$numberInt": "68"
+			},
+			"cursor operation restarted": {
+				"$numberInt": "0"
+			},
+			"cursor prev calls": {
+				"$numberInt": "1"
+			},
+			"cursor remove calls": {
+				"$numberInt": "1"
+			},
+			"cursor reserve calls": {
+				"$numberInt": "0"
+			},
+			"cursor reset calls": {
+				"$numberInt": "222"
+			},
+			"cursor search calls": {
+				"$numberInt": "212"
+			},
+			"cursor search near calls": {
+				"$numberInt": "6"
+			},
+			"cursor sweep buckets": {
+				"$numberInt": "360"
+			},
+			"cursor sweep cursors closed": {
+				"$numberInt": "0"
+			},
+			"cursor sweep cursors examined": {
+				"$numberInt": "5"
+			},
+			"cursor sweeps": {
+				"$numberInt": "60"
+			},
+			"cursor update calls": {
+				"$numberInt": "0"
+			},
+			"cursors reused from cache": {
+				"$numberInt": "6"
+			},
+			"open cursor count": {
+				"$numberInt": "22"
+			},
+			"truncate calls": {
+				"$numberInt": "0"
+			}
+		},
+		"data-handle": {
+			"connection data handles currently active": {
+				"$numberInt": "18"
+			},
+			"connection sweep candidate became referenced": {
+				"$numberInt": "0"
+			},
+			"connection sweep dhandles closed": {
+				"$numberInt": "0"
+			},
+			"connection sweep dhandles removed from hash list": {
+				"$numberInt": "0"
+			},
+			"connection sweep time-of-death sets": {
+				"$numberInt": "11"
+			},
+			"connection sweeps": {
+				"$numberInt": "5"
+			},
+			"connection sweeps skipped due to checkpoint gathering handles": {
+				"$numberInt": "0"
+			},
+			"session dhandles swept": {
+				"$numberInt": "0"
+			},
+			"session sweep attempts": {
+				"$numberInt": "29"
+			}
+		},
+		"lock": {
+			"checkpoint lock acquisitions": {
+				"$numberInt": "1"
+			},
+			"checkpoint lock application thread wait time (usecs)": {
+				"$numberInt": "0"
+			},
+			"checkpoint lock internal thread wait time (usecs)": {
+				"$numberInt": "0"
+			},
+			"commit timestamp queue lock application thread time waiting (usecs)": {
+				"$numberInt": "0"
+			},
+			"commit timestamp queue lock internal thread time waiting (usecs)": {
+				"$numberInt": "0"
+			},
+			"commit timestamp queue read lock acquisitions": {
+				"$numberInt": "0"
+			},
+			"commit timestamp queue write lock acquisitions": {
+				"$numberInt": "0"
+			},
+			"dhandle lock application thread time waiting (usecs)": {
+				"$numberInt": "0"
+			},
+			"dhandle lock internal thread time waiting (usecs)": {
+				"$numberInt": "0"
+			},
+			"dhandle read lock acquisitions": {
+				"$numberInt": "247"
+			},
+			"dhandle write lock acquisitions": {
+				"$numberInt": "18"
+			},
+			"metadata lock acquisitions": {
+				"$numberInt": "1"
+			},
+			"metadata lock application thread wait time (usecs)": {
+				"$numberInt": "0"
+			},
+			"metadata lock internal thread wait time (usecs)": {
+				"$numberInt": "0"
+			},
+			"read timestamp queue lock application thread time waiting (usecs)": {
+				"$numberInt": "0"
+			},
+			"read timestamp queue lock internal thread time waiting (usecs)": {
+				"$numberInt": "0"
+			},
+			"read timestamp queue read lock acquisitions": {
+				"$numberInt": "0"
+			},
+			"read timestamp queue write lock acquisitions": {
+				"$numberInt": "0"
+			},
+			"schema lock acquisitions": {
+				"$numberInt": "21"
+			},
+			"schema lock application thread wait time (usecs)": {
+				"$numberInt": "0"
+			},
+			"schema lock internal thread wait time (usecs)": {
+				"$numberInt": "0"
+			},
+			"table lock application thread time waiting for the table lock (usecs)": {
+				"$numberInt": "0"
+			},
+			"table lock internal thread time waiting for the table lock (usecs)": {
+				"$numberInt": "0"
+			},
+			"table read lock acquisitions": {
+				"$numberInt": "0"
+			},
+			"table write lock acquisitions": {
+				"$numberInt": "10"
+			},
+			"txn global lock application thread time waiting (usecs)": {
+				"$numberInt": "0"
+			},
+			"txn global lock internal thread time waiting (usecs)": {
+				"$numberInt": "0"
+			},
+			"txn global read lock acquisitions": {
+				"$numberInt": "3"
+			},
+			"txn global write lock acquisitions": {
+				"$numberInt": "4"
+			}
+		},
+		"log": {
+			"busy returns attempting to switch slots": {
+				"$numberInt": "0"
+			},
+			"force archive time sleeping (usecs)": {
+				"$numberInt": "0"
+			},
+			"log bytes of payload data": {
+				"$numberInt": "2035"
+			},
+			"log bytes written": {
+				"$numberInt": "3200"
+			},
+			"log files manually zero-filled": {
+				"$numberInt": "0"
+			},
+			"log flush operations": {
+				"$numberInt": "573"
+			},
+			"log force write operations": {
+				"$numberInt": "637"
+			},
+			"log force write operations skipped": {
+				"$numberInt": "636"
+			},
+			"log records compressed": {
+				"$numberInt": "2"
+			},
+			"log records not compressed": {
+				"$numberInt": "0"
+			},
+			"log records too small to compress": {
+				"$numberInt": "5"
+			},
+			"log release advances write LSN": {
+				"$numberInt": "3"
+			},
+			"log scan operations": {
+				"$numberInt": "6"
+			},
+			"log scan records requiring two reads": {
+				"$numberInt": "0"
+			},
+			"log server thread advances write LSN": {
+				"$numberInt": "1"
+			},
+			"log server thread write LSN walk skipped": {
+				"$numberInt": "1040"
+			},
+			"log sync operations": {
+				"$numberInt": "4"
+			},
+			"log sync time duration (usecs)": {
+				"$numberInt": "2896"
+			},
+			"log sync_dir operations": {
+				"$numberInt": "1"
+			},
+			"log sync_dir time duration (usecs)": {
+				"$numberInt": "2168"
+			},
+			"log write operations": {
+				"$numberInt": "7"
+			},
+			"logging bytes consolidated": {
+				"$numberInt": "2688"
+			},
+			"maximum log file size": {
+				"$numberInt": "104857600"
+			},
+			"number of pre-allocated log files to create": {
+				"$numberInt": "2"
+			},
+			"pre-allocated log files not ready and missed": {
+				"$numberInt": "1"
+			},
+			"pre-allocated log files prepared": {
+				"$numberInt": "2"
+			},
+			"pre-allocated log files used": {
+				"$numberInt": "0"
+			},
+			"records processed by log scan": {
+				"$numberInt": "13"
+			},
+			"slot close lost race": {
+				"$numberInt": "0"
+			},
+			"slot close unbuffered waits": {
+				"$numberInt": "0"
+			},
+			"slot closures": {
+				"$numberInt": "4"
+			},
+			"slot join atomic update races": {
+				"$numberInt": "0"
+			},
+			"slot join calls atomic updates raced": {
+				"$numberInt": "0"
+			},
+			"slot join calls did not yield": {
+				"$numberInt": "7"
+			},
+			"slot join calls found active slot closed": {
+				"$numberInt": "0"
+			},
+			"slot join calls slept": {
+				"$numberInt": "0"
+			},
+			"slot join calls yielded": {
+				"$numberInt": "0"
+			},
+			"slot join found active slot closed": {
+				"$numberInt": "0"
+			},
+			"slot joins yield time (usecs)": {
+				"$numberInt": "0"
+			},
+			"slot transitions unable to find free slot": {
+				"$numberInt": "0"
+			},
+			"slot unbuffered writes": {
+				"$numberInt": "0"
+			},
+			"total in-memory size of compressed records": {
+				"$numberInt": "2398"
+			},
+			"total log buffer size": {
+				"$numberInt": "33554432"
+			},
+			"total size of compressed records": {
+				"$numberInt": "1914"
+			},
+			"written slots coalesced": {
+				"$numberInt": "0"
+			},
+			"yields waiting for previous log file close": {
+				"$numberInt": "0"
+			}
+		},
+		"oplog": {
+			"visibility timestamp": {
+				"$timestamp": {
+					"i": 0,
+					"t": 0
+				}
+			}
+		},
+		"perf": {
+			"file system read latency histogram (bucket 1) - 10-49ms": {
+				"$numberInt": "0"
+			},
+			"file system read latency histogram (bucket 2) - 50-99ms": {
+				"$numberInt": "0"
+			},
+			"file system read latency histogram (bucket 3) - 100-249ms": {
+				"$numberInt": "0"
+			},
+			"file system read latency histogram (bucket 4) - 250-499ms": {
+				"$numberInt": "0"
+			},
+			"file system read latency histogram (bucket 5) - 500-999ms": {
+				"$numberInt": "0"
+			},
+			"file system read latency histogram (bucket 6) - 1000ms+": {
+				"$numberInt": "0"
+			},
+			"file system write latency histogram (bucket 1) - 10-49ms": {
+				"$numberInt": "0"
+			},
+			"file system write latency histogram (bucket 2) - 50-99ms": {
+				"$numberInt": "0"
+			},
+			"file system write latency histogram (bucket 3) - 100-249ms": {
+				"$numberInt": "0"
+			},
+			"file system write latency histogram (bucket 4) - 250-499ms": {
+				"$numberInt": "0"
+			},
+			"file system write latency histogram (bucket 5) - 500-999ms": {
+				"$numberInt": "0"
+			},
+			"file system write latency histogram (bucket 6) - 1000ms+": {
+				"$numberInt": "0"
+			},
+			"operation read latency histogram (bucket 1) - 100-249us": {
+				"$numberInt": "0"
+			},
+			"operation read latency histogram (bucket 2) - 250-499us": {
+				"$numberInt": "0"
+			},
+			"operation read latency histogram (bucket 3) - 500-999us": {
+				"$numberInt": "0"
+			},
+			"operation read latency histogram (bucket 4) - 1000-9999us": {
+				"$numberInt": "0"
+			},
+			"operation read latency histogram (bucket 5) - 10000us+": {
+				"$numberInt": "0"
+			},
+			"operation write latency histogram (bucket 1) - 100-249us": {
+				"$numberInt": "0"
+			},
+			"operation write latency histogram (bucket 2) - 250-499us": {
+				"$numberInt": "0"
+			},
+			"operation write latency histogram (bucket 3) - 500-999us": {
+				"$numberInt": "0"
+			},
+			"operation write latency histogram (bucket 4) - 1000-9999us": {
+				"$numberInt": "0"
+			},
+			"operation write latency histogram (bucket 5) - 10000us+": {
+				"$numberInt": "0"
+			}
+		},
+		"reconciliation": {
+			"fast-path pages deleted": {
+				"$numberInt": "0"
+			},
+			"page reconciliation calls": {
+				"$numberInt": "1"
+			},
+			"page reconciliation calls for eviction": {
+				"$numberInt": "0"
+			},
+			"pages deleted": {
+				"$numberInt": "0"
+			},
+			"split bytes currently awaiting free": {
+				"$numberInt": "0"
+			},
+			"split objects currently awaiting free": {
+				"$numberInt": "0"
+			}
+		},
+		"session": {
+			"open session count": {
+				"$numberInt": "19"
+			},
+			"session query timestamp calls": {
+				"$numberInt": "0"
+			},
+			"table alter failed calls": {
+				"$numberInt": "0"
+			},
+			"table alter successful calls": {
+				"$numberInt": "0"
+			},
+			"table alter unchanged and skipped": {
+				"$numberInt": "0"
+			},
+			"table compact failed calls": {
+				"$numberInt": "0"
+			},
+			"table compact successful calls": {
+				"$numberInt": "0"
+			},
+			"table create failed calls": {
+				"$numberInt": "0"
+			},
+			"table create successful calls": {
+				"$numberInt": "1"
+			},
+			"table drop failed calls": {
+				"$numberInt": "0"
+			},
+			"table drop successful calls": {
+				"$numberInt": "0"
+			},
+			"table rebalance failed calls": {
+				"$numberInt": "0"
+			},
+			"table rebalance successful calls": {
+				"$numberInt": "0"
+			},
+			"table rename failed calls": {
+				"$numberInt": "0"
+			},
+			"table rename successful calls": {
+				"$numberInt": "0"
+			},
+			"table salvage failed calls": {
+				"$numberInt": "0"
+			},
+			"table salvage successful calls": {
+				"$numberInt": "0"
+			},
+			"table truncate failed calls": {
+				"$numberInt": "0"
+			},
+			"table truncate successful calls": {
+				"$numberInt": "0"
+			},
+			"table verify failed calls": {
+				"$numberInt": "0"
+			},
+			"table verify successful calls": {
+				"$numberInt": "0"
+			}
+		},
+		"thread-state": {
+			"active filesystem fsync calls": {
+				"$numberInt": "0"
+			},
+			"active filesystem read calls": {
+				"$numberInt": "0"
+			},
+			"active filesystem write calls": {
+				"$numberInt": "0"
+			}
+		},
+		"thread-yield": {
+			"application thread time evicting (usecs)": {
+				"$numberInt": "0"
+			},
+			"application thread time waiting for cache (usecs)": {
+				"$numberInt": "0"
+			},
+			"connection close blocked waiting for transaction state stabilization": {
+				"$numberInt": "0"
+			},
+			"connection close yielded for lsm manager shutdown": {
+				"$numberInt": "0"
+			},
+			"data handle lock yielded": {
+				"$numberInt": "0"
+			},
+			"get reference for page index and slot time sleeping (usecs)": {
+				"$numberInt": "0"
+			},
+			"log server sync yielded for log write": {
+				"$numberInt": "0"
+			},
+			"page access yielded due to prepare state change": {
+				"$numberInt": "0"
+			},
+			"page acquire busy blocked": {
+				"$numberInt": "0"
+			},
+			"page acquire eviction blocked": {
+				"$numberInt": "0"
+			},
+			"page acquire locked blocked": {
+				"$numberInt": "0"
+			},
+			"page acquire read blocked": {
+				"$numberInt": "0"
+			},
+			"page acquire time sleeping (usecs)": {
+				"$numberInt": "0"
+			},
+			"page delete rollback time sleeping for state change (usecs)": {
+				"$numberInt": "0"
+			},
+			"page reconciliation yielded due to child modification": {
+				"$numberInt": "0"
+			}
+		},
+		"transaction": {
+			"Number of prepared updates": {
+				"$numberInt": "0"
+			},
+			"Number of prepared updates added to cache overflow": {
+				"$numberInt": "0"
+			},
+			"Number of prepared updates resolved": {
+				"$numberInt": "0"
+			},
+			"commit timestamp queue entries walked": {
+				"$numberInt": "0"
+			},
+			"commit timestamp queue insert to empty": {
+				"$numberInt": "0"
+			},
+			"commit timestamp queue inserts to head": {
+				"$numberInt": "0"
+			},
+			"commit timestamp queue inserts total": {
+				"$numberInt": "0"
+			},
+			"commit timestamp queue length": {
+				"$numberInt": "0"
+			},
+			"number of named snapshots created": {
+				"$numberInt": "0"
+			},
+			"number of named snapshots dropped": {
+				"$numberInt": "0"
+			},
+			"prepared transactions": {
+				"$numberInt": "0"
+			},
+			"prepared transactions committed": {
+				"$numberInt": "0"
+			},
+			"prepared transactions currently active": {
+				"$numberInt": "0"
+			},
+			"prepared transactions rolled back": {
+				"$numberInt": "0"
+			},
+			"query timestamp calls": {
+				"$numberInt": "1"
+			},
+			"read timestamp queue entries walked": {
+				"$numberInt": "0"
+			},
+			"read timestamp queue insert to empty": {
+				"$numberInt": "0"
+			},
+			"read timestamp queue inserts to head": {
+				"$numberInt": "0"
+			},
+			"read timestamp queue inserts total": {
+				"$numberInt": "0"
+			},
+			"read timestamp queue length": {
+				"$numberInt": "0"
+			},
+			"rollback to stable calls": {
+				"$numberInt": "0"
+			},
+			"rollback to stable updates aborted": {
+				"$numberInt": "0"
+			},
+			"rollback to stable updates removed from cache overflow": {
+				"$numberInt": "0"
+			},
+			"set timestamp calls": {
+				"$numberInt": "0"
+			},
+			"set timestamp commit calls": {
+				"$numberInt": "0"
+			},
+			"set timestamp commit updates": {
+				"$numberInt": "0"
+			},
+			"set timestamp oldest calls": {
+				"$numberInt": "0"
+			},
+			"set timestamp oldest updates": {
+				"$numberInt": "0"
+			},
+			"set timestamp stable calls": {
+				"$numberInt": "0"
+			},
+			"set timestamp stable updates": {
+				"$numberInt": "0"
+			},
+			"transaction begins": {
+				"$numberInt": "15"
+			},
+			"transaction checkpoint currently running": {
+				"$numberInt": "0"
+			},
+			"transaction checkpoint generation": {
+				"$numberInt": "2"
+			},
+			"transaction checkpoint max time (msecs)": {
+				"$numberInt": "5"
+			},
+			"transaction checkpoint min time (msecs)": {
+				"$numberInt": "5"
+			},
+			"transaction checkpoint most recent duration for gathering all handles (usecs)": {
+				"$numberInt": "0"
+			},
+			"transaction checkpoint most recent duration for gathering applied handles (usecs)": {
+				"$numberInt": "0"
+			},
+			"transaction checkpoint most recent duration for gathering skipped handles (usecs)": {
+				"$numberInt": "0"
+			},
+			"transaction checkpoint most recent handles applied": {
+				"$numberInt": "0"
+			},
+			"transaction checkpoint most recent handles skipped": {
+				"$numberInt": "0"
+			},
+			"transaction checkpoint most recent handles walked": {
+				"$numberInt": "1"
+			},
+			"transaction checkpoint most recent time (msecs)": {
+				"$numberInt": "5"
+			},
+			"transaction checkpoint scrub dirty target": {
+				"$numberInt": "0"
+			},
+			"transaction checkpoint scrub time (msecs)": {
+				"$numberInt": "0"
+			},
+			"transaction checkpoint total time (msecs)": {
+				"$numberInt": "5"
+			},
+			"transaction checkpoints": {
+				"$numberInt": "1"
+			},
+			"transaction checkpoints skipped because database was clean": {
+				"$numberInt": "0"
+			},
+			"transaction failures due to cache overflow": {
+				"$numberInt": "0"
+			},
+			"transaction fsync calls for checkpoint after allocating the transaction ID": {
+				"$numberInt": "1"
+			},
+			"transaction fsync duration for checkpoint after allocating the transaction ID (usecs)": {
+				"$numberInt": "0"
+			},
+			"transaction range of IDs currently pinned": {
+				"$numberInt": "0"
+			},
+			"transaction range of IDs currently pinned by a checkpoint": {
+				"$numberInt": "0"
+			},
+			"transaction range of IDs currently pinned by named snapshots": {
+				"$numberInt": "0"
+			},
+			"transaction range of timestamps currently pinned": {
+				"$numberInt": "0"
+			},
+			"transaction range of timestamps pinned by a checkpoint": {
+				"$numberInt": "0"
+			},
+			"transaction range of timestamps pinned by the oldest timestamp": {
+				"$numberInt": "0"
+			},
+			"transaction sync calls": {
+				"$numberInt": "0"
+			},
+			"transactions committed": {
+				"$numberInt": "1"
+			},
+			"transactions rolled back": {
+				"$numberInt": "14"
+			},
+			"update conflicts": {
+				"$numberInt": "0"
+			}
+		},
+		"uri": "statistics:"
+	}
+}
