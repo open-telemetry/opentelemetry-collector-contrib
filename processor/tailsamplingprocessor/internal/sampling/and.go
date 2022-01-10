@@ -36,7 +36,10 @@ func NewAnd(
 	}
 }
 
+// Evaluate looks at the trace data and returns a corresponding SamplingDecision.
 func (c *And) Evaluate(traceID pdata.TraceID, trace *TraceData) (Decision, error) {
+	// The policy iterates over all sub-policies and returns Sampled if all sub-policies returned a Sampled Decision.
+	// If any subpolicy returns NotSampled, it returns NotSampled Decision.
 	for _, sub := range c.subpolicies {
 		decision, err := sub.Evaluate(traceID, trace)
 		if err != nil {
@@ -50,11 +53,17 @@ func (c *And) Evaluate(traceID pdata.TraceID, trace *TraceData) (Decision, error
 	return Sampled, nil
 }
 
+// OnLateArrivingSpans notifies the evaluator that the given list of spans arrived
+// after the sampling decision was already taken for the trace.
+// This gives the evaluator a chance to log any message/metrics and/or update any
+// related internal state.
 func (c *And) OnLateArrivingSpans(Decision, []*pdata.Span) error {
 	c.logger.Debug("Spans are arriving late, decision is already made!!!")
 	return nil
 }
 
+// OnDroppedSpans is called when the trace needs to be dropped, due to memory
+// pressure, before the decision_wait time has been reached.
 func (c *And) OnDroppedSpans(pdata.TraceID, *TraceData) (Decision, error) {
 	return Sampled, nil
 }
