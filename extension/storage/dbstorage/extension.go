@@ -44,7 +44,7 @@ func newDBStorage(logger *zap.Logger, config *Config) (component.Extension, erro
 	}, nil
 }
 
-// Start does nothing
+// Start opens a connection to the database
 func (ds *databaseStorage) Start(context.Context, component.Host) error {
 	db, err := sql.Open(ds.driverName, ds.datasourceName)
 	if err != nil {
@@ -58,7 +58,7 @@ func (ds *databaseStorage) Start(context.Context, component.Host) error {
 	return nil
 }
 
-// Shutdown will close any open databases
+// Shutdown closes the connection to the database
 func (ds *databaseStorage) Shutdown(context.Context) error {
 	return ds.db.Close()
 }

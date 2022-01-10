@@ -6,7 +6,10 @@ The Database Storage extension can persist state to a relational database.
 
 The extension requires read and write access to a database table.
 
-`driver`: the name of the database driver to use. Currently, the storage client supports "sqlite3" and "pgx".
+`driver`: the name of the database driver to use. By default, the storage client supports "sqlite3" and "pgx".
+
+Implementors can add additional driver support by importing SQL drivers into the program.
+See [Golang database/sql package documentation] for more information.
 
 `datasource`: the url of the database, in the format accepted by the driver.
 
