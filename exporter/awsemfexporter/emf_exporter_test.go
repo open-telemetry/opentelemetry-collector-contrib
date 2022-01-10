@@ -36,7 +36,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cloudwatch"
+	cloudwatch "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 

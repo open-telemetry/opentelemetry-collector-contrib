@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cloudwatch // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cloudwatch"
+package cwlogs // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 
 import (
 	"errors"

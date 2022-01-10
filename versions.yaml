@@ -81,7 +81,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil
-      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cloudwatch
+      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s
