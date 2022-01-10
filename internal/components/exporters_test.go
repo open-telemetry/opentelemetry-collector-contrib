@@ -40,6 +40,7 @@ import (
 	ddconf "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	dtconf "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombexporter"
@@ -284,6 +285,14 @@ func TestDefaultExporters(t *testing.T) {
 			getConfigFn: func() config.Exporter {
 				cfg := expFactories["elastic"].CreateDefaultConfig().(*elasticexporter.Config)
 				cfg.APMServerURL = "http://" + endpoint
+				return cfg
+			},
+		},
+		{
+			exporter: "elasticsearch",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["elasticsearch"].CreateDefaultConfig().(*elasticsearchexporter.Config)
+				cfg.Endpoints = []string{"http://" + endpoint}
 				return cfg
 			},
 		},
