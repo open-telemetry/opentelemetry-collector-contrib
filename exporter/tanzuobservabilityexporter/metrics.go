@@ -610,3 +610,67 @@ func (regularHistogramConsumerSpec) AsHistogram(metric pdata.Metric) histogramMe
 		HistogramDataPointSlice: aHistogram.DataPoints(),
 	}
 }
+
+type summariesConsumer struct {
+	sender   gaugeSender
+	settings component.TelemetrySettings
+}
+
+// newSummaryConsumer returns a typedMetricConsumer that consumes summary metrics
+// by sending them to tanzu observability.
+func newSummaryConsumer(
+	sender gaugeSender, settings component.TelemetrySettings,
+) typedMetricConsumer {
+	return &summariesConsumer{sender: sender, settings: settings}
+}
+
+func (s *summariesConsumer) Type() pdata.MetricDataType {
+	return pdata.MetricDataTypeSummary
+}
+
+func (s *summariesConsumer) Consume(metric pdata.Metric, errs *[]error) {
+	summary := metric.Summary()
+	summaryDataPoints := summary.DataPoints()
+	for i := 0; i < summaryDataPoints.Len(); i++ {
+		s.sendSummaryDataPoint(metric, summaryDataPoints.At(i), errs)
+	}
+}
+
+func (*summariesConsumer) PushInternalMetrics(errs *[]error) {
+	// Do nothing
+}
+
+func (s *summariesConsumer) sendSummaryDataPoint(
+	metric pdata.Metric, summaryDataPoint pdata.SummaryDataPoint, errs *[]error,
+) {
+	name := metric.Name()
+	ts := summaryDataPoint.Timestamp().AsTime().Unix()
+	tags := attributesToTags(summaryDataPoint.Attributes())
+	count := summaryDataPoint.Count()
+	sum := summaryDataPoint.Sum()
+
+	if quantileTag, ok := tags["quantile"]; ok {
+		tags["_quantile"] = quantileTag
+		delete(tags, "quantile")
+	}
+	s.sendMetric(name+"_count", float64(count), ts, tags, errs)
+	s.sendMetric(name+"_sum", sum, ts, tags, errs)
+	quantileValues := summaryDataPoint.QuantileValues()
+	for i := 0; i < quantileValues.Len(); i++ {
+		quantileValue := quantileValues.At(i)
+		tags["quantile"] = quantileTagValue(quantileValue.Quantile())
+		s.sendMetric(name, quantileValue.Value(), ts, tags, errs)
+	}
+}
+
+func (s *summariesConsumer) sendMetric(
+	name string, value float64, ts int64, tags map[string]string, errs *[]error) {
+	err := s.sender.SendMetric(name, value, ts, "", tags)
+	if err != nil {
+		*errs = append(*errs, err)
+	}
+}
+
+func quantileTagValue(quantile float64) string {
+	return strconv.FormatFloat(quantile, 'f', -1, 64)
+}
