@@ -39,7 +39,8 @@
 - Sanitize URLs being logged (#7021)
 - `prometheusreceiver`: Fix start time tracking for long scrape intervals (#7053)
 - `signalfxexporter`: Don't use syscall to avoid compilation errors on some platforms (#7062)
-
+- `k8sattributeprocessor`: Parse IP out of net.Addr to correctly tag k8s.pod.ip
+- 
 ## 💡 Enhancements 💡
 
 - `lokiexporter`: add complete log record to body (#6619)
