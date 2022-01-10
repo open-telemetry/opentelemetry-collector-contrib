@@ -28,10 +28,11 @@ import (
 )
 
 type testMetric struct {
-	metricNames  []string
-	metricValues [][]float64
-	isDelta      []bool
-	deltaSecond  int
+	metricNames     []string
+	metricValues    [][]float64
+	metricIntValues [][]int64
+	isDelta         []bool
+	deltaSecond     int
 }
 
 type deltaToRateTest struct {
@@ -101,6 +102,20 @@ var (
 			outMetrics: generateGaugeMetrics(testMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
 				metricValues: [][]float64{{0, 0, 0}, {0}},
+			}),
+		},
+		{
+			name:    "int64-delta_to_rate_one_positive",
+			metrics: []string{"metric_1", "metric_2"},
+			inMetrics: generateSumMetrics(testMetric{
+				metricNames:     []string{"metric_1", "metric_2"},
+				metricIntValues: [][]int64{{120, 240, 360}, {360}},
+				isDelta:         []bool{true, true},
+				deltaSecond:     120,
+			}),
+			outMetrics: generateGaugeMetrics(testMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricValues: [][]float64{{1, 2, 3}, {3}},
 			}),
 		},
 	}
@@ -198,11 +213,21 @@ func generateSumMetrics(tm testMetric) pdata.Metrics {
 			sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		}
 
-		for _, value := range tm.metricValues[i] {
-			dp := m.Sum().DataPoints().AppendEmpty()
-			dp.SetStartTimestamp(pdata.NewTimestampFromTime(now))
-			dp.SetTimestamp(pdata.NewTimestampFromTime(now.Add(delta * time.Second)))
-			dp.SetDoubleVal(value)
+		if i < len(tm.metricValues) {
+			for _, value := range tm.metricValues[i] {
+				dp := m.Sum().DataPoints().AppendEmpty()
+				dp.SetStartTimestamp(pdata.NewTimestampFromTime(now))
+				dp.SetTimestamp(pdata.NewTimestampFromTime(now.Add(delta * time.Second)))
+				dp.SetDoubleVal(value)
+			}
+		}
+		if i < len(tm.metricIntValues) {
+			for _, value := range tm.metricIntValues[i] {
+				dp := m.Sum().DataPoints().AppendEmpty()
+				dp.SetStartTimestamp(pdata.NewTimestampFromTime(now))
+				dp.SetTimestamp(pdata.NewTimestampFromTime(now.Add(delta * time.Second)))
+				dp.SetIntVal(value)
+			}
 		}
 	}
 
@@ -219,10 +244,19 @@ func generateGaugeMetrics(tm testMetric) pdata.Metrics {
 		m := ms.AppendEmpty()
 		m.SetName(name)
 		m.SetDataType(pdata.MetricDataTypeGauge)
-		for _, value := range tm.metricValues[i] {
-			dp := m.Gauge().DataPoints().AppendEmpty()
-			dp.SetTimestamp(pdata.NewTimestampFromTime(now.Add(120 * time.Second)))
-			dp.SetDoubleVal(value)
+		if i < len(tm.metricValues) {
+			for _, value := range tm.metricValues[i] {
+				dp := m.Gauge().DataPoints().AppendEmpty()
+				dp.SetTimestamp(pdata.NewTimestampFromTime(now.Add(120 * time.Second)))
+				dp.SetDoubleVal(value)
+			}
+		}
+		if i < len(tm.metricIntValues) {
+			for _, value := range tm.metricIntValues[i] {
+				dp := m.Gauge().DataPoints().AppendEmpty()
+				dp.SetTimestamp(pdata.NewTimestampFromTime(now.Add(120 * time.Second)))
+				dp.SetIntVal(value)
+			}
 		}
 	}
 

@@ -4,23 +4,22 @@ go 1.17
 
 require (
 	github.com/go-sql-driver/mysql v1.6.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.41.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.42.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.41.1-0.20211222180302-3db1d1146483
-	go.opentelemetry.io/collector/model v0.41.1-0.20211222180302-3db1d1146483
-	go.uber.org/zap v1.19.1
+	go.opentelemetry.io/collector v0.42.0
+	go.opentelemetry.io/collector/model v0.42.0
+	go.uber.org/zap v1.20.0
 )
 
 require github.com/testcontainers/testcontainers-go v0.12.0
 
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78 // indirect
-	github.com/Microsoft/go-winio v0.4.17-0.20210211115548-6eac466e5fa3 // indirect
-	github.com/Microsoft/hcsshim v0.8.16 // indirect
-	github.com/benbjohnson/clock v1.3.0 // indirect
+	github.com/Microsoft/go-winio v0.4.17 // indirect
+	github.com/Microsoft/hcsshim v0.8.23 // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
-	github.com/containerd/cgroups v0.0.0-20210114181951-8a68de567b68 // indirect
-	github.com/containerd/containerd v1.5.0-beta.4 // indirect
+	github.com/containerd/cgroups v1.0.1 // indirect
+	github.com/containerd/containerd v1.5.9 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.7.1+incompatible // indirect
 	github.com/docker/docker v20.10.11+incompatible // indirect
@@ -31,7 +30,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/uuid v1.3.0 // indirect
-	github.com/knadh/koanf v1.3.3 // indirect
+	github.com/knadh/koanf v1.4.0 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
@@ -41,7 +40,7 @@ require (
 	github.com/moby/term v0.0.0-20201216013528-df9cb8a40635 // indirect
 	github.com/morikuni/aec v0.0.0-20170113033406-39771216ff4c // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
-	github.com/opencontainers/image-spec v1.0.1 // indirect
+	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/opencontainers/runc v1.0.2 // indirect
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	github.com/pkg/errors v0.9.1 // indirect

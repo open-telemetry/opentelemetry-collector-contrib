@@ -6,12 +6,12 @@ require (
 	github.com/docker/docker v20.10.12+incompatible
 	github.com/gobwas/glob v0.2.3
 	github.com/stretchr/testify v1.7.0
-	go.uber.org/zap v1.19.1
+	go.uber.org/zap v1.20.0
 )
 
 require (
 	github.com/Microsoft/go-winio v0.4.17 // indirect
-	github.com/containerd/containerd v1.5.8 // indirect
+	github.com/containerd/containerd v1.5.9 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.7.1+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect

@@ -78,7 +78,7 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver:     "docker_stats",
-			skipLifecyle: runtime.GOOS == "windows", // Unable to start docker client on windows
+			skipLifecyle: true,
 		},
 		{
 			receiver:     "dotnet_diagnostics",
@@ -200,8 +200,7 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "zipkin",
 		},
 		{
-			receiver:     "zookeeper",
-			skipLifecyle: true, // Panics due to nil pointer on shutdown with the default configuration
+			receiver: "zookeeper",
 		},
 		{
 			receiver: "syslog",
