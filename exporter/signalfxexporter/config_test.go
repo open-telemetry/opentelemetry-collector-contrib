@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/service/servicetest"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/correlation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
@@ -331,7 +332,7 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 				DeltaTranslationTTL: 3600,
 			}
 
-			got, err := cfg.getOptionsFromConfig()
+			got, err := cfg.getOptionsFromConfig(zap.NewNop())
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getOptionsFromConfig() error = %v, wantErr %v", err, tt.wantErr)
 				return

@@ -65,7 +65,7 @@ func (sf *SFxMetricsDataSender) Start() error {
 	}
 
 	sf.Metrics = exporter
-	return exporter.Start(context.Background(), sf)
+	return nil
 }
 
 // GenConfigYAMLStr returns receiver config for the agent.

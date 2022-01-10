@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/correlation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
@@ -107,8 +108,8 @@ type Config struct {
 	MaxConnections *int `mapstructure:"max_connections"`
 }
 
-func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
-	if err := cfg.validateConfig(); err != nil {
+func (cfg *Config) getOptionsFromConfig(logger *zap.Logger) (*exporterOptions, error) {
+	if err := cfg.validateConfig(logger); err != nil {
 		return nil, err
 	}
 
@@ -142,7 +143,7 @@ func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
 	}, nil
 }
 
-func (cfg *Config) validateConfig() error {
+func (cfg *Config) validateConfig(logger *zap.Logger) error {
 	if cfg.AccessToken == "" {
 		return errors.New(`requires a non-empty "access_token"`)
 	}
@@ -156,8 +157,17 @@ func (cfg *Config) validateConfig() error {
 		return errors.New(`cannot have a negative "timeout"`)
 	}
 
-	if cfg.MaxConnections != nil && *cfg.MaxConnections < 0 {
-		return errors.New(`cannot have a negative "max_connections"`)
+	if cfg.MaxConnections != nil {
+		logger.Warn(`"max_connections" is deprecated, use "max_idle_conns" or "max_idle_conns_per_host" instead`)
+		if *cfg.MaxConnections < 0 {
+			return errors.New(`cannot have a negative "max_connections"`)
+		}
+		if cfg.MaxIdleConns != nil {
+			logger.Info(`ignoring "max_connections" and using "max_idle_conns"`)
+		}
+		if cfg.MaxIdleConnsPerHost != nil {
+			logger.Info(`ignoring "max_connections" and using "max_idle_conns_per_host"`)
+		}
 	}
 
 	return nil
