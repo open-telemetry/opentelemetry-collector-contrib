@@ -17,7 +17,7 @@ package k8seventsreceiver
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 )
@@ -30,14 +30,14 @@ func TestK8sEventToLogData(t *testing.T) {
 	resourceAttrs := rl.Resource().Attributes()
 	lr := rl.InstrumentationLibraryLogs().At(0)
 	attrs := lr.Logs().At(0).Attributes()
-	require.Equal(t, ld.ResourceLogs().Len(), 1)
-	require.Equal(t, resourceAttrs.Len(), 3)
-	require.Equal(t, attrs.Len(), 9)
+	assert.Equal(t, ld.ResourceLogs().Len(), 1)
+	assert.Equal(t, resourceAttrs.Len(), 3)
+	assert.Equal(t, attrs.Len(), 9)
 
 	// Count attribute will not be present in the LogData
 	k8sEvent.Count = 0
 	ld = k8sEventToLogData(zap.NewNop(), k8sEvent)
-	require.Equal(t, ld.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Attributes().Len(), 8)
+	assert.Equal(t, ld.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Attributes().Len(), 8)
 }
 
 func TestUnknownSeverity(t *testing.T) {
@@ -48,6 +48,6 @@ func TestUnknownSeverity(t *testing.T) {
 	rl := ld.ResourceLogs().At(0)
 	logEntry := rl.InstrumentationLibraryLogs().At(0).Logs().At(0)
 
-	require.Equal(t, logEntry.SeverityNumber(), pdata.SeverityNumberUNDEFINED)
-	require.Equal(t, logEntry.SeverityText(), "")
+	assert.Equal(t, logEntry.SeverityNumber(), pdata.SeverityNumberUNDEFINED)
+	assert.Equal(t, logEntry.SeverityText(), "")
 }

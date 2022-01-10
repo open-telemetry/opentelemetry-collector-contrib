@@ -19,6 +19,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -41,7 +42,7 @@ func TestNewReceiver(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
-	require.NoError(t, r.Shutdown(context.Background()))
+	assert.NoError(t, r.Shutdown(context.Background()))
 
 	rCfg.Namespaces = []string{"test", "another_test"}
 	r1, err := newReceiver(
@@ -54,7 +55,7 @@ func TestNewReceiver(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, r1)
 	require.NoError(t, r1.Start(context.Background(), componenttest.NewNopHost()))
-	require.NoError(t, r1.Shutdown(context.Background()))
+	assert.NoError(t, r1.Shutdown(context.Background()))
 }
 
 func TestHandleNewEvent(t *testing.T) {
@@ -74,7 +75,7 @@ func TestHandleNewEvent(t *testing.T) {
 	k8sEvent := getEvent()
 	recv.handleNewEvent(k8sEvent)
 
-	require.Equal(t, sink.LogRecordCount(), 1)
+	assert.Equal(t, sink.LogRecordCount(), 1)
 }
 
 func TestHandleNewEventDropEvent(t *testing.T) {
@@ -95,24 +96,24 @@ func TestHandleNewEventDropEvent(t *testing.T) {
 	k8sEvent.FirstTimestamp = v1.Time{Time: time.Now().Add(-time.Hour)}
 	recv.handleNewEvent(k8sEvent)
 
-	require.Equal(t, sink.LogRecordCount(), 0)
+	assert.Equal(t, sink.LogRecordCount(), 0)
 }
 
 func TestGetEventTimestamp(t *testing.T) {
 	k8sEvent := getEvent()
 	eventTimestamp := getEventTimestamp(k8sEvent)
-	require.Equal(t, k8sEvent.FirstTimestamp.Time, eventTimestamp)
+	assert.Equal(t, k8sEvent.FirstTimestamp.Time, eventTimestamp)
 
 	k8sEvent.FirstTimestamp = v1.Time{Time: time.Now().Add(-time.Hour)}
 	k8sEvent.LastTimestamp = v1.Now()
 	eventTimestamp = getEventTimestamp(k8sEvent)
-	require.Equal(t, k8sEvent.LastTimestamp.Time, eventTimestamp)
+	assert.Equal(t, k8sEvent.LastTimestamp.Time, eventTimestamp)
 
 	k8sEvent.FirstTimestamp = v1.Time{}
 	k8sEvent.LastTimestamp = v1.Time{}
 	k8sEvent.EventTime = v1.MicroTime(v1.Now())
 	eventTimestamp = getEventTimestamp(k8sEvent)
-	require.Equal(t, k8sEvent.EventTime.Time, eventTimestamp)
+	assert.Equal(t, k8sEvent.EventTime.Time, eventTimestamp)
 }
 
 func TestAllowEvent(t *testing.T) {
@@ -130,15 +131,15 @@ func TestAllowEvent(t *testing.T) {
 	k8sEvent := getEvent()
 
 	shouldAllowEvent := recv.allowEvent(k8sEvent)
-	require.Equal(t, shouldAllowEvent, true)
+	assert.Equal(t, shouldAllowEvent, true)
 
 	k8sEvent.FirstTimestamp = v1.Time{Time: time.Now().Add(-time.Hour)}
 	shouldAllowEvent = recv.allowEvent(k8sEvent)
-	require.Equal(t, shouldAllowEvent, false)
+	assert.Equal(t, shouldAllowEvent, false)
 
 	k8sEvent.FirstTimestamp = v1.Time{}
 	shouldAllowEvent = recv.allowEvent(k8sEvent)
-	require.Equal(t, shouldAllowEvent, false)
+	assert.Equal(t, shouldAllowEvent, false)
 }
 
 func getEvent() *corev1.Event {

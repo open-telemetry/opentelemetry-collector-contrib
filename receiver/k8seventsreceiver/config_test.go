@@ -19,6 +19,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
@@ -42,10 +43,10 @@ func TestLoadConfig(t *testing.T) {
 	require.Equal(t, len(cfg.Receivers), 2)
 
 	r1 := cfg.Receivers[config.NewComponentID(typeStr)]
-	require.Equal(t, r1, factory.CreateDefaultConfig())
+	assert.Equal(t, r1, factory.CreateDefaultConfig())
 
 	r2 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "all_settings")].(*Config)
-	require.Equal(t, r2,
+	assert.Equal(t, r2,
 		&Config{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "all_settings")),
 			Namespaces:       []string{"default", "my_namespace"},
@@ -65,5 +66,5 @@ func TestLoadInvalidConfig(t *testing.T) {
 	factories.Receivers[config.Type(receiverType)] = factory
 	_, err = configtest.LoadConfigAndValidate(path.Join(".", "testdata", "invalid_config.yaml"), factories)
 
-	require.Error(t, err)
+	assert.Error(t, err)
 }

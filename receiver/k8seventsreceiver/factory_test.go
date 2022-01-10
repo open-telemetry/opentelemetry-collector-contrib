@@ -19,6 +19,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
@@ -34,7 +35,7 @@ func TestDefaultConfig(t *testing.T) {
 	rCfg, ok := cfg.(*Config)
 	require.True(t, ok)
 
-	require.Equal(t, &Config{
+	assert.Equal(t, &Config{
 		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		InitialLookback:  60 * time.Second,
 		APIConfig: k8sconfig.APIConfig{
@@ -44,7 +45,7 @@ func TestDefaultConfig(t *testing.T) {
 }
 
 func TestFactoryType(t *testing.T) {
-	require.Equal(t, config.Type("k8s_events"), NewFactory().Type())
+	assert.Equal(t, config.Type("k8s_events"), NewFactory().Type())
 }
 
 func TestCreateReceiver(t *testing.T) {
@@ -55,8 +56,8 @@ func TestCreateReceiver(t *testing.T) {
 		context.Background(), componenttest.NewNopReceiverCreateSettings(),
 		rCfg, consumertest.NewNop(),
 	)
-	require.Error(t, err)
-	require.Nil(t, r)
+	assert.Error(t, err)
+	assert.Nil(t, r)
 
 	// Override for test.
 	rCfg.makeClient = func(apiConf k8sconfig.APIConfig) (k8s.Interface, error) {
@@ -67,6 +68,6 @@ func TestCreateReceiver(t *testing.T) {
 		componenttest.NewNopReceiverCreateSettings(),
 		rCfg, consumertest.NewNop(),
 	)
-	require.NoError(t, err)
-	require.NotNil(t, r)
+	assert.NoError(t, err)
+	assert.NotNil(t, r)
 }
