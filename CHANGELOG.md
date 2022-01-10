@@ -2,12 +2,19 @@
 
 ## Unreleased
 
+## v0.42.0
+
 ## 💡 Enhancements 💡
 
+- `couchdbreceiver`: Add couchdb client (#6880)
+- `elasticsearchreceiver`: Implement scraper client (#7019)
+- `couchdbreceiver`: Add metadata metrics (#6878)
 - `prometheusremotewriteexporter`: Handling Staleness flag from OTLP (#6679)
 - `prometheusexporter`: Handling Staleness flag from OTLP (#6805)
+- `prometheusreceiver`: Set OTLP no-data-present flag for stale scraped metrics. (#7043)
 - `mysqlreceiver`: Add Integration test (#6916)
 - `datadogexporter`: Add compatibility with ECS Fargate semantic conventions (#6670)
+- `datadogexporter`: Add configuration option to use OTel span name into the Datatog resource name (#6611)
 - `k8s_observer`: discover k8s.node endpoints (#6820)
 - `redisreceiver`: Add missing description fields to keyspace metrics (#6940)
 - `redisreceiver`: Set start timestamp uniformly for gauge and sum metrics (#6941)
@@ -32,6 +39,10 @@
 - `ecstaskobserver`: Fix "Incorrect conversion between integer types" security issue (#6939)
 - Fix typo in "direction" metrics attribute description (#6949)
 - `zookeeperreceiver`: Fix issue where receiver could panic during shutdown (#7020)
+- `prometheusreceiver`: Fix metadata fetching when metrics differ by trimmable suffixes (#6932)
+- Sanitize URLs being logged (#7021)
+- `prometheusreceiver`: Fix start time tracking for long scrape intervals (#7053)
+- `signalfxexporter`: Don't use syscall to avoid compilation errors on some platforms (#7062)
 
 ## 💡 Enhancements 💡
 
@@ -41,6 +52,7 @@
 - `skywalkingexporter`: add skywalking metrics exporter (#6528)
 - `deltatorateprocessor`: add int counter support (#6982)
 - `filestorageextension`: document default values (#7022)
+- `redisreceiver`: Migrate the scraper to the mdatagen metrics builder (#6938)  
 
 ## v0.41.0
 
@@ -112,6 +124,7 @@
 - `observiqexporter`: Allow Dialer timeout to be configured (#5906)
 - `routingprocessor`: remove broken debug log fields (#6373)
 - `prometheusremotewriteexporter`: Add exemplars support (#5578) 
+- `fluentforwardreceiver`: Convert attributes with nil value to AttributeValueTypeEmpty (#6630)
 
 ## v0.39.0
 

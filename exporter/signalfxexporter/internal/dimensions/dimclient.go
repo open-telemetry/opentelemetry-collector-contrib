@@ -32,6 +32,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/sanitize"
 )
 
 // DimensionClient sends updates to dimensions to the SignalFx API
@@ -240,7 +241,7 @@ func (dc *DimensionClient) handleDimensionUpdate(dimUpdate *DimensionUpdate) err
 				dc.logger.Error(
 					"Unable to update dimension, not retrying",
 					zap.Error(err),
-					zap.String("URL", req.URL.String()),
+					zap.String("URL", sanitize.URL(req.URL)),
 					zap.String("dimensionUpdate", dimUpdate.String()),
 					zap.Int("statusCode", statusCode),
 				)
@@ -256,7 +257,7 @@ func (dc *DimensionClient) handleDimensionUpdate(dimUpdate *DimensionUpdate) err
 			dc.logger.Error(
 				"Unable to update dimension, retrying",
 				zap.Error(err),
-				zap.String("URL", req.URL.String()),
+				zap.String("URL", sanitize.URL(req.URL)),
 				zap.String("dimensionUpdate", dimUpdate.String()),
 				zap.Int("statusCode", statusCode),
 			)
@@ -269,7 +270,7 @@ func (dc *DimensionClient) handleDimensionUpdate(dimUpdate *DimensionUpdate) err
 				dc.logger.Error(
 					"Failed to retry dimension update",
 					zap.Error(err),
-					zap.String("URL", req.URL.String()),
+					zap.String("URL", sanitize.URL(req.URL)),
 					zap.String("dimensionUpdate", dimUpdate.String()),
 					zap.Int("statusCode", statusCode),
 				)
