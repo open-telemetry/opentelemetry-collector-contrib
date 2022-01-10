@@ -21,6 +21,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"sync"
 	"time"
 
@@ -105,7 +107,7 @@ func (r *receiver) Start(ctx context.Context, host component.Host) error {
 			defer r.wg.Done()
 			errorWhileRetry := backoff.Retry(func() error {
 				err := r.handleEvents(ctx, eventBackoff)
-				return err
+				return fmt.Errorf("error fetching/processing events: %w", err)
 			}, backoffContext)
 			if errorWhileRetry != nil {
 				// context will be cancelled only in the case when shutdown will be called. So it's a graceful return.
@@ -172,7 +174,6 @@ func (r *receiver) scrape(context.Context) (pdata.Metrics, error) {
 func (r *receiver) handleEvents(ctx context.Context, eventBackoff *backoff.ExponentialBackOff) error {
 	c, err := r.clientFactory(r.set.Logger, r.config)
 	if err != nil {
-		r.set.Logger.Error("error fetching/processing events", zap.Error(err))
 		return err
 	}
 	r.client = c
@@ -180,7 +181,6 @@ func (r *receiver) handleEvents(ctx context.Context, eventBackoff *backoff.Expon
 	// Fetch the response from the endpoint
 	response, err := r.client.getEventsResponse(ctx)
 	if err != nil {
-		r.set.Logger.Error("error while fetching events", zap.Error(err))
 		return err
 	}
 
@@ -193,13 +193,14 @@ func (r *receiver) handleEvents(ctx context.Context, eventBackoff *backoff.Expon
 			// Translate the response to the events format.
 			decodedEvent, err := decodeEvents(dec)
 			if err != nil {
+				if err == io.EOF {
+					break
+				}
 				// context will be cancelled only in the case when shutdown will be called. So returning gracefully.
 				if errors.Is(err, context.Canceled) {
 					return nil
 				}
-				r.set.Logger.Error("error decoding the event", zap.Error(err))
 				if err = response.Body.Close(); err != nil {
-					r.set.Logger.Error("error while closing the connection", zap.Error(err))
 					return err
 				}
 				return err
@@ -208,13 +209,11 @@ func (r *receiver) handleEvents(ctx context.Context, eventBackoff *backoff.Expon
 			// Translate the events into the pdata.logs format
 			ld, err := translateEventsToLogs(r.set.Logger, decodedEvent)
 			if err != nil {
-				r.set.Logger.Error("error translating event to log", zap.Error(err))
 				return err
 			}
 
 			err = r.logsConsumer.ConsumeLogs(ctx, ld)
 			if err != nil {
-				r.set.Logger.Error("error transferring it to the next component", zap.Error(err))
 				return err
 			}
 			eventBackoff.Reset()

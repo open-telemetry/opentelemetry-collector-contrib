@@ -23,6 +23,7 @@ import (
 	"sort"
 
 	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
 )
 
@@ -34,7 +35,7 @@ func translateEventsToLogs(logger *zap.Logger, event event) (pdata.Logs, error) 
 	logRecord := ill.Logs().AppendEmpty()
 	logRecord.SetName(event.Action)
 	logRecord.SetTimestamp(pdata.Timestamp(event.TimeNano))
-	logRecord.Attributes().InsertString("contianer.id", event.ID)
+	logRecord.Attributes().InsertString(conventions.AttributeContainerID, event.Actor.ID)
 
 	bodyString := fmt.Sprintf("podman %s ( %s ) %s", event.Type, event.Actor.Attributes["name"], event.Action)
 	body := pdata.NewAttributeValueString(bodyString)
@@ -44,7 +45,7 @@ func translateEventsToLogs(logger *zap.Logger, event event) (pdata.Logs, error) 
 	for k := range event.Actor.Attributes {
 		keys = append(keys, k)
 	}
-	sort.Strings(keys)
+
 	for _, key := range keys {
 		val := event.Actor.Attributes[key]
 		attrValue, err := convertInterfaceToAttributeValue(logger, val)
@@ -52,39 +53,40 @@ func translateEventsToLogs(logger *zap.Logger, event event) (pdata.Logs, error) 
 			return pdata.NewLogs(), err
 		}
 		if key == "image" {
-			logRecord.Attributes().Insert("container.image.name", attrValue)
+			logRecord.Attributes().Insert(conventions.AttributeContainerImageName, attrValue)
 		}
 		if key == "name" {
-			logRecord.Attributes().Insert("container.name", attrValue)
+			logRecord.Attributes().Insert(conventions.AttributeContainerName, attrValue)
 		}
 	}
 	return ld, nil
 }
 
 func convertInterfaceToAttributeValue(logger *zap.Logger, originalValue interface{}) (pdata.AttributeValue, error) {
-	if originalValue == nil {
+	switch value := originalValue.(type) {
+	case nil:
 		return pdata.NewAttributeValueEmpty(), nil
-	} else if value, ok := originalValue.(string); ok {
+	case string:
 		return pdata.NewAttributeValueString(value), nil
-	} else if value, ok := originalValue.(int64); ok {
+	case int64:
 		return pdata.NewAttributeValueInt(value), nil
-	} else if value, ok := originalValue.(float64); ok {
+	case float64:
 		return pdata.NewAttributeValueDouble(value), nil
-	} else if value, ok := originalValue.(bool); ok {
+	case bool:
 		return pdata.NewAttributeValueBool(value), nil
-	} else if value, ok := originalValue.(map[string]interface{}); ok {
+	case map[string]interface{}:
 		mapValue, err := convertToAttributeMap(logger, value)
 		if err != nil {
 			return pdata.NewAttributeValueEmpty(), err
 		}
 		return mapValue, nil
-	} else if value, ok := originalValue.([]interface{}); ok {
+	case []interface{}:
 		arrValue, err := convertToSliceVal(logger, value)
 		if err != nil {
 			return pdata.NewAttributeValueEmpty(), err
 		}
 		return arrValue, nil
-	} else {
+	default:
 		logger.Debug("Unsupported value conversion", zap.Any("value", originalValue))
 		return pdata.NewAttributeValueEmpty(), errors.New("cannot convert field value to attribute")
 	}
