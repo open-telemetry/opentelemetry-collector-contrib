@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 💡 Enhancements 💡
+
+- `elasticsearchexporter`: add elasticsearchexporter to the components exporter list (#6002)
+
 ## v0.42.0
 
 ## 💡 Enhancements 💡
