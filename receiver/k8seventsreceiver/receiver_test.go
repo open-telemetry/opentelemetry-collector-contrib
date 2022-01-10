@@ -41,7 +41,7 @@ func TestNewReceiver(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
-	r.Shutdown(context.Background())
+	require.NoError(t, r.Shutdown(context.Background()))
 
 	rCfg.Namespaces = []string{"test", "another_test"}
 	r1, err := newReceiver(
@@ -54,7 +54,7 @@ func TestNewReceiver(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, r1)
 	require.NoError(t, r1.Start(context.Background(), componenttest.NewNopHost()))
-	r1.Shutdown(context.Background())
+	require.NoError(t, r1.Shutdown(context.Background()))
 }
 
 func TestHandleNewEvent(t *testing.T) {

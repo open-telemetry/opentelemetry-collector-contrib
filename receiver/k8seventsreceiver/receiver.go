@@ -63,7 +63,7 @@ func newReceiver(
 func (kr *k8seventsReceiver) Start(ctx context.Context, host component.Host) error {
 	kr.ctx, kr.cancel = context.WithCancel(ctx)
 
-	kr.settings.Logger.Info("Starting to watch namespaces for the events.")
+	kr.settings.Logger.Info("starting to watch namespaces for the events.")
 	if len(kr.config.Namespaces) == 0 {
 		kr.startWatch(corev1.NamespaceAll)
 	} else {
@@ -90,6 +90,10 @@ func (kr *k8seventsReceiver) startWatch(ns string) {
 	kr.stopperChanList = append(kr.stopperChanList, stopperChan)
 	kr.startWatchingNamespace(kr.client, cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
+			ev := obj.(*corev1.Event)
+			kr.handleNewEvent(ev)
+		},
+		UpdateFunc: func(_, obj interface{}) {
 			ev := obj.(*corev1.Event)
 			kr.handleNewEvent(ev)
 		},

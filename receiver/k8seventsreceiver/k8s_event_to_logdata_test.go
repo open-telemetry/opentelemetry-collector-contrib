@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 )
 
@@ -37,4 +38,16 @@ func TestK8sEventToLogData(t *testing.T) {
 	k8sEvent.Count = 0
 	ld = k8sEventToLogData(zap.NewNop(), k8sEvent)
 	require.Equal(t, ld.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Attributes().Len(), 8)
+}
+
+func TestUnknownSeverity(t *testing.T) {
+	k8sEvent := getEvent()
+	k8sEvent.Type = "Unknown"
+
+	ld := k8sEventToLogData(zap.NewNop(), k8sEvent)
+	rl := ld.ResourceLogs().At(0)
+	logEntry := rl.InstrumentationLibraryLogs().At(0).Logs().At(0)
+
+	require.Equal(t, logEntry.SeverityNumber(), pdata.SeverityNumberUNDEFINED)
+	require.Equal(t, logEntry.SeverityText(), "")
 }
