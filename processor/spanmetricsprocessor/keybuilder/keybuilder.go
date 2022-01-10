@@ -31,6 +31,8 @@ type keyBuilder struct {
 	separator string
 }
 
+var _ KeyBuilder = (*keyBuilder)(nil)
+
 func New() KeyBuilder {
 	b := keyBuilder{
 		sb:        strings.Builder{},
