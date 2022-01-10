@@ -17,7 +17,6 @@ package k8seventsreceiver
 import (
 	"path"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -50,21 +49,8 @@ func TestLoadConfig(t *testing.T) {
 		&Config{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "all_settings")),
 			Namespaces:       []string{"default", "my_namespace"},
-			InitialLookback:  10 * time.Second,
 			APIConfig: k8sconfig.APIConfig{
 				AuthType: k8sconfig.AuthTypeServiceAccount,
 			},
 		})
-}
-
-func TestLoadInvalidConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	require.NoError(t, err)
-
-	factory := NewFactory()
-	receiverType := "k8s_events"
-	factories.Receivers[config.Type(receiverType)] = factory
-	_, err = servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "invalid_config.yaml"), factories)
-
-	assert.Error(t, err)
 }

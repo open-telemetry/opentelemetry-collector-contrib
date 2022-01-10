@@ -131,7 +131,7 @@ func (kr *k8seventsReceiver) startWatchingNamespace(
 // event flood can be avoided upon startup.
 func (kr *k8seventsReceiver) allowEvent(ev *corev1.Event) bool {
 	eventTimestamp := getEventTimestamp(ev)
-	return !eventTimestamp.Before(kr.startTime.Add(-kr.config.InitialLookback))
+	return !eventTimestamp.Before(kr.startTime)
 }
 
 // Return the EventTimestamp based on the populated k8s event timestamps.

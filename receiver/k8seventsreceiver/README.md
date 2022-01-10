@@ -21,7 +21,6 @@ the K8s API server. This can be one of `none` (for no auth), `serviceAccount`
 - `namespaces` (default = `all`): An array of `namespaces` to collect events from.
 This receiver will continuously watch all the `namespaces` mentioned in the array for
 new events.
-- `initial_lookback` (default = `60s`): Allows the events newer than `receiver start time` - `initial_lookback`.
 
 Examples:
 
@@ -29,7 +28,6 @@ Examples:
   k8s_events:
     auth_type: kubeConfig
     namespaces: [default, my_namespace]
-    initial_lookback: 10s
 ```
 
 The full list of settings exposed for this receiver are documented [here](./config.go)
