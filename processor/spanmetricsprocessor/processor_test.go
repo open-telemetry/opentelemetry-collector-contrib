@@ -227,44 +227,37 @@ func TestProcessorConsumeTracesErrors(t *testing.T) {
 	}
 }
 
-type consumeTraceCase struct {
-	name                   string
-	aggregationTemporality string
-	verifier               func(t testing.TB, input pdata.Metrics) bool
-	traces                 []pdata.Traces
-}
-
-var consumeTraceCases = []consumeTraceCase{
-	{
-		name:                   "Test single consumption, three spans (Cumulative).",
-		aggregationTemporality: cumulative,
-		verifier:               verifyConsumeMetricsInputCumulative,
-		traces:                 []pdata.Traces{buildSampleTrace()},
-	},
-	{
-		name:                   "Test single consumption, three spans (Delta).",
-		aggregationTemporality: delta,
-		verifier:               verifyConsumeMetricsInputDelta,
-		traces:                 []pdata.Traces{buildSampleTrace()},
-	},
-	{
-		// More consumptions, should accumulate additively.
-		name:                   "Test two consumptions (Cumulative).",
-		aggregationTemporality: cumulative,
-		verifier:               verifyMultipleCumulativeConsumptions(),
-		traces:                 []pdata.Traces{buildSampleTrace(), buildSampleTrace()},
-	},
-	{
-		// More consumptions, should not accumulate. Therefore, end state should be the same as single consumption case.
-		name:                   "Test two consumptions (Delta).",
-		aggregationTemporality: delta,
-		verifier:               verifyConsumeMetricsInputDelta,
-		traces:                 []pdata.Traces{buildSampleTrace(), buildSampleTrace()},
-	},
-}
-
 func TestProcessorConsumeTracesConcurrentSafe(t *testing.T) {
-	for _, tc := range consumeTraceCases {
+	testcases := []struct {
+		name                   string
+		aggregationTemporality string
+		traces                 []pdata.Traces
+	}{
+		{
+			name:                   "Test single consumption, three spans (Cumulative).",
+			aggregationTemporality: cumulative,
+			traces:                 []pdata.Traces{buildSampleTrace()},
+		},
+		{
+			name:                   "Test single consumption, three spans (Delta).",
+			aggregationTemporality: delta,
+			traces:                 []pdata.Traces{buildSampleTrace()},
+		},
+		{
+			// More consumptions, should accumulate additively.
+			name:                   "Test two consumptions (Cumulative).",
+			aggregationTemporality: cumulative,
+			traces:                 []pdata.Traces{buildSampleTrace(), buildSampleTrace()},
+		},
+		{
+			// More consumptions, should not accumulate. Therefore, end state should be the same as single consumption case.
+			name:                   "Test two consumptions (Delta).",
+			aggregationTemporality: delta,
+			traces:                 []pdata.Traces{buildSampleTrace(), buildSampleTrace()},
+		},
+	}
+
+	for _, tc := range testcases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -294,7 +287,41 @@ func TestProcessorConsumeTracesConcurrentSafe(t *testing.T) {
 }
 
 func TestProcessorConsumeTraces(t *testing.T) {
-	for _, tc := range consumeTraceCases {
+	testcases := []struct {
+		name                   string
+		aggregationTemporality string
+		verifier               func(t testing.TB, input pdata.Metrics) bool
+		traces                 []pdata.Traces
+	}{
+		{
+			name:                   "Test single consumption, three spans (Cumulative).",
+			aggregationTemporality: cumulative,
+			verifier:               verifyConsumeMetricsInputCumulative,
+			traces:                 []pdata.Traces{buildSampleTrace()},
+		},
+		{
+			name:                   "Test single consumption, three spans (Delta).",
+			aggregationTemporality: delta,
+			verifier:               verifyConsumeMetricsInputDelta,
+			traces:                 []pdata.Traces{buildSampleTrace()},
+		},
+		{
+			// More consumptions, should accumulate additively.
+			name:                   "Test two consumptions (Cumulative).",
+			aggregationTemporality: cumulative,
+			verifier:               verifyMultipleCumulativeConsumptions(),
+			traces:                 []pdata.Traces{buildSampleTrace(), buildSampleTrace()},
+		},
+		{
+			// More consumptions, should not accumulate. Therefore, end state should be the same as single consumption case.
+			name:                   "Test two consumptions (Delta).",
+			aggregationTemporality: delta,
+			verifier:               verifyConsumeMetricsInputDelta,
+			traces:                 []pdata.Traces{buildSampleTrace(), buildSampleTrace()},
+		},
+	}
+
+	for _, tc := range testcases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
