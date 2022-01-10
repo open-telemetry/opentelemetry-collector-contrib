@@ -50,8 +50,6 @@ func (mkb *keyBuilder) Append(values ...string) {
 		if mkb.sb.Len() != 0 {
 			mkb.sb.WriteString(mkb.separator)
 		}
-		// It's worth noting that from pprof benchmarks, WriteString is the most expensive operation of this processor.
-		// Specifically, the need to grow the underlying []byte slice to make room for the appended string.
 		mkb.sb.WriteString(value)
 	}
 }
