@@ -20,8 +20,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/prometheus/prometheus/pkg/labels"
-	"github.com/prometheus/prometheus/pkg/value"
+	"github.com/prometheus/prometheus/model/labels"
+	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/scrape"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"

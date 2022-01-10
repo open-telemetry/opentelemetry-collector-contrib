@@ -24,9 +24,9 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/prometheus/common/model"
-	"github.com/prometheus/prometheus/pkg/exemplar"
-	"github.com/prometheus/prometheus/pkg/labels"
-	"github.com/prometheus/prometheus/pkg/value"
+	"github.com/prometheus/prometheus/model/exemplar"
+	"github.com/prometheus/prometheus/model/labels"
+	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/storage"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -114,7 +114,7 @@ func newTransaction(
 var _ storage.Appender = (*transaction)(nil)
 
 // Append always returns 0 to disable label caching.
-func (tr *transaction) Append(ref uint64, ls labels.Labels, t int64, v float64) (uint64, error) {
+func (tr *transaction) Append(ref storage.SeriesRef, ls labels.Labels, t int64, v float64) (storage.SeriesRef, error) {
 	if tr.startTimeMs < 0 {
 		tr.startTimeMs = t
 	}
@@ -136,7 +136,7 @@ func (tr *transaction) Append(ref uint64, ls labels.Labels, t int64, v float64) 
 	return 0, tr.metricBuilder.AddDataPoint(ls, t, v)
 }
 
-func (tr *transaction) AppendExemplar(ref uint64, l labels.Labels, e exemplar.Exemplar) (uint64, error) {
+func (tr *transaction) AppendExemplar(ref storage.SeriesRef, l labels.Labels, e exemplar.Exemplar) (storage.SeriesRef, error) {
 	return 0, nil
 }
 
