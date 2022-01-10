@@ -60,6 +60,6 @@ func TestInvalidConsumer(t *testing.T) {
 		nil,
 	)
 
-	require.Error(t, err)
+	require.EqualError(t, err, "nil nextConsumer")
 	require.Nil(t, receiver, "receiver creation failed")
 }

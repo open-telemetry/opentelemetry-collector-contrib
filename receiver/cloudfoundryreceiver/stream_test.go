@@ -73,8 +73,7 @@ func TestInvalidStream(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, uaa)
 
-	// Stream create should fail if given invalid endpoint
-	cfg.RLPGateway.HTTPClientSettings.Endpoint = ""
+	// Stream create should fail if given empty shard ID
 	streamFactory, streamErr := newEnvelopeStreamFactory(
 		zap.NewNop(),
 		uaa,
@@ -86,28 +85,11 @@ func TestInvalidStream(t *testing.T) {
 
 	innerCtx, _ := context.WithCancel(context.Background())
 
-	envelopeStream, createErr := streamFactory.CreateStream(
-		innerCtx,
-		"")
-
-	require.Error(t, createErr)
-	require.Nil(t, envelopeStream)
-
-	// Stream create should fail with invalid shardID
 	INVALID_SHARD_ID := ""
-	cfg.RLPGateway.HTTPClientSettings.Endpoint = defaultURL
-	streamFactory, streamErr = newEnvelopeStreamFactory(
-		zap.NewNop(),
-		uaa,
-		cfg.RLPGateway.HTTPClientSettings,
-		componenttest.NewNopHost())
-
-	innerCtx, _ = context.WithCancel(context.Background())
-
-	envelopeStream, createErr = streamFactory.CreateStream(
+	envelopeStream, createErr := streamFactory.CreateStream(
 		innerCtx,
 		INVALID_SHARD_ID)
 
-	require.Error(t, createErr)
+	require.EqualError(t, createErr, "shardID cannot be empty")
 	require.Nil(t, envelopeStream)
 }

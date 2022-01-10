@@ -59,6 +59,6 @@ func TestInvalidAuthentication(t *testing.T) {
 		cfg.UAA.Username,
 		cfg.UAA.Password)
 
-	require.Error(t, err)
+	require.EqualError(t, err, "client: missing url")
 	require.Nil(t, uaa)
 }
