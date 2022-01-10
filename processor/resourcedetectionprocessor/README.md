@@ -72,7 +72,7 @@ to read resource information from the [GCE metadata server](https://cloud.google
     * host.name
     * host.type
 
-It also can optionally gather tags for the EC2 instance that the collector is running on. 
+It also can optionally gather tags for the EC2 instance that the collector is running on.
 Note that in order to fetch EC2 tags, the IAM role assigned to the EC2 instance must have a policy that includes the `ec2:DescribeTags` permission.
 
 EC2 custom configuration example:
@@ -102,7 +102,7 @@ ec2:
     * aws.log.group.arns (V4 only)
     * aws.log.stream.names (V4 only)
     * aws.log.stream.arns (V4 only)
-    
+
 * Amazon Elastic Beanstalk: Reads the AWS X-Ray configuration file available on all Beanstalk instances with [X-Ray Enabled](https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/environment-configuration-debugging.html).
 
     * cloud.provider ("aws")
@@ -115,7 +115,7 @@ ec2:
 
     * cloud.provider ("aws")
     * cloud.platform ("aws_eks")
-    
+
 * Azure: Queries the [Azure Instance Metadata Service](https://aka.ms/azureimds) to retrieve the following resource attributes:
 
     * cloud.provider ("azure")
@@ -132,6 +132,13 @@ ec2:
 
   * cloud.provider ("azure")
   * cloud.platform ("azure_aks")
+
+* Consul: Queries a [consul agent](https://www.consul.io/docs/agent) and reads its' [configuration endpoint](https://www.consul.io/api-docs/agent#read-configuration) to retrieve the following resource attributes:
+
+  * cloud.region (consul datacenter)
+  * host.id (consul node id)
+  * host.name (consul node name)
+  * *exploded consul metadata* - reads all key:value pairs in [consul metadata](https://www.consul.io/docs/agent/options#_node_meta) into label:labelvalue pairs.
 
 ## Configuration
 
