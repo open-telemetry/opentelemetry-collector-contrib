@@ -297,82 +297,41 @@ func withContainerRunID(containerRunID string) generateResourceFunc {
 }
 
 func TestIPDetectionFromContext(t *testing.T) {
-	m := newMultiTest(t, NewFactory().CreateDefaultConfig(), nil)
 
-	ipCtx := client.NewContext(context.Background(), client.Info{
-		Addr: &net.IPAddr{
-			IP: net.IPv4(1, 1, 1, 1),
+	addresses := []net.Addr{
+		&net.IPAddr{
+				IP: net.IPv4(1, 1, 1, 1),
 		},
-	})
-	m.testConsume(
-		ipCtx,
-		generateTraces(),
-		generateMetrics(),
-		generateLogs(),
-		func(err error) {
-			assert.NoError(t, err)
-		})
-
-	m.assertBatchesLen(1)
-	m.assertResourceObjectLen(0)
-	m.assertResource(0, func(r pdata.Resource) {
-		require.Greater(t, r.Attributes().Len(), 0)
-		assertResourceHasStringAttribute(t, r, "k8s.pod.ip", "1.1.1.1")
-	})
-
-}
-
-func TestIPDetectionFromTCPContext(t *testing.T) {
-	m := newMultiTest(t, NewFactory().CreateDefaultConfig(), nil)
-
-	tcpCtx := client.NewContext(context.Background(), client.Info{
-		Addr: &net.TCPAddr{
+		&net.TCPAddr{
 			IP: net.IPv4(1, 1, 1, 1),
 			Port: 3200,
 		},
-	})
-	m.testConsume(
-		tcpCtx,
-		generateTraces(),
-		generateMetrics(),
-		generateLogs(),
-		func(err error) {
-			assert.NoError(t, err)
-		})
-
-	m.assertBatchesLen(1)
-	m.assertResourceObjectLen(0)
-	m.assertResource(0, func(r pdata.Resource) {
-		require.Greater(t, r.Attributes().Len(), 0)
-		assertResourceHasStringAttribute(t, r, "k8s.pod.ip", "1.1.1.1")
-	})
-
-}
-
-func TestIPDetectionFromUDPContext(t *testing.T) {
-	m := newMultiTest(t, NewFactory().CreateDefaultConfig(), nil)
-
-	udpCtx := client.NewContext(context.Background(), client.Info{
-		Addr: &net.UDPAddr{
+		&net.UDPAddr{
 			IP: net.IPv4(1, 1, 1, 1),
 			Port: 3200,
 		},
-	})
-	m.testConsume(
-		udpCtx,
-		generateTraces(),
-		generateMetrics(),
-		generateLogs(),
-		func(err error) {
-			assert.NoError(t, err)
+	}
+	for _, addr := range addresses {
+		m := newMultiTest(t, NewFactory().CreateDefaultConfig(), nil)
+		ctx := client.NewContext(context.Background(), client.Info{
+			Addr: addr,
 		})
+		m.testConsume(
+			ctx,
+			generateTraces(),
+			generateMetrics(),
+			generateLogs(),
+			func(err error) {
+				assert.NoError(t, err)
+			})
 
-	m.assertBatchesLen(1)
-	m.assertResourceObjectLen(0)
-	m.assertResource(0, func(r pdata.Resource) {
-		require.Greater(t, r.Attributes().Len(), 0)
-		assertResourceHasStringAttribute(t, r, "k8s.pod.ip", "1.1.1.1")
-	})
+		m.assertBatchesLen(1)
+		m.assertResourceObjectLen(0)
+		m.assertResource(0, func(r pdata.Resource) {
+			require.Greater(t, r.Attributes().Len(), 0)
+			assertResourceHasStringAttribute(t, r, "k8s.pod.ip", "1.1.1.1")
+		})
+	}
 
 }
 
