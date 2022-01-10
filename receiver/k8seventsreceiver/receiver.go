@@ -86,23 +86,25 @@ func (kr *k8seventsReceiver) Shutdown(context.Context) error {
 	return nil
 }
 
-// Add the 'New Event' handler and trigger the watch for a specific namespace.
+// Add the 'Event' handler and trigger the watch for a specific namespace.
+// For new and updated events, the code is relying on the following k8s code implementation:
+// https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/client-go/tools/record/events_cache.go#L327
 func (kr *k8seventsReceiver) startWatch(ns string) {
 	stopperChan := make(chan struct{})
 	kr.stopperChanList = append(kr.stopperChanList, stopperChan)
 	kr.startWatchingNamespace(kr.client, cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			ev := obj.(*corev1.Event)
-			kr.handleNewEvent(ev)
+			kr.handleEvent(ev)
 		},
 		UpdateFunc: func(_, obj interface{}) {
 			ev := obj.(*corev1.Event)
-			kr.handleNewEvent(ev)
+			kr.handleEvent(ev)
 		},
 	}, ns, stopperChan)
 }
 
-func (kr *k8seventsReceiver) handleNewEvent(ev *corev1.Event) {
+func (kr *k8seventsReceiver) handleEvent(ev *corev1.Event) {
 	if kr.allowEvent(ev) {
 		ld := k8sEventToLogData(kr.settings.Logger, ev)
 
@@ -127,7 +129,7 @@ func (kr *k8seventsReceiver) startWatchingNamespace(
 }
 
 // Allow events with eventTimestamp(EventTime/LastTimestamp/FirstTimestamp)
-// not older than the receiver start time by 'InitialLookback' so that
+// not older than the receiver start time so that
 // event flood can be avoided upon startup.
 func (kr *k8seventsReceiver) allowEvent(ev *corev1.Event) bool {
 	eventTimestamp := getEventTimestamp(ev)

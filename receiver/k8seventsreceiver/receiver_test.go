@@ -73,7 +73,7 @@ func TestHandleNewEvent(t *testing.T) {
 	recv := r.(*k8seventsReceiver)
 	recv.ctx = context.Background()
 	k8sEvent := getEvent()
-	recv.handleNewEvent(k8sEvent)
+	recv.handleEvent(k8sEvent)
 
 	assert.Equal(t, sink.LogRecordCount(), 1)
 }
@@ -94,7 +94,7 @@ func TestHandleNewEventDropEvent(t *testing.T) {
 	recv.ctx = context.Background()
 	k8sEvent := getEvent()
 	k8sEvent.FirstTimestamp = v1.Time{Time: time.Now().Add(-time.Hour)}
-	recv.handleNewEvent(k8sEvent)
+	recv.handleEvent(k8sEvent)
 
 	assert.Equal(t, sink.LogRecordCount(), 0)
 }

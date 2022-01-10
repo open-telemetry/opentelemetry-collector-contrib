@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/model/pdata"
+	semconv "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -46,12 +47,11 @@ func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event) pdata.Logs {
 	lr := ill.Logs().AppendEmpty()
 
 	resourceAttrs := rl.Resource().Attributes()
-	resourceAttrs.Clear()
 	resourceAttrs.EnsureCapacity(totalResourceAttributes)
 
-	resourceAttrs.InsertString("k8s.cluster.name", ev.ObjectMeta.ClusterName)
+	resourceAttrs.InsertString(semconv.AttributeK8SClusterName, ev.ObjectMeta.ClusterName)
 	resourceAttrs.InsertString("k8s.event.source", ev.Source.Component)
-	resourceAttrs.InsertString("k8s.node.name", ev.Source.Host)
+	resourceAttrs.InsertString(semconv.AttributeK8SNodeName, ev.Source.Host)
 
 	// The Reason field is the most logical "name" of the event.
 	lr.SetName(ev.Reason)
@@ -71,15 +71,14 @@ func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event) pdata.Logs {
 	}
 
 	attrs := lr.Attributes()
-	attrs.Clear()
 	attrs.EnsureCapacity(totalLogAttributes)
 
 	attrs.InsertString("k8s.event.action", ev.Action)
 	attrs.InsertString("k8s.event.start_time", ev.ObjectMeta.CreationTimestamp.String())
 	attrs.InsertString("k8s.event.name", ev.ObjectMeta.Name)
 	attrs.InsertString("k8s.event.uid", string(ev.ObjectMeta.UID))
-	attrs.InsertString("k8s.container.name", ev.InvolvedObject.Name)
-	attrs.InsertString("k8s.namespace.name", ev.InvolvedObject.Namespace)
+	attrs.InsertString(semconv.AttributeK8SContainerName, ev.InvolvedObject.FieldPath)
+	attrs.InsertString(semconv.AttributeK8SNamespaceName, ev.InvolvedObject.Namespace)
 
 	// "Count" field of k8s event will be '0' in case it is
 	// not present in the collected event from k8s.
@@ -87,11 +86,11 @@ func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event) pdata.Logs {
 		attrs.InsertInt("k8s.event.count", int64(ev.Count))
 	}
 
-	involvedObjectName := fmt.Sprintf("k8s.%s.name", ev.InvolvedObject.Kind)
-	involvedObjectID := fmt.Sprintf("k8s.%s.id", ev.InvolvedObject.Kind)
+	involvedObjectName := fmt.Sprintf("k8s.%s.name", strings.ToLower(ev.InvolvedObject.Kind))
+	involvedObjectUID := fmt.Sprintf("k8s.%s.uid", strings.ToLower(ev.InvolvedObject.Kind))
 
 	attrs.InsertString(involvedObjectName, ev.InvolvedObject.Name)
-	attrs.InsertString(involvedObjectID, string(ev.InvolvedObject.UID))
+	attrs.InsertString(involvedObjectUID, string(ev.InvolvedObject.UID))
 
 	return ld
 }
