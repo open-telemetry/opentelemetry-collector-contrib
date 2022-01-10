@@ -76,6 +76,10 @@ libraries = {
         "library": "jinja2 >= 2.7, < 4.0",
         "instrumentation": "opentelemetry-instrumentation-jinja2==0.27b0",
     },
+    "kafka-python": {
+        "library": "kafka-python >= 2.0",
+        "instrumentation": "opentelemetry-instrumentation-kafka-python==0.27b0",
+    },
     "mysql-connector-python": {
         "library": "mysql-connector-python ~= 8.0",
         "instrumentation": "opentelemetry-instrumentation-mysql==0.27b0",
