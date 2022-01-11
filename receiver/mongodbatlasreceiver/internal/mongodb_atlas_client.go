@@ -24,6 +24,7 @@ import (
 	"github.com/mongodb-forks/digest"
 	"github.com/pkg/errors"
 	"go.mongodb.org/atlas/mongodbatlas"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 )
@@ -31,8 +32,7 @@ import (
 type RetryBackoffRoundTripper struct {
 	originalTransport http.RoundTripper
 	log               *zap.Logger
-	Attempts          uint64
-	RetryDelay        time.Duration
+	retrySettings     exporterhelper.RetrySettings
 }
 
 func (rt *RetryBackoffRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
@@ -44,16 +44,15 @@ func (rt *RetryBackoffRoundTripper) RoundTrip(r *http.Request) (*http.Response, 
 
 	if resp.StatusCode == 429 {
 		expBackoff := &backoff.ExponentialBackOff{
-			InitialInterval:     rt.RetryDelay,
+			InitialInterval:     rt.retrySettings.InitialInterval,
 			RandomizationFactor: backoff.DefaultRandomizationFactor,
 			Multiplier:          backoff.DefaultMultiplier,
-			MaxInterval:         backoff.DefaultMaxInterval,
-			MaxElapsedTime:      backoff.DefaultMaxElapsedTime,
+			MaxInterval:         rt.retrySettings.MaxInterval,
+			MaxElapsedTime:      rt.retrySettings.MaxElapsedTime,
 			Stop:                backoff.Stop,
 			Clock:               backoff.SystemClock,
 		}
-		withRetries := backoff.WithMaxRetries(expBackoff, rt.Attempts)
-		withRetries.Reset()
+		expBackoff.Reset()
 		attempts := 0
 		for {
 			attempts++
@@ -89,16 +88,14 @@ type MongoDBAtlasClient struct {
 func NewMongoDBAtlasClient(
 	publicKey string,
 	privateKey string,
-	retryAttempts uint64,
-	retryInterval time.Duration,
+	retrySettings exporterhelper.RetrySettings,
 	log *zap.Logger,
 ) (*MongoDBAtlasClient, error) {
 	t := digest.NewTransport(publicKey, privateKey)
 	retry := &RetryBackoffRoundTripper{
 		originalTransport: t,
 		log:               log,
-		Attempts:          retryAttempts,
-		RetryDelay:        retryInterval,
+		retrySettings:     retrySettings,
 	}
 	tc := &http.Client{Transport: retry}
 	client := mongodbatlas.NewClient(tc)
