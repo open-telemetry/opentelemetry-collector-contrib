@@ -62,14 +62,14 @@ The following settings can be optionally configured:
   - Default: `AGGREGATION_TEMPORALITY_CUMULATIVE`
 
 - `resource_attributes`: the list of resource attributes to add together with the default resource attributes defined 
-  above. Each additional resource attributes is defined with a `name` which is looked up in the span's collection of 
+  above. Each additional resource attribute is defined with a `name` which is looked up in the span's collection of 
   resource attributes. If the `name`d resource attribute is missing in the span, the optional provided `default` is 
   used. If no `default` is provided, this resource attribute will be **omitted** from the metric.
   
-  `service.name` will be automatically added as resource attribute to all the generated metrics.
+  `service.name` will be automatically added as a resource attribute to all the generated metrics.
 
-- `resource_attributes_cache_size`:the max items number of `resouce_key_to_dimensions_cache`. If not provided, will
-  use default value size `1000`.
+- `resource_attributes_cache_size`: the max number of items in the `resouce_key_to_dimensions_cache`. If not provided,
+   will use default value size `1000`.
 ## Examples
 
 The following is a simple example usage of the spanmetrics processor.

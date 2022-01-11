@@ -285,7 +285,7 @@ func (p *processorImp) buildMetrics() (*pdata.Metrics, error) {
 			return nil, errors.New("expected cached resource attributes type assertion failed")
 		}
 
-		// If the service name doesn't exist, we treat it as invalid and do not generate a trace
+		// If the service name doesn't exist, we treat it as invalid and do not generate a metric
 		if _, exist := resourceAttributesMap.Get(serviceNameKey); !exist {
 			continue
 		}
