@@ -46,7 +46,7 @@ const (
 type emfExporter struct {
 	//Each (log group, log stream) keeps a separate pusher because of each (log group, log stream) requires separate stream token.
 	groupStreamToPusherMap map[string]map[string]cloudwatch.Pusher
-	svcStructuredLog       *cloudwatch.CWLogClient
+	svcStructuredLog       *cloudwatch.Client
 	config                 config.Exporter
 	logger                 *zap.Logger
 
@@ -77,7 +77,7 @@ func newEmfPusher(
 	}
 
 	// create CWLogs client with aws session config
-	svcStructuredLog := cloudwatch.NewCWLogsClient(logger, awsConfig, params.BuildInfo, expConfig.LogGroupName, session)
+	svcStructuredLog := cloudwatch.NewClient(logger, awsConfig, params.BuildInfo, expConfig.LogGroupName, session)
 	collectorIdentifier, _ := uuid.NewRandom()
 
 	expConfig.Validate()

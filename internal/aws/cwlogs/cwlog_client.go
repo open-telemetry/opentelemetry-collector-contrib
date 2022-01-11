@@ -40,29 +40,29 @@ const (
 
 // Possible exceptions are combination of common errors (https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/CommonErrors.html)
 // and API specific erros (e.g. https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html#API_PutLogEvents_Errors)
-type CWLogClient struct {
+type Client struct {
 	svc    cloudwatchlogsiface.CloudWatchLogsAPI
 	logger *zap.Logger
 }
 
 //Create a log client based on the actual cloudwatch logs client.
-func newCloudWatchLogClient(svc cloudwatchlogsiface.CloudWatchLogsAPI, logger *zap.Logger) *CWLogClient {
-	logClient := &CWLogClient{svc: svc,
+func newCloudWatchLogClient(svc cloudwatchlogsiface.CloudWatchLogsAPI, logger *zap.Logger) *Client {
+	logClient := &Client{svc: svc,
 		logger: logger}
 	return logClient
 }
 
-// NewCWLogsClient create CWLogClient
-func NewCWLogsClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.BuildInfo, logGroupName string, sess *session.Session) *CWLogClient {
+// NewClient create Client
+func NewClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.BuildInfo, logGroupName string, sess *session.Session) *Client {
 	client := cloudwatchlogs.New(sess, awsConfig)
 	client.Handlers.Build.PushBackNamed(handler.RequestStructuredLogHandler)
 	client.Handlers.Build.PushFrontNamed(newCollectorUserAgentHandler(buildInfo, logGroupName))
 	return newCloudWatchLogClient(client, logger)
 }
 
-//Put log events. The method mainly handles different possible error could be returned from server side, and retries them
+//PutLogEvents mainly handles different possible error could be returned from server side, and retries them
 //if necessary.
-func (client *CWLogClient) PutLogEvents(input *cloudwatchlogs.PutLogEventsInput, retryCnt int) (*string, error) {
+func (client *Client) PutLogEvents(input *cloudwatchlogs.PutLogEventsInput, retryCnt int) (*string, error) {
 	var response *cloudwatchlogs.PutLogEventsOutput
 	var err error
 	var token = input.SequenceToken
@@ -143,7 +143,7 @@ func (client *CWLogClient) PutLogEvents(input *cloudwatchlogs.PutLogEventsInput,
 }
 
 //Prepare the readiness for the log group and log stream.
-func (client *CWLogClient) CreateStream(logGroup, streamName *string) (token string, e error) {
+func (client *Client) CreateStream(logGroup, streamName *string) (token string, e error) {
 	//CreateLogStream / CreateLogGroup
 	_, err := client.svc.CreateLogStream(&cloudwatchlogs.CreateLogStreamInput{
 		LogGroupName:  logGroup,

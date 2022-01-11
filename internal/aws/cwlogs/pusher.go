@@ -38,33 +38,33 @@ const (
 
 	truncatedSuffix = "[Truncated...]"
 
-	logEventTimestampLimitInPast   = 14 * 24 * time.Hour //None of the log events in the batch can be older than 14 days
-	logEventTimestampLimitInFuture = -2 * time.Hour      //None of the log events in the batch can be more than 2 hours in the future.
+	eventTimestampLimitInPast  = 14 * 24 * time.Hour //None of the log events in the batch can be older than 14 days
+	evenTimestampLimitInFuture = -2 * time.Hour      //None of the log events in the batch can be more than 2 hours in the future.
 )
 
 var (
 	maxEventPayloadBytes = defaultMaxEventPayloadBytes
 )
 
-// logEvent struct to present a log event.
-type LogEvent struct {
+// Event struct to present a log event.
+type Event struct {
 	InputLogEvent *cloudwatchlogs.InputLogEvent
 	// The time which log generated.
-	LogGeneratedTime time.Time
+	GeneratedTime time.Time
 }
 
-// NewLogEvent creates a new log event
+// NewEvent creates a new log event
 // logType will be propagated to LogEventBatch and used by logPusher to determine which client to call PutLogEvent
-func NewLogEvent(timestampMs int64, message string) *LogEvent {
-	logEvent := &LogEvent{
+func NewEvent(timestampMs int64, message string) *Event {
+	event := &Event{
 		InputLogEvent: &cloudwatchlogs.InputLogEvent{
 			Timestamp: aws.Int64(timestampMs),
 			Message:   aws.String(message)},
 	}
-	return logEvent
+	return event
 }
 
-func (logEvent *LogEvent) Validate(logger *zap.Logger) error {
+func (logEvent *Event) Validate(logger *zap.Logger) error {
 	if logEvent.eventPayloadBytes() > maxEventPayloadBytes {
 		logger.Warn("logpusher: the single log event size is larger than the max event payload allowed. Truncate the log event.",
 			zap.Int("SingleLogEventSize", logEvent.eventPayloadBytes()), zap.Int("maxEventPayloadBytes", maxEventPayloadBytes))
@@ -75,7 +75,7 @@ func (logEvent *LogEvent) Validate(logger *zap.Logger) error {
 	}
 
 	if *logEvent.InputLogEvent.Timestamp == int64(0) {
-		logEvent.InputLogEvent.Timestamp = aws.Int64(logEvent.LogGeneratedTime.UnixNano() / int64(time.Millisecond))
+		logEvent.InputLogEvent.Timestamp = aws.Int64(logEvent.GeneratedTime.UnixNano() / int64(time.Millisecond))
 	}
 	if len(*logEvent.InputLogEvent.Message) == 0 {
 		return errors.New("empty log event message")
@@ -89,7 +89,7 @@ func (logEvent *LogEvent) Validate(logger *zap.Logger) error {
 	currentTime := time.Now().UTC()
 	utcTime := time.Unix(0, *logEvent.InputLogEvent.Timestamp*int64(time.Millisecond)).UTC()
 	duration := currentTime.Sub(utcTime)
-	if duration > logEventTimestampLimitInPast || duration < logEventTimestampLimitInFuture {
+	if duration > eventTimestampLimitInPast || duration < evenTimestampLimitInFuture {
 		err := errors.New("the log entry's timestamp is older than 14 days or more than 2 hours in the future")
 		logger.Error("discard log entry with invalid timestamp",
 			zap.Error(err), zap.String("LogEventTimestamp", utcTime.String()), zap.String("CurrentTime", currentTime.String()))
@@ -99,12 +99,12 @@ func (logEvent *LogEvent) Validate(logger *zap.Logger) error {
 }
 
 // Calculate the log event payload bytes.
-func (logEvent *LogEvent) eventPayloadBytes() int {
+func (logEvent *Event) eventPayloadBytes() int {
 	return len(*logEvent.InputLogEvent.Message) + perEventHeaderBytes
 }
 
-// logEventBatch struct to present a log event batch
-type logEventBatch struct {
+// eventBatch struct to present a log event batch
+type eventBatch struct {
 	putLogEventsInput *cloudwatchlogs.PutLogEventsInput
 	//the total bytes already in this log event batch
 	byteTotal int
@@ -115,8 +115,8 @@ type logEventBatch struct {
 }
 
 // Create a new log event batch if needed.
-func newLogEventBatch(logGroupName, logStreamName *string) *logEventBatch {
-	return &logEventBatch{
+func newEventBatch(logGroupName, logStreamName *string) *eventBatch {
+	return &eventBatch{
 		putLogEventsInput: &cloudwatchlogs.PutLogEventsInput{
 			LogGroupName:  logGroupName,
 			LogStreamName: logStreamName,
@@ -124,15 +124,15 @@ func newLogEventBatch(logGroupName, logStreamName *string) *logEventBatch {
 	}
 }
 
-func (batch logEventBatch) exceedsLimit(nextByteTotal int) bool {
+func (batch eventBatch) exceedsLimit(nextByteTotal int) bool {
 	return len(batch.putLogEventsInput.LogEvents) == cap(batch.putLogEventsInput.LogEvents) ||
 		batch.byteTotal+nextByteTotal > maxEventPayloadBytes
 }
 
-// isActive checks whether the logEventBatch spans more than 24 hours. Returns
+// isActive checks whether the eventBatch spans more than 24 hours. Returns
 // false if the condition does not match, and this batch should not be processed
 // any further.
-func (batch *logEventBatch) isActive(targetTimestampMs *int64) bool {
+func (batch *eventBatch) isActive(targetTimestampMs *int64) bool {
 	// new log event batch
 	if batch.minTimestampMs == 0 || batch.maxTimestampMs == 0 {
 		return true
@@ -146,7 +146,7 @@ func (batch *logEventBatch) isActive(targetTimestampMs *int64) bool {
 	return true
 }
 
-func (batch *logEventBatch) append(event *LogEvent) {
+func (batch *eventBatch) append(event *Event) {
 	batch.putLogEventsInput.LogEvents = append(batch.putLogEventsInput.LogEvents, event.InputLogEvent)
 	batch.byteTotal += event.eventPayloadBytes()
 	if batch.minTimestampMs == 0 || batch.minTimestampMs > *event.InputLogEvent.Timestamp {
@@ -158,7 +158,7 @@ func (batch *logEventBatch) append(event *LogEvent) {
 }
 
 // Sort the log events based on the timestamp.
-func (batch *logEventBatch) sortLogEvents() {
+func (batch *eventBatch) sortLogEvents() {
 	inputLogEvents := batch.putLogEventsInput.LogEvents
 	sort.Stable(ByTimestamp(inputLogEvents))
 }
@@ -179,7 +179,7 @@ func (inputLogEvents ByTimestamp) Less(i, j int) bool {
 
 // Pusher is created by log group and log stream
 type Pusher interface {
-	AddLogEntry(logEvent *LogEvent) error
+	AddLogEntry(logEvent *Event) error
 	ForceFlush() error
 }
 
@@ -192,17 +192,17 @@ type logPusher struct {
 	logStreamName *string
 
 	batchUpdateLock sync.Mutex
-	logEventBatch   *logEventBatch
+	logEventBatch   *eventBatch
 
 	pushLock         sync.Mutex
 	streamToken      string // no init value
-	svcStructuredLog CWLogClient
+	svcStructuredLog Client
 	retryCnt         int
 }
 
-// newPusher creates a logPusher instance
+// NewPusher creates a logPusher instance
 func NewPusher(logGroupName, logStreamName *string, retryCnt int,
-	svcStructuredLog CWLogClient, logger *zap.Logger) Pusher {
+	svcStructuredLog Client, logger *zap.Logger) Pusher {
 
 	pusher := newLogPusher(logGroupName, logStreamName, svcStructuredLog, logger)
 
@@ -216,14 +216,14 @@ func NewPusher(logGroupName, logStreamName *string, retryCnt int,
 
 // Only create a logPusher, but not start the instance.
 func newLogPusher(logGroupName, logStreamName *string,
-	svcStructuredLog CWLogClient, logger *zap.Logger) *logPusher {
+	svcStructuredLog Client, logger *zap.Logger) *logPusher {
 	pusher := &logPusher{
 		logGroupName:     logGroupName,
 		logStreamName:    logStreamName,
 		svcStructuredLog: svcStructuredLog,
 		logger:           logger,
 	}
-	pusher.logEventBatch = newLogEventBatch(logGroupName, logStreamName)
+	pusher.logEventBatch = newEventBatch(logGroupName, logStreamName)
 
 	return pusher
 }
@@ -234,7 +234,7 @@ func newLogPusher(logGroupName, logStreamName *string,
 // Need to pay attention to the below 2 limits:
 // Event size 256 KB (maximum). This limit cannot be changed.
 // Batch size 1 MB (maximum). This limit cannot be changed.
-func (p *logPusher) AddLogEntry(logEvent *LogEvent) error {
+func (p *logPusher) AddLogEntry(logEvent *Event) error {
 	var err error
 	if logEvent != nil {
 		err = logEvent.Validate(p.logger)
@@ -243,21 +243,21 @@ func (p *logPusher) AddLogEntry(logEvent *LogEvent) error {
 		}
 		prevBatch := p.addLogEvent(logEvent)
 		if prevBatch != nil {
-			err = p.pushLogEventBatch(prevBatch)
+			err = p.pushEventBatch(prevBatch)
 		}
 	}
 	return err
 }
 
 func (p *logPusher) ForceFlush() error {
-	prevBatch := p.renewLogEventBatch()
+	prevBatch := p.renewEventBatch()
 	if prevBatch != nil {
-		return p.pushLogEventBatch(prevBatch)
+		return p.pushEventBatch(prevBatch)
 	}
 	return nil
 }
 
-func (p *logPusher) pushLogEventBatch(req interface{}) error {
+func (p *logPusher) pushEventBatch(req interface{}) error {
 	p.pushLock.Lock()
 	defer p.pushLock.Unlock()
 
@@ -265,7 +265,7 @@ func (p *logPusher) pushLogEventBatch(req interface{}) error {
 	// The log events in the batch must be in chronological ordered by their
 	// timestamp (the time the event occurred, expressed as the number of milliseconds
 	// since Jan 1, 1970 00:00:00 UTC).
-	logEventBatch := req.(*logEventBatch)
+	logEventBatch := req.(*eventBatch)
 	logEventBatch.sortLogEvents()
 	putLogEventsInput := logEventBatch.putLogEventsInput
 
@@ -310,7 +310,7 @@ func (p *logPusher) pushLogEventBatch(req interface{}) error {
 	return nil
 }
 
-func (p *logPusher) addLogEvent(logEvent *LogEvent) *logEventBatch {
+func (p *logPusher) addLogEvent(logEvent *Event) *eventBatch {
 	if logEvent == nil {
 		return nil
 	}
@@ -318,11 +318,11 @@ func (p *logPusher) addLogEvent(logEvent *LogEvent) *logEventBatch {
 	p.batchUpdateLock.Lock()
 	defer p.batchUpdateLock.Unlock()
 
-	var prevBatch *logEventBatch
+	var prevBatch *eventBatch
 	currentBatch := p.logEventBatch
 	if currentBatch.exceedsLimit(logEvent.eventPayloadBytes()) || !currentBatch.isActive(logEvent.InputLogEvent.Timestamp) {
 		prevBatch = currentBatch
-		currentBatch = newLogEventBatch(p.logGroupName, p.logStreamName)
+		currentBatch = newEventBatch(p.logGroupName, p.logStreamName)
 	}
 	currentBatch.append(logEvent)
 	p.logEventBatch = currentBatch
@@ -330,14 +330,14 @@ func (p *logPusher) addLogEvent(logEvent *LogEvent) *logEventBatch {
 	return prevBatch
 }
 
-func (p *logPusher) renewLogEventBatch() *logEventBatch {
+func (p *logPusher) renewEventBatch() *eventBatch {
 	p.batchUpdateLock.Lock()
 	defer p.batchUpdateLock.Unlock()
 
-	var prevBatch *logEventBatch
+	var prevBatch *eventBatch
 	if len(p.logEventBatch.putLogEventsInput.LogEvents) > 0 {
 		prevBatch = p.logEventBatch
-		p.logEventBatch = newLogEventBatch(p.logGroupName, p.logStreamName)
+		p.logEventBatch = newEventBatch(p.logGroupName, p.logStreamName)
 	}
 
 	return prevBatch

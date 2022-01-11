@@ -339,7 +339,7 @@ func groupedMetricToCWMeasurementsWithFilters(groupedMetric *groupedMetric, conf
 }
 
 // translateCWMetricToEMF converts CloudWatch Metric format to EMF.
-func translateCWMetricToEMF(cWMetric *cWMetrics, config *Config) *cloudwatch.LogEvent {
+func translateCWMetricToEMF(cWMetric *cWMetrics, config *Config) *cloudwatch.Event {
 	// convert CWMetric into map format for compatible with PLE input
 	cWMetricMap := make(map[string]interface{})
 	fieldMap := cWMetric.fields
@@ -386,11 +386,11 @@ func translateCWMetricToEMF(cWMetric *cWMetrics, config *Config) *cloudwatch.Log
 	}
 
 	metricCreationTime := cWMetric.timestampMs
-	logEvent := cloudwatch.NewLogEvent(
+	logEvent := cloudwatch.NewEvent(
 		metricCreationTime,
 		string(pleMsg),
 	)
-	logEvent.LogGeneratedTime = time.Unix(0, metricCreationTime*int64(time.Millisecond))
+	logEvent.GeneratedTime = time.Unix(0, metricCreationTime*int64(time.Millisecond))
 
 	return logEvent
 }
