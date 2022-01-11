@@ -30,7 +30,8 @@ Example:
 processors:
   routing:
     from_attribute: X-Tenant
-    default_exporters: jaeger
+    default_exporters:
+    - jaeger
     table:
     - value: acme
       exporters: [jaeger/acme]

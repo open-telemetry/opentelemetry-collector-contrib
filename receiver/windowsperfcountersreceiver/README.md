@@ -25,7 +25,7 @@ be configured:
 ```yaml
 windowsperfcounters:
   collection_interval: <duration> # default = "1m"
-  counters:
+  perfcounters:
     - object: <object name>
       instances: [<instance name>]*
       counters:
@@ -54,14 +54,14 @@ you can configure multiple `windowsperfcounters` receivers with different
 receivers:
   windowsperfcounters/memory:
     collection_interval: 30s
-    counters:
+    perfcounters:
       - object: Memory
         counters:
           - Committed Bytes
 
   windowsperfcounters/processor:
     collection_interval: 1m
-    counters:
+    perfcounters:
       - object: "Processor"
         instances: "*"
         counters:
@@ -90,7 +90,7 @@ e.g. To output the `Memory/Committed Bytes` counter as a metric with the name
 receivers:
   windowsperfcounters:
     collection_interval: 30s
-    counters:
+    perfcounters:
     - object: Memory
       counters:
         - Committed Bytes
@@ -118,3 +118,6 @@ TODO
 ### SQL Server
 
 TODO
+
+## Known Limitation
+- The network interface is not available inside the container. Hence, the metrics for the object `Network Interface` aren't generated in that scenario. In the case of sub-process, it captures `Network Interface` metrics. There is a similar open issue in [Github](https://github.com/influxdata/telegraf/issues/5357) and [Docker](https://forums.docker.com/t/unable-to-collect-network-metrics-inside-windows-container-on-windows-server-2016-data-center/69480) forum.

@@ -33,13 +33,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.uber.org/zap"
-	"google.golang.org/grpc"
 )
 
 type oidcExtension struct {
-	cfg               *Config
-	unaryInterceptor  configauth.GRPCUnaryInterceptorFunc
-	streamInterceptor configauth.GRPCStreamInterceptorFunc
+	cfg *Config
 
 	provider *oidc.Provider
 	verifier *oidc.IDTokenVerifier
@@ -48,8 +45,6 @@ type oidcExtension struct {
 }
 
 var (
-	_ configauth.ServerAuthenticator = (*oidcExtension)(nil)
-
 	errNoAudienceProvided                = errors.New("no Audience provided for the OIDC configuration")
 	errNoIssuerURL                       = errors.New("no IssuerURL provided for the OIDC configuration")
 	errInvalidAuthenticationHeaderFormat = errors.New("invalid authorization header format")
@@ -60,7 +55,7 @@ var (
 	errNotAuthenticated                  = errors.New("authentication didn't succeed")
 )
 
-func newExtension(cfg *Config, logger *zap.Logger) (*oidcExtension, error) {
+func newExtension(cfg *Config, logger *zap.Logger) (configauth.ServerAuthenticator, error) {
 	if cfg.Audience == "" {
 		return nil, errNoAudienceProvided
 	}
@@ -72,15 +67,14 @@ func newExtension(cfg *Config, logger *zap.Logger) (*oidcExtension, error) {
 		cfg.Attribute = defaultAttribute
 	}
 
-	return &oidcExtension{
-		cfg:               cfg,
-		logger:            logger,
-		unaryInterceptor:  configauth.DefaultGRPCUnaryServerInterceptor,
-		streamInterceptor: configauth.DefaultGRPCStreamServerInterceptor,
-	}, nil
+	oe := &oidcExtension{
+		cfg:    cfg,
+		logger: logger,
+	}
+	return configauth.NewServerAuthenticator(configauth.WithStart(oe.start), configauth.WithAuthenticate(oe.authenticate)), nil
 }
 
-func (e *oidcExtension) Start(ctx context.Context, _ component.Host) error {
+func (e *oidcExtension) start(context.Context, component.Host) error {
 	provider, err := getProviderForConfig(e.cfg)
 	if err != nil {
 		return fmt.Errorf("failed to get configuration from the auth server: %w", err)
@@ -94,13 +88,8 @@ func (e *oidcExtension) Start(ctx context.Context, _ component.Host) error {
 	return nil
 }
 
-// Shutdown is invoked during service shutdown.
-func (e *oidcExtension) Shutdown(context.Context) error {
-	return nil
-}
-
-// Authenticate checks whether the given context contains valid auth data. Successfully authenticated calls will always return a nil error and a context with the auth data.
-func (e *oidcExtension) Authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
+// authenticate checks whether the given context contains valid auth data. Successfully authenticated calls will always return a nil error and a context with the auth data.
+func (e *oidcExtension) authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
 	authHeaders := headers[e.cfg.Attribute]
 	if len(authHeaders) == 0 {
 		return ctx, errNotAuthenticated
@@ -145,16 +134,6 @@ func (e *oidcExtension) Authenticate(ctx context.Context, headers map[string][]s
 		membership: membership,
 	}
 	return client.NewContext(ctx, cl), nil
-}
-
-// GRPCUnaryServerInterceptor is a helper method to provide a gRPC-compatible UnaryInterceptor, typically calling the authenticator's Authenticate method.
-func (e *oidcExtension) GRPCUnaryServerInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-	return e.unaryInterceptor(ctx, req, info, handler, e.Authenticate)
-}
-
-// GRPCStreamServerInterceptor is a helper method to provide a gRPC-compatible StreamInterceptor, typically calling the authenticator's Authenticate method.
-func (e *oidcExtension) GRPCStreamServerInterceptor(srv interface{}, str grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-	return e.streamInterceptor(srv, str, info, handler, e.Authenticate)
 }
 
 func getSubjectFromClaims(claims map[string]interface{}, usernameClaim string, fallback string) (string, error) {

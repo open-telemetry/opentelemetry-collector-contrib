@@ -1,0 +1,20 @@
+receivers:
+  elasticsearch:
+    endpoint: http://example.com:9200
+    username: otel
+    password: password
+    collection_interval: 2m
+  elasticsearch/defaults:
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [elasticsearch]
+      processors: [nop]
+      exporters: [nop]

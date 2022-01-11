@@ -80,7 +80,7 @@ func convertToDatadogTd(td pdata.Traces, fallbackHost string, cfg *config.Config
 	var traces []*pb.TracePayload
 
 	seenHosts := make(map[string]struct{})
-	seenHosts[fallbackHost] = struct{}{}
+	seenTags := make(map[string]struct{})
 	var series []datadog.Metric
 	pushTime := pdata.NewTimestampFromTime(time.Now())
 
@@ -93,7 +93,14 @@ func convertToDatadogTd(td pdata.Traces, fallbackHost string, cfg *config.Config
 			host = fallbackHost
 		}
 
-		seenHosts[host] = struct{}{}
+		if host != "" {
+			seenHosts[host] = struct{}{}
+		} else {
+			tags := attributes.RunningTagsFromAttributes(rs.Resource().Attributes())
+			for _, tag := range tags {
+				seenTags[tag] = struct{}{}
+			}
+		}
 		payload := resourceSpansToDatadogSpans(rs, host, cfg, blk, spanNameMap)
 
 		traces = append(traces, &payload)
@@ -103,6 +110,14 @@ func convertToDatadogTd(td pdata.Traces, fallbackHost string, cfg *config.Config
 		// Report the host as running
 		runningMetric := metrics.DefaultMetrics("traces", host, uint64(pushTime), buildInfo)
 		series = append(series, runningMetric...)
+	}
+
+	for tag := range seenTags {
+		runningMetrics := metrics.DefaultMetrics("traces", "", uint64(pushTime), buildInfo)
+		for i := range runningMetrics {
+			runningMetrics[i].Tags = append(runningMetrics[i].Tags, tag)
+		}
+		series = append(series, runningMetrics...)
 	}
 
 	return traces, series
@@ -289,10 +304,15 @@ func spanToDatadogSpan(s pdata.Span,
 
 	resourceName := getDatadogResourceName(s, tags)
 
+	name := s.Name()
+	if !cfg.Traces.SpanNameAsResourceName {
+		name = getDatadogSpanName(s, tags)
+	}
+
 	span := &pb.Span{
 		TraceID:  decodeAPMTraceID(s.TraceID().Bytes()),
 		SpanID:   decodeAPMSpanID(s.SpanID().Bytes()),
-		Name:     remapDatadogSpanName(getDatadogSpanName(s, tags), spanNameMap),
+		Name:     remapDatadogSpanName(name, spanNameMap),
 		Resource: resourceName,
 		Service:  normalizedServiceName,
 		Start:    int64(startTime),

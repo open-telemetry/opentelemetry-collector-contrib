@@ -35,6 +35,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/attributes"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils"
 )
 
@@ -148,7 +149,7 @@ func TestConvertToDatadogTdNoResourceSpans(t *testing.T) {
 	outputTraces, runningMetrics := convertToDatadogTd(traces, "test-host", &config.Config{}, denylister, buildInfo)
 
 	assert.Equal(t, 0, len(outputTraces))
-	assert.Equal(t, 1, len(runningMetrics))
+	assert.Equal(t, 0, len(runningMetrics))
 }
 
 func TestRunningTraces(t *testing.T) {
@@ -187,6 +188,47 @@ func TestRunningTraces(t *testing.T) {
 		runningHostnames,
 		[]string{"resource-hostname-1", "resource-hostname-2", "fallbackHost"},
 	)
+}
+
+func TestRunningTracesARN(t *testing.T) {
+	td := pdata.NewTraces()
+	rts := td.ResourceSpans()
+
+	rm := rts.AppendEmpty()
+	baseAttrs := testutils.NewAttributeMap(map[string]string{
+		conventions.AttributeCloudProvider:      conventions.AttributeCloudProviderAWS,
+		conventions.AttributeCloudPlatform:      conventions.AttributeCloudPlatformAWSECS,
+		conventions.AttributeAWSECSTaskFamily:   "example-task-family",
+		conventions.AttributeAWSECSTaskRevision: "example-task-revision",
+		conventions.AttributeAWSECSLaunchtype:   conventions.AttributeAWSECSLaunchtypeFargate,
+	})
+	baseAttrs.CopyTo(rm.Resource().Attributes())
+	rm.Resource().Attributes().InsertString(conventions.AttributeAWSECSTaskARN, "task-arn-1")
+
+	rm = rts.AppendEmpty()
+	baseAttrs.CopyTo(rm.Resource().Attributes())
+	rm.Resource().Attributes().InsertString(conventions.AttributeAWSECSTaskARN, "task-arn-2")
+
+	rm = rts.AppendEmpty()
+	baseAttrs.CopyTo(rm.Resource().Attributes())
+	rm.Resource().Attributes().InsertString(conventions.AttributeAWSECSTaskARN, "task-arn-3")
+
+	buildInfo := component.BuildInfo{}
+
+	_, runningMetrics := convertToDatadogTd(td, "fallbackHost", &config.Config{}, newDenylister([]string{}), buildInfo)
+
+	runningHostnames := []string{}
+	runningTags := []string{}
+	for _, metric := range runningMetrics {
+		require.Equal(t, *metric.Metric, "otel.datadog_exporter.traces.running")
+		require.NotNil(t, metric.Host)
+		runningHostnames = append(runningHostnames, *metric.Host)
+		runningTags = append(runningTags, metric.Tags...)
+	}
+
+	assert.ElementsMatch(t, runningHostnames, []string{"", "", ""})
+	assert.Len(t, runningMetrics, 3)
+	assert.ElementsMatch(t, runningTags, []string{"task_arn:task-arn-1", "task_arn:task-arn-2", "task_arn:task-arn-3"})
 }
 
 func TestObfuscation(t *testing.T) {
@@ -1234,6 +1276,7 @@ func TestStatsAggregations(t *testing.T) {
 	statsOutput := computeAPMStats(&datadogPayload, time.Now().UTC().UnixNano())
 
 	var statsVersionTag stats.Tag
+	var httpStatusCodeTag stats.Tag
 
 	// extract the first stats.TagSet containing a stats.Tag of "version"
 	for _, countVal := range statsOutput.Stats[0].Counts {
@@ -1241,10 +1284,14 @@ func TestStatsAggregations(t *testing.T) {
 			if tagVal.Name == versionAggregationTag {
 				statsVersionTag = tagVal
 			}
+			if tagVal.Name == httpStatusCodeAggregationTag {
+				httpStatusCodeTag = tagVal
+			}
 		}
 	}
 
 	assert.Equal(t, "test-version", statsVersionTag.Value)
+	assert.Equal(t, "501", httpStatusCodeTag.Value)
 }
 
 // ensure that stats payloads get adjusted for approriate sampling weight
@@ -1528,4 +1575,33 @@ func TestSpanRateLimitTag(t *testing.T) {
 	outputTraces, _ := convertToDatadogTd(traces, "test-host", &config.Config{}, denylister, buildInfo)
 
 	assert.Equal(t, 0.5, outputTraces[0].Traces[0].Spans[0].Metrics["_sample_rate"])
+}
+
+func TestTracesSpanNamingOption(t *testing.T) {
+	hostname := "testhostname"
+	denylister := newDenylister([]string{})
+
+	// generate mock trace, span and parent span ids
+	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
+	mockSpanID := [8]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8}
+	mockParentSpanID := [8]byte{0xEF, 0xEE, 0xED, 0xEC, 0xEB, 0xEA, 0xE9, 0xE8}
+
+	mockEndTime := time.Now().Round(time.Second)
+
+	// create mock resource span data
+	// toggle on errors and custom service naming to test edge case code paths
+	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, pdata.StatusCodeUnset, false, mockEndTime)
+
+	// start with span name as resource name set to true
+	cfgSpanNameAsResourceName := config.Config{
+		Traces: config.TracesConfig{
+			SpanNameAsResourceName: true,
+		},
+	}
+
+	// translate mocks to datadog traces
+	datadogPayloadSpanNameAsResourceName := resourceSpansToDatadogSpans(rs, hostname, &cfgSpanNameAsResourceName, denylister, map[string]string{})
+
+	// ensure the resource name is replaced with the span name when the option is set
+	assert.Equal(t, "End-To-End Here", datadogPayloadSpanNameAsResourceName.Traces[0].Spans[0].Name)
 }
