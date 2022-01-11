@@ -171,9 +171,9 @@ func mapDurationsToMillis(vs []time.Duration) []float64 {
 // the usage of Prometheus related exporters, we also validate the dimensions after sanitization.
 func validateDimensions(dimensions []Dimension, defaults []string) error {
 	labelNames := make(map[string]struct{})
-	for i := 0; i < len(defaults); i++ {
-		labelNames[defaults[i]] = struct{}{}
-		labelNames[sanitize(defaults[i])] = struct{}{}
+	for _, d := range defaults {
+		labelNames[d] = struct{}{}
+		labelNames[sanitize(d)] = struct{}{}
 	}
 	labelNames[operationKey] = struct{}{}
 
