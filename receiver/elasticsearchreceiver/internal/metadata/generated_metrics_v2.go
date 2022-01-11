@@ -25,9 +25,16 @@ type MetricsSettings struct {
 	ElasticsearchNodeDocuments               MetricSettings `mapstructure:"elasticsearch.node.documents"`
 	ElasticsearchNodeFsDiskAvailable         MetricSettings `mapstructure:"elasticsearch.node.fs.disk.available"`
 	ElasticsearchNodeHTTPConnections         MetricSettings `mapstructure:"elasticsearch.node.http.connections"`
+	ElasticsearchNodeJvmGcClassesLoaded      MetricSettings `mapstructure:"elasticsearch.node.jvm.gc.classes.loaded"`
 	ElasticsearchNodeJvmGcCollectionsCount   MetricSettings `mapstructure:"elasticsearch.node.jvm.gc.collections.count"`
 	ElasticsearchNodeJvmGcCollectionsTime    MetricSettings `mapstructure:"elasticsearch.node.jvm.gc.collections.time"`
-	ElasticsearchNodeJvmMemoryHeapLimit      MetricSettings `mapstructure:"elasticsearch.node.jvm.memory.heap.limit"`
+	ElasticsearchNodeJvmMemoryCommitted      MetricSettings `mapstructure:"elasticsearch.node.jvm.memory.committed"`
+	ElasticsearchNodeJvmMemoryInit           MetricSettings `mapstructure:"elasticsearch.node.jvm.memory.init"`
+	ElasticsearchNodeJvmMemoryLimit          MetricSettings `mapstructure:"elasticsearch.node.jvm.memory.limit"`
+	ElasticsearchNodeJvmMemoryPoolCommit     MetricSettings `mapstructure:"elasticsearch.node.jvm.memory.pool.commit"`
+	ElasticsearchNodeJvmMemoryPoolInit       MetricSettings `mapstructure:"elasticsearch.node.jvm.memory.pool.init"`
+	ElasticsearchNodeJvmMemoryPoolLimit      MetricSettings `mapstructure:"elasticsearch.node.jvm.memory.pool.limit"`
+	ElasticsearchNodeJvmMemoryPoolUsage      MetricSettings `mapstructure:"elasticsearch.node.jvm.memory.pool.usage"`
 	ElasticsearchNodeJvmMemoryUsage          MetricSettings `mapstructure:"elasticsearch.node.jvm.memory.usage"`
 	ElasticsearchNodeJvmThreadsCount         MetricSettings `mapstructure:"elasticsearch.node.jvm.threads.count"`
 	ElasticsearchNodeJvmThreadsPeak          MetricSettings `mapstructure:"elasticsearch.node.jvm.threads.peak"`
@@ -72,13 +79,34 @@ func DefaultMetricsSettings() MetricsSettings {
 		ElasticsearchNodeHTTPConnections: MetricSettings{
 			Enabled: true,
 		},
+		ElasticsearchNodeJvmGcClassesLoaded: MetricSettings{
+			Enabled: true,
+		},
 		ElasticsearchNodeJvmGcCollectionsCount: MetricSettings{
 			Enabled: true,
 		},
 		ElasticsearchNodeJvmGcCollectionsTime: MetricSettings{
 			Enabled: true,
 		},
-		ElasticsearchNodeJvmMemoryHeapLimit: MetricSettings{
+		ElasticsearchNodeJvmMemoryCommitted: MetricSettings{
+			Enabled: true,
+		},
+		ElasticsearchNodeJvmMemoryInit: MetricSettings{
+			Enabled: true,
+		},
+		ElasticsearchNodeJvmMemoryLimit: MetricSettings{
+			Enabled: true,
+		},
+		ElasticsearchNodeJvmMemoryPoolCommit: MetricSettings{
+			Enabled: true,
+		},
+		ElasticsearchNodeJvmMemoryPoolInit: MetricSettings{
+			Enabled: true,
+		},
+		ElasticsearchNodeJvmMemoryPoolLimit: MetricSettings{
+			Enabled: true,
+		},
+		ElasticsearchNodeJvmMemoryPoolUsage: MetricSettings{
 			Enabled: true,
 		},
 		ElasticsearchNodeJvmMemoryUsage: MetricSettings{
@@ -634,6 +662,57 @@ func newMetricElasticsearchNodeHTTPConnections(settings MetricSettings) metricEl
 	return m
 }
 
+type metricElasticsearchNodeJvmGcClassesLoaded struct {
+	data     pdata.Metric   // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills elasticsearch.node.jvm.gc.classes.loaded metric with initial data.
+func (m *metricElasticsearchNodeJvmGcClassesLoaded) init() {
+	m.data.SetName("elasticsearch.node.jvm.gc.classes.loaded")
+	m.data.SetDescription("The number of loaded classes.")
+	m.data.SetUnit("{classes}")
+	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+}
+
+func (m *metricElasticsearchNodeJvmGcClassesLoaded) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricElasticsearchNodeJvmGcClassesLoaded) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricElasticsearchNodeJvmGcClassesLoaded) emit(metrics pdata.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricElasticsearchNodeJvmGcClassesLoaded(settings MetricSettings) metricElasticsearchNodeJvmGcClassesLoaded {
+	m := metricElasticsearchNodeJvmGcClassesLoaded{settings: settings}
+	if settings.Enabled {
+		m.data = pdata.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricElasticsearchNodeJvmGcCollectionsCount struct {
 	data     pdata.Metric   // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -696,7 +775,7 @@ type metricElasticsearchNodeJvmGcCollectionsTime struct {
 // init fills elasticsearch.node.jvm.gc.collections.time metric with initial data.
 func (m *metricElasticsearchNodeJvmGcCollectionsTime) init() {
 	m.data.SetName("elasticsearch.node.jvm.gc.collections.time")
-	m.data.SetDescription("The total time spent by the JVM running the GC.")
+	m.data.SetDescription("The total time spent by the JVM running the garbage collector.")
 	m.data.SetUnit("ms")
 	m.data.SetDataType(pdata.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
@@ -740,21 +819,128 @@ func newMetricElasticsearchNodeJvmGcCollectionsTime(settings MetricSettings) met
 	return m
 }
 
-type metricElasticsearchNodeJvmMemoryHeapLimit struct {
+type metricElasticsearchNodeJvmMemoryCommitted struct {
 	data     pdata.Metric   // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills elasticsearch.node.jvm.memory.heap.limit metric with initial data.
-func (m *metricElasticsearchNodeJvmMemoryHeapLimit) init() {
-	m.data.SetName("elasticsearch.node.jvm.memory.heap.limit")
-	m.data.SetDescription("The max heap memory used by the JVM.")
+// init fills elasticsearch.node.jvm.memory.committed metric with initial data.
+func (m *metricElasticsearchNodeJvmMemoryCommitted) init() {
+	m.data.SetName("elasticsearch.node.jvm.memory.committed")
+	m.data.SetDescription("The amount of committed memory.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pdata.MetricDataTypeGauge)
+	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricElasticsearchNodeJvmMemoryHeapLimit) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64) {
+func (m *metricElasticsearchNodeJvmMemoryCommitted) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, segmentAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+	dp.Attributes().Insert(A.Segment, pdata.NewAttributeValueString(segmentAttributeValue))
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricElasticsearchNodeJvmMemoryCommitted) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricElasticsearchNodeJvmMemoryCommitted) emit(metrics pdata.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricElasticsearchNodeJvmMemoryCommitted(settings MetricSettings) metricElasticsearchNodeJvmMemoryCommitted {
+	m := metricElasticsearchNodeJvmMemoryCommitted{settings: settings}
+	if settings.Enabled {
+		m.data = pdata.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricElasticsearchNodeJvmMemoryInit struct {
+	data     pdata.Metric   // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills elasticsearch.node.jvm.memory.init metric with initial data.
+func (m *metricElasticsearchNodeJvmMemoryInit) init() {
+	m.data.SetName("elasticsearch.node.jvm.memory.init")
+	m.data.SetDescription("The initial size of memory.")
+	m.data.SetUnit("By")
+	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricElasticsearchNodeJvmMemoryInit) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, segmentAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+	dp.Attributes().Insert(A.Segment, pdata.NewAttributeValueString(segmentAttributeValue))
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricElasticsearchNodeJvmMemoryInit) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricElasticsearchNodeJvmMemoryInit) emit(metrics pdata.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricElasticsearchNodeJvmMemoryInit(settings MetricSettings) metricElasticsearchNodeJvmMemoryInit {
+	m := metricElasticsearchNodeJvmMemoryInit{settings: settings}
+	if settings.Enabled {
+		m.data = pdata.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricElasticsearchNodeJvmMemoryLimit struct {
+	data     pdata.Metric   // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills elasticsearch.node.jvm.memory.limit metric with initial data.
+func (m *metricElasticsearchNodeJvmMemoryLimit) init() {
+	m.data.SetName("elasticsearch.node.jvm.memory.limit")
+	m.data.SetDescription("The maximum memory used by the JVM.")
+	m.data.SetUnit("By")
+	m.data.SetDataType(pdata.MetricDataTypeGauge)
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricElasticsearchNodeJvmMemoryLimit) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, segmentAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -762,17 +948,18 @@ func (m *metricElasticsearchNodeJvmMemoryHeapLimit) recordDataPoint(start pdata.
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
+	dp.Attributes().Insert(A.Segment, pdata.NewAttributeValueString(segmentAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricElasticsearchNodeJvmMemoryHeapLimit) updateCapacity() {
+func (m *metricElasticsearchNodeJvmMemoryLimit) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricElasticsearchNodeJvmMemoryHeapLimit) emit(metrics pdata.MetricSlice) {
+func (m *metricElasticsearchNodeJvmMemoryLimit) emit(metrics pdata.MetricSlice) {
 	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -780,8 +967,218 @@ func (m *metricElasticsearchNodeJvmMemoryHeapLimit) emit(metrics pdata.MetricSli
 	}
 }
 
-func newMetricElasticsearchNodeJvmMemoryHeapLimit(settings MetricSettings) metricElasticsearchNodeJvmMemoryHeapLimit {
-	m := metricElasticsearchNodeJvmMemoryHeapLimit{settings: settings}
+func newMetricElasticsearchNodeJvmMemoryLimit(settings MetricSettings) metricElasticsearchNodeJvmMemoryLimit {
+	m := metricElasticsearchNodeJvmMemoryLimit{settings: settings}
+	if settings.Enabled {
+		m.data = pdata.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricElasticsearchNodeJvmMemoryPoolCommit struct {
+	data     pdata.Metric   // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills elasticsearch.node.jvm.memory.pool.commit metric with initial data.
+func (m *metricElasticsearchNodeJvmMemoryPoolCommit) init() {
+	m.data.SetName("elasticsearch.node.jvm.memory.pool.commit")
+	m.data.SetDescription("The memory committed by the memory pool.")
+	m.data.SetUnit("By")
+	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricElasticsearchNodeJvmMemoryPoolCommit) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, memoryPoolNameAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+	dp.Attributes().Insert(A.MemoryPoolName, pdata.NewAttributeValueString(memoryPoolNameAttributeValue))
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricElasticsearchNodeJvmMemoryPoolCommit) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricElasticsearchNodeJvmMemoryPoolCommit) emit(metrics pdata.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricElasticsearchNodeJvmMemoryPoolCommit(settings MetricSettings) metricElasticsearchNodeJvmMemoryPoolCommit {
+	m := metricElasticsearchNodeJvmMemoryPoolCommit{settings: settings}
+	if settings.Enabled {
+		m.data = pdata.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricElasticsearchNodeJvmMemoryPoolInit struct {
+	data     pdata.Metric   // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills elasticsearch.node.jvm.memory.pool.init metric with initial data.
+func (m *metricElasticsearchNodeJvmMemoryPoolInit) init() {
+	m.data.SetName("elasticsearch.node.jvm.memory.pool.init")
+	m.data.SetDescription("The initial size of the memory pool.")
+	m.data.SetUnit("By")
+	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricElasticsearchNodeJvmMemoryPoolInit) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, memoryPoolNameAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+	dp.Attributes().Insert(A.MemoryPoolName, pdata.NewAttributeValueString(memoryPoolNameAttributeValue))
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricElasticsearchNodeJvmMemoryPoolInit) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricElasticsearchNodeJvmMemoryPoolInit) emit(metrics pdata.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricElasticsearchNodeJvmMemoryPoolInit(settings MetricSettings) metricElasticsearchNodeJvmMemoryPoolInit {
+	m := metricElasticsearchNodeJvmMemoryPoolInit{settings: settings}
+	if settings.Enabled {
+		m.data = pdata.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricElasticsearchNodeJvmMemoryPoolLimit struct {
+	data     pdata.Metric   // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills elasticsearch.node.jvm.memory.pool.limit metric with initial data.
+func (m *metricElasticsearchNodeJvmMemoryPoolLimit) init() {
+	m.data.SetName("elasticsearch.node.jvm.memory.pool.limit")
+	m.data.SetDescription("The max memory in use by the memory pool.")
+	m.data.SetUnit("By")
+	m.data.SetDataType(pdata.MetricDataTypeGauge)
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricElasticsearchNodeJvmMemoryPoolLimit) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, memoryPoolNameAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+	dp.Attributes().Insert(A.MemoryPoolName, pdata.NewAttributeValueString(memoryPoolNameAttributeValue))
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricElasticsearchNodeJvmMemoryPoolLimit) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricElasticsearchNodeJvmMemoryPoolLimit) emit(metrics pdata.MetricSlice) {
+	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricElasticsearchNodeJvmMemoryPoolLimit(settings MetricSettings) metricElasticsearchNodeJvmMemoryPoolLimit {
+	m := metricElasticsearchNodeJvmMemoryPoolLimit{settings: settings}
+	if settings.Enabled {
+		m.data = pdata.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricElasticsearchNodeJvmMemoryPoolUsage struct {
+	data     pdata.Metric   // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills elasticsearch.node.jvm.memory.pool.usage metric with initial data.
+func (m *metricElasticsearchNodeJvmMemoryPoolUsage) init() {
+	m.data.SetName("elasticsearch.node.jvm.memory.pool.usage")
+	m.data.SetDescription("The memory in use by the memory pool.")
+	m.data.SetUnit("By")
+	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricElasticsearchNodeJvmMemoryPoolUsage) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, memoryPoolNameAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+	dp.Attributes().Insert(A.MemoryPoolName, pdata.NewAttributeValueString(memoryPoolNameAttributeValue))
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricElasticsearchNodeJvmMemoryPoolUsage) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricElasticsearchNodeJvmMemoryPoolUsage) emit(metrics pdata.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricElasticsearchNodeJvmMemoryPoolUsage(settings MetricSettings) metricElasticsearchNodeJvmMemoryPoolUsage {
+	m := metricElasticsearchNodeJvmMemoryPoolUsage{settings: settings}
 	if settings.Enabled {
 		m.data = pdata.NewMetric()
 		m.init()
@@ -798,7 +1195,7 @@ type metricElasticsearchNodeJvmMemoryUsage struct {
 // init fills elasticsearch.node.jvm.memory.usage metric with initial data.
 func (m *metricElasticsearchNodeJvmMemoryUsage) init() {
 	m.data.SetName("elasticsearch.node.jvm.memory.usage")
-	m.data.SetDescription("The current memory in use by the JVM.")
+	m.data.SetDescription("The memory in use by the JVM.")
 	m.data.SetUnit("By")
 	m.data.SetDataType(pdata.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
@@ -851,7 +1248,7 @@ type metricElasticsearchNodeJvmThreadsCount struct {
 // init fills elasticsearch.node.jvm.threads.count metric with initial data.
 func (m *metricElasticsearchNodeJvmThreadsCount) init() {
 	m.data.SetName("elasticsearch.node.jvm.threads.count")
-	m.data.SetDescription("The number of open threads in the node's JVM process.")
+	m.data.SetDescription("The number of running threads in the node's JVM process.")
 	m.data.SetUnit("{threads}")
 	m.data.SetDataType(pdata.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
@@ -902,7 +1299,7 @@ type metricElasticsearchNodeJvmThreadsPeak struct {
 // init fills elasticsearch.node.jvm.threads.peak metric with initial data.
 func (m *metricElasticsearchNodeJvmThreadsPeak) init() {
 	m.data.SetName("elasticsearch.node.jvm.threads.peak")
-	m.data.SetDescription("The maximum number of concurrently running threads in the node's JVM process.")
+	m.data.SetDescription("The highest number of concurrently running threads in the current lifetime of the node's JVM process.")
 	m.data.SetUnit("{threads}")
 	m.data.SetDataType(pdata.MetricDataTypeGauge)
 }
@@ -1324,9 +1721,16 @@ type MetricsBuilder struct {
 	metricElasticsearchNodeDocuments               metricElasticsearchNodeDocuments
 	metricElasticsearchNodeFsDiskAvailable         metricElasticsearchNodeFsDiskAvailable
 	metricElasticsearchNodeHTTPConnections         metricElasticsearchNodeHTTPConnections
+	metricElasticsearchNodeJvmGcClassesLoaded      metricElasticsearchNodeJvmGcClassesLoaded
 	metricElasticsearchNodeJvmGcCollectionsCount   metricElasticsearchNodeJvmGcCollectionsCount
 	metricElasticsearchNodeJvmGcCollectionsTime    metricElasticsearchNodeJvmGcCollectionsTime
-	metricElasticsearchNodeJvmMemoryHeapLimit      metricElasticsearchNodeJvmMemoryHeapLimit
+	metricElasticsearchNodeJvmMemoryCommitted      metricElasticsearchNodeJvmMemoryCommitted
+	metricElasticsearchNodeJvmMemoryInit           metricElasticsearchNodeJvmMemoryInit
+	metricElasticsearchNodeJvmMemoryLimit          metricElasticsearchNodeJvmMemoryLimit
+	metricElasticsearchNodeJvmMemoryPoolCommit     metricElasticsearchNodeJvmMemoryPoolCommit
+	metricElasticsearchNodeJvmMemoryPoolInit       metricElasticsearchNodeJvmMemoryPoolInit
+	metricElasticsearchNodeJvmMemoryPoolLimit      metricElasticsearchNodeJvmMemoryPoolLimit
+	metricElasticsearchNodeJvmMemoryPoolUsage      metricElasticsearchNodeJvmMemoryPoolUsage
 	metricElasticsearchNodeJvmMemoryUsage          metricElasticsearchNodeJvmMemoryUsage
 	metricElasticsearchNodeJvmThreadsCount         metricElasticsearchNodeJvmThreadsCount
 	metricElasticsearchNodeJvmThreadsPeak          metricElasticsearchNodeJvmThreadsPeak
@@ -1362,9 +1766,16 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 		metricElasticsearchNodeDocuments:               newMetricElasticsearchNodeDocuments(settings.ElasticsearchNodeDocuments),
 		metricElasticsearchNodeFsDiskAvailable:         newMetricElasticsearchNodeFsDiskAvailable(settings.ElasticsearchNodeFsDiskAvailable),
 		metricElasticsearchNodeHTTPConnections:         newMetricElasticsearchNodeHTTPConnections(settings.ElasticsearchNodeHTTPConnections),
+		metricElasticsearchNodeJvmGcClassesLoaded:      newMetricElasticsearchNodeJvmGcClassesLoaded(settings.ElasticsearchNodeJvmGcClassesLoaded),
 		metricElasticsearchNodeJvmGcCollectionsCount:   newMetricElasticsearchNodeJvmGcCollectionsCount(settings.ElasticsearchNodeJvmGcCollectionsCount),
 		metricElasticsearchNodeJvmGcCollectionsTime:    newMetricElasticsearchNodeJvmGcCollectionsTime(settings.ElasticsearchNodeJvmGcCollectionsTime),
-		metricElasticsearchNodeJvmMemoryHeapLimit:      newMetricElasticsearchNodeJvmMemoryHeapLimit(settings.ElasticsearchNodeJvmMemoryHeapLimit),
+		metricElasticsearchNodeJvmMemoryCommitted:      newMetricElasticsearchNodeJvmMemoryCommitted(settings.ElasticsearchNodeJvmMemoryCommitted),
+		metricElasticsearchNodeJvmMemoryInit:           newMetricElasticsearchNodeJvmMemoryInit(settings.ElasticsearchNodeJvmMemoryInit),
+		metricElasticsearchNodeJvmMemoryLimit:          newMetricElasticsearchNodeJvmMemoryLimit(settings.ElasticsearchNodeJvmMemoryLimit),
+		metricElasticsearchNodeJvmMemoryPoolCommit:     newMetricElasticsearchNodeJvmMemoryPoolCommit(settings.ElasticsearchNodeJvmMemoryPoolCommit),
+		metricElasticsearchNodeJvmMemoryPoolInit:       newMetricElasticsearchNodeJvmMemoryPoolInit(settings.ElasticsearchNodeJvmMemoryPoolInit),
+		metricElasticsearchNodeJvmMemoryPoolLimit:      newMetricElasticsearchNodeJvmMemoryPoolLimit(settings.ElasticsearchNodeJvmMemoryPoolLimit),
+		metricElasticsearchNodeJvmMemoryPoolUsage:      newMetricElasticsearchNodeJvmMemoryPoolUsage(settings.ElasticsearchNodeJvmMemoryPoolUsage),
 		metricElasticsearchNodeJvmMemoryUsage:          newMetricElasticsearchNodeJvmMemoryUsage(settings.ElasticsearchNodeJvmMemoryUsage),
 		metricElasticsearchNodeJvmThreadsCount:         newMetricElasticsearchNodeJvmThreadsCount(settings.ElasticsearchNodeJvmThreadsCount),
 		metricElasticsearchNodeJvmThreadsPeak:          newMetricElasticsearchNodeJvmThreadsPeak(settings.ElasticsearchNodeJvmThreadsPeak),
@@ -1396,9 +1807,16 @@ func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
 	mb.metricElasticsearchNodeDocuments.emit(metrics)
 	mb.metricElasticsearchNodeFsDiskAvailable.emit(metrics)
 	mb.metricElasticsearchNodeHTTPConnections.emit(metrics)
+	mb.metricElasticsearchNodeJvmGcClassesLoaded.emit(metrics)
 	mb.metricElasticsearchNodeJvmGcCollectionsCount.emit(metrics)
 	mb.metricElasticsearchNodeJvmGcCollectionsTime.emit(metrics)
-	mb.metricElasticsearchNodeJvmMemoryHeapLimit.emit(metrics)
+	mb.metricElasticsearchNodeJvmMemoryCommitted.emit(metrics)
+	mb.metricElasticsearchNodeJvmMemoryInit.emit(metrics)
+	mb.metricElasticsearchNodeJvmMemoryLimit.emit(metrics)
+	mb.metricElasticsearchNodeJvmMemoryPoolCommit.emit(metrics)
+	mb.metricElasticsearchNodeJvmMemoryPoolInit.emit(metrics)
+	mb.metricElasticsearchNodeJvmMemoryPoolLimit.emit(metrics)
+	mb.metricElasticsearchNodeJvmMemoryPoolUsage.emit(metrics)
 	mb.metricElasticsearchNodeJvmMemoryUsage.emit(metrics)
 	mb.metricElasticsearchNodeJvmThreadsCount.emit(metrics)
 	mb.metricElasticsearchNodeJvmThreadsPeak.emit(metrics)
@@ -1461,6 +1879,11 @@ func (mb *MetricsBuilder) RecordElasticsearchNodeHTTPConnectionsDataPoint(ts pda
 	mb.metricElasticsearchNodeHTTPConnections.recordDataPoint(mb.startTime, ts, val)
 }
 
+// RecordElasticsearchNodeJvmGcClassesLoadedDataPoint adds a data point to elasticsearch.node.jvm.gc.classes.loaded metric.
+func (mb *MetricsBuilder) RecordElasticsearchNodeJvmGcClassesLoadedDataPoint(ts pdata.Timestamp, val int64) {
+	mb.metricElasticsearchNodeJvmGcClassesLoaded.recordDataPoint(mb.startTime, ts, val)
+}
+
 // RecordElasticsearchNodeJvmGcCollectionsCountDataPoint adds a data point to elasticsearch.node.jvm.gc.collections.count metric.
 func (mb *MetricsBuilder) RecordElasticsearchNodeJvmGcCollectionsCountDataPoint(ts pdata.Timestamp, val int64, generationAttributeValue string) {
 	mb.metricElasticsearchNodeJvmGcCollectionsCount.recordDataPoint(mb.startTime, ts, val, generationAttributeValue)
@@ -1471,9 +1894,39 @@ func (mb *MetricsBuilder) RecordElasticsearchNodeJvmGcCollectionsTimeDataPoint(t
 	mb.metricElasticsearchNodeJvmGcCollectionsTime.recordDataPoint(mb.startTime, ts, val, generationAttributeValue)
 }
 
-// RecordElasticsearchNodeJvmMemoryHeapLimitDataPoint adds a data point to elasticsearch.node.jvm.memory.heap.limit metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeJvmMemoryHeapLimitDataPoint(ts pdata.Timestamp, val int64) {
-	mb.metricElasticsearchNodeJvmMemoryHeapLimit.recordDataPoint(mb.startTime, ts, val)
+// RecordElasticsearchNodeJvmMemoryCommittedDataPoint adds a data point to elasticsearch.node.jvm.memory.committed metric.
+func (mb *MetricsBuilder) RecordElasticsearchNodeJvmMemoryCommittedDataPoint(ts pdata.Timestamp, val int64, segmentAttributeValue string) {
+	mb.metricElasticsearchNodeJvmMemoryCommitted.recordDataPoint(mb.startTime, ts, val, segmentAttributeValue)
+}
+
+// RecordElasticsearchNodeJvmMemoryInitDataPoint adds a data point to elasticsearch.node.jvm.memory.init metric.
+func (mb *MetricsBuilder) RecordElasticsearchNodeJvmMemoryInitDataPoint(ts pdata.Timestamp, val int64, segmentAttributeValue string) {
+	mb.metricElasticsearchNodeJvmMemoryInit.recordDataPoint(mb.startTime, ts, val, segmentAttributeValue)
+}
+
+// RecordElasticsearchNodeJvmMemoryLimitDataPoint adds a data point to elasticsearch.node.jvm.memory.limit metric.
+func (mb *MetricsBuilder) RecordElasticsearchNodeJvmMemoryLimitDataPoint(ts pdata.Timestamp, val int64, segmentAttributeValue string) {
+	mb.metricElasticsearchNodeJvmMemoryLimit.recordDataPoint(mb.startTime, ts, val, segmentAttributeValue)
+}
+
+// RecordElasticsearchNodeJvmMemoryPoolCommitDataPoint adds a data point to elasticsearch.node.jvm.memory.pool.commit metric.
+func (mb *MetricsBuilder) RecordElasticsearchNodeJvmMemoryPoolCommitDataPoint(ts pdata.Timestamp, val int64, memoryPoolNameAttributeValue string) {
+	mb.metricElasticsearchNodeJvmMemoryPoolCommit.recordDataPoint(mb.startTime, ts, val, memoryPoolNameAttributeValue)
+}
+
+// RecordElasticsearchNodeJvmMemoryPoolInitDataPoint adds a data point to elasticsearch.node.jvm.memory.pool.init metric.
+func (mb *MetricsBuilder) RecordElasticsearchNodeJvmMemoryPoolInitDataPoint(ts pdata.Timestamp, val int64, memoryPoolNameAttributeValue string) {
+	mb.metricElasticsearchNodeJvmMemoryPoolInit.recordDataPoint(mb.startTime, ts, val, memoryPoolNameAttributeValue)
+}
+
+// RecordElasticsearchNodeJvmMemoryPoolLimitDataPoint adds a data point to elasticsearch.node.jvm.memory.pool.limit metric.
+func (mb *MetricsBuilder) RecordElasticsearchNodeJvmMemoryPoolLimitDataPoint(ts pdata.Timestamp, val int64, memoryPoolNameAttributeValue string) {
+	mb.metricElasticsearchNodeJvmMemoryPoolLimit.recordDataPoint(mb.startTime, ts, val, memoryPoolNameAttributeValue)
+}
+
+// RecordElasticsearchNodeJvmMemoryPoolUsageDataPoint adds a data point to elasticsearch.node.jvm.memory.pool.usage metric.
+func (mb *MetricsBuilder) RecordElasticsearchNodeJvmMemoryPoolUsageDataPoint(ts pdata.Timestamp, val int64, memoryPoolNameAttributeValue string) {
+	mb.metricElasticsearchNodeJvmMemoryPoolUsage.recordDataPoint(mb.startTime, ts, val, memoryPoolNameAttributeValue)
 }
 
 // RecordElasticsearchNodeJvmMemoryUsageDataPoint adds a data point to elasticsearch.node.jvm.memory.usage metric.
@@ -1544,6 +1997,8 @@ var Attributes = struct {
 	FsDirection string
 	// Generation (The generation on which garbage collection was performed.)
 	Generation string
+	// MemoryPoolName (The name of the JVM memory pool)
+	MemoryPoolName string
 	// Operation (The type of operation.)
 	Operation string
 	// Segment (The segment of JVM memory.)
@@ -1565,6 +2020,7 @@ var Attributes = struct {
 	"elasticsearch.node.name",
 	"direction",
 	"generation",
+	"pool",
 	"operation",
 	"segment",
 	"state",

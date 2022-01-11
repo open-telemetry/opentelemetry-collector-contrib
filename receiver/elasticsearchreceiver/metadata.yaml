@@ -26,6 +26,9 @@ attributes:
     enum:
     - young
     - old
+  memory_pool_name:
+    value: pool
+    description: The name of the JVM memory pool
   disk_usage_state:
     value: state
     description: The state of a section of space on disk.
@@ -100,6 +103,15 @@ metrics:
       value_type: int
     attributes: [cache_name]
     enabled: true
+  elasticsearch.node.jvm.gc.classes.loaded:
+    description: The number of loaded classes.
+    unit: "{classes}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: []
+    enabled: true
   elasticsearch.node.jvm.gc.collections.count:
     description: The number of garbage collections performed by the JVM.
     unit: "{collections}"
@@ -110,7 +122,7 @@ metrics:
     attributes: [generation]
     enabled: true
   elasticsearch.node.jvm.gc.collections.time:
-    description: The total time spent by the JVM running the GC.
+    description: The total time spent by the JVM running the garbage collector.
     unit: ms
     sum:
       monotonic: true
@@ -118,8 +130,8 @@ metrics:
       value_type: int
     attributes: [generation]
     enabled: true
-  elasticsearch.node.jvm.memory.usage:
-    description: The current memory in use by the JVM.
+  elasticsearch.node.jvm.memory.init:
+    description: The initial size of memory.
     unit: By
     sum:
       monotonic: false
@@ -127,15 +139,67 @@ metrics:
       value_type: int
     attributes: [segment]
     enabled: true
-  elasticsearch.node.jvm.memory.heap.limit:
-    description: The max heap memory used by the JVM.
+  elasticsearch.node.jvm.memory.committed:
+    description: The amount of committed memory.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [segment]
+    enabled: true
+  elasticsearch.node.jvm.memory.usage:
+    description: The memory in use by the JVM.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [segment]
+    enabled: true
+  elasticsearch.node.jvm.memory.limit:
+    description: The maximum memory used by the JVM.
     unit: By
     gauge:
       value_type: int
-    attributes: []
+    attributes: [segment]
+    enabled: true
+  elasticsearch.node.jvm.memory.pool.init:
+    description: The initial size of the memory pool.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [memory_pool_name]
+    enabled: true
+  elasticsearch.node.jvm.memory.pool.commit:
+    description: The memory committed by the memory pool.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [memory_pool_name]
+    enabled: true
+  elasticsearch.node.jvm.memory.pool.usage:
+    description: The memory in use by the memory pool.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [memory_pool_name]
+    enabled: true
+  elasticsearch.node.jvm.memory.pool.limit:
+    description: The max memory in use by the memory pool.
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [memory_pool_name]
     enabled: true
   elasticsearch.node.jvm.threads.count:
-    description: The number of open threads in the node's JVM process.
+    description: The number of running threads in the node's JVM process.
     unit: "{threads}"
     sum:
       monotonic: false
@@ -144,7 +208,7 @@ metrics:
     attributes: []
     enabled: true
   elasticsearch.node.jvm.threads.peak:
-    description: The maximum number of concurrently running threads in the node's JVM process.
+    description: The highest number of concurrently running threads in the current lifetime of the node's JVM process.
     unit: "{threads}"
     gauge:
       value_type: int

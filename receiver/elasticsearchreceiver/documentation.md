@@ -18,12 +18,19 @@ These are the metrics available for this scraper.
 | elasticsearch.node.documents | The number of documents on the node. | {documents} | Sum(Int) | <ul> <li>document_state</li> </ul> |
 | elasticsearch.node.fs.disk.available | The amount of disk space available across all file stores for this node. | By | Sum(Int) | <ul> </ul> |
 | elasticsearch.node.http.connections | The number of HTTP connections to the node. | {connections} | Sum(Int) | <ul> </ul> |
+| elasticsearch.node.jvm.gc.classes.loaded | The number of loaded classes. | {classes} | Sum(Int) | <ul> </ul> |
 | elasticsearch.node.jvm.gc.collections.count | The number of garbage collections performed by the JVM. | {collections} | Sum(Int) | <ul> <li>generation</li> </ul> |
-| elasticsearch.node.jvm.gc.collections.time | The total time spent by the JVM running the GC. | ms | Sum(Int) | <ul> <li>generation</li> </ul> |
-| elasticsearch.node.jvm.memory.heap.limit | The max heap memory used by the JVM. | By | Gauge(Int) | <ul> </ul> |
-| elasticsearch.node.jvm.memory.usage | The current memory in use by the JVM. | By | Sum(Int) | <ul> <li>segment</li> </ul> |
-| elasticsearch.node.jvm.threads.count | The number of open threads in the node's JVM process. | {threads} | Sum(Int) | <ul> </ul> |
-| elasticsearch.node.jvm.threads.peak | The maximum number of concurrently running threads in the node's JVM process. | {threads} | Gauge(Int) | <ul> </ul> |
+| elasticsearch.node.jvm.gc.collections.time | The total time spent by the JVM running the garbage collector. | ms | Sum(Int) | <ul> <li>generation</li> </ul> |
+| elasticsearch.node.jvm.memory.committed | The amount of committed memory. | By | Sum(Int) | <ul> <li>segment</li> </ul> |
+| elasticsearch.node.jvm.memory.init | The initial size of memory. | By | Sum(Int) | <ul> <li>segment</li> </ul> |
+| elasticsearch.node.jvm.memory.limit | The maximum memory used by the JVM. | By | Gauge(Int) | <ul> <li>segment</li> </ul> |
+| elasticsearch.node.jvm.memory.pool.commit | The memory committed by the memory pool. | By | Sum(Int) | <ul> <li>memory_pool_name</li> </ul> |
+| elasticsearch.node.jvm.memory.pool.init | The initial size of the memory pool. | By | Sum(Int) | <ul> <li>memory_pool_name</li> </ul> |
+| elasticsearch.node.jvm.memory.pool.limit | The max memory in use by the memory pool. | By | Gauge(Int) | <ul> <li>memory_pool_name</li> </ul> |
+| elasticsearch.node.jvm.memory.pool.usage | The memory in use by the memory pool. | By | Sum(Int) | <ul> <li>memory_pool_name</li> </ul> |
+| elasticsearch.node.jvm.memory.usage | The memory in use by the JVM. | By | Sum(Int) | <ul> <li>segment</li> </ul> |
+| elasticsearch.node.jvm.threads.count | The number of running threads in the node's JVM process. | {threads} | Sum(Int) | <ul> </ul> |
+| elasticsearch.node.jvm.threads.peak | The highest number of concurrently running threads in the current lifetime of the node's JVM process. | {threads} | Gauge(Int) | <ul> </ul> |
 | elasticsearch.node.open_files | The number of open file descriptors held by the node. | {files} | Sum(Int) | <ul> </ul> |
 | elasticsearch.node.operations.completed | The number of operations completed. | {operations} | Sum(Int) | <ul> <li>operation</li> </ul> |
 | elasticsearch.node.operations.time | Time spent on operations. | ms | Sum(Int) | <ul> <li>operation</li> </ul> |
@@ -44,6 +51,7 @@ These are the metrics available for this scraper.
 | elasticsearch.node.name | The name of the elasticsearch node. |
 | fs_direction | The direction of filesystem IO. |
 | generation | The generation on which garbage collection was performed. |
+| memory_pool_name | The name of the JVM memory pool |
 | operation | The type of operation. |
 | segment | The segment of JVM memory. |
 | shard_state | The state of the shard. |
