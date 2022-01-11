@@ -76,7 +76,7 @@ func (c *couchbaseClient) GetClusterDetails(ctx context.Context) (*clusterRespon
 	var clusterInfo clusterResponse
 
 	if err := c.get(ctx, clusterPath, &clusterInfo); err != nil {
-		c.logger.Error("Failed to retrieve cluster data", zap.Error(err))
+		c.logger.Debug("Failed to retrieve cluster data", zap.Error(err))
 		return nil, err
 	}
 
@@ -87,7 +87,7 @@ func (c *couchbaseClient) GetBuckets(ctx context.Context, path string) ([]*bucke
 	buckets := make([]*bucket, 0)
 
 	if err := c.get(ctx, path, &buckets); err != nil {
-		c.logger.Error("Failed to retrieve buckets", zap.Error(err), zap.String("path", path))
+		c.logger.Debug("Failed to retrieve buckets", zap.Error(err), zap.String("path", path))
 		return nil, err
 	}
 	return buckets, nil
@@ -97,7 +97,7 @@ func (c *couchbaseClient) GetBucketStats(ctx context.Context, path string) (*buc
 	var stats bucketStats
 
 	if err := c.get(ctx, path, &stats); err != nil {
-		c.logger.Error("Failed to retrieve bucket stats", zap.Error(err), zap.String("path", path))
+		c.logger.Debug("Failed to retrieve bucket stats", zap.Error(err), zap.String("path", path))
 		return nil, err
 	}
 	return &stats, nil
@@ -129,14 +129,14 @@ func (c *couchbaseClient) get(ctx context.Context, path string, respObj interfac
 
 	// Check for OK status code
 	if resp.StatusCode != http.StatusOK {
-		c.logger.Error("couchbase API non-200", zap.Error(err), zap.Int("status_code", resp.StatusCode))
+		c.logger.Debug("couchbase API non-200", zap.Error(err), zap.Int("status_code", resp.StatusCode))
 
 		// Attempt to extract the error payload
 		payloadData, err := io.ReadAll(resp.Body)
 		if err != nil {
-			c.logger.Error("failed to read payload error message", zap.Error(err))
+			c.logger.Debug("failed to read payload error message", zap.Error(err))
 		} else {
-			c.logger.Error("couchbase API Error", zap.ByteString("api_error", payloadData))
+			c.logger.Debug("couchbase API Error", zap.ByteString("api_error", payloadData))
 		}
 
 		return fmt.Errorf("non 200 code returned %d", resp.StatusCode)
