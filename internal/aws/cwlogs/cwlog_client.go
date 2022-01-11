@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter"
+package cwlogs // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 
 import (
 	"fmt"
@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter/handler"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs/handler"
 )
 
 var collectorDistribution = "opentelemetry-collector-contrib"
@@ -40,29 +40,29 @@ const (
 
 // Possible exceptions are combination of common errors (https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/CommonErrors.html)
 // and API specific erros (e.g. https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html#API_PutLogEvents_Errors)
-type cloudWatchLogClient struct {
+type Client struct {
 	svc    cloudwatchlogsiface.CloudWatchLogsAPI
 	logger *zap.Logger
 }
 
 //Create a log client based on the actual cloudwatch logs client.
-func newCloudWatchLogClient(svc cloudwatchlogsiface.CloudWatchLogsAPI, logger *zap.Logger) *cloudWatchLogClient {
-	logClient := &cloudWatchLogClient{svc: svc,
+func newCloudWatchLogClient(svc cloudwatchlogsiface.CloudWatchLogsAPI, logger *zap.Logger) *Client {
+	logClient := &Client{svc: svc,
 		logger: logger}
 	return logClient
 }
 
-// newCloudWatchLogsClient create cloudWatchLogClient
-func newCloudWatchLogsClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.BuildInfo, logGroupName string, sess *session.Session) *cloudWatchLogClient {
+// NewClient create Client
+func NewClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.BuildInfo, logGroupName string, sess *session.Session) *Client {
 	client := cloudwatchlogs.New(sess, awsConfig)
 	client.Handlers.Build.PushBackNamed(handler.RequestStructuredLogHandler)
 	client.Handlers.Build.PushFrontNamed(newCollectorUserAgentHandler(buildInfo, logGroupName))
 	return newCloudWatchLogClient(client, logger)
 }
 
-//Put log events. The method mainly handles different possible error could be returned from server side, and retries them
+//PutLogEvents mainly handles different possible error could be returned from server side, and retries them
 //if necessary.
-func (client *cloudWatchLogClient) PutLogEvents(input *cloudwatchlogs.PutLogEventsInput, retryCnt int) (*string, error) {
+func (client *Client) PutLogEvents(input *cloudwatchlogs.PutLogEventsInput, retryCnt int) (*string, error) {
 	var response *cloudwatchlogs.PutLogEventsOutput
 	var err error
 	var token = input.SequenceToken
@@ -143,7 +143,7 @@ func (client *cloudWatchLogClient) PutLogEvents(input *cloudwatchlogs.PutLogEven
 }
 
 //Prepare the readiness for the log group and log stream.
-func (client *cloudWatchLogClient) CreateStream(logGroup, streamName *string) (token string, e error) {
+func (client *Client) CreateStream(logGroup, streamName *string) (token string, e error) {
 	//CreateLogStream / CreateLogGroup
 	_, err := client.svc.CreateLogStream(&cloudwatchlogs.CreateLogStreamInput{
 		LogGroupName:  logGroup,

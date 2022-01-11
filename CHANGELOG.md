@@ -27,6 +27,7 @@
 - `kafkaexporter`: Allow controlling Kafka acknowledgment behaviour  (#6301)
 - `lokiexporter`: Log the first part of the http body on failed pushes to loki (#6946)
 - `resourcedetectionprocessor`: add the [consul](https://www.consul.io/) detector (#6382)
+- `awsemfexporter`: refactor cw_client logic into separate `cwlogs` package (#7072)
 
 ## 🛑 Breaking changes 🛑
 

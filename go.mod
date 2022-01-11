@@ -297,6 +297,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.42.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.42.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.42.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs v0.42.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.42.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s v0.42.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.42.0 // indirect
@@ -464,6 +465,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/p
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray => ./internal/aws/xray
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ./internal/common
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs => ./internal/aws/cwlogs
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ./internal/coreinternal
 
