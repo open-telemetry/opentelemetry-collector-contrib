@@ -36,7 +36,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
-	cloudwatch "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
@@ -51,7 +51,7 @@ type mockPusher struct {
 	mock.Mock
 }
 
-func (p *mockPusher) AddLogEntry(logEvent *cloudwatch.Event) error {
+func (p *mockPusher) AddLogEntry(logEvent *cwlogs.Event) error {
 	args := p.Called(nil)
 	errorStr := args.String(0)
 	if errorStr != "" {
@@ -489,8 +489,8 @@ func TestPushMetricsDataWithErr(t *testing.T) {
 	logPusher.On("ForceFlush", nil).Return("some error").Once()
 	logPusher.On("ForceFlush", nil).Return("").Once()
 	logPusher.On("ForceFlush", nil).Return("some error").Once()
-	streamToPusherMap := map[string]cloudwatch.Pusher{"test-logStreamName": logPusher}
-	exp.(*emfExporter).groupStreamToPusherMap = map[string]map[string]cloudwatch.Pusher{}
+	streamToPusherMap := map[string]cwlogs.Pusher{"test-logStreamName": logPusher}
+	exp.(*emfExporter).groupStreamToPusherMap = map[string]map[string]cwlogs.Pusher{}
 	exp.(*emfExporter).groupStreamToPusherMap["test-logGroupName"] = streamToPusherMap
 
 	mdata := agentmetricspb.ExportMetricsServiceRequest{

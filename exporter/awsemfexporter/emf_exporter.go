@@ -33,7 +33,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
-	cloudwatch "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
@@ -45,8 +45,8 @@ const (
 
 type emfExporter struct {
 	//Each (log group, log stream) keeps a separate pusher because of each (log group, log stream) requires separate stream token.
-	groupStreamToPusherMap map[string]map[string]cloudwatch.Pusher
-	svcStructuredLog       *cloudwatch.Client
+	groupStreamToPusherMap map[string]map[string]cwlogs.Pusher
+	svcStructuredLog       *cwlogs.Client
 	config                 config.Exporter
 	logger                 *zap.Logger
 
@@ -77,7 +77,7 @@ func newEmfPusher(
 	}
 
 	// create CWLogs client with aws session config
-	svcStructuredLog := cloudwatch.NewClient(logger, awsConfig, params.BuildInfo, expConfig.LogGroupName, session)
+	svcStructuredLog := cwlogs.NewClient(logger, awsConfig, params.BuildInfo, expConfig.LogGroupName, session)
 	collectorIdentifier, _ := uuid.NewRandom()
 
 	expConfig.Validate()
@@ -90,7 +90,7 @@ func newEmfPusher(
 		logger:           logger,
 		collectorID:      collectorIdentifier.String(),
 	}
-	emfExporter.groupStreamToPusherMap = map[string]map[string]cloudwatch.Pusher{}
+	emfExporter.groupStreamToPusherMap = map[string]map[string]cwlogs.Pusher{}
 
 	return emfExporter, nil
 }
@@ -187,30 +187,30 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) err
 	return nil
 }
 
-func (emf *emfExporter) getPusher(logGroup, logStream string) cloudwatch.Pusher {
+func (emf *emfExporter) getPusher(logGroup, logStream string) cwlogs.Pusher {
 	emf.pusherMapLock.Lock()
 	defer emf.pusherMapLock.Unlock()
 
 	var ok bool
-	var streamToPusherMap map[string]cloudwatch.Pusher
+	var streamToPusherMap map[string]cwlogs.Pusher
 	if streamToPusherMap, ok = emf.groupStreamToPusherMap[logGroup]; !ok {
-		streamToPusherMap = map[string]cloudwatch.Pusher{}
+		streamToPusherMap = map[string]cwlogs.Pusher{}
 		emf.groupStreamToPusherMap[logGroup] = streamToPusherMap
 	}
 
-	var emfPusher cloudwatch.Pusher
+	var emfPusher cwlogs.Pusher
 	if emfPusher, ok = streamToPusherMap[logStream]; !ok {
-		emfPusher = cloudwatch.NewPusher(aws.String(logGroup), aws.String(logStream), emf.retryCnt, *emf.svcStructuredLog, emf.logger)
+		emfPusher = cwlogs.NewPusher(aws.String(logGroup), aws.String(logStream), emf.retryCnt, *emf.svcStructuredLog, emf.logger)
 		streamToPusherMap[logStream] = emfPusher
 	}
 	return emfPusher
 }
 
-func (emf *emfExporter) listPushers() []cloudwatch.Pusher {
+func (emf *emfExporter) listPushers() []cwlogs.Pusher {
 	emf.pusherMapLock.Lock()
 	defer emf.pusherMapLock.Unlock()
 
-	pushers := []cloudwatch.Pusher{}
+	pushers := []cwlogs.Pusher{}
 	for _, pusherMap := range emf.groupStreamToPusherMap {
 		for _, pusher := range pusherMap {
 			pushers = append(pushers, pusher)
