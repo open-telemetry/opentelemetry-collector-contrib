@@ -148,7 +148,7 @@ func TestFilterTraceProcessor(t *testing.T) {
 			caps := fmp.Capabilities()
 			require.True(t, caps.MutatesData)
 
-			assert.NoError(t, fmp.Start(ctx, nil))
+			require.NoError(t, fmp.Start(ctx, nil))
 
 			cErr := fmp.ConsumeTraces(ctx, test.inTraces)
 			require.Nil(t, cErr)
