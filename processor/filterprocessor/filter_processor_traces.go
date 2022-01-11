@@ -41,12 +41,11 @@ func newFilterSpansProcessor(logger *zap.Logger, cfg *Config) (*filterSpanProces
 		return nil, err
 	}
 
-	includeMatchType := ""
+	includeMatchTypem, excludeMatchType := "[None]"
 	if cfg.Spans.Include != nil {
 		includeMatchType = string(cfg.Spans.Include.MatchType)
 	}
 
-	excludeMatchType := ""
 	if cfg.Spans.Exclude != nil {
 		excludeMatchType = string(cfg.Spans.Exclude.MatchType)
 	}
