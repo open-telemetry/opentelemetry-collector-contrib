@@ -300,14 +300,14 @@ func TestIPDetectionFromContext(t *testing.T) {
 
 	addresses := []net.Addr{
 		&net.IPAddr{
-				IP: net.IPv4(1, 1, 1, 1),
+			IP: net.IPv4(1, 1, 1, 1),
 		},
 		&net.TCPAddr{
-			IP: net.IPv4(1, 1, 1, 1),
+			IP:   net.IPv4(1, 1, 1, 1),
 			Port: 3200,
 		},
 		&net.UDPAddr{
-			IP: net.IPv4(1, 1, 1, 1),
+			IP:   net.IPv4(1, 1, 1, 1),
 			Port: 3200,
 		},
 	}
