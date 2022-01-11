@@ -17,6 +17,7 @@
 
 ## 💡 Enhancements 💡
 
+- `couchbasereceiver`: Add couchbase client (#7122)
 - `couchdbreceiver`: Add couchdb client (#6880)
 - `elasticsearchreceiver`: Implement scraper client (#7019)
 - `couchdbreceiver`: Add metadata metrics (#6878)
