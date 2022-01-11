@@ -7,7 +7,7 @@ The filter processor can be configured to include or exclude:
   or based on other metric attributes in the case of the `expr` match type.
   Please refer to [config.go](./config.go) for the config spec.
 
-It takes a pipeline type, of which `logs` and `metrics` are supported, followed
+It takes a pipeline type, of which `logs` `metrics`, and `traces` are supported, followed
 by an action:
 
 - `include`: Any names NOT matching filters are excluded from remainder of pipeline
@@ -205,7 +205,9 @@ In case the no metric names are provided, `matric_names` being empty, the filter
 
 ### Filter Spans from Traces
 ```diff
-- This plugin has the ability to drop  individual spans or whole traces.  The good news is you define the rules.
+- This pipeline is able to drop spans and whole traces, that means your traces will be incomplete in your visualizaiton tool.  Why would wont want this you may ask? 
+Auto instrument 600 java-redis-clients and tell me how quickly your tracing platform goes to tis knees.  
+Also, DO NOT TRLY ON THIS PLUGIN FOR PCI/Sox/HIPPA etc.  If the data has already gotten this far in the pipeline you have a larger root problem.
 ```
 See the documentation in the [attribute processor](../attributesprocessor/README.md) for syntax
 
