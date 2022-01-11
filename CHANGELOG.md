@@ -10,7 +10,8 @@
 
 ## 🛑 Breaking changes 🛑
 
-- `tanzuobservabilityexporter`: Changes to status.message & status.code(#7126) 
+- `tanzuobservabilityexporter`: Remove status.code
+- `tanzuobservabilityexporter`: Use semantic conventions for status.message (#7126) 
 
 ## v0.42.0
 
