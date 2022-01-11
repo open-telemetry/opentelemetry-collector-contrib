@@ -8,6 +8,11 @@
 - `datadogexporter`: Add http.status_code tag to trace stats (#6889)
 - `tanzuobservabilityexporter`: Support delta histograms (#6897)
 
+## 🛑 Breaking changes 🛑
+
+- `tanzuobservabilityexporter`: Remove status.code
+- `tanzuobservabilityexporter`: Use semantic conventions for status.message (#7126) 
+
 ## v0.42.0
 
 ## 💡 Enhancements 💡
