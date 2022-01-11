@@ -64,7 +64,7 @@ var data = [2]interface{}{
 	},
 }
 
-func Test05Translation(t *testing.T) {
+func TestTracePayloadV05Unmarshalling(t *testing.T) {
 	payload, err := vmsgp.Marshal(&data)
 	assert.NoError(t, err)
 	dc := pb.NewMsgpReader(bytes.NewReader(payload))
