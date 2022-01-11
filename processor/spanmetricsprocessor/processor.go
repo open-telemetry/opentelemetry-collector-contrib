@@ -62,7 +62,9 @@ type exemplarData struct {
 	value   float64
 }
 
+// metricKey is used to carry the stringified metric attributes
 type metricKey string
+// resourceKey is used to carry the stringified resource attributes
 type resourceKey string
 
 type processorImp struct {
