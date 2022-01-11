@@ -85,11 +85,13 @@ func TestScraper(t *testing.T) {
 		_, err := scraper.scrape(context.Background())
 		require.NotNil(t, err)
 		require.Equal(t, 1, logs.Len())
-		require.Equal(t, observer.LoggedEntry{
-			Entry: zapcore.Entry{Level: zap.ErrorLevel, Message: "Failed to connect to couchdb client"},
-			Context: []zapcore.Field{
-				zap.String("endpoint", cfg.Endpoint),
-				zap.Error(errors.New("failed to connect to couchdb client")),
+		require.Equal(t, []observer.LoggedEntry{
+			{
+				Entry: zapcore.Entry{Level: zap.ErrorLevel, Message: "Failed to connect to couchdb client"},
+				Context: []zapcore.Field{
+					zap.String("endpoint", cfg.Endpoint),
+					zap.Error(errors.New("failed to connect to couchdb client")),
+				},
 			},
 		}, logs.AllUntimed())
 	})
@@ -105,11 +107,13 @@ func TestScraper(t *testing.T) {
 		require.NotNil(t, err)
 
 		require.Equal(t, 1, logs.Len())
-		require.Equal(t, observer.LoggedEntry{
-			Entry: zapcore.Entry{Level: zap.ErrorLevel, Message: "Failed to fetch couchdb stats"},
-			Context: []zapcore.Field{
-				zap.String("endpoint", cfg.Endpoint),
-				zap.Error(errors.New("bad response")),
+		require.Equal(t, []observer.LoggedEntry{
+			{
+				Entry: zapcore.Entry{Level: zap.ErrorLevel, Message: "Failed to fetch couchdb stats"},
+				Context: []zapcore.Field{
+					zap.String("endpoint", cfg.Endpoint),
+					zap.Error(errors.New("bad response")),
+				},
 			},
 		}, logs.AllUntimed())
 	})
