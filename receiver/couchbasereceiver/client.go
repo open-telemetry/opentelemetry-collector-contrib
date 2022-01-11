@@ -122,8 +122,8 @@ func (c *couchbaseClient) get(ctx context.Context, path string, respObj interfac
 
 	// Defer body close
 	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			c.logger.Warn("failed to close response body", zap.Error(err))
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			c.logger.Warn("failed to close response body", zap.Error(closeErr))
 		}
 	}()
 

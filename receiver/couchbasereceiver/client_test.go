@@ -308,8 +308,8 @@ func loadAPIResponseData(t *testing.T, fileName string) []byte {
 	require.NoError(t, err)
 
 	defer func() {
-		err := file.Close()
-		require.NoError(t, err)
+		closeErr := file.Close()
+		require.NoError(t, closeErr)
 	}()
 
 	data, err := io.ReadAll(file)

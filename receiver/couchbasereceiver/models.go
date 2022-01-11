@@ -23,7 +23,7 @@ type clusterResponse struct {
 }
 
 type storageTotals struct {
-	Ram ramStorageTotals `json:"ram"`
+	RAM ramStorageTotals `json:"ram"`
 	HDD hddStorageTotals `json:"hdd"`
 }
 
