@@ -25,7 +25,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
-// datadogDataReceiver implements Zipkin format receiver.
+// datadogDataReceiver implements Datadog v3/v4/v5 format receiver.
 type datadogDataReceiver struct {
 	testbed.DataReceiverBase
 	receiver component.TracesReceiver
