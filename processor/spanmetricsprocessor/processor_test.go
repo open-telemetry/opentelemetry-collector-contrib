@@ -412,7 +412,7 @@ func TestResourceCopying(t *testing.T) {
 			}
 			return true
 		})
-		assert.Empty(t, wantResourceAttrServiceB, "Did not see all expected dimensions in metric. Missing: ", wantResourceAttrServiceB)
+		assert.Empty(t, wantResourceAttrServiceB, "Must have no attributes listed inside the slice. Missing: ", wantResourceAttrServiceB)
 
 		return true
 	})).Return(nil)
