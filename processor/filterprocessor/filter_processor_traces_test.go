@@ -142,16 +142,16 @@ func TestFilterTraceProcessor(t *testing.T) {
 				cfg,
 				next,
 			)
-			assert.NotNil(t, fmp)
-			assert.Nil(t, err)
+			require.NotNil(t, fmp)
+			require.Nil(t, err)
 
 			caps := fmp.Capabilities()
-			assert.True(t, caps.MutatesData)
+			require.True(t, caps.MutatesData)
 
-			assert.NoError(t, fmp.Start(ctx, nil))
+			require.NoError(t, fmp.Start(ctx, nil))
 
 			cErr := fmp.ConsumeTraces(ctx, test.inTraces)
-			assert.Nil(t, cErr)
+			require.Nil(t, cErr)
 			got := next.AllTraces()
 
 			// If all traces got filtered you shouldn't even have ResourceSpans
@@ -160,7 +160,7 @@ func TestFilterTraceProcessor(t *testing.T) {
 			} else {
 				require.Equal(t, test.spanCountExpected, got[0].SpanCount())
 			}
-			assert.NoError(t, fmp.Shutdown(ctx))
+			require.NoError(t, fmp.Shutdown(ctx))
 		})
 	}
 }
