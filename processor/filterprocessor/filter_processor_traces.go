@@ -112,7 +112,7 @@ func (fsp *filterSpanProcessor) processTraces(_ context.Context, pdt pdata.Trace
 
 func (fsp *filterSpanProcessor) shouldRemoveSpan(span pdata.Span, resource pdata.Resource, library pdata.InstrumentationLibrary) bool {
 	if fsp.include != nil {
-		if i := fsp.include.MatchSpan(span, resource, library); !i {
+		if !fsp.include.MatchSpan(span, resource, library) {
 			return true
 		}
 	}
