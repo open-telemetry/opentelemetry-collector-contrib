@@ -1,6 +1,4 @@
 # Filter Processor
-### This pipeline drops trace data, that means your traces will be incomplete in your visualizaiton tool.  Why would wont want this you may ask?  Auto instrument  600 java-redis-clients and tell me how quickly your tracing platform goes to tis knees.  Also, this can be used to make sure PII or secure data dont make it to your backend, DO NOT TRLY ON THIS PLUGIN FOR PCI/Sox/HIPPA etc.  If the data has already gotten this far in the pipeline you have a larger root problem.
-Supported pipeline types: logs, metrics
 
 The filter processor can be configured to include or exclude:
 
