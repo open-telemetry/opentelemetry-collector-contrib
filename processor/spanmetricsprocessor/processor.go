@@ -64,6 +64,7 @@ type exemplarData struct {
 
 // metricKey is used to carry the stringified metric attributes
 type metricKey string
+
 // resourceKey is used to carry the stringified resource attributes
 type resourceKey string
 
