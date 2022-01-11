@@ -434,18 +434,18 @@ func (p *processorImp) aggregateMetricsForSpan(serviceName string, span pdata.Sp
 }
 
 // updateCallMetrics increments the call count for the given metric key.
-func (p *processorImp) updateCallMetrics(resourceAttrKey resourceKey, mKey metricKey) {
-	if _, ok := p.callSum[resourceAttrKey]; !ok {
-		p.callSum[resourceAttrKey] = map[metricKey]int64{mKey: 1}
+func (p *processorImp) updateCallMetrics(rKey resourceKey, mKey metricKey) {
+	if _, ok := p.callSum[rKey]; !ok {
+		p.callSum[rKey] = map[metricKey]int64{mKey: 1}
 		return
 	}
 
-	if _, ok := p.callSum[resourceAttrKey][mKey]; !ok {
-		p.callSum[resourceAttrKey][mKey] = 1
+	if _, ok := p.callSum[rKey][mKey]; !ok {
+		p.callSum[rKey][mKey] = 1
 		return
 	}
 
-	p.callSum[resourceAttrKey][mKey]++
+	p.callSum[rKey][mKey]++
 }
 
 func (p *processorImp) reset() {
@@ -472,23 +472,23 @@ func (p *processorImp) resetAccumulatedMetrics() {
 }
 
 // updateLatencyExemplars sets the histogram exemplars for the given metric key and append the exemplar data.
-func (p *processorImp) updateLatencyExemplars(resourceAttrKey resourceKey, mKey metricKey, value float64, traceID pdata.TraceID) {
-	_, ok := p.latencyExemplarsData[resourceAttrKey]
+func (p *processorImp) updateLatencyExemplars(rKey resourceKey, mKey metricKey, value float64, traceID pdata.TraceID) {
+	_, ok := p.latencyExemplarsData[rKey]
 
 	if !ok {
-		p.latencyExemplarsData[resourceAttrKey] = make(map[metricKey][]exemplarData)
-		p.latencyExemplarsData[resourceAttrKey][mKey] = []exemplarData{}
+		p.latencyExemplarsData[rKey] = make(map[metricKey][]exemplarData)
+		p.latencyExemplarsData[rKey][mKey] = []exemplarData{}
 	}
 
-	if _, ok = p.latencyExemplarsData[resourceAttrKey][mKey]; !ok {
-		p.latencyExemplarsData[resourceAttrKey][mKey] = []exemplarData{}
+	if _, ok = p.latencyExemplarsData[rKey][mKey]; !ok {
+		p.latencyExemplarsData[rKey][mKey] = []exemplarData{}
 	}
 
 	e := exemplarData{
 		traceID: traceID,
 		value:   value,
 	}
-	p.latencyExemplarsData[resourceAttrKey][mKey] = append(p.latencyExemplarsData[resourceAttrKey][mKey], e)
+	p.latencyExemplarsData[rKey][mKey] = append(p.latencyExemplarsData[rKey][mKey], e)
 }
 
 // resetExemplarData resets the entire exemplars map so the next trace will recreate all
@@ -499,30 +499,30 @@ func (p *processorImp) resetExemplarData() {
 }
 
 // updateLatencyMetrics increments the histogram counts for the given metric key and bucket index.
-func (p *processorImp) updateLatencyMetrics(resourceAttrKey resourceKey, mKey metricKey, latency float64, index int) {
-	_, ok := p.latencyBucketCounts[resourceAttrKey]
+func (p *processorImp) updateLatencyMetrics(rKey resourceKey, mKey metricKey, latency float64, index int) {
+	_, ok := p.latencyBucketCounts[rKey]
 
 	if !ok {
-		p.latencyBucketCounts[resourceAttrKey] = make(map[metricKey][]uint64)
-		p.latencyBucketCounts[resourceAttrKey][mKey] = make([]uint64, len(p.latencyBounds))
+		p.latencyBucketCounts[rKey] = make(map[metricKey][]uint64)
+		p.latencyBucketCounts[rKey][mKey] = make([]uint64, len(p.latencyBounds))
 	}
 
-	if _, ok = p.latencyBucketCounts[resourceAttrKey][mKey]; !ok {
-		p.latencyBucketCounts[resourceAttrKey][mKey] = make([]uint64, len(p.latencyBounds))
+	if _, ok = p.latencyBucketCounts[rKey][mKey]; !ok {
+		p.latencyBucketCounts[rKey][mKey] = make([]uint64, len(p.latencyBounds))
 	}
 
-	p.latencyBucketCounts[resourceAttrKey][mKey][index]++
+	p.latencyBucketCounts[rKey][mKey][index]++
 
-	if _, ok := p.latencySum[resourceAttrKey]; ok {
-		p.latencySum[resourceAttrKey][mKey] += latency
+	if _, ok := p.latencySum[rKey]; ok {
+		p.latencySum[rKey][mKey] += latency
 	} else {
-		p.latencySum[resourceAttrKey] = map[metricKey]float64{mKey: latency}
+		p.latencySum[rKey] = map[metricKey]float64{mKey: latency}
 	}
 
-	if _, ok := p.latencyCount[resourceAttrKey]; ok {
-		p.latencyCount[resourceAttrKey][mKey]++
+	if _, ok := p.latencyCount[rKey]; ok {
+		p.latencyCount[rKey][mKey]++
 	} else {
-		p.latencyCount[resourceAttrKey] = map[metricKey]uint64{mKey: 1}
+		p.latencyCount[rKey] = map[metricKey]uint64{mKey: 1}
 	}
 }
 
