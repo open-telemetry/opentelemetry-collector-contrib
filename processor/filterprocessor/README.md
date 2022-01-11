@@ -206,7 +206,9 @@ processors:
 In case the no metric names are provided, `matric_names` being empty, the filtering is only done at resource level.
 
 ### Filter Spans from Traces
-
+```diff
+- This plugin has the ability to drop  individual spans or whole traces.  The good news is you define the rules.
+```
 See the documentation in the [attribute processor](../attributesprocessor/README.md) for syntax
 
 For spans, one of Services, SpanNames, Attributes, Resources or Libraries must be specified with a
