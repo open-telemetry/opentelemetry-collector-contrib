@@ -75,6 +75,7 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver: "cloudfoundry",
+			skipLifecyle: true, // Requires UAA (auth) endpoint to run
 		},
 		{
 			receiver: "collectd",
