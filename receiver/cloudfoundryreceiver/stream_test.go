@@ -83,13 +83,15 @@ func TestInvalidStream(t *testing.T) {
 	require.NoError(t, streamErr)
 	require.NotNil(t, streamFactory)
 
-	innerCtx, _ := context.WithCancel(context.Background())
+	innerCtx, cancel := context.WithCancel(context.Background())
 
-	INVALID_SHARD_ID := ""
+	invalidShardID := ""
 	envelopeStream, createErr := streamFactory.CreateStream(
 		innerCtx,
-		INVALID_SHARD_ID)
+		invalidShardID)
 
 	require.EqualError(t, createErr, "shardID cannot be empty")
 	require.Nil(t, envelopeStream)
+
+	cancel()
 }
