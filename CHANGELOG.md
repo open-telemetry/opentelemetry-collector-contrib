@@ -5,7 +5,9 @@
 ## 💡 Enhancements 💡
 
 - `elasticsearchexporter`: add elasticsearchexporter to the components exporter list (#6002)
-- `mongodbreceiver`: add initial client code to the component (#7125)
+- `datadogexporter`: Add http.status_code tag to trace stats (#6889)
+- `mongodbreceiver`: Add initial client code to the component (#7125)
+- `tanzuobservabilityexporter`: Support delta histograms (#6897)
 
 ## v0.42.0
 
