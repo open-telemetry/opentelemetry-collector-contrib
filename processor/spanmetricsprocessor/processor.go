@@ -473,24 +473,23 @@ func (p *processorImp) resetAccumulatedMetrics() {
 	p.resourceKeyToDimensions.Purge()
 }
 
-// updateLatencyExemplars sets the histogram exemplars for the given metric key and append the exemplar data.
+// updateLatencyExemplars sets the histogram exemplars for the given resource and metric key and append the exemplar data.
 func (p *processorImp) updateLatencyExemplars(rKey resourceKey, mKey metricKey, value float64, traceID pdata.TraceID) {
-	_, ok := p.latencyExemplarsData[rKey]
-
+	rled, ok := p.latencyExemplarsData[rKey]
 	if !ok {
-		p.latencyExemplarsData[rKey] = make(map[metricKey][]exemplarData)
-		p.latencyExemplarsData[rKey][mKey] = []exemplarData{}
+		rled = make(map[metricKey][]exemplarData)
+		p.latencyExemplarsData[rKey] = rled
 	}
 
-	if _, ok = p.latencyExemplarsData[rKey][mKey]; !ok {
-		p.latencyExemplarsData[rKey][mKey] = []exemplarData{}
+	if _, ok = rled[mKey]; !ok {
+		rled[mKey] = []exemplarData{}
 	}
 
 	e := exemplarData{
 		traceID: traceID,
 		value:   value,
 	}
-	p.latencyExemplarsData[rKey][mKey] = append(p.latencyExemplarsData[rKey][mKey], e)
+	rled[mKey] = append(rled[mKey], e)
 }
 
 // resetExemplarData resets the entire exemplars map so the next trace will recreate all
