@@ -104,9 +104,9 @@ func getConnectionIP(ctx context.Context) kube.PodIdentifier {
 	//If this is not a known address type, check for known "untyped" formats.
 	// 1.1.1.1:<port>
 
-	splitIpAndPort := strings.Split(c.Addr.String(), ":")
-	if len(splitIpAndPort) > 1 {
-		ipString := strings.Join(splitIpAndPort[:len(splitIpAndPort)-1], ":")
+	splitIPAndPort := strings.Split(c.Addr.String(), ":")
+	if len(splitIPAndPort) > 1 {
+		ipString := strings.Join(splitIPAndPort[:len(splitIPAndPort)-1], ":")
 		ip := net.ParseIP(ipString)
 		if ip != nil {
 			return kube.PodIdentifier(ip.String())
