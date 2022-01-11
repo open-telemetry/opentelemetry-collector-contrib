@@ -154,7 +154,7 @@ func TestFilterTraceProcessor(t *testing.T) {
 			assert.Nil(t, cErr)
 			got := next.AllTraces()
 
-			// If all traces got filtered you shouldnt even have ResourceSpans
+			// If all traces got filtered you shouldn't even have ResourceSpans
 			if test.allTracesFiltered {
 				require.Equal(t, 0, len(got))
 			} else {
