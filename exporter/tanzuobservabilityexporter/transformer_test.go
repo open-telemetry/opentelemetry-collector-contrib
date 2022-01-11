@@ -78,10 +78,6 @@ func TestSpanStatusCodeErrorAddsErrorTag(t *testing.T) {
 	errorTag, ok := actual.Tags["error"]
 	assert.True(t, ok)
 	assert.Equal(t, "true", errorTag)
-
-	code, ok := actual.Tags[labelStatusCode]
-	assert.True(t, ok)
-	assert.Equal(t, "2", code)
 }
 
 func TestSpanStatusCodeOkDoesNotAddErrorTag(t *testing.T) {
@@ -91,10 +87,6 @@ func TestSpanStatusCodeOkDoesNotAddErrorTag(t *testing.T) {
 
 	_, ok := actual.Tags["error"]
 	assert.False(t, ok)
-
-	code, ok := actual.Tags[labelStatusCode]
-	assert.True(t, ok)
-	assert.Equal(t, "1", code)
 }
 
 func TestSpanStatusCodeUnsetDoesNotAddErrorTag(t *testing.T) {
@@ -104,10 +96,6 @@ func TestSpanStatusCodeUnsetDoesNotAddErrorTag(t *testing.T) {
 
 	_, ok := actual.Tags["error"]
 	assert.False(t, ok)
-
-	code, ok := actual.Tags[labelStatusCode]
-	assert.True(t, ok)
-	assert.Equal(t, "0", code)
 }
 
 func TestSpanStatusMessageIsConvertedToTag(t *testing.T) {
@@ -117,7 +105,7 @@ func TestSpanStatusMessageIsConvertedToTag(t *testing.T) {
 
 	require.NoError(t, err, "transforming span to wavefront format")
 
-	msgVal, ok := actual.Tags["status.message"]
+	msgVal, ok := actual.Tags["otel.status_description"]
 	assert.True(t, ok)
 	assert.Equal(t, message, msgVal)
 }
@@ -147,9 +135,9 @@ func TestSpanStatusMessageIsTruncatedToValidLength(t *testing.T) {
 
 	require.NoError(t, err, "transforming span to wavefront format")
 
-	msgVal, ok := actual.Tags["status.message"]
+	msgVal, ok := actual.Tags["otel.status_description"]
 	assert.True(t, ok)
-	assert.Equal(t, 255-1-len("status.message"), len(msgVal), "message value truncated")
+	assert.Equal(t, 255-1-len("otel.status_description"), len(msgVal), "message value truncated")
 }
 
 func TestSpanEventsAreTranslatedToSpanLogs(t *testing.T) {
