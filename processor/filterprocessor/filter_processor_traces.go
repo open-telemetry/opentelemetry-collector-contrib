@@ -118,7 +118,7 @@ func (fsp *filterSpanProcessor) shouldRemoveSpan(span pdata.Span, resource pdata
 	}
 
 	if fsp.exclude != nil {
-		if e := fsp.exclude.MatchSpan(span, resource, library); e {
+		if fsp.exclude.MatchSpan(span, resource, library) {
 			return true
 		}
 	}
