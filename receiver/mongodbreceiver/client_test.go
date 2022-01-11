@@ -202,32 +202,6 @@ func TestInitClientBadEndpoint(t *testing.T) {
 	require.Contains(t, err.Error(), "error creating")
 }
 
-func TestInitClientReplicaSet(t *testing.T) {
-	mont := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
-	defer mont.Close()
-
-	mont.Run("ping failure", func(mt *mtest.T) {
-		mt.AddMockResponses(
-			mtest.CreateCommandErrorResponse(mtest.CommandError{}),
-			mtest.CreateSuccessResponse(),
-			mtest.CreateSuccessResponse(),
-		)
-		driver := mt.Client
-		client := mongodbClient{
-			driver: driver,
-			hosts:  []string{"localhost:27017"},
-			logger: zap.NewNop(),
-		}
-
-		ctx, cancel := context.WithTimeout(context.TODO(), 2*time.Minute)
-		defer cancel()
-
-		err := client.ensureClient(ctx)
-		require.NoError(t, err)
-	})
-
-}
-
 func TestDisconnectSuccess(t *testing.T) {
 	driver := &fakeDriver{}
 	driver.On("Disconnect", mock.Anything).Return(nil)
