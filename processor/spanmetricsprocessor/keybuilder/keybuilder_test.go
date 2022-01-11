@@ -29,7 +29,7 @@ func TestNew(t *testing.T) {
 	})
 }
 
-func Test_metricKeyBuilder_Append(t *testing.T) {
+func TestMetricKeyBuilderAppend(t *testing.T) {
 	tests := []struct {
 		name   string
 		args   [][]string
@@ -47,7 +47,9 @@ func Test_metricKeyBuilder_Append(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt :=  tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			kb := New()
 			for _, arg := range tt.args {
 				kb.Append(arg...)
