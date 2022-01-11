@@ -47,7 +47,6 @@ func TestNewClient(t *testing.T) {
 		expectError error
 	}{
 		{
-
 			desc: "Invalid HTTP config",
 			cfg: &Config{
 				HTTPClientSettings: confighttp.HTTPClientSettings{
@@ -64,7 +63,6 @@ func TestNewClient(t *testing.T) {
 			expectError: errors.New("failed to create HTTP Client"),
 		},
 		{
-
 			desc: "Valid Configuration",
 			cfg: &Config{
 				HTTPClientSettings: confighttp.HTTPClientSettings{
