@@ -91,6 +91,14 @@ func getConnectionIP(ctx context.Context) kube.PodIdentifier {
 	if c.Addr == nil {
 		return ""
 	}
+	switch addr := c.Addr.(type) {
+	case *net.UDPAddr:
+		return kube.PodIdentifier(addr.IP.String())
+	case *net.TCPAddr:
+		return kube.PodIdentifier(addr.IP.String())
+	case *net.IPAddr:
+		return kube.PodIdentifier(addr.IP.String())
+	}
 	return kube.PodIdentifier(c.Addr.String())
 
 }
