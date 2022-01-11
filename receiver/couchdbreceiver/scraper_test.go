@@ -1,0 +1,322 @@
+// Copyright  The OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package couchdbreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver"
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"io/ioutil"
+	"os"
+	"path"
+	"path/filepath"
+	"testing"
+
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+)
+
+func TestScraper(t *testing.T) {
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig().(*Config)
+	cfg.Username = "otelu"
+	cfg.Password = "otelp"
+	require.NoError(t, cfg.Validate())
+
+	t.Run("scrape from couchdb version 2.31", func(t *testing.T) {
+		mockClient := new(MockClient)
+		mockClient.On("GetStats", "_local").Return(getStats("response_2.31.json"))
+		scraper := newCouchdbScraper(zap.NewNop(), cfg)
+		scraper.client = mockClient
+
+		actualMetrics, err := scraper.scrape(context.Background())
+		require.NoError(t, err)
+		aMetricSlice := actualMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+
+		expectedFile := filepath.Join("testdata", "scraper", "expected.json")
+		expectedMetrics, err := golden.ReadMetrics(expectedFile)
+		require.NoError(t, err)
+		eMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+
+		require.NoError(t, scrapertest.CompareMetricSlices(eMetricSlice, aMetricSlice))
+	})
+
+	t.Run("scrape from couchdb 3.12", func(t *testing.T) {
+		mockClient := new(MockClient)
+		mockClient.On("GetStats", "_local").Return(getStats("response_3.12.json"))
+		scraper := newCouchdbScraper(zap.NewNop(), cfg)
+		scraper.client = mockClient
+
+		actualMetrics, err := scraper.scrape(context.Background())
+		require.NoError(t, err)
+		aMetricSlice := actualMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+
+		expectedFile := filepath.Join("testdata", "scraper", "expected.json")
+		expectedMetrics, err := golden.ReadMetrics(expectedFile)
+		require.NoError(t, err)
+		eMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+
+		require.NoError(t, scrapertest.CompareMetricSlices(eMetricSlice, aMetricSlice))
+	})
+
+	t.Run("error no client", func(t *testing.T) {
+		obs, logs := observer.New(zap.ErrorLevel)
+		scraper := newCouchdbScraper(zap.New(obs), cfg)
+
+		_, err := scraper.scrape(context.Background())
+		require.NotNil(t, err)
+		require.Equal(t, 1, logs.Len())
+		require.Equal(t, []observer.LoggedEntry{
+			observer.LoggedEntry{
+				Entry: zapcore.Entry{Level: zap.ErrorLevel, Message: "Failed to connect to couchdb client"},
+				Context: []zapcore.Field{
+					zap.String("endpoint", cfg.Endpoint),
+					zap.Error(errors.New("failed to connect to couchdb client")),
+				},
+			},
+		}, logs.AllUntimed())
+	})
+
+	t.Run("error no stats", func(t *testing.T) {
+		obs, logs := observer.New(zap.ErrorLevel)
+		mockClient := new(MockClient)
+		mockClient.On("GetStats", "_local").Return(getStats(""))
+		scraper := newCouchdbScraper(zap.New(obs), cfg)
+		scraper.client = mockClient
+
+		_, err := scraper.scrape(context.Background())
+		require.NotNil(t, err)
+
+		require.Equal(t, 1, logs.Len())
+		require.Equal(t, []observer.LoggedEntry{
+			observer.LoggedEntry{
+				Entry: zapcore.Entry{Level: zap.ErrorLevel, Message: "Failed to fetch couchdb stats"},
+				Context: []zapcore.Field{
+					zap.String("endpoint", cfg.Endpoint),
+					zap.Error(errors.New("bad response")),
+				},
+			},
+		}, logs.AllUntimed())
+	})
+
+	t.Run("empty stats", func(t *testing.T) {
+		obs, logs := observer.New(zap.InfoLevel)
+		mockClient := new(MockClient)
+
+		mockClient.On("GetStats", "_local").Return(getStats("empty"))
+
+		scraper := newCouchdbScraper(zap.New(obs), cfg)
+		scraper.client = mockClient
+
+		_, err := scraper.scrape(context.Background())
+		require.NoError(t, err)
+
+		require.Equal(t, 9, logs.Len())
+		require.Equal(t, []observer.LoggedEntry{
+			observer.LoggedEntry{
+				Entry: zapcore.Entry{Level: zap.InfoLevel, Message: "could not find key in body"},
+				Context: []zapcore.Field{
+					zap.String("key", "request_time value arithmetic_mean"),
+				},
+			},
+			observer.LoggedEntry{
+				Entry: zapcore.Entry{Level: zap.InfoLevel, Message: "could not find key in body"},
+				Context: []zapcore.Field{
+					zap.String("key", "httpd bulk_requests value"),
+				},
+			},
+			observer.LoggedEntry{
+				Entry: zapcore.Entry{Level: zap.InfoLevel, Message: "could not find key in body"},
+				Context: []zapcore.Field{
+					zap.String("key", "httpd_request_methods COPY value"),
+				},
+			},
+			observer.LoggedEntry{
+				Entry: zapcore.Entry{Level: zap.InfoLevel, Message: "could not find key in body"},
+				Context: []zapcore.Field{
+					zap.String("key", "httpd_status_codes 200 value"),
+				},
+			},
+			observer.LoggedEntry{
+				Entry: zapcore.Entry{Level: zap.InfoLevel, Message: "could not find key in body"},
+				Context: []zapcore.Field{
+					zap.String("key", "httpd temporary_view_reads value"),
+				},
+			},
+			observer.LoggedEntry{
+				Entry: zapcore.Entry{Level: zap.InfoLevel, Message: "could not find key in body"},
+				Context: []zapcore.Field{
+					zap.String("key", "open_databases value"),
+				},
+			},
+			observer.LoggedEntry{
+				Entry: zapcore.Entry{Level: zap.InfoLevel, Message: "could not find key in body"},
+				Context: []zapcore.Field{
+					zap.String("key", "open_os_files value"),
+				},
+			},
+			observer.LoggedEntry{
+				Entry: zapcore.Entry{Level: zap.InfoLevel, Message: "could not find key in body"},
+				Context: []zapcore.Field{
+					zap.String("key", "database_reads value"),
+				},
+			},
+			observer.LoggedEntry{
+				Entry: zapcore.Entry{Level: zap.InfoLevel, Message: "could not find key in body"},
+				Context: []zapcore.Field{
+					zap.String("key", "database_writes value"),
+				},
+			},
+		}, logs.AllUntimed())
+	})
+}
+
+func TestStart(t *testing.T) {
+	t.Run("start success", func(t *testing.T) {
+		f := NewFactory()
+		cfg := f.CreateDefaultConfig().(*Config)
+		cfg.Username = "otelu"
+		cfg.Password = "otelp"
+		require.NoError(t, cfg.Validate())
+
+		scraper := newCouchdbScraper(zap.NewNop(), cfg)
+		err := scraper.start(context.Background(), componenttest.NewNopHost())
+		require.NoError(t, err)
+	})
+
+	t.Run("start fail", func(t *testing.T) {
+		f := NewFactory()
+		cfg := f.CreateDefaultConfig().(*Config)
+		cfg.HTTPClientSettings.TLSSetting.CAFile = "/non/existent"
+		cfg.Username = "otelu"
+		cfg.Password = "otelp"
+		require.NoError(t, cfg.Validate())
+
+		scraper := newCouchdbScraper(zap.NewNop(), cfg)
+		err := scraper.start(context.Background(), componenttest.NewNopHost())
+		require.NotNil(t, err)
+	})
+}
+
+func getStats(filename string) (map[string]interface{}, error) {
+	var stats map[string]interface{}
+
+	if filename == "" {
+		return nil, errors.New("bad response")
+	}
+	if filename == "empty" {
+		_ = json.Unmarshal([]byte{}, &stats)
+		return stats, nil
+	}
+
+	file, err := os.Open(path.Join("testdata", "scraper", filename))
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	body, err := ioutil.ReadAll(file)
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(body, &stats)
+	if err != nil {
+		return nil, err
+	}
+
+	return stats, nil
+}
+
+// MockClient is an autogenerated mock type for the client type
+type MockClient struct {
+	mock.Mock
+}
+
+// Get provides a mock function with given fields: path
+func (_m *MockClient) Get(path string) ([]byte, error) {
+	ret := _m.Called(path)
+
+	var r0 []byte
+	if rf, ok := ret.Get(0).(func(string) []byte); ok {
+		r0 = rf(path)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]byte)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(path)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetNodeNames provides a mock function with given fields:
+func (_m *MockClient) GetNodeNames() ([]string, error) {
+	ret := _m.Called()
+
+	var r0 []string
+	if rf, ok := ret.Get(0).(func() []string); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]string)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetStats provides a mock function with given fields: nodeName
+func (_m *MockClient) GetStats(nodeName string) (map[string]interface{}, error) {
+	ret := _m.Called(nodeName)
+
+	var r0 map[string]interface{}
+	if rf, ok := ret.Get(0).(func(string) map[string]interface{}); ok {
+		r0 = rf(nodeName)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(map[string]interface{})
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(nodeName)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}

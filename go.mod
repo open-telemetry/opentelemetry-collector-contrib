@@ -120,6 +120,11 @@ require (
 )
 
 require (
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza v0.42.0
+	github.com/shirou/gopsutil v3.21.10+incompatible // indirect
+)
+
+require (
 	bitbucket.org/atlassian/go-asap/v2 v2.6.0 // indirect
 	cloud.google.com/go v0.100.2 // indirect
 	cloud.google.com/go/compute v1.0.0 // indirect
