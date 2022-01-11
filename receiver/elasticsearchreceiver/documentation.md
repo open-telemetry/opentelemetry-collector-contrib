@@ -38,6 +38,7 @@ These are the metrics available for this scraper.
 | elasticsearch.node.thread_pool.tasks.finished | The number of tasks finished by the thread pool. | {tasks} | Sum(Int) | <ul> <li>thread_pool_name</li> <li>task_state</li> </ul> |
 | elasticsearch.node.thread_pool.tasks.queued | The number of queued tasks in the thread pool. | {tasks} | Sum(Int) | <ul> <li>thread_pool_name</li> </ul> |
 | elasticsearch.node.thread_pool.threads | The number of threads in the thread pool. | {threads} | Sum(Int) | <ul> <li>thread_state</li> </ul> |
+| elasticserach.cluster.health | The health status of the cluster. Health status is based on the state of its primary and replica shards. Green indicates all shards are assigned. Yellow indicates that one or more replica shards are unassigned. Red indicates that one or more primary shards are unassigned, making some data unavailable.  | {status} | Sum(Int) | <ul> <li>health_status</li> </ul> |
 
 ## Attributes
 
@@ -51,6 +52,7 @@ These are the metrics available for this scraper.
 | elasticsearch.node.name | The name of the elasticsearch node. |
 | fs_direction | The direction of filesystem IO. |
 | generation | The generation on which garbage collection was performed. |
+| health_status | The health status of the cluster. |
 | memory_pool_name | The name of the JVM memory pool |
 | operation | The type of operation. |
 | segment | The segment of JVM memory. |

@@ -45,6 +45,7 @@ type MetricsSettings struct {
 	ElasticsearchNodeThreadPoolTasksFinished MetricSettings `mapstructure:"elasticsearch.node.thread_pool.tasks.finished"`
 	ElasticsearchNodeThreadPoolTasksQueued   MetricSettings `mapstructure:"elasticsearch.node.thread_pool.tasks.queued"`
 	ElasticsearchNodeThreadPoolThreads       MetricSettings `mapstructure:"elasticsearch.node.thread_pool.threads"`
+	ElasticserachClusterHealth               MetricSettings `mapstructure:"elasticserach.cluster.health"`
 }
 
 func DefaultMetricsSettings() MetricsSettings {
@@ -137,6 +138,9 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		ElasticsearchNodeThreadPoolThreads: MetricSettings{
+			Enabled: true,
+		},
+		ElasticserachClusterHealth: MetricSettings{
 			Enabled: true,
 		},
 	}
@@ -1707,6 +1711,59 @@ func newMetricElasticsearchNodeThreadPoolThreads(settings MetricSettings) metric
 	return m
 }
 
+type metricElasticserachClusterHealth struct {
+	data     pdata.Metric   // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills elasticserach.cluster.health metric with initial data.
+func (m *metricElasticserachClusterHealth) init() {
+	m.data.SetName("elasticserach.cluster.health")
+	m.data.SetDescription("The health status of the cluster.")
+	m.data.SetUnit("{status}")
+	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricElasticserachClusterHealth) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, healthStatusAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+	dp.Attributes().Insert(A.HealthStatus, pdata.NewAttributeValueString(healthStatusAttributeValue))
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricElasticserachClusterHealth) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricElasticserachClusterHealth) emit(metrics pdata.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricElasticserachClusterHealth(settings MetricSettings) metricElasticserachClusterHealth {
+	m := metricElasticserachClusterHealth{settings: settings}
+	if settings.Enabled {
+		m.data = pdata.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
@@ -1741,6 +1798,7 @@ type MetricsBuilder struct {
 	metricElasticsearchNodeThreadPoolTasksFinished metricElasticsearchNodeThreadPoolTasksFinished
 	metricElasticsearchNodeThreadPoolTasksQueued   metricElasticsearchNodeThreadPoolTasksQueued
 	metricElasticsearchNodeThreadPoolThreads       metricElasticsearchNodeThreadPoolThreads
+	metricElasticserachClusterHealth               metricElasticserachClusterHealth
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -1786,6 +1844,7 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 		metricElasticsearchNodeThreadPoolTasksFinished: newMetricElasticsearchNodeThreadPoolTasksFinished(settings.ElasticsearchNodeThreadPoolTasksFinished),
 		metricElasticsearchNodeThreadPoolTasksQueued:   newMetricElasticsearchNodeThreadPoolTasksQueued(settings.ElasticsearchNodeThreadPoolTasksQueued),
 		metricElasticsearchNodeThreadPoolThreads:       newMetricElasticsearchNodeThreadPoolThreads(settings.ElasticsearchNodeThreadPoolThreads),
+		metricElasticserachClusterHealth:               newMetricElasticserachClusterHealth(settings.ElasticserachClusterHealth),
 	}
 	for _, op := range options {
 		op(mb)
@@ -1827,6 +1886,7 @@ func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
 	mb.metricElasticsearchNodeThreadPoolTasksFinished.emit(metrics)
 	mb.metricElasticsearchNodeThreadPoolTasksQueued.emit(metrics)
 	mb.metricElasticsearchNodeThreadPoolThreads.emit(metrics)
+	mb.metricElasticserachClusterHealth.emit(metrics)
 }
 
 // RecordElasticsearchClusterDataNodesDataPoint adds a data point to elasticsearch.cluster.data_nodes metric.
@@ -1979,6 +2039,11 @@ func (mb *MetricsBuilder) RecordElasticsearchNodeThreadPoolThreadsDataPoint(ts p
 	mb.metricElasticsearchNodeThreadPoolThreads.recordDataPoint(mb.startTime, ts, val, threadStateAttributeValue)
 }
 
+// RecordElasticserachClusterHealthDataPoint adds a data point to elasticserach.cluster.health metric.
+func (mb *MetricsBuilder) RecordElasticserachClusterHealthDataPoint(ts pdata.Timestamp, val int64, healthStatusAttributeValue string) {
+	mb.metricElasticserachClusterHealth.recordDataPoint(mb.startTime, ts, val, healthStatusAttributeValue)
+}
+
 // Attributes contains the possible metric attributes that can be used.
 var Attributes = struct {
 	// CacheName (The name of cache.)
@@ -1997,6 +2062,8 @@ var Attributes = struct {
 	FsDirection string
 	// Generation (The generation on which garbage collection was performed.)
 	Generation string
+	// HealthStatus (The health status of the cluster.)
+	HealthStatus string
 	// MemoryPoolName (The name of the JVM memory pool)
 	MemoryPoolName string
 	// Operation (The type of operation.)
@@ -2020,6 +2087,7 @@ var Attributes = struct {
 	"elasticsearch.node.name",
 	"direction",
 	"generation",
+	"status",
 	"pool",
 	"operation",
 	"segment",
@@ -2084,6 +2152,17 @@ var AttributeGeneration = struct {
 }{
 	"young",
 	"old",
+}
+
+// AttributeHealthStatus are the possible values that the attribute "health_status" can have.
+var AttributeHealthStatus = struct {
+	Green  string
+	Yellow string
+	Red    string
+}{
+	"green",
+	"yellow",
+	"red",
 }
 
 // AttributeOperation are the possible values that the attribute "operation" can have.
