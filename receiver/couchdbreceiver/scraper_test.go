@@ -85,13 +85,11 @@ func TestScraper(t *testing.T) {
 		_, err := scraper.scrape(context.Background())
 		require.NotNil(t, err)
 		require.Equal(t, 1, logs.Len())
-		require.Equal(t, []observer.LoggedEntry{
-			observer.LoggedEntry{
-				Entry: zapcore.Entry{Level: zap.ErrorLevel, Message: "Failed to connect to couchdb client"},
-				Context: []zapcore.Field{
-					zap.String("endpoint", cfg.Endpoint),
-					zap.Error(errors.New("failed to connect to couchdb client")),
-				},
+		require.Equal(t, observer.LoggedEntry{
+			Entry: zapcore.Entry{Level: zap.ErrorLevel, Message: "Failed to connect to couchdb client"},
+			Context: []zapcore.Field{
+				zap.String("endpoint", cfg.Endpoint),
+				zap.Error(errors.New("failed to connect to couchdb client")),
 			},
 		}, logs.AllUntimed())
 	})
@@ -107,13 +105,11 @@ func TestScraper(t *testing.T) {
 		require.NotNil(t, err)
 
 		require.Equal(t, 1, logs.Len())
-		require.Equal(t, []observer.LoggedEntry{
-			observer.LoggedEntry{
-				Entry: zapcore.Entry{Level: zap.ErrorLevel, Message: "Failed to fetch couchdb stats"},
-				Context: []zapcore.Field{
-					zap.String("endpoint", cfg.Endpoint),
-					zap.Error(errors.New("bad response")),
-				},
+		require.Equal(t, observer.LoggedEntry{
+			Entry: zapcore.Entry{Level: zap.ErrorLevel, Message: "Failed to fetch couchdb stats"},
+			Context: []zapcore.Field{
+				zap.String("endpoint", cfg.Endpoint),
+				zap.Error(errors.New("bad response")),
 			},
 		}, logs.AllUntimed())
 	})
@@ -132,59 +128,41 @@ func TestScraper(t *testing.T) {
 
 		require.Equal(t, 9, logs.Len())
 		require.Equal(t, []observer.LoggedEntry{
-			observer.LoggedEntry{
-				Entry: zapcore.Entry{Level: zap.InfoLevel, Message: "could not find key in body"},
-				Context: []zapcore.Field{
-					zap.String("key", "request_time value arithmetic_mean"),
-				},
+			{
+				Entry:   zapcore.Entry{Level: zap.InfoLevel, Message: "could not find key in body"},
+				Context: []zapcore.Field{zap.String("key", "request_time value arithmetic_mean")},
 			},
-			observer.LoggedEntry{
-				Entry: zapcore.Entry{Level: zap.InfoLevel, Message: "could not find key in body"},
-				Context: []zapcore.Field{
-					zap.String("key", "httpd bulk_requests value"),
-				},
+			{
+				Entry:   zapcore.Entry{Level: zap.InfoLevel, Message: "could not find key in body"},
+				Context: []zapcore.Field{zap.String("key", "httpd bulk_requests value")},
 			},
-			observer.LoggedEntry{
-				Entry: zapcore.Entry{Level: zap.InfoLevel, Message: "could not find key in body"},
-				Context: []zapcore.Field{
-					zap.String("key", "httpd_request_methods COPY value"),
-				},
+			{
+				Entry:   zapcore.Entry{Level: zap.InfoLevel, Message: "could not find key in body"},
+				Context: []zapcore.Field{zap.String("key", "httpd_request_methods COPY value")},
 			},
-			observer.LoggedEntry{
-				Entry: zapcore.Entry{Level: zap.InfoLevel, Message: "could not find key in body"},
-				Context: []zapcore.Field{
-					zap.String("key", "httpd_status_codes 200 value"),
-				},
+			{
+				Entry:   zapcore.Entry{Level: zap.InfoLevel, Message: "could not find key in body"},
+				Context: []zapcore.Field{zap.String("key", "httpd_status_codes 200 value")},
 			},
-			observer.LoggedEntry{
-				Entry: zapcore.Entry{Level: zap.InfoLevel, Message: "could not find key in body"},
-				Context: []zapcore.Field{
-					zap.String("key", "httpd temporary_view_reads value"),
-				},
+			{
+				Entry:   zapcore.Entry{Level: zap.InfoLevel, Message: "could not find key in body"},
+				Context: []zapcore.Field{zap.String("key", "httpd temporary_view_reads value")},
 			},
-			observer.LoggedEntry{
-				Entry: zapcore.Entry{Level: zap.InfoLevel, Message: "could not find key in body"},
-				Context: []zapcore.Field{
-					zap.String("key", "open_databases value"),
-				},
+			{
+				Entry:   zapcore.Entry{Level: zap.InfoLevel, Message: "could not find key in body"},
+				Context: []zapcore.Field{zap.String("key", "open_databases value")},
 			},
-			observer.LoggedEntry{
-				Entry: zapcore.Entry{Level: zap.InfoLevel, Message: "could not find key in body"},
-				Context: []zapcore.Field{
-					zap.String("key", "open_os_files value"),
-				},
+			{
+				Entry:   zapcore.Entry{Level: zap.InfoLevel, Message: "could not find key in body"},
+				Context: []zapcore.Field{zap.String("key", "open_os_files value")},
 			},
-			observer.LoggedEntry{
-				Entry: zapcore.Entry{Level: zap.InfoLevel, Message: "could not find key in body"},
-				Context: []zapcore.Field{
-					zap.String("key", "database_reads value"),
-				},
+			{
+				Entry:   zapcore.Entry{Level: zap.InfoLevel, Message: "could not find key in body"},
+				Context: []zapcore.Field{zap.String("key", "database_reads value")},
 			},
-			observer.LoggedEntry{
-				Entry: zapcore.Entry{Level: zap.InfoLevel, Message: "could not find key in body"},
-				Context: []zapcore.Field{
-					zap.String("key", "database_writes value"),
-				},
+			{
+				Entry:   zapcore.Entry{Level: zap.InfoLevel, Message: "could not find key in body"},
+				Context: []zapcore.Field{zap.String("key", "database_writes value")},
 			},
 		}, logs.AllUntimed())
 	})
