@@ -6,6 +6,13 @@ before you begin your work.
 
 ## Adding New Components
 
+Before any code is written, open an issue providing the following information:
+
+    * Who's the sponsor for your component. A sponsor is an approver who will be in charge of being the official reviewer of the code. For vendor-specific components, it's good to have a volunteer sponsor. If you can't find one, we'll assign one in a round-robin fashion. For non-vendor specific components, having a sponsor means that your use case has been validated.
+    * Some information about your component, such as the reasoning behind it, use-cases, telemetry data types supported, and anything else you think it's relevant for us to make a decision about accepting the component
+    * The configuration options your component will accept. This will help us understand what it does and have an idea of how the implementation might look like
+
+
 Any component (receiver, processor, exporter, or extension) needs to implement
 the interfaces defined on the [core
 repository](https://github.com/open-telemetry/opentelemetry-collector).
