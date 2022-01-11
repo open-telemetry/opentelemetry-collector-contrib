@@ -28,21 +28,21 @@ type storageTotals struct {
 }
 
 type ramStorageTotals struct {
-	Total             int64 `json:"total"`
-	QuotaTotal        int64 `json:"quotaTotal"`
-	QuotaUsed         int64 `json:"quotaUsed"`
-	Used              int64 `json:"used"`
-	UsedByData        int64 `json:"usedByData"`
-	QuotaUsedPerNode  int64 `json:"quotaUsedPerNode"`
-	QuotaTotalPerNode int64 `json:"quotaTotalPerNode"`
+	Total             *int64 `json:"total"`
+	QuotaTotal        *int64 `json:"quotaTotal"`
+	QuotaUsed         *int64 `json:"quotaUsed"`
+	Used              *int64 `json:"used"`
+	UsedByData        *int64 `json:"usedByData"`
+	QuotaUsedPerNode  *int64 `json:"quotaUsedPerNode"`
+	QuotaTotalPerNode *int64 `json:"quotaTotalPerNode"`
 }
 
 type hddStorageTotals struct {
-	Total      int64 `json:"total"`
-	QuotaTotal int64 `json:"quotaTotal"`
-	Used       int64 `json:"used"`
-	UsedByData int64 `json:"usedByData"`
-	Free       int64 `json:"free"`
+	Total      *int64 `json:"total"`
+	QuotaTotal *int64 `json:"quotaTotal"`
+	Used       *int64 `json:"used"`
+	UsedByData *int64 `json:"usedByData"`
+	Free       *int64 `json:"free"`
 }
 
 type clusterBuckets struct {
@@ -57,12 +57,12 @@ type node struct {
 }
 
 type nodeInterestingStats struct {
-	ActiveItems      int `json:"curr_items"`
-	ReplicaItems     int `json:"vb_replica_curr_items"`
-	DocumentDataSize int `json:"couch_docs_data_size"`
-	DocumentDiskSize int `json:"couch_docs_actual_disk_size"`
-	ViewsDataSize    int `json:"couch_views_data_size"`
-	ViewsDiskSize    int `json:"couch_views_actual_disk_size"`
+	ActiveItems      *int64 `json:"curr_items"`
+	ReplicaItems     *int64 `json:"vb_replica_curr_items"`
+	DocumentDataSize *int64 `json:"couch_docs_data_size"`
+	DocumentDiskSize *int64 `json:"couch_docs_actual_disk_size"`
+	ViewsDataSize    *int64 `json:"couch_views_data_size"`
+	ViewsDiskSize    *int64 `json:"couch_views_actual_disk_size"`
 }
 
 // Bucket specific models

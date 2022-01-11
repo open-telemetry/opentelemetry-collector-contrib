@@ -18,10 +18,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"io"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -102,7 +101,6 @@ func TestNewClient(t *testing.T) {
 }
 
 func TestGetClusterDetails(t *testing.T) {
-
 	testCases := []struct {
 		desc     string
 		testFunc func(*testing.T)
@@ -170,7 +168,6 @@ func TestGetClusterDetails(t *testing.T) {
 }
 
 func TestGetBuckets(t *testing.T) {
-
 	testCases := []struct {
 		desc     string
 		testFunc func(*testing.T)
@@ -238,7 +235,6 @@ func TestGetBuckets(t *testing.T) {
 }
 
 func TestGetBucketStats(t *testing.T) {
-
 	testCases := []struct {
 		desc     string
 		testFunc func(*testing.T)
@@ -317,16 +313,9 @@ func createTestClient(t *testing.T, baseEndpoint string) client {
 
 func loadAPIResponseData(t *testing.T, fileName string) []byte {
 	t.Helper()
+	fullPath := filepath.Join("testdata", "apiresponses", fileName)
 
-	file, err := os.Open(filepath.Join("testdata", "apiresponses", fileName))
-	require.NoError(t, err)
-
-	defer func() {
-		closeErr := file.Close()
-		require.NoError(t, closeErr)
-	}()
-
-	data, err := io.ReadAll(file)
+	data, err := ioutil.ReadFile(fullPath)
 	require.NoError(t, err)
 
 	return data
