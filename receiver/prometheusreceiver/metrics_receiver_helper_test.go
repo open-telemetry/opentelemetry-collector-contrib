@@ -586,10 +586,13 @@ func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, s
 			// split and store results by target name
 			pResults := splitMetricsByTarget(metrics)
 			lres, lep := len(pResults), len(mp.endpoints)
-			assert.Equalf(t, lep, lres, "want %d targets, but got %v\n", lep, lres)
+			// There may be an additional scrape entry between when the mock server provided
+			// all responses and when we capture the metrics.  It will be ignored later.
+			assert.GreaterOrEqualf(t, lep, lres, "want at least %d targets, but got %v\n", lep, lres)
 
 			// loop to validate outputs for each targets
-			for _, target := range targets {
+			// Stop once we have evaluated all expected results, any others are superfluous.
+			for _, target := range targets[:lep] {
 				t.Run(target.name, func(t *testing.T) {
 					scrapes := pResults[target.name]
 					if !target.validateScrapes {

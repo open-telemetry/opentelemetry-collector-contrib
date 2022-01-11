@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/wavefronthq/wavefront-sdk-go/histogram"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
@@ -391,7 +392,6 @@ func TestSumConsumerMissingValue(t *testing.T) {
 // Tests that the histogramConsumer correctly delegates to its
 // histogramDataPointConsumers. This tests delta histograms
 func TestHistogramConsumerDeltaAggregation(t *testing.T) {
-	// TODO: Change this test when delta histograms are supported.
 	countAttributeForEachDataPoint := []uint64{2, 5, 10}
 	deltaMetric := newHistogramMetricWithDataPoints(
 		"delta.metric",
@@ -399,11 +399,25 @@ func TestHistogramConsumerDeltaAggregation(t *testing.T) {
 		countAttributeForEachDataPoint)
 	sender := &mockGaugeSender{}
 	cumulativeConsumer := &mockHistogramDataPointConsumer{}
+	deltaConsumer := &mockHistogramDataPointConsumer{}
 	consumer := newHistogramConsumer(
-		cumulativeConsumer, nil, sender, componenttest.NewNopTelemetrySettings())
+		cumulativeConsumer,
+		deltaConsumer,
+		sender,
+		regularHistogram,
+		componenttest.NewNopTelemetrySettings())
 	var errs []error
 	consumer.Consume(deltaMetric, &errs)
-	assert.Len(t, errs, 1)
+
+	assert.Empty(t, errs)
+
+	// We had three datapoints. Our mock just captures the metric name of
+	// each data point consumed.
+	assert.Equal(
+		t, []string{"delta.metric", "delta.metric", "delta.metric"}, deltaConsumer.names)
+	assert.Equal(t, countAttributeForEachDataPoint, deltaConsumer.counts)
+	assert.Empty(t, cumulativeConsumer.names)
+	assert.Empty(t, cumulativeConsumer.counts)
 }
 
 // Tests that the histogramConsumer correctly delegates to its
@@ -416,8 +430,13 @@ func TestHistogramConsumerCumulativeAggregation(t *testing.T) {
 		countAttributeForEachDataPoint)
 	sender := &mockGaugeSender{}
 	cumulativeConsumer := &mockHistogramDataPointConsumer{}
+	deltaConsumer := &mockHistogramDataPointConsumer{}
 	consumer := newHistogramConsumer(
-		cumulativeConsumer, nil, sender, componenttest.NewNopTelemetrySettings())
+		cumulativeConsumer,
+		deltaConsumer,
+		sender,
+		regularHistogram,
+		componenttest.NewNopTelemetrySettings())
 	var errs []error
 
 	consumer.Consume(cumulativeMetric, &errs)
@@ -431,6 +450,8 @@ func TestHistogramConsumerCumulativeAggregation(t *testing.T) {
 		[]string{"cumulative.metric", "cumulative.metric", "cumulative.metric"},
 		cumulativeConsumer.names)
 	assert.Equal(t, countAttributeForEachDataPoint, cumulativeConsumer.counts)
+	assert.Empty(t, deltaConsumer.names)
+	assert.Empty(t, deltaConsumer.counts)
 }
 
 // This tests that the histogram consumer correctly counts and logs
@@ -448,8 +469,9 @@ func TestHistogramConsumerNoAggregation(t *testing.T) {
 	settings.Logger = zap.New(observedZapCore)
 	consumer := newHistogramConsumer(
 		&mockHistogramDataPointConsumer{},
-		nil,
+		&mockHistogramDataPointConsumer{},
 		sender,
+		regularHistogram,
 		settings,
 	)
 	assert.Equal(t, pdata.MetricDataTypeHistogram, consumer.Type())
@@ -634,6 +656,111 @@ func TestCumulativeHistogramDataPointConsumerMissingBuckets(t *testing.T) {
 	assert.Equal(t, int64(1), report.Malformed())
 }
 
+func TestDeltaHistogramDataPointConsumer(t *testing.T) {
+	metric := newMetric("a.delta.histogram", pdata.MetricDataTypeHistogram)
+	histogramDataPoint := pdata.NewHistogramDataPoint()
+
+	// Creates bounds of -Inf to <=2.0; >2.0 to <=5.0; >5.0 to <=10.0; >10.0 to +Inf
+	histogramDataPoint.SetExplicitBounds([]float64{2.0, 5.0, 10.0})
+	histogramDataPoint.SetBucketCounts([]uint64{5, 1, 3, 2})
+	setDataPointTimestamp(1631234567, histogramDataPoint)
+	setTags(
+		map[string]interface{}{"bar": "baz"},
+		histogramDataPoint.Attributes())
+	sender := &mockDistributionSender{}
+	report := newHistogramReporting(componenttest.NewNopTelemetrySettings())
+	consumer := newDeltaHistogramDataPointConsumer(sender)
+	var errs []error
+
+	consumer.Consume(metric, histogramDataPoint, &errs, report)
+
+	assert.Empty(t, errs)
+
+	assert.Equal(
+		t,
+		[]tobsDistribution{
+			{
+				Name: "a.delta.histogram",
+				Centroids: []histogram.Centroid{
+					{Value: 2.0, Count: 5},
+					{Value: 3.5, Count: 1},
+					{Value: 7.5, Count: 3},
+					{Value: 10.0, Count: 2}},
+				Granularity: allGranularity,
+				Ts:          1631234567,
+				Tags:        map[string]string{"bar": "baz"},
+			},
+		},
+		sender.distributions,
+	)
+	assert.Equal(t, int64(0), report.Malformed())
+}
+
+func TestDeltaHistogramDataPointConsumer_OneBucket(t *testing.T) {
+	metric := newMetric("one.bucket.delta.histogram", pdata.MetricDataTypeHistogram)
+	histogramDataPoint := pdata.NewHistogramDataPoint()
+
+	// Creates bounds of -Inf to <=2.0; >2.0 to <=5.0; >5.0 to <=10.0; >10.0 to +Inf
+	histogramDataPoint.SetExplicitBounds([]float64{})
+	histogramDataPoint.SetBucketCounts([]uint64{17})
+	setDataPointTimestamp(1641234567, histogramDataPoint)
+	sender := &mockDistributionSender{}
+	report := newHistogramReporting(componenttest.NewNopTelemetrySettings())
+	consumer := newDeltaHistogramDataPointConsumer(sender)
+	var errs []error
+
+	consumer.Consume(metric, histogramDataPoint, &errs, report)
+
+	assert.Empty(t, errs)
+
+	assert.Equal(
+		t,
+		[]tobsDistribution{
+			{
+				Name:        "one.bucket.delta.histogram",
+				Centroids:   []histogram.Centroid{{Value: 0.0, Count: 17}},
+				Granularity: allGranularity,
+				Ts:          1641234567,
+				Tags:        make(map[string]string),
+			},
+		},
+		sender.distributions,
+	)
+	assert.Equal(t, int64(0), report.Malformed())
+}
+
+func TestDeltaHistogramDataPointConsumerError(t *testing.T) {
+	metric := newMetric("a.delta.histogram", pdata.MetricDataTypeHistogram)
+	histogramDataPoint := pdata.NewHistogramDataPoint()
+
+	// Creates bounds of -Inf to <=2.0; >2.0 to <=5.0; >5.0 to <=10.0; >10.0 to +Inf
+	histogramDataPoint.SetExplicitBounds([]float64{2.0, 5.0, 10.0})
+	histogramDataPoint.SetBucketCounts([]uint64{5, 1, 3, 2})
+	sender := &mockDistributionSender{errorOnSend: true}
+	report := newHistogramReporting(componenttest.NewNopTelemetrySettings())
+	consumer := newDeltaHistogramDataPointConsumer(sender)
+	var errs []error
+
+	consumer.Consume(metric, histogramDataPoint, &errs, report)
+
+	assert.Len(t, errs, 1)
+}
+
+func TestDeltaHistogramDataPointConsumerMissingBuckets(t *testing.T) {
+	metric := newMetric("a.metric", pdata.MetricDataTypeHistogram)
+	histogramDataPoint := pdata.NewHistogramDataPoint()
+	sender := &mockDistributionSender{}
+	report := newHistogramReporting(componenttest.NewNopTelemetrySettings())
+	consumer := newDeltaHistogramDataPointConsumer(sender)
+	var errs []error
+
+	consumer.Consume(metric, histogramDataPoint, &errs, report)
+
+	assert.Empty(t, errs)
+	assert.Empty(t, sender.distributions)
+	assert.Equal(t, int64(1), report.Malformed())
+}
+
 // Creates a histogram metric with len(countAttributeForEachDataPoint)
 // datapoints. name is the name of the histogram metric; temporality
 // is the temporality of the histogram metric;
@@ -645,11 +772,11 @@ func newHistogramMetricWithDataPoints(
 	countAttributeForEachDataPoint []uint64,
 ) pdata.Metric {
 	result := newMetric(name, pdata.MetricDataTypeHistogram)
-	histogram := result.Histogram()
-	histogram.SetAggregationTemporality(temporality)
-	histogram.DataPoints().EnsureCapacity(len(countAttributeForEachDataPoint))
+	aHistogram := result.Histogram()
+	aHistogram.SetAggregationTemporality(temporality)
+	aHistogram.DataPoints().EnsureCapacity(len(countAttributeForEachDataPoint))
 	for _, count := range countAttributeForEachDataPoint {
-		histogram.DataPoints().AppendEmpty().SetCount(count)
+		aHistogram.DataPoints().AppendEmpty().SetCount(count)
 	}
 	return result
 }
@@ -732,7 +859,11 @@ func addDataPoint(
 	setTags(tags, dataPoint.Attributes())
 }
 
-func setDataPointTimestamp(ts int64, dataPoint pdata.NumberDataPoint) {
+type dataPointWithTimestamp interface {
+	SetTimestamp(v pdata.Timestamp)
+}
+
+func setDataPointTimestamp(ts int64, dataPoint dataPointWithTimestamp) {
 	dataPoint.SetTimestamp(
 		pdata.NewTimestampFromTime(time.Unix(ts, 0)))
 }
@@ -799,6 +930,42 @@ func (m *mockGaugeSender) SendMetric(
 	return nil
 }
 
+type tobsDistribution struct {
+	Name        string
+	Centroids   []histogram.Centroid
+	Granularity map[histogram.Granularity]bool
+	Ts          int64
+	Source      string
+	Tags        map[string]string
+}
+
+type mockDistributionSender struct {
+	errorOnSend   bool
+	distributions []tobsDistribution
+}
+
+func (m *mockDistributionSender) SendDistribution(
+	name string,
+	centroids []histogram.Centroid,
+	granularity map[histogram.Granularity]bool,
+	ts int64,
+	source string,
+	tags map[string]string,
+) error {
+	m.distributions = append(m.distributions, tobsDistribution{
+		Name:        name,
+		Centroids:   copyCentroids(centroids),
+		Granularity: copyGranularity(granularity),
+		Ts:          ts,
+		Source:      source,
+		Tags:        copyTags(tags),
+	})
+	if m.errorOnSend {
+		return errors.New("error sending")
+	}
+	return nil
+}
+
 type mockTypedMetricConsumer struct {
 	typ                          pdata.MetricDataType
 	errorOnConsume               bool
@@ -849,7 +1016,7 @@ type mockHistogramDataPointConsumer struct {
 }
 
 func (m *mockHistogramDataPointConsumer) Consume(
-	metric pdata.Metric, h pdata.HistogramDataPoint, _ *[]error, _ *histogramReporting,
+	metric pdata.Metric, h histogramDataPoint, _ *[]error, _ *histogramReporting,
 ) {
 	m.names = append(m.names, metric.Name())
 	m.counts = append(m.counts, h.Count())
@@ -901,4 +1068,25 @@ func (m *mockSumSender) SendDeltaCounter(
 		return errors.New("error sending")
 	}
 	return nil
+}
+
+func copyCentroids(centroids []histogram.Centroid) []histogram.Centroid {
+	if centroids == nil {
+		return nil
+	}
+	result := make([]histogram.Centroid, len(centroids))
+	copy(result, centroids)
+	return result
+}
+
+func copyGranularity(
+	granularity map[histogram.Granularity]bool) map[histogram.Granularity]bool {
+	if granularity == nil {
+		return nil
+	}
+	result := make(map[histogram.Granularity]bool, len(granularity))
+	for k, v := range granularity {
+		result[k] = v
+	}
+	return result
 }
