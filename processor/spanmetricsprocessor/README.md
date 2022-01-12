@@ -68,7 +68,7 @@ The following settings can be optionally configured:
   
   `service.name` will be automatically added as a resource attribute to all the generated metrics.
 
-- `resource_attributes_cache_size`: the max number of items in the `resouce_key_to_dimensions_cache`. If not provided,
+- `resource_attributes_cache_size`: the max number of items in the `resource_key_to_dimensions_cache`. If not provided,
    will use default value size `1000`.
 ## Examples
 

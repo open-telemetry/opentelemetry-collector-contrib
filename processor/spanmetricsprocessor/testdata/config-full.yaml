@@ -59,8 +59,12 @@ processors:
       # - calls{operation="/Address",service_name="shippingservice",span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_UNSET"} 1
       - name: http.status_code
 
-
+    # the max number of items in the `resource_key_to_dimensions_cache`. Default is 1000
     resource_attributes_cache_size: 3000
+    # the list of resource attributes to add together with the default resource attributes defined
+    # above. Each additional resource attribute is defined with a `name` which is looked up in the span's collection of
+    # resource attributes. If the `name`d resource attribute is missing in the span, the optional provided `default` is
+    # used. If no `default` is provided, this resource attribute will be **omitted** from the metric.
     resource_attributes:
       - name: region
         default: us-east-1
