@@ -14,8 +14,6 @@
 
 package elasticsearchreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver"
 
-//go:generate mdatagen metadata.yaml
-
 import (
 	"context"
 	"errors"
