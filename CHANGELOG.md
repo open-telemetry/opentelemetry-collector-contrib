@@ -62,6 +62,7 @@
 - `prometheusreceiver`: Fix start time tracking for long scrape intervals (#7053)
 - `signalfxexporter`: Don't use syscall to avoid compilation errors on some platforms (#7062)
 - `k8sattributeprocessor`: Parse IP out of net.Addr to correctly tag k8s.pod.ip (#7077)
+- `k8sattributeprocessor`: Process IP correctly for net.Addr instances that are not typed (#7133)
 
 ## 💡 Enhancements 💡
 
