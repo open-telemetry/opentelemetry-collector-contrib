@@ -438,19 +438,11 @@ func (p *processorImp) aggregateMetricsForSpan(serviceName string, span pdata.Sp
 
 // updateCallMetrics increments the call count for the given metric key.
 func (p *processorImp) updateCallMetrics(rKey resourceKey, mKey metricKey) {
-	rcs, ok := p.callSum[rKey]
-
-	if !ok {
-		p.callSum[rKey] = map[metricKey]int64{mKey: 1}
-		return
+	if _, ok := p.callSum[rKey]; !ok {
+		p.callSum[rKey] = make(map[metricKey]int64)
 	}
 
-	if _, ok := rcs[mKey]; !ok {
-		rcs[mKey] = 1
-		return
-	}
-
-	rcs[mKey]++
+	p.callSum[rKey][mKey]++
 }
 
 func (p *processorImp) reset() {
