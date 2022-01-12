@@ -148,6 +148,7 @@ func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer cons
 		latencyExemplarsData:    make(map[resourceKey]map[metricKey][]exemplarData),
 		nextConsumer:            nextConsumer,
 		dimensions:              pConfig.Dimensions,
+		resourceAttributes:      pConfig.ResourceAttributes,
 		resourceKeyToDimensions: resourceKeyToDimensionsCache,
 		metricKeyToDimensions:   metricKeyToDimensionsCache,
 	}, nil
