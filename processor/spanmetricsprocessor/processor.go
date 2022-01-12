@@ -476,15 +476,10 @@ func (p *processorImp) updateLatencyExemplars(rKey resourceKey, mKey metricKey, 
 		p.latencyExemplarsData[rKey] = rled
 	}
 
-	if _, ok = rled[mKey]; !ok {
-		rled[mKey] = []exemplarData{}
-	}
-
-	e := exemplarData{
+	rled[mKey] = append(rled[mKey], exemplarData{
 		traceID: traceID,
 		value:   value,
-	}
-	rled[mKey] = append(rled[mKey], e)
+	})
 }
 
 // resetExemplarData resets the entire exemplars map so the next trace will recreate all
@@ -496,14 +491,11 @@ func (p *processorImp) resetExemplarData() {
 
 // updateLatencyMetrics increments the histogram counts for the given metric key and bucket index.
 func (p *processorImp) updateLatencyMetrics(rKey resourceKey, mKey metricKey, latency float64, index int) {
-	_, ok := p.latencyBucketCounts[rKey]
-
-	if !ok {
+	if _, ok := p.latencyBucketCounts[rKey]; !ok {
 		p.latencyBucketCounts[rKey] = make(map[metricKey][]uint64)
-		p.latencyBucketCounts[rKey][mKey] = make([]uint64, len(p.latencyBounds))
 	}
 
-	if _, ok = p.latencyBucketCounts[rKey][mKey]; !ok {
+	if _, ok := p.latencyBucketCounts[rKey][mKey]; !ok {
 		p.latencyBucketCounts[rKey][mKey] = make([]uint64, len(p.latencyBounds))
 	}
 
