@@ -81,11 +81,10 @@ func (c *Config) ClientOptions() *options.ClientOptions {
 	}
 
 	if c.Username != "" && c.Password != "" {
-		authOpt := options.Credential{
+		clientOptions.SetAuth(options.Credential{
 			Username: c.Username,
 			Password: c.Password,
-		}
-		clientOptions.SetAuth(authOpt)
+		})
 	}
 
 	return clientOptions
