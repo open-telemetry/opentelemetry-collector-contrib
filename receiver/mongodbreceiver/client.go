@@ -74,7 +74,7 @@ func (c *mongodbClient) Connect(ctx context.Context) error {
 	return nil
 }
 
-// Query executes a query against a database. Relies on connection to be established via `Connect()`
+// RunCommand executes a query against a database. Relies on connection to be established via `Connect()`
 func (c *mongodbClient) RunCommand(ctx context.Context, database string, command bson.M) (bson.M, error) {
 	db := c.Database(database)
 	result := db.RunCommand(ctx, command)
@@ -100,8 +100,7 @@ type getVersionResponse struct {
 	Version string
 }
 
-// GetVersion validates the underlying connection of the client and returns a result of the
-// version of mongo the client is connected to so adjustments in collection protocol can
+// GetVersion returns a result of the version of mongo the client is connected to so adjustments in collection protocol can
 // be determined
 func (c *mongodbClient) GetVersion(ctx context.Context) (*getVersionResponse, error) {
 	res, err := c.RunCommand(ctx, "admin", bson.M{"buildInfo": 1})

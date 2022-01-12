@@ -111,7 +111,7 @@ func TestSuccessfulRunCommands(t *testing.T) {
 			cmd:      serverStatusType,
 			response: loadedServerStatus,
 			validate: func(t *testing.T, m bson.M) {
-				require.Equal(t, int32(1), m["connections"].(bson.M)["active"])
+				require.Equal(t, int32(0), m["mem"].(bson.M)["mapped"])
 			},
 		},
 	}
