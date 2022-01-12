@@ -30,78 +30,6 @@
 			"$numberInt": "3"
 		}
 	},
-	"electionMetrics": {
-		"averageCatchUpOps": {
-			"$numberDouble": "0.0"
-		},
-		"catchUpTakeover": {
-			"called": {
-				"$numberLong": "0"
-			},
-			"successful": {
-				"$numberLong": "0"
-			}
-		},
-		"electionTimeout": {
-			"called": {
-				"$numberLong": "0"
-			},
-			"successful": {
-				"$numberLong": "0"
-			}
-		},
-		"freezeTimeout": {
-			"called": {
-				"$numberLong": "0"
-			},
-			"successful": {
-				"$numberLong": "0"
-			}
-		},
-		"numCatchUps": {
-			"$numberLong": "0"
-		},
-		"numCatchUpsAlreadyCaughtUp": {
-			"$numberLong": "0"
-		},
-		"numCatchUpsFailedWithError": {
-			"$numberLong": "0"
-		},
-		"numCatchUpsFailedWithNewTerm": {
-			"$numberLong": "0"
-		},
-		"numCatchUpsFailedWithReplSetAbortPrimaryCatchUpCmd": {
-			"$numberLong": "0"
-		},
-		"numCatchUpsSkipped": {
-			"$numberLong": "0"
-		},
-		"numCatchUpsSucceeded": {
-			"$numberLong": "0"
-		},
-		"numCatchUpsTimedOut": {
-			"$numberLong": "0"
-		},
-		"numStepDownsCausedByHigherTerm": {
-			"$numberLong": "0"
-		},
-		"priorityTakeover": {
-			"called": {
-				"$numberLong": "0"
-			},
-			"successful": {
-				"$numberLong": "0"
-			}
-		},
-		"stepUpCmd": {
-			"called": {
-				"$numberLong": "0"
-			},
-			"successful": {
-				"$numberLong": "0"
-			}
-		}
-	},
 	"globalLock": {
 		"activeClients": {
 			"readers": {
@@ -129,6 +57,65 @@
 			"$numberLong": "58889000"
 		}
 	},
+	"host": "7ef1eab6bba0",
+	"locks": {
+		"Collection": {
+			"acquireCount": {
+				"r": {
+					"$numberLong": "89"
+				}
+			}
+		},
+		"Database": {
+			"acquireCount": {
+				"R": {
+					"$numberLong": "3"
+				},
+				"W": {
+					"$numberLong": "7"
+				},
+				"r": {
+					"$numberLong": "149"
+				}
+			},
+			"acquireWaitCount": {
+				"W": {
+					"$numberLong": "1"
+				},
+				"r": {
+					"$numberLong": "2"
+				}
+			},
+			"timeAcquiringMicros": {
+				"W": {
+					"$numberLong": "274"
+				},
+				"r": {
+					"$numberLong": "250"
+				}
+			}
+		},
+		"Global": {
+			"acquireCount": {
+				"W": {
+					"$numberLong": "5"
+				},
+				"r": {
+					"$numberLong": "307"
+				},
+				"w": {
+					"$numberLong": "7"
+				}
+			}
+		},
+		"oplog": {
+			"acquireCount": {
+				"r": {
+					"$numberLong": "61"
+				}
+			}
+		}
+	},
 	"mem": {
 		"bits": {
 			"$numberInt": "64"
@@ -145,206 +132,6 @@
 		"supported": true,
 		"virtual": {
 			"$numberInt": "1089"
-		}
-	},
-	"metrics": {
-		"cursor": {
-			"open": {
-				"noTimeout": {
-					"$numberLong": "0"
-				},
-				"pinned": {
-					"$numberLong": "0"
-				},
-				"total": {
-					"$numberLong": "0"
-				}
-			},
-			"timedOut": {
-				"$numberLong": "0"
-			}
-		},
-		"document": {
-			"deleted": {
-				"$numberLong": "0"
-			},
-			"inserted": {
-				"$numberLong": "0"
-			},
-			"returned": {
-				"$numberLong": "0"
-			},
-			"updated": {
-				"$numberLong": "0"
-			}
-		},
-		"getLastError": {
-			"wtime": {
-				"num": {
-					"$numberInt": "0"
-				},
-				"totalMillis": {
-					"$numberInt": "0"
-				}
-			},
-			"wtimeouts": {
-				"$numberLong": "0"
-			}
-		},
-		"operation": {
-			"scanAndOrder": {
-				"$numberLong": "0"
-			},
-			"writeConflicts": {
-				"$numberLong": "0"
-			}
-		},
-		"query": {
-			"planCacheTotalSizeEstimateBytes": {
-				"$numberLong": "0"
-			},
-			"updateOneOpStyleBroadcastWithExactIDCount": {
-				"$numberLong": "0"
-			},
-			"upsertReplacementCannotTargetByQueryCount": {
-				"$numberLong": "0"
-			}
-		},
-		"queryExecutor": {
-			"scanned": {
-				"$numberLong": "0"
-			},
-			"scannedObjects": {
-				"$numberLong": "0"
-			}
-		},
-		"record": {
-			"moves": {
-				"$numberLong": "0"
-			}
-		},
-		"repl": {
-			"apply": {
-				"attemptsToBecomeSecondary": {
-					"$numberLong": "0"
-				},
-				"batchSize": {
-					"$numberLong": "0"
-				},
-				"batches": {
-					"num": {
-						"$numberInt": "0"
-					},
-					"totalMillis": {
-						"$numberInt": "0"
-					}
-				},
-				"ops": {
-					"$numberLong": "0"
-				}
-			},
-			"buffer": {
-				"count": {
-					"$numberLong": "0"
-				},
-				"maxSizeBytes": {
-					"$numberLong": "0"
-				},
-				"sizeBytes": {
-					"$numberLong": "0"
-				}
-			},
-			"executor": {
-				"networkInterface": "DEPRECATED: getDiagnosticString is deprecated in NetworkInterfaceTL",
-				"pool": {
-					"inProgressCount": {
-						"$numberInt": "0"
-					}
-				},
-				"queues": {
-					"networkInProgress": {
-						"$numberInt": "0"
-					},
-					"sleepers": {
-						"$numberInt": "0"
-					}
-				},
-				"shuttingDown": false,
-				"unsignaledEvents": {
-					"$numberInt": "0"
-				}
-			},
-			"initialSync": {
-				"completed": {
-					"$numberLong": "0"
-				},
-				"failedAttempts": {
-					"$numberLong": "0"
-				},
-				"failures": {
-					"$numberLong": "0"
-				}
-			},
-			"network": {
-				"bytes": {
-					"$numberLong": "0"
-				},
-				"getmores": {
-					"num": {
-						"$numberInt": "0"
-					},
-					"totalMillis": {
-						"$numberInt": "0"
-					}
-				},
-				"ops": {
-					"$numberLong": "0"
-				},
-				"readersCreated": {
-					"$numberLong": "0"
-				}
-			},
-			"preload": {
-				"docs": {
-					"num": {
-						"$numberInt": "0"
-					},
-					"totalMillis": {
-						"$numberInt": "0"
-					}
-				},
-				"indexes": {
-					"num": {
-						"$numberInt": "0"
-					},
-					"totalMillis": {
-						"$numberInt": "0"
-					}
-				}
-			}
-		},
-		"storage": {
-			"freelist": {
-				"search": {
-					"bucketExhausted": {
-						"$numberLong": "0"
-					},
-					"requests": {
-						"$numberLong": "0"
-					},
-					"scanned": {
-						"$numberLong": "0"
-					}
-				}
-			}
-		},
-		"ttl": {
-			"deletedDocuments": {
-				"$numberLong": "0"
-			},
-			"passes": {
-				"$numberLong": "0"
-			}
 		}
 	},
 	"network": {
@@ -390,6 +177,63 @@
 			}
 		}
 	},
+	"ok": {
+		"$numberDouble": "1.0"
+	},
+	"opLatencies": {
+		"commands": {
+			"latency": {
+				"$numberLong": "8631"
+			},
+			"ops": {
+				"$numberLong": "23"
+			}
+		},
+		"reads": {
+			"latency": {
+				"$numberLong": "0"
+			},
+			"ops": {
+				"$numberLong": "0"
+			}
+		},
+		"transactions": {
+			"latency": {
+				"$numberLong": "0"
+			},
+			"ops": {
+				"$numberLong": "0"
+			}
+		},
+		"writes": {
+			"latency": {
+				"$numberLong": "0"
+			},
+			"ops": {
+				"$numberLong": "0"
+			}
+		}
+	},
+	"opReadConcernCounters": {
+		"available": {
+			"$numberLong": "0"
+		},
+		"linearizable": {
+			"$numberLong": "0"
+		},
+		"local": {
+			"$numberLong": "0"
+		},
+		"majority": {
+			"$numberLong": "0"
+		},
+		"none": {
+			"$numberLong": "2"
+		},
+		"snapshot": {
+			"$numberLong": "0"
+		}
+	},
 	"opcounters": {
 		"command": {
 			"$numberInt": "26"
@@ -430,7 +274,87 @@
 			"$numberInt": "0"
 		}
 	},
+	"pid": {
+		"$numberLong": "1"
+	},
 	"process": "mongod",
+	"storageEngine": {
+		"name": "wiredTiger",
+		"persistent": true,
+		"readOnly": false,
+		"supportsCommittedReads": true,
+		"supportsSnapshotReadConcern": true
+	},
+	"tcmalloc": {
+		"generic": {
+			"current_allocated_bytes": {
+				"$numberInt": "74914048"
+			},
+			"heap_size": {
+				"$numberInt": "79032320"
+			}
+		},
+		"tcmalloc": {
+			"aggressive_memory_decommit": {
+				"$numberInt": "0"
+			},
+			"central_cache_free_bytes": {
+				"$numberInt": "205608"
+			},
+			"current_total_thread_cache_bytes": {
+				"$numberInt": "607448"
+			},
+			"formattedString": "------------------------------------------------\nMALLOC:       74914624 (   71.4 MiB) Bytes in use by application\nMALLOC: +      3035136 (    2.9 MiB) Bytes in page heap freelist\nMALLOC: +       205608 (    0.2 MiB) Bytes in central cache freelist\nMALLOC: +       270080 (    0.3 MiB) Bytes in transfer cache freelist\nMALLOC: +       606872 (    0.6 MiB) Bytes in thread cache freelists\nMALLOC: +      1335552 (    1.3 MiB) Bytes in malloc metadata\nMALLOC:   ------------\nMALLOC: =     80367872 (   76.6 MiB) Actual memory used (physical + swap)\nMALLOC: +            0 (    0.0 MiB) Bytes released to OS (aka unmapped)\nMALLOC:   ------------\nMALLOC: =     80367872 (   76.6 MiB) Virtual address space used\nMALLOC:\nMALLOC:            620              Spans in use\nMALLOC:             24              Thread heaps in use\nMALLOC:           4096              Tcmalloc page size\n------------------------------------------------\nCall ReleaseFreeMemory() to release freelist memory to the OS (via madvise()).\nBytes released to the OS take up virtual address space but no physical memory.\n",
+			"max_total_thread_cache_bytes": {
+				"$numberInt": "745537536"
+			},
+			"pageheap_commit_count": {
+				"$numberInt": "47"
+			},
+			"pageheap_committed_bytes": {
+				"$numberInt": "79032320"
+			},
+			"pageheap_decommit_count": {
+				"$numberInt": "0"
+			},
+			"pageheap_free_bytes": {
+				"$numberInt": "3035136"
+			},
+			"pageheap_reserve_count": {
+				"$numberInt": "47"
+			},
+			"pageheap_scavenge_count": {
+				"$numberInt": "0"
+			},
+			"pageheap_total_commit_bytes": {
+				"$numberInt": "79032320"
+			},
+			"pageheap_total_decommit_bytes": {
+				"$numberInt": "0"
+			},
+			"pageheap_total_reserve_bytes": {
+				"$numberInt": "79032320"
+			},
+			"pageheap_unmapped_bytes": {
+				"$numberInt": "0"
+			},
+			"release_rate": {
+				"$numberDouble": "1.0"
+			},
+			"spinlock_total_delay_ns": {
+				"$numberInt": "0"
+			},
+			"thread_cache_free_bytes": {
+				"$numberInt": "607448"
+			},
+			"total_free_bytes": {
+				"$numberInt": "1083136"
+			},
+			"transfer_cache_free_bytes": {
+				"$numberInt": "270080"
+			}
+		}
+	},
 	"transactions": {
 		"currentActive": {
 			"$numberLong": "0"
@@ -460,6 +384,23 @@
 			"$numberLong": "0"
 		}
 	},
+	"transportSecurity": {
+		"1.0": {
+			"$numberLong": "0"
+		},
+		"1.1": {
+			"$numberLong": "0"
+		},
+		"1.2": {
+			"$numberLong": "0"
+		},
+		"1.3": {
+			"$numberLong": "0"
+		},
+		"unknown": {
+			"$numberLong": "0"
+		}
+	},
 	"uptime": {
 		"$numberDouble": "58.0"
 	},
@@ -469,7 +410,81 @@
 	"uptimeMillis": {
 		"$numberLong": "58891"
 	},
+	"version": "4.0.25",
 	"wiredTiger": {
+		"LSM": {
+			"application work units currently queued": {
+				"$numberInt": "0"
+			},
+			"merge work units currently queued": {
+				"$numberInt": "0"
+			},
+			"rows merged in an LSM tree": {
+				"$numberInt": "0"
+			},
+			"sleep for LSM checkpoint throttle": {
+				"$numberInt": "0"
+			},
+			"sleep for LSM merge throttle": {
+				"$numberInt": "0"
+			},
+			"switch work units currently queued": {
+				"$numberInt": "0"
+			},
+			"tree maintenance operations discarded": {
+				"$numberInt": "0"
+			},
+			"tree maintenance operations executed": {
+				"$numberInt": "0"
+			},
+			"tree maintenance operations scheduled": {
+				"$numberInt": "0"
+			},
+			"tree queue hit maximum": {
+				"$numberInt": "0"
+			}
+		},
+		"async": {
+			"current work queue length": {
+				"$numberInt": "0"
+			},
+			"maximum work queue length": {
+				"$numberInt": "0"
+			},
+			"number of allocation state races": {
+				"$numberInt": "0"
+			},
+			"number of flush calls": {
+				"$numberInt": "0"
+			},
+			"number of operation slots viewed for allocation": {
+				"$numberInt": "0"
+			},
+			"number of times operation allocation failed": {
+				"$numberInt": "0"
+			},
+			"number of times worker found no work": {
+				"$numberInt": "0"
+			},
+			"total allocations": {
+				"$numberInt": "0"
+			},
+			"total compact calls": {
+				"$numberInt": "0"
+			},
+			"total insert calls": {
+				"$numberInt": "0"
+			},
+			"total remove calls": {
+				"$numberInt": "0"
+			},
+			"total search calls": {
+				"$numberInt": "0"
+			},
+			"total update calls": {
+				"$numberInt": "0"
+			}
+		},
 		"block-manager": {
 			"blocks pre-loaded": {
 				"$numberInt": "9"
@@ -496,125 +511,53 @@
 				"$numberInt": "0"
 			}
 		},
-		"cache": {
-			"pages currently held in the cache": {
-				"$numberInt": "19"
-			},
-			"pages evicted by application threads": {
+		"thread-yield": {
+			"application thread time evicting (usecs)": {
 				"$numberInt": "0"
 			},
-			"pages queued for eviction": {
+			"application thread time waiting for cache (usecs)": {
 				"$numberInt": "0"
 			},
-			"pages queued for eviction post lru sorting": {
+			"connection close blocked waiting for transaction state stabilization": {
 				"$numberInt": "0"
 			},
-			"pages queued for urgent eviction": {
+			"connection close yielded for lsm manager shutdown": {
 				"$numberInt": "0"
 			},
-			"pages queued for urgent eviction during walk": {
+			"data handle lock yielded": {
 				"$numberInt": "0"
 			},
-			"pages read into cache": {
-				"$numberInt": "18"
-			},
-			"pages read into cache after truncate": {
+			"get reference for page index and slot time sleeping (usecs)": {
 				"$numberInt": "0"
 			},
-			"pages read into cache after truncate in prepare state": {
+			"log server sync yielded for log write": {
 				"$numberInt": "0"
 			},
-			"pages read into cache requiring cache overflow entries": {
+			"page access yielded due to prepare state change": {
 				"$numberInt": "0"
 			},
-			"pages read into cache requiring cache overflow for checkpoint": {
+			"page acquire busy blocked": {
 				"$numberInt": "0"
 			},
-			"pages read into cache skipping older cache overflow entries": {
+			"page acquire eviction blocked": {
 				"$numberInt": "0"
 			},
-			"pages read into cache with skipped cache overflow entries needed later": {
+			"page acquire locked blocked": {
 				"$numberInt": "0"
 			},
-			"pages read into cache with skipped cache overflow entries needed later by checkpoint": {
+			"page acquire read blocked": {
 				"$numberInt": "0"
 			},
-			"pages requested from the cache": {
-				"$numberInt": "225"
-			},
-			"pages seen by eviction walk": {
+			"page acquire time sleeping (usecs)": {
 				"$numberInt": "0"
 			},
-			"pages seen by eviction walk that are already queued": {
+			"page delete rollback time sleeping for state change (usecs)": {
 				"$numberInt": "0"
 			},
-			"pages selected for eviction unable to be evicted": {
-				"$numberInt": "0"
-			},
-			"pages selected for eviction unable to be evicted as the parent page has overflow items": {
-				"$numberInt": "0"
-			},
-			"pages selected for eviction unable to be evicted because of active children on an internal page": {
-				"$numberInt": "0"
-			},
-			"pages selected for eviction unable to be evicted because of failure in reconciliation": {
-				"$numberInt": "0"
-			},
-			"pages selected for eviction unable to be evicted due to newer modifications on a clean page": {
-				"$numberInt": "0"
-			},
-			"pages walked for eviction": {
-				"$numberInt": "0"
-			},
-			"pages written from cache": {
-				"$numberInt": "1"
-			},
-			"pages written requiring in-memory restoration": {
-				"$numberInt": "0"
-			},
-			"percentage overhead": {
-				"$numberInt": "8"
-			},
-			"tracked bytes belonging to internal pages in the cache": {
-				"$numberInt": "2324"
-			},
-			"tracked bytes belonging to leaf pages in the cache": {
-				"$numberInt": "30558"
-			},
-			"tracked dirty bytes in the cache": {
-				"$numberInt": "25788"
-			},
-			"tracked dirty pages in the cache": {
-				"$numberInt": "3"
-			},
-			"unmodified pages evicted": {
+			"page reconciliation yielded due to child modification": {
 				"$numberInt": "0"
 			}
 		},
-		"concurrentTransactions": {
-			"read": {
-				"available": {
-					"$numberInt": "127"
-				},
-				"out": {
-					"$numberInt": "1"
-				},
-				"totalTickets": {
-					"$numberInt": "128"
-				}
-			},
-			"write": {
-				"available": {
-					"$numberInt": "128"
-				},
-				"out": {
-					"$numberInt": "0"
-				},
-				"totalTickets": {
-					"$numberInt": "128"
-				}
-			}
-		}
-	},
-	"uri": "statistics:"
+		"uri": "statistics:"
+	}
 }
