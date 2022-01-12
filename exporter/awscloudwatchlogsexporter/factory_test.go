@@ -15,6 +15,7 @@
 package awscloudwatchlogsexporter
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,8 +25,9 @@ import (
 
 func TestDefaultConfig_exporterSettings(t *testing.T) {
 	want := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		RetrySettings:    exporterhelper.DefaultRetrySettings(),
+		ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
+		RetrySettings:      exporterhelper.DefaultRetrySettings(),
+		AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
 		QueueSettings: QueueSettings{
 			QueueSize: exporterhelper.DefaultQueueSettings().QueueSize,
 		},

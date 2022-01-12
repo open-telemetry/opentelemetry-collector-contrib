@@ -16,6 +16,8 @@ package awscloudwatchlogsexporter // import "github.com/open-telemetry/opentelem
 
 import (
 	"errors"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -48,6 +50,10 @@ type Config struct {
 	// QueueSettings is a subset of exporterhelper.QueueSettings,
 	// because only QueueSize is user-settable due to how AWS CloudWatch API works
 	QueueSettings QueueSettings `mapstructure:"sending_queue"`
+
+	logger *zap.Logger
+
+	awsutil.AWSSessionSettings `mapstructure:",squash"`
 }
 
 type QueueSettings struct {
