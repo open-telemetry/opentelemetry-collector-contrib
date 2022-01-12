@@ -17,7 +17,7 @@ package keybuilder // import "github.com/open-telemetry/opentelemetry-collector-
 import "strings"
 
 const (
-	separator       = string(byte(0))
+	Separator       = string(byte(0))
 	defaultCapacity = 1024
 )
 
@@ -38,7 +38,7 @@ var _ KeyBuilder = (*keyBuilder)(nil)
 func New() KeyBuilder {
 	b := keyBuilder{
 		sb:        strings.Builder{},
-		separator: separator,
+		separator: Separator,
 	}
 	b.sb.Grow(defaultCapacity)
 	return &b

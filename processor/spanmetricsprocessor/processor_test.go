@@ -1131,10 +1131,6 @@ func TestProcessorResetExemplarData(t *testing.T) {
 	assert.Empty(t, p.latencyExemplarsData[rKey][mKey])
 }
 
-func test(){
-
-}
-
 func TestDimensionsAndResourceAttributesOrdered(t *testing.T) {
 	// Prepare
 	factory := NewFactory()
