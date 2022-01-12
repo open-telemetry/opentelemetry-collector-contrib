@@ -141,6 +141,9 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "mongodbatlas",
 		},
 		{
+			receiver: "mysql",
+		},
+		{
 			receiver:     "opencensus",
 			skipLifecyle: true, // TODO: Usage of CMux doesn't allow proper shutdown.
 		},
