@@ -1131,6 +1131,10 @@ func TestProcessorResetExemplarData(t *testing.T) {
 	assert.Empty(t, p.latencyExemplarsData[rKey][mKey])
 }
 
+func test(){
+
+}
+
 func TestDimensionsAndResourceAttributesOrdered(t *testing.T) {
 	// Prepare
 	factory := NewFactory()
@@ -1139,6 +1143,7 @@ func TestDimensionsAndResourceAttributesOrdered(t *testing.T) {
 	// Test
 	next := new(consumertest.TracesSink)
 	p, err := newProcessor(zap.NewNop(), cfg, next)
+
 
 	// Verify
 	assert.NoError(t, err)

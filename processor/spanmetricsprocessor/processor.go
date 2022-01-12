@@ -69,10 +69,9 @@ type metricKey string
 type resourceKey string
 
 type processorImp struct {
-	// Based on OTEL Collector design, each pipeline will always get its own instance of the processor. ConsumeTraces()
-	// of each instance should never be called concurrently in practice.
-	// This processor is stateful. Due to the nature of its logic, the concurrent executions of ConsumeTraces() will
-	// output incorrect data. This lock forces the ConsumeTraces() can only execute in serial.
+	// ConsumeTraces() of each instance might be called concurrently from its upstream component in the pipeline.
+	// As this processor is stateful. Due to the nature of its logic, the concurrent executions of ConsumeTraces() will
+	// output incorrect data. This lock forces the ConsumeTraces() execute in synchronization.
 	lock   sync.Mutex
 	logger *zap.Logger
 	config Config
@@ -247,15 +246,12 @@ func (p *processorImp) Capabilities() consumer.Capabilities {
 // The original input trace data will be forwarded to the next consumer, unmodified.
 func (p *processorImp) ConsumeTraces(ctx context.Context, traces pdata.Traces) error {
 	p.lock.Lock()
-	// use defer to pass the output to downstream components as quick as possible.
-	defer func() {
-		p.reset()
-		p.lock.Unlock()
-	}()
 
 	p.aggregateMetrics(traces)
 
 	m, err := p.buildMetrics()
+	p.reset()
+	p.lock.Unlock()
 
 	if err != nil {
 		return err
