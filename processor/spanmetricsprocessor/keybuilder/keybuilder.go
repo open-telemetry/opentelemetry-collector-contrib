@@ -21,6 +21,7 @@ const (
 	defaultCapacity = 1024
 )
 
+// KeyBuilder is the interface for creating metricKey and resourceKey in a string builder way.
 type KeyBuilder interface {
 	Append(value ...string)
 	String() string
@@ -33,6 +34,7 @@ type keyBuilder struct {
 
 var _ KeyBuilder = (*keyBuilder)(nil)
 
+// New creates new KeyBuilder.
 func New() KeyBuilder {
 	b := keyBuilder{
 		sb:        strings.Builder{},
@@ -42,6 +44,7 @@ func New() KeyBuilder {
 	return &b
 }
 
+// Append adds string to the builder.
 func (mkb *keyBuilder) Append(values ...string) {
 	for _, value := range values {
 		if len(value) == 0 {
@@ -54,6 +57,7 @@ func (mkb *keyBuilder) Append(values ...string) {
 	}
 }
 
+// String generates the string from the appended strings.
 func (mkb *keyBuilder) String() string {
 	return mkb.sb.String()
 }
