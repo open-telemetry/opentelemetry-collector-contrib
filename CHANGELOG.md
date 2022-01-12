@@ -7,6 +7,7 @@
 - `elasticsearchexporter`: add elasticsearchexporter to the components exporter list (#6002)
 - `datadogexporter`: Add http.status_code tag to trace stats (#6889)
 - `tanzuobservabilityexporter`: Support delta histograms (#6897)
+- `mysqlreceiver`: Add the receiver to available components (#7078)
 
 ## 🛑 Breaking changes 🛑
 
