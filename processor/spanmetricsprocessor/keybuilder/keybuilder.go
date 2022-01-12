@@ -47,17 +47,11 @@ func New() KeyBuilder {
 // Append adds string to the builder.
 func (mkb *keyBuilder) Append(values ...string) {
 	for _, value := range values {
-		if len(value) == 0 {
-			continue
-		}
-		if mkb.sb.Len() != 0 {
-			mkb.sb.WriteString(mkb.separator)
-		}
-		mkb.sb.WriteString(value)
+		mkb.sb.WriteString(value + mkb.separator)
 	}
 }
 
 // String generates the string from the appended strings.
 func (mkb *keyBuilder) String() string {
-	return mkb.sb.String()
+	return strings.TrimSuffix(mkb.sb.String(), mkb.separator)
 }

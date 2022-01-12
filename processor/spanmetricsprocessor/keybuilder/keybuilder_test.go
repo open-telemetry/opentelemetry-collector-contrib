@@ -36,14 +36,19 @@ func TestMetricKeyBuilderAppend(t *testing.T) {
 		result string
 	}{
 		{
-			name:   "should skip empty string",
+			name:   "should output empty string when no string is appended",
+			args:   [][]string{{}},
+			result: "",
+		},
+		{
+			name:   "should handle empty string",
 			args:   [][]string{{"", "abc", "", "def"}},
-			result: fmt.Sprintf("abc%sdef", separator),
+			result: fmt.Sprintf("%sabc%s%sdef", separator, separator, separator),
 		},
 		{
 			name:   "should concat multiple append",
 			args:   [][]string{{"abc", "def"}, {"", "hij"}},
-			result: fmt.Sprintf("abc%sdef%shij", separator, separator),
+			result: fmt.Sprintf("abc%sdef%s%shij", separator, separator, separator),
 		},
 	}
 	for _, tt := range tests {
