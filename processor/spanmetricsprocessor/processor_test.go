@@ -17,7 +17,6 @@ package spanmetricsprocessor
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"testing"
 	"time"
 
@@ -36,6 +35,7 @@ import (
 	"go.uber.org/zap/zaptest"
 	"google.golang.org/grpc/metadata"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor/keybuilder"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor/internal/cache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor/mocks"
 )
@@ -1131,25 +1131,157 @@ func TestProcessorResetExemplarData(t *testing.T) {
 	assert.Empty(t, p.latencyExemplarsData[rKey][mKey])
 }
 
-func TestDimensionsAndResourceAttributesOrdered(t *testing.T) {
-	// Prepare
+func TestBuildResourceAttrKey(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-
-	// Test
+	cfg.ResourceAttributes = []Dimension{
+		{
+			Name:    "baz",
+			Default: nil,
+		},
+		{
+			Name:    "foo",
+			Default: nil,
+		},
+	}
 	next := new(consumertest.TracesSink)
 	p, err := newProcessor(zap.NewNop(), cfg, next)
-
-
-	// Verify
 	assert.NoError(t, err)
 
-	dimType := reflect.TypeOf(p.dimensions).Kind()
-	resourceAttrType := reflect.TypeOf(p.resourceAttributes).Kind()
+	type args struct {
+		serviceName     string
+		resourceAttrMap map[string]pdata.AttributeValue
+	}
+	tests := []struct {
+		name string
+		args args
+		want resourceKey
+	}{
+		{
+			name: "should build resource attribute key in order",
+			args: args{
+				serviceName: "serviceA",
+				resourceAttrMap: map[string]pdata.AttributeValue{
+					"foo": pdata.NewAttributeValueString("foo_val"),
+					"bar": pdata.NewAttributeValueString("bar_val"),
+					"baz": pdata.NewAttributeValueString("baz_val"),
+				},
+			},
+			want: resourceKey(fmt.Sprintf("serviceA%sbaz_val%sfoo_val", keybuilder.Separator, keybuilder.Separator)),
+		},
+		{
+			name: "should build resource attribute key in order",
+			args: args{
+				serviceName: "serviceA",
+				resourceAttrMap: map[string]pdata.AttributeValue{
+					"bar": pdata.NewAttributeValueString("bar_val"),
+					"baz": pdata.NewAttributeValueString("baz_val"),
+					"foo": pdata.NewAttributeValueString("foo_val"),
+				},
+			},
+			want: resourceKey(fmt.Sprintf("serviceA%sbaz_val%sfoo_val", keybuilder.Separator, keybuilder.Separator)),
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if got := p.buildResourceAttrKey(
+				tt.args.serviceName,
+				pdata.NewAttributeMapFromMap(tt.args.resourceAttrMap),
+			); got != tt.want {
+				t.Errorf("buildResourceAttrKey() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
 
-	// dimensions and resource attributes must be of an ordered type e.g Slice.
-	// This is because the aggregation generates a string of concatenated key value pairs
-	// and hence is dependent on the order of the keys.
-	assert.Equal(t, reflect.Slice, dimType)
-	assert.Equal(t, reflect.Slice, resourceAttrType)
+func TestBuildBuildMetricKey(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Dimensions = []Dimension{
+		{
+			Name:    "baz",
+			Default: nil,
+		},
+		{
+			Name:    "foo",
+			Default: nil,
+		},
+	}
+	next := new(consumertest.TracesSink)
+	p, err := newProcessor(zap.NewNop(), cfg, next)
+	assert.NoError(t, err)
+
+	type args struct {
+		span    func() pdata.Span
+		attrMap map[string]pdata.AttributeValue
+	}
+	tests := []struct {
+		name string
+		args args
+		want metricKey
+	}{
+		{
+			name: "should build metric key in order",
+			args: args{
+				span: func() pdata.Span {
+					span := pdata.NewSpan()
+					span.SetName("spanA")
+					span.SetKind(pdata.SpanKindServer)
+					return span
+				},
+				attrMap: map[string]pdata.AttributeValue{
+					"foo": pdata.NewAttributeValueString("foo_val"),
+					"bar": pdata.NewAttributeValueString("bar_val"),
+					"baz": pdata.NewAttributeValueString("baz_val"),
+				},
+			},
+			want: metricKey(fmt.Sprintf(
+				"spanA%sSPAN_KIND_SERVER%sSTATUS_CODE_UNSET%sbaz_val%sfoo_val",
+				keybuilder.Separator,
+				keybuilder.Separator,
+				keybuilder.Separator,
+				keybuilder.Separator,
+			)),
+		},
+		{
+			name: "should build metric key in order",
+			args: args{
+				span: func() pdata.Span {
+					span := pdata.NewSpan()
+					span.SetName("spanA")
+					span.SetKind(pdata.SpanKindClient)
+					return span
+				},
+				attrMap: map[string]pdata.AttributeValue{
+					"baz": pdata.NewAttributeValueString("baz_val"),
+					"bar": pdata.NewAttributeValueString("bar_val"),
+					"foo": pdata.NewAttributeValueString("foo_val"),
+				},
+			},
+			want: metricKey(fmt.Sprintf(
+				"spanA%sSPAN_KIND_CLIENT%sSTATUS_CODE_UNSET%sbaz_val%sfoo_val",
+				keybuilder.Separator,
+				keybuilder.Separator,
+				keybuilder.Separator,
+				keybuilder.Separator,
+			)),
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if got := p.buildMetricKey(
+				tt.args.span(),
+				pdata.NewAttributeMapFromMap(tt.args.attrMap),
+			); got != tt.want {
+				fmt.Println(got)
+				fmt.Println(tt.want)
+				t.Errorf("buildResourceAttrKey() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
