@@ -69,7 +69,7 @@ func TestListDatabaseNames(t *testing.T) {
 		client := &mongodbClient{
 			Client: driver,
 		}
-		dbNames, err := client.ListDatabaseNames(context.TODO(), bson.D{})
+		dbNames, err := client.ListDatabaseNames(context.Background(), bson.D{})
 		require.NoError(t, err)
 		require.Equal(t, dbNames[0], "admin")
 	})
@@ -126,9 +126,9 @@ func TestSuccessfulRunCommands(t *testing.T) {
 			}
 			var result bson.M
 			if tc.cmd == serverStatusType {
-				result, err = client.ServerStatus(context.TODO(), "test")
+				result, err = client.ServerStatus(context.Background(), "test")
 			} else {
-				result, err = client.DBStats(context.TODO(), "test")
+				result, err = client.DBStats(context.Background(), "test")
 			}
 			require.NoError(t, err)
 			if tc.validate != nil {
