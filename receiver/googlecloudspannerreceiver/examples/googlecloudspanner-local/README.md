@@ -23,5 +23,5 @@ Run single container.
 Stop containers with all data saved in volumes.
 `docker compose down`
 
-Stop containers with volumes removal. Usefull for clean starts.
+Stop containers with volumes removal. Useful for clean starts.
 `docker compose down -v`
