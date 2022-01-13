@@ -2232,7 +2232,7 @@ var Attributes = struct {
 	FsDirection string
 	// HealthStatus (The health status of the cluster.)
 	HealthStatus string
-	// MemoryPoolName (The name of the JVM memory pool)
+	// MemoryPoolName (The name of the JVM memory pool.)
 	MemoryPoolName string
 	// Operation (The type of operation.)
 	Operation string

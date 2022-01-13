@@ -56,7 +56,7 @@ These are the metrics available for this scraper.
 | elasticsearch.node.name | The name of the elasticsearch node. |
 | fs_direction | The direction of filesystem IO. |
 | health_status | The health status of the cluster. |
-| memory_pool_name | The name of the JVM memory pool |
+| memory_pool_name | The name of the JVM memory pool. |
 | operation | The type of operation. |
 | shard_state | The state of the shard. |
 | task_state | The state of the task. |

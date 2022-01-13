@@ -21,7 +21,7 @@ attributes:
     description: The name of the garbage collector.
   memory_pool_name:
     value: name
-    description: The name of the JVM memory pool
+    description: The name of the JVM memory pool.
   disk_usage_state:
     value: state
     description: The state of a section of space on disk.
@@ -214,14 +214,14 @@ metrics:
   # These metrics are JVM metrics, collected from /_nodes/stats
   # See https://github.com/open-telemetry/opentelemetry-java-contrib/blob/main/jmx-metrics/docs/target-systems/jvm.md
   jvm.classes.loaded:
-    description: "The number of loaded classes"
+    description: The number of loaded classes
     unit: 1
     gauge:
       value_type: int
     attributes: []
     enabled: true
   jvm.gc.collections.count:
-    description: "The total number of garbage collections that have occurred"
+    description: The total number of garbage collections that have occurred
     unit: 1
     sum:
       monotonic: true
@@ -239,91 +239,91 @@ metrics:
     attributes: [collector_name]
     enabled: true
   jvm.memory.heap.init:
-    description: "The initial amount of memory that the JVM requests from the operating system for the heap"
+    description: The initial amount of memory that the JVM requests from the operating system for the heap
     unit: By
     gauge:
       value_type: int
     attributes: []
     enabled: true
   jvm.memory.heap.max:
-    description: "The maximum amount of memory can be used for the heap"
+    description: The maximum amount of memory can be used for the heap
     unit: By
     gauge:
       value_type: int
     attributes: []
     enabled: true  
   jvm.memory.heap.used:
-    description: "The current heap memory usage"
+    description: The current heap memory usage
     unit: By
     gauge:
       value_type: int
     attributes: []
     enabled: true
   jvm.memory.heap.committed:
-    description: "The amount of memory that is guaranteed to be available for the heap"
+    description: The amount of memory that is guaranteed to be available for the heap
     unit: By
     gauge:
       value_type: int
     attributes: []
     enabled: true
   jvm.memory.nonheap.init:
-    description: "The initial amount of memory that the JVM requests from the operating system for non-heap purposes"
+    description: The initial amount of memory that the JVM requests from the operating system for non-heap purposes
     unit: By
     gauge:
       value_type: int
     attributes: []
     enabled: true
   jvm.memory.nonheap.max:
-    description: "The maximum amount of memory can be used for non-heap purposes"
+    description: The maximum amount of memory can be used for non-heap purposes
     unit: By
     gauge:
       value_type: int
     attributes: []
     enabled: true
   jvm.memory.nonheap.used:
-    description: "The current non-heap memory usage"
+    description: The current non-heap memory usage
     unit: By
     gauge:
       value_type: int
     attributes: []
     enabled: true
   jvm.memory.nonheap.committed:
-    description: "The amount of memory that is guaranteed to be available for non-heap purposes"
+    description: The amount of memory that is guaranteed to be available for non-heap purposes
     unit: By
     gauge:
       value_type: int
     attributes: []
     enabled: true
   jvm.memory.pool.init:
-    description: "The initial amount of memory that the JVM requests from the operating system for the memory pool"
+    description: The initial amount of memory that the JVM requests from the operating system for the memory pool
     unit: By
     gauge:
       value_type: int
     attributes: [memory_pool_name]
     enabled: true
   jvm.memory.pool.max:
-    description: "The maximum amount of memory can be used for the memory pool"
+    description: The maximum amount of memory can be used for the memory pool
     unit: By
     gauge:
       value_type: int
     attributes: [memory_pool_name]
     enabled: true
   jvm.memory.pool.used:
-    description: "The current memory pool memory usage"
+    description: The current memory pool memory usage
     unit: By
     gauge:
       value_type: int
     attributes: [memory_pool_name]
     enabled: true
   jvm.memory.pool.committed:
-    description: "The amount of memory that is guaranteed to be available for the memory pool"
+    description: The amount of memory that is guaranteed to be available for the memory pool
     unit: By
     gauge:
       value_type: int
     attributes: [memory_pool_name]
     enabled: true
   jvm.threads.count:
-    description: "The current number of threads"
+    description: The current number of threads
     unit: 1
     gauge:
       value_type: int
