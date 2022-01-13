@@ -19,5 +19,5 @@ import "go.opentelemetry.io/collector/config"
 type Config struct {
 	config.ExtensionSettings `mapstructure:",squash"`
 
-	Htpasswd string `mapstructure:"htpasswd,omitempty"`
+	Htpasswd string `mapstructure:"htpasswd"`
 }
