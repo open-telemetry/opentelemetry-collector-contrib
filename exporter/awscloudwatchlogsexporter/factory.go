@@ -41,8 +41,6 @@ func createDefaultConfig() config.Exporter {
 		ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
 		RetrySettings:      exporterhelper.DefaultRetrySettings(),
 		AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
-		LogGroupName:       "",
-		LogStreamName:      "",
 		QueueSettings: QueueSettings{
 			QueueSize: exporterhelper.DefaultQueueSettings().QueueSize,
 		},
