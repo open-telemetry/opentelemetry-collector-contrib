@@ -1,0 +1,42 @@
+version: "3.9"
+
+services:
+  prometheus:
+    command: ["--storage.tsdb.min-block-duration=30m", "--query.lookback-delta=1m", "--config.file=/etc/prometheus/prometheus.yml", "--enable-feature=remote-write-receiver"]
+    image: prom/prometheus:v2.30.3
+    ports:
+      - "9090:9090"
+    volumes:
+      - prometheus-storage:/prometheus
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+
+  grafana:
+    image: grafana/grafana:8.3.1
+    depends_on:
+      - "collector"
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-storage:/var/lib/grafana
+      - ./grafana/provisioning/:/etc/grafana/provisioning/
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+
+  collector:
+    image: otel/opentelemetry-collector-contrib:0.42.0
+    depends_on:
+      - "prometheus"
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/<SERVICE-ACCOUNT-KEY>.json
+    ports:
+      - "8889:8889"
+      - "8888:8888"
+    volumes:
+      - ./collector/config.yml:/config.yml
+      - ./collector/<SERVICE-ACCOUNT-KEY>.json:/<SERVICE-ACCOUNT-KEY>.json
+    command: ["--config=/config.yml"]
+
+volumes:
+  prometheus-storage:
+  grafana-storage:

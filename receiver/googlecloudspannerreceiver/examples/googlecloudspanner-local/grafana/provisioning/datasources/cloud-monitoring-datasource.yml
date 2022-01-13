@@ -1,0 +1,44 @@
+apiVersion: 1
+
+datasources:
+  - name: Google Cloud Monitoring
+    type: stackdriver
+    access: proxy
+    jsonData:
+      tokenUri: https://oauth2.googleapis.com/token
+      clientEmail: <YOUR SERVICE-ACCOUNT EMAIL> 
+      authenticationType: jwt
+      defaultProject: <YOUR SPANNER PROJECT NAME>
+    secureJsonData:
+      privateKey: |
+        <YOUR SERVICE-ACCOUNT PRIVATE KEY BELOW. SAMPLE SHOWN>
+        -----BEGIN PRIVATE KEY-----
+        MIIEvgIBADANBgkqhkiG9w0DDQEFAASCBKgwggSkAgEAAoIBAQC1J746+DVbMBo4
+        kL6D84QQOxClCAx/tj8+HMnIpzZhZwYP7IOoOF8D4hfQeNhbQTPN7FCi5pkmb62D
+        6Gn4APDJ3hE04OPrpnARMn75nKpO6nATbBxED0tSzZfb3bvSvWly8/ePJG2elucx
+        xPpGewiLCP5cyHgKuecqNKGa88kHNqiKIrVI6/lbwVvQ/YU3zW9+QH2QaTfjb0wi
+        AlkweE3hdPBBcJ9TRmzYo66xqJQL8Z6KCi96vruuAC7zfpjTaPxPDf7YXMcRpRvM
+        2qPAK2Mm0yUlDJ8paZHWprwJLiWMQzpLUD1MxnuusQlbmpg5WWA/Xni8V8jmmVMI
+        reG/UWgjAgMBAAECggEAJiX1aGOmkMpjazAH/q+ESwq1KZu1Thup28GiOJAF4qMY
+        YrgSzZT5ZU7yZuNb5HOpnh66qGNZMv/nkVSbJC/GhSwvgWwucwx8oxJ4LMZyEuZJ
+        rb1hgm+aFBjZduKN0AY1M5DuvAUW1IPAsflfHv9/wA+nyRAqP1AAvyGQOppF5i+g
+        b/lv1Oh7kdHpw6pJjkm42IlzIj5jeEyzrgH+i1w49QSNK03hwCD4E3QPTmDrg8+b
+        Wvm96V6JXs2AhkXZsifQiuajFH7G9gR+5kt/UtCxdDs+q2E+rlkw9JEd9mrpWpmI
+        dD+EV7pGMcSpJBbM2lfdWMiPJgVqZnTNYMW1UI2COQKBgQDqIu4MJBmywXhdrSDz
+        fc5/uI6H4YXyLJAYex1Pj51xuHBVeQHR8mz2y0KGrZ4/35IRDX0sMgnfdFZk8g0s
+        ET7l3IRsdQ4lEylTIUIXV0Kc0x2OldRW2DFQBxiGpKe14Xyn9KoeYgW0Jc1uS6GS
+        AhW0uTYi8q6DjXHRYcy7bIKHtwKBgQDGEkn6QP34IhhArz2dkaVSczzYUz6A5ITK
+        3zK2UQXQgbrxCkz8WFvoRlxWgs14Yv+5NxTjnj93T3FM1q4Gt9wq1qUi9ZcYxQJS
+        9bY8DE96RqM54AqFITKhh7GgyJ6z+ZgV/MvW2R6kB8m/4zbU9vC5ElZDvznbAc0x
+        Tcj/Leqq9QKBgQDkDHuiFbN2Gd08GLokj+AHJOKm1PHbLK55OckVykNHFadMiR1N
+        uXuMZKX6ebbObdtegq3t0xssq6rOjbhouK9zwfK1lNnfIKe6kYVHKLX3++UpESSO
+        Jer6EL9BvbSgge0hxjvAdicqDTvndwD7Ls6nhVKGfaue9LDsiP6Zexo0RwKBgCJQ
+        pNRgUh+c+IqsUYZs5zFjmZT4xwlZjc//3y9K1jELaLG90Ryeyj1xgynRu3sx24/h
+        BRNyJRisgLqJLtknHVOmoDFwTt8RspdgzlOU5mgOuNScBfaOi9EESzfJygTwJvMY
+        OtBcCTztxHwkBynaJlZJ4PwXsxRIOZ5jFYFwGQnJAoGBAMlr55YKOs1BLqJG3qJJ
+        EFcw/RxmpqtquhVhcj3gqwUcBYyzOJlEZoTkg75i4Ez74Ho0cXz8RIPCZGkbQ7LL
+        VnakkRcBsgM418PEgQmfBmqic+ld+3DsL3jubq0VRLwO11j13VEVs6pTEE5Lthoz
+        gZCRIxQ+06m3atTtlVPjPdrM
+        -----END PRIVATE KEY-----
+
+

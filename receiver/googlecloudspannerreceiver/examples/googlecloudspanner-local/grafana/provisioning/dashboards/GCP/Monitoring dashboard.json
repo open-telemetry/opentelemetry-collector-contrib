@@ -1,0 +1,1731 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": [],
+          "type": "dashboard"
+        },
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "Cloud Monitoring | Instance dashboard",
+  "editable": true,
+  "gnetId": null,
+  "graphTooltip": 1,
+  "id": 11,
+  "iteration": 1638196264124,
+  "links": [
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": true,
+      "keepTime": true,
+      "tags": [
+        "cloud-monitoring-database"
+      ],
+      "targetBlank": false,
+      "title": "Database",
+      "tooltip": "",
+      "type": "dashboards",
+      "url": ""
+    },
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": true,
+      "keepTime": true,
+      "tags": [
+        "query-insights"
+      ],
+      "targetBlank": false,
+      "title": "Query Insights",
+      "tooltip": "",
+      "type": "dashboards",
+      "url": ""
+    },
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": true,
+      "keepTime": true,
+      "tags": [
+        "lock-insights"
+      ],
+      "targetBlank": false,
+      "title": "Lock Insights",
+      "tooltip": "",
+      "type": "dashboards",
+      "url": ""
+    },
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": true,
+      "keepTime": true,
+      "tags": [
+        "transaction-insights"
+      ],
+      "targetBlank": false,
+      "title": "Transaction Insights",
+      "tooltip": "",
+      "type": "dashboards",
+      "url": ""
+    },
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": true,
+      "keepTime": true,
+      "tags": [
+        "active-queries-summary"
+      ],
+      "targetBlank": false,
+      "title": "Active Queries Summary",
+      "tooltip": "",
+      "type": "dashboards",
+      "url": ""
+    },
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": true,
+      "keepTime": true,
+      "tags": [
+        "read-insights"
+      ],
+      "targetBlank": false,
+      "title": "Read Insights",
+      "tooltip": "",
+      "type": "dashboards",
+      "url": ""
+    }
+  ],
+  "panels": [
+    {
+      "datasource": "${gcmds}",
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "id": 17,
+      "interval": "1m",
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "hide": false,
+          "metricQuery": {
+            "aliasBy": "$instance",
+            "alignmentPeriod": "cloud-monitoring-auto",
+            "crossSeriesReducer": "REDUCE_MEAN",
+            "editorMode": "mql",
+            "filters": [],
+            "groupBys": [],
+            "metricKind": "GAUGE",
+            "metricType": "",
+            "perSeriesAligner": "ALIGN_MEAN",
+            "preprocessor": "none",
+            "projectName": "$project",
+            "query": "fetch spanner_instance\n| metric 'spanner.googleapis.com/instance/cpu/smoothed_utilization'\n| filter\n    (resource.instance_id == '$instance')\n| group_by 1m,\n    [value_smoothed_utilization_mean: mean(value.smoothed_utilization)]\n| every 1m\n| group_by [resource.instance_id],\n    [value_smoothed_utilization_mean_aggregate:\n       aggregate(value_smoothed_utilization_mean)]",
+            "valueType": ""
+          },
+          "queryType": "metrics",
+          "refId": "Smoothed utilization by instance",
+          "sloQuery": {
+            "aliasBy": "",
+            "alignmentPeriod": "cloud-monitoring-auto",
+            "perSeriesAligner": "ALIGN_MEAN",
+            "projectName": "$project",
+            "selectorName": "select_slo_health",
+            "serviceId": "",
+            "serviceName": "",
+            "sloId": "",
+            "sloName": ""
+          }
+        }
+      ],
+      "title": "CPU utilization - rolling avarage 24 hours",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "${gcmds}",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "id": 15,
+      "interval": "1m",
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "metricQuery": {
+            "aliasBy": "Node count",
+            "alignmentPeriod": "cloud-monitoring-auto",
+            "crossSeriesReducer": "REDUCE_MEAN",
+            "editorMode": "mql",
+            "filters": [],
+            "groupBys": [],
+            "metricKind": "GAUGE",
+            "metricType": "",
+            "perSeriesAligner": "ALIGN_MEAN",
+            "preprocessor": "none",
+            "projectName": "$project",
+            "query": "fetch spanner_instance\n| metric 'spanner.googleapis.com/instance/node_count'\n| filter\n    resource.instance_id == '$instance'\n| group_by 1m, [value_node_count_mean: mean(value.node_count)]\n| every 1m\n| group_by [], [value_node_count_mean_max: max(value_node_count_mean)]",
+            "valueType": ""
+          },
+          "queryType": "metrics",
+          "refId": "Node count",
+          "sloQuery": {
+            "aliasBy": "",
+            "alignmentPeriod": "cloud-monitoring-auto",
+            "perSeriesAligner": "ALIGN_MEAN",
+            "projectName": "$project",
+            "selectorName": "select_slo_health",
+            "serviceId": "",
+            "serviceName": "",
+            "sloId": "",
+            "sloName": ""
+          }
+        }
+      ],
+      "title": "Node count",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "${gcmds}",
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "id": 4,
+      "interval": "1m",
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "metricQuery": {
+            "aliasBy": "{{metric.label.priority}} priority - System",
+            "alignmentPeriod": "cloud-monitoring-auto",
+            "crossSeriesReducer": "REDUCE_MEAN",
+            "editorMode": "mql",
+            "filters": [],
+            "groupBys": [],
+            "metricKind": "GAUGE",
+            "metricType": "",
+            "perSeriesAligner": "ALIGN_MEAN",
+            "preprocessor": "none",
+            "projectName": "$project",
+            "query": "fetch spanner_instance\n| metric 'spanner.googleapis.com/instance/cpu/utilization_by_priority'\n| filter\n    resource.instance_id == '$instance' && metric.is_system && metric.database =~ '$database'\n| group_by 1m,\n    [value_utilization_by_priority_mean: mean(value.utilization_by_priority)]\n| every 1m\n| group_by [metric.priority, metric.is_system],\n    [value_utilization_by_priority_mean_aggregate:\n       aggregate(value_utilization_by_priority_mean)]\n",
+            "valueType": ""
+          },
+          "queryType": "metrics",
+          "refId": "Utilization by system priority",
+          "sloQuery": {
+            "aliasBy": "",
+            "alignmentPeriod": "cloud-monitoring-auto",
+            "perSeriesAligner": "ALIGN_MEAN",
+            "projectName": "$project",
+            "selectorName": "select_slo_health",
+            "serviceId": "",
+            "serviceName": "",
+            "sloId": "",
+            "sloName": ""
+          }
+        },
+        {
+          "hide": false,
+          "metricQuery": {
+            "aliasBy": "{{metric.label.priority}} priority - User",
+            "alignmentPeriod": "cloud-monitoring-auto",
+            "crossSeriesReducer": "REDUCE_MEAN",
+            "editorMode": "mql",
+            "filters": [],
+            "groupBys": [],
+            "metricKind": "GAUGE",
+            "metricType": "",
+            "perSeriesAligner": "ALIGN_MEAN",
+            "preprocessor": "none",
+            "projectName": "$project",
+            "query": "fetch spanner_instance\n| metric 'spanner.googleapis.com/instance/cpu/utilization_by_priority'\n| filter\n    resource.instance_id == '$instance' && !metric.is_system && (metric.database =~ '$database')\n| group_by 1m,\n    [value_utilization_by_priority_mean: mean(value.utilization_by_priority)]\n| every 1m\n| group_by [metric.priority, metric.is_system],\n    [value_utilization_by_priority_mean_aggregate:\n       aggregate(value_utilization_by_priority_mean)]\n",
+            "valueType": ""
+          },
+          "queryType": "metrics",
+          "refId": "Utilization by user priority"
+        }
+      ],
+      "title": "CPU utilization by User & System Tasks",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "${gcmds}",
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "percentunit"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "executesql_select.*"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "View Query Insights",
+                    "url": "d/cRMUiFvnz/query-insights?${__all_variables}&var-query_topn=All&${__url_time_range}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "executesql_dml.*"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "View Transaction Insights",
+                    "url": "/d/mnLe_evnk/transaction-insights?${__all_variables}&var-query_topn=All&${__url_time_range}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "id": 23,
+      "interval": "1m",
+      "options": {
+        "legend": {
+          "calcs": [
+            "min",
+            "max",
+            "mean",
+            "last"
+          ],
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "metricQuery": {
+            "aliasBy": "{{metric.label.category}}",
+            "alignmentPeriod": "cloud-monitoring-auto",
+            "crossSeriesReducer": "REDUCE_MEAN",
+            "editorMode": "mql",
+            "filters": [],
+            "groupBys": [],
+            "metricKind": "GAUGE",
+            "metricType": "",
+            "perSeriesAligner": "ALIGN_MEAN",
+            "preprocessor": "none",
+            "projectName": "$project",
+            "query": "fetch spanner_instance\n| metric 'spanner.googleapis.com/instance/cpu/utilization_by_operation_type'\n| filter\n    resource.instance_id == '$instance' && metric.database =~ '$database'\n| group_by 1m,\n    [value_utilization_by_operation_type_mean:\n       mean(value.utilization_by_operation_type)]\n| every 1m\n| group_by [metric.category],\n    [value_utilization_by_operation_type_mean_aggregate:\n       aggregate(value_utilization_by_operation_type_mean)]\n",
+            "valueType": ""
+          },
+          "queryType": "metrics",
+          "refId": "Utilization by operation type",
+          "sloQuery": {
+            "aliasBy": "",
+            "alignmentPeriod": "cloud-monitoring-auto",
+            "perSeriesAligner": "ALIGN_MEAN",
+            "projectName": "$project",
+            "selectorName": "select_slo_health",
+            "serviceId": "",
+            "serviceName": "",
+            "sloId": "",
+            "sloName": ""
+          }
+        }
+      ],
+      "title": "Total CPU utilization (Operation Type)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "${gcmds}",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "id": 6,
+      "interval": "1m",
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "metricQuery": {
+            "aliasBy": "Read",
+            "alignmentPeriod": "cloud-monitoring-auto",
+            "crossSeriesReducer": "REDUCE_MEAN",
+            "editorMode": "mql",
+            "filters": [],
+            "groupBys": [],
+            "metricKind": "GAUGE",
+            "metricType": "",
+            "perSeriesAligner": "ALIGN_MEAN",
+            "preprocessor": "none",
+            "projectName": "$project",
+            "query": "fetch spanner_instance\n| metric 'spanner.googleapis.com/api/request_latencies'\n| filter\n    (resource.instance_id == '$instance')\n    && (metric.method\n     =~ 'ExecuteBatchDml|ExecuteSql|ExecuteStreamingSql|Read|StreamingRead')\n    && (metric.database =~ '$database')\n| group_by 1m,\n    [value_request_latencies_aggregate: aggregate(value.request_latencies)]\n| every 1m\n| group_by [],\n    [value_request_latencies_aggregate_percentile:\n       percentile(value_request_latencies_aggregate, $latencyPercentile)]\n",
+            "valueType": ""
+          },
+          "queryType": "metrics",
+          "refId": "Latency Read percentile",
+          "sloQuery": {
+            "aliasBy": "",
+            "alignmentPeriod": "cloud-monitoring-auto",
+            "perSeriesAligner": "ALIGN_MEAN",
+            "projectName": "$project",
+            "selectorName": "select_slo_health",
+            "serviceId": "",
+            "serviceName": "",
+            "sloId": "",
+            "sloName": ""
+          }
+        },
+        {
+          "hide": false,
+          "metricQuery": {
+            "aliasBy": "Write",
+            "alignmentPeriod": "cloud-monitoring-auto",
+            "crossSeriesReducer": "REDUCE_MEAN",
+            "editorMode": "mql",
+            "filters": [],
+            "groupBys": [],
+            "metricKind": "GAUGE",
+            "metricType": "",
+            "perSeriesAligner": "ALIGN_MEAN",
+            "preprocessor": "none",
+            "projectName": "$project",
+            "query": "fetch spanner_instance\n| metric 'spanner.googleapis.com/api/request_latencies'\n| filter\n    (resource.instance_id == '$instance')\n    && (metric.method == 'Commit')\n    && (metric.database =~ '$database')\n| group_by 1m,\n    [value_request_latencies_aggregate: aggregate(value.request_latencies)]\n| every 1m\n| group_by [],\n    [value_request_latencies_aggregate_percentile:\n       percentile(value_request_latencies_aggregate, $latencyPercentile)]\n",
+            "valueType": ""
+          },
+          "queryType": "metrics",
+          "refId": "Latency Write percentile"
+        }
+      ],
+      "title": "Latency - $latencyPercentile",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "${gcmds}",
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "id": 21,
+      "interval": "1m",
+      "options": {
+        "legend": {
+          "calcs": [
+            "min",
+            "max",
+            "mean",
+            "last"
+          ],
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "hide": false,
+          "metricQuery": {
+            "aliasBy": "{{metric.label.method}}",
+            "alignmentPeriod": "cloud-monitoring-auto",
+            "crossSeriesReducer": "REDUCE_MEAN",
+            "editorMode": "mql",
+            "filters": [],
+            "groupBys": [],
+            "metricKind": "GAUGE",
+            "metricType": "",
+            "perSeriesAligner": "ALIGN_MEAN",
+            "preprocessor": "none",
+            "projectName": "$project",
+            "query": "fetch spanner_instance\n| metric 'spanner.googleapis.com/api/request_latencies'\n| filter\n    resource.instance_id == '$instance' && metric.database =~ '$database'\n| group_by 1m,\n    [value_request_latencies_aggregate: aggregate(value.request_latencies)]\n| every 1m\n| group_by [metric.method],\n    [value_request_latencies_aggregate_percentile:\n       percentile(value_request_latencies_aggregate, $latencyPercentile)]\n",
+            "valueType": ""
+          },
+          "queryType": "metrics",
+          "refId": "Latency by API method 99th percentile",
+          "sloQuery": {
+            "aliasBy": "",
+            "alignmentPeriod": "cloud-monitoring-auto",
+            "perSeriesAligner": "ALIGN_MEAN",
+            "projectName": "$project",
+            "selectorName": "select_slo_health",
+            "serviceId": "",
+            "serviceName": "",
+            "sloId": "",
+            "sloName": ""
+          }
+        }
+      ],
+      "title": "Latency (API method) - $latencyPercentile",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "${gcmds}",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "id": 10,
+      "interval": "1m",
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "metricQuery": {
+            "aliasBy": "Read",
+            "alignmentPeriod": "cloud-monitoring-auto",
+            "crossSeriesReducer": "REDUCE_MEAN",
+            "editorMode": "mql",
+            "filters": [],
+            "groupBys": [],
+            "metricKind": "GAUGE",
+            "metricType": "",
+            "perSeriesAligner": "ALIGN_MEAN",
+            "preprocessor": "none",
+            "projectName": "$project",
+            "query": "fetch spanner_instance\n| metric 'spanner.googleapis.com/api/api_request_count'\n| filter\n    (resource.instance_id == '$instance')\n    &&\n    (metric.method\n     =~ 'ExecuteBatchDml|ExecuteSql|ExecuteStreamingSql|Read|StreamingRead'\n     && metric.status == 'OK') && (metric.database =~ '$database')\n| align rate(1m)\n| every 1m\n| group_by [],\n    [value_api_request_count_aggregate: aggregate(value.api_request_count)]\n",
+            "valueType": ""
+          },
+          "queryType": "metrics",
+          "refId": "Read operations",
+          "sloQuery": {
+            "aliasBy": "",
+            "alignmentPeriod": "cloud-monitoring-auto",
+            "perSeriesAligner": "ALIGN_MEAN",
+            "projectName": "$project",
+            "selectorName": "select_slo_health",
+            "serviceId": "",
+            "serviceName": "",
+            "sloId": "",
+            "sloName": ""
+          }
+        },
+        {
+          "hide": false,
+          "metricQuery": {
+            "aliasBy": "Read error",
+            "alignmentPeriod": "cloud-monitoring-auto",
+            "crossSeriesReducer": "REDUCE_MEAN",
+            "editorMode": "mql",
+            "filters": [],
+            "groupBys": [],
+            "metricKind": "GAUGE",
+            "metricType": "",
+            "perSeriesAligner": "ALIGN_MEAN",
+            "preprocessor": "none",
+            "projectName": "$project",
+            "query": "fetch spanner_instance\n| metric 'spanner.googleapis.com/api/api_request_count'\n| filter\n    (resource.instance_id == '$instance')\n    &&\n    (metric.method\n     =~ 'ExecuteBatchDml|ExecuteSql|ExecuteStreamingSql|Read|StreamingRead'\n     && metric.status != 'OK') && (metric.database =~ '$database')\n| align rate(1m)\n| every 1m\n| group_by [],\n    [value_api_request_count_aggregate: aggregate(value.api_request_count)]\n",
+            "valueType": ""
+          },
+          "queryType": "metrics",
+          "refId": "Read error operations"
+        },
+        {
+          "hide": false,
+          "metricQuery": {
+            "aliasBy": "Write",
+            "alignmentPeriod": "cloud-monitoring-auto",
+            "crossSeriesReducer": "REDUCE_MEAN",
+            "editorMode": "mql",
+            "filters": [],
+            "groupBys": [],
+            "metricKind": "GAUGE",
+            "metricType": "",
+            "perSeriesAligner": "ALIGN_MEAN",
+            "preprocessor": "none",
+            "projectName": "$project",
+            "query": "fetch spanner_instance\n| metric 'spanner.googleapis.com/api/api_request_count'\n| filter\n    (resource.instance_id == '$instance')\n    && (metric.method == 'Commit' && metric.status == 'OK') && (metric.database =~ '$database')\n| align rate(1m)\n| every 1m\n| group_by [],\n    [value_api_request_count_aggregate: aggregate(value.api_request_count)]\n",
+            "valueType": ""
+          },
+          "queryType": "metrics",
+          "refId": "Write operations"
+        },
+        {
+          "hide": false,
+          "metricQuery": {
+            "aliasBy": "Write error",
+            "alignmentPeriod": "cloud-monitoring-auto",
+            "crossSeriesReducer": "REDUCE_MEAN",
+            "editorMode": "mql",
+            "filters": [],
+            "groupBys": [],
+            "metricKind": "GAUGE",
+            "metricType": "",
+            "perSeriesAligner": "ALIGN_MEAN",
+            "preprocessor": "none",
+            "projectName": "$project",
+            "query": "fetch spanner_instance\n| metric 'spanner.googleapis.com/api/api_request_count'\n| filter\n    (resource.instance_id == '$instance')\n    && (metric.method == 'Commit' && metric.status != 'OK') && (metric.database =~ '$database')\n| align rate(1m)\n| every 1m\n| group_by [],\n    [value_api_request_count_aggregate: aggregate(value.api_request_count)]\n",
+            "valueType": ""
+          },
+          "queryType": "metrics",
+          "refId": "Write error operations"
+        }
+      ],
+      "title": "Operations per second",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "${gcmds}",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
+      "id": 25,
+      "interval": "1m",
+      "options": {
+        "legend": {
+          "calcs": [
+            "min",
+            "max",
+            "mean",
+            "last"
+          ],
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "metricQuery": {
+            "aliasBy": "{{metric.label.method}}",
+            "alignmentPeriod": "cloud-monitoring-auto",
+            "crossSeriesReducer": "REDUCE_MEAN",
+            "editorMode": "mql",
+            "filters": [],
+            "groupBys": [],
+            "metricKind": "GAUGE",
+            "metricType": "",
+            "perSeriesAligner": "ALIGN_MEAN",
+            "preprocessor": "none",
+            "projectName": "$project",
+            "query": "fetch spanner_instance\n| metric 'spanner.googleapis.com/api/api_request_count'\n| filter\n    resource.instance_id == '$instance' && metric.database =~ '$database'\n| align rate(1m)\n| every 1m\n| group_by [metric.method],\n    [value_api_request_count_aggregate: aggregate(value.api_request_count)]\n",
+            "valueType": ""
+          },
+          "queryType": "metrics",
+          "refId": "Operations per second by API method",
+          "sloQuery": {
+            "aliasBy": "",
+            "alignmentPeriod": "cloud-monitoring-auto",
+            "perSeriesAligner": "ALIGN_MEAN",
+            "projectName": "$project",
+            "selectorName": "select_slo_health",
+            "serviceId": "",
+            "serviceName": "",
+            "sloId": "",
+            "sloName": ""
+          }
+        }
+      ],
+      "title": "Operations per second (API Method)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "${gcmds}",
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "Bps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 32
+      },
+      "id": 8,
+      "interval": "1m",
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "hide": false,
+          "metricQuery": {
+            "aliasBy": "Read",
+            "alignmentPeriod": "cloud-monitoring-auto",
+            "crossSeriesReducer": "REDUCE_MEAN",
+            "editorMode": "mql",
+            "filters": [],
+            "groupBys": [],
+            "metricKind": "GAUGE",
+            "metricType": "",
+            "perSeriesAligner": "ALIGN_MEAN",
+            "preprocessor": "none",
+            "projectName": "$project",
+            "query": "fetch spanner_instance\n| metric 'spanner.googleapis.com/api/sent_bytes_count'\n| filter\n    (resource.instance_id == '$instance')\n    &&\n    (metric.method\n     =~ 'ExecuteBatchDml|ExecuteSql|ExecuteStreamingSql|Read|StreamingRead')\n     && (metric.database =~ '$database')\n| align rate(1m)\n| every 1m\n| group_by [],\n    [value_sent_bytes_count_aggregate: aggregate(value.sent_bytes_count)]\n",
+            "valueType": ""
+          },
+          "queryType": "metrics",
+          "refId": "Read bytes"
+        },
+        {
+          "hide": false,
+          "metricQuery": {
+            "aliasBy": "Write",
+            "alignmentPeriod": "cloud-monitoring-auto",
+            "crossSeriesReducer": "REDUCE_MEAN",
+            "editorMode": "mql",
+            "filters": [],
+            "groupBys": [],
+            "metricKind": "GAUGE",
+            "metricType": "",
+            "perSeriesAligner": "ALIGN_MEAN",
+            "preprocessor": "none",
+            "projectName": "$project",
+            "query": "fetch spanner_instance\n| metric 'spanner.googleapis.com/api/received_bytes_count'\n| filter\n    (resource.instance_id == '$instance')\n    &&\n    (metric.method =~ 'Commit')\n    && (metric.database =~ '$database')\n| align rate(1m)\n| every 1m\n| group_by [],\n    [value_received_bytes_count_aggregate: aggregate(value.received_bytes_count)]\n",
+            "valueType": ""
+          },
+          "queryType": "metrics",
+          "refId": "Write bytes"
+        }
+      ],
+      "title": "Throughput",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "${gcmds}",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "Bps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 32
+      },
+      "id": 27,
+      "interval": "1m",
+      "options": {
+        "legend": {
+          "calcs": [
+            "min",
+            "max",
+            "mean",
+            "last"
+          ],
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "metricQuery": {
+            "aliasBy": "{{metric.label.method}}",
+            "alignmentPeriod": "cloud-monitoring-auto",
+            "crossSeriesReducer": "REDUCE_MEAN",
+            "editorMode": "mql",
+            "filters": [],
+            "groupBys": [],
+            "metricKind": "GAUGE",
+            "metricType": "",
+            "perSeriesAligner": "ALIGN_MEAN",
+            "preprocessor": "none",
+            "projectName": "$project",
+            "query": "fetch spanner_instance\n| metric 'spanner.googleapis.com/api/sent_bytes_count'\n| filter\n    resource.instance_id == '$instance' && metric.database =~ '$database'\n| align rate(1m)\n| every 1m\n| group_by [metric.method],\n    [value_sent_bytes_count_aggregate: aggregate(value.sent_bytes_count)]\n",
+            "valueType": ""
+          },
+          "queryType": "metrics",
+          "refId": "Throughput by API method",
+          "sloQuery": {
+            "aliasBy": "",
+            "alignmentPeriod": "cloud-monitoring-auto",
+            "perSeriesAligner": "ALIGN_MEAN",
+            "projectName": "$project",
+            "selectorName": "select_slo_health",
+            "serviceId": "",
+            "serviceName": "",
+            "sloId": "",
+            "sloName": ""
+          }
+        }
+      ],
+      "title": "Throughput (API Method)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "${gcmds}",
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "decbytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 40
+      },
+      "id": 13,
+      "interval": "1m",
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "metricQuery": {
+            "aliasBy": "Total backups storage",
+            "alignmentPeriod": "cloud-monitoring-auto",
+            "crossSeriesReducer": "REDUCE_MEAN",
+            "editorMode": "mql",
+            "filters": [],
+            "groupBys": [],
+            "metricKind": "GAUGE",
+            "metricType": "",
+            "perSeriesAligner": "ALIGN_MEAN",
+            "preprocessor": "none",
+            "projectName": "$project",
+            "query": "fetch spanner_instance\n| metric 'spanner.googleapis.com/instance/backup/used_bytes'\n| filter\n    resource.instance_id == '$instance' && (metric.database =~ '$database')\n| group_by 1m, [value_used_bytes_mean: mean(value.used_bytes)]\n| every 1m\n| group_by [],\n    [value_used_bytes_mean_aggregate: aggregate(value_used_bytes_mean)]\n",
+            "valueType": ""
+          },
+          "queryType": "metrics",
+          "refId": "Total backups storage",
+          "sloQuery": {
+            "aliasBy": "",
+            "alignmentPeriod": "cloud-monitoring-auto",
+            "perSeriesAligner": "ALIGN_MEAN",
+            "projectName": "$project",
+            "selectorName": "select_slo_health",
+            "serviceId": "",
+            "serviceName": "",
+            "sloId": "",
+            "sloName": ""
+          }
+        }
+      ],
+      "title": "Total backups storage",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "${gcmds}",
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "decbytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 40
+      },
+      "id": 12,
+      "interval": "1m",
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "metricQuery": {
+            "aliasBy": "Total database storage",
+            "alignmentPeriod": "cloud-monitoring-auto",
+            "crossSeriesReducer": "REDUCE_MEAN",
+            "editorMode": "mql",
+            "filters": [],
+            "groupBys": [],
+            "metricKind": "GAUGE",
+            "metricType": "",
+            "perSeriesAligner": "ALIGN_MEAN",
+            "preprocessor": "none",
+            "projectName": "$project",
+            "query": "fetch spanner_instance\n| metric 'spanner.googleapis.com/instance/storage/used_bytes'\n| filter\n    resource.instance_id == '$instance' && (metric.database =~ '$database')\n| group_by 1m, [value_used_bytes_mean: mean(value.used_bytes)]\n| every 1m\n| group_by [],\n    [value_used_bytes_mean_aggregate: aggregate(value_used_bytes_mean)]\n",
+            "valueType": ""
+          },
+          "queryType": "metrics",
+          "refId": "Total database storage",
+          "sloQuery": {
+            "aliasBy": "",
+            "alignmentPeriod": "cloud-monitoring-auto",
+            "perSeriesAligner": "ALIGN_MEAN",
+            "projectName": "$project",
+            "selectorName": "select_slo_health",
+            "serviceId": "",
+            "serviceName": "",
+            "sloId": "",
+            "sloName": ""
+          }
+        }
+      ],
+      "title": "Total database storage",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "1m",
+  "schemaVersion": 30,
+  "style": "dark",
+  "tags": [
+    "cloud-monitoring-instance"
+  ],
+  "templating": {
+    "list": [
+      {
+        "allValue": null,
+        "description": "Google Cloud Monitoring data source",
+        "error": null,
+        "hide": 0,
+        "includeAll": false,
+        "label": "Cloud Monitoring",
+        "multi": false,
+        "name": "gcmds",
+        "options": [],
+        "query": "stackdriver",
+        "queryValue": "",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "type": "datasource"
+      },
+      {
+        "allValue": null,
+        "description": "Prometheus data source",
+        "error": null,
+        "hide": 0,
+        "includeAll": false,
+        "label": "Prometheus",
+        "multi": false,
+        "name": "pds",
+        "options": [],
+        "query": "prometheus",
+        "queryValue": "",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "type": "datasource"
+      },
+      {
+        "allValue": null,
+        "datasource": "${gcmds}",
+        "definition": "",
+        "description": null,
+        "error": null,
+        "hide": 0,
+        "includeAll": false,
+        "label": "Project",
+        "multi": false,
+        "name": "project",
+        "options": [],
+        "query": {
+          "labelKey": "resource.label.project_id",
+          "loading": false,
+          "projectName": "$project",
+          "refId": "CloudMonitoringVariableQueryEditor-VariableQuery",
+          "selectedQueryType": "projects",
+          "selectedSLOService": "",
+          "selectedService": "spanner.googleapis.com",
+          "sloServices": []
+        },
+        "refresh": 1,
+        "regex": "(.*)",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "allValue": null,
+        "datasource": "${gcmds}",
+        "definition": "",
+        "description": "Instance",
+        "error": null,
+        "hide": 0,
+        "includeAll": false,
+        "label": "Instance",
+        "multi": false,
+        "name": "instance",
+        "options": [],
+        "query": {
+          "labelKey": "resource.label.instance_id",
+          "loading": false,
+          "projectName": "$project",
+          "refId": "CloudMonitoringVariableQueryEditor-VariableQuery",
+          "selectedMetricType": "spanner.googleapis.com/instance/node_count",
+          "selectedQueryType": "labelValues",
+          "selectedSLOService": "",
+          "selectedService": "spanner.googleapis.com",
+          "sloServices": []
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": ".*",
+        "datasource": "${gcmds}",
+        "definition": "",
+        "description": null,
+        "error": null,
+        "hide": 0,
+        "includeAll": true,
+        "label": "Database",
+        "multi": false,
+        "name": "database",
+        "options": [],
+        "query": {
+          "labelKey": "metric.label.database",
+          "loading": false,
+          "projectName": "$project",
+          "refId": "CloudMonitoringVariableQueryEditor-VariableQuery",
+          "selectedMetricType": "spanner.googleapis.com/instance/cpu/utilization",
+          "selectedQueryType": "labelValues",
+          "selectedSLOService": "",
+          "selectedService": "spanner.googleapis.com",
+          "sloServices": []
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": null,
+        "current": {
+          "selected": true,
+          "text": "99th percentile",
+          "value": "99"
+        },
+        "description": null,
+        "error": null,
+        "hide": 0,
+        "includeAll": false,
+        "label": "Latency percentile",
+        "multi": false,
+        "name": "latencyPercentile",
+        "options": [
+          {
+            "selected": true,
+            "text": "99th percentile",
+            "value": "99"
+          },
+          {
+            "selected": false,
+            "text": "50th percentile",
+            "value": "50"
+          }
+        ],
+        "query": "99th percentile : 99, 50th percentile : 50",
+        "queryValue": "",
+        "skipUrlSync": false,
+        "type": "custom"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "",
+  "title": "Monitoring dashboard",
+  "uid": "0T6S1on7k",
+  "version": 2
+}

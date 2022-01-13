@@ -1,0 +1,1879 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": [],
+          "type": "dashboard"
+        },
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "",
+  "editable": true,
+  "gnetId": null,
+  "graphTooltip": 1,
+  "id": 26,
+  "iteration": 1639041162752,
+  "links": [
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": true,
+      "keepTime": true,
+      "tags": [
+        "cloud-monitoring-instance"
+      ],
+      "targetBlank": false,
+      "title": "Instance",
+      "tooltip": "",
+      "type": "dashboards",
+      "url": ""
+    },
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": true,
+      "keepTime": true,
+      "tags": [
+        "cloud-monitoring-database"
+      ],
+      "targetBlank": false,
+      "title": "Database",
+      "tooltip": "",
+      "type": "dashboards",
+      "url": ""
+    },
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": true,
+      "keepTime": true,
+      "tags": [
+        "query-insights"
+      ],
+      "targetBlank": false,
+      "title": "Query Insights",
+      "tooltip": "",
+      "type": "dashboards",
+      "url": ""
+    },
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": true,
+      "keepTime": true,
+      "tags": [
+        "lock-insights"
+      ],
+      "targetBlank": false,
+      "title": "Lock Insights",
+      "tooltip": "",
+      "type": "dashboards",
+      "url": ""
+    },
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": true,
+      "keepTime": true,
+      "tags": [
+        "transaction-insights"
+      ],
+      "targetBlank": false,
+      "title": "Transaction Insights",
+      "tooltip": "",
+      "type": "dashboards",
+      "url": ""
+    },
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": true,
+      "keepTime": true,
+      "tags": [
+        "active-queries-summary"
+      ],
+      "targetBlank": false,
+      "title": "Active Queries Summary",
+      "tooltip": "",
+      "type": "dashboards",
+      "url": ""
+    }
+  ],
+  "panels": [
+    {
+      "collapsed": true,
+      "datasource": null,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 2,
+      "panels": [
+        {
+          "datasource": "${pds}",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "links": [],
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 1
+          },
+          "id": 9,
+          "interval": "60s",
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "exemplar": false,
+              "expr": "database_spanner_read_stats_total_avg_cpu_seconds{project_id=~\"$project\",instance_id=~\"$instance\",database=~\"$database\"}",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "{{database}}",
+              "refId": "A"
+            }
+          ],
+          "timeFrom": null,
+          "title": "Average CPU usage",
+          "type": "timeseries"
+        },
+        {
+          "datasource": "${pds}",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "none"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 9
+          },
+          "id": 4,
+          "interval": "60s",
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "exemplar": false,
+              "expr": "database_spanner_read_stats_total_execution_count{project_id=~\"$project\",instance_id=~\"$instance\",database=~\"$database\"}",
+              "interval": "",
+              "legendFormat": "{{database}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Execution count",
+          "type": "timeseries"
+        },
+        {
+          "datasource": "${pds}",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 9
+          },
+          "id": 6,
+          "interval": "60s",
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "exemplar": false,
+              "expr": "database_spanner_read_stats_total_avg_rows{project_id=~\"$project\",instance_id=~\"$instance\",database=~\"$database\"}",
+              "interval": "",
+              "legendFormat": "{{database}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Average Rows",
+          "type": "timeseries"
+        },
+        {
+          "datasource": "${pds}",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 17
+          },
+          "id": 11,
+          "interval": "60s",
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "exemplar": false,
+              "expr": "database_spanner_read_stats_total_avg_client_wait_seconds{project_id=~\"$project\",instance_id=~\"$instance\",database=~\"$database\"}",
+              "interval": "",
+              "legendFormat": "{{database}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Average Client Wait Seconds",
+          "type": "timeseries"
+        },
+        {
+          "datasource": "${pds}",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "links": [],
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "none"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 17
+          },
+          "id": 10,
+          "interval": "60s",
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "exemplar": false,
+              "expr": "database_spanner_read_stats_total_avg_bytes{project_id=~\"$project\",instance_id=~\"$instance\",database=~\"$database\"}",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "{{database}}",
+              "refId": "A"
+            }
+          ],
+          "timeFrom": null,
+          "title": "Average Bytes",
+          "type": "timeseries"
+        },
+        {
+          "datasource": "${pds}",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 25
+          },
+          "id": 12,
+          "interval": "60s",
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "exemplar": false,
+              "expr": "database_spanner_read_stats_total_avg_leader_refresh_delay_seconds{project_id=~\"$project\",instance_id=~\"$instance\",database=~\"$database\"}",
+              "interval": "",
+              "legendFormat": "{{database}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Average Leader Refresh Delay Seconds",
+          "type": "timeseries"
+        },
+        {
+          "datasource": "${pds}",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 25
+          },
+          "id": 7,
+          "interval": "60s",
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "exemplar": false,
+              "expr": "database_spanner_read_stats_total_avg_locking_delay_seconds{project_id=~\"$project\",instance_id=~\"$instance\",database=~\"$database\"}",
+              "interval": "",
+              "legendFormat": "{{database}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Average Locking Delay Seconds",
+          "type": "timeseries"
+        }
+      ],
+      "title": "Total (all reads)",
+      "type": "row"
+    },
+    {
+      "collapsed": true,
+      "datasource": null,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 1
+      },
+      "id": 14,
+      "panels": [
+        {
+          "datasource": "${pds}",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "links": [
+                {
+                  "title": "View Read details",
+                  "url": "/d/amO53Tdnz/read-details?var-project=${__field.labels.project_id}﻿&var-instance=﻿${__field.labels.instance_id}﻿&var-database=﻿${__field.labels.database}﻿&var-read_columns_topn=${__field.labels.fingerprint}&﻿${__url_time_range}﻿"
+                }
+              ],
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 2
+          },
+          "id": 16,
+          "interval": "60s",
+          "options": {
+            "legend": {
+              "calcs": [
+                "mean",
+                "max"
+              ],
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "exemplar": false,
+              "expr": "avg by (project_id,instance_id,database,read_columns,fingerprint)(database_spanner_read_stats_top_avg_cpu_seconds{fingerprint=~\"$read_columns_topn\", database=~\"$database\", instance_id=~\"$instance\", project_id=~\"$project\"})",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "{{read_columns}}",
+              "refId": "A"
+            }
+          ],
+          "timeFrom": null,
+          "title": "Average CPU usage",
+          "type": "timeseries"
+        },
+        {
+          "datasource": "${pds}",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "links": [
+                {
+                  "title": "View Read details",
+                  "url": "/d/amO53Tdnz/read-details?var-project=${__field.labels.project_id}﻿&var-instance=﻿${__field.labels.instance_id}﻿&var-database=﻿${__field.labels.database}﻿&var-read_columns_topn=${__field.labels.fingerprint}&﻿${__url_time_range}﻿"
+                }
+              ],
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "none"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 10
+          },
+          "id": 17,
+          "interval": "60s",
+          "options": {
+            "legend": {
+              "calcs": [
+                "mean",
+                "max"
+              ],
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "exemplar": false,
+              "expr": "avg by (project_id,instance_id,database,read_columns,fingerprint)(database_spanner_read_stats_top_execution_count{fingerprint=~\"$read_columns_topn\", database=~\"$database\", instance_id=~\"$instance\", project_id=~\"$project\"})",
+              "interval": "",
+              "legendFormat": "{{read_columns}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Execution count",
+          "type": "timeseries"
+        },
+        {
+          "datasource": "${pds}",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "links": [
+                {
+                  "title": "View Read details",
+                  "url": "/d/amO53Tdnz/read-details?var-project=${__field.labels.project_id}﻿&var-instance=﻿${__field.labels.instance_id}﻿&var-database=﻿${__field.labels.database}﻿&var-read_columns_topn=${__field.labels.fingerprint}&﻿${__url_time_range}﻿"
+                }
+              ],
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 10
+          },
+          "id": 18,
+          "interval": "60s",
+          "options": {
+            "legend": {
+              "calcs": [
+                "mean",
+                "max"
+              ],
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "exemplar": false,
+              "expr": "avg by (project_id,instance_id,database,read_columns,fingerprint)(database_spanner_read_stats_top_avg_rows{fingerprint=~\"$read_columns_topn\", database=~\"$database\", instance_id=~\"$instance\", project_id=~\"$project\"})",
+              "interval": "",
+              "legendFormat": "{{read_columns}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Average Rows",
+          "type": "timeseries"
+        },
+        {
+          "datasource": "${pds}",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "links": [
+                {
+                  "title": "View Read details",
+                  "url": "/d/amO53Tdnz/read-details?var-project=${__field.labels.project_id}﻿&var-instance=﻿${__field.labels.instance_id}﻿&var-database=﻿${__field.labels.database}﻿&var-read_columns_topn=${__field.labels.fingerprint}&﻿${__url_time_range}﻿"
+                }
+              ],
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 18
+          },
+          "id": 19,
+          "interval": "60s",
+          "options": {
+            "legend": {
+              "calcs": [
+                "mean",
+                "max"
+              ],
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "exemplar": false,
+              "expr": "avg by (project_id,instance_id,database,read_columns,fingerprint)(database_spanner_read_stats_top_avg_client_wait_seconds{fingerprint=~\"$read_columns_topn\", database=~\"$database\", instance_id=~\"$instance\", project_id=~\"$project\"})",
+              "interval": "",
+              "legendFormat": "{{read_columns}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Average Client Wait Seconds",
+          "type": "timeseries"
+        },
+        {
+          "datasource": "${pds}",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "links": [
+                {
+                  "title": "View Read details",
+                  "url": "/d/amO53Tdnz/read-details?var-project=${__field.labels.project_id}﻿&var-instance=﻿${__field.labels.instance_id}﻿&var-database=﻿${__field.labels.database}﻿&var-read_columns_topn=${__field.labels.fingerprint}&﻿${__url_time_range}﻿"
+                }
+              ],
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "none"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 18
+          },
+          "id": 20,
+          "interval": "60s",
+          "options": {
+            "legend": {
+              "calcs": [
+                "mean",
+                "max"
+              ],
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "exemplar": false,
+              "expr": "avg by (project_id,instance_id,database,read_columns,fingerprint)(database_spanner_read_stats_top_avg_bytes{fingerprint=~\"$read_columns_topn\", database=~\"$database\", instance_id=~\"$instance\", project_id=~\"$project\"})",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "{{read_columns}}",
+              "refId": "A"
+            }
+          ],
+          "timeFrom": null,
+          "title": "Average Bytes",
+          "type": "timeseries"
+        },
+        {
+          "datasource": "${pds}",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "links": [
+                {
+                  "title": "View Read details",
+                  "url": "/d/amO53Tdnz/read-details?var-project=${__field.labels.project_id}﻿&var-instance=﻿${__field.labels.instance_id}﻿&var-database=﻿${__field.labels.database}﻿&var-read_columns_topn=${__field.labels.fingerprint}&﻿${__url_time_range}﻿"
+                }
+              ],
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 26
+          },
+          "id": 21,
+          "interval": "60s",
+          "options": {
+            "legend": {
+              "calcs": [
+                "mean",
+                "max"
+              ],
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "exemplar": false,
+              "expr": "avg by (project_id,instance_id,database,read_columns,fingerprint)(database_spanner_read_stats_top_avg_leader_refresh_delay_seconds{fingerprint=~\"$read_columns_topn\", database=~\"$database\", instance_id=~\"$instance\", project_id=~\"$project\"})",
+              "interval": "",
+              "legendFormat": "{{read_columns}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Average Leader Refresh Delay Seconds",
+          "type": "timeseries"
+        },
+        {
+          "datasource": "${pds}",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "links": [
+                {
+                  "title": "View Read details",
+                  "url": "/d/amO53Tdnz/read-details?var-project=${__field.labels.project_id}﻿&var-instance=﻿${__field.labels.instance_id}﻿&var-database=﻿${__field.labels.database}﻿&var-read_columns_topn=${__field.labels.fingerprint}&﻿${__url_time_range}﻿"
+                }
+              ],
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 26
+          },
+          "id": 22,
+          "interval": "60s",
+          "options": {
+            "legend": {
+              "calcs": [
+                "mean",
+                "max"
+              ],
+              "displayMode": "table",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          },
+          "targets": [
+            {
+              "exemplar": false,
+              "expr": "avg by (project_id,instance_id,database,read_columns,fingerprint)(database_spanner_read_stats_top_avg_locking_delay_seconds{fingerprint=~\"$read_columns_topn\", database=~\"$database\", instance_id=~\"$instance\", project_id=~\"$project\"})",
+              "interval": "",
+              "legendFormat": "{{read_columns}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Average Locking Delay Seconds",
+          "type": "timeseries"
+        },
+        {
+          "datasource": "${pds}",
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "align": "auto",
+                "displayMode": "auto",
+                "filterable": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Read Columns"
+                },
+                "properties": [
+                  {
+                    "id": "links",
+                    "value": [
+                      {
+                        "title": "View Read details",
+                        "url": "/d/amO53Tdnz/read-details?var-project=${__data.fields.Project}﻿&var-instance=﻿${__data.fields.Instance}﻿&var-database=﻿${__data.fields.Database}﻿&var-read_columns_topn=${__data.fields.Fingerprint}&﻿${__url_time_range}﻿"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "custom.width",
+                    "value": 248
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Fingerprint"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "string"
+                  },
+                  {
+                    "id": "custom.width",
+                    "value": 180
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Database"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 110
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Project"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 89
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Instance"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 107
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Total CPU Usage"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 127
+                  },
+                  {
+                    "id": "unit",
+                    "value": "s"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Average CPU Usage"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 148
+                  },
+                  {
+                    "id": "unit",
+                    "value": "s"
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 34
+          },
+          "id": 25,
+          "interval": "60s",
+          "options": {
+            "showHeader": true,
+            "sortBy": [
+              {
+                "desc": true,
+                "displayName": "CPU Usage (mean)"
+              }
+            ]
+          },
+          "pluginVersion": "8.2.2",
+          "targets": [
+            {
+              "exemplar": false,
+              "expr": "database_spanner_read_stats_top_avg_cpu_seconds{fingerprint=~\"$read_columns_topn\", database=~\"$database\", instance_id=~\"$instance\", project_id=~\"$project\"}",
+              "format": "table",
+              "instant": false,
+              "interval": "",
+              "legendFormat": "",
+              "queryType": "randomWalk",
+              "refId": "A"
+            },
+            {
+              "exemplar": false,
+              "expr": "database_spanner_read_stats_top_execution_count{fingerprint=~\"$read_columns_topn\", database=~\"$database\", instance_id=~\"$instance\", project_id=~\"$project\"}",
+              "format": "table",
+              "hide": false,
+              "instant": false,
+              "interval": "",
+              "legendFormat": "",
+              "refId": "B"
+            }
+          ],
+          "timeFrom": null,
+          "title": "Top Reads",
+          "transformations": [
+            {
+              "id": "filterFieldsByName",
+              "options": {
+                "include": {
+                  "names": [
+                    "Time",
+                    "database",
+                    "instance_id",
+                    "project_id",
+                    "read_columns",
+                    "Value #A",
+                    "Value #B",
+                    "fingerprint"
+                  ]
+                }
+              }
+            },
+            {
+              "id": "merge",
+              "options": {}
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": false,
+                  "database": false,
+                  "instance": true,
+                  "instance_id": false,
+                  "job": true,
+                  "project": true,
+                  "project_id": false,
+                  "query_text_fingerprint": false,
+                  "query_text_truncated": true
+                },
+                "indexByName": {
+                  "Time": 0,
+                  "Value #A": 6,
+                  "Value #B": 7,
+                  "database": 3,
+                  "fingerprint": 4,
+                  "instance_id": 2,
+                  "project_id": 1,
+                  "read_columns": 5
+                },
+                "renameByName": {
+                  "Value #A": "Average CPU Usage",
+                  "Value #B": "Execution count",
+                  "Value #C": "Execution count",
+                  "Value #D": "CPU Usage",
+                  "database": "Database",
+                  "fingerprint": "Fingerprint",
+                  "instance_id": "Instance",
+                  "project_id": "Project",
+                  "query_text": "Query",
+                  "query_text_fingerprint": "Query fingerprint",
+                  "read_columns": "Read Columns"
+                }
+              }
+            },
+            {
+              "id": "groupBy",
+              "options": {
+                "fields": {
+                  "Average CPU Usage": {
+                    "aggregations": [
+                      "last"
+                    ],
+                    "operation": "aggregate"
+                  },
+                  "Database": {
+                    "aggregations": [],
+                    "operation": "groupby"
+                  },
+                  "Execution count": {
+                    "aggregations": [
+                      "last"
+                    ],
+                    "operation": "aggregate"
+                  },
+                  "Fingerprint": {
+                    "aggregations": [],
+                    "operation": "groupby"
+                  },
+                  "Instance": {
+                    "aggregations": [],
+                    "operation": "groupby"
+                  },
+                  "Project": {
+                    "aggregations": [],
+                    "operation": "groupby"
+                  },
+                  "Read Columns": {
+                    "aggregations": [],
+                    "operation": "groupby"
+                  },
+                  "Time": {
+                    "aggregations": [],
+                    "operation": "groupby"
+                  }
+                }
+              }
+            },
+            {
+              "id": "calculateField",
+              "options": {
+                "alias": "Total CPU Usage",
+                "binary": {
+                  "left": "Average CPU Usage (last)",
+                  "operator": "*",
+                  "reducer": "sum",
+                  "right": "Execution count (last)"
+                },
+                "mode": "binary",
+                "reduce": {
+                  "reducer": "sum"
+                }
+              }
+            },
+            {
+              "id": "groupBy",
+              "options": {
+                "fields": {
+                  "Database": {
+                    "aggregations": [],
+                    "operation": "groupby"
+                  },
+                  "Execution count (last)": {
+                    "aggregations": [
+                      "sum"
+                    ],
+                    "operation": "aggregate"
+                  },
+                  "Fingerprint": {
+                    "aggregations": [],
+                    "operation": "groupby"
+                  },
+                  "Instance": {
+                    "aggregations": [],
+                    "operation": "groupby"
+                  },
+                  "Project": {
+                    "aggregations": [],
+                    "operation": "groupby"
+                  },
+                  "Read Columns": {
+                    "aggregations": [],
+                    "operation": "groupby"
+                  },
+                  "Total CPU Usage": {
+                    "aggregations": [
+                      "sum"
+                    ],
+                    "operation": "aggregate"
+                  }
+                }
+              }
+            },
+            {
+              "id": "calculateField",
+              "options": {
+                "alias": "Average CPU Usage",
+                "binary": {
+                  "left": "Total CPU Usage (sum)",
+                  "operator": "/",
+                  "reducer": "sum",
+                  "right": "Execution count (last) (sum)"
+                },
+                "mode": "binary",
+                "reduce": {
+                  "reducer": "sum"
+                }
+              }
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {},
+                "indexByName": {
+                  "Average CPU Usage": 6,
+                  "Database": 2,
+                  "Execution count (last) (sum)": 7,
+                  "Fingerprint": 3,
+                  "Instance": 1,
+                  "Project": 0,
+                  "Read Columns": 4,
+                  "Total CPU Usage (sum)": 5
+                },
+                "renameByName": {
+                  "Average CPU Usage": "",
+                  "Execution count (last) (sum)": "Total Execution count",
+                  "Total CPU Usage (sum)": "Total CPU Usage"
+                }
+              }
+            }
+          ],
+          "type": "table"
+        }
+      ],
+      "title": "Top Reads (per read)",
+      "type": "row"
+    }
+  ],
+  "refresh": "1m",
+  "schemaVersion": 31,
+  "style": "dark",
+  "tags": [
+    "read-insights"
+  ],
+  "templating": {
+    "list": [
+      {
+        "allValue": null,
+        "description": "Prometheus data source",
+        "error": null,
+        "hide": 0,
+        "includeAll": false,
+        "label": "Prometheus",
+        "multi": false,
+        "name": "pds",
+        "options": [],
+        "query": "prometheus",
+        "queryValue": "",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "type": "datasource"
+      },
+      {
+        "allValue": null,
+        "datasource": "${pds}",
+        "definition": "label_values(project_id)",
+        "description": null,
+        "error": null,
+        "hide": 0,
+        "includeAll": false,
+        "label": "Project",
+        "multi": true,
+        "name": "project",
+        "options": [],
+        "query": {
+          "query": "label_values(project_id)",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": ".*",
+        "datasource": "${pds}",
+        "definition": "label_values(instance_id)",
+        "description": null,
+        "error": null,
+        "hide": 0,
+        "includeAll": false,
+        "label": "Instance",
+        "multi": false,
+        "name": "instance",
+        "options": [],
+        "query": {
+          "query": "label_values(instance_id)",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": ".*",
+        "datasource": "${pds}",
+        "definition": "label_values(database)",
+        "description": null,
+        "error": null,
+        "hide": 0,
+        "includeAll": true,
+        "label": "Database",
+        "multi": false,
+        "name": "database",
+        "options": [],
+        "query": {
+          "query": "label_values(database)",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": ".*",
+        "datasource": "Prometheus",
+        "definition": "query_result(topk(10, avg_over_time(database_spanner_read_stats_top_avg_cpu_seconds[${__range_s}s])))",
+        "description": null,
+        "error": null,
+        "hide": 0,
+        "includeAll": true,
+        "label": "Top 10 Read Columns",
+        "multi": true,
+        "name": "read_columns_topn",
+        "options": [],
+        "query": {
+          "query": "query_result(topk(10, avg_over_time(database_spanner_read_stats_top_avg_cpu_seconds[${__range_s}s])))",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 2,
+        "regex": "/read_columns=\"(?<text>[^\"]+)|fingerprint=\"(?<value>[^\"]+)/g",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "",
+  "title": "Read Insights",
+  "uid": "vog7KGO7z",
+  "version": 5
+}

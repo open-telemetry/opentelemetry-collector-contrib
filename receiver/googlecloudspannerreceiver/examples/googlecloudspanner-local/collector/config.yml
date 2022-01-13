@@ -1,0 +1,34 @@
+receivers:
+  googlecloudspanner:
+    collection_interval: 60s
+    top_metrics_query_max_rows: 100
+    # backfill_enabled: true
+    projects:
+      - project_id: "<YOUR_PROJECT>"
+        service_account_key: "<SERVICE_ACCOUNT_KEY>.json"
+        instances:
+          - instance_id: "<YOUR_INSTANCE>"
+            databases:
+              - "<YOUR_DATABASE>"
+exporters:
+  prometheus:
+    send_timestamps: true
+    endpoint: "0.0.0.0:8889"  
+
+  logging:
+    loglevel: debug
+
+  # googlecloud:
+  #   retry_on_failure:
+  #     enabled: false
+
+processors:
+  batch:
+    send_batch_size: 200
+
+service:
+  pipelines:
+    metrics:
+      receivers: [googlecloudspanner]
+      processors: [batch]
+      exporters: [logging, prometheus]
