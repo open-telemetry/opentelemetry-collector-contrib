@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 🧰 Bug fixes 🧰
+
+- `statsdreceiver`: Fix counter metric being dropped by Prometheus exporter (#7156)
+
 ## 💡 Enhancements 💡
 
 - `cloudfoundryreceiver`: Enable Cloud Foundry client (#7060)
