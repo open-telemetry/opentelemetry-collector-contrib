@@ -166,7 +166,7 @@ func (a *lastValueAccumulator) accumulateSum(metric pdata.Metric, il pdata.Instr
 	doubleSum := metric.Sum()
 
 	// Drop metrics with non-cumulative aggregations
-	if doubleSum.AggregationTemporality() != pdata.MetricAggregationTemporalityCumulative {
+	if doubleSum.AggregationTemporality() != pdata.MetricAggregationTemporalityCumulative && !metric.Sum().IsMonotonic() {
 		return
 	}
 
