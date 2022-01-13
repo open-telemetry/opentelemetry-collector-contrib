@@ -119,7 +119,7 @@ func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer cons
 		}
 	}
 
-	if err := validateDimensions(pConfig.Dimensions, []string{serviceNameKey, spanKindKey, statusCodeKey}); err != nil {
+	if err := validateDimensions(pConfig.Dimensions, []string{spanKindKey, statusCodeKey}); err != nil {
 		return nil, err
 	}
 	if err := validateDimensions(pConfig.ResourceAttributes, []string{serviceNameKey}); err != nil {
