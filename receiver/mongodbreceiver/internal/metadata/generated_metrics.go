@@ -46,7 +46,7 @@ type metricStruct struct {
 	MongodbConnections     MetricIntf
 	MongodbDataSize        MetricIntf
 	MongodbExtents         MetricIntf
-	MongodbGlobalLockHold  MetricIntf
+	MongodbGlobalLockTime  MetricIntf
 	MongodbIndexCount      MetricIntf
 	MongodbIndexSize       MetricIntf
 	MongodbMemoryUsage     MetricIntf
@@ -63,7 +63,7 @@ func (m *metricStruct) Names() []string {
 		"mongodb.connections",
 		"mongodb.data.size",
 		"mongodb.extents",
-		"mongodb.global_lock.hold",
+		"mongodb.global_lock.time",
 		"mongodb.index.count",
 		"mongodb.index.size",
 		"mongodb.memory.usage",
@@ -79,7 +79,7 @@ var metricsByName = map[string]MetricIntf{
 	"mongodb.connections":      Metrics.MongodbConnections,
 	"mongodb.data.size":        Metrics.MongodbDataSize,
 	"mongodb.extents":          Metrics.MongodbExtents,
-	"mongodb.global_lock.hold": Metrics.MongodbGlobalLockHold,
+	"mongodb.global_lock.time": Metrics.MongodbGlobalLockTime,
 	"mongodb.index.count":      Metrics.MongodbIndexCount,
 	"mongodb.index.size":       Metrics.MongodbIndexSize,
 	"mongodb.memory.usage":     Metrics.MongodbMemoryUsage,
@@ -100,7 +100,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("mongodb.cache.operations")
 			metric.SetDescription("The number of cache operations of the instance.")
-			metric.SetUnit("1{.operations}")
+			metric.SetUnit("{operations}")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(true)
 			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
@@ -111,8 +111,10 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("mongodb.collections")
 			metric.SetDescription("The number of collections.")
-			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetUnit("{collections}")
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(false)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{
@@ -121,7 +123,9 @@ var Metrics = &metricStruct{
 			metric.SetName("mongodb.connections")
 			metric.SetDescription("The number of connections.")
 			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(false)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{
@@ -130,7 +134,9 @@ var Metrics = &metricStruct{
 			metric.SetName("mongodb.data.size")
 			metric.SetDescription("The size in bytes of the collection. Data compression does not affect this value.")
 			metric.SetUnit("By")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(false)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{
@@ -139,13 +145,15 @@ var Metrics = &metricStruct{
 			metric.SetName("mongodb.extents")
 			metric.SetDescription("The number of extents.")
 			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(false)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{
-		"mongodb.global_lock.hold",
+		"mongodb.global_lock.time",
 		func(metric pdata.Metric) {
-			metric.SetName("mongodb.global_lock.hold")
+			metric.SetName("mongodb.global_lock.time")
 			metric.SetDescription("The time the global lock has been held.")
 			metric.SetUnit("ms")
 			metric.SetDataType(pdata.MetricDataTypeSum)
@@ -159,7 +167,9 @@ var Metrics = &metricStruct{
 			metric.SetName("mongodb.index.count")
 			metric.SetDescription("The number of indexes.")
 			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(false)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{
@@ -167,8 +177,10 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("mongodb.index.size")
 			metric.SetDescription("Sum of the space allocated to all indexes in the database, including free index space.")
-			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetUnit("By")
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(false)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{
@@ -177,7 +189,9 @@ var Metrics = &metricStruct{
 			metric.SetName("mongodb.memory.usage")
 			metric.SetDescription("The amount of memory used.")
 			metric.SetUnit("By")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(false)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{
@@ -186,7 +200,9 @@ var Metrics = &metricStruct{
 			metric.SetName("mongodb.objects")
 			metric.SetDescription("The number of objects.")
 			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(false)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{
@@ -194,7 +210,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("mongodb.operations")
 			metric.SetDescription("The number of operations executed.")
-			metric.SetUnit("1{.operations}")
+			metric.SetUnit("{operations}")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(true)
 			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
@@ -204,9 +220,11 @@ var Metrics = &metricStruct{
 		"mongodb.storage.size",
 		func(metric pdata.Metric) {
 			metric.SetName("mongodb.storage.size")
-			metric.SetDescription("The total amount of storage in bytes allocated to this collection for document storage. If collection data is compressed it reflects the compressed size.")
+			metric.SetDescription("The total amount of storage in bytes allocated to this collection.")
 			metric.SetUnit("By")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(false)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
 }
