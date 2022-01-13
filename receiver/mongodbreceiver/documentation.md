@@ -8,8 +8,25 @@ These are the metrics available for this scraper.
 
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
+| mongodb.cache.operations | The number of cache operations of the instance. | 1{.operations} | Sum(Int) | <ul> <li>type</li> </ul> |
+| mongodb.collections | The number of collections. | 1 | Gauge(Double) | <ul> <li>database</li> </ul> |
+| mongodb.connections | The number of connections. | 1 | Gauge(Double) | <ul> <li>database</li> <li>connection_type</li> </ul> |
+| mongodb.data.size | The size in bytes of the collection. Data compression does not affect this value. | By | Gauge(Double) | <ul> <li>database</li> </ul> |
+| mongodb.extents | The number of extents. | 1 | Gauge(Double) | <ul> <li>database</li> </ul> |
+| mongodb.global_lock.hold | The time the global lock has been held. | ms | Sum(Int) | <ul> </ul> |
+| mongodb.index.count | The number of indexes. | 1 | Gauge(Double) | <ul> <li>database</li> </ul> |
+| mongodb.index.size | Sum of the space allocated to all indexes in the database, including free index space. | 1 | Gauge(Double) | <ul> <li>database</li> </ul> |
+| mongodb.memory.usage | The amount of memory used. | By | Gauge(Double) | <ul> <li>database</li> <li>memory_type</li> </ul> |
+| mongodb.objects | The number of objects. | 1 | Gauge(Double) | <ul> <li>database</li> </ul> |
+| mongodb.operations | The number of operations executed. | 1{.operations} | Sum(Int) | <ul> <li>operation</li> </ul> |
+| mongodb.storage.size | The total amount of storage in bytes allocated to this collection for document storage. If collection data is compressed it reflects the compressed size. | By | Gauge(Double) | <ul> <li>database</li> </ul> |
 
 ## Attributes
 
 | Name | Description |
 | ---- | ----------- |
+| connection_type | The status of the connection. |
+| database | The name of a database. |
+| memory_type | The type of memory used. |
+| operation | The mongoDB operation being counted. |
+| type | The result of a cache request. |

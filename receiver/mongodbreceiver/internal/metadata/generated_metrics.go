@@ -41,14 +41,52 @@ func (m *metricImpl) Init(metric pdata.Metric) {
 }
 
 type metricStruct struct {
+	MongodbCacheOperations MetricIntf
+	MongodbCollections     MetricIntf
+	MongodbConnections     MetricIntf
+	MongodbDataSize        MetricIntf
+	MongodbExtents         MetricIntf
+	MongodbGlobalLockHold  MetricIntf
+	MongodbIndexCount      MetricIntf
+	MongodbIndexSize       MetricIntf
+	MongodbMemoryUsage     MetricIntf
+	MongodbObjects         MetricIntf
+	MongodbOperations      MetricIntf
+	MongodbStorageSize     MetricIntf
 }
 
 // Names returns a list of all the metric name strings.
 func (m *metricStruct) Names() []string {
-	return []string{}
+	return []string{
+		"mongodb.cache.operations",
+		"mongodb.collections",
+		"mongodb.connections",
+		"mongodb.data.size",
+		"mongodb.extents",
+		"mongodb.global_lock.hold",
+		"mongodb.index.count",
+		"mongodb.index.size",
+		"mongodb.memory.usage",
+		"mongodb.objects",
+		"mongodb.operations",
+		"mongodb.storage.size",
+	}
 }
 
-var metricsByName = map[string]MetricIntf{}
+var metricsByName = map[string]MetricIntf{
+	"mongodb.cache.operations": Metrics.MongodbCacheOperations,
+	"mongodb.collections":      Metrics.MongodbCollections,
+	"mongodb.connections":      Metrics.MongodbConnections,
+	"mongodb.data.size":        Metrics.MongodbDataSize,
+	"mongodb.extents":          Metrics.MongodbExtents,
+	"mongodb.global_lock.hold": Metrics.MongodbGlobalLockHold,
+	"mongodb.index.count":      Metrics.MongodbIndexCount,
+	"mongodb.index.size":       Metrics.MongodbIndexSize,
+	"mongodb.memory.usage":     Metrics.MongodbMemoryUsage,
+	"mongodb.objects":          Metrics.MongodbObjects,
+	"mongodb.operations":       Metrics.MongodbOperations,
+	"mongodb.storage.size":     Metrics.MongodbStorageSize,
+}
 
 func (m *metricStruct) ByName(n string) MetricIntf {
 	return metricsByName[n]
@@ -56,7 +94,122 @@ func (m *metricStruct) ByName(n string) MetricIntf {
 
 // Metrics contains a set of methods for each metric that help with
 // manipulating those metrics.
-var Metrics = &metricStruct{}
+var Metrics = &metricStruct{
+	&metricImpl{
+		"mongodb.cache.operations",
+		func(metric pdata.Metric) {
+			metric.SetName("mongodb.cache.operations")
+			metric.SetDescription("The number of cache operations of the instance.")
+			metric.SetUnit("1{.operations}")
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(true)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+		},
+	},
+	&metricImpl{
+		"mongodb.collections",
+		func(metric pdata.Metric) {
+			metric.SetName("mongodb.collections")
+			metric.SetDescription("The number of collections.")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"mongodb.connections",
+		func(metric pdata.Metric) {
+			metric.SetName("mongodb.connections")
+			metric.SetDescription("The number of connections.")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"mongodb.data.size",
+		func(metric pdata.Metric) {
+			metric.SetName("mongodb.data.size")
+			metric.SetDescription("The size in bytes of the collection. Data compression does not affect this value.")
+			metric.SetUnit("By")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"mongodb.extents",
+		func(metric pdata.Metric) {
+			metric.SetName("mongodb.extents")
+			metric.SetDescription("The number of extents.")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"mongodb.global_lock.hold",
+		func(metric pdata.Metric) {
+			metric.SetName("mongodb.global_lock.hold")
+			metric.SetDescription("The time the global lock has been held.")
+			metric.SetUnit("ms")
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(true)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+		},
+	},
+	&metricImpl{
+		"mongodb.index.count",
+		func(metric pdata.Metric) {
+			metric.SetName("mongodb.index.count")
+			metric.SetDescription("The number of indexes.")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"mongodb.index.size",
+		func(metric pdata.Metric) {
+			metric.SetName("mongodb.index.size")
+			metric.SetDescription("Sum of the space allocated to all indexes in the database, including free index space.")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"mongodb.memory.usage",
+		func(metric pdata.Metric) {
+			metric.SetName("mongodb.memory.usage")
+			metric.SetDescription("The amount of memory used.")
+			metric.SetUnit("By")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"mongodb.objects",
+		func(metric pdata.Metric) {
+			metric.SetName("mongodb.objects")
+			metric.SetDescription("The number of objects.")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"mongodb.operations",
+		func(metric pdata.Metric) {
+			metric.SetName("mongodb.operations")
+			metric.SetDescription("The number of operations executed.")
+			metric.SetUnit("1{.operations}")
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(true)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+		},
+	},
+	&metricImpl{
+		"mongodb.storage.size",
+		func(metric pdata.Metric) {
+			metric.SetName("mongodb.storage.size")
+			metric.SetDescription("The total amount of storage in bytes allocated to this collection for document storage. If collection data is compressed it reflects the compressed size.")
+			metric.SetUnit("By")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+}
 
 // M contains a set of methods for each metric that help with
 // manipulating those metrics. M is an alias for Metrics
@@ -64,7 +217,73 @@ var M = Metrics
 
 // Attributes contains the possible metric attributes that can be used.
 var Attributes = struct {
-}{}
+	// ConnectionType (The status of the connection.)
+	ConnectionType string
+	// Database (The name of a database.)
+	Database string
+	// MemoryType (The type of memory used.)
+	MemoryType string
+	// Operation (The mongoDB operation being counted.)
+	Operation string
+	// Type (The result of a cache request.)
+	Type string
+}{
+	"connection_type",
+	"database",
+	"memory_type",
+	"operation",
+	"type",
+}
 
 // A is an alias for Attributes.
 var A = Attributes
+
+// AttributeConnectionType are the possible values that the attribute "connection_type" can have.
+var AttributeConnectionType = struct {
+	Active    string
+	Available string
+	Current   string
+}{
+	"active",
+	"available",
+	"current",
+}
+
+// AttributeMemoryType are the possible values that the attribute "memory_type" can have.
+var AttributeMemoryType = struct {
+	Resident          string
+	Virtual           string
+	Mapped            string
+	MappedWithJournal string
+}{
+	"resident",
+	"virtual",
+	"mapped",
+	"mappedWithJournal",
+}
+
+// AttributeOperation are the possible values that the attribute "operation" can have.
+var AttributeOperation = struct {
+	Insert  string
+	Query   string
+	Update  string
+	Delete  string
+	Getmore string
+	Command string
+}{
+	"insert",
+	"query",
+	"update",
+	"delete",
+	"getmore",
+	"command",
+}
+
+// AttributeType are the possible values that the attribute "type" can have.
+var AttributeType = struct {
+	Hit  string
+	Miss string
+}{
+	"hit",
+	"miss",
+}
