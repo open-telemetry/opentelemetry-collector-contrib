@@ -237,15 +237,18 @@ func (e *exporter) sendBatch(ctx context.Context, lines []string) error {
 		return nil
 	}
 
-	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
-		// Unauthorized and Unauthenticated errors are permanent
+	if resp.StatusCode == http.StatusUnauthorized {
+		// token is missing or wrong format
 		e.isDisabled = true
-		return consumererror.NewPermanent(fmt.Errorf(resp.Status))
+		return consumererror.NewPermanent(fmt.Errorf("API token missing or invalid"))
+	}
+
+	if resp.StatusCode == http.StatusForbidden {
+		return consumererror.NewPermanent(fmt.Errorf("API token missing the required scope (metrics.ingest)"))
 	}
 
 	if resp.StatusCode == http.StatusNotFound {
-		e.isDisabled = true
-		return consumererror.NewPermanent(fmt.Errorf("dynatrace metrics ingest module is disabled"))
+		return consumererror.NewPermanent(fmt.Errorf("metrics ingest v2 module not found - ensure module is enabled and endpoint is correct"))
 	}
 
 	// No known errors
