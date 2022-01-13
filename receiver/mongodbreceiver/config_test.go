@@ -17,6 +17,7 @@ package mongodbreceiver // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -151,4 +152,26 @@ func TestBadTLSConfigs(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestOptions(t *testing.T) {
+	cfg := &Config{
+		Hosts: []confignet.NetAddr{
+			{
+				Endpoint: "localhost:27017",
+			},
+		},
+		Username:   "uname",
+		Password:   "password",
+		Timeout:    2 * time.Minute,
+		ReplicaSet: "rs-1",
+	}
+
+	clientOptions := cfg.ClientOptions()
+	require.Equal(t, clientOptions.Auth.Username, cfg.Username)
+	require.Equal(t,
+		clientOptions.ConnectTimeout.Milliseconds(),
+		(2 * time.Minute).Milliseconds(),
+	)
+	require.Equal(t, "rs-1", *clientOptions.ReplicaSet)
 }

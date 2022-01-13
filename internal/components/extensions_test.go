@@ -36,6 +36,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
 )
@@ -151,6 +152,16 @@ func TestDefaultExtensions(t *testing.T) {
 		{
 			extension:     "oidc",
 			skipLifecycle: true, // Requires a running OIDC server in order to complete life cycle testing
+		},
+		{
+			extension: "db_storage",
+			getConfigFn: func() config.Extension {
+				cfg := extFactories["db_storage"].CreateDefaultConfig().(*dbstorage.Config)
+				cfg.DriverName = "sqlite3"
+				tempFolder := testutil.NewTemporaryDirectory(t)
+				cfg.DataSource = tempFolder + "/foo.db"
+				return cfg
+			},
 		},
 		{
 			extension: "file_storage",

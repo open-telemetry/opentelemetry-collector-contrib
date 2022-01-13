@@ -1,1 +1,373 @@
 name: elasticsearchreceiver
+
+attributes:
+  elasticsearch.cluster.name:
+    description: The name of the elasticsearch cluster.
+  elasticsearch.node.name:
+    description: The name of the elasticsearch node.
+  cache_name:
+    description: The name of cache.
+    enum:
+    - fielddata
+    - query
+  fs_direction:
+    value: direction
+    description: The direction of filesystem IO.
+    enum:
+    - read
+    - write
+  collector_name:
+    value: name
+    description: The name of the garbage collector.
+  memory_pool_name:
+    value: name
+    description: The name of the JVM memory pool.
+  disk_usage_state:
+    value: state
+    description: The state of a section of space on disk.
+    enum:
+    - used
+    - free
+  direction:
+    description: The direction of network data.
+    enum:
+    - received
+    - sent
+  document_state:
+    value: state
+    description: The state of the document.
+    enum:
+    - active
+    - deleted
+  shard_state:
+    value: state
+    description: The state of the shard.
+    enum:
+    - active
+    - relocating
+    - initializing
+    - unassigned
+  operation:
+    value: operation
+    description: The type of operation.
+    enum:
+    - index
+    - delete
+    - get
+    - query
+    - fetch
+    - scroll
+    - suggest
+    - merge
+    - refresh
+    - flush
+    - warmer
+  thread_pool_name:
+    description: The name of the thread pool.
+  thread_state:
+    value: state
+    description: The state of the thread.
+    enum:
+    - active
+    - idle
+  task_state:
+    value: state
+    description: The state of the task.
+    enum:
+    - rejected
+    - completed
+  health_status:
+    value: status
+    description: The health status of the cluster.
+    enum:
+    - green
+    - yellow
+    - red
+metrics:
+  # these metrics are from /_nodes/stats, and are node level metrics
+  elasticsearch.node.cache.memory.usage:
+    description: The size in bytes of the cache.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [cache_name]
+    enabled: true
+  elasticsearch.node.cache.evictions:
+    description: The number of evictions from the cache.
+    unit: "{evictions}"
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [cache_name]
+    enabled: true
+  elasticsearch.node.fs.disk.available:
+    description: The amount of disk space available across all file stores for this node.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: []
+    enabled: true
+  elasticsearch.node.cluster.io:
+    description: The number of bytes sent and received on the network for internal cluster communication.
+    unit: By
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [direction]
+    enabled: true
+  elasticsearch.node.cluster.connections:
+    description: The number of open tcp connections for internal cluster communication.
+    unit: "{connections}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: []
+    enabled: true
+  elasticsearch.node.http.connections:
+    description: The number of HTTP connections to the node.
+    unit: "{connections}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: []
+    enabled: true
+  elasticsearch.node.operations.completed:
+    description: The number of operations completed.
+    unit: "{operations}"
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [operation]
+    enabled: true
+  elasticsearch.node.operations.time:
+    description: Time spent on operations.
+    unit: ms
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [operation]
+    enabled: true
+  elasticsearch.node.shards.size:
+    description: The size of the shards assigned to this node.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: []
+    enabled: true
+  elasticsearch.node.thread_pool.threads:
+    description: The number of threads in the thread pool.
+    unit: "{threads}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [thread_state]
+    enabled: true
+  elasticsearch.node.thread_pool.tasks.queued:
+    description: The number of queued tasks in the thread pool.
+    unit: "{tasks}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [thread_pool_name]
+    enabled: true
+  elasticsearch.node.thread_pool.tasks.finished:
+    description: The number of tasks finished by the thread pool.
+    unit: "{tasks}"
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [thread_pool_name, task_state]
+    enabled: true
+  elasticsearch.node.documents:
+    description: The number of documents on the node.
+    unit: "{documents}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [document_state]
+    enabled: true
+  elasticsearch.node.open_files:
+    description: The number of open file descriptors held by the node.
+    unit: "{files}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: []
+    enabled: true
+  # These metrics are JVM metrics, collected from /_nodes/stats
+  # See https://github.com/open-telemetry/opentelemetry-java-contrib/blob/main/jmx-metrics/docs/target-systems/jvm.md
+  jvm.classes.loaded:
+    description: The number of loaded classes
+    unit: 1
+    gauge:
+      value_type: int
+    attributes: []
+    enabled: true
+  jvm.gc.collections.count:
+    description: The total number of garbage collections that have occurred
+    unit: 1
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [collector_name]
+    enabled: true
+  jvm.gc.collections.elapsed:
+    description: "The approximate accumulated collection elapsed time"
+    unit: ms
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [collector_name]
+    enabled: true
+  jvm.memory.heap.init:
+    description: The initial amount of memory that the JVM requests from the operating system for the heap
+    unit: By
+    gauge:
+      value_type: int
+    attributes: []
+    enabled: true
+  jvm.memory.heap.max:
+    description: The maximum amount of memory can be used for the heap
+    unit: By
+    gauge:
+      value_type: int
+    attributes: []
+    enabled: true  
+  jvm.memory.heap.used:
+    description: The current heap memory usage
+    unit: By
+    gauge:
+      value_type: int
+    attributes: []
+    enabled: true
+  jvm.memory.heap.committed:
+    description: The amount of memory that is guaranteed to be available for the heap
+    unit: By
+    gauge:
+      value_type: int
+    attributes: []
+    enabled: true
+  jvm.memory.nonheap.init:
+    description: The initial amount of memory that the JVM requests from the operating system for non-heap purposes
+    unit: By
+    gauge:
+      value_type: int
+    attributes: []
+    enabled: true
+  jvm.memory.nonheap.max:
+    description: The maximum amount of memory can be used for non-heap purposes
+    unit: By
+    gauge:
+      value_type: int
+    attributes: []
+    enabled: true
+  jvm.memory.nonheap.used:
+    description: The current non-heap memory usage
+    unit: By
+    gauge:
+      value_type: int
+    attributes: []
+    enabled: true
+  jvm.memory.nonheap.committed:
+    description: The amount of memory that is guaranteed to be available for non-heap purposes
+    unit: By
+    gauge:
+      value_type: int
+    attributes: []
+    enabled: true
+  jvm.memory.pool.init:
+    description: The initial amount of memory that the JVM requests from the operating system for the memory pool
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [memory_pool_name]
+    enabled: true
+  jvm.memory.pool.max:
+    description: The maximum amount of memory can be used for the memory pool
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [memory_pool_name]
+    enabled: true
+  jvm.memory.pool.used:
+    description: The current memory pool memory usage
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [memory_pool_name]
+    enabled: true
+  jvm.memory.pool.committed:
+    description: The amount of memory that is guaranteed to be available for the memory pool
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [memory_pool_name]
+    enabled: true
+  jvm.threads.count:
+    description: The current number of threads
+    unit: 1
+    gauge:
+      value_type: int
+    attributes: []
+    enabled: true
+  # these metrics are from /_cluster/health, and are cluster level metrics
+  elasticsearch.cluster.shards:
+    description: The number of shards in the cluster.
+    unit: "{shards}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [shard_state]
+    enabled: true
+  elasticsearch.cluster.data_nodes:
+    description: The number of data nodes in the cluster.
+    unit: "{nodes}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: []
+    enabled: true
+  elasticsearch.cluster.nodes:
+    description: The total number of nodes in the cluster.
+    unit: "{nodes}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: []
+    enabled: true
+  elasticserach.cluster.health:
+    description: The health status of the cluster.
+    extended_documentation: 
+      Health status is based on the state of its primary and replica shards.
+      Green indicates all shards are assigned.
+      Yellow indicates that one or more replica shards are unassigned.
+      Red indicates that one or more primary shards are unassigned, making some data unavailable.
+    unit: "{status}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [health_status]
+    enabled: true

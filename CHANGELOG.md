@@ -6,10 +6,14 @@
 
 - `cloudfoundryreceiver`: Enable Cloud Foundry client (#7060)
 - `elasticsearchexporter`: add elasticsearchexporter to the components exporter list (#6002)
+- `elasticsearchreceiver`: Add metric metadata (#6892)
+- `elasticsearchreceiver`: Use same metrics as JMX receiver for JVM metrics (#7160)
 - `datadogexporter`: Add http.status_code tag to trace stats (#6889)
+- `mongodbreceiver`: Add initial client code to the component (#7125)
 - `tanzuobservabilityexporter`: Support delta histograms (#6897)
 - `mysqlreceiver`: Add the receiver to available components (#7078)
 - `tanzuobservabilityexporter`: Documentation for the memory_limiter configuration (#7164)
+- `dynatraceexporter`: Do not shut down exporter when metrics ingest module is temporarily unavailable (#7161)
 
 ## 🛑 Breaking changes 🛑
 
@@ -52,6 +56,7 @@
 - `ecs_task_observer`: Discover running containers in AWS ECS tasks (#6894)
 - `mongodbreceiver`: Establish codebase for MongoDB metrics receiver (#6972)
 - `couchbasereceiver`: Establish codebase for Couchbase metrics receiver (#7046)
+- `dbstorage`: New experimental dbstorage extension (#7061)
 
 ## 🧰 Bug fixes 🧰
 
