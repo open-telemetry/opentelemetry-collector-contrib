@@ -200,6 +200,22 @@ func TestAccumulateMetrics(t *testing.T) {
 			},
 		},
 		{
+			name: "DeltaCumulativeMonotonicSum",
+			metric: func(ts time.Time, v float64, metrics pdata.MetricSlice) {
+				metric := metrics.AppendEmpty()
+				metric.SetName("test_metric")
+				metric.SetDataType(pdata.MetricDataTypeSum)
+				metric.Sum().SetIsMonotonic(true)
+				metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
+				metric.SetDescription("test description")
+				dp := metric.Sum().DataPoints().AppendEmpty()
+				dp.SetDoubleVal(v)
+				dp.Attributes().InsertString("label_1", "1")
+				dp.Attributes().InsertString("label_2", "2")
+				dp.SetTimestamp(pdata.NewTimestampFromTime(ts))
+			},
+		},
+		{
 			name: "Histogram",
 			metric: func(ts time.Time, v float64, metrics pdata.MetricSlice) {
 				metric := metrics.AppendEmpty()
