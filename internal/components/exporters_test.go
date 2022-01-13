@@ -17,9 +17,10 @@ package components
 import (
 	"context"
 	"errors"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter"
 	"runtime"
 	"testing"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

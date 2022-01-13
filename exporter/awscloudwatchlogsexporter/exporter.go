@@ -107,7 +107,7 @@ func (e *exporter) PushLogs(ctx context.Context, ld pdata.Logs) error {
 
 	for _, logEvent := range logEvents {
 		logEvent := &cwlogs.Event{
-			InputLogEvent:    logEvent,
+			InputLogEvent: logEvent,
 			GeneratedTime: time.Now(),
 		}
 		e.logger.Debug("Adding log event", zap.Any("event", logEvent))

@@ -15,8 +15,9 @@
 package awscloudwatchlogsexporter
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 	"testing"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/config"

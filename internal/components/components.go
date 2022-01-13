@@ -15,7 +15,6 @@
 package components // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/components"
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/loggingexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
@@ -25,6 +24,8 @@ import (
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/processor/memorylimiterprocessor"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter"
