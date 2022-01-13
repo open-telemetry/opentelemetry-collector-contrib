@@ -32,7 +32,7 @@ type client interface {
 	ListDatabaseNames(ctx context.Context, filters interface{}, opts ...*options.ListDatabasesOptions) ([]string, error)
 	Disconnect(context.Context) error
 	Connect(context.Context) error
-	GetVersion(context.Context) (*getVersionResponse, error)
+	GetVersion(context.Context) (*string, error)
 	ServerStatus(ctx context.Context, DBName string) (bson.M, error)
 	DBStats(ctx context.Context, DBName string) (bson.M, error)
 }
@@ -96,13 +96,9 @@ func (c *mongodbClient) DBStats(ctx context.Context, database string) (bson.M, e
 	return c.RunCommand(ctx, database, bson.M{"dbStats": 1})
 }
 
-type getVersionResponse struct {
-	Version string
-}
-
 // GetVersion returns a result of the version of mongo the client is connected to so adjustments in collection protocol can
 // be determined
-func (c *mongodbClient) GetVersion(ctx context.Context) (*getVersionResponse, error) {
+func (c *mongodbClient) GetVersion(ctx context.Context) (*string, error) {
 	res, err := c.RunCommand(ctx, "admin", bson.M{"buildInfo": 1})
 	if err != nil {
 		return nil, fmt.Errorf("unable to get build info: %w", err)
@@ -114,7 +110,5 @@ func (c *mongodbClient) GetVersion(ctx context.Context) (*getVersionResponse, er
 	}
 
 	c.logger.Debug(fmt.Sprintf("detected mongo server to be running version: %s", v))
-	return &getVersionResponse{
-		Version: v,
-	}, nil
+	return &v, nil
 }

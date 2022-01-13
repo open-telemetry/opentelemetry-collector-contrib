@@ -18,31 +18,17 @@ import (
 	"context"
 	"io/ioutil"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
-	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 )
 
 func TestValidClient(t *testing.T) {
-	client, err := NewClient(&Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			CollectionInterval: 10 * time.Second,
-		},
-		Hosts: []confignet.NetAddr{
-			{
-				Endpoint: "localhost:27017",
-			},
-		},
-		Username: "username",
-		Password: "password",
-		Timeout:  1 * time.Second,
-	}, zap.NewNop())
+	cfg := createDefaultConfig().(*Config)
+	client, err := NewClient(cfg, zap.NewNop())
 
 	require.NoError(t, err)
 	require.NotNil(t, client)
@@ -83,7 +69,7 @@ const (
 	serverStatusType commandString = "serverStatus"
 )
 
-func TestSuccessfulRunCommands(t *testing.T) {
+func TestRunCommands(t *testing.T) {
 	mont := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
 	defer mont.Close()
 
@@ -138,7 +124,7 @@ func TestSuccessfulRunCommands(t *testing.T) {
 	}
 }
 
-func TestGetVersionSuccess(t *testing.T) {
+func TestGetVersion(t *testing.T) {
 	mont := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
 	defer mont.Close()
 
@@ -157,9 +143,9 @@ func TestGetVersionSuccess(t *testing.T) {
 			logger: zap.NewNop(),
 		}
 
-		res, err := client.GetVersion(context.TODO())
+		version, err := client.GetVersion(context.TODO())
 		require.NoError(t, err)
-		require.Equal(t, "4.4.10", res.Version)
+		require.Equal(t, "4.4.10", *version)
 	})
 }
 
