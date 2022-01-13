@@ -165,7 +165,7 @@ func (a *lastValueAccumulator) accumulateGauge(metric pdata.Metric, il pdata.Ins
 func (a *lastValueAccumulator) accumulateSum(metric pdata.Metric, il pdata.InstrumentationLibrary, now time.Time) (n int) {
 	doubleSum := metric.Sum()
 
-	// Drop metrics with non-cumulative aggregations
+	// Drop metrics with non-cumulative aggregations and is not monotonic increasing
 	if doubleSum.AggregationTemporality() != pdata.MetricAggregationTemporalityCumulative && !metric.Sum().IsMonotonic() {
 		return
 	}

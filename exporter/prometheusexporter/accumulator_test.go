@@ -200,7 +200,7 @@ func TestAccumulateMetrics(t *testing.T) {
 			},
 		},
 		{
-			name: "DeltaCumulativeMonotonicSum",
+			name: "DeltaCumulativeMonotonicSum", // For testing the delta cumulative but monotonic metric #4153
 			metric: func(ts time.Time, v float64, metrics pdata.MetricSlice) {
 				metric := metrics.AppendEmpty()
 				metric.SetName("test_metric")
