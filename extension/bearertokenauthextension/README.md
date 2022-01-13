@@ -3,6 +3,8 @@
 This extension implements `configauth.GRPCClientAuthenticator` and is to be used in gRPC receivers inside the `auth` settings as a means
 to embed a static token for every RPC call that will be made.
 
+It also implements `configauth.ServerAuthenticator` to verify the token sent by the client.
+
 The authenticator type has to be set to `bearertokenauth`.
 
 ## Configuration
@@ -18,34 +20,41 @@ The following is the only setting and is required:
 
 ```yaml
 extensions:
-  bearertokenauth:
+  bearertokenauth/receiver:
+    token: "somerandomtoken"
+  bearertokenauth/exporter:
     token: "somerandomtoken"
 
 receivers:
   hostmetrics:
     scrapers:
       memory:
-  otlp:
+  otlp/withauth:
     protocols:
       grpc:
+        auth:
+          authenticator: bearertokenauth/receiver
+      http:
+        auth:
+          authenticator: bearertokenauth/receiver
 
 exporters:
   otlp/withauth:
     endpoint: 0.0.0.0:5000
     ca_file: /tmp/certs/ca.pem
     auth:
-      authenticator: bearertokenauth
+      authenticator: bearertokenauth/exporter
 
   otlphttp/withauth:
     endpoint: http://localhost:9000
     auth:
-      authenticator: bearertokenauth
+      authenticator: bearertokenauth/exporter
 
 service:
-  extensions: [bearertokenauth]
+  extensions: [bearertokenauth/receiver, bearertokenauth/exporter]
   pipelines:
     metrics:
-      receivers: [hostmetrics]
+      receivers: [hostmetrics, otlp/withauth]
       processors: []
       exporters: [otlp/withauth, otlphttp/withauth]
 ```

@@ -16,9 +16,11 @@ package bearertokenauthextension // import "github.com/open-telemetry/openteleme
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.uber.org/zap"
@@ -48,7 +50,10 @@ type BearerTokenAuth struct {
 	logger      *zap.Logger
 }
 
-var _ configauth.ClientAuthenticator = (*BearerTokenAuth)(nil)
+var _ interface {
+	configauth.ClientAuthenticator
+	configauth.ServerAuthenticator
+} = (*BearerTokenAuth)(nil)
 
 func newBearerTokenAuth(cfg *Config, logger *zap.Logger) *BearerTokenAuth {
 	return &BearerTokenAuth{
@@ -100,4 +105,40 @@ func (interceptor *BearerAuthRoundTripper) RoundTrip(req *http.Request) (*http.R
 	}
 	req2.Header.Set("Authorization", interceptor.bearerToken)
 	return interceptor.baseTransport.RoundTrip(req2)
+}
+
+var (
+	errNoBearerToken = errors.New("no bearer token provided")
+	errInvalidToken  = errors.New("invalid bearer token")
+)
+
+func (b *BearerTokenAuth) Authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
+	authHeaders := headers["authorization"]
+	if len(authHeaders) == 0 {
+		return ctx, errNoBearerToken
+	}
+
+	bearerToken := authHeaders[0]
+
+	if bearerToken != b.bearerToken() {
+		return ctx, errInvalidToken
+	}
+
+	cl := client.FromContext(ctx)
+	cl.Auth = authData(bearerToken)
+	return client.NewContext(ctx, cl), nil
+}
+
+type authData string
+
+func (ad authData) GetAttribute(name string) interface{} {
+	switch name {
+	case "raw":
+		return string(ad)
+	}
+	return nil
+}
+
+func (ad authData) GetAttributeNames() []string {
+	return []string{"raw"}
 }

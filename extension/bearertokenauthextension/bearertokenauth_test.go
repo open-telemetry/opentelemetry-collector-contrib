@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component/componenttest"
 )
 
@@ -103,4 +104,43 @@ func TestBearerAuthenticator(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, expectedHeaders, resp.Header)
 	assert.Nil(t, bauth.Shutdown(context.Background()))
+}
+
+func TestBearerServerAuthenticatorValidToken(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.BearerToken = "secret"
+
+	bauth := newBearerTokenAuth(cfg, nil)
+	assert.NotNil(t, bauth)
+
+	ctx, err := bauth.Authenticate(context.Background(), map[string][]string{"authorization": {"Bearer secret"}})
+	assert.NoError(t, err)
+
+	cl := client.FromContext(ctx)
+	assert.Equal(t, "Bearer secret", cl.Auth.GetAttribute("raw"))
+}
+
+func TestBearerServerAuthenticatorInvalidToken(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.BearerToken = "secret"
+
+	bauth := newBearerTokenAuth(cfg, nil)
+	assert.NotNil(t, bauth)
+
+	_, err := bauth.Authenticate(context.Background(), map[string][]string{"authorization": {"secret"}})
+	assert.Error(t, err)
+
+	_, err = bauth.Authenticate(context.Background(), map[string][]string{"authorization": {"Bearer invalid"}})
+	assert.Error(t, err)
+}
+
+func TestBearerServerAuthenticatorMissingToken(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.BearerToken = "missing"
+
+	bauth := newBearerTokenAuth(cfg, nil)
+	assert.NotNil(t, bauth)
+
+	_, err := bauth.Authenticate(context.Background(), map[string][]string{})
+	assert.Error(t, err)
 }
