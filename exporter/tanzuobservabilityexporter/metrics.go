@@ -611,7 +611,7 @@ func (regularHistogramConsumerSpec) AsHistogram(metric pdata.Metric) histogramMe
 	}
 }
 
-type summariesConsumer struct {
+type summaryConsumer struct {
 	sender   gaugeSender
 	settings component.TelemetrySettings
 }
@@ -621,14 +621,14 @@ type summariesConsumer struct {
 func newSummaryConsumer(
 	sender gaugeSender, settings component.TelemetrySettings,
 ) typedMetricConsumer {
-	return &summariesConsumer{sender: sender, settings: settings}
+	return &summaryConsumer{sender: sender, settings: settings}
 }
 
-func (s *summariesConsumer) Type() pdata.MetricDataType {
+func (s *summaryConsumer) Type() pdata.MetricDataType {
 	return pdata.MetricDataTypeSummary
 }
 
-func (s *summariesConsumer) Consume(metric pdata.Metric, errs *[]error) {
+func (s *summaryConsumer) Consume(metric pdata.Metric, errs *[]error) {
 	summary := metric.Summary()
 	summaryDataPoints := summary.DataPoints()
 	for i := 0; i < summaryDataPoints.Len(); i++ {
@@ -636,11 +636,12 @@ func (s *summariesConsumer) Consume(metric pdata.Metric, errs *[]error) {
 	}
 }
 
-func (*summariesConsumer) PushInternalMetrics(errs *[]error) {
+// PushInternalMetrics is here so that summaryConsumer implements typedMetricConsumer
+func (*summaryConsumer) PushInternalMetrics(*[]error) {
 	// Do nothing
 }
 
-func (s *summariesConsumer) sendSummaryDataPoint(
+func (s *summaryConsumer) sendSummaryDataPoint(
 	metric pdata.Metric, summaryDataPoint pdata.SummaryDataPoint, errs *[]error,
 ) {
 	name := metric.Name()
@@ -663,7 +664,7 @@ func (s *summariesConsumer) sendSummaryDataPoint(
 	}
 }
 
-func (s *summariesConsumer) sendMetric(
+func (s *summaryConsumer) sendMetric(
 	name string, value float64, ts int64, tags map[string]string, errs *[]error) {
 	err := s.sender.SendMetric(name, value, ts, "", tags)
 	if err != nil {

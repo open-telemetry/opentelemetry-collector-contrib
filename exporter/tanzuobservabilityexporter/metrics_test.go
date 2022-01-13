@@ -789,9 +789,6 @@ func TestSummaries(t *testing.T) {
 	var errs []error
 	consumer.Consume(summaryMetric, &errs)
 
-	// Summaries don't have internal metrics, but this is here for 100% test coverage.
-	consumer.PushInternalMetrics(&errs)
-
 	assert.Empty(t, errs)
 
 	expected := []tobsMetric{
