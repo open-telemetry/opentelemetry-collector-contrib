@@ -91,7 +91,7 @@ fmt:
 	goimports -w  -local github.com/open-telemetry/opentelemetry-collector-contrib ./
 
 .PHONY: lint
-lint:
+lint: checklicense impi misspell
 	$(LINT) run --allow-parallel-runners
 
 .PHONY: porto
