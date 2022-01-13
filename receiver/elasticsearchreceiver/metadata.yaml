@@ -16,18 +16,11 @@ attributes:
     enum:
     - read
     - write
-  segment:
-    description: The segment of JVM memory.
-    enum:
-    - heap
-    - nonheap
-  generation:
-    description: The generation on which garbage collection was performed.
-    enum:
-    - young
-    - old
+  collector_name:
+    value: name
+    description: The name of the garbage collector.
   memory_pool_name:
-    value: pool
+    value: name
     description: The name of the JVM memory pool
   disk_usage_state:
     value: state
@@ -109,117 +102,6 @@ metrics:
       aggregation: cumulative
       value_type: int
     attributes: [cache_name]
-    enabled: true
-  elasticsearch.node.jvm.gc.classes.loaded:
-    description: The number of loaded classes.
-    unit: "{classes}"
-    sum:
-      monotonic: false
-      aggregation: cumulative
-      value_type: int
-    attributes: []
-    enabled: true
-  elasticsearch.node.jvm.gc.collections.count:
-    description: The number of garbage collections performed by the JVM.
-    unit: "{collections}"
-    sum:
-      monotonic: true
-      aggregation: cumulative
-      value_type: int
-    attributes: [generation]
-    enabled: true
-  elasticsearch.node.jvm.gc.collections.time:
-    description: The total time spent by the JVM running the garbage collector.
-    unit: ms
-    sum:
-      monotonic: true
-      aggregation: cumulative
-      value_type: int
-    attributes: [generation]
-    enabled: true
-  elasticsearch.node.jvm.memory.init:
-    description: The initial size of memory.
-    unit: By
-    sum:
-      monotonic: false
-      aggregation: cumulative
-      value_type: int
-    attributes: [segment]
-    enabled: true
-  elasticsearch.node.jvm.memory.committed:
-    description: The amount of committed memory.
-    unit: By
-    sum:
-      monotonic: false
-      aggregation: cumulative
-      value_type: int
-    attributes: [segment]
-    enabled: true
-  elasticsearch.node.jvm.memory.usage:
-    description: The memory in use by the JVM.
-    unit: By
-    sum:
-      monotonic: false
-      aggregation: cumulative
-      value_type: int
-    attributes: [segment]
-    enabled: true
-  elasticsearch.node.jvm.memory.limit:
-    description: The maximum memory used by the JVM.
-    unit: By
-    gauge:
-      value_type: int
-    attributes: [segment]
-    enabled: true
-  elasticsearch.node.jvm.memory.pool.init:
-    description: The initial size of the memory pool.
-    unit: By
-    sum:
-      monotonic: false
-      aggregation: cumulative
-      value_type: int
-    attributes: [memory_pool_name]
-    enabled: true
-  elasticsearch.node.jvm.memory.pool.commit:
-    description: The memory committed by the memory pool.
-    unit: By
-    sum:
-      monotonic: false
-      aggregation: cumulative
-      value_type: int
-    attributes: [memory_pool_name]
-    enabled: true
-  elasticsearch.node.jvm.memory.pool.usage:
-    description: The memory in use by the memory pool.
-    unit: By
-    sum:
-      monotonic: false
-      aggregation: cumulative
-      value_type: int
-    attributes: [memory_pool_name]
-    enabled: true
-  elasticsearch.node.jvm.memory.pool.limit:
-    description: The max memory in use by the memory pool.
-    unit: By
-    gauge:
-      value_type: int
-    attributes: [memory_pool_name]
-    enabled: true
-  elasticsearch.node.jvm.threads.count:
-    description: The number of running threads in the node's JVM process.
-    unit: "{threads}"
-    sum:
-      monotonic: false
-      aggregation: cumulative
-      value_type: int
-    attributes: []
-    enabled: true
-  elasticsearch.node.jvm.threads.peak:
-    description: The highest number of concurrently running threads in the current lifetime of the node's JVM process.
-    unit: "{threads}"
-    gauge:
-      value_type: int
-    attributes: []
     enabled: true
   elasticsearch.node.fs.disk.available:
     description: The amount of disk space available across all file stores for this node.
@@ -326,6 +208,124 @@ metrics:
     sum:
       monotonic: false
       aggregation: cumulative
+      value_type: int
+    attributes: []
+    enabled: true
+  # These metrics are JVM metrics, collected from /_nodes/stats
+  # See https://github.com/open-telemetry/opentelemetry-java-contrib/blob/main/jmx-metrics/docs/target-systems/jvm.md
+  jvm.classes.loaded:
+    description: "The number of loaded classes"
+    unit: 1
+    gauge:
+      value_type: int
+    attributes: []
+    enabled: true
+  jvm.gc.collections.count:
+    description: "The total number of garbage collections that have occurred"
+    unit: 1
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [collector_name]
+    enabled: true
+  jvm.gc.collections.elapsed:
+    description: "The approximate accumulated collection elapsed time"
+    unit: ms
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [collector_name]
+    enabled: true
+  jvm.memory.heap.init:
+    description: "The initial amount of memory that the JVM requests from the operating system for the heap"
+    unit: By
+    gauge:
+      value_type: int
+    attributes: []
+    enabled: true
+  jvm.memory.heap.max:
+    description: "The maximum amount of memory can be used for the heap"
+    unit: By
+    gauge:
+      value_type: int
+    attributes: []
+    enabled: true  
+  jvm.memory.heap.used:
+    description: "The current heap memory usage"
+    unit: By
+    gauge:
+      value_type: int
+    attributes: []
+    enabled: true
+  jvm.memory.heap.committed:
+    description: "The amount of memory that is guaranteed to be available for the heap"
+    unit: By
+    gauge:
+      value_type: int
+    attributes: []
+    enabled: true
+  jvm.memory.nonheap.init:
+    description: "The initial amount of memory that the JVM requests from the operating system for non-heap purposes"
+    unit: By
+    gauge:
+      value_type: int
+    attributes: []
+    enabled: true
+  jvm.memory.nonheap.max:
+    description: "The maximum amount of memory can be used for non-heap purposes"
+    unit: By
+    gauge:
+      value_type: int
+    attributes: []
+    enabled: true
+  jvm.memory.nonheap.used:
+    description: "The current non-heap memory usage"
+    unit: By
+    gauge:
+      value_type: int
+    attributes: []
+    enabled: true
+  jvm.memory.nonheap.committed:
+    description: "The amount of memory that is guaranteed to be available for non-heap purposes"
+    unit: By
+    gauge:
+      value_type: int
+    attributes: []
+    enabled: true
+  jvm.memory.pool.init:
+    description: "The initial amount of memory that the JVM requests from the operating system for the memory pool"
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [memory_pool_name]
+    enabled: true
+  jvm.memory.pool.max:
+    description: "The maximum amount of memory can be used for the memory pool"
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [memory_pool_name]
+    enabled: true
+  jvm.memory.pool.used:
+    description: "The current memory pool memory usage"
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [memory_pool_name]
+    enabled: true
+  jvm.memory.pool.committed:
+    description: "The amount of memory that is guaranteed to be available for the memory pool"
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [memory_pool_name]
+    enabled: true
+  jvm.threads.count:
+    description: "The current number of threads"
+    unit: 1
+    gauge:
       value_type: int
     attributes: []
     enabled: true
