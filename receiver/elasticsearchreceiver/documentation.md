@@ -18,19 +18,6 @@ These are the metrics available for this scraper.
 | elasticsearch.node.documents | The number of documents on the node. | {documents} | Sum(Int) | <ul> <li>document_state</li> </ul> |
 | elasticsearch.node.fs.disk.available | The amount of disk space available across all file stores for this node. | By | Sum(Int) | <ul> </ul> |
 | elasticsearch.node.http.connections | The number of HTTP connections to the node. | {connections} | Sum(Int) | <ul> </ul> |
-| elasticsearch.node.jvm.gc.classes.loaded | The number of loaded classes. | {classes} | Sum(Int) | <ul> </ul> |
-| elasticsearch.node.jvm.gc.collections.count | The number of garbage collections performed by the JVM. | {collections} | Sum(Int) | <ul> <li>generation</li> </ul> |
-| elasticsearch.node.jvm.gc.collections.time | The total time spent by the JVM running the garbage collector. | ms | Sum(Int) | <ul> <li>generation</li> </ul> |
-| elasticsearch.node.jvm.memory.committed | The amount of committed memory. | By | Sum(Int) | <ul> <li>segment</li> </ul> |
-| elasticsearch.node.jvm.memory.init | The initial size of memory. | By | Sum(Int) | <ul> <li>segment</li> </ul> |
-| elasticsearch.node.jvm.memory.limit | The maximum memory used by the JVM. | By | Gauge(Int) | <ul> <li>segment</li> </ul> |
-| elasticsearch.node.jvm.memory.pool.commit | The memory committed by the memory pool. | By | Sum(Int) | <ul> <li>memory_pool_name</li> </ul> |
-| elasticsearch.node.jvm.memory.pool.init | The initial size of the memory pool. | By | Sum(Int) | <ul> <li>memory_pool_name</li> </ul> |
-| elasticsearch.node.jvm.memory.pool.limit | The max memory in use by the memory pool. | By | Gauge(Int) | <ul> <li>memory_pool_name</li> </ul> |
-| elasticsearch.node.jvm.memory.pool.usage | The memory in use by the memory pool. | By | Sum(Int) | <ul> <li>memory_pool_name</li> </ul> |
-| elasticsearch.node.jvm.memory.usage | The memory in use by the JVM. | By | Sum(Int) | <ul> <li>segment</li> </ul> |
-| elasticsearch.node.jvm.threads.count | The number of running threads in the node's JVM process. | {threads} | Sum(Int) | <ul> </ul> |
-| elasticsearch.node.jvm.threads.peak | The highest number of concurrently running threads in the current lifetime of the node's JVM process. | {threads} | Gauge(Int) | <ul> </ul> |
 | elasticsearch.node.open_files | The number of open file descriptors held by the node. | {files} | Sum(Int) | <ul> </ul> |
 | elasticsearch.node.operations.completed | The number of operations completed. | {operations} | Sum(Int) | <ul> <li>operation</li> </ul> |
 | elasticsearch.node.operations.time | Time spent on operations. | ms | Sum(Int) | <ul> <li>operation</li> </ul> |
@@ -39,23 +26,38 @@ These are the metrics available for this scraper.
 | elasticsearch.node.thread_pool.tasks.queued | The number of queued tasks in the thread pool. | {tasks} | Sum(Int) | <ul> <li>thread_pool_name</li> </ul> |
 | elasticsearch.node.thread_pool.threads | The number of threads in the thread pool. | {threads} | Sum(Int) | <ul> <li>thread_state</li> </ul> |
 | elasticserach.cluster.health | The health status of the cluster. Health status is based on the state of its primary and replica shards. Green indicates all shards are assigned. Yellow indicates that one or more replica shards are unassigned. Red indicates that one or more primary shards are unassigned, making some data unavailable.  | {status} | Sum(Int) | <ul> <li>health_status</li> </ul> |
+| jvm.classes.loaded | The number of loaded classes | 1 | Gauge(Int) | <ul> </ul> |
+| jvm.gc.collections.count | The total number of garbage collections that have occurred | 1 | Sum(Int) | <ul> <li>collector_name</li> </ul> |
+| jvm.gc.collections.elapsed | The approximate accumulated collection elapsed time | ms | Sum(Int) | <ul> <li>collector_name</li> </ul> |
+| jvm.memory.heap.committed | The amount of memory that is guaranteed to be available for the heap | By | Gauge(Int) | <ul> </ul> |
+| jvm.memory.heap.init | The initial amount of memory that the JVM requests from the operating system for the heap | By | Gauge(Int) | <ul> </ul> |
+| jvm.memory.heap.max | The maximum amount of memory can be used for the heap | By | Gauge(Int) | <ul> </ul> |
+| jvm.memory.heap.used | The current heap memory usage | By | Gauge(Int) | <ul> </ul> |
+| jvm.memory.nonheap.committed | The amount of memory that is guaranteed to be available for non-heap purposes | By | Gauge(Int) | <ul> </ul> |
+| jvm.memory.nonheap.init | The initial amount of memory that the JVM requests from the operating system for non-heap purposes | By | Gauge(Int) | <ul> </ul> |
+| jvm.memory.nonheap.max | The maximum amount of memory can be used for non-heap purposes | By | Gauge(Int) | <ul> </ul> |
+| jvm.memory.nonheap.used | The current non-heap memory usage | By | Gauge(Int) | <ul> </ul> |
+| jvm.memory.pool.committed | The amount of memory that is guaranteed to be available for the memory pool | By | Gauge(Int) | <ul> <li>memory_pool_name</li> </ul> |
+| jvm.memory.pool.init | The initial amount of memory that the JVM requests from the operating system for the memory pool | By | Gauge(Int) | <ul> <li>memory_pool_name</li> </ul> |
+| jvm.memory.pool.max | The maximum amount of memory can be used for the memory pool | By | Gauge(Int) | <ul> <li>memory_pool_name</li> </ul> |
+| jvm.memory.pool.used | The current memory pool memory usage | By | Gauge(Int) | <ul> <li>memory_pool_name</li> </ul> |
+| jvm.threads.count | The current number of threads | 1 | Gauge(Int) | <ul> </ul> |
 
 ## Attributes
 
 | Name | Description |
 | ---- | ----------- |
 | cache_name | The name of cache. |
+| collector_name | The name of the garbage collector. |
 | direction | The direction of network data. |
 | disk_usage_state | The state of a section of space on disk. |
 | document_state | The state of the document. |
 | elasticsearch.cluster.name | The name of the elasticsearch cluster. |
 | elasticsearch.node.name | The name of the elasticsearch node. |
 | fs_direction | The direction of filesystem IO. |
-| generation | The generation on which garbage collection was performed. |
 | health_status | The health status of the cluster. |
-| memory_pool_name | The name of the JVM memory pool |
+| memory_pool_name | The name of the JVM memory pool. |
 | operation | The type of operation. |
-| segment | The segment of JVM memory. |
 | shard_state | The state of the shard. |
 | task_state | The state of the task. |
 | thread_pool_name | The name of the thread pool. |
