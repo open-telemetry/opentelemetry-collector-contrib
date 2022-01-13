@@ -65,6 +65,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauth"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/fluentbitextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
@@ -157,6 +158,7 @@ func Components() (component.Factories, error) {
 		oauth2clientauthextension.NewFactory(),
 		oidcauthextension.NewFactory(),
 		zpagesextension.NewFactory(),
+		basicauth.NewFactory(),
 	}
 	factories.Extensions, err = component.MakeExtensionFactoryMap(extensions...)
 	if err != nil {
