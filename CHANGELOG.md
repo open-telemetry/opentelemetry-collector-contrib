@@ -7,6 +7,7 @@
 - `cloudfoundryreceiver`: Enable Cloud Foundry client (#7060)
 - `elasticsearchexporter`: add elasticsearchexporter to the components exporter list (#6002)
 - `elasticsearchreceiver`: Add metric metadata (#6892)
+- `elasticsearchreceiver`: Use same metrics as JMX receiver for JVM metrics (#7160)
 - `datadogexporter`: Add http.status_code tag to trace stats (#6889)
 - `tanzuobservabilityexporter`: Support delta histograms (#6897)
 - `mysqlreceiver`: Add the receiver to available components (#7078)
