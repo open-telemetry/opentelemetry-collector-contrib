@@ -17,12 +17,11 @@ package awscloudwatchlogsexporter // import "github.com/open-telemetry/opentelem
 import (
 	"errors"
 
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
-
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // Config represent a configuration for the CloudWatch logs exporter.
