@@ -41,7 +41,7 @@ var (
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	confighttp.HTTPClientSettings           `mapstructure:",squash"`
-	// Metrics defines which metrics to enable for the cluster
+	// Metrics defines which metrics to enable for the scraper
 	Metrics metadata.MetricsSettings `mapstructure:"metrics"`
 	// Nodes defines the nodes to scrape.
 	// See https://www.elastic.co/guide/en/elasticsearch/reference/7.9/cluster.html#cluster-nodes for which selectors may be used here.
