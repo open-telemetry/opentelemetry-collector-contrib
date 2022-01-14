@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package basicauth // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauth"
+package basicauthextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension"
 
 import (
 	"context"
@@ -58,7 +58,7 @@ var (
 
 func TestBasicAuth_Valid(t *testing.T) {
 	t.Parallel()
-	f, err := ioutil.TempFile("", "htpasswd")
+	f, err := ioutil.TempFile("", ".htpasswd")
 	require.NoError(t, err)
 	defer os.Remove(f.Name())
 
@@ -69,12 +69,13 @@ func TestBasicAuth_Valid(t *testing.T) {
 
 	ctx := context.Background()
 
-	ba := BasicAuth{
-		htpasswd: HtpasswdSettings{
+	ext := newExtension(&Config{
+		Htpasswd: HtpasswdSettings{
 			File: f.Name(),
 		},
-	}
-	require.NoError(t, ba.Start(ctx, componenttest.NewNopHost()))
+	})
+
+	require.NoError(t, ext.Start(ctx, componenttest.NewNopHost()))
 
 	for _, c := range credentials {
 		t.Run(c[0], func(t *testing.T) {
@@ -82,48 +83,74 @@ func TestBasicAuth_Valid(t *testing.T) {
 			auth := fmt.Sprintf("%s:%s", c[0], c[0])
 			auth = base64.StdEncoding.EncodeToString([]byte(auth))
 
-			authCtx, err := ba.Authenticate(ctx, map[string][]string{"authorization": {"Basic " + auth}})
+			authCtx, err := ext.Authenticate(ctx, map[string][]string{"authorization": {"Basic " + auth}})
 			assert.NoError(t, err)
 			cl := client.FromContext(authCtx)
-			assert.Equal(t, c[0], cl.Auth.GetAttribute("subject"))
+			assert.Equal(t, c[0], cl.Auth.GetAttribute("username"))
 			assert.Equal(t, auth, cl.Auth.GetAttribute("raw"))
 		})
 	}
 }
 
 func TestBasicAuth_InvalidCredentials(t *testing.T) {
-	ba := BasicAuth{
-		htpasswd: HtpasswdSettings{
-			Inline: "username:password",
+	ext := newExtension(&Config{
+		Htpasswd: HtpasswdSettings{
+			Inline: "username: password",
 		},
-	}
-	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
-	_, err := ba.Authenticate(context.Background(), map[string][]string{"authorization": {"Basic dXNlcm5hbWU6cGFzc3dvcmR4eHg="}})
+	})
+	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+	_, err := ext.Authenticate(context.Background(), map[string][]string{"authorization": {"Basic dXNlcm5hbWU6cGFzc3dvcmR4eHg="}})
 	assert.Equal(t, errInvalidCredentials, err)
 }
 
 func TestBasicAuth_NoHeader(t *testing.T) {
-	var ba BasicAuth
-	_, err := ba.Authenticate(context.Background(), map[string][]string{})
+	ext := newExtension(&Config{})
+	_, err := ext.Authenticate(context.Background(), map[string][]string{})
 	assert.Equal(t, errNoAuth, err)
 }
 
 func TestBasicAuth_InvalidPrefix(t *testing.T) {
-	var ba BasicAuth
-	_, err := ba.Authenticate(context.Background(), map[string][]string{"authorization": {"Bearer token"}})
+	ext := newExtension(&Config{})
+	_, err := ext.Authenticate(context.Background(), map[string][]string{"authorization": {"Bearer token"}})
 	assert.Equal(t, errInvalidSchemePrefix, err)
 }
 
 func TestBasicAuth_InvalidFormat(t *testing.T) {
-	var ba BasicAuth
+	ext := newExtension(&Config{})
 	for _, auth := range [][]string{
 		{"non decodable", "invalid"},
 		{"missing separator", "aW52YWxpZAo="},
 	} {
 		t.Run(auth[0], func(t *testing.T) {
-			_, err := ba.Authenticate(context.Background(), map[string][]string{"authorization": {"Basic " + auth[1]}})
+			_, err := ext.Authenticate(context.Background(), map[string][]string{"authorization": {"Basic " + auth[1]}})
 			assert.Equal(t, errInvalidFormat, err)
 		})
 	}
+}
 
+func TestBasicAuth_HtpasswdInlinePrecedence(t *testing.T) {
+	t.Parallel()
+	f, err := ioutil.TempFile("", ".htpasswd")
+	require.NoError(t, err)
+	defer os.Remove(f.Name())
+
+	f.WriteString("username:fromfile")
+
+	ext := newExtension(&Config{
+		Htpasswd: HtpasswdSettings{
+			File:   f.Name(),
+			Inline: "username:frominline",
+		},
+	})
+	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+
+	auth := base64.StdEncoding.EncodeToString([]byte("username:frominline"))
+
+	_, err = ext.Authenticate(context.Background(), map[string][]string{"authorization": {"Basic " + auth}})
+	assert.NoError(t, err)
+
+	auth = base64.StdEncoding.EncodeToString([]byte("username:fromfile"))
+
+	_, err = ext.Authenticate(context.Background(), map[string][]string{"authorization": {"Basic " + auth}})
+	assert.Error(t, errInvalidCredentials, err)
 }

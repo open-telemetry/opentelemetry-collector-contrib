@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/extension/zpagesextension"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauth"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/fluentbitextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
@@ -81,10 +81,10 @@ func TestDefaultExtensions(t *testing.T) {
 		{
 			extension: "basicauth",
 			getConfigFn: func() config.Extension {
-				cfg := extFactories["basicauth"].CreateDefaultConfig().(*basicauth.Config)
+				cfg := extFactories["basicauth"].CreateDefaultConfig().(*basicauthextension.Config)
 				f := testutil.NewTemporaryFile(t)
 				f.WriteString("username:password")
-				cfg.Htpasswd = basicauth.HtpasswdSettings{
+				cfg.Htpasswd = basicauthextension.HtpasswdSettings{
 					File:   f.Name(),
 					Inline: "username:password",
 				}

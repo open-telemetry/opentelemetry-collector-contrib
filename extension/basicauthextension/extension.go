@@ -12,13 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package basicauth // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauth"
+package basicauthextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension"
 
 import (
 	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"io"
+	"os"
 	"strings"
 
 	"github.com/tg123/go-htpasswd"
@@ -27,39 +29,44 @@ import (
 	"go.opentelemetry.io/collector/config/configauth"
 )
 
-var _ configauth.ServerAuthenticator = (*BasicAuth)(nil)
-
-type BasicAuth struct {
+type basicAuth struct {
 	htpasswd  HtpasswdSettings
-	matchFunc matchFunc
+	matchFunc func(username, password string) bool
 }
 
-type matchFunc func(username, password string) bool
-
-func (ba *BasicAuth) Start(ctx context.Context, host component.Host) error {
-	inlineHtp, err := htpasswd.NewFromReader(strings.NewReader(ba.htpasswd.Inline), htpasswd.DefaultSystems, nil)
-	if err != nil {
-		return fmt.Errorf("read htpasswd from inline: %w", err)
+func newExtension(cfg *Config) configauth.ServerAuthenticator {
+	ba := basicAuth{
+		htpasswd: cfg.Htpasswd,
 	}
-	ba.matchFunc = inlineHtp.Match
+	return configauth.NewServerAuthenticator(configauth.WithStart(ba.start), configauth.WithAuthenticate(ba.authenticate))
+}
+
+func (ba *basicAuth) start(ctx context.Context, host component.Host) error {
+	var rs []io.Reader
 
 	if ba.htpasswd.File != "" {
-		fileHtp, err := htpasswd.New(ba.htpasswd.File, htpasswd.DefaultSystems, nil)
+		f, err := os.Open(ba.htpasswd.File)
 		if err != nil {
-			return fmt.Errorf("read htpasswd from file: %w", err)
+			return fmt.Errorf("open htpasswd file: %w", err)
 		}
+		defer f.Close()
 
-		matchFunc := ba.matchFunc
-		ba.matchFunc = func(username, password string) bool {
-			// Inline takes precedence over the file.
-			return matchFunc(username, password) || fileHtp.Match(username, password)
-		}
+		rs = append(rs, f)
+		rs = append(rs, strings.NewReader("\n"))
 	}
 
-	return nil
-}
+	// Ensure that the inline content is read the last.
+	// This way the inline content will override the content from file.
+	rs = append(rs, strings.NewReader(ba.htpasswd.Inline))
+	mr := io.MultiReader(rs...)
 
-func (ba *BasicAuth) Shutdown(ctx context.Context) error {
+	htp, err := htpasswd.NewFromReader(mr, htpasswd.DefaultSystems, nil)
+	if err != nil {
+		return fmt.Errorf("read htpasswd content: %w", err)
+	}
+
+	ba.matchFunc = htp.Match
+
 	return nil
 }
 
@@ -70,7 +77,7 @@ var (
 	errInvalidFormat       = errors.New("invalid authorization format")
 )
 
-func (ba *BasicAuth) Authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
+func (ba *basicAuth) authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
 	authHeaders := headers["authorization"]
 	if len(authHeaders) == 0 {
 		return ctx, errNoAuth
@@ -126,7 +133,7 @@ type authData struct {
 
 func (a *authData) GetAttribute(name string) interface{} {
 	switch name {
-	case "subject":
+	case "username":
 		return a.username
 	case "raw":
 		return a.raw
@@ -136,5 +143,5 @@ func (a *authData) GetAttribute(name string) interface{} {
 }
 
 func (*authData) GetAttributeNames() []string {
-	return []string{"subject", "raw"}
+	return []string{"username", "raw"}
 }

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package basicauth // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauth"
+package basicauthextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension"
 
 import (
 	"context"
@@ -40,8 +40,6 @@ func createDefaultConfig() config.Extension {
 	}
 }
 
-func createExtension(_ context.Context, set component.ExtensionCreateSettings, cfg config.Extension) (component.Extension, error) {
-	return &BasicAuth{
-		htpasswd: cfg.(*Config).Htpasswd,
-	}, nil
+func createExtension(_ context.Context, _ component.ExtensionCreateSettings, cfg config.Extension) (component.Extension, error) {
+	return newExtension(cfg.(*Config)), nil
 }

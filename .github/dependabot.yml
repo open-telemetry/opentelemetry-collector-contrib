@@ -198,7 +198,7 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/extension/basicauth"
+    directory: "/extension/basicauthextension"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"

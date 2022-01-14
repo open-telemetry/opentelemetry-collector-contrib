@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauth
+module github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension
 
 go 1.17
 
