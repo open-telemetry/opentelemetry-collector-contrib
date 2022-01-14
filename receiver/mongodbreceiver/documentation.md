@@ -9,7 +9,7 @@ These are the metrics available for this scraper.
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
 | mongodb.cache.operations | The number of cache operations of the instance. | {operations} | Sum(Int) | <ul> <li>type</li> </ul> |
-| mongodb.collections | The number of collections. | {collections} | Sum(Double) | <ul> <li>database</li> </ul> |
+| mongodb.collections | The number of collections. | {collections} | Sum(Int) | <ul> <li>database</li> </ul> |
 | mongodb.connections | The number of connections. | 1 | Sum(Int) | <ul> <li>database</li> <li>connection_type</li> </ul> |
 | mongodb.data.size | The size in bytes of the collection. Data compression does not affect this value. | By | Sum(Int) | <ul> <li>database</li> </ul> |
 | mongodb.extents | The number of extents. | 1 | Sum(Int) | <ul> <li>database</li> </ul> |

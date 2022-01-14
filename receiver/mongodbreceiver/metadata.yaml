@@ -48,7 +48,7 @@ metrics:
     sum:
       monotonic: false
       aggregation: cumulative
-      value_type: double
+      value_type: int
     attributes: [database]
   mongodb.data.size:
     description: The size in bytes of the collection. Data compression does not affect this value.
