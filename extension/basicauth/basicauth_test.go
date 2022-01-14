@@ -56,7 +56,7 @@ var (
 	}
 )
 
-func TestBasicAuth_Htpasswd(t *testing.T) {
+func TestBasicAuth_Valid(t *testing.T) {
 	t.Parallel()
 	f, err := ioutil.TempFile("", "htpasswd")
 	require.NoError(t, err)
@@ -85,36 +85,38 @@ func TestBasicAuth_Htpasswd(t *testing.T) {
 			cl := client.FromContext(authCtx)
 			assert.Equal(t, c[0], cl.Auth.GetAttribute("subject"))
 			assert.Equal(t, auth, cl.Auth.GetAttribute("raw"))
-
-			auth = fmt.Sprintf("%s:%s!!!", c[0], c[0])
-			auth = base64.StdEncoding.EncodeToString([]byte(auth))
-
-			_, err = ba.Authenticate(ctx, map[string][]string{"authorization": {"Basic " + auth}})
-			assert.Equal(t, errInvalidCredentials, err)
 		})
 	}
 }
 
-func TestBasicAuth_NoHeader(t *testing.T) {
+func TestBasicAuth_InvalidCredentials(t *testing.T) {
+	t.Parallel()
+	f, err := ioutil.TempFile("", "htpasswd")
+	require.NoError(t, err)
+	defer os.Remove(f.Name())
+
 	ba := BasicAuth{
-		htpasswd: "",
+		htpasswd: f.Name(),
 	}
+	ba.Start(context.Background(), componenttest.NewNopHost())
+	_, err = ba.Authenticate(context.Background(), map[string][]string{"authorization": {"Basic dXNlcm5hbWU6cGFzc3dvcmQ="}})
+	assert.Equal(t, errInvalidCredentials, err)
+}
+
+func TestBasicAuth_NoHeader(t *testing.T) {
+	var ba BasicAuth
 	_, err := ba.Authenticate(context.Background(), map[string][]string{})
 	assert.Equal(t, errNoAuth, err)
 }
 
 func TestBasicAuth_InvalidPrefix(t *testing.T) {
-	ba := BasicAuth{
-		htpasswd: "",
-	}
+	var ba BasicAuth
 	_, err := ba.Authenticate(context.Background(), map[string][]string{"authorization": {"Bearer token"}})
 	assert.Equal(t, errInvalidSchemePrefix, err)
 }
 
 func TestBasicAuth_InvalidFormat(t *testing.T) {
-	ba := BasicAuth{
-		htpasswd: "",
-	}
+	var ba BasicAuth
 	for _, auth := range [][]string{
 		{"non decodable", "invalid"},
 		{"missing separator", "aW52YWxpZAo="},

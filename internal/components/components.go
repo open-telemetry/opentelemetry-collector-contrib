@@ -145,6 +145,7 @@ func Components() (component.Factories, error) {
 		asapauthextension.NewFactory(),
 		awsproxy.NewFactory(),
 		ballastextension.NewFactory(),
+		basicauth.NewFactory(),
 		bearertokenauthextension.NewFactory(),
 		dbstorage.NewFactory(),
 		ecstaskobserver.NewFactory(),
@@ -158,7 +159,6 @@ func Components() (component.Factories, error) {
 		oauth2clientauthextension.NewFactory(),
 		oidcauthextension.NewFactory(),
 		zpagesextension.NewFactory(),
-		basicauth.NewFactory(),
 	}
 	factories.Extensions, err = component.MakeExtensionFactoryMap(extensions...)
 	if err != nil {
