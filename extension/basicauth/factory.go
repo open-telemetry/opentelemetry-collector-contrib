@@ -23,8 +23,7 @@ import (
 )
 
 const (
-	typeStr         = "basicauth"
-	defaultHtpasswd = ".htpasswd"
+	typeStr = "basicauth"
 )
 
 // NewFactory creates a factory for the static bearer token Authenticator extension.
@@ -38,7 +37,6 @@ func NewFactory() component.ExtensionFactory {
 func createDefaultConfig() config.Extension {
 	return &Config{
 		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
-		Htpasswd:          defaultHtpasswd,
 	}
 }
 

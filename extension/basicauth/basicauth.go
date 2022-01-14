@@ -30,18 +30,32 @@ import (
 var _ configauth.ServerAuthenticator = (*BasicAuth)(nil)
 
 type BasicAuth struct {
-	htpasswd  string
+	htpasswd  HtpasswdSettings
 	matchFunc matchFunc
 }
 
 type matchFunc func(username, password string) bool
 
 func (ba *BasicAuth) Start(ctx context.Context, host component.Host) error {
-	htp, err := htpasswd.New(ba.htpasswd, htpasswd.DefaultSystems, nil)
+	inlineHtp, err := htpasswd.NewFromReader(strings.NewReader(ba.htpasswd.Inline), htpasswd.DefaultSystems, nil)
 	if err != nil {
-		return fmt.Errorf("new htpasswd: %w", err)
+		return fmt.Errorf("read htpasswd from inline: %w", err)
 	}
-	ba.matchFunc = htp.Match
+	ba.matchFunc = inlineHtp.Match
+
+	if ba.htpasswd.File != "" {
+		fileHtp, err := htpasswd.New(ba.htpasswd.File, htpasswd.DefaultSystems, nil)
+		if err != nil {
+			return fmt.Errorf("read htpasswd from file: %w", err)
+		}
+
+		matchFunc := ba.matchFunc
+		ba.matchFunc = func(username, password string) bool {
+			// Inline takes precedence over the file.
+			return matchFunc(username, password) || fileHtp.Match(username, password)
+		}
+	}
+
 	return nil
 }
 

@@ -70,9 +70,11 @@ func TestBasicAuth_Valid(t *testing.T) {
 	ctx := context.Background()
 
 	ba := BasicAuth{
-		htpasswd: f.Name(),
+		htpasswd: HtpasswdSettings{
+			File: f.Name(),
+		},
 	}
-	ba.Start(ctx, componenttest.NewNopHost())
+	require.NoError(t, ba.Start(ctx, componenttest.NewNopHost()))
 
 	for _, c := range credentials {
 		t.Run(c[0], func(t *testing.T) {
@@ -90,16 +92,13 @@ func TestBasicAuth_Valid(t *testing.T) {
 }
 
 func TestBasicAuth_InvalidCredentials(t *testing.T) {
-	t.Parallel()
-	f, err := ioutil.TempFile("", "htpasswd")
-	require.NoError(t, err)
-	defer os.Remove(f.Name())
-
 	ba := BasicAuth{
-		htpasswd: f.Name(),
+		htpasswd: HtpasswdSettings{
+			Inline: "username:password",
+		},
 	}
-	ba.Start(context.Background(), componenttest.NewNopHost())
-	_, err = ba.Authenticate(context.Background(), map[string][]string{"authorization": {"Basic dXNlcm5hbWU6cGFzc3dvcmQ="}})
+	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
+	_, err := ba.Authenticate(context.Background(), map[string][]string{"authorization": {"Basic dXNlcm5hbWU6cGFzc3dvcmR4eHg="}})
 	assert.Equal(t, errInvalidCredentials, err)
 }
 

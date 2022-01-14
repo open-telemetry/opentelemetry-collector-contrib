@@ -16,8 +16,16 @@ package basicauth // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import "go.opentelemetry.io/collector/config"
 
+type HtpasswdSettings struct {
+	// Path to the htpasswd file.
+	File string `mapstructure:"file"`
+	// Inline contents of the htpasswd file.
+	Inline string `mapstructure:"inline"`
+}
+
 type Config struct {
 	config.ExtensionSettings `mapstructure:",squash"`
 
-	Htpasswd string `mapstructure:"htpasswd"`
+	// Htpasswd settings.
+	Htpasswd HtpasswdSettings `mapstructure:"htpasswd"`
 }

@@ -27,7 +27,6 @@ import (
 func TestCreateDefaultConfig(t *testing.T) {
 	expected := &Config{
 		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
-		Htpasswd:          defaultHtpasswd,
 	}
 	actual := createDefaultConfig()
 	assert.Equal(t, expected, createDefaultConfig())

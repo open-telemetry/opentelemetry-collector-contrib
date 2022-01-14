@@ -4,16 +4,13 @@ This extension implements `configauth.ServerAuthenticator` to authenticate clien
 
 ## Configuration
 
-The following settings are available:
-
-- `htpasswd` - Path to the htpasswd file used to store the credentials (defaults to `.htpasswd`).
-
-### Example
-
 ```yaml
 extensions:
   basicauth:
-    htpasswd: .htpasswd
+    htpasswd: 
+      file: .htpasswd
+      inline: |
+        ${BASIC_AUTH_USERNAME}:${BASIC_AUTH_PASSWORD}
 
 receivers:
   otlp:
@@ -37,3 +34,9 @@ service:
       exporters: [logging]
 ```
 
+### htpasswd 
+
+- `file`: The path to the htpasswd file.
+- `inline`: The htpasswd file inline content. 
+
+If both `file` and `inline` are configured, `inline` credentials have a higher priority.
