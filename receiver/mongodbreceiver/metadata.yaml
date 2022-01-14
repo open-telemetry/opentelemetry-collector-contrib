@@ -9,7 +9,7 @@ attributes:
       - resident
       - virtual
       - mapped
-      - mappedWithJournal
+      - mapped_with_journal
   operation:
     description: The mongoDB operation being counted.
     enum:
@@ -37,107 +37,107 @@ metrics:
     unit: "{operations}"
     enabled: true
     sum:
+      aggregation: cumulative
       value_type: int
       monotonic: true
-      aggregation: cumulative
     attributes: [type]
-  mongodb.collections:
+  mongodb.collection:
     description: The number of collections.
     unit: "{collections}"
     enabled: true
     sum:
-      monotonic: false
       aggregation: cumulative
       value_type: int
+      monotonic: false
     attributes: [database]
   mongodb.data.size:
-    description: The size in bytes of the collection. Data compression does not affect this value.
+    description: The size of the collection. Data compression does not affect this value.
     unit: By
     enabled: true
     sum:
-      monotonic: false
       aggregation: cumulative
       value_type: int
+      monotonic: false
     attributes: [database]
-  mongodb.connections:
+  mongodb.connection.count:
     description: The number of connections. 
     unit: "{connections}"
     enabled: true
     sum:
-      monotonic: false
-      aggregation: cumulative
       value_type: int
+      aggregation: cumulative
+      monotonic: false
     attributes: [database, connection_type]
-  mongodb.extents:
+  mongodb.extent.count:
     description: The number of extents.
     unit: "{extents}"
     enabled: true
     sum:
-      monotonic: false
       aggregation: cumulative
       value_type: int
+      monotonic: false
     attributes: [database]
   mongodb.global_lock.time:
     description: The time the global lock has been held.
     unit: ms
     enabled: true
     sum:
+      aggregation: cumulative
       value_type: int
       monotonic: true
-      aggregation: cumulative
     attributes: []
   mongodb.index.count:
     description: The number of indexes.
     unit: "{indexes}"
     enabled: true
     sum:
-      monotonic: false
       aggregation: cumulative
       value_type: int
+      monotonic: false
     attributes: [database]
   mongodb.index.size:
     description: Sum of the space allocated to all indexes in the database, including free index space.
     unit: By
     enabled: true
     sum:
-      monotonic: false
       aggregation: cumulative
       value_type: int
+      monotonic: false
     attributes: [database]
   mongodb.memory.usage:
     description: The amount of memory used.
     unit: By
     enabled: true
     sum:
-      monotonic: false
       aggregation: cumulative
       value_type: int
+      monotonic: false
     attributes: [database, memory_type]
-  mongodb.objects:
+  mongodb.object.count:
     description: The number of objects.
     unit: "{objects}"
     enabled: true
     sum:
-      monotonic: false
       aggregation: cumulative
       value_type: int
+      monotonic: false
     attributes: [database]
-  mongodb.operations:
+  mongodb.operation.count:
     description: The number of operations executed.
     unit: "{operations}"
     enabled: true
     sum:
+      aggregation: cumulative
       value_type: int
       monotonic: true
-      aggregation: cumulative
     attributes: [operation]
   mongodb.storage.size:
-    description: The total amount of storage in bytes allocated to this collection.
+    description: The total amount of storage allocated to this collection.
     extended_documentation: If collection data is compressed it reflects the compressed size. 
     unit: By
     enabled: true
     sum:
-      monotonic: false
       aggregation: cumulative
       value_type: int
+      monotonic: true
     attributes: [database]
