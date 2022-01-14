@@ -67,10 +67,20 @@ func createMetricsReceiver(
 	rConf config.Receiver,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
-	_, ok := rConf.(*Config)
+	c, ok := rConf.(*Config)
 	if !ok {
 		return nil, errConfigNotES
 	}
+	es := newElasticSearchScraper(params.Logger, c)
+	scraper, err := scraperhelper.NewScraper(typeStr, es.scrape, scraperhelper.WithStart(es.start))
+	if err != nil {
+		return nil, err
+	}
 
-	return nil, nil
+	return scraperhelper.NewScraperControllerReceiver(
+		&c.ScraperControllerSettings,
+		params,
+		consumer,
+		scraperhelper.AddScraper(scraper),
+	)
 }
