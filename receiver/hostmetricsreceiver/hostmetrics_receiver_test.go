@@ -117,7 +117,7 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 	}
 
 	if runtime.GOOS == "linux" || runtime.GOOS == "windows" {
-		cfg.Scrapers[processscraper.TypeStr] = &processscraper.Config{}
+		cfg.Scrapers[processscraper.TypeStr] = scraperFactories[processscraper.TypeStr].CreateDefaultConfig()
 	}
 
 	receiver, err := NewFactory().CreateMetricsReceiver(context.Background(), creationSet, cfg, sink)
