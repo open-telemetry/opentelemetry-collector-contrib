@@ -122,7 +122,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("mongodb.connections")
 			metric.SetDescription("The number of connections.")
-			metric.SetUnit("1")
+			metric.SetUnit("{connections}")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(false)
 			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
@@ -199,7 +199,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("mongodb.objects")
 			metric.SetDescription("The number of objects.")
-			metric.SetUnit("1")
+			metric.SetUnit("{objects}")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(false)
 			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)

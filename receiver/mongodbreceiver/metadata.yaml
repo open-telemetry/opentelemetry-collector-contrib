@@ -61,7 +61,7 @@ metrics:
     attributes: [database]
   mongodb.connections:
     description: The number of connections. 
-    unit: 1
+    unit: "{connections}"
     enabled: true
     sum:
       monotonic: false
@@ -115,7 +115,7 @@ metrics:
     attributes: [database, memory_type]
   mongodb.objects:
     description: The number of objects.
-    unit: 1
+    unit: "{objects}"
     enabled: true
     sum:
       monotonic: false

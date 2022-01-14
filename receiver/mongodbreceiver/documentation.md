@@ -10,14 +10,14 @@ These are the metrics available for this scraper.
 | ---- | ----------- | ---- | ---- | ---------- |
 | mongodb.cache.operations | The number of cache operations of the instance. | {operations} | Sum(Int) | <ul> <li>type</li> </ul> |
 | mongodb.collections | The number of collections. | {collections} | Sum(Int) | <ul> <li>database</li> </ul> |
-| mongodb.connections | The number of connections. | 1 | Sum(Int) | <ul> <li>database</li> <li>connection_type</li> </ul> |
+| mongodb.connections | The number of connections. | {connections} | Sum(Int) | <ul> <li>database</li> <li>connection_type</li> </ul> |
 | mongodb.data.size | The size in bytes of the collection. Data compression does not affect this value. | By | Sum(Int) | <ul> <li>database</li> </ul> |
 | mongodb.extents | The number of extents. | 1 | Sum(Int) | <ul> <li>database</li> </ul> |
 | mongodb.global_lock.time | The time the global lock has been held. | ms | Sum(Int) | <ul> </ul> |
 | mongodb.index.count | The number of indexes. | 1 | Sum(Int) | <ul> <li>database</li> </ul> |
 | mongodb.index.size | Sum of the space allocated to all indexes in the database, including free index space. | By | Sum(Int) | <ul> <li>database</li> </ul> |
 | mongodb.memory.usage | The amount of memory used. | By | Sum(Int) | <ul> <li>database</li> <li>memory_type</li> </ul> |
-| mongodb.objects | The number of objects. | 1 | Sum(Int) | <ul> <li>database</li> </ul> |
+| mongodb.objects | The number of objects. | {objects} | Sum(Int) | <ul> <li>database</li> </ul> |
 | mongodb.operations | The number of operations executed. | {operations} | Sum(Int) | <ul> <li>operation</li> </ul> |
 | mongodb.storage.size | The total amount of storage in bytes allocated to this collection. If collection data is compressed it reflects the compressed size.  | By | Sum(Int) | <ul> <li>database</li> </ul> |
 
