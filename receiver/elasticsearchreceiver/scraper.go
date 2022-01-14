@@ -10,7 +10,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -47,21 +46,24 @@ func (r *elasticsearchScraper) scrape(ctx context.Context) (pdata.Metrics, error
 	metrics := pdata.NewMetrics()
 	rms := metrics.ResourceMetrics()
 
-	scrapeNodeErr := r.scrapeNodeMetrics(ctx, rms)
-	scrapeClusterErr := r.scrapeClusterMetrics(ctx, rms)
+	errs := &scrapererror.ScrapeErrors{}
 
-	return metrics, multierr.Combine(scrapeClusterErr, scrapeNodeErr)
+	r.scrapeNodeMetrics(ctx, rms, errs)
+	r.scrapeClusterMetrics(ctx, rms, errs)
+
+	return metrics, errs.Combine()
 }
 
 // scrapeNodeMetrics scrapes adds node-level metrics to the given MetricSlice from the NodeStats endpoint
-func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, rms pdata.ResourceMetricsSlice) error {
+func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, rms pdata.ResourceMetricsSlice, errs *scrapererror.ScrapeErrors) {
 	if len(r.cfg.Nodes) == 0 {
-		return nil
+		return
 	}
 
 	nodeStats, err := r.client.NodeStats(ctx, r.cfg.Nodes)
 	if err != nil {
-		return scrapererror.NewPartialScrapeError(err, 26)
+		errs.AddPartial(26, err)
+		return
 	}
 
 	for _, info := range nodeStats.Nodes {
@@ -156,18 +158,17 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, rms pdata.
 
 		r.metricsBuilder.EmitNodeMetrics(ills.Metrics())
 	}
-
-	return nil
 }
 
-func (r *elasticsearchScraper) scrapeClusterMetrics(ctx context.Context, rms pdata.ResourceMetricsSlice) error {
+func (r *elasticsearchScraper) scrapeClusterMetrics(ctx context.Context, rms pdata.ResourceMetricsSlice, errs *scrapererror.ScrapeErrors) {
 	if r.cfg.SkipClusterMetrics {
-		return nil
+		return
 	}
 
 	clusterHealth, err := r.client.ClusterHealth(ctx)
 	if err != nil {
-		return scrapererror.NewPartialScrapeError(err, 4)
+		errs.AddPartial(4, err)
+		return
 	}
 
 	rm := rms.AppendEmpty()
@@ -186,7 +187,6 @@ func (r *elasticsearchScraper) scrapeClusterMetrics(ctx context.Context, rms pda
 	r.metricsBuilder.RecordElasticsearchClusterShardsDataPoint(r.now, clusterHealth.RelocatingShards, metadata.AttributeShardState.Relocating)
 	r.metricsBuilder.RecordElasticsearchClusterShardsDataPoint(r.now, clusterHealth.UnassignedShards, metadata.AttributeShardState.Unassigned)
 
-	var statusErr error
 	switch clusterHealth.Status {
 	case "green":
 		r.metricsBuilder.RecordElasticsearchClusterHealthDataPoint(r.now, 1, metadata.AttributeHealthStatus.Green)
@@ -201,10 +201,8 @@ func (r *elasticsearchScraper) scrapeClusterMetrics(ctx context.Context, rms pda
 		r.metricsBuilder.RecordElasticsearchClusterHealthDataPoint(r.now, 0, metadata.AttributeHealthStatus.Yellow)
 		r.metricsBuilder.RecordElasticsearchClusterHealthDataPoint(r.now, 1, metadata.AttributeHealthStatus.Red)
 	default:
-		statusErr = scrapererror.NewPartialScrapeError(fmt.Errorf("health status %s: %w", clusterHealth.Status, errUnknownClusterStatus), 1)
+		errs.AddPartial(1, fmt.Errorf("health status %s: %w", clusterHealth.Status, errUnknownClusterStatus))
 	}
 
 	r.metricsBuilder.EmitClusterMetrics(ills.Metrics())
-
-	return statusErr
 }

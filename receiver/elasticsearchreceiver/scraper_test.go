@@ -150,6 +150,29 @@ func TestScrapingError(t *testing.T) {
 				require.Equal(t, m.DataPointCount(), 0)
 			},
 		},
+		{
+			desc: "Cluster health status is invalid",
+			run: func(t *testing.T) {
+				t.Parallel()
+
+				ch := clusterHealth(t)
+				ch.Status = "pink"
+
+				mockClient := mocks.MockElasticsearchClient{}
+				mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nodeStats(t), nil)
+				mockClient.On("ClusterHealth", mock.Anything).Return(ch, nil)
+
+				sc := newElasticSearchScraper(zap.NewNop(), createDefaultConfig().(*Config))
+				err := sc.start(context.Background(), componenttest.NewNopHost())
+				require.NoError(t, err)
+
+				sc.client = &mockClient
+
+				_, err = sc.scrape(context.Background())
+				require.True(t, scrapererror.IsPartialScrapeError(err))
+				require.Contains(t, err.Error(), err.Error())
+			},
+		},
 	}
 
 	for _, testCase := range testCases {
