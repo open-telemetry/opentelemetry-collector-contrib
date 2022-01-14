@@ -141,4 +141,3 @@ metrics:
       aggregation: cumulative
       value_type: int
     attributes: [database]
-
