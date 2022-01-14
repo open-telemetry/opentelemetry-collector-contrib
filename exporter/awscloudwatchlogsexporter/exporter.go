@@ -103,8 +103,6 @@ func (e *exporter) PushLogs(ctx context.Context, ld pdata.Logs) error {
 		return nil
 	}
 
-	e.logger.Info("Putting log events", zap.Int("num_of_events", len(logEvents)))
-
 	for _, logEvent := range logEvents {
 		logEvent := &cwlogs.Event{
 			InputLogEvent: logEvent,
