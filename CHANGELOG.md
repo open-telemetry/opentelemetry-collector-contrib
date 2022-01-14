@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### 💡 Enhancements 💡
+
+- `googlecloudexporter`: [Alpha] Translate metrics directly from OTLP to gcm using the `exporter.googlecloud.OTLPDirect` feature-gate (#7177)
+
+### 🛑 Breaking changes 🛑
+
+### 🧰 Bug fixes 🧰
+
+### 🚀 New components 🚀
+
 ## v0.46.0
 
 ### 💡 Enhancements 💡

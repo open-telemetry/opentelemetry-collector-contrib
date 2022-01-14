@@ -28,107 +28,16 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/model/pdata"
 	"google.golang.org/api/option"
 	cloudmetricpb "google.golang.org/genproto/googleapis/api/metric"
-	cloudtracepb "google.golang.org/genproto/googleapis/devtools/cloudtrace/v2"
 	cloudmonitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/types/known/emptypb"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/metricstestutil"
 	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
-
-type testServer struct {
-	reqCh chan *cloudtracepb.BatchWriteSpansRequest
-}
-
-func (ts *testServer) BatchWriteSpans(ctx context.Context, req *cloudtracepb.BatchWriteSpansRequest) (*emptypb.Empty, error) {
-	go func() { ts.reqCh <- req }()
-	return &emptypb.Empty{}, nil
-}
-
-// Creates a new span.
-func (ts *testServer) CreateSpan(context.Context, *cloudtracepb.Span) (*cloudtracepb.Span, error) {
-	return nil, nil
-}
-
-func TestGoogleCloudTraceExport(t *testing.T) {
-	type testCase struct {
-		name        string
-		cfg         *Config
-		expectedErr string
-	}
-
-	testCases := []testCase{
-		{
-			name: "Standard",
-			cfg: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-				ProjectID:        "idk",
-				Endpoint:         "127.0.0.1:8080",
-				UseInsecure:      true,
-			},
-		},
-		{
-			name: "Standard_WithoutSendingQueue",
-			cfg: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-				ProjectID:        "idk",
-				Endpoint:         "127.0.0.1:8080",
-				UseInsecure:      true,
-				QueueSettings: exporterhelper.QueueSettings{
-					Enabled: false,
-				},
-			},
-		},
-	}
-
-	for _, test := range testCases {
-		t.Run(test.name, func(t *testing.T) {
-			srv := grpc.NewServer()
-			reqCh := make(chan *cloudtracepb.BatchWriteSpansRequest)
-			cloudtracepb.RegisterTraceServiceServer(srv, &testServer{reqCh: reqCh})
-
-			lis, err := net.Listen("tcp", "localhost:8080")
-			require.NoError(t, err)
-			defer lis.Close()
-
-			go srv.Serve(lis)
-
-			sde, err := newGoogleCloudTracesExporter(test.cfg, componenttest.NewNopExporterCreateSettings())
-			if test.expectedErr != "" {
-				assert.EqualError(t, err, test.expectedErr)
-				return
-			}
-			require.NoError(t, err)
-			defer func() { require.NoError(t, sde.Shutdown(context.Background())) }()
-
-			testTime := time.Now()
-			spanName := "foobar"
-
-			resource := pdata.NewResource()
-			traces := pdata.NewTraces()
-			rspans := traces.ResourceSpans().AppendEmpty()
-			resource.CopyTo(rspans.Resource())
-			ispans := rspans.InstrumentationLibrarySpans().AppendEmpty()
-			span := ispans.Spans().AppendEmpty()
-			span.SetName(spanName)
-			span.SetStartTimestamp(pdata.NewTimestampFromTime(testTime))
-			err = sde.ConsumeTraces(context.Background(), traces)
-			assert.NoError(t, err)
-
-			r := <-reqCh
-			assert.Len(t, r.Spans, 1)
-			assert.Equal(t, spanName, r.Spans[0].GetDisplayName().Value)
-			assert.Equal(t, timestamppb.New(testTime), r.Spans[0].StartTime)
-		})
-	}
-}
 
 type mockMetricServer struct {
 	cloudmonitoringpb.MetricServiceServer
@@ -190,7 +99,7 @@ func TestGoogleCloudMetricExport(t *testing.T) {
 		Version: "v0.0.1",
 	}
 
-	sde, err := newGoogleCloudMetricsExporter(&Config{
+	sde, err := newLegacyGoogleCloudMetricsExporter(&LegacyConfig{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		ProjectID:        "idk",
 		Endpoint:         "127.0.0.1:8080",
