@@ -19,6 +19,8 @@ import (
 	"time"
 
 	"github.com/shirou/gopsutil/v3/disk"
+	"github.com/shirou/gopsutil/v3/host"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
@@ -32,10 +34,13 @@ const (
 
 // scraper for FileSystem Metrics
 type scraper struct {
-	config   *Config
-	fsFilter fsFilter
+	config    *Config
+	fsFilter  fsFilter
+	mb        *metadata.MetricsBuilder
+	startTime pdata.Timestamp
 
 	// for mocking gopsutil disk.Partitions & disk.Usage
+	bootTime   func() (uint64, error)
 	partitions func(bool) ([]disk.PartitionStat, error)
 	usage      func(string) (*disk.UsageStat, error)
 }
@@ -52,11 +57,22 @@ func newFileSystemScraper(_ context.Context, cfg *Config) (*scraper, error) {
 		return nil, err
 	}
 
-	scraper := &scraper{config: cfg, partitions: disk.Partitions, usage: disk.Usage, fsFilter: *fsFilter}
+	scraper := &scraper{config: cfg, bootTime: host.BootTime, partitions: disk.Partitions, usage: disk.Usage, fsFilter: *fsFilter}
 	return scraper, nil
 }
 
-func (s *scraper) Scrape(_ context.Context) (pdata.Metrics, error) {
+func (s *scraper) start(context.Context, component.Host) error {
+	bootTime, err := s.bootTime()
+	if err != nil {
+		return err
+	}
+
+	s.startTime = pdata.Timestamp(bootTime * 1e9)
+	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, metadata.WithStartTime(pdata.Timestamp(bootTime*1e9)))
+	return nil
+}
+
+func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 	md := pdata.NewMetrics()
 	metrics := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics()
 
@@ -85,37 +101,16 @@ func (s *scraper) Scrape(_ context.Context) (pdata.Metrics, error) {
 
 	if len(usages) > 0 {
 		metrics.EnsureCapacity(metricsLen)
-		initializeFileSystemUsageMetric(metrics.AppendEmpty(), now, usages)
-		appendSystemSpecificMetrics(metrics, now, usages)
+		s.recordFileSystemUsageMetric(now, usages)
+		s.recordSystemSpecificMetrics(now, usages)
+		s.mb.Emit(metrics)
 	}
 
 	err = errors.Combine()
 	if err != nil && len(usages) == 0 {
 		err = scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
-
 	return md, err
-}
-
-func initializeFileSystemUsageMetric(metric pdata.Metric, now pdata.Timestamp, deviceUsages []*deviceUsage) {
-	metadata.Metrics.SystemFilesystemUsage.Init(metric)
-
-	idps := metric.Sum().DataPoints()
-	idps.EnsureCapacity(fileSystemStatesLen * len(deviceUsages))
-	for _, deviceUsage := range deviceUsages {
-		appendFileSystemUsageStateDataPoints(idps, now, deviceUsage)
-	}
-}
-
-func initializeFileSystemUsageDataPoint(dataPoint pdata.NumberDataPoint, now pdata.Timestamp, partition disk.PartitionStat, stateLabel string, value int64) {
-	attributes := dataPoint.Attributes()
-	attributes.InsertString(metadata.Attributes.Device, partition.Device)
-	attributes.InsertString(metadata.Attributes.Type, partition.Fstype)
-	attributes.InsertString(metadata.Attributes.Mode, getMountMode(partition.Opts))
-	attributes.InsertString(metadata.Attributes.Mountpoint, partition.Mountpoint)
-	attributes.InsertString(metadata.Attributes.State, stateLabel)
-	dataPoint.SetTimestamp(now)
-	dataPoint.SetIntVal(value)
 }
 
 func getMountMode(opts []string) string {

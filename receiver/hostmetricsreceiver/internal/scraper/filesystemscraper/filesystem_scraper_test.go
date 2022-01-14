@@ -23,6 +23,7 @@ import (
 	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
@@ -35,23 +36,29 @@ func TestScrape(t *testing.T) {
 	type testCase struct {
 		name                     string
 		config                   Config
+		bootTimeFunc             func() (uint64, error)
 		partitionsFunc           func(bool) ([]disk.PartitionStat, error)
 		usageFunc                func(string) (*disk.UsageStat, error)
 		expectMetrics            bool
 		expectedDeviceDataPoints int
 		expectedDeviceAttributes []map[string]pdata.AttributeValue
 		newErrRegex              string
+		initializationErr        string
 		expectedErr              string
 	}
 
 	testCases := []testCase{
 		{
 			name:          "Standard",
+			config:        Config{Metrics: metadata.DefaultMetricsSettings()},
 			expectMetrics: true,
 		},
 		{
-			name:   "Include single device filter",
-			config: Config{IncludeDevices: DeviceMatchConfig{filterset.Config{MatchType: "strict"}, []string{"a"}}},
+			name: "Include single device filter",
+			config: Config{
+				Metrics:        metadata.DefaultMetricsSettings(),
+				IncludeDevices: DeviceMatchConfig{filterset.Config{MatchType: "strict"}, []string{"a"}},
+			},
 			partitionsFunc: func(bool) ([]disk.PartitionStat, error) {
 				return []disk.PartitionStat{{Device: "a"}, {Device: "b"}}, nil
 			},
@@ -62,13 +69,17 @@ func TestScrape(t *testing.T) {
 			expectedDeviceDataPoints: 1,
 		},
 		{
-			name:          "Include Device Filter that matches nothing",
-			config:        Config{IncludeDevices: DeviceMatchConfig{filterset.Config{MatchType: "strict"}, []string{"@*^#&*$^#)"}}},
+			name: "Include Device Filter that matches nothing",
+			config: Config{
+				Metrics:        metadata.DefaultMetricsSettings(),
+				IncludeDevices: DeviceMatchConfig{filterset.Config{MatchType: "strict"}, []string{"@*^#&*$^#)"}},
+			},
 			expectMetrics: false,
 		},
 		{
 			name: "Include filter with devices, filesystem type and mount points",
 			config: Config{
+				Metrics: metadata.DefaultMetricsSettings(),
 				IncludeDevices: DeviceMatchConfig{
 					Config: filterset.Config{
 						MatchType: filterset.Strict,
@@ -135,33 +146,51 @@ func TestScrape(t *testing.T) {
 			},
 		},
 		{
-			name:        "Invalid Include Device Filter",
-			config:      Config{IncludeDevices: DeviceMatchConfig{Devices: []string{"test"}}},
+			name: "Invalid Include Device Filter",
+			config: Config{
+				Metrics:        metadata.DefaultMetricsSettings(),
+				IncludeDevices: DeviceMatchConfig{Devices: []string{"test"}},
+			},
 			newErrRegex: "^error creating device include filters:",
 		},
 		{
-			name:        "Invalid Exclude Device Filter",
-			config:      Config{ExcludeDevices: DeviceMatchConfig{Devices: []string{"test"}}},
+			name: "Invalid Exclude Device Filter",
+			config: Config{
+				Metrics:        metadata.DefaultMetricsSettings(),
+				ExcludeDevices: DeviceMatchConfig{Devices: []string{"test"}},
+			},
 			newErrRegex: "^error creating device exclude filters:",
 		},
 		{
-			name:        "Invalid Include Filesystems Filter",
-			config:      Config{IncludeFSTypes: FSTypeMatchConfig{FSTypes: []string{"test"}}},
+			name: "Invalid Include Filesystems Filter",
+			config: Config{
+				Metrics:        metadata.DefaultMetricsSettings(),
+				IncludeFSTypes: FSTypeMatchConfig{FSTypes: []string{"test"}},
+			},
 			newErrRegex: "^error creating type include filters:",
 		},
 		{
-			name:        "Invalid Exclude Filesystems Filter",
-			config:      Config{ExcludeFSTypes: FSTypeMatchConfig{FSTypes: []string{"test"}}},
+			name: "Invalid Exclude Filesystems Filter",
+			config: Config{
+				Metrics:        metadata.DefaultMetricsSettings(),
+				ExcludeFSTypes: FSTypeMatchConfig{FSTypes: []string{"test"}},
+			},
 			newErrRegex: "^error creating type exclude filters:",
 		},
 		{
-			name:        "Invalid Include Moountpoints Filter",
-			config:      Config{IncludeMountPoints: MountPointMatchConfig{MountPoints: []string{"test"}}},
+			name: "Invalid Include Moountpoints Filter",
+			config: Config{
+				Metrics:            metadata.DefaultMetricsSettings(),
+				IncludeMountPoints: MountPointMatchConfig{MountPoints: []string{"test"}},
+			},
 			newErrRegex: "^error creating mountpoint include filters:",
 		},
 		{
-			name:        "Invalid Exclude Moountpoints Filter",
-			config:      Config{ExcludeMountPoints: MountPointMatchConfig{MountPoints: []string{"test"}}},
+			name: "Invalid Exclude Moountpoints Filter",
+			config: Config{
+				Metrics:            metadata.DefaultMetricsSettings(),
+				ExcludeMountPoints: MountPointMatchConfig{MountPoints: []string{"test"}},
+			},
 			newErrRegex: "^error creating mountpoint exclude filters:",
 		},
 		{
@@ -192,8 +221,18 @@ func TestScrape(t *testing.T) {
 			if test.usageFunc != nil {
 				scraper.usage = test.usageFunc
 			}
+			if test.bootTimeFunc != nil {
+				scraper.bootTime = test.bootTimeFunc
+			}
 
-			md, err := scraper.Scrape(context.Background())
+			err = scraper.start(context.Background(), componenttest.NewNopHost())
+			if test.initializationErr != "" {
+				assert.EqualError(t, err, test.initializationErr)
+				return
+			}
+			require.NoError(t, err, "Failed to initialize file system scraper: %v", err)
+
+			md, err := scraper.scrape(context.Background())
 			if test.expectedErr != "" {
 				assert.Contains(t, err.Error(), test.expectedErr)
 
@@ -218,7 +257,6 @@ func TestScrape(t *testing.T) {
 			assertFileSystemUsageMetricValid(
 				t,
 				metrics.At(0),
-				metadata.Metrics.SystemFilesystemUsage.New(),
 				test.expectedDeviceDataPoints*fileSystemStatesLen,
 				test.expectedDeviceAttributes,
 			)
@@ -228,7 +266,6 @@ func TestScrape(t *testing.T) {
 				assertFileSystemUsageMetricValid(
 					t,
 					metrics.At(1),
-					metadata.Metrics.SystemFilesystemInodesUsage.New(),
 					test.expectedDeviceDataPoints*2,
 					test.expectedDeviceAttributes,
 				)
@@ -242,10 +279,8 @@ func TestScrape(t *testing.T) {
 func assertFileSystemUsageMetricValid(
 	t *testing.T,
 	metric pdata.Metric,
-	descriptor pdata.Metric,
 	expectedDeviceDataPoints int,
 	expectedDeviceAttributes []map[string]pdata.AttributeValue) {
-	internal.AssertDescriptorEqual(t, descriptor, metric)
 	for i := 0; i < metric.Sum().DataPoints().Len(); i++ {
 		for _, label := range []string{"device", "type", "mode", "mountpoint"} {
 			internal.AssertSumMetricHasAttribute(t, metric, i, label)

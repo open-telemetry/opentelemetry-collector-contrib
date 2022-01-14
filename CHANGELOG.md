@@ -3,6 +3,7 @@
 ## Unreleased
 
 ## 💡 Enhancements 💡
+- `hostreceiver/filesystemscraper`: Migrate the scraper to the mdatagen metrics builder (#7173)
 
 - `hostreceiver/memoryscraper`: Migrate the scraper to the mdatagen metrics builder (#7312)
 - `lokiexporter`: Use record attributes as log labels (#7569)
