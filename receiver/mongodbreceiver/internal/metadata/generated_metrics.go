@@ -144,7 +144,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("mongodb.extents")
 			metric.SetDescription("The number of extents.")
-			metric.SetUnit("1")
+			metric.SetUnit("{extents}")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(false)
 			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
@@ -166,7 +166,7 @@ var Metrics = &metricStruct{
 		func(metric pdata.Metric) {
 			metric.SetName("mongodb.index.count")
 			metric.SetDescription("The number of indexes.")
-			metric.SetUnit("1")
+			metric.SetUnit("{indexes}")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(false)
 			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
