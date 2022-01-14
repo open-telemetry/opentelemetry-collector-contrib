@@ -16,6 +16,7 @@ package k8sclusterreceiver
 
 import (
 	"context"
+	_ "net/http/pprof"
 	"runtime/debug"
 	"testing"
 	"time"
