@@ -32,7 +32,7 @@ type Config struct {
 	// MuteProcessNameError is a flag that will mute the error encountered when trying to read a process the
 	// collector does not have permission for.
 	// See https://github.com/open-telemetry/opentelemetry-collector/issues/3004 for more information.
-	MuteProcessNameError bool `mapstructure:"mute_process_scrape_errors,omitempty"`
+	MuteProcessNameError bool `mapstructure:"mute_process_name_error,omitempty"`
 }
 
 type MatchConfig struct {
