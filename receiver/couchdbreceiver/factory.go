@@ -42,7 +42,7 @@ func createDefaultConfig() config.Receiver {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			CollectionInterval: 10 * time.Second,
+			CollectionInterval: 60 * time.Second,
 		},
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			TLSSetting: configtls.TLSClientSetting{
@@ -52,7 +52,6 @@ func createDefaultConfig() config.Receiver {
 			Endpoint: defaultEndpoint,
 			Timeout:  10 * time.Second,
 		},
-		AllNodes: false,
 	}
 }
 

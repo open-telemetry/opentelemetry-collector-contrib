@@ -65,7 +65,8 @@ func (c *couchdbScraper) scrape(context.Context) (pdata.Metrics, error) {
 }
 
 func (c *couchdbScraper) getResourceMetrics() (pdata.Metrics, error) {
-	stats, err := c.client.GetStats("_local")
+	localNode := "_local"
+	stats, err := c.client.GetStats(localNode)
 	if err != nil {
 		c.logger.Error("Failed to fetch couchdb stats",
 			zap.String("endpoint", c.config.Endpoint),

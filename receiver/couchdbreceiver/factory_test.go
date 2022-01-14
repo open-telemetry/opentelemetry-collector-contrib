@@ -51,7 +51,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 		&Config{
 			ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 				ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID("couchdb")),
-				CollectionInterval: 10 * time.Second,
+				CollectionInterval: 60 * time.Second,
 			},
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint: "http://localhost:5984",
