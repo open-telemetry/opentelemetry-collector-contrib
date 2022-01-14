@@ -1,3 +1,17 @@
+// Copyright  The OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package elasticsearchreceiver
 
 import (
@@ -6,11 +20,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/metadata"
 )
 
 const instrumentationLibraryName = "otel/elasticsearch"
@@ -72,8 +87,8 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, rms pdata.
 		resourceAttrs.InsertString(metadata.A.ElasticsearchClusterName, nodeStats.ClusterName)
 		resourceAttrs.InsertString(metadata.A.ElasticsearchNodeName, info.Name)
 
-		ills := rm.InstrumentationLibraryMetrics().AppendEmpty()
-		ills.InstrumentationLibrary().SetName(instrumentationLibraryName)
+		ilms := rm.InstrumentationLibraryMetrics().AppendEmpty()
+		ilms.InstrumentationLibrary().SetName(instrumentationLibraryName)
 
 		r.metricsBuilder.RecordElasticsearchNodeCacheMemoryUsageDataPoint(r.now, info.Indices.FieldDataCache.MemorySizeInBy, metadata.AttributeCacheName.Fielddata)
 		r.metricsBuilder.RecordElasticsearchNodeCacheMemoryUsageDataPoint(r.now, info.Indices.QueryCache.MemorySizeInBy, metadata.AttributeCacheName.Query)
@@ -156,7 +171,7 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, rms pdata.
 
 		r.metricsBuilder.RecordJvmThreadsCountDataPoint(r.now, info.JVMInfo.JVMThreadInfo.Count)
 
-		r.metricsBuilder.EmitNodeMetrics(ills.Metrics())
+		r.metricsBuilder.EmitNodeMetrics(ilms.Metrics())
 	}
 }
 
@@ -175,8 +190,8 @@ func (r *elasticsearchScraper) scrapeClusterMetrics(ctx context.Context, rms pda
 	resourceAttrs := rm.Resource().Attributes()
 	resourceAttrs.InsertString(metadata.A.ElasticsearchClusterName, clusterHealth.ClusterName)
 
-	ills := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ills.InstrumentationLibrary().SetName(instrumentationLibraryName)
+	ilms := rm.InstrumentationLibraryMetrics().AppendEmpty()
+	ilms.InstrumentationLibrary().SetName(instrumentationLibraryName)
 
 	r.metricsBuilder.RecordElasticsearchClusterNodesDataPoint(r.now, clusterHealth.NodeCount)
 
@@ -204,5 +219,5 @@ func (r *elasticsearchScraper) scrapeClusterMetrics(ctx context.Context, rms pda
 		errs.AddPartial(1, fmt.Errorf("health status %s: %w", clusterHealth.Status, errUnknownClusterStatus))
 	}
 
-	r.metricsBuilder.EmitClusterMetrics(ills.Metrics())
+	r.metricsBuilder.EmitClusterMetrics(ilms.Metrics())
 }

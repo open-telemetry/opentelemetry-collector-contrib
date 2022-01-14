@@ -1,3 +1,17 @@
+// Copyright  The OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package elasticsearchreceiver
 
 import (
@@ -9,20 +23,24 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/mocks"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/model"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/mocks"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/model"
 )
 
-const expectedMetricsPath = "./testdata/expected_metrics/expected.json"
+const fullExpectedMetricsPath = "./testdata/expected_metrics/full.json"
+const skipClusterExpectedMetricsPath = "./testdata/expected_metrics/clusterSkip.json"
+const noNodesExpectedMetricsPath = "./testdata/expected_metrics/noNodes.json"
 
 func TestScraper(t *testing.T) {
 	t.Parallel()
@@ -38,17 +56,65 @@ func TestScraper(t *testing.T) {
 
 	sc.client = &mockClient
 
-	expectedMetrics, err := golden.ReadMetrics(expectedMetricsPath)
+	expectedMetrics, err := golden.ReadMetrics(fullExpectedMetricsPath)
 	require.NoError(t, err)
 
 	actualMetrics, err := sc.scrape(context.Background())
 	require.NoError(t, err)
 
-	expectedMetricsSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
-	actualMetricsSlice := actualMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+	requireMetricsEqual(t, expectedMetrics, actualMetrics)
+}
 
-	err = scrapertest.CompareMetricSlices(expectedMetricsSlice, actualMetricsSlice)
+func TestScraperSkipClusterMetrics(t *testing.T) {
+	t.Parallel()
+
+	conf := createDefaultConfig().(*Config)
+	conf.SkipClusterMetrics = true
+
+	sc := newElasticSearchScraper(zap.NewNop(), conf)
+
+	err := sc.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
+
+	mockClient := mocks.MockElasticsearchClient{}
+	mockClient.On("ClusterHealth", mock.Anything).Return(clusterHealth(t), nil)
+	mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nodeStats(t), nil)
+
+	sc.client = &mockClient
+
+	expectedMetrics, err := golden.ReadMetrics(skipClusterExpectedMetricsPath)
+	require.NoError(t, err)
+
+	actualMetrics, err := sc.scrape(context.Background())
+	require.NoError(t, err)
+
+	requireMetricsEqual(t, expectedMetrics, actualMetrics)
+}
+
+func TestScraperNoNodesMetrics(t *testing.T) {
+	t.Parallel()
+
+	conf := createDefaultConfig().(*Config)
+	conf.Nodes = []string{}
+
+	sc := newElasticSearchScraper(zap.NewNop(), conf)
+
+	err := sc.start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	mockClient := mocks.MockElasticsearchClient{}
+	mockClient.On("ClusterHealth", mock.Anything).Return(clusterHealth(t), nil)
+	mockClient.On("NodeStats", mock.Anything, []string{}).Return(nodeStats(t), nil)
+
+	sc.client = &mockClient
+
+	expectedMetrics, err := golden.ReadMetrics(noNodesExpectedMetricsPath)
+	require.NoError(t, err)
+
+	actualMetrics, err := sc.scrape(context.Background())
+	require.NoError(t, err)
+
+	requireMetricsEqual(t, expectedMetrics, actualMetrics)
 }
 
 func TestScraperFailedStart(t *testing.T) {
@@ -181,21 +247,21 @@ func TestScrapingError(t *testing.T) {
 }
 
 func clusterHealth(t *testing.T) *model.ClusterHealth {
-	healthJson, err := ioutil.ReadFile("./testdata/sample_payloads/health.json")
+	healthJSON, err := ioutil.ReadFile("./testdata/sample_payloads/health.json")
 	require.NoError(t, err)
 
 	clusterHealth := model.ClusterHealth{}
-	require.NoError(t, json.Unmarshal(healthJson, &clusterHealth))
+	require.NoError(t, json.Unmarshal(healthJSON, &clusterHealth))
 
 	return &clusterHealth
 }
 
 func nodeStats(t *testing.T) *model.NodeStats {
-	nodeJson, err := ioutil.ReadFile("./testdata/sample_payloads/nodes_linux.json")
+	nodeJSON, err := ioutil.ReadFile("./testdata/sample_payloads/nodes_linux.json")
 	require.NoError(t, err)
 
 	nodeStats := model.NodeStats{}
-	require.NoError(t, json.Unmarshal(nodeJson, &nodeStats))
+	require.NoError(t, json.Unmarshal(nodeJSON, &nodeStats))
 	return &nodeStats
 }
 
@@ -214,13 +280,67 @@ func TestWriteGolden(t *testing.T) {
 
 	sc.client = &mockClient
 
-	actualMetrics, err := sc.scrape(context.Background())
+	fullMetrics, err := sc.scrape(context.Background())
 	require.NoError(t, err)
 
-	expectedDir := filepath.Dir(expectedMetricsPath)
-	err = os.MkdirAll(expectedDir, 0777)
+	sc.cfg.SkipClusterMetrics = true
+	clusterSkipMetrics, err := sc.scrape(context.Background())
+	require.NoError(t, err)
+	sc.cfg.SkipClusterMetrics = false
+
+	sc.cfg.Nodes = []string{}
+	noNodesMetrics, err := sc.scrape(context.Background())
+	require.NoError(t, err)
+	sc.cfg.Nodes = []string{"_all"}
+
+	initFileDir := func(t *testing.T, filePath string) {
+		dir := filepath.Dir(filePath)
+		mkdirErr := os.MkdirAll(dir, 0777)
+		require.NoError(t, mkdirErr)
+	}
+
+	initFileDir(t, fullExpectedMetricsPath)
+	initFileDir(t, skipClusterExpectedMetricsPath)
+	initFileDir(t, noNodesExpectedMetricsPath)
+
+	err = golden.WriteMetrics(fullExpectedMetricsPath, fullMetrics)
 	require.NoError(t, err)
 
-	err = golden.WriteMetrics(expectedMetricsPath, actualMetrics)
+	err = golden.WriteMetrics(skipClusterExpectedMetricsPath, clusterSkipMetrics)
 	require.NoError(t, err)
+
+	err = golden.WriteMetrics(noNodesExpectedMetricsPath, noNodesMetrics)
+	require.NoError(t, err)
+}
+
+func requireMetricsEqual(t *testing.T, m1, m2 pdata.Metrics) {
+	rms1 := m1.ResourceMetrics()
+	rms2 := m2.ResourceMetrics()
+	if rms1.Len() != rms2.Len() {
+		require.Fail(t, "First metric had %d resource metrics, second had %d", rms1.Len(), rms2.Len())
+	}
+
+	for i := 0; i < rms1.Len(); i++ {
+		rm1 := rms1.At(i)
+		rm2 := rms2.At(i)
+
+		require.Equal(t, rm1.Resource().Attributes().AsRaw(), rm2.Resource().Attributes().AsRaw())
+
+		ilms1 := rm1.InstrumentationLibraryMetrics()
+		ilms2 := rm2.InstrumentationLibraryMetrics()
+
+		if ilms1.Len() != ilms2.Len() {
+			require.Fail(t, "Resource metric %d: First metric had %d ILL metrics, second had %d", i, ilms1.Len(), ilms2.Len())
+		}
+
+		for j := 0; j < ilms1.Len(); j++ {
+			ilm1 := ilms1.At(j)
+			ilm2 := ilms2.At(j)
+
+			require.Equal(t, ilm1.InstrumentationLibrary().Name(), ilm2.InstrumentationLibrary().Name())
+
+			err := scrapertest.CompareMetricSlices(ilm1.Metrics(), ilm2.Metrics())
+			require.NoError(t, err)
+		}
+	}
 }

@@ -1,0 +1,166 @@
+{
+   "resourceMetrics": [
+      {
+         "instrumentationLibraryMetrics": [
+            {
+               "instrumentationLibrary": {
+                  "name": "otel/elasticsearch"
+               },
+               "metrics": [
+                  {
+                     "description": "The number of data nodes in the cluster.",
+                     "name": "elasticsearch.cluster.data_nodes",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "1",
+                              "startTimeUnixNano": "1642162713318107000",
+                              "timeUnixNano": "1642162713318106000"
+                           }
+                        ]
+                     },
+                     "unit": "{nodes}"
+                  },
+                  {
+                     "description": "The total number of nodes in the cluster.",
+                     "name": "elasticsearch.cluster.nodes",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "1",
+                              "startTimeUnixNano": "1642162713318107000",
+                              "timeUnixNano": "1642162713318106000"
+                           }
+                        ]
+                     },
+                     "unit": "{nodes}"
+                  },
+                  {
+                     "description": "The number of shards in the cluster.",
+                     "name": "elasticsearch.cluster.shards",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "state",
+                                    "value": {
+                                       "stringValue": "active"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642162713318107000",
+                              "timeUnixNano": "1642162713318106000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "state",
+                                    "value": {
+                                       "stringValue": "initializing"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642162713318107000",
+                              "timeUnixNano": "1642162713318106000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "state",
+                                    "value": {
+                                       "stringValue": "relocating"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642162713318107000",
+                              "timeUnixNano": "1642162713318106000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "state",
+                                    "value": {
+                                       "stringValue": "unassigned"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642162713318107000",
+                              "timeUnixNano": "1642162713318106000"
+                           }
+                        ]
+                     },
+                     "unit": "{shards}"
+                  },
+                  {
+                     "description": "The health status of the cluster.",
+                     "name": "elasticsearch.cluster.health",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "1",
+                              "attributes": [
+                                 {
+                                    "key": "status",
+                                    "value": {
+                                       "stringValue": "green"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642162713318107000",
+                              "timeUnixNano": "1642162713318106000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "status",
+                                    "value": {
+                                       "stringValue": "yellow"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642162713318107000",
+                              "timeUnixNano": "1642162713318106000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "status",
+                                    "value": {
+                                       "stringValue": "red"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642162713318107000",
+                              "timeUnixNano": "1642162713318106000"
+                           }
+                        ]
+                     },
+                     "unit": "{status}"
+                  }
+               ]
+            }
+         ],
+         "resource": {
+            "attributes": [
+               {
+                  "key": "elasticsearch.cluster.name",
+                  "value": {
+                     "stringValue": "docker-cluster"
+                  }
+               }
+            ]
+         }
+      }
+   ]
+}
