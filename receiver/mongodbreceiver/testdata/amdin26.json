@@ -1,0 +1,320 @@
+{
+    "host": "6d77e75cbad0",
+    "version": "2.6.12",
+    "process": "mongod",
+    "pid": {
+        "floatApprox": 1
+    },
+    "uptime": 1070,
+    "uptimeMillis": {
+        "floatApprox": 1070414
+    },
+    "uptimeEstimate": 981,
+    "localTime": "2022-01-14T19:23:46.972Z",
+    "asserts": {
+        "regular": 0,
+        "warning": 0,
+        "msg": 0,
+        "user": 0,
+        "rollovers": 0
+    },
+    "backgroundFlushing": {
+        "flushes": 17,
+        "total_ms": 36,
+        "average_ms": 2.1176470588235294,
+        "last_ms": 1,
+        "last_finished": "2022-01-14T19:22:55.439Z"
+    },
+    "connections": {
+        "current": 1,
+        "available": 838859,
+        "totalCreated": {
+            "floatApprox": 2
+        }
+    },
+    "cursors": {
+        "note": "deprecated, use server status metrics",
+        "clientCursors_size": 0,
+        "totalOpen": 0,
+        "pinned": 0,
+        "totalNoTimeout": 0,
+        "timedOut": 0
+    },
+    "dur": {
+        "commits": 29,
+        "journaledMB": 0,
+        "writeToDataFilesMB": 0,
+        "compression": 0,
+        "commitsInWriteLock": 0,
+        "earlyCommits": 0,
+        "timeMs": {
+            "dt": 3025,
+            "prepLogBuffer": 0,
+            "writeToJournal": 0,
+            "writeToDataFiles": 0,
+            "remapPrivateView": 0
+        }
+    },
+    "extra_info": {
+        "note": "fields vary by platform",
+        "heap_usage_bytes": 62525784,
+        "page_faults": 18
+    },
+    "globalLock": {
+        "totalTime": {
+            "floatApprox": 1070414000
+        },
+        "lockTime": {
+            "floatApprox": 132712
+        },
+        "currentQueue": {
+            "total": 0,
+            "readers": 0,
+            "writers": 0
+        },
+        "activeClients": {
+            "total": 0,
+            "readers": 0,
+            "writers": 0
+        }
+    },
+    "indexCounters": {
+        "accesses": 2,
+        "hits": 2,
+        "misses": 0,
+        "resets": 0,
+        "missRatio": 0
+    },
+    "locks": {
+        ".": {
+            "timeLockedMicros": {
+                "R": {
+                    "floatApprox": 122169
+                },
+                "W": {
+                    "floatApprox": 132712
+                }
+            },
+            "timeAcquiringMicros": {
+                "R": {
+                    "floatApprox": 116749
+                },
+                "W": {
+                    "floatApprox": 14340
+                }
+            }
+        },
+        "admin": {
+            "timeLockedMicros": {
+                "r": {
+                    "floatApprox": 2527
+                },
+                "w": {
+                    "floatApprox": 0
+                }
+            },
+            "timeAcquiringMicros": {
+                "r": {
+                    "floatApprox": 499
+                },
+                "w": {
+                    "floatApprox": 0
+                }
+            }
+        },
+        "local": {
+            "timeLockedMicros": {
+                "r": {
+                    "floatApprox": 32509
+                },
+                "w": {
+                    "floatApprox": 0
+                }
+            },
+            "timeAcquiringMicros": {
+                "r": {
+                    "floatApprox": 11542
+                },
+                "w": {
+                    "floatApprox": 0
+                }
+            }
+        }
+    },
+    "network": {
+        "bytesIn": 4198,
+        "bytesOut": 80700,
+        "numRequests": 58
+    },
+    "opcounters": {
+        "insert": 1,
+        "query": 35,
+        "update": 0,
+        "delete": 0,
+        "getmore": 0,
+        "command": 60
+    },
+    "opcountersRepl": {
+        "insert": 0,
+        "query": 0,
+        "update": 0,
+        "delete": 0,
+        "getmore": 0,
+        "command": 0
+    },
+    "recordStats": {
+        "accessesNotInMemory": 0,
+        "pageFaultExceptionsThrown": 0,
+        "admin": {
+            "accessesNotInMemory": 0,
+            "pageFaultExceptionsThrown": 0
+        },
+        "local": {
+            "accessesNotInMemory": 0,
+            "pageFaultExceptionsThrown": 0
+        }
+    },
+    "writeBacksQueued": false,
+    "mem": {
+        "bits": 64,
+        "resident": 45,
+        "virtual": 342,
+        "supported": true,
+        "mapped": 80,
+        "mappedWithJournal": 160
+    },
+    "metrics": {
+        "cursor": {
+            "timedOut": {
+                "floatApprox": 0
+            },
+            "open": {
+                "noTimeout": {
+                    "floatApprox": 0
+                },
+                "pinned": {
+                    "floatApprox": 0
+                },
+                "total": {
+                    "floatApprox": 0
+                }
+            }
+        },
+        "document": {
+            "deleted": {
+                "floatApprox": 0
+            },
+            "inserted": {
+                "floatApprox": 1
+            },
+            "returned": {
+                "floatApprox": 0
+            },
+            "updated": {
+                "floatApprox": 0
+            }
+        },
+        "getLastError": {
+            "wtime": {
+                "num": 0,
+                "totalMillis": 0
+            },
+            "wtimeouts": {
+                "floatApprox": 0
+            }
+        },
+        "operation": {
+            "fastmod": {
+                "floatApprox": 0
+            },
+            "idhack": {
+                "floatApprox": 0
+            },
+            "scanAndOrder": {
+                "floatApprox": 0
+            }
+        },
+        "queryExecutor": {
+            "scanned": {
+                "floatApprox": 0
+            },
+            "scannedObjects": {
+                "floatApprox": 0
+            }
+        },
+        "record": {
+            "moves": {
+                "floatApprox": 0
+            }
+        },
+        "repl": {
+            "apply": {
+                "batches": {
+                    "num": 0,
+                    "totalMillis": 0
+                },
+                "ops": {
+                    "floatApprox": 0
+                }
+            },
+            "buffer": {
+                "count": {
+                    "floatApprox": 0
+                },
+                "maxSizeBytes": 268435456,
+                "sizeBytes": {
+                    "floatApprox": 0
+                }
+            },
+            "network": {
+                "bytes": {
+                    "floatApprox": 0
+                },
+                "getmores": {
+                    "num": 0,
+                    "totalMillis": 0
+                },
+                "ops": {
+                    "floatApprox": 0
+                },
+                "readersCreated": {
+                    "floatApprox": 0
+                }
+            },
+            "preload": {
+                "docs": {
+                    "num": 0,
+                    "totalMillis": 0
+                },
+                "indexes": {
+                    "num": 0,
+                    "totalMillis": 0
+                }
+            }
+        },
+        "storage": {
+            "freelist": {
+                "search": {
+                    "bucketExhausted": {
+                        "floatApprox": 0
+                    },
+                    "requests": {
+                        "floatApprox": 6
+                    },
+                    "scanned": {
+                        "floatApprox": 11
+                    }
+                }
+            }
+        },
+        "ttl": {
+            "deletedDocuments": {
+                "floatApprox": 0
+            },
+            "passes": {
+                "floatApprox": 17
+            }
+        }
+    },
+    "ok": 1
+}

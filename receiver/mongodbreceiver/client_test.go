@@ -1,124 +1,37 @@
-package mongodbreceiver
+// Copyright  The OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package mongodbreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver"
 
 import (
 	"context"
-	"fmt"
 	"io/ioutil"
 	"testing"
-	"time"
 
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
-	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 )
 
-var _ driver = (*fakeDriver)(nil)
-
-// fakeDriver is an underlying mock of the mongo.Client used explicitly for testing
-// some functionality wants to be tested outside of the scope of mtest
-// such as some unclean disconnections and it is easier to mock
-// the function behavior rather than specifying the raw bson results
-type fakeDriver struct {
-	mock.Mock
-}
-
-func (c *fakeDriver) Disconnect(ctx context.Context) error {
-	args := c.Called(ctx)
-	return args.Error(0)
-}
-
-func (c *fakeDriver) RunCommand(ctx context.Context, database string, command bson.M) (bson.M, error) {
-	args := c.Called(ctx, database, command)
-	return args.Get(0).(bson.M), args.Error(1)
-}
-
-func (c *fakeDriver) DBStats(ctx context.Context, database string) (bson.M, error) {
-	args := c.Called(ctx, database)
-	return args.Get(0).(bson.M), args.Error(1)
-}
-
-func (c *fakeDriver) ServerStatus(ctx context.Context, database string) (bson.M, error) {
-	args := c.Called(ctx, database)
-	return args.Get(0).(bson.M), args.Error(1)
-}
-
-func (c *fakeDriver) ListDatabaseNames(ctx context.Context, filter interface{}, options ...*options.ListDatabasesOptions) ([]string, error) {
-	args := c.Called(ctx, filter, options)
-	return args.Get(0).([]string), args.Error(1)
-}
-
-func (c *fakeDriver) Connect(ctx context.Context) error {
-	args := c.Called(ctx)
-	return args.Error(0)
-}
-
-func (c *fakeDriver) Ping(ctx context.Context, rp *readpref.ReadPref) error {
-	args := c.Called(ctx, rp)
-	return args.Error(0)
-}
-
-func (c *fakeDriver) Database(name string, opts ...*options.DatabaseOptions) *mongo.Database {
-	args := c.Called(name, opts)
-	return args.Get(0).(*mongo.Database)
-}
-
-func (c *fakeDriver) TestConnection(ctx context.Context) (*mongoTestConnectionResponse, error) {
-	args := c.Called(ctx)
-	return args.Get(0).(*mongoTestConnectionResponse), args.Error(1)
-}
-
 func TestValidClient(t *testing.T) {
-	client, err := NewClient(&Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			CollectionInterval: 10 * time.Second,
-		},
-		Hosts: []confignet.NetAddr{
-			{
-				Endpoint: "localhost:27017",
-			},
-		},
-		Username: "username",
-		Password: "password",
-		Timeout:  1 * time.Second,
-	}, zap.NewNop())
+	cfg := createDefaultConfig().(*Config)
+	client, err := NewClient(cfg, zap.NewNop())
 
 	require.NoError(t, err)
 	require.NotNil(t, client)
-}
-
-func TestBadTLSClient(t *testing.T) {
-	client, err := NewClient(&Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			CollectionInterval: 10 * time.Second,
-		},
-		Hosts: []confignet.NetAddr{
-			{
-				Endpoint: "localhost:27017",
-			},
-		},
-		TLSClientSetting: configtls.TLSClientSetting{
-			TLSSetting: configtls.TLSSetting{
-				CAFile:   "/dev/temporal.txt",
-				CertFile: "/dev/test.txt",
-			},
-		},
-		Username: "username",
-		Password: "password",
-		Timeout:  1 * time.Second,
-	}, zap.NewNop())
-
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "invalid tls configuration")
-	require.Nil(t, client)
 }
 
 func TestListDatabaseNames(t *testing.T) {
@@ -140,121 +53,13 @@ func TestListDatabaseNames(t *testing.T) {
 			}))
 		driver := mt.Client
 		client := &mongodbClient{
-			driver: driver,
-			logger: zap.NewNop(),
+			Client: driver,
 		}
-		dbNames, err := client.ListDatabaseNames(context.TODO(), bson.D{})
+		dbNames, err := client.ListDatabaseNames(context.Background(), bson.D{})
 		require.NoError(t, err)
 		require.Equal(t, dbNames[0], "admin")
 	})
 
-}
-
-func TestBadClientNonTCPAddr(t *testing.T) {
-	cl, err := NewClient(&Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			CollectionInterval: 10 * time.Second,
-		},
-		Hosts: []confignet.NetAddr{
-			{
-				Endpoint: "/dev/null",
-			},
-		},
-		Timeout: 1 * time.Second,
-	}, zap.NewNop())
-
-	require.NoError(t, err)
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	err = cl.Connect(ctx)
-	require.NotNil(t, err)
-	require.Contains(t, err.Error(), "unable to instantiate mongo client")
-}
-
-func TestInitClientBadEndpoint(t *testing.T) {
-	client := mongodbClient{
-		username: "admin",
-		password: "password",
-		hosts:    []string{"x:localhost:27017:an_invalid_tcp_addr"},
-		logger:   zap.NewNop(),
-	}
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	err := client.ensureClient(ctx)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "error creating")
-}
-
-func TestInitClientReplicaSet(t *testing.T) {
-	mont := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
-	defer mont.Close()
-
-	mont.Run("ping failure", func(mt *mtest.T) {
-		mt.AddMockResponses(
-			mtest.CreateCommandErrorResponse(mtest.CommandError{}),
-			mtest.CreateSuccessResponse(),
-			mtest.CreateSuccessResponse(),
-		)
-		driver := mt.Client
-		client := mongodbClient{
-			driver: driver,
-			hosts:  []string{"localhost:27017"},
-			logger: zap.NewNop(),
-		}
-
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
-
-		err := client.ensureClient(ctx)
-		require.NoError(t, err)
-	})
-
-}
-
-func TestDisconnectSuccess(t *testing.T) {
-	driver := &fakeDriver{}
-	driver.On("Disconnect", mock.Anything).Return(nil)
-	driver.On("Ping", mock.Anything, mock.Anything).Return(nil)
-
-	client := mongodbClient{
-		driver: driver,
-		logger: zap.NewNop(),
-	}
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
-
-	err := client.Disconnect(ctx)
-	require.NoError(t, err)
-}
-
-func TestDisconnectFailure(t *testing.T) {
-	fakeMongoClient := &fakeDriver{}
-	fakeMongoClient.On("Disconnect", mock.Anything).Return(fmt.Errorf("connection terminated by peer"))
-	fakeMongoClient.On("Ping", mock.Anything, mock.Anything).Return(nil)
-
-	client := mongodbClient{
-		driver: fakeMongoClient,
-		logger: zap.NewNop(),
-	}
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	err := client.Disconnect(ctx)
-	require.Error(t, err)
-}
-
-func TestDisconnectNoClient(t *testing.T) {
-	client := mongodbClient{
-		logger: zap.NewNop(),
-	}
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	err := client.Disconnect(ctx)
-	require.NoError(t, err)
 }
 
 type commandString = string
@@ -264,7 +69,7 @@ const (
 	serverStatusType commandString = "serverStatus"
 )
 
-func TestSuccessfulRunCommands(t *testing.T) {
+func TestRunCommands(t *testing.T) {
 	mont := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
 	defer mont.Close()
 
@@ -292,7 +97,7 @@ func TestSuccessfulRunCommands(t *testing.T) {
 			cmd:      serverStatusType,
 			response: loadedServerStatus,
 			validate: func(t *testing.T, m bson.M) {
-				require.Equal(t, int32(1), m["connections"].(bson.M)["active"])
+				require.Equal(t, int32(0), m["mem"].(bson.M)["mapped"])
 			},
 		},
 	}
@@ -302,14 +107,14 @@ func TestSuccessfulRunCommands(t *testing.T) {
 			mt.AddMockResponses(tc.response)
 			driver := mt.Client
 			client := mongodbClient{
-				driver: driver,
+				Client: driver,
 				logger: zap.NewNop(),
 			}
 			var result bson.M
 			if tc.cmd == serverStatusType {
-				result, err = client.ServerStatus(context.TODO(), "test")
+				result, err = client.ServerStatus(context.Background(), "test")
 			} else {
-				result, err = client.DBStats(context.TODO(), "test")
+				result, err = client.DBStats(context.Background(), "test")
 			}
 			require.NoError(t, err)
 			if tc.validate != nil {
@@ -319,7 +124,7 @@ func TestSuccessfulRunCommands(t *testing.T) {
 	}
 }
 
-func TestTestConnectionSuccess(t *testing.T) {
+func TestGetVersion(t *testing.T) {
 	mont := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
 	defer mont.Close()
 
@@ -328,25 +133,23 @@ func TestTestConnectionSuccess(t *testing.T) {
 
 	mont.Run("test connection", func(mt *mtest.T) {
 		mt.AddMockResponses(
-			// Connection Success
-			mtest.CreateSuccessResponse(),
 			// retrieving build info
 			buildInfo,
 		)
 
 		driver := mt.Client
 		client := mongodbClient{
-			driver: driver,
+			Client: driver,
 			logger: zap.NewNop(),
 		}
 
-		res, err := client.TestConnection(context.TODO())
+		version, err := client.GetVersion(context.TODO())
 		require.NoError(t, err)
-		require.Equal(t, "4.4.10", res.Version)
+		require.Equal(t, "4.4.10", *version)
 	})
 }
 
-func TestTestConnectionFailures(t *testing.T) {
+func TestGetVersionFailures(t *testing.T) {
 	mont := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
 	defer mont.Close()
 
@@ -361,13 +164,8 @@ func TestTestConnectionFailures(t *testing.T) {
 		partialError string
 	}{
 		{
-			desc:         "Failure to connect",
-			responses:    []primitive.D{},
-			partialError: "unable to connect",
-		},
-		{
 			desc:         "Unable to run buildInfo",
-			responses:    []primitive.D{mtest.CreateSuccessResponse()},
+			responses:    []primitive.D{mtest.CreateCommandErrorResponse(mtest.CommandError{})},
 			partialError: "unable to get build info",
 		},
 		{
@@ -382,11 +180,11 @@ func TestTestConnectionFailures(t *testing.T) {
 			mt.AddMockResponses(tc.responses...)
 			driver := mt.Client
 			client := mongodbClient{
-				driver: driver,
+				Client: driver,
 				logger: zap.NewNop(),
 			}
 
-			_, err := client.TestConnection(context.TODO())
+			_, err := client.GetVersion(context.TODO())
 			require.Error(t, err)
 			require.Contains(t, err.Error(), tc.partialError)
 		})
