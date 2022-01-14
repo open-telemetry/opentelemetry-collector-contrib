@@ -70,7 +70,7 @@ metrics:
     attributes: [database, connection_type]
   mongodb.extents:
     description: The number of extents.
-    unit: 1
+    unit: "{extents}"
     enabled: true
     sum:
       monotonic: false
@@ -88,7 +88,7 @@ metrics:
     attributes: []
   mongodb.index.count:
     description: The number of indexes.
-    unit: 1
+    unit: "{indexes}"
     enabled: true
     sum:
       monotonic: false
