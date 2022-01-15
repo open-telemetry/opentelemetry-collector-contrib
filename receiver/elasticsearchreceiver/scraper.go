@@ -28,7 +28,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/metadata"
 )
 
-const instrumentationLibraryName = "otel/elasticsearch"
+const instrumentationLibraryName = "otelcol/elasticsearch"
 
 var errUnknownClusterStatus = errors.New("unknown cluster status")
 
