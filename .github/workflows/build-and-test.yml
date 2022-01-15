@@ -418,7 +418,7 @@ jobs:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Push to github packages
+      - name: Push tracegen to Github packages
         uses: docker/build-push-action@v2
         with:
           context: tracegen
