@@ -415,7 +415,6 @@ jobs:
 #            docker push otel/opentelemetry-collector-contrib-dev:latest
 
       - name: Test docker pull
-        if: steps.check.outputs.passed == 'true'
         run: |
             docker pull otel/opentelemetry-collector-contrib-dev:latest
       - name: Login to GitHub Container Registry
