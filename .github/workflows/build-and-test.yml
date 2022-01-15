@@ -413,6 +413,11 @@ jobs:
 #        run: |
 #            docker push otel/opentelemetry-collector-contrib-dev:$GITHUB_SHA
 #            docker push otel/opentelemetry-collector-contrib-dev:latest
+
+      - name: Test docker pull
+        if: steps.check.outputs.passed == 'true'
+        run: |
+            docker pull otel/opentelemetry-collector-contrib-dev:latest
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v1
         with:
@@ -420,7 +425,6 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: push to github packages
-        if: steps.check.outputs.passed == 'true'
         uses: docker/build-push-action@v2
         with:
           context: tracegen
