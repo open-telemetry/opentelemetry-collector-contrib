@@ -13,6 +13,7 @@
 - `tanzuobservabilityexporter`: Support delta histograms (#6897)
 - `mysqlreceiver`: Add the receiver to available components (#7078)
 - `dynatraceexporter`: Do not shut down exporter when metrics ingest module is temporarily unavailable (#7161)
+- `postgresqlreceiver`: add the receiver to available components (#7079)
 
 ## 🛑 Breaking changes 🛑
 
