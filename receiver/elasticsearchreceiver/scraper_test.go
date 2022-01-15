@@ -19,8 +19,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/mock"
@@ -263,54 +261,6 @@ func nodeStats(t *testing.T) *model.NodeStats {
 	nodeStats := model.NodeStats{}
 	require.NoError(t, json.Unmarshal(nodeJSON, &nodeStats))
 	return &nodeStats
-}
-
-// TestWriteGolden writes golden metrics to testdata; It should only be used to generate golden metrics when changes to metrics are made.
-func TestWriteGolden(t *testing.T) {
-	t.SkipNow()
-
-	sc := newElasticSearchScraper(zap.NewNop(), createDefaultConfig().(*Config))
-
-	err := sc.start(context.Background(), componenttest.NewNopHost())
-	require.NoError(t, err)
-
-	mockClient := mocks.MockElasticsearchClient{}
-	mockClient.On("ClusterHealth", mock.Anything).Return(clusterHealth(t), nil)
-	mockClient.On("NodeStats", mock.Anything, mock.Anything).Return(nodeStats(t), nil)
-
-	sc.client = &mockClient
-
-	fullMetrics, err := sc.scrape(context.Background())
-	require.NoError(t, err)
-
-	sc.cfg.SkipClusterMetrics = true
-	clusterSkipMetrics, err := sc.scrape(context.Background())
-	require.NoError(t, err)
-	sc.cfg.SkipClusterMetrics = false
-
-	sc.cfg.Nodes = []string{}
-	noNodesMetrics, err := sc.scrape(context.Background())
-	require.NoError(t, err)
-	sc.cfg.Nodes = []string{"_all"}
-
-	initFileDir := func(t *testing.T, filePath string) {
-		dir := filepath.Dir(filePath)
-		mkdirErr := os.MkdirAll(dir, 0777)
-		require.NoError(t, mkdirErr)
-	}
-
-	initFileDir(t, fullExpectedMetricsPath)
-	initFileDir(t, skipClusterExpectedMetricsPath)
-	initFileDir(t, noNodesExpectedMetricsPath)
-
-	err = golden.WriteMetrics(fullExpectedMetricsPath, fullMetrics)
-	require.NoError(t, err)
-
-	err = golden.WriteMetrics(skipClusterExpectedMetricsPath, clusterSkipMetrics)
-	require.NoError(t, err)
-
-	err = golden.WriteMetrics(noNodesExpectedMetricsPath, noNodesMetrics)
-	require.NoError(t, err)
 }
 
 func requireMetricsEqual(t *testing.T, m1, m2 pdata.Metrics) {
