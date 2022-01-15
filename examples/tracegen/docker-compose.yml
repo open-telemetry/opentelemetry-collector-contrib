@@ -32,6 +32,6 @@ services:
       - otel-collector:4317
       - -otlp-insecure
       - -duration
-      - 100000000s
+      - 10000000s
     depends_on:
       - otel-collector
