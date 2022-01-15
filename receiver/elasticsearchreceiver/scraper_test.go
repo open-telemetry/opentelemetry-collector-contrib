@@ -234,7 +234,7 @@ func TestScrapingError(t *testing.T) {
 
 				_, err = sc.scrape(context.Background())
 				require.True(t, scrapererror.IsPartialScrapeError(err))
-				require.Contains(t, err.Error(), err.Error())
+				require.Contains(t, err.Error(), errUnknownClusterStatus.Error())
 			},
 		},
 	}
