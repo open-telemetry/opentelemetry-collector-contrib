@@ -330,7 +330,7 @@ func requireMetricsEqual(t *testing.T, m1, m2 pdata.Metrics) {
 		ilms2 := rm2.InstrumentationLibraryMetrics()
 
 		if ilms1.Len() != ilms2.Len() {
-			require.Fail(t, "Resource metric %d: First metric had %d ILL metrics, second had %d", i, ilms1.Len(), ilms2.Len())
+			require.FailNow(t, "Resource metric %d: First metric had %d InstrumentationLibrary metrics, second had %d", i, ilms1.Len(), ilms2.Len())
 		}
 
 		for j := 0; j < ilms1.Len(); j++ {
