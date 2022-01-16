@@ -46,7 +46,7 @@ type Config struct {
 
 func (c *Config) Validate() error {
 	// validate each parameter and return specific error
-	if c.GRPCClientSettings.Endpoint == "" {
+	if c.GRPCClientSettings.Endpoint == "" || c.GRPCClientSettings.Endpoint == "https://" || c.GRPCClientSettings.Endpoint == "http://" {
 		return fmt.Errorf("`endpoint` not specified, please fix the configuration file")
 	}
 	if c.PrivateKey == "" {
@@ -61,11 +61,10 @@ func (c *Config) Validate() error {
 
 	// check if headers exists
 	if len(c.GRPCClientSettings.Headers) == 0 {
-		c.GRPCClientSettings.Headers = map[string]string{"ACCESS_TOKEN": c.PrivateKey, "appName": c.AppName, "subsystemName": c.SubSystem}
-	} else {
-		c.GRPCClientSettings.Headers["ACCESS_TOKEN"] = c.PrivateKey
-		c.GRPCClientSettings.Headers["appName"] = c.AppName
-		c.GRPCClientSettings.Headers["subsystemName"] = c.SubSystem
+		c.GRPCClientSettings.Headers = map[string]string{}
 	}
+	c.GRPCClientSettings.Headers["ACCESS_TOKEN"] = c.PrivateKey
+	c.GRPCClientSettings.Headers["appName"] = c.AppName
+	c.GRPCClientSettings.Headers["subsystemName"] = c.SubSystem
 	return nil
 }

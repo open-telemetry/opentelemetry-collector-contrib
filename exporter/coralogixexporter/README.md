@@ -19,7 +19,6 @@ exporters:
     # The Coralogix traces ingress endpoint
     endpoint: "https://api.coralogix.com"
 
-    # Your Coralogix private key (sensitive)
     # Your Coralogix private key is sensitive
     private_key: "xxx"
 
