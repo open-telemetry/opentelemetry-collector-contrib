@@ -43,9 +43,9 @@ type exporter struct {
 	pusher           cwlogs.Pusher
 }
 
-func newCwLogsExporter(config config.Exporter, params component.ExporterCreateSettings) (component.LogsExporter, error) {
+func newCwLogsPusher(config config.Exporter, params component.ExporterCreateSettings) (component.LogsExporter, error) {
 	if config == nil {
-		return nil, errors.New("emf exporter config is nil")
+		return nil, errors.New("awscloudwatchlogs exporter config is nil")
 	}
 
 	expConfig := config.(*Config)
@@ -74,7 +74,15 @@ func newCwLogsExporter(config config.Exporter, params component.ExporterCreateSe
 		retryCount:       *awsConfig.MaxRetries,
 		collectorID:      collectorIdentifier.String(),
 	}
+	return logsExporter, nil
+}
 
+func newCwLogsExporter(config config.Exporter, params component.ExporterCreateSettings) (component.LogsExporter, error) {
+	logsExporter, err := newCwLogsPusher(config, params)
+	if err != nil {
+		return nil, err
+	}
+	expConfig := config.(*Config)
 	return exporterhelper.NewLogsExporter(
 		config,
 		params,
@@ -129,7 +137,6 @@ func (e *exporter) Start(ctx context.Context, host component.Host) error {
 }
 
 func (e *exporter) getLogPusher(logGroup, logStream string) cwlogs.Pusher {
-
 	if e.pusher == nil {
 		e.pusher = cwlogs.NewPusher(aws.String(logGroup), aws.String(logStream), e.retryCount, *e.svcStructuredLog, e.logger)
 	}
