@@ -41,7 +41,6 @@ type exporter struct {
 	collectorID      string
 	svcStructuredLog *cwlogs.Client
 	pusher cwlogs.Pusher
-	groupStreamToPusherMap map[string]map[string]cwlogs.Pusher
 }
 
 func newCwLogsExporter(config config.Exporter, params component.ExporterCreateSettings) (component.LogsExporter, error) {
