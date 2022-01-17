@@ -36,8 +36,11 @@ import (
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
+
+const defaultRetryCount = 1
 
 func init() {
 	os.Setenv("AWS_ACCESS_KEY_ID", "test")
@@ -48,7 +51,7 @@ type mockPusher struct {
 	mock.Mock
 }
 
-func (p *mockPusher) addLogEntry(logEvent *logEvent) error {
+func (p *mockPusher) AddLogEntry(logEvent *cwlogs.Event) error {
 	args := p.Called(nil)
 	errorStr := args.String(0)
 	if errorStr != "" {
@@ -57,7 +60,7 @@ func (p *mockPusher) addLogEntry(logEvent *logEvent) error {
 	return nil
 }
 
-func (p *mockPusher) forceFlush() error {
+func (p *mockPusher) ForceFlush() error {
 	args := p.Called(nil)
 	errorStr := args.String(0)
 	if errorStr != "" {
@@ -481,13 +484,13 @@ func TestPushMetricsDataWithErr(t *testing.T) {
 	assert.NotNil(t, exp)
 
 	logPusher := new(mockPusher)
-	logPusher.On("addLogEntry", nil).Return("some error").Once()
-	logPusher.On("addLogEntry", nil).Return("").Twice()
-	logPusher.On("forceFlush", nil).Return("some error").Once()
-	logPusher.On("forceFlush", nil).Return("").Once()
-	logPusher.On("forceFlush", nil).Return("some error").Once()
-	streamToPusherMap := map[string]pusher{"test-logStreamName": logPusher}
-	exp.(*emfExporter).groupStreamToPusherMap = map[string]map[string]pusher{}
+	logPusher.On("AddLogEntry", nil).Return("some error").Once()
+	logPusher.On("AddLogEntry", nil).Return("").Twice()
+	logPusher.On("ForceFlush", nil).Return("some error").Once()
+	logPusher.On("ForceFlush", nil).Return("").Once()
+	logPusher.On("ForceFlush", nil).Return("some error").Once()
+	streamToPusherMap := map[string]cwlogs.Pusher{"test-logStreamName": logPusher}
+	exp.(*emfExporter).groupStreamToPusherMap = map[string]map[string]cwlogs.Pusher{}
 	exp.(*emfExporter).groupStreamToPusherMap["test-logGroupName"] = streamToPusherMap
 
 	mdata := agentmetricspb.ExportMetricsServiceRequest{

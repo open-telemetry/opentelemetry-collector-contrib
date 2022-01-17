@@ -65,6 +65,7 @@ extension/observer/                                  @open-telemetry/collector-c
 extension/observer/ecstaskobserver/                  @open-telemetry/collector-contrib-approvers @rmfitzpatrick
 extension/observer/k8sobserver/                      @open-telemetry/collector-contrib-approvers @rmfitzpatrick @dmitryax
 extension/oidcauthextension/                         @open-telemetry/collector-contrib-approvers @jpkrohling
+extension/storage/dbstorage/                         @open-telemetry/collector-contrib-approvers @dmitryax @atoulme
 extension/storage/filestorage/                       @open-telemetry/collector-contrib-approvers @djaglowski
 
 internal/aws/                                        @open-telemetry/collector-contrib-approvers @anuraaga @mxiamxia
@@ -101,6 +102,7 @@ receiver/awsxrayreceiver/                            @open-telemetry/collector-c
 receiver/carbonreceiver/                             @open-telemetry/collector-contrib-approvers @pjanotti
 receiver/cloudfoundryreceiver/                       @open-telemetry/collector-contrib-approvers @agoallikmaa @pellared
 receiver/collectdreceiver/                           @open-telemetry/collector-contrib-approvers @owais
+receiver/couchbasereceiver/                          @open-telemetry/collector-contrib-approvers @djaglowski @cpheps
 receiver/couchdbreceiver/                            @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/dockerstatsreceiver/                        @open-telemetry/collector-contrib-approvers @rmfitzpatrick
 receiver/dotnetdiagnosticsreceiver/                  @open-telemetry/collector-contrib-approvers @pmcollins @davmason
@@ -119,6 +121,7 @@ receiver/kafkametricsreceiver/                       @open-telemetry/collector-c
 receiver/kafkareceiver/                              @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
 receiver/kubeletstatsreceiver/                       @open-telemetry/collector-contrib-approvers @pmcollins @dmitryax
 receiver/memcachedreceiver/                          @open-telemetry/collector-contrib-approvers @djaglowski
+receiver/mongodbreceiver/                            @open-telemetry/collector-contrib-approvers @djaglowski @schmikei
 receiver/mongodbatlasreceiver/                       @open-telemetry/collector-contrib-approvers @zenmoto
 receiver/mysqlreceiver/                              @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/nginxreceiver/                              @open-telemetry/collector-contrib-approvers @djaglowski

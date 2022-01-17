@@ -21,6 +21,7 @@ import (
 	"strconv"
 	"sync/atomic"
 
+	"github.com/wavefronthq/wavefront-sdk-go/histogram"
 	"github.com/wavefronthq/wavefront-sdk-go/senders"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -40,6 +41,15 @@ var (
 	typeIsGaugeTags     = map[string]string{"type": "gauge"}
 	typeIsSumTags       = map[string]string{"type": "sum"}
 	typeIsHistogramTags = map[string]string{"type": "histogram"}
+)
+
+var (
+	allGranularity = map[histogram.Granularity]bool{histogram.DAY: true, histogram.HOUR: true, histogram.MINUTE: true}
+)
+
+var (
+	// Specifies regular histogram
+	regularHistogram histogramConsumerSpec = regularHistogramConsumerSpec{}
 )
 
 // metricsConsumer instances consume OTEL metrics
@@ -383,6 +393,7 @@ type histogramConsumer struct {
 	delta      histogramDataPointConsumer
 	sender     gaugeSender
 	reporting  *histogramReporting
+	spec       histogramConsumerSpec
 }
 
 // newHistogramConsumer returns a metricConsumer that consumes histograms.
@@ -391,6 +402,7 @@ type histogramConsumer struct {
 func newHistogramConsumer(
 	cumulative, delta histogramDataPointConsumer,
 	sender gaugeSender,
+	spec histogramConsumerSpec,
 	settings component.TelemetrySettings,
 ) typedMetricConsumer {
 	return &histogramConsumer{
@@ -398,31 +410,30 @@ func newHistogramConsumer(
 		delta:      delta,
 		sender:     sender,
 		reporting:  newHistogramReporting(settings),
+		spec:       spec,
 	}
 }
 
 func (h *histogramConsumer) Type() pdata.MetricDataType {
-	return pdata.MetricDataTypeHistogram
+	return h.spec.Type()
 }
 
 func (h *histogramConsumer) Consume(metric pdata.Metric, errs *[]error) {
-	histogram := metric.Histogram()
-	aggregationTemporality := histogram.AggregationTemporality()
+	aHistogram := h.spec.AsHistogram(metric)
+	aggregationTemporality := aHistogram.AggregationTemporality()
 	var consumer histogramDataPointConsumer
 	switch aggregationTemporality {
 	case pdata.MetricAggregationTemporalityDelta:
-		// TODO: follow-on pull request will add support for Delta Histograms.
-		*errs = append(*errs, errors.New("delta histograms not supported"))
-		return
+		consumer = h.delta
 	case pdata.MetricAggregationTemporalityCumulative:
 		consumer = h.cumulative
 	default:
 		h.reporting.LogNoAggregationTemporality(metric)
 		return
 	}
-	histogramDataPoints := histogram.DataPoints()
-	for i := 0; i < histogramDataPoints.Len(); i++ {
-		consumer.Consume(metric, histogramDataPoints.At(i), errs, h.reporting)
+	length := aHistogram.Len()
+	for i := 0; i < length; i++ {
+		consumer.Consume(metric, aHistogram.At(i), errs, h.reporting)
 	}
 }
 
@@ -439,7 +450,7 @@ type histogramDataPointConsumer interface {
 	// errors get appended to errs; reporting keeps track of special situations
 	Consume(
 		metric pdata.Metric,
-		histogram pdata.HistogramDataPoint,
+		histogram histogramDataPoint,
 		errs *[]error,
 		reporting *histogramReporting,
 	)
@@ -457,7 +468,7 @@ func newCumulativeHistogramDataPointConsumer(sender gaugeSender) histogramDataPo
 
 func (c *cumulativeHistogramDataPointConsumer) Consume(
 	metric pdata.Metric,
-	h pdata.HistogramDataPoint,
+	h histogramDataPoint,
 	errs *[]error,
 	reporting *histogramReporting,
 ) {
@@ -489,4 +500,113 @@ func leTagValue(explicitBounds []float64, bucketIndex int) string {
 		return "+Inf"
 	}
 	return strconv.FormatFloat(explicitBounds[bucketIndex], 'f', -1, 64)
+}
+
+type deltaHistogramDataPointConsumer struct {
+	sender senders.DistributionSender
+}
+
+// newDeltaHistogramDataPointConsumer returns a consumer for delta
+// histogram data points.
+func newDeltaHistogramDataPointConsumer(
+	sender senders.DistributionSender) histogramDataPointConsumer {
+	return &deltaHistogramDataPointConsumer{sender: sender}
+}
+
+func (d *deltaHistogramDataPointConsumer) Consume(
+	metric pdata.Metric,
+	h histogramDataPoint,
+	errs *[]error,
+	reporting *histogramReporting,
+) {
+	name := metric.Name()
+	tags := attributesToTags(h.Attributes())
+	ts := h.Timestamp().AsTime().Unix()
+	explicitBounds := h.ExplicitBounds()
+	bucketCounts := h.BucketCounts()
+	if len(bucketCounts) != len(explicitBounds)+1 {
+		reporting.LogMalformed(metric)
+		return
+	}
+	centroids := make([]histogram.Centroid, len(bucketCounts))
+	for i := range bucketCounts {
+		centroids[i] = histogram.Centroid{
+			Value: centroidValue(explicitBounds, i), Count: int(bucketCounts[i])}
+	}
+	err := d.sender.SendDistribution(name, centroids, allGranularity, ts, "", tags)
+	if err != nil {
+		*errs = append(*errs, err)
+	}
+}
+
+func centroidValue(explicitBounds []float64, index int) float64 {
+	length := len(explicitBounds)
+	if length == 0 {
+		// This is the best we can do.
+		return 0.0
+	}
+	if index == 0 {
+		return explicitBounds[0]
+	}
+	if index == length {
+		return explicitBounds[length-1]
+	}
+	return (explicitBounds[index-1] + explicitBounds[index]) / 2.0
+}
+
+// histogramDataPoint represents either a regular or exponential histogram data point
+type histogramDataPoint interface {
+	Count() uint64
+	ExplicitBounds() []float64
+	BucketCounts() []uint64
+	Attributes() pdata.AttributeMap
+	Timestamp() pdata.Timestamp
+}
+
+// histogramMetric represents either a regular or exponential histogram
+type histogramMetric interface {
+
+	// AggregationTemporality returns whether the histogram is delta or cumulative
+	AggregationTemporality() pdata.MetricAggregationTemporality
+
+	// Len returns the number of data points in this histogram
+	Len() int
+
+	// At returns the ith histogramDataPoint where 0 is the first.
+	At(i int) histogramDataPoint
+}
+
+// histogramConsumerSpec is the specification for either regular or exponential histograms
+type histogramConsumerSpec interface {
+
+	// Type returns either regular or exponential histogram
+	Type() pdata.MetricDataType
+
+	// AsHistogram returns given metric as a regular or exponential histogram depending on
+	// what Type returns.
+	AsHistogram(metric pdata.Metric) histogramMetric
+}
+
+type regularHistogramMetric struct {
+	pdata.Histogram
+	pdata.HistogramDataPointSlice
+}
+
+func (r *regularHistogramMetric) At(i int) histogramDataPoint {
+	return r.HistogramDataPointSlice.At(i)
+}
+
+type regularHistogramConsumerSpec struct {
+}
+
+func (regularHistogramConsumerSpec) Type() pdata.MetricDataType {
+	return pdata.MetricDataTypeHistogram
+}
+
+func (regularHistogramConsumerSpec) AsHistogram(metric pdata.Metric) histogramMetric {
+	aHistogram := metric.Histogram()
+	return &regularHistogramMetric{
+		Histogram:               aHistogram,
+		HistogramDataPointSlice: aHistogram.DataPoints(),
+	}
 }

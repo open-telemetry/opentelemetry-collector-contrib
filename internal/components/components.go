@@ -35,6 +35,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter"
@@ -74,6 +75,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor"
@@ -95,6 +97,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver"
@@ -112,6 +115,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver"
@@ -140,6 +144,7 @@ func Components() (component.Factories, error) {
 		awsproxy.NewFactory(),
 		ballastextension.NewFactory(),
 		bearertokenauthextension.NewFactory(),
+		dbstorage.NewFactory(),
 		ecstaskobserver.NewFactory(),
 		filestorage.NewFactory(),
 		fluentbitextension.NewFactory(),
@@ -162,6 +167,7 @@ func Components() (component.Factories, error) {
 		awsecscontainermetricsreceiver.NewFactory(),
 		awsxrayreceiver.NewFactory(),
 		carbonreceiver.NewFactory(),
+		cloudfoundryreceiver.NewFactory(),
 		collectdreceiver.NewFactory(),
 		dockerstatsreceiver.NewFactory(),
 		dotnetdiagnosticsreceiver.NewFactory(),
@@ -179,6 +185,7 @@ func Components() (component.Factories, error) {
 		kubeletstatsreceiver.NewFactory(),
 		memcachedreceiver.NewFactory(),
 		mongodbatlasreceiver.NewFactory(),
+		mysqlreceiver.NewFactory(),
 		opencensusreceiver.NewFactory(),
 		otlpreceiver.NewFactory(),
 		podmanreceiver.NewFactory(),
@@ -216,6 +223,7 @@ func Components() (component.Factories, error) {
 		datadogexporter.NewFactory(),
 		dynatraceexporter.NewFactory(),
 		elasticexporter.NewFactory(),
+		elasticsearchexporter.NewFactory(),
 		f5cloudexporter.NewFactory(),
 		fileexporter.NewFactory(),
 		googlecloudexporter.NewFactory(),

@@ -74,6 +74,10 @@ func TestDefaultReceivers(t *testing.T) {
 			skipLifecyle: true, // Panics after test have completed, requires a wait group
 		},
 		{
+			receiver:     "cloudfoundry",
+			skipLifecyle: true, // Requires UAA (auth) endpoint to run
+		},
+		{
 			receiver: "collectd",
 		},
 		{
@@ -139,6 +143,9 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver: "mongodbatlas",
+		},
+		{
+			receiver: "mysql",
 		},
 		{
 			receiver:     "opencensus",

@@ -2,10 +2,29 @@
 
 ## Unreleased
 
+## 💡 Enhancements 💡
+
+- `cloudfoundryreceiver`: Enable Cloud Foundry client (#7060)
+- `elasticsearchexporter`: add elasticsearchexporter to the components exporter list (#6002)
+- `elasticsearchreceiver`: Add metric metadata (#6892)
+- `elasticsearchreceiver`: Use same metrics as JMX receiver for JVM metrics (#7160)
+- `datadogexporter`: Add http.status_code tag to trace stats (#6889)
+- `mongodbreceiver`: Add initial client code to the component (#7125)
+- `tanzuobservabilityexporter`: Support delta histograms (#6897)
+- `mysqlreceiver`: Add the receiver to available components (#7078)
+- `dynatraceexporter`: Do not shut down exporter when metrics ingest module is temporarily unavailable (#7161)
+
+## 🛑 Breaking changes 🛑
+
+- `tanzuobservabilityexporter`: Remove status.code
+- `tanzuobservabilityexporter`: Use semantic conventions for status.message (#7126) 
+- `k8sattributesprocessor`: Move `kube` and `observability` packages to `internal` folder (#7159)
+
 ## v0.42.0
 
 ## 💡 Enhancements 💡
 
+- `couchbasereceiver`: Add couchbase client (#7122)
 - `couchdbreceiver`: Add couchdb client (#6880)
 - `elasticsearchreceiver`: Implement scraper client (#7019)
 - `couchdbreceiver`: Add metadata metrics (#6878)
@@ -20,6 +39,8 @@
 - `redisreceiver`: Set start timestamp uniformly for gauge and sum metrics (#6941)
 - `kafkaexporter`: Allow controlling Kafka acknowledgment behaviour  (#6301)
 - `lokiexporter`: Log the first part of the http body on failed pushes to loki (#6946)
+- `resourcedetectionprocessor`: add the [consul](https://www.consul.io/) detector (#6382)
+- `awsemfexporter`: refactor cw_client logic into separate `cwlogs` package (#7072)
 
 ## 🛑 Breaking changes 🛑
 
@@ -33,6 +54,9 @@
 ## 🚀 New components 🚀
 
 - `ecs_task_observer`: Discover running containers in AWS ECS tasks (#6894)
+- `mongodbreceiver`: Establish codebase for MongoDB metrics receiver (#6972)
+- `couchbasereceiver`: Establish codebase for Couchbase metrics receiver (#7046)
+- `dbstorage`: New experimental dbstorage extension (#7061)
 
 ## 🧰 Bug fixes 🧰
 
@@ -43,6 +67,8 @@
 - Sanitize URLs being logged (#7021)
 - `prometheusreceiver`: Fix start time tracking for long scrape intervals (#7053)
 - `signalfxexporter`: Don't use syscall to avoid compilation errors on some platforms (#7062)
+- `k8sattributeprocessor`: Parse IP out of net.Addr to correctly tag k8s.pod.ip (#7077)
+- `k8sattributeprocessor`: Process IP correctly for net.Addr instances that are not typed (#7133)
 
 ## 💡 Enhancements 💡
 

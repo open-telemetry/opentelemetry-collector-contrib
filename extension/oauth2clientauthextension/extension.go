@@ -16,10 +16,12 @@ package oauth2clientauthextension // import "github.com/open-telemetry/opentelem
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
@@ -37,6 +39,17 @@ type ClientCredentialsAuthenticator struct {
 
 // ClientCredentialsAuthenticator implements ClientAuthenticator
 var _ configauth.ClientAuthenticator = (*ClientCredentialsAuthenticator)(nil)
+
+type errorWrappingTokenSource struct {
+	ts       oauth2.TokenSource
+	tokenURL string
+}
+
+// errorWrappingTokenSource implements TokenSource
+var _ oauth2.TokenSource = (*errorWrappingTokenSource)(nil)
+
+// errFailedToGetSecurityToken indicates a problem communicating with OAuth2 server.
+var errFailedToGetSecurityToken = fmt.Errorf("failed to get security token from token endpoint")
 
 func newClientCredentialsExtension(cfg *Config, logger *zap.Logger) (*ClientCredentialsAuthenticator, error) {
 	if cfg.ClientID == "" {
@@ -82,13 +95,26 @@ func (o *ClientCredentialsAuthenticator) Shutdown(_ context.Context) error {
 	return nil
 }
 
+func (ewts errorWrappingTokenSource) Token() (*oauth2.Token, error) {
+	tok, err := ewts.ts.Token()
+	if err != nil {
+		return tok, multierr.Combine(
+			fmt.Errorf("%w (endpoint %q)", errFailedToGetSecurityToken, ewts.tokenURL),
+			err)
+	}
+	return tok, nil
+}
+
 // RoundTripper returns oauth2.Transport, an http.RoundTripper that performs "client-credential" OAuth flow and
 // also auto refreshes OAuth tokens as needed.
 func (o *ClientCredentialsAuthenticator) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
 	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, o.client)
 	return &oauth2.Transport{
-		Source: o.clientCredentials.TokenSource(ctx),
-		Base:   base,
+		Source: errorWrappingTokenSource{
+			ts:       o.clientCredentials.TokenSource(ctx),
+			tokenURL: o.clientCredentials.TokenURL,
+		},
+		Base: base,
 	}, nil
 }
 
@@ -97,6 +123,9 @@ func (o *ClientCredentialsAuthenticator) RoundTripper(base http.RoundTripper) (h
 func (o *ClientCredentialsAuthenticator) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
 	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, o.client)
 	return grpcOAuth.TokenSource{
-		TokenSource: o.clientCredentials.TokenSource(ctx),
+		TokenSource: errorWrappingTokenSource{
+			ts:       o.clientCredentials.TokenSource(ctx),
+			tokenURL: o.clientCredentials.TokenURL,
+		},
 	}, nil
 }
