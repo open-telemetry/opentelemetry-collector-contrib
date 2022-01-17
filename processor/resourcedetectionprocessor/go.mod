@@ -19,18 +19,6 @@ require (
 )
 
 require (
-	github.com/containerd/containerd v1.5.9 // indirect
-	github.com/hashicorp/consul/api v1.12.0
-)
-
-require (
-	cloud.google.com/go/compute v0.1.0
-	github.com/docker/go-connections v0.4.0 // indirect
-	github.com/moby/term v0.0.0-20210619224110-3f7ff695adc6 // indirect
-	github.com/morikuni/aec v1.0.0 // indirect
-)
-
-require (
 	github.com/Microsoft/go-winio v0.4.17 // indirect
 	github.com/armon/go-metrics v0.3.10 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -100,6 +88,18 @@ require (
 	k8s.io/utils v0.0.0-20210819203725-bdf08cb9a70a // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.1.2 // indirect
 	sigs.k8s.io/yaml v1.2.0 // indirect
+)
+
+require (
+	github.com/containerd/containerd v1.5.9 // indirect
+	github.com/hashicorp/consul/api v1.12.0
+)
+
+require (
+	cloud.google.com/go/compute v0.1.0
+	github.com/docker/go-connections v0.4.0 // indirect
+	github.com/moby/term v0.0.0-20210619224110-3f7ff695adc6 // indirect
+	github.com/morikuni/aec v1.0.0 // indirect
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus => ../../pkg/translator/opencensus
