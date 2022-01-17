@@ -20,7 +20,7 @@ package mysqlreceiver
 import (
 	"context"
 	"net"
-	"path"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -40,7 +40,18 @@ func TestMySqlIntegration(t *testing.T) {
 	// t.Skip("To be enabled back once open-telemetry/opentelemetry-collector-contrib#7118 is fixed")
 	t.Run("Running mysql version 8.0", func(t *testing.T) {
 		t.Parallel()
-		container := getContainer(t, containerRequest8_0)
+
+		wd, err := os.Getwd()
+		require.NoError(t, err)
+		container := getContainer(t, testcontainers.ContainerRequest{
+			FromDockerfile: testcontainers.FromDockerfile{
+				Context:    filepath.Join(wd, "testdata", "integration"),
+				Dockerfile: "Dockerfile.mysql.8_0",
+			},
+			ExposedPorts: []string{"3306:3306"},
+			WaitingFor: wait.ForListeningPort("3306").
+				WithStartupTimeout(2 * time.Minute),
+		})
 		defer func() {
 			require.NoError(t, container.Terminate(context.Background()))
 		}()
@@ -74,7 +85,18 @@ func TestMySqlIntegration(t *testing.T) {
 
 	t.Run("Running mysql version 5.7", func(t *testing.T) {
 		t.Parallel()
-		container := getContainer(t, containerRequest5_7)
+
+		wd, err := os.Getwd()
+		require.NoError(t, err)
+		container := getContainer(t, testcontainers.ContainerRequest{
+			FromDockerfile: testcontainers.FromDockerfile{
+				Context:    filepath.Join(wd, "testdata", "integration"),
+				Dockerfile: "Dockerfile.mysql.5_7",
+			},
+			ExposedPorts: []string{"3307:3306"},
+			WaitingFor: wait.ForListeningPort("3306").
+				WithStartupTimeout(2 * time.Minute),
+		})
 		defer func() {
 			require.NoError(t, container.Terminate(context.Background()))
 		}()
@@ -111,27 +133,6 @@ func TestMySqlIntegration(t *testing.T) {
 		scrapertest.CompareMetricSlices(eMetricSlice, aMetricSlice, scrapertest.IgnoreValues())
 	})
 }
-
-var (
-	containerRequest5_7 = testcontainers.ContainerRequest{
-		FromDockerfile: testcontainers.FromDockerfile{
-			Context:    path.Join(".", "testdata", "integration"),
-			Dockerfile: "Dockerfile.mysql.5_7",
-		},
-		ExposedPorts: []string{"3307:3306"},
-		WaitingFor: wait.ForListeningPort("3306").
-			WithStartupTimeout(2 * time.Minute),
-	}
-	containerRequest8_0 = testcontainers.ContainerRequest{
-		FromDockerfile: testcontainers.FromDockerfile{
-			Context:    path.Join(".", "testdata", "integration"),
-			Dockerfile: "Dockerfile.mysql.8_0",
-		},
-		ExposedPorts: []string{"3306:3306"},
-		WaitingFor: wait.ForListeningPort("3306").
-			WithStartupTimeout(2 * time.Minute),
-	}
-)
 
 func getContainer(t *testing.T, req testcontainers.ContainerRequest) testcontainers.Container {
 	require.NoError(t, req.Validate())
