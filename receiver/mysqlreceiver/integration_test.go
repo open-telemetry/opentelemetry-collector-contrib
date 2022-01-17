@@ -37,6 +37,7 @@ import (
 )
 
 func TestMySqlIntegration(t *testing.T) {
+	t.Skip("To be enabled back once open-telemetry/opentelemetry-collector-contrib#7118 is fixed")
 	t.Run("Running mysql version 8.0", func(t *testing.T) {
 		t.Parallel()
 		container := getContainer(t, containerRequest8_0)

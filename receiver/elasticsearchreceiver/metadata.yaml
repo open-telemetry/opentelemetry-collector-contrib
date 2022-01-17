@@ -173,7 +173,7 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [thread_state]
+    attributes: [thread_pool_name, thread_state]
     enabled: true
   elasticsearch.node.thread_pool.tasks.queued:
     description: The number of queued tasks in the thread pool.
@@ -238,13 +238,6 @@ metrics:
       value_type: int
     attributes: [collector_name]
     enabled: true
-  jvm.memory.heap.init:
-    description: The initial amount of memory that the JVM requests from the operating system for the heap
-    unit: By
-    gauge:
-      value_type: int
-    attributes: []
-    enabled: true
   jvm.memory.heap.max:
     description: The maximum amount of memory can be used for the heap
     unit: By
@@ -266,20 +259,6 @@ metrics:
       value_type: int
     attributes: []
     enabled: true
-  jvm.memory.nonheap.init:
-    description: The initial amount of memory that the JVM requests from the operating system for non-heap purposes
-    unit: By
-    gauge:
-      value_type: int
-    attributes: []
-    enabled: true
-  jvm.memory.nonheap.max:
-    description: The maximum amount of memory can be used for non-heap purposes
-    unit: By
-    gauge:
-      value_type: int
-    attributes: []
-    enabled: true
   jvm.memory.nonheap.used:
     description: The current non-heap memory usage
     unit: By
@@ -294,13 +273,6 @@ metrics:
       value_type: int
     attributes: []
     enabled: true
-  jvm.memory.pool.init:
-    description: The initial amount of memory that the JVM requests from the operating system for the memory pool
-    unit: By
-    gauge:
-      value_type: int
-    attributes: [memory_pool_name]
-    enabled: true
   jvm.memory.pool.max:
     description: The maximum amount of memory can be used for the memory pool
     unit: By
@@ -310,13 +282,6 @@ metrics:
     enabled: true
   jvm.memory.pool.used:
     description: The current memory pool memory usage
-    unit: By
-    gauge:
-      value_type: int
-    attributes: [memory_pool_name]
-    enabled: true
-  jvm.memory.pool.committed:
-    description: The amount of memory that is guaranteed to be available for the memory pool
     unit: By
     gauge:
       value_type: int
@@ -357,7 +322,7 @@ metrics:
       value_type: int
     attributes: []
     enabled: true
-  elasticserach.cluster.health:
+  elasticsearch.cluster.health:
     description: The health status of the cluster.
     extended_documentation: 
       Health status is based on the state of its primary and replica shards.

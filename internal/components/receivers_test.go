@@ -159,6 +159,9 @@ func TestDefaultReceivers(t *testing.T) {
 			skipLifecyle: true, // Requires a running podman daemon
 		},
 		{
+			receiver: "postgresql",
+		},
+		{
 			receiver: "prometheus",
 			getConfigFn: func() config.Receiver {
 				cfg := rcvrFactories["prometheus"].CreateDefaultConfig().(*prometheusreceiver.Config)

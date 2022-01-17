@@ -50,7 +50,7 @@ func (mn attributeName) RenderUnexported() (string, error) {
 
 type metric struct {
 	// Enabled defines whether the metric is enabled by default.
-	Enabled bool `yaml:"enabled" validate:"required"`
+	Enabled *bool `yaml:"enabled" validate:"required"`
 
 	// Description of the metric.
 	Description string `validate:"required,notblank"`

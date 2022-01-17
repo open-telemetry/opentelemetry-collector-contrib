@@ -166,6 +166,9 @@ func TestLoadConfig(t *testing.T) {
 	advancedRecv := cfg.Receivers[config.NewComponentID(typeStr)]
 	expectedAdvancedRecv := factory.CreateDefaultConfig().(*Config)
 
+	expectedAdvancedRecv.Metrics.ElasticsearchNodeFsDiskAvailable.Enabled = false
+	expectedAdvancedRecv.Nodes = []string{"_local"}
+	expectedAdvancedRecv.SkipClusterMetrics = true
 	expectedAdvancedRecv.Username = "otel"
 	expectedAdvancedRecv.Password = "password"
 	expectedAdvancedRecv.Endpoint = "http://example.com:9200"
