@@ -27,6 +27,10 @@
 
 - `mdatagen`: Fix validation of `enabled` field in metadata.yaml (#7166)
 
+## 🚀 New components 🚀
+
+- Add `basicauth` extension (#7167)
+
 ## v0.42.0
 
 ## 💡 Enhancements 💡
