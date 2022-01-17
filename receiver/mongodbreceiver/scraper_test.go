@@ -34,8 +34,7 @@ func TestNewMongodbScraper(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
 
-	scraper, err := newMongodbScraper(zap.NewNop(), cfg)
-	require.NoError(t, err)
+	scraper := newMongodbScraper(zap.NewNop(), cfg)
 	require.NotEmpty(t, scraper.config.hostlist())
 }
 
@@ -97,10 +96,7 @@ func TestScrapeNoClient(t *testing.T) {
 func TestShutdown(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
-
-	scraper, err := newMongodbScraper(zap.NewNop(), cfg)
-	require.NoError(t, err)
-
+	scraper := newMongodbScraper(zap.NewNop(), cfg)
 	ctx := context.Background()
 	require.NoError(t, scraper.shutdown(ctx))
 }
