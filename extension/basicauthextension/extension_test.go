@@ -172,3 +172,23 @@ func TestBasicAuth_HtpasswdInlinePrecedence(t *testing.T) {
 	_, err = ext.Authenticate(context.Background(), map[string][]string{"authorization": {"Basic " + auth}})
 	assert.Error(t, errInvalidCredentials, err)
 }
+
+func TestBasicAuth_SupportedHeaders(t *testing.T) {
+	ext, err := newExtension(&Config{
+		Htpasswd: HtpasswdSettings{
+			Inline: "username:password",
+		},
+	})
+	require.NoError(t, err)
+	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+
+	auth := base64.StdEncoding.EncodeToString([]byte("username:password"))
+
+	for _, k := range []string{
+		"Authorization",
+		"authorization",
+	} {
+		_, err = ext.Authenticate(context.Background(), map[string][]string{k: {"Basic " + auth}})
+		assert.NoError(t, err)
+	}
+}

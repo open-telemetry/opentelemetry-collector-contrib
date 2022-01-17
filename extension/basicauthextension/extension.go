@@ -81,8 +81,17 @@ func (ba *basicAuth) start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
+const (
+	metadataKey        = "authorization"
+	canonicalHeaderKey = "Authorization"
+)
+
 func (ba *basicAuth) authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
-	authHeaders := headers["authorization"]
+	authHeaders, ok := headers[metadataKey]
+	if !ok {
+		authHeaders = headers[canonicalHeaderKey]
+	}
+
 	if len(authHeaders) == 0 {
 		return ctx, errNoAuth
 	}
