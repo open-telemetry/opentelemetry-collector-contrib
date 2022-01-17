@@ -119,9 +119,9 @@ func (e *exporter) Capabilities() consumer.Capabilities {
 }
 
 func (e *exporter) Shutdown(ctx context.Context) error {
-	exp := e.config.(*Config)
-	logPusher := e.getLogPusher(exp.LogGroupName, exp.LogStreamName)
-	logPusher.ForceFlush()
+	if e.pusher != nil {
+		e.pusher.ForceFlush()
+	}
 	return nil
 }
 
