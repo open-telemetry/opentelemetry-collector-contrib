@@ -16,20 +16,6 @@ ALL_MODULES ?= $(shell find . -type f -name "go.mod" -exec dirname {} \; | sort 
 # Modules to run integration tests on.
 # XXX: Find a way to automatically populate this. Too slow to run across all modules when there are just a few.
 INTEGRATION_TEST_MODULES := \
-	receiver/mysqlreceiver \
-	receiver/mysqlreceiver \
-	receiver/mysqlreceiver \
-	receiver/mysqlreceiver \
-	receiver/mysqlreceiver \
-	receiver/mysqlreceiver \
-	receiver/mysqlreceiver \
-	receiver/mysqlreceiver \
-	receiver/mysqlreceiver \
-	receiver/mysqlreceiver \
-	receiver/mysqlreceiver \
-	receiver/mysqlreceiver \
-	receiver/mysqlreceiver \
-	receiver/mysqlreceiver \
 	receiver/mysqlreceiver
 
 .DEFAULT_GOAL := all
