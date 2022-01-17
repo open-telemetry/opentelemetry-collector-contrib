@@ -18,7 +18,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -41,9 +40,7 @@ type exporter struct {
 	retryCount       int
 	collectorID      string
 	svcStructuredLog *cwlogs.Client
-	seqTokenMu       sync.Mutex
-	// Keep track of all pushers created
-	// For every log group exists multiple log streams, for every log stream exists a Pusher
+	pusher cwlogs.Pusher
 	groupStreamToPusherMap map[string]map[string]cwlogs.Pusher
 }
 
@@ -78,24 +75,18 @@ func newCwLogsExporter(config config.Exporter, params component.ExporterCreateSe
 		retryCount:       *awsConfig.MaxRetries,
 		collectorID:      collectorIdentifier.String(),
 	}
-	logsExporter.groupStreamToPusherMap = map[string]map[string]cwlogs.Pusher{}
 
 	return exporterhelper.NewLogsExporter(
 		config,
 		params,
-		logsExporter.PushLogs,
+		logsExporter.ConsumeLogs,
 		exporterhelper.WithQueue(expConfig.enforcedQueueSettings()),
 		exporterhelper.WithRetry(expConfig.RetrySettings),
 	)
 
 }
 
-func (e *exporter) PushLogs(ctx context.Context, ld pdata.Logs) error {
-	// TODO(jbd): Relax this once CW Logs support ingest
-	// without sequence tokens.
-	e.seqTokenMu.Lock()
-	defer e.seqTokenMu.Unlock()
-
+func (e *exporter) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
 	exp := e.config.(*Config)
 	cwLogsPusher := e.getLogPusher(exp.LogGroupName, exp.LogStreamName)
 	logEvents, _ := logsToCWLogs(e.logger, ld)
@@ -123,10 +114,6 @@ func (e *exporter) PushLogs(ctx context.Context, ld pdata.Logs) error {
 	return nil
 }
 
-func (e *exporter) ConsumeLogs(ctx context.Context, md pdata.Logs) error {
-	return e.PushLogs(ctx, md)
-}
-
 func (e *exporter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
@@ -137,25 +124,17 @@ func (e *exporter) Shutdown(ctx context.Context) error {
 	logPusher.ForceFlush()
 	return nil
 }
+
 func (e *exporter) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
 func (e *exporter) getLogPusher(logGroup, logStream string) cwlogs.Pusher {
 
-	var ok bool
-	var streamToPusherMap map[string]cwlogs.Pusher
-	if streamToPusherMap, ok = e.groupStreamToPusherMap[logGroup]; !ok {
-		streamToPusherMap = map[string]cwlogs.Pusher{}
-		e.groupStreamToPusherMap[logGroup] = streamToPusherMap
+	if e.pusher == nil {
+		e.pusher =  cwlogs.NewPusher(aws.String(logGroup), aws.String(logStream), e.retryCount, *e.svcStructuredLog, e.logger)
 	}
-
-	var logPusher cwlogs.Pusher
-	if logPusher, ok = streamToPusherMap[logStream]; !ok {
-		logPusher = cwlogs.NewPusher(aws.String(logGroup), aws.String(logStream), e.retryCount, *e.svcStructuredLog, e.logger)
-		streamToPusherMap[logStream] = logPusher
-	}
-	return logPusher
+	return e.pusher
 
 }
 

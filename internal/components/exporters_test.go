@@ -31,7 +31,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsprometheusremotewriteexporter"
@@ -233,15 +232,6 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "awsemf",
 			getConfigFn: func() config.Exporter {
 				cfg := expFactories["awsemf"].CreateDefaultConfig().(*awsemfexporter.Config)
-				cfg.Endpoint = "http://" + endpoint
-				cfg.Region = "local"
-				return cfg
-			},
-		},
-		{
-			exporter: "awscloudwatchlogs",
-			getConfigFn: func() config.Exporter {
-				cfg := expFactories["awscloudwatchlogs"].CreateDefaultConfig().(*awscloudwatchlogsexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
 				cfg.Region = "local"
 				return cfg
