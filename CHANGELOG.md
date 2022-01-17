@@ -13,6 +13,7 @@
 - `tanzuobservabilityexporter`: Support delta histograms (#6897)
 - `mysqlreceiver`: Add the receiver to available components (#7078)
 - `dynatraceexporter`: Do not shut down exporter when metrics ingest module is temporarily unavailable (#7161)
+- `postgresqlreceiver`: add the receiver to available components (#7079)
 - `tracegen`: Provide official container images (#7179)
 
 ## 🛑 Breaking changes 🛑
@@ -20,6 +21,10 @@
 - `tanzuobservabilityexporter`: Remove status.code
 - `tanzuobservabilityexporter`: Use semantic conventions for status.message (#7126) 
 - `k8sattributesprocessor`: Move `kube` and `observability` packages to `internal` folder (#7159)
+
+## 🧰 Bug fixes 🧰
+
+- `mdatagen`: Fix validation of `enabled` field in metadata.yaml (#7166)
 
 ## v0.42.0
 
