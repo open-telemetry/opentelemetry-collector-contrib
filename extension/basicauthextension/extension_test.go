@@ -187,6 +187,7 @@ func TestBasicAuth_SupportedHeaders(t *testing.T) {
 	for _, k := range []string{
 		"Authorization",
 		"authorization",
+		"aUtHoRiZaTiOn",
 	} {
 		_, err = ext.Authenticate(context.Background(), map[string][]string{k: {"Basic " + auth}})
 		assert.NoError(t, err)

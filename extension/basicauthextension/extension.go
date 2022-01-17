@@ -81,22 +81,13 @@ func (ba *basicAuth) start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-const (
-	metadataKey        = "authorization"
-	canonicalHeaderKey = "Authorization"
-)
-
 func (ba *basicAuth) authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
-	authHeaders, ok := headers[metadataKey]
-	if !ok {
-		authHeaders = headers[canonicalHeaderKey]
-	}
-
-	if len(authHeaders) == 0 {
+	auth := getAuthHeader(headers)
+	if auth == "" {
 		return ctx, errNoAuth
 	}
 
-	authData, err := parseBasicAuth(authHeaders[0])
+	authData, err := parseBasicAuth(auth)
 	if err != nil {
 		return ctx, err
 	}
@@ -108,6 +99,34 @@ func (ba *basicAuth) authenticate(ctx context.Context, headers map[string][]stri
 	cl := client.FromContext(ctx)
 	cl.Auth = authData
 	return client.NewContext(ctx, cl), nil
+}
+
+func getAuthHeader(h map[string][]string) string {
+	const (
+		canonicalHeaderKey = "Authorization"
+		metadataKey        = "authorization"
+	)
+
+	authHeaders, ok := h[canonicalHeaderKey]
+
+	if !ok {
+		authHeaders, ok = h[metadataKey]
+	}
+
+	if !ok {
+		for k, v := range h {
+			if strings.EqualFold(k, metadataKey) {
+				authHeaders = v
+				break
+			}
+		}
+	}
+
+	if len(authHeaders) == 0 {
+		return ""
+	}
+
+	return authHeaders[0]
 }
 
 // See: https://github.com/golang/go/blob/1a8b4e05b1ff7a52c6d40fad73bcad612168d094/src/net/http/request.go#L950
