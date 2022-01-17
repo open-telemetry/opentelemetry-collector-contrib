@@ -31,8 +31,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	// "github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
+	// "github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver/internal/metadata"
 )
 
@@ -83,55 +83,55 @@ func TestMySqlIntegration(t *testing.T) {
 		require.Equal(t, len(metadata.M.Names()), metrics.Len())
 	})
 
-	t.Run("Running mysql version 5.7", func(t *testing.T) {
-		t.Parallel()
+	// t.Run("Running mysql version 5.7", func(t *testing.T) {
+	// 	t.Parallel()
 
-		wd, err := os.Getwd()
-		require.NoError(t, err)
-		container := getContainer(t, testcontainers.ContainerRequest{
-			FromDockerfile: testcontainers.FromDockerfile{
-				Context:    filepath.Join(wd, "testdata", "integration"),
-				Dockerfile: "Dockerfile.mysql.5_7",
-			},
-			ExposedPorts: []string{"3307:3306"},
-			WaitingFor: wait.ForListeningPort("3306").
-				WithStartupTimeout(2 * time.Minute),
-		})
-		defer func() {
-			require.NoError(t, container.Terminate(context.Background()))
-		}()
-		hostname, err := container.Host(context.Background())
-		require.NoError(t, err)
+	// 	wd, err := os.Getwd()
+	// 	require.NoError(t, err)
+	// 	container := getContainer(t, testcontainers.ContainerRequest{
+	// 		FromDockerfile: testcontainers.FromDockerfile{
+	// 			Context:    filepath.Join(wd, "testdata", "integration"),
+	// 			Dockerfile: "Dockerfile.mysql.5_7",
+	// 		},
+	// 		ExposedPorts: []string{"3307:3306"},
+	// 		WaitingFor: wait.ForListeningPort("3306").
+	// 			WithStartupTimeout(2 * time.Minute),
+	// 	})
+	// 	defer func() {
+	// 		require.NoError(t, container.Terminate(context.Background()))
+	// 	}()
+	// 	hostname, err := container.Host(context.Background())
+	// 	require.NoError(t, err)
 
-		f := NewFactory()
-		cfg := f.CreateDefaultConfig().(*Config)
-		cfg.Endpoint = net.JoinHostPort(hostname, "3307")
-		cfg.Username = "otel"
-		cfg.Password = "otel"
+	// 	f := NewFactory()
+	// 	cfg := f.CreateDefaultConfig().(*Config)
+	// 	cfg.Endpoint = net.JoinHostPort(hostname, "3307")
+	// 	cfg.Username = "otel"
+	// 	cfg.Password = "otel"
 
-		consumer := new(consumertest.MetricsSink)
-		settings := componenttest.NewNopReceiverCreateSettings()
-		rcvr, err := f.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
-		require.NoError(t, err, "failed creating metrics receiver")
-		require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
-		require.Eventuallyf(t, func() bool {
-			return len(consumer.AllMetrics()) > 0
-		}, 2*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
+	// 	consumer := new(consumertest.MetricsSink)
+	// 	settings := componenttest.NewNopReceiverCreateSettings()
+	// 	rcvr, err := f.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
+	// 	require.NoError(t, err, "failed creating metrics receiver")
+	// 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
+	// 	require.Eventuallyf(t, func() bool {
+	// 		return len(consumer.AllMetrics()) > 0
+	// 	}, 2*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
 
-		md := consumer.AllMetrics()[0]
-		require.Equal(t, 1, md.ResourceMetrics().Len())
-		ilms := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics()
-		require.Equal(t, 1, ilms.Len())
-		aMetricSlice := ilms.At(0).Metrics()
-		require.NoError(t, rcvr.Shutdown(context.Background()))
+	// 	md := consumer.AllMetrics()[0]
+	// 	require.Equal(t, 1, md.ResourceMetrics().Len())
+	// 	ilms := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics()
+	// 	require.Equal(t, 1, ilms.Len())
+	// 	aMetricSlice := ilms.At(0).Metrics()
+	// 	require.NoError(t, rcvr.Shutdown(context.Background()))
 
-		expectedFile := filepath.Join("testdata", "scraper", "expected.json")
-		expectedMetrics, err := golden.ReadMetrics(expectedFile)
-		require.NoError(t, err)
-		eMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+	// 	expectedFile := filepath.Join("testdata", "scraper", "expected.json")
+	// 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	// 	require.NoError(t, err)
+	// 	eMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
-		scrapertest.CompareMetricSlices(eMetricSlice, aMetricSlice, scrapertest.IgnoreValues())
-	})
+	// 	scrapertest.CompareMetricSlices(eMetricSlice, aMetricSlice, scrapertest.IgnoreValues())
+	// })
 }
 
 func getContainer(t *testing.T, req testcontainers.ContainerRequest) testcontainers.Container {
