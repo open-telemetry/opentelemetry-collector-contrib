@@ -45,12 +45,9 @@ func createDefaultConfig() config.Receiver {
 			CollectionInterval: 60 * time.Second,
 		},
 		HTTPClientSettings: confighttp.HTTPClientSettings{
-			TLSSetting: configtls.TLSClientSetting{
-				Insecure:           true,
-				InsecureSkipVerify: true,
-			},
-			Endpoint: defaultEndpoint,
-			Timeout:  10 * time.Second,
+			TLSSetting: configtls.TLSClientSetting{},
+			Endpoint:   defaultEndpoint,
+			Timeout:    10 * time.Second,
 		},
 	}
 }
@@ -62,10 +59,8 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	cfg := rConf.(*Config)
-
 	ns := newCouchdbScraper(params.Logger, cfg)
 	scraper, err := scraperhelper.NewScraper(typeStr, ns.scrape, scraperhelper.WithStart(ns.start))
-
 	if err != nil {
 		return nil, err
 	}

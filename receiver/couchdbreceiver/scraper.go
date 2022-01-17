@@ -21,6 +21,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver/internal/metadata"
@@ -76,11 +77,11 @@ func (c *couchdbScraper) getResourceMetrics() (pdata.Metrics, error) {
 	}
 
 	md := pdata.NewMetrics()
-	c.appendMetrics(stats, md.ResourceMetrics())
-	return md, nil
+	err = c.appendMetrics(stats, md.ResourceMetrics())
+	return md, err
 }
 
-func (c *couchdbScraper) appendMetrics(stats map[string]interface{}, rms pdata.ResourceMetricsSlice) {
+func (c *couchdbScraper) appendMetrics(stats map[string]interface{}, rms pdata.ResourceMetricsSlice) error {
 	now := pdata.NewTimestampFromTime(time.Now())
 	rm := pdata.NewResourceMetrics()
 	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
@@ -88,17 +89,20 @@ func (c *couchdbScraper) appendMetrics(stats map[string]interface{}, rms pdata.R
 
 	rm.Resource().Attributes().UpsertString(metadata.A.CouchdbNodeName, c.config.Endpoint)
 
-	c.recordCouchdbAverageRequestTimeDataPoint(now, stats)
-	c.recordCouchdbHttpdBulkRequestsDataPoint(now, stats)
-	c.recordCouchdbHttpdRequestsDataPoint(now, stats)
-	c.recordCouchdbHttpdResponsesDataPoint(now, stats)
-	c.recordCouchdbHttpdViewsDataPoint(now, stats)
-	c.recordCouchdbDatabaseOpenDataPoint(now, stats)
-	c.recordCouchdbFileDescriptorOpenDataPoint(now, stats)
-	c.recordCouchdbDatabaseOperationsDataPoint(now, stats)
+	var errors scrapererror.ScrapeErrors
+	c.recordCouchdbAverageRequestTimeDataPoint(now, stats, errors)
+	c.recordCouchdbHttpdBulkRequestsDataPoint(now, stats, errors)
+	c.recordCouchdbHttpdRequestsDataPoint(now, stats, errors)
+	c.recordCouchdbHttpdResponsesDataPoint(now, stats, errors)
+	c.recordCouchdbHttpdViewsDataPoint(now, stats, errors)
+	c.recordCouchdbDatabaseOpenDataPoint(now, stats, errors)
+	c.recordCouchdbFileDescriptorOpenDataPoint(now, stats, errors)
+	c.recordCouchdbDatabaseOperationsDataPoint(now, stats, errors)
 
 	c.mb.Emit(ilm.Metrics())
 	if ilm.Metrics().Len() > 0 {
 		rm.CopyTo(rms.AppendEmpty())
 	}
+
+	return errors.Combine()
 }
