@@ -1,7 +1,7 @@
 # options for analysis running
 run:
-  # default concurrency is a available CPU number
-  concurrency: 4
+  # disable concurrency in golangci, otherwise parallel makefile jobs get stuck.
+  concurrency: 1
 
   # timeout for analysis, e.g. 30s, 5m, default is 1m
   timeout: 10m
