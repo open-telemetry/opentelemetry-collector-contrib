@@ -67,7 +67,7 @@ metrics:
       value_type: int
       aggregation: cumulative
       monotonic: false
-    attributes: [database, connection_type]
+    attributes: [database, type]
   mongodb.extent.count:
     description: The number of extents.
     unit: "{extents}"
@@ -112,7 +112,7 @@ metrics:
       aggregation: cumulative
       value_type: int
       monotonic: false
-    attributes: [database, memory_type]
+    attributes: [database, type]
   mongodb.object.count:
     description: The number of objects.
     unit: "{objects}"
