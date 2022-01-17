@@ -93,14 +93,6 @@ func TestScrapeNoClient(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestShutdown(t *testing.T) {
-	f := NewFactory()
-	cfg := f.CreateDefaultConfig().(*Config)
-	scraper := newMongodbScraper(zap.NewNop(), cfg)
-	ctx := context.Background()
-	require.NoError(t, scraper.shutdown(ctx))
-}
-
 func TestStart(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)

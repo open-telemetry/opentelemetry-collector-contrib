@@ -74,14 +74,6 @@ func (c *mongodbClient) Connect(ctx context.Context) error {
 	return nil
 }
 
-// Disconnect ensures that the underlying driver disconnect is called
-func (c *mongodbClient) Disconnect(ctx context.Context) error {
-	if c.Client != nil {
-		return c.Disconnect(ctx)
-	}
-	return nil
-}
-
 // RunCommand executes a query against a database. Relies on connection to be established via `Connect()`
 func (c *mongodbClient) RunCommand(ctx context.Context, database string, command bson.M) (bson.M, error) {
 	db := c.Database(database)
