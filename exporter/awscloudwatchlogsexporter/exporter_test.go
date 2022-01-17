@@ -15,11 +15,14 @@
 package awscloudwatchlogsexporter
 
 import (
+	"context"
+	"github.com/stretchr/testify/require"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
@@ -199,4 +202,19 @@ func TestAttrValue(t *testing.T) {
 			assert.Equal(t, tt.want, got)
 		})
 	}
+}
+
+func TestConsumeLogs(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	factory := NewFactory()
+	expCfg := factory.CreateDefaultConfig().(*Config)
+	expCfg.Region = "us-west-2"
+	expCfg.MaxRetries = 0
+	exp, err := newCwLogsExporter(expCfg, componenttest.NewNopExporterCreateSettings())
+	assert.Nil(t, err)
+	assert.NotNil(t, exp)
+	l := pdata.NewLogs()
+	require.NoError(t, exp.ConsumeLogs(ctx,l))
+	require.NoError(t, exp.Shutdown(ctx))
 }

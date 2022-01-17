@@ -51,7 +51,6 @@ func TestLoadConfig(t *testing.T) {
 			RetrySettings:      defaultRetrySettings,
 			LogGroupName:       "test-1",
 			LogStreamName:      "testing",
-			Region:             "",
 			Endpoint:           "",
 			AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
 			QueueSettings: QueueSettings{

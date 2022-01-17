@@ -40,7 +40,7 @@ type exporter struct {
 	retryCount       int
 	collectorID      string
 	svcStructuredLog *cwlogs.Client
-	pusher cwlogs.Pusher
+	pusher           cwlogs.Pusher
 }
 
 func newCwLogsExporter(config config.Exporter, params component.ExporterCreateSettings) (component.LogsExporter, error) {
@@ -131,7 +131,7 @@ func (e *exporter) Start(ctx context.Context, host component.Host) error {
 func (e *exporter) getLogPusher(logGroup, logStream string) cwlogs.Pusher {
 
 	if e.pusher == nil {
-		e.pusher =  cwlogs.NewPusher(aws.String(logGroup), aws.String(logStream), e.retryCount, *e.svcStructuredLog, e.logger)
+		e.pusher = cwlogs.NewPusher(aws.String(logGroup), aws.String(logStream), e.retryCount, *e.svcStructuredLog, e.logger)
 	}
 	return e.pusher
 

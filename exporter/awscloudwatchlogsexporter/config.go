@@ -37,11 +37,7 @@ type Config struct {
 	// LogStreamName is the name of CloudWatch log stream which is a sequence of log events
 	// that share the same source.
 	LogStreamName string `mapstructure:"log_stream_name"`
-
-	// Region is the AWS region where the logs are sent to.
-	// Optional.
-	Region string `mapstructure:"region"`
-
+	
 	// Endpoint is the CloudWatch Logs service endpoint which the requests
 	// are forwarded to. https://docs.aws.amazon.com/general/latest/gr/cwl_region.html
 	// e.g. logs.us-east-1.amazonaws.com
