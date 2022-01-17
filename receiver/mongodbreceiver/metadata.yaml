@@ -10,7 +10,7 @@ attributes:
       - resident
       - virtual
   operation:
-    description: The mongoDB operation being counted.
+    description: The MongoDB operation being counted.
     enum:
       - insert
       - query

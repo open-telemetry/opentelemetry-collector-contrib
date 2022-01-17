@@ -241,7 +241,7 @@ var Attributes = struct {
 	Database string
 	// MemoryType (The type of memory used.)
 	MemoryType string
-	// Operation (The mongoDB operation being counted.)
+	// Operation (The MongoDB operation being counted.)
 	Operation string
 	// Type (The result of a cache request.)
 	Type string

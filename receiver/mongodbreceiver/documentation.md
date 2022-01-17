@@ -28,5 +28,5 @@ These are the metrics available for this scraper.
 | connection_type | The status of the connection. |
 | database | The name of a database. |
 | memory_type | The type of memory used. |
-| operation | The mongoDB operation being counted. |
+| operation | The MongoDB operation being counted. |
 | type | The result of a cache request. |
