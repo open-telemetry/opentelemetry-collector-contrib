@@ -29,16 +29,27 @@ import (
 	"go.opentelemetry.io/collector/config/configauth"
 )
 
+var (
+	errNoCredentialSource  = errors.New("no credential source provided")
+	errNoAuth              = errors.New("no basic auth provided")
+	errInvalidCredentials  = errors.New("invalid credentials")
+	errInvalidSchemePrefix = errors.New("invalid authorization scheme prefix")
+	errInvalidFormat       = errors.New("invalid authorization format")
+)
+
 type basicAuth struct {
 	htpasswd  HtpasswdSettings
 	matchFunc func(username, password string) bool
 }
 
-func newExtension(cfg *Config) configauth.ServerAuthenticator {
+func newExtension(cfg *Config) (configauth.ServerAuthenticator, error) {
+	if cfg.Htpasswd.File == "" && cfg.Htpasswd.Inline == "" {
+		return nil, errNoCredentialSource
+	}
 	ba := basicAuth{
 		htpasswd: cfg.Htpasswd,
 	}
-	return configauth.NewServerAuthenticator(configauth.WithStart(ba.start), configauth.WithAuthenticate(ba.authenticate))
+	return configauth.NewServerAuthenticator(configauth.WithStart(ba.start), configauth.WithAuthenticate(ba.authenticate)), nil
 }
 
 func (ba *basicAuth) start(ctx context.Context, host component.Host) error {
@@ -69,13 +80,6 @@ func (ba *basicAuth) start(ctx context.Context, host component.Host) error {
 
 	return nil
 }
-
-var (
-	errNoAuth              = errors.New("no basic auth provided")
-	errInvalidCredentials  = errors.New("invalid credentials")
-	errInvalidSchemePrefix = errors.New("invalid authorization scheme prefix")
-	errInvalidFormat       = errors.New("invalid authorization format")
-)
 
 func (ba *basicAuth) authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
 	authHeaders := headers["authorization"]

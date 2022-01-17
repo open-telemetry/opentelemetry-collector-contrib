@@ -33,8 +33,21 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, configtest.CheckConfigStruct(actual))
 }
 
-func TestCreateExtension(t *testing.T) {
+func TestCreateExtension_DefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
+
+	ext, err := createExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)
+	assert.Equal(t, err, errNoCredentialSource)
+	assert.Nil(t, ext)
+}
+
+func TestCreateExtension_ValidConfig(t *testing.T) {
+	cfg := &Config{
+		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
+		Htpasswd: HtpasswdSettings{
+			Inline: "username:password",
+		},
+	}
 
 	ext, err := createExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)
 	assert.NoError(t, err)

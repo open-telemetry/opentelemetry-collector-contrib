@@ -69,11 +69,12 @@ func TestBasicAuth_Valid(t *testing.T) {
 
 	ctx := context.Background()
 
-	ext := newExtension(&Config{
+	ext, err := newExtension(&Config{
 		Htpasswd: HtpasswdSettings{
 			File: f.Name(),
 		},
 	})
+	require.NoError(t, err)
 
 	require.NoError(t, ext.Start(ctx, componenttest.NewNopHost()))
 
@@ -93,36 +94,52 @@ func TestBasicAuth_Valid(t *testing.T) {
 }
 
 func TestBasicAuth_InvalidCredentials(t *testing.T) {
-	ext := newExtension(&Config{
+	ext, err := newExtension(&Config{
 		Htpasswd: HtpasswdSettings{
-			Inline: "username: password",
+			Inline: "username:password",
 		},
 	})
+	require.NoError(t, err)
 	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
-	_, err := ext.Authenticate(context.Background(), map[string][]string{"authorization": {"Basic dXNlcm5hbWU6cGFzc3dvcmR4eHg="}})
+	_, err = ext.Authenticate(context.Background(), map[string][]string{"authorization": {"Basic dXNlcm5hbWU6cGFzc3dvcmR4eHg="}})
 	assert.Equal(t, errInvalidCredentials, err)
 }
 
 func TestBasicAuth_NoHeader(t *testing.T) {
-	ext := newExtension(&Config{})
-	_, err := ext.Authenticate(context.Background(), map[string][]string{})
+	ext, err := newExtension(&Config{
+		Htpasswd: HtpasswdSettings{
+			Inline: "username:password",
+		},
+	})
+	require.NoError(t, err)
+	_, err = ext.Authenticate(context.Background(), map[string][]string{})
 	assert.Equal(t, errNoAuth, err)
 }
 
 func TestBasicAuth_InvalidPrefix(t *testing.T) {
-	ext := newExtension(&Config{})
-	_, err := ext.Authenticate(context.Background(), map[string][]string{"authorization": {"Bearer token"}})
+	ext, err := newExtension(&Config{
+		Htpasswd: HtpasswdSettings{
+			Inline: "username:password",
+		},
+	})
+	require.NoError(t, err)
+	_, err = ext.Authenticate(context.Background(), map[string][]string{"authorization": {"Bearer token"}})
 	assert.Equal(t, errInvalidSchemePrefix, err)
 }
 
 func TestBasicAuth_InvalidFormat(t *testing.T) {
-	ext := newExtension(&Config{})
+	ext, err := newExtension(&Config{
+		Htpasswd: HtpasswdSettings{
+			Inline: "username:password",
+		},
+	})
+	require.NoError(t, err)
 	for _, auth := range [][]string{
 		{"non decodable", "invalid"},
 		{"missing separator", "aW52YWxpZAo="},
 	} {
 		t.Run(auth[0], func(t *testing.T) {
-			_, err := ext.Authenticate(context.Background(), map[string][]string{"authorization": {"Basic " + auth[1]}})
+			_, err = ext.Authenticate(context.Background(), map[string][]string{"authorization": {"Basic " + auth[1]}})
 			assert.Equal(t, errInvalidFormat, err)
 		})
 	}
@@ -136,12 +153,13 @@ func TestBasicAuth_HtpasswdInlinePrecedence(t *testing.T) {
 
 	f.WriteString("username:fromfile")
 
-	ext := newExtension(&Config{
+	ext, err := newExtension(&Config{
 		Htpasswd: HtpasswdSettings{
 			File:   f.Name(),
 			Inline: "username:frominline",
 		},
 	})
+	require.NoError(t, err)
 	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
 
 	auth := base64.StdEncoding.EncodeToString([]byte("username:frominline"))
