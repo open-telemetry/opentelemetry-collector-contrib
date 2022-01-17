@@ -341,8 +341,8 @@ func Test_exporter_send_NotFound(t *testing.T) {
 		t.Errorf("Expected error to be permanent %v", err)
 		return
 	}
-	if !e.isDisabled {
-		t.Error("Expected exporter to be disabled")
+	if e.isDisabled {
+		t.Error("Expected exporter to not be disabled")
 		return
 	}
 }
