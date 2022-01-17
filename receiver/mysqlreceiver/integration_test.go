@@ -37,6 +37,7 @@ import (
 )
 
 func TestMySqlIntegration(t *testing.T) {
+	t.Skip()
 	t.Run("Running mysql version 8.0", func(t *testing.T) {
 		t.Parallel()
 		container := getContainer(t, containerRequest8_0)
