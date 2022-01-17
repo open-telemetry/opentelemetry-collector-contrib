@@ -52,7 +52,6 @@ func (mm *mongoMetric) convertToAppropriateValue(value interface{}) interface{} 
 
 const (
 	mebibytesToBytes = 1.049e+6
-	megabytesToBytes = 1e+6
 )
 
 type extractor struct {
@@ -62,7 +61,7 @@ type extractor struct {
 
 var dbStatsMetrics = []mongoMetric{
 	{
-		metricDef:     metadata.M.MongodbCollections,
+		metricDef:     metadata.M.MongodbCollectionCount,
 		path:          []string{"collections"},
 		dataPointType: integer,
 	},
@@ -72,7 +71,7 @@ var dbStatsMetrics = []mongoMetric{
 		dataPointType: double,
 	},
 	{
-		metricDef:       metadata.M.MongodbExtents,
+		metricDef:       metadata.M.MongodbExtentCount,
 		path:            []string{"numExtents"},
 		dataPointType:   integer,
 		maxMongoVersion: Mongo44,
@@ -88,7 +87,7 @@ var dbStatsMetrics = []mongoMetric{
 		dataPointType: integer,
 	},
 	{
-		metricDef:     metadata.M.MongodbObjects,
+		metricDef:     metadata.M.MongodbObjectCount,
 		path:          []string{"objects"},
 		dataPointType: integer,
 	},
@@ -101,19 +100,19 @@ var dbStatsMetrics = []mongoMetric{
 
 var serverStatusMetrics = []mongoMetric{
 	{
-		metricDef:        metadata.M.MongodbConnections,
+		metricDef:        metadata.M.MongodbConnectionCount,
 		path:             []string{"connections", "active"},
 		staticAttributes: map[string]string{metadata.A.ConnectionType: metadata.AttributeConnectionType.Active},
 		dataPointType:    integer,
 	},
 	{
-		metricDef:        metadata.M.MongodbConnections,
+		metricDef:        metadata.M.MongodbConnectionCount,
 		path:             []string{"connections", "available"},
 		staticAttributes: map[string]string{metadata.A.ConnectionType: metadata.AttributeConnectionType.Available},
 		dataPointType:    integer,
 	},
 	{
-		metricDef:        metadata.M.MongodbConnections,
+		metricDef:        metadata.M.MongodbConnectionCount,
 		path:             []string{"connections", "current"},
 		staticAttributes: map[string]string{metadata.A.ConnectionType: metadata.AttributeConnectionType.Current},
 		dataPointType:    integer,
@@ -134,24 +133,6 @@ var serverStatusMetrics = []mongoMetric{
 		dataPointType:    integer,
 		// https://docs.mongodb.com/manual/reference/command/serverStatus/#mongodb-serverstatus-serverstatus.mem.virtual
 		conversionFactor: mebibytesToBytes,
-	},
-	{
-		metricDef:        metadata.M.MongodbMemoryUsage,
-		path:             []string{"mem", "mapped"},
-		staticAttributes: map[string]string{metadata.A.MemoryType: metadata.AttributeMemoryType.Mapped},
-		dataPointType:    integer,
-		// removed in 4.2 https://docs.mongodb.com/v4.2/reference/command/serverStatus/
-		maxMongoVersion:  Mongo40,
-		conversionFactor: megabytesToBytes,
-	},
-	{
-		metricDef:        metadata.M.MongodbMemoryUsage,
-		path:             []string{"mem", "mappedWithJournal"},
-		staticAttributes: map[string]string{metadata.A.MemoryType: metadata.AttributeMemoryType.MappedWithJournal},
-		dataPointType:    integer,
-		// removed in 4.2 https://docs.mongodb.com/v4.2/reference/command/serverStatus/
-		maxMongoVersion:  Mongo40,
-		conversionFactor: megabytesToBytes,
 	},
 }
 
@@ -273,11 +254,11 @@ func (e *extractor) extractAdminStats(document bson.M, mm *metricManager) {
 	} {
 		count, err := digForIntValue(document, []string{"opcounters", operation})
 		if err != nil {
-			e.logger.Error("Failed to Parse", zap.Error(err), zap.String("metric", metadata.M.MongodbOperations.Name()))
+			e.logger.Error("Failed to Parse", zap.Error(err), zap.String("metric", metadata.M.MongodbOperationCount.Name()))
 		} else {
 			attributes := pdata.NewAttributeMap()
 			attributes.Insert(metadata.A.Operation, pdata.NewAttributeValueString(operation))
-			mm.addDataPoint(metadata.M.MongodbOperations, count, attributes)
+			mm.addDataPoint(metadata.M.MongodbOperationCount, count, attributes)
 		}
 	}
 }
@@ -334,7 +315,9 @@ func digForIntValue(document bson.M, path []string) (int64, error) {
 	value := document[curItem]
 	if value == nil {
 		return 0, errors.New("nil found when digging for metric")
-	} else if len(remainingPath) == 0 {
+	}
+
+	if len(remainingPath) == 0 {
 		switch v := value.(type) {
 		case int:
 			return int64(v), nil
@@ -347,9 +330,9 @@ func digForIntValue(document bson.M, path []string) (int64, error) {
 		default:
 			return 0, fmt.Errorf("unexpected type found when parsing int: %v", reflect.TypeOf(value))
 		}
-	} else {
-		return digForIntValue(value.(bson.M), remainingPath)
 	}
+
+	return digForIntValue(value.(bson.M), remainingPath)
 }
 
 func digForDoubleValue(document bson.M, path []string) (float64, error) {
@@ -357,7 +340,9 @@ func digForDoubleValue(document bson.M, path []string) (float64, error) {
 	value := document[curItem]
 	if value == nil {
 		return 0, errors.New("nil found when digging for metric")
-	} else if len(remainingPath) == 0 {
+	}
+
+	if len(remainingPath) == 0 {
 		switch v := value.(type) {
 		case int:
 			return float64(v), nil
@@ -370,7 +355,7 @@ func digForDoubleValue(document bson.M, path []string) (float64, error) {
 		default:
 			return 0, fmt.Errorf("unexpected type found when parsing double: %v", reflect.TypeOf(value))
 		}
-	} else {
-		return digForDoubleValue(value.(bson.M), remainingPath)
 	}
+
+	return digForDoubleValue(value.(bson.M), remainingPath)
 }

@@ -24,10 +24,7 @@ type mongodbScraper struct {
 
 func newMongodbScraper(logger *zap.Logger, config *Config) (*mongodbScraper, error) {
 	clientLogger := logger.Named("mongo-scraper")
-	c, err := NewClient(config, clientLogger)
-	if err != nil {
-		return nil, fmt.Errorf("unable to start mongodb receiver: %w", err)
-	}
+	c := NewClient(config, clientLogger)
 
 	return &mongodbScraper{
 		logger: logger,
@@ -36,7 +33,7 @@ func newMongodbScraper(logger *zap.Logger, config *Config) (*mongodbScraper, err
 	}, nil
 }
 
-func (s *mongodbScraper) start(ctx context.Context, host component.Host) error {
+func (s *mongodbScraper) start(ctx context.Context, _ component.Host) error {
 	if err := s.client.Connect(ctx); err != nil {
 		return fmt.Errorf("unable to connect to mongo instance: %w", err)
 	}
@@ -46,7 +43,7 @@ func (s *mongodbScraper) start(ctx context.Context, host component.Host) error {
 		return fmt.Errorf("unable to get a version from the mongo instance: %w", err)
 	}
 
-	s.extractor, err = newExtractor(vr.Version, s.logger)
+	s.extractor, err = newExtractor(*vr, s.logger)
 	if err != nil {
 		return err
 	}
@@ -62,7 +59,7 @@ func (s *mongodbScraper) shutdown(ctx context.Context) error {
 }
 
 func (s *mongodbScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
-	s.logger.Debug("starting mongoDB scrape")
+	s.logger.Debug("starting otelcol/mongodb scrape")
 	if s.client == nil {
 		return pdata.NewMetrics(), errors.New("no client was initialized before calling scrape")
 	}

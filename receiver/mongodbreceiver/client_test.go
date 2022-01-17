@@ -19,19 +19,53 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"
 )
 
+// fakeClient is a mocked client of the scraper
+// was not able to optimize scraping multiple databases via goroutines
+// while also testing with exclusively mtest.
+type fakeClient struct{ mock.Mock }
+
+func (fc *fakeClient) ListDatabaseNames(ctx context.Context, filters interface{}, opts ...*options.ListDatabasesOptions) ([]string, error) {
+	args := fc.Called(ctx, filters, opts)
+	return args.Get(0).([]string), args.Error(1)
+}
+
+func (fc *fakeClient) Disconnect(ctx context.Context) error {
+	args := fc.Called(ctx)
+	return args.Error(0)
+}
+func (fc *fakeClient) Connect(ctx context.Context) error {
+	args := fc.Called(ctx)
+	return args.Error(0)
+}
+
+func (fc *fakeClient) GetVersion(ctx context.Context) (*string, error) {
+	args := fc.Called(ctx)
+	return args.Get(0).(*string), args.Error(1)
+}
+
+func (fc *fakeClient) ServerStatus(ctx context.Context, DBName string) (bson.M, error) {
+	args := fc.Called(ctx, DBName)
+	return args.Get(0).(bson.M), args.Error(1)
+}
+
+func (fc *fakeClient) DBStats(ctx context.Context, DBName string) (bson.M, error) {
+	args := fc.Called(ctx, DBName)
+	return args.Get(0).(bson.M), args.Error(1)
+}
+
 func TestValidClient(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	client, err := NewClient(cfg, zap.NewNop())
-
-	require.NoError(t, err)
-	require.NotNil(t, client)
+	c := NewClient(cfg, zap.NewNop())
+	require.NotNil(t, c)
 }
 
 func TestListDatabaseNames(t *testing.T) {
@@ -196,16 +230,45 @@ func loadDBStats() (bson.D, error) {
 	return loadTestFile("./testdata/dbstats.json")
 }
 
+func loadDBStatsAsMap() (bson.M, error) {
+	return loadTestFileAsMap("./testdata/dbstats.json")
+}
+
 func loadServerStatus() (bson.D, error) {
 	return loadTestFile("./testdata/serverStatus.json")
+}
+
+func loadServerStatusAsMap() (bson.M, error) {
+	return loadTestFileAsMap("./testdata/serverStatus.json")
 }
 
 func loadBuildInfo() (bson.D, error) {
 	return loadTestFile("./testdata/buildInfo.json")
 }
 
+func loadAdminStatus() (bson.D, error) {
+	return loadTestFile("./testdata/admin40.json")
+}
+
+func loadAdminStatusAsMap() (bson.M, error) {
+	return loadTestFileAsMap("./testdata/admin40.json")
+}
+
 func loadTestFile(filePath string) (bson.D, error) {
 	var doc bson.D
+	testFile, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return nil, err
+	}
+	err = bson.UnmarshalExtJSON(testFile, true, &doc)
+	if err != nil {
+		return nil, err
+	}
+	return doc, nil
+}
+
+func loadTestFileAsMap(filePath string) (bson.M, error) {
+	var doc bson.M
 	testFile, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		return nil, err

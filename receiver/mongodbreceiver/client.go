@@ -46,11 +46,11 @@ type mongodbClient struct {
 
 // NewClient creates a new client to connect and query mongo for the
 // mongodbreceiver
-func NewClient(config *Config, logger *zap.Logger) (client, error) {
+func NewClient(config *Config, logger *zap.Logger) client {
 	return &mongodbClient{
 		cfg:    config,
 		logger: logger,
-	}, nil
+	}
 }
 
 // Connect establishes a connection to mongodb instance
@@ -71,6 +71,14 @@ func (c *mongodbClient) Connect(ctx context.Context) error {
 	c.logger.Info(fmt.Sprintf("Mongo connection established to hosts: %s", strings.Join(c.cfg.hostlist(), ", ")))
 	c.Client = driver
 
+	return nil
+}
+
+// Disconnect ensures that the underlying driver disconnect is called
+func (c *mongodbClient) Disconnect(ctx context.Context) error {
+	if c.Client != nil {
+		return c.Disconnect(ctx)
+	}
 	return nil
 }
 
