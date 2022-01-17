@@ -42,7 +42,7 @@ func (m *metricImpl) Init(metric pdata.Metric) {
 
 type metricStruct struct {
 	MongodbCacheOperations MetricIntf
-	MongodbCollection      MetricIntf
+	MongodbCollectionCount MetricIntf
 	MongodbConnectionCount MetricIntf
 	MongodbDataSize        MetricIntf
 	MongodbExtentCount     MetricIntf
@@ -59,7 +59,7 @@ type metricStruct struct {
 func (m *metricStruct) Names() []string {
 	return []string{
 		"mongodb.cache.operations",
-		"mongodb.collection",
+		"mongodb.collection.count",
 		"mongodb.connection.count",
 		"mongodb.data.size",
 		"mongodb.extent.count",
@@ -75,7 +75,7 @@ func (m *metricStruct) Names() []string {
 
 var metricsByName = map[string]MetricIntf{
 	"mongodb.cache.operations": Metrics.MongodbCacheOperations,
-	"mongodb.collection":       Metrics.MongodbCollection,
+	"mongodb.collection.count": Metrics.MongodbCollectionCount,
 	"mongodb.connection.count": Metrics.MongodbConnectionCount,
 	"mongodb.data.size":        Metrics.MongodbDataSize,
 	"mongodb.extent.count":     Metrics.MongodbExtentCount,
@@ -107,9 +107,9 @@ var Metrics = &metricStruct{
 		},
 	},
 	&metricImpl{
-		"mongodb.collection",
+		"mongodb.collection.count",
 		func(metric pdata.Metric) {
-			metric.SetName("mongodb.collection")
+			metric.SetName("mongodb.collection.count")
 			metric.SetDescription("The number of collections.")
 			metric.SetUnit("{collections}")
 			metric.SetDataType(pdata.MetricDataTypeSum)
@@ -246,9 +246,9 @@ var Attributes = struct {
 	// Type (The result of a cache request.)
 	Type string
 }{
-	"connection_type",
+	"type",
 	"database",
-	"memory_type",
+	"type",
 	"operation",
 	"type",
 }
@@ -269,15 +269,11 @@ var AttributeConnectionType = struct {
 
 // AttributeMemoryType are the possible values that the attribute "memory_type" can have.
 var AttributeMemoryType = struct {
-	Resident          string
-	Virtual           string
-	Mapped            string
-	MappedWithJournal string
+	Resident string
+	Virtual  string
 }{
 	"resident",
 	"virtual",
-	"mapped",
-	"mapped_with_journal",
 }
 
 // AttributeOperation are the possible values that the attribute "operation" can have.

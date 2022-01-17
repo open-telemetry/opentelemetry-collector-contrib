@@ -4,12 +4,11 @@ attributes:
   database:
     description: The name of a database.
   memory_type:
+    value: type
     description: The type of memory used.
     enum:
       - resident
       - virtual
-      - mapped
-      - mapped_with_journal
   operation:
     description: The mongoDB operation being counted.
     enum:
@@ -20,6 +19,7 @@ attributes:
       - getmore
       - command
   connection_type:
+    value: type
     description: The status of the connection.
     enum:
       - active
@@ -41,7 +41,7 @@ metrics:
       value_type: int
       monotonic: true
     attributes: [type]
-  mongodb.collection:
+  mongodb.collection.count:
     description: The number of collections.
     unit: "{collections}"
     enabled: true
