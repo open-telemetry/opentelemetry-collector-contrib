@@ -247,7 +247,7 @@ func loadBuildInfo() (bson.D, error) {
 }
 
 func loadAdminStatusAsMap() (bson.M, error) {
-	return loadTestFileAsMap("./testdata/admin40.json")
+	return loadTestFileAsMap("./testdata/admin.json")
 }
 
 func loadTestFile(filePath string) (bson.D, error) {

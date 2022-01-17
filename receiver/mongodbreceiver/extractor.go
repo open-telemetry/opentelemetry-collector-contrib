@@ -278,31 +278,27 @@ func (e *extractor) extractAdminStats(document bson.M, mm *metricManager) {
 }
 
 func (e *extractor) extractGlobalLockWaitTime(document bson.M) (int64, error) {
-	var lockKey string
-	if e.version.GreaterThanOrEqual(Mongo30) {
-		lockKey = "Global"
+	var heldTimeUs int64
+
+	// Mongo version greater than or equal to 4.0 have it in the serverStats at "globalLock", "totalTime"
+	// reference: https://docs.mongodb.com/v4.0/reference/command/serverStatus/#server-status-global-lock
+	if e.version.GreaterThanOrEqual(Mongo40) {
+		heldTimeUs, _ = digForIntValue(document, []string{"globalLock", "totalTime"})
 	} else {
-		lockKey = "."
-	}
-	totalWaitTime := int64(0)
-	foundLocks := false
-	for _, lockType := range []string{"W", "R", "r", "w"} {
-		waitTimeMicroSeconds, err := digForIntValue(
-			document,
-			[]string{"locks", lockKey, "timeAcquiringMicros", lockType},
-		)
-		if err == nil {
-			// reported value is in microseconds, prefer to report in milliseconds
-			totalWaitTime += waitTimeMicroSeconds
-			foundLocks = true
+		for _, lockType := range []string{"W", "R", "r", "w"} {
+			waitTime, err := digForIntValue(document, []string{"locks", ".", "timeAcquiringMicros", lockType})
+			if err == nil {
+				heldTimeUs += waitTime
+			}
 		}
 	}
-	if foundLocks {
-		waitTimeMilliseconds := totalWaitTime / 1000
-		return waitTimeMilliseconds, nil
+
+	if heldTimeUs != 0 {
+		htMilliseconds := heldTimeUs / 1000
+		return htMilliseconds, nil
 	}
 
-	e.logger.Warn("unable to calculate global lock wait time")
+	e.logger.Warn("unable to find global lock time")
 	return 0, errors.New("was unable to calculate global lock time")
 }
 

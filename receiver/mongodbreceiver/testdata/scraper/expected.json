@@ -23,7 +23,7 @@
                                                 }
                                             }
                                         ],
-                                        "timeUnixNano": "1642453871518221000",
+                                        "timeUnixNano": "1642457501758704000",
                                         "asInt": "1"
                                     }
                                 ],
@@ -45,7 +45,7 @@
                                                 }
                                             }
                                         ],
-                                        "timeUnixNano": "1642453871518221000",
+                                        "timeUnixNano": "1642457501758704000",
                                         "asDouble": 3141
                                     }
                                 ],
@@ -67,7 +67,7 @@
                                                 }
                                             }
                                         ],
-                                        "timeUnixNano": "1642453871518221000",
+                                        "timeUnixNano": "1642457501758704000",
                                         "asInt": "0"
                                     }
                                 ],
@@ -89,7 +89,7 @@
                                                 }
                                             }
                                         ],
-                                        "timeUnixNano": "1642453871518221000",
+                                        "timeUnixNano": "1642457501758704000",
                                         "asDouble": 16384
                                     }
                                 ],
@@ -111,7 +111,7 @@
                                                 }
                                             }
                                         ],
-                                        "timeUnixNano": "1642453871518221000",
+                                        "timeUnixNano": "1642457501758704000",
                                         "asInt": "1"
                                     }
                                 ],
@@ -133,7 +133,7 @@
                                                 }
                                             }
                                         ],
-                                        "timeUnixNano": "1642453871518221000",
+                                        "timeUnixNano": "1642457501758704000",
                                         "asInt": "2"
                                     }
                                 ],
@@ -155,91 +155,8 @@
                                                 }
                                             }
                                         ],
-                                        "timeUnixNano": "1642453871518221000",
+                                        "timeUnixNano": "1642457501758704000",
                                         "asDouble": 16384
-                                    }
-                                ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                                "isMonotonic": true
-                            }
-                        },
-                        {
-                            "name": "mongodb.operation.count",
-                            "description": "The number of operations executed.",
-                            "unit": "{operations}",
-                            "sum": {
-                                "dataPoints": [
-                                    {
-                                        "attributes": [
-                                            {
-                                                "key": "operation",
-                                                "value": {
-                                                    "stringValue": "insert"
-                                                }
-                                            }
-                                        ],
-                                        "timeUnixNano": "1642453871518221000",
-                                        "asInt": "0"
-                                    },
-                                    {
-                                        "attributes": [
-                                            {
-                                                "key": "operation",
-                                                "value": {
-                                                    "stringValue": "query"
-                                                }
-                                            }
-                                        ],
-                                        "timeUnixNano": "1642453871518221000",
-                                        "asInt": "2"
-                                    },
-                                    {
-                                        "attributes": [
-                                            {
-                                                "key": "operation",
-                                                "value": {
-                                                    "stringValue": "update"
-                                                }
-                                            }
-                                        ],
-                                        "timeUnixNano": "1642453871518221000",
-                                        "asInt": "0"
-                                    },
-                                    {
-                                        "attributes": [
-                                            {
-                                                "key": "operation",
-                                                "value": {
-                                                    "stringValue": "delete"
-                                                }
-                                            }
-                                        ],
-                                        "timeUnixNano": "1642453871518221000",
-                                        "asInt": "0"
-                                    },
-                                    {
-                                        "attributes": [
-                                            {
-                                                "key": "operation",
-                                                "value": {
-                                                    "stringValue": "getmore"
-                                                }
-                                            }
-                                        ],
-                                        "timeUnixNano": "1642453871518221000",
-                                        "asInt": "0"
-                                    },
-                                    {
-                                        "attributes": [
-                                            {
-                                                "key": "operation",
-                                                "value": {
-                                                    "stringValue": "command"
-                                                }
-                                            }
-                                        ],
-                                        "timeUnixNano": "1642453871518221000",
-                                        "asInt": "26"
                                     }
                                 ],
                                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -267,7 +184,7 @@
                                                 }
                                             }
                                         ],
-                                        "timeUnixNano": "1642453871518221000",
+                                        "timeUnixNano": "1642457501758704000",
                                         "asInt": "1"
                                     },
                                     {
@@ -285,7 +202,7 @@
                                                 }
                                             }
                                         ],
-                                        "timeUnixNano": "1642453871518221000",
+                                        "timeUnixNano": "1642457501758704000",
                                         "asInt": "838857"
                                     },
                                     {
@@ -303,7 +220,7 @@
                                                 }
                                             }
                                         ],
-                                        "timeUnixNano": "1642453871518221000",
+                                        "timeUnixNano": "1642457501758704000",
                                         "asInt": "3"
                                     }
                                 ],
@@ -331,7 +248,7 @@
                                                 }
                                             }
                                         ],
-                                        "timeUnixNano": "1642453871518221000",
+                                        "timeUnixNano": "1642457501758704000",
                                         "asInt": "82871000"
                                     },
                                     {
@@ -349,11 +266,109 @@
                                                 }
                                             }
                                         ],
-                                        "timeUnixNano": "1642453871518221000",
+                                        "timeUnixNano": "1642457501758704000",
                                         "asInt": "1142361000"
                                     }
                                 ],
                                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "mongodb.global_lock.time",
+                            "description": "The time the global lock has been held.",
+                            "unit": "ms",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "timeUnixNano": "1642457501758704000",
+                                        "asInt": "58889"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        },
+                        {
+                            "name": "mongodb.operation.count",
+                            "description": "The number of operations executed.",
+                            "unit": "{operations}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "operation",
+                                                "value": {
+                                                    "stringValue": "insert"
+                                                }
+                                            }
+                                        ],
+                                        "timeUnixNano": "1642457501758704000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "operation",
+                                                "value": {
+                                                    "stringValue": "query"
+                                                }
+                                            }
+                                        ],
+                                        "timeUnixNano": "1642457501758704000",
+                                        "asInt": "2"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "operation",
+                                                "value": {
+                                                    "stringValue": "update"
+                                                }
+                                            }
+                                        ],
+                                        "timeUnixNano": "1642457501758704000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "operation",
+                                                "value": {
+                                                    "stringValue": "delete"
+                                                }
+                                            }
+                                        ],
+                                        "timeUnixNano": "1642457501758704000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "operation",
+                                                "value": {
+                                                    "stringValue": "getmore"
+                                                }
+                                            }
+                                        ],
+                                        "timeUnixNano": "1642457501758704000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "operation",
+                                                "value": {
+                                                    "stringValue": "command"
+                                                }
+                                            }
+                                        ],
+                                        "timeUnixNano": "1642457501758704000",
+                                        "asInt": "26"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
                             }
                         }
                     ]
