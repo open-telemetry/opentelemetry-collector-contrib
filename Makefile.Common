@@ -46,13 +46,13 @@ test:
 
 .PHONY: do-unit-tests-with-cover
 do-unit-tests-with-cover:
-	@echo "running go unit test ./... + coverage in `pwd`"
+	@echo "running @$(GOTEST) $(GOTEST_OPT_WITH_COVERAGE) ./... in `pwd`"
 	@$(GOTEST) $(GOTEST_OPT_WITH_COVERAGE) ./...
 	go tool cover -html=coverage.txt -o coverage.html
 
 .PHONY: do-integration-tests-with-cover
 do-integration-tests-with-cover:
-	@echo "running go integration test ./... + coverage in `pwd`"
+	@echo "running @$(GOTEST) $(GOTEST_OPT_WITH_INTEGRATION) ./... in `pwd`"
 	@$(GOTEST) $(GOTEST_OPT_WITH_INTEGRATION) ./...
 	@if [ -e integration-coverage.txt ]; then \
   		go tool cover -html=integration-coverage.txt -o integration-coverage.html; \

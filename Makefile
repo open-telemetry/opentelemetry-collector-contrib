@@ -16,16 +16,21 @@ ALL_MODULES ?= $(shell find . -type f -name "go.mod" -exec dirname {} \; | sort 
 # Modules to run integration tests on.
 # XXX: Find a way to automatically populate this. Too slow to run across all modules when there are just a few.
 INTEGRATION_TEST_MODULES := \
-	receiver/dockerstatsreceiver \
-	receiver/jmxreceiver/ \
-	receiver/redisreceiver \
-	receiver/zookeeperreceiver \
-	receiver/kafkametricsreceiver \
-	receiver/nginxreceiver \
-	receiver/memcachedreceiver \
 	receiver/mysqlreceiver \
-	internal/common \
-	extension/observer/dockerobserver
+	receiver/mysqlreceiver \
+	receiver/mysqlreceiver \
+	receiver/mysqlreceiver \
+	receiver/mysqlreceiver \
+	receiver/mysqlreceiver \
+	receiver/mysqlreceiver \
+	receiver/mysqlreceiver \
+	receiver/mysqlreceiver \
+	receiver/mysqlreceiver \
+	receiver/mysqlreceiver \
+	receiver/mysqlreceiver \
+	receiver/mysqlreceiver \
+	receiver/mysqlreceiver \
+	receiver/mysqlreceiver
 
 .DEFAULT_GOAL := all
 
