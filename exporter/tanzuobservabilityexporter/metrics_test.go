@@ -761,6 +761,187 @@ func TestDeltaHistogramDataPointConsumerMissingBuckets(t *testing.T) {
 	assert.Equal(t, int64(1), report.Malformed())
 }
 
+func TestSummaries(t *testing.T) {
+	summaryMetric := newMetric("test.summary", pdata.MetricDataTypeSummary)
+	summary := summaryMetric.Summary()
+	dataPoints := summary.DataPoints()
+	dataPoints.EnsureCapacity(2)
+
+	dataPoint := dataPoints.AppendEmpty()
+	setQuantileValues(dataPoint, 0.1, 100.0, 0.5, 200.0, 0.9, 300.0, 0.99, 400.0)
+	setTags(map[string]interface{}{"foo": "bar"}, dataPoint.Attributes())
+	dataPoint.SetCount(10)
+	dataPoint.SetSum(5000.0)
+	setDataPointTimestamp(1645123456, dataPoint)
+
+	dataPoint = dataPoints.AppendEmpty()
+	setQuantileValues(dataPoint, 0.2, 75.0, 0.5, 125.0, 0.8, 175.0, 0.95, 225.0)
+	setTags(map[string]interface{}{"bar": "baz"}, dataPoint.Attributes())
+	dataPoint.SetCount(15)
+	dataPoint.SetSum(3000.0)
+	setDataPointTimestamp(1645123556, dataPoint)
+
+	sender := &mockGaugeSender{}
+	consumer := newSummaryConsumer(sender, componenttest.NewNopTelemetrySettings())
+
+	assert.Equal(t, pdata.MetricDataTypeSummary, consumer.Type())
+
+	var errs []error
+	consumer.Consume(summaryMetric, &errs)
+
+	assert.Empty(t, errs)
+
+	expected := []tobsMetric{
+		{
+			Name:  "test.summary",
+			Value: 100.0,
+			Tags:  map[string]string{"foo": "bar", "quantile": "0.1"},
+			Ts:    1645123456,
+		},
+		{
+			Name:  "test.summary",
+			Value: 200.0,
+			Tags:  map[string]string{"foo": "bar", "quantile": "0.5"},
+			Ts:    1645123456,
+		},
+		{
+			Name:  "test.summary",
+			Value: 300.0,
+			Tags:  map[string]string{"foo": "bar", "quantile": "0.9"},
+			Ts:    1645123456,
+		},
+		{
+			Name:  "test.summary",
+			Value: 400.0,
+			Tags:  map[string]string{"foo": "bar", "quantile": "0.99"},
+			Ts:    1645123456,
+		},
+		{
+			Name:  "test.summary_count",
+			Value: 10.0,
+			Tags:  map[string]string{"foo": "bar"},
+			Ts:    1645123456,
+		},
+		{
+			Name:  "test.summary_sum",
+			Value: 5000.0,
+			Tags:  map[string]string{"foo": "bar"},
+			Ts:    1645123456,
+		},
+		{
+			Name:  "test.summary",
+			Value: 75.0,
+			Tags:  map[string]string{"bar": "baz", "quantile": "0.2"},
+			Ts:    1645123556,
+		},
+		{
+			Name:  "test.summary",
+			Value: 125.0,
+			Tags:  map[string]string{"bar": "baz", "quantile": "0.5"},
+			Ts:    1645123556,
+		},
+		{
+			Name:  "test.summary",
+			Value: 175.0,
+			Tags:  map[string]string{"bar": "baz", "quantile": "0.8"},
+			Ts:    1645123556,
+		},
+		{
+			Name:  "test.summary",
+			Value: 225.0,
+			Tags:  map[string]string{"bar": "baz", "quantile": "0.95"},
+			Ts:    1645123556,
+		},
+		{
+			Name:  "test.summary_count",
+			Value: 15.0,
+			Tags:  map[string]string{"bar": "baz"},
+			Ts:    1645123556,
+		},
+		{
+			Name:  "test.summary_sum",
+			Value: 3000.0,
+			Tags:  map[string]string{"bar": "baz"},
+			Ts:    1645123556,
+		},
+	}
+	assert.ElementsMatch(t, expected, sender.metrics)
+}
+
+func TestSummaries_QuantileTagExists(t *testing.T) {
+	summaryMetric := newMetric("test.summary.quantile.tag", pdata.MetricDataTypeSummary)
+	summary := summaryMetric.Summary()
+	dataPoints := summary.DataPoints()
+	dataPoints.EnsureCapacity(1)
+
+	dataPoint := dataPoints.AppendEmpty()
+	setQuantileValues(dataPoint, 0.5, 300.0)
+	setTags(map[string]interface{}{"quantile": "exists"}, dataPoint.Attributes())
+	dataPoint.SetCount(12)
+	dataPoint.SetSum(4000.0)
+	setDataPointTimestamp(1650123456, dataPoint)
+
+	sender := &mockGaugeSender{}
+	consumer := newSummaryConsumer(sender, componenttest.NewNopTelemetrySettings())
+	var errs []error
+	consumer.Consume(summaryMetric, &errs)
+	assert.Empty(t, errs)
+
+	expected := []tobsMetric{
+		{
+			Name:  "test.summary.quantile.tag",
+			Value: 300.0,
+			Tags:  map[string]string{"_quantile": "exists", "quantile": "0.5"},
+			Ts:    1650123456,
+		},
+		{
+			Name:  "test.summary.quantile.tag_count",
+			Value: 12.0,
+			Tags:  map[string]string{"_quantile": "exists"},
+			Ts:    1650123456,
+		},
+		{
+			Name:  "test.summary.quantile.tag_sum",
+			Value: 4000.0,
+			Tags:  map[string]string{"_quantile": "exists"},
+			Ts:    1650123456,
+		},
+	}
+	assert.ElementsMatch(t, expected, sender.metrics)
+}
+
+func TestSummariesConsumer_ErrorSending(t *testing.T) {
+	summaryMetric := newMetric("test.summary.error", pdata.MetricDataTypeSummary)
+	summary := summaryMetric.Summary()
+	dataPoints := summary.DataPoints()
+	dataPoints.EnsureCapacity(1)
+
+	dataPoint := dataPoints.AppendEmpty()
+	dataPoint.SetCount(13)
+	dataPoint.SetSum(3900.0)
+
+	sender := &mockGaugeSender{errorOnSend: true}
+	consumer := newSummaryConsumer(sender, componenttest.NewNopTelemetrySettings())
+	var errs []error
+	consumer.Consume(summaryMetric, &errs)
+	assert.NotEmpty(t, errs)
+}
+
+// Sets quantile values for a summary data point
+func setQuantileValues(dataPoint pdata.SummaryDataPoint, quantileValues ...float64) {
+	if len(quantileValues)%2 != 0 {
+		panic("quantileValues must be quantile, value, quantile, value, ...")
+	}
+	length := len(quantileValues) / 2
+	quantileValuesSlice := dataPoint.QuantileValues()
+	quantileValuesSlice.EnsureCapacity(length)
+	for i := 0; i < length; i++ {
+		quantileValueObj := quantileValuesSlice.AppendEmpty()
+		quantileValueObj.SetQuantile(quantileValues[2*i])
+		quantileValueObj.SetValue(quantileValues[2*i+1])
+	}
+}
+
 // Creates a histogram metric with len(countAttributeForEachDataPoint)
 // datapoints. name is the name of the histogram metric; temporality
 // is the temporality of the histogram metric;
