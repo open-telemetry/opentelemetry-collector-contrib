@@ -105,7 +105,7 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, client client) (pda
 
 	wg.Wait()
 
-	return rms, nil
+	return rms, errors.Combine()
 }
 
 func (s *mongodbScraper) collectDatabase(ctx context.Context, wg *sync.WaitGroup, mm *metricManager, databaseName string, errors scrapererror.ScrapeErrors) {
