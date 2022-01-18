@@ -23,7 +23,7 @@
                                                 }
                                             }
                                         ],
-                                        "timeUnixNano": "1642457501758704000",
+                                        "timeUnixNano": "1642517287938753000",
                                         "asInt": "1"
                                     }
                                 ],
@@ -45,7 +45,7 @@
                                                 }
                                             }
                                         ],
-                                        "timeUnixNano": "1642457501758704000",
+                                        "timeUnixNano": "1642517287938753000",
                                         "asDouble": 3141
                                     }
                                 ],
@@ -67,7 +67,7 @@
                                                 }
                                             }
                                         ],
-                                        "timeUnixNano": "1642457501758704000",
+                                        "timeUnixNano": "1642517287938753000",
                                         "asInt": "0"
                                     }
                                 ],
@@ -89,7 +89,7 @@
                                                 }
                                             }
                                         ],
-                                        "timeUnixNano": "1642457501758704000",
+                                        "timeUnixNano": "1642517287938753000",
                                         "asDouble": 16384
                                     }
                                 ],
@@ -111,7 +111,7 @@
                                                 }
                                             }
                                         ],
-                                        "timeUnixNano": "1642457501758704000",
+                                        "timeUnixNano": "1642517287938753000",
                                         "asInt": "1"
                                     }
                                 ],
@@ -133,7 +133,7 @@
                                                 }
                                             }
                                         ],
-                                        "timeUnixNano": "1642457501758704000",
+                                        "timeUnixNano": "1642517287938753000",
                                         "asInt": "2"
                                     }
                                 ],
@@ -155,7 +155,7 @@
                                                 }
                                             }
                                         ],
-                                        "timeUnixNano": "1642457501758704000",
+                                        "timeUnixNano": "1642517287938753000",
                                         "asDouble": 16384
                                     }
                                 ],
@@ -184,7 +184,7 @@
                                                 }
                                             }
                                         ],
-                                        "timeUnixNano": "1642457501758704000",
+                                        "timeUnixNano": "1642517287938753000",
                                         "asInt": "1"
                                     },
                                     {
@@ -202,7 +202,7 @@
                                                 }
                                             }
                                         ],
-                                        "timeUnixNano": "1642457501758704000",
+                                        "timeUnixNano": "1642517287938753000",
                                         "asInt": "838857"
                                     },
                                     {
@@ -220,7 +220,7 @@
                                                 }
                                             }
                                         ],
-                                        "timeUnixNano": "1642457501758704000",
+                                        "timeUnixNano": "1642517287938753000",
                                         "asInt": "3"
                                     }
                                 ],
@@ -248,7 +248,7 @@
                                                 }
                                             }
                                         ],
-                                        "timeUnixNano": "1642457501758704000",
+                                        "timeUnixNano": "1642517287938753000",
                                         "asInt": "82871000"
                                     },
                                     {
@@ -266,7 +266,7 @@
                                                 }
                                             }
                                         ],
-                                        "timeUnixNano": "1642457501758704000",
+                                        "timeUnixNano": "1642517287938753000",
                                         "asInt": "1142361000"
                                     }
                                 ],
@@ -280,8 +280,43 @@
                             "sum": {
                                 "dataPoints": [
                                     {
-                                        "timeUnixNano": "1642457501758704000",
-                                        "asInt": "58889"
+                                        "timeUnixNano": "1642517287938753000",
+                                        "asInt": "58964"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        },
+                        {
+                            "name": "mongodb.cache.operations",
+                            "description": "The number of cache operations of the instance.",
+                            "unit": "{operations}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "misses"
+                                                }
+                                            }
+                                        ],
+                                        "timeUnixNano": "1642517287938753000",
+                                        "asInt": "14"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "hits"
+                                                }
+                                            }
+                                        ],
+                                        "timeUnixNano": "1642517287938753000",
+                                        "asInt": "201"
                                     }
                                 ],
                                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -303,7 +338,7 @@
                                                 }
                                             }
                                         ],
-                                        "timeUnixNano": "1642457501758704000",
+                                        "timeUnixNano": "1642517287938753000",
                                         "asInt": "0"
                                     },
                                     {
@@ -315,7 +350,7 @@
                                                 }
                                             }
                                         ],
-                                        "timeUnixNano": "1642457501758704000",
+                                        "timeUnixNano": "1642517287938753000",
                                         "asInt": "2"
                                     },
                                     {
@@ -327,7 +362,7 @@
                                                 }
                                             }
                                         ],
-                                        "timeUnixNano": "1642457501758704000",
+                                        "timeUnixNano": "1642517287938753000",
                                         "asInt": "0"
                                     },
                                     {
@@ -339,7 +374,7 @@
                                                 }
                                             }
                                         ],
-                                        "timeUnixNano": "1642457501758704000",
+                                        "timeUnixNano": "1642517287938753000",
                                         "asInt": "0"
                                     },
                                     {
@@ -351,7 +386,7 @@
                                                 }
                                             }
                                         ],
-                                        "timeUnixNano": "1642457501758704000",
+                                        "timeUnixNano": "1642517287938753000",
                                         "asInt": "0"
                                     },
                                     {
@@ -363,8 +398,8 @@
                                                 }
                                             }
                                         ],
-                                        "timeUnixNano": "1642457501758704000",
-                                        "asInt": "26"
+                                        "timeUnixNano": "1642517287938753000",
+                                        "asInt": "20"
                                     }
                                 ],
                                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",

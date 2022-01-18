@@ -278,5 +278,31 @@
 	"uptimeMillis": {
 		"$numberLong": "58965"
 	},
+	"opcounters": {
+		"command": {
+			"$numberInt": "20"
+		},
+		"delete": {
+			"$numberInt": "0"
+		},
+		"getmore": {
+			"$numberInt": "0"
+		},
+		"insert": {
+			"$numberInt": "0"
+		},
+		"query": {
+			"$numberInt": "2"
+		},
+		"update": {
+			"$numberInt": "0"
+		}
+	},
+	"wiredTiger": {
+		"cache": {
+			"pages read into cache": 14,
+			"pages requested from the cache": 215
+		}
+	},
 	"version": "4.0.25"
 }

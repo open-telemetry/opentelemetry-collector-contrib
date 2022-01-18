@@ -269,11 +269,11 @@ func (e *extractor) extractAdminStats(document bson.M, mm *metricManager) {
 		count, err := digForIntValue(document, []string{"opcounters", operation})
 		if err != nil {
 			e.logger.Error("Failed to Parse", zap.Error(err), zap.String("metric", metadata.M.MongodbOperationCount.Name()))
-		} else {
-			attributes := pdata.NewAttributeMap()
-			attributes.Insert(metadata.A.Operation, pdata.NewAttributeValueString(operation))
-			mm.addDataPoint(metadata.M.MongodbOperationCount, count, attributes)
+			continue
 		}
+		attributes := pdata.NewAttributeMap()
+		attributes.Insert(metadata.A.Operation, pdata.NewAttributeValueString(operation))
+		mm.addDataPoint(metadata.M.MongodbOperationCount, count, attributes)
 	}
 }
 

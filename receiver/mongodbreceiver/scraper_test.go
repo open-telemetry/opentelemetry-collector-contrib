@@ -56,7 +56,7 @@ func TestScrape(t *testing.T) {
 	fc := &fakeClient{}
 	fc.On("Connect", mock.Anything).Return(nil)
 	fc.On("ListDatabaseNames", mock.Anything, mock.Anything, mock.Anything).Return([]string{fakeDatabaseName}, nil)
-	fc.On("ServerStatus", mock.Anything, mock.Anything).Return(ss, nil)
+	fc.On("ServerStatus", mock.Anything, fakeDatabaseName).Return(ss, nil)
 	fc.On("ServerStatus", mock.Anything, "admin").Return(adminStatus, nil)
 	fc.On("DBStats", mock.Anything, fakeDatabaseName).Return(dbStats, nil)
 
