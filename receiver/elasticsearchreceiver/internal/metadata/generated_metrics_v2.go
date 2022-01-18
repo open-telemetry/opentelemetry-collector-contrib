@@ -16,6 +16,7 @@ type MetricSettings struct {
 // MetricsSettings provides settings for elasticsearchreceiver metrics.
 type MetricsSettings struct {
 	ElasticsearchClusterDataNodes            MetricSettings `mapstructure:"elasticsearch.cluster.data_nodes"`
+	ElasticsearchClusterHealth               MetricSettings `mapstructure:"elasticsearch.cluster.health"`
 	ElasticsearchClusterNodes                MetricSettings `mapstructure:"elasticsearch.cluster.nodes"`
 	ElasticsearchClusterShards               MetricSettings `mapstructure:"elasticsearch.cluster.shards"`
 	ElasticsearchNodeCacheEvictions          MetricSettings `mapstructure:"elasticsearch.node.cache.evictions"`
@@ -32,20 +33,14 @@ type MetricsSettings struct {
 	ElasticsearchNodeThreadPoolTasksFinished MetricSettings `mapstructure:"elasticsearch.node.thread_pool.tasks.finished"`
 	ElasticsearchNodeThreadPoolTasksQueued   MetricSettings `mapstructure:"elasticsearch.node.thread_pool.tasks.queued"`
 	ElasticsearchNodeThreadPoolThreads       MetricSettings `mapstructure:"elasticsearch.node.thread_pool.threads"`
-	ElasticserachClusterHealth               MetricSettings `mapstructure:"elasticserach.cluster.health"`
 	JvmClassesLoaded                         MetricSettings `mapstructure:"jvm.classes.loaded"`
 	JvmGcCollectionsCount                    MetricSettings `mapstructure:"jvm.gc.collections.count"`
 	JvmGcCollectionsElapsed                  MetricSettings `mapstructure:"jvm.gc.collections.elapsed"`
 	JvmMemoryHeapCommitted                   MetricSettings `mapstructure:"jvm.memory.heap.committed"`
-	JvmMemoryHeapInit                        MetricSettings `mapstructure:"jvm.memory.heap.init"`
 	JvmMemoryHeapMax                         MetricSettings `mapstructure:"jvm.memory.heap.max"`
 	JvmMemoryHeapUsed                        MetricSettings `mapstructure:"jvm.memory.heap.used"`
 	JvmMemoryNonheapCommitted                MetricSettings `mapstructure:"jvm.memory.nonheap.committed"`
-	JvmMemoryNonheapInit                     MetricSettings `mapstructure:"jvm.memory.nonheap.init"`
-	JvmMemoryNonheapMax                      MetricSettings `mapstructure:"jvm.memory.nonheap.max"`
 	JvmMemoryNonheapUsed                     MetricSettings `mapstructure:"jvm.memory.nonheap.used"`
-	JvmMemoryPoolCommitted                   MetricSettings `mapstructure:"jvm.memory.pool.committed"`
-	JvmMemoryPoolInit                        MetricSettings `mapstructure:"jvm.memory.pool.init"`
 	JvmMemoryPoolMax                         MetricSettings `mapstructure:"jvm.memory.pool.max"`
 	JvmMemoryPoolUsed                        MetricSettings `mapstructure:"jvm.memory.pool.used"`
 	JvmThreadsCount                          MetricSettings `mapstructure:"jvm.threads.count"`
@@ -54,6 +49,9 @@ type MetricsSettings struct {
 func DefaultMetricsSettings() MetricsSettings {
 	return MetricsSettings{
 		ElasticsearchClusterDataNodes: MetricSettings{
+			Enabled: true,
+		},
+		ElasticsearchClusterHealth: MetricSettings{
 			Enabled: true,
 		},
 		ElasticsearchClusterNodes: MetricSettings{
@@ -104,9 +102,6 @@ func DefaultMetricsSettings() MetricsSettings {
 		ElasticsearchNodeThreadPoolThreads: MetricSettings{
 			Enabled: true,
 		},
-		ElasticserachClusterHealth: MetricSettings{
-			Enabled: true,
-		},
 		JvmClassesLoaded: MetricSettings{
 			Enabled: true,
 		},
@@ -119,9 +114,6 @@ func DefaultMetricsSettings() MetricsSettings {
 		JvmMemoryHeapCommitted: MetricSettings{
 			Enabled: true,
 		},
-		JvmMemoryHeapInit: MetricSettings{
-			Enabled: true,
-		},
 		JvmMemoryHeapMax: MetricSettings{
 			Enabled: true,
 		},
@@ -131,19 +123,7 @@ func DefaultMetricsSettings() MetricsSettings {
 		JvmMemoryNonheapCommitted: MetricSettings{
 			Enabled: true,
 		},
-		JvmMemoryNonheapInit: MetricSettings{
-			Enabled: true,
-		},
-		JvmMemoryNonheapMax: MetricSettings{
-			Enabled: true,
-		},
 		JvmMemoryNonheapUsed: MetricSettings{
-			Enabled: true,
-		},
-		JvmMemoryPoolCommitted: MetricSettings{
-			Enabled: true,
-		},
-		JvmMemoryPoolInit: MetricSettings{
 			Enabled: true,
 		},
 		JvmMemoryPoolMax: MetricSettings{
@@ -202,6 +182,59 @@ func (m *metricElasticsearchClusterDataNodes) emit(metrics pdata.MetricSlice) {
 
 func newMetricElasticsearchClusterDataNodes(settings MetricSettings) metricElasticsearchClusterDataNodes {
 	m := metricElasticsearchClusterDataNodes{settings: settings}
+	if settings.Enabled {
+		m.data = pdata.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricElasticsearchClusterHealth struct {
+	data     pdata.Metric   // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills elasticsearch.cluster.health metric with initial data.
+func (m *metricElasticsearchClusterHealth) init() {
+	m.data.SetName("elasticsearch.cluster.health")
+	m.data.SetDescription("The health status of the cluster.")
+	m.data.SetUnit("{status}")
+	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricElasticsearchClusterHealth) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, healthStatusAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+	dp.Attributes().Insert(A.HealthStatus, pdata.NewAttributeValueString(healthStatusAttributeValue))
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricElasticsearchClusterHealth) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricElasticsearchClusterHealth) emit(metrics pdata.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricElasticsearchClusterHealth(settings MetricSettings) metricElasticsearchClusterHealth {
+	m := metricElasticsearchClusterHealth{settings: settings}
 	if settings.Enabled {
 		m.data = pdata.NewMetric()
 		m.init()
@@ -1010,7 +1043,7 @@ func (m *metricElasticsearchNodeThreadPoolThreads) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricElasticsearchNodeThreadPoolThreads) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, threadStateAttributeValue string) {
+func (m *metricElasticsearchNodeThreadPoolThreads) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, threadPoolNameAttributeValue string, threadStateAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1018,6 +1051,7 @@ func (m *metricElasticsearchNodeThreadPoolThreads) recordDataPoint(start pdata.T
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
+	dp.Attributes().Insert(A.ThreadPoolName, pdata.NewAttributeValueString(threadPoolNameAttributeValue))
 	dp.Attributes().Insert(A.ThreadState, pdata.NewAttributeValueString(threadStateAttributeValue))
 }
 
@@ -1039,59 +1073,6 @@ func (m *metricElasticsearchNodeThreadPoolThreads) emit(metrics pdata.MetricSlic
 
 func newMetricElasticsearchNodeThreadPoolThreads(settings MetricSettings) metricElasticsearchNodeThreadPoolThreads {
 	m := metricElasticsearchNodeThreadPoolThreads{settings: settings}
-	if settings.Enabled {
-		m.data = pdata.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricElasticserachClusterHealth struct {
-	data     pdata.Metric   // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills elasticserach.cluster.health metric with initial data.
-func (m *metricElasticserachClusterHealth) init() {
-	m.data.SetName("elasticserach.cluster.health")
-	m.data.SetDescription("The health status of the cluster.")
-	m.data.SetUnit("{status}")
-	m.data.SetDataType(pdata.MetricDataTypeSum)
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricElasticserachClusterHealth) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, healthStatusAttributeValue string) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.HealthStatus, pdata.NewAttributeValueString(healthStatusAttributeValue))
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricElasticserachClusterHealth) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricElasticserachClusterHealth) emit(metrics pdata.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricElasticserachClusterHealth(settings MetricSettings) metricElasticserachClusterHealth {
-	m := metricElasticserachClusterHealth{settings: settings}
 	if settings.Enabled {
 		m.data = pdata.NewMetric()
 		m.init()
@@ -1303,55 +1284,6 @@ func newMetricJvmMemoryHeapCommitted(settings MetricSettings) metricJvmMemoryHea
 	return m
 }
 
-type metricJvmMemoryHeapInit struct {
-	data     pdata.Metric   // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills jvm.memory.heap.init metric with initial data.
-func (m *metricJvmMemoryHeapInit) init() {
-	m.data.SetName("jvm.memory.heap.init")
-	m.data.SetDescription("The initial amount of memory that the JVM requests from the operating system for the heap")
-	m.data.SetUnit("By")
-	m.data.SetDataType(pdata.MetricDataTypeGauge)
-}
-
-func (m *metricJvmMemoryHeapInit) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricJvmMemoryHeapInit) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricJvmMemoryHeapInit) emit(metrics pdata.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricJvmMemoryHeapInit(settings MetricSettings) metricJvmMemoryHeapInit {
-	m := metricJvmMemoryHeapInit{settings: settings}
-	if settings.Enabled {
-		m.data = pdata.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricJvmMemoryHeapMax struct {
 	data     pdata.Metric   // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -1499,104 +1431,6 @@ func newMetricJvmMemoryNonheapCommitted(settings MetricSettings) metricJvmMemory
 	return m
 }
 
-type metricJvmMemoryNonheapInit struct {
-	data     pdata.Metric   // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills jvm.memory.nonheap.init metric with initial data.
-func (m *metricJvmMemoryNonheapInit) init() {
-	m.data.SetName("jvm.memory.nonheap.init")
-	m.data.SetDescription("The initial amount of memory that the JVM requests from the operating system for non-heap purposes")
-	m.data.SetUnit("By")
-	m.data.SetDataType(pdata.MetricDataTypeGauge)
-}
-
-func (m *metricJvmMemoryNonheapInit) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricJvmMemoryNonheapInit) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricJvmMemoryNonheapInit) emit(metrics pdata.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricJvmMemoryNonheapInit(settings MetricSettings) metricJvmMemoryNonheapInit {
-	m := metricJvmMemoryNonheapInit{settings: settings}
-	if settings.Enabled {
-		m.data = pdata.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricJvmMemoryNonheapMax struct {
-	data     pdata.Metric   // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills jvm.memory.nonheap.max metric with initial data.
-func (m *metricJvmMemoryNonheapMax) init() {
-	m.data.SetName("jvm.memory.nonheap.max")
-	m.data.SetDescription("The maximum amount of memory can be used for non-heap purposes")
-	m.data.SetUnit("By")
-	m.data.SetDataType(pdata.MetricDataTypeGauge)
-}
-
-func (m *metricJvmMemoryNonheapMax) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricJvmMemoryNonheapMax) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricJvmMemoryNonheapMax) emit(metrics pdata.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricJvmMemoryNonheapMax(settings MetricSettings) metricJvmMemoryNonheapMax {
-	m := metricJvmMemoryNonheapMax{settings: settings}
-	if settings.Enabled {
-		m.data = pdata.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricJvmMemoryNonheapUsed struct {
 	data     pdata.Metric   // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -1639,108 +1473,6 @@ func (m *metricJvmMemoryNonheapUsed) emit(metrics pdata.MetricSlice) {
 
 func newMetricJvmMemoryNonheapUsed(settings MetricSettings) metricJvmMemoryNonheapUsed {
 	m := metricJvmMemoryNonheapUsed{settings: settings}
-	if settings.Enabled {
-		m.data = pdata.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricJvmMemoryPoolCommitted struct {
-	data     pdata.Metric   // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills jvm.memory.pool.committed metric with initial data.
-func (m *metricJvmMemoryPoolCommitted) init() {
-	m.data.SetName("jvm.memory.pool.committed")
-	m.data.SetDescription("The amount of memory that is guaranteed to be available for the memory pool")
-	m.data.SetUnit("By")
-	m.data.SetDataType(pdata.MetricDataTypeGauge)
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricJvmMemoryPoolCommitted) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, memoryPoolNameAttributeValue string) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.MemoryPoolName, pdata.NewAttributeValueString(memoryPoolNameAttributeValue))
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricJvmMemoryPoolCommitted) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricJvmMemoryPoolCommitted) emit(metrics pdata.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricJvmMemoryPoolCommitted(settings MetricSettings) metricJvmMemoryPoolCommitted {
-	m := metricJvmMemoryPoolCommitted{settings: settings}
-	if settings.Enabled {
-		m.data = pdata.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricJvmMemoryPoolInit struct {
-	data     pdata.Metric   // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills jvm.memory.pool.init metric with initial data.
-func (m *metricJvmMemoryPoolInit) init() {
-	m.data.SetName("jvm.memory.pool.init")
-	m.data.SetDescription("The initial amount of memory that the JVM requests from the operating system for the memory pool")
-	m.data.SetUnit("By")
-	m.data.SetDataType(pdata.MetricDataTypeGauge)
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricJvmMemoryPoolInit) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, memoryPoolNameAttributeValue string) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.MemoryPoolName, pdata.NewAttributeValueString(memoryPoolNameAttributeValue))
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricJvmMemoryPoolInit) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricJvmMemoryPoolInit) emit(metrics pdata.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricJvmMemoryPoolInit(settings MetricSettings) metricJvmMemoryPoolInit {
-	m := metricJvmMemoryPoolInit{settings: settings}
 	if settings.Enabled {
 		m.data = pdata.NewMetric()
 		m.init()
@@ -1904,6 +1636,7 @@ func newMetricJvmThreadsCount(settings MetricSettings) metricJvmThreadsCount {
 type MetricsBuilder struct {
 	startTime                                      pdata.Timestamp
 	metricElasticsearchClusterDataNodes            metricElasticsearchClusterDataNodes
+	metricElasticsearchClusterHealth               metricElasticsearchClusterHealth
 	metricElasticsearchClusterNodes                metricElasticsearchClusterNodes
 	metricElasticsearchClusterShards               metricElasticsearchClusterShards
 	metricElasticsearchNodeCacheEvictions          metricElasticsearchNodeCacheEvictions
@@ -1920,20 +1653,14 @@ type MetricsBuilder struct {
 	metricElasticsearchNodeThreadPoolTasksFinished metricElasticsearchNodeThreadPoolTasksFinished
 	metricElasticsearchNodeThreadPoolTasksQueued   metricElasticsearchNodeThreadPoolTasksQueued
 	metricElasticsearchNodeThreadPoolThreads       metricElasticsearchNodeThreadPoolThreads
-	metricElasticserachClusterHealth               metricElasticserachClusterHealth
 	metricJvmClassesLoaded                         metricJvmClassesLoaded
 	metricJvmGcCollectionsCount                    metricJvmGcCollectionsCount
 	metricJvmGcCollectionsElapsed                  metricJvmGcCollectionsElapsed
 	metricJvmMemoryHeapCommitted                   metricJvmMemoryHeapCommitted
-	metricJvmMemoryHeapInit                        metricJvmMemoryHeapInit
 	metricJvmMemoryHeapMax                         metricJvmMemoryHeapMax
 	metricJvmMemoryHeapUsed                        metricJvmMemoryHeapUsed
 	metricJvmMemoryNonheapCommitted                metricJvmMemoryNonheapCommitted
-	metricJvmMemoryNonheapInit                     metricJvmMemoryNonheapInit
-	metricJvmMemoryNonheapMax                      metricJvmMemoryNonheapMax
 	metricJvmMemoryNonheapUsed                     metricJvmMemoryNonheapUsed
-	metricJvmMemoryPoolCommitted                   metricJvmMemoryPoolCommitted
-	metricJvmMemoryPoolInit                        metricJvmMemoryPoolInit
 	metricJvmMemoryPoolMax                         metricJvmMemoryPoolMax
 	metricJvmMemoryPoolUsed                        metricJvmMemoryPoolUsed
 	metricJvmThreadsCount                          metricJvmThreadsCount
@@ -1953,6 +1680,7 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 	mb := &MetricsBuilder{
 		startTime:                                      pdata.NewTimestampFromTime(time.Now()),
 		metricElasticsearchClusterDataNodes:            newMetricElasticsearchClusterDataNodes(settings.ElasticsearchClusterDataNodes),
+		metricElasticsearchClusterHealth:               newMetricElasticsearchClusterHealth(settings.ElasticsearchClusterHealth),
 		metricElasticsearchClusterNodes:                newMetricElasticsearchClusterNodes(settings.ElasticsearchClusterNodes),
 		metricElasticsearchClusterShards:               newMetricElasticsearchClusterShards(settings.ElasticsearchClusterShards),
 		metricElasticsearchNodeCacheEvictions:          newMetricElasticsearchNodeCacheEvictions(settings.ElasticsearchNodeCacheEvictions),
@@ -1969,20 +1697,14 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 		metricElasticsearchNodeThreadPoolTasksFinished: newMetricElasticsearchNodeThreadPoolTasksFinished(settings.ElasticsearchNodeThreadPoolTasksFinished),
 		metricElasticsearchNodeThreadPoolTasksQueued:   newMetricElasticsearchNodeThreadPoolTasksQueued(settings.ElasticsearchNodeThreadPoolTasksQueued),
 		metricElasticsearchNodeThreadPoolThreads:       newMetricElasticsearchNodeThreadPoolThreads(settings.ElasticsearchNodeThreadPoolThreads),
-		metricElasticserachClusterHealth:               newMetricElasticserachClusterHealth(settings.ElasticserachClusterHealth),
 		metricJvmClassesLoaded:                         newMetricJvmClassesLoaded(settings.JvmClassesLoaded),
 		metricJvmGcCollectionsCount:                    newMetricJvmGcCollectionsCount(settings.JvmGcCollectionsCount),
 		metricJvmGcCollectionsElapsed:                  newMetricJvmGcCollectionsElapsed(settings.JvmGcCollectionsElapsed),
 		metricJvmMemoryHeapCommitted:                   newMetricJvmMemoryHeapCommitted(settings.JvmMemoryHeapCommitted),
-		metricJvmMemoryHeapInit:                        newMetricJvmMemoryHeapInit(settings.JvmMemoryHeapInit),
 		metricJvmMemoryHeapMax:                         newMetricJvmMemoryHeapMax(settings.JvmMemoryHeapMax),
 		metricJvmMemoryHeapUsed:                        newMetricJvmMemoryHeapUsed(settings.JvmMemoryHeapUsed),
 		metricJvmMemoryNonheapCommitted:                newMetricJvmMemoryNonheapCommitted(settings.JvmMemoryNonheapCommitted),
-		metricJvmMemoryNonheapInit:                     newMetricJvmMemoryNonheapInit(settings.JvmMemoryNonheapInit),
-		metricJvmMemoryNonheapMax:                      newMetricJvmMemoryNonheapMax(settings.JvmMemoryNonheapMax),
 		metricJvmMemoryNonheapUsed:                     newMetricJvmMemoryNonheapUsed(settings.JvmMemoryNonheapUsed),
-		metricJvmMemoryPoolCommitted:                   newMetricJvmMemoryPoolCommitted(settings.JvmMemoryPoolCommitted),
-		metricJvmMemoryPoolInit:                        newMetricJvmMemoryPoolInit(settings.JvmMemoryPoolInit),
 		metricJvmMemoryPoolMax:                         newMetricJvmMemoryPoolMax(settings.JvmMemoryPoolMax),
 		metricJvmMemoryPoolUsed:                        newMetricJvmMemoryPoolUsed(settings.JvmMemoryPoolUsed),
 		metricJvmThreadsCount:                          newMetricJvmThreadsCount(settings.JvmThreadsCount),
@@ -1998,6 +1720,7 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 // defined in metadata and user settings, e.g. delta/cumulative translation.
 func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
 	mb.metricElasticsearchClusterDataNodes.emit(metrics)
+	mb.metricElasticsearchClusterHealth.emit(metrics)
 	mb.metricElasticsearchClusterNodes.emit(metrics)
 	mb.metricElasticsearchClusterShards.emit(metrics)
 	mb.metricElasticsearchNodeCacheEvictions.emit(metrics)
@@ -2014,20 +1737,14 @@ func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
 	mb.metricElasticsearchNodeThreadPoolTasksFinished.emit(metrics)
 	mb.metricElasticsearchNodeThreadPoolTasksQueued.emit(metrics)
 	mb.metricElasticsearchNodeThreadPoolThreads.emit(metrics)
-	mb.metricElasticserachClusterHealth.emit(metrics)
 	mb.metricJvmClassesLoaded.emit(metrics)
 	mb.metricJvmGcCollectionsCount.emit(metrics)
 	mb.metricJvmGcCollectionsElapsed.emit(metrics)
 	mb.metricJvmMemoryHeapCommitted.emit(metrics)
-	mb.metricJvmMemoryHeapInit.emit(metrics)
 	mb.metricJvmMemoryHeapMax.emit(metrics)
 	mb.metricJvmMemoryHeapUsed.emit(metrics)
 	mb.metricJvmMemoryNonheapCommitted.emit(metrics)
-	mb.metricJvmMemoryNonheapInit.emit(metrics)
-	mb.metricJvmMemoryNonheapMax.emit(metrics)
 	mb.metricJvmMemoryNonheapUsed.emit(metrics)
-	mb.metricJvmMemoryPoolCommitted.emit(metrics)
-	mb.metricJvmMemoryPoolInit.emit(metrics)
 	mb.metricJvmMemoryPoolMax.emit(metrics)
 	mb.metricJvmMemoryPoolUsed.emit(metrics)
 	mb.metricJvmThreadsCount.emit(metrics)
@@ -2036,6 +1753,11 @@ func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
 // RecordElasticsearchClusterDataNodesDataPoint adds a data point to elasticsearch.cluster.data_nodes metric.
 func (mb *MetricsBuilder) RecordElasticsearchClusterDataNodesDataPoint(ts pdata.Timestamp, val int64) {
 	mb.metricElasticsearchClusterDataNodes.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordElasticsearchClusterHealthDataPoint adds a data point to elasticsearch.cluster.health metric.
+func (mb *MetricsBuilder) RecordElasticsearchClusterHealthDataPoint(ts pdata.Timestamp, val int64, healthStatusAttributeValue string) {
+	mb.metricElasticsearchClusterHealth.recordDataPoint(mb.startTime, ts, val, healthStatusAttributeValue)
 }
 
 // RecordElasticsearchClusterNodesDataPoint adds a data point to elasticsearch.cluster.nodes metric.
@@ -2114,13 +1836,8 @@ func (mb *MetricsBuilder) RecordElasticsearchNodeThreadPoolTasksQueuedDataPoint(
 }
 
 // RecordElasticsearchNodeThreadPoolThreadsDataPoint adds a data point to elasticsearch.node.thread_pool.threads metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeThreadPoolThreadsDataPoint(ts pdata.Timestamp, val int64, threadStateAttributeValue string) {
-	mb.metricElasticsearchNodeThreadPoolThreads.recordDataPoint(mb.startTime, ts, val, threadStateAttributeValue)
-}
-
-// RecordElasticserachClusterHealthDataPoint adds a data point to elasticserach.cluster.health metric.
-func (mb *MetricsBuilder) RecordElasticserachClusterHealthDataPoint(ts pdata.Timestamp, val int64, healthStatusAttributeValue string) {
-	mb.metricElasticserachClusterHealth.recordDataPoint(mb.startTime, ts, val, healthStatusAttributeValue)
+func (mb *MetricsBuilder) RecordElasticsearchNodeThreadPoolThreadsDataPoint(ts pdata.Timestamp, val int64, threadPoolNameAttributeValue string, threadStateAttributeValue string) {
+	mb.metricElasticsearchNodeThreadPoolThreads.recordDataPoint(mb.startTime, ts, val, threadPoolNameAttributeValue, threadStateAttributeValue)
 }
 
 // RecordJvmClassesLoadedDataPoint adds a data point to jvm.classes.loaded metric.
@@ -2143,11 +1860,6 @@ func (mb *MetricsBuilder) RecordJvmMemoryHeapCommittedDataPoint(ts pdata.Timesta
 	mb.metricJvmMemoryHeapCommitted.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordJvmMemoryHeapInitDataPoint adds a data point to jvm.memory.heap.init metric.
-func (mb *MetricsBuilder) RecordJvmMemoryHeapInitDataPoint(ts pdata.Timestamp, val int64) {
-	mb.metricJvmMemoryHeapInit.recordDataPoint(mb.startTime, ts, val)
-}
-
 // RecordJvmMemoryHeapMaxDataPoint adds a data point to jvm.memory.heap.max metric.
 func (mb *MetricsBuilder) RecordJvmMemoryHeapMaxDataPoint(ts pdata.Timestamp, val int64) {
 	mb.metricJvmMemoryHeapMax.recordDataPoint(mb.startTime, ts, val)
@@ -2163,29 +1875,9 @@ func (mb *MetricsBuilder) RecordJvmMemoryNonheapCommittedDataPoint(ts pdata.Time
 	mb.metricJvmMemoryNonheapCommitted.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordJvmMemoryNonheapInitDataPoint adds a data point to jvm.memory.nonheap.init metric.
-func (mb *MetricsBuilder) RecordJvmMemoryNonheapInitDataPoint(ts pdata.Timestamp, val int64) {
-	mb.metricJvmMemoryNonheapInit.recordDataPoint(mb.startTime, ts, val)
-}
-
-// RecordJvmMemoryNonheapMaxDataPoint adds a data point to jvm.memory.nonheap.max metric.
-func (mb *MetricsBuilder) RecordJvmMemoryNonheapMaxDataPoint(ts pdata.Timestamp, val int64) {
-	mb.metricJvmMemoryNonheapMax.recordDataPoint(mb.startTime, ts, val)
-}
-
 // RecordJvmMemoryNonheapUsedDataPoint adds a data point to jvm.memory.nonheap.used metric.
 func (mb *MetricsBuilder) RecordJvmMemoryNonheapUsedDataPoint(ts pdata.Timestamp, val int64) {
 	mb.metricJvmMemoryNonheapUsed.recordDataPoint(mb.startTime, ts, val)
-}
-
-// RecordJvmMemoryPoolCommittedDataPoint adds a data point to jvm.memory.pool.committed metric.
-func (mb *MetricsBuilder) RecordJvmMemoryPoolCommittedDataPoint(ts pdata.Timestamp, val int64, memoryPoolNameAttributeValue string) {
-	mb.metricJvmMemoryPoolCommitted.recordDataPoint(mb.startTime, ts, val, memoryPoolNameAttributeValue)
-}
-
-// RecordJvmMemoryPoolInitDataPoint adds a data point to jvm.memory.pool.init metric.
-func (mb *MetricsBuilder) RecordJvmMemoryPoolInitDataPoint(ts pdata.Timestamp, val int64, memoryPoolNameAttributeValue string) {
-	mb.metricJvmMemoryPoolInit.recordDataPoint(mb.startTime, ts, val, memoryPoolNameAttributeValue)
 }
 
 // RecordJvmMemoryPoolMaxDataPoint adds a data point to jvm.memory.pool.max metric.

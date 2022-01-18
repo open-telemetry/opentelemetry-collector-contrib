@@ -65,6 +65,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/fluentbitextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension

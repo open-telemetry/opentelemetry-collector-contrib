@@ -9,6 +9,7 @@ These are the metrics available for this scraper.
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
 | elasticsearch.cluster.data_nodes | The number of data nodes in the cluster. | {nodes} | Sum(Int) | <ul> </ul> |
+| elasticsearch.cluster.health | The health status of the cluster. Health status is based on the state of its primary and replica shards. Green indicates all shards are assigned. Yellow indicates that one or more replica shards are unassigned. Red indicates that one or more primary shards are unassigned, making some data unavailable.  | {status} | Sum(Int) | <ul> <li>health_status</li> </ul> |
 | elasticsearch.cluster.nodes | The total number of nodes in the cluster. | {nodes} | Sum(Int) | <ul> </ul> |
 | elasticsearch.cluster.shards | The number of shards in the cluster. | {shards} | Sum(Int) | <ul> <li>shard_state</li> </ul> |
 | elasticsearch.node.cache.evictions | The number of evictions from the cache. | {evictions} | Sum(Int) | <ul> <li>cache_name</li> </ul> |
@@ -24,21 +25,15 @@ These are the metrics available for this scraper.
 | elasticsearch.node.shards.size | The size of the shards assigned to this node. | By | Sum(Int) | <ul> </ul> |
 | elasticsearch.node.thread_pool.tasks.finished | The number of tasks finished by the thread pool. | {tasks} | Sum(Int) | <ul> <li>thread_pool_name</li> <li>task_state</li> </ul> |
 | elasticsearch.node.thread_pool.tasks.queued | The number of queued tasks in the thread pool. | {tasks} | Sum(Int) | <ul> <li>thread_pool_name</li> </ul> |
-| elasticsearch.node.thread_pool.threads | The number of threads in the thread pool. | {threads} | Sum(Int) | <ul> <li>thread_state</li> </ul> |
-| elasticserach.cluster.health | The health status of the cluster. Health status is based on the state of its primary and replica shards. Green indicates all shards are assigned. Yellow indicates that one or more replica shards are unassigned. Red indicates that one or more primary shards are unassigned, making some data unavailable.  | {status} | Sum(Int) | <ul> <li>health_status</li> </ul> |
+| elasticsearch.node.thread_pool.threads | The number of threads in the thread pool. | {threads} | Sum(Int) | <ul> <li>thread_pool_name</li> <li>thread_state</li> </ul> |
 | jvm.classes.loaded | The number of loaded classes | 1 | Gauge(Int) | <ul> </ul> |
 | jvm.gc.collections.count | The total number of garbage collections that have occurred | 1 | Sum(Int) | <ul> <li>collector_name</li> </ul> |
 | jvm.gc.collections.elapsed | The approximate accumulated collection elapsed time | ms | Sum(Int) | <ul> <li>collector_name</li> </ul> |
 | jvm.memory.heap.committed | The amount of memory that is guaranteed to be available for the heap | By | Gauge(Int) | <ul> </ul> |
-| jvm.memory.heap.init | The initial amount of memory that the JVM requests from the operating system for the heap | By | Gauge(Int) | <ul> </ul> |
 | jvm.memory.heap.max | The maximum amount of memory can be used for the heap | By | Gauge(Int) | <ul> </ul> |
 | jvm.memory.heap.used | The current heap memory usage | By | Gauge(Int) | <ul> </ul> |
 | jvm.memory.nonheap.committed | The amount of memory that is guaranteed to be available for non-heap purposes | By | Gauge(Int) | <ul> </ul> |
-| jvm.memory.nonheap.init | The initial amount of memory that the JVM requests from the operating system for non-heap purposes | By | Gauge(Int) | <ul> </ul> |
-| jvm.memory.nonheap.max | The maximum amount of memory can be used for non-heap purposes | By | Gauge(Int) | <ul> </ul> |
 | jvm.memory.nonheap.used | The current non-heap memory usage | By | Gauge(Int) | <ul> </ul> |
-| jvm.memory.pool.committed | The amount of memory that is guaranteed to be available for the memory pool | By | Gauge(Int) | <ul> <li>memory_pool_name</li> </ul> |
-| jvm.memory.pool.init | The initial amount of memory that the JVM requests from the operating system for the memory pool | By | Gauge(Int) | <ul> <li>memory_pool_name</li> </ul> |
 | jvm.memory.pool.max | The maximum amount of memory can be used for the memory pool | By | Gauge(Int) | <ul> <li>memory_pool_name</li> </ul> |
 | jvm.memory.pool.used | The current memory pool memory usage | By | Gauge(Int) | <ul> <li>memory_pool_name</li> </ul> |
 | jvm.threads.count | The current number of threads | 1 | Gauge(Int) | <ul> </ul> |
