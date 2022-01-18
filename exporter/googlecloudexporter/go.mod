@@ -22,7 +22,7 @@ require (
 )
 
 require (
-	cloud.google.com/go/compute v0.1.0 // indirect
+	cloud.google.com/go/compute v1.0.0 // indirect
 	cloud.google.com/go/monitoring v1.1.0 // indirect
 	cloud.google.com/go/trace v1.0.0 // indirect
 	github.com/aws/aws-sdk-go v1.42.35 // indirect

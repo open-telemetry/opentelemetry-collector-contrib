@@ -23,7 +23,7 @@ require (
 require go.opentelemetry.io/otel/sdk v1.3.0
 
 require (
-	cloud.google.com/go/compute v0.1.0 // indirect
+	cloud.google.com/go/compute v1.0.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-logr/logr v1.2.1 // indirect
 	github.com/go-logr/stdr v1.2.0 // indirect

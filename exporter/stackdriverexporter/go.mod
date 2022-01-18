@@ -10,7 +10,7 @@ require (
 )
 
 require (
-	cloud.google.com/go/compute v0.1.0 // indirect
+	cloud.google.com/go/compute v1.0.0 // indirect
 	cloud.google.com/go/monitoring v1.1.0 // indirect
 	cloud.google.com/go/trace v1.0.0 // indirect
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.10 // indirect
