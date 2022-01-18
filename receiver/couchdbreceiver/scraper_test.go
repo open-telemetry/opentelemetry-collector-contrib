@@ -35,7 +35,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
 )
 
-func TestScraper(t *testing.T) {
+func TestScrape(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Username = "otelu"
