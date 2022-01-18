@@ -56,7 +56,6 @@ func TestScraper(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 		eMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
-
 		require.NoError(t, scrapertest.CompareMetricSlices(eMetricSlice, aMetricSlice))
 	})
 
@@ -74,7 +73,6 @@ func TestScraper(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 		eMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
-
 		require.NoError(t, scrapertest.CompareMetricSlices(eMetricSlice, aMetricSlice))
 	})
 
