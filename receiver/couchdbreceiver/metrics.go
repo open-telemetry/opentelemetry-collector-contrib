@@ -19,7 +19,6 @@ import (
 
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver/internal/metadata"
 )
@@ -32,9 +31,12 @@ func (c *couchdbScraper) recordCouchdbAverageRequestTimeDataPoint(now pdata.Time
 		return
 	}
 
-	if parsedValue, ok := c.parseFloat(averageRequestTimeMetricKey, averageRequestTimeValue); ok {
-		c.mb.RecordCouchdbAverageRequestTimeDataPoint(now, parsedValue)
+	parsedValue, err := c.parseFloat(averageRequestTimeValue)
+	if err != nil {
+		errors.AddPartial(1, err)
+		return
 	}
+	c.mb.RecordCouchdbAverageRequestTimeDataPoint(now, parsedValue)
 }
 
 func (c *couchdbScraper) recordCouchdbHttpdBulkRequestsDataPoint(now pdata.Timestamp, stats map[string]interface{}, errors scrapererror.ScrapeErrors) {
@@ -45,9 +47,12 @@ func (c *couchdbScraper) recordCouchdbHttpdBulkRequestsDataPoint(now pdata.Times
 		return
 	}
 
-	if parsedValue, ok := c.parseInt(httpdBulkRequestsMetricKey, httpdBulkRequestsMetricValue); ok {
-		c.mb.RecordCouchdbHttpdBulkRequestsDataPoint(now, parsedValue)
+	parsedValue, err := c.parseInt(httpdBulkRequestsMetricValue)
+	if err != nil {
+		errors.AddPartial(1, err)
+		return
 	}
+	c.mb.RecordCouchdbHttpdBulkRequestsDataPoint(now, parsedValue)
 }
 
 func (c *couchdbScraper) recordCouchdbHttpdRequestsDataPoint(now pdata.Timestamp, stats map[string]interface{}, errors scrapererror.ScrapeErrors) {
@@ -60,9 +65,12 @@ func (c *couchdbScraper) recordCouchdbHttpdRequestsDataPoint(now pdata.Timestamp
 			continue
 		}
 
-		if parsedValue, ok := c.parseInt(httpdRequestMethodKey, httpdRequestMethodValue); ok {
-			c.mb.RecordCouchdbHttpdRequestsDataPoint(now, parsedValue, method)
+		parsedValue, err := c.parseInt(httpdRequestMethodValue)
+		if err != nil {
+			errors.AddPartial(1, err)
+			return
 		}
+		c.mb.RecordCouchdbHttpdRequestsDataPoint(now, parsedValue, method)
 	}
 }
 
@@ -76,9 +84,12 @@ func (c *couchdbScraper) recordCouchdbHttpdResponsesDataPoint(now pdata.Timestam
 			continue
 		}
 
-		if parsedValue, ok := c.parseInt(httpdResponsetCodeKey, httpdResponsetCodeValue); ok {
-			c.mb.RecordCouchdbHttpdResponsesDataPoint(now, parsedValue, code)
+		parsedValue, err := c.parseInt(httpdResponsetCodeValue)
+		if err != nil {
+			errors.AddPartial(1, err)
+			return
 		}
+		c.mb.RecordCouchdbHttpdResponsesDataPoint(now, parsedValue, code)
 	}
 }
 
@@ -92,9 +103,12 @@ func (c *couchdbScraper) recordCouchdbHttpdViewsDataPoint(now pdata.Timestamp, s
 			continue
 		}
 
-		if parsedValue, ok := c.parseInt(viewKey, viewValue); ok {
-			c.mb.RecordCouchdbHttpdViewsDataPoint(now, parsedValue, view)
+		parsedValue, err := c.parseInt(viewValue)
+		if err != nil {
+			errors.AddPartial(1, err)
+			return
 		}
+		c.mb.RecordCouchdbHttpdViewsDataPoint(now, parsedValue, view)
 	}
 }
 
@@ -106,9 +120,12 @@ func (c *couchdbScraper) recordCouchdbDatabaseOpenDataPoint(now pdata.Timestamp,
 		return
 	}
 
-	if parsedValue, ok := c.parseInt(openDatabaseKey, openDatabaseMetricValue); ok {
-		c.mb.RecordCouchdbDatabaseOpenDataPoint(now, parsedValue)
+	parsedValue, err := c.parseInt(openDatabaseMetricValue)
+	if err != nil {
+		errors.AddPartial(1, err)
+		return
 	}
+	c.mb.RecordCouchdbDatabaseOpenDataPoint(now, parsedValue)
 }
 
 func (c *couchdbScraper) recordCouchdbFileDescriptorOpenDataPoint(now pdata.Timestamp, stats map[string]interface{}, errors scrapererror.ScrapeErrors) {
@@ -119,9 +136,12 @@ func (c *couchdbScraper) recordCouchdbFileDescriptorOpenDataPoint(now pdata.Time
 		return
 	}
 
-	if parsedValue, ok := c.parseInt(fileDescriptorKey, fileDescriptorMetricValue); ok {
-		c.mb.RecordCouchdbFileDescriptorOpenDataPoint(now, parsedValue)
+	parsedValue, err := c.parseInt(fileDescriptorMetricValue)
+	if err != nil {
+		errors.AddPartial(1, err)
+		return
 	}
+	c.mb.RecordCouchdbFileDescriptorOpenDataPoint(now, parsedValue)
 }
 
 func (c *couchdbScraper) recordCouchdbDatabaseOperationsDataPoint(now pdata.Timestamp, stats map[string]interface{}, errors scrapererror.ScrapeErrors) {
@@ -135,9 +155,12 @@ func (c *couchdbScraper) recordCouchdbDatabaseOperationsDataPoint(now pdata.Time
 			continue
 		}
 
-		if parsedValue, ok := c.parseInt(key, value); ok {
-			c.mb.RecordCouchdbDatabaseOperationsDataPoint(now, parsedValue, operations[i])
+		parsedValue, err := c.parseInt(value)
+		if err != nil {
+			errors.AddPartial(1, err)
+			return
 		}
+		c.mb.RecordCouchdbDatabaseOperationsDataPoint(now, parsedValue, operations[i])
 	}
 }
 
@@ -157,32 +180,20 @@ func getValueFromBody(keys []string, body map[string]interface{}) (interface{}, 
 	return currentValue, nil
 }
 
-func (c *couchdbScraper) parseInt(key []string, value interface{}) (int64, bool) {
+func (c *couchdbScraper) parseInt(value interface{}) (int64, error) {
 	switch i := value.(type) {
 	case int64:
-		c.logInvalid("int", key, value)
-		return i, true
+		return i, nil
 	case float64:
-		c.logInvalid("int", key, value)
-		return int64(i), true
+		return int64(i), nil
 	}
-	return 0, false
+	return 0, fmt.Errorf("could not parse value as int")
 }
 
-func (c *couchdbScraper) parseFloat(key []string, value interface{}) (float64, bool) {
+func (c *couchdbScraper) parseFloat(value interface{}) (float64, error) {
 	switch f := value.(type) {
 	case float64:
-		c.logInvalid("float", key, value)
-		return f, true
+		return f, nil
 	}
-	return 0, false
-}
-
-func (c *couchdbScraper) logInvalid(expectedType string, key []string, value interface{}) {
-	c.logger.Info(
-		"invalid value",
-		zap.String("expectedType", expectedType),
-		zap.Strings("key", key),
-		zap.Any("value", value),
-	)
+	return 0, fmt.Errorf("could not parse value as float")
 }
