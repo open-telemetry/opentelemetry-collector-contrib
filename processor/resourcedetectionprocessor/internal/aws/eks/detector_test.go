@@ -36,7 +36,6 @@ func (detectorUtils *MockDetectorUtils) getConfigMap(_ context.Context, namespac
 	return args.Get(0).(map[string]string), args.Error(1)
 }
 
-
 func TestNewDetector(t *testing.T) {
 	detector, err := NewDetector(componenttest.NewNopProcessorCreateSettings(), nil)
 	assert.NoError(t, err)
@@ -51,7 +50,7 @@ func TestEKS(t *testing.T) {
 	require.NoError(t, os.Setenv("KUBERNETES_SERVICE_HOST", "localhost"))
 	detectorUtils.On("getConfigMap", authConfigmapNS, authConfigmapName).Return(map[string]string{"cluster.name": "my-cluster"}, nil)
 	// Call EKS Resource detector to detect resources
-	eksResourceDetector := &Detector{ utils: detectorUtils, err: nil}
+	eksResourceDetector := &Detector{utils: detectorUtils, err: nil}
 	res, _, err := eksResourceDetector.Detect(ctx)
 	require.NoError(t, err)
 
