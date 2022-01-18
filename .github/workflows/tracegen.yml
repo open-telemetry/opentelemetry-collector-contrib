@@ -7,6 +7,15 @@ on:
   pull_request:
 
 jobs:
+  build-dev:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+      - name: Build tracegen
+        run: |
+          docker build tracegen -t ghcr.io/open-telemetry/opentelemetry-collector-contrib/tracegen:dev
+
   publish-dev:
     runs-on: ubuntu-latest
     if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
