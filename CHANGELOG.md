@@ -17,6 +17,7 @@
 - `mongodbreceiver`: Add metric metadata (#7163)
 - `postgresqlreceiver`: add the receiver to available components (#7079)
 - `tanzuobservability exporter`: Support summary metrics (#7121)
+- Use Jaeger gRPC instead of Thrift in the docker-compose example (#7243)
 
 ## 🛑 Breaking changes 🛑
 
