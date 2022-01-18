@@ -76,7 +76,7 @@ func TestScraper(t *testing.T) {
 		require.NoError(t, scrapertest.CompareMetricSlices(eMetricSlice, aMetricSlice))
 	})
 
-	t.Run("error no client", func(t *testing.T) {
+	t.Run("scrape error: failed to connect to client", func(t *testing.T) {
 		obs, logs := observer.New(zap.ErrorLevel)
 		scraper := newCouchdbScraper(zap.New(obs), cfg)
 
@@ -94,7 +94,7 @@ func TestScraper(t *testing.T) {
 		}, logs.AllUntimed())
 	})
 
-	t.Run("error no stats", func(t *testing.T) {
+	t.Run("scrape error: get stats endpoint error", func(t *testing.T) {
 		obs, logs := observer.New(zap.ErrorLevel)
 		mockClient := new(MockClient)
 		mockClient.On("GetStats", "_local").Return(getStats(""))
@@ -128,7 +128,6 @@ func TestStart(t *testing.T) {
 		err := scraper.start(context.Background(), componenttest.NewNopHost())
 		require.NoError(t, err)
 	})
-
 	t.Run("start fail", func(t *testing.T) {
 		f := NewFactory()
 		cfg := f.CreateDefaultConfig().(*Config)
