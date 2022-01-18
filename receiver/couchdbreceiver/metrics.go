@@ -68,7 +68,7 @@ func (c *couchdbScraper) recordCouchdbHttpdRequestsDataPoint(now pdata.Timestamp
 		parsedValue, err := c.parseInt(httpdRequestMethodValue)
 		if err != nil {
 			errors.AddPartial(1, err)
-			return
+			continue
 		}
 		c.mb.RecordCouchdbHttpdRequestsDataPoint(now, parsedValue, method)
 	}
@@ -87,7 +87,7 @@ func (c *couchdbScraper) recordCouchdbHttpdResponsesDataPoint(now pdata.Timestam
 		parsedValue, err := c.parseInt(httpdResponsetCodeValue)
 		if err != nil {
 			errors.AddPartial(1, err)
-			return
+			continue
 		}
 		c.mb.RecordCouchdbHttpdResponsesDataPoint(now, parsedValue, code)
 	}
@@ -106,7 +106,7 @@ func (c *couchdbScraper) recordCouchdbHttpdViewsDataPoint(now pdata.Timestamp, s
 		parsedValue, err := c.parseInt(viewValue)
 		if err != nil {
 			errors.AddPartial(1, err)
-			return
+			continue
 		}
 		c.mb.RecordCouchdbHttpdViewsDataPoint(now, parsedValue, view)
 	}
@@ -158,7 +158,7 @@ func (c *couchdbScraper) recordCouchdbDatabaseOperationsDataPoint(now pdata.Time
 		parsedValue, err := c.parseInt(value)
 		if err != nil {
 			errors.AddPartial(1, err)
-			return
+			continue
 		}
 		c.mb.RecordCouchdbDatabaseOperationsDataPoint(now, parsedValue, operations[i])
 	}
