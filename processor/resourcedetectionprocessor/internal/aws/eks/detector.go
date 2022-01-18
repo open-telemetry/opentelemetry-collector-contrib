@@ -17,16 +17,14 @@ package eks // import "github.com/open-telemetry/opentelemetry-collector-contrib
 import (
 	"context"
 	"fmt"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-
 	"os"
-
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
@@ -37,10 +35,9 @@ const (
 
 	// Environment variable that is set when running on Kubernetes.
 	kubernetesServiceHostEnvVar = "KUBERNETES_SERVICE_HOST"
-	authConfigmapNS   = "kube-system"
-	authConfigmapName = "aws-auth"
+	authConfigmapNS             = "kube-system"
+	authConfigmapName           = "aws-auth"
 )
-
 
 type detectorUtils interface {
 	getConfigMap(ctx context.Context, namespace string, name string) (map[string]string, error)
@@ -50,16 +47,16 @@ type eksDetectorUtils struct {
 	clientset *kubernetes.Clientset
 }
 
-
 // Detector for EKS
-type Detector struct{
+type Detector struct {
 	utils detectorUtils
-	err error
+	err   error
 }
 
 var _ internal.Detector = (*Detector)(nil)
 
 var _ detectorUtils = (*eksDetectorUtils)(nil)
+
 // NewDetector returns a resource detector that will detect AWS EKS resources.
 func NewDetector(_ component.ProcessorCreateSettings, _ internal.DetectorConfig) (internal.Detector, error) {
 	utils, err := newK8sDetectorUtils()
@@ -69,7 +66,6 @@ func NewDetector(_ component.ProcessorCreateSettings, _ internal.DetectorConfig)
 // Detect returns a Resource describing the Amazon EKS environment being run in.
 func (detector *Detector) Detect(ctx context.Context) (resource pdata.Resource, schemaURL string, err error) {
 	res := pdata.NewResource()
-
 
 	//Check if running on EKS.
 	isEKS, err := isEKS(ctx, detector.utils)
