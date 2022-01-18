@@ -15,8 +15,6 @@
 package prometheusreceiver
 
 import (
-	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
