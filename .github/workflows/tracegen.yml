@@ -34,6 +34,7 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v2
+      - uses: docker/setup-buildx-action@v1
       - name: Set Release Tag
         id: github_tag
         run: ./.github/workflows/scripts/set_release_tag.sh
@@ -44,6 +45,11 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Push tracegen to Github packages
-        run: |
-          docker build tracegen -t ghcr.io/open-telemetry/opentelemetry-collector-contrib/tracegen:$RELEASE_TAG
-          docker push ghcr.io/open-telemetry/opentelemetry-collector-contrib/tracegen:$RELEASE_TAG
+        uses: docker/build-push-action@v2
+        with:
+          context: tracegen
+          push: true
+          tags: ghcr.io/open-telemetry/opentelemetry-collector-contrib/tracegen:$RELEASE_TAG
+        env:
+          RELEASE_TAG: 123
+#          RELEASE_TAG: ${{ steps.github_tag.outputs.tag }}
