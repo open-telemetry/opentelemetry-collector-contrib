@@ -141,7 +141,6 @@ func (e *exporter) getLogPusher(logGroup, logStream string) cwlogs.Pusher {
 		e.pusher = cwlogs.NewPusher(aws.String(logGroup), aws.String(logStream), e.retryCount, *e.svcStructuredLog, e.logger)
 	}
 	return e.pusher
-
 }
 
 func logsToCWLogs(logger *zap.Logger, ld pdata.Logs) ([]*cloudwatchlogs.InputLogEvent, int) {
