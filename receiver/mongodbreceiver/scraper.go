@@ -24,6 +24,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
@@ -92,13 +93,14 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, client client) (pda
 	}
 
 	wg := &sync.WaitGroup{}
+	var errors scrapererror.ScrapeErrors
 
 	wg.Add(1)
-	go s.collectAdminDatabase(ctx, wg, mm, client)
+	go s.collectAdminDatabase(ctx, wg, mm, errors)
 
 	for _, dbName := range dbNames {
 		wg.Add(1)
-		go s.collectDatabase(ctx, wg, mm, client, dbName)
+		go s.collectDatabase(ctx, wg, mm, dbName, errors)
 	}
 
 	wg.Wait()
@@ -106,28 +108,28 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, client client) (pda
 	return rms, nil
 }
 
-func (s *mongodbScraper) collectDatabase(ctx context.Context, wg *sync.WaitGroup, mm *metricManager, client client, databaseName string) {
+func (s *mongodbScraper) collectDatabase(ctx context.Context, wg *sync.WaitGroup, mm *metricManager, databaseName string, errors scrapererror.ScrapeErrors) {
 	defer wg.Done()
-	dbStats, err := client.DBStats(ctx, databaseName)
+	dbStats, err := s.client.DBStats(ctx, databaseName)
 	if err != nil {
-		s.logger.Error("Failed to collect dbStats metric", zap.Error(err), zap.String("database", databaseName))
+		errors.AddPartial(1, err)
 	} else {
 		s.extractor.Extract(dbStats, mm, databaseName, normalDBStats)
 	}
 
-	serverStatus, err := client.ServerStatus(ctx, databaseName)
+	serverStatus, err := s.client.ServerStatus(ctx, databaseName)
 	if err != nil {
-		s.logger.Error("Failed to collect serverStatus metric", zap.Error(err), zap.String("database", databaseName))
+		errors.AddPartial(1, err)
 	} else {
 		s.extractor.Extract(serverStatus, mm, databaseName, normalServerStats)
 	}
 }
 
-func (s *mongodbScraper) collectAdminDatabase(ctx context.Context, wg *sync.WaitGroup, mm *metricManager, client client) {
+func (s *mongodbScraper) collectAdminDatabase(ctx context.Context, wg *sync.WaitGroup, mm *metricManager, errors scrapererror.ScrapeErrors) {
 	defer wg.Done()
-	serverStatus, err := client.ServerStatus(ctx, "admin")
+	serverStatus, err := s.client.ServerStatus(ctx, "admin")
 	if err != nil {
-		s.logger.Error("Failed to query serverStatus on admin database", zap.Error(err))
+		errors.AddPartial(1, err)
 	} else {
 		s.extractor.Extract(serverStatus, mm, "admin", adminServerStats)
 	}
