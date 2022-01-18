@@ -22,6 +22,8 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/metadata"
 )
 
 var (
@@ -39,6 +41,14 @@ var (
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	confighttp.HTTPClientSettings           `mapstructure:",squash"`
+	// Metrics defines which metrics to enable for the scraper
+	Metrics metadata.MetricsSettings `mapstructure:"metrics"`
+	// Nodes defines the nodes to scrape.
+	// See https://www.elastic.co/guide/en/elasticsearch/reference/7.9/cluster.html#cluster-nodes for which selectors may be used here.
+	// If Nodes is empty, no nodes will be scraped.
+	Nodes []string `mapstructure:"nodes"`
+	// SkipClusterMetrics indicates whether cluster level metrics from /_cluster/health should be scraped or not.
+	SkipClusterMetrics bool `mapstructure:"skip_cluster_metrics"`
 	// Username is the username used when making REST calls to elasticsearch. Must be specified if Password is. Not required.
 	Username string `mapstructure:"username"`
 	// Password is the password used when making REST calls to elasticsearch. Must be specified if Username is. Not required.

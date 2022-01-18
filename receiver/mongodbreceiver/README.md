@@ -1,6 +1,6 @@
-# Mongodb Receiver
+# MongoDB Receiver
 
-This receiver fetches stats from a Mongodb instance using the [golang
+This receiver fetches stats from a MongoDB instance using the [golang
 mongo driver](https://github.com/mongodb/mongo-go-driver). Stats are collected
 via MongoDB's `dbStats` and `serverStatus` commands.
 

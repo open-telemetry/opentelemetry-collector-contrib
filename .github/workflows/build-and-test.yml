@@ -75,7 +75,7 @@ jobs:
           path: /home/runner/.cache/go-build
           key: go-build-lint-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
       - name: Lint
-        run: make -j4 golint
+        run: make -j2 golint
       - name: Checks 
         run: make -j4 checkdoc porto
       - name: Codegem
