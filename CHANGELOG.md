@@ -25,7 +25,7 @@
 
 ## 🚀 New components 🚀
 
-- `rabbitmqreceiver`: Establish codebase for RabbitMQ metrics receiver ()
+- `rabbitmqreceiver`: Establish codebase for RabbitMQ metrics receiver (#7239)
 
 ## 🧰 Bug fixes 🧰
 
