@@ -61,7 +61,7 @@ reduce memory
 consumption. [Details and defaults here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/processor/memorylimiterprocessor/README.md)
 .
 
-#### Exporters
+#### Exporter
 
 This exporter
 uses [queuing and retry helpers](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
