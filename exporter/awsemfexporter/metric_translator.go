@@ -22,6 +22,8 @@ import (
 
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 )
 
 const (
@@ -337,7 +339,7 @@ func groupedMetricToCWMeasurementsWithFilters(groupedMetric *groupedMetric, conf
 }
 
 // translateCWMetricToEMF converts CloudWatch Metric format to EMF.
-func translateCWMetricToEMF(cWMetric *cWMetrics, config *Config) *logEvent {
+func translateCWMetricToEMF(cWMetric *cWMetrics, config *Config) *cwlogs.Event {
 	// convert CWMetric into map format for compatible with PLE input
 	cWMetricMap := make(map[string]interface{})
 	fieldMap := cWMetric.fields
@@ -384,11 +386,11 @@ func translateCWMetricToEMF(cWMetric *cWMetrics, config *Config) *logEvent {
 	}
 
 	metricCreationTime := cWMetric.timestampMs
-	logEvent := newLogEvent(
+	logEvent := cwlogs.NewEvent(
 		metricCreationTime,
 		string(pleMsg),
 	)
-	logEvent.logGeneratedTime = time.Unix(0, metricCreationTime*int64(time.Millisecond))
+	logEvent.GeneratedTime = time.Unix(0, metricCreationTime*int64(time.Millisecond))
 
 	return logEvent
 }

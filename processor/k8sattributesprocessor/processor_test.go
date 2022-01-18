@@ -34,7 +34,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/kube"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 )
 
 func newTracesProcessor(cfg config.Processor, next consumer.Traces, options ...Option) (component.TracesProcessor, error) {
@@ -296,29 +296,54 @@ func withContainerRunID(containerRunID string) generateResourceFunc {
 	}
 }
 
-func TestIPDetectionFromContext(t *testing.T) {
-	m := newMultiTest(t, NewFactory().CreateDefaultConfig(), nil)
+type strAddr string
 
-	ctx := client.NewContext(context.Background(), client.Info{
-		Addr: &net.IPAddr{
+func (s strAddr) String() string {
+	return "1.1.1.1:3200"
+}
+
+func (strAddr) Network() string {
+	return "tcp"
+}
+
+func TestIPDetectionFromContext(t *testing.T) {
+
+	addresses := []net.Addr{
+		&net.IPAddr{
 			IP: net.IPv4(1, 1, 1, 1),
 		},
-	})
-	m.testConsume(
-		ctx,
-		generateTraces(),
-		generateMetrics(),
-		generateLogs(),
-		func(err error) {
-			assert.NoError(t, err)
+		&net.TCPAddr{
+			IP:   net.IPv4(1, 1, 1, 1),
+			Port: 3200,
+		},
+		&net.UDPAddr{
+			IP:   net.IPv4(1, 1, 1, 1),
+			Port: 3200,
+		},
+		strAddr("1.1.1.1:3200"),
+	}
+	for _, addr := range addresses {
+		m := newMultiTest(t, NewFactory().CreateDefaultConfig(), nil)
+		ctx := client.NewContext(context.Background(), client.Info{
+			Addr: addr,
 		})
+		m.testConsume(
+			ctx,
+			generateTraces(),
+			generateMetrics(),
+			generateLogs(),
+			func(err error) {
+				assert.NoError(t, err)
+			})
 
-	m.assertBatchesLen(1)
-	m.assertResourceObjectLen(0)
-	m.assertResource(0, func(r pdata.Resource) {
-		require.Greater(t, r.Attributes().Len(), 0)
-		assertResourceHasStringAttribute(t, r, "k8s.pod.ip", "1.1.1.1")
-	})
+		m.assertBatchesLen(1)
+		m.assertResourceObjectLen(0)
+		m.assertResource(0, func(r pdata.Resource) {
+			require.Greater(t, r.Attributes().Len(), 0)
+			assertResourceHasStringAttribute(t, r, "k8s.pod.ip", "1.1.1.1")
+		})
+	}
+
 }
 
 func TestNilBatch(t *testing.T) {

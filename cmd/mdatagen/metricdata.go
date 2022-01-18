@@ -16,6 +16,8 @@ package main
 
 import (
 	"fmt"
+
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 var (
@@ -24,54 +26,19 @@ var (
 	_ MetricData = &histogram{}
 )
 
-type ymlMetricData struct {
-	MetricData `yaml:"-"`
-}
-
-// UnmarshalYAML converts the metrics.data map based on metrics.data.type.
-func (e *ymlMetricData) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	var m struct {
-		Type string `yaml:"type"`
-	}
-
-	if err := unmarshal(&m); err != nil {
-		return err
-	}
-
-	var md MetricData
-
-	switch m.Type {
-	case "gauge":
-		md = &gauge{}
-	case "sum":
-		md = &sum{}
-	case "histogram":
-		md = &histogram{}
-	default:
-		return fmt.Errorf("metric data %q type invalid", m.Type)
-	}
-
-	if err := unmarshal(md); err != nil {
-		return fmt.Errorf("unable to unmarshal data for type %q: %v", m.Type, err)
-	}
-
-	e.MetricData = md
-
-	return nil
-}
-
 // MetricData is generic interface for all metric datatypes.
 type MetricData interface {
 	Type() string
 	HasMonotonic() bool
 	HasAggregated() bool
+	HasMetricValueType() bool
 }
 
 // Aggregated defines a metric aggregation type.
 type Aggregated struct {
 	// Aggregation describes if the aggregator reports delta changes
 	// since last report time, or cumulative changes since a fixed start time.
-	Aggregation string `yaml:"aggregation" validate:"oneof=delta cumulative"`
+	Aggregation string `mapstructure:"aggregation" validate:"oneof=delta cumulative"`
 }
 
 // Type gets the metric aggregation type.
@@ -89,10 +56,47 @@ func (agg Aggregated) Type() string {
 // Mono defines the metric monotonicity.
 type Mono struct {
 	// Monotonic is true if the sum is monotonic.
-	Monotonic bool `yaml:"monotonic"`
+	Monotonic bool `mapstructure:"monotonic"`
+}
+
+// MetricValueType defines the metric number type.
+type MetricValueType struct {
+	// ValueType is type of the metric number, options are "double", "int".
+	ValueType pdata.MetricValueType `validate:"required"`
+}
+
+// UnmarshalText implements the encoding.TextUnmarshaler interface.
+func (mvt *MetricValueType) UnmarshalText(text []byte) error {
+	switch vtStr := string(text); vtStr {
+	case "int":
+		mvt.ValueType = pdata.MetricValueTypeInt
+	case "double":
+		mvt.ValueType = pdata.MetricValueTypeDouble
+	default:
+		return fmt.Errorf("invalid value_type: %q", vtStr)
+	}
+	return nil
+}
+
+// Type returns name of the datapoint type.
+func (mvt MetricValueType) String() string {
+	return mvt.ValueType.String()
+}
+
+// BasicType returns name of a golang basic type for the datapoint type.
+func (mvt MetricValueType) BasicType() string {
+	switch mvt.ValueType {
+	case pdata.MetricValueTypeInt:
+		return "int64"
+	case pdata.MetricValueTypeDouble:
+		return "float64"
+	default:
+		return ""
+	}
 }
 
 type gauge struct {
+	MetricValueType `mapstructure:"value_type"`
 }
 
 func (d gauge) Type() string {
@@ -107,9 +111,14 @@ func (d gauge) HasAggregated() bool {
 	return false
 }
 
+func (d gauge) HasMetricValueType() bool {
+	return true
+}
+
 type sum struct {
-	Aggregated `yaml:",inline"`
-	Mono       `yaml:",inline"`
+	Aggregated      `mapstructure:",squash"`
+	Mono            `mapstructure:",squash"`
+	MetricValueType `mapstructure:"value_type"`
 }
 
 func (d sum) Type() string {
@@ -124,8 +133,12 @@ func (d sum) HasAggregated() bool {
 	return true
 }
 
+func (d sum) HasMetricValueType() bool {
+	return true
+}
+
 type histogram struct {
-	Aggregated `yaml:",inline"`
+	Aggregated `mapstructure:",squash"`
 }
 
 func (d histogram) Type() string {
@@ -138,4 +151,8 @@ func (d histogram) HasMonotonic() bool {
 
 func (d histogram) HasAggregated() bool {
 	return true
+}
+
+func (d histogram) HasMetricValueType() bool {
+	return false
 }

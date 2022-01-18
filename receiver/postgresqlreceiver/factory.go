@@ -64,5 +64,16 @@ func createMetricsReceiver(
 	rConf config.Receiver,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
-	return nil, nil // TODO build and return receiver in next PR
+	cfg := rConf.(*Config)
+
+	ns := newPostgreSQLScraper(params.Logger, cfg, &defaultClientFactory{})
+	scraper, err := scraperhelper.NewScraper(typeStr, ns.scrape)
+	if err != nil {
+		return nil, err
+	}
+
+	return scraperhelper.NewScraperControllerReceiver(
+		&cfg.ScraperControllerSettings, params, consumer,
+		scraperhelper.AddScraper(scraper),
+	)
 }

@@ -52,27 +52,15 @@ func newTracesExporter(
 		func(ctx context.Context, td pdata.Traces) error {
 			var err error
 			logger.Debug("TracesExporter", typeLog, nameLog, zap.Int("#spans", td.SpanCount()))
-			documents := make([]*string, 0, td.SpanCount())
-			for i := 0; i < td.ResourceSpans().Len(); i++ {
-				rspans := td.ResourceSpans().At(i)
-				resource := rspans.Resource()
-				for j := 0; j < rspans.InstrumentationLibrarySpans().Len(); j++ {
-					spans := rspans.InstrumentationLibrarySpans().At(j).Spans()
-					for k := 0; k < spans.Len(); k++ {
-						document, localErr := translator.MakeSegmentDocumentString(spans.At(k), resource,
-							config.(*Config).IndexedAttributes, config.(*Config).IndexAllAttributes)
-						if localErr != nil {
-							logger.Debug("Error translating span.", zap.Error(localErr))
-							continue
-						}
-						documents = append(documents, &document)
-					}
-				}
-			}
+
+			documents := extractResourceSpans(config, logger, td)
+
 			for offset := 0; offset < len(documents); offset += maxSegmentsPerPut {
-				nextOffset := offset + maxSegmentsPerPut
-				if nextOffset > td.SpanCount() {
-					nextOffset = td.SpanCount()
+				var nextOffset int
+				if offset+maxSegmentsPerPut > len(documents) {
+					nextOffset = len(documents)
+				} else {
+					nextOffset = offset + maxSegmentsPerPut
 				}
 				input := xray.PutTraceSegmentsInput{TraceSegmentDocuments: documents[offset:nextOffset]}
 				logger.Debug("request: " + input.String())
@@ -95,6 +83,27 @@ func newTracesExporter(
 			return nil
 		}),
 	)
+}
+
+func extractResourceSpans(config config.Exporter, logger *zap.Logger, td pdata.Traces) []*string {
+	documents := make([]*string, 0, td.SpanCount())
+	for i := 0; i < td.ResourceSpans().Len(); i++ {
+		rspans := td.ResourceSpans().At(i)
+		resource := rspans.Resource()
+		for j := 0; j < rspans.InstrumentationLibrarySpans().Len(); j++ {
+			spans := rspans.InstrumentationLibrarySpans().At(j).Spans()
+			for k := 0; k < spans.Len(); k++ {
+				document, localErr := translator.MakeSegmentDocumentString(spans.At(k), resource,
+					config.(*Config).IndexedAttributes, config.(*Config).IndexAllAttributes)
+				if localErr != nil {
+					logger.Debug("Error translating span.", zap.Error(localErr))
+					continue
+				}
+				documents = append(documents, &document)
+			}
+		}
+	}
+	return documents
 }
 
 func wrapErrorIfBadRequest(err *error) error {

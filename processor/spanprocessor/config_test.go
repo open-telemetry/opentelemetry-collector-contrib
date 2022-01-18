@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
@@ -34,7 +34,7 @@ func TestLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	factories.Processors[typeStr] = factory
 
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, cfg)
@@ -85,6 +85,31 @@ func TestLoadConfig(t *testing.T) {
 			ToAttributes: &ToAttributes{
 				Rules: []string{`(?P<operation_website>.*?)$`},
 			},
+		},
+	})
+
+	// Set name
+	p4 := cfg.Processors[config.NewComponentIDWithName("span", "set_status_err")]
+	assert.Equal(t, p4, &Config{
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName("span", "set_status_err")),
+		SetStatus: &Status{
+			Code:        "Error",
+			Description: "some additional error description",
+		},
+	})
+
+	p5 := cfg.Processors[config.NewComponentIDWithName("span", "set_status_ok")]
+	assert.Equal(t, p5, &Config{
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName("span", "set_status_ok")),
+		MatchConfig: filterconfig.MatchConfig{
+			Include: &filterconfig.MatchProperties{
+				Attributes: []filterconfig.Attribute{
+					{Key: "http.status_code", Value: 400},
+				},
+			},
+		},
+		SetStatus: &Status{
+			Code: "Ok",
 		},
 	})
 }

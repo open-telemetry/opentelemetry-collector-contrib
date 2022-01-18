@@ -20,7 +20,7 @@ package loadscraper // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"context"
 
-	"github.com/shirou/gopsutil/load"
+	"github.com/shirou/gopsutil/v3/load"
 	"go.uber.org/zap"
 )
 

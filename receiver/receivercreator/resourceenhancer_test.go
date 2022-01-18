@@ -37,6 +37,11 @@ func Test_newResourceEnhancer(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	cntrEnv, err := containerEndpoint.Env()
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	cfg := createDefaultConfig().(*Config)
 	type args struct {
 		resources    resourceAttributes
@@ -82,6 +87,23 @@ func Test_newResourceEnhancer(t *testing.T) {
 					"k8s.pod.uid":        "uid-1",
 					"k8s.pod.name":       "pod-1",
 					"k8s.namespace.name": "default",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "container endpoint",
+			args: args{
+				resources:    cfg.ResourceAttributes,
+				env:          cntrEnv,
+				endpoint:     containerEndpoint,
+				nextConsumer: &consumertest.MetricsSink{},
+			},
+			want: &resourceEnhancer{
+				nextConsumer: &consumertest.MetricsSink{},
+				attrs: map[string]string{
+					"container.name":       "otel-agent",
+					"container.image.name": "otelcol",
 				},
 			},
 			wantErr: false,

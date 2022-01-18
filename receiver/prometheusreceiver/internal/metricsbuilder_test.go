@@ -21,8 +21,8 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/prometheus/common/model"
-	"github.com/prometheus/prometheus/pkg/labels"
-	"github.com/prometheus/prometheus/pkg/textparse"
+	"github.com/prometheus/prometheus/model/labels"
+	"github.com/prometheus/prometheus/model/textparse"
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -44,8 +44,8 @@ var testMetadata = map[string]scrape.MetricMetadata{
 	"summary_test":    {Metric: "summary_test", Type: textparse.MetricTypeSummary, Help: "", Unit: ""},
 	"summary_test2":   {Metric: "summary_test2", Type: textparse.MetricTypeSummary, Help: "", Unit: ""},
 	"unknown_test":    {Metric: "unknown_test", Type: textparse.MetricTypeUnknown, Help: "", Unit: ""},
+	"poor_name":       {Metric: "poor_name", Type: textparse.MetricTypeGauge, Help: "", Unit: ""},
 	"poor_name_count": {Metric: "poor_name_count", Type: textparse.MetricTypeCounter, Help: "", Unit: ""},
-	"up":              {Metric: "up", Type: textparse.MetricTypeCounter, Help: "", Unit: ""},
 	"scrape_foo":      {Metric: "scrape_foo", Type: textparse.MetricTypeCounter, Help: "", Unit: ""},
 	"example_process_start_time_seconds": {Metric: "example_process_start_time_seconds",
 		Type: textparse.MetricTypeGauge, Help: "", Unit: ""},
@@ -108,11 +108,28 @@ func runBuilderTests(t *testing.T, tests []buildTestData) {
 				}
 				metrics, _, _, err := b.Build()
 				assert.NoError(t, err)
-				assert.EqualValues(t, tt.wants[i], metrics)
+				assertEquivalentMetrics(t, tt.wants[i], metrics)
 				st += interval
 			}
 		})
 	}
+}
+
+func assertEquivalentMetrics(t *testing.T, want, got []*metricspb.Metric) {
+	if !assert.Equal(t, len(want), len(got)) {
+		return
+	}
+	wmap := map[string]*metricspb.Metric{}
+	gmap := map[string]*metricspb.Metric{}
+
+	for i := 0; i < len(want); i++ {
+		wi := want[i]
+		wmap[wi.GetMetricDescriptor().GetName()] = wi
+		gi := got[i]
+		gmap[gi.GetMetricDescriptor().GetName()] = gi
+	}
+
+	assert.EqualValues(t, wmap, gmap)
 }
 
 func runBuilderStartTimeTests(t *testing.T, tests []buildTestData,
@@ -225,10 +242,8 @@ func Test_metricBuilder_counters(t *testing.T) {
 				},
 			},
 		},
-		// Some counters such as "python_gc_collections_total" have metadata key as "python_gc_collections" but still need
-		// to be converted using full metric name as "python_gc_collections_total" to match Prometheus functionality
 		{
-			name: "counter-with-metadata-without-total-suffix",
+			name: "counter-with-total-suffix",
 			inputs: []*testScrapedPage{
 				{
 					pts: []*testDataPoint{
@@ -1298,10 +1313,10 @@ func Test_isUsefulLabel(t *testing.T) {
 
 func Benchmark_dpgSignature(b *testing.B) {
 	knownLabelKeys := []string{"a", "b"}
-	labels := labels.FromStrings("a", "va", "b", "vb", "x", "xa")
+	ls := labels.FromStrings("a", "va", "b", "vb", "x", "xa")
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		runtime.KeepAlive(dpgSignature(knownLabelKeys, labels))
+		runtime.KeepAlive(dpgSignature(knownLabelKeys, ls))
 	}
 }
 

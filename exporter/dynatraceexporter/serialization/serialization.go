@@ -28,16 +28,11 @@ func SerializeMetric(logger *zap.Logger, prefix string, metric pdata.Metric, def
 	var metricLines []string
 
 	ce := logger.Check(zap.DebugLevel, "SerializeMetric")
-
-	if ce != nil {
-		ce.Write(zap.String("DataType", metric.DataType().String()))
-	}
+	var points int
 
 	switch metric.DataType() {
 	case pdata.MetricDataTypeGauge:
-		if ce != nil {
-			ce.Write(zap.Int("points", metric.Gauge().DataPoints().Len()))
-		}
+		points = metric.Gauge().DataPoints().Len()
 		for i := 0; i < metric.Gauge().DataPoints().Len(); i++ {
 			dp := metric.Gauge().DataPoints().At(i)
 
@@ -57,9 +52,7 @@ func SerializeMetric(logger *zap.Logger, prefix string, metric pdata.Metric, def
 			}
 		}
 	case pdata.MetricDataTypeSum:
-		if ce != nil {
-			ce.Write(zap.Int("points", metric.Sum().DataPoints().Len()))
-		}
+		points = metric.Sum().DataPoints().Len()
 		for i := 0; i < metric.Sum().DataPoints().Len(); i++ {
 			dp := metric.Sum().DataPoints().At(i)
 
@@ -81,9 +74,7 @@ func SerializeMetric(logger *zap.Logger, prefix string, metric pdata.Metric, def
 			}
 		}
 	case pdata.MetricDataTypeHistogram:
-		if ce != nil {
-			ce.Write(zap.Int("points", metric.Histogram().DataPoints().Len()))
-		}
+		points = metric.Histogram().DataPoints().Len()
 		for i := 0; i < metric.Histogram().DataPoints().Len(); i++ {
 			dp := metric.Histogram().DataPoints().At(i)
 
@@ -106,6 +97,11 @@ func SerializeMetric(logger *zap.Logger, prefix string, metric pdata.Metric, def
 	default:
 		return nil, fmt.Errorf("metric type %s unsupported", metric.DataType().String())
 	}
+
+	if ce != nil {
+		ce.Write(zap.String("DataType", metric.DataType().String()), zap.Int("points", points))
+	}
+
 	return metricLines, nil
 }
 
