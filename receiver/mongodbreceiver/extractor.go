@@ -202,26 +202,28 @@ func (e *extractor) Extract(document bson.M, mm *metricManager, dbName string, e
 
 func (e *extractor) extractStats(document bson.M, mm *metricManager, dbName string, metrics []mongoMetric) {
 	for _, metric := range metrics {
-		if e.shouldDig(metric) {
-			attributes := pdata.NewAttributeMap()
-			attributes.Insert(metadata.A.Database, pdata.NewAttributeValueString(dbName))
-			for k, v := range metric.staticAttributes {
-				attributes.Insert(k, pdata.NewAttributeValueString(v))
-			}
-			value, err := e.extractMetric(document, metric)
-			if err != nil {
-				e.logger.Warn("Failed to extract metric",
-					zap.String("database", dbName),
-					zap.String("mongo-version", e.version.String()),
-					zap.String("metric", metric.metricDef.Name()),
-					zap.Strings("path", metric.path),
-					zap.Error(err))
-				continue
-			}
-			value = metric.convertToAppropriateValue(value)
-
-			mm.addDataPoint(metric.metricDef, value, attributes)
+		if !e.shouldDig(metric) {
+			continue
 		}
+
+		attributes := pdata.NewAttributeMap()
+		attributes.Insert(metadata.A.Database, pdata.NewAttributeValueString(dbName))
+		for k, v := range metric.staticAttributes {
+			attributes.Insert(k, pdata.NewAttributeValueString(v))
+		}
+		value, err := e.extractMetric(document, metric)
+		if err != nil {
+			e.logger.Warn("Failed to extract metric",
+				zap.String("database", dbName),
+				zap.String("mongo-version", e.version.String()),
+				zap.String("metric", metric.metricDef.Name()),
+				zap.Strings("path", metric.path),
+				zap.Error(err))
+			continue
+		}
+
+		value = metric.convertToAppropriateValue(value)
+		mm.addDataPoint(metric.metricDef, value, attributes)
 	}
 }
 
