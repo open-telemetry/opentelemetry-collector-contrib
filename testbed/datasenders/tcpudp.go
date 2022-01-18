@@ -68,9 +68,9 @@ func (f *TCPUDPWriter) Capabilities() consumer.Capabilities {
 
 func (f *TCPUDPWriter) Start() (err error) {
 	f.conn, err = net.Dial(f.GetEndpoint().Network(), f.GetEndpoint().String())
-	// udp not ack, can't use net.Dial to check udp server is ready, use sleep 1 second to wait udp server start
+	// udp not ack, can't use net.Dial to check udp server is ready, use sleep 2 second to wait udp server start
 	if f.network == "udp" {
-		time.Sleep(1 * time.Second)
+		time.Sleep(3 * time.Second)
 	}
 	return err
 }
