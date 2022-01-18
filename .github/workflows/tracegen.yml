@@ -9,7 +9,7 @@ on:
 jobs:
   publish-dev:
     runs-on: ubuntu-latest
-#    if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
+    if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
     permissions:
       packages: write
     steps:
@@ -29,6 +29,8 @@ jobs:
   publish-stable:
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v') && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
+    permissions:
+      packages: write
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v2
