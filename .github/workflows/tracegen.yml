@@ -49,4 +49,4 @@ jobs:
         with:
           context: tracegen
           push: true
-          tags: ghcr.io/open-telemetry/opentelemetry-collector-contrib/tracegen:$RELEASE_TAG
+          tags: ghcr.io/open-telemetry/opentelemetry-collector-contrib/tracegen:1-$RELEASE_TAG
