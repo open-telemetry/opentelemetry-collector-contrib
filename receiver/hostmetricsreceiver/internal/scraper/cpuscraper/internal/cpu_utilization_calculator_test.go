@@ -22,6 +22,14 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
+type inMemoryRecorder struct {
+	cpuUtilizations []CPUUtilization
+}
+
+func (r *inMemoryRecorder) record(_ pdata.Timestamp, utilization CPUUtilization) {
+	r.cpuUtilizations = append(r.cpuUtilizations, utilization)
+}
+
 func TestCpuUtilizationCalculator_Calculate(t *testing.T) {
 	t.Parallel()
 	testCases := []struct {
@@ -161,18 +169,19 @@ func TestCpuUtilizationCalculator_Calculate(t *testing.T) {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
+			recorder := inMemoryRecorder{}
 			calculator := CPUUtilizationCalculator{
 				previousTime:     test.previousTime,
 				previousCPUTimes: test.previousCPUTimes,
 			}
-			actualUtilization, err := calculator.Calculate(test.now, test.cpuTimes)
+			err := calculator.CalculateAndRecord(test.now, test.cpuTimes, recorder.record)
 			assert.ErrorIs(t, err, test.expectedError)
-			assert.Len(t, actualUtilization, len(test.expectedUtilizations))
+			assert.Len(t, recorder.cpuUtilizations, len(test.expectedUtilizations))
 			for idx, expectedUtilization := range test.expectedUtilizations {
-				assert.Equal(t, expectedUtilization.CPU, actualUtilization[idx].CPU)
-				assert.InDelta(t, expectedUtilization.System, actualUtilization[idx].System, 0.00001)
-				assert.InDelta(t, expectedUtilization.User, actualUtilization[idx].User, 0.00001)
-				assert.InDelta(t, expectedUtilization.Idle, actualUtilization[idx].Idle, 0.00001)
+				assert.Equal(t, expectedUtilization.CPU, recorder.cpuUtilizations[idx].CPU)
+				assert.InDelta(t, expectedUtilization.System, recorder.cpuUtilizations[idx].System, 0.00001)
+				assert.InDelta(t, expectedUtilization.User, recorder.cpuUtilizations[idx].User, 0.00001)
+				assert.InDelta(t, expectedUtilization.Idle, recorder.cpuUtilizations[idx].Idle, 0.00001)
 			}
 		})
 	}

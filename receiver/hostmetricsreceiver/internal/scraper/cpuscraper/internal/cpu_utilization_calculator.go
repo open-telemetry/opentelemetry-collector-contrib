@@ -46,30 +46,29 @@ type CPUUtilizationCalculator struct {
 	previousCPUTimes []cpu.TimesStat
 }
 
-// Calculate calculates the cpu utilization for the different cpu states comparing previously
+// CalculateAndRecord calculates the cpu utilization for the different cpu states comparing previously
 // stored []cpu.TimesStat and time.Time and current []cpu.TimesStat and current time.Time
 // If no previous data is stored it will return empty slice of CPUUtilization and no error
-func (c *CPUUtilizationCalculator) Calculate(now pdata.Timestamp, cpuTimes []cpu.TimesStat) ([]CPUUtilization, error) {
-	var utilizationByCPU []CPUUtilization
+func (c *CPUUtilizationCalculator) CalculateAndRecord(now pdata.Timestamp, cpuTimes []cpu.TimesStat, recorder func(pdata.Timestamp, CPUUtilization)) error {
 	elapsedSeconds := now.AsTime().Sub(c.previousTime.AsTime()).Seconds()
 
 	if c.previousCPUTimes != nil {
 		for _, previousCPUTime := range c.previousCPUTimes {
 			currentCPUTime, err := cpuTimeForCPU(previousCPUTime.CPU, cpuTimes)
 			if err != nil {
-				return nil, fmt.Errorf("getting time for cpu %s: %w", previousCPUTime.CPU, err)
+				return fmt.Errorf("getting time for cpu %s: %w", previousCPUTime.CPU, err)
 			}
 			utilization, err := cpuUtilization(previousCPUTime, currentCPUTime, elapsedSeconds)
 			if err != nil {
-				return nil, fmt.Errorf("getting utilization for cpu %s: %w", previousCPUTime.CPU, err)
+				return fmt.Errorf("getting utilization for cpu %s: %w", previousCPUTime.CPU, err)
 			}
-			utilizationByCPU = append(utilizationByCPU, utilization)
+			recorder(now, utilization)
 		}
 	}
 	c.previousCPUTimes = cpuTimes
 	c.previousTime = now
 
-	return utilizationByCPU, nil
+	return nil
 }
 
 // cpuUtilization calculates the difference between 2 cpu.TimesStat using spent time between them

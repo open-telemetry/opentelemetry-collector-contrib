@@ -70,12 +70,9 @@ func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 		s.recordCPUTimeStateDataPoints(now, cpuTime)
 	}
 
-	cpuUtilizations, err := s.ucal.Calculate(now, cpuTimes)
+	err = s.ucal.CalculateAndRecord(now, cpuTimes, s.recordCPUUtilization)
 	if err != nil {
 		return md, scrapererror.NewPartialScrapeError(err, metricsLen)
-	}
-	for _, cpuUtilization := range cpuUtilizations {
-		s.recordCPUUtilization(now, cpuUtilization)
 	}
 
 	s.mb.Emit(metrics)
