@@ -29,140 +29,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
 )
 
-type numberType int
-
-const (
-	integer numberType = iota
-	double
-)
-
-type mongoMetric struct {
-	name             string
-	path             []string
-	staticAttributes map[string]string
-	dataPointType    numberType
-	minMongoVersion  *version.Version
-	maxMongoVersion  *version.Version
-	conversionFactor int
-}
-
-// convertToAppropriateValue allows for definitions of metrics to be scaled to appropriate units,
-// example Megabytes to Bytes etc.
-func (mm *mongoMetric) convertToAppropriateValue(value interface{}) interface{} {
-	if mm.conversionFactor == 0 {
-		return value
-	}
-
-	switch mm.dataPointType {
-	case integer:
-		v, _ := value.(int64)
-		return v * int64(mm.conversionFactor)
-	case double:
-		v, _ := value.(float64)
-		return v * float64(mm.conversionFactor)
-	}
-
-	return value
-}
-
-const (
-	mebibytesToBytes = 1048576
-)
-
 type extractor struct {
 	version *version.Version
 	logger  *zap.Logger
-}
-
-const (
-	collectionCount = "mongodb.collection.count"
-	dataSize        = "mongodb.data.size"
-	numExtents      = "mongodb.extent.count"
-	indexSize       = "mongodb.index.size"
-	indexes         = "mongodb.index.count"
-	objects         = "mongodb.object.count"
-	storageSize     = "mongodb.storage.size"
-	connections     = "mongodb.connection.count"
-	memUsage        = "mongodb.memory.usage"
-
-	operationCount = "mongodb.operation.count"
-)
-
-var dbStatsMetrics = []mongoMetric{
-	{
-		name:          collectionCount,
-		path:          []string{"collections"},
-		dataPointType: integer,
-	},
-	{
-		name:          dataSize,
-		path:          []string{"dataSize"},
-		dataPointType: integer,
-	},
-	{
-		name:            numExtents,
-		path:            []string{"numExtents"},
-		dataPointType:   integer,
-		maxMongoVersion: Mongo44,
-	},
-	{
-		name:          indexSize,
-		path:          []string{"indexSize"},
-		dataPointType: integer,
-	},
-	{
-		name:          indexes,
-		path:          []string{"indexes"},
-		dataPointType: integer,
-	},
-	{
-		name:          objects,
-		path:          []string{"objects"},
-		dataPointType: integer,
-	},
-	{
-		name:          storageSize,
-		path:          []string{"storageSize"},
-		dataPointType: integer,
-	},
-}
-
-var serverStatusMetrics = []mongoMetric{
-	{
-		name:             connections,
-		path:             []string{"connections", "active"},
-		staticAttributes: map[string]string{metadata.A.ConnectionType: metadata.AttributeConnectionType.Active},
-		dataPointType:    integer,
-	},
-	{
-		name:             connections,
-		path:             []string{"connections", "available"},
-		staticAttributes: map[string]string{metadata.A.ConnectionType: metadata.AttributeConnectionType.Available},
-		dataPointType:    integer,
-	},
-	{
-		name:             connections,
-		path:             []string{"connections", "current"},
-		staticAttributes: map[string]string{metadata.A.ConnectionType: metadata.AttributeConnectionType.Current},
-		dataPointType:    integer,
-	},
-	{
-		name:             memUsage,
-		path:             []string{"mem", "resident"},
-		staticAttributes: map[string]string{metadata.A.MemoryType: metadata.AttributeMemoryType.Resident},
-		dataPointType:    integer,
-		// reported value is Mebibytes, want to convert to bytes
-		// https://docs.mongodb.com/manual/reference/command/serverStatus/#mongodb-serverstatus-serverstatus.mem.resident
-		conversionFactor: mebibytesToBytes,
-	},
-	{
-		name:             memUsage,
-		path:             []string{"mem", "virtual"},
-		staticAttributes: map[string]string{metadata.A.MemoryType: metadata.AttributeMemoryType.Virtual},
-		dataPointType:    integer,
-		// https://docs.mongodb.com/manual/reference/command/serverStatus/#mongodb-serverstatus-serverstatus.mem.virtual
-		conversionFactor: mebibytesToBytes,
-	},
 }
 
 type extractType int
@@ -204,32 +73,88 @@ func newExtractor(mongoVersion string, logger *zap.Logger) (*extractor, error) {
 	}, nil
 }
 
-func (e *extractor) Extract(document bson.M, mm *metadata.MetricsBuilder, dbName string, et extractType) {
+func (e *extractor) Extract(document bson.M, mb *metadata.MetricsBuilder, dbName string, et extractType) {
 	now := pdata.NewTimestampFromTime(time.Now())
 	switch et {
 	case normalDBStats:
-		e.extractStats(now, document, mm, dbName, dbStatsMetrics)
+		e.extractDBStats(now, document, mb, dbName)
 	case normalServerStats:
-		e.extractStats(now, document, mm, dbName, serverStatusMetrics)
+		e.extractNormalServerStats(now, document, mb, dbName)
 	case adminServerStats:
-		e.extractAdminStats(document, mm)
+		e.extractAdminStats(now, document, mb)
 	}
 }
 
-func (e *extractor) extractStats(ts pdata.Timestamp, document bson.M, mb *metadata.MetricsBuilder, dbName string, metrics []mongoMetric) {
-	for _, metric := range metrics {
-		if !e.shouldDig(metric) {
-			continue
-		}
-		e.addMetric(ts, mb, document, metric, dbName)
+func (e *extractor) extractDBStats(ts pdata.Timestamp, doc bson.M, mb *metadata.MetricsBuilder, dbName string) {
+	collectionsPath := []string{"collections"}
+	if value, err := digForIntValue(doc, collectionsPath); err == nil {
+		mb.RecordMongodbCollectionCountDataPoint(ts, value, dbName)
+	}
+
+	dataSizePath := []string{"dataSize"}
+	if value, err := digForIntValue(doc, dataSizePath); err == nil {
+		mb.RecordMongodbDataSizeDataPoint(ts, value, dbName)
+	}
+
+	numExtentsPath := []string{"numExtents"}
+	if value, err := digForIntValue(doc, numExtentsPath); err == nil {
+		mb.RecordMongodbExtentCountDataPoint(ts, value, dbName)
+	}
+
+	indexSizePath := []string{"indexSize"}
+	if value, err := digForIntValue(doc, indexSizePath); err == nil {
+		mb.RecordMongodbIndexSizeDataPoint(ts, value, dbName)
+	}
+
+	indexCountPath := []string{"indexes"}
+	if value, err := digForIntValue(doc, indexCountPath); err == nil {
+		mb.RecordMongodbIndexCountDataPoint(ts, value, dbName)
+	}
+
+	objectsPath := []string{"objects"}
+	if value, err := digForIntValue(doc, objectsPath); err == nil {
+		mb.RecordMongodbObjectCountDataPoint(ts, value, dbName)
+	}
+
+	storageSizePath := []string{"storageSize"}
+	if value, err := digForIntValue(doc, storageSizePath); err == nil {
+		mb.RecordMongodbStorageSizeDataPoint(ts, value, dbName)
 	}
 }
 
-func (e *extractor) extractAdminStats(document bson.M, mb *metadata.MetricsBuilder) {
-	now := pdata.NewTimestampFromTime(time.Now())
+func (e *extractor) extractNormalServerStats(ts pdata.Timestamp, doc bson.M, mb *metadata.MetricsBuilder, dbName string) {
+	activeConnectionsPath := []string{"connections", "active"}
+	if value, err := digForIntValue(doc, activeConnectionsPath); err == nil {
+		mb.RecordMongodbConnectionCountDataPoint(ts, value, dbName, metadata.AttributeConnectionType.Active)
+	}
+
+	availableConnectionsPath := []string{"connections", "available"}
+	if value, err := digForIntValue(doc, availableConnectionsPath); err == nil {
+		mb.RecordMongodbConnectionCountDataPoint(ts, value, dbName, metadata.AttributeConnectionType.Available)
+	}
+
+	currentConnectionpath := []string{"connections", "current"}
+	if value, err := digForIntValue(doc, currentConnectionpath); err == nil {
+		mb.RecordMongodbConnectionCountDataPoint(ts, value, dbName, metadata.AttributeConnectionType.Current)
+	}
+
+	memResidentPath := []string{"mem", "resident"}
+	if value, err := digForIntValue(doc, memResidentPath); err == nil {
+		memoryValAsMb := value * int64(1048576)
+		mb.RecordMongodbMemoryUsageDataPoint(ts, memoryValAsMb, dbName, metadata.AttributeMemoryType.Resident)
+	}
+
+	memVirtualPath := []string{"mem", "virtual"}
+	if value, err := digForIntValue(doc, memVirtualPath); err == nil {
+		memoryValAsMb := value * int64(1048576)
+		mb.RecordMongodbMemoryUsageDataPoint(ts, memoryValAsMb, dbName, metadata.AttributeMemoryType.Virtual)
+	}
+}
+
+func (e *extractor) extractAdminStats(ts pdata.Timestamp, document bson.M, mb *metadata.MetricsBuilder) {
 	waitTime, err := e.extractGlobalLockWaitTime(document)
 	if err == nil {
-		mb.RecordMongodbGlobalLockTimeDataPoint(now, waitTime)
+		mb.RecordMongodbGlobalLockTimeDataPoint(ts, waitTime)
 	}
 
 	// Collect Cache Hits & Misses
@@ -237,21 +162,21 @@ func (e *extractor) extractAdminStats(document bson.M, mb *metadata.MetricsBuild
 
 	cacheMisses, err := digForIntValue(document, []string{"wiredTiger", "cache", "pages read into cache"})
 	if err != nil {
-		e.logger.Error("Failed to Parse", zap.Error(err), zap.String("metric", operationCount))
+		e.logger.Error("failed to parse cache misses", zap.Error(err))
 		canCalculateCacheHits = false
 	} else {
-		mb.RecordMongodbCacheOperationsDataPoint(now, cacheMisses, metadata.AttributeType.Miss)
+		mb.RecordMongodbCacheOperationsDataPoint(ts, cacheMisses, metadata.AttributeType.Miss)
 	}
 
 	totalCacheRequests, err := digForIntValue(document, []string{"wiredTiger", "cache", "pages requested from the cache"})
 	if err != nil {
-		e.logger.Error("Failed to Parse", zap.Error(err), zap.String("metric", operationCount))
+		e.logger.Debug("failed to parse total cache requests unable to calculate cache hits", zap.Error(err))
 		canCalculateCacheHits = false
 	}
 
 	if canCalculateCacheHits && totalCacheRequests > cacheMisses {
 		cacheHits := totalCacheRequests - cacheMisses
-		mb.RecordMongodbCacheOperationsDataPoint(now, cacheHits, metadata.AttributeType.Hit)
+		mb.RecordMongodbCacheOperationsDataPoint(ts, cacheHits, metadata.AttributeType.Hit)
 	}
 
 	// Collect Operations
@@ -265,10 +190,10 @@ func (e *extractor) extractAdminStats(document bson.M, mb *metadata.MetricsBuild
 	} {
 		count, err := digForIntValue(document, []string{"opcounters", operation})
 		if err != nil {
-			e.logger.Error("Failed to Parse", zap.Error(err), zap.String("metric", operationCount))
+			e.logger.Error("failed to parse operation", zap.Error(err), zap.String("operation", operation))
 			continue
 		}
-		mb.RecordMongodbOperationCountDataPoint(now, count, operation)
+		mb.RecordMongodbOperationCountDataPoint(ts, count, operation)
 	}
 }
 
@@ -295,91 +220,6 @@ func (e *extractor) extractGlobalLockWaitTime(document bson.M) (int64, error) {
 
 	e.logger.Warn("unable to find global lock time")
 	return 0, errors.New("was unable to calculate global lock time")
-}
-
-func (e *extractor) addMetric(ts pdata.Timestamp, mb *metadata.MetricsBuilder, document bson.M, m mongoMetric, dbName string) {
-	switch m.dataPointType {
-	case integer:
-		e.addIntMetric(ts, mb, document, m, dbName)
-	case double:
-		e.addDoubleMetric(ts, mb, document, m, dbName)
-	default:
-		e.logger.Debug("unknown data point type", zap.String("name", m.name))
-	}
-}
-
-func (e *extractor) addIntMetric(ts pdata.Timestamp, mb *metadata.MetricsBuilder, document bson.M, metric mongoMetric, dbName string) {
-	value, err := digForIntValue(document, metric.path)
-	if err != nil {
-		e.logger.Debug("unable to find metric", zap.String("name", metric.name))
-		return
-	}
-
-	if metric.conversionFactor != 0 {
-		value = metric.convertToAppropriateValue(value).(int64)
-	}
-
-	switch metric.name {
-	// mongodb.collection.count
-	case collectionCount:
-		mb.RecordMongodbCollectionCountDataPoint(ts, value, dbName)
-	// mongodb.connection.count
-	case connections:
-		mb.RecordMongodbConnectionCountDataPoint(ts, value, dbName, metric.staticAttributes[metadata.A.ConnectionType])
-	// mongodb.data.size
-	case dataSize:
-		mb.RecordMongodbDataSizeDataPoint(ts, value, dbName)
-	// mongodb.index.count
-	case indexes:
-		mb.RecordMongodbIndexCountDataPoint(ts, value, dbName)
-	// mongodb.index.size
-	case indexSize:
-		mb.RecordMongodbIndexSizeDataPoint(ts, value, dbName)
-	// mongodb.memory.usage
-	case memUsage:
-		mb.RecordMongodbMemoryUsageDataPoint(ts, value, dbName, metric.staticAttributes[metadata.A.MemoryType])
-	// mongodb.extent.count
-	case numExtents:
-		mb.RecordMongodbExtentCountDataPoint(ts, value, dbName)
-	// mongodb.object.count
-	case objects:
-		mb.RecordMongodbObjectCountDataPoint(ts, value, dbName)
-	// mongodb.storage.size
-	case storageSize:
-		mb.RecordMongodbStorageSizeDataPoint(ts, value, dbName)
-	default:
-		e.logger.Warn("attempted to add an unknown metric", zap.String("metric", metric.name))
-	}
-}
-
-func (e *extractor) addDoubleMetric(_ pdata.Timestamp, _ *metadata.MetricsBuilder, document bson.M, metric mongoMetric, _ string) {
-	_, err := digForDoubleValue(document, metric.path)
-	if err != nil {
-		e.logger.Debug("unable to find metric", zap.String("name", metric.name))
-		return
-	}
-
-	switch metric.name {
-	default:
-		e.logger.Warn("attempted to add metric datapoint was collected.", zap.String("name", metric.name))
-	}
-}
-
-func (e *extractor) shouldDig(metric mongoMetric) bool {
-	if metric.maxMongoVersion == nil && metric.minMongoVersion == nil {
-		return true
-	}
-
-	satisfyLowerBound, satisfyUpperBound := true, true
-	if metric.minMongoVersion != nil {
-		satisfyLowerBound = e.version.GreaterThanOrEqual(metric.minMongoVersion)
-	}
-
-	if metric.maxMongoVersion != nil {
-		satisfyUpperBound = e.version.LessThanOrEqual(metric.maxMongoVersion)
-	}
-
-	return satisfyLowerBound && satisfyUpperBound
 }
 
 func digForIntValue(document bson.M, path []string) (int64, error) {
@@ -409,29 +249,4 @@ func digForIntValue(document bson.M, path []string) (int64, error) {
 	}
 
 	return digForIntValue(value.(bson.M), remainingPath)
-}
-
-func digForDoubleValue(document bson.M, path []string) (float64, error) {
-	curItem, remainingPath := path[0], path[1:]
-	value := document[curItem]
-	if value == nil {
-		return 0, errors.New("nil found when digging for metric")
-	}
-
-	if len(remainingPath) == 0 {
-		switch v := value.(type) {
-		case int:
-			return float64(v), nil
-		case float32:
-			return float64(v), nil
-		case float64:
-			return v, nil
-		case string:
-			return strconv.ParseFloat(v, 64)
-		default:
-			return 0, fmt.Errorf("unexpected type found when parsing double: %v", reflect.TypeOf(value))
-		}
-	}
-
-	return digForDoubleValue(value.(bson.M), remainingPath)
 }
