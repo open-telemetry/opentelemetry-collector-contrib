@@ -28,6 +28,7 @@
 ## 🧰 Bug fixes 🧰
 
 - `mdatagen`: Fix validation of `enabled` field in metadata.yaml (#7166)
+- `elasticsearch`: Fix timestamp for each metric being startup time (#7255)
 
 ## 🚀 New components 🚀
 
