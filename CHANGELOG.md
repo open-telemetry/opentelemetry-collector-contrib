@@ -103,6 +103,7 @@
 - `mongodbreceiver`: Establish codebase for MongoDB metrics receiver (#6972)
 - `couchbasereceiver`: Establish codebase for Couchbase metrics receiver (#7046)
 - `dbstorage`: New experimental dbstorage extension (#7061)
+- `k8seventsreceiver` (#6885)
 
 ## 🧰 Bug fixes 🧰
 
@@ -356,7 +357,7 @@
 ## 🛑 Breaking changes 🛑
 
 - `filter` processor: The configs for `logs` filter processor have been changed to be consistent with the `metrics` filter processor. (#4895)
-- `splunk_hec` receiver: 
+- `splunk_hec` receiver:
   - `source_key`, `sourcetype_key`, `host_key` and `index_key` have now moved under `hec_metadata_to_otel_attrs` (#4726)
   - `path` field on splunkhecreceiver configuration is removed: We removed the `path` attribute as any request going to the Splunk HEC receiver port should be accepted, and added the `raw_path` field to explicitly map the path accepting raw HEC data. (#4951)
 - feat(dynatrace): tags is deprecated in favor of default_dimensions (#5055)
@@ -523,11 +524,11 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
 
 ## 🚀 New components 🚀
 - `oauth2clientauth` extension: ported from core (#3848)
-- `metrics-generation` processor: is now enabled and available (#4047) 
+- `metrics-generation` processor: is now enabled and available (#4047)
 
 ## 🛑 Breaking changes 🛑
 
-- Removed `jaegerthrifthttp` exporter (#4089) 
+- Removed `jaegerthrifthttp` exporter (#4089)
 
 ## 💡 Enhancements 💡
 
@@ -535,9 +536,9 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
   - Add new policy `status_code` (#3754)
   - Add new tail sampling processor policy: status_code (#3754)
 - `awscontainerinsights` receiver:
-  - Integrate components and fix bugs for EKS Container Insights (#3846) 
+  - Integrate components and fix bugs for EKS Container Insights (#3846)
   - Add Cgroup to collect ECS instance metrics for container insights receiver #3875
-- `spanmetrics` processor: Support sub-millisecond latency buckets (#4091) 
+- `spanmetrics` processor: Support sub-millisecond latency buckets (#4091)
 - `sentry` exporter: Add exception event capture in sentry (#3854)
 
 ## v0.29.0
@@ -1498,18 +1499,18 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
 ## 🚀 New components 🚀
 
 - Receivers
-  - `receiver_creator` to create receivers at runtime (#145), add observer support to receiver_creator (#173), add rules support (#207), add dynamic configuration values (#235) 
-  - `kubeletstats` receiver (#237) 
-  - `prometheus_simple` receiver (#184) 
-  - `kubernetes-cluster` receiver (#175) 
+  - `receiver_creator` to create receivers at runtime (#145), add observer support to receiver_creator (#173), add rules support (#207), add dynamic configuration values (#235)
+  - `kubeletstats` receiver (#237)
+  - `prometheus_simple` receiver (#184)
+  - `kubernetes-cluster` receiver (#175)
   - `redis` receiver (#138)
 - Exporters
-  - `alibabacloudlogservice` exporter (#259) 
+  - `alibabacloudlogservice` exporter (#259)
   - `SplunkHEC` metrics exporter (#246)
   - `elastic` APM exporter (#240)
-  - `newrelic` exporter (#229) 
+  - `newrelic` exporter (#229)
 - Extensions
-  - `k8s` observer (#185) 
+  - `k8s` observer (#185)
 
 ## 💡 Enhancements 💡
 
@@ -1545,10 +1546,10 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
 | Traces | Metrics |
 |:-------:|:-------:|
 | Jaeger Legacy | Carbon |
-| SAPM (SignalFx APM) | Collectd | 
+| SAPM (SignalFx APM) | Collectd |
 | Zipkin Scribe | K8s Cluster |
 | | Redis |
-| |  SignalFx | 
+| |  SignalFx |
 | | Simple Prometheus |
 | | Wavefront |
 
@@ -1566,7 +1567,7 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
 | Honeycomb | Kinesis |
 | Lightstep |
 | New Relic |
-| SAPM (SignalFx APM) | 
+| SAPM (SignalFx APM) |
 | SignalFx (Metrics) |
 | Splunk HEC |
 | Stackdriver (Google) |
@@ -1582,14 +1583,14 @@ Released 2020-03-30
 
 ### Breaking changes
 
--  Make prometheus receiver config loading strict. #697 
+-  Make prometheus receiver config loading strict. #697
 Prometheus receiver will now fail fast if the config contains unused keys in it.
 
 ### Changes and fixes
 
 - Enable best effort serve by default of Prometheus Exporter (https://github.com/orijtech/prometheus-go-metrics-exporter/pull/6)
-- Fix null pointer exception in the logging exporter #743 
-- Remove unnecessary condition to have at least one processor #744 
+- Fix null pointer exception in the logging exporter #743
+- Remove unnecessary condition to have at least one processor #744
 - Updated Honeycomb exported to `honeycombio/opentelemetry-exporter-go v0.3.1`
 
 ### Features
