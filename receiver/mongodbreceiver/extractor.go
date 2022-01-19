@@ -18,7 +18,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"strconv"
 	"time"
 
 	"github.com/hashicorp/go-version"
@@ -239,10 +238,6 @@ func digForIntValue(document bson.M, path []string) (int64, error) {
 			return v, nil
 		case float64:
 			return int64(v), nil
-		case float32:
-			return int64(v), nil
-		case string:
-			return strconv.ParseInt(v, 10, 64)
 		default:
 			return 0, fmt.Errorf("unexpected type found when parsing int: %v", reflect.TypeOf(value))
 		}

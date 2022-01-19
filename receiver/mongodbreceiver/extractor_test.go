@@ -39,14 +39,6 @@ func TestDigForValue(t *testing.T) {
 			expect: int64(0),
 		},
 		{
-			desc: "int-string",
-			doc: bson.M{
-				"value": "90",
-			},
-			path:   []string{"value"},
-			expect: int64(90),
-		},
-		{
 			desc: "int-non-int64",
 			doc: bson.M{
 				"value": int(56),
