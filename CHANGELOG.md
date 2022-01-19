@@ -27,6 +27,10 @@
 - `tanzuobservabilityexporter`: Use semantic conventions for status.message (#7126) 
 - `k8sattributesprocessor`: Move `kube` and `observability` packages to `internal` folder (#7159)
 
+## 🚀 New components 🚀
+
+- `rabbitmqreceiver`: Establish codebase for RabbitMQ metrics receiver (#7239)
+
 ## 🧰 Bug fixes 🧰
 
 - `mdatagen`: Fix validation of `enabled` field in metadata.yaml (#7166)
