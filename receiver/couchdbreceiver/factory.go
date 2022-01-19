@@ -28,7 +28,9 @@ import (
 )
 
 const (
-	typeStr = "couchdb"
+	typeStr                   = "couchdb"
+	defaultCollectionInterval = 60 * time.Second
+	defaultHTTPClientTimeout  = 60 * time.Second
 )
 
 func NewFactory() component.ReceiverFactory {
@@ -42,12 +44,12 @@ func createDefaultConfig() config.Receiver {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			CollectionInterval: 60 * time.Second,
+			CollectionInterval: defaultCollectionInterval,
 		},
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			TLSSetting: configtls.TLSClientSetting{},
 			Endpoint:   defaultEndpoint,
-			Timeout:    10 * time.Second,
+			Timeout:    defaultHTTPClientTimeout,
 		},
 	}
 }

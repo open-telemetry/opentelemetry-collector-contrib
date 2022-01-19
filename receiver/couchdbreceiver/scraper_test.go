@@ -77,21 +77,11 @@ func TestScrape(t *testing.T) {
 	})
 
 	t.Run("scrape error: failed to connect to client", func(t *testing.T) {
-		obs, logs := observer.New(zap.ErrorLevel)
-		scraper := newCouchdbScraper(zap.New(obs), cfg)
+		scraper := newCouchdbScraper(zap.NewNop(), cfg)
 
 		_, err := scraper.scrape(context.Background())
 		require.NotNil(t, err)
-		require.Equal(t, 1, logs.Len())
-		require.Equal(t, []observer.LoggedEntry{
-			{
-				Entry: zapcore.Entry{Level: zap.ErrorLevel, Message: "Failed to connect to couchdb client"},
-				Context: []zapcore.Field{
-					zap.String("endpoint", cfg.Endpoint),
-					zap.Error(errors.New("failed to connect to couchdb client")),
-				},
-			},
-		}, logs.AllUntimed())
+		require.Equal(t, err, errors.New("failed to connect to couchdb client"))
 	})
 
 	t.Run("scrape error: get stats endpoint error", func(t *testing.T) {

@@ -45,7 +45,7 @@ func newCouchdbScraper(logger *zap.Logger, config *Config) *couchdbScraper {
 func (c *couchdbScraper) start(_ context.Context, host component.Host) error {
 	httpClient, err := newCouchDBClient(c.config, host, c.logger)
 	if err != nil {
-		c.logger.Error("failed to connect to couchdb", zap.Error(err))
+		c.logger.Error("failed to start", zap.Error(err))
 		return err
 	}
 	c.client = httpClient
@@ -54,12 +54,7 @@ func (c *couchdbScraper) start(_ context.Context, host component.Host) error {
 
 func (c *couchdbScraper) scrape(context.Context) (pdata.Metrics, error) {
 	if c.client == nil {
-		err := errors.New("failed to connect to couchdb client")
-		c.logger.Error("Failed to connect to couchdb client",
-			zap.String("endpoint", c.config.Endpoint),
-			zap.Error(err),
-		)
-		return pdata.NewMetrics(), err
+		return pdata.NewMetrics(), errors.New("failed to connect to couchdb client")
 	}
 
 	return c.getResourceMetrics()
