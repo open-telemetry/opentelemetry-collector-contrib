@@ -862,6 +862,7 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
 - `newrelic` exporter: Multi-tenant support for sending trace data and performance enhancements (#2481)
 - `stackdriver` exporter: Enable `retry_on_failure` and `sending_queue` options (#2613)
 - Use standard way to convert from time.Time to proto Timestamp (#2548)
+- `hostreceiver/networkscraper`: Migrate the scraper to the mdatagen metrics builder (#7048)
 
 ## 🧰 Bug fixes 🧰
 

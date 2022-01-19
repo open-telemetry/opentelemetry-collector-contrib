@@ -76,6 +76,8 @@ func (s *scraper) start(context.Context, component.Host) error {
 	if err != nil {
 		return err
 	}
+
+	s.startTime = pdata.Timestamp(bootTime * 1e9)
 	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, metadata.WithStartTime(pdata.Timestamp(bootTime*1e9)))
 	return nil
 }
