@@ -31,6 +31,7 @@
 - `tanzuobservabilityexporter`: Remove status.code
 - `tanzuobservabilityexporter`: Use semantic conventions for status.message (#7126) 
 - `k8sattributesprocessor`: Move `kube` and `observability` packages to `internal` folder (#7159)
+- `zookeeperreceiver`: Refactored metrics to have correct units, types, and combined some metrics via attributes. ()
 
 ## 🚀 New components 🚀
 
