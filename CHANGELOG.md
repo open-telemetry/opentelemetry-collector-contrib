@@ -14,9 +14,17 @@
 - `tanzuobservabilityexporter`: Support delta histograms (#6897)
 - `awscloudwatchlogsexporter`: Use cwlogs package to export logs (#7152)
 - `mysqlreceiver`: Add the receiver to available components (#7078)
+- `tanzuobservabilityexporter`: Documentation for the memory_limiter configuration (#7164)
 - `dynatraceexporter`: Do not shut down exporter when metrics ingest module is temporarily unavailable (#7161)
 - `mongodbreceiver`: Add metric metadata (#7163)
 - `postgresqlreceiver`: add the receiver to available components (#7079)
+- `tanzuobservability exporter`: Support summary metrics (#7121)
+- Use Jaeger gRPC instead of Thrift in the docker-compose example (#7243)
+- `tanzuobservabilityexporter`: Support exponential histograms (#7127)
+- `receiver_creator`: Log added and removed endpoint env structs (#7248)
+- `prometheusreceiver`: Use the OTLP data conversion path by default. (#TBD)
+  - Use `--feature-gates=-receiver.prometheus.OTLPDirect` to re-enable the 
+    OpenCensus conversion path.
 
 ## 🛑 Breaking changes 🛑
 
@@ -24,9 +32,14 @@
 - `tanzuobservabilityexporter`: Use semantic conventions for status.message (#7126) 
 - `k8sattributesprocessor`: Move `kube` and `observability` packages to `internal` folder (#7159)
 
+## 🚀 New components 🚀
+
+- `rabbitmqreceiver`: Establish codebase for RabbitMQ metrics receiver (#7239)
+
 ## 🧰 Bug fixes 🧰
 
 - `mdatagen`: Fix validation of `enabled` field in metadata.yaml (#7166)
+- `elasticsearch`: Fix timestamp for each metric being startup time (#7255)
 
 ## 🚀 New components 🚀
 
@@ -37,6 +50,7 @@
 ## 💡 Enhancements 💡
 
 - `couchbasereceiver`: Add couchbase client (#7122)
+- `couchdbreceiver`: Add couchdb scraper (#7131)
 - `couchdbreceiver`: Add couchdb client (#6880)
 - `elasticsearchreceiver`: Implement scraper client (#7019)
 - `couchdbreceiver`: Add metadata metrics (#6878)
@@ -81,6 +95,7 @@
 - `signalfxexporter`: Don't use syscall to avoid compilation errors on some platforms (#7062)
 - `k8sattributeprocessor`: Parse IP out of net.Addr to correctly tag k8s.pod.ip (#7077)
 - `k8sattributeprocessor`: Process IP correctly for net.Addr instances that are not typed (#7133)
+- `tailsamplingprocessor`: Add support for new policies as composite sub-policies (#6975)
 
 ## 💡 Enhancements 💡
 
