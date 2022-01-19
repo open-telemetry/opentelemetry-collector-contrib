@@ -21,6 +21,7 @@
 - Use Jaeger gRPC instead of Thrift in the docker-compose example (#7243)
 - `tanzuobservabilityexporter`: Support exponential histograms (#7127)
 - `receiver_creator`: Log added and removed endpoint env structs (#7248)
+- `prometheusreceiver`: Use the OTLP data conversion path by default. (#TBD)
 
 ## 🛑 Breaking changes 🛑
 
