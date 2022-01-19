@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// struct tags are special format so disable govet
-// nolint:govet
 package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 
 import (
@@ -22,12 +20,14 @@ import (
 )
 
 // Query represents a parsed query. It is the entry point into the query DSL.
+// nolint:govet
 type Query struct {
 	Invocation Invocation `@@`
 	Condition  *Condition `( "where" @@ )?`
 }
 
 // Condition represents an optional boolean condition on the RHS of a query.
+// nolint:govet
 type Condition struct {
 	Left  Value  `@@`
 	Op    string `@("==" | "!=")`
@@ -35,6 +35,7 @@ type Condition struct {
 }
 
 // Invocation represents a function call.
+// nolint:govet
 type Invocation struct {
 	Function  string  `@Ident`
 	Arguments []Value `"(" ( @@ ( "," @@ )* )? ")"`
@@ -42,6 +43,7 @@ type Invocation struct {
 
 // Value represents a part of a parsed query which is resolved to a value of some sort. This can be a telemetry path
 // expression, function call, or literal.
+// nolint:govet
 type Value struct {
 	Invocation *Invocation `( @@`
 	String     *string     `| @String`
@@ -51,11 +53,13 @@ type Value struct {
 }
 
 // Path represents a telemetry path expression.
+// nolint:govet
 type Path struct {
 	Fields []Field `@@ ( "." @@ )*`
 }
 
 // Field is an item within a Path.
+// nolint:govet
 type Field struct {
 	Name   string  `@Ident`
 	MapKey *string `( "[" @String "]" )?`
@@ -65,12 +69,12 @@ type Field struct {
 // is not formatted for the DSL.
 func NewParser() *participle.Parser {
 	lex := lexer.MustSimple([]lexer.Rule{
-		{`Ident`, `[a-zA-Z_][a-zA-Z0-9_]*`, nil},
-		{`Float`, `[-+]?\d*\.\d+([eE][-+]?\d+)?`, nil},
-		{`Int`, `[-+]?\d+`, nil},
-		{`String`, `"(\\"|[^"])*"`, nil},
-		{`Operators`, `==|!=|[,.()\[\]]`, nil},
-		{"whitespace", `\s+`, nil},
+		{Name: `Ident`, Pattern: `[a-zA-Z_][a-zA-Z0-9_]*`, Action: nil},
+		{Name: `Float`, Pattern: `[-+]?\d*\.\d+([eE][-+]?\d+)?`, Action: nil},
+		{Name: `Int`, Pattern: `[-+]?\d+`, Action: nil},
+		{Name: `String`, Pattern: `"(\\"|[^"])*"`, Action: nil},
+		{Name: `Operators`, Pattern: `==|!=|[,.()\[\]]`, Action: nil},
+		{Name: "whitespace", Pattern: `\s+`, Action: nil},
 	})
 	parser, err := participle.Build(&Query{},
 		participle.Lexer(lex),
