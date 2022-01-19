@@ -37,8 +37,7 @@ func (cfg *Config) Validate() error {
 	if err := cfg.ReceiverSettings.Validate(); err != nil {
 		return err
 	}
-	err := cfg.APIConfig.Validate()
-	return err
+	return cfg.APIConfig.Validate()
 }
 
 func (cfg *Config) getK8sClient() (k8s.Interface, error) {

@@ -58,7 +58,7 @@ func TestNewReceiver(t *testing.T) {
 	assert.NoError(t, r1.Shutdown(context.Background()))
 }
 
-func TestHandleNewEvent(t *testing.T) {
+func TestHandleEvent(t *testing.T) {
 	rCfg := createDefaultConfig().(*Config)
 	client := fake.NewSimpleClientset()
 	sink := new(consumertest.LogsSink)
@@ -78,7 +78,7 @@ func TestHandleNewEvent(t *testing.T) {
 	assert.Equal(t, sink.LogRecordCount(), 1)
 }
 
-func TestHandleNewEventDropEvent(t *testing.T) {
+func TestEventDrop(t *testing.T) {
 	rCfg := createDefaultConfig().(*Config)
 	client := fake.NewSimpleClientset()
 	sink := new(consumertest.LogsSink)

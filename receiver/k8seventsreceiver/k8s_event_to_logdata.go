@@ -15,7 +15,6 @@
 package k8seventsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver"
 
 import (
-	"fmt"
 	"strings"
 
 	"go.opentelemetry.io/collector/model/pdata"
@@ -26,10 +25,10 @@ import (
 
 const (
 	// Number of log attributes to add to the pdata.LogSlice.
-	totalLogAttributes = 9
+	totalLogAttributes = 8
 
 	// Number of resource attributes to add to the pdata.ResourceLogs.
-	totalResourceAttributes = 3
+	totalResourceAttributes = 6
 )
 
 // Only two types of events are created as of now.
@@ -53,8 +52,11 @@ func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event) pdata.Logs {
 	resourceAttrs.InsertString("k8s.event.source", ev.Source.Component)
 	resourceAttrs.InsertString(semconv.AttributeK8SNodeName, ev.Source.Host)
 
-	// The Reason field is the most logical "name" of the event.
-	lr.SetName(ev.Reason)
+	// Attributes related to the object causing the event.
+	resourceAttrs.InsertString("k8s.object.kind", ev.InvolvedObject.Kind)
+	resourceAttrs.InsertString("k8s.object.name", ev.InvolvedObject.Name)
+	resourceAttrs.InsertString("k8s.object.uid", string(ev.InvolvedObject.UID))
+
 	lr.SetTimestamp(pdata.Timestamp(getEventTimestamp(ev).UnixNano()))
 
 	// The Message field contains description about the event,
@@ -73,11 +75,12 @@ func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event) pdata.Logs {
 	attrs := lr.Attributes()
 	attrs.EnsureCapacity(totalLogAttributes)
 
+	attrs.InsertString("k8s.event.reason", ev.Reason)
 	attrs.InsertString("k8s.event.action", ev.Action)
 	attrs.InsertString("k8s.event.start_time", ev.ObjectMeta.CreationTimestamp.String())
 	attrs.InsertString("k8s.event.name", ev.ObjectMeta.Name)
 	attrs.InsertString("k8s.event.uid", string(ev.ObjectMeta.UID))
-	attrs.InsertString(semconv.AttributeK8SContainerName, ev.InvolvedObject.FieldPath)
+	attrs.InsertString("k8s.object.fieldpath", ev.InvolvedObject.FieldPath)
 	attrs.InsertString(semconv.AttributeK8SNamespaceName, ev.InvolvedObject.Namespace)
 
 	// "Count" field of k8s event will be '0' in case it is
@@ -85,12 +88,6 @@ func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event) pdata.Logs {
 	if ev.Count != 0 {
 		attrs.InsertInt("k8s.event.count", int64(ev.Count))
 	}
-
-	involvedObjectName := fmt.Sprintf("k8s.%s.name", strings.ToLower(ev.InvolvedObject.Kind))
-	involvedObjectUID := fmt.Sprintf("k8s.%s.uid", strings.ToLower(ev.InvolvedObject.Kind))
-
-	attrs.InsertString(involvedObjectName, ev.InvolvedObject.Name)
-	attrs.InsertString(involvedObjectUID, string(ev.InvolvedObject.UID))
 
 	return ld
 }
