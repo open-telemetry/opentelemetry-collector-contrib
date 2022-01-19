@@ -19,7 +19,6 @@ import (
 	"errors"
 	"fmt"
 	"sync"
-	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.opentelemetry.io/collector/component"
@@ -30,27 +29,31 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
 )
 
+const instrumentationLibraryName = "otelcol/mongodb"
+
 type mongodbScraper struct {
 	logger    *zap.Logger
 	config    *Config
 	client    client
 	extractor *extractor
+	mb        *metadata.MetricsBuilder
 }
 
 func newMongodbScraper(logger *zap.Logger, config *Config) *mongodbScraper {
-	clientLogger := logger.Named("mongo-scraper")
-	c := NewClient(config, clientLogger)
-
 	return &mongodbScraper{
 		logger: logger,
 		config: config,
-		client: c,
+		mb:     metadata.NewMetricsBuilder(config.Metrics),
 	}
 }
 
 func (s *mongodbScraper) start(ctx context.Context, _ component.Host) error {
+	clientLogger := s.logger.Named("mongo-scraper")
+	c := NewClient(s.config, clientLogger)
+	s.client = c
+
 	if err := s.client.Connect(ctx); err != nil {
-		return fmt.Errorf("unable to connect to mongo instance: %w", err)
+		s.logger.Error("unable to connect to mongo instance", zap.Error(err))
 	}
 
 	vr, err := s.client.GetVersion(ctx)
@@ -78,120 +81,64 @@ func (s *mongodbScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 	if s.client == nil {
 		return pdata.NewMetrics(), errors.New("no client was initialized before calling scrape")
 	}
-	return s.collectMetrics(ctx, s.client)
+
+	metrics := pdata.NewMetrics()
+	rms := metrics.ResourceMetrics().AppendEmpty()
+	var errors scrapererror.ScrapeErrors
+
+	s.collectMetrics(ctx, rms, errors)
+
+	return metrics, errors.Combine()
 }
 
-func (s *mongodbScraper) collectMetrics(ctx context.Context, client client) (pdata.Metrics, error) {
-	rms := pdata.NewMetrics()
-	ilm := rms.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName("otelcol/mongodb")
-	mm := newMetricManager(s.logger, ilm)
-	dbNames, err := client.ListDatabaseNames(ctx, bson.D{})
+func (s *mongodbScraper) collectMetrics(ctx context.Context, rms pdata.ResourceMetrics, errors scrapererror.ScrapeErrors) {
+	ilm := rms.InstrumentationLibraryMetrics().AppendEmpty()
+	ilm.InstrumentationLibrary().SetName(instrumentationLibraryName)
+
+	dbNames, err := s.client.ListDatabaseNames(ctx, bson.D{})
 	if err != nil {
 		s.logger.Error("Failed to fetch database names", zap.Error(err))
-		return pdata.NewMetrics(), err
+		return
 	}
 
 	wg := &sync.WaitGroup{}
-	var errors scrapererror.ScrapeErrors
 
 	wg.Add(1)
-	go s.collectAdminDatabase(ctx, wg, mm, errors)
+	go s.collectAdminDatabase(ctx, wg, errors)
 
 	for _, dbName := range dbNames {
 		wg.Add(1)
-		go s.collectDatabase(ctx, wg, mm, dbName, errors)
+		go s.collectDatabase(ctx, wg, dbName, errors)
 	}
 
 	wg.Wait()
 
-	return rms, errors.Combine()
+	s.mb.EmitCollection(ilm.Metrics())
 }
 
-func (s *mongodbScraper) collectDatabase(ctx context.Context, wg *sync.WaitGroup, mm *metricManager, databaseName string, errors scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) collectDatabase(ctx context.Context, wg *sync.WaitGroup, databaseName string, errors scrapererror.ScrapeErrors) {
 	defer wg.Done()
 	dbStats, err := s.client.DBStats(ctx, databaseName)
 	if err != nil {
 		errors.AddPartial(1, err)
 	} else {
-		s.extractor.Extract(dbStats, mm, databaseName, normalDBStats)
+		s.extractor.Extract(dbStats, s.mb, databaseName, normalDBStats)
 	}
 
 	serverStatus, err := s.client.ServerStatus(ctx, databaseName)
 	if err != nil {
 		errors.AddPartial(1, err)
 	} else {
-		s.extractor.Extract(serverStatus, mm, databaseName, normalServerStats)
+		s.extractor.Extract(serverStatus, s.mb, databaseName, normalServerStats)
 	}
 }
 
-func (s *mongodbScraper) collectAdminDatabase(ctx context.Context, wg *sync.WaitGroup, mm *metricManager, errors scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) collectAdminDatabase(ctx context.Context, wg *sync.WaitGroup, errors scrapererror.ScrapeErrors) {
 	defer wg.Done()
 	serverStatus, err := s.client.ServerStatus(ctx, "admin")
 	if err != nil {
 		errors.AddPartial(1, err)
 	} else {
-		s.extractor.Extract(serverStatus, mm, "admin", adminServerStats)
+		s.extractor.Extract(serverStatus, s.mb, "admin", adminServerStats)
 	}
-}
-
-type metricManager struct {
-	logger             *zap.Logger
-	ilm                pdata.InstrumentationLibraryMetrics
-	initializedMetrics map[string]pdata.Metric
-	mutex              *sync.RWMutex
-	now                pdata.Timestamp
-}
-
-func newMetricManager(logger *zap.Logger, ilm pdata.InstrumentationLibraryMetrics) *metricManager {
-	mutex := &sync.RWMutex{}
-	return &metricManager{
-		logger:             logger,
-		ilm:                ilm,
-		initializedMetrics: map[string]pdata.Metric{},
-		mutex:              mutex,
-		now:                pdata.NewTimestampFromTime(time.Now()),
-	}
-}
-
-func (m *metricManager) addDataPoint(metricDef metadata.MetricIntf, value interface{}, attributes pdata.AttributeMap) {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
-	var dataPoint pdata.NumberDataPoint
-	switch v := value.(type) {
-	case int64:
-		currDatapoints := m.getOrInit(metricDef)
-		dataPoint = currDatapoints.AppendEmpty()
-		dataPoint.SetTimestamp(m.now)
-		dataPoint.SetIntVal(v)
-	case float64:
-		currDatapoints := m.getOrInit(metricDef)
-		dataPoint = currDatapoints.AppendEmpty()
-		dataPoint.SetTimestamp(m.now)
-		dataPoint.SetDoubleVal(v)
-	default:
-		m.logger.Warn(fmt.Sprintf("unknown metric data type for metric: %s", metricDef.Name()))
-		return
-	}
-	attributes.CopyTo(dataPoint.Attributes())
-}
-
-func (m *metricManager) getOrInit(metricDef metadata.MetricIntf) pdata.NumberDataPointSlice {
-	metric, ok := m.initializedMetrics[metricDef.Name()]
-	if !ok {
-		metric = m.ilm.Metrics().AppendEmpty()
-		metricDef.Init(metric)
-		m.initializedMetrics[metricDef.Name()] = metric
-	}
-
-	if metric.DataType() == pdata.MetricDataTypeSum {
-		return metric.Sum().DataPoints()
-	}
-
-	if metric.DataType() == pdata.MetricDataTypeGauge {
-		return metric.Gauge().DataPoints()
-	}
-
-	m.logger.Error("Failed to get or init metric of unknown type", zap.String("metric", metricDef.Name()))
-	return pdata.NewNumberDataPointSlice()
 }

@@ -20,6 +20,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -30,11 +31,13 @@ import (
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	configtls.TLSClientSetting              `mapstructure:"tls,omitempty"`
-	Hosts                                   []confignet.NetAddr `mapstructure:"hosts"`
-	Username                                string              `mapstructure:"username"`
-	Password                                string              `mapstructure:"password"`
-	ReplicaSet                              string              `mapstructure:"replica_set,omitempty"`
-	Timeout                                 time.Duration       `mapstructure:"timeout"`
+	// Metrics defines which metrics to enable for the scraper
+	Metrics    metadata.MetricsSettings `mapstructure:"metrics"`
+	Hosts      []confignet.NetAddr      `mapstructure:"hosts"`
+	Username   string                   `mapstructure:"username"`
+	Password   string                   `mapstructure:"password"`
+	ReplicaSet string                   `mapstructure:"replica_set,omitempty"`
+	Timeout    time.Duration            `mapstructure:"timeout"`
 }
 
 func (c *Config) Validate() error {

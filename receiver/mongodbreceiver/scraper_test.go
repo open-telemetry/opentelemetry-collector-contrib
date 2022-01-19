@@ -1,16 +1,16 @@
-// // Copyright The OpenTelemetry Authors
-// //
-// // Licensed under the Apache License, Version 2.0 (the "License");
-// // you may not use this file except in compliance with the License.
-// // You may obtain a copy of the License at
-// //
-// //      http://www.apache.org/licenses/LICENSE-2.0
-// //
-// // Unless required by applicable law or agreed to in writing, software
-// // distributed under the License is distributed on an "AS IS" BASIS,
-// // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// // See the License for the specific language governing permissions and
-// // limitations under the License.
+// Copyright The OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package mongodbreceiver
 
@@ -21,13 +21,11 @@ import (
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
 )
 
 func TestNewMongodbScraper(t *testing.T) {
@@ -63,6 +61,7 @@ func TestScrape(t *testing.T) {
 	scraper := mongodbScraper{
 		client:    fc,
 		config:    cfg,
+		mb:        metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
 		logger:    zap.NewNop(),
 		extractor: extractor,
 	}
@@ -91,55 +90,4 @@ func TestScrapeNoClient(t *testing.T) {
 	m, err := scraper.scrape(context.Background())
 	require.Zero(t, m.MetricCount())
 	require.Error(t, err)
-}
-
-func TestStart(t *testing.T) {
-	f := NewFactory()
-	cfg := f.CreateDefaultConfig().(*Config)
-
-	testCases := []struct {
-		desc          string
-		responses     []bson.D
-		errorContains string
-	}{
-		{
-			desc:          "unable to get version response",
-			responses:     []bson.D{mtest.CreateCommandErrorResponse(mtest.CommandError{})},
-			errorContains: "unable to get a version from the mongo instance",
-		},
-		{
-			desc: "incompatible version response",
-			responses: []bson.D{{
-				primitive.E{Key: "version", Value: "-9129;093"},
-				primitive.E{Key: "ok", Value: 1},
-			}},
-			errorContains: "unable to parse version as semantic",
-		},
-	}
-
-	for _, tc := range testCases {
-		mont := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
-		defer mont.Close()
-		mont.Run("start", func(mt *mtest.T) {
-			mt.AddMockResponses(tc.responses...)
-			c := defaultTestClient(mt)
-			scraper := mongodbScraper{
-				client: c,
-				config: cfg,
-				logger: zap.NewNop(),
-			}
-			err := scraper.start(context.Background(), nil)
-			if tc.errorContains != "" {
-				require.Contains(t, err.Error(), tc.errorContains)
-			}
-		})
-	}
-}
-
-func defaultTestClient(mt *mtest.T) client {
-	driver := mt.Client
-	return &mongodbClient{
-		Client: driver,
-		logger: zap.NewNop(),
-	}
 }
