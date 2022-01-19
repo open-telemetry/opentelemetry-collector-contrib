@@ -20,6 +20,7 @@
 - `tanzuobservability exporter`: Support summary metrics (#7121)
 - Use Jaeger gRPC instead of Thrift in the docker-compose example (#7243)
 - `tanzuobservabilityexporter`: Support exponential histograms (#7127)
+- `receiver_creator`: Log added and removed endpoint env structs (#7248)
 
 ## 🛑 Breaking changes 🛑
 
