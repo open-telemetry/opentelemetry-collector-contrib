@@ -17,6 +17,7 @@ package couchdbreceiver // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -45,8 +46,7 @@ func newCouchdbScraper(logger *zap.Logger, config *Config) *couchdbScraper {
 func (c *couchdbScraper) start(_ context.Context, host component.Host) error {
 	httpClient, err := newCouchDBClient(c.config, host, c.logger)
 	if err != nil {
-		c.logger.Error("failed to start", zap.Error(err))
-		return err
+		return fmt.Errorf("failed to start: %w", err)
 	}
 	c.client = httpClient
 	return nil
@@ -54,7 +54,7 @@ func (c *couchdbScraper) start(_ context.Context, host component.Host) error {
 
 func (c *couchdbScraper) scrape(context.Context) (pdata.Metrics, error) {
 	if c.client == nil {
-		return pdata.NewMetrics(), errors.New("failed to connect to couchdb client")
+		return pdata.NewMetrics(), errors.New("no client available")
 	}
 
 	return c.getResourceMetrics()

@@ -81,7 +81,7 @@ func TestScrape(t *testing.T) {
 
 		_, err := scraper.scrape(context.Background())
 		require.NotNil(t, err)
-		require.Equal(t, err, errors.New("failed to connect to couchdb client"))
+		require.Equal(t, err, errors.New("no client available"))
 	})
 
 	t.Run("scrape error: get stats endpoint error", func(t *testing.T) {
