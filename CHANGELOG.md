@@ -8,17 +8,32 @@
 - `elasticsearchexporter`: add elasticsearchexporter to the components exporter list (#6002)
 - `elasticsearchreceiver`: Add metric metadata (#6892)
 - `elasticsearchreceiver`: Use same metrics as JMX receiver for JVM metrics (#7160)
+- `elasticsearchreceiver`: Implement scraping logic (#7174)
 - `datadogexporter`: Add http.status_code tag to trace stats (#6889)
 - `mongodbreceiver`: Add initial client code to the component (#7125)
 - `tanzuobservabilityexporter`: Support delta histograms (#6897)
 - `mysqlreceiver`: Add the receiver to available components (#7078)
+- `tanzuobservabilityexporter`: Documentation for the memory_limiter configuration (#7164)
 - `dynatraceexporter`: Do not shut down exporter when metrics ingest module is temporarily unavailable (#7161)
+- `mongodbreceiver`: Add metric metadata (#7163)
+- `postgresqlreceiver`: add the receiver to available components (#7079)
+- `tanzuobservability exporter`: Support summary metrics (#7121)
+- Use Jaeger gRPC instead of Thrift in the docker-compose example (#7243)
+- `tanzuobservabilityexporter`: Support exponential histograms (#7127)
 
 ## 🛑 Breaking changes 🛑
 
 - `tanzuobservabilityexporter`: Remove status.code
 - `tanzuobservabilityexporter`: Use semantic conventions for status.message (#7126) 
 - `k8sattributesprocessor`: Move `kube` and `observability` packages to `internal` folder (#7159)
+
+## 🧰 Bug fixes 🧰
+
+- `mdatagen`: Fix validation of `enabled` field in metadata.yaml (#7166)
+
+## 🚀 New components 🚀
+
+- Add `basicauth` extension (#7167)
 
 ## v0.42.0
 

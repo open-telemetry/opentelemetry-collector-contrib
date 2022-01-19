@@ -95,12 +95,27 @@ type JVMInfo struct {
 	JVMMemoryInfo JVMMemoryInfo `json:"mem"`
 	JVMThreadInfo JVMThreadInfo `json:"threads"`
 	JVMGCInfo     JVMGCInfo     `json:"gc"`
+	ClassInfo     JVMClassInfo  `json:"classes"`
 }
 
 type JVMMemoryInfo struct {
-	HeapUsedInBy    int64 `json:"heap_used_in_bytes"`
-	NonHeapUsedInBy int64 `json:"non_heap_used_in_bytes"`
-	MaxHeapInBy     int64 `json:"heap_max_in_bytes"`
+	HeapUsedInBy        int64          `json:"heap_used_in_bytes"`
+	NonHeapUsedInBy     int64          `json:"non_heap_used_in_bytes"`
+	MaxHeapInBy         int64          `json:"heap_max_in_bytes"`
+	HeapCommittedInBy   int64          `json:"heap_committed_in_bytes"`
+	NonHeapComittedInBy int64          `json:"non_heap_committed_in_bytes"`
+	MemoryPools         JVMMemoryPools `json:"pools"`
+}
+
+type JVMMemoryPools struct {
+	Young    JVMMemoryPoolInfo `json:"young"`
+	Survivor JVMMemoryPoolInfo `json:"survivor"`
+	Old      JVMMemoryPoolInfo `json:"old"`
+}
+
+type JVMMemoryPoolInfo struct {
+	MemUsedBy int64 `json:"used_in_bytes"`
+	MemMaxBy  int64 `json:"max_in_bytes"`
 }
 
 type JVMThreadInfo struct {
@@ -120,6 +135,10 @@ type JVMCollectors struct {
 type BasicJVMCollectorInfo struct {
 	CollectionCount        int64 `json:"collection_count"`
 	CollectionTimeInMillis int64 `json:"collection_time_in_millis"`
+}
+
+type JVMClassInfo struct {
+	CurrentLoadedCount int64 `json:"current_loaded_count"`
 }
 
 type ThreadPoolStats struct {

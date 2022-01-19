@@ -25,6 +25,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/metadata"
 )
 
 const (
@@ -52,6 +54,8 @@ func createDefaultConfig() config.Receiver {
 			Endpoint: defaultEndpoint,
 			Timeout:  defaultHTTPClientTimeout,
 		},
+		Metrics: metadata.DefaultMetricsSettings(),
+		Nodes:   []string{"_all"},
 	}
 }
 
@@ -64,10 +68,20 @@ func createMetricsReceiver(
 	rConf config.Receiver,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
-	_, ok := rConf.(*Config)
+	c, ok := rConf.(*Config)
 	if !ok {
 		return nil, errConfigNotES
 	}
+	es := newElasticSearchScraper(params.Logger, c)
+	scraper, err := scraperhelper.NewScraper(typeStr, es.scrape, scraperhelper.WithStart(es.start))
+	if err != nil {
+		return nil, err
+	}
 
-	return nil, nil
+	return scraperhelper.NewScraperControllerReceiver(
+		&c.ScraperControllerSettings,
+		params,
+		consumer,
+		scraperhelper.AddScraper(scraper),
+	)
 }

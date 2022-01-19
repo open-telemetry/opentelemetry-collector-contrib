@@ -1,6 +1,7 @@
-FROM mysql:8.0
+FROM mysql:8.0.27
 
 RUN \
+    apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 467B942D3A79BD29 && \
     apt-get update && \
     apt-get install -y libmariadb3
 
