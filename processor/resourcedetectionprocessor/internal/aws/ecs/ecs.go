@@ -41,7 +41,7 @@ type Detector struct {
 }
 
 func NewDetector(params component.ProcessorCreateSettings, _ internal.DetectorConfig) (internal.Detector, error) {
-	provider, err := ecsutil.NewDetectedTaskMetadataProvider(params.Logger)
+	provider, err := ecsutil.NewDetectedTaskMetadataProvider(params.TelemetrySettings)
 	if err != nil {
 		// Allow metadata provider to be created in incompatible environments and just have a noop Detect()
 		if _, ok := err.(endpoints.ErrNoTaskMetadataEndpointDetected); ok {

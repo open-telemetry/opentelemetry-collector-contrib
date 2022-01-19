@@ -30,6 +30,7 @@ type tracesExporter struct {
 	cfg       *Config
 	writer    *influxHTTPWriter
 	converter *otel2influx.OtelTracesToLineProtocol
+	settings  component.TelemetrySettings
 }
 
 func newTracesExporter(config *Config, params component.ExporterCreateSettings) *tracesExporter {
@@ -40,6 +41,7 @@ func newTracesExporter(config *Config, params component.ExporterCreateSettings) 
 		logger:    logger,
 		cfg:       config,
 		converter: converter,
+		settings:  params.TelemetrySettings,
 	}
 }
 
@@ -56,7 +58,7 @@ func (e *tracesExporter) pushTraces(ctx context.Context, td pdata.Traces) error 
 // start starts the traces exporter
 func (e *tracesExporter) start(_ context.Context, host component.Host) (err error) {
 
-	writer, err := newInfluxHTTPWriter(e.logger, e.cfg, host)
+	writer, err := newInfluxHTTPWriter(e.logger, e.cfg, host, e.settings)
 	if err != nil {
 		return err
 	}
@@ -70,6 +72,7 @@ type metricsExporter struct {
 	cfg       *Config
 	writer    *influxHTTPWriter
 	converter *otel2influx.OtelMetricsToLineProtocol
+	settings  component.TelemetrySettings
 }
 
 var metricsSchemata = map[string]common.MetricsSchema{
@@ -93,6 +96,7 @@ func newMetricsExporter(config *Config, params component.ExporterCreateSettings)
 		logger:    logger,
 		cfg:       config,
 		converter: converter,
+		settings:  params.TelemetrySettings,
 	}, nil
 }
 
@@ -109,7 +113,7 @@ func (e *metricsExporter) pushMetrics(ctx context.Context, md pdata.Metrics) err
 // start starts the metrics exporter
 func (e *metricsExporter) start(_ context.Context, host component.Host) (err error) {
 
-	writer, err := newInfluxHTTPWriter(e.logger, e.cfg, host)
+	writer, err := newInfluxHTTPWriter(e.logger, e.cfg, host, e.settings)
 	if err != nil {
 		return err
 	}
@@ -123,6 +127,7 @@ type logsExporter struct {
 	cfg       *Config
 	writer    *influxHTTPWriter
 	converter *otel2influx.OtelLogsToLineProtocol
+	settings  component.TelemetrySettings
 }
 
 func newLogsExporter(config *Config, params component.ExporterCreateSettings) *logsExporter {
@@ -133,6 +138,7 @@ func newLogsExporter(config *Config, params component.ExporterCreateSettings) *l
 		logger:    logger,
 		converter: converter,
 		cfg:       config,
+		settings:  params.TelemetrySettings,
 	}
 }
 
@@ -148,7 +154,7 @@ func (e *logsExporter) pushLogs(ctx context.Context, ld pdata.Logs) error {
 
 // start starts the logs exporter
 func (e *logsExporter) start(_ context.Context, host component.Host) (err error) {
-	writer, err := newInfluxHTTPWriter(e.logger, e.cfg, host)
+	writer, err := newInfluxHTTPWriter(e.logger, e.cfg, host, e.settings)
 	if err != nil {
 		return err
 	}
