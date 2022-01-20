@@ -65,9 +65,29 @@ type Field struct {
 	MapKey *string `( "[" @String "]" )?`
 }
 
-// NewParser returns a parser that can be used to read a string into a Query. An error will be returned if the string
+func Parse(rawQueries []string) ([]Query, error) {
+	parser, err := newParser()
+	if err != nil {
+		return []Query{}, err
+	}
+
+	parsed := make([]Query, 0)
+
+	for _, raw := range rawQueries {
+		query := Query{}
+		err = parser.ParseString("", raw, &query)
+		if err != nil {
+			return []Query{}, err
+		}
+		parsed = append(parsed, query)
+	}
+
+	return parsed, nil
+}
+
+// newParser returns a parser that can be used to read a string into a Query. An error will be returned if the string
 // is not formatted for the DSL.
-func NewParser() *participle.Parser {
+func newParser() (*participle.Parser, error) {
 	lex := lexer.MustSimple([]lexer.Rule{
 		{Name: `Ident`, Pattern: `[a-zA-Z_][a-zA-Z0-9_]*`, Action: nil},
 		{Name: `Float`, Pattern: `[-+]?\d*\.\d+([eE][-+]?\d+)?`, Action: nil},
@@ -76,15 +96,9 @@ func NewParser() *participle.Parser {
 		{Name: `Operators`, Pattern: `==|!=|[,.()\[\]]`, Action: nil},
 		{Name: "whitespace", Pattern: `\s+`, Action: nil},
 	})
-	parser, err := participle.Build(&Query{},
+	return participle.Build(&Query{},
 		participle.Lexer(lex),
 		participle.Unquote("String"),
 		participle.Elide("whitespace"),
 	)
-	// An error would be a fatal programming bug and cannot happen in runtime unless all the unit tests are
-	// completely invalid.
-	if err != nil {
-		panic("Invalid parser configuration. This is a programming bug")
-	}
-	return parser
 }
