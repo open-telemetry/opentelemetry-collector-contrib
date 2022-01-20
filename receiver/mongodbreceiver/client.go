@@ -92,7 +92,6 @@ func (c *mongodbClient) GetVersion(ctx context.Context) (*version.Version, error
 		return nil, errors.New("unable to parse mongo version from server")
 	}
 
-	// TODO: get into version struct
 	version, err := version.NewVersion(v)
 	if err != nil {
 		return nil, err
