@@ -63,7 +63,6 @@ func (s *mongodbScraper) start(ctx context.Context, _ component.Host) error {
 	}
 	s.logger.Debug(fmt.Sprintf("detected mongo server to be running version: %s", version.String()))
 	s.mongoVersion = version
-
 	return nil
 }
 
@@ -92,7 +91,6 @@ func (s *mongodbScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 
 	var errors scrapererror.ScrapeErrors
 	s.collectMetrics(ctx, rms, errors)
-
 	return metrics, errors.Combine()
 }
 
