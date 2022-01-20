@@ -20,12 +20,12 @@ The following settings are required:
 
 - `endpoint` (no default): The remote write URL to send remote write samples.
 
-By default, TLS is enabled:
+By default, TLS is enabled and must be configured under `tls:`:
 
 - `insecure` (default = `false`): whether to enable client transport security for
   the exporter's connection.
 
-As a result, the following parameters are also required:
+As a result, the following parameters are also required under `tls:`:
 
 - `cert_file` (no default): path to the TLS cert to use for TLS required connections. Should
   only be used if `insecure` is set to false.
@@ -34,12 +34,13 @@ As a result, the following parameters are also required:
 
 The following settings can be optionally configured:
 
-- `external_labels`: list of labels to be attached to each metric data point
+- `external_labels`: map of labels names and values to be attached to each metric data point
 - `headers`: additional headers attached to each HTTP request. 
   - *Note the following headers cannot be changed: `Content-Encoding`, `Content-Type`, `X-Prometheus-Remote-Write-Version`, and `User-Agent`.*
 - `namespace`: prefix attached to each exported metric name.
 - `remote_write_queue`: fine tuning for queueing and sending of the outgoing remote writes.
-  - `queue_size`: number of OTLP metrics that can be queued.
+  - `enabled`: enable the sending queue
+  - `queue_size`: number of OTLP metrics that can be queued. Ignored if `enabled` is `false`
   - `num_consumers`: minimum number of workers to use to fan out the outgoing requests.
 
 Example:
@@ -52,6 +53,17 @@ exporters:
         directory: ./prom_rw # The directory to store the WAL in
         buffer_size: 100 # Optional count of elements to be read from the WAL before truncating; default of 300
         truncate_frequency: 45s # Optional frequency for how often the WAL should be truncated. It is a time.ParseDuration; default of 1m
+```
+
+Example:
+
+```yaml
+exporters:
+  prometheusremotewrite:
+    endpoint: "https://my-cortex:7900/api/v1/push"
+    external_labels:
+      label_name1: label_value1
+      label_name2: label_value2      
 ```
 
 ## Advanced Configuration

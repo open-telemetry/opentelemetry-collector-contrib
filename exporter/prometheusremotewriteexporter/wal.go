@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package prometheusremotewriteexporter
+package prometheusremotewriteexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter"
 
 import (
 	"context"
@@ -25,7 +25,7 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/gogo/protobuf/proto"
-	multierror "github.com/hashicorp/go-multierror"
+	"github.com/hashicorp/go-multierror"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/tidwall/wal"
 )

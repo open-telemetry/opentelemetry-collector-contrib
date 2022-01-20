@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package opencensusexporter
+package opencensusexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter"
 
 import (
 	"context"
@@ -40,7 +40,7 @@ func NewFactory() component.ExporterFactory {
 
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Headers: map[string]string{},
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
@@ -52,7 +52,7 @@ func createDefaultConfig() config.Exporter {
 
 func createTracesExporter(ctx context.Context, set component.ExporterCreateSettings, cfg config.Exporter) (component.TracesExporter, error) {
 	oCfg := cfg.(*Config)
-	oce, err := newTracesExporter(ctx, oCfg)
+	oce, err := newTracesExporter(ctx, oCfg, set.TelemetrySettings)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +70,7 @@ func createTracesExporter(ctx context.Context, set component.ExporterCreateSetti
 
 func createMetricsExporter(ctx context.Context, set component.ExporterCreateSettings, cfg config.Exporter) (component.MetricsExporter, error) {
 	oCfg := cfg.(*Config)
-	oce, err := newMetricsExporter(ctx, oCfg)
+	oce, err := newMetricsExporter(ctx, oCfg, set.TelemetrySettings)
 	if err != nil {
 		return nil, err
 	}

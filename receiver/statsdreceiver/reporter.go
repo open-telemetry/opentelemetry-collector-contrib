@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package statsdreceiver
+package statsdreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver"
 
 import (
 	"context"
 
 	"go.opencensus.io/trace"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
@@ -36,12 +37,16 @@ type reporter struct {
 
 var _ transport.Reporter = (*reporter)(nil)
 
-func newReporter(receiverID config.ComponentID, logger *zap.Logger) transport.Reporter {
+func newReporter(receiverID config.ComponentID, set component.ReceiverCreateSettings) transport.Reporter {
 	return &reporter{
 		id:            receiverID,
-		logger:        logger,
-		sugaredLogger: logger.Sugar(),
-		obsrecv:       obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: receiverID, Transport: "tcp"}),
+		logger:        set.Logger,
+		sugaredLogger: set.Logger.Sugar(),
+		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             receiverID,
+			Transport:              "tcp",
+			ReceiverCreateSettings: set,
+		}),
 	}
 }
 

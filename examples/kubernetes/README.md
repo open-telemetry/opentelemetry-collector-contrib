@@ -13,7 +13,7 @@ Switch to this directory and run following command: `kubectl apply -n <namespace
 Kubernetes logs are being stored in `/var/log/pods`.
 Path to container logs is constructed using following pattern:
 
-`/var/log/pods/<namespace>_<pod_name>_<pod_uid>/<container>/<run_id>.log`
+`/var/log/pods/<namespace>_<pod_name>_<pod_uid>/<container>/<restart_count>.log`
 
 You can use it to manage from which containers do you want to include and exclude logs.
 

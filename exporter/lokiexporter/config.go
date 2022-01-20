@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package lokiexporter
+package lokiexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter"
 
 import (
 	"fmt"
@@ -36,6 +36,8 @@ type Config struct {
 
 	// Labels defines how labels should be applied to log streams sent to Loki.
 	Labels LabelsConfig `mapstructure:"labels"`
+	// Allows you to choose the entry format in the exporter
+	Format string `mapstructure:"format"`
 }
 
 func (c *Config) validate() error {

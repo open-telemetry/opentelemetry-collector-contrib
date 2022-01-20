@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package goldendataset
+package goldendataset // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
 
 import (
 	"fmt"
@@ -279,7 +279,7 @@ func appendHTTPClientAttributes(includeStatus bool, attrMap pdata.AttributeMap) 
 	attrMap.UpsertString(conventions.AttributeHTTPURL, "https://opentelemetry.io/registry/")
 	if includeStatus {
 		attrMap.UpsertInt(conventions.AttributeHTTPStatusCode, 200)
-		attrMap.UpsertString(conventions.AttributeHTTPStatusText, "More Than OK")
+		attrMap.UpsertString("http.status_text", "More Than OK")
 	}
 	attrMap.UpsertString(conventions.AttributeEnduserID, "unittest")
 }
@@ -348,7 +348,7 @@ func appendMaxCountAttributes(includeStatus bool, attrMap pdata.AttributeMap) {
 	attrMap.UpsertString(conventions.AttributeHTTPFlavor, "2")
 	if includeStatus {
 		attrMap.UpsertInt(conventions.AttributeHTTPStatusCode, 201)
-		attrMap.UpsertString(conventions.AttributeHTTPStatusText, "Created")
+		attrMap.UpsertString("http.status_text", "Created")
 	}
 	attrMap.UpsertString(conventions.AttributeHTTPUserAgent,
 		"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36")
@@ -362,9 +362,9 @@ func appendMaxCountAttributes(includeStatus bool, attrMap pdata.AttributeMap) {
 	attrMap.UpsertInt("ai-sampler.maxhops", 6)
 	attrMap.UpsertString("application.create.location", "https://api.opentelemetry.io/blog/posts/806673B9-4F4D-4284-9635-3A3E3E3805BE")
 	stages := pdata.NewAttributeValueArray()
-	stages.ArrayVal().AppendEmpty().SetStringVal("Launch")
-	stages.ArrayVal().AppendEmpty().SetStringVal("Injestion")
-	stages.ArrayVal().AppendEmpty().SetStringVal("Validation")
+	stages.SliceVal().AppendEmpty().SetStringVal("Launch")
+	stages.SliceVal().AppendEmpty().SetStringVal("Injestion")
+	stages.SliceVal().AppendEmpty().SetStringVal("Validation")
 	attrMap.Upsert("application.stages", stages)
 	subMap := pdata.NewAttributeValueMap()
 	subMap.MapVal().InsertBool("UIx", false)
@@ -421,9 +421,9 @@ func appendSpanEvent(index int, spanEvents pdata.SpanEventSlice) {
 		spanEvent.SetName("message")
 		attrMap := spanEvent.Attributes()
 		if index%2 == 0 {
-			attrMap.UpsertString(conventions.AttributeMessageType, "SENT")
+			attrMap.UpsertString("message.type", "SENT")
 		} else {
-			attrMap.UpsertString(conventions.AttributeMessageType, "RECEIVED")
+			attrMap.UpsertString("message.type", "RECEIVED")
 		}
 		attrMap.UpsertInt(conventions.AttributeMessagingMessageID, int64(index/4))
 		attrMap.UpsertInt(conventions.AttributeMessagingMessagePayloadCompressedSizeBytes, int64(17*index))

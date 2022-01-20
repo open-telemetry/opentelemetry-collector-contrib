@@ -16,6 +16,8 @@ package prometheusremotewriteexporter
 
 import (
 	"fmt"
+	"math"
+	"strings"
 	"time"
 
 	"github.com/prometheus/prometheus/prompb"
@@ -30,22 +32,24 @@ var (
 	msTime2 = int64(time2 / uint64(int64(time.Millisecond)/int64(time.Nanosecond)))
 	msTime3 = int64(time3 / uint64(int64(time.Millisecond)/int64(time.Nanosecond)))
 
-	label11 = "test_label11"
-	value11 = "test_value11"
-	label12 = "test_label12"
-	value12 = "test_value12"
-	label21 = "test_label21"
-	value21 = "test_value21"
-	label22 = "test_label22"
-	value22 = "test_value22"
-	label31 = "test_label31"
-	value31 = "test_value31"
-	label32 = "test_label32"
-	value32 = "test_value32"
-	label41 = "__test_label41__"
-	value41 = "test_value41"
-	dirty1  = "%"
-	dirty2  = "?"
+	label11       = "test_label11"
+	value11       = "test_value11"
+	label12       = "test_label12"
+	value12       = "test_value12"
+	label21       = "test_label21"
+	value21       = "test_value21"
+	label22       = "test_label22"
+	value22       = "test_value22"
+	label31       = "test_label31"
+	value31       = "test_value31"
+	label32       = "test_label32"
+	value32       = "test_value32"
+	label41       = "__test_label41__"
+	value41       = "test_value41"
+	dirty1        = "%"
+	dirty2        = "?"
+	traceIDValue1 = "traceID-value1"
+	traceIDKey    = "trace_id"
 
 	intVal1   int64 = 1
 	intVal2   int64 = 2
@@ -77,6 +81,20 @@ var (
 			getSample(float64(intVal1), msTime1)),
 		"Gauge" + "-" + label21 + "-" + value21 + "-" + label22 + "-" + value22: getTimeSeries(getPromLabels(label21, value21, label22, value22),
 			getSample(float64(intVal1), msTime2)),
+	}
+	tsWithSamplesAndExemplars = map[string]*prompb.TimeSeries{
+		lb1Sig: getTimeSeriesWithSamplesAndExemplars(getPromLabels(label11, value11, label12, value12),
+			[]prompb.Sample{getSample(float64(intVal1), msTime1)},
+			[]prompb.Exemplar{getExemplar(floatVal2, msTime1)}),
+	}
+	tsWithInfiniteBoundExemplarValue = map[string]*prompb.TimeSeries{
+		lb1Sig: getTimeSeriesWithSamplesAndExemplars(getPromLabels(label11, value11, label12, value12),
+			[]prompb.Sample{getSample(float64(intVal1), msTime1)},
+			[]prompb.Exemplar{getExemplar(math.MaxFloat64, msTime1)}),
+	}
+	tsWithoutSampleAndExemplar = map[string]*prompb.TimeSeries{
+		lb1Sig: getTimeSeries(getPromLabels(label11, value11, label12, value12),
+			nil...),
 	}
 	bounds  = []float64{0.1, 0.5, 0.99}
 	buckets = []uint64{1, 2, 3}
@@ -140,6 +158,22 @@ var (
 		emptyCumulativeSum:       getEmptyCumulativeSumMetric(emptyCumulativeSum),
 		emptyCumulativeHistogram: getEmptyCumulativeHistogramMetric(emptyCumulativeHistogram),
 	}
+	staleNaNIntGauge    = "staleNaNIntGauge"
+	staleNaNDoubleGauge = "staleNaNDoubleGauge"
+	staleNaNIntSum      = "staleNaNIntSum"
+	staleNaNSum         = "staleNaNSum"
+	staleNaNHistogram   = "staleNaNHistogram"
+	staleNaNSummary     = "staleNaNSummary"
+
+	// staleNaN metrics as input should have the staleness marker flag
+	staleNaNMetrics = map[string]pdata.Metric{
+		staleNaNIntGauge:    getIntGaugeMetric(staleNaNIntGauge, lbs1, intVal1, time1),
+		staleNaNDoubleGauge: getDoubleGaugeMetric(staleNaNDoubleGauge, lbs1, floatVal1, time1),
+		staleNaNIntSum:      getIntSumMetric(staleNaNIntSum, lbs1, intVal1, time1),
+		staleNaNSum:         getSumMetric(staleNaNSum, lbs1, floatVal1, time1),
+		staleNaNHistogram:   getHistogramMetric(staleNaNHistogram, lbs1, time1, floatVal2, uint64(intVal2), bounds, buckets),
+		staleNaNSummary:     getSummaryMetric(staleNaNSummary, lbs2, time2, floatVal2, uint64(intVal2), quantiles),
+	}
 )
 
 // OTLP metrics
@@ -184,6 +218,49 @@ func getTimeSeries(labels []prompb.Label, samples ...prompb.Sample) *prompb.Time
 	}
 }
 
+func getExemplar(v float64, t int64) prompb.Exemplar {
+	return prompb.Exemplar{
+		Value:     v,
+		Timestamp: t,
+		Labels:    []prompb.Label{getLabel(traceIDKey, traceIDValue1)},
+	}
+}
+
+func getBucketBoundsData(values []float64) []bucketBoundsData {
+	var b []bucketBoundsData
+
+	for _, value := range values {
+		b = append(b, bucketBoundsData{sig: lb1Sig, bound: value})
+	}
+
+	return b
+}
+
+func getTimeSeriesWithSamplesAndExemplars(labels []prompb.Label, samples []prompb.Sample, exemplars []prompb.Exemplar) *prompb.TimeSeries {
+	return &prompb.TimeSeries{
+		Labels:    labels,
+		Samples:   samples,
+		Exemplars: exemplars,
+	}
+}
+
+func getHistogramDataPointWithExemplars(time time.Time, value float64, attributeKey string, attributeValue string) *pdata.HistogramDataPoint {
+	h := pdata.NewHistogramDataPoint()
+
+	e := h.Exemplars().AppendEmpty()
+	e.SetDoubleVal(value)
+	e.SetTimestamp(pdata.NewTimestampFromTime(time))
+	e.FilteredAttributes().Insert(attributeKey, pdata.NewAttributeValueString(attributeValue))
+
+	return &h
+}
+
+func getHistogramDataPoint() *pdata.HistogramDataPoint {
+	h := pdata.NewHistogramDataPoint()
+
+	return &h
+}
+
 func getQuantiles(bounds []float64, values []float64) pdata.ValueAtQuantileSlice {
 	quantiles := pdata.NewValueAtQuantileSlice()
 	quantiles.EnsureCapacity(len(bounds))
@@ -217,6 +294,9 @@ func getIntGaugeMetric(name string, attributes pdata.AttributeMap, value int64, 
 	metric.SetName(name)
 	metric.SetDataType(pdata.MetricDataTypeGauge)
 	dp := metric.Gauge().DataPoints().AppendEmpty()
+	if strings.HasPrefix(name, "staleNaN") {
+		dp.SetFlags(1)
+	}
 	dp.SetIntVal(value)
 	attributes.CopyTo(dp.Attributes())
 
@@ -230,6 +310,9 @@ func getDoubleGaugeMetric(name string, attributes pdata.AttributeMap, value floa
 	metric.SetName(name)
 	metric.SetDataType(pdata.MetricDataTypeGauge)
 	dp := metric.Gauge().DataPoints().AppendEmpty()
+	if strings.HasPrefix(name, "staleNaN") {
+		dp.SetFlags(1)
+	}
 	dp.SetDoubleVal(value)
 	attributes.CopyTo(dp.Attributes())
 
@@ -249,8 +332,11 @@ func getIntSumMetric(name string, attributes pdata.AttributeMap, value int64, ts
 	metric := pdata.NewMetric()
 	metric.SetName(name)
 	metric.SetDataType(pdata.MetricDataTypeSum)
-	metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 	dp := metric.Sum().DataPoints().AppendEmpty()
+	if strings.HasPrefix(name, "staleNaN") {
+		dp.SetFlags(1)
+	}
 	dp.SetIntVal(value)
 	attributes.CopyTo(dp.Attributes())
 
@@ -263,7 +349,7 @@ func getEmptyCumulativeSumMetric(name string) pdata.Metric {
 	metric := pdata.NewMetric()
 	metric.SetName(name)
 	metric.SetDataType(pdata.MetricDataTypeSum)
-	metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 	return metric
 }
 
@@ -271,8 +357,11 @@ func getSumMetric(name string, attributes pdata.AttributeMap, value float64, ts 
 	metric := pdata.NewMetric()
 	metric.SetName(name)
 	metric.SetDataType(pdata.MetricDataTypeSum)
-	metric.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 	dp := metric.Sum().DataPoints().AppendEmpty()
+	if strings.HasPrefix(name, "staleNaN") {
+		dp.SetFlags(1)
+	}
 	dp.SetDoubleVal(value)
 	attributes.CopyTo(dp.Attributes())
 
@@ -292,7 +381,7 @@ func getEmptyCumulativeHistogramMetric(name string) pdata.Metric {
 	metric := pdata.NewMetric()
 	metric.SetName(name)
 	metric.SetDataType(pdata.MetricDataTypeHistogram)
-	metric.Histogram().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	metric.Histogram().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 	return metric
 }
 
@@ -300,8 +389,11 @@ func getHistogramMetric(name string, attributes pdata.AttributeMap, ts uint64, s
 	metric := pdata.NewMetric()
 	metric.SetName(name)
 	metric.SetDataType(pdata.MetricDataTypeHistogram)
-	metric.Histogram().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	metric.Histogram().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 	dp := metric.Histogram().DataPoints().AppendEmpty()
+	if strings.HasPrefix(name, "staleNaN") {
+		dp.SetFlags(1)
+	}
 	dp.SetCount(count)
 	dp.SetSum(sum)
 	dp.SetBucketCounts(buckets)
@@ -324,9 +416,11 @@ func getSummaryMetric(name string, attributes pdata.AttributeMap, ts uint64, sum
 	metric.SetName(name)
 	metric.SetDataType(pdata.MetricDataTypeSummary)
 	dp := metric.Summary().DataPoints().AppendEmpty()
+	if strings.HasPrefix(name, "staleNaN") {
+		dp.SetFlags(1)
+	}
 	dp.SetCount(count)
 	dp.SetSum(sum)
-
 	attributes.Range(func(k string, v pdata.AttributeValue) bool {
 		dp.Attributes().Upsert(k, v)
 		return true

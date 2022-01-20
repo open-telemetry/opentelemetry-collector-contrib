@@ -7,8 +7,10 @@ The File Storage extension can persist state to the local file system.
 The extension requires read and write access to a directory. A default directory can be used, but it must already exist in order for the extension to operate.
 
 `directory` is the relative or absolute path to the dedicated data storage directory. 
+The default directory is `%ProgramData%\Otelcol\FileStorage` on Windows and `/var/lib/otelcol/file_storage` otherwise.
 
 `timeout` is the maximum time to wait for a file lock. This value does not need to be modified in most circumstances.
+The default timeout is `1s`.
 
 
 ```

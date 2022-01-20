@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package awsprometheusremotewriteexporter provides a Prometheus Remote Write Exporter with AWS Sigv4 authentication
-package awsprometheusremotewriteexporter
+package awsprometheusremotewriteexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsprometheusremotewriteexporter"
 
 import (
 	"context"
@@ -60,7 +60,7 @@ func (af *awsFactory) CreateDefaultConfig() config.Exporter {
 		},
 	}
 
-	cfg.ExporterSettings = config.NewExporterSettings(config.NewID(typeStr))
+	cfg.ExporterSettings = config.NewExporterSettings(config.NewComponentID(typeStr))
 	cfg.HTTPClientSettings.CustomRoundTripper = func(next http.RoundTripper) (http.RoundTripper, error) {
 		extras := []string{runtime.Version(), runtime.GOOS, runtime.GOARCH}
 		if v := os.Getenv("AWS_EXECUTION_ENV"); v != "" {

@@ -25,6 +25,7 @@ receivers:
       host_endpoint: "0.0.0.0:5778"
       endpoint: "jaeger-collector:1234"
       strategy_file: "/etc/strategies.json"
+      strategy_file_reload_interval: 10s
   # The following demonstrates how to enable protocols with defaults.
   jaeger/defaults:
     protocols:
@@ -45,7 +46,7 @@ receivers:
   jaeger/tls:
     protocols:
       grpc:
-        tls_settings:
+        tls:
           cert_file: /test.crt
           key_file: /test.key
         endpoint: "localhost:9876"

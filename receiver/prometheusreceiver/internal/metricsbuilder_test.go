@@ -21,8 +21,8 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/prometheus/common/model"
-	"github.com/prometheus/prometheus/pkg/labels"
-	"github.com/prometheus/prometheus/pkg/textparse"
+	"github.com/prometheus/prometheus/model/labels"
+	"github.com/prometheus/prometheus/model/textparse"
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -44,8 +44,8 @@ var testMetadata = map[string]scrape.MetricMetadata{
 	"summary_test":    {Metric: "summary_test", Type: textparse.MetricTypeSummary, Help: "", Unit: ""},
 	"summary_test2":   {Metric: "summary_test2", Type: textparse.MetricTypeSummary, Help: "", Unit: ""},
 	"unknown_test":    {Metric: "unknown_test", Type: textparse.MetricTypeUnknown, Help: "", Unit: ""},
+	"poor_name":       {Metric: "poor_name", Type: textparse.MetricTypeGauge, Help: "", Unit: ""},
 	"poor_name_count": {Metric: "poor_name_count", Type: textparse.MetricTypeCounter, Help: "", Unit: ""},
-	"up":              {Metric: "up", Type: textparse.MetricTypeCounter, Help: "", Unit: ""},
 	"scrape_foo":      {Metric: "scrape_foo", Type: textparse.MetricTypeCounter, Help: "", Unit: ""},
 	"example_process_start_time_seconds": {Metric: "example_process_start_time_seconds",
 		Type: textparse.MetricTypeGauge, Help: "", Unit: ""},
@@ -99,7 +99,7 @@ func runBuilderTests(t *testing.T, tests []buildTestData) {
 			mc := newMockMetadataCache(testMetadata)
 			st := startTs
 			for i, page := range tt.inputs {
-				b := newMetricBuilder(mc, true, "", testLogger, startTs)
+				b := newMetricBuilder(mc, true, "", testTelemetry.ToReceiverCreateSettings().Logger, startTs)
 				b.startTime = defaultBuilderStartTime // set to a non-zero value
 				for _, pt := range page.pts {
 					// set ts for testing
@@ -108,11 +108,28 @@ func runBuilderTests(t *testing.T, tests []buildTestData) {
 				}
 				metrics, _, _, err := b.Build()
 				assert.NoError(t, err)
-				assert.EqualValues(t, tt.wants[i], metrics)
+				assertEquivalentMetrics(t, tt.wants[i], metrics)
 				st += interval
 			}
 		})
 	}
+}
+
+func assertEquivalentMetrics(t *testing.T, want, got []*metricspb.Metric) {
+	if !assert.Equal(t, len(want), len(got)) {
+		return
+	}
+	wmap := map[string]*metricspb.Metric{}
+	gmap := map[string]*metricspb.Metric{}
+
+	for i := 0; i < len(want); i++ {
+		wi := want[i]
+		wmap[wi.GetMetricDescriptor().GetName()] = wi
+		gi := got[i]
+		gmap[gi.GetMetricDescriptor().GetName()] = gi
+	}
+
+	assert.EqualValues(t, wmap, gmap)
 }
 
 func runBuilderStartTimeTests(t *testing.T, tests []buildTestData,
@@ -123,7 +140,7 @@ func runBuilderStartTimeTests(t *testing.T, tests []buildTestData,
 			st := startTs
 			for _, page := range tt.inputs {
 				b := newMetricBuilder(mc, true, startTimeMetricRegex,
-					testLogger, 0)
+					testTelemetry.Logger, 0)
 				b.startTime = defaultBuilderStartTime // set to a non-zero value
 				for _, pt := range page.pts {
 					// set ts for testing
@@ -210,6 +227,35 @@ func Test_metricBuilder_counters(t *testing.T) {
 					{
 						MetricDescriptor: &metricspb.MetricDescriptor{
 							Name:      "counter_test",
+							Type:      metricspb.MetricDescriptor_CUMULATIVE_DOUBLE,
+							LabelKeys: []*metricspb.LabelKey{{Key: "foo"}}},
+						Timeseries: []*metricspb.TimeSeries{
+							{
+								StartTimestamp: timestampFromMs(startTs),
+								LabelValues:    []*metricspb.LabelValue{{Value: "bar", HasValue: true}},
+								Points: []*metricspb.Point{
+									{Timestamp: timestampFromMs(startTs), Value: &metricspb.Point_DoubleValue{DoubleValue: 100.0}},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "counter-with-total-suffix",
+			inputs: []*testScrapedPage{
+				{
+					pts: []*testDataPoint{
+						createDataPoint("counter_test_total", 100, "foo", "bar"),
+					},
+				},
+			},
+			wants: [][]*metricspb.Metric{
+				{
+					{
+						MetricDescriptor: &metricspb.MetricDescriptor{
+							Name:      "counter_test_total",
 							Type:      metricspb.MetricDescriptor_CUMULATIVE_DOUBLE,
 							LabelKeys: []*metricspb.LabelKey{{Key: "foo"}}},
 						Timeseries: []*metricspb.TimeSeries{
@@ -544,7 +590,7 @@ func Test_metricBuilder_untype(t *testing.T) {
 					{
 						MetricDescriptor: &metricspb.MetricDescriptor{
 							Name:      "something_not_exists",
-							Type:      metricspb.MetricDescriptor_UNSPECIFIED,
+							Type:      metricspb.MetricDescriptor_GAUGE_DOUBLE,
 							LabelKeys: []*metricspb.LabelKey{{Key: "foo"}}},
 						Timeseries: []*metricspb.TimeSeries{
 							{
@@ -558,7 +604,7 @@ func Test_metricBuilder_untype(t *testing.T) {
 					{
 						MetricDescriptor: &metricspb.MetricDescriptor{
 							Name:      "theother_not_exists",
-							Type:      metricspb.MetricDescriptor_UNSPECIFIED,
+							Type:      metricspb.MetricDescriptor_GAUGE_DOUBLE,
 							LabelKeys: []*metricspb.LabelKey{{Key: "bar"}, {Key: "foo"}}},
 						Timeseries: []*metricspb.TimeSeries{
 							{
@@ -1201,7 +1247,7 @@ func Test_metricBuilder_summary(t *testing.T) {
 func Test_metricBuilder_baddata(t *testing.T) {
 	t.Run("empty-metric-name", func(t *testing.T) {
 		mc := newMockMetadataCache(testMetadata)
-		b := newMetricBuilder(mc, true, "", testLogger, 0)
+		b := newMetricBuilder(mc, true, "", testTelemetry.Logger, 0)
 		b.startTime = 1.0 // set to a non-zero value
 		if err := b.AddDataPoint(labels.FromStrings("a", "b"), startTs, 123); err != errMetricNameNotFound {
 			t.Error("expecting errMetricNameNotFound error, but get nil")
@@ -1215,7 +1261,7 @@ func Test_metricBuilder_baddata(t *testing.T) {
 
 	t.Run("histogram-datapoint-no-bucket-label", func(t *testing.T) {
 		mc := newMockMetadataCache(testMetadata)
-		b := newMetricBuilder(mc, true, "", testLogger, 0)
+		b := newMetricBuilder(mc, true, "", testTelemetry.Logger, 0)
 		b.startTime = 1.0 // set to a non-zero value
 		if err := b.AddDataPoint(createLabels("hist_test", "k", "v"), startTs, 123); err != errEmptyBoundaryLabel {
 			t.Error("expecting errEmptyBoundaryLabel error, but get nil")
@@ -1224,7 +1270,7 @@ func Test_metricBuilder_baddata(t *testing.T) {
 
 	t.Run("summary-datapoint-no-quantile-label", func(t *testing.T) {
 		mc := newMockMetadataCache(testMetadata)
-		b := newMetricBuilder(mc, true, "", testLogger, 0)
+		b := newMetricBuilder(mc, true, "", testTelemetry.Logger, 0)
 		b.startTime = 1.0 // set to a non-zero value
 		if err := b.AddDataPoint(createLabels("summary_test", "k", "v"), startTs, 123); err != errEmptyBoundaryLabel {
 			t.Error("expecting errEmptyBoundaryLabel error, but get nil")
@@ -1267,10 +1313,10 @@ func Test_isUsefulLabel(t *testing.T) {
 
 func Benchmark_dpgSignature(b *testing.B) {
 	knownLabelKeys := []string{"a", "b"}
-	labels := labels.FromStrings("a", "va", "b", "vb", "x", "xa")
+	ls := labels.FromStrings("a", "va", "b", "vb", "x", "xa")
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		runtime.KeepAlive(dpgSignature(knownLabelKeys, labels))
+		runtime.KeepAlive(dpgSignature(knownLabelKeys, ls))
 	}
 }
 
@@ -1452,7 +1498,7 @@ func Test_heuristicalMetricAndKnownUnits(t *testing.T) {
 // Ensure that we reject duplicate label keys. See https://github.com/open-telemetry/wg-prometheus/issues/44.
 func TestMetricBuilderDuplicateLabelKeysAreRejected(t *testing.T) {
 	mc := newMockMetadataCache(testMetadata)
-	mb := newMetricBuilder(mc, true, "", testLogger, 0)
+	mb := newMetricBuilder(mc, true, "", testTelemetry.Logger, 0)
 
 	dupLabels := labels.Labels{
 		{Name: "__name__", Value: "test"},

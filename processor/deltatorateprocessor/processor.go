@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package deltatorateprocessor
+package deltatorateprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor"
 
 import (
 	"context"
@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 )
@@ -61,7 +62,7 @@ func (dtrp *deltaToRateProcessor) processMetrics(_ context.Context, md pdata.Met
 				if _, ok := dtrp.ConfiguredMetrics[metric.Name()]; !ok {
 					continue
 				}
-				if metric.DataType() != pdata.MetricDataTypeSum || metric.Sum().AggregationTemporality() != pdata.AggregationTemporalityDelta {
+				if metric.DataType() != pdata.MetricDataTypeSum || metric.Sum().AggregationTemporality() != pdata.MetricAggregationTemporalityDelta {
 					dtrp.logger.Info(fmt.Sprintf("Configured metric for rate calculation %s is not a delta sum\n", metric.Name()))
 					continue
 				}
@@ -74,7 +75,15 @@ func (dtrp *deltaToRateProcessor) processMetrics(_ context.Context, md pdata.Met
 					fromDataPoint.CopyTo(newDp)
 
 					durationNanos := time.Duration(fromDataPoint.Timestamp() - fromDataPoint.StartTimestamp())
-					rate := calculateRate(fromDataPoint.DoubleVal(), durationNanos)
+					var rate float64
+					switch fromDataPoint.Type() {
+					case pdata.MetricValueTypeDouble:
+						rate = calculateRate(fromDataPoint.DoubleVal(), durationNanos)
+					case pdata.MetricValueTypeInt:
+						rate = calculateRate(float64(fromDataPoint.IntVal()), durationNanos)
+					default:
+						return md, consumererror.NewPermanent(fmt.Errorf("invalid data point type:%d", fromDataPoint.Type()))
+					}
 					newDp.SetDoubleVal(rate)
 				}
 

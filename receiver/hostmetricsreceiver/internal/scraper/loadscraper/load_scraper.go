@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package loadscraper
+package loadscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/loadscraper"
 
 import (
 	"context"
 	"time"
 
-	"github.com/shirou/gopsutil/load"
+	"github.com/shirou/gopsutil/v3/load"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
@@ -54,13 +54,14 @@ func (s *scraper) shutdown(ctx context.Context) error {
 }
 
 // scrape
-func (s *scraper) scrape(_ context.Context) (pdata.MetricSlice, error) {
-	metrics := pdata.NewMetricSlice()
+func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
+	md := pdata.NewMetrics()
+	metrics := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics()
 
 	now := pdata.NewTimestampFromTime(time.Now())
 	avgLoadValues, err := s.load()
 	if err != nil {
-		return metrics, scrapererror.NewPartialScrapeError(err, metricsLen)
+		return md, scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
 	metrics.EnsureCapacity(metricsLen)
@@ -68,7 +69,7 @@ func (s *scraper) scrape(_ context.Context) (pdata.MetricSlice, error) {
 	initializeLoadMetric(metrics.AppendEmpty(), metadata.Metrics.SystemCPULoadAverage1m, now, avgLoadValues.Load1)
 	initializeLoadMetric(metrics.AppendEmpty(), metadata.Metrics.SystemCPULoadAverage5m, now, avgLoadValues.Load5)
 	initializeLoadMetric(metrics.AppendEmpty(), metadata.Metrics.SystemCPULoadAverage15m, now, avgLoadValues.Load15)
-	return metrics, nil
+	return md, nil
 }
 
 func initializeLoadMetric(metric pdata.Metric, metricDescriptor metadata.MetricIntf, now pdata.Timestamp, value float64) {

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package elasticsearchexporter
+package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 
 import (
 	"errors"
@@ -81,7 +81,7 @@ type HTTPClientSettings struct {
 	// will be send with each HTTP request.
 	Headers map[string]string `mapstructure:"headers,omitempty"`
 
-	configtls.TLSClientSetting `mapstructure:",squash"`
+	configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
 }
 
 // AuthenticationSettings defines user authentication related settings.

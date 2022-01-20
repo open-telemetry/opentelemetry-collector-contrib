@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package octrace
+package octrace // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver/internal/octrace"
 
 import (
 	"context"
@@ -22,7 +22,7 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"go.opentelemetry.io/collector/client"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
@@ -46,7 +46,7 @@ type Receiver struct {
 }
 
 // New creates a new opencensus.Receiver reference.
-func New(id config.ComponentID, nextConsumer consumer.Traces) (*Receiver, error) {
+func New(id config.ComponentID, nextConsumer consumer.Traces, set component.ReceiverCreateSettings) (*Receiver, error) {
 	if nextConsumer == nil {
 		return nil, componenterror.ErrNilNextConsumer
 	}
@@ -54,7 +54,12 @@ func New(id config.ComponentID, nextConsumer consumer.Traces) (*Receiver, error)
 	return &Receiver{
 		nextConsumer: nextConsumer,
 		id:           id,
-		obsrecv:      obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: id, Transport: receiverTransport, LongLivedCtx: true}),
+		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             id,
+			Transport:              receiverTransport,
+			LongLivedCtx:           true,
+			ReceiverCreateSettings: set,
+		}),
 	}, nil
 }
 
@@ -74,9 +79,6 @@ var errTraceExportProtocolViolation = errors.New("protocol violation: Export's f
 // OpenCensus-traceproto compatible libraries/applications.
 func (ocr *Receiver) Export(tes agenttracepb.TraceService_ExportServer) error {
 	ctx := tes.Context()
-	if c, ok := client.FromGRPC(ctx); ok {
-		ctx = client.NewContext(ctx, c)
-	}
 
 	// The first message MUST have a non-nil Node.
 	recv, err := tes.Recv()

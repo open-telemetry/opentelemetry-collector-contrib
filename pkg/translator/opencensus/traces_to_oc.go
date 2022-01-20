@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package opencensus
+package opencensus // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 
 import (
 	"fmt"
@@ -28,10 +28,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
-)
-
-var (
-	defaultProcessID = 0
 )
 
 // ResourceSpansToOC may be used only by OpenCensus receiver and exporter implementations.
@@ -277,7 +273,7 @@ func eventToOC(event pdata.SpanEvent) *octrace.Span_TimeEvent {
 
 	// Consider TimeEvent to be of MessageEvent type if all and only relevant attributes are set
 	ocMessageEventAttrs := []string{
-		conventions.AttributeMessageType,
+		"message.type",
 		conventions.AttributeMessagingMessageID,
 		conventions.AttributeMessagingMessagePayloadSizeBytes,
 		conventions.AttributeMessagingMessagePayloadCompressedSizeBytes,
@@ -294,7 +290,7 @@ func eventToOC(event pdata.SpanEvent) *octrace.Span_TimeEvent {
 			ocMessageEventAttrValues[attr] = akv
 		}
 		if ocMessageEventAttrFound {
-			ocMessageEventType := ocMessageEventAttrValues[conventions.AttributeMessageType]
+			ocMessageEventType := ocMessageEventAttrValues["message.type"]
 			ocMessageEventTypeVal := octrace.Span_TimeEvent_MessageEvent_Type_value[ocMessageEventType.StringVal()]
 			return &octrace.Span_TimeEvent{
 				Time: timestampAsTimestampPb(event.Timestamp()),

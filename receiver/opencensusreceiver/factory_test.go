@@ -23,9 +23,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
@@ -34,7 +34,7 @@ import (
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
-	assert.NoError(t, configcheck.ValidateConfig(cfg))
+	assert.NoError(t, configtest.CheckConfigStruct(cfg))
 }
 
 func TestCreateReceiver(t *testing.T) {
@@ -67,14 +67,14 @@ func TestCreateTracesReceiver(t *testing.T) {
 		{
 			name: "default",
 			cfg: &Config{
-				ReceiverSettings:   config.NewReceiverSettings(config.NewID(typeStr)),
+				ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 				GRPCServerSettings: defaultGRPCSettings,
 			},
 		},
 		{
 			name: "invalid_port",
 			cfg: &Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 				GRPCServerSettings: configgrpc.GRPCServerSettings{
 					NetAddr: confignet.NetAddr{
 						Endpoint:  "localhost:112233",
@@ -87,7 +87,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 		{
 			name: "max-msg-size-and-concurrent-connections",
 			cfg: &Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 				GRPCServerSettings: configgrpc.GRPCServerSettings{
 					NetAddr:              defaultNetAddr,
 					MaxRecvMsgSizeMiB:    32,
@@ -130,14 +130,14 @@ func TestCreateMetricReceiver(t *testing.T) {
 		{
 			name: "default",
 			cfg: &Config{
-				ReceiverSettings:   config.NewReceiverSettings(config.NewID(typeStr)),
+				ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 				GRPCServerSettings: defaultGRPCSettings,
 			},
 		},
 		{
 			name: "invalid_address",
 			cfg: &Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 				GRPCServerSettings: configgrpc.GRPCServerSettings{
 					NetAddr: confignet.NetAddr{
 						Endpoint:  "327.0.0.1:1122",
@@ -150,7 +150,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 		{
 			name: "keepalive",
 			cfg: &Config{
-				ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 				GRPCServerSettings: configgrpc.GRPCServerSettings{
 					NetAddr: defaultNetAddr,
 					Keepalive: &configgrpc.KeepaliveServerConfig{

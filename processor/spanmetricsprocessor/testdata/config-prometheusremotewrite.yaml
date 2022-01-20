@@ -37,7 +37,8 @@ exporters:
 
   jaeger:
     endpoint: "localhost:14250"
-    insecure: true
+    tls:
+      insecure: true
 
   prometheusremotewrite:
     endpoint: "http://myremotewriteendpoint:1234"

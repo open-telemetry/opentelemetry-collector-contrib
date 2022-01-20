@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tracegen
+package tracegen // import "github.com/open-telemetry/opentelemetry-collector-contrib/tracegen/internal/tracegen"
 
 import (
 	"flag"
@@ -38,6 +38,7 @@ type Config struct {
 	// OTLP config
 	Endpoint string
 	Insecure bool
+	UseHTTP  bool
 }
 
 // Flags registers config flags.
@@ -52,6 +53,7 @@ func (c *Config) Flags(fs *flag.FlagSet) {
 	// unfortunately, at this moment, the otel-go client doesn't support configuring OTLP via env vars
 	fs.StringVar(&c.Endpoint, "otlp-endpoint", "localhost:4317", "Target to which the exporter is going to send spans or metrics. This MAY be configured to include a path (e.g. example.com/v1/traces)")
 	fs.BoolVar(&c.Insecure, "otlp-insecure", false, "Whether to enable client transport security for the exporter's grpc or http connection")
+	fs.BoolVar(&c.UseHTTP, "otlp-http", false, "Whether to use HTTP exporter rather than a gRPC one")
 }
 
 // Run executes the test scenario.

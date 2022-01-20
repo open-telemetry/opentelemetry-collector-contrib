@@ -40,7 +40,7 @@ func TestFactory(t *testing.T) {
 	require.True(t, ok)
 
 	require.Equal(t, &Config{
-		ReceiverSettings:           config.NewReceiverSettings(config.NewID(typeStr)),
+		ReceiverSettings:           config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		Distribution:               distributionKubernetes,
 		CollectionInterval:         10 * time.Second,
 		NodeConditionTypesToReport: defaultNodeConditionsToReport,
@@ -150,8 +150,8 @@ func (n nopHostWithExporters) GetExtensions() map[config.ComponentID]component.E
 func (n nopHostWithExporters) GetExporters() map[config.DataType]map[config.ComponentID]component.Exporter {
 	return map[config.DataType]map[config.ComponentID]component.Exporter{
 		config.MetricsDataType: {
-			config.NewIDWithName("nop", "withoutmetadata"): MockExporter{},
-			config.NewIDWithName("nop", "withmetadata"):    mockExporterWithK8sMetadata{},
+			config.NewComponentIDWithName("nop", "withoutmetadata"): MockExporter{},
+			config.NewComponentIDWithName("nop", "withmetadata"):    mockExporterWithK8sMetadata{},
 		},
 	}
 }

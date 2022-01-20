@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package mockawsxrayreceiver
+package mockawsxrayreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatareceivers/mockawsxrayreceiver"
 
 import (
 	"context"
@@ -44,7 +44,7 @@ func NewFactory() component.ReceiverFactory {
 // CreateDefaultConfig creates the default configuration for Jaeger receiver.
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		Endpoint:         defaultEndpoint,
 	}
 }

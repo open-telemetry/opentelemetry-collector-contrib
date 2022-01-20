@@ -76,7 +76,7 @@ func TestZipkinExporter_roundtripJSON(t *testing.T) {
 	// Run the Zipkin receiver to "receive spans upload from a client application"
 	addr := testutil.GetAvailableLocalAddress(t)
 	recvCfg := &zipkinreceiver.Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName("zipkin", "receiver")),
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName("zipkin", "receiver")),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: addr,
 		},
@@ -324,7 +324,7 @@ func TestZipkinExporter_roundtripProto(t *testing.T) {
 	// Run the Zipkin receiver to "receive spans upload from a client application"
 	port := testutil.GetAvailablePort(t)
 	recvCfg := &zipkinreceiver.Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName("zipkin", "receiver")),
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName("zipkin", "receiver")),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: fmt.Sprintf(":%d", port),
 		},

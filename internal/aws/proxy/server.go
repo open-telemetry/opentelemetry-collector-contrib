@@ -13,10 +13,11 @@
 // limitations under the License.
 
 // Package proxy provides an http server to act as a signing proxy for SDKs calling AWS X-Ray APIs
-package proxy
+package proxy // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -41,7 +42,7 @@ const (
 // Server represents HTTP server.
 type Server interface {
 	ListenAndServe() error
-	Close() error
+	Shutdown(ctx context.Context) error
 }
 
 // NewServer returns a local TCP server that proxies requests to AWS

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sampling
+package sampling // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 
 import (
 	"sync"
@@ -53,6 +53,14 @@ const (
 	// Dropped is used when data needs to be purged before the sampling policy
 	// had a chance to evaluate it.
 	Dropped
+	// Error is used to indicate that policy evaluation was not succeeded.
+	Error
+	// InvertSampled is used on the invert match flow and indicates to sample
+	// the data.
+	InvertSampled
+	// InvertNotSampled is used on the invert match flow and indicates to not
+	// sample the data.
+	InvertNotSampled
 )
 
 // PolicyEvaluator implements a tail-based sampling policy evaluator,

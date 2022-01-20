@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package signalfxreceiver
+package signalfxreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver"
 
 import (
 	"errors"
@@ -94,12 +94,12 @@ func fillInType(sfxDataPoint *sfxpb.DataPoint, m pdata.Metric) (err error) {
 
 	case sfxpb.MetricType_COUNTER:
 		m.SetDataType(pdata.MetricDataTypeSum)
-		m.Sum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+		m.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 		m.Sum().SetIsMonotonic(true)
 
 	case sfxpb.MetricType_CUMULATIVE_COUNTER:
 		m.SetDataType(pdata.MetricDataTypeSum)
-		m.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		m.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		m.Sum().SetIsMonotonic(true)
 	default:
 		err = fmt.Errorf("unknown data-point type (%d)", sfxMetricType)

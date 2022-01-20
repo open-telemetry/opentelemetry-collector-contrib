@@ -12,14 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package datadogexporter
+package datadogexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 
 import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
@@ -81,6 +80,7 @@ func convertToDatadogTd(td pdata.Traces, fallbackHost string, cfg *config.Config
 	var traces []*pb.TracePayload
 
 	seenHosts := make(map[string]struct{})
+	seenTags := make(map[string]struct{})
 	var series []datadog.Metric
 	pushTime := pdata.NewTimestampFromTime(time.Now())
 
@@ -93,7 +93,14 @@ func convertToDatadogTd(td pdata.Traces, fallbackHost string, cfg *config.Config
 			host = fallbackHost
 		}
 
-		seenHosts[host] = struct{}{}
+		if host != "" {
+			seenHosts[host] = struct{}{}
+		} else {
+			tags := attributes.RunningTagsFromAttributes(rs.Resource().Attributes())
+			for _, tag := range tags {
+				seenTags[tag] = struct{}{}
+			}
+		}
 		payload := resourceSpansToDatadogSpans(rs, host, cfg, blk, spanNameMap)
 
 		traces = append(traces, &payload)
@@ -103,6 +110,14 @@ func convertToDatadogTd(td pdata.Traces, fallbackHost string, cfg *config.Config
 		// Report the host as running
 		runningMetric := metrics.DefaultMetrics("traces", host, uint64(pushTime), buildInfo)
 		series = append(series, runningMetric...)
+	}
+
+	for tag := range seenTags {
+		runningMetrics := metrics.DefaultMetrics("traces", "", uint64(pushTime), buildInfo)
+		for i := range runningMetrics {
+			runningMetrics[i].Tags = append(runningMetrics[i].Tags, tag)
+		}
+		series = append(series, runningMetrics...)
 	}
 
 	return traces, series
@@ -232,8 +247,8 @@ func spanToDatadogSpan(s pdata.Span,
 	cfg *config.Config,
 	spanNameMap map[string]string,
 ) *pb.Span {
-
 	tags := aggregateSpanTags(s, datadogTags)
+	tags["otel.trace_id"] = s.TraceID().HexString()
 
 	// otel specification resource service.name takes precedence
 	// and configuration DD_SERVICE as fallback if it exists
@@ -289,10 +304,15 @@ func spanToDatadogSpan(s pdata.Span,
 
 	resourceName := getDatadogResourceName(s, tags)
 
+	name := s.Name()
+	if !cfg.Traces.SpanNameAsResourceName {
+		name = getDatadogSpanName(s, tags)
+	}
+
 	span := &pb.Span{
 		TraceID:  decodeAPMTraceID(s.TraceID().Bytes()),
 		SpanID:   decodeAPMSpanID(s.SpanID().Bytes()),
-		Name:     remapDatadogSpanName(getDatadogSpanName(s, tags), spanNameMap),
+		Name:     remapDatadogSpanName(name, spanNameMap),
 		Resource: resourceName,
 		Service:  normalizedServiceName,
 		Start:    int64(startTime),
@@ -389,27 +409,8 @@ func aggregateSpanTags(span pdata.Span, datadogTags map[string]string) map[strin
 	})
 
 	// we don't want to normalize these tags since `_dd` is a special case
-	spanTags[tagContainersTags] = buildDatadogContainerTags(spanTags)
+	spanTags[tagContainersTags] = attributes.ContainerTagFromAttributes(spanTags)
 	return spanTags
-}
-
-// buildDatadogContainerTags returns container and orchestrator tags belonging to containerID
-// as a comma delimeted list for datadog's special container tag key
-func buildDatadogContainerTags(spanTags map[string]string) string {
-	var b strings.Builder
-
-	if val, ok := spanTags[conventions.AttributeContainerID]; ok {
-		b.WriteString(fmt.Sprintf("%s:%s,", "container_id", val))
-	}
-	if val, ok := spanTags[conventions.AttributeK8SPodName]; ok {
-		b.WriteString(fmt.Sprintf("%s:%s,", "pod_name", val))
-	}
-
-	if val, ok := spanTags[conventions.AttributeAWSECSTaskARN]; ok {
-		b.WriteString(fmt.Sprintf("%s:%s,", "task_arn", val))
-	}
-
-	return strings.TrimSuffix(b.String(), ",")
 }
 
 // inferDatadogTypes returns a string for the datadog type based on metadata
@@ -592,7 +593,7 @@ func getSpanErrorAndSetTags(s pdata.Span, tags map[string]string) int32 {
 				tags[ext.ErrorMsg] = status.Message()
 				// look for useful http metadata if it exists and add that as a fallback for the error message
 			} else if statusCode, ok := tags[conventions.AttributeHTTPStatusCode]; ok {
-				if statusText, ok := tags[conventions.AttributeHTTPStatusText]; ok {
+				if statusText, ok := tags["http.status_text"]; ok {
 					tags[ext.ErrorMsg] = fmt.Sprintf("%s %s", statusCode, statusText)
 				} else {
 					tags[ext.ErrorMsg] = statusCode

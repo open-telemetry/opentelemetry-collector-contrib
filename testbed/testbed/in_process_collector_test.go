@@ -20,11 +20,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/service/defaultcomponents"
 )
 
 func TestNewInProcessPipeline(t *testing.T) {
-	factories, err := defaultcomponents.Components()
+	factories, err := Components()
 	assert.NoError(t, err)
 	sender := NewOTLPTraceDataSender(DefaultHost, GetAvailablePort(t))
 	receiver := NewOTLPDataReceiver(DefaultOTLPPort)

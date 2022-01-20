@@ -11,6 +11,7 @@ exporters:
     access_token: testToken
     realm: "us1"
     timeout: 2s
+    max_connections: 70
     sending_queue:
       enabled: true
       num_consumers: 2

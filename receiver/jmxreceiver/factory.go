@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jmxreceiver
+package jmxreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver"
 
 import (
 	"context"
@@ -39,8 +39,9 @@ func NewFactory() component.ReceiverFactory {
 
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings:   config.NewReceiverSettings(config.NewID(typeStr)),
+		ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
+		Properties:         map[string]string{"org.slf4j.simpleLogger.defaultLogLevel": "info"},
 		CollectionInterval: 10 * time.Second,
 		OTLPExporterConfig: otlpExporterConfig{
 			Endpoint: otlpEndpoint,

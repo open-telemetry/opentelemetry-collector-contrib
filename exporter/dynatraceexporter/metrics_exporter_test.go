@@ -24,6 +24,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/dimensions"
+	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -111,7 +113,10 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	doubleHistogramDataPoint := doubleHistogramDataPoints.AppendEmpty()
 	doubleHistogramDataPoint.SetCount(2)
 	doubleHistogramDataPoint.SetSum(10.1)
+	doubleHistogramDataPoint.SetExplicitBounds([]float64{0, 2, 4, 8})
+	doubleHistogramDataPoint.SetBucketCounts([]uint64{0, 1, 0, 1, 0})
 	doubleHistogramDataPoint.SetTimestamp(testTimestamp)
+	doubleHistogram.SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 
 	type fields struct {
 		logger *zap.Logger
@@ -159,7 +164,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 		}
 	})
 
-	if wantBody := "prefix.int_gauge gauge,10 1626438600000\nprefix.int_sum gauge,10 1626438600000\nprefix.double_gauge gauge,10.1 1626438600000\nprefix.double_sum gauge,10.1 1626438600000\nprefix.double_histogram gauge,min=5.05,max=5.05,sum=10.1,count=2 1626438600000"; sent != wantBody {
+	if wantBody := "prefix.int_gauge gauge,10 1626438600000\nprefix.int_sum count,delta=10 1626438600000\nprefix.double_gauge gauge,10.1 1626438600000\nprefix.double_sum count,delta=10.1 1626438600000\nprefix.double_histogram gauge,min=0,max=8,sum=10.1,count=2 1626438600000"; sent != wantBody {
 		t.Errorf("exporter.PushMetricsData():ResponseBody = %v, want %v", sent, wantBody)
 	}
 }
@@ -253,11 +258,7 @@ func Test_exporter_send_BadRequest(t *testing.T) {
 		},
 		client: ts.Client(),
 	}
-	invalid, err := e.send(context.Background(), []string{""})
-	if invalid != 10 {
-		t.Errorf("Expected 10 lines to be reported invalid")
-		return
-	}
+	err := e.send(context.Background(), []string{""})
 	if consumererror.IsPermanent(err) {
 		t.Errorf("Expected error to not be permanent %v", err)
 		return
@@ -282,7 +283,7 @@ func Test_exporter_send_Unauthorized(t *testing.T) {
 		},
 		client: ts.Client(),
 	}
-	_, err := e.send(context.Background(), []string{""})
+	err := e.send(context.Background(), []string{""})
 	if !consumererror.IsPermanent(err) {
 		t.Errorf("Expected error to be permanent %v", err)
 		return
@@ -307,7 +308,7 @@ func Test_exporter_send_TooLarge(t *testing.T) {
 		},
 		client: ts.Client(),
 	}
-	_, err := e.send(context.Background(), []string{""})
+	err := e.send(context.Background(), []string{""})
 	if !consumererror.IsPermanent(err) {
 		t.Errorf("Expected error to be permanent %v", err)
 		return
@@ -335,13 +336,13 @@ func Test_exporter_send_NotFound(t *testing.T) {
 		},
 		client: ts.Client(),
 	}
-	_, err := e.send(context.Background(), []string{""})
+	err := e.send(context.Background(), []string{""})
 	if !consumererror.IsPermanent(err) {
 		t.Errorf("Expected error to be permanent %v", err)
 		return
 	}
-	if !e.isDisabled {
-		t.Error("Expected exporter to be disabled")
+	if e.isDisabled {
+		t.Error("Expected exporter to not be disabled")
 		return
 	}
 }
@@ -374,13 +375,9 @@ func Test_exporter_send_chunking(t *testing.T) {
 		batch[i] = fmt.Sprintf("%d", i)
 	}
 
-	invalid, err := e.send(context.Background(), batch)
+	err := e.send(context.Background(), batch)
 	if sentChunks != 2 {
 		t.Errorf("Expected batch to be sent in 2 chunks")
-	}
-	if invalid != 2 {
-		t.Errorf("Expected 2 lines to be reported invalid")
-		return
 	}
 	if consumererror.IsPermanent(err) {
 		t.Errorf("Expected error to not be permanent %v", err)
@@ -482,4 +479,35 @@ func Test_exporter_start_InvalidHTTPClientSettings(t *testing.T) {
 		t.Errorf("Expected error when creating a metrics exporter with invalid HTTP Client Settings")
 		return
 	}
+}
+
+func Test_exporter_new_with_tags(t *testing.T) {
+	config := &config.Config{
+		Tags: []string{"test_tag=value"},
+	}
+
+	exp := newMetricsExporter(componenttest.NewNopExporterCreateSettings(), config)
+
+	assert.Equal(t, dimensions.NewNormalizedDimensionList(dimensions.NewDimension("test_tag", "value")), exp.defaultDimensions)
+}
+
+func Test_exporter_new_with_default_dimensions(t *testing.T) {
+	config := &config.Config{
+		DefaultDimensions: map[string]string{"test_dimension": "value"},
+	}
+
+	exp := newMetricsExporter(componenttest.NewNopExporterCreateSettings(), config)
+
+	assert.Equal(t, dimensions.NewNormalizedDimensionList(dimensions.NewDimension("test_dimension", "value")), exp.defaultDimensions)
+}
+
+func Test_exporter_new_with_default_dimensions_override_tag(t *testing.T) {
+	config := &config.Config{
+		Tags:              []string{"from=tag"},
+		DefaultDimensions: map[string]string{"from": "default_dimensions"},
+	}
+
+	exp := newMetricsExporter(componenttest.NewNopExporterCreateSettings(), config)
+
+	assert.Equal(t, dimensions.NewNormalizedDimensionList(dimensions.NewDimension("from", "default_dimensions")), exp.defaultDimensions)
 }

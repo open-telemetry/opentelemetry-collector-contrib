@@ -12,23 +12,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awsecscontainermetrics
+package awsecscontainermetrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/internal/awsecscontainermetrics"
 
 import (
 	"strings"
 
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/docker"
 )
 
-func containerResource(cm ContainerMetadata) pdata.Resource {
+func containerResource(cm ecsutil.ContainerMetadata, logger *zap.Logger) pdata.Resource {
 	resource := pdata.NewResource()
+
+	image, err := docker.ParseImageName(cm.Image)
+	if err != nil {
+		docker.LogParseError(err, cm.Image, logger)
+	}
+
 	resource.Attributes().UpsertString(conventions.AttributeContainerName, cm.ContainerName)
 	resource.Attributes().UpsertString(conventions.AttributeContainerID, cm.DockerID)
 	resource.Attributes().UpsertString(attributeECSDockerName, cm.DockerName)
-	resource.Attributes().UpsertString(conventions.AttributeContainerImageName, cm.Image)
+	resource.Attributes().UpsertString(conventions.AttributeContainerImageName, image.Repository)
 	resource.Attributes().UpsertString(attributeContainerImageID, cm.ImageID)
-	resource.Attributes().UpsertString(conventions.AttributeContainerImageTag, getVersionFromIamge(cm.Image))
+	resource.Attributes().UpsertString(conventions.AttributeContainerImageTag, image.Tag)
 	resource.Attributes().UpsertString(attributeContainerCreatedAt, cm.CreatedAt)
 	resource.Attributes().UpsertString(attributeContainerStartedAt, cm.StartedAt)
 	if cm.FinishedAt != "" {
@@ -41,7 +51,7 @@ func containerResource(cm ContainerMetadata) pdata.Resource {
 	return resource
 }
 
-func taskResource(tm TaskMetadata) pdata.Resource {
+func taskResource(tm ecsutil.TaskMetadata) pdata.Resource {
 	resource := pdata.NewResource()
 	region, accountID, taskID := getResourceFromARN(tm.TaskARN)
 	resource.Attributes().UpsertString(attributeECSCluster, getNameFromCluster(tm.Cluster))
@@ -77,17 +87,6 @@ func getResourceFromARN(arn string) (string, string, string) {
 	accountID := subSplits[4]
 
 	return region, accountID, taskID
-}
-
-func getVersionFromIamge(image string) string {
-	if image == "" {
-		return ""
-	}
-	splits := strings.Split(image, ":")
-	if len(splits) == 1 {
-		return "latest"
-	}
-	return splits[len(splits)-1]
 }
 
 //The Amazon Resource Name (ARN) that identifies the cluster. The ARN contains the arn:aws:ecs namespace,

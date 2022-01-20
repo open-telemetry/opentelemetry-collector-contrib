@@ -55,16 +55,14 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 		case pdata.MetricDataTypeGauge:
 			dps = m.Gauge().DataPoints()
 		case pdata.MetricDataTypeSum:
-			m.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+			m.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 			dps = m.Sum().DataPoints()
 		}
 
 		dp := dps.AppendEmpty()
-		dp.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-			"k0": pdata.NewAttributeValueString("v0"),
-			"k1": pdata.NewAttributeValueString("v1"),
-			"k2": pdata.NewAttributeValueString("v2"),
-		})
+		dp.Attributes().InsertString("k0", "v0")
+		dp.Attributes().InsertString("k1", "v1")
+		dp.Attributes().InsertString("k2", "v2")
 		dp.Attributes().Sort()
 
 		dp.SetTimestamp(pdata.NewTimestampFromTime(now.Truncate(time.Millisecond)))
@@ -112,7 +110,7 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 			wantMetricsData: func() pdata.Metrics {
 				m := buildDefaultMetricsData(pdata.MetricDataTypeSum, 13)
 				d := m.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Sum()
-				d.SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+				d.SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 				d.SetIsMonotonic(true)
 				return m
 			}(),
@@ -130,7 +128,7 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 			wantMetricsData: func() pdata.Metrics {
 				m := buildDefaultMetricsData(pdata.MetricDataTypeSum, 13.13)
 				d := m.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Sum()
-				d.SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+				d.SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 				d.SetIsMonotonic(true)
 				return m
 			}(),

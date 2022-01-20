@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package translator
+package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/translator"
 
 import (
 	"strconv"
@@ -141,7 +141,7 @@ func extractResponseSizeFromEvents(span pdata.Span) int64 {
 }
 
 func extractResponseSizeFromAttributes(attributes pdata.AttributeMap) int64 {
-	typeVal, ok := attributes.Get(conventions.AttributeMessageType)
+	typeVal, ok := attributes.Get("message.type")
 	if ok && typeVal.StringVal() == "RECEIVED" {
 		if sizeVal, ok := attributes.Get(conventions.AttributeMessagingMessagePayloadSizeBytes); ok {
 			return sizeVal.IntVal()

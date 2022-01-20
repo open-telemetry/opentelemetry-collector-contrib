@@ -13,12 +13,12 @@ The following settings are required:
 using the gRPC protocol. The valid syntax is described
 [here](https://github.com/grpc/grpc/blob/master/doc/naming.md)
 
-By default, TLS is enabled:
+By default, TLS is enabled and must be configured under `tls:`:
 
 - `insecure` (default = `false`): whether to enable client transport security for
   the exporter's connection.
 
-As a result, the following parameters are also required:
+As a result, the following parameters are also required under `tls:`:
 
 - `cert_file` (no default): path to the TLS cert to use for TLS required connections. Should
   only be used if `insecure` is set to false.
@@ -31,11 +31,13 @@ Example:
 exporters:
   opencensus:
     endpoint: opencensus2:55678
-    cert_file: file.cert
-    key_file: file.key
-  otlp/2:
+    tls:
+      cert_file: file.cert
+      key_file: file.key
+  opencensus/2:
     endpoint: opencensus2:55678
-    insecure: true
+    tls:
+      insecure: true
 ```
 
 ## Advanced Configuration

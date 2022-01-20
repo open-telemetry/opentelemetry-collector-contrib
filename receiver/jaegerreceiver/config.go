@@ -12,15 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jaegerreceiver
+package jaegerreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver"
 
 import (
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configparser"
 )
 
 const (
@@ -36,8 +36,9 @@ const (
 
 // RemoteSamplingConfig defines config key for remote sampling fetch endpoint
 type RemoteSamplingConfig struct {
-	HostEndpoint                  string `mapstructure:"host_endpoint"`
-	StrategyFile                  string `mapstructure:"strategy_file"`
+	HostEndpoint                  string        `mapstructure:"host_endpoint"`
+	StrategyFile                  string        `mapstructure:"strategy_file"`
+	StrategyFileReloadInterval    time.Duration `mapstructure:"strategy_file_reload_interval"`
 	configgrpc.GRPCClientSettings `mapstructure:",squash"`
 }
 
@@ -91,11 +92,52 @@ func (cfg *Config) Validate() error {
 		cfg.ThriftCompact == nil {
 		return fmt.Errorf("must specify at least one protocol when using the Jaeger receiver")
 	}
+
+	var grpcPort int
+	if cfg.GRPC != nil {
+		var err error
+		if grpcPort, err = extractPortFromEndpoint(cfg.GRPC.NetAddr.Endpoint); err != nil {
+			return fmt.Errorf("unable to extract port for the gRPC endpoint: %w", err)
+		}
+	}
+
+	if cfg.ThriftHTTP != nil {
+		if _, err := extractPortFromEndpoint(cfg.ThriftHTTP.Endpoint); err != nil {
+			return fmt.Errorf("unable to extract port for the Thrift HTTP endpoint: %w", err)
+		}
+	}
+
+	if cfg.ThriftBinary != nil {
+		if _, err := extractPortFromEndpoint(cfg.ThriftBinary.Endpoint); err != nil {
+			return fmt.Errorf("unable to extract port for the Thrift UDP Binary endpoint: %w", err)
+		}
+	}
+
+	if cfg.ThriftCompact != nil {
+		if _, err := extractPortFromEndpoint(cfg.ThriftCompact.Endpoint); err != nil {
+			return fmt.Errorf("unable to extract port for the Thrift UDP Compact endpoint: %w", err)
+		}
+	}
+
+	if cfg.RemoteSampling != nil {
+		if _, err := extractPortFromEndpoint(cfg.RemoteSampling.HostEndpoint); err != nil {
+			return fmt.Errorf("unable to extract port for the Remote Sampling endpoint: %w", err)
+		}
+
+		if len(cfg.RemoteSampling.StrategyFile) != 0 && grpcPort == 0 {
+			return fmt.Errorf("strategy file requires the gRPC protocol to be enabled")
+		}
+
+		if cfg.RemoteSampling.StrategyFileReloadInterval < 0 {
+			return fmt.Errorf("strategy file reload interval should be great or equal zero")
+		}
+	}
+
 	return nil
 }
 
 // Unmarshal a config.Parser into the config struct.
-func (cfg *Config) Unmarshal(componentParser *configparser.ConfigMap) error {
+func (cfg *Config) Unmarshal(componentParser *config.Map) error {
 	if componentParser == nil || len(componentParser.AllKeys()) == 0 {
 		return fmt.Errorf("empty config for Jaeger receiver")
 	}

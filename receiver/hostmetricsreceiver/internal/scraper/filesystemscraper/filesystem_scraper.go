@@ -12,14 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package filesystemscraper
+package filesystemscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper"
 
 import (
 	"context"
-	"strings"
 	"time"
 
-	"github.com/shirou/gopsutil/disk"
+	"github.com/shirou/gopsutil/v3/disk"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
@@ -57,15 +56,16 @@ func newFileSystemScraper(_ context.Context, cfg *Config) (*scraper, error) {
 	return scraper, nil
 }
 
-func (s *scraper) Scrape(_ context.Context) (pdata.MetricSlice, error) {
-	metrics := pdata.NewMetricSlice()
+func (s *scraper) Scrape(_ context.Context) (pdata.Metrics, error) {
+	md := pdata.NewMetrics()
+	metrics := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics()
 
 	now := pdata.NewTimestampFromTime(time.Now())
 
 	// omit logical (virtual) filesystems (not relevant for windows)
 	partitions, err := s.partitions( /*all=*/ false)
 	if err != nil {
-		return metrics, scrapererror.NewPartialScrapeError(err, metricsLen)
+		return md, scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
 	var errors scrapererror.ScrapeErrors
@@ -94,7 +94,7 @@ func (s *scraper) Scrape(_ context.Context) (pdata.MetricSlice, error) {
 		err = scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
-	return metrics, err
+	return md, err
 }
 
 func initializeFileSystemUsageMetric(metric pdata.Metric, now pdata.Timestamp, deviceUsages []*deviceUsage) {
@@ -109,20 +109,19 @@ func initializeFileSystemUsageMetric(metric pdata.Metric, now pdata.Timestamp, d
 
 func initializeFileSystemUsageDataPoint(dataPoint pdata.NumberDataPoint, now pdata.Timestamp, partition disk.PartitionStat, stateLabel string, value int64) {
 	attributes := dataPoint.Attributes()
-	attributes.InsertString(metadata.Labels.Device, partition.Device)
-	attributes.InsertString(metadata.Labels.Type, partition.Fstype)
-	attributes.InsertString(metadata.Labels.Mode, getMountMode(partition.Opts))
-	attributes.InsertString(metadata.Labels.Mountpoint, partition.Mountpoint)
-	attributes.InsertString(metadata.Labels.State, stateLabel)
+	attributes.InsertString(metadata.Attributes.Device, partition.Device)
+	attributes.InsertString(metadata.Attributes.Type, partition.Fstype)
+	attributes.InsertString(metadata.Attributes.Mode, getMountMode(partition.Opts))
+	attributes.InsertString(metadata.Attributes.Mountpoint, partition.Mountpoint)
+	attributes.InsertString(metadata.Attributes.State, stateLabel)
 	dataPoint.SetTimestamp(now)
 	dataPoint.SetIntVal(value)
 }
 
-func getMountMode(opts string) string {
-	splitOptions := strings.Split(opts, ",")
-	if exists(splitOptions, "rw") {
+func getMountMode(opts []string) string {
+	if exists(opts, "rw") {
 		return "rw"
-	} else if exists(splitOptions, "ro") {
+	} else if exists(opts, "ro") {
 		return "ro"
 	}
 	return "unknown"

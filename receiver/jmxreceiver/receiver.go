@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jmxreceiver
+package jmxreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver"
 
 import (
 	"context"
@@ -70,7 +70,7 @@ func (jmx *jmxMetricReceiver) Start(ctx context.Context, host component.Host) (e
 
 	subprocessConfig := subprocess.Config{
 		ExecutablePath: "java",
-		Args:           append(jmx.config.parseProperties(), "-Dorg.slf4j.simpleLogger.defaultLogLevel=info", "-jar", jmx.config.JARPath, "-config", "-"),
+		Args:           append(jmx.config.parseProperties(), "-jar", jmx.config.JARPath, "-config", "-"),
 		StdInContents:  javaConfig,
 	}
 

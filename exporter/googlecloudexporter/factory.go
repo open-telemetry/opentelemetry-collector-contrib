@@ -12,13 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package googlecloudexporter
+package googlecloudexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter"
 
 import (
 	"context"
 	"sync"
 	"time"
 
+	"go.opencensus.io/plugin/ocgrpc"
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -38,6 +39,7 @@ func NewFactory() component.ExporterFactory {
 	// register view for self-observability
 	once.Do(func() {
 		view.Register(viewPointCount)
+		view.Register(ocgrpc.DefaultClientViews...)
 	})
 
 	return exporterhelper.NewFactory(
@@ -51,7 +53,7 @@ func NewFactory() component.ExporterFactory {
 // createDefaultConfig creates the default configuration for exporter.
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: defaultTimeout},
 		RetrySettings:    exporterhelper.DefaultRetrySettings(),
 		QueueSettings:    exporterhelper.DefaultQueueSettings(),

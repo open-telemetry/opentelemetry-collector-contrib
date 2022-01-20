@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package datareceivers
+package datareceivers // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
 
 import (
 	"context"
@@ -65,7 +65,8 @@ func (jr *jaegerDataReceiver) GenConfigYAMLStr() string {
 	return fmt.Sprintf(`
   jaeger:
     endpoint: "localhost:%d"
-    insecure: true`, jr.Port)
+    tls:
+      insecure: true`, jr.Port)
 }
 
 func (jr *jaegerDataReceiver) ProtocolName() string {

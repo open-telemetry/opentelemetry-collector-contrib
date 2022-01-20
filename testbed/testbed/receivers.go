@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package testbed
+package testbed // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 
 import (
 	"context"
@@ -144,7 +144,8 @@ func (bor *BaseOTLPDataReceiver) GenConfigYAMLStr() string {
 	str := fmt.Sprintf(`
   %s:
     endpoint: "%s"
-    insecure: true`, bor.exporterType, addr)
+    tls:
+      insecure: true`, bor.exporterType, addr)
 
 	if bor.compression != "" {
 		str += fmt.Sprintf(`

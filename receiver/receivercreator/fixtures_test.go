@@ -59,6 +59,50 @@ var hostportEndpoint = observer.Endpoint{
 	},
 }
 
+var container = observer.Container{
+	Name:          "otel-agent",
+	Image:         "otelcol",
+	Port:          8080,
+	AlternatePort: 80,
+	Transport:     observer.ProtocolTCP,
+	Command:       "otelcol -c",
+	Host:          "localhost",
+	ContainerID:   "abc123",
+	Labels: map[string]string{
+		"env":    "prod",
+		"region": "east-1",
+	},
+}
+
+var containerEndpoint = observer.Endpoint{
+	ID:      "container-1",
+	Target:  "localhost:1234",
+	Details: &container,
+}
+
+var k8sNodeEndpoint = observer.Endpoint{
+	ID:     "k8s.node-1",
+	Target: "2.3.4.5",
+	Details: &observer.K8sNode{
+		Annotations: map[string]string{
+			"node.alpha.kubernetes.io/ttl":                           "0",
+			"volumes.kubernetes.io/controller-managed-attach-detach": "true",
+		},
+		ExternalDNS:         "an.external.dns",
+		ExternalIP:          "1.2.3.4",
+		Hostname:            "a.hostname",
+		InternalDNS:         "an.internal.dns",
+		InternalIP:          "2.3.4.5",
+		KubeletEndpointPort: 10250,
+		Labels: map[string]string{
+			"beta.kubernetes.io/arch": "amd64",
+			"beta.kubernetes.io/os":   "linux",
+		},
+		Name: "a.name",
+		UID:  "b344f2a7-1ec1-40f0-8557-8a9bfd8b6f99",
+	},
+}
+
 var unsupportedEndpoint = observer.Endpoint{
 	ID:      "endpoint-1",
 	Target:  "localhost:1234",

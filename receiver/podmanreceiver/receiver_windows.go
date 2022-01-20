@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package podmanreceiver
+package podmanreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver"
 
 import (
 	"context"
@@ -20,12 +20,11 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.uber.org/zap"
 )
 
 func newReceiver(
 	_ context.Context,
-	logger *zap.Logger,
+	settings component.ReceiverCreateSettings,
 	config *Config,
 	nextConsumer consumer.Metrics,
 	clientFactory interface{},

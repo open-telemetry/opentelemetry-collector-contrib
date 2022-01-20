@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package translation
+package translation // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
 
 const (
 	// DefaultTranslationRulesYaml defines default translation rules that will be applied to metrics if
@@ -129,6 +129,17 @@ translation_rules:
   aggregation_method: count
   without_dimensions:
   - cpu
+
+- action: copy_metrics
+  mapping:
+    sf_temp.cpu.idle: sf_temp.cpu.idle_per_core
+    sf_temp.cpu.interrupt: sf_temp.cpu.interrupt_per_core
+    sf_temp.cpu.system: sf_temp.cpu.system_per_core
+    sf_temp.cpu.user: sf_temp.cpu.user_per_core
+    sf_temp.cpu.wait: sf_temp.cpu.wait_per_core
+    sf_temp.cpu.steal: sf_temp.cpu.steal_per_core
+    sf_temp.cpu.softirq: sf_temp.cpu.softirq_per_core
+    sf_temp.cpu.nice: sf_temp.cpu.nice_per_core
 
 - action: aggregate_metric
   metric_name: sf_temp.cpu.idle
@@ -399,15 +410,23 @@ translation_rules:
   mapping:
     sf_temp.container_cpu_utilization: container_cpu_utilization
     sf_temp.cpu.idle: cpu.idle
+    sf_temp.cpu.idle_per_core: cpu.idle
     sf_temp.cpu.interrupt: cpu.interrupt
+    sf_temp.cpu.interrupt_per_core: cpu.interrupt
     sf_temp.cpu.nice: cpu.nice
+    sf_temp.cpu.nice_per_core: cpu.nice
     sf_temp.cpu.num_processors: cpu.num_processors
     sf_temp.cpu.softirq: cpu.softirq
+    sf_temp.cpu.softirq_per_core: cpu.softirq
     sf_temp.cpu.steal: cpu.steal
+    sf_temp.cpu.steal_per_core: cpu.steal
     sf_temp.cpu.system: cpu.system
+    sf_temp.cpu.system_per_core: cpu.system
     sf_temp.cpu.user: cpu.user
+    sf_temp.cpu.user_per_core: cpu.user
     sf_temp.cpu.utilization: cpu.utilization
     sf_temp.cpu.wait: cpu.wait
+    sf_temp.cpu.wait_per_core: cpu.wait
     sf_temp.disk.summary_utilization: disk.summary_utilization
     sf_temp.disk.utilization: disk.utilization
     sf_temp.memory.total: memory.total

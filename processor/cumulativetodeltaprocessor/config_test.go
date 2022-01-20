@@ -18,43 +18,46 @@ import (
 	"fmt"
 	"path"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/service/servicetest"
 )
 
+const configFile = "config.yaml"
+
 func TestLoadingFullConfig(t *testing.T) {
+
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Processors[typeStr] = factory
+	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", configFile), factories)
+	assert.NoError(t, err)
+	require.NotNil(t, cfg)
+
 	tests := []struct {
-		configFile string
-		expCfg     *Config
+		expCfg *Config
 	}{
 		{
-			configFile: "config_full.yaml",
 			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Metrics: []string{
 					"metric1",
 					"metric2",
 				},
+				MaxStaleness: 10 * time.Second,
 			},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.expCfg.ID().String(), func(t *testing.T) {
-			factories, err := componenttest.NopFactories()
-			assert.NoError(t, err)
-
-			factory := NewFactory()
-			factories.Processors[typeStr] = factory
-			config, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", test.configFile), factories)
-			assert.NoError(t, err)
-			require.NotNil(t, config)
-
-			cfg := config.Processors[test.expCfg.ID()]
+			cfg := cfg.Processors[test.expCfg.ID()]
 			assert.Equal(t, test.expCfg, cfg)
 		})
 	}
@@ -67,7 +70,7 @@ func TestValidateConfig(t *testing.T) {
 		errorMessage string
 	}{
 		{
-			configName: "config_full.yaml",
+			configName: "config.yaml",
 			succeed:    true,
 		},
 		{
@@ -84,7 +87,7 @@ func TestValidateConfig(t *testing.T) {
 		factory := NewFactory()
 		factories.Processors[typeStr] = factory
 		t.Run(test.configName, func(t *testing.T) {
-			config, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", test.configName), factories)
+			config, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", test.configName), factories)
 			if test.succeed {
 				assert.NotNil(t, config)
 				assert.NoError(t, err)
@@ -92,6 +95,5 @@ func TestValidateConfig(t *testing.T) {
 				assert.EqualError(t, err, fmt.Sprintf("processor %q has invalid configuration: %s", typeStr, test.errorMessage))
 			}
 		})
-
 	}
 }

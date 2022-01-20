@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awsecscontainermetrics
+package awsecscontainermetrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/internal/awsecscontainermetrics"
 
 import (
 	"go.opentelemetry.io/collector/model/pdata"
@@ -86,7 +86,7 @@ func appendIntSum(metricName string, unit string, value int64, ts pdata.Timestam
 
 	metric.SetDataType(pdata.MetricDataTypeSum)
 	intSum := metric.Sum()
-	intSum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	intSum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 
 	appendIntDataPoint(intSum.DataPoints(), value, ts)
 }

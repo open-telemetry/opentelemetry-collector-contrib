@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package zookeeperreceiver
+package zookeeperreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver"
 
 import (
 	"context"
@@ -23,8 +23,9 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver/internal/metadata"
 )
 
 const (
@@ -45,13 +46,14 @@ func NewFactory() component.ReceiverFactory {
 func createDefaultConfig() config.Receiver {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewID(typeStr)),
+			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			CollectionInterval: defaultCollectionInterval,
 		},
 		TCPAddr: confignet.TCPAddr{
 			Endpoint: ":2181",
 		},
 		Timeout: defaultTimeout,
+		Metrics: metadata.DefaultMetricsSettings(),
 	}
 }
 
@@ -68,16 +70,19 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
+	scrp, err := scraperhelper.NewScraper(
+		typeStr,
+		zms.scrape,
+		scraperhelper.WithShutdown(zms.shutdown),
+	)
+	if err != nil {
+		return nil, err
+	}
+
 	return scraperhelper.NewScraperControllerReceiver(
 		&rConfig.ScraperControllerSettings,
-		params.Logger,
+		params,
 		consumer,
-		scraperhelper.AddScraper(
-			scraperhelper.NewResourceMetricsScraper(
-				rConfig.ID(),
-				zms.scrape,
-				scraperhelper.WithShutdown(zms.shutdown),
-			),
-		),
+		scraperhelper.AddScraper(scrp),
 	)
 }

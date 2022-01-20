@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package opencensusexporter
+package opencensusexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter"
 
 import (
 	"context"
@@ -56,9 +56,11 @@ type ocExporter struct {
 	metricsClients chan *metricsClientWithCancel
 	grpcClientConn *grpc.ClientConn
 	metadata       metadata.MD
+
+	settings component.TelemetrySettings
 }
 
-func newOcExporter(_ context.Context, cfg *Config) (*ocExporter, error) {
+func newOcExporter(_ context.Context, cfg *Config, settings component.TelemetrySettings) (*ocExporter, error) {
 	if cfg.Endpoint == "" {
 		return nil, errors.New("OpenCensus exporter cfg requires an Endpoint")
 	}
@@ -70,13 +72,14 @@ func newOcExporter(_ context.Context, cfg *Config) (*ocExporter, error) {
 	oce := &ocExporter{
 		cfg:      cfg,
 		metadata: metadata.New(cfg.GRPCClientSettings.Headers),
+		settings: settings,
 	}
 	return oce, nil
 }
 
 // start creates the gRPC client Connection
 func (oce *ocExporter) start(ctx context.Context, host component.Host) error {
-	dialOpts, err := oce.cfg.GRPCClientSettings.ToDialOptions(host.GetExtensions())
+	dialOpts, err := oce.cfg.GRPCClientSettings.ToDialOptions(host, oce.settings)
 	if err != nil {
 		return err
 	}
@@ -129,8 +132,8 @@ func (oce *ocExporter) shutdown(context.Context) error {
 	return oce.grpcClientConn.Close()
 }
 
-func newTracesExporter(ctx context.Context, cfg *Config) (*ocExporter, error) {
-	oce, err := newOcExporter(ctx, cfg)
+func newTracesExporter(ctx context.Context, cfg *Config, settings component.TelemetrySettings) (*ocExporter, error) {
+	oce, err := newOcExporter(ctx, cfg, settings)
 	if err != nil {
 		return nil, err
 	}
@@ -138,8 +141,8 @@ func newTracesExporter(ctx context.Context, cfg *Config) (*ocExporter, error) {
 	return oce, nil
 }
 
-func newMetricsExporter(ctx context.Context, cfg *Config) (*ocExporter, error) {
-	oce, err := newOcExporter(ctx, cfg)
+func newMetricsExporter(ctx context.Context, cfg *Config, settings component.TelemetrySettings) (*ocExporter, error) {
+	oce, err := newOcExporter(ctx, cfg, settings)
 	if err != nil {
 		return nil, err
 	}

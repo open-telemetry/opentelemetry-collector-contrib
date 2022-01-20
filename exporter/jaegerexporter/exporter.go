@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jaegerexporter
+package jaegerexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter"
 
 import (
 	"context"
@@ -41,7 +41,7 @@ import (
 // The exporter name is the name to be used in the observability of the exporter.
 // The collectorEndpoint should be of the form "hostname:14250" (a gRPC target).
 func newTracesExporter(cfg *Config, set component.ExporterCreateSettings) (component.TracesExporter, error) {
-	s := newProtoGRPCSender(cfg, set.Logger)
+	s := newProtoGRPCSender(cfg, set.TelemetrySettings)
 	return exporterhelper.NewTracesExporter(
 		cfg, set, s.pushTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
@@ -57,7 +57,7 @@ func newTracesExporter(cfg *Config, set component.ExporterCreateSettings) (compo
 // format, to a grpc server.
 type protoGRPCSender struct {
 	name         string
-	logger       *zap.Logger
+	settings     component.TelemetrySettings
 	client       jaegerproto.CollectorServiceClient
 	metadata     metadata.MD
 	waitForReady bool
@@ -72,10 +72,10 @@ type protoGRPCSender struct {
 	clientSettings *configgrpc.GRPCClientSettings
 }
 
-func newProtoGRPCSender(cfg *Config, logger *zap.Logger) *protoGRPCSender {
+func newProtoGRPCSender(cfg *Config, settings component.TelemetrySettings) *protoGRPCSender {
 	s := &protoGRPCSender{
 		name:                      cfg.ID().String(),
-		logger:                    logger,
+		settings:                  settings,
 		metadata:                  metadata.New(cfg.GRPCClientSettings.Headers),
 		waitForReady:              cfg.WaitForReady,
 		connStateReporterInterval: time.Second,
@@ -97,7 +97,7 @@ func (s *protoGRPCSender) pushTraces(
 
 	batches, err := jaegertranslator.InternalTracesToJaegerProto(td)
 	if err != nil {
-		return consumererror.Permanent(fmt.Errorf("failed to push trace data via Jaeger exporter: %w", err))
+		return consumererror.NewPermanent(fmt.Errorf("failed to push trace data via Jaeger exporter: %w", err))
 	}
 
 	if s.metadata.Len() > 0 {
@@ -110,7 +110,7 @@ func (s *protoGRPCSender) pushTraces(
 			&jaegerproto.PostSpansRequest{Batch: *batch}, grpc.WaitForReady(s.waitForReady))
 
 		if err != nil {
-			s.logger.Debug("failed to push trace data to Jaeger", zap.Error(err))
+			s.settings.Logger.Debug("failed to push trace data to Jaeger", zap.Error(err))
 			return fmt.Errorf("failed to push trace data via Jaeger exporter: %w", err)
 		}
 	}
@@ -130,7 +130,7 @@ func (s *protoGRPCSender) start(_ context.Context, host component.Host) error {
 	if s.clientSettings == nil {
 		return fmt.Errorf("client settings not found")
 	}
-	opts, err := s.clientSettings.ToDialOptions(host.GetExtensions())
+	opts, err := s.clientSettings.ToDialOptions(host, s.settings)
 	if err != nil {
 		return err
 	}
@@ -183,7 +183,7 @@ func (s *protoGRPCSender) propagateStateChange(st connectivity.State) {
 func (s *protoGRPCSender) onStateChange(st connectivity.State) {
 	mCtx, _ := tag.New(context.Background(), tag.Upsert(tag.MustNewKey("exporter_name"), s.name))
 	stats.Record(mCtx, mLastConnectionState.M(int64(st)))
-	s.logger.Info("State of the connection with the Jaeger Collector backend", zap.Stringer("state", st))
+	s.settings.Logger.Info("State of the connection with the Jaeger Collector backend", zap.Stringer("state", st))
 }
 
 func (s *protoGRPCSender) AddStateChangeCallback(f func(connectivity.State)) {

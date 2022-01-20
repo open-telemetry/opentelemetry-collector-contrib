@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package humioexporter
+package humioexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/humioexporter"
 
 import (
 	"context"
@@ -41,7 +41,7 @@ func NewFactory() component.ExporterFactory {
 // Provides a struct with default values for all relevant configuration settings
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 
 		// Default settings inherited from exporter helper
 		QueueSettings: exporterhelper.DefaultQueueSettings(),

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package hostmetricsreceiver
+package hostmetricsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
 
 import (
 	"context"
@@ -21,7 +21,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerhelper"
+	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
@@ -34,7 +38,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
 )
 
 // This file implements Factory for HostMetrics receiver.
@@ -54,10 +57,7 @@ var (
 		networkscraper.TypeStr:    &networkscraper.Factory{},
 		pagingscraper.TypeStr:     &pagingscraper.Factory{},
 		processesscraper.TypeStr:  &processesscraper.Factory{},
-	}
-
-	resourceScraperFactories = map[string]internal.ResourceScraperFactory{
-		processscraper.TypeStr: &processscraper.Factory{},
+		processscraper.TypeStr:    &processscraper.Factory{},
 	}
 )
 
@@ -69,12 +69,8 @@ func NewFactory() component.ReceiverFactory {
 		receiverhelper.WithMetrics(createMetricsReceiver))
 }
 
-func getScraperFactory(key string) (internal.BaseFactory, bool) {
+func getScraperFactory(key string) (internal.ScraperFactory, bool) {
 	if factory, ok := scraperFactories[key]; ok {
-		return factory, true
-	}
-
-	if factory, ok := resourceScraperFactories[key]; ok {
 		return factory, true
 	}
 
@@ -95,17 +91,43 @@ func createMetricsReceiver(
 ) (component.MetricsReceiver, error) {
 	oCfg := cfg.(*Config)
 
-	addScraperOptions, err := createAddScraperOptions(ctx, set.Logger, oCfg, scraperFactories, resourceScraperFactories)
+	addScraperOptions, err := createAddScraperOptions(ctx, set.Logger, oCfg, scraperFactories)
+	if err != nil {
+		return nil, err
+	}
+
+	schemaURLSetterConsumer, err := wrapBySchemaURLSetterConsumer(consumer)
 	if err != nil {
 		return nil, err
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(
 		&oCfg.ScraperControllerSettings,
-		set.Logger,
-		consumer,
+		set,
+		schemaURLSetterConsumer,
 		addScraperOptions...,
 	)
+}
+
+// This function wraps the consumer and returns a new consumer such that the schema URL
+// of all metrics that pass through the new consumer is set correctly.
+func wrapBySchemaURLSetterConsumer(consumer consumer.Metrics) (consumer.Metrics, error) {
+	return consumerhelper.NewMetrics(func(ctx context.Context, md pdata.Metrics) error {
+		rms := md.ResourceMetrics()
+		for i := 0; i < rms.Len(); i++ {
+			rm := rms.At(i)
+			if rm.SchemaUrl() == "" {
+				// If no specific SchemaURL is set we assume all collected host metrics
+				// confirm to our default SchemaURL. The assumption here is that
+				// the code that produces these metrics uses semantic conventions
+				// defined in package "conventions".
+				rm.SetSchemaUrl(conventions.SchemaURL)
+			}
+			// Else if the SchemaURL is set we assume the producer of the metric knows
+			// what it does. We won't touch it.
+		}
+		return consumer.ConsumeMetrics(ctx, md)
+	})
 }
 
 func createAddScraperOptions(
@@ -113,7 +135,6 @@ func createAddScraperOptions(
 	logger *zap.Logger,
 	config *Config,
 	factories map[string]internal.ScraperFactory,
-	resourceFactories map[string]internal.ResourceScraperFactory,
 ) ([]scraperhelper.ScraperControllerOption, error) {
 	scraperControllerOptions := make([]scraperhelper.ScraperControllerOption, 0, len(config.Scrapers))
 
@@ -125,16 +146,6 @@ func createAddScraperOptions(
 
 		if ok {
 			scraperControllerOptions = append(scraperControllerOptions, scraperhelper.AddScraper(hostMetricsScraper))
-			continue
-		}
-
-		resourceMetricsScraper, ok, err := createResourceMetricsScraper(ctx, logger, key, cfg, resourceFactories)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create resource scraper for key %q: %w", key, err)
-		}
-
-		if ok {
-			scraperControllerOptions = append(scraperControllerOptions, scraperhelper.AddScraper(resourceMetricsScraper))
 			continue
 		}
 
@@ -153,17 +164,5 @@ func createHostMetricsScraper(ctx context.Context, logger *zap.Logger, key strin
 
 	ok = true
 	scraper, err = factory.CreateMetricsScraper(ctx, logger, cfg)
-	return
-}
-
-func createResourceMetricsScraper(ctx context.Context, logger *zap.Logger, key string, cfg internal.Config, factories map[string]internal.ResourceScraperFactory) (scraper scraperhelper.Scraper, ok bool, err error) {
-	factory := factories[key]
-	if factory == nil {
-		ok = false
-		return
-	}
-
-	ok = true
-	scraper, err = factory.CreateResourceMetricsScraper(ctx, logger, cfg)
 	return
 }

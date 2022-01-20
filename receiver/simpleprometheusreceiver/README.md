@@ -1,7 +1,7 @@
 # Simple Prometheus Receiver
 
 The `prometheus_simple` receiver is a wrapper around the [prometheus
-receiver](https://github.com/open-telemetry/opentelemetry-collector/tree/main/receiver/prometheusreceiver).
+receiver](../prometheusreceiver).
 This receiver provides a simple configuration interface to configure the
 prometheus receiver to scrape metrics from a single target.
 

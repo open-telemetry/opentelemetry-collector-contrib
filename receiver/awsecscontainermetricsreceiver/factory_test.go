@@ -16,25 +16,24 @@ package awsecscontainermetricsreceiver
 
 import (
 	"context"
-	"net/url"
 	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configcheck"
+	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/internal/awsecscontainermetrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil/endpoints"
 )
 
 func TestValidConfig(t *testing.T) {
-	err := configcheck.ValidateConfig(createDefaultConfig())
+	err := configtest.CheckConfigStruct(createDefaultConfig())
 	require.NoError(t, err)
 }
 
 func TestCreateMetricsReceiver(t *testing.T) {
-	os.Unsetenv(awsecscontainermetrics.EndpointEnvKey)
+	os.Unsetenv(endpoints.TaskMetadataEndpointV4EnvVar)
 
 	metricsReceiver, err := createMetricsReceiver(
 		context.Background(),
@@ -47,7 +46,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 }
 
 func TestCreateMetricsReceiverWithEnv(t *testing.T) {
-	os.Setenv(awsecscontainermetrics.EndpointEnvKey, "http://www.test.com")
+	os.Setenv(endpoints.TaskMetadataEndpointV4EnvVar, "http://www.test.com")
 
 	metricsReceiver, err := createMetricsReceiver(
 		context.Background(),
@@ -60,7 +59,7 @@ func TestCreateMetricsReceiverWithEnv(t *testing.T) {
 }
 
 func TestCreateMetricsReceiverWithBadUrl(t *testing.T) {
-	os.Setenv(awsecscontainermetrics.EndpointEnvKey, "bad-url-format")
+	os.Setenv(endpoints.TaskMetadataEndpointV4EnvVar, "bad-url-format")
 
 	metricsReceiver, err := createMetricsReceiver(
 		context.Background(),
@@ -82,11 +81,4 @@ func TestCreateMetricsReceiverWithNilConsumer(t *testing.T) {
 
 	require.Error(t, err, "Nil Comsumer")
 	require.Nil(t, metricsReceiver)
-}
-
-func TestRestClient(t *testing.T) {
-	u, _ := url.Parse("http://www.test.com")
-	rest := restClient(nil, *u)
-
-	require.NotNil(t, rest)
 }

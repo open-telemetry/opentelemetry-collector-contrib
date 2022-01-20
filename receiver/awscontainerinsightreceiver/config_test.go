@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -32,7 +32,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -40,16 +40,16 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, len(cfg.Receivers), 2)
 
 	//ensure default configurations are generated when users provide nothing
-	r0 := cfg.Receivers[config.NewID(typeStr)]
+	r0 := cfg.Receivers[config.NewComponentID(typeStr)]
 	assert.Equal(t, factory.CreateDefaultConfig(), r0)
 
-	r1 := cfg.Receivers[config.NewID(typeStr)]
+	r1 := cfg.Receivers[config.NewComponentID(typeStr)]
 	assert.Equal(t, r1, factory.CreateDefaultConfig())
 
-	r2 := cfg.Receivers[config.NewIDWithName(typeStr, "collection_interval_settings")].(*Config)
+	r2 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "collection_interval_settings")].(*Config)
 	assert.Equal(t, r2,
 		&Config{
-			ReceiverSettings:      config.NewReceiverSettings(config.NewIDWithName(typeStr, "collection_interval_settings")),
+			ReceiverSettings:      config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "collection_interval_settings")),
 			CollectionInterval:    60 * time.Second,
 			ContainerOrchestrator: "eks",
 			TagService:            true,

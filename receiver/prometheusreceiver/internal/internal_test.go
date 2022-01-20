@@ -15,18 +15,20 @@
 package internal
 
 import (
-	"github.com/prometheus/prometheus/pkg/labels"
+	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/scrape"
+	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.uber.org/zap"
 )
 
 // test helpers
 
-var testLogger *zap.Logger
+var testTelemetry obsreporttest.TestTelemetry
 
 func init() {
 	zl, _ := zap.NewDevelopment()
-	testLogger = zl
+	testTelemetry, _ = obsreporttest.SetupTelemetry()
+	testTelemetry.Logger = zl
 }
 
 type mockMetadataCache struct {

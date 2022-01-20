@@ -31,11 +31,11 @@ import (
 	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/service/servicetest"
 	"go.uber.org/zap"
 )
 
@@ -229,11 +229,11 @@ func TestBuildExporterConfig(t *testing.T) {
 
 	factories.Exporters[typeStr] = NewFactory()
 
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "test-build-exporter-config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "test-build-exporter-config.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	c := cfg.Exporters[config.NewID(typeStr)]
+	c := cfg.Exporters[config.NewComponentID(typeStr)]
 	require.NotNil(t, c)
 
 	// test
@@ -326,6 +326,11 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 	// ["127.0.0.1"] -> ["127.0.0.1", "127.0.0.2"] -> ["127.0.0.2"]
 	res, err := newDNSResolver(zap.NewNop(), "service-1", "")
 	require.NoError(t, err)
+
+	var lastResolved []string
+	res.onChange(func(s []string) {
+		lastResolved = s
+	})
 
 	resolverCh := make(chan struct{}, 1)
 	counter := 0
@@ -437,7 +442,7 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 	<-consumeCh
 
 	// verify
-	require.Equal(t, []string{"127.0.0.2"}, res.endpoints)
+	require.Equal(t, []string{"127.0.0.2"}, lastResolved)
 	require.Greater(t, atomic.LoadInt64(&counter1), int64(0))
 	require.Greater(t, atomic.LoadInt64(&counter2), int64(0))
 }
@@ -462,7 +467,7 @@ func simpleTraceWithID(id pdata.TraceID) pdata.Traces {
 
 func simpleConfig() *Config {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		Resolver: ResolverSettings{
 			Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},
 		},

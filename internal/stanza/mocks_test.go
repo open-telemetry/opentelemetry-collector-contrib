@@ -28,7 +28,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/extension/storage"
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
@@ -85,13 +85,17 @@ func (m *mockLogsConsumer) Capabilities() consumer.Capabilities {
 }
 
 func (m *mockLogsConsumer) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
-	atomic.AddInt32(&m.received, 1)
+	atomic.AddInt32(&m.received, int32(ld.LogRecordCount()))
 	return nil
 }
 
 func (m *mockLogsConsumer) Received() int {
 	ret := atomic.LoadInt32(&m.received)
 	return int(ret)
+}
+
+func (m *mockLogsConsumer) ResetReceivedCount() {
+	atomic.StoreInt32(&m.received, 0)
 }
 
 type mockLogsRejecter struct {
@@ -127,7 +131,7 @@ func (f TestReceiverType) Type() config.Type {
 func (f TestReceiverType) CreateDefaultConfig() config.Receiver {
 	return &TestConfig{
 		BaseConfig: BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewID(testType)),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(testType)),
 			Operators:        OperatorConfigs{},
 			Converter: ConverterConfig{
 				MaxFlushCount: 1,

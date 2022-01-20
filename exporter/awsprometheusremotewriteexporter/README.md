@@ -6,7 +6,7 @@ The exporter uses AWS Signature Version 4 signing process for authentication
 and uses credentials from the 
 [default credential chain](https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials).
 
-Note: This exporter is similar to [Prometheus remote write exporter](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/prometheusremotewriteexporter)
+Note: This exporter is similar to [Prometheus remote write exporter](../prometheusremotewriteexporter)
 and it only adds SigV4 support to it.
 
 Similar to the Prometheus remote write exporter, the exporter checks the
@@ -26,10 +26,11 @@ The following settings can be optionally configured:
 
 - `namespace`: prefix attached to each exported metric name.
 - `headers`: additional headers attached to each HTTP request. If `X-Prometheus-Remote-Write-Version` is set by user, its value must be `0.1.0`
-- `insecure` (default = false): whether to enable client transport security for the exporter's connection.
-- `ca_file`: path to the CA cert. For a client this verifies the server certificate. Should only be used if `insecure` is set to true.
-- `cert_file`: path to the TLS cert to use for TLS required connections. Should only be used if `insecure` is set to true.
-- `key_file`: path to the TLS key to use for TLS required connections. Should only be used if `insecure` is set to true.
+- `tls`:
+  - `insecure` (default = false): whether to enable client transport security for the exporter's connection.
+  - `ca_file`: path to the CA cert. For a client this verifies the server certificate. Should only be used if `insecure` is set to true.
+  - `cert_file`: path to the TLS cert to use for TLS required connections. Should only be used if `insecure` is set to true.
+  - `key_file`: path to the TLS key to use for TLS required connections. Should only be used if `insecure` is set to true.
 - `timeout` (default = 5s): How long to wait until the connection is close.
 - `read_buffer_size` (default = 0): ReadBufferSize for HTTP client.
 - `write_buffer_size` (default = 512 * 1024): WriteBufferSize for HTTP client.
@@ -65,8 +66,6 @@ exporters:
         role_arn: "arn:aws:iam::123456789012:role/aws-service-role/access"
     ca_file: "/var/lib/mycert.pem"
     write_buffer_size: 524288
-    headers:
-        X-Scope-OrgID: 234
     external_labels:
         key1: value1
         key2: value2

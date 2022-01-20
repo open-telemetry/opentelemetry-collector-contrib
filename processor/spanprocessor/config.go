@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package spanprocessor
+package spanprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor"
 
 import (
 	"go.opentelemetry.io/collector/config"
@@ -35,6 +35,9 @@ type Config struct {
 	// Note: The field name is `Rename` to avoid collision with the Name() method
 	// from config.NamedEntity
 	Rename Name `mapstructure:"name"`
+
+	// SetStatus specifies status which should be set for this span.
+	SetStatus *Status `mapstructure:"status"`
 }
 
 // Name specifies the attributes to use to re-name a span.
@@ -78,6 +81,15 @@ type ToAttributes struct {
 	// match. If it is false rule processing will continue to be performed over the
 	// modified span name.
 	BreakAfterMatch bool `mapstructure:"break_after_match"`
+}
+
+type Status struct {
+	// Code is one of three values "Ok" or "Error" or "Unset". Please check:
+	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#set-status
+	Code string `mapstructure:"code"`
+
+	// Description is an optional field documenting Error statuses.
+	Description string `mapstructure:"description"`
 }
 
 var _ config.Processor = (*Config)(nil)

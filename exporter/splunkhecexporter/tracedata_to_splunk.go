@@ -12,11 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package splunkhecexporter
+package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 
 import (
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -59,6 +58,11 @@ type hecSpan struct {
 }
 
 func traceDataToSplunk(logger *zap.Logger, data pdata.Traces, config *Config) ([]*splunk.Event, int) {
+	sourceKey := config.HecToOtelAttrs.Source
+	sourceTypeKey := config.HecToOtelAttrs.SourceType
+	indexKey := config.HecToOtelAttrs.Index
+	hostKey := config.HecToOtelAttrs.Host
+
 	numDroppedSpans := 0
 	splunkEvents := make([]*splunk.Event, 0, data.SpanCount())
 	rss := data.ResourceSpans()
@@ -69,22 +73,21 @@ func traceDataToSplunk(logger *zap.Logger, data pdata.Traces, config *Config) ([
 		sourceType := config.SourceType
 		index := config.Index
 		commonFields := map[string]interface{}{}
-		resource := rs.Resource()
-		attributes := resource.Attributes()
-		if conventionHost, isSet := attributes.Get(conventions.AttributeHostName); isSet {
-			host = conventionHost.StringVal()
-		}
-		if sourceSet, isSet := attributes.Get(splunk.DefaultSourceLabel); isSet {
-			source = sourceSet.StringVal()
-		}
-		if sourcetypeSet, isSet := attributes.Get(splunk.DefaultSourceTypeLabel); isSet {
-			sourceType = sourcetypeSet.StringVal()
-		}
-		if indexSet, isSet := attributes.Get(splunk.DefaultIndexLabel); isSet {
-			index = indexSet.StringVal()
-		}
-		attributes.Range(func(k string, v pdata.AttributeValue) bool {
-			commonFields[k] = v.AsString()
+		rs.Resource().Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+			switch k {
+			case hostKey:
+				host = v.StringVal()
+			case sourceKey:
+				source = v.StringVal()
+			case sourceTypeKey:
+				sourceType = v.StringVal()
+			case indexKey:
+				index = v.StringVal()
+			case splunk.HecTokenLabel:
+				// ignore
+			default:
+				commonFields[k] = v.AsString()
+			}
 			return true
 		})
 		ilss := rs.InstrumentationLibrarySpans()

@@ -174,7 +174,7 @@ func TestMetricsGrouping(t *testing.T) {
 			p := newMetricsTransformProcessor(zap.NewExample(), test.transforms)
 
 			mtp, err := processorhelper.NewMetricsProcessor(&Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 			}, next, p.processMetrics, processorhelper.WithCapabilities(consumerCapabilities))
 
 			require.NoError(t, err)

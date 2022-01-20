@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package kafkaexporter
+package kafkaexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 
 import (
 	"context"
@@ -47,7 +47,7 @@ func (ke kafkaErrors) Error() string {
 func (e *kafkaTracesProducer) tracesPusher(_ context.Context, td pdata.Traces) error {
 	messages, err := e.marshaler.Marshal(td, e.topic)
 	if err != nil {
-		return consumererror.Permanent(err)
+		return consumererror.NewPermanent(err)
 	}
 	err = e.producer.SendMessages(messages)
 	if err != nil {
@@ -76,7 +76,7 @@ type kafkaMetricsProducer struct {
 func (e *kafkaMetricsProducer) metricsDataPusher(_ context.Context, md pdata.Metrics) error {
 	messages, err := e.marshaler.Marshal(md, e.topic)
 	if err != nil {
-		return consumererror.Permanent(err)
+		return consumererror.NewPermanent(err)
 	}
 	err = e.producer.SendMessages(messages)
 	if err != nil {
@@ -105,7 +105,7 @@ type kafkaLogsProducer struct {
 func (e *kafkaLogsProducer) logsDataPusher(_ context.Context, ld pdata.Logs) error {
 	messages, err := e.marshaler.Marshal(ld, e.topic)
 	if err != nil {
-		return consumererror.Permanent(err)
+		return consumererror.NewPermanent(err)
 	}
 	err = e.producer.SendMessages(messages)
 	if err != nil {
@@ -128,8 +128,7 @@ func newSaramaProducer(config Config) (sarama.SyncProducer, error) {
 	// These setting are required by the sarama.SyncProducer implementation.
 	c.Producer.Return.Successes = true
 	c.Producer.Return.Errors = true
-	// Wait only the local commit to succeed before responding.
-	c.Producer.RequiredAcks = sarama.WaitForLocal
+	c.Producer.RequiredAcks = config.Producer.RequiredAcks
 	// Because sarama does not accept a Context for every message, set the Timeout here.
 	c.Producer.Timeout = config.Timeout
 	c.Metadata.Full = config.Metadata.Full

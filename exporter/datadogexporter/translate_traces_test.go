@@ -35,6 +35,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/attributes"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils"
 )
 
@@ -93,10 +94,7 @@ func NewResourceSpansData(mockTraceID [16]byte, mockSpanID [8]byte, mockParentSp
 	evt = events.AppendEmpty()
 	evt.SetTimestamp(pdataEndTime)
 	evt.SetName("end")
-	evt.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		"flag": pdata.NewAttributeValueBool(false),
-	})
-
+	evt.Attributes().InsertBool("flag", false)
 	attribs := map[string]pdata.AttributeValue{
 		"cache_hit":  pdata.NewAttributeValueBool(true),
 		"timeout_ns": pdata.NewAttributeValueInt(12e9),
@@ -108,25 +106,20 @@ func NewResourceSpansData(mockTraceID [16]byte, mockSpanID [8]byte, mockParentSp
 		attribs["http.status_code"] = pdata.NewAttributeValueString("501")
 	}
 
-	span.Attributes().InitFromMap(attribs)
+	pdata.NewAttributeMapFromMap(attribs).CopyTo(span.Attributes())
 
 	resource := rs.Resource()
 
 	if resourceEnvAndService {
-		resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-			conventions.AttributeContainerID:           pdata.NewAttributeValueString("3249847017410247"),
-			conventions.AttributeDeploymentEnvironment: pdata.NewAttributeValueString("test-env"),
-			conventions.AttributeK8SPodName:            pdata.NewAttributeValueString("example-pod-name"),
-			conventions.AttributeAWSECSTaskARN:         pdata.NewAttributeValueString("arn:aws:ecs:ap-southwest-1:241423265983:task/test-environment-test-echo-Cluster-2lrqTJKFjACT/746bf64740324812835f688c30cf1512"),
-			"namespace":                                pdata.NewAttributeValueString("kube-system"),
-			"service.name":                             pdata.NewAttributeValueString("test-resource-service-name"),
-			"service.version":                          pdata.NewAttributeValueString("test-version"),
-		})
-
+		resource.Attributes().InsertString(conventions.AttributeContainerID, "3249847017410247")
+		resource.Attributes().InsertString(conventions.AttributeDeploymentEnvironment, "test-env")
+		resource.Attributes().InsertString(conventions.AttributeK8SPodName, "example-pod-name")
+		resource.Attributes().InsertString(conventions.AttributeAWSECSTaskARN, "arn:aws:ecs:ap-southwest-1:241423265983:task/test-environment-test-echo-Cluster-2lrqTJKFjACT/746bf64740324812835f688c30cf1512")
+		resource.Attributes().InsertString("namespace", "kube-system")
+		resource.Attributes().InsertString("service.name", "test-resource-service-name")
+		resource.Attributes().InsertString("service.version", "test-version")
 	} else {
-		resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-			"namespace": pdata.NewAttributeValueString("kube-system"),
-		})
+		resource.Attributes().InsertString("namespace", "kube-system")
 	}
 
 	return rs
@@ -197,6 +190,47 @@ func TestRunningTraces(t *testing.T) {
 	)
 }
 
+func TestRunningTracesARN(t *testing.T) {
+	td := pdata.NewTraces()
+	rts := td.ResourceSpans()
+
+	rm := rts.AppendEmpty()
+	baseAttrs := testutils.NewAttributeMap(map[string]string{
+		conventions.AttributeCloudProvider:      conventions.AttributeCloudProviderAWS,
+		conventions.AttributeCloudPlatform:      conventions.AttributeCloudPlatformAWSECS,
+		conventions.AttributeAWSECSTaskFamily:   "example-task-family",
+		conventions.AttributeAWSECSTaskRevision: "example-task-revision",
+		conventions.AttributeAWSECSLaunchtype:   conventions.AttributeAWSECSLaunchtypeFargate,
+	})
+	baseAttrs.CopyTo(rm.Resource().Attributes())
+	rm.Resource().Attributes().InsertString(conventions.AttributeAWSECSTaskARN, "task-arn-1")
+
+	rm = rts.AppendEmpty()
+	baseAttrs.CopyTo(rm.Resource().Attributes())
+	rm.Resource().Attributes().InsertString(conventions.AttributeAWSECSTaskARN, "task-arn-2")
+
+	rm = rts.AppendEmpty()
+	baseAttrs.CopyTo(rm.Resource().Attributes())
+	rm.Resource().Attributes().InsertString(conventions.AttributeAWSECSTaskARN, "task-arn-3")
+
+	buildInfo := component.BuildInfo{}
+
+	_, runningMetrics := convertToDatadogTd(td, "fallbackHost", &config.Config{}, newDenylister([]string{}), buildInfo)
+
+	runningHostnames := []string{}
+	runningTags := []string{}
+	for _, metric := range runningMetrics {
+		require.Equal(t, *metric.Metric, "otel.datadog_exporter.traces.running")
+		require.NotNil(t, metric.Host)
+		runningHostnames = append(runningHostnames, *metric.Host)
+		runningTags = append(runningTags, metric.Tags...)
+	}
+
+	assert.ElementsMatch(t, runningHostnames, []string{"", "", ""})
+	assert.Len(t, runningMetrics, 3)
+	assert.ElementsMatch(t, runningTags, []string{"task_arn:task-arn-1", "task_arn:task-arn-2", "task_arn:task-arn-3"})
+}
+
 func TestObfuscation(t *testing.T) {
 
 	denylister := newDenylister([]string{})
@@ -207,9 +241,7 @@ func TestObfuscation(t *testing.T) {
 	traces := pdata.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
 	resource := rs.Resource()
-	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		"service.name": pdata.NewAttributeValueString("sure"),
-	})
+	resource.Attributes().InsertString("service.name", "sure")
 	ilss := rs.InstrumentationLibrarySpans().AppendEmpty()
 	instrumentationLibrary := ilss.InstrumentationLibrary()
 	instrumentationLibrary.SetName("flash")
@@ -269,6 +301,9 @@ func TestBasicTracesTranslation(t *testing.T) {
 	assert.Equal(t, decodeAPMSpanID(mockSpanID), datadogPayload.Traces[0].Spans[0].SpanID)
 	assert.Equal(t, decodeAPMSpanID(mockParentSpanID), datadogPayload.Traces[0].Spans[0].ParentID)
 
+	// ensure original TraceID is preserved
+	assert.Equal(t, pdata.NewTraceID(mockTraceID).HexString(), datadogPayload.Traces[0].Spans[0].Meta["otel.trace_id"])
+
 	// ensure that span.resource defaults to otlp span.name
 	assert.Equal(t, "End-To-End Here", datadogPayload.Traces[0].Spans[0].Resource)
 
@@ -279,7 +314,7 @@ func TestBasicTracesTranslation(t *testing.T) {
 	assert.Equal(t, "web", datadogPayload.Traces[0].Spans[0].Type)
 
 	// ensure that span.meta and span.metrics pick up attributes, instrumentation ibrary and resource attribs
-	assert.Equal(t, 10, len(datadogPayload.Traces[0].Spans[0].Meta))
+	assert.Equal(t, 11, len(datadogPayload.Traces[0].Spans[0].Meta))
 	assert.Equal(t, 1, len(datadogPayload.Traces[0].Spans[0].Metrics))
 
 	// ensure that span error is based on otlp span status
@@ -376,7 +411,7 @@ func TestTracesTranslationErrorsAndResource(t *testing.T) {
 	// ensure that version gives resource service.version priority
 	assert.Equal(t, "test-version", datadogPayload.Traces[0].Spans[0].Meta["version"])
 
-	assert.Equal(t, 20, len(datadogPayload.Traces[0].Spans[0].Meta))
+	assert.Equal(t, 21, len(datadogPayload.Traces[0].Spans[0].Meta))
 
 	assert.Contains(t, datadogPayload.Traces[0].Spans[0].Meta[tagContainersTags], "container_id:3249847017410247")
 	assert.Contains(t, datadogPayload.Traces[0].Spans[0].Meta[tagContainersTags], "pod_name:example-pod-name")
@@ -422,7 +457,7 @@ func TestTracesFallbackErrorMessage(t *testing.T) {
 	status.SetCode(pdata.StatusCodeError)
 
 	span.Attributes().InsertString(conventions.AttributeHTTPStatusCode, "404")
-	span.Attributes().InsertString(conventions.AttributeHTTPStatusText, "Not Found")
+	span.Attributes().InsertString("http.status_text", "Not Found")
 
 	// translate mocks to datadog traces
 	datadogPayload := resourceSpansToDatadogSpans(rs, hostname, &config.Config{}, denylister, map[string]string{})
@@ -462,21 +497,17 @@ func TestTracesTranslationErrorsFromEventsUsesLast(t *testing.T) {
 
 	event := events.AppendEmpty()
 	event.SetName(AttributeExceptionEventName)
-	event.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		conventions.AttributeExceptionType:       pdata.NewAttributeValueString("SomeOtherErr"),
-		conventions.AttributeExceptionStacktrace: pdata.NewAttributeValueString("SomeOtherErr at line 67\nthing at line 45"),
-		conventions.AttributeExceptionMessage:    pdata.NewAttributeValueString("SomeOtherErr error occurred"),
-	})
+	event.Attributes().InsertString(conventions.AttributeExceptionType, "SomeOtherErr")
+	event.Attributes().InsertString(conventions.AttributeExceptionStacktrace, "SomeOtherErr at line 67\nthing at line 45")
+	event.Attributes().InsertString(conventions.AttributeExceptionMessage, "SomeOtherErr error occurred")
 
 	event = events.AppendEmpty()
 	event.SetName(AttributeExceptionEventName)
-	event.Attributes().InitFromMap(attribs)
+	pdata.NewAttributeMapFromMap(attribs).CopyTo(event.Attributes())
 
 	event = events.AppendEmpty()
 	event.SetName("end")
-	event.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		"flag": pdata.NewAttributeValueBool(false),
-	})
+	event.Attributes().InsertBool("flag", false)
 
 	// translate mocks to datadog traces
 	cfg := config.Config{
@@ -525,16 +556,14 @@ func TestTracesTranslationErrorsFromEventsBounds(t *testing.T) {
 
 	evt := events.AppendEmpty()
 	evt.SetName(AttributeExceptionEventName)
-	evt.Attributes().InitFromMap(attribs)
+	pdata.NewAttributeMapFromMap(attribs).CopyTo(evt.Attributes())
 
 	evt = events.AppendEmpty()
 	evt.SetName("start")
 
 	evt = events.AppendEmpty()
 	evt.SetName("end")
-	evt.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		"flag": pdata.NewAttributeValueBool(false),
-	})
+	evt.Attributes().InsertBool("flag", false)
 
 	// translate mocks to datadog traces
 	cfg := config.Config{
@@ -557,15 +586,13 @@ func TestTracesTranslationErrorsFromEventsBounds(t *testing.T) {
 	// Now with the error event at the end of the list...
 	events.At(0).SetName("start")
 	// Reset the attributes
-	events.At(0).Attributes().InitFromMap(map[string]pdata.AttributeValue{})
+	pdata.NewAttributeMap().CopyTo(events.At(0).Attributes())
 
 	events.At(1).SetName("end")
-	events.At(1).Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		"flag": pdata.NewAttributeValueBool(false),
-	})
+	events.At(1).Attributes().InsertBool("flag", false)
 
 	events.At(2).SetName(AttributeExceptionEventName)
-	events.At(2).Attributes().InitFromMap(attribs)
+	pdata.NewAttributeMapFromMap(attribs).CopyTo(events.At(2).Attributes())
 
 	// Ensure the error type is copied over
 	assert.Equal(t, attribs[conventions.AttributeExceptionType].StringVal(), datadogPayload.Traces[0].Spans[0].Meta[ext.ErrorType])
@@ -623,7 +650,7 @@ func TestTracesTranslationOkStatus(t *testing.T) {
 	// ensure that version gives resource service.version priority
 	assert.Equal(t, "test-version", datadogPayload.Traces[0].Spans[0].Meta["version"])
 
-	assert.Equal(t, 20, len(datadogPayload.Traces[0].Spans[0].Meta))
+	assert.Equal(t, 21, len(datadogPayload.Traces[0].Spans[0].Meta))
 }
 
 // ensure that the datadog span uses the configured unified service tags
@@ -670,7 +697,7 @@ func TestTracesTranslationConfig(t *testing.T) {
 	// ensure that version gives resource service.version priority
 	assert.Equal(t, "test-version", datadogPayload.Traces[0].Spans[0].Meta["version"])
 
-	assert.Equal(t, 17, len(datadogPayload.Traces[0].Spans[0].Meta))
+	assert.Equal(t, 18, len(datadogPayload.Traces[0].Spans[0].Meta))
 }
 
 // ensure that the translation returns early if no resource instrumentation library spans
@@ -805,7 +832,7 @@ func TestTracesTranslationServicePeerName(t *testing.T) {
 	assert.Equal(t, "web", datadogPayload.Traces[0].Spans[0].Type)
 
 	// ensure that span.meta and span.metrics pick up attributes, instrumentation ibrary and resource attribs
-	assert.Equal(t, 11, len(datadogPayload.Traces[0].Spans[0].Meta))
+	assert.Equal(t, 12, len(datadogPayload.Traces[0].Spans[0].Meta))
 	assert.Equal(t, 1, len(datadogPayload.Traces[0].Spans[0].Metrics))
 
 	// ensure that span error is based on otlp span status
@@ -880,7 +907,7 @@ func TestTracesTranslationTruncatetag(t *testing.T) {
 	assert.Equal(t, "web", datadogPayload.Traces[0].Spans[0].Type)
 
 	// ensure that span.meta and span.metrics pick up attributes, instrumentation ibrary and resource attribs
-	assert.Equal(t, 11, len(datadogPayload.Traces[0].Spans[0].Meta))
+	assert.Equal(t, 12, len(datadogPayload.Traces[0].Spans[0].Meta))
 	assert.Equal(t, 1, len(datadogPayload.Traces[0].Spans[0].Metrics))
 
 	// ensure that span error is based on otlp span status
@@ -1249,6 +1276,7 @@ func TestStatsAggregations(t *testing.T) {
 	statsOutput := computeAPMStats(&datadogPayload, time.Now().UTC().UnixNano())
 
 	var statsVersionTag stats.Tag
+	var httpStatusCodeTag stats.Tag
 
 	// extract the first stats.TagSet containing a stats.Tag of "version"
 	for _, countVal := range statsOutput.Stats[0].Counts {
@@ -1256,10 +1284,14 @@ func TestStatsAggregations(t *testing.T) {
 			if tagVal.Name == versionAggregationTag {
 				statsVersionTag = tagVal
 			}
+			if tagVal.Name == httpStatusCodeAggregationTag {
+				httpStatusCodeTag = tagVal
+			}
 		}
 	}
 
 	assert.Equal(t, "test-version", statsVersionTag.Value)
+	assert.Equal(t, "501", httpStatusCodeTag.Value)
 }
 
 // ensure that stats payloads get adjusted for approriate sampling weight
@@ -1284,12 +1316,7 @@ func TestSamplingWeightedStatsAggregations(t *testing.T) {
 	instrumentationLibrary.SetName("flash")
 	instrumentationLibrary.SetVersion("v1")
 	span := ilss.Spans().AppendEmpty()
-
-	attribs := map[string]pdata.AttributeValue{
-		"_sample_rate": pdata.NewAttributeValueString("0.2"),
-	}
-
-	span.Attributes().InitFromMap(attribs)
+	span.Attributes().InsertString("_sample_rate", "0.2")
 	span.SetKind(pdata.SpanKindServer)
 
 	// translate mocks to datadog traces
@@ -1324,9 +1351,7 @@ func TestSanitization(t *testing.T) {
 	traces.ResourceSpans().EnsureCapacity(1)
 	rs := traces.ResourceSpans().AppendEmpty()
 	resource := rs.Resource()
-	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		"deployment.environment": pdata.NewAttributeValueString("UpperCase"),
-	})
+	resource.Attributes().InsertString("deployment.environment", "UpperCase")
 	rs.InstrumentationLibrarySpans().EnsureCapacity(1)
 	ilss := rs.InstrumentationLibrarySpans().AppendEmpty()
 	instrumentationLibrary := ilss.InstrumentationLibrary()
@@ -1424,9 +1449,7 @@ func TestSpanNameMapping(t *testing.T) {
 	traces.ResourceSpans().EnsureCapacity(1)
 	rs := traces.ResourceSpans().AppendEmpty()
 	resource := rs.Resource()
-	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		"deployment.environment": pdata.NewAttributeValueString("UpperCase"),
-	})
+	resource.Attributes().InsertString("deployment.environment", "UpperCase")
 	rs.InstrumentationLibrarySpans().EnsureCapacity(1)
 	ilss := rs.InstrumentationLibrarySpans().AppendEmpty()
 	instrumentationLibrary := ilss.InstrumentationLibrary()
@@ -1476,10 +1499,8 @@ func TestSpanEnvClobbering(t *testing.T) {
 	traces.ResourceSpans().EnsureCapacity(1)
 	rs := traces.ResourceSpans().AppendEmpty()
 	resource := rs.Resource()
-	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		conventions.AttributeDeploymentEnvironment: pdata.NewAttributeValueString("correctenv"),
-		"env": pdata.NewAttributeValueString("incorrectenv"),
-	})
+	resource.Attributes().InsertString(conventions.AttributeDeploymentEnvironment, "correctenv")
+	resource.Attributes().InsertString("env", "incorrectenv")
 
 	rs.InstrumentationLibrarySpans().EnsureCapacity(1)
 	ilss := rs.InstrumentationLibrarySpans().AppendEmpty()
@@ -1525,9 +1546,7 @@ func TestSpanRateLimitTag(t *testing.T) {
 	traces.ResourceSpans().EnsureCapacity(1)
 	rs := traces.ResourceSpans().AppendEmpty()
 	resource := rs.Resource()
-	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		conventions.AttributeDeploymentEnvironment: pdata.NewAttributeValueString("correctenv"),
-	})
+	resource.Attributes().InsertString(conventions.AttributeDeploymentEnvironment, "correctenv")
 
 	rs.InstrumentationLibrarySpans().EnsureCapacity(1)
 	ilss := rs.InstrumentationLibrarySpans().AppendEmpty()
@@ -1540,7 +1559,7 @@ func TestSpanRateLimitTag(t *testing.T) {
 		"_sample_rate": pdata.NewAttributeValueString("0.5"),
 	}
 
-	span.Attributes().InitFromMap(attribs)
+	pdata.NewAttributeMapFromMap(attribs).CopyTo(span.Attributes())
 
 	traceID := pdata.NewTraceID(mockTraceID)
 	spanID := pdata.NewSpanID(mockSpanID)
@@ -1556,4 +1575,33 @@ func TestSpanRateLimitTag(t *testing.T) {
 	outputTraces, _ := convertToDatadogTd(traces, "test-host", &config.Config{}, denylister, buildInfo)
 
 	assert.Equal(t, 0.5, outputTraces[0].Traces[0].Spans[0].Metrics["_sample_rate"])
+}
+
+func TestTracesSpanNamingOption(t *testing.T) {
+	hostname := "testhostname"
+	denylister := newDenylister([]string{})
+
+	// generate mock trace, span and parent span ids
+	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
+	mockSpanID := [8]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8}
+	mockParentSpanID := [8]byte{0xEF, 0xEE, 0xED, 0xEC, 0xEB, 0xEA, 0xE9, 0xE8}
+
+	mockEndTime := time.Now().Round(time.Second)
+
+	// create mock resource span data
+	// toggle on errors and custom service naming to test edge case code paths
+	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, pdata.StatusCodeUnset, false, mockEndTime)
+
+	// start with span name as resource name set to true
+	cfgSpanNameAsResourceName := config.Config{
+		Traces: config.TracesConfig{
+			SpanNameAsResourceName: true,
+		},
+	}
+
+	// translate mocks to datadog traces
+	datadogPayloadSpanNameAsResourceName := resourceSpansToDatadogSpans(rs, hostname, &cfgSpanNameAsResourceName, denylister, map[string]string{})
+
+	// ensure the resource name is replaced with the span name when the option is set
+	assert.Equal(t, "End-To-End Here", datadogPayloadSpanNameAsResourceName.Traces[0].Spans[0].Name)
 }

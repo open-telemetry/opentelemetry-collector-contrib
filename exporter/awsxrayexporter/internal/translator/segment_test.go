@@ -24,7 +24,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.8.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
@@ -42,7 +42,40 @@ var (
 	testWriters = newWriterPool(2048)
 )
 
-func TestClientSpanWithAwsSdkClient(t *testing.T) {
+func TestClientSpanWithRpcAwsSdkClientAttributes(t *testing.T) {
+	spanName := "AmazonDynamoDB.getItem"
+	parentSpanID := newSegmentID()
+	user := "testingT"
+	attributes := make(map[string]interface{})
+	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPScheme] = "https"
+	attributes[conventions.AttributeHTTPHost] = "dynamodb.us-east-1.amazonaws.com"
+	attributes[conventions.AttributeHTTPTarget] = "/"
+	attributes[conventions.AttributeRPCService] = "DynamoDB"
+	attributes[conventions.AttributeRPCMethod] = "GetItem"
+	attributes[conventions.AttributeRPCSystem] = "aws-api"
+	attributes[awsxray.AWSRequestIDAttribute] = "18BO1FEPJSSAOGNJEDPTPCMIU7VV4KQNSO5AEMVJF66Q9ASUAAJG"
+	attributes[awsxray.AWSTableNameAttribute] = "otel-dev-Testing"
+	resource := constructDefaultResource()
+	span := constructClientSpan(parentSpanID, spanName, 0, "OK", attributes)
+
+	segment, _ := MakeSegment(span, resource, nil, false)
+	assert.Equal(t, "DynamoDB", *segment.Name)
+	assert.Equal(t, conventions.AttributeCloudProviderAWS, *segment.Namespace)
+	assert.Equal(t, "GetItem", *segment.AWS.Operation)
+	assert.Equal(t, "subsegment", *segment.Type)
+
+	jsonStr, err := MakeSegmentDocumentString(span, resource, nil, false)
+
+	assert.NotNil(t, jsonStr)
+	assert.Nil(t, err)
+	assert.True(t, strings.Contains(jsonStr, "DynamoDB"))
+	assert.True(t, strings.Contains(jsonStr, "GetItem"))
+	assert.False(t, strings.Contains(jsonStr, user))
+	assert.False(t, strings.Contains(jsonStr, "user"))
+}
+
+func TestClientSpanWithLegacyAwsSdkClientAttributes(t *testing.T) {
 	spanName := "AmazonDynamoDB.getItem"
 	parentSpanID := newSegmentID()
 	user := "testingT"
@@ -52,6 +85,7 @@ func TestClientSpanWithAwsSdkClient(t *testing.T) {
 	attributes[conventions.AttributeHTTPHost] = "dynamodb.us-east-1.amazonaws.com"
 	attributes[conventions.AttributeHTTPTarget] = "/"
 	attributes[awsxray.AWSServiceAttribute] = "DynamoDB"
+	attributes[conventions.AttributeRPCMethod] = "IncorrectAWSSDKOperation"
 	attributes[awsxray.AWSOperationAttribute] = "GetItem"
 	attributes[awsxray.AWSRequestIDAttribute] = "18BO1FEPJSSAOGNJEDPTPCMIU7VV4KQNSO5AEMVJF66Q9ASUAAJG"
 	attributes[awsxray.AWSTableNameAttribute] = "otel-dev-Testing"
@@ -60,7 +94,8 @@ func TestClientSpanWithAwsSdkClient(t *testing.T) {
 
 	segment, _ := MakeSegment(span, resource, nil, false)
 	assert.Equal(t, "DynamoDB", *segment.Name)
-	assert.Equal(t, "aws", *segment.Namespace)
+	assert.Equal(t, conventions.AttributeCloudProviderAWS, *segment.Namespace)
+	assert.Equal(t, "GetItem", *segment.AWS.Operation)
 	assert.Equal(t, "subsegment", *segment.Type)
 
 	jsonStr, err := MakeSegmentDocumentString(span, resource, nil, false)
@@ -68,6 +103,7 @@ func TestClientSpanWithAwsSdkClient(t *testing.T) {
 	assert.NotNil(t, jsonStr)
 	assert.Nil(t, err)
 	assert.True(t, strings.Contains(jsonStr, "DynamoDB"))
+	assert.True(t, strings.Contains(jsonStr, "GetItem"))
 	assert.False(t, strings.Contains(jsonStr, user))
 	assert.False(t, strings.Contains(jsonStr, "user"))
 }
@@ -103,7 +139,7 @@ func TestServerSpanWithInternalServerError(t *testing.T) {
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.org/api/locations"
 	attributes[conventions.AttributeHTTPTarget] = "/api/locations"
 	attributes[conventions.AttributeHTTPStatusCode] = 500
-	attributes[conventions.AttributeHTTPStatusText] = "java.lang.NullPointerException"
+	attributes["http.status_text"] = "java.lang.NullPointerException"
 	attributes[conventions.AttributeHTTPUserAgent] = userAgent
 	attributes[conventions.AttributeEnduserID] = enduser
 	resource := constructDefaultResource()
@@ -130,7 +166,7 @@ func TestServerSpanWithThrottle(t *testing.T) {
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.org/api/locations"
 	attributes[conventions.AttributeHTTPTarget] = "/api/locations"
 	attributes[conventions.AttributeHTTPStatusCode] = 429
-	attributes[conventions.AttributeHTTPStatusText] = "java.lang.NullPointerException"
+	attributes["http.status_text"] = "java.lang.NullPointerException"
 	attributes[conventions.AttributeHTTPUserAgent] = userAgent
 	attributes[conventions.AttributeEnduserID] = enduser
 	resource := constructDefaultResource()
@@ -645,6 +681,23 @@ func TestOriginEks(t *testing.T) {
 	assert.Equal(t, OriginEKS, *segment.Origin)
 }
 
+func TestOriginAppRunner(t *testing.T) {
+	spanName := "/test"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]interface{})
+	resource := pdata.NewResource()
+	attrs := pdata.NewAttributeMap()
+	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSAppRunner)
+	attrs.CopyTo(resource.Attributes())
+	span := constructServerSpan(parentSpanID, spanName, pdata.StatusCodeError, "OK", attributes)
+
+	segment, _ := MakeSegment(span, resource, []string{}, false)
+
+	assert.NotNil(t, segment)
+	assert.Equal(t, OriginAppRunner, *segment.Origin)
+}
+
 func TestOriginBlank(t *testing.T) {
 	spanName := "/test"
 	parentSpanID := newSegmentID()
@@ -696,9 +749,9 @@ func TestFilteredAttributesMetadata(t *testing.T) {
 	attrs.InsertNull("null_value")
 
 	arrayValue := pdata.NewAttributeValueArray()
-	arrayValue.ArrayVal().AppendEmpty().SetIntVal(12)
-	arrayValue.ArrayVal().AppendEmpty().SetIntVal(34)
-	arrayValue.ArrayVal().AppendEmpty().SetIntVal(56)
+	arrayValue.SliceVal().AppendEmpty().SetIntVal(12)
+	arrayValue.SliceVal().AppendEmpty().SetIntVal(34)
+	arrayValue.SliceVal().AppendEmpty().SetIntVal(56)
 	attrs.Insert("array_value", arrayValue)
 
 	mapValue := pdata.NewAttributeValueMap()
@@ -820,7 +873,7 @@ func constructDefaultResource() pdata.Resource {
 	attrs.Insert(resourceMapKey, resourceMapVal)
 
 	resourceArrayVal := pdata.NewAttributeValueArray()
-	resourceArray := resourceArrayVal.ArrayVal()
+	resourceArray := resourceArrayVal.SliceVal()
 	resourceArray.AppendEmpty().SetStringVal("foo")
 	resourceArray.AppendEmpty().SetStringVal("bar")
 	attrs.Insert(resourceArrayKey, resourceArrayVal)
@@ -830,7 +883,7 @@ func constructDefaultResource() pdata.Resource {
 
 func constructTimedEventsWithReceivedMessageEvent(tm pdata.Timestamp) pdata.SpanEventSlice {
 	eventAttr := pdata.NewAttributeMap()
-	eventAttr.InsertString(conventions.AttributeMessageType, "RECEIVED")
+	eventAttr.InsertString("message.type", "RECEIVED")
 	eventAttr.InsertInt(conventions.AttributeMessagingMessageID, 1)
 	eventAttr.InsertInt(conventions.AttributeMessagingMessagePayloadCompressedSizeBytes, 6478)
 	eventAttr.InsertInt(conventions.AttributeMessagingMessagePayloadSizeBytes, 12452)
@@ -847,7 +900,7 @@ func constructTimedEventsWithReceivedMessageEvent(tm pdata.Timestamp) pdata.Span
 
 func constructTimedEventsWithSentMessageEvent(tm pdata.Timestamp) pdata.SpanEventSlice {
 	eventAttr := pdata.NewAttributeMap()
-	eventAttr.InsertString(conventions.AttributeMessageType, "SENT")
+	eventAttr.InsertString("message.type", "SENT")
 	eventAttr.InsertInt(conventions.AttributeMessagingMessageID, 1)
 	eventAttr.InsertInt(conventions.AttributeMessagingMessagePayloadSizeBytes, 7480)
 

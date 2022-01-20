@@ -12,15 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pagingscraper
+package pagingscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper"
 
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
 )
 
 // This file implements Factory for Paging scraper.
@@ -48,11 +48,9 @@ func (f *Factory) CreateMetricsScraper(
 	cfg := config.(*Config)
 	s := newPagingScraper(ctx, cfg)
 
-	ms := scraperhelper.NewMetricsScraper(
+	return scraperhelper.NewScraper(
 		TypeStr,
 		s.scrape,
 		scraperhelper.WithStart(s.start),
 	)
-
-	return ms, nil
 }

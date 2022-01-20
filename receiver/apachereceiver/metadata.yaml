@@ -1,0 +1,86 @@
+name: apachereceiver
+
+attributes:
+  server_name:
+    description: The name of the Apache HTTP server.
+  workers_state:
+    value: state
+    description: The state of workers.
+    enum:
+      - busy
+      - idle
+  scoreboard_state:
+    value: state
+    description: The state of a connection.
+    enum:
+      - open
+      - waiting
+      - starting
+      - reading
+      - sending
+      - keepalive
+      - dnslookup
+      - closing
+      - logging
+      - finishing
+      - idle_cleanup
+
+metrics:
+  apache.uptime:
+    enabled: true
+    description: The amount of time that the server has been running in seconds.
+    unit: s
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation: cumulative
+    attributes: [ server_name ]
+  apache.current_connections:
+    enabled: true
+    description: The number of active connections currently attached to the HTTP server.
+    unit: connections
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation: cumulative
+    attributes: [ server_name ]
+  apache.workers:
+    enabled: true
+    description: The number of workers currently attached to the HTTP server.
+    unit: connections
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation: cumulative
+    attributes: [ server_name, workers_state]
+  apache.requests:
+    enabled: true
+    description: The number of requests serviced by the HTTP server per second.
+    unit: 1
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation: cumulative
+    attributes: [ server_name ]
+  apache.traffic:
+    enabled: true
+    description: Total HTTP server traffic.
+    unit: By
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation: cumulative
+    attributes: [ server_name ]
+  apache.scoreboard:
+    enabled: true
+    description: The number of connections in each state.
+    extended_documentation: >
+      The apache scoreboard is an encoded representation of the state of all the server's workers.
+      This metric decodes the scoreboard and presents a count of workers in each state.
+      Additional details can be found [here](https://support.cpanel.net/hc/en-us/articles/360052040234-Understanding-the-Apache-scoreboard).
+    unit: scoreboard
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation: cumulative
+    attributes: [server_name, scoreboard_state]

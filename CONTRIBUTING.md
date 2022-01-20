@@ -6,6 +6,13 @@ before you begin your work.
 
 ## Adding New Components
 
+**Before** any code is written, [open an issue](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/new?assignees=&labels=new+component&template=new_component.md&title=New%20component) providing the following information:
+
+* Who's the sponsor for your component. A sponsor is an approver who will be in charge of being the official reviewer of the code and become a code owner for the component. For vendor-specific components, it's good to have a volunteer sponsor. If you can't find one, we'll assign one in a round-robin fashion. For non-vendor specific components, having a sponsor means that your use case has been validated.
+* Some information about your component, such as the reasoning behind it, use-cases, telemetry data types supported, and anything else you think is relevant for us to make a decision about accepting the component.
+* The configuration options your component will accept. This will help us understand what it does and have an idea of how the implementation might look like.
+
+
 Any component (receiver, processor, exporter, or extension) needs to implement
 the interfaces defined on the [core
 repository](https://github.com/open-telemetry/opentelemetry-collector).
@@ -46,6 +53,13 @@ contributors.
   needed.
 - Add a `replace` directive at the root `go.mod` file so your component is
   included in the build of the contrib executable.
+- Add your component to `versions.yaml`.
+- All components must be included in [`internal/components/`](./internal/components) 
+  and in the respective testing harnesses. To align with the test goal of the project, 
+  components must be testable within the framework defined within the folder.
+  If a component can not be properly tested within the existing framework, 
+  it must increase the non testable components number
+  with a comment within the PR explaining as to why it can not be tested.
 
 ## General Recommendations
 Below are some recommendations that apply to typical components. These are not

@@ -12,14 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package windowsperfcountersreceiver
+package windowsperfcountersreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver"
 
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/consumer/consumererror"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.uber.org/multierr"
 )
 
 // Config defines configuration for WindowsPerfCounters receiver.
@@ -37,14 +36,14 @@ type PerfCounterConfig struct {
 }
 
 func (c *Config) Validate() error {
-	var errors []error
+	var errs error
 
 	if c.CollectionInterval <= 0 {
-		errors = append(errors, fmt.Errorf("collection_interval must be a positive duration"))
+		errs = multierr.Append(errs, fmt.Errorf("collection_interval must be a positive duration"))
 	}
 
 	if len(c.PerfCounters) == 0 {
-		errors = append(errors, fmt.Errorf("must specify at least one perf counter"))
+		errs = multierr.Append(errs, fmt.Errorf("must specify at least one perf counter"))
 	}
 
 	var perfCounterMissingObjectName bool
@@ -56,19 +55,19 @@ func (c *Config) Validate() error {
 
 		for _, instance := range pc.Instances {
 			if instance == "" {
-				errors = append(errors, fmt.Errorf("perf counter for object %q includes an empty instance", pc.Object))
+				errs = multierr.Append(errs, fmt.Errorf("perf counter for object %q includes an empty instance", pc.Object))
 				break
 			}
 		}
 
 		if len(pc.Counters) == 0 {
-			errors = append(errors, fmt.Errorf("perf counter for object %q does not specify any counters", pc.Object))
+			errs = multierr.Append(errs, fmt.Errorf("perf counter for object %q does not specify any counters", pc.Object))
 		}
 	}
 
 	if perfCounterMissingObjectName {
-		errors = append(errors, fmt.Errorf("must specify object name for all perf counters"))
+		errs = multierr.Append(errs, fmt.Errorf("must specify object name for all perf counters"))
 	}
 
-	return consumererror.Combine(errors)
+	return errs
 }

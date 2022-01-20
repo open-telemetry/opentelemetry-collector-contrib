@@ -12,42 +12,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package stanza
+package stanza // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
+	"encoding/binary"
 	"errors"
 	"fmt"
+	"hash/fnv"
 	"math"
 	"runtime"
+	"sort"
 	"sync"
-	"time"
 
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 )
 
-const (
-	// DefaultFlushInterval is the default flush interval.
-	DefaultFlushInterval = 100 * time.Millisecond
-	// DefaultMaxFlushCount is the default max flush count.
-	DefaultMaxFlushCount = 100
-)
-
-// Converter converts entry.Entry into pdata.Logs aggregating translated
+// Converter converts a batch of entry.Entry into pdata.Logs aggregating translated
 // entries into logs coming from the same Resource.
-// Logs are being sent out based on the flush interval and/or the maximum
-// batch size.
 //
 // The diagram below illustrates the internal communication inside the Converter:
 //
 //            ┌─────────────────────────────────┐
 //            │ Batch()                         │
-//  ┌─────────┤  Ingests log entries and sends  │
-//  │         │  them onto a workerChan         │
+//  ┌─────────┤  Ingests batches of log entries │
+//  │         │  and sends them onto workerChan │
 //  │         └─────────────────────────────────┘
 //  │
 //  │ ┌───────────────────────────────────────────────────┐
@@ -58,16 +49,15 @@ const (
 //  └─┼─┼─► workerLoop()                                      │
 //    └─┤ │   consumes sent log entries from workerChan,      │
 //      │ │   translates received entries to pdata.LogRecords,│
-//      └─┤   marshalls them to JSON and send them onto       │
-//        │   batchChan                                       │
+//      └─┤   hashes them to generate an ID, and sends them   │
+//        │   onto batchChan                                  │
 //        └─────────────────────────┬─────────────────────────┘
 //                                  │
 //                                  ▼
 //      ┌─────────────────────────────────────────────────────┐
-//      │ batchLoop()                                         │
+//      │ aggregationLoop()                                   │
 //      │   consumes from batchChan, aggregates log records   │
-//      │   by marshaled Resource and based on flush interval │
-//      │   and maxFlushCount decides whether to send the     │
+//      │   by marshaled Resource and sends the               │
 //      │   aggregated buffer to flushChan                    │
 //      └───────────────────────────┬─────────────────────────┘
 //                                  │
@@ -80,7 +70,7 @@ const (
 //      └─────────────────────────────────────────────────────┘
 //
 type Converter struct {
-	// pLogsChan is a channel on which batched logs will be sent to.
+	// pLogsChan is a channel on which aggregated logs will be sent to.
 	pLogsChan chan pdata.Logs
 
 	stopOnce sync.Once
@@ -88,28 +78,16 @@ type Converter struct {
 
 	// workerChan is an internal communication channel that gets the log
 	// entries from Batch() calls and it receives the data in workerLoop().
-	workerChan chan *entry.Entry
+	workerChan chan []*entry.Entry
 	// workerCount configures the amount of workers started.
 	workerCount int
-	// batchChan obtains log entries converted by the pool of workers,
-	// in a form of logRecords grouped by Resource and then after aggregating
-	// them decides based on maxFlushCount if the flush should be triggered.
-	// If also serves the ticker flushes configured by flushInterval.
-	batchChan chan *workerItem
+	// aggregationChan obtains log entries converted by the pool of workers,
+	// in a form of logRecords grouped by Resource and then sends aggregated logs
+	// on flushChan.
+	aggregationChan chan []workerItem
 
-	// flushInterval defines how often we flush the aggregated log entries.
-	flushInterval time.Duration
-	// maxFlushCount defines what's the amount of entries in the buffer that
-	// will trigger a flush of log entries.
-	maxFlushCount uint
 	// flushChan is an internal channel used for transporting batched pdata.Logs.
 	flushChan chan pdata.Logs
-
-	// data holds currently converted and aggregated log entries, grouped by Resource.
-	data map[string]pdata.Logs
-	// logRecordCount holds the number of translated and accumulated log Records
-	// and is compared against maxFlushCount to make a decision whether to flush.
-	logRecordCount uint
 
 	// wg is a WaitGroup that makes sure that we wait for spun up goroutines exit
 	// when Stop() is called.
@@ -128,18 +106,6 @@ func (f optionFunc) apply(c *Converter) {
 	f(c)
 }
 
-func WithFlushInterval(interval time.Duration) ConverterOption {
-	return optionFunc(func(c *Converter) {
-		c.flushInterval = interval
-	})
-}
-
-func WithMaxFlushCount(count uint) ConverterOption {
-	return optionFunc(func(c *Converter) {
-		c.maxFlushCount = count
-	})
-}
-
 func WithLogger(logger *zap.Logger) ConverterOption {
 	return optionFunc(func(c *Converter) {
 		c.logger = logger
@@ -154,16 +120,13 @@ func WithWorkerCount(workerCount int) ConverterOption {
 
 func NewConverter(opts ...ConverterOption) *Converter {
 	c := &Converter{
-		workerChan:    make(chan *entry.Entry),
-		workerCount:   int(math.Max(1, float64(runtime.NumCPU()/4))),
-		batchChan:     make(chan *workerItem),
-		data:          make(map[string]pdata.Logs),
-		pLogsChan:     make(chan pdata.Logs),
-		stopChan:      make(chan struct{}),
-		logger:        zap.NewNop(),
-		flushChan:     make(chan pdata.Logs),
-		flushInterval: DefaultFlushInterval,
-		maxFlushCount: DefaultMaxFlushCount,
+		workerChan:      make(chan []*entry.Entry),
+		workerCount:     int(math.Max(1, float64(runtime.NumCPU()/4))),
+		aggregationChan: make(chan []workerItem),
+		pLogsChan:       make(chan pdata.Logs),
+		stopChan:        make(chan struct{}),
+		logger:          zap.NewNop(),
+		flushChan:       make(chan pdata.Logs),
 	}
 
 	for _, opt := range opts {
@@ -182,7 +145,7 @@ func (c *Converter) Start() {
 	}
 
 	c.wg.Add(1)
-	go c.batchLoop()
+	go c.aggregationLoop()
 
 	c.wg.Add(1)
 	go c.flushLoop()
@@ -202,21 +165,16 @@ func (c *Converter) OutChannel() <-chan pdata.Logs {
 }
 
 type workerItem struct {
-	Resource       map[string]string
-	LogRecord      pdata.LogRecord
-	ResourceString string
+	Resource   map[string]string
+	LogRecord  pdata.LogRecord
+	ResourceID uint64
 }
 
 // workerLoop is responsible for obtaining log entries from Batch() calls,
 // converting them to pdata.LogRecords and sending them together with the
-// associated Resource through the batchChan for aggregation.
+// associated Resource through the aggregationChan for aggregation.
 func (c *Converter) workerLoop() {
 	defer c.wg.Done()
-
-	var (
-		buff    = bytes.Buffer{}
-		encoder = json.NewEncoder(&buff)
-	)
 
 	for {
 
@@ -224,56 +182,55 @@ func (c *Converter) workerLoop() {
 		case <-c.stopChan:
 			return
 
-		case e, ok := <-c.workerChan:
+		case entries, ok := <-c.workerChan:
 			if !ok {
 				return
 			}
 
-			buff.Reset()
-			lr := convert(e)
+			workerItems := make([]workerItem, 0, len(entries))
 
-			if err := encoder.Encode(e.Resource); err != nil {
-				c.logger.Debug("Failed marshaling entry.Resource to JSON",
-					zap.Any("resource", e.Resource),
-				)
-				continue
+			for _, e := range entries {
+				lr := convert(e)
+				resourceID := getResourceID(e.Resource)
+				workerItems = append(workerItems, workerItem{
+					Resource:   e.Resource,
+					ResourceID: resourceID,
+					LogRecord:  lr,
+				})
 			}
 
 			select {
-			case c.batchChan <- &workerItem{
-				Resource:       e.Resource,
-				ResourceString: buff.String(),
-				LogRecord:      lr,
-			}:
+			case c.aggregationChan <- workerItems:
 			case <-c.stopChan:
 			}
 		}
 	}
 }
 
-// batchLoop is responsible for receiving the converted log entries and aggregating
+// aggregationLoop is responsible for receiving the converted log entries and aggregating
 // them by Resource.
-// Whenever maxFlushCount is reached or the ticker ticks a flush is triggered.
-func (c *Converter) batchLoop() {
+func (c *Converter) aggregationLoop() {
 	defer c.wg.Done()
 
-	ticker := time.NewTicker(c.flushInterval)
-	defer ticker.Stop()
+	resourceIDToLogs := make(map[uint64]pdata.Logs)
 
 	for {
 		select {
-		case wi, ok := <-c.batchChan:
+		case workerItems, ok := <-c.aggregationChan:
 			if !ok {
 				return
 			}
 
-			pLogs, ok := c.data[wi.ResourceString]
-			if ok {
-				lr := pLogs.ResourceLogs().
-					At(0).InstrumentationLibraryLogs().
-					At(0).Logs().AppendEmpty()
-				wi.LogRecord.CopyTo(lr)
-			} else {
+			for _, wi := range workerItems {
+				pLogs, ok := resourceIDToLogs[wi.ResourceID]
+				if ok {
+					lr := pLogs.ResourceLogs().
+						At(0).InstrumentationLibraryLogs().
+						At(0).Logs().AppendEmpty()
+					wi.LogRecord.CopyTo(lr)
+					continue
+				}
+
 				pLogs = pdata.NewLogs()
 				logs := pLogs.ResourceLogs()
 				rls := logs.AppendEmpty()
@@ -288,25 +245,14 @@ func (c *Converter) batchLoop() {
 				ills := rls.InstrumentationLibraryLogs()
 				lr := ills.AppendEmpty().Logs().AppendEmpty()
 				wi.LogRecord.CopyTo(lr)
+
+				resourceIDToLogs[wi.ResourceID] = pLogs
 			}
 
-			c.data[wi.ResourceString] = pLogs
-			c.logRecordCount++
-
-			if c.logRecordCount >= c.maxFlushCount {
-				for r, pLogs := range c.data {
-					c.flushChan <- pLogs
-					delete(c.data, r)
-				}
-				c.logRecordCount = 0
-			}
-
-		case <-ticker.C:
-			for r, pLogs := range c.data {
+			for r, pLogs := range resourceIDToLogs {
 				c.flushChan <- pLogs
-				delete(c.data, r)
+				delete(resourceIDToLogs, r)
 			}
-			c.logRecordCount = 0
 
 		case <-c.stopChan:
 			return
@@ -353,7 +299,7 @@ func (c *Converter) flush(ctx context.Context, pLogs pdata.Logs) error {
 }
 
 // Batch takes in an entry.Entry and sends it to an available worker for processing.
-func (c *Converter) Batch(e *entry.Entry) error {
+func (c *Converter) Batch(e []*entry.Entry) error {
 	select {
 	case c.workerChan <- e:
 		return nil
@@ -519,7 +465,7 @@ func toAttributeMap(obsMap map[string]interface{}) pdata.AttributeValue {
 
 func toAttributeArray(obsArr []interface{}) pdata.AttributeValue {
 	arrVal := pdata.NewAttributeValueArray()
-	arr := arrVal.ArrayVal()
+	arr := arrVal.SliceVal()
 	arr.EnsureCapacity(len(obsArr))
 	for _, v := range obsArr {
 		insertToAttributeVal(v, arr.AppendEmpty())
@@ -556,7 +502,7 @@ var sevMap = map[entry.Severity]pdata.SeverityNumber{
 }
 
 var sevTextMap = map[entry.Severity]string{
-	entry.Default: "Undefined",
+	entry.Default: "",
 	entry.Trace:   "Trace",
 	entry.Trace2:  "Trace2",
 	entry.Trace3:  "Trace3",
@@ -581,4 +527,43 @@ var sevTextMap = map[entry.Severity]string{
 	entry.Fatal2:  "Fatal2",
 	entry.Fatal3:  "Fatal3",
 	entry.Fatal4:  "Fatal4",
+}
+
+// pairSep is chosen to be an invalid byte for a utf-8 sequence
+// making it very unlikely to be present in the resource maps keys or values
+var pairSep = []byte{0xfe}
+
+// emptyResourceID is the ID returned by getResourceID when it is passed an empty resource.
+// This specific number is chosen as it is the starting offset of fnv64.
+const emptyResourceID uint64 = 14695981039346656037
+
+func getResourceID(resource map[string]string) uint64 {
+	if len(resource) == 0 {
+		return emptyResourceID
+	}
+
+	var fnvHash = fnv.New64a()
+	var fnvHashOut = make([]byte, 0, 16)
+	var keySlice = make([]string, 0, len(resource))
+
+	for k := range resource {
+		keySlice = append(keySlice, k)
+	}
+
+	if len(keySlice) > 1 {
+		// In order for this to be deterministic, we need to sort the map. Using range, like above,
+		// has no guarantee about order.
+		sort.Strings(keySlice)
+	}
+
+	for _, k := range keySlice {
+		fnvHash.Write([]byte(k))
+		fnvHash.Write(pairSep)
+
+		fnvHash.Write([]byte(resource[k]))
+		fnvHash.Write(pairSep)
+	}
+
+	fnvHashOut = fnvHash.Sum(fnvHashOut)
+	return binary.BigEndian.Uint64(fnvHashOut)
 }

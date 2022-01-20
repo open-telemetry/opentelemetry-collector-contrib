@@ -17,6 +17,21 @@ details of which are currently pending confirmation in the OpenTelemetry specifi
     * host.name
     * os.type
 
+By default `host.name` is being set to FQDN if possible, and a hostname provided by OS used as fallback.
+This logic can be changed with `hostname_sources` configuration which is set to `["dns", "os"]` by default.
+
+Use the following config to avoid getting FQDN and apply hostname provided by OS only:
+
+    ```yaml
+    detectors: ["system"]
+    system:
+        hostname_sources: ["os"]
+    ```
+
+    * all valid options for hostname_sources:
+        * "dns"
+        * "os"
+
 Use the Docker detector (see below) if running the Collector as a Docker container.
 
 * Docker metadata: Queries the Docker daemon to retrieve the following resource attributes from the host machine:
@@ -57,7 +72,7 @@ to read resource information from the [GCE metadata server](https://cloud.google
     * host.name
     * host.type
 
-It also can optionally gather tags for the EC2 instance that the collector is running on. 
+It also can optionally gather tags for the EC2 instance that the collector is running on.
 Note that in order to fetch EC2 tags, the IAM role assigned to the EC2 instance must have a policy that includes the `ec2:DescribeTags` permission.
 
 EC2 custom configuration example:
@@ -70,6 +85,8 @@ ec2:
         - ^tag2$
         - ^label.*$
 ```
+
+If you are using a proxy server on your EC2 instance, it's important that you exempt requests for instance metadata as [described in the AWS cli user guide](https://github.com/awsdocs/aws-cli-user-guide/blob/a2393582590b64bd2a1d9978af15b350e1f9eb8e/doc_source/cli-configure-proxy.md#using-a-proxy-on-amazon-ec2-instances). Failing to do so can result in proxied or missing instance data.
 
 * Amazon ECS: Queries the [Task Metadata Endpoint](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-metadata-endpoint.html) (TMDE) to record information about the current ECS Task. Only TMDE V4 and V3 are supported.
 
@@ -87,7 +104,7 @@ ec2:
     * aws.log.group.arns (V4 only)
     * aws.log.stream.names (V4 only)
     * aws.log.stream.arns (V4 only)
-    
+
 * Amazon Elastic Beanstalk: Reads the AWS X-Ray configuration file available on all Beanstalk instances with [X-Ray Enabled](https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/environment-configuration-debugging.html).
 
     * cloud.provider ("aws")
@@ -100,8 +117,7 @@ ec2:
 
     * cloud.provider ("aws")
     * cloud.platform ("aws_eks")
-    * k8s.cluster.name (name of the EKS cluster)
-    
+
 * Azure: Queries the [Azure Instance Metadata Service](https://aka.ms/azureimds) to retrieve the following resource attributes:
 
     * cloud.provider ("azure")
@@ -118,6 +134,13 @@ ec2:
 
   * cloud.provider ("azure")
   * cloud.platform ("azure_aks")
+
+* Consul: Queries a [consul agent](https://www.consul.io/docs/agent) and reads its' [configuration endpoint](https://www.consul.io/api-docs/agent#read-configuration) to retrieve the following resource attributes:
+
+  * cloud.region (consul datacenter)
+  * host.id (consul node id)
+  * host.name (consul node name)
+  * *exploded consul metadata* - reads all key:value pairs in [consul metadata](https://www.consul.io/docs/agent/options#_node_meta) into label:labelvalue pairs.
 
 ## Configuration
 

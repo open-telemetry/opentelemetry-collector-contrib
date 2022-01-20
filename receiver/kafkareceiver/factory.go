@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package kafkareceiver
+package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver"
 
 import (
 	"context"
 	"time"
 
+	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
@@ -41,6 +42,11 @@ const (
 	defaultMetadataRetryBackoff = time.Millisecond * 250
 	// default from sarama.NewConfig()
 	defaultMetadataFull = true
+
+	// default from sarama.NewConfig()
+	defaultAutoCommitEnable = true
+	// default from sarama.NewConfig()
+	defaultAutoCommitInterval = 1 * time.Second
 )
 
 // FactoryOption applies changes to kafkaExporterFactory.
@@ -75,6 +81,8 @@ func WithLogsUnmarshalers(logsUnmarshalers ...LogsUnmarshaler) FactoryOption {
 
 // NewFactory creates Kafka receiver factory.
 func NewFactory(options ...FactoryOption) component.ReceiverFactory {
+	_ = view.Register(MetricViews()...)
+
 	f := &kafkaReceiverFactory{
 		tracesUnmarshalers:  defaultTracesUnmarshalers(),
 		metricsUnmarshalers: defaultMetricsUnmarshalers(),
@@ -94,7 +102,7 @@ func NewFactory(options ...FactoryOption) component.ReceiverFactory {
 
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		Topic:            defaultTopic,
 		Encoding:         defaultEncoding,
 		Brokers:          []string{defaultBroker},
@@ -106,6 +114,14 @@ func createDefaultConfig() config.Receiver {
 				Max:     defaultMetadataRetryMax,
 				Backoff: defaultMetadataRetryBackoff,
 			},
+		},
+		AutoCommit: AutoCommit{
+			Enable:   defaultAutoCommitEnable,
+			Interval: defaultAutoCommitInterval,
+		},
+		MessageMarking: MessageMarking{
+			After:   false,
+			OnError: false,
 		},
 	}
 }

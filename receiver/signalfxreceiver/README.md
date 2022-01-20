@@ -23,10 +23,11 @@ The following settings are optional:
 
 - `access_token_passthrough`: (default = `false`) Whether to preserve incoming
   access token (`X-Sf-Token` header value) as
-  `"com.splunk.signalfx.access_token"` metric resource label.  Can be used in
-  tandem with identical configuration option for [SignalFx
+  `"com.splunk.signalfx.access_token"` metric resource attribute.  Should only be
+  used in tandem with identical configuration option for [SignalFx
   exporter](../../exporter/signalfxexporter/README.md) to preserve datapoint
-  origin.
+  origin.  Usage of any other exporter in a metric pipeline with this configuration
+  option enabled will reveal all organization access tokens contained in this attribute.
 - `tls_settings` (no default): This is an optional object used to specify if
   TLS should be used for incoming connections. Both `key_file` and `cert_file`
   are required to support incoming TLS connections.

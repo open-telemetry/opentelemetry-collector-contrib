@@ -27,8 +27,8 @@ import (
 	"testing"
 	"time"
 
-	psnet "github.com/shirou/gopsutil/net"
-	"github.com/shirou/gopsutil/process"
+	psnet "github.com/shirou/gopsutil/v3/net"
+	"github.com/shirou/gopsutil/v3/process"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"

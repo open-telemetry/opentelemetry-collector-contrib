@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configcheck"
+	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 )
 
@@ -31,7 +31,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, "dotnet_diagnostics", string(f.Type()))
 	cfg := f.CreateDefaultConfig()
 	assert.NotNil(t, cfg)
-	assert.NoError(t, configcheck.ValidateConfig(cfg))
+	assert.NoError(t, configtest.CheckConfigStruct(cfg))
 	assert.Equal(
 		t,
 		[]string{"System.Runtime", "Microsoft.AspNetCore.Hosting"},

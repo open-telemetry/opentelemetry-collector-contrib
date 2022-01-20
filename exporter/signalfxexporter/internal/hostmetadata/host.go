@@ -15,10 +15,9 @@
 // Taken from https://github.com/signalfx/golib/blob/master/metadata/hostmetadata/host.go
 // with minor modifications.
 
-package hostmetadata
+package hostmetadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/hostmetadata"
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"io/ioutil"
@@ -28,9 +27,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/shirou/gopsutil/cpu"
-	"github.com/shirou/gopsutil/host"
-	"github.com/shirou/gopsutil/mem"
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/host"
+	"github.com/shirou/gopsutil/v3/mem"
 )
 
 // etcPath is the path to host etc and can be set using the env var "HOST_ETC"
@@ -127,15 +126,6 @@ func (o *hostOS) toStringMap() map[string]string {
 		"host_os_name":        o.HostOSName,
 		"host_linux_version":  o.HostLinuxVersion,
 	}
-}
-
-// int8ArrayToByteArray converts an []int8 to []byte
-func int8ArrayToByteArray(in []int8) []byte {
-	bts := make([]byte, len(in))
-	for i, c := range in {
-		bts[i] = byte(c)
-	}
-	return bytes.Trim(bts, "\x00")
 }
 
 // getOS returns a struct with information about the host os

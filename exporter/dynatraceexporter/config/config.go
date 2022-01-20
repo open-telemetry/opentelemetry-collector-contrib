@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config
+package config // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
 
 import (
 	"errors"
@@ -39,11 +39,15 @@ type Config struct {
 	// Dynatrace API token with metrics ingest permission
 	APIToken string `mapstructure:"api_token"`
 
-	// Tags will be added to all exported metrics
-	Tags []string `mapstructure:"tags"`
+	// DefaultDimensions will be added to all exported metrics
+	DefaultDimensions map[string]string `mapstructure:"default_dimensions"`
 
 	// String to prefix all metric names
 	Prefix string `mapstructure:"prefix"`
+
+	// Tags will be added to all exported metrics
+	// Deprecated: Please use DefaultDimensions instead
+	Tags []string `mapstructure:"tags"`
 }
 
 // ValidateAndConfigureHTTPClientSettings validates the configuration and sets default values

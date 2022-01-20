@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tcplogreceiver
+package tcplogreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver"
 
 import (
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
@@ -44,7 +44,7 @@ func (f ReceiverType) Type() config.Type {
 func (f ReceiverType) CreateDefaultConfig() config.Receiver {
 	return &TCPLogConfig{
 		BaseConfig: stanza.BaseConfig{
-			ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			Operators:        stanza.OperatorConfigs{},
 		},
 		Input: stanza.InputConfig{},

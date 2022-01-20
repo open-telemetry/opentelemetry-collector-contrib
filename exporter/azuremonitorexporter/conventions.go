@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package azuremonitorexporter
+package azuremonitorexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter"
 
 import (
 	"strconv"
@@ -114,7 +114,7 @@ func (attrs *HTTPAttributes) MapAttribute(k string, v pdata.AttributeValue) bool
 		if val, err := getAttributeValueAsInt(v); err == nil {
 			attrs.HTTPStatusCode = val
 		}
-	case conventions.AttributeHTTPStatusText:
+	case "http.status_text":
 		attrs.HTTPStatusText = v.StringVal()
 	case conventions.AttributeHTTPFlavor:
 		attrs.HTTPFlavor = v.StringVal()

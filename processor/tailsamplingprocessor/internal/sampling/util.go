@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sampling
+package sampling // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 
 import "go.opentelemetry.io/collector/model/pdata"
 
@@ -40,6 +40,32 @@ func hasResourceOrSpanWithCondition(
 		}
 	}
 	return NotSampled
+}
+
+// invertHasResourceOrSpanWithCondition iterates through all the resources and instrumentation library spans until any
+// callback returns false.
+func invertHasResourceOrSpanWithCondition(
+	batches []pdata.Traces,
+	shouldSampleResource func(resource pdata.Resource) bool,
+	shouldSampleSpan func(span pdata.Span) bool,
+) Decision {
+	for _, batch := range batches {
+		rspans := batch.ResourceSpans()
+
+		for i := 0; i < rspans.Len(); i++ {
+			rs := rspans.At(i)
+
+			resource := rs.Resource()
+			if !shouldSampleResource(resource) {
+				return InvertNotSampled
+			}
+
+			if !invertHasInstrumentationLibrarySpanWithCondition(rs.InstrumentationLibrarySpans(), shouldSampleSpan) {
+				return InvertNotSampled
+			}
+		}
+	}
+	return InvertSampled
 }
 
 // hasSpanWithCondition iterates through all the instrumentation library spans until any callback returns true.
@@ -71,4 +97,19 @@ func hasInstrumentationLibrarySpanWithCondition(ilss pdata.InstrumentationLibrar
 		}
 	}
 	return false
+}
+
+func invertHasInstrumentationLibrarySpanWithCondition(ilss pdata.InstrumentationLibrarySpansSlice, check func(span pdata.Span) bool) bool {
+	for i := 0; i < ilss.Len(); i++ {
+		ils := ilss.At(i)
+
+		for j := 0; j < ils.Spans().Len(); j++ {
+			span := ils.Spans().At(j)
+
+			if !check(span) {
+				return false
+			}
+		}
+	}
+	return true
 }

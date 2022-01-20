@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package resourcedetectionprocessor
+package resourcedetectionprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 
 import (
 	"time"
@@ -21,6 +21,8 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/consul"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
 )
 
 // Config defines configuration for Resource processor.
@@ -44,13 +46,28 @@ type Config struct {
 type DetectorConfig struct {
 	// EC2Config contains user-specified configurations for the EC2 detector
 	EC2Config ec2.Config `mapstructure:"ec2"`
+
+	// ConsulConfig contains user-specified configurations for the Consul detector
+	ConsulConfig consul.Config `mapstructure:"consul"`
+
+	// SystemConfig contains user-specified configurations for the System detector
+	SystemConfig system.Config `mapstructure:"system"`
 }
 
 func (d *DetectorConfig) GetConfigFromType(detectorType internal.DetectorType) internal.DetectorConfig {
 	switch detectorType {
 	case ec2.TypeStr:
 		return d.EC2Config
+	case consul.TypeStr:
+		return d.ConsulConfig
+	case system.TypeStr:
+		return d.SystemConfig
 	default:
 		return nil
 	}
+}
+
+// Validate config
+func (cfg *Config) Validate() error {
+	return cfg.DetectorConfig.SystemConfig.Validate()
 }

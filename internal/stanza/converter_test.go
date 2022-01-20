@@ -17,6 +17,7 @@ package stanza
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strconv"
 	"sync"
 	"testing"
@@ -160,24 +161,20 @@ func TestConvert(t *testing.T) {
 
 	if atts := lr.Attributes(); assert.Equal(t, 2, atts.Len()) {
 		m := pdata.NewAttributeMap()
-		m.InitFromMap(map[string]pdata.AttributeValue{
-			"one": pdata.NewAttributeValueString("two"),
-			"two": pdata.NewAttributeValueString("three"),
-		})
+		m.InsertString("one", "two")
+		m.InsertString("two", "three")
 		assert.EqualValues(t, m.Sort(), atts.Sort())
 	}
 
 	if assert.Equal(t, pdata.AttributeValueTypeMap, lr.Body().Type()) {
 		m := pdata.NewAttributeMap()
-		m.InitFromMap(map[string]pdata.AttributeValue{
-			"bool":   pdata.NewAttributeValueBool(true),
-			"int":    pdata.NewAttributeValueInt(123),
-			"double": pdata.NewAttributeValueDouble(12.34),
-			"string": pdata.NewAttributeValueString("hello"),
-			"bytes":  pdata.NewAttributeValueString("asdf"),
-			// Don't include a nested object because AttributeValueMap sorting
-			// doesn't sort recursively.
-		})
+		// Don't include a nested object because AttributeValueMap sorting
+		// doesn't sort recursively.
+		m.InsertBool("bool", true)
+		m.InsertInt("int", 123)
+		m.InsertDouble("double", 12.34)
+		m.InsertString("string", "hello")
+		m.InsertString("bytes", "asdf")
 		assert.EqualValues(t, m.Sort(), lr.Body().MapVal().Sort())
 	}
 }
@@ -211,15 +208,18 @@ func TestAllConvertedEntriesAreSentAndReceived(t *testing.T) {
 
 			converter := NewConverter(
 				WithWorkerCount(1),
-				WithMaxFlushCount(tc.maxFlushCount),
-				WithFlushInterval(10*time.Millisecond), // To minimize time spent in test
 			)
 			converter.Start()
 			defer converter.Stop()
 
 			go func() {
-				for _, ent := range complexEntries(tc.entries) {
-					assert.NoError(t, converter.Batch(ent))
+				entries := complexEntries(tc.entries)
+				for from := 0; from < tc.entries; from += int(tc.maxFlushCount) {
+					to := from + int(tc.maxFlushCount)
+					if to > tc.entries {
+						to = tc.entries
+					}
+					assert.NoError(t, converter.Batch(entries[from:to]))
 				}
 			}()
 
@@ -269,127 +269,8 @@ func TestAllConvertedEntriesAreSentAndReceived(t *testing.T) {
 	}
 }
 
-func TestAllConvertedEntriesAreSentAndReceivedWithinAnExpectedTimeDuration(t *testing.T) {
-	t.Parallel()
-
-	testcases := []struct {
-		entries       int
-		hostsCount    int
-		maxFlushCount uint
-		flushInterval time.Duration
-	}{
-		{
-			entries:       10,
-			hostsCount:    1,
-			maxFlushCount: 20,
-			flushInterval: 100 * time.Millisecond,
-		},
-		{
-			entries:       50,
-			hostsCount:    1,
-			maxFlushCount: 51,
-			flushInterval: 100 * time.Millisecond,
-		},
-		{
-			entries:       500,
-			hostsCount:    1,
-			maxFlushCount: 501,
-			flushInterval: 100 * time.Millisecond,
-		},
-		{
-			entries:       500,
-			hostsCount:    1,
-			maxFlushCount: 100,
-			flushInterval: 100 * time.Millisecond,
-		},
-		{
-			entries:       500,
-			hostsCount:    4,
-			maxFlushCount: 501,
-			flushInterval: 100 * time.Millisecond,
-		},
-	}
-
-	for i, tc := range testcases {
-		tc := tc
-
-		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			t.Parallel()
-
-			converter := NewConverter(
-				WithWorkerCount(1),
-				WithMaxFlushCount(tc.maxFlushCount),
-				WithFlushInterval(tc.flushInterval),
-			)
-			converter.Start()
-			defer converter.Stop()
-
-			go func() {
-				for _, ent := range complexEntriesForNDifferentHosts(tc.entries, tc.hostsCount) {
-					assert.NoError(t, converter.Batch(ent))
-				}
-			}()
-
-			var (
-				actualCount      int
-				actualFlushCount int
-				timeoutTimer     = time.NewTimer(10 * time.Second)
-				ch               = converter.OutChannel()
-			)
-			defer timeoutTimer.Stop()
-
-		forLoop:
-			for start := time.Now(); ; start = time.Now() {
-				if tc.entries == actualCount {
-					break
-				}
-
-				select {
-				case pLogs, ok := <-ch:
-					if !ok {
-						break forLoop
-					}
-
-					assert.WithinDuration(t,
-						start.Add(tc.flushInterval),
-						time.Now(),
-						tc.flushInterval,
-					)
-
-					actualFlushCount++
-
-					rLogs := pLogs.ResourceLogs()
-					require.Equal(t, 1, rLogs.Len())
-
-					rLog := rLogs.At(0)
-					ills := rLog.InstrumentationLibraryLogs()
-					require.Equal(t, 1, ills.Len())
-
-					ill := ills.At(0)
-
-					actualCount += ill.Logs().Len()
-
-					assert.LessOrEqual(t, uint(ill.Logs().Len()), tc.maxFlushCount,
-						"Received more log records in one flush than configured by maxFlushCount",
-					)
-
-				case <-timeoutTimer.C:
-					break forLoop
-				}
-			}
-
-			assert.Equal(t, tc.entries, actualCount,
-				"didn't receive expected number of entries after conversion",
-			)
-		})
-	}
-}
-
 func TestConverterCancelledContextCancellsTheFlush(t *testing.T) {
-	converter := NewConverter(
-		WithMaxFlushCount(1),
-		WithFlushInterval(time.Millisecond),
-	)
+	converter := NewConverter()
 	converter.Start()
 	defer converter.Stop()
 	var wg sync.WaitGroup
@@ -521,7 +402,7 @@ func TestConvertArrayBody(t *testing.T) {
 		map[string]interface{}{"one": 1, "yes": true},
 	}
 
-	result := anyToBody(structuredBody).ArrayVal()
+	result := anyToBody(structuredBody).SliceVal()
 
 	require.True(t, result.At(0).BoolVal())
 	require.False(t, result.At(1).BoolVal())
@@ -542,7 +423,7 @@ func TestConvertArrayBody(t *testing.T) {
 	require.Equal(t, float64(1), result.At(14).DoubleVal()) // float32
 	require.Equal(t, float64(1), result.At(15).DoubleVal()) // float64
 
-	nestedArr := result.At(16).ArrayVal()
+	nestedArr := result.At(16).SliceVal()
 	require.Equal(t, "string", nestedArr.At(0).StringVal())
 	require.Equal(t, int64(1), nestedArr.At(1).IntVal())
 
@@ -571,7 +452,7 @@ func TestConvertNestedMapBody(t *testing.T) {
 	result := anyToBody(structuredBody).MapVal()
 
 	arrayAttVal, _ := result.Get("array")
-	a := arrayAttVal.ArrayVal()
+	a := arrayAttVal.SliceVal()
 	require.Equal(t, int64(0), a.At(0).IntVal())
 	require.Equal(t, int64(1), a.At(1).IntVal())
 
@@ -602,7 +483,7 @@ func TestConvertSeverity(t *testing.T) {
 		expectedNumber pdata.SeverityNumber
 		expectedText   string
 	}{
-		{entry.Default, pdata.SeverityNumberUNDEFINED, "Undefined"},
+		{entry.Default, pdata.SeverityNumberUNDEFINED, ""},
 		{entry.Trace, pdata.SeverityNumberTRACE, "Trace"},
 		{entry.Trace2, pdata.SeverityNumberTRACE2, "Trace2"},
 		{entry.Trace3, pdata.SeverityNumberTRACE3, "Trace3"},
@@ -667,6 +548,7 @@ func BenchmarkConverter(b *testing.B) {
 	const (
 		entryCount = 1_000_000
 		hostsCount = 4
+		batchSize  = 200
 	)
 
 	var (
@@ -680,16 +562,18 @@ func BenchmarkConverter(b *testing.B) {
 
 				converter := NewConverter(
 					WithWorkerCount(wc),
-					WithMaxFlushCount(1_000),
-					WithFlushInterval(250*time.Millisecond),
 				)
 				converter.Start()
 				defer converter.Stop()
 				b.ResetTimer()
 
 				go func() {
-					for _, ent := range entries {
-						assert.NoError(b, converter.Batch(ent))
+					for from := 0; from < entryCount; from += int(batchSize) {
+						to := from + int(batchSize)
+						if to > entryCount {
+							to = entryCount
+						}
+						assert.NoError(b, converter.Batch(entries[from:to]))
 					}
 				}()
 
@@ -734,4 +618,135 @@ func BenchmarkConverter(b *testing.B) {
 			}
 		})
 	}
+}
+
+func BenchmarkGetResourceID(b *testing.B) {
+	b.StopTimer()
+	res := getResource()
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		getResourceID(res)
+	}
+}
+
+func BenchmarkGetResourceIDEmptyResource(b *testing.B) {
+	res := map[string]string{}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		getResourceID(res)
+	}
+}
+
+func BenchmarkGetResourceIDSingleResource(b *testing.B) {
+	res := map[string]string{
+		"resource": "value",
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		getResourceID(res)
+	}
+}
+
+func getResource() map[string]string {
+	return map[string]string{
+		"file.name":        "filename.log",
+		"file.directory":   "/some_directory",
+		"host.name":        "localhost",
+		"host.ip":          "192.168.1.12",
+		"k8s.pod.name":     "test-pod-123zwe1",
+		"k8s.node.name":    "aws-us-east-1.asfasf.aws.com",
+		"k8s.container.id": "192end1yu823aocajsiocjnasd",
+		"k8s.cluster.name": "my-cluster",
+	}
+}
+
+type resourceIDOutput struct {
+	name   string
+	output uint64
+}
+
+type resourceIDOutputSlice []resourceIDOutput
+
+func (r resourceIDOutputSlice) Len() int {
+	return len(r)
+}
+
+func (r resourceIDOutputSlice) Less(i, j int) bool {
+	return r[i].output < r[j].output
+}
+
+func (r resourceIDOutputSlice) Swap(i, j int) {
+	r[i], r[j] = r[j], r[i]
+}
+
+func TestGetResourceID(t *testing.T) {
+	testCases := []struct {
+		name  string
+		input map[string]string
+	}{
+		{
+			name:  "Typical Resource",
+			input: getResource(),
+		},
+		{
+			name: "Empty value/key",
+			input: map[string]string{
+				"SomeKey": "",
+				"":        "Ooops",
+			},
+		},
+		{
+			name: "Empty value/key (reversed)",
+			input: map[string]string{
+				"":      "SomeKey",
+				"Ooops": "",
+			},
+		},
+		{
+			name: "Ambiguous map 1",
+			input: map[string]string{
+				"AB": "CD",
+				"EF": "G",
+			},
+		},
+		{
+			name: "Ambiguous map 2",
+			input: map[string]string{
+				"ABC": "DE",
+				"F":   "G",
+			},
+		},
+		{
+			name:  "nil resource",
+			input: nil,
+		},
+		{
+			name: "Long resource value",
+			input: map[string]string{
+				"key": "This is a really long resource value; It's so long that the internal pre-allocated buffer doesn't hold it.",
+			},
+		},
+	}
+
+	outputs := resourceIDOutputSlice{}
+	for _, testCase := range testCases {
+		outputs = append(outputs, resourceIDOutput{
+			name:   testCase.name,
+			output: getResourceID(testCase.input),
+		})
+	}
+
+	// Ensure every output is unique
+	sort.Sort(outputs)
+	for i := 1; i < len(outputs); i++ {
+		if outputs[i].output == outputs[i-1].output {
+			t.Errorf("Test case %s and %s had the same output", outputs[i].name, outputs[i-1].name)
+		}
+	}
+}
+
+func TestGetResourceIDEmptyAndNilAreEqual(t *testing.T) {
+	nilID := getResourceID(nil)
+	emptyID := getResourceID(map[string]string{})
+	require.Equal(t, nilID, emptyID)
 }

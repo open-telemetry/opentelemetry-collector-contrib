@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package metrics
+package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver/metrics"
 
 import (
 	"time"
@@ -53,7 +53,7 @@ func rawMetricToPdata(dm dotnet.Metric, pdm pdata.Metric, startTime, now time.Ti
 	case "Sum":
 		pdm.SetDataType(pdata.MetricDataTypeSum)
 		sum := pdm.Sum()
-		sum.SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+		sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 		dps := sum.DataPoints()
 		dp := dps.AppendEmpty()
 		dp.SetStartTimestamp(pdata.NewTimestampFromTime(startTime))

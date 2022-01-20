@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package k8sclusterreceiver
+package k8sclusterreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver"
 
 import (
 	"context"
@@ -45,7 +45,7 @@ var defaultNodeConditionsToReport = []string{"Ready"}
 
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings:           config.NewReceiverSettings(config.NewID(typeStr)),
+		ReceiverSettings:           config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		Distribution:               defaultDistribution,
 		CollectionInterval:         defaultCollectionInterval,
 		NodeConditionTypesToReport: defaultNodeConditionsToReport,
@@ -78,7 +78,7 @@ func createMetricsReceiver(
 		return nil, fmt.Errorf("\"%s\" is not a supported distribution. Must be one of: \"openshift\", \"kubernetes\"", rCfg.Distribution)
 	}
 
-	return newReceiver(params.Logger, rCfg, consumer, k8sClient, osQuotaClient)
+	return newReceiver(params, rCfg, consumer, k8sClient, osQuotaClient)
 }
 
 // NewFactory creates a factory for k8s_cluster receiver.

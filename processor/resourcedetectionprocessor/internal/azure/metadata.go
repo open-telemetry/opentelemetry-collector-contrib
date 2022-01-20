@@ -15,7 +15,7 @@
 // This file contains code based on the Azure IMDS samples, https://github.com/microsoft/azureimds
 // under the Apache License 2.0
 
-package azure
+package azure // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure"
 
 import (
 	"context"

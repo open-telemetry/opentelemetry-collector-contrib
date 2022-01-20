@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package f5cloudexporter
+package f5cloudexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter"
 
 import (
 	"context"
@@ -105,7 +105,7 @@ func (f *f5cloudFactory) CreateDefaultConfig() config.Exporter {
 		},
 	}
 
-	cfg.ExporterSettings = config.NewExporterSettings(config.NewID(typeStr))
+	cfg.ExporterSettings = config.NewExporterSettings(config.NewComponentID(typeStr))
 
 	cfg.Headers["User-Agent"] = "opentelemetry-collector-contrib {{version}}"
 

@@ -12,18 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package filestorage
+package filestorage // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
 
 import (
 	"context"
 	"fmt"
-	"os"
 	"path/filepath"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/extension/storage"
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.uber.org/zap"
 )
 
@@ -37,11 +36,6 @@ type localFileStorage struct {
 var _ storage.Extension = (*localFileStorage)(nil)
 
 func newLocalFileStorage(logger *zap.Logger, config *Config) (component.Extension, error) {
-	info, err := os.Stat(config.Directory)
-	if (err != nil && os.IsNotExist(err)) || !info.IsDir() {
-		return nil, fmt.Errorf("directory must exist: %v", err)
-	}
-
 	return &localFileStorage{
 		directory: filepath.Clean(config.Directory),
 		timeout:   config.Timeout,

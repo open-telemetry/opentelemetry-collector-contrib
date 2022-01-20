@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package stackdriverexporter
+package stackdriverexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackdriverexporter"
 
 import (
 	"context"
@@ -53,7 +53,7 @@ func (f *factory) Type() config.Type {
 
 func (f *factory) CreateDefaultConfig() config.Exporter {
 	cfg := f.ExporterFactory.CreateDefaultConfig()
-	cfg.(*googlecloudexporter.Config).ExporterSettings = config.NewExporterSettings(config.NewID(typeVal))
+	cfg.(*googlecloudexporter.Config).ExporterSettings = config.NewExporterSettings(config.NewComponentID(typeVal))
 	return cfg
 }
 

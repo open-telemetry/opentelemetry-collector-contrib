@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package opencensusreceiver
+package opencensusreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver"
 
 import (
 	"context"
@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver/internal/ocmetrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver/internal/octrace"
@@ -56,7 +57,8 @@ type ocReceiver struct {
 	startTracesReceiverOnce  sync.Once
 	startMetricsReceiverOnce sync.Once
 
-	id config.ComponentID
+	id       config.ComponentID
+	settings component.ReceiverCreateSettings
 }
 
 // newOpenCensusReceiver just creates the OpenCensus receiver services. It is the caller's
@@ -68,6 +70,7 @@ func newOpenCensusReceiver(
 	addr string,
 	tc consumer.Traces,
 	mc consumer.Metrics,
+	settings component.ReceiverCreateSettings,
 	opts ...ocOption,
 ) (*ocReceiver, error) {
 	// TODO: (@odeke-em) use options to enable address binding changes.
@@ -83,6 +86,7 @@ func newOpenCensusReceiver(
 		gatewayMux:      gatewayruntime.NewServeMux(),
 		traceConsumer:   tc,
 		metricsConsumer: mc,
+		settings:        settings,
 	}
 
 	for _, opt := range opts {
@@ -127,7 +131,7 @@ func (ocr *ocReceiver) registerTraceConsumer(host component.Host) error {
 	var err error
 
 	ocr.startTracesReceiverOnce.Do(func() {
-		ocr.traceReceiver, err = octrace.New(ocr.id, ocr.traceConsumer)
+		ocr.traceReceiver, err = octrace.New(ocr.id, ocr.traceConsumer, ocr.settings)
 		if err != nil {
 			return
 		}
@@ -149,7 +153,7 @@ func (ocr *ocReceiver) registerMetricsConsumer(host component.Host) error {
 	var err error
 
 	ocr.startMetricsReceiverOnce.Do(func() {
-		ocr.metricsReceiver, err = ocmetrics.New(ocr.id, ocr.metricsConsumer)
+		ocr.metricsReceiver, err = ocmetrics.New(ocr.id, ocr.metricsConsumer, ocr.settings)
 		if err != nil {
 			return
 		}
@@ -170,7 +174,7 @@ func (ocr *ocReceiver) grpcServer(host component.Host) (*grpc.Server, error) {
 	defer ocr.mu.Unlock()
 
 	if ocr.serverGRPC == nil {
-		opts, err := ocr.grpcServerSettings.ToServerOption(host.GetExtensions())
+		opts, err := ocr.grpcServerSettings.ToServerOption(host, ocr.settings.TelemetrySettings)
 		if err != nil {
 			return nil, err
 		}
@@ -223,7 +227,7 @@ func (ocr *ocReceiver) httpServer() *http.Server {
 func (ocr *ocReceiver) startServer(host component.Host) error {
 	// Register the grpc-gateway on the HTTP server mux
 	c := context.Background()
-	opts := []grpc.DialOption{grpc.WithInsecure()}
+	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	endpoint := ocr.ln.Addr().String()
 
 	_, ok := ocr.ln.(*net.UnixListener)
@@ -247,12 +251,12 @@ func (ocr *ocReceiver) startServer(host component.Host) error {
 
 	httpL := m.Match(cmux.Any())
 	go func() {
-		if errGrpc := ocr.serverGRPC.Serve(grpcL); errGrpc != nil {
+		if errGrpc := ocr.serverGRPC.Serve(grpcL); !errors.Is(errGrpc, grpc.ErrServerStopped) && errGrpc != nil {
 			host.ReportFatalError(errGrpc)
 		}
 	}()
 	go func() {
-		if errHTTP := ocr.httpServer().Serve(httpL); errHTTP != nil && errHTTP != http.ErrServerClosed {
+		if errHTTP := ocr.httpServer().Serve(httpL); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
 			host.ReportFatalError(errHTTP)
 		}
 	}()

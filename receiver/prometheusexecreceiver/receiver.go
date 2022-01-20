@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package prometheusexecreceiver
+package prometheusexecreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver"
 
 import (
 	"context"
@@ -49,8 +49,6 @@ const (
 	initialDelay = 1 * time.Second
 	// default path to scrape metrics at endpoint
 	defaultMetricsPath = "/metrics"
-	// default timeout for a scrape
-	defaultScrapeTimeout = 10 * time.Second
 )
 
 type prometheusExecReceiver struct {
@@ -100,7 +98,7 @@ func getPromReceiverConfig(cfg *Config) *prometheusreceiver.Config {
 	scrapeConfig := &promconfig.ScrapeConfig{}
 
 	scrapeConfig.ScrapeInterval = model.Duration(cfg.ScrapeInterval)
-	scrapeConfig.ScrapeTimeout = model.Duration(defaultScrapeTimeout)
+	scrapeConfig.ScrapeTimeout = model.Duration(cfg.ScrapeTimeout)
 	scrapeConfig.Scheme = "http"
 	scrapeConfig.MetricsPath = defaultMetricsPath
 	jobName := cfg.ID().Name()
@@ -124,7 +122,7 @@ func getPromReceiverConfig(cfg *Config) *prometheusreceiver.Config {
 	}
 
 	return &prometheusreceiver.Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, cfg.ID().Name())),
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, cfg.ID().Name())),
 		PrometheusConfig: &promconfig.Config{
 			ScrapeConfigs: []*promconfig.ScrapeConfig{scrapeConfig},
 		},

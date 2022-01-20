@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package observiqexporter
+package observiqexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/observiqexporter"
 
 import (
 	"context"
@@ -25,9 +25,10 @@ import (
 )
 
 const (
-	typeStr            = "observiq"
-	defaultHTTPTimeout = 10 * time.Second
-	defaultEndpoint    = "https://nozzle.app.observiq.com/v1/add"
+	typeStr              = "observiq"
+	defaultHTTPTimeout   = 20 * time.Second
+	defaultEndpoint      = "https://nozzle.app.observiq.com/v1/add"
+	defaultDialerTimeout = 10 * time.Second
 )
 
 // NewFactory creates a factory for observIQ exporter
@@ -41,7 +42,7 @@ func NewFactory() component.ExporterFactory {
 
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		Endpoint:         defaultEndpoint,
 		TimeoutSettings: exporterhelper.TimeoutSettings{
 			Timeout: defaultHTTPTimeout,
@@ -50,6 +51,7 @@ func createDefaultConfig() config.Exporter {
 		QueueSettings: exporterhelper.DefaultQueueSettings(),
 		AgentID:       defaultAgentID(),
 		AgentName:     defaultAgentName(),
+		DialerTimeout: defaultDialerTimeout,
 	}
 }
 

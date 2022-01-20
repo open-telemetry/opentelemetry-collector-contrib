@@ -14,7 +14,7 @@
 
 // Package googlecloudexporter contains the wrapper for OpenTelemetry-GoogleCloud
 // exporter to be used in opentelemetry-collector.
-package googlecloudexporter
+package googlecloudexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter"
 
 import (
 	"context"
@@ -25,14 +25,15 @@ import (
 	cloudtrace "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace"
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"go.opencensus.io/plugin/ocgrpc"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
@@ -54,7 +55,7 @@ func (te *traceExporter) Shutdown(ctx context.Context) error {
 func (me *metricsExporter) Shutdown(context.Context) error {
 	me.mexporter.Flush()
 	me.mexporter.StopMetricsExporter()
-	return nil
+	return me.mexporter.Close()
 }
 
 func setVersionInUserAgent(cfg *Config, version string) {
@@ -75,7 +76,7 @@ func generateClientOptions(cfg *Config) ([]option.ClientOption, error) {
 			if cfg.UserAgent != "" {
 				dialOpts = append(dialOpts, grpc.WithUserAgent(cfg.UserAgent))
 			}
-			conn, err := grpc.Dial(cfg.Endpoint, append(dialOpts, grpc.WithInsecure())...)
+			conn, err := grpc.Dial(cfg.Endpoint, append(dialOpts, grpc.WithStatsHandler(&ocgrpc.ClientHandler{}), grpc.WithTransportCredentials(insecure.NewCredentials()))...)
 			if err != nil {
 				return nil, fmt.Errorf("cannot configure grpc conn: %w", err)
 			}
@@ -236,7 +237,6 @@ func exportAdditionalLabels(mds []*agentmetricspb.ExportMetricsServiceRequest) [
 
 // pushTraces calls texporter.ExportSpan for each span in the given traces
 func (te *traceExporter) pushTraces(ctx context.Context, td pdata.Traces) error {
-	var errs []error
 	resourceSpans := td.ResourceSpans()
 	spans := make([]sdktrace.ReadOnlySpan, 0, td.SpanCount())
 	for i := 0; i < resourceSpans.Len(); i++ {
@@ -244,11 +244,7 @@ func (te *traceExporter) pushTraces(ctx context.Context, td pdata.Traces) error 
 		spans = append(spans, sd...)
 	}
 
-	err := te.texporter.ExportSpans(ctx, spans)
-	if err != nil {
-		errs = append(errs, err)
-	}
-	return consumererror.Combine(errs)
+	return te.texporter.ExportSpans(ctx, spans)
 }
 
 func numPoints(metrics []*metricspb.Metric) int {

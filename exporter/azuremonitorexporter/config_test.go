@@ -23,8 +23,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -33,22 +33,22 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
 	assert.Equal(t, len(cfg.Exporters), 2)
 
-	exporter := cfg.Exporters[config.NewID(typeStr)]
+	exporter := cfg.Exporters[config.NewComponentID(typeStr)]
 	assert.Equal(t, factory.CreateDefaultConfig(), exporter)
 
-	exporter = cfg.Exporters[config.NewIDWithName(typeStr, "2")].(*Config)
-	assert.NoError(t, configcheck.ValidateConfig(exporter))
+	exporter = cfg.Exporters[config.NewComponentIDWithName(typeStr, "2")].(*Config)
+	assert.NoError(t, configtest.CheckConfigStruct(exporter))
 	assert.Equal(
 		t,
 		&Config{
-			ExporterSettings:   config.NewExporterSettings(config.NewIDWithName(typeStr, "2")),
+			ExporterSettings:   config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "2")),
 			Endpoint:           defaultEndpoint,
 			InstrumentationKey: "abcdefg",
 			MaxBatchSize:       100,

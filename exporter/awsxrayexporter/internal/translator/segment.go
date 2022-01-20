@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package translator
+package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/translator"
 
 import (
 	"encoding/binary"
@@ -26,7 +26,7 @@ import (
 
 	awsP "github.com/aws/aws-sdk-go/aws"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.8.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
@@ -39,6 +39,7 @@ const (
 	OriginECSFargate = "AWS::ECS::Fargate"
 	OriginEB         = "AWS::ElasticBeanstalk::Environment"
 	OriginEKS        = "AWS::EKS::Container"
+	OriginAppRunner  = "AWS::AppRunner::Service"
 )
 
 var (
@@ -119,13 +120,23 @@ func MakeSegment(span pdata.Span, resource pdata.Resource, indexedAttrs []string
 		name = peerService.StringVal()
 	}
 
+	if namespace == "" {
+		if rpcSystem, ok := attributes.Get(conventions.AttributeRPCSystem); ok {
+			if rpcSystem.StringVal() == "aws-api" {
+				namespace = conventions.AttributeCloudProviderAWS
+			}
+		}
+	}
+
 	if name == "" {
 		if awsService, ok := attributes.Get(awsxray.AWSServiceAttribute); ok {
 			// Generally spans are named something like "Method" or "Service.Method" but for AWS spans, X-Ray expects spans
 			// to be named "Service"
 			name = awsService.StringVal()
 
-			namespace = "aws"
+			if namespace == "" {
+				namespace = conventions.AttributeCloudProviderAWS
+			}
 		}
 	}
 
@@ -221,16 +232,16 @@ func determineAwsOrigin(resource pdata.Resource) string {
 		}
 	}
 
-	// TODO(willarmiros): Only use platform for origin resolution once detectors for all AWS environments are
-	// implemented for robustness
 	if is, present := resource.Attributes().Get(conventions.AttributeCloudPlatform); present {
 		switch is.StringVal() {
+		case conventions.AttributeCloudPlatformAWSAppRunner:
+			return OriginAppRunner
 		case conventions.AttributeCloudPlatformAWSEKS:
 			return OriginEKS
 		case conventions.AttributeCloudPlatformAWSElasticBeanstalk:
 			return OriginEB
 		case conventions.AttributeCloudPlatformAWSECS:
-			lt, present := resource.Attributes().Get("aws.ecs.launchtype")
+			lt, present := resource.Attributes().Get(conventions.AttributeAWSECSLaunchtype)
 			if !present {
 				return OriginECS
 			}
@@ -245,7 +256,7 @@ func determineAwsOrigin(resource pdata.Resource) string {
 		case conventions.AttributeCloudPlatformAWSEC2:
 			return OriginEC2
 
-		// If infrastructure_service is defined with a non-AWS value, we should not assign it an AWS origin
+		// If cloud_platform is defined with a non-AWS value, we should not assign it an AWS origin
 		default:
 			return ""
 		}
@@ -415,7 +426,7 @@ func metadataValue(value pdata.AttributeValue) interface{} {
 		})
 		return converted
 	case pdata.AttributeValueTypeArray:
-		arrVal := value.ArrayVal()
+		arrVal := value.SliceVal()
 		converted := make([]interface{}, arrVal.Len())
 		for i := 0; i < arrVal.Len(); i++ {
 			converted[i] = metadataValue(arrVal.At(i))

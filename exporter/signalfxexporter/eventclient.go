@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package signalfxexporter
+package signalfxexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
 
 import (
 	"context"
@@ -62,7 +62,7 @@ func (s *sfxEventClient) pushLogsData(ctx context.Context, ld pdata.Logs) (int, 
 
 	body, compressed, err := s.encodeBody(sfxEvents)
 	if err != nil {
-		return ld.LogRecordCount(), consumererror.Permanent(err)
+		return ld.LogRecordCount(), consumererror.NewPermanent(err)
 	}
 
 	eventURL := *s.ingestURL
@@ -71,7 +71,7 @@ func (s *sfxEventClient) pushLogsData(ctx context.Context, ld pdata.Logs) (int, 
 	}
 	req, err := http.NewRequestWithContext(ctx, "POST", eventURL.String(), body)
 	if err != nil {
-		return ld.LogRecordCount(), consumererror.Permanent(err)
+		return ld.LogRecordCount(), consumererror.NewPermanent(err)
 	}
 
 	for k, v := range s.headers {

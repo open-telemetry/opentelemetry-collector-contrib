@@ -35,6 +35,7 @@ func TestReceiver(t *testing.T) {
 		OTLPExporterConfig: otlpExporterConfig{
 			Endpoint: fmt.Sprintf("localhost:%d", testutil.GetAvailablePort(t)),
 		},
+		Properties: make(map[string]string),
 	}
 
 	receiver := newJMXMetricReceiver(params, config, consumertest.NewNop())

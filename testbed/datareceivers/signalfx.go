@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package datareceivers
+package datareceivers // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
 
 import (
 	"context"
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
@@ -51,7 +51,7 @@ func (sr *SFxMetricsDataReceiver) Start(_ consumer.Traces, mc consumer.Metrics, 
 	}
 	var err error
 	f := signalfxreceiver.NewFactory()
-	sr.receiver, err = f.CreateMetricsReceiver(context.Background(), component.ReceiverCreateSettings{TelemetrySettings: component.TelemetrySettings{Logger: zap.L()}}, &config, mc)
+	sr.receiver, err = f.CreateMetricsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), &config, mc)
 	if err != nil {
 		return err
 	}
@@ -69,7 +69,7 @@ func (sr *SFxMetricsDataReceiver) GenConfigYAMLStr() string {
 	// Note that this generates an exporter config for agent.
 	return fmt.Sprintf(`
     signalfx:
-      ingest_url: "http://localhost:%d/v2/datapoint"
+      ingest_url: "http://localhost:%d"
       api_url: "http://localhost/"
       access_token: "access_token"`, sr.Port)
 }

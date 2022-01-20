@@ -12,15 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package memoryscraper
+package memoryscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/memoryscraper"
 
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
 )
 
 // This file implements Factory for Memory scraper.
@@ -48,7 +48,5 @@ func (f *Factory) CreateMetricsScraper(
 	cfg := config.(*Config)
 	s := newMemoryScraper(ctx, cfg)
 
-	ms := scraperhelper.NewMetricsScraper(TypeStr, s.Scrape)
-
-	return ms, nil
+	return scraperhelper.NewScraper(TypeStr, s.Scrape)
 }

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tanzuobservabilityexporter
+package tanzuobservabilityexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tanzuobservabilityexporter"
 
 import (
 	"context"
@@ -39,7 +39,7 @@ func createDefaultConfig() config.Exporter {
 		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http://localhost:30001"},
 	}
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(exporterType)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(exporterType)),
 		QueueSettings:    exporterhelper.DefaultQueueSettings(),
 		RetrySettings:    exporterhelper.DefaultRetrySettings(),
 		Traces:           tracesCfg,

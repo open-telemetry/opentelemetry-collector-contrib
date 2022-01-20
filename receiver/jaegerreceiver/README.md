@@ -78,7 +78,8 @@ receivers:
       grpc:
     remote_sampling:
       endpoint: "jaeger-collector:14250"
-      insecure: true
+      tls:
+        insecure: true
 ```
 
 Remote sampling can also be directly served by the collector by providing a
@@ -91,6 +92,7 @@ receivers:
       grpc:
     remote_sampling:
       strategy_file: "/etc/strategy.json"
+      strategy_file_reload_interval: 10s
 ```
 
 Note: the `grpc` protocol must be enabled for this to work as Jaeger serves its

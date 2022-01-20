@@ -30,7 +30,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
 )
@@ -209,7 +208,7 @@ func TestExtension(t *testing.T) {
 				test.config.Egress.Endpoint = "http://" + testutil.GetAvailableLocalAddress(t)
 			}
 
-			hf, err := newHTTPForwarder(test.config, zap.NewNop())
+			hf, err := newHTTPForwarder(test.config, componenttest.NewNopTelemetrySettings())
 			require.NoError(t, err)
 
 			ctx := context.Background()

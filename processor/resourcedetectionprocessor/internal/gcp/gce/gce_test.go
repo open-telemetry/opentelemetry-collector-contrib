@@ -90,7 +90,7 @@ func TestDetectError(t *testing.T) {
 	detector := &Detector{metadata: md}
 	res, _, err := detector.Detect(context.Background())
 
-	assert.EqualError(t, err, "[err1; err2; err3; err4; err6]")
+	assert.EqualError(t, err, "err1; err2; err3; err4; err6")
 
 	expected := internal.NewResource(map[string]interface{}{
 		conventions.AttributeCloudProvider: conventions.AttributeCloudProviderGCP,

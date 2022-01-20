@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package azuremonitorexporter
+package azuremonitorexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter"
 
 import (
 	"context"
@@ -44,7 +44,7 @@ func (v *traceVisitor) visit(
 	envelope, err := spanToEnvelope(resource, instrumentationLibrary, span, v.exporter.logger)
 	if err != nil {
 		// record the error and short-circuit
-		v.err = consumererror.Permanent(err)
+		v.err = consumererror.NewPermanent(err)
 		return false
 	}
 

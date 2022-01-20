@@ -20,7 +20,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/shirou/gopsutil/cpu"
+	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -33,38 +33,57 @@ import (
 
 func TestScrape(t *testing.T) {
 	type testCase struct {
-		name              string
-		bootTimeFunc      func() (uint64, error)
-		timesFunc         func(bool) ([]cpu.TimesStat, error)
-		expectedStartTime pdata.Timestamp
-		initializationErr string
-		expectedErr       string
+		name                string
+		bootTimeFunc        func() (uint64, error)
+		timesFunc           func(bool) ([]cpu.TimesStat, error)
+		metricsConfig       metadata.MetricsSettings
+		expectedMetricCount int
+		expectedStartTime   pdata.Timestamp
+		initializationErr   string
+		expectedErr         string
 	}
 
 	testCases := []testCase{
 		{
-			name: "Standard",
+			name:                "Standard",
+			metricsConfig:       metadata.DefaultMetricsSettings(),
+			expectedMetricCount: 1,
 		},
 		{
-			name:              "Validate Start Time",
-			bootTimeFunc:      func() (uint64, error) { return 100, nil },
-			expectedStartTime: 100 * 1e9,
+			name:                "Validate Start Time",
+			bootTimeFunc:        func() (uint64, error) { return 100, nil },
+			metricsConfig:       metadata.DefaultMetricsSettings(),
+			expectedMetricCount: 1,
+			expectedStartTime:   100 * 1e9,
 		},
 		{
-			name:              "Boot Time Error",
-			bootTimeFunc:      func() (uint64, error) { return 0, errors.New("err1") },
-			initializationErr: "err1",
+			name:                "Boot Time Error",
+			bootTimeFunc:        func() (uint64, error) { return 0, errors.New("err1") },
+			metricsConfig:       metadata.DefaultMetricsSettings(),
+			expectedMetricCount: 1,
+			initializationErr:   "err1",
 		},
 		{
-			name:        "Times Error",
-			timesFunc:   func(bool) ([]cpu.TimesStat, error) { return nil, errors.New("err2") },
-			expectedErr: "err2",
+			name:                "Times Error",
+			timesFunc:           func(bool) ([]cpu.TimesStat, error) { return nil, errors.New("err2") },
+			metricsConfig:       metadata.DefaultMetricsSettings(),
+			expectedMetricCount: 1,
+			expectedErr:         "err2",
+		},
+		{
+			name: "SystemCPUTime metric is disabled ",
+			metricsConfig: metadata.MetricsSettings{
+				SystemCPUTime: metadata.MetricSettings{
+					Enabled: false,
+				},
+			},
+			expectedMetricCount: 0,
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newCPUScraper(context.Background(), &Config{})
+			scraper := newCPUScraper(context.Background(), &Config{Metrics: test.metricsConfig})
 			if test.bootTimeFunc != nil {
 				scraper.bootTime = test.bootTimeFunc
 			}
@@ -79,7 +98,7 @@ func TestScrape(t *testing.T) {
 			}
 			require.NoError(t, err, "Failed to initialize cpu scraper: %v", err)
 
-			metrics, err := scraper.scrape(context.Background())
+			md, err := scraper.scrape(context.Background())
 			if test.expectedErr != "" {
 				assert.EqualError(t, err, test.expectedErr)
 
@@ -93,35 +112,43 @@ func TestScrape(t *testing.T) {
 			}
 			require.NoError(t, err, "Failed to scrape metrics: %v", err)
 
-			assert.Equal(t, 1, metrics.Len())
+			assert.Equal(t, test.expectedMetricCount, md.MetricCount())
 
-			assertCPUMetricValid(t, metrics.At(0), metadata.Metrics.SystemCPUTime.New(), test.expectedStartTime)
+			if test.expectedMetricCount > 0 {
+				metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+				assertCPUMetricValid(t, metrics.At(0), test.expectedStartTime)
 
-			if runtime.GOOS == "linux" {
-				assertCPUMetricHasLinuxSpecificStateLabels(t, metrics.At(0))
+				if runtime.GOOS == "linux" {
+					assertCPUMetricHasLinuxSpecificStateLabels(t, metrics.At(0))
+				}
+
+				internal.AssertSameTimeStampForAllMetrics(t, metrics)
 			}
-
-			internal.AssertSameTimeStampForAllMetrics(t, metrics)
 		})
 	}
 }
 
-func assertCPUMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Metric, startTime pdata.Timestamp) {
-	internal.AssertDescriptorEqual(t, descriptor, metric)
+func assertCPUMetricValid(t *testing.T, metric pdata.Metric, startTime pdata.Timestamp) {
+	expected := pdata.NewMetric()
+	expected.SetName("system.cpu.time")
+	expected.SetDescription("Total CPU seconds broken down by different states.")
+	expected.SetUnit("s")
+	expected.SetDataType(pdata.MetricDataTypeSum)
+	internal.AssertDescriptorEqual(t, expected, metric)
 	if startTime != 0 {
 		internal.AssertSumMetricStartTimeEquals(t, metric, startTime)
 	}
 	assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), 4*runtime.NumCPU())
-	internal.AssertSumMetricHasAttribute(t, metric, 0, metadata.Labels.Cpu)
-	internal.AssertSumMetricHasAttributeValue(t, metric, 0, metadata.Labels.State, pdata.NewAttributeValueString(metadata.LabelState.User))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 1, metadata.Labels.State, pdata.NewAttributeValueString(metadata.LabelState.System))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 2, metadata.Labels.State, pdata.NewAttributeValueString(metadata.LabelState.Idle))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 3, metadata.Labels.State, pdata.NewAttributeValueString(metadata.LabelState.Interrupt))
+	internal.AssertSumMetricHasAttribute(t, metric, 0, metadata.Attributes.Cpu)
+	internal.AssertSumMetricHasAttributeValue(t, metric, 0, metadata.Attributes.State, pdata.NewAttributeValueString(metadata.AttributeState.User))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 1, metadata.Attributes.State, pdata.NewAttributeValueString(metadata.AttributeState.System))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 2, metadata.Attributes.State, pdata.NewAttributeValueString(metadata.AttributeState.Idle))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 3, metadata.Attributes.State, pdata.NewAttributeValueString(metadata.AttributeState.Interrupt))
 }
 
 func assertCPUMetricHasLinuxSpecificStateLabels(t *testing.T, metric pdata.Metric) {
-	internal.AssertSumMetricHasAttributeValue(t, metric, 4, metadata.Labels.State, pdata.NewAttributeValueString(metadata.LabelState.Nice))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 5, metadata.Labels.State, pdata.NewAttributeValueString(metadata.LabelState.Softirq))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 6, metadata.Labels.State, pdata.NewAttributeValueString(metadata.LabelState.Steal))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 7, metadata.Labels.State, pdata.NewAttributeValueString(metadata.LabelState.Wait))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 4, metadata.Attributes.State, pdata.NewAttributeValueString(metadata.AttributeState.Nice))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 5, metadata.Attributes.State, pdata.NewAttributeValueString(metadata.AttributeState.Softirq))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 6, metadata.Attributes.State, pdata.NewAttributeValueString(metadata.AttributeState.Steal))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 7, metadata.Attributes.State, pdata.NewAttributeValueString(metadata.AttributeState.Wait))
 }

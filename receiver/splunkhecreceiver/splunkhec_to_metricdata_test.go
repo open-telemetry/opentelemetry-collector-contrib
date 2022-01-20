@@ -55,7 +55,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 		splunkDataPoint       *splunk.Event
 		wantMetricsData       pdata.Metrics
 		wantDroppedTimeseries int
-		hecConfig             splunk.HECConfiguration
+		hecConfig             *Config
 	}{
 		{
 			name:            "int_gauge",
@@ -168,11 +168,12 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				intPt.SetTimestamp(pdata.Timestamp(nanos))
 				return metrics
 			}(),
-			hecConfig: &testingHecConfiguration{
-				sourceKey:     "mysource",
-				sourceTypeKey: "mysourcetype",
-				indexKey:      "myindex",
-				hostKey:       "myhost",
+			hecConfig: &Config{HecToOtelAttrs: splunk.HecToOtelAttrs{
+				Source:     "mysource",
+				SourceType: "mysourcetype",
+				Index:      "myindex",
+				Host:       "myhost",
+			},
 			},
 		},
 		{

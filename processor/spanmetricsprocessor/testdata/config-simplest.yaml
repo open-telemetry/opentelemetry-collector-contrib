@@ -15,11 +15,11 @@ receivers:
 exporters:
   prometheus:
     endpoint: "0.0.0.0:8889"
-    namespace: promexample
 
   jaeger:
     endpoint: "localhost:14250"
-    insecure: true
+    tls:
+      insecure: true
 
 processors:
   batch:

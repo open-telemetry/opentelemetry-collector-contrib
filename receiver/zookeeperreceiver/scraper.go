@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package zookeeperreceiver
+package zookeeperreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver"
 
 import (
 	"bufio"
@@ -40,6 +40,7 @@ type zookeeperMetricsScraper struct {
 	logger *zap.Logger
 	config *Config
 	cancel context.CancelFunc
+	mb     *metadata.MetricsBuilder
 
 	// For mocking.
 	closeConnection       func(net.Conn) error
@@ -64,6 +65,7 @@ func newZookeeperMetricsScraper(logger *zap.Logger, config *Config) (*zookeeperM
 	return &zookeeperMetricsScraper{
 		logger:                logger,
 		config:                config,
+		mb:                    metadata.NewMetricsBuilder(config.Metrics),
 		closeConnection:       closeConnection,
 		setConnectionDeadline: setConnectionDeadline,
 		sendCmd:               sendCmd,
@@ -71,11 +73,14 @@ func newZookeeperMetricsScraper(logger *zap.Logger, config *Config) (*zookeeperM
 }
 
 func (z *zookeeperMetricsScraper) shutdown(_ context.Context) error {
-	z.cancel()
+	if z.cancel != nil {
+		z.cancel()
+		z.cancel = nil
+	}
 	return nil
 }
 
-func (z *zookeeperMetricsScraper) scrape(ctx context.Context) (pdata.ResourceMetricsSlice, error) {
+func (z *zookeeperMetricsScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 	var ctxWithTimeout context.Context
 	ctxWithTimeout, z.cancel = context.WithTimeout(ctx, z.config.Timeout)
 
@@ -85,7 +90,7 @@ func (z *zookeeperMetricsScraper) scrape(ctx context.Context) (pdata.ResourceMet
 			zap.String("endpoint", z.config.Endpoint),
 			zap.Error(err),
 		)
-		return pdata.NewResourceMetricsSlice(), err
+		return pdata.NewMetrics(), err
 	}
 	defer func() {
 		if closeErr := z.closeConnection(conn); closeErr != nil {
@@ -103,19 +108,19 @@ func (z *zookeeperMetricsScraper) scrape(ctx context.Context) (pdata.ResourceMet
 	return z.getResourceMetrics(conn)
 }
 
-func (z *zookeeperMetricsScraper) getResourceMetrics(conn net.Conn) (pdata.ResourceMetricsSlice, error) {
+func (z *zookeeperMetricsScraper) getResourceMetrics(conn net.Conn) (pdata.Metrics, error) {
 	scanner, err := z.sendCmd(conn, mntrCommand)
 	if err != nil {
 		z.logger.Error("failed to send command",
 			zap.Error(err),
 			zap.String("command", mntrCommand),
 		)
-		return pdata.NewResourceMetricsSlice(), err
+		return pdata.NewMetrics(), err
 	}
 
 	md := pdata.NewMetrics()
 	z.appendMetrics(scanner, md.ResourceMetrics())
-	return md.ResourceMetrics(), nil
+	return md, nil
 }
 
 func (z *zookeeperMetricsScraper) appendMetrics(scanner *bufio.Scanner, rms pdata.ResourceMetricsSlice) {
@@ -123,7 +128,6 @@ func (z *zookeeperMetricsScraper) appendMetrics(scanner *bufio.Scanner, rms pdat
 	rm := pdata.NewResourceMetrics()
 	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
 	ilm.InstrumentationLibrary().SetName("otelcol/zookeeper")
-	keepRM := false
 	for scanner.Scan() {
 		line := scanner.Text()
 		parts := zookeeperFormatRE.FindStringSubmatch(line)
@@ -139,15 +143,15 @@ func (z *zookeeperMetricsScraper) appendMetrics(scanner *bufio.Scanner, rms pdat
 		metricValue := parts[2]
 		switch metricKey {
 		case zkVersionKey:
-			rm.Resource().Attributes().UpsertString(metadata.Labels.ZkVersion, metricValue)
+			rm.Resource().Attributes().UpsertString(metadata.Attributes.ZkVersion, metricValue)
 			continue
 		case serverStateKey:
-			rm.Resource().Attributes().UpsertString(metadata.Labels.ServerState, metricValue)
+			rm.Resource().Attributes().UpsertString(metadata.Attributes.ServerState, metricValue)
 			continue
 		default:
 			// Skip metric if there is no descriptor associated with it.
-			initMetric := getOTLPInitFunc(metricKey)
-			if initMetric == nil {
+			recordDataPoints := recordDataPointsFunc(z.mb, metricKey)
+			if recordDataPoints == nil {
 				// Unexported metric, just move to the next line.
 				continue
 			}
@@ -159,22 +163,11 @@ func (z *zookeeperMetricsScraper) appendMetrics(scanner *bufio.Scanner, rms pdat
 				)
 				continue
 			}
-			metric := ilm.Metrics().AppendEmpty()
-			initMetric(metric)
-			switch metric.DataType() {
-			case pdata.MetricDataTypeGauge:
-				dp := metric.Gauge().DataPoints().AppendEmpty()
-				dp.SetTimestamp(now)
-				dp.SetIntVal(int64Val)
-			case pdata.MetricDataTypeSum:
-				dp := metric.Sum().DataPoints().AppendEmpty()
-				dp.SetTimestamp(now)
-				dp.SetIntVal(int64Val)
-			}
-			keepRM = true
+			recordDataPoints(now, int64Val)
 		}
 	}
-	if keepRM {
+	z.mb.Emit(ilm.Metrics())
+	if ilm.Metrics().Len() > 0 {
 		rm.CopyTo(rms.AppendEmpty())
 	}
 }

@@ -65,6 +65,19 @@ func TestHostnameFromAttributes(t *testing.T) {
 	assert.True(t, ok)
 	assert.Equal(t, hostname, testHostName)
 
+	// AWS cloud provider means relying on the EC2 function
+	attrs = testutils.NewAttributeMap(map[string]string{
+		conventions.AttributeCloudProvider:      conventions.AttributeCloudProviderAWS,
+		conventions.AttributeCloudPlatform:      conventions.AttributeCloudPlatformAWSECS,
+		conventions.AttributeAWSECSTaskARN:      "example-task-ARN",
+		conventions.AttributeAWSECSTaskFamily:   "example-task-family",
+		conventions.AttributeAWSECSTaskRevision: "example-task-revision",
+		conventions.AttributeAWSECSLaunchtype:   conventions.AttributeAWSECSLaunchtypeFargate,
+	})
+	hostname, ok = HostnameFromAttributes(attrs)
+	assert.True(t, ok)
+	assert.Empty(t, hostname)
+
 	// GCP cloud provider means relying on the GCP function
 	attrs = testutils.NewAttributeMap(map[string]string{
 		conventions.AttributeCloudProvider: conventions.AttributeCloudProviderGCP,
@@ -96,6 +109,13 @@ func TestHostnameFromAttributes(t *testing.T) {
 
 	// No labels means no hostname
 	attrs = testutils.NewAttributeMap(map[string]string{})
+	hostname, ok = HostnameFromAttributes(attrs)
+	assert.False(t, ok)
+	assert.Empty(t, hostname)
+
+	attrs = testutils.NewAttributeMap(map[string]string{
+		AttributeDatadogHostname: "127.0.0.1",
+	})
 	hostname, ok = HostnameFromAttributes(attrs)
 	assert.False(t, ok)
 	assert.Empty(t, hostname)

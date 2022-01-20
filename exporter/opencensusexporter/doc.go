@@ -13,4 +13,4 @@
 // limitations under the License.
 
 // Package opencensusexporter exports data to an OpenCensus agent.
-package opencensusexporter
+package opencensusexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter"

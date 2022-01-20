@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package datadogexporter
+package datadogexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 
 import (
 	"time"
@@ -22,8 +22,9 @@ import (
 )
 
 const (
-	statsBucketDuration   int64  = int64(10 * time.Second)
-	versionAggregationTag string = "version"
+	statsBucketDuration          int64  = int64(10 * time.Second)
+	versionAggregationTag        string = "version"
+	httpStatusCodeAggregationTag string = "http.status_code"
 )
 
 // ComputeAPMStats calculates the stats that should be submitted to APM about a given trace
@@ -70,7 +71,7 @@ func computeAPMStats(tracePayload *pb.TracePayload, pushTime int64) *stats.Paylo
 				Weight:   spanWeight,
 				TopLevel: true,
 			}
-			statsRawBucket.HandleSpan(weightedSpan, tracePayload.Env, []string{versionAggregationTag}, emptySublayer)
+			statsRawBucket.HandleSpan(weightedSpan, tracePayload.Env, []string{versionAggregationTag, httpStatusCodeAggregationTag}, emptySublayer)
 		}
 	}
 

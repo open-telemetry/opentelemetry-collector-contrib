@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package prometheusexporter
+package prometheusexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
 
 import (
 	"fmt"
@@ -105,6 +105,10 @@ func (a *lastValueAccumulator) accumulateSummary(metric pdata.Metric, il pdata.I
 		ip := dps.At(i)
 
 		signature := timeseriesSignature(il.Name(), metric, ip.Attributes())
+		if ip.Flags().HasFlag(pdata.MetricDataPointFlagNoRecordedValue) {
+			a.registeredMetrics.Delete(signature)
+			return 0
+		}
 
 		v, ok := a.registeredMetrics.Load(signature)
 		stalePoint := ok &&
@@ -130,6 +134,10 @@ func (a *lastValueAccumulator) accumulateGauge(metric pdata.Metric, il pdata.Ins
 		ip := dps.At(i)
 
 		signature := timeseriesSignature(il.Name(), metric, ip.Attributes())
+		if ip.Flags().HasFlag(pdata.MetricDataPointFlagNoRecordedValue) {
+			a.registeredMetrics.Delete(signature)
+			return 0
+		}
 
 		v, ok := a.registeredMetrics.Load(signature)
 		if !ok {
@@ -158,7 +166,7 @@ func (a *lastValueAccumulator) accumulateSum(metric pdata.Metric, il pdata.Instr
 	doubleSum := metric.Sum()
 
 	// Drop metrics with non-cumulative aggregations
-	if doubleSum.AggregationTemporality() != pdata.AggregationTemporalityCumulative {
+	if doubleSum.AggregationTemporality() != pdata.MetricAggregationTemporalityCumulative {
 		return
 	}
 
@@ -167,12 +175,16 @@ func (a *lastValueAccumulator) accumulateSum(metric pdata.Metric, il pdata.Instr
 		ip := dps.At(i)
 
 		signature := timeseriesSignature(il.Name(), metric, ip.Attributes())
+		if ip.Flags().HasFlag(pdata.MetricDataPointFlagNoRecordedValue) {
+			a.registeredMetrics.Delete(signature)
+			return 0
+		}
 
 		v, ok := a.registeredMetrics.Load(signature)
 		if !ok {
 			m := createMetric(metric)
 			m.Sum().SetIsMonotonic(metric.Sum().IsMonotonic())
-			m.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+			m.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 			ip.CopyTo(m.Sum().DataPoints().AppendEmpty())
 			a.registeredMetrics.Store(signature, &accumulatedValue{value: m, instrumentationLibrary: il, updated: now})
 			n++
@@ -187,7 +199,7 @@ func (a *lastValueAccumulator) accumulateSum(metric pdata.Metric, il pdata.Instr
 
 		m := createMetric(metric)
 		m.Sum().SetIsMonotonic(metric.Sum().IsMonotonic())
-		m.Sum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		m.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		ip.CopyTo(m.Sum().DataPoints().AppendEmpty())
 		a.registeredMetrics.Store(signature, &accumulatedValue{value: m, instrumentationLibrary: il, updated: now})
 		n++
@@ -199,7 +211,7 @@ func (a *lastValueAccumulator) accumulateDoubleHistogram(metric pdata.Metric, il
 	doubleHistogram := metric.Histogram()
 
 	// Drop metrics with non-cumulative aggregations
-	if doubleHistogram.AggregationTemporality() != pdata.AggregationTemporalityCumulative {
+	if doubleHistogram.AggregationTemporality() != pdata.MetricAggregationTemporalityCumulative {
 		return
 	}
 
@@ -208,6 +220,10 @@ func (a *lastValueAccumulator) accumulateDoubleHistogram(metric pdata.Metric, il
 		ip := dps.At(i)
 
 		signature := timeseriesSignature(il.Name(), metric, ip.Attributes())
+		if ip.Flags().HasFlag(pdata.MetricDataPointFlagNoRecordedValue) {
+			a.registeredMetrics.Delete(signature)
+			return 0
+		}
 
 		v, ok := a.registeredMetrics.Load(signature)
 		if !ok {
@@ -226,7 +242,7 @@ func (a *lastValueAccumulator) accumulateDoubleHistogram(metric pdata.Metric, il
 
 		m := createMetric(metric)
 		ip.CopyTo(m.Histogram().DataPoints().AppendEmpty())
-		m.Histogram().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		m.Histogram().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		a.registeredMetrics.Store(signature, &accumulatedValue{value: m, instrumentationLibrary: il, updated: now})
 		n++
 	}

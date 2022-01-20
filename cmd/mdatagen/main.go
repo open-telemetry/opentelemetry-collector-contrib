@@ -30,25 +30,30 @@ import (
 	"text/template"
 )
 
+const (
+	tmplFileV1   = "metrics.tmpl"
+	outputFileV1 = "generated_metrics.go"
+	tmplFileV2   = "metrics_v2.tmpl"
+	outputFileV2 = "generated_metrics_v2.go"
+)
+
 func main() {
+	useExpGen := flag.Bool("experimental-gen", false, "Use experimental generator")
 	flag.Parse()
 	yml := flag.Arg(0)
-	if err := run(yml); err != nil {
+	if err := run(yml, *useExpGen); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func run(ymlPath string) error {
+func run(ymlPath string, useExpGen bool) error {
 	if ymlPath == "" {
 		return errors.New("argument must be metadata.yaml file")
 	}
 
-	ymlData, err := ioutil.ReadFile(filepath.Clean(ymlPath))
-	if err != nil {
-		return fmt.Errorf("unable to read file %v: %v", ymlPath, err)
-	}
+	ymlDir := path.Dir(ymlPath)
 
-	md, err := loadMetadata(ymlData)
+	md, err := loadMetadata(filepath.Clean(ymlPath))
 	if err != nil {
 		return fmt.Errorf("failed loading %v: %v", ymlPath, err)
 	}
@@ -57,23 +62,34 @@ func run(ymlPath string) error {
 	if !ok {
 		return errors.New("unable to determine filename")
 	}
-
 	thisDir := path.Dir(filename)
+
+	if err = generateMetrics(ymlDir, thisDir, md, useExpGen); err != nil {
+		return err
+	}
+	return generateDocumentation(ymlDir, thisDir, md)
+}
+
+func generateMetrics(ymlDir string, thisDir string, md metadata, useExpGen bool) error {
+	tmplFile := tmplFileV1
+	outputFile := outputFileV1
+	if useExpGen {
+		tmplFile = tmplFileV2
+		outputFile = outputFileV2
+	}
+
 	tmpl := template.Must(
 		template.
-			New("metrics.tmpl").
+			New(tmplFile).
 			Option("missingkey=error").
 			Funcs(map[string]interface{}{
 				"publicVar": func(s string) (string, error) {
 					return formatIdentifier(s, true)
 				},
-			}).ParseFiles(path.Join(thisDir, "metrics.tmpl")))
+			}).ParseFiles(path.Join(thisDir, tmplFile)))
 	buf := bytes.Buffer{}
 
-	if err = tmpl.Execute(&buf, templateContext{
-		metadata: md,
-		Package:  "metadata",
-	}); err != nil {
+	if err := tmpl.Execute(&buf, templateContext{metadata: md, Package: "metadata"}); err != nil {
 		return fmt.Errorf("failed executing template: %v", err)
 	}
 
@@ -88,13 +104,42 @@ func run(ymlPath string) error {
 		return errors.New(errstr.String())
 	}
 
-	metadir := path.Dir(ymlPath)
-	outputDir := path.Join(metadir, "internal", "metadata")
-	outputFile := path.Join(outputDir, "generated_metrics.go")
+	outputDir := path.Join(ymlDir, "internal", "metadata")
 	if err := os.MkdirAll(outputDir, 0700); err != nil {
 		return fmt.Errorf("unable to create output directory %q: %v", outputDir, err)
 	}
-	if err := ioutil.WriteFile(outputFile, formatted, 0600); err != nil {
+	for _, f := range []string{path.Join(outputDir, outputFileV1), path.Join(outputDir, outputFileV2)} {
+		if err := os.Remove(f); err != nil && !errors.Is(err, os.ErrNotExist) {
+			return fmt.Errorf("unable to remove genererated file %q: %v", f, err)
+		}
+	}
+	outputFilepath := path.Join(outputDir, outputFile)
+	if err := ioutil.WriteFile(outputFilepath, formatted, 0600); err != nil {
+		return fmt.Errorf("failed writing %q: %v", outputFilepath, err)
+	}
+
+	return nil
+}
+
+func generateDocumentation(ymlDir string, thisDir string, md metadata) error {
+	tmpl := template.Must(
+		template.
+			New("documentation.tmpl").
+			Option("missingkey=error").
+			Funcs(map[string]interface{}{
+				"publicVar": func(s string) (string, error) {
+					return formatIdentifier(s, true)
+				},
+			}).ParseFiles(path.Join(thisDir, "documentation.tmpl")))
+
+	buf := bytes.Buffer{}
+
+	if err := tmpl.Execute(&buf, templateContext{metadata: md, Package: "metadata"}); err != nil {
+		return fmt.Errorf("failed executing template: %v", err)
+	}
+
+	outputFile := path.Join(ymlDir, "documentation.md")
+	if err := ioutil.WriteFile(outputFile, buf.Bytes(), 0600); err != nil {
 		return fmt.Errorf("failed writing %q: %v", outputFile, err)
 	}
 

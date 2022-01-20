@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package diskscraper
+package diskscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/diskscraper"
 
 import (
 	"context"
 	"fmt"
 	"time"
 
-	"github.com/shirou/gopsutil/host"
+	"github.com/shirou/gopsutil/v3/host"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
@@ -52,6 +52,7 @@ const (
 type scraper struct {
 	config    *Config
 	startTime pdata.Timestamp
+	mb        *metadata.MetricsBuilder
 	includeFS filterset.FilterSet
 	excludeFS filterset.FilterSet
 
@@ -91,23 +92,25 @@ func (s *scraper) start(context.Context, component.Host) error {
 	}
 
 	s.startTime = pdata.Timestamp(bootTime * 1e9)
+	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, metadata.WithStartTime(s.startTime))
 
 	return s.perfCounterScraper.Initialize(logicalDisk)
 }
 
-func (s *scraper) scrape(ctx context.Context) (pdata.MetricSlice, error) {
-	metrics := pdata.NewMetricSlice()
+func (s *scraper) scrape(ctx context.Context) (pdata.Metrics, error) {
+	md := pdata.NewMetrics()
+	metrics := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics()
 
 	now := pdata.NewTimestampFromTime(time.Now())
 
 	counters, err := s.perfCounterScraper.Scrape()
 	if err != nil {
-		return metrics, scrapererror.NewPartialScrapeError(err, metricsLen)
+		return md, scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
 	logicalDiskObject, err := counters.GetObject(logicalDisk)
 	if err != nil {
-		return metrics, scrapererror.NewPartialScrapeError(err, metricsLen)
+		return md, scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
 	// filter devices by name
@@ -115,77 +118,52 @@ func (s *scraper) scrape(ctx context.Context) (pdata.MetricSlice, error) {
 
 	logicalDiskCounterValues, err := logicalDiskObject.GetValues(readsPerSec, writesPerSec, readBytesPerSec, writeBytesPerSec, idleTime, avgDiskSecsPerRead, avgDiskSecsPerWrite, queueLength)
 	if err != nil {
-		return metrics, scrapererror.NewPartialScrapeError(err, metricsLen)
+		return md, scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
 	if len(logicalDiskCounterValues) > 0 {
 		metrics.EnsureCapacity(metricsLen)
-		initializeDiskIOMetric(metrics.AppendEmpty(), s.startTime, now, logicalDiskCounterValues)
-		initializeDiskOperationsMetric(metrics.AppendEmpty(), s.startTime, now, logicalDiskCounterValues)
-		initializeDiskIOTimeMetric(metrics.AppendEmpty(), s.startTime, now, logicalDiskCounterValues)
-		initializeDiskOperationTimeMetric(metrics.AppendEmpty(), s.startTime, now, logicalDiskCounterValues)
-		initializeDiskPendingOperationsMetric(metrics.AppendEmpty(), now, logicalDiskCounterValues)
+		s.recordDiskIOMetric(now, logicalDiskCounterValues)
+		s.recordDiskOperationsMetric(now, logicalDiskCounterValues)
+		s.recordDiskIOTimeMetric(now, logicalDiskCounterValues)
+		s.recordDiskOperationTimeMetric(now, logicalDiskCounterValues)
+		s.recordDiskPendingOperationsMetric(now, logicalDiskCounterValues)
+		s.mb.Emit(metrics)
 	}
 
-	return metrics, nil
+	return md, nil
 }
 
-func initializeDiskIOMetric(metric pdata.Metric, startTime, now pdata.Timestamp, logicalDiskCounterValues []*perfcounters.CounterValues) {
-	metadata.Metrics.SystemDiskIo.Init(metric)
-
-	idps := metric.Sum().DataPoints()
-	idps.EnsureCapacity(2 * len(logicalDiskCounterValues))
+func (s *scraper) recordDiskIOMetric(now pdata.Timestamp, logicalDiskCounterValues []*perfcounters.CounterValues) {
 	for _, logicalDiskCounter := range logicalDiskCounterValues {
-		initializeNumberDataPointAsInt(idps.AppendEmpty(), startTime, now, logicalDiskCounter.InstanceName, metadata.LabelDirection.Read, logicalDiskCounter.Values[readBytesPerSec])
-		initializeNumberDataPointAsInt(idps.AppendEmpty(), startTime, now, logicalDiskCounter.InstanceName, metadata.LabelDirection.Write, logicalDiskCounter.Values[writeBytesPerSec])
+		s.mb.RecordSystemDiskIoDataPoint(now, logicalDiskCounter.Values[readBytesPerSec], logicalDiskCounter.InstanceName, metadata.AttributeDirection.Read)
+		s.mb.RecordSystemDiskIoDataPoint(now, logicalDiskCounter.Values[writeBytesPerSec], logicalDiskCounter.InstanceName, metadata.AttributeDirection.Write)
 	}
 }
 
-func initializeDiskOperationsMetric(metric pdata.Metric, startTime, now pdata.Timestamp, logicalDiskCounterValues []*perfcounters.CounterValues) {
-	metadata.Metrics.SystemDiskOperations.Init(metric)
-
-	idps := metric.Sum().DataPoints()
-	idps.EnsureCapacity(2 * len(logicalDiskCounterValues))
+func (s *scraper) recordDiskOperationsMetric(now pdata.Timestamp, logicalDiskCounterValues []*perfcounters.CounterValues) {
 	for _, logicalDiskCounter := range logicalDiskCounterValues {
-		initializeNumberDataPointAsInt(idps.AppendEmpty(), startTime, now, logicalDiskCounter.InstanceName, metadata.LabelDirection.Read, logicalDiskCounter.Values[readsPerSec])
-		initializeNumberDataPointAsInt(idps.AppendEmpty(), startTime, now, logicalDiskCounter.InstanceName, metadata.LabelDirection.Write, logicalDiskCounter.Values[writesPerSec])
+		s.mb.RecordSystemDiskOperationsDataPoint(now, logicalDiskCounter.Values[readsPerSec], logicalDiskCounter.InstanceName, metadata.AttributeDirection.Read)
+		s.mb.RecordSystemDiskOperationsDataPoint(now, logicalDiskCounter.Values[writesPerSec], logicalDiskCounter.InstanceName, metadata.AttributeDirection.Write)
 	}
 }
 
-func initializeDiskIOTimeMetric(metric pdata.Metric, startTime, now pdata.Timestamp, logicalDiskCounterValues []*perfcounters.CounterValues) {
-	metadata.Metrics.SystemDiskIoTime.Init(metric)
-
-	ddps := metric.Sum().DataPoints()
-	ddps.EnsureCapacity(len(logicalDiskCounterValues))
+func (s *scraper) recordDiskIOTimeMetric(now pdata.Timestamp, logicalDiskCounterValues []*perfcounters.CounterValues) {
 	for _, logicalDiskCounter := range logicalDiskCounterValues {
 		// disk active time = system boot time - disk idle time
-		initializeNumberDataPointAsDouble(ddps.AppendEmpty(), startTime, now, logicalDiskCounter.InstanceName, "", float64(now-startTime)/1e9-float64(logicalDiskCounter.Values[idleTime])/1e7)
+		s.mb.RecordSystemDiskIoTimeDataPoint(now, float64(now-s.startTime)/1e9-float64(logicalDiskCounter.Values[idleTime])/1e7, logicalDiskCounter.InstanceName)
 	}
 }
 
-func initializeDiskOperationTimeMetric(metric pdata.Metric, startTime, now pdata.Timestamp, logicalDiskCounterValues []*perfcounters.CounterValues) {
-	metadata.Metrics.SystemDiskOperationTime.Init(metric)
-
-	ddps := metric.Sum().DataPoints()
-	ddps.EnsureCapacity(2 * len(logicalDiskCounterValues))
+func (s *scraper) recordDiskOperationTimeMetric(now pdata.Timestamp, logicalDiskCounterValues []*perfcounters.CounterValues) {
 	for _, logicalDiskCounter := range logicalDiskCounterValues {
-		initializeNumberDataPointAsDouble(ddps.AppendEmpty(), startTime, now, logicalDiskCounter.InstanceName, metadata.LabelDirection.Read, float64(logicalDiskCounter.Values[avgDiskSecsPerRead])/1e7)
-		initializeNumberDataPointAsDouble(ddps.AppendEmpty(), startTime, now, logicalDiskCounter.InstanceName, metadata.LabelDirection.Write, float64(logicalDiskCounter.Values[avgDiskSecsPerWrite])/1e7)
+		s.mb.RecordSystemDiskOperationTimeDataPoint(now, float64(logicalDiskCounter.Values[avgDiskSecsPerRead])/1e7, logicalDiskCounter.InstanceName, metadata.AttributeDirection.Read)
+		s.mb.RecordSystemDiskOperationTimeDataPoint(now, float64(logicalDiskCounter.Values[avgDiskSecsPerWrite])/1e7, logicalDiskCounter.InstanceName, metadata.AttributeDirection.Write)
 	}
 }
 
-func initializeDiskPendingOperationsMetric(metric pdata.Metric, now pdata.Timestamp, logicalDiskCounterValues []*perfcounters.CounterValues) {
-	metadata.Metrics.SystemDiskPendingOperations.Init(metric)
-
-	idps := metric.Sum().DataPoints()
-	idps.EnsureCapacity(len(logicalDiskCounterValues))
+func (s *scraper) recordDiskPendingOperationsMetric(now pdata.Timestamp, logicalDiskCounterValues []*perfcounters.CounterValues) {
 	for _, logicalDiskCounter := range logicalDiskCounterValues {
-		initializeDiskPendingDataPoint(idps.AppendEmpty(), now, logicalDiskCounter.InstanceName, logicalDiskCounter.Values[queueLength])
+		s.mb.RecordSystemDiskPendingOperationsDataPoint(now, logicalDiskCounter.Values[queueLength], logicalDiskCounter.InstanceName)
 	}
-}
-
-func initializeDiskPendingDataPoint(dataPoint pdata.NumberDataPoint, now pdata.Timestamp, deviceLabel string, value int64) {
-	dataPoint.Attributes().InsertString(metadata.Labels.Device, deviceLabel)
-	dataPoint.SetTimestamp(now)
-	dataPoint.SetIntVal(value)
 }

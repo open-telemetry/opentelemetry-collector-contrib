@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package oidcauthextension
+package oidcauthextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension"
 
 import "go.opentelemetry.io/collector/config"
 
@@ -20,7 +20,7 @@ import "go.opentelemetry.io/collector/config"
 type Config struct {
 	config.ExtensionSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
-	// The attribute (header name) to look for auth data. Optional, default value: "authentication".
+	// The attribute (header name) to look for auth data. Optional, default value: "authorization".
 	Attribute string `mapstructure:"attribute"`
 
 	// IssuerURL is the base URL for the OIDC provider.

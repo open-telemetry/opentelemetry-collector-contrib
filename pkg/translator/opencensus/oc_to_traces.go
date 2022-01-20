@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package opencensus
+package opencensus // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 
 import (
 	"strings"
@@ -352,7 +352,7 @@ func ocMessageEventToInternalAttrs(msgEvent *octrace.Span_TimeEvent_MessageEvent
 		return
 	}
 
-	dest.UpsertString(conventions.AttributeMessageType, msgEvent.Type.String())
+	dest.UpsertString("message.type", msgEvent.Type.String())
 	dest.UpsertInt(conventions.AttributeMessagingMessageID, int64(msgEvent.Id))
 	dest.UpsertInt(conventions.AttributeMessagingMessagePayloadSizeBytes, int64(msgEvent.UncompressedSize))
 	dest.UpsertInt(conventions.AttributeMessagingMessagePayloadCompressedSizeBytes, int64(msgEvent.CompressedSize))

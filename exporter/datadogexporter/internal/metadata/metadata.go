@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package metadata
+package metadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 
 import (
 	"bytes"
@@ -34,6 +34,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/attributes/gcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/ec2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/system"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils"
 )
 
@@ -154,7 +155,7 @@ func pushMetadata(cfg *config.Config, buildInfo component.BuildInfo, metadata *H
 	req, _ := http.NewRequest(http.MethodPost, path, bytes.NewBuffer(buf))
 	utils.SetDDHeaders(req.Header, buildInfo, cfg.API.Key)
 	utils.SetExtraHeaders(req.Header, utils.JSONHeaders)
-	client := utils.NewHTTPClient(10 * time.Second)
+	client := utils.NewHTTPClient(cfg.TimeoutSettings)
 	resp, err := client.Do(req)
 
 	if err != nil {
@@ -174,19 +175,17 @@ func pushMetadata(cfg *config.Config, buildInfo component.BuildInfo, metadata *H
 	return nil
 }
 
-func pushMetadataWithRetry(params component.ExporterCreateSettings, cfg *config.Config, hostMetadata *HostMetadata) {
-	const maxRetries = 5
-
+func pushMetadataWithRetry(retrier *utils.Retrier, params component.ExporterCreateSettings, cfg *config.Config, hostMetadata *HostMetadata) {
 	params.Logger.Debug("Sending host metadata payload", zap.Any("payload", hostMetadata))
 
-	numRetries, err := utils.DoWithRetries(maxRetries, func() error {
+	err := retrier.DoWithRetries(context.Background(), func(context.Context) error {
 		return pushMetadata(cfg, params.BuildInfo, hostMetadata)
 	})
 
 	if err != nil {
 		params.Logger.Warn("Sending host metadata failed", zap.Error(err))
 	} else {
-		params.Logger.Info("Sent host metadata", zap.Int("retries", numRetries))
+		params.Logger.Info("Sent host metadata")
 	}
 
 }
@@ -197,6 +196,7 @@ func Pusher(ctx context.Context, params component.ExporterCreateSettings, cfg *c
 	ticker := time.NewTicker(30 * time.Minute)
 	defer ticker.Stop()
 	defer params.Logger.Debug("Shut down host metadata routine")
+	retrier := utils.NewRetrier(params.Logger, cfg.RetrySettings, scrub.NewScrubber())
 
 	// Get host metadata from resources and fill missing info using our exporter.
 	// Currently we only retrieve it once but still send the same payload
@@ -212,14 +212,14 @@ func Pusher(ctx context.Context, params component.ExporterCreateSettings, cfg *c
 	fillHostMetadata(params, cfg, hostMetadata)
 
 	// Run one first time at startup
-	pushMetadataWithRetry(params, cfg, hostMetadata)
+	pushMetadataWithRetry(retrier, params, cfg, hostMetadata)
 
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C: // Send host metadata
-			pushMetadataWithRetry(params, cfg, hostMetadata)
+			pushMetadataWithRetry(retrier, params, cfg, hostMetadata)
 		}
 	}
 }

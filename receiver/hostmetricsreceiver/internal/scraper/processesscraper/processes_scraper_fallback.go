@@ -15,10 +15,11 @@
 //go:build !linux && !darwin && !freebsd && !openbsd
 // +build !linux,!darwin,!freebsd,!openbsd
 
-package processesscraper
+package processesscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper"
 
-import "go.opentelemetry.io/collector/model/pdata"
+const enableProcessesCount = false
+const enableProcessesCreated = false
 
-func appendSystemSpecificProcessesMetrics(metrics pdata.MetricSlice, startTime pdata.Timestamp, miscFunc getMiscStats) error {
-	return nil
+func (s *scraper) getProcessesMetadata() (processesMetadata, error) {
+	return processesMetadata{}, nil
 }

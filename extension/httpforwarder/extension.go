@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package httpforwarder
+package httpforwarder // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder"
 
 import (
 	"context"
@@ -30,7 +30,7 @@ type httpForwarder struct {
 	forwardTo  *url.URL
 	httpClient *http.Client
 	server     *http.Server
-	logger     *zap.Logger
+	settings   component.TelemetrySettings
 	config     *Config
 }
 
@@ -51,10 +51,14 @@ func (h *httpForwarder) Start(_ context.Context, host component.Host) error {
 	handler := http.NewServeMux()
 	handler.HandleFunc("/", h.forwardRequest)
 
-	h.server = h.config.Ingress.ToServer(handler)
+	h.server, err = h.config.Ingress.ToServer(host, h.settings, handler)
+	if err != nil {
+		return fmt.Errorf("failed to create HTTP Client: %w", err)
+	}
+
 	go func() {
-		if err := h.server.Serve(listener); err != http.ErrServerClosed {
-			host.ReportFatalError(err)
+		if errHTTP := h.server.Serve(listener); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
+			host.ReportFatalError(errHTTP)
 		}
 	}()
 
@@ -101,11 +105,11 @@ func (h *httpForwarder) forwardRequest(writer http.ResponseWriter, request *http
 	writer.WriteHeader(response.StatusCode)
 	written, err := io.Copy(writer, response.Body)
 	if err != nil {
-		h.logger.Warn("Error writing HTTP response message", zap.Error(err))
+		h.settings.Logger.Warn("Error writing HTTP response message", zap.Error(err))
 	}
 
 	if response.ContentLength != written {
-		h.logger.Warn("Response from target not fully copied, body might be corrupted")
+		h.settings.Logger.Warn("Response from target not fully copied, body might be corrupted")
 	}
 }
 
@@ -113,7 +117,7 @@ func addViaHeader(header http.Header, protocol string, host string) {
 	header.Add("Via", fmt.Sprintf("%s %s", protocol, host))
 }
 
-func newHTTPForwarder(config *Config, logger *zap.Logger) (component.Extension, error) {
+func newHTTPForwarder(config *Config, settings component.TelemetrySettings) (component.Extension, error) {
 	if config.Egress.Endpoint == "" {
 		return nil, errors.New("'egress.endpoint' config option cannot be empty")
 	}
@@ -126,7 +130,7 @@ func newHTTPForwarder(config *Config, logger *zap.Logger) (component.Extension, 
 	h := &httpForwarder{
 		config:    config,
 		forwardTo: url,
-		logger:    logger,
+		settings:  settings,
 	}
 
 	return h, nil

@@ -23,8 +23,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
@@ -35,7 +35,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -44,22 +44,22 @@ func TestLoadConfig(t *testing.T) {
 	// are excluded from the final list.
 	assert.Equal(t, len(cfg.Receivers), 4)
 
-	r0 := cfg.Receivers[config.NewID(typeStr)]
+	r0 := cfg.Receivers[config.NewComponentID(typeStr)]
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
 
-	r1 := cfg.Receivers[config.NewIDWithName(typeStr, "customname")].(*Config)
+	r1 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "customname")].(*Config)
 	assert.Equal(t, r1,
 		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "customname")),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "customname")),
 			HTTPServerSettings: confighttp.HTTPServerSettings{
 				Endpoint: "0.0.0.0:7276",
 			},
 		})
 
-	r2 := cfg.Receivers[config.NewIDWithName(typeStr, "tls")].(*Config)
+	r2 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "tls")].(*Config)
 	assert.Equal(t, r2,
 		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "tls")),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "tls")),
 			HTTPServerSettings: confighttp.HTTPServerSettings{
 				Endpoint: ":7276",
 				TLSSetting: &configtls.TLSServerSetting{
@@ -71,10 +71,10 @@ func TestLoadConfig(t *testing.T) {
 			},
 		})
 
-	r3 := cfg.Receivers[config.NewIDWithName(typeStr, "passthrough")].(*Config)
+	r3 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "passthrough")].(*Config)
 	assert.Equal(t, r3,
 		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewIDWithName(typeStr, "passthrough")),
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "passthrough")),
 			HTTPServerSettings: confighttp.HTTPServerSettings{
 				Endpoint: ":7276",
 			},

@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package protocol
+package protocol // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
 
 import (
 	"fmt"
 	"sort"
 
-	"go.opentelemetry.io/collector/config/configparser"
+	"go.opentelemetry.io/collector/config"
 )
 
 var (
@@ -71,7 +71,7 @@ type ParserConfig interface {
 // LoadParserConfig is used to load the parser configuration according to the
 // specified parser type. It expects the passed viper to be pointing at the level
 // of the Config reference.
-func LoadParserConfig(cp *configparser.ConfigMap, cfg *Config) error {
+func LoadParserConfig(cp *config.Map, cfg *Config) error {
 	defaultCfgFn, ok := parserMap[cfg.Type]
 	if !ok {
 		return fmt.Errorf(

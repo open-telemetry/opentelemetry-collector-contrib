@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package influxdbreceiver
+package influxdbreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influxdbreceiver"
 
 import (
 	"context"
@@ -38,7 +38,7 @@ func NewFactory() component.ReceiverFactory {
 // createDefaultConfig creates the default configuration for receiver.
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: "0.0.0.0:8086",
 		},
@@ -46,7 +46,5 @@ func createDefaultConfig() config.Receiver {
 }
 
 func createMetricsReceiver(_ context.Context, params component.ReceiverCreateSettings, cfg config.Receiver, nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
-	influxLogger := newZapInfluxLogger(params.Logger)
-
-	return newMetricsReceiver(cfg.(*Config), influxLogger, nextConsumer)
+	return newMetricsReceiver(cfg.(*Config), params.TelemetrySettings, nextConsumer)
 }

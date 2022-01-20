@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tracetranslator
+package tracetranslator // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 
 import (
 	"go.opentelemetry.io/collector/model/pdata"
@@ -53,7 +53,7 @@ const (
 
 // StatusCodeFromHTTP takes an HTTP status code and return the appropriate OpenTelemetry status code
 // See: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/http.md#status
-func StatusCodeFromHTTP(httpStatusCode int) pdata.StatusCode {
+func StatusCodeFromHTTP(httpStatusCode int64) pdata.StatusCode {
 	if httpStatusCode >= 100 && httpStatusCode < 399 {
 		return pdata.StatusCodeUnset
 	}

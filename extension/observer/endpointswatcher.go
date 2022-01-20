@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package observer
+package observer // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 
 import (
 	"reflect"
@@ -105,7 +105,9 @@ func (ew *EndpointsWatcher) refreshEndpoints(listener Notify) {
 
 // StopListAndWatch polling the ListEndpoints.
 func (ew *EndpointsWatcher) StopListAndWatch() {
-	close(ew.stop)
+	if ew.stop != nil {
+		close(ew.stop)
+	}
 }
 
 // EndpointsLister that provides a list of endpoints.

@@ -24,8 +24,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -34,17 +34,17 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	configDefault := cfg.Exporters[config.NewID(typeStr)]
+	configDefault := cfg.Exporters[config.NewComponentID(typeStr)]
 	assert.Equal(t, configDefault, factory.CreateDefaultConfig())
 
-	configWithSettings := cfg.Exporters[config.NewIDWithName(typeStr, "withsettings")].(*Config)
+	configWithSettings := cfg.Exporters[config.NewComponentIDWithName(typeStr, "withsettings")].(*Config)
 	assert.Equal(t, configWithSettings, &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "withsettings")),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "withsettings")),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "http://localhost:8080",
 			Timeout:  500 * time.Millisecond,

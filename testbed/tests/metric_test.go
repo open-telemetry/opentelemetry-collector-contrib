@@ -53,7 +53,7 @@ func TestMetric10kDPS(t *testing.T) {
 			datareceivers.NewOCDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 85,
-				ExpectedMaxRAM: 85,
+				ExpectedMaxRAM: 100,
 			},
 		},
 		{
@@ -62,7 +62,7 @@ func TestMetric10kDPS(t *testing.T) {
 			testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 50,
-				ExpectedMaxRAM: 85,
+				ExpectedMaxRAM: 98,
 			},
 		},
 		{
@@ -71,7 +71,7 @@ func TestMetric10kDPS(t *testing.T) {
 			testbed.NewOTLPHTTPDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 50,
-				ExpectedMaxRAM: 85,
+				ExpectedMaxRAM: 92,
 			},
 		},
 		{
@@ -80,7 +80,7 @@ func TestMetric10kDPS(t *testing.T) {
 			datareceivers.NewSFxMetricsDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 120,
-				ExpectedMaxRAM: 91,
+				ExpectedMaxRAM: 98,
 			},
 		},
 	}
@@ -136,12 +136,12 @@ func TestMetricsFromFile(t *testing.T) {
 		agentProc,
 		&testbed.PerfTestValidator{},
 		performanceResultsSummary,
-		testbed.WithResourceLimits(testbed.ResourceSpec{ExpectedMaxCPU: 120, ExpectedMaxRAM: 85}),
+		testbed.WithResourceLimits(testbed.ResourceSpec{ExpectedMaxCPU: 120, ExpectedMaxRAM: 94}),
 	)
 	defer tc.Stop()
 
 	tc.StartBackend()
-	tc.StartAgent("--log-level=debug")
+	tc.StartAgent()
 
 	tc.StartLoad(options)
 

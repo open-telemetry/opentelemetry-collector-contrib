@@ -14,7 +14,7 @@
 
 // Package idbatcher defines a pipeline of fixed size in which the
 // elements are batches of ids.
-package idbatcher
+package idbatcher // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
 
 import (
 	"errors"
@@ -69,6 +69,7 @@ type batcher struct {
 	newBatchesInitialCapacity uint64
 	stopchan                  chan bool
 	stopped                   bool
+	stopLock                  sync.RWMutex
 }
 
 // New creates a Batcher that will hold numBatches in its pipeline, having a channel with
@@ -119,6 +120,7 @@ func (b *batcher) AddToCurrentBatch(id pdata.TraceID) {
 
 func (b *batcher) CloseCurrentAndTakeFirstBatch() (Batch, bool) {
 	if readBatch, ok := <-b.batches; ok {
+		b.stopLock.RLock()
 		if !b.stopped {
 			nextBatch := make(Batch, 0, b.newBatchesInitialCapacity)
 			b.cbMutex.Lock()
@@ -126,6 +128,7 @@ func (b *batcher) CloseCurrentAndTakeFirstBatch() (Batch, bool) {
 			b.currentBatch = nextBatch
 			b.cbMutex.Unlock()
 		}
+		b.stopLock.RUnlock()
 		return readBatch, true
 	}
 
@@ -136,6 +139,8 @@ func (b *batcher) CloseCurrentAndTakeFirstBatch() (Batch, bool) {
 
 func (b *batcher) Stop() {
 	close(b.pendingIds)
+	b.stopLock.Lock()
 	b.stopped = <-b.stopchan
+	b.stopLock.Unlock()
 	close(b.batches)
 }

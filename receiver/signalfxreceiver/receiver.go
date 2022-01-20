@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package signalfxreceiver
+package signalfxreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver"
 
 import (
 	"compress/gzip"
@@ -78,12 +78,12 @@ var (
 
 // sfxReceiver implements the component.MetricsReceiver for SignalFx metric protocol.
 type sfxReceiver struct {
-	sync.Mutex
-	logger          *zap.Logger
+	settings        component.ReceiverCreateSettings
 	config          *Config
 	metricsConsumer consumer.Metrics
 	logsConsumer    consumer.Logs
 	server          *http.Server
+	shutdownWG      sync.WaitGroup
 	obsrecv         *obsreport.Receiver
 }
 
@@ -91,7 +91,7 @@ var _ component.MetricsReceiver = (*sfxReceiver)(nil)
 
 // New creates the SignalFx receiver with the given configuration.
 func newReceiver(
-	logger *zap.Logger,
+	settings component.ReceiverCreateSettings,
 	config Config,
 ) *sfxReceiver {
 	transport := "http"
@@ -99,25 +99,23 @@ func newReceiver(
 		transport = "https"
 	}
 	r := &sfxReceiver{
-		logger:  logger,
-		config:  &config,
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: config.ID(), Transport: transport}),
+		settings: settings,
+		config:   &config,
+		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             config.ID(),
+			Transport:              transport,
+			ReceiverCreateSettings: settings,
+		}),
 	}
 
 	return r
 }
 
 func (r *sfxReceiver) RegisterMetricsConsumer(mc consumer.Metrics) {
-	r.Lock()
-	defer r.Unlock()
-
 	r.metricsConsumer = mc
 }
 
 func (r *sfxReceiver) RegisterLogsConsumer(lc consumer.Logs) {
-	r.Lock()
-	defer r.Unlock()
-
 	r.logsConsumer = lc
 }
 
@@ -125,9 +123,6 @@ func (r *sfxReceiver) RegisterLogsConsumer(lc consumer.Logs) {
 // By convention the consumer of the received data is set when the receiver
 // instance is created.
 func (r *sfxReceiver) Start(_ context.Context, host component.Host) error {
-	r.Lock()
-	defer r.Unlock()
-
 	if r.metricsConsumer == nil && r.logsConsumer == nil {
 		return componenterror.ErrNilNextConsumer
 	}
@@ -142,15 +137,20 @@ func (r *sfxReceiver) Start(_ context.Context, host component.Host) error {
 	mx.HandleFunc("/v2/datapoint", r.handleDatapointReq)
 	mx.HandleFunc("/v2/event", r.handleEventReq)
 
-	r.server = r.config.HTTPServerSettings.ToServer(mx)
+	r.server, err = r.config.HTTPServerSettings.ToServer(host, r.settings.TelemetrySettings, mx)
+	if err != nil {
+		return err
+	}
 
 	// TODO: Evaluate what properties should be configurable, for now
 	//		set some hard-coded values.
 	r.server.ReadHeaderTimeout = defaultServerTimeout
 	r.server.WriteTimeout = defaultServerTimeout
 
+	r.shutdownWG.Add(1)
 	go func() {
-		if errHTTP := r.server.Serve(ln); errHTTP != http.ErrServerClosed {
+		defer r.shutdownWG.Done()
+		if errHTTP := r.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
 			host.ReportFatalError(errHTTP)
 		}
 	}()
@@ -160,10 +160,9 @@ func (r *sfxReceiver) Start(_ context.Context, host component.Host) error {
 // Shutdown tells the receiver that should stop reception,
 // giving it a chance to perform any necessary clean-up.
 func (r *sfxReceiver) Shutdown(context.Context) error {
-	r.Lock()
-	defer r.Unlock()
-
-	return r.server.Close()
+	err := r.server.Close()
+	r.shutdownWG.Wait()
+	return err
 }
 
 func (r *sfxReceiver) readBody(ctx context.Context, resp http.ResponseWriter, req *http.Request) ([]byte, bool) {
@@ -236,7 +235,7 @@ func (r *sfxReceiver) handleDatapointReq(resp http.ResponseWriter, req *http.Req
 		return
 	}
 
-	md, _ := signalFxV2ToMetrics(r.logger, msg.Datapoints)
+	md, _ := signalFxV2ToMetrics(r.settings.Logger, msg.Datapoints)
 
 	if r.config.AccessTokenPassthrough {
 		if accessToken := req.Header.Get(splunk.SFxAccessTokenHeader); accessToken != "" {
@@ -316,7 +315,7 @@ func (r *sfxReceiver) failRequest(
 		// The response needs to be written as a JSON string.
 		_, writeErr := resp.Write(jsonResponse)
 		if writeErr != nil {
-			r.logger.Warn(
+			r.settings.Logger.Warn(
 				"Error writing HTTP response message",
 				zap.Error(writeErr),
 				zap.String("receiver", r.config.ID().String()))
@@ -329,7 +328,7 @@ func (r *sfxReceiver) failRequest(
 	reqSpan := trace.FromContext(ctx)
 	reqSpan.AddAttributes(
 		trace.Int64Attribute(conventions.AttributeHTTPStatusCode, int64(httpStatusCode)),
-		trace.StringAttribute(conventions.AttributeHTTPStatusText, msg))
+		trace.StringAttribute("http.status_text", msg))
 	traceStatus := trace.Status{
 		Code: trace.StatusCodeInvalidArgument,
 	}
@@ -342,7 +341,7 @@ func (r *sfxReceiver) failRequest(
 	reqSpan.SetStatus(traceStatus)
 	reqSpan.End()
 
-	r.logger.Debug(
+	r.settings.Logger.Debug(
 		"SignalFx receiver request failed",
 		zap.Int("http_status_code", httpStatusCode),
 		zap.String("msg", msg),

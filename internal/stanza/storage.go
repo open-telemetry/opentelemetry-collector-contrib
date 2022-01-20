@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package stanza
+package stanza // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
 
 import (
 	"context"
@@ -20,7 +20,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/extension/storage"
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 )
 
 func (r *receiver) setStorageClient(ctx context.Context, host component.Host) error {

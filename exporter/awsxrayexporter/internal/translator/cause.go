@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package translator
+package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/translator"
 
 import (
 	"bufio"
@@ -94,7 +94,7 @@ func makeCause(span pdata.Span, attributes map[string]pdata.AttributeValue, reso
 		filtered = make(map[string]pdata.AttributeValue)
 		for key, value := range attributes {
 			switch key {
-			case conventions.AttributeHTTPStatusText:
+			case "http.status_text":
 				if message == "" {
 					message = value.StringVal()
 				}

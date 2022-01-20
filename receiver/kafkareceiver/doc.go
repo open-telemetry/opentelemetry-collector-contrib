@@ -13,4 +13,4 @@
 // limitations under the License.
 
 // Package kafkareceiver receives traces from Kafka.
-package kafkareceiver
+package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver"

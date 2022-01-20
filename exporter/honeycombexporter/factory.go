@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package honeycombexporter
+package honeycombexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombexporter"
 
 import (
 	"context"
@@ -37,7 +37,7 @@ func NewFactory() component.ExporterFactory {
 
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings:    config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings:    config.NewExporterSettings(config.NewComponentID(typeStr)),
 		APIKey:              "",
 		Dataset:             "",
 		APIURL:              "https://api.honeycomb.io",

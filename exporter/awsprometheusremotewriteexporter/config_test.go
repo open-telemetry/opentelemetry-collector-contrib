@@ -24,9 +24,9 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/service/servicetest"
 
 	prw "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter"
 )
@@ -38,13 +38,13 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
 	// From the default configurations -- checks if a correct exporter is instantiated
-	e0 := cfg.Exporters[config.NewID(typeStr)]
+	e0 := cfg.Exporters[config.NewComponentID(typeStr)]
 	cfgDefault := factory.CreateDefaultConfig()
 	// testing function equality is not supported in Go hence these will be ignored for this test
 	cfgDefault.(*Config).HTTPClientSettings.CustomRoundTripper = nil
@@ -52,10 +52,10 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, e0, cfgDefault)
 
 	// checks if the correct Config struct can be instantiated from testdata/config.yaml
-	e1 := cfg.Exporters[config.NewIDWithName(typeStr, "2")]
+	e1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "2")]
 	cfgComplete := &Config{
 		Config: prw.Config{
-			ExporterSettings: config.NewExporterSettings(config.NewIDWithName(typeStr, "2")),
+			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "2")),
 			TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
 			RetrySettings: exporterhelper.RetrySettings{
 				Enabled:         true,
@@ -64,6 +64,7 @@ func TestLoadConfig(t *testing.T) {
 				MaxElapsedTime:  10 * time.Minute,
 			},
 			RemoteWriteQueue: prw.RemoteWriteQueue{
+				Enabled:      true,
 				QueueSize:    10000,
 				NumConsumers: 5,
 			},

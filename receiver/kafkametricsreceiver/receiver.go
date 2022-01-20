@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package kafkametricsreceiver
+package kafkametricsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver"
 
 import (
 	"context"
@@ -21,10 +21,10 @@ import (
 	"github.com/Shopify/sarama"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
 )
 
 const (
@@ -77,7 +77,7 @@ var newMetricsReceiver = func(
 
 	return scraperhelper.NewScraperControllerReceiver(
 		&config.ScraperControllerSettings,
-		params.Logger,
+		params,
 		consumer,
 		scraperControllerOptions...,
 	)

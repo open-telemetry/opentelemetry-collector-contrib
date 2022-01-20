@@ -23,18 +23,18 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 func TestLoadConfig(t *testing.T) {
 	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 	factories.Receivers[typeStr] = NewFactory()
-	collectorCfg, err := configtest.LoadConfigAndValidate(path.Join("testdata", "config.yaml"), factories)
+	collectorCfg, err := servicetest.LoadConfigAndValidate(path.Join("testdata", "config.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, collectorCfg)
 
-	cfg := collectorCfg.Receivers[config.NewID(typeStr)].(*Config)
+	cfg := collectorCfg.Receivers[config.NewComponentID(typeStr)].(*Config)
 	require.NotNil(t, cfg)
 
 	assert.Equal(t, 1234, cfg.PID)

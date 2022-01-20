@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dockerobserver
+package dockerobserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/dockerobserver"
 
 import (
 	"context"
@@ -38,10 +38,11 @@ func NewFactory() component.ExtensionFactory {
 
 func createDefaultConfig() config.Extension {
 	return &Config{
-		ExtensionSettings: config.NewExtensionSettings(config.NewID(typeStr)),
+		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
 		Endpoint:          "unix:///var/run/docker.sock",
 		Timeout:           5 * time.Second,
 		CacheSyncInterval: 60 * time.Minute,
+		DockerAPIVersion:  defaultDockerAPIVersion,
 	}
 }
 

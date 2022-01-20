@@ -16,6 +16,7 @@ package lokiexporter
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -161,8 +162,8 @@ func TestExporter_pushLogData(t *testing.T) {
 			genLogsFunc:      genericGenLogsFunc,
 			errFunc: func(err error) {
 				var e consumererror.Logs
-				consumererror.AsLogs(err, &e)
-				require.Equal(t, 10, e.GetLogs().LogRecordCount())
+				require.True(t, errors.As(err, &e))
+				assert.Equal(t, 10, e.GetLogs().LogRecordCount())
 			},
 		},
 		{
@@ -174,8 +175,8 @@ func TestExporter_pushLogData(t *testing.T) {
 			genLogsFunc:      genericGenLogsFunc,
 			errFunc: func(err error) {
 				var e consumererror.Logs
-				consumererror.AsLogs(err, &e)
-				require.Equal(t, 10, e.GetLogs().LogRecordCount())
+				require.True(t, errors.As(err, &e))
+				assert.Equal(t, 10, e.GetLogs().LogRecordCount())
 			},
 		},
 		{
@@ -471,17 +472,34 @@ func TestExporter_convertAttributesToLabels(t *testing.T) {
 	})
 }
 
-func TestExporter_convertLogToLokiEntry(t *testing.T) {
-	ts := pdata.Timestamp(int64(1) * time.Millisecond.Nanoseconds())
+func TestExporter_convertLogBodyToEntry(t *testing.T) {
+	res := pdata.NewResource()
+	res.Attributes().Insert("host.name", pdata.NewAttributeValueString("something"))
+	res.Attributes().Insert("pod.name", pdata.NewAttributeValueString("something123"))
+
 	lr := pdata.NewLogRecord()
-	lr.Body().SetStringVal("log message")
+	lr.SetName("Checkout")
+	lr.Body().SetStringVal("Payment succeeded")
+	lr.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4}))
+	lr.SetSpanID(pdata.NewSpanID([8]byte{5, 6, 7, 8}))
+	lr.SetSeverityText("DEBUG")
+	lr.SetSeverityNumber(pdata.SeverityNumberDEBUG)
+	lr.Attributes().Insert("payment_method", pdata.NewAttributeValueString("credit_card"))
+
+	ts := pdata.Timestamp(int64(1) * time.Millisecond.Nanoseconds())
 	lr.SetTimestamp(ts)
 
-	entry := convertLogToLokiEntry(lr)
+	exp := newExporter(&Config{
+		Labels: LabelsConfig{
+			Attributes:         map[string]string{"payment_method": "payment_method"},
+			ResourceAttributes: map[string]string{"pod.name": "pod.name"},
+		},
+	}, zap.NewNop())
+	entry, _ := exp.convertLogBodyToEntry(lr, res)
 
 	expEntry := &logproto.Entry{
 		Timestamp: time.Unix(0, int64(lr.Timestamp())),
-		Line:      "log message",
+		Line:      "name=Checkout severity=DEBUG severityN=5 traceID=01020304000000000000000000000000 spanID=0506070800000000 host.name=something Payment succeeded",
 	}
 	require.NotNil(t, entry)
 	require.Equal(t, expEntry, entry)
@@ -574,4 +592,23 @@ func TestExporter_stopAlwaysReturnsNil(t *testing.T) {
 	exp := newExporter(config, zap.NewNop())
 	require.NotNil(t, exp)
 	require.NoError(t, exp.stop(context.Background()))
+}
+
+func TestExporter_convertLogtoJSONEntry(t *testing.T) {
+	ts := pdata.Timestamp(int64(1) * time.Millisecond.Nanoseconds())
+	lr := pdata.NewLogRecord()
+	lr.Body().SetStringVal("log message")
+	lr.SetTimestamp(ts)
+	res := pdata.NewResource()
+	res.Attributes().Insert("host.name", pdata.NewAttributeValueString("something"))
+
+	exp := newExporter(&Config{}, zap.NewNop())
+	entry, err := exp.convertLogToJSONEntry(lr, res)
+	expEntry := &logproto.Entry{
+		Timestamp: time.Unix(0, int64(lr.Timestamp())),
+		Line:      `{"body":"log message","resources":{"host.name":"something"}}`,
+	}
+	require.Nil(t, err)
+	require.NotNil(t, entry)
+	require.Equal(t, expEntry, entry)
 }

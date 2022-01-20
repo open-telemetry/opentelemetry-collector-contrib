@@ -23,8 +23,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -33,7 +33,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[config.Type(typeStr)] = factory
-	cfg, err := configtest.LoadConfig(
+	cfg, err := servicetest.LoadConfig(
 		path.Join(".", "testdata", "config.yaml"), factories,
 	)
 
@@ -43,7 +43,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, len(cfg.Exporters), 2)
 
 	defaultConfig := factory.CreateDefaultConfig().(*Config)
-	assert.Equal(t, cfg.Exporters[config.NewID(typeStr)], defaultConfig)
+	assert.Equal(t, cfg.Exporters[config.NewComponentID(typeStr)], defaultConfig)
 
 	customConfig := factory.CreateDefaultConfig().(*Config)
 	customConfig.SetIDName("customname")
@@ -56,7 +56,7 @@ func TestLoadConfig(t *testing.T) {
 		Timeout: 20 * time.Second,
 	}
 	customConfig.Topic = "projects/my-project/topics/otlp-topic"
-	assert.Equal(t, cfg.Exporters[config.NewIDWithName(typeStr, "customname")], customConfig)
+	assert.Equal(t, cfg.Exporters[config.NewComponentIDWithName(typeStr, "customname")], customConfig)
 }
 
 func TestTraceConfigValidation(t *testing.T) {

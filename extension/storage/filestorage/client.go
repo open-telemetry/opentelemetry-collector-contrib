@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package filestorage
+package filestorage // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
 
 import (
 	"context"
@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"go.etcd.io/bbolt"
-	"go.opentelemetry.io/collector/extension/storage"
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 )
 
 var defaultBucket = []byte(`default`)

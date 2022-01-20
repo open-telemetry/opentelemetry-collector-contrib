@@ -12,15 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package loadscraper
+package loadscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/loadscraper"
 
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
 )
 
 // This file implements Factory for Load scraper.
@@ -48,12 +48,10 @@ func (f *Factory) CreateMetricsScraper(
 	cfg := config.(*Config)
 	s := newLoadScraper(ctx, logger, cfg)
 
-	ms := scraperhelper.NewMetricsScraper(
+	return scraperhelper.NewScraper(
 		TypeStr,
 		s.scrape,
 		scraperhelper.WithStart(s.start),
 		scraperhelper.WithShutdown(s.shutdown),
 	)
-
-	return ms, nil
 }

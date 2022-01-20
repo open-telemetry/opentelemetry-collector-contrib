@@ -34,7 +34,7 @@ func TestFactory(t *testing.T) {
 	require.Equal(t, typeStr, f.Type())
 
 	cfg := f.CreateDefaultConfig().(*Config)
-	require.Equal(t, config.NewID(typeStr), cfg.ID())
+	require.Equal(t, config.NewComponentID(typeStr), cfg.ID())
 
 	if runtime.GOOS != "windows" {
 		require.Equal(t, "/var/lib/otelcol/file_storage", cfg.Directory)
@@ -50,20 +50,6 @@ func TestFactory(t *testing.T) {
 		wantErr        bool
 		wantErrMessage string
 	}{
-		{
-			name:           "Default",
-			config:         cfg,
-			wantErr:        true,
-			wantErrMessage: "directory must exist",
-		},
-		{
-			name: "Invalid directory",
-			config: &Config{
-				Directory: "/not/very/likely/a/real/dir",
-			},
-			wantErr:        true,
-			wantErrMessage: "directory must exist",
-		},
 		{
 			name: "Default",
 			config: func() *Config {
@@ -83,10 +69,10 @@ func TestFactory(t *testing.T) {
 				test.config,
 			)
 			if test.wantErr {
+				require.Error(t, err)
 				if test.wantErrMessage != "" {
 					require.True(t, strings.HasPrefix(err.Error(), test.wantErrMessage))
 				}
-				require.Error(t, err)
 				require.Nil(t, e)
 			} else {
 				require.NoError(t, err)

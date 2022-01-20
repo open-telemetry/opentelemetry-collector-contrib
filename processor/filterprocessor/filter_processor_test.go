@@ -279,15 +279,50 @@ var (
 			inc: &filtermetric.MatchProperties{
 				MatchType: filtermetric.Regexp,
 				MetricNames: []string{
-					"metric1",
-					"metric3",
+					".*",
 				},
-				ResourceAttributes: []filterconfig.Attribute{{Key: "attr1", Value: "(attr1/val1|attr1/val2)"}},
+				ResourceAttributes: []filterconfig.Attribute{{Key: "attr1", Value: "attr1/val1"}},
 			},
 			inMetrics: testResourceMetrics(inMetricForTwoResource),
 			outMN: [][]string{
-				{"metric1"},
-				{"metric3"},
+				{"metric1", "metric2"},
+			},
+		},
+		{
+			name: "includeWithRegexResourceAttributesOnly",
+			inc: &filtermetric.MatchProperties{
+				MatchType:          filtermetric.Regexp,
+				ResourceAttributes: []filterconfig.Attribute{{Key: "attr1", Value: "attr1/val1"}},
+			},
+			inMetrics: testResourceMetrics(inMetricForTwoResource),
+			outMN: [][]string{
+				{"metric1", "metric2"},
+			},
+		},
+		{
+			name: "includeWithStrictResourceAttributes",
+			inc: &filtermetric.MatchProperties{
+				MatchType: filtermetric.Strict,
+				MetricNames: []string{
+					"metric1",
+					"metric2",
+				},
+				ResourceAttributes: []filterconfig.Attribute{{Key: "attr1", Value: "attr1/val1"}},
+			},
+			inMetrics: testResourceMetrics(inMetricForTwoResource),
+			outMN: [][]string{
+				{"metric1", "metric2"},
+			},
+		},
+		{
+			name: "includeWithStrictResourceAttributesOnly",
+			inc: &filtermetric.MatchProperties{
+				MatchType:          filtermetric.Strict,
+				ResourceAttributes: []filterconfig.Attribute{{Key: "attr1", Value: "attr1/val1"}},
+			},
+			inMetrics: testResourceMetrics(inMetricForTwoResource),
+			outMN: [][]string{
+				{"metric1", "metric2"},
 			},
 		},
 	}
@@ -299,7 +334,7 @@ func TestFilterMetricProcessor(t *testing.T) {
 			// next stores the results of the filter metric processor
 			next := new(consumertest.MetricsSink)
 			cfg := &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Metrics: MetricFilters{
 					Include: test.inc,
 					Exclude: test.exc,
@@ -349,7 +384,7 @@ func testResourceMetrics(mwrs []metricWithResource) pdata.Metrics {
 
 	for _, mwr := range mwrs {
 		rm := md.ResourceMetrics().AppendEmpty()
-		rm.Resource().Attributes().InitFromMap(mwr.resourceAttributes)
+		pdata.NewAttributeMapFromMap(mwr.resourceAttributes).CopyTo(rm.Resource().Attributes())
 		ms := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics()
 		for _, name := range mwr.metricNames {
 			m := ms.AppendEmpty()

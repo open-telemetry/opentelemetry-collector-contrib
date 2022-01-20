@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package httpforwarder
+package httpforwarder // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder"
 
 import (
 	"context"
@@ -42,7 +42,7 @@ func NewFactory() component.ExtensionFactory {
 
 func createDefaultConfig() config.Extension {
 	return &Config{
-		ExtensionSettings: config.NewExtensionSettings(config.NewID(typeStr)),
+		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
 		Ingress: confighttp.HTTPServerSettings{
 			Endpoint: defaultEndpoint,
 		},
@@ -57,5 +57,5 @@ func createExtension(
 	params component.ExtensionCreateSettings,
 	cfg config.Extension,
 ) (component.Extension, error) {
-	return newHTTPForwarder(cfg.(*Config), params.Logger)
+	return newHTTPForwarder(cfg.(*Config), params.TelemetrySettings)
 }

@@ -1,0 +1,20 @@
+receivers:
+  mysql:
+    endpoint: localhost:3306
+    username: otel
+    password: $MYSQL_PASSWORD
+    database: otel
+    collection_interval: 10s
+
+processors:
+  nop:
+
+exporters:
+  nop:
+  
+service:
+  pipelines:
+    metrics:
+     receivers: [mysql]
+     processors: [nop]
+     exporters: [nop]

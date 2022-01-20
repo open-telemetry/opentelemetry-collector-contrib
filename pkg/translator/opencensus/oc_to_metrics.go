@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package opencensus
+package opencensus // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 
 import (
 	occommon "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
@@ -167,18 +167,18 @@ func descriptorTypeToMetrics(t ocmetrics.MetricDescriptor_Type, metric pdata.Met
 		metric.SetDataType(pdata.MetricDataTypeSum)
 		sum := metric.Sum()
 		sum.SetIsMonotonic(true)
-		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		return pdata.MetricDataTypeSum, pdata.MetricValueTypeInt
 	case ocmetrics.MetricDescriptor_CUMULATIVE_DOUBLE:
 		metric.SetDataType(pdata.MetricDataTypeSum)
 		sum := metric.Sum()
 		sum.SetIsMonotonic(true)
-		sum.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		return pdata.MetricDataTypeSum, pdata.MetricValueTypeDouble
 	case ocmetrics.MetricDescriptor_CUMULATIVE_DISTRIBUTION:
 		metric.SetDataType(pdata.MetricDataTypeHistogram)
 		histo := metric.Histogram()
-		histo.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		histo.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		return pdata.MetricDataTypeHistogram, pdata.MetricValueTypeNone
 	case ocmetrics.MetricDescriptor_SUMMARY:
 		metric.SetDataType(pdata.MetricDataTypeSummary)

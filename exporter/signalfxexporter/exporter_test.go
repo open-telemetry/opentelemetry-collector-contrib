@@ -62,7 +62,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "bad config fails",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				APIURL:           "abc",
 			},
 			wantErr: true,
@@ -70,7 +70,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "fails to create metrics converter",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				AccessToken:      "test",
 				Realm:            "realm",
 				ExcludeMetrics:   []dpfilters.MetricFilter{{}},
@@ -80,7 +80,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "successfully create exporter",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				AccessToken:      "someToken",
 				Realm:            "xyz",
 				TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
@@ -90,7 +90,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "create exporter with host metadata syncer",
 			config: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				AccessToken:      "someToken",
 				Realm:            "xyz",
 				TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
@@ -124,10 +124,8 @@ func TestConsumeMetrics(t *testing.T) {
 	m.SetName("test_gauge")
 	m.SetDataType(pdata.MetricDataTypeGauge)
 	dp := m.Gauge().DataPoints().AppendEmpty()
-	dp.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-		"k0": pdata.NewAttributeValueString("v0"),
-		"k1": pdata.NewAttributeValueString("v1"),
-	})
+	dp.Attributes().InsertString("k0", "v0")
+	dp.Attributes().InsertString("k1", "v1")
 	dp.SetDoubleVal(123)
 
 	tests := []struct {
@@ -248,9 +246,7 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 		rm := out.ResourceMetrics().AppendEmpty()
 
 		if includeToken {
-			rm.Resource().Attributes().InitFromMap(map[string]pdata.AttributeValue{
-				"com.splunk.signalfx.access_token": pdata.NewAttributeValueString(token),
-			})
+			rm.Resource().Attributes().InsertString("com.splunk.signalfx.access_token", token)
 		}
 
 		ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
@@ -260,10 +256,8 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 		m.SetDataType(pdata.MetricDataTypeGauge)
 
 		dp := m.Gauge().DataPoints().AppendEmpty()
-		dp.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-			"k0": pdata.NewAttributeValueString("v0"),
-			"k1": pdata.NewAttributeValueString("v1"),
-		})
+		dp.Attributes().InsertString("k0", "v0")
+		dp.Attributes().InsertString("k1", "v1")
 		dp.SetDoubleVal(123)
 		return out
 	}
@@ -325,10 +319,8 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 				m.SetName("test_gauge")
 				m.SetDataType(pdata.MetricDataTypeGauge)
 				dp := m.Gauge().DataPoints().AppendEmpty()
-				dp.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-					"k0": pdata.NewAttributeValueString("v0"),
-					"k1": pdata.NewAttributeValueString("v1"),
-				})
+				dp.Attributes().InsertString("k0", "v0")
+				dp.Attributes().InsertString("k1", "v1")
 				dp.SetDoubleVal(123)
 
 				return out
@@ -449,7 +441,7 @@ func TestNewEventExporter(t *testing.T) {
 	assert.Nil(t, got)
 
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		AccessToken:      "someToken",
 		IngestURL:        "asdf://:%",
 		TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
@@ -485,20 +477,16 @@ func makeSampleResourceLogs() pdata.Logs {
 	l.SetTimestamp(pdata.Timestamp(1000))
 	attrs := l.Attributes()
 
-	attrs.InitFromMap(map[string]pdata.AttributeValue{
-		"k0": pdata.NewAttributeValueString("v0"),
-		"k1": pdata.NewAttributeValueString("v1"),
-		"k2": pdata.NewAttributeValueString("v2"),
-	})
+	attrs.InsertString("k0", "v0")
+	attrs.InsertString("k1", "v1")
+	attrs.InsertString("k2", "v2")
 
 	propMapVal := pdata.NewAttributeValueMap()
 	propMap := propMapVal.MapVal()
-	propMap.InitFromMap(map[string]pdata.AttributeValue{
-		"env":      pdata.NewAttributeValueString("prod"),
-		"isActive": pdata.NewAttributeValueBool(true),
-		"rack":     pdata.NewAttributeValueInt(5),
-		"temp":     pdata.NewAttributeValueDouble(40.5),
-	})
+	propMap.InsertString("env", "prod")
+	propMap.InsertBool("isActive", true)
+	propMap.InsertInt("rack", 5)
+	propMap.InsertDouble("temp", 40.5)
 	propMap.Sort()
 	attrs.Insert("com.splunk.signalfx.event_properties", propMapVal)
 	attrs.Insert("com.splunk.signalfx.event_category", pdata.NewAttributeValueInt(int64(sfxpb.EventCategory_USER_DEFINED)))
@@ -708,10 +696,8 @@ func generateLargeDPBatch() pdata.Metrics {
 
 		dp := m.Gauge().DataPoints().AppendEmpty()
 		dp.SetTimestamp(pdata.NewTimestampFromTime(ts))
-		dp.Attributes().InitFromMap(map[string]pdata.AttributeValue{
-			"k0": pdata.NewAttributeValueString("v0"),
-			"k1": pdata.NewAttributeValueString("v1"),
-		})
+		dp.Attributes().InsertString("k0", "v0")
+		dp.Attributes().InsertString("k1", "v1")
 		dp.SetIntVal(int64(i))
 	}
 

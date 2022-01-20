@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awscontainerinsightreceiver
+package awscontainerinsightreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver"
 
 import (
 	"context"
@@ -53,7 +53,7 @@ func NewFactory() component.ReceiverFactory {
 // createDefaultConfig returns a default config for the receiver.
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings:      config.NewReceiverSettings(config.NewID(typeStr)),
+		ReceiverSettings:      config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		CollectionInterval:    defaultCollectionInterval,
 		ContainerOrchestrator: defaultContainerOrchestrator,
 		TagService:            defaultTagService,

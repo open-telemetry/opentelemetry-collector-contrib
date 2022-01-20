@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package elasticexporter
+package elasticexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticexporter"
 
 import (
 	"errors"
@@ -24,7 +24,7 @@ import (
 // Config defines configuration for Elastic APM exporter.
 type Config struct {
 	config.ExporterSettings    `mapstructure:",squash"`
-	configtls.TLSClientSetting `mapstructure:",squash"`
+	configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
 
 	// APMServerURLs holds the APM Server URL.
 	//

@@ -12,19 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package memcachedreceiver
+package memcachedreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver"
 
 import (
 	"time"
 
 	"go.opentelemetry.io/collector/config/confignet"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	confignet.TCPAddr                       `mapstructure:",squash"`
+	confignet.NetAddr                       `mapstructure:",squash"`
 
 	// Timeout for the memcache stats request
 	Timeout time.Duration `mapstructure:"timeout"`

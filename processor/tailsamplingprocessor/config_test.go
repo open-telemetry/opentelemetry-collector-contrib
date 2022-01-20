@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -33,13 +33,13 @@ func TestLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	factories.Processors[factory.Type()] = factory
 
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "tail_sampling_config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "tail_sampling_config.yaml"), factories)
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
 
-	assert.Equal(t, cfg.Processors[config.NewID(typeStr)],
+	assert.Equal(t, cfg.Processors[config.NewComponentID(typeStr)],
 		&Config{
-			ProcessorSettings:       config.NewProcessorSettings(config.NewID(typeStr)),
+			ProcessorSettings:       config.NewProcessorSettings(config.NewComponentID(typeStr)),
 			DecisionWait:            10 * time.Second,
 			NumTraces:               100,
 			ExpectedNewTracesPerSec: 10,
@@ -77,6 +77,40 @@ func TestLoadConfig(t *testing.T) {
 					Name:            "test-policy-7",
 					Type:            RateLimiting,
 					RateLimitingCfg: RateLimitingCfg{SpansPerSecond: 35},
+				},
+				{
+					Name: "composite-policy-1",
+					Type: Composite,
+					CompositeCfg: CompositeCfg{
+						MaxTotalSpansPerSecond: 1000,
+						PolicyOrder:            []string{"test-composite-policy-1", "test-composite-policy-2", "test-composite-policy-3"},
+						SubPolicyCfg: []SubPolicyCfg{
+							{
+								Name:                "test-composite-policy-1",
+								Type:                NumericAttribute,
+								NumericAttributeCfg: NumericAttributeCfg{Key: "key1", MinValue: 50, MaxValue: 100},
+							},
+							{
+								Name:               "test-composite-policy-2",
+								Type:               StringAttribute,
+								StringAttributeCfg: StringAttributeCfg{Key: "key2", Values: []string{"value1", "value2"}},
+							},
+							{
+								Name: "test-composite-policy-3",
+								Type: AlwaysSample,
+							},
+						},
+						RateAllocation: []RateAllocationCfg{
+							{
+								Policy:  "test-composite-policy-1",
+								Percent: 50,
+							},
+							{
+								Policy:  "test-composite-policy-2",
+								Percent: 25,
+							},
+						},
+					},
 				},
 			},
 		})

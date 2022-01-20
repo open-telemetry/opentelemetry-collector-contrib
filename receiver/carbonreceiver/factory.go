@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package carbonreceiver
+package carbonreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
 
 import (
 	"context"
@@ -44,7 +44,7 @@ func NewFactory() component.ReceiverFactory {
 
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		NetAddr: confignet.NetAddr{
 			Endpoint:  "localhost:2003",
 			Transport: "tcp",
@@ -65,5 +65,5 @@ func createMetricsReceiver(
 ) (component.MetricsReceiver, error) {
 
 	rCfg := cfg.(*Config)
-	return New(params.Logger, *rCfg, consumer)
+	return New(params, *rCfg, consumer)
 }

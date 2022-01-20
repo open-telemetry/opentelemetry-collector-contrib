@@ -68,7 +68,7 @@ func TestGoogleCloudTraceExport(t *testing.T) {
 		{
 			name: "Standard",
 			cfg: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				ProjectID:        "idk",
 				Endpoint:         "127.0.0.1:8080",
 				UseInsecure:      true,
@@ -77,7 +77,7 @@ func TestGoogleCloudTraceExport(t *testing.T) {
 		{
 			name: "Standard_WithoutSendingQueue",
 			cfg: &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 				ProjectID:        "idk",
 				Endpoint:         "127.0.0.1:8080",
 				UseInsecure:      true,
@@ -191,7 +191,7 @@ func TestGoogleCloudMetricExport(t *testing.T) {
 	}
 
 	sde, err := newGoogleCloudMetricsExporter(&Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		ProjectID:        "idk",
 		Endpoint:         "127.0.0.1:8080",
 		UserAgent:        "MyAgent {{version}}",

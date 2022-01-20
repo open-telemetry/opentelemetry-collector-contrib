@@ -13,4 +13,4 @@
 // limitations under the License.
 
 // Package f5cloudexporter implements an OpenTelemetry Collector exporter that sends trace, metric, and log data to F5 Cloud.
-package f5cloudexporter
+package f5cloudexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter"

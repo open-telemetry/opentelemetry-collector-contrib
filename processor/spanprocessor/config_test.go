@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
@@ -34,32 +34,32 @@ func TestLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	factories.Processors[typeStr] = factory
 
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, cfg)
 
-	p0 := cfg.Processors[config.NewIDWithName("span", "custom")]
+	p0 := cfg.Processors[config.NewComponentIDWithName("span", "custom")]
 	assert.Equal(t, p0, &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName("span", "custom")),
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName("span", "custom")),
 		Rename: Name{
 			FromAttributes: []string{"db.svc", "operation", "id"},
 			Separator:      "::",
 		},
 	})
 
-	p1 := cfg.Processors[config.NewIDWithName("span", "no-separator")]
+	p1 := cfg.Processors[config.NewComponentIDWithName("span", "no-separator")]
 	assert.Equal(t, p1, &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName("span", "no-separator")),
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName("span", "no-separator")),
 		Rename: Name{
 			FromAttributes: []string{"db.svc", "operation", "id"},
 			Separator:      "",
 		},
 	})
 
-	p2 := cfg.Processors[config.NewIDWithName("span", "to_attributes")]
+	p2 := cfg.Processors[config.NewComponentIDWithName("span", "to_attributes")]
 	assert.Equal(t, p2, &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName("span", "to_attributes")),
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName("span", "to_attributes")),
 		Rename: Name{
 			ToAttributes: &ToAttributes{
 				Rules: []string{`^\/api\/v1\/document\/(?P<documentId>.*)\/update$`},
@@ -67,9 +67,9 @@ func TestLoadConfig(t *testing.T) {
 		},
 	})
 
-	p3 := cfg.Processors[config.NewIDWithName("span", "includeexclude")]
+	p3 := cfg.Processors[config.NewComponentIDWithName("span", "includeexclude")]
 	assert.Equal(t, p3, &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName("span", "includeexclude")),
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName("span", "includeexclude")),
 		MatchConfig: filterconfig.MatchConfig{
 			Include: &filterconfig.MatchProperties{
 				Config:    *createMatchConfig(filterset.Regexp),
@@ -85,6 +85,31 @@ func TestLoadConfig(t *testing.T) {
 			ToAttributes: &ToAttributes{
 				Rules: []string{`(?P<operation_website>.*?)$`},
 			},
+		},
+	})
+
+	// Set name
+	p4 := cfg.Processors[config.NewComponentIDWithName("span", "set_status_err")]
+	assert.Equal(t, p4, &Config{
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName("span", "set_status_err")),
+		SetStatus: &Status{
+			Code:        "Error",
+			Description: "some additional error description",
+		},
+	})
+
+	p5 := cfg.Processors[config.NewComponentIDWithName("span", "set_status_ok")]
+	assert.Equal(t, p5, &Config{
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName("span", "set_status_ok")),
+		MatchConfig: filterconfig.MatchConfig{
+			Include: &filterconfig.MatchProperties{
+				Attributes: []filterconfig.Attribute{
+					{Key: "http.status_code", Value: 400},
+				},
+			},
+		},
+		SetStatus: &Status{
+			Code: "Ok",
 		},
 	})
 }

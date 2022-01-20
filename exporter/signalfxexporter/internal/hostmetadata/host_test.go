@@ -24,9 +24,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/shirou/gopsutil/cpu"
-	"github.com/shirou/gopsutil/host"
-	"github.com/shirou/gopsutil/mem"
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/host"
+	"github.com/shirou/gopsutil/v3/mem"
 )
 
 func TestGetCPU(t *testing.T) {
@@ -317,30 +317,4 @@ func TestEtcPath(t *testing.T) {
 		os.Unsetenv("HOST_ETC")
 	}
 
-}
-
-func TestInt8ArrayToByteArray(t *testing.T) {
-	type args struct {
-		in []int8
-	}
-	tests := []struct {
-		name string
-		args args
-		want []byte
-	}{
-		{
-			name: "convert int8 array to byte array",
-			args: args{
-				in: []int8{72, 69, 76, 76, 79, 32, 87, 79, 82, 76, 68},
-			},
-			want: []byte{72, 69, 76, 76, 79, 32, 87, 79, 82, 76, 68},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := int8ArrayToByteArray(tt.args.in); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("int8ArrayToByteArray() = %v, want %v", got, tt.want)
-			}
-		})
-	}
 }

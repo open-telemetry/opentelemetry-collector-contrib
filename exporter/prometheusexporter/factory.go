@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package prometheusexporter
+package prometheusexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
 
 import (
 	"context"
@@ -41,7 +41,7 @@ func NewFactory() component.ExporterFactory {
 
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		ConstLabels:      map[string]string{},
 		SendTimestamps:   false,
 		MetricExpiration: time.Minute * 5,
@@ -72,13 +72,13 @@ func createMetricsExporter(
 		return nil, err
 	}
 
-	return &wrapMetricsExpoter{
+	return &wrapMetricsExporter{
 		MetricsExporter: resourcetotelemetry.WrapMetricsExporter(pcfg.ResourceToTelemetrySettings, exporter),
 		exporter:        prometheus,
 	}, nil
 }
 
-type wrapMetricsExpoter struct {
+type wrapMetricsExporter struct {
 	component.MetricsExporter
 	exporter *prometheusExporter
 }

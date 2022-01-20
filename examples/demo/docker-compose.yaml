@@ -34,7 +34,7 @@ services:
 
   demo-client:
     build:
-      dockerfile: $PWD/client/Dockerfile
+      dockerfile: Dockerfile
       context: ./client
     environment:
       - OTEL_EXPORTER_OTLP_ENDPOINT=otel-collector:4317
@@ -44,7 +44,7 @@ services:
 
   demo-server:
     build:
-      dockerfile: $PWD/server/Dockerfile
+      dockerfile: Dockerfile
       context: ./server
     environment:
       - OTEL_EXPORTER_OTLP_ENDPOINT=otel-collector:4317

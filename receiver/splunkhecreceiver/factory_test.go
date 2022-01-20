@@ -21,14 +21,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configcheck"
+	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
-	assert.NoError(t, configcheck.ValidateConfig(cfg))
+	assert.NoError(t, configtest.CheckConfigStruct(cfg))
 }
 
 func TestCreateReceiver(t *testing.T) {
@@ -50,18 +50,6 @@ func TestFactoryType(t *testing.T) {
 	assert.Equal(t, config.Type("splunk_hec"), NewFactory().Type())
 }
 
-func TestValidate(t *testing.T) {
-	err := createDefaultConfig().(*Config).initialize()
-	assert.NoError(t, err)
-}
-
-func TestValidateBadEndpoint(t *testing.T) {
-	config := createDefaultConfig().(*Config)
-	config.Endpoint = "localhost:abr"
-	err := config.initialize()
-	assert.EqualError(t, err, "endpoint port is not a number: strconv.ParseInt: parsing \"abr\": invalid syntax")
-}
-
 func TestCreateNilNextConsumerMetrics(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = "localhost:1"
@@ -71,41 +59,11 @@ func TestCreateNilNextConsumerMetrics(t *testing.T) {
 	assert.Nil(t, mReceiver, "receiver creation failed")
 }
 
-func TestCreateMetricsReceiverWithBadConfig(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "localhost:1"
-	cfg.Path = " *[* "
-
-	mReceiver, err := createMetricsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, consumertest.NewNop())
-	assert.EqualError(t, err, "unexpected end of input")
-	assert.Nil(t, mReceiver, "receiver creation failed")
-}
-
-func TestCreateLogsReceiverWithBadConfig(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "localhost:1"
-	cfg.Path = " *[* "
-
-	mReceiver, err := createLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, consumertest.NewNop())
-	assert.EqualError(t, err, "unexpected end of input")
-	assert.Nil(t, mReceiver, "receiver creation failed")
-}
-
 func TestCreateNilNextConsumerLogs(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = "localhost:1"
 
 	mReceiver, err := createLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, nil)
 	assert.EqualError(t, err, "nil logsConsumer")
-	assert.Nil(t, mReceiver, "receiver creation failed")
-}
-
-func TestCreateBadEndpoint(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "localhost:abc"
-
-	mockLogsConsumer := consumertest.NewNop()
-	mReceiver, err := createLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, mockLogsConsumer)
-	assert.EqualError(t, err, "endpoint port is not a number: strconv.ParseInt: parsing \"abc\": invalid syntax")
 	assert.Nil(t, mReceiver, "receiver creation failed")
 }

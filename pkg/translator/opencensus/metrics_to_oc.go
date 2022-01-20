@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package opencensus
+package opencensus // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 
 import (
 	"sort"
@@ -172,13 +172,13 @@ func descriptorTypeToOC(metric pdata.Metric, allNumberDataPointValueInt bool) oc
 		return gaugeType(allNumberDataPointValueInt)
 	case pdata.MetricDataTypeSum:
 		sd := metric.Sum()
-		if sd.IsMonotonic() && sd.AggregationTemporality() == pdata.AggregationTemporalityCumulative {
+		if sd.IsMonotonic() && sd.AggregationTemporality() == pdata.MetricAggregationTemporalityCumulative {
 			return cumulativeType(allNumberDataPointValueInt)
 		}
 		return gaugeType(allNumberDataPointValueInt)
 	case pdata.MetricDataTypeHistogram:
 		hd := metric.Histogram()
-		if hd.AggregationTemporality() == pdata.AggregationTemporalityCumulative {
+		if hd.AggregationTemporality() == pdata.MetricAggregationTemporalityCumulative {
 			return ocmetrics.MetricDescriptor_CUMULATIVE_DISTRIBUTION
 		}
 		return ocmetrics.MetricDescriptor_GAUGE_DISTRIBUTION

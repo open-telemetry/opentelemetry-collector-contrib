@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package signalfxreceiver
+package signalfxreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver"
 
 import (
 	"context"
@@ -49,7 +49,7 @@ func NewFactory() component.ReceiverFactory {
 
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewID(typeStr)),
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: defaultEndpoint,
 		},
@@ -103,7 +103,7 @@ func createMetricsReceiver(
 	receiverLock.Lock()
 	r := receivers[rCfg]
 	if r == nil {
-		r = newReceiver(params.Logger, *rCfg)
+		r = newReceiver(params, *rCfg)
 		receivers[rCfg] = r
 	}
 	receiverLock.Unlock()
@@ -130,7 +130,7 @@ func createLogsReceiver(
 	receiverLock.Lock()
 	r := receivers[rCfg]
 	if r == nil {
-		r = newReceiver(params.Logger, *rCfg)
+		r = newReceiver(params, *rCfg)
 		receivers[rCfg] = r
 	}
 	receiverLock.Unlock()
