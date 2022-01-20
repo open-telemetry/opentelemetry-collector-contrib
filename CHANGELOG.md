@@ -28,7 +28,6 @@
 - `extension/observers`: Correctly set image and tag on container endpoints (#7279)
 - `tanzuobservabilityexporter`: Document how to enable memory_limiter (#7286)
 - `resourcedetectionprocessor`: check cluster config to verify resource is on aws for eks resources
->>>>>>> main
 
 ## 🛑 Breaking changes 🛑
 
