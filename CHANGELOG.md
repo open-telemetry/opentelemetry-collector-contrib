@@ -24,6 +24,7 @@
 - `prometheusreceiver`: Use the OTLP data conversion path by default. (#TBD)
   - Use `--feature-gates=-receiver.prometheus.OTLPDirect` to re-enable the 
     OpenCensus conversion path.
+- `extension/observers`: Correctly set image and tag on container endpoints (#7279)
 - `tanzuobservabilityexporter`: Document how to enable memory_limiter (#7286)
 
 ## 🛑 Breaking changes 🛑
@@ -31,6 +32,7 @@
 - `tanzuobservabilityexporter`: Remove status.code
 - `tanzuobservabilityexporter`: Use semantic conventions for status.message (#7126) 
 - `k8sattributesprocessor`: Move `kube` and `observability` packages to `internal` folder (#7159)
+- `zookeeperreceiver`: Refactored metrics to have correct units, types, and combined some metrics via attributes. (#7280)
 
 ## 🚀 New components 🚀
 
