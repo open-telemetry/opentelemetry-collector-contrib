@@ -47,11 +47,12 @@ type awsContainerInsightReceiver struct {
 	cancel       context.CancelFunc
 	cadvisor     metricsProvider
 	k8sapiserver metricsProvider
+	settings     component.TelemetrySettings
 }
 
 // newAWSContainerInsightReceiver creates the aws container insight receiver with the given parameters.
 func newAWSContainerInsightReceiver(
-	logger *zap.Logger,
+	settings component.TelemetrySettings,
 	config *Config,
 	nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
 	if nextConsumer == nil {
@@ -59,9 +60,10 @@ func newAWSContainerInsightReceiver(
 	}
 
 	r := &awsContainerInsightReceiver{
-		logger:       logger,
+		logger:       settings.Logger,
 		nextConsumer: nextConsumer,
 		config:       config,
+		settings:     settings,
 	}
 	return r, nil
 }
@@ -93,7 +95,7 @@ func (acir *awsContainerInsightReceiver) Start(ctx context.Context, host compone
 	}
 	if acir.config.ContainerOrchestrator == ci.ECS {
 
-		ecsInfo, err := ecsinfo.NewECSInfo(acir.config.CollectionInterval, hostinfo, acir.logger)
+		ecsInfo, err := ecsinfo.NewECSInfo(acir.config.CollectionInterval, hostinfo, acir.logger, acir.settings)
 		if err != nil {
 			return err
 		}

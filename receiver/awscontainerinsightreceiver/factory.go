@@ -70,6 +70,5 @@ func createMetricsReceiver(
 ) (component.MetricsReceiver, error) {
 
 	rCfg := baseCfg.(*Config)
-	logger := params.Logger
-	return newAWSContainerInsightReceiver(logger, rCfg, consumer)
+	return newAWSContainerInsightReceiver(params.TelemetrySettings, rCfg, consumer)
 }

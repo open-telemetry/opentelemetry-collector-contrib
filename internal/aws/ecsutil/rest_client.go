@@ -15,14 +15,14 @@
 package ecsutil // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
 
 import (
+	"go.opentelemetry.io/collector/component"
 	"net/url"
 
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.uber.org/zap"
 )
 
-func NewRestClient(baseEndpoint url.URL, clientSettings confighttp.HTTPClientSettings, logger *zap.Logger) (RestClient, error) {
-	clientProvider := NewClientProvider(baseEndpoint, clientSettings, logger)
+func NewRestClient(baseEndpoint url.URL, clientSettings confighttp.HTTPClientSettings, set component.TelemetrySettings) (RestClient, error) {
+	clientProvider := NewClientProvider(baseEndpoint, clientSettings, set)
 
 	client, err := clientProvider.BuildClient()
 	if err != nil {

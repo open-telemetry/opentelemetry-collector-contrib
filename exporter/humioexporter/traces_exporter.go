@@ -57,13 +57,14 @@ type humioTracesExporter struct {
 
 	// Needed to enable current unit tests with the latest changes from core collector.
 	getClient clientGetter
+	settings  component.ExporterCreateSettings
 }
 
-type clientGetter func(cfg *Config, logger *zap.Logger, host component.Host) (exporterClient, error)
+type clientGetter func(cfg *Config, set component.ExporterCreateSettings, host component.Host) (exporterClient, error)
 
-func newTracesExporter(cfg *Config, logger *zap.Logger) *humioTracesExporter {
-	gc := func(cfg *Config, logger *zap.Logger, host component.Host) (exporterClient, error) {
-		client, err := newHumioClient(cfg, logger, host)
+func newTracesExporter(cfg *Config, set component.ExporterCreateSettings) *humioTracesExporter {
+	gc := func(cfg *Config, set component.ExporterCreateSettings, host component.Host) (exporterClient, error) {
+		client, err := newHumioClient(cfg, set, host)
 		if err != nil {
 			return nil, err
 		}
@@ -73,8 +74,9 @@ func newTracesExporter(cfg *Config, logger *zap.Logger) *humioTracesExporter {
 
 	return &humioTracesExporter{
 		cfg:       cfg,
-		logger:    logger,
+		logger:    set.Logger,
 		getClient: gc,
+		settings:  set,
 	}
 }
 
@@ -261,7 +263,7 @@ func tagFromSpan(evt *HumioStructuredEvent, strategy Tagger) string {
 
 // start starts the exporter
 func (e *humioTracesExporter) start(_ context.Context, host component.Host) error {
-	client, err := e.getClient(e.cfg, e.logger, host)
+	client, err := e.getClient(e.cfg, e.settings, host)
 	if err != nil {
 		return err
 	}

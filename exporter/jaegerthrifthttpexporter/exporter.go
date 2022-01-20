@@ -40,6 +40,7 @@ func newTracesExporter(
 ) (component.TracesExporter, error) {
 	s := &jaegerThriftHTTPSender{
 		config: config,
+		settings: params.TelemetrySettings,
 	}
 
 	return exporterhelper.NewTracesExporter(
@@ -55,11 +56,12 @@ func newTracesExporter(
 type jaegerThriftHTTPSender struct {
 	config *Config
 	client *http.Client
+	settings component.TelemetrySettings
 }
 
 // start starts the exporter
 func (s *jaegerThriftHTTPSender) start(_ context.Context, host component.Host) (err error) {
-	s.client, err = s.config.HTTPClientSettings.ToClient(host.GetExtensions())
+	s.client, err = s.config.HTTPClientSettings.ToClient(host.GetExtensions(), s.settings)
 
 	if err != nil {
 		return consumererror.NewPermanent(err)

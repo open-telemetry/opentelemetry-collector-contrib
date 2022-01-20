@@ -7,8 +7,8 @@ require (
 	github.com/mongodb-forks/digest v1.0.3
 	github.com/pkg/errors v0.9.1
 	go.mongodb.org/atlas v0.14.0
-	go.opentelemetry.io/collector v0.42.0
-	go.opentelemetry.io/collector/model v0.42.0
+	go.opentelemetry.io/collector v0.42.1-0.20220120002110-6b5a3d08a96b
+	go.opentelemetry.io/collector/model v0.42.1-0.20220120002110-6b5a3d08a96b
 	go.uber.org/zap v1.20.0
 )
 

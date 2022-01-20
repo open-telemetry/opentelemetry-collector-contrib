@@ -50,10 +50,11 @@ type PRWExporter struct {
 	concurrency     int
 	userAgentHeader string
 	clientSettings  *confighttp.HTTPClientSettings
+	settings        component.TelemetrySettings
 }
 
 // NewPRWExporter initializes a new PRWExporter instance and sets fields accordingly.
-func NewPRWExporter(cfg *Config, buildInfo component.BuildInfo) (*PRWExporter, error) {
+func NewPRWExporter(cfg *Config, set component.ExporterCreateSettings) (*PRWExporter, error) {
 	sanitizedLabels, err := validateAndSanitizeExternalLabels(cfg.ExternalLabels)
 	if err != nil {
 		return nil, err
@@ -64,7 +65,7 @@ func NewPRWExporter(cfg *Config, buildInfo component.BuildInfo) (*PRWExporter, e
 		return nil, errors.New("invalid endpoint")
 	}
 
-	userAgentHeader := fmt.Sprintf("%s/%s", strings.ReplaceAll(strings.ToLower(buildInfo.Description), " ", "-"), buildInfo.Version)
+	userAgentHeader := fmt.Sprintf("%s/%s", strings.ReplaceAll(strings.ToLower(set.BuildInfo.Description), " ", "-"), set.BuildInfo.Version)
 
 	return &PRWExporter{
 		namespace:       cfg.Namespace,
@@ -75,12 +76,13 @@ func NewPRWExporter(cfg *Config, buildInfo component.BuildInfo) (*PRWExporter, e
 		userAgentHeader: userAgentHeader,
 		concurrency:     cfg.RemoteWriteQueue.NumConsumers,
 		clientSettings:  &cfg.HTTPClientSettings,
+		settings:        set.TelemetrySettings,
 	}, nil
 }
 
 // Start creates the prometheus client
 func (prwe *PRWExporter) Start(_ context.Context, host component.Host) (err error) {
-	prwe.client, err = prwe.clientSettings.ToClient(host.GetExtensions())
+	prwe.client, err = prwe.clientSettings.ToClient(host.GetExtensions(), prwe.settings)
 	return err
 }
 

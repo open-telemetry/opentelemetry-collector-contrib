@@ -6,8 +6,8 @@ require (
 	github.com/pierrec/lz4 v2.6.1+incompatible
 	github.com/stretchr/testify v1.7.0
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.333
-	go.opentelemetry.io/collector v0.42.0
-	go.opentelemetry.io/collector/model v0.42.0
+	go.opentelemetry.io/collector v0.42.1-0.20220120002110-6b5a3d08a96b
+	go.opentelemetry.io/collector/model v0.42.1-0.20220120002110-6b5a3d08a96b
 	go.uber.org/zap v1.20.0
 )
 

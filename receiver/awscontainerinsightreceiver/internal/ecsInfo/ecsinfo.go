@@ -91,13 +91,13 @@ func (e *EcsInfo) GetClusterName() string {
 type ecsInfoOption func(*EcsInfo)
 
 // New creates a k8sApiServer which can generate cluster-level metrics
-func NewECSInfo(refreshInterval time.Duration, hostIPProvider hostIPProvider, logger *zap.Logger, options ...ecsInfoOption) (*EcsInfo, error) {
+func NewECSInfo(refreshInterval time.Duration, hostIPProvider hostIPProvider, logger *zap.Logger, settings component.TelemetrySettings, options ...ecsInfoOption) (*EcsInfo, error) {
 
 	setting := confighttp.HTTPClientSettings{
 		Timeout: defaultTimeout,
 	}
 
-	client, err := setting.ToClient(map[config.ComponentID]component.Extension{})
+	client, err := setting.ToClient(map[config.ComponentID]component.Extension{}, settings)
 
 	if err != nil {
 		logger.Warn("Failed to create a http client for ECS info!")

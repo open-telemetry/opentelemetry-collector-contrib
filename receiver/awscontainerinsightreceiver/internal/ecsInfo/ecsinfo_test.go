@@ -16,6 +16,7 @@ package ecsinfo
 
 import (
 	"context"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"testing"
 	"time"
 
@@ -117,7 +118,7 @@ func TestNewECSInfo(t *testing.T) {
 	}
 	hostIPProvider := &FakehostInfo{}
 
-	ecsinfo, _ := NewECSInfo(time.Minute, hostIPProvider, zap.NewNop(), containerInstanceInfoCreatorOpt, taskinfoCreatorOpt, cgroupScannerCreatorOpt)
+	ecsinfo, _ := NewECSInfo(time.Minute, hostIPProvider, zap.NewNop(), componenttest.NewNopTelemetrySettings(),containerInstanceInfoCreatorOpt, taskinfoCreatorOpt, cgroupScannerCreatorOpt)
 	assert.NotNil(t, ecsinfo)
 
 	<-ecsinfo.taskInfoTestReadyC

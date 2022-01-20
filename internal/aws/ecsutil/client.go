@@ -34,11 +34,12 @@ type Client interface {
 }
 
 // NewClientProvider creates the default rest client provider
-func NewClientProvider(baseURL url.URL, clientSettings confighttp.HTTPClientSettings, logger *zap.Logger) ClientProvider {
+func NewClientProvider(baseURL url.URL, clientSettings confighttp.HTTPClientSettings, set component.TelemetrySettings) ClientProvider {
 	return &defaultClientProvider{
 		baseURL:        baseURL,
 		clientSettings: clientSettings,
-		logger:         logger,
+		logger:         set.Logger,
+		settings:       set,
 	}
 }
 
@@ -51,6 +52,7 @@ type defaultClientProvider struct {
 	baseURL        url.URL
 	clientSettings confighttp.HTTPClientSettings
 	logger         *zap.Logger
+	settings       component.TelemetrySettings
 }
 
 func (dcp *defaultClientProvider) BuildClient() (Client, error) {
@@ -58,6 +60,7 @@ func (dcp *defaultClientProvider) BuildClient() (Client, error) {
 		dcp.baseURL,
 		dcp.clientSettings,
 		dcp.logger,
+		dcp.settings,
 	)
 }
 
@@ -65,8 +68,9 @@ func defaultClient(
 	baseURL url.URL,
 	clientSettings confighttp.HTTPClientSettings,
 	logger *zap.Logger,
+	settings component.TelemetrySettings,
 ) (*clientImpl, error) {
-	client, err := clientSettings.ToClient(map[cconfig.ComponentID]component.Extension{})
+	client, err := clientSettings.ToClient(map[cconfig.ComponentID]component.Extension{}, settings)
 	if err != nil {
 		return nil, err
 	}

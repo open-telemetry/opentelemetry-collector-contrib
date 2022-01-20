@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"go.opentelemetry.io/collector/component"
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.uber.org/zap"
@@ -44,7 +45,7 @@ func NewTaskMetadataProvider(client RestClient, logger *zap.Logger) MetadataProv
 	}
 }
 
-func NewDetectedTaskMetadataProvider(logger *zap.Logger) (MetadataProvider, error) {
+func NewDetectedTaskMetadataProvider(params component.TelemetrySettings) (MetadataProvider, error) {
 	endpoint, err := endpoints.GetTMEFromEnv()
 	if err != nil {
 		return nil, err
@@ -53,14 +54,14 @@ func NewDetectedTaskMetadataProvider(logger *zap.Logger) (MetadataProvider, erro
 	}
 
 	clientSettings := confighttp.HTTPClientSettings{}
-	client, err := NewRestClient(*endpoint, clientSettings, logger)
+	client, err := NewRestClient(*endpoint, clientSettings, params)
 	if err != nil {
 		return nil, err
 	}
 
 	return &ecsMetadataProviderImpl{
 		client: client,
-		logger: logger,
+		logger: params.Logger,
 	}, nil
 }
 
