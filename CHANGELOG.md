@@ -45,6 +45,7 @@
 
 - `mdatagen`: Fix validation of `enabled` field in metadata.yaml (#7166)
 - `elasticsearch`: Fix timestamp for each metric being startup time (#7255)
+- `resourcedetection`: Log the error when checking for ec2metadata availability (#7296) 
 
 ## 🚀 New components 🚀
 
