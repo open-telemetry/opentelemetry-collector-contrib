@@ -120,7 +120,6 @@ func (s *scraper) recordNetworkCounterMetrics(metrics pdata.MetricSlice) error {
 		s.recordNetworkDroppedPacketsMetric(now, ioCounters)
 		s.recordNetworkErrorPacketsMetric(now, ioCounters)
 		s.recordNetworkIOMetric(now, ioCounters)
-		s.mb.Emit(metrics)
 	}
 
 	return nil
