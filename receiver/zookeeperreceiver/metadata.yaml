@@ -5,12 +5,12 @@ attributes:
     description: State of the Zookeeper server (leader, standalone or follower).
   zk.version:
     description: Zookeeper version of the instance.
-  follower.state:
+  state:
     description: State of followers
     enum:
       - synced
-      - not_synced
-  packet.state:
+      - unsynced
+  packet.direction:
     description: State of a packet based on io direction.
     enum:
       - received
@@ -21,7 +21,7 @@ metrics:
     enabled: true
     description: The number of followers. Only exposed by the leader.
     unit: "{followers}"
-    attributes: [follower.state]
+    attributes: [state]
     sum:
       monotonic: false
       aggregation: cumulative
@@ -118,7 +118,7 @@ metrics:
     enabled: true
     description: The number of ZooKeeper packets received or sent by a server.
     unit: "{packets}"
-    attributes: [packet.state]
+    attributes: [packet.direction]
     sum:
       value_type: int
       monotonic: true

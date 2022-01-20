@@ -71,7 +71,7 @@ func (m *metricCreator) recordDataPointsFunc(metric string) func(ts pdata.Timest
 	case syncedFollowersMetricKey:
 		return func(ts pdata.Timestamp, val int64) {
 			m.computedMetricStore[syncedFollowersMetricKey] = val
-			m.mb.RecordZookeeperFollowerCountDataPoint(ts, val, metadata.AttributeFollowerState.Synced)
+			m.mb.RecordZookeeperFollowerCountDataPoint(ts, val, metadata.AttributeState.Synced)
 		}
 	case pendingSyncsMetricKey:
 		return m.mb.RecordZookeeperSyncPendingDataPoint
@@ -101,11 +101,11 @@ func (m *metricCreator) recordDataPointsFunc(metric string) func(ts pdata.Timest
 		return m.mb.RecordZookeeperFsyncExceededThresholdCountDataPoint
 	case packetsReceivedMetricKey:
 		return func(ts pdata.Timestamp, val int64) {
-			m.mb.RecordZookeeperPacketCountDataPoint(ts, val, metadata.AttributePacketState.Received)
+			m.mb.RecordZookeeperPacketCountDataPoint(ts, val, metadata.AttributePacketDirection.Received)
 		}
 	case packetsSentMetricKey:
 		return func(ts pdata.Timestamp, val int64) {
-			m.mb.RecordZookeeperPacketCountDataPoint(ts, val, metadata.AttributePacketState.Sent)
+			m.mb.RecordZookeeperPacketCountDataPoint(ts, val, metadata.AttributePacketDirection.Sent)
 		}
 	}
 
@@ -132,7 +132,7 @@ func (m *metricCreator) computeNotSyncedFollowersMetric(ts pdata.Timestamp) erro
 	}
 
 	val := followersTotal - syncedFollowers
-	m.mb.RecordZookeeperFollowerCountDataPoint(ts, val, metadata.AttributeFollowerState.NotSynced)
+	m.mb.RecordZookeeperFollowerCountDataPoint(ts, val, metadata.AttributeState.Unsynced)
 
 	return nil
 }

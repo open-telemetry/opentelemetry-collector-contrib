@@ -15,8 +15,8 @@
                         "dataPoints": [
                            {
                               "asInt": "1",
-                              "startTimeUnixNano": "1642556716923804000",
-                              "timeUnixNano": "1642556716923914000"
+                              "startTimeUnixNano": "1642685966462139000",
+                              "timeUnixNano": "1642685966462251000"
                            }
                         ]
                      },
@@ -30,8 +30,8 @@
                         "dataPoints": [
                            {
                               "asInt": "0",
-                              "startTimeUnixNano": "1642556716923804000",
-                              "timeUnixNano": "1642556716923914000"
+                              "startTimeUnixNano": "1642685966462139000",
+                              "timeUnixNano": "1642685966462251000"
                            }
                         ]
                      },
@@ -45,8 +45,8 @@
                         "dataPoints": [
                            {
                               "asInt": "27",
-                              "startTimeUnixNano": "1642556716923804000",
-                              "timeUnixNano": "1642556716923914000"
+                              "startTimeUnixNano": "1642685966462139000",
+                              "timeUnixNano": "1642685966462251000"
                            }
                         ]
                      },
@@ -58,8 +58,8 @@
                         "dataPoints": [
                            {
                               "asInt": "1048576",
-                              "startTimeUnixNano": "1642556716923804000",
-                              "timeUnixNano": "1642556716923914000"
+                              "startTimeUnixNano": "1642685966462139000",
+                              "timeUnixNano": "1642685966462251000"
                            }
                         ]
                      },
@@ -74,8 +74,8 @@
                         "dataPoints": [
                            {
                               "asInt": "26",
-                              "startTimeUnixNano": "1642556716923804000",
-                              "timeUnixNano": "1642556716923914000"
+                              "startTimeUnixNano": "1642685966462139000",
+                              "timeUnixNano": "1642685966462251000"
                            }
                         ]
                      },
@@ -89,8 +89,8 @@
                         "dataPoints": [
                            {
                               "asInt": "0",
-                              "startTimeUnixNano": "1642556716923804000",
-                              "timeUnixNano": "1642556716923914000"
+                              "startTimeUnixNano": "1642685966462139000",
+                              "timeUnixNano": "1642685966462251000"
                            }
                         ],
                         "isMonotonic": true
@@ -103,8 +103,8 @@
                         "dataPoints": [
                            {
                               "asInt": "0",
-                              "startTimeUnixNano": "1642556716923804000",
-                              "timeUnixNano": "1642556716923914000"
+                              "startTimeUnixNano": "1642685966462139000",
+                              "timeUnixNano": "1642685966462251000"
                            }
                         ]
                      },
@@ -117,8 +117,8 @@
                         "dataPoints": [
                            {
                               "asInt": "0",
-                              "startTimeUnixNano": "1642556716923804000",
-                              "timeUnixNano": "1642556716923914000"
+                              "startTimeUnixNano": "1642685966462139000",
+                              "timeUnixNano": "1642685966462251000"
                            }
                         ]
                      },
@@ -131,8 +131,8 @@
                         "dataPoints": [
                            {
                               "asInt": "0",
-                              "startTimeUnixNano": "1642556716923804000",
-                              "timeUnixNano": "1642556716923914000"
+                              "startTimeUnixNano": "1642685966462139000",
+                              "timeUnixNano": "1642685966462251000"
                            }
                         ]
                      },
@@ -149,27 +149,27 @@
                               "asInt": "1",
                               "attributes": [
                                  {
-                                    "key": "packet.state",
+                                    "key": "packet.direction",
                                     "value": {
                                        "stringValue": "received"
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1642556716923804000",
-                              "timeUnixNano": "1642556716923914000"
+                              "startTimeUnixNano": "1642685966462139000",
+                              "timeUnixNano": "1642685966462251000"
                            },
                            {
                               "asInt": "0",
                               "attributes": [
                                  {
-                                    "key": "packet.state",
+                                    "key": "packet.direction",
                                     "value": {
                                        "stringValue": "sent"
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1642556716923804000",
-                              "timeUnixNano": "1642556716923914000"
+                              "startTimeUnixNano": "1642685966462139000",
+                              "timeUnixNano": "1642685966462251000"
                            }
                         ],
                         "isMonotonic": true
@@ -184,8 +184,8 @@
                         "dataPoints": [
                            {
                               "asInt": "0",
-                              "startTimeUnixNano": "1642556716923804000",
-                              "timeUnixNano": "1642556716923914000"
+                              "startTimeUnixNano": "1642685966462139000",
+                              "timeUnixNano": "1642685966462251000"
                            }
                         ]
                      },
@@ -199,8 +199,8 @@
                         "dataPoints": [
                            {
                               "asInt": "4",
-                              "startTimeUnixNano": "1642556716923804000",
-                              "timeUnixNano": "1642556716923914000"
+                              "startTimeUnixNano": "1642685966462139000",
+                              "timeUnixNano": "1642685966462251000"
                            }
                         ]
                      },

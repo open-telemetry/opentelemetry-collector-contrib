@@ -352,7 +352,7 @@ func (m *metricZookeeperFollowerCount) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricZookeeperFollowerCount) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, followerStateAttributeValue string) {
+func (m *metricZookeeperFollowerCount) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, stateAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -360,7 +360,7 @@ func (m *metricZookeeperFollowerCount) recordDataPoint(start pdata.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.FollowerState, pdata.NewAttributeValueString(followerStateAttributeValue))
+	dp.Attributes().Insert(A.State, pdata.NewAttributeValueString(stateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -603,7 +603,7 @@ func (m *metricZookeeperPacketCount) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricZookeeperPacketCount) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, packetStateAttributeValue string) {
+func (m *metricZookeeperPacketCount) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, packetDirectionAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -611,7 +611,7 @@ func (m *metricZookeeperPacketCount) recordDataPoint(start pdata.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.PacketState, pdata.NewAttributeValueString(packetStateAttributeValue))
+	dp.Attributes().Insert(A.PacketDirection, pdata.NewAttributeValueString(packetDirectionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -946,8 +946,8 @@ func (mb *MetricsBuilder) RecordZookeeperFileDescriptorOpenDataPoint(ts pdata.Ti
 }
 
 // RecordZookeeperFollowerCountDataPoint adds a data point to zookeeper.follower.count metric.
-func (mb *MetricsBuilder) RecordZookeeperFollowerCountDataPoint(ts pdata.Timestamp, val int64, followerStateAttributeValue string) {
-	mb.metricZookeeperFollowerCount.recordDataPoint(mb.startTime, ts, val, followerStateAttributeValue)
+func (mb *MetricsBuilder) RecordZookeeperFollowerCountDataPoint(ts pdata.Timestamp, val int64, stateAttributeValue string) {
+	mb.metricZookeeperFollowerCount.recordDataPoint(mb.startTime, ts, val, stateAttributeValue)
 }
 
 // RecordZookeeperFsyncExceededThresholdCountDataPoint adds a data point to zookeeper.fsync.exceeded_threshold.count metric.
@@ -971,8 +971,8 @@ func (mb *MetricsBuilder) RecordZookeeperLatencyMinDataPoint(ts pdata.Timestamp,
 }
 
 // RecordZookeeperPacketCountDataPoint adds a data point to zookeeper.packet.count metric.
-func (mb *MetricsBuilder) RecordZookeeperPacketCountDataPoint(ts pdata.Timestamp, val int64, packetStateAttributeValue string) {
-	mb.metricZookeeperPacketCount.recordDataPoint(mb.startTime, ts, val, packetStateAttributeValue)
+func (mb *MetricsBuilder) RecordZookeeperPacketCountDataPoint(ts pdata.Timestamp, val int64, packetDirectionAttributeValue string) {
+	mb.metricZookeeperPacketCount.recordDataPoint(mb.startTime, ts, val, packetDirectionAttributeValue)
 }
 
 // RecordZookeeperRequestActiveDataPoint adds a data point to zookeeper.request.active metric.
@@ -1006,38 +1006,38 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 
 // Attributes contains the possible metric attributes that can be used.
 var Attributes = struct {
-	// FollowerState (State of followers)
-	FollowerState string
-	// PacketState (State of a packet based on io direction.)
-	PacketState string
+	// PacketDirection (State of a packet based on io direction.)
+	PacketDirection string
 	// ServerState (State of the Zookeeper server (leader, standalone or follower).)
 	ServerState string
+	// State (State of followers)
+	State string
 	// ZkVersion (Zookeeper version of the instance.)
 	ZkVersion string
 }{
-	"follower.state",
-	"packet.state",
+	"packet.direction",
 	"server.state",
+	"state",
 	"zk.version",
 }
 
 // A is an alias for Attributes.
 var A = Attributes
 
-// AttributeFollowerState are the possible values that the attribute "follower.state" can have.
-var AttributeFollowerState = struct {
-	Synced    string
-	NotSynced string
-}{
-	"synced",
-	"not_synced",
-}
-
-// AttributePacketState are the possible values that the attribute "packet.state" can have.
-var AttributePacketState = struct {
+// AttributePacketDirection are the possible values that the attribute "packet.direction" can have.
+var AttributePacketDirection = struct {
 	Received string
 	Sent     string
 }{
 	"received",
 	"sent",
+}
+
+// AttributeState are the possible values that the attribute "state" can have.
+var AttributeState = struct {
+	Synced   string
+	Unsynced string
+}{
+	"synced",
+	"unsynced",
 }
