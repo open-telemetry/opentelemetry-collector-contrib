@@ -19,6 +19,7 @@
 - `tanzuobservabilityexporter`: Remove status.code
 - `tanzuobservabilityexporter`: Use semantic conventions for status.message (#7126) 
 - `k8sattributesprocessor`: Move `kube` and `observability` packages to `internal` folder (#7159)
+- `newrelicexporter` marked as deprecated (#7284)
 
 ## v0.42.0
 
