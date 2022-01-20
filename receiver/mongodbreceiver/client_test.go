@@ -19,6 +19,7 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/hashicorp/go-version"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -47,9 +48,9 @@ func (fc *fakeClient) Connect(ctx context.Context) error {
 	return args.Error(0)
 }
 
-func (fc *fakeClient) GetVersion(ctx context.Context) (*string, error) {
+func (fc *fakeClient) GetVersion(ctx context.Context) (*version.Version, error) {
 	args := fc.Called(ctx)
-	return args.Get(0).(*string), args.Error(1)
+	return args.Get(0).(*version.Version), args.Error(1)
 }
 
 func (fc *fakeClient) ServerStatus(ctx context.Context, DBName string) (bson.M, error) {
@@ -60,12 +61,6 @@ func (fc *fakeClient) ServerStatus(ctx context.Context, DBName string) (bson.M, 
 func (fc *fakeClient) DBStats(ctx context.Context, DBName string) (bson.M, error) {
 	args := fc.Called(ctx, DBName)
 	return args.Get(0).(bson.M), args.Error(1)
-}
-
-func TestValidClient(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	c := NewClient(cfg, zap.NewNop())
-	require.NotNil(t, c)
 }
 
 func TestListDatabaseNames(t *testing.T) {
@@ -179,7 +174,7 @@ func TestGetVersion(t *testing.T) {
 
 		version, err := client.GetVersion(context.TODO())
 		require.NoError(t, err)
-		require.Equal(t, "4.4.10", *version)
+		require.Equal(t, "4.4.10", version.String())
 	})
 }
 

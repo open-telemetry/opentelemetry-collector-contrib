@@ -25,6 +25,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
 )
 
 const (
@@ -51,6 +53,7 @@ func createDefaultConfig() config.Receiver {
 				Endpoint: "localhost:27017",
 			},
 		},
+		Metrics:          metadata.DefaultMetricsSettings(),
 		TLSClientSetting: configtls.TLSClientSetting{},
 	}
 }

@@ -176,9 +176,9 @@ func (s *mongodbScraper) recordMemoryUsage(now pdata.Timestamp, doc bson.M, dbNa
 			errors.AddPartial(1, err)
 			continue
 		}
-		// convert from mebibytes to megabytes
-		memUsageMega := memUsageMebi * int64(1048576)
-		s.mb.RecordMongodbMemoryUsageDataPoint(now, memUsageMega, dbName, mt)
+		// convert from mebibytes to bytes
+		memUsageBytes := memUsageMebi * int64(1048576)
+		s.mb.RecordMongodbMemoryUsageDataPoint(now, memUsageBytes, dbName, mt)
 	}
 }
 

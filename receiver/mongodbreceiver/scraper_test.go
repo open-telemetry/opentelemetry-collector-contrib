@@ -56,7 +56,6 @@ func TestScrape(t *testing.T) {
 
 	fakeDatabaseName := "fakedatabase"
 	fc := &fakeClient{}
-	fc.On("Connect", mock.Anything).Return(nil)
 	fc.On("ListDatabaseNames", mock.Anything, mock.Anything, mock.Anything).Return([]string{fakeDatabaseName}, nil)
 	fc.On("ServerStatus", mock.Anything, fakeDatabaseName).Return(ss, nil)
 	fc.On("ServerStatus", mock.Anything, "admin").Return(adminStatus, nil)
@@ -72,14 +71,12 @@ func TestScrape(t *testing.T) {
 
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
-	aMetricSlice := actualMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
 	expectedFile := filepath.Join("testdata", "scraper", "expected.json")
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
-	eMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
-	require.NoError(t, scrapertest.CompareMetricSlices(eMetricSlice, aMetricSlice))
+	requireMetricsEqual(t, actualMetrics, expectedMetrics)
 }
 
 func TestScrapeNoClient(t *testing.T) {
@@ -126,4 +123,37 @@ func TestGlobalLockTimeOldFormat(t *testing.T) {
 	scraper.mb.EmitCollection(metrics)
 	collectedValue := metrics.At(0).Sum().DataPoints().At(0).IntVal()
 	require.Equal(t, expectedValue, collectedValue)
+}
+
+func requireMetricsEqual(t *testing.T, m1, m2 pdata.Metrics) {
+	rms1 := m1.ResourceMetrics()
+	rms2 := m2.ResourceMetrics()
+
+	if rms1.Len() != rms2.Len() {
+		require.Fail(t, "First metric had %d resource metrics, second had %d", rms1.Len(), rms2.Len())
+	}
+
+	for i := 0; i < rms1.Len(); i++ {
+		rm1 := rms1.At(i)
+		rm2 := rms2.At(i)
+
+		require.Equal(t, rm1.Resource().Attributes().AsRaw(), rm2.Resource().Attributes().AsRaw())
+
+		ilms1 := rm1.InstrumentationLibraryMetrics()
+		ilms2 := rm2.InstrumentationLibraryMetrics()
+
+		if ilms1.Len() != ilms2.Len() {
+			require.FailNow(t, "Resource metric %d: First metric had %d InstrumentationLibrary metrics, second had %d", i, ilms1.Len(), ilms2.Len())
+		}
+
+		for j := 0; j < ilms1.Len(); j++ {
+			ilm1 := ilms1.At(j)
+			ilm2 := ilms2.At(j)
+
+			require.Equal(t, ilm1.InstrumentationLibrary().Name(), ilm2.InstrumentationLibrary().Name())
+
+			err := scrapertest.CompareMetricSlices(ilm1.Metrics(), ilm2.Metrics())
+			require.NoError(t, err)
+		}
+	}
 }
