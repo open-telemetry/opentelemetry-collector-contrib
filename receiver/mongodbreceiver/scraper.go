@@ -126,7 +126,7 @@ func (s *mongodbScraper) collectDatabase(ctx context.Context, wg *sync.WaitGroup
 		errors.AddPartial(1, err)
 	} else {
 		now := pdata.NewTimestampFromTime(time.Now())
-		s.extractDBStats(now, dbStats, databaseName, errors)
+		s.recordDBStats(now, dbStats, databaseName, errors)
 	}
 
 	serverStatus, err := s.client.ServerStatus(ctx, databaseName)
@@ -135,7 +135,7 @@ func (s *mongodbScraper) collectDatabase(ctx context.Context, wg *sync.WaitGroup
 		return
 	}
 	now := pdata.NewTimestampFromTime(time.Now())
-	s.extractNormalServerStats(now, serverStatus, databaseName, errors)
+	s.recordNormalServerStats(now, serverStatus, databaseName, errors)
 }
 
 func (s *mongodbScraper) collectAdminDatabase(ctx context.Context, wg *sync.WaitGroup, errors scrapererror.ScrapeErrors) {
@@ -146,10 +146,10 @@ func (s *mongodbScraper) collectAdminDatabase(ctx context.Context, wg *sync.Wait
 		return
 	}
 	now := pdata.NewTimestampFromTime(time.Now())
-	s.extractAdminStats(now, serverStatus, errors)
+	s.recordAdminStats(now, serverStatus, errors)
 }
 
-func (s *mongodbScraper) extractDBStats(now pdata.Timestamp, doc bson.M, dbName string, errors scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordDBStats(now pdata.Timestamp, doc bson.M, dbName string, errors scrapererror.ScrapeErrors) {
 	s.recordCollections(now, doc, dbName, errors)
 	s.recordDataSize(now, doc, dbName, errors)
 	s.recordExtentCount(now, doc, dbName, errors)
@@ -159,12 +159,12 @@ func (s *mongodbScraper) extractDBStats(now pdata.Timestamp, doc bson.M, dbName 
 	s.recordStorageSize(now, doc, dbName, errors)
 }
 
-func (s *mongodbScraper) extractNormalServerStats(now pdata.Timestamp, doc bson.M, dbName string, errors scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordNormalServerStats(now pdata.Timestamp, doc bson.M, dbName string, errors scrapererror.ScrapeErrors) {
 	s.recordConnections(now, doc, dbName, errors)
 	s.recordMemoryUsage(now, doc, dbName, errors)
 }
 
-func (s *mongodbScraper) extractAdminStats(now pdata.Timestamp, document bson.M, errors scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordAdminStats(now pdata.Timestamp, document bson.M, errors scrapererror.ScrapeErrors) {
 	s.recordGlobalLockTime(now, document, errors)
 	s.recordCacheOperations(now, document, errors)
 	s.recordOperations(now, document, errors)
