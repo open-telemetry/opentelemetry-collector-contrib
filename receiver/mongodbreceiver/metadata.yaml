@@ -1,1 +1,143 @@
 name: mongodbreceiver
+
+attributes:
+  database:
+    description: The name of a database.
+  memory_type:
+    value: type
+    description: The type of memory used.
+    enum:
+      - resident
+      - virtual
+  operation:
+    description: The MongoDB operation being counted.
+    enum:
+      - insert
+      - query
+      - update
+      - delete
+      - getmore
+      - command
+  connection_type:
+    value: type
+    description: The status of the connection.
+    enum:
+      - active
+      - available
+      - current
+  type:
+    description: The result of a cache request.
+    enum:
+      - hit
+      - miss
+
+metrics:
+  mongodb.cache.operations:
+    description: The number of cache operations of the instance.
+    unit: "{operations}"
+    enabled: true
+    sum:
+      aggregation: cumulative
+      value_type: int
+      monotonic: true
+    attributes: [type]
+  mongodb.collection.count:
+    description: The number of collections.
+    unit: "{collections}"
+    enabled: true
+    sum:
+      aggregation: cumulative
+      value_type: int
+      monotonic: false
+    attributes: [database]
+  mongodb.data.size:
+    description: The size of the collection. Data compression does not affect this value.
+    unit: By
+    enabled: true
+    sum:
+      aggregation: cumulative
+      value_type: int
+      monotonic: false
+    attributes: [database]
+  mongodb.connection.count:
+    description: The number of connections. 
+    unit: "{connections}"
+    enabled: true
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: false
+    attributes: [database, connection_type]
+  mongodb.extent.count:
+    description: The number of extents.
+    unit: "{extents}"
+    enabled: true
+    sum:
+      aggregation: cumulative
+      value_type: int
+      monotonic: false
+    attributes: [database]
+  mongodb.global_lock.time:
+    description: The time the global lock has been held.
+    unit: ms
+    enabled: true
+    sum:
+      aggregation: cumulative
+      value_type: int
+      monotonic: true
+    attributes: []
+  mongodb.index.count:
+    description: The number of indexes.
+    unit: "{indexes}"
+    enabled: true
+    sum:
+      aggregation: cumulative
+      value_type: int
+      monotonic: false
+    attributes: [database]
+  mongodb.index.size:
+    description: Sum of the space allocated to all indexes in the database, including free index space.
+    unit: By
+    enabled: true
+    sum:
+      aggregation: cumulative
+      value_type: int
+      monotonic: false
+    attributes: [database]
+  mongodb.memory.usage:
+    description: The amount of memory used.
+    unit: By
+    enabled: true
+    sum:
+      aggregation: cumulative
+      value_type: int
+      monotonic: false
+    attributes: [database, memory_type]
+  mongodb.object.count:
+    description: The number of objects.
+    unit: "{objects}"
+    enabled: true
+    sum:
+      aggregation: cumulative
+      value_type: int
+      monotonic: false
+    attributes: [database]
+  mongodb.operation.count:
+    description: The number of operations executed.
+    unit: "{operations}"
+    enabled: true
+    sum:
+      aggregation: cumulative
+      value_type: int
+      monotonic: true
+    attributes: [operation]
+  mongodb.storage.size:
+    description: The total amount of storage allocated to this collection.
+    extended_documentation: If collection data is compressed it reflects the compressed size. 
+    unit: By
+    enabled: true
+    sum:
+      aggregation: cumulative
+      value_type: int
+      monotonic: true
+    attributes: [database]

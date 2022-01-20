@@ -40,7 +40,8 @@ func TestEndpointsFromTaskMetadata(t *testing.T) {
 			Details: &observer.Container{
 				ContainerID: "5302b3fac16c62951717f444030cb1b8f233f40c03fe5507fc127ca1a70597da",
 				Host:        "172.17.0.3",
-				Image:       "nginx:latest",
+				Image:       "nginx",
+				Tag:         "latest",
 				Labels: map[string]string{
 					"com.amazonaws.ecs.cluster":                 "test200",
 					"com.amazonaws.ecs.container-name":          "nginx100",
@@ -59,7 +60,8 @@ func TestEndpointsFromTaskMetadata(t *testing.T) {
 			Details: &observer.Container{
 				ContainerID: "4a984770705c4f4f95e1267af3623ab0923c602b7cd4ed7d77b7f8356537337f",
 				Host:        "172.17.0.4",
-				Image:       "nginx:latest",
+				Image:       "nginx",
+				Tag:         "latest",
 				Labels: map[string]string{
 					"com.amazonaws.ecs.cluster":                 "test200",
 					"com.amazonaws.ecs.container-name":          "nginx300",
