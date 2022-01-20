@@ -120,7 +120,7 @@ func TestGlobalLockTimeOldFormat(t *testing.T) {
 	expectedValue := (int64(116749+14340) / 1000)
 
 	metrics := pdata.NewMetricSlice()
-	scraper.mb.EmitCollection(metrics)
+	scraper.mb.EmitAdmin(metrics)
 	collectedValue := metrics.At(0).Sum().DataPoints().At(0).IntVal()
 	require.Equal(t, expectedValue, collectedValue)
 }

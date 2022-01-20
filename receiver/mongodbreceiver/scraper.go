@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/hashicorp/go-version"
@@ -105,22 +104,14 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, rms pdata.ResourceM
 	}
 
 	now := pdata.NewTimestampFromTime(time.Now())
-	wg := &sync.WaitGroup{}
 
-	wg.Add(1)
-	go s.collectAdminDatabase(ctx, rms, now, wg, errors)
-
+	s.collectAdminDatabase(ctx, rms, now, errors)
 	for _, dbName := range dbNames {
-		wg.Add(1)
-		go s.collectDatabase(ctx, rms, now, wg, dbName, errors)
+		s.collectDatabase(ctx, rms, now, dbName, errors)
 	}
-
-	wg.Wait()
 }
 
-func (s *mongodbScraper) collectDatabase(ctx context.Context, rms pdata.ResourceMetricsSlice, now pdata.Timestamp, wg *sync.WaitGroup, databaseName string, errors scrapererror.ScrapeErrors) {
-	defer wg.Done()
-
+func (s *mongodbScraper) collectDatabase(ctx context.Context, rms pdata.ResourceMetricsSlice, now pdata.Timestamp, databaseName string, errors scrapererror.ScrapeErrors) {
 	rm := rms.AppendEmpty()
 	resourceAttrs := rm.Resource().Attributes()
 	resourceAttrs.InsertString(metadata.A.Database, databaseName)
@@ -134,7 +125,6 @@ func (s *mongodbScraper) collectDatabase(ctx context.Context, rms pdata.Resource
 	} else {
 		s.recordDBStats(now, dbStats, databaseName, errors)
 	}
-	s.mb.EmitCollection(ilms.Metrics())
 
 	serverStatus, err := s.client.ServerStatus(ctx, databaseName)
 	if err != nil {
@@ -143,13 +133,11 @@ func (s *mongodbScraper) collectDatabase(ctx context.Context, rms pdata.Resource
 	}
 	s.recordNormalServerStats(now, serverStatus, databaseName, errors)
 
-	s.mb.EmitCollection(ilms.Metrics())
+	s.mb.EmitDatabase(ilms.Metrics())
 }
 
-func (s *mongodbScraper) collectAdminDatabase(ctx context.Context, rms pdata.ResourceMetricsSlice, now pdata.Timestamp, wg *sync.WaitGroup, errors scrapererror.ScrapeErrors) {
-	defer wg.Done()
+func (s *mongodbScraper) collectAdminDatabase(ctx context.Context, rms pdata.ResourceMetricsSlice, now pdata.Timestamp, errors scrapererror.ScrapeErrors) {
 	rm := rms.AppendEmpty()
-
 	ilms := rm.InstrumentationLibraryMetrics().AppendEmpty()
 	ilms.InstrumentationLibrary().SetName(instrumentationLibraryName)
 
@@ -159,7 +147,7 @@ func (s *mongodbScraper) collectAdminDatabase(ctx context.Context, rms pdata.Res
 		return
 	}
 	s.recordAdminStats(now, serverStatus, errors)
-	s.mb.EmitCollection(ilms.Metrics())
+	s.mb.EmitAdmin(ilms.Metrics())
 }
 
 func (s *mongodbScraper) recordDBStats(now pdata.Timestamp, doc bson.M, dbName string, errors scrapererror.ScrapeErrors) {
