@@ -10,7 +10,7 @@ attributes:
     enum:
       - synced
       - unsynced
-  packet.direction:
+  direction:
     description: State of a packet based on io direction.
     enum:
       - received
@@ -118,7 +118,7 @@ metrics:
     enabled: true
     description: The number of ZooKeeper packets received or sent by a server.
     unit: "{packets}"
-    attributes: [packet.direction]
+    attributes: [direction]
     sum:
       value_type: int
       monotonic: true

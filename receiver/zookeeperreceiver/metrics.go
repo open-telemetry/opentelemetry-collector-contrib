@@ -101,11 +101,11 @@ func (m *metricCreator) recordDataPointsFunc(metric string) func(ts pdata.Timest
 		return m.mb.RecordZookeeperFsyncExceededThresholdCountDataPoint
 	case packetsReceivedMetricKey:
 		return func(ts pdata.Timestamp, val int64) {
-			m.mb.RecordZookeeperPacketCountDataPoint(ts, val, metadata.AttributePacketDirection.Received)
+			m.mb.RecordZookeeperPacketCountDataPoint(ts, val, metadata.AttributeDirection.Received)
 		}
 	case packetsSentMetricKey:
 		return func(ts pdata.Timestamp, val int64) {
-			m.mb.RecordZookeeperPacketCountDataPoint(ts, val, metadata.AttributePacketDirection.Sent)
+			m.mb.RecordZookeeperPacketCountDataPoint(ts, val, metadata.AttributeDirection.Sent)
 		}
 	}
 

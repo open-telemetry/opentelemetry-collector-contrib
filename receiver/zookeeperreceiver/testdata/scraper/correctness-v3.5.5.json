@@ -169,7 +169,7 @@
                               "asInt": "1",
                               "attributes": [
                                  {
-                                    "key": "packet.direction",
+                                    "key": "direction",
                                     "value": {
                                        "stringValue": "received"
                                     }
@@ -182,7 +182,7 @@
                               "asInt": "0",
                               "attributes": [
                                  {
-                                    "key": "packet.direction",
+                                    "key": "direction",
                                     "value": {
                                        "stringValue": "sent"
                                     }

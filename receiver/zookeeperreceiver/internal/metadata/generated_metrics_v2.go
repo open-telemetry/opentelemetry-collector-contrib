@@ -603,7 +603,7 @@ func (m *metricZookeeperPacketCount) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricZookeeperPacketCount) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, packetDirectionAttributeValue string) {
+func (m *metricZookeeperPacketCount) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, directionAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -611,7 +611,7 @@ func (m *metricZookeeperPacketCount) recordDataPoint(start pdata.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.PacketDirection, pdata.NewAttributeValueString(packetDirectionAttributeValue))
+	dp.Attributes().Insert(A.Direction, pdata.NewAttributeValueString(directionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -971,8 +971,8 @@ func (mb *MetricsBuilder) RecordZookeeperLatencyMinDataPoint(ts pdata.Timestamp,
 }
 
 // RecordZookeeperPacketCountDataPoint adds a data point to zookeeper.packet.count metric.
-func (mb *MetricsBuilder) RecordZookeeperPacketCountDataPoint(ts pdata.Timestamp, val int64, packetDirectionAttributeValue string) {
-	mb.metricZookeeperPacketCount.recordDataPoint(mb.startTime, ts, val, packetDirectionAttributeValue)
+func (mb *MetricsBuilder) RecordZookeeperPacketCountDataPoint(ts pdata.Timestamp, val int64, directionAttributeValue string) {
+	mb.metricZookeeperPacketCount.recordDataPoint(mb.startTime, ts, val, directionAttributeValue)
 }
 
 // RecordZookeeperRequestActiveDataPoint adds a data point to zookeeper.request.active metric.
@@ -1006,8 +1006,8 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 
 // Attributes contains the possible metric attributes that can be used.
 var Attributes = struct {
-	// PacketDirection (State of a packet based on io direction.)
-	PacketDirection string
+	// Direction (State of a packet based on io direction.)
+	Direction string
 	// ServerState (State of the Zookeeper server (leader, standalone or follower).)
 	ServerState string
 	// State (State of followers)
@@ -1015,7 +1015,7 @@ var Attributes = struct {
 	// ZkVersion (Zookeeper version of the instance.)
 	ZkVersion string
 }{
-	"packet.direction",
+	"direction",
 	"server.state",
 	"state",
 	"zk.version",
@@ -1024,8 +1024,8 @@ var Attributes = struct {
 // A is an alias for Attributes.
 var A = Attributes
 
-// AttributePacketDirection are the possible values that the attribute "packet.direction" can have.
-var AttributePacketDirection = struct {
+// AttributeDirection are the possible values that the attribute "direction" can have.
+var AttributeDirection = struct {
 	Received string
 	Sent     string
 }{
