@@ -23,6 +23,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver/internal/models"
 )
 
 // queuePath is the path to queues endpoint
@@ -30,7 +32,7 @@ const queuePath = "/api/queues"
 
 type client interface {
 	// GetQueues calls "/api/queues" endpoint to get list of queues for the target node
-	GetQueues(ctx context.Context) ([]*queue, error)
+	GetQueues(ctx context.Context) ([]*models.Queue, error)
 }
 
 var _ client = (*rabbitmqClient)(nil)
@@ -64,8 +66,8 @@ func newClient(cfg *Config, host component.Host, logger *zap.Logger) (client, er
 	}, nil
 }
 
-func (c *rabbitmqClient) GetQueues(ctx context.Context) ([]*queue, error) {
-	var queues []*queue
+func (c *rabbitmqClient) GetQueues(ctx context.Context) ([]*models.Queue, error) {
+	var queues []*models.Queue
 
 	if err := c.get(ctx, queuePath, &queues); err != nil {
 		c.logger.Debug("Failed to retrieve queues", zap.Error(err))

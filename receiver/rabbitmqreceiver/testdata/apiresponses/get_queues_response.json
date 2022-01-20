@@ -142,6 +142,10 @@
             "deliver_no_ack_details": {
                 "rate": 0.0
             },
+            "drop_unroutable": 0,
+            "drop_unroutable_details": {
+                "rate": 0.0
+            },
             "get": 0,
             "get_details": {
                 "rate": 0.0

@@ -30,6 +30,8 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver/internal/models"
 )
 
 const (
@@ -147,7 +149,7 @@ func TestGetQueuesDetails(t *testing.T) {
 				tc := createTestClient(t, ts.URL)
 
 				// Load the valid data into a struct to compare
-				var expected []*queue
+				var expected []*models.Queue
 				err := json.Unmarshal(data, &expected)
 				require.NoError(t, err)
 

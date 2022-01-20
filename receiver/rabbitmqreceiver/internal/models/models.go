@@ -12,16 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package rabbitmqreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver"
+package models // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver/internal/models"
 
-type queue struct {
+// Queue represents a queue in the API response
+type Queue struct {
 	// Identifiers
 	Name  string `json:"name"`
 	Node  string `json:"node"`
 	VHost string `json:"vhost"`
 
 	// Metrics
-	Consumers int64 `json:"consumers"`
+	Consumers              int64 `json:"consumers"`
+	UnacknowledgedMessages int64 `json:"messages_unacknowledged"`
+	ReadyMessages          int64 `json:"messages_ready"`
 
 	// Embedded Metrics
 	MessageStats map[string]interface{} `json:"message_stats"`
