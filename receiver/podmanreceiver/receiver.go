@@ -88,9 +88,8 @@ func (r *receiver) Start(ctx context.Context, host component.Host) error {
 	c, err := r.clientFactory(r.set.Logger, r.config)
 	if err != nil {
 		return fmt.Errorf("error setting up client: %w", err)
-	} else {
-		r.client = c
 	}
+	r.client = c
 
 	// Check for logs pipeline
 	if r.logsConsumer == nil {
