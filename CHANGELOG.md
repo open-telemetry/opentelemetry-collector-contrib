@@ -26,6 +26,7 @@
   - Use `--feature-gates=-receiver.prometheus.OTLPDirect` to re-enable the 
     OpenCensus conversion path.
 - `extension/observers`: Correctly set image and tag on container endpoints (#7279)
+- `tanzuobservabilityexporter`: Document how to enable memory_limiter (#7286)
 
 ## 🛑 Breaking changes 🛑
 
