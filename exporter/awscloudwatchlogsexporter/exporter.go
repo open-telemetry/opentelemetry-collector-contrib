@@ -35,7 +35,7 @@ import (
 )
 
 type exporter struct {
-	config           config.Exporter
+	Config           *Config
 	logger           *zap.Logger
 	retryCount       int
 	collectorID      string
@@ -43,12 +43,11 @@ type exporter struct {
 	pusher           cwlogs.Pusher
 }
 
-func newCwLogsPusher(config config.Exporter, params component.ExporterCreateSettings) (component.LogsExporter, error) {
-	if config == nil {
+func newCwLogsPusher(expConfig *Config, params component.ExporterCreateSettings) (component.LogsExporter, error) {
+	if expConfig == nil {
 		return nil, errors.New("awscloudwatchlogs exporter config is nil")
 	}
 
-	expConfig := config.(*Config)
 	expConfig.logger = params.Logger
 
 	// create AWS session
@@ -67,22 +66,25 @@ func newCwLogsPusher(config config.Exporter, params component.ExporterCreateSett
 
 	expConfig.Validate()
 
+	pusher := cwlogs.NewPusher(aws.String(expConfig.LogGroupName), aws.String(expConfig.LogStreamName), *awsConfig.MaxRetries, *svcStructuredLog, params.Logger)
+
 	logsExporter := &exporter{
 		svcStructuredLog: svcStructuredLog,
-		config:           config,
+		Config:           expConfig,
 		logger:           params.Logger,
 		retryCount:       *awsConfig.MaxRetries,
 		collectorID:      collectorIdentifier.String(),
+		pusher:           pusher,
 	}
 	return logsExporter, nil
 }
 
 func newCwLogsExporter(config config.Exporter, params component.ExporterCreateSettings) (component.LogsExporter, error) {
-	logsExporter, err := newCwLogsPusher(config, params)
+	expConfig := config.(*Config)
+	logsExporter, err := newCwLogsPusher(expConfig, params)
 	if err != nil {
 		return nil, err
 	}
-	expConfig := config.(*Config)
 	return exporterhelper.NewLogsExporter(
 		config,
 		params,
@@ -94,8 +96,7 @@ func newCwLogsExporter(config config.Exporter, params component.ExporterCreateSe
 }
 
 func (e *exporter) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
-	exp := e.config.(*Config)
-	cwLogsPusher := e.getLogPusher(exp.LogGroupName, exp.LogStreamName)
+	cwLogsPusher := e.pusher
 	logEvents, _ := logsToCWLogs(e.logger, ld)
 	if len(logEvents) == 0 {
 		return nil
@@ -134,13 +135,6 @@ func (e *exporter) Shutdown(ctx context.Context) error {
 
 func (e *exporter) Start(ctx context.Context, host component.Host) error {
 	return nil
-}
-
-func (e *exporter) getLogPusher(logGroup, logStream string) cwlogs.Pusher {
-	if e.pusher == nil {
-		e.pusher = cwlogs.NewPusher(aws.String(logGroup), aws.String(logStream), e.retryCount, *e.svcStructuredLog, e.logger)
-	}
-	return e.pusher
 }
 
 func logsToCWLogs(logger *zap.Logger, ld pdata.Logs) ([]*cloudwatchlogs.InputLogEvent, int) {
