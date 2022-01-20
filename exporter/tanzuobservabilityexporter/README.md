@@ -58,8 +58,9 @@ service:
 The memory limiter processor is used to prevent out of memory situations on the collector. It allows performing periodic
 checks of memory usage – if it exceeds defined limits it will begin dropping data and forcing garbage collection to
 reduce memory
-consumption. [Details and defaults here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/processor/memorylimiterprocessor/README.md)
-.
+consumption. [Details and defaults here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/processor/memorylimiterprocessor/README.md) .
+
+**NOTE:** The order matters when enabling multiple processors in a pipeline (e.g. the memory limiter and batch processors in the example config below). Please refer to the processors' [documentation](https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor) for more information.
 
 #### Exporter
 
@@ -105,6 +106,6 @@ service:
   pipelines:
     traces:
       receivers: [ examplereceiver ]
-      processors: [ batch ]
+      processors: [ memory_limiter, batch ]
       exporters: [ tanzuobservability ]
 ```
