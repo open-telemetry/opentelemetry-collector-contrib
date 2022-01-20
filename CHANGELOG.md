@@ -24,6 +24,7 @@
 - `prometheusreceiver`: Use the OTLP data conversion path by default. (#TBD)
   - Use `--feature-gates=-receiver.prometheus.OTLPDirect` to re-enable the 
     OpenCensus conversion path.
+- `tanzuobservabilityexporter`: Document how to enable memory_limiter (#7286)
 
 ## 🛑 Breaking changes 🛑
 
