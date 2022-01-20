@@ -92,11 +92,5 @@ func (c *mongodbClient) GetVersion(ctx context.Context) (*version.Version, error
 		return nil, errors.New("unable to parse mongo version from server")
 	}
 
-	version, err := version.NewVersion(v)
-	if err != nil {
-		return nil, err
-	}
-
-	c.logger.Debug(fmt.Sprintf("detected mongo server to be running version: %s", v))
-	return version, nil
+	return version.NewVersion(v)
 }

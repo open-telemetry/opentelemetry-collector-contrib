@@ -49,8 +49,7 @@ func newMongodbScraper(logger *zap.Logger, config *Config) *mongodbScraper {
 }
 
 func (s *mongodbScraper) start(ctx context.Context, _ component.Host) error {
-	clientLogger := s.logger.Named("mongo-scraper")
-	c, err := NewClient(ctx, s.config, clientLogger)
+	c, err := NewClient(ctx, s.config, s.logger)
 	if err != nil {
 		return fmt.Errorf("create mongo client: %w", err)
 	}
@@ -62,6 +61,7 @@ func (s *mongodbScraper) start(ctx context.Context, _ component.Host) error {
 		// component should not fail to start if it cannot get the version
 		return nil
 	}
+	s.logger.Debug(fmt.Sprintf("detected mongo server to be running version: %s", version.String()))
 	s.mongoVersion = version
 
 	return nil
