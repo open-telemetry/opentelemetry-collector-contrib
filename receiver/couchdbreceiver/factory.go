@@ -42,20 +42,31 @@ func createDefaultConfig() config.Receiver {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			CollectionInterval: 10 * time.Second,
+			CollectionInterval: 1 * time.Minute,
 		},
 		HTTPClientSettings: confighttp.HTTPClientSettings{
-			TLSSetting: configtls.TLSClientSetting{
-				Insecure:           false,
-				InsecureSkipVerify: true,
-			},
-			Endpoint: defaultEndpoint,
-			Timeout:  10 * time.Second,
+			TLSSetting: configtls.TLSClientSetting{},
+			Endpoint:   defaultEndpoint,
+			Timeout:    1 * time.Minute,
 		},
-		AllNodes: false,
 	}
 }
 
-func createMetricsReceiver(_ context.Context, params component.ReceiverCreateSettings, rConf config.Receiver, consumer consumer.Metrics) (component.MetricsReceiver, error) {
-	return nil, nil
+func createMetricsReceiver(
+	_ context.Context,
+	params component.ReceiverCreateSettings,
+	rConf config.Receiver,
+	consumer consumer.Metrics,
+) (component.MetricsReceiver, error) {
+	cfg := rConf.(*Config)
+	ns := newCouchdbScraper(params.Logger, cfg)
+	scraper, err := scraperhelper.NewScraper(typeStr, ns.scrape, scraperhelper.WithStart(ns.start))
+	if err != nil {
+		return nil, err
+	}
+
+	return scraperhelper.NewScraperControllerReceiver(
+		&cfg.ScraperControllerSettings, params, consumer,
+		scraperhelper.AddScraper(scraper),
+	)
 }
