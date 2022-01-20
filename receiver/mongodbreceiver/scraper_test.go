@@ -18,9 +18,14 @@ import (
 	"context"
 	"path/filepath"
 	"testing"
+	"time"
 
+	"github.com/hashicorp/go-version"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
@@ -46,11 +51,10 @@ func TestScrape(t *testing.T) {
 	require.NoError(t, err)
 	dbStats, err := loadDBStatsAsMap()
 	require.NoError(t, err)
-
-	fakeDatabaseName := "fakedatabase"
-	extractor, err := newExtractor(Mongo40.String(), zap.NewNop())
+	mongo40, err := version.NewVersion("4.0")
 	require.NoError(t, err)
 
+	fakeDatabaseName := "fakedatabase"
 	fc := &fakeClient{}
 	fc.On("Connect", mock.Anything).Return(nil)
 	fc.On("ListDatabaseNames", mock.Anything, mock.Anything, mock.Anything).Return([]string{fakeDatabaseName}, nil)
@@ -59,11 +63,11 @@ func TestScrape(t *testing.T) {
 	fc.On("DBStats", mock.Anything, fakeDatabaseName).Return(dbStats, nil)
 
 	scraper := mongodbScraper{
-		client:    fc,
-		config:    cfg,
-		mb:        metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
-		logger:    zap.NewNop(),
-		extractor: extractor,
+		client:       fc,
+		config:       cfg,
+		mb:           metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+		logger:       zap.NewNop(),
+		mongoVersion: mongo40,
 	}
 
 	actualMetrics, err := scraper.scrape(context.Background())
@@ -90,4 +94,36 @@ func TestScrapeNoClient(t *testing.T) {
 	m, err := scraper.scrape(context.Background())
 	require.Zero(t, m.MetricCount())
 	require.Error(t, err)
+}
+
+func TestGlobalLockTimeOldFormat(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Metrics = metadata.DefaultMetricsSettings()
+	scraper := newMongodbScraper(zap.NewNop(), cfg)
+	mong26, err := version.NewVersion("2.6")
+	require.NoError(t, err)
+	scraper.mongoVersion = mong26
+	doc := primitive.M{
+		"locks": primitive.M{
+			".": primitive.M{
+				"timeLockedMicros": primitive.M{
+					"R": 122169,
+					"W": 132712,
+				},
+				"timeAcquiringMicros": primitive.M{
+					"R": 116749,
+					"W": 14340,
+				},
+			},
+		},
+	}
+
+	now := pdata.NewTimestampFromTime(time.Now())
+	scraper.recordGlobalLockTime(now, doc, scrapererror.ScrapeErrors{})
+	expectedValue := (int64(116749+14340) / 1000)
+
+	metrics := pdata.NewMetricSlice()
+	scraper.mb.EmitCollection(metrics)
+	collectedValue := metrics.At(0).Sum().DataPoints().At(0).IntVal()
+	require.Equal(t, expectedValue, collectedValue)
 }
