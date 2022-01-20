@@ -61,7 +61,7 @@ reduce memory
 consumption. [Details and defaults here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/processor/memorylimiterprocessor/README.md)
 .
 
-The order matters when enabling multiple processors in a pipeline (e.g. the memory limiter and batch processors in the
+**NOTE:** The order matters when enabling multiple processors in a pipeline (e.g. the memory limiter and batch processors in the
 example config below). Please refer to the
 processors' [documentation](https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor) for more
 information.
