@@ -18,108 +18,122 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
-	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
+	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 )
 
 type exporter struct {
-	config *Config
-	logger *zap.Logger
-
-	startOnce sync.Once
-	client    *cloudwatchlogs.CloudWatchLogs // available after startOnce
-
-	seqTokenMu sync.Mutex
-	seqToken   string
+	Config           *Config
+	logger           *zap.Logger
+	retryCount       int
+	collectorID      string
+	svcStructuredLog *cwlogs.Client
+	pusher           cwlogs.Pusher
 }
 
-func (e *exporter) Start(ctx context.Context, host component.Host) error {
-	var startErr error
-	e.startOnce.Do(func() {
-		awsConfig := &aws.Config{}
-		if e.config.Region != "" {
-			awsConfig.Region = aws.String(e.config.Region)
-		}
-		if e.config.Endpoint != "" {
-			awsConfig.Endpoint = aws.String(e.config.Endpoint)
-		}
-		awsConfig.MaxRetries = aws.Int(1) // retry will be handled by the collector queue
-		sess, err := session.NewSession(awsConfig)
-		if err != nil {
-			startErr = err
-			return
-		}
-		e.client = cloudwatchlogs.New(sess)
+func newCwLogsPusher(expConfig *Config, params component.ExporterCreateSettings) (component.LogsExporter, error) {
+	if expConfig == nil {
+		return nil, errors.New("awscloudwatchlogs exporter config is nil")
+	}
 
-		e.logger.Debug("Retrieving CloudWatch sequence token")
-		out, err := e.client.DescribeLogStreams(&cloudwatchlogs.DescribeLogStreamsInput{
-			LogGroupName:        aws.String(e.config.LogGroupName),
-			LogStreamNamePrefix: aws.String(e.config.LogStreamName),
-		})
-		if err != nil {
-			startErr = err
-			return
-		}
-		if len(out.LogStreams) == 0 {
-			startErr = errors.New("cannot find log group and stream")
-			return
-		}
-		stream := out.LogStreams[0]
-		if stream.UploadSequenceToken == nil {
-			e.logger.Debug("CloudWatch sequence token is nil, will assume empty")
-			return
-		}
-		e.seqToken = *stream.UploadSequenceToken
-	})
-	return startErr
+	expConfig.logger = params.Logger
+
+	// create AWS session
+	awsConfig, session, err := awsutil.GetAWSConfigSession(params.Logger, &awsutil.Conn{}, &expConfig.AWSSessionSettings)
+	if err != nil {
+		return nil, err
+	}
+
+	// create CWLogs client with aws session config
+	svcStructuredLog := cwlogs.NewClient(params.Logger, awsConfig, params.BuildInfo, expConfig.LogGroupName, session)
+	collectorIdentifier, err := uuid.NewRandom()
+
+	if err != nil {
+		return nil, err
+	}
+
+	expConfig.Validate()
+
+	pusher := cwlogs.NewPusher(aws.String(expConfig.LogGroupName), aws.String(expConfig.LogStreamName), *awsConfig.MaxRetries, *svcStructuredLog, params.Logger)
+
+	logsExporter := &exporter{
+		svcStructuredLog: svcStructuredLog,
+		Config:           expConfig,
+		logger:           params.Logger,
+		retryCount:       *awsConfig.MaxRetries,
+		collectorID:      collectorIdentifier.String(),
+		pusher:           pusher,
+	}
+	return logsExporter, nil
 }
 
-func (e *exporter) Shutdown(ctx context.Context) error {
-	// TODO(jbd): Signal shutdown to flush the logs.
-	return nil
+func newCwLogsExporter(config config.Exporter, params component.ExporterCreateSettings) (component.LogsExporter, error) {
+	expConfig := config.(*Config)
+	logsExporter, err := newCwLogsPusher(expConfig, params)
+	if err != nil {
+		return nil, err
+	}
+	return exporterhelper.NewLogsExporter(
+		config,
+		params,
+		logsExporter.ConsumeLogs,
+		exporterhelper.WithQueue(expConfig.enforcedQueueSettings()),
+		exporterhelper.WithRetry(expConfig.RetrySettings),
+	)
+
 }
 
-func (e *exporter) PushLogs(ctx context.Context, ld pdata.Logs) (err error) {
-	// TODO(jbd): Relax this once CW Logs support ingest
-	// without sequence tokens.
-	e.seqTokenMu.Lock()
-	defer e.seqTokenMu.Unlock()
-
+func (e *exporter) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
+	cwLogsPusher := e.pusher
 	logEvents, _ := logsToCWLogs(e.logger, ld)
 	if len(logEvents) == 0 {
 		return nil
 	}
 
-	e.logger.Debug("Putting log events", zap.Int("num_of_events", len(logEvents)))
-	input := &cloudwatchlogs.PutLogEventsInput{
-		LogGroupName:  aws.String(e.config.LogGroupName),
-		LogStreamName: aws.String(e.config.LogStreamName),
-		LogEvents:     logEvents,
-	}
-	if e.seqToken != "" {
-		input.SequenceToken = aws.String(e.seqToken)
-	} else {
-		e.logger.Debug("Putting log events without a sequence token")
-	}
-
-	out, err := e.client.PutLogEvents(input)
-	if err != nil {
-		return err
-	}
-	if info := out.RejectedLogEventsInfo; info != nil {
-		return fmt.Errorf("log event rejected: %s", info.String())
+	for _, logEvent := range logEvents {
+		logEvent := &cwlogs.Event{
+			InputLogEvent: logEvent,
+			GeneratedTime: time.Now(),
+		}
+		e.logger.Debug("Adding log event", zap.Any("event", logEvent))
+		err := cwLogsPusher.AddLogEntry(logEvent)
+		if err != nil {
+			e.logger.Error("Failed ", zap.Int("num_of_events", len(logEvents)))
+		}
 	}
 	e.logger.Debug("Log events are successfully put")
+	flushErr := cwLogsPusher.ForceFlush()
+	if flushErr != nil {
+		e.logger.Error("Error force flushing logs. Skipping to next logPusher.", zap.Error(flushErr))
+		return flushErr
+	}
+	return nil
+}
 
-	e.seqToken = *out.NextSequenceToken
+func (e *exporter) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
+}
+
+func (e *exporter) Shutdown(ctx context.Context) error {
+	if e.pusher != nil {
+		e.pusher.ForceFlush()
+	}
+	return nil
+}
+
+func (e *exporter) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
