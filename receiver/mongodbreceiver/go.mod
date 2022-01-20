@@ -10,6 +10,8 @@ require (
 )
 
 require (
+	github.com/hashicorp/go-version v1.4.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.0.0-00010101000000-000000000000
 	go.mongodb.org/mongo-driver v1.8.2
 	go.uber.org/zap v1.19.1
 	golang.org/x/sys v0.0.0-20211109184856-51b60fd695b3 // indirect
@@ -24,14 +26,15 @@ require (
 	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/klauspost/compress v1.14.1 // indirect
 	github.com/knadh/koanf v1.3.3 // indirect
-	github.com/kr/pretty v0.3.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pelletier/go-toml v1.9.3 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/rogpeppe/go-internal v1.6.1 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
+	github.com/stretchr/objx v0.1.1 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.0 // indirect
 	github.com/xdg-go/stringprep v1.0.2 // indirect
