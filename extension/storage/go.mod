@@ -12,7 +12,7 @@ require (
 
 require (
 	github.com/jackc/pgx/v4 v4.14.1
-	github.com/mattn/go-sqlite3 v1.14.10
+	github.com/mattn/go-sqlite3 v2.0.3+incompatible
 )
 
 require (

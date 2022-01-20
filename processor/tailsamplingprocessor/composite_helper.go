@@ -59,9 +59,18 @@ func getSubPolicyEvaluator(logger *zap.Logger, cfg *SubPolicyCfg) (sampling.Poli
 	switch cfg.Type {
 	case AlwaysSample:
 		return sampling.NewAlwaysSample(logger), nil
+	case Latency:
+		lfCfg := cfg.LatencyCfg
+		return sampling.NewLatency(logger, lfCfg.ThresholdMs), nil
 	case NumericAttribute:
 		nafCfg := cfg.NumericAttributeCfg
 		return sampling.NewNumericAttributeFilter(logger, nafCfg.Key, nafCfg.MinValue, nafCfg.MaxValue), nil
+	case Probabilistic:
+		pfCfg := cfg.ProbabilisticCfg
+		return sampling.NewProbabilisticSampler(logger, pfCfg.HashSalt, pfCfg.SamplingPercentage), nil
+	case StatusCode:
+		scCfg := cfg.StatusCodeCfg
+		return sampling.NewStatusCodeFilter(logger, scCfg.StatusCodes)
 	case StringAttribute:
 		safCfg := cfg.StringAttributeCfg
 		return sampling.NewStringAttributeFilter(logger, safCfg.Key, safCfg.Values, safCfg.EnabledRegexMatching, safCfg.CacheMaxSize, safCfg.InvertMatch), nil
