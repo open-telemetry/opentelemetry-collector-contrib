@@ -24,6 +24,7 @@
 - `prometheusreceiver`: Use the OTLP data conversion path by default. (#TBD)
   - Use `--feature-gates=-receiver.prometheus.OTLPDirect` to re-enable the 
     OpenCensus conversion path.
+- `kafkaexporter`: Add `kafka_exporter_messages` metrics (#6464)
 
 ## 🛑 Breaking changes 🛑
 
