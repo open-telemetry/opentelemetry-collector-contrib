@@ -111,7 +111,7 @@ func Test_NewPRWExporter(t *testing.T) {
 			cfg.ExternalLabels = tt.externalLabels
 			cfg.Namespace = tt.namespace
 			cfg.RemoteWriteQueue.NumConsumers = 1
-			prwe, err := NewPRWExporter(cfg, tt.buildInfo)
+			prwe, err := newPRWExporter(cfg, tt.buildInfo)
 
 			if tt.returnErrorOnCreate {
 				assert.Error(t, err)
@@ -193,7 +193,7 @@ func Test_Start(t *testing.T) {
 			cfg.RemoteWriteQueue.NumConsumers = 1
 			cfg.HTTPClientSettings = tt.clientSettings
 
-			prwe, err := NewPRWExporter(cfg, tt.buildInfo)
+			prwe, err := newPRWExporter(cfg, tt.buildInfo)
 			assert.NoError(t, err)
 			assert.NotNil(t, prwe)
 
@@ -209,7 +209,7 @@ func Test_Start(t *testing.T) {
 
 // Test_Shutdown checks after Shutdown is called, incoming calls to PushMetrics return error.
 func Test_Shutdown(t *testing.T) {
-	prwe := &PRWExporter{
+	prwe := &prwExporter{
 		wg:        new(sync.WaitGroup),
 		closeChan: make(chan struct{}),
 	}
@@ -335,7 +335,7 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) []error {
 		Version:     "1.0",
 	}
 	// after this, instantiate a CortexExporter with the current HTTP client and endpoint set to passed in endpoint
-	prwe, err := NewPRWExporter(cfg, buildInfo)
+	prwe, err := newPRWExporter(cfg, buildInfo)
 	if err != nil {
 		errs = append(errs, err)
 		return errs
@@ -627,7 +627,7 @@ func Test_PushMetrics(t *testing.T) {
 				Description: "OpenTelemetry Collector",
 				Version:     "1.0",
 			}
-			prwe, nErr := NewPRWExporter(cfg, buildInfo)
+			prwe, nErr := newPRWExporter(cfg, buildInfo)
 			require.NoError(t, nErr)
 			require.NoError(t, prwe.Start(context.Background(), componenttest.NewNopHost()))
 			err := prwe.PushMetrics(context.Background(), *tt.md)
