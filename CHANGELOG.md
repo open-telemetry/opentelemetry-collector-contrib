@@ -12,6 +12,7 @@
 - `datadogexporter`: Add http.status_code tag to trace stats (#6889)
 - `mongodbreceiver`: Add initial client code to the component (#7125)
 - `tanzuobservabilityexporter`: Support delta histograms (#6897)
+- `awscloudwatchlogsexporter`: Use cwlogs package to export logs (#7152)
 - `mysqlreceiver`: Add the receiver to available components (#7078)
 - `tanzuobservabilityexporter`: Documentation for the memory_limiter configuration (#7164)
 - `dynatraceexporter`: Do not shut down exporter when metrics ingest module is temporarily unavailable (#7161)
