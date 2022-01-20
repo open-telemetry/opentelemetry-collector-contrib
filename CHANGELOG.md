@@ -30,6 +30,7 @@
 - `tanzuobservabilityexporter`: Remove status.code
 - `tanzuobservabilityexporter`: Use semantic conventions for status.message (#7126) 
 - `k8sattributesprocessor`: Move `kube` and `observability` packages to `internal` folder (#7159)
+- Updated go.opentelemetry.io/collector version to v0.42.1
 
 ## 🚀 New components 🚀
 
