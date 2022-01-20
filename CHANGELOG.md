@@ -7,6 +7,7 @@
 - `tanzuobservabilityexporter`: Turn on metrics exporter (#7281)
 - `attributesprocessor` `resourceprocessor`: Add `from_context` value source
 - `awscloudwatchlogsexporter`: enable awscloudwatchlogsexporter which accepts and exports log data (#7297)
+- `translator/prometheusremotewrite`: add a new module to help translate data from OTLP to Prometheus Remote Write (#7240)
 
 ## 🛑 Breaking changes 🛑
 
