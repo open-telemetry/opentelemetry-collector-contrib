@@ -42,7 +42,6 @@ type receiver struct {
 
 	metricsComponent component.MetricsReceiver
 	logsConsumer     consumer.Logs
-	metricsConsumer  consumer.Metrics
 
 	cancel context.CancelFunc
 	wg     *sync.WaitGroup
@@ -73,7 +72,6 @@ func newReceiver(
 }
 
 func (r *receiver) registerMetricsConsumer(mc consumer.Metrics, set component.ReceiverCreateSettings) error {
-	r.metricsConsumer = mc
 	scrp, err := scraperhelper.NewScraper(typeStr, r.scrape)
 	if err != nil {
 		return err
@@ -87,6 +85,13 @@ func (r *receiver) registerLogsConsumer(lc consumer.Logs) {
 }
 
 func (r *receiver) Start(ctx context.Context, host component.Host) error {
+	c, err := r.clientFactory(r.set.Logger, r.config)
+	if err != nil {
+		return fmt.Errorf("error setting up client: %w", err)
+	} else {
+		r.client = c
+	}
+
 	// Check for logs pipeline
 	if r.logsConsumer == nil {
 		r.set.Logger.Debug("logs receiver is not set")
@@ -106,7 +111,7 @@ func (r *receiver) Start(ctx context.Context, host component.Host) error {
 			// Retry if any errors occur while getting the events.
 			defer r.wg.Done()
 			errorWhileRetry := backoff.Retry(func() error {
-				err := r.handleEvents(ctx, eventBackoff)
+				err = r.handleEvents(ctx, eventBackoff)
 				return fmt.Errorf("error fetching/processing events: %w", err)
 			}, backoffContext)
 			if errorWhileRetry != nil {
@@ -121,15 +126,9 @@ func (r *receiver) Start(ctx context.Context, host component.Host) error {
 	}
 
 	// Check for metrics pipeline
-	if r.metricsConsumer == nil {
+	if r.metricsComponent == nil {
 		r.set.Logger.Debug("metrics receiver is not set")
 	} else {
-		c, err := r.clientFactory(r.set.Logger, r.config)
-		if err != nil {
-			r.set.Logger.Error("error setting up client", zap.Error(err))
-		} else {
-			r.client = c
-		}
 		go func() {
 			err = r.metricsComponent.Start(ctx, host)
 			if err != nil {
@@ -141,7 +140,7 @@ func (r *receiver) Start(ctx context.Context, host component.Host) error {
 }
 
 func (r *receiver) Shutdown(ctx context.Context) error {
-	if r.metricsConsumer != nil {
+	if r.metricsComponent != nil {
 		err := r.metricsComponent.Shutdown(ctx)
 		if err != nil {
 			return err
@@ -172,12 +171,6 @@ func (r *receiver) scrape(context.Context) (pdata.Metrics, error) {
 }
 
 func (r *receiver) handleEvents(ctx context.Context, eventBackoff *backoff.ExponentialBackOff) error {
-	c, err := r.clientFactory(r.set.Logger, r.config)
-	if err != nil {
-		return err
-	}
-	r.client = c
-
 	// Fetch the response from the endpoint
 	response, err := r.client.getEventsResponse(ctx)
 	if err != nil {
