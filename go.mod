@@ -4,7 +4,6 @@ go 1.17
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.42.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter v0.42.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter v0.42.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter v0.42.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsprometheusremotewriteexporter v0.42.0
@@ -512,8 +511,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/splun
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza => ./internal/stanza
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter => ./exporter/alibabacloudlogserviceexporter
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter => ./exporter/awscloudwatchlogsexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter => ./exporter/awsemfexporter
 
