@@ -101,7 +101,7 @@ func TestPushTraceData(t *testing.T) {
 	// Act
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			cg := func(cfg *Config, logger *zap.Logger, host component.Host) (exporterClient, error) {
+			cg := func(cfg *Config, set component.ExporterCreateSettings, host component.Host) (exporterClient, error) {
 				return tC.client, nil
 			}
 
@@ -133,7 +133,7 @@ func TestPushTraceData_PermanentOnCompleteFailure(t *testing.T) {
 	traces := pdata.NewTraces()
 	traces.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
 
-	cg := func(cfg *Config, logger *zap.Logger, host component.Host) (exporterClient, error) {
+	cg := func(cfg *Config, set component.ExporterCreateSettings, host component.Host) (exporterClient, error) {
 		return &clientMock{}, nil
 	}
 	exp := newTracesExporterWithClientGetter(&Config{}, zap.NewNop(), cg)
@@ -163,7 +163,7 @@ func TestPushTraceData_TransientOnPartialFailure(t *testing.T) {
 	// ...and one without (partial failure)
 	traces.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
 
-	cg := func(cfg *Config, logger *zap.Logger, host component.Host) (exporterClient, error) {
+	cg := func(cfg *Config, set component.ExporterCreateSettings, host component.Host) (exporterClient, error) {
 		return &clientMock{
 			func() error { return nil },
 		}, nil
@@ -209,7 +209,7 @@ func TestTracesToHumioEvents_OrganizedByTags(t *testing.T) {
 	res3.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(pdata.NewTraceID(createTraceID("20000000000000000000000000000000")))
 
 	// Organize by trace id
-	cg := func(cfg *Config, logger *zap.Logger, host component.Host) (exporterClient, error) {
+	cg := func(cfg *Config, set component.ExporterCreateSettings, host component.Host) (exporterClient, error) {
 		return &clientMock{}, nil
 	}
 	exp := newTracesExporterWithClientGetter(&Config{
@@ -284,7 +284,7 @@ func TestSpanToHumioEvent(t *testing.T) {
 		},
 	}
 
-	cg := func(cfg *Config, logger *zap.Logger, host component.Host) (exporterClient, error) {
+	cg := func(cfg *Config, set component.ExporterCreateSettings, host component.Host) (exporterClient, error) {
 		return &clientMock{}, nil
 	}
 	exp := newTracesExporterWithClientGetter(&Config{
@@ -310,7 +310,7 @@ func TestSpanToHumioEventNoInstrumentation(t *testing.T) {
 	inst := pdata.NewInstrumentationLibrary()
 	res := pdata.NewResource()
 
-	cg := func(cfg *Config, logger *zap.Logger, host component.Host) (exporterClient, error) {
+	cg := func(cfg *Config, set component.ExporterCreateSettings, host component.Host) (exporterClient, error) {
 		return &clientMock{}, nil
 	}
 	exp := newTracesExporterWithClientGetter(&Config{
@@ -510,7 +510,7 @@ func TestTagFromSpan(t *testing.T) {
 
 func TestShutdown(t *testing.T) {
 	// Arrange
-	cg := func(cfg *Config, logger *zap.Logger, host component.Host) (exporterClient, error) {
+	cg := func(cfg *Config, set component.ExporterCreateSettings, host component.Host) (exporterClient, error) {
 		return &clientMock{}, nil
 	}
 	exp := newTracesExporterWithClientGetter(&Config{}, zap.NewNop(), cg)

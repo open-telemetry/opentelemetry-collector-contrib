@@ -16,14 +16,13 @@ package ecsutil
 
 import (
 	"fmt"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"net/url"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil/endpoints"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil/endpoints"
 )
 
 type fakeClient struct{}
@@ -34,7 +33,7 @@ func (f *fakeClient) Get(path string) ([]byte, error) {
 
 func TestRestClient(t *testing.T) {
 	u, _ := url.Parse("http://www.test.com")
-	rest, err := NewRestClient(*u, confighttp.HTTPClientSettings{}, zap.NewNop())
+	rest, err := NewRestClient(*u, confighttp.HTTPClientSettings{}, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 	require.NotNil(t, rest)
 }

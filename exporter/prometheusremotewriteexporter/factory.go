@@ -48,7 +48,7 @@ func createMetricsExporter(_ context.Context, set component.ExporterCreateSettin
 		return nil, errors.New("invalid configuration")
 	}
 
-	prwe, err := NewPRWExporter(prwCfg, set.BuildInfo)
+	prwe, err := NewPRWExporter(prwCfg, set)
 	if err != nil {
 		return nil, err
 	}

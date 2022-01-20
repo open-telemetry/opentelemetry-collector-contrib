@@ -41,7 +41,8 @@ func TestValidStream(t *testing.T) {
 		zap.NewNop(),
 		uaa,
 		cfg.RLPGateway.HTTPClientSettings,
-		componenttest.NewNopHost())
+		componenttest.NewNopHost(),
+		componenttest.NewNopTelemetrySettings())
 
 	require.NoError(t, streamErr)
 	require.NotNil(t, streamFactory)
@@ -78,7 +79,8 @@ func TestInvalidStream(t *testing.T) {
 		zap.NewNop(),
 		uaa,
 		cfg.RLPGateway.HTTPClientSettings,
-		componenttest.NewNopHost())
+		componenttest.NewNopHost(),
+		componenttest.NewNopTelemetrySettings())
 
 	require.NoError(t, streamErr)
 	require.NotNil(t, streamFactory)

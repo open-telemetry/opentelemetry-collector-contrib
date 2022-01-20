@@ -107,8 +107,8 @@ type humioClient struct {
 }
 
 // Constructs a new HTTP client for sending payloads to Humio
-func newHumioClient(cfg *Config, logger *zap.Logger, host component.Host) (exporterClient, error) {
-	client, err := cfg.HTTPClientSettings.ToClient(host.GetExtensions())
+func newHumioClient(cfg *Config, set component.ExporterCreateSettings, host component.Host) (exporterClient, error) {
+	client, err := cfg.HTTPClientSettings.ToClient(host.GetExtensions(), set.TelemetrySettings)
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +119,7 @@ func newHumioClient(cfg *Config, logger *zap.Logger, host component.Host) (expor
 		gzipPool: &sync.Pool{New: func() interface{} {
 			return gzip.NewWriter(nil)
 		}},
-		logger: logger,
+		logger: set.Logger,
 	}, nil
 }
 

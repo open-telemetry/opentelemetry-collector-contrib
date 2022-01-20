@@ -47,6 +47,7 @@ type cloudFoundryReceiver struct {
 	obsrecv           *obsreport.Receiver
 	goroutines        sync.WaitGroup
 	receiverStartTime time.Time
+	settings          component.TelemetrySettings
 }
 
 // newCloudFoundryReceiver creates the Cloud Foundry receiver with the given parameters.
@@ -69,6 +70,7 @@ func newCloudFoundryReceiver(
 			ReceiverCreateSettings: settings,
 		}),
 		receiverStartTime: time.Now(),
+		settings:          settings.TelemetrySettings,
 	}, nil
 }
 
@@ -83,6 +85,7 @@ func (cfr *cloudFoundryReceiver) Start(ctx context.Context, host component.Host)
 		tokenProvider,
 		cfr.config.RLPGateway.HTTPClientSettings,
 		host,
+		cfr.settings,
 	)
 	if streamErr != nil {
 		return fmt.Errorf("creating cloud foundry RLP envelope stream factory: %v", streamErr)

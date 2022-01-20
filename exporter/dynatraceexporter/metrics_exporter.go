@@ -65,6 +65,7 @@ func newMetricsExporter(params component.ExporterCreateSettings, cfg *config.Con
 		defaultDimensions: defaultDimensions,
 		staticDimensions:  staticDimensions,
 		prevPts:           prevPts,
+		settings:          params.TelemetrySettings,
 	}
 }
 
@@ -78,7 +79,8 @@ type exporter struct {
 	defaultDimensions dimensions.NormalizedDimensionList
 	staticDimensions  dimensions.NormalizedDimensionList
 
-	prevPts *ttlmap.TTLMap
+	prevPts  *ttlmap.TTLMap
+	settings component.TelemetrySettings
 }
 
 // for backwards-compatibility with deprecated `Tags` config option
@@ -257,7 +259,7 @@ func (e *exporter) sendBatch(ctx context.Context, lines []string) error {
 
 // start starts the exporter
 func (e *exporter) start(_ context.Context, host component.Host) (err error) {
-	client, err := e.cfg.HTTPClientSettings.ToClient(host.GetExtensions())
+	client, err := e.cfg.HTTPClientSettings.ToClient(host.GetExtensions(), e.settings)
 	if err != nil {
 		return err
 	}

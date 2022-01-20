@@ -36,9 +36,9 @@ func newEnvelopeStreamFactory(
 	logger *zap.Logger,
 	authTokenProvider *UAATokenProvider,
 	httpConfig confighttp.HTTPClientSettings,
-	host component.Host) (*EnvelopeStreamFactory, error) {
+	host component.Host, set component.TelemetrySettings) (*EnvelopeStreamFactory, error) {
 
-	httpClient, err := httpConfig.ToClient(host.GetExtensions())
+	httpClient, err := httpConfig.ToClient(host.GetExtensions(), set)
 	if err != nil {
 		return nil, fmt.Errorf("creating HTTP client for Cloud Foundry RLP Gateway: %v", err)
 	}

@@ -49,12 +49,14 @@ type lokiExporter struct {
 	client  *http.Client
 	wg      sync.WaitGroup
 	convert func(pdata.LogRecord, pdata.Resource) (*logproto.Entry, error)
+	settings component.TelemetrySettings
 }
 
-func newExporter(config *Config, logger *zap.Logger) *lokiExporter {
+func newExporter(config *Config, params component.ExporterCreateSettings) *lokiExporter {
 	lokiexporter := &lokiExporter{
 		config: config,
-		logger: logger,
+		logger: params.Logger,
+		settings: params.TelemetrySettings,
 	}
 	if config.Format == "json" {
 		lokiexporter.convert = lokiexporter.convertLogToJSONEntry
@@ -125,7 +127,7 @@ func encode(pb proto.Message) ([]byte, error) {
 }
 
 func (l *lokiExporter) start(_ context.Context, host component.Host) (err error) {
-	client, err := l.config.HTTPClientSettings.ToClient(host.GetExtensions())
+	client, err := l.config.HTTPClientSettings.ToClient(host.GetExtensions(), l.settings)
 	if err != nil {
 		return err
 	}

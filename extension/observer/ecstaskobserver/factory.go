@@ -19,14 +19,12 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension/extensionhelper"
-	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
 )
 
 const (
@@ -52,14 +50,12 @@ func createExtension(
 	cfg config.Extension,
 ) (component.Extension, error) {
 	obsCfg := cfg.(*Config)
-
-	logger := params.TelemetrySettings.Logger
 	var metadataProvider ecsutil.MetadataProvider
 	var err error
 	if obsCfg.Endpoint == "" {
-		metadataProvider, err = ecsutil.NewDetectedTaskMetadataProvider(logger)
+		metadataProvider, err = ecsutil.NewDetectedTaskMetadataProvider(params.TelemetrySettings)
 	} else {
-		metadataProvider, err = metadataProviderFromEndpoint(obsCfg, logger)
+		metadataProvider, err = metadataProviderFromEndpoint(obsCfg, params.TelemetrySettings)
 	}
 
 	if err != nil {
@@ -80,16 +76,16 @@ func createExtension(
 	return e, nil
 }
 
-func metadataProviderFromEndpoint(config *Config, logger *zap.Logger) (ecsutil.MetadataProvider, error) {
+func metadataProviderFromEndpoint(config *Config, params component.TelemetrySettings) (ecsutil.MetadataProvider, error) {
 	parsed, err := url.Parse(config.Endpoint)
 	if err != nil || parsed == nil {
 		return nil, fmt.Errorf("failed to parse task metadata endpoint: %w", err)
 	}
 
-	restClient, err := ecsutil.NewRestClient(*parsed, config.HTTPClientSettings, logger)
+	restClient, err := ecsutil.NewRestClient(*parsed, config.HTTPClientSettings, params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create ECS Task Observer rest client: %w", err)
 	}
 
-	return ecsutil.NewTaskMetadataProvider(restClient, logger), nil
+	return ecsutil.NewTaskMetadataProvider(restClient, params.Logger), nil
 }

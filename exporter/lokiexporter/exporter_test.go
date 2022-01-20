@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/golang/snappy"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/third_party/loki/logproto"
 	"github.com/prometheus/common/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -34,9 +35,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
-	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/third_party/loki/logproto"
 )
 
 const (
@@ -84,7 +82,7 @@ func TestExporter_new(t *testing.T) {
 				ResourceAttributes: testValidResourceWithMapping,
 			},
 		}
-		exp := newExporter(config, zap.NewNop())
+		exp := newExporter(config, componenttest.NewNopExporterCreateSettings())
 		require.NotNil(t, exp)
 	})
 }
@@ -239,7 +237,7 @@ func TestExporter_pushLogData(t *testing.T) {
 				tt.config.Endpoint = serverURL.String()
 			}
 
-			exp := newExporter(tt.config, zap.NewNop())
+			exp := newExporter(tt.config, componenttest.NewNopExporterCreateSettings())
 			require.NotNil(t, exp)
 			err := exp.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err)
@@ -272,7 +270,7 @@ func TestExporter_logDataToLoki(t *testing.T) {
 			},
 		},
 	}
-	exp := newExporter(config, zap.NewNop())
+	exp := newExporter(config, componenttest.NewNopExporterCreateSettings())
 	require.NotNil(t, exp)
 	err := exp.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -414,7 +412,7 @@ func TestExporter_convertAttributesToLabels(t *testing.T) {
 			},
 		},
 	}
-	exp := newExporter(config, zap.NewNop())
+	exp := newExporter(config, componenttest.NewNopExporterCreateSettings())
 	require.NotNil(t, exp)
 	err := exp.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -494,7 +492,7 @@ func TestExporter_convertLogBodyToEntry(t *testing.T) {
 			Attributes:         map[string]string{"payment_method": "payment_method"},
 			ResourceAttributes: map[string]string{"pod.name": "pod.name"},
 		},
-	}, zap.NewNop())
+	}, componenttest.NewNopExporterCreateSettings())
 	entry, _ := exp.convertLogBodyToEntry(lr, res)
 
 	expEntry := &logproto.Entry{
@@ -560,7 +558,7 @@ func TestExporter_startReturnsNillWhenValidConfig(t *testing.T) {
 			ResourceAttributes: testValidResourceWithMapping,
 		},
 	}
-	exp := newExporter(config, zap.NewNop())
+	exp := newExporter(config, componenttest.NewNopExporterCreateSettings())
 	require.NotNil(t, exp)
 	require.NoError(t, exp.start(context.Background(), componenttest.NewNopHost()))
 }
@@ -574,7 +572,7 @@ func TestExporter_startReturnsErrorWhenInvalidHttpClientSettings(t *testing.T) {
 			},
 		},
 	}
-	exp := newExporter(config, zap.NewNop())
+	exp := newExporter(config, componenttest.NewNopExporterCreateSettings())
 	require.NotNil(t, exp)
 	require.Error(t, exp.start(context.Background(), componenttest.NewNopHost()))
 }
@@ -589,7 +587,7 @@ func TestExporter_stopAlwaysReturnsNil(t *testing.T) {
 			ResourceAttributes: testValidResourceWithMapping,
 		},
 	}
-	exp := newExporter(config, zap.NewNop())
+	exp := newExporter(config, componenttest.NewNopExporterCreateSettings())
 	require.NotNil(t, exp)
 	require.NoError(t, exp.stop(context.Background()))
 }
@@ -602,7 +600,7 @@ func TestExporter_convertLogtoJSONEntry(t *testing.T) {
 	res := pdata.NewResource()
 	res.Attributes().Insert("host.name", pdata.NewAttributeValueString("something"))
 
-	exp := newExporter(&Config{}, zap.NewNop())
+	exp := newExporter(&Config{}, componenttest.NewNopExporterCreateSettings())
 	entry, err := exp.convertLogToJSONEntry(lr, res)
 	expEntry := &logproto.Entry{
 		Timestamp: time.Unix(0, int64(lr.Timestamp())),

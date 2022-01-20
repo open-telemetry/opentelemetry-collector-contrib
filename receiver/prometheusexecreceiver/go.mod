@@ -8,8 +8,8 @@ require (
 	github.com/prometheus/common v0.32.1
 	github.com/prometheus/prometheus v1.8.2-0.20220111145625-076109fa1910
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.42.0
-	go.opentelemetry.io/collector/model v0.42.0
+	go.opentelemetry.io/collector v0.42.1-0.20220120002110-6b5a3d08a96b
+	go.opentelemetry.io/collector/model v0.42.1-0.20220120002110-6b5a3d08a96b
 	go.uber.org/zap v1.20.0
 )
 
