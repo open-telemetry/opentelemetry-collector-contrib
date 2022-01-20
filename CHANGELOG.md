@@ -25,6 +25,7 @@
   - Use `--feature-gates=-receiver.prometheus.OTLPDirect` to re-enable the 
     OpenCensus conversion path.
 - `resourcedetectionprocessor`: check cluster config to verify resource is on aws for eks resources
+
 ## 🛑 Breaking changes 🛑
 
 - `tanzuobservabilityexporter`: Remove status.code
