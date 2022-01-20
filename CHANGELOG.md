@@ -40,6 +40,7 @@
 ## 🚀 New components 🚀
 
 - `rabbitmqreceiver`: Establish codebase for RabbitMQ metrics receiver (#7239)
+- `awscloudwatchlogsexporter`: awscloudwatchlogsexporter accepts and exports log data (#7297)
 
 ## 🧰 Bug fixes 🧰
 
