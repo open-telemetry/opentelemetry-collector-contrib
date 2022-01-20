@@ -34,6 +34,9 @@ import (
 	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
+var logGroup = "logGroup"
+var logStreamName = "logStream"
+
 func TestAddToGroupedMetric(t *testing.T) {
 	namespace := "namespace"
 	instrumentationLibName := "cloudwatch-otel"

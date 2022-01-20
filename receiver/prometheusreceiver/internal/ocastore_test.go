@@ -17,8 +17,9 @@ package internal
 import (
 	"context"
 	"testing"
+	"time"
 
-	"github.com/prometheus/prometheus/pkg/labels"
+	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -26,7 +27,7 @@ import (
 )
 
 func TestOcaStore(t *testing.T) {
-	o := NewOcaStore(context.Background(), nil, testTelemetry.ToReceiverCreateSettings(), nil, false, "", config.NewComponentID("prometheus"), nil)
+	o := NewOcaStore(context.Background(), nil, testTelemetry.ToReceiverCreateSettings(), 2*time.Minute, false, "", config.NewComponentID("prometheus"), nil, false)
 	o.SetScrapeManager(&scrape.Manager{})
 
 	app := o.Appender(context.Background())

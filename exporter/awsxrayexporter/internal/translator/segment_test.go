@@ -24,7 +24,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.8.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
@@ -682,15 +682,14 @@ func TestOriginEks(t *testing.T) {
 }
 
 func TestOriginAppRunner(t *testing.T) {
+	spanName := "/test"
+	parentSpanID := newSegmentID()
 	attributes := make(map[string]interface{})
 	resource := pdata.NewResource()
 	attrs := pdata.NewAttributeMap()
 	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	// TODO: Replace with semantic convention const when aws_app_runner is included in an official semconv release
-	attrs.InsertString(conventions.AttributeCloudPlatform, "aws_app_runner")
+	attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSAppRunner)
 	attrs.CopyTo(resource.Attributes())
-	spanName := "/test"
-	parentSpanID := newSegmentID()
 	span := constructServerSpan(parentSpanID, spanName, pdata.StatusCodeError, "OK", attributes)
 
 	segment, _ := MakeSegment(span, resource, []string{}, false)

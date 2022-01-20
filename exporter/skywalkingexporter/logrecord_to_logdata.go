@@ -72,9 +72,6 @@ func resourceToLogData(resource pdata.Resource, logData *logpb.LogData) {
 	}
 
 	attrs.Range(func(k string, v pdata.AttributeValue) bool {
-		if k == conventions.AttributeServiceName || k == conventions.AttributeServiceInstanceID {
-			return true
-		}
 		logData.Tags.Data = append(logData.Tags.Data, &common.KeyStringValuePair{
 			Key:   k,
 			Value: v.AsString(),

@@ -35,8 +35,16 @@ func (database *Database) DatabaseID() *DatabaseID {
 }
 
 func NewDatabase(ctx context.Context, databaseID *DatabaseID, credentialsFilePath string) (*Database, error) {
-	credentialsFileClientOption := option.WithCredentialsFile(credentialsFilePath)
-	client, err := spanner.NewClient(ctx, databaseID.ID(), credentialsFileClientOption)
+	var client *spanner.Client
+	var err error
+
+	if credentialsFilePath != "" {
+		credentialsFileClientOption := option.WithCredentialsFile(credentialsFilePath)
+		client, err = spanner.NewClient(ctx, databaseID.ID(), credentialsFileClientOption)
+	} else {
+		// Fallback to Application Default Credentials(https://google.aip.dev/auth/4110)
+		client, err = spanner.NewClient(ctx, databaseID.ID())
+	}
 
 	if err != nil {
 		return nil, err

@@ -48,6 +48,7 @@ import (
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -442,7 +443,7 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 				require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()))
 				t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
 
-				cc, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithBlock())
+				cc, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 				if err != nil {
 					t.Errorf("grpc.Dial: %v", err)
 				}
@@ -591,7 +592,7 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 				require.Nil(t, ocr.Start(context.Background(), componenttest.NewNopHost()))
 				t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
 
-				cc, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithBlock())
+				cc, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 				if err != nil {
 					t.Errorf("grpc.Dial: %v", err)
 				}

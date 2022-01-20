@@ -16,13 +16,12 @@ package tanzuobservabilityexporter // import "github.com/open-telemetry/opentele
 
 import (
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/wavefronthq/wavefront-sdk-go/senders"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 )
@@ -169,21 +168,21 @@ func attributesToTags(attributes ...pdata.AttributeMap) map[string]string {
 }
 
 func errorTagsFromStatus(status pdata.SpanStatus) map[string]string {
-	tags := map[string]string{
-		labelStatusCode: fmt.Sprintf("%d", status.Code()),
-	}
+	tags := make(map[string]string)
+
 	if status.Code() != pdata.StatusCodeError {
 		return tags
 	}
 
 	tags[labelError] = "true"
+
 	if status.Message() != "" {
 		msg := status.Message()
-		const maxLength = 255 - len(labelStatusMessage+"=")
+		const maxLength = 255 - len(conventions.OtelStatusDescription+"=")
 		if len(msg) > maxLength {
 			msg = msg[:maxLength]
 		}
-		tags[labelStatusMessage] = msg
+		tags[conventions.OtelStatusDescription] = msg
 	}
 	return tags
 }

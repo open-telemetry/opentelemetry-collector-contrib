@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -46,7 +47,7 @@ func TestFactoryCanParseServiceDiscoveryConfigs(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	_, err = configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config_sd.yaml"), factories)
+	_, err = servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config_sd.yaml"), factories)
 
 	assert.NoError(t, err)
 }

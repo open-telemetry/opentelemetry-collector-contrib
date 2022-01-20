@@ -59,6 +59,13 @@ func (r *collectDRecord) protoTime() *timestamppb.Timestamp {
 	return timestamppb.New(ts)
 }
 
+func (r *collectDRecord) startTimestamp(mdType metricspb.MetricDescriptor_Type) *timestamppb.Timestamp {
+	if mdType == metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION || mdType == metricspb.MetricDescriptor_CUMULATIVE_DOUBLE || mdType == metricspb.MetricDescriptor_CUMULATIVE_INT64 {
+		return timestamppb.New(time.Unix(0, int64((*r.Time-*r.Interval)*float64(time.Second))))
+	}
+	return nil
+}
+
 func (r *collectDRecord) appendToMetrics(metrics []*metricspb.Metric, defaultLabels map[string]string) ([]*metricspb.Metric, error) {
 	// Ignore if record is an event instead of data point
 	if r.isEvent() {
@@ -103,15 +110,17 @@ func (r *collectDRecord) newMetric(name string, dsType *string, val *json.Number
 	}
 
 	lKeys, lValues := labelKeysAndValues(labels)
+	metricType := r.metricType(dsType, isDouble)
 	metric.MetricDescriptor = &metricspb.MetricDescriptor{
 		Name:      name,
-		Type:      r.metricType(dsType, isDouble),
+		Type:      metricType,
 		LabelKeys: lKeys,
 	}
 	metric.Timeseries = []*metricspb.TimeSeries{
 		{
-			LabelValues: lValues,
-			Points:      []*metricspb.Point{point},
+			StartTimestamp: r.startTimestamp(metricType),
+			LabelValues:    lValues,
+			Points:         []*metricspb.Point{point},
 		},
 	}
 
