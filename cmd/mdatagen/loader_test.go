@@ -107,7 +107,7 @@ func Test_loadMetadata(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := loadMetadata(path.Join("testdata", tt.yml))
+			got, err := loadMetadata(path.Join("file:testdata", tt.yml))
 			if tt.wantErr != "" {
 				require.Error(t, err)
 				require.EqualError(t, err, tt.wantErr)

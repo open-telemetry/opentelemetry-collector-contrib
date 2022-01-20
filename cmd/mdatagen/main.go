@@ -53,7 +53,7 @@ func run(ymlPath string, useExpGen bool) error {
 
 	ymlDir := path.Dir(ymlPath)
 
-	md, err := loadMetadata(filepath.Clean(ymlPath))
+	md, err := loadMetadata("file:" + filepath.Clean(ymlPath))
 	if err != nil {
 		return fmt.Errorf("failed loading %v: %v", ymlPath, err)
 	}
