@@ -61,6 +61,10 @@ reduce memory
 consumption. [Details and defaults here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/processor/memorylimiterprocessor/README.md)
 .
 
+Note: Enable memory limiter processor(The order of enabled processors matters. Please refer to the
+processors' [documentation](https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor) for more
+information.)
+
 #### Exporter
 
 This exporter
@@ -105,6 +109,6 @@ service:
   pipelines:
     traces:
       receivers: [ examplereceiver ]
-      processors: [ batch ]
+      processors: [ memory_limiter, batch ]
       exporters: [ tanzuobservability ]
 ```
