@@ -39,9 +39,14 @@ func TestFieldUnmarshalJSON(t *testing.T) {
 			NewBodyField("test1", "test2"),
 		},
 		{
-			"RootField",
+			"BodyShort",
 			[]byte(`"$"`),
-			NewBodyField([]string{}...),
+			NewBodyField(),
+		},
+		{
+			"BodyLong",
+			[]byte(`"$body"`),
+			NewBodyField(),
 		},
 	}
 
@@ -80,6 +85,11 @@ func TestFieldMarshalJSON(t *testing.T) {
 			NewBodyField("test1", "test2"),
 			[]byte(`"test1.test2"`),
 		},
+		{
+			"BodyLong",
+			NewBodyField(),
+			[]byte(`"$body"`),
+		},
 	}
 
 	for _, tc := range cases {
@@ -109,11 +119,6 @@ func TestFieldUnmarshalYAML(t *testing.T) {
 			NewBodyField("test1"),
 		},
 		{
-			"RootField",
-			[]byte(`"$"`),
-			NewBodyField([]string{}...),
-		},
-		{
 			"ComplexField",
 			[]byte(`"test1.test2"`),
 			NewBodyField("test1", "test2"),
@@ -122,6 +127,16 @@ func TestFieldUnmarshalYAML(t *testing.T) {
 			"ComplexFieldWithRoot",
 			[]byte(`"$.test1.test2"`),
 			NewBodyField("test1", "test2"),
+		},
+		{
+			"BodyShort",
+			[]byte(`"$"`),
+			NewBodyField(),
+		},
+		{
+			"BodyLong",
+			[]byte(`"$body"`),
+			NewBodyField(),
 		},
 	}
 
@@ -161,7 +176,7 @@ func TestFieldMarshalYAML(t *testing.T) {
 			"test1.test2\n",
 		},
 		{
-			"EmptyField",
+			"Body",
 			NewBodyField(),
 			"$body\n",
 		},
