@@ -156,10 +156,10 @@ func TestScrape(t *testing.T) {
 			metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 			idx := 0
 			if test.expectNetworkMetrics {
-				assertNetworkIOMetricValid(t, metrics.At(idx+0), test.expectedStartTime)
-				assertNetworkIOMetricValid(t, metrics.At(idx+1), test.expectedStartTime)
-				assertNetworkIOMetricValid(t, metrics.At(idx+2), test.expectedStartTime)
-				assertNetworkIOMetricValid(t, metrics.At(idx+3), test.expectedStartTime)
+				assertNetworkIOMetricValid(t, metrics.At(idx+0), "system.network.dropped", test.expectedStartTime)
+				assertNetworkIOMetricValid(t, metrics.At(idx+1), "system.network.errors", test.expectedStartTime)
+				assertNetworkIOMetricValid(t, metrics.At(idx+2), "system.network.io", test.expectedStartTime)
+				assertNetworkIOMetricValid(t, metrics.At(idx+3), "system.network.packets", test.expectedStartTime)
 				internal.AssertSameTimeStampForMetrics(t, metrics, 0, 4)
 				idx += 4
 			}
@@ -170,7 +170,8 @@ func TestScrape(t *testing.T) {
 	}
 }
 
-func assertNetworkIOMetricValid(t *testing.T, metric pdata.Metric, startTime pdata.Timestamp) {
+func assertNetworkIOMetricValid(t *testing.T, metric pdata.Metric, expectedName string, startTime pdata.Timestamp) {
+	assert.Equal(t, metric.Name(), expectedName)
 	if startTime != 0 {
 		internal.AssertSumMetricStartTimeEquals(t, metric, startTime)
 	}
@@ -181,6 +182,7 @@ func assertNetworkIOMetricValid(t *testing.T, metric pdata.Metric, startTime pda
 }
 
 func assertNetworkConnectionsMetricValid(t *testing.T, metric pdata.Metric) {
+	assert.Equal(t, metric.Name(), "system.network.connections")
 	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "protocol", pdata.NewAttributeValueString(metadata.AttributeProtocol.Tcp))
 	internal.AssertSumMetricHasAttribute(t, metric, 0, "state")
 	assert.Equal(t, 12, metric.Sum().DataPoints().Len())
