@@ -31,22 +31,22 @@ type nginxScraper struct {
 	httpClient *http.Client
 	client     *client.NginxClient
 
-	logger *zap.Logger
-	cfg    *Config
+	settings component.TelemetrySettings
+	cfg      *Config
 }
 
 func newNginxScraper(
-	logger *zap.Logger,
+	settings component.TelemetrySettings,
 	cfg *Config,
 ) *nginxScraper {
 	return &nginxScraper{
-		logger: logger,
-		cfg:    cfg,
+		settings: settings,
+		cfg:      cfg,
 	}
 }
 
 func (r *nginxScraper) start(_ context.Context, host component.Host) error {
-	httpClient, err := r.cfg.ToClient(host.GetExtensions())
+	httpClient, err := r.cfg.ToClient(host.GetExtensions(), r.settings)
 	if err != nil {
 		return err
 	}
@@ -69,7 +69,7 @@ func (r *nginxScraper) scrape(context.Context) (pdata.Metrics, error) {
 
 	stats, err := r.client.GetStubStats()
 	if err != nil {
-		r.logger.Error("Failed to fetch nginx stats", zap.Error(err))
+		r.settings.Logger.Error("Failed to fetch nginx stats", zap.Error(err))
 		return pdata.Metrics{}, err
 	}
 
