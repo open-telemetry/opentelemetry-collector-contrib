@@ -107,10 +107,10 @@ from opentelemetry.instrumentation.propagators import (
     get_global_response_propagator,
 )
 from opentelemetry.instrumentation.utils import (
+    _start_internal_or_server_span,
     extract_attributes_from_object,
     http_status_to_status_code,
 )
-from opentelemetry.propagate import extract
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace.status import Status
 from opentelemetry.util._time import _time_ns
@@ -195,12 +195,14 @@ class _InstrumentedFalconAPI(getattr(falcon, _instrument_app)):
 
         start_time = _time_ns()
 
-        token = context.attach(extract(env, getter=otel_wsgi.wsgi_getter))
-        span = self._tracer.start_span(
-            otel_wsgi.get_default_span_name(env),
-            kind=trace.SpanKind.SERVER,
+        span, token = _start_internal_or_server_span(
+            tracer=self._tracer,
+            span_name=otel_wsgi.get_default_span_name(env),
             start_time=start_time,
+            context_carrier=env,
+            context_getter=otel_wsgi.wsgi_getter,
         )
+
         if span.is_recording():
             attributes = otel_wsgi.collect_request_attributes(env)
             for key, value in attributes.items():
@@ -216,7 +218,8 @@ class _InstrumentedFalconAPI(getattr(falcon, _instrument_app)):
                 status, response_headers, *args, **kwargs
             )
             activation.__exit__(None, None, None)
-            context.detach(token)
+            if token is not None:
+                context.detach(token)
             return response
 
         try:
@@ -227,7 +230,8 @@ class _InstrumentedFalconAPI(getattr(falcon, _instrument_app)):
                 exc,
                 getattr(exc, "__traceback__", None),
             )
-            context.detach(token)
+            if token is not None:
+                context.detach(token)
             raise
 
 

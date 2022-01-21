@@ -16,6 +16,7 @@ from unittest.mock import Mock, patch
 
 from falcon import testing
 
+from opentelemetry import trace
 from opentelemetry.instrumentation.falcon import FalconInstrumentor
 from opentelemetry.instrumentation.propagators import (
     TraceResponsePropagator,
@@ -264,3 +265,18 @@ class TestFalconInstrumentationHooks(TestFalconBase):
         self.assertEqual(
             span.attributes["request_hook_attr"], "value from hook"
         )
+
+
+class TestFalconInstrumentationWrappedWithOtherFramework(TestFalconBase):
+    def test_mark_span_internal_in_presence_of_span_from_other_framework(self):
+        tracer = trace.get_tracer(__name__)
+        with tracer.start_as_current_span(
+            "test", kind=trace.SpanKind.SERVER
+        ) as parent_span:
+            self.client().simulate_request(method="GET", path="/hello")
+            span = self.memory_exporter.get_finished_spans()[0]
+            assert span.status.is_ok
+            self.assertEqual(trace.SpanKind.INTERNAL, span.kind)
+            self.assertEqual(
+                span.parent.span_id, parent_span.get_span_context().span_id
+            )

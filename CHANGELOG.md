@@ -13,7 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#817](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/817))
 - `opentelemetry-instrumentation-kafka-python` added kafka-python module instrumentation.
   ([#814](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/814))
-
+- `opentelemetry-instrumentation-falcon` Falcon: Conditionally create SERVER spans
+  ([#867](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/867))
 ### Fixed
 
 - `opentelemetry-instrumentation-django` Django: Conditionally create SERVER spans
