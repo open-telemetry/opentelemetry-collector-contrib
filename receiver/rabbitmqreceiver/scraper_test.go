@@ -35,8 +35,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver/internal/models"
 )
 
-const goldenMetricsFile = "metrics_golden.json"
-
 func TestScraperStart(t *testing.T) {
 	testcases := []struct {
 		desc        string
@@ -129,7 +127,7 @@ func TestScaperScrape(t *testing.T) {
 				return &mockClient
 			},
 			expectedMetricGen: func(t *testing.T) pdata.Metrics {
-				goldenPath := filepath.Join("testdata", "expected_metrics", goldenMetricsFile)
+				goldenPath := filepath.Join("testdata", "expected_metrics", "metrics_golden.json")
 				expectedMetrics, err := golden.ReadMetrics(goldenPath)
 				require.NoError(t, err)
 				return expectedMetrics

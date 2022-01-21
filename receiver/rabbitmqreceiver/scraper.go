@@ -141,7 +141,6 @@ func (r *rabbitmqScraper) collectQueue(queue *models.Queue, now pdata.Timestamp,
 		}
 	}
 	r.metricsBuilder.Emit(ilms.Metrics())
-
 }
 
 // convertValToInt64 values from message state unmarshal as float64s but should be int64.
