@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/metadata"
 )
@@ -34,24 +33,24 @@ var errUnknownClusterStatus = errors.New("unknown cluster status")
 
 type elasticsearchScraper struct {
 	client         elasticsearchClient
-	logger         *zap.Logger
+	settings       component.TelemetrySettings
 	cfg            *Config
 	metricsBuilder *metadata.MetricsBuilder
 }
 
 func newElasticSearchScraper(
-	logger *zap.Logger,
+	settings component.TelemetrySettings,
 	cfg *Config,
 ) *elasticsearchScraper {
 	return &elasticsearchScraper{
-		logger:         logger,
+		settings:       settings,
 		cfg:            cfg,
 		metricsBuilder: metadata.NewMetricsBuilder(cfg.Metrics),
 	}
 }
 
 func (r *elasticsearchScraper) start(_ context.Context, host component.Host) (err error) {
-	r.client, err = newElasticsearchClient(r.logger, *r.cfg, host)
+	r.client, err = newElasticsearchClient(r.settings, *r.cfg, host)
 	return
 }
 

@@ -10,8 +10,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.42.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.42.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.42.0
-	go.opentelemetry.io/collector/model v0.42.0
+	go.opentelemetry.io/collector v0.42.1-0.20220121210129-2c5eb7ca1ad5
+	go.opentelemetry.io/collector/model v0.42.1-0.20220121210129-2c5eb7ca1ad5
 	go.uber.org/multierr v1.7.0
 	go.uber.org/zap v1.20.0
 )
@@ -64,7 +64,6 @@ require (
 	go.uber.org/atomic v1.9.0 // indirect
 	golang.org/x/net v0.0.0-20211216030914-fe4d6282115f // indirect
 	golang.org/x/sys v0.0.0-20211210111614-af8b64212486 // indirect
-	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/genproto v0.0.0-20211221195035-429b39de9b1c // indirect
 	google.golang.org/grpc v1.43.0 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect

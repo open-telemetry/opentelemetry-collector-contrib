@@ -29,22 +29,22 @@ import (
 )
 
 type couchdbScraper struct {
-	client client
-	config *Config
-	logger *zap.Logger
-	mb     *metadata.MetricsBuilder
+	client   client
+	config   *Config
+	settings component.TelemetrySettings
+	mb       *metadata.MetricsBuilder
 }
 
-func newCouchdbScraper(logger *zap.Logger, config *Config) *couchdbScraper {
+func newCouchdbScraper(settings component.TelemetrySettings, config *Config) *couchdbScraper {
 	return &couchdbScraper{
-		logger: logger,
-		config: config,
-		mb:     metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+		settings: settings,
+		config:   config,
+		mb:       metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
 	}
 }
 
 func (c *couchdbScraper) start(_ context.Context, host component.Host) error {
-	httpClient, err := newCouchDBClient(c.config, host, c.logger)
+	httpClient, err := newCouchDBClient(c.config, host, c.settings)
 	if err != nil {
 		return fmt.Errorf("failed to start: %w", err)
 	}
@@ -64,7 +64,7 @@ func (c *couchdbScraper) getResourceMetrics() (pdata.Metrics, error) {
 	localNode := "_local"
 	stats, err := c.client.GetStats(localNode)
 	if err != nil {
-		c.logger.Error("Failed to fetch couchdb stats",
+		c.settings.Logger.Error("Failed to fetch couchdb stats",
 			zap.String("endpoint", c.config.Endpoint),
 			zap.Error(err),
 		)
