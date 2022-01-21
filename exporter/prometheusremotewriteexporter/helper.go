@@ -18,11 +18,9 @@ import (
 	"errors"
 	"sort"
 	"strings"
-	"time"
 	"unicode"
 
 	"github.com/prometheus/prometheus/prompb"
-	"go.opentelemetry.io/collector/model/pdata"
 )
 
 const (
@@ -112,9 +110,4 @@ func sanitizeRune(r rune) rune {
 	}
 	// Everything else turns into an underscore
 	return '_'
-}
-
-// convertTimeStamp converts OTLP timestamp in ns to timestamp in ms
-func convertTimeStamp(timestamp pdata.Timestamp) int64 {
-	return timestamp.AsTime().UnixNano() / (int64(time.Millisecond) / int64(time.Nanosecond))
 }

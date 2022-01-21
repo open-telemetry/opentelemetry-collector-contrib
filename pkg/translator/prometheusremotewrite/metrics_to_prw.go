@@ -12,16 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package prometheusremotewrite
+package prometheusremotewrite // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
 
 import (
 	"errors"
 	"fmt"
 
+	"github.com/prometheus/prometheus/prompb"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
-
-	"github.com/prometheus/prometheus/prompb"
 	"go.uber.org/multierr"
 )
 
