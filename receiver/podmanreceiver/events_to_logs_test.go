@@ -67,6 +67,8 @@ func Test_EventsToLogs(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := translateEventsToLogs(zap.NewNop(), tt.event)
+			// need to sort the attributes because attribute's order is not fixed.
+			result.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Attributes().Sort()
 			assert.Equal(t, tt.wantErr, err)
 			assert.Equal(t, tt.output.Len(), result.ResourceLogs().Len())
 			assert.Equal(t, tt.output.At(0), result.ResourceLogs().At(0))
