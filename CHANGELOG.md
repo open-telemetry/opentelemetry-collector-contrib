@@ -38,19 +38,18 @@
 - `zookeeperreceiver`: Refactored metrics to have correct units, types, and combined some metrics via attributes. (#7280)
 - `prometheusremotewriteexporter`: `PRWExporter` struct and `NewPRWExporter()`
   function are now unexported. (#TBD)
+- `newrelicexporter` marked as deprecated (#7284)
+
 
 ## 🚀 New components 🚀
 
 - `rabbitmqreceiver`: Establish codebase for RabbitMQ metrics receiver (#7239)
+- Add `basicauth` extension (#7167)
 
 ## 🧰 Bug fixes 🧰
 
 - `mdatagen`: Fix validation of `enabled` field in metadata.yaml (#7166)
 - `elasticsearch`: Fix timestamp for each metric being startup time (#7255)
-
-## 🚀 New components 🚀
-
-- Add `basicauth` extension (#7167)
 
 ## v0.42.0
 
