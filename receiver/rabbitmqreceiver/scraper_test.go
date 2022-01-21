@@ -75,8 +75,6 @@ func TestScraperStart(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.desc, func(t *testing.T) {
-			t.Parallel()
-
 			err := tc.scraper.start(context.Background(), componenttest.NewNopHost())
 			if tc.expectError {
 				require.Error(t, err)
