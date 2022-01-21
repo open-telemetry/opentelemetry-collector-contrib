@@ -723,7 +723,7 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 			Endpoint: prweServer.URL,
 		},
 		RemoteWriteQueue: RemoteWriteQueue{NumConsumers: 1},
-		WAL: &walConfig{
+		WAL: &WALConfig{
 			Directory:         tempDir,
 			TruncateFrequency: 60 * time.Microsecond,
 			BufferSize:        1,

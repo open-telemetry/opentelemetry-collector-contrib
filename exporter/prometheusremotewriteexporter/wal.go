@@ -33,7 +33,7 @@ import (
 type prweWAL struct {
 	mu        sync.Mutex // mu protects the fields below.
 	wal       *wal.Log
-	walConfig *walConfig
+	walConfig *WALConfig
 	walPath   string
 
 	exportSink func(ctx context.Context, reqL []*prompb.WriteRequest) []error
@@ -49,7 +49,7 @@ const (
 	defaultWALTruncateFrequency = 1 * time.Minute
 )
 
-type walConfig struct {
+type WALConfig struct {
 	// Note: These variable names are meant to closely mirror what Prometheus' WAL uses for field names per
 	// https://docs.google.com/document/d/1cCcoFgjDFwU2n823tKuMvrIhzHty4UDyn0IcfUHiyyI/edit#heading=h.mlf37ibqjgov
 	// but also we are using underscores "_" instead of dashes "-".
@@ -58,21 +58,21 @@ type walConfig struct {
 	TruncateFrequency time.Duration `mapstructure:"truncate_frequency"`
 }
 
-func (wc *walConfig) bufferSize() int {
+func (wc *WALConfig) bufferSize() int {
 	if wc.BufferSize > 0 {
 		return wc.BufferSize
 	}
 	return defaultWALBufferSize
 }
 
-func (wc *walConfig) truncateFrequency() time.Duration {
+func (wc *WALConfig) truncateFrequency() time.Duration {
 	if wc.TruncateFrequency > 0 {
 		return wc.TruncateFrequency
 	}
 	return defaultWALTruncateFrequency
 }
 
-func newWAL(walConfig *walConfig, exportSink func(context.Context, []*prompb.WriteRequest) []error) (*prweWAL, error) {
+func newWAL(walConfig *WALConfig, exportSink func(context.Context, []*prompb.WriteRequest) []error) (*prweWAL, error) {
 	if walConfig == nil {
 		// There are cases for which the WAL can be disabled.
 		// TODO: Perhaps log that the WAL wasn't enabled.
@@ -86,7 +86,7 @@ func newWAL(walConfig *walConfig, exportSink func(context.Context, []*prompb.Wri
 	}, nil
 }
 
-func (wc *walConfig) createWAL() (*wal.Log, string, error) {
+func (wc *WALConfig) createWAL() (*wal.Log, string, error) {
 	walPath := filepath.Join(wc.Directory, "prom_remotewrite")
 	wal, err := wal.Open(walPath, &wal.Options{
 		SegmentCacheSize: wc.bufferSize(),

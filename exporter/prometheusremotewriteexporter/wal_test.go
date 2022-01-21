@@ -31,14 +31,14 @@ func doNothingExportSink(_ context.Context, reqL []*prompb.WriteRequest) []error
 }
 
 func TestWALCreation_nilConfig(t *testing.T) {
-	config := (*walConfig)(nil)
+	config := (*WALConfig)(nil)
 	pwal, err := newWAL(config, doNothingExportSink)
 	require.Equal(t, err, errNilConfig)
 	require.Nil(t, pwal)
 }
 
 func TestWALCreation_nonNilConfig(t *testing.T) {
-	config := &walConfig{Directory: t.TempDir()}
+	config := &WALConfig{Directory: t.TempDir()}
 	pwal, err := newWAL(config, doNothingExportSink)
 	require.NotNil(t, pwal)
 	assert.Nil(t, err)
@@ -86,7 +86,7 @@ func orderByLabelValue(wreq *prompb.WriteRequest) {
 
 func TestWALStopManyTimes(t *testing.T) {
 	tempDir := t.TempDir()
-	config := &walConfig{
+	config := &WALConfig{
 		Directory:         tempDir,
 		TruncateFrequency: 60 * time.Microsecond,
 		BufferSize:        1,
@@ -108,7 +108,7 @@ func TestWALStopManyTimes(t *testing.T) {
 
 func TestWAL_persist(t *testing.T) {
 	// Unit tests that requests written to the WAL persist.
-	config := &walConfig{Directory: t.TempDir()}
+	config := &WALConfig{Directory: t.TempDir()}
 
 	pwal, err := newWAL(config, doNothingExportSink)
 	require.Nil(t, err)
