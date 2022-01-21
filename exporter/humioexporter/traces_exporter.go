@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
-	"go.uber.org/zap"
 )
 
 // HumioLink represents a relation between two spans
@@ -50,20 +49,20 @@ type HumioSpan struct {
 }
 
 type humioTracesExporter struct {
-	cfg    *Config
-	logger *zap.Logger
-	client exporterClient
-	wg     sync.WaitGroup
+	cfg      *Config
+	settings component.TelemetrySettings
+	client   exporterClient
+	wg       sync.WaitGroup
 
 	// Needed to enable current unit tests with the latest changes from core collector.
 	getClient clientGetter
 }
 
-type clientGetter func(cfg *Config, logger *zap.Logger, host component.Host) (exporterClient, error)
+type clientGetter func(cfg *Config, settings component.TelemetrySettings, host component.Host) (exporterClient, error)
 
-func newTracesExporter(cfg *Config, logger *zap.Logger) *humioTracesExporter {
-	gc := func(cfg *Config, logger *zap.Logger, host component.Host) (exporterClient, error) {
-		client, err := newHumioClient(cfg, logger, host)
+func newTracesExporter(cfg *Config, settings component.TelemetrySettings) *humioTracesExporter {
+	gc := func(cfg *Config, settings component.TelemetrySettings, host component.Host) (exporterClient, error) {
+		client, err := newHumioClient(cfg, settings, host)
 		if err != nil {
 			return nil, err
 		}
@@ -73,15 +72,15 @@ func newTracesExporter(cfg *Config, logger *zap.Logger) *humioTracesExporter {
 
 	return &humioTracesExporter{
 		cfg:       cfg,
-		logger:    logger,
+		settings:  settings,
 		getClient: gc,
 	}
 }
 
-func newTracesExporterWithClientGetter(cfg *Config, logger *zap.Logger, cg clientGetter) *humioTracesExporter {
+func newTracesExporterWithClientGetter(cfg *Config, settings component.TelemetrySettings, cg clientGetter) *humioTracesExporter {
 	return &humioTracesExporter{
 		cfg:       cfg,
-		logger:    logger,
+		settings:  settings,
 		getClient: cg,
 	}
 }
@@ -126,7 +125,7 @@ func (e *humioTracesExporter) tracesToHumioEvents(td pdata.Traces) ([]*HumioStru
 
 		if _, ok := r.Attributes().Get(conventions.AttributeServiceName); !ok {
 			droppedTraces = append(droppedTraces, resSpan)
-			e.logger.Error("skipping export of spans for resource with missing service name, which is required for the Humio exporter")
+			e.settings.Logger.Error("skipping export of spans for resource with missing service name, which is required for the Humio exporter")
 			continue
 		}
 
@@ -261,7 +260,7 @@ func tagFromSpan(evt *HumioStructuredEvent, strategy Tagger) string {
 
 // start starts the exporter
 func (e *humioTracesExporter) start(_ context.Context, host component.Host) error {
-	client, err := e.getClient(e.cfg, e.logger, host)
+	client, err := e.getClient(e.cfg, e.settings, host)
 	if err != nil {
 		return err
 	}

@@ -40,8 +40,8 @@ type couchDBClient struct {
 }
 
 // newCouchDBClient creates a new client to make requests for the CouchDB receiver.
-func newCouchDBClient(cfg *Config, host component.Host, logger *zap.Logger) (client, error) {
-	client, err := cfg.ToClient(host.GetExtensions())
+func newCouchDBClient(cfg *Config, host component.Host, settings component.TelemetrySettings) (client, error) {
+	client, err := cfg.ToClient(host.GetExtensions(), settings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTP Client: %w", err)
 	}
@@ -49,7 +49,7 @@ func newCouchDBClient(cfg *Config, host component.Host, logger *zap.Logger) (cli
 	return &couchDBClient{
 		client: client,
 		cfg:    cfg,
-		logger: logger,
+		logger: settings.Logger,
 	}, nil
 }
 

@@ -34,9 +34,10 @@ type sumologicexporter struct {
 	filter              filter
 	prometheusFormatter prometheusFormatter
 	graphiteFormatter   graphiteFormatter
+	settings            component.TelemetrySettings
 }
 
-func initExporter(cfg *Config) (*sumologicexporter, error) {
+func initExporter(cfg *Config, settings component.TelemetrySettings) (*sumologicexporter, error) {
 	switch cfg.LogFormat {
 	case JSONFormat:
 	case TextFormat:
@@ -90,6 +91,7 @@ func initExporter(cfg *Config) (*sumologicexporter, error) {
 		filter:              f,
 		prometheusFormatter: pf,
 		graphiteFormatter:   gf,
+		settings:            settings,
 	}
 
 	return se, nil
@@ -99,7 +101,7 @@ func newLogsExporter(
 	cfg *Config,
 	set component.ExporterCreateSettings,
 ) (component.LogsExporter, error) {
-	se, err := initExporter(cfg)
+	se, err := initExporter(cfg, set.TelemetrySettings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize the logs exporter: %w", err)
 	}
@@ -121,7 +123,7 @@ func newMetricsExporter(
 	cfg *Config,
 	set component.ExporterCreateSettings,
 ) (component.MetricsExporter, error) {
-	se, err := initExporter(cfg)
+	se, err := initExporter(cfg, set.TelemetrySettings)
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +143,7 @@ func newMetricsExporter(
 
 // start starts the exporter
 func (se *sumologicexporter) start(_ context.Context, host component.Host) (err error) {
-	client, err := se.config.HTTPClientSettings.ToClient(host.GetExtensions())
+	client, err := se.config.HTTPClientSettings.ToClient(host.GetExtensions(), se.settings)
 	if err != nil {
 		return fmt.Errorf("failed to create HTTP Client: %w", err)
 	}
