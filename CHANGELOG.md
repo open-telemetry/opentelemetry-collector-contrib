@@ -29,6 +29,7 @@
 - `extension/observers`: Correctly set image and tag on container endpoints (#7279)
 - `tanzuobservabilityexporter`: Document how to enable memory_limiter (#7286)
 - `hostreceiver/networkscraper`: Migrate the scraper to the mdatagen metrics builder (#7048)
+- `prometheusremotewriteexporter`: Write-Ahead Log support enabled (#7304)
 
 ## 🛑 Breaking changes 🛑
 
