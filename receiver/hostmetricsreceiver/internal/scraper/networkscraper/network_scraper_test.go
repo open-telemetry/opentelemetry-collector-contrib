@@ -155,23 +155,23 @@ func TestScrape(t *testing.T) {
 
 			metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 			idx := 0
+			assertNetworkConnectionsMetricValid(t, metrics.At(idx))
 			if test.expectNetworkMetrics {
-				assertNetworkIOMetricValid(t, metrics.At(idx+0), "system.network.dropped", test.expectedStartTime)
-				assertNetworkIOMetricValid(t, metrics.At(idx+1), "system.network.errors", test.expectedStartTime)
-				assertNetworkIOMetricValid(t, metrics.At(idx+2), "system.network.io", test.expectedStartTime)
-				assertNetworkIOMetricValid(t, metrics.At(idx+3), "system.network.packets", test.expectedStartTime)
-				internal.AssertSameTimeStampForMetrics(t, metrics, 0, 4)
+				assertNetworkIOMetricValid(t, metrics.At(idx+1), "system.network.dropped", test.expectedStartTime)
+				assertNetworkIOMetricValid(t, metrics.At(idx+2), "system.network.errors", test.expectedStartTime)
+				assertNetworkIOMetricValid(t, metrics.At(idx+3), "system.network.io", test.expectedStartTime)
+				assertNetworkIOMetricValid(t, metrics.At(idx+4), "system.network.packets", test.expectedStartTime)
+				internal.AssertSameTimeStampForMetrics(t, metrics, 1, 5)
 				idx += 4
 			}
 
-			assertNetworkConnectionsMetricValid(t, metrics.At(idx+0))
 			internal.AssertSameTimeStampForMetrics(t, metrics, idx, idx+1)
 		})
 	}
 }
 
 func assertNetworkIOMetricValid(t *testing.T, metric pdata.Metric, expectedName string, startTime pdata.Timestamp) {
-	assert.Equal(t, metric.Name(), expectedName)
+	assert.Equal(t, expectedName, metric.Name())
 	if startTime != 0 {
 		internal.AssertSumMetricStartTimeEquals(t, metric, startTime)
 	}
