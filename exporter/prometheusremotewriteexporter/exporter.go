@@ -30,7 +30,6 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
 	"github.com/prometheus/prometheus/prompb"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -40,8 +39,8 @@ import (
 
 const maxBatchByteSize = 3000000
 
-// PRWExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint.
-type PRWExporter struct {
+// prwExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint.
+type prwExporter struct {
 	namespace       string
 	externalLabels  map[string]string
 	endpointURL     *url.URL
@@ -55,8 +54,8 @@ type PRWExporter struct {
 	wal *prweWAL
 }
 
-// NewPRWExporter initializes a new PRWExporter instance and sets fields accordingly.
-func NewPRWExporter(cfg *Config, buildInfo component.BuildInfo) (*PRWExporter, error) {
+// newPRWExporter initializes a new prwExporter instance and sets fields accordingly.
+func newPRWExporter(cfg *Config, buildInfo component.BuildInfo) (*prwExporter, error) {
 	sanitizedLabels, err := validateAndSanitizeExternalLabels(cfg.ExternalLabels)
 	if err != nil {
 		return nil, err
@@ -69,7 +68,7 @@ func NewPRWExporter(cfg *Config, buildInfo component.BuildInfo) (*PRWExporter, e
 
 	userAgentHeader := fmt.Sprintf("%s/%s", strings.ReplaceAll(strings.ToLower(buildInfo.Description), " ", "-"), buildInfo.Version)
 
-	prwe := &PRWExporter{
+	prwe := &prwExporter{
 		namespace:       cfg.Namespace,
 		externalLabels:  sanitizedLabels,
 		endpointURL:     endpointURL,
@@ -92,7 +91,7 @@ func NewPRWExporter(cfg *Config, buildInfo component.BuildInfo) (*PRWExporter, e
 }
 
 // Start creates the prometheus client
-func (prwe *PRWExporter) Start(ctx context.Context, host component.Host) (err error) {
+func (prwe *prwExporter) Start(ctx context.Context, host component.Host) (err error) {
 	prwe.client, err = prwe.clientSettings.ToClient(host.GetExtensions())
 	if err != nil {
 		return err
@@ -100,7 +99,7 @@ func (prwe *PRWExporter) Start(ctx context.Context, host component.Host) (err er
 	return prwe.turnOnWALIfEnabled(ctx)
 }
 
-func (prwe *PRWExporter) shutdownWALIfEnabled() error {
+func (prwe *prwExporter) shutdownWALIfEnabled() error {
 	if !prwe.walEnabled() {
 		return nil
 	}
@@ -109,7 +108,7 @@ func (prwe *PRWExporter) shutdownWALIfEnabled() error {
 
 // Shutdown stops the exporter from accepting incoming calls(and return error), and wait for current export operations
 // to finish before returning
-func (prwe *PRWExporter) Shutdown(context.Context) error {
+func (prwe *prwExporter) Shutdown(context.Context) error {
 	select {
 	case <-prwe.closeChan:
 	default:
@@ -123,7 +122,7 @@ func (prwe *PRWExporter) Shutdown(context.Context) error {
 // PushMetrics converts metrics to Prometheus remote write TimeSeries and send to remote endpoint. It maintain a map of
 // TimeSeries, validates and handles each individual metric, adding the converted TimeSeries to the map, and finally
 // exports the map.
-func (prwe *PRWExporter) PushMetrics(ctx context.Context, md pdata.Metrics) error {
+func (prwe *prwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) error {
 	prwe.wg.Add(1)
 	defer prwe.wg.Done()
 
@@ -227,7 +226,7 @@ func validateAndSanitizeExternalLabels(externalLabels map[string]string) (map[st
 	return sanitizedLabels, nil
 }
 
-func (prwe *PRWExporter) addNumberDataPointSlice(dataPoints pdata.NumberDataPointSlice, tsMap map[string]*prompb.TimeSeries, resource pdata.Resource, metric pdata.Metric) error {
+func (prwe *prwExporter) addNumberDataPointSlice(dataPoints pdata.NumberDataPointSlice, tsMap map[string]*prompb.TimeSeries, resource pdata.Resource, metric pdata.Metric) error {
 	if dataPoints.Len() == 0 {
 		return consumererror.NewPermanent(fmt.Errorf("empty data points. %s is dropped", metric.Name()))
 	}
@@ -237,7 +236,7 @@ func (prwe *PRWExporter) addNumberDataPointSlice(dataPoints pdata.NumberDataPoin
 	return nil
 }
 
-func (prwe *PRWExporter) handleExport(ctx context.Context, tsMap map[string]*prompb.TimeSeries) []error {
+func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*prompb.TimeSeries) []error {
 	var errs []error
 	// Calls the helper function to convert and batch the TsMap to the desired format
 	requests, err := batchTimeSeries(tsMap, maxBatchByteSize)
@@ -259,7 +258,7 @@ func (prwe *PRWExporter) handleExport(ctx context.Context, tsMap map[string]*pro
 }
 
 // export sends a Snappy-compressed WriteRequest containing TimeSeries to a remote write endpoint in order
-func (prwe *PRWExporter) export(ctx context.Context, requests []*prompb.WriteRequest) (errs []error) {
+func (prwe *prwExporter) export(ctx context.Context, requests []*prompb.WriteRequest) (errs []error) {
 	input := make(chan *prompb.WriteRequest, len(requests))
 	for _, request := range requests {
 		input <- request
@@ -302,7 +301,7 @@ func (prwe *PRWExporter) export(ctx context.Context, requests []*prompb.WriteReq
 	return errs
 }
 
-func (prwe *PRWExporter) execute(ctx context.Context, writeReq *prompb.WriteRequest) error {
+func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequest) error {
 	// Uses proto.Marshal to convert the WriteRequest into bytes array
 	data, err := proto.Marshal(writeReq)
 	if err != nil {
@@ -345,9 +344,9 @@ func (prwe *PRWExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 	return consumererror.NewPermanent(rerr)
 }
 
-func (prwe *PRWExporter) walEnabled() bool { return prwe.wal != nil }
+func (prwe *prwExporter) walEnabled() bool { return prwe.wal != nil }
 
-func (prwe *PRWExporter) turnOnWALIfEnabled(ctx context.Context) error {
+func (prwe *prwExporter) turnOnWALIfEnabled(ctx context.Context) error {
 	if !prwe.walEnabled() {
 		return nil
 	}
