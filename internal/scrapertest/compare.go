@@ -61,8 +61,9 @@ func CompareMetricSlices(expected, actual pdata.MetricSlice, options ...CompareO
 		return errs
 	}
 
-	for name, actualMetric := range actualByName {
-		expectedMetric := expectedByName[name]
+	for i := 0; i < actual.Len(); i++ {
+		actualMetric := actual.At(i)
+		expectedMetric := expectedByName[actualMetric.Name()]
 		if actualMetric.Description() != expectedMetric.Description() {
 			return fmt.Errorf("metric Description does not match expected: %s, actual: %s", expectedMetric.Description(), actualMetric.Description())
 		}
@@ -105,14 +106,24 @@ func CompareNumberDataPointSlices(expected, actual pdata.NumberDataPointSlice) e
 		return fmt.Errorf("length of datapoints don't match")
 	}
 
+	numPoints := expected.Len()
+
+	// Keep track of which points have already been used as a match
+	// so that each point can only be matched once
+	once := make(map[int]bool, numPoints)
+
 	var errs error
-	for j := 0; j < expected.Len(); j++ {
+	for j := 0; j < numPoints; j++ {
 		edp := expected.At(j)
 		var foundMatch bool
-		for k := 0; k < actual.Len(); k++ {
+		for k := 0; k < numPoints; k++ {
+			if once[k] {
+				continue
+			}
 			adp := actual.At(k)
 			if reflect.DeepEqual(edp.Attributes().Sort().AsRaw(), adp.Attributes().Sort().AsRaw()) {
 				foundMatch = true
+				once[k] = true
 				break
 			}
 		}
@@ -122,14 +133,20 @@ func CompareNumberDataPointSlices(expected, actual pdata.NumberDataPointSlice) e
 		}
 	}
 
-	matchingDPS := make(map[pdata.NumberDataPoint]pdata.NumberDataPoint, actual.Len())
-	for j := 0; j < actual.Len(); j++ {
+	once = make(map[int]bool, numPoints)
+
+	matchingDPS := make(map[pdata.NumberDataPoint]pdata.NumberDataPoint, numPoints)
+	for j := 0; j < numPoints; j++ {
 		adp := actual.At(j)
 		var foundMatch bool
-		for k := 0; k < expected.Len(); k++ {
+		for k := 0; k < numPoints; k++ {
+			if once[k] {
+				continue
+			}
 			edp := expected.At(k)
 			if reflect.DeepEqual(edp.Attributes().Sort(), adp.Attributes().Sort()) {
 				foundMatch = true
+				once[k] = true
 				matchingDPS[adp] = edp
 				break
 			}
