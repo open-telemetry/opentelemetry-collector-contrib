@@ -337,14 +337,13 @@ func TestTimeout(t *testing.T) {
 	cfg.CombineField = entry.NewBodyField()
 	cfg.IsFirstEntry = "false"
 	cfg.OutputIDs = []string{"fake"}
-	cfg.ForceFlushTimeout = 70 * time.Millisecond
+	cfg.ForceFlushTimeout = 100 * time.Millisecond
 	ops, err := cfg.Build(testutil.NewBuildContext(t))
 	require.NoError(t, err)
 	recombine := ops[0].(*RecombineOperator)
 
 	fake := testutil.NewFakeOutput(t)
 	require.NoError(t, recombine.SetOutputs([]operator.Operator{fake}))
-	recombine.Start(nil)
 
 	e := entry.New()
 	e.Timestamp = time.Now()
@@ -352,6 +351,7 @@ func TestTimeout(t *testing.T) {
 
 	ctx := context.Background()
 
+	recombine.Start(nil)
 	require.NoError(t, recombine.Process(ctx, e))
 	select {
 	case <-fake.Received:
