@@ -21,6 +21,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/memoryscraper/internal/metadata"
 )
 
 // This file implements Factory for Memory scraper.
@@ -36,7 +37,9 @@ type Factory struct {
 
 // CreateDefaultConfig creates the default configuration for the Scraper.
 func (f *Factory) CreateDefaultConfig() internal.Config {
-	return &Config{}
+	return &Config{
+		Metrics: metadata.DefaultMetricsSettings(),
+	}
 }
 
 // CreateMetricsScraper creates a scraper based on provided config.
@@ -48,5 +51,6 @@ func (f *Factory) CreateMetricsScraper(
 	cfg := config.(*Config)
 	s := newMemoryScraper(ctx, cfg)
 
-	return scraperhelper.NewScraper(TypeStr, s.Scrape)
+	return scraperhelper.NewScraper(
+		TypeStr, s.scrape, scraperhelper.WithStart(s.start))
 }
