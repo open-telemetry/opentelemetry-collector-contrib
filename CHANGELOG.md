@@ -50,6 +50,7 @@
 
 - `mdatagen`: Fix validation of `enabled` field in metadata.yaml (#7166)
 - `elasticsearch`: Fix timestamp for each metric being startup time (#7255)
+- `prometheusremotewriteexporter`: Fix index out of range panic caused by expiring metrics (#7149)
 
 ## v0.42.0
 
