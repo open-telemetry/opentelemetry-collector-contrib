@@ -114,6 +114,7 @@ var (
 	validIntGaugeDirty = "*valid_IntGauge$"
 
 	unmatchedBoundBucketHist = "unmatchedBoundBucketHist"
+	noBucketsHist            = "noBucketsHist"
 
 	// valid metrics as input should not return error
 	validMetrics1 = map[string]pdata.Metric{
@@ -134,6 +135,7 @@ var (
 		validSummary:             getSummaryMetric(validSummary, lbs2, time2, floatVal2, uint64(intVal2), quantiles),
 		validIntGaugeDirty:       getIntGaugeMetric(validIntGaugeDirty, lbs1, intVal1, time1),
 		unmatchedBoundBucketHist: getHistogramMetric(unmatchedBoundBucketHist, pdata.NewAttributeMap(), 0, 0, 0, []float64{0.1, 0.2, 0.3}, []uint64{1, 2}),
+		noBucketsHist:            getHistogramMetric(noBucketsHist, pdata.NewAttributeMap(), 0, 0, 0, []float64{}, []uint64{}),
 	}
 
 	empty = "empty"
@@ -158,21 +160,23 @@ var (
 		emptyCumulativeSum:       getEmptyCumulativeSumMetric(emptyCumulativeSum),
 		emptyCumulativeHistogram: getEmptyCumulativeHistogramMetric(emptyCumulativeHistogram),
 	}
-	staleNaNIntGauge    = "staleNaNIntGauge"
-	staleNaNDoubleGauge = "staleNaNDoubleGauge"
-	staleNaNIntSum      = "staleNaNIntSum"
-	staleNaNSum         = "staleNaNSum"
-	staleNaNHistogram   = "staleNaNHistogram"
-	staleNaNSummary     = "staleNaNSummary"
+	staleNaNIntGauge       = "staleNaNIntGauge"
+	staleNaNDoubleGauge    = "staleNaNDoubleGauge"
+	staleNaNIntSum         = "staleNaNIntSum"
+	staleNaNSum            = "staleNaNSum"
+	staleNaNHistogram      = "staleNaNHistogram"
+	staleNaNEmptyHistogram = "staleNaNEmptyHistogram"
+	staleNaNSummary        = "staleNaNSummary"
 
 	// staleNaN metrics as input should have the staleness marker flag
 	staleNaNMetrics = map[string]pdata.Metric{
-		staleNaNIntGauge:    getIntGaugeMetric(staleNaNIntGauge, lbs1, intVal1, time1),
-		staleNaNDoubleGauge: getDoubleGaugeMetric(staleNaNDoubleGauge, lbs1, floatVal1, time1),
-		staleNaNIntSum:      getIntSumMetric(staleNaNIntSum, lbs1, intVal1, time1),
-		staleNaNSum:         getSumMetric(staleNaNSum, lbs1, floatVal1, time1),
-		staleNaNHistogram:   getHistogramMetric(staleNaNHistogram, lbs1, time1, floatVal2, uint64(intVal2), bounds, buckets),
-		staleNaNSummary:     getSummaryMetric(staleNaNSummary, lbs2, time2, floatVal2, uint64(intVal2), quantiles),
+		staleNaNIntGauge:       getIntGaugeMetric(staleNaNIntGauge, lbs1, intVal1, time1),
+		staleNaNDoubleGauge:    getDoubleGaugeMetric(staleNaNDoubleGauge, lbs1, floatVal1, time1),
+		staleNaNIntSum:         getIntSumMetric(staleNaNIntSum, lbs1, intVal1, time1),
+		staleNaNSum:            getSumMetric(staleNaNSum, lbs1, floatVal1, time1),
+		staleNaNHistogram:      getHistogramMetric(staleNaNHistogram, lbs1, time1, floatVal2, uint64(intVal2), bounds, buckets),
+		staleNaNEmptyHistogram: getHistogramMetric(staleNaNEmptyHistogram, lbs1, time1, floatVal2, uint64(intVal2), []float64{}, []uint64{}),
+		staleNaNSummary:        getSummaryMetric(staleNaNSummary, lbs2, time2, floatVal2, uint64(intVal2), quantiles),
 	}
 )
 
