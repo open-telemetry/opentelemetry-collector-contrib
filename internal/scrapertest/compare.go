@@ -108,22 +108,21 @@ func CompareNumberDataPointSlices(expected, actual pdata.NumberDataPointSlice) e
 
 	numPoints := expected.Len()
 
-	// Keep track of which points have already been used as a match
-	// so that each point can only be matched once
-	once := make(map[int]bool, numPoints)
+	// Keep track of matching data points so that each point can only be matched once
+	matchingDPS := make(map[pdata.NumberDataPoint]pdata.NumberDataPoint, numPoints)
 
 	var errs error
-	for j := 0; j < numPoints; j++ {
-		edp := expected.At(j)
+	for e := 0; e < numPoints; e++ {
+		edp := expected.At(e)
 		var foundMatch bool
-		for k := 0; k < numPoints; k++ {
-			if once[k] {
+		for a := 0; a < numPoints; a++ {
+			adp := actual.At(a)
+			if _, ok := matchingDPS[adp]; ok {
 				continue
 			}
-			adp := actual.At(k)
 			if reflect.DeepEqual(edp.Attributes().Sort().AsRaw(), adp.Attributes().Sort().AsRaw()) {
 				foundMatch = true
-				once[k] = true
+				matchingDPS[adp] = edp
 				break
 			}
 		}
@@ -133,27 +132,9 @@ func CompareNumberDataPointSlices(expected, actual pdata.NumberDataPointSlice) e
 		}
 	}
 
-	once = make(map[int]bool, numPoints)
-
-	matchingDPS := make(map[pdata.NumberDataPoint]pdata.NumberDataPoint, numPoints)
-	for j := 0; j < numPoints; j++ {
-		adp := actual.At(j)
-		var foundMatch bool
-		for k := 0; k < numPoints; k++ {
-			if once[k] {
-				continue
-			}
-			edp := expected.At(k)
-			if reflect.DeepEqual(edp.Attributes().Sort(), adp.Attributes().Sort()) {
-				foundMatch = true
-				once[k] = true
-				matchingDPS[adp] = edp
-				break
-			}
-		}
-
-		if !foundMatch {
-			errs = multierr.Append(errs, fmt.Errorf("metric has extra datapoint with attributes: %v", adp.Attributes().AsRaw()))
+	for i := 0; i < numPoints; i++ {
+		if _, ok := matchingDPS[actual.At(i)]; !ok {
+			errs = multierr.Append(errs, fmt.Errorf("metric has extra datapoint with attributes: %v", actual.At(i).Attributes().AsRaw()))
 		}
 	}
 
