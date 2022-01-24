@@ -54,11 +54,11 @@ func createMetricsConsumer(
 		true), nil
 }
 
-type metricsConsumerCreater func(hostName string, port int, settings component.TelemetrySettings) (
+type metricsConsumerCreator func(hostName string, port int, settings component.TelemetrySettings) (
 	*metricsConsumer, error)
 
 func newMetricsExporter(
-	settings component.TelemetrySettings, c config.Exporter, creator metricsConsumerCreater) (
+	settings component.TelemetrySettings, c config.Exporter, creator metricsConsumerCreator) (
 	*metricsExporter, error) {
 	cfg, ok := c.(*Config)
 	if !ok {
