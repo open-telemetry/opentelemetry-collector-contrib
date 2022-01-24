@@ -133,8 +133,8 @@ func NewMongoDBAtlasClient(
 	}, nil
 }
 
-func (c *MongoDBAtlasClient) Shutdown() error {
-	c.roundTripper.Shutdown()
+func (s *MongoDBAtlasClient) Shutdown() error {
+	s.roundTripper.Shutdown()
 	return nil
 }
 
