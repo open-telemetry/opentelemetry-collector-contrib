@@ -101,6 +101,37 @@ func TestCompareMetricSlices(t *testing.T) {
 			},
 		},
 		{
+			name: "data-point-slice-extra",
+			withoutOptions: expectation{
+				err: multierr.Combine(
+					errors.New("datapoints for metric: `gauge.one`, do not match expected"),
+					errors.New("length of datapoints don't match"),
+				),
+				reason: "A data point slice with an extra data point should cause a failure.",
+			},
+		},
+		{
+			name: "data-point-slice-missing",
+			withoutOptions: expectation{
+				err: multierr.Combine(
+					errors.New("datapoints for metric: `sum.one`, do not match expected"),
+					errors.New("length of datapoints don't match"),
+				),
+				reason: "A data point slice with a missing data point should cause a failure.",
+			},
+		},
+		{
+			name: "data-point-slice-dedup",
+			withoutOptions: expectation{
+				err: multierr.Combine(
+					errors.New("datapoints for metric: `sum.one`, do not match expected"),
+					errors.New("metric missing expected datapoint with attributes: map[attribute.one:two]"),
+					errors.New("metric has extra datapoint with attributes: map[attribute.one:one]"),
+				),
+				reason: "Data point slice comparison must not match each data point more than once.",
+			},
+		},
+		{
 			name: "data-point-attribute-extra",
 			withoutOptions: expectation{
 				err: multierr.Combine(
