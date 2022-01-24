@@ -77,7 +77,7 @@ func (c *Config) Flags(fs *flag.FlagSet) {
 	fs.BoolVar(&c.UseHTTP, "otlp-http", false, "Whether to use HTTP exporter rather than a gRPC one")
 
 	// custom headers
-	fs.Var(&c.Headers, "otlp-headers", `Custom Headers to be passed along with each otlp request. The value expected is a key(string), valued(string) pair json string (e.g '{"key1":"value1", "key2": "value2"}')`)
+	fs.Var(&c.Headers, "otlp-headers", `Custom headers to be passed along with each OTLP request. The value expected is a key(string), valued(string) pair json string (e.g '{"key1":"value1", "key2": "value2"}')`)
 }
 
 // Run executes the test scenario.
