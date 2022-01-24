@@ -54,7 +54,7 @@ func (v *HeaderValue) String() string {
 func (v *HeaderValue) Set(s string) error {
 	kv := strings.SplitN(s, "=", 2)
 	if len(kv) != 2 {
-		return fmt.Errorf("-otlp-header value should be of the format key=value")
+		return fmt.Errorf("value should be of the format key=value")
 	}
 	(*v)[kv[0]] = kv[1]
 	return nil
