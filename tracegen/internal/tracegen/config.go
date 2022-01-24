@@ -16,8 +16,10 @@
 package tracegen // import "github.com/open-telemetry/opentelemetry-collector-contrib/tracegen/internal/tracegen"
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -39,6 +41,25 @@ type Config struct {
 	Endpoint string
 	Insecure bool
 	UseHTTP  bool
+	Headers  HeaderValue
+}
+
+type HeaderValue map[string]string
+
+func (v *HeaderValue) String() string {
+	if *v != nil {
+		var s strings.Builder
+		if err := json.NewEncoder(&s).Encode(v); err != nil {
+			return ""
+		}
+		return s.String()
+	}
+	return ""
+}
+
+func (v *HeaderValue) Set(s string) error {
+	err := json.Unmarshal([]byte(s), v)
+	return err
 }
 
 // Flags registers config flags.
@@ -54,6 +75,9 @@ func (c *Config) Flags(fs *flag.FlagSet) {
 	fs.StringVar(&c.Endpoint, "otlp-endpoint", "localhost:4317", "Target to which the exporter is going to send spans or metrics. This MAY be configured to include a path (e.g. example.com/v1/traces)")
 	fs.BoolVar(&c.Insecure, "otlp-insecure", false, "Whether to enable client transport security for the exporter's grpc or http connection")
 	fs.BoolVar(&c.UseHTTP, "otlp-http", false, "Whether to use HTTP exporter rather than a gRPC one")
+
+	// custom headers
+	fs.Var(&c.Headers, "otlp-headers", "Custom Headers to be passed along with each otlp request. Must be in map[string]string format")
 }
 
 // Run executes the test scenario.
