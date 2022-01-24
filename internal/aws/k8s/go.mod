@@ -6,8 +6,8 @@ require (
 	github.com/aws/aws-sdk-go v1.42.36
 	github.com/stretchr/testify v1.7.0
 	go.uber.org/zap v1.20.0
-	k8s.io/api v0.23.1
-	k8s.io/apimachinery v0.23.1
+	k8s.io/api v0.23.2
+	k8s.io/apimachinery v0.23.2
 	k8s.io/client-go v0.23.1
 )
 
@@ -45,6 +45,6 @@ require (
 	k8s.io/kube-openapi v0.0.0-20211115234752-e816edb12b65 // indirect
 	k8s.io/utils v0.0.0-20210930125809-cb0fa318a74b // indirect
 	sigs.k8s.io/json v0.0.0-20211020170558-c049b76a60c6 // indirect
-	sigs.k8s.io/structured-merge-diff/v4 v4.1.2 // indirect
+	sigs.k8s.io/structured-merge-diff/v4 v4.2.1 // indirect
 	sigs.k8s.io/yaml v1.2.0 // indirect
 )
