@@ -82,6 +82,9 @@ func TestLoadConfig(t *testing.T) {
 				"property.two":                           "value.two.a=value.two.b,value.two.c=value.two.d",
 				"org.slf4j.simpleLogger.defaultLogLevel": "info",
 			},
+			AdditionalJars: []string{
+				"/path/to/additional.jar",
+			},
 		}, r1)
 
 	assert.Equal(
@@ -170,4 +173,39 @@ func TestLoadConfig(t *testing.T) {
 	err = r5.validate()
 	require.Error(t, err)
 	assert.Equal(t, "jmx/invalidotlptimeout `otlp.timeout` must be positive: -100ms", err.Error())
+}
+
+func TestClassPathParse(t *testing.T) {
+	testCases := []struct {
+		desc     string
+		cfg      *Config
+		expected string
+	}{
+		{
+			desc: "Metric Gatherer JAR Only",
+			cfg: &Config{
+				JARPath: "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
+			},
+			expected: `"/opt/opentelemetry-java-contrib-jmx-metrics.jar"`,
+		},
+		{
+			desc: "Additional JARS",
+			cfg: &Config{
+				JARPath: "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
+				AdditionalJars: []string{
+					"/path/to/one.jar",
+					"/path/to/two.jar",
+				},
+			},
+			expected: `"/opt/opentelemetry-java-contrib-jmx-metrics.jar:/path/to/one.jar:/path/to/two.jar"`,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			t.Parallel()
+			actual := tc.cfg.parseClasspath()
+			require.Equal(t, tc.expected, actual)
+		})
+	}
 }
