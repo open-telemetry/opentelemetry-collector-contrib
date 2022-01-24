@@ -54,6 +54,7 @@ func TestScraperStart(t *testing.T) {
 						},
 					},
 				},
+				settings: componenttest.NewNopTelemetrySettings(),
 			},
 			expectError: true,
 		},
@@ -66,6 +67,7 @@ func TestScraperStart(t *testing.T) {
 						Endpoint:   defaultEndpoint,
 					},
 				},
+				settings: componenttest.NewNopTelemetrySettings(),
 			},
 			expectError: false,
 		},
@@ -138,7 +140,7 @@ func TestScaperScrape(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			scraper := newScraper(zap.NewNop(), createDefaultConfig().(*Config))
+			scraper := newScraper(zap.NewNop(), createDefaultConfig().(*Config), componenttest.NewNopTelemetrySettings())
 			scraper.client = tc.setupMockClient(t)
 
 			metrics, err := scraper.scrape(context.Background())

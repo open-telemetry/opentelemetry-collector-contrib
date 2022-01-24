@@ -43,6 +43,7 @@ func TestNewClient(t *testing.T) {
 		desc        string
 		cfg         *Config
 		host        component.Host
+		settings    component.TelemetrySettings
 		logger      *zap.Logger
 		expectError error
 	}{
@@ -59,6 +60,7 @@ func TestNewClient(t *testing.T) {
 				},
 			},
 			host:        componenttest.NewNopHost(),
+			settings:    componenttest.NewNopTelemetrySettings(),
 			logger:      zap.NewNop(),
 			expectError: errors.New("failed to create HTTP Client"),
 		},
@@ -71,6 +73,7 @@ func TestNewClient(t *testing.T) {
 				},
 			},
 			host:        componenttest.NewNopHost(),
+			settings:    componenttest.NewNopTelemetrySettings(),
 			logger:      zap.NewNop(),
 			expectError: nil,
 		},
@@ -78,7 +81,7 @@ func TestNewClient(t *testing.T) {
 
 	for _, tc := range testCase {
 		t.Run(tc.desc, func(t *testing.T) {
-			ac, err := newClient(tc.cfg, tc.host, tc.logger)
+			ac, err := newClient(tc.cfg, tc.host, tc.settings, tc.logger)
 			if tc.expectError != nil {
 				require.Nil(t, ac)
 				require.Contains(t, err.Error(), tc.expectError.Error())
@@ -170,7 +173,7 @@ func createTestClient(t *testing.T, baseEndpoint string) client {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = baseEndpoint
 
-	testClient, err := newClient(cfg, componenttest.NewNopHost(), zap.NewNop())
+	testClient, err := newClient(cfg, componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), zap.NewNop())
 	require.NoError(t, err)
 	return testClient
 }

@@ -52,21 +52,23 @@ type rabbitmqScraper struct {
 	client         client
 	logger         *zap.Logger
 	cfg            *Config
+	settings       component.TelemetrySettings
 	metricsBuilder *metadata.MetricsBuilder
 }
 
 // newScraper creates a new scraper
-func newScraper(logger *zap.Logger, cfg *Config) *rabbitmqScraper {
+func newScraper(logger *zap.Logger, cfg *Config, settings component.TelemetrySettings) *rabbitmqScraper {
 	return &rabbitmqScraper{
 		logger:         logger,
 		cfg:            cfg,
+		settings:       settings,
 		metricsBuilder: metadata.NewMetricsBuilder(cfg.Metrics),
 	}
 }
 
 // start starts the scraper by creating a new HTTP Client on the scraper
 func (r *rabbitmqScraper) start(ctx context.Context, host component.Host) (err error) {
-	r.client, err = newClient(r.cfg, host, r.logger)
+	r.client, err = newClient(r.cfg, host, r.settings, r.logger)
 	return
 }
 

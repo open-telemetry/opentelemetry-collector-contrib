@@ -49,8 +49,8 @@ type rabbitmqCredentials struct {
 	password string
 }
 
-func newClient(cfg *Config, host component.Host, logger *zap.Logger) (client, error) {
-	httpClient, err := cfg.ToClient(host.GetExtensions())
+func newClient(cfg *Config, host component.Host, settings component.TelemetrySettings, logger *zap.Logger) (client, error) {
+	httpClient, err := cfg.ToClient(host.GetExtensions(), settings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTP Client: %w", err)
 	}
