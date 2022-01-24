@@ -37,7 +37,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 )
 
-func newTracesProcessor(cfg config.Processor, next consumer.Traces, options ...Option) (component.TracesProcessor, error) {
+func newTracesProcessor(cfg config.Processor, next consumer.Traces, options ...option) (component.TracesProcessor, error) {
 	opts := append(options, withKubeClientProvider(newFakeClient))
 	return createTracesProcessorWithOptions(
 		context.Background(),
@@ -48,7 +48,7 @@ func newTracesProcessor(cfg config.Processor, next consumer.Traces, options ...O
 	)
 }
 
-func newMetricsProcessor(cfg config.Processor, nextMetricsConsumer consumer.Metrics, options ...Option) (component.MetricsProcessor, error) {
+func newMetricsProcessor(cfg config.Processor, nextMetricsConsumer consumer.Metrics, options ...option) (component.MetricsProcessor, error) {
 	opts := append(options, withKubeClientProvider(newFakeClient))
 	return createMetricsProcessorWithOptions(
 		context.Background(),
@@ -59,7 +59,7 @@ func newMetricsProcessor(cfg config.Processor, nextMetricsConsumer consumer.Metr
 	)
 }
 
-func newLogsProcessor(cfg config.Processor, nextLogsConsumer consumer.Logs, options ...Option) (component.LogsProcessor, error) {
+func newLogsProcessor(cfg config.Processor, nextLogsConsumer consumer.Logs, options ...option) (component.LogsProcessor, error) {
 	opts := append(options, withKubeClientProvider(newFakeClient))
 	return createLogsProcessorWithOptions(
 		context.Background(),
@@ -71,14 +71,14 @@ func newLogsProcessor(cfg config.Processor, nextLogsConsumer consumer.Logs, opti
 }
 
 // withKubeClientProvider sets the specific implementation for getting K8s Client instances
-func withKubeClientProvider(kcp kube.ClientProvider) Option {
+func withKubeClientProvider(kcp kube.ClientProvider) option {
 	return func(p *kubernetesprocessor) error {
 		return p.initKubeClient(p.logger, kcp)
 	}
 }
 
 // withExtractKubernetesProcessorInto allows to pull the internal model easily even when processorhelper factory is used
-func withExtractKubernetesProcessorInto(kp **kubernetesprocessor) Option {
+func withExtractKubernetesProcessorInto(kp **kubernetesprocessor) option {
 	return func(p *kubernetesprocessor) error {
 		*kp = p
 		return nil
@@ -105,7 +105,7 @@ func newMultiTest(
 	t *testing.T,
 	cfg config.Processor,
 	errFunc func(err error),
-	options ...Option,
+	options ...option,
 ) *multiTest {
 	m := &multiTest{
 		t:           t,
@@ -365,7 +365,7 @@ func TestProcessorNoAttrs(t *testing.T) {
 		t,
 		NewFactory().CreateDefaultConfig(),
 		nil,
-		WithExtractMetadata(conventions.AttributeK8SPodName),
+		withExtractMetadata(conventions.AttributeK8SPodName),
 	)
 
 	ctx := client.NewContext(context.Background(), client.Info{
@@ -889,7 +889,7 @@ func TestMetricsProcessorHostname(t *testing.T) {
 	p, err := newMetricsProcessor(
 		NewFactory().CreateDefaultConfig(),
 		next,
-		WithExtractMetadata(conventions.AttributeK8SPodName),
+		withExtractMetadata(conventions.AttributeK8SPodName),
 		withExtractKubernetesProcessorInto(&kp),
 	)
 	require.NoError(t, err)
@@ -959,7 +959,7 @@ func TestMetricsProcessorHostnameWithPodAssociation(t *testing.T) {
 	p, err := newMetricsProcessor(
 		NewFactory().CreateDefaultConfig(),
 		next,
-		WithExtractMetadata(conventions.AttributeK8SPodName),
+		withExtractMetadata(conventions.AttributeK8SPodName),
 		withExtractKubernetesProcessorInto(&kp),
 	)
 	require.NoError(t, err)
@@ -1031,7 +1031,7 @@ func TestMetricsProcessorHostnameWithPodAssociation(t *testing.T) {
 
 func TestPassthroughStart(t *testing.T) {
 	next := new(consumertest.TracesSink)
-	opts := []Option{WithPassthrough()}
+	opts := []option{withPassthrough()}
 
 	p, err := newTracesProcessor(
 		NewFactory().CreateDefaultConfig(),
@@ -1054,7 +1054,7 @@ func TestRealClient(t *testing.T) {
 			assert.Equal(t, err.Error(), "unable to load k8s config, KUBERNETES_SERVICE_HOST and KUBERNETES_SERVICE_PORT must be defined")
 		},
 		withKubeClientProvider(kubeClientProvider),
-		WithAPIConfig(k8sconfig.APIConfig{AuthType: "none"}),
+		withAPIConfig(k8sconfig.APIConfig{AuthType: "none"}),
 	)
 }
 
