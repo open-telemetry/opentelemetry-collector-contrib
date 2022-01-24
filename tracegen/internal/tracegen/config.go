@@ -16,7 +16,6 @@
 package tracegen // import "github.com/open-telemetry/opentelemetry-collector-contrib/tracegen/internal/tracegen"
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"strings"
@@ -46,20 +45,19 @@ type Config struct {
 
 type HeaderValue map[string]string
 
+var _ flag.Value = (*HeaderValue)(nil)
+
 func (v *HeaderValue) String() string {
-	if *v != nil {
-		var s strings.Builder
-		if err := json.NewEncoder(&s).Encode(v); err != nil {
-			return ""
-		}
-		return s.String()
-	}
 	return ""
 }
 
 func (v *HeaderValue) Set(s string) error {
-	err := json.Unmarshal([]byte(s), v)
-	return err
+	kv := strings.SplitN(s, "=", 2)
+	if len(kv) != 2 {
+		return fmt.Errorf("-otlp-header value should be of the format key=value")
+	}
+	(*v)[kv[0]] = kv[1]
+	return nil
 }
 
 // Flags registers config flags.
@@ -77,7 +75,9 @@ func (c *Config) Flags(fs *flag.FlagSet) {
 	fs.BoolVar(&c.UseHTTP, "otlp-http", false, "Whether to use HTTP exporter rather than a gRPC one")
 
 	// custom headers
-	fs.Var(&c.Headers, "otlp-headers", `Custom Headers to be passed along with each otlp request. The value expected is a key(string), valued(string) pair json string (e.g '{"key1":"value1", "key2": "value2"}')`)
+	c.Headers = make(map[string]string)
+	fs.Var(&c.Headers, "otlp-headers", "Custom Headers to be passed along with each otlp request. The value expected is of format key=value."+
+		"Flag could be set multiple times to set more than one header (e.g -otlp-header key1=value1 -otlp-header key2=value2)")
 }
 
 // Run executes the test scenario.
