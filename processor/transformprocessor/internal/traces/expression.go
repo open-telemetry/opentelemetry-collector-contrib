@@ -22,6 +22,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
+type exprFunc func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{}
+
 // getter allows reading a value while processing traces. Note that data is not necessarily read from input
 // telemetry but may be a literal value or a function invocation.
 type getter interface {

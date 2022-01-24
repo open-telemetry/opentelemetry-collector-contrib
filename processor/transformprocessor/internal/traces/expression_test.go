@@ -23,7 +23,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
-func hello() func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
+func hello() exprFunc {
 	return func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
 		return "world"
 	}

@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
-func set(target getSetter, value getter) func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
+func set(target getSetter, value getter) exprFunc {
 	return func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
 		val := value.get(span, il, resource)
 		if val != nil {
@@ -28,7 +28,7 @@ func set(target getSetter, value getter) func(span pdata.Span, il pdata.Instrume
 	}
 }
 
-func keep(target getSetter, keys []string) func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
+func keep(target getSetter, keys []string) exprFunc {
 	keySet := make(map[string]struct{}, len(keys))
 	for _, key := range keys {
 		keySet[key] = struct{}{}

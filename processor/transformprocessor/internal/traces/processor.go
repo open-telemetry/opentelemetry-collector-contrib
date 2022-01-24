@@ -32,8 +32,8 @@ type Processor struct {
 // Query holds a top level Query for processing trace data. A Query is a combination of a function
 // invocation and the condition to match telemetry for invoking the function.
 type Query struct {
-	function  func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{}
-	condition func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) bool
+	function  exprFunc
+	condition condFunc
 }
 
 func NewProcessor(statements []Query, settings component.ProcessorCreateSettings) (*Processor, error) {

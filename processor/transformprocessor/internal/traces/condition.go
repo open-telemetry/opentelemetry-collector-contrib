@@ -22,7 +22,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
-func newConditionEvaluator(cond *common.Condition) (func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) bool, error) {
+type condFunc = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) bool
+
+func newConditionEvaluator(cond *common.Condition) (condFunc, error) {
 	if cond == nil {
 		return func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) bool {
 			return true

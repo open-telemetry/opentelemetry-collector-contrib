@@ -26,7 +26,7 @@ import (
 
 // pathGetSetter is a getSetter which has been resolved using a path expression provided by a user.
 type pathGetSetter struct {
-	getter func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{}
+	getter exprFunc
 	setter func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{})
 }
 
@@ -47,7 +47,7 @@ func newGetSetter(val common.Value) (getSetter, error) {
 }
 
 func newPathGetSetter(path []common.Field) (getSetter, error) {
-	var getter func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{}
+	var getter exprFunc
 	var setter func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{})
 	switch path[0].Name {
 	case "resource":

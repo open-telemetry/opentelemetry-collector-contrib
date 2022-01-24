@@ -18,14 +18,12 @@ import (
 	"fmt"
 	"reflect"
 
-	"go.opentelemetry.io/collector/model/pdata"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
 var registry = make(map[string]interface{})
 
-func newFunctionCall(inv common.Invocation) (func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{}, error) {
+func newFunctionCall(inv common.Invocation) (exprFunc, error) {
 	if f, ok := registry[inv.Function]; ok {
 		fType := reflect.TypeOf(f)
 		args := make([]reflect.Value, 0)
@@ -72,7 +70,7 @@ func newFunctionCall(inv common.Invocation) (func(span pdata.Span, il pdata.Inst
 		}
 		val := reflect.ValueOf(f)
 		ret := val.Call(args)
-		return ret[0].Interface().(func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{}), nil
+		return ret[0].Interface().(exprFunc), nil
 	}
 	return nil, fmt.Errorf("undefined function %v", inv.Function)
 }
