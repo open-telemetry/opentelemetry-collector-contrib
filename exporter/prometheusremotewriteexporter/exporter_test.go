@@ -54,6 +54,8 @@ func Test_NewPRWExporter(t *testing.T) {
 		Description: "OpenTelemetry Collector",
 		Version:     "1.0",
 	}
+	set := componenttest.NewNopExporterCreateSettings()
+	set.BuildInfo = buildInfo
 
 	tests := []struct {
 		name                string
@@ -63,7 +65,7 @@ func Test_NewPRWExporter(t *testing.T) {
 		concurrency         int
 		externalLabels      map[string]string
 		returnErrorOnCreate bool
-		buildInfo           component.BuildInfo
+		set                 component.ExporterCreateSettings
 	}{
 		{
 			name:                "invalid_URL",
@@ -73,7 +75,7 @@ func Test_NewPRWExporter(t *testing.T) {
 			concurrency:         5,
 			externalLabels:      map[string]string{"Key1": "Val1"},
 			returnErrorOnCreate: true,
-			buildInfo:           buildInfo,
+			set:                 set,
 		},
 		{
 			name:                "invalid_labels_case",
@@ -83,7 +85,7 @@ func Test_NewPRWExporter(t *testing.T) {
 			concurrency:         5,
 			externalLabels:      map[string]string{"Key1": ""},
 			returnErrorOnCreate: true,
-			buildInfo:           buildInfo,
+			set:                 set,
 		},
 		{
 			name:           "success_case",
@@ -92,7 +94,7 @@ func Test_NewPRWExporter(t *testing.T) {
 			endpoint:       "http://some.url:9411/api/prom/push",
 			concurrency:    5,
 			externalLabels: map[string]string{"Key1": "Val1"},
-			buildInfo:      buildInfo,
+			set:            set,
 		},
 		{
 			name:           "success_case_no_labels",
@@ -101,7 +103,7 @@ func Test_NewPRWExporter(t *testing.T) {
 			endpoint:       "http://some.url:9411/api/prom/push",
 			concurrency:    5,
 			externalLabels: map[string]string{},
-			buildInfo:      buildInfo,
+			set:            set,
 		},
 	}
 
@@ -111,7 +113,7 @@ func Test_NewPRWExporter(t *testing.T) {
 			cfg.ExternalLabels = tt.externalLabels
 			cfg.Namespace = tt.namespace
 			cfg.RemoteWriteQueue.NumConsumers = 1
-			prwe, err := NewPRWExporter(cfg, tt.buildInfo)
+			prwe, err := newPRWExporter(cfg, tt.set)
 
 			if tt.returnErrorOnCreate {
 				assert.Error(t, err)
@@ -143,6 +145,8 @@ func Test_Start(t *testing.T) {
 		Description: "OpenTelemetry Collector",
 		Version:     "1.0",
 	}
+	set := componenttest.NewNopExporterCreateSettings()
+	set.BuildInfo = buildInfo
 	tests := []struct {
 		name                 string
 		config               *Config
@@ -150,7 +154,7 @@ func Test_Start(t *testing.T) {
 		concurrency          int
 		externalLabels       map[string]string
 		returnErrorOnStartUp bool
-		buildInfo            component.BuildInfo
+		set                  component.ExporterCreateSettings
 		endpoint             string
 		clientSettings       confighttp.HTTPClientSettings
 	}{
@@ -160,7 +164,7 @@ func Test_Start(t *testing.T) {
 			namespace:      "test",
 			concurrency:    5,
 			externalLabels: map[string]string{"Key1": "Val1"},
-			buildInfo:      buildInfo,
+			set:            set,
 			clientSettings: confighttp.HTTPClientSettings{Endpoint: "https://some.url:9411/api/prom/push"},
 		},
 		{
@@ -169,7 +173,7 @@ func Test_Start(t *testing.T) {
 			namespace:            "test",
 			concurrency:          5,
 			externalLabels:       map[string]string{"Key1": "Val1"},
-			buildInfo:            buildInfo,
+			set:                  set,
 			returnErrorOnStartUp: true,
 			clientSettings: confighttp.HTTPClientSettings{
 				Endpoint: "https://some.url:9411/api/prom/push",
@@ -193,7 +197,7 @@ func Test_Start(t *testing.T) {
 			cfg.RemoteWriteQueue.NumConsumers = 1
 			cfg.HTTPClientSettings = tt.clientSettings
 
-			prwe, err := NewPRWExporter(cfg, tt.buildInfo)
+			prwe, err := newPRWExporter(cfg, tt.set)
 			assert.NoError(t, err)
 			assert.NotNil(t, prwe)
 
@@ -209,7 +213,7 @@ func Test_Start(t *testing.T) {
 
 // Test_Shutdown checks after Shutdown is called, incoming calls to PushMetrics return error.
 func Test_Shutdown(t *testing.T) {
-	prwe := &PRWExporter{
+	prwe := &prwExporter{
 		wg:        new(sync.WaitGroup),
 		closeChan: make(chan struct{}),
 	}
@@ -334,8 +338,10 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) []error {
 		Description: "OpenTelemetry Collector",
 		Version:     "1.0",
 	}
+	set := componenttest.NewNopExporterCreateSettings()
+	set.BuildInfo = buildInfo
 	// after this, instantiate a CortexExporter with the current HTTP client and endpoint set to passed in endpoint
-	prwe, err := NewPRWExporter(cfg, buildInfo)
+	prwe, err := newPRWExporter(cfg, set)
 	if err != nil {
 		errs = append(errs, err)
 		return errs
@@ -627,7 +633,9 @@ func Test_PushMetrics(t *testing.T) {
 				Description: "OpenTelemetry Collector",
 				Version:     "1.0",
 			}
-			prwe, nErr := NewPRWExporter(cfg, buildInfo)
+			set := componenttest.NewNopExporterCreateSettings()
+			set.BuildInfo = buildInfo
+			prwe, nErr := newPRWExporter(cfg, set)
 			require.NoError(t, nErr)
 			require.NoError(t, prwe.Start(context.Background(), componenttest.NewNopHost()))
 			err := prwe.PushMetrics(context.Background(), *tt.md)

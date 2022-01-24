@@ -6,12 +6,12 @@ require (
 	github.com/lib/pq v1.10.4
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.42.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.42.0
+	go.opentelemetry.io/collector v0.42.1-0.20220121210129-2c5eb7ca1ad5
 	go.uber.org/multierr v1.7.0
 	go.uber.org/zap v1.20.0
 )
 
-require go.opentelemetry.io/collector/model v0.42.0
+require go.opentelemetry.io/collector/model v0.42.1-0.20220121210129-2c5eb7ca1ad5
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
