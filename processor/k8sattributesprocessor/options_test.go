@@ -174,8 +174,8 @@ func TestWithExtractAnnotations(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &kubernetesprocessor{}
-			option := withExtractAnnotations(tt.args...)
-			err := option(p)
+			opt := withExtractAnnotations(tt.args...)
+			err := opt(p)
 			if tt.wantError == "" {
 				assert.NoError(t, err)
 			} else {
@@ -293,8 +293,8 @@ func TestWithExtractLabels(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &kubernetesprocessor{}
-			option := withExtractLabels(tt.args...)
-			err := option(p)
+			opt := withExtractLabels(tt.args...)
+			err := opt(p)
 			if tt.wantError == "" {
 				assert.NoError(t, err)
 			} else {
@@ -451,8 +451,8 @@ func TestWithFilterLabels(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &kubernetesprocessor{}
-			option := withFilterLabels(tt.args...)
-			err := option(p)
+			opt := withFilterLabels(tt.args...)
+			err := opt(p)
 			if tt.error == "" {
 				assert.NoError(t, err)
 			} else {
@@ -583,8 +583,8 @@ func TestWithFilterFields(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &kubernetesprocessor{}
-			option := withFilterFields(tt.args...)
-			err := option(p)
+			opt := withFilterFields(tt.args...)
+			err := opt(p)
 			if tt.error == "" {
 				assert.NoError(t, err)
 			} else {
@@ -735,8 +735,8 @@ func TestWithExtractPodAssociation(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &kubernetesprocessor{}
-			option := withExtractPodAssociations(tt.args...)
-			option(p)
+			opt := withExtractPodAssociations(tt.args...)
+			opt(p)
 			assert.Equal(t, tt.want, p.podAssociations)
 		})
 	}
@@ -777,8 +777,8 @@ func TestWithExcludes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &kubernetesprocessor{}
-			option := withExcludes(tt.args)
-			option(p)
+			opt := withExcludes(tt.args)
+			opt(p)
 			assert.Equal(t, tt.want, p.podIgnore)
 		})
 	}
