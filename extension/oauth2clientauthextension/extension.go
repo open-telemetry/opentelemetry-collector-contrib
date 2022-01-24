@@ -76,6 +76,7 @@ func newClientCredentialsExtension(cfg *Config, logger *zap.Logger) (*ClientCred
 			ClientSecret: cfg.ClientSecret,
 			TokenURL:     cfg.TokenURL,
 			Scopes:       cfg.Scopes,
+			EndpointParams: cfg.EndpointParams,
 		},
 		logger: logger,
 		client: &http.Client{
