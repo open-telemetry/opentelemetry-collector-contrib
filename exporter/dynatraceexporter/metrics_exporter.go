@@ -113,7 +113,7 @@ func (e *exporter) PushMetricsData(ctx context.Context, md pdata.Metrics) error 
 	err := e.send(ctx, lines)
 
 	if err != nil {
-		return fmt.Errorf("PushMetricsData: %v", err)
+		return err
 	}
 
 	return nil
@@ -171,7 +171,7 @@ func (e *exporter) send(ctx context.Context, lines []string) error {
 
 		err := e.sendBatch(ctx, lines[i:end])
 		if err != nil {
-			return fmt.Errorf("send: %v", err)
+			return err
 		}
 	}
 
