@@ -15,6 +15,7 @@
 package oauth2clientauthextension
 
 import (
+	"net/url"
 	"path/filepath"
 	"testing"
 	"time"
