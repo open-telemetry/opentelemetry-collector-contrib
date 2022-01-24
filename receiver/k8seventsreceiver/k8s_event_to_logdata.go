@@ -25,7 +25,7 @@ import (
 
 const (
 	// Number of log attributes to add to the pdata.LogSlice.
-	totalLogAttributes = 8
+	totalLogAttributes = 7
 
 	// Number of resource attributes to add to the pdata.ResourceLogs.
 	totalResourceAttributes = 6
@@ -49,13 +49,13 @@ func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event) pdata.Logs {
 	resourceAttrs.EnsureCapacity(totalResourceAttributes)
 
 	resourceAttrs.InsertString(semconv.AttributeK8SClusterName, ev.ObjectMeta.ClusterName)
-	resourceAttrs.InsertString("k8s.event.source", ev.Source.Component)
 	resourceAttrs.InsertString(semconv.AttributeK8SNodeName, ev.Source.Host)
 
 	// Attributes related to the object causing the event.
 	resourceAttrs.InsertString("k8s.object.kind", ev.InvolvedObject.Kind)
 	resourceAttrs.InsertString("k8s.object.name", ev.InvolvedObject.Name)
 	resourceAttrs.InsertString("k8s.object.uid", string(ev.InvolvedObject.UID))
+	resourceAttrs.InsertString("k8s.object.fieldpath", ev.InvolvedObject.FieldPath)
 
 	lr.SetTimestamp(pdata.Timestamp(getEventTimestamp(ev).UnixNano()))
 
@@ -80,7 +80,6 @@ func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event) pdata.Logs {
 	attrs.InsertString("k8s.event.start_time", ev.ObjectMeta.CreationTimestamp.String())
 	attrs.InsertString("k8s.event.name", ev.ObjectMeta.Name)
 	attrs.InsertString("k8s.event.uid", string(ev.ObjectMeta.UID))
-	attrs.InsertString("k8s.object.fieldpath", ev.InvolvedObject.FieldPath)
 	attrs.InsertString(semconv.AttributeK8SNamespaceName, ev.InvolvedObject.Namespace)
 
 	// "Count" field of k8s event will be '0' in case it is
