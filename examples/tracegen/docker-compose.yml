@@ -5,7 +5,6 @@ services:
     image: jaegertracing/all-in-one:latest
     ports:
       - "16686:16686"
-      - "14268"
       - "14250"
 
   otel-collector:
@@ -31,6 +30,8 @@ services:
       - -otlp-endpoint
       - otel-collector:4317
       - -otlp-insecure
+      - -rate
+      - "1"
       - -duration
       - 10000000s
     depends_on:

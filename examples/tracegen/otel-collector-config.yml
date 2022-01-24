@@ -4,8 +4,10 @@ receivers:
       grpc:
 
 exporters:
-  jaeger_thrift:
-    endpoint: "http://jaeger:14268/api/traces"
+  jaeger:
+    endpoint: "jaeger:14250"
+    tls:
+      insecure: true
   logging:
 
 processors:
@@ -21,5 +23,5 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      exporters: [jaeger_thrift, logging]
+      exporters: [jaeger, logging]
       processors: [batch]
