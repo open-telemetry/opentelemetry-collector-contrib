@@ -113,7 +113,7 @@ func (e *exporter) PushMetricsData(ctx context.Context, md pdata.Metrics) error 
 	err := e.send(ctx, lines)
 
 	if err != nil {
-		return err
+		return fmt.Errorf("PushMetricsData: %v", err)
 	}
 
 	return nil
@@ -171,7 +171,7 @@ func (e *exporter) send(ctx context.Context, lines []string) error {
 
 		err := e.sendBatch(ctx, lines[i:end])
 		if err != nil {
-			return err
+			return fmt.Errorf("send: %v", err)
 		}
 	}
 
@@ -194,7 +194,8 @@ func (e *exporter) sendBatch(ctx context.Context, lines []string) error {
 	resp, err := e.client.Do(req)
 
 	if err != nil {
-		return err
+		e.logger.Sugar().Errorf("failed to send request: %v", err)
+		return fmt.Errorf("sendBatch: %v", err)
 	}
 
 	defer resp.Body.Close()
@@ -259,7 +260,8 @@ func (e *exporter) sendBatch(ctx context.Context, lines []string) error {
 func (e *exporter) start(_ context.Context, host component.Host) (err error) {
 	client, err := e.cfg.HTTPClientSettings.ToClient(host.GetExtensions(), e.settings)
 	if err != nil {
-		return err
+		e.logger.Sugar().Errorf("failed to construct HTTP client %v", err)
+		return fmt.Errorf("start: %v", err)
 	}
 
 	e.client = client
