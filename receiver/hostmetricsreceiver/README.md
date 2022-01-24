@@ -64,6 +64,15 @@ filesystem:
     match_type: <strict|regexp>
 ```
 
+### Load
+
+`cpu_average` specifies whether to divide the average load by the reported number of logical CPUs (default: `false`).
+
+```yaml
+load:
+  cpu_average: <false|true>
+```
+
 ### Network
 
 ```yaml

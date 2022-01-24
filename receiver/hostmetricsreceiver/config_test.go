@@ -69,7 +69,7 @@ func TestLoadConfig(t *testing.T) {
 		Scrapers: map[string]internal.Config{
 			cpuscraper.TypeStr:        (&cpuscraper.Factory{}).CreateDefaultConfig(),
 			diskscraper.TypeStr:       (&diskscraper.Factory{}).CreateDefaultConfig(),
-			loadscraper.TypeStr:       &loadscraper.Config{},
+			loadscraper.TypeStr:       &loadscraper.Config{CPUAverage: true},
 			filesystemscraper.TypeStr: &filesystemscraper.Config{},
 			memoryscraper.TypeStr:     &memoryscraper.Config{},
 			networkscraper.TypeStr: (func() internal.Config {
