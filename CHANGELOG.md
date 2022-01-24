@@ -4,6 +4,7 @@
 
 ## 💡 Enhancements 💡
 
+- `coralogixexporter`: First implementation of Coralogix Exporter (#6816)
 - `cloudfoundryreceiver`: Enable Cloud Foundry client (#7060)
 - `elasticsearchexporter`: add elasticsearchexporter to the components exporter list (#6002)
 - `elasticsearchreceiver`: Add metric metadata (#6892)
@@ -50,6 +51,7 @@
 
 - `mdatagen`: Fix validation of `enabled` field in metadata.yaml (#7166)
 - `elasticsearch`: Fix timestamp for each metric being startup time (#7255)
+- `resourcedetection`: Log the error when checking for ec2metadata availability (#7296) 
 
 ## v0.42.0
 

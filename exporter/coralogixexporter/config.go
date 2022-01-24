@@ -18,6 +18,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -32,7 +33,7 @@ type Config struct {
 	exporterhelper.RetrySettings `mapstructure:"retry_on_failure"`
 
 	// The Coralogix logs ingress endpoint
-	Endpoint string `mapstructure:"endpoint"`
+	configgrpc.GRPCClientSettings `mapstructure:",squash"`
 
 	// Your Coralogix private key (sensitive) for authentication
 	PrivateKey string `mapstructure:"private_key"`
@@ -44,8 +45,26 @@ type Config struct {
 }
 
 func (c *Config) Validate() error {
-	if c.Endpoint == "" || c.PrivateKey == "" || c.AppName == "" || c.SubSystem == "" {
-		return fmt.Errorf("One of your configureation field (endpoint, private_key, application_name, subsystem_name) is empty, please fix the configuration file")
+	// validate each parameter and return specific error
+	if c.GRPCClientSettings.Endpoint == "" || c.GRPCClientSettings.Endpoint == "https://" || c.GRPCClientSettings.Endpoint == "http://" {
+		return fmt.Errorf("`endpoint` not specified, please fix the configuration file")
 	}
+	if c.PrivateKey == "" {
+		return fmt.Errorf("`privateKey` not specified, please fix the configuration file")
+	}
+	if c.AppName == "" {
+		return fmt.Errorf("`appName` not specified, please fix the configuration file")
+	}
+	if c.SubSystem == "" {
+		return fmt.Errorf("`subSystem` not specified, please fix the configuration file")
+	}
+
+	// check if headers exists
+	if len(c.GRPCClientSettings.Headers) == 0 {
+		c.GRPCClientSettings.Headers = map[string]string{}
+	}
+	c.GRPCClientSettings.Headers["ACCESS_TOKEN"] = c.PrivateKey
+	c.GRPCClientSettings.Headers["appName"] = c.AppName
+	c.GRPCClientSettings.Headers["subsystemName"] = c.SubSystem
 	return nil
 }
