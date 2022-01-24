@@ -194,7 +194,7 @@ func (e *exporter) sendBatch(ctx context.Context, lines []string) error {
 	resp, err := e.client.Do(req)
 
 	if err != nil {
-		e.logger.Sugar().Errorf("failed to send request: %v", err)
+		e.settings.Logger.Sugar().Errorf("failed to send request: %v", err)
 		return fmt.Errorf("sendBatch: %v", err)
 	}
 
@@ -260,7 +260,7 @@ func (e *exporter) sendBatch(ctx context.Context, lines []string) error {
 func (e *exporter) start(_ context.Context, host component.Host) (err error) {
 	client, err := e.cfg.HTTPClientSettings.ToClient(host.GetExtensions(), e.settings)
 	if err != nil {
-		e.logger.Sugar().Errorf("failed to construct HTTP client %v", err)
+		e.settings.Logger.Sugar().Errorf("failed to construct HTTP client %v", err)
 		return fmt.Errorf("start: %v", err)
 	}
 
