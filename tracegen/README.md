@@ -45,5 +45,4 @@ Or, to generate a specific number of traces:
 $ tracegen -otlp-insecure -traces 1
 ```
 
-
 Check `-help` for all the options.
