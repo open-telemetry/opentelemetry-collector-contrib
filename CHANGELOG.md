@@ -4,6 +4,7 @@
 
 ## 💡 Enhancements 💡
 
+- `coralogixexporter`: First implementation of Coralogix Exporter (#6816)
 - `cloudfoundryreceiver`: Enable Cloud Foundry client (#7060)
 - `elasticsearchexporter`: add elasticsearchexporter to the components exporter list (#6002)
 - `elasticsearchreceiver`: Add metric metadata (#6892)
@@ -29,6 +30,8 @@
 - `extension/observers`: Correctly set image and tag on container endpoints (#7279)
 - `tanzuobservabilityexporter`: Document how to enable memory_limiter (#7286)
 - `hostreceiver/networkscraper`: Migrate the scraper to the mdatagen metrics builder (#7048)
+- `hostmetricsreceiver`: Add MuteProcessNameError config flag to mute specific error reading process executable (#7176)
+- `hostmetricsreceiver`: add `cpu_average` option for load scraper to report the average cpu load (#6999)
 - `prometheusremotewriteexporter`: Write-Ahead Log support enabled (#7304)
 
 ## 🛑 Breaking changes 🛑
@@ -36,11 +39,11 @@
 - `tanzuobservabilityexporter`: Remove status.code
 - `tanzuobservabilityexporter`: Use semantic conventions for status.message (#7126) 
 - `k8sattributesprocessor`: Move `kube` and `observability` packages to `internal` folder (#7159)
+- `k8sattributesprocessor`: Unexport processor `Option`s (#7311)
 - `zookeeperreceiver`: Refactored metrics to have correct units, types, and combined some metrics via attributes. (#7280)
 - `prometheusremotewriteexporter`: `PRWExporter` struct and `NewPRWExporter()`
   function are now unexported. (#TBD)
 - `newrelicexporter` marked as deprecated (#7284)
-
 
 ## 🚀 New components 🚀
 
@@ -51,6 +54,7 @@
 
 - `mdatagen`: Fix validation of `enabled` field in metadata.yaml (#7166)
 - `elasticsearch`: Fix timestamp for each metric being startup time (#7255)
+- `resourcedetection`: Log the error when checking for ec2metadata availability (#7296) 
 
 ## v0.42.0
 

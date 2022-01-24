@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
@@ -41,9 +42,10 @@ var _ internal.Detector = (*Detector)(nil)
 type Detector struct {
 	metadataProvider metadataProvider
 	tagKeyRegexes    []*regexp.Regexp
+	logger           *zap.Logger
 }
 
-func NewDetector(_ component.ProcessorCreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(set component.ProcessorCreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 	sess, err := session.NewSession()
 	if err != nil {
@@ -53,12 +55,17 @@ func NewDetector(_ component.ProcessorCreateSettings, dcfg internal.DetectorConf
 	if err != nil {
 		return nil, err
 	}
-	return &Detector{metadataProvider: newMetadataClient(sess), tagKeyRegexes: tagKeyRegexes}, nil
+	return &Detector{
+		metadataProvider: newMetadataClient(sess),
+		tagKeyRegexes:    tagKeyRegexes,
+		logger:           set.Logger,
+	}, nil
 }
 
 func (d *Detector) Detect(ctx context.Context) (resource pdata.Resource, schemaURL string, err error) {
 	res := pdata.NewResource()
-	if !d.metadataProvider.available(ctx) {
+	if _, err = d.metadataProvider.instanceID(ctx); err != nil {
+		d.logger.Debug("EC2 metadata unavailable", zap.Error(err))
 		return res, "", nil
 	}
 
