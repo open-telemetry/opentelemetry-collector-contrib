@@ -41,6 +41,7 @@
 - `scrapertest`: Add comparison option to ignore specific attributes (#6519)
 - `tracegen`: Add option to pass in custom headers to export calls via command line (#7308)
 - `tracegen`: Provide official container images (#7179)
+- `jmxreceiver`: Added `additional_jars` configuration option to launch JMX Metric Gatherer JAR with extended `CLASSPATH` (#7378)
 
 ## 🛑 Breaking changes 🛑
 
