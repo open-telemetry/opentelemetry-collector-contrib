@@ -65,14 +65,11 @@ type Field struct {
 	MapKey *string `( "[" @String "]" )?`
 }
 
-func Parse(raw string) (*ParsedQuery, error) {
-	parser, err := newParser()
-	if err != nil {
-		return &ParsedQuery{}, err
-	}
+var parser = newParser()
 
+func Parse(raw string) (*ParsedQuery, error) {
 	parsed := &ParsedQuery{}
-	err = parser.ParseString("", raw, parsed)
+	err := parser.ParseString("", raw, parsed)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +78,7 @@ func Parse(raw string) (*ParsedQuery, error) {
 
 // newParser returns a parser that can be used to read a string into a ParsedQuery. An error will be returned if the string
 // is not formatted for the DSL.
-func newParser() (*participle.Parser, error) {
+func newParser() *participle.Parser {
 	lex := lexer.MustSimple([]lexer.Rule{
 		{Name: `Ident`, Pattern: `[a-zA-Z_][a-zA-Z0-9_]*`, Action: nil},
 		{Name: `Float`, Pattern: `[-+]?\d*\.\d+([eE][-+]?\d+)?`, Action: nil},
@@ -90,9 +87,13 @@ func newParser() (*participle.Parser, error) {
 		{Name: `Operators`, Pattern: `==|!=|[,.()\[\]]`, Action: nil},
 		{Name: "whitespace", Pattern: `\s+`, Action: nil},
 	})
-	return participle.Build(&ParsedQuery{},
+	parser, err := participle.Build(&ParsedQuery{},
 		participle.Lexer(lex),
 		participle.Unquote("String"),
 		participle.Elide("whitespace"),
 	)
+	if err != nil {
+		panic("Unable to initialize parser, this is a programming error in the transformprocesor")
+	}
+	return parser
 }
