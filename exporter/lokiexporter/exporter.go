@@ -44,17 +44,17 @@ const (
 )
 
 type lokiExporter struct {
-	config  *Config
-	logger  *zap.Logger
-	client  *http.Client
-	wg      sync.WaitGroup
-	convert func(pdata.LogRecord, pdata.Resource) (*logproto.Entry, error)
+	config   *Config
+	settings component.TelemetrySettings
+	client   *http.Client
+	wg       sync.WaitGroup
+	convert  func(pdata.LogRecord, pdata.Resource) (*logproto.Entry, error)
 }
 
-func newExporter(config *Config, logger *zap.Logger) *lokiExporter {
+func newExporter(config *Config, settings component.TelemetrySettings) *lokiExporter {
 	lokiexporter := &lokiExporter{
-		config: config,
-		logger: logger,
+		config:   config,
+		settings: settings,
 	}
 	if config.Format == "json" {
 		lokiexporter.convert = lokiexporter.convertLogToJSONEntry
@@ -125,7 +125,7 @@ func encode(pb proto.Message) ([]byte, error) {
 }
 
 func (l *lokiExporter) start(_ context.Context, host component.Host) (err error) {
-	client, err := l.config.HTTPClientSettings.ToClient(host.GetExtensions())
+	client, err := l.config.HTTPClientSettings.ToClient(host.GetExtensions(), l.settings)
 	if err != nil {
 		return err
 	}
@@ -192,7 +192,7 @@ func (l *lokiExporter) logDataToLoki(ld pdata.Logs) (pr *logproto.PushRequest, n
 	}
 
 	if errs != nil {
-		l.logger.Debug("some logs has been dropped", zap.Error(errs))
+		l.settings.Logger.Debug("some logs has been dropped", zap.Error(errs))
 	}
 
 	pr = &logproto.PushRequest{
@@ -230,7 +230,7 @@ func (l *lokiExporter) convertAttributesToLabels(attributes pdata.AttributeMap, 
 		av, ok := attributes.Get(attr)
 		if ok {
 			if av.Type() != pdata.AttributeValueTypeString {
-				l.logger.Debug("Failed to convert attribute value to Loki label value, value is not a string", zap.String("attribute", attr))
+				l.settings.Logger.Debug("Failed to convert attribute value to Loki label value, value is not a string", zap.String("attribute", attr))
 				continue
 			}
 			ls[attrLabelName] = model.LabelValue(av.StringVal())
