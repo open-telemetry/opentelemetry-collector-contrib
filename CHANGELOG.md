@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `opentelemetry-instrumentation-grpc` added `trailing_metadata` to _OpenTelemetryServicerContext.
+  ([#871](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/871))
 - `opentelemetry-instrumentation-asgi` now returns a `traceresponse` response header.
   ([#817](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/817))
 - `opentelemetry-instrumentation-kafka-python` added kafka-python module instrumentation.

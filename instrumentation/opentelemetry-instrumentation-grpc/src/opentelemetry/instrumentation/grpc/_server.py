@@ -114,6 +114,9 @@ class _OpenTelemetryServicerContext(grpc.ServicerContext):
     def set_trailing_metadata(self, *args, **kwargs):
         return self._servicer_context.set_trailing_metadata(*args, **kwargs)
 
+    def trailing_metadata(self):
+        return self._servicer_context.trailing_metadata()
+
     def abort(self, code, details):
         self.code = code
         self.details = details
