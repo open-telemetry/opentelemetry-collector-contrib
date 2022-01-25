@@ -76,7 +76,7 @@ func (c *Config) Flags(fs *flag.FlagSet) {
 
 	// custom headers
 	c.Headers = make(map[string]string)
-	fs.Var(&c.Headers, "otlp-headers", "Custom headers to be passed along with each OTLP request. The value expected in the format key=value."+
+	fs.Var(&c.Headers, "otlp-header", "Custom header to be passed along with each OTLP request. The value is expected in the format key=value."+
 		"Flag may be repeated to set multiple headers (e.g -otlp-header key1=value1 -otlp-header key2=value2)")
 }
 
