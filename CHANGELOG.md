@@ -36,6 +36,7 @@
 - `hostmetricsreceiver`: Add MuteProcessNameError config flag to mute specific error reading process executable (#7176)
 - `scrapertest`: Improve comparison logic (#7305)
 - `hostmetricsreceiver`: add `cpu_average` option for load scraper to report the average cpu load (#6999)
+- `tracegen`: Add option to pass in custom headers to export calls via command line (#7308)
 
 ## 🛑 Breaking changes 🛑
 
