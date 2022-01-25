@@ -25,16 +25,20 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
 )
 
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	configtls.TLSClientSetting              `mapstructure:"tls,omitempty"`
-	Hosts                                   []confignet.NetAddr `mapstructure:"hosts"`
-	Username                                string              `mapstructure:"username"`
-	Password                                string              `mapstructure:"password"`
-	ReplicaSet                              string              `mapstructure:"replica_set,omitempty"`
-	Timeout                                 time.Duration       `mapstructure:"timeout"`
+	// Metrics defines which metrics to enable for the scraper
+	Metrics    metadata.MetricsSettings `mapstructure:"metrics"`
+	Hosts      []confignet.NetAddr      `mapstructure:"hosts"`
+	Username   string                   `mapstructure:"username"`
+	Password   string                   `mapstructure:"password"`
+	ReplicaSet string                   `mapstructure:"replica_set,omitempty"`
+	Timeout    time.Duration            `mapstructure:"timeout"`
 }
 
 func (c *Config) Validate() error {

@@ -4,6 +4,7 @@
 
 ## 💡 Enhancements 💡
 
+- `coralogixexporter`: First implementation of Coralogix Exporter (#6816)
 - `cloudfoundryreceiver`: Enable Cloud Foundry client (#7060)
 - `elasticsearchexporter`: add elasticsearchexporter to the components exporter list (#6002)
 - `elasticsearchreceiver`: Add metric metadata (#6892)
@@ -17,7 +18,9 @@
 - `tanzuobservabilityexporter`: Documentation for the memory_limiter configuration (#7164)
 - `dynatraceexporter`: Do not shut down exporter when metrics ingest module is temporarily unavailable (#7161)
 - `mongodbreceiver`: Add metric metadata (#7163)
+- `mongodbreceiver`: Add metric scraping (#7175)
 - `postgresqlreceiver`: add the receiver to available components (#7079)
+- `rabbitmqreceiver`: Add scraper logic (#7299)
 - `tanzuobservability exporter`: Support summary metrics (#7121)
 - Use Jaeger gRPC instead of Thrift in the docker-compose example (#7243)
 - `tanzuobservabilityexporter`: Support exponential histograms (#7127)
@@ -27,29 +30,32 @@
     OpenCensus conversion path.
 - `extension/observers`: Correctly set image and tag on container endpoints (#7279)
 - `tanzuobservabilityexporter`: Document how to enable memory_limiter (#7286)
-- `resourcedetectionprocessor`: check cluster config to verify resource is on aws for eks resources
+- `hostreceiver/networkscraper`: Migrate the scraper to the mdatagen metrics builder (#7048)
+- `hostmetricsreceiver`: Add MuteProcessNameError config flag to mute specific error reading process executable (#7176)
+- `hostmetricsreceiver`: add `cpu_average` option for load scraper to report the average cpu load (#6999)
+- `resourcedetectionprocessor`: check cluster config to verify resource is on aws for eks resources (#7186)
 
 ## 🛑 Breaking changes 🛑
 
 - `tanzuobservabilityexporter`: Remove status.code
 - `tanzuobservabilityexporter`: Use semantic conventions for status.message (#7126) 
 - `k8sattributesprocessor`: Move `kube` and `observability` packages to `internal` folder (#7159)
+- `k8sattributesprocessor`: Unexport processor `Option`s (#7311)
 - `zookeeperreceiver`: Refactored metrics to have correct units, types, and combined some metrics via attributes. (#7280)
 - `prometheusremotewriteexporter`: `PRWExporter` struct and `NewPRWExporter()`
   function are now unexported. (#TBD)
+- `newrelicexporter` marked as deprecated (#7284)
 
 ## 🚀 New components 🚀
 
 - `rabbitmqreceiver`: Establish codebase for RabbitMQ metrics receiver (#7239)
+- Add `basicauth` extension (#7167)
 
 ## 🧰 Bug fixes 🧰
 
 - `mdatagen`: Fix validation of `enabled` field in metadata.yaml (#7166)
 - `elasticsearch`: Fix timestamp for each metric being startup time (#7255)
-
-## 🚀 New components 🚀
-
-- Add `basicauth` extension (#7167)
+- `resourcedetection`: Log the error when checking for ec2metadata availability (#7296) 
 
 ## v0.42.0
 

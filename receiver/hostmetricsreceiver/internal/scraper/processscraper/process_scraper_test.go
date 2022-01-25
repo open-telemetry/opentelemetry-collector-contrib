@@ -489,3 +489,57 @@ func getExpectedScrapeFailures(nameError, exeError, timeError, memError, diskErr
 
 	return metricsLen - expectedMetricsLen
 }
+
+func TestScrapeMetrics_MuteProcessNameError(t *testing.T) {
+	processNameError := errors.New("err1")
+
+	type testCase struct {
+		name                 string
+		muteProcessNameError bool
+		omitConfigField      bool
+		expectedError        string
+	}
+
+	testCases := []testCase{
+		{
+			name:                 "Process Name Error Muted",
+			muteProcessNameError: true,
+		},
+		{
+			name:                 "Process Name Error Enabled",
+			muteProcessNameError: false,
+			expectedError:        fmt.Sprintf("error reading process name for pid 1: %v", processNameError),
+		},
+		{
+			name:            "Process Name Error Default (Enabled)",
+			omitConfigField: true,
+			expectedError:   fmt.Sprintf("error reading process name for pid 1: %v", processNameError),
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			config := &Config{}
+			if !test.omitConfigField {
+				config.MuteProcessNameError = test.muteProcessNameError
+			}
+			scraper, err := newProcessScraper(config)
+			require.NoError(t, err, "Failed to create process scraper: %v", err)
+
+			handleMock := &processHandleMock{}
+			handleMock.On("Name").Return("test", processNameError)
+
+			scraper.getProcessHandles = func() (processHandles, error) {
+				return &processHandlesMock{handles: []*processHandleMock{handleMock}}, nil
+			}
+			md, err := scraper.scrape(context.Background())
+
+			assert.Zero(t, md.MetricCount())
+			if config.MuteProcessNameError {
+				assert.Nil(t, err)
+			} else {
+				assert.EqualError(t, err, test.expectedError)
+			}
+		})
+	}
+}
