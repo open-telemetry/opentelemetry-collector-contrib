@@ -11,6 +11,7 @@
 - `elasticsearchreceiver`: Use same metrics as JMX receiver for JVM metrics (#7160)
 - `elasticsearchreceiver`: Implement scraping logic (#7174)
 - `datadogexporter`: Add http.status_code tag to trace stats (#6889)
+- `datadogexporter`: Add configuration option to use OTel span name into the Datatog resource name (#6611)
 - `dynatraceexporter`: Write error logs using plugin logger (#7360)
 - `mongodbreceiver`: Add initial client code to the component (#7125)
 - `tanzuobservabilityexporter`: Support delta histograms (#6897)
@@ -21,7 +22,9 @@
 - `mongodbreceiver`: Add metric metadata (#7163)
 - `mongodbreceiver`: Add metric scraping (#7175)
 - `postgresqlreceiver`: add the receiver to available components (#7079)
+- `rabbitmqreceiver`: Add scraper logic (#7299)
 - `tanzuobservability exporter`: Support summary metrics (#7121)
+- `mongodbatlasreceiver`: Add retry and backoff to HTTP client (#6943)
 - Use Jaeger gRPC instead of Thrift in the docker-compose example (#7243)
 - `tanzuobservabilityexporter`: Support exponential histograms (#7127)
 - `receiver_creator`: Log added and removed endpoint env structs (#7248)
@@ -32,6 +35,8 @@
 - `tanzuobservabilityexporter`: Document how to enable memory_limiter (#7286)
 - `hostreceiver/networkscraper`: Migrate the scraper to the mdatagen metrics builder (#7048)
 - `hostmetricsreceiver`: Add MuteProcessNameError config flag to mute specific error reading process executable (#7176)
+- `scrapertest`: Improve comparison logic (#7305)
+- `hostmetricsreceiver`: add `cpu_average` option for load scraper to report the average cpu load (#6999)
 
 ## 🛑 Breaking changes 🛑
 
@@ -69,7 +74,6 @@
 - `prometheusreceiver`: Set OTLP no-data-present flag for stale scraped metrics. (#7043)
 - `mysqlreceiver`: Add Integration test (#6916)
 - `datadogexporter`: Add compatibility with ECS Fargate semantic conventions (#6670)
-- `datadogexporter`: Add configuration option to use OTel span name into the Datatog resource name (#6611)
 - `k8s_observer`: discover k8s.node endpoints (#6820)
 - `redisreceiver`: Add missing description fields to keyspace metrics (#6940)
 - `redisreceiver`: Set start timestamp uniformly for gauge and sum metrics (#6941)

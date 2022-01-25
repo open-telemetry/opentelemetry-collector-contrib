@@ -61,8 +61,9 @@ func CompareMetricSlices(expected, actual pdata.MetricSlice, options ...CompareO
 		return errs
 	}
 
-	for name, actualMetric := range actualByName {
-		expectedMetric := expectedByName[name]
+	for i := 0; i < actual.Len(); i++ {
+		actualMetric := actual.At(i)
+		expectedMetric := expectedByName[actualMetric.Name()]
 		if actualMetric.Description() != expectedMetric.Description() {
 			return fmt.Errorf("metric Description does not match expected: %s, actual: %s", expectedMetric.Description(), actualMetric.Description())
 		}
@@ -105,14 +106,23 @@ func CompareNumberDataPointSlices(expected, actual pdata.NumberDataPointSlice) e
 		return fmt.Errorf("length of datapoints don't match")
 	}
 
+	numPoints := expected.Len()
+
+	// Keep track of matching data points so that each point can only be matched once
+	matchingDPS := make(map[pdata.NumberDataPoint]pdata.NumberDataPoint, numPoints)
+
 	var errs error
-	for j := 0; j < expected.Len(); j++ {
-		edp := expected.At(j)
+	for e := 0; e < numPoints; e++ {
+		edp := expected.At(e)
 		var foundMatch bool
-		for k := 0; k < actual.Len(); k++ {
-			adp := actual.At(k)
+		for a := 0; a < numPoints; a++ {
+			adp := actual.At(a)
+			if _, ok := matchingDPS[adp]; ok {
+				continue
+			}
 			if reflect.DeepEqual(edp.Attributes().Sort().AsRaw(), adp.Attributes().Sort().AsRaw()) {
 				foundMatch = true
+				matchingDPS[adp] = edp
 				break
 			}
 		}
@@ -122,21 +132,9 @@ func CompareNumberDataPointSlices(expected, actual pdata.NumberDataPointSlice) e
 		}
 	}
 
-	matchingDPS := make(map[pdata.NumberDataPoint]pdata.NumberDataPoint, actual.Len())
-	for j := 0; j < actual.Len(); j++ {
-		adp := actual.At(j)
-		var foundMatch bool
-		for k := 0; k < expected.Len(); k++ {
-			edp := expected.At(k)
-			if reflect.DeepEqual(edp.Attributes().Sort(), adp.Attributes().Sort()) {
-				foundMatch = true
-				matchingDPS[adp] = edp
-				break
-			}
-		}
-
-		if !foundMatch {
-			errs = multierr.Append(errs, fmt.Errorf("metric has extra datapoint with attributes: %v", adp.Attributes().AsRaw()))
+	for i := 0; i < numPoints; i++ {
+		if _, ok := matchingDPS[actual.At(i)]; !ok {
+			errs = multierr.Append(errs, fmt.Errorf("metric has extra datapoint with attributes: %v", actual.At(i).Attributes().AsRaw()))
 		}
 	}
 
