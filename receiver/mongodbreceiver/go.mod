@@ -4,8 +4,8 @@ go 1.17
 
 require (
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.42.1-0.20220121210129-2c5eb7ca1ad5
-	go.opentelemetry.io/collector/model v0.42.1-0.20220121210129-2c5eb7ca1ad5
+	go.opentelemetry.io/collector v0.42.1-0.20220124134949-6ab3c983bbfb
+	go.opentelemetry.io/collector/model v0.42.1-0.20220124134949-6ab3c983bbfb
 	go.uber.org/multierr v1.7.0
 )
 
@@ -22,7 +22,7 @@ require (
 	github.com/go-stack/stack v1.8.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/google/go-cmp v0.5.6 // indirect
+	github.com/google/go-cmp v0.5.7 // indirect
 	github.com/klauspost/compress v1.14.1 // indirect
 	github.com/knadh/koanf v1.4.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
