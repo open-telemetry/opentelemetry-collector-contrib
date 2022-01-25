@@ -48,31 +48,31 @@ type eksDetectorUtils struct {
 	clientset *kubernetes.Clientset
 }
 
-// Detector for EKS
-type Detector struct {
+// detector for EKS
+type detector struct {
 	utils  detectorUtils
 	logger *zap.Logger
 	err    error
 }
 
-var _ internal.Detector = (*Detector)(nil)
+var _ internal.Detector = (*detector)(nil)
 
 var _ detectorUtils = (*eksDetectorUtils)(nil)
 
 // NewDetector returns a resource detector that will detect AWS EKS resources.
 func NewDetector(set component.ProcessorCreateSettings, _ internal.DetectorConfig) (internal.Detector, error) {
 	utils, err := newK8sDetectorUtils()
-	return &Detector{utils: utils, logger: set.Logger, err: err}, nil
+	return &detector{utils: utils, logger: set.Logger, err: err}, nil
 }
 
 // Detect returns a Resource describing the Amazon EKS environment being run in.
-func (detector *Detector) Detect(ctx context.Context) (resource pdata.Resource, schemaURL string, err error) {
+func (detector *detector) Detect(ctx context.Context) (resource pdata.Resource, schemaURL string, err error) {
 	res := pdata.NewResource()
 
 	//Check if running on EKS.
 	isEKS, err := isEKS(ctx, detector.utils)
 	if !isEKS {
-		detector.logger.Debug("EKS environment not detected", zap.Error(err))
+		detector.logger.Debug("EKS envi", zap.Error(err))
 		return res, "", err
 	}
 

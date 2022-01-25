@@ -51,7 +51,7 @@ func TestEKS(t *testing.T) {
 	require.NoError(t, os.Setenv("KUBERNETES_SERVICE_HOST", "localhost"))
 	detectorUtils.On("getConfigMap", authConfigmapNS, authConfigmapName).Return(map[string]string{"cluster.name": "my-cluster"}, nil)
 	// Call EKS Resource detector to detect resources
-	eksResourceDetector := &Detector{utils: detectorUtils, err: nil}
+	eksResourceDetector := &detector{utils: detectorUtils, err: nil}
 	res, _, err := eksResourceDetector.Detect(ctx)
 	require.NoError(t, err)
 
@@ -63,7 +63,7 @@ func TestEKS(t *testing.T) {
 
 // Tests EKS resource detector not running in EKS environment by verifying resource is not running on k8s
 func TestNotEKS(t *testing.T) {
-	eksResourceDetector := Detector{logger: zap.NewNop()}
+	eksResourceDetector := detector{logger: zap.NewNop()}
 	require.NoError(t, os.Unsetenv("KUBERNETES_SERVICE_HOST"))
 	r, _, err := eksResourceDetector.Detect(context.Background())
 	require.NoError(t, err)
