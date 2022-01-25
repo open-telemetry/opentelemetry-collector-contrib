@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
@@ -62,9 +63,9 @@ func TestEKS(t *testing.T) {
 
 // Tests EKS resource detector not running in EKS environment
 func TestNotEKS(t *testing.T) {
-	detector := Detector{}
+	eksResourceDetector := Detector{logger: zap.NewNop()}
 	require.NoError(t, os.Unsetenv("KUBERNETES_SERVICE_HOST"))
-	r, _, err := detector.Detect(context.Background())
+	r, _, err := eksResourceDetector.Detect(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, 0, r.Attributes().Len(), "Resource object should be empty")
 }

@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -49,8 +50,9 @@ type eksDetectorUtils struct {
 
 // Detector for EKS
 type Detector struct {
-	utils detectorUtils
-	err   error
+	utils  detectorUtils
+	logger *zap.Logger
+	err    error
 }
 
 var _ internal.Detector = (*Detector)(nil)
@@ -58,9 +60,9 @@ var _ internal.Detector = (*Detector)(nil)
 var _ detectorUtils = (*eksDetectorUtils)(nil)
 
 // NewDetector returns a resource detector that will detect AWS EKS resources.
-func NewDetector(_ component.ProcessorCreateSettings, _ internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(set component.ProcessorCreateSettings, _ internal.DetectorConfig) (internal.Detector, error) {
 	utils, err := newK8sDetectorUtils()
-	return &Detector{utils: utils, err: err}, nil
+	return &Detector{utils: utils, logger: set.Logger, err: err}, nil
 }
 
 // Detect returns a Resource describing the Amazon EKS environment being run in.
@@ -70,6 +72,7 @@ func (detector *Detector) Detect(ctx context.Context) (resource pdata.Resource, 
 	//Check if running on EKS.
 	isEKS, err := isEKS(ctx, detector.utils)
 	if !isEKS {
+		detector.logger.Debug("EKS environment not detected", zap.Error(err))
 		return res, "", err
 	}
 
