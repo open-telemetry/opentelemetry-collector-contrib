@@ -5,7 +5,6 @@ services:
     image: jaegertracing/all-in-one:latest
     ports:
       - "16686:16686"
-      - "14268"
       - "14250"
 
   #Zipkin

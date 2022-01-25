@@ -27,7 +27,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
@@ -42,7 +41,7 @@ func TestScraper(t *testing.T) {
 	}
 	require.NoError(t, cfg.Validate())
 
-	scraper := newApacheScraper(zap.NewNop(), cfg)
+	scraper := newApacheScraper(componenttest.NewNopTelemetrySettings(), cfg)
 
 	err := scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -60,7 +59,7 @@ func TestScraper(t *testing.T) {
 }
 
 func TestScraperFailedStart(t *testing.T) {
-	sc := newApacheScraper(zap.NewNop(), &Config{
+	sc := newApacheScraper(componenttest.NewNopTelemetrySettings(), &Config{
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "localhost:8080",
 			TLSSetting: configtls.TLSClientSetting{
@@ -158,7 +157,7 @@ ConnsTotal: 110
 
 func TestScraperError(t *testing.T) {
 	t.Run("no client", func(t *testing.T) {
-		sc := newApacheScraper(zap.NewNop(), &Config{})
+		sc := newApacheScraper(componenttest.NewNopTelemetrySettings(), &Config{})
 		sc.httpClient = nil
 
 		_, err := sc.scrape(context.Background())
