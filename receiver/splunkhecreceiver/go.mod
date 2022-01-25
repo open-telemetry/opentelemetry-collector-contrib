@@ -9,8 +9,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.42.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.42.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.42.1-0.20220121210129-2c5eb7ca1ad5
-	go.opentelemetry.io/collector/model v0.42.1-0.20220121210129-2c5eb7ca1ad5
+	go.opentelemetry.io/collector v0.42.1-0.20220124134949-6ab3c983bbfb
+	go.opentelemetry.io/collector/model v0.42.1-0.20220124134949-6ab3c983bbfb
 	go.uber.org/zap v1.20.0
 )
 
@@ -23,6 +23,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
+	github.com/google/go-cmp v0.5.7 // indirect
 	github.com/klauspost/compress v1.14.1 // indirect
 	github.com/knadh/koanf v1.4.0 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect

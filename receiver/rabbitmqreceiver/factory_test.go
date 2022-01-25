@@ -20,11 +20,13 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver/internal/metadata"
 )
 
 func TestNewFactory(t *testing.T) {
@@ -53,6 +55,7 @@ func TestNewFactory(t *testing.T) {
 						Endpoint: defaultEndpoint,
 						Timeout:  10 * time.Second,
 					},
+					Metrics: metadata.DefaultMetricsSettings(),
 				}
 
 				require.Equal(t, expectedCfg, factory.CreateDefaultConfig())
@@ -65,11 +68,24 @@ func TestNewFactory(t *testing.T) {
 				cfg := factory.CreateDefaultConfig()
 				_, err := factory.CreateMetricsReceiver(
 					context.Background(),
-					component.ReceiverCreateSettings{},
+					componenttest.NewNopReceiverCreateSettings(),
 					cfg,
 					consumertest.NewNop(),
 				)
 				require.NoError(t, err)
+			},
+		},
+		{
+			desc: "creates a new factory and CreateMetricReceiver returns error with incorrect config",
+			testFunc: func(t *testing.T) {
+				factory := NewFactory()
+				_, err := factory.CreateMetricsReceiver(
+					context.Background(),
+					componenttest.NewNopReceiverCreateSettings(),
+					nil,
+					consumertest.NewNop(),
+				)
+				require.ErrorIs(t, err, errConfigNotRabbit)
 			},
 		},
 	}

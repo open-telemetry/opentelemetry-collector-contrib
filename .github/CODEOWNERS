@@ -61,7 +61,7 @@ extension/basicauthextension/                        @open-telemetry/collector-c
 extension/bearertokenauthextension/                  @open-telemetry/collector-contrib-approvers @jpkrohling @pavankrish123
 extension/healthcheckextension/                      @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/httpforwarder/                             @open-telemetry/collector-contrib-approvers @asuresh4
-extension/oauth2clientauthextension/                 @open-telemetry/collector-contrib-approvers @jpkrohling @pavankrish123
+extension/oauth2clientauthextension/                 @open-telemetry/collector-contrib-approvers @pavankrish123 @jpkrohling
 extension/observer/                                  @open-telemetry/collector-contrib-approvers @asuresh4 @jrcamp
 extension/observer/ecstaskobserver/                  @open-telemetry/collector-contrib-approvers @rmfitzpatrick
 extension/observer/k8sobserver/                      @open-telemetry/collector-contrib-approvers @rmfitzpatrick @dmitryax

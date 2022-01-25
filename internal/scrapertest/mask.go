@@ -15,8 +15,6 @@
 package scrapertest // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 
 import (
-	"fmt"
-
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
@@ -35,22 +33,8 @@ func (opt ignoreValues) apply(expected, actual pdata.MetricSlice) {
 // maskMetricSliceValues sets all data point values to zero.
 func maskMetricSliceValues(metrics pdata.MetricSlice) {
 	for i := 0; i < metrics.Len(); i++ {
-		maskMetricValues(metrics.At(i))
+		maskDataPointSliceValues(getDataPointSlice(metrics.At(i)))
 	}
-}
-
-// maskMetricValues sets all data point values to zero.
-func maskMetricValues(metric pdata.Metric) {
-	var dataPoints pdata.NumberDataPointSlice
-	switch metric.DataType() {
-	case pdata.MetricDataTypeGauge:
-		dataPoints = metric.Gauge().DataPoints()
-	case pdata.MetricDataTypeSum:
-		dataPoints = metric.Sum().DataPoints()
-	default:
-		panic(fmt.Sprintf("data type not supported: %s", metric.DataType()))
-	}
-	maskDataPointSliceValues(dataPoints)
 }
 
 // maskDataPointSliceValues sets all data point values to zero.
