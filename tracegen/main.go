@@ -69,7 +69,7 @@ func main() {
 		grpcExpOpt = append(grpcExpOpt, otlptracegrpc.WithHeaders(cfg.Headers))
 		httpExpOpt = append(httpExpOpt, otlptracehttp.WithHeaders(cfg.Headers))
 	}
-	
+
 	var exp *otlptrace.Exporter
 	if cfg.UseHTTP {
 		logger.Info("starting HTTP exporter")
