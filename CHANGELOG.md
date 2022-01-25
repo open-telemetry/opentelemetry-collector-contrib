@@ -22,6 +22,7 @@
 - `postgresqlreceiver`: add the receiver to available components (#7079)
 - `rabbitmqreceiver`: Add scraper logic (#7299)
 - `tanzuobservability exporter`: Support summary metrics (#7121)
+- `mongodbatlasreceiver`: Add retry and backoff to HTTP client (#6943)
 - Use Jaeger gRPC instead of Thrift in the docker-compose example (#7243)
 - `tanzuobservabilityexporter`: Support exponential histograms (#7127)
 - `receiver_creator`: Log added and removed endpoint env structs (#7248)
@@ -32,6 +33,7 @@
 - `tanzuobservabilityexporter`: Document how to enable memory_limiter (#7286)
 - `hostreceiver/networkscraper`: Migrate the scraper to the mdatagen metrics builder (#7048)
 - `hostmetricsreceiver`: Add MuteProcessNameError config flag to mute specific error reading process executable (#7176)
+- `scrapertest`: Improve comparison logic (#7305)
 - `hostmetricsreceiver`: add `cpu_average` option for load scraper to report the average cpu load (#6999)
 - `resourcedetectionprocessor`: check cluster config to verify resource is on aws for eks resources (#7186)
 
