@@ -136,13 +136,18 @@ func (e *exporter) serializeMetrics(md pdata.Metrics) []string {
 				metricLines, err := serialization.SerializeMetric(e.settings.Logger, e.cfg.Prefix, metric, e.defaultDimensions, e.staticDimensions, e.prevPts)
 
 				if err != nil {
-					e.settings.Logger.Sugar().Errorf("failed to serialize %s %s: %s", metric.DataType().String(), metric.Name(), err.Error())
+					e.settings.Logger.Sugar().Errorw(
+						"failed to serialize",
+						"datatype", metric.DataType().String(),
+						"name", metric.Name(),
+						zap.Error(err),
+					)
 				}
 
 				if len(metricLines) > 0 {
 					lines = append(lines, metricLines...)
 				}
-				e.settings.Logger.Debug(fmt.Sprintf("Serialized %s %s - %d lines", metric.DataType().String(), metric.Name(), len(metricLines)))
+				e.settings.Logger.Sugar().Debugf("Serialized %s %s - %d lines", metric.DataType().String(), metric.Name(), len(metricLines))
 			}
 		}
 	}
@@ -158,7 +163,7 @@ func (e *exporter) send(ctx context.Context, lines []string) error {
 	e.settings.Logger.Sugar().Debugf("Exporting %d lines", len(lines))
 
 	if now := time.Now().Unix(); len(lines) > apiconstants.GetPayloadLinesLimit() && now-lastLog > 60 {
-		e.settings.Logger.Warn(fmt.Sprintf("Batch too large. Sending in chunks of %[1]d metrics. If any chunk fails, previous chunks in the batch could be retried by the batch processor. Please set send_batch_max_size to %[1]d or less. Suppressing this log for 60 seconds.", apiconstants.GetPayloadLinesLimit()))
+		e.settings.Logger.Sugar().Warnf("Batch too large. Sending in chunks of %[1]d metrics. If any chunk fails, previous chunks in the batch could be retried by the batch processor. Please set send_batch_max_size to %[1]d or less. Suppressing this log for 60 seconds.", apiconstants.GetPayloadLinesLimit())
 		lastLog = time.Now().Unix()
 	}
 
@@ -194,8 +199,8 @@ func (e *exporter) sendBatch(ctx context.Context, lines []string) error {
 	resp, err := e.client.Do(req)
 
 	if err != nil {
-		e.settings.Logger.Sugar().Errorf("failed to send request: %v", err)
-		return fmt.Errorf("sendBatch: %v", err)
+		e.settings.Logger.Sugar().Error("failed to send request", zap.Error(err))
+		return fmt.Errorf("sendBatch: %w", err)
 	}
 
 	defer resp.Body.Close()
@@ -210,7 +215,7 @@ func (e *exporter) sendBatch(ctx context.Context, lines []string) error {
 		bodyBytes, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			// if the response cannot be read, do not retry the batch as it may have been successful
-			e.settings.Logger.Error(fmt.Sprintf("failed to read response: %s", err.Error()))
+			e.settings.Logger.Error("failed to read response", zap.Error(err))
 			return nil
 		}
 
@@ -221,17 +226,17 @@ func (e *exporter) sendBatch(ctx context.Context, lines []string) error {
 			return nil
 		}
 
-		e.settings.Logger.Debug(fmt.Sprintf("Accepted %d lines", responseBody.Ok))
-		e.settings.Logger.Error(fmt.Sprintf("Rejected %d lines", responseBody.Invalid))
+		e.settings.Logger.Sugar().Debugf("Accepted %d lines", responseBody.Ok)
+		e.settings.Logger.Sugar().Errorf("Rejected %d lines", responseBody.Invalid)
 
 		if responseBody.Error.Message != "" {
-			e.settings.Logger.Error(fmt.Sprintf("Error from Dynatrace: %s", responseBody.Error.Message))
+			e.settings.Logger.Sugar().Error("Error from Dynatrace: %s", responseBody.Error.Message)
 		}
 
 		for _, line := range responseBody.Error.InvalidLines {
 			// Enabled debug logging to see which lines were dropped
 			if line.Line >= 0 && line.Line < len(lines) {
-				e.settings.Logger.Debug(fmt.Sprintf("rejected line %3d: [%s] %s", line.Line, line.Error, lines[line.Line]))
+				e.settings.Logger.Sugar().Debugf("rejected line %3d: [%s] %s", line.Line, line.Error, lines[line.Line])
 			}
 		}
 
@@ -260,8 +265,8 @@ func (e *exporter) sendBatch(ctx context.Context, lines []string) error {
 func (e *exporter) start(_ context.Context, host component.Host) (err error) {
 	client, err := e.cfg.HTTPClientSettings.ToClient(host.GetExtensions(), e.settings)
 	if err != nil {
-		e.settings.Logger.Sugar().Errorf("failed to construct HTTP client %v", err)
-		return fmt.Errorf("start: %v", err)
+		e.settings.Logger.Sugar().Error("failed to construct HTTP client", zap.Error(err))
+		return fmt.Errorf("start: %w", err)
 	}
 
 	e.client = client
