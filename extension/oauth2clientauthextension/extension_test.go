@@ -47,11 +47,12 @@ func TestOAuthClientSettings(t *testing.T) {
 		{
 			name: "all_valid_settings",
 			settings: &Config{
-				ClientID:     "testclientid",
-				ClientSecret: "testsecret",
-				TokenURL:     "https://example.com/v1/token",
-				Scopes:       []string{"resource.read"},
-				Timeout:      2,
+				ClientID:       "testclientid",
+				ClientSecret:   "testsecret",
+				EndpointParams: url.Values{"audience": []string{"someaudience"}},
+				TokenURL:       "https://example.com/v1/token",
+				Scopes:         []string{"resource.read"},
+				Timeout:        2,
 				TLSSetting: configtls.TLSClientSetting{
 					TLSSetting: configtls.TLSSetting{
 						CAFile:   testCAFile,
