@@ -11,6 +11,7 @@
 - `elasticsearchreceiver`: Use same metrics as JMX receiver for JVM metrics (#7160)
 - `elasticsearchreceiver`: Implement scraping logic (#7174)
 - `datadogexporter`: Add http.status_code tag to trace stats (#6889)
+- `datadogexporter`: Add configuration option to use OTel span name into the Datatog resource name (#6611)
 - `mongodbreceiver`: Add initial client code to the component (#7125)
 - `tanzuobservabilityexporter`: Support delta histograms (#6897)
 - `awscloudwatchlogsexporter`: Use cwlogs package to export logs (#7152)
@@ -36,6 +37,7 @@
 - `scrapertest`: Improve comparison logic (#7305)
 - `hostmetricsreceiver`: add `cpu_average` option for load scraper to report the average cpu load (#6999)
 - `scrapertest`: Add comparison option to ignore specific attributes (#6519)
+- `tracegen`: Add option to pass in custom headers to export calls via command line (#7308)
 
 ## 🛑 Breaking changes 🛑
 
@@ -73,7 +75,6 @@
 - `prometheusreceiver`: Set OTLP no-data-present flag for stale scraped metrics. (#7043)
 - `mysqlreceiver`: Add Integration test (#6916)
 - `datadogexporter`: Add compatibility with ECS Fargate semantic conventions (#6670)
-- `datadogexporter`: Add configuration option to use OTel span name into the Datatog resource name (#6611)
 - `k8s_observer`: discover k8s.node endpoints (#6820)
 - `redisreceiver`: Add missing description fields to keyspace metrics (#6940)
 - `redisreceiver`: Set start timestamp uniformly for gauge and sum metrics (#6941)
