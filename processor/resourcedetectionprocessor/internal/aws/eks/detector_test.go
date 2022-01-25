@@ -61,7 +61,7 @@ func TestEKS(t *testing.T) {
 	}, internal.AttributesToMap(res.Attributes()), "Resource object returned is incorrect")
 }
 
-// Tests EKS resource detector not running in EKS environment
+// Tests EKS resource detector not running in EKS environment by verifying resource is not running on k8s
 func TestNotEKS(t *testing.T) {
 	eksResourceDetector := Detector{logger: zap.NewNop()}
 	require.NoError(t, os.Unsetenv("KUBERNETES_SERVICE_HOST"))
