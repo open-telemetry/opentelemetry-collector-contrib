@@ -96,6 +96,46 @@ class TestUtils(unittest.TestCase):
         self.assertFalse(mock_span.set_attribute.called)
         self.assertFalse(mock_span.set_status.called)
 
+    def test_set_attributes_partial_timelimit_hard_limit(self):
+        # it should extract only relevant keys
+        context = {
+            "correlation_id": "44b7f305",
+            "delivery_info": {"eager": True},
+            "eta": "soon",
+            "expires": "later",
+            "hostname": "localhost",
+            "id": "44b7f305",
+            "reply_to": "44b7f305",
+            "retries": 4,
+            "timelimit": ("now", None),
+            "custom_meta": "custom_value",
+            "routing_key": "celery",
+        }
+        span = trace._Span("name", mock.Mock(spec=trace_api.SpanContext))
+        utils.set_attributes_from_context(span, context)
+        self.assertEqual(span.attributes.get("celery.timelimit"), ("now", ""))
+
+    def test_set_attributes_partial_timelimit_soft_limit(self):
+        # it should extract only relevant keys
+        context = {
+            "correlation_id": "44b7f305",
+            "delivery_info": {"eager": True},
+            "eta": "soon",
+            "expires": "later",
+            "hostname": "localhost",
+            "id": "44b7f305",
+            "reply_to": "44b7f305",
+            "retries": 4,
+            "timelimit": (None, "later"),
+            "custom_meta": "custom_value",
+            "routing_key": "celery",
+        }
+        span = trace._Span("name", mock.Mock(spec=trace_api.SpanContext))
+        utils.set_attributes_from_context(span, context)
+        self.assertEqual(
+            span.attributes.get("celery.timelimit"), ("", "later")
+        )
+
     def test_set_attributes_from_context_empty_keys(self):
         # it should not extract empty keys
         context = {

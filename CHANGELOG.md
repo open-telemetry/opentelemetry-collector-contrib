@@ -26,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   
 - `opentelemetry-instrumentation-flask` Flask: Conditionally create SERVER spans
   ([#828](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/828))
+- `opentelemetry-instrumentation-celery` Celery: Support partial task time limit
+  ([#846](https://github.com/open-telemetry/opentelemetry-python-contrib/issues/846))
 
 - `opentelemetry-instrumentation-asgi` ASGI: Conditionally create SERVER spans
   ([#843](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/843))
