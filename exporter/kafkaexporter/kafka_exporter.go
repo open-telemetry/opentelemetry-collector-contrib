@@ -135,6 +135,8 @@ func newSaramaProducer(config Config) (sarama.SyncProducer, error) {
 	c.Metadata.Retry.Max = config.Metadata.Retry.Max
 	c.Metadata.Retry.Backoff = config.Metadata.Retry.Backoff
 	c.Producer.MaxMessageBytes = config.Producer.MaxMessageBytes
+	c.Producer.Flush.MaxMessages = config.Producer.FlushMaxMessages
+
 	if config.ProtocolVersion != "" {
 		version, err := sarama.ParseKafkaVersion(config.ProtocolVersion)
 		if err != nil {
@@ -142,9 +144,17 @@ func newSaramaProducer(config Config) (sarama.SyncProducer, error) {
 		}
 		c.Version = version
 	}
+
 	if err := ConfigureAuthentication(config.Authentication, c); err != nil {
 		return nil, err
 	}
+
+	compression, err := saramaProducerCompressionCodec(config.Producer.Compression)
+	if err != nil {
+		return nil, err
+	}
+	c.Producer.Compression = compression
+
 	producer, err := sarama.NewSyncProducer(config.Brokers, c)
 	if err != nil {
 		return nil, err

@@ -42,6 +42,10 @@ const (
 	defaultProducerMaxMessageBytes = 1000000
 	// default required_acks for the producer
 	defaultProducerRequiredAcks = sarama.WaitForLocal
+	// default from sarama.NewConfig()
+	defaultCompression = "none"
+	// default from sarama.NewConfig()
+	defaultFluxMaxMessages = 0
 )
 
 // FactoryOption applies changes to kafkaExporterFactory.
@@ -93,8 +97,10 @@ func createDefaultConfig() config.Exporter {
 			},
 		},
 		Producer: Producer{
-			MaxMessageBytes: defaultProducerMaxMessageBytes,
-			RequiredAcks:    defaultProducerRequiredAcks,
+			MaxMessageBytes:  defaultProducerMaxMessageBytes,
+			RequiredAcks:     defaultProducerRequiredAcks,
+			Compression:      defaultCompression,
+			FlushMaxMessages: defaultFluxMaxMessages,
 		},
 	}
 }
