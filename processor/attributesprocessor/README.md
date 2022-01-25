@@ -44,8 +44,9 @@ For the actions `insert`, `update` and `upsert`,
   # Key specifies the attribute to act upon.
 - key: <key>
   action: {insert, update, upsert}
-  # FromContext specifies the context value to use to populate
-  # the value. The values would be searched in client.Info.Metadata.
+  # FromContext specifies the context value to use to populate the attribute value. 
+  # The context values would be searched in receiver's transport protocol additional information
+  # like GRPC Metadata or HTTP Headers. 
   # If the key doesn't exist, no action is performed.
   # If the key has multiple values the values will be joined with `;` separator.
   from_context: <other key>
