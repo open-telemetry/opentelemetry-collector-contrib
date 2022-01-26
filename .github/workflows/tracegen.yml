@@ -13,8 +13,11 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v2
       - name: Build tracegen
-        run: |
-          docker build tracegen -t ghcr.io/open-telemetry/opentelemetry-collector-contrib/tracegen:dev
+        uses: docker/build-push-action@v2
+        with:
+          context: tracegen
+          push: false
+          tags: ghcr.io/open-telemetry/opentelemetry-collector-contrib/tracegen:dev
 
   publish-dev:
     runs-on: ubuntu-latest
