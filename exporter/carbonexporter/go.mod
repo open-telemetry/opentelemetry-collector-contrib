@@ -4,11 +4,11 @@ go 1.17
 
 require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.42.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.42.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.43.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.43.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.43.1-0.20220125205051-21847f466965
-	go.opentelemetry.io/collector/model v0.43.1-0.20220125205051-21847f466965
+	go.opentelemetry.io/collector v0.43.1
+	go.opentelemetry.io/collector/model v0.43.1
 	google.golang.org/protobuf v1.27.1
 
 )

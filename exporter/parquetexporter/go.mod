@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parque
 go 1.17
 
 require (
-	go.opentelemetry.io/collector v0.43.1-0.20220125205051-21847f466965
-	go.opentelemetry.io/collector/model v0.43.1-0.20220125205051-21847f466965
+	go.opentelemetry.io/collector v0.43.1
+	go.opentelemetry.io/collector/model v0.43.1
 )
 
 require (
