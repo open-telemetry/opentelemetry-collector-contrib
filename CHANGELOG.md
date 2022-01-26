@@ -5,12 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased](https://github.com/open-telemetry/opentelemetry-python/compare/v1.8.0-0.27b0...HEAD)
-- `opentelemetry-instrumentation-pyramid` Pyramid: Conditionally create SERVER spans
-  ([#869](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/869))
+## [Unreleased](https://github.com/open-telemetry/opentelemetry-python/compare/v1.9.0-0.28b0...HEAD)
+
+## [1.9.0-0.28b0](https://github.com/open-telemetry/opentelemetry-python/releases/tag/v1.9.0-0.28b0) - 2022-01-26
+
 
 ### Added
 
+- `opentelemetry-instrumentation-pyramid` Pyramid: Conditionally create SERVER spans
+  ([#869](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/869))
 - `opentelemetry-instrumentation-grpc` added `trailing_metadata` to _OpenTelemetryServicerContext.
   ([#871](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/871))
 - `opentelemetry-instrumentation-asgi` now returns a `traceresponse` response header.
@@ -19,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#814](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/814))
 - `opentelemetry-instrumentation-falcon` Falcon: Conditionally create SERVER spans
   ([#867](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/867))
+
 ### Fixed
 
 - `opentelemetry-instrumentation-django` Django: Conditionally create SERVER spans
