@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.43.0
+
 ## 💡 Enhancements 💡
 
 - `coralogixexporter`: First implementation of Coralogix Exporter (#6816)
@@ -27,7 +29,7 @@
 - Use Jaeger gRPC instead of Thrift in the docker-compose example (#7243)
 - `tanzuobservabilityexporter`: Support exponential histograms (#7127)
 - `receiver_creator`: Log added and removed endpoint env structs (#7248)
-- `prometheusreceiver`: Use the OTLP data conversion path by default. (#TBD)
+- `prometheusreceiver`: Use the OTLP data conversion path by default. (#7282)
   - Use `--feature-gates=-receiver.prometheus.OTLPDirect` to re-enable the 
     OpenCensus conversion path.
 - `extension/observers`: Correctly set image and tag on container endpoints (#7279)
@@ -36,8 +38,11 @@
 - `hostmetricsreceiver`: Add MuteProcessNameError config flag to mute specific error reading process executable (#7176)
 - `scrapertest`: Improve comparison logic (#7305)
 - `hostmetricsreceiver`: add `cpu_average` option for load scraper to report the average cpu load (#6999)
+- `scrapertest`: Add comparison option to ignore specific attributes (#6519)
 - `tracegen`: Add option to pass in custom headers to export calls via command line (#7308)
+- `tracegen`: Provide official container images (#7179)
 - `awscloudwatchlogsexporter`: enable awscloudwatchlogsexporter which accepts and exports log data (#7297)
+>>>>>>> main
 
 ## 🛑 Breaking changes 🛑
 
