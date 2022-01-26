@@ -10,8 +10,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.42.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.42.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.43.1-0.20220125205051-21847f466965
-	go.opentelemetry.io/collector/model v0.43.1-0.20220125205051-21847f466965
+	go.opentelemetry.io/collector v0.43.1
+	go.opentelemetry.io/collector/model v0.43.1
 	go.uber.org/multierr v1.7.0
 	go.uber.org/zap v1.20.0
 	google.golang.org/protobuf v1.27.1
