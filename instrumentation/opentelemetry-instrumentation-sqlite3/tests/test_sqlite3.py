@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import sqlite3
+from sqlite3 import dbapi2
 
 from opentelemetry import trace as trace_api
 from opentelemetry.instrumentation.sqlite3 import SQLite3Instrumentor
@@ -25,10 +26,14 @@ class TestSQLite3(TestBase):
         super().setUpClass()
         cls._connection = None
         cls._cursor = None
+        cls._connection2 = None
+        cls._cursor2 = None
         cls._tracer = cls.tracer_provider.get_tracer(__name__)
         SQLite3Instrumentor().instrument(tracer_provider=cls.tracer_provider)
         cls._connection = sqlite3.connect(":memory:")
         cls._cursor = cls._connection.cursor()
+        cls._connection2 = dbapi2.connect(":memory:")
+        cls._cursor2 = cls._connection2.cursor()
 
     @classmethod
     def tearDownClass(cls):
@@ -36,9 +41,14 @@ class TestSQLite3(TestBase):
             cls._cursor.close()
         if cls._connection:
             cls._connection.close()
+        if cls._cursor2:
+            cls._cursor2.close()
+        if cls._connection2:
+            cls._connection2.close()
 
     def validate_spans(self, span_name):
         spans = self.memory_exporter.get_finished_spans()
+        self.memory_exporter.clear()
         self.assertEqual(len(spans), 2)
         for span in spans:
             if span.name == "rootSpan":
@@ -62,12 +72,20 @@ class TestSQLite3(TestBase):
             self._cursor.execute(stmt)
         self.validate_spans("CREATE")
 
+        with self._tracer.start_as_current_span("rootSpan"):
+            self._cursor2.execute(stmt)
+        self.validate_spans("CREATE")
+
     def test_executemany(self):
         """Should create a child span for executemany"""
         stmt = "INSERT INTO test (id) VALUES (?)"
+        data = [("1",), ("2",), ("3",)]
         with self._tracer.start_as_current_span("rootSpan"):
-            data = [("1",), ("2",), ("3",)]
             self._cursor.executemany(stmt, data)
+        self.validate_spans("INSERT")
+
+        with self._tracer.start_as_current_span("rootSpan"):
+            self._cursor2.executemany(stmt, data)
         self.validate_spans("INSERT")
 
     def test_callproc(self):

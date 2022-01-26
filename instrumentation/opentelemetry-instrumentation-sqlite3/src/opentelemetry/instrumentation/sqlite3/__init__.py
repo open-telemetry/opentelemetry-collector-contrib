@@ -40,6 +40,7 @@ API
 """
 
 import sqlite3
+from sqlite3 import dbapi2
 from typing import Collection
 
 from opentelemetry.instrumentation import dbapi
@@ -54,6 +55,8 @@ _DATABASE_SYSTEM = "sqlite"
 
 
 class SQLite3Instrumentor(BaseInstrumentor):
+    _TO_WRAP = [sqlite3, dbapi2]
+
     def instrumentation_dependencies(self) -> Collection[str]:
         return _instruments
 
@@ -63,19 +66,21 @@ class SQLite3Instrumentor(BaseInstrumentor):
         """
         tracer_provider = kwargs.get("tracer_provider")
 
-        dbapi.wrap_connect(
-            __name__,
-            sqlite3,
-            "connect",
-            _DATABASE_SYSTEM,
-            _CONNECTION_ATTRIBUTES,
-            version=__version__,
-            tracer_provider=tracer_provider,
-        )
+        for module in self._TO_WRAP:
+            dbapi.wrap_connect(
+                __name__,
+                module,
+                "connect",
+                _DATABASE_SYSTEM,
+                _CONNECTION_ATTRIBUTES,
+                version=__version__,
+                tracer_provider=tracer_provider,
+            )
 
     def _uninstrument(self, **kwargs):
         """ "Disable SQLite3 instrumentation"""
-        dbapi.unwrap_connect(sqlite3, "connect")
+        for module in self._TO_WRAP:
+            dbapi.unwrap_connect(module, "connect")
 
     @staticmethod
     def instrument_connection(connection, tracer_provider=None):
