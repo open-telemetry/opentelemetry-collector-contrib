@@ -1,0 +1,19 @@
+processors:
+  regex:
+    logs:
+      patterns:
+        - s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g
+        - s/42/1337/g
+
+receivers:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    logs:
+      receivers: [nop]
+      processors: [regex]
+      exporters: [nop]
