@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.43.0
+
 ## 💡 Enhancements 💡
 
 - `coralogixexporter`: First implementation of Coralogix Exporter (#6816)
@@ -27,7 +29,7 @@
 - Use Jaeger gRPC instead of Thrift in the docker-compose example (#7243)
 - `tanzuobservabilityexporter`: Support exponential histograms (#7127)
 - `receiver_creator`: Log added and removed endpoint env structs (#7248)
-- `prometheusreceiver`: Use the OTLP data conversion path by default. (#TBD)
+- `prometheusreceiver`: Use the OTLP data conversion path by default. (#7282)
   - Use `--feature-gates=-receiver.prometheus.OTLPDirect` to re-enable the 
     OpenCensus conversion path.
 - `extension/observers`: Correctly set image and tag on container endpoints (#7279)
