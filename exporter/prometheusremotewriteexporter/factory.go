@@ -17,13 +17,13 @@ package prometheusremotewriteexporter // import "github.com/open-telemetry/opent
 import (
 	"context"
 	"errors"
-	"go.opentelemetry.io/collector/service/featuregate"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/service/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
