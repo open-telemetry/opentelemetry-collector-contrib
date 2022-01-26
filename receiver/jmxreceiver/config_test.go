@@ -15,6 +15,7 @@
 package jmxreceiver
 
 import (
+	"os"
 	"path"
 	"testing"
 	"time"
@@ -177,16 +178,18 @@ func TestLoadConfig(t *testing.T) {
 
 func TestClassPathParse(t *testing.T) {
 	testCases := []struct {
-		desc     string
-		cfg      *Config
-		expected string
+		desc           string
+		cfg            *Config
+		existingEnvVal string
+		expected       string
 	}{
 		{
 			desc: "Metric Gatherer JAR Only",
 			cfg: &Config{
 				JARPath: "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
 			},
-			expected: `"/opt/opentelemetry-java-contrib-jmx-metrics.jar"`,
+			existingEnvVal: "",
+			expected:       `"/opt/opentelemetry-java-contrib-jmx-metrics.jar"`,
 		},
 		{
 			desc: "Additional JARS",
@@ -197,13 +200,29 @@ func TestClassPathParse(t *testing.T) {
 					"/path/to/two.jar",
 				},
 			},
-			expected: `"/opt/opentelemetry-java-contrib-jmx-metrics.jar:/path/to/one.jar:/path/to/two.jar"`,
+			existingEnvVal: "",
+			expected:       `"/opt/opentelemetry-java-contrib-jmx-metrics.jar:/path/to/one.jar:/path/to/two.jar"`,
+		},
+		{
+			desc: "Existing ENV Value",
+			cfg: &Config{
+				JARPath: "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
+				AdditionalJars: []string{
+					"/path/to/one.jar",
+					"/path/to/two.jar",
+				},
+			},
+			existingEnvVal: "/pre/existing/class/path/",
+			expected:       `"/pre/existing/class/path/:/opt/opentelemetry-java-contrib-jmx-metrics.jar:/path/to/one.jar:/path/to/two.jar"`,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			t.Parallel()
+			os.Unsetenv("CLASSPATH")
+			err := os.Setenv("CLASSPATH", tc.existingEnvVal)
+			require.NoError(t, err)
+
 			actual := tc.cfg.parseClasspath()
 			require.Equal(t, tc.expected, actual)
 		})

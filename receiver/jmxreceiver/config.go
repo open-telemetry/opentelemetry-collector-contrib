@@ -16,6 +16,7 @@ package jmxreceiver // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"fmt"
+	"os"
 	"sort"
 	"strings"
 	"time"
@@ -105,8 +106,21 @@ func (c *Config) parseProperties() []string {
 
 // parseClasspath creates a classpath string with the JMX Gatherer JAR at the beginning
 func (c *Config) parseClasspath() string {
-	classPathElems := []string{c.JARPath}
+	classPathElems := make([]string, 0)
+
+	// See if the CLASSPATH env exists and if so get it's current value
+	currentClassPath, ok := os.LookupEnv("CLASSPATH")
+	if ok && currentClassPath != "" {
+		classPathElems = append(classPathElems, currentClassPath)
+	}
+
+	// Add JMX JAR to classpath
+	classPathElems = append(classPathElems, c.JARPath)
+
+	// Add additional JARs if any
 	classPathElems = append(classPathElems, c.AdditionalJars...)
+
+	// Join them
 	classPath := strings.Join(classPathElems, ":")
 
 	// Quote string before returning it
