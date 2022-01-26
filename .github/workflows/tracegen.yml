@@ -21,7 +21,7 @@ jobs:
 
   publish-master:
     runs-on: ubuntu-latest
-#    if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
+    if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
     permissions:
       packages: write
     steps:
