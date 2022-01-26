@@ -76,7 +76,7 @@ func TestScrape(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
-	requireMetricsEqual(t, actualMetrics, expectedMetrics)
+	scrapertest.CompareMetrics(actualMetrics, expectedMetrics)
 }
 
 func TestScrapeNoClient(t *testing.T) {
@@ -123,37 +123,4 @@ func TestGlobalLockTimeOldFormat(t *testing.T) {
 	scraper.mb.EmitAdmin(metrics)
 	collectedValue := metrics.At(0).Sum().DataPoints().At(0).IntVal()
 	require.Equal(t, expectedValue, collectedValue)
-}
-
-func requireMetricsEqual(t *testing.T, m1, m2 pdata.Metrics) {
-	rms1 := m1.ResourceMetrics()
-	rms2 := m2.ResourceMetrics()
-
-	if rms1.Len() != rms2.Len() {
-		require.Fail(t, "First metric had %d resource metrics, second had %d", rms1.Len(), rms2.Len())
-	}
-
-	for i := 0; i < rms1.Len(); i++ {
-		rm1 := rms1.At(i)
-		rm2 := rms2.At(i)
-
-		require.Equal(t, rm1.Resource().Attributes().AsRaw(), rm2.Resource().Attributes().AsRaw())
-
-		ilms1 := rm1.InstrumentationLibraryMetrics()
-		ilms2 := rm2.InstrumentationLibraryMetrics()
-
-		if ilms1.Len() != ilms2.Len() {
-			require.FailNow(t, "Resource metric %d: First metric had %d InstrumentationLibrary metrics, second had %d", i, ilms1.Len(), ilms2.Len())
-		}
-
-		for j := 0; j < ilms1.Len(); j++ {
-			ilm1 := ilms1.At(j)
-			ilm2 := ilms2.At(j)
-
-			require.Equal(t, ilm1.InstrumentationLibrary().Name(), ilm2.InstrumentationLibrary().Name())
-
-			err := scrapertest.CompareMetricSlices(ilm1.Metrics(), ilm2.Metrics())
-			require.NoError(t, err)
-		}
-	}
 }
