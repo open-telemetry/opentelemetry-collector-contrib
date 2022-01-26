@@ -5,11 +5,11 @@ go 1.17
 require (
 	github.com/gobwas/glob v0.2.3
 	github.com/gogo/protobuf v1.3.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.42.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.42.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.42.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.42.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.42.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.43.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.43.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.43.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.43.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.43.0
 	github.com/shirou/gopsutil/v3 v3.21.12
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.2
 	github.com/signalfx/signalfx-agent/pkg/apm v0.0.0-20201202163743-65b4fa925fc8
@@ -21,11 +21,6 @@ require (
 )
 
 require gopkg.in/yaml.v2 v2.4.0
-
-require (
-	github.com/jaegertracing/jaeger v1.30.0 // indirect
-	golang.org/x/sys v0.0.0-20211210111614-af8b64212486
-)
 
 require (
 	github.com/cenkalti/backoff/v4 v4.1.2 // indirect
@@ -71,6 +66,11 @@ require (
 	google.golang.org/grpc v1.43.0 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+)
+
+require (
+	github.com/jaegertracing/jaeger v1.30.0 // indirect
+	golang.org/x/sys v0.0.0-20211210111614-af8b64212486
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
