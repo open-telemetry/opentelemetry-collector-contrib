@@ -57,6 +57,8 @@
 
 ## 🧰 Bug fixes 🧰
 
+- `k8sattributeprocessor`: Parse IP out of net.Addr to correctly tag k8s.pod.ip (#7077)
+- `k8sattributeprocessor`: Process IP correctly for net.Addr instances that are not typed (#7133)
 - `mdatagen`: Fix validation of `enabled` field in metadata.yaml (#7166)
 - `elasticsearch`: Fix timestamp for each metric being startup time (#7255)
 - `resourcedetection`: Log the error when checking for ec2metadata availability (#7296) 
@@ -108,8 +110,6 @@
 - Sanitize URLs being logged (#7021)
 - `prometheusreceiver`: Fix start time tracking for long scrape intervals (#7053)
 - `signalfxexporter`: Don't use syscall to avoid compilation errors on some platforms (#7062)
-- `k8sattributeprocessor`: Parse IP out of net.Addr to correctly tag k8s.pod.ip (#7077)
-- `k8sattributeprocessor`: Process IP correctly for net.Addr instances that are not typed (#7133)
 - `tailsamplingprocessor`: Add support for new policies as composite sub-policies (#6975)
 
 ## 💡 Enhancements 💡
