@@ -7,25 +7,13 @@ require (
 	github.com/aws/aws-sdk-go v1.42.40
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/docker/docker v20.10.12+incompatible
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.42.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.42.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.43.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.43.0
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.43.1
 	go.opentelemetry.io/collector/model v0.43.1
 	go.uber.org/multierr v1.7.0
 	go.uber.org/zap v1.20.0
-)
-
-require (
-	github.com/containerd/containerd v1.5.9 // indirect
-	github.com/hashicorp/consul/api v1.12.0
-)
-
-require (
-	cloud.google.com/go/compute v1.1.0
-	github.com/docker/go-connections v0.4.0 // indirect
-	github.com/moby/term v0.0.0-20210619224110-3f7ff695adc6 // indirect
-	github.com/morikuni/aec v1.0.0 // indirect
 )
 
 require (
@@ -58,7 +46,7 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.42.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.43.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
@@ -81,6 +69,18 @@ require (
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+)
+
+require (
+	github.com/containerd/containerd v1.5.9 // indirect
+	github.com/hashicorp/consul/api v1.12.0
+)
+
+require (
+	cloud.google.com/go/compute v1.1.0
+	github.com/docker/go-connections v0.4.0 // indirect
+	github.com/moby/term v0.0.0-20210619224110-3f7ff695adc6 // indirect
+	github.com/morikuni/aec v1.0.0 // indirect
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus => ../../pkg/translator/opencensus
