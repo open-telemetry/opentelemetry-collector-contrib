@@ -38,7 +38,7 @@ libraries = {
     },
     "botocore": {
         "library": "botocore ~= 1.0",
-        "instrumentation": "opentelemetry-instrumentation-botocore==0.27b0",
+        "instrumentation": "opentelemetry-instrumentation-botocore==0.28b0",
     },
     "celery": {
         "library": "celery >= 4.0, < 6.0",
