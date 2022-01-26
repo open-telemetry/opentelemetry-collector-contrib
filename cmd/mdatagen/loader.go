@@ -115,7 +115,7 @@ type templateContext struct {
 }
 
 func loadMetadata(filePath string) (metadata, error) {
-	cp, err := configmapprovider.NewFile(filePath).Retrieve(context.Background(), nil)
+	cp, err := configmapprovider.NewFile().Retrieve(context.Background(), "file:"+filePath, nil)
 	if err != nil {
 		return metadata{}, err
 	}

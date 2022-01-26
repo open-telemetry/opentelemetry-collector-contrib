@@ -71,19 +71,19 @@ func TestMetadataProvider_available(t *testing.T) {
 		name   string
 		fields fields
 		args   args
-		want   bool
+		want   error
 	}{
 		{
 			name:   "mock session",
 			fields: fields{},
 			args:   args{ctx: context.Background(), sess: mock.Session},
-			want:   true,
+			want:   nil,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := newMetadataClient(tt.args.sess)
-			if got := c.available(tt.args.ctx); got != tt.want {
+			if _, got := c.instanceID(tt.args.ctx); got != tt.want {
 				t.Errorf("available() = %v, want %v", got, tt.want)
 			}
 		})

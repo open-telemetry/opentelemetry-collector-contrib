@@ -17,37 +17,125 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/mongodb-forks/digest"
 	"github.com/pkg/errors"
 	"go.mongodb.org/atlas/mongodbatlas"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 )
 
+type clientRoundTripper struct {
+	originalTransport http.RoundTripper
+	log               *zap.Logger
+	retrySettings     exporterhelper.RetrySettings
+	isStopped         bool
+	shutdownChan      chan struct{}
+}
+
+func newClientRoundTripper(
+	originalTransport http.RoundTripper,
+	log *zap.Logger,
+	retrySettings exporterhelper.RetrySettings) *clientRoundTripper {
+
+	return &clientRoundTripper{
+		originalTransport: originalTransport,
+		log:               log,
+		retrySettings:     retrySettings,
+		shutdownChan:      make(chan struct{}, 1),
+	}
+}
+
+func (rt *clientRoundTripper) Shutdown() error {
+	rt.isStopped = true
+	rt.shutdownChan <- struct{}{}
+	close(rt.shutdownChan)
+	return nil
+}
+
+func (rt *clientRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
+	if rt.isStopped {
+		return nil, fmt.Errorf("request cancelled due to shutdown")
+	}
+
+	resp, err := rt.originalTransport.RoundTrip(r)
+	if err != nil {
+		return nil, err // Can't do anything
+	}
+	if resp.StatusCode == 429 {
+		expBackoff := &backoff.ExponentialBackOff{
+			InitialInterval:     rt.retrySettings.InitialInterval,
+			RandomizationFactor: backoff.DefaultRandomizationFactor,
+			Multiplier:          backoff.DefaultMultiplier,
+			MaxInterval:         rt.retrySettings.MaxInterval,
+			MaxElapsedTime:      rt.retrySettings.MaxElapsedTime,
+			Stop:                backoff.Stop,
+			Clock:               backoff.SystemClock,
+		}
+		expBackoff.Reset()
+		attempts := 0
+		for {
+			attempts++
+			delay := expBackoff.NextBackOff()
+			if delay == backoff.Stop {
+				return resp, err
+			}
+			rt.log.Warn("server busy, retrying request",
+				zap.Int("attempts", attempts),
+				zap.Duration("delay", delay))
+			select {
+			case <-r.Context().Done():
+				return resp, fmt.Errorf("request was cancelled or timed out")
+			case <-rt.shutdownChan:
+				return resp, fmt.Errorf("request is cancelled due to server shutdown")
+			case <-time.After(delay):
+			}
+
+			resp, err = rt.originalTransport.RoundTrip(r)
+			if err != nil {
+				return nil, err
+			}
+			if resp.StatusCode != 429 {
+				break
+			}
+		}
+	}
+	return resp, err
+}
+
 // MongoDBAtlasClient wraps the official MongoDB Atlas client to manage pagination
 // and mapping to OpenTelmetry metric and log structures.
 type MongoDBAtlasClient struct {
-	log    *zap.Logger
-	client *mongodbatlas.Client
+	log          *zap.Logger
+	client       *mongodbatlas.Client
+	roundTripper *clientRoundTripper
 }
 
 // NewMongoDBAtlasClient creates a new MongoDB Atlas client wrapper
 func NewMongoDBAtlasClient(
 	publicKey string,
 	privateKey string,
+	retrySettings exporterhelper.RetrySettings,
 	log *zap.Logger,
 ) (*MongoDBAtlasClient, error) {
 	t := digest.NewTransport(publicKey, privateKey)
-	tc, err := t.Client()
-	if err != nil {
-		return nil, fmt.Errorf("could not create MongoDB Atlas transport HTTP client: %w", err)
-	}
+	roundTripper := newClientRoundTripper(t, log, retrySettings)
+	tc := &http.Client{Transport: roundTripper}
 	client := mongodbatlas.NewClient(tc)
 	return &MongoDBAtlasClient{
 		log,
 		client,
+		roundTripper,
 	}, nil
+}
+
+func (s *MongoDBAtlasClient) Shutdown() error {
+	s.roundTripper.Shutdown()
+	return nil
 }
 
 // Check both the returned error and the status of the HTTP response

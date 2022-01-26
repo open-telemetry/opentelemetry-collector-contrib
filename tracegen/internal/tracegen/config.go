@@ -18,6 +18,7 @@ package tracegen // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"flag"
 	"fmt"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -39,6 +40,24 @@ type Config struct {
 	Endpoint string
 	Insecure bool
 	UseHTTP  bool
+	Headers  HeaderValue
+}
+
+type HeaderValue map[string]string
+
+var _ flag.Value = (*HeaderValue)(nil)
+
+func (v *HeaderValue) String() string {
+	return ""
+}
+
+func (v *HeaderValue) Set(s string) error {
+	kv := strings.SplitN(s, "=", 2)
+	if len(kv) != 2 {
+		return fmt.Errorf("value should be of the format key=value")
+	}
+	(*v)[kv[0]] = kv[1]
+	return nil
 }
 
 // Flags registers config flags.
@@ -54,6 +73,11 @@ func (c *Config) Flags(fs *flag.FlagSet) {
 	fs.StringVar(&c.Endpoint, "otlp-endpoint", "localhost:4317", "Target to which the exporter is going to send spans or metrics. This MAY be configured to include a path (e.g. example.com/v1/traces)")
 	fs.BoolVar(&c.Insecure, "otlp-insecure", false, "Whether to enable client transport security for the exporter's grpc or http connection")
 	fs.BoolVar(&c.UseHTTP, "otlp-http", false, "Whether to use HTTP exporter rather than a gRPC one")
+
+	// custom headers
+	c.Headers = make(map[string]string)
+	fs.Var(&c.Headers, "otlp-header", "Custom header to be passed along with each OTLP request. The value is expected in the format key=value."+
+		"Flag may be repeated to set multiple headers (e.g -otlp-header key1=value1 -otlp-header key2=value2)")
 }
 
 // Run executes the test scenario.

@@ -159,7 +159,7 @@ service:
 
 	appSettings := service.CollectorSettings{
 		Factories:      factories,
-		ConfigProvider: service.NewDefaultConfigProvider(confFile.Name(), nil),
+		ConfigProvider: service.NewDefaultConfigProvider([]string{confFile.Name()}, nil),
 		BuildInfo: component.BuildInfo{
 			Command:     "otelcol",
 			Description: "OpenTelemetry Collector",
