@@ -11,6 +11,7 @@
 - `elasticsearchreceiver`: Use same metrics as JMX receiver for JVM metrics (#7160)
 - `elasticsearchreceiver`: Implement scraping logic (#7174)
 - `datadogexporter`: Add http.status_code tag to trace stats (#6889)
+- `datadogexporter`: Add configuration option to use OTel span name into the Datatog resource name (#6611)
 - `mongodbreceiver`: Add initial client code to the component (#7125)
 - `tanzuobservabilityexporter`: Support delta histograms (#6897)
 - `awscloudwatchlogsexporter`: Use cwlogs package to export logs (#7152)
@@ -35,6 +36,7 @@
 - `hostmetricsreceiver`: Add MuteProcessNameError config flag to mute specific error reading process executable (#7176)
 - `scrapertest`: Improve comparison logic (#7305)
 - `hostmetricsreceiver`: add `cpu_average` option for load scraper to report the average cpu load (#6999)
+- `tracegen`: Add option to pass in custom headers to export calls via command line (#7308)
 - `tracegen`: Provide official container images (#7179)
 
 ## 🛑 Breaking changes 🛑
@@ -55,6 +57,8 @@
 
 ## 🧰 Bug fixes 🧰
 
+- `k8sattributeprocessor`: Parse IP out of net.Addr to correctly tag k8s.pod.ip (#7077)
+- `k8sattributeprocessor`: Process IP correctly for net.Addr instances that are not typed (#7133)
 - `mdatagen`: Fix validation of `enabled` field in metadata.yaml (#7166)
 - `elasticsearch`: Fix timestamp for each metric being startup time (#7255)
 - `resourcedetection`: Log the error when checking for ec2metadata availability (#7296) 
@@ -73,7 +77,6 @@
 - `prometheusreceiver`: Set OTLP no-data-present flag for stale scraped metrics. (#7043)
 - `mysqlreceiver`: Add Integration test (#6916)
 - `datadogexporter`: Add compatibility with ECS Fargate semantic conventions (#6670)
-- `datadogexporter`: Add configuration option to use OTel span name into the Datatog resource name (#6611)
 - `k8s_observer`: discover k8s.node endpoints (#6820)
 - `redisreceiver`: Add missing description fields to keyspace metrics (#6940)
 - `redisreceiver`: Set start timestamp uniformly for gauge and sum metrics (#6941)
@@ -107,8 +110,6 @@
 - Sanitize URLs being logged (#7021)
 - `prometheusreceiver`: Fix start time tracking for long scrape intervals (#7053)
 - `signalfxexporter`: Don't use syscall to avoid compilation errors on some platforms (#7062)
-- `k8sattributeprocessor`: Parse IP out of net.Addr to correctly tag k8s.pod.ip (#7077)
-- `k8sattributeprocessor`: Process IP correctly for net.Addr instances that are not typed (#7133)
 - `tailsamplingprocessor`: Add support for new policies as composite sub-policies (#6975)
 
 ## 💡 Enhancements 💡
