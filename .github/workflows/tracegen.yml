@@ -27,11 +27,6 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v2
-      - name: Docker meta
-        id: meta
-        uses: docker/metadata-action@v3
-        with:
-          images: ghcr.io/open-telemetry/opentelemetry-collector-contrib/tracegen
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v1
         with:
@@ -43,7 +38,7 @@ jobs:
         with:
           context: tracegen
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ghcr.io/open-telemetry/opentelemetry-collector-contrib/tracegen:latest
 
   publish-stable:
     runs-on: ubuntu-latest
