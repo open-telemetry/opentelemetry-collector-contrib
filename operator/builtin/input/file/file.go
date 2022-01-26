@@ -208,7 +208,7 @@ func (f *InputOperator) makeReaders(filesPaths []string) []*Reader {
 		}
 		file, err := os.Open(path) // #nosec - operator must read in files defined by user
 		if err != nil {
-			f.Errorw("Failed to open file", zap.Error(err))
+			f.Debugf("Failed to open file", zap.Error(err))
 			continue
 		}
 		files = append(files, file)
