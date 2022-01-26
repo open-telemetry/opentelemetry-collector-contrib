@@ -63,11 +63,11 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Push tracegen to Github packages
-        uses: docker/build-push-action@v2
-        with:
-          context: tracegen
-          push: false
-          tags: ghcr.io/open-telemetry/opentelemetry-collector-contrib/tracegen:dev
+#        uses: docker/build-push-action@v2
+#        with:
+#          context: tracegen
+#          push: false
+#          tags: ghcr.io/open-telemetry/opentelemetry-collector-contrib/tracegen:dev
         run: |
           docker build tracegen -t ghcr.io/open-telemetry/opentelemetry-collector-contrib/tracegen:$RELEASE_TAG
           docker push ghcr.io/open-telemetry/opentelemetry-collector-contrib/tracegen:$RELEASE_TAG
