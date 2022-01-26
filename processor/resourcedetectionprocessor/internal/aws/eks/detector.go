@@ -72,7 +72,7 @@ func (detector *detector) Detect(ctx context.Context) (resource pdata.Resource, 
 	//Check if running on EKS.
 	isEKS, err := isEKS(ctx, detector.utils)
 	if !isEKS {
-		detector.logger.Debug("EKS envi", zap.Error(err))
+		detector.logger.Debug("Unable to identify EKS environment", zap.Error(err))
 		return res, "", err
 	}
 
