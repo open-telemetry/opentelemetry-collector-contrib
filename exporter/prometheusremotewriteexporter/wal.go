@@ -50,9 +50,6 @@ const (
 )
 
 type WALConfig struct {
-	// Note: These variable names are meant to closely mirror what Prometheus' WAL uses for field names per
-	// https://docs.google.com/document/d/1cCcoFgjDFwU2n823tKuMvrIhzHty4UDyn0IcfUHiyyI/edit#heading=h.mlf37ibqjgov
-	// but also we are using underscores "_" instead of dashes "-".
 	Directory         string        `mapstructure:"directory"`
 	BufferSize        int           `mapstructure:"buffer_size"`
 	TruncateFrequency time.Duration `mapstructure:"truncate_frequency"`
@@ -224,8 +221,6 @@ func (prwe *prweWAL) continuallyPopWALThenExport(ctx context.Context, signalStar
 		select {
 		case <-timer.C:
 			shouldExport = true
-			timer.Stop()
-			timer = freshTimer()
 		default:
 			shouldExport = len(reqL) >= maxCountPerUpload
 		}
@@ -236,12 +231,13 @@ func (prwe *prweWAL) continuallyPopWALThenExport(ctx context.Context, signalStar
 
 		// Otherwise, it is time to export, flush and then truncate the WAL, but also to kill the timer!
 		timer.Stop()
+		timer = freshTimer()
+
 		if err := prwe.exportThenFrontTruncateWAL(ctx, reqL); err != nil {
 			return err
 		}
 		// Reset but reuse the write requests slice.
 		reqL = reqL[:0]
-		timer = freshTimer()
 	}
 }
 
