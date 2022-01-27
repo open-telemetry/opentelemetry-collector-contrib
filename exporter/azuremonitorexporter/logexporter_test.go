@@ -59,11 +59,11 @@ func TestLogRecordToEnvelope(t *testing.T) {
 	assert.Equal(t, messageData.Message, logRecord.Body().StringVal())
 	assert.Equal(t, messageData.SeverityLevel, contracts.Information)
 
-	hexTraceId := logRecord.TraceID().HexString()
-	assert.Equal(t, messageData.Properties[traceIdTag], hexTraceId)
-	assert.Equal(t, envelope.Tags[contracts.OperationId], hexTraceId)
+	hexTraceID := logRecord.TraceID().HexString()
+	assert.Equal(t, messageData.Properties[traceIDTag], hexTraceID)
+	assert.Equal(t, envelope.Tags[contracts.OperationId], hexTraceID)
 
-	assert.Equal(t, messageData.Properties[spanIdTag], logRecord.SpanID().HexString())
+	assert.Equal(t, messageData.Properties[spanIDTag], logRecord.SpanID().HexString())
 	assert.Equal(t, messageData.Properties[categoryNameTag], logRecord.Name())
 
 }

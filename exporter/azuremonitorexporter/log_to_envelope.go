@@ -23,8 +23,8 @@ import (
 )
 
 const (
-	traceIdTag      = "TraceId"
-	spanIdTag       = "SpanId"
+	traceIDTag      = "TraceId"
+	spanIDTag       = "SpanId"
 	categoryNameTag = "CategoryName"
 )
 
@@ -54,11 +54,11 @@ func (packer *logPacker) LogRecordToEnvelope(logRecord pdata.LogRecord) *contrac
 
 	messageData.Message = logRecord.Body().StringVal()
 
-	hexTraceId := logRecord.TraceID().HexString()
-	messageData.Properties[traceIdTag] = hexTraceId
-	envelope.Tags[contracts.OperationId] = hexTraceId
+	hexTraceID := logRecord.TraceID().HexString()
+	messageData.Properties[traceIDTag] = hexTraceID
+	envelope.Tags[contracts.OperationId] = hexTraceID
 
-	messageData.Properties[spanIdTag] = logRecord.SpanID().HexString()
+	messageData.Properties[spanIDTag] = logRecord.SpanID().HexString()
 
 	messageData.Properties[categoryNameTag] = logRecord.Name()
 	envelope.Name = messageData.EnvelopeName("")
