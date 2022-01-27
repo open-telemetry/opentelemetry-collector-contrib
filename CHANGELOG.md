@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 💡 Enhancements 💡
+
+- `tanzuobservabilityexporter`: Turn on metrics exporter (#7281)
+
 ## v0.43.0
 
 ## 💡 Enhancements 💡
