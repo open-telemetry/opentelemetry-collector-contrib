@@ -6,6 +6,7 @@
 
 - `tanzuobservabilityexporter`: Turn on metrics exporter (#7281)
 - `attributesprocessor` `resourceprocessor`: Add `from_context` value source
+- `resourcedetectionprocessor`: check cluster config to verify resource is on aws for eks resources (#7186)
 - `awscloudwatchlogsexporter`: enable awscloudwatchlogsexporter which accepts and exports log data (#7297)
 
 ## 🛑 Breaking changes 🛑
