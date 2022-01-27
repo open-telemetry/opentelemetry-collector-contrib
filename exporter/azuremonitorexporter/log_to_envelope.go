@@ -14,54 +14,83 @@
 
 package azuremonitorexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter"
 
-// Contains code common to both trace and metrics exporters
 import (
 	"time"
 
 	"github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
-	otlplogs "go.opentelemetry.io/collector/model/internal/data/protogen/logs/v1"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 )
 
 const (
-	TraceIdTag sring = "TraceId"
-	SpanIdTag  sring = "SpanId"
+	traceIdTag      = "TraceId"
+	spanIdTag       = "SpanId"
+	categoryNameTag = "CategoryName"
 )
 
+var severityLevelMap = map[string]contracts.SeverityLevel{
+	"Verbose":     contracts.Verbose,
+	"Information": contracts.Information,
+	"Warning":     contracts.Warning,
+	"Error":       contracts.Error,
+	"Critical":    contracts.Critical}
+
 type logPacker struct {
+	logger *zap.Logger
 }
 
-func (packer *logPacker) LogRecordToEnvelope(
-	logRecord otlplogs.LogRecord,
-	logger *zap.Logger) (*contracts.Envelope, error) {
-
+func (packer *logPacker) LogRecordToEnvelope(logRecord pdata.LogRecord) *contracts.Envelope {
 	envelope := contracts.NewEnvelope()
 	envelope.Tags = make(map[string]string)
-	envelope.Time = toTime(logRecord.TimeUnixNano).Format(time.RFC3339Nano)
-	envelope.Tags[contracts.OperationId] = logRecord.TraceID.HexString()
+	envelope.Time = toTime(logRecord.Timestamp()).Format(time.RFC3339Nano)
 
-	data := contracts.NewMessageData()
-	data.Message = sring(logRecord.Body)
-	data.SeverityLevel = packer.toAiSeverityLevel(logRecord.SeverityNumber)
-	data.Properties[TraceIdTag] = logRecord.TraceID.HexString()
-	data.Properties[SpanIdTag] = logRecord.SpanID.HexString()
-	data.Properties["Component"] = logRecord.Name
+	data := contracts.NewData()
+
+	messaageData := contracts.NewMessageData()
+	messaageData.Properties = make(map[string]string)
+
+	messaageData.SeverityLevel = packer.toAiSeverityLevel(logRecord.SeverityText())
+
+	messaageData.Message = logRecord.Body().StringVal()
+
+	hexTraceId := logRecord.TraceID().HexString()
+	messaageData.Properties[traceIdTag] = hexTraceId
+	envelope.Tags[contracts.OperationId] = hexTraceId
+
+	messaageData.Properties[spanIdTag] = logRecord.SpanID().HexString()
+
+	messaageData.Properties[categoryNameTag] = logRecord.Name()
+	envelope.Name = messaageData.EnvelopeName("")
+
+	data.BaseData = messaageData
+	data.BaseType = messaageData.BaseType()
 	envelope.Data = data
 
-	packer.sanitize(func() []string { return envelope.Sanitize() }, logger)
-	packer.sanitize(func() []string { return contracts.SanitizeTags(envelope.Tags) }, logger)
+	packer.sanitize(func() []string { return messaageData.Sanitize() })
+	packer.sanitize(func() []string { return envelope.Sanitize() })
+	packer.sanitize(func() []string { return contracts.SanitizeTags(envelope.Tags) })
 
-	return envelope, nil
+	return envelope
 }
 
-func (packer *logPacker) sanitize(sanitizeFunc func() []string, logger *zap.Logger) {
+func (packer *logPacker) sanitize(sanitizeFunc func() []string) {
 	sanitizeWarnings := sanitizeFunc()
 	for _, warning := range sanitizeWarnings {
-		logger.Warn(warning)
+		packer.logger.Warn(warning)
 	}
 }
 
-func (packer *logPacker) toAiSeverityLevel(pdata.SeverityNumber) (contracts, error) {
+func (packer *logPacker) toAiSeverityLevel(severityText string) contracts.SeverityLevel {
+	if severityLevel, ok := severityLevelMap[severityText]; ok {
+		return severityLevel
+	} else {
+		packer.logger.Warn("Unknown Severity Level", zap.String("Severity Level", severityText))
+		return contracts.Verbose
+	}
+}
 
+func newLogPacker(logger *zap.Logger) *logPacker {
+	packer := &logPacker{
+		logger: logger}
+	return packer
 }
