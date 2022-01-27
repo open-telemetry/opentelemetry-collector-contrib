@@ -236,6 +236,7 @@ func (e *exporter) sendBatch(ctx context.Context, lines []string) error {
 			"accepted-lines", responseBody.Ok,
 			"rejected-lines", responseBody.Invalid,
 			"error-message", responseBody.Error.Message,
+			"status", resp.Status,
 		)
 
 		for _, line := range responseBody.Error.InvalidLines {
