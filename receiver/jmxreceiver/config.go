@@ -121,10 +121,7 @@ func (c *Config) parseClasspath() string {
 	classPathElems = append(classPathElems, c.AdditionalJars...)
 
 	// Join them
-	classPath := strings.Join(classPathElems, ":")
-
-	// Quote string before returning it
-	return fmt.Sprintf(`"%s"`, classPath)
+	return strings.Join(classPathElems, ":")
 }
 
 func (c *Config) validate() error {

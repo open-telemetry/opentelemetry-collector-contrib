@@ -189,7 +189,7 @@ func TestClassPathParse(t *testing.T) {
 				JARPath: "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
 			},
 			existingEnvVal: "",
-			expected:       `"/opt/opentelemetry-java-contrib-jmx-metrics.jar"`,
+			expected:       "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
 		},
 		{
 			desc: "Additional JARS",
@@ -201,7 +201,7 @@ func TestClassPathParse(t *testing.T) {
 				},
 			},
 			existingEnvVal: "",
-			expected:       `"/opt/opentelemetry-java-contrib-jmx-metrics.jar:/path/to/one.jar:/path/to/two.jar"`,
+			expected:       "/opt/opentelemetry-java-contrib-jmx-metrics.jar:/path/to/one.jar:/path/to/two.jar",
 		},
 		{
 			desc: "Existing ENV Value",
@@ -213,7 +213,7 @@ func TestClassPathParse(t *testing.T) {
 				},
 			},
 			existingEnvVal: "/pre/existing/class/path/",
-			expected:       `"/pre/existing/class/path/:/opt/opentelemetry-java-contrib-jmx-metrics.jar:/path/to/one.jar:/path/to/two.jar"`,
+			expected:       "/pre/existing/class/path/:/opt/opentelemetry-java-contrib-jmx-metrics.jar:/path/to/one.jar:/path/to/two.jar",
 		},
 	}
 
