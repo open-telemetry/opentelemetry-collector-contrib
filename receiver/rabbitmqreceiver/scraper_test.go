@@ -143,7 +143,7 @@ func TestScaperScrape(t *testing.T) {
 			scraper := newScraper(zap.NewNop(), createDefaultConfig().(*Config), componenttest.NewNopTelemetrySettings())
 			scraper.client = tc.setupMockClient(t)
 
-			metrics, err := scraper.scrape(context.Background())
+			actualMetrics, err := scraper.scrape(context.Background())
 			if tc.expectedErr == nil {
 				require.NoError(t, err)
 			} else {
@@ -152,34 +152,7 @@ func TestScaperScrape(t *testing.T) {
 
 			expectedMetrics := tc.expectedMetricGen(t)
 
-			requireMetricEqual(t, expectedMetrics, metrics)
+			scrapertest.CompareMetrics(expectedMetrics, actualMetrics)
 		})
-	}
-}
-
-func requireMetricEqual(t *testing.T, expected, actual pdata.Metrics) {
-	expectedRms := expected.ResourceMetrics()
-	actualRms := actual.ResourceMetrics()
-	require.Equal(t, expectedRms.Len(), actualRms.Len())
-
-	for i := 0; i < expectedRms.Len(); i++ {
-		expectedRm := expectedRms.At(i)
-		actualRm := expectedRms.At(i)
-
-		require.Equal(t, expectedRm.Resource().Attributes().AsRaw(), actualRm.Resource().Attributes().AsRaw())
-
-		expectedIlms := expectedRm.InstrumentationLibraryMetrics()
-		actualIlms := actualRm.InstrumentationLibraryMetrics()
-		require.Equal(t, expectedIlms.Len(), actualIlms.Len())
-
-		for j := 0; j < expectedIlms.Len(); j++ {
-			expectedIlm := expectedIlms.At(j)
-			actualIlm := actualIlms.At(j)
-
-			require.Equal(t, expectedIlm.InstrumentationLibrary().Name(), actualIlm.InstrumentationLibrary().Name())
-
-			err := scrapertest.CompareMetricSlices(expectedIlm.Metrics(), actualIlm.Metrics())
-			require.NoError(t, err)
-		}
 	}
 }
