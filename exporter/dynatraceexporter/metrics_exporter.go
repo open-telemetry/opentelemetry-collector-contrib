@@ -30,7 +30,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/serialization"
@@ -99,10 +98,10 @@ func (e *exporter) PushMetricsData(ctx context.Context, md pdata.Metrics) error 
 	}
 
 	lines := e.serializeMetrics(md)
-	ce := e.settings.Logger.Check(zapcore.DebugLevel, "Serialization complete")
-	if ce != nil {
-		ce.Write(zap.Int("DataPoints", md.DataPointCount()), zap.Int("Lines", len(lines)))
-	}
+	e.settings.Logger.Sugar().Debugw("Serialization complete",
+		"DataPoints", md.DataPointCount(),
+		"lines", len(lines),
+	)
 
 	// If request is empty string, there are no serializable metrics in the batch.
 	// This can happen if all metric names are invalid
@@ -147,7 +146,7 @@ func (e *exporter) serializeMetrics(md pdata.Metrics) []string {
 				if len(metricLines) > 0 {
 					lines = append(lines, metricLines...)
 				}
-				e.settings.Logger.Sugar().Debug("Serialized metric data",
+				e.settings.Logger.Sugar().Debugw("Serialized metric data",
 					"metric-type", metric.DataType().String(),
 					"metric-name", metric.Name(),
 					"data-len", len(metricLines),
@@ -164,7 +163,7 @@ var lastLog int64
 // send sends a serialized metric batch to Dynatrace.
 // An error indicates all lines were dropped regardless of the returned number.
 func (e *exporter) send(ctx context.Context, lines []string) error {
-	e.settings.Logger.Sugar().Debugf("Exporting %d lines", len(lines))
+	e.settings.Logger.Debug("Exporting", zap.Int("lines", len(lines)))
 
 	if now := time.Now().Unix(); len(lines) > apiconstants.GetPayloadLinesLimit() && now-lastLog > 60 {
 		e.settings.Logger.Sugar().Warnf("Batch too large. Sending in chunks of %[1]d metrics. If any chunk fails, previous chunks in the batch could be retried by the batch processor. Please set send_batch_max_size to %[1]d or less. Suppressing this log for 60 seconds.", apiconstants.GetPayloadLinesLimit())
@@ -191,7 +190,10 @@ func (e *exporter) send(ctx context.Context, lines []string) error {
 // An error indicates all lines were dropped regardless of the returned number.
 func (e *exporter) sendBatch(ctx context.Context, lines []string) error {
 	message := strings.Join(lines, "\n")
-	e.settings.Logger.Debug("SendBatch", zap.Int("lines", len(lines)), zap.String("endpoint", e.cfg.Endpoint))
+	e.settings.Logger.Sugar().Debugw("SendBatch",
+		"lines", len(lines),
+		"endpoint", e.cfg.Endpoint,
+	)
 
 	req, err := http.NewRequestWithContext(ctx, "POST", e.cfg.Endpoint, bytes.NewBufferString(message))
 
@@ -203,7 +205,7 @@ func (e *exporter) sendBatch(ctx context.Context, lines []string) error {
 	resp, err := e.client.Do(req)
 
 	if err != nil {
-		e.settings.Logger.Sugar().Error("failed to send request", zap.Error(err))
+		e.settings.Logger.Error("failed to send request", zap.Error(err))
 		return fmt.Errorf("sendBatch: %w", err)
 	}
 
@@ -230,7 +232,7 @@ func (e *exporter) sendBatch(ctx context.Context, lines []string) error {
 			return nil
 		}
 
-		e.settings.Logger.Sugar().Error("Response from Dynatrace",
+		e.settings.Logger.Sugar().Errorw("Response from Dynatrace",
 			"accepted-lines", responseBody.Ok,
 			"rejected-lines", responseBody.Invalid,
 			"error-message", responseBody.Error.Message,
@@ -268,7 +270,7 @@ func (e *exporter) sendBatch(ctx context.Context, lines []string) error {
 func (e *exporter) start(_ context.Context, host component.Host) (err error) {
 	client, err := e.cfg.HTTPClientSettings.ToClient(host.GetExtensions(), e.settings)
 	if err != nil {
-		e.settings.Logger.Sugar().Error("Failed to construct HTTP client", zap.Error(err))
+		e.settings.Logger.Error("Failed to construct HTTP client", zap.Error(err))
 		return fmt.Errorf("start: %w", err)
 	}
 
