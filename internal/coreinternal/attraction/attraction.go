@@ -15,10 +15,12 @@
 package attraction // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"strings"
 
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/model/pdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterhelper"
@@ -56,20 +58,26 @@ type ActionKeyValue struct {
 	// the value. If the attribute doesn't exist, no action is performed.
 	FromAttribute string `mapstructure:"from_attribute"`
 
+	// FromContext specifies the context value to use to populate
+	// the value. The values would be searched in client.Info.Metadata.
+	// If the key doesn't exist, no action is performed.
+	// If the key has multiple values the values will be joined with `;` separator.
+	FromContext string `mapstructure:"from_context"`
+
 	// Action specifies the type of action to perform.
 	// The set of values are {INSERT, UPDATE, UPSERT, DELETE, HASH}.
 	// Both lower case and upper case are supported.
 	// INSERT -  Inserts the key/value to attributes when the key does not exist.
 	//           No action is applied to attributes where the key already exists.
-	//           Either Value or FromAttribute must be set.
+	//           Either Value, FromAttribute or FromContext must be set.
 	// UPDATE -  Updates an existing key with a value. No action is applied
 	//           to attributes where the key does not exist.
-	//           Either Value or FromAttribute must be set.
+	//           Either Value, FromAttribute or FromContext must be set.
 	// UPSERT -  Performs insert or update action depending on the attributes
 	//           containing the key. The key/value is inserted to attributes
 	//           that did not originally have the key. The key/value is updated
 	//           for attributes where the key already existed.
-	//           Either Value or FromAttribute must be set.
+	//           Either Value, FromAttribute or FromContext must be set.
 	// DELETE  - Deletes the attribute. If the key doesn't exist,
 	//           no action is performed.
 	// HASH    - Calculates the SHA-1 hash of an existing value and overwrites the
@@ -79,6 +87,22 @@ type ActionKeyValue struct {
 	//           already exists, it will be overridden.
 	// This is a required field.
 	Action Action `mapstructure:"action"`
+}
+
+func (a *ActionKeyValue) valueSourceCount() int {
+	count := 0
+	if a.Value != nil {
+		count++
+	}
+
+	if a.FromAttribute != "" {
+		count++
+	}
+
+	if a.FromContext != "" {
+		count++
+	}
+	return count
 }
 
 // Action is the enum to capture the four types of actions to perform on an
@@ -115,6 +139,7 @@ const (
 type attributeAction struct {
 	Key           string
 	FromAttribute string
+	FromContext   string
 	// Compiled regex if provided
 	Regex *regexp.Regexp
 	// Attribute names extracted from the regexp's subexpressions.
@@ -152,14 +177,16 @@ func NewAttrProc(settings *Settings) (*AttrProc, error) {
 			Action: a.Action,
 		}
 
+		valueSourceCount := a.valueSourceCount()
+
 		switch a.Action {
 		case INSERT, UPDATE, UPSERT:
-			if a.Value == nil && a.FromAttribute == "" {
-				return nil, fmt.Errorf("error creating AttrProc. Either field \"value\" or \"from_attribute\" setting must be specified for %d-th action", i)
+			if valueSourceCount == 0 {
+				return nil, fmt.Errorf("error creating AttrProc. Either field \"value\", \"from_attribute\" or \"from_context\" setting must be specified for %d-th action", i)
 			}
 
-			if a.Value != nil && a.FromAttribute != "" {
-				return nil, fmt.Errorf("error creating AttrProc due to both fields \"value\" and \"from_attribute\" being set at the %d-th actions", i)
+			if valueSourceCount > 1 {
+				return nil, fmt.Errorf("error creating AttrProc due to multiple value sources being set at the %d-th actions", i)
 			}
 			if a.RegexPattern != "" {
 				return nil, fmt.Errorf("error creating AttrProc. Action \"%s\" does not use the \"pattern\" field. This must not be specified for %d-th action", a.Action, i)
@@ -174,14 +201,15 @@ func NewAttrProc(settings *Settings) (*AttrProc, error) {
 				action.AttributeValue = &val
 			} else {
 				action.FromAttribute = a.FromAttribute
+				action.FromContext = a.FromContext
 			}
 		case HASH, DELETE:
-			if a.Value != nil || a.FromAttribute != "" || a.RegexPattern != "" {
-				return nil, fmt.Errorf("error creating AttrProc. Action \"%s\" does not use \"value\", \"pattern\" or \"from_attribute\" field. These must not be specified for %d-th action", a.Action, i)
+			if valueSourceCount > 0 || a.RegexPattern != "" {
+				return nil, fmt.Errorf("error creating AttrProc. Action \"%s\" does not use value sources or \"pattern\" field. These must not be specified for %d-th action", a.Action, i)
 			}
 		case EXTRACT:
-			if a.Value != nil || a.FromAttribute != "" {
-				return nil, fmt.Errorf("error creating AttrProc. Action \"%s\" does not use \"value\" or \"from_attribute\" field. These must not be specified for %d-th action", a.Action, i)
+			if valueSourceCount > 0 {
+				return nil, fmt.Errorf("error creating AttrProc. Action \"%s\" does not use a value source field. These must not be specified for %d-th action", a.Action, i)
 			}
 			if a.RegexPattern == "" {
 				return nil, fmt.Errorf("error creating AttrProc due to missing required field \"pattern\" for action \"%s\" at the %d-th action", a.Action, i)
@@ -213,7 +241,7 @@ func NewAttrProc(settings *Settings) (*AttrProc, error) {
 }
 
 // Process applies the AttrProc to an attribute map.
-func (ap *AttrProc) Process(attrs pdata.AttributeMap) {
+func (ap *AttrProc) Process(ctx context.Context, attrs pdata.AttributeMap) {
 	for _, action := range ap.actions {
 		// TODO https://go.opentelemetry.io/collector/issues/296
 		// Do benchmark testing between having action be of type string vs integer.
@@ -223,19 +251,19 @@ func (ap *AttrProc) Process(attrs pdata.AttributeMap) {
 		case DELETE:
 			attrs.Delete(action.Key)
 		case INSERT:
-			av, found := getSourceAttributeValue(action, attrs)
+			av, found := getSourceAttributeValue(ctx, action, attrs)
 			if !found {
 				continue
 			}
 			attrs.Insert(action.Key, av)
 		case UPDATE:
-			av, found := getSourceAttributeValue(action, attrs)
+			av, found := getSourceAttributeValue(ctx, action, attrs)
 			if !found {
 				continue
 			}
 			attrs.Update(action.Key, av)
 		case UPSERT:
-			av, found := getSourceAttributeValue(action, attrs)
+			av, found := getSourceAttributeValue(ctx, action, attrs)
 			if !found {
 				continue
 			}
@@ -248,10 +276,25 @@ func (ap *AttrProc) Process(attrs pdata.AttributeMap) {
 	}
 }
 
-func getSourceAttributeValue(action attributeAction, attrs pdata.AttributeMap) (pdata.AttributeValue, bool) {
+func getAttributeValueFromContext(ctx context.Context, key string) (pdata.AttributeValue, bool) {
+	ci := client.FromContext(ctx)
+	vals := ci.Metadata.Get(key)
+
+	if len(vals) == 0 {
+		return pdata.AttributeValue{}, false
+	}
+
+	return pdata.NewAttributeValueString(strings.Join(vals, ";")), true
+}
+
+func getSourceAttributeValue(ctx context.Context, action attributeAction, attrs pdata.AttributeMap) (pdata.AttributeValue, bool) {
 	// Set the key with a value from the configuration.
 	if action.AttributeValue != nil {
 		return *action.AttributeValue, true
+	}
+
+	if action.FromContext != "" {
+		return getAttributeValueFromContext(ctx, action.FromContext)
 	}
 
 	return attrs.Get(action.FromAttribute)

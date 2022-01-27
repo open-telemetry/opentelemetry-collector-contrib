@@ -5,6 +5,13 @@
 ## 💡 Enhancements 💡
 
 - `tanzuobservabilityexporter`: Turn on metrics exporter (#7281)
+- `attributesprocessor` `resourceprocessor`: Add `from_context` value source
+
+## 🛑 Breaking changes 🛑
+
+## 🚀 New components 🚀
+
+## 🧰 Bug fixes 🧰
 
 ## v0.43.0
 
