@@ -6,6 +6,7 @@
 
 - `tanzuobservabilityexporter`: Turn on metrics exporter (#7281)
 - `attributesprocessor` `resourceprocessor`: Add `from_context` value source
+- `awscloudwatchlogsexporter`: enable awscloudwatchlogsexporter which accepts and exports log data (#7297)
 
 ## 🛑 Breaking changes 🛑
 
