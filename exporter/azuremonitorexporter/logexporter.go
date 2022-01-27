@@ -31,14 +31,14 @@ type logExporter struct {
 
 func (exporter *logExporter) onLogData(context context.Context, logData pdata.Logs) error {
 	resourceLogs := logData.ResourceLogs()
+	logPacker := newLogPacker(exporter.logger)
+
 	for i := 0; i < resourceLogs.Len(); i++ {
 		instrumentationLibraryLogs := resourceLogs.At(i).InstrumentationLibraryLogs()
 		for j := 0; j < instrumentationLibraryLogs.Len(); j++ {
 			logs := instrumentationLibraryLogs.At(j).Logs()
 			for k := 0; k < logs.Len(); k++ {
-				logPacker := newLogPacker(exporter.logger)
 				envelope := logPacker.LogRecordToEnvelope(logs.At(k))
-
 				envelope.IKey = exporter.config.InstrumentationKey
 				exporter.transportChannel.Send(envelope)
 			}

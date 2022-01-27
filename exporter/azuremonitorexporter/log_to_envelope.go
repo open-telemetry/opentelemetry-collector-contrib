@@ -47,27 +47,27 @@ func (packer *logPacker) LogRecordToEnvelope(logRecord pdata.LogRecord) *contrac
 
 	data := contracts.NewData()
 
-	messaageData := contracts.NewMessageData()
-	messaageData.Properties = make(map[string]string)
+	messageData := contracts.NewMessageData()
+	messageData.Properties = make(map[string]string)
 
-	messaageData.SeverityLevel = packer.toAiSeverityLevel(logRecord.SeverityText())
+	messageData.SeverityLevel = packer.toAiSeverityLevel(logRecord.SeverityText())
 
-	messaageData.Message = logRecord.Body().StringVal()
+	messageData.Message = logRecord.Body().StringVal()
 
 	hexTraceId := logRecord.TraceID().HexString()
-	messaageData.Properties[traceIdTag] = hexTraceId
+	messageData.Properties[traceIdTag] = hexTraceId
 	envelope.Tags[contracts.OperationId] = hexTraceId
 
-	messaageData.Properties[spanIdTag] = logRecord.SpanID().HexString()
+	messageData.Properties[spanIdTag] = logRecord.SpanID().HexString()
 
-	messaageData.Properties[categoryNameTag] = logRecord.Name()
-	envelope.Name = messaageData.EnvelopeName("")
+	messageData.Properties[categoryNameTag] = logRecord.Name()
+	envelope.Name = messageData.EnvelopeName("")
 
-	data.BaseData = messaageData
-	data.BaseType = messaageData.BaseType()
+	data.BaseData = messageData
+	data.BaseType = messageData.BaseType()
 	envelope.Data = data
 
-	packer.sanitize(func() []string { return messaageData.Sanitize() })
+	packer.sanitize(func() []string { return messageData.Sanitize() })
 	packer.sanitize(func() []string { return envelope.Sanitize() })
 	packer.sanitize(func() []string { return contracts.SanitizeTags(envelope.Tags) })
 
@@ -83,10 +83,10 @@ func (packer *logPacker) sanitize(sanitizeFunc func() []string) {
 func (packer *logPacker) toAiSeverityLevel(severityText string) contracts.SeverityLevel {
 	if severityLevel, ok := severityLevelMap[severityText]; ok {
 		return severityLevel
-	} else {
-		packer.logger.Warn("Unknown Severity Level", zap.String("Severity Level", severityText))
-		return contracts.Verbose
 	}
+
+	packer.logger.Warn("Unknown Severity Level", zap.String("Severity Level", severityText))
+	return contracts.Verbose
 }
 
 func newLogPacker(logger *zap.Logger) *logPacker {
