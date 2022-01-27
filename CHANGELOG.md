@@ -68,6 +68,7 @@
 - `k8sattributeprocessor`: Process IP correctly for net.Addr instances that are not typed (#7133)
 - `mdatagen`: Fix validation of `enabled` field in metadata.yaml (#7166)
 - `elasticsearch`: Fix timestamp for each metric being startup time (#7255)
+- `prometheusremotewriteexporter`: Fix index out of range panic caused by expiring metrics (#7149)
 - `resourcedetection`: Log the error when checking for ec2metadata availability (#7296) 
 
 ## v0.42.0
