@@ -54,6 +54,7 @@
 - `scrapertest`: Add comparison option to ignore specific attributes (#6519)
 - `tracegen`: Add option to pass in custom headers to export calls via command line (#7308)
 - `tracegen`: Provide official container images (#7179)
+- `scrapertest`: Add comparison function for pdata.Metrics (#7400)
 
 ## 🛑 Breaking changes 🛑
 
