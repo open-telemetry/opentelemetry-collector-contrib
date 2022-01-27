@@ -208,6 +208,7 @@ require (
 	github.com/observiq/go-syslog/v3 v3.0.2 // indirect
 	github.com/olivere/elastic v6.2.37+incompatible // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.43.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter v0.43.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter v0.43.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter v0.43.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsprometheusremotewriteexporter v0.43.0 // indirect
@@ -315,6 +316,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver v0.43.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver v0.43.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver v0.43.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver v0.43.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver v0.43.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver v0.43.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver v0.43.0 // indirect
@@ -504,6 +506,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/splun
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza => ../../internal/stanza
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter => ../../exporter/alibabacloudlogserviceexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter => ../../exporter/awscloudwatchlogsexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter => ../../exporter/awsemfexporter
 

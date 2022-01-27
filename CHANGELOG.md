@@ -4,7 +4,16 @@
 
 ## 💡 Enhancements 💡
 
+- `tanzuobservabilityexporter`: Turn on metrics exporter (#7281)
+- `attributesprocessor` `resourceprocessor`: Add `from_context` value source
+- `awscloudwatchlogsexporter`: enable awscloudwatchlogsexporter which accepts and exports log data (#7297)
 - `prometheusremotewriteexporter`: Write-Ahead Log support enabled (#7304)
+
+## 🛑 Breaking changes 🛑
+
+## 🚀 New components 🚀
+
+## 🧰 Bug fixes 🧰
 
 ## v0.43.0
 
@@ -18,6 +27,7 @@
 - `elasticsearchreceiver`: Implement scraping logic (#7174)
 - `datadogexporter`: Add http.status_code tag to trace stats (#6889)
 - `datadogexporter`: Add configuration option to use OTel span name into the Datatog resource name (#6611)
+- `dynatraceexporter`: Write error logs using plugin logger (#7360)
 - `mongodbreceiver`: Add initial client code to the component (#7125)
 - `tanzuobservabilityexporter`: Support delta histograms (#6897)
 - `awscloudwatchlogsexporter`: Use cwlogs package to export logs (#7152)
@@ -45,6 +55,7 @@
 - `scrapertest`: Add comparison option to ignore specific attributes (#6519)
 - `tracegen`: Add option to pass in custom headers to export calls via command line (#7308)
 - `tracegen`: Provide official container images (#7179)
+- `scrapertest`: Add comparison function for pdata.Metrics (#7400)
 
 ## 🛑 Breaking changes 🛑
 
@@ -61,6 +72,7 @@
 
 - `rabbitmqreceiver`: Establish codebase for RabbitMQ metrics receiver (#7239)
 - Add `basicauth` extension (#7167)
+- `k8seventsreceiver`: Implement core logic (#6885)
 
 ## 🧰 Bug fixes 🧰
 
@@ -68,6 +80,7 @@
 - `k8sattributeprocessor`: Process IP correctly for net.Addr instances that are not typed (#7133)
 - `mdatagen`: Fix validation of `enabled` field in metadata.yaml (#7166)
 - `elasticsearch`: Fix timestamp for each metric being startup time (#7255)
+- `prometheusremotewriteexporter`: Fix index out of range panic caused by expiring metrics (#7149)
 - `resourcedetection`: Log the error when checking for ec2metadata availability (#7296) 
 
 ## v0.42.0

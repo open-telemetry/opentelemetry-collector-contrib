@@ -240,7 +240,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 				z.sendCmd = tt.sendCmd
 			}
 
-			got, err := z.scrape(ctx)
+			actualMetrics, err := z.scrape(ctx)
 			require.NoError(t, z.shutdown(ctx))
 
 			require.Equal(t, len(tt.expectedLogs), observedLogs.Len())
@@ -252,7 +252,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			if tt.expectedNumResourceMetrics == 0 {
 				if tt.wantErr {
 					require.Error(t, err)
-					require.Equal(t, pdata.NewMetrics(), got)
+					require.Equal(t, pdata.NewMetrics(), actualMetrics)
 				}
 
 				require.NoError(t, z.shutdown(ctx))
@@ -262,10 +262,8 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			expectedFile := filepath.Join("testdata", "scraper", fmt.Sprintf("%s.json", tt.expectedMetricsFilename))
 			expectedMetrics, err := golden.ReadMetrics(expectedFile)
 			require.NoError(t, err)
-			eMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
-			aMetricSlice := got.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
-			require.NoError(t, scrapertest.CompareMetricSlices(eMetricSlice, aMetricSlice))
+			require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
 		})
 	}
 }
