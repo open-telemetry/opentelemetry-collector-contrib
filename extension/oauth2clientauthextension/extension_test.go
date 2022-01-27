@@ -133,6 +133,7 @@ func TestOAuthClientSettings(t *testing.T) {
 			assert.Equal(t, test.settings.ClientSecret, rc.clientCredentials.ClientSecret)
 			assert.Equal(t, test.settings.ClientID, rc.clientCredentials.ClientID)
 			assert.Equal(t, test.settings.Timeout, rc.client.Timeout)
+			assert.Equal(t, test.settings.EndpointParams, rc.clientCredentials.EndpointParams)
 
 			// test tls settings
 			transport := rc.client.Transport.(*http.Transport)
