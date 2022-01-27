@@ -70,6 +70,7 @@
 
 - `rabbitmqreceiver`: Establish codebase for RabbitMQ metrics receiver (#7239)
 - Add `basicauth` extension (#7167)
+- `k8seventsreceiver`: Implement core logic (#6885)
 
 ## 🧰 Bug fixes 🧰
 
