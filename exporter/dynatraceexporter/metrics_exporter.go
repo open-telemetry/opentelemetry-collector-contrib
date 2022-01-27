@@ -147,7 +147,11 @@ func (e *exporter) serializeMetrics(md pdata.Metrics) []string {
 				if len(metricLines) > 0 {
 					lines = append(lines, metricLines...)
 				}
-				e.settings.Logger.Sugar().Debugf("Serialized %s %s - %d lines", metric.DataType().String(), metric.Name(), len(metricLines))
+				e.settings.Logger.Sugar().Debug("Serialized metric data",
+					"metric-type", metric.DataType().String(),
+					"metric-name", metric.Name(),
+					"data-len", len(metricLines),
+				)
 			}
 		}
 	}
@@ -215,23 +219,22 @@ func (e *exporter) sendBatch(ctx context.Context, lines []string) error {
 		bodyBytes, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			// if the response cannot be read, do not retry the batch as it may have been successful
-			e.settings.Logger.Error("failed to read response", zap.Error(err))
+			e.settings.Logger.Error("Failed to read response from Dynatrace", zap.Error(err))
 			return nil
 		}
 
 		responseBody := metricsResponse{}
 		if err := json.Unmarshal(bodyBytes, &responseBody); err != nil {
 			// if the response cannot be read, do not retry the batch as it may have been successful
-			e.settings.Logger.Error("failed to unmarshal response", zap.Error(err), zap.ByteString("body", bodyBytes))
+			e.settings.Logger.Error("Failed to unmarshal response from Dynatrace", zap.Error(err), zap.ByteString("body", bodyBytes))
 			return nil
 		}
 
-		e.settings.Logger.Sugar().Debugf("Accepted %d lines", responseBody.Ok)
-		e.settings.Logger.Sugar().Errorf("Rejected %d lines", responseBody.Invalid)
-
-		if responseBody.Error.Message != "" {
-			e.settings.Logger.Sugar().Error("Error from Dynatrace: %s", responseBody.Error.Message)
-		}
+		e.settings.Logger.Sugar().Error("Response from Dynatrace",
+			"accepted-lines", responseBody.Ok,
+			"rejected-lines", responseBody.Invalid,
+			"error-message", responseBody.Error.Message,
+		)
 
 		for _, line := range responseBody.Error.InvalidLines {
 			// Enabled debug logging to see which lines were dropped
@@ -265,7 +268,7 @@ func (e *exporter) sendBatch(ctx context.Context, lines []string) error {
 func (e *exporter) start(_ context.Context, host component.Host) (err error) {
 	client, err := e.cfg.HTTPClientSettings.ToClient(host.GetExtensions(), e.settings)
 	if err != nil {
-		e.settings.Logger.Sugar().Error("failed to construct HTTP client", zap.Error(err))
+		e.settings.Logger.Sugar().Error("Failed to construct HTTP client", zap.Error(err))
 		return fmt.Errorf("start: %w", err)
 	}
 
