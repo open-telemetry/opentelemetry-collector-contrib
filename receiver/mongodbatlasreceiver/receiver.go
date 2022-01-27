@@ -42,12 +42,12 @@ type timeconstraints struct {
 }
 
 func newMongoDBAtlasScraper(log *zap.Logger, cfg *Config) (scraperhelper.Scraper, error) {
-	client, err := internal.NewMongoDBAtlasClient(cfg.PublicKey, cfg.PrivateKey, log)
+	client, err := internal.NewMongoDBAtlasClient(cfg.PublicKey, cfg.PrivateKey, cfg.RetrySettings, log)
 	if err != nil {
 		return nil, err
 	}
 	recv := &receiver{log: log, cfg: cfg, client: client}
-	return scraperhelper.NewScraper(typeStr, recv.scrape)
+	return scraperhelper.NewScraper(typeStr, recv.scrape, scraperhelper.WithShutdown(recv.shutdown))
 }
 
 func (s *receiver) scrape(ctx context.Context) (pdata.Metrics, error) {
@@ -69,6 +69,10 @@ func (s *receiver) scrape(ctx context.Context) (pdata.Metrics, error) {
 	}
 	s.lastRun = now
 	return metrics, nil
+}
+
+func (s *receiver) shutdown(context.Context) error {
+	return s.client.Shutdown()
 }
 
 func (s *receiver) poll(ctx context.Context, time timeconstraints) (pdata.Metrics, error) {
