@@ -7,14 +7,14 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/snappy v0.0.4
 	github.com/hashicorp/go-multierror v1.1.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.42.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.42.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.43.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.43.0
 	github.com/prometheus/common v0.32.1
 	github.com/prometheus/prometheus v1.8.2-0.20220111145625-076109fa1910
 	github.com/stretchr/testify v1.7.0
 	github.com/tidwall/wal v1.1.7
-	go.opentelemetry.io/collector v0.42.1-0.20220124134949-6ab3c983bbfb
-	go.opentelemetry.io/collector/model v0.42.1-0.20220124134949-6ab3c983bbfb
+	go.opentelemetry.io/collector v0.43.1
+	go.opentelemetry.io/collector/model v0.43.1
 	go.uber.org/multierr v1.7.0
 )
 
