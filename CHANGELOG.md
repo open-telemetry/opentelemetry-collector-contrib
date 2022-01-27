@@ -5,6 +5,8 @@
 ## 💡 Enhancements 💡
 
 - `tanzuobservabilityexporter`: Turn on metrics exporter (#7281)
+- `resourcedetectionprocessor`: check cluster config to verify resource is on aws for eks resources (#7186)
+
 
 ## v0.43.0
 
@@ -45,7 +47,6 @@
 - `scrapertest`: Add comparison option to ignore specific attributes (#6519)
 - `tracegen`: Add option to pass in custom headers to export calls via command line (#7308)
 - `tracegen`: Provide official container images (#7179)
-- `resourcedetectionprocessor`: check cluster config to verify resource is on aws for eks resources (#7186)
 
 ## 🛑 Breaking changes 🛑
 
