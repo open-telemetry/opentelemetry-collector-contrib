@@ -7,6 +7,7 @@
 - `tanzuobservabilityexporter`: Turn on metrics exporter (#7281)
 - `attributesprocessor` `resourceprocessor`: Add `from_context` value source
 - `resourcedetectionprocessor`: check cluster config to verify resource is on aws for eks resources (#7186)
+- `awscloudwatchlogsexporter`: enable awscloudwatchlogsexporter which accepts and exports log data (#7297)
 
 ## 🛑 Breaking changes 🛑
 
@@ -70,6 +71,7 @@
 
 - `rabbitmqreceiver`: Establish codebase for RabbitMQ metrics receiver (#7239)
 - Add `basicauth` extension (#7167)
+- `k8seventsreceiver`: Implement core logic (#6885)
 
 ## 🧰 Bug fixes 🧰
 
