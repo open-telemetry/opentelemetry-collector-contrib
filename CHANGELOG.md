@@ -3,6 +3,8 @@
 ## Unreleased
 
 ## 💡 Enhancements 💡
+
+- `tanzuobservabilityexporter`: Turn on metrics exporter (#7281)
 - `awscloudwatchlogsexporter`: enable awscloudwatchlogsexporter which accepts and exports log data (#7297)
 
 ## v0.43.0
