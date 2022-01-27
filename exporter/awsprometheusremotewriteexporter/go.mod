@@ -29,9 +29,10 @@ require (
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.43.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.43.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/common v0.32.1 // indirect
-	github.com/prometheus/prometheus v1.8.2-0.20220111145625-076109fa1910 // indirect
+	github.com/prometheus/prometheus v1.8.2-0.20220117154355-4855a0c067e2 // indirect
 	github.com/rs/cors v1.8.2 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
 	github.com/tidwall/gjson v1.10.2 // indirect
@@ -61,3 +62,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prome
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry => ../../pkg/resourcetotelemetry
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite => ../../pkg/translator/prometheusremotewrite
