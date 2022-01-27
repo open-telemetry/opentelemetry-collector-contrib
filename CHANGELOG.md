@@ -57,6 +57,7 @@
 
 - `rabbitmqreceiver`: Establish codebase for RabbitMQ metrics receiver (#7239)
 - Add `basicauth` extension (#7167)
+- `k8seventsreceiver`: Implement core logic (#6885)
 
 ## 🧰 Bug fixes 🧰
 
@@ -103,7 +104,6 @@
 - `mongodbreceiver`: Establish codebase for MongoDB metrics receiver (#6972)
 - `couchbasereceiver`: Establish codebase for Couchbase metrics receiver (#7046)
 - `dbstorage`: New experimental dbstorage extension (#7061)
-- `k8seventsreceiver` (#6885)
 
 ## 🧰 Bug fixes 🧰
 

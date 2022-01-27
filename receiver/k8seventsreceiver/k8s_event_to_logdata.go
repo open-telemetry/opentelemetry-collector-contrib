@@ -57,7 +57,7 @@ func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event) pdata.Logs {
 	resourceAttrs.InsertString("k8s.object.uid", string(ev.InvolvedObject.UID))
 	resourceAttrs.InsertString("k8s.object.fieldpath", ev.InvolvedObject.FieldPath)
 
-	lr.SetTimestamp(pdata.Timestamp(getEventTimestamp(ev).UnixNano()))
+	lr.SetTimestamp(pdata.NewTimestampFromTime(getEventTimestamp(ev)))
 
 	// The Message field contains description about the event,
 	// which is best suited for the "Body" of the LogSlice.
