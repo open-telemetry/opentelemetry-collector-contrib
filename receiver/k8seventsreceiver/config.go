@@ -16,6 +16,7 @@ package k8seventsreceiver // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"go.opentelemetry.io/collector/config"
+	k8s "k8s.io/client-go/kubernetes"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
@@ -27,14 +28,21 @@ type Config struct {
 
 	// List of ‘namespaces’ to collect events from.
 	Namespaces []string `mapstructure:"namespaces"`
+
+	// For mocking
+	makeClient func(apiConf k8sconfig.APIConfig) (k8s.Interface, error)
 }
 
 func (cfg *Config) Validate() error {
 	if err := cfg.ReceiverSettings.Validate(); err != nil {
 		return err
 	}
-	if err := cfg.APIConfig.Validate(); err != nil {
-		return err
+	return cfg.APIConfig.Validate()
+}
+
+func (cfg *Config) getK8sClient() (k8s.Interface, error) {
+	if cfg.makeClient == nil {
+		cfg.makeClient = k8sconfig.MakeClient
 	}
-	return nil
+	return cfg.makeClient(cfg.APIConfig)
 }
