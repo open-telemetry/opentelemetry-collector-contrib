@@ -24,7 +24,7 @@ The supported actions are:
 
 For the actions `insert`, `update` and `upsert`,
  - `key`  is required
- - one of `value` or `from_attribute` is required
+ - one of `value`, `from_attribute` or `from_context` is required
  - `action` is required.
 ```yaml
   # Key specifies the attribute to act upon.
@@ -40,6 +40,16 @@ For the actions `insert`, `update` and `upsert`,
   # FromAttribute specifies the attribute from the span/log to use to populate
   # the value. If the attribute doesn't exist, no action is performed.
   from_attribute: <other key>
+
+  # Key specifies the attribute to act upon.
+- key: <key>
+  action: {insert, update, upsert}
+  # FromContext specifies the context value to use to populate the attribute value. 
+  # The context values would be searched in receiver's transport protocol additional information
+  # like GRPC Metadata or HTTP Headers. 
+  # If the key doesn't exist, no action is performed.
+  # If the key has multiple values the values will be joined with `;` separator.
+  from_context: <other key>
 ```
 
 For the `delete` action,
