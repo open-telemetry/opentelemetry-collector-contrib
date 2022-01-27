@@ -1,8 +1,6 @@
 receivers:
-  k8s_events:
-  k8s_events/all_settings:
-    namespaces: [default, my_namespace]
-    initial_lookback: 10s
+  k8s_events/invalid_initial_lookback:
+    initial_lookback: -10s
 
 processors:
   nop:

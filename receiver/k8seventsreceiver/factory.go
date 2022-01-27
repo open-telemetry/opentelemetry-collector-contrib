@@ -16,6 +16,7 @@ package k8seventsreceiver // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -44,6 +45,7 @@ func createDefaultConfig() config.Receiver {
 		APIConfig: k8sconfig.APIConfig{
 			AuthType: k8sconfig.AuthTypeServiceAccount,
 		},
+		InitialLookback: 60 * time.Second,
 	}
 }
 
@@ -53,6 +55,12 @@ func createLogsReceiver(
 	cfg config.Receiver,
 	consumer consumer.Logs,
 ) (component.LogsReceiver, error) {
-	// TODO: build and return receiver in next PR
-	return nil, nil
+	rCfg := cfg.(*Config)
+
+	k8sInterface, err := rCfg.getK8sClient()
+	if err != nil {
+		return nil, err
+	}
+
+	return newReceiver(params, rCfg, consumer, k8sInterface)
 }

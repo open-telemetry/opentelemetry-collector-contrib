@@ -15,7 +15,11 @@
 package k8seventsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver"
 
 import (
+	"errors"
+	"time"
+
 	"go.opentelemetry.io/collector/config"
+	k8s "k8s.io/client-go/kubernetes"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
@@ -27,14 +31,33 @@ type Config struct {
 
 	// List of ‘namespaces’ to collect events from.
 	Namespaces []string `mapstructure:"namespaces"`
+
+	// Discard the events older than ‘InitialLookback’ from the current time.
+	InitialLookback time.Duration `mapstructure:"initial_lookback"`
+
+	// For mocking
+	makeClient func(apiConf k8sconfig.APIConfig) (k8s.Interface, error)
 }
 
 func (cfg *Config) Validate() error {
 	if err := cfg.ReceiverSettings.Validate(); err != nil {
 		return err
 	}
+
 	if err := cfg.APIConfig.Validate(); err != nil {
 		return err
 	}
+
+	if cfg.InitialLookback < 0 {
+		return errors.New("cannot have a negative value in `initial_lookback` config option")
+	}
+
 	return nil
+}
+
+func (cfg *Config) getK8sClient() (k8s.Interface, error) {
+	if cfg.makeClient == nil {
+		cfg.makeClient = k8sconfig.MakeClient
+	}
+	return cfg.makeClient(cfg.APIConfig)
 }
