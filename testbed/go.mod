@@ -34,6 +34,11 @@ require (
 )
 
 require (
+	github.com/go-kit/kit v0.12.0 // indirect
+	go.uber.org/multierr v1.7.0
+)
+
+require (
 	cloud.google.com/go/compute v1.1.0 // indirect
 	contrib.go.opencensus.io/exporter/prometheus v0.4.0 // indirect
 	github.com/Azure/azure-sdk-for-go v61.1.0+incompatible // indirect
@@ -211,11 +216,6 @@ require (
 	sigs.k8s.io/json v0.0.0-20211020170558-c049b76a60c6 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.1 // indirect
 	sigs.k8s.io/yaml v1.2.0 // indirect
-)
-
-require (
-	github.com/go-kit/kit v0.12.0 // indirect
-	go.uber.org/multierr v1.7.0
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter => ../exporter/carbonexporter
