@@ -394,13 +394,14 @@ func addSingleHistogramDataPoint(pt pdata.HistogramDataPoint, resource pdata.Res
 		bucketBounds = append(bucketBounds, bucketBoundsData{sig: sig, bound: bound})
 	}
 	// add le=+Inf bucket
-	cumulativeCount += pt.BucketCounts()[len(pt.BucketCounts())-1]
 	infBucket := &prompb.Sample{
-		Value:     float64(cumulativeCount),
 		Timestamp: time,
 	}
 	if pt.Flags().HasFlag(pdata.MetricDataPointFlagNoRecordedValue) {
 		infBucket.Value = math.Float64frombits(value.StaleNaN)
+	} else {
+		cumulativeCount += pt.BucketCounts()[len(pt.BucketCounts())-1]
+		infBucket.Value = float64(cumulativeCount)
 	}
 	infLabels := createAttributes(resource, pt.Attributes(), externalLabels, nameStr, baseName+bucketStr, leStr, pInfStr)
 	sig := addSample(tsMap, infBucket, infLabels, metric)
