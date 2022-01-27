@@ -94,20 +94,15 @@ func TestMySqlIntegration(t *testing.T) {
 		require.Eventuallyf(t, func() bool {
 			return len(consumer.AllMetrics()) > 0
 		}, 2*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
-
-		md := consumer.AllMetrics()[0]
-		require.Equal(t, 1, md.ResourceMetrics().Len())
-		ilms := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics()
-		require.Equal(t, 1, ilms.Len())
-		aMetricSlice := ilms.At(0).Metrics()
 		require.NoError(t, rcvr.Shutdown(context.Background()))
+
+		actualMetrics := consumer.AllMetrics()[0]
 
 		expectedFile := filepath.Join("testdata", "scraper", "expected.json")
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
-		eMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
-		scrapertest.CompareMetricSlices(eMetricSlice, aMetricSlice, scrapertest.IgnoreValues())
+		scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues())
 	})
 }
 
