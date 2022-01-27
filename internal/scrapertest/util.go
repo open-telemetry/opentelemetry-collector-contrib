@@ -15,6 +15,8 @@
 package scrapertest // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
@@ -31,4 +33,17 @@ func metricsByName(metricSlice pdata.MetricSlice) map[string]pdata.Metric {
 		byName[a.Name()] = a
 	}
 	return byName
+}
+
+func getDataPointSlice(metric pdata.Metric) pdata.NumberDataPointSlice {
+	var dataPointSlice pdata.NumberDataPointSlice
+	switch metric.DataType() {
+	case pdata.MetricDataTypeGauge:
+		dataPointSlice = metric.Gauge().DataPoints()
+	case pdata.MetricDataTypeSum:
+		dataPointSlice = metric.Sum().DataPoints()
+	default:
+		panic(fmt.Sprintf("data type not supported: %s", metric.DataType()))
+	}
+	return dataPointSlice
 }

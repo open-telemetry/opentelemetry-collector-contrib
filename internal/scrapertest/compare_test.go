@@ -101,6 +101,37 @@ func TestCompareMetricSlices(t *testing.T) {
 			},
 		},
 		{
+			name: "data-point-slice-extra",
+			withoutOptions: expectation{
+				err: multierr.Combine(
+					errors.New("datapoints for metric: `gauge.one`, do not match expected"),
+					errors.New("length of datapoints don't match"),
+				),
+				reason: "A data point slice with an extra data point should cause a failure.",
+			},
+		},
+		{
+			name: "data-point-slice-missing",
+			withoutOptions: expectation{
+				err: multierr.Combine(
+					errors.New("datapoints for metric: `sum.one`, do not match expected"),
+					errors.New("length of datapoints don't match"),
+				),
+				reason: "A data point slice with a missing data point should cause a failure.",
+			},
+		},
+		{
+			name: "data-point-slice-dedup",
+			withoutOptions: expectation{
+				err: multierr.Combine(
+					errors.New("datapoints for metric: `sum.one`, do not match expected"),
+					errors.New("metric missing expected datapoint with attributes: map[attribute.one:two]"),
+					errors.New("metric has extra datapoint with attributes: map[attribute.one:one]"),
+				),
+				reason: "Data point slice comparison must not match each data point more than once.",
+			},
+		},
+		{
 			name: "data-point-attribute-extra",
 			withoutOptions: expectation{
 				err: multierr.Combine(
@@ -249,6 +280,111 @@ func TestCompareMetricSlices(t *testing.T) {
 					errors.New("metric datapoint IntVal doesn't match expected: 123, actual: 654"),
 				),
 				reason: "An unpredictable data point value will cause failures if not ignored.",
+			},
+		},
+		{
+			name: "ignore-global-attribute-value",
+			compareOptions: []CompareOption{
+				IgnoreAttributeValue("hostname"),
+			},
+			withoutOptions: expectation{
+				err: multierr.Combine(
+					errors.New("datapoints for metric: `gauge.one`, do not match expected"),
+					errors.New("metric missing expected datapoint with attributes: map[attribute.two:value A hostname:unpredictable]"),
+					errors.New("metric missing expected datapoint with attributes: map[attribute.two:value B hostname:unpredictable]"),
+					errors.New("metric has extra datapoint with attributes: map[attribute.two:value A hostname:random]"),
+					errors.New("metric has extra datapoint with attributes: map[attribute.two:value B hostname:random]"),
+				),
+				reason: "An unpredictable attribute value will cause failures if not ignored.",
+			},
+			withOptions: expectation{
+				err:    nil,
+				reason: "The unpredictable attribute was ignored on all metrics that carried it.",
+			},
+		},
+		{
+			name: "ignore-one-attribute-value",
+			compareOptions: []CompareOption{
+				IgnoreAttributeValue("hostname", "gauge.one"),
+			},
+			withoutOptions: expectation{
+				err: multierr.Combine(
+					errors.New("datapoints for metric: `gauge.one`, do not match expected"),
+					errors.New("metric missing expected datapoint with attributes: map[attribute.two:value A hostname:unpredictable]"),
+					errors.New("metric missing expected datapoint with attributes: map[attribute.two:value B hostname:unpredictable]"),
+					errors.New("metric has extra datapoint with attributes: map[attribute.two:value A hostname:random]"),
+					errors.New("metric has extra datapoint with attributes: map[attribute.two:value B hostname:random]"),
+				),
+				reason: "An unpredictable attribute will cause failures if not ignored.",
+			},
+			withOptions: expectation{
+				err: multierr.Combine(
+					errors.New("datapoints for metric: `sum.one`, do not match expected"),
+					errors.New("metric missing expected datapoint with attributes: map[hostname:also unpredictable]"),
+					errors.New("metric has extra datapoint with attributes: map[hostname:also random]"),
+				),
+				reason: "Although the unpredictable attribute was ignored on one metric, it was not ignored on another.",
+			},
+		},
+		{
+			name: "ignore-each-attribute-value",
+			compareOptions: []CompareOption{
+				IgnoreAttributeValue("hostname", "gauge.one", "sum.one"),
+			},
+			withoutOptions: expectation{
+				err: multierr.Combine(
+					errors.New("datapoints for metric: `gauge.one`, do not match expected"),
+					errors.New("metric missing expected datapoint with attributes: map[attribute.two:value A hostname:unpredictable]"),
+					errors.New("metric missing expected datapoint with attributes: map[attribute.two:value B hostname:unpredictable]"),
+					errors.New("metric has extra datapoint with attributes: map[attribute.two:value A hostname:random]"),
+					errors.New("metric has extra datapoint with attributes: map[attribute.two:value B hostname:random]"),
+				),
+				reason: "An unpredictable attribute will cause failures if not ignored.",
+			},
+			withOptions: expectation{
+				err:    nil,
+				reason: "The unpredictable attribute was ignored on each metric that carried it.",
+			},
+		},
+		{
+			name: "ignore-attribute-set-collision",
+			compareOptions: []CompareOption{
+				IgnoreAttributeValue("attribute.one"),
+			},
+			withoutOptions: expectation{
+				err: multierr.Combine(
+					errors.New("datapoints for metric: `gauge.one`, do not match expected"),
+					errors.New("metric missing expected datapoint with attributes: map[attribute.one:one attribute.two:same]"),
+					errors.New("metric missing expected datapoint with attributes: map[attribute.one:two attribute.two:same]"),
+					errors.New("metric has extra datapoint with attributes: map[attribute.one:random.one attribute.two:same]"),
+					errors.New("metric has extra datapoint with attributes: map[attribute.one:random.two attribute.two:same]"),
+				),
+				reason: "An unpredictable attribute will cause failures if not ignored.",
+			},
+			withOptions: expectation{
+				err:    nil,
+				reason: "Ignoring the unpredictable attribute caused an attribute set collision, but comparison still works.",
+			},
+		},
+		{
+			name: "ignore-attribute-set-collision-order",
+			compareOptions: []CompareOption{
+				IgnoreAttributeValue("attribute.one"),
+			},
+			withoutOptions: expectation{
+				err: multierr.Combine(
+					errors.New("datapoints for metric: `gauge.one`, do not match expected"),
+					errors.New("metric missing expected datapoint with attributes: map[attribute.one:unpredictable.one attribute.two:same]"),
+					errors.New("metric missing expected datapoint with attributes: map[attribute.one:unpredictable.two attribute.two:same]"),
+					errors.New("metric has extra datapoint with attributes: map[attribute.one:random.two attribute.two:same]"),
+					errors.New("metric has extra datapoint with attributes: map[attribute.one:random.one attribute.two:same]"),
+				),
+				reason: "An unpredictable attribute will cause failures if not ignored.",
+			},
+			withOptions: expectation{
+				err: nil,
+				reason: "Ignoring the unpredictable attribute caused an attribute set collision where the data point values " +
+					"where in different orders in expected vs actual, but comparison ignores order.",
 			},
 		},
 	}
