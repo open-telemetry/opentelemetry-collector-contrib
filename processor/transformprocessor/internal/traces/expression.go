@@ -41,23 +41,19 @@ type literal struct {
 	value interface{}
 }
 
-func (l literal) get(_ pdata.Span, _ pdata.InstrumentationLibrary, _ pdata.Resource) interface{} {
+func (l literal) get(pdata.Span, pdata.InstrumentationLibrary, pdata.Resource) interface{} {
 	return l.value
 }
 
 func newGetter(val common.Value) (getter, error) {
 	if s := val.String; s != nil {
-		return &literal{
-			value: *s,
-		}, nil
-	} else if f := val.Float; f != nil {
-		return &literal{
-			value: *f,
-		}, nil
-	} else if i := val.Int; i != nil {
-		return &literal{
-			value: *i,
-		}, nil
+		return &literal{value: *s}, nil
+	}
+	if f := val.Float; f != nil {
+		return &literal{value: *f}, nil
+	}
+	if i := val.Int; i != nil {
+		return &literal{value: *i}, nil
 	}
 
 	if val.Path != nil {

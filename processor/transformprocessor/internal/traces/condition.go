@@ -24,17 +24,20 @@ import (
 
 type condFunc = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) bool
 
+var alwaysTrue = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) bool {
+	return true
+}
+
 func newConditionEvaluator(cond *common.Condition) (condFunc, error) {
 	if cond == nil {
-		return func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) bool {
-			return true
-		}, nil
+		return alwaysTrue, nil
 	}
 	left, err := newGetter(cond.Left)
 	if err != nil {
 		return nil, err
 	}
 	right, err := newGetter(cond.Right)
+	// TODO(anuraaga): Check if both left and right are literals and const-evaluate
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +51,9 @@ func newConditionEvaluator(cond *common.Condition) (condFunc, error) {
 		}, nil
 	case "!=":
 		return func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) bool {
-			return left.get(span, il, resource) != right.get(span, il, resource)
+			a := left.get(span, il, resource)
+			b := right.get(span, il, resource)
+			return a != b
 		}, nil
 	}
 
