@@ -25,6 +25,7 @@ import (
 
 	"github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/model/otlp"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
@@ -45,25 +46,25 @@ func TestLogRecordToEnvelope(t *testing.T) {
 	logPacker := getLogPacker()
 	envelope := logPacker.LogRecordToEnvelope(logRecord)
 
-	assert.NotNil(t, envelope)
+	require.NotNil(t, envelope)
 	assert.Equal(t, defaultEnvelopeName, envelope.Name)
 	assert.Equal(t, toTime(logRecord.Timestamp()).Format(time.RFC3339Nano), envelope.Time)
-	assert.NotNil(t, envelope.Data)
+	require.NotNil(t, envelope.Data)
 	envelopeData := envelope.Data.(*contracts.Data)
 	assert.Equal(t, defaultdBaseType, envelopeData.BaseType)
 
-	assert.NotNil(t, envelopeData.BaseData)
+	require.NotNil(t, envelopeData.BaseData)
 
 	messageData := envelopeData.BaseData.(*contracts.MessageData)
 	assert.Equal(t, messageData.Message, logRecord.Body().StringVal())
 	assert.Equal(t, messageData.SeverityLevel, contracts.Information)
 
 	hexTraceId := logRecord.TraceID().HexString()
-	assert.Equal(t, messageData.Properties[TRACE_ID_TAG], hexTraceId)
+	assert.Equal(t, messageData.Properties[traceIdTag], hexTraceId)
 	assert.Equal(t, envelope.Tags[contracts.OperationId], hexTraceId)
 
-	assert.Equal(t, messageData.Properties[SPAN_ID_TAG], logRecord.SpanID().HexString())
-	assert.Equal(t, messageData.Properties[CATEGORY_NAME_TAG], logRecord.Name())
+	assert.Equal(t, messageData.Properties[spanIdTag], logRecord.SpanID().HexString())
+	assert.Equal(t, messageData.Properties[categoryNameTag], logRecord.Name())
 
 }
 
@@ -100,16 +101,16 @@ func getLogPacker() *logPacker {
 	return newLogPacker(zap.NewNop())
 }
 
-func getTestLogs(t *testing.T) pdata.Logs {
+func getTestLogs(tb testing.TB) pdata.Logs {
 	logsMarshaler := otlp.NewJSONLogsUnmarshaler()
 	logs, err := logsMarshaler.UnmarshalLogs(testLogs)
-	assert.NoError(t, err, "Can't unmarshal testing logs data -> %s", err)
+	assert.NoError(tb, err, "Can't unmarshal testing logs data -> %s", err)
 	return logs
 }
 
-func getTestLogRecord(t *testing.T) pdata.LogRecord {
+func getTestLogRecord(tb testing.TB) pdata.LogRecord {
 	var logRecord pdata.LogRecord
-	logs := getTestLogs(t)
+	logs := getTestLogs(tb)
 	resourceLogs := logs.ResourceLogs()
 	instrumentationLibraryLogs := resourceLogs.At(0).InstrumentationLibraryLogs()
 	logRecords := instrumentationLibraryLogs.At(0).Logs()

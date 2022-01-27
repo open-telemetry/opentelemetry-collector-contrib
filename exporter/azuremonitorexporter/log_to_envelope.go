@@ -33,7 +33,8 @@ var severityLevelMap = map[string]contracts.SeverityLevel{
 	"Information": contracts.Information,
 	"Warning":     contracts.Warning,
 	"Error":       contracts.Error,
-	"Critical":    contracts.Critical}
+	"Critical":    contracts.Critical,
+}
 
 type logPacker struct {
 	logger *zap.Logger
@@ -74,8 +75,7 @@ func (packer *logPacker) LogRecordToEnvelope(logRecord pdata.LogRecord) *contrac
 }
 
 func (packer *logPacker) sanitize(sanitizeFunc func() []string) {
-	sanitizeWarnings := sanitizeFunc()
-	for _, warning := range sanitizeWarnings {
+	for _, warning := range sanitizeFunc() {
 		packer.logger.Warn(warning)
 	}
 }
@@ -91,6 +91,7 @@ func (packer *logPacker) toAiSeverityLevel(severityText string) contracts.Severi
 
 func newLogPacker(logger *zap.Logger) *logPacker {
 	packer := &logPacker{
-		logger: logger}
+		logger: logger,
+	}
 	return packer
 }
