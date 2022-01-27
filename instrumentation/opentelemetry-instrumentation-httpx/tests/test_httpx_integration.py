@@ -359,7 +359,7 @@ class BaseTestCases:
         def test_not_recording(self):
             with mock.patch("opentelemetry.trace.INVALID_SPAN") as mock_span:
                 transport = self.create_transport(
-                    tracer_provider=trace._DefaultTracerProvider()
+                    tracer_provider=trace.NoOpTracerProvider()
                 )
                 client = self.create_client(transport)
                 mock_span.is_recording.return_value = False
@@ -454,7 +454,7 @@ class BaseTestCases:
         def test_not_recording(self):
             with mock.patch("opentelemetry.trace.INVALID_SPAN") as mock_span:
                 HTTPXClientInstrumentor().instrument(
-                    tracer_provider=trace._DefaultTracerProvider()
+                    tracer_provider=trace.NoOpTracerProvider()
                 )
                 client = self.create_client()
 
