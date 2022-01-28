@@ -14,9 +14,15 @@
 
 package memoryscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/memoryscraper"
 
-import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
+import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/memoryscraper/internal/metadata"
+)
 
 // Config relating to Memory Metric Scraper.
 type Config struct {
 	internal.ConfigSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+
+	// Metrics allows to customize scraped metrics representation.
+	Metrics metadata.MetricsSettings `mapstructure:"metrics"`
 }

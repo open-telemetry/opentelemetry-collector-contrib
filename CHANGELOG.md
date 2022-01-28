@@ -24,6 +24,7 @@
 - `postgresreceiver`: Update to mdatagen v2 (#7503)
 - `nginxreceiver`: Update to mdatagen v2 (#7549)
 - `datadogexporter`: Fix traces exporter's initialization log (#7564)
+- `hostreceiver/memoryscraper`: Migrate the scraper to the mdatagen metrics builder (#7421)
 
 ## 🛑 Breaking changes 🛑
 
