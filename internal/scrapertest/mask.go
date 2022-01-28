@@ -20,16 +20,26 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
-// IgnoreValues is a CompareOption that clears all values
-func IgnoreValues() CompareOption {
-	return ignoreValues{}
+// IgnoreMetricValues is a CompareOption that clears all values
+func IgnoreMetricValues() CompareOption {
+	return ignoreMetricValues{}
 }
 
-type ignoreValues struct{}
+type ignoreMetricValues struct{}
 
-func (opt ignoreValues) apply(expected, actual pdata.MetricSlice) {
-	maskMetricSliceValues(expected)
-	maskMetricSliceValues(actual)
+func (opt ignoreMetricValues) apply(expected, actual pdata.Metrics) {
+	maskMetricValues(expected)
+	maskMetricValues(actual)
+}
+
+func maskMetricValues(metrics pdata.Metrics) {
+	rms := metrics.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		ilms := rms.At(i).InstrumentationLibraryMetrics()
+		for j := 0; j < ilms.Len(); j++ {
+			maskMetricSliceValues(ilms.At(j).Metrics())
+		}
+	}
 }
 
 // maskMetricSliceValues sets all data point values to zero.
@@ -48,22 +58,32 @@ func maskDataPointSliceValues(dataPoints pdata.NumberDataPointSlice) {
 	}
 }
 
-// IgnoreAttributeValue is a CompareOption that clears all values
-func IgnoreAttributeValue(attributeName string, metricNames ...string) CompareOption {
-	return ignoreAttributeValue{
+// IgnoreMetricAttributeValue is a CompareOption that clears all values
+func IgnoreMetricAttributeValue(attributeName string, metricNames ...string) CompareOption {
+	return ignoreMetricAttributeValue{
 		attributeName: attributeName,
 		metricNames:   metricNames,
 	}
 }
 
-type ignoreAttributeValue struct {
+type ignoreMetricAttributeValue struct {
 	attributeName string
 	metricNames   []string
 }
 
-func (opt ignoreAttributeValue) apply(expected, actual pdata.MetricSlice) {
-	maskMetricSliceAttributeValues(expected, opt.attributeName, opt.metricNames...)
-	maskMetricSliceAttributeValues(actual, opt.attributeName, opt.metricNames...)
+func (opt ignoreMetricAttributeValue) apply(expected, actual pdata.Metrics) {
+	maskMetricAttributeValue(expected, opt)
+	maskMetricAttributeValue(actual, opt)
+}
+
+func maskMetricAttributeValue(metrics pdata.Metrics, opt ignoreMetricAttributeValue) {
+	rms := metrics.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		ilms := rms.At(i).InstrumentationLibraryMetrics()
+		for j := 0; j < ilms.Len(); j++ {
+			maskMetricSliceAttributeValues(ilms.At(j).Metrics(), opt.attributeName, opt.metricNames...)
+		}
+	}
 }
 
 // maskMetricSliceAttributeValues sets the value of the specified attribute to

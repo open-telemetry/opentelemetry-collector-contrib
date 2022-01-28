@@ -116,7 +116,7 @@ spec:
         - mountPath: /var/lib/docker/containers
           name: varlibdockercontainers
           readOnly: true
-        - mountPath: /etc/otel/config.yaml
+        - mountPath: /etc/otelcol-contrib/config.yaml
           name: data
           subPath: config.yaml
           readOnly: true
