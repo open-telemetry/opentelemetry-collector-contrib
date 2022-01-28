@@ -97,7 +97,7 @@ func translatorFromConfig(logger *zap.Logger, cfg *config.Config) (*translator.T
 func newMetricsExporter(ctx context.Context, params component.ExporterCreateSettings, cfg *config.Config) (*metricsExporter, error) {
 	client := utils.CreateClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
 	client.ExtraHeader["User-Agent"] = utils.UserAgent(params.BuildInfo)
-	client.HttpClient = utils.NewHTTPClient(cfg.TimeoutSettings)
+	client.HttpClient = utils.NewHTTPClient(cfg.TimeoutSettings, cfg.TLSSetting)
 
 	utils.ValidateAPIKey(params.Logger, client)
 
