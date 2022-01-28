@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/open-telemetry/opentelemetry-python/compare/v1.9.0-0.28b0...HEAD)
 
+### Fixed
+
+- `opentelemetry-instrumentation-pika` requires `packaging` dependency
+
+
 ## [1.9.0-0.28b0](https://github.com/open-telemetry/opentelemetry-python/releases/tag/v1.9.0-0.28b0) - 2022-01-26
 
 
