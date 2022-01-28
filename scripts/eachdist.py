@@ -17,6 +17,8 @@ from pathlib import Path, PurePath
 DEFAULT_ALLSEP = " "
 DEFAULT_ALLFMT = "{rel}"
 
+NON_SRC_DIRS = ["build", "dist", "__pycache__", "lib", "venv", ".tox"]
+
 
 def unique(elems):
     seen = set()
@@ -591,7 +593,17 @@ def update_changelogs(version):
 
 
 def find(name, path):
+    non_src_dirs = [os.path.join(path, nsd) for nsd in NON_SRC_DIRS]
+
+    def _is_non_src_dir(root) -> bool:
+        for nsd in non_src_dirs:
+            if root.startswith(nsd):
+                return True
+        return False
+
     for root, _, files in os.walk(path):
+        if _is_non_src_dir(root):
+            continue
         if name in files:
             return os.path.join(root, name)
     return None
@@ -669,13 +681,16 @@ def release_args(args):
     cfg.read(str(find_projectroot() / "eachdist.ini"))
     versions = args.versions
     updated_versions = []
+
+    excluded = cfg["exclude_release"]["packages"].split()
+    targets = [target for target in targets if basename(target) not in excluded]
     for group in versions.split(","):
         mcfg = cfg[group]
         version = mcfg["version"]
         updated_versions.append(version)
         packages = None
         if "packages" in mcfg:
-            packages = mcfg["packages"].split()
+            packages = [pkg for pkg in mcfg["packages"].split() if pkg not in excluded]
         print(f"update {group} packages to {version}")
         update_dependencies(targets, version, packages)
         update_version_files(targets, version, packages)
