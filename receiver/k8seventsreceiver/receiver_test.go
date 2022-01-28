@@ -78,7 +78,7 @@ func TestHandleEvent(t *testing.T) {
 	assert.Equal(t, sink.LogRecordCount(), 1)
 }
 
-func TestEventDrop(t *testing.T) {
+func TestDropEventsOlderThanStartupTime(t *testing.T) {
 	rCfg := createDefaultConfig().(*Config)
 	client := fake.NewSimpleClientset()
 	sink := new(consumertest.LogsSink)
