@@ -55,27 +55,36 @@ class KafkaPropertiesExtractor:
     @staticmethod
     def extract_send_partition(instance, args, kwargs):
         """extract partition `send` method arguments, using the `_partition` method in KafkaProducer class"""
-        topic = KafkaPropertiesExtractor.extract_send_topic(args)
-        key = KafkaPropertiesExtractor.extract_send_key(args, kwargs)
-        value = KafkaPropertiesExtractor.extract_send_value(args, kwargs)
-        partition = KafkaPropertiesExtractor._extract_argument(
-            "partition", 4, None, args, kwargs
-        )
-        key_bytes = instance._serialize(
-            instance.config["key_serializer"], topic, key
-        )
-        value_bytes = instance._serialize(
-            instance.config["value_serializer"], topic, value
-        )
-        valid_types = (bytes, bytearray, memoryview, type(None))
-        if (
-            type(key_bytes) not in valid_types
-            or type(value_bytes) not in valid_types
-        ):
+        try:
+            topic = KafkaPropertiesExtractor.extract_send_topic(args)
+            key = KafkaPropertiesExtractor.extract_send_key(args, kwargs)
+            value = KafkaPropertiesExtractor.extract_send_value(args, kwargs)
+            partition = KafkaPropertiesExtractor._extract_argument(
+                "partition", 4, None, args, kwargs
+            )
+            key_bytes = instance._serialize(
+                instance.config["key_serializer"], topic, key
+            )
+            value_bytes = instance._serialize(
+                instance.config["value_serializer"], topic, value
+            )
+            valid_types = (bytes, bytearray, memoryview, type(None))
+            if (
+                type(key_bytes) not in valid_types
+                or type(value_bytes) not in valid_types
+            ):
+                return None
+
+            all_partitions = instance._metadata.partitions_for_topic(topic)
+            if all_partitions is None or len(all_partitions) == 0:
+                return None
+
+            return instance._partition(
+                topic, partition, key, value, key_bytes, value_bytes
+            )
+        except Exception as exception:  # pylint: disable=W0703
+            _LOG.debug("Unable to extract partition: %s", exception)
             return None
-        return instance._partition(
-            topic, partition, key, value, key_bytes, value_bytes
-        )
 
 
 ProduceHookT = Optional[Callable[[Span, List, Dict], None]]

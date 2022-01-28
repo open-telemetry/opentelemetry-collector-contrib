@@ -45,6 +45,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `opentelemetry-instrumentation-sqlite3` Instrumentation now works with `dbapi2.connect`
 
+- `opentelemetry-instrumentation-kafka` Kafka: safe kafka partition extraction
+  ([#872](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/872))
+
 ## [1.8.0-0.27b0](https://github.com/open-telemetry/opentelemetry-python/releases/tag/v1.8.0-0.27b0) - 2021-12-17
 
 ### Added
