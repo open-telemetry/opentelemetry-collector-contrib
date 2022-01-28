@@ -10,6 +10,7 @@
 - `awscloudwatchlogsexporter`: enable awscloudwatchlogsexporter which accepts and exports log data (#7297)
 - `translator/prometheusremotewrite`: add a new module to help translate data from OTLP to Prometheus Remote Write (#7240)
 - `azuremonitorexporter`: In addition to traces, export logs to Azure Application Insights (#7403)
+- `jmxreceiver`: Added `additional_jars` configuration option to launch JMX Metric Gatherer JAR with extended `CLASSPATH` (#7378)
 
 ## 🛑 Breaking changes 🛑
 
