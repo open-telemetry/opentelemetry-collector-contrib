@@ -28,5 +28,5 @@ const memStatesLen = 2
 
 func (s *scraper) recordMemoryUsageMetric(now pdata.Timestamp, memInfo *mem.VirtualMemoryStat) {
 	s.mb.RecordSystemMemoryUsageDataPoint(now, int64(memInfo.Used), metadata.AttributeState.Used)
-	s.mb.RecordSystemMemoryUsageDataPoint(now, int64(memInfo.Available), metadata.AttributeState.Available)
+	s.mb.RecordSystemMemoryUsageDataPoint(now, int64(memInfo.Free), metadata.AttributeState.Free)
 }
