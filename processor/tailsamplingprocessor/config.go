@@ -64,10 +64,6 @@ type SubPolicyCfg struct {
 	StringAttributeCfg StringAttributeCfg `mapstructure:"string_attribute"`
 	// Configs for rate limiting filter sampling policy evaluator.
 	RateLimitingCfg RateLimitingCfg `mapstructure:"rate_limiting"`
-	// Configs for latency filter sampling policy evaluator.
-	LatencyCfg LatencyCfg `mapstructure:"latency"`
-	// Configs for status code filter sampling policy evaluator.
-	StatusCodeCfg StatusCodeCfg `mapstructure:"status_code"`
 	// Configs for and policy evaluator.
 	AndCfg AndCfg `mapstructure:"and"`
 }
@@ -79,6 +75,8 @@ type AndSubPolicyCfg struct {
 	Type PolicyType `mapstructure:"type"`
 	// Configs for numeric attribute filter sampling policy evaluator.
 	NumericAttributeCfg NumericAttributeCfg `mapstructure:"numeric_attribute"`
+	// Configs for probabilistic sampling policy evaluator.
+	ProbabilisticCfg ProbabilisticCfg `mapstructure:"probabilistic"`
 	// Configs for string attribute filter sampling policy evaluator.
 	StringAttributeCfg StringAttributeCfg `mapstructure:"string_attribute"`
 	// Configs for rate limiting filter sampling policy evaluator.
@@ -128,8 +126,8 @@ type PolicyCfg struct {
 	RateLimitingCfg RateLimitingCfg `mapstructure:"rate_limiting"`
 	// Configs for defining composite policy
 	CompositeCfg CompositeCfg `mapstructure:"composite"`
-	// Configs for defining combined policy
-	CombinedCfg CombinedCfg `mapstructure:"combined"`
+	// Configs for defining and policy
+	AndCfg AndCfg `mapstructure:"and"`
 }
 
 // LatencyCfg holds the configurable settings to create a latency filter sampling policy

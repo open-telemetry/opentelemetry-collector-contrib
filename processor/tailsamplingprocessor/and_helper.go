@@ -48,6 +48,9 @@ func getAndSubPolicyEvaluator(logger *zap.Logger, cfg *AndSubPolicyCfg) (samplin
 		return sampling.NewRateLimiting(logger, rlfCfg.SpansPerSecond), nil
 	case StatusCode:
 		return sampling.NewStatusCodeFilter(logger, cfg.StatusCodeCfg.StatusCodes)
+	case Probabilistic:
+		pfCfg := cfg.ProbabilisticCfg
+		return sampling.NewProbabilisticSampler(logger, pfCfg.HashSalt, pfCfg.SamplingPercentage), nil
 	default:
 		return nil, fmt.Errorf("unknown sampling policy type %s", cfg.Type)
 	}
