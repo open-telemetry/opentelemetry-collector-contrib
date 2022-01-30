@@ -50,7 +50,6 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, r1.StartTimeMetricRegex, "^(.+_)*process_start_time_seconds$")
 }
 
-
 func TestLoadConfigFailsOnUnknownSection(t *testing.T) {
 	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
