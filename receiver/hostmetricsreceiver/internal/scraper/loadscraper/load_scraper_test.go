@@ -35,15 +35,17 @@ import (
 const (
 	testStandard = "Standard"
 	testAverage  = "PerCPUEnabled"
+	bootTime     = 100
 )
 
 func TestScrape(t *testing.T) {
 	type testCase struct {
-		name        string
-		loadFunc    func() (*load.AvgStat, error)
-		expectedErr string
-		saveMetrics bool
-		config      *Config
+		name         string
+		bootTimeFunc func() (uint64, error)
+		loadFunc     func() (*load.AvgStat, error)
+		expectedErr  string
+		saveMetrics  bool
+		config       *Config
 	}
 
 	testCases := []testCase{
@@ -61,6 +63,7 @@ func TestScrape(t *testing.T) {
 				Metrics:    metadata.DefaultMetricsSettings(),
 				CPUAverage: true,
 			},
+			bootTimeFunc: func() (uint64, error) { return bootTime, nil },
 		},
 		{
 			name:     "Load Error",
@@ -78,6 +81,9 @@ func TestScrape(t *testing.T) {
 			scraper := newLoadScraper(context.Background(), zap.NewNop(), test.config)
 			if test.loadFunc != nil {
 				scraper.load = test.loadFunc
+			}
+			if test.bootTimeFunc != nil {
+				scraper.bootTime = test.bootTimeFunc
 			}
 
 			err := scraper.start(context.Background(), componenttest.NewNopHost())
@@ -98,6 +104,11 @@ func TestScrape(t *testing.T) {
 			}
 			require.NoError(t, err, "Failed to scrape metrics: %v", err)
 
+			if test.bootTimeFunc != nil {
+				actualBootTime, err := scraper.bootTime()
+				assert.Nil(t, err)
+				assert.Equal(t, uint64(bootTime), actualBootTime)
+			}
 			// expect 3 metrics
 			assert.Equal(t, 3, md.MetricCount())
 
