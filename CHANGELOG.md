@@ -18,6 +18,8 @@
 
 ## 🧰 Bug fixes 🧰
 
+- `resourcedetectionprocessor`: fix `meta` allow list excluding keys with nil values (#7424)
+
 ## v0.43.0
 
 ## 💡 Enhancements 💡
