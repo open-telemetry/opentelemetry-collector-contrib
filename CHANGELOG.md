@@ -37,6 +37,7 @@
 - `scrapertest`: Improve comparison logic (#7305)
 - `hostmetricsreceiver`: add `cpu_average` option for load scraper to report the average cpu load (#6999)
 - `tracegen`: Add option to pass in custom headers to export calls via command line (#7308)
+- `prometheusremotewriteexporter` : Dropping the condition to replace _ with key_ as __ label is reserved and _ is not (#7112)
 
 ## 🛑 Breaking changes 🛑
 
