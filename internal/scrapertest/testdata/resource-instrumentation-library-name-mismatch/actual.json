@@ -1,0 +1,14 @@
+{
+   "resourceMetrics": [
+      {
+         "instrumentationLibraryMetrics": [
+            {
+               "instrumentationLibrary": {
+                  "name": "two",
+                  "version": "1.0"
+               }
+            }
+         ]
+      }
+   ]
+}

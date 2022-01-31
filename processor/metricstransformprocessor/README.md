@@ -50,59 +50,61 @@ later transformations or operations may reference the result of previous
 transformations or operations.
 
 ```yaml
-# transforms is a list of transformations with each element transforming a metric selected by metric name
-transforms:
-
-    # SPECIFY WHICH METRIC(S) TO MATCH
+processors:
+  metricstransform:
+  # transforms is a list of transformations with each element transforming a metric selected by metric name
+    transforms:
     
-    # include specifies the metric name used to determine which metric(s) to operate on
-  - include: <metric_name>
-    # match_type specifies whether the include name should be used as a strict match or regexp match, default = strict
-    match_type: {strict, regexp}
-
-    # experimental_match_labels specifies the label set against which the metric filter will work. If experimental_match_labels is specified, transforms will only be applied to those metrics which 
-    # have the provided metric label values. This works for both strict and regexp match_type. This is an experimental feature.
-    experimental_match_labels: {<label1>: <label_value1>, <label2>: <label_value2>}
+        # SPECIFY WHICH METRIC(S) TO MATCH
+        
+        # include specifies the metric name used to determine which metric(s) to operate on
+      - include: <metric_name>
+        # match_type specifies whether the include name should be used as a strict match or regexp match, default = strict
+        match_type: {strict, regexp}
     
-    # SPECIFY THE ACTION TO TAKE ON THE MATCHED METRIC(S)
-    
-    # action specifies if the operations (specified below) are performed on metrics in place (update), on an inserted clone (insert), or on a new combined metric (combine)
-    action: {update, insert, combine}
-    
-    # SPECIFY HOW TO TRANSFORM THE METRIC GENERATED AS A RESULT OF APPLYING THE ABOVE ACTION
-    
-    # new_name specifies the updated name of the metric; if action is insert or combine, new_name is required
-    new_name: <new_metric_name_inserted>
-    # aggregation_type defines how combined data points will be aggregated; if action is combine, aggregation_type is required
-    aggregation_type: {sum, mean, min, max}
-    # submatch_case specifies the case that should be used when adding label values based on regexp submatches when performing a combine action; leave blank to use the submatch value as is
-    submatch_case: {lower, upper}
-    # operations contain a list of operations that will be performed on the resulting metric(s)
-    operations:
-        # action defines the type of operation that will be performed, see examples below for more details
-      - action: {add_label, update_label, delete_label_value, toggle_scalar_data_type, experimental_scale_value, aggregate_labels, aggregate_label_values}
-        # label specifies the label to operate on
-        label: <label>
-        # new_label specifies the updated name of the label; if action is add_label, new_label is required
-        new_label: <new_label>
-        # aggregated_values contains a list of label values that will be aggregated; if action is aggregate_label_values, aggregated_values is required
-        aggregated_values: [values...]
-        # new_value specifies the updated name of the label value; if action is add_label or aggregate_label_values, new_value is required
-        new_value: <new_value>
-        # label_value specifies the label value for which points should be deleted; if action is delete_label_value, label_value is required
-        label_value: <label_value>
-        # label_set contains a list of labels that will remain after aggregation; if action is aggregate_labels, label_set is required
-        label_set: [labels...]
-        # aggregation_type defines how data points will be aggregated; if action is aggregate_labels or aggregate_label_values, aggregation_type is required
+        # experimental_match_labels specifies the label set against which the metric filter will work. If experimental_match_labels is specified, transforms will only be applied to those metrics which 
+        # have the provided metric label values. This works for both strict and regexp match_type. This is an experimental feature.
+        experimental_match_labels: {<label1>: <label_value1>, <label2>: <label_value2>}
+        
+        # SPECIFY THE ACTION TO TAKE ON THE MATCHED METRIC(S)
+        
+        # action specifies if the operations (specified below) are performed on metrics in place (update), on an inserted clone (insert), or on a new combined metric (combine)
+        action: {update, insert, combine}
+        
+        # SPECIFY HOW TO TRANSFORM THE METRIC GENERATED AS A RESULT OF APPLYING THE ABOVE ACTION
+        
+        # new_name specifies the updated name of the metric; if action is insert or combine, new_name is required
+        new_name: <new_metric_name_inserted>
+        # aggregation_type defines how combined data points will be aggregated; if action is combine, aggregation_type is required
         aggregation_type: {sum, mean, min, max}
-        # experimental_scale specifies the scalar to apply to values
-        experimental_scale: <scalar>
-        # value_actions contain a list of operations that will be performed on the selected label
-        value_actions:
-            # value specifies the value to operate on
-          - value: <current_label_value>
-            # new_value specifies the updated value
-            new_value: <new_label_value>
+        # submatch_case specifies the case that should be used when adding label values based on regexp submatches when performing a combine action; leave blank to use the submatch value as is
+        submatch_case: {lower, upper}
+        # operations contain a list of operations that will be performed on the resulting metric(s)
+        operations:
+            # action defines the type of operation that will be performed, see examples below for more details
+          - action: {add_label, update_label, delete_label_value, toggle_scalar_data_type, experimental_scale_value, aggregate_labels, aggregate_label_values}
+            # label specifies the label to operate on
+            label: <label>
+            # new_label specifies the updated name of the label; if action is add_label, new_label is required
+            new_label: <new_label>
+            # aggregated_values contains a list of label values that will be aggregated; if action is aggregate_label_values, aggregated_values is required
+            aggregated_values: [values...]
+            # new_value specifies the updated name of the label value; if action is add_label or aggregate_label_values, new_value is required
+            new_value: <new_value>
+            # label_value specifies the label value for which points should be deleted; if action is delete_label_value, label_value is required
+            label_value: <label_value>
+            # label_set contains a list of labels that will remain after aggregation; if action is aggregate_labels, label_set is required
+            label_set: [labels...]
+            # aggregation_type defines how data points will be aggregated; if action is aggregate_labels or aggregate_label_values, aggregation_type is required
+            aggregation_type: {sum, mean, min, max}
+            # experimental_scale specifies the scalar to apply to values
+            experimental_scale: <scalar>
+            # value_actions contain a list of operations that will be performed on the selected label
+            value_actions:
+                # value specifies the value to operate on
+              - value: <current_label_value>
+                # new_value specifies the updated value
+                new_value: <new_label_value>
 ```
 
 ## Examples

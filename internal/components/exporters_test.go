@@ -31,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsprometheusremotewriteexporter"
@@ -40,6 +41,7 @@ import (
 	ddconf "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	dtconf "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombexporter"
@@ -228,6 +230,15 @@ func TestDefaultExporters(t *testing.T) {
 			},
 		},
 		{
+			exporter: "awscloudwatch",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["awscloudwatch"].CreateDefaultConfig().(*awscloudwatchlogsexporter.Config)
+				cfg.Endpoint = "http://" + endpoint
+				cfg.Region = "local"
+				return cfg
+			},
+		},
+		{
 			exporter: "awsemf",
 			getConfigFn: func() config.Exporter {
 				cfg := expFactories["awsemf"].CreateDefaultConfig().(*awsemfexporter.Config)
@@ -284,6 +295,14 @@ func TestDefaultExporters(t *testing.T) {
 			getConfigFn: func() config.Exporter {
 				cfg := expFactories["elastic"].CreateDefaultConfig().(*elasticexporter.Config)
 				cfg.APMServerURL = "http://" + endpoint
+				return cfg
+			},
+		},
+		{
+			exporter: "elasticsearch",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["elasticsearch"].CreateDefaultConfig().(*elasticsearchexporter.Config)
+				cfg.Endpoints = []string{"http://" + endpoint}
 				return cfg
 			},
 		},

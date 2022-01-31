@@ -26,7 +26,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/kube"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 )
 
 const (
@@ -89,7 +89,7 @@ func createTracesProcessorWithOptions(
 	params component.ProcessorCreateSettings,
 	cfg config.Processor,
 	next consumer.Traces,
-	options ...Option,
+	options ...option,
 ) (component.TracesProcessor, error) {
 	kp, err := createKubernetesProcessor(params, cfg, options...)
 	if err != nil {
@@ -110,7 +110,7 @@ func createMetricsProcessorWithOptions(
 	params component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextMetricsConsumer consumer.Metrics,
-	options ...Option,
+	options ...option,
 ) (component.MetricsProcessor, error) {
 	kp, err := createKubernetesProcessor(params, cfg, options...)
 	if err != nil {
@@ -131,7 +131,7 @@ func createLogsProcessorWithOptions(
 	params component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextLogsConsumer consumer.Logs,
-	options ...Option,
+	options ...option,
 ) (component.LogsProcessor, error) {
 	kp, err := createKubernetesProcessor(params, cfg, options...)
 	if err != nil {
@@ -150,7 +150,7 @@ func createLogsProcessorWithOptions(
 func createKubernetesProcessor(
 	params component.ProcessorCreateSettings,
 	cfg config.Processor,
-	options ...Option,
+	options ...option,
 ) (*kubernetesprocessor, error) {
 	kp := &kubernetesprocessor{logger: params.Logger}
 
@@ -180,28 +180,28 @@ func createKubernetesProcessor(
 	return kp, nil
 }
 
-func createProcessorOpts(cfg config.Processor) []Option {
+func createProcessorOpts(cfg config.Processor) []option {
 	oCfg := cfg.(*Config)
-	opts := []Option{}
+	opts := []option{}
 	if oCfg.Passthrough {
-		opts = append(opts, WithPassthrough())
+		opts = append(opts, withPassthrough())
 	}
 
 	// extraction rules
-	opts = append(opts, WithExtractMetadata(oCfg.Extract.Metadata...))
-	opts = append(opts, WithExtractLabels(oCfg.Extract.Labels...))
-	opts = append(opts, WithExtractAnnotations(oCfg.Extract.Annotations...))
+	opts = append(opts, withExtractMetadata(oCfg.Extract.Metadata...))
+	opts = append(opts, withExtractLabels(oCfg.Extract.Labels...))
+	opts = append(opts, withExtractAnnotations(oCfg.Extract.Annotations...))
 
 	// filters
-	opts = append(opts, WithFilterNode(oCfg.Filter.Node, oCfg.Filter.NodeFromEnvVar))
-	opts = append(opts, WithFilterNamespace(oCfg.Filter.Namespace))
-	opts = append(opts, WithFilterLabels(oCfg.Filter.Labels...))
-	opts = append(opts, WithFilterFields(oCfg.Filter.Fields...))
-	opts = append(opts, WithAPIConfig(oCfg.APIConfig))
+	opts = append(opts, withFilterNode(oCfg.Filter.Node, oCfg.Filter.NodeFromEnvVar))
+	opts = append(opts, withFilterNamespace(oCfg.Filter.Namespace))
+	opts = append(opts, withFilterLabels(oCfg.Filter.Labels...))
+	opts = append(opts, withFilterFields(oCfg.Filter.Fields...))
+	opts = append(opts, withAPIConfig(oCfg.APIConfig))
 
-	opts = append(opts, WithExtractPodAssociations(oCfg.Association...))
+	opts = append(opts, withExtractPodAssociations(oCfg.Association...))
 
-	opts = append(opts, WithExcludes(oCfg.Exclude))
+	opts = append(opts, withExcludes(oCfg.Exclude))
 
 	return opts
 }

@@ -23,8 +23,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.uber.org/zap"
 )
 
 func TestClient(t *testing.T) {
@@ -47,7 +47,7 @@ func TestClient(t *testing.T) {
 
 func TestNewClientProvider(t *testing.T) {
 	baseURL, _ := url.Parse("http://localhost:8080")
-	provider := NewClientProvider(*baseURL, confighttp.HTTPClientSettings{}, zap.NewNop())
+	provider := NewClientProvider(*baseURL, confighttp.HTTPClientSettings{}, componenttest.NewNopTelemetrySettings())
 	require.NotNil(t, provider)
 	_, ok := provider.(*defaultClientProvider)
 	require.True(t, ok)
@@ -59,7 +59,7 @@ func TestNewClientProvider(t *testing.T) {
 
 func TestDefaultClient(t *testing.T) {
 	endpoint, _ := url.Parse("http://localhost:8080")
-	client, err := defaultClient(*endpoint, confighttp.HTTPClientSettings{}, zap.NewNop())
+	client, err := defaultClient(*endpoint, confighttp.HTTPClientSettings{}, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 	require.NotNil(t, client.httpClient.Transport)
 	require.Equal(t, "http://localhost:8080", client.baseURL.String())
@@ -68,8 +68,8 @@ func TestDefaultClient(t *testing.T) {
 func TestBuildReq(t *testing.T) {
 	endpoint, _ := url.Parse("http://localhost:8080")
 	p := &defaultClientProvider{
-		baseURL: *endpoint,
-		logger:  zap.NewNop(),
+		baseURL:  *endpoint,
+		settings: componenttest.NewNopTelemetrySettings(),
 	}
 	cl, err := p.BuildClient()
 	require.NoError(t, err)
@@ -83,8 +83,8 @@ func TestBuildReq(t *testing.T) {
 func TestBuildBadReq(t *testing.T) {
 	endpoint, _ := url.Parse("http://localhost:8080")
 	p := &defaultClientProvider{
-		baseURL: *endpoint,
-		logger:  zap.NewNop(),
+		baseURL:  *endpoint,
+		settings: componenttest.NewNopTelemetrySettings(),
 	}
 	cl, err := p.BuildClient()
 	require.NoError(t, err)
@@ -95,8 +95,8 @@ func TestBuildBadReq(t *testing.T) {
 func TestGetBad(t *testing.T) {
 	endpoint, _ := url.Parse("http://localhost:8080")
 	p := &defaultClientProvider{
-		baseURL: *endpoint,
-		logger:  zap.NewNop(),
+		baseURL:  *endpoint,
+		settings: componenttest.NewNopTelemetrySettings(),
 	}
 	cl, err := p.BuildClient()
 	require.NoError(t, err)
@@ -122,7 +122,7 @@ func TestErrOnRead(t *testing.T) {
 	client := &clientImpl{
 		baseURL:    *endpoint,
 		httpClient: http.Client{Transport: tr},
-		logger:     zap.NewNop(),
+		settings:   componenttest.NewNopTelemetrySettings(),
 	}
 	resp, err := client.Get("/foo")
 	require.Error(t, err)
@@ -135,7 +135,7 @@ func TestErrCode(t *testing.T) {
 	client := &clientImpl{
 		baseURL:    *endpoint,
 		httpClient: http.Client{Transport: tr},
-		logger:     zap.NewNop(),
+		settings:   componenttest.NewNopTelemetrySettings(),
 	}
 	resp, err := client.Get("/foo")
 	require.Error(t, err)

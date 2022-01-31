@@ -29,7 +29,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
-	"github.com/prometheus/prometheus/pkg/value"
+	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -159,7 +159,7 @@ service:
 
 	appSettings := service.CollectorSettings{
 		Factories:      factories,
-		ConfigProvider: service.NewDefaultConfigProvider(confFile.Name(), nil),
+		ConfigProvider: service.NewDefaultConfigProvider([]string{confFile.Name()}, nil),
 		BuildInfo: component.BuildInfo{
 			Command:     "otelcol",
 			Description: "OpenTelemetry Collector",

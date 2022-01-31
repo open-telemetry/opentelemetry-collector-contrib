@@ -198,6 +198,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/extension/basicauthextension"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/extension/bearertokenauthextension"
     schedule:
       interval: "weekly"
@@ -462,6 +466,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/receiver/couchbasereceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/receiver/couchdbreceiver"
     schedule:
       interval: "weekly"
@@ -567,6 +575,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/receiver/prometheusreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/rabbitmqreceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"

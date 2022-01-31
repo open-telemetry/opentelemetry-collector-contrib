@@ -27,9 +27,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
+
+var errUnavailable = errors.New("ec2metadata unavailable")
 
 type mockMetadata struct {
 	retIDDoc    ec2metadata.EC2InstanceIdentityDocument
@@ -43,18 +46,21 @@ type mockMetadata struct {
 
 var _ metadataProvider = (*mockMetadata)(nil)
 
-func (mm mockMetadata) available(ctx context.Context) bool {
-	return mm.isAvailable
+func (mm mockMetadata) instanceID(_ context.Context) (string, error) {
+	if !mm.isAvailable {
+		return "", errUnavailable
+	}
+	return "", nil
 }
 
-func (mm mockMetadata) get(ctx context.Context) (ec2metadata.EC2InstanceIdentityDocument, error) {
+func (mm mockMetadata) get(_ context.Context) (ec2metadata.EC2InstanceIdentityDocument, error) {
 	if mm.retErrIDDoc != nil {
 		return ec2metadata.EC2InstanceIdentityDocument{}, mm.retErrIDDoc
 	}
 	return mm.retIDDoc, nil
 }
 
-func (mm mockMetadata) hostname(ctx context.Context) (string, error) {
+func (mm mockMetadata) hostname(_ context.Context) (string, error) {
 	if mm.retErrHostname != nil {
 		return "", mm.retErrHostname
 	}
@@ -185,6 +191,7 @@ func TestDetector_Detect(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			d := &Detector{
 				metadataProvider: tt.fields.metadataProvider,
+				logger:           zap.NewNop(),
 			}
 			got, _, err := d.Detect(tt.args.ctx)
 

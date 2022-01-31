@@ -50,7 +50,7 @@ func (mn attributeName) RenderUnexported() (string, error) {
 
 type metric struct {
 	// Enabled defines whether the metric is enabled by default.
-	Enabled bool `yaml:"enabled" validate:"required"`
+	Enabled *bool `yaml:"enabled" validate:"required"`
 
 	// Description of the metric.
 	Description string `validate:"required,notblank"`
@@ -115,7 +115,7 @@ type templateContext struct {
 }
 
 func loadMetadata(filePath string) (metadata, error) {
-	cp, err := configmapprovider.NewFile(filePath).Retrieve(context.Background(), nil)
+	cp, err := configmapprovider.NewFile().Retrieve(context.Background(), "file:"+filePath, nil)
 	if err != nil {
 		return metadata{}, err
 	}

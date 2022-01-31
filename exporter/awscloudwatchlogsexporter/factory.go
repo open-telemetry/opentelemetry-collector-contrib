@@ -23,6 +23,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
 
 const typeStr = "awscloudwatchlogs"
@@ -36,28 +38,20 @@ func NewFactory() component.ExporterFactory {
 
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		RetrySettings:    exporterhelper.DefaultRetrySettings(),
+		ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
+		RetrySettings:      exporterhelper.DefaultRetrySettings(),
+		AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
 		QueueSettings: QueueSettings{
 			QueueSize: exporterhelper.DefaultQueueSettings().QueueSize,
 		},
 	}
 }
 
-func createLogsExporter(_ context.Context, set component.ExporterCreateSettings, cfg config.Exporter) (component.LogsExporter, error) {
-	oCfg, ok := cfg.(*Config)
+func createLogsExporter(_ context.Context, params component.ExporterCreateSettings, config config.Exporter) (component.LogsExporter, error) {
+	expConfig, ok := config.(*Config)
 	if !ok {
 		return nil, errors.New("invalid configuration type; can't cast to awscloudwatchlogsexporter.Config")
 	}
+	return newCwLogsExporter(expConfig, params)
 
-	exporter := &exporter{config: oCfg, logger: set.Logger}
-	return exporterhelper.NewLogsExporter(
-		oCfg,
-		set,
-		exporter.PushLogs,
-		exporterhelper.WithStart(exporter.Start),
-		exporterhelper.WithShutdown(exporter.Shutdown),
-		exporterhelper.WithQueue(oCfg.enforcedQueueSettings()),
-		exporterhelper.WithRetry(oCfg.RetrySettings),
-	)
 }

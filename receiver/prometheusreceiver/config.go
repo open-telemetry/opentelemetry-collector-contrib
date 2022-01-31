@@ -42,7 +42,7 @@ const (
 
 var pdataPipelineGate = featuregate.Gate{
 	ID:          "receiver.prometheus.OTLPDirect",
-	Enabled:     false,
+	Enabled:     true,
 	Description: "Controls whether to use a new translation directly from Prometheus timeseries to pdata, without an intermediate representation as OpenCensus data.",
 }
 

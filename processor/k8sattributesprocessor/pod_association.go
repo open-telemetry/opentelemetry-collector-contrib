@@ -17,12 +17,13 @@ package k8sattributesprocessor // import "github.com/open-telemetry/opentelemetr
 import (
 	"context"
 	"net"
+	"strings"
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/kube"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 )
 
 // extractPodIds extracts IP and pod UID from attributes or request context.
@@ -91,6 +92,27 @@ func getConnectionIP(ctx context.Context) kube.PodIdentifier {
 	if c.Addr == nil {
 		return ""
 	}
+	switch addr := c.Addr.(type) {
+	case *net.UDPAddr:
+		return kube.PodIdentifier(addr.IP.String())
+	case *net.TCPAddr:
+		return kube.PodIdentifier(addr.IP.String())
+	case *net.IPAddr:
+		return kube.PodIdentifier(addr.IP.String())
+	}
+
+	//If this is not a known address type, check for known "untyped" formats.
+	// 1.1.1.1:<port>
+
+	lastColonIndex := strings.LastIndex(c.Addr.String(), ":")
+	if lastColonIndex != -1 {
+		ipString := c.Addr.String()[:lastColonIndex]
+		ip := net.ParseIP(ipString)
+		if ip != nil {
+			return kube.PodIdentifier(ip.String())
+		}
+	}
+
 	return kube.PodIdentifier(c.Addr.String())
 
 }

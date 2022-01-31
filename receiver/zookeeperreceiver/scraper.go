@@ -124,6 +124,7 @@ func (z *zookeeperMetricsScraper) getResourceMetrics(conn net.Conn) (pdata.Metri
 }
 
 func (z *zookeeperMetricsScraper) appendMetrics(scanner *bufio.Scanner, rms pdata.ResourceMetricsSlice) {
+	creator := newMetricCreator(z.mb)
 	now := pdata.NewTimestampFromTime(time.Now())
 	rm := pdata.NewResourceMetrics()
 	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
@@ -150,7 +151,7 @@ func (z *zookeeperMetricsScraper) appendMetrics(scanner *bufio.Scanner, rms pdat
 			continue
 		default:
 			// Skip metric if there is no descriptor associated with it.
-			recordDataPoints := recordDataPointsFunc(z.mb, metricKey)
+			recordDataPoints := creator.recordDataPointsFunc(metricKey)
 			if recordDataPoints == nil {
 				// Unexported metric, just move to the next line.
 				continue
@@ -166,6 +167,10 @@ func (z *zookeeperMetricsScraper) appendMetrics(scanner *bufio.Scanner, rms pdat
 			recordDataPoints(now, int64Val)
 		}
 	}
+
+	// Generate computed metrics
+	creator.generateComputedMetrics(z.logger, now)
+
 	z.mb.Emit(ilm.Metrics())
 	if ilm.Metrics().Len() > 0 {
 		rm.CopyTo(rms.AppendEmpty())

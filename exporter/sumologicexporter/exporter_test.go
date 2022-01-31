@@ -50,7 +50,7 @@ func TestInitExporter(t *testing.T) {
 			Timeout:  defaultTimeout,
 			Endpoint: "test_endpoint",
 		},
-	})
+	}, componenttest.NewNopTelemetrySettings())
 	assert.NoError(t, err)
 }
 
@@ -63,7 +63,7 @@ func TestInitExporterInvalidLogFormat(t *testing.T) {
 			Timeout:  defaultTimeout,
 			Endpoint: "test_endpoint",
 		},
-	})
+	}, componenttest.NewNopTelemetrySettings())
 
 	assert.EqualError(t, err, "unexpected log format: test_format")
 }
@@ -77,7 +77,7 @@ func TestInitExporterInvalidMetricFormat(t *testing.T) {
 			Endpoint: "test_endpoint",
 		},
 		CompressEncoding: "gzip",
-	})
+	}, componenttest.NewNopTelemetrySettings())
 
 	assert.EqualError(t, err, "unexpected metric format: test_format")
 }
@@ -91,7 +91,7 @@ func TestInitExporterInvalidCompressEncoding(t *testing.T) {
 			Timeout:  defaultTimeout,
 			Endpoint: "test_endpoint",
 		},
-	})
+	}, componenttest.NewNopTelemetrySettings())
 
 	assert.EqualError(t, err, "unexpected compression encoding: test_format")
 }
@@ -104,7 +104,7 @@ func TestInitExporterInvalidEndpoint(t *testing.T) {
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Timeout: defaultTimeout,
 		},
-	})
+	}, componenttest.NewNopTelemetrySettings())
 
 	assert.EqualError(t, err, "endpoint is not set")
 }
@@ -213,7 +213,7 @@ func TestInvalidSourceFormats(t *testing.T) {
 			Endpoint: "test_endpoint",
 		},
 		MetadataAttributes: []string{"[a-z"},
-	})
+	}, componenttest.NewNopTelemetrySettings())
 	assert.EqualError(t, err, "error parsing regexp: missing closing ]: `[a-z`")
 }
 
@@ -228,7 +228,7 @@ func TestInvalidHTTPCLient(t *testing.T) {
 				return nil, errors.New("roundTripperException")
 			},
 		},
-	})
+	}, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 	require.NotNil(t, se)
 

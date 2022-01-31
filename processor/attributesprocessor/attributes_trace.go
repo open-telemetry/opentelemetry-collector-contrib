@@ -40,7 +40,7 @@ func newSpanAttributesProcessor(attrProc *attraction.AttrProc, include, exclude 
 	}
 }
 
-func (a *spanAttributesProcessor) processTraces(_ context.Context, td pdata.Traces) (pdata.Traces, error) {
+func (a *spanAttributesProcessor) processTraces(ctx context.Context, td pdata.Traces) (pdata.Traces, error) {
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
@@ -56,7 +56,7 @@ func (a *spanAttributesProcessor) processTraces(_ context.Context, td pdata.Trac
 					continue
 				}
 
-				a.attrProc.Process(span.Attributes())
+				a.attrProc.Process(ctx, span.Attributes())
 			}
 		}
 	}

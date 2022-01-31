@@ -1,0 +1,68 @@
+{
+    "resourceMetrics": [
+        {
+            "instrumentationLibraryMetrics": [
+                {
+                    "metrics": [
+                        {
+                            "name": "gauge.one",
+                            "gauge": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "hostname",
+                                                "value": {
+                                                    "stringValue": "random"
+                                                }
+                                            },
+                                            {
+                                                "key": "attribute.two",
+                                                "value": {
+                                                    "stringValue": "value A"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "hostname",
+                                                "value": {
+                                                    "stringValue": "random"
+                                                }
+                                            },
+                                            {
+                                                "key": "attribute.two",
+                                                "value": {
+                                                    "stringValue": "value B"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "name": "sum.one",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "hostname",
+                                                "value": {
+                                                    "stringValue": "randomvalue"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

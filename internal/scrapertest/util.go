@@ -15,14 +15,10 @@
 package scrapertest // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/model/pdata"
 )
-
-func cloneMetricSlice(metricSlice pdata.MetricSlice) pdata.MetricSlice {
-	clone := pdata.NewMetricSlice()
-	metricSlice.CopyTo(clone)
-	return clone
-}
 
 func metricsByName(metricSlice pdata.MetricSlice) map[string]pdata.Metric {
 	byName := make(map[string]pdata.Metric, metricSlice.Len())
@@ -31,4 +27,30 @@ func metricsByName(metricSlice pdata.MetricSlice) map[string]pdata.Metric {
 		byName[a.Name()] = a
 	}
 	return byName
+}
+
+func getDataPointSlice(metric pdata.Metric) pdata.NumberDataPointSlice {
+	var dataPointSlice pdata.NumberDataPointSlice
+	switch metric.DataType() {
+	case pdata.MetricDataTypeGauge:
+		dataPointSlice = metric.Gauge().DataPoints()
+	case pdata.MetricDataTypeSum:
+		dataPointSlice = metric.Sum().DataPoints()
+	default:
+		panic(fmt.Sprintf("data type not supported: %s", metric.DataType()))
+	}
+	return dataPointSlice
+}
+
+func sortInstrumentationLibrary(a, b pdata.InstrumentationLibraryMetrics) bool {
+	if a.SchemaUrl() < b.SchemaUrl() {
+		return true
+	}
+	if a.InstrumentationLibrary().Name() < b.InstrumentationLibrary().Name() {
+		return true
+	}
+	if a.InstrumentationLibrary().Version() < b.InstrumentationLibrary().Version() {
+		return true
+	}
+	return false
 }

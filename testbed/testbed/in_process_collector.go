@@ -69,7 +69,7 @@ func (ipp *inProcessCollector) Start(args StartParams) error {
 	settings := service.CollectorSettings{
 		BuildInfo:      component.NewDefaultBuildInfo(),
 		Factories:      ipp.factories,
-		ConfigProvider: service.NewDefaultConfigProvider(ipp.configFile, nil),
+		ConfigProvider: service.NewDefaultConfigProvider([]string{ipp.configFile}, nil),
 	}
 
 	ipp.svc, err = service.New(settings)

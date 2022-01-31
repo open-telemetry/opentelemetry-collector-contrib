@@ -74,6 +74,10 @@ func TestDefaultReceivers(t *testing.T) {
 			skipLifecyle: true, // Panics after test have completed, requires a wait group
 		},
 		{
+			receiver:     "cloudfoundry",
+			skipLifecyle: true, // Requires UAA (auth) endpoint to run
+		},
+		{
 			receiver: "collectd",
 		},
 		{
@@ -120,6 +124,10 @@ func TestDefaultReceivers(t *testing.T) {
 			skipLifecyle: runtime.GOOS != "linux",
 		},
 		{
+			receiver:     "k8s_events",
+			skipLifecyle: true, // need a valid Kubernetes host and port
+		},
+		{
 			receiver:     "kafka",
 			skipLifecyle: true, // TODO: It needs access to internals to successful start.
 		},
@@ -141,6 +149,9 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "mongodbatlas",
 		},
 		{
+			receiver: "mysql",
+		},
+		{
 			receiver:     "opencensus",
 			skipLifecyle: true, // TODO: Usage of CMux doesn't allow proper shutdown.
 		},
@@ -150,6 +161,9 @@ func TestDefaultReceivers(t *testing.T) {
 		{
 			receiver:     "podman_stats",
 			skipLifecyle: true, // Requires a running podman daemon
+		},
+		{
+			receiver: "postgresql",
 		},
 		{
 			receiver: "prometheus",
