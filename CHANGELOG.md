@@ -12,6 +12,7 @@
 - `jmxreceiver`: Added `additional_jars` configuration option to launch JMX Metric Gatherer JAR with extended `CLASSPATH` (#7378)
 - `awscontainerinsightreceiver`: add full pod name when configured to AWS Container Insights Receiver (#7415)
 - `hostreceiver/loadscraper`: Migrate the scraper to the mdatagen metrics builder (#7288)
+- `awsecscontainermetricsreceiver`: Rename attributes to follow semantic conventions (#7425)
 ## 🛑 Breaking changes 🛑
 
 ## 🚀 New components 🚀
