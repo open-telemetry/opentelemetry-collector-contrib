@@ -35,30 +35,42 @@ import (
 const (
 	testStandard = "Standard"
 	testAverage  = "PerCPUEnabled"
+	bootTime     = 100
 )
 
 func TestScrape(t *testing.T) {
 	type testCase struct {
-		name        string
-		loadFunc    func() (*load.AvgStat, error)
-		expectedErr string
-		perCPU      bool
-		saveMetrics bool
+		name         string
+		bootTimeFunc func() (uint64, error)
+		loadFunc     func() (*load.AvgStat, error)
+		expectedErr  string
+		saveMetrics  bool
+		config       *Config
 	}
 
 	testCases := []testCase{
 		{
 			name:        testStandard,
 			saveMetrics: true,
+			config: &Config{
+				Metrics: metadata.DefaultMetricsSettings(),
+			},
 		},
 		{
 			name:        testAverage,
-			perCPU:      true,
 			saveMetrics: true,
+			config: &Config{
+				Metrics:    metadata.DefaultMetricsSettings(),
+				CPUAverage: true,
+			},
+			bootTimeFunc: func() (uint64, error) { return bootTime, nil },
 		},
 		{
-			name:        "Load Error",
-			loadFunc:    func() (*load.AvgStat, error) { return nil, errors.New("err1") },
+			name:     "Load Error",
+			loadFunc: func() (*load.AvgStat, error) { return nil, errors.New("err1") },
+			config: &Config{
+				Metrics: metadata.DefaultMetricsSettings(),
+			},
 			expectedErr: "err1",
 		},
 	}
@@ -66,9 +78,12 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newLoadScraper(context.Background(), zap.NewNop(), &Config{CPUAverage: test.perCPU})
+			scraper := newLoadScraper(context.Background(), zap.NewNop(), test.config)
 			if test.loadFunc != nil {
 				scraper.load = test.loadFunc
+			}
+			if test.bootTimeFunc != nil {
+				scraper.bootTime = test.bootTimeFunc
 			}
 
 			err := scraper.start(context.Background(), componenttest.NewNopHost())
@@ -89,14 +104,19 @@ func TestScrape(t *testing.T) {
 			}
 			require.NoError(t, err, "Failed to scrape metrics: %v", err)
 
+			if test.bootTimeFunc != nil {
+				actualBootTime, err := scraper.bootTime()
+				assert.Nil(t, err)
+				assert.Equal(t, uint64(bootTime), actualBootTime)
+			}
 			// expect 3 metrics
 			assert.Equal(t, 3, md.MetricCount())
 
 			metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 			// expect a single datapoint for 1m, 5m & 15m load metrics
-			assertMetricHasSingleDatapoint(t, metrics.At(0), metadata.Metrics.SystemCPULoadAverage1m.New())
-			assertMetricHasSingleDatapoint(t, metrics.At(1), metadata.Metrics.SystemCPULoadAverage5m.New())
-			assertMetricHasSingleDatapoint(t, metrics.At(2), metadata.Metrics.SystemCPULoadAverage15m.New())
+			assertMetricHasSingleDatapoint(t, metrics.At(0), "system.cpu.load_average.15m")
+			assertMetricHasSingleDatapoint(t, metrics.At(1), "system.cpu.load_average.1m")
+			assertMetricHasSingleDatapoint(t, metrics.At(2), "system.cpu.load_average.5m")
 
 			internal.AssertSameTimeStampForAllMetrics(t, metrics)
 
@@ -114,8 +134,8 @@ func TestScrape(t *testing.T) {
 	}
 }
 
-func assertMetricHasSingleDatapoint(t *testing.T, metric pdata.Metric, descriptor pdata.Metric) {
-	internal.AssertDescriptorEqual(t, descriptor, metric)
+func assertMetricHasSingleDatapoint(t *testing.T, metric pdata.Metric, expectedName string) {
+	assert.Equal(t, expectedName, metric.Name())
 	assert.Equal(t, 1, metric.Gauge().DataPoints().Len())
 }
 
