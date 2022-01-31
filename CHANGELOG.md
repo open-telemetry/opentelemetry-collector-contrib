@@ -9,6 +9,7 @@
 - `resourcedetectionprocessor`: check cluster config to verify resource is on aws for eks resources (#7186)
 - `awscloudwatchlogsexporter`: enable awscloudwatchlogsexporter which accepts and exports log data (#7297)
 - `translator/prometheusremotewrite`: add a new module to help translate data from OTLP to Prometheus Remote Write (#7240)
+- `datadogexporter`: Add insecure_skip_tls flag to configuration (#7422)
 
 ## 🛑 Breaking changes 🛑
 
