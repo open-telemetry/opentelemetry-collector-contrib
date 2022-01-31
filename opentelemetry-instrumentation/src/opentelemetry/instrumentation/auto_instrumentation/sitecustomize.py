@@ -119,7 +119,7 @@ def initialize():
         logger.exception("Failed to auto initialize opentelemetry")
     finally:
         environ["PYTHONPATH"] = sub(
-            fr"{dirname(abspath(__file__))}{pathsep}?",
+            rf"{dirname(abspath(__file__))}{pathsep}?",
             "",
             environ["PYTHONPATH"],
         )
