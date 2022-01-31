@@ -390,6 +390,7 @@ func Test_PushMetrics(t *testing.T) {
 
 	// staleNaN cases
 	staleNaNHistogramBatch := getMetricsFromMetricList(staleNaNMetrics[staleNaNHistogram])
+	staleNaNEmptyHistogramBatch := getMetricsFromMetricList(staleNaNMetrics[staleNaNEmptyHistogram])
 
 	staleNaNSummaryBatch := getMetricsFromMetricList(staleNaNMetrics[staleNaNSummary])
 
@@ -590,6 +591,15 @@ func Test_PushMetrics(t *testing.T) {
 			&staleNaNHistogramBatch,
 			checkFunc,
 			6,
+			http.StatusAccepted,
+			false,
+			true,
+		},
+		{
+			"staleNaNEmptyHistogram_case",
+			&staleNaNEmptyHistogramBatch,
+			checkFunc,
+			3,
 			http.StatusAccepted,
 			false,
 			true,

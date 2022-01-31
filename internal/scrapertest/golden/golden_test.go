@@ -150,5 +150,3 @@ func initSum(metric pdata.Metric, name, desc, unit string, aggr pdata.MetricAggr
 	metric.SetName(name)
 	metric.SetUnit(unit)
 }
-
-// TODO test Read/WriteMetricSlice

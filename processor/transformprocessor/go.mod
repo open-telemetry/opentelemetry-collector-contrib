@@ -5,8 +5,8 @@ go 1.17
 require (
 	github.com/alecthomas/participle/v2 v2.0.0-alpha7
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.42.1-0.20220124134949-6ab3c983bbfb
-	go.opentelemetry.io/collector/model v0.42.1-0.20220124134949-6ab3c983bbfb
+	go.opentelemetry.io/collector v0.43.1
+	go.opentelemetry.io/collector/model v0.43.1
 )
 
 require (
