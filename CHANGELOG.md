@@ -16,6 +16,8 @@
 - `datadogexporter`: Always map conventional attributes to tags (#7185)
 - `mysqlreceiver`: Add golden files for integration test (#7303)
 - `mysqlreceiver`: Update to use mdatagen v2 (#7507)
+- `postgresqlreceiver`: Add integration tests (#7501)
+
 ## 🛑 Breaking changes 🛑
 
 ## 🚀 New components 🚀
