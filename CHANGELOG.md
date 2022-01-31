@@ -20,7 +20,7 @@
 ## 🧰 Bug fixes 🧰
 
 - `resourcedetectionprocessor`: fix `meta` allow list excluding keys with nil values (#7424)
-
+- `postgresqlreceiver`: Fix issue where empty metrics could be returned after failed connection (#7502)
 ## v0.43.0
 
 ## 💡 Enhancements 💡
