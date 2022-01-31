@@ -20,6 +20,7 @@
 - `redisreceiver`: Set start timestamp uniformly for gauge and sum metrics (#6941)
 - `kafkaexporter`: Allow controlling Kafka acknowledgment behaviour  (#6301)
 - `lokiexporter`: Log the first part of the http body on failed pushes to loki (#6946)
+- `prometheusexporter`: Dropping the condition to replace _ with key_ as __ label is reserved and _ is not (#7506)
 
 ## 🛑 Breaking changes 🛑
 
