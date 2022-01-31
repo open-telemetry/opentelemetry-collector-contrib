@@ -35,6 +35,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
 )
 
 const maxBatchByteSize = 3000000
@@ -105,69 +107,7 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) erro
 	case <-prwe.closeChan:
 		return errors.New("shutdown has been called")
 	default:
-		tsMap := map[string]*prompb.TimeSeries{}
-		dropped := 0
-		var errs error
-		resourceMetricsSlice := md.ResourceMetrics()
-		for i := 0; i < resourceMetricsSlice.Len(); i++ {
-			resourceMetrics := resourceMetricsSlice.At(i)
-			resource := resourceMetrics.Resource()
-			instrumentationLibraryMetricsSlice := resourceMetrics.InstrumentationLibraryMetrics()
-			// TODO: add resource attributes as labels, probably in next PR
-			for j := 0; j < instrumentationLibraryMetricsSlice.Len(); j++ {
-				instrumentationLibraryMetrics := instrumentationLibraryMetricsSlice.At(j)
-				metricSlice := instrumentationLibraryMetrics.Metrics()
-
-				// TODO: decide if instrumentation library information should be exported as labels
-				for k := 0; k < metricSlice.Len(); k++ {
-					metric := metricSlice.At(k)
-
-					// check for valid type and temporality combination and for matching data field and type
-					if ok := validateMetrics(metric); !ok {
-						dropped++
-						errs = multierr.Append(errs, consumererror.NewPermanent(errors.New("invalid temporality and type combination")))
-						continue
-					}
-
-					// handle individual metric based on type
-					switch metric.DataType() {
-					case pdata.MetricDataTypeGauge:
-						dataPoints := metric.Gauge().DataPoints()
-						if err := prwe.addNumberDataPointSlice(dataPoints, tsMap, resource, metric); err != nil {
-							dropped++
-							errs = multierr.Append(errs, err)
-						}
-					case pdata.MetricDataTypeSum:
-						dataPoints := metric.Sum().DataPoints()
-						if err := prwe.addNumberDataPointSlice(dataPoints, tsMap, resource, metric); err != nil {
-							dropped++
-							errs = multierr.Append(errs, err)
-						}
-					case pdata.MetricDataTypeHistogram:
-						dataPoints := metric.Histogram().DataPoints()
-						if dataPoints.Len() == 0 {
-							dropped++
-							errs = multierr.Append(errs, consumererror.NewPermanent(fmt.Errorf("empty data points. %s is dropped", metric.Name())))
-						}
-						for x := 0; x < dataPoints.Len(); x++ {
-							addSingleHistogramDataPoint(dataPoints.At(x), resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
-						}
-					case pdata.MetricDataTypeSummary:
-						dataPoints := metric.Summary().DataPoints()
-						if dataPoints.Len() == 0 {
-							dropped++
-							errs = multierr.Append(errs, consumererror.NewPermanent(fmt.Errorf("empty data points. %s is dropped", metric.Name())))
-						}
-						for x := 0; x < dataPoints.Len(); x++ {
-							addSingleSummaryDataPoint(dataPoints.At(x), resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
-						}
-					default:
-						dropped++
-						errs = multierr.Append(errs, consumererror.NewPermanent(errors.New("unsupported metric type")))
-					}
-				}
-			}
-		}
+		tsMap, dropped, errs := prometheusremotewrite.MetricsToPRW(prwe.namespace, prwe.externalLabels, md)
 
 		if exportErrors := prwe.export(ctx, tsMap); len(exportErrors) != 0 {
 			dropped = md.MetricCount()
@@ -208,16 +148,6 @@ func validateAndSanitizeExternalLabels(cfg *Config) (map[string]string, error) {
 	}
 
 	return sanitizedLabels, nil
-}
-
-func (prwe *prwExporter) addNumberDataPointSlice(dataPoints pdata.NumberDataPointSlice, tsMap map[string]*prompb.TimeSeries, resource pdata.Resource, metric pdata.Metric) error {
-	if dataPoints.Len() == 0 {
-		return consumererror.NewPermanent(fmt.Errorf("empty data points. %s is dropped", metric.Name()))
-	}
-	for x := 0; x < dataPoints.Len(); x++ {
-		addSingleNumberDataPoint(dataPoints.At(x), resource, metric, prwe.namespace, tsMap, prwe.externalLabels)
-	}
-	return nil
 }
 
 // export sends a Snappy-compressed WriteRequest containing TimeSeries to a remote write endpoint in order

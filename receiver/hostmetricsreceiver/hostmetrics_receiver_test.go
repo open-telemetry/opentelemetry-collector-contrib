@@ -108,7 +108,7 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 			cpuscraper.TypeStr:        scraperFactories[cpuscraper.TypeStr].CreateDefaultConfig(),
 			diskscraper.TypeStr:       scraperFactories[diskscraper.TypeStr].CreateDefaultConfig(),
 			filesystemscraper.TypeStr: &filesystemscraper.Config{},
-			loadscraper.TypeStr:       &loadscraper.Config{},
+			loadscraper.TypeStr:       scraperFactories[loadscraper.TypeStr].CreateDefaultConfig(),
 			memoryscraper.TypeStr:     &memoryscraper.Config{},
 			networkscraper.TypeStr:    scraperFactories[networkscraper.TypeStr].CreateDefaultConfig(),
 			pagingscraper.TypeStr:     &pagingscraper.Config{},
