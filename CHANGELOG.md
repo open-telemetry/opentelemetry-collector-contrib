@@ -4,39 +4,95 @@
 
 ## 💡 Enhancements 💡
 
+- `tanzuobservabilityexporter`: Turn on metrics exporter (#7281)
+- `attributesprocessor` `resourceprocessor`: Add `from_context` value source
+- `resourcedetectionprocessor`: check cluster config to verify resource is on aws for eks resources (#7186)
+- `awscloudwatchlogsexporter`: enable awscloudwatchlogsexporter which accepts and exports log data (#7297)
+- `translator/prometheusremotewrite`: add a new module to help translate data from OTLP to Prometheus Remote Write (#7240)
+- `jmxreceiver`: Added `additional_jars` configuration option to launch JMX Metric Gatherer JAR with extended `CLASSPATH` (#7378)
+- `awscontainerinsightreceiver`: add full pod name when configured to AWS Container Insights Receiver (#7415)
+- `filterprocessor`: Add ability to filter trace data (#5838)
+
+## 🛑 Breaking changes 🛑
+
+## 🚀 New components 🚀
+
+## 🧰 Bug fixes 🧰
+
+## v0.43.0
+
+## 💡 Enhancements 💡
+
+- `coralogixexporter`: First implementation of Coralogix Exporter (#6816)
 - `cloudfoundryreceiver`: Enable Cloud Foundry client (#7060)
 - `elasticsearchexporter`: add elasticsearchexporter to the components exporter list (#6002)
 - `elasticsearchreceiver`: Add metric metadata (#6892)
 - `elasticsearchreceiver`: Use same metrics as JMX receiver for JVM metrics (#7160)
 - `elasticsearchreceiver`: Implement scraping logic (#7174)
 - `datadogexporter`: Add http.status_code tag to trace stats (#6889)
+- `datadogexporter`: Add configuration option to use OTel span name into the Datatog resource name (#6611)
+- `dynatraceexporter`: Write error logs using plugin logger (#7360)
 - `mongodbreceiver`: Add initial client code to the component (#7125)
 - `tanzuobservabilityexporter`: Support delta histograms (#6897)
+- `awscloudwatchlogsexporter`: Use cwlogs package to export logs (#7152)
 - `mysqlreceiver`: Add the receiver to available components (#7078)
+- `tanzuobservabilityexporter`: Documentation for the memory_limiter configuration (#7164)
 - `dynatraceexporter`: Do not shut down exporter when metrics ingest module is temporarily unavailable (#7161)
 - `mongodbreceiver`: Add metric metadata (#7163)
+- `mongodbreceiver`: Add metric scraping (#7175)
 - `postgresqlreceiver`: add the receiver to available components (#7079)
-- `filterprocessor`: Add ability to filter trace data (#5838)
+- `rabbitmqreceiver`: Add scraper logic (#7299)
+- `tanzuobservability exporter`: Support summary metrics (#7121)
+- `mongodbatlasreceiver`: Add retry and backoff to HTTP client (#6943)
+- Use Jaeger gRPC instead of Thrift in the docker-compose example (#7243)
+- `tanzuobservabilityexporter`: Support exponential histograms (#7127)
+- `receiver_creator`: Log added and removed endpoint env structs (#7248)
+- `prometheusreceiver`: Use the OTLP data conversion path by default. (#7282)
+  - Use `--feature-gates=-receiver.prometheus.OTLPDirect` to re-enable the 
+    OpenCensus conversion path.
+- `extension/observers`: Correctly set image and tag on container endpoints (#7279)
+- `tanzuobservabilityexporter`: Document how to enable memory_limiter (#7286)
+- `hostreceiver/networkscraper`: Migrate the scraper to the mdatagen metrics builder (#7048)
+- `hostmetricsreceiver`: Add MuteProcessNameError config flag to mute specific error reading process executable (#7176)
+- `scrapertest`: Improve comparison logic (#7305)
+- `hostmetricsreceiver`: add `cpu_average` option for load scraper to report the average cpu load (#6999)
+- `scrapertest`: Add comparison option to ignore specific attributes (#6519)
+- `tracegen`: Add option to pass in custom headers to export calls via command line (#7308)
+- `tracegen`: Provide official container images (#7179)
+- `scrapertest`: Add comparison function for pdata.Metrics (#7400)
 
 ## 🛑 Breaking changes 🛑
 
 - `tanzuobservabilityexporter`: Remove status.code
 - `tanzuobservabilityexporter`: Use semantic conventions for status.message (#7126) 
 - `k8sattributesprocessor`: Move `kube` and `observability` packages to `internal` folder (#7159)
-
-## 🧰 Bug fixes 🧰
-
-- `mdatagen`: Fix validation of `enabled` field in metadata.yaml (#7166)
+- `k8sattributesprocessor`: Unexport processor `Option`s (#7311)
+- `zookeeperreceiver`: Refactored metrics to have correct units, types, and combined some metrics via attributes. (#7280)
+- `prometheusremotewriteexporter`: `PRWExporter` struct and `NewPRWExporter()`
+  function are now unexported. (#TBD)
+- `newrelicexporter` marked as deprecated (#7284)
 
 ## 🚀 New components 🚀
 
+- `rabbitmqreceiver`: Establish codebase for RabbitMQ metrics receiver (#7239)
 - Add `basicauth` extension (#7167)
+- `k8seventsreceiver`: Implement core logic (#6885)
+
+## 🧰 Bug fixes 🧰
+
+- `k8sattributeprocessor`: Parse IP out of net.Addr to correctly tag k8s.pod.ip (#7077)
+- `k8sattributeprocessor`: Process IP correctly for net.Addr instances that are not typed (#7133)
+- `mdatagen`: Fix validation of `enabled` field in metadata.yaml (#7166)
+- `elasticsearch`: Fix timestamp for each metric being startup time (#7255)
+- `prometheusremotewriteexporter`: Fix index out of range panic caused by expiring metrics (#7149)
+- `resourcedetection`: Log the error when checking for ec2metadata availability (#7296) 
 
 ## v0.42.0
 
 ## 💡 Enhancements 💡
 
 - `couchbasereceiver`: Add couchbase client (#7122)
+- `couchdbreceiver`: Add couchdb scraper (#7131)
 - `couchdbreceiver`: Add couchdb client (#6880)
 - `elasticsearchreceiver`: Implement scraper client (#7019)
 - `couchdbreceiver`: Add metadata metrics (#6878)
@@ -45,7 +101,6 @@
 - `prometheusreceiver`: Set OTLP no-data-present flag for stale scraped metrics. (#7043)
 - `mysqlreceiver`: Add Integration test (#6916)
 - `datadogexporter`: Add compatibility with ECS Fargate semantic conventions (#6670)
-- `datadogexporter`: Add configuration option to use OTel span name into the Datatog resource name (#6611)
 - `k8s_observer`: discover k8s.node endpoints (#6820)
 - `redisreceiver`: Add missing description fields to keyspace metrics (#6940)
 - `redisreceiver`: Set start timestamp uniformly for gauge and sum metrics (#6941)
@@ -79,8 +134,7 @@
 - Sanitize URLs being logged (#7021)
 - `prometheusreceiver`: Fix start time tracking for long scrape intervals (#7053)
 - `signalfxexporter`: Don't use syscall to avoid compilation errors on some platforms (#7062)
-- `k8sattributeprocessor`: Parse IP out of net.Addr to correctly tag k8s.pod.ip (#7077)
-- `k8sattributeprocessor`: Process IP correctly for net.Addr instances that are not typed (#7133)
+- `tailsamplingprocessor`: Add support for new policies as composite sub-policies (#6975)
 
 ## 💡 Enhancements 💡
 

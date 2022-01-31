@@ -72,7 +72,7 @@ func createMetricsReceiver(
 	if !ok {
 		return nil, errConfigNotES
 	}
-	es := newElasticSearchScraper(params.Logger, c)
+	es := newElasticSearchScraper(params.TelemetrySettings, c)
 	scraper, err := scraperhelper.NewScraper(typeStr, es.scrape, scraperhelper.WithStart(es.start))
 	if err != nil {
 		return nil, err

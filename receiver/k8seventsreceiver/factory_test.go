@@ -18,32 +18,54 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	k8s "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/fake"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
-func TestFactory(t *testing.T) {
-	f := NewFactory()
-	require.Equal(t, config.Type("k8s_events"), f.Type())
-
-	cfg := f.CreateDefaultConfig()
+func TestDefaultConfig(t *testing.T) {
+	cfg := createDefaultConfig()
 	rCfg, ok := cfg.(*Config)
 	require.True(t, ok)
 
-	require.Equal(t, &Config{
+	assert.Equal(t, &Config{
 		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		APIConfig: k8sconfig.APIConfig{
 			AuthType: k8sconfig.AuthTypeServiceAccount,
 		},
 	}, rCfg)
+}
 
-	_, err := f.CreateLogsReceiver(
+func TestFactoryType(t *testing.T) {
+	assert.Equal(t, config.Type("k8s_events"), NewFactory().Type())
+}
+
+func TestCreateReceiver(t *testing.T) {
+	rCfg := createDefaultConfig().(*Config)
+
+	// Fails with bad K8s Config.
+	r, err := createLogsReceiver(
 		context.Background(), componenttest.NewNopReceiverCreateSettings(),
 		rCfg, consumertest.NewNop(),
 	)
-	require.NoError(t, err)
+	assert.Error(t, err)
+	assert.Nil(t, r)
+
+	// Override for test.
+	rCfg.makeClient = func(apiConf k8sconfig.APIConfig) (k8s.Interface, error) {
+		return fake.NewSimpleClientset(), nil
+	}
+	r, err = createLogsReceiver(
+		context.Background(),
+		componenttest.NewNopReceiverCreateSettings(),
+		rCfg, consumertest.NewNop(),
+	)
+	assert.NoError(t, err)
+	assert.NotNil(t, r)
 }

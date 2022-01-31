@@ -66,6 +66,12 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 				"server.state": "standalone",
 				"zk.version":   "3.4.14-4c25d480e66aadd371de8bd2fd8da255ac140bcf",
 			},
+			expectedLogs: []logMsg{
+				{
+					msg:   "metric computation failed",
+					level: zapcore.DebugLevel,
+				},
+			},
 			expectedNumResourceMetrics: 1,
 		},
 		{
@@ -97,6 +103,10 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 					msg:   "unexpected line in response",
 					level: zapcore.WarnLevel,
 				},
+				{
+					msg:   "metric computation failed",
+					level: zapcore.DebugLevel,
+				},
 			},
 			expectedNumResourceMetrics: 0,
 		},
@@ -106,6 +116,10 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			expectedLogs: []logMsg{
 				{
 					msg:   "non-integer value from mntr",
+					level: zapcore.DebugLevel,
+				},
+				{
+					msg:   "metric computation failed",
 					level: zapcore.DebugLevel,
 				},
 			},
@@ -118,6 +132,10 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 				{
 					msg:   "failed to set deadline on connection",
 					level: zapcore.WarnLevel,
+				},
+				{
+					msg:   "metric computation failed",
+					level: zapcore.DebugLevel,
 				},
 			},
 			expectedMetricsFilename: "error-setting-connection-deadline",
@@ -134,6 +152,10 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			name:                         "Error closing connection",
 			mockedZKOutputSourceFilename: "mntr-3.4.14",
 			expectedLogs: []logMsg{
+				{
+					msg:   "metric computation failed",
+					level: zapcore.DebugLevel,
+				},
 				{
 					msg:   "failed to shutdown connection",
 					level: zapcore.WarnLevel,
@@ -166,7 +188,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			name: "Disable zookeeper.watches metric",
 			metricsSettings: func() metadata.MetricsSettings {
 				ms := metadata.DefaultMetricsSettings()
-				ms.ZookeeperWatches.Enabled = false
+				ms.ZookeeperWatchCount.Enabled = false
 				return ms
 			},
 			mockedZKOutputSourceFilename: "mntr-3.4.14",
@@ -174,6 +196,12 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			expectedResourceAttributes: map[string]string{
 				"server.state": "standalone",
 				"zk.version":   "3.4.14-4c25d480e66aadd371de8bd2fd8da255ac140bcf",
+			},
+			expectedLogs: []logMsg{
+				{
+					msg:   "metric computation failed",
+					level: zapcore.DebugLevel,
+				},
 			},
 			expectedNumResourceMetrics: 1,
 		},
@@ -212,7 +240,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 				z.sendCmd = tt.sendCmd
 			}
 
-			got, err := z.scrape(ctx)
+			actualMetrics, err := z.scrape(ctx)
 			require.NoError(t, z.shutdown(ctx))
 
 			require.Equal(t, len(tt.expectedLogs), observedLogs.Len())
@@ -224,7 +252,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			if tt.expectedNumResourceMetrics == 0 {
 				if tt.wantErr {
 					require.Error(t, err)
-					require.Equal(t, pdata.NewMetrics(), got)
+					require.Equal(t, pdata.NewMetrics(), actualMetrics)
 				}
 
 				require.NoError(t, z.shutdown(ctx))
@@ -234,10 +262,8 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			expectedFile := filepath.Join("testdata", "scraper", fmt.Sprintf("%s.json", tt.expectedMetricsFilename))
 			expectedMetrics, err := golden.ReadMetrics(expectedFile)
 			require.NoError(t, err)
-			eMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
-			aMetricSlice := got.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
-			require.NoError(t, scrapertest.CompareMetricSlices(eMetricSlice, aMetricSlice))
+			require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
 		})
 	}
 }

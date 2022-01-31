@@ -32,7 +32,6 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.uber.org/zap"
 )
 
 func makeClient(t *testing.T, host string, compression bool) exporterClient {
@@ -56,7 +55,7 @@ func makeClient(t *testing.T, host string, compression bool) exporterClient {
 	err = cfg.sanitize()
 	require.NoError(t, err)
 
-	client, err := newHumioClient(cfg, zap.NewNop(), componenttest.NewNopHost())
+	client, err := newHumioClient(cfg, componenttest.NewNopTelemetrySettings(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	return client
 }

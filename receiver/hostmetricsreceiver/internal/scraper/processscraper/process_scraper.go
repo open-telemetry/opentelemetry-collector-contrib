@@ -144,7 +144,9 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 
 		executable, err := getProcessExecutable(handle)
 		if err != nil {
-			errs.AddPartial(1, fmt.Errorf("error reading process name for pid %v: %w", pid, err))
+			if !s.config.MuteProcessNameError {
+				errs.AddPartial(1, fmt.Errorf("error reading process name for pid %v: %w", pid, err))
+			}
 			continue
 		}
 

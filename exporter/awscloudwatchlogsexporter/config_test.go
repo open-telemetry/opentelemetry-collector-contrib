@@ -24,6 +24,8 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/service/servicetest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -45,12 +47,12 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t,
 		&Config{
-			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "e1-defaults")),
-			RetrySettings:    defaultRetrySettings,
-			LogGroupName:     "test-1",
-			LogStreamName:    "testing",
-			Region:           "",
-			Endpoint:         "",
+			ExporterSettings:   config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "e1-defaults")),
+			RetrySettings:      defaultRetrySettings,
+			LogGroupName:       "test-1",
+			LogStreamName:      "testing",
+			Endpoint:           "",
+			AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
 			QueueSettings: QueueSettings{
 				QueueSize: exporterhelper.DefaultQueueSettings().QueueSize,
 			},
@@ -69,8 +71,9 @@ func TestLoadConfig(t *testing.T) {
 				MaxInterval:     defaultRetrySettings.MaxInterval,
 				MaxElapsedTime:  defaultRetrySettings.MaxElapsedTime,
 			},
-			LogGroupName:  "test-2",
-			LogStreamName: "testing",
+			AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
+			LogGroupName:       "test-2",
+			LogStreamName:      "testing",
 			QueueSettings: QueueSettings{
 				QueueSize: 2,
 			},
