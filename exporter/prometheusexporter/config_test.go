@@ -52,5 +52,6 @@ func TestLoadConfig(t *testing.T) {
 			},
 			SendTimestamps:   true,
 			MetricExpiration: 60 * time.Minute,
+			sanitizeLabel:    false,
 		})
 }
