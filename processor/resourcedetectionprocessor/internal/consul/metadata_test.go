@@ -48,7 +48,7 @@ func TestConsulHappyPath(t *testing.T) {
 	config.Address = ts.URL
 
 	allowedLabels := map[string]interface{}{
-		"test": "",
+		"test": nil,
 	}
 	client, err := api.NewClient(config)
 	require.NoError(t, err)
