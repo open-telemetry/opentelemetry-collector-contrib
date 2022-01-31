@@ -150,6 +150,11 @@ func fillHostMetadata(params component.ExporterCreateSettings, cfg *config.Confi
 }
 
 func pushMetadata(cfg *config.Config, buildInfo component.BuildInfo, metadata *HostMetadata) error {
+	if metadata.Meta.Hostname == "" {
+		// if the hostname is empty, don't send metadata; we don't need it.
+		return nil
+	}
+
 	path := cfg.Metrics.TCPAddr.Endpoint + "/intake"
 	buf, _ := json.Marshal(metadata)
 	req, _ := http.NewRequest(http.MethodPost, path, bytes.NewBuffer(buf))
