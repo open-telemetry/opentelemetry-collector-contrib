@@ -31,6 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#814](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/814))
 - `opentelemetry-instrumentation-falcon` Falcon: Conditionally create SERVER spans
   ([#867](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/867))
+- `opentelemetry-instrumentation-pymongo` now supports `pymongo v4`
+  ([#876](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/876))
 
 ### Fixed
 

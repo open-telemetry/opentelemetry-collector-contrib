@@ -97,7 +97,7 @@ libraries = {
         "instrumentation": "opentelemetry-instrumentation-pymemcache==0.28b1",
     },
     "pymongo": {
-        "library": "pymongo ~= 3.1",
+        "library": "pymongo >= 3.1, < 5.0",
         "instrumentation": "opentelemetry-instrumentation-pymongo==0.28b1",
     },
     "PyMySQL": {

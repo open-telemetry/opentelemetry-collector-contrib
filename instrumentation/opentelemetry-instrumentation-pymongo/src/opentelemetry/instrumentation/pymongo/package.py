@@ -13,4 +13,4 @@
 # limitations under the License.
 
 
-_instruments = ("pymongo ~= 3.1",)
+_instruments = ("pymongo >= 3.1, < 5.0",)
