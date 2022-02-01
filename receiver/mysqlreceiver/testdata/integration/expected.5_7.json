@@ -1,0 +1,971 @@
+{
+   "resourceMetrics": [
+      {
+         "instrumentationLibraryMetrics": [
+            {
+               "instrumentationLibrary": {
+                  "name": "otel/mysql"
+               },
+               "metrics": [
+                  {
+                     "description": "The number of pages in the InnoDB buffer pool.",
+                     "name": "mysql.buffer_pool_pages",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asDouble": 0,
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "dirty"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asDouble": 1130,
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "data"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asDouble": 7058,
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "free"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asDouble": 8192,
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "total"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asDouble": 4,
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "misc"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asDouble": 165,
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "flushed"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           }
+                        ]
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "description": "The number of operations on the InnoDB buffer pool.",
+                     "name": "mysql.buffer_pool_operations",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "14557",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "read_requests"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "read_ahead_rnd"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "read_ahead"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asInt": "986",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "reads"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "read_ahead_evicted"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "wait_free"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asInt": "1669",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "write_requests"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "description": "The number of bytes in the InnoDB buffer pool.",
+                     "name": "mysql.buffer_pool_size",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asDouble": 134217728,
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "total"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asDouble": 18513920,
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "data"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asDouble": 0,
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "dirty"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           }
+                        ]
+                     },
+                     "unit": "By"
+                  },
+                  {
+                     "description": "The number of times each type of command has been executed.",
+                     "name": "mysql.commands",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "command",
+                                    "value": {
+                                       "stringValue": "prepare"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "command",
+                                    "value": {
+                                       "stringValue": "fetch"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "command",
+                                    "value": {
+                                       "stringValue": "close"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "command",
+                                    "value": {
+                                       "stringValue": "reset"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "command",
+                                    "value": {
+                                       "stringValue": "send_long_data"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "command",
+                                    "value": {
+                                       "stringValue": "execute"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "description": "The number of requests to various MySQL handlers.",
+                     "name": "mysql.handlers",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "4",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "prepare"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asInt": "583",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "read_rnd_next"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "delete"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "discover"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "read_prev"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asInt": "50",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "read_first"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asInt": "566",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "commit"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asInt": "3963",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "read_next"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asInt": "1682",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "read_key"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "read_last"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asInt": "314",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "write"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "mrr_init"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "savepoint"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "rollback"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "savepoint_rollback"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asInt": "6095",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "lock"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "read_rnd"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asInt": "318",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "update"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "description": "The number of writes to the InnoDB doublewrite buffer.",
+                     "name": "mysql.double_writes",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "6",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "writes"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asInt": "24",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "written"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "description": "The number of InndoDB log operations.",
+                     "name": "mysql.log_operations",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "waits"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asInt": "652",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "requests"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asInt": "44",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "writes"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "description": "The number of InndoDB operations.",
+                     "name": "mysql.operations",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "239",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "writes"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asInt": "1008",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "reads"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asInt": "55",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "fsyncs"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "description": "The number of InndoDB page operations.",
+                     "name": "mysql.page_operations",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "145",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "created"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asInt": "165",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "written"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asInt": "985",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "read"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "description": "The number of InndoDB row locks.",
+                     "name": "mysql.row_locks",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "waits"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "time"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "description": "The number of InndoDB row operations.",
+                     "name": "mysql.row_operations",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "updated"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "read"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "inserted"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "deleted"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "description": "The number of MySQL locks.",
+                     "name": "mysql.locks",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "waited"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asInt": "1",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "immediate"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "description": "The number of MySQL sorts.",
+                     "name": "mysql.sorts",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "range"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "scan"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "rows"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "merge_passes"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "description": "The state of MySQL threads.",
+                     "name": "mysql.threads",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asDouble": 0,
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "cached"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asDouble": 2,
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "running"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asDouble": 1,
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "connected"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           },
+                           {
+                              "asDouble": 1,
+                              "attributes": [
+                                 {
+                                    "key": "kind",
+                                    "value": {
+                                       "stringValue": "created"
+                                    }
+                                 }
+                              ],
+                              "timeUnixNano": "1642792845808815000"
+                           }
+                        ]
+                     },
+                     "unit": "1"
+                  }
+               ]
+            }
+         ],
+         "resource": {}
+      }
+   ]
+}
