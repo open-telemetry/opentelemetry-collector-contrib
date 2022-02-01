@@ -34,7 +34,7 @@ class TestJinja2Instrumentor(TestBase):
         # prevent cache effects when using Template('code...')
         if version.parse(jinja2.__version__) >= version.parse("3.0.0"):
             # by clearing functools.lru_cache
-            jinja2.environment.get_spontaneous_environment.clear()
+            jinja2.environment.get_spontaneous_environment.cache_clear()
         else:
             # by clearing jinja2.utils.LRUCache
             jinja2.environment._spontaneous_environments.clear()  # pylint: disable=no-member
