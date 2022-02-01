@@ -707,17 +707,17 @@ func TestLogs_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 
 	rl := l.ResourceLogs().AppendEmpty()
 	rl.Resource().Attributes().InsertString("X-Tenant", "acme")
-	log := rl.InstrumentationLibraryLogs().AppendEmpty().Logs().AppendEmpty()
+	log := rl.InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty()
 	log.SetName("mylog")
 
 	rl = l.ResourceLogs().AppendEmpty()
 	rl.Resource().Attributes().InsertString("X-Tenant", "acme")
-	log = rl.InstrumentationLibraryLogs().AppendEmpty().Logs().AppendEmpty()
+	log = rl.InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty()
 	log.SetName("mylog1")
 
 	rl = l.ResourceLogs().AppendEmpty()
 	rl.Resource().Attributes().InsertString("X-Tenant", "something-else")
-	log = rl.InstrumentationLibraryLogs().AppendEmpty().Logs().AppendEmpty()
+	log = rl.InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty()
 	log.SetName("mylog2")
 
 	ctx := context.Background()

@@ -884,7 +884,6 @@ go.opencensus.io v0.23.0 h1:gqCw0LfLxScz8irSi8exQc7fyQ0fKQU/qnC/X8+V/1M=
 go.opencensus.io v0.23.0/go.mod h1:XItmlyltB5F7CS4xOC1DcqMoFqwtC6OG2xF7mCv7P7E=
 go.opentelemetry.io/collector v0.43.3-0.20220201020338-caead4c4b0e2 h1:gupqyGxS+mSmGfO+4Q7XJTqh9zYQED9IJxGMX0hDzas=
 go.opentelemetry.io/collector v0.43.3-0.20220201020338-caead4c4b0e2/go.mod h1:6KcsT9S2jsF9Wi5deb8btujEgBssVXvww95+YthX8xA=
-go.opentelemetry.io/collector/model v0.36.1-0.20211004155959-190f8fbb2b9a/go.mod h1:ESh1oWDNdS4fTg9sTFoYuiuvs8QuaX8yNGTPix3JZc8=
 go.opentelemetry.io/collector/model v0.43.1/go.mod h1:uUgx84gI+G/tE87Oo84305q0MD8tUV9uWxg+ckAE7Ew=
 go.opentelemetry.io/collector/model v0.43.3-0.20220201020338-caead4c4b0e2 h1:mZaYmKE19t4T+gofBLpXgtUz2uxx8Bqh1MVhmEtTvxk=
 go.opentelemetry.io/collector/model v0.43.3-0.20220201020338-caead4c4b0e2/go.mod h1:4jo1R8uBDspLCxUGhQ0k3v/EFXFbW7s0AIy3LuGLbcU=
@@ -1390,7 +1389,6 @@ google.golang.org/grpc v1.39.0/go.mod h1:PImNr+rS9TWYb2O4/emRugxiyHZ5JyHW5F+RPnD
 google.golang.org/grpc v1.39.1/go.mod h1:PImNr+rS9TWYb2O4/emRugxiyHZ5JyHW5F+RPnDzfrE=
 google.golang.org/grpc v1.40.0/go.mod h1:ogyxbiOoUXAkP+4+xa6PZSE9DZgIHtSpzjDTB9KAK34=
 google.golang.org/grpc v1.40.1/go.mod h1:ogyxbiOoUXAkP+4+xa6PZSE9DZgIHtSpzjDTB9KAK34=
-google.golang.org/grpc v1.41.0/go.mod h1:U3l9uK9J0sini8mHphKoXyaqDA/8VyGnDee1zzIUK6k=
 google.golang.org/grpc v1.42.0/go.mod h1:k+4IHHFw41K8+bbowsex27ge2rCb65oeWqe4jJ590SU=
 google.golang.org/grpc v1.43.0/go.mod h1:k+4IHHFw41K8+bbowsex27ge2rCb65oeWqe4jJ590SU=
 google.golang.org/grpc v1.44.0 h1:weqSxi/TMs1SqFRMHCtBgXRs8k3X39QIDEZ0pRcttUg=

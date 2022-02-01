@@ -371,7 +371,7 @@ func TestFilterLogProcessor(t *testing.T) {
 			assert.Equal(t, len(test.outLN), rLogs.Len())
 
 			for i, wantOut := range test.outLN {
-				gotLogs := rLogs.At(i).InstrumentationLibraryLogs().At(0).Logs()
+				gotLogs := rLogs.At(i).InstrumentationLibraryLogs().At(0).LogRecords()
 				assert.Equal(t, len(wantOut), gotLogs.Len())
 				for idx := range wantOut {
 					assert.Equal(t, wantOut[idx], gotLogs.At(idx).Name())
@@ -390,7 +390,7 @@ func testResourceLogs(lwrs []logWithResource) pdata.Logs {
 
 		// Add resource level attribtues
 		pdata.NewAttributeMapFromMap(lwr.resourceAttributes).CopyTo(rl.Resource().Attributes())
-		ls := rl.InstrumentationLibraryLogs().AppendEmpty().Logs()
+		ls := rl.InstrumentationLibraryLogs().AppendEmpty().LogRecords()
 		for _, name := range lwr.logNames {
 			l := ls.AppendEmpty()
 			l.SetName(name)
@@ -426,7 +426,7 @@ func TestNilLog(t *testing.T) {
 	rl := rls.AppendEmpty()
 	ills := rl.InstrumentationLibraryLogs()
 	ill := ills.AppendEmpty()
-	ls := ill.Logs()
+	ls := ill.LogRecords()
 	ls.AppendEmpty()
 	requireNotPanicsLogs(t, logs)
 }
