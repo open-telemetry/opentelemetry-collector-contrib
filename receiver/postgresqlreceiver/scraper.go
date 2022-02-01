@@ -79,6 +79,23 @@ func addToIntMetric(metric pdata.NumberDataPointSlice, attributes pdata.Attribut
 
 // scrape scrapes the metric stats, transforms them and attributes them into a metric slices.
 func (p *postgreSQLScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
+	databases := p.config.Databases
+	listClient, err := p.clientFactory.getClient(p.config, "")
+	if err != nil {
+		p.logger.Error("Failed to initialize connection to postgres", zap.Error(err))
+		return pdata.NewMetrics(), err
+	}
+	defer listClient.Close()
+
+	if len(databases) == 0 {
+		dbList, err := listClient.listDatabases(ctx)
+		if err != nil {
+			p.logger.Error("Failed to request list of databases from postgres", zap.Error(err))
+			return pdata.NewMetrics(), err
+		}
+		databases = dbList
+	}
+
 	// metric initialization
 	md := pdata.NewMetrics()
 	ilm := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
@@ -94,26 +111,6 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 	rollbacks := initMetric(ilm.Metrics(), metadata.M.PostgresqlRollbacks).Sum().DataPoints()
 
 	var errors scrapererror.ScrapeErrors
-
-	databases := p.config.Databases
-	listClient, err := p.clientFactory.getClient(p.config, "")
-	if err != nil {
-		p.logger.Error("Failed to initialize connection to postgres", zap.Error(err))
-		errors.Add(err)
-		return md, errors.Combine()
-	}
-	defer listClient.Close()
-
-	if len(databases) == 0 {
-		dbList, err := listClient.listDatabases(ctx)
-		if err != nil {
-			p.logger.Error("Failed to request list of databases from postgres", zap.Error(err))
-			errors.Add(err)
-			return md, errors.Combine()
-		}
-
-		databases = dbList
-	}
 
 	p.collectCommitsAndRollbacks(ctx, now, listClient, databases, commits, rollbacks, errors)
 	p.collectDatabaseSize(ctx, now, listClient, databases, databaseSize, errors)
@@ -132,6 +129,9 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 		p.collectDatabaseTableMetrics(ctx, now, dbClient, databaseRows, operations, errors)
 	}
 
+	if md.DataPointCount() == 0 {
+		md = pdata.NewMetrics()
+	}
 	return md, errors.Combine()
 }
 

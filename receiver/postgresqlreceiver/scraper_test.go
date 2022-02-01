@@ -22,11 +22,24 @@ import (
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
 )
+
+func TestUnsuccessfulScrape(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Endpoint = "fake:11111"
+
+	scraper := newPostgreSQLScraper(zap.NewNop(), cfg, &defaultClientFactory{})
+	actualMetrics, err := scraper.scrape(context.Background())
+	require.Error(t, err)
+
+	require.NoError(t, scrapertest.CompareMetrics(pdata.NewMetrics(), actualMetrics))
+}
 
 func TestScraper(t *testing.T) {
 	factory := new(mockClientFactory)
