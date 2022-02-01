@@ -1,5 +1,6 @@
 # Resource Detection Processor
 
+
 Supported pipeline types: metrics, traces, logs
 
 The resource detection processor can be used to detect resource information from the host,
