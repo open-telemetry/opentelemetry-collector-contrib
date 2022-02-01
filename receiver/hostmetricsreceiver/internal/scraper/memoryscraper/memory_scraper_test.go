@@ -56,6 +56,14 @@ func TestScrape(t *testing.T) {
 				Metrics: metadata.DefaultMetricsSettings(),
 			},
 		},
+		{
+			name:              "Error",
+			bootTimeFunc:      func() (uint64, error) { return 100, errors.New("err1") },
+			initializationErr: "err1",
+			config: &Config{
+				Metrics: metadata.DefaultMetricsSettings(),
+			},
+		},
 	}
 
 	for _, test := range testCases {
