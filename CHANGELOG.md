@@ -13,6 +13,8 @@
 - `awscontainerinsightreceiver`: add full pod name when configured to AWS Container Insights Receiver (#7415)
 - `hostreceiver/loadscraper`: Migrate the scraper to the mdatagen metrics builder (#7288)
 - `awsecscontainermetricsreceiver`: Rename attributes to follow semantic conventions (#7425)
+- `mysqlreceiver`: Add golden files for integration test
+
 ## 🛑 Breaking changes 🛑
 
 ## 🚀 New components 🚀
