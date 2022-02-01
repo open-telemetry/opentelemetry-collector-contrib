@@ -47,253 +47,402 @@ func newGetSetter(val common.Value) (getSetter, error) {
 }
 
 func newPathGetSetter(path []common.Field) (getSetter, error) {
-	var getter exprFunc
-	var setter func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{})
 	switch path[0].Name {
 	case "resource":
-		mapKey := path[1].MapKey
-		if mapKey == nil {
-			getter = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
-				return resource.Attributes()
+		if len(path) == 1 {
+			return accessResource(), nil
+		}
+		switch path[1].Name {
+		case "attributes":
+			mapKey := path[1].MapKey
+			if mapKey == nil {
+				return accessResourceAttributes(), nil
 			}
-			setter = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
-				if attrs, ok := val.(pdata.AttributeMap); ok {
-					resource.Attributes().Clear()
-					attrs.CopyTo(resource.Attributes())
-				}
-			}
-		} else {
-			getter = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
-				return getAttr(resource.Attributes(), *mapKey)
-			}
-			setter = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
-				setAttr(resource.Attributes(), *mapKey, val)
-			}
+			return accessResourceAttributesKey(mapKey), nil
 		}
 	case "instrumentation_library":
 		if len(path) == 1 {
-			getter = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
-				return il
-			}
-			setter = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
-				if newIl, ok := val.(pdata.InstrumentationLibrary); ok {
-					newIl.CopyTo(il)
-				}
-			}
-		} else {
-			switch path[1].Name {
-			case "name":
-				getter = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
-					return il.Name()
-				}
-				setter = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
-					if str, ok := val.(string); ok {
-						il.SetName(str)
-					}
-				}
-			case "version":
-				getter = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
-					return il.Version()
-				}
-				setter = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
-					if str, ok := val.(string); ok {
-						il.SetVersion(str)
-					}
-				}
-			}
+			return accessInstrumentationLibrary(), nil
+		}
+		switch path[1].Name {
+		case "name":
+			return accessInstrumentationLibraryName(), nil
+		case "version":
+			return accessInstrumentationLibraryVersion(), nil
 		}
 	case "trace_id":
-		getter = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
-			return span.TraceID()
+		return accessTraceID(), nil
+	case "span_id":
+		return accessSpanID(), nil
+	case "trace_state":
+		return accessTraceState(), nil
+	case "parent_span_id":
+		return accessParentSpanID(), nil
+	case "name":
+		return accessName(), nil
+	case "kind":
+		return accessKind(), nil
+	case "start_time_unix_nano":
+		return accessStartTimeUnixNano(), nil
+	case "end_time_unix_nano":
+		return accessEndTimeUnixNano(), nil
+	case "attributes":
+		mapKey := path[0].MapKey
+		if mapKey == nil {
+			return accessAttributes(), nil
 		}
-		setter = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
+		return accessAttributesKey(mapKey), nil
+	case "dropped_attributes_count":
+		return accessDroppedAttributesCount(), nil
+	case "events":
+		return accessEvents(), nil
+	case "dropped_events_count":
+		return accessDroppedEventsCount(), nil
+	case "links":
+		return accessLinks(), nil
+	case "dropped_links_count":
+		return accessDroppedLinksCount(), nil
+	case "status":
+		if len(path) == 1 {
+			return accessStatus(), nil
+		}
+		switch path[1].Name {
+		case "code":
+			return accessStatusCode(), nil
+		case "message":
+			return accessStatusMessage(), nil
+		}
+	default:
+		return nil, fmt.Errorf("invalid path expression, unrecognized field %v", path[0].Name)
+	}
+
+	return nil, fmt.Errorf("invalid path expression %v", path)
+}
+
+func accessResource() pathGetSetter {
+	return pathGetSetter{
+		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
+			return resource
+		},
+		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
+			if newRes, ok := val.(pdata.Resource); ok {
+				resource.Attributes().Clear()
+				newRes.CopyTo(resource)
+			}
+		},
+	}
+}
+
+func accessResourceAttributes() pathGetSetter {
+	return pathGetSetter{
+		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
+			return resource.Attributes()
+		},
+		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
+			if attrs, ok := val.(pdata.AttributeMap); ok {
+				resource.Attributes().Clear()
+				attrs.CopyTo(resource.Attributes())
+			}
+		},
+	}
+}
+
+func accessResourceAttributesKey(mapKey *string) pathGetSetter {
+	return pathGetSetter{
+		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
+			return getAttr(resource.Attributes(), *mapKey)
+		},
+		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
+			setAttr(resource.Attributes(), *mapKey, val)
+		},
+	}
+}
+
+func accessInstrumentationLibrary() pathGetSetter {
+	return pathGetSetter{
+		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
+			return il
+		},
+		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
+			if newIl, ok := val.(pdata.InstrumentationLibrary); ok {
+				newIl.CopyTo(il)
+			}
+		},
+	}
+}
+
+func accessInstrumentationLibraryName() pathGetSetter {
+	return pathGetSetter{
+		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
+			return il.Name()
+		},
+		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
+			if str, ok := val.(string); ok {
+				il.SetName(str)
+			}
+		},
+	}
+}
+
+func accessInstrumentationLibraryVersion() pathGetSetter {
+	return pathGetSetter{
+		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
+			return il.Version()
+		},
+		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
+			if str, ok := val.(string); ok {
+				il.SetVersion(str)
+			}
+		},
+	}
+}
+
+func accessTraceID() pathGetSetter {
+	return pathGetSetter{
+		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
+			return span.TraceID()
+		},
+		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
 			if str, ok := val.(string); ok {
 				id, _ := hex.DecodeString(str)
 				var idArr [16]byte
 				copy(idArr[:16], id)
 				span.SetTraceID(pdata.NewTraceID(idArr))
 			}
-		}
-	case "span_id":
-		getter = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
+		},
+	}
+}
+
+func accessSpanID() pathGetSetter {
+	return pathGetSetter{
+		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
 			return span.SpanID()
-		}
-		setter = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
+		},
+		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
 			if str, ok := val.(string); ok {
 				id, _ := hex.DecodeString(str)
 				var idArr [8]byte
 				copy(idArr[:8], id)
 				span.SetSpanID(pdata.NewSpanID(idArr))
 			}
-		}
-	case "trace_state":
-		getter = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
+		},
+	}
+}
+
+func accessTraceState() pathGetSetter {
+	return pathGetSetter{
+		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
 			return span.TraceState()
-		}
-		setter = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
+		},
+		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
 			if str, ok := val.(string); ok {
 				span.SetTraceState(pdata.TraceState(str))
 			}
-		}
-	case "parent_span_id":
-		getter = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
+		},
+	}
+}
+
+func accessParentSpanID() pathGetSetter {
+	return pathGetSetter{
+		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
 			return span.ParentSpanID()
-		}
-		setter = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
+		},
+		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
 			if str, ok := val.(string); ok {
 				id, _ := hex.DecodeString(str)
 				var idArr [8]byte
 				copy(idArr[:8], id)
 				span.SetParentSpanID(pdata.NewSpanID(idArr))
 			}
-		}
-	case "name":
-		getter = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
+		},
+	}
+}
+
+func accessName() pathGetSetter {
+	return pathGetSetter{
+		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
 			return span.Name()
-		}
-		setter = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
+		},
+		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
 			if str, ok := val.(string); ok {
 				span.SetName(str)
 			}
-		}
-	case "kind":
-		getter = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
+		},
+	}
+}
+
+func accessKind() pathGetSetter {
+	return pathGetSetter{
+		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
 			return span.Kind()
-		}
-		setter = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
+		},
+		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
 			if i, ok := val.(int64); ok {
 				span.SetKind(pdata.SpanKind(i))
 			}
-		}
-	case "start_time_unix_nano":
-		getter = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
+		},
+	}
+}
+
+func accessStartTimeUnixNano() pathGetSetter {
+	return pathGetSetter{
+		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
 			return span.StartTimestamp().AsTime().UnixNano()
-		}
-		setter = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
+		},
+		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
 			if i, ok := val.(int64); ok {
 				span.SetStartTimestamp(pdata.NewTimestampFromTime(time.Unix(0, i)))
 			}
-		}
-	case "end_time_unix_nano":
-		getter = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
+		},
+	}
+}
+
+func accessEndTimeUnixNano() pathGetSetter {
+	return pathGetSetter{
+		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
 			return span.EndTimestamp().AsTime().UnixNano()
-		}
-		setter = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
+		},
+		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
 			if i, ok := val.(int64); ok {
 				span.SetEndTimestamp(pdata.NewTimestampFromTime(time.Unix(0, i)))
 			}
-		}
-	case "attributes":
-		mapKey := path[0].MapKey
-		if mapKey == nil {
-			getter = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
-				return span.Attributes()
+		},
+	}
+}
+
+func accessAttributes() pathGetSetter {
+	return pathGetSetter{
+		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
+			return span.Attributes()
+		},
+		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
+			if attrs, ok := val.(pdata.AttributeMap); ok {
+				span.Attributes().Clear()
+				attrs.CopyTo(span.Attributes())
 			}
-			setter = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
-				if attrs, ok := val.(pdata.AttributeMap); ok {
-					span.Attributes().Clear()
-					attrs.CopyTo(span.Attributes())
-				}
-			}
-		} else {
-			getter = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
-				return getAttr(span.Attributes(), *mapKey)
-			}
-			setter = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
-				setAttr(span.Attributes(), *mapKey, val)
-			}
-		}
-	case "dropped_attributes_count":
-		getter = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
+		},
+	}
+}
+
+func accessAttributesKey(mapKey *string) pathGetSetter {
+	return pathGetSetter{
+		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
+			return getAttr(span.Attributes(), *mapKey)
+		},
+		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
+			setAttr(span.Attributes(), *mapKey, val)
+		},
+	}
+}
+
+func accessDroppedAttributesCount() pathGetSetter {
+	return pathGetSetter{
+		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
 			return span.DroppedAttributesCount()
-		}
-		setter = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
+		},
+		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
 			if i, ok := val.(int64); ok {
 				span.SetDroppedAttributesCount(uint32(i))
 			}
-		}
-	case "events":
-		getter = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
+		},
+	}
+}
+
+func accessEvents() pathGetSetter {
+	return pathGetSetter{
+		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
 			return span.Events()
-		}
-		setter = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
+		},
+		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
 			if slc, ok := val.(pdata.SpanEventSlice); ok {
 				span.Events().RemoveIf(func(event pdata.SpanEvent) bool {
 					return true
 				})
 				slc.CopyTo(span.Events())
 			}
-		}
-	case "dropped_events_count":
-		getter = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
+		},
+	}
+}
+
+func accessDroppedEventsCount() pathGetSetter {
+	return pathGetSetter{
+		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
 			return span.DroppedEventsCount()
-		}
-		setter = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
+		},
+		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
 			if i, ok := val.(int64); ok {
 				span.SetDroppedEventsCount(uint32(i))
 			}
-		}
-	case "links":
-		getter = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
+		},
+	}
+}
+
+func accessLinks() pathGetSetter {
+	return pathGetSetter{
+		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
 			return span.Links()
-		}
-		setter = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
+		},
+		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
 			if slc, ok := val.(pdata.SpanLinkSlice); ok {
 				span.Links().RemoveIf(func(event pdata.SpanLink) bool {
 					return true
 				})
 				slc.CopyTo(span.Links())
 			}
-		}
-	case "dropped_links_count":
-		getter = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
+		},
+	}
+}
+
+func accessDroppedLinksCount() pathGetSetter {
+	return pathGetSetter{
+		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
 			return span.DroppedLinksCount()
-		}
-		setter = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
+		},
+		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
 			if i, ok := val.(int64); ok {
 				span.SetDroppedLinksCount(uint32(i))
 			}
-		}
-	case "status":
-		if len(path) == 1 {
-			getter = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
-				return span.Status()
-			}
-			setter = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
-				if status, ok := val.(pdata.SpanStatus); ok {
-					status.CopyTo(span.Status())
-				}
-			}
-		} else {
-			switch path[1].Name {
-			case "code":
-				getter = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
-					return span.Status().Code()
-				}
-				setter = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
-					if i, ok := val.(int64); ok {
-						span.Status().SetCode(pdata.StatusCode(i))
-					}
-				}
-			case "message":
-				getter = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
-					return span.Status().Message()
-				}
-				setter = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
-					if str, ok := val.(string); ok {
-						span.Status().SetMessage(str)
-					}
-				}
-			}
-		}
-	default:
-		return nil, fmt.Errorf("invalid path expression, unrecognized field %v", path[0].Name)
+		},
 	}
+}
 
+func accessStatus() pathGetSetter {
 	return pathGetSetter{
-		getter: getter,
-		setter: setter,
-	}, nil
+		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
+			return span.Status()
+		},
+		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
+			if status, ok := val.(pdata.SpanStatus); ok {
+				status.CopyTo(span.Status())
+			}
+		},
+	}
+}
+
+func accessStatusCode() pathGetSetter {
+	return pathGetSetter{
+		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
+			return span.Status().Code()
+		},
+		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
+			if i, ok := val.(int64); ok {
+				span.Status().SetCode(pdata.StatusCode(i))
+			}
+		},
+	}
+}
+
+func accessStatusMessage() pathGetSetter {
+	return pathGetSetter{
+		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
+			return span.Status().Message()
+		},
+		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
+			if str, ok := val.(string); ok {
+				span.Status().SetMessage(str)
+			}
+		},
+	}
 }
 
 func getAttr(attrs pdata.AttributeMap, mapKey string) interface{} {
