@@ -16,10 +16,12 @@ package transformprocessor // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"go.opentelemetry.io/collector/config"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
 )
 
 type TracesConfig struct {
-	Queries []string `mapstructure:"queries"`
+	Queries []traces.Query `mapstructure:"queries"`
 }
 
 type Config struct {

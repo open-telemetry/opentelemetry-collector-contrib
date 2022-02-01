@@ -20,6 +20,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
 )
 
 func TestFactory_Type(t *testing.T) {
@@ -33,7 +35,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, cfg, &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		Traces: TracesConfig{
-			Queries: []string{},
+			Queries: []traces.Query{},
 		},
 	})
 	assert.NoError(t, configtest.CheckConfigStruct(cfg))

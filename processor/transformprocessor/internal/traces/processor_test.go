@@ -123,10 +123,13 @@ func BenchmarkTwoSpans(b *testing.B) {
 		b.Run(tt.name, func(b *testing.B) {
 			statements, err := parse(tt.queries)
 			assert.NoError(b, err)
+			processor, err := NewProcessor(statements, component.ProcessorCreateSettings{})
+			assert.NoError(b, err)
 			b.ResetTimer()
 			for n := 0; n < b.N; n++ {
 				td := constructTraces()
-				process(td, statements)
+				_, err = processor.ProcessTraces(context.Background(), td)
+				assert.NoError(b, err)
 			}
 		})
 	}
@@ -164,10 +167,13 @@ func BenchmarkHundredSpans(b *testing.B) {
 		b.Run(tt.name, func(b *testing.B) {
 			statements, err := parse(tt.queries)
 			assert.NoError(b, err)
+			processor, err := NewProcessor(statements, component.ProcessorCreateSettings{})
+			assert.NoError(b, err)
 			b.ResetTimer()
 			for n := 0; n < b.N; n++ {
 				td := constructTracesNum(100)
-				process(td, statements)
+				_, err = processor.ProcessTraces(context.Background(), td)
+				assert.NoError(b, err)
 			}
 		})
 	}

@@ -44,11 +44,6 @@ func NewProcessor(statements []Query, settings component.ProcessorCreateSettings
 }
 
 func (p *Processor) ProcessTraces(_ context.Context, td pdata.Traces) (pdata.Traces, error) {
-	process(td, p.statements)
-	return td, nil
-}
-
-func process(td pdata.Traces, statements []Query) {
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
 		for j := 0; j < rspans.InstrumentationLibrarySpans().Len(); j++ {
@@ -57,7 +52,7 @@ func process(td pdata.Traces, statements []Query) {
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
 
-				for _, statement := range statements {
+				for _, statement := range p.statements {
 					if statement.condition(span, il, rspans.Resource()) {
 						statement.function(span, il, rspans.Resource())
 					}
@@ -65,6 +60,7 @@ func process(td pdata.Traces, statements []Query) {
 			}
 		}
 	}
+	return td, nil
 }
 
 func (s *Query) UnmarshalText(text []byte) error {

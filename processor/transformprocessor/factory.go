@@ -16,12 +16,14 @@ package transformprocessor // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
 )
 
 const (
@@ -42,23 +44,26 @@ func createDefaultConfig() config.Processor {
 	return &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		Traces: TracesConfig{
-			Queries: []string{},
+			Queries: []traces.Query{},
 		},
 	}
 }
 
 func createTracesProcessor(
 	_ context.Context,
-	_ component.ProcessorCreateSettings,
+	settings component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
+	oCfg := cfg.(*Config)
+
+	proc, err := traces.NewProcessor(oCfg.Traces.Queries, settings)
+	if err != nil {
+		return nil, fmt.Errorf("invalid config for \"transform\" processor %w", err)
+	}
 	return processorhelper.NewTracesProcessor(
 		cfg,
 		nextConsumer,
-		// TODO(anuraaga): Replace with business logic.
-		func(ctx context.Context, p pdata.Traces) (pdata.Traces, error) {
-			return p, nil
-		},
+		proc.ProcessTraces,
 		processorhelper.WithCapabilities(processorCapabilities))
 }
