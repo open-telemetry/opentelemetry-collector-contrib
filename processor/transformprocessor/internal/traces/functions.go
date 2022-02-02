@@ -70,6 +70,7 @@ func keepKeys(target getSetter, keys []string) exprFunc {
 	}
 }
 
+// TODO(anuraaga): See if reflection can be avoided without complicating definition of transform functions.
 func newFunctionCall(inv common.Invocation, functions map[string]interface{}) (exprFunc, error) {
 	if f, ok := functions[inv.Function]; ok {
 		fType := reflect.TypeOf(f)
