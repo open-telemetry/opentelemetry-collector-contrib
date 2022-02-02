@@ -56,6 +56,12 @@ class TestUtils(TestBase):
                 actual = http_status_to_status_code(int(status_code))
                 self.assertEqual(actual, expected, status_code)
 
+    def test_http_status_to_status_code_none(self):
+        for status_code, expected in ((None, StatusCode.UNSET),):
+            with self.subTest(status_code=status_code):
+                actual = http_status_to_status_code(status_code)
+                self.assertEqual(actual, expected, status_code)
+
     def test_http_status_to_status_code_redirect(self):
         for status_code, expected in (
             (HTTPStatus.MULTIPLE_CHOICES, StatusCode.ERROR),

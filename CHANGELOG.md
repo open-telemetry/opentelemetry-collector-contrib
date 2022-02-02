@@ -64,6 +64,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `opentelemetry-instrumentation-urllib` Fixed an error on unexpected status values.
+  ([#823](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/823))
+
 - `opentelemetry-exporter-richconsole` Fixed attribute error on parentless spans.
   ([#782](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/782))
 

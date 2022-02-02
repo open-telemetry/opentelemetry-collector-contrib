@@ -49,6 +49,9 @@ def http_status_to_status_code(
         status (int): HTTP status code
     """
     # See: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/http.md#status
+    if not isinstance(status, int):
+        return StatusCode.UNSET
+
     if status < 100:
         return StatusCode.ERROR
     if status <= 299:
