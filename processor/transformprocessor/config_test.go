@@ -43,7 +43,7 @@ func TestLoadingConfig(t *testing.T) {
 		Traces: TracesConfig{
 			Queries: []string{
 				`set(name, "bear") where attributes["http.path"] == "/animal"`,
-				`keep(attributes, "http.method", "http.path")`,
+				`keep_keys(attributes, "http.method", "http.path")`,
 			},
 
 			functions: traces.DefaultFunctions(),

@@ -89,9 +89,9 @@ func Test_newFunctionCall(t *testing.T) {
 			},
 		},
 		{
-			name: "keep one",
+			name: "keep_keys one",
 			inv: common.Invocation{
-				Function: "keep",
+				Function: "keep_keys",
 				Arguments: []common.Value{
 					{
 						Path: &common.Path{
@@ -116,9 +116,9 @@ func Test_newFunctionCall(t *testing.T) {
 			},
 		},
 		{
-			name: "keep two",
+			name: "keep_keys two",
 			inv: common.Invocation{
-				Function: "keep",
+				Function: "keep_keys",
 				Arguments: []common.Value{
 					{
 						Path: &common.Path{
@@ -147,9 +147,9 @@ func Test_newFunctionCall(t *testing.T) {
 			},
 		},
 		{
-			name: "keep none",
+			name: "keep_keys none",
 			inv: common.Invocation{
-				Function: "keep",
+				Function: "keep_keys",
 				Arguments: []common.Value{
 					{
 						Path: &common.Path{
@@ -257,7 +257,7 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 		{
 			name: "not matching slice type",
 			inv: common.Invocation{
-				Function: "keep",
+				Function: "keep_keys",
 				Arguments: []common.Value{
 					{
 						Path: &common.Path{

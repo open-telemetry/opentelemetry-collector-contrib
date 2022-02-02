@@ -51,7 +51,7 @@ func TestProcess(t *testing.T) {
 			},
 		},
 		{
-			query: `keep(attributes, "http.method") where name == "operationA"`,
+			query: `keep_keys(attributes, "http.method") where name == "operationA"`,
 			want: func(td pdata.Traces) {
 				td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).Attributes().Clear()
 				td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).Attributes().InsertString("http.method", "get")
@@ -97,12 +97,12 @@ func BenchmarkTwoSpans(b *testing.B) {
 			queries: []string{`set(attributes["test"], "pass") where name == "operationA"`},
 		},
 		{
-			name:    "keep attribute",
-			queries: []string{`keep(attributes, "http.method") where name == "operationA"`},
+			name:    "keep_keys attribute",
+			queries: []string{`keep_keys(attributes, "http.method") where name == "operationA"`},
 		},
 		{
 			name:    "no match",
-			queries: []string{`keep(attributes, "http.method") where name == "unknownOperation"`},
+			queries: []string{`keep_keys(attributes, "http.method") where name == "unknownOperation"`},
 		},
 		{
 			name:    "inner field",
@@ -153,7 +153,7 @@ func BenchmarkHundredSpans(b *testing.B) {
 				queries := make([]string, 0)
 				queries = append(queries, `set(status.code, 1) where name == "operationA"`)
 				for i := 0; i < 99; i++ {
-					queries = append(queries, `keep(attributes, "http.method") where name == "unknownOperation"`)
+					queries = append(queries, `keep_keys(attributes, "http.method") where name == "unknownOperation"`)
 				}
 				return queries
 			}(),
