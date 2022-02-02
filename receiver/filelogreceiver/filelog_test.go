@@ -227,7 +227,7 @@ func consumeNLogsFromConverter(ch <-chan pdata.Logs, count int, wg *sync.WaitGro
 
 	n := 0
 	for pLog := range ch {
-		n += pLog.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().Len()
+		n += pLog.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().Len()
 
 		if n == count {
 			return

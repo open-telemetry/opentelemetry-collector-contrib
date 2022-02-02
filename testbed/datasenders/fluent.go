@@ -90,13 +90,13 @@ func (f *FluentLogsForwarder) ConsumeLogs(_ context.Context, logs pdata.Logs) er
 	for i := 0; i < logs.ResourceLogs().Len(); i++ {
 		for j := 0; j < logs.ResourceLogs().At(i).InstrumentationLibraryLogs().Len(); j++ {
 			ills := logs.ResourceLogs().At(i).InstrumentationLibraryLogs().At(j)
-			for k := 0; k < ills.Logs().Len(); k++ {
+			for k := 0; k < ills.LogRecords().Len(); k++ {
 				if f.dataFile == nil {
-					if err := f.fluentLogger.Post("", f.convertLogToMap(ills.Logs().At(k))); err != nil {
+					if err := f.fluentLogger.Post("", f.convertLogToMap(ills.LogRecords().At(k))); err != nil {
 						return err
 					}
 				} else {
-					if _, err := f.dataFile.Write(append(f.convertLogToJSON(ills.Logs().At(k)), '\n')); err != nil {
+					if _, err := f.dataFile.Write(append(f.convertLogToJSON(ills.LogRecords().At(k)), '\n')); err != nil {
 						return err
 					}
 				}
