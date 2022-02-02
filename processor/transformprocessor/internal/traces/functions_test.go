@@ -173,7 +173,7 @@ func Test_newFunctionCall(t *testing.T) {
 			span := pdata.NewSpan()
 			input.CopyTo(span)
 
-			evaluate, err := newFunctionCall(tt.inv)
+			evaluate, err := newFunctionCall(tt.inv, DefaultFunctions())
 			assert.NoError(t, err)
 			evaluate(span, pdata.NewInstrumentationLibrary(), pdata.NewResource())
 
@@ -277,7 +277,7 @@ func Test_newFunctionCall_invalid(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := newFunctionCall(tt.inv)
+			_, err := newFunctionCall(tt.inv, DefaultFunctions())
 			assert.Error(t, err)
 		})
 	}

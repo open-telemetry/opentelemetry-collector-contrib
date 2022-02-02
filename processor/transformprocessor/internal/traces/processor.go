@@ -19,6 +19,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
@@ -36,9 +37,13 @@ type Query struct {
 	condition condFunc
 }
 
-func NewProcessor(statements []Query, settings component.ProcessorCreateSettings) (*Processor, error) {
+func NewProcessor(statements []string, functions map[string]interface{}, settings component.ProcessorCreateSettings) (*Processor, error) {
+	queries, err := Parse(statements, functions)
+	if err != nil {
+		return nil, err
+	}
 	return &Processor{
-		statements: statements,
+		statements: queries,
 		logger:     settings.Logger,
 	}, nil
 }
@@ -63,22 +68,34 @@ func (p *Processor) ProcessTraces(_ context.Context, td pdata.Traces) (pdata.Tra
 	return td, nil
 }
 
-func (s *Query) UnmarshalText(text []byte) error {
-	parsed, err := common.Parse(string(text))
-	if err != nil {
-		return err
+func Parse(statements []string, functions map[string]interface{}) ([]Query, error) {
+	queries := make([]Query, 0)
+	var errors error
+
+	for _, statement := range statements {
+		parsed, err := common.Parse(statement)
+		if err != nil {
+			errors = multierr.Append(errors, err)
+			continue
+		}
+		function, err := newFunctionCall(parsed.Invocation, functions)
+		if err != nil {
+			errors = multierr.Append(errors, err)
+			continue
+		}
+		condition, err := newConditionEvaluator(parsed.Condition, functions)
+		if err != nil {
+			errors = multierr.Append(errors, err)
+			continue
+		}
+		queries = append(queries, Query{
+			function:  function,
+			condition: condition,
+		})
 	}
-	function, err := newFunctionCall(parsed.Invocation)
-	if err != nil {
-		return err
+
+	if errors != nil {
+		return nil, errors
 	}
-	condition, err := newConditionEvaluator(parsed.Condition)
-	if err != nil {
-		return err
-	}
-	*s = Query{
-		function:  function,
-		condition: condition,
-	}
-	return nil
+	return queries, nil
 }

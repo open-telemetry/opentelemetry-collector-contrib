@@ -28,15 +28,15 @@ var alwaysTrue = func(span pdata.Span, il pdata.InstrumentationLibrary, resource
 	return true
 }
 
-func newConditionEvaluator(cond *common.Condition) (condFunc, error) {
+func newConditionEvaluator(cond *common.Condition, functions map[string]interface{}) (condFunc, error) {
 	if cond == nil {
 		return alwaysTrue, nil
 	}
-	left, err := newGetter(cond.Left)
+	left, err := newGetter(cond.Left, functions)
 	if err != nil {
 		return nil, err
 	}
-	right, err := newGetter(cond.Right)
+	right, err := newGetter(cond.Right, functions)
 	// TODO(anuraaga): Check if both left and right are literals and const-evaluate
 	if err != nil {
 		return nil, err

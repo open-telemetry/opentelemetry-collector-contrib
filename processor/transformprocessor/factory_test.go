@@ -35,7 +35,9 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, cfg, &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		Traces: TracesConfig{
-			Queries: []traces.Query{},
+			Queries: []string{},
+
+			functions: traces.DefaultFunctions(),
 		},
 	})
 	assert.NoError(t, configtest.CheckConfigStruct(cfg))

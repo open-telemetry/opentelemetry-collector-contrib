@@ -69,9 +69,7 @@ func TestProcess(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.query, func(t *testing.T) {
 			td := constructTraces()
-			statements, err := parse([]string{tt.query})
-			assert.NoError(t, err)
-			processor, err := NewProcessor(statements, component.ProcessorCreateSettings{})
+			processor, err := NewProcessor([]string{tt.query}, DefaultFunctions(), component.ProcessorCreateSettings{})
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessTraces(context.Background(), td)
@@ -121,9 +119,7 @@ func BenchmarkTwoSpans(b *testing.B) {
 
 	for _, tt := range tests {
 		b.Run(tt.name, func(b *testing.B) {
-			statements, err := parse(tt.queries)
-			assert.NoError(b, err)
-			processor, err := NewProcessor(statements, component.ProcessorCreateSettings{})
+			processor, err := NewProcessor(tt.queries, DefaultFunctions(), component.ProcessorCreateSettings{})
 			assert.NoError(b, err)
 			b.ResetTimer()
 			for n := 0; n < b.N; n++ {
@@ -165,9 +161,7 @@ func BenchmarkHundredSpans(b *testing.B) {
 	}
 	for _, tt := range tests {
 		b.Run(tt.name, func(b *testing.B) {
-			statements, err := parse(tt.queries)
-			assert.NoError(b, err)
-			processor, err := NewProcessor(statements, component.ProcessorCreateSettings{})
+			processor, err := NewProcessor(tt.queries, DefaultFunctions(), component.ProcessorCreateSettings{})
 			assert.NoError(b, err)
 			b.ResetTimer()
 			for n := 0; n < b.N; n++ {
@@ -227,18 +221,4 @@ func fillSpanTwo(span pdata.Span) {
 	status := span.Status()
 	status.SetCode(pdata.StatusCodeError)
 	status.SetMessage("status-cancelled")
-}
-
-func parse(queries []string) ([]Query, error) {
-	statements := make([]Query, 0)
-	for _, q := range queries {
-		statement := Query{}
-		err := statement.UnmarshalText([]byte(q))
-		if err != nil {
-			return nil, err
-		}
-		statements = append(statements, statement)
-	}
-
-	return statements, nil
 }

@@ -30,9 +30,6 @@ func hello() exprFunc {
 }
 
 func Test_newGetter(t *testing.T) {
-	registerFunction("hello", hello)
-	defer unregisterFunction("hello")
-
 	span := pdata.NewSpan()
 	span.SetName("bear")
 	tests := []struct {
@@ -85,9 +82,11 @@ func Test_newGetter(t *testing.T) {
 		},
 	}
 
+	functions := map[string]interface{}{"hello": hello}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			reader, err := newGetter(tt.val)
+			reader, err := newGetter(tt.val, functions)
 			assert.NoError(t, err)
 			val := reader.get(span, pdata.NewInstrumentationLibrary(), pdata.NewResource())
 			assert.Equal(t, tt.want, val)
@@ -95,7 +94,7 @@ func Test_newGetter(t *testing.T) {
 	}
 
 	t.Run("empty value", func(t *testing.T) {
-		_, err := newGetter(common.Value{})
+		_, err := newGetter(common.Value{}, functions)
 		assert.Error(t, err)
 	})
 }

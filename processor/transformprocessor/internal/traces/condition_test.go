@@ -103,7 +103,7 @@ func Test_newConditionEvaluator(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			evaluate, err := newConditionEvaluator(tt.cond)
+			evaluate, err := newConditionEvaluator(tt.cond, DefaultFunctions())
 			assert.NoError(t, err)
 			assert.True(t, evaluate(tt.matching, pdata.NewInstrumentationLibrary(), pdata.NewResource()))
 		})
@@ -118,7 +118,7 @@ func Test_newConditionEvaluator(t *testing.T) {
 			Right: common.Value{
 				String: strp("cat"),
 			},
-		})
+		}, DefaultFunctions())
 		assert.Error(t, err)
 	})
 }

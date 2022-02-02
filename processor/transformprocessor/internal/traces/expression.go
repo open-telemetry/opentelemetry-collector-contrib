@@ -45,7 +45,7 @@ func (l literal) get(pdata.Span, pdata.InstrumentationLibrary, pdata.Resource) i
 	return l.value
 }
 
-func newGetter(val common.Value) (getter, error) {
+func newGetter(val common.Value, functions map[string]interface{}) (getter, error) {
 	if s := val.String; s != nil {
 		return &literal{value: *s}, nil
 	}
@@ -65,7 +65,7 @@ func newGetter(val common.Value) (getter, error) {
 		return nil, fmt.Errorf("no value field set. This is a bug in the transformprocessor")
 	}
 
-	call, err := newFunctionCall(*val.Invocation)
+	call, err := newFunctionCall(*val.Invocation, functions)
 	if err != nil {
 		return nil, err
 	}

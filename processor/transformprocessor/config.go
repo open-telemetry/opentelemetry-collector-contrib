@@ -21,7 +21,10 @@ import (
 )
 
 type TracesConfig struct {
-	Queries []traces.Query `mapstructure:"queries"`
+	Queries []string `mapstructure:"queries"`
+
+	// The functions that have been registered in the extension for traces processing.
+	functions map[string]interface{} `mapstructure:"-"`
 }
 
 type Config struct {
@@ -31,3 +34,8 @@ type Config struct {
 }
 
 var _ config.Processor = (*Config)(nil)
+
+func (c *Config) Validate() error {
+	_, err := traces.Parse(c.Traces.Queries, c.Traces.functions)
+	return err
+}
