@@ -24,7 +24,7 @@
 - `resourcedetectionprocessor`: fix `meta` allow list excluding keys with nil values (#7424)
 - `postgresqlreceiver`: Fix issue where empty metrics could be returned after failed connection (#7502)
 - `resourcetotelemetry`: Ensure resource attributes are added to summary
-  data points. (#7523)
+  and exponential histogram data points. (#7523)
 
 ## v0.43.0
 
