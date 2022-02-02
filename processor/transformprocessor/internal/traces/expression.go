@@ -30,10 +30,15 @@ type getter interface {
 	get(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{}
 }
 
+// setter allows writing a value to trace data.
+type setter interface {
+	set(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{})
+}
+
 // getSetter allows reading or writing a value to trace data.
 type getSetter interface {
 	getter
-	set(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{})
+	setter
 }
 
 // literal holds a literal value defined as part of a Query. It does not read from telemetry data.

@@ -32,7 +32,7 @@ func DefaultFunctions() map[string]interface{} {
 	return registry
 }
 
-func set(target getSetter, value getter) exprFunc {
+func set(target setter, value getter) exprFunc {
 	return func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
 		val := value.get(span, il, resource)
 		if val != nil {
@@ -99,6 +99,8 @@ func newFunctionCall(inv common.Invocation, functions map[string]interface{}) (e
 			}
 			argDef := inv.Arguments[i]
 			switch argType.Name() {
+			case "setter":
+				fallthrough
 			case "getSetter":
 				arg, err := newGetSetter(argDef)
 				if err != nil {
