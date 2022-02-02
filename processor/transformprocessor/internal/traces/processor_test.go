@@ -148,7 +148,7 @@ func BenchmarkHundredSpans(b *testing.B) {
 			},
 		},
 		{
-			name: "hundred statements",
+			name: "hundred queries",
 			queries: func() []string {
 				queries := make([]string, 0)
 				queries = append(queries, `set(status.code, 1) where name == "operationA"`)

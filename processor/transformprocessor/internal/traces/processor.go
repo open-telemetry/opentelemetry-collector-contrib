@@ -26,8 +26,8 @@ import (
 )
 
 type Processor struct {
-	statements []Query
-	logger     *zap.Logger
+	queries []Query
+	logger  *zap.Logger
 }
 
 // Query holds a top level Query for processing trace data. A Query is a combination of a function
@@ -43,8 +43,8 @@ func NewProcessor(statements []string, functions map[string]interface{}, setting
 		return nil, err
 	}
 	return &Processor{
-		statements: queries,
-		logger:     settings.Logger,
+		queries: queries,
+		logger:  settings.Logger,
 	}, nil
 }
 
@@ -57,7 +57,7 @@ func (p *Processor) ProcessTraces(_ context.Context, td pdata.Traces) (pdata.Tra
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
 
-				for _, statement := range p.statements {
+				for _, statement := range p.queries {
 					if statement.condition(span, il, rspans.Resource()) {
 						statement.function(span, il, rspans.Resource())
 					}
