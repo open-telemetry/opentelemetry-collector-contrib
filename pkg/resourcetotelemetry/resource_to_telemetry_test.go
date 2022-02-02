@@ -61,6 +61,7 @@ func TestConvertResourceToAttributesAllDataTypesEmptyDataPoint(t *testing.T) {
 	assert.Equal(t, 1, cloneMd.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(2).Sum().DataPoints().At(0).Attributes().Len())
 	assert.Equal(t, 1, cloneMd.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(3).Sum().DataPoints().At(0).Attributes().Len())
 	assert.Equal(t, 1, cloneMd.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(4).Histogram().DataPoints().At(0).Attributes().Len())
+	assert.Equal(t, 1, cloneMd.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(5).Summary().DataPoints().At(0).Attributes().Len())
 
 	assert.Equal(t, 1, md.ResourceMetrics().At(0).Resource().Attributes().Len())
 	assert.Equal(t, 0, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes().Len())
@@ -68,5 +69,6 @@ func TestConvertResourceToAttributesAllDataTypesEmptyDataPoint(t *testing.T) {
 	assert.Equal(t, 0, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(2).Sum().DataPoints().At(0).Attributes().Len())
 	assert.Equal(t, 0, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(3).Sum().DataPoints().At(0).Attributes().Len())
 	assert.Equal(t, 0, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(4).Histogram().DataPoints().At(0).Attributes().Len())
+	assert.Equal(t, 0, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(5).Summary().DataPoints().At(0).Attributes().Len())
 
 }
