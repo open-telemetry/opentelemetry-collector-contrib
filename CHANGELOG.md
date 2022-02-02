@@ -14,6 +14,7 @@
 - `hostreceiver/loadscraper`: Migrate the scraper to the mdatagen metrics builder (#7288)
 - `awsecscontainermetricsreceiver`: Rename attributes to follow semantic conventions (#7425)
 - `mysqlreceiver`: Add golden files for integration test
+- `datadogexporter`: Always map conventional attributes to tags (#7185)
 
 ## 🛑 Breaking changes 🛑
 
