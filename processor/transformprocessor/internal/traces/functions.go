@@ -24,7 +24,7 @@ import (
 )
 
 var registry = map[string]interface{}{
-	"keep_keys": keep_keys,
+	"keep_keys": keepKeys,
 	"set":       set,
 }
 
@@ -42,7 +42,7 @@ func set(target setter, value getter) exprFunc {
 	}
 }
 
-func keep_keys(target getSetter, keys []string) exprFunc {
+func keepKeys(target getSetter, keys []string) exprFunc {
 	keySet := make(map[string]struct{}, len(keys))
 	for _, key := range keys {
 		keySet[key] = struct{}{}
