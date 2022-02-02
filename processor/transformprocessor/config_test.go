@@ -50,3 +50,19 @@ func TestLoadingConfig(t *testing.T) {
 		},
 	})
 }
+
+func TestLoadInvalidConfig(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Processors[typeStr] = factory
+
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "invalid_config_bad_syntax.yaml"), factories)
+	assert.Error(t, err)
+	assert.NotNil(t, cfg)
+
+	cfg, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "invalid_config_unknown_function.yaml"), factories)
+	assert.Error(t, err)
+	assert.NotNil(t, cfg)
+}
