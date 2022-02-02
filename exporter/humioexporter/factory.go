@@ -80,7 +80,7 @@ func createTracesExporter(
 		return nil, errors.New("an ingest token for traces is required when enabling the Humio trace exporter")
 	}
 
-	exporter := newTracesExporter(cfg, set.Logger)
+	exporter := newTracesExporter(cfg, set.TelemetrySettings)
 
 	return exporterhelper.NewTracesExporter(
 		cfg,

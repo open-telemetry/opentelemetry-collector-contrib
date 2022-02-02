@@ -19,7 +19,7 @@ import (
 
 	"github.com/prometheus/common/model"
 	promcfg "github.com/prometheus/prometheus/config"
-	"github.com/prometheus/prometheus/pkg/relabel"
+	"github.com/prometheus/prometheus/model/relabel"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
 )

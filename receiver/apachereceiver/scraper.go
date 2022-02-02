@@ -31,23 +31,23 @@ import (
 )
 
 type apacheScraper struct {
-	logger     *zap.Logger
+	settings   component.TelemetrySettings
 	cfg        *Config
 	httpClient *http.Client
 }
 
 func newApacheScraper(
-	logger *zap.Logger,
+	settings component.TelemetrySettings,
 	cfg *Config,
 ) *apacheScraper {
 	return &apacheScraper{
-		logger: logger,
-		cfg:    cfg,
+		settings: settings,
+		cfg:      cfg,
 	}
 }
 
 func (r *apacheScraper) start(_ context.Context, host component.Host) error {
-	httpClient, err := r.cfg.ToClient(host.GetExtensions())
+	httpClient, err := r.cfg.ToClient(host.GetExtensions(), r.settings)
 	if err != nil {
 		return err
 	}
@@ -77,7 +77,7 @@ func (r *apacheScraper) scrape(context.Context) (pdata.Metrics, error) {
 
 	stats, err := r.GetStats()
 	if err != nil {
-		r.logger.Error("failed to fetch Apache Httpd stats", zap.Error(err))
+		r.settings.Logger.Error("failed to fetch Apache Httpd stats", zap.Error(err))
 		return pdata.Metrics{}, err
 	}
 	md := pdata.NewMetrics()
@@ -178,7 +178,7 @@ func (r *apacheScraper) parseInt(key, value string) (int64, bool) {
 }
 
 func (r *apacheScraper) logInvalid(expectedType, key, value string) {
-	r.logger.Info(
+	r.settings.Logger.Info(
 		"invalid value",
 		zap.String("expectedType", expectedType),
 		zap.String("key", key),

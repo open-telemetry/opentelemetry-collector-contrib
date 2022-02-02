@@ -41,7 +41,7 @@ type metricsProvider interface {
 
 // awsContainerInsightReceiver implements the component.MetricsReceiver
 type awsContainerInsightReceiver struct {
-	logger       *zap.Logger
+	settings     component.TelemetrySettings
 	nextConsumer consumer.Metrics
 	config       *Config
 	cancel       context.CancelFunc
@@ -51,7 +51,7 @@ type awsContainerInsightReceiver struct {
 
 // newAWSContainerInsightReceiver creates the aws container insight receiver with the given parameters.
 func newAWSContainerInsightReceiver(
-	logger *zap.Logger,
+	settings component.TelemetrySettings,
 	config *Config,
 	nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
 	if nextConsumer == nil {
@@ -59,7 +59,7 @@ func newAWSContainerInsightReceiver(
 	}
 
 	r := &awsContainerInsightReceiver{
-		logger:       logger,
+		settings:     settings,
 		nextConsumer: nextConsumer,
 		config:       config,
 	}
@@ -70,37 +70,37 @@ func newAWSContainerInsightReceiver(
 func (acir *awsContainerInsightReceiver) Start(ctx context.Context, host component.Host) error {
 	ctx, acir.cancel = context.WithCancel(context.Background())
 
-	hostinfo, err := hostInfo.NewInfo(acir.config.ContainerOrchestrator, acir.config.CollectionInterval, acir.logger)
+	hostinfo, err := hostInfo.NewInfo(acir.config.ContainerOrchestrator, acir.config.CollectionInterval, acir.settings.Logger)
 	if err != nil {
 		return err
 	}
 
 	if acir.config.ContainerOrchestrator == ci.EKS {
-		k8sDecorator, err := stores.NewK8sDecorator(ctx, acir.config.TagService, acir.config.PrefFullPodName, acir.logger)
+		k8sDecorator, err := stores.NewK8sDecorator(ctx, acir.config.TagService, acir.config.PrefFullPodName, acir.config.AddFullPodNameMetricLabel, acir.settings.Logger)
 		if err != nil {
 			return err
 		}
 
 		decoratorOption := cadvisor.WithDecorator(k8sDecorator)
-		acir.cadvisor, err = cadvisor.New(acir.config.ContainerOrchestrator, hostinfo, acir.logger, decoratorOption)
+		acir.cadvisor, err = cadvisor.New(acir.config.ContainerOrchestrator, hostinfo, acir.settings.Logger, decoratorOption)
 		if err != nil {
 			return err
 		}
-		acir.k8sapiserver, err = k8sapiserver.New(hostinfo, acir.logger)
+		acir.k8sapiserver, err = k8sapiserver.New(hostinfo, acir.settings.Logger)
 		if err != nil {
 			return err
 		}
 	}
 	if acir.config.ContainerOrchestrator == ci.ECS {
 
-		ecsInfo, err := ecsinfo.NewECSInfo(acir.config.CollectionInterval, hostinfo, acir.logger)
+		ecsInfo, err := ecsinfo.NewECSInfo(acir.config.CollectionInterval, hostinfo, acir.settings)
 		if err != nil {
 			return err
 		}
 
 		ecsOption := cadvisor.WithECSInfoCreator(ecsInfo)
 
-		acir.cadvisor, err = cadvisor.New(acir.config.ContainerOrchestrator, hostinfo, acir.logger, ecsOption)
+		acir.cadvisor, err = cadvisor.New(acir.config.ContainerOrchestrator, hostinfo, acir.settings.Logger, ecsOption)
 		if err != nil {
 			return err
 		}
@@ -141,7 +141,7 @@ func (acir *awsContainerInsightReceiver) collectData(ctx context.Context) error 
 	var mds []pdata.Metrics
 	if acir.cadvisor == nil && acir.k8sapiserver == nil {
 		err := errors.New("both cadvisor and k8sapiserver failed to start")
-		acir.logger.Error("Failed to collect stats", zap.Error(err))
+		acir.settings.Logger.Error("Failed to collect stats", zap.Error(err))
 		return err
 	}
 

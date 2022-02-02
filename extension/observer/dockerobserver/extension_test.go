@@ -87,6 +87,7 @@ func TestCollectEndpointsDefaultConfig(t *testing.T) {
 			Details: &observer.Container{
 				Name:        "agitated_wu",
 				Image:       "nginx",
+				Tag:         "1.17",
 				Command:     "nginx -g daemon off;",
 				ContainerID: "babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c",
 				Transport:   observer.ProtocolTCP,
@@ -134,6 +135,7 @@ func TestCollectEndpointsAllConfigSettings(t *testing.T) {
 			Details: &observer.Container{
 				Name:        "agitated_wu",
 				Image:       "nginx",
+				Tag:         "1.17",
 				Command:     "nginx -g daemon off;",
 				ContainerID: "babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c",
 				Transport:   observer.ProtocolTCP,
@@ -181,6 +183,7 @@ func TestCollectEndpointsUseHostnameIfPresent(t *testing.T) {
 			Details: &observer.Container{
 				Name:        "agitated_wu",
 				Image:       "nginx",
+				Tag:         "1.17",
 				Command:     "nginx -g daemon off;",
 				ContainerID: "babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c",
 				Transport:   observer.ProtocolTCP,
@@ -228,6 +231,7 @@ func TestCollectEndpointsUseHostBindings(t *testing.T) {
 			Details: &observer.Container{
 				Name:        "agitated_wu",
 				Image:       "nginx",
+				Tag:         "1.17",
 				Command:     "nginx -g daemon off;",
 				ContainerID: "babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c",
 				Transport:   observer.ProtocolTCP,
@@ -275,6 +279,7 @@ func TestCollectEndpointsIgnoreNonHostBindings(t *testing.T) {
 			Details: &observer.Container{
 				Name:        "agitated_wu",
 				Image:       "nginx",
+				Tag:         "1.17",
 				Command:     "nginx -g daemon off;",
 				ContainerID: "babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c",
 				Transport:   observer.ProtocolTCP,

@@ -76,7 +76,7 @@ jobs:
           key: go-build-lint-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
       - name: Lint
         run: make -j2 golint
-      - name: Checks 
+      - name: Checks
         run: make -j4 checkdoc porto
       - name: Codegem
         run: |
@@ -425,7 +425,6 @@ jobs:
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
           mkdir bin/ dist/
-
       - name: Cache Tools
         id: tool-cache
         uses: actions/cache@v2
@@ -436,7 +435,6 @@ jobs:
         id: github_tag
         run: ./.github/workflows/scripts/set_release_tag.sh
       - name: Create Github Release
-        if: steps.check.outputs.passed == 'true'
         run: |
           mkdir -p dist/
           ghr -t $GITHUB_TOKEN -u open-telemetry -r opentelemetry-collector-contrib --replace $RELEASE_TAG dist/

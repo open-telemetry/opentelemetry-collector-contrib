@@ -38,7 +38,7 @@ func TestValidStream(t *testing.T) {
 	require.NotNil(t, uaa)
 
 	streamFactory, streamErr := newEnvelopeStreamFactory(
-		zap.NewNop(),
+		componenttest.NewNopTelemetrySettings(),
 		uaa,
 		cfg.RLPGateway.HTTPClientSettings,
 		componenttest.NewNopHost())
@@ -75,7 +75,7 @@ func TestInvalidStream(t *testing.T) {
 
 	// Stream create should fail if given empty shard ID
 	streamFactory, streamErr := newEnvelopeStreamFactory(
-		zap.NewNop(),
+		componenttest.NewNopTelemetrySettings(),
 		uaa,
 		cfg.RLPGateway.HTTPClientSettings,
 		componenttest.NewNopHost())

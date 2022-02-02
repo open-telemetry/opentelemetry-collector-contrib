@@ -25,12 +25,9 @@ import (
 	"go.uber.org/zap"
 )
 
-const nodeNamesPath = "/_membership"
-
 // client defines the basic HTTP client interface.
 type client interface {
 	Get(path string) ([]byte, error)
-	GetNodeNames() ([]string, error)
 	GetStats(nodeName string) (map[string]interface{}, error)
 }
 
@@ -43,8 +40,8 @@ type couchDBClient struct {
 }
 
 // newCouchDBClient creates a new client to make requests for the CouchDB receiver.
-func newCouchDBClient(cfg *Config, host component.Host, logger *zap.Logger) (client, error) {
-	client, err := cfg.ToClient(host.GetExtensions())
+func newCouchDBClient(cfg *Config, host component.Host, settings component.TelemetrySettings) (client, error) {
+	client, err := cfg.ToClient(host.GetExtensions(), settings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTP Client: %w", err)
 	}
@@ -52,7 +49,7 @@ func newCouchDBClient(cfg *Config, host component.Host, logger *zap.Logger) (cli
 	return &couchDBClient{
 		client: client,
 		cfg:    cfg,
-		logger: logger,
+		logger: settings.Logger,
 	}, nil
 }
 
@@ -87,27 +84,6 @@ func (c *couchDBClient) Get(path string) ([]byte, error) {
 	}
 
 	return body, nil
-}
-
-// nodes contains a list of all known connected node names.
-type nodes struct {
-	AllNodes []string `json:"all_nodes"`
-}
-
-// GetNodeNames gets all known connected nodes names.
-func (c *couchDBClient) GetNodeNames() ([]string, error) {
-	body, err := c.Get(nodeNamesPath)
-	if err != nil {
-		return nil, err
-	}
-
-	var nodeNames nodes
-	err = json.Unmarshal(body, &nodeNames)
-	if err != nil {
-		return nil, err
-	}
-
-	return nodeNames.AllNodes, nil
 }
 
 // GetStats gets couchdb stats at a specific node name endpoint.

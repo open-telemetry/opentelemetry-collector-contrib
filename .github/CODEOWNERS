@@ -57,10 +57,11 @@ exporter/tencentcloudlogserviceexporter/             @open-telemetry/collector-c
 
 extension/asapauthextension                          @open-telemetry/collector-contrib-approvers @jamesmoessis @MovieStoreGuy
 extension/awsproxy/                                  @open-telemetry/collector-contrib-approvers @anuraaga @Aneurysm9 @mxiamxia
+extension/basicauthextension/                        @open-telemetry/collector-contrib-approvers @jpkrohling @svrakitin
 extension/bearertokenauthextension/                  @open-telemetry/collector-contrib-approvers @jpkrohling @pavankrish123
 extension/healthcheckextension/                      @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/httpforwarder/                             @open-telemetry/collector-contrib-approvers @asuresh4
-extension/oauth2clientauthextension/                 @open-telemetry/collector-contrib-approvers @jpkrohling @pavankrish123
+extension/oauth2clientauthextension/                 @open-telemetry/collector-contrib-approvers @pavankrish123 @jpkrohling
 extension/observer/                                  @open-telemetry/collector-contrib-approvers @asuresh4 @jrcamp
 extension/observer/ecstaskobserver/                  @open-telemetry/collector-contrib-approvers @rmfitzpatrick
 extension/observer/k8sobserver/                      @open-telemetry/collector-contrib-approvers @rmfitzpatrick @dmitryax
@@ -73,6 +74,7 @@ internal/docker/                                     @open-telemetry/collector-c
 
 internal/k8sconfig/                                  @open-telemetry/collector-contrib-approvers @pmcollins @dmitryax
 internal/kubelet/                                    @open-telemetry/collector-contrib-approvers @dmitryax
+internal/scrapertest/                                @open-telemetry/collector-contrib-approvers @djaglowski
 internal/splunk/                                     @open-telemetry/collector-contrib-approvers @pmcollins @dmitryax
 internal/stanza/                                     @open-telemetry/collector-contrib-approvers @djaglowski
 
@@ -128,6 +130,7 @@ receiver/nginxreceiver/                              @open-telemetry/collector-c
 receiver/postgresqlreceiver/                         @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/prometheusexecreceiver/                     @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/prometheusreceiver/                         @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
+receiver/rabbitmqreceiver/                           @open-telemetry/collector-contrib-approvers @djaglowski @cpheps
 receiver/receivercreator/                            @open-telemetry/collector-contrib-approvers @jrcamp
 receiver/redisreceiver/                              @open-telemetry/collector-contrib-approvers @pmcollins @dmitryax
 receiver/sapmreceiver/                               @open-telemetry/collector-contrib-approvers @owais
