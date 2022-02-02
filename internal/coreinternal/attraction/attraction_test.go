@@ -15,6 +15,7 @@
 package attraction
 
 import (
+	"context"
 	"crypto/sha1" // #nosec
 	"encoding/binary"
 	"errors"
@@ -25,6 +26,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
@@ -39,7 +41,7 @@ type testCase struct {
 func runIndividualTestCase(t *testing.T, tt testCase, ap *AttrProc) {
 	t.Run(tt.name, func(t *testing.T) {
 		attrMap := pdata.NewAttributeMapFromMap(tt.inputAttributes)
-		ap.Process(attrMap)
+		ap.Process(context.TODO(), attrMap)
 		attrMap.Sort()
 		require.Equal(t, pdata.NewAttributeMapFromMap(tt.expectedAttributes).Sort(), attrMap)
 	})
@@ -770,14 +772,14 @@ func TestInvalidConfig(t *testing.T) {
 			actionLists: []ActionKeyValue{
 				{Key: "MissingValueFromAttributes", Action: INSERT},
 			},
-			errorString: "error creating AttrProc. Either field \"value\" or \"from_attribute\" setting must be specified for 0-th action",
+			errorString: "error creating AttrProc. Either field \"value\", \"from_attribute\" or \"from_context\" setting must be specified for 0-th action",
 		},
 		{
 			name: "both set value and from attribute",
 			actionLists: []ActionKeyValue{
 				{Key: "BothSet", Value: 123, FromAttribute: "aa", Action: UPSERT},
 			},
-			errorString: "error creating AttrProc due to both fields \"value\" and \"from_attribute\" being set at the 0-th actions",
+			errorString: "error creating AttrProc due to multiple value sources being set at the 0-th actions",
 		},
 		{
 			name: "pattern shouldn't be specified",
@@ -797,14 +799,14 @@ func TestInvalidConfig(t *testing.T) {
 			actionLists: []ActionKeyValue{
 				{Key: "Key", RegexPattern: "(?P<operation_website>.*?)$", Value: "value", Action: EXTRACT},
 			},
-			errorString: "error creating AttrProc. Action \"extract\" does not use \"value\" or \"from_attribute\" field. These must not be specified for 0-th action",
+			errorString: "error creating AttrProc. Action \"extract\" does not use a value source field. These must not be specified for 0-th action",
 		},
 		{
 			name: "set from attribute for extract",
 			actionLists: []ActionKeyValue{
 				{Key: "key", RegexPattern: "(?P<operation_website>.*?)$", FromAttribute: "aa", Action: EXTRACT},
 			},
-			errorString: "error creating AttrProc. Action \"extract\" does not use \"value\" or \"from_attribute\" field. These must not be specified for 0-th action",
+			errorString: "error creating AttrProc. Action \"extract\" does not use a value source field. These must not be specified for 0-th action",
 		},
 		{
 			name: "invalid regex",
@@ -818,7 +820,7 @@ func TestInvalidConfig(t *testing.T) {
 			actionLists: []ActionKeyValue{
 				{RegexPattern: "(?P<operation_website>.*?)$", Key: "ab", Action: DELETE},
 			},
-			errorString: "error creating AttrProc. Action \"delete\" does not use \"value\", \"pattern\" or \"from_attribute\" field. These must not be specified for 0-th action",
+			errorString: "error creating AttrProc. Action \"delete\" does not use value sources or \"pattern\" field. These must not be specified for 0-th action",
 		},
 		{
 			name: "regex with unnamed capture group",
@@ -877,4 +879,60 @@ func sha1Hash(b []byte) string {
 	h := sha1.New()
 	h.Write(b)
 	return fmt.Sprintf("%x", h.Sum(nil))
+}
+
+func TestFromContext(t *testing.T) {
+
+	mdCtx := client.NewContext(context.TODO(), client.Info{
+		Metadata: client.NewMetadata(map[string][]string{
+			"source_single_val":   {"single_val"},
+			"source_multiple_val": {"first_val", "second_val"},
+		}),
+	})
+
+	testCases := []struct {
+		name               string
+		ctx                context.Context
+		expectedAttributes map[string]pdata.AttributeValue
+		action             *ActionKeyValue
+	}{
+		{
+			name:               "no_metadata",
+			ctx:                context.TODO(),
+			expectedAttributes: map[string]pdata.AttributeValue{},
+			action:             &ActionKeyValue{Key: "dest", FromContext: "source", Action: INSERT},
+		},
+		{
+			name:               "no_value",
+			ctx:                mdCtx,
+			expectedAttributes: map[string]pdata.AttributeValue{},
+			action:             &ActionKeyValue{Key: "dest", FromContext: "source", Action: INSERT},
+		},
+		{
+			name:               "single_value",
+			ctx:                mdCtx,
+			expectedAttributes: map[string]pdata.AttributeValue{"dest": pdata.NewAttributeValueString("single_val")},
+			action:             &ActionKeyValue{Key: "dest", FromContext: "source_single_val", Action: INSERT},
+		},
+		{
+			name:               "multiple_values",
+			ctx:                mdCtx,
+			expectedAttributes: map[string]pdata.AttributeValue{"dest": pdata.NewAttributeValueString("first_val;second_val")},
+			action:             &ActionKeyValue{Key: "dest", FromContext: "source_multiple_val", Action: INSERT},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ap, err := NewAttrProc(&Settings{
+				Actions: []ActionKeyValue{*tc.action},
+			})
+			require.Nil(t, err)
+			require.NotNil(t, ap)
+			attrMap := pdata.NewAttributeMap()
+			ap.Process(tc.ctx, attrMap)
+			attrMap.Sort()
+			require.Equal(t, pdata.NewAttributeMapFromMap(tc.expectedAttributes).Sort(), attrMap)
+		})
+	}
 }

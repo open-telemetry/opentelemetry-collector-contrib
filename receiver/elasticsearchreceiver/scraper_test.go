@@ -26,9 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
@@ -43,7 +41,7 @@ const noNodesExpectedMetricsPath = "./testdata/expected_metrics/noNodes.json"
 func TestScraper(t *testing.T) {
 	t.Parallel()
 
-	sc := newElasticSearchScraper(zap.NewNop(), createDefaultConfig().(*Config))
+	sc := newElasticSearchScraper(componenttest.NewNopTelemetrySettings(), createDefaultConfig().(*Config))
 
 	err := sc.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -60,7 +58,7 @@ func TestScraper(t *testing.T) {
 	actualMetrics, err := sc.scrape(context.Background())
 	require.NoError(t, err)
 
-	requireMetricsEqual(t, expectedMetrics, actualMetrics)
+	scrapertest.CompareMetrics(expectedMetrics, actualMetrics)
 }
 
 func TestScraperSkipClusterMetrics(t *testing.T) {
@@ -69,7 +67,7 @@ func TestScraperSkipClusterMetrics(t *testing.T) {
 	conf := createDefaultConfig().(*Config)
 	conf.SkipClusterMetrics = true
 
-	sc := newElasticSearchScraper(zap.NewNop(), conf)
+	sc := newElasticSearchScraper(componenttest.NewNopTelemetrySettings(), conf)
 
 	err := sc.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -86,7 +84,7 @@ func TestScraperSkipClusterMetrics(t *testing.T) {
 	actualMetrics, err := sc.scrape(context.Background())
 	require.NoError(t, err)
 
-	requireMetricsEqual(t, expectedMetrics, actualMetrics)
+	scrapertest.CompareMetrics(expectedMetrics, actualMetrics)
 }
 
 func TestScraperNoNodesMetrics(t *testing.T) {
@@ -95,7 +93,7 @@ func TestScraperNoNodesMetrics(t *testing.T) {
 	conf := createDefaultConfig().(*Config)
 	conf.Nodes = []string{}
 
-	sc := newElasticSearchScraper(zap.NewNop(), conf)
+	sc := newElasticSearchScraper(componenttest.NewNopTelemetrySettings(), conf)
 
 	err := sc.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -112,7 +110,7 @@ func TestScraperNoNodesMetrics(t *testing.T) {
 	actualMetrics, err := sc.scrape(context.Background())
 	require.NoError(t, err)
 
-	requireMetricsEqual(t, expectedMetrics, actualMetrics)
+	scrapertest.CompareMetrics(expectedMetrics, actualMetrics)
 }
 
 func TestScraperFailedStart(t *testing.T) {
@@ -132,7 +130,7 @@ func TestScraperFailedStart(t *testing.T) {
 	conf.Username = "dev"
 	conf.Password = "dev"
 
-	sc := newElasticSearchScraper(zap.NewNop(), conf)
+	sc := newElasticSearchScraper(componenttest.NewNopTelemetrySettings(), conf)
 
 	err := sc.start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)
@@ -154,7 +152,7 @@ func TestScrapingError(t *testing.T) {
 				mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nil, err404)
 				mockClient.On("ClusterHealth", mock.Anything).Return(clusterHealth(t), nil)
 
-				sc := newElasticSearchScraper(zap.NewNop(), createDefaultConfig().(*Config))
+				sc := newElasticSearchScraper(componenttest.NewNopTelemetrySettings(), createDefaultConfig().(*Config))
 				err := sc.start(context.Background(), componenttest.NewNopHost())
 				require.NoError(t, err)
 
@@ -177,7 +175,7 @@ func TestScrapingError(t *testing.T) {
 				mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nodeStats(t), nil)
 				mockClient.On("ClusterHealth", mock.Anything).Return(nil, err404)
 
-				sc := newElasticSearchScraper(zap.NewNop(), createDefaultConfig().(*Config))
+				sc := newElasticSearchScraper(componenttest.NewNopTelemetrySettings(), createDefaultConfig().(*Config))
 				err := sc.start(context.Background(), componenttest.NewNopHost())
 				require.NoError(t, err)
 
@@ -201,7 +199,7 @@ func TestScrapingError(t *testing.T) {
 				mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nil, err500)
 				mockClient.On("ClusterHealth", mock.Anything).Return(nil, err404)
 
-				sc := newElasticSearchScraper(zap.NewNop(), createDefaultConfig().(*Config))
+				sc := newElasticSearchScraper(componenttest.NewNopTelemetrySettings(), createDefaultConfig().(*Config))
 				err := sc.start(context.Background(), componenttest.NewNopHost())
 				require.NoError(t, err)
 
@@ -226,7 +224,7 @@ func TestScrapingError(t *testing.T) {
 				mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nodeStats(t), nil)
 				mockClient.On("ClusterHealth", mock.Anything).Return(ch, nil)
 
-				sc := newElasticSearchScraper(zap.NewNop(), createDefaultConfig().(*Config))
+				sc := newElasticSearchScraper(componenttest.NewNopTelemetrySettings(), createDefaultConfig().(*Config))
 				err := sc.start(context.Background(), componenttest.NewNopHost())
 				require.NoError(t, err)
 
@@ -261,36 +259,4 @@ func nodeStats(t *testing.T) *model.NodeStats {
 	nodeStats := model.NodeStats{}
 	require.NoError(t, json.Unmarshal(nodeJSON, &nodeStats))
 	return &nodeStats
-}
-
-func requireMetricsEqual(t *testing.T, m1, m2 pdata.Metrics) {
-	rms1 := m1.ResourceMetrics()
-	rms2 := m2.ResourceMetrics()
-	if rms1.Len() != rms2.Len() {
-		require.Fail(t, "First metric had %d resource metrics, second had %d", rms1.Len(), rms2.Len())
-	}
-
-	for i := 0; i < rms1.Len(); i++ {
-		rm1 := rms1.At(i)
-		rm2 := rms2.At(i)
-
-		require.Equal(t, rm1.Resource().Attributes().AsRaw(), rm2.Resource().Attributes().AsRaw())
-
-		ilms1 := rm1.InstrumentationLibraryMetrics()
-		ilms2 := rm2.InstrumentationLibraryMetrics()
-
-		if ilms1.Len() != ilms2.Len() {
-			require.FailNow(t, "Resource metric %d: First metric had %d InstrumentationLibrary metrics, second had %d", i, ilms1.Len(), ilms2.Len())
-		}
-
-		for j := 0; j < ilms1.Len(); j++ {
-			ilm1 := ilms1.At(j)
-			ilm2 := ilms2.At(j)
-
-			require.Equal(t, ilm1.InstrumentationLibrary().Name(), ilm2.InstrumentationLibrary().Name())
-
-			err := scrapertest.CompareMetricSlices(ilm1.Metrics(), ilm2.Metrics())
-			require.NoError(t, err)
-		}
-	}
 }

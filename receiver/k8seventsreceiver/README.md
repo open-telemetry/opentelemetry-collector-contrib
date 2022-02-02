@@ -1,8 +1,7 @@
 # Kubernetes Events Receiver
 
 The kubernetes Events receiver collects events from the Kubernetes
-API server. It collects all the events that K8s has that are still
-persisted and then send any new events that come in.
+API server. It collects all the new or updated events that come in.
 
 Currently this receiver supports authentication via service accounts only.
 See [example](#example) for more information.
@@ -89,7 +88,7 @@ EOF
 
 ### RBAC
 
-Use the below commands to create a `ClusterRole` with required permissions and a 
+Use the below commands to create a `ClusterRole` with required permissions and a
 `ClusterRoleBinding` to grant the role to the service account created above.
 
 ```bash

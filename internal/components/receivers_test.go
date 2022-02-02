@@ -124,6 +124,10 @@ func TestDefaultReceivers(t *testing.T) {
 			skipLifecyle: runtime.GOOS != "linux",
 		},
 		{
+			receiver:     "k8s_events",
+			skipLifecyle: true, // need a valid Kubernetes host and port
+		},
+		{
 			receiver:     "kafka",
 			skipLifecyle: true, // TODO: It needs access to internals to successful start.
 		},
