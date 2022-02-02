@@ -458,6 +458,208 @@ func Test_newPathGetSetter(t *testing.T) {
 				span.Status().SetMessage("bad span")
 			},
 		},
+		{
+			name: "resource attributes",
+			path: []common.Field{
+				{
+					Name: "resource",
+				},
+				{
+					Name: "attributes",
+				},
+			},
+			orig: refSpan.Attributes(),
+			new:  newAttrs,
+			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+				resource.Attributes().Clear()
+				newAttrs.CopyTo(resource.Attributes())
+			},
+		},
+		{
+			name: "resource attributes string",
+			path: []common.Field{
+				{
+					Name: "resource",
+				},
+				{
+					Name:   "attributes",
+					MapKey: strp("str"),
+				},
+			},
+			orig: "val",
+			new:  "newVal",
+			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+				resource.Attributes().UpsertString("str", "newVal")
+			},
+		},
+		{
+			name: "resource attributes bool",
+			path: []common.Field{
+				{
+					Name: "resource",
+				},
+				{
+					Name:   "attributes",
+					MapKey: strp("bool"),
+				},
+			},
+			orig: true,
+			new:  false,
+			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+				resource.Attributes().UpsertBool("bool", false)
+			},
+		},
+		{
+			name: "resource attributes int",
+			path: []common.Field{
+				{
+					Name: "resource",
+				},
+				{
+					Name:   "attributes",
+					MapKey: strp("int"),
+				},
+			},
+			orig: int64(10),
+			new:  int64(20),
+			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+				resource.Attributes().UpsertInt("int", 20)
+			},
+		},
+		{
+			name: "resource attributes float",
+			path: []common.Field{
+				{
+					Name: "resource",
+				},
+				{
+					Name:   "attributes",
+					MapKey: strp("double"),
+				},
+			},
+			orig: float64(1.2),
+			new:  float64(2.4),
+			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+				resource.Attributes().UpsertDouble("double", 2.4)
+			},
+		},
+		{
+			name: "resource attributes bytes",
+			path: []common.Field{
+				{
+					Name: "resource",
+				},
+				{
+					Name:   "attributes",
+					MapKey: strp("bytes"),
+				},
+			},
+			orig: []byte{1, 3, 2},
+			new:  []byte{2, 3, 4},
+			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+				resource.Attributes().UpsertBytes("bytes", []byte{2, 3, 4})
+			},
+		},
+		{
+			name: "resource attributes array string",
+			path: []common.Field{
+				{
+					Name: "resource",
+				},
+				{
+					Name:   "attributes",
+					MapKey: strp("arr_str"),
+				},
+			},
+			orig: func() pdata.AttributeValueSlice {
+				val, _ := refSpan.Attributes().Get("arr_str")
+				return val.SliceVal()
+			}(),
+			new: []string{"new"},
+			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+				resource.Attributes().Upsert("arr_str", newArrStr)
+			},
+		},
+		{
+			name: "resource attributes array bool",
+			path: []common.Field{
+				{
+					Name: "resource",
+				},
+				{
+					Name:   "attributes",
+					MapKey: strp("arr_bool"),
+				},
+			},
+			orig: func() pdata.AttributeValueSlice {
+				val, _ := refSpan.Attributes().Get("arr_bool")
+				return val.SliceVal()
+			}(),
+			new: []bool{false},
+			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+				resource.Attributes().Upsert("arr_bool", newArrBool)
+			},
+		},
+		{
+			name: "resource attributes array int",
+			path: []common.Field{
+				{
+					Name: "resource",
+				},
+				{
+					Name:   "attributes",
+					MapKey: strp("arr_int"),
+				},
+			},
+			orig: func() pdata.AttributeValueSlice {
+				val, _ := refSpan.Attributes().Get("arr_int")
+				return val.SliceVal()
+			}(),
+			new: []int64{20},
+			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+				resource.Attributes().Upsert("arr_int", newArrInt)
+			},
+		},
+		{
+			name: "resource attributes array float",
+			path: []common.Field{
+				{
+					Name: "resource",
+				},
+				{
+					Name:   "attributes",
+					MapKey: strp("arr_float"),
+				},
+			},
+			orig: func() pdata.AttributeValueSlice {
+				val, _ := refSpan.Attributes().Get("arr_float")
+				return val.SliceVal()
+			}(),
+			new: []float64{2.0},
+			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+				resource.Attributes().Upsert("arr_float", newArrFloat)
+			},
+		},
+		{
+			name: "resource attributes array bytes",
+			path: []common.Field{
+				{
+					Name: "resource",
+				},
+				{
+					Name:   "attributes",
+					MapKey: strp("arr_bytes"),
+				},
+			},
+			orig: func() pdata.AttributeValueSlice {
+				val, _ := refSpan.Attributes().Get("arr_bytes")
+				return val.SliceVal()
+			}(),
+			new: [][]byte{{9, 6, 4}},
+			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+				resource.Attributes().Upsert("arr_bytes", newArrBytes)
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
