@@ -51,7 +51,7 @@ func runIndividualLogTestCase(t *testing.T, tt logTestCase, tp component.LogsPro
 
 func generateLogData(logName string, attrs map[string]pdata.AttributeValue) pdata.Logs {
 	td := pdata.NewLogs()
-	lr := td.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().Logs().AppendEmpty()
+	lr := td.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty()
 	lr.SetName(logName)
 	pdata.NewAttributeMapFromMap(attrs).CopyTo(lr.Attributes())
 	lr.Attributes().Sort()
@@ -65,7 +65,7 @@ func sortLogAttributes(ld pdata.Logs) {
 		rs.Resource().Attributes().Sort()
 		ilss := rs.InstrumentationLibraryLogs()
 		for j := 0; j < ilss.Len(); j++ {
-			logs := ilss.At(j).Logs()
+			logs := ilss.At(j).LogRecords()
 			for k := 0; k < logs.Len(); k++ {
 				s := logs.At(k)
 				s.Attributes().Sort()

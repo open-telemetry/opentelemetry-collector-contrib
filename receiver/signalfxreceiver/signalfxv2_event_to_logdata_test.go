@@ -48,8 +48,8 @@ func TestSignalFxV2EventsToLogData(t *testing.T) {
 		}
 	}
 
-	buildDefaultLogs := func() pdata.LogSlice {
-		logSlice := pdata.NewLogSlice()
+	buildDefaultLogs := func() pdata.LogRecordSlice {
+		logSlice := pdata.NewLogRecordSlice()
 		l := logSlice.AppendEmpty()
 		l.SetName("shutdown")
 		l.SetTimestamp(pdata.NewTimestampFromTime(now.Truncate(time.Millisecond)))
@@ -76,7 +76,7 @@ func TestSignalFxV2EventsToLogData(t *testing.T) {
 	tests := []struct {
 		name      string
 		sfxEvents []*sfxpb.Event
-		expected  pdata.LogSlice
+		expected  pdata.LogRecordSlice
 	}{
 		{
 			name:      "default",
@@ -90,7 +90,7 @@ func TestSignalFxV2EventsToLogData(t *testing.T) {
 				e.Category = nil
 				return []*sfxpb.Event{e}
 			}(),
-			expected: func() pdata.LogSlice {
+			expected: func() pdata.LogRecordSlice {
 				lrs := buildDefaultLogs()
 				lrs.At(0).Attributes().Upsert("com.splunk.signalfx.event_category", pdata.NewAttributeValueEmpty())
 				return lrs
@@ -100,7 +100,7 @@ func TestSignalFxV2EventsToLogData(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			lrs := pdata.NewLogSlice()
+			lrs := pdata.NewLogRecordSlice()
 			signalFxV2EventsToLogRecords(tt.sfxEvents, lrs)
 			for i := 0; i < lrs.Len(); i++ {
 				lrs.At(i).Attributes().Sort()

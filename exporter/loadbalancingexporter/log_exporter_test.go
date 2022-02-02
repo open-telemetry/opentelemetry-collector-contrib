@@ -463,7 +463,7 @@ func simpleLogWithID(id pdata.TraceID) pdata.Logs {
 	logs := pdata.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
 	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
-	ill.Logs().AppendEmpty().SetTraceID(id)
+	ill.LogRecords().AppendEmpty().SetTraceID(id)
 
 	return logs
 }
@@ -472,7 +472,7 @@ func simpleLogWithoutID() pdata.Logs {
 	logs := pdata.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
 	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
-	ill.Logs().AppendEmpty()
+	ill.LogRecords().AppendEmpty()
 
 	return logs
 }

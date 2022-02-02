@@ -245,7 +245,7 @@ func TestConsumeLogs(t *testing.T) {
 	ld := pdata.NewLogs()
 	r := ld.ResourceLogs().AppendEmpty()
 	r.Resource().Attributes().UpsertString("hello", "test")
-	logRecords := r.InstrumentationLibraryLogs().AppendEmpty().Logs()
+	logRecords := r.InstrumentationLibraryLogs().AppendEmpty().LogRecords()
 	logRecords.EnsureCapacity(5)
 	logRecords.AppendEmpty().SetName("test")
 	assert.Equal(t, 1, ld.LogRecordCount())

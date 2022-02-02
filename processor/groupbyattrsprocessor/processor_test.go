@@ -80,7 +80,7 @@ func someComplexLogs(withResourceAttrIndex bool, rlCount int, illCount int) pdat
 		}
 
 		for j := 0; j < illCount; j++ {
-			log := rl.InstrumentationLibraryLogs().AppendEmpty().Logs().AppendEmpty()
+			log := rl.InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty()
 			log.SetName(fmt.Sprintf("foo-%d-%d", i, j))
 			log.Attributes().InsertString("commonGroupedAttr", "abc")
 			log.Attributes().InsertString("commonNonGroupedAttr", "xyz")
@@ -218,7 +218,7 @@ func TestComplexAttributeGrouping(t *testing.T) {
 				assert.Equal(t, pdata.NewAttributeValueString("abc"), commonAttrValue)
 
 				for j := 0; j < rl.InstrumentationLibraryLogs().Len(); j++ {
-					logs := rl.InstrumentationLibraryLogs().At(j).Logs()
+					logs := rl.InstrumentationLibraryLogs().At(j).LogRecords()
 					for k := 0; k < logs.Len(); k++ {
 						assert.EqualValues(t, outputRecordAttrs, logs.At(k).Attributes())
 					}
@@ -373,7 +373,7 @@ func TestAttributeGrouping(t *testing.T) {
 			assert.Equal(t, 1, ilhms.Len())
 			assert.Equal(t, 1, ilehms.Len())
 
-			ls := ills.At(0).Logs()
+			ls := ills.At(0).LogRecords()
 			ss := ilss.At(0).Spans()
 			gms := ilgms.At(0).Metrics()
 			sms := ilsms.At(0).Metrics()
@@ -435,7 +435,7 @@ func someLogs(attrs pdata.AttributeMap, count int) pdata.Logs {
 	ill := logs.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty()
 
 	for i := 0; i < count; i++ {
-		log := ill.Logs().AppendEmpty()
+		log := ill.LogRecords().AppendEmpty()
 		log.SetName(fmt.Sprint("foo-", i))
 		attrs.CopyTo(log.Attributes())
 	}

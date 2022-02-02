@@ -44,7 +44,7 @@ func logRecordToLogData(ld pdata.Logs) []*logpb.LogData {
 		resource := rl.Resource()
 		for j := 0; j < ills.Len(); j++ {
 			ils := ills.At(j)
-			logs := ils.Logs()
+			logs := ils.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
 				logData := &logpb.LogData{}
 				logData.Tags = &logpb.LogTags{}
