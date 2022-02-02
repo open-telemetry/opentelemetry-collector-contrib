@@ -71,20 +71,6 @@ class TestAioHttpIntegration(TestBase):
             spans,
         )
 
-    def test_url_path_span_name(self):
-        for url, expected in (
-            (
-                yarl.URL("http://hostname.local:1234/some/path?query=params"),
-                "/some/path",
-            ),
-            (yarl.URL("http://hostname.local:1234"), "/"),
-        ):
-            with self.subTest(url=url):
-                params = aiohttp.TraceRequestStartParams("METHOD", url, {})
-                actual = aiohttp_client.url_path_span_name(params)
-                self.assertEqual(actual, expected)
-                self.assertIsInstance(actual, str)
-
     @staticmethod
     def _http_request(
         trace_config,
