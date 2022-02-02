@@ -39,7 +39,7 @@ func splunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCust
 			logger.Debug("Unsupported value conversion", zap.Any("value", event.Event))
 			return ld, errors.New(cannotConvertValue)
 		}
-		logRecord := ill.Logs().AppendEmpty()
+		logRecord := ill.LogRecords().AppendEmpty()
 		// The SourceType field is the most logical "name" of the event.
 		logRecord.SetName(event.SourceType)
 		attrValue.CopyTo(logRecord.Body())

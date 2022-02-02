@@ -24,9 +24,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
-func LogSliceToSignalFxV2(
+func LogRecordSliceToSignalFxV2(
 	logger *zap.Logger,
-	logs pdata.LogSlice,
+	logs pdata.LogRecordSlice,
 	resourceAttrs pdata.AttributeMap,
 ) ([]*sfxpb.Event, int) {
 	events := make([]*sfxpb.Event, 0, logs.Len())

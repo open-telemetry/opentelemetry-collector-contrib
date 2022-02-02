@@ -71,7 +71,7 @@ func logdataToObservIQFormat(ld pdata.Logs, agentID string, agentName string, bu
 		ills := rl.InstrumentationLibraryLogs()
 		for j := 0; j < ills.Len(); j++ {
 			ill := ills.At(j)
-			logs := ill.Logs()
+			logs := ill.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
 				oiqLogEntry := resourceAndInstrumentationLogToEntry(resMap, logs.At(k), agentID, agentName, buildVersion)
 
