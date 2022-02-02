@@ -471,7 +471,7 @@ func TestNewEventExporter(t *testing.T) {
 
 func makeSampleResourceLogs() pdata.Logs {
 	out := pdata.NewLogs()
-	l := out.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().Logs().AppendEmpty()
+	l := out.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty()
 
 	l.SetName("shutdown")
 	l.SetTimestamp(pdata.Timestamp(1000))
@@ -515,7 +515,7 @@ func TestConsumeEventData(t *testing.T) {
 			name: "no_event_attribute",
 			resourceLogs: func() pdata.Logs {
 				out := makeSampleResourceLogs()
-				out.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Attributes().Delete("com.splunk.signalfx.event_category")
+				out.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(0).Attributes().Delete("com.splunk.signalfx.event_category")
 				return out
 			}(),
 			reqTestFunc:          nil,
@@ -527,7 +527,7 @@ func TestConsumeEventData(t *testing.T) {
 			resourceLogs: func() pdata.Logs {
 				out := makeSampleResourceLogs()
 
-				attrs := out.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Attributes()
+				attrs := out.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(0).Attributes()
 				mapAttr := pdata.NewAttributeValueMap()
 				attrs.Insert("map", mapAttr)
 
@@ -706,7 +706,7 @@ func generateLargeDPBatch() pdata.Metrics {
 
 func generateLargeEventBatch() pdata.Logs {
 	out := pdata.NewLogs()
-	logs := out.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().Logs()
+	logs := out.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().LogRecords()
 
 	batchSize := 65000
 	logs.EnsureCapacity(batchSize)

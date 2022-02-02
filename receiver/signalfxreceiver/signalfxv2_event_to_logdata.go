@@ -22,9 +22,9 @@ import (
 )
 
 // signalFxV2ToMetricsData converts SignalFx event proto data points to
-// pdata.LogSlice. Returning the converted data and the number of dropped log
+// pdata.LogRecordSlice. Returning the converted data and the number of dropped log
 // records.
-func signalFxV2EventsToLogRecords(events []*sfxpb.Event, lrs pdata.LogSlice) {
+func signalFxV2EventsToLogRecords(events []*sfxpb.Event, lrs pdata.LogRecordSlice) {
 	lrs.EnsureCapacity(len(events))
 
 	for _, event := range events {
