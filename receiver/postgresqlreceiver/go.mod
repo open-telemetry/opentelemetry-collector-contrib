@@ -6,12 +6,12 @@ require (
 	github.com/lib/pq v1.10.4
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.43.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.43.3-0.20220201020338-caead4c4b0e2
+	go.opentelemetry.io/collector v0.44.0
 	go.uber.org/multierr v1.7.0
 	go.uber.org/zap v1.20.0
 )
 
-require go.opentelemetry.io/collector/model v0.43.3-0.20220201020338-caead4c4b0e2
+require go.opentelemetry.io/collector/model v0.44.0
 
 require github.com/testcontainers/testcontainers-go v0.12.0
 
