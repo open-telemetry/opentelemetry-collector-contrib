@@ -20,6 +20,7 @@
 - `mysqlreceiver`: Update to use mdatagen v2 (#7507)
 - `postgresqlreceiver`: Add integration tests (#7501)
 - `apachereceiver`: Add integration test (#7517)
+- `postgresreceiver`: Update to mdatagen v2 (#7503)
 
 ## 🛑 Breaking changes 🛑
 

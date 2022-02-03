@@ -45,7 +45,9 @@ func TestScraper(t *testing.T) {
 	factory := new(mockClientFactory)
 	factory.initMocks([]string{"otel"})
 
-	scraper := newPostgreSQLScraper(zap.NewNop(), &Config{Databases: []string{"otel"}}, factory)
+	cfg := createDefaultConfig().(*Config)
+	cfg.Databases = []string{"otel"}
+	scraper := newPostgreSQLScraper(zap.NewNop(), cfg, factory)
 
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
@@ -61,7 +63,8 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 	factory := new(mockClientFactory)
 	factory.initMocks([]string{"otel"})
 
-	scraper := newPostgreSQLScraper(zap.NewNop(), &Config{}, factory)
+	cfg := createDefaultConfig().(*Config)
+	scraper := newPostgreSQLScraper(zap.NewNop(), cfg, factory)
 
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
@@ -77,7 +80,8 @@ func TestScraperNoDatabaseMultiple(t *testing.T) {
 	factory := mockClientFactory{}
 	factory.initMocks([]string{"otel", "open", "telemetry"})
 
-	scraper := newPostgreSQLScraper(zap.NewNop(), &Config{}, &factory)
+	cfg := createDefaultConfig().(*Config)
+	scraper := newPostgreSQLScraper(zap.NewNop(), cfg, &factory)
 
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
