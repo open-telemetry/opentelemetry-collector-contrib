@@ -32,12 +32,13 @@ var (
 )
 
 const (
-	TestGaugeDoubleMetricName     = "gauge-double"
-	TestGaugeIntMetricName        = "gauge-int"
-	TestSumDoubleMetricName       = "counter-double"
-	TestSumIntMetricName          = "counter-int"
-	TestDoubleHistogramMetricName = "double-histogram"
-	TestDoubleSummaryMetricName   = "double-summary"
+	TestGaugeDoubleMetricName          = "gauge-double"
+	TestGaugeIntMetricName             = "gauge-int"
+	TestSumDoubleMetricName            = "counter-double"
+	TestSumIntMetricName               = "counter-int"
+	TestDoubleHistogramMetricName      = "double-histogram"
+	TestDoubleSummaryMetricName        = "double-summary"
+	TestExponentialHistogramMetricName = "exponential-histogram"
 )
 
 func GenerateMetricsOneEmptyResourceMetrics() pdata.Metrics {
@@ -134,6 +135,9 @@ func GenerateMetricsAllTypesEmptyDataPoint() pdata.Metrics {
 	summary := ms.AppendEmpty()
 	initMetric(summary, TestDoubleSummaryMetricName, pdata.MetricDataTypeSummary)
 	summary.Summary().DataPoints().AppendEmpty()
+	exphist := ms.AppendEmpty()
+	initMetric(exphist, TestExponentialHistogramMetricName, pdata.MetricDataTypeExponentialHistogram)
+	exphist.ExponentialHistogram().DataPoints().AppendEmpty()
 	return md
 }
 

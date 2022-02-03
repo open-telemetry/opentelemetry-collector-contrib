@@ -4,6 +4,7 @@
 
 ## 💡 Enhancements 💡
 
+- `dynatraceexporter`: Write error logs using plugin logger (#7360)
 - `tanzuobservabilityexporter`: Turn on metrics exporter (#7281)
 - `attributesprocessor` `resourceprocessor`: Add `from_context` value source
 - `resourcedetectionprocessor`: check cluster config to verify resource is on aws for eks resources (#7186)
@@ -17,6 +18,7 @@
 - `mysqlreceiver`: Add golden files for integration test (#7303)
 - `nginxreceiver`: Standardize integration test (#7515)
 - `mysqlreceiver`: Update to use mdatagen v2 (#7507)
+- `postgresqlreceiver`: Add integration tests (#7501)
 
 ## 🛑 Breaking changes 🛑
 
@@ -26,6 +28,9 @@
 
 - `resourcedetectionprocessor`: fix `meta` allow list excluding keys with nil values (#7424)
 - `postgresqlreceiver`: Fix issue where empty metrics could be returned after failed connection (#7502)
+- `resourcetotelemetry`: Ensure resource attributes are added to summary
+  and exponential histogram data points. (#7523)
+
 ## v0.43.0
 
 ## 💡 Enhancements 💡
@@ -38,7 +43,6 @@
 - `elasticsearchreceiver`: Implement scraping logic (#7174)
 - `datadogexporter`: Add http.status_code tag to trace stats (#6889)
 - `datadogexporter`: Add configuration option to use OTel span name into the Datatog resource name (#6611)
-- `dynatraceexporter`: Write error logs using plugin logger (#7360)
 - `mongodbreceiver`: Add initial client code to the component (#7125)
 - `tanzuobservabilityexporter`: Support delta histograms (#6897)
 - `awscloudwatchlogsexporter`: Use cwlogs package to export logs (#7152)
