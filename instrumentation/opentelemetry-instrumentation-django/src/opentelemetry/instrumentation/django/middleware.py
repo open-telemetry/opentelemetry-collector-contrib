@@ -20,25 +20,21 @@ from typing import Callable
 from django import VERSION as django_version
 from django.http import HttpRequest, HttpResponse
 
-from opentelemetry.context import attach, detach
+from opentelemetry.context import detach
 from opentelemetry.instrumentation.propagators import (
     get_global_response_propagator,
 )
-from opentelemetry.instrumentation.utils import extract_attributes_from_object
+from opentelemetry.instrumentation.utils import (
+    _start_internal_or_server_span,
+    extract_attributes_from_object,
+)
 from opentelemetry.instrumentation.wsgi import add_response_attributes
 from opentelemetry.instrumentation.wsgi import (
     collect_request_attributes as wsgi_collect_request_attributes,
 )
 from opentelemetry.instrumentation.wsgi import wsgi_getter
-from opentelemetry.propagate import extract
 from opentelemetry.semconv.trace import SpanAttributes
-from opentelemetry.trace import (
-    INVALID_SPAN,
-    Span,
-    SpanKind,
-    get_current_span,
-    use_span,
-)
+from opentelemetry.trace import Span, use_span
 from opentelemetry.util.http import get_excluded_urls, get_traced_request_attrs
 
 try:
@@ -189,19 +185,14 @@ class _DjangoMiddleware(MiddlewareMixin):
             carrier_getter = wsgi_getter
             collect_request_attributes = wsgi_collect_request_attributes
 
-        token = context = None
-        span_kind = SpanKind.INTERNAL
-        if get_current_span() is INVALID_SPAN:
-            context = extract(carrier, getter=carrier_getter)
-            token = attach(context)
-            span_kind = SpanKind.SERVER
-        span = self._tracer.start_span(
-            self._get_span_name(request),
-            context,
-            kind=span_kind,
+        span, token = _start_internal_or_server_span(
+            tracer=self._tracer,
+            span_name=self._get_span_name(request),
             start_time=request_meta.get(
                 "opentelemetry-instrumentor-django.starttime_key"
             ),
+            context_carrier=carrier,
+            context_getter=carrier_getter,
         )
 
         attributes = collect_request_attributes(carrier)

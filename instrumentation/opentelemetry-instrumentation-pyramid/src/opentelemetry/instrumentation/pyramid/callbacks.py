@@ -25,7 +25,7 @@ from opentelemetry.instrumentation.propagators import (
     get_global_response_propagator,
 )
 from opentelemetry.instrumentation.pyramid.version import __version__
-from opentelemetry.propagate import extract
+from opentelemetry.instrumentation.utils import _start_internal_or_server_span
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.util._time import _time_ns
 from opentelemetry.util.http import get_excluded_urls
@@ -81,9 +81,6 @@ def _before_traversal(event):
         return
 
     start_time = request_environ.get(_ENVIRON_STARTTIME_KEY)
-
-    token = ctx = None
-    span_kind = trace.SpanKind.INTERNAL
     tracer = trace.get_tracer(__name__, __version__)
 
     if request.matched_route:
@@ -91,15 +88,12 @@ def _before_traversal(event):
     else:
         span_name = otel_wsgi.get_default_span_name(request_environ)
 
-    if trace.get_current_span() is trace.INVALID_SPAN:
-        ctx = extract(request_environ, getter=otel_wsgi.wsgi_getter)
-        token = context.attach(ctx)
-        span_kind = trace.SpanKind.SERVER
-    span = tracer.start_span(
-        span_name,
-        ctx,
-        kind=span_kind,
+    span, token = _start_internal_or_server_span(
+        tracer=tracer,
+        span_name=span_name,
         start_time=start_time,
+        context_carrier=request_environ,
+        context_getter=otel_wsgi.wsgi_getter,
     )
 
     if span.is_recording():

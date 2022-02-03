@@ -574,3 +574,33 @@ class TestTornadoUninstrument(TornadoTest):
         self.assertEqual(len(spans), 1)
         manual = spans[0]
         self.assertEqual(manual.name, "manual")
+
+
+class TestTornadoWrappedWithOtherFramework(TornadoTest):
+    def get_app(self):
+        tracer = trace.get_tracer(__name__)
+        app = make_app(tracer)
+
+        def middleware(request):
+            """Wraps the request with a server span"""
+            with tracer.start_as_current_span(
+                "test", kind=trace.SpanKind.SERVER
+            ):
+                app(request)
+
+        return middleware
+
+    def test_mark_span_internal_in_presence_of_another_span(self):
+        response = self.fetch("/")
+        self.assertEqual(response.code, 201)
+        spans = self.sorted_spans(self.memory_exporter.get_finished_spans())
+        self.assertEqual(len(spans), 4)
+
+        tornado_handler_span = spans[1]
+        self.assertEqual(trace.SpanKind.INTERNAL, tornado_handler_span.kind)
+
+        test_span = spans[2]
+        self.assertEqual(trace.SpanKind.SERVER, test_span.kind)
+        self.assertEqual(
+            test_span.context.span_id, tornado_handler_span.parent.span_id
+        )
