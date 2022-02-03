@@ -35,6 +35,10 @@
 - `resourcetotelemetry`: Ensure resource attributes are added to summary
   and exponential histogram data points. (#7523)
 
+## Deprecations
+
+- Deprecated otel_to_hec_fields.name setting from splunkhec exporter. (#7560)
+
 ## v0.43.0
 
 ## 💡 Enhancements 💡
