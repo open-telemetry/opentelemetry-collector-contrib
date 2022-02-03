@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
@@ -43,16 +44,17 @@ func TestLoadConfig(t *testing.T) {
 	p1 := cfg.Processors[config.NewComponentID(typeStr)]
 	assert.Equal(t, p1, factory.CreateDefaultConfig())
 
-	p2 := cfg.Processors[config.NewComponentIDWithName(typeStr, "gce")]
-	assert.Equal(t, p2, &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "gce")),
-		Detectors:         []string{"env", "gce"},
-		Timeout:           2 * time.Second,
-		Override:          false,
-	})
+	p2 := cfg.Processors[config.NewComponentIDWithName(typeStr, "gce")].(*Config)
+	p2e := &Config{
+		ProcessorSettings:  config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "gce")),
+		Detectors:          []string{"env", "gce"},
+		HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 2 * time.Second, MaxIdleConns: p2.MaxIdleConns, IdleConnTimeout: p2.IdleConnTimeout},
+		Override:           false,
+	}
+	assert.Equal(t, p2, p2e)
 
 	p3 := cfg.Processors[config.NewComponentIDWithName(typeStr, "ec2")]
-	assert.Equal(t, p3, &Config{
+	p3e := &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "ec2")),
 		Detectors:         []string{"env", "ec2"},
 		DetectorConfig: DetectorConfig{
@@ -60,12 +62,13 @@ func TestLoadConfig(t *testing.T) {
 				Tags: []string{"^tag1$", "^tag2$"},
 			},
 		},
-		Timeout:  2 * time.Second,
-		Override: false,
-	})
+		HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 2 * time.Second, MaxIdleConns: p2.MaxIdleConns, IdleConnTimeout: p2.IdleConnTimeout},
+		Override:           false,
+	}
+	assert.Equal(t, p3, p3e)
 
 	p4 := cfg.Processors[config.NewComponentIDWithName(typeStr, "system")]
-	assert.Equal(t, p4, &Config{
+	p4e := &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "system")),
 		Detectors:         []string{"env", "system"},
 		DetectorConfig: DetectorConfig{
@@ -73,9 +76,10 @@ func TestLoadConfig(t *testing.T) {
 				HostnameSources: []string{"os"},
 			},
 		},
-		Timeout:  2 * time.Second,
-		Override: false,
-	})
+		HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 2 * time.Second, MaxIdleConns: p2.MaxIdleConns, IdleConnTimeout: p2.IdleConnTimeout},
+		Override:           false,
+	}
+	assert.Equal(t, p4, p4e)
 }
 
 func TestLoadInvalidConfig(t *testing.T) {

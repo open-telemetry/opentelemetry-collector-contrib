@@ -20,6 +20,7 @@
 - `mysqlreceiver`: Update to use mdatagen v2 (#7507)
 - `postgresqlreceiver`: Add integration tests (#7501)
 - `postgresreceiver`: Update to mdatagen v2 (#7503)
+- `resourcedetectionprocessor`: Add confighttp.HTTPClientSettings To Resource Detection Config Fixes (#7397)
 
 ## 🛑 Breaking changes 🛑
 
