@@ -269,8 +269,9 @@ func TestAttributesToMap(t *testing.T) {
 }
 
 func TestGOOSToOsType(t *testing.T) {
-	assert.Equal(t, "DARWIN", GOOSToOSType("darwin"))
-	assert.Equal(t, "LINUX", GOOSToOSType("linux"))
-	assert.Equal(t, "WINDOWS", GOOSToOSType("windows"))
-	assert.Equal(t, "DRAGONFLYBSD", GOOSToOSType("dragonfly"))
+	assert.Equal(t, "darwin", GOOSToOSType("darwin"))
+	assert.Equal(t, "linux", GOOSToOSType("linux"))
+	assert.Equal(t, "windows", GOOSToOSType("windows"))
+	assert.Equal(t, "dragonflybsd", GOOSToOSType("dragonfly"))
+	assert.Equal(t, "z_os", GOOSToOSType("zos"))
 }

@@ -23,6 +23,8 @@
 
 ## 🛑 Breaking changes 🛑
 
+- `resourcedetectionprocessor`: Update `os.type` attribute values according to semantic conventions (#7544)
+
 ## 🚀 New components 🚀
 
 ## 🧰 Bug fixes 🧰
