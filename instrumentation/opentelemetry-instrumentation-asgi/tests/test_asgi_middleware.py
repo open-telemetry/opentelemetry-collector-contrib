@@ -30,7 +30,7 @@ from opentelemetry.test.asgitestutil import (
     setup_testing_defaults,
 )
 from opentelemetry.test.test_base import TestBase
-from opentelemetry.trace import format_span_id, format_trace_id
+from opentelemetry.trace import SpanKind, format_span_id, format_trace_id
 
 
 async def http_app(scope, receive, send):
@@ -547,6 +547,39 @@ class TestAsgiAttributes(unittest.TestCase):
         attrs = otel_asgi.collect_request_attributes(self.scope)
         self.assertEqual(
             attrs[SpanAttributes.HTTP_URL], "http://httpbin.org/status/200"
+        )
+
+
+class TestWrappedApplication(AsgiTestBase):
+    def test_mark_span_internal_in_presence_of_span_from_other_framework(self):
+        tracer_provider, exporter = TestBase.create_tracer_provider()
+        tracer = tracer_provider.get_tracer(__name__)
+        app = otel_asgi.OpenTelemetryMiddleware(
+            simple_asgi, tracer_provider=tracer_provider
+        )
+
+        # Wrapping the otel intercepted app with server span
+        async def wrapped_app(scope, receive, send):
+            with tracer.start_as_current_span(
+                "test", kind=SpanKind.SERVER
+            ) as _:
+                await app(scope, receive, send)
+
+        self.seed_app(wrapped_app)
+        self.send_default_request()
+        span_list = exporter.get_finished_spans()
+
+        self.assertEqual(SpanKind.INTERNAL, span_list[0].kind)
+        self.assertEqual(SpanKind.INTERNAL, span_list[1].kind)
+        self.assertEqual(SpanKind.INTERNAL, span_list[2].kind)
+        self.assertEqual(trace_api.SpanKind.INTERNAL, span_list[3].kind)
+
+        # SERVER "test"
+        self.assertEqual(SpanKind.SERVER, span_list[4].kind)
+
+        # internal span should be child of the test span we have provided
+        self.assertEqual(
+            span_list[4].context.span_id, span_list[3].parent.span_id
         )
 
 
