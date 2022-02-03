@@ -16,6 +16,7 @@
 - `awsecscontainermetricsreceiver`: Rename attributes to follow semantic conventions (#7425)
 - `datadogexporter`: Always map conventional attributes to tags (#7185)
 - `mysqlreceiver`: Add golden files for integration test (#7303)
+- `nginxreceiver`: Standardize integration test (#7515)
 - `mysqlreceiver`: Update to use mdatagen v2 (#7507)
 - `postgresqlreceiver`: Add integration tests (#7501)
 
