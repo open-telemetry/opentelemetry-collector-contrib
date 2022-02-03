@@ -24,11 +24,11 @@ import (
 
 func TestSystemExtractTags(t *testing.T) {
 	sattrs := systemAttributes{
-		OSType: "WINDOWS",
+		OSType: "windows",
 	}
 
 	assert.Equal(t, []string{
-		fmt.Sprintf("%s:%s", conventions.AttributeOSType, "WINDOWS"),
+		fmt.Sprintf("%s:%s", conventions.AttributeOSType, "windows"),
 	}, sattrs.extractTags())
 }
 
