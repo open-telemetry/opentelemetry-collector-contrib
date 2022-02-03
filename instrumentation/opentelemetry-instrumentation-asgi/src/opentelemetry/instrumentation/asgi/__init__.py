@@ -107,16 +107,13 @@ from opentelemetry.instrumentation.asgi.version import __version__  # noqa
 from opentelemetry.instrumentation.propagators import (
     get_global_response_propagator,
 )
-from opentelemetry.instrumentation.utils import http_status_to_status_code
-from opentelemetry.propagate import extract
+from opentelemetry.instrumentation.utils import (
+    _start_internal_or_server_span,
+    http_status_to_status_code,
+)
 from opentelemetry.propagators.textmap import Getter, Setter
 from opentelemetry.semconv.trace import SpanAttributes
-from opentelemetry.trace import (
-    INVALID_SPAN,
-    Span,
-    SpanKind,
-    set_span_in_context,
-)
+from opentelemetry.trace import Span, set_span_in_context
 from opentelemetry.trace.status import Status, StatusCode
 from opentelemetry.util.http import remove_url_credentials
 
@@ -327,24 +324,18 @@ class OpenTelemetryMiddleware:
         if self.excluded_urls and self.excluded_urls.url_disabled(url):
             return await self.app(scope, receive, send)
 
-        token = ctx = span_kind = None
-
-        if trace.get_current_span() is INVALID_SPAN:
-            ctx = extract(scope, getter=asgi_getter)
-            token = context.attach(ctx)
-            span_kind = SpanKind.SERVER
-        else:
-            ctx = context.get_current()
-            span_kind = SpanKind.INTERNAL
-
         span_name, additional_attributes = self.default_span_details(scope)
 
+        span, token = _start_internal_or_server_span(
+            tracer=self.tracer,
+            span_name=span_name,
+            start_time=None,
+            context_carrier=scope,
+            context_getter=asgi_getter,
+        )
+
         try:
-            with self.tracer.start_as_current_span(
-                span_name,
-                context=ctx,
-                kind=span_kind,
-            ) as current_span:
+            with trace.use_span(span, end_on_exit=True) as current_span:
                 if current_span.is_recording():
                     attributes = collect_request_attributes(scope)
                     attributes.update(additional_attributes)
