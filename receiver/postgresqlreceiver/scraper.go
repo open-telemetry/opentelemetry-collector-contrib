@@ -27,10 +27,10 @@ import (
 )
 
 type postgreSQLScraper struct {
-	logger         *zap.Logger
-	config         *Config
-	clientFactory  postgreSQLClientFactory
-	mb *metadata.MetricsBuilder
+	logger        *zap.Logger
+	config        *Config
+	clientFactory postgreSQLClientFactory
+	mb            *metadata.MetricsBuilder
 }
 
 type postgreSQLClientFactory interface {
@@ -55,10 +55,10 @@ func newPostgreSQLScraper(
 	clientFactory postgreSQLClientFactory,
 ) *postgreSQLScraper {
 	return &postgreSQLScraper{
-		logger:         logger,
-		config:         config,
-		clientFactory:  clientFactory,
-		mb: metadata.NewMetricsBuilder(config.Metrics),
+		logger:        logger,
+		config:        config,
+		clientFactory: clientFactory,
+		mb:            metadata.NewMetricsBuilder(config.Metrics),
 	}
 }
 

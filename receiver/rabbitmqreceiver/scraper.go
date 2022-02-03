@@ -49,20 +49,20 @@ var messageStatMetrics = []string{
 
 // rabbitmqScraper handles scraping of RabbitMQ metrics
 type rabbitmqScraper struct {
-	client         client
-	logger         *zap.Logger
-	cfg            *Config
-	settings       component.TelemetrySettings
-	mb *metadata.MetricsBuilder
+	client   client
+	logger   *zap.Logger
+	cfg      *Config
+	settings component.TelemetrySettings
+	mb       *metadata.MetricsBuilder
 }
 
 // newScraper creates a new scraper
 func newScraper(logger *zap.Logger, cfg *Config, settings component.TelemetrySettings) *rabbitmqScraper {
 	return &rabbitmqScraper{
-		logger:         logger,
-		cfg:            cfg,
-		settings:       settings,
-		mb: metadata.NewMetricsBuilder(cfg.Metrics),
+		logger:   logger,
+		cfg:      cfg,
+		settings: settings,
+		mb:       metadata.NewMetricsBuilder(cfg.Metrics),
 	}
 }
 
