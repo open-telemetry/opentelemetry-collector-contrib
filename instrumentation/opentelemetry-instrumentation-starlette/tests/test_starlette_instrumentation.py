@@ -24,6 +24,7 @@ import opentelemetry.instrumentation.starlette as otel_starlette
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.test.test_base import TestBase
+from opentelemetry.trace import SpanKind, get_tracer
 from opentelemetry.util.http import get_excluded_urls
 
 
@@ -225,3 +226,21 @@ class TestAutoInstrumentationLogic(unittest.TestCase):
 
         should_be_original = applications.Starlette
         self.assertIs(original, should_be_original)
+
+
+class TestConditonalServerSpanCreation(TestStarletteManualInstrumentation):
+    def test_mark_span_internal_in_presence_of_another_span(self):
+        tracer = get_tracer(__name__)
+        with tracer.start_as_current_span(
+            "test", kind=SpanKind.SERVER
+        ) as parent_span:
+            self._client.get("/foobar")
+            spans = self.sorted_spans(
+                self.memory_exporter.get_finished_spans()
+            )
+            starlette_span = spans[2]
+            self.assertEqual(SpanKind.INTERNAL, starlette_span.kind)
+            self.assertEqual(SpanKind.SERVER, parent_span.kind)
+            self.assertEqual(
+                parent_span.context.span_id, starlette_span.parent.span_id
+            )
