@@ -49,5 +49,5 @@ func TestDocker(t *testing.T) {
 
 	osType, err := provider.OSType(context.Background())
 	assert.NoError(t, err)
-	assert.Equal(t, "LINUX", osType)
+	assert.Equal(t, "linux", osType)
 }
