@@ -24,6 +24,7 @@ INTEGRATION_TEST_MODULES := \
 	receiver/nginxreceiver \
 	receiver/memcachedreceiver \
 	receiver/mysqlreceiver \
+	receiver/postgresqlreceiver \
 	internal/common \
 	extension/observer/dockerobserver
 
