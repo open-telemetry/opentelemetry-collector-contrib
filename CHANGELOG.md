@@ -4,6 +4,7 @@
 
 ## 💡 Enhancements 💡
 
+- `dynatraceexporter`: Write error logs using plugin logger (#7360)
 - `tanzuobservabilityexporter`: Turn on metrics exporter (#7281)
 - `attributesprocessor` `resourceprocessor`: Add `from_context` value source
 - `resourcedetectionprocessor`: check cluster config to verify resource is on aws for eks resources (#7186)
@@ -36,7 +37,6 @@
 - `elasticsearchreceiver`: Implement scraping logic (#7174)
 - `datadogexporter`: Add http.status_code tag to trace stats (#6889)
 - `datadogexporter`: Add configuration option to use OTel span name into the Datatog resource name (#6611)
-- `dynatraceexporter`: Write error logs using plugin logger (#7360)
 - `mongodbreceiver`: Add initial client code to the component (#7125)
 - `tanzuobservabilityexporter`: Support delta histograms (#6897)
 - `awscloudwatchlogsexporter`: Use cwlogs package to export logs (#7152)
