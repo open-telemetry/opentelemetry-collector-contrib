@@ -76,20 +76,29 @@ class LoggingInstrumentor(BaseInstrumentor):  # pylint: disable=empty-docstring
         return _instruments
 
     def _instrument(self, **kwargs):
-        service_name = ""
-        provider = kwargs.get("tracer_provider", None) or get_tracer_provider()
-        resource = provider.resource if provider else None
-        if resource:
-            service_name = resource.attributes.get("service.name")
 
+        provider = kwargs.get("tracer_provider", None) or get_tracer_provider()
         old_factory = logging.getLogRecordFactory()
         LoggingInstrumentor._old_factory = old_factory
+
+        service_name = None
 
         def record_factory(*args, **kwargs):
             record = old_factory(*args, **kwargs)
 
             record.otelSpanID = "0"
             record.otelTraceID = "0"
+
+            nonlocal service_name
+            if service_name is None:
+                resource = getattr(provider, "resource", None)
+                if resource:
+                    service_name = (
+                        resource.attributes.get("service.name") or ""
+                    )
+                else:
+                    service_name = ""
+
             record.otelServiceName = service_name
 
             span = get_current_span()

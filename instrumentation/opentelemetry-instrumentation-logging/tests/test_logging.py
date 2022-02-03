@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import logging
+from typing import Optional
 from unittest import mock
 
 import pytest
@@ -22,7 +23,45 @@ from opentelemetry.instrumentation.logging import (  # pylint: disable=no-name-i
     LoggingInstrumentor,
 )
 from opentelemetry.test.test_base import TestBase
-from opentelemetry.trace import get_tracer
+from opentelemetry.trace import ProxyTracer, get_tracer
+
+
+class FakeTracerProvider:
+    def get_tracer(  # pylint: disable=no-self-use
+        self,
+        instrumenting_module_name: str,
+        instrumenting_library_version: Optional[str] = None,
+        schema_url: Optional[str] = None,
+    ) -> ProxyTracer:
+        return ProxyTracer(
+            instrumenting_module_name,
+            instrumenting_library_version,
+            schema_url,
+        )
+
+
+class TestLoggingInstrumentorProxyTracerProvider(TestBase):
+    @pytest.fixture(autouse=True)
+    def inject_fixtures(self, caplog):
+        self.caplog = caplog  # pylint: disable=attribute-defined-outside-init
+
+    def setUp(self):
+        super().setUp()
+        LoggingInstrumentor().instrument(tracer_provider=FakeTracerProvider())
+
+    def tearDown(self):
+        super().tearDown()
+        LoggingInstrumentor().uninstrument()
+
+    def test_trace_context_injection(self):
+        with self.caplog.at_level(level=logging.INFO):
+            logger = logging.getLogger("test logger")
+            logger.info("hello")
+            self.assertEqual(len(self.caplog.records), 1)
+            record = self.caplog.records[0]
+            self.assertEqual(record.otelSpanID, "0")
+            self.assertEqual(record.otelTraceID, "0")
+            self.assertEqual(record.otelServiceName, "")
 
 
 class TestLoggingInstrumentor(TestBase):
