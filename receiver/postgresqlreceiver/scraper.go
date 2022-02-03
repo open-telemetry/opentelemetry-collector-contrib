@@ -30,7 +30,7 @@ type postgreSQLScraper struct {
 	logger         *zap.Logger
 	config         *Config
 	clientFactory  postgreSQLClientFactory
-	metricsBuilder *metadata.MetricsBuilder
+	mb *metadata.MetricsBuilder
 }
 
 type postgreSQLClientFactory interface {
@@ -58,7 +58,7 @@ func newPostgreSQLScraper(
 		logger:         logger,
 		config:         config,
 		clientFactory:  clientFactory,
-		metricsBuilder: metadata.NewMetricsBuilder(config.Metrics),
+		mb: metadata.NewMetricsBuilder(config.Metrics),
 	}
 }
 
@@ -106,7 +106,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 		p.collectDatabaseTableMetrics(ctx, now, dbClient, errors)
 	}
 
-	p.metricsBuilder.Emit(ilm.Metrics())
+	p.mb.Emit(ilm.Metrics())
 	return md, errors.Combine()
 }
 
@@ -133,7 +133,7 @@ func (p *postgreSQLScraper) collectBlockReads(
 				errors.AddPartial(0, err)
 				continue
 			}
-			p.metricsBuilder.RecordPostgresqlBlocksReadDataPoint(now, i, table.database, table.table, k)
+			p.mb.RecordPostgresqlBlocksReadDataPoint(now, i, table.database, table.table, k)
 		}
 	}
 }
@@ -166,7 +166,7 @@ func (p *postgreSQLScraper) collectDatabaseTableMetrics(
 				errors.AddPartial(0, err)
 				continue
 			}
-			p.metricsBuilder.RecordPostgresqlRowsDataPoint(now, i, table.database, table.table, key)
+			p.mb.RecordPostgresqlRowsDataPoint(now, i, table.database, table.table, key)
 		}
 
 		for _, key := range []string{"ins", "upd", "del", "hot_upd"} {
@@ -180,7 +180,7 @@ func (p *postgreSQLScraper) collectDatabaseTableMetrics(
 				errors.AddPartial(0, err)
 				continue
 			}
-			p.metricsBuilder.RecordPostgresqlOperationsDataPoint(now, i, table.database, table.table, key)
+			p.mb.RecordPostgresqlOperationsDataPoint(now, i, table.database, table.table, key)
 		}
 	}
 }
@@ -208,7 +208,7 @@ func (p *postgreSQLScraper) collectCommitsAndRollbacks(
 			errors.AddPartial(0, err)
 			continue
 		} else {
-			p.metricsBuilder.RecordPostgresqlCommitsDataPoint(now, i, metric.database)
+			p.mb.RecordPostgresqlCommitsDataPoint(now, i, metric.database)
 		}
 
 		rollbackValue := metric.stats["xact_rollback"]
@@ -216,7 +216,7 @@ func (p *postgreSQLScraper) collectCommitsAndRollbacks(
 			errors.AddPartial(0, err)
 			continue
 		} else {
-			p.metricsBuilder.RecordPostgresqlRollbacksDataPoint(now, i, metric.database)
+			p.mb.RecordPostgresqlRollbacksDataPoint(now, i, metric.database)
 		}
 	}
 }
@@ -245,7 +245,7 @@ func (p *postgreSQLScraper) collectDatabaseSize(
 				errors.AddPartial(0, err)
 				continue
 			}
-			p.metricsBuilder.RecordPostgresqlDbSizeDataPoint(now, i, metric.database)
+			p.mb.RecordPostgresqlDbSizeDataPoint(now, i, metric.database)
 		}
 	}
 }
@@ -274,7 +274,7 @@ func (p *postgreSQLScraper) collectBackends(
 				errors.AddPartial(0, err)
 				continue
 			}
-			p.metricsBuilder.RecordPostgresqlBackendsDataPoint(now, i, metric.database)
+			p.mb.RecordPostgresqlBackendsDataPoint(now, i, metric.database)
 		}
 	}
 }

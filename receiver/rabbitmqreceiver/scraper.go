@@ -53,7 +53,7 @@ type rabbitmqScraper struct {
 	logger         *zap.Logger
 	cfg            *Config
 	settings       component.TelemetrySettings
-	metricsBuilder *metadata.MetricsBuilder
+	mb *metadata.MetricsBuilder
 }
 
 // newScraper creates a new scraper
@@ -62,7 +62,7 @@ func newScraper(logger *zap.Logger, cfg *Config, settings component.TelemetrySet
 		logger:         logger,
 		cfg:            cfg,
 		settings:       settings,
-		metricsBuilder: metadata.NewMetricsBuilder(cfg.Metrics),
+		mb: metadata.NewMetricsBuilder(cfg.Metrics),
 	}
 }
 
@@ -109,9 +109,9 @@ func (r *rabbitmqScraper) collectQueue(queue *models.Queue, now pdata.Timestamp,
 	ilms := resourceMetric.InstrumentationLibraryMetrics().AppendEmpty()
 	ilms.InstrumentationLibrary().SetName(instrumentationLibraryName)
 
-	r.metricsBuilder.RecordRabbitmqConsumerCountDataPoint(now, queue.Consumers)
-	r.metricsBuilder.RecordRabbitmqMessageCurrentDataPoint(now, queue.UnacknowledgedMessages, metadata.AttributeMessageState.Unacknowledged)
-	r.metricsBuilder.RecordRabbitmqMessageCurrentDataPoint(now, queue.ReadyMessages, metadata.AttributeMessageState.Ready)
+	r.mb.RecordRabbitmqConsumerCountDataPoint(now, queue.Consumers)
+	r.mb.RecordRabbitmqMessageCurrentDataPoint(now, queue.UnacknowledgedMessages, metadata.AttributeMessageState.Unacknowledged)
+	r.mb.RecordRabbitmqMessageCurrentDataPoint(now, queue.ReadyMessages, metadata.AttributeMessageState.Ready)
 
 	for _, messageStatMetric := range messageStatMetrics {
 		// Get metric value
@@ -132,17 +132,17 @@ func (r *rabbitmqScraper) collectQueue(queue *models.Queue, now pdata.Timestamp,
 
 		switch messageStatMetric {
 		case deliverStat:
-			r.metricsBuilder.RecordRabbitmqMessageDeliveredDataPoint(now, val64)
+			r.mb.RecordRabbitmqMessageDeliveredDataPoint(now, val64)
 		case publishStat:
-			r.metricsBuilder.RecordRabbitmqMessagePublishedDataPoint(now, val64)
+			r.mb.RecordRabbitmqMessagePublishedDataPoint(now, val64)
 		case ackStat:
-			r.metricsBuilder.RecordRabbitmqMessageAcknowledgedDataPoint(now, val64)
+			r.mb.RecordRabbitmqMessageAcknowledgedDataPoint(now, val64)
 		case dropUnroutableStat:
-			r.metricsBuilder.RecordRabbitmqMessageDroppedDataPoint(now, val64)
+			r.mb.RecordRabbitmqMessageDroppedDataPoint(now, val64)
 
 		}
 	}
-	r.metricsBuilder.Emit(ilms.Metrics())
+	r.mb.Emit(ilms.Metrics())
 }
 
 // convertValToInt64 values from message state unmarshal as float64s but should be int64.
