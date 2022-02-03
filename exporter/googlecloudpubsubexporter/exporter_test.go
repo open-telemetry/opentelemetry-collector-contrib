@@ -16,6 +16,7 @@ package googlecloudpubsubexporter
 
 import (
 	"context"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"testing"
 	"time"
 
@@ -23,7 +24,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.uber.org/zap/zaptest"
 	"google.golang.org/api/option"
 	pb "google.golang.org/genproto/googleapis/pubsub/v1"
 )
@@ -37,17 +37,19 @@ func TestGenerateClientOptions(t *testing.T) {
 	// Start a fake server running locally.
 	srv := pstest.NewServer()
 	defer srv.Close()
-	exporter := &pubsubExporter{
-		instanceName: "dummy",
-		logger:       zaptest.NewLogger(t),
-		userAgent:    "test-user-agent",
-
-		config: &Config{
-			Endpoint:  srv.Addr,
-			Insecure:  true,
-			ProjectID: "my-project",
-		},
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	exporterConfig := cfg.(*Config)
+	exporterConfig.Endpoint = srv.Addr
+	exporterConfig.UserAgent = "test-user-agent"
+	exporterConfig.Insecure = true
+	exporterConfig.ProjectID = "my-project"
+	exporterConfig.Topic = "projects/my-project/topics/otlp"
+	exporterConfig.TimeoutSettings = exporterhelper.TimeoutSettings{
+		Timeout: 12 * time.Second,
 	}
+	exporter := ensureExporter(componenttest.NewNopExporterCreateSettings(), exporterConfig)
+
 	options := exporter.generateClientOptions()
 	assert.Equal(t, option.WithUserAgent("test-user-agent"), options[0])
 
@@ -67,21 +69,17 @@ func TestExporterDefaultSettings(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
-	exporter := &pubsubExporter{
-		instanceName: "dummy",
-		logger:       zaptest.NewLogger(t),
-		userAgent:    "test-user-agent",
-
-		config: &Config{
-			Endpoint:  srv.Addr,
-			Insecure:  true,
-			ProjectID: "my-project",
-			TimeoutSettings: exporterhelper.TimeoutSettings{
-				Timeout: 12 * time.Second,
-			},
-		},
-		topicName: "projects/my-project/topics/otlp",
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	exporterConfig := cfg.(*Config)
+	exporterConfig.Endpoint = srv.Addr
+	exporterConfig.Insecure = true
+	exporterConfig.ProjectID = "my-project"
+	exporterConfig.Topic = "projects/my-project/topics/otlp"
+	exporterConfig.TimeoutSettings = exporterhelper.TimeoutSettings{
+		Timeout: 12 * time.Second,
 	}
+	exporter := ensureExporter(componenttest.NewNopExporterCreateSettings(), exporterConfig)
 	assert.NoError(t, exporter.start(ctx, nil))
 	assert.NoError(t, exporter.consumeTraces(ctx, pdata.NewTraces()))
 	assert.NoError(t, exporter.consumeMetrics(ctx, pdata.NewMetrics()))
@@ -99,22 +97,19 @@ func TestExporterCompression(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
-	exporter := &pubsubExporter{
-		instanceName: "dummy",
-		logger:       zaptest.NewLogger(t),
-		userAgent:    "test-user-agent",
-
-		config: &Config{
-			Endpoint:  srv.Addr,
-			Insecure:  true,
-			ProjectID: "my-project",
-			TimeoutSettings: exporterhelper.TimeoutSettings{
-				Timeout: 12 * time.Second,
-			},
-		},
-		topicName:     "projects/my-project/topics/otlp",
-		ceCompression: GZip,
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	exporterConfig := cfg.(*Config)
+	exporterConfig.Endpoint = srv.Addr
+	exporterConfig.UserAgent = "test-user-agent"
+	exporterConfig.Insecure = true
+	exporterConfig.ProjectID = "my-project"
+	exporterConfig.Topic = "projects/my-project/topics/otlp"
+	exporterConfig.TimeoutSettings = exporterhelper.TimeoutSettings{
+		Timeout: 12 * time.Second,
 	}
+	exporterConfig.Compression = "gzip"
+	exporter := ensureExporter(componenttest.NewNopExporterCreateSettings(), exporterConfig)
 	assert.NoError(t, exporter.start(ctx, nil))
 	assert.NoError(t, exporter.consumeTraces(ctx, pdata.NewTraces()))
 	assert.NoError(t, exporter.consumeMetrics(ctx, pdata.NewMetrics()))

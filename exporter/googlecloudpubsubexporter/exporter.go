@@ -24,7 +24,6 @@ import (
 	pubsub "cloud.google.com/go/pubsub/apiv1"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/otlp"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 	"google.golang.org/api/option"
@@ -36,39 +35,37 @@ import (
 const name = "googlecloudpubsub"
 
 type pubsubExporter struct {
-	instanceName         string
 	logger               *zap.Logger
-	topicName            string
 	client               *pubsub.PublisherClient
 	cancel               context.CancelFunc
 	userAgent            string
 	ceSource             string
-	ceCompression        Compression
+	ceCompression        compression
 	config               *Config
 	tracesMarshaler      pdata.TracesMarshaler
-	tracesWatermarkFunc  TracesWatermarkFunc
+	tracesWatermarkFunc  tracesWatermarkFunc
 	metricsMarshaler     pdata.MetricsMarshaler
-	metricsWatermarkFunc MetricsWatermarkFunc
+	metricsWatermarkFunc metricsWatermarkFunc
 	logsMarshaler        pdata.LogsMarshaler
-	logsWatermarkFunc    LogsWatermarkFunc
+	logsWatermarkFunc    logsWatermarkFunc
 }
 
 func (*pubsubExporter) Name() string {
 	return name
 }
 
-type Encoding int
+type encoding int
 
 const (
-	OtlpProtoTrace  Encoding = iota
+	OtlpProtoTrace  encoding = iota
 	OtlpProtoMetric          = iota
 	OtlpProtoLog             = iota
 )
 
-type Compression int
+type compression int
 
 const (
-	Uncompressed Compression = iota
+	Uncompressed compression = iota
 	GZip                     = iota
 )
 
@@ -91,12 +88,6 @@ func (ex *pubsubExporter) start(ctx context.Context, _ component.Host) error {
 
 		ex.client = client
 	}
-	ex.tracesMarshaler = otlp.NewProtobufTracesMarshaler()
-	ex.tracesWatermarkFunc = currentTracesWatermark
-	ex.metricsMarshaler = otlp.NewProtobufMetricsMarshaler()
-	ex.metricsWatermarkFunc = currentMetricsWatermark
-	ex.logsMarshaler = otlp.NewProtobufLogsMarshaler()
-	ex.logsWatermarkFunc = currentLogsWatermark
 	return nil
 }
 
@@ -127,7 +118,7 @@ func (ex *pubsubExporter) generateClientOptions() (copts []option.ClientOption) 
 	return copts
 }
 
-func (ex *pubsubExporter) publishMessage(ctx context.Context, encoding Encoding, data []byte, watermark time.Time) error {
+func (ex *pubsubExporter) publishMessage(ctx context.Context, encoding encoding, data []byte, watermark time.Time) error {
 	id, err := uuid.NewRandom()
 	if err != nil {
 		return err
@@ -163,7 +154,7 @@ func (ex *pubsubExporter) publishMessage(ctx context.Context, encoding Encoding,
 		}
 	}
 	_, err = ex.client.Publish(ctx, &pubsubpb.PublishRequest{
-		Topic: ex.topicName,
+		Topic: ex.config.Topic,
 		Messages: []*pubsubpb.PubsubMessage{
 			{
 				Attributes: attributes,

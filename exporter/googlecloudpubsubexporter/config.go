@@ -50,10 +50,11 @@ type Config struct {
 
 // WatermarkConfig customizes the behavior of the watermark
 type WatermarkConfig struct {
-	// Behavior of the watermark. Currently, only  of the message (none, latest, earliest and current, current being the default)
+	// Behavior of the watermark. Currently, only  of the message (none, earliest and current, current being the default)
 	// will set the timestamp on pubsub based on timestamps of the events inside the message
 	Behavior string `mapstructure:"behavior"`
-	// Indication on how much the timestamp can drift from the current time.
+	// Indication on how much the timestamp can drift from the current time, the timestamp will be capped to the allowed
+	// maximum.
 	AllowedDrift time.Duration `mapstructure:"allowed_drift"`
 }
 
@@ -70,20 +71,17 @@ func (config *Config) validate() error {
 
 func (config *WatermarkConfig) validate() error {
 	_, err := config.parseWatermarkBehavior()
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
-func (config *Config) parseCompression() (Compression, error) {
+func (config *Config) parseCompression() (compression, error) {
 	switch config.Compression {
 	case "gzip":
 		return GZip, nil
 	case "":
 		return Uncompressed, nil
 	}
-	return Uncompressed, fmt.Errorf("if specified, compression should be gzip ")
+	return Uncompressed, fmt.Errorf("compression %v is not supported.  supported compression formats include [gzip]", config.Compression)
 }
 
 func (config *WatermarkConfig) parseWatermarkBehavior() (WatermarkBehavior, error) {
@@ -95,5 +93,5 @@ func (config *WatermarkConfig) parseWatermarkBehavior() (WatermarkBehavior, erro
 	case "":
 		return Current, nil
 	}
-	return Current, fmt.Errorf("if specified, behavior should be earliest or current ")
+	return Current, fmt.Errorf("behavior %v is not supported.  supported compression formats include [current,earliest]", config.Behavior)
 }

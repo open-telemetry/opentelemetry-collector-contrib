@@ -9,7 +9,12 @@ The following configuration options are supported:
 * `project` (Optional): The Google Cloud Project of the topics.
 * `topic` (Required): The topic name to receive OTLP data over. The topic name should be a fully qualified resource
   name (eg: `projects/otel-project/topics/otlp`).
-* `compression` (Optional): TODO
+* `compression` (Optional): Set the payload compression, only `gzip` is supported. Default is no compression.
+* `watermark` Behaviour of how the `ce-time` attribute is set (see watermark section for more info)
+  * `behavior` (Optional): `current` sets the `ce-time` attribute to the system clock, `earlierst` sets the attribute to 
+  the smallest timestamp of all the messages.
+  * `allow_drift` (Optional): The maximum difference the `ce-time` attribute can be set from the system clock. Make sure
+  to set it when behaviour is earliest, otherwise you will not see effect as the default is `0s`.
 
 ```yaml
 exporters:
@@ -34,15 +39,15 @@ defined in the
 The data field is either a `ExportTraceServiceRequest`, `ExportMetricsServiceRequest` or `ExportLogsServiceRequest` for 
 traces, metrics or logs respectively.  Each message is accompanied by the following attributes:
 
-| attributes | description |
-| --- | --- |
-| ce-specversion | Follow version `1.0` of the CloudEvent spec |
-| ce-source | The source is this `/opentelemetry/collector/googlecloudpubsub/<version>` exporter |
-| ce-id | a random `UUID` to uniquely define the message |
-| ce-time | a watermark indicating when the events, encapsulated in the OTLP message, where generated. The behavior will depend on the watermark setting in the configuration |
-| ce-type | depending on the data `org.opentelemetry.otlp.traces.v1`, `org.opentelemetry.otlp.metrics.v1` or `org.opentelemetry.otlp.logs.v1` |
-| content-type | the content type is `application/protobuf` | 
-| content-encoding | indicates that payload is compressed. Only gzip compression is supported |
+| attributes       | description                                                                                                                                                       |
+|------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ce-specversion   | Follow version `1.0` of the CloudEvent spec                                                                                                                       |
+| ce-source        | The source is this `/opentelemetry/collector/googlecloudpubsub/<version>` exporter                                                                                |
+| ce-id            | a random `UUID` to uniquely define the message                                                                                                                    |
+| ce-time          | a watermark indicating when the events, encapsulated in the OTLP message, where generated. The behavior will depend on the watermark setting in the configuration |
+| ce-type          | depending on the data `org.opentelemetry.otlp.traces.v1`, `org.opentelemetry.otlp.metrics.v1` or `org.opentelemetry.otlp.logs.v1`                                 |
+| content-type     | the content type is `application/protobuf`                                                                                                                        | 
+| content-encoding | indicates that payload is compressed. Only gzip compression is supported                                                                                          |
 
 ### Compression
  
@@ -64,9 +69,16 @@ Only `gzip` is supported.
 
 ### Watermark
 
-The exporters automatically adds a unique id (`ce-id`) and a timestamp (`ce-time`) to the message attributes. These 
-attributes are useful for real time streaming analytics, de-duplication or anomaly detection. The behavior of the 
-watermark can be changed by setting in the configuration file.
+A watermark is a threshold that indicates where streaming processing frameworks (like Apache Beam) expects all the 
+data in a window to have arrived. If new data arrives with a timestamp that's in the window but older than the 
+watermark, the data is considered late data. The watermark section will change the behaviour of the `ce-time`
+attribute of the message. If you don't use such frameworks you can ignore the section and the `ce-time` will 
+be set to the current time, but to have a more reliable watermark behaviour in such streaming it's better to set
+the `ce-time` attribute to the earliest timestamp of the messages embedded in the Pubsub message.
+
+Setting the behaviour to `earliest` will scan all the embedded message before sending the actual Pubsub message to
+figure out what the earliest timestamp is. You have to set `allow_drift`, the allowed maximum for the `ce-time` 
+timestamp , if you want to behaviour to have effect as the default is `0s`.
 
 ```yaml
 exporters:
@@ -83,8 +95,9 @@ that much as the timestamp that is attached to a Pubsub message. Most users that
 as a global distribution system will not need anything else.
 
 If you use Google Cloud [Dataflow](https://cloud.google.com/dataflow) and want to rely on the advanced streaming 
-feature you may want to change the behavior of the watermark and de-duplication. You can set the attributes names on
-the [Pubsub connector](https://beam.apache.org/releases/javadoc/2.31.0/org/apache/beam/sdk/io/gcp/pubsub/PubsubIO.Read.html#withTimestampAttribute-java.lang.String-)
+feature you may want to change the behavior of the watermark and de-duplication. You can leverage the unique id (`ce-id`) 
+and a timestamp (`ce-time`) attributes on the message. In Apache Beam (the framework used by Dataflow) you can set the 
+attributes names on the [Pubsub connector](https://beam.apache.org/releases/javadoc/2.31.0/org/apache/beam/sdk/io/gcp/pubsub/PubsubIO.Read.html#withTimestampAttribute-java.lang.String-)
 via the `.withTimestampAttribute("ce-time")` and `.withIdAttribute("ce-id")` methods.  A good settings for this 
 scenario is `behavior: earliest` with a reasonable `allow_drift` of `1h`.
 

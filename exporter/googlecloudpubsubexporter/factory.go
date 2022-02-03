@@ -51,16 +51,15 @@ func ensureExporter(params component.ExporterCreateSettings, pCfg *Config) *pubs
 		return receiver
 	}
 	receiver = &pubsubExporter{
-		instanceName:     pCfg.ID().Name(),
 		logger:           params.Logger,
 		userAgent:        strings.ReplaceAll(pCfg.UserAgent, "{{version}}", params.BuildInfo.Version),
 		ceSource:         fmt.Sprintf("/opentelemetry/collector/%s/%s", name, params.BuildInfo.Version),
 		config:           pCfg,
-		topicName:        pCfg.Topic,
 		tracesMarshaler:  otlp.NewProtobufTracesMarshaler(),
 		metricsMarshaler: otlp.NewProtobufMetricsMarshaler(),
 		logsMarshaler:    otlp.NewProtobufLogsMarshaler(),
 	}
+	// we ignore the error here as the config is already validated with the same method
 	receiver.ceCompression, _ = pCfg.parseCompression()
 	watermarkBehavior, _ := pCfg.Watermark.parseWatermarkBehavior()
 	switch watermarkBehavior {

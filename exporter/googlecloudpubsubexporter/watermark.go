@@ -20,18 +20,24 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
-type MetricsWatermarkFunc func(metrics pdata.Metrics, processingTime time.Time, allowedDrift time.Duration) time.Time
-type LogsWatermarkFunc func(logs pdata.Logs, processingTime time.Time, allowedDrift time.Duration) time.Time
-type TracesWatermarkFunc func(traces pdata.Traces, processingTime time.Time, allowedDrift time.Duration) time.Time
+type metricsWatermarkFunc func(metrics pdata.Metrics, processingTime time.Time, allowedDrift time.Duration) time.Time
+type logsWatermarkFunc func(logs pdata.Logs, processingTime time.Time, allowedDrift time.Duration) time.Time
+type tracesWatermarkFunc func(traces pdata.Traces, processingTime time.Time, allowedDrift time.Duration) time.Time
 
 type collectFunc func(timestamp pdata.Timestamp) bool
 
+// collector helps traverse the OTLP tree to calculate the final time to set to the ce-time attribute
 type collector struct {
+	// the current system clock time, set at the start of the tree traversal
 	processingTime time.Time
-	allowedDrift   time.Duration
+	// maximum allowed difference for the processingTime
+	allowedDrift time.Duration
+	// calculated time, that can be set each time a timestamp is given to a calculation function
 	calculatedTime time.Time
 }
 
+// add a new timestamp, and set the calculated time if it's earlier then the current calculated,
+// taking into account the allowedDrift
 func (c *collector) earliest(timestamp pdata.Timestamp) bool {
 	t := timestamp.AsTime()
 	if t.Before(c.calculatedTime) {
@@ -45,14 +51,12 @@ func (c *collector) earliest(timestamp pdata.Timestamp) bool {
 	return false
 }
 
-func currentLogsWatermark(_ pdata.Logs, processingTime time.Time, _ time.Duration) time.Time {
-	return processingTime
-}
-
+// function that doesn't traverse the metric data, return the processingTime
 func currentMetricsWatermark(_ pdata.Metrics, processingTime time.Time, _ time.Duration) time.Time {
 	return processingTime
 }
 
+// function that traverse the metric data, and returns the earliest timestamp (within limits of the allowedDrift)
 func earliestMetricsWatermark(metrics pdata.Metrics, processingTime time.Time, allowedDrift time.Duration) time.Time {
 	collector := &collector{
 		processingTime: processingTime,
@@ -63,6 +67,7 @@ func earliestMetricsWatermark(metrics pdata.Metrics, processingTime time.Time, a
 	return collector.calculatedTime
 }
 
+// traverse the metric data, with a collectFunc
 func traverseMetrics(metrics pdata.Metrics, collect collectFunc) {
 	for rix := 0; rix < metrics.ResourceMetrics().Len(); rix++ {
 		r := metrics.ResourceMetrics().At(rix)
@@ -112,6 +117,12 @@ func traverseMetrics(metrics pdata.Metrics, collect collectFunc) {
 	}
 }
 
+// function that doesn't traverse the log data, return the processingTime
+func currentLogsWatermark(_ pdata.Logs, processingTime time.Time, _ time.Duration) time.Time {
+	return processingTime
+}
+
+// function that traverse the log data, and returns the earliest timestamp (within limits of the allowedDrift)
 func earliestLogsWatermark(logs pdata.Logs, processingTime time.Time, allowedDrift time.Duration) time.Time {
 	c := collector{
 		processingTime: processingTime,
@@ -122,6 +133,7 @@ func earliestLogsWatermark(logs pdata.Logs, processingTime time.Time, allowedDri
 	return c.calculatedTime
 }
 
+// traverse the log data, with a collectFunc
 func traverseLogs(logs pdata.Logs, collect collectFunc) {
 	for rix := 0; rix < logs.ResourceLogs().Len(); rix++ {
 		r := logs.ResourceLogs().At(rix)
@@ -137,10 +149,12 @@ func traverseLogs(logs pdata.Logs, collect collectFunc) {
 	}
 }
 
+// function that doesn't traverse the trace data, return the processingTime
 func currentTracesWatermark(_ pdata.Traces, processingTime time.Time, _ time.Duration) time.Time {
 	return processingTime
 }
 
+// function that traverse the trace data, and returns the earliest timestamp (within limits of the allowedDrift)
 func earliestTracesWatermark(traces pdata.Traces, processingTime time.Time, allowedDrift time.Duration) time.Time {
 	c := collector{
 		processingTime: processingTime,
@@ -151,6 +165,7 @@ func earliestTracesWatermark(traces pdata.Traces, processingTime time.Time, allo
 	return c.calculatedTime
 }
 
+// traverse the trace data, with a collectFunc
 func traverseTraces(traces pdata.Traces, collect collectFunc) {
 	for rix := 0; rix < traces.ResourceSpans().Len(); rix++ {
 		r := traces.ResourceSpans().At(rix)
