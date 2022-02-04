@@ -4,15 +4,15 @@ go 1.17
 
 require (
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.43.1
+	go.opentelemetry.io/collector v0.44.0
 )
 
 require (
 	github.com/coralogix/opentelemetry-cx-protobuf-api/coralogixpb v0.0.0-20211201100428-d2a5d0ecf53e
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.43.0
-	go.opentelemetry.io/collector/model v0.43.1
+	go.opentelemetry.io/collector/model v0.44.0
 	go.uber.org/zap v1.20.0
-	google.golang.org/grpc v1.43.0
+	google.golang.org/grpc v1.44.0
 )
 
 require (
@@ -26,7 +26,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/jaegertracing/jaeger v1.30.0 // indirect
-	github.com/klauspost/compress v1.14.1 // indirect
+	github.com/klauspost/compress v1.14.2 // indirect
 	github.com/knadh/koanf v1.4.0 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect

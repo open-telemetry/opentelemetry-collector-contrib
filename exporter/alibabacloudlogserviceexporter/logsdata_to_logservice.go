@@ -52,7 +52,7 @@ func logDataToLogService(ld pdata.Logs) []*sls.Log {
 		for j := 0; j < ills.Len(); j++ {
 			ils := ills.At(j)
 			instrumentationLibraryContents := instrumentationLibraryToLogContents(ils.InstrumentationLibrary())
-			logs := ils.Logs()
+			logs := ils.LogRecords()
 			for j := 0; j < logs.Len(); j++ {
 				slsLog := mapLogRecordToLogService(logs.At(j), resourceContents, instrumentationLibraryContents)
 				if slsLog != nil {

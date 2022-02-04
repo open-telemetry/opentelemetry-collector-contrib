@@ -4,6 +4,7 @@
 
 ## 💡 Enhancements 💡
 
+- `dynatraceexporter`: Write error logs using plugin logger (#7360)
 - `tanzuobservabilityexporter`: Turn on metrics exporter (#7281)
 - `attributesprocessor` `resourceprocessor`: Add `from_context` value source
 - `resourcedetectionprocessor`: check cluster config to verify resource is on aws for eks resources (#7186)
@@ -12,11 +13,34 @@
 - `jmxreceiver`: Added `additional_jars` configuration option to launch JMX Metric Gatherer JAR with extended `CLASSPATH` (#7378)
 - `awscontainerinsightreceiver`: add full pod name when configured to AWS Container Insights Receiver (#7415)
 - `hostreceiver/loadscraper`: Migrate the scraper to the mdatagen metrics builder (#7288)
+- `awsecscontainermetricsreceiver`: Rename attributes to follow semantic conventions (#7425)
+- `datadogexporter`: Always map conventional attributes to tags (#7185)
+- `mysqlreceiver`: Add golden files for integration test (#7303)
+- `nginxreceiver`: Standardize integration test (#7515)
+- `mysqlreceiver`: Update to use mdatagen v2 (#7507)
+- `postgresqlreceiver`: Add integration tests (#7501)
+- `apachereceiver`: Add integration test (#7517)
+- `mysqlreceiver`: Use scrapererror to report errors (#7513)
+- `postgresreceiver`: Update to mdatagen v2 (#7503)
+- `nginxreceiver`: Update to mdatagen v2 (#7549)
+- `datadogexporter`: Fix traces exporter's initialization log (#7564)
+
 ## 🛑 Breaking changes 🛑
+
+- `resourcedetectionprocessor`: Update `os.type` attribute values according to semantic conventions (#7544)
 
 ## 🚀 New components 🚀
 
 ## 🧰 Bug fixes 🧰
+
+- `resourcedetectionprocessor`: fix `meta` allow list excluding keys with nil values (#7424)
+- `postgresqlreceiver`: Fix issue where empty metrics could be returned after failed connection (#7502)
+- `resourcetotelemetry`: Ensure resource attributes are added to summary
+  and exponential histogram data points. (#7523)
+
+## Deprecations
+
+- Deprecated otel_to_hec_fields.name setting from splunkhec exporter. (#7560)
 
 ## v0.43.0
 
@@ -30,7 +54,6 @@
 - `elasticsearchreceiver`: Implement scraping logic (#7174)
 - `datadogexporter`: Add http.status_code tag to trace stats (#6889)
 - `datadogexporter`: Add configuration option to use OTel span name into the Datatog resource name (#6611)
-- `dynatraceexporter`: Write error logs using plugin logger (#7360)
 - `mongodbreceiver`: Add initial client code to the component (#7125)
 - `tanzuobservabilityexporter`: Support delta histograms (#6897)
 - `awscloudwatchlogsexporter`: Use cwlogs package to export logs (#7152)

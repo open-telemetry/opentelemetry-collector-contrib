@@ -93,9 +93,9 @@ func createLogData() pdata.Logs {
 	rl.InstrumentationLibraryLogs().EnsureCapacity(1)
 
 	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
-	ill.Logs().EnsureCapacity(1)
+	ill.LogRecords().EnsureCapacity(1)
 
-	logRecord := ill.Logs().AppendEmpty()
+	logRecord := ill.LogRecords().AppendEmpty()
 
 	logRecord.SetTimestamp(pdata.Timestamp(now.UnixNano()))
 	logRecord.Body().SetStringVal("message")
