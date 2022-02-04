@@ -243,11 +243,6 @@ func (l *lokiExporter) convertAttributesToLabels(attributes pdata.AttributeMap, 
 func (l *lokiExporter) convertLogBodyToEntry(lr pdata.LogRecord, res pdata.Resource) (*logproto.Entry, error) {
 	var b strings.Builder
 
-	if len(lr.Name()) > 0 {
-		b.WriteString("name=")
-		b.WriteString(lr.Name())
-		b.WriteRune(' ')
-	}
 	if len(lr.SeverityText()) > 0 {
 		b.WriteString("severity=")
 		b.WriteString(lr.SeverityText())
