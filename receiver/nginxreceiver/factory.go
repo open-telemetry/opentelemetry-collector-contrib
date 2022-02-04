@@ -14,8 +14,6 @@
 
 package nginxreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver"
 
-//go:generate mdatagen metadata.yaml
-
 import (
 	"context"
 	"time"
@@ -26,6 +24,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver/internal/metadata"
 )
 
 const (
@@ -50,6 +50,7 @@ func createDefaultConfig() config.Receiver {
 			Endpoint: "http://localhost:80/status",
 			Timeout:  10 * time.Second,
 		},
+		Metrics: metadata.DefaultMetricsSettings(),
 	}
 }
 
