@@ -1,0 +1,21 @@
+extensions:
+  sigv4auth:
+    region: "region"
+    service: "service"
+
+
+# Data pipeline is required to load the config.
+receivers:
+  nop:
+processors:
+  nop:
+exporters:
+  nop:
+
+service:
+  extensions: [sigv4auth]
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [nop]

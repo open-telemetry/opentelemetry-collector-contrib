@@ -24,8 +24,11 @@
 ## 🛑 Breaking changes 🛑
 
 - `resourcedetectionprocessor`: Update `os.type` attribute values according to semantic conventions (#7544)
+- `awsprometheusremotewriteexporter`: Deprecation notice; may be removed after v0.46.0
+  - Switch to using the `prometheusremotewriteexporter` + `sigv4authextension` instead
 
 ## 🚀 New components 🚀
+- `sigv4authextension`: (#)
 
 ## 🧰 Bug fixes 🧰
 

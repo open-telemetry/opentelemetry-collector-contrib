@@ -1,0 +1,21 @@
+extensions:
+  sigv4auth/bad_credentials:
+    region: "region"
+    service: "service"
+    role_arn: "rolearn"
+
+# Data pipeline is required to load the config.
+receivers:
+  nop:
+processors:
+  nop:
+exporters:
+  nop:
+
+service:
+  extensions: [sigv4auth/bad_credentials]
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [nop]

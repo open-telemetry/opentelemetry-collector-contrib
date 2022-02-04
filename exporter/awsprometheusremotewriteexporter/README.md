@@ -1,3 +1,9 @@
+## DEPRECATION NOTICE
+
+The AWS Prometheus Remote Write Exporter will be removed in 0.47.0. Users who want to send metrics to Amazon Managed Service 
+for Prometheus will need to instead use the Prometheus Remote Write Exporter along with the Sigv4 Authenticator Extension 
+to achieve the same result. 
+
 # AWS Prometheus Remote Write Exporter
 
 AWS Prometheus Remote Write Exporter sends metrics in remote write format to
