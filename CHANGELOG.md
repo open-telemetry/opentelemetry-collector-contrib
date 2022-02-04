@@ -41,6 +41,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `opentelemetry-instrumentation-pymongo` now supports `pymongo v4`
   ([#876](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/876))
 
+- `opentelemetry-instrumentation-httpx` now supports versions higher than `0.19.0`.
+  ([#866](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/866))
+
 ### Fixed
 
 - `opentelemetry-instrumentation-django` Django: Conditionally create SERVER spans
