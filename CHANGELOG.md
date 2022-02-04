@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.44.0
+
 ## 💡 Enhancements 💡
 
 - `dynatraceexporter`: Write error logs using plugin logger (#7360)
