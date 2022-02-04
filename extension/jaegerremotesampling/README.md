@@ -15,14 +15,16 @@ Although this extension is derived from Jaeger, it can be used by any clients wh
 ```yaml
 extensions:
   jaegerremotesampling:
-    remote:
-      endpoint: jaeger-collector:14250
-  jaegerremotesampling/1:
-    strategy_file: /etc/otel/sampling_strategies.json
     grpc:
       endpoint: :15251
+    source:
+      remote:
+        endpoint: jaeger-collector:14250
+  jaegerremotesampling/1:
     http:
       endpoint: :5878
+    source:
+      file: /etc/otel/sampling_strategies.json
 ```
 
 A sampling strategy file could look like:

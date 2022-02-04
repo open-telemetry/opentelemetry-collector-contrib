@@ -46,7 +46,7 @@ func TestLoadConfig(t *testing.T) {
 			HTTPServerSettings: confighttp.HTTPServerSettings{Endpoint: ":5778"},
 			GRPCServerSettings: configgrpc.GRPCServerSettings{NetAddr: confignet.NetAddr{Endpoint: ":14250"}},
 			Source: Source{
-				Remote: configgrpc.GRPCClientSettings{
+				Remote: &configgrpc.GRPCClientSettings{
 					Endpoint: "jaeger-collector:14250",
 				},
 			},
@@ -54,16 +54,49 @@ func TestLoadConfig(t *testing.T) {
 		ext0)
 
 	ext1 := cfg.Extensions[config.NewComponentIDWithName(typeStr, "1")]
+	fileSource := "/etc/otel/sampling_strategies.json"
 	assert.Equal(t,
 		&Config{
 			ExtensionSettings:  config.NewExtensionSettings(config.NewComponentIDWithName(typeStr, "1")),
 			HTTPServerSettings: confighttp.HTTPServerSettings{Endpoint: ":5778"},
 			GRPCServerSettings: configgrpc.GRPCServerSettings{NetAddr: confignet.NetAddr{Endpoint: ":14250"}},
 			Source: Source{
-				File: "/etc/otel/sampling_strategies.json",
+				File: &fileSource,
 			},
 		},
 		ext1)
 	assert.Equal(t, 1, len(cfg.Service.Extensions))
 	assert.Equal(t, config.NewComponentIDWithName(typeStr, "1"), cfg.Service.Extensions[0])
+}
+
+func TestValidate(t *testing.T) {
+	fileSource := "/tmp/some-file"
+
+	testCases := []struct {
+		desc     string
+		cfg      Config
+		expected error
+	}{
+		{
+			desc:     "no sources",
+			cfg:      Config{},
+			expected: errNoSources,
+		},
+		{
+			desc: "too many sources",
+			cfg: Config{
+				Source: Source{
+					Remote: &configgrpc.GRPCClientSettings{},
+					File:   &fileSource,
+				},
+			},
+			expected: errTooManySources,
+		},
+	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			res := tC.cfg.Validate()
+			assert.Equal(t, tC.expected, res)
+		})
+	}
 }
