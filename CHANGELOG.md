@@ -23,6 +23,7 @@
 - `mysqlreceiver`: Use scrapererror to report errors (#7513)
 - `postgresreceiver`: Update to mdatagen v2 (#7503)
 - `nginxreceiver`: Update to mdatagen v2 (#7549)
+- `datadogexporter`: Fix traces exporter's initialization log (#7564)
 
 ## 🛑 Breaking changes 🛑
 
