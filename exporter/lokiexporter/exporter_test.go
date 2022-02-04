@@ -610,3 +610,79 @@ func TestExporter_convertLogtoJSONEntry(t *testing.T) {
 	require.NotNil(t, entry)
 	require.Equal(t, expEntry, entry)
 }
+
+func TestConvertRecordAttributesToLabels(t *testing.T) {
+	testCases := []struct {
+		desc     string
+		lr       pdata.LogRecord
+		expected model.LabelSet
+	}{
+		{
+			desc: "traceID",
+			lr: func() pdata.LogRecord {
+				lr := pdata.NewLogRecord()
+				lr.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4}))
+				return lr
+			}(),
+			expected: func() model.LabelSet {
+				ls := model.LabelSet{}
+				ls[model.LabelName("traceID")] = model.LabelValue("01020304000000000000000000000000")
+				return ls
+			}(),
+		},
+		{
+			desc: "spanID",
+			lr: func() pdata.LogRecord {
+				lr := pdata.NewLogRecord()
+				lr.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4}))
+				return lr
+			}(),
+			expected: func() model.LabelSet {
+				ls := model.LabelSet{}
+				ls[model.LabelName("spanID")] = model.LabelValue("0102030400000000")
+				return ls
+			}(),
+		},
+		{
+			desc: "severity",
+			lr: func() pdata.LogRecord {
+				lr := pdata.NewLogRecord()
+				lr.SetSeverityText("DEBUG")
+				return lr
+			}(),
+			expected: func() model.LabelSet {
+				ls := model.LabelSet{}
+				ls[model.LabelName("severity")] = model.LabelValue("DEBUG")
+				return ls
+			}(),
+		},
+		{
+			desc: "severityN",
+			lr: func() pdata.LogRecord {
+				lr := pdata.NewLogRecord()
+				lr.SetSeverityNumber(pdata.SeverityNumberDEBUG)
+				return lr
+			}(),
+			expected: func() model.LabelSet {
+				ls := model.LabelSet{}
+				ls[model.LabelName("severityN")] = model.LabelValue(pdata.SeverityNumberDEBUG.String())
+				return ls
+			}(),
+		},
+	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			exp := newExporter(&Config{
+				Labels: LabelsConfig{
+					RecordAttributes: map[string]string{
+						tC.desc: tC.desc,
+					},
+				},
+			}, componenttest.NewNopTelemetrySettings())
+
+			ls := exp.convertRecordAttributesToLabels(tC.lr)
+
+			assert.Equal(t, tC.expected, ls)
+		})
+	}
+}

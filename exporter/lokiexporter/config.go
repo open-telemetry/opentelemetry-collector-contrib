@@ -55,11 +55,15 @@ type LabelsConfig struct {
 
 	// ResourceAttributes are the resource attributes that are allowed to be added as labels on a log stream.
 	ResourceAttributes map[string]string `mapstructure:"resource"`
+
+	// RecordAttributes are the attributes from the record that are allowed to be added as labels on a log stream. Possible keys:
+	// traceID, spanID, severity, severityN. Any other keys will be ignored without notice.
+	RecordAttributes map[string]string `mapstructure:"record"`
 }
 
 func (c *LabelsConfig) validate() error {
-	if len(c.Attributes) == 0 && len(c.ResourceAttributes) == 0 {
-		return fmt.Errorf("\"labels.attributes\" or \"labels.resource\" must be configured with at least one attribute")
+	if len(c.Attributes) == 0 && len(c.ResourceAttributes) == 0 && len(c.RecordAttributes) == 0 {
+		return fmt.Errorf("\"labels.attributes\", \"labels.resource\", or \"labels.record\" must be configured with at least one attribute")
 	}
 
 	logRecordNameInvalidErr := "the label `%s` in \"labels.attributes\" is not a valid label name. Label names must match " + model.LabelNameRE.String()
@@ -80,6 +84,17 @@ func (c *LabelsConfig) validate() error {
 		}
 	}
 
+	possibleRecordAttributes := map[string]bool{
+		"traceID":   true,
+		"spanID":    true,
+		"severity":  true,
+		"severityN": true,
+	}
+	for k := range c.RecordAttributes {
+		if _, found := possibleRecordAttributes[k]; !found {
+			return fmt.Errorf("record attribute %q not recognized, possible values: traceID, spanID, severity, severityN", k)
+		}
+	}
 	return nil
 }
 
