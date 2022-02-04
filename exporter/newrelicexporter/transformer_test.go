@@ -807,14 +807,13 @@ func TestTransformer_Log(t *testing.T) {
 			want: telemetry.Log{
 				Message:    "",
 				Timestamp:  time.Unix(0, 0).UTC(),
-				Attributes: map[string]interface{}{"name": ""},
+				Attributes: map[string]interface{}{},
 			},
 		},
 		{
 			name: "With Log attributes",
 			logFunc: func() pdata.LogRecord {
 				log := pdata.NewLogRecord()
-				log.SetName("bloopbleep")
 				log.Attributes().InsertString("foo", "bar")
 				log.Body().SetStringVal("Hello World")
 				return log
@@ -822,35 +821,35 @@ func TestTransformer_Log(t *testing.T) {
 			want: telemetry.Log{
 				Message:    "Hello World",
 				Timestamp:  time.Unix(0, 0).UTC(),
-				Attributes: map[string]interface{}{"foo": "bar", "name": "bloopbleep"},
+				Attributes: map[string]interface{}{"foo": "bar"},
 			},
 		},
 		{
 			name: "With severity number",
 			logFunc: func() pdata.LogRecord {
 				log := pdata.NewLogRecord()
-				log.SetName("bloopbleep")
 				log.SetSeverityNumber(pdata.SeverityNumberWARN)
+				log.Body().SetStringVal("bloopbleep")
 				return log
 			},
 			want: telemetry.Log{
 				Message:    "bloopbleep",
 				Timestamp:  time.Unix(0, 0).UTC(),
-				Attributes: map[string]interface{}{"name": "bloopbleep", "log.levelNum": int32(13)},
+				Attributes: map[string]interface{}{"log.levelNum": int32(13)},
 			},
 		},
 		{
 			name: "With severity text",
 			logFunc: func() pdata.LogRecord {
 				log := pdata.NewLogRecord()
-				log.SetName("bloopbleep")
 				log.SetSeverityText("SEVERE")
+				log.Body().SetStringVal("bloopbleep")
 				return log
 			},
 			want: telemetry.Log{
 				Message:    "bloopbleep",
 				Timestamp:  time.Unix(0, 0).UTC(),
-				Attributes: map[string]interface{}{"name": "bloopbleep", "log.level": "SEVERE"},
+				Attributes: map[string]interface{}{"log.level": "SEVERE"},
 			},
 		},
 		{
@@ -867,7 +866,6 @@ func TestTransformer_Log(t *testing.T) {
 				Message:   "",
 				Timestamp: time.Unix(0, 0).UTC(),
 				Attributes: map[string]interface{}{
-					"name":     "",
 					"trace.id": "01010101010101010101010101010101",
 					"span.id":  "0000000000000001",
 				},
@@ -886,7 +884,6 @@ func TestTransformer_Log(t *testing.T) {
 				Message:   "",
 				Timestamp: time.Unix(0, 0).UTC(),
 				Attributes: map[string]interface{}{
-					"name":                    "",
 					droppedAttributesCountKey: uint32(4),
 				},
 			},
@@ -904,7 +901,6 @@ func TestTransformer_Log(t *testing.T) {
 
 func TestCaptureLogAttributeMetadata(t *testing.T) {
 	log := pdata.NewLogRecord()
-	log.SetName("bloopbleep")
 	log.Attributes().InsertString("foo", "bar")
 	log.Body().SetStringVal("Hello World")
 
@@ -919,7 +915,6 @@ func TestCaptureLogAttributeMetadata(t *testing.T) {
 
 func TestDoesNotCaptureLogAttributeMetadata(t *testing.T) {
 	log := pdata.NewLogRecord()
-	log.SetName("bloopbleep")
 	log.Body().SetStringVal("Hello World")
 
 	details := newLogMetadata(context.TODO())
