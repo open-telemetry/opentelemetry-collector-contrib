@@ -4,15 +4,15 @@ attributes:
   buffer_pool_pages:
     value: kind
     description: The buffer pool pages types.
-    enum: [data, dirty, flushed, free, misc, total]
+    enum: [data, free, misc]
+  buffer_pool_data:
+    value: status
+    description: The status of buffer pool data.
+    enum: [dirty, clean]
   buffer_pool_operations:
     value: operation
     description: The buffer pool operations types.
     enum: [read_ahead_rnd, read_ahead, read_ahead_evicted, read_requests, reads, wait_free, write_requests]
-  buffer_pool_size:
-    value: kind
-    description: The buffer pool size types.
-    enum: [data, dirty, total]
   command:
     value: command
     description: The command types.
@@ -59,16 +59,33 @@ attributes:
     enum: [cached, connected, created, running]
 
 metrics:
-  mysql.buffer_pool_pages:
+  mysql.buffer_pool.pages:
     enabled: true
     description: The number of pages in the InnoDB buffer pool.
     unit: 1
     sum:
-      value_type: double
+      value_type: int
       monotonic: false
       aggregation: cumulative
     attributes: [buffer_pool_pages]
-  mysql.buffer_pool_operations:
+  mysql.buffer_pool.data_pages:
+    enabled: true
+    description: The number of data pages in the InnoDB buffer pool.
+    unit: 1
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation: cumulative
+    attributes: [buffer_pool_data]
+  mysql.buffer_pool.page_flushes:
+    enabled: true
+    description: The number of requests to flush pages from the InnoDB buffer pool.
+    unit: 1
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation: cumulative
+  mysql.buffer_pool.operations:
     enabled: true
     description: The number of operations on the InnoDB buffer pool.
     unit: 1
@@ -77,15 +94,23 @@ metrics:
       monotonic: true
       aggregation: cumulative
     attributes: [buffer_pool_operations]
-  mysql.buffer_pool_size:
+  mysql.buffer_pool.limit:
+    enabled: true
+    description: The configured size of the InnoDB buffer pool.
+    unit: By
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation: cumulative
+  mysql.buffer_pool.usage:
     enabled: true
     description: The number of bytes in the InnoDB buffer pool.
     unit: By
     sum:
-      value_type: double
+      value_type: int
       monotonic: false
       aggregation: cumulative
-    attributes: [buffer_pool_size]
+    attributes: [buffer_pool_data]
   mysql.commands:
     enabled: true
     description: The number of times each type of command has been executed.
@@ -181,7 +206,7 @@ metrics:
     description: The state of MySQL threads.
     unit: 1
     sum:
-      value_type: double
+      value_type: int
       monotonic: false
       aggregation: cumulative
     attributes: [threads]
