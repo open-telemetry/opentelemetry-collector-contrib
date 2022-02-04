@@ -22,6 +22,7 @@
 - `apachereceiver`: Add integration test (#7517)
 - `mysqlreceiver`: Use scrapererror to report errors (#7513)
 - `postgresreceiver`: Update to mdatagen v2 (#7503)
+- `nginxreceiver`: Update to mdatagen v2 (#7549)
 
 ## 🛑 Breaking changes 🛑
 
