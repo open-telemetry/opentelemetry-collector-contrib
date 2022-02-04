@@ -477,7 +477,6 @@ func TestExporter_convertLogBodyToEntry(t *testing.T) {
 	res.Attributes().Insert("pod.name", pdata.NewAttributeValueString("something123"))
 
 	lr := pdata.NewLogRecord()
-	lr.SetName("Checkout")
 	lr.Body().SetStringVal("Payment succeeded")
 	lr.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4}))
 	lr.SetSpanID(pdata.NewSpanID([8]byte{5, 6, 7, 8}))
@@ -498,7 +497,7 @@ func TestExporter_convertLogBodyToEntry(t *testing.T) {
 
 	expEntry := &logproto.Entry{
 		Timestamp: time.Unix(0, int64(lr.Timestamp())),
-		Line:      "name=Checkout severity=DEBUG severityN=5 traceID=01020304000000000000000000000000 spanID=0506070800000000 host.name=something Payment succeeded",
+		Line:      "severity=DEBUG severityN=5 traceID=01020304000000000000000000000000 spanID=0506070800000000 host.name=something Payment succeeded",
 	}
 	require.NotNil(t, entry)
 	require.Equal(t, expEntry, entry)
