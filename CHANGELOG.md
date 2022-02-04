@@ -19,8 +19,10 @@
 - `nginxreceiver`: Standardize integration test (#7515)
 - `mysqlreceiver`: Update to use mdatagen v2 (#7507)
 - `postgresqlreceiver`: Add integration tests (#7501)
+- `apachereceiver`: Add integration test (#7517)
 - `mysqlreceiver`: Use scrapererror to report errors (#7513)
 - `postgresreceiver`: Update to mdatagen v2 (#7503)
+- `nginxreceiver`: Update to mdatagen v2 (#7549)
 - `datadogexporter`: Fix traces exporter's initialization log (#7564)
 
 ## 🛑 Breaking changes 🛑
@@ -35,6 +37,10 @@
 - `postgresqlreceiver`: Fix issue where empty metrics could be returned after failed connection (#7502)
 - `resourcetotelemetry`: Ensure resource attributes are added to summary
   and exponential histogram data points. (#7523)
+
+## Deprecations
+
+- Deprecated otel_to_hec_fields.name setting from splunkhec exporter. (#7560)
 
 ## v0.43.0
 
