@@ -15,6 +15,7 @@
 package coralogixexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter"
 
 import (
+	"context"
 	"path/filepath"
 	"testing"
 
@@ -68,7 +69,7 @@ func TestExporter(t *testing.T) {
 	factories, _ := componenttest.NopFactories()
 	factory := NewFactory()
 	factories.Exporters[typestr] = factory
-	cfg, _ := servicetest.LoadConfigAndValidate(path.Join(".", "example", "config.yaml"), factories)
+	cfg, _ := servicetest.LoadConfigAndValidate(filepath.Join("example", "config.yaml"), factories)
 	apiConfig := cfg.Exporters[config.NewComponentID(typestr)].(*Config)
 	params := componenttest.NewNopExporterCreateSettings()
 	te := newCoralogixExporter(apiConfig, params)
