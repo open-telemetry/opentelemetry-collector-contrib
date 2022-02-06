@@ -65,7 +65,14 @@ The following settings can be optionally configured:
 - `producer`
   - `max_message_bytes` (default = 1000000) the maximum permitted size of a message in bytes
   - `required_acks` (default = 1) controls when a message is regarded as transmitted.   https://pkg.go.dev/github.com/Shopify/sarama@v1.30.0#RequiredAcks
-
+- `compression` 
+  - `codec` (default = none): The compression method to compress the messages sent to Kafka. Four compression methods are supported: `gzip`, `snappy`, `lz4` and `zstd`.
+  - `level` (default = -1000): The corresponding compression level which measures the compression degree.
+Lower compression level would lead to fast compression as well as relatively big file size. The valid ranges for each compression method are:
+  - `gzip`: `1 - 9`
+  - `snappy`: Snappy does not support compression level.
+  - `lz4`: `1 - 17`
+  - `zstd`: `1 - 22`
 Example configuration:
 
 ```yaml
@@ -74,4 +81,7 @@ exporters:
     brokers:
       - localhost:9092
     protocol_version: 2.0.0
+    compression:
+      codec: zstd
+      level: 7
 ```

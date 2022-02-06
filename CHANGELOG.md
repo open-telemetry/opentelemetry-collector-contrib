@@ -24,7 +24,7 @@
 - `postgresreceiver`: Update to mdatagen v2 (#7503)
 - `nginxreceiver`: Update to mdatagen v2 (#7549)
 - `datadogexporter`: Fix traces exporter's initialization log (#7564)
-
+- `kafkaexporter`: Added configuration option to set compression codec and level for producer in kafka exporter (#6079)
 ## 🛑 Breaking changes 🛑
 
 - `resourcedetectionprocessor`: Update `os.type` attribute values according to semantic conventions (#7544)
