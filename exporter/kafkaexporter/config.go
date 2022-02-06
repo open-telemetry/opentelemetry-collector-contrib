@@ -23,6 +23,16 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
+type CompressionType string
+
+const (
+	Gzip    CompressionType = "gzip"
+	Snappy  CompressionType = "snappy"
+	Zstd    CompressionType = "zstd"
+	LZ4     CompressionType = "lz4"
+	None    CompressionType = "none"
+)
+
 // Config defines configuration for Kafka exporter.
 type Config struct {
 	config.ExporterSettings        `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
@@ -49,6 +59,9 @@ type Config struct {
 
 	// Authentication defines used authentication mechanism.
 	Authentication Authentication `mapstructure:"auth"`
+
+	// Compression defines the compression method and compression level, if applicable.
+	Compression Compression `mapstructure:"compression"`
 }
 
 // Metadata defines configuration for retrieving metadata from the broker.
@@ -89,12 +102,38 @@ type MetadataRetry struct {
 	Backoff time.Duration `mapstructure:"backoff"`
 }
 
+// Compression defines the compression method and the compression level.
+type Compression struct {
+	Codec CompressionType `mapstructure:"codec"`
+	Level int    `mapstructure:"level"`
+}
+
 var _ config.Exporter = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {
 	if cfg.Producer.RequiredAcks < -1 || cfg.Producer.RequiredAcks > 1 {
 		return fmt.Errorf("producer.required_acks has to be between -1 and 1. configured value %v", cfg.Producer.RequiredAcks)
+	}
+	if cfg.Compression.Level == defaultCompressionLevel {
+		return nil
+	}
+	switch cfg.Compression.Codec {
+	case Gzip:
+		if cfg.Compression.Level > 9 || cfg.Compression.Level < 1 {
+			return fmt.Errorf("invalid compression level %d: valid range is [1, 9] when using gzip", cfg.Compression.Level)
+		}
+	case Snappy:
+			return fmt.Errorf("invalid compression level %d: should be %d when using snappy", cfg.Compression.Level, defaultCompressionLevel)
+
+	case LZ4:
+		if  cfg.Compression.Level > 17 || cfg.Compression.Level < 1 {
+			return fmt.Errorf("invalid compression level %d: valid range is [1, 17] when using lz4", cfg.Compression.Level)
+		}
+	case Zstd:
+		if cfg.Compression.Level > 22 || cfg.Compression.Level < 1 {
+			return fmt.Errorf("invalid compression level %d: valid range is [1, 22] when using zstd", cfg.Compression.Level)
+		}
 	}
 	return nil
 }
