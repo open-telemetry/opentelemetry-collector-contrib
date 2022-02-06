@@ -23,7 +23,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func TestCombinedEvaluatorNotSampled(t *testing.T) {
+func TestAndEvaluatorNotSampled(t *testing.T) {
 	n1 := NewStringAttributeFilter(zap.NewNop(), "name", []string{"value"}, false, 0, false)
 	n2, err := NewStatusCodeFilter(zap.NewNop(), []string{"ERROR"})
 	if err != nil {
@@ -50,7 +50,7 @@ func TestCombinedEvaluatorNotSampled(t *testing.T) {
 
 }
 
-func TestCombinedEvaluatorSampled(t *testing.T) {
+func TestAndEvaluatorSampled(t *testing.T) {
 	n1 := NewStringAttributeFilter(zap.NewNop(), "attribute_name", []string{"attribute_value"}, false, 0, false)
 	n2, err := NewStatusCodeFilter(zap.NewNop(), []string{"ERROR"})
 	if err != nil {
