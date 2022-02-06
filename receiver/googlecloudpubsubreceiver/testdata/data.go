@@ -52,7 +52,7 @@ func CreateLogExport() []byte {
 	resource := resources.AppendEmpty()
 	libs := resource.InstrumentationLibraryLogs()
 	logs := libs.AppendEmpty()
-	log := logs.Logs().AppendEmpty()
+	log := logs.LogRecords().AppendEmpty()
 	log.SetName("test")
 	data, _ := otlp.NewProtobufLogsMarshaler().MarshalLogs(out)
 	return data

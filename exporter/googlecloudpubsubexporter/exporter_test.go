@@ -16,12 +16,12 @@ package googlecloudpubsubexporter
 
 import (
 	"context"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"testing"
 	"time"
 
 	"cloud.google.com/go/pubsub/pstest"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/model/pdata"
 	"google.golang.org/api/option"

@@ -64,11 +64,11 @@ var tracesData = func() pdata.Traces {
 
 var logsData = func() pdata.Logs {
 	d := pdata.NewLogs()
-	log := d.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().Logs().AppendEmpty()
+	log := d.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty()
 	log.SetTimestamp(pdata.NewTimestampFromTime(tsRef))
-	log = d.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().Logs().AppendEmpty()
+	log = d.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty()
 	log.SetTimestamp(pdata.NewTimestampFromTime(tsBefore30s))
-	log = d.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().Logs().AppendEmpty()
+	log = d.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty()
 	log.SetTimestamp(pdata.NewTimestampFromTime(tsBefore5m))
 	return d
 }()

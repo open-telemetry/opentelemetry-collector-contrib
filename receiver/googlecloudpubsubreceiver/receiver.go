@@ -138,7 +138,7 @@ func (receiver *pubsubReceiver) handleLogStrings(ctx context.Context, message *p
 	rls := logs.AppendEmpty()
 
 	ills := rls.InstrumentationLibraryLogs().AppendEmpty()
-	lr := ills.Logs().AppendEmpty()
+	lr := ills.LogRecords().AppendEmpty()
 
 	lr.Body().SetStringVal(data)
 	lr.SetTimestamp(pdata.NewTimestampFromTime(timestamp.AsTime()))

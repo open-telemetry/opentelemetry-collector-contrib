@@ -139,8 +139,8 @@ func traverseLogs(logs pdata.Logs, collect collectFunc) {
 		r := logs.ResourceLogs().At(rix)
 		for lix := 0; lix < r.InstrumentationLibraryLogs().Len(); lix++ {
 			l := r.InstrumentationLibraryLogs().At(lix)
-			for dix := 0; dix < l.Logs().Len(); dix++ {
-				d := l.Logs().At(dix)
+			for dix := 0; dix < l.LogRecords().Len(); dix++ {
+				d := l.LogRecords().At(dix)
 				if collect(d.Timestamp()) {
 					return
 				}
