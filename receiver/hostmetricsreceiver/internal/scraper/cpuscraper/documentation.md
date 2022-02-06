@@ -8,7 +8,16 @@ These are the metrics available for this scraper.
 
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
-| system.cpu.time | Total CPU seconds broken down by different states. | s | Sum(Double) | <ul> <li>cpu</li> <li>state</li> </ul> |
+| **system.cpu.time** | Total CPU seconds broken down by different states. | s | Sum(Double) | <ul> <li>cpu</li> <li>state</li> </ul> |
+
+**Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
+Any metric can be enabled or disabled with the following scraper configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: <true|false>
+```
 
 ## Attributes
 
