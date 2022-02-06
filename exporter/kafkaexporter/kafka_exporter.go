@@ -17,7 +17,6 @@ package kafkaexporter // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"context"
 	"fmt"
-
 	"github.com/Shopify/sarama"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -135,6 +134,7 @@ func newSaramaProducer(config Config) (sarama.SyncProducer, error) {
 	c.Metadata.Retry.Max = config.Metadata.Retry.Max
 	c.Metadata.Retry.Backoff = config.Metadata.Retry.Backoff
 	c.Producer.MaxMessageBytes = config.Producer.MaxMessageBytes
+	configureCompression(config.Compression, c)
 	if config.ProtocolVersion != "" {
 		version, err := sarama.ParseKafkaVersion(config.ProtocolVersion)
 		if err != nil {
@@ -206,4 +206,20 @@ func newLogsExporter(config Config, set component.ExporterCreateSettings, marsha
 		logger:    set.Logger,
 	}, nil
 
+}
+
+func configureCompression(comp Compression, saramaConfig *sarama.Config) {
+	switch comp.Codec {
+	case None:
+		saramaConfig.Producer.Compression = sarama.CompressionNone
+	case Gzip:
+		saramaConfig.Producer.Compression = sarama.CompressionGZIP
+	case Snappy:
+		saramaConfig.Producer.Compression = sarama.CompressionSnappy
+	case LZ4:
+		saramaConfig.Producer.Compression = sarama.CompressionLZ4
+	case Zstd:
+		saramaConfig.Producer.Compression = sarama.CompressionZSTD
+	}
+	saramaConfig.Producer.CompressionLevel = comp.Level
 }
