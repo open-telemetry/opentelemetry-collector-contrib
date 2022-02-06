@@ -23,6 +23,8 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver/internal/metadata"
 )
 
 // Errors for missing required config parameters.
@@ -41,7 +43,7 @@ type Config struct {
 	Databases                               []string                       `mapstructure:"databases"`
 	confignet.NetAddr                       `mapstructure:",squash"`       // provides Endpoint and Transport
 	configtls.TLSClientSetting              `mapstructure:"tls,omitempty"` // provides SSL details
-
+	Metrics                                 metadata.MetricsSettings       `mapstructure:"metrics"`
 }
 
 func (cfg *Config) Validate() error {

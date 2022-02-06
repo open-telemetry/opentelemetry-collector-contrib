@@ -154,7 +154,7 @@ func logsToCWLogs(logger *zap.Logger, ld pdata.Logs) ([]*cloudwatchlogs.InputLog
 		ills := rl.InstrumentationLibraryLogs()
 		for j := 0; j < ills.Len(); j++ {
 			ils := ills.At(j)
-			logs := ils.Logs()
+			logs := ils.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
 				log := logs.At(k)
 				event, err := logToCWLog(resourceAttrs, log)

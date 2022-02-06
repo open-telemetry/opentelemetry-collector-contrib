@@ -142,7 +142,7 @@ aws.ecs.cluster.name | aws.ecs.cluster.name
 aws.ecs.task.family  | aws.ecs.task.family
 aws.ecs.task.arn     | aws.ecs.task.arn
 aws.ecs.task.id      | aws.ecs.task.id
-aws.ecs.task.version | aws.ecs.task.version
+aws.ecs.task.revision | aws.ecs.task.revision
 aws.ecs.service.name | aws.ecs.service.name
 cloud.availability_zone | cloud.availability_zone
 cloud.account.id | cloud.account.id
@@ -150,7 +150,7 @@ cloud.region | cloud.region
 aws.ecs.task.pull_started_at | aws.ecs.container.started_at
 aws.ecs.task.pull_stopped_at | aws.ecs.container.finished_at
 aws.ecs.task.known_status | aws.ecs.container.know_status
-aws.ecs.task.launch_type | aws.ecs.task.launch_type
+aws.ecs.launch_type | aws.ecs.launch_type
 &nbsp; | aws.ecs.container.created_at
 &nbsp; | container.name
 &nbsp; | container.id
