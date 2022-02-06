@@ -56,21 +56,21 @@ type pubsubReceiver struct {
 	startOnce          sync.Once
 }
 
-type Encoding int
+type encoding int
 
 const (
-	Unknown         Encoding = iota
-	OtlpProtoTrace           = iota
-	OtlpProtoMetric          = iota
-	OtlpProtoLog             = iota
-	RawTextLog               = iota
+	unknown         encoding = iota
+	otlpProtoTrace           = iota
+	otlpProtoMetric          = iota
+	otlpProtoLog             = iota
+	rawTextLog               = iota
 )
 
-type Compression int
+type compression int
 
 const (
-	Uncompressed Compression = iota
-	GZip                     = iota
+	uncompressed compression = iota
+	gZip                     = iota
 )
 
 func (receiver *pubsubReceiver) generateClientOptions() (copts []option.ClientOption) {
@@ -145,9 +145,9 @@ func (receiver *pubsubReceiver) handleLogStrings(ctx context.Context, message *p
 	return receiver.logsConsumer.ConsumeLogs(ctx, out)
 }
 
-func decompress(payload []byte, compression Compression) ([]byte, error) {
+func decompress(payload []byte, compression compression) ([]byte, error) {
 	switch compression {
-	case GZip:
+	case gZip:
 		reader, err := gzip.NewReader(bytes.NewReader(payload))
 		if err != nil {
 			return nil, err
@@ -157,7 +157,7 @@ func decompress(payload []byte, compression Compression) ([]byte, error) {
 	return payload, nil
 }
 
-func (receiver *pubsubReceiver) handleTrace(ctx context.Context, payload []byte, compression Compression) error {
+func (receiver *pubsubReceiver) handleTrace(ctx context.Context, payload []byte, compression compression) error {
 	payload, err := decompress(payload, compression)
 	if err != nil {
 		return err
@@ -173,7 +173,7 @@ func (receiver *pubsubReceiver) handleTrace(ctx context.Context, payload []byte,
 	return nil
 }
 
-func (receiver *pubsubReceiver) handleMetric(ctx context.Context, payload []byte, compression Compression) error {
+func (receiver *pubsubReceiver) handleMetric(ctx context.Context, payload []byte, compression compression) error {
 	payload, err := decompress(payload, compression)
 	if err != nil {
 		return err
@@ -189,7 +189,7 @@ func (receiver *pubsubReceiver) handleMetric(ctx context.Context, payload []byte
 	return nil
 }
 
-func (receiver *pubsubReceiver) handleLog(ctx context.Context, payload []byte, compression Compression) error {
+func (receiver *pubsubReceiver) handleLog(ctx context.Context, payload []byte, compression compression) error {
 	payload, err := decompress(payload, compression)
 	if err != nil {
 		return err
@@ -205,48 +205,48 @@ func (receiver *pubsubReceiver) handleLog(ctx context.Context, payload []byte, c
 	return nil
 }
 
-func (receiver *pubsubReceiver) detectEncoding(attributes map[string]string) (Encoding, Compression) {
-	otlpEncoding := Unknown
-	otlpCompression := Uncompressed
+func (receiver *pubsubReceiver) detectEncoding(attributes map[string]string) (encoding, compression) {
+	otlpEncoding := unknown
+	otlpCompression := uncompressed
 
 	ceType := attributes["ce-type"]
 	ceContentType := attributes["content-type"]
 	if strings.HasSuffix(ceContentType, "application/protobuf") {
 		switch ceType {
 		case "org.opentelemetry.otlp.traces.v1":
-			otlpEncoding = OtlpProtoTrace
+			otlpEncoding = otlpProtoTrace
 		case "org.opentelemetry.otlp.metrics.v1":
-			otlpEncoding = OtlpProtoMetric
+			otlpEncoding = otlpProtoMetric
 		case "org.opentelemetry.otlp.logs.v1":
-			otlpEncoding = OtlpProtoLog
+			otlpEncoding = otlpProtoLog
 		}
 	} else if strings.HasSuffix(ceContentType, "text/plain") {
-		otlpEncoding = RawTextLog
+		otlpEncoding = rawTextLog
 	}
 
-	if otlpEncoding == Unknown && receiver.config.Encoding != "" {
+	if otlpEncoding == unknown && receiver.config.Encoding != "" {
 		switch receiver.config.Encoding {
 		case "otlp_proto_trace":
-			otlpEncoding = OtlpProtoTrace
+			otlpEncoding = otlpProtoTrace
 		case "otlp_proto_metric":
-			otlpEncoding = OtlpProtoMetric
+			otlpEncoding = otlpProtoMetric
 		case "otlp_proto_log":
-			otlpEncoding = OtlpProtoLog
+			otlpEncoding = otlpProtoLog
 		case "raw_text":
-			otlpEncoding = RawTextLog
+			otlpEncoding = rawTextLog
 		}
 	}
 
 	ceContentEncoding := attributes["content-encoding"]
 	switch ceContentEncoding {
 	case "gzip":
-		otlpCompression = GZip
+		otlpCompression = gZip
 	}
 
-	if otlpCompression == Uncompressed && receiver.config.Compression != "" {
+	if otlpCompression == uncompressed && receiver.config.Compression != "" {
 		switch receiver.config.Compression {
 		case "gzip":
-			otlpCompression = GZip
+			otlpCompression = gZip
 		}
 	}
 	return otlpEncoding, otlpCompression
@@ -265,19 +265,19 @@ func (receiver *pubsubReceiver) createReceiverHandler(ctx context.Context) error
 			encoding, compression := receiver.detectEncoding(message.Message.Attributes)
 
 			switch encoding {
-			case OtlpProtoTrace:
+			case otlpProtoTrace:
 				if receiver.tracesConsumer != nil {
 					return receiver.handleTrace(ctx, payload, compression)
 				}
-			case OtlpProtoMetric:
+			case otlpProtoMetric:
 				if receiver.metricsConsumer != nil {
 					return receiver.handleMetric(ctx, payload, compression)
 				}
-			case OtlpProtoLog:
+			case otlpProtoLog:
 				if receiver.logsConsumer != nil {
 					return receiver.handleLog(ctx, payload, compression)
 				}
-			case RawTextLog:
+			case rawTextLog:
 				return receiver.handleLogStrings(ctx, message)
 			}
 			return errors.New("unknown encoding")

@@ -57,7 +57,7 @@ func TestCancelStream(t *testing.T) {
 		func(ctx context.Context, message *pubsubpb.ReceivedMessage) error {
 			return nil
 		})
-	handler.duration = 10 * time.Millisecond
+	handler.ackBatchWait = 10 * time.Millisecond
 	assert.NoError(t, err)
 	srv.Publish("projects/my-project/topics/otlp", []byte{}, map[string]string{
 		"ce-type":      "org.opentelemetry.otlp.traces.v1",

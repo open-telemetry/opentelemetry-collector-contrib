@@ -29,6 +29,9 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// Time to wait before restarting, when the stream stopped
+const streamRecoveryBackoffPeriod = 250 * time.Millisecond
+
 type StreamHandler struct {
 	stream      pubsubpb.Subscriber_StreamingPullClient
 	pushMessage func(ctx context.Context, message *pubsubpb.ReceivedMessage) error
@@ -39,11 +42,14 @@ type StreamHandler struct {
 	clientID     string
 	subscription string
 
-	cancel            context.CancelFunc
-	wg                sync.WaitGroup
-	receiverWaitGroup sync.WaitGroup
-	logger            *zap.Logger
-	duration          time.Duration
+	cancel context.CancelFunc
+	// wait group for the send/receive function
+	streamWaitGroup sync.WaitGroup
+	// wait group for the handler
+	handlerWaitGroup sync.WaitGroup
+	logger           *zap.Logger
+	// time that acknowledge loop waits before acknowledging messages
+	ackBatchWait time.Duration
 
 	isRunning atomic.Bool
 }
@@ -69,7 +75,7 @@ func NewHandler(
 		subscription: subscription,
 		pushMessage:  callback,
 		acks:         make([]string, 0),
-		duration:     10000 * time.Millisecond,
+		ackBatchWait: 10 * time.Second,
 	}
 	return &handler, handler.initStream(ctx)
 }
@@ -95,7 +101,7 @@ func (handler *StreamHandler) initStream(ctx context.Context) error {
 }
 
 func (handler *StreamHandler) RecoverableStream(ctx context.Context) {
-	handler.receiverWaitGroup.Add(1)
+	handler.handlerWaitGroup.Add(1)
 	handler.isRunning.Swap(true)
 	var handlerCtx context.Context
 	handlerCtx, handler.cancel = context.WithCancel(ctx)
@@ -109,16 +115,16 @@ func (handler *StreamHandler) recoverableStream(ctx context.Context) {
 		loopCtx, cancel := context.WithCancel(ctx)
 
 		handler.logger.Info("Starting Streaming Pull")
-		handler.wg.Add(2)
+		handler.streamWaitGroup.Add(2)
 		go handler.requestStream(loopCtx, cancel)
 		go handler.responseStream(loopCtx, cancel)
 
 		select {
 		case <-loopCtx.Done():
-			handler.wg.Wait()
+			handler.streamWaitGroup.Wait()
 		case <-ctx.Done():
 			cancel()
-			handler.wg.Wait()
+			handler.streamWaitGroup.Wait()
 		}
 		if handler.isRunning.Load() {
 			err := handler.initStream(ctx)
@@ -127,10 +133,10 @@ func (handler *StreamHandler) recoverableStream(ctx context.Context) {
 			}
 		}
 		handler.logger.Warn("End of recovery loop, restarting.")
-		time.Sleep(250)
+		time.Sleep(streamRecoveryBackoffPeriod)
 	}
 	handler.logger.Warn("Shutting down recovery loop.")
-	handler.receiverWaitGroup.Done()
+	handler.handlerWaitGroup.Done()
 }
 
 func (handler *StreamHandler) CancelNow() {
@@ -142,7 +148,7 @@ func (handler *StreamHandler) CancelNow() {
 }
 
 func (handler *StreamHandler) Wait() {
-	handler.receiverWaitGroup.Wait()
+	handler.handlerWaitGroup.Wait()
 }
 
 func (handler *StreamHandler) acknowledgeMessages() error {
@@ -159,7 +165,7 @@ func (handler *StreamHandler) acknowledgeMessages() error {
 }
 
 func (handler *StreamHandler) requestStream(ctx context.Context, cancel context.CancelFunc) {
-	timer := time.NewTimer(handler.duration)
+	timer := time.NewTimer(handler.ackBatchWait)
 	for {
 		if err := handler.acknowledgeMessages(); err != nil {
 			if err == io.EOF {
@@ -173,7 +179,7 @@ func (handler *StreamHandler) requestStream(ctx context.Context, cancel context.
 		case <-ctx.Done():
 			handler.logger.Warn("requestStream <-ctx.Done()")
 		case <-timer.C:
-			timer.Reset(handler.duration)
+			timer.Reset(handler.ackBatchWait)
 		}
 		if ctx.Err() == context.Canceled {
 			_ = handler.acknowledgeMessages()
@@ -184,7 +190,7 @@ func (handler *StreamHandler) requestStream(ctx context.Context, cancel context.
 	cancel()
 	handler.logger.Warn("Request Stream loop ended.")
 	_ = handler.stream.CloseSend()
-	handler.wg.Done()
+	handler.streamWaitGroup.Done()
 }
 
 func (handler *StreamHandler) responseStream(ctx context.Context, cancel context.CancelFunc) {
@@ -216,7 +222,7 @@ func (handler *StreamHandler) responseStream(ctx context.Context, cancel context
 				activeStreaming = false
 			case s.Code() == codes.NotFound:
 				handler.logger.Error("resource doesn't exist, wait 60 seconds, and restarting stream")
-				time.Sleep(time.Millisecond * 60)
+				time.Sleep(time.Second * 60)
 				activeStreaming = false
 			default:
 				handler.logger.Warn(fmt.Sprintf("response stream breaking on gRPC s %s", s.Message()),
@@ -233,5 +239,5 @@ func (handler *StreamHandler) responseStream(ctx context.Context, cancel context
 	}
 	cancel()
 	handler.logger.Warn("Response Stream loop ended.")
-	handler.wg.Done()
+	handler.streamWaitGroup.Done()
 }

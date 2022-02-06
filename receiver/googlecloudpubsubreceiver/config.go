@@ -60,7 +60,7 @@ func (config *Config) validateForLog() error {
 	case "raw_text":
 	case "raw_json":
 	default:
-		return fmt.Errorf("if specified, log encoding should be either otlp_proto_log, raw_text or raw_json")
+		return fmt.Errorf("log encoding %v is not supported.  supported encoding formats include [otlp_proto_log,raw_text,raw_json]", config.Encoding)
 	}
 	return nil
 }
@@ -74,7 +74,7 @@ func (config *Config) validateForTrace() error {
 	case "":
 	case "otlp_proto_trace":
 	default:
-		return fmt.Errorf("if specified, trace encoding can be be only otlp_proto_trace")
+		return fmt.Errorf("trace encoding %v is not supported.  supported encoding formats include [otlp_proto_trace]", config.Encoding)
 	}
 	return nil
 }
@@ -88,7 +88,7 @@ func (config *Config) validateForMetric() error {
 	case "":
 	case "otlp_proto_metric":
 	default:
-		return fmt.Errorf("if specified, trace encoding can be be only otlp_proto_metric")
+		return fmt.Errorf("metric encoding %v is not supported.  supported encoding formats include [otlp_proto_metric]", config.Encoding)
 	}
 	return nil
 }
@@ -101,7 +101,7 @@ func (config *Config) validate() error {
 	case "":
 	case "gzip":
 	default:
-		return fmt.Errorf("if specified, only gzip is supported")
+		return fmt.Errorf("compression %v is not supported.  supported compression formats include [gzip]", config.Compression)
 	}
 	return nil
 }
