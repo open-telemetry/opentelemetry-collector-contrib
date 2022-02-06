@@ -28,7 +28,7 @@ import (
 	"go.uber.org/atomic"
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
-	v2beta2 "k8s.io/api/autoscaling/v2beta2"
+	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -98,7 +98,7 @@ func (rw *resourceWatcher) prepareSharedInformerFactory() {
 	rw.setupInformers(&appsv1.StatefulSet{}, factory.Apps().V1().StatefulSets().Informer())
 	rw.setupInformers(&batchv1.Job{}, factory.Batch().V1().Jobs().Informer())
 	rw.setupInformers(&batchv1.CronJob{}, factory.Batch().V1beta1().CronJobs().Informer())
-	rw.setupInformers(&v2beta2.HorizontalPodAutoscaler{},
+	rw.setupInformers(&autoscalingv2beta2.HorizontalPodAutoscaler{},
 		factory.Autoscaling().V2beta1().HorizontalPodAutoscalers().Informer(),
 	)
 
