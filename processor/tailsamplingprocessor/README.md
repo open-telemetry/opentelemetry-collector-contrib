@@ -19,6 +19,7 @@ Multiple policies exist today and it is straight forward to add more. These incl
 - `status_code`: Sample based upon the status code (`OK`, `ERROR` or `UNSET`)
 - `string_attribute`: Sample based on string attributes value matches, both exact and regex value matches are supported
 - `rate_limiting`: Sample based on rate
+- `and`: Sample based on multiple policies, creates an AND policy 
 - `composite`: Sample based on a combination of above samplers, with ordering and rate allocation per sampler. Rate allocation allocates certain percentages of spans per policy order. 
   For example if we have set max_total_spans_per_second as 100 then we can set rate_allocation as follows
   1. test-composite-policy-1 = 50 % of max_total_spans_per_second = 50 spans_per_second
@@ -83,6 +84,25 @@ processors:
             name: test-policy-9,
             type: string_attribute,
             string_attribute: {key: http.url, values: [\/health, \/metrics], enabled_regex_matching: true, invert_match: true}
+         },
+         {
+            name: and-policy-1,
+            type: and,
+            and: {
+              and_sub_policy: 
+              [
+                {
+                  name: test-and-policy-1,
+                  type: numeric_attribute,
+                  numeric_attribute: { key: key1, min_value: 50, max_value: 100 }
+                },
+                {
+                    name: test-and-policy-2,
+                    type: string_attribute,
+                    string_attribute: { key: key2, values: [ value1, value2 ] }
+                },
+              ]
+            }
          },
          {
             name: composite-policy-1,
