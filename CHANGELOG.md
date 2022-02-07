@@ -39,7 +39,7 @@
 - `postgresqlreceiver`: Fix issue where empty metrics could be returned after failed connection (#7502)
 - `resourcetotelemetry`: Ensure resource attributes are added to summary
   and exponential histogram data points. (#7523)
-- `tailsamplingprocessor`: And policy only works as a sub policy under a composite policy (#)
+- `tailsamplingprocessor`: And policy only works as a sub policy under a composite policy (#7590)
 
 ## Deprecations
 
