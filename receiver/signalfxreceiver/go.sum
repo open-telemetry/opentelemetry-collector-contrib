@@ -1058,8 +1058,9 @@ github.com/shirou/gopsutil/v3 v3.21.12/go.mod h1:BToYZVTlSVlfazpDDYFnsVZLaoRG+g8
 github.com/shirou/w32 v0.0.0-20160930032740-bb4de0191aa4/go.mod h1:qsXQc7+bwAM3Q1u/4XEfrquwF8Lw7D7y5cD8CuHnfIc=
 github.com/shurcooL/sanitized_anchor_name v1.0.0/go.mod h1:1NzhyTcUVG4SuEtjjoZeVRXNmyL/1OwPU0+IJeTBvfc=
 github.com/signalfx/com_signalfx_metrics_protobuf v0.0.1/go.mod h1:QkslgLDW0N9qRi9qkxcNDaf812gg0kWcf3ZZORE5/FI=
-github.com/signalfx/com_signalfx_metrics_protobuf v0.0.2 h1:X886QgwZH5qr9HIQkk3mWcNEhUxx6D8rUZumzLV4Wiw=
 github.com/signalfx/com_signalfx_metrics_protobuf v0.0.2/go.mod h1:tCQQqyJAVF1+mxNdqOi18sS/zaSrE6EMyWwRA2QTl70=
+github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3 h1:32k2QLgsKhcEs55q4REPKyIadvid5FPy2+VMgvbmKJ0=
+github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3/go.mod h1:gJrXWi7wSGXfiC7+VheQaz+ypdCt5SmZNL+BRxUe7y4=
 github.com/signalfx/gohistogram v0.0.0-20160107210732-1ccfd2ff5083 h1:WsShHmu12ZztYPfh9b+I+VjYD1o8iOHhB67WZCMEEE8=
 github.com/signalfx/gohistogram v0.0.0-20160107210732-1ccfd2ff5083/go.mod h1:adPDS6s7WaajdFBV9mQ7i0dKfQ8xiDnF9ZNETVPpp7c=
 github.com/signalfx/golib/v3 v3.3.13 h1:Q+WDU2CeOGAJ2uZtb3Ov5cIUKS6tyvR2KU87SjVlXg0=
