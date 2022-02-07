@@ -15,7 +15,7 @@
 package metricstransformprocessor
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -178,7 +178,7 @@ func TestLoadingFullConfig(t *testing.T) {
 
 			factory := NewFactory()
 			factories.Processors[typeStr] = factory
-			cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", test.configFile), factories)
+			cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", test.configFile), factories)
 			assert.NoError(t, err)
 			require.NotNil(t, cfg)
 			assert.Equal(t, test.expCfg, cfg.Processors[test.filterName])
