@@ -11,7 +11,7 @@ require (
 
 require (
 	github.com/hashicorp/go-version v1.4.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.43.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.44.0
 	go.mongodb.org/mongo-driver v1.8.2
 	go.uber.org/zap v1.20.0
 )
