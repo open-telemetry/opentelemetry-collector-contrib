@@ -7,8 +7,8 @@ require (
 	github.com/aws/aws-sdk-go v1.42.44
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/docker/docker v20.10.12+incompatible
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.43.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.43.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.44.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.44.0
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.44.0
 	go.opentelemetry.io/collector/model v0.44.0
@@ -54,7 +54,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.43.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.44.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
