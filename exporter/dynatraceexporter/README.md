@@ -138,7 +138,7 @@ exporters:
     write_buffer_size: 4000
     timeout: 30s
     tls:
-      insecure_skip_verify: false // default
+      insecure_skip_verify: false # (default=false)
     retry_on_failure:
       enabled: true
       initial_interval: 5s
