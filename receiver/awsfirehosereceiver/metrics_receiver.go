@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"go.uber.org/zap"
 	"io"
 	"io/ioutil"
 	"net"
@@ -35,6 +34,9 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/unmarshaler"
 )
 
 var (
@@ -48,7 +50,7 @@ type firehoseMetricsReceiver struct {
 	settings     component.ReceiverCreateSettings
 	host         component.Host
 	nextConsumer consumer.Metrics
-	unmarshaler  MetricsUnmarshaler
+	unmarshaler  unmarshaler.MetricsUnmarshaler
 
 	config     *Config
 	server     *http.Server
@@ -76,15 +78,15 @@ var _ http.Handler = (*firehoseMetricsReceiver)(nil)
 func newMetricsReceiver(
 	config *Config,
 	set component.ReceiverCreateSettings,
-	unmarshalers map[string]MetricsUnmarshaler,
+	unmarshalers map[string]unmarshaler.MetricsUnmarshaler,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	if nextConsumer == nil {
 		return nil, componenterror.ErrNilNextConsumer
 	}
 
-	unmarshaler := unmarshalers[config.Encoding]
-	if unmarshaler == nil {
+	configuredUnmarshaler := unmarshalers[config.Encoding]
+	if configuredUnmarshaler == nil {
 		return nil, errUnrecognizedEncoding
 	}
 
@@ -92,7 +94,7 @@ func newMetricsReceiver(
 		instanceID:   config.ID(),
 		settings:     set,
 		nextConsumer: nextConsumer,
-		unmarshaler:  unmarshaler,
+		unmarshaler:  configuredUnmarshaler,
 		config:       config,
 	}, nil
 }
@@ -170,7 +172,7 @@ func (fmr *firehoseMetricsReceiver) ServeHTTP(w http.ResponseWriter, r *http.Req
 				return
 			}
 
-			rmd, err := fmr.unmarshaler.Unmarshal(bytes)
+			rmd, err := fmr.unmarshaler.Unmarshal(bytes, fmr.settings.Logger)
 			if err != nil {
 				fmr.sendResponse(w, requestId, http.StatusBadRequest, err.Error())
 				return
