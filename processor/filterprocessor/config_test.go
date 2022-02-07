@@ -15,7 +15,7 @@
 package filterprocessor
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -47,7 +47,7 @@ func TestLoadingConfigStrict(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Processors[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config_strict.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config_strict.yaml"), factories)
 
 	assert.Nil(t, err)
 	require.NotNil(t, cfg)
@@ -133,7 +133,7 @@ func TestLoadingConfigStrictLogs(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Processors[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config_logs_strict.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config_logs_strict.yaml"), factories)
 
 	assert.Nil(t, err)
 	require.NotNil(t, cfg)
@@ -212,7 +212,7 @@ func TestLoadingConfigRegexp(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Processors[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config_regexp.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config_regexp.yaml"), factories)
 
 	assert.Nil(t, err)
 	require.NotNil(t, cfg)
@@ -277,7 +277,7 @@ func TestLoadingConfigExpr(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	factories.Processors[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config_expr.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config_expr.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 

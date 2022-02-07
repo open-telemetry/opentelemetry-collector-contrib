@@ -15,7 +15,7 @@
 package filterset
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -26,7 +26,7 @@ import (
 )
 
 func readTestdataConfigYamls(t *testing.T, filename string) map[string]*Config {
-	testFile := path.Join(".", "testdata", filename)
+	testFile := filepath.Join("testdata", filename)
 	v, err := configtest.LoadConfigMap(testFile)
 	require.NoError(t, err)
 

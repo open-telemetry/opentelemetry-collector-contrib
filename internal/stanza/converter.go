@@ -226,7 +226,7 @@ func (c *Converter) aggregationLoop() {
 				if ok {
 					lr := pLogs.ResourceLogs().
 						At(0).InstrumentationLibraryLogs().
-						At(0).Logs().AppendEmpty()
+						At(0).LogRecords().AppendEmpty()
 					wi.LogRecord.CopyTo(lr)
 					continue
 				}
@@ -243,7 +243,7 @@ func (c *Converter) aggregationLoop() {
 				}
 
 				ills := rls.InstrumentationLibraryLogs()
-				lr := ills.AppendEmpty().Logs().AppendEmpty()
+				lr := ills.AppendEmpty().LogRecords().AppendEmpty()
 				wi.LogRecord.CopyTo(lr)
 
 				resourceIDToLogs[wi.ResourceID] = pLogs
@@ -332,7 +332,7 @@ func Convert(ent *entry.Entry) pdata.Logs {
 	}
 
 	ills := rls.InstrumentationLibraryLogs().AppendEmpty()
-	lr := ills.Logs().AppendEmpty()
+	lr := ills.LogRecords().AppendEmpty()
 	convertInto(ent, lr)
 	return pLogs
 }

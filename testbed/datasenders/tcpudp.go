@@ -79,8 +79,8 @@ func (f *TCPUDPWriter) ConsumeLogs(_ context.Context, logs pdata.Logs) error {
 	for i := 0; i < logs.ResourceLogs().Len(); i++ {
 		for j := 0; j < logs.ResourceLogs().At(i).InstrumentationLibraryLogs().Len(); j++ {
 			ills := logs.ResourceLogs().At(i).InstrumentationLibraryLogs().At(j)
-			for k := 0; k < ills.Logs().Len(); k++ {
-				err := f.Send(ills.Logs().At(k))
+			for k := 0; k < ills.LogRecords().Len(); k++ {
+				err := f.Send(ills.LogRecords().At(k))
 				if err != nil {
 					return err
 				}

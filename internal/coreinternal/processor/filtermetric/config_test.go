@@ -15,7 +15,7 @@
 package filtermetric
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -47,7 +47,7 @@ func createConfigWithRegexpOptions(filters []string, rCfg *regexp.Config) *Match
 }
 
 func TestConfig(t *testing.T) {
-	testFile := path.Join(".", "testdata", "config.yaml")
+	testFile := filepath.Join("testdata", "config.yaml")
 	v, err := configtest.LoadConfigMap(testFile)
 	require.NoError(t, err)
 	testYamls := map[string]MatchProperties{}

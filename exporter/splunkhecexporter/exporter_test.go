@@ -220,10 +220,10 @@ func generateLargeLogsBatch() pdata.Logs {
 	logs := pdata.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
 	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
-	ill.Logs().EnsureCapacity(65000)
+	ill.LogRecords().EnsureCapacity(65000)
 	ts := pdata.Timestamp(123)
 	for i := 0; i < 65000; i++ {
-		logRecord := ill.Logs().AppendEmpty()
+		logRecord := ill.LogRecords().AppendEmpty()
 		logRecord.Body().SetStringVal("mylog")
 		logRecord.Attributes().InsertString(splunk.DefaultSourceLabel, "myapp")
 		logRecord.Attributes().InsertString(splunk.DefaultSourceTypeLabel, "myapp-type")
@@ -238,7 +238,7 @@ func generateLargeLogsBatch() pdata.Logs {
 
 func TestConsumeLogsData(t *testing.T) {
 	smallBatch := pdata.NewLogs()
-	logRecord := smallBatch.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().Logs().AppendEmpty()
+	logRecord := smallBatch.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty()
 	logRecord.Body().SetStringVal("mylog")
 	logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
 	logRecord.Attributes().InsertString("custom", "custom")

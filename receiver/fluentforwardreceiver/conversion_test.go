@@ -48,7 +48,7 @@ func TestMessageEventConversion(t *testing.T) {
 			},
 		},
 	)
-	require.EqualValues(t, expected.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0), le)
+	require.EqualValues(t, expected.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(0), le)
 }
 
 func TestAttributeTypeConversion(t *testing.T) {
@@ -133,7 +133,7 @@ func TestAttributeTypeConversion(t *testing.T) {
 				"p":          pdata.NewAttributeValueEmpty(),
 			},
 		},
-	).ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0), le)
+	).ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(0), le)
 }
 
 func TestEventMode(t *testing.T) {
@@ -281,5 +281,5 @@ func TestBodyConversion(t *testing.T) {
 				"fluent.tag": pdata.NewAttributeValueString("my-tag"),
 			},
 		},
-	).ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0), le)
+	).ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(0), le)
 }
