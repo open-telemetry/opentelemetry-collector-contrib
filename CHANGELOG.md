@@ -142,6 +142,7 @@
 - `jaeger` receiver/exporter: Parse/set Jaeger status with OTel spec values (#6682)
 - `awsecscontainermetricsreceiver`: remove tag from `container.image.name` (#6436)
 - `k8sclusterreceiver`: remove tag from `container.image.name` (#6436)
+- `prometheusexecreceiver`: new option `scrape_timeout` must be defined (see #7586) (#7592)
 
 ## 🚀 New components 🚀
 
