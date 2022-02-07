@@ -118,9 +118,9 @@ func (prwe *prwExporter) Shutdown(context.Context) error {
 	default:
 		close(prwe.closeChan)
 	}
-	prwe.shutdownWALIfEnabled()
+	err := prwe.shutdownWALIfEnabled()
 	prwe.wg.Wait()
-	return nil
+	return err
 }
 
 // PushMetrics converts metrics to Prometheus remote write TimeSeries and send to remote endpoint. It maintain a map of

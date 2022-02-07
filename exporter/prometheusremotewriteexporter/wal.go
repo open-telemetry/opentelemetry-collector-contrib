@@ -106,7 +106,11 @@ func (prwe *prweWAL) retrieveWALIndices(context.Context) (err error) {
 	prwe.mu.Lock()
 	defer prwe.mu.Unlock()
 
-	prwe.closeWAL()
+	err = prwe.closeWAL()
+	if err != nil {
+		return err
+	}
+
 	wal, walPath, err := prwe.walConfig.createWAL()
 	if err != nil {
 		return err
@@ -134,8 +138,7 @@ func (prwe *prweWAL) stop() error {
 		defer prwe.mu.Unlock()
 
 		close(prwe.stopChan)
-		prwe.closeWAL()
-		err = nil
+		err = prwe.closeWAL()
 	})
 	return err
 }
@@ -241,11 +244,13 @@ func (prwe *prweWAL) continuallyPopWALThenExport(ctx context.Context, signalStar
 	}
 }
 
-func (prwe *prweWAL) closeWAL() {
+func (prwe *prweWAL) closeWAL() error {
 	if prwe.wal != nil {
-		prwe.wal.Close()
+		err := prwe.wal.Close()
 		prwe.wal = nil
+		return err
 	}
+	return nil
 }
 
 func (prwe *prweWAL) syncAndTruncateFront() error {
