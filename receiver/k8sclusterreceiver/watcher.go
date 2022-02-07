@@ -99,7 +99,7 @@ func (rw *resourceWatcher) prepareSharedInformerFactory() {
 	rw.setupInformers(&batchv1.Job{}, factory.Batch().V1().Jobs().Informer())
 	rw.setupInformers(&batchv1.CronJob{}, factory.Batch().V1beta1().CronJobs().Informer())
 	rw.setupInformers(&autoscalingv2beta2.HorizontalPodAutoscaler{},
-		factory.Autoscaling().V2beta1().HorizontalPodAutoscalers().Informer(),
+		factory.Autoscaling().V2beta2().HorizontalPodAutoscalers().Informer(),
 	)
 
 	if rw.osQuotaClient != nil {
