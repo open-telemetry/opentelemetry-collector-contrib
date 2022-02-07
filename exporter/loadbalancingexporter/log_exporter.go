@@ -132,7 +132,7 @@ func traceIDFromLogs(ld pdata.Logs) pdata.TraceID {
 		return pdata.InvalidTraceID()
 	}
 
-	logs := ill.At(0).Logs()
+	logs := ill.At(0).LogRecords()
 	if logs.Len() == 0 {
 		return pdata.InvalidTraceID()
 	}

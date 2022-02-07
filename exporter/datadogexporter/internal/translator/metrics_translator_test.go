@@ -1135,12 +1135,12 @@ func TestMapMetrics(t *testing.T) {
 		conventions.AttributeDeploymentEnvironment: "dev",
 		"custom_attribute":                         "custom_value",
 	}
-	// When ResourceAttributesAsTags is true, attributes are
-	// converted into labels by the resourcetotelemetry helper,
-	// so MapMetrics doesn't do any conversion.
-	// When ResourceAttributesAsTags is false, attributes
-	// defined in internal/attributes get converted to tags.
-	// Other tags do not get converted.
+
+	// Attributes defined in internal/attributes get converted to tags.
+	// Other tags do not get converted if ResourceAttributesAsTags is false,
+	// or are converted into datapoint-level attributes (which are then converted to tags) by
+	// the resourcetotelemetry helper if ResourceAttributesAsTags is true
+	// (outside of the MapMetrics function's scope).
 	attrTags := []string{
 		"env:dev",
 	}
@@ -1196,18 +1196,18 @@ func TestMapMetrics(t *testing.T) {
 			resourceAttributesAsTags:             true,
 			instrumentationLibraryMetadataAsTags: false,
 			expectedMetrics: []metric{
-				newGaugeWithHostname("int.gauge", 1, []string{}),
-				newGaugeWithHostname("double.gauge", math.Pi, []string{}),
-				newCountWithHostname("int.delta.sum", 2, 0, []string{}),
-				newCountWithHostname("double.delta.sum", math.E, 0, []string{}),
-				newCountWithHostname("int.delta.monotonic.sum", 2, 0, []string{}),
-				newCountWithHostname("double.delta.monotonic.sum", math.E, 0, []string{}),
-				newCountWithHostname("summary.sum", 10_000, 2, []string{}),
-				newCountWithHostname("summary.count", 100, 2, []string{}),
-				newGaugeWithHostname("int.cumulative.sum", 4, []string{}),
-				newGaugeWithHostname("double.cumulative.sum", 4, []string{}),
-				newCountWithHostname("int.cumulative.monotonic.sum", 3, 2, []string{}),
-				newCountWithHostname("double.cumulative.monotonic.sum", math.Pi, 2, []string{}),
+				newGaugeWithHostname("int.gauge", 1, attrTags),
+				newGaugeWithHostname("double.gauge", math.Pi, attrTags),
+				newCountWithHostname("int.delta.sum", 2, 0, attrTags),
+				newCountWithHostname("double.delta.sum", math.E, 0, attrTags),
+				newCountWithHostname("int.delta.monotonic.sum", 2, 0, attrTags),
+				newCountWithHostname("double.delta.monotonic.sum", math.E, 0, attrTags),
+				newCountWithHostname("summary.sum", 10_000, 2, attrTags),
+				newCountWithHostname("summary.count", 100, 2, attrTags),
+				newGaugeWithHostname("int.cumulative.sum", 4, attrTags),
+				newGaugeWithHostname("double.cumulative.sum", 4, attrTags),
+				newCountWithHostname("int.cumulative.monotonic.sum", 3, 2, attrTags),
+				newCountWithHostname("double.cumulative.monotonic.sum", math.Pi, 2, attrTags),
 			},
 			expectedSketches: []sketch{
 				newSketchWithHostname("double.histogram", summary.Summary{
@@ -1216,7 +1216,7 @@ func TestMapMetrics(t *testing.T) {
 					Sum: 0,
 					Avg: 0,
 					Cnt: 20,
-				}, []string{}),
+				}, attrTags),
 			},
 			expectedUnknownMetricType:                 1,
 			expectedUnsupportedAggregationTemporality: 2,
@@ -1256,18 +1256,18 @@ func TestMapMetrics(t *testing.T) {
 			resourceAttributesAsTags:             true,
 			instrumentationLibraryMetadataAsTags: true,
 			expectedMetrics: []metric{
-				newGaugeWithHostname("int.gauge", 1, ilTags),
-				newGaugeWithHostname("double.gauge", math.Pi, ilTags),
-				newCountWithHostname("int.delta.sum", 2, 0, ilTags),
-				newCountWithHostname("double.delta.sum", math.E, 0, ilTags),
-				newCountWithHostname("int.delta.monotonic.sum", 2, 0, ilTags),
-				newCountWithHostname("double.delta.monotonic.sum", math.E, 0, ilTags),
-				newCountWithHostname("summary.sum", 10_000, 2, ilTags),
-				newCountWithHostname("summary.count", 100, 2, ilTags),
-				newGaugeWithHostname("int.cumulative.sum", 4, ilTags),
-				newGaugeWithHostname("double.cumulative.sum", 4, ilTags),
-				newCountWithHostname("int.cumulative.monotonic.sum", 3, 2, ilTags),
-				newCountWithHostname("double.cumulative.monotonic.sum", math.Pi, 2, ilTags),
+				newGaugeWithHostname("int.gauge", 1, append(attrTags, ilTags...)),
+				newGaugeWithHostname("double.gauge", math.Pi, append(attrTags, ilTags...)),
+				newCountWithHostname("int.delta.sum", 2, 0, append(attrTags, ilTags...)),
+				newCountWithHostname("double.delta.sum", math.E, 0, append(attrTags, ilTags...)),
+				newCountWithHostname("int.delta.monotonic.sum", 2, 0, append(attrTags, ilTags...)),
+				newCountWithHostname("double.delta.monotonic.sum", math.E, 0, append(attrTags, ilTags...)),
+				newCountWithHostname("summary.sum", 10_000, 2, append(attrTags, ilTags...)),
+				newCountWithHostname("summary.count", 100, 2, append(attrTags, ilTags...)),
+				newGaugeWithHostname("int.cumulative.sum", 4, append(attrTags, ilTags...)),
+				newGaugeWithHostname("double.cumulative.sum", 4, append(attrTags, ilTags...)),
+				newCountWithHostname("int.cumulative.monotonic.sum", 3, 2, append(attrTags, ilTags...)),
+				newCountWithHostname("double.cumulative.monotonic.sum", math.Pi, 2, append(attrTags, ilTags...)),
 			},
 			expectedSketches: []sketch{
 				newSketchWithHostname("double.histogram", summary.Summary{
@@ -1276,7 +1276,7 @@ func TestMapMetrics(t *testing.T) {
 					Sum: 0,
 					Avg: 0,
 					Cnt: 20,
-				}, ilTags),
+				}, append(attrTags, ilTags...)),
 			},
 			expectedUnknownMetricType:                 1,
 			expectedUnsupportedAggregationTemporality: 2,

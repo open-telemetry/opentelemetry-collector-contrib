@@ -16,6 +16,7 @@ package jmxreceiver // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"fmt"
+	"os"
 	"sort"
 	"strings"
 	"time"
@@ -61,6 +62,8 @@ type Config struct {
 	Realm string `mapstructure:"realm"`
 	// Map of property names to values to pass as system properties when running JMX Metric Gatherer
 	Properties map[string]string `mapstructure:"properties"`
+	// Array of additional JARs to be added to the the class path when launching the JMX Metric Gatherer JAR
+	AdditionalJars []string `mapstructure:"additional_jars"`
 }
 
 // We don't embed the existing OTLP Exporter config as most fields are unsupported
@@ -99,6 +102,26 @@ func (c *Config) parseProperties() []string {
 	// Sorted for testing and reproducibility
 	sort.Strings(parsed)
 	return parsed
+}
+
+// parseClasspath creates a classpath string with the JMX Gatherer JAR at the beginning
+func (c *Config) parseClasspath() string {
+	classPathElems := make([]string, 0)
+
+	// See if the CLASSPATH env exists and if so get it's current value
+	currentClassPath, ok := os.LookupEnv("CLASSPATH")
+	if ok && currentClassPath != "" {
+		classPathElems = append(classPathElems, currentClassPath)
+	}
+
+	// Add JMX JAR to classpath
+	classPathElems = append(classPathElems, c.JARPath)
+
+	// Add additional JARs if any
+	classPathElems = append(classPathElems, c.AdditionalJars...)
+
+	// Join them
+	return strings.Join(classPathElems, ":")
 }
 
 func (c *Config) validate() error {

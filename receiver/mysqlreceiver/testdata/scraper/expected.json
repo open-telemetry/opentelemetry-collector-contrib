@@ -15,60 +15,72 @@
                 "dataPoints": [
                   {
                     "asDouble": 228,
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "kind",
-                        "value": "data"
+                        "value": {
+                            "stringValue": "data"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asDouble": 230,
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "kind",
-                        "value": "dirty"
+                        "value": {
+                            "stringValue": "dirty"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asDouble": 232,
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "kind",
-                        "value": "flushed"
+                        "value": {
+                            "stringValue": "flushed"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asDouble": 233,
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "kind",
-                        "value": "free"
+                        "value": {
+                            "stringValue": "free"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asDouble": 234,
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "kind",
-                        "value": "misc"
+                        "value": {
+                            "stringValue": "misc"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asDouble": 235,
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "kind",
-                        "value": "total"
+                        "value": {
+                            "stringValue": "total"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
@@ -86,70 +98,84 @@
                 "dataPoints": [
                   {
                     "asInt": "236",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "operation",
-                        "value": "read_ahead_rnd"
+                        "value": {
+                          "stringValue":"read_ahead_rnd"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asInt": "241",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "operation",
-                        "value": "wait_free"
+                        "value": {
+                          "stringValue": "wait_free"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asInt": "240",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "operation",
-                        "value": "reads"
+                        "value": {
+                          "stringValue":"reads"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asInt": "239",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "operation",
-                        "value": "read_requests"
+                        "value": {
+                          "stringValue": "read_requests"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asInt": "237",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "operation",
-                        "value": "read_ahead"
+                        "value": {
+                          "stringValue": "read_ahead"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asInt": "238",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "operation",
-                        "value": "read_ahead_evicted"
+                        "value": {
+                          "stringValue": "read_ahead_evicted"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asInt": "242",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "operation",
-                        "value": "write_requests"
+                        "value": {
+                          "stringValue": "write_requests"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
@@ -167,30 +193,36 @@
                 "dataPoints": [
                   {
                     "asDouble": 229,
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "kind",
-                        "value": "data"
+                        "value": {
+                            "stringValue": "data"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asDouble": 231,
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "kind",
-                        "value": "dirty"
+                        "value": {
+                            "stringValue": "dirty"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asDouble": 134217728,
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "kind",
-                        "value": "total"
+                        "value": {
+                            "stringValue": "total"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
@@ -208,60 +240,72 @@
                 "dataPoints": [
                   {
                     "asInt": "166",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "command",
-                        "value": "reset"
+                        "value": {
+                          "stringValue": "reset"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asInt": "163",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "command",
-                        "value": "close"
+                        "value": {
+                          "stringValue": "close"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asInt": "165",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "command",
-                        "value": "prepare"
+                        "value": {
+                          "stringValue": "prepare"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asInt": "167",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "command",
-                        "value": "send_long_data"
+                        "value": {
+                          "stringValue": "send_long_data"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asInt": "162",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "command",
-                        "value": "execute"
+                        "value": {
+                          "stringValue": "execute"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asInt": "164",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "command",
-                        "value": "fetch"
+                        "value": {
+                          "stringValue": "fetch"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
@@ -279,180 +323,216 @@
                 "dataPoints": [
                   {
                     "asInt": "222",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "kind",
-                        "value": "read_rnd_next"
+                        "value": {
+                            "stringValue": "read_rnd_next"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asInt": "214",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "kind",
-                        "value": "mrr_init"
+                        "value": {
+                            "stringValue": "mrr_init"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asInt": "219",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "kind",
-                        "value": "read_next"
+                        "value": {
+                            "stringValue": "read_next"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asInt": "224",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "kind",
-                        "value": "savepoint"
+                        "value": {
+                            "stringValue": "savepoint"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asInt": "211",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "kind",
-                        "value": "delete"
+                        "value": {
+                            "stringValue": "delete"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asInt": "225",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "kind",
-                        "value": "savepoint_rollback"
+                        "value": {
+                            "stringValue": "savepoint_rollback"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asInt": "215",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "kind",
-                        "value": "prepare"
+                        "value": {
+                            "stringValue": "prepare"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asInt": "212",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "kind",
-                        "value": "discover"
+                        "value": {
+                            "stringValue": "discover"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asInt": "217",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "kind",
-                        "value": "read_key"
+                        "value": {
+                            "stringValue": "read_key"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asInt": "220",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "kind",
-                        "value": "read_prev"
+                        "value": {
+                            "stringValue": "read_prev"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asInt": "221",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "kind",
-                        "value": "read_rnd"
+                        "value": {
+                            "stringValue": "read_rnd"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asInt": "227",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "kind",
-                        "value": "write"
+                        "value": {
+                            "stringValue": "write"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asInt": "226",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "kind",
-                        "value": "update"
+                        "value": {
+                            "stringValue": "update"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asInt": "216",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "kind",
-                        "value": "read_first"
+                        "value": {
+                            "stringValue": "read_first"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asInt": "200",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "kind",
-                        "value": "commit"
+                        "value": {
+                            "stringValue": "commit"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asInt": "223",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "kind",
-                        "value": "rollback"
+                        "value": {
+                            "stringValue": "rollback"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asInt": "218",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "kind",
-                        "value": "read_last"
+                        "value": {
+                            "stringValue": "read_last"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asInt": "213",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "kind",
-                        "value": "lock"
+                        "value": {
+                            "stringValue": "lock"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
@@ -470,20 +550,24 @@
                 "dataPoints": [
                   {
                     "asInt": "252",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "kind",
-                        "value": "writes"
+                        "value": {
+                            "stringValue": "writes"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asInt": "251",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "kind",
-                        "value": "written"
+                        "value": {
+                            "stringValue": "written"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
@@ -501,30 +585,36 @@
                 "dataPoints": [
                   {
                     "asInt": "255",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "operation",
-                        "value": "writes"
+                        "value": {
+                          "stringValue": "writes"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asInt": "253",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "operation",
-                        "value": "waits"
+                        "value": {
+                          "stringValue": "waits"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asInt": "254",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "operation",
-                        "value": "requests"
+                        "value": {
+                          "stringValue": "requests"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
@@ -542,30 +632,36 @@
                 "dataPoints": [
                   {
                     "asInt": "248",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "operation",
-                        "value": "reads"
+                        "value": {
+                          "stringValue": "reads"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asInt": "249",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "operation",
-                        "value": "writes"
+                        "value": {
+                          "stringValue": "writes"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asInt": "243",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "operation",
-                        "value": "fsyncs"
+                        "value": {
+                          "stringValue": "fsyncs"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
@@ -583,30 +679,36 @@
                 "dataPoints": [
                   {
                     "asInt": "263",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "operation",
-                        "value": "written"
+                        "value": {
+                          "stringValue": "written"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asInt": "262",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "operation",
-                        "value": "read"
+                        "value": {
+                          "stringValue": "read"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asInt": "261",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "operation",
-                        "value": "created"
+                        "value": {
+                          "stringValue": "created"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
@@ -624,20 +726,24 @@
                 "dataPoints": [
                   {
                     "asInt": "269",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "kind",
-                        "value": "waits"
+                        "value": {
+                            "stringValue": "waits"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asInt": "266",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "kind",
-                        "value": "time"
+                        "value": {
+                            "stringValue": "time"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
@@ -655,40 +761,48 @@
                 "dataPoints": [
                   {
                     "asInt": "270",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "operation",
-                        "value": "deleted"
+                        "value": {
+                          "stringValue": "deleted"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asInt": "272",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "operation",
-                        "value": "read"
+                        "value": {
+                          "stringValue": "read"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asInt": "273",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "operation",
-                        "value": "updated"
+                        "value": {
+                          "stringValue": "updated"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asInt": "271",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "operation",
-                        "value": "inserted"
+                        "value": {
+                          "stringValue": "inserted"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
@@ -706,20 +820,24 @@
                 "dataPoints": [
                   {
                     "asInt": "440",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "kind",
-                        "value": "immediate"
+                        "value": {
+                            "stringValue": "immediate"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asInt": "441",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "kind",
-                        "value": "waited"
+                        "value": {
+                            "stringValue": "waited"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
@@ -737,40 +855,48 @@
                 "dataPoints": [
                   {
                     "asInt": "416",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "kind",
-                        "value": "merge_passes"
+                        "value": {
+                            "stringValue": "merge_passes"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asInt": "419",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "kind",
-                        "value": "scan"
+                        "value": {
+                            "stringValue": "scan"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asInt": "417",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "kind",
-                        "value": "range"
+                        "value": {
+                            "stringValue": "range"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asInt": "418",
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "kind",
-                        "value": "rows"
+                        "value": {
+                            "stringValue": "rows"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
@@ -788,40 +914,48 @@
                 "dataPoints": [
                   {
                     "asDouble": 448,
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "kind",
-                        "value": "cached"
+                        "value": {
+                            "stringValue": "cached"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asDouble": 449,
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "kind",
-                        "value": "connected"
+                        "value": {
+                            "stringValue": "connected"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asDouble": 450,
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "kind",
-                        "value": "created"
+                        "value": {
+                            "stringValue": "created"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"
                   },
                   {
                     "asDouble": 451,
-                    "labels": [
+                    "attributes": [
                       {
                         "key": "kind",
-                        "value": "running"
+                        "value": {
+                            "stringValue": "running"
+                        }
                       }
                     ],
                     "timeUnixNano": "0"

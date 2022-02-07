@@ -24,9 +24,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
-func LogSliceToSignalFxV2(
+func LogRecordSliceToSignalFxV2(
 	logger *zap.Logger,
-	logs pdata.LogSlice,
+	logs pdata.LogRecordSlice,
 	resourceAttrs pdata.AttributeMap,
 ) ([]*sfxpb.Event, int) {
 	events := make([]*sfxpb.Event, 0, logs.Len())
@@ -89,7 +89,15 @@ func convertLogRecord(lr pdata.LogRecord, resourceAttrs pdata.AttributeMap, logg
 
 	addDimension := func(k string, v pdata.AttributeValue) bool {
 		// Skip internal attributes
-		if k == splunk.SFxEventCategoryKey || k == splunk.SFxEventPropertiesKey {
+		switch k {
+		case splunk.SFxEventCategoryKey:
+			return true
+		case splunk.SFxEventPropertiesKey:
+			return true
+		case splunk.SFxEventType:
+			if v.Type() == pdata.AttributeValueTypeString {
+				event.EventType = v.StringVal()
+			}
 			return true
 		}
 
@@ -108,7 +116,6 @@ func convertLogRecord(lr pdata.LogRecord, resourceAttrs pdata.AttributeMap, logg
 	resourceAttrsForDimensions.Range(addDimension)
 	attrs.Range(addDimension)
 
-	event.EventType = lr.Name()
 	// Convert nanoseconds to nearest milliseconds, which is the unit of
 	// SignalFx event timestamps.
 	event.Timestamp = int64(lr.Timestamp()) / 1e6

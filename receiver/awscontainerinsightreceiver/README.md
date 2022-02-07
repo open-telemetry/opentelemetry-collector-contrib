@@ -24,6 +24,7 @@ receivers:
     container_orchestrator: eks
     add_service_as_attribute: true 
     prefer_full_pod_name: false 
+    add_full_pod_name_metric_label: false 
 ```
 There is no need to provide any parameters since they are all optional. 
 
@@ -42,6 +43,10 @@ Whether to add the associated service name as attribute. The default is true
 **prefer_full_pod_name (optional)**
 
 The "PodName" attribute is set based on the name of the relevant controllers like Daemonset, Job, ReplicaSet, ReplicationController, ... If it can not be set that way and PrefFullPodName is true, the "PodName" attribute is set to the pod's own name. The default value is false.
+
+**add_full_pod_name_metric_label (optional)**
+
+The "FullPodName" attribute is the pod name including suffix. If false FullPodName label is not added. The default value is false
 
 ## Sample configuration for Container Insights 
 This is a sample configuration for AWS Container Insights using the `awscontainerinsightreceiver` and `awsemfexporter` for an EKS cluster:

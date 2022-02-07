@@ -48,7 +48,7 @@ func (a *logAttributesProcessor) processLogs(ctx context.Context, ld pdata.Logs)
 		resource := rs.Resource()
 		for j := 0; j < ilss.Len(); j++ {
 			ils := ilss.At(j)
-			logs := ils.Logs()
+			logs := ils.LogRecords()
 			library := ils.InstrumentationLibrary()
 			for k := 0; k < logs.Len(); k++ {
 				lr := logs.At(k)

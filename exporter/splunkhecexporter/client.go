@@ -261,7 +261,7 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld pdata.Logs, send f
 
 func (c *client) pushLogRecords(ctx context.Context, lds pdata.ResourceLogsSlice, state *bufferState, headers map[string]string, send func(context.Context, *bytes.Buffer, map[string]string) error) (permanentErrors []error, sendingError error) {
 	res := lds.At(state.resource)
-	logs := res.InstrumentationLibraryLogs().At(state.library).Logs()
+	logs := res.InstrumentationLibraryLogs().At(state.library).LogRecords()
 	bufCap := int(c.config.MaxContentLengthLogs)
 
 	for k := 0; k < logs.Len(); k++ {
@@ -401,8 +401,8 @@ func subLogsByType(src *pdata.Logs, from *logIndex, dst *pdata.Logs, profiling b
 			newLibSub := librariesSub.AppendEmpty()
 			lib.InstrumentationLibrary().CopyTo(newLibSub.InstrumentationLibrary())
 
-			logs := lib.Logs()
-			logsSub := newLibSub.Logs()
+			logs := lib.LogRecords()
+			logsSub := newLibSub.LogRecords()
 			jSub++
 
 			k := 0
