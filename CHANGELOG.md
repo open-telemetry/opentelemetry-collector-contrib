@@ -5,6 +5,7 @@
 ## 💡 Enhancements 💡
 
 - `dynatraceexporter`: Write error logs using plugin logger (#7360)
+- `dynatraceexporter`: Fix docs for TLS settings (#7568)
 - `tanzuobservabilityexporter`: Turn on metrics exporter (#7281)
 - `attributesprocessor` `resourceprocessor`: Add `from_context` value source
 - `resourcedetectionprocessor`: check cluster config to verify resource is on aws for eks resources (#7186)
@@ -25,6 +26,7 @@
 - `nginxreceiver`: Update to mdatagen v2 (#7549)
 - `datadogexporter`: Fix traces exporter's initialization log (#7564)
 - `hostreceiver/memoryscraper`: Migrate the scraper to the mdatagen metrics builder (#7421)
+- `tailsamplingprocessor`: Add And sampling policy (#6910)
 
 ## 🛑 Breaking changes 🛑
 
