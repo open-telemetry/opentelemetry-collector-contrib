@@ -5,6 +5,7 @@
 ## 💡 Enhancements 💡
 
 - `dynatraceexporter`: Write error logs using plugin logger (#7360)
+- `dynatraceexporter`: Fix docs for TLS settings (#7568)
 - `tanzuobservabilityexporter`: Turn on metrics exporter (#7281)
 - `attributesprocessor` `resourceprocessor`: Add `from_context` value source
 - `resourcedetectionprocessor`: check cluster config to verify resource is on aws for eks resources (#7186)
