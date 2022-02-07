@@ -97,7 +97,7 @@ func (rw *resourceWatcher) prepareSharedInformerFactory() {
 	rw.setupInformers(&appsv1.ReplicaSet{}, factory.Apps().V1().ReplicaSets().Informer())
 	rw.setupInformers(&appsv1.StatefulSet{}, factory.Apps().V1().StatefulSets().Informer())
 	rw.setupInformers(&batchv1.Job{}, factory.Batch().V1().Jobs().Informer())
-	rw.setupInformers(&batchv1.CronJob{}, factory.Batch().V1beta1().CronJobs().Informer())
+	rw.setupInformers(&batchv1.CronJob{}, factory.Batch().V1().CronJobs().Informer())
 	rw.setupInformers(&autoscalingv2beta2.HorizontalPodAutoscaler{},
 		factory.Autoscaling().V2beta2().HorizontalPodAutoscalers().Informer(),
 	)
