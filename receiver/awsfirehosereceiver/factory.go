@@ -21,15 +21,18 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/unmarshaler"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/unmarshaler/cwmetricstream"
 )
 
 const (
 	typeStr         = "awsfirehose"
-	defaultEncoding = encodingCWMetricStream
+	defaultEncoding = cwmetricstream.Encoding
 )
 
 type firehoseReceiverFactory struct {
-	metricsUnmarshalers map[string]MetricsUnmarshaler
+	metricsUnmarshalers map[string]unmarshaler.MetricsUnmarshaler
 }
 
 func NewFactory() component.ReceiverFactory {
@@ -41,6 +44,13 @@ func NewFactory() component.ReceiverFactory {
 		typeStr,
 		createDefaultConfig,
 		receiverhelper.WithMetrics(frf.createMetricsReceiver))
+}
+
+func defaultMetricsUnmarshalers() map[string]unmarshaler.MetricsUnmarshaler {
+	cwmsu := &cwmetricstream.Unmarshaler{}
+	return map[string]unmarshaler.MetricsUnmarshaler{
+		cwmsu.Encoding(): cwmsu,
+	}
 }
 
 func createDefaultConfig() config.Receiver {

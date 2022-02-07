@@ -12,24 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awsfirehosereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver"
+package unmarshaler // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/unmarshaler"
 
 import (
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/zap"
 )
 
 // MetricsUnmarshaler deserializes the message body
 type MetricsUnmarshaler interface {
-	// Unmarshal deserializes the message body into traces
-	Unmarshal([]byte) (pdata.Metrics, error)
+	// Unmarshal deserializes the message body into metrics
+	Unmarshal([]byte, *zap.Logger) (pdata.Metrics, error)
 
 	// Encoding of the serialized messages
 	Encoding() string
-}
-
-func defaultMetricsUnmarshalers() map[string]MetricsUnmarshaler {
-	cwMetrics := &cwMetricStreamUnmarshaler{}
-	return map[string]MetricsUnmarshaler{
-		cwMetrics.Encoding(): cwMetrics,
-	}
 }
