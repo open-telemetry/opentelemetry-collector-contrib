@@ -78,7 +78,6 @@ func TestCreateTraceAndMetricsReceiver(t *testing.T) {
 				ScrapeConfigs: []*promconfig.ScrapeConfig{
 					{
 						ScrapeInterval:  model.Duration(60 * time.Second),
-						ScrapeTimeout:   model.Duration(10 * time.Second),
 						Scheme:          "http",
 						MetricsPath:     "/metrics",
 						JobName:         "test",
