@@ -7,7 +7,7 @@ require (
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.44.0
 	go.opentelemetry.io/collector/model v0.44.0
-	go.uber.org/zap v1.20.0
+	go.uber.org/zap v1.21.0
 	google.golang.org/grpc v1.44.0
 )
 
@@ -24,7 +24,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/jaegertracing/jaeger v1.30.0 // indirect
+	github.com/jaegertracing/jaeger v1.31.0 // indirect
 	github.com/klauspost/compress v1.14.2 // indirect
 	github.com/knadh/koanf v1.4.0 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
@@ -45,9 +45,9 @@ require (
 	go.opentelemetry.io/otel/metric v0.26.0 // indirect
 	go.opentelemetry.io/otel/trace v1.3.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
-	golang.org/x/net v0.0.0-20210917221730-978cfadd31cf // indirect
+	golang.org/x/net v0.0.0-20220105145211-5b0dc2dfae98 // indirect
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
-	golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e // indirect
+	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20220111164026-67b88f271998 // indirect
