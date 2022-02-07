@@ -63,7 +63,6 @@ func TestLogDataToSignalFxEvents(t *testing.T) {
 		logSlice := ilLogs.AppendEmpty().LogRecords()
 
 		l := logSlice.AppendEmpty()
-		l.SetName("shutdown")
 		l.SetTimestamp(pdata.NewTimestampFromTime(now.Truncate(time.Millisecond)))
 		attrs := l.Attributes()
 
@@ -80,6 +79,7 @@ func TestLogDataToSignalFxEvents(t *testing.T) {
 		propMap.Sort()
 		attrs.Insert("com.splunk.signalfx.event_properties", propMapVal)
 		attrs.Insert("com.splunk.signalfx.event_category", pdata.NewAttributeValueInt(int64(sfxpb.EventCategory_USER_DEFINED)))
+		attrs.Insert("com.splunk.signalfx.event_type", pdata.NewAttributeValueString("shutdown"))
 
 		l.Attributes().Sort()
 

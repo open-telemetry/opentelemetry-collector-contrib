@@ -138,7 +138,7 @@ exporters:
     write_buffer_size: 4000
     timeout: 30s
     tls:
-      insecure_skip_verify: false
+      insecure_skip_verify: false // default
     retry_on_failure:
       enabled: true
       initial_interval: 5s
@@ -200,7 +200,7 @@ Default: `0`
 Additionally you can configure TLS to be enabled but skip verifying the server's certificate chain.
 This cannot be combined with `insecure` since `insecure` won't use TLS at all.
 More details can be found in the collector readme for
-[configtls](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md#client-configuration).
+[TLS and mTLS settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md).
 
 Default: `false`
 
