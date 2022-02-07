@@ -15,7 +15,7 @@
 package resourcedetectionprocessor
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -36,7 +36,7 @@ func TestLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	factories.Processors[typeStr] = factory
 
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 	assert.NoError(t, err)
 	assert.NotNil(t, cfg)
 
@@ -85,7 +85,7 @@ func TestLoadInvalidConfig(t *testing.T) {
 	factory := NewFactory()
 	factories.Processors[typeStr] = factory
 
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "invalid_config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "invalid_config.yaml"), factories)
 	assert.Error(t, err)
 	assert.NotNil(t, cfg)
 }
