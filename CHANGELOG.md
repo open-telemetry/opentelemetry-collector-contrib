@@ -26,6 +26,7 @@
 - `nginxreceiver`: Update to mdatagen v2 (#7549)
 - `datadogexporter`: Fix traces exporter's initialization log (#7564)
 - `tailsamplingprocessor`: Add And sampling policy (#6910)
+- `coralogixexporter`: Add Coralogix Exporter (#7383)
 
 ## 🛑 Breaking changes 🛑
 

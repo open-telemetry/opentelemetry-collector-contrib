@@ -11,6 +11,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter v0.43.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter v0.43.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.43.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter v0.43.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.43.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter v0.43.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticexporter v0.43.0
@@ -182,6 +183,7 @@ require (
 	github.com/containerd/console v1.0.2 // indirect
 	github.com/containerd/containerd v1.5.9 // indirect
 	github.com/containerd/ttrpc v1.1.0 // indirect
+	github.com/coralogix/opentelemetry-cx-protobuf-api/coralogixpb v0.0.0-20211201100428-d2a5d0ecf53e // indirect
 	github.com/coreos/go-oidc v2.2.1+incompatible // indirect
 	github.com/coreos/go-systemd/v22 v22.3.2 // indirect
 	github.com/cyphar/filepath-securejoin v0.2.2 // indirect
@@ -528,6 +530,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxr
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter => ./exporter/azuremonitorexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter => ./exporter/carbonexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter => ./exporter/coralogixexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter => ./exporter/datadogexporter
 
