@@ -11,7 +11,7 @@ require (
 	github.com/coralogix/opentelemetry-cx-protobuf-api/coralogixpb v0.0.0-20211201100428-d2a5d0ecf53e
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.43.0
 	go.opentelemetry.io/collector/model v0.44.0
-	go.uber.org/zap v1.20.0
+	go.uber.org/zap v1.21.0
 	google.golang.org/grpc v1.44.0
 )
 
