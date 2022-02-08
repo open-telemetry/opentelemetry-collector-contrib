@@ -2,10 +2,19 @@
 
 ## Unreleased
 
+## 💡 Enhancements 💡
+
+## 🛑 Breaking changes 🛑
+
+## 🚩 Deprecations 🚩
+
 ## 🧰 Bug fixes 🧰
 
-- `prometheusreceiver`: Correctly map description and units when converting
+ - `tailsamplingprocessor`: "And" policy only works as a sub policy under a composite policy (#7590) 
+ - `prometheusreceiver`: Correctly map description and units when converting
   Prometheus metadata directly to pdata. (#7748)
+
+## 🚀 New components 🚀
 
 ## v0.44.0
 
@@ -26,6 +35,7 @@
 - `mysqlreceiver`: Add golden files for integration test (#7303)
 - `nginxreceiver`: Standardize integration test (#7515)
 - `mysqlreceiver`: Update to use mdatagen v2 (#7507)
+- `routingprocessor`: Do not err on failure to build exporters (#7423)
 - `postgresqlreceiver`: Add integration tests (#7501)
 - `apachereceiver`: Add integration test (#7517)
 - `mysqlreceiver`: Use scrapererror to report errors (#7513)
