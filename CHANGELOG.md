@@ -133,6 +133,7 @@
 - `lokiexporter`: Log the first part of the http body on failed pushes to loki (#6946)
 - `resourcedetectionprocessor`: add the [consul](https://www.consul.io/) detector (#6382)
 - `awsemfexporter`: refactor cw_client logic into separate `cwlogs` package (#7072)
+- `prometheusexecreceiver`: New option `scrape_timeout` available must be defined until #7587 (#7592)
 
 ## 🛑 Breaking changes 🛑
 
@@ -142,7 +143,6 @@
 - `jaeger` receiver/exporter: Parse/set Jaeger status with OTel spec values (#6682)
 - `awsecscontainermetricsreceiver`: remove tag from `container.image.name` (#6436)
 - `k8sclusterreceiver`: remove tag from `container.image.name` (#6436)
-- `prometheusexecreceiver`: new option `scrape_timeout` must be defined (see #7586) (#7592)
 
 ## 🚀 New components 🚀
 
