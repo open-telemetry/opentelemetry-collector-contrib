@@ -18,7 +18,6 @@ import (
 	"context"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/prometheus/common/model"
 	promconfig "github.com/prometheus/prometheus/config"
@@ -77,7 +76,8 @@ func TestCreateTraceAndMetricsReceiver(t *testing.T) {
 			PrometheusConfig: &promconfig.Config{
 				ScrapeConfigs: []*promconfig.ScrapeConfig{
 					{
-						ScrapeInterval:  model.Duration(60 * time.Second),
+						ScrapeInterval:  model.Duration(defaultCollectionInterval),
+						ScrapeTimeout:   model.Duration(defaultTimeoutInterval),
 						Scheme:          "http",
 						MetricsPath:     "/metrics",
 						JobName:         "test",
