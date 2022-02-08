@@ -18,6 +18,7 @@ import (
 	"context"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/prometheus/common/model"
 	promconfig "github.com/prometheus/prometheus/config"
@@ -34,6 +35,11 @@ import (
 )
 
 func TestCreateTraceAndMetricsReceiver(t *testing.T) {
+	// Ensure default values are not 0 to prevent receiver regression error
+	timeZeroValue := model.Duration(0 * time.Second)
+	assert.NotEqual(t, timeZeroValue, defaultCollectionInterval)
+	assert.NotEqual(t, timeZeroValue, defaultTimeoutInterval)
+
 	var (
 		traceReceiver  component.TracesReceiver
 		metricReceiver component.MetricsReceiver
