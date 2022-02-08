@@ -160,14 +160,26 @@ func (prwe *prweWAL) start(ctx context.Context) error {
 }
 
 func (prwe *prweWAL) run(ctx context.Context) (err error) {
-	if err := prwe.start(ctx); err != nil {
-		return err
+	if err = prwe.start(ctx); err != nil {
+		return
 	}
 
 	// Start the process of exporting but wait until the exporting has started.
 	waitUntilStartedCh := make(chan bool)
 	go func() {
-		prwe.continuallyPopWALThenExport(ctx, func() { close(waitUntilStartedCh) })
+		signalStart := func() { close(waitUntilStartedCh) }
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				err := prwe.continuallyPopWALThenExport(ctx, signalStart)
+				signalStart = func() {}
+				if err != nil {
+					// log err
+				}
+			}
+		}
 	}()
 	<-waitUntilStartedCh
 	return nil
