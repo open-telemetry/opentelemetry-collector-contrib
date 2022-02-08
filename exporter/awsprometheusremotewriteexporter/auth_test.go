@@ -64,7 +64,7 @@ func TestRequestSignature(t *testing.T) {
 			return newSigningRoundTripperWithCredentials(authConfig, awsCreds, next, sdkInformation)
 		},
 	}
-	client, _ := setting.ToClient(componenttest.NewNopHost().GetExtensions())
+	client, _ := setting.ToClient(componenttest.NewNopHost().GetExtensions(), componenttest.NewNopTelemetrySettings())
 	req, err := http.NewRequest("POST", setting.Endpoint, strings.NewReader("a=1&b=2"))
 	assert.NoError(t, err)
 	_, err = client.Do(req)
@@ -110,7 +110,7 @@ func TestLeakingBody(t *testing.T) {
 			return newSigningRoundTripperWithCredentials(authConfig, awsCreds, next, sdkInformation)
 		},
 	}
-	client, _ := setting.ToClient(componenttest.NewNopHost().GetExtensions())
+	client, _ := setting.ToClient(componenttest.NewNopHost().GetExtensions(), componenttest.NewNopTelemetrySettings())
 	checker := &checkCloser{Reader: strings.NewReader("a=1&b=2")}
 	req, err := http.NewRequest("POST", setting.Endpoint, checker)
 	assert.NoError(t, err)

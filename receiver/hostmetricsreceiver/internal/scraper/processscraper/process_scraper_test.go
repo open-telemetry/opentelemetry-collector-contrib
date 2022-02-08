@@ -21,8 +21,8 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/shirou/gopsutil/cpu"
-	"github.com/shirou/gopsutil/process"
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/process"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -70,12 +70,20 @@ func TestScrape(t *testing.T) {
 	}
 
 	require.Greater(t, md.ResourceMetrics().Len(), 1)
+	assertSchemaIsSet(t, md.ResourceMetrics())
 	assertProcessResourceAttributesExist(t, md.ResourceMetrics())
 	assertCPUTimeMetricValid(t, md.ResourceMetrics(), expectedStartTime)
 	assertMemoryUsageMetricValid(t, metadata.Metrics.ProcessMemoryPhysicalUsage.New(), md.ResourceMetrics())
 	assertMemoryUsageMetricValid(t, metadata.Metrics.ProcessMemoryVirtualUsage.New(), md.ResourceMetrics())
 	assertDiskIOMetricValid(t, md.ResourceMetrics(), expectedStartTime)
 	assertSameTimeStampForAllMetricsWithinResource(t, md.ResourceMetrics())
+}
+
+func assertSchemaIsSet(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice) {
+	for i := 0; i < resourceMetrics.Len(); i++ {
+		rm := resourceMetrics.At(0)
+		assert.EqualValues(t, conventions.SchemaURL, rm.SchemaUrl())
+	}
 }
 
 func assertProcessResourceAttributesExist(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice) {
@@ -480,4 +488,58 @@ func getExpectedScrapeFailures(nameError, exeError, timeError, memError, diskErr
 	}
 
 	return metricsLen - expectedMetricsLen
+}
+
+func TestScrapeMetrics_MuteProcessNameError(t *testing.T) {
+	processNameError := errors.New("err1")
+
+	type testCase struct {
+		name                 string
+		muteProcessNameError bool
+		omitConfigField      bool
+		expectedError        string
+	}
+
+	testCases := []testCase{
+		{
+			name:                 "Process Name Error Muted",
+			muteProcessNameError: true,
+		},
+		{
+			name:                 "Process Name Error Enabled",
+			muteProcessNameError: false,
+			expectedError:        fmt.Sprintf("error reading process name for pid 1: %v", processNameError),
+		},
+		{
+			name:            "Process Name Error Default (Enabled)",
+			omitConfigField: true,
+			expectedError:   fmt.Sprintf("error reading process name for pid 1: %v", processNameError),
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			config := &Config{}
+			if !test.omitConfigField {
+				config.MuteProcessNameError = test.muteProcessNameError
+			}
+			scraper, err := newProcessScraper(config)
+			require.NoError(t, err, "Failed to create process scraper: %v", err)
+
+			handleMock := &processHandleMock{}
+			handleMock.On("Name").Return("test", processNameError)
+
+			scraper.getProcessHandles = func() (processHandles, error) {
+				return &processHandlesMock{handles: []*processHandleMock{handleMock}}, nil
+			}
+			md, err := scraper.scrape(context.Background())
+
+			assert.Zero(t, md.MetricCount())
+			if config.MuteProcessNameError {
+				assert.Nil(t, err)
+			} else {
+				assert.EqualError(t, err, test.expectedError)
+			}
+		})
+	}
 }

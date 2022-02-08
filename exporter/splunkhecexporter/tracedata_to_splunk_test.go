@@ -198,8 +198,6 @@ func commonSplunkEvent(
 				},
 			},
 		},
-		Fields: map[string]interface{}{
-			"host.name": "myhost",
-		},
+		Fields: map[string]interface{}{},
 	}
 }

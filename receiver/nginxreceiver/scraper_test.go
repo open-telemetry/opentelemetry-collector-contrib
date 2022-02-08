@@ -17,86 +17,39 @@ package nginxreceiver
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/model/pdata"
-	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
 )
 
 func TestScraper(t *testing.T) {
-	nginxMock := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		if req.URL.Path == "/status" {
-			rw.WriteHeader(200)
-			_, _ = rw.Write([]byte(`Active connections: 291
-server accepts handled requests
- 16630948 16630948 31070465
-Reading: 6 Writing: 179 Waiting: 106
-`))
-			return
-		}
-		rw.WriteHeader(404)
-	}))
-	sc := newNginxScraper(zap.NewNop(), &Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Endpoint: nginxMock.URL + "/status",
-		},
-	})
-	err := sc.start(context.Background(), componenttest.NewNopHost())
+	nginxMock := newMockServer(t)
+	cfg := createDefaultConfig().(*Config)
+	cfg.Endpoint = nginxMock.URL + "/status"
+	require.NoError(t, cfg.Validate())
+
+	scraper := newNginxScraper(componenttest.NewNopTelemetrySettings(), cfg)
+
+	err := scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	md, err := sc.scrape(context.Background())
-	require.Nil(t, err)
 
-	require.Equal(t, 1, md.ResourceMetrics().Len())
-	rm := md.ResourceMetrics().At(0)
+	actualMetrics, err := scraper.scrape(context.Background())
+	require.NoError(t, err)
 
-	ilms := rm.InstrumentationLibraryMetrics()
-	require.Equal(t, 1, ilms.Len())
+	expectedFile := filepath.Join("testdata", "scraper", "expected.json")
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
 
-	ilm := ilms.At(0)
-	ms := ilm.Metrics()
-
-	require.Equal(t, 4, ms.Len())
-
-	metricValues := make(map[string]int64, 7)
-
-	for i := 0; i < ms.Len(); i++ {
-		m := ms.At(i)
-
-		switch m.DataType() {
-		case pdata.MetricDataTypeGauge:
-			dps := m.Gauge().DataPoints()
-			require.Equal(t, 4, dps.Len())
-			for j := 0; j < dps.Len(); j++ {
-				dp := dps.At(j)
-				state, _ := dp.Attributes().Get(metadata.A.State)
-				label := fmt.Sprintf("%s state:%s", m.Name(), state.StringVal())
-				metricValues[label] = dp.IntVal()
-			}
-		case pdata.MetricDataTypeSum:
-			dps := m.Sum().DataPoints()
-			require.Equal(t, 1, dps.Len())
-			metricValues[m.Name()] = dps.At(0).IntVal()
-		}
-	}
-
-	require.Equal(t, map[string]int64{
-		"nginx.connections_accepted":              16630948,
-		"nginx.connections_handled":               16630948,
-		"nginx.requests":                          31070465,
-		"nginx.connections_current state:active":  291,
-		"nginx.connections_current state:reading": 6,
-		"nginx.connections_current state:writing": 179,
-		"nginx.connections_current state:waiting": 106,
-	}, metricValues)
+	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
 }
 
 func TestScraperError(t *testing.T) {
@@ -109,7 +62,7 @@ func TestScraperError(t *testing.T) {
 		rw.WriteHeader(404)
 	}))
 	t.Run("404", func(t *testing.T) {
-		sc := newNginxScraper(zap.NewNop(), &Config{
+		sc := newNginxScraper(componenttest.NewNopTelemetrySettings(), &Config{
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint: nginxMock.URL + "/badpath",
 			},
@@ -121,7 +74,7 @@ func TestScraperError(t *testing.T) {
 	})
 
 	t.Run("parse error", func(t *testing.T) {
-		sc := newNginxScraper(zap.NewNop(), &Config{
+		sc := newNginxScraper(componenttest.NewNopTelemetrySettings(), &Config{
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint: nginxMock.URL + "/status",
 			},
@@ -134,7 +87,7 @@ func TestScraperError(t *testing.T) {
 }
 
 func TestScraperFailedStart(t *testing.T) {
-	sc := newNginxScraper(zap.NewNop(), &Config{
+	sc := newNginxScraper(componenttest.NewNopTelemetrySettings(), &Config{
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "localhost:8080",
 			TLSSetting: configtls.TLSClientSetting{
@@ -146,4 +99,20 @@ func TestScraperFailedStart(t *testing.T) {
 	})
 	err := sc.start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)
+}
+
+func newMockServer(t *testing.T) *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		if req.URL.Path == "/status" {
+			rw.WriteHeader(200)
+			_, err := rw.Write([]byte(`Active connections: 291
+server accepts handled requests
+ 16630948 16630946 31070465
+Reading: 6 Writing: 179 Waiting: 106
+`))
+			require.NoError(t, err)
+			return
+		}
+		rw.WriteHeader(404)
+	}))
 }

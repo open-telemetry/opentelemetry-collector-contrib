@@ -138,7 +138,7 @@ func (flp *filterLogProcessor) filterByRecordAttributes(rLogs pdata.ResourceLogs
 		ills := rLogs.At(i).InstrumentationLibraryLogs()
 
 		for j := 0; j < ills.Len(); j++ {
-			ls := ills.At(j).Logs()
+			ls := ills.At(j).LogRecords()
 
 			ls.RemoveIf(func(lr pdata.LogRecord) bool {
 				return flp.shouldSkipLogsForRecord(lr)
@@ -146,7 +146,7 @@ func (flp *filterLogProcessor) filterByRecordAttributes(rLogs pdata.ResourceLogs
 		}
 
 		ills.RemoveIf(func(ill pdata.InstrumentationLibraryLogs) bool {
-			return ill.Logs().Len() == 0
+			return ill.LogRecords().Len() == 0
 		})
 	}
 

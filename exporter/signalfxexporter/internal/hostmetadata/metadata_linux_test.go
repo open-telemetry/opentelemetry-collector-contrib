@@ -14,11 +14,11 @@
 
 package hostmetadata
 
-import "syscall"
+import "golang.org/x/sys/unix"
 
 func mockSyscallUname() {
-	syscallUname = func(in *syscall.Utsname) error {
-		in.Machine = [65]int8{}
+	syscallUname = func(in *unix.Utsname) error {
+		in.Machine = [65]byte{}
 		return nil
 	}
 }

@@ -16,14 +16,14 @@ package metricsgenerationprocessor
 
 import (
 	"fmt"
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 func TestLoadingFullConfig(t *testing.T) {
@@ -64,7 +64,7 @@ func TestLoadingFullConfig(t *testing.T) {
 
 			factory := NewFactory()
 			factories.Processors[typeStr] = factory
-			config, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", test.configFile), factories)
+			config, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", test.configFile), factories)
 			assert.NoError(t, err)
 			require.NotNil(t, config)
 
@@ -128,7 +128,7 @@ func TestValidateConfig(t *testing.T) {
 		factory := NewFactory()
 		factories.Processors[typeStr] = factory
 		t.Run(test.configName, func(t *testing.T) {
-			config, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", test.configName), factories)
+			config, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", test.configName), factories)
 			if test.succeed {
 				assert.NotNil(t, config)
 				assert.NoError(t, err)

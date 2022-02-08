@@ -8,9 +8,9 @@ These are the metrics available for this scraper.
 
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
-| system.paging.faults | The number of page faults. | {faults} | Sum | <ul> <li>type</li> </ul> |
-| system.paging.operations | The number of paging operations. | {operations} | Sum | <ul> <li>direction</li> <li>type</li> </ul> |
-| system.paging.usage | Swap (unix) or pagefile (windows) usage. | By | Sum | <ul> <li>device</li> <li>state</li> </ul> |
+| system.paging.faults | The number of page faults. | {faults} | Sum(Int) | <ul> <li>type</li> </ul> |
+| system.paging.operations | The number of paging operations. | {operations} | Sum(Int) | <ul> <li>direction</li> <li>type</li> </ul> |
+| system.paging.usage | Swap (unix) or pagefile (windows) usage. | By | Sum(Int) | <ul> <li>device</li> <li>state</li> </ul> |
 
 ## Attributes
 

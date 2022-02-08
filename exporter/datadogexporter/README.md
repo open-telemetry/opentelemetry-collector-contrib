@@ -28,11 +28,22 @@ datadog:
     site: datadoghq.eu
 ```
 
+ If you want to use the OpenTelemetry Span Name as the Datadog Resource Name you can set the `span_name_as_resource_name` configuration option to `true` (default is `false`). For more info on the downsides of this option check [this](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/1909) issue.
+
+ ```yaml
+datadog:
+  api:
+    key: "<API key>"
+  traces:
+    span_name_as_resource_name: true
+```
+
 The hostname, environment, service and version can be set in the configuration for unified service tagging.
 The exporter will try to retrieve a hostname following the OpenTelemetry semantic conventions if there is one available.
 
 See the sample configuration files under the `example` folder for other available options, as well as an example K8s Manifest.
 This exporter also supports the `exporterhelper` queuing, retry and timeout settings documented [here](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/exporterhelper#configuration).
+Retry settings will only affect metrics.
 
 ## Trace exporter
 ### **Important Pipeline Setup Details** 

@@ -16,6 +16,7 @@ package influxdbreceiver // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"sync"
@@ -28,6 +29,8 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/sanitize"
 )
 
 type metricsReceiver struct {
@@ -70,11 +73,14 @@ func (r *metricsReceiver) Start(_ context.Context, host component.Host) error {
 	router.HandleFunc("/api/v2/write", r.handleWrite) // InfluxDB 2.x
 
 	r.wg.Add(1)
-	r.server = r.httpServerSettings.ToServer(router, r.settings)
+	r.server, err = r.httpServerSettings.ToServer(host, r.settings, router)
+	if err != nil {
+		return err
+	}
 	go func() {
 		defer r.wg.Done()
-		if err := r.server.Serve(ln); err != nil && err != http.ErrServerClosed {
-			host.ReportFatalError(err)
+		if errHTTP := r.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
+			host.ReportFatalError(errHTTP)
 		}
 	}()
 
@@ -108,7 +114,7 @@ func (r *metricsReceiver) handleWrite(w http.ResponseWriter, req *http.Request) 
 		var ok bool
 		if precision, ok = precisions[precisionStr]; !ok {
 			w.WriteHeader(http.StatusBadRequest)
-			_, _ = fmt.Fprintf(w, "unrecognized precision '%s'", precisionStr)
+			_, _ = fmt.Fprintf(w, "unrecognized precision '%s'", sanitize.String(precisionStr))
 			return
 		}
 	}
@@ -177,5 +183,5 @@ func (r *metricsReceiver) handleWrite(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	w.WriteHeader(http.StatusAccepted)
+	w.WriteHeader(http.StatusNoContent)
 }

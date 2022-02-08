@@ -57,7 +57,7 @@ func convertLogs(ld pdata.Logs) []*cls.Log {
 		for j := 0; j < ills.Len(); j++ {
 			ils := ills.At(j)
 			instrumentationLibraryContents := instrumentationLibraryToLogContents(ils.InstrumentationLibrary())
-			logs := ils.Logs()
+			logs := ils.LogRecords()
 			for j := 0; j < logs.Len(); j++ {
 				clsLog := mapLogRecordToLogService(logs.At(j), resourceContents, instrumentationLibraryContents)
 				if clsLog != nil {

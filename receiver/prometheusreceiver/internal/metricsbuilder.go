@@ -24,8 +24,8 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/prometheus/common/model"
-	"github.com/prometheus/prometheus/pkg/labels"
-	"github.com/prometheus/prometheus/pkg/textparse"
+	"github.com/prometheus/prometheus/model/labels"
+	"github.com/prometheus/prometheus/model/textparse"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -58,7 +58,7 @@ type metricBuilder struct {
 	startTime            float64
 	intervalStartTimeMs  int64
 	logger               *zap.Logger
-	currentMf            MetricFamily
+	families             map[string]*metricFamily
 }
 
 // newMetricBuilder creates a MetricBuilder which is allowed to feed all the datapoints from a single prometheus
@@ -72,6 +72,7 @@ func newMetricBuilder(mc MetadataCache, useStartTimeMetric bool, startTimeMetric
 	return &metricBuilder{
 		mc:                   mc,
 		metrics:              make([]*metricspb.Metric, 0),
+		families:             map[string]*metricFamily{},
 		logger:               logger,
 		numTimeseries:        0,
 		droppedTimeseries:    0,
@@ -137,19 +138,18 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 
 	b.hasData = true
 
-	if b.currentMf != nil && !b.currentMf.IsSameFamily(metricName) {
-		m, ts, dts := b.currentMf.ToMetric()
-		b.numTimeseries += ts
-		b.droppedTimeseries += dts
-		if m != nil {
-			b.metrics = append(b.metrics, m)
+	curMF, ok := b.families[metricName]
+	if !ok {
+		familyName := normalizeMetricName(metricName)
+		if mf, ok := b.families[familyName]; ok && mf.includesMetric(metricName) {
+			curMF = mf
+		} else {
+			curMF = newMetricFamily(metricName, b.mc, b.logger, b.intervalStartTimeMs)
+			b.families[curMF.name] = curMF
 		}
-		b.currentMf = newMetricFamily(metricName, b.mc, b.logger, b.intervalStartTimeMs)
-	} else if b.currentMf == nil {
-		b.currentMf = newMetricFamily(metricName, b.mc, b.logger, b.intervalStartTimeMs)
 	}
 
-	return b.currentMf.Add(metricName, ls, t, v)
+	return curMF.Add(metricName, ls, t, v)
 }
 
 // Build an opencensus data.MetricsData based on all added data complexValue.
@@ -162,14 +162,13 @@ func (b *metricBuilder) Build() ([]*metricspb.Metric, int, int, error) {
 		return nil, 0, 0, errNoDataToBuild
 	}
 
-	if b.currentMf != nil {
-		m, ts, dts := b.currentMf.ToMetric()
+	for _, mf := range b.families {
+		m, ts, dts := mf.ToMetric()
 		b.numTimeseries += ts
 		b.droppedTimeseries += dts
 		if m != nil {
 			b.metrics = append(b.metrics, m)
 		}
-		b.currentMf = nil
 	}
 
 	return b.metrics, b.numTimeseries, b.droppedTimeseries, nil

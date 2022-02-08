@@ -8,10 +8,10 @@ These are the metrics available for this scraper.
 
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
-| nginx.connections_accepted | The total number of accepted client connections | connections | Sum | <ul> </ul> |
-| nginx.connections_current | The current number of nginx connections by state | connections | Gauge | <ul> <li>state</li> </ul> |
-| nginx.connections_handled | The total number of handled connections. Generally, the parameter value is the same as nginx.connections_accepted unless some resource limits have been reached (for example, the worker_connections limit). | connections | Sum | <ul> </ul> |
-| nginx.requests | Total number of requests made to the server since it started | requests | Sum | <ul> </ul> |
+| nginx.connections_accepted | The total number of accepted client connections | connections | Sum(Int) | <ul> </ul> |
+| nginx.connections_current | The current number of nginx connections by state | connections | Gauge(Int) | <ul> <li>state</li> </ul> |
+| nginx.connections_handled | The total number of handled connections. Generally, the parameter value is the same as nginx.connections_accepted unless some resource limits have been reached (for example, the worker_connections limit). | connections | Sum(Int) | <ul> </ul> |
+| nginx.requests | Total number of requests made to the server since it started | requests | Sum(Int) | <ul> </ul> |
 
 ## Attributes
 

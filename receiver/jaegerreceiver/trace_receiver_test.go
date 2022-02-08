@@ -24,7 +24,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -48,6 +48,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
@@ -160,7 +161,7 @@ func TestGRPCReception(t *testing.T) {
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 
-	conn, err := grpc.Dial(fmt.Sprintf("0.0.0.0:%d", config.CollectorGRPCPort), grpc.WithInsecure())
+	conn, err := grpc.Dial(fmt.Sprintf("0.0.0.0:%d", config.CollectorGRPCPort), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 	defer conn.Close()
 
@@ -193,8 +194,8 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 	// prepare
 	tlsCreds := &configtls.TLSServerSetting{
 		TLSSetting: configtls.TLSSetting{
-			CertFile: path.Join(".", "testdata", "server.crt"),
-			KeyFile:  path.Join(".", "testdata", "server.key"),
+			CertFile: filepath.Join("testdata", "server.crt"),
+			KeyFile:  filepath.Join("testdata", "server.key"),
 		},
 	}
 
@@ -215,7 +216,7 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 
-	creds, err := credentials.NewClientTLSFromFile(path.Join(".", "testdata", "server.crt"), "localhost")
+	creds, err := credentials.NewClientTLSFromFile(filepath.Join("testdata", "server.crt"), "localhost")
 	require.NoError(t, err)
 	conn, err := grpc.Dial(jr.collectorGRPCAddr(), grpc.WithTransportCredentials(creds))
 	require.NoError(t, err)
@@ -348,7 +349,7 @@ func TestSampling(t *testing.T) {
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 
-	conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", config.CollectorGRPCPort), grpc.WithInsecure())
+	conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", config.CollectorGRPCPort), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	assert.NoError(t, err)
 	defer conn.Close()
 
@@ -399,7 +400,7 @@ func TestSamplingFailsOnNotConfigured(t *testing.T) {
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 
-	conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", config.CollectorGRPCPort), grpc.WithInsecure())
+	conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", config.CollectorGRPCPort), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	assert.NoError(t, err)
 	defer conn.Close()
 
@@ -428,11 +429,11 @@ func TestSamplingFailsOnBadFile(t *testing.T) {
 }
 
 func TestSamplingStrategiesMutualTLS(t *testing.T) {
-	caPath := path.Join(".", "testdata", "ca.crt")
-	serverCertPath := path.Join(".", "testdata", "server.crt")
-	serverKeyPath := path.Join(".", "testdata", "server.key")
-	clientCertPath := path.Join(".", "testdata", "client.crt")
-	clientKeyPath := path.Join(".", "testdata", "client.key")
+	caPath := filepath.Join("testdata", "ca.crt")
+	serverCertPath := filepath.Join("testdata", "server.crt")
+	serverKeyPath := filepath.Join("testdata", "server.key")
+	clientCertPath := filepath.Join("testdata", "client.crt")
+	clientKeyPath := filepath.Join("testdata", "client.key")
 
 	// start gRPC server that serves sampling strategies
 	tlsCfgOpts := configtls.TLSServerSetting{
@@ -446,7 +447,7 @@ func TestSamplingStrategiesMutualTLS(t *testing.T) {
 	require.NoError(t, err)
 	server, serverAddr := initializeGRPCTestServer(t, func(s *grpc.Server) {
 		ss, serr := staticStrategyStore.NewStrategyStore(staticStrategyStore.Options{
-			StrategiesFile: path.Join(".", "testdata", "strategies.json"),
+			StrategiesFile: filepath.Join("testdata", "strategies.json"),
 		}, zap.NewNop())
 		require.NoError(t, serr)
 		api_v2.RegisterSamplingManagerServer(s, collectorSampling.NewGRPCHandler(ss))

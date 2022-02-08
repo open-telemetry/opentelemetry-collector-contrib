@@ -75,7 +75,8 @@ func appendCloudVMAttributes(attrMap pdata.AttributeMap) {
 
 func appendOnpremK8sAttributes(attrMap pdata.AttributeMap) {
 	attrMap.UpsertString(conventions.AttributeContainerName, "cert-manager")
-	attrMap.UpsertString(conventions.AttributeContainerImageName, "quay.io/jetstack/cert-manager-controller:v0.14.2")
+	attrMap.UpsertString(conventions.AttributeContainerImageName, "quay.io/jetstack/cert-manager-controller")
+	attrMap.UpsertString(conventions.AttributeContainerImageTag, "v0.14.2")
 	attrMap.UpsertString(conventions.AttributeK8SClusterName, "docker-desktop")
 	attrMap.UpsertString(conventions.AttributeK8SNamespaceName, "cert-manager")
 	attrMap.UpsertString(conventions.AttributeK8SDeploymentName, "cm-1-cert-manager")
@@ -124,7 +125,7 @@ func appendExecAttributes(attrMap pdata.AttributeMap) {
 	attrMap.UpsertString(conventions.AttributeProcessExecutablePath, "/usr/local/bin/otelcol")
 	attrMap.UpsertInt(conventions.AttributeProcessPID, 2020)
 	attrMap.UpsertString(conventions.AttributeProcessOwner, "otel")
-	attrMap.UpsertString(conventions.AttributeOSType, "LINUX")
+	attrMap.UpsertString(conventions.AttributeOSType, "linux")
 	attrMap.UpsertString(conventions.AttributeOSDescription,
 		"Linux ubuntu 5.4.0-42-generic #46-Ubuntu SMP Fri Jul 10 00:24:02 UTC 2020 x86_64 x86_64 x86_64 GNU/Linux")
 }

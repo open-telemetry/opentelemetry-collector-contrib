@@ -17,7 +17,7 @@ package dockerobserver
 import (
 	"encoding/json"
 	"io/ioutil"
-	"path"
+	"path/filepath"
 	"testing"
 
 	dtypes "github.com/docker/docker/api/types"
@@ -25,14 +25,14 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/service/servicetest"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
 
 func containerJSON(t *testing.T) dtypes.ContainerJSON {
-	containerRaw, err := ioutil.ReadFile(path.Join(".", "testdata", "container.json"))
+	containerRaw, err := ioutil.ReadFile(filepath.Join("testdata", "container.json"))
 	require.NoError(t, err)
 
 	var container dtypes.ContainerJSON
@@ -85,8 +85,9 @@ func TestCollectEndpointsDefaultConfig(t *testing.T) {
 			ID:     "babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c:8080",
 			Target: "172.17.0.2:80",
 			Details: &observer.Container{
-				Name:        "/agitated_wu",
+				Name:        "agitated_wu",
 				Image:       "nginx",
+				Tag:         "1.17",
 				Command:     "nginx -g daemon off;",
 				ContainerID: "babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c",
 				Transport:   observer.ProtocolTCP,
@@ -111,7 +112,7 @@ func TestCollectEndpointsAllConfigSettings(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Extensions[typeStr] = factory
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
@@ -132,8 +133,9 @@ func TestCollectEndpointsAllConfigSettings(t *testing.T) {
 			ID:     "babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c:8080",
 			Target: "127.0.0.1:8080",
 			Details: &observer.Container{
-				Name:        "/agitated_wu",
+				Name:        "agitated_wu",
 				Image:       "nginx",
+				Tag:         "1.17",
 				Command:     "nginx -g daemon off;",
 				ContainerID: "babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c",
 				Transport:   observer.ProtocolTCP,
@@ -158,7 +160,7 @@ func TestCollectEndpointsUseHostnameIfPresent(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Extensions[typeStr] = factory
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
@@ -179,8 +181,9 @@ func TestCollectEndpointsUseHostnameIfPresent(t *testing.T) {
 			ID:     "babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c:8080",
 			Target: "babc5a6d7af2:80",
 			Details: &observer.Container{
-				Name:        "/agitated_wu",
+				Name:        "agitated_wu",
 				Image:       "nginx",
+				Tag:         "1.17",
 				Command:     "nginx -g daemon off;",
 				ContainerID: "babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c",
 				Transport:   observer.ProtocolTCP,
@@ -205,7 +208,7 @@ func TestCollectEndpointsUseHostBindings(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Extensions[typeStr] = factory
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
@@ -226,8 +229,9 @@ func TestCollectEndpointsUseHostBindings(t *testing.T) {
 			ID:     "babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c:8080",
 			Target: "127.0.0.1:8080",
 			Details: &observer.Container{
-				Name:        "/agitated_wu",
+				Name:        "agitated_wu",
 				Image:       "nginx",
+				Tag:         "1.17",
 				Command:     "nginx -g daemon off;",
 				ContainerID: "babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c",
 				Transport:   observer.ProtocolTCP,
@@ -252,7 +256,7 @@ func TestCollectEndpointsIgnoreNonHostBindings(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Extensions[typeStr] = factory
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
@@ -273,8 +277,9 @@ func TestCollectEndpointsIgnoreNonHostBindings(t *testing.T) {
 			ID:     "babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c:8080",
 			Target: "172.17.0.2:80",
 			Details: &observer.Container{
-				Name:        "/agitated_wu",
+				Name:        "agitated_wu",
 				Image:       "nginx",
+				Tag:         "1.17",
 				Command:     "nginx -g daemon off;",
 				ContainerID: "babc5a6d7af2a48e7f52e1da26047024dcf98b737e754c9c3459bb84d1e4f80c",
 				Transport:   observer.ProtocolTCP,

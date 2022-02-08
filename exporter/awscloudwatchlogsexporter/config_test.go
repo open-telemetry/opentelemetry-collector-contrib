@@ -15,15 +15,17 @@
 package awscloudwatchlogsexporter
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/service/servicetest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -32,7 +34,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -45,12 +47,12 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t,
 		&Config{
-			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "e1-defaults")),
-			RetrySettings:    defaultRetrySettings,
-			LogGroupName:     "test-1",
-			LogStreamName:    "testing",
-			Region:           "",
-			Endpoint:         "",
+			ExporterSettings:   config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "e1-defaults")),
+			RetrySettings:      defaultRetrySettings,
+			LogGroupName:       "test-1",
+			LogStreamName:      "testing",
+			Endpoint:           "",
+			AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
 			QueueSettings: QueueSettings{
 				QueueSize: exporterhelper.DefaultQueueSettings().QueueSize,
 			},
@@ -69,8 +71,9 @@ func TestLoadConfig(t *testing.T) {
 				MaxInterval:     defaultRetrySettings.MaxInterval,
 				MaxElapsedTime:  defaultRetrySettings.MaxElapsedTime,
 			},
-			LogGroupName:  "test-2",
-			LogStreamName: "testing",
+			AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
+			LogGroupName:       "test-2",
+			LogStreamName:      "testing",
 			QueueSettings: QueueSettings{
 				QueueSize: 2,
 			},
@@ -86,15 +89,15 @@ func TestFailedLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
 
-	_, err = configtest.LoadConfigAndValidate(path.Join(".", "testdata", "missing_required_field_1_config.yaml"), factories)
+	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "missing_required_field_1_config.yaml"), factories)
 	assert.EqualError(t, err, "exporter \"awscloudwatchlogs\" has invalid configuration: 'log_stream_name' must be set")
 
-	_, err = configtest.LoadConfigAndValidate(path.Join(".", "testdata", "missing_required_field_2_config.yaml"), factories)
+	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "missing_required_field_2_config.yaml"), factories)
 	assert.EqualError(t, err, "exporter \"awscloudwatchlogs\" has invalid configuration: 'log_group_name' must be set")
 
-	_, err = configtest.LoadConfigAndValidate(path.Join(".", "testdata", "invalid_queue_size.yaml"), factories)
+	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "invalid_queue_size.yaml"), factories)
 	assert.EqualError(t, err, "exporter \"awscloudwatchlogs\" has invalid configuration: 'sending_queue.queue_size' must be 1 or greater")
 
-	_, err = configtest.LoadConfigAndValidate(path.Join(".", "testdata", "invalid_queue_setting.yaml"), factories)
+	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "invalid_queue_setting.yaml"), factories)
 	assert.EqualError(t, err, "error reading exporters configuration for \"awscloudwatchlogs\": 1 error(s) decoding:\n\n* 'sending_queue' has invalid keys: enabled, num_consumers")
 }

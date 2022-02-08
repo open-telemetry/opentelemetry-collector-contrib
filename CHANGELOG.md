@@ -2,13 +2,249 @@
 
 ## Unreleased
 
+## v0.44.0
+
+## 💡 Enhancements 💡
+
+- `dynatraceexporter`: Write error logs using plugin logger (#7360)
+- `dynatraceexporter`: Fix docs for TLS settings (#7568)
+- `tanzuobservabilityexporter`: Turn on metrics exporter (#7281)
+- `attributesprocessor` `resourceprocessor`: Add `from_context` value source
+- `resourcedetectionprocessor`: check cluster config to verify resource is on aws for eks resources (#7186)
+- `awscloudwatchlogsexporter`: enable awscloudwatchlogsexporter which accepts and exports log data (#7297)
+- `translator/prometheusremotewrite`: add a new module to help translate data from OTLP to Prometheus Remote Write (#7240)
+- `jmxreceiver`: Added `additional_jars` configuration option to launch JMX Metric Gatherer JAR with extended `CLASSPATH` (#7378)
+- `awscontainerinsightreceiver`: add full pod name when configured to AWS Container Insights Receiver (#7415)
+- `hostreceiver/loadscraper`: Migrate the scraper to the mdatagen metrics builder (#7288)
+- `awsecscontainermetricsreceiver`: Rename attributes to follow semantic conventions (#7425)
+- `datadogexporter`: Always map conventional attributes to tags (#7185)
+- `mysqlreceiver`: Add golden files for integration test (#7303)
+- `nginxreceiver`: Standardize integration test (#7515)
+- `mysqlreceiver`: Update to use mdatagen v2 (#7507)
+- `postgresqlreceiver`: Add integration tests (#7501)
+- `apachereceiver`: Add integration test (#7517)
+- `mysqlreceiver`: Use scrapererror to report errors (#7513)
+- `postgresreceiver`: Update to mdatagen v2 (#7503)
+- `nginxreceiver`: Update to mdatagen v2 (#7549)
+- `datadogexporter`: Fix traces exporter's initialization log (#7564)
+- `tailsamplingprocessor`: Add And sampling policy (#6910)
+- `coralogixexporter`: Add Coralogix Exporter (#7383)
+- `prometheusexecreceiver`: Add default value for `scrape_timeout` option (#7587)
+
 ## 🛑 Breaking changes 🛑
 
-- `tencentcloudlogserviceexporter` change `Endpoint` to `Region` to simplify configuration (#6135)
+- `resourcedetectionprocessor`: Update `os.type` attribute values according to semantic conventions (#7544)
+
+## 🚀 New components 🚀
+
+## 🧰 Bug fixes 🧰
+
+- `resourcedetectionprocessor`: fix `meta` allow list excluding keys with nil values (#7424)
+- `postgresqlreceiver`: Fix issue where empty metrics could be returned after failed connection (#7502)
+- `resourcetotelemetry`: Ensure resource attributes are added to summary
+  and exponential histogram data points. (#7523)
+
+## Deprecations
+
+- Deprecated otel_to_hec_fields.name setting from splunkhec exporter. (#7560)
+
+## v0.43.0
+
+## 💡 Enhancements 💡
+
+- `coralogixexporter`: First implementation of Coralogix Exporter (#6816)
+- `cloudfoundryreceiver`: Enable Cloud Foundry client (#7060)
+- `elasticsearchexporter`: add elasticsearchexporter to the components exporter list (#6002)
+- `elasticsearchreceiver`: Add metric metadata (#6892)
+- `elasticsearchreceiver`: Use same metrics as JMX receiver for JVM metrics (#7160)
+- `elasticsearchreceiver`: Implement scraping logic (#7174)
+- `datadogexporter`: Add http.status_code tag to trace stats (#6889)
+- `datadogexporter`: Add configuration option to use OTel span name into the Datatog resource name (#6611)
+- `mongodbreceiver`: Add initial client code to the component (#7125)
+- `tanzuobservabilityexporter`: Support delta histograms (#6897)
+- `awscloudwatchlogsexporter`: Use cwlogs package to export logs (#7152)
+- `mysqlreceiver`: Add the receiver to available components (#7078)
+- `tanzuobservabilityexporter`: Documentation for the memory_limiter configuration (#7164)
+- `dynatraceexporter`: Do not shut down exporter when metrics ingest module is temporarily unavailable (#7161)
+- `mongodbreceiver`: Add metric metadata (#7163)
+- `mongodbreceiver`: Add metric scraping (#7175)
+- `postgresqlreceiver`: add the receiver to available components (#7079)
+- `rabbitmqreceiver`: Add scraper logic (#7299)
+- `tanzuobservability exporter`: Support summary metrics (#7121)
+- `mongodbatlasreceiver`: Add retry and backoff to HTTP client (#6943)
+- Use Jaeger gRPC instead of Thrift in the docker-compose example (#7243)
+- `tanzuobservabilityexporter`: Support exponential histograms (#7127)
+- `receiver_creator`: Log added and removed endpoint env structs (#7248)
+- `prometheusreceiver`: Use the OTLP data conversion path by default. (#7282)
+  - Use `--feature-gates=-receiver.prometheus.OTLPDirect` to re-enable the 
+    OpenCensus conversion path.
+- `extension/observers`: Correctly set image and tag on container endpoints (#7279)
+- `tanzuobservabilityexporter`: Document how to enable memory_limiter (#7286)
+- `hostreceiver/networkscraper`: Migrate the scraper to the mdatagen metrics builder (#7048)
+- `hostmetricsreceiver`: Add MuteProcessNameError config flag to mute specific error reading process executable (#7176)
+- `scrapertest`: Improve comparison logic (#7305)
+- `hostmetricsreceiver`: add `cpu_average` option for load scraper to report the average cpu load (#6999)
+- `scrapertest`: Add comparison option to ignore specific attributes (#6519)
+- `tracegen`: Add option to pass in custom headers to export calls via command line (#7308)
+- `tracegen`: Provide official container images (#7179)
+- `scrapertest`: Add comparison function for pdata.Metrics (#7400)
+
+## 🛑 Breaking changes 🛑
+
+- `tanzuobservabilityexporter`: Remove status.code
+- `tanzuobservabilityexporter`: Use semantic conventions for status.message (#7126) 
+- `k8sattributesprocessor`: Move `kube` and `observability` packages to `internal` folder (#7159)
+- `k8sattributesprocessor`: Unexport processor `Option`s (#7311)
+- `zookeeperreceiver`: Refactored metrics to have correct units, types, and combined some metrics via attributes. (#7280)
+- `prometheusremotewriteexporter`: `PRWExporter` struct and `NewPRWExporter()`
+  function are now unexported. (#TBD)
+- `newrelicexporter` marked as deprecated (#7284)
+
+## 🚀 New components 🚀
+
+- `rabbitmqreceiver`: Establish codebase for RabbitMQ metrics receiver (#7239)
+- Add `basicauth` extension (#7167)
+- `k8seventsreceiver`: Implement core logic (#6885)
+
+## 🧰 Bug fixes 🧰
+
+- `k8sattributeprocessor`: Parse IP out of net.Addr to correctly tag k8s.pod.ip (#7077)
+- `k8sattributeprocessor`: Process IP correctly for net.Addr instances that are not typed (#7133)
+- `mdatagen`: Fix validation of `enabled` field in metadata.yaml (#7166)
+- `elasticsearch`: Fix timestamp for each metric being startup time (#7255)
+- `prometheusremotewriteexporter`: Fix index out of range panic caused by expiring metrics (#7149)
+- `resourcedetection`: Log the error when checking for ec2metadata availability (#7296) 
+
+## v0.42.0
+
+## 💡 Enhancements 💡
+
+- `couchbasereceiver`: Add couchbase client (#7122)
+- `couchdbreceiver`: Add couchdb scraper (#7131)
+- `couchdbreceiver`: Add couchdb client (#6880)
+- `elasticsearchreceiver`: Implement scraper client (#7019)
+- `couchdbreceiver`: Add metadata metrics (#6878)
+- `prometheusremotewriteexporter`: Handling Staleness flag from OTLP (#6679)
+- `prometheusexporter`: Handling Staleness flag from OTLP (#6805)
+- `prometheusreceiver`: Set OTLP no-data-present flag for stale scraped metrics. (#7043)
+- `mysqlreceiver`: Add Integration test (#6916)
+- `datadogexporter`: Add compatibility with ECS Fargate semantic conventions (#6670)
+- `k8s_observer`: discover k8s.node endpoints (#6820)
+- `redisreceiver`: Add missing description fields to keyspace metrics (#6940)
+- `redisreceiver`: Set start timestamp uniformly for gauge and sum metrics (#6941)
+- `kafkaexporter`: Allow controlling Kafka acknowledgment behaviour  (#6301)
+- `lokiexporter`: Log the first part of the http body on failed pushes to loki (#6946)
+- `resourcedetectionprocessor`: add the [consul](https://www.consul.io/) detector (#6382)
+- `awsemfexporter`: refactor cw_client logic into separate `cwlogs` package (#7072)
+
+## 🛑 Breaking changes 🛑
+
+- `memcachedreceiver`: Update metric names (#6594)
+- `memcachedreceiver`: Fix some metric units and value types (#6895)
+- `sapm` receiver: Use Jaeger status values instead of OpenCensus (#6682)
+- `jaeger` receiver/exporter: Parse/set Jaeger status with OTel spec values (#6682)
+- `awsecscontainermetricsreceiver`: remove tag from `container.image.name` (#6436)
+- `k8sclusterreceiver`: remove tag from `container.image.name` (#6436)
+
+## 🚀 New components 🚀
+
+- `ecs_task_observer`: Discover running containers in AWS ECS tasks (#6894)
+- `mongodbreceiver`: Establish codebase for MongoDB metrics receiver (#6972)
+- `couchbasereceiver`: Establish codebase for Couchbase metrics receiver (#7046)
+- `dbstorage`: New experimental dbstorage extension (#7061)
+
+## 🧰 Bug fixes 🧰
+
+- `ecstaskobserver`: Fix "Incorrect conversion between integer types" security issue (#6939)
+- Fix typo in "direction" metrics attribute description (#6949)
+- `zookeeperreceiver`: Fix issue where receiver could panic during shutdown (#7020)
+- `prometheusreceiver`: Fix metadata fetching when metrics differ by trimmable suffixes (#6932)
+- Sanitize URLs being logged (#7021)
+- `prometheusreceiver`: Fix start time tracking for long scrape intervals (#7053)
+- `signalfxexporter`: Don't use syscall to avoid compilation errors on some platforms (#7062)
+- `tailsamplingprocessor`: Add support for new policies as composite sub-policies (#6975)
+
+## 💡 Enhancements 💡
+
+- `lokiexporter`: add complete log record to body (#6619)
+- `k8sclusterreceiver` add `container.image.tag` attribute (#6436)
+- `spanmetricproccessor`: use an LRU cache for the cached Dimensions key-value pairs (#2179)
+- `skywalkingexporter`: add skywalking metrics exporter (#6528)
+- `deltatorateprocessor`: add int counter support (#6982)
+- `filestorageextension`: document default values (#7022)
+- `redisreceiver`: Migrate the scraper to the mdatagen metrics builder (#6938)  
+
+## v0.41.0
+
+## 🛑 Breaking changes 🛑
+
+- None
+
+## 🚀 New components 🚀
+
+- `asapauthextension` (#6627)
+- `mongodbatlasreceiver` (#6367)
+
+## 🧰 Bug fixes 🧰
+
+- `filestorageextension`: fix panic when configured directory cannot be accessed (#6103)
+- `hostmetricsreceiver`: fix set of attributes for system.cpu.time metric (#6422)
+- `k8sobserver`: only record pod endpoints for running pods (#5878)
+- `mongodbatlasreceiver`: fix attributes fields in metadata.yaml (#6440)
+- `prometheusexecreceiver`: command line processing on Windows (#6145)
+- `spanmetricsprocessor`: fix exemplars support (#6140)
+-  Remap arm64 to aarch64 on rpm/deb packages (#6635)
+
+## 💡 Enhancements 💡
+
+- `datadogexporter`: do not use attribute localhost-like hostnames (#6477)
+- `datadogexporter`: retry per network call (#6412)
+- `datadogexporter`: take hostname into account for cache (#6223)
+- `exporter/lokiexporter`: adding a feature for loki exporter to encode JSON for log entry (#5846)
+- `googlecloudspannerreceiver`: added fallback to ADC for database connections. (#6629)
+- `googlecloudspannerreceiver`: added parsing only distinct items for sample lock request label. (#6514)
+- `googlecloudspannerreceiver`: added request tag label to metadata config for top query stats. (#6475)
+- `googlecloudspannerreceiver`: added sample lock requests label to the top lock stats metrics. (#6466)
+- `googlecloudspannerreceiver`: added transaction tag label to metadata config for top transaction stats. (#6433)
+- `groupbyattrsprocessor`: added support for metrics signal (#6248)
+- `hostmetricsreceiver`: ensure SchemaURL is set (#6482)
+- `kubeletstatsreceiver`: add support for read-only kubelet endpoint (#6488)
+- `mysqlreceiver`: enable native authentication (#6628)
+- `mysqlreceiver`: remove requirement for password on MySQL (#6479)
+- `receiver/prometheusreceiver`: do not add host.name to metrics from localhost/unspecified targets (#6476)
+- `spanmetricsprocessor`: add setStatus operation (#5886)
+- `splunkhecexporter`: remove duplication of host.name attribute (#6527)
+- `tanzuobservabilityexporter`: add consumer for sum metrics. (#6385)
+- Update log-collection library to v0.23.0 (#6593)
+
+## v0.40.0
+
+## 🛑 Breaking changes 🛑
+
+- `tencentcloudlogserviceexporter`: change `Endpoint` to `Region` to simplify configuration (#6135)
+
+## 🚀 New components 🚀
+
+- Add `memcached` receiver (#5839)
+
+## 🧰 Bug fixes 🧰
+
+- Fix token passthrough for HEC (#5435)
+- `datadogexporter`: Fix missing resource attributes default mapping when resource_attributes_as_tags: false (#6359)
+- `tanzuobservabilityexporter`: Log and report missing metric values. (#5835)
+- `mongodbatlasreceiver`: Fix metrics metadata (#6395)
 
 ## 💡 Enhancements 💡
 
 - `awsprometheusremotewrite` exporter: Improve error message when failing to sign request
+- `mongodbatlas`: add metrics (#5921)
+- `healthcheckextension`: Add path option (#6111)
+- Set unprivileged user to container image (#6380)
+- `k8sclusterreceiver`: Add allocatable type of metrics (#6113)
+- `observiqexporter`: Allow Dialer timeout to be configured (#5906)
+- `routingprocessor`: remove broken debug log fields (#6373)
+- `prometheusremotewriteexporter`: Add exemplars support (#5578) 
+- `fluentforwardreceiver`: Convert attributes with nil value to AttributeValueTypeEmpty (#6630)
 
 ## v0.39.0
 

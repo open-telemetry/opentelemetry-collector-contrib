@@ -31,6 +31,8 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/sanitize"
 )
 
 type esClientCurrent = elasticsearch7.Client
@@ -101,7 +103,7 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld pdata.Logs)
 		resource := rl.Resource()
 		ills := rl.InstrumentationLibraryLogs()
 		for j := 0; j < ills.Len(); j++ {
-			logs := ills.At(i).Logs()
+			logs := ills.At(i).LogRecords()
 			for k := 0; k < logs.Len(); k++ {
 				if err := e.pushLogRecord(ctx, resource, logs.At(k)); err != nil {
 					if cerr := ctx.Err(); cerr != nil {
@@ -176,7 +178,7 @@ func (cl *clientLogger) LogRoundTrip(requ *http.Request, resp *http.Response, er
 	switch {
 	case err == nil && resp != nil:
 		zl.Debug("Request roundtrip completed.",
-			zap.String("path", requ.URL.Path),
+			zap.String("path", sanitize.String(requ.URL.Path)),
 			zap.String("method", requ.Method),
 			zap.Duration("duration", dur),
 			zap.String("status", resp.Status))

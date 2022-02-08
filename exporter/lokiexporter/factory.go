@@ -48,6 +48,7 @@ func createDefaultConfig() config.Exporter {
 		RetrySettings: exporterhelper.DefaultRetrySettings(),
 		QueueSettings: exporterhelper.DefaultQueueSettings(),
 		TenantID:      "",
+		Format:        "body",
 		Labels: LabelsConfig{
 			Attributes:         map[string]string{},
 			ResourceAttributes: map[string]string{},
@@ -62,7 +63,7 @@ func createLogsExporter(_ context.Context, set component.ExporterCreateSettings,
 		return nil, err
 	}
 
-	exp := newExporter(expCfg, set.Logger)
+	exp := newExporter(expCfg, set.TelemetrySettings)
 
 	return exporterhelper.NewLogsExporter(
 		expCfg,

@@ -15,7 +15,7 @@
 package googlecloudspannerreceiver
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -23,8 +23,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 const (
@@ -37,7 +37,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -123,7 +123,7 @@ func TestValidateProject(t *testing.T) {
 	}{
 		"All required fields are populated": {"id", "key", []Instance{instance}, false},
 		"No id":                             {"", "key", []Instance{instance}, true},
-		"No service account key":            {"id", "", []Instance{instance}, true},
+		"No service account key":            {"id", "", []Instance{instance}, false},
 		"No instances":                      {"id", "key", nil, true},
 		"Invalid instance in instances":     {"id", "key", []Instance{{}}, true},
 	}

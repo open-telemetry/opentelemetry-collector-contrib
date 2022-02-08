@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -28,12 +29,11 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
-	"github.com/prometheus/prometheus/pkg/value"
+	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmapprovider"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/service"
 	"go.uber.org/zap"
@@ -138,6 +138,11 @@ service:
       processors: [batch]
       exporters: [prometheusremotewrite]`, serverURL.Host, prweServer.URL)
 
+	confFile, err := ioutil.TempFile(os.TempDir(), "conf-")
+	require.Nil(t, err)
+	defer os.Remove(confFile.Name())
+	_, err = confFile.Write([]byte(config))
+	require.Nil(t, err)
 	// 4. Run the OpenTelemetry Collector.
 	receivers, err := component.MakeReceiverFactoryMap(prometheusreceiver.NewFactory())
 	require.Nil(t, err)
@@ -153,8 +158,8 @@ service:
 	}
 
 	appSettings := service.CollectorSettings{
-		Factories:         factories,
-		ConfigMapProvider: configmapprovider.NewInMemory(strings.NewReader(config)),
+		Factories:      factories,
+		ConfigProvider: service.MustNewDefaultConfigProvider([]string{confFile.Name()}, nil),
 		BuildInfo: component.BuildInfo{
 			Command:     "otelcol",
 			Description: "OpenTelemetry Collector",
@@ -176,22 +181,17 @@ service:
 			t.Error(err)
 		}
 	}()
+	defer app.Shutdown()
 
 	// Wait until the collector has actually started.
-	stateChannel := app.GetStateChannel()
 	for notYetStarted := true; notYetStarted; {
-		switch state := <-stateChannel; state {
+		state := app.GetState()
+		switch state {
 		case service.Running, service.Closed, service.Closing:
 			notYetStarted = false
 		}
+		time.Sleep(10 * time.Millisecond)
 	}
-
-	// The OpenTelemetry collector has a data race because it closes
-	// a channel while
-	if false {
-		defer app.Shutdown()
-	}
-	time.Sleep(60 * time.Second)
 
 	// 5. Let's wait on 10 fetches.
 	var wReqL []*prompb.WriteRequest
@@ -203,6 +203,7 @@ service:
 	// 6. Assert that we encounter the stale markers aka special NaNs for the various time series.
 	staleMarkerCount := 0
 	totalSamples := 0
+	require.True(t, len(wReqL) > 0, "Expecting at least one WriteRequest")
 	for i, wReq := range wReqL {
 		name := fmt.Sprintf("WriteRequest#%d", i)
 		require.True(t, len(wReq.Timeseries) > 0, "Expecting at least 1 timeSeries for:: "+name)

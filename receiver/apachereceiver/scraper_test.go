@@ -27,54 +27,37 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
 )
 
 func TestScraper(t *testing.T) {
-	apacheMock := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		if req.URL.String() == "/server-status?auto" {
-			rw.WriteHeader(200)
-			_, err := rw.Write([]byte(`ServerUptimeSeconds: 410
-Total Accesses: 14169
-Total kBytes: 20910
-BusyWorkers: 13
-IdleWorkers: 227
-ConnsTotal: 110
-Scoreboard: S_DD_L_GGG_____W__IIII_C________________W__________________________________.........................____WR______W____W________________________C______________________________________W_W____W______________R_________R________C_________WK_W________K_____W__C__________W___R______.............................................................................................................................
-`))
-			require.NoError(t, err)
-			return
-		}
-		rw.WriteHeader(404)
-	}))
+	apacheMock := newMockServer(t)
 	cfg := &Config{
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: fmt.Sprintf("%s%s", apacheMock.URL, "/server-status?auto"),
 		},
 	}
 	require.NoError(t, cfg.Validate())
-	sc := newApacheScraper(zap.NewNop(), cfg)
-	err := sc.start(context.Background(), componenttest.NewNopHost())
-	require.NoError(t, err)
-	require.NotNil(t, sc.httpClient)
 
-	scrapedRMS, err := sc.scrape(context.Background())
+	scraper := newApacheScraper(componenttest.NewNopTelemetrySettings(), cfg)
+
+	err := scraper.start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
 
 	expectedFile := filepath.Join("testdata", "scraper", "expected.json")
-	expectedMetrics, err := scrapertest.ReadExpected(expectedFile)
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
-	eMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
-	aMetricSlice := scrapedRMS.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
-
-	require.NoError(t, scrapertest.CompareMetricSlices(eMetricSlice, aMetricSlice, true))
+	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
 }
 
 func TestScraperFailedStart(t *testing.T) {
-	sc := newApacheScraper(zap.NewNop(), &Config{
+	sc := newApacheScraper(componenttest.NewNopTelemetrySettings(), &Config{
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "localhost:8080",
 			TLSSetting: configtls.TLSClientSetting{
@@ -172,11 +155,30 @@ ConnsTotal: 110
 
 func TestScraperError(t *testing.T) {
 	t.Run("no client", func(t *testing.T) {
-		sc := newApacheScraper(zap.NewNop(), &Config{})
+		sc := newApacheScraper(componenttest.NewNopTelemetrySettings(), &Config{})
 		sc.httpClient = nil
 
 		_, err := sc.scrape(context.Background())
 		require.Error(t, err)
 		require.EqualValues(t, errors.New("failed to connect to Apache HTTPd"), err)
 	})
+}
+
+func newMockServer(t *testing.T) *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		if req.URL.String() == "/server-status?auto" {
+			rw.WriteHeader(200)
+			_, err := rw.Write([]byte(`ServerUptimeSeconds: 410
+Total Accesses: 14169
+Total kBytes: 20910
+BusyWorkers: 13
+IdleWorkers: 227
+ConnsTotal: 110
+Scoreboard: S_DD_L_GGG_____W__IIII_C________________W__________________________________.........................____WR______W____W________________________C______________________________________W_W____W______________R_________R________C_________WK_W________K_____W__C__________W___R______.............................................................................................................................
+`))
+			require.NoError(t, err)
+			return
+		}
+		rw.WriteHeader(404)
+	}))
 }

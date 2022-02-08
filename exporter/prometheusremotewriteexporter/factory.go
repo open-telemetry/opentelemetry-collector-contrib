@@ -48,7 +48,7 @@ func createMetricsExporter(_ context.Context, set component.ExporterCreateSettin
 		return nil, errors.New("invalid configuration")
 	}
 
-	prwe, err := NewPRWExporter(prwCfg, set.BuildInfo)
+	prwe, err := newPRWExporter(prwCfg, set)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func createMetricsExporter(_ context.Context, set component.ExporterCreateSettin
 		prwe.PushMetrics,
 		exporterhelper.WithTimeout(prwCfg.TimeoutSettings),
 		exporterhelper.WithQueue(exporterhelper.QueueSettings{
-			Enabled:      true,
+			Enabled:      prwCfg.RemoteWriteQueue.Enabled,
 			NumConsumers: 1,
 			QueueSize:    prwCfg.RemoteWriteQueue.QueueSize,
 		}),
@@ -101,6 +101,7 @@ func createDefaultConfig() config.Exporter {
 		},
 		// TODO(jbd): Adjust the default queue size.
 		RemoteWriteQueue: RemoteWriteQueue{
+			Enabled:      true,
 			QueueSize:    10000,
 			NumConsumers: 5,
 		},

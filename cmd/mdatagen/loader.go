@@ -15,6 +15,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -24,7 +25,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/go-playground/validator/v10/non-standard/validators"
 	en_translations "github.com/go-playground/validator/v10/translations/en"
-	"gopkg.in/yaml.v2"
+	"go.opentelemetry.io/collector/config/configmapprovider"
 )
 
 type metricName string
@@ -33,30 +34,56 @@ func (mn metricName) Render() (string, error) {
 	return formatIdentifier(string(mn), true)
 }
 
+func (mn metricName) RenderUnexported() (string, error) {
+	return formatIdentifier(string(mn), false)
+}
+
 type attributeName string
 
 func (mn attributeName) Render() (string, error) {
 	return formatIdentifier(string(mn), true)
 }
 
+func (mn attributeName) RenderUnexported() (string, error) {
+	return formatIdentifier(string(mn), false)
+}
+
 type metric struct {
+	// Enabled defines whether the metric is enabled by default.
+	Enabled *bool `yaml:"enabled" validate:"required"`
+
 	// Description of the metric.
 	Description string `validate:"required,notblank"`
 
 	// ExtendedDocumentation of the metric. If specified, this will
 	// be appended to the description used in generated documentation.
-	ExtendedDocumentation string `yaml:"extended_documentation"`
+	ExtendedDocumentation string `mapstructure:"extended_documentation"`
 
 	// Unit of the metric.
-	Unit string `yaml:"unit"`
+	Unit string `mapstructure:"unit"`
 
-	// Raw data that is used to set Data interface below.
-	YmlData *ymlMetricData `yaml:"data" validate:"required"`
-	// Date is set to generic metric data interface after validating.
-	Data MetricData `yaml:"-"`
+	// Sum stores metadata for sum metric type
+	Sum *sum `yaml:"sum"`
+	// Gauge stores metadata for gauge metric type
+	Gauge *gauge `yaml:"gauge"`
+	// Histogram stores metadata for histogram metric type
+	Histogram *histogram `yaml:"histogram"`
 
 	// Attributes is the list of attributes that the metric emits.
 	Attributes []attributeName
+}
+
+func (m metric) Data() MetricData {
+	if m.Sum != nil {
+		return m.Sum
+	}
+	if m.Gauge != nil {
+		return m.Gauge
+	}
+	if m.Histogram != nil {
+		return m.Histogram
+	}
+	return nil
 }
 
 type attribute struct {
@@ -83,22 +110,30 @@ type templateContext struct {
 	metadata
 	// Package name for generated code.
 	Package string
+	// ExpFileNote contains a note about experimental metrics builder.
+	ExpFileNote string
 }
 
-func loadMetadata(ymlData []byte) (metadata, error) {
-	var out metadata
-
-	// Unmarshal metadata.
-	if err := yaml.Unmarshal(ymlData, &out); err != nil {
-		return metadata{}, fmt.Errorf("unable to unmarshal yaml: %v", err)
+func loadMetadata(filePath string) (metadata, error) {
+	cp, err := configmapprovider.NewFile().Retrieve(context.Background(), "file:"+filePath, nil)
+	if err != nil {
+		return metadata{}, err
 	}
-
-	// Validate metadata.
-	if err := validateMetadata(out); err != nil {
+	mdMap, err := cp.Get(context.Background())
+	if err != nil {
 		return metadata{}, err
 	}
 
-	return out, nil
+	var md metadata
+	if err := mdMap.UnmarshalExact(&md); err != nil {
+		return metadata{}, err
+	}
+
+	if err := validateMetadata(md); err != nil {
+		return md, err
+	}
+
+	return md, nil
 }
 
 func validateMetadata(out metadata) error {
@@ -146,9 +181,24 @@ func validateMetadata(out metadata) error {
 
 	// Set metric data interface.
 	for k, v := range out.Metrics {
-		v.Data = v.YmlData.MetricData
-		v.YmlData = nil
-		out.Metrics[k] = v
+		dataTypesSet := 0
+		if v.Sum != nil {
+			dataTypesSet++
+		}
+		if v.Gauge != nil {
+			dataTypesSet++
+		}
+		if v.Histogram != nil {
+			dataTypesSet++
+		}
+		if dataTypesSet == 0 {
+			return fmt.Errorf("metric %v doesn't have a metric type key, "+
+				"one of the following has to be specified: sum, gauge, histogram", k)
+		}
+		if dataTypesSet > 1 {
+			return fmt.Errorf("metric %v has more than one metric type keys, "+
+				"only one of the following has to be specified: sum, gauge, histogram", k)
+		}
 	}
 
 	return nil

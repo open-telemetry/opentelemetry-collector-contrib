@@ -18,17 +18,31 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
 
-func TestEndpointsAdded(t *testing.T) {
-	sink := endpointSink{}
-	h := handler{
-		idNamespace: "test-1",
-		watcher:     &sink,
+type testHandler struct {
+	h    *handler
+	sink *endpointSink
+}
+
+func newTestHandler() testHandler {
+	sink := &endpointSink{}
+	return testHandler{
+		h: &handler{
+			idNamespace: "test-1",
+			listener:    sink,
+			logger:      zap.NewNop(),
+		},
+		sink: sink,
 	}
-	h.OnAdd(podWithNamedPorts)
+}
+
+func TestPodEndpointsAdded(t *testing.T) {
+	th := newTestHandler()
+	th.h.OnAdd(podWithNamedPorts)
 	assert.ElementsMatch(t, []observer.Endpoint{
 		{
 			ID:     "test-1/pod-2-UID",
@@ -53,18 +67,14 @@ func TestEndpointsAdded(t *testing.T) {
 				Port:      443,
 				Transport: observer.ProtocolTCP,
 			},
-		}}, sink.added)
-	assert.Nil(t, sink.removed)
-	assert.Nil(t, sink.changed)
+		}}, th.sink.added)
+	assert.Nil(t, th.sink.removed)
+	assert.Nil(t, th.sink.changed)
 }
 
-func TestEndpointsRemoved(t *testing.T) {
-	sink := endpointSink{}
-	h := handler{
-		idNamespace: "test-1",
-		watcher:     &sink,
-	}
-	h.OnDelete(podWithNamedPorts)
+func TestPodEndpointsRemoved(t *testing.T) {
+	th := newTestHandler()
+	th.h.OnDelete(podWithNamedPorts)
 	assert.ElementsMatch(t, []observer.Endpoint{
 		{
 			ID:     "test-1/pod-2-UID",
@@ -89,41 +99,36 @@ func TestEndpointsRemoved(t *testing.T) {
 				Port:      443,
 				Transport: observer.ProtocolTCP,
 			},
-		}}, sink.removed)
-	assert.Nil(t, sink.added)
-	assert.Nil(t, sink.changed)
+		}}, th.sink.removed)
+	assert.Nil(t, th.sink.added)
+	assert.Nil(t, th.sink.changed)
 }
 
-func TestEndpointsChanged(t *testing.T) {
-	sink := endpointSink{}
-	h := handler{
-		idNamespace: "test-1",
-		watcher:     &sink,
-	}
+func TestPodEndpointsChanged(t *testing.T) {
+	th := newTestHandler()
 	// Nothing changed.
-	h.OnUpdate(podWithNamedPorts, podWithNamedPorts)
-	assert.Nil(t, sink.added)
-	assert.Nil(t, sink.changed)
-	assert.Nil(t, sink.removed)
+	th.h.OnUpdate(podWithNamedPorts, podWithNamedPorts)
+	assert.Nil(t, th.sink.added)
+	assert.Nil(t, th.sink.changed)
+	assert.Nil(t, th.sink.removed)
 
 	// Labels changed.
 	changedLabels := podWithNamedPorts.DeepCopy()
 	changedLabels.Labels["new-label"] = "value"
-	h.OnUpdate(podWithNamedPorts, changedLabels)
+	th.h.OnUpdate(podWithNamedPorts, changedLabels)
 
-	assert.Nil(t, sink.added)
-	assert.Nil(t, sink.removed)
+	assert.Nil(t, th.sink.added)
+	assert.Nil(t, th.sink.removed)
 	assert.ElementsMatch(t,
 		[]observer.EndpointID{"test-1/pod-2-UID", "test-1/pod-2-UID/https(443)"},
-		[]observer.EndpointID{sink.changed[0].ID, sink.changed[1].ID})
+		[]observer.EndpointID{th.sink.changed[0].ID, th.sink.changed[1].ID})
 
 	// Running state changed, one added and one removed.
-	sink = endpointSink{}
 	updatedPod := podWithNamedPorts.DeepCopy()
 	updatedPod.Labels["updated-label"] = "true"
-	h.OnUpdate(podWithNamedPorts, updatedPod)
-	assert.Nil(t, sink.added)
-	assert.Nil(t, sink.removed)
+	th.h.OnUpdate(podWithNamedPorts, updatedPod)
+	assert.Nil(t, th.sink.added)
+	assert.Nil(t, th.sink.removed)
 	assert.ElementsMatch(t, []observer.Endpoint{
 		{
 			ID:     "test-1/pod-2-UID",
@@ -144,5 +149,103 @@ func TestEndpointsChanged(t *testing.T) {
 					Labels:    map[string]string{"env": "prod", "updated-label": "true"}},
 				Port:      443,
 				Transport: observer.ProtocolTCP}},
-	}, sink.changed)
+	}, th.sink.changed)
+}
+
+func TestNodeEndpointsAdded(t *testing.T) {
+	th := newTestHandler()
+	th.h.OnAdd(node1V1)
+	assert.ElementsMatch(t, []observer.Endpoint{
+		{
+			ID:     "test-1/node1-uid",
+			Target: "internalIP",
+			Details: &observer.K8sNode{
+				UID:                 "uid",
+				Annotations:         map[string]string{"annotation-key": "annotation-value"},
+				Labels:              map[string]string{"label-key": "label-value"},
+				Name:                "node1",
+				InternalIP:          "internalIP",
+				InternalDNS:         "internalDNS",
+				Hostname:            "localhost",
+				ExternalIP:          "externalIP",
+				ExternalDNS:         "externalDNS",
+				KubeletEndpointPort: 1234,
+			},
+		},
+	}, th.sink.added)
+	assert.Nil(t, th.sink.removed)
+	assert.Nil(t, th.sink.changed)
+}
+
+func TestNodeEndpointsRemoved(t *testing.T) {
+	th := newTestHandler()
+	th.h.OnDelete(node1V1)
+	assert.ElementsMatch(t, []observer.Endpoint{
+		{
+			ID:     "test-1/node1-uid",
+			Target: "internalIP",
+			Details: &observer.K8sNode{
+				UID:                 "uid",
+				Annotations:         map[string]string{"annotation-key": "annotation-value"},
+				Labels:              map[string]string{"label-key": "label-value"},
+				Name:                "node1",
+				InternalIP:          "internalIP",
+				InternalDNS:         "internalDNS",
+				Hostname:            "localhost",
+				ExternalIP:          "externalIP",
+				ExternalDNS:         "externalDNS",
+				KubeletEndpointPort: 1234,
+			},
+		},
+	}, th.sink.removed)
+	assert.Nil(t, th.sink.added)
+	assert.Nil(t, th.sink.changed)
+}
+
+func TestNodeEndpointsChanged(t *testing.T) {
+	th := newTestHandler()
+	// Nothing changed.
+	th.h.OnUpdate(node1V1, node1V1)
+	assert.Nil(t, th.sink.added)
+	assert.Nil(t, th.sink.changed)
+	assert.Nil(t, th.sink.removed)
+
+	// Labels changed.
+	changedLabels := node1V1.DeepCopy()
+	changedLabels.Labels["new-label"] = "value"
+	th.h.OnUpdate(node1V1, changedLabels)
+
+	assert.Nil(t, th.sink.added)
+	assert.Nil(t, th.sink.removed)
+	assert.ElementsMatch(t,
+		[]observer.EndpointID{"test-1/node1-uid"},
+		[]observer.EndpointID{th.sink.changed[0].ID})
+
+	// Running state changed, one added and one removed.
+	updatedNode := node1V1.DeepCopy()
+	updatedNode.Labels["updated-label"] = "true"
+	th.h.OnUpdate(podWithNamedPorts, updatedNode)
+	assert.Nil(t, th.sink.added)
+	assert.Nil(t, th.sink.removed)
+	assert.ElementsMatch(t, []observer.Endpoint{
+		{
+			ID:     "test-1/node1-uid",
+			Target: "internalIP",
+			Details: &observer.K8sNode{
+				UID:         "uid",
+				Annotations: map[string]string{"annotation-key": "annotation-value"},
+				Labels: map[string]string{
+					"label-key": "label-value",
+					"new-label": "value",
+				},
+				Name:                "node1",
+				InternalIP:          "internalIP",
+				InternalDNS:         "internalDNS",
+				Hostname:            "localhost",
+				ExternalIP:          "externalIP",
+				ExternalDNS:         "externalDNS",
+				KubeletEndpointPort: 1234,
+			},
+		},
+	}, th.sink.changed)
 }

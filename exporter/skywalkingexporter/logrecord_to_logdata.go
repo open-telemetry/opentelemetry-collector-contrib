@@ -44,7 +44,7 @@ func logRecordToLogData(ld pdata.Logs) []*logpb.LogData {
 		resource := rl.Resource()
 		for j := 0; j < ills.Len(); j++ {
 			ils := ills.At(j)
-			logs := ils.Logs()
+			logs := ils.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
 				logData := &logpb.LogData{}
 				logData.Tags = &logpb.LogTags{}
@@ -72,9 +72,6 @@ func resourceToLogData(resource pdata.Resource, logData *logpb.LogData) {
 	}
 
 	attrs.Range(func(k string, v pdata.AttributeValue) bool {
-		if k == conventions.AttributeServiceName || k == conventions.AttributeServiceInstanceID {
-			return true
-		}
 		logData.Tags.Data = append(logData.Tags.Data, &common.KeyStringValuePair{
 			Key:   k,
 			Value: v.AsString(),

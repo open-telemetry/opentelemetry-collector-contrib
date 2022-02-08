@@ -36,6 +36,7 @@ processors:
   spanmetrics:
     metrics_exporter: otlp/spanmetrics
     latency_histogram_buckets: [100us, 1ms, 2ms, 6ms, 10ms, 100ms, 250ms]
+    dimensions_cache_size: 1500
 
     # Additional list of dimensions on top of:
     # - service.name
@@ -57,6 +58,10 @@ processors:
       # - calls{http_status_code="200",operation="/Address",service_name="shippingservice",span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_UNSET"} 1
       # - calls{operation="/Address",service_name="shippingservice",span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_UNSET"} 1
       - name: http.status_code
+
+    # The aggregation temporality of the generated metrics.
+    # Default: "AGGREGATION_TEMPORALITY_CUMULATIVE"
+    aggregation_temporality: "AGGREGATION_TEMPORALITY_DELTA"
 
 service:
   pipelines:

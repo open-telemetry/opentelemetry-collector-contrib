@@ -14,4 +14,52 @@
 
 package cloudfoundryreceiver
 
-// TODO: integration test to be added in next PR
+import (
+	"context"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
+)
+
+// Test to make sure a new receiver can be created properly, started and shutdown with the default config
+func TestDefaultValidReceiver(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	params := componenttest.NewNopReceiverCreateSettings()
+
+	receiver, err := newCloudFoundryReceiver(
+		params,
+		*cfg,
+		consumertest.NewNop(),
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, receiver, "receiver creation failed")
+
+	// Test start
+	ctx := context.Background()
+	err = receiver.Start(ctx, componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	// Test shutdown
+	err = receiver.Shutdown(ctx)
+	require.NoError(t, err)
+}
+
+// Test to make sure start fails with invalid consumer
+func TestInvalidConsumer(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	params := componenttest.NewNopReceiverCreateSettings()
+
+	receiver, err := newCloudFoundryReceiver(
+		params,
+		*cfg,
+		nil,
+	)
+
+	require.EqualError(t, err, "nil nextConsumer")
+	require.Nil(t, receiver, "receiver creation failed")
+}

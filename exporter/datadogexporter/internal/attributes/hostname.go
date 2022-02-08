@@ -56,9 +56,34 @@ func getClusterName(attrs pdata.AttributeMap) (string, bool) {
 //
 //  It returns a boolean value indicated if any name was found
 func HostnameFromAttributes(attrs pdata.AttributeMap) (string, bool) {
+	// Check if the host is localhost or 0.0.0.0, if so discard it.
+	// We don't do the more strict validation done for metadata,
+	// to avoid breaking users existing invalid-but-accepted hostnames.
+	var invalidHosts = map[string]struct{}{
+		"0.0.0.0":                 {},
+		"127.0.0.1":               {},
+		"localhost":               {},
+		"localhost.localdomain":   {},
+		"localhost6.localdomain6": {},
+		"ip6-localhost":           {},
+	}
+
+	candidateHost, ok := unsanitizedHostnameFromAttributes(attrs)
+	if _, invalid := invalidHosts[candidateHost]; invalid {
+		return "", false
+	}
+	return candidateHost, ok
+}
+
+func unsanitizedHostnameFromAttributes(attrs pdata.AttributeMap) (string, bool) {
 	// Custom hostname: useful for overriding in k8s/cloud envs
 	if customHostname, ok := attrs.Get(AttributeDatadogHostname); ok {
 		return customHostname.StringVal(), true
+	}
+
+	if launchType, ok := attrs.Get(conventions.AttributeAWSECSLaunchtype); ok && launchType.StringVal() == conventions.AttributeAWSECSLaunchtypeFargate {
+		// If on AWS ECS Fargate, return a valid but empty hostname
+		return "", true
 	}
 
 	// Kubernetes: node-cluster if cluster name is available, else node

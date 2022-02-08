@@ -22,7 +22,6 @@ package tests
 
 import (
 	"context"
-	"path"
 	"path/filepath"
 	"testing"
 
@@ -55,7 +54,7 @@ func TestTrace10kSPS(t *testing.T) {
 			datareceivers.NewJaegerDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 40,
-				ExpectedMaxRAM: 90,
+				ExpectedMaxRAM: 100,
 			},
 		},
 		{
@@ -64,7 +63,7 @@ func TestTrace10kSPS(t *testing.T) {
 			datareceivers.NewOCDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 39,
-				ExpectedMaxRAM: 90,
+				ExpectedMaxRAM: 100,
 			},
 		},
 		{
@@ -73,7 +72,7 @@ func TestTrace10kSPS(t *testing.T) {
 			testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 20,
-				ExpectedMaxRAM: 90,
+				ExpectedMaxRAM: 100,
 			},
 		},
 		{
@@ -109,7 +108,7 @@ func TestTrace10kSPS(t *testing.T) {
 			datareceivers.NewSapmDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 32,
-				ExpectedMaxRAM: 98,
+				ExpectedMaxRAM: 100,
 			},
 		},
 		{
@@ -118,7 +117,7 @@ func TestTrace10kSPS(t *testing.T) {
 			datareceivers.NewZipkinDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 80,
-				ExpectedMaxRAM: 100,
+				ExpectedMaxRAM: 120,
 			},
 		},
 	}
@@ -401,7 +400,7 @@ func TestTraceAttributesProcessor(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			resultDir, err := filepath.Abs(path.Join("results", t.Name()))
+			resultDir, err := filepath.Abs(filepath.Join("results", t.Name()))
 			require.NoError(t, err)
 
 			// Use processor to add attributes to certain spans.

@@ -396,7 +396,7 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 	logs := pdata.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
 	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
-	lr := ill.Logs().AppendEmpty()
+	lr := ill.LogRecords().AppendEmpty()
 
 	now := time.Now()
 	msecInt64 := now.UnixNano() / 1e6
@@ -974,5 +974,36 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 
 			tt.assertResponse(t, resp.StatusCode, bodyStr)
 		})
+	}
+}
+
+func BenchmarkHandleReq(b *testing.B) {
+	config := createDefaultConfig().(*Config)
+	config.Endpoint = "localhost:0"
+	sink := new(consumertest.LogsSink)
+	rcv, err := newLogsReceiver(componenttest.NewNopReceiverCreateSettings(), *config, sink)
+	assert.NoError(b, err)
+
+	r := rcv.(*splunkReceiver)
+	w := httptest.NewRecorder()
+	currentTime := float64(time.Now().UnixNano()) / 1e6
+	splunkMsg := buildSplunkHecMsg(currentTime, 3)
+	msgBytes, err := json.Marshal(splunkMsg)
+	require.NoError(b, err)
+	totalMessage := make([]byte, 100*len(msgBytes))
+	for i := 0; i < 100; i++ {
+		offset := len(msgBytes) * i
+		for bi, b := range msgBytes {
+			totalMessage[offset+bi] = b
+		}
+	}
+
+	for n := 0; n < b.N; n++ {
+		req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(totalMessage))
+		r.handleReq(w, req)
+
+		resp := w.Result()
+		_, err = ioutil.ReadAll(resp.Body)
+		assert.NoError(b, err)
 	}
 }

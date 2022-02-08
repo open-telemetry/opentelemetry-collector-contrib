@@ -2,7 +2,7 @@
 
 Exports data via gRPC using [skywalking-data-collect-protocol](https://github.com/apache/skywalking-data-collect-protocol) format. By default, this exporter requires TLS and offers queued retry capabilities.
 
-Supported pipeline types: logs
+Supported pipeline types: logs, metrics
 
 ## Getting Started
 
@@ -38,7 +38,7 @@ exporters:
     num_streams: 5  
   skywalking/2:
     endpoint: "10.18.7.4:11800"
-    compression: "on"
+    compression: "gzip"
     tls:
       cert_file: file.cert
       key_file: file.key

@@ -20,8 +20,10 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testing/util"
 	metadataPkg "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/utils"
@@ -142,13 +144,19 @@ func getResourceForContainer(labels map[string]string) *resourcepb.Resource {
 // getAllContainerLabels returns all container labels, including ones from
 // the pod in which the container is running.
 func getAllContainerLabels(cs corev1.ContainerStatus,
-	dims map[string]string) map[string]string {
+	dims map[string]string, logger *zap.Logger) map[string]string {
+
+	image, err := docker.ParseImageName(cs.Image)
+	if err != nil {
+		docker.LogParseError(err, cs.Image, logger)
+	}
 
 	out := util.CloneStringMap(dims)
 
 	out[conventions.AttributeContainerID] = utils.StripContainerID(cs.ContainerID)
 	out[conventions.AttributeK8SContainerName] = cs.Name
-	out[conventions.AttributeContainerImageName] = cs.Image
+	out[conventions.AttributeContainerImageName] = image.Repository
+	out[conventions.AttributeContainerImageTag] = image.Tag
 
 	return out
 }

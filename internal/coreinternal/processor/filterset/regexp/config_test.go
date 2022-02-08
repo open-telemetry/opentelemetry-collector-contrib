@@ -15,17 +15,17 @@
 package regexp
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configtest"
 )
 
 func TestConfig(t *testing.T) {
-	testFile := path.Join(".", "testdata", "config.yaml")
-	v, err := config.NewMapFromFile(testFile)
+	testFile := filepath.Join("testdata", "config.yaml")
+	v, err := configtest.LoadConfigMap(testFile)
 	require.NoError(t, err)
 
 	actualConfigs := map[string]*Config{}

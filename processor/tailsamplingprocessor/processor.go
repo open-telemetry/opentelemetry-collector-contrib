@@ -139,6 +139,9 @@ func getPolicyEvaluator(logger *zap.Logger, cfg *PolicyCfg) (sampling.PolicyEval
 	case Composite:
 		rlfCfg := cfg.CompositeCfg
 		return getNewCompositePolicy(logger, rlfCfg)
+	case And:
+		andCfg := cfg.AndCfg
+		return getNewAndPolicy(logger, andCfg)
 	default:
 		return nil, fmt.Errorf("unknown sampling policy type %s", cfg.Type)
 	}

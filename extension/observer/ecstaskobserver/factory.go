@@ -16,11 +16,16 @@ package ecstaskobserver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"fmt"
+	"net/url"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension/extensionhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
 )
 
 const (
@@ -46,12 +51,43 @@ func createExtension(
 	cfg config.Extension,
 ) (component.Extension, error) {
 	obsCfg := cfg.(*Config)
+
+	var metadataProvider ecsutil.MetadataProvider
+	var err error
+	if obsCfg.Endpoint == "" {
+		metadataProvider, err = ecsutil.NewDetectedTaskMetadataProvider(params.TelemetrySettings)
+	} else {
+		metadataProvider, err = metadataProviderFromEndpoint(obsCfg, params.TelemetrySettings)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to create ECS Task Observer metadata provider: %w", err)
+	}
+
 	e := &ecsTaskObserver{
-		Extension:        componenthelper.New(),
 		config:           obsCfg,
-		endpointsWatcher: nil,
+		metadataProvider: metadataProvider,
 		telemetry:        params.TelemetrySettings,
+	}
+	e.Extension = componenthelper.New(componenthelper.WithShutdown(e.Shutdown))
+	e.EndpointsWatcher = &observer.EndpointsWatcher{
+		Endpointslister: e,
+		RefreshInterval: obsCfg.RefreshInterval,
 	}
 
 	return e, nil
+}
+
+func metadataProviderFromEndpoint(config *Config, settings component.TelemetrySettings) (ecsutil.MetadataProvider, error) {
+	parsed, err := url.Parse(config.Endpoint)
+	if err != nil || parsed == nil {
+		return nil, fmt.Errorf("failed to parse task metadata endpoint: %w", err)
+	}
+
+	restClient, err := ecsutil.NewRestClient(*parsed, config.HTTPClientSettings, settings)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create ECS Task Observer rest client: %w", err)
+	}
+
+	return ecsutil.NewTaskMetadataProvider(restClient, settings.Logger), nil
 }

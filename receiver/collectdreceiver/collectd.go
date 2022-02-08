@@ -22,6 +22,8 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/sanitize"
 )
 
 const (
@@ -59,6 +61,13 @@ func (r *collectDRecord) protoTime() *timestamppb.Timestamp {
 	return timestamppb.New(ts)
 }
 
+func (r *collectDRecord) startTimestamp(mdType metricspb.MetricDescriptor_Type) *timestamppb.Timestamp {
+	if mdType == metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION || mdType == metricspb.MetricDescriptor_CUMULATIVE_DOUBLE || mdType == metricspb.MetricDescriptor_CUMULATIVE_INT64 {
+		return timestamppb.New(time.Unix(0, int64((*r.Time-*r.Interval)*float64(time.Second))))
+	}
+	return nil
+}
+
 func (r *collectDRecord) appendToMetrics(metrics []*metricspb.Metric, defaultLabels map[string]string) ([]*metricspb.Metric, error) {
 	// Ignore if record is an event instead of data point
 	if r.isEvent() {
@@ -86,7 +95,7 @@ func (r *collectDRecord) appendToMetrics(metrics []*metricspb.Metric, defaultLab
 
 			metric, err := r.newMetric(metricName, dsType, val, labels)
 			if err != nil {
-				return metrics, fmt.Errorf("error processing metric %s: %v", metricName, err)
+				return metrics, fmt.Errorf("error processing metric %s: %v", sanitize.String(metricName), err)
 			}
 			metrics = append(metrics, metric)
 
@@ -103,15 +112,17 @@ func (r *collectDRecord) newMetric(name string, dsType *string, val *json.Number
 	}
 
 	lKeys, lValues := labelKeysAndValues(labels)
+	metricType := r.metricType(dsType, isDouble)
 	metric.MetricDescriptor = &metricspb.MetricDescriptor{
 		Name:      name,
-		Type:      r.metricType(dsType, isDouble),
+		Type:      metricType,
 		LabelKeys: lKeys,
 	}
 	metric.Timeseries = []*metricspb.TimeSeries{
 		{
-			LabelValues: lValues,
-			Points:      []*metricspb.Point{point},
+			StartTimestamp: r.startTimestamp(metricType),
+			LabelValues:    lValues,
+			Points:         []*metricspb.Point{point},
 		},
 	}
 

@@ -155,7 +155,7 @@ func generateThriftSpan() *jaeger.Span {
 	intAttrVal := int64(123)
 	eventName := "event-with-attr"
 	eventStrAttrVal := "span-event-attr-val"
-	statusCode := int64(pdata.StatusCodeError)
+	statusCode := statusError
 	statusMsg := "status-cancelled"
 	kind := string(tracetranslator.OpenTracingSpanKindClient)
 
@@ -196,8 +196,8 @@ func generateThriftSpan() *jaeger.Span {
 		Tags: []*jaeger.Tag{
 			{
 				Key:   conventions.OtelStatusCode,
-				VType: jaeger.TagType_LONG,
-				VLong: &statusCode,
+				VType: jaeger.TagType_STRING,
+				VStr:  &statusCode,
 			},
 			{
 				Key:   conventions.OtelStatusDescription,
@@ -243,7 +243,7 @@ func generateThriftChildSpan() *jaeger.Span {
 }
 
 func generateThriftFollowerSpan() *jaeger.Span {
-	statusCode := int64(pdata.StatusCodeOk)
+	statusCode := statusOk
 	statusMsg := "status-ok"
 	kind := string(tracetranslator.OpenTracingSpanKindConsumer)
 
@@ -257,8 +257,8 @@ func generateThriftFollowerSpan() *jaeger.Span {
 		Tags: []*jaeger.Tag{
 			{
 				Key:   conventions.OtelStatusCode,
-				VType: jaeger.TagType_LONG,
-				VLong: &statusCode,
+				VType: jaeger.TagType_STRING,
+				VStr:  &statusCode,
 			},
 			{
 				Key:   conventions.OtelStatusDescription,

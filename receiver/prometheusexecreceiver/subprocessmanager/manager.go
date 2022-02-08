@@ -20,24 +20,21 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"strings"
 	"time"
 
-	"github.com/kballard/go-shellquote"
 	"go.uber.org/zap"
 )
 
 // Run will start the process and keep track of running time
 func (proc *SubprocessConfig) Run(ctx context.Context, logger *zap.Logger) (time.Duration, error) {
-	// Parse the command line string into arguments
-	args, err := shellquote.Split(proc.Command)
+
+	childProcess, err := ExecCommand(proc.Command)
 	if err != nil {
-		return 0, fmt.Errorf("could not parse command, error: %w", err)
+		return 0, err
 	}
 
-	// Create the command object and attach current os environment + environment variables defined by the user
-	childProcess := exec.Command(args[0], args[1:]...) // #nosec
+	// Attach current os environment + environment variables defined by the user
 	childProcess.Env = append(os.Environ(), formatEnvSlice(&proc.Env)...)
 
 	// Handle the subprocess standard and error outputs in goroutines

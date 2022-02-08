@@ -1,16 +1,41 @@
 # Kubernetes Observer
 
-The k8sobserver uses the Kubernetes API to discover pods running on the local node. This assumes the collector is deployed in the "agent" model where it is running on each individual node/host instance.
+The `k8s_observer` is a [Receiver Creator](../../../receiver/receivercreator/README.md)-compatible "watch observer" that will detect and report
+Kubernetes pod, port, and node endpoints via the Kubernetes API.
 
-## Config
+## Example Config
 
-**auth_type**
+```yaml
+extensions:
+  k8s_observer:
+    auth_type: serviceAccount
+    node: ${K8S_NODE_NAME}
+    observe_pods: true
+    observe_nodes: true
 
-How to authenticate to the K8s API server.  This can be one of `none` (for no auth), `serviceAccount` (to use the standard service account token provided to the agent pod), or `kubeConfig` to use credentials from `~/.kube/config`.
+receivers:
+  receiver_creator:
+    watch_observers: [k8s_observer]
+    receivers:
+      redis:
+        rule: type == "port" && pod.name matches "redis"
+        config:
+          password: '`pod.labels["SECRET"]`'
+      kubeletstats:
+        rule: type == "k8s.node"
+        config:
+          auth_type: serviceAccount
+          collection_interval: 10s
+          endpoint: "`endpoint`:`kubelet_endpoint_port`"
+          extra_metadata_labels:
+            - container.id
+          metric_groups:
+            - container
+            - pod
+            - node
+```
 
-**node**
-
-Node should be set to the node name to limit discovered endpoints to. For example, node name can be set using the downward API inside the collector pod spec as follows:
+The `node` field can be set to the node name to limit discovered endpoints. For example, its name value can be obtained using the downward API inside a Collector pod spec as follows:
 
 ```yaml
 env:
@@ -20,8 +45,15 @@ env:
         fieldPath: spec.nodeName
 ```
 
-Then set this value to `${K8S_NODE_NAME}` in the configuration.
+This spec-determined value would then be available via the `${K8S_NODE_NAME}` usage in the observer configuration.
 
-The full list of settings exposed for this exporter are documented [here](./config.go)
-with detailed sample configurations [here](./testdata/config.yaml).
+## Config
 
+All fields are optional.
+
+| Name | Type | Default | Docs |
+| ---- | ---- | ------- | ---- |
+| auth_type | string | `serviceAccount` | How to authenticate to the K8s API server.  This can be one of `none` (for no auth), `serviceAccount` (to use the standard service account token provided to the agent pod), or `kubeConfig` to use credentials from `~/.kube/config`. |
+| node | string | <no value> | The node name to limit the discovery of pod, port, and node endpoints. Providing no value (the default) results in discovering endpoints for all available nodes. |
+| observe_pods | bool | `true` | Whether to report observer pod and port endpoints. If `true` and `node` is specified it will only discover pod and port endpoints whose `spec.nodeName` matches the provided node name. If `true` and `node` isn't specified, it will discover all available pod and port endpoints. Please note that Collector connectivity to pods from other nodes is dependent on your cluster configuration and isn't guaranteed. | 
+| observe_nodes | bool | `false` | Whether to report observer k8s.node endpoints. If `true` and `node` is specified it will only discover node endpoints whose `metadata.name` matches the provided node name. If `true` and `node` isn't specified, it will discover all available node endpoints. Please note that Collector connectivity to nodes is dependent on your cluster configuration and isn't guaranteed.| 

@@ -24,6 +24,8 @@ import (
 	cconfig "go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/sanitize"
 )
 
 // Client defines the basic HTTP client interface with GET response validation and content parsing
@@ -32,11 +34,11 @@ type Client interface {
 }
 
 // NewClientProvider creates the default rest client provider
-func NewClientProvider(baseURL url.URL, clientSettings confighttp.HTTPClientSettings, logger *zap.Logger) ClientProvider {
+func NewClientProvider(baseURL url.URL, clientSettings confighttp.HTTPClientSettings, settings component.TelemetrySettings) ClientProvider {
 	return &defaultClientProvider{
 		baseURL:        baseURL,
 		clientSettings: clientSettings,
-		logger:         logger,
+		settings:       settings,
 	}
 }
 
@@ -48,23 +50,23 @@ type ClientProvider interface {
 type defaultClientProvider struct {
 	baseURL        url.URL
 	clientSettings confighttp.HTTPClientSettings
-	logger         *zap.Logger
+	settings       component.TelemetrySettings
 }
 
 func (dcp *defaultClientProvider) BuildClient() (Client, error) {
 	return defaultClient(
 		dcp.baseURL,
 		dcp.clientSettings,
-		dcp.logger,
+		dcp.settings,
 	)
 }
 
 func defaultClient(
 	baseURL url.URL,
 	clientSettings confighttp.HTTPClientSettings,
-	logger *zap.Logger,
+	settings component.TelemetrySettings,
 ) (*clientImpl, error) {
-	client, err := clientSettings.ToClient(map[cconfig.ComponentID]component.Extension{})
+	client, err := clientSettings.ToClient(map[cconfig.ComponentID]component.Extension{}, settings)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +76,7 @@ func defaultClient(
 	return &clientImpl{
 		baseURL:    baseURL,
 		httpClient: *client,
-		logger:     logger,
+		settings:   settings,
 	}, nil
 }
 
@@ -83,7 +85,7 @@ var _ Client = (*clientImpl)(nil)
 type clientImpl struct {
 	baseURL    url.URL
 	httpClient http.Client
-	logger     *zap.Logger
+	settings   component.TelemetrySettings
 }
 
 func (c *clientImpl) Get(path string) ([]byte, error) {
@@ -98,7 +100,7 @@ func (c *clientImpl) Get(path string) ([]byte, error) {
 	defer func() {
 		closeErr := resp.Body.Close()
 		if closeErr != nil {
-			c.logger.Warn("Failed to close response body", zap.Error(closeErr))
+			c.settings.Logger.Warn("Failed to close response body", zap.Error(closeErr))
 		}
 	}()
 	body, err := ioutil.ReadAll(resp.Body)
@@ -107,7 +109,7 @@ func (c *clientImpl) Get(path string) ([]byte, error) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("request GET %s failed - %q", req.URL.String(), resp.Status)
+		return nil, fmt.Errorf("request GET %s failed - %q", sanitize.URL(req.URL), resp.Status)
 	}
 	return body, nil
 }

@@ -23,6 +23,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"regexp"
+	"sync"
 	"testing"
 	"time"
 
@@ -41,20 +42,20 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	}
 
 	// 1. Create the Prometheus scrape endpoint.
-	waitForScrape := make(chan bool, 1)
-	shutdown := make(chan bool, 1)
+	var wg sync.WaitGroup
+	var currentScrapeIndex = 0
+	wg.Add(1) // scrape one endpoint
+
 	dropWizardServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		select {
-		case <-shutdown:
-			return
-		case waitForScrape <- true:
-			// Serve back the metrics as if they were from DropWizard.
-			_, err := rw.Write([]byte(dropWizardResponse))
-			require.NoError(t, err)
+		// Serve back the metrics as if they were from DropWizard.
+		_, err := rw.Write([]byte(dropWizardResponse))
+		require.NoError(t, err)
+		currentScrapeIndex++
+		if currentScrapeIndex == 8 { // We shall let the Prometheus receiver scrape the DropWizard mock server, at least 8 times.
+			wg.Done() // done scraping dropWizardResponse 8 times
 		}
 	}))
 	defer dropWizardServer.Close()
-	defer close(shutdown)
 
 	srvURL, err := url.Parse(dropWizardServer.URL)
 	if err != nil {
@@ -79,7 +80,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err = exporter.Start(ctx, nil); err != nil {
-		t.Fatalf("Failed to start the Prometheus receiver: %v", err)
+		t.Fatalf("Failed to start the Prometheus exporter: %v", err)
 	}
 	t.Cleanup(func() { require.NoError(t, exporter.Shutdown(ctx)) })
 
@@ -91,7 +92,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
           
         scrape_configs:
             - job_name: 'otel-collector'
-              scrape_interval: 2ms
+              scrape_interval: 10ms
               static_configs:
                 - targets: ['%s']
         `, srvURL.Host))
@@ -106,7 +107,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 		PrometheusConfig: receiverConfig,
 		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID("prometheus")),
 	}
-	// 3.5 Create the Prometheus receiver and pass in the preivously created Prometheus exporter.
+	// 3.5 Create the Prometheus receiver and pass in the previously created Prometheus exporter.
 	prometheusReceiver, err := receiverFactory.CreateMetricsReceiver(ctx, receiverCreateSet, rcvCfg, exporter)
 	if err != nil {
 		t.Fatal(err)
@@ -116,11 +117,9 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	}
 	t.Cleanup(func() { require.NoError(t, prometheusReceiver.Shutdown(ctx)) })
 
-	// 4. Scrape from the Prometheus exporter to ensure that we export summary metrics
-	// We shall let the Prometheus exporter scrape the DropWizard mock server, at least 9 times.
-	for i := 0; i < 8; i++ {
-		<-waitForScrape
-	}
+	// 4. Scrape from the Prometheus receiver to ensure that we export summary metrics
+	wg.Wait()
+
 	res, err := http.Get("http://localhost" + exporterCfg.Endpoint + "/metrics")
 	if err != nil {
 		t.Fatalf("Failed to scrape from the exporter: %v", err)
