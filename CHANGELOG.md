@@ -2,12 +2,12 @@
 
 ## Unreleased
 
-## v0.44.0
-
 ## 🧰 Bug fixes 🧰
 
-- `prometheusreceiver`: Correctly map description and units when converting 
+- `prometheusreceiver`: Correctly map description and units when converting
   Prometheus metadata directly to pdata. (#7748)
+
+## v0.44.0
 
 ## 💡 Enhancements 💡
 
