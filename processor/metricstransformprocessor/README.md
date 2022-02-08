@@ -225,7 +225,7 @@ operations:
 # deletes all data points with the label value 'idle' of the label 'state'
 include: system.cpu.usage
 action: update
-operation:
+operations:
   - action: delete_label_value
     label: state
     label_value: idle
@@ -236,7 +236,7 @@ operation:
 # toggle the datatype of cpu usage from int (the default) to double
 include: system.cpu.usage
 action: update
-operation:
+operations:
   - action: toggle_scalar_data_type
 ```
 
@@ -245,7 +245,7 @@ operation:
 # experimental_scale CPU usage from seconds to milliseconds
 include: system.cpu.usage
 action: update
-operation:
+operations:
   - action: experimental_scale_value
     experimental_scale: 1000
 ```
