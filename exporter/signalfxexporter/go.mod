@@ -17,7 +17,7 @@ require (
 	go.opentelemetry.io/collector v0.44.0
 	go.opentelemetry.io/collector/model v0.44.0
 	go.uber.org/multierr v1.7.0
-	go.uber.org/zap v1.20.0
+	go.uber.org/zap v1.21.0
 )
 
 require gopkg.in/yaml.v2 v2.4.0
@@ -69,8 +69,8 @@ require (
 )
 
 require (
-	github.com/jaegertracing/jaeger v1.30.0 // indirect
-	golang.org/x/sys v0.0.0-20211210111614-af8b64212486
+	github.com/jaegertracing/jaeger v1.31.0 // indirect
+	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common

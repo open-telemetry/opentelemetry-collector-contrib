@@ -19,7 +19,7 @@ These are the metrics available for this scraper.
 | mongodb.memory.usage | The amount of memory used. | By | Sum(Int) | <ul> <li>database</li> <li>memory_type</li> </ul> |
 | mongodb.object.count | The number of objects. | {objects} | Sum(Int) | <ul> <li>database</li> </ul> |
 | mongodb.operation.count | The number of operations executed. | {operations} | Sum(Int) | <ul> <li>operation</li> </ul> |
-| mongodb.storage.size | The total amount of storage allocated to this collection. If collection data is compressed it reflects the compressed size.  | By | Sum(Int) | <ul> <li>database</li> </ul> |
+| mongodb.storage.size | The total amount of storage allocated to this collection. If collection data is compressed it reflects the compressed size. | By | Sum(Int) | <ul> <li>database</li> </ul> |
 
 ## Attributes
 

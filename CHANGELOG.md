@@ -9,6 +9,16 @@
   -  The `receiver.prometheus.OTLPDirect` feature gate has been removed as 
      the direct pipeline is the only remaining pipeline.
 
+## 🛑 Breaking changes 🛑
+
+## 🚩 Deprecations 🚩
+
+## 🧰 Bug fixes 🧰
+
+ - `tailsamplingprocessor`: "And" policy only works as a sub policy under a composite policy (#7590) 
+
+## 🚀 New components 🚀
+
 ## v0.44.0
 
 ## 💡 Enhancements 💡
