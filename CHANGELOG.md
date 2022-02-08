@@ -4,6 +4,11 @@
 
 ## v0.44.0
 
+## 🧰 Bug fixes 🧰
+
+- `prometheusreceiver`: Correctly map description and units when converting 
+  Prometheus metadata directly to pdata. (#7748)
+
 ## 💡 Enhancements 💡
 
 - `dynatraceexporter`: Write error logs using plugin logger (#7360)
