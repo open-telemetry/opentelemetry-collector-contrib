@@ -51,14 +51,14 @@ const (
 )
 
 // createTraceEdgeConnection returns a new traceEdgeConnection
-func createTraceEdgeConnection(rootURL, apiKey string, buildInfo component.BuildInfo, settings exporterhelper.TimeoutSettings, TLSSetting config.LimitedTLSClientSetting) traceEdgeConnection {
+func createTraceEdgeConnection(rootURL, apiKey string, buildInfo component.BuildInfo, settings exporterhelper.TimeoutSettings, httpClientSettings config.LimitedHTTPClientSettings) traceEdgeConnection {
 
 	return &traceEdgeConnectionImpl{
 		traceURL:  rootURL + "/api/v0.2/traces",
 		statsURL:  rootURL + "/api/v0.2/stats",
 		buildInfo: buildInfo,
 		apiKey:    apiKey,
-		client:    utils.NewHTTPClient(settings, TLSSetting),
+		client:    utils.NewHTTPClient(settings, httpClientSettings),
 	}
 }
 

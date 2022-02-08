@@ -41,7 +41,7 @@ var (
 )
 
 // NewHTTPClient returns a http.Client configured with the Agent options.
-func NewHTTPClient(settings exporterhelper.TimeoutSettings, TLSSetting config.LimitedTLSClientSetting) *http.Client {
+func NewHTTPClient(settings exporterhelper.TimeoutSettings, httpClientSettings config.LimitedHTTPClientSettings) *http.Client {
 	return &http.Client{
 		Timeout: settings.Timeout,
 		Transport: &http.Transport{
@@ -53,7 +53,7 @@ func NewHTTPClient(settings exporterhelper.TimeoutSettings, TLSSetting config.Li
 			MaxIdleConns: 100,
 			// Not supported by intake
 			ForceAttemptHTTP2: false,
-			TLSClientConfig:   &tls.Config{InsecureSkipVerify: TLSSetting.InsecureSkipVerify},
+			TLSClientConfig:   &tls.Config{InsecureSkipVerify: httpClientSettings.TLSSetting.InsecureSkipVerify},
 		},
 	}
 }
