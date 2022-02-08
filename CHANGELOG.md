@@ -6,6 +6,8 @@
 
 ## 🛑 Breaking changes 🛑
 
+- `apachereceiver`: Update instrumentation library name from `otel/apache` to `otelcol/apache` (#7754)
+
 ## 🚩 Deprecations 🚩
 
 - Deprecated log_names setting from filter processor. (#7552)
