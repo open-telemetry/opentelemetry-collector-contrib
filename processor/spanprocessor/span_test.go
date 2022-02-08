@@ -635,6 +635,9 @@ func TestSpanProcessor_setStatusCodeConditionally(t *testing.T) {
 	}
 	// This test numer two include rule for applying rule only for status code 400
 	oCfg.Include = &filterconfig.MatchProperties{
+		Config: filterset.Config{
+			MatchType: filterset.Strict,
+		},
 		Attributes: []filterconfig.Attribute{
 			{Key: "http.status_code", Value: 400},
 		},

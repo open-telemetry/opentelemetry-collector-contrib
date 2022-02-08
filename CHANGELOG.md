@@ -16,8 +16,6 @@
 
 ## 🚀 New components 🚀
 
-## 🧰 Bug fixes 🧰
-
 ## v0.44.0
 
 ## 💡 Enhancements 💡

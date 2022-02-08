@@ -191,16 +191,16 @@ func TestAttributes_FilterLogsByNameStrict(t *testing.T) {
 				"attribute1": pdata.NewAttributeValueInt(123),
 			},
 		},
-		//{
-		//	name: "apply",
-		//	inputAttributes: map[string]pdata.AttributeValue{
-		//		"NoModification": pdata.NewAttributeValueBool(false),
-		//	},
-		//	expectedAttributes: map[string]pdata.AttributeValue{
-		//		"attribute1":     pdata.NewAttributeValueInt(123),
-		//		"NoModification": pdata.NewAttributeValueBool(false),
-		//	},
-		//},
+		{
+			name: "apply",
+			inputAttributes: map[string]pdata.AttributeValue{
+				"NoModification": pdata.NewAttributeValueBool(false),
+			},
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"attribute1":     pdata.NewAttributeValueInt(123),
+				"NoModification": pdata.NewAttributeValueBool(false),
+			},
+		},
 		{
 			name:               "incorrect_log_name",
 			inputAttributes:    map[string]pdata.AttributeValue{},
