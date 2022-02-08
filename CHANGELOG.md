@@ -8,6 +8,8 @@
 
 ## 🚩 Deprecations 🚩
 
+- Deprecated log_names setting from filter processor. (#7552)
+
 ## 🧰 Bug fixes 🧰
 
  - `tailsamplingprocessor`: "And" policy only works as a sub policy under a composite policy (#7590) 
