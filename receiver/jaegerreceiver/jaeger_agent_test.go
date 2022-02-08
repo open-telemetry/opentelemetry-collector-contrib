@@ -191,11 +191,20 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *configu
 	jr := newJaegerReceiver(jaegerAgent, receiverConfig, sink, set)
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 
-	assert.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()), "Start failed")
+	var err error
+	for i := 0; i < 3; i++ {
+		err = jr.Start(context.Background(), componenttest.NewNopHost())
+		if err == nil {
+			break
+		} else {
+			time.Sleep(50 * time.Millisecond)
+		}
+	}
+	require.NoError(t, err, "Start failed")
 
 	// 2. Then send spans to the Jaeger receiver.
 	jexp, err := newClientUDP(agentEndpoint, jr.agentBinaryThriftEnabled())
-	assert.NoError(t, err, "Failed to create the Jaeger OpenCensus exporter for the live application")
+	require.NoError(t, err, "Failed to create the Jaeger OpenTelemetry exporter for the live application")
 
 	// 3. Now finally send some spans
 	td := generateTraceData()
@@ -205,7 +214,7 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *configu
 		require.NoError(t, jexp.EmitBatch(context.Background(), modelToThrift(batch)))
 	}
 
-	assert.Eventually(t, func() bool {
+	require.Eventually(t, func() bool {
 		return sink.SpanCount() > 0
 	}, 10*time.Second, 5*time.Millisecond)
 
