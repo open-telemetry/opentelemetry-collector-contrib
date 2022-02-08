@@ -43,6 +43,9 @@ These instructions are to get you up and running quickly with the GCP exporter i
         loglevel: debug
     processors:
       memory_limiter:
+          check_interval: 5s
+          limit_mib: 4000
+          spike_limit_mib: 500
       batch:
         # Google Cloud Monitoring limits batches to 200 metric points.
         send_batch_max_size: 200
