@@ -20,7 +20,7 @@ require (
 )
 
 require (
-	cloud.google.com/go/compute v1.1.0 // indirect
+	cloud.google.com/go/compute v1.2.0 // indirect
 	contrib.go.opencensus.io/exporter/prometheus v0.4.0 // indirect
 	github.com/Azure/azure-sdk-for-go v61.1.0+incompatible // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
@@ -114,7 +114,7 @@ require (
 	github.com/prometheus/statsd_exporter v0.21.0 // indirect
 	github.com/rs/cors v1.8.2 // indirect
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.7.0.20210223165440-c65ae3540d44 // indirect
-	github.com/shirou/gopsutil/v3 v3.21.12 // indirect
+	github.com/shirou/gopsutil/v3 v3.22.1 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
 	github.com/spf13/cobra v1.3.0 // indirect
@@ -153,7 +153,7 @@ require (
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/api v0.67.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20220126215142-9970aeb2e350 // indirect
+	google.golang.org/genproto v0.0.0-20220201184016-50beb8ab5c44 // indirect
 	google.golang.org/grpc v1.44.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
