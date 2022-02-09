@@ -5,6 +5,8 @@
 ## 💡 Enhancements 💡
 
 - `hostreceiver/memoryscraper`: Migrate the scraper to the mdatagen metrics builder (#7312)
+- `routingprocessor`: Do not err on failure to build exporters (#7423)
+- `apachereceiver`: Update to mdatagen v2 (#7573)
 
 ## 🛑 Breaking changes 🛑
 
@@ -39,7 +41,6 @@
 - `mysqlreceiver`: Add golden files for integration test (#7303)
 - `nginxreceiver`: Standardize integration test (#7515)
 - `mysqlreceiver`: Update to use mdatagen v2 (#7507)
-- `routingprocessor`: Do not err on failure to build exporters (#7423)
 - `postgresqlreceiver`: Add integration tests (#7501)
 - `apachereceiver`: Add integration test (#7517)
 - `mysqlreceiver`: Use scrapererror to report errors (#7513)
@@ -49,7 +50,6 @@
 - `tailsamplingprocessor`: Add And sampling policy (#6910)
 - `coralogixexporter`: Add Coralogix Exporter (#7383)
 - `prometheusexecreceiver`: Add default value for `scrape_timeout` option (#7587)
-- `apachereceiver`: Update to mdatagen v2 (#7573)
 
 ## 🛑 Breaking changes 🛑
 
