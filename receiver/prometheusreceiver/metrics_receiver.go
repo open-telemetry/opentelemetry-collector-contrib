@@ -88,7 +88,6 @@ func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 		r.cfg.StartTimeMetricRegex,
 		r.cfg.ID(),
 		r.cfg.PrometheusConfig.GlobalConfig.ExternalLabels,
-		r.cfg.pdataDirect,
 	)
 	r.scrapeManager = scrape.NewManager(&scrape.Options{}, logger, r.ocaStore)
 	r.ocaStore.SetScrapeManager(r.scrapeManager)

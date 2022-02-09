@@ -31,7 +31,6 @@ import (
 	"github.com/prometheus/prometheus/discovery/kubernetes"
 	"github.com/prometheus/prometheus/discovery/targetgroup"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/service/featuregate"
 	"gopkg.in/yaml.v2"
 )
 
@@ -39,16 +38,6 @@ const (
 	// The key for Prometheus scraping configs.
 	prometheusConfigKey = "config"
 )
-
-var pdataPipelineGate = featuregate.Gate{
-	ID:          "receiver.prometheus.OTLPDirect",
-	Enabled:     true,
-	Description: "Controls whether to use a new translation directly from Prometheus timeseries to pdata, without an intermediate representation as OpenCensus data.",
-}
-
-func init() {
-	featuregate.Register(pdataPipelineGate)
-}
 
 // Config defines configuration for Prometheus receiver.
 type Config struct {
@@ -58,7 +47,6 @@ type Config struct {
 	BufferCount             int                      `mapstructure:"buffer_count"`
 	UseStartTimeMetric      bool                     `mapstructure:"use_start_time_metric"`
 	StartTimeMetricRegex    string                   `mapstructure:"start_time_metric_regex"`
-	pdataDirect             bool
 
 	// ConfigPlaceholder is just an entry to make the configuration pass a check
 	// that requires that all keys present in the config actually exist on the
