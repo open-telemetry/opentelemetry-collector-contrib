@@ -57,7 +57,7 @@ type LabelsConfig struct {
 	ResourceAttributes map[string]string `mapstructure:"resource"`
 
 	// RecordAttributes are the attributes from the record that are allowed to be added as labels on a log stream. Possible keys:
-	// traceID, spanID, severity, severityN. Any other keys will be ignored without notice.
+	// traceID, spanID, severity, severityN.
 	RecordAttributes map[string]string `mapstructure:"record"`
 }
 

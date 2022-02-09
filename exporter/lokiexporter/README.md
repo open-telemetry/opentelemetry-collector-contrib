@@ -23,8 +23,8 @@ The following settings are required:
 
 - `labels.record` (no default): A map of record attributes to valid Loki label names (must match 
   "^[a-zA-Z_][a-zA-Z0-9_]*$") allowed to be added as labels to Loki log streams.
-  Record attributes can be: `traceID`, `spanID`, `severity`, `severityN`. Any other values will be ignored without
-  warning. These attributes will be added as log labels and will be removed from the log body.
+  Record attributes can be: `traceID`, `spanID`, `severity`, `severityN`. These attributes will be added as log labels 
+  and will be removed from the log body.
 
 The following settings can be optionally configured:
 
