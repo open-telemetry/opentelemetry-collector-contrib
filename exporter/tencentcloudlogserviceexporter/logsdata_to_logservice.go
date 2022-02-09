@@ -33,7 +33,6 @@ const (
 	clsLogTimeUnixNano   = "timeUnixNano"
 	clsLogSeverityNumber = "severityNumber"
 	clsLogSeverityText   = "severityText"
-	clsLogName           = "name"
 	clsLogContent        = "content"
 	clsLogAttribute      = "attribute"
 	clsLogFlags          = "flags"
@@ -158,10 +157,6 @@ func mapLogRecordToLogService(lr pdata.LogRecord,
 		{
 			Key:   proto.String(clsLogSeverityText),
 			Value: proto.String(lr.SeverityText()),
-		},
-		{
-			Key:   proto.String(clsLogName),
-			Value: proto.String(lr.Name()),
 		},
 		{
 			Key:   proto.String(clsLogAttribute),
