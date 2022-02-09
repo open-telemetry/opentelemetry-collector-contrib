@@ -86,7 +86,7 @@ func TestScrape_Errors(t *testing.T) {
 			name:             "multipleErrors",
 			getPageFileStats: func() ([]*pageFileStats, error) { return nil, errors.New("err1") },
 			getObjectErr:     errors.New("err2"),
-			expectedErr:      "[err1; err2]",
+			expectedErr:      "err1; err2",
 			expectedErrCount: pagingUsageMetricsLen + pagingMetricsLen,
 		},
 	}
