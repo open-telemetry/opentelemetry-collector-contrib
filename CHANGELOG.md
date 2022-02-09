@@ -12,6 +12,10 @@
 ## 🛑 Breaking changes 🛑
 
 - `apachereceiver`: Update instrumentation library name from `otel/apache` to `otelcol/apache` (#7754)
+- `prometheusreceiver`: The OpenCensus-based metric conversion pipeline has 
+  been removed.
+  -  The `receiver.prometheus.OTLPDirect` feature gate has been removed as 
+     the direct pipeline is the only remaining pipeline.
 
 ## 🚩 Deprecations 🚩
 
