@@ -63,6 +63,7 @@
 ## 🛑 Breaking changes 🛑
 
 - `resourcedetectionprocessor`: Update `os.type` attribute values according to semantic conventions (#7544)
+- `pkg/translator/prometheusremotewrite`: Cleanup prw translator public functions (#7776)
 
 ## 🚀 New components 🚀
 
