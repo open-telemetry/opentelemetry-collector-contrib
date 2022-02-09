@@ -75,7 +75,7 @@ func TestLoadConfig(t *testing.T) {
 				return cfg
 			})(),
 			filesystemscraper.TypeStr: &filesystemscraper.Config{},
-			memoryscraper.TypeStr:     &memoryscraper.Config{},
+			memoryscraper.TypeStr:     (&memoryscraper.Factory{}).CreateDefaultConfig(),
 			networkscraper.TypeStr: (func() internal.Config {
 				cfg := (&networkscraper.Factory{}).CreateDefaultConfig()
 				cfg.(*networkscraper.Config).Include = networkscraper.MatchConfig{
