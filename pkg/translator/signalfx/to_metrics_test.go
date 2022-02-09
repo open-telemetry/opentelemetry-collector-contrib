@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package signalfxreceiver
+package signalfx
 
 import (
 	"strconv"
@@ -22,10 +22,9 @@ import (
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.uber.org/zap"
 )
 
-func Test_signalFxV2ToMetricsData(t *testing.T) {
+func Test_ToMetrics(t *testing.T) {
 	now := time.Now()
 
 	buildDefaulstSFxDataPt := func() *sfxpb.DataPoint {
@@ -40,7 +39,7 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 		}
 	}
 
-	buildDefaultMetricsData := func(typ pdata.MetricDataType, value interface{}) pdata.Metrics {
+	buildDefaultMetrics := func(typ pdata.MetricDataType, value interface{}) pdata.Metrics {
 		out := pdata.NewMetrics()
 		rm := out.ResourceMetrics().AppendEmpty()
 		ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
@@ -78,15 +77,15 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 	}
 
 	tests := []struct {
-		name                  string
-		sfxDataPoints         []*sfxpb.DataPoint
-		wantMetricsData       pdata.Metrics
-		wantDroppedTimeseries int
+		name          string
+		sfxDataPoints []*sfxpb.DataPoint
+		wantMetrics   pdata.Metrics
+		wantError     bool
 	}{
 		{
-			name:            "int_gauge",
-			sfxDataPoints:   []*sfxpb.DataPoint{buildDefaulstSFxDataPt()},
-			wantMetricsData: buildDefaultMetricsData(pdata.MetricDataTypeGauge, 13),
+			name:          "int_gauge",
+			sfxDataPoints: []*sfxpb.DataPoint{buildDefaulstSFxDataPt()},
+			wantMetrics:   buildDefaultMetrics(pdata.MetricDataTypeGauge, 13),
 		},
 		{
 			name: "double_gauge",
@@ -98,7 +97,7 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 				}
 				return []*sfxpb.DataPoint{pt}
 			}(),
-			wantMetricsData: buildDefaultMetricsData(pdata.MetricDataTypeGauge, 13.13),
+			wantMetrics: buildDefaultMetrics(pdata.MetricDataTypeGauge, 13.13),
 		},
 		{
 			name: "int_counter",
@@ -107,8 +106,8 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 				pt.MetricType = sfxTypePtr(sfxpb.MetricType_COUNTER)
 				return []*sfxpb.DataPoint{pt}
 			}(),
-			wantMetricsData: func() pdata.Metrics {
-				m := buildDefaultMetricsData(pdata.MetricDataTypeSum, 13)
+			wantMetrics: func() pdata.Metrics {
+				m := buildDefaultMetrics(pdata.MetricDataTypeSum, 13)
 				d := m.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Sum()
 				d.SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 				d.SetIsMonotonic(true)
@@ -125,8 +124,8 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 				}
 				return []*sfxpb.DataPoint{pt}
 			}(),
-			wantMetricsData: func() pdata.Metrics {
-				m := buildDefaultMetricsData(pdata.MetricDataTypeSum, 13.13)
+			wantMetrics: func() pdata.Metrics {
+				m := buildDefaultMetrics(pdata.MetricDataTypeSum, 13.13)
 				d := m.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Sum()
 				d.SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 				d.SetIsMonotonic(true)
@@ -140,8 +139,8 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 				pt.Timestamp = 0
 				return []*sfxpb.DataPoint{pt}
 			}(),
-			wantMetricsData: func() pdata.Metrics {
-				md := buildDefaultMetricsData(pdata.MetricDataTypeGauge, 13)
+			wantMetrics: func() pdata.Metrics {
+				md := buildDefaultMetrics(pdata.MetricDataTypeGauge, 13)
 				md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).SetTimestamp(0)
 				return md
 			}(),
@@ -153,8 +152,8 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 				pt.Dimensions[0].Value = ""
 				return []*sfxpb.DataPoint{pt}
 			}(),
-			wantMetricsData: func() pdata.Metrics {
-				md := buildDefaultMetricsData(pdata.MetricDataTypeGauge, 13)
+			wantMetrics: func() pdata.Metrics {
+				md := buildDefaultMetrics(pdata.MetricDataTypeGauge, 13)
 				md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes().UpdateString("k0", "")
 				return md
 			}(),
@@ -171,12 +170,12 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 				pt.Dimensions = dimensions
 				return []*sfxpb.DataPoint{pt}
 			}(),
-			wantMetricsData: buildDefaultMetricsData(pdata.MetricDataTypeGauge, 13),
+			wantMetrics: buildDefaultMetrics(pdata.MetricDataTypeGauge, 13),
 		},
 		{
-			name:            "nil_datapoint_ignored",
-			sfxDataPoints:   []*sfxpb.DataPoint{nil, buildDefaulstSFxDataPt(), nil},
-			wantMetricsData: buildDefaultMetricsData(pdata.MetricDataTypeGauge, 13),
+			name:          "nil_datapoint_ignored",
+			sfxDataPoints: []*sfxpb.DataPoint{nil, buildDefaulstSFxDataPt(), nil},
+			wantMetrics:   buildDefaultMetrics(pdata.MetricDataTypeGauge, 13),
 		},
 		{
 			name: "drop_inconsistent_datapoints",
@@ -197,25 +196,24 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 				pt3 := buildDefaulstSFxDataPt()
 				pt3.MetricType = sfxTypePtr(sfxpb.MetricType_CUMULATIVE_COUNTER + 1)
 
-				return []*sfxpb.DataPoint{
-					pt0, buildDefaulstSFxDataPt(), pt1, pt2, pt3}
+				return []*sfxpb.DataPoint{pt0, buildDefaulstSFxDataPt(), pt1, pt2, pt3}
 			}(),
-			wantMetricsData:       buildDefaultMetricsData(pdata.MetricDataTypeGauge, 13),
-			wantDroppedTimeseries: 4,
+			wantMetrics: buildDefaultMetrics(pdata.MetricDataTypeGauge, 13),
+			wantError:   true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			md, numDroppedTimeseries := signalFxV2ToMetrics(zap.NewNop(), tt.sfxDataPoints)
-			assert.Equal(t, tt.wantMetricsData, md)
-			assert.Equal(t, tt.wantDroppedTimeseries, numDroppedTimeseries)
+			md, err := ToMetrics(tt.sfxDataPoints)
+			if tt.wantError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, tt.wantMetrics, md)
 		})
 	}
-}
-
-func strPtr(s string) *string {
-	return &s
 }
 
 func int64Ptr(i int64) *int64 {
@@ -227,10 +225,6 @@ func float64Ptr(f float64) *float64 {
 }
 
 func sfxTypePtr(t sfxpb.MetricType) *sfxpb.MetricType {
-	return &t
-}
-
-func sfxCategoryPtr(t sfxpb.EventCategory) *sfxpb.EventCategory {
 	return &t
 }
 
