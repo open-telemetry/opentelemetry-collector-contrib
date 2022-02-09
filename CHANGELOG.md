@@ -4,6 +4,8 @@
 
 ## 💡 Enhancements 💡
 
+- `hostreceiver/memoryscraper`: Migrate the scraper to the mdatagen metrics builder (#7312)
+
 ## 🛑 Breaking changes 🛑
 
 ## 🚩 Deprecations 🚩
