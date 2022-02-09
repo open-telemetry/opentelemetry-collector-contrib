@@ -29,24 +29,29 @@ type Config struct {
 
 	Directory string        `mapstructure:"directory,omitempty"`
 	Timeout   time.Duration `mapstructure:"timeout,omitempty"`
+
+	CompactOnStart      bool   `mapstructure:"compact_on_start,omitempty"`
+	CompactionDirectory string `mapstructure:"compaction_directory,omitempty"`
 }
 
 func (cfg *Config) Validate() error {
-	info, err := os.Stat(cfg.Directory)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return fmt.Errorf("directory must exist: %v", err)
-		}
-		if fsErr, ok := err.(*fs.PathError); ok {
-			return fmt.Errorf(
-				"problem accessing configured directory: %s, err: %v",
-				cfg.Directory, fsErr,
-			)
-		}
+	for _, dir := range []string{cfg.Directory, cfg.CompactionDirectory} {
+		info, err := os.Stat(dir)
+		if err != nil {
+			if os.IsNotExist(err) {
+				return fmt.Errorf("directory must exist: %v", err)
+			}
+			if fsErr, ok := err.(*fs.PathError); ok {
+				return fmt.Errorf(
+					"problem accessing configured directory: %s, err: %v",
+					dir, fsErr,
+				)
+			}
 
-	}
-	if !info.IsDir() {
-		return fmt.Errorf("%s is not a directory", cfg.Directory)
+		}
+		if !info.IsDir() {
+			return fmt.Errorf("%s is not a directory", dir)
+		}
 	}
 
 	return nil

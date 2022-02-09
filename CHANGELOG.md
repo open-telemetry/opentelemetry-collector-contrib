@@ -15,6 +15,7 @@
 - `apachereceiver`: Update to mdatagen v2 (#7573)
 - `datadogexporter`: Don't send host metadata if hostname is empty (#7426)
 - `datadogexporter`: Add insecure_skip_verify flag to configuration (#7422)
+- `storageextension`: add optional compaction to filestorage (#7768)
 
 ## 🛑 Breaking changes 🛑
 
