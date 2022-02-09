@@ -20,6 +20,7 @@ package pagingscraper
 import (
 	"context"
 	"errors"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper/internal/metadata"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -92,7 +93,7 @@ func TestScrape_Errors(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newPagingScraper(context.Background(), &Config{})
+			scraper := newPagingScraper(context.Background(), &Config{Metrics: metadata.DefaultMetricsSettings()})
 			if test.getPageFileStats != nil {
 				scraper.pageFileStats = test.getPageFileStats
 			}
