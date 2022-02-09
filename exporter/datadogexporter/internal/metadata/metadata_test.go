@@ -55,6 +55,11 @@ var (
 		Command: "otelcontribcol",
 		Version: "1.0",
 	}
+
+	mockExporterCreateSettings = component.ExporterCreateSettings{
+		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+		BuildInfo:         mockBuildInfo,
+	}
 )
 
 func TestFillHostMetadata(t *testing.T) {
@@ -171,7 +176,7 @@ func TestPushMetadata(t *testing.T) {
 	defer ts.Close()
 	cfg.Metrics.Endpoint = ts.URL
 
-	err := pushMetadata(cfg, mockBuildInfo, &mockMetadata)
+	err := pushMetadata(cfg, mockExporterCreateSettings, &mockMetadata)
 	require.NoError(t, err)
 }
 
@@ -185,7 +190,7 @@ func TestFailPushMetadata(t *testing.T) {
 	defer ts.Close()
 	cfg.Metrics.Endpoint = ts.URL
 
-	err := pushMetadata(cfg, mockBuildInfo, &mockMetadata)
+	err := pushMetadata(cfg, mockExporterCreateSettings, &mockMetadata)
 	require.Error(t, err)
 }
 
