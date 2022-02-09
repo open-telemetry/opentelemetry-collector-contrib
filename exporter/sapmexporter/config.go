@@ -58,7 +58,7 @@ type Config struct {
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
 }
 
-func (c *Config) validate() error {
+func (c *Config) Validate() error {
 	if c.Endpoint == "" {
 		return errors.New("`endpoint` not specified")
 	}

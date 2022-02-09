@@ -45,4 +45,8 @@ type Config struct {
 	MaxRecordSize      int       `mapstructure:"max_record_size"`
 }
 
+func (cfg *Config) Validate() error {
+	return nil
+}
+
 var _ config.Exporter = (*Config)(nil)
