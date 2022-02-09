@@ -6,6 +6,8 @@ extensions:
     directory: .
   file_storage/all_settings:
     directory: .
+    compaction_directory: .
+    compact_on_start: true
     timeout: 2s
 
 service:

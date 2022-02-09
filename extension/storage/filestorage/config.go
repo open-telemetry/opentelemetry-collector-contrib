@@ -35,7 +35,13 @@ type Config struct {
 }
 
 func (cfg *Config) Validate() error {
-	for _, dir := range []string{cfg.Directory, cfg.CompactionDirectory} {
+	var dirs []string
+	if cfg.CompactOnStart {
+		dirs = []string{cfg.Directory, cfg.CompactionDirectory}
+	} else {
+		dirs = []string{cfg.Directory}
+	}
+	for _, dir := range dirs {
 		info, err := os.Stat(dir)
 		if err != nil {
 			if os.IsNotExist(err) {

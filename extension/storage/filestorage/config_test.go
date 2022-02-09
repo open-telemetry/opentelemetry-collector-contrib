@@ -53,9 +53,11 @@ func TestLoadConfig(t *testing.T) {
 	ext1 := cfg.Extensions[config.NewComponentIDWithName(typeStr, "all_settings")]
 	assert.Equal(t,
 		&Config{
-			ExtensionSettings: config.NewExtensionSettings(config.NewComponentIDWithName(typeStr, "all_settings")),
-			Directory:         ".",
-			Timeout:           2 * time.Second,
+			ExtensionSettings:   config.NewExtensionSettings(config.NewComponentIDWithName(typeStr, "all_settings")),
+			Directory:           ".",
+			CompactionDirectory: ".",
+			CompactOnStart:      true,
+			Timeout:             2 * time.Second,
 		},
 		ext1)
 }
