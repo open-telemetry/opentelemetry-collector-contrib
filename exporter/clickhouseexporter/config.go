@@ -27,6 +27,9 @@ type Config struct {
 	config.ExporterSettings        `mapstructure:",squash"`
 	exporterhelper.TimeoutSettings `mapstructure:",squash"`
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
+	// QueueSettings is a subset of exporterhelper.QueueSettings,
+	// because only QueueSize is user-settable.
+	QueueSettings QueueSettings `mapstructure:"sending_queue"`
 
 	// DSN is the ClickHouse server Data Source Name.
 	// For tcp protocol reference: [ClickHouse/clickhouse-go#dsn](https://github.com/ClickHouse/clickhouse-go#dsn).
@@ -34,6 +37,12 @@ type Config struct {
 	DSN string `mapstructure:"dsn"`
 	// TTLDays is The data time-to-live in days, 0 means no ttl.
 	TTLDays uint `mapstructure:"ttl_days"`
+}
+
+// QueueSettings is a subset of exporterhelper.QueueSettings.
+type QueueSettings struct {
+	// QueueSize set the length of the sending queue
+	QueueSize int `mapstructure:"queue_size"`
 }
 
 var (
@@ -46,4 +55,12 @@ func (cfg *Config) Validate() (err error) {
 		err = multierr.Append(err, errConfigNoDSN)
 	}
 	return err
+}
+
+func (cfg *Config) enforcedQueueSettings() exporterhelper.QueueSettings {
+	return exporterhelper.QueueSettings{
+		Enabled:      true,
+		NumConsumers: 1,
+		QueueSize:    cfg.QueueSettings.QueueSize,
+	}
 }

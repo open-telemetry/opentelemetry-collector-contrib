@@ -41,6 +41,7 @@ func createDefaultConfig() config.Exporter {
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
+		QueueSettings:    QueueSettings{QueueSize: exporterhelper.DefaultQueueSettings().QueueSize},
 		RetrySettings:    exporterhelper.DefaultRetrySettings(),
 	}
 }
@@ -64,6 +65,7 @@ func createLogsExporter(
 		exporter.pushLogsData,
 		exporterhelper.WithShutdown(exporter.Shutdown),
 		exporterhelper.WithTimeout(c.TimeoutSettings),
+		exporterhelper.WithQueue(c.enforcedQueueSettings()),
 		exporterhelper.WithRetry(c.RetrySettings),
 	)
 }
