@@ -7,6 +7,7 @@
 - `hostreceiver/memoryscraper`: Migrate the scraper to the mdatagen metrics builder (#7312)
 - `routingprocessor`: Do not err on failure to build exporters (#7423)
 - `apachereceiver`: Update to mdatagen v2 (#7573)
+- `datadogexporter`: Don't send host metadata if hostname is empty (#7426)
 
 ## 🛑 Breaking changes 🛑
 
