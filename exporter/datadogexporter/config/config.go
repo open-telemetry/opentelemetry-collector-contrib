@@ -32,7 +32,6 @@ import (
 var (
 	errUnsetAPIKey = errors.New("api.key is not set")
 	errNoMetadata  = errors.New("only_metadata can't be enabled when send_metadata or use_resource_metadata is disabled")
-	errBuckets     = errors.New("'metrics::report_buckets' is obsolete. Use 'metrics::histograms::mode' instead")
 )
 
 // TODO: Import these from translator when we eliminate cyclic dependency.
@@ -328,12 +327,6 @@ func (c *Config) Validate() error {
 }
 
 func (c *Config) Unmarshal(configMap *config.Map) error {
-	// metrics::report_buckets is obsolete, return an error to
-	// tell the user to use metrics::histograms::mode instead.
-	if configMap.IsSet("metrics::report_buckets") {
-		return errBuckets
-	}
-
 	err := configMap.UnmarshalExact(c)
 	if err != nil {
 		return err
