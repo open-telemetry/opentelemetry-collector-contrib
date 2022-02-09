@@ -280,6 +280,10 @@ func (f *prometheusFormatter) histogram2Strings(record metricPair) []string {
 		dp := dps.At(i)
 
 		explicitBounds := dp.ExplicitBounds()
+		if len(explicitBounds) == 0 {
+			continue
+		}
+
 		var cumulative uint64
 		additionalAttributes := pdata.NewAttributeMap()
 
