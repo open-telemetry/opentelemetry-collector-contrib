@@ -76,7 +76,12 @@ def unwrap(obj, attr: str):
 
 
 def _start_internal_or_server_span(
-    tracer, span_name, start_time, context_carrier, context_getter
+    tracer,
+    span_name,
+    start_time,
+    context_carrier,
+    context_getter,
+    attributes=None,
 ):
     """Returns internal or server span along with the token which can be used by caller to reset context
 
@@ -107,5 +112,6 @@ def _start_internal_or_server_span(
         context=ctx,
         kind=span_kind,
         start_time=start_time,
+        attributes=attributes,
     )
     return span, token

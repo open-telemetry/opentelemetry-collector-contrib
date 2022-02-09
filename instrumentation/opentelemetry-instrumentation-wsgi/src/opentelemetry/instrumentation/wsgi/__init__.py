@@ -109,9 +109,11 @@ import typing
 import wsgiref.util as wsgiref_util
 
 from opentelemetry import context, trace
-from opentelemetry.instrumentation.utils import http_status_to_status_code
+from opentelemetry.instrumentation.utils import (
+    _start_internal_or_server_span,
+    http_status_to_status_code,
+)
 from opentelemetry.instrumentation.wsgi.version import __version__
-from opentelemetry.propagate import extract
 from opentelemetry.propagators.textmap import Getter
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace.status import Status, StatusCode
@@ -279,12 +281,12 @@ class OpenTelemetryMiddleware:
             environ: A WSGI environment.
             start_response: The WSGI start_response callable.
         """
-
-        token = context.attach(extract(environ, getter=wsgi_getter))
-
-        span = self.tracer.start_span(
-            get_default_span_name(environ),
-            kind=trace.SpanKind.SERVER,
+        span, token = _start_internal_or_server_span(
+            tracer=self.tracer,
+            span_name=get_default_span_name(environ),
+            start_time=None,
+            context_carrier=environ,
+            context_getter=wsgi_getter,
             attributes=collect_request_attributes(environ),
         )
 
@@ -308,7 +310,8 @@ class OpenTelemetryMiddleware:
             if span.is_recording():
                 span.set_status(Status(StatusCode.ERROR, str(ex)))
             span.end()
-            context.detach(token)
+            if token is not None:
+                context.detach(token)
             raise
 
 
@@ -324,7 +327,8 @@ def _end_span_after_iterating(iterable, span, tracer, token):
         if close:
             close()
         span.end()
-        context.detach(token)
+        if token is not None:
+            context.detach(token)
 
 
 # TODO: inherit from opentelemetry.instrumentation.propagators.Setter

@@ -414,5 +414,35 @@ class TestWsgiMiddlewareWithTracerProvider(WsgiTestBase):
         self.validate_response(response, exporter)
 
 
+class TestWsgiMiddlewareWrappedWithAnotherFramework(WsgiTestBase):
+    def test_mark_span_internal_in_presence_of_span_from_other_framework(self):
+        tracer_provider, exporter = TestBase.create_tracer_provider()
+        tracer = tracer_provider.get_tracer(__name__)
+
+        with tracer.start_as_current_span(
+            "test", kind=trace_api.SpanKind.SERVER
+        ) as parent_span:
+            app = otel_wsgi.OpenTelemetryMiddleware(
+                simple_wsgi, tracer_provider=tracer_provider
+            )
+            response = app(self.environ, self.start_response)
+            while True:
+                try:
+                    value = next(response)
+                    self.assertEqual(value, b"*")
+                except StopIteration:
+                    break
+
+            span_list = exporter.get_finished_spans()
+
+            self.assertEqual(trace_api.SpanKind.INTERNAL, span_list[0].kind)
+            self.assertEqual(trace_api.SpanKind.SERVER, parent_span.kind)
+
+            # internal span should be child of the parent span we have provided
+            self.assertEqual(
+                parent_span.context.span_id, span_list[0].parent.span_id
+            )
+
+
 if __name__ == "__main__":
     unittest.main()
