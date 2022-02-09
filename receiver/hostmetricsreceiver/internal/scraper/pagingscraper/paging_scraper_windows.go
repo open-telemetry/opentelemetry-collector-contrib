@@ -134,6 +134,6 @@ func (s *scraper) scrapePagingOperationsMetric(metrics pdata.MetricSlice) error 
 }
 
 func (s *scraper) recordPagingOperationsDataPoints(now pdata.Timestamp, memoryCounterValues *perfcounters.CounterValues) {
-	s.mb.RecordSystemPagingFaultsDataPoint(now, memoryCounterValues.Values[pageReadsPerSec], metadata.AttributeDirection.PageIn)
-	s.mb.RecordSystemPagingFaultsDataPoint(now, memoryCounterValues.Values[pageWritesPerSec], metadata.AttributeDirection.PageOut)
+	s.mb.RecordSystemPagingOperationsDataPoint(now, memoryCounterValues.Values[pageReadsPerSec], metadata.AttributeDirection.PageIn, metadata.AttributeType.Major)
+	s.mb.RecordSystemPagingOperationsDataPoint(now, memoryCounterValues.Values[pageWritesPerSec], metadata.AttributeDirection.PageOut, metadata.AttributeType.Major)
 }
