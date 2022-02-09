@@ -89,6 +89,7 @@ type MatchProperties struct {
 
 	// LogNames is a list of strings that the LogRecord's name field must match
 	// against.
+	// Deprecated: the Name field is removed from the log data model.
 	LogNames []string `mapstructure:"log_names"`
 
 	// Attributes specifies the list of attributes to match against.
@@ -128,8 +129,8 @@ func (mp *MatchProperties) ValidateForLogs() error {
 		return errors.New("neither services nor span_names should be specified for log records")
 	}
 
-	if len(mp.LogNames) == 0 && len(mp.Attributes) == 0 && len(mp.Libraries) == 0 && len(mp.Resources) == 0 {
-		return errors.New(`at least one of "log_names", "attributes", "libraries" or "resources" field must be specified`)
+	if len(mp.Attributes) == 0 && len(mp.Libraries) == 0 && len(mp.Resources) == 0 {
+		return errors.New(`at least one of "attributes", "libraries" or "resources" field must be specified`)
 	}
 
 	return nil

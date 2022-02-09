@@ -151,7 +151,7 @@ func TestConvert(t *testing.T) {
 	ills := rls.InstrumentationLibraryLogs()
 	require.Equal(t, 1, ills.Len())
 
-	logs := ills.At(0).Logs()
+	logs := ills.At(0).LogRecords()
 	require.Equal(t, 1, logs.Len())
 
 	lr := logs.At(0)
@@ -251,9 +251,9 @@ func TestAllConvertedEntriesAreSentAndReceived(t *testing.T) {
 
 					ill := ills.At(0)
 
-					actualCount += ill.Logs().Len()
+					actualCount += ill.LogRecords().Len()
 
-					assert.LessOrEqual(t, uint(ill.Logs().Len()), tc.maxFlushCount,
+					assert.LessOrEqual(t, uint(ill.LogRecords().Len()), tc.maxFlushCount,
 						"Received more log records in one flush than configured by maxFlushCount",
 					)
 
@@ -285,7 +285,7 @@ func TestConverterCancelledContextCancellsTheFlush(t *testing.T) {
 		ills := pLogs.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty()
 
 		lr := convert(complexEntry())
-		lr.CopyTo(ills.Logs().AppendEmpty())
+		lr.CopyTo(ills.LogRecords().AppendEmpty())
 
 		assert.Error(t, converter.flush(ctx, pLogs))
 	}()
@@ -605,7 +605,7 @@ func BenchmarkConverter(b *testing.B) {
 
 						ill := ills.At(0)
 
-						n += ill.Logs().Len()
+						n += ill.LogRecords().Len()
 
 					case <-timeoutTimer.C:
 						break forLoop

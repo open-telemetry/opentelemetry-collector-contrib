@@ -22,7 +22,6 @@ import (
 	"log"
 	"math"
 	"os"
-	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -163,7 +162,7 @@ func (c *cgroupScanner) getMEMReservedInTask(taskID string, clusterName string, 
 	// sum the containers' memory if the task's memory limit is not configured
 	sum := int64(0)
 	for _, container := range containers {
-		containerPath := path.Join(memPath, container.DockerID)
+		containerPath := filepath.Join(memPath, container.DockerID)
 
 		//soft limit first
 		if softLimit, err := readInt64(containerPath, "memory.soft_limit_in_bytes"); err == nil && softLimit != kernelMagicCodeNotSet {
@@ -180,7 +179,7 @@ func (c *cgroupScanner) getMEMReservedInTask(taskID string, clusterName string, 
 }
 
 func readString(dirpath string, file string) (string, error) {
-	cgroupFile := path.Join(dirpath, file)
+	cgroupFile := filepath.Join(dirpath, file)
 
 	// Read
 	out, err := ioutil.ReadFile(cgroupFile)
@@ -203,7 +202,7 @@ func readInt64(dirpath string, file string) (int64, error) {
 
 	val, err := strconv.ParseInt(out, 10, 64)
 	if err != nil {
-		log.Printf("W! readInt64: Failed to parse int %q from file %q: %s", out, path.Join(dirpath, file), err)
+		log.Printf("W! readInt64: Failed to parse int %q from file %q: %s", out, filepath.Join(dirpath, file), err)
 		return 0, err
 	}
 
@@ -245,12 +244,12 @@ func getCGroupMountPoint(mountConfigPath string) (string, error) {
 }
 
 func getCGroupPathForTask(cgroupMount, controller, taskID, clusterName string) (string, error) {
-	taskPath := path.Join(cgroupMount, controller, "ecs", taskID)
+	taskPath := filepath.Join(cgroupMount, controller, "ecs", taskID)
 	if _, err := os.Stat(taskPath); os.IsNotExist(err) {
 		// Task cgroup path does not exist, fallback to try legacy Task cgroup path,
 		// legacy cgroup path of task with new format ARN used to contain cluster name,
 		// before ECS Agent PR https://github.com/aws/amazon-ecs-agent/pull/2497/
-		taskPath = path.Join(cgroupMount, controller, "ecs", clusterName, taskID)
+		taskPath = filepath.Join(cgroupMount, controller, "ecs", clusterName, taskID)
 		if _, err := os.Stat(taskPath); os.IsNotExist(err) {
 			return "", fmt.Errorf("CGroup Path %q does not exist", taskPath)
 		}

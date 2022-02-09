@@ -5,13 +5,13 @@ go 1.17
 require (
 	github.com/stretchr/testify v1.7.0
 	go.etcd.io/bbolt v1.3.6
-	go.opentelemetry.io/collector v0.43.1
-	go.uber.org/zap v1.20.0
+	go.opentelemetry.io/collector v0.44.0
+	go.uber.org/zap v1.21.0
 
 )
 
 require (
-	github.com/jackc/pgx/v4 v4.14.1
+	github.com/jackc/pgx/v4 v4.15.0
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible
 )
 
@@ -21,12 +21,12 @@ require (
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
-	github.com/jackc/pgconn v1.10.1 // indirect
+	github.com/jackc/pgconn v1.11.0 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgproto3/v2 v2.2.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20200714003250-2b9c44734f2b // indirect
-	github.com/jackc/pgtype v1.9.1 // indirect
+	github.com/jackc/pgtype v1.10.0 // indirect
 	github.com/knadh/koanf v1.4.0 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
@@ -37,7 +37,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
-	go.opentelemetry.io/collector/model v0.43.1 // indirect
+	go.opentelemetry.io/collector/model v0.44.0 // indirect
 	go.opentelemetry.io/otel v1.3.0 // indirect
 	go.opentelemetry.io/otel/metric v0.26.0 // indirect
 	go.opentelemetry.io/otel/trace v1.3.0 // indirect

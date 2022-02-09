@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
-	"path"
 	"path/filepath"
 	"testing"
 	"time"
@@ -290,7 +289,7 @@ func (ms *mockedServer) mockZKServer(t *testing.T, endpoint string, filename str
 	require.NoError(t, err)
 
 	for {
-		out, err := ioutil.ReadFile(path.Join(".", "testdata", filename))
+		out, err := ioutil.ReadFile(filepath.Join("testdata", filename))
 		require.NoError(t, err)
 
 		conn.Write(out)

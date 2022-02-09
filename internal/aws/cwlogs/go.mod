@@ -3,10 +3,10 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cw
 go 1.17
 
 require (
-	github.com/aws/aws-sdk-go v1.42.40
+	github.com/aws/aws-sdk-go v1.42.48
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.43.1
-	go.uber.org/zap v1.20.0
+	go.opentelemetry.io/collector v0.44.0
+	go.uber.org/zap v1.21.0
 )
 
 require (
@@ -23,7 +23,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
 	github.com/stretchr/objx v0.1.1 // indirect
-	go.opentelemetry.io/collector/model v0.43.1 // indirect
+	go.opentelemetry.io/collector/model v0.44.0 // indirect
 	go.opentelemetry.io/otel v1.3.0 // indirect
 	go.opentelemetry.io/otel/metric v0.26.0 // indirect
 	go.opentelemetry.io/otel/trace v1.3.0 // indirect

@@ -78,7 +78,7 @@ func (d *consulMetadataImpl) Metadata(ctx context.Context) (*consulMetadata, err
 
 	metaMap := make(map[string]string)
 	for k, v := range meta {
-		if d.allowedLabels[k] != nil {
+		if _, ok := d.allowedLabels[k]; ok {
 			metaMap[k] = v.(string)
 		}
 	}
