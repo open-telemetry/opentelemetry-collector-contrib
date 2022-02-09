@@ -161,7 +161,7 @@ func pushMetadata(cfg *config.Config, params component.ExporterCreateSettings, m
 	req, _ := http.NewRequest(http.MethodPost, path, bytes.NewBuffer(buf))
 	utils.SetDDHeaders(req.Header, params.BuildInfo, cfg.API.Key)
 	utils.SetExtraHeaders(req.Header, utils.JSONHeaders)
-	client := utils.NewHTTPClient(cfg.TimeoutSettings)
+	client := utils.NewHTTPClient(cfg.TimeoutSettings, cfg.LimitedHTTPClientSettings)
 	resp, err := client.Do(req)
 
 	if err != nil {
