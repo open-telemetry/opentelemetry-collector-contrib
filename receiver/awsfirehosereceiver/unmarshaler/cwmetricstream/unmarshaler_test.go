@@ -20,16 +20,17 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 )
 
 func TestUnmarshal(t *testing.T) {
-	unmarshaler := &Unmarshaler{}
+	unmarshaler := NewUnmarshaler()
 
 	tests := []struct {
-		filename            string
-		expectedMetricCount int
-		expectedError       error
+		filename               string
+		expectedResourceCount  int
+		expectedMetricCount    int
+		expectedDatapointCount int
+		expectedError          error
 	}{
 		{
 			filename:            "multiple_records",
@@ -54,7 +55,9 @@ func TestUnmarshal(t *testing.T) {
 			record, err := os.ReadFile(path.Join(".", "testdata", tt.filename))
 			require.NoError(t, err)
 
-			md, err := unmarshaler.Unmarshal(record, zap.NewNop())
+			records := [][]byte{record}
+
+			md, err := unmarshaler.Unmarshal(records)
 			if tt.expectedError != nil {
 				require.Error(t, err)
 				require.Equal(t, tt.expectedError, err)

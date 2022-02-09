@@ -33,10 +33,15 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/unmarshaler"
+)
+
+const (
+	headerFirehoseRequestId        = "X-Amz-Firehose-Request-Id"
+	headerFirehoseAccessKey        = "X-Amz-Firehose-Access-Key"
+	headerFirehoseCommonAttributes = "X-Amz-Firehose-Common-Attributes"
 )
 
 var (
@@ -46,30 +51,36 @@ var (
 )
 
 type firehoseMetricsReceiver struct {
-	instanceID   config.ComponentID
-	settings     component.ReceiverCreateSettings
-	host         component.Host
-	nextConsumer consumer.Metrics
-	unmarshaler  unmarshaler.MetricsUnmarshaler
+	instanceID  config.ComponentID
+	settings    component.ReceiverCreateSettings
+	host        component.Host
+	consumer    consumer.Metrics
+	unmarshaler unmarshaler.MetricsUnmarshaler
 
 	config     *Config
 	server     *http.Server
 	shutdownWG sync.WaitGroup
 }
 
+// firehoseRequest is based on https://docs.aws.amazon.com/firehose/latest/dev/httpdeliveryrequestresponse.html
 type firehoseRequest struct {
-	RequestId string `json:"requestId"`
-	Timestamp int64  `json:"timestamp"`
-	Records   []struct {
-		// base64 encoded string
-		Data string `json:"data"`
-	} `json:"records"`
+	RequestId string           `json:"requestId"`
+	Timestamp int64            `json:"timestamp"`
+	Records   []firehoseRecord `json:"records"`
+}
+
+type firehoseRecord struct {
+	Data string `json:"data"` // base64 encoded string
 }
 
 type firehoseResponse struct {
 	RequestId    string `json:"requestId"`
 	Timestamp    int64  `json:"timestamp"`
 	ErrorMessage string `json:"errorMessage,omitempty"`
+}
+
+type firehoseCommonAttributes struct {
+	CommonAttributes map[string]string `json:"commonAttributes"`
 }
 
 var _ component.Receiver = (*firehoseMetricsReceiver)(nil)
@@ -91,11 +102,11 @@ func newMetricsReceiver(
 	}
 
 	return &firehoseMetricsReceiver{
-		instanceID:   config.ID(),
-		settings:     set,
-		nextConsumer: nextConsumer,
-		unmarshaler:  configuredUnmarshaler,
-		config:       config,
+		instanceID:  config.ID(),
+		settings:    set,
+		consumer:    nextConsumer,
+		unmarshaler: configuredUnmarshaler,
+		config:      config,
 	}, nil
 }
 
@@ -143,7 +154,7 @@ func (fmr *firehoseMetricsReceiver) Shutdown(context.Context) error {
 func (fmr *firehoseMetricsReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	requestId := r.Header.Get("X-Amz-Firehose-Request-Id")
+	requestId := r.Header.Get(headerFirehoseRequestId)
 	fmr.settings.Logger.Debug("processing request", zap.String("requestId", requestId))
 
 	if statusCode, err := fmr.validate(r); err != nil {
@@ -163,25 +174,26 @@ func (fmr *firehoseMetricsReceiver) ServeHTTP(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	md := pdata.NewMetrics()
+	records := make([][]byte, 0, len(fr.Records))
 	for _, record := range fr.Records {
 		if record.Data != "" {
-			bytes, err := base64.StdEncoding.DecodeString(record.Data)
+			decoded, err := base64.StdEncoding.DecodeString(record.Data)
 			if err != nil {
 				fmr.sendResponse(w, requestId, http.StatusBadRequest, err.Error())
 				return
 			}
 
-			rmd, err := fmr.unmarshaler.Unmarshal(bytes, fmr.settings.Logger)
-			if err != nil {
-				fmr.sendResponse(w, requestId, http.StatusBadRequest, err.Error())
-				return
-			}
-			rmd.ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())
+			records = append(records, decoded)
 		}
 	}
 
-	err = fmr.nextConsumer.ConsumeMetrics(ctx, md)
+	md, err := fmr.unmarshaler.Unmarshal(records)
+	if err != nil {
+		fmr.sendResponse(w, requestId, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	err = fmr.consumer.ConsumeMetrics(ctx, md)
 	if err != nil {
 		fmr.sendResponse(w, requestId, http.StatusInternalServerError, err.Error())
 		return
@@ -191,7 +203,7 @@ func (fmr *firehoseMetricsReceiver) ServeHTTP(w http.ResponseWriter, r *http.Req
 }
 
 func (fmr *firehoseMetricsReceiver) validate(r *http.Request) (int, error) {
-	if accessKey := r.Header.Get("X-Amz-Firehose-Access-Key"); accessKey != "" && accessKey != fmr.config.AccessKey {
+	if accessKey := r.Header.Get(headerFirehoseAccessKey); accessKey != "" && accessKey != fmr.config.AccessKey {
 		return http.StatusUnauthorized, errInvalidAccessKey
 	}
 	return http.StatusAccepted, nil
@@ -218,14 +230,15 @@ func (fmr *firehoseMetricsReceiver) getReader(r io.Reader, encoding string) io.R
 }
 
 func (fmr *firehoseMetricsReceiver) getCommonAttributes(r *http.Request) (map[string]string, error) {
-	var metadata map[string]map[string]string
-	ca := r.Header.Get("X-Amz-Firehose-Common-Attributes")
-	if ca != "" {
-		if err := json.Unmarshal([]byte(ca), &metadata); err != nil {
+	attributes := make(map[string]string)
+	if commonAttributes := r.Header.Get(headerFirehoseCommonAttributes); commonAttributes != "" {
+		var fca firehoseCommonAttributes
+		if err := json.Unmarshal([]byte(commonAttributes), &fca); err != nil {
 			return nil, err
 		}
+		attributes = fca.CommonAttributes
 	}
-	return metadata["commonAttributes"], nil
+	return attributes, nil
 }
 
 func (fmr *firehoseMetricsReceiver) sendResponse(w http.ResponseWriter, requestId string, statusCode int, errorMessage string) {

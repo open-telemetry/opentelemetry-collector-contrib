@@ -20,13 +20,13 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/unmarshaler"
 )
 
 const (
-	Encoding = "cwmetrics"
+	Encoding        = "cwmetrics"
+	recordDelimiter = "\n"
 )
 
 var (
@@ -38,41 +38,53 @@ type Unmarshaler struct {
 
 var _ unmarshaler.MetricsUnmarshaler = (*Unmarshaler)(nil)
 
-func (u Unmarshaler) Unmarshal(record []byte, logger *zap.Logger) (pdata.Metrics, error) {
-	metricsBuilders := make(map[string]*namespacedMetricsBuilder)
-	// multiple metrics in each record separated by newline character
-	for _, datum := range bytes.Split(record, []byte("\n")) {
-		if len(datum) > 0 {
-			var metric cWMetric
-			// TODO: use sonic unmarshaler
-			err := json.Unmarshal(datum, &metric)
-			if err != nil || !u.isValid(metric) {
-				continue
+func NewUnmarshaler() *Unmarshaler {
+	return &Unmarshaler{}
+}
+
+func (u Unmarshaler) Unmarshal(records [][]byte) (pdata.Metrics, error) {
+	builders := make(map[string]*resourceMetricsBuilder)
+	for _, record := range records {
+		// multiple metrics in each record separated by newline character
+		for _, datum := range bytes.Split(record, []byte(recordDelimiter)) {
+			if len(datum) > 0 {
+				var metric cWMetric
+				// TODO: use sonic unmarshaler
+				err := json.Unmarshal(datum, &metric)
+				if err != nil || !u.isValid(metric) {
+					continue
+				}
+				resourceKey := u.toResourceKey(metric)
+				mb, ok := builders[resourceKey]
+				if !ok {
+					mb = newResourceMetricsBuilder()
+					builders[resourceKey] = mb
+				}
+				mb.AddMetric(metric)
 			}
-			logger.Debug("successfully unmarshalled", zap.Reflect("cwmetric", metric))
-			mb, ok := metricsBuilders[metric.Namespace]
-			if !ok {
-				mb = newNamespacedMetricsBuilder()
-				metricsBuilders[metric.Namespace] = mb
-			}
-			mb.AddMetric(metric)
 		}
 	}
 
-	if len(metricsBuilders) == 0 {
+	if len(builders) == 0 {
 		return pdata.NewMetrics(), errInvalidRecords
 	}
 
 	md := pdata.NewMetrics()
-	for _, mb := range metricsBuilders {
-		mb.Build().CopyTo(md.ResourceMetrics().AppendEmpty())
+	for _, builder := range builders {
+		builder.Build().CopyTo(md.ResourceMetrics().AppendEmpty())
 	}
 
 	return md, nil
 }
 
+// isValid validates that the cWMetric has been unmarshalled correctly.
 func (u Unmarshaler) isValid(metric cWMetric) bool {
 	return metric.MetricName != "" && metric.Namespace != "" && metric.Unit != "" && metric.Value != nil
+}
+
+// toResourceKey combines the metric stream name, namespace, account id, and region into a string key
+func (u Unmarshaler) toResourceKey(metric cWMetric) string {
+	return fmt.Sprintf("%s::%s::%s::%s", metric.MetricStreamName, metric.Namespace, metric.AccountId, metric.Region)
 }
 
 func (u Unmarshaler) Encoding() string {

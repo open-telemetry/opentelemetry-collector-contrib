@@ -30,8 +30,7 @@ func TestValidConfig(t *testing.T) {
 }
 
 func TestCreateMetricsReceiver(t *testing.T) {
-	f := firehoseReceiverFactory{metricsUnmarshalers: defaultMetricsUnmarshalers()}
-	r, err := f.createMetricsReceiver(
+	r, err := createMetricsReceiver(
 		context.Background(),
 		componenttest.NewNopReceiverCreateSettings(),
 		createDefaultConfig(),
@@ -42,8 +41,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 }
 
 func TestCreateMetricsReceiverWithNilConsumer(t *testing.T) {
-	f := firehoseReceiverFactory{metricsUnmarshalers: defaultMetricsUnmarshalers()}
-	r, err := f.createMetricsReceiver(
+	r, err := createMetricsReceiver(
 		context.Background(),
 		componenttest.NewNopReceiverCreateSettings(),
 		createDefaultConfig(),

@@ -15,6 +15,7 @@
 package cwmetricstream // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/unmarshaler/cwmetricstream"
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/model/pdata"
@@ -22,105 +23,125 @@ import (
 )
 
 const (
-	attributeAWSCloudWatchNamespace        = "aws.cloudwatch.namespace"
 	attributeAWSCloudWatchMetricStreamName = "aws.cloudwatch.metric_stream_name"
-	attributeAWSCloudWatchDimension        = "aws.cloudwatch.dimension"
+	dimensionInstanceId                    = "InstanceId"
 )
 
-type namespacedMetricsBuilder struct {
+var (
+	semConvMapping = map[string]string{
+		dimensionInstanceId: conventions.AttributeServiceInstanceID,
+	}
+)
+
+type resourceMetricsBuilder struct {
 	resource       pdata.Resource
 	metricBuilders map[string]*metricBuilder
 }
 
-func newNamespacedMetricsBuilder() *namespacedMetricsBuilder {
-	return &namespacedMetricsBuilder{
+func newResourceMetricsBuilder() *resourceMetricsBuilder {
+	return &resourceMetricsBuilder{
 		resource:       pdata.NewResource(),
 		metricBuilders: make(map[string]*metricBuilder),
 	}
 }
 
-func (nmb *namespacedMetricsBuilder) AddMetric(metric cWMetric) {
-	if nmb.resource.Attributes().Len() == 0 {
-		nmb.resource = nmb.buildResource(metric)
+func (rmb *resourceMetricsBuilder) AddMetric(metric cWMetric) {
+	if rmb.resource.Attributes().Len() == 0 {
+		rmb.resource = rmb.toResource(metric)
 	}
-	key := nmb.toKey(metric)
-	mb, ok := nmb.metricBuilders[key]
+	metricKey := rmb.toMetricKey(metric)
+	mb, ok := rmb.metricBuilders[metricKey]
 	if !ok {
-		mb = newMetricBuilder(metric.MetricName, metric.Unit, key)
-		nmb.metricBuilders[key] = mb
+		mb = newMetricBuilder(metric.MetricName, metric.Unit)
+		rmb.metricBuilders[metricKey] = mb
 	}
 	mb.AddDataPoint(metric)
 }
 
-func (nmb *namespacedMetricsBuilder) Build() pdata.ResourceMetrics {
+func (rmb *resourceMetricsBuilder) Build() pdata.ResourceMetrics {
 	rm := pdata.NewResourceMetrics()
 	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	nmb.resource.CopyTo(rm.Resource())
-	for _, mb := range nmb.metricBuilders {
-		mb.metric.CopyTo(ilm.Metrics().AppendEmpty())
+	rmb.resource.CopyTo(rm.Resource())
+	for _, mb := range rmb.metricBuilders {
+		mb.Build().CopyTo(ilm.Metrics().AppendEmpty())
 	}
 	return rm
 }
 
-func (nmb *namespacedMetricsBuilder) buildResource(metric cWMetric) pdata.Resource {
+func (rmb *resourceMetricsBuilder) toResource(metric cWMetric) pdata.Resource {
 	resource := pdata.NewResource()
 	attributes := resource.Attributes()
 	attributes.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
 	attributes.InsertString(conventions.AttributeCloudAccountID, metric.AccountId)
 	attributes.InsertString(conventions.AttributeCloudRegion, metric.Region)
-	attributes.InsertString(attributeAWSCloudWatchNamespace, metric.Namespace)
+	// split namespace into service namespace/name (e.g. namespace: AWS/,
+	splitNamespace := strings.SplitN(metric.Namespace, "/", 2)
+	if len(splitNamespace) == 2 && strings.EqualFold(splitNamespace[0], conventions.AttributeCloudProviderAWS) {
+		attributes.InsertString(conventions.AttributeServiceNamespace, splitNamespace[0])
+		attributes.InsertString(conventions.AttributeServiceName, splitNamespace[1])
+	} else {
+		attributes.InsertString(conventions.AttributeServiceName, metric.Namespace)
+	}
 	attributes.InsertString(attributeAWSCloudWatchMetricStreamName, metric.MetricStreamName)
 	return resource
 }
 
-func (nmb *namespacedMetricsBuilder) toKey(metric cWMetric) string {
-	key := metric.MetricName
-	for k, v := range metric.Dimensions {
-		key += fmt.Sprintf("::%s=%s", k, v)
-	}
-	return key
+// toMetricKey creates a key based on the metric name and dimensions to
+// keep metrics with different dimensions separate.
+func (rmb *resourceMetricsBuilder) toMetricKey(metric cWMetric) string {
+	return fmt.Sprintf("%s::%v", metric.MetricName, metric.Dimensions)
 }
 
 type metricBuilder struct {
-	metric     pdata.Metric
+	name       string
+	unit       string
+	dataPoints pdata.HistogramDataPointSlice
 	timestamps map[int64]bool
 }
 
-func newMetricBuilder(name, unit, key string) *metricBuilder {
-	metric := pdata.NewMetric()
-	metric.SetName(name)
-	metric.SetUnit(unit)
-	metric.SetDataType(pdata.MetricDataTypeGauge)
-	metric.SetDescription(key)
+func newMetricBuilder(name, unit string) *metricBuilder {
 	return &metricBuilder{
-		metric:     metric,
+		name:       name,
+		unit:       unit,
+		dataPoints: pdata.NewHistogramDataPointSlice(),
 		timestamps: make(map[int64]bool),
 	}
 }
 
 func (mb *metricBuilder) AddDataPoint(metric cWMetric) {
-	if mb.metric.Name() == "" {
-		mb.metric.SetName(metric.MetricName)
-		mb.metric.SetUnit(metric.Unit)
-		mb.metric.SetDataType(pdata.MetricDataTypeGauge)
-	} else if mb.metric.Name() != metric.MetricName {
-		// skipping invalid metric
-		return
-	}
-
 	if _, ok := mb.timestamps[metric.Timestamp]; !ok {
-		mb.buildDataPoint(metric).CopyTo(mb.metric.Gauge().DataPoints().AppendEmpty())
+		mb.toDataPoint(metric).CopyTo(mb.dataPoints.AppendEmpty())
 		mb.timestamps[metric.Timestamp] = true
 	}
 }
 
-func (mb *metricBuilder) buildDataPoint(metric cWMetric) pdata.NumberDataPoint {
-	dp := pdata.NewNumberDataPoint()
-	dp.SetDoubleVal(metric.Value.Count)
+func (mb *metricBuilder) Build() pdata.Metric {
+	metric := pdata.NewMetric()
+	metric.SetName(mb.name)
+	metric.SetUnit(mb.unit)
+	metric.SetDataType(pdata.MetricDataTypeHistogram)
+	metric.Histogram().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
+	mb.dataPoints.CopyTo(metric.Histogram().DataPoints())
+	return metric
+}
+
+func (mb *metricBuilder) toDataPoint(metric cWMetric) pdata.HistogramDataPoint {
+	dp := pdata.NewHistogramDataPoint()
+	dp.SetCount(uint64(metric.Value.Count))
+	dp.SetSum(metric.Value.Sum)
+	dp.SetExplicitBounds([]float64{metric.Value.Min, metric.Value.Max})
+	// need to set start timestamp as well
 	dp.SetTimestamp(pdata.NewTimestampFromTime(time.UnixMilli(metric.Timestamp)))
 	for k, v := range metric.Dimensions {
-		dimensionKey := fmt.Sprintf("%s.%s", attributeAWSCloudWatchDimension, k)
-		dp.Attributes().InsertString(dimensionKey, v)
+		dp.Attributes().InsertString(mb.toSemConvKey(k), v)
 	}
 	return dp
+}
+
+// toCommonKey map some common keys to semantic convention attributes
+func (mb *metricBuilder) toSemConvKey(key string) string {
+	if sc, ok := semConvMapping[key]; ok {
+		return sc
+	}
+	return key
 }
