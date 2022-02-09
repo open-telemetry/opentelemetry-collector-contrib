@@ -6,8 +6,18 @@
 
 - `hostreceiver/memoryscraper`: Migrate the scraper to the mdatagen metrics builder (#7312)
 - `lokiexporter`: Use record attributes as log labels (#7569)
+- `routingprocessor`: Do not err on failure to build exporters (#7423)
+- `apachereceiver`: Update to mdatagen v2 (#7573)
+- `datadogexporter`: Don't send host metadata if hostname is empty (#7426)
+- `datadogexporter`: Add insecure_skip_verify flag to configuration (#7422)
 
 ## 🛑 Breaking changes 🛑
+
+- `apachereceiver`: Update instrumentation library name from `otel/apache` to `otelcol/apache` (#7754)
+- `prometheusreceiver`: The OpenCensus-based metric conversion pipeline has 
+  been removed.
+  -  The `receiver.prometheus.OTLPDirect` feature gate has been removed as 
+     the direct pipeline is the only remaining pipeline.
 
 ## 🚩 Deprecations 🚩
 
@@ -18,6 +28,7 @@
  - `tailsamplingprocessor`: "And" policy only works as a sub policy under a composite policy (#7590) 
  - `prometheusreceiver`: Correctly map description and units when converting
   Prometheus metadata directly to pdata. (#7748)
+ - `sumologicexporter`: fix exporter panics on malformed histogram (#7548)
 
 ## 🚀 New components 🚀
 
@@ -40,7 +51,6 @@
 - `mysqlreceiver`: Add golden files for integration test (#7303)
 - `nginxreceiver`: Standardize integration test (#7515)
 - `mysqlreceiver`: Update to use mdatagen v2 (#7507)
-- `routingprocessor`: Do not err on failure to build exporters (#7423)
 - `postgresqlreceiver`: Add integration tests (#7501)
 - `apachereceiver`: Add integration test (#7517)
 - `mysqlreceiver`: Use scrapererror to report errors (#7513)
@@ -50,7 +60,6 @@
 - `tailsamplingprocessor`: Add And sampling policy (#6910)
 - `coralogixexporter`: Add Coralogix Exporter (#7383)
 - `prometheusexecreceiver`: Add default value for `scrape_timeout` option (#7587)
-- `apachereceiver`: Update to mdatagen v2 (#7573)
 
 ## 🛑 Breaking changes 🛑
 
