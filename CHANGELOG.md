@@ -8,6 +8,7 @@
 - `routingprocessor`: Do not err on failure to build exporters (#7423)
 - `apachereceiver`: Update to mdatagen v2 (#7573)
 - `datadogexporter`: Don't send host metadata if hostname is empty (#7426)
+- `datadogexporter`: Add insecure_skip_verify flag to configuration (#7422)
 
 ## 🛑 Breaking changes 🛑
 
@@ -53,7 +54,6 @@
 - `tailsamplingprocessor`: Add And sampling policy (#6910)
 - `coralogixexporter`: Add Coralogix Exporter (#7383)
 - `prometheusexecreceiver`: Add default value for `scrape_timeout` option (#7587)
-- `datadogexporter`: Add insecure_skip_verify flag to configuration (#7422)
 
 ## 🛑 Breaking changes 🛑
 
