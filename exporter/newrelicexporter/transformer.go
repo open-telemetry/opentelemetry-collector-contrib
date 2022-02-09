@@ -124,8 +124,6 @@ func (t *transformer) Log(log pdata.LogRecord) (telemetry.Log, error) {
 
 	if bodyString := log.Body().StringVal(); bodyString != "" {
 		message = bodyString
-	} else {
-		message = log.Name()
 	}
 
 	logAttrs := log.Attributes()
@@ -139,7 +137,6 @@ func (t *transformer) Log(log pdata.LogRecord) (telemetry.Log, error) {
 	}
 	t.TrackAttributes(attributeLocationLog, logAttrs)
 
-	attrs["name"] = log.Name()
 	if !log.TraceID().IsEmpty() {
 		attrs[traceIDKey] = log.TraceID().HexString()
 	}

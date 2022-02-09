@@ -9,7 +9,7 @@ These are the metrics available for this scraper.
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
 | elasticsearch.cluster.data_nodes | The number of data nodes in the cluster. | {nodes} | Sum(Int) | <ul> </ul> |
-| elasticsearch.cluster.health | The health status of the cluster. Health status is based on the state of its primary and replica shards. Green indicates all shards are assigned. Yellow indicates that one or more replica shards are unassigned. Red indicates that one or more primary shards are unassigned, making some data unavailable.  | {status} | Sum(Int) | <ul> <li>health_status</li> </ul> |
+| elasticsearch.cluster.health | The health status of the cluster. Health status is based on the state of its primary and replica shards. Green indicates all shards are assigned. Yellow indicates that one or more replica shards are unassigned. Red indicates that one or more primary shards are unassigned, making some data unavailable. | {status} | Sum(Int) | <ul> <li>health_status</li> </ul> |
 | elasticsearch.cluster.nodes | The total number of nodes in the cluster. | {nodes} | Sum(Int) | <ul> </ul> |
 | elasticsearch.cluster.shards | The number of shards in the cluster. | {shards} | Sum(Int) | <ul> <li>shard_state</li> </ul> |
 | elasticsearch.node.cache.evictions | The number of evictions from the cache. | {evictions} | Sum(Int) | <ul> <li>cache_name</li> </ul> |

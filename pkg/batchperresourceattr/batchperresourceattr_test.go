@@ -308,10 +308,10 @@ func fillResourceLogs(rs pdata.ResourceLogs, key string, val pdata.AttributeValu
 	rs.Resource().Attributes().Upsert(key, val)
 	rs.Resource().Attributes().Upsert("__other_key__", pdata.NewAttributeValueInt(123))
 	ils := rs.InstrumentationLibraryLogs().AppendEmpty()
-	firstLogRecord := ils.Logs().AppendEmpty()
+	firstLogRecord := ils.LogRecords().AppendEmpty()
 	firstLogRecord.SetName("first-log-record")
 	firstLogRecord.SetFlags(rand.Uint32())
-	secondLogRecord := ils.Logs().AppendEmpty()
+	secondLogRecord := ils.LogRecords().AppendEmpty()
 	secondLogRecord.SetName("second-log-record")
 	secondLogRecord.SetFlags(rand.Uint32())
 }

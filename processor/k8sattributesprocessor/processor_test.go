@@ -261,7 +261,7 @@ func generateLogs(resourceFunc ...generateResourceFunc) pdata.Logs {
 		res := ls.Resource()
 		resFun(res)
 	}
-	log := ls.InstrumentationLibraryLogs().AppendEmpty().Logs().AppendEmpty()
+	log := ls.InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty()
 	log.SetName("foobar")
 	return l
 }

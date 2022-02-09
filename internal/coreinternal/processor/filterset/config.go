@@ -43,6 +43,10 @@ type Config struct {
 	RegexpConfig *regexp.Config `mapstructure:"regexp"`
 }
 
+func NewUnrecognizedMatchTypeError(matchType MatchType) error {
+	return fmt.Errorf("unrecognized %v: '%v', valid types are: %v", MatchTypeFieldName, matchType, validMatchTypes)
+}
+
 // CreateFilterSet creates a FilterSet from yaml config.
 func CreateFilterSet(filters []string, cfg *Config) (FilterSet, error) {
 	switch cfg.MatchType {
@@ -52,6 +56,6 @@ func CreateFilterSet(filters []string, cfg *Config) (FilterSet, error) {
 		// Strict FilterSets do not have any extra configuration options, so call the constructor directly.
 		return strict.NewFilterSet(filters), nil
 	default:
-		return nil, fmt.Errorf("unrecognized %v: '%v', valid types are: %v", MatchTypeFieldName, cfg.MatchType, validMatchTypes)
+		return nil, NewUnrecognizedMatchTypeError(cfg.MatchType)
 	}
 }

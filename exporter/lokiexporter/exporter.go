@@ -149,7 +149,7 @@ func (l *lokiExporter) logDataToLoki(ld pdata.Logs) (pr *logproto.PushRequest, n
 		ills := rls.At(i).InstrumentationLibraryLogs()
 		resource := rls.At(i).Resource()
 		for j := 0; j < ills.Len(); j++ {
-			logs := ills.At(j).Logs()
+			logs := ills.At(j).LogRecords()
 			for k := 0; k < logs.Len(); k++ {
 				log := logs.At(k)
 
@@ -243,11 +243,6 @@ func (l *lokiExporter) convertAttributesToLabels(attributes pdata.AttributeMap, 
 func (l *lokiExporter) convertLogBodyToEntry(lr pdata.LogRecord, res pdata.Resource) (*logproto.Entry, error) {
 	var b strings.Builder
 
-	if len(lr.Name()) > 0 {
-		b.WriteString("name=")
-		b.WriteString(lr.Name())
-		b.WriteRune(' ')
-	}
 	if len(lr.SeverityText()) > 0 {
 		b.WriteString("severity=")
 		b.WriteString(lr.SeverityText())
