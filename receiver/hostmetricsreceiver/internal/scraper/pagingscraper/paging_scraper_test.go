@@ -32,6 +32,7 @@ import (
 func TestScrape(t *testing.T) {
 	type testCase struct {
 		name              string
+		config            Config
 		bootTimeFunc      func() (uint64, error)
 		expectedStartTime pdata.Timestamp
 		initializationErr string
@@ -39,15 +40,18 @@ func TestScrape(t *testing.T) {
 
 	testCases := []testCase{
 		{
-			name: "Standard",
+			name:   "Standard",
+			config: Config{Metrics: metadata.DefaultMetricsSettings()},
 		},
 		{
 			name:              "Validate Start Time",
+			config:            Config{Metrics: metadata.DefaultMetricsSettings()},
 			bootTimeFunc:      func() (uint64, error) { return 100, nil },
 			expectedStartTime: 100 * 1e9,
 		},
 		{
 			name:              "Boot Time Error",
+			config:            Config{Metrics: metadata.DefaultMetricsSettings()},
 			bootTimeFunc:      func() (uint64, error) { return 0, errors.New("err1") },
 			initializationErr: "err1",
 		},
@@ -55,7 +59,7 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newPagingScraper(context.Background(), &Config{})
+			scraper := newPagingScraper(context.Background(), &test.config)
 			if test.bootTimeFunc != nil {
 				scraper.bootTime = test.bootTimeFunc
 			}
@@ -91,7 +95,12 @@ func TestScrape(t *testing.T) {
 }
 
 func assertPagingUsageMetricValid(t *testing.T, hostPagingUsageMetric pdata.Metric) {
-	internal.AssertDescriptorEqual(t, metadata.Metrics.SystemPagingUsage.New(), hostPagingUsageMetric)
+	expected := pdata.NewMetric()
+	expected.SetName("system.paging.usage")
+	expected.SetDescription("Swap (unix) or pagefile (windows) usage.")
+	expected.SetUnit("By")
+	expected.SetDataType(pdata.MetricDataTypeSum)
+	internal.AssertDescriptorEqual(t, expected, hostPagingUsageMetric)
 
 	// it's valid for a system to have no swap space  / paging file, so if no data points were returned, do no validation
 	if hostPagingUsageMetric.Sum().DataPoints().Len() == 0 {
@@ -121,7 +130,13 @@ func assertPagingUsageMetricValid(t *testing.T, hostPagingUsageMetric pdata.Metr
 }
 
 func assertPagingOperationsMetricValid(t *testing.T, pagingMetric pdata.Metric, startTime pdata.Timestamp) {
-	internal.AssertDescriptorEqual(t, metadata.Metrics.SystemPagingOperations.New(), pagingMetric)
+	expected := pdata.NewMetric()
+	expected.SetName("system.paging.operations")
+	expected.SetDescription("The number of paging operations.")
+	expected.SetUnit("{operations}")
+	expected.SetDataType(pdata.MetricDataTypeSum)
+	internal.AssertDescriptorEqual(t, expected, pagingMetric)
+
 	if startTime != 0 {
 		internal.AssertSumMetricStartTimeEquals(t, pagingMetric, startTime)
 	}
@@ -146,7 +161,13 @@ func assertPagingOperationsMetricValid(t *testing.T, pagingMetric pdata.Metric, 
 }
 
 func assertPageFaultsMetricValid(t *testing.T, pageFaultsMetric pdata.Metric, startTime pdata.Timestamp) {
-	internal.AssertDescriptorEqual(t, metadata.Metrics.SystemPagingFaults.New(), pageFaultsMetric)
+	expected := pdata.NewMetric()
+	expected.SetName("system.paging.faults")
+	expected.SetDescription("The number of page faults.")
+	expected.SetUnit("{faults}")
+	expected.SetDataType(pdata.MetricDataTypeSum)
+	internal.AssertDescriptorEqual(t, expected, pageFaultsMetric)
+
 	if startTime != 0 {
 		internal.AssertSumMetricStartTimeEquals(t, pageFaultsMetric, startTime)
 	}

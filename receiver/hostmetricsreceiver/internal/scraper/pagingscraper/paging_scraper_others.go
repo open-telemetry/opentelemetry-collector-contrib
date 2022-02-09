@@ -110,16 +110,17 @@ func (s *scraper) scrapePagingMetrics(metrics pdata.MetricSlice) error {
 	}
 
 	s.recordPagingOperationsDataPoints(now, swap)
+	s.mb.Emit(metrics)
 	s.recordPageFaultsDataPoints(now, swap)
 	s.mb.Emit(metrics)
 	return nil
 }
 
 func (s *scraper) recordPagingOperationsDataPoints(now pdata.Timestamp, swap *mem.SwapMemoryStat) {
-	s.mb.RecordSystemPagingOperationsDataPoint(now, int64(swap.Sin), metadata.AttributeType.Major, metadata.AttributeDirection.PageIn)
-	s.mb.RecordSystemPagingOperationsDataPoint(now, int64(swap.Sout), metadata.AttributeType.Major, metadata.AttributeDirection.PageOut)
-	s.mb.RecordSystemPagingOperationsDataPoint(now, int64(swap.PgIn), metadata.AttributeType.Minor, metadata.AttributeDirection.PageIn)
-	s.mb.RecordSystemPagingOperationsDataPoint(now, int64(swap.PgOut), metadata.AttributeType.Minor, metadata.AttributeDirection.PageOut)
+	s.mb.RecordSystemPagingOperationsDataPoint(now, int64(swap.Sin), metadata.AttributeDirection.PageIn, metadata.AttributeType.Major)
+	s.mb.RecordSystemPagingOperationsDataPoint(now, int64(swap.Sout), metadata.AttributeDirection.PageOut, metadata.AttributeType.Major)
+	s.mb.RecordSystemPagingOperationsDataPoint(now, int64(swap.PgIn), metadata.AttributeDirection.PageIn, metadata.AttributeType.Minor)
+	s.mb.RecordSystemPagingOperationsDataPoint(now, int64(swap.PgOut), metadata.AttributeDirection.PageOut, metadata.AttributeType.Minor)
 }
 
 func (s *scraper) recordPageFaultsDataPoints(now pdata.Timestamp, swap *mem.SwapMemoryStat) {
