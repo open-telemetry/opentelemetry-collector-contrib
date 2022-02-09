@@ -296,6 +296,60 @@ func (tsp *tailSamplingSpanProcessor) ConsumeTraces(ctx context.Context, td pdat
 	return nil
 }
 
+func (tsp *tailSamplingSpanProcessor) groupResourceSpansByTraceID(rsSource pdata.ResourceSpans) map[pdata.TraceID]*pdata.ResourceSpans {
+	// here, we need to do two things: find out how many traces are within the resource spans
+	// so that we return a map based on the trace ID
+	// and then we iterate again to create one resource span per trace ID
+	idToResourceSpans := make(map[pdata.TraceID]*pdata.ResourceSpans)
+
+	ilss := rsSource.InstrumentationLibrarySpans()
+	for j := 0; j < ilss.Len(); j++ {
+		// first, keep track of the trace IDs we have in the batch
+		ilsSource := ilss.At(j)
+		spans := ilsSource.Spans()
+		spansLen := spans.Len()
+		for k := 0; k < spansLen; k++ {
+			span := spans.At(k)
+			rs := pdata.NewResourceSpans()
+			idToResourceSpans[span.TraceID()] = &rs
+		}
+	}
+
+	// now, group the spans on resource spans based on the original ones,
+	// split by trace ID
+	for traceID := range idToResourceSpans {
+		rs := idToResourceSpans[traceID]
+		rsSource.Resource().CopyTo(rs.Resource())
+		rs.SetSchemaUrl(rsSource.SchemaUrl())
+
+		ilss := rsSource.InstrumentationLibrarySpans()
+		for i := 0; i < ilss.Len(); i++ {
+			ilsSource := ilss.At(i)
+
+			ils := pdata.NewInstrumentationLibrarySpans()
+			ilsSource.InstrumentationLibrary().CopyTo(ils.InstrumentationLibrary())
+			ils.SetSchemaUrl(ilsSource.SchemaUrl())
+
+			spansSource := ilsSource.Spans()
+			for j := 0; j < spansSource.Len(); j++ {
+				spanSource := spansSource.At(j)
+				if spanSource.TraceID() == traceID {
+					span := ils.Spans().AppendEmpty()
+					spanSource.CopyTo(span)
+				}
+			}
+
+			// only add a new instrumentation library if we have spans in it
+			if ils.Spans().Len() > 0 {
+				ilsDest := rs.InstrumentationLibrarySpans().AppendEmpty()
+				ils.CopyTo(ilsDest)
+			}
+		}
+	}
+
+	return idToResourceSpans
+}
+
 func (tsp *tailSamplingSpanProcessor) groupSpansByTraceKey(resourceSpans pdata.ResourceSpans) map[pdata.TraceID][]*pdata.Span {
 	idToSpans := make(map[pdata.TraceID][]*pdata.Span)
 	ilss := resourceSpans.InstrumentationLibrarySpans()

@@ -23,6 +23,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -556,6 +557,126 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 		})
 
 		require.EqualValues(t, expected, got)
+	}
+}
+
+func TestKeepOriginalResourceSpans(t *testing.T) {
+	// prepare
+	in := pdata.NewResourceSpans()
+	tsp := tailSamplingSpanProcessor{}
+
+	traces := []pdata.TraceID{
+		pdata.NewTraceID([16]byte{1, 2, 3, 4}),
+		pdata.NewTraceID([16]byte{2, 2, 3, 4}),
+		pdata.NewTraceID([16]byte{3, 2, 3, 4}),
+	}
+
+	// first instrumentation library:
+
+	// ils 0
+	{
+		in.InstrumentationLibrarySpans().AppendEmpty()
+		ils := in.InstrumentationLibrarySpans().At(0)
+		ils.InstrumentationLibrary().SetName("library-0")
+
+		// span 0, trace 0
+		ils.Spans().AppendEmpty()
+		ils.Spans().At(0).SetName("operation-0")
+		ils.Spans().At(0).SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4}))
+		ils.Spans().At(0).SetTraceID(traces[0])
+
+		// span 1, trace 1
+		ils.Spans().AppendEmpty()
+		ils.Spans().At(1).SetName("operation-1")
+		ils.Spans().At(1).SetSpanID(pdata.NewSpanID([8]byte{2, 2, 3, 4}))
+		ils.Spans().At(1).SetTraceID(traces[1])
+
+		// span 2, trace 0
+		ils.Spans().AppendEmpty()
+		ils.Spans().At(2).SetName("operation-2")
+		ils.Spans().At(2).SetSpanID(pdata.NewSpanID([8]byte{3, 2, 3, 4}))
+		ils.Spans().At(2).SetTraceID(traces[0])
+	}
+
+	// ils 1
+	{
+		in.InstrumentationLibrarySpans().AppendEmpty()
+		ils := in.InstrumentationLibrarySpans().At(1)
+		ils.InstrumentationLibrary().SetName("library-1")
+
+		// span 0, trace 2
+		ils.Spans().AppendEmpty()
+		ils.Spans().At(0).SetName("operation-3")
+		ils.Spans().At(0).SetSpanID(pdata.NewSpanID([8]byte{4, 2, 3, 4}))
+		ils.Spans().At(0).SetTraceID(traces[2])
+
+		// span 1, trace 1
+		ils.Spans().AppendEmpty()
+		ils.Spans().At(1).SetName("operation-4")
+		ils.Spans().At(1).SetSpanID(pdata.NewSpanID([8]byte{5, 2, 3, 4}))
+		ils.Spans().At(1).SetTraceID(traces[1])
+
+		// span 2, trace 0
+		ils.Spans().AppendEmpty()
+		ils.Spans().At(2).SetName("operation-5")
+		ils.Spans().At(2).SetSpanID(pdata.NewSpanID([8]byte{6, 2, 3, 4}))
+		ils.Spans().At(2).SetTraceID(traces[0])
+	}
+
+	// test
+	out := tsp.groupResourceSpansByTraceID(in)
+
+	// verify
+	require.Len(t, out, 3)
+
+	// trace[0]
+	{
+		// this trace has two spans on the first instrumentation library
+		// and one in the second
+		trace := out[traces[0]]
+		require.Equal(t, 2, trace.InstrumentationLibrarySpans().Len())
+
+		{
+			ils := trace.InstrumentationLibrarySpans().At(0)
+			assert.Equal(t, 2, ils.Spans().Len())
+			assert.Equal(t, pdata.NewSpanID([8]byte{1, 2, 3, 4}), ils.Spans().At(0).SpanID())
+			assert.Equal(t, pdata.NewSpanID([8]byte{3, 2, 3, 4}), ils.Spans().At(1).SpanID())
+		}
+
+		{
+			ils := trace.InstrumentationLibrarySpans().At(1)
+			assert.Equal(t, 1, ils.Spans().Len())
+			assert.Equal(t, pdata.NewSpanID([8]byte{6, 2, 3, 4}), ils.Spans().At(0).SpanID())
+		}
+	}
+
+	// trace[1]
+	{
+		// this trace has two spans over two instrumentation libraries
+		trace := out[traces[1]]
+		require.Equal(t, 2, trace.InstrumentationLibrarySpans().Len())
+
+		{
+			ils := trace.InstrumentationLibrarySpans().At(0)
+			assert.Equal(t, 1, ils.Spans().Len())
+			assert.Equal(t, pdata.NewSpanID([8]byte{2, 2, 3, 4}), ils.Spans().At(0).SpanID())
+		}
+
+		{
+			ils := trace.InstrumentationLibrarySpans().At(1)
+			assert.Equal(t, 1, ils.Spans().Len())
+			assert.Equal(t, pdata.NewSpanID([8]byte{5, 2, 3, 4}), ils.Spans().At(0).SpanID())
+		}
+	}
+
+	// trace[2]
+	{
+		// this trace has one spans, only in the second instrumentation library
+		trace := out[traces[2]]
+		require.Equal(t, 1, trace.InstrumentationLibrarySpans().Len())
+		ils := trace.InstrumentationLibrarySpans().At(0)
+		assert.Equal(t, 1, ils.Spans().Len())
+		assert.Equal(t, pdata.NewSpanID([8]byte{4, 2, 3, 4}), ils.Spans().At(0).SpanID())
 	}
 }
 
