@@ -31,23 +31,15 @@ const (
 	defaultEncoding = cwmetricstream.Encoding
 )
 
-type firehoseReceiverFactory struct {
-	metricsUnmarshalers map[string]unmarshaler.MetricsUnmarshaler
-}
-
 func NewFactory() component.ReceiverFactory {
-	frf := &firehoseReceiverFactory{
-		metricsUnmarshalers: defaultMetricsUnmarshalers(),
-	}
-
 	return receiverhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithMetrics(frf.createMetricsReceiver))
+		receiverhelper.WithMetrics(createMetricsReceiver))
 }
 
 func defaultMetricsUnmarshalers() map[string]unmarshaler.MetricsUnmarshaler {
-	cwmsu := &cwmetricstream.Unmarshaler{}
+	cwmsu := cwmetricstream.NewUnmarshaler()
 	return map[string]unmarshaler.MetricsUnmarshaler{
 		cwmsu.Encoding(): cwmsu,
 	}
@@ -60,11 +52,11 @@ func createDefaultConfig() config.Receiver {
 	}
 }
 
-func (frf *firehoseReceiverFactory) createMetricsReceiver(
+func createMetricsReceiver(
 	_ context.Context,
 	set component.ReceiverCreateSettings,
 	cfg config.Receiver,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
-	return newMetricsReceiver(cfg.(*Config), set, frf.metricsUnmarshalers, nextConsumer)
+	return newMetricsReceiver(cfg.(*Config), set, defaultMetricsUnmarshalers(), nextConsumer)
 }

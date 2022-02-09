@@ -22,13 +22,14 @@ type cWMetric struct {
 	Namespace        string            `json:"namespace"`
 	MetricName       string            `json:"metric_name"`
 	Dimensions       map[string]string `json:"dimensions"`
-	// in epoch milliseconds
-	Timestamp int64 `json:"timestamp"`
-	Value     *struct {
-		Max   float64 `json:"max"`
-		Min   float64 `json:"min"`
-		Sum   float64 `json:"sum"`
-		Count float64 `json:"count"`
-	} `json:"value"`
-	Unit string `json:"unit"`
+	Timestamp        int64             `json:"timestamp"` // in epoch milliseconds
+	Value            *cWMetricValue    `json:"value"`
+	Unit             string            `json:"unit"`
+}
+
+type cWMetricValue struct {
+	Max   float64 `json:"max"`
+	Min   float64 `json:"min"`
+	Sum   float64 `json:"sum"`
+	Count float64 `json:"count"`
 }

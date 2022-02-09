@@ -16,13 +16,12 @@ package unmarshaler // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.uber.org/zap"
 )
 
 // MetricsUnmarshaler deserializes the message body
 type MetricsUnmarshaler interface {
-	// Unmarshal deserializes the message body into metrics
-	Unmarshal([]byte, *zap.Logger) (pdata.Metrics, error)
+	// Unmarshal deserializes the records into metrics
+	Unmarshal(records [][]byte) (pdata.Metrics, error)
 
 	// Encoding of the serialized messages
 	Encoding() string
