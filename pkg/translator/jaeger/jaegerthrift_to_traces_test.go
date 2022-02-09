@@ -129,7 +129,8 @@ func TestThriftBatchToInternalTraces(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			td := ThriftBatchToInternalTraces(test.jb)
+			td, err := ThriftToTraces(test.jb)
+			assert.NoError(t, err)
 			assert.EqualValues(t, test.td, td)
 		})
 	}
@@ -297,6 +298,7 @@ func BenchmarkThriftBatchToInternalTraces(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		ThriftBatchToInternalTraces(jb)
+		_, err := ThriftToTraces(jb)
+		assert.NoError(b, err)
 	}
 }

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- `translator/jaeger`: Cleanup jaeger translator function names (#7775)
+  - Deprecate old funcs with Internal word.
+
 ## 💡 Enhancements 💡
 
 - `dynatraceexporter`: Write error logs using plugin logger (#7360)
