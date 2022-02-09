@@ -11,7 +11,7 @@
 - `translator/prometheusremotewrite`: add a new module to help translate data from OTLP to Prometheus Remote Write (#7240)
 - `jmxreceiver`: Added `additional_jars` configuration option to launch JMX Metric Gatherer JAR with extended `CLASSPATH` (#7378)
 - `awscontainerinsightreceiver`: add full pod name when configured to AWS Container Insights Receiver (#7415)
-- `datadogexporter`: Add insecure_skip_tls flag to configuration (#7422)
+- `datadogexporter`: Add insecure_skip_verify flag to configuration (#7422)
 
 ## 🛑 Breaking changes 🛑
 
