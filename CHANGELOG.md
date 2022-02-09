@@ -13,6 +13,8 @@
 ## 🧰 Bug fixes 🧰
 
  - `tailsamplingprocessor`: "And" policy only works as a sub policy under a composite policy (#7590) 
+ - `prometheusreceiver`: Correctly map description and units when converting
+  Prometheus metadata directly to pdata. (#7748)
 
 ## 🚀 New components 🚀
 
