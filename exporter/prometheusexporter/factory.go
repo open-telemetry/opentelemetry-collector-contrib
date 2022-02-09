@@ -42,11 +42,11 @@ func NewFactory() component.ExporterFactory {
 
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		ConstLabels:      map[string]string{},
-		SendTimestamps:   false,
-		MetricExpiration: time.Minute * 5,
-		sanitizeLabel:    featuregate.IsEnabled(dropSanitizationGate.ID),
+		ExporterSettings:  config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ConstLabels:       map[string]string{},
+		SendTimestamps:    false,
+		MetricExpiration:  time.Minute * 5,
+		skipSanitizeLabel: featuregate.IsEnabled(dropSanitizationGate.ID),
 	}
 }
 

@@ -22,18 +22,18 @@ import (
 
 func TestSanitize(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	require.Equal(t, "", sanitize("", cfg.sanitizeLabel), "")
-	require.Equal(t, "key_test", sanitize("_test", cfg.sanitizeLabel))
-	require.Equal(t, "key_0test", sanitize("0test", cfg.sanitizeLabel))
-	require.Equal(t, "test", sanitize("test", cfg.sanitizeLabel))
-	require.Equal(t, "test__", sanitize("test_/", cfg.sanitizeLabel))
-	require.Equal(t, "key__test", sanitize("__test", cfg.sanitizeLabel))
-	//enable sanitizeLabel
-	cfg.sanitizeLabel = true
-	require.Equal(t, "_test", sanitize("_test", cfg.sanitizeLabel))
-	require.Equal(t, "", sanitize("", cfg.sanitizeLabel), "")
-	require.Equal(t, "key_0test", sanitize("0test", cfg.sanitizeLabel))
-	require.Equal(t, "test", sanitize("test", cfg.sanitizeLabel))
-	require.Equal(t, "key__test", sanitize("__test", cfg.sanitizeLabel))
+	require.Equal(t, "", sanitize("", cfg.skipSanitizeLabel), "")
+	require.Equal(t, "key_test", sanitize("_test", cfg.skipSanitizeLabel))
+	require.Equal(t, "key_0test", sanitize("0test", cfg.skipSanitizeLabel))
+	require.Equal(t, "test", sanitize("test", cfg.skipSanitizeLabel))
+	require.Equal(t, "test__", sanitize("test_/", cfg.skipSanitizeLabel))
+	require.Equal(t, "key__test", sanitize("__test", cfg.skipSanitizeLabel))
+	//enable skipSanitizeLabel
+	cfg.skipSanitizeLabel = true
+	require.Equal(t, "_test", sanitize("_test", cfg.skipSanitizeLabel))
+	require.Equal(t, "", sanitize("", cfg.skipSanitizeLabel), "")
+	require.Equal(t, "key_0test", sanitize("0test", cfg.skipSanitizeLabel))
+	require.Equal(t, "test", sanitize("test", cfg.skipSanitizeLabel))
+	require.Equal(t, "key__test", sanitize("__test", cfg.skipSanitizeLabel))
 
 }

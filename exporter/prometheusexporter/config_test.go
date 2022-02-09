@@ -50,8 +50,8 @@ func TestLoadConfig(t *testing.T) {
 				"label1":        "value1",
 				"another label": "spaced value",
 			},
-			SendTimestamps:   true,
-			MetricExpiration: 60 * time.Minute,
-			sanitizeLabel:    false,
+			SendTimestamps:    true,
+			MetricExpiration:  60 * time.Minute,
+			skipSanitizeLabel: false,
 		})
 }

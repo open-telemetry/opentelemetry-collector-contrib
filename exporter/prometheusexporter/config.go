@@ -46,8 +46,8 @@ type Config struct {
 	// ResourceToTelemetrySettings defines configuration for converting resource attributes to metric labels.
 	ResourceToTelemetrySettings resourcetotelemetry.Settings `mapstructure:"resource_to_telemetry_conversion"`
 
-	// sanitizeLabel if enabled, labels that start with _ are not sanitized
-	sanitizeLabel bool
+	// skipSanitizeLabel if enabled, labels that start with _ are not sanitized
+	skipSanitizeLabel bool
 }
 
 var _ config.Exporter = (*Config)(nil)
