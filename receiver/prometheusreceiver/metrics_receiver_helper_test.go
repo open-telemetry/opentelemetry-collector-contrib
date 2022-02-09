@@ -164,7 +164,7 @@ func verifyNumValidScrapeResults(t *testing.T, td *testData, resourceMetrics []*
 			want++
 		}
 	}
-	require.Equal(t, want, len(resourceMetrics), "want %d valid scrapes, but got %d", want, len(resourceMetrics))
+	require.LessOrEqual(t, want, len(resourceMetrics), "want at least %d valid scrapes, but got %d", want, len(resourceMetrics))
 }
 
 func verifyNumTotalScrapeResults(t *testing.T, td *testData, resourceMetrics []*pdata.ResourceMetrics) {
@@ -174,7 +174,7 @@ func verifyNumTotalScrapeResults(t *testing.T, td *testData, resourceMetrics []*
 			want++
 		}
 	}
-	require.Equal(t, want, len(resourceMetrics), "want %d total scrapes, but got %d", want, len(resourceMetrics))
+	require.LessOrEqual(t, want, len(resourceMetrics), "want at least %d total scrapes, but got %d", want, len(resourceMetrics))
 }
 
 func getMetrics(rm *pdata.ResourceMetrics) []*pdata.Metric {

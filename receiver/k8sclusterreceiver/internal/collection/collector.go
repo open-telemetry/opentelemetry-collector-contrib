@@ -23,9 +23,8 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/api/autoscaling/v2beta1"
+	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
 	batchv1 "k8s.io/api/batch/v1"
-	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -146,9 +145,9 @@ func (dc *DataCollector) SyncMetrics(obj interface{}) {
 		rm = getMetricsForStatefulSet(o)
 	case *batchv1.Job:
 		rm = getMetricsForJob(o)
-	case *batchv1beta1.CronJob:
+	case *batchv1.CronJob:
 		rm = getMetricsForCronJob(o)
-	case *v2beta1.HorizontalPodAutoscaler:
+	case *autoscalingv2beta2.HorizontalPodAutoscaler:
 		rm = getMetricsForHPA(o)
 	case *quotav1.ClusterResourceQuota:
 		rm = getMetricsForClusterResourceQuota(o)
@@ -183,9 +182,9 @@ func (dc *DataCollector) SyncMetadata(obj interface{}) map[metadata.ResourceID]*
 		km = getMetadataForStatefulSet(o)
 	case *batchv1.Job:
 		km = getMetadataForJob(o)
-	case *batchv1beta1.CronJob:
+	case *batchv1.CronJob:
 		km = getMetadataForCronJob(o)
-	case *v2beta1.HorizontalPodAutoscaler:
+	case *autoscalingv2beta2.HorizontalPodAutoscaler:
 		km = getMetadataForHPA(o)
 	}
 
