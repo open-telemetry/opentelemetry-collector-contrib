@@ -101,6 +101,7 @@
 - `tailsamplingprocessor`: Add And sampling policy (#6910)
 - `coralogixexporter`: Add Coralogix Exporter (#7383)
 - `prometheusexecreceiver`: Add default value for `scrape_timeout` option (#7587)
+- `hostreceiver/pagingscraper`: Migrate the scraper to the mdatagen metrics builder (#7139)
 
 ### 🛑 Breaking changes 🛑
 
