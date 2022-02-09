@@ -8,6 +8,7 @@
 - `routingprocessor`: Do not err on failure to build exporters (#7423)
 - `apachereceiver`: Update to mdatagen v2 (#7573)
 - `datadogexporter`: Don't send host metadata if hostname is empty (#7426)
+- `datadogexporter`: Add insecure_skip_verify flag to configuration (#7422)
 
 ## 🛑 Breaking changes 🛑
 
