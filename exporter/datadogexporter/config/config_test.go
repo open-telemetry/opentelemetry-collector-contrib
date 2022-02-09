@@ -112,6 +112,31 @@ func TestDefaultSite(t *testing.T) {
 	assert.Equal(t, cfg.API.Site, DefaultSite)
 }
 
+func TestDefaultTLSSettings(t *testing.T) {
+	cfg := Config{
+		API: APIConfig{Key: "notnull"},
+	}
+
+	err := cfg.Sanitize(zap.NewNop())
+	require.NoError(t, err)
+	assert.Equal(t, cfg.LimitedHTTPClientSettings.TLSSetting.InsecureSkipVerify, false)
+}
+
+func TestTLSSettings(t *testing.T) {
+	cfg := Config{
+		API: APIConfig{Key: "notnull"},
+		LimitedHTTPClientSettings: LimitedHTTPClientSettings{
+			TLSSetting: LimitedTLSClientSettings{
+				InsecureSkipVerify: true,
+			},
+		},
+	}
+
+	err := cfg.Sanitize(zap.NewNop())
+	require.NoError(t, err)
+	assert.Equal(t, cfg.TLSSetting.InsecureSkipVerify, true)
+}
+
 func TestAPIKeyUnset(t *testing.T) {
 	cfg := Config{}
 	err := cfg.Sanitize(zap.NewNop())
