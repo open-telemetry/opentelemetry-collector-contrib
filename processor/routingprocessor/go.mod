@@ -11,8 +11,6 @@ require (
 	google.golang.org/grpc v1.44.0
 )
 
-require go.uber.org/multierr v1.7.0
-
 require (
 	cloud.google.com/go/compute v1.2.0 // indirect
 	github.com/apache/thrift v0.15.0 // indirect
@@ -46,6 +44,7 @@ require (
 	go.opentelemetry.io/otel/metric v0.26.0 // indirect
 	go.opentelemetry.io/otel/trace v1.3.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
+	go.uber.org/multierr v1.7.0 // indirect
 	golang.org/x/net v0.0.0-20220105145211-5b0dc2dfae98 // indirect
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
 	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9 // indirect
