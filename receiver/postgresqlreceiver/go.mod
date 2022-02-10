@@ -6,12 +6,12 @@ require (
 	github.com/lib/pq v1.10.4
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.44.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.44.1-0.20220209155257-0afea3faaac8
+	go.opentelemetry.io/collector v0.44.1-0.20220210184720-ea897a6906a5
 	go.uber.org/multierr v1.7.0
 	go.uber.org/zap v1.21.0
 )
 
-require go.opentelemetry.io/collector/model v0.44.1-0.20220209155257-0afea3faaac8
+require go.opentelemetry.io/collector/model v0.44.1-0.20220210184720-ea897a6906a5
 
 require github.com/testcontainers/testcontainers-go v0.12.0
 
@@ -31,6 +31,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/google/go-cmp v0.5.7 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/knadh/koanf v1.4.0 // indirect
 	github.com/kr/text v0.2.0 // indirect
@@ -59,7 +60,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.3.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	golang.org/x/net v0.0.0-20211108170745-6635138e15ea // indirect
-	golang.org/x/sys v0.0.0-20211205182925-97ca703d548d // indirect
+	golang.org/x/sys v0.0.0-20220111092808-5a964db01320 // indirect
 	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa // indirect
 	google.golang.org/grpc v1.44.0 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect

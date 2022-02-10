@@ -14,8 +14,8 @@ require (
 	github.com/openzipkin/zipkin-go v0.4.0
 	github.com/stretchr/testify v1.7.0
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.44.1-0.20220209155257-0afea3faaac8
-	go.opentelemetry.io/collector/model v0.44.1-0.20220209155257-0afea3faaac8
+	go.opentelemetry.io/collector v0.44.1-0.20220210184720-ea897a6906a5
+	go.opentelemetry.io/collector/model v0.44.1-0.20220210184720-ea897a6906a5
 	go.uber.org/zap v1.21.0
 )
 
