@@ -59,7 +59,6 @@ func fromMetric(metric pdata.Metric, extraDimensions []*sfxpb.Dimension) []*sfxp
 
 func fromMetricTypeToMetricType(metric pdata.Metric) *sfxpb.MetricType {
 	switch metric.DataType() {
-
 	case pdata.MetricDataTypeGauge:
 		return &sfxMetricTypeGauge
 

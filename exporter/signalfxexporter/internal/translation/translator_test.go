@@ -2531,7 +2531,7 @@ func TestNegativeDeltas(t *testing.T) {
 func TestDeltaTranslatorNoMatchingMapping(t *testing.T) {
 	c := testConverter(t, map[string]string{"foo": "bar"})
 	md := intMD(1, 1)
-	idx := indexPts(c.MetricDataToSignalFxV2(md))
+	idx := indexPts(c.MetricsToSignalFxV2(md))
 	require.Equal(t, 1, len(idx))
 }
 
@@ -2541,25 +2541,25 @@ func TestDeltaTranslatorMismatchedValueTypes(t *testing.T) {
 	md1.SetDataType(pdata.MetricDataTypeSum)
 	intTS("cpu0", "user", 1, 1, 1, md1.Sum().DataPoints().AppendEmpty())
 
-	_ = c.MetricDataToSignalFxV2(wrapMetric(md1))
+	_ = c.MetricsToSignalFxV2(wrapMetric(md1))
 	md2 := baseMD()
 	md2.SetDataType(pdata.MetricDataTypeSum)
 	dblTS("cpu0", "user", 1, 1, 1, md2.Sum().DataPoints().AppendEmpty())
-	pts := c.MetricDataToSignalFxV2(wrapMetric(md2))
+	pts := c.MetricsToSignalFxV2(wrapMetric(md2))
 	idx := indexPts(pts)
 	require.Equal(t, 1, len(idx))
 }
 
-func requireDeltaMetricOk(t *testing.T, md1, md2, md3 pdata.ResourceMetrics) (
+func requireDeltaMetricOk(t *testing.T, md1, md2, md3 pdata.Metrics) (
 	[]*sfxpb.DataPoint, []*sfxpb.DataPoint,
 ) {
 	c := testConverter(t, map[string]string{"system.cpu.time": "system.cpu.delta"})
 
-	dp1 := c.MetricDataToSignalFxV2(md1)
+	dp1 := c.MetricsToSignalFxV2(md1)
 	m1 := indexPts(dp1)
 	require.Equal(t, 1, len(m1))
 
-	dp2 := c.MetricDataToSignalFxV2(md2)
+	dp2 := c.MetricsToSignalFxV2(md2)
 	m2 := indexPts(dp2)
 	require.Equal(t, 2, len(m2))
 
@@ -2574,7 +2574,7 @@ func requireDeltaMetricOk(t *testing.T, md1, md2, md3 pdata.ResourceMetrics) (
 		require.Equal(t, &counterType, pt.MetricType)
 	}
 
-	dp3 := c.MetricDataToSignalFxV2(md3)
+	dp3 := c.MetricsToSignalFxV2(md3)
 	m3 := indexPts(dp3)
 	require.Equal(t, 2, len(m3))
 
@@ -2980,7 +2980,7 @@ func indexPts(pts []*sfxpb.DataPoint) map[string][]*sfxpb.DataPoint {
 	return m
 }
 
-func doubleMD(secondsDelta int64, valueDelta float64) pdata.ResourceMetrics {
+func doubleMD(secondsDelta int64, valueDelta float64) pdata.Metrics {
 	md := baseMD()
 	md.SetDataType(pdata.MetricDataTypeSum)
 	ms := md.Sum()
@@ -2994,7 +2994,7 @@ func doubleMD(secondsDelta int64, valueDelta float64) pdata.ResourceMetrics {
 	return wrapMetric(md)
 }
 
-func intMD(secondsDelta int64, valueDelta int64) pdata.ResourceMetrics {
+func intMD(secondsDelta int64, valueDelta int64) pdata.Metrics {
 	md := baseMD()
 	md.SetDataType(pdata.MetricDataTypeSum)
 	ms := md.Sum()
@@ -3008,7 +3008,7 @@ func intMD(secondsDelta int64, valueDelta int64) pdata.ResourceMetrics {
 	return wrapMetric(md)
 }
 
-func intMDAfterReset(secondsDelta int64, valueDelta int64) pdata.ResourceMetrics {
+func intMDAfterReset(secondsDelta int64, valueDelta int64) pdata.Metrics {
 	md := baseMD()
 	md.SetDataType(pdata.MetricDataTypeSum)
 	ms := md.Sum()
@@ -3045,8 +3045,8 @@ func intTS(lbl0 string, lbl1 string, secondsDelta int64, v int64, valueDelta int
 	out.SetIntVal(v + valueDelta)
 }
 
-func wrapMetric(m pdata.Metric) pdata.ResourceMetrics {
-	out := pdata.NewResourceMetrics()
-	m.CopyTo(out.InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty())
+func wrapMetric(m pdata.Metric) pdata.Metrics {
+	out := pdata.NewMetrics()
+	m.CopyTo(out.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty())
 	return out
 }
