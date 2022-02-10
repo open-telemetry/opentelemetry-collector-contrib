@@ -20,7 +20,7 @@ metrics:
     attributes: [cpu, state]
 
   system.cpu.utilization:
-    enabled: true
+    enabled: false
     description: Percentage of CPU time broken down by different states.
     unit: 1
     gauge:
