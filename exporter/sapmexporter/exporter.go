@@ -51,7 +51,7 @@ func (se *sapmExporter) Shutdown(context.Context) error {
 }
 
 func newSAPMExporter(cfg *Config, params component.ExporterCreateSettings) (sapmExporter, error) {
-	err := cfg.Validate()
+	err := cfg.validate()
 	if err != nil {
 		return sapmExporter{}, err
 	}

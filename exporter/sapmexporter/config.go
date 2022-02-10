@@ -58,7 +58,7 @@ type Config struct {
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
 }
 
-func (c *Config) Validate() error {
+func (c *Config) validate() error {
 	if c.Endpoint == "" {
 		return errors.New("`endpoint` not specified")
 	}
@@ -72,6 +72,10 @@ func (c *Config) Validate() error {
 		e.Scheme = defaultEndpointScheme
 	}
 	c.Endpoint = e.String()
+	return nil
+}
+
+func (c *Config) Validate() error {
 	return nil
 }
 

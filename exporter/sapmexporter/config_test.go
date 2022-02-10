@@ -78,7 +78,7 @@ func TestInvalidConfig(t *testing.T) {
 		NumWorkers:     3,
 		MaxConnections: 45,
 	}
-	noEndpointErr := invalid.Validate()
+	noEndpointErr := invalid.validate()
 	require.Error(t, noEndpointErr)
 
 	invalid = Config{
@@ -87,6 +87,6 @@ func TestInvalidConfig(t *testing.T) {
 		NumWorkers:     3,
 		MaxConnections: 45,
 	}
-	invalidURLErr := invalid.Validate()
+	invalidURLErr := invalid.validate()
 	require.Error(t, invalidURLErr)
 }
