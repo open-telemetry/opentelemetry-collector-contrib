@@ -29,7 +29,6 @@ const (
 	slsLogTimeUnixNano   = "timeUnixNano"
 	slsLogSeverityNumber = "severityNumber"
 	slsLogSeverityText   = "severityText"
-	slsLogName           = "name"
 	slsLogContent        = "content"
 	slsLogAttribute      = "attribute"
 	slsLogFlags          = "flags"
