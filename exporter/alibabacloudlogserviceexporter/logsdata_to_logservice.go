@@ -29,7 +29,6 @@ const (
 	slsLogTimeUnixNano   = "timeUnixNano"
 	slsLogSeverityNumber = "severityNumber"
 	slsLogSeverityText   = "severityText"
-	slsLogName           = "name"
 	slsLogContent        = "content"
 	slsLogAttribute      = "attribute"
 	slsLogFlags          = "flags"
@@ -151,11 +150,6 @@ func mapLogRecordToLogService(lr pdata.LogRecord,
 	contentsBuffer = append(contentsBuffer, sls.LogContent{
 		Key:   proto.String(slsLogSeverityText),
 		Value: proto.String(lr.SeverityText()),
-	})
-
-	contentsBuffer = append(contentsBuffer, sls.LogContent{
-		Key:   proto.String(slsLogName),
-		Value: proto.String(lr.Name()),
 	})
 
 	fields := map[string]interface{}{}
