@@ -109,7 +109,7 @@ func TestFilterToken(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			traces := buildTestTraces(tt.useToken)
-			batches, err := jaeger.InternalTracesToJaegerProto(traces)
+			batches, err := jaeger.ProtoFromTraces(traces)
 			require.NoError(t, err)
 			assert.Equal(t, tt.useToken, hasToken(batches))
 			filterToken(batches)

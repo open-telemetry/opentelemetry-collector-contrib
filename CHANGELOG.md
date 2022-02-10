@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- `translator/jaeger`: Cleanup jaeger translator function names (#7775)
+  - Deprecate old funcs with Internal word.
+
 ## 💡 Enhancements 💡
 
 - `hostreceiver/memoryscraper`: Migrate the scraper to the mdatagen metrics builder (#7312)
