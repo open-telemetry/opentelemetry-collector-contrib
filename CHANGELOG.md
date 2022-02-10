@@ -39,6 +39,8 @@
 ## 🚀 New components 🚀
 
 - `clickhouse` exporter: Add ClickHouse Exporter (#6907)
+- `pkg/translator/signalfx`: Extract signalfx to metrics conversion in a separate package (#7778)
+  - Extract FromMetrics to SignalFx translator package (#7823)
 
 ## v0.44.0
 
@@ -72,10 +74,6 @@
 ## 🛑 Breaking changes 🛑
 
 - `resourcedetectionprocessor`: Update `os.type` attribute values according to semantic conventions (#7544)
-
-## 🚀 New components 🚀
-
-- `pkg/translator/signalfx`: Extract signalfx to metrics conversion in a separate package (#7778)
 
 ## 🧰 Bug fixes 🧰
 
