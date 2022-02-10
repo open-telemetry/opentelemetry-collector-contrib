@@ -45,8 +45,14 @@ type Config struct {
 	PrometheusConfig        *promconfig.Config       `mapstructure:"-"`
 	BufferPeriod            time.Duration            `mapstructure:"buffer_period"`
 	BufferCount             int                      `mapstructure:"buffer_count"`
-	UseStartTimeMetric      bool                     `mapstructure:"use_start_time_metric"`
-	StartTimeMetricRegex    string                   `mapstructure:"start_time_metric_regex"`
+	// UseStartTimeMetric enables retrieving the start time of all counter metrics
+	// from the process_start_time_seconds metric. This is only correct if all counters on that endpoint
+	// started after the process start time, and the process is the only actor exporting the metric after
+	// the process started. It should not be used in "exporters" which export counters that may have
+	// started before the process itself. Use only if you know what you are doing, as this may result
+	// in incorrect rate calculations.
+	UseStartTimeMetric   bool   `mapstructure:"use_start_time_metric"`
+	StartTimeMetricRegex string `mapstructure:"start_time_metric_regex"`
 
 	// ConfigPlaceholder is just an entry to make the configuration pass a check
 	// that requires that all keys present in the config actually exist on the

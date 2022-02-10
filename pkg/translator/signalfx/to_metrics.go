@@ -12,103 +12,78 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package signalfxreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver"
+package signalfx // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx"
 
 import (
-	"errors"
 	"fmt"
 
-	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
+	"github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.uber.org/zap"
+	"go.uber.org/multierr"
 )
 
-var (
-	errSFxNilDatum = errors.New("nil datum value for data-point")
-)
-
-// signalFxV2ToMetrics converts SignalFx proto data points to pdata.Metrics.
+// ToMetrics converts SignalFx proto data points to pdata.Metrics.
 // Returning the converted data and the number of dropped data points.
-func signalFxV2ToMetrics(
-	logger *zap.Logger,
-	sfxDataPoints []*sfxpb.DataPoint,
-) (pdata.Metrics, int) {
-
+func ToMetrics(sfxDataPoints []*model.DataPoint) (pdata.Metrics, error) {
 	// TODO: not optimized at all, basically regenerating everything for each
 	// 	data point.
-	numDroppedDataPoints := 0
 	md := pdata.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
 	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
 
-	metrics := ilm.Metrics()
-	metrics.EnsureCapacity(len(sfxDataPoints))
+	ms := ilm.Metrics()
+	ms.EnsureCapacity(len(sfxDataPoints))
 
+	var err error
 	for _, sfxDataPoint := range sfxDataPoints {
 		if sfxDataPoint == nil {
 			// TODO: Log or metric for this odd ball?
 			continue
 		}
-
-		// fill in a new, unassociated metric as we may drop it during the process
-		m := pdata.NewMetric()
-
-		// First check if the type is convertible and the data point is consistent.
-		err := fillInType(sfxDataPoint, m)
-		if err != nil {
-			numDroppedDataPoints++
-			logger.Debug("SignalFx data-point type conversion error",
-				zap.Error(err),
-				zap.String("metric", sfxDataPoint.GetMetric()))
-			continue
-		}
-
-		m.SetName(sfxDataPoint.Metric)
-
-		switch m.DataType() {
-		case pdata.MetricDataTypeGauge:
-			fillNumberDataPoint(sfxDataPoint, m.Gauge().DataPoints())
-		case pdata.MetricDataTypeSum:
-			fillNumberDataPoint(sfxDataPoint, m.Sum().DataPoints())
-		}
-
-		// We know at this point we're keeping this metric
-		m.CopyTo(metrics.AppendEmpty())
+		err = multierr.Append(err, setDataTypeAndPoints(sfxDataPoint, ms))
 	}
 
-	return md, numDroppedDataPoints
+	return md, err
 }
 
-func fillInType(sfxDataPoint *sfxpb.DataPoint, m pdata.Metric) (err error) {
+func setDataTypeAndPoints(sfxDataPoint *model.DataPoint, ms pdata.MetricSlice) error {
 	// Combine metric type with the actual data point type
 	sfxMetricType := sfxDataPoint.GetMetricType()
 	sfxDatum := sfxDataPoint.Value
 	if sfxDatum.IntValue == nil && sfxDatum.DoubleValue == nil {
-		return errSFxNilDatum
+		return fmt.Errorf("nil datum value for data-point in metric %q", sfxDataPoint.GetMetric())
 	}
 
+	var m pdata.Metric
 	switch sfxMetricType {
-	case sfxpb.MetricType_GAUGE:
+	case model.MetricType_GAUGE:
+		m = ms.AppendEmpty()
 		// Numerical: Periodic, instantaneous measurement of some state.
 		m.SetDataType(pdata.MetricDataTypeGauge)
+		fillNumberDataPoint(sfxDataPoint, m.Gauge().DataPoints())
 
-	case sfxpb.MetricType_COUNTER:
+	case model.MetricType_COUNTER:
+		m = ms.AppendEmpty()
 		m.SetDataType(pdata.MetricDataTypeSum)
 		m.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 		m.Sum().SetIsMonotonic(true)
+		fillNumberDataPoint(sfxDataPoint, m.Sum().DataPoints())
 
-	case sfxpb.MetricType_CUMULATIVE_COUNTER:
+	case model.MetricType_CUMULATIVE_COUNTER:
+		m = ms.AppendEmpty()
 		m.SetDataType(pdata.MetricDataTypeSum)
 		m.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		m.Sum().SetIsMonotonic(true)
-	default:
-		err = fmt.Errorf("unknown data-point type (%d)", sfxMetricType)
-	}
+		fillNumberDataPoint(sfxDataPoint, m.Sum().DataPoints())
 
-	return err
+	default:
+		return fmt.Errorf("unknown data-point type (%d) in metric %q", sfxMetricType, sfxDataPoint.GetMetric())
+	}
+	m.SetName(sfxDataPoint.Metric)
+	return nil
 }
 
-func fillNumberDataPoint(sfxDataPoint *sfxpb.DataPoint, dps pdata.NumberDataPointSlice) {
+func fillNumberDataPoint(sfxDataPoint *model.DataPoint, dps pdata.NumberDataPointSlice) {
 	dp := dps.AppendEmpty()
 	dp.SetTimestamp(dpTimestamp(sfxDataPoint))
 	switch {
@@ -120,13 +95,13 @@ func fillNumberDataPoint(sfxDataPoint *sfxpb.DataPoint, dps pdata.NumberDataPoin
 	fillInAttributes(sfxDataPoint.Dimensions, dp.Attributes())
 }
 
-func dpTimestamp(dp *sfxpb.DataPoint) pdata.Timestamp {
+func dpTimestamp(dp *model.DataPoint) pdata.Timestamp {
 	// Convert from SignalFx millis to pdata nanos
 	return pdata.Timestamp(dp.GetTimestamp() * 1e6)
 }
 
 func fillInAttributes(
-	dimensions []*sfxpb.Dimension,
+	dimensions []*model.Dimension,
 	attributes pdata.AttributeMap,
 ) {
 	attributes.Clear()

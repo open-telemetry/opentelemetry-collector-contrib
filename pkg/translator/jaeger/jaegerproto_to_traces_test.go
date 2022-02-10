@@ -175,88 +175,94 @@ func TestJTagsToInternalAttributes(t *testing.T) {
 	require.EqualValues(t, expected, got)
 }
 
-func TestProtoBatchToInternalTraces(t *testing.T) {
+func TestProtoToTraces(t *testing.T) {
 
 	tests := []struct {
 		name string
-		jb   model.Batch
+		jb   []*model.Batch
 		td   pdata.Traces
 	}{
 		{
 			name: "empty",
-			jb:   model.Batch{},
+			jb:   []*model.Batch{},
 			td:   pdata.NewTraces(),
 		},
 
 		{
 			name: "no-spans",
-			jb: model.Batch{
-				Process: generateProtoProcess(),
-			},
+			jb: []*model.Batch{
+				{
+					Process: generateProtoProcess(),
+				}},
 			td: generateTracesResourceOnly(),
 		},
 
 		{
 			name: "no-resource-attrs",
-			jb: model.Batch{
-				Process: &model.Process{
-					ServiceName: tracetranslator.ResourceNoServiceName,
-				},
-			},
+			jb: []*model.Batch{
+				{
+					Process: &model.Process{
+						ServiceName: tracetranslator.ResourceNoServiceName,
+					},
+				}},
 			td: generateTracesResourceOnlyWithNoAttrs(),
 		},
 
 		{
 			name: "one-span-no-resources",
-			jb: model.Batch{
-				Process: &model.Process{
-					ServiceName: tracetranslator.ResourceNoServiceName,
-				},
-				Spans: []*model.Span{
-					generateProtoSpanWithTraceState(),
-				},
-			},
+			jb: []*model.Batch{
+				{
+					Process: &model.Process{
+						ServiceName: tracetranslator.ResourceNoServiceName,
+					},
+					Spans: []*model.Span{
+						generateProtoSpanWithTraceState(),
+					},
+				}},
 			td: generateTracesOneSpanNoResourceWithTraceState(),
 		},
 		{
 			name: "two-spans-child-parent",
-			jb: model.Batch{
-				Process: &model.Process{
-					ServiceName: tracetranslator.ResourceNoServiceName,
-				},
-				Spans: []*model.Span{
-					generateProtoSpan(),
-					generateProtoChildSpan(),
-				},
-			},
+			jb: []*model.Batch{
+				{
+					Process: &model.Process{
+						ServiceName: tracetranslator.ResourceNoServiceName,
+					},
+					Spans: []*model.Span{
+						generateProtoSpan(),
+						generateProtoChildSpan(),
+					},
+				}},
 			td: generateTracesTwoSpansChildParent(),
 		},
 
 		{
 			name: "two-spans-with-follower",
-			jb: model.Batch{
-				Process: &model.Process{
-					ServiceName: tracetranslator.ResourceNoServiceName,
-				},
-				Spans: []*model.Span{
-					generateProtoSpan(),
-					generateProtoFollowerSpan(),
-				},
-			},
+			jb: []*model.Batch{
+				{
+					Process: &model.Process{
+						ServiceName: tracetranslator.ResourceNoServiceName,
+					},
+					Spans: []*model.Span{
+						generateProtoSpan(),
+						generateProtoFollowerSpan(),
+					},
+				}},
 			td: generateTracesTwoSpansWithFollower(),
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			td := ProtoBatchToInternalTraces(test.jb)
+			td, err := ProtoToTraces(test.jb)
+			assert.NoError(t, err)
 			assert.EqualValues(t, test.td, td)
 		})
 	}
 }
 
 func TestProtoBatchToInternalTracesWithTwoLibraries(t *testing.T) {
-	jb := model.Batch{
+	jb := &model.Batch{
 		Process: &model.Process{
 			ServiceName: tracetranslator.ResourceNoServiceName,
 		},
@@ -300,7 +306,8 @@ func TestProtoBatchToInternalTracesWithTwoLibraries(t *testing.T) {
 	library1Span := expected.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0)
 	library2Span := expected.ResourceSpans().At(0).InstrumentationLibrarySpans().At(1)
 
-	actual := ProtoBatchToInternalTraces(jb)
+	actual, err := ProtoToTraces([]*model.Batch{jb})
+	assert.NoError(t, err)
 
 	assert.Equal(t, actual.ResourceSpans().Len(), 1)
 	assert.Equal(t, actual.ResourceSpans().At(0).InstrumentationLibrarySpans().Len(), 2)
@@ -448,7 +455,8 @@ func TestProtoBatchesToInternalTraces(t *testing.T) {
 	twoSpans := generateTracesTwoSpansChildParent().ResourceSpans().At(0)
 	twoSpans.CopyTo(tgt)
 
-	got := ProtoBatchesToInternalTraces(batches)
+	got, err := ProtoToTraces(batches)
+	assert.NoError(t, err)
 	assert.EqualValues(t, expected, got)
 }
 
@@ -805,17 +813,19 @@ func generateProtoFollowerSpan() *model.Span {
 }
 
 func BenchmarkProtoBatchToInternalTraces(b *testing.B) {
-	jb := model.Batch{
-		Process: generateProtoProcess(),
-		Spans: []*model.Span{
-			generateProtoSpan(),
-			generateProtoChildSpan(),
-		},
-	}
+	jb := []*model.Batch{
+		{
+			Process: generateProtoProcess(),
+			Spans: []*model.Span{
+				generateProtoSpan(),
+				generateProtoChildSpan(),
+			},
+		}}
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		ProtoBatchToInternalTraces(jb)
+		_, err := ProtoToTraces(jb)
+		assert.NoError(b, err)
 	}
 }
 

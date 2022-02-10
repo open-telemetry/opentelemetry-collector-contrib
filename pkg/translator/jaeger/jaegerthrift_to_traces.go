@@ -29,26 +29,32 @@ import (
 
 var blankJaegerThriftSpan = new(jaeger.Span)
 
-// ThriftBatchToInternalTraces transforms a Thrift trace batch into pdata.Traces.
-func ThriftBatchToInternalTraces(batch *jaeger.Batch) pdata.Traces {
+// Deprecated: [0.45.0] use `jaeger.ThriftToTraces`
+func ThriftBatchToInternalTraces(batches *jaeger.Batch) pdata.Traces {
+	td, _ := ThriftToTraces(batches)
+	return td
+}
+
+// ThriftToTraces transforms a Thrift trace batch into pdata.Traces.
+func ThriftToTraces(batches *jaeger.Batch) (pdata.Traces, error) {
 	traceData := pdata.NewTraces()
-	jProcess := batch.GetProcess()
-	jSpans := batch.GetSpans()
+	jProcess := batches.GetProcess()
+	jSpans := batches.GetSpans()
 
 	if jProcess == nil && len(jSpans) == 0 {
-		return traceData
+		return traceData, nil
 	}
 
 	rs := traceData.ResourceSpans().AppendEmpty()
 	jThriftProcessToInternalResource(jProcess, rs.Resource())
 
 	if len(jSpans) == 0 {
-		return traceData
+		return traceData, nil
 	}
 
 	jThriftSpansToInternal(jSpans, rs.InstrumentationLibrarySpans().AppendEmpty().Spans())
 
-	return traceData
+	return traceData, nil
 }
 
 func jThriftProcessToInternalResource(process *jaeger.Process, dest pdata.Resource) {

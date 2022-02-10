@@ -138,16 +138,16 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 
 	tests := []struct {
 		name              string
-		metricsDataFn     func() pdata.ResourceMetrics
+		metricsFn         func() pdata.Metrics
 		excludeMetrics    []dpfilters.MetricFilter
 		includeMetrics    []dpfilters.MetricFilter
 		wantSfxDataPoints []*sfxpb.DataPoint
 	}{
 		{
 			name: "nil_node_nil_resources_no_dims",
-			metricsDataFn: func() pdata.ResourceMetrics {
-				out := pdata.NewResourceMetrics()
-				ilm := out.InstrumentationLibraryMetrics().AppendEmpty()
+			metricsFn: func() pdata.Metrics {
+				out := pdata.NewMetrics()
+				ilm := out.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
 
 				{
 					m := ilm.Metrics().AppendEmpty()
@@ -223,9 +223,9 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		},
 		{
 			name: "nil_node_and_resources_with_dims",
-			metricsDataFn: func() pdata.ResourceMetrics {
-				out := pdata.NewResourceMetrics()
-				ilm := out.InstrumentationLibraryMetrics().AppendEmpty()
+			metricsFn: func() pdata.Metrics {
+				out := pdata.NewMetrics()
+				ilm := out.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
 
 				{
 					m := ilm.Metrics().AppendEmpty()
@@ -265,15 +265,16 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		},
 		{
 			name: "with_node_resources_dims",
-			metricsDataFn: func() pdata.ResourceMetrics {
-				out := pdata.NewResourceMetrics()
-				res := out.Resource()
+			metricsFn: func() pdata.Metrics {
+				out := pdata.NewMetrics()
+				rm := out.ResourceMetrics().AppendEmpty()
+				res := rm.Resource()
 				res.Attributes().InsertString("k/r0", "vr0")
 				res.Attributes().InsertString("k/r1", "vr1")
 				res.Attributes().InsertString("k/n0", "vn0")
 				res.Attributes().InsertString("k/n1", "vn1")
 
-				ilm := out.InstrumentationLibraryMetrics().AppendEmpty()
+				ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
 				ilm.Metrics().EnsureCapacity(2)
 
 				{
@@ -318,15 +319,16 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		},
 		{
 			name: "with_node_resources_dims - long metric name",
-			metricsDataFn: func() pdata.ResourceMetrics {
-				out := pdata.NewResourceMetrics()
-				res := out.Resource()
+			metricsFn: func() pdata.Metrics {
+				out := pdata.NewMetrics()
+				rm := out.ResourceMetrics().AppendEmpty()
+				res := rm.Resource()
 				res.Attributes().InsertString("k/r0", "vr0")
 				res.Attributes().InsertString("k/r1", "vr1")
 				res.Attributes().InsertString("k/n0", "vn0")
 				res.Attributes().InsertString("k/n1", "vn1")
 
-				ilm := out.InstrumentationLibraryMetrics().AppendEmpty()
+				ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
 				ilm.Metrics().EnsureCapacity(5)
 
 				{
@@ -389,15 +391,16 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		},
 		{
 			name: "with_node_resources_dims - long dimension name/value",
-			metricsDataFn: func() pdata.ResourceMetrics {
-				out := pdata.NewResourceMetrics()
-				res := out.Resource()
+			metricsFn: func() pdata.Metrics {
+				out := pdata.NewMetrics()
+				rm := out.ResourceMetrics().AppendEmpty()
+				res := rm.Resource()
 				res.Attributes().InsertString("k/r0", "vr0")
 				res.Attributes().InsertString("k/r1", "vr1")
 				res.Attributes().InsertString("k/n0", "vn0")
 				res.Attributes().InsertString("k/n1", "vn1")
 
-				ilm := out.InstrumentationLibraryMetrics().AppendEmpty()
+				ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
 				ilm.Metrics().EnsureCapacity(1)
 
 				{
@@ -428,16 +431,17 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		},
 		{
 			name: "with_resources_cloud_partial_aws_dim",
-			metricsDataFn: func() pdata.ResourceMetrics {
-				out := pdata.NewResourceMetrics()
-				res := out.Resource()
+			metricsFn: func() pdata.Metrics {
+				out := pdata.NewMetrics()
+				rm := out.ResourceMetrics().AppendEmpty()
+				res := rm.Resource()
 				res.Attributes().InsertString("k/r0", "vr0")
 				res.Attributes().InsertString("k/r1", "vr1")
 				res.Attributes().InsertString("cloud.provider", conventions.AttributeCloudProviderAWS)
 				res.Attributes().InsertString("cloud.account.id", "efgh")
 				res.Attributes().InsertString("cloud.region", "us-east")
 
-				ilm := out.InstrumentationLibraryMetrics().AppendEmpty()
+				ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
 				m := ilm.Metrics().AppendEmpty()
 				m.SetName("gauge_double_with_dims")
 				m.SetDataType(pdata.MetricDataTypeGauge)
@@ -462,9 +466,10 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		},
 		{
 			name: "with_resources_cloud_aws_dim",
-			metricsDataFn: func() pdata.ResourceMetrics {
-				out := pdata.NewResourceMetrics()
-				res := out.Resource()
+			metricsFn: func() pdata.Metrics {
+				out := pdata.NewMetrics()
+				rm := out.ResourceMetrics().AppendEmpty()
+				res := rm.Resource()
 				res.Attributes().InsertString("k/r0", "vr0")
 				res.Attributes().InsertString("k/r1", "vr1")
 				res.Attributes().InsertString("cloud.provider", conventions.AttributeCloudProviderAWS)
@@ -472,7 +477,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				res.Attributes().InsertString("cloud.region", "us-east")
 				res.Attributes().InsertString("host.id", "abcd")
 
-				ilm := out.InstrumentationLibraryMetrics().AppendEmpty()
+				ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
 				m := ilm.Metrics().AppendEmpty()
 				m.SetName("gauge_double_with_dims")
 				m.SetDataType(pdata.MetricDataTypeGauge)
@@ -499,15 +504,16 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		},
 		{
 			name: "with_resources_cloud_gcp_dim_partial",
-			metricsDataFn: func() pdata.ResourceMetrics {
-				out := pdata.NewResourceMetrics()
-				res := out.Resource()
+			metricsFn: func() pdata.Metrics {
+				out := pdata.NewMetrics()
+				rm := out.ResourceMetrics().AppendEmpty()
+				res := rm.Resource()
 				res.Attributes().InsertString("k/r0", "vr0")
 				res.Attributes().InsertString("k/r1", "vr1")
 				res.Attributes().InsertString("cloud.provider", conventions.AttributeCloudProviderGCP)
 				res.Attributes().InsertString("host.id", "abcd")
 
-				ilm := out.InstrumentationLibraryMetrics().AppendEmpty()
+				ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
 				m := ilm.Metrics().AppendEmpty()
 				m.SetName("gauge_double_with_dims")
 				m.SetDataType(pdata.MetricDataTypeGauge)
@@ -531,16 +537,17 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		},
 		{
 			name: "with_resources_cloud_gcp_dim",
-			metricsDataFn: func() pdata.ResourceMetrics {
-				out := pdata.NewResourceMetrics()
-				res := out.Resource()
+			metricsFn: func() pdata.Metrics {
+				out := pdata.NewMetrics()
+				rm := out.ResourceMetrics().AppendEmpty()
+				res := rm.Resource()
 				res.Attributes().InsertString("k/r0", "vr0")
 				res.Attributes().InsertString("k/r1", "vr1")
 				res.Attributes().InsertString("cloud.provider", conventions.AttributeCloudProviderGCP)
 				res.Attributes().InsertString("host.id", "abcd")
 				res.Attributes().InsertString("cloud.account.id", "efgh")
 
-				ilm := out.InstrumentationLibraryMetrics().AppendEmpty()
+				ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
 				m := ilm.Metrics().AppendEmpty()
 				m.SetName("gauge_double_with_dims")
 				m.SetDataType(pdata.MetricDataTypeGauge)
@@ -566,9 +573,9 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		},
 		{
 			name: "histograms",
-			metricsDataFn: func() pdata.ResourceMetrics {
-				out := pdata.NewResourceMetrics()
-				ilm := out.InstrumentationLibraryMetrics().AppendEmpty()
+			metricsFn: func() pdata.Metrics {
+				out := pdata.NewMetrics()
+				ilm := out.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
 				{
 					m := ilm.Metrics().AppendEmpty()
 					m.SetName("double_histo")
@@ -591,9 +598,9 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		},
 		{
 			name: "distribution_no_buckets",
-			metricsDataFn: func() pdata.ResourceMetrics {
-				out := pdata.NewResourceMetrics()
-				ilm := out.InstrumentationLibraryMetrics().AppendEmpty()
+			metricsFn: func() pdata.Metrics {
+				out := pdata.NewMetrics()
+				ilm := out.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
 				m := ilm.Metrics().AppendEmpty()
 				m.SetName("no_bucket_histo")
 				m.SetDataType(pdata.MetricDataTypeHistogram)
@@ -605,9 +612,9 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		},
 		{
 			name: "summaries",
-			metricsDataFn: func() pdata.ResourceMetrics {
-				out := pdata.NewResourceMetrics()
-				ilm := out.InstrumentationLibraryMetrics().AppendEmpty()
+			metricsFn: func() pdata.Metrics {
+				out := pdata.NewMetrics()
+				ilm := out.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
 				m := ilm.Metrics().AppendEmpty()
 				m.SetName("summary")
 				m.SetDataType(pdata.MetricDataTypeSummary)
@@ -619,9 +626,9 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		},
 		{
 			name: "empty_summary",
-			metricsDataFn: func() pdata.ResourceMetrics {
-				out := pdata.NewResourceMetrics()
-				ilm := out.InstrumentationLibraryMetrics().AppendEmpty()
+			metricsFn: func() pdata.Metrics {
+				out := pdata.NewMetrics()
+				ilm := out.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
 				m := ilm.Metrics().AppendEmpty()
 				m.SetName("empty_summary")
 				m.SetDataType(pdata.MetricDataTypeSummary)
@@ -633,9 +640,9 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		},
 		{
 			name: "with_exclude_metrics_filter",
-			metricsDataFn: func() pdata.ResourceMetrics {
-				out := pdata.NewResourceMetrics()
-				ilm := out.InstrumentationLibraryMetrics().AppendEmpty()
+			metricsFn: func() pdata.Metrics {
+				out := pdata.NewMetrics()
+				ilm := out.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
 
 				{
 					m := ilm.Metrics().AppendEmpty()
@@ -695,9 +702,9 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		{
 			// To validate that filters in include serves as override to the ones in exclude list.
 			name: "with_include_and_exclude_metrics_filter",
-			metricsDataFn: func() pdata.ResourceMetrics {
-				out := pdata.NewResourceMetrics()
-				ilm := out.InstrumentationLibraryMetrics().AppendEmpty()
+			metricsFn: func() pdata.Metrics {
+				out := pdata.NewMetrics()
+				ilm := out.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
 
 				{
 					m := ilm.Metrics().AppendEmpty()
@@ -765,8 +772,8 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			c, err := NewMetricsConverter(logger, nil, tt.excludeMetrics, tt.includeMetrics, "")
 			require.NoError(t, err)
-			md := tt.metricsDataFn()
-			gotSfxDataPoints := c.MetricDataToSignalFxV2(md)
+			md := tt.metricsFn()
+			gotSfxDataPoints := c.MetricsToSignalFxV2(md)
 			// Sort SFx dimensions since they are built from maps and the order
 			// of those is not deterministic.
 			sortDimensions(tt.wantSfxDataPoints)
@@ -787,11 +794,11 @@ func TestMetricDataToSignalFxV2WithTranslation(t *testing.T) {
 	}, 1)
 	require.NoError(t, err)
 
-	rm := pdata.NewResourceMetrics()
-	md := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
-	md.SetDataType(pdata.MetricDataTypeGauge)
-	md.SetName("metric1")
-	dp := md.Gauge().DataPoints().AppendEmpty()
+	md := pdata.NewMetrics()
+	m := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
+	m.SetDataType(pdata.MetricDataTypeGauge)
+	m.SetName("metric1")
+	dp := m.Gauge().DataPoints().AppendEmpty()
 	dp.SetIntVal(123)
 	dp.Attributes().InsertString("old.dim", "val1")
 
@@ -813,7 +820,7 @@ func TestMetricDataToSignalFxV2WithTranslation(t *testing.T) {
 	}
 	c, err := NewMetricsConverter(zap.NewNop(), translator, nil, nil, "")
 	require.NoError(t, err)
-	assert.EqualValues(t, expected, c.MetricDataToSignalFxV2(rm))
+	assert.EqualValues(t, expected, c.MetricsToSignalFxV2(md))
 }
 
 func TestDimensionKeyCharsWithPeriod(t *testing.T) {
@@ -827,11 +834,11 @@ func TestDimensionKeyCharsWithPeriod(t *testing.T) {
 	}, 1)
 	require.NoError(t, err)
 
-	rm := pdata.NewResourceMetrics()
-	md := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
-	md.SetDataType(pdata.MetricDataTypeGauge)
-	md.SetName("metric1")
-	dp := md.Gauge().DataPoints().AppendEmpty()
+	md := pdata.NewMetrics()
+	m := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
+	m.SetDataType(pdata.MetricDataTypeGauge)
+	m.SetName("metric1")
+	dp := m.Gauge().DataPoints().AppendEmpty()
 	dp.SetIntVal(123)
 	dp.Attributes().InsertString("old.dim.with.periods", "val1")
 
@@ -853,7 +860,7 @@ func TestDimensionKeyCharsWithPeriod(t *testing.T) {
 	}
 	c, err := NewMetricsConverter(zap.NewNop(), translator, nil, nil, "_-.")
 	require.NoError(t, err)
-	assert.EqualValues(t, expected, c.MetricDataToSignalFxV2(rm))
+	assert.EqualValues(t, expected, c.MetricsToSignalFxV2(md))
 
 }
 

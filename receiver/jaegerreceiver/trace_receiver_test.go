@@ -106,7 +106,7 @@ func TestReception(t *testing.T) {
 	// 2. Then send spans to the Jaeger receiver.
 	collectorAddr := fmt.Sprintf("http://localhost:%d/api/traces", port)
 	td := generateTraceData()
-	batches, err := jaeger.InternalTracesToJaegerProto(td)
+	batches, err := jaeger.ProtoFromTraces(td)
 	require.NoError(t, err)
 	for _, batch := range batches {
 		require.NoError(t, sendToCollector(collectorAddr, modelToThrift(batch)))

@@ -5,18 +5,24 @@
 ## 💡 Enhancements 💡
 
 - `hostreceiver/memoryscraper`: Migrate the scraper to the mdatagen metrics builder (#7312)
+- `lokiexporter`: Use record attributes as log labels (#7569)
 - `routingprocessor`: Do not err on failure to build exporters (#7423)
 - `apachereceiver`: Update to mdatagen v2 (#7573)
 - `datadogexporter`: Don't send host metadata if hostname is empty (#7426)
 - `datadogexporter`: Add insecure_skip_verify flag to configuration (#7422)
+- `coralogixexporter`: Update readme (#7785)
+- `awscloudwatchlogsexporter`: Remove name from aws cloudwatch logs exporter (#7554)
 
 ## 🛑 Breaking changes 🛑
 
 - `apachereceiver`: Update instrumentation library name from `otel/apache` to `otelcol/apache` (#7754)
+- `pkg/translator/prometheusremotewrite`: Cleanup prw translator public functions (#7776)
 - `prometheusreceiver`: The OpenCensus-based metric conversion pipeline has 
   been removed.
-  -  The `receiver.prometheus.OTLPDirect` feature gate has been removed as 
-     the direct pipeline is the only remaining pipeline.
+  - The `receiver.prometheus.OTLPDirect` feature gate has been removed as 
+    the direct pipeline is the only remaining pipeline.
+- `translator/jaeger`: Cleanup jaeger translator function names (#7775)
+  - Deprecate old funcs with Internal word.
 
 ## 🚩 Deprecations 🚩
 
@@ -28,8 +34,11 @@
  - `prometheusreceiver`: Correctly map description and units when converting
   Prometheus metadata directly to pdata. (#7748)
  - `sumologicexporter`: fix exporter panics on malformed histogram (#7548)
+- `awsecscontainermetrics`: CPU Reserved is now 1024/vCPU for ECS Container Insights (#6734)
 
 ## 🚀 New components 🚀
+
+- `clickhouse` exporter: Add ClickHouse Exporter (#6907)
 
 ## v0.44.0
 
@@ -66,6 +75,8 @@
 
 ## 🚀 New components 🚀
 
+- `pkg/translator/signalfx`: Extract signalfx to metrics conversion in a separate package (#7778)
+
 ## 🧰 Bug fixes 🧰
 
 - `resourcedetectionprocessor`: fix `meta` allow list excluding keys with nil values (#7424)
@@ -73,7 +84,7 @@
 - `resourcetotelemetry`: Ensure resource attributes are added to summary
   and exponential histogram data points. (#7523)
 
-## Deprecations
+## 🚩 Deprecations 🚩
 
 - Deprecated otel_to_hec_fields.name setting from splunkhec exporter. (#7560)
 

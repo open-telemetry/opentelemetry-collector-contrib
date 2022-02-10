@@ -208,7 +208,7 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *configu
 
 	// 3. Now finally send some spans
 	td := generateTraceData()
-	batches, err := jaeger.InternalTracesToJaegerProto(td)
+	batches, err := jaeger.ProtoFromTraces(td)
 	require.NoError(t, err)
 	for _, batch := range batches {
 		require.NoError(t, jexp.EmitBatch(context.Background(), modelToThrift(batch)))

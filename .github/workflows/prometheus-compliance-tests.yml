@@ -21,7 +21,7 @@ jobs:
           path: /home/runner/go/bin
           key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
       - name: Setup Go
-        uses: actions/setup-go@v2.1.5
+        uses: actions/setup-go@v2.2.0
         with:
           go-version: 1.17
       - name: Setup Go Environment
