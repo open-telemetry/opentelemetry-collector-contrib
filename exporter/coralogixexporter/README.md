@@ -17,7 +17,7 @@ Example configuration:
 exporters:
   coralogix:
     # The Coralogix traces ingress endpoint
-    endpoint: "https://api.coralogix.com"
+    endpoint: "api.coralogix.com"
 
     # Your Coralogix private key is sensitive
     private_key: "xxx"
