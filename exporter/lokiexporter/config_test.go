@@ -86,6 +86,9 @@ func TestLoadConfig(t *testing.T) {
 				"resource.name": "resource_name",
 				"severity":      "severity",
 			},
+			RecordAttributes: map[string]string{
+				"traceID": "traceid",
+			},
 		},
 		Format: "body",
 	}
@@ -202,7 +205,7 @@ func TestConfig_validate(t *testing.T) {
 					ResourceAttributes: nil,
 				},
 			},
-			errorMessage: "\"labels.attributes\" or \"labels.resource\" must be configured with at least one attribute",
+			errorMessage: "\"labels.attributes\", \"labels.resource\", or \"labels.record\" must be configured with at least one attribute",
 			shouldError:  true,
 		},
 		{
@@ -220,6 +223,33 @@ func TestConfig_validate(t *testing.T) {
 				Labels:   validAttribLabelsConfig,
 			},
 			shouldError: false,
+		},
+		{
+			name: "with valid `labels.record`",
+			fields: fields{
+				Endpoint: validEndpoint,
+				Labels: LabelsConfig{
+					RecordAttributes: map[string]string{
+						"traceID":   "traceID",
+						"spanID":    "spanID",
+						"severity":  "severity",
+						"severityN": "severityN",
+					},
+				},
+			},
+			shouldError: false,
+		},
+		{
+			name: "with invalid `labels.record`",
+			fields: fields{
+				Endpoint: validEndpoint,
+				Labels: LabelsConfig{
+					RecordAttributes: map[string]string{
+						"invalid": "Invalid",
+					},
+				},
+			},
+			shouldError: true,
 		},
 	}
 
@@ -260,7 +290,7 @@ func TestLabelsConfig_validate(t *testing.T) {
 				Attributes:         map[string]string{},
 				ResourceAttributes: map[string]string{},
 			},
-			errorMessage: "\"labels.attributes\" or \"labels.resource\" must be configured with at least one attribute",
+			errorMessage: "\"labels.attributes\", \"labels.resource\", or \"labels.record\" must be configured with at least one attribute",
 			shouldError:  true,
 		},
 		{
