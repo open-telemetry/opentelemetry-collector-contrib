@@ -231,7 +231,7 @@ func TestConfig_validate(t *testing.T) {
 			cfg.Endpoint = tt.fields.Endpoint
 			cfg.Labels = tt.fields.Labels
 
-			err := cfg.Validate()
+			err := cfg.validate()
 			if (err != nil) != tt.shouldError {
 				t.Errorf("validate() error = %v, shouldError %v", err, tt.shouldError)
 				return
