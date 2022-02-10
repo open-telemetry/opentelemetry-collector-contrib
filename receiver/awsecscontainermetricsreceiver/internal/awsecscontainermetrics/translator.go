@@ -39,8 +39,8 @@ func convertToOTLPMetrics(prefix string, m ECSMetrics, r pdata.Resource, timesta
 	appendIntGauge(prefix+attributeCPUCores, unitCount, int64(m.NumOfCPUCores), timestamp, ilms.AppendEmpty())
 	appendIntGauge(prefix+attributeCPUOnlines, unitCount, int64(m.CPUOnlineCpus), timestamp, ilms.AppendEmpty())
 	appendIntSum(prefix+attributeCPUSystemUsage, unitNanoSecond, int64(m.SystemCPUUsage), timestamp, ilms.AppendEmpty())
-	appendDoubleGauge(prefix+attributeCPUUtilized, unitPercent, m.CPUUtilized, timestamp, ilms.AppendEmpty())
-	appendDoubleGauge(prefix+attributeCPUReserved, unitVCpu, m.CPUReserved, timestamp, ilms.AppendEmpty())
+	appendDoubleGauge(prefix+attributeCPUUtilized, unitNone, m.CPUUtilized, timestamp, ilms.AppendEmpty())
+	appendDoubleGauge(prefix+attributeCPUReserved, unitNone, m.CPUReserved, timestamp, ilms.AppendEmpty())
 	appendDoubleGauge(prefix+attributeCPUUsageInVCPU, unitVCpu, m.CPUUsageInVCPU, timestamp, ilms.AppendEmpty())
 
 	appendDoubleGauge(prefix+attributeNetworkRateRx, unitBytesPerSec, m.NetworkRateRxBytesPerSecond, timestamp, ilms.AppendEmpty())
