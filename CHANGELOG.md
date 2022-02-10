@@ -73,6 +73,8 @@
 
 ## 🚀 New components 🚀
 
+- `pkg/translator/signalfx`: Extract signalfx to metrics conversion in a separate package (#7778)
+
 ## 🧰 Bug fixes 🧰
 
 - `resourcedetectionprocessor`: fix `meta` allow list excluding keys with nil values (#7424)
