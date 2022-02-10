@@ -2,11 +2,6 @@
 
 ## Unreleased
 
-## 🛑 Breaking changes 🛑
-
-- `translator/jaeger`: Cleanup jaeger translator function names (#7775)
-  - Deprecate old funcs with Internal word.
-
 ## 💡 Enhancements 💡
 
 - `hostreceiver/memoryscraper`: Migrate the scraper to the mdatagen metrics builder (#7312)
@@ -21,10 +16,13 @@
 ## 🛑 Breaking changes 🛑
 
 - `apachereceiver`: Update instrumentation library name from `otel/apache` to `otelcol/apache` (#7754)
+- `pkg/translator/prometheusremotewrite`: Cleanup prw translator public functions (#7776)
 - `prometheusreceiver`: The OpenCensus-based metric conversion pipeline has 
   been removed.
-  -  The `receiver.prometheus.OTLPDirect` feature gate has been removed as 
-     the direct pipeline is the only remaining pipeline.
+  - The `receiver.prometheus.OTLPDirect` feature gate has been removed as 
+    the direct pipeline is the only remaining pipeline.
+- `translator/jaeger`: Cleanup jaeger translator function names (#7775)
+  - Deprecate old funcs with Internal word.
 
 ## 🚩 Deprecations 🚩
 
@@ -39,6 +37,8 @@
 - `awsecscontainermetrics`: CPU Reserved is now 1024/vCPU for ECS Container Insights (#6734)
 
 ## 🚀 New components 🚀
+
+- `clickhouse` exporter: Add ClickHouse Exporter (#6907)
 
 ## v0.44.0
 
@@ -72,10 +72,8 @@
 ## 🛑 Breaking changes 🛑
 
 - `resourcedetectionprocessor`: Update `os.type` attribute values according to semantic conventions (#7544)
-- `pkg/translator/prometheusremotewrite`: Cleanup prw translator public functions (#7776)
 
 ## 🚀 New components 🚀
-- `clickhouse` exporter: Add ClickHouse Exporter (#6907)
 
 - `pkg/translator/signalfx`: Extract signalfx to metrics conversion in a separate package (#7778)
 
@@ -86,7 +84,7 @@
 - `resourcetotelemetry`: Ensure resource attributes are added to summary
   and exponential histogram data points. (#7523)
 
-## Deprecations
+## 🚩 Deprecations 🚩
 
 - Deprecated otel_to_hec_fields.name setting from splunkhec exporter. (#7560)
 
