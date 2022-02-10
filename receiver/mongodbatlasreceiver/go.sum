@@ -458,8 +458,8 @@ github.com/yusufpapurcu/wmi v1.2.2/go.mod h1:SBZ9tNy3G9/m5Oi98Zks0QjeHVDvuK0qfxQ
 go.etcd.io/etcd/api/v3 v3.5.1/go.mod h1:cbVKeC6lCfl7j/8jBhAK6aIYO9XOjdptoxU/nLQcPvs=
 go.etcd.io/etcd/client/pkg/v3 v3.5.1/go.mod h1:IJHfcCEKxYu1Os13ZdwCwIUTUVGYTSAM3YSwc9/Ac1g=
 go.etcd.io/etcd/client/v2 v2.305.1/go.mod h1:pMEacxZW7o8pg4CrFE7pquyCJJzZvkvdD2RibOCCCGs=
-go.mongodb.org/atlas v0.14.0 h1:g5y/ZbM+eg++qJtpjG/oxoEicf3MTx7o7JaTpoKfyYw=
-go.mongodb.org/atlas v0.14.0/go.mod h1:lQhRHIxc6jQHEK3/q9WLu/SdBkPj2fQYhjLGUF6Z3U8=
+go.mongodb.org/atlas v0.15.0 h1:YyOBdBIuI//krRITf4r7PSirJ3YDNNUfNmapxwSyDow=
+go.mongodb.org/atlas v0.15.0/go.mod h1:lQhRHIxc6jQHEK3/q9WLu/SdBkPj2fQYhjLGUF6Z3U8=
 go.opencensus.io v0.21.0/go.mod h1:mSImk1erAIZhrmZN+AvHh14ztQfjbGwt4TtuofqLduU=
 go.opencensus.io v0.22.0/go.mod h1:+kGneAE2xo2IficOXnaByMWTGM9T73dGwxeWcUqIpI8=
 go.opencensus.io v0.22.2/go.mod h1:yxeiOL68Rb0Xd1ddK5vPZ/oVn4vY4Ynel7k9FzqtOIw=
