@@ -47,10 +47,10 @@ type InputOperator struct {
 
 	persister operator.Persister
 
-	knownFiles      []*Reader
-	queuedMatches   []string
-	maxBatchFiles   int
-	lastPollReaders []*Reader
+	knownFiles    []*Reader
+	queuedMatches []string
+	maxBatchFiles int
+	roller        roller
 
 	startAtBeginning bool
 
@@ -70,6 +70,7 @@ func (f *InputOperator) Start(persister operator.Persister) error {
 	f.firstCheck = true
 
 	f.persister = persister
+
 	// Load offsets from disk
 	if err := f.loadLastPollFiles(ctx); err != nil {
 		return fmt.Errorf("read known files from database: %s", err)
@@ -85,9 +86,7 @@ func (f *InputOperator) Start(persister operator.Persister) error {
 func (f *InputOperator) Stop() error {
 	f.cancel()
 	f.wg.Wait()
-	for _, reader := range f.lastPollReaders {
-		reader.Close()
-	}
+	f.roller.cleanup()
 	for _, reader := range f.knownFiles {
 		reader.Close()
 	}
@@ -148,27 +147,7 @@ func (f *InputOperator) poll(ctx context.Context) {
 	readers := f.makeReaders(matches)
 	f.firstCheck = false
 
-	// Detect files that have been rotated out of matching pattern
-	lostReaders := make([]*Reader, 0, len(f.lastPollReaders))
-OUTER:
-	for _, oldReader := range f.lastPollReaders {
-		for _, reader := range readers {
-			if reader.Fingerprint.StartsWith(oldReader.Fingerprint) {
-				continue OUTER
-			}
-		}
-		lostReaders = append(lostReaders, oldReader)
-	}
-
 	var wg sync.WaitGroup
-	for _, reader := range lostReaders {
-		wg.Add(1)
-		go func(r *Reader) {
-			defer wg.Done()
-			r.ReadToEnd(ctx)
-		}(reader)
-	}
-
 	for _, reader := range readers {
 		wg.Add(1)
 		go func(r *Reader) {
@@ -176,17 +155,9 @@ OUTER:
 			r.ReadToEnd(ctx)
 		}(reader)
 	}
-
-	// Wait until all the reader goroutines are finished
 	wg.Wait()
 
-	// Close all files
-	for _, reader := range f.lastPollReaders {
-		reader.Close()
-	}
-
-	f.lastPollReaders = readers
-
+	f.roller.roll(ctx, readers)
 	f.saveCurrent(readers)
 	f.syncLastPollFiles(ctx)
 }
