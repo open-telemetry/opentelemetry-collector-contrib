@@ -153,11 +153,6 @@ func mapLogRecordToLogService(lr pdata.LogRecord,
 		Value: proto.String(lr.SeverityText()),
 	})
 
-	contentsBuffer = append(contentsBuffer, sls.LogContent{
-		Key:   proto.String(slsLogName),
-		Value: proto.String(lr.Name()),
-	})
-
 	fields := map[string]interface{}{}
 	lr.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
 		fields[k] = v.AsString()
