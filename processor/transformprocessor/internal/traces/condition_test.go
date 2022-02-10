@@ -89,9 +89,9 @@ func Test_newConditionEvaluator(t *testing.T) {
 					},
 				},
 				Right: common.Value{
-					String: strp("bear"),
+					String: strp("cat"),
 				},
-				Op: "==",
+				Op: "!=",
 			},
 			matching: span,
 		},
