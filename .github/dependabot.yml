@@ -58,6 +58,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/exporter/clickhouseexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/exporter/coralogixexporter"
     schedule:
       interval: "weekly"

@@ -75,6 +75,7 @@
 - `pkg/translator/prometheusremotewrite`: Cleanup prw translator public functions (#7776)
 
 ## 🚀 New components 🚀
+- `clickhouse` exporter: Add ClickHouse Exporter (#6907)
 
 - `pkg/translator/signalfx`: Extract signalfx to metrics conversion in a separate package (#7778)
 
