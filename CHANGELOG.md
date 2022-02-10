@@ -16,6 +16,7 @@
 - `datadogexporter`: Don't send host metadata if hostname is empty (#7426)
 - `datadogexporter`: Add insecure_skip_verify flag to configuration (#7422)
 - `coralogixexporter`: Update readme (#7785)
+- `awscloudwatchlogsexporter`: Remove name from aws cloudwatch logs exporter (#7554)
 
 ## 🛑 Breaking changes 🛑
 
