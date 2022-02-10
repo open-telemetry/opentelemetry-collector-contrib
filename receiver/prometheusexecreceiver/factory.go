@@ -32,6 +32,7 @@ const (
 	typeStr = "prometheus_exec"
 
 	defaultCollectionInterval = 60 * time.Second
+	defaultTimeoutInterval    = 10 * time.Second
 )
 
 // NewFactory creates a factory for the prometheusexec receiver
@@ -47,6 +48,7 @@ func createDefaultConfig() config.Receiver {
 	return &Config{
 		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		ScrapeInterval:   defaultCollectionInterval,
+		ScrapeTimeout:    defaultTimeoutInterval,
 		SubprocessConfig: subprocessmanager.SubprocessConfig{
 			Env: []subprocessmanager.EnvConfig{},
 		},

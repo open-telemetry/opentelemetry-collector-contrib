@@ -15,7 +15,7 @@
 package regexp
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,7 +24,7 @@ import (
 )
 
 func TestConfig(t *testing.T) {
-	testFile := path.Join("testdata", "config.yaml")
+	testFile := filepath.Join("testdata", "config.yaml")
 	v, err := configtest.LoadConfigMap(testFile)
 	require.NoError(t, err)
 

@@ -190,7 +190,7 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) er
 			ill := ills.At(j)
 
 			// iterate over Logs
-			logs := ill.Logs()
+			logs := ill.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
 				log := logs.At(k)
 
@@ -240,7 +240,7 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) er
 		droppedLogs := pdata.NewLogs()
 		rls = droppedLogs.ResourceLogs()
 		ills := rls.AppendEmpty().InstrumentationLibraryLogs()
-		logs := ills.AppendEmpty().Logs()
+		logs := ills.AppendEmpty().LogRecords()
 
 		for _, log := range droppedRecords {
 			tgt := logs.AppendEmpty()

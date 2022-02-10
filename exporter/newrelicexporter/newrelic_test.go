@@ -651,8 +651,7 @@ func TestExportLogs(t *testing.T) {
 	rlog := logs.ResourceLogs().AppendEmpty()
 	rlog.Resource().Attributes().InsertString("resource", "R1")
 	rlog.Resource().Attributes().InsertString("service.name", "test-service")
-	l := rlog.InstrumentationLibraryLogs().AppendEmpty().Logs().AppendEmpty()
-	l.SetName("logname")
+	l := rlog.InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty()
 	l.SetTimestamp(pdata.NewTimestampFromTime(timestamp))
 	l.Body().SetStringVal("log body")
 	l.Attributes().InsertString("foo", "bar")
@@ -672,8 +671,7 @@ func TestExportLogs(t *testing.T) {
 					Message:   "log body",
 					Timestamp: timestamp.UnixNano() / (1000 * 1000),
 					Attributes: map[string]interface{}{
-						"foo":  "bar",
-						"name": "logname",
+						"foo": "bar",
 					},
 				},
 			},
@@ -857,7 +855,7 @@ func TestBadLogResourceGeneratesError(t *testing.T) {
 	ld := pdata.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
 	rl.Resource().Attributes().InsertDouble("badattribute", math.Inf(1))
-	rl.InstrumentationLibraryLogs().AppendEmpty().Logs().AppendEmpty()
+	rl.InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty()
 
 	errorFromConsumeLogs := exp.ConsumeLogs(ctx, ld)
 

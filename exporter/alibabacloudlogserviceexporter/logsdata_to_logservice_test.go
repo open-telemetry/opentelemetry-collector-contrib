@@ -58,7 +58,7 @@ func createLogData(numberOfLogs int) pdata.Logs {
 
 	for i := 0; i < numberOfLogs; i++ {
 		ts := pdata.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
-		logRecord := ill.Logs().AppendEmpty()
+		logRecord := ill.LogRecords().AppendEmpty()
 		switch i {
 		case 0:
 			// do nothing, left body null

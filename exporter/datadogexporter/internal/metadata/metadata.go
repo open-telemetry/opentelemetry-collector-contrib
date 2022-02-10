@@ -149,13 +149,19 @@ func fillHostMetadata(params component.ExporterCreateSettings, cfg *config.Confi
 	}
 }
 
-func pushMetadata(cfg *config.Config, buildInfo component.BuildInfo, metadata *HostMetadata) error {
+func pushMetadata(cfg *config.Config, params component.ExporterCreateSettings, metadata *HostMetadata) error {
+	if metadata.Meta.Hostname == "" {
+		// if the hostname is empty, don't send metadata; we don't need it.
+		params.Logger.Debug("Skipping host metadata since the hostname is empty")
+		return nil
+	}
+
 	path := cfg.Metrics.TCPAddr.Endpoint + "/intake"
 	buf, _ := json.Marshal(metadata)
 	req, _ := http.NewRequest(http.MethodPost, path, bytes.NewBuffer(buf))
-	utils.SetDDHeaders(req.Header, buildInfo, cfg.API.Key)
+	utils.SetDDHeaders(req.Header, params.BuildInfo, cfg.API.Key)
 	utils.SetExtraHeaders(req.Header, utils.JSONHeaders)
-	client := utils.NewHTTPClient(cfg.TimeoutSettings)
+	client := utils.NewHTTPClient(cfg.TimeoutSettings, cfg.LimitedHTTPClientSettings)
 	resp, err := client.Do(req)
 
 	if err != nil {
@@ -179,7 +185,7 @@ func pushMetadataWithRetry(retrier *utils.Retrier, params component.ExporterCrea
 	params.Logger.Debug("Sending host metadata payload", zap.Any("payload", hostMetadata))
 
 	err := retrier.DoWithRetries(context.Background(), func(context.Context) error {
-		return pushMetadata(cfg, params.BuildInfo, hostMetadata)
+		return pushMetadata(cfg, params, hostMetadata)
 	})
 
 	if err != nil {

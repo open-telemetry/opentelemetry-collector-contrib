@@ -19,7 +19,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	colconfig "go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.uber.org/zap"
 )
@@ -113,6 +112,31 @@ func TestDefaultSite(t *testing.T) {
 	assert.Equal(t, cfg.API.Site, DefaultSite)
 }
 
+func TestDefaultTLSSettings(t *testing.T) {
+	cfg := Config{
+		API: APIConfig{Key: "notnull"},
+	}
+
+	err := cfg.Sanitize(zap.NewNop())
+	require.NoError(t, err)
+	assert.Equal(t, cfg.LimitedHTTPClientSettings.TLSSetting.InsecureSkipVerify, false)
+}
+
+func TestTLSSettings(t *testing.T) {
+	cfg := Config{
+		API: APIConfig{Key: "notnull"},
+		LimitedHTTPClientSettings: LimitedHTTPClientSettings{
+			TLSSetting: LimitedTLSClientSettings{
+				InsecureSkipVerify: true,
+			},
+		},
+	}
+
+	err := cfg.Sanitize(zap.NewNop())
+	require.NoError(t, err)
+	assert.Equal(t, cfg.TLSSetting.InsecureSkipVerify, true)
+}
+
 func TestAPIKeyUnset(t *testing.T) {
 	cfg := Config{}
 	err := cfg.Sanitize(zap.NewNop())
@@ -165,57 +189,4 @@ func TestSpanNameRemappingsValidation(t *testing.T) {
 	err := invalidCfg.Validate()
 	require.NoError(t, noErr)
 	require.Error(t, err)
-}
-
-func TestErrorReportBuckets(t *testing.T) {
-
-	tests := []struct {
-		name          string
-		stringMap     map[string]interface{}
-		expectedError error
-	}{
-		{
-			name: "report buckets false",
-			stringMap: map[string]interface{}{
-				"api": map[string]interface{}{"key": "aaa"},
-				"metrics": map[string]interface{}{
-					"report_buckets": false,
-				},
-			},
-			expectedError: errBuckets,
-		},
-		{
-			name: "report buckets true",
-			stringMap: map[string]interface{}{
-				"api": map[string]interface{}{"key": "aaa"},
-				"metrics": map[string]interface{}{
-					"report_buckets": true,
-				},
-			},
-			expectedError: errBuckets,
-		},
-		{
-			name: "no report buckets",
-			stringMap: map[string]interface{}{
-				"api": map[string]interface{}{"key": "aaa"},
-			},
-			expectedError: nil,
-		},
-	}
-
-	for _, testInstance := range tests {
-		t.Run(testInstance.name, func(t *testing.T) {
-			// default config for buckets
-			config := Config{Metrics: MetricsConfig{HistConfig: HistogramConfig{Mode: histogramModeDistributions}}}
-			configMap := colconfig.NewMapFromStringMap(testInstance.stringMap)
-			err := config.Unmarshal(configMap)
-
-			if testInstance.expectedError != nil {
-				require.Error(t, err)
-				require.ErrorIs(t, testInstance.expectedError, err)
-			} else {
-				require.NoError(t, err)
-			}
-		})
-	}
 }

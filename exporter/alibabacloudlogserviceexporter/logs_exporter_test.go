@@ -16,7 +16,7 @@ package alibabacloudlogserviceexporter
 
 import (
 	"context"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -37,7 +37,7 @@ func createSimpleLogData(numberOfLogs int) pdata.Logs {
 
 	for i := 0; i < numberOfLogs; i++ {
 		ts := pdata.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
-		logRecord := ill.Logs().AppendEmpty()
+		logRecord := ill.LogRecords().AppendEmpty()
 		logRecord.Body().SetStringVal("mylog")
 		logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
 		logRecord.Attributes().InsertString("my-label", "myapp-type")
@@ -45,7 +45,7 @@ func createSimpleLogData(numberOfLogs int) pdata.Logs {
 		logRecord.Attributes().InsertString("custom", "custom")
 		logRecord.SetTimestamp(ts)
 	}
-	ill.Logs().AppendEmpty()
+	ill.LogRecords().AppendEmpty()
 
 	return logs
 }
@@ -72,7 +72,7 @@ func TestSTSTokenExporter(t *testing.T) {
 		Endpoint:         "us-west-1.log.aliyuncs.com",
 		Project:          "demo-project",
 		Logstore:         "demo-logstore",
-		TokenFilePath:    path.Join(".", "testdata", "config.yaml"),
+		TokenFilePath:    filepath.Join("testdata", "config.yaml"),
 	})
 	assert.NoError(t, err)
 	require.NotNil(t, got)

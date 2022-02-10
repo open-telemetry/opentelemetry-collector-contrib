@@ -19,7 +19,6 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"context"
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
@@ -218,7 +217,9 @@ func IsEmptyResource(res pdata.Resource) bool {
 func GOOSToOSType(goos string) string {
 	switch goos {
 	case "dragonfly":
-		return "DRAGONFLYBSD"
+		return "dragonflybsd"
+	case "zos":
+		return "z_os"
 	}
-	return strings.ToUpper(goos)
+	return goos
 }

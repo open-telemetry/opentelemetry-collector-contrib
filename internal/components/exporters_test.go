@@ -38,6 +38,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter"
 	ddconf "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	dtconf "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticexporter"
@@ -270,6 +271,14 @@ func TestDefaultExporters(t *testing.T) {
 			getConfigFn: func() config.Exporter {
 				cfg := expFactories["carbon"].CreateDefaultConfig().(*carbonexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
+				return cfg
+			},
+		},
+		{
+			exporter: "coralogix",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["coralogix"].CreateDefaultConfig().(*coralogixexporter.Config)
+				cfg.Endpoint = endpoint
 				return cfg
 			},
 		},

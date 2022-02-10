@@ -60,7 +60,7 @@ func createLogData(numberOfLogs int, attributes pdata.AttributeMap) pdata.Logs {
 
 	for i := 0; i < numberOfLogs; i++ {
 		ts := pdata.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
-		logRecord := ill.Logs().AppendEmpty()
+		logRecord := ill.LogRecords().AppendEmpty()
 		logRecord.Body().SetStringVal("mylog")
 		attributes.Range(func(k string, v pdata.AttributeValue) bool {
 			logRecord.Attributes().Insert(k, v)
@@ -279,7 +279,7 @@ func TestExporter_logDataToLoki(t *testing.T) {
 	t.Run("with attributes that match config", func(t *testing.T) {
 		logs := pdata.NewLogs()
 		ts := pdata.Timestamp(int64(1) * time.Millisecond.Nanoseconds())
-		lr := logs.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().Logs().AppendEmpty()
+		lr := logs.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty()
 		lr.Body().SetStringVal("log message")
 		lr.Attributes().InsertString("not.in.config", "not allowed")
 		lr.SetTimestamp(ts)
@@ -293,7 +293,7 @@ func TestExporter_logDataToLoki(t *testing.T) {
 	t.Run("with partial attributes that match config", func(t *testing.T) {
 		logs := pdata.NewLogs()
 		ts := pdata.Timestamp(int64(1) * time.Millisecond.Nanoseconds())
-		lr := logs.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().Logs().AppendEmpty()
+		lr := logs.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty()
 		lr.Body().SetStringVal("log message")
 		lr.Attributes().InsertString(conventions.AttributeContainerName, "mycontainer")
 		lr.Attributes().InsertString("severity", "info")
@@ -310,14 +310,14 @@ func TestExporter_logDataToLoki(t *testing.T) {
 		logs := pdata.NewLogs()
 		ts := pdata.Timestamp(int64(1) * time.Millisecond.Nanoseconds())
 		ill := logs.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty()
-		lr1 := ill.Logs().AppendEmpty()
+		lr1 := ill.LogRecords().AppendEmpty()
 		lr1.Body().SetStringVal("log message 1")
 		lr1.Attributes().InsertString(conventions.AttributeContainerName, "mycontainer")
 		lr1.Attributes().InsertString(conventions.AttributeK8SClusterName, "mycluster")
 		lr1.Attributes().InsertString("severity", "info")
 		lr1.SetTimestamp(ts)
 
-		lr2 := ill.Logs().AppendEmpty()
+		lr2 := ill.LogRecords().AppendEmpty()
 		lr2.Body().SetStringVal("log message 2")
 		lr2.Attributes().InsertString(conventions.AttributeContainerName, "mycontainer")
 		lr2.Attributes().InsertString(conventions.AttributeK8SClusterName, "mycluster")
@@ -336,14 +336,14 @@ func TestExporter_logDataToLoki(t *testing.T) {
 		ts := pdata.Timestamp(int64(1) * time.Millisecond.Nanoseconds())
 		ill := logs.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty()
 
-		lr1 := ill.Logs().AppendEmpty()
+		lr1 := ill.LogRecords().AppendEmpty()
 		lr1.Body().SetStringVal("log message 1")
 		lr1.Attributes().InsertString(conventions.AttributeContainerName, "mycontainer1")
 		lr1.Attributes().InsertString(conventions.AttributeK8SClusterName, "mycluster1")
 		lr1.Attributes().InsertString("severity", "debug")
 		lr1.SetTimestamp(ts)
 
-		lr2 := ill.Logs().AppendEmpty()
+		lr2 := ill.LogRecords().AppendEmpty()
 		lr2.Body().SetStringVal("log message 2")
 		lr2.Attributes().InsertString(conventions.AttributeContainerName, "mycontainer2")
 		lr2.Attributes().InsertString(conventions.AttributeK8SClusterName, "mycluster2")
@@ -364,7 +364,7 @@ func TestExporter_logDataToLoki(t *testing.T) {
 		lr := logs.ResourceLogs().AppendEmpty()
 		lr.Resource().Attributes().InsertString("not.in.config", "not allowed")
 
-		lri := lr.InstrumentationLibraryLogs().AppendEmpty().Logs().AppendEmpty()
+		lri := lr.InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty()
 		lri.Body().SetStringVal("log message")
 		lri.Attributes().InsertString("not.in.config", "not allowed")
 		lri.SetTimestamp(ts)
@@ -381,7 +381,7 @@ func TestExporter_logDataToLoki(t *testing.T) {
 		lr := logs.ResourceLogs().AppendEmpty()
 		lr.Resource().Attributes().InsertString("resource.name", "myresource")
 
-		lri := lr.InstrumentationLibraryLogs().AppendEmpty().Logs().AppendEmpty()
+		lri := lr.InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty()
 		lri.Body().SetStringVal("log message")
 		lri.Attributes().InsertString(conventions.AttributeContainerName, "mycontainer")
 		lri.Attributes().InsertString("severity", "info")
@@ -477,7 +477,6 @@ func TestExporter_convertLogBodyToEntry(t *testing.T) {
 	res.Attributes().Insert("pod.name", pdata.NewAttributeValueString("something123"))
 
 	lr := pdata.NewLogRecord()
-	lr.SetName("Checkout")
 	lr.Body().SetStringVal("Payment succeeded")
 	lr.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4}))
 	lr.SetSpanID(pdata.NewSpanID([8]byte{5, 6, 7, 8}))
@@ -498,7 +497,7 @@ func TestExporter_convertLogBodyToEntry(t *testing.T) {
 
 	expEntry := &logproto.Entry{
 		Timestamp: time.Unix(0, int64(lr.Timestamp())),
-		Line:      "name=Checkout severity=DEBUG severityN=5 traceID=01020304000000000000000000000000 spanID=0506070800000000 host.name=something Payment succeeded",
+		Line:      "severity=DEBUG severityN=5 traceID=01020304000000000000000000000000 spanID=0506070800000000 host.name=something Payment succeeded",
 	}
 	require.NotNil(t, entry)
 	require.Equal(t, expEntry, entry)
@@ -610,4 +609,80 @@ func TestExporter_convertLogtoJSONEntry(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, entry)
 	require.Equal(t, expEntry, entry)
+}
+
+func TestConvertRecordAttributesToLabels(t *testing.T) {
+	testCases := []struct {
+		desc     string
+		lr       pdata.LogRecord
+		expected model.LabelSet
+	}{
+		{
+			desc: "traceID",
+			lr: func() pdata.LogRecord {
+				lr := pdata.NewLogRecord()
+				lr.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4}))
+				return lr
+			}(),
+			expected: func() model.LabelSet {
+				ls := model.LabelSet{}
+				ls[model.LabelName("traceID")] = model.LabelValue("01020304000000000000000000000000")
+				return ls
+			}(),
+		},
+		{
+			desc: "spanID",
+			lr: func() pdata.LogRecord {
+				lr := pdata.NewLogRecord()
+				lr.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4}))
+				return lr
+			}(),
+			expected: func() model.LabelSet {
+				ls := model.LabelSet{}
+				ls[model.LabelName("spanID")] = model.LabelValue("0102030400000000")
+				return ls
+			}(),
+		},
+		{
+			desc: "severity",
+			lr: func() pdata.LogRecord {
+				lr := pdata.NewLogRecord()
+				lr.SetSeverityText("DEBUG")
+				return lr
+			}(),
+			expected: func() model.LabelSet {
+				ls := model.LabelSet{}
+				ls[model.LabelName("severity")] = model.LabelValue("DEBUG")
+				return ls
+			}(),
+		},
+		{
+			desc: "severityN",
+			lr: func() pdata.LogRecord {
+				lr := pdata.NewLogRecord()
+				lr.SetSeverityNumber(pdata.SeverityNumberDEBUG)
+				return lr
+			}(),
+			expected: func() model.LabelSet {
+				ls := model.LabelSet{}
+				ls[model.LabelName("severityN")] = model.LabelValue(pdata.SeverityNumberDEBUG.String())
+				return ls
+			}(),
+		},
+	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			exp := newExporter(&Config{
+				Labels: LabelsConfig{
+					RecordAttributes: map[string]string{
+						tC.desc: tC.desc,
+					},
+				},
+			}, componenttest.NewNopTelemetrySettings())
+
+			ls := exp.convertRecordAttributesToLabels(tC.lr)
+
+			assert.Equal(t, tC.expected, ls)
+		})
+	}
 }

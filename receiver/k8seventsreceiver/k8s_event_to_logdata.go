@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	// Number of log attributes to add to the pdata.LogSlice.
+	// Number of log attributes to add to the pdata.LogRecordSlice.
 	totalLogAttributes = 7
 
 	// Number of resource attributes to add to the pdata.ResourceLogs.
@@ -38,12 +38,12 @@ var severityMap = map[string]pdata.SeverityNumber{
 	"warning": pdata.SeverityNumberWARN,
 }
 
-// k8sEventToLogRecord converts Kubernetes event to pdata.LogSlice and adds the resource attributes.
+// k8sEventToLogRecord converts Kubernetes event to pdata.LogRecordSlice and adds the resource attributes.
 func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event) pdata.Logs {
 	ld := pdata.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
 	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
-	lr := ill.Logs().AppendEmpty()
+	lr := ill.LogRecords().AppendEmpty()
 
 	resourceAttrs := rl.Resource().Attributes()
 	resourceAttrs.EnsureCapacity(totalResourceAttributes)
@@ -60,7 +60,7 @@ func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event) pdata.Logs {
 	lr.SetTimestamp(pdata.NewTimestampFromTime(getEventTimestamp(ev)))
 
 	// The Message field contains description about the event,
-	// which is best suited for the "Body" of the LogSlice.
+	// which is best suited for the "Body" of the LogRecordSlice.
 	lr.Body().SetStringVal(ev.Message)
 
 	// Set the "SeverityNumber" and "SeverityText" if a known type of
