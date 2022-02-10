@@ -31,7 +31,6 @@ type LogAgentBuilder struct {
 	config        *Config
 	logger        *zap.SugaredLogger
 	pluginDir     string
-	configFiles   []string
 }
 
 // NewBuilder creates a new LogAgentBuilder
@@ -44,12 +43,6 @@ func NewBuilder(logger *zap.SugaredLogger) *LogAgentBuilder {
 // WithPluginDir adds the specified plugin directory when building a log agent
 func (b *LogAgentBuilder) WithPluginDir(pluginDir string) *LogAgentBuilder {
 	b.pluginDir = pluginDir
-	return b
-}
-
-// WithConfigFiles adds a list of globs to the search path for config files
-func (b *LogAgentBuilder) WithConfigFiles(files []string) *LogAgentBuilder {
-	b.configFiles = files
 	return b
 }
 
@@ -73,18 +66,8 @@ func (b *LogAgentBuilder) Build() (*LogAgent, error) {
 		}
 	}
 
-	if b.config != nil && len(b.configFiles) > 0 {
-		return nil, errors.NewError("agent can be built WithConfig or WithConfigFiles, but not both", "")
-	}
-	if b.config == nil && len(b.configFiles) == 0 {
-		return nil, errors.NewError("agent cannot be built without WithConfig or WithConfigFiles", "")
-	}
-	if len(b.configFiles) > 0 {
-		cfgs, err := NewConfigFromGlobs(b.configFiles)
-		if err != nil {
-			return nil, errors.Wrap(err, "read configs from globs")
-		}
-		b.config = cfgs
+	if b.config == nil {
+		return nil, errors.NewError("config must be specified", "")
 	}
 
 	if len(b.config.Pipeline) == 0 {

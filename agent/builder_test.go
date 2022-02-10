@@ -117,38 +117,6 @@ func TestBuildAgentFailureNoConfigOrGlobs(t *testing.T) {
 		WithDefaultOutput(mockOutput).
 		Build()
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "cannot be built without")
-	require.Nil(t, agent)
-}
-
-func TestBuildAgentFailureWithBothConfigAndGlobs(t *testing.T) {
-	mockCfg := Config{}
-	mockLogger := zap.NewNop().Sugar()
-	mockPluginDir := "/some/plugin/path"
-	mockOutput := testutil.NewFakeOutput(t)
-
-	agent, err := NewBuilder(mockLogger).
-		WithConfig(&mockCfg).
-		WithConfigFiles([]string{"test"}).
-		WithPluginDir(mockPluginDir).
-		WithDefaultOutput(mockOutput).
-		Build()
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "not both")
-	require.Nil(t, agent)
-}
-
-func TestBuildAgentFailureNonexistGlobs(t *testing.T) {
-	mockLogger := zap.NewNop().Sugar()
-	mockPluginDir := "/some/plugin/path"
-	mockOutput := testutil.NewFakeOutput(t)
-
-	agent, err := NewBuilder(mockLogger).
-		WithConfigFiles([]string{"/tmp/nonexist"}).
-		WithPluginDir(mockPluginDir).
-		WithDefaultOutput(mockOutput).
-		Build()
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "read configs from globs")
+	require.Contains(t, err.Error(), "config must be specified")
 	require.Nil(t, agent)
 }
