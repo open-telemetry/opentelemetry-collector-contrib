@@ -100,7 +100,8 @@ porto:
 
 .PHONY: misspell
 misspell:
-	$(MISSPELL) $(ALL_SRC_AND_DOC)
+	@echo "running $(MISSPELL) $(ALL_SRC_AND_DOC)" | awk 'length > 70{$$0=substr($$0,0,71)"..."}1'
+	@$(MISSPELL) $(ALL_SRC_AND_DOC)
 
 .PHONY: misspell-correction
 misspell-correction:
