@@ -5,19 +5,19 @@ go 1.17
 require (
 	github.com/gobwas/glob v0.2.3
 	github.com/gogo/protobuf v1.3.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.43.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.43.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.43.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.43.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.43.0
-	github.com/shirou/gopsutil/v3 v3.21.12
-	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.2
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.44.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.44.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.44.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.44.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.44.0
+	github.com/shirou/gopsutil/v3 v3.22.1
+	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3
 	github.com/signalfx/signalfx-agent/pkg/apm v0.0.0-20201202163743-65b4fa925fc8
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.44.0
 	go.opentelemetry.io/collector/model v0.44.0
 	go.uber.org/multierr v1.7.0
-	go.uber.org/zap v1.20.0
+	go.uber.org/zap v1.21.0
 )
 
 require gopkg.in/yaml.v2 v2.4.0
@@ -69,8 +69,8 @@ require (
 )
 
 require (
-	github.com/jaegertracing/jaeger v1.30.0 // indirect
-	golang.org/x/sys v0.0.0-20211210111614-af8b64212486
+	github.com/jaegertracing/jaeger v1.31.0 // indirect
+	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common

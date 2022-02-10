@@ -1,4 +1,4 @@
-# Coralogix Exporter (in development)
+# Coralogix Exporter
 
 The Coralogix exporter sends traces to [Coralogix](https://coralogix.com/) as
 Coralogix logs.

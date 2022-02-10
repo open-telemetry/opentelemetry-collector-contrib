@@ -16,7 +16,7 @@ package alibabacloudlogserviceexporter
 
 import (
 	"context"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -72,7 +72,7 @@ func TestSTSTokenExporter(t *testing.T) {
 		Endpoint:         "us-west-1.log.aliyuncs.com",
 		Project:          "demo-project",
 		Logstore:         "demo-logstore",
-		TokenFilePath:    path.Join(".", "testdata", "config.yaml"),
+		TokenFilePath:    filepath.Join("testdata", "config.yaml"),
 	})
 	assert.NoError(t, err)
 	require.NotNil(t, got)

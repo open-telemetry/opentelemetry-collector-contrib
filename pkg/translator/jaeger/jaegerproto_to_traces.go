@@ -32,11 +32,17 @@ import (
 
 var blankJaegerProtoSpan = new(model.Span)
 
-// ProtoBatchesToInternalTraces converts multiple Jaeger proto batches to internal traces
+// Deprecated: [0.45.0] use `jaeger.ProtoToTraces`
 func ProtoBatchesToInternalTraces(batches []*model.Batch) pdata.Traces {
+	td, _ := ProtoToTraces(batches)
+	return td
+}
+
+// ProtoToTraces converts multiple Jaeger proto batches to internal traces
+func ProtoToTraces(batches []*model.Batch) (pdata.Traces, error) {
 	traceData := pdata.NewTraces()
 	if len(batches) == 0 {
-		return traceData
+		return traceData, nil
 	}
 
 	rss := traceData.ResourceSpans()
@@ -50,10 +56,10 @@ func ProtoBatchesToInternalTraces(batches []*model.Batch) pdata.Traces {
 		protoBatchToResourceSpans(*batch, rss.AppendEmpty())
 	}
 
-	return traceData
+	return traceData, nil
 }
 
-// ProtoBatchToInternalTraces converts Jeager proto batch to internal traces
+// Deprecated: [0.45.0] use `jaeger.ProtoToTraces`
 func ProtoBatchToInternalTraces(batch model.Batch) pdata.Traces {
 	traceData := pdata.NewTraces()
 

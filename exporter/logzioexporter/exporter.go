@@ -70,7 +70,7 @@ func newLogzioExporter(config *Config, params component.ExporterCreateSettings) 
 		writer:                       spanWriter,
 		accountToken:                 config.TracesToken,
 		logger:                       &logger,
-		InternalTracesToJaegerTraces: jaeger.InternalTracesToJaegerProto,
+		InternalTracesToJaegerTraces: jaeger.ProtoFromTraces,
 		WriteSpanFunc:                spanWriter.WriteSpan,
 	}, nil
 }

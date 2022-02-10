@@ -15,7 +15,7 @@
 package dynatraceexporter
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/apiconstants"
@@ -59,7 +59,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
