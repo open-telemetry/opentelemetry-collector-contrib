@@ -5,6 +5,7 @@
 ## 💡 Enhancements 💡
 
 - `hostreceiver/memoryscraper`: Migrate the scraper to the mdatagen metrics builder (#7312)
+- `lokiexporter`: Use record attributes as log labels (#7569)
 - `routingprocessor`: Do not err on failure to build exporters (#7423)
 - `apachereceiver`: Update to mdatagen v2 (#7573)
 - `datadogexporter`: Don't send host metadata if hostname is empty (#7426)
