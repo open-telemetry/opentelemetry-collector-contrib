@@ -282,15 +282,15 @@ func TestCompaction(t *testing.T) {
 		require.NoError(t, err)
 
 		// compact before checking size
-		c, ok := client.(*fileStorageClient)
-		require.True(t, ok)
-		client, err = c.Compact(tempDir, cfg.Timeout, ctx)
+		c, fok := client.(*fileStorageClient)
+		require.True(t, fok)
+		client, err = c.Compact(ctx, tempDir, cfg.Timeout, 1)
 		require.NoError(t, err)
 
 		// check size after compaction
 		newStats, err = os.Stat(path)
 		require.NoError(t, err)
-		i += 1
+		i++
 	}
 
 	stats = newStats
@@ -298,7 +298,7 @@ func TestCompaction(t *testing.T) {
 	// compact again just in case
 	c, ok := client.(*fileStorageClient)
 	require.True(t, ok)
-	client, err = c.Compact(tempDir, cfg.Timeout, ctx)
+	client, err = c.Compact(ctx, tempDir, cfg.Timeout, 1)
 	require.NoError(t, err)
 
 	// check size after compaction
@@ -317,11 +317,71 @@ func TestCompaction(t *testing.T) {
 	// compact after data removal
 	c, ok = client.(*fileStorageClient)
 	require.True(t, ok)
-	_, err = c.Compact(tempDir, cfg.Timeout, ctx)
+	_, err = c.Compact(ctx, tempDir, cfg.Timeout, 1)
 	require.NoError(t, err)
 
 	// check size
 	newStats, err = os.Stat(path)
 	require.NoError(t, err)
 	require.Less(t, newStats.Size(), stats.Size())
+}
+
+// TestCompactionRemoveTemp validates if temporary db used for compaction is removed afterwards
+// test is performed for both: the same and different than storage directories
+func TestCompactionRemoveTemp(t *testing.T) {
+	ctx := context.Background()
+
+	tempDir, err := ioutil.TempDir("", "")
+	require.NoError(t, err)
+
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig().(*Config)
+	cfg.Directory = tempDir
+
+	extension, err := f.CreateExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)
+	require.NoError(t, err)
+
+	se, ok := extension.(storage.Extension)
+	require.True(t, ok)
+
+	client, err := se.GetClient(
+		ctx,
+		component.KindReceiver,
+		newTestEntity("my_component"),
+		"",
+	)
+
+	require.NoError(t, err)
+
+	// check if only db exists in tempDir
+	files, err := ioutil.ReadDir(tempDir)
+	require.NoError(t, err)
+	require.Equal(t, 1, len(files))
+	fileName := files[0].Name()
+
+	// perform compaction in the same directory
+	c, ok := client.(*fileStorageClient)
+	require.True(t, ok)
+	client, err = c.Compact(ctx, tempDir, cfg.Timeout, 1)
+	require.NoError(t, err)
+
+	// check if only db exists in tempDir
+	files, err = ioutil.ReadDir(tempDir)
+	require.NoError(t, err)
+	require.Equal(t, 1, len(files))
+	require.Equal(t, fileName, files[0].Name())
+
+	// perform compaction in different directory
+	emptyTempDir, err := ioutil.TempDir("", "")
+	require.NoError(t, err)
+
+	c, ok = client.(*fileStorageClient)
+	require.True(t, ok)
+	_, err = c.Compact(ctx, emptyTempDir, cfg.Timeout, 1)
+	require.NoError(t, err)
+
+	// check if emptyTempDir is empty after compaction
+	files, err = ioutil.ReadDir(emptyTempDir)
+	require.NoError(t, err)
+	require.Equal(t, 0, len(files))
 }

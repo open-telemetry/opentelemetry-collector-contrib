@@ -111,7 +111,7 @@ func (c *fileStorageClient) Close(_ context.Context) error {
 }
 
 // Compact database. Use temporary file as helper as we cannot replace database in-place
-func (c *fileStorageClient) Compact(compactionDirectory string, timeout time.Duration, ctx context.Context) (*fileStorageClient, error) {
+func (c *fileStorageClient) Compact(ctx context.Context, compactionDirectory string, timeout time.Duration, maxTransactionSize int64) (*fileStorageClient, error) {
 	// create temporary file in compactionDirectory
 	file, err := ioutil.TempFile(compactionDirectory, "tempdb")
 	if err != nil {
@@ -130,7 +130,7 @@ func (c *fileStorageClient) Compact(compactionDirectory string, timeout time.Dur
 		return nil, err
 	}
 
-	if err := bbolt.Compact(db, c.db, 0); err != nil {
+	if err := bbolt.Compact(db, c.db, maxTransactionSize); err != nil {
 		return nil, err
 	}
 

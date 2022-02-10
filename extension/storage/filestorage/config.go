@@ -15,6 +15,7 @@
 package filestorage // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -30,14 +31,19 @@ type Config struct {
 	Directory string        `mapstructure:"directory,omitempty"`
 	Timeout   time.Duration `mapstructure:"timeout,omitempty"`
 
-	CompactOnStart      bool   `mapstructure:"compact_on_start,omitempty"`
-	CompactionDirectory string `mapstructure:"compaction_directory,omitempty"`
+	Compaction *CompactionConfig `mapstructure:"compaction,omitempty"`
+}
+
+type CompactionConfig struct {
+	OnStart            bool   `mapstructure:"on_start,omitempty"`
+	Directory          string `mapstructure:"directory,omitempty"`
+	MaxTransactionSize int64  `mapstructure:"max_transaction_size,omitempty"`
 }
 
 func (cfg *Config) Validate() error {
 	var dirs []string
-	if cfg.CompactOnStart {
-		dirs = []string{cfg.Directory, cfg.CompactionDirectory}
+	if cfg.Compaction.OnStart {
+		dirs = []string{cfg.Directory, cfg.Compaction.Directory}
 	} else {
 		dirs = []string{cfg.Directory}
 	}
@@ -58,6 +64,10 @@ func (cfg *Config) Validate() error {
 		if !info.IsDir() {
 			return fmt.Errorf("%s is not a directory", dir)
 		}
+	}
+
+	if cfg.Compaction.MaxTransactionSize < 0 {
+		return errors.New("max transaction size for compaction cannot be less than 0")
 	}
 
 	return nil

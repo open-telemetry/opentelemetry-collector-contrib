@@ -36,11 +36,16 @@ func NewFactory() component.ExtensionFactory {
 
 func createDefaultConfig() config.Extension {
 	return &Config{
-		ExtensionSettings:   config.NewExtensionSettings(config.NewComponentID(typeStr)),
-		Directory:           getDefaultDirectory(),
-		CompactionDirectory: getDefaultDirectory(),
-		CompactOnStart:      false,
-		Timeout:             time.Second,
+		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
+		Directory:         getDefaultDirectory(),
+		Compaction: &CompactionConfig{
+			Directory: getDefaultDirectory(),
+			OnStart:   false,
+			// use default bbolt value
+			// https://github.com/etcd-io/bbolt/blob/d5db64bdbfdee1cb410894605f42ffef898f395d/cmd/bbolt/main.go#L1955
+			MaxTransactionSize: 65536,
+		},
+		Timeout: time.Second,
 	}
 }
 

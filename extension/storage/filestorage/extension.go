@@ -32,6 +32,7 @@ type localFileStorage struct {
 	logger              *zap.Logger
 	compactionDirectory string
 	compactOnStart      bool
+	maxCompactionSize   int64
 }
 
 // Ensure this storage extension implements the appropriate interface
@@ -40,8 +41,8 @@ var _ storage.Extension = (*localFileStorage)(nil)
 func newLocalFileStorage(logger *zap.Logger, config *Config) (component.Extension, error) {
 	return &localFileStorage{
 		directory:           filepath.Clean(config.Directory),
-		compactionDirectory: filepath.Clean(config.CompactionDirectory),
-		compactOnStart:      config.CompactOnStart,
+		compactionDirectory: filepath.Clean(config.Compaction.Directory),
+		compactOnStart:      config.Compaction.OnStart,
 		timeout:             config.Timeout,
 		logger:              logger,
 	}, nil
@@ -77,7 +78,7 @@ func (lfs *localFileStorage) GetClient(ctx context.Context, kind component.Kind,
 	}
 
 	// perform compaction and returns client
-	return client.Compact(lfs.compactionDirectory, lfs.timeout, ctx)
+	return client.Compact(ctx, lfs.compactionDirectory, lfs.timeout, lfs.maxCompactionSize)
 }
 
 func kindString(k component.Kind) string {
