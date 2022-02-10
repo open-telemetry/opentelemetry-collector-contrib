@@ -11,6 +11,7 @@ Typical use cases:
 * extract resources from "flat" data formats, such as Fluentbit logs or Prometheus metrics
 * associate Prometheus metrics to a *Resource* that describes the relevant host, based on label present on all metrics
 * optimize data packaging by extracting common attributes
+* compacting multiple records that share the same Resource attributes but are under multiple ResourceSpans/ResourceMetrics/ResourceLogs into single ResourceSpans/ResourceMetrics/ResourceLogs (when empty list of keys is being provided) 
 
 ## Example
 

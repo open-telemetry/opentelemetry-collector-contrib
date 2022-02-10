@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 )
@@ -194,8 +193,7 @@ func TestComplexAttributeGrouping(t *testing.T) {
 			inputTraces := someComplexTraces(tt.withResourceAttrIndex, tt.inputResourceCount, tt.inputInstrumentationLibraryCount)
 			inputMetrics := someComplexMetrics(tt.withResourceAttrIndex, tt.inputResourceCount, tt.inputInstrumentationLibraryCount, 2)
 
-			gap, err := createGroupByAttrsProcessor(zap.NewNop(), []string{"commonGroupedAttr"})
-			require.NoError(t, err)
+			gap := createGroupByAttrsProcessor(zap.NewNop(), []string{"commonGroupedAttr"})
 
 			processedLogs, err := gap.processLogs(context.Background(), inputLogs)
 			assert.NoError(t, err)
@@ -307,8 +305,7 @@ func TestAttributeGrouping(t *testing.T) {
 			histogramMetrics := someHistogramMetrics(attrMap, tt.count)
 			exponentialHistogramMetrics := someExponentialHistogramMetrics(attrMap, tt.count)
 
-			gap, err := createGroupByAttrsProcessor(zap.NewNop(), tt.groupByKeys)
-			require.NoError(t, err)
+			gap := createGroupByAttrsProcessor(zap.NewNop(), tt.groupByKeys)
 
 			expectedResource := prepareResource(attrMap, tt.groupByKeys)
 			expectedAttributes := filterAttributeMap(attrMap, tt.nonGroupedKeys)
@@ -616,8 +613,7 @@ func TestMetricAdvancedGrouping(t *testing.T) {
 	datapoint.Attributes().UpsertString("id", "eth0")
 
 	// Perform the test
-	gap, err := createGroupByAttrsProcessor(zap.NewNop(), []string{"host.name"})
-	require.NoError(t, err)
+	gap := createGroupByAttrsProcessor(zap.NewNop(), []string{"host.name"})
 
 	processedMetrics, err := gap.processMetrics(context.Background(), metrics)
 	assert.NoError(t, err)
@@ -690,4 +686,31 @@ func retrieveMetric(metrics pdata.MetricSlice, name string, metricType pdata.Met
 		}
 	}
 	return pdata.Metric{}, false
+}
+
+func someResourceSpans(attrs pdata.AttributeMap, count int) pdata.Traces {
+	traces := pdata.NewTraces()
+	for i := 0; i < count; i++ {
+		ils := traces.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty()
+		span := ils.Spans().AppendEmpty()
+		span.SetName(fmt.Sprint("foo-", i))
+		attrs.CopyTo(span.Attributes())
+	}
+	return traces
+}
+
+func TestCompactingTraces(t *testing.T) {
+	spans := someResourceSpans(attrMap, 100)
+
+	gap := createGroupByAttrsProcessor(zap.NewNop(), []string{})
+
+	processedSpans, err := gap.processTraces(context.Background(), spans)
+	assert.NoError(t, err)
+
+	assert.Equal(t, 100, spans.ResourceSpans().Len())
+	assert.Equal(t, 1, processedSpans.ResourceSpans().Len())
+	rss := processedSpans.ResourceSpans().At(0)
+	assert.Equal(t, 0, rss.Resource().Attributes().Len())
+	// All spans are now under same resourcespans
+	assert.Equal(t, 100, rss.InstrumentationLibrarySpans().At(0).Spans().Len())
 }
