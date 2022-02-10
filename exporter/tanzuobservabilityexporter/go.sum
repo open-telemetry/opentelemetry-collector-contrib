@@ -474,8 +474,8 @@ github.com/subosito/gotenv v1.2.0/go.mod h1:N0PQaV/YGNqwC0u51sEeR/aUtSLEXKX9iv69
 github.com/tklauser/go-sysconf v0.3.9/go.mod h1:11DU/5sG7UexIrp/O6g35hrWzu0JxlwQ3LSFUzyeuhs=
 github.com/tklauser/numcpus v0.3.0/go.mod h1:yFGUr7TUHQRAhyqBcEg0Ge34zDBAsIvJJcyE6boqnA8=
 github.com/tv42/httpunix v0.0.0-20150427012821-b75d8614f926/go.mod h1:9ESjWnEqriFuLhtthL60Sar/7RFoluCcXsuvEwTV5KM=
-github.com/wavefronthq/wavefront-sdk-go v0.9.9 h1:ufOksviv+Cg6X2BIqha//onx8kJkQWZTYWjXcsLYDN0=
-github.com/wavefronthq/wavefront-sdk-go v0.9.9/go.mod h1:JTGsu+KKgxx+GitC65VVdftN2iep1nVpQi/8EGR6v4Y=
+github.com/wavefronthq/wavefront-sdk-go v0.9.10 h1:L4eiEdHpudHTGwrJaPYaCXSjCYDex8FEKVqaprU2sY0=
+github.com/wavefronthq/wavefront-sdk-go v0.9.10/go.mod h1:ACJVXk0ksPHFkkTkXckqKEJGU3YDoAWjxTESkZlp+IE=
 github.com/yuin/goldmark v1.1.25/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.1.32/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
