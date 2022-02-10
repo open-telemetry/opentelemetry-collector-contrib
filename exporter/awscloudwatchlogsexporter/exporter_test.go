@@ -66,7 +66,7 @@ func TestLogToCWLog(t *testing.T) {
 			log:      testLogRecord(),
 			want: &cloudwatchlogs.InputLogEvent{
 				Timestamp: aws.Int64(1609719139),
-				Message:   aws.String(`{"name":"test","body":"hello world","severity_number":5,"severity_text":"debug","dropped_attributes_count":4,"flags":255,"trace_id":"0102030405060708090a0b0c0d0e0f10","span_id":"0102030405060708","attributes":{"key1":1,"key2":"attr2"},"resource":{"host":"abc123","node":5}}`),
+				Message:   aws.String(`{"body":"hello world","severity_number":5,"severity_text":"debug","dropped_attributes_count":4,"flags":255,"trace_id":"0102030405060708090a0b0c0d0e0f10","span_id":"0102030405060708","attributes":{"key1":1,"key2":"attr2"},"resource":{"host":"abc123","node":5}}`),
 			},
 		},
 		{
@@ -75,7 +75,7 @@ func TestLogToCWLog(t *testing.T) {
 			log:      testLogRecord(),
 			want: &cloudwatchlogs.InputLogEvent{
 				Timestamp: aws.Int64(1609719139),
-				Message:   aws.String(`{"name":"test","body":"hello world","severity_number":5,"severity_text":"debug","dropped_attributes_count":4,"flags":255,"trace_id":"0102030405060708090a0b0c0d0e0f10","span_id":"0102030405060708","attributes":{"key1":1,"key2":"attr2"}}`),
+				Message:   aws.String(`{"body":"hello world","severity_number":5,"severity_text":"debug","dropped_attributes_count":4,"flags":255,"trace_id":"0102030405060708090a0b0c0d0e0f10","span_id":"0102030405060708","attributes":{"key1":1,"key2":"attr2"}}`),
 			},
 		},
 		{
@@ -84,7 +84,7 @@ func TestLogToCWLog(t *testing.T) {
 			log:      testLogRecordWithoutTrace(),
 			want: &cloudwatchlogs.InputLogEvent{
 				Timestamp: aws.Int64(1609719139),
-				Message:   aws.String(`{"name":"test","body":"hello world","severity_number":5,"severity_text":"debug","dropped_attributes_count":4,"attributes":{"key1":1,"key2":"attr2"},"resource":{"host":"abc123","node":5}}`),
+				Message:   aws.String(`{"body":"hello world","severity_number":5,"severity_text":"debug","dropped_attributes_count":4,"attributes":{"key1":1,"key2":"attr2"},"resource":{"host":"abc123","node":5}}`),
 			},
 		},
 	}
@@ -121,7 +121,6 @@ func testResource() pdata.Resource {
 
 func testLogRecord() pdata.LogRecord {
 	record := pdata.NewLogRecord()
-	record.SetName("test")
 	record.SetSeverityNumber(5)
 	record.SetSeverityText("debug")
 	record.SetDroppedAttributesCount(4)
@@ -137,7 +136,6 @@ func testLogRecord() pdata.LogRecord {
 
 func testLogRecordWithoutTrace() pdata.LogRecord {
 	record := pdata.NewLogRecord()
-	record.SetName("test")
 	record.SetSeverityNumber(5)
 	record.SetSeverityText("debug")
 	record.SetDroppedAttributesCount(4)
@@ -247,7 +245,7 @@ func TestConsumeLogs(t *testing.T) {
 	r.Resource().Attributes().UpsertString("hello", "test")
 	logRecords := r.InstrumentationLibraryLogs().AppendEmpty().LogRecords()
 	logRecords.EnsureCapacity(5)
-	logRecords.AppendEmpty().SetName("test")
+	logRecords.AppendEmpty()
 	assert.Equal(t, 1, ld.LogRecordCount())
 
 	logPusher := new(mockPusher)

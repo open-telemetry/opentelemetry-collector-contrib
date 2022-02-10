@@ -171,7 +171,6 @@ func logsToCWLogs(logger *zap.Logger, ld pdata.Logs) ([]*cloudwatchlogs.InputLog
 }
 
 type cwLogBody struct {
-	Name                   string                 `json:"name,omitempty"`
 	Body                   interface{}            `json:"body,omitempty"`
 	SeverityNumber         int32                  `json:"severity_number,omitempty"`
 	SeverityText           string                 `json:"severity_text,omitempty"`
@@ -187,7 +186,6 @@ func logToCWLog(resourceAttrs map[string]interface{}, log pdata.LogRecord) (*clo
 	// TODO(jbd): Benchmark and improve the allocations.
 	// Evaluate go.elastic.co/fastjson as a replacement for encoding/json.
 	body := cwLogBody{
-		Name:                   log.Name(),
 		Body:                   attrValue(log.Body()),
 		SeverityNumber:         int32(log.SeverityNumber()),
 		SeverityText:           log.SeverityText(),
