@@ -97,11 +97,9 @@ func overrideWithTaskLevelLimit(taskMetrics *ECSMetrics, metadata ecsutil.TaskMe
 		taskMetrics.MemoryReserved = *metadata.Limits.Memory
 	}
 
-	taskMetrics.CPUReserved = taskMetrics.CPUReserved / cpusInVCpu
-
 	// Overwrite CPU limit with task level limit
 	if metadata.Limits.CPU != nil {
-		taskMetrics.CPUReserved = *metadata.Limits.CPU
+		taskMetrics.CPUReserved = *metadata.Limits.CPU * cpusInVCpu
 	}
 
 	// taskMetrics.CPUReserved cannot be zero. In ECS, user needs to set CPU limit
@@ -109,7 +107,7 @@ func overrideWithTaskLevelLimit(taskMetrics *ECSMetrics, metadata ecsutil.TaskMe
 	// task level CPULimit is not present, we calculate it from the summation of
 	// all container CPU limits.
 	if taskMetrics.CPUReserved > 0 {
-		taskMetrics.CPUUtilized = ((taskMetrics.CPUUsageInVCPU / taskMetrics.CPUReserved) * 100)
+		taskMetrics.CPUUtilized = taskMetrics.CPUUsageInVCPU * cpusInVCpu
 	}
 }
 

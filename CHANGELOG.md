@@ -36,6 +36,7 @@
  - `prometheusreceiver`: Correctly map description and units when converting
   Prometheus metadata directly to pdata. (#7748)
  - `sumologicexporter`: fix exporter panics on malformed histogram (#7548)
+- `awsecscontainermetrics`: CPU Reserved is now 1024/vCPU for ECS Container Insights (#6734)
 
 ## 🚀 New components 🚀
 
