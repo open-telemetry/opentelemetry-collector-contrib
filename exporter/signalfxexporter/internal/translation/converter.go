@@ -69,24 +69,28 @@ func NewMetricsConverter(
 	}, nil
 }
 
-// MetricDataToSignalFxV2 converts the passed in MetricsData to SFx datapoints,
+// MetricsToSignalFxV2 converts the passed in MetricsData to SFx datapoints,
 // returning those datapoints and the number of time series that had to be
 // dropped because of errors or warnings.
-func (c *MetricsConverter) MetricDataToSignalFxV2(rm pdata.ResourceMetrics) []*sfxpb.DataPoint {
-	var sfxDatapoints []*sfxpb.DataPoint
+func (c *MetricsConverter) MetricsToSignalFxV2(md pdata.Metrics) []*sfxpb.DataPoint {
+	var sfxDataPoints []*sfxpb.DataPoint
 
-	extraDimensions := resourceToDimensions(rm.Resource())
+	rms := md.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		rm := rms.At(i)
+		extraDimensions := resourceToDimensions(rm.Resource())
 
-	for j := 0; j < rm.InstrumentationLibraryMetrics().Len(); j++ {
-		ilm := rm.InstrumentationLibraryMetrics().At(j)
-		for k := 0; k < ilm.Metrics().Len(); k++ {
-			dps := fromMetric(ilm.Metrics().At(k), extraDimensions)
-			dps = c.translateAndFilter(dps)
-			sfxDatapoints = append(sfxDatapoints, dps...)
+		for j := 0; j < rm.InstrumentationLibraryMetrics().Len(); j++ {
+			ilm := rm.InstrumentationLibraryMetrics().At(j)
+			for k := 0; k < ilm.Metrics().Len(); k++ {
+				dps := fromMetric(ilm.Metrics().At(k), extraDimensions)
+				dps = c.translateAndFilter(dps)
+				sfxDataPoints = append(sfxDataPoints, dps...)
+			}
 		}
 	}
 
-	return c.datapointValidator.sanitizeDataPoints(sfxDatapoints)
+	return c.datapointValidator.sanitizeDataPoints(sfxDataPoints)
 }
 
 func (c *MetricsConverter) translateAndFilter(dps []*sfxpb.DataPoint) []*sfxpb.DataPoint {
