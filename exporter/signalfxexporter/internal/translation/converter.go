@@ -28,6 +28,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation/dpfilters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx"
 )
 
 // Some fields on SignalFx protobuf are pointers, in order to reduce
@@ -83,7 +84,7 @@ func (c *MetricsConverter) MetricsToSignalFxV2(md pdata.Metrics) []*sfxpb.DataPo
 		for j := 0; j < rm.InstrumentationLibraryMetrics().Len(); j++ {
 			ilm := rm.InstrumentationLibraryMetrics().At(j)
 			for k := 0; k < ilm.Metrics().Len(); k++ {
-				dps := fromMetric(ilm.Metrics().At(k), extraDimensions)
+				dps := signalfx.FromMetric(ilm.Metrics().At(k), extraDimensions)
 				dps = c.translateAndFilter(dps)
 				sfxDataPoints = append(sfxDataPoints, dps...)
 			}
@@ -151,11 +152,6 @@ func resourceToDimensions(res pdata.Resource) []*sfxpb.Dimension {
 	})
 
 	return dims
-}
-
-func timestampToSignalFx(ts pdata.Timestamp) int64 {
-	// Convert nanosecs to millisecs.
-	return int64(ts) / 1e6
 }
 
 func (c *MetricsConverter) ConvertDimension(dim string) string {
