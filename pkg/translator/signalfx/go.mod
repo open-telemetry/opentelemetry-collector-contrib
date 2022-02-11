@@ -7,7 +7,7 @@ require (
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector/model v0.44.0
-	go.uber.org/multierr v1.6.0
+	go.uber.org/multierr v1.7.0
 )
 
 require (
