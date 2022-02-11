@@ -29,6 +29,7 @@ import (
 var _ SketchConsumer = (*sketchConsumer)(nil)
 
 type sketchConsumer struct {
+	mockTimeSeriesConsumer
 	sk *quantile.Sketch
 }
 
@@ -44,6 +45,30 @@ func (c *sketchConsumer) ConsumeSketch(
 	c.sk = sketch
 }
 
+func newHistogramMetric(p pdata.HistogramDataPoint) pdata.Metrics {
+	md := pdata.NewMetrics()
+	rms := md.ResourceMetrics()
+	rm := rms.AppendEmpty()
+	ilms := rm.InstrumentationLibraryMetrics()
+	ilm := ilms.AppendEmpty()
+	metricsArray := ilm.Metrics()
+	m := metricsArray.AppendEmpty()
+	m.SetDataType(pdata.MetricDataTypeHistogram)
+	m.SetName("test")
+
+	// Copy Histogram point
+	m.Histogram().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
+	dps := m.Histogram().DataPoints()
+	np := dps.AppendEmpty()
+	np.SetCount(p.Count())
+	np.SetSum(p.Sum())
+	np.SetBucketCounts(p.BucketCounts())
+	np.SetExplicitBounds(p.ExplicitBounds())
+	np.SetTimestamp(p.Timestamp())
+
+	return md
+}
+
 func TestHistogramSketches(t *testing.T) {
 	N := 1_000
 	M := 50_000.0
@@ -52,7 +77,7 @@ func TestHistogramSketches(t *testing.T) {
 	// with support [0, N], generate an OTLP Histogram data point with N buckets,
 	// (-inf, 0], (0, 1], ..., (N-1, N], (N, inf)
 	// which contains N*M uniform samples of the distribution.
-	fromCDF := func(cdf func(x float64) float64) pdata.HistogramDataPoint {
+	fromCDF := func(cdf func(x float64) float64) pdata.Metrics {
 		p := pdata.NewHistogramDataPoint()
 		bounds := make([]float64, N+1)
 		buckets := make([]uint64, N+2)
@@ -70,7 +95,7 @@ func TestHistogramSketches(t *testing.T) {
 		p.SetExplicitBounds(bounds)
 		p.SetBucketCounts(buckets)
 		p.SetCount(count)
-		return p
+		return newHistogramMetric(p)
 	}
 
 	tests := []struct {
@@ -106,12 +131,11 @@ func TestHistogramSketches(t *testing.T) {
 	cfg := quantile.Default()
 	ctx := context.Background()
 	tr := newTranslator(t, zap.NewNop())
-	dims := metricsDimensions{name: "test"}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			p := fromCDF(test.cdf)
+			md := fromCDF(test.cdf)
 			consumer := &sketchConsumer{}
-			tr.getSketchBuckets(ctx, consumer, dims, p, true)
+			tr.MapMetrics(ctx, md, consumer)
 			sk := consumer.sk
 
 			// Check the minimum is 0.0
@@ -129,6 +153,7 @@ func TestHistogramSketches(t *testing.T) {
 			}
 
 			cumulSum := uint64(0)
+			p := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0)
 			for i := 0; i < len(p.BucketCounts())-3; i++ {
 				{
 					q := float64(cumulSum) / float64(p.Count()) * (1 - tol)
@@ -160,52 +185,53 @@ func TestInfiniteBounds(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		getHist func() pdata.HistogramDataPoint
+		getHist func() pdata.Metrics
 	}{
 		{
 			name: "(-inf, inf): 100",
-			getHist: func() pdata.HistogramDataPoint {
+			getHist: func() pdata.Metrics {
 				p := pdata.NewHistogramDataPoint()
 				p.SetExplicitBounds([]float64{})
 				p.SetBucketCounts([]uint64{100})
 				p.SetCount(100)
 				p.SetSum(0)
-				return p
+				return newHistogramMetric(p)
 			},
 		},
 		{
 			name: "(-inf, 0]: 100, (0, +inf]: 100",
-			getHist: func() pdata.HistogramDataPoint {
+			getHist: func() pdata.Metrics {
 				p := pdata.NewHistogramDataPoint()
 				p.SetExplicitBounds([]float64{0})
 				p.SetBucketCounts([]uint64{100, 100})
 				p.SetCount(200)
 				p.SetSum(0)
-				return p
+				return newHistogramMetric(p)
 			},
 		},
 		{
 			name: "(-inf, -1]: 100, (-1, 1]: 10,  (1, +inf]: 100",
-			getHist: func() pdata.HistogramDataPoint {
+			getHist: func() pdata.Metrics {
 				p := pdata.NewHistogramDataPoint()
 				p.SetExplicitBounds([]float64{-1, 1})
 				p.SetBucketCounts([]uint64{100, 10, 100})
 				p.SetCount(210)
 				p.SetSum(0)
-				return p
+				return newHistogramMetric(p)
 			},
 		},
 	}
 
 	ctx := context.Background()
 	tr := newTranslator(t, zap.NewNop())
-	dims := metricsDimensions{name: "test"}
 	for _, testInstance := range tests {
 		t.Run(testInstance.name, func(t *testing.T) {
-			p := testInstance.getHist()
+			md := testInstance.getHist()
 			consumer := &sketchConsumer{}
-			tr.getSketchBuckets(ctx, consumer, dims, p, true)
+			tr.MapMetrics(ctx, md, consumer)
 			sk := consumer.sk
+
+			p := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0)
 			assert.InDelta(t, sk.Basic.Sum, p.Sum(), 1)
 			assert.Equal(t, uint64(sk.Basic.Cnt), p.Count())
 		})
