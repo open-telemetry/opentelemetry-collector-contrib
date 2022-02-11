@@ -62,11 +62,11 @@ func TestLoadConfig(t *testing.T) {
 func TestTraceConfigValidation(t *testing.T) {
 	factory := NewFactory()
 	config := factory.CreateDefaultConfig().(*Config)
-	assert.Error(t, config.validate())
+	assert.Error(t, config.Validate())
 	config.Topic = "projects/000project/topics/my-topic"
-	assert.Error(t, config.validate())
+	assert.Error(t, config.Validate())
 	config.Topic = "projects/my-project/subscriptions/my-subscription"
-	assert.Error(t, config.validate())
+	assert.Error(t, config.Validate())
 	config.Topic = "projects/my-project/topics/my-topic"
-	assert.NoError(t, config.validate())
+	assert.NoError(t, config.Validate())
 }

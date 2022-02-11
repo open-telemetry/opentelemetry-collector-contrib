@@ -48,6 +48,10 @@ func (c *Config) validate() error {
 	return c.Labels.validate()
 }
 
+func (c *Config) Validate() error {
+	return nil
+}
+
 // LabelsConfig defines the labels-related configuration
 type LabelsConfig struct {
 	// Attributes are the log record attributes that are allowed to be added as labels on a log stream.

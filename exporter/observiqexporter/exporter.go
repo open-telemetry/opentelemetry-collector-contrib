@@ -26,7 +26,7 @@ func newObservIQLogExporter(config *Config, set component.ExporterCreateSettings
 		return nil, errors.New("config must not be nil")
 	}
 
-	if err := config.validateConfig(); err != nil {
+	if err := config.Validate(); err != nil {
 		return nil, err
 	}
 
