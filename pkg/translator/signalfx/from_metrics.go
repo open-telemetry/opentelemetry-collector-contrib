@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package translation // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
+package signalfx // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx"
 
 import (
 	"math"
@@ -20,6 +20,15 @@ import (
 
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"go.opentelemetry.io/collector/model/pdata"
+)
+
+// Some fields on SignalFx protobuf are pointers, in order to reduce
+// allocations create the most used ones.
+var (
+	// SignalFx metric types used in the conversions.
+	sfxMetricTypeGauge             = sfxpb.MetricType_GAUGE
+	sfxMetricTypeCumulativeCounter = sfxpb.MetricType_CUMULATIVE_COUNTER
+	sfxMetricTypeCounter           = sfxpb.MetricType_COUNTER
 )
 
 var (
@@ -31,27 +40,45 @@ var (
 	infinityBoundSFxDimValue = float64ToDimValue(math.Inf(1))
 )
 
-func fromMetric(metric pdata.Metric, extraDimensions []*sfxpb.Dimension) []*sfxpb.DataPoint {
-	// TODO: Figure out some efficient way to know how many datapoints there
-	// will be in the given metric.
+// FromMetrics converts pdata.Metrics to SignalFx proto data points.
+func FromMetrics(md pdata.Metrics) ([]*sfxpb.DataPoint, error) {
+	var sfxDataPoints []*sfxpb.DataPoint
+
+	rms := md.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		rm := rms.At(i)
+		extraDimensions := attributesToDimensions(rm.Resource().Attributes(), nil)
+
+		for j := 0; j < rm.InstrumentationLibraryMetrics().Len(); j++ {
+			ilm := rm.InstrumentationLibraryMetrics().At(j)
+			for k := 0; k < ilm.Metrics().Len(); k++ {
+				sfxDataPoints = append(sfxDataPoints, FromMetric(ilm.Metrics().At(k), extraDimensions)...)
+			}
+		}
+	}
+
+	return sfxDataPoints, nil
+}
+
+// FromMetric converts pdata.Metric to SignalFx proto data points.
+// TODO: Remove this and change signalfxexporter to us FromMetrics.
+func FromMetric(m pdata.Metric, extraDimensions []*sfxpb.Dimension) []*sfxpb.DataPoint {
 	var dps []*sfxpb.DataPoint
 
 	basePoint := &sfxpb.DataPoint{
-		Metric:     metric.Name(),
-		MetricType: fromMetricTypeToMetricType(metric),
+		Metric:     m.Name(),
+		MetricType: fromMetricTypeToMetricType(m),
 	}
 
-	switch metric.DataType() {
-	case pdata.MetricDataTypeNone:
-		return nil
+	switch m.DataType() {
 	case pdata.MetricDataTypeGauge:
-		dps = convertNumberDataPoints(metric.Gauge().DataPoints(), basePoint, extraDimensions)
+		dps = convertNumberDataPoints(m.Gauge().DataPoints(), basePoint, extraDimensions)
 	case pdata.MetricDataTypeSum:
-		dps = convertNumberDataPoints(metric.Sum().DataPoints(), basePoint, extraDimensions)
+		dps = convertNumberDataPoints(m.Sum().DataPoints(), basePoint, extraDimensions)
 	case pdata.MetricDataTypeHistogram:
-		dps = convertHistogram(metric.Histogram().DataPoints(), basePoint, extraDimensions)
+		dps = convertHistogram(m.Histogram().DataPoints(), basePoint, extraDimensions)
 	case pdata.MetricDataTypeSummary:
-		dps = convertSummaryDataPoints(metric.Summary().DataPoints(), metric.Name(), extraDimensions)
+		dps = convertSummaryDataPoints(m.Summary().DataPoints(), m.Name(), extraDimensions)
 	}
 
 	return dps
@@ -88,7 +115,7 @@ func convertNumberDataPoints(in pdata.NumberDataPointSlice, basePoint *sfxpb.Dat
 		inDp := in.At(i)
 
 		dp := *basePoint
-		dp.Timestamp = timestampToSignalFx(inDp.Timestamp())
+		dp.Timestamp = fromTimestamp(inDp.Timestamp())
 		dp.Dimensions = attributesToDimensions(inDp.Attributes(), extraDims)
 
 		switch inDp.Type() {
@@ -110,7 +137,7 @@ func convertHistogram(histDPs pdata.HistogramDataPointSlice, basePoint *sfxpb.Da
 
 	for i := 0; i < histDPs.Len(); i++ {
 		histDP := histDPs.At(i)
-		ts := timestampToSignalFx(histDP.Timestamp())
+		ts := fromTimestamp(histDP.Timestamp())
 
 		countDP := *basePoint
 		countDP.Metric = basePoint.Metric + "_count"
@@ -171,7 +198,7 @@ func convertSummaryDataPoints(
 		inDp := in.At(i)
 
 		dims := attributesToDimensions(inDp.Attributes(), extraDims)
-		ts := timestampToSignalFx(inDp.Timestamp())
+		ts := fromTimestamp(inDp.Timestamp())
 
 		countPt := sfxpb.DataPoint{
 			Metric:     name + "_count",
