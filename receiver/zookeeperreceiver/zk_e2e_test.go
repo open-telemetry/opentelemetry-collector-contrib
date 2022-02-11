@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testing/container"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest"
 )
 
 type testHost struct {
@@ -74,8 +74,8 @@ func TestIntegration(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			d := container.New(t)
-			c := d.StartImageWithEnv(test.image, test.env, container.WithPortReady(zkPort))
+			d := containertest.New(t)
+			c := d.StartImageWithEnv(test.image, test.env, containertest.WithPortReady(zkPort))
 
 			f := NewFactory()
 			cfg := f.CreateDefaultConfig().(*Config)
