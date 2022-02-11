@@ -262,7 +262,7 @@ func TestScrape(t *testing.T) {
 			)
 
 			if isUnix() {
-				assertFileSystemUsageMetricHasUnixSpecificStateLabels(t, metrics.At(1))
+				assertFileSystemUsageMetricHasUnixSpecificStateLabels(t, metrics.At(0))
 				assertFileSystemUsageMetricValid(
 					t,
 					metrics.At(1),

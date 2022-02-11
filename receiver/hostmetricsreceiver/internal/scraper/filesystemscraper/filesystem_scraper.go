@@ -16,11 +16,11 @@ package filesystemscraper // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
-	"github.com/shirou/gopsutil/v3/host"
-	"go.opentelemetry.io/collector/component"
 	"time"
 
 	"github.com/shirou/gopsutil/v3/disk"
+	"github.com/shirou/gopsutil/v3/host"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
@@ -100,6 +100,7 @@ func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 	if len(usages) > 0 {
 		metrics.EnsureCapacity(metricsLen)
 		s.recordFileSystemUsageMetric(now, usages)
+		s.mb.Emit(metrics)
 		s.recordSystemSpecificMetrics(now, usages)
 		s.mb.Emit(metrics)
 	}
