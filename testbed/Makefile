@@ -34,4 +34,4 @@ list-correctness-traces-tests:
 
 .PHONY: run-correctness-traces-tests
 run-correctness-traces-tests:
-	TESTS_DIR=correctnesstests/metrics ./runtests.sh
+	TESTS_DIR=correctnesstests/traces ./runtests.sh
