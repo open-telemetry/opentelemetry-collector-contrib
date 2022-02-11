@@ -12,26 +12,41 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package util // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testing/util"
+package maps
 
-// MergeStringMaps merges n maps with a later map's keys overriding earlier maps.
-func MergeStringMaps(maps ...map[string]string) map[string]string {
-	ret := map[string]string{}
+import (
+	"testing"
 
-	for _, m := range maps {
-		for k, v := range m {
-			ret[k] = v
-		}
+	"github.com/stretchr/testify/require"
+)
+
+func TestMergeStringMaps(t *testing.T) {
+	m1 := map[string]string{
+		"key-1": "val-1",
 	}
 
-	return ret
+	m2 := map[string]string{
+		"key-2": "val-2",
+	}
+
+	actual := MergeStringMaps(m1, m2)
+	expected := map[string]string{
+		"key-1": "val-1",
+		"key-2": "val-2",
+	}
+
+	require.Equal(t, expected, actual)
 }
 
-// CloneStringMap makes a shallow copy of a map[string]string.
-func CloneStringMap(m map[string]string) map[string]string {
-	m2 := make(map[string]string, len(m))
-	for k, v := range m {
-		m2[k] = v
+func TestCloneStringMap(t *testing.T) {
+	m := map[string]string{
+		"key-1": "val-1",
 	}
-	return m2
+
+	actual := CloneStringMap(m)
+	expected := map[string]string{
+		"key-1": "val-1",
+	}
+
+	require.Equal(t, expected, actual)
 }
