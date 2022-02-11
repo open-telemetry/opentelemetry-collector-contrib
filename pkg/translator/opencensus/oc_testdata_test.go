@@ -26,7 +26,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
@@ -615,13 +614,13 @@ func generateOCTestMetricDoubleSummary() *ocmetrics.Metric {
 
 func generateResourceWithOcNodeAndResource() pdata.Resource {
 	resource := pdata.NewResource()
-	resource.Attributes().InsertString(occonventions.AttributeProcessStartTime, "2020-02-11T20:26:00Z")
+	resource.Attributes().InsertString(attributeProcessStartTime, "2020-02-11T20:26:00Z")
 	resource.Attributes().InsertString(conventions.AttributeHostName, "host1")
 	resource.Attributes().InsertInt(conventions.AttributeProcessPID, 123)
 	resource.Attributes().InsertString(conventions.AttributeTelemetrySDKVersion, "v2.0.1")
-	resource.Attributes().InsertString(occonventions.AttributeExporterVersion, "v1.2.0")
+	resource.Attributes().InsertString(attributeExporterVersion, "v1.2.0")
 	resource.Attributes().InsertString(conventions.AttributeTelemetrySDKLanguage, "cpp")
-	resource.Attributes().InsertString(occonventions.AttributeResourceType, "good-resource")
+	resource.Attributes().InsertString(attributeResourceType, "good-resource")
 	resource.Attributes().InsertString("node-str-attr", "node-str-attr-val")
 	resource.Attributes().InsertString("resource-str-attr", "resource-str-attr-val")
 	resource.Attributes().InsertInt("resource-int-attr", 123)

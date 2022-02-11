@@ -30,7 +30,6 @@ import (
 	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
 )
 
 func TestResourceToOC(t *testing.T) {
@@ -107,7 +106,7 @@ func TestContainerResourceToOC(t *testing.T) {
 	}
 
 	// Also test that the explicit resource type is preserved if present
-	resource.Attributes().InsertString(occonventions.AttributeResourceType, "other-type")
+	resource.Attributes().InsertString(attributeResourceType, "other-type")
 	want.Type = "other-type"
 
 	_, ocResource = internalResourceToOC(resource)
@@ -207,7 +206,7 @@ func TestResourceToOCAndBack(t *testing.T) {
 			actual := pdata.NewResource()
 			ocNodeResourceToInternal(ocNode, ocResource, actual)
 			// Remove opencensus resource type from actual. This will be added during translation.
-			actual.Attributes().Delete(occonventions.AttributeResourceType)
+			actual.Attributes().Delete(attributeResourceType)
 			assert.Equal(t, expected.Attributes().Len(), actual.Attributes().Len())
 			expected.Attributes().Range(func(k string, v pdata.Value) bool {
 				a, ok := actual.Attributes().Get(k)

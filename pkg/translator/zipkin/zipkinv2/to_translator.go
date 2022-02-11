@@ -30,7 +30,6 @@ import (
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/internal/zipkin"
 )
@@ -95,10 +94,7 @@ var nonSpanAttributes = func() map[string]struct{} {
 	attrs[zipkin.TagServiceNameSource] = struct{}{}
 	attrs[conventions.OtelLibraryName] = struct{}{}
 	attrs[conventions.OtelLibraryVersion] = struct{}{}
-	attrs[occonventions.AttributeProcessStartTime] = struct{}{}
-	attrs[occonventions.AttributeExporterVersion] = struct{}{}
 	attrs[conventions.AttributeProcessPID] = struct{}{}
-	attrs[occonventions.AttributeResourceType] = struct{}{}
 	return attrs
 }()
 

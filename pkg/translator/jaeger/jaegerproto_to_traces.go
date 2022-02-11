@@ -26,7 +26,6 @@ import (
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 )
 
@@ -97,7 +96,6 @@ func jProcessToInternalResource(process *model.Process, dest pdata.Resource) {
 
 	// Handle special keys translations.
 	translateHostnameAttr(attrs)
-	translateJaegerVersionAttr(attrs)
 }
 
 // translateHostnameAttr translates "hostname" atttribute
@@ -107,16 +105,6 @@ func translateHostnameAttr(attrs pdata.Map) {
 	if hostnameFound && !convHostNameFound {
 		attrs.Insert(conventions.AttributeHostName, hostname)
 		attrs.Delete("hostname")
-	}
-}
-
-// translateHostnameAttr translates "jaeger.version" atttribute
-func translateJaegerVersionAttr(attrs pdata.Map) {
-	jaegerVersion, jaegerVersionFound := attrs.Get("jaeger.version")
-	_, exporterVersionFound := attrs.Get(occonventions.AttributeExporterVersion)
-	if jaegerVersionFound && !exporterVersionFound {
-		attrs.InsertString(occonventions.AttributeExporterVersion, "Jaeger-"+jaegerVersion.StringVal())
-		attrs.Delete("jaeger.version")
 	}
 }
 

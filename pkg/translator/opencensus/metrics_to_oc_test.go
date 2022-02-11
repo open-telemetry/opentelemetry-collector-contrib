@@ -27,7 +27,6 @@ import (
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
@@ -36,10 +35,10 @@ func TestMetricsToOC(t *testing.T) {
 	attrs := sampleMetricData.ResourceMetrics().At(0).Resource().Attributes()
 	attrs.Upsert(conventions.AttributeHostName, pdata.NewValueString("host1"))
 	attrs.Upsert(conventions.AttributeProcessPID, pdata.NewValueInt(123))
-	attrs.Upsert(occonventions.AttributeProcessStartTime, pdata.NewValueString("2020-02-11T20:26:00Z"))
+	attrs.Upsert(attributeProcessStartTime, pdata.NewValueString("2020-02-11T20:26:00Z"))
 	attrs.Upsert(conventions.AttributeTelemetrySDKLanguage, pdata.NewValueString("cpp"))
 	attrs.Upsert(conventions.AttributeTelemetrySDKVersion, pdata.NewValueString("v2.0.1"))
-	attrs.Upsert(occonventions.AttributeExporterVersion, pdata.NewValueString("v1.2.0"))
+	attrs.Upsert(attributeExporterVersion, pdata.NewValueString("v1.2.0"))
 
 	tests := []struct {
 		name     string

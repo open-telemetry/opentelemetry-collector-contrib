@@ -24,8 +24,6 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"google.golang.org/protobuf/types/known/timestamppb"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
 )
 
 type ocInferredResourceType struct {
@@ -93,11 +91,11 @@ func internalResourceToOC(resource pdata.Resource) (*occommon.Node, *ocresource.
 		switch k {
 		case conventions.AttributeCloudAvailabilityZone:
 			labels[resourcekeys.CloudKeyZone] = val
-		case occonventions.AttributeResourceType:
+		case attributeResourceType:
 			ocResource.Type = val
 		case conventions.AttributeServiceName:
 			getServiceInfo(ocNode).Name = val
-		case occonventions.AttributeProcessStartTime:
+		case attributeProcessStartTime:
 			t, err := time.Parse(time.RFC3339Nano, val)
 			if err != nil {
 				return true
@@ -113,7 +111,7 @@ func internalResourceToOC(resource pdata.Resource) (*occommon.Node, *ocresource.
 			}
 		case conventions.AttributeTelemetrySDKVersion:
 			getLibraryInfo(ocNode).CoreLibraryVersion = val
-		case occonventions.AttributeExporterVersion:
+		case attributeExporterVersion:
 			getLibraryInfo(ocNode).ExporterVersion = val
 		case conventions.AttributeTelemetrySDKLanguage:
 			if code, ok := langToOCLangCodeMap[val]; ok {

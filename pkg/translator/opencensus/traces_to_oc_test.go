@@ -27,7 +27,6 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 )
@@ -139,13 +138,13 @@ func TestAttributesMapTOOcSameProcessAsParentSpan(t *testing.T) {
 	attr := pdata.NewMap()
 	assert.Nil(t, attributesMapToOCSameProcessAsParentSpan(attr))
 
-	attr.UpsertBool(occonventions.AttributeSameProcessAsParentSpan, true)
+	attr.UpsertBool(attributeSameProcessAsParentSpan, true)
 	assert.True(t, proto.Equal(wrapperspb.Bool(true), attributesMapToOCSameProcessAsParentSpan(attr)))
 
-	attr.UpsertBool(occonventions.AttributeSameProcessAsParentSpan, false)
+	attr.UpsertBool(attributeSameProcessAsParentSpan, false)
 	assert.True(t, proto.Equal(wrapperspb.Bool(false), attributesMapToOCSameProcessAsParentSpan(attr)))
 
-	attr.UpdateInt(occonventions.AttributeSameProcessAsParentSpan, 13)
+	attr.UpdateInt(attributeSameProcessAsParentSpan, 13)
 	assert.Nil(t, attributesMapToOCSameProcessAsParentSpan(attr))
 }
 

@@ -25,7 +25,6 @@ import (
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 )
 
@@ -362,5 +361,5 @@ func ocSameProcessAsParentSpanToInternal(spaps *wrapperspb.BoolValue, dest pdata
 	if spaps == nil {
 		return
 	}
-	dest.Attributes().UpsertBool(occonventions.AttributeSameProcessAsParentSpan, spaps.Value)
+	dest.Attributes().UpsertBool(attributeSameProcessAsParentSpan, spaps.Value)
 }

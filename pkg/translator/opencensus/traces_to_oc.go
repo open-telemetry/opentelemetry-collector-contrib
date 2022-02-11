@@ -26,7 +26,6 @@ import (
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 )
 
@@ -189,7 +188,7 @@ func stringAttributeValue(val string) *octrace.AttributeValue {
 }
 
 func attributesMapToOCSameProcessAsParentSpan(attr pdata.Map) *wrapperspb.BoolValue {
-	val, ok := attr.Get(occonventions.AttributeSameProcessAsParentSpan)
+	val, ok := attr.Get(attributeSameProcessAsParentSpan)
 	if !ok || val.Type() != pdata.ValueTypeBool {
 		return nil
 	}

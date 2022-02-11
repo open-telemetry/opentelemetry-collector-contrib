@@ -22,8 +22,6 @@ import (
 	"go.opencensus.io/resource/resourcekeys"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
 )
 
 var ocLangCodeToLangMap = getOCLangCodeToLangMap()
@@ -98,7 +96,7 @@ func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Reso
 		}
 		if ocNode.Identifier != nil {
 			if ocNode.Identifier.StartTimestamp != nil {
-				attrs.UpsertString(occonventions.AttributeProcessStartTime, ocNode.Identifier.StartTimestamp.AsTime().Format(time.RFC3339Nano))
+				attrs.UpsertString(attributeProcessStartTime, ocNode.Identifier.StartTimestamp.AsTime().Format(time.RFC3339Nano))
 			}
 			if ocNode.Identifier.HostName != "" {
 				attrs.UpsertString(conventions.AttributeHostName, ocNode.Identifier.HostName)
@@ -112,7 +110,7 @@ func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Reso
 				attrs.UpsertString(conventions.AttributeTelemetrySDKVersion, ocNode.LibraryInfo.CoreLibraryVersion)
 			}
 			if ocNode.LibraryInfo.ExporterVersion != "" {
-				attrs.UpsertString(occonventions.AttributeExporterVersion, ocNode.LibraryInfo.ExporterVersion)
+				attrs.UpsertString(attributeExporterVersion, ocNode.LibraryInfo.ExporterVersion)
 			}
 			if ocNode.LibraryInfo.Language != occommon.LibraryInfo_LANGUAGE_UNSPECIFIED {
 				if str, ok := ocLangCodeToLangMap[ocNode.LibraryInfo.Language]; ok {
@@ -134,7 +132,7 @@ func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Reso
 		}
 		// Add special fields.
 		if ocResource.Type != "" {
-			attrs.UpsertString(occonventions.AttributeResourceType, ocResource.Type)
+			attrs.UpsertString(attributeResourceType, ocResource.Type)
 		}
 	}
 }

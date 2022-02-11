@@ -24,8 +24,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
 	"google.golang.org/protobuf/proto"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
 )
 
 func TestOcNodeResourceToInternal(t *testing.T) {
@@ -55,7 +53,7 @@ func TestOcNodeResourceToInternal(t *testing.T) {
 		}
 		return true
 	})
-	ocResource.Labels[occonventions.AttributeResourceType] = "this will be overridden 2"
+	ocResource.Labels[attributeResourceType] = "this will be overridden 2"
 
 	// Convert again.
 	resource = pdata.NewResource()

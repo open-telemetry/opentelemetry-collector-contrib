@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package occonventions // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
+package opencensus // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 
 // OTLP attributes to map certain OpenCensus proto fields. These fields don't have
 // corresponding fields in OTLP, nor are defined in OTLP semantic conventions.
 const (
-	AttributeProcessStartTime        = "opencensus.starttime"
-	AttributeExporterVersion         = "opencensus.exporterversion"
-	AttributeResourceType            = "opencensus.resourcetype"
-	AttributeSameProcessAsParentSpan = "opencensus.same_process_as_parent_span"
+	attributeProcessStartTime        = "opencensus.starttime"
+	attributeExporterVersion         = "opencensus.exporterversion"
+	attributeResourceType            = "opencensus.resourcetype"
+	attributeSameProcessAsParentSpan = "opencensus.same_process_as_parent_span"
 )

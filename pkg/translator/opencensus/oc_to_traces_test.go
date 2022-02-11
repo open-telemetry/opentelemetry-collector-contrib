@@ -27,7 +27,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
@@ -396,14 +395,14 @@ func TestOcSameProcessAsParentSpanToInternal(t *testing.T) {
 
 	ocSameProcessAsParentSpanToInternal(wrapperspb.Bool(false), span)
 	assert.Equal(t, 1, span.Attributes().Len())
-	v, ok := span.Attributes().Get(occonventions.AttributeSameProcessAsParentSpan)
+	v, ok := span.Attributes().Get(attributeSameProcessAsParentSpan)
 	assert.True(t, ok)
 	assert.EqualValues(t, pdata.ValueTypeBool, v.Type())
 	assert.False(t, v.BoolVal())
 
 	ocSameProcessAsParentSpanToInternal(wrapperspb.Bool(true), span)
 	assert.Equal(t, 1, span.Attributes().Len())
-	v, ok = span.Attributes().Get(occonventions.AttributeSameProcessAsParentSpan)
+	v, ok = span.Attributes().Get(attributeSameProcessAsParentSpan)
 	assert.True(t, ok)
 	assert.EqualValues(t, pdata.ValueTypeBool, v.Type())
 	assert.True(t, v.BoolVal())

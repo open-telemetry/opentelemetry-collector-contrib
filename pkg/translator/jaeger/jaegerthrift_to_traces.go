@@ -74,7 +74,6 @@ func jThriftProcessToInternalResource(process *jaeger.Process, dest pdata.Resour
 
 	// Handle special keys translations.
 	translateHostnameAttr(attrs)
-	translateJaegerVersionAttr(attrs)
 }
 
 func jThriftSpansToInternal(spans []*jaeger.Span, dest pdata.SpanSlice) {
