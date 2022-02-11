@@ -24,8 +24,8 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/ucal"
 )
 
 const metricsLen = 2
@@ -34,7 +34,7 @@ const metricsLen = 2
 type scraper struct {
 	config *Config
 	mb     *metadata.MetricsBuilder
-	ucal   *internal.CPUUtilizationCalculator
+	ucal   *ucal.CPUUtilizationCalculator
 
 	// for mocking
 	bootTime func() (uint64, error)
@@ -44,7 +44,7 @@ type scraper struct {
 
 // newCPUScraper creates a set of CPU related metrics
 func newCPUScraper(_ context.Context, cfg *Config) *scraper {
-	return &scraper{config: cfg, bootTime: host.BootTime, times: cpu.Times, ucal: &internal.CPUUtilizationCalculator{}, now: time.Now}
+	return &scraper{config: cfg, bootTime: host.BootTime, times: cpu.Times, ucal: &ucal.CPUUtilizationCalculator{}, now: time.Now}
 }
 
 func (s *scraper) start(context.Context, component.Host) error {

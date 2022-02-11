@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/internal"
+package ucal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/ucal"
 
 import (
 	"errors"
@@ -51,6 +51,9 @@ type CPUUtilizationCalculator struct {
 // If no previous data is stored it will return empty slice of CPUUtilization and no error
 func (c *CPUUtilizationCalculator) CalculateAndRecord(now pdata.Timestamp, cpuTimes []cpu.TimesStat, recorder func(pdata.Timestamp, CPUUtilization)) error {
 	elapsedSeconds := now.AsTime().Sub(c.previousTime.AsTime()).Seconds()
+	if elapsedSeconds <= 0 {
+		return fmt.Errorf("%f: %w", elapsedSeconds, ErrInvalidElapsed)
+	}
 
 	if c.previousCPUTimes != nil {
 		for _, previousCPUTime := range c.previousCPUTimes {
@@ -75,12 +78,6 @@ func (c *CPUUtilizationCalculator) CalculateAndRecord(now pdata.Timestamp, cpuTi
 // If no time was spent between TimesStat an error will be returned
 // If TimesStats do not belog to same CPU an error will be returned
 func cpuUtilization(timeStart cpu.TimesStat, timeEnd cpu.TimesStat, elapsedSeconds float64) (CPUUtilization, error) {
-	if elapsedSeconds <= 0 {
-		return CPUUtilization{}, fmt.Errorf("%f: %w", elapsedSeconds, ErrInvalidElapsed)
-	}
-	if timeStart.CPU != timeEnd.CPU {
-		return CPUUtilization{}, fmt.Errorf("%s <> %s: %w", timeStart.CPU, timeEnd.CPU, ErrDifferentCPUs)
-	}
 	return CPUUtilization{
 		CPU:     timeStart.CPU,
 		User:    (timeEnd.User - timeStart.User) / elapsedSeconds,
