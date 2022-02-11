@@ -228,6 +228,21 @@ class TestDBApiIntegration(TestBase):
             span.attributes[SpanAttributes.DB_STATEMENT], "Test query"
         )
 
+    def test_executemany_comment(self):
+        db_integration = dbapi.DatabaseApiIntegration(
+            "testname", "testcomponent", enable_commenter=True
+        )
+        mock_connection = db_integration.wrapped_connection(
+            mock_connect, {}, {}
+        )
+        cursor = mock_connection.cursor()
+        cursor.executemany("Test query")
+        spans_list = self.memory_exporter.get_finished_spans()
+        self.assertEqual(len(spans_list), 1)
+        span = spans_list[0]
+        comment = dbapi.CursorTracer._generate_comment(span)
+        self.assertIn(comment, cursor.query)
+
     def test_callproc(self):
         db_integration = dbapi.DatabaseApiIntegration(
             "testname", "testcomponent"
@@ -308,6 +323,10 @@ class MockConnection:
 
 
 class MockCursor:
+    def __init__(self) -> None:
+        self.query = ""
+        self.params = None
+
     # pylint: disable=unused-argument, no-self-use
     def execute(self, query, params=None, throw_exception=False):
         if throw_exception:
@@ -317,6 +336,8 @@ class MockCursor:
     def executemany(self, query, params=None, throw_exception=False):
         if throw_exception:
             raise Exception("Test Exception")
+        self.query = query
+        self.params = params
 
     # pylint: disable=unused-argument, no-self-use
     def callproc(self, query, params=None, throw_exception=False):

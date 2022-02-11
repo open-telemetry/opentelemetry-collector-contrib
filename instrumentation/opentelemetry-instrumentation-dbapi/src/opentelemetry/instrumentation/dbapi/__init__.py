@@ -45,11 +45,11 @@ import wrapt
 
 from opentelemetry import trace as trace_api
 from opentelemetry.instrumentation.dbapi.version import __version__
-from opentelemetry.instrumentation.utils import unwrap
+from opentelemetry.instrumentation.utils import _generate_sql_comment, unwrap
 from opentelemetry.semconv.trace import SpanAttributes
-from opentelemetry.trace import SpanKind, TracerProvider, get_tracer
+from opentelemetry.trace import Span, SpanKind, TracerProvider, get_tracer
 
-logger = logging.getLogger(__name__)
+_logger = logging.getLogger(__name__)
 
 
 def trace_integration(
@@ -59,6 +59,7 @@ def trace_integration(
     connection_attributes: typing.Dict = None,
     tracer_provider: typing.Optional[TracerProvider] = None,
     capture_parameters: bool = False,
+    enable_commenter: bool = False,
     db_api_integration_factory=None,
 ):
     """Integrate with DB API library.
@@ -84,6 +85,7 @@ def trace_integration(
         version=__version__,
         tracer_provider=tracer_provider,
         capture_parameters=capture_parameters,
+        enable_commenter=enable_commenter,
         db_api_integration_factory=db_api_integration_factory,
     )
 
@@ -97,6 +99,7 @@ def wrap_connect(
     version: str = "",
     tracer_provider: typing.Optional[TracerProvider] = None,
     capture_parameters: bool = False,
+    enable_commenter: bool = False,
     db_api_integration_factory=None,
 ):
     """Integrate with DB API library.
@@ -132,6 +135,7 @@ def wrap_connect(
             version=version,
             tracer_provider=tracer_provider,
             capture_parameters=capture_parameters,
+            enable_commenter=enable_commenter,
         )
         return db_integration.wrapped_connection(wrapped, args, kwargs)
 
@@ -140,7 +144,7 @@ def wrap_connect(
             connect_module, connect_method_name, wrap_connect_
         )
     except Exception as ex:  # pylint: disable=broad-except
-        logger.warning("Failed to integrate with DB API. %s", str(ex))
+        _logger.warning("Failed to integrate with DB API. %s", str(ex))
 
 
 def unwrap_connect(
@@ -163,7 +167,8 @@ def instrument_connection(
     connection_attributes: typing.Dict = None,
     version: str = "",
     tracer_provider: typing.Optional[TracerProvider] = None,
-    capture_parameters=False,
+    capture_parameters: bool = False,
+    enable_commenter: bool = False,
 ):
     """Enable instrumentation in a database connection.
 
@@ -180,7 +185,7 @@ def instrument_connection(
         An instrumented connection.
     """
     if isinstance(connection, wrapt.ObjectProxy):
-        logger.warning("Connection already instrumented")
+        _logger.warning("Connection already instrumented")
         return connection
 
     db_integration = DatabaseApiIntegration(
@@ -190,6 +195,7 @@ def instrument_connection(
         version=version,
         tracer_provider=tracer_provider,
         capture_parameters=capture_parameters,
+        enable_commenter=enable_commenter,
     )
     db_integration.get_connection_attributes(connection)
     return get_traced_connection_proxy(connection, db_integration)
@@ -207,7 +213,7 @@ def uninstrument_connection(connection):
     if isinstance(connection, wrapt.ObjectProxy):
         return connection.__wrapped__
 
-    logger.warning("Connection is not instrumented")
+    _logger.warning("Connection is not instrumented")
     return connection
 
 
@@ -220,6 +226,7 @@ class DatabaseApiIntegration:
         version: str = "",
         tracer_provider: typing.Optional[TracerProvider] = None,
         capture_parameters: bool = False,
+        enable_commenter: bool = False,
     ):
         self.connection_attributes = connection_attributes
         if self.connection_attributes is None:
@@ -237,6 +244,7 @@ class DatabaseApiIntegration:
             tracer_provider=tracer_provider,
         )
         self.capture_parameters = capture_parameters
+        self.enable_commenter = enable_commenter
         self.database_system = database_system
         self.connection_props = {}
         self.span_attributes = {}
@@ -313,8 +321,9 @@ def get_traced_connection_proxy(
 
 
 class CursorTracer:
-    def __init__(self, db_api_integration: DatabaseApiIntegration):
+    def __init__(self, db_api_integration: DatabaseApiIntegration) -> None:
         self._db_api_integration = db_api_integration
+        self._commenter_enabled = self._db_api_integration.enable_commenter
 
     def _populate_span(
         self,
@@ -355,6 +364,22 @@ class CursorTracer:
             return statement.decode("utf8", "replace")
         return statement
 
+    @staticmethod
+    def _generate_comment(span: Span) -> str:
+        span_context = span.get_span_context()
+        meta = {}
+        if span_context.is_valid:
+            meta.update(
+                {
+                    "trace_id": span_context.trace_id,
+                    "span_id": span_context.span_id,
+                    "trace_flags": span_context.trace_flags,
+                    "trace_state": span_context.trace_state.to_header(),
+                }
+            )
+        # TODO(schekuri): revisit to enrich with info such as route, db_driver etc...
+        return _generate_sql_comment(**meta)
+
     def traced_execution(
         self,
         cursor,
@@ -374,6 +399,18 @@ class CursorTracer:
             name, kind=SpanKind.CLIENT
         ) as span:
             self._populate_span(span, cursor, *args)
+            if args and self._commenter_enabled:
+                try:
+                    comment = self._generate_comment(span)
+                    if isinstance(args[0], bytes):
+                        comment = comment.encode("utf8")
+                    args_list = list(args)
+                    args_list[0] += comment
+                    args = tuple(args_list)
+                except Exception as exc:  # pylint: disable=broad-except
+                    _logger.exception(
+                        "Exception while generating sql comment: %s", exc
+                    )
             return query_method(*args, **kwargs)
 
 

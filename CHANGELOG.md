@@ -7,13 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased](https://github.com/open-telemetry/opentelemetry-python/compare/v1.9.1-0.28b1...HEAD)
 
-- `opentelemetry-instrumentation-wsgi` WSGI: Conditionally create SERVER spans
-  ([#903](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/903))
+### Added
+
+- `opentelemetry-instrumentation-dbapi` add experimental sql commenter capability
+  ([#908](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/908))
 
 ### Fixed
 
 - `opentelemetry-instrumentation-logging` retrieves service name defensively.
   ([#890](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/890))
+
+- `opentelemetry-instrumentation-wsgi` WSGI: Conditionally create SERVER spans
+  ([#903](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/903))
 
 ## [1.9.1-0.28b1](https://github.com/open-telemetry/opentelemetry-python/releases/tag/v1.9.1-0.28b1) - 2022-01-29
 
