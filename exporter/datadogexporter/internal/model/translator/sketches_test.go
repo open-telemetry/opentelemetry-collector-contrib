@@ -181,6 +181,142 @@ func TestHistogramSketches(t *testing.T) {
 	}
 }
 
+func TestExactSumCount(t *testing.T) {
+	tests := []struct {
+		name    string
+		getHist func() pdata.Metrics
+		sum     float64
+		count   uint64
+	}{}
+
+	// Add tests for issue 6129: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/6129
+	tests = append(tests,
+		struct {
+			name    string
+			getHist func() pdata.Metrics
+			sum     float64
+			count   uint64
+		}{
+			name: "Uniform distribution (delta)",
+			getHist: func() pdata.Metrics {
+				md := pdata.NewMetrics()
+				rms := md.ResourceMetrics()
+				rm := rms.AppendEmpty()
+				ilms := rm.InstrumentationLibraryMetrics()
+				ilm := ilms.AppendEmpty()
+				metricsArray := ilm.Metrics()
+				m := metricsArray.AppendEmpty()
+				m.SetDataType(pdata.MetricDataTypeHistogram)
+				m.SetName("test")
+				m.Histogram().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
+				dp := m.Histogram().DataPoints()
+				p := dp.AppendEmpty()
+				p.SetExplicitBounds([]float64{0, 5_000, 10_000, 15_000, 20_000})
+				// Points from contrib issue 6129: 0, 5_000, 10_000, 15_000, 20_000
+				p.SetBucketCounts([]uint64{0, 1, 1, 1, 1, 1})
+				p.SetCount(5)
+				p.SetSum(50_000)
+				return md
+			},
+			sum:   50_000,
+			count: 5,
+		},
+
+		struct {
+			name    string
+			getHist func() pdata.Metrics
+			sum     float64
+			count   uint64
+		}{
+			name: "Uniform distribution (cumulative)",
+			getHist: func() pdata.Metrics {
+				md := pdata.NewMetrics()
+				rms := md.ResourceMetrics()
+				rm := rms.AppendEmpty()
+				ilms := rm.InstrumentationLibraryMetrics()
+				ilm := ilms.AppendEmpty()
+				metricsArray := ilm.Metrics()
+				m := metricsArray.AppendEmpty()
+				m.SetDataType(pdata.MetricDataTypeHistogram)
+				m.SetName("test")
+				m.Histogram().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+				dp := m.Histogram().DataPoints()
+				// Points from contrib issue 6129: 0, 5_000, 10_000, 15_000, 20_000 repeated.
+				bounds := []float64{0, 5_000, 10_000, 15_000, 20_000}
+				for i := 1; i <= 2; i++ {
+					p := dp.AppendEmpty()
+					p.SetExplicitBounds(bounds)
+					cnt := uint64(i)
+					p.SetBucketCounts([]uint64{0, cnt, cnt, cnt, cnt, cnt})
+					p.SetCount(uint64(5 * i))
+					p.SetSum(float64(50_000 * i))
+				}
+				return md
+			},
+			sum:   50_000,
+			count: 5,
+		})
+
+	// Add tests for issue 7065: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/7065
+	for pos, val := range []float64{500, 5_000, 50_000} {
+		pos := pos
+		val := val
+		tests = append(tests, struct {
+			name    string
+			getHist func() pdata.Metrics
+			sum     float64
+			count   uint64
+		}{
+			name: fmt.Sprintf("Issue 7065 (%d, %f)", pos, val),
+			getHist: func() pdata.Metrics {
+				md := pdata.NewMetrics()
+				rms := md.ResourceMetrics()
+				rm := rms.AppendEmpty()
+				ilms := rm.InstrumentationLibraryMetrics()
+				ilm := ilms.AppendEmpty()
+				metricsArray := ilm.Metrics()
+				m := metricsArray.AppendEmpty()
+				m.SetDataType(pdata.MetricDataTypeHistogram)
+				m.SetName("test")
+
+				m.Histogram().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+				bounds := []float64{1_000, 10_000, 100_000}
+
+				dp := m.Histogram().DataPoints()
+				for i := 0; i < 2; i++ {
+					p := dp.AppendEmpty()
+					p.SetExplicitBounds(bounds)
+					counts := []uint64{0, 0, 0, 0}
+					counts[pos] = uint64(i)
+					t.Logf("pos: %d, val: %f, counts: %v", pos, val, counts)
+					p.SetBucketCounts(counts)
+					p.SetCount(uint64(i))
+					p.SetSum(val * float64(i))
+				}
+				return md
+			},
+			sum:   val,
+			count: 1,
+		})
+	}
+
+	ctx := context.Background()
+	tr := newTranslator(t, zap.NewNop())
+	for _, testInstance := range tests {
+		t.Run(testInstance.name, func(t *testing.T) {
+			md := testInstance.getHist()
+			consumer := &sketchConsumer{}
+			tr.MapMetrics(ctx, md, consumer)
+			sk := consumer.sk
+
+			assert.Equal(t, testInstance.count, uint64(sk.Basic.Cnt), "counts differ")
+			assert.Equal(t, testInstance.sum, sk.Basic.Sum, "sums differ")
+			avg := testInstance.sum / float64(testInstance.count)
+			assert.Equal(t, avg, sk.Basic.Avg, "averages differ")
+		})
+	}
+}
+
 func TestInfiniteBounds(t *testing.T) {
 
 	tests := []struct {
