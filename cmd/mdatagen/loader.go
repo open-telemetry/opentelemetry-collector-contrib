@@ -119,13 +119,9 @@ func loadMetadata(filePath string) (metadata, error) {
 	if err != nil {
 		return metadata{}, err
 	}
-	mdMap, err := cp.Get(context.Background())
-	if err != nil {
-		return metadata{}, err
-	}
 
 	var md metadata
-	if err := mdMap.UnmarshalExact(&md); err != nil {
+	if err := cp.Map.UnmarshalExact(&md); err != nil {
 		return metadata{}, err
 	}
 

@@ -39,3 +39,7 @@ type Config struct {
 	// QueueSettings enable queued processing
 	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
 }
+
+func (cfg *Config) Validate() error {
+	return nil
+}

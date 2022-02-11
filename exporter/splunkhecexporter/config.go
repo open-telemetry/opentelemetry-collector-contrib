@@ -133,3 +133,7 @@ func (cfg *Config) getURL() (out *url.URL, err error) {
 
 	return
 }
+
+func (cfg *Config) Validate() error {
+	return nil
+}

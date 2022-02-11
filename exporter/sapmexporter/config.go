@@ -75,6 +75,10 @@ func (c *Config) validate() error {
 	return nil
 }
 
+func (c *Config) Validate() error {
+	return nil
+}
+
 func (c *Config) clientOptions() []sapmclient.Option {
 	opts := []sapmclient.Option{
 		sapmclient.WithEndpoint(c.Endpoint),

@@ -11,7 +11,7 @@ require (
 	github.com/pavius/impi v0.0.3
 	github.com/stretchr/objx v0.2.0 // indirect
 	github.com/tcnksm/ghr v0.14.0
-	go.opentelemetry.io/build-tools/checkdoc v0.0.0-20210920164323-2ceabab23375
+	go.opentelemetry.io/build-tools/checkdoc v0.0.0-20220110194441-2a9d5288bd70
 	go.opentelemetry.io/build-tools/issuegenerator v0.0.0-20210920164323-2ceabab23375
 	go.opentelemetry.io/build-tools/multimod v0.0.0-20220110194441-2a9d5288bd70
 	go.uber.org/atomic v1.8.0 // indirect
