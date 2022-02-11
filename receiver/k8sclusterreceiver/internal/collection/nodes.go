@@ -25,7 +25,7 @@ import (
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testing/util"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/maps"
 	metadataPkg "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/utils"
 )
@@ -142,7 +142,7 @@ func nodeConditionValue(node *corev1.Node, condType corev1.NodeConditionType) in
 }
 
 func getMetadataForNode(node *corev1.Node) map[metadataPkg.ResourceID]*KubernetesMetadata {
-	metadata := util.MergeStringMaps(map[string]string{}, node.Labels)
+	metadata := maps.MergeStringMaps(map[string]string{}, node.Labels)
 
 	metadata[conventions.AttributeK8SNodeName] = node.Name
 	metadata[nodeCreationTime] = node.GetCreationTimestamp().Format(time.RFC3339)

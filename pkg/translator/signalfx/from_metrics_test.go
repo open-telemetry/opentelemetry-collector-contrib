@@ -25,7 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/model/pdata"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testing/util"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/maps"
 )
 
 const (
@@ -268,7 +268,7 @@ func Test_FromMetrics(t *testing.T) {
 				doubleSFxDataPoint(
 					"gauge_double_with_dims",
 					&sfxMetricTypeGauge,
-					util.MergeStringMaps(map[string]string{
+					maps.MergeStringMaps(map[string]string{
 						"k_n0": "v_n0",
 						"k_n1": "v_n1",
 						"k_r0": "v_r0",
@@ -278,7 +278,7 @@ func Test_FromMetrics(t *testing.T) {
 				int64SFxDataPoint(
 					"gauge_int_with_dims",
 					&sfxMetricTypeGauge,
-					util.MergeStringMaps(map[string]string{
+					maps.MergeStringMaps(map[string]string{
 						"k_n0": "v_n0",
 						"k_n1": "v_n1",
 						"k_r0": "v_r0",
@@ -446,11 +446,11 @@ func expectedFromHistogram(
 		return dps
 	}
 	for i := 0; i < len(explicitBounds); i++ {
-		dimsCopy := util.CloneStringMap(dims)
+		dimsCopy := maps.CloneStringMap(dims)
 		dimsCopy[upperBoundDimensionKey] = float64ToDimValue(explicitBounds[i])
 		dps = append(dps, int64SFxDataPoint(metricName+"_bucket", typ, dimsCopy, int64(buckets[i])))
 	}
-	dimsCopy := util.CloneStringMap(dims)
+	dimsCopy := maps.CloneStringMap(dims)
 	dimsCopy[upperBoundDimensionKey] = float64ToDimValue(math.Inf(1))
 	dps = append(dps, int64SFxDataPoint(metricName+"_bucket", typ, dimsCopy, int64(buckets[len(buckets)-1])))
 	return dps
@@ -467,7 +467,7 @@ func expectedFromSummary(name string, labelMap map[string]string, count int64, s
 		qPt := doubleSFxDataPoint(
 			name+"_quantile",
 			&sfxMetricTypeGauge,
-			util.MergeStringMaps(labelMap, qDims),
+			maps.MergeStringMaps(labelMap, qDims),
 			float64(i),
 		)
 		out = append(out, qPt)
