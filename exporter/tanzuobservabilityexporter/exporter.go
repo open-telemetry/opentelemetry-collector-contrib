@@ -80,7 +80,7 @@ func newTracesExporter(settings component.ExporterCreateSettings, c config.Expor
 		MetricsPort:          2878,
 		TracingPort:          tracingPort,
 		FlushIntervalSeconds: 1,
-		SDKMetricsTags:       map[string]string{"otel.collector_version": settings.BuildInfo.Version},
+		SDKMetricsTags:       map[string]string{"otel.traces.collector_version": settings.BuildInfo.Version},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create proxy sender: %v", err)

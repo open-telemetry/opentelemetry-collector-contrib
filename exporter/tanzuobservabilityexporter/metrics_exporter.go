@@ -35,7 +35,7 @@ func createMetricsConsumer(hostName string, port int, settings component.Telemet
 		Host:                 hostName,
 		MetricsPort:          port,
 		FlushIntervalSeconds: 1,
-		SDKMetricsTags:       map[string]string{"otel.collector_version": otelVersion},
+		SDKMetricsTags:       map[string]string{"otel.metrics.collector_version": otelVersion},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create proxy sender: %v", err)
