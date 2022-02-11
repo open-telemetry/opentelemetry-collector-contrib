@@ -11,12 +11,11 @@ require (
 	cloud.google.com/go/compute v1.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
-	github.com/go-logr/logr v1.2.1 // indirect
-	github.com/go-logr/stdr v1.2.0 // indirect
+	github.com/go-logr/logr v1.2.2 // indirect
+	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/google/go-cmp v0.5.7 // indirect
 	github.com/klauspost/compress v1.14.2 // indirect
 	github.com/knadh/koanf v1.4.0 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
@@ -30,9 +29,9 @@ require (
 	github.com/spf13/cast v1.4.1 // indirect
 	go.opentelemetry.io/collector/model v0.44.1-0.20220210184720-ea897a6906a5 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.28.0 // indirect
-	go.opentelemetry.io/otel v1.3.0 // indirect
-	go.opentelemetry.io/otel/metric v0.26.0 // indirect
-	go.opentelemetry.io/otel/trace v1.3.0 // indirect
+	go.opentelemetry.io/otel v1.4.0 // indirect
+	go.opentelemetry.io/otel/metric v0.27.0 // indirect
+	go.opentelemetry.io/otel/trace v1.4.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/zap v1.21.0 // indirect

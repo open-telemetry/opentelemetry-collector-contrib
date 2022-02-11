@@ -8,7 +8,7 @@ require (
 	go.opentelemetry.io/collector/model v0.44.0
 )
 
-require go.uber.org/multierr v1.6.0
+require go.uber.org/multierr v1.7.0
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect

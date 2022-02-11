@@ -49,7 +49,7 @@ require (
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
 	github.com/apache/thrift v0.15.0 // indirect
 	github.com/armon/go-metrics v0.3.10 // indirect
-	github.com/aws/aws-sdk-go v1.42.48 // indirect
+	github.com/aws/aws-sdk-go v1.42.51 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.2 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.3.0 // indirect
@@ -70,8 +70,8 @@ require (
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/go-kit/log v0.2.0 // indirect
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
-	github.com/go-logr/logr v1.2.1 // indirect
-	github.com/go-logr/stdr v1.2.0 // indirect
+	github.com/go-logr/logr v1.2.2 // indirect
+	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/go-resty/resty/v2 v2.1.1-0.20191201195748-d7b97669fe48 // indirect
 	github.com/go-stack/stack v1.8.0 // indirect
@@ -176,14 +176,14 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.28.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.28.0 // indirect
 	go.opentelemetry.io/contrib/zpages v0.28.0 // indirect
-	go.opentelemetry.io/otel v1.3.0 // indirect
-	go.opentelemetry.io/otel/exporters/prometheus v0.26.0 // indirect
-	go.opentelemetry.io/otel/internal/metric v0.26.0 // indirect
-	go.opentelemetry.io/otel/metric v0.26.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.3.0 // indirect
-	go.opentelemetry.io/otel/sdk/export/metric v0.26.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v0.26.0 // indirect
-	go.opentelemetry.io/otel/trace v1.3.0 // indirect
+	go.opentelemetry.io/otel v1.4.0 // indirect
+	go.opentelemetry.io/otel/exporters/prometheus v0.27.0 // indirect
+	go.opentelemetry.io/otel/internal/metric v0.27.0 // indirect
+	go.opentelemetry.io/otel/metric v0.27.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.4.0 // indirect
+	go.opentelemetry.io/otel/sdk/export/metric v0.27.0 // indirect
+	go.opentelemetry.io/otel/sdk/metric v0.27.0 // indirect
+	go.opentelemetry.io/otel/trace v1.4.0 // indirect
 	go.uber.org/goleak v1.1.12 // indirect
 	golang.org/x/crypto v0.0.0-20211202192323-5770296d904e // indirect
 	golang.org/x/mod v0.5.1 // indirect
