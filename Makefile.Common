@@ -100,7 +100,8 @@ porto:
 
 .PHONY: misspell
 misspell:
-	$(MISSPELL) $(ALL_SRC_AND_DOC)
+	@echo "running $(MISSPELL)"
+	@$(MISSPELL) $(ALL_SRC_AND_DOC)
 
 .PHONY: misspell-correction
 misspell-correction:
