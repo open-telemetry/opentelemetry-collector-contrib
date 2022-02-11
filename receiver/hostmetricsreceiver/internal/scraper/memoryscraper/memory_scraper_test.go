@@ -33,12 +33,13 @@ import (
 
 func TestScrape(t *testing.T) {
 	type testCase struct {
-		name              string
-		virtualMemoryFunc func() (*mem.VirtualMemoryStat, error)
-		expectedErr       string
-		initializationErr string
-		config            *Config
-		bootTimeFunc      func() (uint64, error)
+		name                string
+		virtualMemoryFunc   func() (*mem.VirtualMemoryStat, error)
+		expectedErr         string
+		initializationErr   string
+		config              *Config
+		expectedMetricCount int
+		bootTimeFunc        func() (uint64, error)
 	}
 
 	testCases := []testCase{
@@ -47,6 +48,21 @@ func TestScrape(t *testing.T) {
 			config: &Config{
 				Metrics: metadata.DefaultMetricsSettings(),
 			},
+			expectedMetricCount: 1,
+		},
+		{
+			name: "All metrics enabled",
+			config: &Config{
+				Metrics: metadata.MetricsSettings{
+					SystemMemoryUtilization: metadata.MetricSettings{
+						Enabled: true,
+					},
+					SystemMemoryUsage: metadata.MetricSettings{
+						Enabled: true,
+					},
+				},
+			},
+			expectedMetricCount: 2,
 		},
 		{
 			name:              "Error",
@@ -55,6 +71,7 @@ func TestScrape(t *testing.T) {
 			config: &Config{
 				Metrics: metadata.DefaultMetricsSettings(),
 			},
+			expectedMetricCount: 1,
 		},
 		{
 			name:              "Error",
@@ -63,6 +80,7 @@ func TestScrape(t *testing.T) {
 			config: &Config{
 				Metrics: metadata.DefaultMetricsSettings(),
 			},
+			expectedMetricCount: 1,
 		},
 	}
 
@@ -96,7 +114,7 @@ func TestScrape(t *testing.T) {
 			}
 			require.NoError(t, err, "Failed to scrape metrics: %v", err)
 
-			assert.Equal(t, 1, md.MetricCount())
+			assert.Equal(t, test.expectedMetricCount, md.MetricCount())
 
 			metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 			assertMemoryUsageMetricValid(t, metrics.At(0), "system.memory.usage")
@@ -112,6 +130,61 @@ func TestScrape(t *testing.T) {
 	}
 }
 
+func TestScrape_MemoryUtilization(t *testing.T) {
+	type testCase struct {
+		name              string
+		virtualMemoryFunc func() (*mem.VirtualMemoryStat, error)
+		expectedErr       error
+	}
+	testCases := []testCase{
+		{
+			name: "Standard",
+		},
+		{
+			name:              "Invalid total memory",
+			virtualMemoryFunc: func() (*mem.VirtualMemoryStat, error) { return &mem.VirtualMemoryStat{Total: 0}, nil },
+			expectedErr:       ErrInvalidTotalMem,
+		},
+	}
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			scraperConfig := Config{
+				Metrics: metadata.MetricsSettings{
+					SystemMemoryUtilization: metadata.MetricSettings{
+						Enabled: true,
+					},
+				},
+			}
+			scraper := newMemoryScraper(context.Background(), &scraperConfig)
+			if test.virtualMemoryFunc != nil {
+				scraper.virtualMemory = test.virtualMemoryFunc
+			}
+
+			err := scraper.start(context.Background(), componenttest.NewNopHost())
+			require.NoError(t, err, "Failed to initialize memory scraper: %v", err)
+
+			md, err := scraper.scrape(context.Background())
+			if test.expectedErr != nil {
+				var partialScrapeErr scrapererror.PartialScrapeError
+				assert.ErrorAs(t, err, &partialScrapeErr)
+				return
+			}
+			require.NoError(t, err, "Failed to scrape metrics: %v", err)
+
+			metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+			assertMemoryUtilizationMetricValid(t, metrics.At(0), "system.memory.utilization")
+
+			if runtime.GOOS == "linux" {
+				assertMemoryUtilizationMetricHasLinuxSpecificStateLabels(t, metrics.At(0))
+			} else if runtime.GOOS != "windows" {
+				internal.AssertGaugeMetricHasAttributeValue(t, metrics.At(0), 2, metadata.Attributes.State, pdata.NewAttributeValueString(metadata.AttributeState.Inactive))
+			}
+
+			internal.AssertSameTimeStampForAllMetrics(t, metrics)
+		})
+	}
+}
+
 func assertMemoryUsageMetricValid(t *testing.T, metric pdata.Metric, expectedName string) {
 	assert.Equal(t, expectedName, metric.Name())
 	assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), 2)
@@ -119,9 +192,23 @@ func assertMemoryUsageMetricValid(t *testing.T, metric pdata.Metric, expectedNam
 	internal.AssertSumMetricHasAttributeValue(t, metric, 1, metadata.Attributes.State, pdata.NewAttributeValueString(metadata.AttributeState.Free))
 }
 
+func assertMemoryUtilizationMetricValid(t *testing.T, metric pdata.Metric, expectedName string) {
+	assert.Equal(t, expectedName, metric.Name())
+	assert.GreaterOrEqual(t, metric.Gauge().DataPoints().Len(), 2)
+	internal.AssertGaugeMetricHasAttributeValue(t, metric, 0, metadata.Attributes.State, pdata.NewAttributeValueString(metadata.AttributeState.Used))
+	internal.AssertGaugeMetricHasAttributeValue(t, metric, 1, metadata.Attributes.State, pdata.NewAttributeValueString(metadata.AttributeState.Free))
+}
+
 func assertMemoryUsageMetricHasLinuxSpecificStateLabels(t *testing.T, metric pdata.Metric) {
 	internal.AssertSumMetricHasAttributeValue(t, metric, 2, metadata.Attributes.State, pdata.NewAttributeValueString(metadata.AttributeState.Buffered))
 	internal.AssertSumMetricHasAttributeValue(t, metric, 3, metadata.Attributes.State, pdata.NewAttributeValueString(metadata.AttributeState.Cached))
 	internal.AssertSumMetricHasAttributeValue(t, metric, 4, metadata.Attributes.State, pdata.NewAttributeValueString(metadata.AttributeState.SlabReclaimable))
 	internal.AssertSumMetricHasAttributeValue(t, metric, 5, metadata.Attributes.State, pdata.NewAttributeValueString(metadata.AttributeState.SlabUnreclaimable))
+}
+
+func assertMemoryUtilizationMetricHasLinuxSpecificStateLabels(t *testing.T, metric pdata.Metric) {
+	internal.AssertGaugeMetricHasAttributeValue(t, metric, 2, metadata.Attributes.State, pdata.NewAttributeValueString(metadata.AttributeState.Buffered))
+	internal.AssertGaugeMetricHasAttributeValue(t, metric, 3, metadata.Attributes.State, pdata.NewAttributeValueString(metadata.AttributeState.Cached))
+	internal.AssertGaugeMetricHasAttributeValue(t, metric, 4, metadata.Attributes.State, pdata.NewAttributeValueString(metadata.AttributeState.SlabReclaimable))
+	internal.AssertGaugeMetricHasAttributeValue(t, metric, 5, metadata.Attributes.State, pdata.NewAttributeValueString(metadata.AttributeState.SlabUnreclaimable))
 }
