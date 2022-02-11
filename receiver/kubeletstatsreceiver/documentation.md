@@ -8,24 +8,26 @@ These are the metrics available for this scraper.
 
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
-| cpu.time | CPU time | s | Sum(Double) | <ul> </ul> |
-| cpu.utilization | CPU utilization | 1 | Gauge(Double) | <ul> </ul> |
-| filesystem.available | Filesystem available | By | Gauge(Int) | <ul> </ul> |
-| filesystem.capacity | Filesystem capacity | By | Gauge(Int) | <ul> </ul> |
-| filesystem.usage | Filesystem usage | By | Gauge(Int) | <ul> </ul> |
-| memory.available | Memory available | By | Gauge(Int) | <ul> </ul> |
-| memory.major_page_faults | Memory major_page_faults | 1 | Gauge(Int) | <ul> </ul> |
-| memory.page_faults | Memory page_faults | 1 | Gauge(Int) | <ul> </ul> |
-| memory.rss | Memory rss | By | Gauge(Int) | <ul> </ul> |
-| memory.usage | Memory usage | By | Gauge(Int) | <ul> </ul> |
-| memory.working_set | Memory working_set | By | Gauge(Int) | <ul> </ul> |
-| network.errors | Network errors | 1 | Sum(Int) | <ul> <li>interface</li> <li>direction</li> </ul> |
-| network.io | Network IO | By | Sum(Int) | <ul> <li>interface</li> <li>direction</li> </ul> |
-| volume.available | The number of available bytes in the volume. | By | Gauge(Int) | <ul> </ul> |
-| volume.capacity | The total capacity in bytes of the volume. | By | Gauge(Int) | <ul> </ul> |
-| volume.inodes | The total inodes in the filesystem. | 1 | Gauge(Int) | <ul> </ul> |
-| volume.inodes.free | The free inodes in the filesystem. | 1 | Gauge(Int) | <ul> </ul> |
-| volume.inodes.used | The inodes used by the filesystem. This may not equal inodes - free because filesystem may share inodes with other filesystems. | 1 | Gauge(Int) | <ul> </ul> |
+| **cpu.time** | CPU time | s | Sum(Double) | <ul> </ul> |
+| **cpu.utilization** | CPU utilization | 1 | Gauge(Double) | <ul> </ul> |
+| **filesystem.available** | Filesystem available | By | Gauge(Int) | <ul> </ul> |
+| **filesystem.capacity** | Filesystem capacity | By | Gauge(Int) | <ul> </ul> |
+| **filesystem.usage** | Filesystem usage | By | Gauge(Int) | <ul> </ul> |
+| **memory.available** | Memory available | By | Gauge(Int) | <ul> </ul> |
+| **memory.major_page_faults** | Memory major_page_faults | 1 | Gauge(Int) | <ul> </ul> |
+| **memory.page_faults** | Memory page_faults | 1 | Gauge(Int) | <ul> </ul> |
+| **memory.rss** | Memory rss | By | Gauge(Int) | <ul> </ul> |
+| **memory.usage** | Memory usage | By | Gauge(Int) | <ul> </ul> |
+| **memory.working_set** | Memory working_set | By | Gauge(Int) | <ul> </ul> |
+| **network.errors** | Network errors | 1 | Sum(Int) | <ul> <li>interface</li> <li>direction</li> </ul> |
+| **network.io** | Network IO | By | Sum(Int) | <ul> <li>interface</li> <li>direction</li> </ul> |
+| **volume.available** | The number of available bytes in the volume. | By | Gauge(Int) | <ul> </ul> |
+| **volume.capacity** | The total capacity in bytes of the volume. | By | Gauge(Int) | <ul> </ul> |
+| **volume.inodes** | The total inodes in the filesystem. | 1 | Gauge(Int) | <ul> </ul> |
+| **volume.inodes.free** | The free inodes in the filesystem. | 1 | Gauge(Int) | <ul> </ul> |
+| **volume.inodes.used** | The inodes used by the filesystem. This may not equal inodes - free because filesystem may share inodes with other filesystems. | 1 | Gauge(Int) | <ul> </ul> |
+
+**Highlighted metrics** are emitted by default.
 
 ## Attributes
 
