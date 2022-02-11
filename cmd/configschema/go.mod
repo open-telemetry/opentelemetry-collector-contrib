@@ -36,12 +36,12 @@ require (
 	github.com/Azure/go-autorest/logger v0.2.1 // indirect
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.15 // indirect
-	github.com/DataDog/datadog-agent/pkg/quantile v0.33.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/quantile v0.33.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/log v0.0.0-20201009092105-58e18918b2db // indirect
 	github.com/DataDog/datadog-go v4.8.2+incompatible // indirect
 	github.com/GehirnInc/crypt v0.0.0-20200316065508-bb7000b8a962 // indirect
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.0.0 // indirect
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.3.0 // indirect
 	github.com/Microsoft/go-winio v0.5.1 // indirect
 	github.com/ReneKroon/ttlcache/v2 v2.11.0 // indirect
 	github.com/SermoDigital/jose v0.9.2-0.20161205224733-f6df55f235c2 // indirect
@@ -54,7 +54,7 @@ require (
 	github.com/apache/thrift v0.15.0 // indirect
 	github.com/armon/go-metrics v0.3.10 // indirect
 	github.com/avast/retry-go v3.0.0+incompatible // indirect
-	github.com/aws/aws-sdk-go v1.42.51 // indirect
+	github.com/aws/aws-sdk-go v1.42.52 // indirect
 	github.com/beeker1121/goque v2.1.0+incompatible // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bits-and-blooms/bitset v1.2.0 // indirect
@@ -412,7 +412,7 @@ require (
 	github.com/vishvananda/netns v0.0.0-20200728191858-db3c7e526aae // indirect
 	github.com/vmihailenco/msgpack/v5 v5.3.5 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
-	github.com/wavefronthq/wavefront-sdk-go v0.9.9 // indirect
+	github.com/wavefronthq/wavefront-sdk-go v0.9.10 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.0 // indirect
 	github.com/xdg-go/stringprep v1.0.2 // indirect
@@ -420,7 +420,7 @@ require (
 	go.elastic.co/apm v1.15.0 // indirect
 	go.elastic.co/fastjson v1.1.0 // indirect
 	go.etcd.io/bbolt v1.3.6 // indirect
-	go.mongodb.org/atlas v0.14.0 // indirect
+	go.mongodb.org/atlas v0.15.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.28.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.28.0 // indirect
@@ -436,16 +436,16 @@ require (
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
-	golang.org/x/sys v0.0.0-20220128215802-99c3d69c2c27 // indirect
+	golang.org/x/sys v0.0.0-20220207234003-57398862261d // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20220210224613-90d013bbcef8 // indirect
 	golang.org/x/tools v0.1.9 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	gonum.org/v1/gonum v0.9.3 // indirect
-	google.golang.org/api v0.67.0 // indirect
+	google.golang.org/api v0.68.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20220201184016-50beb8ab5c44 // indirect
+	google.golang.org/genproto v0.0.0-20220207185906-7721543eae58 // indirect
 	google.golang.org/grpc v1.44.0 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/DataDog/dd-trace-go.v1 v1.36.0 // indirect
