@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/Shopify/sarama v1.31.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.44.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.44.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest v0.44.0
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.44.1-0.20220210184720-ea897a6906a5
 	go.opentelemetry.io/collector/model v0.44.1-0.20220210184720-ea897a6906a5
@@ -15,13 +15,14 @@ require (
 require go.uber.org/multierr v1.7.0
 
 require (
-	github.com/Microsoft/go-winio v0.4.17 // indirect
+	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
+	github.com/Microsoft/go-winio v0.5.1 // indirect
 	github.com/apache/thrift v0.15.0 // indirect
 	github.com/aws/aws-sdk-go v1.42.51 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.2 // indirect
 	github.com/containerd/containerd v1.5.9 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/docker/distribution v2.7.1+incompatible // indirect
+	github.com/docker/distribution v2.8.0+incompatible // indirect
 	github.com/docker/docker v20.10.12+incompatible // indirect
 	github.com/docker/go-connections v0.4.1-0.20210727194412-58542c764a11 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
@@ -80,7 +81,7 @@ require (
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter => ../../exporter/kafkaexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest => ../../internal/containertest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 
