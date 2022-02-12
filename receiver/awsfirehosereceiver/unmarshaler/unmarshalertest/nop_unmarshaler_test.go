@@ -12,30 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awsfirehosereceiver
+package unmarshalertest
 
 import (
-	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configtest"
-	"go.opentelemetry.io/collector/consumer/consumertest"
 )
 
-func TestValidConfig(t *testing.T) {
-	err := configtest.CheckConfigStruct(createDefaultConfig())
+func TestNewNopMetrics(t *testing.T) {
+	unmarshaler := NewNopMetrics()
+	got, err := unmarshaler.Unmarshal(nil)
 	require.NoError(t, err)
+	require.NotNil(t, got)
+	require.Equal(t, encoding, unmarshaler.Encoding())
 }
 
-func TestCreateMetricsReceiver(t *testing.T) {
-	r, err := createMetricsReceiver(
-		context.Background(),
-		componenttest.NewNopReceiverCreateSettings(),
-		createDefaultConfig(),
-		consumertest.NewNop(),
-	)
-	require.NoError(t, err)
-	require.NotNil(t, r)
+func TestNewErrMetrics(t *testing.T) {
+	wantErr := fmt.Errorf("test error")
+	unmarshaler := NewErrMetrics(wantErr)
+	got, err := unmarshaler.Unmarshal(nil)
+	require.Error(t, err)
+	require.Equal(t, wantErr, err)
+	require.NotNil(t, got)
+	require.Equal(t, encoding, unmarshaler.Encoding())
 }

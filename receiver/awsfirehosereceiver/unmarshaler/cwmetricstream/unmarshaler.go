@@ -17,6 +17,7 @@ package cwmetricstream // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/model/pdata"
@@ -30,7 +31,7 @@ const (
 )
 
 var (
-	errInvalidRecords = fmt.Errorf("record format invalid")
+	errInvalidRecords = errors.New("record format invalid")
 )
 
 type Unmarshaler struct {
@@ -49,7 +50,6 @@ func (u Unmarshaler) Unmarshal(records [][]byte) (pdata.Metrics, error) {
 		for _, datum := range bytes.Split(record, []byte(recordDelimiter)) {
 			if len(datum) > 0 {
 				var metric cWMetric
-				// TODO: use sonic unmarshaler
 				err := json.Unmarshal(datum, &metric)
 				if err != nil || !u.isValid(metric) {
 					continue
@@ -57,7 +57,12 @@ func (u Unmarshaler) Unmarshal(records [][]byte) (pdata.Metrics, error) {
 				resourceKey := u.toResourceKey(metric)
 				mb, ok := builders[resourceKey]
 				if !ok {
-					mb = newResourceMetricsBuilder()
+					mb = newResourceMetricsBuilder(
+						metric.MetricStreamName,
+						metric.AccountId,
+						metric.Region,
+						metric.Namespace,
+					)
 					builders[resourceKey] = mb
 				}
 				mb.AddMetric(metric)
