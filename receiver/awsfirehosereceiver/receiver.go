@@ -22,10 +22,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
-	"strconv"
 	"sync"
 	"time"
 
@@ -38,18 +36,24 @@ const (
 	headerFirehoseRequestId        = "X-Amz-Firehose-Request-Id"
 	headerFirehoseAccessKey        = "X-Amz-Firehose-Access-Key"
 	headerFirehoseCommonAttributes = "X-Amz-Firehose-Common-Attributes"
+	headerContentEncoding          = "Content-Encoding"
+	headerContentType              = "Content-Type"
+	headerContentLength            = "Content-Length"
 )
 
 var (
-	errUnrecognizedEncoding = fmt.Errorf("unrecognized encoding")
-	errMissingHost          = fmt.Errorf("nil host")
-	errInvalidAccessKey     = fmt.Errorf("invalid firehose access key")
+	errUnrecognizedEncoding     = errors.New("unrecognized encoding")
+	errMissingHost              = errors.New("nil host")
+	errInvalidAccessKey         = errors.New("invalid firehose access key")
+	errMissingRequestIdInHeader = errors.New("missing request id in header")
+	errMissingRequestIdInBody   = errors.New("missing request id in body")
+	errDiffRequestIdBody        = errors.New("different request id in body")
 )
 
 // The firehoseConsumer is responsible for using the unmarshaler and the consumer.
 type firehoseConsumer interface {
-	// consume unmarshalls and consumes the records
-	consume(ctx context.Context, records [][]byte) (int, error)
+	// Consume unmarshalls and consumes the records.
+	Consume(ctx context.Context, records [][]byte) (int, error)
 }
 
 type firehoseReceiver struct {
@@ -87,7 +91,8 @@ type firehoseCommonAttributes struct {
 var _ component.Receiver = (*firehoseReceiver)(nil)
 var _ http.Handler = (*firehoseReceiver)(nil)
 
-// Start spins up the receiver's HTTP server and makes the receiver start its processing.
+// Start spins up the receiver's HTTP server and makes the receiver start
+// its processing.
 func (fmr *firehoseReceiver) Start(_ context.Context, host component.Host) error {
 	if host == nil {
 		return errMissingHost
@@ -118,36 +123,47 @@ func (fmr *firehoseReceiver) Start(_ context.Context, host component.Host) error
 }
 
 // Shutdown tells the receiver that should stop reception,
-// giving it a chance to perform any necessary clean-up and shutting down
-// its HTTP server.
+// giving it a chance to perform any necessary clean-up and
+// shutting down its HTTP server.
 func (fmr *firehoseReceiver) Shutdown(context.Context) error {
 	err := fmr.server.Close()
 	fmr.shutdownWG.Wait()
 	return err
 }
 
-// ServeHTTP receives metrics as JSON, unmarshalls them,
-// and sends them along to the nextConsumer.
+// ServeHTTP receives Firehose requests, unmarshalls them, and sends them along to the firehoseConsumer.
 func (fmr *firehoseReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	requestId := r.Header.Get(headerFirehoseRequestId)
+	if requestId == "" {
+		fmr.sendResponse(w, requestId, http.StatusBadRequest, errMissingRequestIdInHeader)
+		return
+	}
 	fmr.settings.Logger.Debug("processing request", zap.String("requestId", requestId))
 
 	if statusCode, err := fmr.validate(r); err != nil {
-		fmr.sendResponse(w, requestId, statusCode, err.Error())
+		fmr.sendResponse(w, requestId, statusCode, err)
 		return
 	}
 
 	body, err := fmr.getBody(r)
 	if err != nil {
-		fmr.sendResponse(w, requestId, http.StatusBadRequest, err.Error())
+		fmr.sendResponse(w, requestId, http.StatusBadRequest, err)
 		return
 	}
 
 	var fr firehoseRequest
 	if err = json.Unmarshal(body, &fr); err != nil {
-		fmr.sendResponse(w, requestId, http.StatusBadRequest, err.Error())
+		fmr.sendResponse(w, requestId, http.StatusBadRequest, err)
+		return
+	}
+
+	if fr.RequestId == "" {
+		fmr.sendResponse(w, requestId, http.StatusBadRequest, errMissingRequestIdInBody)
+		return
+	} else if fr.RequestId != requestId {
+		fmr.sendResponse(w, requestId, http.StatusBadRequest, errDiffRequestIdBody)
 		return
 	}
 
@@ -156,7 +172,7 @@ func (fmr *firehoseReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if record.Data != "" {
 			decoded, err := base64.StdEncoding.DecodeString(record.Data)
 			if err != nil {
-				fmr.sendResponse(w, requestId, http.StatusBadRequest, err.Error())
+				fmr.sendResponse(w, requestId, http.StatusBadRequest, err)
 				return
 			}
 
@@ -164,14 +180,17 @@ func (fmr *firehoseReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	statusCode, err := fmr.consumer.consume(ctx, records)
+	statusCode, err := fmr.consumer.Consume(ctx, records)
 	if err != nil {
-		fmr.sendResponse(w, requestId, statusCode, err.Error())
+		fmr.sendResponse(w, requestId, statusCode, err)
+		return
 	}
 
-	fmr.sendResponse(w, requestId, http.StatusOK, "")
+	fmr.sendResponse(w, requestId, http.StatusOK, nil)
 }
 
+// validate checks the Firehose access key in the header against
+// the one passed into the Config
 func (fmr *firehoseReceiver) validate(r *http.Request) (int, error) {
 	if accessKey := r.Header.Get(headerFirehoseAccessKey); accessKey != "" && accessKey != fmr.config.AccessKey {
 		return http.StatusUnauthorized, errInvalidAccessKey
@@ -179,10 +198,11 @@ func (fmr *firehoseReceiver) validate(r *http.Request) (int, error) {
 	return http.StatusAccepted, nil
 }
 
+// getBody reads the body from the request as a slice of bytes.
 func (fmr *firehoseReceiver) getBody(r *http.Request) ([]byte, error) {
-	reader := fmr.getReader(r.Body, r.Header.Get("Content-Encoding"))
+	reader := fmr.getReader(r.Body, r.Header.Get(headerContentEncoding))
 
-	body, _ := ioutil.ReadAll(reader)
+	body, _ := io.ReadAll(reader)
 	if c, ok := reader.(io.Closer); ok {
 		_ = c.Close()
 	}
@@ -190,6 +210,8 @@ func (fmr *firehoseReceiver) getBody(r *http.Request) ([]byte, error) {
 	return body, nil
 }
 
+// getReader uses the encoding to wrap the reader if matched otherwise returns
+// the original reader.
 func (fmr *firehoseReceiver) getReader(r io.Reader, encoding string) io.Reader {
 	if encoding == "gzip" {
 		if gzr, err := gzip.NewReader(r); err == nil {
@@ -199,6 +221,7 @@ func (fmr *firehoseReceiver) getReader(r io.Reader, encoding string) io.Reader {
 	return r
 }
 
+// TODO: attach common attributes to resources. may need to pass into firehoseConsumer.
 func (fmr *firehoseReceiver) getCommonAttributes(r *http.Request) (map[string]string, error) {
 	attributes := make(map[string]string)
 	if commonAttributes := r.Header.Get(headerFirehoseCommonAttributes); commonAttributes != "" {
@@ -211,7 +234,12 @@ func (fmr *firehoseReceiver) getCommonAttributes(r *http.Request) (map[string]st
 	return attributes, nil
 }
 
-func (fmr *firehoseReceiver) sendResponse(w http.ResponseWriter, requestId string, statusCode int, errorMessage string) {
+// sendResponse writes a response to Firehose in the expected format.
+func (fmr *firehoseReceiver) sendResponse(w http.ResponseWriter, requestId string, statusCode int, err error) {
+	var errorMessage string
+	if err != nil {
+		errorMessage = err.Error()
+	}
 	body := firehoseResponse{
 		RequestId:    requestId,
 		Timestamp:    time.Now().UnixMilli(),
@@ -219,8 +247,8 @@ func (fmr *firehoseReceiver) sendResponse(w http.ResponseWriter, requestId strin
 	}
 	payload, _ := json.Marshal(body)
 	w.WriteHeader(statusCode)
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Content-Length", strconv.Itoa(len(payload)))
+	w.Header().Set(headerContentType, "application/json")
+	w.Header().Set(headerContentLength, fmt.Sprintf("%d", len(payload)))
 	if _, err := w.Write(payload); err != nil {
 		fmr.settings.Logger.Error("failed to send response", zap.Error(err))
 	}

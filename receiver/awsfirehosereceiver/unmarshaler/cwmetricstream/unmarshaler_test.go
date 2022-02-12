@@ -22,51 +22,72 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestEncoding(t *testing.T) {
+	unmarshaler := NewUnmarshaler()
+	require.Equal(t, Encoding, unmarshaler.Encoding())
+}
+
 func TestUnmarshal(t *testing.T) {
 	unmarshaler := NewUnmarshaler()
-
-	tests := []struct {
-		filename               string
-		expectedResourceCount  int
-		expectedMetricCount    int
-		expectedDatapointCount int
-		expectedError          error
+	testCases := map[string]struct {
+		filename           string
+		wantResourceCount  int
+		wantMetricCount    int
+		wantDatapointCount int
+		wantErr            error
 	}{
-		{
-			filename:            "multiple_records",
-			expectedMetricCount: 33,
+		"WithMultipleRecords": {
+			filename:           "multiple_records",
+			wantResourceCount:  6,
+			wantMetricCount:    94,
+			wantDatapointCount: 127,
 		},
-		{
-			filename:            "single_record",
-			expectedMetricCount: 1,
+		"WithSingleRecord": {
+			filename:           "single_record",
+			wantResourceCount:  1,
+			wantMetricCount:    1,
+			wantDatapointCount: 1,
 		},
-		{
-			filename:      "invalid_records",
-			expectedError: errInvalidRecords,
+		"WithInvalidRecords": {
+			filename: "invalid_records",
+			wantErr:  errInvalidRecords,
 		},
-		{
-			filename:            "some_invalid_records",
-			expectedMetricCount: 35,
+		"WithSomeInvalidRecords": {
+			filename:           "some_invalid_records",
+			wantResourceCount:  5,
+			wantMetricCount:    88,
+			wantDatapointCount: 88,
 		},
 	}
-
-	for _, tt := range tests {
-		t.Run(tt.filename, func(t *testing.T) {
-			record, err := os.ReadFile(path.Join(".", "testdata", tt.filename))
+	for name, testCase := range testCases {
+		t.Run(name, func(t *testing.T) {
+			record, err := os.ReadFile(path.Join(".", "testdata", testCase.filename))
 			require.NoError(t, err)
 
 			records := [][]byte{record}
 
-			md, err := unmarshaler.Unmarshal(records)
-			if tt.expectedError != nil {
+			got, err := unmarshaler.Unmarshal(records)
+			if testCase.wantErr != nil {
 				require.Error(t, err)
-				require.Equal(t, tt.expectedError, err)
+				require.Equal(t, testCase.wantErr, err)
 			} else {
 				require.NoError(t, err)
-				require.NotNil(t, md)
-				require.Equal(t, 1, md.ResourceMetrics().Len())
-				ilm := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics()
-				require.Equal(t, tt.expectedMetricCount, ilm.Len())
+				require.NotNil(t, got)
+				require.Equal(t, testCase.wantResourceCount, got.ResourceMetrics().Len())
+				gotMetricCount := 0
+				gotDatapointCount := 0
+				for i := 0; i < got.ResourceMetrics().Len(); i++ {
+					rm := got.ResourceMetrics().At(i)
+					require.Equal(t, 1, rm.InstrumentationLibraryMetrics().Len())
+					ilm := rm.InstrumentationLibraryMetrics().At(0)
+					gotMetricCount += ilm.Metrics().Len()
+					for j := 0; j < ilm.Metrics().Len(); j++ {
+						metric := ilm.Metrics().At(j)
+						gotDatapointCount += metric.Histogram().DataPoints().Len()
+					}
+				}
+				require.Equal(t, testCase.wantMetricCount, gotMetricCount)
+				require.Equal(t, testCase.wantDatapointCount, gotDatapointCount)
 			}
 		})
 	}
