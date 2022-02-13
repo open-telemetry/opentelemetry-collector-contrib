@@ -45,3 +45,7 @@ type Config struct {
 	// - telegraf-prometheus-v2
 	MetricsSchema string `mapstructure:"metrics_schema"`
 }
+
+func (cfg *Config) Validate() error {
+	return nil
+}

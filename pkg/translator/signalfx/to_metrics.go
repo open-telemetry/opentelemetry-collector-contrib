@@ -23,7 +23,6 @@ import (
 )
 
 // ToMetrics converts SignalFx proto data points to pdata.Metrics.
-// Returning the converted data and the number of dropped data points.
 func ToMetrics(sfxDataPoints []*model.DataPoint) (pdata.Metrics, error) {
 	// TODO: not optimized at all, basically regenerating everything for each
 	// 	data point.
@@ -85,7 +84,7 @@ func setDataTypeAndPoints(sfxDataPoint *model.DataPoint, ms pdata.MetricSlice) e
 
 func fillNumberDataPoint(sfxDataPoint *model.DataPoint, dps pdata.NumberDataPointSlice) {
 	dp := dps.AppendEmpty()
-	dp.SetTimestamp(dpTimestamp(sfxDataPoint))
+	dp.SetTimestamp(toTimestamp(sfxDataPoint.GetTimestamp()))
 	switch {
 	case sfxDataPoint.Value.IntValue != nil:
 		dp.SetIntVal(*sfxDataPoint.Value.IntValue)
@@ -93,11 +92,6 @@ func fillNumberDataPoint(sfxDataPoint *model.DataPoint, dps pdata.NumberDataPoin
 		dp.SetDoubleVal(*sfxDataPoint.Value.DoubleValue)
 	}
 	fillInAttributes(sfxDataPoint.Dimensions, dp.Attributes())
-}
-
-func dpTimestamp(dp *model.DataPoint) pdata.Timestamp {
-	// Convert from SignalFx millis to pdata nanos
-	return pdata.Timestamp(dp.GetTimestamp() * 1e6)
 }
 
 func fillInAttributes(

@@ -3,18 +3,18 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awspro
 go 1.17
 
 require (
-	github.com/aws/aws-sdk-go v1.42.48
+	github.com/aws/aws-sdk-go v1.42.52
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.44.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.44.0
+	go.opentelemetry.io/collector v0.44.1-0.20220210184720-ea897a6906a5
 )
 
 require (
 	github.com/cenkalti/backoff/v4 v4.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/felixge/httpsnoop v1.0.2 // indirect
-	github.com/go-logr/logr v1.2.1 // indirect
-	github.com/go-logr/stdr v1.2.0 // indirect
+	github.com/go-logr/logr v1.2.2 // indirect
+	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
@@ -38,12 +38,12 @@ require (
 	github.com/tidwall/tinylru v1.1.0 // indirect
 	github.com/tidwall/wal v1.1.7 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/model v0.44.0 // indirect
+	go.opentelemetry.io/collector/model v0.44.1-0.20220210184720-ea897a6906a5 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.28.0 // indirect
-	go.opentelemetry.io/otel v1.3.0 // indirect
-	go.opentelemetry.io/otel/internal/metric v0.26.0 // indirect
-	go.opentelemetry.io/otel/metric v0.26.0 // indirect
-	go.opentelemetry.io/otel/trace v1.3.0 // indirect
+	go.opentelemetry.io/otel v1.4.0 // indirect
+	go.opentelemetry.io/otel/internal/metric v0.27.0 // indirect
+	go.opentelemetry.io/otel/metric v0.27.0 // indirect
+	go.opentelemetry.io/otel/trace v1.4.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/zap v1.21.0 // indirect

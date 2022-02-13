@@ -66,6 +66,7 @@ func TestLoadConfig(t *testing.T) {
 				Headers: map[string]string{
 					"User-Agent": "opentelemetry-collector-contrib {{version}}",
 				},
+				Compression: "gzip",
 			},
 		},
 		Source: "dev",

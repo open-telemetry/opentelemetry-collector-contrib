@@ -15,7 +15,7 @@
 //go:build integration
 // +build integration
 
-package container
+package containertest
 
 import (
 	"context"

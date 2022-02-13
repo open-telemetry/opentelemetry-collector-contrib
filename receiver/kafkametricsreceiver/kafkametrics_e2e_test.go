@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testing/container"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest"
 )
 
 const (
@@ -51,8 +51,8 @@ func (h *testHost) ReportFatalError(err error) {
 var _ component.Host = (*testHost)(nil)
 
 func TestIntegrationSingleNode(t *testing.T) {
-	docker := container.New(t)
-	container := docker.StartImage(kafkaZkImage, container.WithPortReady(kafkaPort), container.WithPortReady(zkPort))
+	docker := containertest.New(t)
+	container := docker.StartImage(kafkaZkImage, containertest.WithPortReady(kafkaPort), containertest.WithPortReady(zkPort))
 	kafkaAddress := container.AddrForPort(kafkaPort)
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)

@@ -14,13 +14,13 @@ require (
 	github.com/openzipkin/zipkin-go v0.4.0
 	github.com/stretchr/testify v1.7.0
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.44.0
-	go.opentelemetry.io/collector/model v0.44.0
+	go.opentelemetry.io/collector v0.44.1-0.20220210184720-ea897a6906a5
+	go.opentelemetry.io/collector/model v0.44.1-0.20220210184720-ea897a6906a5
 	go.uber.org/zap v1.21.0
 )
 
 require (
-	github.com/aws/aws-sdk-go v1.42.48 // indirect
+	github.com/aws/aws-sdk-go v1.42.52 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.2 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -54,9 +54,9 @@ require (
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.0 // indirect
 	github.com/xdg-go/stringprep v1.0.2 // indirect
-	go.opentelemetry.io/otel v1.3.0 // indirect
-	go.opentelemetry.io/otel/metric v0.26.0 // indirect
-	go.opentelemetry.io/otel/trace v1.3.0 // indirect
+	go.opentelemetry.io/otel v1.4.0 // indirect
+	go.opentelemetry.io/otel/metric v0.27.0 // indirect
+	go.opentelemetry.io/otel/trace v1.4.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	golang.org/x/crypto v0.0.0-20220128200615-198e4374d7ed // indirect

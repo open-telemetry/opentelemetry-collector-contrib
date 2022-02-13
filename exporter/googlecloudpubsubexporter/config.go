@@ -43,7 +43,7 @@ type Config struct {
 	Topic string `mapstructure:"topic"`
 }
 
-func (config *Config) validate() error {
+func (config *Config) Validate() error {
 	if !topicMatcher.MatchString(config.Topic) {
 		return fmt.Errorf("topic '%s' is not a valide  format, use 'projects/<project_id>/topics/<name>'", config.Topic)
 	}
