@@ -62,6 +62,9 @@ func (h *hashRing) endpointFor(traceID pdata.TraceID) string {
 // findEndpoint returns the "next" endpoint starting from the given position
 func (h *hashRing) findEndpoint(pos position) string {
 	ringSize := len(h.items)
+	if ringSize == 0 {
+		return ""
+	}
 	left, right := h.items[:ringSize/2], h.items[ringSize/2:]
 	found := bsearch(pos, left, right)
 	return found.endpoint
