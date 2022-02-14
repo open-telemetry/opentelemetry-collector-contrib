@@ -95,7 +95,7 @@
 // Config
 //
 //   processors:
-//    resourcedetection:
+//      resourcedetection:
 //        detectors: ["env"]
 //        timeout: 5s
 //        override: true 
