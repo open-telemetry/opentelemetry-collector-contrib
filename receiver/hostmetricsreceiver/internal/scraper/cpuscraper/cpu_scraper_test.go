@@ -138,30 +138,32 @@ func TestScrape_CpuUtilization(t *testing.T) {
 		expectedMetricCount int
 		times               bool
 		utilization         bool
+		utilizationIndex    int
 	}
 
 	testCases := []testCase{
 		{
 			name:                "Standard",
 			metricsConfig:       metadata.DefaultMetricsSettings(),
-			expectedMetricCount: 2,
+			expectedMetricCount: 1,
 			times:               true,
-			utilization:         true,
+			utilization:         false,
 		},
 		{
-			name:                "SystemCPUTime metric is disabled ",
+			name:                "SystemCPUTime metric is disabled",
 			times:               false,
 			utilization:         true,
 			expectedMetricCount: 1,
 		},
 		{
-			name:                "SystemCPUUtilization metric is disabled ",
+			name:                "all metrics are enabled",
 			times:               true,
-			utilization:         false,
-			expectedMetricCount: 1,
+			utilization:         true,
+			expectedMetricCount: 2,
+			utilizationIndex:    1,
 		},
 		{
-			name:                "all metrics are disabled ",
+			name:                "all metrics are disabled",
 			times:               false,
 			utilization:         false,
 			expectedMetricCount: 0,
@@ -197,26 +199,15 @@ func TestScrape_CpuUtilization(t *testing.T) {
 			assert.Equal(t, test.expectedMetricCount, md.MetricCount())
 			metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 			internal.AssertSameTimeStampForAllMetrics(t, metrics)
-			if test.times && test.utilization {
+			if test.times {
 				timesMetrics := metrics.At(0)
 				assertCPUMetricValid(t, timesMetrics, 0)
 				if runtime.GOOS == "linux" {
 					assertCPUMetricHasLinuxSpecificStateLabels(t, timesMetrics)
 				}
-
-				utilizationMetrics := metrics.At(1)
-				assertCPUUtilizationMetricValid(t, utilizationMetrics, 0)
-				if runtime.GOOS == "linux" {
-					assertCPUUtilizationMetricHasLinuxSpecificStateLabels(t, utilizationMetrics)
-				}
-			} else if test.times {
-				timesMetrics := metrics.At(0)
-				assertCPUMetricValid(t, timesMetrics, 0)
-				if runtime.GOOS == "linux" {
-					assertCPUMetricHasLinuxSpecificStateLabels(t, timesMetrics)
-				}
-			} else if test.utilization {
-				utilizationMetrics := metrics.At(0)
+			}
+			if test.utilization {
+				utilizationMetrics := metrics.At(test.utilizationIndex)
 				assertCPUUtilizationMetricValid(t, utilizationMetrics, 0)
 				if runtime.GOOS == "linux" {
 					assertCPUUtilizationMetricHasLinuxSpecificStateLabels(t, utilizationMetrics)

@@ -21,8 +21,8 @@ import (
 	"github.com/shirou/gopsutil/v3/cpu"
 	"go.opentelemetry.io/collector/model/pdata"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/ucal"
 )
 
 func (s *scraper) recordCPUTimeStateDataPoints(now pdata.Timestamp, cpuTime cpu.TimesStat) {
@@ -32,7 +32,7 @@ func (s *scraper) recordCPUTimeStateDataPoints(now pdata.Timestamp, cpuTime cpu.
 	s.mb.RecordSystemCPUTimeDataPoint(now, cpuTime.Irq, cpuTime.CPU, metadata.AttributeState.Interrupt)
 }
 
-func (s *scraper) recordCPUUtilization(now pdata.Timestamp, cpuUtilization internal.CPUUtilization) {
+func (s *scraper) recordCPUUtilization(now pdata.Timestamp, cpuUtilization ucal.CPUUtilization) {
 	s.mb.RecordSystemCPUUtilizationDataPoint(now, cpuUtilization.User, cpuUtilization.CPU, metadata.AttributeState.User)
 	s.mb.RecordSystemCPUUtilizationDataPoint(now, cpuUtilization.System, cpuUtilization.CPU, metadata.AttributeState.System)
 	s.mb.RecordSystemCPUUtilizationDataPoint(now, cpuUtilization.Idle, cpuUtilization.CPU, metadata.AttributeState.Idle)

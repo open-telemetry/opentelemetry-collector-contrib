@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- `hostmetricsreceiver`: Add cpu.utilization metrics to cpu scrapper (#6221)
 
 ### 💡 Enhancements 💡
 
