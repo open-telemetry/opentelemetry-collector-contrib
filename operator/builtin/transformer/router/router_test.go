@@ -29,8 +29,8 @@ import (
 )
 
 func TestRouterOperator(t *testing.T) {
-	os.Setenv("TEST_ROUTER_PLUGIN_ENV", "foo")
-	defer os.Unsetenv("TEST_ROUTER_PLUGIN_ENV")
+	os.Setenv("TEST_ROUTER_OPERATOR_ENV", "foo")
+	defer os.Unsetenv("TEST_ROUTER_OPERATOR_ENV")
 
 	basicConfig := func() *RouterOperatorConfig {
 		return &RouterOperatorConfig{
@@ -139,7 +139,7 @@ func TestRouterOperator(t *testing.T) {
 			[]*RouterOperatorRouteConfig{
 				{
 					helper.NewAttributerConfig(),
-					`env("TEST_ROUTER_PLUGIN_ENV") == "foo"`,
+					`env("TEST_ROUTER_OPERATOR_ENV") == "foo"`,
 					[]string{"output1"},
 				},
 				{

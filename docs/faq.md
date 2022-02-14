@@ -17,11 +17,6 @@ pipeline:
   - type: elastic_output
 ```
 
-## What is a plugin?
-
-A plugin is a templated set of operators. Read more about plugins [here](/docs/plugins.md).
-
-
 ## Does Stanza support HTTP proxies?
 
 Yes. Read about the details [here](/docs/proxy.md).

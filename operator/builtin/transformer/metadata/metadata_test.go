@@ -29,8 +29,8 @@ import (
 )
 
 func TestMetadata(t *testing.T) {
-	os.Setenv("TEST_METADATA_PLUGIN_ENV", "foo")
-	defer os.Unsetenv("TEST_METADATA_PLUGIN_ENV")
+	os.Setenv("TEST_METADATA_OPERATOR_ENV", "foo")
+	defer os.Unsetenv("TEST_METADATA_OPERATOR_ENV")
 
 	cases := []struct {
 		name      string
@@ -74,7 +74,7 @@ func TestMetadata(t *testing.T) {
 			"AddAttributeEnv",
 			func(cfg *MetadataOperatorConfig) {
 				cfg.Attributes = map[string]helper.ExprStringConfig{
-					"label1": `EXPR(env("TEST_METADATA_PLUGIN_ENV"))`,
+					"label1": `EXPR(env("TEST_METADATA_OPERATOR_ENV"))`,
 				}
 			},
 			entry.New(),
@@ -122,7 +122,7 @@ func TestMetadata(t *testing.T) {
 			"AddResourceEnv",
 			func(cfg *MetadataOperatorConfig) {
 				cfg.Resource = map[string]helper.ExprStringConfig{
-					"key1": `EXPR(env("TEST_METADATA_PLUGIN_ENV"))`,
+					"key1": `EXPR(env("TEST_METADATA_OPERATOR_ENV"))`,
 				}
 			},
 			entry.New(),
