@@ -22,26 +22,37 @@ import (
 
 const encoding = "nop"
 
-type nopMetricsUnmarshaler struct {
-	err error
+type NopMetricsUnmarshaler struct {
+	metrics pdata.Metrics
+	err     error
 }
 
-var _ unmarshaler.MetricsUnmarshaler = (*nopMetricsUnmarshaler)(nil)
+var _ unmarshaler.MetricsUnmarshaler = (*NopMetricsUnmarshaler)(nil)
 
-func NewNopMetrics() *nopMetricsUnmarshaler {
-	return &nopMetricsUnmarshaler{}
+// NewNopMetrics provides a nop metrics unmarshaler with the default
+// pdata.Metrics and no error.
+func NewNopMetrics() *NopMetricsUnmarshaler {
+	return &NopMetricsUnmarshaler{}
 }
 
-func NewErrMetrics(err error) *nopMetricsUnmarshaler {
-	return &nopMetricsUnmarshaler{err}
+// NewWithMetrics provides a nop metrics unmarshaler with the passed
+// in metrics as the result of the Unmarshal and no error.
+func NewWithMetrics(metrics pdata.Metrics) *NopMetricsUnmarshaler {
+	return &NopMetricsUnmarshaler{metrics: metrics}
+}
+
+// NewErrMetrics provides a nop metrics unmarshaler with the passed
+// in error as the Unmarshal error.
+func NewErrMetrics(err error) *NopMetricsUnmarshaler {
+	return &NopMetricsUnmarshaler{err: err}
 }
 
 // Unmarshal deserializes the records into metrics
-func (u *nopMetricsUnmarshaler) Unmarshal([][]byte) (pdata.Metrics, error) {
-	return pdata.NewMetrics(), u.err
+func (u *NopMetricsUnmarshaler) Unmarshal([][]byte) (pdata.Metrics, error) {
+	return u.metrics, u.err
 }
 
 // Encoding of the serialized messages
-func (u *nopMetricsUnmarshaler) Encoding() string {
+func (u *NopMetricsUnmarshaler) Encoding() string {
 	return encoding
 }

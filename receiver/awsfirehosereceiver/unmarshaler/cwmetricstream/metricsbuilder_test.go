@@ -26,7 +26,7 @@ import (
 
 const (
 	testRegion     = "us-east-1"
-	testAccountId  = "1234567890"
+	testAccountID  = "1234567890"
 	testStreamName = "MyMetricStream"
 )
 
@@ -115,7 +115,7 @@ func TestResourceMetricsBuilder(t *testing.T) {
 			namespace: "AWS/EC2",
 			wantAttributes: map[string]string{
 				attributeAWSCloudWatchMetricStreamName: testStreamName,
-				conventions.AttributeCloudAccountID:    testAccountId,
+				conventions.AttributeCloudAccountID:    testAccountID,
 				conventions.AttributeCloudRegion:       testRegion,
 				conventions.AttributeServiceName:       "EC2",
 				conventions.AttributeServiceNamespace:  "AWS",
@@ -125,7 +125,7 @@ func TestResourceMetricsBuilder(t *testing.T) {
 			namespace: "CustomNamespace",
 			wantAttributes: map[string]string{
 				attributeAWSCloudWatchMetricStreamName: testStreamName,
-				conventions.AttributeCloudAccountID:    testAccountId,
+				conventions.AttributeCloudAccountID:    testAccountID,
 				conventions.AttributeCloudRegion:       testRegion,
 				conventions.AttributeServiceName:       "CustomNamespace",
 				conventions.AttributeServiceNamespace:  "",
@@ -141,7 +141,7 @@ func TestResourceMetricsBuilder(t *testing.T) {
 				Value:      testCWMetricValue(),
 				Dimensions: map[string]string{},
 			}
-			rmb := newResourceMetricsBuilder(testStreamName, testAccountId, testRegion, testCase.namespace)
+			rmb := newResourceMetricsBuilder(testStreamName, testAccountID, testRegion, testCase.namespace)
 			rmb.AddMetric(metric)
 			got := rmb.Build()
 			attrs := got.Resource().Attributes()
@@ -175,7 +175,7 @@ func TestResourceMetricsBuilder(t *testing.T) {
 				},
 			},
 		}
-		rmb := newResourceMetricsBuilder(testStreamName, testAccountId, testRegion, "AWS/EC2")
+		rmb := newResourceMetricsBuilder(testStreamName, testAccountID, testRegion, "AWS/EC2")
 		for _, metric := range metrics {
 			rmb.AddMetric(metric)
 		}

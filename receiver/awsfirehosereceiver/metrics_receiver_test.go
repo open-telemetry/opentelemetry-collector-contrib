@@ -25,9 +25,25 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/model/pdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/unmarshaler/unmarshalertest"
 )
+
+type recordConsumer struct {
+	result pdata.Metrics
+}
+
+var _ consumer.Metrics = (*recordConsumer)(nil)
+
+func (rc *recordConsumer) ConsumeMetrics(_ context.Context, metrics pdata.Metrics) error {
+	rc.result = metrics
+	return nil
+}
+
+func (rc *recordConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
+}
 
 func TestNewMetricsReceiver(t *testing.T) {
 	testCases := map[string]struct {
@@ -92,9 +108,27 @@ func TestMetricsConsumer(t *testing.T) {
 				unmarshaler: unmarshalertest.NewErrMetrics(testCase.unmarshalerErr),
 				consumer:    consumertest.NewErr(testCase.consumerErr),
 			}
-			gotStatus, gotErr := mc.Consume(context.TODO(), nil)
+			gotStatus, gotErr := mc.Consume(context.TODO(), nil, nil)
 			require.Equal(t, testCase.wantStatus, gotStatus)
 			require.Equal(t, testCase.wantErr, gotErr)
 		})
 	}
+
+	t.Run("WithCommonAttributes", func(t *testing.T) {
+		base := pdata.NewMetrics()
+		base.ResourceMetrics().AppendEmpty()
+		rc := recordConsumer{}
+		mc := &metricsConsumer{
+			unmarshaler: unmarshalertest.NewWithMetrics(base),
+			consumer:    &rc,
+		}
+		gotStatus, gotErr := mc.Consume(context.TODO(), nil, map[string]string{
+			"CommonAttributes": "Test",
+		})
+		require.Equal(t, http.StatusOK, gotStatus)
+		require.NoError(t, gotErr)
+		require.Equal(t, 1, rc.result.ResourceMetrics().Len())
+		rm := rc.result.ResourceMetrics().At(0)
+		require.Equal(t, 1, rm.Resource().Attributes().Len())
+	})
 }

@@ -35,7 +35,7 @@ import (
 )
 
 const (
-	testFirehoseRequestId = "firehose-request-id"
+	testFirehoseRequestID = "firehose-request-id"
 	testFirehoseAccessKey = "firehose-access-key"
 )
 
@@ -50,7 +50,7 @@ func newNopFirehoseConsumer(statusCode int, err error) *nopFirehoseConsumer {
 	return &nopFirehoseConsumer{statusCode, err}
 }
 
-func (nfc *nopFirehoseConsumer) Consume(context.Context, [][]byte) (int, error) {
+func (nfc *nopFirehoseConsumer) Consume(context.Context, [][]byte, map[string]string) (int, error) {
 	return nfc.statusCode, nfc.err
 }
 
@@ -93,43 +93,44 @@ func TestFirehoseRequest(t *testing.T) {
 	}
 	var noRecords []firehoseRecord
 	testCases := map[string]struct {
-		headers        map[string]string
-		body           interface{}
-		consumer       firehoseConsumer
-		wantStatusCode int
-		wantErr        error
+		headers          map[string]string
+		commonAttributes map[string]string
+		body             interface{}
+		consumer         firehoseConsumer
+		wantStatusCode   int
+		wantErr          error
 	}{
 		"WithoutRequestId/Header": {
 			headers: map[string]string{
-				headerFirehoseRequestId: "",
+				headerFirehoseRequestID: "",
 			},
-			body:           testFirehoseRequest(testFirehoseRequestId, noRecords),
+			body:           testFirehoseRequest(testFirehoseRequestID, noRecords),
 			wantStatusCode: http.StatusBadRequest,
-			wantErr:        errMissingRequestIdInHeader,
+			wantErr:        errInHeaderMissingRequestID,
 		},
 		"WithDifferentAccessKey": {
 			headers: map[string]string{
 				headerFirehoseAccessKey: "test",
 			},
-			body:           testFirehoseRequest(testFirehoseRequestId, noRecords),
+			body:           testFirehoseRequest(testFirehoseRequestID, noRecords),
 			wantStatusCode: http.StatusUnauthorized,
 			wantErr:        errInvalidAccessKey,
 		},
 		"WithoutRequestId/Body": {
 			headers: map[string]string{
-				headerFirehoseRequestId: testFirehoseRequestId,
+				headerFirehoseRequestID: testFirehoseRequestID,
 			},
 			body:           testFirehoseRequest("", noRecords),
 			wantStatusCode: http.StatusBadRequest,
-			wantErr:        errMissingRequestIdInBody,
+			wantErr:        errInBodyMissingRequestID,
 		},
 		"WithDifferentRequestIds": {
 			headers: map[string]string{
-				headerFirehoseRequestId: testFirehoseRequestId,
+				headerFirehoseRequestID: testFirehoseRequestID,
 			},
 			body:           testFirehoseRequest("otherId", noRecords),
 			wantStatusCode: http.StatusBadRequest,
-			wantErr:        errDiffRequestIdBody,
+			wantErr:        errInBodyDiffRequestID,
 		},
 		"WithInvalidBody": {
 			body:           "{ test: ",
@@ -137,33 +138,42 @@ func TestFirehoseRequest(t *testing.T) {
 			wantErr:        errors.New("json: cannot unmarshal string into Go value of type awsfirehosereceiver.firehoseRequest"),
 		},
 		"WithNoRecords": {
-			body:           testFirehoseRequest(testFirehoseRequestId, noRecords),
+			body:           testFirehoseRequest(testFirehoseRequestID, noRecords),
 			wantStatusCode: http.StatusOK,
 		},
 		"WithFirehoseConsumerError": {
-			body:           testFirehoseRequest(testFirehoseRequestId, noRecords),
+			body:           testFirehoseRequest(testFirehoseRequestID, noRecords),
 			consumer:       newNopFirehoseConsumer(http.StatusInternalServerError, firehoseConsumerErr),
 			wantStatusCode: http.StatusInternalServerError,
 			wantErr:        firehoseConsumerErr,
 		},
 		"WithCorruptBase64Records": {
-			body: testFirehoseRequest(testFirehoseRequestId, []firehoseRecord{
+			body: testFirehoseRequest(testFirehoseRequestID, []firehoseRecord{
 				{Data: "XXXXXaGVsbG8="},
 			}),
 			wantStatusCode: http.StatusBadRequest,
 			wantErr:        base64.CorruptInputError(12),
 		},
 		"WithValidRecords": {
-			body: testFirehoseRequest(testFirehoseRequestId, []firehoseRecord{
+			body: testFirehoseRequest(testFirehoseRequestID, []firehoseRecord{
 				testFirehoseRecord("test"),
 			}),
+			wantStatusCode: http.StatusOK,
+		},
+		"WithValidRecords/CommonAttributes": {
+			body: testFirehoseRequest(testFirehoseRequestID, []firehoseRecord{
+				testFirehoseRecord("test"),
+			}),
+			commonAttributes: map[string]string{
+				"TestAttribute": "common",
+			},
 			wantStatusCode: http.StatusOK,
 		},
 		"WithValidRecords/gzip": {
 			headers: map[string]string{
 				headerContentEncoding: "gzip",
 			},
-			body: testFirehoseRequest(testFirehoseRequestId, []firehoseRecord{
+			body: testFirehoseRequest(testFirehoseRequestID, []firehoseRecord{
 				testFirehoseRecord("test"),
 			}),
 			wantStatusCode: http.StatusOK,
@@ -185,12 +195,19 @@ func TestFirehoseRequest(t *testing.T) {
 			request := httptest.NewRequest("POST", "/", requestBody)
 			request.Header.Set(headerContentType, "application/json")
 			request.Header.Set(headerContentLength, fmt.Sprintf("%d", requestBody.Len()))
-			request.Header.Set(headerFirehoseRequestId, testFirehoseRequestId)
+			request.Header.Set(headerFirehoseRequestID, testFirehoseRequestID)
 			request.Header.Set(headerFirehoseAccessKey, testFirehoseAccessKey)
 			if testCase.headers != nil {
 				for k, v := range testCase.headers {
 					request.Header.Set(k, v)
 				}
+			}
+			if testCase.commonAttributes != nil {
+				attrs, err := json.Marshal(firehoseCommonAttributes{
+					CommonAttributes: testCase.commonAttributes,
+				})
+				require.NoError(t, err)
+				request.Header.Set(headerFirehoseCommonAttributes, string(attrs))
 			}
 
 			consumer := testCase.consumer
@@ -205,7 +222,7 @@ func TestFirehoseRequest(t *testing.T) {
 			require.Equal(t, testCase.wantStatusCode, got.Code)
 			var response firehoseResponse
 			require.NoError(t, json.Unmarshal(got.Body.Bytes(), &response))
-			require.Equal(t, request.Header.Get(headerFirehoseRequestId), response.RequestId)
+			require.Equal(t, request.Header.Get(headerFirehoseRequestID), response.RequestID)
 			if testCase.wantErr != nil {
 				require.Equal(t, testCase.wantErr.Error(), response.ErrorMessage)
 			} else {
@@ -241,9 +258,9 @@ func testFirehoseReceiver(config *Config, consumer firehoseConsumer) *firehoseRe
 	}
 }
 
-func testFirehoseRequest(requestId string, records []firehoseRecord) firehoseRequest {
+func testFirehoseRequest(requestID string, records []firehoseRecord) firehoseRequest {
 	return firehoseRequest{
-		RequestId: requestId,
+		RequestID: requestID,
 		Timestamp: time.Now().UnixMilli(),
 		Records:   records,
 	}

@@ -59,7 +59,7 @@ func (u Unmarshaler) Unmarshal(records [][]byte) (pdata.Metrics, error) {
 				if !ok {
 					mb = newResourceMetricsBuilder(
 						metric.MetricStreamName,
-						metric.AccountId,
+						metric.AccountID,
 						metric.Region,
 						metric.Namespace,
 					)
@@ -89,7 +89,7 @@ func (u Unmarshaler) isValid(metric cWMetric) bool {
 
 // toResourceKey combines the metric stream name, namespace, account id, and region into a string key
 func (u Unmarshaler) toResourceKey(metric cWMetric) string {
-	return fmt.Sprintf("%s::%s::%s::%s", metric.MetricStreamName, metric.Namespace, metric.AccountId, metric.Region)
+	return fmt.Sprintf("%s::%s::%s::%s", metric.MetricStreamName, metric.Namespace, metric.AccountID, metric.Region)
 }
 
 func (u Unmarshaler) Encoding() string {
