@@ -11,16 +11,27 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package awsecscontainermetrics
 
-import (
-	"testing"
+package maps // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/maps"
 
-	"github.com/stretchr/testify/require"
-)
+// MergeStringMaps merges n maps with a later map's keys overriding earlier maps.
+func MergeStringMaps(maps ...map[string]string) map[string]string {
+	ret := map[string]string{}
 
-func TestCreateGaugeIntMetric(t *testing.T) {
-	m := createGaugeIntMetric(100)
+	for _, m := range maps {
+		for k, v := range m {
+			ret[k] = v
+		}
+	}
 
-	require.EqualValues(t, 1, len(m.Timeseries))
+	return ret
+}
+
+// CloneStringMap makes a shallow copy of a map[string]string.
+func CloneStringMap(m map[string]string) map[string]string {
+	m2 := make(map[string]string, len(m))
+	for k, v := range m {
+		m2[k] = v
+	}
+	return m2
 }

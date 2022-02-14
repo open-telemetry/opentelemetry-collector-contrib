@@ -77,6 +77,6 @@ const (
 	unitBytesPerSec = "Bytes/Second"
 	unitCount       = "Count"
 	unitVCpu        = "vCPU"
-	unitPercent     = "Percent"
 	unitSecond      = "Seconds"
+	unitNone        = "None"
 )

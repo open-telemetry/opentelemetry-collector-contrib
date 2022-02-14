@@ -133,3 +133,7 @@ const (
 	// DefaultGraphiteTemplate defines default template for Graphite
 	DefaultGraphiteTemplate string = "%{_metric_}"
 )
+
+func (cfg *Config) Validate() error {
+	return nil
+}

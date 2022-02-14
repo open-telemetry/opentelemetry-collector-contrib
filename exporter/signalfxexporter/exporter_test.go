@@ -993,7 +993,7 @@ func BenchmarkExporterConsumeData(b *testing.B) {
 	metrics := pdata.NewMetrics()
 	tmd := testMetricsData()
 	for i := 0; i < batchSize; i++ {
-		tmd.CopyTo(metrics.ResourceMetrics().AppendEmpty())
+		tmd.ResourceMetrics().At(0).CopyTo(metrics.ResourceMetrics().AppendEmpty())
 	}
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

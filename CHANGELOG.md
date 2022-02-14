@@ -10,14 +10,19 @@
 - `apachereceiver`: Update to mdatagen v2 (#7573)
 - `datadogexporter`: Don't send host metadata if hostname is empty (#7426)
 - `datadogexporter`: Add insecure_skip_verify flag to configuration (#7422)
+- `coralogixexporter`: Update readme (#7785)
+- `awscloudwatchlogsexporter`: Remove name from aws cloudwatch logs exporter (#7554)
 
 ## 🛑 Breaking changes 🛑
 
 - `apachereceiver`: Update instrumentation library name from `otel/apache` to `otelcol/apache` (#7754)
+- `pkg/translator/prometheusremotewrite`: Cleanup prw translator public functions (#7776)
 - `prometheusreceiver`: The OpenCensus-based metric conversion pipeline has 
   been removed.
-  -  The `receiver.prometheus.OTLPDirect` feature gate has been removed as 
-     the direct pipeline is the only remaining pipeline.
+  - The `receiver.prometheus.OTLPDirect` feature gate has been removed as 
+    the direct pipeline is the only remaining pipeline.
+- `translator/jaeger`: Cleanup jaeger translator function names (#7775)
+  - Deprecate old funcs with Internal word.
 
 ## 🚩 Deprecations 🚩
 
@@ -29,8 +34,13 @@
  - `prometheusreceiver`: Correctly map description and units when converting
   Prometheus metadata directly to pdata. (#7748)
  - `sumologicexporter`: fix exporter panics on malformed histogram (#7548)
+- `awsecscontainermetrics`: CPU Reserved is now 1024/vCPU for ECS Container Insights (#6734)
 
 ## 🚀 New components 🚀
+
+- `clickhouse` exporter: Add ClickHouse Exporter (#6907)
+- `pkg/translator/signalfx`: Extract signalfx to metrics conversion in a separate package (#7778)
+  - Extract FromMetrics to SignalFx translator package (#7823)
 
 ## v0.44.0
 
@@ -64,9 +74,6 @@
 ## 🛑 Breaking changes 🛑
 
 - `resourcedetectionprocessor`: Update `os.type` attribute values according to semantic conventions (#7544)
-- `pkg/translator/prometheusremotewrite`: Cleanup prw translator public functions (#7776)
-
-## 🚀 New components 🚀
 
 ## 🧰 Bug fixes 🧰
 
@@ -75,7 +82,7 @@
 - `resourcetotelemetry`: Ensure resource attributes are added to summary
   and exponential histogram data points. (#7523)
 
-## Deprecations
+## 🚩 Deprecations 🚩
 
 - Deprecated otel_to_hec_fields.name setting from splunkhec exporter. (#7560)
 
@@ -167,6 +174,8 @@
 - `lokiexporter`: Log the first part of the http body on failed pushes to loki (#6946)
 - `resourcedetectionprocessor`: add the [consul](https://www.consul.io/) detector (#6382)
 - `awsemfexporter`: refactor cw_client logic into separate `cwlogs` package (#7072)
+- `prometheusexporter`: Dropping the condition to replace _ with key_ as __ label is reserved and _ is not (#7506)
+
 
 ## 🛑 Breaking changes 🛑
 
