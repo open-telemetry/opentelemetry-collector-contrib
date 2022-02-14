@@ -1,0 +1,19 @@
+receivers:
+    nop:
+
+processors:
+    nop:
+
+exporters:
+    awsprometheusremotewrite:
+        aws_auth:
+            region: "us-west-2"
+            service: "service-name"
+            role_arn: "arn:aws:iam::123456789012:role/IAMRole"
+            sts_endpoint: "wrong-name"
+service:
+    pipelines:
+        metrics:
+            receivers: [nop]
+            processors: [nop]
+            exporters: [awsprometheusremotewrite]

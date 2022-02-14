@@ -28,6 +28,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
+	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/session"
 	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
 )
@@ -103,9 +104,25 @@ func newSigningRoundTripper(cfg *Config, next http.RoundTripper, runtimeInfo str
 	return newSigningRoundTripperWithCredentials(auth, creds, next, runtimeInfo)
 }
 
+func getAWSConfig(auth AuthConfig) (*aws.Config, error) {
+	config := &aws.Config{Region: aws.String(auth.Region)}
+	if auth.STSEndpoint != "" {
+		if stsEndpoint, err := endpoints.GetSTSRegionalEndpoint(auth.STSEndpoint); err == nil {
+			config.STSRegionalEndpoint = stsEndpoint
+		} else {
+			return nil, err
+		}
+	}
+	return config, nil
+}
+
 func getCredsFromConfig(auth AuthConfig) (*credentials.Credentials, error) {
+	config, err := getAWSConfig(auth)
+	if err != nil {
+		return nil, err
+	}
 	sess, err := session.NewSessionWithOptions(session.Options{
-		Config: aws.Config{Region: aws.String(auth.Region)},
+		Config: *config,
 	})
 	if err != nil {
 		return nil, err

@@ -28,6 +28,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/endpoints"
 	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -123,6 +124,39 @@ func TestLeakingBody(t *testing.T) {
 	assert.True(t, checker.closed)
 }
 
+func TestGetAWSConfig(t *testing.T) {
+	tests := []struct {
+		name                string
+		authConfig          AuthConfig
+		STSRegionalEndpoint endpoints.STSRegionalEndpoint
+	}{
+		{
+			"success_case_without_sts_endpoint",
+			AuthConfig{},
+			endpoints.UnsetSTSEndpoint,
+		},
+		{
+			"success_case_with_legacy_sts_endpoint",
+			AuthConfig{STSEndpoint: "legacy"},
+			endpoints.LegacySTSEndpoint,
+		},
+		{
+			"success_case_with_regional_sts_endpoint",
+			AuthConfig{STSEndpoint: "regional"},
+			endpoints.RegionalSTSEndpoint,
+		},
+	}
+	// run tests
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			config, err := getAWSConfig(tt.authConfig)
+			require.NoError(t, err, "Failed getAWSConfig")
+			require.NotNil(t, config)
+			require.Equal(t, config.STSRegionalEndpoint, tt.STSRegionalEndpoint)
+		})
+	}
+}
+
 func TestGetCredsFromConfig(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -135,6 +169,10 @@ func TestGetCredsFromConfig(t *testing.T) {
 		{
 			"success_case_with_role",
 			AuthConfig{Region: "region", Service: "service", RoleArn: "arn:aws:iam::123456789012:role/IAMRole"},
+		},
+		{
+			"success_case_with_role_and_regional_sts_endpoint",
+			AuthConfig{Region: "region", Service: "service", RoleArn: "arn:aws:iam::123456789012:role/IAMRole", STSEndpoint: "regional"},
 		},
 	}
 	// run tests

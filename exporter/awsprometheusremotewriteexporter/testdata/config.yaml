@@ -24,6 +24,7 @@ exporters:
             region: "us-west-2"
             service: "service-name"
             role_arn: "arn:aws:iam::123456789012:role/IAMRole"
+            sts_endpoint: regional
         external_labels:
             key1: value1
             key2: value2

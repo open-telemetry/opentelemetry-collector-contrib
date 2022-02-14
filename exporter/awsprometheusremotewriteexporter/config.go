@@ -15,6 +15,8 @@
 package awsprometheusremotewriteexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsprometheusremotewriteexporter"
 
 import (
+	"fmt"
+
 	prw "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter"
 )
 
@@ -37,4 +39,16 @@ type AuthConfig struct {
 
 	// Amazon Resource Name (ARN) of a role to assume. Optional.
 	RoleArn string `mapstructure:"role_arn"`
+
+	// Select which endpoint to use for STS between `legacy` or `regional`. Optional.
+	STSEndpoint string `mapstructure:"sts_endpoint"`
+}
+
+func (c *Config) Validate() error {
+	switch c.AuthConfig.STSEndpoint {
+	case "", "legacy", "regional":
+	default:
+		return fmt.Errorf("invalid value for sts_endpoint")
+	}
+	return nil
 }

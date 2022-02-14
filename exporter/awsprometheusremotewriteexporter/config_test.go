@@ -86,13 +86,26 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		AuthConfig: AuthConfig{
-			Region:  "us-west-2",
-			Service: "service-name",
-			RoleArn: "arn:aws:iam::123456789012:role/IAMRole",
+			Region:      "us-west-2",
+			Service:     "service-name",
+			RoleArn:     "arn:aws:iam::123456789012:role/IAMRole",
+			STSEndpoint: "regional",
 		},
 	}
 	// testing function equality is not supported in Go hence these will be ignored for this test
 	cfgComplete.HTTPClientSettings.CustomRoundTripper = nil
 	e1.(*Config).HTTPClientSettings.CustomRoundTripper = nil
 	assert.Equal(t, cfgComplete, e1)
+}
+
+// TestInvalidAuth checks whether a misconfigured STS endpoint raised an error.
+func TestInvalidAuth(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Exporters[typeStr] = factory
+	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "invalid_sts_endpoint.yaml"), factories)
+	require.NotNil(t, cfg)
+	require.EqualError(t, err, `exporter "awsprometheusremotewrite" has invalid configuration: invalid value for sts_endpoint`)
 }
