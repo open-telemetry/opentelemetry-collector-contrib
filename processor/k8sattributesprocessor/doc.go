@@ -94,7 +94,31 @@
 //
 // Config
 //
-// TODO: example config.
+//   processors:
+//    resourcedetection:
+//        detectors: ["env"]
+//        timeout: 5s
+//        override: true 
+//      k8sattributes:
+//      k8sattributes/2:
+//        auth_type: "serviceAccount"
+//        passthrough: false
+//        filter:
+//          node_from_env_var: KUBE_NODE_NAME
+//
+//        extract:
+//          metadata:
+//            - k8s.pod.name
+//            - k8s.pod.uid
+//            - k8s.deployment.name
+//            - k8s.cluster.name
+//            - k8s.namespace.name
+//            - k8s.node.name
+//            - k8s.pod.start_time
+//
+//        pod_association:
+//         - from: resource_attribute
+//           name: k8s.pod.ip
 //
 // Deployment scenarios
 //
@@ -117,12 +141,22 @@
 // 1. Use the downward API to inject the node name as an environment variable.
 // Add the following snippet under the pod env section of the OpenTelemetry container.
 //
-//    env:
-//    - name: KUBE_NODE_NAME
-//      valueFrom:
-//  	  fieldRef:
-//  	    apiVersion: v1
-//  	    fieldPath: spec.nodeName
+//
+//    spec:
+//      containers:
+//      - env:
+//        - name: KUBE_NODE_NAME
+//          valueFrom:
+//            fieldRef:
+//             apiVersion: v1
+//              fieldPath: spec.nodeName
+//        - name: POD_IP
+//          valueFrom:
+//            fieldRef:
+//              apiVersion: v1
+//              fieldPath: status.podIP
+//        - name: OTEL_RESOURCE_ATTRIBUTES
+//          value: k8s.pod.ip=$(POD_IP)
 //
 // This will inject a new environment variable to the OpenTelemetry container with the value as the
 // name of the node the pod was scheduled to run on.
