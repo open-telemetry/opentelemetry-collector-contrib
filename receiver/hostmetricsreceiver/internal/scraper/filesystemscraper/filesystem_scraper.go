@@ -100,7 +100,6 @@ func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 	if len(usages) > 0 {
 		metrics.EnsureCapacity(metricsLen)
 		s.recordFileSystemUsageMetric(now, usages)
-		s.mb.Emit(metrics)
 		s.recordSystemSpecificMetrics(now, usages)
 		s.mb.Emit(metrics)
 	}

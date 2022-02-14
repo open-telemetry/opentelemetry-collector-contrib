@@ -17,6 +17,7 @@ package filesystemscraper
 import (
 	"context"
 	"errors"
+	"fmt"
 	"runtime"
 	"testing"
 
@@ -254,18 +255,22 @@ func TestScrape(t *testing.T) {
 			assert.GreaterOrEqual(t, md.MetricCount(), 1)
 
 			metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+			m, err := findMetricByName(metrics, "system.filesystem.usage")
+			assert.NoError(t, err)
 			assertFileSystemUsageMetricValid(
 				t,
-				metrics.At(0),
+				m,
 				test.expectedDeviceDataPoints*fileSystemStatesLen,
 				test.expectedDeviceAttributes,
 			)
 
 			if isUnix() {
-				assertFileSystemUsageMetricHasUnixSpecificStateLabels(t, metrics.At(0))
+				assertFileSystemUsageMetricHasUnixSpecificStateLabels(t, m)
+				m, err = findMetricByName(metrics, "system.filesystem.inodes.usage")
+				assert.NoError(t, err)
 				assertFileSystemUsageMetricValid(
 					t,
-					metrics.At(1),
+					m,
 					test.expectedDeviceDataPoints*2,
 					test.expectedDeviceAttributes,
 				)
@@ -274,6 +279,15 @@ func TestScrape(t *testing.T) {
 			internal.AssertSameTimeStampForAllMetrics(t, metrics)
 		})
 	}
+}
+
+func findMetricByName(metrics pdata.MetricSlice, name string) (pdata.Metric, error) {
+	for i := 0; i < metrics.Len(); i++ {
+		if metrics.At(i).Name() == name {
+			return metrics.At(i), nil
+		}
+	}
+	return pdata.Metric{}, fmt.Errorf("no metric found with name %s", name)
 }
 
 func assertFileSystemUsageMetricValid(
