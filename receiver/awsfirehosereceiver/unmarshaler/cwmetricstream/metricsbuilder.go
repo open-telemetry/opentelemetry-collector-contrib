@@ -24,22 +24,22 @@ import (
 
 const (
 	attributeAWSCloudWatchMetricStreamName = "aws.cloudwatch.metric_stream_name"
-	dimensionInstanceId                    = "InstanceId"
+	dimensionInstanceID                    = "InstanceId"
 	namespaceDelimiter                     = "/"
 )
 
 type resourceMetricsBuilder struct {
 	metricStreamName string
-	accountId        string
+	accountID        string
 	region           string
 	namespace        string
 	metricBuilders   map[string]*metricBuilder
 }
 
-func newResourceMetricsBuilder(metricStreamName, accountId, region, namespace string) *resourceMetricsBuilder {
+func newResourceMetricsBuilder(metricStreamName, accountID, region, namespace string) *resourceMetricsBuilder {
 	return &resourceMetricsBuilder{
 		metricStreamName: metricStreamName,
-		accountId:        accountId,
+		accountID:        accountID,
 		region:           region,
 		namespace:        namespace,
 		metricBuilders:   make(map[string]*metricBuilder),
@@ -75,7 +75,7 @@ func (rmb *resourceMetricsBuilder) toResource() pdata.Resource {
 	resource := pdata.NewResource()
 	attributes := resource.Attributes()
 	attributes.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attributes.InsertString(conventions.AttributeCloudAccountID, rmb.accountId)
+	attributes.InsertString(conventions.AttributeCloudAccountID, rmb.accountID)
 	attributes.InsertString(conventions.AttributeCloudRegion, rmb.region)
 	splitNamespace := strings.SplitN(rmb.namespace, namespaceDelimiter, 2)
 	if len(splitNamespace) == 2 && strings.EqualFold(splitNamespace[0], conventions.AttributeCloudProviderAWS) {
@@ -149,7 +149,7 @@ func (mb *metricBuilder) toDataPoint(metric cWMetric) pdata.HistogramDataPoint {
 // ToSemConvAttributeKey maps some common keys to semantic convention attributes
 func ToSemConvAttributeKey(key string) string {
 	switch key {
-	case dimensionInstanceId:
+	case dimensionInstanceID:
 		return conventions.AttributeServiceInstanceID
 	default:
 		return key

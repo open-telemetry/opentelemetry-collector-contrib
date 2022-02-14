@@ -60,10 +60,19 @@ func newMetricsReceiver(
 	}, nil
 }
 
-func (mc *metricsConsumer) Consume(ctx context.Context, records [][]byte) (int, error) {
+func (mc *metricsConsumer) Consume(ctx context.Context, records [][]byte, commonAttributes map[string]string) (int, error) {
 	md, err := mc.unmarshaler.Unmarshal(records)
 	if err != nil {
 		return http.StatusBadRequest, err
+	}
+
+	if commonAttributes != nil {
+		for i := 0; i < md.ResourceMetrics().Len(); i++ {
+			rm := md.ResourceMetrics().At(i)
+			for k, v := range commonAttributes {
+				rm.Resource().Attributes().InsertString(k, v)
+			}
+		}
 	}
 
 	err = mc.consumer.ConsumeMetrics(ctx, md)

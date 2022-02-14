@@ -17,7 +17,7 @@ package cwmetricstream // import "github.com/open-telemetry/opentelemetry-collec
 // cWMetric is based on https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-metric-streams-formats-json.html
 type cWMetric struct {
 	MetricStreamName string            `json:"metric_stream_name"`
-	AccountId        string            `json:"account_id"`
+	AccountID        string            `json:"account_id"`
 	Region           string            `json:"region"`
 	Namespace        string            `json:"namespace"`
 	MetricName       string            `json:"metric_name"`
