@@ -15,6 +15,7 @@
 
 ### 🛑 Breaking changes 🛑
 
+- Use go mod compat, drops support for reproducibility with go 1.16 (#7915)
 - `apachereceiver`: Update instrumentation library name from `otel/apache` to `otelcol/apache` (#7754)
 - `pkg/translator/prometheusremotewrite`: Cleanup prw translator public functions (#7776)
 - `prometheusreceiver`: The OpenCensus-based metric conversion pipeline has 
