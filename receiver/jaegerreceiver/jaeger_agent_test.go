@@ -40,7 +40,7 @@ import (
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"google.golang.org/grpc"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 

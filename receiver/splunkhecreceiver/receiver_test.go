@@ -40,7 +40,7 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
