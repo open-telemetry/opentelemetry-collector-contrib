@@ -86,8 +86,7 @@ func (f internalFilterStrict) getMatches(toMatch metricNameMapping) []*match {
 	if metrics, ok := toMatch[f.include]; ok {
 		matches := make([]*match, 0)
 		for _, metric := range metrics {
-			matchedMetric := labelMatched(f.matchLabels, metric)
-			if matchedMetric {
+			if labelMatched(f.matchLabels, metric) {
 				matches = append(matches, &match{metric: metric})
 			}
 		}
@@ -111,8 +110,7 @@ func (f internalFilterRegexp) getMatches(toMatch metricNameMapping) []*match {
 	for name, metrics := range toMatch {
 		if submatches := f.include.FindStringSubmatchIndex(name); submatches != nil {
 			for _, metric := range metrics {
-				matchedMetric := labelMatched(f.matchLabels, metric)
-				if matchedMetric {
+				if labelMatched(f.matchLabels, metric) {
 					matches = append(matches, &match{metric: metric, pattern: f.include, submatches: submatches})
 				}
 			}
@@ -165,11 +163,7 @@ func labelMatched(matchLabels map[string]StringMatcher, metric *metricspb.Metric
 		}
 	}
 
-	if len(timeSeriesWithMatchedLabel) == 0 {
-		return false
-	}
-
-	return true
+	return len(timeSeriesWithMatchedLabel) != 0
 }
 
 type metricNameMapping map[string][]*metricspb.Metric
