@@ -12,25 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package utils
+package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/translator"
 
-import (
-	"testing"
+import "context"
 
-	"github.com/stretchr/testify/assert"
-)
+// HostnameProvider gets a hostname
+type HostnameProvider interface {
+	// Hostname gets the hostname from the machine.
+	Hostname(ctx context.Context) (string, error)
+}
 
-func TestFormatKeyValueTag(t *testing.T) {
-	tests := []struct {
-		key         string
-		value       string
-		expectedTag string
-	}{
-		{"a.test.tag", "a.test.value", "a.test.tag:a.test.value"},
-		{"a.test.tag", "", "a.test.tag:n/a"},
-	}
+var _ HostnameProvider = (*noHostProvider)(nil)
 
-	for _, testInstance := range tests {
-		assert.Equal(t, testInstance.expectedTag, FormatKeyValueTag(testInstance.key, testInstance.value))
-	}
+type noHostProvider struct{}
+
+func (*noHostProvider) Hostname(context.Context) (string, error) {
+	return "", nil
 }

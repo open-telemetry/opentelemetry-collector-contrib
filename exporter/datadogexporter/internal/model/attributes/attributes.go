@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package attributes // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/attributes"
+package attributes // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes"
 
 import (
 	"fmt"

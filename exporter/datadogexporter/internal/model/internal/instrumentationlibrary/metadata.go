@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package instrumentationlibrary // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/instrumentationlibrary"
+package instrumentationlibrary // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/internal/instrumentationlibrary"
 
 import (
 	"go.opentelemetry.io/collector/model/pdata"
 
-	translatorUtils "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/translator/utils"
+	translatorUtils "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/internal/utils"
 )
 
 const (
