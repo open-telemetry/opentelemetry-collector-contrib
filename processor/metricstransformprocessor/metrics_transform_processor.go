@@ -87,8 +87,8 @@ func (f internalFilterStrict) getMatches(toMatch metricNameMapping) []*match {
 		matches := make([]*match, 0)
 		for _, metric := range metrics {
 			matchedMetric := labelMatched(f.matchLabels, metric)
-			if matchedMetric != nil {
-				matches = append(matches, &match{metric: matchedMetric})
+			if matchedMetric {
+				matches = append(matches, &match{metric: metric})
 			}
 		}
 		return matches
@@ -112,8 +112,8 @@ func (f internalFilterRegexp) getMatches(toMatch metricNameMapping) []*match {
 		if submatches := f.include.FindStringSubmatchIndex(name); submatches != nil {
 			for _, metric := range metrics {
 				matchedMetric := labelMatched(f.matchLabels, metric)
-				if matchedMetric != nil {
-					matches = append(matches, &match{metric: matchedMetric, pattern: f.include, submatches: submatches})
+				if matchedMetric {
+					matches = append(matches, &match{metric: metric, pattern: f.include, submatches: submatches})
 				}
 			}
 		}
@@ -125,14 +125,10 @@ func (f internalFilterRegexp) getSubexpNames() []string {
 	return f.include.SubexpNames()
 }
 
-func labelMatched(matchLabels map[string]StringMatcher, metric *metricspb.Metric) *metricspb.Metric {
+func labelMatched(matchLabels map[string]StringMatcher, metric *metricspb.Metric) bool {
 	if len(matchLabels) == 0 {
-		return metric
+		return true
 	}
-
-	metricWithMatchedLabel := &metricspb.Metric{}
-	metricWithMatchedLabel.MetricDescriptor = proto.Clone(metric.MetricDescriptor).(*metricspb.MetricDescriptor)
-	metricWithMatchedLabel.Resource = proto.Clone(metric.Resource).(*resourcepb.Resource)
 
 	var timeSeriesWithMatchedLabel []*metricspb.TimeSeries
 	labelIndexValueMap := make(map[int]StringMatcher)
@@ -152,7 +148,7 @@ func labelMatched(matchLabels map[string]StringMatcher, metric *metricspb.Metric
 		// if a label-key is not found then return nil only if the given label-value is non-empty. If a given label-value is empty
 		// and the key is not found then move forward. In this approach we can make sure certain key is not present which is a valid use case.
 		if !keyFound && !value.MatchString("") {
-			return nil
+			return false
 		}
 	}
 
@@ -170,11 +166,10 @@ func labelMatched(matchLabels map[string]StringMatcher, metric *metricspb.Metric
 	}
 
 	if len(timeSeriesWithMatchedLabel) == 0 {
-		return nil
+		return false
 	}
 
-	metricWithMatchedLabel.Timeseries = timeSeriesWithMatchedLabel
-	return metricWithMatchedLabel
+	return true
 }
 
 type metricNameMapping map[string][]*metricspb.Metric

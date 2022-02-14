@@ -196,6 +196,70 @@ var (
 			},
 		},
 		{
+			name: "update existing metric by adding a new label when there is a label set match strict",
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric1", matchLabels: map[string]StringMatcher{"label1": strictMatcher("value1")}},
+					Action:              Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action:   AddLabel,
+								NewLabel: "foo",
+								NewValue: "bar",
+							},
+						},
+					},
+				},
+			},
+			in: []*metricspb.Metric{
+				metricBuilder().setName("metric1").setLabels([]string{"label1"}).
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(1, []string{"value1"}).
+					addInt64Point(0, 3, 2).
+					build(),
+			},
+			out: []*metricspb.Metric{
+				metricBuilder().setName("metric1").setLabels([]string{"foo", "label1"}).
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(1, []string{"bar", "value1"}).
+					addInt64Point(0, 3, 2).
+					build(),
+			},
+		},
+		{
+			name: "update existing metric by adding a new label when there is a label set match regex",
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric1", matchLabels: map[string]StringMatcher{"label1": regexp.MustCompile("value1.*")}},
+					Action:              Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action:   AddLabel,
+								NewLabel: "foo",
+								NewValue: "bar",
+							},
+						},
+					},
+				},
+			},
+			in: []*metricspb.Metric{
+				metricBuilder().setName("metric1").setLabels([]string{"label1"}).
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(1, []string{"value1.nested"}).
+					addInt64Point(0, 3, 2).
+					build(),
+			},
+			out: []*metricspb.Metric{
+				metricBuilder().setName("metric1").setLabels([]string{"foo", "label1"}).
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(1, []string{"bar", "value1.nested"}).
+					addInt64Point(0, 3, 2).
+					build(),
+			},
+		},
+		{
 			name: "metric_label_aggregation_sum_int_update",
 			transforms: []internalTransform{
 				{
@@ -736,8 +800,10 @@ var (
 				metricBuilder().setName("new/metric1").
 					setLabels([]string{"label1", "label2"}).
 					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(1, []string{"value1", "value2"}).
 					addTimeseries(2, []string{"value3", "value4"}).
-					addInt64Point(0, 3, 2).build(),
+					addInt64Point(0, 3, 2).
+					addInt64Point(1, 3, 2).build(),
 			},
 		},
 		{
