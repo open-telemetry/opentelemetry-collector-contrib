@@ -34,11 +34,9 @@ func TestBuildAgentSuccess(t *testing.T) {
 		},
 	}
 	mockLogger := zap.NewNop().Sugar()
-	mockPluginDir := "/some/path/plugins"
 
 	agent, err := NewBuilder(mockLogger).
 		WithConfig(&mockCfg).
-		WithPluginDir(mockPluginDir).
 		Build()
 	require.NoError(t, err)
 	require.Equal(t, mockLogger, agent.SugaredLogger)
@@ -56,12 +54,10 @@ func TestBuildAgentDefaultOperator(t *testing.T) {
 		},
 	}
 	mockLogger := zap.NewNop().Sugar()
-	mockPluginDir := "/some/path/plugins"
 	mockOutput := testutil.NewFakeOutput(t)
 
 	agent, err := NewBuilder(mockLogger).
 		WithConfig(&mockCfg).
-		WithPluginDir(mockPluginDir).
 		WithDefaultOutput(mockOutput).
 		Build()
 	require.NoError(t, err)
@@ -92,28 +88,11 @@ func TestBuildAgentDefaultOperator(t *testing.T) {
 	require.True(t, exists["$.fake"])
 }
 
-func TestBuildAgentFailureOnPluginRegistry(t *testing.T) {
-	mockCfg := Config{}
-	mockLogger := zap.NewNop().Sugar()
-	mockPluginDir := "[]"
-	mockOutput := testutil.NewFakeOutput(t)
-	agent, err := NewBuilder(mockLogger).
-		WithConfig(&mockCfg).
-		WithPluginDir(mockPluginDir).
-		WithDefaultOutput(mockOutput).
-		Build()
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "empty pipeline not allowed")
-	require.Nil(t, agent)
-}
-
 func TestBuildAgentFailureNoConfigOrGlobs(t *testing.T) {
 	mockLogger := zap.NewNop().Sugar()
-	mockPluginDir := "/some/plugin/path"
 	mockOutput := testutil.NewFakeOutput(t)
 
 	agent, err := NewBuilder(mockLogger).
-		WithPluginDir(mockPluginDir).
 		WithDefaultOutput(mockOutput).
 		Build()
 	require.Error(t, err)

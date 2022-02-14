@@ -22,7 +22,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-log-collection/errors"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
-	"github.com/open-telemetry/opentelemetry-log-collection/plugin"
 )
 
 // LogAgentBuilder is a construct used to build a log agent
@@ -30,7 +29,6 @@ type LogAgentBuilder struct {
 	defaultOutput operator.Operator
 	config        *Config
 	logger        *zap.SugaredLogger
-	pluginDir     string
 }
 
 // NewBuilder creates a new LogAgentBuilder
@@ -38,12 +36,6 @@ func NewBuilder(logger *zap.SugaredLogger) *LogAgentBuilder {
 	return &LogAgentBuilder{
 		logger: logger,
 	}
-}
-
-// WithPluginDir adds the specified plugin directory when building a log agent
-func (b *LogAgentBuilder) WithPluginDir(pluginDir string) *LogAgentBuilder {
-	b.pluginDir = pluginDir
-	return b
 }
 
 // WithConfig builds the agent with a given, pre-built config
@@ -60,12 +52,6 @@ func (b *LogAgentBuilder) WithDefaultOutput(defaultOutput operator.Operator) *Lo
 
 // Build will build a new log agent using the values defined on the builder
 func (b *LogAgentBuilder) Build() (*LogAgent, error) {
-	if b.pluginDir != "" {
-		if errs := plugin.RegisterPlugins(b.pluginDir, operator.DefaultRegistry); len(errs) != 0 {
-			b.logger.Errorw("Got errors parsing plugins", "errors", errs)
-		}
-	}
-
 	if b.config == nil {
 		return nil, errors.NewError("config must be specified", "")
 	}

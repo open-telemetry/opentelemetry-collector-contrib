@@ -29,7 +29,6 @@ type BuildContext struct {
 	Logger           *logger.Logger
 	Namespace        string
 	DefaultOutputIDs []string
-	PluginDepth      int
 }
 
 // PrependNamespace adds the current namespace of the build context to the
@@ -56,14 +55,6 @@ func (bc BuildContext) WithDefaultOutputIDs(ids []string) BuildContext {
 	return newBuildContext
 }
 
-// WithIncrementedDepth returns a new build context with an incremented
-// plugin depth
-func (bc BuildContext) WithIncrementedDepth() BuildContext {
-	newBuildContext := bc.Copy()
-	newBuildContext.PluginDepth += 1
-	return newBuildContext
-}
-
 // Copy creates a copy of the build context
 func (bc BuildContext) Copy() BuildContext {
 	return BuildContext{
@@ -71,7 +62,6 @@ func (bc BuildContext) Copy() BuildContext {
 		Logger:           bc.Logger,
 		Namespace:        bc.Namespace,
 		DefaultOutputIDs: bc.DefaultOutputIDs,
-		PluginDepth:      bc.PluginDepth,
 	}
 }
 

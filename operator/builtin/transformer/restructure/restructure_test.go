@@ -33,8 +33,8 @@ import (
 )
 
 func TestRestructureOperator(t *testing.T) {
-	os.Setenv("TEST_RESTRUCTURE_PLUGIN_ENV", "foo")
-	defer os.Unsetenv("TEST_RESTRUCTURE_PLUGIN_ENV")
+	os.Setenv("TEST_RESTRUCTURE_OPERATOR_ENV", "foo")
+	defer os.Unsetenv("TEST_RESTRUCTURE_OPERATOR_ENV")
 
 	newTestEntry := func() *entry.Entry {
 		e := entry.New()
@@ -104,7 +104,7 @@ func TestRestructureOperator(t *testing.T) {
 					&OpAdd{
 						Field: entry.NewBodyField("new"),
 						program: func() *vm.Program {
-							vm, err := expr.Compile(`env("TEST_RESTRUCTURE_PLUGIN_ENV")`)
+							vm, err := expr.Compile(`env("TEST_RESTRUCTURE_OPERATOR_ENV")`)
 							require.NoError(t, err)
 							return vm
 						}(),

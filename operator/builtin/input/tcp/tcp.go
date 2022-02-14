@@ -74,8 +74,7 @@ func (c TCPInputConfig) Build(context operator.BuildContext) ([]operator.Operato
 		return nil, err
 	}
 
-	// If MaxLogSize not set, set sane default in order to remain
-	// backwards compatible with existing plugins and configurations
+	// If MaxLogSize not set, set sane default
 	if c.MaxLogSize == 0 {
 		c.MaxLogSize = DefaultMaxLogSize
 	}

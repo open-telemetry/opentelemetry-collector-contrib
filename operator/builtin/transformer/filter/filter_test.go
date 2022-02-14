@@ -30,8 +30,8 @@ import (
 )
 
 func TestFilterOperator(t *testing.T) {
-	os.Setenv("TEST_FILTER_PLUGIN_ENV", "foo")
-	defer os.Unsetenv("TEST_FILTER_PLUGIN_ENV")
+	os.Setenv("TEST_FILTER_OPERATOR_ENV", "foo")
+	defer os.Unsetenv("TEST_FILTER_OPERATOR_ENV")
 
 	cases := []struct {
 		name       string
@@ -89,7 +89,7 @@ func TestFilterOperator(t *testing.T) {
 					"message": "test_message",
 				},
 			},
-			`env("TEST_FILTER_PLUGIN_ENV") == "foo"`,
+			`env("TEST_FILTER_OPERATOR_ENV") == "foo"`,
 			true,
 		},
 		{
@@ -99,7 +99,7 @@ func TestFilterOperator(t *testing.T) {
 					"message": "test_message",
 				},
 			},
-			`env("TEST_FILTER_PLUGIN_ENV") == "bar"`,
+			`env("TEST_FILTER_OPERATOR_ENV") == "bar"`,
 			false,
 		},
 	}
