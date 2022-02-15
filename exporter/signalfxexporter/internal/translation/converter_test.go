@@ -16,7 +16,6 @@ package translation
 
 import (
 	"fmt"
-	"math"
 	"reflect"
 	"sort"
 	"strings"
@@ -31,7 +30,19 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation/dpfilters"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testing/util"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/maps"
+)
+
+const (
+	unixSecs  = int64(1574092046)
+	unixNSecs = int64(11 * time.Millisecond)
+	tsMSecs   = unixSecs*1e3 + unixNSecs/1e6
+)
+
+// Not const to be able to take the address of them.
+var (
+	doubleVal = 1234.5678
+	int64Val  = int64(123)
 )
 
 func Test_MetricDataToSignalFxV2(t *testing.T) {
@@ -49,12 +60,8 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		"k2": "v2",
 	}
 
-	const unixSecs = int64(1574092046)
-	const unixNSecs = int64(11 * time.Millisecond)
 	ts := pdata.NewTimestampFromTime(time.Unix(unixSecs, unixNSecs))
-	tsMSecs := unixSecs*1e3 + unixNSecs/1e6
 
-	const doubleVal = 1234.5678
 	initDoublePt := func(doublePt pdata.NumberDataPoint) {
 		doublePt.SetTimestamp(ts)
 		doublePt.SetDoubleVal(doubleVal)
@@ -79,7 +86,6 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		pdata.NewAttributeMapFromMap(stringMapToAttributeMap(differentLabelMap)).CopyTo(doublePtWithDifferentLabels.Attributes())
 	}
 
-	const int64Val = int64(123)
 	initInt64Pt := func(int64Pt pdata.NumberDataPoint) {
 		int64Pt.SetTimestamp(ts)
 		int64Pt.SetIntVal(int64Val)
@@ -112,29 +118,6 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 	}
 	histDPNoBuckets := pdata.NewHistogramDataPoint()
 	initHistDPNoBuckets(histDPNoBuckets)
-
-	const summarySumVal = 123.4
-	const summaryCountVal = 111
-
-	initSummaryDP := func(summaryDP pdata.SummaryDataPoint) {
-		summaryDP.SetTimestamp(ts)
-		summaryDP.SetSum(summarySumVal)
-		summaryDP.SetCount(summaryCountVal)
-		qvs := summaryDP.QuantileValues()
-		for i := 0; i < 4; i++ {
-			qv := qvs.AppendEmpty()
-			qv.SetQuantile(0.25 * float64(i+1))
-			qv.SetValue(float64(i))
-		}
-		pdata.NewAttributeMapFromMap(stringMapToAttributeMap(labelMap)).CopyTo(summaryDP.Attributes())
-	}
-
-	initEmptySummaryDP := func(summaryDP pdata.SummaryDataPoint) {
-		summaryDP.SetTimestamp(ts)
-		summaryDP.SetSum(summarySumVal)
-		summaryDP.SetCount(summaryCountVal)
-		pdata.NewAttributeMapFromMap(stringMapToAttributeMap(labelMap)).CopyTo(summaryDP.Attributes())
-	}
 
 	tests := []struct {
 		name              string
@@ -211,14 +194,14 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				return out
 			},
 			wantSfxDataPoints: []*sfxpb.DataPoint{
-				doubleSFxDataPoint("gauge_double_with_dims", tsMSecs, &sfxMetricTypeGauge, nil, doubleVal),
-				int64SFxDataPoint("gauge_int_with_dims", tsMSecs, &sfxMetricTypeGauge, nil, int64Val),
-				doubleSFxDataPoint("cumulative_double_with_dims", tsMSecs, &sfxMetricTypeCumulativeCounter, nil, doubleVal),
-				int64SFxDataPoint("cumulative_int_with_dims", tsMSecs, &sfxMetricTypeCumulativeCounter, nil, int64Val),
-				doubleSFxDataPoint("delta_double_with_dims", tsMSecs, &sfxMetricTypeCounter, nil, doubleVal),
-				int64SFxDataPoint("delta_int_with_dims", tsMSecs, &sfxMetricTypeCounter, nil, int64Val),
-				doubleSFxDataPoint("gauge_sum_double_with_dims", tsMSecs, &sfxMetricTypeGauge, nil, doubleVal),
-				int64SFxDataPoint("gauge_sum_int_with_dims", tsMSecs, &sfxMetricTypeGauge, nil, int64Val),
+				doubleSFxDataPoint("gauge_double_with_dims", &sfxMetricTypeGauge, nil),
+				int64SFxDataPoint("gauge_int_with_dims", &sfxMetricTypeGauge, nil),
+				doubleSFxDataPoint("cumulative_double_with_dims", &sfxMetricTypeCumulativeCounter, nil),
+				int64SFxDataPoint("cumulative_int_with_dims", &sfxMetricTypeCumulativeCounter, nil),
+				doubleSFxDataPoint("delta_double_with_dims", &sfxMetricTypeCounter, nil),
+				int64SFxDataPoint("delta_int_with_dims", &sfxMetricTypeCounter, nil),
+				doubleSFxDataPoint("gauge_sum_double_with_dims", &sfxMetricTypeGauge, nil),
+				int64SFxDataPoint("gauge_sum_int_with_dims", &sfxMetricTypeGauge, nil),
 			},
 		},
 		{
@@ -257,10 +240,10 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				return out
 			},
 			wantSfxDataPoints: []*sfxpb.DataPoint{
-				doubleSFxDataPoint("gauge_double_with_dims", tsMSecs, &sfxMetricTypeGauge, labelMap, doubleVal),
-				int64SFxDataPoint("gauge_int_with_dims", tsMSecs, &sfxMetricTypeGauge, labelMap, int64Val),
-				doubleSFxDataPoint("cumulative_double_with_dims", tsMSecs, &sfxMetricTypeCumulativeCounter, labelMap, doubleVal),
-				int64SFxDataPoint("cumulative_int_with_dims", tsMSecs, &sfxMetricTypeCumulativeCounter, labelMap, int64Val),
+				doubleSFxDataPoint("gauge_double_with_dims", &sfxMetricTypeGauge, labelMap),
+				int64SFxDataPoint("gauge_int_with_dims", &sfxMetricTypeGauge, labelMap),
+				doubleSFxDataPoint("cumulative_double_with_dims", &sfxMetricTypeCumulativeCounter, labelMap),
+				int64SFxDataPoint("cumulative_int_with_dims", &sfxMetricTypeCumulativeCounter, labelMap),
 			},
 		},
 		{
@@ -295,26 +278,22 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 			wantSfxDataPoints: []*sfxpb.DataPoint{
 				doubleSFxDataPoint(
 					"gauge_double_with_dims",
-					tsMSecs,
 					&sfxMetricTypeGauge,
-					util.MergeStringMaps(map[string]string{
+					maps.MergeStringMaps(map[string]string{
 						"k_n0": "vn0",
 						"k_n1": "vn1",
 						"k_r0": "vr0",
 						"k_r1": "vr1",
-					}, labelMap),
-					doubleVal),
+					}, labelMap)),
 				int64SFxDataPoint(
 					"gauge_int_with_dims",
-					tsMSecs,
 					&sfxMetricTypeGauge,
-					util.MergeStringMaps(map[string]string{
+					maps.MergeStringMaps(map[string]string{
 						"k_n0": "vn0",
 						"k_n1": "vn1",
 						"k_r0": "vr0",
 						"k_r1": "vr1",
-					}, labelMap),
-					int64Val),
+					}, labelMap)),
 			},
 		},
 		{
@@ -367,26 +346,22 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 			wantSfxDataPoints: []*sfxpb.DataPoint{
 				int64SFxDataPoint(
 					"gauge_int_with_dims",
-					tsMSecs,
 					&sfxMetricTypeGauge,
-					util.MergeStringMaps(map[string]string{
+					maps.MergeStringMaps(map[string]string{
 						"k_n0": "vn0",
 						"k_n1": "vn1",
 						"k_r0": "vr0",
 						"k_r1": "vr1",
-					}, labelMap),
-					int64Val),
+					}, labelMap)),
 				int64SFxDataPoint(
 					"gauge_int_with_dims",
-					tsMSecs,
 					&sfxMetricTypeGauge,
-					util.MergeStringMaps(map[string]string{
+					maps.MergeStringMaps(map[string]string{
 						"k_n0": "vn0",
 						"k_n1": "vn1",
 						"k_r0": "vr0",
 						"k_r1": "vr1",
-					}, labelMap),
-					int64Val),
+					}, labelMap)),
 			},
 		},
 		{
@@ -415,9 +390,8 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 			wantSfxDataPoints: []*sfxpb.DataPoint{
 				doubleSFxDataPoint(
 					"gauge_double_with_dims",
-					tsMSecs,
 					&sfxMetricTypeGauge,
-					util.MergeStringMaps(map[string]string{
+					maps.MergeStringMaps(map[string]string{
 						"k_n0": "vn0",
 						"k_n1": "vn1",
 						"k_r0": "vr0",
@@ -425,8 +399,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 					}, map[string]string{
 						"k0": "v0",
 						"k2": "v2",
-					}),
-					doubleVal),
+					})),
 			},
 		},
 		{
@@ -452,16 +425,14 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 			wantSfxDataPoints: []*sfxpb.DataPoint{
 				doubleSFxDataPoint(
 					"gauge_double_with_dims",
-					tsMSecs,
 					&sfxMetricTypeGauge,
-					util.MergeStringMaps(labelMap, map[string]string{
+					maps.MergeStringMaps(labelMap, map[string]string{
 						"cloud_account_id": "efgh",
 						"cloud_provider":   conventions.AttributeCloudProviderAWS,
 						"cloud_region":     "us-east",
 						"k_r0":             "vr0",
 						"k_r1":             "vr1",
-					}),
-					doubleVal),
+					})),
 			},
 		},
 		{
@@ -488,9 +459,8 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 			wantSfxDataPoints: []*sfxpb.DataPoint{
 				doubleSFxDataPoint(
 					"gauge_double_with_dims",
-					tsMSecs,
 					&sfxMetricTypeGauge,
-					util.MergeStringMaps(labelMap, map[string]string{
+					maps.MergeStringMaps(labelMap, map[string]string{
 						"cloud_provider":   conventions.AttributeCloudProviderAWS,
 						"cloud_account_id": "efgh",
 						"cloud_region":     "us-east",
@@ -498,8 +468,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 						"AWSUniqueId":      "abcd_us-east_efgh",
 						"k_r0":             "vr0",
 						"k_r1":             "vr1",
-					}),
-					doubleVal),
+					})),
 			},
 		},
 		{
@@ -524,15 +493,13 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 			wantSfxDataPoints: []*sfxpb.DataPoint{
 				doubleSFxDataPoint(
 					"gauge_double_with_dims",
-					tsMSecs,
 					&sfxMetricTypeGauge,
-					util.MergeStringMaps(labelMap, map[string]string{
+					maps.MergeStringMaps(labelMap, map[string]string{
 						"host_id":        "abcd",
 						"cloud_provider": conventions.AttributeCloudProviderGCP,
 						"k_r0":           "vr0",
 						"k_r1":           "vr1",
-					}),
-					doubleVal),
+					})),
 			},
 		},
 		{
@@ -558,85 +525,16 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 			wantSfxDataPoints: []*sfxpb.DataPoint{
 				doubleSFxDataPoint(
 					"gauge_double_with_dims",
-					tsMSecs,
 					&sfxMetricTypeGauge,
-					util.MergeStringMaps(labelMap, map[string]string{
+					maps.MergeStringMaps(labelMap, map[string]string{
 						"gcp_id":           "efgh_abcd",
 						"k_r0":             "vr0",
 						"k_r1":             "vr1",
 						"cloud_provider":   conventions.AttributeCloudProviderGCP,
 						"host_id":          "abcd",
 						"cloud_account_id": "efgh",
-					}),
-					doubleVal),
+					})),
 			},
-		},
-		{
-			name: "histograms",
-			metricsFn: func() pdata.Metrics {
-				out := pdata.NewMetrics()
-				ilm := out.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
-				{
-					m := ilm.Metrics().AppendEmpty()
-					m.SetName("double_histo")
-					m.SetDataType(pdata.MetricDataTypeHistogram)
-					initHistDP(m.Histogram().DataPoints().AppendEmpty())
-				}
-				{
-					m := ilm.Metrics().AppendEmpty()
-					m.SetName("double_delta_histo")
-					m.SetDataType(pdata.MetricDataTypeHistogram)
-					m.Histogram().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
-					initHistDP(m.Histogram().DataPoints().AppendEmpty())
-				}
-				return out
-			},
-			wantSfxDataPoints: mergeDPs(
-				expectedFromHistogram("double_histo", tsMSecs, labelMap, histDP, false),
-				expectedFromHistogram("double_delta_histo", tsMSecs, labelMap, histDP, true),
-			),
-		},
-		{
-			name: "distribution_no_buckets",
-			metricsFn: func() pdata.Metrics {
-				out := pdata.NewMetrics()
-				ilm := out.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
-				m := ilm.Metrics().AppendEmpty()
-				m.SetName("no_bucket_histo")
-				m.SetDataType(pdata.MetricDataTypeHistogram)
-				initHistDPNoBuckets(m.Histogram().DataPoints().AppendEmpty())
-
-				return out
-			},
-			wantSfxDataPoints: expectedFromHistogram("no_bucket_histo", tsMSecs, labelMap, histDPNoBuckets, false),
-		},
-		{
-			name: "summaries",
-			metricsFn: func() pdata.Metrics {
-				out := pdata.NewMetrics()
-				ilm := out.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
-				m := ilm.Metrics().AppendEmpty()
-				m.SetName("summary")
-				m.SetDataType(pdata.MetricDataTypeSummary)
-				initSummaryDP(m.Summary().DataPoints().AppendEmpty())
-
-				return out
-			},
-			wantSfxDataPoints: expectedFromSummary("summary", tsMSecs, labelMap, summaryCountVal, summarySumVal),
-		},
-		{
-			name: "empty_summary",
-			metricsFn: func() pdata.Metrics {
-				out := pdata.NewMetrics()
-				ilm := out.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
-				m := ilm.Metrics().AppendEmpty()
-				m.SetName("empty_summary")
-				m.SetDataType(pdata.MetricDataTypeSummary)
-				initEmptySummaryDP(m.Summary().DataPoints().AppendEmpty())
-
-				return out
-			},
-			wantSfxDataPoints: expectedFromEmptySummary("empty_summary", tsMSecs, labelMap, summaryCountVal, summarySumVal),
 		},
 		{
 			name: "with_exclude_metrics_filter",
@@ -695,8 +593,8 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				},
 			},
 			wantSfxDataPoints: []*sfxpb.DataPoint{
-				int64SFxDataPoint("gauge_int_with_dims", tsMSecs, &sfxMetricTypeGauge, labelMap, int64Val),
-				doubleSFxDataPoint("cumulative_double_with_dims", tsMSecs, &sfxMetricTypeCumulativeCounter, differentLabelMap, doubleVal),
+				int64SFxDataPoint("gauge_int_with_dims", &sfxMetricTypeGauge, labelMap),
+				doubleSFxDataPoint("cumulative_double_with_dims", &sfxMetricTypeCumulativeCounter, differentLabelMap),
 			},
 		},
 		{
@@ -762,9 +660,9 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				},
 			},
 			wantSfxDataPoints: []*sfxpb.DataPoint{
-				int64SFxDataPoint("gauge_int_with_dims", tsMSecs, &sfxMetricTypeGauge, labelMap, int64Val),
-				doubleSFxDataPoint("cumulative_double_with_dims", tsMSecs, &sfxMetricTypeCumulativeCounter, differentLabelMap, doubleVal),
-				int64SFxDataPoint("cumulative_int_with_dims", tsMSecs, &sfxMetricTypeCumulativeCounter, labelMap, int64Val),
+				int64SFxDataPoint("gauge_int_with_dims", &sfxMetricTypeGauge, labelMap),
+				doubleSFxDataPoint("cumulative_double_with_dims", &sfxMetricTypeCumulativeCounter, differentLabelMap),
+				int64SFxDataPoint("cumulative_int_with_dims", &sfxMetricTypeCumulativeCounter, labelMap),
 			},
 		},
 	}
@@ -877,15 +775,13 @@ func sortDimensions(points []*sfxpb.DataPoint) {
 
 func doubleSFxDataPoint(
 	metric string,
-	ts int64,
 	metricType *sfxpb.MetricType,
 	dims map[string]string,
-	val float64,
 ) *sfxpb.DataPoint {
 	return &sfxpb.DataPoint{
 		Metric:     metric,
-		Timestamp:  ts,
-		Value:      sfxpb.Datum{DoubleValue: &val},
+		Timestamp:  tsMSecs,
+		Value:      sfxpb.Datum{DoubleValue: &doubleVal},
 		MetricType: metricType,
 		Dimensions: sfxDimensions(dims),
 	}
@@ -893,15 +789,13 @@ func doubleSFxDataPoint(
 
 func int64SFxDataPoint(
 	metric string,
-	ts int64,
 	metricType *sfxpb.MetricType,
 	dims map[string]string,
-	val int64,
 ) *sfxpb.DataPoint {
 	return &sfxpb.DataPoint{
 		Metric:     metric,
-		Timestamp:  ts,
-		Value:      sfxpb.Datum{IntValue: &val},
+		Timestamp:  tsMSecs,
+		Value:      sfxpb.Datum{IntValue: &int64Val},
 		MetricType: metricType,
 		Dimensions: sfxDimensions(dims),
 	}
@@ -917,84 +811,6 @@ func sfxDimensions(m map[string]string) []*sfxpb.Dimension {
 	}
 
 	return sfxDims
-}
-
-func expectedFromHistogram(
-	metricName string,
-	ts int64,
-	dims map[string]string,
-	histDP pdata.HistogramDataPoint,
-	isDelta bool,
-) []*sfxpb.DataPoint {
-	buckets := histDP.BucketCounts()
-
-	dps := make([]*sfxpb.DataPoint, 0)
-
-	typ := &sfxMetricTypeCumulativeCounter
-	if isDelta {
-		typ = &sfxMetricTypeCounter
-	}
-
-	dps = append(dps,
-		int64SFxDataPoint(metricName+"_count", ts, typ, dims,
-			int64(histDP.Count())),
-		doubleSFxDataPoint(metricName, ts, typ, dims,
-			histDP.Sum()))
-
-	explicitBounds := histDP.ExplicitBounds()
-	if explicitBounds == nil {
-		return dps
-	}
-	for i := 0; i < len(explicitBounds); i++ {
-		dimsCopy := util.CloneStringMap(dims)
-		dimsCopy[upperBoundDimensionKey] = float64ToDimValue(explicitBounds[i])
-		dps = append(dps,
-			int64SFxDataPoint(metricName+"_bucket", ts,
-				typ, dimsCopy,
-				int64(buckets[i])))
-	}
-	dimsCopy := util.CloneStringMap(dims)
-	dimsCopy[upperBoundDimensionKey] = float64ToDimValue(math.Inf(1))
-	dps = append(dps,
-		int64SFxDataPoint(metricName+"_bucket", ts, typ,
-			dimsCopy,
-			int64(buckets[len(buckets)-1])))
-	return dps
-}
-
-func expectedFromSummary(name string, ts int64, labelMap map[string]string, count int64, sumVal float64) []*sfxpb.DataPoint {
-	countName := name + "_count"
-	countPt := int64SFxDataPoint(countName, ts, &sfxMetricTypeCumulativeCounter, labelMap, count)
-	sumPt := doubleSFxDataPoint(name, ts, &sfxMetricTypeCumulativeCounter, labelMap, sumVal)
-	out := []*sfxpb.DataPoint{countPt, sumPt}
-	quantileDimVals := []string{"0.25", "0.5", "0.75", "1"}
-	for i := 0; i < 4; i++ {
-		qDims := map[string]string{"quantile": quantileDimVals[i]}
-		qPt := doubleSFxDataPoint(
-			name+"_quantile",
-			ts,
-			&sfxMetricTypeGauge,
-			util.MergeStringMaps(labelMap, qDims),
-			float64(i),
-		)
-		out = append(out, qPt)
-	}
-	return out
-}
-
-func expectedFromEmptySummary(name string, ts int64, labelMap map[string]string, count int64, sumVal float64) []*sfxpb.DataPoint {
-	countName := name + "_count"
-	countPt := int64SFxDataPoint(countName, ts, &sfxMetricTypeCumulativeCounter, labelMap, count)
-	sumPt := doubleSFxDataPoint(name, ts, &sfxMetricTypeCumulativeCounter, labelMap, sumVal)
-	return []*sfxpb.DataPoint{countPt, sumPt}
-}
-
-func mergeDPs(dps ...[]*sfxpb.DataPoint) []*sfxpb.DataPoint {
-	var out []*sfxpb.DataPoint
-	for i := range dps {
-		out = append(out, dps[i]...)
-	}
-	return out
 }
 
 func TestNewMetricsConverter(t *testing.T) {
@@ -1080,79 +896,6 @@ func TestMetricsConverter_ConvertDimension(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestConvertSummary(t *testing.T) {
-	extraDims := []*sfxpb.Dimension{{
-		Key:   "dim1",
-		Value: "val1",
-	}}
-	summarys := pdata.NewSummaryDataPointSlice()
-	summary := summarys.AppendEmpty()
-	const count = 42
-	summary.SetCount(count)
-	const sum = 10.0
-	summary.SetSum(sum)
-	const startTime = 55 * 1e6
-	summary.SetStartTimestamp(pdata.Timestamp(startTime))
-	timestamp := 111 * 1e6
-	summary.SetTimestamp(pdata.Timestamp(timestamp))
-	qvs := summary.QuantileValues()
-	for i := 0; i < 4; i++ {
-		qv := qvs.AppendEmpty()
-		qv.SetQuantile(0.25 * float64(i+1))
-		qv.SetValue(float64(i))
-	}
-	dps := convertSummaryDataPoints(summarys, "metric_name", extraDims)
-
-	pt := dps[0]
-	assert.Equal(t, sfxpb.MetricType_CUMULATIVE_COUNTER, *pt.MetricType)
-	assert.Equal(t, int64(111), pt.Timestamp)
-	assert.Equal(t, "metric_name_count", pt.Metric)
-	assert.Equal(t, int64(count), pt.Value.GetIntValue())
-	assert.Equal(t, 1, len(pt.Dimensions))
-	assertHasExtraDim(t, pt)
-
-	pt = dps[1]
-	assert.Equal(t, sfxpb.MetricType_CUMULATIVE_COUNTER, *pt.MetricType)
-	assert.Equal(t, int64(111), pt.Timestamp)
-	assert.Equal(t, "metric_name", pt.Metric)
-	assert.Equal(t, sum, pt.Value.GetDoubleValue())
-	assert.Equal(t, 1, len(pt.Dimensions))
-	assertHasExtraDim(t, pt)
-
-	pt = dps[2]
-	assert.Equal(t, sfxpb.MetricType_GAUGE, *pt.MetricType)
-	assert.Equal(t, int64(111), pt.Timestamp)
-	assert.Equal(t, "metric_name_quantile", pt.Metric)
-	assert.Equal(t, 0.0, pt.Value.GetDoubleValue())
-	assert.Equal(t, 2, len(pt.Dimensions))
-	dim := pt.Dimensions[1]
-	assert.Equal(t, "quantile", dim.Key)
-
-	for i := 0; i < 4; i++ {
-		pt = dps[i+2]
-		assert.Equal(t, sfxpb.MetricType_GAUGE, *pt.MetricType)
-		assert.Equal(t, int64(111), pt.Timestamp)
-		assert.Equal(t, "metric_name_quantile", pt.Metric)
-		assert.EqualValues(t, i, pt.Value.GetDoubleValue())
-		assert.Equal(t, 2, len(pt.Dimensions))
-		dim = pt.Dimensions[1]
-		assert.Equal(t, "quantile", dim.Key)
-	}
-
-	assert.Equal(t, "0.25", dps[2].Dimensions[1].Value)
-	assert.Equal(t, "0.5", dps[3].Dimensions[1].Value)
-	assert.Equal(t, "0.75", dps[4].Dimensions[1].Value)
-	assert.Equal(t, "1", dps[5].Dimensions[1].Value)
-
-	println()
-}
-
-func assertHasExtraDim(t *testing.T, pt *sfxpb.DataPoint) {
-	extraDim := pt.Dimensions[0]
-	assert.Equal(t, "dim1", extraDim.Key)
-	assert.Equal(t, "val1", extraDim.Value)
 }
 
 func stringMapToAttributeMap(m map[string]string) map[string]pdata.AttributeValue {

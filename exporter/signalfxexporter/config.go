@@ -203,3 +203,7 @@ func (cfg *Config) Unmarshal(componentParser *config.Map) (err error) {
 
 	return nil
 }
+
+func (cfg *Config) Validate() error {
+	return nil
+}

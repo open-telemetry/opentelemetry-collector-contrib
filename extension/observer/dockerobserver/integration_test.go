@@ -32,7 +32,7 @@ import (
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testing/container"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest"
 )
 
 type testHost struct {
@@ -56,10 +56,10 @@ func paramsAndContext(t *testing.T) (component.ExtensionCreateSettings, context.
 }
 
 func TestObserverEmitsEndpointsIntegration(t *testing.T) {
-	c := container.New(t)
+	c := containertest.New(t)
 	image := "docker.io/library/nginx"
 	tag := "1.17"
-	cntr := c.StartImage(fmt.Sprintf("%s:%s", image, tag), container.WithPortReady(80))
+	cntr := c.StartImage(fmt.Sprintf("%s:%s", image, tag), containertest.WithPortReady(80))
 	config := NewFactory().CreateDefaultConfig().(*Config)
 	config.CacheSyncInterval = 1 * time.Second
 	config.UseHostBindings = true
@@ -79,10 +79,10 @@ func TestObserverEmitsEndpointsIntegration(t *testing.T) {
 }
 
 func TestObserverUpdatesEndpointsIntegration(t *testing.T) {
-	c := container.New(t)
+	c := containertest.New(t)
 	image := "docker.io/library/nginx"
 	tag := "1.17"
-	cntr := c.StartImage(fmt.Sprintf("%s:%s", image, tag), container.WithPortReady(80))
+	cntr := c.StartImage(fmt.Sprintf("%s:%s", image, tag), containertest.WithPortReady(80))
 	mn := &mockNotifier{endpointsMap: map[observer.EndpointID]observer.Endpoint{}}
 	obvs := startObserver(t, mn)
 	defer stopObserver(t, obvs)
@@ -111,10 +111,10 @@ func TestObserverUpdatesEndpointsIntegration(t *testing.T) {
 }
 
 func TestObserverRemovesEndpointsIntegration(t *testing.T) {
-	c := container.New(t)
+	c := containertest.New(t)
 	image := "docker.io/library/nginx"
 	tag := "1.17"
-	tmpCntr := c.StartImage(fmt.Sprintf("%s:%s", image, tag), container.WithPortReady(80))
+	tmpCntr := c.StartImage(fmt.Sprintf("%s:%s", image, tag), containertest.WithPortReady(80))
 	mn := &mockNotifier{endpointsMap: map[observer.EndpointID]observer.Endpoint{}}
 	obvs := startObserver(t, mn)
 	defer stopObserver(t, obvs)
@@ -133,8 +133,8 @@ func TestObserverRemovesEndpointsIntegration(t *testing.T) {
 }
 
 func TestObserverExcludesImagesIntegration(t *testing.T) {
-	c := container.New(t)
-	c.StartImage("docker.io/library/nginx:1.17", container.WithPortReady(80))
+	c := containertest.New(t)
+	c.StartImage("docker.io/library/nginx:1.17", containertest.WithPortReady(80))
 
 	config := NewFactory().CreateDefaultConfig().(*Config)
 	config.ExcludedImages = []string{"*nginx*"}

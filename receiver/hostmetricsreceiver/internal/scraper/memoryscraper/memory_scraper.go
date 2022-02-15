@@ -16,6 +16,8 @@ package memoryscraper // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/shirou/gopsutil/v3/host"
@@ -27,7 +29,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/memoryscraper/internal/metadata"
 )
 
-const metricsLen = 1
+const metricsLen = 2
+
+var ErrInvalidTotalMem = errors.New("invalid total memory")
 
 // scraper for Memory Metrics
 type scraper struct {
@@ -67,6 +71,10 @@ func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 	if memInfo != nil {
 		metrics.EnsureCapacity(metricsLen)
 		s.recordMemoryUsageMetric(now, memInfo)
+		if memInfo.Total <= 0 {
+			return md, scrapererror.NewPartialScrapeError(fmt.Errorf("%w: %d", ErrInvalidTotalMem, memInfo.Total), metricsLen)
+		}
+		s.recordMemoryUtilizationMetric(now, memInfo)
 	}
 	s.mb.Emit(metrics)
 	return md, nil
