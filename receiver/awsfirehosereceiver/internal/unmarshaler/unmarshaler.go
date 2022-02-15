@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package unmarshaler // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/unmarshaler"
+package unmarshaler // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler"
 
 import (
 	"go.opentelemetry.io/collector/model/pdata"
@@ -20,9 +20,9 @@ import (
 
 // MetricsUnmarshaler deserializes the message body
 type MetricsUnmarshaler interface {
-	// Unmarshal deserializes the records into metrics
+	// Unmarshal deserializes the records into metrics.
 	Unmarshal(records [][]byte) (pdata.Metrics, error)
 
-	// Encoding of the serialized messages
-	Encoding() string
+	// Type of the serialized messages.
+	Type() string
 }

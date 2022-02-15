@@ -16,21 +16,31 @@ package awsfirehosereceiver // import "github.com/open-telemetry/opentelemetry-c
 
 import (
 	"context"
+	"errors"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/unmarshaler"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/unmarshaler/cwmetricstream"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwmetricstream"
 )
 
 const (
-	typeStr         = "awsfirehose"
-	defaultEncoding = cwmetricstream.Encoding
+	typeStr           = "awsfirehose"
+	defaultRecordType = cwmetricstream.TypeStr
 )
 
+var (
+	errUnrecognizedRecordType = errors.New("unrecognized record type")
+	availableRecordTypes      = map[string]bool{
+		cwmetricstream.TypeStr: true,
+	}
+)
+
+// NewFactory creates a receiver factory. Currently, only available in metrics pipelines.
 func NewFactory() component.ReceiverFactory {
 	return receiverhelper.NewFactory(
 		typeStr,
@@ -38,17 +48,24 @@ func NewFactory() component.ReceiverFactory {
 		receiverhelper.WithMetrics(createMetricsReceiver))
 }
 
-func defaultMetricsUnmarshalers() map[string]unmarshaler.MetricsUnmarshaler {
-	cwmsu := cwmetricstream.NewUnmarshaler()
+func isValidRecordType(recordType string) error {
+	if _, ok := availableRecordTypes[recordType]; !ok {
+		return errUnrecognizedRecordType
+	}
+	return nil
+}
+
+func defaultMetricsUnmarshalers(logger *zap.Logger) map[string]unmarshaler.MetricsUnmarshaler {
+	cwmsu := cwmetricstream.NewUnmarshaler(logger)
 	return map[string]unmarshaler.MetricsUnmarshaler{
-		cwmsu.Encoding(): cwmsu,
+		cwmsu.Type(): cwmsu,
 	}
 }
 
 func createDefaultConfig() config.Receiver {
 	return &Config{
 		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-		Encoding:         defaultEncoding,
+		RecordType:       defaultRecordType,
 	}
 }
 
@@ -58,5 +75,5 @@ func createMetricsReceiver(
 	cfg config.Receiver,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
-	return newMetricsReceiver(cfg.(*Config), set, defaultMetricsUnmarshalers(), nextConsumer)
+	return newMetricsReceiver(cfg.(*Config), set, defaultMetricsUnmarshalers(set.Logger), nextConsumer)
 }

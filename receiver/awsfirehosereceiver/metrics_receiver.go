@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/unmarshaler"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler"
 )
 
 type metricsConsumer struct {
@@ -42,9 +42,9 @@ func newMetricsReceiver(
 		return nil, componenterror.ErrNilNextConsumer
 	}
 
-	configuredUnmarshaler := unmarshalers[config.Encoding]
+	configuredUnmarshaler := unmarshalers[config.RecordType]
 	if configuredUnmarshaler == nil {
-		return nil, errUnrecognizedEncoding
+		return nil, errUnrecognizedRecordType
 	}
 
 	mc := &metricsConsumer{
@@ -60,6 +60,10 @@ func newMetricsReceiver(
 	}, nil
 }
 
+// Consume uses the configured unmarshaler to deserialize the records into a
+// single pdata.Metrics. If there are common attributes available, then it will
+// attach those to each of the pdata.Resources. It will send the final result
+// to the next consumer.
 func (mc *metricsConsumer) Consume(ctx context.Context, records [][]byte, commonAttributes map[string]string) (int, error) {
 	md, err := mc.unmarshaler.Unmarshal(records)
 	if err != nil {

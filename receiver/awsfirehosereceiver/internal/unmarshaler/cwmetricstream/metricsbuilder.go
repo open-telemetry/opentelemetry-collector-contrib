@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cwmetricstream // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/unmarshaler/cwmetricstream"
+package cwmetricstream // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwmetricstream"
 import (
 	"fmt"
 	"strings"
@@ -58,21 +58,19 @@ func (rmb *resourceMetricsBuilder) AddMetric(metric cWMetric) {
 	mb.AddDataPoint(metric)
 }
 
-// Build creates the pdata.ResourceMetrics from the added metrics.
-func (rmb *resourceMetricsBuilder) Build() pdata.ResourceMetrics {
-	rm := pdata.NewResourceMetrics()
+// Build updates the passed in pdata.ResourceMetrics with the metrics in
+// the builder.
+func (rmb *resourceMetricsBuilder) Build(rm pdata.ResourceMetrics) {
 	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	rmb.toResource().CopyTo(rm.Resource())
+	rmb.setAttributes(rm.Resource())
 	for _, mb := range rmb.metricBuilders {
-		mb.Build().CopyTo(ilm.Metrics().AppendEmpty())
+		mb.Build(ilm.Metrics().AppendEmpty())
 	}
-	return rm
 }
 
-// toResource creates a pdata.Resource from the fields in the resourceMetricsBuilder.
+// setAttributes creates a pdata.Resource from the fields in the resourceMetricsBuilder.
 // Splits the namespace into service.namespace/service.name if prepended by AWS/.
-func (rmb *resourceMetricsBuilder) toResource() pdata.Resource {
-	resource := pdata.NewResource()
+func (rmb *resourceMetricsBuilder) setAttributes(resource pdata.Resource) {
 	attributes := resource.Attributes()
 	attributes.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
 	attributes.InsertString(conventions.AttributeCloudAccountID, rmb.accountID)
@@ -85,7 +83,6 @@ func (rmb *resourceMetricsBuilder) toResource() pdata.Resource {
 		attributes.InsertString(conventions.AttributeServiceName, rmb.namespace)
 	}
 	attributes.InsertString(attributeAWSCloudWatchMetricStreamName, rmb.metricStreamName)
-	return resource
 }
 
 // toMetricKey creates a key based on the metric name and dimensions to
@@ -114,27 +111,24 @@ func newMetricBuilder(name, unit string) *metricBuilder {
 // hasn't already been added
 func (mb *metricBuilder) AddDataPoint(metric cWMetric) {
 	if _, ok := mb.timestamps[metric.Timestamp]; !ok {
-		mb.toDataPoint(metric).CopyTo(mb.dataPoints.AppendEmpty())
+		mb.toDataPoint(mb.dataPoints.AppendEmpty(), metric)
 		mb.timestamps[metric.Timestamp] = true
 	}
 }
 
 // Build builds the pdata.Metric with the data points that were added
 // with AddDataPoint
-func (mb *metricBuilder) Build() pdata.Metric {
-	metric := pdata.NewMetric()
+func (mb *metricBuilder) Build(metric pdata.Metric) {
 	metric.SetName(mb.name)
 	metric.SetUnit(mb.unit)
 	metric.SetDataType(pdata.MetricDataTypeHistogram)
 	metric.Histogram().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
-	mb.dataPoints.CopyTo(metric.Histogram().DataPoints())
-	return metric
+	mb.dataPoints.MoveAndAppendTo(metric.Histogram().DataPoints())
 }
 
 // toDataPoint converts a cWMetric into a pdata datapoint and attaches the
 // dimensions as attributes
-func (mb *metricBuilder) toDataPoint(metric cWMetric) pdata.HistogramDataPoint {
-	dp := pdata.NewHistogramDataPoint()
+func (mb *metricBuilder) toDataPoint(dp pdata.HistogramDataPoint, metric cWMetric) {
 	dp.SetCount(uint64(metric.Value.Count))
 	dp.SetSum(metric.Value.Sum)
 	dp.SetExplicitBounds([]float64{metric.Value.Min, metric.Value.Max})
@@ -143,7 +137,6 @@ func (mb *metricBuilder) toDataPoint(metric cWMetric) pdata.HistogramDataPoint {
 	for k, v := range metric.Dimensions {
 		dp.Attributes().InsertString(ToSemConvAttributeKey(k), v)
 	}
-	return dp
 }
 
 // ToSemConvAttributeKey maps some common keys to semantic convention attributes

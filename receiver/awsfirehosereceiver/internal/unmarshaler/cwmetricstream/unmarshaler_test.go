@@ -16,19 +16,20 @@ package cwmetricstream
 
 import (
 	"os"
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
-func TestEncoding(t *testing.T) {
-	unmarshaler := NewUnmarshaler()
-	require.Equal(t, Encoding, unmarshaler.Encoding())
+func TestType(t *testing.T) {
+	unmarshaler := NewUnmarshaler(zap.NewNop())
+	require.Equal(t, TypeStr, unmarshaler.Type())
 }
 
 func TestUnmarshal(t *testing.T) {
-	unmarshaler := NewUnmarshaler()
+	unmarshaler := NewUnmarshaler(zap.NewNop())
 	testCases := map[string]struct {
 		filename           string
 		wantResourceCount  int
@@ -61,7 +62,7 @@ func TestUnmarshal(t *testing.T) {
 	}
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
-			record, err := os.ReadFile(path.Join(".", "testdata", testCase.filename))
+			record, err := os.ReadFile(filepath.Join(".", "testdata", testCase.filename))
 			require.NoError(t, err)
 
 			records := [][]byte{record}
