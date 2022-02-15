@@ -25,13 +25,21 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler"
 )
 
+// The metricsConsumer implements the firehoseConsumer
+// to use a metrics consumer and unmarshaler.
 type metricsConsumer struct {
-	consumer    consumer.Metrics
+	// consumer passes the translated metrics on to the
+	// next consumer.
+	consumer consumer.Metrics
+	// unmarshaler is the configured MetricsUnmarshaler
+	// to use when processing the records.
 	unmarshaler unmarshaler.MetricsUnmarshaler
 }
 
 var _ firehoseConsumer = (*metricsConsumer)(nil)
 
+// newMetricsReceiver creates a new instance of the receiver
+// with a metricsConsumer.
 func newMetricsReceiver(
 	config *Config,
 	set component.ReceiverCreateSettings,
