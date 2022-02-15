@@ -88,6 +88,18 @@ For the `extract` action,
 
  ```
 
+
+For the `coerce` action,
+- `key` is required
+- `action: coerce` is required.
+- `target_type` is required and must be one of int, double or string
+```yaml
+# Key specifies the attribute to act upon.
+- key: <key>
+  action: coerce
+  target_type: <type>
+```
+
 The list of actions can be composed to create rich scenarios, such as
 back filling attribute, copying values to a new key, redacting sensitive information.
 The following is a sample configuration.
@@ -110,6 +122,9 @@ processors:
         action: delete
       - key: account_email
         action: hash
+      - key: http.status_code
+        action: coerce
+        target_type: int
 
 ```
 
