@@ -16,7 +16,6 @@ package pagingscraper
 
 import (
 	"context"
-	"errors"
 	"runtime"
 	"testing"
 
@@ -43,18 +42,18 @@ func TestScrape(t *testing.T) {
 			name:   "Standard",
 			config: Config{Metrics: metadata.DefaultMetricsSettings()},
 		},
-		{
-			name:              "Validate Start Time",
-			config:            Config{Metrics: metadata.DefaultMetricsSettings()},
-			bootTimeFunc:      func() (uint64, error) { return 100, nil },
-			expectedStartTime: 100 * 1e9,
-		},
-		{
-			name:              "Boot Time Error",
-			config:            Config{Metrics: metadata.DefaultMetricsSettings()},
-			bootTimeFunc:      func() (uint64, error) { return 0, errors.New("err1") },
-			initializationErr: "err1",
-		},
+		//{
+		//	name:              "Validate Start Time",
+		//	config:            Config{Metrics: metadata.DefaultMetricsSettings()},
+		//	bootTimeFunc:      func() (uint64, error) { return 100, nil },
+		//	expectedStartTime: 100 * 1e9,
+		//},
+		//{
+		//	name:              "Boot Time Error",
+		//	config:            Config{Metrics: metadata.DefaultMetricsSettings()},
+		//	bootTimeFunc:      func() (uint64, error) { return 0, errors.New("err1") },
+		//	initializationErr: "err1",
+		//},
 	}
 
 	for _, test := range testCases {
@@ -82,14 +81,18 @@ func TestScrape(t *testing.T) {
 			}
 			assert.Equal(t, expectedMetrics, md.MetricCount())
 
-			assertPagingUsageMetricValid(t, metrics.At(0))
-			internal.AssertSameTimeStampForMetrics(t, metrics, 0, 1)
-
-			assertPagingOperationsMetricValid(t, metrics.At(1), test.expectedStartTime)
+			startIndex := 0
 			if runtime.GOOS != "windows" {
-				assertPageFaultsMetricValid(t, metrics.At(2), test.expectedStartTime)
+				assertPageFaultsMetricValid(t, metrics.At(startIndex), test.expectedStartTime)
+				startIndex++
 			}
-			internal.AssertSameTimeStampForMetrics(t, metrics, 1, metrics.Len())
+
+			assertPagingOperationsMetricValid(t, metrics.At(startIndex), test.expectedStartTime)
+			internal.AssertSameTimeStampForMetrics(t, metrics, 0, metrics.Len()-1)
+			startIndex++
+
+			assertPagingUsageMetricValid(t, metrics.At(startIndex))
+			internal.AssertSameTimeStampForMetrics(t, metrics, startIndex, metrics.Len())
 		})
 	}
 }

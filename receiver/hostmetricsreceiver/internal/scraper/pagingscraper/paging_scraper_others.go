@@ -77,6 +77,7 @@ func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 		errors.AddPartial(pagingMetricsLen, err)
 	}
 
+	s.mb.Emit(metrics)
 	return md, errors.Combine()
 }
 
@@ -88,7 +89,6 @@ func (s *scraper) scrapePagingUsageMetric(metrics pdata.MetricSlice) error {
 	}
 
 	s.recordPagingUsageDataPoints(now, pageFileStats)
-	s.mb.Emit(metrics)
 	return nil
 }
 
@@ -110,9 +110,7 @@ func (s *scraper) scrapePagingMetrics(metrics pdata.MetricSlice) error {
 	}
 
 	s.recordPagingOperationsDataPoints(now, swap)
-	s.mb.Emit(metrics)
 	s.recordPageFaultsDataPoints(now, swap)
-	s.mb.Emit(metrics)
 	return nil
 }
 
