@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,17 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package utils // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/translator/utils"
+package attributes // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes"
 
 import (
 	"fmt"
+
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 )
 
-// FormatKeyValueTag takes a key-value pair, and creates a tag string out of it
-// Tags can't end with ":" so we replace empty values with "n/a"
-func FormatKeyValueTag(key, value string) string {
-	if value == "" {
-		value = "n/a"
+type systemAttributes struct {
+	OSType string
+}
+
+func (sattrs *systemAttributes) extractTags() []string {
+	tags := make([]string, 0, 1)
+
+	// Add OS type, eg. WINDOWS, LINUX, etc.
+	if sattrs.OSType != "" {
+		tags = append(tags, fmt.Sprintf("%s:%s", conventions.AttributeOSType, sattrs.OSType))
 	}
-	return fmt.Sprintf("%s:%s", key, value)
+
+	return tags
 }
