@@ -61,9 +61,9 @@ func NewUnstartableConfig() *UnstartableConfig {
 }
 
 // Build will build an unstartable operator
-func (c *UnstartableConfig) Build(context operator.BuildContext) ([]operator.Operator, error) {
+func (c *UnstartableConfig) Build(context operator.BuildContext) (operator.Operator, error) {
 	o, _ := c.OutputConfig.Build(context)
-	return []operator.Operator{&UnstartableOperator{OutputOperator: o}}, nil
+	return &UnstartableOperator{OutputOperator: o}, nil
 }
 
 // Start will return an error
