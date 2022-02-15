@@ -29,7 +29,7 @@ import (
 // Settings specifies the processor settings.
 type Settings struct {
 	// Actions specifies the list of attributes to act on.
-	// The set of actions are {INSERT, UPDATE, UPSERT, DELETE, HASH, EXTRACt, COERCE}.
+	// The set of actions are {INSERT, UPDATE, UPSERT, DELETE, HASH, EXTRACT, COERCE}.
 	// This is a required field.
 	Actions []ActionKeyValue `mapstructure:"actions"`
 }
