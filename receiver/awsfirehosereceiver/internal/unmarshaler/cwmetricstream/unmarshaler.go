@@ -61,10 +61,18 @@ func (u Unmarshaler) Unmarshal(records [][]byte) (pdata.Metrics, error) {
 			if len(datum) > 0 {
 				var metric cWMetric
 				err := json.Unmarshal(datum, &metric)
-				if err != nil || !u.isValid(metric) {
+				if err != nil {
+					u.logger.Error(
+						"Unable to unmarshal input",
+						zap.Error(err),
+						zap.Int("datum_index", datumIndex),
+						zap.Int("record_index", recordIndex),
+					)
+					continue
+				}
+				if !u.isValid(metric) {
 					u.logger.Error(
 						"Invalid metric",
-						zap.Error(err),
 						zap.Int("datum_index", datumIndex),
 						zap.Int("record_index", recordIndex),
 					)

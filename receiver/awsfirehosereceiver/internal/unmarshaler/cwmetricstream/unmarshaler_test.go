@@ -40,7 +40,7 @@ func TestUnmarshal(t *testing.T) {
 		"WithMultipleRecords": {
 			filename:           "multiple_records",
 			wantResourceCount:  6,
-			wantMetricCount:    94,
+			wantMetricCount:    33,
 			wantDatapointCount: 127,
 		},
 		"WithSingleRecord": {
@@ -56,7 +56,7 @@ func TestUnmarshal(t *testing.T) {
 		"WithSomeInvalidRecords": {
 			filename:           "some_invalid_records",
 			wantResourceCount:  5,
-			wantMetricCount:    88,
+			wantMetricCount:    35,
 			wantDatapointCount: 88,
 		},
 	}
@@ -84,7 +84,7 @@ func TestUnmarshal(t *testing.T) {
 					gotMetricCount += ilm.Metrics().Len()
 					for j := 0; j < ilm.Metrics().Len(); j++ {
 						metric := ilm.Metrics().At(j)
-						gotDatapointCount += metric.Histogram().DataPoints().Len()
+						gotDatapointCount += metric.Summary().DataPoints().Len()
 					}
 				}
 				require.Equal(t, testCase.wantMetricCount, gotMetricCount)
