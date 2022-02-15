@@ -42,10 +42,12 @@ func init() {
 func NewUDPInputConfig(operatorID string) *UDPInputConfig {
 	return &UDPInputConfig{
 		InputConfig: helper.NewInputConfig(operatorID, "udp_input"),
-		Encoding:    helper.NewEncodingConfig(),
-		Multiline: helper.MultilineConfig{
-			LineStartPattern: "",
-			LineEndPattern:   ".^", // Use never matching regex to not split data by default
+		UDPBaseConfig: UDPBaseConfig{
+			Encoding: helper.NewEncodingConfig(),
+			Multiline: helper.MultilineConfig{
+				LineStartPattern: "",
+				LineEndPattern:   ".^", // Use never matching regex to not split data by default
+			},
 		},
 	}
 }
@@ -53,7 +55,11 @@ func NewUDPInputConfig(operatorID string) *UDPInputConfig {
 // UDPInputConfig is the configuration of a udp input operator.
 type UDPInputConfig struct {
 	helper.InputConfig `yaml:",inline"`
+	UDPBaseConfig      `yaml:",inline"`
+}
 
+// UDPBaseConfig is the details configuration of a udp input operator.
+type UDPBaseConfig struct {
 	ListenAddress string                 `mapstructure:"listen_address,omitempty"        json:"listen_address,omitempty"       yaml:"listen_address,omitempty"`
 	AddAttributes bool                   `mapstructure:"add_attributes,omitempty"        json:"add_attributes,omitempty"       yaml:"add_attributes,omitempty"`
 	Encoding      helper.EncodingConfig  `mapstructure:",squash,omitempty"               json:",inline,omitempty"              yaml:",inline,omitempty"`
