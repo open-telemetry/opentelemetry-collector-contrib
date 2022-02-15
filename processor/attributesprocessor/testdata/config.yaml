@@ -87,7 +87,14 @@ processors:
   attributes/hash:
     actions:
       - key: user.email
-        action: hash 
+        action: hash
+
+  # The following demonstrates coercing the type of existing attribute values.
+  attributes/coerce:
+    actions:
+      - key: http.status_code
+        action: coerce
+        target_type: int
 
 
   # The following demonstrates excluding spans from this attributes processor.

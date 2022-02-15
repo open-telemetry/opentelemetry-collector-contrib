@@ -29,7 +29,7 @@ import (
 // Settings specifies the processor settings.
 type Settings struct {
 	// Actions specifies the list of attributes to act on.
-	// The set of actions are {INSERT, UPDATE, UPSERT, DELETE, HASH, EXTRACT}.
+	// The set of actions are {INSERT, UPDATE, UPSERT, DELETE, HASH, EXTRACt, COERCE}.
 	// This is a required field.
 	Actions []ActionKeyValue `mapstructure:"actions"`
 }
@@ -64,6 +64,11 @@ type ActionKeyValue struct {
 	// If the key has multiple values the values will be joined with `;` separator.
 	FromContext string `mapstructure:"from_context"`
 
+	// TargetType specifies the target type of an attribute to be coerced
+	// If the key doesn't exist, no action is performed.
+	// If the value cannot be coerced, the null type will be inserted.
+	TargetType string `mapstructure:"target_type"`
+
 	// Action specifies the type of action to perform.
 	// The set of values are {INSERT, UPDATE, UPSERT, DELETE, HASH}.
 	// Both lower case and upper case are supported.
@@ -85,6 +90,8 @@ type ActionKeyValue struct {
 	// EXTRACT - Extracts values using a regular expression rule from the input
 	//           'key' to target keys specified in the 'rule'. If a target key
 	//           already exists, it will be overridden.
+	// COERCE  - coerces the type of an existing attribute, or sets it to the null
+	//	         value if the existing value cannot be coerced
 	// This is a required field.
 	Action Action `mapstructure:"action"`
 }
@@ -134,12 +141,17 @@ const (
 	// 'key' to target keys specified in the 'rule'. If a target key already
 	// exists, it will be overridden.
 	EXTRACT Action = "extract"
+
+	// COERCE coerces the type of an existing attribute, or sets it to the null
+	// value if the existing value cannot be coerced
+	COERCE Action = "coerce"
 )
 
 type attributeAction struct {
 	Key           string
 	FromAttribute string
 	FromContext   string
+	TargetType    string
 	// Compiled regex if provided
 	Regex *regexp.Regexp
 	// Attribute names extracted from the regexp's subexpressions.
@@ -190,7 +202,9 @@ func NewAttrProc(settings *Settings) (*AttrProc, error) {
 			}
 			if a.RegexPattern != "" {
 				return nil, fmt.Errorf("error creating AttrProc. Action \"%s\" does not use the \"pattern\" field. This must not be specified for %d-th action", a.Action, i)
-
+			}
+			if a.TargetType != "" {
+				return nil, fmt.Errorf("error creating AttrProc. Action \"%s\" does not use the \"target_type\" field. This must not be specified for %d-th action", a.Action, i)
 			}
 			// Convert the raw value from the configuration to the internal trace representation of the value.
 			if a.Value != nil {
@@ -207,13 +221,18 @@ func NewAttrProc(settings *Settings) (*AttrProc, error) {
 			if valueSourceCount > 0 || a.RegexPattern != "" {
 				return nil, fmt.Errorf("error creating AttrProc. Action \"%s\" does not use value sources or \"pattern\" field. These must not be specified for %d-th action", a.Action, i)
 			}
+			if a.TargetType != "" {
+				return nil, fmt.Errorf("error creating AttrProc. Action \"%s\" does not use the \"target_type\" field. This must not be specified for %d-th action", a.Action, i)
+			}
 		case EXTRACT:
 			if valueSourceCount > 0 {
 				return nil, fmt.Errorf("error creating AttrProc. Action \"%s\" does not use a value source field. These must not be specified for %d-th action", a.Action, i)
 			}
 			if a.RegexPattern == "" {
 				return nil, fmt.Errorf("error creating AttrProc due to missing required field \"pattern\" for action \"%s\" at the %d-th action", a.Action, i)
-
+			}
+			if a.TargetType != "" {
+				return nil, fmt.Errorf("error creating AttrProc. Action \"%s\" does not use the \"target_type\" field. This must not be specified for %d-th action", a.Action, i)
 			}
 			re, err := regexp.Compile(a.RegexPattern)
 			if err != nil {
@@ -231,6 +250,20 @@ func NewAttrProc(settings *Settings) (*AttrProc, error) {
 			}
 			action.Regex = re
 			action.AttrNames = attrNames
+		case COERCE:
+			if valueSourceCount > 0 || a.RegexPattern != "" {
+				return nil, fmt.Errorf("error creating AttrProc. Action \"%s\" does not use value sources or \"pattern\" field. These must not be specified for %d-th action", a.Action, i)
+			}
+			switch a.TargetType {
+			case "string":
+			case "int":
+			case "double":
+			case "":
+				return nil, fmt.Errorf("error creating AttrProc due to missing required field \"target_type\" for action \"%s\" at the %d-th action", a.Action, i)
+			default:
+				return nil, fmt.Errorf("error creating AttrProc due to invalid value \"%s\" in field \"target_type\" for action \"%s\" at the %d-th action", a.TargetType, a.Action, i)
+			}
+			action.TargetType = a.TargetType
 		default:
 			return nil, fmt.Errorf("error creating AttrProc due to unsupported action %q at the %d-th actions", a.Action, i)
 		}
@@ -272,6 +305,8 @@ func (ap *AttrProc) Process(ctx context.Context, attrs pdata.AttributeMap) {
 			hashAttribute(action, attrs)
 		case EXTRACT:
 			extractAttributes(action, attrs)
+		case COERCE:
+			coerceAttribute(action, attrs)
 		}
 	}
 }
@@ -303,6 +338,12 @@ func getSourceAttributeValue(ctx context.Context, action attributeAction, attrs 
 func hashAttribute(action attributeAction, attrs pdata.AttributeMap) {
 	if value, exists := attrs.Get(action.Key); exists {
 		sha1Hasher(value)
+	}
+}
+
+func coerceAttribute(action attributeAction, attrs pdata.AttributeMap) {
+	if value, exists := attrs.Get(action.Key); exists {
+		coerceValue(action.TargetType, value)
 	}
 }
 
