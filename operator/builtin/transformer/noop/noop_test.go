@@ -27,9 +27,8 @@ import (
 
 func TestBuildValid(t *testing.T) {
 	cfg := NewNoopOperatorConfig("test")
-	ops, err := cfg.Build(testutil.NewBuildContext(t))
+	op, err := cfg.Build(testutil.NewBuildContext(t))
 	require.NoError(t, err)
-	op := ops[0]
 	require.IsType(t, &NoopOperator{}, op)
 }
 
@@ -45,9 +44,8 @@ func TestBuildIvalid(t *testing.T) {
 func TestProcess(t *testing.T) {
 	cfg := NewNoopOperatorConfig("test")
 	cfg.OutputIDs = []string{"fake"}
-	ops, err := cfg.Build(testutil.NewBuildContext(t))
+	op, err := cfg.Build(testutil.NewBuildContext(t))
 	require.NoError(t, err)
-	op := ops[0]
 
 	fake := testutil.NewFakeOutput(t)
 	op.SetOutputs([]operator.Operator{fake})

@@ -30,9 +30,8 @@ import (
 
 func newTestParser(t *testing.T) *URIParser {
 	cfg := NewURIParserConfig("test")
-	ops, err := cfg.Build(testutil.NewBuildContext(t))
+	op, err := cfg.Build(testutil.NewBuildContext(t))
 	require.NoError(t, err)
-	op := ops[0]
 	return op.(*URIParser)
 }
 
@@ -82,11 +81,7 @@ func TestProcess(t *testing.T) {
 			"default",
 			func() (operator.Operator, error) {
 				cfg := NewURIParserConfig("test_id")
-				ops, err := cfg.Build(testutil.NewBuildContext(t))
-				if err != nil {
-					return nil, err
-				}
-				return ops[0], nil
+				return cfg.Build(testutil.NewBuildContext(t))
 			},
 			&entry.Entry{
 				Body: "https://google.com:443/path?user=dev",
@@ -111,11 +106,7 @@ func TestProcess(t *testing.T) {
 				cfg := NewURIParserConfig("test_id")
 				cfg.ParseFrom = entry.NewBodyField("url")
 				cfg.ParseTo = entry.NewBodyField("url2")
-				ops, err := cfg.Build(testutil.NewBuildContext(t))
-				if err != nil {
-					return nil, err
-				}
-				return ops[0], nil
+				return cfg.Build(testutil.NewBuildContext(t))
 			},
 			&entry.Entry{
 				Body: map[string]interface{}{
@@ -143,11 +134,7 @@ func TestProcess(t *testing.T) {
 			func() (operator.Operator, error) {
 				cfg := NewURIParserConfig("test_id")
 				cfg.ParseFrom = entry.NewBodyField("url")
-				ops, err := cfg.Build(testutil.NewBuildContext(t))
-				if err != nil {
-					return nil, err
-				}
-				return ops[0], nil
+				return cfg.Build(testutil.NewBuildContext(t))
 			},
 			&entry.Entry{
 				Body: map[string]interface{}{
@@ -174,11 +161,7 @@ func TestProcess(t *testing.T) {
 				cfg := NewURIParserConfig("test_id")
 				cfg.ParseFrom = entry.NewBodyField("url")
 				cfg.PreserveTo = &cfg.ParseFrom
-				ops, err := cfg.Build(testutil.NewBuildContext(t))
-				if err != nil {
-					return nil, err
-				}
-				return ops[0], nil
+				return cfg.Build(testutil.NewBuildContext(t))
 			},
 			&entry.Entry{
 				Body: map[string]interface{}{

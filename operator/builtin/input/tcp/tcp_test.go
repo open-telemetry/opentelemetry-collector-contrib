@@ -90,9 +90,8 @@ func tcpInputTest(input []byte, expected []string) func(t *testing.T) {
 		cfg := NewTCPInputConfig("test_id")
 		cfg.ListenAddress = ":0"
 
-		ops, err := cfg.Build(testutil.NewBuildContext(t))
+		op, err := cfg.Build(testutil.NewBuildContext(t))
 		require.NoError(t, err)
-		op := ops[0]
 
 		mockOutput := testutil.Operator{}
 		tcpInput := op.(*TCPInput)
@@ -141,9 +140,8 @@ func tcpInputAttributesTest(input []byte, expected []string) func(t *testing.T) 
 		cfg.ListenAddress = ":0"
 		cfg.AddAttributes = true
 
-		ops, err := cfg.Build(testutil.NewBuildContext(t))
+		op, err := cfg.Build(testutil.NewBuildContext(t))
 		require.NoError(t, err)
-		op := ops[0]
 
 		mockOutput := testutil.Operator{}
 		tcpInput := op.(*TCPInput)
@@ -229,9 +227,8 @@ func tlsTCPInputTest(input []byte, expected []string) func(t *testing.T) {
 			},
 		})
 
-		ops, err := cfg.Build(testutil.NewBuildContext(t))
+		op, err := cfg.Build(testutil.NewBuildContext(t))
 		require.NoError(t, err)
-		op := ops[0]
 
 		mockOutput := testutil.Operator{}
 		tcpInput := op.(*TCPInput)
@@ -401,9 +398,8 @@ func TestFailToBind(t *testing.T) {
 	var startTCP func(port int) (*TCPInput, error) = func(int) (*TCPInput, error) {
 		cfg := NewTCPInputConfig("test_id")
 		cfg.ListenAddress = net.JoinHostPort(ip, strconv.Itoa(port))
-		ops, err := cfg.Build(testutil.NewBuildContext(t))
+		op, err := cfg.Build(testutil.NewBuildContext(t))
 		require.NoError(t, err)
-		op := ops[0]
 		mockOutput := testutil.Operator{}
 		tcpInput := op.(*TCPInput)
 		tcpInput.InputOperator.OutputOperators = []operator.Operator{&mockOutput}
@@ -430,9 +426,8 @@ func BenchmarkTcpInput(b *testing.B) {
 	cfg := NewTCPInputConfig("test_id")
 	cfg.ListenAddress = ":0"
 
-	ops, err := cfg.Build(testutil.NewBuildContext(b))
+	op, err := cfg.Build(testutil.NewBuildContext(b))
 	require.NoError(b, err)
-	op := ops[0]
 
 	fakeOutput := testutil.NewFakeOutput(b)
 	tcpInput := op.(*TCPInput)

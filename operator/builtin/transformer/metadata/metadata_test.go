@@ -141,9 +141,8 @@ func TestMetadata(t *testing.T) {
 			cfg := NewMetadataOperatorConfig("test_operator_id")
 			cfg.OutputIDs = []string{"fake"}
 			tc.configMod(cfg)
-			ops, err := cfg.Build(testutil.NewBuildContext(t))
+			op, err := cfg.Build(testutil.NewBuildContext(t))
 			require.NoError(t, err)
-			op := ops[0]
 
 			fake := testutil.NewFakeOutput(t)
 			err = op.SetOutputs([]operator.Operator{fake})

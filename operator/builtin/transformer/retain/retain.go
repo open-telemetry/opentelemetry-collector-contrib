@@ -42,7 +42,7 @@ type RetainOperatorConfig struct {
 }
 
 // Build will build a retain operator from the supplied configuration
-func (c RetainOperatorConfig) Build(context operator.BuildContext) ([]operator.Operator, error) {
+func (c RetainOperatorConfig) Build(context operator.BuildContext) (operator.Operator, error) {
 	transformerOperator, err := c.TransformerConfig.Build(context)
 	if err != nil {
 		return nil, err
@@ -68,7 +68,7 @@ func (c RetainOperatorConfig) Build(context operator.BuildContext) ([]operator.O
 		}
 		retainOp.AllBodyFields = true
 	}
-	return []operator.Operator{retainOp}, nil
+	return retainOp, nil
 }
 
 // RetainOperator keeps the given fields and deletes the rest.

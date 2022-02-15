@@ -100,13 +100,13 @@ func TestBuild(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			cfg, err := tc.input()
 			require.NoError(t, err, "expected nil error when running test cases input func")
-			ops, err := cfg.Build(testutil.NewBuildContext(t))
+			op, err := cfg.Build(testutil.NewBuildContext(t))
 			if tc.expectErr {
 				require.Error(t, err, "expected error while building trace_parser operator")
 				return
 			}
 			require.NoError(t, err, "did not expect error while building trace_parser operator")
-			require.Equal(t, 1, len(ops), "expected Build to return one operator")
+			require.NotNil(t, op, "expected Build to return an operator")
 		})
 	}
 }
@@ -126,11 +126,7 @@ func TestProcess(t *testing.T) {
 			"no-op",
 			func() (operator.Operator, error) {
 				cfg := NewTraceParserConfig("test_id")
-				ops, err := cfg.Build(testutil.NewBuildContext(t))
-				if err != nil {
-					return nil, err
-				}
-				return ops[0], nil
+				return cfg.Build(testutil.NewBuildContext(t))
 			},
 			&entry.Entry{
 				Body: "https://google.com:443/path?user=dev",
@@ -149,11 +145,7 @@ func TestProcess(t *testing.T) {
 				cfg.SpanId.ParseFrom = &spanFrom
 				cfg.TraceId.ParseFrom = &traceFrom
 				cfg.TraceFlags.ParseFrom = &flagsFrom
-				ops, err := cfg.Build(testutil.NewBuildContext(t))
-				if err != nil {
-					return nil, err
-				}
-				return ops[0], nil
+				return cfg.Build(testutil.NewBuildContext(t))
 			},
 			&entry.Entry{
 				Body: map[string]interface{}{
@@ -185,11 +177,7 @@ func TestProcess(t *testing.T) {
 				cfg.TraceId.PreserveTo = &traceTo
 				cfg.TraceFlags.ParseFrom = &flagsFrom
 				cfg.TraceFlags.PreserveTo = &flagsTo
-				ops, err := cfg.Build(testutil.NewBuildContext(t))
-				if err != nil {
-					return nil, err
-				}
-				return ops[0], nil
+				return cfg.Build(testutil.NewBuildContext(t))
 			},
 			&entry.Entry{
 				Body: map[string]interface{}{

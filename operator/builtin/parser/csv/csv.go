@@ -48,7 +48,7 @@ type CSVParserConfig struct {
 }
 
 // Build will build a csv parser operator.
-func (c CSVParserConfig) Build(context operator.BuildContext) ([]operator.Operator, error) {
+func (c CSVParserConfig) Build(context operator.BuildContext) (operator.Operator, error) {
 	parserOperator, err := c.ParserConfig.Build(context)
 	if err != nil {
 		return nil, err
@@ -76,7 +76,7 @@ func (c CSVParserConfig) Build(context operator.BuildContext) ([]operator.Operat
 		headers = strings.Split(c.Header, c.FieldDelimiter)
 	}
 
-	csvParser := &CSVParser{
+	return &CSVParser{
 		ParserOperator:  parserOperator,
 		header:          headers,
 		headerAttribute: c.HeaderAttribute,
@@ -84,9 +84,7 @@ func (c CSVParserConfig) Build(context operator.BuildContext) ([]operator.Operat
 		lazyQuotes:      c.LazyQuotes,
 
 		parse: generateParseFunc(headers, fieldDelimiter, c.LazyQuotes),
-	}
-
-	return []operator.Operator{csvParser}, nil
+	}, nil
 }
 
 // CSVParser is an operator that parses csv in an entry.

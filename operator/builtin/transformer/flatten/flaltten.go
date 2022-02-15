@@ -43,7 +43,7 @@ type FlattenOperatorConfig struct {
 }
 
 // Build will build a Flatten operator from the supplied configuration
-func (c FlattenOperatorConfig) Build(context operator.BuildContext) ([]operator.Operator, error) {
+func (c FlattenOperatorConfig) Build(context operator.BuildContext) (operator.Operator, error) {
 	transformerOperator, err := c.TransformerConfig.Build(context)
 	if err != nil {
 		return nil, err
@@ -53,12 +53,10 @@ func (c FlattenOperatorConfig) Build(context operator.BuildContext) ([]operator.
 		return nil, fmt.Errorf("flatten: field cannot be a resource or attribute")
 	}
 
-	flattenOp := &FlattenOperator{
+	return &FlattenOperator{
 		TransformerOperator: transformerOperator,
 		Field:               c.Field,
-	}
-
-	return []operator.Operator{flattenOp}, nil
+	}, nil
 }
 
 // FlattenOperator flattens an object in the body field

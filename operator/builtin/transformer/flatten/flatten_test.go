@@ -269,14 +269,13 @@ func TestBuildAndProcess(t *testing.T) {
 			cfg.OutputIDs = []string{"fake"}
 			cfg.OnError = "drop"
 
-			ops, err := cfg.Build(testutil.NewBuildContext(t))
+			op, err := cfg.Build(testutil.NewBuildContext(t))
 			if tc.expectErr && err != nil {
 				require.Error(t, err)
 				t.SkipNow()
 			}
 			require.NoError(t, err)
 
-			op := ops[0]
 			flatten := op.(*FlattenOperator)
 			fake := testutil.NewFakeOutput(t)
 			flatten.SetOutputs([]operator.Operator{fake})

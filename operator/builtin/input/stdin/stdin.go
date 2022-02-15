@@ -45,17 +45,16 @@ type StdinInputConfig struct {
 }
 
 // Build will build a stdin input operator.
-func (c *StdinInputConfig) Build(context operator.BuildContext) ([]operator.Operator, error) {
+func (c *StdinInputConfig) Build(context operator.BuildContext) (operator.Operator, error) {
 	inputOperator, err := c.InputConfig.Build(context)
 	if err != nil {
 		return nil, err
 	}
 
-	stdinInput := &StdinInput{
+	return &StdinInput{
 		InputOperator: inputOperator,
 		stdin:         os.Stdin,
-	}
-	return []operator.Operator{stdinInput}, nil
+	}, nil
 }
 
 // StdinInput is an operator that reads input from stdin

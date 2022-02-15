@@ -61,7 +61,7 @@ type RecombineOperatorConfig struct {
 }
 
 // Build creates a new RecombineOperator from a config
-func (c *RecombineOperatorConfig) Build(bc operator.BuildContext) ([]operator.Operator, error) {
+func (c *RecombineOperatorConfig) Build(bc operator.BuildContext) (operator.Operator, error) {
 	transformer, err := c.TransformerConfig.Build(bc)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build transformer config: %s", err)
@@ -105,7 +105,7 @@ func (c *RecombineOperatorConfig) Build(bc operator.BuildContext) ([]operator.Op
 		return nil, fmt.Errorf("invalid value '%s' for parameter 'overwrite_with'", c.OverwriteWith)
 	}
 
-	recombine := &RecombineOperator{
+	return &RecombineOperator{
 		TransformerOperator: transformer,
 		matchFirstLine:      matchesFirst,
 		prog:                prog,
@@ -119,9 +119,7 @@ func (c *RecombineOperatorConfig) Build(bc operator.BuildContext) ([]operator.Op
 		ticker:              time.NewTicker(c.ForceFlushTimeout),
 		chClose:             make(chan struct{}),
 		sourceIdentifier:    c.SourceIdentifier,
-	}
-
-	return []operator.Operator{recombine}, nil
+	}, nil
 }
 
 // RecombineOperator is an operator that combines a field from consecutive log entries

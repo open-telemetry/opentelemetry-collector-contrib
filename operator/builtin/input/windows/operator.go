@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build windows
 // +build windows
 
 package windows
@@ -40,7 +41,7 @@ type EventLogConfig struct {
 }
 
 // Build will build a windows event log operator.
-func (c *EventLogConfig) Build(context operator.BuildContext) ([]operator.Operator, error) {
+func (c *EventLogConfig) Build(context operator.BuildContext) (operator.Operator, error) {
 	inputOperator, err := c.InputConfig.Build(context)
 	if err != nil {
 		return nil, err
@@ -58,15 +59,14 @@ func (c *EventLogConfig) Build(context operator.BuildContext) ([]operator.Operat
 		return nil, fmt.Errorf("the `start_at` field must be set to `beginning` or `end`")
 	}
 
-	eventLogInput := &EventLogInput{
+	return &EventLogInput{
 		InputOperator: inputOperator,
 		buffer:        NewBuffer(),
 		channel:       c.Channel,
 		maxReads:      c.MaxReads,
 		startAt:       c.StartAt,
 		pollInterval:  c.PollInterval,
-	}
-	return []operator.Operator{eventLogInput}, nil
+	}, nil
 }
 
 // NewDefaultConfig will return an event log config with default values.

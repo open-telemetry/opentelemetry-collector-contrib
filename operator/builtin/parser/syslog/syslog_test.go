@@ -41,8 +41,7 @@ func TestSyslogParser(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			ops, err := tc.Config.Build(testutil.NewBuildContext(t))
-			op := ops[0]
+			op, err := tc.Config.Build(testutil.NewBuildContext(t))
 			require.NoError(t, err)
 
 			fake := testutil.NewFakeOutput(t)

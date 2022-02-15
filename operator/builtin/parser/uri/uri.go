@@ -42,17 +42,15 @@ type URIParserConfig struct {
 }
 
 // Build will build a uri parser operator.
-func (c URIParserConfig) Build(context operator.BuildContext) ([]operator.Operator, error) {
+func (c URIParserConfig) Build(context operator.BuildContext) (operator.Operator, error) {
 	parserOperator, err := c.ParserConfig.Build(context)
 	if err != nil {
 		return nil, err
 	}
 
-	uriParser := &URIParser{
+	return &URIParser{
 		ParserOperator: parserOperator,
-	}
-
-	return []operator.Operator{uriParser}, nil
+	}, nil
 }
 
 // URIParser is an operator that parses a uri.

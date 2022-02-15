@@ -41,7 +41,7 @@ type TraceParserConfig struct {
 }
 
 // Build will build a trace parser operator.
-func (c TraceParserConfig) Build(context operator.BuildContext) ([]operator.Operator, error) {
+func (c TraceParserConfig) Build(context operator.BuildContext) (operator.Operator, error) {
 	transformerOperator, err := c.TransformerConfig.Build(context)
 	if err != nil {
 		return nil, err
@@ -51,12 +51,10 @@ func (c TraceParserConfig) Build(context operator.BuildContext) ([]operator.Oper
 		return nil, err
 	}
 
-	traceOperator := &TraceParserOperator{
+	return &TraceParserOperator{
 		TransformerOperator: transformerOperator,
 		TraceParser:         c.TraceParser,
-	}
-
-	return []operator.Operator{traceOperator}, nil
+	}, nil
 }
 
 // TraceParserConfig is an operator that parses traces from fields to an entry.

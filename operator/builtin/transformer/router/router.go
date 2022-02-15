@@ -53,7 +53,7 @@ type RouterOperatorRouteConfig struct {
 }
 
 // Build will build a router operator from the supplied configuration
-func (c RouterOperatorConfig) Build(bc operator.BuildContext) ([]operator.Operator, error) {
+func (c RouterOperatorConfig) Build(bc operator.BuildContext) (operator.Operator, error) {
 	basicOperator, err := c.BasicConfig.Build(bc)
 	if err != nil {
 		return nil, err
@@ -87,16 +87,11 @@ func (c RouterOperatorConfig) Build(bc operator.BuildContext) ([]operator.Operat
 		routes = append(routes, &route)
 	}
 
-	routerOperator := &RouterOperator{
+	return &RouterOperator{
 		BasicOperator: basicOperator,
 		routes:        routes,
-	}
-
-	return []operator.Operator{routerOperator}, nil
+	}, nil
 }
-
-// BuildsMultipleOps returns false
-func (c RouterOperatorConfig) BuildsMultipleOps() bool { return false }
 
 // RouterOperator is an operator that routes entries based on matching expressions
 type RouterOperator struct {

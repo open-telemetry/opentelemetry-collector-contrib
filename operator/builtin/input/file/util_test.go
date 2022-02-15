@@ -54,9 +54,8 @@ func newTestFileOperator(t *testing.T, cfgMod func(*InputConfig), outMod func(*t
 	if cfgMod != nil {
 		cfgMod(cfg)
 	}
-	ops, err := cfg.Build(testutil.NewBuildContext(t))
+	op, err := cfg.Build(testutil.NewBuildContext(t))
 	require.NoError(t, err)
-	op := ops[0]
 
 	err = op.SetOutputs([]operator.Operator{fakeOutput})
 	require.NoError(t, err)

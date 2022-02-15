@@ -57,7 +57,7 @@ type K8sEventsConfig struct {
 }
 
 // Build will build a k8s_event_input operator from the supplied configuration
-func (c K8sEventsConfig) Build(context operator.BuildContext) ([]operator.Operator, error) {
+func (c K8sEventsConfig) Build(context operator.BuildContext) (operator.Operator, error) {
 	input, err := c.InputConfig.Build(context)
 	if err != nil {
 		return nil, errors.Wrap(err, "build transformer")
@@ -67,14 +67,12 @@ func (c K8sEventsConfig) Build(context operator.BuildContext) ([]operator.Operat
 		return nil, fmt.Errorf("`namespaces` must be specified or `discover_namespaces` enabled")
 	}
 
-	op := &K8sEvents{
+	return &K8sEvents{
 		InputOperator:      input,
 		namespaces:         c.Namespaces,
 		discoverNamespaces: c.DiscoverNamespaces,
 		discoveryInterval:  c.DiscoveryInterval,
-	}
-
-	return []operator.Operator{op}, nil
+	}, nil
 }
 
 // K8sEvents is an operator for generating logs from k8s events

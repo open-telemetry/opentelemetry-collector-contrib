@@ -53,11 +53,6 @@ func (c WriterConfig) Build(bc operator.BuildContext) (WriterOperator, error) {
 	return writer, nil
 }
 
-// BuildsMultipleOps Returns false as a base line
-func (c WriterConfig) BuildsMultipleOps() bool {
-	return false
-}
-
 // WriterOperator is an operator that can write to other operators.
 type WriterOperator struct {
 	BasicOperator

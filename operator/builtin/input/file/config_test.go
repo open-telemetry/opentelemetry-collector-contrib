@@ -655,12 +655,11 @@ func TestBuild(t *testing.T) {
 			cfg := basicConfig()
 			tc.modifyBaseConfig(cfg)
 
-			ops, err := cfg.Build(testutil.NewBuildContext(t))
+			op, err := cfg.Build(testutil.NewBuildContext(t))
 			tc.errorRequirement(t, err)
 			if err != nil {
 				return
 			}
-			op := ops[0]
 
 			err = op.SetOutputs([]operator.Operator{fakeOutput})
 			require.NoError(t, err)

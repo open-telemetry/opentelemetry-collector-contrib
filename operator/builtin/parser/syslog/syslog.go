@@ -55,7 +55,7 @@ type SyslogBaseConfig struct {
 }
 
 // Build will build a JSON parser operator.
-func (c SyslogParserConfig) Build(context operator.BuildContext) ([]operator.Operator, error) {
+func (c SyslogParserConfig) Build(context operator.BuildContext) (operator.Operator, error) {
 	if c.ParserConfig.TimeParser == nil {
 		parseFromField := entry.NewBodyField("timestamp")
 		c.ParserConfig.TimeParser = &helper.TimeParser{
@@ -82,13 +82,11 @@ func (c SyslogParserConfig) Build(context operator.BuildContext) ([]operator.Ope
 		return nil, fmt.Errorf("failed to load location %s: %w", c.Location, err)
 	}
 
-	syslogParser := &SyslogParser{
+	return &SyslogParser{
 		ParserOperator: parserOperator,
 		protocol:       c.Protocol,
 		location:       location,
-	}
-
-	return []operator.Operator{syslogParser}, nil
+	}, nil
 }
 
 func buildMachine(protocol string, location *time.Location) (sl.Machine, error) {

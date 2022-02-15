@@ -42,7 +42,7 @@ type RemoveOperatorConfig struct {
 }
 
 // Build will build a Remove operator from the supplied configuration
-func (c RemoveOperatorConfig) Build(context operator.BuildContext) ([]operator.Operator, error) {
+func (c RemoveOperatorConfig) Build(context operator.BuildContext) (operator.Operator, error) {
 	transformerOperator, err := c.TransformerConfig.Build(context)
 	if err != nil {
 		return nil, err
@@ -52,12 +52,10 @@ func (c RemoveOperatorConfig) Build(context operator.BuildContext) ([]operator.O
 		return nil, fmt.Errorf("remove: field is empty")
 	}
 
-	removeOperator := &RemoveOperator{
+	return &RemoveOperator{
 		TransformerOperator: transformerOperator,
 		Field:               c.Field,
-	}
-
-	return []operator.Operator{removeOperator}, nil
+	}, nil
 }
 
 // RemoveOperator is an operator that deletes a field

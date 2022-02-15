@@ -46,7 +46,7 @@ type AddOperatorConfig struct {
 }
 
 // Build will build an add operator from the supplied configuration
-func (c AddOperatorConfig) Build(context operator.BuildContext) ([]operator.Operator, error) {
+func (c AddOperatorConfig) Build(context operator.BuildContext) (operator.Operator, error) {
 	transformerOperator, err := c.TransformerConfig.Build(context)
 	if err != nil {
 		return nil, err
@@ -59,7 +59,7 @@ func (c AddOperatorConfig) Build(context operator.BuildContext) ([]operator.Oper
 	strVal, ok := c.Value.(string)
 	if !ok || !isExpr(strVal) {
 		addOperator.Value = c.Value
-		return []operator.Operator{addOperator}, nil
+		return addOperator, nil
 	}
 	exprStr := strings.TrimPrefix(strVal, "EXPR(")
 	exprStr = strings.TrimSuffix(exprStr, ")")
@@ -70,7 +70,7 @@ func (c AddOperatorConfig) Build(context operator.BuildContext) ([]operator.Oper
 	}
 
 	addOperator.program = compiled
-	return []operator.Operator{addOperator}, nil
+	return addOperator, nil
 }
 
 // AddOperator is an operator that adds a string value or an expression value

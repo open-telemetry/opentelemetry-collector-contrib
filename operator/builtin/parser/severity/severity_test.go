@@ -236,13 +236,12 @@ func runSeverityParseTest(cfg *SeverityParserConfig, ent *entry.Entry, buildErr 
 	return func(t *testing.T) {
 		buildContext := testutil.NewBuildContext(t)
 
-		ops, err := cfg.Build(buildContext)
+		op, err := cfg.Build(buildContext)
 		if buildErr {
 			require.Error(t, err, "expected error when configuring operator")
 			return
 		}
 		require.NoError(t, err, "unexpected error when configuring operator")
-		op := ops[0]
 
 		mockOutput := &testutil.Operator{}
 		resultChan := make(chan *entry.Entry, 1)

@@ -42,18 +42,16 @@ type JSONParserConfig struct {
 }
 
 // Build will build a JSON parser operator.
-func (c JSONParserConfig) Build(context operator.BuildContext) ([]operator.Operator, error) {
+func (c JSONParserConfig) Build(context operator.BuildContext) (operator.Operator, error) {
 	parserOperator, err := c.ParserConfig.Build(context)
 	if err != nil {
 		return nil, err
 	}
 
-	jsonParser := &JSONParser{
+	return &JSONParser{
 		ParserOperator: parserOperator,
 		json:           jsoniter.ConfigFastest,
-	}
-
-	return []operator.Operator{jsonParser}, nil
+	}, nil
 }
 
 // JSONParser is an operator that parses JSON.

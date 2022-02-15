@@ -32,12 +32,12 @@ func TestStdin(t *testing.T) {
 	require.NoError(t, err)
 
 	fake := testutil.NewFakeOutput(t)
-	op[0].SetOutputs([]operator.Operator{fake})
+	op.SetOutputs([]operator.Operator{fake})
 
 	r, w, err := os.Pipe()
 	require.NoError(t, err)
 
-	stdin := op[0].(*StdinInput)
+	stdin := op.(*StdinInput)
 	stdin.stdin = r
 
 	require.NoError(t, stdin.Start(testutil.NewMockPersister("test")))
