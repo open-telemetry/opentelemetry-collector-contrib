@@ -66,7 +66,7 @@ type ActionKeyValue struct {
 
 	// TargetType specifies the target type of an attribute to be coerced
 	// If the key doesn't exist, no action is performed.
-	// If the value cannot be coerced, the null type will be inserted.
+	// If the value cannot be coerced, the null value will be inserted.
 	TargetType string `mapstructure:"target_type"`
 
 	// Action specifies the type of action to perform.
