@@ -13,6 +13,7 @@
 - `coralogixexporter`: Update readme (#7785)
 - `awscloudwatchlogsexporter`: Remove name from aws cloudwatch logs exporter (#7554)
 - `hostreceiver/memoryscraper`: Add memory.utilization (#6221)
+- `elasticsearchexporter`: Remove usage of deprecated LogRecord.Name field (#7829).
 - `datadogexporter`: Use exact sum, count and average on Datadog distributions (#7830)
 
 ### 🛑 Breaking changes 🛑
