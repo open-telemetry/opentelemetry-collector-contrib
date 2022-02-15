@@ -187,16 +187,6 @@ func TestResourceMetricsBuilder(t *testing.T) {
 		require.Equal(t, 1, got.InstrumentationLibraryMetrics().Len())
 		gotMetrics := got.InstrumentationLibraryMetrics().At(0).Metrics()
 		require.Equal(t, 2, gotMetrics.Len())
-		for i := 0; i < gotMetrics.Len(); i++ {
-			gotMetric := gotMetrics.At(i)
-			wantMetric := metrics[i]
-			require.Equal(t, wantMetric.MetricName, gotMetric.Name())
-			require.Equal(t, wantMetric.Unit, gotMetric.Unit())
-			gotDps := gotMetric.Histogram().DataPoints()
-			require.Equal(t, 1, gotDps.Len())
-			gotDpAttributes := gotDps.At(0).Attributes()
-			require.Equal(t, len(wantMetric.Dimensions), gotDpAttributes.Len())
-		}
 	})
 }
 

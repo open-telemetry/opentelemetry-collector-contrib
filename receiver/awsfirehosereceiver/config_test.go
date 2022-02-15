@@ -40,14 +40,13 @@ func TestLoadConfig(t *testing.T) {
 	require.Equal(t, &Config{
 		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		RecordType:       "cwmetrics",
-		AccessKey:        "some access key",
+		AccessKey:        "some_access_key",
 		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: "0.0.0.0:443",
+			Endpoint: "0.0.0.0:4433",
 			TLSSetting: &configtls.TLSServerSetting{
 				TLSSetting: configtls.TLSSetting{
-					CAFile:   "server.crt",
-					CertFile: "client.crt",
-					KeyFile:  "client.key",
+					CertFile: "server.crt",
+					KeyFile:  "server.key",
 				},
 			},
 		},

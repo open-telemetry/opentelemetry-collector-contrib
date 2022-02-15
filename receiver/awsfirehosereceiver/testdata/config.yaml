@@ -1,12 +1,11 @@
 receivers:
   awsfirehose:
-    endpoint: 0.0.0.0:443
+    endpoint: 0.0.0.0:4433
     record_type: cwmetrics
-    access_key: "some access key"
+    access_key: "some_access_key"
     tls:
-      cert_file: client.crt
-      key_file: client.key
-      ca_file: server.crt
+      cert_file: server.crt
+      key_file: server.key
 
 processors:
   nop:

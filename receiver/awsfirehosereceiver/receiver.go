@@ -53,35 +53,63 @@ type firehoseConsumer interface {
 	Consume(ctx context.Context, records [][]byte, commonAttributes map[string]string) (int, error)
 }
 
+// firehoseReceiver
 type firehoseReceiver struct {
+	// instanceID is the instance ID for the receiver.
 	instanceID config.ComponentID
-	settings   component.ReceiverCreateSettings
-	host       component.Host
-
-	config     *Config
-	server     *http.Server
+	// settings is the base receiver settings.
+	settings component.ReceiverCreateSettings
+	// config is the configuration for the receiver.
+	config *Config
+	// server is the HTTP/HTTPS server set up to listen
+	// for requests.
+	server *http.Server
+	// shutdownWG is the WaitGroup that is used to wait until
+	// the server shutdown has completed.
 	shutdownWG sync.WaitGroup
-	consumer   firehoseConsumer
+	// consumer is the firehoseConsumer to use to process/send
+	// the records in each request.
+	consumer firehoseConsumer
 }
 
-// firehoseRequest is based on https://docs.aws.amazon.com/firehose/latest/dev/httpdeliveryrequestresponse.html
+// The firehoseRequest is the format of the received request body.
 type firehoseRequest struct {
-	RequestID string           `json:"requestId"`
-	Timestamp int64            `json:"timestamp"`
-	Records   []firehoseRecord `json:"records"`
+	// RequestID is a GUID that should be the same value as
+	// the one in the header.
+	RequestID string `json:"requestId"`
+	// Timestamp is the milliseconds since epoch for when the
+	// request was generated.
+	Timestamp int64 `json:"timestamp"`
+	// Records contains the data.
+	Records []firehoseRecord `json:"records"`
 }
 
+// The firehoseRecord is an individual record within the firehoseRequest.
 type firehoseRecord struct {
-	Data string `json:"data"` // base64 encoded string
+	// Data is a base64 encoded string. Can be empty.
+	Data string `json:"data"`
 }
 
+// The firehoseResponse is the expected body for the response back to
+// the delivery stream.
 type firehoseResponse struct {
-	RequestID    string `json:"requestId"`
-	Timestamp    int64  `json:"timestamp"`
+	// RequestID is the same GUID that was received in
+	// the request.
+	RequestID string `json:"requestId"`
+	// Timestamp is the milliseconds since epoch for when the
+	// request finished being processed.
+	Timestamp int64 `json:"timestamp"`
+	// ErrorMessage is the error to report. Empty if request
+	// was successfully processed.
 	ErrorMessage string `json:"errorMessage,omitempty"`
 }
 
+// The firehoseCommonAttributes is the format for the common attributes
+// found in the header of requests.
 type firehoseCommonAttributes struct {
+	// CommonAttributes can be set when creating the delivery stream.
+	// These will be passed to the firehoseConsumer, which should
+	// attach the attributes.
 	CommonAttributes map[string]string `json:"commonAttributes"`
 }
 
@@ -96,7 +124,6 @@ func (fmr *firehoseReceiver) Start(_ context.Context, host component.Host) error
 	}
 
 	var err error
-	fmr.host = host
 	fmr.server, err = fmr.config.HTTPServerSettings.ToServer(host, fmr.settings.TelemetrySettings, fmr)
 	if err != nil {
 		return err

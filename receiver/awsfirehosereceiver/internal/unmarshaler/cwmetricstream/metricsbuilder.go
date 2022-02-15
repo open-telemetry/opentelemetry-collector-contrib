@@ -28,14 +28,24 @@ const (
 	namespaceDelimiter                     = "/"
 )
 
+// The resourceMetricsBuilder is used to aggregate metrics for the
+// same metric stream name, account ID, region, and namespace.
 type resourceMetricsBuilder struct {
+	// metricStreamName is the metric stream name.
 	metricStreamName string
-	accountID        string
-	region           string
-	namespace        string
-	metricBuilders   map[string]*metricBuilder
+	// accountID is the AWS account ID.
+	accountID string
+	// region is the AWS region.
+	region string
+	// namespace is the CloudWatch metric namespace.
+	namespace string
+	// metricBuilders is the map of metrics within the same
+	// resource group.
+	metricBuilders map[string]*metricBuilder
 }
 
+// newResourceMetricsBuilder creates a resourceMetricsBuilder for the
+// metric stream name, account ID, region, and namespace.
 func newResourceMetricsBuilder(metricStreamName, accountID, region, namespace string) *resourceMetricsBuilder {
 	return &resourceMetricsBuilder{
 		metricStreamName: metricStreamName,
@@ -91,6 +101,9 @@ func (rmb *resourceMetricsBuilder) toMetricKey(metric cWMetric) string {
 	return fmt.Sprintf("%s::%v", metric.MetricName, metric.Dimensions)
 }
 
+// The metricBuilder aggregates metrics of the same name and unit
+// into data points. Stores the timestamps for each added metric
+// in a set to prevent duplicates.
 type metricBuilder struct {
 	name       string
 	unit       string
@@ -98,6 +111,7 @@ type metricBuilder struct {
 	timestamps map[int64]bool
 }
 
+// newMetricBuilder creates a metricBuilder with the name and unit.
 func newMetricBuilder(name, unit string) *metricBuilder {
 	return &metricBuilder{
 		name:       name,
@@ -117,7 +131,7 @@ func (mb *metricBuilder) AddDataPoint(metric cWMetric) {
 }
 
 // Build builds the pdata.Metric with the data points that were added
-// with AddDataPoint
+// with AddDataPoint.
 func (mb *metricBuilder) Build(metric pdata.Metric) {
 	metric.SetName(mb.name)
 	metric.SetUnit(mb.unit)
@@ -127,7 +141,7 @@ func (mb *metricBuilder) Build(metric pdata.Metric) {
 }
 
 // toDataPoint converts a cWMetric into a pdata datapoint and attaches the
-// dimensions as attributes
+// dimensions as attributes.
 func (mb *metricBuilder) toDataPoint(dp pdata.HistogramDataPoint, metric cWMetric) {
 	dp.SetCount(uint64(metric.Value.Count))
 	dp.SetSum(metric.Value.Sum)
@@ -139,7 +153,7 @@ func (mb *metricBuilder) toDataPoint(dp pdata.HistogramDataPoint, metric cWMetri
 	}
 }
 
-// ToSemConvAttributeKey maps some common keys to semantic convention attributes
+// ToSemConvAttributeKey maps some common keys to semantic convention attributes.
 func ToSemConvAttributeKey(key string) string {
 	switch key {
 	case dimensionInstanceID:

@@ -36,7 +36,9 @@ var (
 )
 
 // Unmarshaler for the CloudWatch Metric Stream JSON record format.
-// See https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-metric-streams-formats-json.html
+//
+// More details can be found at:
+// https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-metric-streams-formats-json.html
 type Unmarshaler struct {
 	logger *zap.Logger
 }

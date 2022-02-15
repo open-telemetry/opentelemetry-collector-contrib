@@ -20,6 +20,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
@@ -31,6 +32,7 @@ import (
 const (
 	typeStr           = "awsfirehose"
 	defaultRecordType = cwmetricstream.TypeStr
+	defaultEndpoint   = "0.0.0.0:4433"
 )
 
 var (
@@ -40,7 +42,8 @@ var (
 	}
 )
 
-// NewFactory creates a receiver factory. Currently, only available in metrics pipelines.
+// NewFactory creates a receiver factory for awsfirehose. Currently, only
+// available in metrics pipelines.
 func NewFactory() component.ReceiverFactory {
 	return receiverhelper.NewFactory(
 		typeStr,
@@ -48,13 +51,17 @@ func NewFactory() component.ReceiverFactory {
 		receiverhelper.WithMetrics(createMetricsReceiver))
 }
 
-func isValidRecordType(recordType string) error {
+// validateRecordType checks the available record types for the
+// passed in one and returns an error if not found.
+func validateRecordType(recordType string) error {
 	if _, ok := availableRecordTypes[recordType]; !ok {
 		return errUnrecognizedRecordType
 	}
 	return nil
 }
 
+// defaultMetricsUnmarshalers creates a map of the available metrics
+// unmarshalers.
 func defaultMetricsUnmarshalers(logger *zap.Logger) map[string]unmarshaler.MetricsUnmarshaler {
 	cwmsu := cwmetricstream.NewUnmarshaler(logger)
 	return map[string]unmarshaler.MetricsUnmarshaler{
@@ -62,13 +69,19 @@ func defaultMetricsUnmarshalers(logger *zap.Logger) map[string]unmarshaler.Metri
 	}
 }
 
+// createDefaultConfig creates a default config with the endpoint set
+// to port 8443 and the record type set to the CloudWatch metric stream.
 func createDefaultConfig() config.Receiver {
 	return &Config{
 		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		RecordType:       defaultRecordType,
+		HTTPServerSettings: confighttp.HTTPServerSettings{
+			Endpoint: defaultEndpoint,
+		},
 	}
 }
 
+// createMetricsReceiver implements the CreateMetricsReceiver function type.
 func createMetricsReceiver(
 	_ context.Context,
 	set component.ReceiverCreateSettings,
