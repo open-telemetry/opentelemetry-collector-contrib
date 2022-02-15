@@ -16,6 +16,7 @@ package pagingscraper
 
 import (
 	"context"
+	"errors"
 	"runtime"
 	"testing"
 
@@ -42,18 +43,18 @@ func TestScrape(t *testing.T) {
 			name:   "Standard",
 			config: Config{Metrics: metadata.DefaultMetricsSettings()},
 		},
-		//{
-		//	name:              "Validate Start Time",
-		//	config:            Config{Metrics: metadata.DefaultMetricsSettings()},
-		//	bootTimeFunc:      func() (uint64, error) { return 100, nil },
-		//	expectedStartTime: 100 * 1e9,
-		//},
-		//{
-		//	name:              "Boot Time Error",
-		//	config:            Config{Metrics: metadata.DefaultMetricsSettings()},
-		//	bootTimeFunc:      func() (uint64, error) { return 0, errors.New("err1") },
-		//	initializationErr: "err1",
-		//},
+		{
+			name:              "Validate Start Time",
+			config:            Config{Metrics: metadata.DefaultMetricsSettings()},
+			bootTimeFunc:      func() (uint64, error) { return 100, nil },
+			expectedStartTime: 100 * 1e9,
+		},
+		{
+			name:              "Boot Time Error",
+			config:            Config{Metrics: metadata.DefaultMetricsSettings()},
+			bootTimeFunc:      func() (uint64, error) { return 0, errors.New("err1") },
+			initializationErr: "err1",
+		},
 	}
 
 	for _, test := range testCases {
@@ -83,8 +84,8 @@ func TestScrape(t *testing.T) {
 
 			startIndex := 0
 			if runtime.GOOS != "windows" {
-				//assertPageFaultsMetricValid(t, metrics.At(startIndex), test.expectedStartTime)
-				//startIndex++
+				assertPageFaultsMetricValid(t, metrics.At(startIndex), test.expectedStartTime)
+				startIndex++
 			}
 
 			assertPagingOperationsMetricValid(t, metrics.At(startIndex), test.expectedStartTime)
