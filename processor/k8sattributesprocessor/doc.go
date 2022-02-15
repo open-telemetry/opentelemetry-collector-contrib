@@ -114,6 +114,8 @@
 //        pod_association:
 //         - from: resource_attribute
 //           name: k8s.pod.ip
+//         - from: resource_attribute
+//           name: k8s.pod.uid
 //
 // Deployment scenarios
 //
@@ -149,22 +151,8 @@
 // This will inject a new environment variable to the OpenTelemetry container with the value as the
 // name of the node the pod was scheduled to run on.
 
-// 2. ( Optional in case the filereciever does not have k8s.pod.uid available in filepath ) Use the downward API to inject the podIP in the instrumented pod inside spec.containers.env to capture status.podIP 
-//    and add it as part of the OTEL_RESOURCE_ATTRIBUTES env variable. After this is set up it is used by the OpenTelemetry Collector's
-//    resourcedetection and k8sattributes processors to tag k8s metadata. 
-//    Add the following snippet under the pod env section of instrumented pod
-//    spec:
-//      containers:
-//      - env:
-//        - name: POD_IP
-//          valueFrom:
-//            fieldRef:
-//              apiVersion: v1
-//              fieldPath: status.podIP
-//        - name: OTEL_RESOURCE_ATTRIBUTES
-//          value: k8s.pod.ip=$(POD_IP)
 //
-// 3. Set "filter.node_from_env_var" to the name of the environment variable holding the node name.
+// 2. Set "filter.node_from_env_var" to the name of the environment variable holding the node name.
 //
 //    k8sattributes:
 //      filter:
