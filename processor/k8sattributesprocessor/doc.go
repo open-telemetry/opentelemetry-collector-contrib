@@ -94,11 +94,6 @@
 //
 // Config
 //
-//   processors:
-//      resourcedetection:
-//        detectors: ["env"]
-//        timeout: 5s
-//        override: true 
 //      k8sattributes:
 //      k8sattributes/2:
 //        auth_type: "serviceAccount"
