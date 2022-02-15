@@ -30,9 +30,8 @@ import (
 func newTestParser(t *testing.T, regex string) *RegexParser {
 	cfg := NewRegexParserConfig("test")
 	cfg.Regex = regex
-	ops, err := cfg.Build(testutil.NewBuildContext(t))
+	op, err := cfg.Build(testutil.NewBuildContext(t))
 	require.NoError(t, err)
-	op := ops[0]
 	return op.(*RegexParser)
 }
 
@@ -90,9 +89,8 @@ func TestParserRegex(t *testing.T) {
 			cfg.OutputIDs = []string{"fake"}
 			tc.configure(cfg)
 
-			ops, err := cfg.Build(testutil.NewBuildContext(t))
+			op, err := cfg.Build(testutil.NewBuildContext(t))
 			require.NoError(t, err)
-			op := ops[0]
 
 			fake := testutil.NewFakeOutput(t)
 			op.SetOutputs([]operator.Operator{fake})

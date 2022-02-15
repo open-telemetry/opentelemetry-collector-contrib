@@ -74,7 +74,7 @@ type TCPBaseConfig struct {
 }
 
 // Build will build a tcp input operator.
-func (c TCPInputConfig) Build(context operator.BuildContext) ([]operator.Operator, error) {
+func (c TCPInputConfig) Build(context operator.BuildContext) (operator.Operator, error) {
 	inputOperator, err := c.InputConfig.Build(context)
 	if err != nil {
 		return nil, err
@@ -134,7 +134,7 @@ func (c TCPInputConfig) Build(context operator.BuildContext) ([]operator.Operato
 		}
 	}
 
-	return []operator.Operator{tcpInput}, nil
+	return tcpInput, nil
 }
 
 // TCPInput is an operator that listens for log entries over tcp.

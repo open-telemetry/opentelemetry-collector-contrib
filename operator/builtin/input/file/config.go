@@ -71,7 +71,7 @@ type InputConfig struct {
 }
 
 // Build will build a file input operator from the supplied configuration
-func (c InputConfig) Build(context operator.BuildContext) ([]operator.Operator, error) {
+func (c InputConfig) Build(context operator.BuildContext) (operator.Operator, error) {
 	inputOperator, err := c.InputConfig.Build(context)
 	if err != nil {
 		return nil, err
@@ -152,7 +152,7 @@ func (c InputConfig) Build(context operator.BuildContext) ([]operator.Operator, 
 		filePathResolvedField = entry.NewAttributeField("file.path.resolved")
 	}
 
-	op := &InputOperator{
+	return &InputOperator{
 		InputOperator:         inputOperator,
 		finder:                c.Finder,
 		PollInterval:          c.PollInterval.Raw(),
@@ -172,7 +172,5 @@ func (c InputConfig) Build(context operator.BuildContext) ([]operator.Operator, 
 		MaxLogSize:            int(c.MaxLogSize),
 		MaxConcurrentFiles:    c.MaxConcurrentFiles,
 		SeenPaths:             make(map[string]struct{}, 100),
-	}
-
-	return []operator.Operator{op}, nil
+	}, nil
 }

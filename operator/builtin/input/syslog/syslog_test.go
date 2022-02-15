@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v2"
 
+	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/input/tcp"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/input/udp"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/parser/syslog"
@@ -50,11 +51,11 @@ func TestSyslogInput(t *testing.T) {
 }
 
 func SyslogInputTest(t *testing.T, cfg *SyslogInputConfig, tc syslog.Case) {
-	ops, err := cfg.Build(testutil.NewBuildContext(t))
+	op, err := cfg.Build(testutil.NewBuildContext(t))
 	require.NoError(t, err)
 
 	fake := testutil.NewFakeOutput(t)
-	ops = append(ops, fake)
+	ops := []operator.Operator{op, fake}
 	p, err := pipeline.NewDirectedPipeline(ops)
 	require.NoError(t, err)
 
@@ -103,9 +104,9 @@ func TestSyslogIDs(t *testing.T) {
 	t.Run("TCP", func(t *testing.T) {
 		cfg := NewSyslogInputConfigWithTcp(basicConfig())
 		bc := testutil.NewBuildContext(t)
-		ops, err := cfg.Build(bc)
+		op, err := cfg.Build(bc)
 		require.NoError(t, err)
-		syslogInputOp := ops[0].(*SyslogInput)
+		syslogInputOp := op.(*SyslogInput)
 		require.Equal(t, "$.test_syslog_internal_tcp", syslogInputOp.tcp.ID())
 		require.Equal(t, "$.test_syslog_internal_parser", syslogInputOp.parser.ID())
 		require.Equal(t, []string{syslogInputOp.parser.ID()}, syslogInputOp.tcp.GetOutputIDs())
@@ -115,9 +116,9 @@ func TestSyslogIDs(t *testing.T) {
 	t.Run("UDP", func(t *testing.T) {
 		cfg := NewSyslogInputConfigWithUdp(basicConfig())
 		bc := testutil.NewBuildContext(t)
-		ops, err := cfg.Build(bc)
+		op, err := cfg.Build(bc)
 		require.NoError(t, err)
-		syslogInputOp := ops[0].(*SyslogInput)
+		syslogInputOp := op.(*SyslogInput)
 		require.Equal(t, "$.test_syslog_internal_udp", syslogInputOp.udp.ID())
 		require.Equal(t, "$.test_syslog_internal_parser", syslogInputOp.parser.ID())
 		require.Equal(t, []string{syslogInputOp.parser.ID()}, syslogInputOp.udp.GetOutputIDs())

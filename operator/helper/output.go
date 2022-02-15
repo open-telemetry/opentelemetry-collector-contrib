@@ -45,9 +45,6 @@ func (c OutputConfig) Build(context operator.BuildContext) (OutputOperator, erro
 	return outputOperator, nil
 }
 
-// BuildsMultipleOps Returns false
-func (c OutputConfig) BuildsMultipleOps() bool { return false }
-
 // OutputOperator provides a basic implementation of an output operator.
 type OutputOperator struct {
 	BasicOperator

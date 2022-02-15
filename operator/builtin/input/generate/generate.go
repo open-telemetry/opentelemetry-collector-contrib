@@ -45,7 +45,7 @@ type GenerateInputConfig struct {
 }
 
 // Build will build a generate input operator.
-func (c *GenerateInputConfig) Build(context operator.BuildContext) ([]operator.Operator, error) {
+func (c *GenerateInputConfig) Build(context operator.BuildContext) (operator.Operator, error) {
 	inputOperator, err := c.InputConfig.Build(context)
 	if err != nil {
 		return nil, err
@@ -53,13 +53,12 @@ func (c *GenerateInputConfig) Build(context operator.BuildContext) ([]operator.O
 
 	c.Entry.Body = recursiveMapInterfaceToMapString(c.Entry.Body)
 
-	generateInput := &GenerateInput{
+	return &GenerateInput{
 		InputOperator: inputOperator,
 		entry:         c.Entry,
 		count:         c.Count,
 		static:        c.Static,
-	}
-	return []operator.Operator{generateInput}, nil
+	}, nil
 }
 
 // GenerateInput is an operator that generates log entries.

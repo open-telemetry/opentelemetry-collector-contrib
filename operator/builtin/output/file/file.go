@@ -47,7 +47,7 @@ type FileOutputConfig struct {
 }
 
 // Build will build a file output operator.
-func (c FileOutputConfig) Build(context operator.BuildContext) ([]operator.Operator, error) {
+func (c FileOutputConfig) Build(context operator.BuildContext) (operator.Operator, error) {
 	outputOperator, err := c.OutputConfig.Build(context)
 	if err != nil {
 		return nil, err
@@ -65,13 +65,11 @@ func (c FileOutputConfig) Build(context operator.BuildContext) ([]operator.Opera
 		return nil, fmt.Errorf("must provide a path to output to")
 	}
 
-	fileOutput := &FileOutput{
+	return &FileOutput{
 		OutputOperator: outputOperator,
 		path:           c.Path,
 		tmpl:           tmpl,
-	}
-
-	return []operator.Operator{fileOutput}, nil
+	}, nil
 }
 
 // FileOutput is an operator that writes logs to a file.

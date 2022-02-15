@@ -60,7 +60,7 @@ type JournaldInputConfig struct {
 }
 
 // Build will build a journald input operator from the supplied configuration
-func (c JournaldInputConfig) Build(buildContext operator.BuildContext) ([]operator.Operator, error) {
+func (c JournaldInputConfig) Build(buildContext operator.BuildContext) (operator.Operator, error) {
 	inputOperator, err := c.InputConfig.Build(buildContext)
 	if err != nil {
 		return nil, err
@@ -100,7 +100,7 @@ func (c JournaldInputConfig) Build(buildContext operator.BuildContext) ([]operat
 		}
 	}
 
-	journaldInput := &JournaldInput{
+	return &JournaldInput{
 		InputOperator: inputOperator,
 		newCmd: func(ctx context.Context, cursor []byte) cmd {
 			if cursor != nil {
@@ -110,8 +110,7 @@ func (c JournaldInputConfig) Build(buildContext operator.BuildContext) ([]operat
 			// journalctl is an executable that is required for this operator to function
 		},
 		json: jsoniter.ConfigFastest,
-	}
-	return []operator.Operator{journaldInput}, nil
+	}, nil
 }
 
 // JournaldInput is an operator that process logs using journald

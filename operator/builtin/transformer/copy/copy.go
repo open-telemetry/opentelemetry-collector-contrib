@@ -42,7 +42,7 @@ type CopyOperatorConfig struct {
 }
 
 // Build will build a copy operator from the supplied configuration
-func (c CopyOperatorConfig) Build(context operator.BuildContext) ([]operator.Operator, error) {
+func (c CopyOperatorConfig) Build(context operator.BuildContext) (operator.Operator, error) {
 	transformerOperator, err := c.TransformerConfig.Build(context)
 	if err != nil {
 		return nil, err
@@ -56,13 +56,11 @@ func (c CopyOperatorConfig) Build(context operator.BuildContext) ([]operator.Ope
 		return nil, fmt.Errorf("copy: missing to field")
 	}
 
-	copyOp := &CopyOperator{
+	return &CopyOperator{
 		TransformerOperator: transformerOperator,
 		From:                c.From,
 		To:                  c.To,
-	}
-
-	return []operator.Operator{copyOp}, nil
+	}, nil
 }
 
 // CopyOperator copies a value from one field and creates a new field with that value

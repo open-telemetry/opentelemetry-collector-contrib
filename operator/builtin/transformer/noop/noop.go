@@ -39,17 +39,15 @@ type NoopOperatorConfig struct {
 }
 
 // Build will build a noop operator.
-func (c NoopOperatorConfig) Build(context operator.BuildContext) ([]operator.Operator, error) {
+func (c NoopOperatorConfig) Build(context operator.BuildContext) (operator.Operator, error) {
 	transformerOperator, err := c.TransformerConfig.Build(context)
 	if err != nil {
 		return nil, err
 	}
 
-	noopOperator := &NoopOperator{
+	return &NoopOperator{
 		TransformerOperator: transformerOperator,
-	}
-
-	return []operator.Operator{noopOperator}, nil
+	}, nil
 }
 
 // NoopOperator is an operator that performs no operations on an entry.

@@ -30,9 +30,8 @@ var testHeader = "name,sev,msg"
 func newTestParser(t *testing.T) *CSVParser {
 	cfg := NewCSVParserConfig("test")
 	cfg.Header = testHeader
-	ops, err := cfg.Build(testutil.NewBuildContext(t))
+	op, err := cfg.Build(testutil.NewBuildContext(t))
 	require.NoError(t, err)
-	op := ops[0]
 	return op.(*CSVParser)
 }
 
@@ -549,13 +548,12 @@ func TestParserCSV(t *testing.T) {
 			cfg.OutputIDs = []string{"fake"}
 			tc.configure(cfg)
 
-			ops, err := cfg.Build(testutil.NewBuildContext(t))
+			op, err := cfg.Build(testutil.NewBuildContext(t))
 			if tc.expectBuildErr {
 				require.Error(t, err)
 				return
 			}
 			require.NoError(t, err)
-			op := ops[0]
 
 			fake := testutil.NewFakeOutput(t)
 			op.SetOutputs([]operator.Operator{fake})
@@ -580,9 +578,8 @@ func TestParserCSVMultipleBodies(t *testing.T) {
 		cfg.OutputIDs = []string{"fake"}
 		cfg.Header = testHeader
 
-		ops, err := cfg.Build(testutil.NewBuildContext(t))
+		op, err := cfg.Build(testutil.NewBuildContext(t))
 		require.NoError(t, err)
-		op := ops[0]
 
 		fake := testutil.NewFakeOutput(t)
 		op.SetOutputs([]operator.Operator{fake})
@@ -606,9 +603,8 @@ func TestParserCSVInvalidJSONInput(t *testing.T) {
 		cfg.OutputIDs = []string{"fake"}
 		cfg.Header = testHeader
 
-		ops, err := cfg.Build(testutil.NewBuildContext(t))
+		op, err := cfg.Build(testutil.NewBuildContext(t))
 		require.NoError(t, err)
-		op := ops[0]
 
 		fake := testutil.NewFakeOutput(t)
 		op.SetOutputs([]operator.Operator{fake})

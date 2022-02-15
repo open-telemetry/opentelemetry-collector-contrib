@@ -67,7 +67,7 @@ type UDPBaseConfig struct {
 }
 
 // Build will build a udp input operator.
-func (c UDPInputConfig) Build(context operator.BuildContext) ([]operator.Operator, error) {
+func (c UDPInputConfig) Build(context operator.BuildContext) (operator.Operator, error) {
 	inputOperator, err := c.InputConfig.Build(context)
 	if err != nil {
 		return nil, err
@@ -107,7 +107,7 @@ func (c UDPInputConfig) Build(context operator.BuildContext) ([]operator.Operato
 		splitFunc:     splitFunc,
 		resolver:      resolver,
 	}
-	return []operator.Operator{udpInput}, nil
+	return udpInput, nil
 }
 
 // UDPInput is an operator that listens to a socket for log entries.

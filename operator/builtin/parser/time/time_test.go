@@ -75,13 +75,13 @@ func TestBuild(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			cfg, err := tc.input()
 			require.NoError(t, err, "expected nil error when running test cases input func")
-			ops, err := cfg.Build(testutil.NewBuildContext(t))
+			op, err := cfg.Build(testutil.NewBuildContext(t))
 			if tc.expectErr {
 				require.Error(t, err, "expected error while building time_parser operator")
 				return
 			}
 			require.NoError(t, err, "did not expect error while building time_parser operator")
-			require.Equal(t, 1, len(ops), "expected Build to return one operator")
+			require.NotNil(t, op, "expected Build to return an operator")
 		})
 	}
 }
@@ -155,13 +155,12 @@ func TestProcess(t *testing.T) {
 				require.NoError(t, err)
 				return
 			}
-			ops, err := cfg.Build(testutil.NewBuildContext(t))
+			op, err := cfg.Build(testutil.NewBuildContext(t))
 			if err != nil {
 				require.NoError(t, err)
 				return
 			}
 
-			op := ops[0]
 			require.True(t, op.CanOutput(), "expected test operator CanOutput to return true")
 
 			err = op.Process(context.Background(), tc.input)
@@ -538,13 +537,12 @@ func runLossyTimeParseTest(_ *testing.T, cfg *TimeParserConfig, ent *entry.Entry
 	return func(t *testing.T) {
 		buildContext := testutil.NewBuildContext(t)
 
-		ops, err := cfg.Build(buildContext)
+		op, err := cfg.Build(buildContext)
 		if buildErr {
 			require.Error(t, err, "expected error when configuring operator")
 			return
 		}
 		require.NoError(t, err)
-		op := ops[0]
 
 		mockOutput := &testutil.Operator{}
 		resultChan := make(chan *entry.Entry, 1)

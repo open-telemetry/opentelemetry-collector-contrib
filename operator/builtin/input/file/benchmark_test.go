@@ -156,9 +156,8 @@ func BenchmarkFileInput(b *testing.B) {
 			}
 			cfg.StartAt = "beginning"
 
-			ops, err := cfg.Build(testutil.NewBuildContext(b))
+			op, err := cfg.Build(testutil.NewBuildContext(b))
 			require.NoError(b, err)
-			op := ops[0]
 
 			fakeOutput := testutil.NewFakeOutput(b)
 			err = op.SetOutputs([]operator.Operator{fakeOutput})

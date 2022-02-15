@@ -42,7 +42,7 @@ type MoveOperatorConfig struct {
 }
 
 // Build will build a Move operator from the supplied configuration
-func (c MoveOperatorConfig) Build(context operator.BuildContext) ([]operator.Operator, error) {
+func (c MoveOperatorConfig) Build(context operator.BuildContext) (operator.Operator, error) {
 	transformerOperator, err := c.TransformerConfig.Build(context)
 	if err != nil {
 		return nil, err
@@ -52,13 +52,11 @@ func (c MoveOperatorConfig) Build(context operator.BuildContext) ([]operator.Ope
 		return nil, fmt.Errorf("move: missing to or from field")
 	}
 
-	moveOperator := &MoveOperator{
+	return &MoveOperator{
 		TransformerOperator: transformerOperator,
 		From:                c.From,
 		To:                  c.To,
-	}
-
-	return []operator.Operator{moveOperator}, nil
+	}, nil
 }
 
 // MoveOperator is an operator that moves a field's value to a new field

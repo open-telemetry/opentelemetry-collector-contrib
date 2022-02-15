@@ -29,9 +29,8 @@ func TestStanzaOperator(t *testing.T) {
 	cfg.OutputIDs = []string{"fake"}
 
 	bc := testutil.NewBuildContext(t)
-	ops, err := cfg.Build(bc)
+	op, err := cfg.Build(bc)
 	require.NoError(t, err)
-	op := ops[0]
 
 	fake := testutil.NewFakeOutput(t)
 	op.SetOutputs([]operator.Operator{fake})

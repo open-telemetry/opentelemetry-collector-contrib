@@ -41,7 +41,7 @@ type SeverityParserConfig struct {
 }
 
 // Build will build a time parser operator.
-func (c SeverityParserConfig) Build(context operator.BuildContext) ([]operator.Operator, error) {
+func (c SeverityParserConfig) Build(context operator.BuildContext) (operator.Operator, error) {
 	transformerOperator, err := c.TransformerConfig.Build(context)
 	if err != nil {
 		return nil, err
@@ -52,12 +52,10 @@ func (c SeverityParserConfig) Build(context operator.BuildContext) ([]operator.O
 		return nil, err
 	}
 
-	severityOperator := &SeverityParserOperator{
+	return &SeverityParserOperator{
 		TransformerOperator: transformerOperator,
 		SeverityParser:      severityParser,
-	}
-
-	return []operator.Operator{severityOperator}, nil
+	}, nil
 }
 
 // SeverityParserOperator is an operator that parses time from a field to an entry.

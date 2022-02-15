@@ -207,9 +207,8 @@ func TestProcessAndBuild(t *testing.T) {
 			cfg := tc.op
 			cfg.OutputIDs = []string{"fake"}
 			cfg.OnError = "drop"
-			ops, err := cfg.Build(testutil.NewBuildContext(t))
+			op, err := cfg.Build(testutil.NewBuildContext(t))
 			require.NoError(t, err)
-			op := ops[0]
 
 			remove := op.(*RemoveOperator)
 			fake := testutil.NewFakeOutput(t)

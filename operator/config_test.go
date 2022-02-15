@@ -28,11 +28,10 @@ type FakeBuilder struct {
 	Array        []string `json:"array" yaml:"array"`
 }
 
-func (f *FakeBuilder) Build(context BuildContext) ([]Operator, error) { return nil, nil }
-func (f *FakeBuilder) ID() string                                     { return "operator" }
-func (f *FakeBuilder) Type() string                                   { return "operator" }
-func (f *FakeBuilder) SetID(s string)                                 {}
-func (f *FakeBuilder) BuildsMultipleOps() bool                        { return false }
+func (f *FakeBuilder) Build(context BuildContext) (Operator, error) { return nil, nil }
+func (f *FakeBuilder) ID() string                                   { return "operator" }
+func (f *FakeBuilder) Type() string                                 { return "operator" }
+func (f *FakeBuilder) SetID(s string)                               {}
 
 func TestUnmarshalJSONErrors(t *testing.T) {
 	t.Cleanup(func() {

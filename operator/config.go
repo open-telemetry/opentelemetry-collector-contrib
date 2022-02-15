@@ -30,9 +30,8 @@ type Config struct {
 type Builder interface {
 	ID() string
 	Type() string
-	Build(BuildContext) ([]Operator, error)
+	Build(BuildContext) (Operator, error)
 	SetID(string)
-	BuildsMultipleOps() bool
 }
 
 // UnmarshalJSON will unmarshal a config from JSON.

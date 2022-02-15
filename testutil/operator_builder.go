@@ -13,15 +13,15 @@ type OperatorBuilder struct {
 }
 
 // Build provides a mock function with given fields: _a0
-func (_m *OperatorBuilder) Build(_a0 operator.BuildContext) ([]operator.Operator, error) {
+func (_m *OperatorBuilder) Build(_a0 operator.BuildContext) (operator.Operator, error) {
 	ret := _m.Called(_a0)
 
-	var r0 []operator.Operator
-	if rf, ok := ret.Get(0).(func(operator.BuildContext) []operator.Operator); ok {
+	var r0 operator.Operator
+	if rf, ok := ret.Get(0).(func(operator.BuildContext) operator.Operator); ok {
 		r0 = rf(_a0)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]operator.Operator)
+			r0 = ret.Get(0).(operator.Operator)
 		}
 	}
 
@@ -33,20 +33,6 @@ func (_m *OperatorBuilder) Build(_a0 operator.BuildContext) ([]operator.Operator
 	}
 
 	return r0, r1
-}
-
-// BuildsMultipleOps provides a mock function with given fields:
-func (_m *OperatorBuilder) BuildsMultipleOps() bool {
-	ret := _m.Called()
-
-	var r0 bool
-	if rf, ok := ret.Get(0).(func() bool); ok {
-		r0 = rf()
-	} else {
-		r0 = ret.Get(0).(bool)
-	}
-
-	return r0
 }
 
 // ID provides a mock function with given fields:
@@ -64,17 +50,8 @@ func (_m *OperatorBuilder) ID() string {
 }
 
 // SetID provides a mock function with given fields: _a0
-func (_m *OperatorBuilder) SetID(_a0 string) error {
-	ret := _m.Called(_a0)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(string) error); ok {
-		r0 = rf(_a0)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
+func (_m *OperatorBuilder) SetID(_a0 string) {
+	_m.Called(_a0)
 }
 
 // Type provides a mock function with given fields:
