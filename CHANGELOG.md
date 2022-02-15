@@ -37,6 +37,7 @@
   Prometheus metadata directly to pdata. (#7748)
  - `sumologicexporter`: fix exporter panics on malformed histogram (#7548)
 - `awsecscontainermetrics`: CPU Reserved is now 1024/vCPU for ECS Container Insights (#6734)
+- `metricstransformprocessor`: transform ops are not working with `experimental_match_labels` (#7911)
 
 ### 🚀 New components 🚀
 
