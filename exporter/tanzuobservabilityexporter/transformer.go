@@ -51,6 +51,7 @@ type span struct {
 	StartMillis    int64
 	DurationMillis int64
 	SpanLogs       []senders.SpanLog
+	Source         string
 }
 
 func (t *traceTransformer) Span(orig pdata.Span) (span, error) {
@@ -69,6 +70,7 @@ func (t *traceTransformer) Span(orig pdata.Span) (span, error) {
 	tags := attributesToTags(t.resAttrs, orig.Attributes())
 	t.setRequiredTags(tags)
 
+	source := getSource(tags)
 	tags[labelSpanKind] = spanKind(orig)
 
 	errorTags := errorTagsFromStatus(orig.Status())
@@ -86,10 +88,29 @@ func (t *traceTransformer) Span(orig pdata.Span) (span, error) {
 		SpanID:         spanID,
 		ParentSpanID:   parentSpanIDtoUUID(orig.ParentSpanID()),
 		Tags:           tags,
+		Source:         source,
 		StartMillis:    startMillis,
 		DurationMillis: durationMillis,
 		SpanLogs:       eventsToLogs(orig.Events()),
 	}, nil
+}
+
+func getSource(tags map[string]string) string {
+	candidateKeys := []string{"source", "host.name", "hostname", "host.id"}
+
+	var source string
+
+	for _, key := range candidateKeys {
+		if value, isFound := tags[key]; isFound {
+			source = value
+			break
+		}
+	}
+
+	if source == "" {
+		source = "otlp"
+	}
+	return source
 }
 
 func spanKind(span pdata.Span) string {

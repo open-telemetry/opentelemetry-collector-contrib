@@ -134,7 +134,7 @@ func (e *tracesExporter) recordSpan(span span) error {
 		span.Name,
 		span.StartMillis,
 		span.DurationMillis,
-		"",
+		span.Source,
 		span.TraceID.String(),
 		span.SpanID.String(),
 		parents,
