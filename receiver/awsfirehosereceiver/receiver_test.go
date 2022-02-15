@@ -16,7 +16,6 @@ package awsfirehosereceiver
 
 import (
 	"bytes"
-	"compress/gzip"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -24,7 +23,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 
@@ -70,7 +68,7 @@ func TestStart(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			cfg := &Config{
 				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-				Encoding:         defaultEncoding,
+				RecordType:       defaultRecordType,
 			}
 			ctx := context.TODO()
 			r := testFirehoseReceiver(cfg, newNopFirehoseConsumer(http.StatusOK, nil))
@@ -88,7 +86,7 @@ func TestFirehoseRequest(t *testing.T) {
 	firehoseConsumerErr := errors.New("firehose consumer error")
 	cfg := &Config{
 		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-		Encoding:         defaultEncoding,
+		RecordType:       defaultRecordType,
 		AccessKey:        testFirehoseAccessKey,
 	}
 	var noRecords []firehoseRecord
@@ -152,7 +150,7 @@ func TestFirehoseRequest(t *testing.T) {
 				{Data: "XXXXXaGVsbG8="},
 			}),
 			wantStatusCode: http.StatusBadRequest,
-			wantErr:        base64.CorruptInputError(12),
+			wantErr:        fmt.Errorf("unable to base64 decode the record at index 0: %w", base64.CorruptInputError(12)),
 		},
 		"WithValidRecords": {
 			body: testFirehoseRequest(testFirehoseRequestID, []firehoseRecord{
@@ -169,28 +167,13 @@ func TestFirehoseRequest(t *testing.T) {
 			},
 			wantStatusCode: http.StatusOK,
 		},
-		"WithValidRecords/gzip": {
-			headers: map[string]string{
-				headerContentEncoding: "gzip",
-			},
-			body: testFirehoseRequest(testFirehoseRequestID, []firehoseRecord{
-				testFirehoseRecord("test"),
-			}),
-			wantStatusCode: http.StatusOK,
-		},
 	}
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
 			body, err := json.Marshal(testCase.body)
 			require.NoError(t, err)
 
-			var requestBody *bytes.Buffer
-			if encoding, ok := testCase.headers[headerContentEncoding]; ok && strings.EqualFold("gzip", encoding) {
-				requestBody, err = compressGzip(body)
-				require.NoError(t, err)
-			} else {
-				requestBody = bytes.NewBuffer(body)
-			}
+			requestBody := bytes.NewBuffer(body)
 
 			request := httptest.NewRequest("POST", "/", requestBody)
 			request.Header.Set(headerContentType, "application/json")
@@ -230,22 +213,6 @@ func TestFirehoseRequest(t *testing.T) {
 			}
 		})
 	}
-}
-
-func compressGzip(body []byte) (*bytes.Buffer, error) {
-	var buf bytes.Buffer
-	w := gzip.NewWriter(&buf)
-
-	_, err := w.Write(body)
-	if err != nil {
-		return nil, err
-	}
-
-	if err = w.Close(); err != nil {
-		return nil, err
-	}
-
-	return &buf, nil
 }
 
 // testFirehoseReceiver is a convenience function for creating a test firehoseReceiver

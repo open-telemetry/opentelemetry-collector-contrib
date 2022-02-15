@@ -15,7 +15,6 @@
 package awsfirehosereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver"
 
 import (
-	"compress/gzip"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -36,13 +35,11 @@ const (
 	headerFirehoseRequestID        = "X-Amz-Firehose-Request-Id"
 	headerFirehoseAccessKey        = "X-Amz-Firehose-Access-Key"
 	headerFirehoseCommonAttributes = "X-Amz-Firehose-Common-Attributes"
-	headerContentEncoding          = "Content-Encoding"
 	headerContentType              = "Content-Type"
 	headerContentLength            = "Content-Length"
 )
 
 var (
-	errUnrecognizedEncoding     = errors.New("unrecognized encoding")
 	errMissingHost              = errors.New("nil host")
 	errInvalidAccessKey         = errors.New("invalid firehose access key")
 	errInHeaderMissingRequestID = errors.New("missing request id in header")
@@ -114,7 +111,7 @@ func (fmr *firehoseReceiver) Start(_ context.Context, host component.Host) error
 	go func() {
 		defer fmr.shutdownWG.Done()
 
-		if errHTTP := fmr.server.Serve(listener); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
+		if errHTTP := fmr.server.Serve(listener); errHTTP != nil && !errors.Is(errHTTP, http.ErrServerClosed) {
 			host.ReportFatalError(errHTTP)
 		}
 	}()
@@ -131,26 +128,39 @@ func (fmr *firehoseReceiver) Shutdown(context.Context) error {
 	return err
 }
 
-// ServeHTTP receives Firehose requests, unmarshalls them, and sends them along to the firehoseConsumer.
+// ServeHTTP receives Firehose requests, unmarshalls them, and sends them along to the firehoseConsumer,
+// which is responsible for unmarshalling the records and sending them to the next consumer.
 func (fmr *firehoseReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	requestID := r.Header.Get(headerFirehoseRequestID)
 	if requestID == "" {
+		fmr.settings.Logger.Error(
+			"Invalid Firehose request",
+			zap.Error(errInHeaderMissingRequestID),
+		)
 		fmr.sendResponse(w, requestID, http.StatusBadRequest, errInHeaderMissingRequestID)
 		return
 	}
-	fmr.settings.Logger.Debug("processing request", zap.String("requestID", requestID))
+	fmr.settings.Logger.Debug("Processing Firehose request", zap.String("RequestID", requestID))
 
 	if statusCode, err := fmr.validate(r); err != nil {
+		fmr.settings.Logger.Error(
+			"Invalid Firehose request",
+			zap.Error(err),
+		)
 		fmr.sendResponse(w, requestID, statusCode, err)
 		return
 	}
 
-	body := fmr.getBody(r)
+	body, err := fmr.getBody(r)
+	if err != nil {
+		fmr.sendResponse(w, requestID, http.StatusBadRequest, err)
+		return
+	}
 
 	var fr firehoseRequest
-	if err := json.Unmarshal(body, &fr); err != nil {
+	if err = json.Unmarshal(body, &fr); err != nil {
 		fmr.sendResponse(w, requestID, http.StatusBadRequest, err)
 		return
 	}
@@ -164,22 +174,37 @@ func (fmr *firehoseReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	records := make([][]byte, 0, len(fr.Records))
-	for _, record := range fr.Records {
+	for index, record := range fr.Records {
 		if record.Data != "" {
-			decoded, err := base64.StdEncoding.DecodeString(record.Data)
+			var decoded []byte
+			decoded, err = base64.StdEncoding.DecodeString(record.Data)
 			if err != nil {
-				fmr.sendResponse(w, requestID, http.StatusBadRequest, err)
+				fmr.sendResponse(
+					w,
+					requestID,
+					http.StatusBadRequest,
+					fmt.Errorf("unable to base64 decode the record at index %d: %w", index, err),
+				)
 				return
 			}
-
 			records = append(records, decoded)
 		}
 	}
 
-	commonAttributes, _ := fmr.getCommonAttributes(r)
+	commonAttributes, err := fmr.getCommonAttributes(r)
+	if err != nil {
+		fmr.settings.Logger.Error(
+			"Unable to get common attributes from request header. Will not attach attributes.",
+			zap.Error(err),
+		)
+	}
 
 	statusCode, err := fmr.consumer.Consume(ctx, records, commonAttributes)
 	if err != nil {
+		fmr.settings.Logger.Error(
+			"Unable to consume records",
+			zap.Error(err),
+		)
 		fmr.sendResponse(w, requestID, statusCode, err)
 		return
 	}
@@ -197,26 +222,16 @@ func (fmr *firehoseReceiver) validate(r *http.Request) (int, error) {
 }
 
 // getBody reads the body from the request as a slice of bytes.
-func (fmr *firehoseReceiver) getBody(r *http.Request) []byte {
-	reader := fmr.getReader(r.Body, r.Header.Get(headerContentEncoding))
-
-	body, _ := io.ReadAll(reader)
-	if c, ok := reader.(io.Closer); ok {
-		_ = c.Close()
+func (fmr *firehoseReceiver) getBody(r *http.Request) ([]byte, error) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		return nil, err
 	}
-	_ = r.Body.Close()
-	return body
-}
-
-// getReader uses the encoding to wrap the reader if matched otherwise returns
-// the original reader.
-func (fmr *firehoseReceiver) getReader(r io.Reader, encoding string) io.Reader {
-	if encoding == "gzip" {
-		if gzr, err := gzip.NewReader(r); err == nil {
-			return gzr
-		}
+	err = r.Body.Close()
+	if err != nil {
+		return nil, err
 	}
-	return r
+	return body, nil
 }
 
 // getCommonAttributes unmarshalls the common attributes from the request header
@@ -244,10 +259,10 @@ func (fmr *firehoseReceiver) sendResponse(w http.ResponseWriter, requestID strin
 		ErrorMessage: errorMessage,
 	}
 	payload, _ := json.Marshal(body)
-	w.WriteHeader(statusCode)
 	w.Header().Set(headerContentType, "application/json")
 	w.Header().Set(headerContentLength, fmt.Sprintf("%d", len(payload)))
+	w.WriteHeader(statusCode)
 	if _, err = w.Write(payload); err != nil {
-		fmr.settings.Logger.Error("failed to send response", zap.Error(err))
+		fmr.settings.Logger.Error("Failed to send response", zap.Error(err))
 	}
 }

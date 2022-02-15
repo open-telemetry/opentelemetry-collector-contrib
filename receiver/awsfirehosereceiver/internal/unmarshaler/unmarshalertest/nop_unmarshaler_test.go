@@ -27,7 +27,7 @@ func TestNewNopMetrics(t *testing.T) {
 	got, err := unmarshaler.Unmarshal(nil)
 	require.NoError(t, err)
 	require.NotNil(t, got)
-	require.Equal(t, encoding, unmarshaler.Encoding())
+	require.Equal(t, typeStr, unmarshaler.Type())
 }
 
 func TestNewWithMetrics(t *testing.T) {
@@ -38,7 +38,7 @@ func TestNewWithMetrics(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, got)
 	require.Equal(t, metrics, got)
-	require.Equal(t, encoding, unmarshaler.Encoding())
+	require.Equal(t, typeStr, unmarshaler.Type())
 }
 
 func TestNewErrMetrics(t *testing.T) {
@@ -48,5 +48,5 @@ func TestNewErrMetrics(t *testing.T) {
 	require.Error(t, err)
 	require.Equal(t, wantErr, err)
 	require.NotNil(t, got)
-	require.Equal(t, encoding, unmarshaler.Encoding())
+	require.Equal(t, typeStr, unmarshaler.Type())
 }

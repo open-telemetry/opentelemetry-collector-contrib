@@ -12,16 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package unmarshalertest // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/unmarshaler/unmarshalertest"
+package unmarshalertest // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/unmarshalertest"
 
 import (
 	"go.opentelemetry.io/collector/model/pdata"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/unmarshaler"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler"
 )
 
-const encoding = "nop"
+const typeStr = "nop"
 
+// NopMetricsUnmarshaler is a MetricsUnmarshaler that doesn't do anything
+// with the inputs and just returns the metrics and error passed in.
 type NopMetricsUnmarshaler struct {
 	metrics pdata.Metrics
 	err     error
@@ -47,12 +49,12 @@ func NewErrMetrics(err error) *NopMetricsUnmarshaler {
 	return &NopMetricsUnmarshaler{err: err}
 }
 
-// Unmarshal deserializes the records into metrics
+// Unmarshal deserializes the records into metrics.
 func (u *NopMetricsUnmarshaler) Unmarshal([][]byte) (pdata.Metrics, error) {
 	return u.metrics, u.err
 }
 
-// Encoding of the serialized messages
-func (u *NopMetricsUnmarshaler) Encoding() string {
-	return encoding
+// Type of the serialized messages.
+func (u *NopMetricsUnmarshaler) Type() string {
+	return typeStr
 }

@@ -26,8 +26,9 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/unmarshaler/unmarshalertest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/unmarshalertest"
 )
 
 type recordConsumer struct {
@@ -47,27 +48,27 @@ func (rc *recordConsumer) Capabilities() consumer.Capabilities {
 
 func TestNewMetricsReceiver(t *testing.T) {
 	testCases := map[string]struct {
-		consumer consumer.Metrics
-		encoding string
-		wantErr  error
+		consumer   consumer.Metrics
+		recordType string
+		wantErr    error
 	}{
 		"WithNilConsumer": {
 			wantErr: componenterror.ErrNilNextConsumer,
 		},
-		"WithInvalidEncoding": {
-			consumer: consumertest.NewNop(),
-			encoding: "test",
-			wantErr:  errUnrecognizedEncoding,
+		"WithInvalidRecordType": {
+			consumer:   consumertest.NewNop(),
+			recordType: "test",
+			wantErr:    errUnrecognizedRecordType,
 		},
 	}
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
-			cfg.Encoding = testCase.encoding
+			cfg.RecordType = testCase.recordType
 			got, err := newMetricsReceiver(
 				cfg,
 				componenttest.NewNopReceiverCreateSettings(),
-				defaultMetricsUnmarshalers(),
+				defaultMetricsUnmarshalers(zap.NewNop()),
 				testCase.consumer,
 			)
 			require.Equal(t, testCase.wantErr, err)

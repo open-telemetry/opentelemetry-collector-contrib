@@ -12,18 +12,19 @@ Example:
 receivers:
   awsfirehose:
     endpoint: 0.0.0.0:443
-    encoding: cwmetrics
+    record_type: cwmetrics
+    access_key: "some_access_key"
 ```
 
-#### encoding:
+#### record_type:
 
-The encoding to use for the records received. Corresponds to an unmarshaler.
+The type of record being received from the delivery stream. Each unmarshaler handles a specific type, so the field allows the receiver to use the correct one.
 
 default: `cwmetrics`
 
 ###### cwmetrics
-The encoding for the CloudWatch metric streams. Expects the format for the records to be JSON. See [documentation](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-Metric-Streams.html) for details.
+The record type for the CloudWatch metric streams. Expects the format for the records to be JSON. See [documentation](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-Metric-Streams.html) for details.
 
 #### access_key:
 
-The access key to be checked on each request received. This can be set when creating or updating the delivery stream.
+The access key to be checked on each request received. This can be set when creating or updating the delivery stream. See [documentation](https://docs.aws.amazon.com/firehose/latest/dev/create-destination.html#create-destination-http) for details.
