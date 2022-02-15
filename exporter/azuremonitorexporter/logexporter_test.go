@@ -113,7 +113,7 @@ func getTestLogRecord(tb testing.TB) pdata.LogRecord {
 	logs := getTestLogs(tb)
 	resourceLogs := logs.ResourceLogs()
 	instrumentationLibraryLogs := resourceLogs.At(0).InstrumentationLibraryLogs()
-	logRecords := instrumentationLibraryLogs.At(0).Logs()
+	logRecords := instrumentationLibraryLogs.At(0).LogRecords()
 	logRecord = logRecords.At(0)
 
 	return logRecord
