@@ -59,7 +59,7 @@ func (h *hashRing) endpointFor(traceID pdata.TraceID) string {
 	return h.findEndpoint(position(pos))
 }
 
-// findEndpoint returns the "next" endpoint starting from the given position
+// findEndpoint returns the "next" endpoint starting from the given position, or an empty string in case no endpoints are available
 func (h *hashRing) findEndpoint(pos position) string {
 	ringSize := len(h.items)
 	if ringSize == 0 {
