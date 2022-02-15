@@ -283,54 +283,68 @@ func TestBuild(t *testing.T) {
 		{
 			"default-auto-address",
 			TCPInputConfig{
-				ListenAddress: ":0",
+				TCPBaseConfig: TCPBaseConfig{
+					ListenAddress: ":0",
+				},
 			},
 			false,
 		},
 		{
 			"default-fixed-address",
 			TCPInputConfig{
-				ListenAddress: "10.0.0.1:0",
+				TCPBaseConfig: TCPBaseConfig{
+					ListenAddress: "10.0.0.1:0",
+				},
 			},
 			false,
 		},
 		{
 			"default-fixed-address-port",
 			TCPInputConfig{
-				ListenAddress: "10.0.0.1:9000",
+				TCPBaseConfig: TCPBaseConfig{
+					ListenAddress: "10.0.0.1:9000",
+				},
 			},
 			false,
 		},
 		{
 			"buffer-size-valid-default",
 			TCPInputConfig{
-				MaxLogSize:    0,
-				ListenAddress: "10.0.0.1:9000",
+				TCPBaseConfig: TCPBaseConfig{
+					MaxLogSize:    0,
+					ListenAddress: "10.0.0.1:9000",
+				},
 			},
 			false,
 		},
 		{
 			"buffer-size-valid-min",
 			TCPInputConfig{
-				MaxLogSize:    65536,
-				ListenAddress: "10.0.0.1:9000",
+				TCPBaseConfig: TCPBaseConfig{
+					MaxLogSize:    65536,
+					ListenAddress: "10.0.0.1:9000",
+				},
 			},
 			false,
 		},
 		{
 			"buffer-size-negative",
 			TCPInputConfig{
-				MaxLogSize:    -1,
-				ListenAddress: "10.0.0.1:9000",
+				TCPBaseConfig: TCPBaseConfig{
+					MaxLogSize:    -1,
+					ListenAddress: "10.0.0.1:9000",
+				},
 			},
 			true,
 		},
 		{
 			"tls-enabled-with-no-such-file-error",
 			TCPInputConfig{
-				MaxLogSize:    65536,
-				ListenAddress: "10.0.0.1:9000",
-				TLS:           createTlsConfig("/tmp/cert/missing", "/tmp/key/missing"),
+				TCPBaseConfig: TCPBaseConfig{
+					MaxLogSize:    65536,
+					ListenAddress: "10.0.0.1:9000",
+					TLS:           createTlsConfig("/tmp/cert/missing", "/tmp/key/missing"),
+				},
 			},
 			true,
 		},

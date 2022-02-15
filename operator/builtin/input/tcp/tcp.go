@@ -50,15 +50,21 @@ func init() {
 func NewTCPInputConfig(operatorID string) *TCPInputConfig {
 	return &TCPInputConfig{
 		InputConfig: helper.NewInputConfig(operatorID, "tcp_input"),
-		Multiline:   helper.NewMultilineConfig(),
-		Encoding:    helper.NewEncodingConfig(),
+		TCPBaseConfig: TCPBaseConfig{
+			Multiline: helper.NewMultilineConfig(),
+			Encoding:  helper.NewEncodingConfig(),
+		},
 	}
 }
 
 // TCPInputConfig is the configuration of a tcp input operator.
 type TCPInputConfig struct {
 	helper.InputConfig `yaml:",inline"`
+	TCPBaseConfig      `yaml:",inline"`
+}
 
+// TCPBaseConfig is the detailed configuration of a tcp input operator.
+type TCPBaseConfig struct {
 	MaxLogSize    helper.ByteSize         `mapstructure:"max_log_size,omitempty"          json:"max_log_size,omitempty"         yaml:"max_log_size,omitempty"`
 	ListenAddress string                  `mapstructure:"listen_address,omitempty"        json:"listen_address,omitempty"       yaml:"listen_address,omitempty"`
 	TLS           *helper.TLSServerConfig `mapstructure:"tls,omitempty"                   json:"tls,omitempty"                  yaml:"tls,omitempty"`
