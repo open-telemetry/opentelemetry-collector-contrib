@@ -145,7 +145,7 @@
 //        - name: KUBE_NODE_NAME
 //          valueFrom:
 //            fieldRef:
-//             apiVersion: v1
+//              apiVersion: v1
 //              fieldPath: spec.nodeName
 //
 // This will inject a new environment variable to the OpenTelemetry container with the value as the
