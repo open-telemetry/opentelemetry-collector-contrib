@@ -23,7 +23,6 @@ import (
 )
 
 var ErrInvalidElapsed = errors.New("invalid elapsed seconds")
-var ErrDifferentCPUs = errors.New("cannot compare times from different cpus")
 var ErrTimeStatNotFound = errors.New("cannot find TimesStat for cpu")
 
 // CPUUtilization stores the utilization percents [0-1] for the different cpu states
@@ -50,22 +49,17 @@ type CPUUtilizationCalculator struct {
 // stored []cpu.TimesStat and time.Time and current []cpu.TimesStat and current time.Time
 // If no previous data is stored it will return empty slice of CPUUtilization and no error
 func (c *CPUUtilizationCalculator) CalculateAndRecord(now pdata.Timestamp, cpuTimes []cpu.TimesStat, recorder func(pdata.Timestamp, CPUUtilization)) error {
-	elapsedSeconds := now.AsTime().Sub(c.previousTime.AsTime()).Seconds()
-	if elapsedSeconds <= 0 {
-		return fmt.Errorf("%f: %w", elapsedSeconds, ErrInvalidElapsed)
-	}
-
 	if c.previousCPUTimes != nil {
+		elapsedSeconds := now.AsTime().Sub(c.previousTime.AsTime()).Seconds()
+		if elapsedSeconds <= 0 {
+			return fmt.Errorf("%f: %w", elapsedSeconds, ErrInvalidElapsed)
+		}
 		for _, previousCPUTime := range c.previousCPUTimes {
 			currentCPUTime, err := cpuTimeForCPU(previousCPUTime.CPU, cpuTimes)
 			if err != nil {
 				return fmt.Errorf("getting time for cpu %s: %w", previousCPUTime.CPU, err)
 			}
-			utilization, err := cpuUtilization(previousCPUTime, currentCPUTime, elapsedSeconds)
-			if err != nil {
-				return fmt.Errorf("getting utilization for cpu %s: %w", previousCPUTime.CPU, err)
-			}
-			recorder(now, utilization)
+			recorder(now, cpuUtilization(previousCPUTime, currentCPUTime, elapsedSeconds))
 		}
 	}
 	c.previousCPUTimes = cpuTimes
@@ -75,9 +69,7 @@ func (c *CPUUtilizationCalculator) CalculateAndRecord(now pdata.Timestamp, cpuTi
 }
 
 // cpuUtilization calculates the difference between 2 cpu.TimesStat using spent time between them
-// If no time was spent between TimesStat an error will be returned
-// If TimesStats do not belog to same CPU an error will be returned
-func cpuUtilization(timeStart cpu.TimesStat, timeEnd cpu.TimesStat, elapsedSeconds float64) (CPUUtilization, error) {
+func cpuUtilization(timeStart cpu.TimesStat, timeEnd cpu.TimesStat, elapsedSeconds float64) CPUUtilization {
 	return CPUUtilization{
 		CPU:     timeStart.CPU,
 		User:    (timeEnd.User - timeStart.User) / elapsedSeconds,
@@ -88,7 +80,7 @@ func cpuUtilization(timeStart cpu.TimesStat, timeEnd cpu.TimesStat, elapsedSecon
 		Irq:     (timeEnd.Irq - timeStart.Irq) / elapsedSeconds,
 		Softirq: (timeEnd.Softirq - timeStart.Softirq) / elapsedSeconds,
 		Steal:   (timeEnd.Steal - timeStart.Steal) / elapsedSeconds,
-	}, nil
+	}
 }
 
 // cpuTimeForCPU returns cpu.TimesStat from a slice of cpu.TimesStat based on CPU

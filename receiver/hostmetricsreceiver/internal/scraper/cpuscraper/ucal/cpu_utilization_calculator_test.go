@@ -42,9 +42,8 @@ func TestCpuUtilizationCalculator_Calculate(t *testing.T) {
 		expectedError        error
 	}{
 		{
-			name:         "no previous times",
-			previousTime: 1640097430772858000,
-			now:          1640097435776827000,
+			name: "no previous times",
+			now:  1640097435776827000,
 			cpuTimes: []cpu.TimesStat{
 				{
 					CPU:  "cpu0",
@@ -73,7 +72,7 @@ func TestCpuUtilizationCalculator_Calculate(t *testing.T) {
 		{
 			name:         "invalid TimesStats",
 			previousTime: 1640097430772858000,
-			now:          1640097430772858000,
+			now:          1640097430772859000,
 			previousCPUTimes: []cpu.TimesStat{
 				{
 					CPU:  "cpu5",
@@ -188,81 +187,33 @@ func TestCpuUtilizationCalculator_Calculate(t *testing.T) {
 }
 
 func Test_cpuUtilization(t *testing.T) {
-	testCases := []struct {
-		name                string
-		timeStart           cpu.TimesStat
-		timeEnd             cpu.TimesStat
-		expectedUtilization CPUUtilization
-		elapsedSeconds      float64
-		expectedError       error
-	}{
-		{
-			name:           "0 seconds",
-			elapsedSeconds: 0,
-			timeStart: cpu.TimesStat{
-				CPU:    "cpu0",
-				User:   1.5,
-				System: 2.7,
-				Idle:   0.8,
-			},
-			timeEnd: cpu.TimesStat{
-				CPU:    "cpu0",
-				User:   2.7,
-				System: 4.2,
-				Idle:   1.2,
-			},
-			expectedError: ErrInvalidElapsed,
-		},
-		{
-			name:           "standard",
-			elapsedSeconds: 5,
-			timeStart: cpu.TimesStat{
-				CPU:    "cpu0",
-				User:   1.5,
-				System: 2.7,
-				Idle:   0.8,
-			},
-			timeEnd: cpu.TimesStat{
-				CPU:    "cpu0",
-				User:   2.7,
-				System: 4.2,
-				Idle:   3.1,
-			},
-			expectedUtilization: CPUUtilization{
-				CPU:    "cpu0",
-				User:   0.24,
-				System: 0.3,
-				Idle:   0.46,
-			},
-		},
-		{
-			name:           "different cpus",
-			elapsedSeconds: 5,
-			timeStart: cpu.TimesStat{
-				CPU:    "cpu0",
-				User:   1.5,
-				System: 2.7,
-				Idle:   0.8,
-			},
-			timeEnd: cpu.TimesStat{
-				CPU:    "cpu1",
-				User:   2.7,
-				System: 4.2,
-				Idle:   3.1,
-			},
-			expectedError: ErrDifferentCPUs,
-		},
+
+	elapsedSeconds := 5.0
+	timeStart := cpu.TimesStat{
+		CPU:    "cpu0",
+		User:   1.5,
+		System: 2.7,
+		Idle:   0.8,
 	}
-	for _, test := range testCases {
-		t.Run(test.name, func(t *testing.T) {
-			actualUtilization, err := cpuUtilization(test.timeStart, test.timeEnd, test.elapsedSeconds)
-			assert.ErrorIs(t, err, test.expectedError)
-			assert.Equal(t, test.expectedUtilization.CPU, actualUtilization.CPU, 0.00001)
-			assert.InDelta(t, test.expectedUtilization.User, actualUtilization.User, 0.00001)
-			assert.InDelta(t, test.expectedUtilization.System, actualUtilization.System, 0.00001)
-			assert.InDelta(t, test.expectedUtilization.Idle, actualUtilization.Idle, 0.00001)
-		})
+	timeEnd := cpu.TimesStat{
+		CPU:    "cpu0",
+		User:   2.7,
+		System: 4.2,
+		Idle:   3.1,
 	}
+	expectedUtilization := CPUUtilization{
+		CPU:    "cpu0",
+		User:   0.24,
+		System: 0.3,
+		Idle:   0.46,
+	}
+
+	actualUtilization := cpuUtilization(timeStart, timeEnd, elapsedSeconds)
+	assert.Equal(t, expectedUtilization.CPU, actualUtilization.CPU, 0.00001)
+	assert.InDelta(t, expectedUtilization.User, actualUtilization.User, 0.00001)
+	assert.InDelta(t, expectedUtilization.System, actualUtilization.System, 0.00001)
+	assert.InDelta(t, expectedUtilization.Idle, actualUtilization.Idle, 0.00001)
+
 }
 
 func Test_cpuTimeByCpu(t *testing.T) {

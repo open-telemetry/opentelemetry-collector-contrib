@@ -1,7 +1,6 @@
 # Changelog
 
 ## Unreleased
-- `hostmetricsreceiver`: Add cpu.utilization metrics to cpu scrapper (#6221)
 
 ### 💡 Enhancements 💡
 
@@ -55,6 +54,7 @@
 - `loadbalancingexporter`: Allow non-exist hostname on startup (#7935)
 - `datadogexporter`: Use exact sum, count and average on Datadog distributions (#7830)
 - `storage/filestorage`: add optional compaction to filestorage (#7768)
+- `hostmetricsreceiver`: Add cpu.utilization metrics to cpu scrapper (#6221)
 
 ### 🛑 Breaking changes 🛑
 
@@ -171,6 +171,7 @@
 - `tracegen`: Add option to pass in custom headers to export calls via command line (#7308)
 - `tracegen`: Provide official container images (#7179)
 - `scrapertest`: Add comparison function for pdata.Metrics (#7400)
+- `prometheusremotewriteexporter` : Dropping the condition to replace _ with key_ as __ label is reserved and _ is not (#7112)
 
 ### 🛑 Breaking changes 🛑
 
