@@ -16,6 +16,7 @@ package tanzuobservabilityexporter // import "github.com/open-telemetry/opentele
 
 import (
 	"errors"
+	"os"
 	"time"
 
 	"github.com/google/uuid"
@@ -108,7 +109,7 @@ func getSource(tags map[string]string) string {
 	}
 
 	if source == "" {
-		source = "otlp"
+		source, _ = os.Hostname()
 	}
 	return source
 }
