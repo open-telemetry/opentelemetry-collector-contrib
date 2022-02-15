@@ -16,7 +16,7 @@ ALL_MODULES ?= $(shell find . -type f -name "go.mod" -exec dirname {} \; | sort 
 # Modules to run integration tests on.
 # XXX: Find a way to automatically populate this. Too slow to run across all modules when there are just a few.
 INTEGRATION_TEST_MODULES := \
-	internal/common \
+	internal/containertest \
 	receiver/apachereceiver \
 	receiver/dockerstatsreceiver \
 	receiver/jmxreceiver/ \
@@ -61,12 +61,11 @@ stability-tests: otelcontribcol
 .PHONY: gotidy
 gotidy:
 	$(MAKE) for-all CMD="rm -fr go.sum"
-	$(MAKE) for-all CMD="go mod tidy -go=1.16"
-	$(MAKE) for-all CMD="go mod tidy -go=1.17"
+	$(MAKE) for-all CMD="$(GOCMD) mod tidy -compat=1.17"
 
 .PHONY: gomoddownload
 gomoddownload:
-	@$(MAKE) for-all CMD="go mod download"
+	@$(MAKE) for-all CMD="$(GOCMD) mod download"
 
 .PHONY: gotest
 gotest:
@@ -160,21 +159,21 @@ $(MODULEDIRS):
 TOOLS_MOD_DIR := ./internal/tools
 .PHONY: install-tools
 install-tools:
-	cd $(TOOLS_MOD_DIR) && go install github.com/client9/misspell/cmd/misspell
-	cd $(TOOLS_MOD_DIR) && go install github.com/golangci/golangci-lint/cmd/golangci-lint
-	cd $(TOOLS_MOD_DIR) && go install github.com/google/addlicense
-	cd $(TOOLS_MOD_DIR) && go install github.com/jstemmer/go-junit-report
-	cd $(TOOLS_MOD_DIR) && go install github.com/pavius/impi/cmd/impi
-	cd $(TOOLS_MOD_DIR) && go install github.com/tcnksm/ghr
-	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/build-tools/checkdoc
-	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/build-tools/issuegenerator
-	cd $(TOOLS_MOD_DIR) && go install golang.org/x/tools/cmd/goimports
-	cd $(TOOLS_MOD_DIR) && go install go.opentelemetry.io/build-tools/multimod
-	cd $(TOOLS_MOD_DIR) && go install github.com/jcchavezs/porto/cmd/porto
+	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/client9/misspell/cmd/misspell
+	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/golangci/golangci-lint/cmd/golangci-lint
+	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/google/addlicense
+	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/jstemmer/go-junit-report
+	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/pavius/impi/cmd/impi
+	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/tcnksm/ghr
+	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/checkdoc
+	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/issuegenerator
+	cd $(TOOLS_MOD_DIR) && $(GOCMD) install golang.org/x/tools/cmd/goimports
+	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/multimod
+	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/jcchavezs/porto/cmd/porto
 
 .PHONY: run
 run:
-	GO111MODULE=on go run --race ./cmd/otelcontribcol/... --config ${RUN_CONFIG} ${RUN_ARGS}
+	GO111MODULE=on $(GOCMD) run --race ./cmd/otelcontribcol/... --config ${RUN_CONFIG} ${RUN_ARGS}
 
 .PHONY: docker-component # Not intended to be used directly
 docker-component: check-component
@@ -195,19 +194,19 @@ docker-otelcontribcol:
 
 .PHONY: generate
 generate:
-	cd cmd/mdatagen && go install .
-	$(MAKE) for-all CMD="go generate ./..."
+	cd cmd/mdatagen && $(GOCMD) install .
+	$(MAKE) for-all CMD="$(GOCMD) generate ./..."
 
 # Build the Collector executable.
 .PHONY: otelcontribcol
 otelcontribcol:
-	GO111MODULE=on CGO_ENABLED=0 go build -trimpath -o ./bin/otelcontribcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
+	GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ./bin/otelcontribcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
 		$(BUILD_INFO) -tags $(GO_BUILD_TAGS) ./cmd/otelcontribcol
 
 # Build the Collector executable, including unstable functionality.
 .PHONY: otelcontribcol-unstable
 otelcontribcol-unstable:
-	GO111MODULE=on CGO_ENABLED=0 go build -trimpath -o ./bin/otelcontribcol_unstable_$(GOOS)_$(GOARCH)$(EXTENSION) \
+	GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ./bin/otelcontribcol_unstable_$(GOOS)_$(GOARCH)$(EXTENSION) \
 		$(BUILD_INFO) -tags $(GO_BUILD_TAGS),enable_unstable ./cmd/otelcontribcol
 
 .PHONY: otelcontribcol-all-sys
@@ -253,12 +252,12 @@ otel-from-tree:
 	# 2. Run `make otel-from-tree` (only need to run it once to remap go modules)
 	# 3. You can now build contrib and it will use your local otel core changes.
 	# 4. Before committing/pushing your contrib changes, undo by running `make otel-from-lib`.
-	$(MAKE) for-all CMD="go mod edit -replace go.opentelemetry.io/collector=$(SRC_ROOT)/../opentelemetry-collector"
+	$(MAKE) for-all CMD="$(GOCMD) mod edit -replace go.opentelemetry.io/collector=$(SRC_ROOT)/../opentelemetry-collector"
 
 .PHONY: otel-from-lib
 otel-from-lib:
 	# Sets opentelemetry core to be not be pulled from local source tree. (Undoes otel-from-tree.)
-	$(MAKE) for-all CMD="go mod edit -dropreplace go.opentelemetry.io/collector"
+	$(MAKE) for-all CMD="$(GOCMD) mod edit -dropreplace go.opentelemetry.io/collector"
 
 .PHONY: build-examples
 build-examples:

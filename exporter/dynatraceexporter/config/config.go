@@ -76,3 +76,7 @@ func (c *Config) ValidateAndConfigureHTTPClientSettings() error {
 
 	return nil
 }
+
+func (c *Config) Validate() error {
+	return nil
+}

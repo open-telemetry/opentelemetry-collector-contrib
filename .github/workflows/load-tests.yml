@@ -15,7 +15,7 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v2
       - name: Setup Go
-        uses: actions/setup-go@v2.1.5
+        uses: actions/setup-go@v2.2.0
         with:
           go-version: 1.17
       - name: Setup Go Environment
@@ -89,7 +89,7 @@ jobs:
           wget https://packages.fluentbit.io/ubuntu/bionic/pool/main/t/td-agent-bit/td-agent-bit_1.5.3_amd64.deb
           sudo dpkg -i ./td-agent-bit*.deb
       - name: Setup Go
-        uses: actions/setup-go@v2.1.5
+        uses: actions/setup-go@v2.2.0
         with:
           go-version: 1.17
       - name: Setup Go Environment

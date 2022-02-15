@@ -94,7 +94,7 @@ func TestValidateConfig(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.testName, func(t *testing.T) {
-			err := testCase.input.validateConfig()
+			err := testCase.input.Validate()
 			if testCase.shouldError {
 				require.Error(t, err)
 			} else {
