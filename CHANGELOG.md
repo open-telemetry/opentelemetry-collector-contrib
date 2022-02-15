@@ -13,7 +13,7 @@
 - `coralogixexporter`: Update readme (#7785)
 - `awscloudwatchlogsexporter`: Remove name from aws cloudwatch logs exporter (#7554)
 - `hostreceiver/memoryscraper`: Add memory.utilization (#6221)
-- `storageextension`: add optional compaction to filestorage (#7768)
+- `storage/filestorage`: add optional compaction to filestorage (#7768)
 
 ### 🛑 Breaking changes 🛑
 
