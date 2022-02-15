@@ -59,11 +59,10 @@ func newResourceMetricsBuilder(metricStreamName, accountID, region, namespace st
 // AddMetric adds a metric to one of the metric builders based on
 // the key generated for each.
 func (rmb *resourceMetricsBuilder) AddMetric(metric cWMetric) {
-	metricKey := rmb.toMetricKey(metric)
-	mb, ok := rmb.metricBuilders[metricKey]
+	mb, ok := rmb.metricBuilders[metric.MetricName]
 	if !ok {
 		mb = newMetricBuilder(metric.MetricName, metric.Unit)
-		rmb.metricBuilders[metricKey] = mb
+		rmb.metricBuilders[metric.MetricName] = mb
 	}
 	mb.AddDataPoint(metric)
 }
@@ -95,20 +94,19 @@ func (rmb *resourceMetricsBuilder) setAttributes(resource pdata.Resource) {
 	attributes.InsertString(attributeAWSCloudWatchMetricStreamName, rmb.metricStreamName)
 }
 
-// toMetricKey creates a key based on the metric name and dimensions to
-// keep metrics with different dimensions separate.
-func (rmb *resourceMetricsBuilder) toMetricKey(metric cWMetric) string {
-	return fmt.Sprintf("%s::%v", metric.MetricName, metric.Dimensions)
-}
-
 // The metricBuilder aggregates metrics of the same name and unit
 // into data points. Stores the timestamps for each added metric
 // in a set to prevent duplicates.
 type metricBuilder struct {
-	name       string
-	unit       string
-	dataPoints pdata.HistogramDataPointSlice
-	timestamps map[int64]bool
+	// name is the metric name.
+	name string
+	// unit is the metric unit.
+	unit string
+	// dataPoints is the slice of summary data points
+	// for the metric.
+	dataPoints pdata.SummaryDataPointSlice
+	// timestamps is the set of seen timestamps.
+	timestamps map[string]bool
 }
 
 // newMetricBuilder creates a metricBuilder with the name and unit.
@@ -116,17 +114,18 @@ func newMetricBuilder(name, unit string) *metricBuilder {
 	return &metricBuilder{
 		name:       name,
 		unit:       unit,
-		dataPoints: pdata.NewHistogramDataPointSlice(),
-		timestamps: make(map[int64]bool),
+		dataPoints: pdata.NewSummaryDataPointSlice(),
+		timestamps: make(map[string]bool),
 	}
 }
 
 // AddDataPoint adds the metric as a datapoint if a metric for that timestamp
-// hasn't already been added
+// hasn't already been added.
 func (mb *metricBuilder) AddDataPoint(metric cWMetric) {
-	if _, ok := mb.timestamps[metric.Timestamp]; !ok {
+	key := mb.toTimestampKey(metric)
+	if _, ok := mb.timestamps[key]; !ok {
 		mb.toDataPoint(mb.dataPoints.AppendEmpty(), metric)
-		mb.timestamps[metric.Timestamp] = true
+		mb.timestamps[key] = true
 	}
 }
 
@@ -135,22 +134,32 @@ func (mb *metricBuilder) AddDataPoint(metric cWMetric) {
 func (mb *metricBuilder) Build(metric pdata.Metric) {
 	metric.SetName(mb.name)
 	metric.SetUnit(mb.unit)
-	metric.SetDataType(pdata.MetricDataTypeHistogram)
-	metric.Histogram().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
-	mb.dataPoints.MoveAndAppendTo(metric.Histogram().DataPoints())
+	metric.SetDataType(pdata.MetricDataTypeSummary)
+	mb.dataPoints.MoveAndAppendTo(metric.Summary().DataPoints())
 }
 
 // toDataPoint converts a cWMetric into a pdata datapoint and attaches the
 // dimensions as attributes.
-func (mb *metricBuilder) toDataPoint(dp pdata.HistogramDataPoint, metric cWMetric) {
+func (mb *metricBuilder) toDataPoint(dp pdata.SummaryDataPoint, metric cWMetric) {
 	dp.SetCount(uint64(metric.Value.Count))
 	dp.SetSum(metric.Value.Sum)
-	dp.SetExplicitBounds([]float64{metric.Value.Min, metric.Value.Max})
-	// TODO: need to set start timestamp as well
+	qv := dp.QuantileValues()
+	min := qv.AppendEmpty()
+	min.SetQuantile(0)
+	min.SetValue(metric.Value.Min)
+	max := qv.AppendEmpty()
+	max.SetQuantile(1)
+	max.SetValue(metric.Value.Max)
 	dp.SetTimestamp(pdata.NewTimestampFromTime(time.UnixMilli(metric.Timestamp)))
 	for k, v := range metric.Dimensions {
 		dp.Attributes().InsertString(ToSemConvAttributeKey(k), v)
 	}
+}
+
+// toTimestampKey combines the dimensions and timestamps to create a key
+// used to prevent duplicate metrics.
+func (mb *metricBuilder) toTimestampKey(metric cWMetric) string {
+	return fmt.Sprintf("%v::%v", metric.Dimensions, metric.Timestamp)
 }
 
 // ToSemConvAttributeKey maps some common keys to semantic convention attributes.
