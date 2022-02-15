@@ -67,12 +67,12 @@ func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 
 	var errors scrapererror.ScrapeErrors
 
-	err := s.scrapePagingUsageMetric(metrics)
+	err := s.scrapePagingUsageMetric()
 	if err != nil {
 		errors.AddPartial(pagingUsageMetricsLen, err)
 	}
 
-	err = s.scrapePagingMetrics(metrics)
+	err = s.scrapePagingMetrics()
 	if err != nil {
 		errors.AddPartial(pagingMetricsLen, err)
 	}
@@ -81,7 +81,7 @@ func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 	return md, errors.Combine()
 }
 
-func (s *scraper) scrapePagingUsageMetric(metrics pdata.MetricSlice) error {
+func (s *scraper) scrapePagingUsageMetric() error {
 	now := pdata.NewTimestampFromTime(time.Now())
 	pageFileStats, err := s.getPageFileStats()
 	if err != nil {
@@ -102,7 +102,7 @@ func (s *scraper) recordPagingUsageDataPoints(now pdata.Timestamp, pageFileStats
 	}
 }
 
-func (s *scraper) scrapePagingMetrics(metrics pdata.MetricSlice) error {
+func (s *scraper) scrapePagingMetrics() error {
 	now := pdata.NewTimestampFromTime(time.Now())
 	swap, err := s.swapMemory()
 	if err != nil {

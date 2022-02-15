@@ -83,8 +83,8 @@ func TestScrape(t *testing.T) {
 
 			startIndex := 0
 			if runtime.GOOS != "windows" {
-				assertPageFaultsMetricValid(t, metrics.At(startIndex), test.expectedStartTime)
-				startIndex++
+				//assertPageFaultsMetricValid(t, metrics.At(startIndex), test.expectedStartTime)
+				//startIndex++
 			}
 
 			assertPagingOperationsMetricValid(t, metrics.At(startIndex), test.expectedStartTime)
