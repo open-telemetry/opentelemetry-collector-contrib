@@ -12,6 +12,7 @@
 - `datadogexporter`: Add insecure_skip_verify flag to configuration (#7422)
 - `coralogixexporter`: Update readme (#7785)
 - `awscloudwatchlogsexporter`: Remove name from aws cloudwatch logs exporter (#7554)
+- `hostreceiver/memoryscraper`: Add memory.utilization (#6221)
 
 ### 🛑 Breaking changes 🛑
 
