@@ -14,6 +14,7 @@
 - `coralogixexporter`: Update readme (#7785)
 - `awscloudwatchlogsexporter`: Remove name from aws cloudwatch logs exporter (#7554)
 - `hostreceiver/memoryscraper`: Add memory.utilization (#6221)
+- `awskinesisexporter`: Add Queue Config Validation AWS Kinesis Exporter (#7835)
 - `elasticsearchexporter`: Remove usage of deprecated LogRecord.Name field (#7829).
 - `loadbalancingexporter`: Allow non-exist hostname on startup (#7935)
 - `datadogexporter`: Use exact sum, count and average on Datadog distributions (#7830)
