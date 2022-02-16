@@ -216,7 +216,7 @@ func TestParserInvalidTimeValidSeverityParse(t *testing.T) {
 				BasicOperator: BasicOperator{
 					OperatorID:    "test-id",
 					OperatorType:  "test-type",
-					SugaredLogger: buildContext.Logger.SugaredLogger,
+					SugaredLogger: buildContext.Logger,
 				},
 			},
 			OnError: DropOnError,
@@ -270,7 +270,7 @@ func TestParserValidTimeInvalidSeverityParse(t *testing.T) {
 				BasicOperator: BasicOperator{
 					OperatorID:    "test-id",
 					OperatorType:  "test-type",
-					SugaredLogger: buildContext.Logger.SugaredLogger,
+					SugaredLogger: buildContext.Logger,
 				},
 			},
 			OnError: DropOnError,
@@ -316,7 +316,7 @@ func TestParserOutput(t *testing.T) {
 				BasicOperator: BasicOperator{
 					OperatorID:    "test-id",
 					OperatorType:  "test-type",
-					SugaredLogger: buildContext.Logger.SugaredLogger,
+					SugaredLogger: buildContext.Logger,
 				},
 				OutputOperators: []operator.Operator{output},
 			},
@@ -498,7 +498,7 @@ func writerWithFakeOut(t *testing.T) (*WriterOperator, *testutil.FakeOutput) {
 		BasicOperator: BasicOperator{
 			OperatorID:    "test-id",
 			OperatorType:  "test-type",
-			SugaredLogger: buildContext.Logger.SugaredLogger,
+			SugaredLogger: buildContext.Logger,
 		},
 		OutputIDs: []string{fakeOut.ID()},
 	}
