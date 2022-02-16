@@ -107,11 +107,11 @@ func TestSyslogIDs(t *testing.T) {
 		op, err := cfg.Build(bc)
 		require.NoError(t, err)
 		syslogInputOp := op.(*SyslogInput)
-		require.Equal(t, "$.test_syslog_internal_tcp", syslogInputOp.tcp.ID())
-		require.Equal(t, "$.test_syslog_internal_parser", syslogInputOp.parser.ID())
+		require.Equal(t, "test_syslog_internal_tcp", syslogInputOp.tcp.ID())
+		require.Equal(t, "test_syslog_internal_parser", syslogInputOp.parser.ID())
 		require.Equal(t, []string{syslogInputOp.parser.ID()}, syslogInputOp.tcp.GetOutputIDs())
-		require.Equal(t, []string{"$.fake"}, syslogInputOp.parser.GetOutputIDs())
-		require.Equal(t, []string{"$.fake"}, syslogInputOp.GetOutputIDs())
+		require.Equal(t, []string{"fake"}, syslogInputOp.parser.GetOutputIDs())
+		require.Equal(t, []string{"fake"}, syslogInputOp.GetOutputIDs())
 	})
 	t.Run("UDP", func(t *testing.T) {
 		cfg := NewSyslogInputConfigWithUdp(basicConfig())
@@ -119,11 +119,11 @@ func TestSyslogIDs(t *testing.T) {
 		op, err := cfg.Build(bc)
 		require.NoError(t, err)
 		syslogInputOp := op.(*SyslogInput)
-		require.Equal(t, "$.test_syslog_internal_udp", syslogInputOp.udp.ID())
-		require.Equal(t, "$.test_syslog_internal_parser", syslogInputOp.parser.ID())
+		require.Equal(t, "test_syslog_internal_udp", syslogInputOp.udp.ID())
+		require.Equal(t, "test_syslog_internal_parser", syslogInputOp.parser.ID())
 		require.Equal(t, []string{syslogInputOp.parser.ID()}, syslogInputOp.udp.GetOutputIDs())
-		require.Equal(t, []string{"$.fake"}, syslogInputOp.parser.GetOutputIDs())
-		require.Equal(t, []string{"$.fake"}, syslogInputOp.GetOutputIDs())
+		require.Equal(t, []string{"fake"}, syslogInputOp.parser.GetOutputIDs())
+		require.Equal(t, []string{"fake"}, syslogInputOp.GetOutputIDs())
 	})
 }
 
@@ -132,7 +132,7 @@ func NewSyslogInputConfigWithTcp(syslogCfg *syslog.SyslogBaseConfig) *SyslogInpu
 	cfg.SyslogBaseConfig = *syslogCfg
 	cfg.Tcp = &tcp.NewTCPInputConfig("test_syslog_tcp").TCPBaseConfig
 	cfg.Tcp.ListenAddress = ":14201"
-	cfg.OutputIDs = []string{"$.fake"}
+	cfg.OutputIDs = []string{"fake"}
 	return cfg
 }
 
@@ -141,7 +141,7 @@ func NewSyslogInputConfigWithUdp(syslogCfg *syslog.SyslogBaseConfig) *SyslogInpu
 	cfg.SyslogBaseConfig = *syslogCfg
 	cfg.Udp = &udp.NewUDPInputConfig("test_syslog_udp").UDPBaseConfig
 	cfg.Udp.ListenAddress = ":12032"
-	cfg.OutputIDs = []string{"$.fake"}
+	cfg.OutputIDs = []string{"fake"}
 	return cfg
 }
 

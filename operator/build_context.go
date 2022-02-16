@@ -15,34 +15,13 @@
 package operator
 
 import (
-	"fmt"
-	"strings"
-
 	"go.uber.org/zap"
 )
 
 // BuildContext supplies contextual resources when building an operator.
 type BuildContext struct {
-	Parameters       map[string]interface{}
 	Logger           *zap.SugaredLogger
-	Namespace        string
 	DefaultOutputIDs []string
-}
-
-// PrependNamespace adds the current namespace of the build context to the
-// front of the given ID if that ID is not already namespaced up to the root level
-func (bc BuildContext) PrependNamespace(id string) string {
-	if strings.HasPrefix(id, "$.") {
-		return id
-	}
-	return fmt.Sprintf("%s.%s", bc.Namespace, id)
-}
-
-// WithSubNamespace creates a new build context with a more specific namespace
-func (bc BuildContext) WithSubNamespace(namespace string) BuildContext {
-	newBuildContext := bc.Copy()
-	newBuildContext.Namespace = bc.PrependNamespace(namespace)
-	return newBuildContext
 }
 
 // WithDefaultOutputIDs sets the default output IDs for the current context or
@@ -56,20 +35,15 @@ func (bc BuildContext) WithDefaultOutputIDs(ids []string) BuildContext {
 // Copy creates a copy of the build context
 func (bc BuildContext) Copy() BuildContext {
 	return BuildContext{
-		Parameters:       bc.Parameters,
 		Logger:           bc.Logger,
-		Namespace:        bc.Namespace,
 		DefaultOutputIDs: bc.DefaultOutputIDs,
 	}
 }
 
-// NewBuildContext creates a new build context with the given database, logger, and the
-// default namespace
+// NewBuildContext creates a new build context with the given logger
 func NewBuildContext(lg *zap.SugaredLogger) BuildContext {
 	return BuildContext{
-		Parameters:       nil,
 		Logger:           lg,
-		Namespace:        "$",
 		DefaultOutputIDs: []string{},
 	}
 }

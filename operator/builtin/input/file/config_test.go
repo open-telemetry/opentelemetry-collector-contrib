@@ -516,7 +516,7 @@ func TestUnmarshal(t *testing.T) {
 
 func TestBuild(t *testing.T) {
 	t.Parallel()
-	fakeOutput := testutil.NewMockOperator("$.fake")
+	fakeOutput := testutil.NewMockOperator("fake")
 
 	basicConfig := func() *InputConfig {
 		cfg := NewInputConfig("testfile")

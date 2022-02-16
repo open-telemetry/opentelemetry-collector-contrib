@@ -78,7 +78,7 @@ func TestBasicConfigBuildValid(t *testing.T) {
 	context := testutil.NewBuildContext(t)
 	operator, err := config.Build(context)
 	require.NoError(t, err)
-	require.Equal(t, "$.test-id", operator.OperatorID)
+	require.Equal(t, "test-id", operator.OperatorID)
 	require.Equal(t, "test-type", operator.OperatorType)
 }
 

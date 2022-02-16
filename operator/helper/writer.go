@@ -43,14 +43,10 @@ func (c WriterConfig) Build(bc operator.BuildContext) (WriterOperator, error) {
 		return WriterOperator{}, err
 	}
 
-	// Namespace all the output IDs
-	namespacedIDs := c.OutputIDs.WithNamespace(bc)
-
-	writer := WriterOperator{
-		OutputIDs:     namespacedIDs,
+	return WriterOperator{
+		OutputIDs:     c.OutputIDs,
 		BasicOperator: basicOperator,
-	}
-	return writer, nil
+	}, nil
 }
 
 // WriterOperator is an operator that can write to other operators.
@@ -124,14 +120,6 @@ func (w *WriterOperator) findOperator(operators []operator.Operator, operatorID 
 
 // OutputIDs is a collection of operator IDs used as outputs.
 type OutputIDs []string
-
-func (o OutputIDs) WithNamespace(bc operator.BuildContext) OutputIDs {
-	namespacedIDs := make([]string, 0, len(o))
-	for _, id := range o {
-		namespacedIDs = append(namespacedIDs, bc.PrependNamespace(id))
-	}
-	return namespacedIDs
-}
 
 // UnmarshalJSON will unmarshal a string or array of strings to OutputIDs.
 func (o *OutputIDs) UnmarshalJSON(bytes []byte) error {

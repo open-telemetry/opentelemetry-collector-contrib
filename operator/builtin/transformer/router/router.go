@@ -82,7 +82,7 @@ func (c RouterOperatorConfig) Build(bc operator.BuildContext) (operator.Operator
 		route := RouterOperatorRoute{
 			Attributer: attributer,
 			Expression: compiled,
-			OutputIDs:  routeConfig.OutputIDs.WithNamespace(bc),
+			OutputIDs:  routeConfig.OutputIDs,
 		}
 		routes = append(routes, &route)
 	}
