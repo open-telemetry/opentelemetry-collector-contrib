@@ -95,9 +95,6 @@ func TestExportTraceDataFullTrace(t *testing.T) {
 
 	clientAttrs := pdata.NewAttributeMap()
 	clientAttrs.InsertString(labelApplication, "test-app")
-	clientAttrs.InsertString("source", "test-source")
-	clientAttrs.InsertString("host.name", "test-host.name")
-	clientAttrs.InsertString("host-name", "test-host-name")
 	clientAttrs.CopyTo(clientSpan.Attributes())
 
 	serverSpan := createSpan(
@@ -125,7 +122,6 @@ func TestExportTraceDataFullTrace(t *testing.T) {
 			Name:    "root",
 			SpanID:  uuid.MustParse("00000000000000000000000000000001"),
 			TraceID: uuid.MustParse("01010101010101010101010101010101"),
-			Source:  "test-source",
 			Tags: map[string]string{
 				"resource":       "R1",
 				labelApplication: "defaultApp",
@@ -137,7 +133,6 @@ func TestExportTraceDataFullTrace(t *testing.T) {
 			SpanID:       uuid.MustParse("00000000000000000000000000000002"),
 			TraceID:      uuid.MustParse("01010101010101010101010101010101"),
 			ParentSpanID: uuid.MustParse("00000000000000000000000000000001"),
-			Source:       "test-source",
 			Tags: map[string]string{
 				"resource":                "R1",
 				labelApplication:          "test-app",
@@ -145,9 +140,6 @@ func TestExportTraceDataFullTrace(t *testing.T) {
 				"otel.status_description": "an error event occurred",
 				"error":                   "true",
 				labelSpanKind:             "client",
-				"source":                  "test-source",
-				"host.name":               "test-host.name",
-				"host-name":               "test-host-name",
 			},
 			SpanLogs: []senders.SpanLog{{
 				Fields: map[string]string{labelEventName: "client-event"},
@@ -189,7 +181,6 @@ func validateTraces(t *testing.T, expected []*span, traces pdata.Traces) {
 		}
 		assert.Equal(t, expected[i].StartMillis, actual[i].StartMillis)
 		assert.Equal(t, expected[i].DurationMillis, actual[i].DurationMillis)
-		assert.Equal(t, expected[i].SpanLogs, actual[i].SpanLogs)
 		assert.Equal(t, expected[i].SpanLogs, actual[i].SpanLogs)
 	}
 }

@@ -223,6 +223,70 @@ func TestTraceStateTranslatedToTag(t *testing.T) {
 	assert.False(t, ok)
 }
 
+func TestSpanForSourceTag(t *testing.T) {
+	inNanos := int64(50000000)
+
+	//TestCase1: default value for source
+	att := pdata.NewAttributeMap()
+	transform := transformerFromAttributes(att)
+	span := pdata.NewSpan()
+	span.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+	span.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	span.SetStartTimestamp(pdata.Timestamp(inNanos))
+
+	actual, err := transform.Span(span)
+	require.NoError(t, err, "transforming span to wavefront format")
+	assert.Equal(t, "", actual.Source)
+
+	//TestCase2: source value from resAttrs.source
+	att.InsertString("source", "test_source")
+	att.InsertString("host.name", "test_host.name")
+	transform = transformerFromAttributes(att)
+	span = pdata.NewSpan()
+	span.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+	span.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	span.SetStartTimestamp(pdata.Timestamp(inNanos))
+
+	actual, err = transform.Span(span)
+	require.NoError(t, err, "transforming span to wavefront format")
+	assert.Equal(t, "test_source", actual.Source)
+	assert.Equal(t, "test_host.name", actual.Tags["host.name"])
+	if value, isFound := actual.Tags["source"]; isFound {
+		t.Logf("Tag Source with value " + value + " not expected.")
+	}
+
+	//TestCase2: source value from resAttrs.host.name when source is not present
+	att.InsertString("host_name", "test_host_name")
+	att.InsertString("host.name", "test_host.name")
+	transform = transformerFromAttributes(att)
+	span = pdata.NewSpan()
+	span.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+	span.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	span.SetStartTimestamp(pdata.Timestamp(inNanos))
+
+	actual, err = transform.Span(span)
+	require.NoError(t, err, "transforming span to wavefront format")
+	assert.Equal(t, "test_host.name", actual.Source)
+	assert.Equal(t, "test_host_name", actual.Tags["host_name"])
+	if value, isFound := actual.Tags["host.name"]; isFound {
+		t.Logf("Tag host.name with value " + value + " not expected.")
+	}
+
+	//TestCase4: source value from resAttrs.source when spanAttrs.source is present
+	span.Attributes().InsertString("source", "source_from_span_attribute")
+	att.InsertString("source", "test_source")
+	att.InsertString("host.name", "test_host.name")
+	transform = transformerFromAttributes(att)
+	actual, err = transform.Span(span)
+	require.NoError(t, err, "transforming span to wavefront format")
+	assert.Equal(t, "test_source", actual.Source)
+	assert.Equal(t, "test_host.name", actual.Tags["host.name"])
+	if value, isFound := actual.Tags["source"]; isFound {
+		t.Logf("Tag Source with value " + value + " not expected.")
+	}
+	assert.Equal(t, "source_from_span_attribute", actual.Tags["_source"])
+}
+
 func spanWithKind(kind pdata.SpanKind) pdata.Span {
 	span := pdata.NewSpan()
 	span.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
