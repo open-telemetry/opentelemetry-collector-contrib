@@ -39,20 +39,20 @@ func newTTLCache(sweepInterval int64, deltaTTL int64) *ttlCache {
 
 // Diff submits a new value for a given non-monotonic metric and returns the difference with the
 // last submitted value (ordered by timestamp). The diff value is only valid if `ok` is true.
-func (t *ttlCache) Diff(dimensions metricsDimensions, startTs, ts uint64, val float64) (float64, bool) {
+func (t *ttlCache) Diff(dimensions *Dimensions, startTs, ts uint64, val float64) (float64, bool) {
 	return t.putAndGetDiff(dimensions, false, startTs, ts, val)
 }
 
 // MonotonicDiff submits a new value for a given monotonic metric and returns the difference with the
 // last submitted value (ordered by timestamp). The diff value is only valid if `ok` is true.
-func (t *ttlCache) MonotonicDiff(dimensions metricsDimensions, startTs, ts uint64, val float64) (float64, bool) {
+func (t *ttlCache) MonotonicDiff(dimensions *Dimensions, startTs, ts uint64, val float64) (float64, bool) {
 	return t.putAndGetDiff(dimensions, true, startTs, ts, val)
 }
 
 // putAndGetDiff submits a new value for a given metric and returns the difference with the
 // last submitted value (ordered by timestamp). The diff value is only valid if `ok` is true.
 func (t *ttlCache) putAndGetDiff(
-	dimensions metricsDimensions,
+	dimensions *Dimensions,
 	monotonic bool,
 	startTs, ts uint64,
 	val float64,

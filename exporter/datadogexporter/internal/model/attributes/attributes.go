@@ -163,6 +163,19 @@ func TagsFromAttributes(attrs pdata.AttributeMap) []string {
 	return tags
 }
 
+// OriginIDFromAttributes gets the origin IDs from resource attributes.
+// If not found, an empty string is returned for each of them.
+func OriginIDFromAttributes(attrs pdata.AttributeMap) (originID string) {
+	// originID is always empty. Container ID is preferred over Kubernetes pod UID.
+	// Prefixes come from pkg/util/kubernetes/kubelet and pkg/util/containers.
+	if containerID, ok := attrs.Get(conventions.AttributeContainerID); ok {
+		originID = "container_id://" + containerID.AsString()
+	} else if podUID, ok := attrs.Get(conventions.AttributeK8SPodUID); ok {
+		originID = "kubernetes_pod_uid://" + podUID.AsString()
+	}
+	return
+}
+
 // RunningTagsFromAttributes gets tags used for running metrics from attributes.
 func RunningTagsFromAttributes(attrs pdata.AttributeMap) []string {
 	tags := make([]string, 0, 1)

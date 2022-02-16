@@ -25,7 +25,7 @@ func newTestCache() *ttlCache {
 	return cache
 }
 
-var dims metricsDimensions = metricsDimensions{name: "test"}
+var dims = &Dimensions{name: "test"}
 
 func TestMonotonicDiffUnknownStart(t *testing.T) {
 	startTs := uint64(0) // equivalent to start being unset

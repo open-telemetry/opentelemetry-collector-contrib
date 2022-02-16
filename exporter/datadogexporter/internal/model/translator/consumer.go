@@ -35,12 +35,10 @@ type TimeSeriesConsumer interface {
 	// ConsumeTimeSeries consumes a timeseries-style metric.
 	ConsumeTimeSeries(
 		ctx context.Context,
-		name string,
+		dimensions *Dimensions,
 		typ MetricDataType,
 		timestamp uint64,
 		value float64,
-		tags []string,
-		host string,
 	)
 }
 
@@ -49,11 +47,9 @@ type SketchConsumer interface {
 	// ConsumeSketch consumes a pkg/quantile-style sketch.
 	ConsumeSketch(
 		ctx context.Context,
-		name string,
+		dimensions *Dimensions,
 		timestamp uint64,
 		sketch *quantile.Sketch,
-		tags []string,
-		host string,
 	)
 }
 
