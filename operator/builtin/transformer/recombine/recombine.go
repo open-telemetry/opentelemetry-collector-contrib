@@ -23,6 +23,7 @@ import (
 
 	"github.com/antonmedv/expr"
 	"github.com/antonmedv/expr/vm"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
@@ -61,8 +62,8 @@ type RecombineOperatorConfig struct {
 }
 
 // Build creates a new RecombineOperator from a config
-func (c *RecombineOperatorConfig) Build(bc operator.BuildContext) (operator.Operator, error) {
-	transformer, err := c.TransformerConfig.Build(bc)
+func (c *RecombineOperatorConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+	transformer, err := c.TransformerConfig.Build(logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build transformer config: %s", err)
 	}

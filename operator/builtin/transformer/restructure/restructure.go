@@ -21,6 +21,7 @@ import (
 
 	"github.com/antonmedv/expr"
 	"github.com/antonmedv/expr/vm"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/open-telemetry/opentelemetry-log-collection/errors"
@@ -47,8 +48,8 @@ type RestructureOperatorConfig struct {
 }
 
 // Build will build a restructure operator from the supplied configuration
-func (c RestructureOperatorConfig) Build(context operator.BuildContext) (operator.Operator, error) {
-	transformerOperator, err := c.TransformerConfig.Build(context)
+func (c RestructureOperatorConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+	transformerOperator, err := c.TransformerConfig.Build(logger)
 	if err != nil {
 		return nil, err
 	}

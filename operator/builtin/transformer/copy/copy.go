@@ -18,6 +18,8 @@ import (
 	"context"
 	"fmt"
 
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
@@ -42,8 +44,8 @@ type CopyOperatorConfig struct {
 }
 
 // Build will build a copy operator from the supplied configuration
-func (c CopyOperatorConfig) Build(context operator.BuildContext) (operator.Operator, error) {
-	transformerOperator, err := c.TransformerConfig.Build(context)
+func (c CopyOperatorConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+	transformerOperator, err := c.TransformerConfig.Build(logger)
 	if err != nil {
 		return nil, err
 	}

@@ -38,7 +38,7 @@ func TestStdoutOperator(t *testing.T) {
 		},
 	}
 
-	op, err := cfg.Build(testutil.NewBuildContext(t))
+	op, err := cfg.Build(testutil.Logger(t))
 	require.NoError(t, err)
 
 	var buf bytes.Buffer

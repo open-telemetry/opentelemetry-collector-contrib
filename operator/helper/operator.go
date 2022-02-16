@@ -54,7 +54,7 @@ func (c BasicConfig) Type() string {
 }
 
 // Build will build a basic operator.
-func (c BasicConfig) Build(context operator.BuildContext) (BasicOperator, error) {
+func (c BasicConfig) Build(logger *zap.SugaredLogger) (BasicOperator, error) {
 	if c.OperatorType == "" {
 		return BasicOperator{}, errors.NewError(
 			"missing required `type` field.",
@@ -63,7 +63,7 @@ func (c BasicConfig) Build(context operator.BuildContext) (BasicOperator, error)
 		)
 	}
 
-	if context.Logger == nil {
+	if logger == nil {
 		return BasicOperator{}, errors.NewError(
 			"operator build context is missing a logger.",
 			"this is an unexpected internal error",
@@ -75,7 +75,7 @@ func (c BasicConfig) Build(context operator.BuildContext) (BasicOperator, error)
 	operator := BasicOperator{
 		OperatorID:    c.ID(),
 		OperatorType:  c.Type(),
-		SugaredLogger: context.Logger.With("operator_id", c.ID(), "operator_type", c.Type()),
+		SugaredLogger: logger.With("operator_id", c.ID(), "operator_type", c.Type()),
 	}
 
 	return operator, nil

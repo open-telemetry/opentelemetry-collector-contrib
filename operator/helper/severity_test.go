@@ -381,15 +381,13 @@ func (tc severityTestCase) run(parseFrom entry.Field) func(*testing.T) {
 	return func(t *testing.T) {
 		t.Parallel()
 
-		buildContext := testutil.NewBuildContext(t)
-
 		cfg := &SeverityParserConfig{
 			ParseFrom: &parseFrom,
 			Preset:    tc.mappingSet,
 			Mapping:   tc.mapping,
 		}
 
-		severityParser, err := cfg.Build(buildContext)
+		severityParser, err := cfg.Build(testutil.Logger(t))
 		if tc.buildErr {
 			require.Error(t, err, "expected error when configuring operator")
 			return

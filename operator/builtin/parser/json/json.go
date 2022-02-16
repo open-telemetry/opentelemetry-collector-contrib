@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	jsoniter "github.com/json-iterator/go"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
@@ -42,8 +43,8 @@ type JSONParserConfig struct {
 }
 
 // Build will build a JSON parser operator.
-func (c JSONParserConfig) Build(context operator.BuildContext) (operator.Operator, error) {
-	parserOperator, err := c.ParserConfig.Build(context)
+func (c JSONParserConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+	parserOperator, err := c.ParserConfig.Build(logger)
 	if err != nil {
 		return nil, err
 	}

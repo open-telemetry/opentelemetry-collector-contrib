@@ -17,6 +17,8 @@ package metadata
 import (
 	"context"
 
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/open-telemetry/opentelemetry-log-collection/errors"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
@@ -44,8 +46,8 @@ type MetadataOperatorConfig struct {
 }
 
 // Build will build a metadata operator from the supplied configuration
-func (c MetadataOperatorConfig) Build(context operator.BuildContext) (operator.Operator, error) {
-	transformerOperator, err := c.TransformerConfig.Build(context)
+func (c MetadataOperatorConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+	transformerOperator, err := c.TransformerConfig.Build(logger)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to build transformer")
 	}

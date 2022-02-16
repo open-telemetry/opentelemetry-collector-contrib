@@ -34,8 +34,7 @@ func TestWriterConfigMissingOutput(t *testing.T) {
 			OperatorType: "testtype",
 		},
 	}
-	context := testutil.NewBuildContext(t)
-	_, err := config.Build(context)
+	_, err := config.Build(testutil.Logger(t))
 	require.NoError(t, err)
 }
 
@@ -46,8 +45,7 @@ func TestWriterConfigValidBuild(t *testing.T) {
 			OperatorType: "testtype",
 		},
 	}
-	context := testutil.NewBuildContext(t)
-	_, err := config.Build(context)
+	_, err := config.Build(testutil.Logger(t))
 	require.NoError(t, err)
 }
 

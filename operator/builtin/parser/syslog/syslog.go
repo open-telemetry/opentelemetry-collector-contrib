@@ -22,6 +22,7 @@ import (
 	sl "github.com/observiq/go-syslog/v3"
 	"github.com/observiq/go-syslog/v3/rfc3164"
 	"github.com/observiq/go-syslog/v3/rfc5424"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
@@ -55,7 +56,7 @@ type SyslogBaseConfig struct {
 }
 
 // Build will build a JSON parser operator.
-func (c SyslogParserConfig) Build(context operator.BuildContext) (operator.Operator, error) {
+func (c SyslogParserConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	if c.ParserConfig.TimeParser == nil {
 		parseFromField := entry.NewBodyField("timestamp")
 		c.ParserConfig.TimeParser = &helper.TimeParser{
@@ -64,7 +65,7 @@ func (c SyslogParserConfig) Build(context operator.BuildContext) (operator.Opera
 		}
 	}
 
-	parserOperator, err := c.ParserConfig.Build(context)
+	parserOperator, err := c.ParserConfig.Build(logger)
 	if err != nil {
 		return nil, err
 	}

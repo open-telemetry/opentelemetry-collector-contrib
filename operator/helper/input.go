@@ -21,7 +21,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/open-telemetry/opentelemetry-log-collection/errors"
-	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 )
 
 // NewInputConfig creates a new input config with default values.
@@ -43,8 +42,8 @@ type InputConfig struct {
 }
 
 // Build will build a base producer.
-func (c InputConfig) Build(context operator.BuildContext) (InputOperator, error) {
-	writerOperator, err := c.WriterConfig.Build(context)
+func (c InputConfig) Build(logger *zap.SugaredLogger) (InputOperator, error) {
+	writerOperator, err := c.WriterConfig.Build(logger)
 	if err != nil {
 		return InputOperator{}, errors.WithDetails(err, "operator_id", c.ID())
 	}

@@ -30,7 +30,7 @@ import (
 func newTestParser(t *testing.T, regex string) *RegexParser {
 	cfg := NewRegexParserConfig("test")
 	cfg.Regex = regex
-	op, err := cfg.Build(testutil.NewBuildContext(t))
+	op, err := cfg.Build(testutil.Logger(t))
 	require.NoError(t, err)
 	return op.(*RegexParser)
 }
@@ -38,7 +38,7 @@ func newTestParser(t *testing.T, regex string) *RegexParser {
 func TestRegexParserBuildFailure(t *testing.T) {
 	cfg := NewRegexParserConfig("test")
 	cfg.OnError = "invalid_on_error"
-	_, err := cfg.Build(testutil.NewBuildContext(t))
+	_, err := cfg.Build(testutil.Logger(t))
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "invalid `on_error` field")
 }
@@ -89,7 +89,7 @@ func TestParserRegex(t *testing.T) {
 			cfg.OutputIDs = []string{"fake"}
 			tc.configure(cfg)
 
-			op, err := cfg.Build(testutil.NewBuildContext(t))
+			op, err := cfg.Build(testutil.Logger(t))
 			require.NoError(t, err)
 
 			fake := testutil.NewFakeOutput(t)
@@ -115,28 +115,28 @@ func TestBuildParserRegex(t *testing.T) {
 
 	t.Run("BasicConfig", func(t *testing.T) {
 		c := newBasicRegexParser()
-		_, err := c.Build(testutil.NewBuildContext(t))
+		_, err := c.Build(testutil.Logger(t))
 		require.NoError(t, err)
 	})
 
 	t.Run("MissingRegexField", func(t *testing.T) {
 		c := newBasicRegexParser()
 		c.Regex = ""
-		_, err := c.Build(testutil.NewBuildContext(t))
+		_, err := c.Build(testutil.Logger(t))
 		require.Error(t, err)
 	})
 
 	t.Run("InvalidRegexField", func(t *testing.T) {
 		c := newBasicRegexParser()
 		c.Regex = "())()"
-		_, err := c.Build(testutil.NewBuildContext(t))
+		_, err := c.Build(testutil.Logger(t))
 		require.Error(t, err)
 	})
 
 	t.Run("NoNamedGroups", func(t *testing.T) {
 		c := newBasicRegexParser()
 		c.Regex = ".*"
-		_, err := c.Build(testutil.NewBuildContext(t))
+		_, err := c.Build(testutil.Logger(t))
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "no named capture groups")
 	})
@@ -144,7 +144,7 @@ func TestBuildParserRegex(t *testing.T) {
 	t.Run("NoNamedGroups", func(t *testing.T) {
 		c := newBasicRegexParser()
 		c.Regex = "(.*)"
-		_, err := c.Build(testutil.NewBuildContext(t))
+		_, err := c.Build(testutil.Logger(t))
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "no named capture groups")
 	})

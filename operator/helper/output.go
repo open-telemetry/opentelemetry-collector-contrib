@@ -15,6 +15,8 @@
 package helper
 
 import (
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-log-collection/errors"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 )
@@ -32,8 +34,8 @@ type OutputConfig struct {
 }
 
 // Build will build an output operator.
-func (c OutputConfig) Build(context operator.BuildContext) (OutputOperator, error) {
-	basicOperator, err := c.BasicConfig.Build(context)
+func (c OutputConfig) Build(logger *zap.SugaredLogger) (OutputOperator, error) {
+	basicOperator, err := c.BasicConfig.Build(logger)
 	if err != nil {
 		return OutputOperator{}, err
 	}

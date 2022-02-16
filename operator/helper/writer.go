@@ -19,6 +19,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 )
@@ -37,8 +39,8 @@ type WriterConfig struct {
 }
 
 // Build will build a writer operator from the config.
-func (c WriterConfig) Build(bc operator.BuildContext) (WriterOperator, error) {
-	basicOperator, err := c.BasicConfig.Build(bc)
+func (c WriterConfig) Build(logger *zap.SugaredLogger) (WriterOperator, error) {
+	basicOperator, err := c.BasicConfig.Build(logger)
 	if err != nil {
 		return WriterOperator{}, err
 	}

@@ -27,16 +27,14 @@ import (
 
 func TestBuildValid(t *testing.T) {
 	cfg := NewNoopOperatorConfig("test")
-	op, err := cfg.Build(testutil.NewBuildContext(t))
+	op, err := cfg.Build(testutil.Logger(t))
 	require.NoError(t, err)
 	require.IsType(t, &NoopOperator{}, op)
 }
 
-func TestBuildIvalid(t *testing.T) {
+func TestBuildInvalid(t *testing.T) {
 	cfg := NewNoopOperatorConfig("test")
-	ctx := testutil.NewBuildContext(t)
-	ctx.Logger = nil
-	_, err := cfg.Build(ctx)
+	_, err := cfg.Build(nil)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "build context is missing a logger")
 }
@@ -44,7 +42,7 @@ func TestBuildIvalid(t *testing.T) {
 func TestProcess(t *testing.T) {
 	cfg := NewNoopOperatorConfig("test")
 	cfg.OutputIDs = []string{"fake"}
-	op, err := cfg.Build(testutil.NewBuildContext(t))
+	op, err := cfg.Build(testutil.Logger(t))
 	require.NoError(t, err)
 
 	fake := testutil.NewFakeOutput(t)

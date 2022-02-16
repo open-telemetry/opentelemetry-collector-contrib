@@ -28,7 +28,7 @@ func TestStdin(t *testing.T) {
 	cfg := NewStdinInputConfig("")
 	cfg.OutputIDs = []string{"fake"}
 
-	op, err := cfg.Build(testutil.NewBuildContext(t))
+	op, err := cfg.Build(testutil.Logger(t))
 	require.NoError(t, err)
 
 	fake := testutil.NewFakeOutput(t)

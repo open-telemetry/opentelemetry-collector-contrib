@@ -655,7 +655,7 @@ func TestBuild(t *testing.T) {
 			cfg := basicConfig()
 			tc.modifyBaseConfig(cfg)
 
-			op, err := cfg.Build(testutil.NewBuildContext(t))
+			op, err := cfg.Build(testutil.Logger(t))
 			tc.errorRequirement(t, err)
 			if err != nil {
 				return

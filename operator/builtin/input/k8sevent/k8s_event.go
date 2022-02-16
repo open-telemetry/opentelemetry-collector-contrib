@@ -57,8 +57,8 @@ type K8sEventsConfig struct {
 }
 
 // Build will build a k8s_event_input operator from the supplied configuration
-func (c K8sEventsConfig) Build(context operator.BuildContext) (operator.Operator, error) {
-	input, err := c.InputConfig.Build(context)
+func (c K8sEventsConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+	input, err := c.InputConfig.Build(logger)
 	if err != nil {
 		return nil, errors.Wrap(err, "build transformer")
 	}

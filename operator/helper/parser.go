@@ -17,9 +17,10 @@ package helper
 import (
 	"context"
 
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/open-telemetry/opentelemetry-log-collection/errors"
-	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 )
 
 // NewParserConfig creates a new parser config with default values
@@ -45,8 +46,8 @@ type ParserConfig struct {
 }
 
 // Build will build a parser operator.
-func (c ParserConfig) Build(context operator.BuildContext) (ParserOperator, error) {
-	transformerOperator, err := c.TransformerConfig.Build(context)
+func (c ParserConfig) Build(logger *zap.SugaredLogger) (ParserOperator, error) {
+	transformerOperator, err := c.TransformerConfig.Build(logger)
 	if err != nil {
 		return ParserOperator{}, err
 	}
@@ -59,14 +60,14 @@ func (c ParserConfig) Build(context operator.BuildContext) (ParserOperator, erro
 	}
 
 	if c.TimeParser != nil {
-		if err := c.TimeParser.Validate(context); err != nil {
+		if err := c.TimeParser.Validate(); err != nil {
 			return ParserOperator{}, err
 		}
 		parserOperator.TimeParser = c.TimeParser
 	}
 
 	if c.SeverityParserConfig != nil {
-		severityParser, err := c.SeverityParserConfig.Build(context)
+		severityParser, err := c.SeverityParserConfig.Build(logger)
 		if err != nil {
 			return ParserOperator{}, err
 		}
@@ -74,7 +75,7 @@ func (c ParserConfig) Build(context operator.BuildContext) (ParserOperator, erro
 	}
 
 	if c.TraceParser != nil {
-		if err := c.TraceParser.Validate(context); err != nil {
+		if err := c.TraceParser.Validate(); err != nil {
 			return ParserOperator{}, err
 		}
 		parserOperator.TraceParser = c.TraceParser

@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
@@ -41,7 +40,7 @@ func TestSyslogParser(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			op, err := tc.Config.Build(testutil.NewBuildContext(t))
+			op, err := tc.Config.Build(testutil.Logger(t))
 			require.NoError(t, err)
 
 			fake := testutil.NewFakeOutput(t)
@@ -107,7 +106,7 @@ func TestSyslogParserInvalidLocation(t *testing.T) {
 	config.Location = "not_a_location"
 	config.Protocol = RFC3164
 
-	_, err := config.Build(operator.NewBuildContext(zap.NewNop().Sugar()))
+	_, err := config.Build(testutil.Logger(t))
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to load location "+config.Location)
 }

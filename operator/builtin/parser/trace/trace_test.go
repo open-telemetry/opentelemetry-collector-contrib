@@ -33,7 +33,7 @@ func TestInit(t *testing.T) {
 }
 func TestDefaultParser(t *testing.T) {
 	traceParserConfig := NewTraceParserConfig("")
-	_, err := traceParserConfig.Build(testutil.NewBuildContext(t))
+	_, err := traceParserConfig.Build(testutil.Logger(t))
 	require.NoError(t, err)
 }
 
@@ -100,7 +100,7 @@ func TestBuild(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			cfg, err := tc.input()
 			require.NoError(t, err, "expected nil error when running test cases input func")
-			op, err := cfg.Build(testutil.NewBuildContext(t))
+			op, err := cfg.Build(testutil.Logger(t))
 			if tc.expectErr {
 				require.Error(t, err, "expected error while building trace_parser operator")
 				return
@@ -126,7 +126,7 @@ func TestProcess(t *testing.T) {
 			"no-op",
 			func() (operator.Operator, error) {
 				cfg := NewTraceParserConfig("test_id")
-				return cfg.Build(testutil.NewBuildContext(t))
+				return cfg.Build(testutil.Logger(t))
 			},
 			&entry.Entry{
 				Body: "https://google.com:443/path?user=dev",
@@ -145,7 +145,7 @@ func TestProcess(t *testing.T) {
 				cfg.SpanId.ParseFrom = &spanFrom
 				cfg.TraceId.ParseFrom = &traceFrom
 				cfg.TraceFlags.ParseFrom = &flagsFrom
-				return cfg.Build(testutil.NewBuildContext(t))
+				return cfg.Build(testutil.Logger(t))
 			},
 			&entry.Entry{
 				Body: map[string]interface{}{
@@ -177,7 +177,7 @@ func TestProcess(t *testing.T) {
 				cfg.TraceId.PreserveTo = &traceTo
 				cfg.TraceFlags.ParseFrom = &flagsFrom
 				cfg.TraceFlags.PreserveTo = &flagsTo
-				return cfg.Build(testutil.NewBuildContext(t))
+				return cfg.Build(testutil.Logger(t))
 			},
 			&entry.Entry{
 				Body: map[string]interface{}{
@@ -306,7 +306,7 @@ func TestTraceParserParse(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			traceParserConfig := NewTraceParserConfig("")
-			_, _ = traceParserConfig.Build(testutil.NewBuildContext(t))
+			_, _ = traceParserConfig.Build(testutil.Logger(t))
 			e := entry.New()
 			e.Body = tc.inputRecord
 			err := traceParserConfig.Parse(e)

@@ -33,8 +33,7 @@ import (
 
 func TestParserConfigMissingBase(t *testing.T) {
 	config := ParserConfig{}
-	context := testutil.NewBuildContext(t)
-	_, err := config.Build(context)
+	_, err := config.Build(testutil.Logger(t))
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "missing required `type` field.")
 }
@@ -48,7 +47,7 @@ func TestParserConfigInvalidTimeParser(t *testing.T) {
 		LayoutType: "strptime",
 	}
 
-	_, err := cfg.Build(testutil.NewBuildContext(t))
+	_, err := cfg.Build(testutil.Logger(t))
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "missing required configuration parameter `layout`")
 }
@@ -61,7 +60,7 @@ func TestParserConfigBuildValid(t *testing.T) {
 		Layout:     "",
 		LayoutType: "native",
 	}
-	_, err := cfg.Build(testutil.NewBuildContext(t))
+	_, err := cfg.Build(testutil.Logger(t))
 	require.NoError(t, err)
 }
 
@@ -209,14 +208,13 @@ func TestParserInvalidSeverityParseDrop(t *testing.T) {
 }
 
 func TestParserInvalidTimeValidSeverityParse(t *testing.T) {
-	buildContext := testutil.NewBuildContext(t)
 	parser := ParserOperator{
 		TransformerOperator: TransformerOperator{
 			WriterOperator: WriterOperator{
 				BasicOperator: BasicOperator{
 					OperatorID:    "test-id",
 					OperatorType:  "test-type",
-					SugaredLogger: buildContext.Logger,
+					SugaredLogger: testutil.Logger(t),
 				},
 			},
 			OnError: DropOnError,
@@ -263,14 +261,13 @@ func TestParserValidTimeInvalidSeverityParse(t *testing.T) {
 	expected, err := time.ParseInLocation(layout, sample, hst)
 	require.NoError(t, err)
 
-	buildContext := testutil.NewBuildContext(t)
 	parser := ParserOperator{
 		TransformerOperator: TransformerOperator{
 			WriterOperator: WriterOperator{
 				BasicOperator: BasicOperator{
 					OperatorID:    "test-id",
 					OperatorType:  "test-type",
-					SugaredLogger: buildContext.Logger,
+					SugaredLogger: testutil.Logger(t),
 				},
 			},
 			OnError: DropOnError,
@@ -308,7 +305,7 @@ func TestParserOutput(t *testing.T) {
 	output := &testutil.Operator{}
 	output.On("ID").Return("test-output")
 	output.On("Process", mock.Anything, mock.Anything).Return(nil)
-	buildContext := testutil.NewBuildContext(t)
+
 	parser := ParserOperator{
 		TransformerOperator: TransformerOperator{
 			OnError: DropOnError,
@@ -316,7 +313,7 @@ func TestParserOutput(t *testing.T) {
 				BasicOperator: BasicOperator{
 					OperatorID:    "test-id",
 					OperatorType:  "test-type",
-					SugaredLogger: buildContext.Logger,
+					SugaredLogger: testutil.Logger(t),
 				},
 				OutputOperators: []operator.Operator{output},
 			},
@@ -411,7 +408,7 @@ func TestParserPreserve(t *testing.T) {
 			cfg := NewParserConfig("test-id", "test-type")
 			tc.cfgMod(&cfg)
 
-			parser, err := cfg.Build(testutil.NewBuildContext(t))
+			parser, err := cfg.Build(testutil.Logger(t))
 			require.NoError(t, err)
 
 			e := entry.New()
@@ -492,13 +489,12 @@ func TestMapStructureDecodeParserConfig(t *testing.T) {
 }
 
 func writerWithFakeOut(t *testing.T) (*WriterOperator, *testutil.FakeOutput) {
-	buildContext := testutil.NewBuildContext(t)
 	fakeOut := testutil.NewFakeOutput(t)
 	writer := &WriterOperator{
 		BasicOperator: BasicOperator{
 			OperatorID:    "test-id",
 			OperatorType:  "test-type",
-			SugaredLogger: buildContext.Logger,
+			SugaredLogger: testutil.Logger(t),
 		},
 		OutputIDs: []string{fakeOut.ID()},
 	}

@@ -20,6 +20,8 @@ import (
 	"net/url"
 	"strings"
 
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
@@ -42,8 +44,8 @@ type URIParserConfig struct {
 }
 
 // Build will build a uri parser operator.
-func (c URIParserConfig) Build(context operator.BuildContext) (operator.Operator, error) {
-	parserOperator, err := c.ParserConfig.Build(context)
+func (c URIParserConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+	parserOperator, err := c.ParserConfig.Build(logger)
 	if err != nil {
 		return nil, err
 	}

@@ -20,7 +20,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/open-telemetry/opentelemetry-log-collection/errors"
-	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 )
 
 // NewTraceParser creates a new trace parser with default values
@@ -64,7 +63,7 @@ type TraceFlagsConfig struct {
 }
 
 // Validate validates a TraceParser, and reconfigures it if necessary
-func (t *TraceParser) Validate(context operator.BuildContext) error {
+func (t *TraceParser) Validate() error {
 	if t.TraceId == nil {
 		t.TraceId = &TraceIdConfig{}
 	}

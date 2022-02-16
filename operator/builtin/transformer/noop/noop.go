@@ -17,6 +17,8 @@ package noop
 import (
 	"context"
 
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
@@ -39,8 +41,8 @@ type NoopOperatorConfig struct {
 }
 
 // Build will build a noop operator.
-func (c NoopOperatorConfig) Build(context operator.BuildContext) (operator.Operator, error) {
-	transformerOperator, err := c.TransformerConfig.Build(context)
+func (c NoopOperatorConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+	transformerOperator, err := c.TransformerConfig.Build(logger)
 	if err != nil {
 		return nil, err
 	}

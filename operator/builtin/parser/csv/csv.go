@@ -21,6 +21,8 @@ import (
 	"io"
 	"strings"
 
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
@@ -48,8 +50,8 @@ type CSVParserConfig struct {
 }
 
 // Build will build a csv parser operator.
-func (c CSVParserConfig) Build(context operator.BuildContext) (operator.Operator, error) {
-	parserOperator, err := c.ParserConfig.Build(context)
+func (c CSVParserConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+	parserOperator, err := c.ParserConfig.Build(logger)
 	if err != nil {
 		return nil, err
 	}

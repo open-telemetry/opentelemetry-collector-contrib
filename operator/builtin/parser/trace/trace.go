@@ -17,6 +17,8 @@ package trace
 import (
 	"context"
 
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
@@ -41,13 +43,13 @@ type TraceParserConfig struct {
 }
 
 // Build will build a trace parser operator.
-func (c TraceParserConfig) Build(context operator.BuildContext) (operator.Operator, error) {
-	transformerOperator, err := c.TransformerConfig.Build(context)
+func (c TraceParserConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+	transformerOperator, err := c.TransformerConfig.Build(logger)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := c.TraceParser.Validate(context); err != nil {
+	if err := c.TraceParser.Validate(); err != nil {
 		return nil, err
 	}
 

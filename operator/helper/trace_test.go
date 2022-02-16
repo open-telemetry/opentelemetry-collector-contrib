@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
-	"github.com/open-telemetry/opentelemetry-log-collection/testutil"
 )
 
 func TestValidateDoesntChangeFields(t *testing.T) {
@@ -39,7 +38,7 @@ func TestValidateDoesntChangeFields(t *testing.T) {
 			ParseFrom: &traceFlags,
 		},
 	}
-	err := parser.Validate(testutil.NewBuildContext(t))
+	err := parser.Validate()
 	require.NoError(t, err)
 	require.Equal(t, &traceId, parser.TraceId.ParseFrom)
 	require.Equal(t, &spanId, parser.SpanId.ParseFrom)
@@ -51,7 +50,7 @@ func TestValidateSetsDefaultFields(t *testing.T) {
 	spanId := entry.NewBodyField("span_id")
 	traceFlags := entry.NewBodyField("trace_flags")
 	parser := TraceParser{}
-	err := parser.Validate(testutil.NewBuildContext(t))
+	err := parser.Validate()
 	require.NoError(t, err)
 	require.Equal(t, &traceId, parser.TraceId.ParseFrom)
 	require.Equal(t, &spanId, parser.SpanId.ParseFrom)
@@ -73,7 +72,7 @@ func TestPreserveFields(t *testing.T) {
 			PreserveTo: &traceFlags,
 		},
 	}
-	err := parser.Validate(testutil.NewBuildContext(t))
+	err := parser.Validate()
 	require.NoError(t, err)
 
 	entry := entry.New()

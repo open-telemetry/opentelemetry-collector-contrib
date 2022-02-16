@@ -20,7 +20,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 	"github.com/open-telemetry/opentelemetry-log-collection/testutil"
 )
 
@@ -44,8 +43,8 @@ func TestBasicConfigBuildWithoutID(t *testing.T) {
 	config := BasicConfig{
 		OperatorType: "test-type",
 	}
-	context := testutil.NewBuildContext(t)
-	_, err := config.Build(context)
+
+	_, err := config.Build(testutil.Logger(t))
 	require.NoError(t, err)
 }
 
@@ -53,8 +52,8 @@ func TestBasicConfigBuildWithoutType(t *testing.T) {
 	config := BasicConfig{
 		OperatorID: "test-id",
 	}
-	context := operator.BuildContext{}
-	_, err := config.Build(context)
+
+	_, err := config.Build(testutil.Logger(t))
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "missing required `type` field.")
 }
@@ -64,8 +63,8 @@ func TestBasicConfigBuildMissingLogger(t *testing.T) {
 		OperatorID:   "test-id",
 		OperatorType: "test-type",
 	}
-	context := operator.BuildContext{}
-	_, err := config.Build(context)
+
+	_, err := config.Build(nil)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "operator build context is missing a logger.")
 }
@@ -75,8 +74,8 @@ func TestBasicConfigBuildValid(t *testing.T) {
 		OperatorID:   "test-id",
 		OperatorType: "test-type",
 	}
-	context := testutil.NewBuildContext(t)
-	operator, err := config.Build(context)
+
+	operator, err := config.Build(testutil.Logger(t))
 	require.NoError(t, err)
 	require.Equal(t, "test-id", operator.OperatorID)
 	require.Equal(t, "test-type", operator.OperatorType)

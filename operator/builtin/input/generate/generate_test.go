@@ -32,7 +32,7 @@ func TestInputGenerate(t *testing.T) {
 		Body: "test message",
 	}
 
-	op, err := cfg.Build(testutil.NewBuildContext(t))
+	op, err := cfg.Build(testutil.Logger(t))
 	require.NoError(t, err)
 
 	fake := testutil.NewFakeOutput(t)

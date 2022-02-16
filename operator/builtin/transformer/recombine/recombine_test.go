@@ -236,7 +236,7 @@ func TestRecombineOperator(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			op, err := tc.config.Build(testutil.NewBuildContext(t))
+			op, err := tc.config.Build(testutil.Logger(t))
 			require.NoError(t, err)
 			recombine := op.(*RecombineOperator)
 
@@ -265,7 +265,7 @@ func TestRecombineOperator(t *testing.T) {
 		cfg.CombineField = entry.NewBodyField()
 		cfg.IsFirstEntry = "false"
 		cfg.OutputIDs = []string{"fake"}
-		op, err := cfg.Build(testutil.NewBuildContext(t))
+		op, err := cfg.Build(testutil.Logger(t))
 		require.NoError(t, err)
 		recombine := op.(*RecombineOperator)
 
@@ -300,7 +300,7 @@ func BenchmarkRecombine(b *testing.B) {
 	cfg.CombineField = entry.NewBodyField()
 	cfg.IsFirstEntry = "false"
 	cfg.OutputIDs = []string{"fake"}
-	op, err := cfg.Build(testutil.NewBuildContext(b))
+	op, err := cfg.Build(testutil.Logger(b))
 	require.NoError(b, err)
 	recombine := op.(*RecombineOperator)
 
@@ -338,7 +338,7 @@ func TestTimeout(t *testing.T) {
 	cfg.IsFirstEntry = "false"
 	cfg.OutputIDs = []string{"fake"}
 	cfg.ForceFlushTimeout = 100 * time.Millisecond
-	op, err := cfg.Build(testutil.NewBuildContext(t))
+	op, err := cfg.Build(testutil.Logger(t))
 	require.NoError(t, err)
 	recombine := op.(*RecombineOperator)
 

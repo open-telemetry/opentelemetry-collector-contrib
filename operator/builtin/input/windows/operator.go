@@ -23,6 +23,8 @@ import (
 	"sync"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
 )
@@ -41,8 +43,8 @@ type EventLogConfig struct {
 }
 
 // Build will build a windows event log operator.
-func (c *EventLogConfig) Build(context operator.BuildContext) (operator.Operator, error) {
-	inputOperator, err := c.InputConfig.Build(context)
+func (c *EventLogConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+	inputOperator, err := c.InputConfig.Build(logger)
 	if err != nil {
 		return nil, err
 	}

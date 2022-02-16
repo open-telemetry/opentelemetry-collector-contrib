@@ -15,6 +15,7 @@
 package pipeline
 
 import (
+	"sort"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -174,29 +175,30 @@ func TestDeduplicateIDs(t *testing.T) {
 	}
 }
 
-type outputTestCase struct {
-	name            string
-	ops             func() Config
-	expectedOutputs []string
-}
-
 func TestUpdateOutputIDs(t *testing.T) {
-	cases := []outputTestCase{
+	cases := []struct {
+		defaultOut operator.Operator
+		ops        func() Config
+		outMap     map[string][]string
+		name       string
+	}{
 		{
-			"one_op_rename",
-			func() Config {
+			name: "one_op_rename",
+			ops: func() Config {
 				var ops Config
 				ops = append(ops, newDummyJSON("json_parser"))
 				ops = append(ops, newDummyJSON("json_parser"))
 				return ops
 			},
-			[]string{
-				"json_parser1",
+			outMap: map[string][]string{
+				"json_parser":  {"json_parser1"},
+				"json_parser1": nil,
 			},
+			defaultOut: nil,
 		},
 		{
-			"multi_op_rename",
-			func() Config {
+			name: "multi_op_rename",
+			ops: func() Config {
 				var ops Config
 				ops = append(ops, newDummyJSON("json_parser"))
 				ops = append(ops, newDummyJSON("json_parser"))
@@ -204,15 +206,17 @@ func TestUpdateOutputIDs(t *testing.T) {
 				ops = append(ops, newDummyJSON("json_parser"))
 				return ops
 			},
-			[]string{
-				"json_parser1",
-				"json_parser2",
-				"json_parser3",
+			outMap: map[string][]string{
+				"json_parser":  {"json_parser1"},
+				"json_parser1": {"json_parser2"},
+				"json_parser2": {"json_parser3"},
+				"json_parser3": nil,
 			},
+			defaultOut: nil,
 		},
 		{
-			"different_ops",
-			func() Config {
+			name: "different_ops",
+			ops: func() Config {
 				var ops Config
 				ops = append(ops, newDummyJSON("json_parser"))
 				ops = append(ops, newDummyJSON("json_parser"))
@@ -221,16 +225,18 @@ func TestUpdateOutputIDs(t *testing.T) {
 				ops = append(ops, newDummyCopy("copy"))
 				return ops
 			},
-			[]string{
-				"json_parser1",
-				"json_parser2",
-				"copy",
-				"copy1",
+			outMap: map[string][]string{
+				"json_parser":  {"json_parser1"},
+				"json_parser1": {"json_parser2"},
+				"json_parser2": {"copy"},
+				"copy":         {"copy1"},
+				"copy1":        nil,
 			},
+			defaultOut: nil,
 		},
 		{
-			"unordered",
-			func() Config {
+			name: "unordered",
+			ops: func() Config {
 				var ops Config
 				ops = append(ops, newDummyJSON("json_parser"))
 				ops = append(ops, newDummyCopy("copy"))
@@ -238,15 +244,17 @@ func TestUpdateOutputIDs(t *testing.T) {
 				ops = append(ops, newDummyCopy("copy"))
 				return ops
 			},
-			[]string{
-				"copy",
-				"json_parser1",
-				"copy1",
+			outMap: map[string][]string{
+				"json_parser":  {"copy"},
+				"copy":         {"json_parser1"},
+				"json_parser1": {"copy1"},
+				"copy1":        nil,
 			},
+			defaultOut: nil,
 		},
 		{
-			"already_renamed",
-			func() Config {
+			name: "already_renamed",
+			ops: func() Config {
 				var ops Config
 				ops = append(ops, newDummyJSON("json_parser"))
 				ops = append(ops, newDummyJSON("json_parser"))
@@ -255,23 +263,55 @@ func TestUpdateOutputIDs(t *testing.T) {
 				ops = append(ops, newDummyJSON("json_parser"))
 				return ops
 			},
-			[]string{
-				"json_parser1",
-				"json_parser2",
-				"json_parser3",
-				"json_parser4",
+			outMap: map[string][]string{
+				"json_parser":  {"json_parser1"},
+				"json_parser1": {"json_parser2"},
+				"json_parser2": {"json_parser3"},
+				"json_parser3": {"json_parser4"},
+				"json_parser4": nil,
 			},
+			defaultOut: nil,
+		},
+		{
+			name: "one_op_rename",
+			ops: func() Config {
+				var ops Config
+				ops = append(ops, newDummyJSON("json_parser"))
+				ops = append(ops, newDummyJSON("json_parser"))
+				return ops
+			},
+			outMap: map[string][]string{
+				"json_parser":  {"json_parser1"},
+				"json_parser1": {"fake"},
+			},
+			defaultOut: testutil.NewFakeOutput(t),
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run("UpdateOutputIDs/"+tc.name, func(t *testing.T) {
-			bc := testutil.NewBuildContext(t)
-			ops, err := tc.ops().BuildOperators(bc, nil)
+			pipeline, err := tc.ops().Build(testutil.Logger(t), tc.defaultOut)
 			require.NoError(t, err)
-			require.Equal(t, len(tc.expectedOutputs), len(ops)-1)
-			for i := 0; i < len(ops)-1; i++ {
-				require.Equal(t, tc.expectedOutputs[i], ops[i].GetOutputIDs()[0])
+			ops := pipeline.Operators()
+
+			expectedNumOps := len(tc.outMap)
+			if tc.defaultOut != nil {
+				expectedNumOps++
+			}
+			require.Equal(t, expectedNumOps, len(ops))
+
+			for i := 0; i < len(ops); i++ {
+				id := ops[i].ID()
+				if id == "fake" {
+					require.Nil(t, ops[i].GetOutputIDs())
+					continue
+				}
+				expectedOuts, ok := tc.outMap[id]
+				require.True(t, ok)
+				actualOuts := ops[i].GetOutputIDs()
+				sort.Strings(expectedOuts)
+				sort.Strings(actualOuts)
+				require.Equal(t, expectedOuts, actualOuts)
 			}
 		})
 	}

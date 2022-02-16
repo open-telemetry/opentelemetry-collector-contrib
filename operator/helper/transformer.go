@@ -24,7 +24,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/open-telemetry/opentelemetry-log-collection/errors"
-	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 )
 
 // NewTransformerConfig creates a new transformer config with default values
@@ -43,8 +42,8 @@ type TransformerConfig struct {
 }
 
 // Build will build a transformer operator.
-func (c TransformerConfig) Build(context operator.BuildContext) (TransformerOperator, error) {
-	writerOperator, err := c.WriterConfig.Build(context)
+func (c TransformerConfig) Build(logger *zap.SugaredLogger) (TransformerOperator, error) {
+	writerOperator, err := c.WriterConfig.Build(logger)
 	if err != nil {
 		return TransformerOperator{}, errors.WithDetails(err, "operator_id", c.ID())
 	}

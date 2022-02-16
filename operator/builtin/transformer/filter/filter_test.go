@@ -109,8 +109,7 @@ func TestFilterOperator(t *testing.T) {
 			cfg := NewFilterOperatorConfig("test")
 			cfg.Expression = tc.expression
 
-			buildContext := testutil.NewBuildContext(t)
-			op, err := cfg.Build(buildContext)
+			op, err := cfg.Build(testutil.Logger(t))
 			require.NoError(t, err)
 
 			filtered := true
@@ -135,8 +134,7 @@ func TestFilterDropRatio(t *testing.T) {
 	cfg := NewFilterOperatorConfig("test")
 	cfg.Expression = `$.message == "test_message"`
 	cfg.DropRatio = 0.5
-	buildContext := testutil.NewBuildContext(t)
-	op, err := cfg.Build(buildContext)
+	op, err := cfg.Build(testutil.Logger(t))
 	require.NoError(t, err)
 
 	processedEntries := 0

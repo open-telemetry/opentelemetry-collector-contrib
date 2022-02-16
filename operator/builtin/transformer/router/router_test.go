@@ -196,8 +196,7 @@ func TestRouterOperator(t *testing.T) {
 			cfg.Routes = tc.routes
 			cfg.Default = tc.defaultOutput
 
-			buildContext := testutil.NewBuildContext(t)
-			op, err := cfg.Build(buildContext)
+			op, err := cfg.Build(testutil.Logger(t))
 			require.NoError(t, err)
 
 			results := map[string]int{}

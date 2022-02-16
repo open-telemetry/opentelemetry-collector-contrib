@@ -53,8 +53,8 @@ type FilterOperatorConfig struct {
 }
 
 // Build will build a filter operator from the supplied configuration
-func (c FilterOperatorConfig) Build(context operator.BuildContext) (operator.Operator, error) {
-	transformer, err := c.TransformerConfig.Build(context)
+func (c FilterOperatorConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+	transformer, err := c.TransformerConfig.Build(logger)
 	if err != nil {
 		return nil, err
 	}
