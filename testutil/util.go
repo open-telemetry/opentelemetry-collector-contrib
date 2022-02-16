@@ -22,6 +22,7 @@ import (
 	"sync"
 	"testing"
 
+	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest"
 
@@ -45,11 +46,9 @@ func NewTempDir(t testing.TB) string {
 	return tempDir
 }
 
-// NewBuildContext will return a new build context for testing
-func NewBuildContext(t testing.TB) operator.BuildContext {
-	return operator.BuildContext{
-		Logger: zaptest.NewLogger(t, zaptest.Level(zapcore.ErrorLevel)).Sugar(),
-	}
+// Logger will return a new tesst logger
+func Logger(t testing.TB) *zap.SugaredLogger {
+	return zaptest.NewLogger(t, zaptest.Level(zapcore.ErrorLevel)).Sugar()
 }
 
 type mockPersister struct {

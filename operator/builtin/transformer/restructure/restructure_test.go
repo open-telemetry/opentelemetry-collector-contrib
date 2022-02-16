@@ -199,7 +199,7 @@ func TestRestructureOperator(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			cfg := NewRestructureOperatorConfig("test")
 			cfg.OutputIDs = []string{"fake"}
-			op, err := cfg.Build(testutil.NewBuildContext(t))
+			op, err := cfg.Build(testutil.Logger(t))
 			require.NoError(t, err)
 
 			restructure := op.(*RestructureOperator)

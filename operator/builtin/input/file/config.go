@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/bmatcuk/doublestar/v3"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
@@ -71,8 +72,8 @@ type InputConfig struct {
 }
 
 // Build will build a file input operator from the supplied configuration
-func (c InputConfig) Build(context operator.BuildContext) (operator.Operator, error) {
-	inputOperator, err := c.InputConfig.Build(context)
+func (c InputConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+	inputOperator, err := c.InputConfig.Build(logger)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +112,7 @@ func (c InputConfig) Build(context operator.BuildContext) (operator.Operator, er
 		return nil, fmt.Errorf("`fingerprint_size` must be at least %d bytes", minFingerprintSize)
 	}
 
-	encoding, err := c.Encoding.Build(context)
+	encoding, err := c.Encoding.Build()
 	if err != nil {
 		return nil, err
 	}

@@ -24,7 +24,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/open-telemetry/opentelemetry-log-collection/errors"
-	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 )
 
 // StrptimeKey is literally "strptime", and is the default layout type
@@ -63,7 +62,7 @@ func (t *TimeParser) IsZero() bool {
 }
 
 // Validate validates a TimeParser, and reconfigures it if necessary
-func (t *TimeParser) Validate(context operator.BuildContext) error {
+func (t *TimeParser) Validate() error {
 	if t.ParseFrom == nil {
 		return fmt.Errorf("missing required parameter 'parse_from'")
 	}

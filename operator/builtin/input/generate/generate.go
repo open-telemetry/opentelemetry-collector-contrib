@@ -20,6 +20,8 @@ import (
 	"sync"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
@@ -45,8 +47,8 @@ type GenerateInputConfig struct {
 }
 
 // Build will build a generate input operator.
-func (c *GenerateInputConfig) Build(context operator.BuildContext) (operator.Operator, error) {
-	inputOperator, err := c.InputConfig.Build(context)
+func (c *GenerateInputConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+	inputOperator, err := c.InputConfig.Build(logger)
 	if err != nil {
 		return nil, err
 	}

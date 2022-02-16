@@ -17,6 +17,8 @@ package severity
 import (
 	"context"
 
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
@@ -41,13 +43,13 @@ type SeverityParserConfig struct {
 }
 
 // Build will build a time parser operator.
-func (c SeverityParserConfig) Build(context operator.BuildContext) (operator.Operator, error) {
-	transformerOperator, err := c.TransformerConfig.Build(context)
+func (c SeverityParserConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+	transformerOperator, err := c.TransformerConfig.Build(logger)
 	if err != nil {
 		return nil, err
 	}
 
-	severityParser, err := c.SeverityParserConfig.Build(context)
+	severityParser, err := c.SeverityParserConfig.Build(logger)
 	if err != nil {
 		return nil, err
 	}

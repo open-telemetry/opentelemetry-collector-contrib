@@ -31,8 +31,8 @@ func TestInputConfigMissingBase(t *testing.T) {
 			OutputIDs: []string{"test-output"},
 		},
 	}
-	context := testutil.NewBuildContext(t)
-	_, err := config.Build(context)
+
+	_, err := config.Build(testutil.Logger(t))
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "missing required `type` field.")
 }
@@ -47,8 +47,8 @@ func TestInputConfigMissingOutput(t *testing.T) {
 		},
 		WriteTo: entry.Field{},
 	}
-	context := testutil.NewBuildContext(t)
-	_, err := config.Build(context)
+
+	_, err := config.Build(testutil.Logger(t))
 	require.NoError(t, err)
 }
 
@@ -63,19 +63,18 @@ func TestInputConfigValid(t *testing.T) {
 			OutputIDs: []string{"test-output"},
 		},
 	}
-	context := testutil.NewBuildContext(t)
-	_, err := config.Build(context)
+
+	_, err := config.Build(testutil.Logger(t))
 	require.NoError(t, err)
 }
 
 func TestInputOperatorCanProcess(t *testing.T) {
-	buildContext := testutil.NewBuildContext(t)
 	input := InputOperator{
 		WriterOperator: WriterOperator{
 			BasicOperator: BasicOperator{
 				OperatorID:    "test-id",
 				OperatorType:  "test-type",
-				SugaredLogger: buildContext.Logger,
+				SugaredLogger: testutil.Logger(t),
 			},
 		},
 	}
@@ -83,13 +82,12 @@ func TestInputOperatorCanProcess(t *testing.T) {
 }
 
 func TestInputOperatorProcess(t *testing.T) {
-	buildContext := testutil.NewBuildContext(t)
 	input := InputOperator{
 		WriterOperator: WriterOperator{
 			BasicOperator: BasicOperator{
 				OperatorID:    "test-id",
 				OperatorType:  "test-type",
-				SugaredLogger: buildContext.Logger,
+				SugaredLogger: testutil.Logger(t),
 			},
 		},
 	}
@@ -101,7 +99,6 @@ func TestInputOperatorProcess(t *testing.T) {
 }
 
 func TestInputOperatorNewEntry(t *testing.T) {
-	buildContext := testutil.NewBuildContext(t)
 	writeTo := entry.NewBodyField("test-field")
 
 	labelExpr, err := ExprStringConfig("test").Build()
@@ -125,7 +122,7 @@ func TestInputOperatorNewEntry(t *testing.T) {
 			BasicOperator: BasicOperator{
 				OperatorID:    "test-id",
 				OperatorType:  "test-type",
-				SugaredLogger: buildContext.Logger,
+				SugaredLogger: testutil.Logger(t),
 			},
 		},
 		WriteTo: writeTo,

@@ -75,7 +75,7 @@ func TestBuild(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			cfg, err := tc.input()
 			require.NoError(t, err, "expected nil error when running test cases input func")
-			op, err := cfg.Build(testutil.NewBuildContext(t))
+			op, err := cfg.Build(testutil.Logger(t))
 			if tc.expectErr {
 				require.Error(t, err, "expected error while building time_parser operator")
 				return
@@ -155,7 +155,7 @@ func TestProcess(t *testing.T) {
 				require.NoError(t, err)
 				return
 			}
-			op, err := cfg.Build(testutil.NewBuildContext(t))
+			op, err := cfg.Build(testutil.Logger(t))
 			if err != nil {
 				require.NoError(t, err)
 				return
@@ -535,9 +535,7 @@ func runTimeParseTest(t *testing.T, cfg *TimeParserConfig, ent *entry.Entry, bui
 
 func runLossyTimeParseTest(_ *testing.T, cfg *TimeParserConfig, ent *entry.Entry, buildErr bool, parseErr bool, expected time.Time, maxLoss time.Duration) func(*testing.T) {
 	return func(t *testing.T) {
-		buildContext := testutil.NewBuildContext(t)
-
-		op, err := cfg.Build(buildContext)
+		op, err := cfg.Build(testutil.Logger(t))
 		if buildErr {
 			require.Error(t, err, "expected error when configuring operator")
 			return

@@ -67,8 +67,8 @@ type UDPBaseConfig struct {
 }
 
 // Build will build a udp input operator.
-func (c UDPInputConfig) Build(context operator.BuildContext) (operator.Operator, error) {
-	inputOperator, err := c.InputConfig.Build(context)
+func (c UDPInputConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+	inputOperator, err := c.InputConfig.Build(logger)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +82,7 @@ func (c UDPInputConfig) Build(context operator.BuildContext) (operator.Operator,
 		return nil, fmt.Errorf("failed to resolve listen_address: %s", err)
 	}
 
-	encoding, err := c.Encoding.Build(context)
+	encoding, err := c.Encoding.Build()
 	if err != nil {
 		return nil, err
 	}

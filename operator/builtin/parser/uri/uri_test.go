@@ -30,7 +30,7 @@ import (
 
 func newTestParser(t *testing.T) *URIParser {
 	cfg := NewURIParserConfig("test")
-	op, err := cfg.Build(testutil.NewBuildContext(t))
+	op, err := cfg.Build(testutil.Logger(t))
 	require.NoError(t, err)
 	return op.(*URIParser)
 }
@@ -44,7 +44,7 @@ func TestInit(t *testing.T) {
 func TestURIParserBuildFailure(t *testing.T) {
 	cfg := NewURIParserConfig("test")
 	cfg.OnError = "invalid_on_error"
-	_, err := cfg.Build(testutil.NewBuildContext(t))
+	_, err := cfg.Build(testutil.Logger(t))
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "invalid `on_error` field")
 }
@@ -81,7 +81,7 @@ func TestProcess(t *testing.T) {
 			"default",
 			func() (operator.Operator, error) {
 				cfg := NewURIParserConfig("test_id")
-				return cfg.Build(testutil.NewBuildContext(t))
+				return cfg.Build(testutil.Logger(t))
 			},
 			&entry.Entry{
 				Body: "https://google.com:443/path?user=dev",
@@ -106,7 +106,7 @@ func TestProcess(t *testing.T) {
 				cfg := NewURIParserConfig("test_id")
 				cfg.ParseFrom = entry.NewBodyField("url")
 				cfg.ParseTo = entry.NewBodyField("url2")
-				return cfg.Build(testutil.NewBuildContext(t))
+				return cfg.Build(testutil.Logger(t))
 			},
 			&entry.Entry{
 				Body: map[string]interface{}{
@@ -134,7 +134,7 @@ func TestProcess(t *testing.T) {
 			func() (operator.Operator, error) {
 				cfg := NewURIParserConfig("test_id")
 				cfg.ParseFrom = entry.NewBodyField("url")
-				return cfg.Build(testutil.NewBuildContext(t))
+				return cfg.Build(testutil.Logger(t))
 			},
 			&entry.Entry{
 				Body: map[string]interface{}{
@@ -161,7 +161,7 @@ func TestProcess(t *testing.T) {
 				cfg := NewURIParserConfig("test_id")
 				cfg.ParseFrom = entry.NewBodyField("url")
 				cfg.PreserveTo = &cfg.ParseFrom
-				return cfg.Build(testutil.NewBuildContext(t))
+				return cfg.Build(testutil.Logger(t))
 			},
 			&entry.Entry{
 				Body: map[string]interface{}{
@@ -526,7 +526,7 @@ func TestBuildParserURL(t *testing.T) {
 
 	t.Run("BasicConfig", func(t *testing.T) {
 		c := newBasicURIParser()
-		_, err := c.Build(testutil.NewBuildContext(t))
+		_, err := c.Build(testutil.Logger(t))
 		require.NoError(t, err)
 	})
 }

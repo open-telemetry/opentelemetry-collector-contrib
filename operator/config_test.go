@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -28,10 +29,12 @@ type FakeBuilder struct {
 	Array        []string `json:"array" yaml:"array"`
 }
 
-func (f *FakeBuilder) Build(context BuildContext) (Operator, error) { return nil, nil }
-func (f *FakeBuilder) ID() string                                   { return "operator" }
-func (f *FakeBuilder) Type() string                                 { return "operator" }
-func (f *FakeBuilder) SetID(s string)                               {}
+func (f *FakeBuilder) Build(_ *zap.SugaredLogger) (Operator, error) {
+	return nil, nil
+}
+func (f *FakeBuilder) ID() string     { return "operator" }
+func (f *FakeBuilder) Type() string   { return "operator" }
+func (f *FakeBuilder) SetID(s string) {}
 
 func TestUnmarshalJSONErrors(t *testing.T) {
 	t.Cleanup(func() {

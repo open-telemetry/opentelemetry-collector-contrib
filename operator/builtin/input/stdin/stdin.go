@@ -45,8 +45,8 @@ type StdinInputConfig struct {
 }
 
 // Build will build a stdin input operator.
-func (c *StdinInputConfig) Build(context operator.BuildContext) (operator.Operator, error) {
-	inputOperator, err := c.InputConfig.Build(context)
+func (c *StdinInputConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+	inputOperator, err := c.InputConfig.Build(logger)
 	if err != nil {
 		return nil, err
 	}

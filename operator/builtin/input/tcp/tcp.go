@@ -74,8 +74,8 @@ type TCPBaseConfig struct {
 }
 
 // Build will build a tcp input operator.
-func (c TCPInputConfig) Build(context operator.BuildContext) (operator.Operator, error) {
-	inputOperator, err := c.InputConfig.Build(context)
+func (c TCPInputConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+	inputOperator, err := c.InputConfig.Build(logger)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +98,7 @@ func (c TCPInputConfig) Build(context operator.BuildContext) (operator.Operator,
 		return nil, fmt.Errorf("failed to resolve listen_address: %s", err)
 	}
 
-	encoding, err := c.Encoding.Build(context)
+	encoding, err := c.Encoding.Build()
 	if err != nil {
 		return nil, err
 	}

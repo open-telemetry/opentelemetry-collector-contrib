@@ -17,6 +17,8 @@ package syslog
 import (
 	"fmt"
 
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/input/tcp"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/input/udp"
@@ -40,8 +42,8 @@ type SyslogInputConfig struct {
 	Udp                     *udp.UDPBaseConfig `json:"udp" yaml:"udp"`
 }
 
-func (c SyslogInputConfig) Build(context operator.BuildContext) (operator.Operator, error) {
-	inputBase, err := c.InputConfig.Build(context)
+func (c SyslogInputConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+	inputBase, err := c.InputConfig.Build(logger)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +52,7 @@ func (c SyslogInputConfig) Build(context operator.BuildContext) (operator.Operat
 	syslogParserCfg.SyslogBaseConfig = c.SyslogBaseConfig
 	syslogParserCfg.SetID(inputBase.ID() + "_internal_parser")
 	syslogParserCfg.OutputIDs = c.OutputIDs
-	syslogParser, err := syslogParserCfg.Build(context)
+	syslogParser, err := syslogParserCfg.Build(logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve syslog config: %s", err)
 	}
@@ -59,7 +61,7 @@ func (c SyslogInputConfig) Build(context operator.BuildContext) (operator.Operat
 		tcpInputCfg := tcp.NewTCPInputConfig(inputBase.ID() + "_internal_tcp")
 		tcpInputCfg.TCPBaseConfig = *c.Tcp
 
-		tcpInput, err := tcpInputCfg.Build(context)
+		tcpInput, err := tcpInputCfg.Build(logger)
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve tcp config: %s", err)
 		}
@@ -80,7 +82,7 @@ func (c SyslogInputConfig) Build(context operator.BuildContext) (operator.Operat
 		udpInputCfg := udp.NewUDPInputConfig(inputBase.ID() + "_internal_udp")
 		udpInputCfg.UDPBaseConfig = *c.Udp
 
-		udpInput, err := udpInputCfg.Build(context)
+		udpInput, err := udpInputCfg.Build(logger)
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve upd config: %s", err)
 		}

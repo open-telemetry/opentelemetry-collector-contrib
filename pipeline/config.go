@@ -17,34 +17,47 @@ package pipeline
 import (
 	"fmt"
 
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 )
 
 // Config is the configuration of a pipeline.
 type Config []operator.Config
 
-// BuildOperators builds the operators from the list of configs into operators.
-func (c Config) BuildOperators(bc operator.BuildContext, defaultOperator operator.Operator) ([]operator.Operator, error) {
+// Build will build a pipeline from the config.
+func (c Config) Build(logger *zap.SugaredLogger, defaultOut operator.Operator) (*DirectedPipeline, error) {
 	c.dedeplucateIDs()
 
-	operators := make([]operator.Operator, 0, len(c))
+	ops := make([]operator.Operator, 0, len(c))
 	for _, builder := range c {
-		op, err := builder.Build(bc)
+		op, err := builder.Build(logger)
 		if err != nil {
 			return nil, err
 		}
-		operators = append(operators, op)
+		ops = append(ops, op)
 	}
 
-	if defaultOperator != nil && operators[len(operators)-1].CanOutput() {
-		operators = append(operators, defaultOperator)
+	for i, op := range ops {
+		// Any operator that already has an output will not be changed
+		if len(op.GetOutputIDs()) > 0 {
+			continue
+		}
+
+		// Any operator (except the last) will just output to the next
+		if i+1 < len(ops) {
+			op.SetOutputIDs([]string{ops[i+1].ID()})
+			continue
+		}
+
+		// The last operator may output to the default output
+		if op.CanOutput() && defaultOut != nil {
+			ops = append(ops, defaultOut)
+			op.SetOutputIDs([]string{ops[i+1].ID()})
+		}
 	}
 
-	if err := SetOutputIDs(operators); err != nil {
-		return nil, err
-	}
-
-	return operators, nil
+	return NewDirectedPipeline(ops)
 }
 
 func (c Config) dedeplucateIDs() {
@@ -71,32 +84,4 @@ func (c Config) dedeplucateIDs() {
 		typeMap[op.Type()]++
 		op.SetID(newID)
 	}
-}
-
-// BuildPipeline will build a pipeline from the config.
-func (c Config) BuildPipeline(bc operator.BuildContext, defaultOperator operator.Operator) (*DirectedPipeline, error) {
-	operators, err := c.BuildOperators(bc, defaultOperator)
-	if err != nil {
-		return nil, err
-	}
-
-	return NewDirectedPipeline(operators)
-}
-
-// SetOutputIDs Loops through all the operators and sets a default output to the next operator in the slice.
-// Additionally, if the output is set to a plugin, it sets the output to the first operator in the plugins pipeline.
-func SetOutputIDs(operators []operator.Operator) error {
-	for i, op := range operators {
-		// because no output is specified at this point for the last operator,
-		// it will always be empty and there is nothing after it to automatically point towards, so we break the loop
-		if i+1 == len(operators) {
-			break
-		}
-
-		if len(op.GetOutputIDs()) == 0 {
-			op.SetOutputIDs([]string{operators[i+1].ID()})
-			continue
-		}
-	}
-	return nil
 }

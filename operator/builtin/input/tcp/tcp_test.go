@@ -90,7 +90,7 @@ func tcpInputTest(input []byte, expected []string) func(t *testing.T) {
 		cfg := NewTCPInputConfig("test_id")
 		cfg.ListenAddress = ":0"
 
-		op, err := cfg.Build(testutil.NewBuildContext(t))
+		op, err := cfg.Build(testutil.Logger(t))
 		require.NoError(t, err)
 
 		mockOutput := testutil.Operator{}
@@ -140,7 +140,7 @@ func tcpInputAttributesTest(input []byte, expected []string) func(t *testing.T) 
 		cfg.ListenAddress = ":0"
 		cfg.AddAttributes = true
 
-		op, err := cfg.Build(testutil.NewBuildContext(t))
+		op, err := cfg.Build(testutil.Logger(t))
 		require.NoError(t, err)
 
 		mockOutput := testutil.Operator{}
@@ -227,7 +227,7 @@ func tlsTCPInputTest(input []byte, expected []string) func(t *testing.T) {
 			},
 		})
 
-		op, err := cfg.Build(testutil.NewBuildContext(t))
+		op, err := cfg.Build(testutil.Logger(t))
 		require.NoError(t, err)
 
 		mockOutput := testutil.Operator{}
@@ -353,7 +353,7 @@ func TestBuild(t *testing.T) {
 			cfg.ListenAddress = tc.inputBody.ListenAddress
 			cfg.MaxLogSize = tc.inputBody.MaxLogSize
 			cfg.TLS = tc.inputBody.TLS
-			_, err := cfg.Build(testutil.NewBuildContext(t))
+			_, err := cfg.Build(testutil.Logger(t))
 			if tc.expectErr {
 				require.Error(t, err)
 				return
@@ -398,7 +398,7 @@ func TestFailToBind(t *testing.T) {
 	var startTCP func(port int) (*TCPInput, error) = func(int) (*TCPInput, error) {
 		cfg := NewTCPInputConfig("test_id")
 		cfg.ListenAddress = net.JoinHostPort(ip, strconv.Itoa(port))
-		op, err := cfg.Build(testutil.NewBuildContext(t))
+		op, err := cfg.Build(testutil.Logger(t))
 		require.NoError(t, err)
 		mockOutput := testutil.Operator{}
 		tcpInput := op.(*TCPInput)
@@ -426,7 +426,7 @@ func BenchmarkTcpInput(b *testing.B) {
 	cfg := NewTCPInputConfig("test_id")
 	cfg.ListenAddress = ":0"
 
-	op, err := cfg.Build(testutil.NewBuildContext(b))
+	op, err := cfg.Build(testutil.Logger(b))
 	require.NoError(b, err)
 
 	fakeOutput := testutil.NewFakeOutput(b)

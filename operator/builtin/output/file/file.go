@@ -22,6 +22,8 @@ import (
 	"os"
 	"sync"
 
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
@@ -47,8 +49,8 @@ type FileOutputConfig struct {
 }
 
 // Build will build a file output operator.
-func (c FileOutputConfig) Build(context operator.BuildContext) (operator.Operator, error) {
-	outputOperator, err := c.OutputConfig.Build(context)
+func (c FileOutputConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+	outputOperator, err := c.OutputConfig.Build(logger)
 	if err != nil {
 		return nil, err
 	}

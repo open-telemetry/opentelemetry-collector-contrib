@@ -33,14 +33,14 @@ import (
 
 func newTestParser(t *testing.T) *JSONParser {
 	config := NewJSONParserConfig("test")
-	op, err := config.Build(testutil.NewBuildContext(t))
+	op, err := config.Build(testutil.Logger(t))
 	require.NoError(t, err)
 	return op.(*JSONParser)
 }
 
 func TestJSONParserConfigBuild(t *testing.T) {
 	config := NewJSONParserConfig("test")
-	op, err := config.Build(testutil.NewBuildContext(t))
+	op, err := config.Build(testutil.Logger(t))
 	require.NoError(t, err)
 	require.IsType(t, &JSONParser{}, op)
 }
@@ -48,7 +48,7 @@ func TestJSONParserConfigBuild(t *testing.T) {
 func TestJSONParserConfigBuildFailure(t *testing.T) {
 	config := NewJSONParserConfig("test")
 	config.OnError = "invalid_on_error"
-	_, err := config.Build(testutil.NewBuildContext(t))
+	_, err := config.Build(testutil.Logger(t))
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "invalid `on_error` field")
 }

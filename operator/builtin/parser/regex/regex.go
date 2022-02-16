@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"regexp"
 
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/open-telemetry/opentelemetry-log-collection/errors"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
@@ -44,8 +46,8 @@ type RegexParserConfig struct {
 }
 
 // Build will build a regex parser operator.
-func (c RegexParserConfig) Build(context operator.BuildContext) (operator.Operator, error) {
-	parserOperator, err := c.ParserConfig.Build(context)
+func (c RegexParserConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+	parserOperator, err := c.ParserConfig.Build(logger)
 	if err != nil {
 		return nil, err
 	}

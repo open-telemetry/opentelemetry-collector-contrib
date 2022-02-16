@@ -61,7 +61,7 @@ func (f *fakeWatch) ResultChan() <-chan watch.Event {
 }
 
 func TestWatchNamespace(t *testing.T) {
-	inputOp, err := helper.NewInputConfig("test_id", "k8s_event_input").Build(testutil.NewBuildContext(t))
+	inputOp, err := helper.NewInputConfig("test_id", "k8s_event_input").Build(testutil.Logger(t))
 	require.NoError(t, err)
 
 	fakeAPI := &fakeTest.Fake{}

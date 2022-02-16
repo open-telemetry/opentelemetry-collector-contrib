@@ -26,7 +26,6 @@ import (
 	yaml "gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
-	"github.com/open-telemetry/opentelemetry-log-collection/testutil"
 )
 
 func Test_setTimestampYear(t *testing.T) {
@@ -579,9 +578,7 @@ func runTimeParseTest(timeParser *TimeParser, ent *entry.Entry, buildErr bool, p
 
 func runLossyTimeParseTest(timeParser *TimeParser, ent *entry.Entry, buildErr bool, parseErr bool, expected time.Time, maxLoss time.Duration) func(*testing.T) {
 	return func(t *testing.T) {
-		buildContext := testutil.NewBuildContext(t)
-
-		err := timeParser.Validate(buildContext)
+		err := timeParser.Validate()
 		if buildErr {
 			require.Error(t, err, "expected error when validating config")
 			return

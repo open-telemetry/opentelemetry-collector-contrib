@@ -60,8 +60,8 @@ type JournaldInputConfig struct {
 }
 
 // Build will build a journald input operator from the supplied configuration
-func (c JournaldInputConfig) Build(buildContext operator.BuildContext) (operator.Operator, error) {
-	inputOperator, err := c.InputConfig.Build(buildContext)
+func (c JournaldInputConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+	inputOperator, err := c.InputConfig.Build(logger)
 	if err != nil {
 		return nil, err
 	}

@@ -22,8 +22,6 @@ import (
 	"golang.org/x/text/encoding/ianaindex"
 	"golang.org/x/text/encoding/unicode"
 	"golang.org/x/text/transform"
-
-	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 )
 
 // NewBasicConfig creates a new Encoding config
@@ -39,7 +37,7 @@ type EncodingConfig struct {
 }
 
 // Build will build an Encoding operator.
-func (c EncodingConfig) Build(context operator.BuildContext) (Encoding, error) {
+func (c EncodingConfig) Build() (Encoding, error) {
 	enc, err := lookupEncoding(c.Encoding)
 	if err != nil {
 		return Encoding{}, err

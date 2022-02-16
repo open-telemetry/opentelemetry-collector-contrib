@@ -51,7 +51,7 @@ func TestSyslogInput(t *testing.T) {
 }
 
 func SyslogInputTest(t *testing.T, cfg *SyslogInputConfig, tc syslog.Case) {
-	op, err := cfg.Build(testutil.NewBuildContext(t))
+	op, err := cfg.Build(testutil.Logger(t))
 	require.NoError(t, err)
 
 	fake := testutil.NewFakeOutput(t)
@@ -103,8 +103,7 @@ func TestSyslogIDs(t *testing.T) {
 
 	t.Run("TCP", func(t *testing.T) {
 		cfg := NewSyslogInputConfigWithTcp(basicConfig())
-		bc := testutil.NewBuildContext(t)
-		op, err := cfg.Build(bc)
+		op, err := cfg.Build(testutil.Logger(t))
 		require.NoError(t, err)
 		syslogInputOp := op.(*SyslogInput)
 		require.Equal(t, "test_syslog_internal_tcp", syslogInputOp.tcp.ID())
@@ -115,8 +114,7 @@ func TestSyslogIDs(t *testing.T) {
 	})
 	t.Run("UDP", func(t *testing.T) {
 		cfg := NewSyslogInputConfigWithUdp(basicConfig())
-		bc := testutil.NewBuildContext(t)
-		op, err := cfg.Build(bc)
+		op, err := cfg.Build(testutil.Logger(t))
 		require.NoError(t, err)
 		syslogInputOp := op.(*SyslogInput)
 		require.Equal(t, "test_syslog_internal_udp", syslogInputOp.udp.ID())

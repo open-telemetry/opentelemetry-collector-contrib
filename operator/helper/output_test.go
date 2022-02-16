@@ -25,8 +25,7 @@ import (
 
 func TestOutputConfigMissingBase(t *testing.T) {
 	config := OutputConfig{}
-	context := testutil.NewBuildContext(t)
-	_, err := config.Build(context)
+	_, err := config.Build(testutil.Logger(t))
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "missing required `type` field.")
 }
@@ -38,54 +37,49 @@ func TestOutputConfigBuildValid(t *testing.T) {
 			OperatorType: "test-type",
 		},
 	}
-	context := testutil.NewBuildContext(t)
-	_, err := config.Build(context)
+	_, err := config.Build(testutil.Logger(t))
 	require.NoError(t, err)
 }
 
 func TestOutputOperatorCanProcess(t *testing.T) {
-	buildContext := testutil.NewBuildContext(t)
 	output := OutputOperator{
 		BasicOperator: BasicOperator{
 			OperatorID:    "test-id",
 			OperatorType:  "test-type",
-			SugaredLogger: buildContext.Logger,
+			SugaredLogger: testutil.Logger(t),
 		},
 	}
 	require.True(t, output.CanProcess())
 }
 
 func TestOutputOperatorCanOutput(t *testing.T) {
-	buildContext := testutil.NewBuildContext(t)
 	output := OutputOperator{
 		BasicOperator: BasicOperator{
 			OperatorID:    "test-id",
 			OperatorType:  "test-type",
-			SugaredLogger: buildContext.Logger,
+			SugaredLogger: testutil.Logger(t),
 		},
 	}
 	require.False(t, output.CanOutput())
 }
 
 func TestOutputOperatorOutputs(t *testing.T) {
-	buildContext := testutil.NewBuildContext(t)
 	output := OutputOperator{
 		BasicOperator: BasicOperator{
 			OperatorID:    "test-id",
 			OperatorType:  "test-type",
-			SugaredLogger: buildContext.Logger,
+			SugaredLogger: testutil.Logger(t),
 		},
 	}
 	require.Equal(t, []operator.Operator{}, output.Outputs())
 }
 
 func TestOutputOperatorSetOutputs(t *testing.T) {
-	buildContext := testutil.NewBuildContext(t)
 	output := OutputOperator{
 		BasicOperator: BasicOperator{
 			OperatorID:    "test-id",
 			OperatorType:  "test-type",
-			SugaredLogger: buildContext.Logger,
+			SugaredLogger: testutil.Logger(t),
 		},
 	}
 

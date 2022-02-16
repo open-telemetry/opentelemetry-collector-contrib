@@ -17,6 +17,8 @@ package drop
 import (
 	"context"
 
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
@@ -39,8 +41,8 @@ type DropOutputConfig struct {
 }
 
 // Build will build a drop output operator.
-func (c DropOutputConfig) Build(context operator.BuildContext) (operator.Operator, error) {
-	outputOperator, err := c.OutputConfig.Build(context)
+func (c DropOutputConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+	outputOperator, err := c.OutputConfig.Build(logger)
 	if err != nil {
 		return nil, err
 	}

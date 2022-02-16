@@ -66,9 +66,7 @@ func (b *LogAgentBuilder) Build() (*LogAgent, error) {
 		}),
 	).Sugar()
 
-	buildContext := operator.NewBuildContext(sampledLogger)
-
-	pipeline, err := b.config.Pipeline.BuildPipeline(buildContext, b.defaultOutput)
+	pipeline, err := b.config.Pipeline.Build(sampledLogger, b.defaultOutput)
 	if err != nil {
 		return nil, err
 	}
