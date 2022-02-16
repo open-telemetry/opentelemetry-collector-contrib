@@ -228,8 +228,8 @@ func TestSpanForSourceTag(t *testing.T) {
 	inNanos := int64(50000000)
 
 	//TestCase1: default value for source
-	att := pdata.NewAttributeMap()
-	transform := transformerFromAttributes(att)
+	resAttrs := pdata.NewAttributeMap()
+	transform := transformerFromAttributes(resAttrs)
 	span := pdata.NewSpan()
 	span.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
 	span.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
@@ -240,10 +240,10 @@ func TestSpanForSourceTag(t *testing.T) {
 	assert.Equal(t, "", actual.Source)
 
 	//TestCase2: source value from resAttrs.source
-	att = pdata.NewAttributeMap()
-	att.InsertString(labelSource, "test_source")
-	att.InsertString(conventions.AttributeHostName, "test_host.name")
-	transform = transformerFromAttributes(att)
+	resAttrs = pdata.NewAttributeMap()
+	resAttrs.InsertString(labelSource, "test_source")
+	resAttrs.InsertString(conventions.AttributeHostName, "test_host.name")
+	transform = transformerFromAttributes(resAttrs)
 	span = pdata.NewSpan()
 	span.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
 	span.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
@@ -255,13 +255,14 @@ func TestSpanForSourceTag(t *testing.T) {
 	assert.Equal(t, "test_host.name", actual.Tags[conventions.AttributeHostName])
 	if value, isFound := actual.Tags[labelSource]; isFound {
 		t.Logf("Tag Source with value " + value + " not expected.")
+		t.Fail()
 	}
 
 	//TestCase2: source value from resAttrs.host.name when source is not present
-	att = pdata.NewAttributeMap()
-	att.InsertString("hostname", "test_hostname")
-	att.InsertString(conventions.AttributeHostName, "test_host.name")
-	transform = transformerFromAttributes(att)
+	resAttrs = pdata.NewAttributeMap()
+	resAttrs.InsertString("hostname", "test_hostname")
+	resAttrs.InsertString(conventions.AttributeHostName, "test_host.name")
+	transform = transformerFromAttributes(resAttrs)
 	span = pdata.NewSpan()
 	span.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
 	span.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
@@ -273,22 +274,37 @@ func TestSpanForSourceTag(t *testing.T) {
 	assert.Equal(t, "test_hostname", actual.Tags["hostname"])
 	if value, isFound := actual.Tags[conventions.AttributeHostName]; isFound {
 		t.Logf("Tag host.name with value " + value + " not expected.")
+		t.Fail()
 	}
 
 	//TestCase4: source value from resAttrs.source when spanAttrs.source is present
-	att = pdata.NewAttributeMap()
+	resAttrs = pdata.NewAttributeMap()
 	span.Attributes().InsertString(labelSource, "source_from_span_attribute")
-	att.InsertString(labelSource, "test_source")
-	att.InsertString(conventions.AttributeHostName, "test_host.name")
-	transform = transformerFromAttributes(att)
+	resAttrs.InsertString(labelSource, "test_source")
+	resAttrs.InsertString(conventions.AttributeHostName, "test_host.name")
+	transform = transformerFromAttributes(resAttrs)
 	actual, err = transform.Span(span)
 	require.NoError(t, err, "transforming span to wavefront format")
 	assert.Equal(t, "test_source", actual.Source)
 	assert.Equal(t, "test_host.name", actual.Tags[conventions.AttributeHostName])
 	if value, isFound := actual.Tags[labelSource]; isFound {
 		t.Logf("Tag Source with value " + value + " not expected.")
+		t.Fail()
 	}
 	assert.Equal(t, "source_from_span_attribute", actual.Tags["_source"])
+}
+
+func TestGetSourceAndResourceTags(t *testing.T) {
+	resAttrs := pdata.NewAttributeMap()
+	resAttrs.InsertString(labelSource, "test_source")
+	resAttrs.InsertString(conventions.AttributeHostName, "test_host.name")
+
+	actualSource, actualAttrsWithoutSource := getSourceAndResourceTags(resAttrs)
+	assert.Equal(t, "test_source", actualSource)
+	if value, isFound := actualAttrsWithoutSource.Get(labelSource); isFound {
+		t.Logf("Tag Source with value " + value.StringVal() + " not expected.")
+		t.Fail()
+	}
 }
 
 func spanWithKind(kind pdata.SpanKind) pdata.Span {
