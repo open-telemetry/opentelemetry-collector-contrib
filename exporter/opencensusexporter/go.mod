@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.44.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.44.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.44.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver v0.44.0
@@ -51,6 +52,14 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
+
+// ambiguous import: found package cloud.google.com/go/compute/metadata in multiple modules:
+//        cloud.google.com/go
+//        cloud.google.com/go/compute
+// Force cloud.google.com/go to be at least v0.100.2, so that the metadata is not present.
+replace cloud.google.com/go => cloud.google.com/go v0.100.2
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 

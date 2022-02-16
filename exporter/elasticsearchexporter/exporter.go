@@ -32,7 +32,7 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/sanitize"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
 )
 
 type esClientCurrent = elasticsearch7.Client

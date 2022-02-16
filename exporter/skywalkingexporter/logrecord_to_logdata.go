@@ -28,7 +28,6 @@ const (
 	spanIDField            = "spanID"
 	severityNumber         = "severityNumber"
 	severityText           = "severityText"
-	name                   = "name"
 	flags                  = "flags"
 	instrumentationName    = "otlp.name"
 	instrumentationVersion = "otlp.version"
@@ -115,13 +114,6 @@ func mapLogRecordToLogData(lr pdata.LogRecord, logData *logpb.LogData) {
 		logData.Tags.Data = append(logData.Tags.Data, &common.KeyStringValuePair{
 			Key:   severityText,
 			Value: st,
-		})
-	}
-
-	if ln := lr.Name(); ln != "" {
-		logData.Tags.Data = append(logData.Tags.Data, &common.KeyStringValuePair{
-			Key:   name,
-			Value: ln,
 		})
 	}
 

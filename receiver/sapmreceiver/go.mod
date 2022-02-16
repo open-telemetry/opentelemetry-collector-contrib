@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/gorilla/mux v1.8.0
 	github.com/jaegertracing/jaeger v1.31.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.44.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.44.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.44.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.44.0
 	github.com/signalfx/sapm-proto v0.7.2
@@ -30,6 +30,7 @@ require (
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.44.0 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.8.2 // indirect
@@ -54,5 +55,7 @@ require (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk => ../../internal/splunk
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger => ../../pkg/translator/jaeger
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal

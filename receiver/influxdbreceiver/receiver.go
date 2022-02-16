@@ -30,7 +30,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/sanitize"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
 )
 
 type metricsReceiver struct {
