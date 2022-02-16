@@ -11,8 +11,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.44.0
 	github.com/stretchr/testify v1.7.0
 	github.com/xdg-go/scram v1.1.0
-	go.opentelemetry.io/collector v0.44.1-0.20220210184720-ea897a6906a5
-	go.opentelemetry.io/collector/model v0.44.1-0.20220210184720-ea897a6906a5
+	go.opentelemetry.io/collector v0.44.1-0.20220214172918-839909863acc
+	go.opentelemetry.io/collector/model v0.44.1-0.20220214172918-839909863acc
 	go.uber.org/multierr v1.7.0
 	go.uber.org/zap v1.21.0
 )

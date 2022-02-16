@@ -7,7 +7,7 @@ require (
 	github.com/influxdata/influxdb-observability/influx2otel v0.2.10
 	github.com/influxdata/line-protocol/v2 v2.2.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.43.0
-	go.opentelemetry.io/collector v0.44.1-0.20220210184720-ea897a6906a5
+	go.opentelemetry.io/collector v0.44.1-0.20220214172918-839909863acc
 	go.uber.org/zap v1.21.0
 
 )
@@ -29,7 +29,7 @@ require (
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	github.com/rs/cors v1.8.2 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
-	go.opentelemetry.io/collector/model v0.44.1-0.20220210184720-ea897a6906a5 // indirect
+	go.opentelemetry.io/collector/model v0.44.1-0.20220214172918-839909863acc // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.28.0 // indirect
 	go.opentelemetry.io/otel v1.4.0 // indirect
 	go.opentelemetry.io/otel/internal/metric v0.27.0 // indirect

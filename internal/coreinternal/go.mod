@@ -8,8 +8,8 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
 	github.com/spf13/cast v1.4.1
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.44.1-0.20220210184720-ea897a6906a5
-	go.opentelemetry.io/collector/model v0.44.1-0.20220210184720-ea897a6906a5
+	go.opentelemetry.io/collector v0.44.1-0.20220214172918-839909863acc
+	go.opentelemetry.io/collector/model v0.44.1-0.20220214172918-839909863acc
 	google.golang.org/protobuf v1.27.1
 )
 

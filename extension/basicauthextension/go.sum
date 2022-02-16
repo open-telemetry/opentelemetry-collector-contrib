@@ -174,10 +174,10 @@ github.com/tg123/go-htpasswd v1.2.0/go.mod h1:h7IzlfpvIWnVJhNZ0nQ9HaFxHb7pn5uFJY
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.3.5/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=
-go.opentelemetry.io/collector v0.44.1-0.20220210184720-ea897a6906a5 h1:IVLi36IKmnKDxs24+1OaMhGJ/acnUC8VKjKsfi0jVnA=
-go.opentelemetry.io/collector v0.44.1-0.20220210184720-ea897a6906a5/go.mod h1:rW8f1w3Bbyxnq/BUUuESFy9UoDCncOn9OuRjUf4OoQ4=
-go.opentelemetry.io/collector/model v0.44.1-0.20220210184720-ea897a6906a5 h1:Dy6sFwdTurMgkZS4xJ4vCmKp1yP1ZOS1ChCQsXgSnjc=
-go.opentelemetry.io/collector/model v0.44.1-0.20220210184720-ea897a6906a5/go.mod h1:uyiyyq8lV45zrJ94MnLip26sorfNLP6J9XmOvaEmy7w=
+go.opentelemetry.io/collector v0.44.1-0.20220214172918-839909863acc h1:/pm6p2YVLx0znssRFtCsTPf+SveiSmGBhXch3ODkuYY=
+go.opentelemetry.io/collector v0.44.1-0.20220214172918-839909863acc/go.mod h1:mnxm8d7ih0Q7pOZLxskdk6UswdTr5I5fwtdjqI4WY5Q=
+go.opentelemetry.io/collector/model v0.44.1-0.20220214172918-839909863acc h1:i7Udg5ZNw9zXf4B8r5BL3M5eYfDel4dOXag70FI24T4=
+go.opentelemetry.io/collector/model v0.44.1-0.20220214172918-839909863acc/go.mod h1:uyiyyq8lV45zrJ94MnLip26sorfNLP6J9XmOvaEmy7w=
 go.opentelemetry.io/otel v1.4.0 h1:7ESuKPq6zpjRaY5nvVDGiuwK7VAJ8MwkKnmNJ9whNZ4=
 go.opentelemetry.io/otel v1.4.0/go.mod h1:jeAqMFKy2uLIxCtKxoFj0FAL5zAPKQagc3+GtBWakzk=
 go.opentelemetry.io/otel/internal/metric v0.27.0 h1:9dAVGAfFiiEq5NVB9FUJ5et+btbDQAUIJehJ+ikyryk=
@@ -246,7 +246,7 @@ golang.org/x/sys v0.0.0-20201119102817-f84b799fce68/go.mod h1:h1NjWce9XRLGQEsW7w
 golang.org/x/sys v0.0.0-20210330210617-4fbd30eecc44/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20210510120138-977fb7262007/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
-golang.org/x/sys v0.0.0-20220111092808-5a964db01320 h1:0jf+tOCoZ3LyutmCOWpVni1chK4VfFLhRsDK7MhqGRY=
+golang.org/x/sys v0.0.0-20220114195835-da31bd327af9 h1:XfKQ4OlFl8okEOr5UvAqFRVj8pY/4yfcXrddB8qAbU0=
 golang.org/x/term v0.0.0-20201126162022-7de9c90e9dd1/go.mod h1:bj7SfCRtBDWHUb9snDiAeCFNEtKQo2Wmx5Cou7ajbmo=
 golang.org/x/text v0.3.0/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
 golang.org/x/text v0.3.1-0.20181227161524-e6919f6577db/go.mod h1:bEr9sfX3Q8Zfm5fL9x+3itogRgK3+ptLWKqgva+5dAk=
