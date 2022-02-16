@@ -23,11 +23,11 @@ import (
 func Test_parse(t *testing.T) {
 	tests := []struct {
 		query    string
-		expected Query
+		expected *ParsedQuery
 	}{
 		{
 			query: `set("foo")`,
-			expected: Query{
+			expected: &ParsedQuery{
 				Invocation: Invocation{
 					Function: "set",
 					Arguments: []Value{
@@ -41,7 +41,7 @@ func Test_parse(t *testing.T) {
 		},
 		{
 			query: `met(1.2)`,
-			expected: Query{
+			expected: &ParsedQuery{
 				Invocation: Invocation{
 					Function: "met",
 					Arguments: []Value{
@@ -55,7 +55,7 @@ func Test_parse(t *testing.T) {
 		},
 		{
 			query: `fff(12)`,
-			expected: Query{
+			expected: &ParsedQuery{
 				Invocation: Invocation{
 					Function: "fff",
 					Arguments: []Value{
@@ -69,7 +69,7 @@ func Test_parse(t *testing.T) {
 		},
 		{
 			query: `set("foo", get(bear.honey))`,
-			expected: Query{
+			expected: &ParsedQuery{
 				Invocation: Invocation{
 					Function: "set",
 					Arguments: []Value{
@@ -102,7 +102,7 @@ func Test_parse(t *testing.T) {
 		},
 		{
 			query: `set(foo.attributes["bar"].cat, "dog")`,
-			expected: Query{
+			expected: &ParsedQuery{
 				Invocation: Invocation{
 					Function: "set",
 					Arguments: []Value{
@@ -132,7 +132,7 @@ func Test_parse(t *testing.T) {
 		},
 		{
 			query: `set(foo.attributes["bar"].cat, "dog") where name == "fido"`,
-			expected: Query{
+			expected: &ParsedQuery{
 				Invocation: Invocation{
 					Function: "set",
 					Arguments: []Value{
@@ -176,7 +176,7 @@ func Test_parse(t *testing.T) {
 		},
 		{
 			query: `set(foo.attributes["bar"].cat, "dog") where name != "fido"`,
-			expected: Query{
+			expected: &ParsedQuery{
 				Invocation: Invocation{
 					Function: "set",
 					Arguments: []Value{
@@ -220,7 +220,7 @@ func Test_parse(t *testing.T) {
 		},
 		{
 			query: `set  ( foo.attributes[ "bar"].cat,   "dog")   where name=="fido"`,
-			expected: Query{
+			expected: &ParsedQuery{
 				Invocation: Invocation{
 					Function: "set",
 					Arguments: []Value{
@@ -264,7 +264,7 @@ func Test_parse(t *testing.T) {
 		},
 		{
 			query: `set("fo\"o")`,
-			expected: Query{
+			expected: &ParsedQuery{
 				Invocation: Invocation{
 					Function: "set",
 					Arguments: []Value{
@@ -280,10 +280,9 @@ func Test_parse(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.query, func(t *testing.T) {
-			parsed, err := Parse([]string{tt.query})
+			parsed, err := Parse(tt.query)
 			assert.NoError(t, err)
-			assert.Len(t, parsed, 1)
-			assert.Equal(t, tt.expected, parsed[0])
+			assert.Equal(t, tt.expected, parsed)
 		})
 	}
 }
@@ -298,7 +297,7 @@ func Test_parse_failure(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt, func(t *testing.T) {
-			_, err := Parse([]string{tt})
+			_, err := Parse(tt)
 			assert.Error(t, err)
 		})
 	}
