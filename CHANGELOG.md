@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### 💡 Enhancements 💡
+
+- `simpleprometheusreceiver`: Add support for static labels (#7908)
+
 ## v0.45.0
 
 ### 💡 Enhancements 💡
