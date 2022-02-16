@@ -25,7 +25,7 @@ type Config struct {
 	config.ReceiverSettings `mapstructure:",squash"`
 	// HTTPServerSettings is used to set up the Firehose delivery
 	// endpoint. The Firehose delivery stream expects an HTTPS
-	// endpoint, so TLSSettings can be used to enable that.
+	// endpoint, so TLSSettings must be used to enable that.
 	confighttp.HTTPServerSettings `mapstructure:",squash"`
 	// RecordType is the key used to determine which unmarshaler to use
 	// when receiving the requests.

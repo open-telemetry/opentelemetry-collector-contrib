@@ -28,6 +28,7 @@ const (
 	testRegion     = "us-east-1"
 	testAccountID  = "1234567890"
 	testStreamName = "MyMetricStream"
+	testInstanceID = "i-1234567890abcdef0"
 )
 
 func TestToSemConvAttributeKey(t *testing.T) {
@@ -69,28 +70,36 @@ func TestMetricBuilder(t *testing.T) {
 		require.Equal(t, metric.MetricName, got.Name())
 		require.Equal(t, metric.Unit, got.Unit())
 		require.Equal(t, pdata.MetricDataTypeSummary, got.DataType())
-		dps := got.Summary().DataPoints()
-		require.Equal(t, 1, dps.Len())
-		dp := dps.At(0)
-		require.Equal(t, uint64(metric.Value.Count), dp.Count())
-		require.Equal(t, metric.Value.Sum, dp.Sum())
-		qv := dp.QuantileValues()
-		require.Equal(t, 2, qv.Len())
-		require.Equal(t, []float64{metric.Value.Min, metric.Value.Max}, []float64{qv.At(0).Value(), qv.At(1).Value()})
-		require.Equal(t, 1, dp.Attributes().Len())
+		gotDps := got.Summary().DataPoints()
+		require.Equal(t, 1, gotDps.Len())
+		gotDp := gotDps.At(0)
+		require.Equal(t, uint64(metric.Value.Count), gotDp.Count())
+		require.Equal(t, metric.Value.Sum, gotDp.Sum())
+		gotQv := gotDp.QuantileValues()
+		require.Equal(t, 2, gotQv.Len())
+		require.Equal(t, []float64{metric.Value.Min, metric.Value.Max}, []float64{gotQv.At(0).Value(), gotQv.At(1).Value()})
+		require.Equal(t, 1, gotDp.Attributes().Len())
 	})
 	t.Run("WithTimestampCollision", func(t *testing.T) {
 		timestamp := time.Now().UnixMilli()
 		metrics := []cWMetric{
 			{
-				Timestamp:  timestamp,
-				Value:      testCWMetricValue(),
-				Dimensions: map[string]string{},
+				Timestamp: timestamp,
+				Value:     testCWMetricValue(),
+				Dimensions: map[string]string{
+					"AccountId":  testAccountID,
+					"Region":     testRegion,
+					"InstanceId": testInstanceID,
+				},
 			},
 			{
-				Timestamp:  timestamp,
-				Value:      testCWMetricValue(),
-				Dimensions: map[string]string{},
+				Timestamp: timestamp,
+				Value:     testCWMetricValue(),
+				Dimensions: map[string]string{
+					"InstanceId": testInstanceID,
+					"AccountId":  testAccountID,
+					"Region":     testRegion,
+				},
 			},
 		}
 		mb := newMetricBuilder("name", "unit")
@@ -99,12 +108,12 @@ func TestMetricBuilder(t *testing.T) {
 		}
 		got := pdata.NewMetric()
 		mb.Build(got)
-		dps := got.Summary().DataPoints()
-		require.Equal(t, 1, dps.Len())
-		dp := dps.At(0)
-		require.Equal(t, uint64(metrics[0].Value.Count), dp.Count())
-		require.Equal(t, metrics[0].Value.Sum, dp.Sum())
-		require.Equal(t, 0, dp.Attributes().Len())
+		gotDps := got.Summary().DataPoints()
+		require.Equal(t, 1, gotDps.Len())
+		gotDp := gotDps.At(0)
+		require.Equal(t, uint64(metrics[0].Value.Count), gotDp.Count())
+		require.Equal(t, metrics[0].Value.Sum, gotDp.Sum())
+		require.Equal(t, 3, gotDp.Attributes().Len())
 	})
 }
 
@@ -143,16 +152,22 @@ func TestResourceMetricsBuilder(t *testing.T) {
 				Value:      testCWMetricValue(),
 				Dimensions: map[string]string{},
 			}
-			rmb := newResourceMetricsBuilder(testStreamName, testAccountID, testRegion, testCase.namespace)
+			attrs := resourceAttributes{
+				metricStreamName: testStreamName,
+				accountID:        testAccountID,
+				region:           testRegion,
+				namespace:        testCase.namespace,
+			}
+			rmb := newResourceMetricsBuilder(attrs)
 			rmb.AddMetric(metric)
 			got := pdata.NewResourceMetrics()
 			rmb.Build(got)
-			attrs := got.Resource().Attributes()
-			for k, want := range testCase.wantAttributes {
-				v, ok := attrs.Get(k)
-				if want != "" {
+			gotAttrs := got.Resource().Attributes()
+			for wantKey, wantValue := range testCase.wantAttributes {
+				gotValue, ok := gotAttrs.Get(wantKey)
+				if wantValue != "" {
 					require.True(t, ok)
-					require.Equal(t, want, v.AsString())
+					require.Equal(t, wantValue, gotValue.AsString())
 				} else {
 					require.False(t, ok)
 				}
@@ -178,7 +193,13 @@ func TestResourceMetricsBuilder(t *testing.T) {
 				},
 			},
 		}
-		rmb := newResourceMetricsBuilder(testStreamName, testAccountID, testRegion, "AWS/EC2")
+		attrs := resourceAttributes{
+			metricStreamName: testStreamName,
+			accountID:        testAccountID,
+			region:           testRegion,
+			namespace:        "AWS/EC2",
+		}
+		rmb := newResourceMetricsBuilder(attrs)
 		for _, metric := range metrics {
 			rmb.AddMetric(metric)
 		}
@@ -187,8 +208,8 @@ func TestResourceMetricsBuilder(t *testing.T) {
 		require.Equal(t, 1, got.InstrumentationLibraryMetrics().Len())
 		gotMetrics := got.InstrumentationLibraryMetrics().At(0).Metrics()
 		require.Equal(t, 1, gotMetrics.Len())
-		dps := gotMetrics.At(0).Summary().DataPoints()
-		require.Equal(t, 2, dps.Len())
+		gotDps := gotMetrics.At(0).Summary().DataPoints()
+		require.Equal(t, 2, gotDps.Len())
 	})
 }
 
