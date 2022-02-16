@@ -21,6 +21,11 @@ This exporter supports sending traces to [Tanzu Observability](https://tanzu.vmw
 - Application identity tags, which are [required by Tanzu Observability](https://docs.wavefront.com/trace_data_details.html#how-wavefront-uses-application-tags), are added if they are missing.
   - `application` is set to "defaultApp".
   - `service` is set to "defaultService".
+- A `source` field is required in a [Tanzu Observability Span](https://docs.wavefront.com/trace_data_details.html#span-fields). The `source` is set to the first matching OpenTelemetry Resource Attribute from the list below. The Attribute is removed from the resulting Tanzu Observability Span to reduce data duplication. If none of the Attributes exist on the Resource, the hostname of the OpenTelemetry Collector is used as a default for `source`.
+   1. `source`
+   2. `host.name`
+   3. `hostname`
+   4. `host.id`
 
 ## Configuration
 

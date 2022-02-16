@@ -16,7 +16,6 @@ package tanzuobservabilityexporter // import "github.com/open-telemetry/opentele
 
 import (
 	"errors"
-	"os"
 	"time"
 
 	"github.com/google/uuid"
@@ -68,10 +67,10 @@ func (t *traceTransformer) Span(orig pdata.Span) (span, error) {
 
 	startMillis, durationMillis := calculateTimes(orig)
 
+	source := getSource(t.resAttrs)
 	tags := attributesToTags(t.resAttrs, orig.Attributes())
 	t.setRequiredTags(tags)
 
-	source := getSource(tags)
 	tags[labelSpanKind] = spanKind(orig)
 
 	errorTags := errorTagsFromStatus(orig.Status())
@@ -96,21 +95,20 @@ func (t *traceTransformer) Span(orig pdata.Span) (span, error) {
 	}, nil
 }
 
-func getSource(tags map[string]string) string {
+func getSource(attributes pdata.AttributeMap) string {
 	candidateKeys := []string{"source", "host.name", "hostname", "host.id"}
 
 	var source string
 
 	for _, key := range candidateKeys {
-		if value, isFound := tags[key]; isFound {
-			source = value
+		if value, isFound := attributes.Get(key); isFound {
+			source = value.StringVal()
+			attributes.Delete(key)
 			break
 		}
 	}
 
-	if source == "" {
-		source, _ = os.Hostname()
-	}
+	//returning an empty source is fine as wavefront.go.sdk will set it up to a default value(os.hostname())
 	return source
 }
 
@@ -186,6 +184,11 @@ func attributesToTags(attributes ...pdata.AttributeMap) map[string]string {
 		att.Range(extractTag)
 	}
 
+	if value, isFound := tags["source"]; isFound {
+		source := value
+		delete(tags, "source")
+		tags["_source"] = source
+	}
 	return tags
 }
 
