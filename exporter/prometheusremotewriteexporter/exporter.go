@@ -57,7 +57,7 @@ type prwExporter struct {
 
 // newPRWExporter initializes a new prwExporter instance and sets fields accordingly.
 func newPRWExporter(cfg *Config, set component.ExporterCreateSettings) (*prwExporter, error) {
-	sanitizedLabels, err := validateAndSanitizeExternalLabels(cfg.ExternalLabels)
+	sanitizedLabels, err := validateAndSanitizeExternalLabels(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -116,18 +116,27 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) erro
 	}
 }
 
-func validateAndSanitizeExternalLabels(externalLabels map[string]string) (map[string]string, error) {
+func validateAndSanitizeExternalLabels(cfg *Config) (map[string]string, error) {
 	sanitizedLabels := make(map[string]string)
-	for key, value := range externalLabels {
+	for key, value := range cfg.ExternalLabels {
 		if key == "" || value == "" {
 			return nil, fmt.Errorf("prometheus remote write: external labels configuration contains an empty key or value")
 		}
 
 		// Sanitize label keys to meet Prometheus Requirements
+		// if sanitizeLabel is enabled, invoke sanitizeLabels else sanitize
 		if len(key) > 2 && key[:2] == "__" {
-			key = "__" + sanitize(key[2:])
+			if cfg.sanitizeLabel {
+				key = "__" + sanitizeLabels(key[2:])
+			} else {
+				key = "__" + sanitize(key[2:])
+			}
 		} else {
-			key = sanitize(key)
+			if cfg.sanitizeLabel {
+				key = sanitizeLabels(key)
+			} else {
+				key = sanitize(key)
+			}
 		}
 		sanitizedLabels[key] = value
 	}
