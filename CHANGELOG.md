@@ -15,6 +15,7 @@
 - `hostreceiver/memoryscraper`: Add memory.utilization (#6221)
 - `elasticsearchexporter`: Remove usage of deprecated LogRecord.Name field (#7829).
 - `datadogexporter`: Use exact sum, count and average on Datadog distributions (#7830)
+- `storage/filestorage`: add optional compaction to filestorage (#7768)
 
 ### 🛑 Breaking changes 🛑
 
