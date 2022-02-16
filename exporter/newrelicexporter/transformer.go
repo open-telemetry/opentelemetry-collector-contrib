@@ -274,7 +274,7 @@ func (t *transformer) Metric(m pdata.Metric) ([]telemetry.Metric, error) {
 			point := points.At(l)
 
 			var val float64
-			switch point.Type() {
+			switch point.ValueType() {
 			case pdata.MetricValueTypeDouble:
 				val = point.DoubleVal()
 			case pdata.MetricValueTypeInt:
@@ -302,7 +302,7 @@ func (t *transformer) Metric(m pdata.Metric) ([]telemetry.Metric, error) {
 			point := points.At(l)
 			attributes := t.MetricAttributes(baseAttributes, point.Attributes())
 			var val float64
-			switch point.Type() {
+			switch point.ValueType() {
 			case pdata.MetricValueTypeDouble:
 				val = point.DoubleVal()
 			case pdata.MetricValueTypeInt:

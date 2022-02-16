@@ -102,7 +102,7 @@ func (c *collector) convertGauge(metric pdata.Metric) (prometheus.Metric, error)
 
 	desc, attributes := c.getMetricMetadata(metric, ip.Attributes())
 	var value float64
-	switch ip.Type() {
+	switch ip.ValueType() {
 	case pdata.MetricValueTypeInt:
 		value = float64(ip.IntVal())
 	case pdata.MetricValueTypeDouble:
@@ -129,7 +129,7 @@ func (c *collector) convertSum(metric pdata.Metric) (prometheus.Metric, error) {
 
 	desc, attributes := c.getMetricMetadata(metric, ip.Attributes())
 	var value float64
-	switch ip.Type() {
+	switch ip.ValueType() {
 	case pdata.MetricValueTypeInt:
 		value = float64(ip.IntVal())
 	case pdata.MetricValueTypeDouble:

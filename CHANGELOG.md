@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.45.0
+
 ### 💡 Enhancements 💡
 
 - `hostreceiver/filesystemscraper`: Migrate the scraper to the mdatagen metrics builder (#7772)
