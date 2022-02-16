@@ -507,6 +507,7 @@ class MockPool:
         self.server_host = server_host
         self.user = user
 
+    # pylint: disable=no-self-use
     async def release(self, conn):
         return conn
 
@@ -542,11 +543,11 @@ class MockConnection:
             database, server_port, server_host, user
         )
 
-    # pylint: disable=no-self-use
     def cursor(self):
         coro = self._cursor()
         return _ContextManager(coro)  # pylint: disable=no-value-for-parameter
 
+    # pylint: disable=no-self-use
     async def _cursor(self):
         return MockCursor()
 
@@ -585,6 +586,7 @@ class AiopgConnectionMock:
 
 
 class AiopgPoolMock:
+    # pylint: disable=no-self-use
     async def release(self, conn):
         return conn
 
@@ -592,6 +594,7 @@ class AiopgPoolMock:
         coro = self._acquire()
         return _PoolAcquireContextManager(coro, self)
 
+    # pylint: disable=no-self-use
     async def _acquire(self):
         return AiopgConnectionMock()
 

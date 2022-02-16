@@ -106,7 +106,7 @@ class PymemcacheClientTestCase(
     def test_get_many_none_found(self):
         client = self.make_client([b"END\r\n"])
         result = client.get_many([b"key1", b"key2"])
-        assert result == {}
+        assert not result
 
         spans = self.memory_exporter.get_finished_spans()
 
@@ -116,7 +116,7 @@ class PymemcacheClientTestCase(
         client = self.make_client([b"END\r\n"])
         # alias for get_many
         result = client.get_multi([b"key1", b"key2"])
-        assert result == {}
+        assert not result
 
         spans = self.memory_exporter.get_finished_spans()
 

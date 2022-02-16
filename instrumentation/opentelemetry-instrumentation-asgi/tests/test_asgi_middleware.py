@@ -310,10 +310,10 @@ class TestAsgiApplication(AsgiTestBase):
         self.assertEqual(response_body["body"], b"*")
         self.assertEqual(response_start["status"], 200)
 
-        traceresponse = "00-{0}-{1}-01".format(
-            format_trace_id(span.get_span_context().trace_id),
-            format_span_id(span.get_span_context().span_id),
-        )
+        trace_id = format_trace_id(span.get_span_context().trace_id)
+        span_id = format_span_id(span.get_span_context().span_id)
+        traceresponse = f"00-{trace_id}-{span_id}-01"
+
         self.assertListEqual(
             response_start["headers"],
             [
@@ -423,10 +423,10 @@ class TestAsgiApplication(AsgiTestBase):
         span = self.memory_exporter.get_finished_spans()[-1]
         self.assertEqual(trace_api.SpanKind.SERVER, span.kind)
 
-        traceresponse = "00-{0}-{1}-01".format(
-            format_trace_id(span.get_span_context().trace_id),
-            format_span_id(span.get_span_context().span_id),
-        )
+        trace_id = format_trace_id(span.get_span_context().trace_id)
+        span_id = format_span_id(span.get_span_context().span_id)
+        traceresponse = f"00-{trace_id}-{span_id}-01"
+
         self.assertListEqual(
             socket_send["headers"],
             [

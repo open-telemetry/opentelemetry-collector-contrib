@@ -368,12 +368,11 @@ class TestMiddlewareAsgi(SimpleTestCase, TestBase):
             response["Access-Control-Expose-Headers"],
             "traceresponse",
         )
+        trace_id = format_trace_id(span.get_span_context().trace_id)
+        span_id = format_span_id(span.get_span_context().span_id)
         self.assertEqual(
             response["traceresponse"],
-            "00-{}-{}-01".format(
-                format_trace_id(span.get_span_context().trace_id),
-                format_span_id(span.get_span_context().span_id),
-            ),
+            f"00-{trace_id}-{span_id}-01",
         )
         self.memory_exporter.clear()
 

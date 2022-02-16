@@ -131,6 +131,7 @@ def _generate_sql_comment(**meta):
 
     # Sort the keywords to ensure that caching works and that testing is
     # deterministic. It eases visual inspection as well.
+    # pylint: disable=consider-using-f-string
     return (
         " /*"
         + _KEY_VALUE_DELIMITER.join(
