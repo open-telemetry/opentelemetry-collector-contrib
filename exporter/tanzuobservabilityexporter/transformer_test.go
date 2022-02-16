@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 )
 
 func TestSpanStartTimeIsConvertedToMilliseconds(t *testing.T) {
@@ -240,7 +241,7 @@ func TestSpanForSourceTag(t *testing.T) {
 
 	//TestCase2: source value from resAttrs.source
 	att.InsertString("source", "test_source")
-	att.InsertString("host.name", "test_host.name")
+	att.InsertString(conventions.AttributeHostName, "test_host.name")
 	transform = transformerFromAttributes(att)
 	span = pdata.NewSpan()
 	span.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
@@ -250,14 +251,14 @@ func TestSpanForSourceTag(t *testing.T) {
 	actual, err = transform.Span(span)
 	require.NoError(t, err, "transforming span to wavefront format")
 	assert.Equal(t, "test_source", actual.Source)
-	assert.Equal(t, "test_host.name", actual.Tags["host.name"])
+	assert.Equal(t, "test_host.name", actual.Tags[conventions.AttributeHostName])
 	if value, isFound := actual.Tags["source"]; isFound {
 		t.Logf("Tag Source with value " + value + " not expected.")
 	}
 
 	//TestCase2: source value from resAttrs.host.name when source is not present
-	att.InsertString("host_name", "test_host_name")
-	att.InsertString("host.name", "test_host.name")
+	att.InsertString("hostname", "test_hostname")
+	att.InsertString(conventions.AttributeHostName, "test_host.name")
 	transform = transformerFromAttributes(att)
 	span = pdata.NewSpan()
 	span.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
@@ -267,20 +268,20 @@ func TestSpanForSourceTag(t *testing.T) {
 	actual, err = transform.Span(span)
 	require.NoError(t, err, "transforming span to wavefront format")
 	assert.Equal(t, "test_host.name", actual.Source)
-	assert.Equal(t, "test_host_name", actual.Tags["host_name"])
-	if value, isFound := actual.Tags["host.name"]; isFound {
+	assert.Equal(t, "test_hostname", actual.Tags["hostname"])
+	if value, isFound := actual.Tags[conventions.AttributeHostName]; isFound {
 		t.Logf("Tag host.name with value " + value + " not expected.")
 	}
 
 	//TestCase4: source value from resAttrs.source when spanAttrs.source is present
 	span.Attributes().InsertString("source", "source_from_span_attribute")
 	att.InsertString("source", "test_source")
-	att.InsertString("host.name", "test_host.name")
+	att.InsertString(conventions.AttributeHostName, "test_host.name")
 	transform = transformerFromAttributes(att)
 	actual, err = transform.Span(span)
 	require.NoError(t, err, "transforming span to wavefront format")
 	assert.Equal(t, "test_source", actual.Source)
-	assert.Equal(t, "test_host.name", actual.Tags["host.name"])
+	assert.Equal(t, "test_host.name", actual.Tags[conventions.AttributeHostName])
 	if value, isFound := actual.Tags["source"]; isFound {
 		t.Logf("Tag Source with value " + value + " not expected.")
 	}

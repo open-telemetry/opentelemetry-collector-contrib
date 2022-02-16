@@ -96,7 +96,7 @@ func (t *traceTransformer) Span(orig pdata.Span) (span, error) {
 }
 
 func getSource(attributes pdata.AttributeMap) string {
-	candidateKeys := []string{"source", "host.name", "hostname", "host.id"}
+	candidateKeys := []string{"source", conventions.AttributeHostName, "hostname", conventions.AttributeHostID}
 
 	var source string
 
