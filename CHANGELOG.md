@@ -15,6 +15,7 @@
 - `hostreceiver/memoryscraper`: Add memory.utilization (#6221)
 - `elasticsearchexporter`: Remove usage of deprecated LogRecord.Name field (#7829).
 - `loadbalancingexporter`: Allow non-exist hostname on startup (#7935)
+- `datadogexporter`: Use exact sum, count and average on Datadog distributions (#7830)
 
 ### 🛑 Breaking changes 🛑
 
@@ -131,6 +132,7 @@
 - `tracegen`: Add option to pass in custom headers to export calls via command line (#7308)
 - `tracegen`: Provide official container images (#7179)
 - `scrapertest`: Add comparison function for pdata.Metrics (#7400)
+- `prometheusremotewriteexporter` : Dropping the condition to replace _ with key_ as __ label is reserved and _ is not (#7112)
 
 ### 🛑 Breaking changes 🛑
 
