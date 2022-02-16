@@ -6,8 +6,8 @@ require (
 	github.com/getsentry/sentry-go v0.12.0
 	github.com/google/go-cmp v0.5.7
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.44.1-0.20220214172918-839909863acc
-	go.opentelemetry.io/collector/model v0.44.1-0.20220214172918-839909863acc
+	go.opentelemetry.io/collector v0.45.0
+	go.opentelemetry.io/collector/model v0.45.0
 )
 
 require (
