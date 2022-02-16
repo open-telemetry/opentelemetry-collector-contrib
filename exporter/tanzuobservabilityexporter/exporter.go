@@ -37,6 +37,7 @@ const (
 	labelEventName         = "name"
 	labelService           = "service"
 	labelSpanKind          = "span.kind"
+	labelSource            = "source"
 )
 
 // spanSender Interface for sending tracing spans to Tanzu Observability

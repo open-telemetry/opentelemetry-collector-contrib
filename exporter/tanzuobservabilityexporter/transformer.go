@@ -96,9 +96,8 @@ func (t *traceTransformer) Span(orig pdata.Span) (span, error) {
 }
 
 func getSourceAndResourceTags(attributes pdata.AttributeMap) (string, pdata.AttributeMap) {
-	candidateKeys := []string{"source", conventions.AttributeHostName, "hostname", conventions.AttributeHostID}
+	candidateKeys := []string{labelSource, conventions.AttributeHostName, "hostname", conventions.AttributeHostID}
 
-	//attributesWithoutSource := attributes
 	attributesWithoutSource := pdata.NewAttributeMap()
 	attributes.CopyTo(attributesWithoutSource)
 	var source string
@@ -187,9 +186,9 @@ func attributesToTags(attributes ...pdata.AttributeMap) map[string]string {
 		att.Range(extractTag)
 	}
 
-	if value, isFound := tags["source"]; isFound {
+	if value, isFound := tags[labelSource]; isFound {
 		source := value
-		delete(tags, "source")
+		delete(tags, labelSource)
 		tags["_source"] = source
 	}
 	return tags

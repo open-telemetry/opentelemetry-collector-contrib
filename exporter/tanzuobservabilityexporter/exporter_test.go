@@ -110,14 +110,14 @@ func TestExportTraceDataFullTrace(t *testing.T) {
 	serverAttrs.InsertString(conventions.AttributeServiceName, "the-server")
 	serverAttrs.InsertString(conventions.AttributeHTTPMethod, "POST")
 	serverAttrs.InsertInt(conventions.AttributeHTTPStatusCode, 403)
-	serverAttrs.InsertString("source", "test_source")
+	serverAttrs.InsertString(labelSource, "test_source")
 	serverAttrs.CopyTo(serverSpan.Attributes())
 
 	traces := constructTraces([]pdata.Span{rootSpan, clientSpan, serverSpan})
 	resourceAttrs := pdata.NewAttributeMap()
 	resourceAttrs.InsertString("resource", "R1")
 	resourceAttrs.InsertString(conventions.AttributeServiceName, "test-service")
-	resourceAttrs.InsertString("source", "test-source")
+	resourceAttrs.InsertString(labelSource, "test-source")
 	resourceAttrs.CopyTo(traces.ResourceSpans().At(0).Resource().Attributes())
 
 	expected := []*span{

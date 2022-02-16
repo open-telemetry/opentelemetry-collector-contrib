@@ -241,7 +241,7 @@ func TestSpanForSourceTag(t *testing.T) {
 
 	//TestCase2: source value from resAttrs.source
 	att = pdata.NewAttributeMap()
-	att.InsertString("source", "test_source")
+	att.InsertString(labelSource, "test_source")
 	att.InsertString(conventions.AttributeHostName, "test_host.name")
 	transform = transformerFromAttributes(att)
 	span = pdata.NewSpan()
@@ -253,7 +253,7 @@ func TestSpanForSourceTag(t *testing.T) {
 	require.NoError(t, err, "transforming span to wavefront format")
 	assert.Equal(t, "test_source", actual.Source)
 	assert.Equal(t, "test_host.name", actual.Tags[conventions.AttributeHostName])
-	if value, isFound := actual.Tags["source"]; isFound {
+	if value, isFound := actual.Tags[labelSource]; isFound {
 		t.Logf("Tag Source with value " + value + " not expected.")
 	}
 
@@ -277,15 +277,15 @@ func TestSpanForSourceTag(t *testing.T) {
 
 	//TestCase4: source value from resAttrs.source when spanAttrs.source is present
 	att = pdata.NewAttributeMap()
-	span.Attributes().InsertString("source", "source_from_span_attribute")
-	att.InsertString("source", "test_source")
+	span.Attributes().InsertString(labelSource, "source_from_span_attribute")
+	att.InsertString(labelSource, "test_source")
 	att.InsertString(conventions.AttributeHostName, "test_host.name")
 	transform = transformerFromAttributes(att)
 	actual, err = transform.Span(span)
 	require.NoError(t, err, "transforming span to wavefront format")
 	assert.Equal(t, "test_source", actual.Source)
 	assert.Equal(t, "test_host.name", actual.Tags[conventions.AttributeHostName])
-	if value, isFound := actual.Tags["source"]; isFound {
+	if value, isFound := actual.Tags[labelSource]; isFound {
 		t.Logf("Tag Source with value " + value + " not expected.")
 	}
 	assert.Equal(t, "source_from_span_attribute", actual.Tags["_source"])
