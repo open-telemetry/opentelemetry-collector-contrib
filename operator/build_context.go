@@ -19,14 +19,12 @@ import (
 	"strings"
 
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-log-collection/logger"
 )
 
 // BuildContext supplies contextual resources when building an operator.
 type BuildContext struct {
 	Parameters       map[string]interface{}
-	Logger           *logger.Logger
+	Logger           *zap.SugaredLogger
 	Namespace        string
 	DefaultOutputIDs []string
 }
@@ -70,7 +68,7 @@ func (bc BuildContext) Copy() BuildContext {
 func NewBuildContext(lg *zap.SugaredLogger) BuildContext {
 	return BuildContext{
 		Parameters:       nil,
-		Logger:           logger.New(lg),
+		Logger:           lg,
 		Namespace:        "$",
 		DefaultOutputIDs: []string{},
 	}

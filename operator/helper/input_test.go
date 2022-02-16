@@ -75,7 +75,7 @@ func TestInputOperatorCanProcess(t *testing.T) {
 			BasicOperator: BasicOperator{
 				OperatorID:    "test-id",
 				OperatorType:  "test-type",
-				SugaredLogger: buildContext.Logger.SugaredLogger,
+				SugaredLogger: buildContext.Logger,
 			},
 		},
 	}
@@ -89,7 +89,7 @@ func TestInputOperatorProcess(t *testing.T) {
 			BasicOperator: BasicOperator{
 				OperatorID:    "test-id",
 				OperatorType:  "test-type",
-				SugaredLogger: buildContext.Logger.SugaredLogger,
+				SugaredLogger: buildContext.Logger,
 			},
 		},
 	}
@@ -125,7 +125,7 @@ func TestInputOperatorNewEntry(t *testing.T) {
 			BasicOperator: BasicOperator{
 				OperatorID:    "test-id",
 				OperatorType:  "test-type",
-				SugaredLogger: buildContext.Logger.SugaredLogger,
+				SugaredLogger: buildContext.Logger,
 			},
 		},
 		WriteTo: writeTo,

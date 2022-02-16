@@ -25,7 +25,6 @@ import (
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest"
 
-	"github.com/open-telemetry/opentelemetry-log-collection/logger"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 )
 
@@ -49,7 +48,7 @@ func NewTempDir(t testing.TB) string {
 // NewBuildContext will return a new build context for testing
 func NewBuildContext(t testing.TB) operator.BuildContext {
 	return operator.BuildContext{
-		Logger:    logger.New(zaptest.NewLogger(t, zaptest.Level(zapcore.ErrorLevel)).Sugar()),
+		Logger:    zaptest.NewLogger(t, zaptest.Level(zapcore.ErrorLevel)).Sugar(),
 		Namespace: "$",
 	}
 }
