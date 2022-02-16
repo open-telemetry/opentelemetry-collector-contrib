@@ -105,7 +105,7 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 						dataPt := pts.At(gi)
 						fields := cloneMap(commonFields)
 						populateAttributes(fields, dataPt.Attributes())
-						switch dataPt.Type() {
+						switch dataPt.ValueType() {
 						case pdata.MetricValueTypeInt:
 							fields[metricFieldName] = dataPt.IntVal()
 						case pdata.MetricValueTypeDouble:
@@ -172,7 +172,7 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 						dataPt := pts.At(gi)
 						fields := cloneMap(commonFields)
 						populateAttributes(fields, dataPt.Attributes())
-						switch dataPt.Type() {
+						switch dataPt.ValueType() {
 						case pdata.MetricValueTypeInt:
 							fields[metricFieldName] = dataPt.IntVal()
 						case pdata.MetricValueTypeDouble:
