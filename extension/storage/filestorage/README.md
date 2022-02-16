@@ -18,6 +18,7 @@ For now only compaction on start of the collector is supported, and can be enabl
 `compaction.directory` is the directory used for compaction (as midstep).
 
 `compaction.max_transaction_size` defines maximum size of the compaction transaction.
+A value of zero will ignore transaction sizes.
 
 ```
 extensions:
