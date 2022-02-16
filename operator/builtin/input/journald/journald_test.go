@@ -54,7 +54,7 @@ func TestInputJournald(t *testing.T) {
 	op, err := cfg.Build(testutil.NewBuildContext(t))
 	require.NoError(t, err)
 
-	mockOutput := testutil.NewMockOperator("$.output")
+	mockOutput := testutil.NewMockOperator("output")
 	received := make(chan *entry.Entry)
 	mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 		received <- args.Get(1).(*entry.Entry)

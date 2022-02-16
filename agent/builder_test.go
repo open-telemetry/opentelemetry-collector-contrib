@@ -70,22 +70,22 @@ func TestBuildAgentDefaultOperator(t *testing.T) {
 
 	for _, op := range ops {
 		switch op.ID() {
-		case "$.noop":
+		case "noop":
 			require.Equal(t, 1, len(op.GetOutputIDs()))
-			require.Equal(t, "$.noop1", op.GetOutputIDs()[0])
-			exists["$.noop"] = true
-		case "$.noop1":
+			require.Equal(t, "noop1", op.GetOutputIDs()[0])
+			exists["noop"] = true
+		case "noop1":
 			require.Equal(t, 1, len(op.GetOutputIDs()))
-			require.Equal(t, "$.fake", op.GetOutputIDs()[0])
-			exists["$.noop1"] = true
-		case "$.fake":
+			require.Equal(t, "fake", op.GetOutputIDs()[0])
+			exists["noop1"] = true
+		case "fake":
 			require.Equal(t, 0, len(op.GetOutputIDs()))
-			exists["$.fake"] = true
+			exists["fake"] = true
 		}
 	}
-	require.True(t, exists["$.noop"])
-	require.True(t, exists["$.noop1"])
-	require.True(t, exists["$.fake"])
+	require.True(t, exists["noop"])
+	require.True(t, exists["noop1"])
+	require.True(t, exists["fake"])
 }
 
 func TestBuildAgentFailureNoConfigOrGlobs(t *testing.T) {

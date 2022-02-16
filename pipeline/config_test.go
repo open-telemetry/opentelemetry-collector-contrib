@@ -191,7 +191,7 @@ func TestUpdateOutputIDs(t *testing.T) {
 				return ops
 			},
 			[]string{
-				"$.json_parser1",
+				"json_parser1",
 			},
 		},
 		{
@@ -205,9 +205,9 @@ func TestUpdateOutputIDs(t *testing.T) {
 				return ops
 			},
 			[]string{
-				"$.json_parser1",
-				"$.json_parser2",
-				"$.json_parser3",
+				"json_parser1",
+				"json_parser2",
+				"json_parser3",
 			},
 		},
 		{
@@ -222,10 +222,10 @@ func TestUpdateOutputIDs(t *testing.T) {
 				return ops
 			},
 			[]string{
-				"$.json_parser1",
-				"$.json_parser2",
-				"$.copy",
-				"$.copy1",
+				"json_parser1",
+				"json_parser2",
+				"copy",
+				"copy1",
 			},
 		},
 		{
@@ -239,9 +239,9 @@ func TestUpdateOutputIDs(t *testing.T) {
 				return ops
 			},
 			[]string{
-				"$.copy",
-				"$.json_parser1",
-				"$.copy1",
+				"copy",
+				"json_parser1",
+				"copy1",
 			},
 		},
 		{
@@ -256,10 +256,10 @@ func TestUpdateOutputIDs(t *testing.T) {
 				return ops
 			},
 			[]string{
-				"$.json_parser1",
-				"$.json_parser2",
-				"$.json_parser3",
-				"$.json_parser4",
+				"json_parser1",
+				"json_parser2",
+				"json_parser3",
+				"json_parser4",
 			},
 		},
 	}

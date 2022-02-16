@@ -57,7 +57,7 @@ func (f *FakeOutput) CanOutput() bool { return false }
 func (f *FakeOutput) CanProcess() bool { return true }
 
 // ID always returns `fake` as the ID of a fake output operator
-func (f *FakeOutput) ID() string { return "$.fake" }
+func (f *FakeOutput) ID() string { return "fake" }
 
 // Logger returns the logger of a fake output
 func (f *FakeOutput) Logger() *zap.SugaredLogger { return f.SugaredLogger }

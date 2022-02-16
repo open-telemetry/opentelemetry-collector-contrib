@@ -203,7 +203,7 @@ func TestRouterOperator(t *testing.T) {
 			results := map[string]int{}
 			var attributes map[string]string
 
-			mock1 := testutil.NewMockOperator("$.output1")
+			mock1 := testutil.NewMockOperator("output1")
 			mock1.On("Process", mock.Anything, mock.Anything).Return(nil).Run(func(args mock.Arguments) {
 				results["output1"]++
 				if entry, ok := args[1].(*entry.Entry); ok {
@@ -211,7 +211,7 @@ func TestRouterOperator(t *testing.T) {
 				}
 			})
 
-			mock2 := testutil.NewMockOperator("$.output2")
+			mock2 := testutil.NewMockOperator("output2")
 			mock2.On("Process", mock.Anything, mock.Anything).Return(nil).Run(func(args mock.Arguments) {
 				results["output2"]++
 				if entry, ok := args[1].(*entry.Entry); ok {
