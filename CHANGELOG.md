@@ -13,6 +13,8 @@
 - `coralogixexporter`: Update readme (#7785)
 - `awscloudwatchlogsexporter`: Remove name from aws cloudwatch logs exporter (#7554)
 - `hostreceiver/memoryscraper`: Add memory.utilization (#6221)
+- `elasticsearchexporter`: Remove usage of deprecated LogRecord.Name field (#7829).
+- `datadogexporter`: Use exact sum, count and average on Datadog distributions (#7830)
 - `storage/filestorage`: add optional compaction to filestorage (#7768)
 
 ### 🛑 Breaking changes 🛑
@@ -130,6 +132,7 @@
 - `tracegen`: Add option to pass in custom headers to export calls via command line (#7308)
 - `tracegen`: Provide official container images (#7179)
 - `scrapertest`: Add comparison function for pdata.Metrics (#7400)
+- `prometheusremotewriteexporter` : Dropping the condition to replace _ with key_ as __ label is reserved and _ is not (#7112)
 
 ### 🛑 Breaking changes 🛑
 
