@@ -240,6 +240,7 @@ func TestSpanForSourceTag(t *testing.T) {
 	assert.Equal(t, "", actual.Source)
 
 	//TestCase2: source value from resAttrs.source
+	att = pdata.NewAttributeMap()
 	att.InsertString("source", "test_source")
 	att.InsertString(conventions.AttributeHostName, "test_host.name")
 	transform = transformerFromAttributes(att)
@@ -257,6 +258,7 @@ func TestSpanForSourceTag(t *testing.T) {
 	}
 
 	//TestCase2: source value from resAttrs.host.name when source is not present
+	att = pdata.NewAttributeMap()
 	att.InsertString("hostname", "test_hostname")
 	att.InsertString(conventions.AttributeHostName, "test_host.name")
 	transform = transformerFromAttributes(att)
@@ -274,6 +276,7 @@ func TestSpanForSourceTag(t *testing.T) {
 	}
 
 	//TestCase4: source value from resAttrs.source when spanAttrs.source is present
+	att = pdata.NewAttributeMap()
 	span.Attributes().InsertString("source", "source_from_span_attribute")
 	att.InsertString("source", "test_source")
 	att.InsertString(conventions.AttributeHostName, "test_host.name")

@@ -67,8 +67,8 @@ func (t *traceTransformer) Span(orig pdata.Span) (span, error) {
 
 	startMillis, durationMillis := calculateTimes(orig)
 
-	source := getSource(t.resAttrs)
-	tags := attributesToTags(t.resAttrs, orig.Attributes())
+	source, attributesWithoutSource := getSourceAndResourceTags(t.resAttrs)
+	tags := attributesToTags(attributesWithoutSource, orig.Attributes())
 	t.setRequiredTags(tags)
 
 	tags[labelSpanKind] = spanKind(orig)
@@ -95,21 +95,24 @@ func (t *traceTransformer) Span(orig pdata.Span) (span, error) {
 	}, nil
 }
 
-func getSource(attributes pdata.AttributeMap) string {
+func getSourceAndResourceTags(attributes pdata.AttributeMap) (string, pdata.AttributeMap) {
 	candidateKeys := []string{"source", conventions.AttributeHostName, "hostname", conventions.AttributeHostID}
 
+	//attributesWithoutSource := attributes
+	attributesWithoutSource := pdata.NewAttributeMap()
+	attributes.CopyTo(attributesWithoutSource)
 	var source string
 
 	for _, key := range candidateKeys {
-		if value, isFound := attributes.Get(key); isFound {
+		if value, isFound := attributesWithoutSource.Get(key); isFound {
 			source = value.StringVal()
-			attributes.Delete(key)
+			attributesWithoutSource.Delete(key)
 			break
 		}
 	}
 
 	//returning an empty source is fine as wavefront.go.sdk will set it up to a default value(os.hostname())
-	return source
+	return source, attributesWithoutSource
 }
 
 func spanKind(span pdata.Span) string {

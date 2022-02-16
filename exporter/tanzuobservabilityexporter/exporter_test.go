@@ -137,6 +137,7 @@ func TestExportTraceDataFullTrace(t *testing.T) {
 			SpanID:       uuid.MustParse("00000000000000000000000000000002"),
 			TraceID:      uuid.MustParse("01010101010101010101010101010101"),
 			ParentSpanID: uuid.MustParse("00000000000000000000000000000001"),
+			Source:       "test-source",
 			Tags: map[string]string{
 				"resource":                "R1",
 				labelApplication:          "test-app",
@@ -154,6 +155,7 @@ func TestExportTraceDataFullTrace(t *testing.T) {
 			SpanID:       uuid.MustParse("00000000000000000000000000000003"),
 			TraceID:      uuid.MustParse("01010101010101010101010101010101"),
 			ParentSpanID: uuid.MustParse("00000000000000000000000000000002"),
+			Source:       "test-source",
 			Tags: map[string]string{
 				"resource":                          "R1",
 				labelApplication:                    "defaultApp",
