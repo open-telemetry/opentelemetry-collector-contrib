@@ -128,8 +128,9 @@ func TestMetricsConsumer(t *testing.T) {
 		})
 		require.Equal(t, http.StatusOK, gotStatus)
 		require.NoError(t, gotErr)
-		require.Equal(t, 1, rc.result.ResourceMetrics().Len())
-		rm := rc.result.ResourceMetrics().At(0)
-		require.Equal(t, 1, rm.Resource().Attributes().Len())
+		gotRms := rc.result.ResourceMetrics()
+		require.Equal(t, 1, gotRms.Len())
+		gotRm := gotRms.At(0)
+		require.Equal(t, 1, gotRm.Resource().Attributes().Len())
 	})
 }

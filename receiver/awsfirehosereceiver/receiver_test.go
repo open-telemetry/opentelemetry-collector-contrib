@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -30,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confighttp"
 )
 
 const (
@@ -71,7 +73,7 @@ func TestStart(t *testing.T) {
 				RecordType:       defaultRecordType,
 			}
 			ctx := context.TODO()
-			r := testFirehoseReceiver(cfg, newNopFirehoseConsumer(http.StatusOK, nil))
+			r := testFirehoseReceiver(cfg, nil)
 			got := r.Start(ctx, testCase.host)
 			require.Equal(t, testCase.wantErr, got)
 			if r.server != nil {
@@ -79,6 +81,27 @@ func TestStart(t *testing.T) {
 			}
 		})
 	}
+	t.Run("WithPortTaken", func(t *testing.T) {
+		listener, err := net.Listen("tcp", "localhost:")
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			require.NoError(t, listener.Close())
+		})
+		cfg := &Config{
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+			RecordType:       defaultRecordType,
+			HTTPServerSettings: confighttp.HTTPServerSettings{
+				Endpoint: listener.Addr().String(),
+			},
+		}
+		ctx := context.TODO()
+		r := testFirehoseReceiver(cfg, nil)
+		got := r.Start(ctx, componenttest.NewNopHost())
+		require.Error(t, got)
+		if r.server != nil {
+			require.NoError(t, r.Shutdown(ctx))
+		}
+	})
 }
 
 func TestFirehoseRequest(t *testing.T) {
@@ -203,13 +226,13 @@ func TestFirehoseRequest(t *testing.T) {
 			r.ServeHTTP(got, request)
 
 			require.Equal(t, testCase.wantStatusCode, got.Code)
-			var response firehoseResponse
-			require.NoError(t, json.Unmarshal(got.Body.Bytes(), &response))
-			require.Equal(t, request.Header.Get(headerFirehoseRequestID), response.RequestID)
+			var gotResponse firehoseResponse
+			require.NoError(t, json.Unmarshal(got.Body.Bytes(), &gotResponse))
+			require.Equal(t, request.Header.Get(headerFirehoseRequestID), gotResponse.RequestID)
 			if testCase.wantErr != nil {
-				require.Equal(t, testCase.wantErr.Error(), response.ErrorMessage)
+				require.Equal(t, testCase.wantErr.Error(), gotResponse.ErrorMessage)
 			} else {
-				require.Empty(t, response.ErrorMessage)
+				require.Empty(t, gotResponse.ErrorMessage)
 			}
 		})
 	}

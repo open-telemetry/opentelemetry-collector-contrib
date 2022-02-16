@@ -28,9 +28,9 @@ const (
 	namespaceDelimiter                     = "/"
 )
 
-// The resourceMetricsBuilder is used to aggregate metrics for the
-// same metric stream name, account ID, region, and namespace.
-type resourceMetricsBuilder struct {
+// resourceAttributes are the CloudWatch metric stream attributes that define a
+// unique resource.
+type resourceAttributes struct {
 	// metricStreamName is the metric stream name.
 	metricStreamName string
 	// accountID is the AWS account ID.
@@ -39,20 +39,23 @@ type resourceMetricsBuilder struct {
 	region string
 	// namespace is the CloudWatch metric namespace.
 	namespace string
+}
+
+// The resourceMetricsBuilder is used to aggregate metrics for the
+// same resourceAttributes.
+type resourceMetricsBuilder struct {
+	resourceAttributes `mapstructure:",squash"`
 	// metricBuilders is the map of metrics within the same
 	// resource group.
 	metricBuilders map[string]*metricBuilder
 }
 
-// newResourceMetricsBuilder creates a resourceMetricsBuilder for the
-// metric stream name, account ID, region, and namespace.
-func newResourceMetricsBuilder(metricStreamName, accountID, region, namespace string) *resourceMetricsBuilder {
+// newResourceMetricsBuilder creates a resourceMetricsBuilder with the
+// resourceAttributes.
+func newResourceMetricsBuilder(attrs resourceAttributes) *resourceMetricsBuilder {
 	return &resourceMetricsBuilder{
-		metricStreamName: metricStreamName,
-		accountID:        accountID,
-		region:           region,
-		namespace:        namespace,
-		metricBuilders:   make(map[string]*metricBuilder),
+		resourceAttributes: attrs,
+		metricBuilders:     make(map[string]*metricBuilder),
 	}
 }
 
@@ -78,25 +81,42 @@ func (rmb *resourceMetricsBuilder) Build(rm pdata.ResourceMetrics) {
 }
 
 // setAttributes creates a pdata.Resource from the fields in the resourceMetricsBuilder.
-// Splits the namespace into service.namespace/service.name if prepended by AWS/.
 func (rmb *resourceMetricsBuilder) setAttributes(resource pdata.Resource) {
 	attributes := resource.Attributes()
 	attributes.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
 	attributes.InsertString(conventions.AttributeCloudAccountID, rmb.accountID)
 	attributes.InsertString(conventions.AttributeCloudRegion, rmb.region)
-	splitNamespace := strings.SplitN(rmb.namespace, namespaceDelimiter, 2)
-	if len(splitNamespace) == 2 && strings.EqualFold(splitNamespace[0], conventions.AttributeCloudProviderAWS) {
-		attributes.InsertString(conventions.AttributeServiceNamespace, splitNamespace[0])
-		attributes.InsertString(conventions.AttributeServiceName, splitNamespace[1])
-	} else {
-		attributes.InsertString(conventions.AttributeServiceName, rmb.namespace)
+	serviceNamespace, serviceName := rmb.toServiceAttributes(rmb.namespace)
+	if serviceNamespace != "" {
+		attributes.InsertString(conventions.AttributeServiceNamespace, serviceNamespace)
 	}
+	attributes.InsertString(conventions.AttributeServiceName, serviceName)
 	attributes.InsertString(attributeAWSCloudWatchMetricStreamName, rmb.metricStreamName)
 }
 
+// toServiceAttributes splits the CloudWatch namespace into service namespace/name
+// if prepended by AWS/. Otherwise, it returns the CloudWatch namespace as the
+// service name with an empty service namespace
+func (rmb *resourceMetricsBuilder) toServiceAttributes(namespace string) (serviceNamespace, serviceName string) {
+	index := strings.Index(namespace, namespaceDelimiter)
+	if index != -1 && strings.EqualFold(namespace[:index], conventions.AttributeCloudProviderAWS) {
+		return namespace[:index], namespace[index+1:]
+	}
+	return "", namespace
+}
+
+// dataPointKey combines the dimensions and timestamps to create a key
+// used to prevent duplicate metrics.
+type dataPointKey struct {
+	// timestamp is the milliseconds since epoch
+	timestamp int64
+	// dimensions is the string representation of the metric dimensions.
+	// fmt guarantees key-sorted order when printing a map.
+	dimensions string
+}
+
 // The metricBuilder aggregates metrics of the same name and unit
-// into data points. Stores the timestamps for each added metric
-// in a set to prevent duplicates.
+// into data points.
 type metricBuilder struct {
 	// name is the metric name.
 	name string
@@ -105,8 +125,8 @@ type metricBuilder struct {
 	// dataPoints is the slice of summary data points
 	// for the metric.
 	dataPoints pdata.SummaryDataPointSlice
-	// timestamps is the set of seen timestamps.
-	timestamps map[string]bool
+	// seen is the set of added data point keys.
+	seen map[dataPointKey]bool
 }
 
 // newMetricBuilder creates a metricBuilder with the name and unit.
@@ -115,17 +135,20 @@ func newMetricBuilder(name, unit string) *metricBuilder {
 		name:       name,
 		unit:       unit,
 		dataPoints: pdata.NewSummaryDataPointSlice(),
-		timestamps: make(map[string]bool),
+		seen:       make(map[dataPointKey]bool),
 	}
 }
 
 // AddDataPoint adds the metric as a datapoint if a metric for that timestamp
 // hasn't already been added.
 func (mb *metricBuilder) AddDataPoint(metric cWMetric) {
-	key := mb.toTimestampKey(metric)
-	if _, ok := mb.timestamps[key]; !ok {
+	key := dataPointKey{
+		timestamp:  metric.Timestamp,
+		dimensions: fmt.Sprint(metric.Dimensions),
+	}
+	if _, ok := mb.seen[key]; !ok {
 		mb.toDataPoint(mb.dataPoints.AppendEmpty(), metric)
-		mb.timestamps[key] = true
+		mb.seen[key] = true
 	}
 }
 
@@ -154,12 +177,6 @@ func (mb *metricBuilder) toDataPoint(dp pdata.SummaryDataPoint, metric cWMetric)
 	for k, v := range metric.Dimensions {
 		dp.Attributes().InsertString(ToSemConvAttributeKey(k), v)
 	}
-}
-
-// toTimestampKey combines the dimensions and timestamps to create a key
-// used to prevent duplicate metrics.
-func (mb *metricBuilder) toTimestampKey(metric cWMetric) string {
-	return fmt.Sprintf("%v::%v", metric.Dimensions, metric.Timestamp)
 }
 
 // ToSemConvAttributeKey maps some common keys to semantic convention attributes.

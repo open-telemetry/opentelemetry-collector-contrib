@@ -39,3 +39,8 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, r)
 }
+
+func TestValidateRecordType(t *testing.T) {
+	require.NoError(t, validateRecordType(defaultRecordType))
+	require.Error(t, validateRecordType("nop"))
+}

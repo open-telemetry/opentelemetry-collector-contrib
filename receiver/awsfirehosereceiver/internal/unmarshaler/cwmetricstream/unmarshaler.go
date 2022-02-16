@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
@@ -54,7 +53,7 @@ func NewUnmarshaler(logger *zap.Logger) *Unmarshaler {
 // resourceMetricsBuilder to group them into a single pdata.Metrics.
 // Skips invalid cWMetrics received in the record and
 func (u Unmarshaler) Unmarshal(records [][]byte) (pdata.Metrics, error) {
-	builders := make(map[string]*resourceMetricsBuilder)
+	builders := make(map[resourceAttributes]*resourceMetricsBuilder)
 	for recordIndex, record := range records {
 		// Multiple metrics in each record separated by newline character
 		for datumIndex, datum := range bytes.Split(record, []byte(recordDelimiter)) {
@@ -78,16 +77,16 @@ func (u Unmarshaler) Unmarshal(records [][]byte) (pdata.Metrics, error) {
 					)
 					continue
 				}
-				resourceKey := u.toResourceKey(metric)
-				mb, ok := builders[resourceKey]
+				attrs := resourceAttributes{
+					metricStreamName: metric.MetricStreamName,
+					namespace:        metric.Namespace,
+					accountID:        metric.AccountID,
+					region:           metric.Region,
+				}
+				mb, ok := builders[attrs]
 				if !ok {
-					mb = newResourceMetricsBuilder(
-						metric.MetricStreamName,
-						metric.AccountID,
-						metric.Region,
-						metric.Namespace,
-					)
-					builders[resourceKey] = mb
+					mb = newResourceMetricsBuilder(attrs)
+					builders[attrs] = mb
 				}
 				mb.AddMetric(metric)
 			}
@@ -109,11 +108,6 @@ func (u Unmarshaler) Unmarshal(records [][]byte) (pdata.Metrics, error) {
 // isValid validates that the cWMetric has been unmarshalled correctly.
 func (u Unmarshaler) isValid(metric cWMetric) bool {
 	return metric.MetricName != "" && metric.Namespace != "" && metric.Unit != "" && metric.Value != nil
-}
-
-// toResourceKey combines the metric stream name, namespace, account id, and region into a string key
-func (u Unmarshaler) toResourceKey(metric cWMetric) string {
-	return fmt.Sprintf("%s::%s::%s::%s", metric.MetricStreamName, metric.Namespace, metric.AccountID, metric.Region)
 }
 
 // Type of the serialized messages.

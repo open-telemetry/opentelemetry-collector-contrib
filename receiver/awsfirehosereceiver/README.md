@@ -20,6 +20,8 @@ receivers:
 ```
 The configuration includes the Opentelemetry collector's server [confighttp](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp#server-configuration),
 which allows for a variety of settings. Only the most relevant ones will be discussed here, but all are available.
+The AWS Kinesis Data Firehose Delivery Streams currently only support HTTPS endpoints using port 443. This can be potentially circumvented
+using a Load Balancer.
 
 ### endpoint:
 The address:port to bind the listener to.
@@ -31,20 +33,19 @@ See [documentation](https://github.com/open-telemetry/opentelemetry-collector/bl
 
 A `cert_file` and `key_file` are required.
 
-The AWS Kinesis Data Firehose Delivery Streams currently only support HTTPS endpoints using port 443. This can be potentially circumvented
-using a Load Balancer.
-
 ### record_type:
 The type of record being received from the delivery stream. Each unmarshaler handles a specific type, so the field allows the receiver to use the correct one.
 
 default: `cwmetrics`
 
+See the [Record Types](#record-types) section for all available options.
+
 ### access_key (Optional):
 The access key to be checked on each request received. This can be set when creating or updating the delivery stream.
 See [documentation](https://docs.aws.amazon.com/firehose/latest/dev/create-destination.html#create-destination-http) for details.
 
-## Record Types
+##Record Types
 
-#### cwmetrics
+### cwmetrics
 The record type for the CloudWatch metric stream. Expects the format for the records to be JSON.
 See [documentation](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-Metric-Streams.html) for details.
