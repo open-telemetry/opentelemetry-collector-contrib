@@ -74,7 +74,7 @@ func TestLoadConfig(t *testing.T) {
 				cfg.(*loadscraper.Config).CPUAverage = true
 				return cfg
 			})(),
-			filesystemscraper.TypeStr: &filesystemscraper.Config{},
+			filesystemscraper.TypeStr: (&filesystemscraper.Factory{}).CreateDefaultConfig(),
 			memoryscraper.TypeStr:     (&memoryscraper.Factory{}).CreateDefaultConfig(),
 			networkscraper.TypeStr: (func() internal.Config {
 				cfg := (&networkscraper.Factory{}).CreateDefaultConfig()

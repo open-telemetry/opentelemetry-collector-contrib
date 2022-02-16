@@ -11,7 +11,14 @@ These are the metrics available for this scraper.
 | **system.filesystem.inodes.usage** | FileSystem inodes used. | {inodes} | Sum(Int) | <ul> <li>device</li> <li>mode</li> <li>mountpoint</li> <li>type</li> <li>state</li> </ul> |
 | **system.filesystem.usage** | Filesystem bytes used. | By | Sum(Int) | <ul> <li>device</li> <li>mode</li> <li>mountpoint</li> <li>type</li> <li>state</li> </ul> |
 
-**Highlighted metrics** are emitted by default.
+**Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
+Any metric can be enabled or disabled with the following scraper configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: <true|false>
+```
 
 ## Attributes
 
