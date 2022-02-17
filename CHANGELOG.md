@@ -15,6 +15,8 @@
 
 ### 🧰 Bug fixes 🧰
 
+- `awsprometheusremotewriteexporter`: fix dependencies issue (#7963)
+
 ### 🚀 New components 🚀
 
 - `awsfirehose` receiver: Add AWS Kinesis Data Firehose Receiver (#7918)

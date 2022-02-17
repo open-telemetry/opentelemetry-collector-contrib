@@ -208,46 +208,46 @@ require (
 	github.com/observiq/ctimefmt v1.0.0 // indirect
 	github.com/observiq/go-syslog/v3 v3.0.2 // indirect
 	github.com/olivere/elastic v6.2.37+incompatible // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.0.0-00010101000000-000000000000 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter v0.0.0-00010101000000-000000000000 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter v0.0.0-00010101000000-000000000000 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter v0.0.0-00010101000000-000000000000 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsprometheusremotewriteexporter v0.0.0-00010101000000-000000000000 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter v0.0.0-00010101000000-000000000000 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter v0.0.0-00010101000000-000000000000 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.0.0-00010101000000-000000000000 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter v0.0.0-00010101000000-000000000000 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter v0.0.0-00010101000000-000000000000 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.0.0-00010101000000-000000000000 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter v0.0.0-00010101000000-000000000000 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticexporter v0.0.0-00010101000000-000000000000 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter v0.0.0-00010101000000-000000000000 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter v0.0.0-00010101000000-000000000000 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter v0.0.0-00010101000000-000000000000 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.45.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter v0.45.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter v0.45.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter v0.45.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsprometheusremotewriteexporter v0.45.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter v0.45.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter v0.45.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.45.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter v0.45.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter v0.45.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.45.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter v0.45.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticexporter v0.45.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter v0.45.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter v0.45.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter v0.45.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter v0.45.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombexporter v0.0.0-00010101000000-000000000000 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/humioexporter v0.0.0-00010101000000-000000000000 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter v0.0.0-00010101000000-000000000000 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombexporter v0.45.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/humioexporter v0.45.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter v0.45.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter v0.45.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter v0.0.0-00010101000000-000000000000 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter v0.45.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.45.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter v0.0.0-00010101000000-000000000000 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter v0.0.0-00010101000000-000000000000 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter v0.0.0-00010101000000-000000000000 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/newrelicexporter v0.0.0-00010101000000-000000000000 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.0.0-00010101000000-000000000000 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parquetexporter v0.0.0-00010101000000-000000000000 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter v0.45.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter v0.45.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter v0.45.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/newrelicexporter v0.45.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.45.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parquetexporter v0.45.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.45.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.45.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.0.0-00010101000000-000000000000 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter v0.0.0-00010101000000-000000000000 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.45.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter v0.45.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.45.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/skywalkingexporter v0.0.0-00010101000000-000000000000 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/skywalkingexporter v0.45.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter v0.45.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackdriverexporter v0.0.0-00010101000000-000000000000 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter v0.0.0-00010101000000-000000000000 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tanzuobservabilityexporter v0.0.0-00010101000000-000000000000 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter v0.0.0-00010101000000-000000000000 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackdriverexporter v0.45.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter v0.45.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tanzuobservabilityexporter v0.45.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter v0.45.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.45.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension v0.45.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy v0.45.0 // indirect
@@ -300,8 +300,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.45.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.45.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.45.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor v0.0.0-00010101000000-000000000000 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor v0.0.0-00010101000000-000000000000 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor v0.45.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor v0.45.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor v0.45.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.45.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver v0.45.0 // indirect
@@ -322,8 +322,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver v0.45.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver v0.45.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver v0.45.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver v0.0.0-00010101000000-000000000000 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver v0.0.0-00010101000000-000000000000 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver v0.45.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver v0.45.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver v0.45.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver v0.45.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver v0.45.0 // indirect
@@ -331,14 +331,14 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver v0.45.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver v0.45.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver v0.45.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver v0.0.0-00010101000000-000000000000 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver v0.45.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.45.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator v0.45.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver v0.45.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver v0.45.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.0.0-00010101000000-000000000000 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver v0.0.0-00010101000000-000000000000 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver v0.0.0-00010101000000-000000000000 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.45.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver v0.45.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver v0.45.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver v0.45.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver v0.45.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver v0.45.0 // indirect
