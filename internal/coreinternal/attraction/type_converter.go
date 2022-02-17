@@ -30,11 +30,8 @@ func convertValue(to string, v pdata.AttributeValue) {
 			n, err := strconv.ParseInt(s, 10, 64)
 			if err == nil {
 				v.SetIntVal(n)
-			} else {
-				v.SetIntVal(0)
-			}
-		default:
-			v.SetIntVal(0)
+			} // else leave original value
+		default: // leave original value
 		}
 	case "double":
 		switch v.Type().String() {
@@ -52,11 +49,8 @@ func convertValue(to string, v pdata.AttributeValue) {
 			n, err := strconv.ParseFloat(s, 64)
 			if err == nil {
 				v.SetDoubleVal(n)
-			} else {
-				v.SetDoubleVal(0)
-			}
-		default:
-			v.SetDoubleVal(0)
+			} // else leave original value
+		default: // leave original value
 		}
 	default: // No-op
 	}

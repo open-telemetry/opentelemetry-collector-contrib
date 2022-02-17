@@ -66,7 +66,7 @@ type ActionKeyValue struct {
 
 	// ConvertedType specifies the target type of an attribute to be converted
 	// If the key doesn't exist, no action is performed.
-	// If the value cannot be converted, the null value will be inserted.
+	// If the value cannot be converted, the original value will be left as-is
 	ConvertedType string `mapstructure:"converted_type"`
 
 	// Action specifies the type of action to perform.
@@ -90,8 +90,7 @@ type ActionKeyValue struct {
 	// EXTRACT - Extracts values using a regular expression rule from the input
 	//           'key' to target keys specified in the 'rule'. If a target key
 	//           already exists, it will be overridden.
-	// CONVERT  - converts the type of an existing attribute, or sets it to the null
-	//	         value if the existing value cannot be converted
+	// CONVERT  - converts the type of an existing attribute, if convertable
 	// This is a required field.
 	Action Action `mapstructure:"action"`
 }
@@ -142,8 +141,7 @@ const (
 	// exists, it will be overridden.
 	EXTRACT Action = "extract"
 
-	// CONVERT converts the type of an existing attribute, or sets it to the null
-	// value if the existing value cannot be converted
+	// CONVERT converts the type of an existing attribute, if convertable
 	CONVERT Action = "convert"
 )
 

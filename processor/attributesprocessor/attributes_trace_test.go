@@ -432,7 +432,7 @@ func TestAttributes_Coerce(t *testing.T) {
 				"to.int": pdata.NewAttributeValueString("int-10"),
 			},
 			expectedAttributes: map[string]pdata.AttributeValue{
-				"to.int": pdata.NewAttributeValueInt(0),
+				"to.int": pdata.NewAttributeValueString("int-10"),
 			},
 		},
 		{
@@ -459,7 +459,7 @@ func TestAttributes_Coerce(t *testing.T) {
 				"to.double": pdata.NewAttributeValueString("int-10"),
 			},
 			expectedAttributes: map[string]pdata.AttributeValue{
-				"to.double": pdata.NewAttributeValueDouble(0),
+				"to.double": pdata.NewAttributeValueString("int-10"),
 			},
 		},
 		{
