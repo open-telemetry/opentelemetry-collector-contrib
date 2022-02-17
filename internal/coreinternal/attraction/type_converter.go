@@ -1,14 +1,10 @@
 package attraction
 
 import (
-	"regexp"
 	"strconv"
 
 	"go.opentelemetry.io/collector/model/pdata"
 )
-
-var num = regexp.MustCompile(`^(\d+)(?:\.\d+)?$`)
-var dub = regexp.MustCompile(`^(\d+(?:\.\d+)?)$`)
 
 func convertValue(to string, v pdata.AttributeValue) {
 	switch to {
@@ -31,15 +27,14 @@ func convertValue(to string, v pdata.AttributeValue) {
 			}
 		case "STRING":
 			s := v.StringVal()
-			n := num.FindStringSubmatch(s)
-			if n != nil {
-				intVal, _ := strconv.Atoi(n[1])
-				v.SetIntVal(int64(intVal))
+			n, err := strconv.ParseInt(s, 10, 64)
+			if err == nil {
+				v.SetIntVal(n)
 			} else {
-				v.SetIntVal(int64(0))
+				v.SetIntVal(0)
 			}
 		default:
-			v.SetIntVal(int64(0))
+			v.SetIntVal(0)
 		}
 	case "double":
 		switch v.Type().String() {
@@ -54,10 +49,9 @@ func convertValue(to string, v pdata.AttributeValue) {
 			}
 		case "STRING":
 			s := v.StringVal()
-			n := dub.FindStringSubmatch(s)
-			if n != nil {
-				dubVal, _ := strconv.ParseFloat(n[1], 64)
-				v.SetDoubleVal(dubVal)
+			n, err := strconv.ParseFloat(s, 64)
+			if err == nil {
+				v.SetDoubleVal(n)
 			} else {
 				v.SetDoubleVal(0)
 			}
