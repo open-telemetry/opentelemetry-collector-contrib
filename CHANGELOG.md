@@ -18,6 +18,7 @@
 ### 🛑 Breaking changes 🛑
 
 - Remove deprecated functions from jaeger translator (#8032)
+- `mongodbatlasreceiver`: modify attributes to adhere to naming guidelines and add 3 new attributes (#7960)
 
 ### 🚩 Deprecations 🚩
 

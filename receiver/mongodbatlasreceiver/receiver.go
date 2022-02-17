@@ -90,6 +90,7 @@ func (s *receiver) poll(ctx context.Context, time timeconstraints) (pdata.Metric
 		}
 		for _, project := range projects {
 			resourceAttributes.InsertString("mongodb.atlas.project", project.Name)
+			resourceAttributes.InsertString("mongodb.atlas.project.id", project.ID)
 			processes, err := s.client.Processes(ctx, project.ID)
 			if err != nil {
 				return pdata.Metrics{}, errors.Wrap(err, "error retrieving MongoDB Atlas processes")
@@ -99,6 +100,8 @@ func (s *receiver) poll(ctx context.Context, time timeconstraints) (pdata.Metric
 				resourceAttributes.CopyTo(resource.Attributes())
 				resource.Attributes().InsertString("host.name", process.Hostname)
 				resource.Attributes().InsertString("process.port", strconv.Itoa(process.Port))
+				resource.Attributes().InsertString("process.typename", process.TypeName)
+				resource.Attributes().InsertString("process.id", process.ID)
 				resourceMetrics, err := s.extractProcessMetrics(
 					ctx,
 					time,
