@@ -2,7 +2,19 @@
 
 ## Unreleased
 
+=======
+### 💡 Enhancements 💡
+
+- `sumologicexporter`: Move validation to Config (#7936)
 - `elasticsearchexporter`: Fix crash with batch processor (#7953).
+
+### 🛑 Breaking changes 🛑
+
+### 🚩 Deprecations 🚩
+
+### 🧰 Bug fixes 🧰
+
+### 🚀 New components 🚀
 
 ## v0.45.0
 
