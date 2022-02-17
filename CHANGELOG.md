@@ -8,6 +8,7 @@
 - `elasticsearchexporter`: Fix crash with batch processor (#7953).
 - `splunkhecexporter`: Batch metrics payloads (#7760)
 - `tanzuobservabilityexporter`: Add internal SDK metric tag (#7826)
+- `attributesprocessor`: Add convert action (#7930)
 
 ### 🛑 Breaking changes 🛑
 
