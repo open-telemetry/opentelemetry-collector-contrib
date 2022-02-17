@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### 💡 Enhancements 💡
+
+- `sumologicexporter`: Move validation to Config (#7936)
+
+### 🛑 Breaking changes 🛑
+
+### 🚩 Deprecations 🚩
+
+### 🧰 Bug fixes 🧰
+
+### 🚀 New components 🚀
+
 ## v0.45.0
 
 ### 💡 Enhancements 💡
@@ -21,7 +33,6 @@
 - `loadbalancingexporter`: Allow non-exist hostname on startup (#7935)
 - `datadogexporter`: Use exact sum, count and average on Datadog distributions (#7830)
 - `storage/filestorage`: add optional compaction to filestorage (#7768)
-- `sumologicexporter`: Move validation to Config (#7936)
 
 ### 🛑 Breaking changes 🛑
 
