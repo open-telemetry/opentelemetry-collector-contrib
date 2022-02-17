@@ -8,6 +8,7 @@
 - `elasticsearchexporter`: Fix crash with batch processor (#7953).
 - `splunkhecexporter`: Batch metrics payloads (#7760)
 - `tanzuobservabilityexporter`: Add internal SDK metric tag (#7826)
+- `hostreceiver/processscraper`: Migrate the scraper to the mdatagen metrics builder (#7287)
 
 ### 🛑 Breaking changes 🛑
 
@@ -40,7 +41,6 @@
 - `loadbalancingexporter`: Allow non-exist hostname on startup (#7935)
 - `datadogexporter`: Use exact sum, count and average on Datadog distributions (#7830)
 - `storage/filestorage`: add optional compaction to filestorage (#7768)
-- `hostreceiver/processscraper`: Migrate the scraper to the mdatagen metrics builder (#7287)
 
 ### 🛑 Breaking changes 🛑
 
