@@ -20,7 +20,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-log-collection/agent"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/transformer/noop"
 	"github.com/open-telemetry/opentelemetry-log-collection/pipeline"
@@ -36,14 +35,13 @@ func createNoopReceiver(workerCount int, nextConsumer consumer.Logs) (*receiver,
 		LogEmitterWithLogger(zap.NewNop().Sugar()),
 	)
 
-	logAgent, err := agent.NewBuilder(zap.NewNop().Sugar()).
-		WithConfig(&agent.Config{Pipeline: pipeline.Config{
+	pipe, err := pipeline.Config{
+		Operators: []operator.Config{
 			operator.Config{
 				Builder: noop.NewNoopOperatorConfig(""),
 			},
-		}}).
-		WithDefaultOutput(emitter).
-		Build()
+		},
+	}.Build(zap.NewNop().Sugar())
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +58,7 @@ func createNoopReceiver(workerCount int, nextConsumer consumer.Logs) (*receiver,
 
 	return &receiver{
 		id:        config.NewComponentID("testReceiver"),
-		agent:     logAgent,
+		pipe:      pipe,
 		emitter:   emitter,
 		consumer:  nextConsumer,
 		logger:    zap.NewNop(),

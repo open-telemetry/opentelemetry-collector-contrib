@@ -22,6 +22,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/transformer/noop"
@@ -61,8 +63,8 @@ func NewUnstartableConfig() *UnstartableConfig {
 }
 
 // Build will build an unstartable operator
-func (c *UnstartableConfig) Build(context operator.BuildContext) (operator.Operator, error) {
-	o, _ := c.OutputConfig.Build(context)
+func (c *UnstartableConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+	o, _ := c.OutputConfig.Build(logger)
 	return &UnstartableOperator{OutputOperator: o}, nil
 }
 
