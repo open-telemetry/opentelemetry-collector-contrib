@@ -55,7 +55,12 @@ func TestLoadConfig(t *testing.T) {
 		&Config{
 			ExtensionSettings: config.NewExtensionSettings(config.NewComponentIDWithName(typeStr, "all_settings")),
 			Directory:         ".",
-			Timeout:           2 * time.Second,
+			Compaction: &CompactionConfig{
+				Directory:          ".",
+				OnStart:            true,
+				MaxTransactionSize: 2048,
+			},
+			Timeout: 2 * time.Second,
 		},
 		ext1)
 }
