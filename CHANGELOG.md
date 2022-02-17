@@ -33,6 +33,7 @@
 - `loadbalancingexporter`: Allow non-exist hostname on startup (#7935)
 - `datadogexporter`: Use exact sum, count and average on Datadog distributions (#7830)
 - `storage/filestorage`: add optional compaction to filestorage (#7768)
+- `awsprometheusremotewriteexporter`: refresh credentials before signing if expired (#7956)
 
 ### 🛑 Breaking changes 🛑
 
