@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### 💡 Enhancements 💡
+
+- `sumologicexporter`: Move validation to Config (#7936)
+
+### 🛑 Breaking changes 🛑
+
+### 🚩 Deprecations 🚩
+
+### 🧰 Bug fixes 🧰
+
+### 🚀 New components 🚀
+
 ## v0.45.0
 
 ### 💡 Enhancements 💡
