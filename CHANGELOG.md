@@ -32,6 +32,7 @@
 - `hostreceiver/memoryscraper`: Add memory.utilization (#6221)
 - `awskinesisexporter`: Add Queue Config Validation AWS Kinesis Exporter (#7835)
 - `elasticsearchexporter`: Remove usage of deprecated LogRecord.Name field (#7829).
+- `splunkhecexporter`: Batch metrics payloads (#7760)
 - `loadbalancingexporter`: Allow non-exist hostname on startup (#7935)
 - `datadogexporter`: Use exact sum, count and average on Datadog distributions (#7830)
 - `storage/filestorage`: add optional compaction to filestorage (#7768)
