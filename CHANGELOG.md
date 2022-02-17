@@ -17,6 +17,8 @@
 
 ### 🚀 New components 🚀
 
+- `awsfirehose` receiver: Add AWS Kinesis Data Firehose Receiver (#7918)
+
 ## v0.45.0
 
 ### 💡 Enhancements 💡
@@ -66,6 +68,7 @@
 - `clickhouse` exporter: Add ClickHouse Exporter (#6907)
 - `pkg/translator/signalfx`: Extract signalfx to metrics conversion in a separate package (#7778)
   - Extract FromMetrics to SignalFx translator package (#7823)
+- `awsfirehose` receiver: Add AWS Kinesis Data Firehose Receiver (#7918)
 
 ## v0.44.0
 
