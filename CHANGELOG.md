@@ -43,6 +43,7 @@
 - `splunkhecexporter`: Batch metrics payloads (#7760)
 - `tanzuobservabilityexporter`: Add internal SDK metric tag (#7826)
 - `hostreceiver/processscraper`: Migrate the scraper to the mdatagen metrics builder (#7287)
+- `groupbyattrsprocesor`: Allow empty keys, which allows to use the processor for compaction (#7793)
 
 ### 🧰 Bug fixes 🧰
 
