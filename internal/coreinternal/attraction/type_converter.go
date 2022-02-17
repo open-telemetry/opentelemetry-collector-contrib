@@ -6,26 +6,32 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
+const (
+	stringConversionTarget = "string"
+	intConversionTarget    = "int"
+	doubleConversionTarget = "double"
+)
+
 func convertValue(to string, v pdata.AttributeValue) {
 	switch to {
-	case "string":
-		switch v.Type().String() {
-		case "STRING":
+	case stringConversionTarget:
+		switch v.Type() {
+		case pdata.AttributeValueTypeString:
 		default:
 			v.SetStringVal(v.AsString())
 		}
-	case "int":
-		switch v.Type().String() {
-		case "INT":
-		case "DOUBLE":
+	case intConversionTarget:
+		switch v.Type() {
+		case pdata.AttributeValueTypeInt:
+		case pdata.AttributeValueTypeDouble:
 			v.SetIntVal(int64(v.DoubleVal()))
-		case "BOOL":
+		case pdata.AttributeValueTypeBool:
 			if v.BoolVal() {
 				v.SetIntVal(1)
 			} else {
 				v.SetIntVal(0)
 			}
-		case "STRING":
+		case pdata.AttributeValueTypeString:
 			s := v.StringVal()
 			n, err := strconv.ParseInt(s, 10, 64)
 			if err == nil {
@@ -33,18 +39,18 @@ func convertValue(to string, v pdata.AttributeValue) {
 			} // else leave original value
 		default: // leave original value
 		}
-	case "double":
-		switch v.Type().String() {
-		case "INT":
+	case doubleConversionTarget:
+		switch v.Type() {
+		case pdata.AttributeValueTypeInt:
 			v.SetDoubleVal(float64(v.IntVal()))
-		case "DOUBLE":
-		case "BOOL":
+		case pdata.AttributeValueTypeDouble:
+		case pdata.AttributeValueTypeBool:
 			if v.BoolVal() {
 				v.SetDoubleVal(1)
 			} else {
 				v.SetDoubleVal(0)
 			}
-		case "STRING":
+		case pdata.AttributeValueTypeString:
 			s := v.StringVal()
 			n, err := strconv.ParseFloat(s, 64)
 			if err == nil {

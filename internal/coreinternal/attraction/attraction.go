@@ -253,9 +253,9 @@ func NewAttrProc(settings *Settings) (*AttrProc, error) {
 				return nil, fmt.Errorf("error creating AttrProc. Action \"%s\" does not use value sources or \"pattern\" field. These must not be specified for %d-th action", a.Action, i)
 			}
 			switch a.ConvertedType {
-			case "string":
-			case "int":
-			case "double":
+			case stringConversionTarget:
+			case intConversionTarget:
+			case doubleConversionTarget:
 			case "":
 				return nil, fmt.Errorf("error creating AttrProc due to missing required field \"converted_type\" for action \"%s\" at the %d-th action", a.Action, i)
 			default:
