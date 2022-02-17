@@ -40,6 +40,7 @@ type signingRoundTripper struct {
 	signer      *v4.Signer
 	region      string
 	service     string
+	roleArn     string
 	runtimeInfo string
 }
 
@@ -68,16 +69,40 @@ func (si *signingRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 	}
 	req2.Header.Set("User-Agent", ua)
 
-	// Sign the request
-	_, err = si.signer.Sign(req2, body, si.service, si.region, time.Now())
-	if err != nil {
-		return nil, fmt.Errorf("error signing the request: %v", err)
+	expiration, _ := si.signer.Credentials.ExpiresAt()
+
+	if len(si.roleArn) != 0 && !expiration.IsZero() && si.signer.Credentials.IsExpired() {
+		// Under an assumed role, Credential expiration will be known so we update the credentials before requesting the Signature
+		// and avoid dropping data.
+		auth := AuthConfig{
+			Region:  si.region,
+			Service: si.service,
+			RoleArn: si.roleArn,
+		}
+		si.signer.Credentials, err = getCredsFromConfig(auth)
+		if err != nil {
+			return nil, fmt.Errorf("error refreshing credentials: %v", err)
+		}
 	}
 
-	// Send the request to Prometheus Remote Write Backend.
+	// Sign the request
+	_, err = si.signer.Sign(req2, body, si.service, si.region, time.Now())
+
 	resp, err := si.transport.RoundTrip(req2)
 	if err != nil {
 		return nil, err
+	}
+
+	if resp != nil && resp.StatusCode == 403 {
+
+		// If request gets denied by a 403, refresh the credentials for the next retry (packets will be lost)
+		auth := AuthConfig{
+			Region:  si.region,
+			Service: si.service,
+			RoleArn: si.roleArn,
+		}
+
+		si.signer.Credentials, err = getCredsFromConfig(auth)
 	}
 
 	return resp, err
@@ -104,6 +129,7 @@ func newSigningRoundTripper(cfg *Config, next http.RoundTripper, runtimeInfo str
 }
 
 func getCredsFromConfig(auth AuthConfig) (*credentials.Credentials, error) {
+
 	sess, err := session.NewSessionWithOptions(session.Options{
 		Config: aws.Config{Region: aws.String(auth.Region)},
 	})
@@ -145,6 +171,7 @@ func newSigningRoundTripperWithCredentials(auth AuthConfig, creds *credentials.C
 		region:      auth.Region,
 		service:     auth.Service,
 		runtimeInfo: runtimeInfo,
+		roleArn:     auth.RoleArn,
 	}
 	return &rt, nil
 }
