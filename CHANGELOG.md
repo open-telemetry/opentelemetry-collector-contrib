@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- `elasticsearchexporter`: Fix crash with batch processor (#7953).
+
 ## v0.45.0
 
 ### 💡 Enhancements 💡
