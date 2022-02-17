@@ -64,11 +64,12 @@ func createDefaultConfig() config.Exporter {
 		TimeoutSettings: exporterhelper.TimeoutSettings{
 			Timeout: defaultHTTPTimeout,
 		},
-		RetrySettings:        exporterhelper.DefaultRetrySettings(),
-		QueueSettings:        exporterhelper.DefaultQueueSettings(),
-		DisableCompression:   false,
-		MaxConnections:       defaultMaxIdleCons,
-		MaxContentLengthLogs: maxContentLengthLogsLimit,
+		RetrySettings:           exporterhelper.DefaultRetrySettings(),
+		QueueSettings:           exporterhelper.DefaultQueueSettings(),
+		DisableCompression:      false,
+		MaxConnections:          defaultMaxIdleCons,
+		MaxContentLengthLogs:    maxContentLengthLogsLimit,
+		MaxContentLengthMetrics: maxContentLengthMetricsLimit,
 		HecToOtelAttrs: splunk.HecToOtelAttrs{
 			Source:     splunk.DefaultSourceLabel,
 			SourceType: splunk.DefaultSourceTypeLabel,
