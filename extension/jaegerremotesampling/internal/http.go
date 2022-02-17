@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"sync"
 
@@ -74,11 +75,17 @@ func (h *SamplingHTTPServer) Start(_ context.Context, host component.Host) error
 		return err
 	}
 
+	var hln net.Listener
+	hln, err = h.settings.ToListener()
+	if err != nil {
+		return err
+	}
+
 	h.shutdownWG.Add(1)
 	go func() {
 		defer h.shutdownWG.Done()
 
-		if err := h.srv.ListenAndServe(); err != http.ErrServerClosed && err != nil {
+		if err := h.srv.Serve(hln); err != http.ErrServerClosed && err != nil {
 			host.ReportFatalError(err)
 		}
 	}()
@@ -87,8 +94,9 @@ func (h *SamplingHTTPServer) Start(_ context.Context, host component.Host) error
 }
 
 func (h *SamplingHTTPServer) Shutdown(ctx context.Context) error {
+	err := h.srv.Shutdown(ctx)
 	h.shutdownWG.Wait()
-	return h.srv.Shutdown(ctx)
+	return err
 }
 
 func (h *SamplingHTTPServer) samplingStrategyHandler(rw http.ResponseWriter, r *http.Request) {

@@ -43,7 +43,10 @@ func TestMissingClientConfigManager(t *testing.T) {
 
 func TestStartAndStop(t *testing.T) {
 	// prepare
-	s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), confighttp.HTTPServerSettings{}, NewClientConfigManager())
+	srvSettings := confighttp.HTTPServerSettings{
+		Endpoint: ":0",
+	}
+	s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), srvSettings, NewClientConfigManager())
 	require.NoError(t, err)
 	require.NotNil(t, s)
 

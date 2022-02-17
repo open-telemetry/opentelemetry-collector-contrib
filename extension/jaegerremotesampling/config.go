@@ -44,7 +44,7 @@ type Source struct {
 	Remote *configgrpc.GRPCClientSettings `mapstructure:"remote"`
 
 	// File specifies a local file as the strategies source
-	File *string `mapstructure:"file"`
+	File string `mapstructure:"file"`
 
 	// ReloadInterval determines the periodicity to refresh the strategies
 	ReloadInterval time.Duration `mapstructure:"reload_interval"`
@@ -54,11 +54,11 @@ var _ config.Extension = (*Config)(nil)
 
 // Validate checks if the extension configuration is valid
 func (cfg *Config) Validate() error {
-	if cfg.Source.File != nil && cfg.Source.Remote != nil {
+	if cfg.Source.File != "" && cfg.Source.Remote != nil {
 		return errTooManySources
 	}
 
-	if cfg.Source.File == nil && cfg.Source.Remote == nil {
+	if cfg.Source.File == "" && cfg.Source.Remote == nil {
 		return errNoSources
 	}
 

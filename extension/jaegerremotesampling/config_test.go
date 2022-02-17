@@ -54,14 +54,13 @@ func TestLoadConfig(t *testing.T) {
 		ext0)
 
 	ext1 := cfg.Extensions[config.NewComponentIDWithName(typeStr, "1")]
-	fileSource := "/etc/otel/sampling_strategies.json"
 	assert.Equal(t,
 		&Config{
 			ExtensionSettings:  config.NewExtensionSettings(config.NewComponentIDWithName(typeStr, "1")),
 			HTTPServerSettings: confighttp.HTTPServerSettings{Endpoint: ":5778"},
 			GRPCServerSettings: configgrpc.GRPCServerSettings{NetAddr: confignet.NetAddr{Endpoint: ":14250"}},
 			Source: Source{
-				File: &fileSource,
+				File: "/etc/otel/sampling_strategies.json",
 			},
 		},
 		ext1)
@@ -70,7 +69,6 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestValidate(t *testing.T) {
-	fileSource := "/tmp/some-file"
 
 	testCases := []struct {
 		desc     string
@@ -87,7 +85,7 @@ func TestValidate(t *testing.T) {
 			cfg: Config{
 				Source: Source{
 					Remote: &configgrpc.GRPCClientSettings{},
-					File:   &fileSource,
+					File:   "/tmp/some-file",
 				},
 			},
 			expected: errTooManySources,

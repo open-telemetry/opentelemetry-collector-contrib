@@ -22,6 +22,8 @@ import (
 	"github.com/jaegertracing/jaeger/thrift-gen/sampling"
 )
 
+// NewClientConfigManager returns a new Jaeger's configmanager.ClientConfigManager. It might be either
+// a proxy to a remote location, or might serve data based on local files.
 func NewClientConfigManager() configmanager.ClientConfigManager {
 	return &clientCfgMgr{}
 }
