@@ -151,7 +151,7 @@ type attributeAction struct {
 	Key           string
 	FromAttribute string
 	FromContext   string
-	TargetType    string
+	ConvertedType string
 	// Compiled regex if provided
 	Regex *regexp.Regexp
 	// Attribute names extracted from the regexp's subexpressions.
@@ -263,7 +263,7 @@ func NewAttrProc(settings *Settings) (*AttrProc, error) {
 			default:
 				return nil, fmt.Errorf("error creating AttrProc due to invalid value \"%s\" in field \"converted_type\" for action \"%s\" at the %d-th action", a.ConvertedType, a.Action, i)
 			}
-			action.TargetType = a.ConvertedType
+			action.ConvertedType = a.ConvertedType
 		default:
 			return nil, fmt.Errorf("error creating AttrProc due to unsupported action %q at the %d-th actions", a.Action, i)
 		}
@@ -343,7 +343,7 @@ func hashAttribute(action attributeAction, attrs pdata.AttributeMap) {
 
 func convertAttribute(action attributeAction, attrs pdata.AttributeMap) {
 	if value, exists := attrs.Get(action.Key); exists {
-		convertValue(action.TargetType, value)
+		convertValue(action.ConvertedType, value)
 	}
 }
 
