@@ -58,7 +58,7 @@ func createTracesExporter(
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.TracesExporter, error) {
-	exp, err := newTracesExporter(set.Logger, cfg)
+	exp, err := newTracesExporter(set, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +80,7 @@ func createMetricsExporter(
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.MetricsExporter, error) {
-	exp, err := newMetricsExporter(set.TelemetrySettings, cfg, createMetricsConsumer)
+	exp, err := newMetricsExporter(set, cfg, createMetricsConsumer)
 	if err != nil {
 		return nil, err
 	}
