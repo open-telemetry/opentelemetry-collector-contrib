@@ -69,7 +69,10 @@ func (si *signingRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 	}
 	req2.Header.Set("User-Agent", ua)
 
-	expiration, _ := si.signer.Credentials.ExpiresAt()
+	expiration, err := si.signer.Credentials.ExpiresAt()
+	if err != nil {
+		expiration = time.Time{} // Avoid errors in the the if condition
+	}
 
 	if len(si.roleArn) != 0 && !expiration.IsZero() && si.signer.Credentials.IsExpired() {
 		// Under an assumed role, Credential expiration will be known so we update the credentials before requesting the Signature
