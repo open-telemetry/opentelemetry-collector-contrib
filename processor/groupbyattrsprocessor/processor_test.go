@@ -799,3 +799,38 @@ func TestCompacting(t *testing.T) {
 		assert.Equal(t, 10, ilm.Metrics().Len())
 	}
 }
+
+func BenchmarkCompacting(bb *testing.B) {
+	runs := []struct {
+		ilCount   int
+		spanCount int
+	}{
+		{
+			ilCount:   1,
+			spanCount: 100,
+		},
+		{
+			ilCount:   10,
+			spanCount: 10,
+		},
+		{
+			ilCount:   100,
+			spanCount: 1,
+		},
+	}
+
+	for _, run := range runs {
+		bb.Run(fmt.Sprintf("instrumentation_library_count=%d, spans_per_library_count=%d", run.ilCount, run.spanCount), func(b *testing.B) {
+			spans := someSpans(attrMap, run.ilCount, run.spanCount)
+			gap := createGroupByAttrsProcessor(zap.NewNop(), []string{})
+
+			b.ResetTimer()
+			for n := 0; n < b.N; n++ {
+				_, err := gap.processTraces(context.Background(), spans)
+				if err != nil {
+					return
+				}
+			}
+		})
+	}
+}
