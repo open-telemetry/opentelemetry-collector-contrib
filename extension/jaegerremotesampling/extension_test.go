@@ -34,17 +34,7 @@ func TestNewExtension(t *testing.T) {
 	assert.NotNil(t, e)
 }
 
-func TestStart(t *testing.T) {
-	// prepare
-	e, err := newExtension(createDefaultConfig().(*Config), componenttest.NewNopTelemetrySettings())
-	require.NotNil(t, e)
-	require.NoError(t, err)
-
-	// test and verify
-	assert.NoError(t, e.Start(context.Background(), componenttest.NewNopHost()))
-}
-
-func TestShutdown(t *testing.T) {
+func TestStartAndShutdown(t *testing.T) {
 	// prepare
 	e, err := newExtension(createDefaultConfig().(*Config), componenttest.NewNopTelemetrySettings())
 	require.NotNil(t, e)

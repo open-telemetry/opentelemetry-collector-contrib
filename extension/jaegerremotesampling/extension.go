@@ -30,16 +30,18 @@ type jrsExtension struct {
 
 func newExtension(cfg *Config, telemetry component.TelemetrySettings) (*jrsExtension, error) {
 	// TODO(jpkroehling): get a proper instance
-	var cfgMgr = internal.NewClientConfigManager()
+	cfgMgr := internal.NewClientConfigManager()
+	ext := &jrsExtension{}
 
-	httpServer, err := internal.NewHTTP(telemetry, cfg.HTTPServerSettings, cfgMgr)
-	if err != nil {
-		return nil, err
+	if cfg.HTTPServerSettings != nil {
+		httpServer, err := internal.NewHTTP(telemetry, *cfg.HTTPServerSettings, cfgMgr)
+		if err != nil {
+			return nil, err
+		}
+		ext.httpServer = httpServer
 	}
 
-	return &jrsExtension{
-		httpServer: httpServer,
-	}, nil
+	return ext, nil
 }
 
 func (jrse *jrsExtension) Start(ctx context.Context, host component.Host) error {

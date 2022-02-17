@@ -43,8 +43,8 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t,
 		&Config{
 			ExtensionSettings:  config.NewExtensionSettings(config.NewComponentID(typeStr)),
-			HTTPServerSettings: confighttp.HTTPServerSettings{Endpoint: ":5778"},
-			GRPCServerSettings: configgrpc.GRPCServerSettings{NetAddr: confignet.NetAddr{Endpoint: ":14250"}},
+			HTTPServerSettings: &confighttp.HTTPServerSettings{Endpoint: ":5778"},
+			GRPCServerSettings: &configgrpc.GRPCServerSettings{NetAddr: confignet.NetAddr{Endpoint: ":14250"}},
 			Source: Source{
 				Remote: &configgrpc.GRPCClientSettings{
 					Endpoint: "jaeger-collector:14250",
@@ -57,8 +57,8 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t,
 		&Config{
 			ExtensionSettings:  config.NewExtensionSettings(config.NewComponentIDWithName(typeStr, "1")),
-			HTTPServerSettings: confighttp.HTTPServerSettings{Endpoint: ":5778"},
-			GRPCServerSettings: configgrpc.GRPCServerSettings{NetAddr: confignet.NetAddr{Endpoint: ":14250"}},
+			HTTPServerSettings: &confighttp.HTTPServerSettings{Endpoint: ":5778"},
+			GRPCServerSettings: &configgrpc.GRPCServerSettings{NetAddr: confignet.NetAddr{Endpoint: ":14250"}},
 			Source: Source{
 				File: "/etc/otel/sampling_strategies.json",
 			},
@@ -76,13 +76,21 @@ func TestValidate(t *testing.T) {
 		expected error
 	}{
 		{
-			desc:     "no sources",
+			desc:     "no receiving protocols",
 			cfg:      Config{},
+			expected: errAtLeastOneProtocol,
+		},
+		{
+			desc: "no sources",
+			cfg: Config{
+				GRPCServerSettings: &configgrpc.GRPCServerSettings{},
+			},
 			expected: errNoSources,
 		},
 		{
 			desc: "too many sources",
 			cfg: Config{
+				GRPCServerSettings: &configgrpc.GRPCServerSettings{},
 				Source: Source{
 					Remote: &configgrpc.GRPCClientSettings{},
 					File:   "/tmp/some-file",
