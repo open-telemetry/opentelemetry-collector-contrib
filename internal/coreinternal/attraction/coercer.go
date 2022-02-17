@@ -10,7 +10,7 @@ import (
 var num = regexp.MustCompile(`^(\d+)(?:\.\d+)?$`)
 var dub = regexp.MustCompile(`^(\d+(?:\.\d+)?)$`)
 
-func coerceValue(to string, v pdata.AttributeValue) {
+func convertValue(to string, v pdata.AttributeValue) {
 	switch to {
 	case "string":
 		switch v.Type().String() {

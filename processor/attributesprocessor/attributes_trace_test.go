@@ -477,9 +477,9 @@ func TestAttributes_Coerce(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
 	oCfg.Actions = []attraction.ActionKeyValue{
-		{Key: "to.int", Action: attraction.COERCE, TargetType: "int"},
-		{Key: "to.double", Action: attraction.COERCE, TargetType: "double"},
-		{Key: "to.string", Action: attraction.COERCE, TargetType: "string"},
+		{Key: "to.int", Action: attraction.CONVERT, ConvertedType: "int"},
+		{Key: "to.double", Action: attraction.CONVERT, ConvertedType: "double"},
+		{Key: "to.string", Action: attraction.CONVERT, ConvertedType: "string"},
 	}
 
 	tp, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())

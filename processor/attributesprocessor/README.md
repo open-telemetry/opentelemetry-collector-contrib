@@ -89,15 +89,15 @@ For the `extract` action,
  ```
 
 
-For the `coerce` action,
+For the `convert` action,
 - `key` is required
-- `action: coerce` is required.
-- `target_type` is required and must be one of int, double or string
+- `action: convert` is required.
+- `converted_type` is required and must be one of int, double or string
 ```yaml
 # Key specifies the attribute to act upon.
 - key: <key>
-  action: coerce
-  target_type: <type>
+  action: convert
+  converted_type: <type>
 ```
 
 The list of actions can be composed to create rich scenarios, such as
@@ -123,8 +123,8 @@ processors:
       - key: account_email
         action: hash
       - key: http.status_code
-        action: coerce
-        target_type: int
+        action: convert
+        converted_type: int
 
 ```
 
