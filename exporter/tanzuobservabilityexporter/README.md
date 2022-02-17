@@ -1,39 +1,17 @@
 # Tanzu Observability (Wavefront) Exporter
 
-This exporter supports sending traces to [Tanzu Observability](https://tanzu.vmware.com/observability).
+This exporter supports sending metrics and traces to [Tanzu Observability](https://tanzu.vmware.com/observability).
 
 ## Prerequisites
 
 - [Obtain the Tanzu Observability by Wavefront API token.](https://docs.wavefront.com/wavefront_api.html#generating-an-api-token)
 - [Set up and start a Tanzu Observability by Wavefront proxy](https://docs.wavefront.com/proxies_installing.html) and configure it with the API token you obtained.
-- To have the proxy generate [span RED metrics](https://docs.wavefront.com/trace_data_details.html#red-metrics) from trace data, [configure](https://docs.wavefront.com/proxies_configuring.html) the proxy's `customTracingListenerPorts` and use it for the exporter's endpoint.
-
-## Data Conversion
-
-- Trace IDs and Span IDs are converted to UUIDs. For example, span IDs are left-padded with zeros to fit the correct size.
-- Events are converted to [Span Logs](https://docs.wavefront.com/trace_data_details.html#span-logs).
-- Kind is converted to the `span.kind` tag.
-- Status is converted to `error`, `status.code` and `status.message` tags.
-- TraceState is converted to the `w3c.tracestate` tag.
-
-## Tanzu Observability Specific Attributes
-
-- Application identity tags, which are [required by Tanzu Observability](https://docs.wavefront.com/trace_data_details.html#how-wavefront-uses-application-tags), are added if they are missing.
-  - `application` is set to "defaultApp".
-  - `service` is set to "defaultService".
-- A `source` field is required in a [Tanzu Observability Span](https://docs.wavefront.com/trace_data_details.html#span-fields) and [Tanzu Observability Metrics](https://docs.wavefront.com/wavefront_data_format.html#wavefront-data-format-fields). The `source` is set to the first matching OpenTelemetry Resource Attribute from the list below. The matched Attribute is excluded from the resulting Tanzu Observability Span/Metrics tags to reduce duplicate data. If none of the Attributes exist on the Resource, the hostname of the OpenTelemetry Collector is used as a default for `source`.
-   1. `source`
-   2. `host.name`
-   3. `hostname`
-   4. `host.id`
+- To have the proxy generate [span RED metrics](https://docs.wavefront.com/trace_data_details.html#red-metrics) from trace data, [configure](https://docs.wavefront.com/proxies_configuring.html) the proxy to receive traces by setting `customTracingListenerPorts=30001`. For metrics, the proxy listens on port 2878 by default.
 
 ## Configuration
 
-The only required configuration is a Wavefront proxy API endpoint to receive traces from the Tanzu Observability Exporter.
-
-Given a Wavefront proxy at `10.10.10.10`, configured with `customTracingListenerPorts` set to `30001`, the traces endpoint would be `http://10.10.10.10:30001`.
-
-### Example Configuration
+Given a Wavefront proxy at 10.10.10.10 configured with `customTracingListenerPorts=30001`, a minimal configuration of
+the Tanzu Observability exporter follows:
 
 ```yaml
 receivers:
@@ -47,6 +25,8 @@ exporters:
   tanzuobservability:
     traces:
       endpoint: "http://10.10.10.10:30001"
+    metrics:
+      endpoint: "http://10.10.10.10:2878"
 
 service:
   pipelines:
@@ -54,54 +34,63 @@ service:
       receivers: [examplereceiver]
       processors: [batch]
       exporters: [tanzuobservability]
+    metrics:
+      receivers: [examplereceiver]
+      processors: [batch]
+      exporters: [tanzuobservability]
 ```
 
-### Advanced Configuration
+## Advanced Configuration
 
-#### Processors
+### Resource Attributes on Metrics
 
-The memory limiter processor is used to prevent out of memory situations on the collector. It allows performing periodic
-checks of memory usage – if it exceeds defined limits it will begin dropping data and forcing garbage collection to
-reduce memory
-consumption. [Details and defaults here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/processor/memorylimiterprocessor/README.md) .
+Client programs using an OpenTelemetry SDK can be configured to wrap all emitted telemetry (metrics, spans, logs) with 
+a set of global key-value pairs, called [resource attributes](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/sdk.md).
+By default, the Tanzu Observability Exporter includes resource attributes on spans but _excludes_ them on metrics. To
+include resource attributes as tags on metrics, configure the `resource_attributes` stanza per the example below.
 
-**NOTE:** The order matters when enabling multiple processors in a pipeline (e.g. the memory limiter and batch processors in the example config below). Please refer to the processors' [documentation](https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor) for more information.
+**Note:** Tanzu Observability has a 254-character limit on tag key-value pairs. If a resource attribute exceeds this
+limit, the metric will not show up in Tanzu Observability.
 
-#### Exporter
+### Queuing and Retries
 
-This exporter
-uses [queuing and retry helpers](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
-provided by the core OpenTelemetry Collector. The `retry_on_failure` and `sending_queue` features are enabled by
-default, but can be disabled using the options below.
+This exporter uses OpenTelemetry Collector helpers to queue data and retry on failures.
 
-* `retry_on_failure` [Details and defaults here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md#configuration)
-  . Enabled by default.
-    * `enabled`
-    * `initial_interval`
-    * `max_interval`
-    * `max_elapsed_time`
+* `retry_on_failure` [Details and defaults here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md#configuration).
 * `sending_queue` [Details and defaults here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md#configuration)
-  . Enabled by default.
-    * `enabled`
-    * `num_consumers`
-    * `queue_size`
+
+### Recommended Pipeline Processors
+
+The memory_limiter processor is recommended to prevent out of memory situations on the collector. It allows performing
+periodic checks of memory usage – if it exceeds defined limits it will begin dropping data and forcing garbage
+collection to reduce memory consumption. [Details and defaults here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/processor/memorylimiterprocessor/README.md).
+
+**Note:** The order matters when enabling multiple processors in a pipeline (e.g. the memory limiter and batch
+processors in the example config below). Please refer to the processors' [documentation](https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor)
+for more information.
+
+### Example Advanced Configuration
 
 ```yaml
 receivers:
   examplereceiver:
 
 processors:
-  batch:
-    timeout: 10s
   memory_limiter:
     check_interval: 1s
     limit_percentage: 50
     spike_limit_percentage: 30
+  batch:
+    timeout: 10s
 
 exporters:
   tanzuobservability:
     traces:
       endpoint: "http://10.10.10.10:30001"
+    metrics:
+      endpoint: "http://10.10.10.10:2878"
+      resource_attributes:
+        enabled: true
     retry_on_failure:
       max_elapsed_time: 3m
     sending_queue:
@@ -110,7 +99,93 @@ exporters:
 service:
   pipelines:
     traces:
-      receivers: [ examplereceiver ]
-      processors: [ memory_limiter, batch ]
-      exporters: [ tanzuobservability ]
+      receivers: [examplereceiver]
+      processors: [memory_limiter, batch]
+      exporters: [tanzuobservability]
+    metrics:
+      receivers: [examplereceiver]
+      processors: [memory_limiter, batch]
+      exporters: [tanzuobservability]
 ```
+
+## Attributes Required by Tanzu Observability
+
+### Source
+
+A `source` field is required in Tanzu Observability [spans](https://docs.wavefront.com/trace_data_details.html#span-fields)
+and [metrics](https://docs.wavefront.com/wavefront_data_format.html#wavefront-data-format-fields). The source is set to the
+first matching OpenTelemetry Resource Attribute:
+
+1. `source`
+2. `host.name`
+3. `hostname`
+4. `host.id`
+
+To reduce duplicate data, the matched attribute is excluded from the tags on the exported Tanzu Observability span or metric.
+If none of the above resource attributes exist, the OpenTelemetry Collector's hostname is used as a fallback for source.
+
+### Application Identity Tags on Spans
+
+[Application identity tags](https://docs.wavefront.com/trace_data_details.html#how-wavefront-uses-application-tags) of
+`application` and `service` are required for all spans in Tanzu Observability.
+
+- `application` is set to the value of the attribute `application` on the OpenTelemetry Span or Resource. Default is "defaultApp".
+- `service` is set the value of the attribute `service` or `service.name` on the OpenTelemetry Span or Resource. Default is "defaultService".
+
+## Data Conversion for Traces
+
+- Trace IDs and Span IDs are converted to UUIDs. For example, span IDs are left-padded with zeros to fit the correct size.
+- Events are converted to [Span Logs](https://docs.wavefront.com/trace_data_details.html#span-logs).
+- Kind is converted to the `span.kind` tag.
+- If a Span's status code is error, a tag of `error=true` is added. If the status also has a description, it's set to `otel.status_description`.
+- TraceState is converted to the `w3c.tracestate` tag.
+
+## Data Conversion for Metrics
+
+This section describes the process used by the Exporter when converting from
+[OpenTelemetry Metrics](https://opentelemetry.io/docs/reference/specification/metrics/datamodel) to
+[Tanzu Observability by Wavefront Metrics](https://docs.wavefront.com/metric_types.html).
+
+| OpenTelemetry Metric Type | Wavefront Metric Type | Notes |
+| ------ | ------ | ------ |
+| Gauge | Gauge |
+| Cumulative Sum | Cumulative Counter |
+| Delta Sum | Delta Counter |
+| Cumulative Histogram (incl. Exponential) | Cumulative Counters | [Details below](#cumulative-histogram-conversion-incl-exponential). |
+| Delta Histogram (incl. Exponential) | Histogram |
+| Summary | Gauges | [Details below](#summary-conversion).
+
+### Cumulative Histogram Conversion (incl. Exponential)
+
+A cumulative histogram is converted to multiple counter metrics: one counter per bucket in the histogram. Each counter
+has a special "le" tag that matches the upper bound of the corresponding bucket. The value of the counter metric is the
+sum of the histogram's corresponding bucket and all the buckets before it.
+
+When working with OpenTelemetry Cumulative Histograms that have been converted to Wavefront Counters, these functions
+will be of use:
+- [cumulativeHisto()](https://docs.wavefront.com/ts_cumulativeHisto.html)
+- [cumulativePercentile()](https://docs.wavefront.com/ts_cumulativePercentile.html)
+
+#### Example
+
+Suppose a cumulative histogram named "http.response_times" has
+the following buckets and values:
+
+| Bucket | Value |
+| ------ | ----- |
+| &le; 100ms | 5 |
+| &gt; 100ms to &le; 200ms | 20 |
+| &gt; 200ms | 100 |
+
+The exporter sends the following metrics to tanzuobservability:
+
+| Name | Tags | Value |
+| ---- | ---- | ----- |
+| http.response_times | le="100" | 5 |
+| http.response_times | le="200" | 25 |
+| http.response_times | le="+Inf"  | 125 |
+
+### Summary Conversion
+
+A summary is converted to multiple gauge metrics: one gauge for every quantile in the summary. A special "quantile" tag
+contains avalue between 0 and 1 indicating the quantile for which the value belongs.
