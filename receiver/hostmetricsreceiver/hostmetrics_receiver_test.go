@@ -107,7 +107,7 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 		Scrapers: map[string]internal.Config{
 			cpuscraper.TypeStr:        scraperFactories[cpuscraper.TypeStr].CreateDefaultConfig(),
 			diskscraper.TypeStr:       scraperFactories[diskscraper.TypeStr].CreateDefaultConfig(),
-			filesystemscraper.TypeStr: &filesystemscraper.Config{},
+			filesystemscraper.TypeStr: (&filesystemscraper.Factory{}).CreateDefaultConfig(),
 			loadscraper.TypeStr:       scraperFactories[loadscraper.TypeStr].CreateDefaultConfig(),
 			memoryscraper.TypeStr:     scraperFactories[memoryscraper.TypeStr].CreateDefaultConfig(),
 			networkscraper.TypeStr:    scraperFactories[networkscraper.TypeStr].CreateDefaultConfig(),
@@ -402,7 +402,7 @@ func Benchmark_ScrapeSystemAndProcessMetrics(b *testing.B) {
 		Scrapers: map[string]internal.Config{
 			cpuscraper.TypeStr:        &cpuscraper.Config{},
 			diskscraper.TypeStr:       &diskscraper.Config{},
-			filesystemscraper.TypeStr: &filesystemscraper.Config{},
+			filesystemscraper.TypeStr: (&filesystemscraper.Factory{}).CreateDefaultConfig(),
 			loadscraper.TypeStr:       &loadscraper.Config{},
 			memoryscraper.TypeStr:     &memoryscraper.Config{},
 			networkscraper.TypeStr:    &networkscraper.Config{},

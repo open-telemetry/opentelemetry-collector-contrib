@@ -2,8 +2,11 @@
 
 ## Unreleased
 
+## v0.45.0
+
 ### 💡 Enhancements 💡
 
+- `hostreceiver/filesystemscraper`: Migrate the scraper to the mdatagen metrics builder (#7772)
 - `hostreceiver/memoryscraper`: Migrate the scraper to the mdatagen metrics builder (#7312)
 - `lokiexporter`: Use record attributes as log labels (#7569)
 - `routingprocessor`: Do not err on failure to build exporters (#7423)
@@ -13,7 +16,11 @@
 - `coralogixexporter`: Update readme (#7785)
 - `awscloudwatchlogsexporter`: Remove name from aws cloudwatch logs exporter (#7554)
 - `hostreceiver/memoryscraper`: Add memory.utilization (#6221)
+- `awskinesisexporter`: Add Queue Config Validation AWS Kinesis Exporter (#7835)
 - `elasticsearchexporter`: Remove usage of deprecated LogRecord.Name field (#7829).
+- `loadbalancingexporter`: Allow non-exist hostname on startup (#7935)
+- `datadogexporter`: Use exact sum, count and average on Datadog distributions (#7830)
+- `storage/filestorage`: add optional compaction to filestorage (#7768)
 
 ### 🛑 Breaking changes 🛑
 

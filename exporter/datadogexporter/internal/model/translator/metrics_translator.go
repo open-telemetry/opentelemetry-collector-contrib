@@ -99,7 +99,7 @@ func (t *Translator) mapNumberMetrics(
 		p := slice.At(i)
 		pointDims := dims.WithAttributeMap(p.Attributes())
 		var val float64
-		switch p.Type() {
+		switch p.ValueType() {
 		case pdata.MetricValueTypeDouble:
 			val = p.DoubleVal()
 		case pdata.MetricValueTypeInt:
@@ -128,7 +128,7 @@ func (t *Translator) mapNumberMonotonicMetrics(
 		pointDims := dims.WithAttributeMap(p.Attributes())
 
 		var val float64
-		switch p.Type() {
+		switch p.ValueType() {
 		case pdata.MetricValueTypeDouble:
 			val = p.DoubleVal()
 		case pdata.MetricValueTypeInt:
@@ -158,11 +158,21 @@ func getBounds(p pdata.HistogramDataPoint, idx int) (lowerBound float64, upperBo
 	return
 }
 
+type histogramInfo struct {
+	// sum of histogram (exact)
+	sum float64
+	// count of histogram (exact)
+	count uint64
+	// ok to use
+	ok bool
+}
+
 func (t *Translator) getSketchBuckets(
 	ctx context.Context,
 	consumer SketchConsumer,
 	pointDims metricsDimensions,
 	p pdata.HistogramDataPoint,
+	histInfo histogramInfo,
 	delta bool,
 ) {
 	startTs := uint64(p.StartTimestamp())
@@ -199,6 +209,12 @@ func (t *Translator) getSketchBuckets(
 
 	sketch := as.Finish()
 	if sketch != nil {
+		if histInfo.ok {
+			// override approximate sum, count and average in sketch with exact values if available.
+			sketch.Basic.Cnt = int64(histInfo.count)
+			sketch.Basic.Sum = histInfo.sum
+			sketch.Basic.Avg = sketch.Basic.Sum / float64(sketch.Basic.Cnt)
+		}
 		consumer.ConsumeSketch(ctx, pointDims.name, ts, sketch, pointDims.tags, pointDims.host)
 	}
 }
@@ -257,33 +273,41 @@ func (t *Translator) mapHistogramMetrics(
 		ts := uint64(p.Timestamp())
 		pointDims := dims.WithAttributeMap(p.Attributes())
 
-		if t.cfg.SendCountSum {
-			count := float64(p.Count())
-			countDims := pointDims.WithSuffix("count")
-			if delta {
-				consumer.ConsumeTimeSeries(ctx, countDims.name, Count, ts, count, countDims.tags, countDims.host)
-			} else if dx, ok := t.prevPts.Diff(countDims, startTs, ts, count); ok {
-				consumer.ConsumeTimeSeries(ctx, countDims.name, Count, ts, dx, countDims.tags, countDims.host)
-			}
+		histInfo := histogramInfo{ok: true}
+
+		countDims := pointDims.WithSuffix("count")
+		if delta {
+			histInfo.count = p.Count()
+		} else if dx, ok := t.prevPts.Diff(countDims, startTs, ts, float64(p.Count())); ok {
+			histInfo.count = uint64(dx)
+		} else { // not ok
+			histInfo.ok = false
 		}
 
-		if t.cfg.SendCountSum {
-			sum := p.Sum()
-			sumDims := pointDims.WithSuffix("sum")
-			if !t.isSkippable(sumDims.name, p.Sum()) {
-				if delta {
-					consumer.ConsumeTimeSeries(ctx, sumDims.name, Count, ts, sum, sumDims.tags, sumDims.host)
-				} else if dx, ok := t.prevPts.Diff(sumDims, startTs, ts, sum); ok {
-					consumer.ConsumeTimeSeries(ctx, sumDims.name, Count, ts, dx, sumDims.tags, sumDims.host)
-				}
+		sumDims := pointDims.WithSuffix("sum")
+		if !t.isSkippable(sumDims.name, p.Sum()) {
+			if delta {
+				histInfo.sum = p.Sum()
+			} else if dx, ok := t.prevPts.Diff(sumDims, startTs, ts, p.Sum()); ok {
+				histInfo.sum = dx
+			} else { // not ok
+				histInfo.ok = false
 			}
+		} else { // skippable
+			histInfo.ok = false
+		}
+
+		if t.cfg.SendCountSum && histInfo.ok {
+			// We only send the sum and count if both values were ok.
+			consumer.ConsumeTimeSeries(ctx, countDims.name, Count, ts, float64(histInfo.count), countDims.tags, countDims.host)
+			consumer.ConsumeTimeSeries(ctx, sumDims.name, Count, ts, histInfo.sum, sumDims.tags, sumDims.host)
 		}
 
 		switch t.cfg.HistMode {
 		case HistogramModeCounters:
 			t.getLegacyBuckets(ctx, consumer, pointDims, p, delta)
 		case HistogramModeDistributions:
-			t.getSketchBuckets(ctx, consumer, pointDims, p, delta)
+			t.getSketchBuckets(ctx, consumer, pointDims, p, histInfo, delta)
 		}
 	}
 }
