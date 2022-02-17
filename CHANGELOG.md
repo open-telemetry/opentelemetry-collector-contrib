@@ -2,8 +2,11 @@
 
 ## Unreleased
 
+## v0.45.0
+
 ### 💡 Enhancements 💡
 
+- `hostreceiver/filesystemscraper`: Migrate the scraper to the mdatagen metrics builder (#7772)
 - `hostreceiver/memoryscraper`: Migrate the scraper to the mdatagen metrics builder (#7312)
 - `lokiexporter`: Use record attributes as log labels (#7569)
 - `routingprocessor`: Do not err on failure to build exporters (#7423)
@@ -12,6 +15,12 @@
 - `datadogexporter`: Add insecure_skip_verify flag to configuration (#7422)
 - `coralogixexporter`: Update readme (#7785)
 - `awscloudwatchlogsexporter`: Remove name from aws cloudwatch logs exporter (#7554)
+- `hostreceiver/memoryscraper`: Add memory.utilization (#6221)
+- `awskinesisexporter`: Add Queue Config Validation AWS Kinesis Exporter (#7835)
+- `elasticsearchexporter`: Remove usage of deprecated LogRecord.Name field (#7829).
+- `loadbalancingexporter`: Allow non-exist hostname on startup (#7935)
+- `datadogexporter`: Use exact sum, count and average on Datadog distributions (#7830)
+- `storage/filestorage`: add optional compaction to filestorage (#7768)
 
 ### 🛑 Breaking changes 🛑
 
@@ -54,6 +63,7 @@
 - `resourcedetectionprocessor`: check cluster config to verify resource is on aws for eks resources (#7186)
 - `awscloudwatchlogsexporter`: enable awscloudwatchlogsexporter which accepts and exports log data (#7297)
 - `translator/prometheusremotewrite`: add a new module to help translate data from OTLP to Prometheus Remote Write (#7240)
+- `azuremonitorexporter`: In addition to traces, export logs to Azure Application Insights (#7403)
 - `jmxreceiver`: Added `additional_jars` configuration option to launch JMX Metric Gatherer JAR with extended `CLASSPATH` (#7378)
 - `awscontainerinsightreceiver`: add full pod name when configured to AWS Container Insights Receiver (#7415)
 - `hostreceiver/loadscraper`: Migrate the scraper to the mdatagen metrics builder (#7288)
@@ -127,6 +137,7 @@
 - `tracegen`: Add option to pass in custom headers to export calls via command line (#7308)
 - `tracegen`: Provide official container images (#7179)
 - `scrapertest`: Add comparison function for pdata.Metrics (#7400)
+- `prometheusremotewriteexporter` : Dropping the condition to replace _ with key_ as __ label is reserved and _ is not (#7112)
 
 ### 🛑 Breaking changes 🛑
 

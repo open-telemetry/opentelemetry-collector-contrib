@@ -29,3 +29,9 @@ func (s *scraper) recordMemoryUsageMetric(now pdata.Timestamp, memInfo *mem.Virt
 	s.mb.RecordSystemMemoryUsageDataPoint(now, int64(memInfo.Free), metadata.AttributeState.Free)
 	s.mb.RecordSystemMemoryUsageDataPoint(now, int64(memInfo.Inactive), metadata.AttributeState.Inactive)
 }
+
+func (s *scraper) recordMemoryUtilizationMetric(now pdata.Timestamp, memInfo *mem.VirtualMemoryStat) {
+	s.mb.RecordSystemMemoryUtilizationDataPoint(now, float64(memInfo.Used)/float64(memInfo.Total), metadata.AttributeState.Used)
+	s.mb.RecordSystemMemoryUtilizationDataPoint(now, float64(memInfo.Free)/float64(memInfo.Total), metadata.AttributeState.Free)
+	s.mb.RecordSystemMemoryUtilizationDataPoint(now, float64(memInfo.Inactive)/float64(memInfo.Total), metadata.AttributeState.Inactive)
+}

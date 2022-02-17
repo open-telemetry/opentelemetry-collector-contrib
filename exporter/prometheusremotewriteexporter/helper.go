@@ -102,6 +102,21 @@ func sanitize(s string) string {
 	return s
 }
 
+func sanitizeLabels(s string) string {
+	if len(s) == 0 {
+		return s
+	}
+
+	// Note: No length limit for label keys because Prometheus doesn't
+	// define a length limit, thus we should NOT be truncating label keys.
+	// labels that start with _ are not sanitized
+	s = strings.Map(sanitizeRune, s)
+	if unicode.IsDigit(rune(s[0])) {
+		s = keyStr + "_" + s
+	}
+	return s
+}
+
 // copied from prometheus-go-metric-exporter
 // sanitizeRune converts anything that is not a letter or digit to an underscore
 func sanitizeRune(r rune) rune {
