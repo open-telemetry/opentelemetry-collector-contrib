@@ -41,10 +41,17 @@ func TestLoadConfig(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
 
-	conf := cfg.Processors[config.NewComponentIDWithName(typeStr, "custom")]
-	assert.Equal(t, conf,
+	groupingConf := cfg.Processors[config.NewComponentIDWithName(typeStr, "grouping")]
+	assert.Equal(t, groupingConf,
 		&Config{
-			ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "custom")),
+			ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "grouping")),
 			GroupByKeys:       []string{"key1", "key2"},
+		})
+
+	compactionConf := cfg.Processors[config.NewComponentIDWithName(typeStr, "compaction")]
+	assert.Equal(t, compactionConf,
+		&Config{
+			ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "compaction")),
+			GroupByKeys:       []string{},
 		})
 }

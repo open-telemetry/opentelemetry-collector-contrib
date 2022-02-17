@@ -11,9 +11,11 @@ Typical use cases:
 * extract resources from "flat" data formats, such as Fluentbit logs or Prometheus metrics
 * associate Prometheus metrics to a *Resource* that describes the relevant host, based on label present on all metrics
 * optimize data packaging by extracting common attributes
-* compacting multiple records that share the same Resource attributes but are under multiple ResourceSpans/ResourceMetrics/ResourceLogs into single ResourceSpans/ResourceMetrics/ResourceLogs (when empty list of keys is being provided) 
+* [compacting](#compaction) multiple records that share the same Resource and InstrumentationLibrary attributes but are under multiple ResourceSpans/ResourceMetrics/ResourceLogs, into a single ResourceSpans/ResourceMetrics/ResourceLogs (when empty list of keys is being provided) 
 
-## Example
+## Examples
+
+### Grouping metrics
 
 Consider the below metrics, all originally associated to the same *Resource*:
 
@@ -83,6 +85,64 @@ Notes:
 * The new *Resources* inherited the attributes from the original *Resource* (`source="prom"`), **plus** the specified attributes from the processed metrics (`host.name="host-A"` or `host.name="host-B"`)
 * The specified "grouping" attributes that are set on the new *Resources* are also **removed** from the metric *DataPoints*
 * While not shown in the above example, the processor also merges collections of records under matching InstrumentationLibrary
+
+### Compaction
+
+In some cases, the data might come in single requests to the collector and even after batching there might be multiple duplicated ResourceSpans/ResourceLogs/ResourceMetrics objects, which leads to additional memory consumption and increased processing costs. As a remedy, `groupbyattrs` processor might be used to compact the data which has matching Resource and InstrumentationLibrary properties.
+
+For example, consider the following input:
+
+```
+Resource {host.name="localhost"}
+  InstumentationLibrary {name="MyLibrary"}
+  Spans
+    Span {"span_id"=1, ...}
+  InstumentationLibrary {name="OtherLibrary"}
+  Spans
+    Span {"span_id"=2, ...}
+    
+Resource {host.name="localhost"}
+  InstumentationLibrary {name="MyLibrary"}
+  Spans
+    Span {"span_id"=3, ...}
+    
+Resource {host.name="localhost"}
+  InstumentationLibrary {name="MyLibrary"}
+  Spans
+    Span {"span_id"=4, ...}
+    
+Resource {host.name="otherhost"}
+  InstumentationLibrary {name="MyLibrary"}
+  Spans
+    Span {"span_id"=5, ...}
+```
+
+With the below configuration, the **groupbyattrs** will re-associate the spans with matching Resource and InstrumentationLibrary
+
+```yaml
+processors:
+  groupbyattrs:
+```
+
+The output of the processor will therefore be:
+
+```
+Resource {host.name="localhost"}
+  InstumentationLibrary {name="MyLibrary"}
+  Spans
+    Span {"span_id"=1, ...}
+    Span {"span_id"=3, ...}
+    Span {"span_id"=4, ...}
+  InstumentationLibrary {name="OtherLibrary"}
+  Spans
+    Span {"span_id"=2, ...}
+
+Resource {host.name="otherhost"}
+  InstumentationLibrary {name="MyLibrary"}
+  Spans
+    Span {"span_id"=5, ...}
+```
+
 
 ## Configuration
 
