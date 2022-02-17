@@ -92,29 +92,29 @@ In some cases, the data might come in single requests to the collector and even 
 
 For example, consider the following input:
 
-```
+```go
 Resource {host.name="localhost"}
   InstumentationLibrary {name="MyLibrary"}
   Spans
-    Span {"span_id"=1, ...}
+    Span {span_id=1, ...}
   InstumentationLibrary {name="OtherLibrary"}
   Spans
-    Span {"span_id"=2, ...}
+    Span {span_id=2, ...}
     
 Resource {host.name="localhost"}
   InstumentationLibrary {name="MyLibrary"}
   Spans
-    Span {"span_id"=3, ...}
+    Span {span_id=3, ...}
     
 Resource {host.name="localhost"}
   InstumentationLibrary {name="MyLibrary"}
   Spans
-    Span {"span_id"=4, ...}
+    Span {span_id=4, ...}
     
 Resource {host.name="otherhost"}
   InstumentationLibrary {name="MyLibrary"}
   Spans
-    Span {"span_id"=5, ...}
+    Span {span_id=5, ...}
 ```
 
 With the below configuration, the **groupbyattrs** will re-associate the spans with matching Resource and InstrumentationLibrary
@@ -126,21 +126,21 @@ processors:
 
 The output of the processor will therefore be:
 
-```
+```go
 Resource {host.name="localhost"}
   InstumentationLibrary {name="MyLibrary"}
   Spans
-    Span {"span_id"=1, ...}
-    Span {"span_id"=3, ...}
-    Span {"span_id"=4, ...}
+    Span {span_id=1, ...}
+    Span {span_id=3, ...}
+    Span {span_id=4, ...}
   InstumentationLibrary {name="OtherLibrary"}
   Spans
-    Span {"span_id"=2, ...}
+    Span {span_id=2, ...}
 
 Resource {host.name="otherhost"}
   InstumentationLibrary {name="MyLibrary"}
   Spans
-    Span {"span_id"=5, ...}
+    Span {span_id=5, ...}
 ```
 
 
