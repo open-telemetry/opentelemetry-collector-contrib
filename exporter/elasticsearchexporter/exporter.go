@@ -103,7 +103,7 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld pdata.Logs)
 		resource := rl.Resource()
 		ills := rl.InstrumentationLibraryLogs()
 		for j := 0; j < ills.Len(); j++ {
-			logs := ills.At(i).LogRecords()
+			logs := ills.At(j).LogRecords()
 			for k := 0; k < logs.Len(); k++ {
 				if err := e.pushLogRecord(ctx, resource, logs.At(k)); err != nil {
 					if cerr := ctx.Err(); cerr != nil {
