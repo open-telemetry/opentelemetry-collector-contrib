@@ -15,12 +15,12 @@
 package config
 
 import (
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"testing"
 
 	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/apiconstants"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 func TestConfig_Validate(t *testing.T) {
