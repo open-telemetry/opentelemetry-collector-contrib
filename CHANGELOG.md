@@ -8,6 +8,7 @@
 - `elasticsearchexporter`: Fix crash with batch processor (#7953).
 - `splunkhecexporter`: Batch metrics payloads (#7760)
 - `tanzuobservabilityexporter`: Add internal SDK metric tag (#7826)
+- `hostreceiver/processscraper`: Migrate the scraper to the mdatagen metrics builder (#7287)
 - `attributesprocessor`: Add convert action (#7930)
 
 ### 🛑 Breaking changes 🛑
@@ -71,7 +72,6 @@
 - `clickhouse` exporter: Add ClickHouse Exporter (#6907)
 - `pkg/translator/signalfx`: Extract signalfx to metrics conversion in a separate package (#7778)
   - Extract FromMetrics to SignalFx translator package (#7823)
-- `awsfirehose` receiver: Add AWS Kinesis Data Firehose Receiver (#7918)
 
 ## v0.44.0
 
