@@ -96,15 +96,6 @@ func NewStringAttributeFilter(logger *zap.Logger, key string, values []string, r
 	}
 }
 
-// OnLateArrivingSpans notifies the evaluator that the given list of spans arrived
-// after the sampling decision was already taken for the trace.
-// This gives the evaluator a chance to log any message/metrics and/or update any
-// related internal state.
-func (saf *stringAttributeFilter) OnLateArrivingSpans(Decision, []*pdata.Span) error {
-	saf.logger.Debug("Triggering action for late arriving spans in string-tag filter")
-	return nil
-}
-
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
 // The SamplingDecision is made by comparing the attribute values with the matching values,
 // which might be static strings or regular expressions.
