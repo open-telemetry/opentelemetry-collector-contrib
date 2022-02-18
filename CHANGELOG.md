@@ -84,6 +84,7 @@
 
 - `sumologicexporter`: Move validation to Config (#7936)
 - `elasticsearchexporter`: Fix crash with batch processor (#7953).
+- `processor/tailsampling`: Keep original resource/instrumentation data (#7771)
 - `splunkhecexporter`: Batch metrics payloads (#7760)
 - `tanzuobservabilityexporter`: Add internal SDK metric tag (#7826)
 - `hostreceiver/processscraper`: Migrate the scraper to the mdatagen metrics builder (#7287)
