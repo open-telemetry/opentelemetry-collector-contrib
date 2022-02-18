@@ -1,5 +1,9 @@
 # Changelog
 
+### 💡 Enhancements 💡
+
+- Do not drop zero trace/span id spans in the jaeger conversion (#7946)
+
 ## Unreleased
 
 ### 💡 Enhancements 💡
