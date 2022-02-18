@@ -23,7 +23,10 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/service/servicetest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -31,6 +34,10 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	factories.Processors[typeStr] = factory
+
+	factories.Processors["batch"] = batchprocessor.NewFactory()
+	factories.Processors["groupbytrace"] = groupbytraceprocessor.NewFactory()
+
 	require.NoError(t, err)
 
 	err = configtest.CheckConfigStruct(factory.CreateDefaultConfig())

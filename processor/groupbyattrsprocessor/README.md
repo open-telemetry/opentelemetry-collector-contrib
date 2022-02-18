@@ -11,7 +11,9 @@ Typical use cases:
 * extract resources from "flat" data formats, such as Fluentbit logs or Prometheus metrics
 * associate Prometheus metrics to a *Resource* that describes the relevant host, based on label present on all metrics
 * optimize data packaging by extracting common attributes
-* [compacting](#compaction) multiple records that share the same Resource and InstrumentationLibrary attributes but are under multiple ResourceSpans/ResourceMetrics/ResourceLogs, into a single ResourceSpans/ResourceMetrics/ResourceLogs (when empty list of keys is being provided) 
+* [compacting](#compaction) multiple records that share the same Resource and InstrumentationLibrary attributes but are under multiple ResourceSpans/ResourceMetrics/ResourceLogs, into a single ResourceSpans/ResourceMetrics/ResourceLogs (when empty list of keys is being provided). This might happen e.g. when [groupbytrace](../groupbytraceprocessor) processor is being used or data comes in multiple requests. By compacting data, it takes less memory, is more efficiently processed, serialized and the number of export requests is reduced (e.g. in case of [jaeger](../../exporters/jaegerexporter) exporter).
+
+It is recommended to use the `groupbyattrs` processor together with [batch](https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/batchprocessor) processor, as a consecutive step, as this will reduce the fragmentation of data (by grouping records together under matching Resource/Instrumentation Library)
 
 ## Examples
 
@@ -88,7 +90,7 @@ Notes:
 
 ### Compaction
 
-In some cases, the data might come in single requests to the collector and even after batching there might be multiple duplicated ResourceSpans/ResourceLogs/ResourceMetrics objects, which leads to additional memory consumption and increased processing costs. As a remedy, `groupbyattrs` processor might be used to compact the data which has matching Resource and InstrumentationLibrary properties.
+In some cases, the data might come in single requests to the collector or become fragmented due to use of [groupbytrace](../groupbytraceprocessor) processor. Even after batching there might be multiple duplicated ResourceSpans/ResourceLogs/ResourceMetrics objects, which leads to additional memory consumption, increased processing costs, inefficient serialization and increase of the export requests. As a remedy, `groupbyattrs` processor might be used to compact the data with matching Resource and InstrumentationLibrary properties.
 
 For example, consider the following input:
 
@@ -117,11 +119,17 @@ Resource {host.name="otherhost"}
     Span {span_id=5, ...}
 ```
 
-With the below configuration, the **groupbyattrs** will re-associate the spans with matching Resource and InstrumentationLibrary
+With the below configuration, the **groupbyattrs** will re-associate the spans with matching Resource and InstrumentationLibrary. 
 
 ```yaml
 processors:
+  batch:
   groupbyattrs:
+
+pipelines:
+  traces:
+    processors: [batch, groupbyattrs/grouping]
+    ...
 ```
 
 The output of the processor will therefore be:
@@ -142,7 +150,6 @@ Resource {host.name="otherhost"}
   Spans
     Span {span_id=5, ...}
 ```
-
 
 ## Configuration
 
