@@ -86,12 +86,14 @@ func TestLoadConfig(t *testing.T) {
 			})(),
 			processesscraper.TypeStr: &processesscraper.Config{},
 			pagingscraper.TypeStr:    &pagingscraper.Config{},
-			processscraper.TypeStr: &processscraper.Config{
-				Include: processscraper.MatchConfig{
+			processscraper.TypeStr: (func() internal.Config {
+				cfg := (&processscraper.Factory{}).CreateDefaultConfig()
+				cfg.(*processscraper.Config).Include = processscraper.MatchConfig{
 					Names:  []string{"test2", "test3"},
 					Config: filterset.Config{MatchType: "regexp"},
-				},
-			},
+				}
+				return cfg
+			})(),
 		},
 	}
 
