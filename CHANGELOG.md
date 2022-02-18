@@ -4,15 +4,23 @@
 
 ### 💡 Enhancements 💡
 
+### 🛑 Breaking changes 🛑
+
+### 🚩 Deprecations 🚩
+
+### 🧰 Bug fixes 🧰
+
+### 🚀 New components 🚀
+
+## v0.45.1
+
+### 💡 Enhancements 💡
+
 - `sumologicexporter`: Move validation to Config (#7936)
 - `elasticsearchexporter`: Fix crash with batch processor (#7953).
 - `splunkhecexporter`: Batch metrics payloads (#7760)
 - `tanzuobservabilityexporter`: Add internal SDK metric tag (#7826)
 - `hostreceiver/processscraper`: Migrate the scraper to the mdatagen metrics builder (#7287)
-
-### 🛑 Breaking changes 🛑
-
-### 🚩 Deprecations 🚩
 
 ### 🧰 Bug fixes 🧰
 
