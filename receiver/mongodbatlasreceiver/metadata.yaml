@@ -265,8 +265,10 @@ metrics:
     extended_documentation: Aggregate of MongoDB Metrics DOCUMENT_METRICS_UPDATED, DOCUMENT_METRICS_DELETED, DOCUMENT_METRICS_RETURNED, DOCUMENT_METRICS_INSERTED
     unit: "{documents}/s"
     attributes: [document_status]
-    gauge:
+    sum:
       value_type: double
+      monotonic: true
+      aggregation: cumulative
   mongodbatlas.process.fts.cpu.usage:
     enabled: true
     description: Full text search CPU (%)
@@ -365,8 +367,10 @@ metrics:
     extended_documentation: Aggregate of MongoDB Metrics OPCOUNTER_GETMORE, OPERATIONS_SCAN_AND_ORDER, OPCOUNTER_UPDATE, OPCOUNTER_REPL_UPDATE, OPCOUNTER_CMD, OPCOUNTER_DELETE, OPCOUNTER_REPL_DELETE, OPCOUNTER_REPL_CMD, OPCOUNTER_QUERY, OPCOUNTER_REPL_INSERT, OPCOUNTER_INSERT
     unit: "{operations}/s"
     attributes: [operation, cluster_role]
-    gauge:
+    sum:
       value_type: double
+      monotonic: true
+      aggregation: cumulative
   mongodbatlas.process.db.operations.time:
     enabled: true
     description: DB Operation Times

@@ -492,7 +492,9 @@ var Metrics = &metricStruct{
 			metric.SetName("mongodbatlas.process.db.document.rate")
 			metric.SetDescription("Document access rates")
 			metric.SetUnit("{documents}/s")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(true)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{
@@ -501,7 +503,9 @@ var Metrics = &metricStruct{
 			metric.SetName("mongodbatlas.process.db.operations.rate")
 			metric.SetDescription("DB Operation Rates")
 			metric.SetUnit("{operations}/s")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(true)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{

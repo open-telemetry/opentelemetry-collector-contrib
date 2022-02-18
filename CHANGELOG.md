@@ -9,6 +9,7 @@
 ### 🚩 Deprecations 🚩
 
 ### 🧰 Bug fixes 🧰
+- `mongodbatlasreceiver`: Fix two metric types to be Sum instead of Gauge measurements (#8021)
 
 ### 🚀 New components 🚀
 
