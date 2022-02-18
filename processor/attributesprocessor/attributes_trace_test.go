@@ -388,7 +388,7 @@ func TestAttributes_Hash(t *testing.T) {
 	}
 }
 
-func TestAttributes_Coerce(t *testing.T) {
+func TestAttributes_Convert(t *testing.T) {
 	testCases := []testCase{
 		{
 			name: "int to int",
