@@ -51,7 +51,6 @@ func createLogsReceiver(logReceiverType LogReceiverType) receiverhelper.CreateLo
 		nextConsumer consumer.Logs,
 	) (component.LogsReceiver, error) {
 		inputCfg, err := logReceiverType.DecodeInputConfig(cfg)
-
 		if err != nil {
 			return nil, err
 		}

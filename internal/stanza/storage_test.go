@@ -16,6 +16,9 @@ package stanza
 
 import (
 	"context"
+	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/trace"
 	"io/ioutil"
 	"testing"
 
@@ -89,6 +92,9 @@ func createReceiver(t *testing.T) *receiver {
 	params := component.ReceiverCreateSettings{
 		TelemetrySettings: component.TelemetrySettings{
 			Logger: zaptest.NewLogger(t),
+			TracerProvider: trace.NewNoopTracerProvider(),
+			MeterProvider:  metric.NewNoopMeterProvider(),
+			MetricsLevel:   configtelemetry.LevelNone,
 		},
 	}
 	mockConsumer := mockLogsConsumer{}
