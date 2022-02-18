@@ -350,26 +350,21 @@ func (tsp *tailSamplingSpanProcessor) groupResourceSpansByTraceID(rsSource pdata
 	return idToResourceSpans
 }
 
-func (tsp *tailSamplingSpanProcessor) groupSpansByTraceKey(resourceSpans pdata.ResourceSpans) map[pdata.TraceID][]*pdata.Span {
-	idToSpans := make(map[pdata.TraceID][]*pdata.Span)
-	ilss := resourceSpans.InstrumentationLibrarySpans()
-	for j := 0; j < ilss.Len(); j++ {
-		spans := ilss.At(j).Spans()
-		spansLen := spans.Len()
-		for k := 0; k < spansLen; k++ {
-			span := spans.At(k)
-			key := span.TraceID()
-			idToSpans[key] = append(idToSpans[key], &span)
-		}
-	}
-	return idToSpans
-}
-
 func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans pdata.ResourceSpans) {
 	// Group spans per their traceId to minimize contention on idToTrace
-	idToSpans := tsp.groupSpansByTraceKey(resourceSpans)
+	rss := tsp.groupResourceSpansByTraceID(resourceSpans)
 	var newTraceIDs int64
-	for id, spans := range idToSpans {
+	for id, rs := range rss {
+
+		spans := []*pdata.Span{}
+		for i := 0; i < rs.InstrumentationLibrarySpans().Len(); i++ {
+			ils := rs.InstrumentationLibrarySpans().At(i)
+			for j := 0; j < ils.Spans().Len(); j++ {
+				span := ils.Spans().At(j)
+				spans = append(spans, &span)
+			}
+		}
+
 		lenSpans := int64(len(spans))
 		lenPolicies := len(tsp.policies)
 		initialDecisions := make([]sampling.Decision, lenPolicies)
@@ -412,7 +407,7 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans pdata.Resource
 			if actualDecision == sampling.Pending {
 				// Add the spans to the trace, but only once for all policy, otherwise same spans will
 				// be duplicated in the final trace.
-				traceTd = prepareTraceBatch(resourceSpans, spans)
+				traceTd = prepareTraceBatch(resourceSpans)
 				actualData.ReceivedBatches = append(actualData.ReceivedBatches, traceTd)
 				actualData.Unlock()
 				break
@@ -422,7 +417,7 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans pdata.Resource
 			switch actualDecision {
 			case sampling.Sampled:
 				// Forward the spans to the policy destinations
-				traceTd := prepareTraceBatch(resourceSpans, spans)
+				traceTd := prepareTraceBatch(resourceSpans)
 				if err := tsp.nextConsumer.ConsumeTraces(p.ctx, traceTd); err != nil {
 					tsp.logger.Warn("Error sending late arrived spans to destination",
 						zap.String("policy", p.name),
@@ -481,15 +476,10 @@ func (tsp *tailSamplingSpanProcessor) dropTrace(traceID pdata.TraceID, deletionT
 	stats.Record(tsp.ctx, statTraceRemovalAgeSec.M(int64(deletionTime.Sub(trace.ArrivalTime)/time.Second)))
 }
 
-func prepareTraceBatch(rss pdata.ResourceSpans, spans []*pdata.Span) pdata.Traces {
+func prepareTraceBatch(rss pdata.ResourceSpans) pdata.Traces {
 	traceTd := pdata.NewTraces()
 	rs := traceTd.ResourceSpans().AppendEmpty()
-	rss.Resource().CopyTo(rs.Resource())
-	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
-	for _, span := range spans {
-		sp := ils.Spans().AppendEmpty()
-		span.CopyTo(sp)
-	}
+	rss.CopyTo(rs)
 	return traceTd
 }
 
