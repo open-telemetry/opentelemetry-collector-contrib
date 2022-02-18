@@ -50,8 +50,11 @@ type Config struct {
 	Tags []string `mapstructure:"tags"`
 }
 
-// ValidateAndConfigureHTTPClientSettings validates the configuration and sets default values
-func (c *Config) ValidateAndConfigureHTTPClientSettings() error {
+func (c *Config) Validate() error {
+	if err := c.QueueSettings.Validate(); err != nil {
+		return fmt.Errorf("queue settings has invalid configuration: %w", err)
+	}
+
 	if c.HTTPClientSettings.Headers == nil {
 		c.HTTPClientSettings.Headers = make(map[string]string)
 	}
@@ -74,9 +77,5 @@ func (c *Config) ValidateAndConfigureHTTPClientSettings() error {
 	c.HTTPClientSettings.Headers["Content-Type"] = "text/plain; charset=UTF-8"
 	c.HTTPClientSettings.Headers["User-Agent"] = "opentelemetry-collector"
 
-	return nil
-}
-
-func (c *Config) Validate() error {
 	return nil
 }
