@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
@@ -50,6 +51,7 @@ func createLogsReceiver(logReceiverType LogReceiverType) receiverhelper.CreateLo
 		nextConsumer consumer.Logs,
 	) (component.LogsReceiver, error) {
 		inputCfg, err := logReceiverType.DecodeInputConfig(cfg)
+
 		if err != nil {
 			return nil, err
 		}
@@ -91,7 +93,10 @@ func createLogsReceiver(logReceiverType LogReceiverType) receiverhelper.CreateLo
 			opts = append(opts, WithWorkerCount(baseCfg.Converter.WorkerCount))
 		}
 		converter := NewConverter(opts...)
-
+		obsrecv := obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             cfg.ID(),
+			ReceiverCreateSettings: params,
+		})
 		return &receiver{
 			id:        cfg.ID(),
 			agent:     logAgent,
@@ -99,6 +104,7 @@ func createLogsReceiver(logReceiverType LogReceiverType) receiverhelper.CreateLo
 			consumer:  nextConsumer,
 			logger:    params.Logger,
 			converter: converter,
+			obsrecv:   obsrecv,
 		}, nil
 	}
 }
