@@ -25,7 +25,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/traceutil"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
@@ -379,10 +379,10 @@ func extractDatadogServiceName(datadogTags map[string]string) string {
 
 func extractInstrumentationLibraryTags(il pdata.InstrumentationLibrary, datadogTags map[string]string) {
 	if ilName := il.Name(); ilName != "" {
-		datadogTags[conventions.InstrumentationLibraryName] = ilName
+		datadogTags[conventions.OtelLibraryName] = ilName
 	}
 	if ilVer := il.Version(); ilVer != "" {
-		datadogTags[conventions.InstrumentationLibraryVersion] = ilVer
+		datadogTags[conventions.OtelLibraryVersion] = ilVer
 	}
 }
 
@@ -514,7 +514,7 @@ func getDatadogSpanName(s pdata.Span, datadogTags map[string]string) string {
 
 	// The spec has changed over time and, depending on the original exporter, IL Name could represented a few different ways
 	// so we try to account for all permutations
-	if ilnOtlp, okOtlp := datadogTags[conventions.InstrumentationLibraryName]; okOtlp {
+	if ilnOtlp, okOtlp := datadogTags[conventions.OtelLibraryName]; okOtlp {
 		return utils.NormalizeSpanName(fmt.Sprintf("%s.%s", ilnOtlp, utils.NormalizeSpanKind(s.Kind())), false)
 	}
 

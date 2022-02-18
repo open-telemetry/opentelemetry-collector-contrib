@@ -4,6 +4,8 @@
 
 ### 💡 Enhancements 💡
 
+- Upgrade to use semantic conventions 1.6.1 (#7926)
+
 ### 🛑 Breaking changes 🛑
 
 ### 🚩 Deprecations 🚩
