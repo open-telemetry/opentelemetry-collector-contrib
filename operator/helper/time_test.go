@@ -675,7 +675,7 @@ func TestGoldenTimeParserConfig(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run("yaml/"+tc.name, func(t *testing.T) {
-			cfgFromYaml, yamlErr := timeConfigFromFileViaYaml(path.Join(".", "timetestdata", fmt.Sprintf("%s.yaml", tc.name)))
+			cfgFromYaml, yamlErr := timeConfigFromFileViaYaml(path.Join(".", "testdata", "time", fmt.Sprintf("%s.yaml", tc.name)))
 			if tc.expectErr {
 				require.Error(t, yamlErr)
 			} else {
@@ -686,7 +686,7 @@ func TestGoldenTimeParserConfig(t *testing.T) {
 		t.Run("mapstructure/"+tc.name, func(t *testing.T) {
 			cfgFromMapstructure := defaultTimeCfg()
 			mapErr := timeConfigFromFileViaMapstructure(
-				path.Join(".", "timetestdata", fmt.Sprintf("%s.yaml", tc.name)),
+				path.Join(".", "testdata", "time", fmt.Sprintf("%s.yaml", tc.name)),
 				cfgFromMapstructure,
 			)
 			if tc.expectErr {

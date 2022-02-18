@@ -1,2 +1,2 @@
 type: severity_parser
-on_error: drop
+parse_from: $.from
