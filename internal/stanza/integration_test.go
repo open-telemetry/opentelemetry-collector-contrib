@@ -17,7 +17,6 @@ package stanza
 import (
 	"context"
 	"fmt"
-	"go.opentelemetry.io/collector/obsreport"
 	"testing"
 	"time"
 
@@ -29,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
 )
 
@@ -68,7 +68,7 @@ func createNoopReceiver(workerCount int, nextConsumer consumer.Logs) (*receiver,
 		logger:    zap.NewNop(),
 		converter: converter,
 		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
-			ReceiverID: receiverId,
+			ReceiverID:             receiverId,
 			ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings(),
 		}),
 	}, nil
