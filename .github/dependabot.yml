@@ -470,6 +470,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/receiver/awsfirehosereceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/receiver/awsxrayreceiver"
     schedule:
       interval: "weekly"
