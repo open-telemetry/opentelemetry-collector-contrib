@@ -8,7 +8,7 @@ ALL_MODULES := $(shell find . -type f -name "go.mod" -exec dirname {} \; | sort 
 ALL_SRC := $(shell find . -name '*.go' -type f | sort)
 ADDLICENSE=addlicense
 ALL_COVERAGE_MOD_DIRS := $(shell find . -type f -name 'go.mod' -exec dirname {} \; | egrep -v '^./internal/tools' | sort)
-FIELDALIGNMENT_DIRS := ./agent/ ./pipeline/
+FIELDALIGNMENT_DIRS := ./pipeline/
 
 TOOLS_MOD_DIR := ./internal/tools
 .PHONY: install-tools

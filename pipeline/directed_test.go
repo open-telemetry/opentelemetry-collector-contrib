@@ -87,11 +87,8 @@ func TestPipeline(t *testing.T) {
 		pipeline, err := NewDirectedPipeline([]operator.Operator{})
 		require.NoError(t, err)
 
-		err = pipeline.Start(testutil.NewMockPersister("test1"))
-		require.NoError(t, err)
-
-		err = pipeline.Start(testutil.NewMockPersister("test2"))
-		require.NoError(t, err)
+		require.NoError(t, pipeline.Start(testutil.NewMockPersister("test1")))
+		require.Error(t, pipeline.Start(testutil.NewMockPersister("test2")))
 
 		require.NoError(t, pipeline.Stop())
 	})
@@ -100,11 +97,10 @@ func TestPipeline(t *testing.T) {
 		pipeline, err := NewDirectedPipeline([]operator.Operator{})
 		require.NoError(t, err)
 
-		err = pipeline.Start(testutil.NewMockPersister("test3"))
-		require.NoError(t, err)
+		require.NoError(t, pipeline.Start(testutil.NewMockPersister("test3")))
 
 		require.NoError(t, pipeline.Stop())
-		require.NoError(t, pipeline.Stop())
+		require.Error(t, pipeline.Stop())
 	})
 
 	t.Run("DuplicateNodeIDs", func(t *testing.T) {

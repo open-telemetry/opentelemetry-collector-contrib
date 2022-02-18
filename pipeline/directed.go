@@ -17,7 +17,10 @@ package pipeline
 import (
 	"fmt"
 	"strings"
+	"sync"
 
+	"go.uber.org/multierr"
+	"go.uber.org/zap"
 	"gonum.org/v1/gonum/graph/encoding/dot"
 	"gonum.org/v1/gonum/graph/simple"
 	"gonum.org/v1/gonum/graph/topo"
@@ -28,13 +31,36 @@ import (
 
 var _ Pipeline = (*DirectedPipeline)(nil)
 
+var alreadyStarted = errors.NewError("pipeline already started", "")
+var alreadyStopped = errors.NewError("pipeline already stopped", "")
+
 // DirectedPipeline is a pipeline backed by a directed graph
 type DirectedPipeline struct {
 	Graph *simple.DirectedGraph
+	*zap.SugaredLogger
+	startOnce sync.Once
+	stopOnce  sync.Once
 }
 
 // Start will start the operators in a pipeline in reverse topological order
 func (p *DirectedPipeline) Start(persister operator.Persister) error {
+	var err error = alreadyStarted
+	p.startOnce.Do(func() {
+		err = p.start(persister)
+	})
+	return err
+}
+
+// Stop will stop the operators in a pipeline in topological order
+func (p *DirectedPipeline) Stop() error {
+	var err error = alreadyStopped
+	p.stopOnce.Do(func() {
+		err = p.stop()
+	})
+	return err
+}
+
+func (p *DirectedPipeline) start(persister operator.Persister) error {
 	sortedNodes, _ := topo.Sort(p.Graph)
 	for i := len(sortedNodes) - 1; i >= 0; i-- {
 		op := sortedNodes[i].(OperatorNode).Operator()
@@ -50,17 +76,18 @@ func (p *DirectedPipeline) Start(persister operator.Persister) error {
 	return nil
 }
 
-// Stop will stop the operators in a pipeline in topological order
-func (p *DirectedPipeline) Stop() error {
+func (p *DirectedPipeline) stop() error {
+	var err error
 	sortedNodes, _ := topo.Sort(p.Graph)
 	for _, node := range sortedNodes {
 		operator := node.(OperatorNode).Operator()
 		operator.Logger().Debug("Stopping operator")
-		_ = operator.Stop()
+		if opErr := operator.Stop(); opErr != nil {
+			err = multierr.Append(err, opErr)
+		}
 		operator.Logger().Debug("Stopped operator")
 	}
-
-	return nil
+	return err
 }
 
 // Render will render the pipeline as a dot graph
