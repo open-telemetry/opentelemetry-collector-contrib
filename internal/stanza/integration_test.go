@@ -37,7 +37,7 @@ func createNoopReceiver(workerCount int, nextConsumer consumer.Logs) (*receiver,
 
 	pipe, err := pipeline.Config{
 		Operators: []operator.Config{
-			operator.Config{
+			{
 				Builder: noop.NewNoopOperatorConfig(""),
 			},
 		},

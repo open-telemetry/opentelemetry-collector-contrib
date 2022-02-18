@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.45.1
-	github.com/open-telemetry/opentelemetry-log-collection v0.24.0
+	github.com/open-telemetry/opentelemetry-log-collection v0.24.1-0.20220218175243-5254ed5cfed8
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.45.0
 	go.opentelemetry.io/collector/model v0.45.0
@@ -16,7 +16,6 @@ require (
 require (
 	github.com/antonmedv/expr v1.9.0 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
-	github.com/bmatcuk/doublestar/v3 v3.0.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -31,7 +30,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.8.0 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
-	github.com/stretchr/objx v0.2.0 // indirect
 	go.etcd.io/bbolt v1.3.6 // indirect
 	go.opentelemetry.io/otel v1.4.1 // indirect
 	go.opentelemetry.io/otel/metric v0.27.0 // indirect
@@ -44,5 +42,3 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../../extension/storage
-
-replace github.com/open-telemetry/opentelemetry-log-collection => ../../../opentelemetry-log-collection

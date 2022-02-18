@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza v0.45.1
-	github.com/open-telemetry/opentelemetry-log-collection v0.24.0
+	github.com/open-telemetry/opentelemetry-log-collection v0.24.1-0.20220218175243-5254ed5cfed8
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.45.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -13,12 +13,10 @@ require (
 require (
 	github.com/antonmedv/expr v1.9.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/knadh/koanf v1.4.0 // indirect
-	github.com/kr/pretty v0.3.0 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
@@ -44,5 +42,3 @@ require (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza => ../../internal/stanza
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../../extension/storage
-
-replace github.com/open-telemetry/opentelemetry-log-collection => ../../../opentelemetry-log-collection
