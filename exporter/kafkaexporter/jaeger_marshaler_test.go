@@ -79,15 +79,3 @@ func TestJaegerMarshaler(t *testing.T) {
 		})
 	}
 }
-
-func TestJaegerMarshaler_error_covert_traceID(t *testing.T) {
-	marshaler := jaegerMarshaler{
-		marshaler: jaegerProtoSpanMarshaler{},
-	}
-	td := pdata.NewTraces()
-	td.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
-	// fails in zero traceID
-	messages, err := marshaler.Marshal(td, "topic")
-	require.Error(t, err)
-	assert.Nil(t, messages)
-}
