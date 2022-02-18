@@ -104,6 +104,7 @@ processor/transformprocessor/                        @open-telemetry/collector-c
 receiver/apachereceiver/                             @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/awscontainerinsightreceiver/                @open-telemetry/collector-contrib-approvers @Aneurysm9 @pxaws
 receiver/awsecscontainermetricsreceiver/             @open-telemetry/collector-contrib-approvers @anuraaga
+receiver/awsfirehosereceiver/                        @open-telemetry/collector-contrib-approvers @anuraaga @Aneurysm9
 receiver/awsxrayreceiver/                            @open-telemetry/collector-contrib-approvers @anuraaga
 receiver/carbonreceiver/                             @open-telemetry/collector-contrib-approvers @pjanotti
 receiver/cloudfoundryreceiver/                       @open-telemetry/collector-contrib-approvers @agoallikmaa @pellared
