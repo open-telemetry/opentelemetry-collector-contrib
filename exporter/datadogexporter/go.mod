@@ -9,8 +9,8 @@ require (
 	github.com/aws/aws-sdk-go v1.42.52
 	github.com/cenkalti/backoff/v4 v4.1.2
 	github.com/gogo/protobuf v1.3.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.45.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.45.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.45.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.45.1
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.45.0
