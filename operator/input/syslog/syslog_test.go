@@ -24,9 +24,9 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
-	"github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/input/tcp"
-	"github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/input/udp"
-	"github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/parser/syslog"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator/input/tcp"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator/input/udp"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator/parser/syslog"
 	"github.com/open-telemetry/opentelemetry-log-collection/pipeline"
 	"github.com/open-telemetry/opentelemetry-log-collection/testutil"
 )

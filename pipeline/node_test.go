@@ -19,8 +19,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/input/generate"
-	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/transformer/noop"
+	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/input/generate"
+	_ "github.com/open-telemetry/opentelemetry-log-collection/operator/transformer/noop"
 	"github.com/open-telemetry/opentelemetry-log-collection/testutil"
 )
 
