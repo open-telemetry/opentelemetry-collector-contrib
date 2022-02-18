@@ -9,6 +9,7 @@
 ### 💡 Enhancements 💡
 
 - `dynatraceexporter`: Validate QueueSettings and perform config validation in Validate() instead (#8020)
+- `sapmexporter`: Add validation for `sending_queue` setting (#8023)
 
 ### 🛑 Breaking changes 🛑
 
