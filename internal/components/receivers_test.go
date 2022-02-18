@@ -61,6 +61,9 @@ func TestDefaultReceivers(t *testing.T) {
 			skipLifecyle: true, // Requires container metaendpoint to be running
 		},
 		{
+			receiver: "awsfirehose",
+		},
+		{
 			receiver:     "awsxray",
 			skipLifecyle: true, // Requires AWS endpoint to check identity to run
 		},
