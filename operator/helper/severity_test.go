@@ -467,7 +467,7 @@ func TestGoldenSeverityParserConfig(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run("yaml/"+tc.name, func(t *testing.T) {
-			cfgFromYaml, yamlErr := severityConfigFromFileViaYaml(path.Join(".", "severitytestdata", fmt.Sprintf("%s.yaml", tc.name)))
+			cfgFromYaml, yamlErr := severityConfigFromFileViaYaml(path.Join(".", "testdata", "severity", fmt.Sprintf("%s.yaml", tc.name)))
 			if tc.expectErr {
 				require.Error(t, yamlErr)
 			} else {
@@ -478,7 +478,7 @@ func TestGoldenSeverityParserConfig(t *testing.T) {
 		t.Run("mapstructure/"+tc.name, func(t *testing.T) {
 			cfgFromMapstructure := defaultSeverityCfg()
 			mapErr := severityConfigFromFileViaMapstructure(
-				path.Join(".", "severitytestdata", fmt.Sprintf("%s.yaml", tc.name)),
+				path.Join(".", "testdata", "severity", fmt.Sprintf("%s.yaml", tc.name)),
 				cfgFromMapstructure,
 			)
 			if tc.expectErr {

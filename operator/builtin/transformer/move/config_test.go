@@ -25,7 +25,7 @@ import (
 func TestGoldenConfig(t *testing.T) {
 	cases := []operatortest.ConfigUnmarshalTest{
 		{
-			Name: "MoveBodyToBody",
+			Name: "move_body_to_body",
 			Expect: func() *MoveOperatorConfig {
 				cfg := defaultCfg()
 				cfg.From = entry.NewBodyField("key")
@@ -34,7 +34,7 @@ func TestGoldenConfig(t *testing.T) {
 			}(),
 		},
 		{
-			Name: "MoveBodyToAttribute",
+			Name: "move_body_to_attribute",
 			Expect: func() *MoveOperatorConfig {
 				cfg := defaultCfg()
 				cfg.From = entry.NewBodyField("key")
@@ -43,7 +43,7 @@ func TestGoldenConfig(t *testing.T) {
 			}(),
 		},
 		{
-			Name: "MoveAttributeToBody",
+			Name: "move_attribute_to_body",
 			Expect: func() *MoveOperatorConfig {
 				cfg := defaultCfg()
 				cfg.From = entry.NewAttributeField("new")
@@ -52,7 +52,7 @@ func TestGoldenConfig(t *testing.T) {
 			}(),
 		},
 		{
-			Name: "MoveAttributeToResource",
+			Name: "move_attribute_to_resource",
 			Expect: func() *MoveOperatorConfig {
 				cfg := defaultCfg()
 				cfg.From = entry.NewAttributeField("new")
@@ -61,7 +61,7 @@ func TestGoldenConfig(t *testing.T) {
 			}(),
 		},
 		{
-			Name: "MoveBracketedAttributeToResource",
+			Name: "move_bracketed_attribute_to_resource",
 			Expect: func() *MoveOperatorConfig {
 				cfg := defaultCfg()
 				cfg.From = entry.NewAttributeField("dotted.field.name")
@@ -70,7 +70,7 @@ func TestGoldenConfig(t *testing.T) {
 			}(),
 		},
 		{
-			Name: "MoveResourceToAttribute",
+			Name: "move_resource_to_attribute",
 			Expect: func() *MoveOperatorConfig {
 				cfg := defaultCfg()
 				cfg.From = entry.NewResourceField("new")
@@ -79,7 +79,7 @@ func TestGoldenConfig(t *testing.T) {
 			}(),
 		},
 		{
-			Name: "MoveNest",
+			Name: "move_nested",
 			Expect: func() *MoveOperatorConfig {
 				cfg := defaultCfg()
 				cfg.From = entry.NewBodyField("nested")
@@ -88,7 +88,7 @@ func TestGoldenConfig(t *testing.T) {
 			}(),
 		},
 		{
-			Name: "MoveFromNestedObj",
+			Name: "move_from_nested_object",
 			Expect: func() *MoveOperatorConfig {
 				cfg := defaultCfg()
 				cfg.From = entry.NewBodyField("nested", "nestedkey")
@@ -97,7 +97,7 @@ func TestGoldenConfig(t *testing.T) {
 			}(),
 		},
 		{
-			Name: "MoveToNestedObj",
+			Name: "move_to_nested_object",
 			Expect: func() *MoveOperatorConfig {
 				cfg := defaultCfg()
 				cfg.From = entry.NewBodyField("newnestedkey")
@@ -106,7 +106,7 @@ func TestGoldenConfig(t *testing.T) {
 			}(),
 		},
 		{
-			Name: "MoveDoubleNestedObj",
+			Name: "move_double_nested_object",
 			Expect: func() *MoveOperatorConfig {
 				cfg := defaultCfg()
 				cfg.From = entry.NewBodyField("nested", "nested2")
@@ -115,7 +115,7 @@ func TestGoldenConfig(t *testing.T) {
 			}(),
 		},
 		{
-			Name: "MoveNestToResource",
+			Name: "move_nested_to_resource",
 			Expect: func() *MoveOperatorConfig {
 				cfg := defaultCfg()
 				cfg.From = entry.NewBodyField("nested")
@@ -124,7 +124,7 @@ func TestGoldenConfig(t *testing.T) {
 			}(),
 		},
 		{
-			Name: "MoveNestToAttribute",
+			Name: "move_nested_to_attribute",
 			Expect: func() *MoveOperatorConfig {
 				cfg := defaultCfg()
 				cfg.From = entry.NewBodyField("nested")
@@ -133,7 +133,7 @@ func TestGoldenConfig(t *testing.T) {
 			}(),
 		},
 		{
-			Name: "ImplicitBodyFrom",
+			Name: "implicit_body_from",
 			Expect: func() *MoveOperatorConfig {
 				cfg := defaultCfg()
 				cfg.From = entry.NewBodyField("implicitkey")
@@ -142,7 +142,7 @@ func TestGoldenConfig(t *testing.T) {
 			}(),
 		},
 		{
-			Name: "ImplicitBodyTo",
+			Name: "implicit_body_to",
 			Expect: func() *MoveOperatorConfig {
 				cfg := defaultCfg()
 				cfg.From = entry.NewAttributeField("new")
@@ -151,7 +151,7 @@ func TestGoldenConfig(t *testing.T) {
 			}(),
 		},
 		{
-			Name: "ImplicitNestedKey",
+			Name: "implicit_nested_key",
 			Expect: func() *MoveOperatorConfig {
 				cfg := defaultCfg()
 				cfg.From = entry.NewAttributeField("new")
@@ -160,7 +160,7 @@ func TestGoldenConfig(t *testing.T) {
 			}(),
 		},
 		{
-			Name: "ReplaceBody",
+			Name: "replace_body",
 			Expect: func() *MoveOperatorConfig {
 				cfg := defaultCfg()
 				cfg.From = entry.NewBodyField("nested")
