@@ -21,6 +21,7 @@ The supported actions are:
   to target keys specified in the rule. If a target key already exists, it will
   be overridden. Note: It behaves similar to the Span Processor `to_attributes`
   setting with the existing attribute as the source.
+- `convert`: Converts an existing attribute value to a specified type.
 
 For the actions `insert`, `update` and `upsert`,
  - `key`  is required
@@ -90,9 +91,9 @@ For the `extract` action,
 
 
 For the `convert` action,
-- `key` is required
-- `action: convert` is required.
-- `converted_type` is required and must be one of int, double or string
+ - `key` is required
+ - `action: convert` is required.
+ - `converted_type` is required and must be one of int, double or string
 ```yaml
 # Key specifies the attribute to act upon.
 - key: <key>
