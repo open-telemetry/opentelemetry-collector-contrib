@@ -8,6 +8,8 @@
 
 ### 💡 Enhancements 💡
 
+- `dynatraceexporter`: Validate QueueSettings and perform config validation in Validate() instead (#8020)
+
 ### 🛑 Breaking changes 🛑
 
 ### 🚩 Deprecations 🚩
