@@ -16,6 +16,7 @@ require (
 require (
 	github.com/antonmedv/expr v1.9.0 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
+	github.com/bmatcuk/doublestar/v3 v3.0.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect

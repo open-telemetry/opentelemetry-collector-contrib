@@ -16,8 +16,8 @@ package syslogreceiver // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
-	"github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/input/syslog"
-	syslogparser "github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/parser/syslog"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator/input/syslog"
+	syslogparser "github.com/open-telemetry/opentelemetry-log-collection/operator/parser/syslog"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"gopkg.in/yaml.v2"

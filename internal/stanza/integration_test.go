@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
-	"github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/transformer/noop"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator/transformer/noop"
 	"github.com/open-telemetry/opentelemetry-log-collection/pipeline"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
