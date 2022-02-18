@@ -38,15 +38,6 @@ func NewNumericAttributeFilter(logger *zap.Logger, key string, minValue, maxValu
 	}
 }
 
-// OnLateArrivingSpans notifies the evaluator that the given list of spans arrived
-// after the sampling decision was already taken for the trace.
-// This gives the evaluator a chance to log any message/metrics and/or update any
-// related internal state.
-func (naf *numericAttributeFilter) OnLateArrivingSpans(Decision, []*pdata.Span) error {
-	naf.logger.Debug("Triggering action for late arriving spans in numeric-attribute filter")
-	return nil
-}
-
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
 func (naf *numericAttributeFilter) Evaluate(_ pdata.TraceID, trace *TraceData) (Decision, error) {
 	trace.Lock()
