@@ -16,22 +16,45 @@ package pipeline
 
 import (
 	"fmt"
+	"time"
 
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
+	"github.com/open-telemetry/opentelemetry-log-collection/errors"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 )
 
 // Config is the configuration of a pipeline.
-type Config []operator.Config
+type Config struct {
+	DefaultOutput operator.Operator
+	Operators     []operator.Config
+}
 
 // Build will build a pipeline from the config.
-func (c Config) Build(logger *zap.SugaredLogger, defaultOut operator.Operator) (*DirectedPipeline, error) {
-	c.dedeplucateIDs()
+func (c Config) Build(logger *zap.SugaredLogger) (*DirectedPipeline, error) {
+	if logger == nil {
+		return nil, errors.NewError("logger must be provided", "")
+	}
+	if c.Operators == nil {
+		return nil, errors.NewError("operators must be specified", "")
+	}
 
-	ops := make([]operator.Operator, 0, len(c))
-	for _, builder := range c {
-		op, err := builder.Build(logger)
+	if len(c.Operators) == 0 {
+		return nil, errors.NewError("empty pipeline not allowed", "")
+	}
+
+	sampledLogger := logger.Desugar().WithOptions(
+		zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+			return zapcore.NewSamplerWithOptions(core, time.Second, 1, 10000)
+		}),
+	).Sugar()
+
+	dedeplucateIDs(c.Operators)
+
+	ops := make([]operator.Operator, 0, len(c.Operators))
+	for _, opCfg := range c.Operators {
+		op, err := opCfg.Build(sampledLogger)
 		if err != nil {
 			return nil, err
 		}
@@ -51,8 +74,8 @@ func (c Config) Build(logger *zap.SugaredLogger, defaultOut operator.Operator) (
 		}
 
 		// The last operator may output to the default output
-		if op.CanOutput() && defaultOut != nil {
-			ops = append(ops, defaultOut)
+		if op.CanOutput() && c.DefaultOutput != nil {
+			ops = append(ops, c.DefaultOutput)
 			op.SetOutputIDs([]string{ops[i+1].ID()})
 		}
 	}
@@ -60,9 +83,9 @@ func (c Config) Build(logger *zap.SugaredLogger, defaultOut operator.Operator) (
 	return NewDirectedPipeline(ops)
 }
 
-func (c Config) dedeplucateIDs() {
+func dedeplucateIDs(ops []operator.Config) {
 	typeMap := make(map[string]int)
-	for _, op := range c {
+	for _, op := range ops {
 		if op.Type() != op.ID() {
 			continue
 		}
@@ -73,8 +96,8 @@ func (c Config) dedeplucateIDs() {
 		}
 		newID := fmt.Sprintf("%s%d", op.Type(), typeMap[op.Type()])
 
-		for j := 0; j < len(c); j++ {
-			if newID == c[j].ID() {
+		for j := 0; j < len(ops); j++ {
+			if newID == ops[j].ID() {
 				j = 0
 				typeMap[op.Type()]++
 				newID = fmt.Sprintf("%s%d", op.Type(), typeMap[op.Type()])
