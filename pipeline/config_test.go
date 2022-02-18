@@ -21,9 +21,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
-	"github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/parser/json"
-	"github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/transformer/copy"
-	"github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/transformer/noop"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator/parser/json"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator/transformer/copy"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator/transformer/noop"
 	"github.com/open-telemetry/opentelemetry-log-collection/testutil"
 )
 
