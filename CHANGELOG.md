@@ -38,6 +38,7 @@
 
 ### 💡 Enhancements 💡
 
+- `hostreceiver/filesystemscraper`: Add filesystem utilization (#8027)
 - `sumologicexporter`: Move validation to Config (#7936)
 - `elasticsearchexporter`: Fix crash with batch processor (#7953).
 - `splunkhecexporter`: Batch metrics payloads (#7760)
