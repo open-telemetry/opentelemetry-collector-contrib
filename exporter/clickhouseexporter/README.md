@@ -25,16 +25,16 @@ Support time-series graph, table and logs.
 ```clickhouse
 /* get error count about my service last 1 hour.*/
 SELECT count(*)
-FROM logs
-WHERE SeverityText="ERROR" AND timestamp >= NOW() - INTERVAL 1 HOUR;
-/* find error log.*/
+FROM logs_local
+WHERE SeverityText='ERROR' AND Timestamp >= NOW() - INTERVAL 1 HOUR;
+/* find log.*/
 SELECT * 
-FROM logs 
-WHERE SeverityText="ERROR" AND timestamp >= NOW() - INTERVAL 1 HOUR;
+FROM logs_local 
+WHERE Timestamp >= NOW() - INTERVAL 1 HOUR;
 /* find log with specific attribute .*/
 SELECT Body
-FROM logs 
-WHERE Attributes.value[indexOf(Attributes.key, 'http.method')] = 'post' AND timestamp >= NOW() - INTERVAL 1 HOUR;
+FROM logs_local 
+WHERE Attributes.Value[indexOf(Attributes.Key, 'http_method')] = 'post' AND Timestamp >= NOW() - INTERVAL 1 HOUR;
 ```
 
 ## Configuration options
@@ -86,29 +86,28 @@ service:
 ## Schema
 
 ```clickhouse
-CREATE TABLE IF NOT EXISTS logs (
-     timestamp DateTime CODEC(Delta, ZSTD(1)),
-     TraceId String CODEC(ZSTD(1)),
-     SpanId String CODEC(ZSTD(1)),
-     TraceFlags Int64,
-     SeverityText LowCardinality(String) CODEC(ZSTD(1)),
-     SeverityNumber Int64,
-     Name LowCardinality(String) CODEC(ZSTD(1)),
-     Body String CODEC(ZSTD(1)),
-     Attributes Nested
-     (
-         key LowCardinality(String),
-         value String
-     ) CODEC(ZSTD(1)),
-     Resource Nested
-     (
-         key LowCardinality(String),
-         value String
-     ) CODEC(ZSTD(1)),
-     INDEX idx_attr_keys Attributes.key TYPE bloom_filter(0.01) GRANULARITY 64,
-     INDEX idx_res_keys Resource.key TYPE bloom_filter(0.01) GRANULARITY 64
+CREATE TABLE IF NOT EXISTS logs_local (
+    Timestamp DateTime CODEC(Delta, ZSTD(1)),
+    TraceId String CODEC(ZSTD(1)),
+    SpanId String CODEC(ZSTD(1)),
+    TraceFlags UInt32,
+    SeverityText LowCardinality(String) CODEC(ZSTD(1)),
+    SeverityNumber Int32,
+    Body String CODEC(ZSTD(1)),
+    Attributes Nested
+        (
+        Key LowCardinality(String),
+        Value String
+        ) CODEC(ZSTD(1)),
+    Resource Nested
+        (
+        Key LowCardinality(String),
+        Value String
+        ) CODEC(ZSTD(1)),
+INDEX idx_attr_keys Attributes.Key TYPE bloom_filter(0.01) GRANULARITY 64,
+INDEX idx_res_keys Resource.Key TYPE bloom_filter(0.01) GRANULARITY 64
 ) ENGINE MergeTree()
-TTL timestamp + INTERVAL 3 DAY
-PARTITION BY toDate(timestamp)
-ORDER BY (Name, -toUnixTimestamp(timestamp))
+TTL Timestamp + INTERVAL 3 DAY
+PARTITION BY toDate(Timestamp)
+ORDER BY (toUnixTimestamp(Timestamp));
 ```
