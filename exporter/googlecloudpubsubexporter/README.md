@@ -11,11 +11,10 @@ The following configuration options are supported:
   name (eg: `projects/otel-project/topics/otlp`).
 * `compression` (Optional): Set the payload compression, only `gzip` is supported. Default is no compression.
 * `watermark` Behaviour of how the `ce-time` attribute is set (see watermark section for more info)
-  * `behavior` (Optional): `current` sets the `ce-time` attribute to the system clock, `earlierst` sets the attribute to 
+  * `behavior` (Optional): `current` sets the `ce-time` attribute to the system clock, `earliest` sets the attribute to 
   the smallest timestamp of all the messages.
-  * `allow_drift` (Optional): The maximum difference the `ce-time` attribute can be set from the system clock. Make sure
-  to set it when behaviour is earliest, otherwise you will not see effect as the default is `0s`.
-
+  * `allow_drift` (Optional): The maximum difference the `ce-time` attribute can be set from the system clock. When the
+  drift is set to 0, the maximum drift from the clock is allowed (only applicable to `earliest`).
 ```yaml
 exporters:
   googlecloudpubsub:

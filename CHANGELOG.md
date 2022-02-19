@@ -195,9 +195,7 @@
 
 - `resourcedetectionprocessor`: Update `os.type` attribute values according to semantic conventions (#7544)
 
-## 🚀 New components 🚀
-
-## 🧰 Bug fixes 🧰
+### 🧰 Bug fixes 🧰
 
 - `resourcedetectionprocessor`: fix `meta` allow list excluding keys with nil values (#7424)
 - `postgresqlreceiver`: Fix issue where empty metrics could be returned after failed connection (#7502)

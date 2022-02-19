@@ -63,11 +63,11 @@ func ensureExporter(params component.ExporterCreateSettings, pCfg *Config) *pubs
 	receiver.ceCompression, _ = pCfg.parseCompression()
 	watermarkBehavior, _ := pCfg.Watermark.parseWatermarkBehavior()
 	switch watermarkBehavior {
-	case Earliest:
+	case earliest:
 		receiver.tracesWatermarkFunc = earliestTracesWatermark
 		receiver.metricsWatermarkFunc = earliestMetricsWatermark
 		receiver.logsWatermarkFunc = earliestLogsWatermark
-	case Current:
+	case current:
 		receiver.tracesWatermarkFunc = currentTracesWatermark
 		receiver.metricsWatermarkFunc = currentMetricsWatermark
 		receiver.logsWatermarkFunc = currentLogsWatermark
@@ -82,6 +82,10 @@ func createDefaultConfig() config.Exporter {
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		UserAgent:        "opentelemetry-collector-contrib {{version}}",
 		TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: defaultTimeout},
+		Watermark: WatermarkConfig{
+			Behavior:     "current",
+			AllowedDrift: 0,
+		},
 	}
 }
 

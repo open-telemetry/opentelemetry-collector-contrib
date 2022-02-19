@@ -57,23 +57,23 @@ func (*pubsubExporter) Name() string {
 type encoding int
 
 const (
-	OtlpProtoTrace  encoding = iota
-	OtlpProtoMetric          = iota
-	OtlpProtoLog             = iota
+	otlpProtoTrace  encoding = iota
+	otlpProtoMetric          = iota
+	otlpProtoLog             = iota
 )
 
 type compression int
 
 const (
-	Uncompressed compression = iota
-	GZip                     = iota
+	uncompressed compression = iota
+	gZip                     = iota
 )
 
 type WatermarkBehavior int
 
 const (
-	Current  WatermarkBehavior = iota
-	Earliest                   = iota
+	current  WatermarkBehavior = iota
+	earliest                   = iota
 )
 
 func (ex *pubsubExporter) start(ctx context.Context, _ component.Host) error {
@@ -103,16 +103,16 @@ func (ex *pubsubExporter) generateClientOptions() (copts []option.ClientOption) 
 	if ex.userAgent != "" {
 		copts = append(copts, option.WithUserAgent(ex.userAgent))
 	}
-	if ex.config.Endpoint != "" {
-		if ex.config.Insecure {
+	if ex.config.endpoint != "" {
+		if ex.config.insecure {
 			var dialOpts []grpc.DialOption
 			if ex.userAgent != "" {
 				dialOpts = append(dialOpts, grpc.WithUserAgent(ex.userAgent))
 			}
-			conn, _ := grpc.Dial(ex.config.Endpoint, append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))...)
+			conn, _ := grpc.Dial(ex.config.endpoint, append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))...)
 			copts = append(copts, option.WithGRPCConn(conn))
 		} else {
-			copts = append(copts, option.WithEndpoint(ex.config.Endpoint))
+			copts = append(copts, option.WithEndpoint(ex.config.endpoint))
 		}
 	}
 	return copts
@@ -135,18 +135,18 @@ func (ex *pubsubExporter) publishMessage(ctx context.Context, encoding encoding,
 		"ce-time":        string(ceTime),
 	}
 	switch encoding {
-	case OtlpProtoTrace:
+	case otlpProtoTrace:
 		attributes["ce-type"] = "org.opentelemetry.otlp.traces.v1"
 		attributes["content-type"] = "application/protobuf"
-	case OtlpProtoMetric:
+	case otlpProtoMetric:
 		attributes["ce-type"] = "org.opentelemetry.otlp.metrics.v1"
 		attributes["content-type"] = "application/protobuf"
-	case OtlpProtoLog:
+	case otlpProtoLog:
 		attributes["ce-type"] = "org.opentelemetry.otlp.logs.v1"
 		attributes["content-type"] = "application/protobuf"
 	}
 	switch ex.ceCompression {
-	case GZip:
+	case gZip:
 		attributes["content-encoding"] = "gzip"
 		data, err = ex.compress(data)
 		if err != nil {
@@ -167,7 +167,7 @@ func (ex *pubsubExporter) publishMessage(ctx context.Context, encoding encoding,
 
 func (ex *pubsubExporter) compress(payload []byte) ([]byte, error) {
 	switch ex.ceCompression {
-	case GZip:
+	case gZip:
 		var buf bytes.Buffer
 		writer := gzip.NewWriter(&buf)
 		_, err := writer.Write(payload)
@@ -188,7 +188,7 @@ func (ex *pubsubExporter) consumeTraces(ctx context.Context, traces pdata.Traces
 	if err != nil {
 		return err
 	}
-	return ex.publishMessage(ctx, OtlpProtoTrace, buffer, ex.tracesWatermarkFunc(traces, time.Now(), time.Hour*1).UTC())
+	return ex.publishMessage(ctx, otlpProtoTrace, buffer, ex.tracesWatermarkFunc(traces, time.Now(), ex.config.Watermark.AllowedDrift).UTC())
 }
 
 func (ex *pubsubExporter) consumeMetrics(ctx context.Context, metrics pdata.Metrics) error {
@@ -196,7 +196,7 @@ func (ex *pubsubExporter) consumeMetrics(ctx context.Context, metrics pdata.Metr
 	if err != nil {
 		return err
 	}
-	return ex.publishMessage(ctx, OtlpProtoMetric, buffer, ex.metricsWatermarkFunc(metrics, time.Now(), time.Hour*1).UTC())
+	return ex.publishMessage(ctx, otlpProtoMetric, buffer, ex.metricsWatermarkFunc(metrics, time.Now(), ex.config.Watermark.AllowedDrift).UTC())
 }
 
 func (ex *pubsubExporter) consumeLogs(ctx context.Context, logs pdata.Logs) error {
@@ -204,5 +204,5 @@ func (ex *pubsubExporter) consumeLogs(ctx context.Context, logs pdata.Logs) erro
 	if err != nil {
 		return err
 	}
-	return ex.publishMessage(ctx, OtlpProtoLog, buffer, ex.logsWatermarkFunc(logs, time.Now(), time.Hour*1).UTC())
+	return ex.publishMessage(ctx, otlpProtoLog, buffer, ex.logsWatermarkFunc(logs, time.Now(), ex.config.Watermark.AllowedDrift).UTC())
 }

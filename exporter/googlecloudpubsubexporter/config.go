@@ -35,10 +35,10 @@ type Config struct {
 	ProjectID string `mapstructure:"project"`
 	// User agent that will be used by the Pubsub client to connect to the service
 	UserAgent string `mapstructure:"user_agent"`
-	// Override of the Pubsub endpoint
-	Endpoint string `mapstructure:"endpoint"`
+	// Override of the Pubsub endpoint, for testing only
+	endpoint string
 	// Only has effect if Endpoint is not ""
-	Insecure bool `mapstructure:"insecure"`
+	insecure bool
 
 	// The fully qualified resource name of the Pubsub topic
 	Topic string `mapstructure:"topic"`
@@ -54,7 +54,7 @@ type WatermarkConfig struct {
 	// will set the timestamp on pubsub based on timestamps of the events inside the message
 	Behavior string `mapstructure:"behavior"`
 	// Indication on how much the timestamp can drift from the current time, the timestamp will be capped to the allowed
-	// maximum.
+	// maximum. A duration of 0 is the same as maximum duration
 	AllowedDrift time.Duration `mapstructure:"allowed_drift"`
 }
 
@@ -70,6 +70,9 @@ func (config *Config) Validate() error {
 }
 
 func (config *WatermarkConfig) validate() error {
+	if config.AllowedDrift == 0 {
+		config.AllowedDrift = 1<<63 - 1
+	}
 	_, err := config.parseWatermarkBehavior()
 	return err
 }
@@ -77,21 +80,21 @@ func (config *WatermarkConfig) validate() error {
 func (config *Config) parseCompression() (compression, error) {
 	switch config.Compression {
 	case "gzip":
-		return GZip, nil
+		return gZip, nil
 	case "":
-		return Uncompressed, nil
+		return uncompressed, nil
 	}
-	return Uncompressed, fmt.Errorf("compression %v is not supported.  supported compression formats include [gzip]", config.Compression)
+	return uncompressed, fmt.Errorf("compression %v is not supported.  supported compression formats include [gzip]", config.Compression)
 }
 
 func (config *WatermarkConfig) parseWatermarkBehavior() (WatermarkBehavior, error) {
 	switch config.Behavior {
 	case "earliest":
-		return Earliest, nil
+		return earliest, nil
 	case "current":
-		return Current, nil
+		return current, nil
 	case "":
-		return Current, nil
+		return current, nil
 	}
-	return Current, fmt.Errorf("behavior %v is not supported.  supported compression formats include [current,earliest]", config.Behavior)
+	return current, fmt.Errorf("behavior %v is not supported.  supported compression formats include [current,earliest]", config.Behavior)
 }

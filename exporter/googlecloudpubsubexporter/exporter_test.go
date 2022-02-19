@@ -40,9 +40,9 @@ func TestGenerateClientOptions(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	exporterConfig := cfg.(*Config)
-	exporterConfig.Endpoint = srv.Addr
+	exporterConfig.endpoint = srv.Addr
 	exporterConfig.UserAgent = "test-user-agent"
-	exporterConfig.Insecure = true
+	exporterConfig.insecure = true
 	exporterConfig.ProjectID = "my-project"
 	exporterConfig.Topic = "projects/my-project/topics/otlp"
 	exporterConfig.TimeoutSettings = exporterhelper.TimeoutSettings{
@@ -53,7 +53,7 @@ func TestGenerateClientOptions(t *testing.T) {
 	options := exporter.generateClientOptions()
 	assert.Equal(t, option.WithUserAgent("test-user-agent"), options[0])
 
-	exporter.config.Insecure = false
+	exporter.config.insecure = false
 	options = exporter.generateClientOptions()
 	assert.Equal(t, option.WithUserAgent("test-user-agent"), options[0])
 	assert.Equal(t, option.WithEndpoint(srv.Addr), options[1])
@@ -72,8 +72,8 @@ func TestExporterDefaultSettings(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	exporterConfig := cfg.(*Config)
-	exporterConfig.Endpoint = srv.Addr
-	exporterConfig.Insecure = true
+	exporterConfig.endpoint = srv.Addr
+	exporterConfig.insecure = true
 	exporterConfig.ProjectID = "my-project"
 	exporterConfig.Topic = "projects/my-project/topics/otlp"
 	exporterConfig.TimeoutSettings = exporterhelper.TimeoutSettings{
@@ -100,9 +100,9 @@ func TestExporterCompression(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	exporterConfig := cfg.(*Config)
-	exporterConfig.Endpoint = srv.Addr
+	exporterConfig.endpoint = srv.Addr
 	exporterConfig.UserAgent = "test-user-agent"
-	exporterConfig.Insecure = true
+	exporterConfig.insecure = true
 	exporterConfig.ProjectID = "my-project"
 	exporterConfig.Topic = "projects/my-project/topics/otlp"
 	exporterConfig.TimeoutSettings = exporterhelper.TimeoutSettings{

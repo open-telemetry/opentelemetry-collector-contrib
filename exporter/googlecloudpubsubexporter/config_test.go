@@ -50,8 +50,6 @@ func TestLoadConfig(t *testing.T) {
 
 	customConfig.ProjectID = "my-project"
 	customConfig.UserAgent = "opentelemetry-collector-contrib {{version}}"
-	customConfig.Endpoint = "test-endpoint"
-	customConfig.Insecure = true
 	customConfig.TimeoutSettings = exporterhelper.TimeoutSettings{
 		Timeout: 20 * time.Second,
 	}
@@ -102,4 +100,15 @@ func TestWatermarkBehaviorConfigValidation(t *testing.T) {
 	assert.Error(t, c.Validate())
 	c.Watermark.Behavior = "current"
 	assert.NoError(t, c.Validate())
+}
+
+func TestWatermarkDefaultMaxDriftValidation(t *testing.T) {
+	factory := NewFactory()
+	c := factory.CreateDefaultConfig().(*Config)
+	c.Topic = "projects/my-project/topics/my-topic"
+	assert.NoError(t, c.Validate())
+	c.Watermark.AllowedDrift = 0
+	assert.Equal(t, time.Duration(0), c.Watermark.AllowedDrift)
+	assert.NoError(t, c.Validate())
+	assert.Equal(t, time.Duration(9223372036854775807), c.Watermark.AllowedDrift)
 }
