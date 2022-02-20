@@ -90,7 +90,6 @@ API
 ---
 """
 
-from functools import partial
 from logging import getLogger
 from sys import exc_info
 from typing import Collection
@@ -135,48 +134,32 @@ else:
     _instrument_app = "API"
 
 
-class FalconInstrumentor(BaseInstrumentor):
-    # pylint: disable=protected-access,attribute-defined-outside-init
-    """An instrumentor for falcon.API
-
-    See `BaseInstrumentor`
-    """
-
-    def instrumentation_dependencies(self) -> Collection[str]:
-        return _instruments
-
-    def _instrument(self, **kwargs):
-        self._original_falcon_api = getattr(falcon, _instrument_app)
-        setattr(
-            falcon, _instrument_app, partial(_InstrumentedFalconAPI, **kwargs)
-        )
-
-    def _uninstrument(self, **kwargs):
-        setattr(falcon, _instrument_app, self._original_falcon_api)
-
-
 class _InstrumentedFalconAPI(getattr(falcon, _instrument_app)):
     def __init__(self, *args, **kwargs):
+        otel_opts = kwargs.pop("_otel_opts", {})
+
         # inject trace middleware
         middlewares = kwargs.pop("middleware", [])
-        tracer_provider = kwargs.pop("tracer_provider", None)
+        tracer_provider = otel_opts.pop("tracer_provider", None)
         if not isinstance(middlewares, (list, tuple)):
             middlewares = [middlewares]
 
-        self._tracer = trace.get_tracer(__name__, __version__, tracer_provider)
+        self._otel_tracer = trace.get_tracer(
+            __name__, __version__, tracer_provider
+        )
 
         trace_middleware = _TraceMiddleware(
-            self._tracer,
-            kwargs.pop(
+            self._otel_tracer,
+            otel_opts.pop(
                 "traced_request_attributes", get_traced_request_attrs("FALCON")
             ),
-            kwargs.pop("request_hook", None),
-            kwargs.pop("response_hook", None),
+            otel_opts.pop("request_hook", None),
+            otel_opts.pop("response_hook", None),
         )
         middlewares.insert(0, trace_middleware)
         kwargs["middleware"] = middlewares
 
-        self._excluded_urls = get_excluded_urls("FALCON")
+        self._otel_excluded_urls = get_excluded_urls("FALCON")
         super().__init__(*args, **kwargs)
 
     def _handle_exception(
@@ -190,13 +173,13 @@ class _InstrumentedFalconAPI(getattr(falcon, _instrument_app)):
 
     def __call__(self, env, start_response):
         # pylint: disable=E1101
-        if self._excluded_urls.url_disabled(env.get("PATH_INFO", "/")):
+        if self._otel_excluded_urls.url_disabled(env.get("PATH_INFO", "/")):
             return super().__call__(env, start_response)
 
         start_time = _time_ns()
 
         span, token = _start_internal_or_server_span(
-            tracer=self._tracer,
+            tracer=self._otel_tracer,
             span_name=otel_wsgi.get_default_span_name(env),
             start_time=start_time,
             context_carrier=env,
@@ -321,3 +304,27 @@ class _TraceMiddleware:
 
         if self._response_hook:
             self._response_hook(span, req, resp)
+
+
+class FalconInstrumentor(BaseInstrumentor):
+    # pylint: disable=protected-access,attribute-defined-outside-init
+    """An instrumentor for falcon.API
+
+    See `BaseInstrumentor`
+    """
+
+    def instrumentation_dependencies(self) -> Collection[str]:
+        return _instruments
+
+    def _instrument(self, **opts):
+        self._original_falcon_api = getattr(falcon, _instrument_app)
+
+        class FalconAPI(_InstrumentedFalconAPI):
+            def __init__(self, *args, **kwargs):
+                kwargs["_otel_opts"] = opts
+                super().__init__(*args, **kwargs)
+
+        setattr(falcon, _instrument_app, FalconAPI)
+
+    def _uninstrument(self, **kwargs):
+        setattr(falcon, _instrument_app, self._original_falcon_api)
