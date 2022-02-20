@@ -9,6 +9,7 @@
 ### 💡 Enhancements 💡
 
 - `dynatraceexporter`: Validate QueueSettings and perform config validation in Validate() instead (#8020)
+- `signalfxexporter`: Add validation for `sending_queue` setting (#8026)
 
 ### 🛑 Breaking changes 🛑
 
