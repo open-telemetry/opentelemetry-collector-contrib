@@ -4,7 +4,9 @@
 
 ### 💡 Enhancements 💡
 
+- Do not drop zero trace/span id spans in the jaeger conversion (#7946)
 - Upgrade to use semantic conventions 1.6.1 (#7926)
+- `dynatraceexporter`: Validate QueueSettings and perform config validation in Validate() instead (#8020)
 
 ### 🛑 Breaking changes 🛑
 
