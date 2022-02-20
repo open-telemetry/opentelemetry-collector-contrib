@@ -67,10 +67,6 @@ func createMetricsExporter(
 
 	cfg := c.(*dtconfig.Config)
 
-	if err := cfg.ValidateAndConfigureHTTPClientSettings(); err != nil {
-		return nil, err
-	}
-
 	exp := newMetricsExporter(set, cfg)
 
 	exporter, err := exporterhelper.NewMetricsExporter(
