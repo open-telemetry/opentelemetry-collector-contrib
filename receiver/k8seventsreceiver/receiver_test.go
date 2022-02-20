@@ -30,32 +30,38 @@ import (
 )
 
 func TestNewReceiver(t *testing.T) {
-	rCfg := createDefaultConfig().(*Config)
-	client := fake.NewSimpleClientset()
-	r, err := newReceiver(
-		componenttest.NewNopReceiverCreateSettings(),
-		rCfg,
-		consumertest.NewNop(),
-		client,
-	)
-
-	require.NoError(t, err)
-	require.NotNil(t, r)
-	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, r.Shutdown(context.Background()))
-
-	rCfg.Namespaces = []string{"test", "another_test"}
-	r1, err := newReceiver(
-		componenttest.NewNopReceiverCreateSettings(),
-		rCfg,
-		consumertest.NewNop(),
-		client,
-	)
-
-	require.NoError(t, err)
-	require.NotNil(t, r1)
-	require.NoError(t, r1.Start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, r1.Shutdown(context.Background()))
+	tests := []struct {
+		name string
+		cfg  *Config
+	}{
+		{
+			name: "all_namespaces",
+			cfg:  createDefaultConfig().(*Config),
+		},
+		{
+			name: "custom_namespaces",
+			cfg: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.Namespaces = []string{"test", "another_test"}
+				return cfg
+			}(),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client := fake.NewSimpleClientset()
+			r, err := newReceiver(
+				componenttest.NewNopReceiverCreateSettings(),
+				tt.cfg,
+				consumertest.NewNop(),
+				client,
+			)
+			require.NoError(t, err)
+			require.NotNil(t, r)
+			require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+			assert.NoError(t, r.Shutdown(context.Background()))
+		})
+	}
 }
 
 func TestHandleEvent(t *testing.T) {
