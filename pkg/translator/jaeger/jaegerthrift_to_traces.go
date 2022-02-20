@@ -29,12 +29,6 @@ import (
 
 var blankJaegerThriftSpan = new(jaeger.Span)
 
-// Deprecated: [0.45.0] use `jaeger.ThriftToTraces`
-func ThriftBatchToInternalTraces(batches *jaeger.Batch) pdata.Traces {
-	td, _ := ThriftToTraces(batches)
-	return td
-}
-
 // ThriftToTraces transforms a Thrift trace batch into pdata.Traces.
 func ThriftToTraces(batches *jaeger.Batch) (pdata.Traces, error) {
 	traceData := pdata.NewTraces()
