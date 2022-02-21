@@ -23,7 +23,7 @@ import (
 
 	"github.com/jaegertracing/jaeger/model"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
@@ -395,9 +395,9 @@ func getTraceStateFromAttrs(attrs pdata.AttributeMap) pdata.TraceState {
 
 func getInstrumentationLibrary(span *model.Span) instrumentationLibrary {
 	il := instrumentationLibrary{}
-	if libraryName, ok := getAndDeleteTag(span, conventions.InstrumentationLibraryName); ok {
+	if libraryName, ok := getAndDeleteTag(span, conventions.OtelLibraryName); ok {
 		il.name = libraryName
-		if libraryVersion, ok := getAndDeleteTag(span, conventions.InstrumentationLibraryVersion); ok {
+		if libraryVersion, ok := getAndDeleteTag(span, conventions.OtelLibraryVersion); ok {
 			il.version = libraryVersion
 		}
 	}

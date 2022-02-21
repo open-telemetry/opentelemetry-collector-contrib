@@ -17,7 +17,7 @@ package jaeger // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"github.com/jaegertracing/jaeger/model"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
@@ -397,7 +397,7 @@ func getTagsFromInstrumentationLibrary(il pdata.InstrumentationLibrary) ([]model
 	keyValues := make([]model.KeyValue, 0)
 	if ilName := il.Name(); ilName != "" {
 		kv := model.KeyValue{
-			Key:   conventions.InstrumentationLibraryName,
+			Key:   conventions.OtelLibraryName,
 			VStr:  ilName,
 			VType: model.ValueType_STRING,
 		}
@@ -405,7 +405,7 @@ func getTagsFromInstrumentationLibrary(il pdata.InstrumentationLibrary) ([]model
 	}
 	if ilVersion := il.Version(); ilVersion != "" {
 		kv := model.KeyValue{
-			Key:   conventions.InstrumentationLibraryVersion,
+			Key:   conventions.OtelLibraryVersion,
 			VStr:  ilVersion,
 			VType: model.ValueType_STRING,
 		}
