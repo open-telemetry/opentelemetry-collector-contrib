@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza v0.45.1
-	github.com/open-telemetry/opentelemetry-log-collection v0.24.1-0.20220218175243-5254ed5cfed8
+	github.com/open-telemetry/opentelemetry-log-collection v0.25.0
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.45.0
 	gopkg.in/yaml.v2 v2.4.0

@@ -146,8 +146,8 @@ github.com/observiq/ctimefmt v1.0.0/go.mod h1:mxi62//WbSpG/roCO1c6MqZ7zQTvjVtYhe
 github.com/observiq/go-syslog/v3 v3.0.2 h1:vaeINFErM/E3cKE2Ot1FAhhGq5mv7uGBOzjnGL3qhbY=
 github.com/observiq/go-syslog/v3 v3.0.2/go.mod h1:9abcumkQwDUY0VgWdH6CaaJ3Ks39A7NvIelMlavPru0=
 github.com/oklog/run v1.0.0/go.mod h1:dlhp/R75TPv97u0XWUtDeV/lRKWPKSdTuV0TZvrmrQA=
-github.com/open-telemetry/opentelemetry-log-collection v0.24.1-0.20220218175243-5254ed5cfed8 h1:5gbedd9d8XzD3b269ICerKL95d999LQ2zXx0QGFFJiw=
-github.com/open-telemetry/opentelemetry-log-collection v0.24.1-0.20220218175243-5254ed5cfed8/go.mod h1:gTXK4jxVramVGRQzknHKd5RvxBqixhrdk0QvpAcj64E=
+github.com/open-telemetry/opentelemetry-log-collection v0.25.0 h1:RQawI3i/j2rFDWgb7Fc/kSVQfQ2d9oRTZxiZbSzKDRM=
+github.com/open-telemetry/opentelemetry-log-collection v0.25.0/go.mod h1:uDwNd0UaNnnSXYfjXkBLNPGz/rlw9Bdydc67+4fK8Hk=
 github.com/pascaldekloe/goe v0.1.0/go.mod h1:lzWF7FIEvWOWxwDKqyGYQf6ZUaNfKdP144TG7ZOy1lc=
 github.com/pelletier/go-toml v1.7.0/go.mod h1:vwGMzjaWMwyfHwgIBhI2YUM4fB6nL6lVAvS1LBMMhTE=
 github.com/pelletier/go-toml v1.9.4 h1:tjENF6MfZAg8e4ZmZTeWaWiT2vXtsoO6+iuOjFhECwM=
