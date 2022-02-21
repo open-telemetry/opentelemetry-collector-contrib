@@ -62,6 +62,12 @@ func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 	logger := internal.NewZapToGokitLogAdapter(r.settings.Logger)
 
 	discoveryManager := discovery.NewManager(discoveryCtx, logger)
+
+	targetAllocatorConfig := r.cfg.TargetAllocator
+	if targetAllocatorConfig != nil {
+		// TODO implement target allocator handling
+	}
+
 	discoveryCfg := make(map[string]discovery.Configs)
 	for _, scrapeConfig := range r.cfg.PrometheusConfig.ScrapeConfigs {
 		discoveryCfg[scrapeConfig.JobName] = scrapeConfig.ServiceDiscoveryConfigs

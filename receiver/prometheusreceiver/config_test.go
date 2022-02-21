@@ -20,6 +20,8 @@ import (
 	"testing"
 	"time"
 
+	promConfig "github.com/prometheus/common/config"
+	promModel "github.com/prometheus/common/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -48,6 +50,13 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, time.Duration(r1.PrometheusConfig.ScrapeConfigs[0].ScrapeInterval), 5*time.Second)
 	assert.Equal(t, r1.UseStartTimeMetric, true)
 	assert.Equal(t, r1.StartTimeMetricRegex, "^(.+_)*process_start_time_seconds$")
+
+	assert.Equal(t, "http://my-targetallocator-service", r1.TargetAllocator.Endpoint)
+	assert.Equal(t, 30*time.Second, r1.TargetAllocator.Interval)
+	assert.Equal(t, "collector-1", r1.TargetAllocator.CollectorID)
+	assert.Equal(t, promModel.Duration(60*time.Second), r1.TargetAllocator.HttpSDConfig.RefreshInterval)
+	assert.Equal(t, "prometheus", r1.TargetAllocator.HttpSDConfig.HTTPClientConfig.BasicAuth.Username)
+	assert.Equal(t, promConfig.Secret("changeme"), r1.TargetAllocator.HttpSDConfig.HTTPClientConfig.BasicAuth.Password)
 }
 
 func TestLoadConfigFailsOnUnknownSection(t *testing.T) {
