@@ -240,14 +240,16 @@ func TestSumConsumerDelta(t *testing.T) {
 
 	expected := []tobsMetric{
 		{
-			Name:  "test.delta.metric",
-			Value: 35.0,
-			Tags:  map[string]string{"env": "dev"},
+			Name:   "test.delta.metric",
+			Value:  35.0,
+			Source: "test_source",
+			Tags:   map[string]string{"env": "dev", "test_key": "test_value"},
 		},
 		{
-			Name:  "test.delta.metric",
-			Value: 52.375,
-			Tags:  map[string]string{"env": "prod"},
+			Name:   "test.delta.metric",
+			Value:  52.375,
+			Source: "test_source",
+			Tags:   map[string]string{"env": "prod", "test_key": "test_value"},
 		},
 	}
 	assert.ElementsMatch(t, expected, sender.deltaMetrics)
@@ -317,10 +319,11 @@ func TestSumConsumerCumulative(t *testing.T) {
 
 	expected := []tobsMetric{
 		{
-			Name:  "test.cumulative.metric",
-			Value: 62.25,
-			Ts:    1634205001,
-			Tags:  map[string]string{"env": "dev"},
+			Name:   "test.cumulative.metric",
+			Value:  62.25,
+			Ts:     1634205001,
+			Source: "test_source",
+			Tags:   map[string]string{"env": "dev", "test_key": "test_value"},
 		},
 	}
 	assert.ElementsMatch(t, expected, sender.metrics)
@@ -354,10 +357,11 @@ func TestSumConsumerUnspecified(t *testing.T) {
 
 	expected := []tobsMetric{
 		{
-			Name:  "test.unspecified.metric",
-			Value: 72.25,
-			Ts:    1634206001,
-			Tags:  map[string]string{"env": "qa"},
+			Name:   "test.unspecified.metric",
+			Value:  72.25,
+			Ts:     1634206001,
+			Source: "test_source",
+			Tags:   map[string]string{"env": "qa", "test_key": "test_value"},
 		},
 	}
 	assert.ElementsMatch(t, expected, sender.metrics)
@@ -583,24 +587,28 @@ func TestCumulativeHistogramDataPointConsumer(t *testing.T) {
 		t,
 		[]tobsMetric{
 			{
-				Name:  "a.metric",
-				Value: 5.0,
-				Tags:  map[string]string{"foo": "bar", "le": "2"},
+				Name:   "a.metric",
+				Value:  5.0,
+				Source: "test_source",
+				Tags:   map[string]string{"foo": "bar", "le": "2", "test_key": "test_value"},
 			},
 			{
-				Name:  "a.metric",
-				Value: 6.0,
-				Tags:  map[string]string{"foo": "bar", "le": "5"},
+				Name:   "a.metric",
+				Value:  6.0,
+				Source: "test_source",
+				Tags:   map[string]string{"foo": "bar", "le": "5", "test_key": "test_value"},
 			},
 			{
-				Name:  "a.metric",
-				Value: 9.0,
-				Tags:  map[string]string{"foo": "bar", "le": "10"},
+				Name:   "a.metric",
+				Value:  9.0,
+				Source: "test_source",
+				Tags:   map[string]string{"foo": "bar", "le": "10", "test_key": "test_value"},
 			},
 			{
-				Name:  "a.metric",
-				Value: 11.0,
-				Tags:  map[string]string{"foo": "bar", "le": "+Inf"},
+				Name:   "a.metric",
+				Value:  11.0,
+				Source: "test_source",
+				Tags:   map[string]string{"foo": "bar", "le": "+Inf", "test_key": "test_value"},
 			},
 		},
 		sender.metrics,
@@ -644,14 +652,16 @@ func TestCumulativeHistogramDataPointConsumerLeInUse(t *testing.T) {
 		t,
 		[]tobsMetric{
 			{
-				Name:  "a.metric",
-				Value: 4.0,
-				Tags:  map[string]string{"_le": "8", "le": "10"},
+				Name:   "a.metric",
+				Value:  4.0,
+				Source: "test_source",
+				Tags:   map[string]string{"_le": "8", "le": "10", "test_key": "test_value"},
 			},
 			{
-				Name:  "a.metric",
-				Value: 16.0,
-				Tags:  map[string]string{"_le": "8", "le": "+Inf"},
+				Name:   "a.metric",
+				Value:  16.0,
+				Source: "test_source",
+				Tags:   map[string]string{"_le": "8", "le": "+Inf", "test_key": "test_value"},
 			},
 		},
 		sender.metrics,
@@ -706,7 +716,8 @@ func TestDeltaHistogramDataPointConsumer(t *testing.T) {
 					{Value: 10.0, Count: 2}},
 				Granularity: allGranularity,
 				Ts:          1631234567,
-				Tags:        map[string]string{"bar": "baz"},
+				Source:      "test_source",
+				Tags:        map[string]string{"bar": "baz", "test_key": "test_value"},
 			},
 		},
 		sender.distributions,
@@ -739,7 +750,8 @@ func TestDeltaHistogramDataPointConsumer_OneBucket(t *testing.T) {
 				Centroids:   []histogram.Centroid{{Value: 0.0, Count: 17}},
 				Granularity: allGranularity,
 				Ts:          1641234567,
-				Tags:        make(map[string]string),
+				Source:      "test_source",
+				Tags:        map[string]string{"test_key": "test_value"},
 			},
 		},
 		sender.distributions,
@@ -813,76 +825,88 @@ func TestSummaries(t *testing.T) {
 
 	expected := []tobsMetric{
 		{
-			Name:  "test.summary",
-			Value: 100.0,
-			Tags:  map[string]string{"foo": "bar", "quantile": "0.1"},
-			Ts:    1645123456,
+			Name:   "test.summary",
+			Value:  100.0,
+			Source: "test_source",
+			Tags:   map[string]string{"foo": "bar", "quantile": "0.1", "test_key": "test_value"},
+			Ts:     1645123456,
 		},
 		{
-			Name:  "test.summary",
-			Value: 200.0,
-			Tags:  map[string]string{"foo": "bar", "quantile": "0.5"},
-			Ts:    1645123456,
+			Name:   "test.summary",
+			Value:  200.0,
+			Source: "test_source",
+			Tags:   map[string]string{"foo": "bar", "quantile": "0.5", "test_key": "test_value"},
+			Ts:     1645123456,
 		},
 		{
-			Name:  "test.summary",
-			Value: 300.0,
-			Tags:  map[string]string{"foo": "bar", "quantile": "0.9"},
-			Ts:    1645123456,
+			Name:   "test.summary",
+			Value:  300.0,
+			Source: "test_source",
+			Tags:   map[string]string{"foo": "bar", "quantile": "0.9", "test_key": "test_value"},
+			Ts:     1645123456,
 		},
 		{
-			Name:  "test.summary",
-			Value: 400.0,
-			Tags:  map[string]string{"foo": "bar", "quantile": "0.99"},
-			Ts:    1645123456,
+			Name:   "test.summary",
+			Value:  400.0,
+			Source: "test_source",
+			Tags:   map[string]string{"foo": "bar", "quantile": "0.99", "test_key": "test_value"},
+			Ts:     1645123456,
 		},
 		{
-			Name:  "test.summary_count",
-			Value: 10.0,
-			Tags:  map[string]string{"foo": "bar"},
-			Ts:    1645123456,
+			Name:   "test.summary_count",
+			Value:  10.0,
+			Source: "test_source",
+			Tags:   map[string]string{"foo": "bar", "test_key": "test_value"},
+			Ts:     1645123456,
 		},
 		{
-			Name:  "test.summary_sum",
-			Value: 5000.0,
-			Tags:  map[string]string{"foo": "bar"},
-			Ts:    1645123456,
+			Name:   "test.summary_sum",
+			Value:  5000.0,
+			Source: "test_source",
+			Tags:   map[string]string{"foo": "bar", "test_key": "test_value"},
+			Ts:     1645123456,
 		},
 		{
-			Name:  "test.summary",
-			Value: 75.0,
-			Tags:  map[string]string{"bar": "baz", "quantile": "0.2"},
-			Ts:    1645123556,
+			Name:   "test.summary",
+			Value:  75.0,
+			Source: "test_source",
+			Tags:   map[string]string{"bar": "baz", "quantile": "0.2", "test_key": "test_value"},
+			Ts:     1645123556,
 		},
 		{
-			Name:  "test.summary",
-			Value: 125.0,
-			Tags:  map[string]string{"bar": "baz", "quantile": "0.5"},
-			Ts:    1645123556,
+			Name:   "test.summary",
+			Value:  125.0,
+			Source: "test_source",
+			Tags:   map[string]string{"bar": "baz", "quantile": "0.5", "test_key": "test_value"},
+			Ts:     1645123556,
 		},
 		{
-			Name:  "test.summary",
-			Value: 175.0,
-			Tags:  map[string]string{"bar": "baz", "quantile": "0.8"},
-			Ts:    1645123556,
+			Name:   "test.summary",
+			Value:  175.0,
+			Source: "test_source",
+			Tags:   map[string]string{"bar": "baz", "quantile": "0.8", "test_key": "test_value"},
+			Ts:     1645123556,
 		},
 		{
-			Name:  "test.summary",
-			Value: 225.0,
-			Tags:  map[string]string{"bar": "baz", "quantile": "0.95"},
-			Ts:    1645123556,
+			Name:   "test.summary",
+			Value:  225.0,
+			Source: "test_source",
+			Tags:   map[string]string{"bar": "baz", "quantile": "0.95", "test_key": "test_value"},
+			Ts:     1645123556,
 		},
 		{
-			Name:  "test.summary_count",
-			Value: 15.0,
-			Tags:  map[string]string{"bar": "baz"},
-			Ts:    1645123556,
+			Name:   "test.summary_count",
+			Value:  15.0,
+			Source: "test_source",
+			Tags:   map[string]string{"bar": "baz", "test_key": "test_value"},
+			Ts:     1645123556,
 		},
 		{
-			Name:  "test.summary_sum",
-			Value: 3000.0,
-			Tags:  map[string]string{"bar": "baz"},
-			Ts:    1645123556,
+			Name:   "test.summary_sum",
+			Value:  3000.0,
+			Source: "test_source",
+			Tags:   map[string]string{"bar": "baz", "test_key": "test_value"},
+			Ts:     1645123556,
 		},
 	}
 	assert.ElementsMatch(t, expected, sender.metrics)
@@ -1066,16 +1090,18 @@ func verifyGaugeConsumer(t *testing.T, errorOnSend bool) {
 	)
 	expected := []tobsMetric{
 		{
-			Name:  "test.metric",
-			Value: 7.0,
-			Ts:    1631205001,
-			Tags:  map[string]string{"env": "prod", "bucket": "73"},
+			Name:   "test.metric",
+			Value:  7.0,
+			Ts:     1631205001,
+			Source: "test_source",
+			Tags:   map[string]string{"env": "prod", "bucket": "73", "test_key": "test_value"},
 		},
 		{
-			Name:  "test.metric",
-			Value: 7.5,
-			Ts:    1631205002,
-			Tags:  map[string]string{"env": "prod", "bucket": "73"},
+			Name:   "test.metric",
+			Value:  7.5,
+			Ts:     1631205002,
+			Source: "test_source",
+			Tags:   map[string]string{"env": "prod", "bucket": "73", "test_key": "test_value"},
 		},
 	}
 	sender := &mockGaugeSender{errorOnSend: errorOnSend}
@@ -1245,8 +1271,8 @@ func (m *mockTypedMetricConsumer) Type() pdata.MetricDataType {
 	return m.typ
 }
 
-func (m *mockTypedMetricConsumer) Consume(metric metricInfo, errs *[]error) {
-	m.names = append(m.names, metric.Name())
+func (m *mockTypedMetricConsumer) Consume(metricInfo metricInfo, errs *[]error) {
+	m.names = append(m.names, metricInfo.Name())
 	if m.errorOnConsume {
 		*errs = append(*errs, errors.New("error in consume"))
 	}
@@ -1282,8 +1308,8 @@ type mockHistogramDataPointConsumer struct {
 	counts []uint64
 }
 
-func (m *mockHistogramDataPointConsumer) Consume(metric metricInfo, histogram histogramDataPoint, errs *[]error, reporting *histogramReporting) {
-	m.names = append(m.names, metric.Name())
+func (m *mockHistogramDataPointConsumer) Consume(metricInfo metricInfo, histogram histogramDataPoint, errs *[]error, reporting *histogramReporting) {
+	m.names = append(m.names, metricInfo.Name())
 	m.counts = append(m.counts, histogram.Count())
 }
 
