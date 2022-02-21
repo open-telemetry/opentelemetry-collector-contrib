@@ -15,6 +15,8 @@
 
 ### 🧰 Bug fixes 🧰
 
+- `prometheusreceiver`: Fix segfault that can occur after receiving stale metrics (#8056)
+
 ### 🚀 New components 🚀
 
 ## v0.45.1
