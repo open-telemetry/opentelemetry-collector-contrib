@@ -149,7 +149,6 @@
 //            fieldRef:
 //              apiVersion: v1
 //              fieldPath: spec.nodeName
-//
 // This will inject a new environment variable to the OpenTelemetry container with the value as the
 // name of the node the pod was scheduled to run on.
 
