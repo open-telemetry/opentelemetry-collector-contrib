@@ -39,7 +39,7 @@ metrics:
     attributes: [device, mode, mountpoint, type, state]
 
   system.filesystem.utilization:
-    enabled: true
+    enabled: false
     description: Percentage of filesystem bytes used.
     unit: 1
     gauge:
