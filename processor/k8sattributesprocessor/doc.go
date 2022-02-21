@@ -140,7 +140,6 @@
 // 1. Use the downward API to inject the node name as an environment variable.
 // Add the following snippet under the pod env section of the OpenTelemetry container.
 //
-//
 //    spec:
 //      containers:
 //      - env:
@@ -149,9 +148,9 @@
 //            fieldRef:
 //              apiVersion: v1
 //              fieldPath: spec.nodeName
+//
 // This will inject a new environment variable to the OpenTelemetry container with the value as the
 // name of the node the pod was scheduled to run on.
-
 //
 // 2. Set "filter.node_from_env_var" to the name of the environment variable holding the node name.
 //
