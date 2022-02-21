@@ -39,10 +39,10 @@ func NewFactory() component.ExporterFactory {
 func createDefaultConfig() config.Exporter {
 	return &Config{
 		ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
-		RetrySettings:      exporterhelper.DefaultRetrySettings(),
+		RetrySettings:      exporterhelper.NewDefaultRetrySettings(),
 		AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
 		QueueSettings: QueueSettings{
-			QueueSize: exporterhelper.DefaultQueueSettings().QueueSize,
+			QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize,
 		},
 	}
 }

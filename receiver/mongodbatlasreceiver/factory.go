@@ -56,8 +56,8 @@ func createMetricsReceiver(
 
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ScraperControllerSettings: scraperhelper.DefaultScraperControllerSettings(typeStr),
+		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
 		Granularity:               defaultGranularity,
-		RetrySettings:             exporterhelper.DefaultRetrySettings(),
+		RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
 	}
 }
