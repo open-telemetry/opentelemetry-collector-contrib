@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.uber.org/zap"
 )
 
@@ -34,8 +34,6 @@ const (
 	descriptionAttrKey        = "description"
 	collectorNameKey          = "collector.name"
 	collectorVersionKey       = "collector.version"
-	instrumentationNameKey    = conventions.InstrumentationLibraryName
-	instrumentationVersionKey = conventions.InstrumentationLibraryVersion
 	droppedAttributesCountKey = "otel.dropped_attributes_count"
 	droppedEventsCountKey     = "otel.dropped_events_count"
 	statusCodeKey             = "otel.status_code"
@@ -71,9 +69,9 @@ func (t *transformer) CommonAttributes(resource pdata.Resource, lib pdata.Instru
 	t.TrackAttributes(attributeLocationResource, resourceAttrs)
 
 	if n := lib.Name(); n != "" {
-		commonAttrs[instrumentationNameKey] = n
+		commonAttrs[conventions.OtelLibraryName] = n
 		if v := lib.Version(); v != "" {
-			commonAttrs[instrumentationVersionKey] = v
+			commonAttrs[conventions.OtelLibraryVersion] = v
 		}
 	}
 

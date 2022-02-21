@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/model/pdata"
-	semconv "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	semconv "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 )
 
 func TestDefaultTracesMarshalers(t *testing.T) {
