@@ -40,7 +40,7 @@ func newLogAttributesProcessor(attrProc *attraction.AttrProc, include, exclude f
 	}
 }
 
-func (a *logAttributesProcessor) processLogs(_ context.Context, ld pdata.Logs) (pdata.Logs, error) {
+func (a *logAttributesProcessor) processLogs(ctx context.Context, ld pdata.Logs) (pdata.Logs, error) {
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		rs := rls.At(i)
@@ -48,7 +48,7 @@ func (a *logAttributesProcessor) processLogs(_ context.Context, ld pdata.Logs) (
 		resource := rs.Resource()
 		for j := 0; j < ilss.Len(); j++ {
 			ils := ilss.At(j)
-			logs := ils.Logs()
+			logs := ils.LogRecords()
 			library := ils.InstrumentationLibrary()
 			for k := 0; k < logs.Len(); k++ {
 				lr := logs.At(k)
@@ -56,7 +56,7 @@ func (a *logAttributesProcessor) processLogs(_ context.Context, ld pdata.Logs) (
 					continue
 				}
 
-				a.attrProc.Process(lr.Attributes())
+				a.attrProc.Process(ctx, lr.Attributes())
 			}
 		}
 	}

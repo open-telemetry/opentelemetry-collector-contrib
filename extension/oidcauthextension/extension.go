@@ -45,8 +45,6 @@ type oidcExtension struct {
 }
 
 var (
-	_ configauth.ServerAuthenticator = (*oidcExtension)(nil)
-
 	errNoAudienceProvided                = errors.New("no Audience provided for the OIDC configuration")
 	errNoIssuerURL                       = errors.New("no IssuerURL provided for the OIDC configuration")
 	errInvalidAuthenticationHeaderFormat = errors.New("invalid authorization header format")
@@ -57,7 +55,7 @@ var (
 	errNotAuthenticated                  = errors.New("authentication didn't succeed")
 )
 
-func newExtension(cfg *Config, logger *zap.Logger) (*oidcExtension, error) {
+func newExtension(cfg *Config, logger *zap.Logger) (configauth.ServerAuthenticator, error) {
 	if cfg.Audience == "" {
 		return nil, errNoAudienceProvided
 	}
@@ -69,13 +67,14 @@ func newExtension(cfg *Config, logger *zap.Logger) (*oidcExtension, error) {
 		cfg.Attribute = defaultAttribute
 	}
 
-	return &oidcExtension{
+	oe := &oidcExtension{
 		cfg:    cfg,
 		logger: logger,
-	}, nil
+	}
+	return configauth.NewServerAuthenticator(configauth.WithStart(oe.start), configauth.WithAuthenticate(oe.authenticate)), nil
 }
 
-func (e *oidcExtension) Start(ctx context.Context, _ component.Host) error {
+func (e *oidcExtension) start(context.Context, component.Host) error {
 	provider, err := getProviderForConfig(e.cfg)
 	if err != nil {
 		return fmt.Errorf("failed to get configuration from the auth server: %w", err)
@@ -89,13 +88,8 @@ func (e *oidcExtension) Start(ctx context.Context, _ component.Host) error {
 	return nil
 }
 
-// Shutdown is invoked during service shutdown.
-func (e *oidcExtension) Shutdown(context.Context) error {
-	return nil
-}
-
-// Authenticate checks whether the given context contains valid auth data. Successfully authenticated calls will always return a nil error and a context with the auth data.
-func (e *oidcExtension) Authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
+// authenticate checks whether the given context contains valid auth data. Successfully authenticated calls will always return a nil error and a context with the auth data.
+func (e *oidcExtension) authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
 	authHeaders := headers[e.cfg.Attribute]
 	if len(authHeaders) == 0 {
 		return ctx, errNotAuthenticated

@@ -133,6 +133,10 @@ func TestGraphiteMetricDataTypeSummary(t *testing.T) {
 	result := gf.metric2String(metric)
 	expected := ``
 	assert.Equal(t, expected, result)
+
+	metric = buildExampleSummaryMetric(false)
+	result = gf.metric2String(metric)
+	assert.Equal(t, expected, result)
 }
 
 func TestGraphiteMetricDataTypeHistogram(t *testing.T) {
@@ -146,5 +150,9 @@ func TestGraphiteMetricDataTypeHistogram(t *testing.T) {
 
 	result := gf.metric2String(metric)
 	expected := ``
+	assert.Equal(t, expected, result)
+
+	metric = buildExampleHistogramMetric(false)
+	result = gf.metric2String(metric)
 	assert.Equal(t, expected, result)
 }

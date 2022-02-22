@@ -15,7 +15,7 @@
 package ecstaskobserver
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -33,7 +33,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Extensions[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -67,7 +67,7 @@ func TestValidateConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Extensions[typeStr] = factory
-	_, err = servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "invalid_endpoint_config.yaml"), factories)
+	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "invalid_endpoint_config.yaml"), factories)
 	require.Error(t, err)
 	require.EqualError(t, err, `extension "ecs_task_observer/with-invalid-endpoint" has invalid configuration: failed to parse ecs task metadata endpoint "_:invalid": parse "_:invalid": first path segment in URL cannot contain colon`)
 }

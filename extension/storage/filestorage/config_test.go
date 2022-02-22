@@ -16,7 +16,7 @@ package filestorage
 
 import (
 	"os"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -33,7 +33,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Extensions[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -55,7 +55,12 @@ func TestLoadConfig(t *testing.T) {
 		&Config{
 			ExtensionSettings: config.NewExtensionSettings(config.NewComponentIDWithName(typeStr, "all_settings")),
 			Directory:         ".",
-			Timeout:           2 * time.Second,
+			Compaction: &CompactionConfig{
+				Directory:          ".",
+				OnStart:            true,
+				MaxTransactionSize: 2048,
+			},
+			Timeout: 2 * time.Second,
 		},
 		ext1)
 }

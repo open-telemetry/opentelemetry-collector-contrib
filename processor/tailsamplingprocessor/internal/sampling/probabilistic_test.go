@@ -102,13 +102,6 @@ func TestProbabilisticSampling(t *testing.T) {
 	}
 }
 
-func TestOnLateArrivingSpans_PercentageSampling(t *testing.T) {
-	probabilisticSampler := NewProbabilisticSampler(zap.NewNop(), "", 10)
-
-	err := probabilisticSampler.OnLateArrivingSpans(NotSampled, nil)
-	assert.Nil(t, err)
-}
-
 func genRandomTraceIDs(num int) (ids []pdata.TraceID) {
 	r := rand.New(rand.NewSource(1))
 	ids = make([]pdata.TraceID, 0, num)

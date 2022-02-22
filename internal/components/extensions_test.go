@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/extension/zpagesextension"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/fluentbitextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
@@ -36,8 +37,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
 func TestDefaultExtensions(t *testing.T) {
@@ -73,6 +75,19 @@ func TestDefaultExtensions(t *testing.T) {
 			getConfigFn: func() config.Extension {
 				cfg := extFactories["zpages"].CreateDefaultConfig().(*zpagesextension.Config)
 				cfg.TCPAddr.Endpoint = endpoint
+				return cfg
+			},
+		},
+		{
+			extension: "basicauth",
+			getConfigFn: func() config.Extension {
+				cfg := extFactories["basicauth"].CreateDefaultConfig().(*basicauthextension.Config)
+				f := testutil.NewTemporaryFile(t)
+				f.WriteString("username:password")
+				cfg.Htpasswd = basicauthextension.HtpasswdSettings{
+					File:   f.Name(),
+					Inline: "username:password",
+				}
 				return cfg
 			},
 		},
@@ -151,6 +166,16 @@ func TestDefaultExtensions(t *testing.T) {
 		{
 			extension:     "oidc",
 			skipLifecycle: true, // Requires a running OIDC server in order to complete life cycle testing
+		},
+		{
+			extension: "db_storage",
+			getConfigFn: func() config.Extension {
+				cfg := extFactories["db_storage"].CreateDefaultConfig().(*dbstorage.Config)
+				cfg.DriverName = "sqlite3"
+				tempFolder := testutil.NewTemporaryDirectory(t)
+				cfg.DataSource = tempFolder + "/foo.db"
+				return cfg
+			},
 		},
 		{
 			extension: "file_storage",

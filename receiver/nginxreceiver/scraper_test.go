@@ -26,7 +26,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
@@ -34,28 +33,23 @@ import (
 
 func TestScraper(t *testing.T) {
 	nginxMock := newMockServer(t)
-	cfg := &Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Endpoint: nginxMock.URL + "/status",
-		},
-	}
+	cfg := createDefaultConfig().(*Config)
+	cfg.Endpoint = nginxMock.URL + "/status"
 	require.NoError(t, cfg.Validate())
 
-	scraper := newNginxScraper(zap.NewNop(), cfg)
+	scraper := newNginxScraper(componenttest.NewNopTelemetrySettings(), cfg)
 
 	err := scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
-	aMetricSlice := actualMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
 	expectedFile := filepath.Join("testdata", "scraper", "expected.json")
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
-	eMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
-	require.NoError(t, scrapertest.CompareMetricSlices(eMetricSlice, aMetricSlice))
+	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
 }
 
 func TestScraperError(t *testing.T) {
@@ -68,7 +62,7 @@ func TestScraperError(t *testing.T) {
 		rw.WriteHeader(404)
 	}))
 	t.Run("404", func(t *testing.T) {
-		sc := newNginxScraper(zap.NewNop(), &Config{
+		sc := newNginxScraper(componenttest.NewNopTelemetrySettings(), &Config{
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint: nginxMock.URL + "/badpath",
 			},
@@ -80,7 +74,7 @@ func TestScraperError(t *testing.T) {
 	})
 
 	t.Run("parse error", func(t *testing.T) {
-		sc := newNginxScraper(zap.NewNop(), &Config{
+		sc := newNginxScraper(componenttest.NewNopTelemetrySettings(), &Config{
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint: nginxMock.URL + "/status",
 			},
@@ -93,7 +87,7 @@ func TestScraperError(t *testing.T) {
 }
 
 func TestScraperFailedStart(t *testing.T) {
-	sc := newNginxScraper(zap.NewNop(), &Config{
+	sc := newNginxScraper(componenttest.NewNopTelemetrySettings(), &Config{
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "localhost:8080",
 			TLSSetting: configtls.TLSClientSetting{

@@ -29,7 +29,7 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -563,7 +563,7 @@ func TestTranslateCWMetricToEMF(t *testing.T) {
 	}
 	inputLogEvent := translateCWMetricToEMF(met, config)
 
-	assert.Equal(t, readFromFile("testdata/testTranslateCWMetricToEMF.json"), *inputLogEvent.inputLogEvent.Message, "Expect to be equal")
+	assert.Equal(t, readFromFile("testdata/testTranslateCWMetricToEMF.json"), *inputLogEvent.InputLogEvent.Message, "Expect to be equal")
 }
 
 func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
@@ -2049,7 +2049,7 @@ func TestTranslateCWMetricToEMFNoMeasurements(t *testing.T) {
 	inputLogEvent := translateCWMetricToEMF(met, &Config{})
 	expected := "{\"OTelLib\":\"cloudwatch-otel\",\"spanCounter\":0,\"spanName\":\"test\"}"
 
-	assert.Equal(t, expected, *inputLogEvent.inputLogEvent.Message)
+	assert.Equal(t, expected, *inputLogEvent.InputLogEvent.Message)
 }
 
 func BenchmarkTranslateOtToGroupedMetricWithInstrLibrary(b *testing.B) {

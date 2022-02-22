@@ -50,7 +50,7 @@ func (mn attributeName) RenderUnexported() (string, error) {
 
 type metric struct {
 	// Enabled defines whether the metric is enabled by default.
-	Enabled bool `yaml:"enabled" validate:"required"`
+	Enabled *bool `yaml:"enabled" validate:"required"`
 
 	// Description of the metric.
 	Description string `validate:"required,notblank"`
@@ -86,6 +86,10 @@ func (m metric) Data() MetricData {
 	return nil
 }
 
+func (m metric) IsEnabled() bool {
+	return *m.Enabled
+}
+
 type attribute struct {
 	// Description describes the purpose of the attribute.
 	Description string `validate:"notblank"`
@@ -110,22 +114,19 @@ type templateContext struct {
 	metadata
 	// Package name for generated code.
 	Package string
-	// ExpFileNote contains a note about experimental metrics builder.
-	ExpFileNote string
+	// ExpGen identifies whether the experimental metrics generator is used.
+	// TODO: Remove once the old mdata generator is gone.
+	ExpGen bool
 }
 
 func loadMetadata(filePath string) (metadata, error) {
-	cp, err := configmapprovider.NewFile(filePath).Retrieve(context.Background(), nil)
-	if err != nil {
-		return metadata{}, err
-	}
-	mdMap, err := cp.Get(context.Background())
+	cp, err := configmapprovider.NewFile().Retrieve(context.Background(), "file:"+filePath, nil)
 	if err != nil {
 		return metadata{}, err
 	}
 
 	var md metadata
-	if err := mdMap.UnmarshalExact(&md); err != nil {
+	if err := cp.Map.UnmarshalExact(&md); err != nil {
 		return metadata{}, err
 	}
 

@@ -21,7 +21,7 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
-	"path"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
@@ -41,7 +41,7 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/udppoller"
 )
 
@@ -130,7 +130,7 @@ func TestSegmentsPassedToConsumer(t *testing.T) {
 	addr, rcvr, _ := createAndOptionallyStartReceiver(t, receiverID, nil, true, tt.ToReceiverCreateSettings())
 	defer rcvr.Shutdown(context.Background())
 
-	content, err := ioutil.ReadFile(path.Join("../../internal/aws/xray", "testdata", "ddbSample.txt"))
+	content, err := ioutil.ReadFile(filepath.Join("../../internal/aws/xray", "testdata", "ddbSample.txt"))
 	assert.NoError(t, err, "can not read raw segment")
 
 	err = writePacket(t, addr, segmentHeader+string(content))
@@ -188,7 +188,7 @@ func TestSegmentsConsumerErrorsOut(t *testing.T) {
 		consumertest.NewErr(errors.New("can't consume traces")), true, tt.ToReceiverCreateSettings())
 	defer rcvr.Shutdown(context.Background())
 
-	content, err := ioutil.ReadFile(path.Join("../../internal/aws/xray", "testdata", "serverSample.txt"))
+	content, err := ioutil.ReadFile(filepath.Join("../../internal/aws/xray", "testdata", "serverSample.txt"))
 	assert.NoError(t, err, "can not read raw segment")
 
 	err = writePacket(t, addr, segmentHeader+string(content))

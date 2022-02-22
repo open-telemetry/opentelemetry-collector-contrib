@@ -31,6 +31,7 @@ func NewFactory() component.ExporterFactory {
 		exporterType,
 		createDefaultConfig,
 		exporterhelper.WithTraces(createTracesExporter),
+		exporterhelper.WithMetrics(createMetricsExporter),
 	)
 }
 
@@ -38,11 +39,15 @@ func createDefaultConfig() config.Exporter {
 	tracesCfg := TracesConfig{
 		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http://localhost:30001"},
 	}
+	metricsCfg := MetricsConfig{
+		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http://localhost:2878"},
+	}
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(exporterType)),
 		QueueSettings:    exporterhelper.DefaultQueueSettings(),
 		RetrySettings:    exporterhelper.DefaultRetrySettings(),
 		Traces:           tracesCfg,
+		Metrics:          metricsCfg,
 	}
 }
 
@@ -53,7 +58,7 @@ func createTracesExporter(
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.TracesExporter, error) {
-	exp, err := newTracesExporter(set.Logger, cfg)
+	exp, err := newTracesExporter(set, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -64,6 +69,28 @@ func createTracesExporter(
 		cfg,
 		set,
 		exp.pushTraceData,
+		exporterhelper.WithQueue(tobsCfg.QueueSettings),
+		exporterhelper.WithRetry(tobsCfg.RetrySettings),
+		exporterhelper.WithShutdown(exp.shutdown),
+	)
+}
+
+func createMetricsExporter(
+	_ context.Context,
+	set component.ExporterCreateSettings,
+	cfg config.Exporter,
+) (component.MetricsExporter, error) {
+	exp, err := newMetricsExporter(set, cfg, createMetricsConsumer)
+	if err != nil {
+		return nil, err
+	}
+
+	tobsCfg := cfg.(*Config)
+
+	return exporterhelper.NewMetricsExporter(
+		cfg,
+		set,
+		exp.pushMetricsData,
 		exporterhelper.WithQueue(tobsCfg.QueueSettings),
 		exporterhelper.WithRetry(tobsCfg.RetrySettings),
 		exporterhelper.WithShutdown(exp.shutdown),

@@ -147,7 +147,7 @@ func (dp *perfTestDataProvider) GenerateLogs() (pdata.Logs, bool) {
 			attrs.UpsertString(k, v)
 		}
 	}
-	logRecords := rl.InstrumentationLibraryLogs().AppendEmpty().Logs()
+	logRecords := rl.InstrumentationLibraryLogs().AppendEmpty().LogRecords()
 	logRecords.EnsureCapacity(dp.options.ItemsPerBatch)
 
 	now := pdata.NewTimestampFromTime(time.Now())

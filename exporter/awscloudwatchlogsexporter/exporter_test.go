@@ -15,13 +15,42 @@
 package awscloudwatchlogsexporter
 
 import (
+	"context"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/model/pdata"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 )
+
+type mockPusher struct {
+	mock.Mock
+}
+
+func (p *mockPusher) AddLogEntry(logEvent *cwlogs.Event) error {
+	args := p.Called(nil)
+	errorStr := args.String(0)
+	if errorStr != "" {
+		return awserr.NewRequestFailure(nil, 400, "").(error)
+	}
+	return nil
+}
+
+func (p *mockPusher) ForceFlush() error {
+	args := p.Called(nil)
+	errorStr := args.String(0)
+	if errorStr != "" {
+		return awserr.NewRequestFailure(nil, 400, "").(error)
+	}
+	return nil
+}
 
 func TestLogToCWLog(t *testing.T) {
 	tests := []struct {
@@ -37,7 +66,7 @@ func TestLogToCWLog(t *testing.T) {
 			log:      testLogRecord(),
 			want: &cloudwatchlogs.InputLogEvent{
 				Timestamp: aws.Int64(1609719139),
-				Message:   aws.String(`{"name":"test","body":"hello world","severity_number":5,"severity_text":"debug","dropped_attributes_count":4,"flags":255,"trace_id":"0102030405060708090a0b0c0d0e0f10","span_id":"0102030405060708","attributes":{"key1":1,"key2":"attr2"},"resource":{"host":"abc123","node":5}}`),
+				Message:   aws.String(`{"body":"hello world","severity_number":5,"severity_text":"debug","dropped_attributes_count":4,"flags":255,"trace_id":"0102030405060708090a0b0c0d0e0f10","span_id":"0102030405060708","attributes":{"key1":1,"key2":"attr2"},"resource":{"host":"abc123","node":5}}`),
 			},
 		},
 		{
@@ -46,7 +75,7 @@ func TestLogToCWLog(t *testing.T) {
 			log:      testLogRecord(),
 			want: &cloudwatchlogs.InputLogEvent{
 				Timestamp: aws.Int64(1609719139),
-				Message:   aws.String(`{"name":"test","body":"hello world","severity_number":5,"severity_text":"debug","dropped_attributes_count":4,"flags":255,"trace_id":"0102030405060708090a0b0c0d0e0f10","span_id":"0102030405060708","attributes":{"key1":1,"key2":"attr2"}}`),
+				Message:   aws.String(`{"body":"hello world","severity_number":5,"severity_text":"debug","dropped_attributes_count":4,"flags":255,"trace_id":"0102030405060708090a0b0c0d0e0f10","span_id":"0102030405060708","attributes":{"key1":1,"key2":"attr2"}}`),
 			},
 		},
 		{
@@ -55,7 +84,7 @@ func TestLogToCWLog(t *testing.T) {
 			log:      testLogRecordWithoutTrace(),
 			want: &cloudwatchlogs.InputLogEvent{
 				Timestamp: aws.Int64(1609719139),
-				Message:   aws.String(`{"name":"test","body":"hello world","severity_number":5,"severity_text":"debug","dropped_attributes_count":4,"attributes":{"key1":1,"key2":"attr2"},"resource":{"host":"abc123","node":5}}`),
+				Message:   aws.String(`{"body":"hello world","severity_number":5,"severity_text":"debug","dropped_attributes_count":4,"attributes":{"key1":1,"key2":"attr2"},"resource":{"host":"abc123","node":5}}`),
 			},
 		},
 	}
@@ -92,7 +121,6 @@ func testResource() pdata.Resource {
 
 func testLogRecord() pdata.LogRecord {
 	record := pdata.NewLogRecord()
-	record.SetName("test")
 	record.SetSeverityNumber(5)
 	record.SetSeverityText("debug")
 	record.SetDroppedAttributesCount(4)
@@ -108,7 +136,6 @@ func testLogRecord() pdata.LogRecord {
 
 func testLogRecordWithoutTrace() pdata.LogRecord {
 	record := pdata.NewLogRecord()
-	record.SetName("test")
 	record.SetSeverityNumber(5)
 	record.SetSeverityText("debug")
 	record.SetDroppedAttributesCount(4)
@@ -199,4 +226,41 @@ func TestAttrValue(t *testing.T) {
 			assert.Equal(t, tt.want, got)
 		})
 	}
+}
+
+func TestConsumeLogs(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	factory := NewFactory()
+	expCfg := factory.CreateDefaultConfig().(*Config)
+	expCfg.Region = "us-west-2"
+	expCfg.LogGroupName = "testGroup"
+	expCfg.LogStreamName = "testStream"
+	expCfg.MaxRetries = 0
+	exp, err := newCwLogsPusher(expCfg, componenttest.NewNopExporterCreateSettings())
+	assert.Nil(t, err)
+	assert.NotNil(t, exp)
+	ld := pdata.NewLogs()
+	r := ld.ResourceLogs().AppendEmpty()
+	r.Resource().Attributes().UpsertString("hello", "test")
+	logRecords := r.InstrumentationLibraryLogs().AppendEmpty().LogRecords()
+	logRecords.EnsureCapacity(5)
+	logRecords.AppendEmpty()
+	assert.Equal(t, 1, ld.LogRecordCount())
+
+	logPusher := new(mockPusher)
+	logPusher.On("AddLogEntry", nil).Return("").Once()
+	logPusher.On("ForceFlush", nil).Return("").Twice()
+	exp.(*exporter).pusher = logPusher
+	require.NoError(t, exp.(*exporter).ConsumeLogs(ctx, ld))
+	require.NoError(t, exp.Shutdown(ctx))
+}
+
+func TestNewExporterWithoutRegionErr(t *testing.T) {
+	factory := NewFactory()
+	expCfg := factory.CreateDefaultConfig().(*Config)
+	expCfg.MaxRetries = 0
+	exp, err := newCwLogsExporter(expCfg, componenttest.NewNopExporterCreateSettings())
+	assert.Nil(t, exp)
+	assert.NotNil(t, err)
 }

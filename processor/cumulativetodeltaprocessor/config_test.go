@@ -16,7 +16,7 @@ package cumulativetodeltaprocessor
 
 import (
 	"fmt"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -36,7 +36,7 @@ func TestLoadingFullConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Processors[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", configFile), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", configFile), factories)
 	assert.NoError(t, err)
 	require.NotNil(t, cfg)
 
@@ -87,7 +87,7 @@ func TestValidateConfig(t *testing.T) {
 		factory := NewFactory()
 		factories.Processors[typeStr] = factory
 		t.Run(test.configName, func(t *testing.T) {
-			config, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", test.configName), factories)
+			config, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", test.configName), factories)
 			if test.succeed {
 				assert.NotNil(t, config)
 				assert.NoError(t, err)

@@ -23,7 +23,7 @@ import (
 
 	"github.com/jaegertracing/jaeger/model"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
@@ -32,11 +32,17 @@ import (
 
 var blankJaegerProtoSpan = new(model.Span)
 
-// ProtoBatchesToInternalTraces converts multiple Jaeger proto batches to internal traces
+// Deprecated: [0.45.0] use `jaeger.ProtoToTraces`
 func ProtoBatchesToInternalTraces(batches []*model.Batch) pdata.Traces {
+	td, _ := ProtoToTraces(batches)
+	return td
+}
+
+// ProtoToTraces converts multiple Jaeger proto batches to internal traces
+func ProtoToTraces(batches []*model.Batch) (pdata.Traces, error) {
 	traceData := pdata.NewTraces()
 	if len(batches) == 0 {
-		return traceData
+		return traceData, nil
 	}
 
 	rss := traceData.ResourceSpans()
@@ -50,10 +56,10 @@ func ProtoBatchesToInternalTraces(batches []*model.Batch) pdata.Traces {
 		protoBatchToResourceSpans(*batch, rss.AppendEmpty())
 	}
 
-	return traceData
+	return traceData, nil
 }
 
-// ProtoBatchToInternalTraces converts Jeager proto batch to internal traces
+// Deprecated: [0.45.0] use `jaeger.ProtoToTraces`
 func ProtoBatchToInternalTraces(batch model.Batch) pdata.Traces {
 	traceData := pdata.NewTraces()
 
@@ -389,9 +395,9 @@ func getTraceStateFromAttrs(attrs pdata.AttributeMap) pdata.TraceState {
 
 func getInstrumentationLibrary(span *model.Span) instrumentationLibrary {
 	il := instrumentationLibrary{}
-	if libraryName, ok := getAndDeleteTag(span, conventions.InstrumentationLibraryName); ok {
+	if libraryName, ok := getAndDeleteTag(span, conventions.OtelLibraryName); ok {
 		il.name = libraryName
-		if libraryVersion, ok := getAndDeleteTag(span, conventions.InstrumentationLibraryVersion); ok {
+		if libraryVersion, ok := getAndDeleteTag(span, conventions.OtelLibraryVersion); ok {
 			il.version = libraryVersion
 		}
 	}

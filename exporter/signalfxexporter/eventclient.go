@@ -54,7 +54,7 @@ func (s *sfxEventClient) pushLogsData(ctx context.Context, ld pdata.Logs) (int, 
 		ills := rl.InstrumentationLibraryLogs()
 		for j := 0; j < ills.Len(); j++ {
 			ill := ills.At(j)
-			events, dropped := translation.LogSliceToSignalFxV2(s.logger, ill.Logs(), rl.Resource().Attributes())
+			events, dropped := translation.LogRecordSliceToSignalFxV2(s.logger, ill.LogRecords(), rl.Resource().Attributes())
 			sfxEvents = append(sfxEvents, events...)
 			numDroppedLogRecords += dropped
 		}

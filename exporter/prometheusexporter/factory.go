@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/service/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
@@ -41,10 +42,11 @@ func NewFactory() component.ExporterFactory {
 
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		ConstLabels:      map[string]string{},
-		SendTimestamps:   false,
-		MetricExpiration: time.Minute * 5,
+		ExporterSettings:  config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ConstLabels:       map[string]string{},
+		SendTimestamps:    false,
+		MetricExpiration:  time.Minute * 5,
+		skipSanitizeLabel: featuregate.IsEnabled(dropSanitizationGate.ID),
 	}
 }
 
