@@ -117,7 +117,6 @@
 //         - from: resource_attribute
 //           name: k8s.pod.uid
 //         - from: connection
-//           name: ip
 //
 // Deployment scenarios
 //
