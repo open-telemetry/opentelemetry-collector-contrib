@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.opentelemetry.io/collector/service/featuregate"
 )
 
 const (
@@ -42,6 +43,7 @@ func createDefaultConfig() config.Processor {
 		ProcessorSettings:      config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		AggregationTemporality: "AGGREGATION_TEMPORALITY_CUMULATIVE",
 		DimensionsCacheSize:    defaultDimensionsCacheSize,
+		skipSanitizeLabel:      featuregate.IsEnabled(dropSanitizationGate.ID),
 	}
 }
 
