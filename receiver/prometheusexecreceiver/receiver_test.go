@@ -17,7 +17,7 @@ package prometheusexecreceiver
 import (
 	"context"
 	"fmt"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -44,7 +44,7 @@ func loadConfigAssertNoError(t *testing.T, receiverConfigID config.ComponentID) 
 	factory := NewFactory()
 	factories.Receivers[factory.Type()] = factory
 
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 	assert.NoError(t, err)
 	assert.NotNil(t, cfg)
 

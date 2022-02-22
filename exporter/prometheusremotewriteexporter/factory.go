@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/service/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
@@ -48,7 +49,7 @@ func createMetricsExporter(_ context.Context, set component.ExporterCreateSettin
 		return nil, errors.New("invalid configuration")
 	}
 
-	prwe, err := NewPRWExporter(prwCfg, set.BuildInfo)
+	prwe, err := newPRWExporter(prwCfg, set)
 	if err != nil {
 		return nil, err
 	}
@@ -85,6 +86,7 @@ func createDefaultConfig() config.Exporter {
 		Namespace:        "",
 		ExternalLabels:   map[string]string{},
 		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
+		sanitizeLabel:    featuregate.IsEnabled(dropSanitizationGate.ID),
 		RetrySettings: exporterhelper.RetrySettings{
 			Enabled:         true,
 			InitialInterval: 50 * time.Millisecond,

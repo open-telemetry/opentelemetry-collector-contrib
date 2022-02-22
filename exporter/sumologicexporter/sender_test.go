@@ -61,7 +61,7 @@ func prepareSenderTest(t *testing.T, cb []func(w http.ResponseWriter, req *http.
 		Client:             "otelcol",
 		MaxRequestBodySize: 20_971_520,
 	}
-	exp, err := initExporter(cfg)
+	exp, err := initExporter(cfg, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 
 	f, err := newFilter([]string{})

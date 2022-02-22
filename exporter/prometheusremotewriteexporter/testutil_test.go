@@ -16,7 +16,6 @@ package prometheusremotewriteexporter
 
 import (
 	"fmt"
-	"math"
 	"strings"
 	"time"
 
@@ -32,24 +31,14 @@ var (
 	msTime2 = int64(time2 / uint64(int64(time.Millisecond)/int64(time.Nanosecond)))
 	msTime3 = int64(time3 / uint64(int64(time.Millisecond)/int64(time.Nanosecond)))
 
-	label11       = "test_label11"
-	value11       = "test_value11"
-	label12       = "test_label12"
-	value12       = "test_value12"
-	label21       = "test_label21"
-	value21       = "test_value21"
-	label22       = "test_label22"
-	value22       = "test_value22"
-	label31       = "test_label31"
-	value31       = "test_value31"
-	label32       = "test_label32"
-	value32       = "test_value32"
-	label41       = "__test_label41__"
-	value41       = "test_value41"
-	dirty1        = "%"
-	dirty2        = "?"
-	traceIDValue1 = "traceID-value1"
-	traceIDKey    = "trace_id"
+	label11 = "test_label11"
+	value11 = "test_value11"
+	label12 = "test_label12"
+	value12 = "test_value12"
+	label21 = "test_label21"
+	value21 = "test_value21"
+	label22 = "test_label22"
+	value22 = "test_value22"
 
 	intVal1   int64 = 1
 	intVal2   int64 = 2
@@ -57,45 +46,8 @@ var (
 	floatVal2       = 2.0
 	floatVal3       = 3.0
 
-	lbs1      = getAttributes(label11, value11, label12, value12)
-	lbs2      = getAttributes(label21, value21, label22, value22)
-	lbs1Dirty = getAttributes(label11+dirty1, value11, dirty2+label12, value12)
-
-	exlbs1 = map[string]string{label41: value41}
-	exlbs2 = map[string]string{label11: value41}
-
-	promLbs1 = getPromLabels(label11, value11, label12, value12)
-	promLbs2 = getPromLabels(label21, value21, label22, value22)
-
-	lb1Sig = "-" + label11 + "-" + value11 + "-" + label12 + "-" + value12
-	lb2Sig = "-" + label21 + "-" + value21 + "-" + label22 + "-" + value22
-	ns1    = "test_ns"
-
-	twoPointsSameTs = map[string]*prompb.TimeSeries{
-		"Gauge" + "-" + label11 + "-" + value11 + "-" + label12 + "-" + value12: getTimeSeries(getPromLabels(label11, value11, label12, value12),
-			getSample(float64(intVal1), msTime1),
-			getSample(float64(intVal2), msTime2)),
-	}
-	twoPointsDifferentTs = map[string]*prompb.TimeSeries{
-		"Gauge" + "-" + label11 + "-" + value11 + "-" + label12 + "-" + value12: getTimeSeries(getPromLabels(label11, value11, label12, value12),
-			getSample(float64(intVal1), msTime1)),
-		"Gauge" + "-" + label21 + "-" + value21 + "-" + label22 + "-" + value22: getTimeSeries(getPromLabels(label21, value21, label22, value22),
-			getSample(float64(intVal1), msTime2)),
-	}
-	tsWithSamplesAndExemplars = map[string]*prompb.TimeSeries{
-		lb1Sig: getTimeSeriesWithSamplesAndExemplars(getPromLabels(label11, value11, label12, value12),
-			[]prompb.Sample{getSample(float64(intVal1), msTime1)},
-			[]prompb.Exemplar{getExemplar(floatVal2, msTime1)}),
-	}
-	tsWithInfiniteBoundExemplarValue = map[string]*prompb.TimeSeries{
-		lb1Sig: getTimeSeriesWithSamplesAndExemplars(getPromLabels(label11, value11, label12, value12),
-			[]prompb.Sample{getSample(float64(intVal1), msTime1)},
-			[]prompb.Exemplar{getExemplar(math.MaxFloat64, msTime1)}),
-	}
-	tsWithoutSampleAndExemplar = map[string]*prompb.TimeSeries{
-		lb1Sig: getTimeSeries(getPromLabels(label11, value11, label12, value12),
-			nil...),
-	}
+	lbs1    = getAttributes(label11, value11, label12, value12)
+	lbs2    = getAttributes(label21, value21, label22, value22)
 	bounds  = []float64{0.1, 0.5, 0.99}
 	buckets = []uint64{1, 2, 3}
 
@@ -158,21 +110,23 @@ var (
 		emptyCumulativeSum:       getEmptyCumulativeSumMetric(emptyCumulativeSum),
 		emptyCumulativeHistogram: getEmptyCumulativeHistogramMetric(emptyCumulativeHistogram),
 	}
-	staleNaNIntGauge    = "staleNaNIntGauge"
-	staleNaNDoubleGauge = "staleNaNDoubleGauge"
-	staleNaNIntSum      = "staleNaNIntSum"
-	staleNaNSum         = "staleNaNSum"
-	staleNaNHistogram   = "staleNaNHistogram"
-	staleNaNSummary     = "staleNaNSummary"
+	staleNaNIntGauge       = "staleNaNIntGauge"
+	staleNaNDoubleGauge    = "staleNaNDoubleGauge"
+	staleNaNIntSum         = "staleNaNIntSum"
+	staleNaNSum            = "staleNaNSum"
+	staleNaNHistogram      = "staleNaNHistogram"
+	staleNaNEmptyHistogram = "staleNaNEmptyHistogram"
+	staleNaNSummary        = "staleNaNSummary"
 
 	// staleNaN metrics as input should have the staleness marker flag
 	staleNaNMetrics = map[string]pdata.Metric{
-		staleNaNIntGauge:    getIntGaugeMetric(staleNaNIntGauge, lbs1, intVal1, time1),
-		staleNaNDoubleGauge: getDoubleGaugeMetric(staleNaNDoubleGauge, lbs1, floatVal1, time1),
-		staleNaNIntSum:      getIntSumMetric(staleNaNIntSum, lbs1, intVal1, time1),
-		staleNaNSum:         getSumMetric(staleNaNSum, lbs1, floatVal1, time1),
-		staleNaNHistogram:   getHistogramMetric(staleNaNHistogram, lbs1, time1, floatVal2, uint64(intVal2), bounds, buckets),
-		staleNaNSummary:     getSummaryMetric(staleNaNSummary, lbs2, time2, floatVal2, uint64(intVal2), quantiles),
+		staleNaNIntGauge:       getIntGaugeMetric(staleNaNIntGauge, lbs1, intVal1, time1),
+		staleNaNDoubleGauge:    getDoubleGaugeMetric(staleNaNDoubleGauge, lbs1, floatVal1, time1),
+		staleNaNIntSum:         getIntSumMetric(staleNaNIntSum, lbs1, intVal1, time1),
+		staleNaNSum:            getSumMetric(staleNaNSum, lbs1, floatVal1, time1),
+		staleNaNHistogram:      getHistogramMetric(staleNaNHistogram, lbs1, time1, floatVal2, uint64(intVal2), bounds, buckets),
+		staleNaNEmptyHistogram: getHistogramMetric(staleNaNEmptyHistogram, lbs1, time1, floatVal2, uint64(intVal2), []float64{}, []uint64{}),
+		staleNaNSummary:        getSummaryMetric(staleNaNSummary, lbs2, time2, floatVal2, uint64(intVal2), quantiles),
 	}
 )
 
@@ -218,68 +172,17 @@ func getTimeSeries(labels []prompb.Label, samples ...prompb.Sample) *prompb.Time
 	}
 }
 
-func getExemplar(v float64, t int64) prompb.Exemplar {
-	return prompb.Exemplar{
-		Value:     v,
-		Timestamp: t,
-		Labels:    []prompb.Label{getLabel(traceIDKey, traceIDValue1)},
-	}
-}
+func getMetricsFromMetricList(metricList ...pdata.Metric) pdata.Metrics {
+	metrics := pdata.NewMetrics()
 
-func getBucketBoundsData(values []float64) []bucketBoundsData {
-	var b []bucketBoundsData
-
-	for _, value := range values {
-		b = append(b, bucketBoundsData{sig: lb1Sig, bound: value})
+	rm := metrics.ResourceMetrics().AppendEmpty()
+	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+	ilm.Metrics().EnsureCapacity(len(metricList))
+	for i := 0; i < len(metricList); i++ {
+		metricList[i].CopyTo(ilm.Metrics().AppendEmpty())
 	}
 
-	return b
-}
-
-func getTimeSeriesWithSamplesAndExemplars(labels []prompb.Label, samples []prompb.Sample, exemplars []prompb.Exemplar) *prompb.TimeSeries {
-	return &prompb.TimeSeries{
-		Labels:    labels,
-		Samples:   samples,
-		Exemplars: exemplars,
-	}
-}
-
-func getHistogramDataPointWithExemplars(time time.Time, value float64, attributeKey string, attributeValue string) *pdata.HistogramDataPoint {
-	h := pdata.NewHistogramDataPoint()
-
-	e := h.Exemplars().AppendEmpty()
-	e.SetDoubleVal(value)
-	e.SetTimestamp(pdata.NewTimestampFromTime(time))
-	e.FilteredAttributes().Insert(attributeKey, pdata.NewAttributeValueString(attributeValue))
-
-	return &h
-}
-
-func getHistogramDataPoint() *pdata.HistogramDataPoint {
-	h := pdata.NewHistogramDataPoint()
-
-	return &h
-}
-
-func getQuantiles(bounds []float64, values []float64) pdata.ValueAtQuantileSlice {
-	quantiles := pdata.NewValueAtQuantileSlice()
-	quantiles.EnsureCapacity(len(bounds))
-
-	for i := 0; i < len(bounds); i++ {
-		quantile := quantiles.AppendEmpty()
-		quantile.SetQuantile(bounds[i])
-		quantile.SetValue(values[i])
-	}
-
-	return quantiles
-}
-
-func getTimeseriesMap(timeseries []*prompb.TimeSeries) map[string]*prompb.TimeSeries {
-	tsMap := make(map[string]*prompb.TimeSeries)
-	for i, v := range timeseries {
-		tsMap[fmt.Sprintf("%s%d", "timeseries_name", i)] = v
-	}
-	return tsMap
+	return metrics
 }
 
 func getEmptyGaugeMetric(name string) pdata.Metric {
@@ -434,25 +337,23 @@ func getSummaryMetric(name string, attributes pdata.AttributeMap, ts uint64, sum
 	return metric
 }
 
-func getResource(resources ...string) pdata.Resource {
-	resource := pdata.NewResource()
+func getQuantiles(bounds []float64, values []float64) pdata.ValueAtQuantileSlice {
+	quantiles := pdata.NewValueAtQuantileSlice()
+	quantiles.EnsureCapacity(len(bounds))
 
-	for i := 0; i < len(resources); i += 2 {
-		resource.Attributes().Upsert(resources[i], pdata.NewAttributeValueString(resources[i+1]))
+	for i := 0; i < len(bounds); i++ {
+		quantile := quantiles.AppendEmpty()
+		quantile.SetQuantile(bounds[i])
+		quantile.SetValue(values[i])
 	}
 
-	return resource
+	return quantiles
 }
 
-func getMetricsFromMetricList(metricList ...pdata.Metric) pdata.Metrics {
-	metrics := pdata.NewMetrics()
-
-	rm := metrics.ResourceMetrics().AppendEmpty()
-	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.Metrics().EnsureCapacity(len(metricList))
-	for i := 0; i < len(metricList); i++ {
-		metricList[i].CopyTo(ilm.Metrics().AppendEmpty())
+func getTimeseriesMap(timeseries []*prompb.TimeSeries) map[string]*prompb.TimeSeries {
+	tsMap := make(map[string]*prompb.TimeSeries)
+	for i, v := range timeseries {
+		tsMap[fmt.Sprintf("%s%d", "timeseries_name", i)] = v
 	}
-
-	return metrics
+	return tsMap
 }

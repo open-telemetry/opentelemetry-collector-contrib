@@ -33,7 +33,7 @@ const tagAttributeKey = "fluent.tag"
 
 type Event interface {
 	DecodeMsg(dc *msgp.Reader) error
-	LogRecords() pdata.LogSlice
+	LogRecords() pdata.LogRecordSlice
 	Chunk() string
 	Compressed() string
 }
@@ -199,17 +199,17 @@ func parseRecordToLogRecord(dc *msgp.Reader, lr pdata.LogRecord) error {
 }
 
 type MessageEventLogRecord struct {
-	pdata.LogSlice
+	pdata.LogRecordSlice
 	OptionsMap
 }
 
-func (melr *MessageEventLogRecord) LogRecords() pdata.LogSlice {
-	return melr.LogSlice
+func (melr *MessageEventLogRecord) LogRecords() pdata.LogRecordSlice {
+	return melr.LogRecordSlice
 }
 
 func (melr *MessageEventLogRecord) DecodeMsg(dc *msgp.Reader) error {
-	melr.LogSlice = pdata.NewLogSlice()
-	log := melr.LogSlice.AppendEmpty()
+	melr.LogRecordSlice = pdata.NewLogRecordSlice()
+	log := melr.LogRecordSlice.AppendEmpty()
 
 	var arrLen uint32
 	var err error
@@ -273,16 +273,16 @@ func parseOptions(dc *msgp.Reader) (OptionsMap, error) {
 }
 
 type ForwardEventLogRecords struct {
-	pdata.LogSlice
+	pdata.LogRecordSlice
 	OptionsMap
 }
 
-func (fe *ForwardEventLogRecords) LogRecords() pdata.LogSlice {
-	return fe.LogSlice
+func (fe *ForwardEventLogRecords) LogRecords() pdata.LogRecordSlice {
+	return fe.LogRecordSlice
 }
 
 func (fe *ForwardEventLogRecords) DecodeMsg(dc *msgp.Reader) (err error) {
-	fe.LogSlice = pdata.NewLogSlice()
+	fe.LogRecordSlice = pdata.NewLogRecordSlice()
 
 	var arrLen uint32
 	arrLen, err = dc.ReadArrayHeader()
@@ -306,15 +306,15 @@ func (fe *ForwardEventLogRecords) DecodeMsg(dc *msgp.Reader) (err error) {
 		return
 	}
 
-	fe.LogSlice.EnsureCapacity(int(entryLen))
+	fe.LogRecordSlice.EnsureCapacity(int(entryLen))
 	for i := 0; i < int(entryLen); i++ {
-		lr := fe.LogSlice.AppendEmpty()
+		lr := fe.LogRecordSlice.AppendEmpty()
 
 		err = parseEntryToLogRecord(dc, lr)
 		if err != nil {
 			return msgp.WrapError(err, "Entries", i)
 		}
-		fe.LogSlice.At(i).Attributes().InsertString(tagAttributeKey, tag)
+		fe.LogRecordSlice.At(i).Attributes().InsertString(tagAttributeKey, tag)
 	}
 
 	if arrLen == 3 {
@@ -345,18 +345,18 @@ func parseEntryToLogRecord(dc *msgp.Reader, lr pdata.LogRecord) error {
 }
 
 type PackedForwardEventLogRecords struct {
-	pdata.LogSlice
+	pdata.LogRecordSlice
 	OptionsMap
 }
 
-func (pfe *PackedForwardEventLogRecords) LogRecords() pdata.LogSlice {
-	return pfe.LogSlice
+func (pfe *PackedForwardEventLogRecords) LogRecords() pdata.LogRecordSlice {
+	return pfe.LogRecordSlice
 }
 
 // DecodeMsg implements msgp.Decodable.  This was originally code generated but
 // then manually copied here in order to handle the optional Options field.
 func (pfe *PackedForwardEventLogRecords) DecodeMsg(dc *msgp.Reader) error {
-	pfe.LogSlice = pdata.NewLogSlice()
+	pfe.LogRecordSlice = pdata.NewLogRecordSlice()
 
 	arrLen, err := dc.ReadArrayHeader()
 	if err != nil {
@@ -441,7 +441,7 @@ func (pfe *PackedForwardEventLogRecords) parseEntries(entriesRaw []byte, isGzipp
 
 		lr.Attributes().InsertString(tagAttributeKey, tag)
 
-		tgt := pfe.LogSlice.AppendEmpty()
+		tgt := pfe.LogRecordSlice.AppendEmpty()
 		lr.CopyTo(tgt)
 	}
 }

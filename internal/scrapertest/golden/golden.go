@@ -16,7 +16,6 @@ package golden // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 
 	"go.opentelemetry.io/collector/model/otlp"
@@ -47,37 +46,4 @@ func WriteMetrics(filePath string, metrics pdata.Metrics) error {
 	}
 	b = append(b, []byte("\n")...)
 	return ioutil.WriteFile(filePath, b, 0600)
-}
-
-// ReadMetricSlice reads a file that contains a pdata.Metrics and returns
-// the MetricSlice found within the first Resource and InstrumentationLibrary
-func ReadMetricSlice(filePath string) (pdata.MetricSlice, error) {
-	metrics, err := ReadMetrics(filePath)
-	if err != nil {
-		return pdata.NewMetricSlice(), err
-	}
-
-	rms := metrics.ResourceMetrics()
-	if rms.Len() == 0 {
-		return pdata.NewMetricSlice(), fmt.Errorf("no resource found")
-	}
-
-	ilms := rms.At(0).InstrumentationLibraryMetrics()
-	if ilms.Len() == 0 {
-		return pdata.NewMetricSlice(), fmt.Errorf("no instrumentation library found")
-	}
-
-	return ilms.At(0).Metrics(), nil
-}
-
-// WriteMetricSlice wraps a pdata.MetricSlice in a pdata.Metrics and writes it
-// to the specified file
-func WriteMetricSlice(filePath string, metricSlice pdata.MetricSlice) error {
-	metrics := pdata.NewMetrics()
-	metricSlice.CopyTo(
-		metrics.ResourceMetrics().AppendEmpty().
-			InstrumentationLibraryMetrics().AppendEmpty().
-			Metrics(),
-	)
-	return WriteMetrics(filePath, metrics)
 }

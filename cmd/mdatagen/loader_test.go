@@ -15,7 +15,7 @@
 package main
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -47,7 +47,7 @@ func Test_loadMetadata(t *testing.T) {
 						Value:       "state"}},
 				Metrics: map[metricName]metric{
 					"system.cpu.time": {
-						Enabled:               true,
+						Enabled:               (func() *bool { t := true; return &t })(),
 						Description:           "Total CPU seconds broken down by different states.",
 						ExtendedDocumentation: "Additional information on CPU Time can be found [here](https://en.wikipedia.org/wiki/CPU_time).",
 						Unit:                  "s",
@@ -56,9 +56,18 @@ func Test_loadMetadata(t *testing.T) {
 							Aggregated:      Aggregated{Aggregation: "cumulative"},
 							Mono:            Mono{Monotonic: true},
 						},
-						// YmlData: nil,
-						Attributes: []attributeName{"freeFormAttribute", "freeFormAttributeWithValue",
-							"enumAttribute"}}},
+						Attributes: []attributeName{"freeFormAttribute", "freeFormAttributeWithValue", "enumAttribute"},
+					},
+					"system.cpu.utilization": {
+						Enabled:     (func() *bool { f := false; return &f })(),
+						Description: "Percentage of CPU time broken down by different states.",
+						Unit:        "1",
+						Gauge: &gauge{
+							MetricValueType: MetricValueType{pdata.MetricValueTypeDouble},
+						},
+						Attributes: []attributeName{"enumAttribute"},
+					},
+				},
 			},
 		},
 		{
@@ -98,7 +107,7 @@ func Test_loadMetadata(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := loadMetadata(path.Join("testdata", tt.yml))
+			got, err := loadMetadata(filepath.Join("testdata", tt.yml))
 			if tt.wantErr != "" {
 				require.Error(t, err)
 				require.EqualError(t, err, tt.wantErr)

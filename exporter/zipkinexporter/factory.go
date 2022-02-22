@@ -71,7 +71,7 @@ func createTracesExporter(
 		return nil, errors.New("exporter config requires a non-empty 'endpoint'")
 	}
 
-	ze, err := createZipkinExporter(zc)
+	ze, err := createZipkinExporter(zc, set.TelemetrySettings)
 	if err != nil {
 		return nil, err
 	}

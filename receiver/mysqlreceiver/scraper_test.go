@@ -18,7 +18,6 @@ import (
 	"bufio"
 	"context"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -32,27 +31,22 @@ import (
 )
 
 func TestScrape(t *testing.T) {
-	cfg := &Config{
-		Username: "otel",
-		Password: "otel",
-		NetAddr: confignet.NetAddr{
-			Endpoint: "localhost:3306",
-		},
-	}
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "otel"
+	cfg.Password = "otel"
+	cfg.NetAddr = confignet.NetAddr{Endpoint: "localhost:3306"}
 
 	scraper := newMySQLScraper(zap.NewNop(), cfg)
 	scraper.sqlclient = &mockClient{}
 
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
-	aMetricSlice := actualMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
 	expectedFile := filepath.Join("testdata", "scraper", "expected.json")
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
-	eMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
-	require.NoError(t, scrapertest.CompareMetricSlices(eMetricSlice, aMetricSlice))
+	require.NoError(t, scrapertest.CompareMetrics(actualMetrics, expectedMetrics))
 }
 
 var _ client = (*mockClient)(nil)
@@ -61,7 +55,7 @@ type mockClient struct{}
 
 func readFile(fname string) (map[string]string, error) {
 	var stats = map[string]string{}
-	file, err := os.Open(path.Join("testdata", "scraper", fname+".txt"))
+	file, err := os.Open(filepath.Join("testdata", "scraper", fname+".txt"))
 	if err != nil {
 		return nil, err
 	}

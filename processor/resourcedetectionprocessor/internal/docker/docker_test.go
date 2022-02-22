@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
@@ -44,7 +44,7 @@ func (m *mockMetadata) OSType(context.Context) (string, error) {
 func TestDetect(t *testing.T) {
 	md := &mockMetadata{}
 	md.On("Hostname").Return("hostname", nil)
-	md.On("OSType").Return("DARWIN", nil)
+	md.On("OSType").Return("darwin", nil)
 
 	detector := &Detector{provider: md, logger: zap.NewNop()}
 	res, schemaURL, err := detector.Detect(context.Background())
@@ -55,7 +55,7 @@ func TestDetect(t *testing.T) {
 
 	expected := internal.NewResource(map[string]interface{}{
 		conventions.AttributeHostName: "hostname",
-		conventions.AttributeOSType:   "DARWIN",
+		conventions.AttributeOSType:   "darwin",
 	})
 	expected.Attributes().Sort()
 

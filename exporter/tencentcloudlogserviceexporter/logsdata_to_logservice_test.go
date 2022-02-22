@@ -24,7 +24,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 )
 
 type logKeyValuePair struct {
@@ -71,7 +71,7 @@ func createLogData(numberOfLogs int) pdata.Logs {
 
 	for i := 0; i < numberOfLogs; i++ {
 		ts := pdata.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
-		logRecord := ill.Logs().AppendEmpty()
+		logRecord := ill.LogRecords().AppendEmpty()
 		switch i {
 		case 0:
 			// do nothing, left body null

@@ -91,7 +91,7 @@ func test(nGoroutine int, nStream int, t *testing.T) {
 	exporter, server, m := doInit(nStream, t)
 	atomic.StoreInt32(&consumerNum, -int32(nStream))
 	l := testdata.GenerateLogsOneLogRecordNoResource()
-	l.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Body().SetIntVal(0)
+	l.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(0).Body().SetIntVal(0)
 
 	for i := 0; i < nStream; i++ {
 		err := exporter.pushLogs(context.Background(), l)

@@ -18,7 +18,7 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -71,7 +71,7 @@ func testSyslog(t *testing.T, cfg *SysLogConfig) {
 	require.Len(t, sink.AllLogs(), 1)
 
 	resourceLogs := sink.AllLogs()[0].ResourceLogs().At(0)
-	logs := resourceLogs.InstrumentationLibraryLogs().At(0).Logs()
+	logs := resourceLogs.InstrumentationLibraryLogs().At(0).LogRecords()
 
 	for i := 0; i < numLogs; i++ {
 		log := logs.At(i)
@@ -89,7 +89,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 

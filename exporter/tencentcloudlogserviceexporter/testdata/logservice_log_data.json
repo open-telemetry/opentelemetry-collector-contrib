@@ -33,10 +33,6 @@
       "Value": ""
     },
     {
-      "Key": "name",
-      "Value": ""
-    },
-    {
       "Key": "attribute",
       "Value": "{\"custom\":\"custom\",\"host.name\":\"myhost\",\"my-label\":\"myapp-type\",\"null-value\":\"\",\"service.name\":\"myapp\"}"
     },
@@ -88,10 +84,6 @@
     },
     {
       "Key": "severityText",
-      "Value": ""
-    },
-    {
-      "Key": "name",
       "Value": ""
     },
     {
@@ -149,10 +141,6 @@
       "Value": ""
     },
     {
-      "Key": "name",
-      "Value": ""
-    },
-    {
       "Key": "attribute",
       "Value": "{\"custom\":\"custom\",\"host.name\":\"myhost\",\"my-label\":\"myapp-type\",\"null-value\":\"\",\"service.name\":\"myapp\"}"
     },
@@ -204,10 +192,6 @@
     },
     {
       "Key": "severityText",
-      "Value": ""
-    },
-    {
-      "Key": "name",
       "Value": ""
     },
     {
@@ -265,10 +249,6 @@
       "Value": ""
     },
     {
-      "Key": "name",
-      "Value": ""
-    },
-    {
       "Key": "attribute",
       "Value": "{\"custom\":\"custom\",\"host.name\":\"myhost\",\"map-value\":\"{\\\"array\\\":[\\\"array\\\"],\\\"code\\\":200,\\\"map\\\":{\\\"data\\\":\\\"hello world\\\"},\\\"null\\\":null,\\\"result\\\":true,\\\"status\\\":\\\"ok\\\",\\\"value\\\":1.3}\",\"my-label\":\"myapp-type\",\"null-value\":\"\",\"service.name\":\"myapp\"}"
     },
@@ -320,10 +300,6 @@
     },
     {
       "Key": "severityText",
-      "Value": ""
-    },
-    {
-      "Key": "name",
       "Value": ""
     },
     {
@@ -381,10 +357,6 @@
       "Value": ""
     },
     {
-      "Key": "name",
-      "Value": ""
-    },
-    {
       "Key": "attribute",
       "Value": "{\"custom\":\"custom\",\"host.name\":\"myhost\",\"my-label\":\"myapp-type\",\"null-value\":\"\",\"service.name\":\"myapp\"}"
     },
@@ -439,10 +411,6 @@
       "Value": ""
     },
     {
-      "Key": "name",
-      "Value": ""
-    },
-    {
       "Key": "attribute",
       "Value": "{\"custom\":\"custom\",\"host.name\":\"myhost\",\"my-label\":\"myapp-type\",\"null-value\":\"\",\"service.name\":\"myapp\"}"
     },
@@ -494,10 +462,6 @@
     },
     {
       "Key": "severityText",
-      "Value": ""
-    },
-    {
-      "Key": "name",
       "Value": ""
     },
     {

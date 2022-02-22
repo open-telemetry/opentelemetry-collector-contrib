@@ -251,6 +251,10 @@ var wantMetricsData = []*metricspb.Metric{
 		},
 		Timeseries: []*metricspb.TimeSeries{
 			{
+				StartTimestamp: &timestamppb.Timestamp{
+					Seconds: 1415062567,
+					Nanos:   494999808,
+				},
 				LabelValues: []*metricspb.LabelValue{
 					{Value: "value", HasValue: true},
 					{Value: "df", HasValue: true},
@@ -430,6 +434,89 @@ func TestLabelsFromName(t *testing.T) {
 			gotMetricName, gotLabels := LabelsFromName(&tt.name)
 			assert.Equal(t, tt.wantMetricName, gotMetricName)
 			assert.Equal(t, tt.wantLabels, gotLabels)
+		})
+	}
+}
+
+func createPtrFloat64(v float64) *float64 {
+	return &v
+}
+
+func TestStartTimestamp(t *testing.T) {
+	tests := []struct {
+		name                 string
+		record               collectDRecord
+		metricDescriptorType metricspb.MetricDescriptor_Type
+		wantStartTimestamp   *timestamppb.Timestamp
+	}{
+		{
+			name: "metric type cumulative distribution",
+			record: collectDRecord{
+				Time:     createPtrFloat64(10),
+				Interval: createPtrFloat64(5),
+			},
+			metricDescriptorType: metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION,
+			wantStartTimestamp: &timestamppb.Timestamp{
+				Seconds: 5,
+				Nanos:   0,
+			},
+		},
+		{
+			name: "metric type cumulative double",
+			record: collectDRecord{
+				Time:     createPtrFloat64(10),
+				Interval: createPtrFloat64(5),
+			},
+			metricDescriptorType: metricspb.MetricDescriptor_CUMULATIVE_DOUBLE,
+			wantStartTimestamp: &timestamppb.Timestamp{
+				Seconds: 5,
+				Nanos:   0,
+			},
+		},
+		{
+			name: "metric type cumulative int64",
+			record: collectDRecord{
+				Time:     createPtrFloat64(10),
+				Interval: createPtrFloat64(5),
+			},
+			metricDescriptorType: metricspb.MetricDescriptor_CUMULATIVE_INT64,
+			wantStartTimestamp: &timestamppb.Timestamp{
+				Seconds: 5,
+				Nanos:   0,
+			},
+		},
+		{
+			name: "metric type non-cumulative gauge distribution",
+			record: collectDRecord{
+				Time:     createPtrFloat64(0),
+				Interval: createPtrFloat64(0),
+			},
+			metricDescriptorType: metricspb.MetricDescriptor_GAUGE_DISTRIBUTION,
+			wantStartTimestamp:   nil,
+		},
+		{
+			name: "metric type non-cumulative gauge int64",
+			record: collectDRecord{
+				Time:     createPtrFloat64(0),
+				Interval: createPtrFloat64(0),
+			},
+			metricDescriptorType: metricspb.MetricDescriptor_GAUGE_INT64,
+			wantStartTimestamp:   nil,
+		},
+		{
+			name: "metric type non-cumulativegauge double",
+			record: collectDRecord{
+				Time:     createPtrFloat64(0),
+				Interval: createPtrFloat64(0),
+			},
+			metricDescriptorType: metricspb.MetricDescriptor_GAUGE_DOUBLE,
+			wantStartTimestamp:   nil,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			gotStartTimestamp := tc.record.startTimestamp(tc.metricDescriptorType)
+			assert.Equal(t, tc.wantStartTimestamp, gotStartTimestamp)
 		})
 	}
 }

@@ -25,7 +25,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
-	"github.com/prometheus/prometheus/pkg/value"
+	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -49,11 +49,14 @@ func Test_NewPRWExporter(t *testing.T) {
 		Namespace:          "",
 		ExternalLabels:     map[string]string{},
 		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ""},
+		sanitizeLabel:      true,
 	}
 	buildInfo := component.BuildInfo{
 		Description: "OpenTelemetry Collector",
 		Version:     "1.0",
 	}
+	set := componenttest.NewNopExporterCreateSettings()
+	set.BuildInfo = buildInfo
 
 	tests := []struct {
 		name                string
@@ -63,7 +66,7 @@ func Test_NewPRWExporter(t *testing.T) {
 		concurrency         int
 		externalLabels      map[string]string
 		returnErrorOnCreate bool
-		buildInfo           component.BuildInfo
+		set                 component.ExporterCreateSettings
 	}{
 		{
 			name:                "invalid_URL",
@@ -73,7 +76,7 @@ func Test_NewPRWExporter(t *testing.T) {
 			concurrency:         5,
 			externalLabels:      map[string]string{"Key1": "Val1"},
 			returnErrorOnCreate: true,
-			buildInfo:           buildInfo,
+			set:                 set,
 		},
 		{
 			name:                "invalid_labels_case",
@@ -83,7 +86,7 @@ func Test_NewPRWExporter(t *testing.T) {
 			concurrency:         5,
 			externalLabels:      map[string]string{"Key1": ""},
 			returnErrorOnCreate: true,
-			buildInfo:           buildInfo,
+			set:                 set,
 		},
 		{
 			name:           "success_case",
@@ -92,7 +95,7 @@ func Test_NewPRWExporter(t *testing.T) {
 			endpoint:       "http://some.url:9411/api/prom/push",
 			concurrency:    5,
 			externalLabels: map[string]string{"Key1": "Val1"},
-			buildInfo:      buildInfo,
+			set:            set,
 		},
 		{
 			name:           "success_case_no_labels",
@@ -101,7 +104,7 @@ func Test_NewPRWExporter(t *testing.T) {
 			endpoint:       "http://some.url:9411/api/prom/push",
 			concurrency:    5,
 			externalLabels: map[string]string{},
-			buildInfo:      buildInfo,
+			set:            set,
 		},
 	}
 
@@ -111,7 +114,7 @@ func Test_NewPRWExporter(t *testing.T) {
 			cfg.ExternalLabels = tt.externalLabels
 			cfg.Namespace = tt.namespace
 			cfg.RemoteWriteQueue.NumConsumers = 1
-			prwe, err := NewPRWExporter(cfg, tt.buildInfo)
+			prwe, err := newPRWExporter(cfg, tt.set)
 
 			if tt.returnErrorOnCreate {
 				assert.Error(t, err)
@@ -143,6 +146,8 @@ func Test_Start(t *testing.T) {
 		Description: "OpenTelemetry Collector",
 		Version:     "1.0",
 	}
+	set := componenttest.NewNopExporterCreateSettings()
+	set.BuildInfo = buildInfo
 	tests := []struct {
 		name                 string
 		config               *Config
@@ -150,7 +155,7 @@ func Test_Start(t *testing.T) {
 		concurrency          int
 		externalLabels       map[string]string
 		returnErrorOnStartUp bool
-		buildInfo            component.BuildInfo
+		set                  component.ExporterCreateSettings
 		endpoint             string
 		clientSettings       confighttp.HTTPClientSettings
 	}{
@@ -160,7 +165,7 @@ func Test_Start(t *testing.T) {
 			namespace:      "test",
 			concurrency:    5,
 			externalLabels: map[string]string{"Key1": "Val1"},
-			buildInfo:      buildInfo,
+			set:            set,
 			clientSettings: confighttp.HTTPClientSettings{Endpoint: "https://some.url:9411/api/prom/push"},
 		},
 		{
@@ -169,7 +174,7 @@ func Test_Start(t *testing.T) {
 			namespace:            "test",
 			concurrency:          5,
 			externalLabels:       map[string]string{"Key1": "Val1"},
-			buildInfo:            buildInfo,
+			set:                  set,
 			returnErrorOnStartUp: true,
 			clientSettings: confighttp.HTTPClientSettings{
 				Endpoint: "https://some.url:9411/api/prom/push",
@@ -193,7 +198,7 @@ func Test_Start(t *testing.T) {
 			cfg.RemoteWriteQueue.NumConsumers = 1
 			cfg.HTTPClientSettings = tt.clientSettings
 
-			prwe, err := NewPRWExporter(cfg, tt.buildInfo)
+			prwe, err := newPRWExporter(cfg, tt.set)
 			assert.NoError(t, err)
 			assert.NotNil(t, prwe)
 
@@ -209,7 +214,7 @@ func Test_Start(t *testing.T) {
 
 // Test_Shutdown checks after Shutdown is called, incoming calls to PushMetrics return error.
 func Test_Shutdown(t *testing.T) {
-	prwe := &PRWExporter{
+	prwe := &prwExporter{
 		wg:        new(sync.WaitGroup),
 		closeChan: make(chan struct{}),
 	}
@@ -309,19 +314,17 @@ func Test_export(t *testing.T) {
 			if !tt.serverUp {
 				server.Close()
 			}
-			errs := runExportPipeline(ts1, serverURL)
+			err := runExportPipeline(ts1, serverURL)
 			if tt.returnErrorOnCreate {
-				assert.Error(t, errs[0])
+				assert.Error(t, err)
 				return
 			}
-			assert.Len(t, errs, 0)
+			assert.NoError(t, err)
 		})
 	}
 }
 
-func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) []error {
-	var errs []error
-
+func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) error {
 	// First we will construct a TimeSeries array from the testutils package
 	testmap := make(map[string]*prompb.TimeSeries)
 	testmap["test"] = ts
@@ -334,20 +337,19 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) []error {
 		Description: "OpenTelemetry Collector",
 		Version:     "1.0",
 	}
+	set := componenttest.NewNopExporterCreateSettings()
+	set.BuildInfo = buildInfo
 	// after this, instantiate a CortexExporter with the current HTTP client and endpoint set to passed in endpoint
-	prwe, err := NewPRWExporter(cfg, buildInfo)
+	prwe, err := newPRWExporter(cfg, set)
 	if err != nil {
-		errs = append(errs, err)
-		return errs
+		return err
 	}
 
 	if err = prwe.Start(context.Background(), componenttest.NewNopHost()); err != nil {
-		errs = append(errs, err)
-		return errs
+		return err
 	}
 
-	errs = append(errs, prwe.export(context.Background(), testmap)...)
-	return errs
+	return prwe.export(context.Background(), testmap)
 }
 
 // Test_PushMetrics checks the number of TimeSeries received by server and the number of metrics dropped is the same as
@@ -383,6 +385,7 @@ func Test_PushMetrics(t *testing.T) {
 
 	// staleNaN cases
 	staleNaNHistogramBatch := getMetricsFromMetricList(staleNaNMetrics[staleNaNHistogram])
+	staleNaNEmptyHistogramBatch := getMetricsFromMetricList(staleNaNMetrics[staleNaNEmptyHistogram])
 
 	staleNaNSummaryBatch := getMetricsFromMetricList(staleNaNMetrics[staleNaNSummary])
 
@@ -588,6 +591,15 @@ func Test_PushMetrics(t *testing.T) {
 			true,
 		},
 		{
+			"staleNaNEmptyHistogram_case",
+			&staleNaNEmptyHistogramBatch,
+			checkFunc,
+			3,
+			http.StatusAccepted,
+			false,
+			true,
+		},
+		{
 			"staleNaNSummary_case",
 			&staleNaNSummaryBatch,
 			checkFunc,
@@ -627,7 +639,9 @@ func Test_PushMetrics(t *testing.T) {
 				Description: "OpenTelemetry Collector",
 				Version:     "1.0",
 			}
-			prwe, nErr := NewPRWExporter(cfg, buildInfo)
+			set := componenttest.NewNopExporterCreateSettings()
+			set.BuildInfo = buildInfo
+			prwe, nErr := newPRWExporter(cfg, set)
 			require.NoError(t, nErr)
 			require.NoError(t, prwe.Start(context.Background(), componenttest.NewNopHost()))
 			err := prwe.PushMetrics(context.Background(), *tt.md)
@@ -667,6 +681,58 @@ func Test_validateAndSanitizeExternalLabels(t *testing.T) {
 			map[string]string{"__key1_key__": "val1"},
 			false,
 		},
+		{"labels_that_start_with_underscore",
+			map[string]string{"_key_": "val1"},
+			map[string]string{"_key_": "val1"},
+			false,
+		},
+		{"labels_that_start_with_digit",
+			map[string]string{"6key_": "val1"},
+			map[string]string{"key_6key_": "val1"},
+			false,
+		},
+		{"fail_case_empty_label",
+			map[string]string{"": "val1"},
+			map[string]string{},
+			true,
+		},
+	}
+	testsWithoutSanitizelabel := []struct {
+		name                string
+		inputLabels         map[string]string
+		expectedLabels      map[string]string
+		returnErrorOnCreate bool
+	}{
+		{"success_case_no_labels",
+			map[string]string{},
+			map[string]string{},
+			false,
+		},
+		{"success_case_with_labels",
+			map[string]string{"key1": "val1"},
+			map[string]string{"key1": "val1"},
+			false,
+		},
+		{"success_case_2_with_labels",
+			map[string]string{"__key1__": "val1"},
+			map[string]string{"__key1__": "val1"},
+			false,
+		},
+		{"success_case_with_sanitized_labels",
+			map[string]string{"__key1.key__": "val1"},
+			map[string]string{"__key1_key__": "val1"},
+			false,
+		},
+		{"labels_that_start_with_underscore",
+			map[string]string{"_key_": "val1"},
+			map[string]string{"key_key_": "val1"},
+			false,
+		},
+		{"labels_that_start_with_digit",
+			map[string]string{"6key_": "val1"},
+			map[string]string{"key_6key_": "val1"},
+			false,
+		},
 		{"fail_case_empty_label",
 			map[string]string{"": "val1"},
 			map[string]string{},
@@ -675,8 +741,27 @@ func Test_validateAndSanitizeExternalLabels(t *testing.T) {
 	}
 	// run tests
 	for _, tt := range tests {
+		cfg := createDefaultConfig().(*Config)
+		cfg.sanitizeLabel = true
+		cfg.ExternalLabels = tt.inputLabels
 		t.Run(tt.name, func(t *testing.T) {
-			newLabels, err := validateAndSanitizeExternalLabels(tt.inputLabels)
+			newLabels, err := validateAndSanitizeExternalLabels(cfg)
+			if tt.returnErrorOnCreate {
+				assert.Error(t, err)
+				return
+			}
+			assert.EqualValues(t, tt.expectedLabels, newLabels)
+			assert.NoError(t, err)
+		})
+	}
+
+	for _, tt := range testsWithoutSanitizelabel {
+		cfg := createDefaultConfig().(*Config)
+		//disable sanitizeLabel flag
+		cfg.sanitizeLabel = false
+		cfg.ExternalLabels = tt.inputLabels
+		t.Run(tt.name, func(t *testing.T) {
+			newLabels, err := validateAndSanitizeExternalLabels(cfg)
 			if tt.returnErrorOnCreate {
 				assert.Error(t, err)
 				return

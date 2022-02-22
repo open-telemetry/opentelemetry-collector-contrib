@@ -58,6 +58,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/exporter/clickhouseexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/exporter/coralogixexporter"
     schedule:
       interval: "weekly"
@@ -142,6 +146,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/exporter/parquetexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/exporter/prometheusexporter"
     schedule:
       interval: "weekly"
@@ -195,6 +203,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/extension/awsproxy"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/extension/basicauthextension"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -263,6 +275,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/internal/aws/containerinsight"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/internal/aws/cwlogs"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -358,6 +374,14 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/pkg/translator/prometheusremotewrite"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/pkg/translator/signalfx"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/pkg/translator/zipkin"
     schedule:
       interval: "weekly"
@@ -446,6 +470,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/receiver/awsfirehosereceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/receiver/awsxrayreceiver"
     schedule:
       interval: "weekly"
@@ -459,6 +487,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/receiver/collectdreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/couchbasereceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -542,6 +574,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/receiver/mongodbreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/receiver/mysqlreceiver"
     schedule:
       interval: "weekly"
@@ -567,6 +603,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/receiver/prometheusreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/rabbitmqreceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"

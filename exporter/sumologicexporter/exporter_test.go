@@ -32,7 +32,7 @@ import (
 
 func LogRecordsToLogs(records []pdata.LogRecord) pdata.Logs {
 	logs := pdata.NewLogs()
-	logsSlice := logs.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().Logs()
+	logsSlice := logs.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().LogRecords()
 	for _, record := range records {
 		tgt := logsSlice.AppendEmpty()
 		record.CopyTo(tgt)
@@ -50,25 +50,11 @@ func TestInitExporter(t *testing.T) {
 			Timeout:  defaultTimeout,
 			Endpoint: "test_endpoint",
 		},
-	})
+	}, componenttest.NewNopTelemetrySettings())
 	assert.NoError(t, err)
 }
 
-func TestInitExporterInvalidLogFormat(t *testing.T) {
-	_, err := initExporter(&Config{
-		LogFormat:        "test_format",
-		MetricFormat:     "carbon2",
-		CompressEncoding: "gzip",
-		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Timeout:  defaultTimeout,
-			Endpoint: "test_endpoint",
-		},
-	})
-
-	assert.EqualError(t, err, "unexpected log format: test_format")
-}
-
-func TestInitExporterInvalidMetricFormat(t *testing.T) {
+func TestInitExporterInvalidConfig(t *testing.T) {
 	_, err := initExporter(&Config{
 		LogFormat:    "json",
 		MetricFormat: "test_format",
@@ -77,36 +63,9 @@ func TestInitExporterInvalidMetricFormat(t *testing.T) {
 			Endpoint: "test_endpoint",
 		},
 		CompressEncoding: "gzip",
-	})
+	}, componenttest.NewNopTelemetrySettings())
 
 	assert.EqualError(t, err, "unexpected metric format: test_format")
-}
-
-func TestInitExporterInvalidCompressEncoding(t *testing.T) {
-	_, err := initExporter(&Config{
-		LogFormat:        "json",
-		MetricFormat:     "carbon2",
-		CompressEncoding: "test_format",
-		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Timeout:  defaultTimeout,
-			Endpoint: "test_endpoint",
-		},
-	})
-
-	assert.EqualError(t, err, "unexpected compression encoding: test_format")
-}
-
-func TestInitExporterInvalidEndpoint(t *testing.T) {
-	_, err := initExporter(&Config{
-		LogFormat:        "json",
-		MetricFormat:     "carbon2",
-		CompressEncoding: "gzip",
-		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Timeout: defaultTimeout,
-		},
-	})
-
-	assert.EqualError(t, err, "endpoint is not set")
 }
 
 func TestAllSuccess(t *testing.T) {
@@ -140,7 +99,7 @@ func TestResourceMerge(t *testing.T) {
 	test.exp.filter = f
 
 	logs := LogRecordsToLogs(exampleLog())
-	logs.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Attributes().InsertString("key1", "original_value")
+	logs.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(0).Attributes().InsertString("key1", "original_value")
 	logs.ResourceLogs().At(0).Resource().Attributes().InsertString("key1", "overwrite_value")
 	logs.ResourceLogs().At(0).Resource().Attributes().InsertString("key2", "additional_value")
 
@@ -213,7 +172,7 @@ func TestInvalidSourceFormats(t *testing.T) {
 			Endpoint: "test_endpoint",
 		},
 		MetadataAttributes: []string{"[a-z"},
-	})
+	}, componenttest.NewNopTelemetrySettings())
 	assert.EqualError(t, err, "error parsing regexp: missing closing ]: `[a-z`")
 }
 
@@ -228,7 +187,7 @@ func TestInvalidHTTPCLient(t *testing.T) {
 				return nil, errors.New("roundTripperException")
 			},
 		},
-	})
+	}, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 	require.NotNil(t, se)
 

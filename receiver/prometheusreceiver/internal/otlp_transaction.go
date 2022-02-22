@@ -20,8 +20,9 @@ import (
 	"time"
 
 	"github.com/prometheus/common/model"
-	"github.com/prometheus/prometheus/pkg/exemplar"
-	"github.com/prometheus/prometheus/pkg/labels"
+	"github.com/prometheus/prometheus/model/exemplar"
+	"github.com/prometheus/prometheus/model/labels"
+	"github.com/prometheus/prometheus/storage"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
@@ -78,7 +79,7 @@ func newTransactionPdata(ctx context.Context, txc *txConfig) *transactionPdata {
 }
 
 // Append always returns 0 to disable label caching.
-func (t *transactionPdata) Append(ref uint64, labels labels.Labels, atMs int64, value float64) (pointCount uint64, err error) {
+func (t *transactionPdata) Append(ref storage.SeriesRef, labels labels.Labels, atMs int64, value float64) (pointCount storage.SeriesRef, err error) {
 	select {
 	case <-t.ctx.Done():
 		return 0, errTransactionAborted
@@ -99,7 +100,7 @@ func (t *transactionPdata) Append(ref uint64, labels labels.Labels, atMs int64, 
 	return 0, t.metricBuilder.AddDataPoint(labels, atMs, value)
 }
 
-func (t *transactionPdata) AppendExemplar(ref uint64, l labels.Labels, e exemplar.Exemplar) (uint64, error) {
+func (t *transactionPdata) AppendExemplar(ref storage.SeriesRef, l labels.Labels, e exemplar.Exemplar) (storage.SeriesRef, error) {
 	return 0, nil
 }
 

@@ -76,8 +76,8 @@ func SplitLogs(batch pdata.Logs) []pdata.Logs {
 			batches := map[pdata.TraceID]pdata.ResourceLogs{}
 
 			ill := rs.InstrumentationLibraryLogs().At(j)
-			for k := 0; k < ill.Logs().Len(); k++ {
-				log := ill.Logs().At(k)
+			for k := 0; k < ill.LogRecords().Len(); k++ {
+				log := ill.LogRecords().At(k)
 				key := log.TraceID()
 
 				// for the first traceID in the ILL, initialize the map entry
@@ -99,7 +99,7 @@ func SplitLogs(batch pdata.Logs) []pdata.Logs {
 				}
 
 				// there is only one instrumentation library per batch
-				tgt := batches[key].InstrumentationLibraryLogs().At(0).Logs().AppendEmpty()
+				tgt := batches[key].InstrumentationLibraryLogs().At(0).LogRecords().AppendEmpty()
 				log.CopyTo(tgt)
 			}
 		}

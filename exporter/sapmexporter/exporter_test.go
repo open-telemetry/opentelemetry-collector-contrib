@@ -109,7 +109,7 @@ func TestFilterToken(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			traces := buildTestTraces(tt.useToken)
-			batches, err := jaeger.InternalTracesToJaegerProto(traces)
+			batches, err := jaeger.ProtoFromTraces(traces)
 			require.NoError(t, err)
 			assert.Equal(t, tt.useToken, hasToken(batches))
 			filterToken(batches)
@@ -133,7 +133,7 @@ func hasToken(batches []*model.Batch) bool {
 	return false
 }
 
-func buildTestTrace(setIds bool) pdata.Traces {
+func buildTestTrace() pdata.Traces {
 	trace := pdata.NewTraces()
 	trace.ResourceSpans().EnsureCapacity(2)
 	for i := 0; i < 2; i++ {
@@ -148,10 +148,8 @@ func buildTestTrace(setIds bool) pdata.Traces {
 		var spanIDBytes [8]byte
 		rand.Read(traceIDBytes[:])
 		rand.Read(spanIDBytes[:])
-		if setIds {
-			span.SetTraceID(pdata.NewTraceID(traceIDBytes))
-			span.SetSpanID(pdata.NewSpanID(spanIDBytes))
-		}
+		span.SetTraceID(pdata.NewTraceID(traceIDBytes))
+		span.SetSpanID(pdata.NewSpanID(spanIDBytes))
 	}
 	return trace
 }
@@ -160,31 +158,26 @@ func TestSAPMClientTokenUsageAndErrorMarshalling(t *testing.T) {
 	tests := []struct {
 		name                   string
 		accessTokenPassthrough bool
-		translateError         bool
 		sendError              bool
 	}{
 		{
 			name:                   "no error without passthrough",
 			accessTokenPassthrough: false,
-			translateError:         false,
 			sendError:              false,
 		},
 		{
 			name:                   "no error with passthrough",
 			accessTokenPassthrough: true,
-			translateError:         false,
 			sendError:              false,
 		},
 		{
-			name:                   "translate error",
-			accessTokenPassthrough: true,
-			translateError:         true,
-			sendError:              false,
+			name:                   "error without passthrough",
+			accessTokenPassthrough: false,
+			sendError:              true,
 		},
 		{
-			name:                   "sendError",
+			name:                   "error with passthrough",
 			accessTokenPassthrough: true,
-			translateError:         false,
 			sendError:              true,
 		},
 	}
@@ -205,11 +198,7 @@ func TestSAPMClientTokenUsageAndErrorMarshalling(t *testing.T) {
 				tracesReceived = true
 			}))
 			defer func() {
-				if !tt.translateError {
-					assert.True(t, tracesReceived, "Test server never received traces.")
-				} else {
-					assert.False(t, tracesReceived, "Test server received traces when none expected.")
-				}
+				assert.True(t, tracesReceived, "Test server never received traces.")
 			}()
 			defer server.Close()
 
@@ -226,10 +215,10 @@ func TestSAPMClientTokenUsageAndErrorMarshalling(t *testing.T) {
 			assert.Nil(t, err)
 			assert.NotNil(t, se, "failed to create trace exporter")
 
-			trace := buildTestTrace(!tt.translateError)
+			trace := buildTestTrace()
 			err = se.pushTraceData(context.Background(), trace)
 
-			if tt.sendError || tt.translateError {
+			if tt.sendError {
 				require.Error(t, err)
 			} else {
 				require.NoError(t, err)
