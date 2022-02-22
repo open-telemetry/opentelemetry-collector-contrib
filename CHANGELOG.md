@@ -7,6 +7,7 @@
 - Do not drop zero trace/span id spans in the jaeger conversion (#7946)
 - Upgrade to use semantic conventions 1.6.1 (#7926)
 - `dynatraceexporter`: Validate QueueSettings and perform config validation in Validate() instead (#8020)
+- `hostmetricsreceiver`: Add cpu.utilization metrics to cpu scrapper (#7130)
 - `signalfxexporter`: Add validation for `sending_queue` setting (#8026)
 
 ### 🛑 Breaking changes 🛑
@@ -54,7 +55,6 @@
 - `loadbalancingexporter`: Allow non-exist hostname on startup (#7935)
 - `datadogexporter`: Use exact sum, count and average on Datadog distributions (#7830)
 - `storage/filestorage`: add optional compaction to filestorage (#7768)
-- `hostmetricsreceiver`: Add cpu.utilization metrics to cpu scrapper (#6221)
 
 ### 🛑 Breaking changes 🛑
 
