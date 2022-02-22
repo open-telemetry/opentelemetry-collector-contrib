@@ -53,6 +53,72 @@ func TestMetricsConsumerNormal(t *testing.T) {
 	assert.Equal(t, 1, sender.numCloseCalls)
 }
 
+func TestMetricsConsumerNormalWithSourceTag(t *testing.T) {
+	sum := newMetric("sum", pdata.MetricDataTypeSum)
+	mockSumConsumer := &mockTypedMetricConsumer{typ: pdata.MetricDataTypeSum}
+	sender := &mockFlushCloser{}
+	tags := map[string]string{"source": "test_source", "test_key": "test_value"}
+	metrics := constructMetricsWithTags(tags, sum)
+	consumer := newMetricsConsumer(
+		[]typedMetricConsumer{mockSumConsumer}, sender, true)
+
+	assert.NoError(t, consumer.Consume(context.Background(), metrics))
+
+	assert.ElementsMatch(t, []string{"sum"}, mockSumConsumer.names)
+	assert.ElementsMatch(t, []string{"test_source"}, mockSumConsumer.sources)
+
+	if _, ok := mockSumConsumer.attrMaps[0].Get("test_key"); ok {
+	} else {
+		t.Logf("Expecting a tag <test_key>.")
+		t.Fail()
+	}
+
+	if _, ok := mockSumConsumer.attrMaps[0].Get("source"); ok {
+		t.Logf("Not expecting a tag <source>.")
+		t.Fail()
+	}
+
+	assert.Equal(t, 1, mockSumConsumer.pushInternalMetricsCallCount)
+	assert.Equal(t, 1, sender.numFlushCalls)
+	assert.Equal(t, 0, sender.numCloseCalls)
+
+	consumer.Close()
+	assert.Equal(t, 1, sender.numCloseCalls)
+}
+
+func TestMetricsConsumerNormalWithHostnameTag(t *testing.T) {
+	sum := newMetric("sum", pdata.MetricDataTypeSum)
+	mockSumConsumer := &mockTypedMetricConsumer{typ: pdata.MetricDataTypeSum}
+	sender := &mockFlushCloser{}
+	tags := map[string]string{"host.name": "test_host.name", "hostname": "test_hostname"}
+	metrics := constructMetricsWithTags(tags, sum)
+	consumer := newMetricsConsumer(
+		[]typedMetricConsumer{mockSumConsumer}, sender, true)
+
+	assert.NoError(t, consumer.Consume(context.Background(), metrics))
+
+	assert.ElementsMatch(t, []string{"sum"}, mockSumConsumer.names)
+	assert.ElementsMatch(t, []string{"test_host.name"}, mockSumConsumer.sources)
+
+	if _, ok := mockSumConsumer.attrMaps[0].Get("hostname"); ok {
+	} else {
+		t.Logf("Expecting a tag <hostname>.")
+		t.Fail()
+	}
+
+	if _, ok := mockSumConsumer.attrMaps[0].Get("host.name"); ok {
+		t.Logf("Not expecting a tag <host.name>.")
+		t.Fail()
+	}
+
+	assert.Equal(t, 1, mockSumConsumer.pushInternalMetricsCallCount)
+	assert.Equal(t, 1, sender.numFlushCalls)
+	assert.Equal(t, 0, sender.numCloseCalls)
+
+	consumer.Close()
+	assert.Equal(t, 1, sender.numCloseCalls)
+}
+
 func TestMetricsConsumerNone(t *testing.T) {
 	consumer := newMetricsConsumer(nil, nil, true)
 	metrics := constructMetrics()
@@ -1359,6 +1425,22 @@ func constructMetrics(metricList ...pdata.Metric) pdata.Metrics {
 	return result
 }
 
+func constructMetricsWithTags(tags map[string]string, metricList ...pdata.Metric) pdata.Metrics {
+	result := pdata.NewMetrics()
+	result.ResourceMetrics().EnsureCapacity(1)
+	rm := result.ResourceMetrics().AppendEmpty()
+	for key, val := range tags {
+		rm.Resource().Attributes().InsertString(key, val)
+	}
+	rm.InstrumentationLibraryMetrics().EnsureCapacity(1)
+	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+	ilm.Metrics().EnsureCapacity(len(metricList))
+	for _, metric := range metricList {
+		metric.CopyTo(ilm.Metrics().AppendEmpty())
+	}
+	return result
+}
+
 func newMetric(name string, typ pdata.MetricDataType) pdata.Metric {
 	result := pdata.NewMetric()
 	result.SetName(name)
@@ -1492,6 +1574,8 @@ type mockTypedMetricConsumer struct {
 	errorOnConsume               bool
 	errorOnPushInternalMetrics   bool
 	names                        []string
+	attrMaps                     []pdata.AttributeMap
+	sources                      []string
 	pushInternalMetricsCallCount int
 }
 
@@ -1501,6 +1585,8 @@ func (m *mockTypedMetricConsumer) Type() pdata.MetricDataType {
 
 func (m *mockTypedMetricConsumer) Consume(metricInfo metricInfo, errs *[]error) {
 	m.names = append(m.names, metricInfo.Name())
+	m.attrMaps = append(m.attrMaps, metricInfo.Tags)
+	m.sources = append(m.sources, metricInfo.Source)
 	if m.errorOnConsume {
 		*errs = append(*errs, errors.New("error in consume"))
 	}
