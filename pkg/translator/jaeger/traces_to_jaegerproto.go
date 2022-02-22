@@ -23,11 +23,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 )
 
-// Deprecated: [0.45.0] use `jaeger.ProtoToTraces`
-func InternalTracesToJaegerProto(td pdata.Traces) ([]*model.Batch, error) {
-	return ProtoFromTraces(td)
-}
-
 // ProtoFromTraces translates internal trace data into the Jaeger Proto for GRPC.
 // Returns slice of translated Jaeger batches and error if translation failed.
 func ProtoFromTraces(td pdata.Traces) ([]*model.Batch, error) {
