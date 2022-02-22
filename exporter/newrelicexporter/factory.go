@@ -51,12 +51,12 @@ func logDeprecation(logger *zap.Logger) {
 }
 
 func createDefaultConfig() config.Exporter {
-	defaultRetry := exporterhelper.DefaultRetrySettings()
+	defaultRetry := exporterhelper.NewDefaultRetrySettings()
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 
 		CommonConfig: EndpointConfig{
-			TimeoutSettings: exporterhelper.DefaultTimeoutSettings(),
+			TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 			RetrySettings:   defaultRetry,
 		},
 	}

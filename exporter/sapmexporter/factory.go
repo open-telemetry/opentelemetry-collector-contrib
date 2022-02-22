@@ -44,9 +44,9 @@ func createDefaultConfig() config.Exporter {
 		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 			AccessTokenPassthrough: true,
 		},
-		TimeoutSettings: exporterhelper.DefaultTimeoutSettings(),
-		RetrySettings:   exporterhelper.DefaultRetrySettings(),
-		QueueSettings:   exporterhelper.DefaultQueueSettings(),
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 	}
 }
 
