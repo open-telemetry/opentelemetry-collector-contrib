@@ -660,6 +660,174 @@ func Test_histogram_flag_norecordedvalue(t *testing.T) {
 	runScriptPdata(t, NewJobsMapPdata(time.Minute).get("job", "0"), script)
 }
 
+func Test_histogram_flag_norecordedvalue_first_observation(t *testing.T) {
+	m1 := func() *pdata.MetricSlice {
+		metric := pdata.NewMetric()
+		metric.SetName(cd1)
+		metric.SetDataType(pdata.MetricDataTypeHistogram)
+		histogram := metric.Histogram()
+		histogram.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+		destPointL := histogram.DataPoints()
+		dp := destPointL.AppendEmpty()
+		dp.SetTimestamp(pdt1Ms)
+		dp.SetFlags(1)
+		return metricSlice(histogramMetric(cd1, k1v1k2v2, pdt1Ms, &dp))
+	}()
+	m2 := func() *pdata.MetricSlice {
+		metric := pdata.NewMetric()
+		metric.SetName(cd1)
+		metric.SetDataType(pdata.MetricDataTypeHistogram)
+		histogram := metric.Histogram()
+		histogram.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+		destPointL := histogram.DataPoints()
+		dp := destPointL.AppendEmpty()
+		dp.SetTimestamp(pdt2Ms)
+		dp.SetFlags(1)
+		return metricSlice(histogramMetric(cd1, k1v1k2v2, pdt2Ms, &dp))
+	}()
+	script := []*metricsAdjusterTestPdata{
+		{
+			"Histogram: round 1 - initial instance, start time is unknown",
+			m1,
+			m1,
+			1,
+		},
+		{
+			"Histogram: round 2 - instance unchanged",
+			m2,
+			m2,
+			0,
+		},
+	}
+
+	runScriptPdata(t, NewJobsMapPdata(time.Minute).get("job", "0"), script)
+}
+
+func Test_summary_flag_norecordedvalue_first_observation(t *testing.T) {
+	m1 := func() *pdata.MetricSlice {
+		metric := pdata.NewMetric()
+		metric.SetName(cd1)
+		metric.SetDataType(pdata.MetricDataTypeSummary)
+		summary := metric.Summary()
+		destPointL := summary.DataPoints()
+		dp := destPointL.AppendEmpty()
+		dp.SetTimestamp(pdt1Ms)
+		dp.SetFlags(1)
+		return metricSlice(summaryMetric(cd1, k1v1k2v2, pdt1Ms, &dp))
+	}()
+	m2 := func() *pdata.MetricSlice {
+		metric := pdata.NewMetric()
+		metric.SetName(cd1)
+		metric.SetDataType(pdata.MetricDataTypeSummary)
+		summary := metric.Summary()
+		destPointL := summary.DataPoints()
+		dp := destPointL.AppendEmpty()
+		dp.SetTimestamp(pdt2Ms)
+		dp.SetFlags(1)
+		return metricSlice(summaryMetric(cd1, k1v1k2v2, pdt2Ms, &dp))
+	}()
+	script := []*metricsAdjusterTestPdata{
+		{
+			"Summary: round 1 - initial instance, start time is unknown",
+			m1,
+			m1,
+			1,
+		},
+		{
+			"Summary: round 2 - instance unchanged",
+			m2,
+			m2,
+			0,
+		},
+	}
+
+	runScriptPdata(t, NewJobsMapPdata(time.Minute).get("job", "0"), script)
+}
+
+func Test_gauge_flag_norecordedvalue_first_observation(t *testing.T) {
+	m1 := func() *pdata.MetricSlice {
+		metric := pdata.NewMetric()
+		metric.SetName(cd1)
+		metric.SetDataType(pdata.MetricDataTypeGauge)
+		gauge := metric.Gauge()
+		destPointL := gauge.DataPoints()
+		dp := destPointL.AppendEmpty()
+		dp.SetTimestamp(pdt1Ms)
+		dp.SetFlags(1)
+		return metricSlice(gaugeMetric(cd1, k1v1k2v2, pdt1Ms, &dp))
+	}()
+	m2 := func() *pdata.MetricSlice {
+		metric := pdata.NewMetric()
+		metric.SetName(cd1)
+		metric.SetDataType(pdata.MetricDataTypeGauge)
+		gauge := metric.Gauge()
+		destPointL := gauge.DataPoints()
+		dp := destPointL.AppendEmpty()
+		dp.SetTimestamp(pdt2Ms)
+		dp.SetFlags(1)
+		return metricSlice(gaugeMetric(cd1, k1v1k2v2, pdt2Ms, &dp))
+	}()
+	script := []*metricsAdjusterTestPdata{
+		{
+			"Gauge: round 1 - initial instance, start time is unknown",
+			m1,
+			m1,
+			0,
+		},
+		{
+			"Gauge: round 2 - instance unchanged",
+			m2,
+			m2,
+			0,
+		},
+	}
+
+	runScriptPdata(t, NewJobsMapPdata(time.Minute).get("job", "0"), script)
+}
+
+func Test_sum_flag_norecordedvalue_first_observation(t *testing.T) {
+	m1 := func() *pdata.MetricSlice {
+		metric := pdata.NewMetric()
+		metric.SetName(cd1)
+		metric.SetDataType(pdata.MetricDataTypeSum)
+		sum := metric.Sum()
+		sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+		destPointL := sum.DataPoints()
+		dp := destPointL.AppendEmpty()
+		dp.SetTimestamp(pdt1Ms)
+		dp.SetFlags(1)
+		return metricSlice(sumMetric(cd1, k1v1k2v2, pdt1Ms, &dp))
+	}()
+	m2 := func() *pdata.MetricSlice {
+		metric := pdata.NewMetric()
+		metric.SetName(cd1)
+		metric.SetDataType(pdata.MetricDataTypeSum)
+		sum := metric.Sum()
+		sum.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+		destPointL := sum.DataPoints()
+		dp := destPointL.AppendEmpty()
+		dp.SetTimestamp(pdt2Ms)
+		dp.SetFlags(1)
+		return metricSlice(sumMetric(cd1, k1v1k2v2, pdt2Ms, &dp))
+	}()
+	script := []*metricsAdjusterTestPdata{
+		{
+			"Sum: round 1 - initial instance, start time is unknown",
+			m1,
+			m1,
+			1,
+		},
+		{
+			"Sum: round 2 - instance unchanged",
+			m2,
+			m2,
+			0,
+		},
+	}
+
+	runScriptPdata(t, NewJobsMapPdata(time.Minute).get("job", "0"), script)
+}
+
 func Test_multiMetrics_pdata(t *testing.T) {
 	g1 := "gauge1"
 	script := []*metricsAdjusterTestPdata{
