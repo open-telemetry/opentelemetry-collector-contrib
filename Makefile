@@ -80,7 +80,7 @@ golint:
 
 .PHONY: goporto
 goporto:
-	$(MAKE) for-all-target TARGET="porto"
+	porto -w --include-internal --skip-dirs "^cmd$$" ./
 
 .PHONY: for-all
 for-all:

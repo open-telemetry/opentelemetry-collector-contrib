@@ -100,10 +100,6 @@ tidy:
 	rm -fr go.sum
 	$(GOCMD) mod tidy -compat=1.17
 
-.PHONY: porto
-porto:
-	porto -w --include-internal --skip-dirs "^cmd$$" ./
-
 .PHONY: misspell
 misspell:
 	@echo "running $(MISSPELL)"
