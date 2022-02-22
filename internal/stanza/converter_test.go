@@ -58,8 +58,8 @@ func complexEntriesForNDifferentHosts(count int, n int) []*entry.Entry {
 	for i := 0; i < count; i++ {
 		e := entry.New()
 		e.Severity = entry.Error
-		e.AddResourceKey("type", "global")
-		e.Resource = map[string]string{
+		e.Resource = map[string]interface{}{ // TODO
+			"type": "global",
 			"host": fmt.Sprintf("host-%d", i%n),
 		}
 		e.Body = map[string]interface{}{
@@ -92,8 +92,18 @@ func complexEntry() *entry.Entry {
 	e := entry.New()
 	e.Severity = entry.Error
 	e.AddResourceKey("type", "global")
-	e.AddAttribute("one", "two")
-	e.AddAttribute("two", "three")
+	e.Attributes = map[string]interface{}{
+		"bool":   true,
+		"int":    123,
+		"double": 12.34,
+		"string": "hello",
+		"object": map[string]interface{}{
+			"bool":   true,
+			"int":    123,
+			"double": 12.34,
+			"string": "hello",
+		},
+	}
 	e.Body = map[string]interface{}{
 		"bool":   true,
 		"int":    123,
@@ -123,8 +133,13 @@ func TestConvert(t *testing.T) {
 		e := entry.New()
 		e.Severity = entry.Error
 		e.AddResourceKey("type", "global")
-		e.AddAttribute("one", "two")
-		e.AddAttribute("two", "three")
+		e.Attributes = map[string]interface{}{
+			"bool":   true,
+			"int":    123,
+			"double": 12.34,
+			"string": "hello",
+			"object": map[string]interface{}{},
+		}
 		e.Body = map[string]interface{}{
 			"bool":   true,
 			"int":    123,
@@ -159,10 +174,13 @@ func TestConvert(t *testing.T) {
 	assert.Equal(t, pdata.SeverityNumberERROR, lr.SeverityNumber())
 	assert.Equal(t, "Error", lr.SeverityText())
 
-	if atts := lr.Attributes(); assert.Equal(t, 2, atts.Len()) {
+	if atts := lr.Attributes(); assert.Equal(t, 5, atts.Len()) {
 		m := pdata.NewAttributeMap()
-		m.InsertString("one", "two")
-		m.InsertString("two", "three")
+		m.InsertBool("bool", true)
+		m.InsertInt("int", 123)
+		m.InsertDouble("double", 12.34)
+		m.InsertString("string", "hello")
+		m.Insert("object", pdata.NewAttributeValueMap())
 		assert.EqualValues(t, m.Sort(), atts.Sort())
 	}
 
@@ -299,16 +317,62 @@ func TestConvertMetadata(t *testing.T) {
 	e.Timestamp = now
 	e.Severity = entry.Error
 	e.AddResourceKey("type", "global")
-	e.AddAttribute("one", "two")
+	e.Attributes = map[string]interface{}{
+		"bool":   true,
+		"int":    123,
+		"double": 12.34,
+		"string": "hello",
+		"object": map[string]interface{}{
+			"bool":   true,
+			"int":    123,
+			"double": 12.34,
+			"string": "hello",
+		},
+	}
 	e.Body = true
 
 	result := convert(e)
 
 	atts := result.Attributes()
-	require.Equal(t, 1, atts.Len(), "expected 1 attribute")
-	attVal, ok := atts.Get("one")
-	require.True(t, ok, "expected label with key 'one'")
-	require.Equal(t, "two", attVal.StringVal(), "expected label to have value 'two'")
+	require.Equal(t, 5, atts.Len())
+
+	attVal, ok := atts.Get("bool")
+	require.True(t, ok)
+	require.True(t, attVal.BoolVal())
+
+	attVal, ok = atts.Get("int")
+	require.True(t, ok)
+	require.Equal(t, int64(123), attVal.IntVal())
+
+	attVal, ok = atts.Get("double")
+	require.True(t, ok)
+	require.Equal(t, 12.34, attVal.DoubleVal())
+
+	attVal, ok = atts.Get("string")
+	require.True(t, ok)
+	require.Equal(t, "hello", attVal.StringVal())
+
+	attVal, ok = atts.Get("object")
+	require.True(t, ok)
+
+	mapVal := attVal.MapVal()
+	require.Equal(t, 4, mapVal.Len())
+
+	attVal, ok = mapVal.Get("bool")
+	require.True(t, ok)
+	require.True(t, attVal.BoolVal())
+
+	attVal, ok = mapVal.Get("int")
+	require.True(t, ok)
+	require.Equal(t, int64(123), attVal.IntVal())
+
+	attVal, ok = mapVal.Get("double")
+	require.True(t, ok)
+	require.Equal(t, 12.34, attVal.DoubleVal())
+
+	attVal, ok = mapVal.Get("string")
+	require.True(t, ok)
+	require.Equal(t, "hello", attVal.StringVal())
 
 	bod := result.Body()
 	require.Equal(t, pdata.AttributeValueTypeBool, bod.Type())
@@ -630,7 +694,7 @@ func BenchmarkGetResourceID(b *testing.B) {
 }
 
 func BenchmarkGetResourceIDEmptyResource(b *testing.B) {
-	res := map[string]string{}
+	res := map[string]interface{}{}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		getResourceID(res)
@@ -638,7 +702,7 @@ func BenchmarkGetResourceIDEmptyResource(b *testing.B) {
 }
 
 func BenchmarkGetResourceIDSingleResource(b *testing.B) {
-	res := map[string]string{
+	res := map[string]interface{}{
 		"resource": "value",
 	}
 	b.ResetTimer()
@@ -647,8 +711,8 @@ func BenchmarkGetResourceIDSingleResource(b *testing.B) {
 	}
 }
 
-func getResource() map[string]string {
-	return map[string]string{
+func getResource() map[string]interface{} {
+	return map[string]interface{}{
 		"file.name":        "filename.log",
 		"file.directory":   "/some_directory",
 		"host.name":        "localhost",
@@ -682,7 +746,7 @@ func (r resourceIDOutputSlice) Swap(i, j int) {
 func TestGetResourceID(t *testing.T) {
 	testCases := []struct {
 		name  string
-		input map[string]string
+		input map[string]interface{}
 	}{
 		{
 			name:  "Typical Resource",
@@ -690,28 +754,28 @@ func TestGetResourceID(t *testing.T) {
 		},
 		{
 			name: "Empty value/key",
-			input: map[string]string{
+			input: map[string]interface{}{
 				"SomeKey": "",
 				"":        "Ooops",
 			},
 		},
 		{
 			name: "Empty value/key (reversed)",
-			input: map[string]string{
+			input: map[string]interface{}{
 				"":      "SomeKey",
 				"Ooops": "",
 			},
 		},
 		{
 			name: "Ambiguous map 1",
-			input: map[string]string{
+			input: map[string]interface{}{
 				"AB": "CD",
 				"EF": "G",
 			},
 		},
 		{
 			name: "Ambiguous map 2",
-			input: map[string]string{
+			input: map[string]interface{}{
 				"ABC": "DE",
 				"F":   "G",
 			},
@@ -722,7 +786,7 @@ func TestGetResourceID(t *testing.T) {
 		},
 		{
 			name: "Long resource value",
-			input: map[string]string{
+			input: map[string]interface{}{
 				"key": "This is a really long resource value; It's so long that the internal pre-allocated buffer doesn't hold it.",
 			},
 		},
@@ -747,6 +811,6 @@ func TestGetResourceID(t *testing.T) {
 
 func TestGetResourceIDEmptyAndNilAreEqual(t *testing.T) {
 	nilID := getResourceID(nil)
-	emptyID := getResourceID(map[string]string{})
+	emptyID := getResourceID(map[string]interface{}{})
 	require.Equal(t, nilID, emptyID)
 }
