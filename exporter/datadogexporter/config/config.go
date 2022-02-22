@@ -27,18 +27,12 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/valid"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/translator"
 )
 
 var (
 	errUnsetAPIKey = errors.New("api.key is not set")
 	errNoMetadata  = errors.New("only_metadata can't be enabled when send_metadata or use_resource_metadata is disabled")
-)
-
-// TODO: Import these from translator when we eliminate cyclic dependency.
-const (
-	histogramModeNoBuckets     = "nobuckets"
-	histogramModeCounters      = "counters"
-	histogramModeDistributions = "distributions"
 )
 
 const (
@@ -109,7 +103,7 @@ type HistogramConfig struct {
 }
 
 func (c *HistogramConfig) validate() error {
-	if c.Mode == histogramModeNoBuckets && !c.SendCountSum {
+	if c.Mode == string(translator.HistogramModeNoBuckets) && !c.SendCountSum {
 		return fmt.Errorf("'nobuckets' mode and `send_count_sum_metrics` set to false will send no histogram metrics")
 	}
 	return nil
@@ -345,11 +339,12 @@ func (c *Config) Unmarshal(configMap *config.Map) error {
 		return err
 	}
 
-	switch c.Metrics.HistConfig.Mode {
-	case histogramModeCounters, histogramModeNoBuckets, histogramModeDistributions:
+	mode := translator.HistogramMode(c.Metrics.HistConfig.Mode)
+	switch mode {
+	case translator.HistogramModeCounters, translator.HistogramModeNoBuckets, translator.HistogramModeDistributions:
 		// Do nothing
 	default:
-		return fmt.Errorf("invalid `mode` %s", c.Metrics.HistConfig.Mode)
+		return fmt.Errorf("invalid `mode` %q", c.Metrics.HistConfig.Mode)
 	}
 
 	return nil

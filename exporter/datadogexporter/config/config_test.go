@@ -19,6 +19,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.uber.org/zap"
 )
@@ -189,4 +190,48 @@ func TestSpanNameRemappingsValidation(t *testing.T) {
 	err := invalidCfg.Validate()
 	require.NoError(t, noErr)
 	require.Error(t, err)
+}
+
+func TestUnmarshal(t *testing.T) {
+	tests := []struct {
+		name   string
+		cfgMap map[string]interface{}
+		cfg    Config
+		err    string
+	}{
+		{
+			name: "invalid mode",
+			cfgMap: map[string]interface{}{
+				"metrics": map[string]interface{}{
+					"histograms": map[string]interface{}{
+						"mode": "invalidmode",
+					},
+				},
+			},
+			err: "invalid `mode` \"invalidmode\"",
+		},
+		{
+			name: "invalid mode",
+			cfgMap: map[string]interface{}{
+				"metrics": map[string]interface{}{
+					"histograms": map[string]interface{}{
+						"mode": "nobuckets",
+					},
+				},
+			},
+			cfg: Config{Metrics: MetricsConfig{HistConfig: HistogramConfig{Mode: "nobuckets"}}},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := Config{}
+			err := cfg.Unmarshal(config.NewMapFromStringMap(test.cfgMap))
+			if err != nil || test.err != "" {
+				assert.EqualError(t, err, test.err)
+			} else {
+				assert.Equal(t, cfg, test.cfg)
+			}
+		})
+	}
 }
