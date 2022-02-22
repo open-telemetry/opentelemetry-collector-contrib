@@ -109,12 +109,12 @@ func (c *metricsConsumer) Consume(ctx context.Context, md pdata.Metrics) error {
 			ms := ilms.At(j).Metrics()
 			for k := 0; k < ms.Len(); k++ {
 				m := ms.At(k)
-				metricInfo := metricInfo{m, source, resourceTags}
+				mi := metricInfo{m, source, resourceTags}
 				select {
 				case <-ctx.Done():
 					return multierr.Combine(append(errs, errors.New("context canceled"))...)
 				default:
-					c.pushSingleMetric(metricInfo, &errs)
+					c.pushSingleMetric(mi, &errs)
 				}
 			}
 		}
@@ -144,15 +144,15 @@ func (c *metricsConsumer) pushInternalMetrics(errs *[]error) {
 	}
 }
 
-func (c *metricsConsumer) pushSingleMetric(metricInfo metricInfo, errs *[]error) {
-	dataType := metricInfo.DataType()
+func (c *metricsConsumer) pushSingleMetric(mi metricInfo, errs *[]error) {
+	dataType := mi.DataType()
 	consumer := c.consumerMap[dataType]
 	if consumer == nil {
 		*errs = append(
 			*errs, fmt.Errorf("no support for metric type %v", dataType))
 
 	} else {
-		consumer.Consume(metricInfo, errs)
+		consumer.Consume(mi, errs)
 	}
 }
 
@@ -164,7 +164,7 @@ type typedMetricConsumer interface {
 	Type() pdata.MetricDataType
 
 	// Consume consumes the metric and appends any errors encountered to errs
-	Consume(metricInfo metricInfo, errs *[]error)
+	Consume(mi metricInfo, errs *[]error)
 
 	// PushInternalMetrics sends internal metrics for this consumer to tanzu observability
 	// and appends any errors encountered to errs. The Consume method of metricsConsumer calls
@@ -233,15 +233,15 @@ func getValue(numberDataPoint pdata.NumberDataPoint) (float64, error) {
 // of the metric. Any errors get appended to errs. sender is what sends the
 // gauge metric to tanzu observability. settings logs problems. missingValues
 // keeps track of metrics with missing values.
-func pushGaugeNumberDataPoint(metricInfo metricInfo, numberDataPoint pdata.NumberDataPoint, errs *[]error, sender gaugeSender, settings component.TelemetrySettings, missingValues *counter) {
-	tags := attributesToTags(metricInfo.Tags, numberDataPoint.Attributes())
+func pushGaugeNumberDataPoint(mi metricInfo, numberDataPoint pdata.NumberDataPoint, errs *[]error, sender gaugeSender, settings component.TelemetrySettings, missingValues *counter) {
+	tags := attributesToTags(mi.Tags, numberDataPoint.Attributes())
 	ts := numberDataPoint.Timestamp().AsTime().Unix()
 	value, err := getValue(numberDataPoint)
 	if err != nil {
-		logMissingValue(metricInfo.Metric, settings, missingValues)
+		logMissingValue(mi.Metric, settings, missingValues)
 		return
 	}
-	err = sender.SendMetric(metricInfo.Name(), value, ts, metricInfo.Source, tags)
+	err = sender.SendMetric(mi.Name(), value, ts, mi.Source, tags)
 	if err != nil {
 		*errs = append(*errs, err)
 	}
@@ -272,12 +272,12 @@ func (g *gaugeConsumer) Type() pdata.MetricDataType {
 	return pdata.MetricDataTypeGauge
 }
 
-func (g *gaugeConsumer) Consume(metricInfo metricInfo, errs *[]error) {
-	gauge := metricInfo.Gauge()
+func (g *gaugeConsumer) Consume(mi metricInfo, errs *[]error) {
+	gauge := mi.Gauge()
 	numberDataPoints := gauge.DataPoints()
 	for i := 0; i < numberDataPoints.Len(); i++ {
 		pushGaugeNumberDataPoint(
-			metricInfo,
+			mi,
 			numberDataPoints.At(i),
 			errs,
 			g.sender,
@@ -310,19 +310,19 @@ func (s *sumConsumer) Type() pdata.MetricDataType {
 	return pdata.MetricDataTypeSum
 }
 
-func (s *sumConsumer) Consume(metricInfo metricInfo, errs *[]error) {
-	sum := metricInfo.Sum()
+func (s *sumConsumer) Consume(mi metricInfo, errs *[]error) {
+	sum := mi.Sum()
 	isDelta := sum.AggregationTemporality() == pdata.MetricAggregationTemporalityDelta
 	numberDataPoints := sum.DataPoints()
 	for i := 0; i < numberDataPoints.Len(); i++ {
-		// If sum metricInfo is a delta type, send it to tanzu observability as a
+		// If sum mi is a delta type, send it to tanzu observability as a
 		// delta counter. Otherwise, send it to tanzu observability as a gauge
-		// metricInfo.
+		// mi.
 		if isDelta {
-			s.pushNumberDataPoint(metricInfo, numberDataPoints.At(i), errs)
+			s.pushNumberDataPoint(mi, numberDataPoints.At(i), errs)
 		} else {
 			pushGaugeNumberDataPoint(
-				metricInfo, numberDataPoints.At(i), errs, s.sender, s.settings, &s.missingValues)
+				mi, numberDataPoints.At(i), errs, s.sender, s.settings, &s.missingValues)
 		}
 	}
 }
@@ -331,14 +331,14 @@ func (s *sumConsumer) PushInternalMetrics(errs *[]error) {
 	s.missingValues.Report(missingValueMetricName, typeIsSumTags, s.sender, errs)
 }
 
-func (s *sumConsumer) pushNumberDataPoint(metricInfo metricInfo, numberDataPoint pdata.NumberDataPoint, errs *[]error) {
-	tags := attributesToTags(metricInfo.Tags, numberDataPoint.Attributes())
+func (s *sumConsumer) pushNumberDataPoint(mi metricInfo, numberDataPoint pdata.NumberDataPoint, errs *[]error) {
+	tags := attributesToTags(mi.Tags, numberDataPoint.Attributes())
 	value, err := getValue(numberDataPoint)
 	if err != nil {
-		logMissingValue(metricInfo.Metric, s.settings, &s.missingValues)
+		logMissingValue(mi.Metric, s.settings, &s.missingValues)
 		return
 	}
-	err = s.sender.SendDeltaCounter(metricInfo.Name(), value, metricInfo.Source, tags)
+	err = s.sender.SendDeltaCounter(mi.Name(), value, mi.Source, tags)
 	if err != nil {
 		*errs = append(*errs, err)
 	}
@@ -422,8 +422,8 @@ func (h *histogramConsumer) Type() pdata.MetricDataType {
 	return h.spec.Type()
 }
 
-func (h *histogramConsumer) Consume(metricInfo metricInfo, errs *[]error) {
-	aHistogram := h.spec.AsHistogram(metricInfo.Metric)
+func (h *histogramConsumer) Consume(mi metricInfo, errs *[]error) {
+	aHistogram := h.spec.AsHistogram(mi.Metric)
 	aggregationTemporality := aHistogram.AggregationTemporality()
 	var consumer histogramDataPointConsumer
 	switch aggregationTemporality {
@@ -432,12 +432,12 @@ func (h *histogramConsumer) Consume(metricInfo metricInfo, errs *[]error) {
 	case pdata.MetricAggregationTemporalityCumulative:
 		consumer = h.cumulative
 	default:
-		h.reporting.LogNoAggregationTemporality(metricInfo.Metric)
+		h.reporting.LogNoAggregationTemporality(mi.Metric)
 		return
 	}
 	length := aHistogram.Len()
 	for i := 0; i < length; i++ {
-		consumer.Consume(metricInfo, aHistogram.At(i), errs, h.reporting)
+		consumer.Consume(mi, aHistogram.At(i), errs, h.reporting)
 	}
 }
 
@@ -452,7 +452,7 @@ type histogramDataPointConsumer interface {
 	// Consume consumes the histogram data point.
 	// metric is the enclosing metric; histogram is the histogram data point;
 	// errors get appended to errs; reporting keeps track of special situations
-	Consume(metricInfo metricInfo, histogram histogramDataPoint, errs *[]error, reporting *histogramReporting)
+	Consume(mi metricInfo, histogram histogramDataPoint, errs *[]error, reporting *histogramReporting)
 }
 
 type cumulativeHistogramDataPointConsumer struct {
@@ -465,14 +465,14 @@ func newCumulativeHistogramDataPointConsumer(sender gaugeSender) histogramDataPo
 	return &cumulativeHistogramDataPointConsumer{sender: sender}
 }
 
-func (c *cumulativeHistogramDataPointConsumer) Consume(metricInfo metricInfo, histogram histogramDataPoint, errs *[]error, reporting *histogramReporting) {
-	name := metricInfo.Name()
-	tags := attributesToTags(metricInfo.Tags, histogram.Attributes())
+func (c *cumulativeHistogramDataPointConsumer) Consume(mi metricInfo, histogram histogramDataPoint, errs *[]error, reporting *histogramReporting) {
+	name := mi.Name()
+	tags := attributesToTags(mi.Tags, histogram.Attributes())
 	ts := histogram.Timestamp().AsTime().Unix()
 	explicitBounds := histogram.ExplicitBounds()
 	bucketCounts := histogram.BucketCounts()
 	if len(bucketCounts) != len(explicitBounds)+1 {
-		reporting.LogMalformed(metricInfo.Metric)
+		reporting.LogMalformed(mi.Metric)
 		return
 	}
 	if leTag, ok := tags["le"]; ok {
@@ -482,7 +482,7 @@ func (c *cumulativeHistogramDataPointConsumer) Consume(metricInfo metricInfo, hi
 	for i := range bucketCounts {
 		tags["le"] = leTagValue(explicitBounds, i)
 		leCount += bucketCounts[i]
-		err := c.sender.SendMetric(name, float64(leCount), ts, metricInfo.Source, tags)
+		err := c.sender.SendMetric(name, float64(leCount), ts, mi.Source, tags)
 		if err != nil {
 			*errs = append(*errs, err)
 		}
@@ -507,14 +507,14 @@ func newDeltaHistogramDataPointConsumer(
 	return &deltaHistogramDataPointConsumer{sender: sender}
 }
 
-func (d *deltaHistogramDataPointConsumer) Consume(metricInfo metricInfo, his histogramDataPoint, errs *[]error, reporting *histogramReporting) {
-	name := metricInfo.Name()
-	tags := attributesToTags(metricInfo.Tags, his.Attributes())
+func (d *deltaHistogramDataPointConsumer) Consume(mi metricInfo, his histogramDataPoint, errs *[]error, reporting *histogramReporting) {
+	name := mi.Name()
+	tags := attributesToTags(mi.Tags, his.Attributes())
 	ts := his.Timestamp().AsTime().Unix()
 	explicitBounds := his.ExplicitBounds()
 	bucketCounts := his.BucketCounts()
 	if len(bucketCounts) != len(explicitBounds)+1 {
-		reporting.LogMalformed(metricInfo.Metric)
+		reporting.LogMalformed(mi.Metric)
 		return
 	}
 	centroids := make([]histogram.Centroid, len(bucketCounts))
@@ -522,7 +522,7 @@ func (d *deltaHistogramDataPointConsumer) Consume(metricInfo metricInfo, his his
 		centroids[i] = histogram.Centroid{
 			Value: centroidValue(explicitBounds, i), Count: int(bucketCounts[i])}
 	}
-	err := d.sender.SendDistribution(name, centroids, allGranularity, ts, metricInfo.Source, tags)
+	err := d.sender.SendDistribution(name, centroids, allGranularity, ts, mi.Source, tags)
 	if err != nil {
 		*errs = append(*errs, err)
 	}
@@ -617,11 +617,11 @@ func (s *summaryConsumer) Type() pdata.MetricDataType {
 	return pdata.MetricDataTypeSummary
 }
 
-func (s *summaryConsumer) Consume(metricInfo metricInfo, errs *[]error) {
-	summary := metricInfo.Summary()
+func (s *summaryConsumer) Consume(mi metricInfo, errs *[]error) {
+	summary := mi.Summary()
 	summaryDataPoints := summary.DataPoints()
 	for i := 0; i < summaryDataPoints.Len(); i++ {
-		s.sendSummaryDataPoint(metricInfo, summaryDataPoints.At(i), errs)
+		s.sendSummaryDataPoint(mi, summaryDataPoints.At(i), errs)
 	}
 }
 
@@ -630,10 +630,10 @@ func (*summaryConsumer) PushInternalMetrics(*[]error) {
 	// Do nothing
 }
 
-func (s *summaryConsumer) sendSummaryDataPoint(metricInfo metricInfo, summaryDataPoint pdata.SummaryDataPoint, errs *[]error) {
-	name := metricInfo.Name()
+func (s *summaryConsumer) sendSummaryDataPoint(mi metricInfo, summaryDataPoint pdata.SummaryDataPoint, errs *[]error) {
+	name := mi.Name()
 	ts := summaryDataPoint.Timestamp().AsTime().Unix()
-	tags := attributesToTags(metricInfo.Tags, summaryDataPoint.Attributes())
+	tags := attributesToTags(mi.Tags, summaryDataPoint.Attributes())
 	count := summaryDataPoint.Count()
 	sum := summaryDataPoint.Sum()
 
@@ -641,13 +641,13 @@ func (s *summaryConsumer) sendSummaryDataPoint(metricInfo metricInfo, summaryDat
 		tags["_quantile"] = quantileTag
 		delete(tags, "quantile")
 	}
-	s.sendMetric(name+"_count", float64(count), ts, tags, errs, metricInfo.Source)
-	s.sendMetric(name+"_sum", sum, ts, tags, errs, metricInfo.Source)
+	s.sendMetric(name+"_count", float64(count), ts, tags, errs, mi.Source)
+	s.sendMetric(name+"_sum", sum, ts, tags, errs, mi.Source)
 	quantileValues := summaryDataPoint.QuantileValues()
 	for i := 0; i < quantileValues.Len(); i++ {
 		quantileValue := quantileValues.At(i)
 		tags["quantile"] = quantileTagValue(quantileValue.Quantile())
-		s.sendMetric(name, quantileValue.Value(), ts, tags, errs, metricInfo.Source)
+		s.sendMetric(name, quantileValue.Value(), ts, tags, errs, mi.Source)
 	}
 }
 
