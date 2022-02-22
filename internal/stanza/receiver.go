@@ -122,11 +122,11 @@ func (r *receiver) consumerLoop(ctx context.Context) {
 			return
 
 		case pLogs, ok := <-pLogsChan:
-			obsrecvCtx := r.obsrecv.StartLogsOp(ctx)
 			if !ok {
 				r.logger.Debug("Converter channel got closed")
 				continue
 			}
+			obsrecvCtx := r.obsrecv.StartLogsOp(ctx)
 			cErr := r.consumer.ConsumeLogs(ctx, pLogs)
 			if cErr != nil {
 				r.logger.Error("ConsumeLogs() failed", zap.Error(cErr))
