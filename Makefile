@@ -51,8 +51,14 @@ clean:
 .PHONY: tidy
 tidy:
 	$(MAKE) for-all CMD="rm -fr go.sum"
-	$(MAKE) for-all CMD="go mod tidy -go=1.16"
-	$(MAKE) for-all CMD="go mod tidy -go=1.17"
+	$(MAKE) for-all CMD="go mod tidy -compat=1.17"
+
+.PHONY: mod-update-only
+mod-update-only:
+	$(MAKE) for-all CMD="go get -u ./..."
+
+.PHONY: mod-update
+mod-update: mod-update-only tidy
 
 .PHONY: listmod
 listmod:
