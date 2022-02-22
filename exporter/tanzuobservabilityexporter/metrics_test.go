@@ -17,6 +17,7 @@ package tanzuobservabilityexporter
 import (
 	"context"
 	"errors"
+	"sort"
 	"testing"
 	"time"
 
@@ -67,16 +68,8 @@ func TestMetricsConsumerNormalWithSourceTag(t *testing.T) {
 	assert.ElementsMatch(t, []string{"sum"}, mockSumConsumer.names)
 	assert.ElementsMatch(t, []string{"test_source"}, mockSumConsumer.sources)
 
-	if _, ok := mockSumConsumer.attrMaps[0].Get("test_key"); ok {
-	} else {
-		t.Logf("Expecting a tag <test_key>.")
-		t.Fail()
-	}
-
-	if _, ok := mockSumConsumer.attrMaps[0].Get("source"); ok {
-		t.Logf("Not expecting a tag <source>.")
-		t.Fail()
-	}
+	assert.True(t, containsStr(mockSumConsumer.attrMaps, "test_key:test_value"))
+	assert.False(t, containsStr(mockSumConsumer.attrMaps, "source:test_source"))
 
 	assert.Equal(t, 1, mockSumConsumer.pushInternalMetricsCallCount)
 	assert.Equal(t, 1, sender.numFlushCalls)
@@ -99,17 +92,8 @@ func TestMetricsConsumerNormalWithHostnameTag(t *testing.T) {
 
 	assert.ElementsMatch(t, []string{"sum"}, mockSumConsumer.names)
 	assert.ElementsMatch(t, []string{"test_host.name"}, mockSumConsumer.sources)
-
-	if _, ok := mockSumConsumer.attrMaps[0].Get("hostname"); ok {
-	} else {
-		t.Logf("Expecting a tag <hostname>.")
-		t.Fail()
-	}
-
-	if _, ok := mockSumConsumer.attrMaps[0].Get("host.name"); ok {
-		t.Logf("Not expecting a tag <host.name>.")
-		t.Fail()
-	}
+	assert.True(t, containsStr(mockSumConsumer.attrMaps, "hostname:test_hostname"))
+	assert.False(t, containsStr(mockSumConsumer.attrMaps, "host.name:test_host.name"))
 
 	assert.Equal(t, 1, mockSumConsumer.pushInternalMetricsCallCount)
 	assert.Equal(t, 1, sender.numFlushCalls)
@@ -117,6 +101,11 @@ func TestMetricsConsumerNormalWithHostnameTag(t *testing.T) {
 
 	consumer.Close()
 	assert.Equal(t, 1, sender.numCloseCalls)
+}
+
+func containsStr(s []string, searchStr string) bool {
+	i := sort.SearchStrings(s, searchStr)
+	return i < len(s) && s[i] == searchStr
 }
 
 func TestMetricsConsumerNone(t *testing.T) {
@@ -1574,7 +1563,7 @@ type mockTypedMetricConsumer struct {
 	errorOnConsume               bool
 	errorOnPushInternalMetrics   bool
 	names                        []string
-	attrMaps                     []pdata.AttributeMap
+	attrMaps                     []string
 	sources                      []string
 	pushInternalMetricsCallCount int
 }
@@ -1585,7 +1574,11 @@ func (m *mockTypedMetricConsumer) Type() pdata.MetricDataType {
 
 func (m *mockTypedMetricConsumer) Consume(metricInfo metricInfo, errs *[]error) {
 	m.names = append(m.names, metricInfo.Name())
-	m.attrMaps = append(m.attrMaps, metricInfo.Tags)
+
+	for key, val := range metricInfo.Tags.AsRaw() {
+		m.attrMaps = append(m.attrMaps, key+":"+val.(string))
+	}
+
 	m.sources = append(m.sources, metricInfo.Source)
 	if m.errorOnConsume {
 		*errs = append(*errs, errors.New("error in consume"))
