@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/open-telemetry/opentelemetry-log-collection/agent"
+	"github.com/open-telemetry/opentelemetry-log-collection/pipeline"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
@@ -34,7 +34,7 @@ type receiver struct {
 	wg     sync.WaitGroup
 	cancel context.CancelFunc
 
-	agent         *agent.LogAgent
+	pipe          pipeline.Pipeline
 	emitter       *LogEmitter
 	consumer      consumer.Logs
 	storageClient storage.Client
@@ -56,7 +56,7 @@ func (r *receiver) Start(ctx context.Context, host component.Host) error {
 		return fmt.Errorf("storage client: %s", setErr)
 	}
 
-	if obsErr := r.agent.Start(r.getPersister()); obsErr != nil {
+	if obsErr := r.pipe.Start(r.getPersister()); obsErr != nil {
 		return fmt.Errorf("start stanza: %s", obsErr)
 	}
 
@@ -139,11 +139,11 @@ func (r *receiver) consumerLoop(ctx context.Context) {
 // Shutdown is invoked during service shutdown
 func (r *receiver) Shutdown(ctx context.Context) error {
 	r.logger.Info("Stopping stanza receiver")
-	agentErr := r.agent.Stop()
+	pipelineErr := r.pipe.Stop()
 	r.converter.Stop()
 	r.cancel()
 	r.wg.Wait()
 
 	clientErr := r.storageClient.Close(ctx)
-	return multierr.Combine(agentErr, clientErr)
+	return multierr.Combine(pipelineErr, clientErr)
 }
