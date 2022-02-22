@@ -56,7 +56,7 @@ func TestLoadConfig(t *testing.T) {
 	cfgComplete := &Config{
 		Config: prw.Config{
 			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "2")),
-			TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
+			TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
 			RetrySettings: exporterhelper.RetrySettings{
 				Enabled:         true,
 				InitialInterval: 10 * time.Second,

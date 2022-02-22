@@ -44,8 +44,8 @@ func createDefaultConfig() config.Exporter {
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 
 		// Default settings inherited from exporter helper
-		QueueSettings: exporterhelper.DefaultQueueSettings(),
-		RetrySettings: exporterhelper.DefaultRetrySettings(),
+		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+		RetrySettings: exporterhelper.NewDefaultRetrySettings(),
 
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Headers: map[string]string{},

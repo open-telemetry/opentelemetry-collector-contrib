@@ -44,8 +44,8 @@ func createDefaultConfig() config.Exporter {
 	}
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(exporterType)),
-		QueueSettings:    exporterhelper.DefaultQueueSettings(),
-		RetrySettings:    exporterhelper.DefaultRetrySettings(),
+		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
+		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
 		Traces:           tracesCfg,
 		Metrics:          metricsCfg,
 	}

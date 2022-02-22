@@ -45,8 +45,8 @@ func createDefaultConfig() config.Exporter {
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
 			WriteBufferSize: 512 * 1024,
 		},
-		RetrySettings: exporterhelper.DefaultRetrySettings(),
-		QueueSettings: exporterhelper.DefaultQueueSettings(),
+		RetrySettings: exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 		TenantID:      "",
 		Format:        "body",
 		Labels: LabelsConfig{

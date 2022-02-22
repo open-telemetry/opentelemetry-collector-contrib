@@ -6,6 +6,7 @@
 
 
 - `internal/stanza` : Export metrics from Stanza receivers (#8025)
+- `hostreceiver/pagingscraper`: Migrate the scraper to the mdatagen metrics builder (#7139)
 - Do not drop zero trace/span id spans in the jaeger conversion (#7946)
 - Upgrade to use semantic conventions 1.6.1 (#7926)
 - `dynatraceexporter`: Validate QueueSettings and perform config validation in Validate() instead (#8020)
@@ -18,6 +19,8 @@
 ### 🚩 Deprecations 🚩
 
 ### 🧰 Bug fixes 🧰
+
+- `prometheusreceiver`: Fix segfault that can occur after receiving stale metrics (#8056)
 
 ### 🚀 New components 🚀
 
@@ -70,6 +73,16 @@
     the direct pipeline is the only remaining pipeline.
 - `translator/jaeger`: Cleanup jaeger translator function names (#7775)
   - Deprecate old funcs with Internal word.
+- `mysqlreceiver`: Update data model and names for several metrics (#7924)
+  - Change all metrics to Int values
+  - Remove `mysql.buffer_pool_pages`. Replace with:
+    - `mysql.buffer_pool.pages`
+    - `mysql.buffer_pool.data_pages`
+    - `mysql.buffer_pool.page_flushes`
+  - Remove `mysql.buffer_pool_size`. Replace with:
+    - `mysql.buffer_pool.limit`
+    - `mysql.buffer_pool.usage`
+  - Rename `mysql.buffer_pool_operations` to `mysql.buffer_pool.operations`
 
 ### 🚩 Deprecations 🚩
 

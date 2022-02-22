@@ -85,7 +85,7 @@ func TestLoadConfig(t *testing.T) {
 				return cfg
 			})(),
 			processesscraper.TypeStr: &processesscraper.Config{},
-			pagingscraper.TypeStr:    &pagingscraper.Config{},
+			pagingscraper.TypeStr:    (&pagingscraper.Factory{}).CreateDefaultConfig(),
 			processscraper.TypeStr: (func() internal.Config {
 				cfg := (&processscraper.Factory{}).CreateDefaultConfig()
 				cfg.(*processscraper.Config).Include = processscraper.MatchConfig{
