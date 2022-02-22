@@ -36,6 +36,7 @@ type topicScraper struct {
 	topicFilter  *regexp.Regexp
 	saramaConfig *sarama.Config
 	config       Config
+	mb           *metadata.MetricsBuilder
 }
 
 func (s *topicScraper) Name() string {
@@ -81,35 +82,37 @@ func (s *topicScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		}
 		labels := pcommon.NewMap()
 		labels.UpsertString(metadata.A.Topic, topic)
-		addIntGauge(ilm.Metrics(), metadata.M.KafkaTopicPartitions.Name(), now, labels, int64(len(partitions)))
+		s.mb.RecordKafkaTopicPartitionsDataPoint(now, int64(len(partitions)), topic)
 		for _, partition := range partitions {
 			labels.UpsertInt(metadata.A.Partition, int64(partition))
 			currentOffset, err := s.client.GetOffset(topic, partition, sarama.OffsetNewest)
 			if err != nil {
 				scrapeErrors.AddPartial(1, err)
 			} else {
-				addIntGauge(ilm.Metrics(), metadata.M.KafkaPartitionCurrentOffset.Name(), now, labels, currentOffset)
+				s.mb.RecordKafkaPartitionCurrentOffsetDataPoint(now, currentOffset, topic, fmt.Sprintf("%d", int64(partition)))
 			}
 			oldestOffset, err := s.client.GetOffset(topic, partition, sarama.OffsetOldest)
 			if err != nil {
 				scrapeErrors.AddPartial(1, err)
 			} else {
-				addIntGauge(ilm.Metrics(), metadata.M.KafkaPartitionOldestOffset.Name(), now, labels, oldestOffset)
+				s.mb.RecordKafkaPartitionOldestOffsetDataPoint(now, oldestOffset, topic, fmt.Sprintf("%d", int64(partition)))
 			}
 			replicas, err := s.client.Replicas(topic, partition)
 			if err != nil {
 				scrapeErrors.AddPartial(1, err)
 			} else {
-				addIntGauge(ilm.Metrics(), metadata.M.KafkaPartitionReplicas.Name(), now, labels, int64(len(replicas)))
+				s.mb.RecordKafkaPartitionReplicasDataPoint(now, int64(len(replicas)), topic, fmt.Sprintf("%d", int64(partition)))
 			}
 			replicasInSync, err := s.client.InSyncReplicas(topic, partition)
 			if err != nil {
 				scrapeErrors.AddPartial(1, err)
 			} else {
-				addIntGauge(ilm.Metrics(), metadata.M.KafkaPartitionReplicasInSync.Name(), now, labels, int64(len(replicasInSync)))
+				s.mb.RecordKafkaPartitionReplicasInSyncDataPoint(now, int64(len(replicasInSync)), topic, fmt.Sprintf("%d", int64(partition)))
 			}
 		}
 	}
+
+	s.mb.Emit(ilm.Metrics())
 	return md, scrapeErrors.Combine()
 }
 
@@ -123,20 +126,11 @@ func createTopicsScraper(_ context.Context, cfg Config, saramaConfig *sarama.Con
 		topicFilter:  topicFilter,
 		saramaConfig: saramaConfig,
 		config:       cfg,
+		mb:           metadata.NewMetricsBuilder(cfg.Metrics),
 	}
 	return scraperhelper.NewScraper(
 		s.Name(),
 		s.scrape,
 		scraperhelper.WithShutdown(s.shutdown),
 	)
-}
-
-func addIntGauge(ms pmetric.MetricSlice, name string, now pcommon.Timestamp, labels pcommon.Map, value int64) {
-	m := ms.AppendEmpty()
-	m.SetName(name)
-	m.SetDataType(pmetric.MetricDataTypeGauge)
-	dp := m.Gauge().DataPoints().AppendEmpty()
-	dp.SetTimestamp(now)
-	dp.SetIntVal(value)
-	labels.CopyTo(dp.Attributes())
 }

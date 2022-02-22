@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
-	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
@@ -33,6 +33,7 @@ type brokerScraper struct {
 	logger       *zap.Logger
 	config       Config
 	saramaConfig *sarama.Config
+	mb           *metadata.MetricsBuilder
 }
 
 func (s *brokerScraper) Name() string {
@@ -57,11 +58,12 @@ func (s *brokerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 
 	brokers := s.client.Brokers()
 
-	md := pmetric.NewMetrics()
-	ilm := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
-	ilm.Scope().SetName(instrumentationLibName)
-	addIntGauge(ilm.Metrics(), metadata.M.KafkaBrokers.Name(), pcommon.NewTimestampFromTime(time.Now()), pcommon.NewMap(), int64(len(brokers)))
+	md := pdata.NewMetrics()
+	ilm := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
+	ilm.InstrumentationLibrary().SetName(instrumentationLibName)
+	s.mb.RecordKafkaBrokersDataPoint(pdata.NewTimestampFromTime(time.Now()), int64(len(brokers)))
 
+	s.mb.Emit(ilm.Metrics())
 	return md, nil
 }
 
@@ -70,6 +72,7 @@ func createBrokerScraper(_ context.Context, cfg Config, saramaConfig *sarama.Con
 		logger:       logger,
 		config:       cfg,
 		saramaConfig: saramaConfig,
+		mb:           metadata.NewMetricsBuilder(cfg.Metrics),
 	}
 	return scraperhelper.NewScraper(
 		s.Name(),

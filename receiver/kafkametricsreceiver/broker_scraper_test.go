@@ -22,6 +22,8 @@ import (
 	"github.com/Shopify/sarama"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
 )
 
 func TestBrokerShutdown(t *testing.T) {
@@ -103,10 +105,12 @@ func TestBrokerScraper_shutdown_handles_nil_client(t *testing.T) {
 func TestBrokerScraper_scrape(t *testing.T) {
 	client := newMockClient()
 	client.Mock.On("Brokers").Return(testBrokers)
+	config := createDefaultConfig().(*Config)
 	bs := brokerScraper{
 		client: client,
 		logger: zap.NewNop(),
-		config: Config{},
+		config: *config,
+		mb:     metadata.NewMetricsBuilder(config.Metrics),
 	}
 	md, err := bs.scrape(context.Background())
 	assert.NoError(t, err)
@@ -119,7 +123,8 @@ func TestBrokerScraper_scrape(t *testing.T) {
 func TestBrokersScraper_createBrokerScraper(t *testing.T) {
 	sc := sarama.NewConfig()
 	newSaramaClient = mockNewSaramaClient
-	bs, err := createBrokerScraper(context.Background(), Config{}, sc, zap.NewNop())
+	config := createDefaultConfig().(*Config)
+	bs, err := createBrokerScraper(context.Background(), *config, sc, zap.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, bs)
 }

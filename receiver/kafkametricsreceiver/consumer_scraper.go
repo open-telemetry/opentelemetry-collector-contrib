@@ -38,6 +38,7 @@ type consumerScraper struct {
 	clusterAdmin sarama.ClusterAdmin
 	saramaConfig *sarama.Config
 	config       Config
+	mb           *metadata.MetricsBuilder
 }
 
 func (s *consumerScraper) Name() string {
@@ -126,7 +127,7 @@ func (s *consumerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	for _, group := range consumerGroups {
 		labels := pcommon.NewMap()
 		labels.UpsertString(metadata.A.Group, group.GroupId)
-		addIntGauge(ilm.Metrics(), metadata.M.KafkaConsumerGroupMembers.Name(), now, labels, int64(len(group.Members)))
+		s.mb.RecordKafkaConsumerGroupMembersDataPoint(now, int64(len(group.Members)), group.GroupId)
 		groupOffsetFetchResponse, err := s.clusterAdmin.ListConsumerGroupOffsets(group.GroupId, topicPartitions)
 		if err != nil {
 			scrapeError = multierr.Append(scrapeError, err)
@@ -150,7 +151,7 @@ func (s *consumerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 					labels.UpsertInt(metadata.A.Partition, int64(partition))
 					consumerOffset := block.Offset
 					offsetSum += consumerOffset
-					addIntGauge(ilm.Metrics(), metadata.M.KafkaConsumerGroupOffset.Name(), now, labels, consumerOffset)
+					s.mb.RecordKafkaConsumerGroupOffsetDataPoint(now, consumerOffset, group.GroupId, topic, fmt.Sprintf("%d", partition))
 					// default -1 to indicate no lag measured.
 					var consumerLag int64 = -1
 					if partitionOffset, ok := topicPartitionOffset[topic][partition]; ok {
@@ -160,15 +161,16 @@ func (s *consumerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 							lagSum += consumerLag
 						}
 					}
-					addIntGauge(ilm.Metrics(), metadata.M.KafkaConsumerGroupLag.Name(), now, labels, consumerLag)
+					s.mb.RecordKafkaConsumerGroupLagDataPoint(now, consumerLag, group.GroupId, topic, fmt.Sprintf("%d", partition))
 				}
-				labels.Remove(metadata.A.Partition)
-				addIntGauge(ilm.Metrics(), metadata.M.KafkaConsumerGroupOffsetSum.Name(), now, labels, offsetSum)
-				addIntGauge(ilm.Metrics(), metadata.M.KafkaConsumerGroupLagSum.Name(), now, labels, lagSum)
+				labels.Delete(metadata.A.Partition)
+				s.mb.RecordKafkaConsumerGroupOffsetSumDataPoint(now, offsetSum, group.GroupId, topic)
+				s.mb.RecordKafkaConsumerGroupLagSumDataPoint(now, lagSum, group.GroupId, topic)
 			}
 		}
 	}
 
+	s.mb.Emit(ilm.Metrics())
 	return md, scrapeError
 }
 
@@ -187,6 +189,7 @@ func createConsumerScraper(_ context.Context, cfg Config, saramaConfig *sarama.C
 		topicFilter:  topicFilter,
 		config:       cfg,
 		saramaConfig: saramaConfig,
+		mb:           metadata.NewMetricsBuilder(cfg.Metrics),
 	}
 	return scraperhelper.NewScraper(
 		s.Name(),

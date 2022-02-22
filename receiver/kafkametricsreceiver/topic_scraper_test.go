@@ -125,6 +125,8 @@ func TestTopicScraper_scrapes(t *testing.T) {
 		client:      client,
 		logger:      zap.NewNop(),
 		topicFilter: match,
+		config:      *config,
+		mb:          metadata.NewMetricsBuilder(config.Metrics),
 	}
 	md, err := scraper.scrape(context.Background())
 	assert.NoError(t, err)
@@ -135,15 +137,15 @@ func TestTopicScraper_scrapes(t *testing.T) {
 		m := ms.At(i)
 		dp := m.Gauge().DataPoints().At(0)
 		switch m.Name() {
-		case metadata.M.KafkaTopicPartitions.Name():
+		case "kafka.topic.partitions":
 			assert.Equal(t, dp.IntVal(), int64(len(testPartitions)))
-		case metadata.M.KafkaPartitionCurrentOffset.Name():
+		case "kafka.partition.current_offset":
 			assert.Equal(t, dp.IntVal(), testOffset)
-		case metadata.M.KafkaPartitionOldestOffset.Name():
+		case "kafka.partition.oldest_offset":
 			assert.Equal(t, dp.IntVal(), testOffset)
-		case metadata.M.KafkaPartitionReplicas.Name():
+		case "kafka.partition.replicas":
 			assert.Equal(t, dp.IntVal(), int64(len(testReplicas)))
-		case metadata.M.KafkaPartitionReplicasInSync.Name():
+		case "kafka.partition.replicas_in_sync":
 			assert.Equal(t, dp.IntVal(), int64(len(testReplicas)))
 		}
 	}
@@ -172,6 +174,7 @@ func TestTopicScraper_scrape_handlesPartitionError(t *testing.T) {
 		client:      client,
 		logger:      zap.NewNop(),
 		topicFilter: match,
+		mb:          metadata.NewMetricsBuilder(config.Metrics),
 	}
 	_, err := scraper.scrape(context.Background())
 	assert.Error(t, err)
@@ -189,6 +192,7 @@ func TestTopicScraper_scrape_handlesPartialScrapeErrors(t *testing.T) {
 		client:      client,
 		logger:      zap.NewNop(),
 		topicFilter: match,
+		mb:          metadata.NewMetricsBuilder(config.Metrics),
 	}
 	_, err := scraper.scrape(context.Background())
 	assert.Error(t, err)

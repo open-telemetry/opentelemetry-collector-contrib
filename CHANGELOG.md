@@ -356,6 +356,10 @@ This version has been skipped.
 - `splunkhecreceiver`: Fix issue where component instance use in multiple pipelines leads to start failures (#11517)
 
 
+### 💡 Enhancements 💡
+
+- `kafkametricsreceiver`: Migrate kafkametricsreceiver to the mdatagen metrics builder (#7142)
+
 ## v0.54.0
 
 ## 🛑 Breaking changes 🛑

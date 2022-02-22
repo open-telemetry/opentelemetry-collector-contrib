@@ -23,6 +23,8 @@ import (
 	"github.com/Shopify/sarama"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
 )
 
 func TestConsumerShutdown(t *testing.T) {
@@ -142,12 +144,14 @@ func TestConsumerScraper_createScraper_handles_invalid_group_match(t *testing.T)
 
 func TestConsumerScraper_scrape(t *testing.T) {
 	filter := regexp.MustCompile(defaultGroupMatch)
+	config := createDefaultConfig().(*Config)
 	cs := consumerScraper{
 		client:       newMockClient(),
 		logger:       zap.NewNop(),
 		clusterAdmin: newMockClusterAdmin(),
 		topicFilter:  filter,
 		groupFilter:  filter,
+		mb:           metadata.NewMetricsBuilder(config.Metrics),
 	}
 	md, err := cs.scrape(context.Background())
 	assert.NoError(t, err)
@@ -156,6 +160,7 @@ func TestConsumerScraper_scrape(t *testing.T) {
 
 func TestConsumerScraper_scrape_handlesListTopicError(t *testing.T) {
 	filter := regexp.MustCompile(defaultGroupMatch)
+	config := createDefaultConfig().(*Config)
 	clusterAdmin := newMockClusterAdmin()
 	client := newMockClient()
 	clusterAdmin.topics = nil
@@ -165,6 +170,7 @@ func TestConsumerScraper_scrape_handlesListTopicError(t *testing.T) {
 		clusterAdmin: clusterAdmin,
 		topicFilter:  filter,
 		groupFilter:  filter,
+		mb:           metadata.NewMetricsBuilder(config.Metrics),
 	}
 	_, err := cs.scrape(context.Background())
 	assert.Error(t, err)
@@ -202,6 +208,7 @@ func TestConsumerScraper_scrape_handlesDescribeConsumerError(t *testing.T) {
 
 func TestConsumerScraper_scrape_handlesOffsetPartialError(t *testing.T) {
 	filter := regexp.MustCompile(defaultGroupMatch)
+	config := createDefaultConfig().(*Config)
 	clusterAdmin := newMockClusterAdmin()
 	client := newMockClient()
 	client.offset = -1
@@ -212,6 +219,7 @@ func TestConsumerScraper_scrape_handlesOffsetPartialError(t *testing.T) {
 		groupFilter:  filter,
 		topicFilter:  filter,
 		clusterAdmin: clusterAdmin,
+		mb:           metadata.NewMetricsBuilder(config.Metrics),
 	}
 	_, err := cs.scrape(context.Background())
 	assert.Error(t, err)
@@ -219,6 +227,7 @@ func TestConsumerScraper_scrape_handlesOffsetPartialError(t *testing.T) {
 
 func TestConsumerScraper_scrape_handlesPartitionPartialError(t *testing.T) {
 	filter := regexp.MustCompile(defaultGroupMatch)
+	config := createDefaultConfig().(*Config)
 	clusterAdmin := newMockClusterAdmin()
 	client := newMockClient()
 	client.partitions = nil
@@ -229,6 +238,7 @@ func TestConsumerScraper_scrape_handlesPartitionPartialError(t *testing.T) {
 		groupFilter:  filter,
 		topicFilter:  filter,
 		clusterAdmin: clusterAdmin,
+		mb:           metadata.NewMetricsBuilder(config.Metrics),
 	}
 	_, err := cs.scrape(context.Background())
 	assert.Error(t, err)
