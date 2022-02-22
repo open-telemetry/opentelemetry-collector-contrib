@@ -8,9 +8,12 @@ These are the metrics available for this scraper.
 
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
-| **mysql.buffer_pool_operations** | The number of operations on the InnoDB buffer pool. | 1 | Sum(Int) | <ul> <li>buffer_pool_operations</li> </ul> |
-| **mysql.buffer_pool_pages** | The number of pages in the InnoDB buffer pool. | 1 | Sum(Double) | <ul> <li>buffer_pool_pages</li> </ul> |
-| **mysql.buffer_pool_size** | The number of bytes in the InnoDB buffer pool. | By | Sum(Double) | <ul> <li>buffer_pool_size</li> </ul> |
+| **mysql.buffer_pool.data_pages** | The number of data pages in the InnoDB buffer pool. | 1 | Sum(Int) | <ul> <li>buffer_pool_data</li> </ul> |
+| **mysql.buffer_pool.limit** | The configured size of the InnoDB buffer pool. | By | Sum(Int) | <ul> </ul> |
+| **mysql.buffer_pool.operations** | The number of operations on the InnoDB buffer pool. | 1 | Sum(Int) | <ul> <li>buffer_pool_operations</li> </ul> |
+| **mysql.buffer_pool.page_flushes** | The number of requests to flush pages from the InnoDB buffer pool. | 1 | Sum(Int) | <ul> </ul> |
+| **mysql.buffer_pool.pages** | The number of pages in the InnoDB buffer pool. | 1 | Sum(Int) | <ul> <li>buffer_pool_pages</li> </ul> |
+| **mysql.buffer_pool.usage** | The number of bytes in the InnoDB buffer pool. | By | Sum(Int) | <ul> <li>buffer_pool_data</li> </ul> |
 | **mysql.commands** | The number of times each type of command has been executed. | 1 | Sum(Int) | <ul> <li>command</li> </ul> |
 | **mysql.double_writes** | The number of writes to the InnoDB doublewrite buffer. | 1 | Sum(Int) | <ul> <li>double_writes</li> </ul> |
 | **mysql.handlers** | The number of requests to various MySQL handlers. | 1 | Sum(Int) | <ul> <li>handler</li> </ul> |
@@ -21,7 +24,7 @@ These are the metrics available for this scraper.
 | **mysql.row_locks** | The number of InndoDB row locks. | 1 | Sum(Int) | <ul> <li>row_locks</li> </ul> |
 | **mysql.row_operations** | The number of InndoDB row operations. | 1 | Sum(Int) | <ul> <li>row_operations</li> </ul> |
 | **mysql.sorts** | The number of MySQL sorts. | 1 | Sum(Int) | <ul> <li>sorts</li> </ul> |
-| **mysql.threads** | The state of MySQL threads. | 1 | Sum(Double) | <ul> <li>threads</li> </ul> |
+| **mysql.threads** | The state of MySQL threads. | 1 | Sum(Int) | <ul> <li>threads</li> </ul> |
 
 **Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
 Any metric can be enabled or disabled with the following scraper configuration:
@@ -36,9 +39,9 @@ metrics:
 
 | Name | Description |
 | ---- | ----------- |
+| buffer_pool_data | The status of buffer pool data. |
 | buffer_pool_operations | The buffer pool operations types. |
 | buffer_pool_pages | The buffer pool pages types. |
-| buffer_pool_size | The buffer pool size types. |
 | command | The command types. |
 | double_writes | The doublewrite types. |
 | handler | The handler types. |
