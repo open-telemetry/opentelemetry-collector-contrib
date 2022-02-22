@@ -23,14 +23,14 @@ import (
 func TestAttributeFieldGet(t *testing.T) {
 	cases := []struct {
 		name       string
-		attributes map[string]string
+		attributes map[string]interface{}
 		field      Field
 		expected   interface{}
 		expectedOK bool
 	}{
 		{
 			"Simple",
-			map[string]string{
+			map[string]interface{}{
 				"test": "val",
 			},
 			NewAttributeField("test"),
@@ -39,11 +39,11 @@ func TestAttributeFieldGet(t *testing.T) {
 		},
 		{
 			"NonexistentKey",
-			map[string]string{
+			map[string]interface{}{
 				"test": "val",
 			},
 			NewAttributeField("nonexistent"),
-			"",
+			nil,
 			false,
 		},
 		{
@@ -69,31 +69,31 @@ func TestAttributeFieldGet(t *testing.T) {
 func TestAttributeFieldDelete(t *testing.T) {
 	cases := []struct {
 		name               string
-		attributes         map[string]string
+		attributes         map[string]interface{}
 		field              Field
 		expected           interface{}
 		expectedOK         bool
-		expectedAttributes map[string]string
+		expectedAttributes map[string]interface{}
 	}{
 		{
 			"Simple",
-			map[string]string{
+			map[string]interface{}{
 				"test": "val",
 			},
 			NewAttributeField("test"),
 			"val",
 			true,
-			map[string]string{},
+			map[string]interface{}{},
 		},
 		{
 			"NonexistentKey",
-			map[string]string{
+			map[string]interface{}{
 				"test": "val",
 			},
 			NewAttributeField("nonexistent"),
-			"",
+			nil,
 			false,
-			map[string]string{
+			map[string]interface{}{
 				"test": "val",
 			},
 		},
@@ -121,30 +121,30 @@ func TestAttributeFieldDelete(t *testing.T) {
 func TestAttributeFieldSet(t *testing.T) {
 	cases := []struct {
 		name        string
-		attributes  map[string]string
+		attributes  map[string]interface{}
 		field       Field
 		val         interface{}
-		expected    map[string]string
+		expected    map[string]interface{}
 		expectedErr bool
 	}{
 		{
 			"Simple",
-			map[string]string{},
+			map[string]interface{}{},
 			NewAttributeField("test"),
 			"val",
-			map[string]string{
+			map[string]interface{}{
 				"test": "val",
 			},
 			false,
 		},
 		{
 			"Overwrite",
-			map[string]string{
+			map[string]interface{}{
 				"test": "original",
 			},
 			NewAttributeField("test"),
 			"val",
-			map[string]string{
+			map[string]interface{}{
 				"test": "val",
 			},
 			false,
@@ -154,17 +154,17 @@ func TestAttributeFieldSet(t *testing.T) {
 			nil,
 			NewAttributeField("test"),
 			"val",
-			map[string]string{
+			map[string]interface{}{
 				"test": "val",
 			},
 			false,
 		},
 		{
 			"NonString",
-			map[string]string{},
+			map[string]interface{}{},
 			NewAttributeField("test"),
 			123,
-			map[string]string{
+			map[string]interface{}{
 				"test": "val",
 			},
 			true,

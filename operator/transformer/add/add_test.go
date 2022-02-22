@@ -120,7 +120,7 @@ func TestProcessAndBuild(t *testing.T) {
 			newTestEntry,
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Attributes = map[string]string{"new": "newVal"}
+				e.Attributes = map[string]interface{}{"new": "newVal"}
 				return e
 			},
 			false,

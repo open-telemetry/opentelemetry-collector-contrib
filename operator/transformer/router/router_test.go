@@ -47,7 +47,7 @@ func TestRouterOperator(t *testing.T) {
 		routes             []*RouterOperatorRouteConfig
 		defaultOutput      helper.OutputIDs
 		expectedCounts     map[string]int
-		expectedAttributes map[string]string
+		expectedAttributes map[string]interface{}
 	}{
 		{
 			"DefaultRoute",
@@ -125,7 +125,7 @@ func TestRouterOperator(t *testing.T) {
 			},
 			nil,
 			map[string]int{"output2": 1},
-			map[string]string{
+			map[string]interface{}{
 				"label-key": "label-value",
 			},
 		},
@@ -200,7 +200,7 @@ func TestRouterOperator(t *testing.T) {
 			require.NoError(t, err)
 
 			results := map[string]int{}
-			var attributes map[string]string
+			var attributes map[string]interface{}
 
 			mock1 := testutil.NewMockOperator("output1")
 			mock1.On("Process", mock.Anything, mock.Anything).Return(nil).Run(func(args mock.Arguments) {

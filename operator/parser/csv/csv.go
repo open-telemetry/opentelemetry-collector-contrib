@@ -113,7 +113,13 @@ func (r *CSVParser) Process(ctx context.Context, e *entry.Entry) error {
 			r.Error(err)
 			return err
 		}
-		headers := strings.Split(h, string([]rune{r.fieldDelimiter}))
+		headerString, ok := h.(string)
+		if !ok {
+			err := fmt.Errorf("header is expected to be a string but is %T", h)
+			r.Error(err)
+			return err
+		}
+		headers := strings.Split(headerString, string([]rune{r.fieldDelimiter}))
 		parse = generateParseFunc(headers, r.fieldDelimiter, r.lazyQuotes)
 	}
 

@@ -111,14 +111,14 @@ func TestProcessAndBuild(t *testing.T) {
 			}(),
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Attributes = map[string]string{
+				e.Attributes = map[string]interface{}{
 					"key": "val",
 				}
 				return e
 			},
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Attributes = map[string]string{}
+				e.Attributes = map[string]interface{}{}
 				return e
 			},
 			false,
@@ -189,7 +189,7 @@ func TestProcessAndBuild(t *testing.T) {
 			}(),
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Attributes = map[string]string{
+				e.Attributes = map[string]interface{}{
 					"key": "val",
 				}
 				return e
