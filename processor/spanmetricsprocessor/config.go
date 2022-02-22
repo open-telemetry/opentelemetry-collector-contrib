@@ -65,7 +65,7 @@ type Config struct {
 }
 
 var dropSanitizationGate = featuregate.Gate{
-	ID:          "exporter.prometheus.PermissiveLabelSanitization",
+	ID:          "processor.spanmetrics.PermissiveLabelSanitization",
 	Enabled:     false,
 	Description: "Controls whether to change labels starting with '_' to 'key_'",
 }
