@@ -57,8 +57,8 @@ func createDefaultConfig() config.Exporter {
 	return &ddconfig.Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		TimeoutSettings:  defaulttimeoutSettings(),
-		RetrySettings:    exporterhelper.DefaultRetrySettings(),
-		QueueSettings:    exporterhelper.DefaultQueueSettings(),
+		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 
 		API: ddconfig.APIConfig{
 			Key:  os.Getenv("DD_API_KEY"), // Must be set if using API

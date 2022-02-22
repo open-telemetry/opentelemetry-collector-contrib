@@ -44,8 +44,8 @@ func NewFactory() component.ExporterFactory {
 func createDefaultConfig() config.Exporter {
 	return &dtconfig.Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		RetrySettings:    exporterhelper.DefaultRetrySettings(),
-		QueueSettings:    exporterhelper.DefaultQueueSettings(),
+		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 		ResourceToTelemetrySettings: resourcetotelemetry.Settings{
 			Enabled: false,
 		},

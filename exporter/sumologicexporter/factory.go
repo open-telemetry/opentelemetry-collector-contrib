@@ -39,7 +39,7 @@ func NewFactory() component.ExporterFactory {
 }
 
 func createDefaultConfig() config.Exporter {
-	qs := exporterhelper.DefaultQueueSettings()
+	qs := exporterhelper.NewDefaultQueueSettings()
 	qs.Enabled = false
 
 	return &Config{
@@ -56,7 +56,7 @@ func createDefaultConfig() config.Exporter {
 		GraphiteTemplate:   DefaultGraphiteTemplate,
 
 		HTTPClientSettings: CreateDefaultHTTPClientSettings(),
-		RetrySettings:      exporterhelper.DefaultRetrySettings(),
+		RetrySettings:      exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:      qs,
 	}
 }

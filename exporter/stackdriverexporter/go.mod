@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter v0.45.1
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.45.0
+	go.opentelemetry.io/collector v0.45.1-0.20220219184850-89e0d42c11df
 	go.uber.org/zap v1.21.0
 )
 
@@ -38,7 +38,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/model v0.45.0 // indirect
+	go.opentelemetry.io/collector/model v0.45.1-0.20220219184850-89e0d42c11df // indirect
 	go.opentelemetry.io/otel v1.4.1 // indirect
 	go.opentelemetry.io/otel/metric v0.27.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.4.1 // indirect
