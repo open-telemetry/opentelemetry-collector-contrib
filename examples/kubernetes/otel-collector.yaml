@@ -90,7 +90,7 @@ data:
             - k8s.namespace.name
             - k8s.node.name
             - k8s.pod.start_time
-# pod labels which can be fetched via K8sattributeprocessor
+          # Pod labels which can be fetched via K8sattributeprocessor
           labels:
             - tag_name: k8s.label.app
               key: app
@@ -98,16 +98,15 @@ data:
             - tag_name: k8s.label.component
               key: component
               from: pod
-      # Pod association using resource attribute 
+        # Pod association using resource attributes and
         pod_association:
-            - from: resource_attribute
-              name: k8s.pod.uid
-            - from: resource_attribute
-              name: k8s.pod.ip
-            - from: connection
-              name: ip
+          - from: resource_attribute
+            name: k8s.pod.uid
+          - from: resource_attribute
+            name: k8s.pod.ip
+          - from: connection
+            name: ip
 
-                  
     exporters:
       logging:
         loglevel: debug
