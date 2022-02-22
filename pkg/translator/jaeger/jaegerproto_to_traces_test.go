@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
@@ -273,11 +273,11 @@ func TestProtoBatchToInternalTracesWithTwoLibraries(t *testing.T) {
 				OperationName: "operation2",
 				Tags: []model.KeyValue{
 					{
-						Key:   conventions.InstrumentationLibraryName,
+						Key:   conventions.OtelLibraryName,
 						VType: model.ValueType_STRING,
 						VStr:  "library2",
 					}, {
-						Key:   conventions.InstrumentationLibraryVersion,
+						Key:   conventions.OtelLibraryVersion,
 						VType: model.ValueType_STRING,
 						VStr:  "0.42.0",
 					},
@@ -290,11 +290,11 @@ func TestProtoBatchToInternalTracesWithTwoLibraries(t *testing.T) {
 				OperationName: "operation1",
 				Tags: []model.KeyValue{
 					{
-						Key:   conventions.InstrumentationLibraryName,
+						Key:   conventions.OtelLibraryName,
 						VType: model.ValueType_STRING,
 						VStr:  "library1",
 					}, {
-						Key:   conventions.InstrumentationLibraryVersion,
+						Key:   conventions.OtelLibraryVersion,
 						VType: model.ValueType_STRING,
 						VStr:  "0.42.0",
 					},
@@ -626,11 +626,11 @@ func generateProtoSpanWithLibraryInfo(libraryName string) *model.Span {
 	span := generateProtoSpan()
 	span.Tags = append([]model.KeyValue{
 		{
-			Key:   conventions.InstrumentationLibraryName,
+			Key:   conventions.OtelLibraryName,
 			VType: model.ValueType_STRING,
 			VStr:  libraryName,
 		}, {
-			Key:   conventions.InstrumentationLibraryVersion,
+			Key:   conventions.OtelLibraryVersion,
 			VType: model.ValueType_STRING,
 			VStr:  "0.42.0",
 		},

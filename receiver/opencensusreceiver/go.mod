@@ -15,16 +15,16 @@ require (
 	go.opentelemetry.io/collector v0.45.0
 	go.opentelemetry.io/collector/model v0.45.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.28.0
-	go.opentelemetry.io/otel v1.4.0
-	go.opentelemetry.io/otel/trace v1.4.0
+	go.opentelemetry.io/otel v1.4.1
+	go.opentelemetry.io/otel/trace v1.4.1
 	google.golang.org/grpc v1.44.0
 	google.golang.org/protobuf v1.27.1
 )
 
-require go.opentelemetry.io/otel/sdk v1.4.0
+require go.opentelemetry.io/otel/sdk v1.4.1
 
 require (
-	cloud.google.com/go/compute v1.2.0 // indirect
+	cloud.google.com/go/compute v1.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-logr/logr v1.2.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -48,10 +48,10 @@ require (
 	go.uber.org/zap v1.21.0 // indirect
 	golang.org/x/net v0.0.0-20210813160813-60bc85c4be6d // indirect
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
-	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9 // indirect
+	golang.org/x/sys v0.0.0-20220128215802-99c3d69c2c27 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20220201184016-50beb8ab5c44 // indirect
+	google.golang.org/genproto v0.0.0-20220207164111-0872dc986b00 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )

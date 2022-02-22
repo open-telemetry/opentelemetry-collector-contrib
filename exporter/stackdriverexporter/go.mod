@@ -10,12 +10,12 @@ require (
 )
 
 require (
-	cloud.google.com/go/compute v1.2.0 // indirect
+	cloud.google.com/go/compute v1.3.0 // indirect
 	cloud.google.com/go/monitoring v1.1.0 // indirect
 	cloud.google.com/go/trace v1.0.0 // indirect
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.10 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.3.0 // indirect
-	github.com/aws/aws-sdk-go v1.42.52 // indirect
+	github.com/aws/aws-sdk-go v1.43.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.2 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -39,10 +39,10 @@ require (
 	github.com/spf13/cast v1.4.1 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.opentelemetry.io/collector/model v0.45.0 // indirect
-	go.opentelemetry.io/otel v1.4.0 // indirect
+	go.opentelemetry.io/otel v1.4.1 // indirect
 	go.opentelemetry.io/otel/metric v0.27.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.4.0 // indirect
-	go.opentelemetry.io/otel/trace v1.4.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.4.1 // indirect
+	go.opentelemetry.io/otel/trace v1.4.1 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect

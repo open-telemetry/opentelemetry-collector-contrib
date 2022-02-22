@@ -18,7 +18,7 @@ import (
 	"net"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 )
 
 // isDiscernibleHost checks if a host can be used as a value for the 'host.name' key.

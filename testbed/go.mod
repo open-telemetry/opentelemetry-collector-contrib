@@ -34,7 +34,7 @@ require (
 )
 
 require (
-	cloud.google.com/go/compute v1.2.0 // indirect
+	cloud.google.com/go/compute v1.3.0 // indirect
 	contrib.go.opencensus.io/exporter/prometheus v0.4.0 // indirect
 	github.com/Azure/azure-sdk-for-go v61.1.0+incompatible // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
@@ -47,9 +47,9 @@ require (
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
 	github.com/Microsoft/go-winio v0.4.17 // indirect
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
-	github.com/apache/thrift v0.15.0 // indirect
+	github.com/apache/thrift v0.16.0 // indirect
 	github.com/armon/go-metrics v0.3.10 // indirect
-	github.com/aws/aws-sdk-go v1.42.52 // indirect
+	github.com/aws/aws-sdk-go v1.43.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.2 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.3.0 // indirect
@@ -172,15 +172,15 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.28.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.28.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.29.0 // indirect
 	go.opentelemetry.io/contrib/zpages v0.28.0 // indirect
-	go.opentelemetry.io/otel v1.4.0 // indirect
+	go.opentelemetry.io/otel v1.4.1 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.27.0 // indirect
 	go.opentelemetry.io/otel/internal/metric v0.27.0 // indirect
 	go.opentelemetry.io/otel/metric v0.27.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.4.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.4.1 // indirect
 	go.opentelemetry.io/otel/sdk/metric v0.27.0 // indirect
-	go.opentelemetry.io/otel/trace v1.4.0 // indirect
+	go.opentelemetry.io/otel/trace v1.4.1 // indirect
 	go.uber.org/goleak v1.1.12 // indirect
 	golang.org/x/crypto v0.0.0-20211202192323-5770296d904e // indirect
 	golang.org/x/mod v0.5.1 // indirect
@@ -193,16 +193,16 @@ require (
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/api v0.68.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20220204002441-d6cc3cc0770e // indirect
+	google.golang.org/genproto v0.0.0-20220207164111-0872dc986b00 // indirect
 	google.golang.org/grpc v1.44.0 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.66.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
-	k8s.io/api v0.23.3 // indirect
-	k8s.io/apimachinery v0.23.3 // indirect
-	k8s.io/client-go v0.23.3 // indirect
+	k8s.io/api v0.23.4 // indirect
+	k8s.io/apimachinery v0.23.4 // indirect
+	k8s.io/client-go v0.23.4 // indirect
 	k8s.io/klog/v2 v2.40.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20211115234752-e816edb12b65 // indirect
 	k8s.io/utils v0.0.0-20211116205334-6203023598ed // indirect
