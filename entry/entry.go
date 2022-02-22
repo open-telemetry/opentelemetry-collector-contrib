@@ -42,15 +42,15 @@ var now = getNow()
 
 // Entry is a flexible representation of log data associated with a timestamp.
 type Entry struct {
-	Timestamp    time.Time         `json:"timestamp"               yaml:"timestamp"`
-	Body         interface{}       `json:"body"                    yaml:"body"`
-	Attributes   map[string]string `json:"attributes,omitempty"    yaml:"attributes,omitempty"`
-	Resource     map[string]string `json:"resource,omitempty"      yaml:"resource,omitempty"`
-	SeverityText string            `json:"severity_text,omitempty" yaml:"severity_text,omitempty"`
-	SpanId       []byte            `json:"span_id,omitempty"       yaml:"span_id,omitempty"`
-	TraceId      []byte            `json:"trace_id,omitempty"      yaml:"trace_id,omitempty"`
-	TraceFlags   []byte            `json:"trace_flags,omitempty"   yaml:"trace_flags,omitempty"`
-	Severity     Severity          `json:"severity"                yaml:"severity"`
+	Timestamp    time.Time              `json:"timestamp"               yaml:"timestamp"`
+	Body         interface{}            `json:"body"                    yaml:"body"`
+	Attributes   map[string]interface{} `json:"attributes,omitempty"    yaml:"attributes,omitempty"`
+	Resource     map[string]string      `json:"resource,omitempty"      yaml:"resource,omitempty"`
+	SeverityText string                 `json:"severity_text,omitempty" yaml:"severity_text,omitempty"`
+	SpanId       []byte                 `json:"span_id,omitempty"       yaml:"span_id,omitempty"`
+	TraceId      []byte                 `json:"trace_id,omitempty"      yaml:"trace_id,omitempty"`
+	TraceFlags   []byte                 `json:"trace_flags,omitempty"   yaml:"trace_flags,omitempty"`
+	Severity     Severity               `json:"severity"                yaml:"severity"`
 }
 
 // New will create a new log entry with current timestamp and an empty body.
@@ -63,7 +63,7 @@ func New() *Entry {
 // AddAttribute will add a key/value pair to the entry's attributes.
 func (entry *Entry) AddAttribute(key, value string) {
 	if entry.Attributes == nil {
-		entry.Attributes = make(map[string]string)
+		entry.Attributes = make(map[string]interface{})
 	}
 	entry.Attributes[key] = value
 }
@@ -196,7 +196,7 @@ func (entry *Entry) Copy() *Entry {
 		Timestamp:    entry.Timestamp,
 		Severity:     entry.Severity,
 		SeverityText: entry.SeverityText,
-		Attributes:   copyStringMap(entry.Attributes),
+		Attributes:   copyInterfaceMap(entry.Attributes),
 		Resource:     copyStringMap(entry.Resource),
 		Body:         copyValue(entry.Body),
 		TraceId:      copyByteArray(entry.TraceId),

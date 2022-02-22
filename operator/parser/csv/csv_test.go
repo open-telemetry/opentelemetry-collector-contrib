@@ -178,7 +178,7 @@ func TestParserCSV(t *testing.T) {
 			},
 			[]entry.Entry{
 				{
-					Attributes: map[string]string{
+					Attributes: map[string]interface{}{
 						"Fields": "name,age,height,number",
 					},
 					Body: "stanza dev,1,400,555-555-5555",
@@ -203,19 +203,19 @@ func TestParserCSV(t *testing.T) {
 			},
 			[]entry.Entry{
 				{
-					Attributes: map[string]string{
+					Attributes: map[string]interface{}{
 						"Fields": "name,age,height,number",
 					},
 					Body: "stanza dev,1,400,555-555-5555",
 				},
 				{
-					Attributes: map[string]string{
+					Attributes: map[string]interface{}{
 						"Fields": "x,y",
 					},
 					Body: "000100,2",
 				},
 				{
-					Attributes: map[string]string{
+					Attributes: map[string]interface{}{
 						"Fields": "a,b,c,d,e,f",
 					},
 					Body: "1,2,3,4,5,6",
@@ -252,7 +252,7 @@ func TestParserCSV(t *testing.T) {
 			},
 			[]entry.Entry{
 				{
-					Attributes: map[string]string{
+					Attributes: map[string]interface{}{
 						"columns": "name	age	height	number",
 					},
 					Body: "stanza dev	1	400	555-555-5555",

@@ -86,7 +86,7 @@ func TestProcessAndBuild(t *testing.T) {
 						"nestedkey": "nestedval",
 					},
 				}
-				e.Attributes = map[string]string{"new": "val"}
+				e.Attributes = map[string]interface{}{"new": "val"}
 				return e
 			},
 		},
@@ -101,7 +101,7 @@ func TestProcessAndBuild(t *testing.T) {
 			}(),
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Attributes = map[string]string{"new": "val"}
+				e.Attributes = map[string]interface{}{"new": "val"}
 				return e
 			},
 			func() *entry.Entry {
@@ -113,7 +113,7 @@ func TestProcessAndBuild(t *testing.T) {
 						"nestedkey": "nestedval",
 					},
 				}
-				e.Attributes = map[string]string{}
+				e.Attributes = map[string]interface{}{}
 				return e
 			},
 		},
@@ -128,13 +128,13 @@ func TestProcessAndBuild(t *testing.T) {
 			}(),
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Attributes = map[string]string{"new": "val"}
+				e.Attributes = map[string]interface{}{"new": "val"}
 				return e
 			},
 			func() *entry.Entry {
 				e := newTestEntry()
 				e.Resource = map[string]string{"new": "val"}
-				e.Attributes = map[string]string{}
+				e.Attributes = map[string]interface{}{}
 				return e
 			},
 		},
@@ -149,13 +149,13 @@ func TestProcessAndBuild(t *testing.T) {
 			}(),
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Attributes = map[string]string{"dotted.field.name": "val"}
+				e.Attributes = map[string]interface{}{"dotted.field.name": "val"}
 				return e
 			},
 			func() *entry.Entry {
 				e := newTestEntry()
 				e.Resource = map[string]string{"new": "val"}
-				e.Attributes = map[string]string{}
+				e.Attributes = map[string]interface{}{}
 				return e
 			},
 		},
@@ -170,13 +170,13 @@ func TestProcessAndBuild(t *testing.T) {
 			}(),
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Attributes = map[string]string{"dotted.field.name": "val"}
+				e.Attributes = map[string]interface{}{"dotted.field.name": "val"}
 				return e
 			},
 			func() *entry.Entry {
 				e := newTestEntry()
 				e.Resource = map[string]string{"dotted.field.name": "val"}
-				e.Attributes = map[string]string{}
+				e.Attributes = map[string]interface{}{}
 				return e
 			},
 		},
@@ -191,13 +191,13 @@ func TestProcessAndBuild(t *testing.T) {
 			}(),
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Attributes = map[string]string{"new": "val"}
+				e.Attributes = map[string]interface{}{"new": "val"}
 				return e
 			},
 			func() *entry.Entry {
 				e := newTestEntry()
 				e.Resource = map[string]string{"dotted.field.name": "val"}
-				e.Attributes = map[string]string{}
+				e.Attributes = map[string]interface{}{}
 				return e
 			},
 		},
@@ -218,7 +218,7 @@ func TestProcessAndBuild(t *testing.T) {
 			func() *entry.Entry {
 				e := newTestEntry()
 				e.Resource = map[string]string{}
-				e.Attributes = map[string]string{"new": "val"}
+				e.Attributes = map[string]interface{}{"new": "val"}
 				return e
 			},
 		},

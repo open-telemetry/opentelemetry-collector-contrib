@@ -169,7 +169,7 @@ func tcpInputAttributesTest(input []byte, expected []string) func(t *testing.T) 
 		for _, expectedMessage := range expected {
 			select {
 			case entry := <-entryChan:
-				expectedAttributes := map[string]string{
+				expectedAttributes := map[string]interface{}{
 					"net.transport": "IP.TCP",
 				}
 				if addr, ok := conn.RemoteAddr().(*net.TCPAddr); ok {

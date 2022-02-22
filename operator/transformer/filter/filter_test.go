@@ -65,7 +65,7 @@ func TestFilterOperator(t *testing.T) {
 				Body: map[string]interface{}{
 					"message": "test_message",
 				},
-				Attributes: map[string]string{
+				Attributes: map[string]interface{}{
 					"key": "value",
 				},
 			},

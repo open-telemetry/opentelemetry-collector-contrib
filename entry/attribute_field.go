@@ -36,7 +36,7 @@ func (l AttributeField) Get(entry *Entry) (interface{}, bool) {
 // Set will set the attribute value on an entry
 func (l AttributeField) Set(entry *Entry, val interface{}) error {
 	if entry.Attributes == nil {
-		entry.Attributes = make(map[string]string, 1)
+		entry.Attributes = make(map[string]interface{}, 1)
 	}
 
 	str, ok := val.(string)
