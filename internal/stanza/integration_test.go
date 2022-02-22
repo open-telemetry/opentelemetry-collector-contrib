@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
 )
 
@@ -56,6 +57,7 @@ func createNoopReceiver(workerCount int, nextConsumer consumer.Logs) (*receiver,
 
 	converter := NewConverter(opts...)
 
+	receiverID, _ := config.NewComponentIDFromString("test")
 	return &receiver{
 		id:        config.NewComponentID("testReceiver"),
 		pipe:      pipe,
@@ -63,6 +65,10 @@ func createNoopReceiver(workerCount int, nextConsumer consumer.Logs) (*receiver,
 		consumer:  nextConsumer,
 		logger:    zap.NewNop(),
 		converter: converter,
+		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             receiverID,
+			ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings(),
+		}),
 	}, nil
 }
 
