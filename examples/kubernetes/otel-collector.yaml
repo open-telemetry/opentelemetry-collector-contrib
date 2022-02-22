@@ -98,7 +98,7 @@ data:
             - tag_name: k8s.label.component
               key: component
               from: pod
-#Pod association using resource attribute 
+      # Pod association using resource attribute 
         pod_association:
             - from: resource_attribute
               name: k8s.pod.uid
