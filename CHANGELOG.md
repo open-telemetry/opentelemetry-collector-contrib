@@ -11,6 +11,8 @@
 
 ### 🛑 Breaking changes 🛑
 
+- Remove deprecated functions from jaeger translator (#8032)
+
 ### 🚩 Deprecations 🚩
 
 ### 🧰 Bug fixes 🧰
