@@ -57,7 +57,7 @@ func createNoopReceiver(workerCount int, nextConsumer consumer.Logs) (*receiver,
 
 	converter := NewConverter(opts...)
 
-	receiverId, _ := config.NewComponentIDFromString("test")
+	receiverID, _ := config.NewComponentIDFromString("test")
 	return &receiver{
 		id:        config.NewComponentID("testReceiver"),
 		pipe:      pipe,
@@ -66,7 +66,7 @@ func createNoopReceiver(workerCount int, nextConsumer consumer.Logs) (*receiver,
 		logger:    zap.NewNop(),
 		converter: converter,
 		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             receiverId,
+			ReceiverID:             receiverID,
 			ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings(),
 		}),
 	}, nil
