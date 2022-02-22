@@ -4,7 +4,37 @@
 
 ### 💡 Enhancements 💡
 
+- Do not drop zero trace/span id spans in the jaeger conversion (#7946)
+- Upgrade to use semantic conventions 1.6.1 (#7926)
+- `dynatraceexporter`: Validate QueueSettings and perform config validation in Validate() instead (#8020)
+- `signalfxexporter`: Add validation for `sending_queue` setting (#8026)
 - `simpleprometheusreceiver`: Add support for static labels (#7908)
+
+### 🛑 Breaking changes 🛑
+
+### 🚩 Deprecations 🚩
+
+### 🧰 Bug fixes 🧰
+
+### 🚀 New components 🚀
+
+## v0.45.1
+
+### 💡 Enhancements 💡
+
+- `sumologicexporter`: Move validation to Config (#7936)
+- `elasticsearchexporter`: Fix crash with batch processor (#7953).
+- `splunkhecexporter`: Batch metrics payloads (#7760)
+- `tanzuobservabilityexporter`: Add internal SDK metric tag (#7826)
+- `hostreceiver/processscraper`: Migrate the scraper to the mdatagen metrics builder (#7287)
+
+### 🧰 Bug fixes 🧰
+
+- `awsprometheusremotewriteexporter`: fix dependencies issue (#7963)
+
+### 🚀 New components 🚀
+
+- `awsfirehose` receiver: Add AWS Kinesis Data Firehose Receiver (#7918)
 
 ## v0.45.0
 

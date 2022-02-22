@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.uber.org/zap"
 )
 
@@ -48,8 +49,8 @@ func TestCommonAttributes(t *testing.T) {
 	assert.Equal(t, "the-collector", commonAttrs[collectorNameKey])
 	assert.Equal(t, "0.0.1", commonAttrs[collectorVersionKey])
 	assert.Equal(t, "R1", commonAttrs["resource"])
-	assert.Equal(t, "test name", commonAttrs[instrumentationNameKey])
-	assert.Equal(t, "test version", commonAttrs[instrumentationVersionKey])
+	assert.Equal(t, "test name", commonAttrs[conventions.OtelLibraryName])
+	assert.Equal(t, "test version", commonAttrs[conventions.OtelLibraryVersion])
 
 	assert.Equal(t, 1, len(details.attributeMetadataCount))
 	assert.Equal(t, 1, details.attributeMetadataCount[attributeStatsKey{location: attributeLocationResource, attributeType: pdata.AttributeValueTypeString}])
