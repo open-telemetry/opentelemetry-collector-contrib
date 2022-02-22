@@ -77,7 +77,7 @@ data:
                   
                   
     processors:
-#K8sattributes processor to get the metadata from K8s
+      # k8sattributes processor to get the metadata from K8s
       k8sattributes:
         auth_type: "serviceAccount"
         passthrough: false
