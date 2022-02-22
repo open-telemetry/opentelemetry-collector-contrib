@@ -37,7 +37,7 @@ jobs:
           key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
       - name: Install dependencies
         if: steps.module-cache.outputs.hit != 'true'
-        run: make gomoddownload
+        run: make -j2 gomoddownload
       - name: Install Tools
         if: steps.tool-cache.outputs.cache-hit != 'true'
         run: make install-tools
@@ -110,7 +110,7 @@ jobs:
       - name: CheckDoc
         run: make checkdoc
       - name: Porto
-        run: make porto
+        run: make -j2 goporto
       - name: CodeGen
         run: |
           make generate
