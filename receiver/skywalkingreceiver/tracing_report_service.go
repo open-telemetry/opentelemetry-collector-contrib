@@ -20,22 +20,18 @@ import (
 
 	common "skywalking.apache.org/repo/goapi/collect/common/v3"
 	agent "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
-	v1 "skywalking.apache.org/repo/goapi/satellite/data/v1"
 )
 
 const (
 	httpEventName = "http-tracing-event"
-	grpcEventName = "grpc-tracing-event"
-	success       = "success"
 	failing       = "failing"
 )
 
-type TraceSegmentReportService struct {
-	receiveChannel chan *v1.SniffData
+type traceSegmentReportService struct {
 	agent.UnimplementedTraceSegmentReportServiceServer
 }
 
-func (s *TraceSegmentReportService) Collect(stream agent.TraceSegmentReportService_CollectServer) error {
+func (s *traceSegmentReportService) Collect(stream agent.TraceSegmentReportService_CollectServer) error {
 	for {
 		var recData interface{}
 		err := stream.RecvMsg(recData)
@@ -50,7 +46,7 @@ func (s *TraceSegmentReportService) Collect(stream agent.TraceSegmentReportServi
 	}
 }
 
-func (s *TraceSegmentReportService) CollectInSync(ctx context.Context, segments *agent.SegmentCollection) (*common.Commands, error) {
+func (s *traceSegmentReportService) CollectInSync(ctx context.Context, segments *agent.SegmentCollection) (*common.Commands, error) {
 	// TODO: convert skywalking tracing to otel trace
 	return &common.Commands{}, nil
 }

@@ -68,8 +68,6 @@ type swReceiver struct {
 const (
 	collectorHTTPTransport = "http"
 	grpcTransport          = "grpc"
-
-	protobufFormat = "protobuf"
 )
 
 // newSkywalkingReceiver creates a TracesReceiver that receives traffic as a Skywalking collector
@@ -175,11 +173,7 @@ func (sr *swReceiver) startCollector(host component.Host) error {
 			return fmt.Errorf("failed to bind to gRPC address %q: %v", gaddr, gerr)
 		}
 
-		//api_v2.RegisterCollectorServiceServer(sr.grpc, sr)
-
-		if gerr != nil {
-			return fmt.Errorf("failed to create collector strategy store: %v", gerr)
-		}
+		//TODO: RegisterCollectorServiceServer(sr.grpc, sr)
 
 		sr.goroutines.Add(1)
 		go func() {
