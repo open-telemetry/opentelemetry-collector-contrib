@@ -133,7 +133,7 @@ func TestProcessAndBuild(t *testing.T) {
 			},
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Resource = map[string]string{"new": "val"}
+				e.Resource = map[string]interface{}{"new": "val"}
 				e.Attributes = map[string]interface{}{}
 				return e
 			},
@@ -154,7 +154,7 @@ func TestProcessAndBuild(t *testing.T) {
 			},
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Resource = map[string]string{"new": "val"}
+				e.Resource = map[string]interface{}{"new": "val"}
 				e.Attributes = map[string]interface{}{}
 				return e
 			},
@@ -175,7 +175,7 @@ func TestProcessAndBuild(t *testing.T) {
 			},
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Resource = map[string]string{"dotted.field.name": "val"}
+				e.Resource = map[string]interface{}{"dotted.field.name": "val"}
 				e.Attributes = map[string]interface{}{}
 				return e
 			},
@@ -196,7 +196,7 @@ func TestProcessAndBuild(t *testing.T) {
 			},
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Resource = map[string]string{"dotted.field.name": "val"}
+				e.Resource = map[string]interface{}{"dotted.field.name": "val"}
 				e.Attributes = map[string]interface{}{}
 				return e
 			},
@@ -212,12 +212,12 @@ func TestProcessAndBuild(t *testing.T) {
 			}(),
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Resource = map[string]string{"new": "val"}
+				e.Resource = map[string]interface{}{"new": "val"}
 				return e
 			},
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Resource = map[string]string{}
+				e.Resource = map[string]interface{}{}
 				e.Attributes = map[string]interface{}{"new": "val"}
 				return e
 			},

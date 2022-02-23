@@ -132,14 +132,14 @@ func TestProcessAndBuild(t *testing.T) {
 			}(),
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Resource = map[string]string{
+				e.Resource = map[string]interface{}{
 					"key": "val",
 				}
 				return e
 			},
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Resource = map[string]string{}
+				e.Resource = map[string]interface{}{}
 				return e
 			},
 			false,
@@ -168,7 +168,7 @@ func TestProcessAndBuild(t *testing.T) {
 			}(),
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Resource = map[string]string{
+				e.Resource = map[string]interface{}{
 					"key": "val",
 				}
 				return e

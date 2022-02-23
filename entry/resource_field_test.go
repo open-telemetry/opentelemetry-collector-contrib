@@ -23,14 +23,14 @@ import (
 func TestResourceFieldGet(t *testing.T) {
 	cases := []struct {
 		name       string
-		resources  map[string]string
+		resources  map[string]interface{}
 		field      Field
 		expected   interface{}
 		expectedOK bool
 	}{
 		{
 			"Simple",
-			map[string]string{
+			map[string]interface{}{
 				"test": "val",
 			},
 			NewResourceField("test"),
@@ -39,11 +39,11 @@ func TestResourceFieldGet(t *testing.T) {
 		},
 		{
 			"NonexistentKey",
-			map[string]string{
+			map[string]interface{}{
 				"test": "val",
 			},
 			NewResourceField("nonexistent"),
-			"",
+			nil,
 			false,
 		},
 		{
@@ -69,31 +69,31 @@ func TestResourceFieldGet(t *testing.T) {
 func TestResourceFieldDelete(t *testing.T) {
 	cases := []struct {
 		name              string
-		resources         map[string]string
+		resources         map[string]interface{}
 		field             Field
 		expected          interface{}
 		expectedOK        bool
-		expectedResources map[string]string
+		expectedResources map[string]interface{}
 	}{
 		{
 			"Simple",
-			map[string]string{
+			map[string]interface{}{
 				"test": "val",
 			},
 			NewResourceField("test"),
 			"val",
 			true,
-			map[string]string{},
+			map[string]interface{}{},
 		},
 		{
 			"NonexistentKey",
-			map[string]string{
+			map[string]interface{}{
 				"test": "val",
 			},
 			NewResourceField("nonexistent"),
-			"",
+			nil,
 			false,
-			map[string]string{
+			map[string]interface{}{
 				"test": "val",
 			},
 		},
@@ -121,30 +121,30 @@ func TestResourceFieldDelete(t *testing.T) {
 func TestResourceFieldSet(t *testing.T) {
 	cases := []struct {
 		name        string
-		resources   map[string]string
+		resources   map[string]interface{}
 		field       Field
 		val         interface{}
-		expected    map[string]string
+		expected    map[string]interface{}
 		expectedErr bool
 	}{
 		{
 			"Simple",
-			map[string]string{},
+			map[string]interface{}{},
 			NewResourceField("test"),
 			"val",
-			map[string]string{
+			map[string]interface{}{
 				"test": "val",
 			},
 			false,
 		},
 		{
 			"Overwrite",
-			map[string]string{
+			map[string]interface{}{
 				"test": "original",
 			},
 			NewResourceField("test"),
 			"val",
-			map[string]string{
+			map[string]interface{}{
 				"test": "val",
 			},
 			false,
@@ -154,17 +154,17 @@ func TestResourceFieldSet(t *testing.T) {
 			nil,
 			NewResourceField("test"),
 			"val",
-			map[string]string{
+			map[string]interface{}{
 				"test": "val",
 			},
 			false,
 		},
 		{
 			"NonString",
-			map[string]string{},
+			map[string]interface{}{},
 			NewResourceField("test"),
 			123,
-			map[string]string{
+			map[string]interface{}{
 				"test": "val",
 			},
 			true,

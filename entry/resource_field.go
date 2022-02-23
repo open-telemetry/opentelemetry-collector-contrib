@@ -36,7 +36,7 @@ func (r ResourceField) Get(entry *Entry) (interface{}, bool) {
 // Set will set the resource value on an entry
 func (r ResourceField) Set(entry *Entry, val interface{}) error {
 	if entry.Resource == nil {
-		entry.Resource = make(map[string]string, 1)
+		entry.Resource = make(map[string]interface{}, 1)
 	}
 
 	str, ok := val.(string)

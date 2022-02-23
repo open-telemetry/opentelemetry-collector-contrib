@@ -33,7 +33,7 @@ func TestExprString(t *testing.T) {
 		e.Body = map[string]interface{}{
 			"test": "value",
 		}
-		e.Resource = map[string]string{
+		e.Resource = map[string]interface{}{
 			"id": "value",
 		}
 		return e
