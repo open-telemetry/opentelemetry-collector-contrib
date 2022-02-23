@@ -37,11 +37,11 @@ var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
 // NewFactory returns a new factory for the Attributes processor.
 func NewFactory() component.ProcessorFactory {
-	return processorhelper.NewFactory(
+	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		processorhelper.WithTraces(createTracesProcessor),
-		processorhelper.WithLogs(createLogProcessor))
+		component.WithTracesProcessor(createTracesProcessor),
+		component.WithLogsProcessor(createLogProcessor))
 }
 
 // Note: This isn't a valid configuration because the processor would do no work.
@@ -83,7 +83,7 @@ func createTracesProcessor(
 
 func createLogProcessor(
 	_ context.Context,
-	_ component.ProcessorCreateSettings,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Logs,
 ) (component.LogsProcessor, error) {
@@ -95,6 +95,11 @@ func createLogProcessor(
 	if err != nil {
 		return nil, fmt.Errorf("error creating \"attributes\" processor: %w of processor %v", err, cfg.ID())
 	}
+
+	if (oCfg.Include != nil && len(oCfg.Include.LogNames) > 0) || (oCfg.Exclude != nil && len(oCfg.Exclude.LogNames) > 0) {
+		set.Logger.Warn("log_names setting is deprecated and will be removed soon")
+	}
+
 	include, err := filterlog.NewMatcher(oCfg.Include)
 	if err != nil {
 		return nil, err

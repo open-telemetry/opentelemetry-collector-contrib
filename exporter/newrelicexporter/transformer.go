@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.uber.org/zap"
 )
 
@@ -34,8 +34,6 @@ const (
 	descriptionAttrKey        = "description"
 	collectorNameKey          = "collector.name"
 	collectorVersionKey       = "collector.version"
-	instrumentationNameKey    = conventions.InstrumentationLibraryName
-	instrumentationVersionKey = conventions.InstrumentationLibraryVersion
 	droppedAttributesCountKey = "otel.dropped_attributes_count"
 	droppedEventsCountKey     = "otel.dropped_events_count"
 	statusCodeKey             = "otel.status_code"
@@ -71,9 +69,9 @@ func (t *transformer) CommonAttributes(resource pdata.Resource, lib pdata.Instru
 	t.TrackAttributes(attributeLocationResource, resourceAttrs)
 
 	if n := lib.Name(); n != "" {
-		commonAttrs[instrumentationNameKey] = n
+		commonAttrs[conventions.OtelLibraryName] = n
 		if v := lib.Version(); v != "" {
-			commonAttrs[instrumentationVersionKey] = v
+			commonAttrs[conventions.OtelLibraryVersion] = v
 		}
 	}
 
@@ -124,8 +122,6 @@ func (t *transformer) Log(log pdata.LogRecord) (telemetry.Log, error) {
 
 	if bodyString := log.Body().StringVal(); bodyString != "" {
 		message = bodyString
-	} else {
-		message = log.Name()
 	}
 
 	logAttrs := log.Attributes()
@@ -139,7 +135,6 @@ func (t *transformer) Log(log pdata.LogRecord) (telemetry.Log, error) {
 	}
 	t.TrackAttributes(attributeLocationLog, logAttrs)
 
-	attrs["name"] = log.Name()
 	if !log.TraceID().IsEmpty() {
 		attrs[traceIDKey] = log.TraceID().HexString()
 	}
@@ -277,7 +272,7 @@ func (t *transformer) Metric(m pdata.Metric) ([]telemetry.Metric, error) {
 			point := points.At(l)
 
 			var val float64
-			switch point.Type() {
+			switch point.ValueType() {
 			case pdata.MetricValueTypeDouble:
 				val = point.DoubleVal()
 			case pdata.MetricValueTypeInt:
@@ -305,7 +300,7 @@ func (t *transformer) Metric(m pdata.Metric) ([]telemetry.Metric, error) {
 			point := points.At(l)
 			attributes := t.MetricAttributes(baseAttributes, point.Attributes())
 			var val float64
-			switch point.Type() {
+			switch point.ValueType() {
 			case pdata.MetricValueTypeDouble:
 				val = point.DoubleVal()
 			case pdata.MetricValueTypeInt:

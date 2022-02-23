@@ -25,18 +25,18 @@ import (
 
 // NewFactory by Coralogix
 func NewFactory() component.ExporterFactory {
-	return exporterhelper.NewFactory(
+	return component.NewExporterFactory(
 		typestr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTraceExporter),
+		component.WithTracesExporter(createTraceExporter),
 	)
 }
 
 func createDefaultConfig() config.Exporter {
 	return &Config{
 		ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typestr)),
-		QueueSettings:      exporterhelper.DefaultQueueSettings(),
-		RetrySettings:      exporterhelper.DefaultRetrySettings(),
+		QueueSettings:      exporterhelper.NewDefaultQueueSettings(),
+		RetrySettings:      exporterhelper.NewDefaultRetrySettings(),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{Endpoint: "https://"},
 		PrivateKey:         "",
 		AppName:            "",

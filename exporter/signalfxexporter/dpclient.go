@@ -94,11 +94,7 @@ func (s *sfxDPClient) pushMetricsData(
 	// All metrics in the pdata.Metrics will have the same access token because of the BatchPerResourceMetrics.
 	metricToken := s.retrieveAccessToken(rms.At(0))
 
-	var sfxDataPoints []*sfxpb.DataPoint
-
-	for i := 0; i < rms.Len(); i++ {
-		sfxDataPoints = append(sfxDataPoints, s.converter.MetricDataToSignalFxV2(rms.At(i))...)
-	}
+	sfxDataPoints := s.converter.MetricsToSignalFxV2(md)
 	if s.logDataPoints {
 		for _, dp := range sfxDataPoints {
 			s.logger.Debug("Dispatching SFx datapoint", zap.String("dp", translation.DatapointToString(dp)))

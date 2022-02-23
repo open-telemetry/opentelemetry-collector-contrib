@@ -200,16 +200,6 @@ func TestCompositeEvaluatorThrottling(t *testing.T) {
 	}
 }
 
-func TestOnLateArrivingSpans_Composite(t *testing.T) {
-	n1 := NewNumericAttributeFilter(zap.NewNop(), "tag", 0, 100)
-	n2 := NewAlwaysSample(zap.NewNop())
-	timeProvider := &FakeTimeProvider{second: 0}
-	const totalSPS = 10
-	c := NewComposite(zap.NewNop(), totalSPS, []SubPolicyEvalParams{{n1, totalSPS / 2}, {n2, totalSPS / 2}}, timeProvider)
-	e := c.OnLateArrivingSpans(Sampled, nil)
-	assert.NoError(t, e)
-}
-
 func TestCompositeEvaluator2SubpolicyThrottling(t *testing.T) {
 
 	n1 := NewNumericAttributeFilter(zap.NewNop(), "tag", 0, 100)

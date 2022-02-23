@@ -158,6 +158,11 @@ func (l *lokiExporter) logDataToLoki(ld pdata.Logs) (pr *logproto.PushRequest, n
 					numDroppedLogs++
 					continue
 				}
+
+				// now merge the labels based on the record attributes
+				recordLabels := l.convertRecordAttributesToLabels(log)
+				mergedLabels = mergedLabels.Merge(recordLabels)
+
 				labels := mergedLabels.String()
 				var entry *logproto.Entry
 				var err error
@@ -240,30 +245,47 @@ func (l *lokiExporter) convertAttributesToLabels(attributes pdata.AttributeMap, 
 	return ls
 }
 
+func (l *lokiExporter) convertRecordAttributesToLabels(log pdata.LogRecord) model.LabelSet {
+	ls := model.LabelSet{}
+
+	if val, ok := l.config.Labels.RecordAttributes["traceID"]; ok {
+		ls[model.LabelName(val)] = model.LabelValue(log.TraceID().HexString())
+	}
+
+	if val, ok := l.config.Labels.RecordAttributes["spanID"]; ok {
+		ls[model.LabelName(val)] = model.LabelValue(log.SpanID().HexString())
+	}
+
+	if val, ok := l.config.Labels.RecordAttributes["severity"]; ok {
+		ls[model.LabelName(val)] = model.LabelValue(log.SeverityText())
+	}
+
+	if val, ok := l.config.Labels.RecordAttributes["severityN"]; ok {
+		ls[model.LabelName(val)] = model.LabelValue(log.SeverityNumber().String())
+	}
+
+	return ls
+}
+
 func (l *lokiExporter) convertLogBodyToEntry(lr pdata.LogRecord, res pdata.Resource) (*logproto.Entry, error) {
 	var b strings.Builder
 
-	if len(lr.Name()) > 0 {
-		b.WriteString("name=")
-		b.WriteString(lr.Name())
-		b.WriteRune(' ')
-	}
-	if len(lr.SeverityText()) > 0 {
+	if _, ok := l.config.Labels.RecordAttributes["severity"]; !ok && len(lr.SeverityText()) > 0 {
 		b.WriteString("severity=")
 		b.WriteString(lr.SeverityText())
 		b.WriteRune(' ')
 	}
-	if lr.SeverityNumber() > 0 {
+	if _, ok := l.config.Labels.RecordAttributes["severityN"]; !ok && lr.SeverityNumber() > 0 {
 		b.WriteString("severityN=")
 		b.WriteString(strconv.Itoa(int(lr.SeverityNumber())))
 		b.WriteRune(' ')
 	}
-	if !lr.TraceID().IsEmpty() {
+	if _, ok := l.config.Labels.RecordAttributes["traceID"]; !ok && !lr.TraceID().IsEmpty() {
 		b.WriteString("traceID=")
 		b.WriteString(lr.TraceID().HexString())
 		b.WriteRune(' ')
 	}
-	if !lr.SpanID().IsEmpty() {
+	if _, ok := l.config.Labels.RecordAttributes["spanID"]; !ok && !lr.SpanID().IsEmpty() {
 		b.WriteString("spanID=")
 		b.WriteString(lr.SpanID().HexString())
 		b.WriteRune(' ')

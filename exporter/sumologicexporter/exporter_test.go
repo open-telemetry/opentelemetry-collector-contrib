@@ -54,21 +54,7 @@ func TestInitExporter(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestInitExporterInvalidLogFormat(t *testing.T) {
-	_, err := initExporter(&Config{
-		LogFormat:        "test_format",
-		MetricFormat:     "carbon2",
-		CompressEncoding: "gzip",
-		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Timeout:  defaultTimeout,
-			Endpoint: "test_endpoint",
-		},
-	}, componenttest.NewNopTelemetrySettings())
-
-	assert.EqualError(t, err, "unexpected log format: test_format")
-}
-
-func TestInitExporterInvalidMetricFormat(t *testing.T) {
+func TestInitExporterInvalidConfig(t *testing.T) {
 	_, err := initExporter(&Config{
 		LogFormat:    "json",
 		MetricFormat: "test_format",
@@ -80,33 +66,6 @@ func TestInitExporterInvalidMetricFormat(t *testing.T) {
 	}, componenttest.NewNopTelemetrySettings())
 
 	assert.EqualError(t, err, "unexpected metric format: test_format")
-}
-
-func TestInitExporterInvalidCompressEncoding(t *testing.T) {
-	_, err := initExporter(&Config{
-		LogFormat:        "json",
-		MetricFormat:     "carbon2",
-		CompressEncoding: "test_format",
-		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Timeout:  defaultTimeout,
-			Endpoint: "test_endpoint",
-		},
-	}, componenttest.NewNopTelemetrySettings())
-
-	assert.EqualError(t, err, "unexpected compression encoding: test_format")
-}
-
-func TestInitExporterInvalidEndpoint(t *testing.T) {
-	_, err := initExporter(&Config{
-		LogFormat:        "json",
-		MetricFormat:     "carbon2",
-		CompressEncoding: "gzip",
-		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Timeout: defaultTimeout,
-		},
-	}, componenttest.NewNopTelemetrySettings())
-
-	assert.EqualError(t, err, "endpoint is not set")
 }
 
 func TestAllSuccess(t *testing.T) {

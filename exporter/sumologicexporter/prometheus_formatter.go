@@ -152,7 +152,7 @@ func (f *prometheusFormatter) uintValueLine(name string, value uint64, dp dataPo
 
 // numberDataPointValueLine returns prometheus line with value from pdata.NumberDataPoint
 func (f *prometheusFormatter) numberDataPointValueLine(name string, dp pdata.NumberDataPoint, attributes pdata.AttributeMap) string {
-	switch dp.Type() {
+	switch dp.ValueType() {
 	case pdata.MetricValueTypeDouble:
 		return f.doubleValueLine(
 			name,
@@ -280,6 +280,10 @@ func (f *prometheusFormatter) histogram2Strings(record metricPair) []string {
 		dp := dps.At(i)
 
 		explicitBounds := dp.ExplicitBounds()
+		if len(explicitBounds) == 0 {
+			continue
+		}
+
 		var cumulative uint64
 		additionalAttributes := pdata.NewAttributeMap()
 

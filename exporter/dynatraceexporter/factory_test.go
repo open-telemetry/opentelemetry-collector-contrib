@@ -15,7 +15,7 @@
 package dynatraceexporter
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/apiconstants"
@@ -39,8 +39,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 	assert.Equal(t, &dtconfig.Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		RetrySettings:    exporterhelper.DefaultRetrySettings(),
-		QueueSettings:    exporterhelper.DefaultQueueSettings(),
+		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 		ResourceToTelemetrySettings: resourcetotelemetry.Settings{
 			Enabled: false,
 		},
@@ -59,19 +59,19 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yml"), factories)
+	cfg, err := servicetest.LoadConfig(filepath.Join("testdata", "config.yml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
 	t.Run("defaults", func(t *testing.T) {
 		defaultConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "defaults")].(*dtconfig.Config)
-		err = defaultConfig.ValidateAndConfigureHTTPClientSettings()
+		err = defaultConfig.Validate()
 		require.NoError(t, err)
 		assert.Equal(t, &dtconfig.Config{
 			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "defaults")),
-			RetrySettings:    exporterhelper.DefaultRetrySettings(),
-			QueueSettings:    exporterhelper.DefaultQueueSettings(),
+			RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
+			QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint: apiconstants.GetDefaultOneAgentEndpoint(),
@@ -85,13 +85,13 @@ func TestLoadConfig(t *testing.T) {
 	})
 	t.Run("valid config", func(t *testing.T) {
 		validConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "valid")].(*dtconfig.Config)
-		err = validConfig.ValidateAndConfigureHTTPClientSettings()
+		err = validConfig.Validate()
 
 		require.NoError(t, err)
 		assert.Equal(t, &dtconfig.Config{
 			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "valid")),
-			RetrySettings:    exporterhelper.DefaultRetrySettings(),
-			QueueSettings:    exporterhelper.DefaultQueueSettings(),
+			RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
+			QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint: "http://example.com/api/v2/metrics/ingest",
@@ -112,13 +112,13 @@ func TestLoadConfig(t *testing.T) {
 	})
 	t.Run("valid config with tags", func(t *testing.T) {
 		validConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "valid_tags")].(*dtconfig.Config)
-		err = validConfig.ValidateAndConfigureHTTPClientSettings()
+		err = validConfig.Validate()
 
 		require.NoError(t, err)
 		assert.Equal(t, &dtconfig.Config{
 			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "valid_tags")),
-			RetrySettings:    exporterhelper.DefaultRetrySettings(),
-			QueueSettings:    exporterhelper.DefaultQueueSettings(),
+			RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
+			QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint: "http://example.com/api/v2/metrics/ingest",
@@ -137,13 +137,13 @@ func TestLoadConfig(t *testing.T) {
 	})
 	t.Run("bad endpoint", func(t *testing.T) {
 		badEndpointConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "bad_endpoint")].(*dtconfig.Config)
-		err = badEndpointConfig.ValidateAndConfigureHTTPClientSettings()
+		err = badEndpointConfig.Validate()
 		require.Error(t, err)
 	})
 
 	t.Run("missing api token", func(t *testing.T) {
 		missingTokenConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "missing_token")].(*dtconfig.Config)
-		err = missingTokenConfig.ValidateAndConfigureHTTPClientSettings()
+		err = missingTokenConfig.Validate()
 		require.Error(t, err)
 	})
 }

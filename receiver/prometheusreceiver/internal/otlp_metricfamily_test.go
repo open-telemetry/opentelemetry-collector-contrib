@@ -41,37 +41,37 @@ var mc = byLookupMetadataCache{
 	"counter": scrape.MetricMetadata{
 		Metric: "cr",
 		Type:   textparse.MetricTypeCounter,
-		Help:   "This is some help",
+		Help:   "This is some help for a counter",
 		Unit:   "By",
 	},
 	"gauge": scrape.MetricMetadata{
 		Metric: "ge",
 		Type:   textparse.MetricTypeGauge,
-		Help:   "This is some help",
+		Help:   "This is some help for a gauge",
 		Unit:   "1",
 	},
 	"gaugehistogram": scrape.MetricMetadata{
 		Metric: "gh",
 		Type:   textparse.MetricTypeGaugeHistogram,
-		Help:   "This is some help",
+		Help:   "This is some help for a gauge histogram",
 		Unit:   "?",
 	},
 	"histogram": scrape.MetricMetadata{
 		Metric: "hg",
 		Type:   textparse.MetricTypeHistogram,
-		Help:   "This is some help",
+		Help:   "This is some help for a histogram",
 		Unit:   "ms",
 	},
 	"summary": scrape.MetricMetadata{
 		Metric: "s",
 		Type:   textparse.MetricTypeSummary,
-		Help:   "This is some help",
+		Help:   "This is some help for a summary",
 		Unit:   "ms",
 	},
 	"unknown": scrape.MetricMetadata{
 		Metric: "u",
 		Type:   textparse.MetricTypeUnknown,
-		Help:   "This is some help",
+		Help:   "This is some help for an unknown metric",
 		Unit:   "?",
 	},
 }
@@ -128,8 +128,15 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 			groupKey := mp.getGroupKey(tt.labels.Copy())
 			require.NotNil(t, mp.groups[groupKey], "Expecting the groupKey to have a value given key:: "+groupKey)
 
-			hdpL := pdata.NewHistogramDataPointSlice()
-			require.True(t, mp.groups[groupKey].toDistributionPoint(mp.labelKeysOrdered, &hdpL))
+			sl := pdata.NewMetricSlice()
+			mp.ToMetricPdata(&sl)
+
+			require.Equal(t, 1, sl.Len(), "Exactly one metric expected")
+			metric := sl.At(0)
+			require.Equal(t, mc[tt.metricName].Help, metric.Description(), "Expected help metadata in metric description")
+			require.Equal(t, mc[tt.metricName].Unit, metric.Unit(), "Expected unit metadata in metric")
+
+			hdpL := metric.Histogram().DataPoints()
 			require.Equal(t, 1, hdpL.Len(), "Exactly one point expected")
 			got := hdpL.At(0)
 			want := tt.want()
@@ -256,8 +263,15 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 			}
 			require.NotNil(t, mp.groups[groupKey], "Expecting the groupKey to have a value given key:: "+groupKey)
 
-			sdpL := pdata.NewSummaryDataPointSlice()
-			require.True(t, mp.groups[groupKey].toSummaryPoint(mp.labelKeysOrdered, &sdpL))
+			sl := pdata.NewMetricSlice()
+			mp.ToMetricPdata(&sl)
+
+			require.Equal(t, 1, sl.Len(), "Exactly one metric expected")
+			metric := sl.At(0)
+			require.Equal(t, mc[tt.name].Help, metric.Description(), "Expected help metadata in metric description")
+			require.Equal(t, mc[tt.name].Unit, metric.Unit(), "Expected unit metadata in metric")
+
+			sdpL := metric.Summary().DataPoints()
 			require.Equal(t, 1, sdpL.Len(), "Exactly one point expected")
 			got := sdpL.At(0)
 			want := tt.want()
@@ -332,8 +346,15 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 			groupKey := mp.getGroupKey(tt.labels.Copy())
 			require.NotNil(t, mp.groups[groupKey], "Expecting the groupKey to have a value given key:: "+groupKey)
 
-			ndpL := pdata.NewNumberDataPointSlice()
-			require.True(t, mp.groups[groupKey].toNumberDataPoint(mp.labelKeysOrdered, &ndpL))
+			sl := pdata.NewMetricSlice()
+			mp.ToMetricPdata(&sl)
+
+			require.Equal(t, 1, sl.Len(), "Exactly one metric expected")
+			metric := sl.At(0)
+			require.Equal(t, mc[tt.metricKind].Help, metric.Description(), "Expected help metadata in metric description")
+			require.Equal(t, mc[tt.metricKind].Unit, metric.Unit(), "Expected unit metadata in metric")
+
+			ndpL := metric.Sum().DataPoints()
 			require.Equal(t, 1, ndpL.Len(), "Exactly one point expected")
 			got := ndpL.At(0)
 			want := tt.want()

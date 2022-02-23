@@ -15,7 +15,7 @@
 package asapauthextension
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -41,7 +41,7 @@ func TestLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	factories.Extensions[typeStr] = factory
 
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 	assert.NotNil(t, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, cfg.Validate())
@@ -85,7 +85,7 @@ func TestLoadBadConfig(t *testing.T) {
 	for _, tt := range tests {
 		factory := NewFactory()
 		factories.Extensions[typeStr] = factory
-		cfg, err := servicetest.LoadConfig(path.Join(".", "testdata", "config_bad.yaml"), factories)
+		cfg, err := servicetest.LoadConfig(filepath.Join("testdata", "config_bad.yaml"), factories)
 		assert.NoError(t, err)
 		extension := cfg.Extensions[config.NewComponentIDWithName(typeStr, tt.configName)]
 		verr := extension.Validate()
