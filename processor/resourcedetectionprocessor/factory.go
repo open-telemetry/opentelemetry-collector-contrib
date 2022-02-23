@@ -102,7 +102,7 @@ func createDefaultConfig() config.Processor {
 }
 
 func defaultHTTPClientSettings() confighttp.HTTPClientSettings {
-	httpClientSettings := confighttp.DefaultHTTPClientSettings()
+	httpClientSettings := confighttp.NewDefaultHTTPClientSettings()
 	httpClientSettings.Timeout = 5 * time.Second
 	return httpClientSettings
 }
