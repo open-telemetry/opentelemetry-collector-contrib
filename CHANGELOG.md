@@ -12,6 +12,7 @@
 - `dynatraceexporter`: Validate QueueSettings and perform config validation in Validate() instead (#8020)
 - `sapmexporter`: Add validation for `sending_queue` setting (#8023)
 - `signalfxexporter`: Add validation for `sending_queue` setting (#8026)
+- `resourcedetectionprocessor`: Add confighttp.HTTPClientSettings To Resource Detection Config Fixes (#7397)
 
 ### 🛑 Breaking changes 🛑
 
