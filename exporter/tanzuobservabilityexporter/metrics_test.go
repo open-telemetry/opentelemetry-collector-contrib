@@ -17,7 +17,6 @@ package tanzuobservabilityexporter
 import (
 	"context"
 	"errors"
-	"sort"
 	"testing"
 	"time"
 
@@ -100,11 +99,6 @@ func TestMetricsConsumerNormalWithHostnameTag(t *testing.T) {
 
 	consumer.Close()
 	assert.Equal(t, 1, sender.numCloseCalls)
-}
-
-func containsStr(s []string, searchStr string) bool {
-	i := sort.SearchStrings(s, searchStr)
-	return i < len(s) && s[i] == searchStr
 }
 
 func TestMetricsConsumerNone(t *testing.T) {
