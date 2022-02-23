@@ -50,7 +50,7 @@ type Config struct {
 
 func (cfg *Config) Validate() error {
 	if err := cfg.ExporterSettings.Validate(); err != nil {
-		return fmt.Errorf("exporter settings is invalid :%w", err)
+		return fmt.Errorf("exporter settings are invalid :%w", err)
 	}
 	return nil
 }
