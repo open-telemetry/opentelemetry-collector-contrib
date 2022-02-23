@@ -163,7 +163,7 @@ type typedMetricConsumer interface {
 	// Gauge, Sum, or Histogram
 	Type() pdata.MetricDataType
 
-	// Consume consumes the metric and appends any errors encountered to errs
+	// Consume consumes the metric from the metricInfo and appends any errors encountered to errs
 	Consume(mi metricInfo, errs *[]error)
 
 	// PushInternalMetrics sends internal metrics for this consumer to tanzu observability
@@ -233,7 +233,8 @@ func getValue(numberDataPoint pdata.NumberDataPoint) (float64, error) {
 // of the metric. Any errors get appended to errs. sender is what sends the
 // gauge metric to tanzu observability. settings logs problems. missingValues
 // keeps track of metrics with missing values.
-func pushGaugeNumberDataPoint(mi metricInfo, numberDataPoint pdata.NumberDataPoint, errs *[]error, sender gaugeSender, settings component.TelemetrySettings, missingValues *counter) {
+func pushGaugeNumberDataPoint(mi metricInfo, numberDataPoint pdata.NumberDataPoint, errs *[]error, sender gaugeSender,
+	settings component.TelemetrySettings, missingValues *counter) {
 	tags := attributesToTags(mi.Tags, numberDataPoint.Attributes())
 	ts := numberDataPoint.Timestamp().AsTime().Unix()
 	value, err := getValue(numberDataPoint)
@@ -315,9 +316,9 @@ func (s *sumConsumer) Consume(mi metricInfo, errs *[]error) {
 	isDelta := sum.AggregationTemporality() == pdata.MetricAggregationTemporalityDelta
 	numberDataPoints := sum.DataPoints()
 	for i := 0; i < numberDataPoints.Len(); i++ {
-		// If sum mi is a delta type, send it to tanzu observability as a
+		// If sum is a delta type, send it to tanzu observability as a
 		// delta counter. Otherwise, send it to tanzu observability as a gauge
-		// mi.
+		// metric.
 		if isDelta {
 			s.pushNumberDataPoint(mi, numberDataPoints.At(i), errs)
 		} else {
@@ -450,7 +451,7 @@ func (h *histogramConsumer) PushInternalMetrics(errs *[]error) {
 type histogramDataPointConsumer interface {
 
 	// Consume consumes the histogram data point.
-	// metric is the enclosing metric; histogram is the histogram data point;
+	// mi is the metricInfo which encloses metric; histogram is the histogram data point;
 	// errors get appended to errs; reporting keeps track of special situations
 	Consume(mi metricInfo, histogram histogramDataPoint, errs *[]error, reporting *histogramReporting)
 }
@@ -465,7 +466,8 @@ func newCumulativeHistogramDataPointConsumer(sender gaugeSender) histogramDataPo
 	return &cumulativeHistogramDataPointConsumer{sender: sender}
 }
 
-func (c *cumulativeHistogramDataPointConsumer) Consume(mi metricInfo, histogram histogramDataPoint, errs *[]error, reporting *histogramReporting) {
+func (c *cumulativeHistogramDataPointConsumer) Consume(mi metricInfo, histogram histogramDataPoint, errs *[]error,
+	reporting *histogramReporting) {
 	name := mi.Name()
 	tags := attributesToTags(mi.Tags, histogram.Attributes())
 	ts := histogram.Timestamp().AsTime().Unix()

@@ -67,9 +67,8 @@ func TestMetricsConsumerNormalWithSourceTag(t *testing.T) {
 
 	assert.ElementsMatch(t, []string{"sum"}, mockSumConsumer.names)
 	assert.ElementsMatch(t, []string{"test_source"}, mockSumConsumer.sources)
-
-	assert.True(t, containsStr(mockSumConsumer.attrMaps, "test_key:test_value"))
-	assert.False(t, containsStr(mockSumConsumer.attrMaps, "source:test_source"))
+	assert.Contains(t, mockSumConsumer.attrMaps[0], "test_key")
+	assert.NotContains(t, mockSumConsumer.attrMaps[0], "source")
 
 	assert.Equal(t, 1, mockSumConsumer.pushInternalMetricsCallCount)
 	assert.Equal(t, 1, sender.numFlushCalls)
@@ -92,8 +91,8 @@ func TestMetricsConsumerNormalWithHostnameTag(t *testing.T) {
 
 	assert.ElementsMatch(t, []string{"sum"}, mockSumConsumer.names)
 	assert.ElementsMatch(t, []string{"test_host.name"}, mockSumConsumer.sources)
-	assert.True(t, containsStr(mockSumConsumer.attrMaps, "hostname:test_hostname"))
-	assert.False(t, containsStr(mockSumConsumer.attrMaps, "host.name:test_host.name"))
+	assert.Contains(t, mockSumConsumer.attrMaps[0], "hostname")
+	assert.NotContains(t, mockSumConsumer.attrMaps[0], "host.name")
 
 	assert.Equal(t, 1, mockSumConsumer.pushInternalMetricsCallCount)
 	assert.Equal(t, 1, sender.numFlushCalls)
@@ -1563,7 +1562,7 @@ type mockTypedMetricConsumer struct {
 	errorOnConsume               bool
 	errorOnPushInternalMetrics   bool
 	names                        []string
-	attrMaps                     []string
+	attrMaps                     []map[string]string
 	sources                      []string
 	pushInternalMetricsCallCount int
 }
@@ -1572,12 +1571,19 @@ func (m *mockTypedMetricConsumer) Type() pdata.MetricDataType {
 	return m.typ
 }
 
+func toGoMap(attrMap pdata.AttributeMap) map[string]string {
+	result := make(map[string]string)
+	attrMap.Range(func(key string, value pdata.AttributeValue) bool {
+		result[key] = value.AsString()
+		return true
+	})
+	return result
+}
+
 func (m *mockTypedMetricConsumer) Consume(mi metricInfo, errs *[]error) {
 	m.names = append(m.names, mi.Name())
 
-	for key, val := range mi.Tags.AsRaw() {
-		m.attrMaps = append(m.attrMaps, key+":"+val.(string))
-	}
+	m.attrMaps = append(m.attrMaps, toGoMap(mi.Tags))
 
 	m.sources = append(m.sources, mi.Source)
 	if m.errorOnConsume {
