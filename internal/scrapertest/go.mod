@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector/model v0.43.3-0.20220201020338-caead4c4b0e2
+	go.opentelemetry.io/collector/model v0.45.1-0.20220222185228-27f7607ca13a
 	go.uber.org/multierr v1.7.0
 )
 
@@ -14,6 +14,7 @@ require (
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
+	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
 

@@ -4,8 +4,8 @@ go 1.17
 
 require (
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.45.1-0.20220219184850-89e0d42c11df
-	go.opentelemetry.io/collector/model v0.45.1-0.20220219184850-89e0d42c11df
+	go.opentelemetry.io/collector v0.45.1-0.20220222205432-ec4f7040191d
+	go.opentelemetry.io/collector/model v0.45.1-0.20220222185228-27f7607ca13a
 
 )
 
@@ -19,7 +19,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/klauspost/compress v1.14.2 // indirect
+	github.com/klauspost/compress v1.14.4 // indirect
 	github.com/knadh/koanf v1.4.0 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect

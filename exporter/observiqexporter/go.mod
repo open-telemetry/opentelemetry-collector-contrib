@@ -5,8 +5,8 @@ go 1.17
 require (
 	github.com/google/uuid v1.3.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.45.1-0.20220219184850-89e0d42c11df
-	go.opentelemetry.io/collector/model v0.45.1-0.20220219184850-89e0d42c11df
+	go.opentelemetry.io/collector v0.45.1-0.20220222205432-ec4f7040191d
+	go.opentelemetry.io/collector/model v0.45.1-0.20220222185228-27f7607ca13a
 	go.uber.org/multierr v1.7.0
 	go.uber.org/zap v1.21.0
 )
