@@ -31,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.uber.org/zap"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -48,6 +49,14 @@ type metricsExporter struct {
 	mexporter *stackdriver.Exporter
 }
 
+// logsExporter contains what is necessary to export logs to google
+type logsExporter struct {
+	Config         *Config
+	requestBuilder RequestBuilder
+	logClient      LogClient
+	logger         *zap.Logger
+}
+
 func (te *traceExporter) Shutdown(ctx context.Context) error {
 	return te.texporter.Shutdown(ctx)
 }
@@ -56,6 +65,11 @@ func (me *metricsExporter) Shutdown(context.Context) error {
 	me.mexporter.Flush()
 	me.mexporter.StopMetricsExporter()
 	return me.mexporter.Close()
+}
+
+// Shutdown cleans up anything related to the logsExporter
+func (le *logsExporter) Shutdown(context.Context) error {
+	return le.logClient.Close()
 }
 
 func setVersionInUserAgent(cfg *Config, version string) {
@@ -182,6 +196,51 @@ func newGoogleCloudMetricsExporter(cfg *Config, set component.ExporterCreateSett
 		exporterhelper.WithRetry(cfg.RetrySettings))
 }
 
+// newGoogleCloudLogsExporter creates a LogsExporter which is able to push logs to google cloud
+func newGoogleCloudLogsExporter(cfg *Config, set component.ExporterCreateSettings) (component.LogsExporter, error) {
+	setVersionInUserAgent(cfg, set.BuildInfo.Version)
+
+	copts, err := generateClientOptions(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate client options: %w", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), cfg.Timeout)
+	defer cancel()
+
+	logClient, err := newLogClient(ctx, copts...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create log client: %w", err)
+	}
+
+	entryBuilder := &GoogleEntryBuilder{
+		MaxEntrySize: defaultMaxEntrySize,
+		ProjectID:    cfg.ProjectID,
+		NameFields:   cfg.LogConfig.NameFields,
+	}
+	requestBuilder := &GoogleRequestBuilder{
+		MaxRequestSize: defaultMaxRequestSize,
+		ProjectID:      cfg.ProjectID,
+		EntryBuilder:   entryBuilder,
+		SugaredLogger:  set.Logger.Sugar(),
+	}
+
+	lExp := &logsExporter{
+		logger:         set.Logger,
+		requestBuilder: requestBuilder,
+		logClient:      logClient,
+	}
+
+	return exporterhelper.NewLogsExporter(
+		cfg,
+		set,
+		lExp.pushLogs,
+		exporterhelper.WithShutdown(lExp.Shutdown),
+		exporterhelper.WithTimeout(cfg.TimeoutSettings),
+		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithRetry(cfg.RetrySettings))
+}
+
 // pushMetrics calls StackdriverExporter.PushMetricsProto on each element of the given metrics
 func (me *metricsExporter) pushMetrics(ctx context.Context, m pdata.Metrics) error {
 	rms := m.ResourceMetrics()
@@ -256,4 +315,23 @@ func numPoints(metrics []*metricspb.Metric) int {
 		}
 	}
 	return numPoints
+}
+
+// pushLogs converts all pdata.Logs to google logging api format and creates them in google cloud
+func (le *logsExporter) pushLogs(ctx context.Context, logs pdata.Logs) error {
+	len := logs.ResourceLogs().Len()
+	if len == 0 {
+		return nil
+	}
+
+	requests := le.requestBuilder.Build(&logs)
+
+	for _, request := range requests {
+		_, err := le.logClient.WriteLogEntries(ctx, request)
+		if err != nil {
+			return fmt.Errorf("failed to send all logs: %w", err)
+		}
+	}
+
+	return nil
 }

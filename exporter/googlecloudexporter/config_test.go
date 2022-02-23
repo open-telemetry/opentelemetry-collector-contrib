@@ -91,5 +91,8 @@ func TestLoadConfig(t *testing.T) {
 				Prefix:                     "prefix",
 				SkipCreateMetricDescriptor: true,
 			},
+			LogConfig: LogConfig{
+				NameFields: []string{"name1", "parent.name2"},
+			},
 		})
 }

@@ -42,6 +42,8 @@ type Config struct {
 	GetClientOptions func() []option.ClientOption
 
 	MetricConfig MetricConfig `mapstructure:"metric"`
+
+	LogConfig LogConfig `mapstructure:"log"`
 }
 
 func (cfg *Config) Validate() error {
@@ -67,4 +69,8 @@ type LabelMapping struct {
 	// Optional flag signals whether we can proceed with transformation if a label is missing in the resource.
 	// When required label is missing, we fallback to default resource mapping.
 	Optional bool `mapstructure:"optional"`
+}
+
+type LogConfig struct {
+	NameFields []string `mapstructure:"name_fields"`
 }

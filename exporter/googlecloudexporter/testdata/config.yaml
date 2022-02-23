@@ -35,6 +35,10 @@ exporters:
     metric:
       prefix: prefix
       skip_create_descriptor: true
+    log:
+      name_fields:
+        - name1
+        - parent.name2
 
 service:
   pipelines:

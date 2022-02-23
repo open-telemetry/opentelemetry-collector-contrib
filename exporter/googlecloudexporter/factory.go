@@ -47,6 +47,7 @@ func NewFactory() component.ExporterFactory {
 		createDefaultConfig,
 		component.WithTracesExporter(createTracesExporter),
 		component.WithMetricsExporter(createMetricsExporter),
+		component.WithLogsExporter(createLogsExporter),
 	)
 }
 
@@ -77,4 +78,13 @@ func createMetricsExporter(
 	cfg config.Exporter) (component.MetricsExporter, error) {
 	eCfg := cfg.(*Config)
 	return newGoogleCloudMetricsExporter(eCfg, params)
+}
+
+// createLogsExporter creates a logs exporter based on this config.
+func createLogsExporter(
+	_ context.Context,
+	params component.ExporterCreateSettings,
+	cfg config.Exporter) (component.LogsExporter, error) {
+	eCfg := cfg.(*Config)
+	return newGoogleCloudLogsExporter(eCfg, params)
 }

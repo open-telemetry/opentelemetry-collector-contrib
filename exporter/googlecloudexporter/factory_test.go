@@ -48,4 +48,8 @@ func TestCreateExporter(t *testing.T) {
 	me, err := factory.CreateMetricsExporter(ctx, componenttest.NewNopExporterCreateSettings(), eCfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, me, "failed to create metrics exporter")
+
+	le, err := factory.CreateLogsExporter(ctx, componenttest.NewNopExporterCreateSettings(), eCfg)
+	assert.NoError(t, err)
+	assert.NotNil(t, le, "failed to create log exporter")
 }

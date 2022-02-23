@@ -1,6 +1,6 @@
 # Google Cloud Exporter
 
-This exporter can be used to send metrics and traces to Google Cloud Monitoring and Trace (formerly known as Stackdriver) respectively.
+This exporter can be used to send logs, metrics, and traces to Google Cloud Logging, Monitoring, Trace (formerly known as Stackdriver) respectively.
 
 ## Getting started
 
@@ -60,6 +60,10 @@ These instructions are to get you up and running quickly with the GCP exporter i
           receivers: [otlp]
           processors: [memory_limiter, batch]
           exporters: [googlecloud, logging]
+        logs:
+          receivers: [otlp]
+          processors: [memeory_limiter, batch]
+          exporters: [googlecloud, logging]
     ```
 
 3.  **Set up credentials.**
@@ -104,7 +108,7 @@ These instructions are to get you up and running quickly with the GCP exporter i
 
     </details>
 
-5.  **Gather telemetry.** Run an application that can submit OTLP-formatted metrics and traces, and configure it to send them to `127.0.0.1:4317` (for gRPC) or `127.0.0.1:55681` (for HTTP).
+5.  **Gather telemetry.** Run an application that can submit OTLP-formatted logs, metrics, and traces, and configure it to send them to `127.0.0.1:4317` (for gRPC) or `127.0.0.1:55681` (for HTTP).
 
     <details>
       <summary>Alternatives</summary>
@@ -116,7 +120,7 @@ These instructions are to get you up and running quickly with the GCP exporter i
       *   Set up a receiver for some other protocol (such Prometheus, StatsD, Zipkin or Jaeger), and run an application that speaks one of those protocols.
     </details>
 
-6.  **View telemetry in GCP.** Use the GCP [metrics explorer](https://console.cloud.google.com/monitoring/metrics-explorer) and [trace overview](https://console.cloud.google.com/traces) to view your newly submitted telemetry.
+6.  **View telemetry in GCP.** Use the GCP [logs explorer](https://console.cloud.google.com/logs), [metrics explorer](https://console.cloud.google.com/monitoring/metrics-explorer) and [trace overview](https://console.cloud.google.com/traces) to view your newly submitted telemetry.
 
 ## Configuration reference
 
@@ -127,7 +131,7 @@ The following configuration options are supported:
 - `user_agent` (optional): Override the user agent string sent on requests to Cloud Monitoring (currently only applies to metrics). Specify `{{version}}` to include the application version number. Defaults to `opentelemetry-collector-contrib {{version}}`.
 - `use_insecure` (optional): If true. use gRPC as their communication transport. Only has effect if Endpoint is not "".
 - `timeout` (optional): Timeout for all API calls. If not set, defaults to 12 seconds.
-- `resource_mappings` (optional): ResourceMapping defines mapping of resources from source (OpenCensus) to target (Google Cloud).
+- `resource_mappings` (optional): ResourceMapping defines mapping of resources from source (OpenCensus) to target (Google Cloud). Note: Does not apply to logging.
   - `label_mappings` (optional): Optional flag signals whether we can proceed with transformation if a label is missing in the resource.
 - `retry_on_failure` (optional): Configuration for how to handle retries when sending data to Google Cloud fails.
   - `enabled` (default = true)
@@ -148,6 +152,10 @@ Additional configuration for the metric exporter:
 
 - `metric.prefix` (optional): MetricPrefix overrides the prefix / namespace of the Google Cloud metric type identifier. If not set, defaults to "custom.googleapis.com/opencensus/"
 - `metric.skip_create_descriptor` (optional): Whether to skip creating the metric descriptor.
+
+Additional configuration for the logs exporter:
+
+- `log.name_fields` (optional): NameFields is used to specify which nested attribute should be used for the log name. This uses simple JSON dot notation."
 
 Example:
 
@@ -183,6 +191,10 @@ exporters:
     metric:
       prefix: prefix
       skip_create_descriptor: true
+    log:
+      name_fields:
+        - field1
+        - field2.field3.field4
 ```
 
 Beyond standard YAML configuration as outlined in the sections that follow,
