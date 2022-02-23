@@ -1,0 +1,21 @@
+receivers:
+  nop:
+
+processors:
+  nop:
+
+exporters:
+  azureblob:
+    connection_string: abcdefg
+
+
+service:
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [azureblob]
+    logs:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [azureblob]

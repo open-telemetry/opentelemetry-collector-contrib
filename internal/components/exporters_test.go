@@ -268,6 +268,14 @@ func TestDefaultExporters(t *testing.T) {
 			},
 		},
 		{
+			exporter: "azureblob",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["azureblob"].CreateDefaultConfig().(*azureblobexporter.Config)
+				cfg.ConnectionString = "azureblobconnectionstring"
+				return cfg
+			},
+		},
+		{
 			exporter: "carbon",
 			getConfigFn: func() config.Exporter {
 				cfg := expFactories["carbon"].CreateDefaultConfig().(*carbonexporter.Config)

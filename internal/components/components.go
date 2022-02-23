@@ -231,6 +231,7 @@ func Components() (component.Factories, error) {
 		awsprometheusremotewriteexporter.NewFactory(),
 		awsxrayexporter.NewFactory(),
 		azuremonitorexporter.NewFactory(),
+		azureblobexporter.NewFactory(),
 		carbonexporter.NewFactory(),
 		clickhouseexporter.NewFactory(),
 		coralogixexporter.NewFactory(),

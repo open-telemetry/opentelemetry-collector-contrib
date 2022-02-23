@@ -31,8 +31,8 @@ const (
 func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		typeStr,
-		createDefaultConfig,
 		exporterhelper.WithTraces(createTracesExporter),
+		createDefaultConfig,
 		exporterhelper.WithMetrics(createMetricsExporter),
 	)
 }
