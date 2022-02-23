@@ -136,7 +136,7 @@ func TestProcessAndBuild(t *testing.T) {
 			newTestEntry,
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Resource = map[string]string{"new": "newVal"}
+				e.Resource = map[string]interface{}{"new": "newVal"}
 				return e
 			},
 			false,
@@ -152,7 +152,7 @@ func TestProcessAndBuild(t *testing.T) {
 			newTestEntry,
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Resource = map[string]string{"new": "val_suffix"}
+				e.Resource = map[string]interface{}{"new": "val_suffix"}
 				return e
 			},
 			false,

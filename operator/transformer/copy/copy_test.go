@@ -180,7 +180,7 @@ func TestBuildAndProcess(t *testing.T) {
 			func() *entry.Entry {
 				e := newTestEntry()
 				e.Attributes = map[string]interface{}{"key": "val"}
-				e.Resource = map[string]string{"key2": "val"}
+				e.Resource = map[string]interface{}{"key2": "val"}
 				return e
 			},
 		},

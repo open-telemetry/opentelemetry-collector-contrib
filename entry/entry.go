@@ -45,7 +45,7 @@ type Entry struct {
 	Timestamp    time.Time              `json:"timestamp"               yaml:"timestamp"`
 	Body         interface{}            `json:"body"                    yaml:"body"`
 	Attributes   map[string]interface{} `json:"attributes,omitempty"    yaml:"attributes,omitempty"`
-	Resource     map[string]string      `json:"resource,omitempty"      yaml:"resource,omitempty"`
+	Resource     map[string]interface{} `json:"resource,omitempty"      yaml:"resource,omitempty"`
 	SeverityText string                 `json:"severity_text,omitempty" yaml:"severity_text,omitempty"`
 	SpanId       []byte                 `json:"span_id,omitempty"       yaml:"span_id,omitempty"`
 	TraceId      []byte                 `json:"trace_id,omitempty"      yaml:"trace_id,omitempty"`
@@ -71,7 +71,7 @@ func (entry *Entry) AddAttribute(key, value string) {
 // AddResourceKey wil add a key/value pair to the entry's resource.
 func (entry *Entry) AddResourceKey(key, value string) {
 	if entry.Resource == nil {
-		entry.Resource = make(map[string]string)
+		entry.Resource = make(map[string]interface{})
 	}
 	entry.Resource[key] = value
 }
@@ -197,7 +197,7 @@ func (entry *Entry) Copy() *Entry {
 		Severity:     entry.Severity,
 		SeverityText: entry.SeverityText,
 		Attributes:   copyInterfaceMap(entry.Attributes),
-		Resource:     copyStringMap(entry.Resource),
+		Resource:     copyInterfaceMap(entry.Resource),
 		Body:         copyValue(entry.Body),
 		TraceId:      copyByteArray(entry.TraceId),
 		SpanId:       copyByteArray(entry.SpanId),

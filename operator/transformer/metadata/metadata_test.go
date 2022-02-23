@@ -96,7 +96,7 @@ func TestMetadata(t *testing.T) {
 			entry.New(),
 			func() *entry.Entry {
 				e := entry.New()
-				e.Resource = map[string]string{
+				e.Resource = map[string]interface{}{
 					"key1": "value1",
 				}
 				return e
@@ -112,7 +112,7 @@ func TestMetadata(t *testing.T) {
 			entry.New(),
 			func() *entry.Entry {
 				e := entry.New()
-				e.Resource = map[string]string{
+				e.Resource = map[string]interface{}{
 					"key1": "startend",
 				}
 				return e
@@ -128,7 +128,7 @@ func TestMetadata(t *testing.T) {
 			entry.New(),
 			func() *entry.Entry {
 				e := entry.New()
-				e.Resource = map[string]string{
+				e.Resource = map[string]interface{}{
 					"key1": "foo",
 				}
 				return e

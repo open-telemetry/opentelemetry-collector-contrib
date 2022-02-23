@@ -35,12 +35,12 @@ func TestHostAttributer(t *testing.T) {
 	cases := []struct {
 		name             string
 		config           HostIdentifierConfig
-		expectedResource map[string]string
+		expectedResource map[string]interface{}
 	}{
 		{
 			"HostnameAndIP",
 			MockHostIdentifierConfig(true, true, "ip", "hostname"),
-			map[string]string{
+			map[string]interface{}{
 				"host.name": "hostname",
 				"host.ip":   "ip",
 			},
@@ -48,14 +48,14 @@ func TestHostAttributer(t *testing.T) {
 		{
 			"HostnameNoIP",
 			MockHostIdentifierConfig(false, true, "ip", "hostname"),
-			map[string]string{
+			map[string]interface{}{
 				"host.name": "hostname",
 			},
 		},
 		{
 			"IPNoHostname",
 			MockHostIdentifierConfig(true, false, "ip", "hostname"),
-			map[string]string{
+			map[string]interface{}{
 				"host.ip": "ip",
 			},
 		},
