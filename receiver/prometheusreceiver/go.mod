@@ -10,8 +10,8 @@ require (
 	github.com/prometheus/common v0.32.1
 	github.com/prometheus/prometheus v1.8.2-0.20220117154355-4855a0c067e2
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.45.1-0.20220219184850-89e0d42c11df
-	go.opentelemetry.io/collector/model v0.45.1-0.20220219184850-89e0d42c11df
+	go.opentelemetry.io/collector v0.45.1-0.20220222205432-ec4f7040191d
+	go.opentelemetry.io/collector/model v0.45.1-0.20220222185228-27f7607ca13a
 	go.uber.org/zap v1.21.0
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/yaml.v2 v2.4.0
@@ -32,7 +32,7 @@ require (
 	github.com/Microsoft/go-winio v0.4.17 // indirect
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
 	github.com/armon/go-metrics v0.3.10 // indirect
-	github.com/aws/aws-sdk-go v1.43.2 // indirect
+	github.com/aws/aws-sdk-go v1.43.4 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.2 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
@@ -79,7 +79,7 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.14.2 // indirect
+	github.com/klauspost/compress v1.14.4 // indirect
 	github.com/knadh/koanf v1.4.0 // indirect
 	github.com/kolo/xmlrpc v0.0.0-20201022064351-38db28db192b // indirect
 	github.com/linode/linodego v1.2.1 // indirect
@@ -125,7 +125,7 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.29.0 // indirect
-	go.opentelemetry.io/contrib/zpages v0.28.0 // indirect
+	go.opentelemetry.io/contrib/zpages v0.29.0 // indirect
 	go.opentelemetry.io/otel v1.4.1 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.27.0 // indirect
 	go.opentelemetry.io/otel/internal/metric v0.27.0 // indirect
