@@ -2,6 +2,47 @@
 
 ## Unreleased
 
+### 💡 Enhancements 💡
+
+
+- `internal/stanza` : Export metrics from Stanza receivers (#8025)
+- `hostreceiver/pagingscraper`: Migrate the scraper to the mdatagen metrics builder (#7139)
+- Do not drop zero trace/span id spans in the jaeger conversion (#7946)
+- Upgrade to use semantic conventions 1.6.1 (#7926)
+- `dynatraceexporter`: Validate QueueSettings and perform config validation in Validate() instead (#8020)
+- `sapmexporter`: Add validation for `sending_queue` setting (#8023)
+- `signalfxexporter`: Add validation for `sending_queue` setting (#8026)
+
+### 🛑 Breaking changes 🛑
+
+- Remove deprecated functions from jaeger translator (#8032)
+
+### 🚩 Deprecations 🚩
+
+### 🧰 Bug fixes 🧰
+
+- `prometheusreceiver`: Fix segfault that can occur after receiving stale metrics (#8056)
+
+### 🚀 New components 🚀
+
+## v0.45.1
+
+### 💡 Enhancements 💡
+
+- `sumologicexporter`: Move validation to Config (#7936)
+- `elasticsearchexporter`: Fix crash with batch processor (#7953).
+- `splunkhecexporter`: Batch metrics payloads (#7760)
+- `tanzuobservabilityexporter`: Add internal SDK metric tag (#7826)
+- `hostreceiver/processscraper`: Migrate the scraper to the mdatagen metrics builder (#7287)
+
+### 🧰 Bug fixes 🧰
+
+- `awsprometheusremotewriteexporter`: fix dependencies issue (#7963)
+
+### 🚀 New components 🚀
+
+- `awsfirehose` receiver: Add AWS Kinesis Data Firehose Receiver (#7918)
+
 ## v0.45.0
 
 ### 💡 Enhancements 💡
@@ -33,6 +74,16 @@
     the direct pipeline is the only remaining pipeline.
 - `translator/jaeger`: Cleanup jaeger translator function names (#7775)
   - Deprecate old funcs with Internal word.
+- `mysqlreceiver`: Update data model and names for several metrics (#7924)
+  - Change all metrics to Int values
+  - Remove `mysql.buffer_pool_pages`. Replace with:
+    - `mysql.buffer_pool.pages`
+    - `mysql.buffer_pool.data_pages`
+    - `mysql.buffer_pool.page_flushes`
+  - Remove `mysql.buffer_pool_size`. Replace with:
+    - `mysql.buffer_pool.limit`
+    - `mysql.buffer_pool.usage`
+  - Rename `mysql.buffer_pool_operations` to `mysql.buffer_pool.operations`
 
 ### 🚩 Deprecations 🚩
 

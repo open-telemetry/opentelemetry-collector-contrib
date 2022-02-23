@@ -46,9 +46,9 @@ func NewFactory() component.ExporterFactory {
 func createDefaultConfig() config.Exporter {
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
-		RetrySettings:    exporterhelper.DefaultRetrySettings(),
-		QueueSettings:    exporterhelper.DefaultQueueSettings(),
+		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
+		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 		Encoding: Encoding{
 			Name:        defaultEncoding,
 			Compression: defaultCompression,

@@ -42,7 +42,7 @@ func NewFactory() component.ReceiverFactory {
 
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ScraperControllerSettings: scraperhelper.DefaultScraperControllerSettings(typeStr),
+		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
 		Brokers:                   []string{defaultBroker},
 		GroupMatch:                defaultGroupMatch,
 		TopicMatch:                defaultTopicMatch,

@@ -16,7 +16,6 @@ package sumologicexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -38,31 +37,8 @@ type sumologicexporter struct {
 }
 
 func initExporter(cfg *Config, settings component.TelemetrySettings) (*sumologicexporter, error) {
-	switch cfg.LogFormat {
-	case JSONFormat:
-	case TextFormat:
-	default:
-		return nil, fmt.Errorf("unexpected log format: %s", cfg.LogFormat)
-	}
-
-	switch cfg.MetricFormat {
-	case GraphiteFormat:
-	case Carbon2Format:
-	case PrometheusFormat:
-	default:
-		return nil, fmt.Errorf("unexpected metric format: %s", cfg.MetricFormat)
-	}
-
-	switch cfg.CompressEncoding {
-	case GZIPCompression:
-	case DeflateCompression:
-	case NoCompression:
-	default:
-		return nil, fmt.Errorf("unexpected compression encoding: %s", cfg.CompressEncoding)
-	}
-
-	if len(cfg.HTTPClientSettings.Endpoint) == 0 {
-		return nil, errors.New("endpoint is not set")
+	if err := cfg.Validate(); err != nil {
+		return nil, err
 	}
 
 	sfs, err := newSourceFormats(cfg)

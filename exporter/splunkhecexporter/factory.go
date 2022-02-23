@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr"
@@ -64,11 +64,12 @@ func createDefaultConfig() config.Exporter {
 		TimeoutSettings: exporterhelper.TimeoutSettings{
 			Timeout: defaultHTTPTimeout,
 		},
-		RetrySettings:        exporterhelper.DefaultRetrySettings(),
-		QueueSettings:        exporterhelper.DefaultQueueSettings(),
-		DisableCompression:   false,
-		MaxConnections:       defaultMaxIdleCons,
-		MaxContentLengthLogs: maxContentLengthLogsLimit,
+		RetrySettings:           exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:           exporterhelper.NewDefaultQueueSettings(),
+		DisableCompression:      false,
+		MaxConnections:          defaultMaxIdleCons,
+		MaxContentLengthLogs:    maxContentLengthLogsLimit,
+		MaxContentLengthMetrics: maxContentLengthMetricsLimit,
 		HecToOtelAttrs: splunk.HecToOtelAttrs{
 			Source:     splunk.DefaultSourceLabel,
 			SourceType: splunk.DefaultSourceTypeLabel,

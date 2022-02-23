@@ -43,8 +43,8 @@ func createDefaultConfig() config.Exporter {
 		APIURL:              "https://api.honeycomb.io",
 		SampleRateAttribute: "",
 		Debug:               false,
-		RetrySettings:       exporterhelper.DefaultRetrySettings(),
-		QueueSettings:       exporterhelper.DefaultQueueSettings(),
+		RetrySettings:       exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:       exporterhelper.NewDefaultQueueSettings(),
 	}
 }
 

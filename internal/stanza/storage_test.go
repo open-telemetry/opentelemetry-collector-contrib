@@ -21,6 +21,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/storagetest"
@@ -88,7 +91,10 @@ func TestFailOnMultipleStorageExtensions(t *testing.T) {
 func createReceiver(t *testing.T) *receiver {
 	params := component.ReceiverCreateSettings{
 		TelemetrySettings: component.TelemetrySettings{
-			Logger: zaptest.NewLogger(t),
+			Logger:         zaptest.NewLogger(t),
+			TracerProvider: trace.NewNoopTracerProvider(),
+			MeterProvider:  metric.NewNoopMeterProvider(),
+			MetricsLevel:   configtelemetry.LevelNone,
 		},
 	}
 	mockConsumer := mockLogsConsumer{}

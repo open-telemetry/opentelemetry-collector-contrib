@@ -17,11 +17,12 @@ package stanza // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"context"
 
-	"github.com/open-telemetry/opentelemetry-log-collection/agent"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
+	"github.com/open-telemetry/opentelemetry-log-collection/pipeline"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
@@ -60,7 +61,7 @@ func createLogsReceiver(logReceiverType LogReceiverType) receiverhelper.CreateLo
 			return nil, err
 		}
 
-		pipeline := append([]operator.Config{*inputCfg}, operatorCfgs...)
+		operators := append([]operator.Config{*inputCfg}, operatorCfgs...)
 
 		emitterOpts := []LogEmitterOption{
 			LogEmitterWithLogger(params.Logger.Sugar()),
@@ -75,10 +76,10 @@ func createLogsReceiver(logReceiverType LogReceiverType) receiverhelper.CreateLo
 		}
 
 		emitter := NewLogEmitter(emitterOpts...)
-		logAgent, err := agent.NewBuilder(params.Logger.Sugar()).
-			WithConfig(&agent.Config{Pipeline: pipeline}).
-			WithDefaultOutput(emitter).
-			Build()
+		pipe, err := pipeline.Config{
+			Operators:     operators,
+			DefaultOutput: emitter,
+		}.Build(params.Logger.Sugar())
 		if err != nil {
 			return nil, err
 		}
@@ -91,14 +92,18 @@ func createLogsReceiver(logReceiverType LogReceiverType) receiverhelper.CreateLo
 			opts = append(opts, WithWorkerCount(baseCfg.Converter.WorkerCount))
 		}
 		converter := NewConverter(opts...)
-
+		obsrecv := obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             cfg.ID(),
+			ReceiverCreateSettings: params,
+		})
 		return &receiver{
 			id:        cfg.ID(),
-			agent:     logAgent,
+			pipe:      pipe,
 			emitter:   emitter,
 			consumer:  nextConsumer,
 			logger:    params.Logger,
 			converter: converter,
+			obsrecv:   obsrecv,
 		}, nil
 	}
 }

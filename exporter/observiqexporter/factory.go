@@ -47,8 +47,8 @@ func createDefaultConfig() config.Exporter {
 		TimeoutSettings: exporterhelper.TimeoutSettings{
 			Timeout: defaultHTTPTimeout,
 		},
-		RetrySettings: exporterhelper.DefaultRetrySettings(),
-		QueueSettings: exporterhelper.DefaultQueueSettings(),
+		RetrySettings: exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 		AgentID:       defaultAgentID(),
 		AgentName:     defaultAgentName(),
 		DialerTimeout: defaultDialerTimeout,

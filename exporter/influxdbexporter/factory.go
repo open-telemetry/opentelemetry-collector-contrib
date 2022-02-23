@@ -92,8 +92,8 @@ func createDefaultConfig() config.Exporter {
 				"User-Agent": "OpenTelemetry -> Influx",
 			},
 		},
-		QueueSettings: exporterhelper.DefaultQueueSettings(),
-		RetrySettings: exporterhelper.DefaultRetrySettings(),
+		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+		RetrySettings: exporterhelper.NewDefaultRetrySettings(),
 		MetricsSchema: "telegraf-prometheus-v1",
 	}
 }
