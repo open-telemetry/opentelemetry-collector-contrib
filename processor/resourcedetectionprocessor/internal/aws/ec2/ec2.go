@@ -26,7 +26,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
@@ -106,10 +106,10 @@ func (d *Detector) Detect(ctx context.Context) (resource pdata.Resource, schemaU
 }
 
 func getHTTPClientSettings(ctx context.Context, logger *zap.Logger) *http.Client {
-	client, ok := ctx.Value(internal.Client{}).(*http.Client)
-	if !ok {
+	client, err := internal.ClientFromContext(ctx)
+	if err != nil {
 		client = http.DefaultClient
-		logger.Debug("Could not find client in context thus creating default")
+		logger.Debug("Error retrieving client from context thus creating default", zap.Error(err))
 	}
 	return client
 }

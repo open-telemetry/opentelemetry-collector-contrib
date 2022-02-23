@@ -29,11 +29,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testing/container"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 )
 
@@ -67,8 +67,8 @@ func paramsAndContext(t *testing.T) (component.ReceiverCreateSettings, context.C
 func TestDefaultMetricsIntegration(t *testing.T) {
 	params, ctx, cancel := paramsAndContext(t)
 	defer cancel()
-	d := container.New(t)
-	d.StartImage("docker.io/library/nginx:1.17", container.WithPortReady(80))
+	d := containertest.New(t)
+	d.StartImage("docker.io/library/nginx:1.17", containertest.WithPortReady(80))
 
 	consumer := new(consumertest.MetricsSink)
 	f, config := factory()
@@ -87,8 +87,8 @@ func TestDefaultMetricsIntegration(t *testing.T) {
 }
 
 func TestAllMetricsIntegration(t *testing.T) {
-	d := container.New(t)
-	d.StartImage("docker.io/library/nginx:1.17", container.WithPortReady(80))
+	d := containertest.New(t)
+	d.StartImage("docker.io/library/nginx:1.17", containertest.WithPortReady(80))
 
 	consumer := new(consumertest.MetricsSink)
 	f, config := factory()
@@ -122,8 +122,8 @@ func TestMonitoringAddedContainerIntegration(t *testing.T) {
 		t: t,
 	}))
 
-	d := container.New(t)
-	d.StartImage("docker.io/library/nginx:1.17", container.WithPortReady(80))
+	d := containertest.New(t)
+	d.StartImage("docker.io/library/nginx:1.17", containertest.WithPortReady(80))
 
 	assert.Eventuallyf(t, func() bool {
 		return len(consumer.AllMetrics()) > 0
@@ -135,8 +135,8 @@ func TestMonitoringAddedContainerIntegration(t *testing.T) {
 func TestExcludedImageProducesNoMetricsIntegration(t *testing.T) {
 	params, ctx, cancel := paramsAndContext(t)
 	defer cancel()
-	d := container.New(t)
-	d.StartImage("docker.io/library/redis:6.0.3", container.WithPortReady(6379))
+	d := containertest.New(t)
+	d.StartImage("docker.io/library/redis:6.0.3", containertest.WithPortReady(6379))
 
 	f, config := factory()
 	config.ExcludedImages = append(config.ExcludedImages, "*redis*")
@@ -181,8 +181,8 @@ func TestRemovedContainerRemovesRecordsIntegration(t *testing.T) {
 	require.NoError(t, client.LoadContainerList(context.Background()))
 	go client.ContainerEventLoop(context.Background())
 
-	d := container.New(t)
-	nginx := d.StartImage("docker.io/library/nginx:1.17", container.WithPortReady(80))
+	d := containertest.New(t)
+	nginx := d.StartImage("docker.io/library/nginx:1.17", containertest.WithPortReady(80))
 	t.Log(nginx.ID)
 	desiredAmount := func(numDesired int) func() bool {
 		return func() bool {

@@ -26,6 +26,9 @@ import (
 type Config struct {
 	internal.ConfigSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
+	// Metrics allows to customize scraped metrics representation.
+	Metrics metadata.MetricsSettings `mapstructure:"metrics"`
+
 	// IncludeDevices specifies a filter on the devices that should be included in the generated metrics.
 	IncludeDevices DeviceMatchConfig `mapstructure:"include_devices"`
 	// ExcludeDevices specifies a filter on the devices that should be excluded from the generated metrics.

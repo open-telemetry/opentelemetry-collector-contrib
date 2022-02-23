@@ -49,10 +49,12 @@ func runIndividualLogTestCase(t *testing.T, tt logTestCase, tp component.LogsPro
 	})
 }
 
-func generateLogData(logName string, attrs map[string]pdata.AttributeValue) pdata.Logs {
+func generateLogData(resourceName string, attrs map[string]pdata.AttributeValue) pdata.Logs {
 	td := pdata.NewLogs()
-	lr := td.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty()
-	lr.SetName(logName)
+	res := td.ResourceLogs().AppendEmpty()
+	res.Resource().Attributes().InsertString("name", resourceName)
+	ill := res.InstrumentationLibraryLogs().AppendEmpty()
+	lr := ill.LogRecords().AppendEmpty()
 	pdata.NewAttributeMapFromMap(attrs).CopyTo(lr.Attributes())
 	lr.Attributes().Sort()
 	return td
@@ -161,8 +163,9 @@ func TestAttributes_FilterLogs(t *testing.T) {
 		{Key: "attribute1", Action: attraction.INSERT, Value: 123},
 	}
 	oCfg.Include = &filterconfig.MatchProperties{
-		LogNames: []string{"^[^i].*"},
-		Config:   *createConfig(filterset.Regexp),
+		Resources: []filterconfig.Attribute{{Key: "name", Value: "^[^i].*"}},
+		//Libraries: []filterconfig.InstrumentationLibrary{{Name: "^[^i].*"}},
+		Config: *createConfig(filterset.Regexp),
 	}
 	oCfg.Exclude = &filterconfig.MatchProperties{
 		Attributes: []filterconfig.Attribute{
@@ -171,7 +174,7 @@ func TestAttributes_FilterLogs(t *testing.T) {
 		Config: *createConfig(filterset.Strict),
 	}
 	tp, err := factory.CreateLogsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, tp)
 
 	for _, tt := range testCases {
@@ -226,12 +229,12 @@ func TestAttributes_FilterLogsByNameStrict(t *testing.T) {
 		{Key: "attribute1", Action: attraction.INSERT, Value: 123},
 	}
 	oCfg.Include = &filterconfig.MatchProperties{
-		LogNames: []string{"apply", "dont_apply"},
-		Config:   *createConfig(filterset.Strict),
+		Resources: []filterconfig.Attribute{{Key: "name", Value: "apply"}},
+		Config:    *createConfig(filterset.Strict),
 	}
 	oCfg.Exclude = &filterconfig.MatchProperties{
-		LogNames: []string{"dont_apply"},
-		Config:   *createConfig(filterset.Strict),
+		Resources: []filterconfig.Attribute{{Key: "name", Value: "dont_apply"}},
+		Config:    *createConfig(filterset.Strict),
 	}
 	tp, err := factory.CreateLogsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
 	require.Nil(t, err)
@@ -289,12 +292,12 @@ func TestAttributes_FilterLogsByNameRegexp(t *testing.T) {
 		{Key: "attribute1", Action: attraction.INSERT, Value: 123},
 	}
 	oCfg.Include = &filterconfig.MatchProperties{
-		LogNames: []string{"^apply.*"},
-		Config:   *createConfig(filterset.Regexp),
+		Resources: []filterconfig.Attribute{{Key: "name", Value: "^apply.*"}},
+		Config:    *createConfig(filterset.Regexp),
 	}
 	oCfg.Exclude = &filterconfig.MatchProperties{
-		LogNames: []string{".*dont_apply$"},
-		Config:   *createConfig(filterset.Regexp),
+		Resources: []filterconfig.Attribute{{Key: "name", Value: ".*dont_apply$"}},
+		Config:    *createConfig(filterset.Regexp),
 	}
 	tp, err := factory.CreateLogsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
 	require.Nil(t, err)
@@ -397,10 +400,11 @@ func BenchmarkAttributes_FilterLogsByName(b *testing.B) {
 		{Key: "attribute1", Action: attraction.INSERT, Value: 123},
 	}
 	oCfg.Include = &filterconfig.MatchProperties{
-		LogNames: []string{"^apply.*"},
+		Config:    *createConfig(filterset.Regexp),
+		Resources: []filterconfig.Attribute{{Key: "name", Value: "^apply.*"}},
 	}
 	tp, err := factory.CreateLogsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
-	require.Nil(b, err)
+	require.NoError(b, err)
 	require.NotNil(b, tp)
 
 	for _, tt := range testCases {

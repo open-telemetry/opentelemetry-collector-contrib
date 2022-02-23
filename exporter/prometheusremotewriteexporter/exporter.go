@@ -57,7 +57,7 @@ type prwExporter struct {
 
 // newPRWExporter initializes a new prwExporter instance and sets fields accordingly.
 func newPRWExporter(cfg *Config, set component.ExporterCreateSettings) (*prwExporter, error) {
-	sanitizedLabels, err := validateAndSanitizeExternalLabels(cfg.ExternalLabels)
+	sanitizedLabels, err := validateAndSanitizeExternalLabels(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -107,33 +107,36 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) erro
 	case <-prwe.closeChan:
 		return errors.New("shutdown has been called")
 	default:
-		tsMap, dropped, errs := prometheusremotewrite.MetricsToPRW(prwe.namespace, prwe.externalLabels, md)
-
-		if exportErrors := prwe.export(ctx, tsMap); len(exportErrors) != 0 {
-			dropped = md.MetricCount()
-			errs = multierr.Append(errs, multierr.Combine(exportErrors...))
+		tsMap, err := prometheusremotewrite.FromMetrics(md, prometheusremotewrite.Settings{Namespace: prwe.namespace, ExternalLabels: prwe.externalLabels})
+		if err != nil {
+			err = consumererror.NewPermanent(err)
 		}
-
-		if dropped != 0 {
-			return errs
-		}
-
-		return nil
+		// Call export even if a conversion error, since there may be points that were successfully converted.
+		return multierr.Combine(err, prwe.export(ctx, tsMap))
 	}
 }
 
-func validateAndSanitizeExternalLabels(externalLabels map[string]string) (map[string]string, error) {
+func validateAndSanitizeExternalLabels(cfg *Config) (map[string]string, error) {
 	sanitizedLabels := make(map[string]string)
-	for key, value := range externalLabels {
+	for key, value := range cfg.ExternalLabels {
 		if key == "" || value == "" {
 			return nil, fmt.Errorf("prometheus remote write: external labels configuration contains an empty key or value")
 		}
 
 		// Sanitize label keys to meet Prometheus Requirements
+		// if sanitizeLabel is enabled, invoke sanitizeLabels else sanitize
 		if len(key) > 2 && key[:2] == "__" {
-			key = "__" + sanitize(key[2:])
+			if cfg.sanitizeLabel {
+				key = "__" + sanitizeLabels(key[2:])
+			} else {
+				key = "__" + sanitize(key[2:])
+			}
 		} else {
-			key = sanitize(key)
+			if cfg.sanitizeLabel {
+				key = sanitizeLabels(key)
+			} else {
+				key = sanitize(key)
+			}
 		}
 		sanitizedLabels[key] = value
 	}
@@ -142,13 +145,11 @@ func validateAndSanitizeExternalLabels(externalLabels map[string]string) (map[st
 }
 
 // export sends a Snappy-compressed WriteRequest containing TimeSeries to a remote write endpoint in order
-func (prwe *prwExporter) export(ctx context.Context, tsMap map[string]*prompb.TimeSeries) []error {
-	var errs []error
+func (prwe *prwExporter) export(ctx context.Context, tsMap map[string]*prompb.TimeSeries) error {
 	// Calls the helper function to convert and batch the TsMap to the desired format
 	requests, err := batchTimeSeries(tsMap, maxBatchByteSize)
 	if err != nil {
-		errs = append(errs, consumererror.NewPermanent(err))
-		return errs
+		return err
 	}
 
 	input := make(chan *prompb.WriteRequest, len(requests))
@@ -157,23 +158,22 @@ func (prwe *prwExporter) export(ctx context.Context, tsMap map[string]*prompb.Ti
 	}
 	close(input)
 
-	var mu sync.Mutex
 	var wg sync.WaitGroup
 
 	concurrencyLimit := int(math.Min(float64(prwe.concurrency), float64(len(requests))))
 	wg.Add(concurrencyLimit) // used to wait for workers to be finished
 
+	var mu sync.Mutex
+	var errs error
 	// Run concurrencyLimit of workers until there
 	// is no more requests to execute in the input channel.
 	for i := 0; i < concurrencyLimit; i++ {
 		go func() {
 			defer wg.Done()
-
 			for request := range input {
-				err := prwe.execute(ctx, request)
-				if err != nil {
+				if errExecute := prwe.execute(ctx, request); errExecute != nil {
 					mu.Lock()
-					errs = append(errs, err)
+					errs = multierr.Append(errs, consumererror.NewPermanent(errExecute))
 					mu.Unlock()
 				}
 			}

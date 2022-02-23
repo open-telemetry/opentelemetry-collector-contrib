@@ -17,14 +17,14 @@ package dockerstatsreceiver
 import (
 	"encoding/json"
 	"io/ioutil"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
 	dtypes "github.com/docker/docker/api/types"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 )
@@ -232,7 +232,7 @@ func TestZeroValueStats(t *testing.T) {
 }
 
 func statsJSON(t *testing.T) *dtypes.StatsJSON {
-	statsRaw, err := ioutil.ReadFile(path.Join(".", "testdata", "stats.json"))
+	statsRaw, err := ioutil.ReadFile(filepath.Join("testdata", "stats.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -246,7 +246,7 @@ func statsJSON(t *testing.T) *dtypes.StatsJSON {
 }
 
 func containerJSON(t *testing.T) docker.Container {
-	containerRaw, err := ioutil.ReadFile(path.Join(".", "testdata", "container.json"))
+	containerRaw, err := ioutil.ReadFile(filepath.Join("testdata", "container.json"))
 	if err != nil {
 		t.Fatal(err)
 	}

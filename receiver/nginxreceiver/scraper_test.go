@@ -33,11 +33,8 @@ import (
 
 func TestScraper(t *testing.T) {
 	nginxMock := newMockServer(t)
-	cfg := &Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Endpoint: nginxMock.URL + "/status",
-		},
-	}
+	cfg := createDefaultConfig().(*Config)
+	cfg.Endpoint = nginxMock.URL + "/status"
 	require.NoError(t, cfg.Validate())
 
 	scraper := newNginxScraper(componenttest.NewNopTelemetrySettings(), cfg)

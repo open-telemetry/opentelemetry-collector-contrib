@@ -6,6 +6,10 @@ extensions:
     directory: .
   file_storage/all_settings:
     directory: .
+    compaction:
+      directory: .
+      on_start: true
+      max_transaction_size: 2048
     timeout: 2s
 
 service:

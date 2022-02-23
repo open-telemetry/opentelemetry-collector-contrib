@@ -15,7 +15,7 @@
 package googlecloudpubsubexporter
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -34,7 +34,7 @@ func TestLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	factories.Exporters[config.Type(typeStr)] = factory
 	cfg, err := servicetest.LoadConfig(
-		path.Join(".", "testdata", "config.yaml"), factories,
+		filepath.Join("testdata", "config.yaml"), factories,
 	)
 
 	require.NoError(t, err)
@@ -62,11 +62,11 @@ func TestLoadConfig(t *testing.T) {
 func TestTraceConfigValidation(t *testing.T) {
 	factory := NewFactory()
 	config := factory.CreateDefaultConfig().(*Config)
-	assert.Error(t, config.validate())
+	assert.Error(t, config.Validate())
 	config.Topic = "projects/000project/topics/my-topic"
-	assert.Error(t, config.validate())
+	assert.Error(t, config.Validate())
 	config.Topic = "projects/my-project/subscriptions/my-subscription"
-	assert.Error(t, config.validate())
+	assert.Error(t, config.Validate())
 	config.Topic = "projects/my-project/topics/my-topic"
-	assert.NoError(t, config.validate())
+	assert.NoError(t, config.Validate())
 }

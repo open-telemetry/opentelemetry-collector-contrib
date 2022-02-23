@@ -18,7 +18,6 @@ package tests
 // coded in this file or use scenarios from perf_scenarios.go.
 
 import (
-	"path"
 	"path/filepath"
 	"testing"
 
@@ -70,7 +69,7 @@ func TestMetric10kDPS(t *testing.T) {
 			testbed.NewOTLPHTTPMetricDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
 			testbed.NewOTLPHTTPDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
-				ExpectedMaxCPU: 50,
+				ExpectedMaxCPU: 55,
 				ExpectedMaxRAM: 92,
 			},
 		},
@@ -105,7 +104,7 @@ func TestMetricsFromFile(t *testing.T) {
 	// This test demonstrates usage of NewFileDataProvider to generate load using
 	// previously recorded data.
 
-	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
+	resultDir, err := filepath.Abs(filepath.Join("results", t.Name()))
 	require.NoError(t, err)
 
 	// Use metrics previously recorded using "file" exporter and "k8scluster" receiver.

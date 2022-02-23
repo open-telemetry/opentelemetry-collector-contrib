@@ -58,6 +58,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/exporter/clickhouseexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/exporter/coralogixexporter"
     schedule:
       interval: "weekly"
@@ -139,6 +143,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/exporter/opencensusexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/parquetexporter"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -270,6 +278,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/internal/aws/cwlogs"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/internal/aws/ecsutil"
     schedule:
       interval: "weekly"
@@ -362,6 +374,14 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/pkg/translator/prometheusremotewrite"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/pkg/translator/signalfx"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/pkg/translator/zipkin"
     schedule:
       interval: "weekly"
@@ -447,6 +467,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/receiver/awsecscontainermetricsreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/awsfirehosereceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -547,6 +571,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/receiver/mongodbatlasreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/mongodbreceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"

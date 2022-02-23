@@ -164,7 +164,7 @@ func verifyNumValidScrapeResults(t *testing.T, td *testData, resourceMetrics []*
 			want++
 		}
 	}
-	require.Equal(t, want, len(resourceMetrics), "want %d valid scrapes, but got %d", want, len(resourceMetrics))
+	require.LessOrEqual(t, want, len(resourceMetrics), "want at least %d valid scrapes, but got %d", want, len(resourceMetrics))
 }
 
 func verifyNumTotalScrapeResults(t *testing.T, td *testData, resourceMetrics []*pdata.ResourceMetrics) {
@@ -174,7 +174,7 @@ func verifyNumTotalScrapeResults(t *testing.T, td *testData, resourceMetrics []*
 			want++
 		}
 	}
-	require.Equal(t, want, len(resourceMetrics), "want %d total scrapes, but got %d", want, len(resourceMetrics))
+	require.LessOrEqual(t, want, len(resourceMetrics), "want at least %d total scrapes, but got %d", want, len(resourceMetrics))
 }
 
 func getMetrics(rm *pdata.ResourceMetrics) []*pdata.Metric {
@@ -547,60 +547,51 @@ func compareSummary(count uint64, sum float64, quantiles [][]float64) summaryPoi
 
 // starts prometheus receiver with custom config, retrieves metrics from MetricsSink
 func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, startTimeMetricRegex string, cfgMuts ...func(*promcfg.Config)) {
-	for _, pdataDirect := range []bool{false, true} {
-		pipelineType := "OpenCensus"
-		if pdataDirect {
-			pipelineType = "pdata"
-		}
-		t.Run(pipelineType, func(t *testing.T) {
-			ctx := context.Background()
-			mp, cfg, err := setupMockPrometheus(targets...)
-			for _, cfgMut := range cfgMuts {
-				cfgMut(cfg)
+	ctx := context.Background()
+	mp, cfg, err := setupMockPrometheus(targets...)
+	for _, cfgMut := range cfgMuts {
+		cfgMut(cfg)
+	}
+	require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
+	defer mp.Close()
+
+	cms := new(consumertest.MetricsSink)
+	receiver := newPrometheusReceiver(componenttest.NewNopReceiverCreateSettings(), &Config{
+		ReceiverSettings:     config.NewReceiverSettings(config.NewComponentID(typeStr)),
+		PrometheusConfig:     cfg,
+		UseStartTimeMetric:   useStartTimeMetric,
+		StartTimeMetricRegex: startTimeMetricRegex,
+	}, cms)
+
+	require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
+
+	// verify state after shutdown is called
+	t.Cleanup(func() {
+		// verify state after shutdown is called
+		assert.Lenf(t, flattenTargets(receiver.scrapeManager.TargetsAll()), len(targets), "expected %v targets to be running", len(targets))
+		require.NoError(t, receiver.Shutdown(context.Background()))
+		assert.Len(t, flattenTargets(receiver.scrapeManager.TargetsAll()), 0, "expected scrape manager to have no targets")
+	})
+	// wait for all provided data to be scraped
+	mp.wg.Wait()
+	metrics := cms.AllMetrics()
+
+	// split and store results by target name
+	pResults := splitMetricsByTarget(metrics)
+	lres, lep := len(pResults), len(mp.endpoints)
+	// There may be an additional scrape entry between when the mock server provided
+	// all responses and when we capture the metrics.  It will be ignored later.
+	assert.GreaterOrEqualf(t, lep, lres, "want at least %d targets, but got %v\n", lep, lres)
+
+	// loop to validate outputs for each targets
+	// Stop once we have evaluated all expected results, any others are superfluous.
+	for _, target := range targets[:lep] {
+		t.Run(target.name, func(t *testing.T) {
+			scrapes := pResults[target.name]
+			if !target.validateScrapes {
+				scrapes = getValidScrapes(t, pResults[target.name])
 			}
-			require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
-			defer mp.Close()
-
-			cms := new(consumertest.MetricsSink)
-			receiver := newPrometheusReceiver(componenttest.NewNopReceiverCreateSettings(), &Config{
-				ReceiverSettings:     config.NewReceiverSettings(config.NewComponentID(typeStr)),
-				PrometheusConfig:     cfg,
-				UseStartTimeMetric:   useStartTimeMetric,
-				StartTimeMetricRegex: startTimeMetricRegex,
-				pdataDirect:          pdataDirect,
-			}, cms)
-
-			require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
-
-			// verify state after shutdown is called
-			t.Cleanup(func() {
-				// verify state after shutdown is called
-				assert.Lenf(t, flattenTargets(receiver.scrapeManager.TargetsAll()), len(targets), "expected %v targets to be running", len(targets))
-				require.NoError(t, receiver.Shutdown(context.Background()))
-				assert.Len(t, flattenTargets(receiver.scrapeManager.TargetsAll()), 0, "expected scrape manager to have no targets")
-			})
-			// wait for all provided data to be scraped
-			mp.wg.Wait()
-			metrics := cms.AllMetrics()
-
-			// split and store results by target name
-			pResults := splitMetricsByTarget(metrics)
-			lres, lep := len(pResults), len(mp.endpoints)
-			// There may be an additional scrape entry between when the mock server provided
-			// all responses and when we capture the metrics.  It will be ignored later.
-			assert.GreaterOrEqualf(t, lep, lres, "want at least %d targets, but got %v\n", lep, lres)
-
-			// loop to validate outputs for each targets
-			// Stop once we have evaluated all expected results, any others are superfluous.
-			for _, target := range targets[:lep] {
-				t.Run(target.name, func(t *testing.T) {
-					scrapes := pResults[target.name]
-					if !target.validateScrapes {
-						scrapes = getValidScrapes(t, pResults[target.name])
-					}
-					target.validateFunc(t, target, scrapes)
-				})
-			}
+			target.validateFunc(t, target, scrapes)
 		})
 	}
 }

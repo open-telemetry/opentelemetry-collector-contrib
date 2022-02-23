@@ -16,7 +16,7 @@ package alibabacloudlogserviceexporter
 
 import (
 	"context"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 )
 
 func createSimpleLogData(numberOfLogs int) pdata.Logs {
@@ -72,7 +72,7 @@ func TestSTSTokenExporter(t *testing.T) {
 		Endpoint:         "us-west-1.log.aliyuncs.com",
 		Project:          "demo-project",
 		Logstore:         "demo-logstore",
-		TokenFilePath:    path.Join(".", "testdata", "config.yaml"),
+		TokenFilePath:    filepath.Join("testdata", "config.yaml"),
 	})
 	assert.NoError(t, err)
 	require.NotNil(t, got)

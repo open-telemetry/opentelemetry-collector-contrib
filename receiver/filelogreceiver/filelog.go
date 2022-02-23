@@ -16,7 +16,7 @@ package filelogreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
-	"github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/input/file"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator/input/file"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"gopkg.in/yaml.v2"

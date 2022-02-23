@@ -10,7 +10,7 @@ ALL_SRC_AND_DOC := $(shell find . \( -name "*.md" -o -name "*.go" -o -name "*.ya
                                 -type f | sort)
 
 # ALL_PKGS is used with 'go cover'
-ALL_PKGS := $(shell go list $(sort $(dir $(ALL_SRC))) 2>/dev/null)
+ALL_PKGS := $(shell $(GOCMD) list $(sort $(dir $(ALL_SRC))) 2>/dev/null)
 
 # build tags required by any component should be defined as an independent variables and later added to GO_BUILD_TAGS below
 GO_BUILD_TAGS=""
@@ -18,9 +18,10 @@ GOTEST_OPT?= -race -v -timeout 300s --tags=$(GO_BUILD_TAGS)
 GOTEST_INTEGRATION_OPT?= -race -timeout 120s
 GOTEST_OPT_WITH_COVERAGE = $(GOTEST_OPT) -coverprofile=coverage.txt -covermode=atomic
 GOTEST_OPT_WITH_INTEGRATION=$(GOTEST_INTEGRATION_OPT) -v -tags=integration,$(GO_BUILD_TAGS) -run=Integration -coverprofile=integration-coverage.txt -covermode=atomic
-GOTEST=go test
-GOOS=$(shell go env GOOS)
-GOARCH=$(shell go env GOARCH)
+GOCMD?= go
+GOTEST=$(GOCMD) test
+GOOS=$(shell $(GOCMD) env GOOS)
+GOARCH=$(shell $(GOCMD) env GOARCH)
 ADDLICENCESE= addlicense
 MISSPELL=misspell -error
 MISSPELL_CORRECTION=misspell -w
@@ -46,16 +47,16 @@ test:
 
 .PHONY: do-unit-tests-with-cover
 do-unit-tests-with-cover:
-	@echo "running go unit test ./... + coverage in `pwd`"
+	@echo "running $(GOCMD) unit test ./... + coverage in `pwd`"
 	@$(GOTEST) $(GOTEST_OPT_WITH_COVERAGE) ./...
-	go tool cover -html=coverage.txt -o coverage.html
+	$(GOCMD) tool cover -html=coverage.txt -o coverage.html
 
 .PHONY: do-integration-tests-with-cover
 do-integration-tests-with-cover:
-	@echo "running go integration test ./... + coverage in `pwd`"
+	@echo "running $(GOCMD) integration test ./... + coverage in `pwd`"
 	@$(GOTEST) $(GOTEST_OPT_WITH_INTEGRATION) ./...
 	@if [ -e integration-coverage.txt ]; then \
-  		go tool cover -html=integration-coverage.txt -o integration-coverage.html; \
+  		$(GOCMD) tool cover -html=integration-coverage.txt -o integration-coverage.html; \
   	fi
 
 .PHONY: benchmark
@@ -94,13 +95,15 @@ fmt:
 lint: checklicense impi misspell
 	$(LINT) run --allow-parallel-runners
 
-.PHONY: porto
-porto:
-	porto -w --include-internal --skip-dirs "^cmd$$" ./
+.PHONY: tidy
+tidy:
+	rm -fr go.sum
+	$(GOCMD) mod tidy -compat=1.17
 
 .PHONY: misspell
 misspell:
-	$(MISSPELL) $(ALL_SRC_AND_DOC)
+	@echo "running $(MISSPELL)"
+	@$(MISSPELL) $(ALL_SRC_AND_DOC)
 
 .PHONY: misspell-correction
 misspell-correction:
@@ -110,6 +113,11 @@ misspell-correction:
 impi:
 	@$(IMPI) --local github.com/open-telemetry/opentelemetry-collector-contrib --scheme stdThirdPartyLocal ./...
 
-.PHONY: dep
-dep:
-	go mod download
+.PHONY: moddownload
+moddownload:
+	$(GOCMD) mod download
+
+.PHONY: updatedep
+updatedep:
+	$(PWD)/internal/buildscripts/update-dep
+	@$(MAKE) tidy
