@@ -38,11 +38,11 @@ const (
 
 // NewFactory creates a Datadog exporter factory
 func NewFactory() component.ExporterFactory {
-	return exporterhelper.NewFactory(
+	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithMetrics(createMetricsExporter),
-		exporterhelper.WithTraces(createTracesExporter),
+		component.WithMetricsExporter(createMetricsExporter),
+		component.WithTracesExporter(createTracesExporter),
 	)
 }
 

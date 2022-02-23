@@ -25,10 +25,10 @@ import (
 
 // NewFactory by Coralogix
 func NewFactory() component.ExporterFactory {
-	return exporterhelper.NewFactory(
+	return component.NewExporterFactory(
 		typestr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTraceExporter),
+		component.WithTracesExporter(createTraceExporter),
 	)
 }
 

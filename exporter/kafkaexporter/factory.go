@@ -66,12 +66,12 @@ func NewFactory(options ...FactoryOption) component.ExporterFactory {
 	for _, o := range options {
 		o(f)
 	}
-	return exporterhelper.NewFactory(
+	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(f.createTracesExporter),
-		exporterhelper.WithMetrics(f.createMetricsExporter),
-		exporterhelper.WithLogs(f.createLogsExporter),
+		component.WithTracesExporter(f.createTracesExporter),
+		component.WithMetricsExporter(f.createMetricsExporter),
+		component.WithLogsExporter(f.createLogsExporter),
 	)
 }
 

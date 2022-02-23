@@ -6,7 +6,7 @@ require (
 	github.com/aws/aws-sdk-go v1.43.4
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.45.1
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.45.1-0.20220222205432-ec4f7040191d
+	go.opentelemetry.io/collector v0.45.1-0.20220223001941-c9c253193a75
 )
 
 require (

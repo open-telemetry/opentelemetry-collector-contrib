@@ -76,12 +76,12 @@ func NewFactory() component.ProcessorFactory {
 		providers:               map[config.ComponentID]*internal.ResourceProvider{},
 	}
 
-	return processorhelper.NewFactory(
+	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		processorhelper.WithTraces(f.createTracesProcessor),
-		processorhelper.WithMetrics(f.createMetricsProcessor),
-		processorhelper.WithLogs(f.createLogsProcessor))
+		component.WithTracesProcessor(f.createTracesProcessor),
+		component.WithMetricsProcessor(f.createMetricsProcessor),
+		component.WithLogsProcessor(f.createLogsProcessor))
 }
 
 // Type gets the type of the Option config created by this factory.
