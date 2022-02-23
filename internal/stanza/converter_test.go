@@ -58,9 +58,18 @@ func complexEntriesForNDifferentHosts(count int, n int) []*entry.Entry {
 	for i := 0; i < count; i++ {
 		e := entry.New()
 		e.Severity = entry.Error
-		e.Resource = map[string]interface{}{ // TODO
-			"type": "global",
-			"host": fmt.Sprintf("host-%d", i%n),
+		e.Resource = map[string]interface{}{
+			"host":   fmt.Sprintf("host-%d", i%n),
+			"bool":   true,
+			"int":    123,
+			"double": 12.34,
+			"string": "hello",
+			"object": map[string]interface{}{
+				"bool":   true,
+				"int":    123,
+				"double": 12.34,
+				"string": "hello",
+			},
 		}
 		e.Body = map[string]interface{}{
 			"bool":   true,
@@ -91,7 +100,18 @@ func complexEntriesForNDifferentHosts(count int, n int) []*entry.Entry {
 func complexEntry() *entry.Entry {
 	e := entry.New()
 	e.Severity = entry.Error
-	e.AddResourceKey("type", "global")
+	e.Resource = map[string]interface{}{
+		"bool":   true,
+		"int":    123,
+		"double": 12.34,
+		"string": "hello",
+		"object": map[string]interface{}{
+			"bool":   true,
+			"int":    123,
+			"double": 12.34,
+			"string": "hello",
+		},
+	}
 	e.Attributes = map[string]interface{}{
 		"bool":   true,
 		"int":    123,
@@ -132,7 +152,13 @@ func TestConvert(t *testing.T) {
 	ent := func() *entry.Entry {
 		e := entry.New()
 		e.Severity = entry.Error
-		e.AddResourceKey("type", "global")
+		e.Resource = map[string]interface{}{
+			"bool":   true,
+			"int":    123,
+			"double": 12.34,
+			"string": "hello",
+			"object": map[string]interface{}{},
+		}
 		e.Attributes = map[string]interface{}{
 			"bool":   true,
 			"int":    123,
@@ -153,14 +179,15 @@ func TestConvert(t *testing.T) {
 	pLogs := Convert(ent)
 	require.Equal(t, 1, pLogs.ResourceLogs().Len())
 	rls := pLogs.ResourceLogs().At(0)
-	require.Equal(t, 1, rls.Resource().Attributes().Len())
-	{
-		att, ok := rls.Resource().Attributes().Get("type")
-		if assert.True(t, ok) {
-			if assert.Equal(t, att.Type(), pdata.AttributeValueTypeString) {
-				assert.Equal(t, att.StringVal(), "global")
-			}
-		}
+
+	if resAtts := rls.Resource().Attributes(); assert.Equal(t, 5, resAtts.Len()) {
+		m := pdata.NewAttributeMap()
+		m.InsertBool("bool", true)
+		m.InsertInt("int", 123)
+		m.InsertDouble("double", 12.34)
+		m.InsertString("string", "hello")
+		m.Insert("object", pdata.NewAttributeValueMap())
+		assert.EqualValues(t, m.Sort(), resAtts.Sort())
 	}
 
 	ills := rls.InstrumentationLibraryLogs()
@@ -194,6 +221,186 @@ func TestConvert(t *testing.T) {
 		m.InsertString("string", "hello")
 		m.InsertString("bytes", "asdf")
 		assert.EqualValues(t, m.Sort(), lr.Body().MapVal().Sort())
+	}
+}
+
+func TestHashResource(t *testing.T) {
+	testcases := []struct {
+		name     string
+		baseline map[string]interface{}
+		same     []map[string]interface{}
+		diff     []map[string]interface{}
+	}{
+		{
+			name:     "empty",
+			baseline: map[string]interface{}{},
+			same: []map[string]interface{}{
+				{},
+			},
+			diff: []map[string]interface{}{
+				{
+					"a": "b",
+				},
+				{
+					"a": 1,
+				},
+			},
+		},
+		{
+			name: "single_string",
+			baseline: map[string]interface{}{
+				"one": "two",
+			},
+			same: []map[string]interface{}{
+				{
+					"one": "two",
+				},
+			},
+			diff: []map[string]interface{}{
+				{
+					"a": "b",
+				},
+				{
+					"one": 2,
+				},
+				{
+					"one":   "two",
+					"three": "four",
+				},
+			},
+		},
+		{
+			name: "multi_string",
+			baseline: map[string]interface{}{
+				"one": "two",
+				"a":   "b",
+			},
+			same: []map[string]interface{}{
+				{
+					"one": "two",
+					"a":   "b",
+				},
+				{
+					"a":   "b",
+					"one": "two",
+				},
+			},
+			diff: []map[string]interface{}{
+				{
+					"a": "b",
+				},
+				{
+					"one": "two",
+				},
+			},
+		},
+		{
+			name: "multi_type",
+			baseline: map[string]interface{}{
+				"bool":   true,
+				"int":    123,
+				"double": 12.34,
+				"string": "hello",
+				"object": map[string]interface{}{},
+			},
+			same: []map[string]interface{}{
+				{
+					"bool":   true,
+					"int":    123,
+					"double": 12.34,
+					"string": "hello",
+					"object": map[string]interface{}{},
+				},
+				{
+					"object": map[string]interface{}{},
+					"double": 12.34,
+					"int":    123,
+					"bool":   true,
+					"string": "hello",
+				},
+			},
+			diff: []map[string]interface{}{
+				{
+					"bool":   true,
+					"int":    123,
+					"double": 12.34,
+					"string": "hello",
+					"object": map[string]interface{}{
+						"string": "hello",
+					},
+				},
+			},
+		},
+		{
+			name: "nested",
+			baseline: map[string]interface{}{
+				"bool":   true,
+				"int":    123,
+				"double": 12.34,
+				"string": "hello",
+				"object": map[string]interface{}{
+					"bool":   true,
+					"int":    123,
+					"double": 12.34,
+					"string": "hello",
+					"object": map[string]interface{}{
+						"bool":   true,
+						"int":    123,
+						"double": 12.34,
+						"string": "hello",
+						"object": map[string]interface{}{},
+					},
+				},
+			},
+			same: []map[string]interface{}{
+				{
+					"bool":   true,
+					"int":    123,
+					"double": 12.34,
+					"string": "hello",
+					"object": map[string]interface{}{
+						"bool":   true,
+						"int":    123,
+						"double": 12.34,
+						"string": "hello",
+						"object": map[string]interface{}{
+							"bool":   true,
+							"int":    123,
+							"double": 12.34,
+							"string": "hello",
+							"object": map[string]interface{}{},
+						},
+					},
+				},
+			},
+			diff: []map[string]interface{}{
+				{
+					"bool":   true,
+					"int":    123,
+					"double": 12.34,
+					"string": "hello",
+					"object": map[string]interface{}{
+						"bool":   true,
+						"int":    123,
+						"double": 12.34,
+						"string": "hello",
+						"object": map[string]interface{}{},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			base := HashResource(tc.baseline)
+			for _, s := range tc.same {
+				require.Equal(t, base, HashResource(s))
+			}
+			for _, d := range tc.diff {
+				require.NotEqual(t, base, HashResource(d))
+			}
+		})
 	}
 }
 
@@ -380,7 +587,6 @@ func TestConvertMetadata(t *testing.T) {
 }
 
 func TestConvertSimpleBody(t *testing.T) {
-
 	require.True(t, anyToBody(true).BoolVal())
 	require.False(t, anyToBody(false).BoolVal())
 
@@ -504,7 +710,6 @@ func TestConvertUnknownBody(t *testing.T) {
 }
 
 func TestConvertNestedMapBody(t *testing.T) {
-
 	unknownType := map[string]int{"0": 0, "1": 1}
 
 	structuredBody := map[string]interface{}{
@@ -689,7 +894,7 @@ func BenchmarkGetResourceID(b *testing.B) {
 	res := getResource()
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		getResourceID(res)
+		HashResource(res)
 	}
 }
 
@@ -697,7 +902,7 @@ func BenchmarkGetResourceIDEmptyResource(b *testing.B) {
 	res := map[string]interface{}{}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		getResourceID(res)
+		HashResource(res)
 	}
 }
 
@@ -707,7 +912,21 @@ func BenchmarkGetResourceIDSingleResource(b *testing.B) {
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		getResourceID(res)
+		HashResource(res)
+	}
+}
+
+func BenchmarkGetResourceIDComplexResource(b *testing.B) {
+	res := map[string]interface{}{
+		"resource": "value",
+		"object": map[string]interface{}{
+			"one":   "two",
+			"three": 4,
+		},
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		HashResource(res)
 	}
 }
 
@@ -796,7 +1015,7 @@ func TestGetResourceID(t *testing.T) {
 	for _, testCase := range testCases {
 		outputs = append(outputs, resourceIDOutput{
 			name:   testCase.name,
-			output: getResourceID(testCase.input),
+			output: HashResource(testCase.input),
 		})
 	}
 
@@ -810,7 +1029,7 @@ func TestGetResourceID(t *testing.T) {
 }
 
 func TestGetResourceIDEmptyAndNilAreEqual(t *testing.T) {
-	nilID := getResourceID(nil)
-	emptyID := getResourceID(map[string]interface{}{})
+	nilID := HashResource(nil)
+	emptyID := HashResource(map[string]interface{}{})
 	require.Equal(t, nilID, emptyID)
 }

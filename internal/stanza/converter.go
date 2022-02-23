@@ -192,7 +192,7 @@ func (c *Converter) workerLoop() {
 
 			for _, e := range entries {
 				lr := convert(e)
-				resourceID := getResourceID(e.Resource)
+				resourceID := HashResource(e.Resource)
 				workerItems = append(workerItems, workerItem{
 					Resource:   e.Resource,
 					ResourceID: resourceID,
@@ -523,11 +523,12 @@ var sevTextMap = map[entry.Severity]string{
 // making it very unlikely to be present in the resource maps keys or values
 var pairSep = []byte{0xfe}
 
-// emptyResourceID is the ID returned by getResourceID when it is passed an empty resource.
+// emptyResourceID is the ID returned by HashResource when it is passed an empty resource.
 // This specific number is chosen as it is the starting offset of fnv64.
 const emptyResourceID uint64 = 14695981039346656037
 
-func getResourceID(resource map[string]interface{}) uint64 {
+// HashResource will hash an entry.Entry.Resource
+func HashResource(resource map[string]interface{}) uint64 {
 	if len(resource) == 0 {
 		return emptyResourceID
 	}
@@ -555,6 +556,8 @@ func getResourceID(resource map[string]interface{}) uint64 {
 			fnvHash.Write([]byte(t))
 		case []byte:
 			fnvHash.Write(t)
+		case int, int64:
+			binary.Write(fnvHash, binary.BigEndian, t)
 		default:
 			b, _ := json.Marshal(t)
 			fnvHash.Write(b)
