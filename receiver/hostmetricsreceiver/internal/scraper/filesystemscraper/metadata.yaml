@@ -12,7 +12,7 @@ attributes:
 
   state:
     description: Breakdown of filesystem usage by type.
-    enum: [free, reserved, used, utilized]
+    enum: [free, reserved, used]
 
   type:
     description: Filesystem type, such as, "ext4", "tmpfs", etc.
@@ -44,4 +44,4 @@ metrics:
     unit: 1
     gauge:
       value_type: double
-    attributes: [device, mode, mountpoint, type, state]
+    attributes: [device, mode, mountpoint, type]

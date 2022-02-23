@@ -29,7 +29,7 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		SystemFilesystemUtilization: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 	}
 }
@@ -163,7 +163,7 @@ func (m *metricSystemFilesystemUtilization) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSystemFilesystemUtilization) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val float64, deviceAttributeValue string, modeAttributeValue string, mountpointAttributeValue string, typeAttributeValue string, stateAttributeValue string) {
+func (m *metricSystemFilesystemUtilization) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val float64, deviceAttributeValue string, modeAttributeValue string, mountpointAttributeValue string, typeAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -175,7 +175,6 @@ func (m *metricSystemFilesystemUtilization) recordDataPoint(start pdata.Timestam
 	dp.Attributes().Insert(A.Mode, pdata.NewAttributeValueString(modeAttributeValue))
 	dp.Attributes().Insert(A.Mountpoint, pdata.NewAttributeValueString(mountpointAttributeValue))
 	dp.Attributes().Insert(A.Type, pdata.NewAttributeValueString(typeAttributeValue))
-	dp.Attributes().Insert(A.State, pdata.NewAttributeValueString(stateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -255,8 +254,8 @@ func (mb *MetricsBuilder) RecordSystemFilesystemUsageDataPoint(ts pdata.Timestam
 }
 
 // RecordSystemFilesystemUtilizationDataPoint adds a data point to system.filesystem.utilization metric.
-func (mb *MetricsBuilder) RecordSystemFilesystemUtilizationDataPoint(ts pdata.Timestamp, val float64, deviceAttributeValue string, modeAttributeValue string, mountpointAttributeValue string, typeAttributeValue string, stateAttributeValue string) {
-	mb.metricSystemFilesystemUtilization.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, modeAttributeValue, mountpointAttributeValue, typeAttributeValue, stateAttributeValue)
+func (mb *MetricsBuilder) RecordSystemFilesystemUtilizationDataPoint(ts pdata.Timestamp, val float64, deviceAttributeValue string, modeAttributeValue string, mountpointAttributeValue string, typeAttributeValue string) {
+	mb.metricSystemFilesystemUtilization.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, modeAttributeValue, mountpointAttributeValue, typeAttributeValue)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
@@ -296,10 +295,8 @@ var AttributeState = struct {
 	Free     string
 	Reserved string
 	Used     string
-	Utilized string
 }{
 	"free",
 	"reserved",
 	"used",
-	"utilized",
 }
