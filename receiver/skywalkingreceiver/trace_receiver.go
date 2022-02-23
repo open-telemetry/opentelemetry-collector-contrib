@@ -1,10 +1,10 @@
-// Copyright The OpenTelemetry Authors
+// Copyright  OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//       http://www.apache.org/licenses/LICENSE-2.0
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,6 +19,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"net"
+	"net/http"
+	"sync"
+	"time"
+
 	"github.com/gorilla/mux"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -28,12 +34,7 @@ import (
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/multierr"
 	"google.golang.org/grpc"
-	"io/ioutil"
-	"net"
-	"net/http"
 	v1 "skywalking.apache.org/repo/goapi/satellite/data/v1"
-	"sync"
-	"time"
 )
 
 // configuration defines the behavior and the ports that
