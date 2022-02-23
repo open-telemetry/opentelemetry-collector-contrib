@@ -26,7 +26,6 @@ import (
 
 func TestInputConfigMissingBase(t *testing.T) {
 	config := InputConfig{
-		WriteTo: entry.Field{},
 		WriterConfig: WriterConfig{
 			OutputIDs: []string{"test-output"},
 		},
@@ -45,7 +44,6 @@ func TestInputConfigMissingOutput(t *testing.T) {
 				OperatorType: "test-type",
 			},
 		},
-		WriteTo: entry.Field{},
 	}
 
 	_, err := config.Build(testutil.Logger(t))
@@ -54,7 +52,6 @@ func TestInputConfigMissingOutput(t *testing.T) {
 
 func TestInputConfigValid(t *testing.T) {
 	config := InputConfig{
-		WriteTo: entry.Field{},
 		WriterConfig: WriterConfig{
 			BasicConfig: BasicConfig{
 				OperatorID:   "test-id",
@@ -99,7 +96,7 @@ func TestInputOperatorProcess(t *testing.T) {
 }
 
 func TestInputOperatorNewEntry(t *testing.T) {
-	writeTo := entry.NewBodyField("test-field")
+	body := entry.NewBodyField()
 
 	labelExpr, err := ExprStringConfig("test").Build()
 	require.NoError(t, err)
@@ -125,13 +122,12 @@ func TestInputOperatorNewEntry(t *testing.T) {
 				SugaredLogger: testutil.Logger(t),
 			},
 		},
-		WriteTo: writeTo,
 	}
 
 	entry, err := input.NewEntry("test")
 	require.NoError(t, err)
 
-	value, exists := entry.Get(writeTo)
+	value, exists := entry.Get(body)
 	require.True(t, exists)
 	require.Equal(t, "test", value)
 

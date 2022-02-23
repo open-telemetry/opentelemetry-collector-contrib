@@ -676,7 +676,6 @@ func defaultCfg() *InputConfig {
 
 func NewTestInputConfig() *InputConfig {
 	cfg := NewInputConfig("config_test")
-	cfg.WriteTo = entry.NewBodyField([]string{}...)
 	cfg.Include = []string{"i1", "i2"}
 	cfg.Exclude = []string{"e1", "e2"}
 	cfg.Splitter = helper.NewSplitterConfig()
@@ -695,7 +694,6 @@ func TestMapStructureDecodeConfigWithHook(t *testing.T) {
 		// InputConfig
 		"id":            "config_test",
 		"type":          "file_input",
-		"write_to":      "$",
 		"attributes":    map[string]interface{}{},
 		"resource":      map[string]interface{}{},
 		"include":       expect.Include,
@@ -730,7 +728,6 @@ func TestMapStructureDecodeConfig(t *testing.T) {
 		// InputConfig
 		"id":         "config_test",
 		"type":       "file_input",
-		"write_to":   entry.NewBodyField([]string{}...),
 		"attributes": map[string]interface{}{},
 		"resource":   map[string]interface{}{},
 		"include":    expect.Include,

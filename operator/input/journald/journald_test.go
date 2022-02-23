@@ -118,14 +118,12 @@ func TestInputJournald(t *testing.T) {
 
 func TestJournaldInputConfig(t *testing.T) {
 	expect := NewJournaldInputConfig("my_journald_input")
-	expect.WriteTo = entry.NewBodyField("to")
 
 	input := map[string]interface{}{
 		"id":         "my_journald_input",
 		"type":       "journald_input",
 		"priority":   "info",
 		"start_at":   "end",
-		"write_to":   "$body.to",
 		"attributes": map[string]interface{}{},
 		"resource":   map[string]interface{}{},
 	}

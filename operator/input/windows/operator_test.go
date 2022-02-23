@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build windows
 // +build windows
 
 package windows
@@ -21,13 +22,11 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
 )
 
 func TestEventLogConfig(t *testing.T) {
 	expect := NewDefaultConfig()
-	expect.WriteTo = entry.NewBodyField("to")
 
 	input := map[string]interface{}{
 		"id":            "",
@@ -37,7 +36,6 @@ func TestEventLogConfig(t *testing.T) {
 		"poll_interval": "1s",
 		"attributes":    map[string]interface{}{},
 		"resource":      map[string]interface{}{},
-		"write_to":      "$body.to",
 	}
 
 	var actual EventLogConfig

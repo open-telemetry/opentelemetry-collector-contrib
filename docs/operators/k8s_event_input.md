@@ -12,7 +12,6 @@ Kubernetes API, and currently requires that Stanza is running inside a Kubernete
 | `namespaces`          | All namespaces    | An array of namespaces to collect events from.. |
 | `discover_namespaces` | `true`            | If true, the operator will regularly poll for new namespaces to include. |
 | `discovery_interval ` | `1m`              | The interval at which the operator searches for new namespaces to follow. |
-| `write_to`            | `$body`           | The body [field](/docs/types/field.md) written to when creating a new log entry. |
 | `attributes`          | {}                | A map of `key: value` pairs to add to the entry's attributes. |
 | `resource`            | {}                | A map of `key: value` pairs to add to the entry's resource. |
  
