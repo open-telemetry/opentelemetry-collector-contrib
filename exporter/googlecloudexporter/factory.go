@@ -42,11 +42,11 @@ func NewFactory() component.ExporterFactory {
 		view.Register(ocgrpc.DefaultClientViews...)
 	})
 
-	return exporterhelper.NewFactory(
+	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTracesExporter),
-		exporterhelper.WithMetrics(createMetricsExporter),
+		component.WithTracesExporter(createTracesExporter),
+		component.WithMetricsExporter(createMetricsExporter),
 	)
 }
 

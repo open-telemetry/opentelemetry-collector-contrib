@@ -20,7 +20,6 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 )
 
@@ -33,11 +32,11 @@ const (
 func NewFactory() component.ExporterFactory {
 	view.Register(MetricViews()...)
 
-	return exporterhelper.NewFactory(
+	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTracesExporter),
-		exporterhelper.WithLogs(createLogExporter),
+		component.WithTracesExporter(createTracesExporter),
+		component.WithLogsExporter(createLogExporter),
 	)
 }
 
