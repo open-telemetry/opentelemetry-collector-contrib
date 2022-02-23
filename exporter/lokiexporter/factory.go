@@ -28,10 +28,10 @@ const typeStr = "loki"
 
 // NewFactory creates a factory for Loki exporter.
 func NewFactory() component.ExporterFactory {
-	return exporterhelper.NewFactory(
+	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithLogs(createLogsExporter),
+		component.WithLogsExporter(createLogsExporter),
 	)
 }
 
