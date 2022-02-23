@@ -76,24 +76,29 @@ func createTracesReceiver(
 	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
 
-	// Convert settings in the source config to configuration struct
+	// Convert settings in the source c to configuration struct
 	// that Skywalking receiver understands.
 	rCfg := cfg.(*Config)
 
-	var config configuration
+	var err error
+	var c configuration
 	// Set ports
 	if rCfg.Protocols.GRPC != nil {
-		config.CollectorGRPCServerSettings = *rCfg.Protocols.GRPC
-		config.CollectorGRPCPort, _ = extractPortFromEndpoint(rCfg.Protocols.GRPC.NetAddr.Endpoint)
+		c.CollectorGRPCServerSettings = *rCfg.Protocols.GRPC
+		if c.CollectorGRPCPort, err = extractPortFromEndpoint(rCfg.Protocols.GRPC.NetAddr.Endpoint); err != nil {
+			return nil, fmt.Errorf("unable to extract port for the gRPC endpoint: %w", err)
+		}
 	}
 
 	if rCfg.Protocols.HTTP != nil {
-		config.CollectorHTTPSettings = *rCfg.Protocols.HTTP
-		config.CollectorHTTPPort, _ = extractPortFromEndpoint(rCfg.Protocols.HTTP.Endpoint)
+		c.CollectorHTTPSettings = *rCfg.Protocols.HTTP
+		if c.CollectorHTTPPort, err = extractPortFromEndpoint(rCfg.Protocols.HTTP.Endpoint); err != nil {
+			return nil, fmt.Errorf("unable to extract port for the HTTP endpoint: %w", err)
+		}
 	}
 
 	// Create the receiver.
-	return newSkywalkingReceiver(rCfg.ID(), &config, nextConsumer, set), nil
+	return newSkywalkingReceiver(rCfg.ID(), &c, nextConsumer, set), nil
 }
 
 // extract the port number from string in "address:port" format. If the

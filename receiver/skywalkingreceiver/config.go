@@ -48,6 +48,19 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("must specify at least one protocol when using the Skywalking receiver")
 	}
 
+	if cfg.GRPC != nil {
+		var err error
+		if _, err = extractPortFromEndpoint(cfg.GRPC.NetAddr.Endpoint); err != nil {
+			return fmt.Errorf("unable to extract port for the gRPC endpoint: %w", err)
+		}
+	}
+
+	if cfg.HTTP != nil {
+		if _, err := extractPortFromEndpoint(cfg.HTTP.Endpoint); err != nil {
+			return fmt.Errorf("unable to extract port for the Thrift HTTP endpoint: %w", err)
+		}
+	}
+
 	return nil
 }
 
