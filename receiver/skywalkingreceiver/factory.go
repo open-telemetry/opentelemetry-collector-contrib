@@ -36,7 +36,7 @@ const (
 
 	// Protocol values.
 	protoGRPC = "grpc"
-	protoHttp = "http"
+	protoHTTP = "http"
 	
 	// Default endpoints to bind to.
 	defaultGRPCBindEndpoint = "0.0.0.0:11800"
