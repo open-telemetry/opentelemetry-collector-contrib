@@ -47,7 +47,7 @@ type configuration struct {
 }
 
 // Receiver type is used to receive spans that were originally intended to be sent to Skywaking.
-// This receiver is basically a Jaeger collector.
+// This receiver is basically a Skywalking collector.
 type swReceiver struct {
 	nextConsumer consumer.Traces
 	id           config.ComponentID
