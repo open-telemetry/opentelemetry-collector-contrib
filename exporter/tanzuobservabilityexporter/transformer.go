@@ -95,17 +95,23 @@ func (t *traceTransformer) Span(orig pdata.Span) (span, error) {
 	}, nil
 }
 
-func getSourceAndResourceTags(attributes pdata.AttributeMap) (string, pdata.AttributeMap) {
+func getSourceAndResourceTags(attributes pdata.AttributeMap) (string, map[string]string) {
 	candidateKeys := []string{labelSource, conventions.AttributeHostName, "hostname", conventions.AttributeHostID}
 
-	attributesWithoutSource := pdata.NewAttributeMap()
-	attributes.CopyTo(attributesWithoutSource)
+	attributesWithoutSource := map[string]string{}
 	var source string
 
+	extractTag := func(k string, v pdata.AttributeValue) bool {
+		attributesWithoutSource[k] = v.AsString()
+		return true
+	}
+
+	attributes.Range(extractTag)
+
 	for _, key := range candidateKeys {
-		if value, isFound := attributesWithoutSource.Get(key); isFound {
-			source = value.StringVal()
-			attributesWithoutSource.Delete(key)
+		if value, isFound := attributesWithoutSource[key]; isFound {
+			source = value
+			delete(attributesWithoutSource, key)
 			break
 		}
 	}
@@ -151,7 +157,7 @@ func eventsToLogs(events pdata.SpanEventSlice) []senders.SpanLog {
 	var result []senders.SpanLog
 	for i := 0; i < events.Len(); i++ {
 		e := events.At(i)
-		fields := attributesToTags(e.Attributes())
+		fields := attributesToTags(nil, e.Attributes())
 		fields[labelEventName] = e.Name()
 		result = append(result, senders.SpanLog{
 			Timestamp: int64(e.Timestamp()) / time.Microsecond.Nanoseconds(), // Timestamp is in microseconds
@@ -173,25 +179,26 @@ func calculateTimes(span pdata.Span) (int64, int64) {
 	return startMillis, durationMillis
 }
 
-func attributesToTags(attributes ...pdata.AttributeMap) map[string]string {
-	tags := map[string]string{}
+func attributesToTags(attributesWithoutSource map[string]string, attributes pdata.AttributeMap) map[string]string {
 
+	if attributesWithoutSource == nil {
+		attributesWithoutSource = map[string]string{}
+	}
+
+	// Since AttributeMaps are processed later, its values overwrite earlier ones
 	extractTag := func(k string, v pdata.AttributeValue) bool {
-		tags[k] = v.AsString()
+		attributesWithoutSource[k] = v.AsString()
 		return true
 	}
 
-	// Since AttributeMaps are processed in the order received, later values overwrite earlier ones
-	for _, att := range attributes {
-		att.Range(extractTag)
-	}
+	attributes.Range(extractTag)
 
-	if value, isFound := tags[labelSource]; isFound {
+	if value, isFound := attributesWithoutSource[labelSource]; isFound {
 		source := value
-		delete(tags, labelSource)
-		tags["_source"] = source
+		delete(attributesWithoutSource, labelSource)
+		attributesWithoutSource["_source"] = source
 	}
-	return tags
+	return attributesWithoutSource
 }
 
 func errorTagsFromStatus(status pdata.SpanStatus) map[string]string {
