@@ -61,7 +61,7 @@ func TestCustomBatchSizeConstraints(t *testing.T) {
 }
 
 func TestBatchWithAggregation(t *testing.T) {
-	b := batch.New(batch.WithAggregation())
+	b := batch.New(batch.WithAggregation(true))
 
 	recordCount := 948
 	for i := 0; i < recordCount; i++ {
@@ -77,7 +77,7 @@ func TestBatchWithAggregation(t *testing.T) {
 }
 
 func TestBatchWithAggregation_maxRecordSize(t *testing.T) {
-	b := batch.New(batch.WithAggregation())
+	b := batch.New(batch.WithAggregation(true))
 
 	recordCount := 948
 	for i := 0; i < recordCount; i++ {

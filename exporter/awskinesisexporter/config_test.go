@@ -57,6 +57,7 @@ func TestDefaultConfig(t *testing.T) {
 			},
 			MaxRecordsPerBatch: batch.MaxBatchedRecords,
 			MaxRecordSize:      batch.MaxRecordSize,
+			UseKplAggregation:  false,
 		},
 	)
 }

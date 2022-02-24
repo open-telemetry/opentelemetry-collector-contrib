@@ -43,6 +43,7 @@ type Config struct {
 	AWS                AWSConfig `mapstructure:"aws"`
 	MaxRecordsPerBatch int       `mapstructure:"max_records_per_batch"`
 	MaxRecordSize      int       `mapstructure:"max_record_size"`
+	UseKplAggregation  bool      `mapstructure:"use_kpl_aggregation"`
 }
 
 func (cfg *Config) Validate() error {

@@ -59,9 +59,9 @@ func WithMaxRecordsPerBatch(limit int) Option {
 	}
 }
 
-func WithAggregation() Option {
+func WithAggregation(useKplAggregation bool) Option {
 	return func(bt *Batch) {
-		bt.useAggregation = true
+		bt.useAggregation = useKplAggregation
 		bt.aggregator = new(Aggregator)
 	}
 }
