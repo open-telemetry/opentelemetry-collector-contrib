@@ -48,7 +48,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	// have to enable at least one protocol for the jaeger receiver to be created
+	// have to enable at least one protocol for the skywalking receiver to be created
 	cfg.(*Config).Protocols.GRPC = &configgrpc.GRPCServerSettings{
 		NetAddr: confignet.NetAddr{
 			Endpoint:  defaultGRPCBindEndpoint,
