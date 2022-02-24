@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influx
 go 1.17
 
 require (
-	github.com/influxdata/influxdb-observability/common v0.2.10
-	github.com/influxdata/influxdb-observability/influx2otel v0.2.10
+	github.com/influxdata/influxdb-observability/common v0.2.12
+	github.com/influxdata/influxdb-observability/influx2otel v0.2.12
 	github.com/influxdata/line-protocol/v2 v2.2.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.45.1
 	go.opentelemetry.io/collector v0.45.1-0.20220223001941-c9c253193a75

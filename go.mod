@@ -265,9 +265,9 @@ require (
 	github.com/iancoleman/strcase v0.2.0 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
-	github.com/influxdata/influxdb-observability/common v0.2.10 // indirect
-	github.com/influxdata/influxdb-observability/influx2otel v0.2.10 // indirect
-	github.com/influxdata/influxdb-observability/otel2influx v0.2.10 // indirect
+	github.com/influxdata/influxdb-observability/common v0.2.12 // indirect
+	github.com/influxdata/influxdb-observability/influx2otel v0.2.12 // indirect
+	github.com/influxdata/influxdb-observability/otel2influx v0.2.12 // indirect
 	github.com/influxdata/line-protocol/v2 v2.2.1 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.11.0 // indirect
@@ -463,6 +463,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 	gopkg.in/zorkian/go-datadog-api.v2 v2.30.0 // indirect
+	gotest.tools/v3 v3.1.0 // indirect
 	k8s.io/api v0.23.4 // indirect
 	k8s.io/apimachinery v0.23.4 // indirect
 	k8s.io/client-go v0.23.4 // indirect
