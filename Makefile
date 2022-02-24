@@ -233,8 +233,7 @@ otelcontribcol-windows_amd64:
 
 .PHONY: update-dep
 update-dep:
-	$(MAKE) for-all CMD="$(PWD)/internal/buildscripts/update-dep"
-	$(MAKE) -j2 gotidy
+	$(MAKE) for-all-target TARGET="updatedep"
 	$(MAKE) otelcontribcol
 
 .PHONY: update-otel
