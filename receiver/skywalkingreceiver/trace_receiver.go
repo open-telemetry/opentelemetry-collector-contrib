@@ -46,7 +46,7 @@ type configuration struct {
 	CollectorGRPCServerSettings configgrpc.GRPCServerSettings
 }
 
-// Receiver type is used to receive spans that were originally intended to be sent to Jaeger.
+// Receiver type is used to receive spans that were originally intended to be sent to Skywaking.
 // This receiver is basically a Jaeger collector.
 type swReceiver struct {
 	nextConsumer consumer.Traces
