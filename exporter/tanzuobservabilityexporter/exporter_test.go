@@ -83,6 +83,7 @@ func TestExportTraceDataFullTrace(t *testing.T) {
 		pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 2}),
 		rootSpan.SpanID(),
 	)
+
 	clientSpan.SetKind(pdata.SpanKindClient)
 	event := pdata.NewSpanEvent()
 	event.SetName("client-event")
@@ -109,12 +110,14 @@ func TestExportTraceDataFullTrace(t *testing.T) {
 	serverAttrs.InsertString(conventions.AttributeServiceName, "the-server")
 	serverAttrs.InsertString(conventions.AttributeHTTPMethod, "POST")
 	serverAttrs.InsertInt(conventions.AttributeHTTPStatusCode, 403)
+	serverAttrs.InsertString(labelSource, "test_source")
 	serverAttrs.CopyTo(serverSpan.Attributes())
 
 	traces := constructTraces([]pdata.Span{rootSpan, clientSpan, serverSpan})
 	resourceAttrs := pdata.NewAttributeMap()
 	resourceAttrs.InsertString("resource", "R1")
 	resourceAttrs.InsertString(conventions.AttributeServiceName, "test-service")
+	resourceAttrs.InsertString(labelSource, "test-source")
 	resourceAttrs.CopyTo(traces.ResourceSpans().At(0).Resource().Attributes())
 
 	expected := []*span{
@@ -122,6 +125,7 @@ func TestExportTraceDataFullTrace(t *testing.T) {
 			Name:    "root",
 			SpanID:  uuid.MustParse("00000000000000000000000000000001"),
 			TraceID: uuid.MustParse("01010101010101010101010101010101"),
+			Source:  "test-source",
 			Tags: map[string]string{
 				"resource":       "R1",
 				labelApplication: "defaultApp",
@@ -133,6 +137,7 @@ func TestExportTraceDataFullTrace(t *testing.T) {
 			SpanID:       uuid.MustParse("00000000000000000000000000000002"),
 			TraceID:      uuid.MustParse("01010101010101010101010101010101"),
 			ParentSpanID: uuid.MustParse("00000000000000000000000000000001"),
+			Source:       "test-source",
 			Tags: map[string]string{
 				"resource":                "R1",
 				labelApplication:          "test-app",
@@ -150,6 +155,7 @@ func TestExportTraceDataFullTrace(t *testing.T) {
 			SpanID:       uuid.MustParse("00000000000000000000000000000003"),
 			TraceID:      uuid.MustParse("01010101010101010101010101010101"),
 			ParentSpanID: uuid.MustParse("00000000000000000000000000000002"),
+			Source:       "test-source",
 			Tags: map[string]string{
 				"resource":                          "R1",
 				labelApplication:                    "defaultApp",
@@ -182,6 +188,7 @@ func validateTraces(t *testing.T, expected []*span, traces pdata.Traces) {
 		assert.Equal(t, expected[i].StartMillis, actual[i].StartMillis)
 		assert.Equal(t, expected[i].DurationMillis, actual[i].DurationMillis)
 		assert.Equal(t, expected[i].SpanLogs, actual[i].SpanLogs)
+		assert.Equal(t, expected[i].Source, actual[i].Source)
 	}
 }
 
@@ -299,6 +306,7 @@ func (m *mockSender) SendSpan(
 		StartMillis:    startMillis,
 		DurationMillis: durationMillis,
 		SpanLogs:       spanLogs,
+		Source:         source,
 	}
 	m.spans = append(m.spans, span)
 	return nil
