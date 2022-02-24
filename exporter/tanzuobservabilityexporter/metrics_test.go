@@ -247,9 +247,7 @@ func TestGaugeConsumerMissingValue(t *testing.T) {
 }
 
 func createMetricInfo(metric pdata.Metric) metricInfo {
-	attrMap := pdata.NewAttributeMap()
-	attrMap.InsertString("test_key", "test_value")
-	mi := metricInfo{Metric: metric, Source: "test_source", Tags: attrMap}
+	mi := metricInfo{Metric: metric, Source: "test_source", Tags: map[string]string{"test_key": "test_value"}}
 	return mi
 }
 
@@ -1565,19 +1563,10 @@ func (m *mockTypedMetricConsumer) Type() pdata.MetricDataType {
 	return m.typ
 }
 
-func toGoMap(attrMap pdata.AttributeMap) map[string]string {
-	result := make(map[string]string)
-	attrMap.Range(func(key string, value pdata.AttributeValue) bool {
-		result[key] = value.AsString()
-		return true
-	})
-	return result
-}
-
 func (m *mockTypedMetricConsumer) Consume(mi metricInfo, errs *[]error) {
 	m.names = append(m.names, mi.Name())
 
-	m.attrMaps = append(m.attrMaps, toGoMap(mi.Tags))
+	m.attrMaps = append(m.attrMaps, mi.Tags)
 
 	m.sources = append(m.sources, mi.Source)
 	if m.errorOnConsume {

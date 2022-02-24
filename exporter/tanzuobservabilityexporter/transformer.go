@@ -180,25 +180,26 @@ func calculateTimes(span pdata.Span) (int64, int64) {
 }
 
 func attributesToTags(attributesWithoutSource map[string]string, attributes pdata.AttributeMap) map[string]string {
+	tags := make(map[string]string)
 
-	if attributesWithoutSource == nil {
-		attributesWithoutSource = map[string]string{}
+	if attributesWithoutSource != nil {
+		for key, val := range attributesWithoutSource {
+			tags[key] = val
+		}
 	}
 
 	// Since AttributeMaps are processed later, its values overwrite earlier ones
-	extractTag := func(k string, v pdata.AttributeValue) bool {
-		attributesWithoutSource[k] = v.AsString()
+	attributes.Range(func(key string, value pdata.AttributeValue) bool {
+		tags[key] = value.AsString()
 		return true
-	}
+	})
 
-	attributes.Range(extractTag)
-
-	if value, isFound := attributesWithoutSource[labelSource]; isFound {
+	if value, isFound := tags[labelSource]; isFound {
 		source := value
-		delete(attributesWithoutSource, labelSource)
-		attributesWithoutSource["_source"] = source
+		delete(tags, labelSource)
+		tags["_source"] = source
 	}
-	return attributesWithoutSource
+	return tags
 }
 
 func errorTagsFromStatus(status pdata.SpanStatus) map[string]string {

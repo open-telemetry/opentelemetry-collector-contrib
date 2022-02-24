@@ -66,7 +66,7 @@ type metricsConsumer struct {
 type metricInfo struct {
 	pdata.Metric
 	Source string
-	Tags   pdata.AttributeMap
+	Tags   map[string]string
 }
 
 // newMetricsConsumer returns a new metricsConsumer. consumers are the
@@ -233,8 +233,14 @@ func getValue(numberDataPoint pdata.NumberDataPoint) (float64, error) {
 // of the metric. Any errors get appended to errs. sender is what sends the
 // gauge metric to tanzu observability. settings logs problems. missingValues
 // keeps track of metrics with missing values.
-func pushGaugeNumberDataPoint(mi metricInfo, numberDataPoint pdata.NumberDataPoint, errs *[]error, sender gaugeSender,
-	settings component.TelemetrySettings, missingValues *counter) {
+func pushGaugeNumberDataPoint(
+	mi metricInfo,
+	numberDataPoint pdata.NumberDataPoint,
+	errs *[]error,
+	sender gaugeSender,
+	settings component.TelemetrySettings,
+	missingValues *counter,
+) {
 	tags := attributesToTags(mi.Tags, numberDataPoint.Attributes())
 	ts := numberDataPoint.Timestamp().AsTime().Unix()
 	value, err := getValue(numberDataPoint)
@@ -509,7 +515,11 @@ func newDeltaHistogramDataPointConsumer(
 	return &deltaHistogramDataPointConsumer{sender: sender}
 }
 
-func (d *deltaHistogramDataPointConsumer) Consume(mi metricInfo, his histogramDataPoint, errs *[]error, reporting *histogramReporting) {
+func (d *deltaHistogramDataPointConsumer) Consume(
+	mi metricInfo,
+	his histogramDataPoint,
+	errs *[]error,
+	reporting *histogramReporting) {
 	name := mi.Name()
 	tags := attributesToTags(mi.Tags, his.Attributes())
 	ts := his.Timestamp().AsTime().Unix()
@@ -653,7 +663,13 @@ func (s *summaryConsumer) sendSummaryDataPoint(mi metricInfo, summaryDataPoint p
 	}
 }
 
-func (s *summaryConsumer) sendMetric(name string, value float64, ts int64, tags map[string]string, errs *[]error, source string) {
+func (s *summaryConsumer) sendMetric(
+	name string,
+	value float64,
+	ts int64,
+	tags map[string]string,
+	errs *[]error,
+	source string) {
 	err := s.sender.SendMetric(name, value, ts, source, tags)
 	if err != nil {
 		*errs = append(*errs, err)
