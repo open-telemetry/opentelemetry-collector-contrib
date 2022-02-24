@@ -116,3 +116,8 @@ impi:
 .PHONY: moddownload
 moddownload:
 	$(GOCMD) mod download
+
+.PHONY: updatedep
+updatedep:
+	$(PWD)/internal/buildscripts/update-dep
+	@$(MAKE) tidy
