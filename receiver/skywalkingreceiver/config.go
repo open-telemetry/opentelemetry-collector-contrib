@@ -67,7 +67,7 @@ func (cfg *Config) Validate() error {
 // Unmarshal a config.Parser into the config struct.
 func (cfg *Config) Unmarshal(componentParser *config.Map) error {
 	if componentParser == nil || len(componentParser.AllKeys()) == 0 {
-		return fmt.Errorf("empty config for Jaeger receiver")
+		return fmt.Errorf("empty config for Skywalking receiver")
 	}
 
 	// UnmarshalExact will not set struct properties to nil even if no key is provided,
