@@ -30,7 +30,7 @@ func CreateMatchPropertiesFromDefault(properties *filterconfig.MatchProperties) 
 	}
 
 	return &MatchProperties{
-		MatchType: 			MatchType(properties.Config.MatchType),
+		MatchType:          MatchType(properties.Config.MatchType),
 		RegexpConfig:       properties.Config.RegexpConfig,
 		MetricNames:        properties.MetricNames,
 		Expressions:        properties.Expressions,
@@ -55,15 +55,15 @@ func SkipMetric(include, exclude Matcher, metric pdata.Metric) bool {
 	if include != nil {
 		// A false (or an error) returned in this case means the metric should not be processed.
 		i, err := include.MatchMetric(metric)
-		if !i || err != nil  {
+		if !i || err != nil {
 			return true
 		}
 	}
 
 	if exclude != nil {
 		// A true (or an error) returned in this case means the span should not be processed.
-		e, err := exclude.MatchMetric(metric);
-		if  e || err != nil {
+		e, err := exclude.MatchMetric(metric)
+		if e || err != nil {
 			return true
 		}
 	}
