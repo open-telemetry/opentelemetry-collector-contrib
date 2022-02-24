@@ -1,7 +1,4 @@
 receivers:
-#  otlp:
-#    protocols:
-#      grpc:
   # The following demonstrates how to enable protocols with defaults.
   skywalking/defaults:
     protocols:
