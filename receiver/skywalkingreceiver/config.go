@@ -86,7 +86,7 @@ func (cfg *Config) Unmarshal(componentParser *config.Map) error {
 		cfg.GRPC = nil
 	}
 
-	if !protocols.IsSet(protoHttp) {
+	if !protocols.IsSet(protoHTTP) {
 		cfg.HTTP = nil
 	}
 
