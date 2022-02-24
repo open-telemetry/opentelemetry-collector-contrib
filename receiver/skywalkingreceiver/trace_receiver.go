@@ -68,6 +68,8 @@ type swReceiver struct {
 const (
 	collectorHTTPTransport = "http"
 	grpcTransport          = "grpc"
+	httpEventName          = "http-tracing-event"
+	failing                = "failing"
 )
 
 // newSkywalkingReceiver creates a TracesReceiver that receives traffic as a Skywalking collector
