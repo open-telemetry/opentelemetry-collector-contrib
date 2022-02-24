@@ -43,7 +43,7 @@ const (
 	defaultHTTPBindEndpoint = "0.0.0.0:12800"
 )
 
-// NewFactory creates a new Jaeger receiver factory.
+// NewFactory creates a new Skywalking receiver factory.
 func NewFactory() component.ReceiverFactory {
 	return receiverhelper.NewFactory(
 		typeStr,
