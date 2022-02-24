@@ -165,7 +165,7 @@ func (sr *swReceiver) startCollector(host component.Host) error {
 	if sr.collectorGRPCEnabled() {
 		opts, err := sr.config.CollectorGRPCServerSettings.ToServerOption(host, sr.settings.TelemetrySettings)
 		if err != nil {
-			return fmt.Errorf("failed to build the options for the Jaeger gRPC Collector: %v", err)
+			return fmt.Errorf("failed to build the options for the Skywalking gRPC Collector: %v", err)
 		}
 
 		sr.grpc = grpc.NewServer(opts...)
