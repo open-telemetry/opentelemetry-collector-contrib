@@ -16,6 +16,7 @@ package tanzuobservabilityexporter // import "github.com/open-telemetry/opentele
 
 import (
 	"errors"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -72,6 +73,18 @@ func (t *traceTransformer) Span(orig pdata.Span) (span, error) {
 	t.setRequiredTags(tags)
 
 	tags[labelSpanKind] = spanKind(orig)
+
+	if droppedEventsCount := orig.DroppedEventsCount(); droppedEventsCount > 0 {
+		tags[labelDroppedEventsCount] = strconv.Itoa(int(droppedEventsCount))
+	}
+
+	if droppedLinksCount := orig.DroppedLinksCount(); droppedLinksCount > 0 {
+		tags[labelDroppedLinksCount] = strconv.Itoa(int(droppedLinksCount))
+	}
+
+	if droppedAttrsCount := orig.DroppedAttributesCount(); droppedAttrsCount > 0 {
+		tags[labelDroppedAttrsCount] = strconv.Itoa(int(droppedAttrsCount))
+	}
 
 	errorTags := errorTagsFromStatus(orig.Status())
 	for k, v := range errorTags {

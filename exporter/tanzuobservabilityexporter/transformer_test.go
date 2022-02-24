@@ -294,6 +294,75 @@ func TestSpanForSourceTag(t *testing.T) {
 	assert.Equal(t, "source_from_span_attribute", actual.Tags["_source"])
 }
 
+func TestSpanForDroppedEventsCount(t *testing.T) {
+	inNanos := int64(50000000)
+
+	//TestCase: 1 droppedEvents tag not set
+	resAttrs := pdata.NewAttributeMap()
+	transform := transformerFromAttributes(resAttrs)
+	span := pdata.NewSpan()
+	span.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+	span.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	span.SetStartTimestamp(pdata.Timestamp(inNanos))
+
+	actual, err := transform.Span(span)
+	require.NoError(t, err, "transforming span to wavefront format")
+	assert.NotContains(t, actual.Tags, "otel.dropped_events_count")
+
+	//TestCase2: droppedEvents set
+	span.SetDroppedEventsCount(123)
+
+	actual, err = transform.Span(span)
+	require.NoError(t, err, "transforming span to wavefront format")
+	assert.Equal(t, "123", actual.Tags["otel.dropped_events_count"])
+}
+
+func TestSpanForDroppedLinksCounts(t *testing.T) {
+	inNanos := int64(50000000)
+
+	//TestCase: 1 DroppedLinks tag not set
+	resAttrs := pdata.NewAttributeMap()
+	transform := transformerFromAttributes(resAttrs)
+	span := pdata.NewSpan()
+	span.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+	span.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	span.SetStartTimestamp(pdata.Timestamp(inNanos))
+
+	actual, err := transform.Span(span)
+	require.NoError(t, err, "transforming span to wavefront format")
+	assert.NotContains(t, actual.Tags, "otel.dropped_links_count")
+
+	//TestCase2: DroppedLinks set
+	span.SetDroppedLinksCount(123)
+
+	actual, err = transform.Span(span)
+	require.NoError(t, err, "transforming span to wavefront format")
+	assert.Equal(t, "123", actual.Tags["otel.dropped_links_count"])
+}
+
+func TestSpanForDroppedAttributesCounts(t *testing.T) {
+	inNanos := int64(50000000)
+
+	//TestCase: 1 DroppedAttributes tag not set
+	resAttrs := pdata.NewAttributeMap()
+	transform := transformerFromAttributes(resAttrs)
+	span := pdata.NewSpan()
+	span.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+	span.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	span.SetStartTimestamp(pdata.Timestamp(inNanos))
+
+	actual, err := transform.Span(span)
+	require.NoError(t, err, "transforming span to wavefront format")
+	assert.NotContains(t, actual.Tags, "otel.dropped_attributes_count")
+
+	//TestCase2: DroppedAttributes set
+	span.SetDroppedAttributesCount(123)
+
+	actual, err = transform.Span(span)
+	require.NoError(t, err, "transforming span to wavefront format")
+	assert.Equal(t, "123", actual.Tags["otel.dropped_attributes_count"])
+}
+
 func TestGetSourceAndResourceTags(t *testing.T) {
 	resAttrs := pdata.NewAttributeMap()
 	resAttrs.InsertString(labelSource, "test_source")
