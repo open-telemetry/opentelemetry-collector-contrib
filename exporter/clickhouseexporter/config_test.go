@@ -49,6 +49,7 @@ func TestLoadConfig(t *testing.T) {
 		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "full")),
 		DSN:              "tcp://127.0.0.1:9000?database=default",
 		TTLDays:          3,
+		LogsTableName:    "otel_logs",
 		TimeoutSettings: exporterhelper.TimeoutSettings{
 			Timeout: 5 * time.Second,
 		},

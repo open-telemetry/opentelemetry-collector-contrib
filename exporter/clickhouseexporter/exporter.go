@@ -27,7 +27,8 @@ import (
 )
 
 type clickhouseExporter struct {
-	client *sql.DB
+	client        *sql.DB
+	insertLogsSQL string
 
 	logger *zap.Logger
 	cfg    *Config
@@ -43,10 +44,13 @@ func newExporter(logger *zap.Logger, cfg *Config) (*clickhouseExporter, error) {
 		return nil, err
 	}
 
+	insertLogsSQL := renderInsertLogsSQL(cfg)
+
 	return &clickhouseExporter{
-		client: client,
-		logger: logger,
-		cfg:    cfg,
+		client:        client,
+		insertLogsSQL: insertLogsSQL,
+		logger:        logger,
+		cfg:           cfg,
 	}, nil
 }
 
@@ -61,7 +65,7 @@ func (e *clickhouseExporter) Shutdown(_ context.Context) error {
 func (e *clickhouseExporter) pushLogsData(ctx context.Context, ld pdata.Logs) error {
 	start := time.Now()
 	err := doWithTx(ctx, e.client, func(tx *sql.Tx) error {
-		statement, err := tx.PrepareContext(ctx, query)
+		statement, err := tx.PrepareContext(ctx, e.insertLogsSQL)
 		if err != nil {
 			return fmt.Errorf("PrepareContext:%w", err)
 		}
@@ -122,7 +126,7 @@ func formatKey(k string) string {
 const (
 	// language=ClickHouse SQL
 	createLogsTableSQL = `
-CREATE TABLE IF NOT EXISTS logs_local (
+CREATE TABLE IF NOT EXISTS %s (
      Timestamp DateTime CODEC(Delta, ZSTD(1)),
      TraceId String CODEC(ZSTD(1)),
      SpanId String CODEC(ZSTD(1)),
@@ -148,7 +152,7 @@ PARTITION BY toDate(Timestamp)
 ORDER BY (toUnixTimestamp(Timestamp));
 `
 	// language=ClickHouse SQL
-	query = `INSERT INTO logs_local (
+	insertLogsSQLTemplate = `INSERT INTO %s (
                         Timestamp,
                         TraceId,
                         SpanId,
@@ -185,15 +189,20 @@ func newClickhouseClient(cfg *Config) (*sql.DB, error) {
 		return nil, fmt.Errorf("sql.Open:%w", err)
 	}
 	// create table
-	query := fmt.Sprintf(createLogsTableSQL, "")
+	query := fmt.Sprintf(createLogsTableSQL, cfg.LogsTableName, "")
 	if cfg.TTLDays > 0 {
 		query = fmt.Sprintf(createLogsTableSQL,
+			cfg.LogsTableName,
 			fmt.Sprintf(`TTL Timestamp + INTERVAL %d DAY`, cfg.TTLDays))
 	}
 	if _, err := db.Exec(query); err != nil {
 		return nil, fmt.Errorf("exec create table sql: %w", err)
 	}
 	return db, nil
+}
+
+func renderInsertLogsSQL(cfg *Config) string {
+	return fmt.Sprintf(insertLogsSQLTemplate, cfg.LogsTableName)
 }
 
 func doWithTx(_ context.Context, db *sql.DB, fn func(tx *sql.Tx) error) error {

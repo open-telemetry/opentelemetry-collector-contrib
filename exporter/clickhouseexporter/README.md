@@ -25,15 +25,15 @@ Support time-series graph, table and logs.
 ```clickhouse
 /* get error count about my service last 1 hour.*/
 SELECT count(*)
-FROM logs_local
+FROM otel_logs
 WHERE SeverityText='ERROR' AND Timestamp >= NOW() - INTERVAL 1 HOUR;
 /* find log.*/
 SELECT * 
-FROM logs_local 
+FROM otel_logs 
 WHERE Timestamp >= NOW() - INTERVAL 1 HOUR;
 /* find log with specific attribute .*/
 SELECT Body
-FROM logs_local 
+FROM otel_logs 
 WHERE Attributes.Value[indexOf(Attributes.Key, 'http_method')] = 'post' AND Timestamp >= NOW() - INTERVAL 1 HOUR;
 ```
 
@@ -47,7 +47,8 @@ The following settings are required:
 
 The following settings can be optionally configured:
 
-- `ttl_days` (default=0): The data time-to-live in days, 0 means no ttl.
+- `ttl_days` (defaul t= 0): The data time-to-live in days, 0 means no ttl.
+- `logs_table_name` (default = otel_logs): The table name for logs.
 - `timeout` (default = 5s): The timeout for every attempt to send data to the backend.
 - `sending_queue`
   - `queue_size` (default = 5000): Maximum number of batches kept in memory before dropping data.
@@ -86,7 +87,7 @@ service:
 ## Schema
 
 ```clickhouse
-CREATE TABLE IF NOT EXISTS logs_local (
+CREATE TABLE IF NOT EXISTS otel_logs (
     Timestamp DateTime CODEC(Delta, ZSTD(1)),
     TraceId String CODEC(ZSTD(1)),
     SpanId String CODEC(ZSTD(1)),
