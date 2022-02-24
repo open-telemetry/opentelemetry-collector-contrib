@@ -40,7 +40,7 @@ metrics:
 
   system.filesystem.utilization:
     enabled: false
-    description: Percentage of filesystem bytes used.
+    description: Fraction of filesystem bytes used.
     unit: 1
     gauge:
       value_type: double
