@@ -301,8 +301,8 @@ func TestGetSourceAndResourceTags(t *testing.T) {
 
 	actualSource, actualAttrsWithoutSource := getSourceAndResourceTags(resAttrs)
 	assert.Equal(t, "test_source", actualSource)
-	if value, isFound := actualAttrsWithoutSource.Get(labelSource); isFound {
-		t.Logf("Tag Source with value " + value.StringVal() + " not expected.")
+	if value, isFound := actualAttrsWithoutSource[labelSource]; isFound {
+		t.Logf("Tag Source with value " + value + " not expected.")
 		t.Fail()
 	}
 }

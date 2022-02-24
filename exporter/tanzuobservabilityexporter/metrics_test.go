@@ -1296,7 +1296,7 @@ func TestExponentialHistogramDataPoint(t *testing.T) {
 		[]float64{-22.6274, -16.0, -11.3137, -8.0, 2.8284, 4.0, 5.6569, 8.0, 11.3137},
 		h.ExplicitBounds(),
 		0.0001)
-	assert.Equal(t, map[string]string{"foo": "bar", "baz": "7"}, attributesToTags(h.Attributes()))
+	assert.Equal(t, map[string]string{"foo": "bar", "baz": "7"}, attributesToTags(nil, h.Attributes()))
 	assert.Equal(t, int64(1640198765), h.Timestamp().AsTime().Unix())
 }
 
