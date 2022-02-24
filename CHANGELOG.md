@@ -13,6 +13,7 @@
 - `sapmexporter`: Add validation for `sending_queue` setting (#8023)
 - `signalfxexporter`: Add validation for `sending_queue` setting (#8026)
 - `resourcedetectionprocessor`: Add confighttp.HTTPClientSettings To Resource Detection Config Fixes (#7397)
+- `tanzuobservabilityexporter`: nstrumentation Library and Dropped Counts to Span Tags (#8120)
 
 ### 🛑 Breaking changes 🛑
 
