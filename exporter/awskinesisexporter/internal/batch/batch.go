@@ -16,6 +16,7 @@ package batch // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"errors"
+	"log"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/kinesis" //nolint:staticcheck // Some encoding types uses legacy prototype version
@@ -42,7 +43,9 @@ type Batch struct {
 
 	compression compress.Compressor
 
-	records []*kinesis.PutRecordsRequestEntry
+	records        []*kinesis.PutRecordsRequestEntry
+	useAggregation bool
+	aggregator     *Aggregator
 }
 
 type Option func(bt *Batch)
@@ -53,6 +56,13 @@ func WithMaxRecordsPerBatch(limit int) Option {
 			limit = MaxBatchedRecords
 		}
 		bt.maxBatchSize = limit
+	}
+}
+
+func WithAggregation() Option {
+	return func(bt *Batch) {
+		bt.useAggregation = true
+		bt.aggregator = new(Aggregator)
 	}
 }
 
@@ -89,7 +99,7 @@ func New(opts ...Option) *Batch {
 }
 
 func (b *Batch) AddRecord(raw []byte, key string) error {
-	record, err := b.compression.Do(raw)
+	compressed, err := b.compression.Do(raw)
 	if err != nil {
 		return err
 	}
@@ -98,18 +108,45 @@ func (b *Batch) AddRecord(raw []byte, key string) error {
 		return ErrPartitionKeyLength
 	}
 
-	if l := len(record); l == 0 || l > b.maxRecordSize {
+	if l := len(compressed); l == 0 || l > b.maxRecordSize {
 		return ErrRecordLength
 	}
 
-	b.records = append(b.records, &kinesis.PutRecordsRequestEntry{Data: record, PartitionKey: aws.String(key)})
+	if b.useAggregation && b.aggregator.IsRecordAggregative(compressed, key) {
+		if b.aggregator.IsBatchFull(compressed, key) {
+			record, err := b.aggregator.Drain()
+			if err != nil {
+				log.Fatal(err)
+			}
+			if record != nil {
+				b.records = append(b.records, record)
+			}
+		} else {
+			b.aggregator.Put(compressed, key)
+		}
+	} else {
+		b.records = append(b.records, &kinesis.PutRecordsRequestEntry{Data: compressed, PartitionKey: aws.String(key)})
+	}
 	return nil
+}
+
+func (b *Batch) Close() {
+	if !b.useAggregation {
+		return
+	}
+	record, err := b.aggregator.Drain()
+	if err != nil {
+		log.Fatal(err)
+	}
+	b.records = append(b.records, record)
 }
 
 // Chunk breaks up the iternal queue into blocks that can be used
 // to be written to he kinesis.PutRecords endpoint
 func (b *Batch) Chunk() (chunks [][]*kinesis.PutRecordsRequestEntry) {
 	// Using local copies to avoid mutating internal data
+	b.Close()
+
 	var (
 		slice = b.records
 		size  = b.maxBatchSize
