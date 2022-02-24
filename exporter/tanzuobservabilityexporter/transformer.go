@@ -19,11 +19,10 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 	"github.com/wavefronthq/wavefront-sdk-go/senders"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 )
 
 type traceTransformer struct {
@@ -182,10 +181,8 @@ func calculateTimes(span pdata.Span) (int64, int64) {
 func attributesToTags(attributesWithoutSource map[string]string, attributes pdata.AttributeMap) map[string]string {
 	tags := make(map[string]string)
 
-	if attributesWithoutSource != nil {
-		for key, val := range attributesWithoutSource {
-			tags[key] = val
-		}
+	for key, val := range attributesWithoutSource {
+		tags[key] = val
 	}
 
 	// Since AttributeMaps are processed later, its values overwrite earlier ones
