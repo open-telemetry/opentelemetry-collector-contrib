@@ -157,7 +157,7 @@ type metricSystemFilesystemUtilization struct {
 // init fills system.filesystem.utilization metric with initial data.
 func (m *metricSystemFilesystemUtilization) init() {
 	m.data.SetName("system.filesystem.utilization")
-	m.data.SetDescription("Percentage of filesystem bytes used.")
+	m.data.SetDescription("Fraction of filesystem bytes used.")
 	m.data.SetUnit("1")
 	m.data.SetDataType(pdata.MetricDataTypeGauge)
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
