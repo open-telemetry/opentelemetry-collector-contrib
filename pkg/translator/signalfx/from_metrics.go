@@ -118,7 +118,7 @@ func convertNumberDataPoints(in pdata.NumberDataPointSlice, basePoint *sfxpb.Dat
 		dp.Timestamp = fromTimestamp(inDp.Timestamp())
 		dp.Dimensions = attributesToDimensions(inDp.Attributes(), extraDims)
 
-		switch inDp.Type() {
+		switch inDp.ValueType() {
 		case pdata.MetricValueTypeInt:
 			val := inDp.IntVal()
 			dp.Value.IntValue = &val

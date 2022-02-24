@@ -6,8 +6,8 @@ require (
 	github.com/getsentry/sentry-go v0.12.0
 	github.com/google/go-cmp v0.5.7
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.44.1-0.20220210184720-ea897a6906a5
-	go.opentelemetry.io/collector/model v0.44.1-0.20220210184720-ea897a6906a5
+	go.opentelemetry.io/collector v0.45.1-0.20220223001941-c9c253193a75
+	go.opentelemetry.io/collector/model v0.45.1-0.20220222185228-27f7607ca13a
 )
 
 require (
@@ -26,13 +26,13 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/otel v1.4.0 // indirect
+	go.opentelemetry.io/otel v1.4.1 // indirect
 	go.opentelemetry.io/otel/metric v0.27.0 // indirect
-	go.opentelemetry.io/otel/trace v1.4.0 // indirect
+	go.opentelemetry.io/otel/trace v1.4.1 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/zap v1.21.0 // indirect
-	golang.org/x/sys v0.0.0-20220111092808-5a964db01320 // indirect
+	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

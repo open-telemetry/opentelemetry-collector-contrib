@@ -459,7 +459,12 @@ type histogramDataPointConsumer interface {
 	// Consume consumes the histogram data point.
 	// mi is the metricInfo which encloses metric; histogram is the histogram data point;
 	// errors get appended to errs; reporting keeps track of special situations
-	Consume(mi metricInfo, histogram histogramDataPoint, errs *[]error, reporting *histogramReporting)
+	Consume(
+		mi metricInfo,
+		histogram histogramDataPoint,
+		errs *[]error,
+		reporting *histogramReporting,
+	)
 }
 
 type cumulativeHistogramDataPointConsumer struct {
@@ -472,8 +477,12 @@ func newCumulativeHistogramDataPointConsumer(sender gaugeSender) histogramDataPo
 	return &cumulativeHistogramDataPointConsumer{sender: sender}
 }
 
-func (c *cumulativeHistogramDataPointConsumer) Consume(mi metricInfo, histogram histogramDataPoint, errs *[]error,
-	reporting *histogramReporting) {
+func (c *cumulativeHistogramDataPointConsumer) Consume(
+	mi metricInfo,
+	histogram histogramDataPoint,
+	errs *[]error,
+	reporting *histogramReporting,
+) {
 	name := mi.Name()
 	tags := attributesToTags(mi.Tags, histogram.Attributes())
 	ts := histogram.Timestamp().AsTime().Unix()
@@ -642,7 +651,9 @@ func (*summaryConsumer) PushInternalMetrics(*[]error) {
 	// Do nothing
 }
 
-func (s *summaryConsumer) sendSummaryDataPoint(mi metricInfo, summaryDataPoint pdata.SummaryDataPoint, errs *[]error) {
+func (s *summaryConsumer) sendSummaryDataPoint(
+	mi metricInfo, summaryDataPoint pdata.SummaryDataPoint, errs *[]error,
+) {
 	name := mi.Name()
 	ts := summaryDataPoint.Timestamp().AsTime().Unix()
 	tags := attributesToTags(mi.Tags, summaryDataPoint.Attributes())

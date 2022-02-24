@@ -31,10 +31,10 @@ const (
 
 // NewFactory creates an exporter factory for Humio
 func NewFactory() component.ExporterFactory {
-	return exporterhelper.NewFactory(
+	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTracesExporter),
+		component.WithTracesExporter(createTracesExporter),
 	)
 }
 
@@ -44,8 +44,8 @@ func createDefaultConfig() config.Exporter {
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 
 		// Default settings inherited from exporter helper
-		QueueSettings: exporterhelper.DefaultQueueSettings(),
-		RetrySettings: exporterhelper.DefaultRetrySettings(),
+		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+		RetrySettings: exporterhelper.NewDefaultRetrySettings(),
 
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Headers: map[string]string{},

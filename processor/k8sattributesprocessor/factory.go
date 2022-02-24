@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.uber.org/zap"
 
@@ -40,12 +40,12 @@ var defaultExcludes = ExcludeConfig{Pods: []ExcludePodConfig{{Name: "jaeger-agen
 
 // NewFactory returns a new factory for the k8s processor.
 func NewFactory() component.ProcessorFactory {
-	return processorhelper.NewFactory(
+	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		processorhelper.WithTraces(createTracesProcessor),
-		processorhelper.WithMetrics(createMetricsProcessor),
-		processorhelper.WithLogs(createLogsProcessor),
+		component.WithTracesProcessor(createTracesProcessor),
+		component.WithMetricsProcessor(createMetricsProcessor),
+		component.WithLogsProcessor(createLogsProcessor),
 	)
 }
 

@@ -18,7 +18,7 @@ import (
 	"strconv"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	metricpb "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
 )
 
@@ -74,7 +74,7 @@ func numberMetricsToData(name string, data pdata.NumberDataPointSlice, defaultLa
 		sv.SingleValue.Labels = labels
 		meterData.Timestamp = dataPoint.Timestamp().AsTime().UnixMilli()
 		sv.SingleValue.Name = name
-		switch dataPoint.Type() {
+		switch dataPoint.ValueType() {
 		case pdata.MetricValueTypeInt:
 			sv.SingleValue.Value = float64(dataPoint.IntVal())
 		case pdata.MetricValueTypeDouble:

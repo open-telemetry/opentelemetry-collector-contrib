@@ -14,7 +14,7 @@
 
 module-sets:
   contrib-base:
-    version: v0.44.0
+    version: v0.45.1
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema
@@ -132,6 +132,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver

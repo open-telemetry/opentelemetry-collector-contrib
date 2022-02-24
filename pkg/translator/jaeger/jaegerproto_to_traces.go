@@ -23,7 +23,7 @@ import (
 
 	"github.com/jaegertracing/jaeger/model"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
@@ -31,12 +31,6 @@ import (
 )
 
 var blankJaegerProtoSpan = new(model.Span)
-
-// Deprecated: [0.45.0] use `jaeger.ProtoToTraces`
-func ProtoBatchesToInternalTraces(batches []*model.Batch) pdata.Traces {
-	td, _ := ProtoToTraces(batches)
-	return td
-}
 
 // ProtoToTraces converts multiple Jaeger proto batches to internal traces
 func ProtoToTraces(batches []*model.Batch) (pdata.Traces, error) {
@@ -57,19 +51,6 @@ func ProtoToTraces(batches []*model.Batch) (pdata.Traces, error) {
 	}
 
 	return traceData, nil
-}
-
-// Deprecated: [0.45.0] use `jaeger.ProtoToTraces`
-func ProtoBatchToInternalTraces(batch model.Batch) pdata.Traces {
-	traceData := pdata.NewTraces()
-
-	if batch.GetProcess() == nil && len(batch.GetSpans()) == 0 {
-		return traceData
-	}
-
-	protoBatchToResourceSpans(batch, traceData.ResourceSpans().AppendEmpty())
-
-	return traceData
 }
 
 func protoBatchToResourceSpans(batch model.Batch, dest pdata.ResourceSpans) {
@@ -395,9 +376,9 @@ func getTraceStateFromAttrs(attrs pdata.AttributeMap) pdata.TraceState {
 
 func getInstrumentationLibrary(span *model.Span) instrumentationLibrary {
 	il := instrumentationLibrary{}
-	if libraryName, ok := getAndDeleteTag(span, conventions.InstrumentationLibraryName); ok {
+	if libraryName, ok := getAndDeleteTag(span, conventions.OtelLibraryName); ok {
 		il.name = libraryName
-		if libraryVersion, ok := getAndDeleteTag(span, conventions.InstrumentationLibraryVersion); ok {
+		if libraryVersion, ok := getAndDeleteTag(span, conventions.OtelLibraryVersion); ok {
 			il.version = libraryVersion
 		}
 	}

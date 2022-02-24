@@ -254,7 +254,7 @@ func addSingleNumberDataPoint(pt pdata.NumberDataPoint, resource pdata.Resource,
 		// convert ns to ms
 		Timestamp: convertTimeStamp(pt.Timestamp()),
 	}
-	switch pt.Type() {
+	switch pt.ValueType() {
 	case pdata.MetricValueTypeInt:
 		sample.Value = float64(pt.IntVal())
 	case pdata.MetricValueTypeDouble:

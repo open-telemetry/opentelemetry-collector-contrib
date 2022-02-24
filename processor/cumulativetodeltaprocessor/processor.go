@@ -104,7 +104,7 @@ func (ctdp *cumulativeToDeltaProcessor) convertDataPoints(in interface{}, baseId
 			id := baseIdentity
 			id.StartTimestamp = dp.StartTimestamp()
 			id.Attributes = dp.Attributes()
-			id.MetricValueType = dp.Type()
+			id.MetricValueType = dp.ValueType()
 			point := tracking.ValuePoint{
 				ObservedTimestamp: dp.Timestamp(),
 			}

@@ -3,17 +3,17 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubele
 go 1.17
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.44.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.44.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.45.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.45.1
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.44.1-0.20220210184720-ea897a6906a5
+	go.opentelemetry.io/collector v0.45.1-0.20220223001941-c9c253193a75
 	go.uber.org/zap v1.21.0
 )
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
-	github.com/go-logr/logr v1.2.1 // indirect
+	github.com/go-logr/logr v1.2.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-cmp v0.5.7 // indirect
@@ -32,7 +32,7 @@ require (
 	go.uber.org/multierr v1.7.0 // indirect
 	golang.org/x/net v0.0.0-20211209124913-491a49abca63 // indirect
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
-	golang.org/x/sys v0.0.0-20220111092808-5a964db01320 // indirect
+	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9 // indirect
 	golang.org/x/term v0.0.0-20210615171337-6886f2dfbf5b // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac // indirect
@@ -41,9 +41,9 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
-	k8s.io/api v0.23.3 // indirect
-	k8s.io/apimachinery v0.23.3 // indirect
-	k8s.io/client-go v0.23.3 // indirect
+	k8s.io/api v0.23.4 // indirect
+	k8s.io/apimachinery v0.23.4 // indirect
+	k8s.io/client-go v0.23.4 // indirect
 	k8s.io/klog/v2 v2.30.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20211115234752-e816edb12b65 // indirect
 	k8s.io/utils v0.0.0-20211116205334-6203023598ed // indirect
