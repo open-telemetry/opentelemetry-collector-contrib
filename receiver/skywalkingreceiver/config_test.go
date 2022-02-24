@@ -63,9 +63,6 @@ func TestLoadConfig(t *testing.T) {
 						Transport: "tcp",
 					},
 				},
-				HTTP: &confighttp.HTTPServerSettings{
-					Endpoint: defaultHTTPBindEndpoint,
-				},
 			},
 		})
 }
