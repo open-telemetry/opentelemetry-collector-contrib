@@ -13,6 +13,8 @@
 - `sapmexporter`: Add validation for `sending_queue` setting (#8023)
 - `signalfxexporter`: Add validation for `sending_queue` setting (#8026)
 - `internal/stanza`: Add support for arbitrary attribute types (#8081)
+- `resourcedetectionprocessor`: Add confighttp.HTTPClientSettings To Resource Detection Config Fixes (#7397)
+- `honeycombexporter`: Add validation for `sending_queue` setting (#8113)
 
 ### 🛑 Breaking changes 🛑
 
@@ -58,6 +60,7 @@
 - `datadogexporter`: Add insecure_skip_verify flag to configuration (#7422)
 - `coralogixexporter`: Update readme (#7785)
 - `awscloudwatchlogsexporter`: Remove name from aws cloudwatch logs exporter (#7554)
+- `tanzuobservabilityexporter`: Update OTel Collector's Exporter to match WF Proxy Handling of source (#7929)
 - `hostreceiver/memoryscraper`: Add memory.utilization (#6221)
 - `awskinesisexporter`: Add Queue Config Validation AWS Kinesis Exporter (#7835)
 - `elasticsearchexporter`: Remove usage of deprecated LogRecord.Name field (#7829).
