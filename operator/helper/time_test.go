@@ -314,6 +314,13 @@ func TestTimeParser(t *testing.T) {
 			strptimeLayout: "%Y-%m-%dT%H:%M:%S.%LZ",
 			location:       hst.String(),
 		},
+		{
+			name:           "1970",
+			sample:         "1970-12-16T21:43:28.391Z",
+			expected:       time.Date(1970, 12, 16, 21, 43, 28, 391*1000*1000, time.UTC),
+			gotimeLayout:   "2006-01-02T15:04:05.999Z",
+			strptimeLayout: "%Y-%m-%dT%H:%M:%S.%LZ",
+		},
 	}
 
 	rootField := entry.NewBodyField()
