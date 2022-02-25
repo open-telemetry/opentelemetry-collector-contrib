@@ -14,7 +14,6 @@ Supported pipeline types: logs
 | `max_log_size`    | `1MiB`           | The maximum size of a log entry to read before failing. Protects against reading large amounts of data into memory |
 | `listen_address`  | required         | A listen address of the form `<ip>:<port>`                                                                         |
 | `tls`             | nil              | An optional `TLS` configuration (see the TLS configuration section)                                                |
-| `write_to`        | `$body`          | The body [field](/docs/types/field.md) written to when creating a new log entry                                    |
 | `attributes`      | {}               | A map of `key: value` pairs to add to the entry's attributes                                                       |
 | `resource`        | {}               | A map of `key: value` pairs to add to the entry's resource                                                         |
 | `add_attributes`  | false            | Adds `net.*` attributes according to [semantic convention][https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/span-general.md#general-network-connection-attributes] |
