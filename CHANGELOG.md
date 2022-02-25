@@ -14,6 +14,7 @@
 - `signalfxexporter`: Add validation for `sending_queue` setting (#8026)
 - `resourcedetectionprocessor`: Add confighttp.HTTPClientSettings To Resource Detection Config Fixes (#7397)
 - `tanzuobservabilityexporter`: nstrumentation Library and Dropped Counts to Span Tags (#8120)
+- `honeycombexporter`: Add validation for `sending_queue` setting (#8113)
 
 ### 🛑 Breaking changes 🛑
 
