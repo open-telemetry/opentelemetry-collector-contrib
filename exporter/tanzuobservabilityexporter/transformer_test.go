@@ -297,7 +297,7 @@ func TestSpanForSourceTag(t *testing.T) {
 func TestSpanForDroppedCount(t *testing.T) {
 	inNanos := int64(50000000)
 
-	//TestCase: 1 droppedEvents tag not set
+	//TestCase: 1 count tags are not set
 	resAttrs := pdata.NewAttributeMap()
 	transform := transformerFromAttributes(resAttrs)
 	span := pdata.NewSpan()
@@ -311,16 +311,16 @@ func TestSpanForDroppedCount(t *testing.T) {
 	assert.NotContains(t, actual.Tags, "otel.dropped_links_count")
 	assert.NotContains(t, actual.Tags, "otel.dropped_attributes_count")
 
-	//TestCase2: droppedEvents set
+	//TestCase2: count tags are set
 	span.SetDroppedEventsCount(123)
-	span.SetDroppedLinksCount(123)
-	span.SetDroppedAttributesCount(123)
+	span.SetDroppedLinksCount(456)
+	span.SetDroppedAttributesCount(789)
 
 	actual, err = transform.Span(span)
 	require.NoError(t, err, "transforming span to wavefront format")
 	assert.Equal(t, "123", actual.Tags["otel.dropped_events_count"])
-	assert.Equal(t, "123", actual.Tags["otel.dropped_links_count"])
-	assert.Equal(t, "123", actual.Tags["otel.dropped_attributes_count"])
+	assert.Equal(t, "456", actual.Tags["otel.dropped_links_count"])
+	assert.Equal(t, "789", actual.Tags["otel.dropped_attributes_count"])
 }
 
 func TestGetSourceAndResourceTags(t *testing.T) {
