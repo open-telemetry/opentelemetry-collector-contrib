@@ -3,11 +3,11 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influx
 go 1.17
 
 require (
-	github.com/influxdata/influxdb-observability/common v0.2.10
-	github.com/influxdata/influxdb-observability/influx2otel v0.2.10
+	github.com/influxdata/influxdb-observability/common v0.2.13
+	github.com/influxdata/influxdb-observability/influx2otel v0.2.13
 	github.com/influxdata/line-protocol/v2 v2.2.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.45.1
-	go.opentelemetry.io/collector v0.45.1-0.20220223001941-c9c253193a75
+	go.opentelemetry.io/collector v0.45.1-0.20220225200547-7bdb684e27bf
 	go.uber.org/zap v1.21.0
 
 )
@@ -29,7 +29,7 @@ require (
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	github.com/rs/cors v1.8.2 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
-	go.opentelemetry.io/collector/model v0.45.1-0.20220222185228-27f7607ca13a // indirect
+	go.opentelemetry.io/collector/model v0.45.1-0.20220225200547-7bdb684e27bf // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.29.0 // indirect
 	go.opentelemetry.io/otel v1.4.1 // indirect
 	go.opentelemetry.io/otel/internal/metric v0.27.0 // indirect
