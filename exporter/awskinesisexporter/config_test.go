@@ -45,9 +45,9 @@ func TestDefaultConfig(t *testing.T) {
 	assert.Equal(t, e,
 		&Config{
 			ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-			QueueSettings:    exporterhelper.DefaultQueueSettings(),
-			RetrySettings:    exporterhelper.DefaultRetrySettings(),
-			TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
+			QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
+			RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
+			TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
 			Encoding: Encoding{
 				Name:        "otlp",
 				Compression: "none",
@@ -83,8 +83,8 @@ func TestConfig(t *testing.T) {
 				InitialInterval: 5 * time.Second,
 				MaxElapsedTime:  300 * time.Second,
 			},
-			TimeoutSettings: exporterhelper.DefaultTimeoutSettings(),
-			QueueSettings:   exporterhelper.DefaultQueueSettings(),
+			TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+			QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 			Encoding: Encoding{
 				Name:        "otlp-proto",
 				Compression: "none",

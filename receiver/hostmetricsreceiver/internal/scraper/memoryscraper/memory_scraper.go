@@ -16,31 +16,49 @@ package memoryscraper // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"time"
 
+	"github.com/shirou/gopsutil/v3/host"
 	"github.com/shirou/gopsutil/v3/mem"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/memoryscraper/internal/metadata"
 )
 
-const metricsLen = 1
+const metricsLen = 2
+
+var ErrInvalidTotalMem = errors.New("invalid total memory")
 
 // scraper for Memory Metrics
 type scraper struct {
 	config *Config
+	mb     *metadata.MetricsBuilder
 
 	// for mocking gopsutil mem.VirtualMemory
+	bootTime      func() (uint64, error)
 	virtualMemory func() (*mem.VirtualMemoryStat, error)
 }
 
 // newMemoryScraper creates a Memory Scraper
 func newMemoryScraper(_ context.Context, cfg *Config) *scraper {
-	return &scraper{config: cfg, virtualMemory: mem.VirtualMemory}
+	return &scraper{config: cfg, bootTime: host.BootTime, virtualMemory: mem.VirtualMemory}
 }
 
-func (s *scraper) Scrape(_ context.Context) (pdata.Metrics, error) {
+func (s *scraper) start(context.Context, component.Host) error {
+	bootTime, err := s.bootTime()
+	if err != nil {
+		return err
+	}
+
+	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, metadata.WithStartTime(pdata.Timestamp(bootTime*1e9)))
+	return nil
+}
+
+func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 	md := pdata.NewMetrics()
 	metrics := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics()
 
@@ -50,21 +68,14 @@ func (s *scraper) Scrape(_ context.Context) (pdata.Metrics, error) {
 		return md, scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
-	metrics.EnsureCapacity(metricsLen)
-	initializeMemoryUsageMetric(metrics.AppendEmpty(), now, memInfo)
+	if memInfo != nil {
+		metrics.EnsureCapacity(metricsLen)
+		s.recordMemoryUsageMetric(now, memInfo)
+		if memInfo.Total <= 0 {
+			return md, scrapererror.NewPartialScrapeError(fmt.Errorf("%w: %d", ErrInvalidTotalMem, memInfo.Total), metricsLen)
+		}
+		s.recordMemoryUtilizationMetric(now, memInfo)
+	}
+	s.mb.Emit(metrics)
 	return md, nil
-}
-
-func initializeMemoryUsageMetric(metric pdata.Metric, now pdata.Timestamp, memInfo *mem.VirtualMemoryStat) {
-	metadata.Metrics.SystemMemoryUsage.Init(metric)
-
-	idps := metric.Sum().DataPoints()
-	idps.EnsureCapacity(memStatesLen)
-	appendMemoryUsageStateDataPoints(idps, now, memInfo)
-}
-
-func initializeMemoryUsageDataPoint(dataPoint pdata.NumberDataPoint, now pdata.Timestamp, stateLabel string, value int64) {
-	dataPoint.Attributes().InsertString(metadata.Attributes.State, stateLabel)
-	dataPoint.SetTimestamp(now)
-	dataPoint.SetIntVal(value)
 }

@@ -44,13 +44,13 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
@@ -106,7 +106,7 @@ func TestReception(t *testing.T) {
 	// 2. Then send spans to the Jaeger receiver.
 	collectorAddr := fmt.Sprintf("http://localhost:%d/api/traces", port)
 	td := generateTraceData()
-	batches, err := jaeger.InternalTracesToJaegerProto(td)
+	batches, err := jaeger.ProtoFromTraces(td)
 	require.NoError(t, err)
 	for _, batch := range batches {
 		require.NoError(t, sendToCollector(collectorAddr, modelToThrift(batch)))

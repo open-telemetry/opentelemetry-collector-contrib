@@ -23,6 +23,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 )
 
 var (
@@ -39,7 +41,7 @@ var (
 )
 
 // NewHTTPClient returns a http.Client configured with the Agent options.
-func NewHTTPClient(settings exporterhelper.TimeoutSettings) *http.Client {
+func NewHTTPClient(settings exporterhelper.TimeoutSettings, httpClientSettings config.LimitedHTTPClientSettings) *http.Client {
 	return &http.Client{
 		Timeout: settings.Timeout,
 		Transport: &http.Transport{
@@ -51,7 +53,7 @@ func NewHTTPClient(settings exporterhelper.TimeoutSettings) *http.Client {
 			MaxIdleConns: 100,
 			// Not supported by intake
 			ForceAttemptHTTP2: false,
-			TLSClientConfig:   &tls.Config{InsecureSkipVerify: false},
+			TLSClientConfig:   &tls.Config{InsecureSkipVerify: httpClientSettings.TLSSetting.InsecureSkipVerify},
 		},
 	}
 }

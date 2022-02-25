@@ -36,7 +36,7 @@ type prweWAL struct {
 	walConfig *WALConfig
 	walPath   string
 
-	exportSink func(ctx context.Context, reqL []*prompb.WriteRequest) []error
+	exportSink func(ctx context.Context, reqL []*prompb.WriteRequest) error
 
 	stopOnce  sync.Once
 	stopChan  chan struct{}
@@ -69,7 +69,7 @@ func (wc *WALConfig) truncateFrequency() time.Duration {
 	return defaultWALTruncateFrequency
 }
 
-func newWAL(walConfig *WALConfig, exportSink func(context.Context, []*prompb.WriteRequest) []error) (*prweWAL, error) {
+func newWAL(walConfig *WALConfig, exportSink func(context.Context, []*prompb.WriteRequest) error) (*prweWAL, error) {
 	if walConfig == nil {
 		// There are cases for which the WAL can be disabled.
 		// TODO: Perhaps log that the WAL wasn't enabled.
@@ -195,8 +195,8 @@ func (prwe *prweWAL) continuallyPopWALThenExport(ctx context.Context, signalStar
 	defer func() {
 		// Keeping it within a closure to ensure that the later
 		// updated value of reqL is always flushed to disk.
-		if errL := prwe.exportSink(ctx, reqL); len(errL) != 0 && err == nil {
-			err = multierror.Append(nil, errL...)
+		if errL := prwe.exportSink(ctx, reqL); errL != nil {
+			err = multierror.Append(err, errL)
 		}
 	}()
 
@@ -293,8 +293,8 @@ func (prwe *prweWAL) exportThenFrontTruncateWAL(ctx context.Context, reqL []*pro
 		return nil
 	}
 
-	if errL := prwe.exportSink(ctx, reqL); len(errL) != 0 {
-		return multierror.Append(nil, errL...)
+	if errL := prwe.exportSink(ctx, reqL); errL != nil {
+		return multierror.Append(nil, errL)
 	}
 	if err := prwe.syncAndTruncateFront(); err != nil {
 		return err

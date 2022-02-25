@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"sync"
 	"testing"
 	"time"
@@ -99,7 +100,7 @@ func TestDetect(t *testing.T) {
 			p, err := f.CreateResourceProvider(componenttest.NewNopProcessorCreateSettings(), time.Second, &mockDetectorConfig{}, mockDetectorTypes...)
 			require.NoError(t, err)
 
-			got, _, err := p.Get(context.Background())
+			got, _, err := p.Get(context.Background(), http.DefaultClient)
 			require.NoError(t, err)
 
 			tt.expectedResource.Attributes().Sort()
@@ -135,7 +136,7 @@ func TestDetectResource_Error(t *testing.T) {
 	md2.On("Detect").Return(pdata.NewResource(), errors.New("err1"))
 
 	p := NewResourceProvider(zap.NewNop(), time.Second, md1, md2)
-	_, _, err := p.Get(context.Background())
+	_, _, err := p.Get(context.Background(), http.DefaultClient)
 	require.NoError(t, err)
 }
 
@@ -212,7 +213,7 @@ func TestDetectResource_Parallel(t *testing.T) {
 	for i := 0; i < iterations; i++ {
 		go func() {
 			defer wg.Done()
-			detected, _, err := p.Get(context.Background())
+			detected, _, err := p.Get(context.Background(), http.DefaultClient)
 			require.NoError(t, err)
 			detected.Attributes().Sort()
 			assert.Equal(t, expectedResource, detected)

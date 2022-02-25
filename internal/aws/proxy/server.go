@@ -33,7 +33,7 @@ import (
 	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/sanitize"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
 )
 
 const (

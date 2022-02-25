@@ -154,14 +154,14 @@ The rule language is expressed in yaml mappings and is [documented here](./inter
 
 * `aggregate_metric` - Aggregates a metric through removal of specified dimensions
 * `calculate_new_metric` - Creates a new metric via operating on two consistuent ones
-* `convert_values` - Convert float values to int for specified metric names
+* `convert_values` - Convert float values to int or int to float for specified metric names
 * `copy_metrics` - Creates a new metric as a copy of another
 * `delta_metric` - Creates a new delta metric for a specified non-delta one
 * `divide_int` - Scales a metric's integer value by a given factor
 * `drop_dimensions` - Drops dimensions for specified metrics, or globally
 * `drop_metrics` - Drops all metrics with a given name
-* `multiply_float` - Scales a metric's integer value by a given float factor
-* `multiply_int` - Scales a metric's integer value by a given int factor
+* `multiply_float` - Scales a metric's float value by a given float factor
+* `multiply_int` - Scales a metric's int value by a given int factor
 * `rename_dimension_keys` - Renames dimensions for specified metrics, or globally
 * `rename_metrics` - Replaces a given metric name with specified one
 * `split_metric` - Splits a given metric into multiple new ones for a specified dimension

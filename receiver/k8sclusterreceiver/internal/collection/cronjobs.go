@@ -17,8 +17,8 @@ package collection // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
-	batchv1beta1 "k8s.io/api/batch/v1beta1"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	batchv1 "k8s.io/api/batch/v1"
 
 	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/utils"
@@ -37,7 +37,7 @@ var activeJobs = &metricspb.MetricDescriptor{
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 }
 
-func getMetricsForCronJob(cj *batchv1beta1.CronJob) []*resourceMetrics {
+func getMetricsForCronJob(cj *batchv1.CronJob) []*resourceMetrics {
 	metrics := []*metricspb.Metric{
 		{
 			MetricDescriptor: activeJobs,
@@ -55,7 +55,7 @@ func getMetricsForCronJob(cj *batchv1beta1.CronJob) []*resourceMetrics {
 	}
 }
 
-func getResourceForCronJob(cj *batchv1beta1.CronJob) *resourcepb.Resource {
+func getResourceForCronJob(cj *batchv1.CronJob) *resourcepb.Resource {
 	return &resourcepb.Resource{
 		Type: k8sType,
 		Labels: map[string]string{
@@ -67,7 +67,7 @@ func getResourceForCronJob(cj *batchv1beta1.CronJob) *resourcepb.Resource {
 	}
 }
 
-func getMetadataForCronJob(cj *batchv1beta1.CronJob) map[metadata.ResourceID]*KubernetesMetadata {
+func getMetadataForCronJob(cj *batchv1.CronJob) map[metadata.ResourceID]*KubernetesMetadata {
 	rm := getGenericMetadata(&cj.ObjectMeta, k8sKindCronJob)
 	rm.metadata[cronJobKeySchedule] = cj.Spec.Schedule
 	rm.metadata[cronJobKeyConcurrencyPolicy] = string(cj.Spec.ConcurrencyPolicy)

@@ -21,6 +21,11 @@ The following settings are required:
   [Loki label best practices](https://grafana.com/docs/loki/latest/best-practices/) page for 
   additional details on the types of labels you may want to associate with log streams.
 
+- `labels.record` (no default): A map of record attributes to valid Loki label names (must match 
+  "^[a-zA-Z_][a-zA-Z0-9_]*$") allowed to be added as labels to Loki log streams.
+  Record attributes can be: `traceID`, `spanID`, `severity`, `severityN`. These attributes will be added as log labels 
+  and will be removed from the log body.
+
 The following settings can be optionally configured:
 
 - `tenant_id` (no default): The tenant ID used to identify the tenant the logs are associated to. This will set the 
@@ -62,7 +67,10 @@ loki:
       # Allowing 'severity' attribute and not providing a mapping, since the attribute name is a valid Loki label name.
       severity: ""
       http.status_code: "http_status_code" 
-      
+    record:
+      # Adds 'traceID' as a log label, seen as 'traceid' in Loki.
+      traceID: "traceid"
+
   headers:
     "X-Custom-Header": "loki_rocks"
 ```

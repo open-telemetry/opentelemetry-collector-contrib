@@ -209,7 +209,7 @@ func logMissingValue(metric pdata.Metric, settings component.TelemetrySettings, 
 
 // getValue gets the floating point value out of a NumberDataPoint
 func getValue(numberDataPoint pdata.NumberDataPoint) (float64, error) {
-	switch numberDataPoint.Type() {
+	switch numberDataPoint.ValueType() {
 	case pdata.MetricValueTypeInt:
 		return float64(numberDataPoint.IntVal()), nil
 	case pdata.MetricValueTypeDouble:
@@ -232,7 +232,7 @@ func pushGaugeNumberDataPoint(
 	settings component.TelemetrySettings,
 	missingValues *counter,
 ) {
-	tags := attributesToTags(numberDataPoint.Attributes())
+	tags := attributesToTags(nil, numberDataPoint.Attributes())
 	ts := numberDataPoint.Timestamp().AsTime().Unix()
 	value, err := getValue(numberDataPoint)
 	if err != nil {
@@ -332,7 +332,7 @@ func (s *sumConsumer) PushInternalMetrics(errs *[]error) {
 func (s *sumConsumer) pushNumberDataPoint(
 	metric pdata.Metric, numberDataPoint pdata.NumberDataPoint, errs *[]error,
 ) {
-	tags := attributesToTags(numberDataPoint.Attributes())
+	tags := attributesToTags(nil, numberDataPoint.Attributes())
 	value, err := getValue(numberDataPoint)
 	if err != nil {
 		logMissingValue(metric, s.settings, &s.missingValues)
@@ -477,7 +477,7 @@ func (c *cumulativeHistogramDataPointConsumer) Consume(
 	reporting *histogramReporting,
 ) {
 	name := metric.Name()
-	tags := attributesToTags(h.Attributes())
+	tags := attributesToTags(nil, h.Attributes())
 	ts := h.Timestamp().AsTime().Unix()
 	explicitBounds := h.ExplicitBounds()
 	bucketCounts := h.BucketCounts()
@@ -524,7 +524,7 @@ func (d *deltaHistogramDataPointConsumer) Consume(
 	reporting *histogramReporting,
 ) {
 	name := metric.Name()
-	tags := attributesToTags(h.Attributes())
+	tags := attributesToTags(nil, h.Attributes())
 	ts := h.Timestamp().AsTime().Unix()
 	explicitBounds := h.ExplicitBounds()
 	bucketCounts := h.BucketCounts()
@@ -650,7 +650,7 @@ func (s *summaryConsumer) sendSummaryDataPoint(
 ) {
 	name := metric.Name()
 	ts := summaryDataPoint.Timestamp().AsTime().Unix()
-	tags := attributesToTags(summaryDataPoint.Attributes())
+	tags := attributesToTags(nil, summaryDataPoint.Attributes())
 	count := summaryDataPoint.Count()
 	sum := summaryDataPoint.Sum()
 

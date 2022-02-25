@@ -79,7 +79,7 @@ func (gf *graphiteFormatter) format(f fields, metricName string) string {
 // numberRecord converts NumberDataPoint to graphite metric string
 // with additional information from fields
 func (gf *graphiteFormatter) numberRecord(fs fields, name string, dataPoint pdata.NumberDataPoint) string {
-	switch dataPoint.Type() {
+	switch dataPoint.ValueType() {
 	case pdata.MetricValueTypeDouble:
 		return fmt.Sprintf("%s %g %d",
 			gf.format(fs, name),

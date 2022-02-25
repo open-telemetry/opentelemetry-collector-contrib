@@ -44,6 +44,10 @@ type Config struct {
 	MetricConfig MetricConfig `mapstructure:"metric"`
 }
 
+func (cfg *Config) Validate() error {
+	return nil
+}
+
 type MetricConfig struct {
 	Prefix                     string `mapstructure:"prefix"`
 	SkipCreateMetricDescriptor bool   `mapstructure:"skip_create_descriptor"`

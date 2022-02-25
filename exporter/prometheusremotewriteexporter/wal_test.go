@@ -25,7 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func doNothingExportSink(_ context.Context, reqL []*prompb.WriteRequest) []error {
+func doNothingExportSink(_ context.Context, reqL []*prompb.WriteRequest) error {
 	_ = reqL
 	return nil
 }

@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	common "skywalking.apache.org/repo/goapi/collect/common/v3"
 	logpb "skywalking.apache.org/repo/goapi/collect/logging/v3"
 )
@@ -28,7 +28,6 @@ const (
 	spanIDField            = "spanID"
 	severityNumber         = "severityNumber"
 	severityText           = "severityText"
-	name                   = "name"
 	flags                  = "flags"
 	instrumentationName    = "otlp.name"
 	instrumentationVersion = "otlp.version"
@@ -115,13 +114,6 @@ func mapLogRecordToLogData(lr pdata.LogRecord, logData *logpb.LogData) {
 		logData.Tags.Data = append(logData.Tags.Data, &common.KeyStringValuePair{
 			Key:   severityText,
 			Value: st,
-		})
-	}
-
-	if ln := lr.Name(); ln != "" {
-		logData.Tags.Data = append(logData.Tags.Data, &common.KeyStringValuePair{
-			Key:   name,
-			Value: ln,
 		})
 	}
 
