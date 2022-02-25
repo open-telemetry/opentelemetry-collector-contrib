@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.26.0] - 2022-02-25
+
+### Added
+- `source_identifier` setting to `recombine` operator, to ensure partial entries are joined to others from the same file, or other source. ([PR341](https://github.com/open-telemetry/opentelemetry-log-collection/pull/341))
+- `max_sources` setting to `recombine` operator, which limits the number of unique sources that may accumulate partial entries. ([PR341](https://github.com/open-telemetry/opentelemetry-log-collection/pull/341))
+
+### Fixed
+- Time parsing will now correctly parse timestamps from 1970. ([PR417](https://github.com/open-telemetry/opentelemetry-log-collection/pull/417))
+- Issue where `file_input` operator could duplicate a small number of log entries. ([PR413](https://github.com/open-telemetry/opentelemetry-log-collection/pull/413))
+
+### Changed
+- `entry.Attributes` data type from `map[string]string` to `map[string]interface{}`. ([PR401](https://github.com/open-telemetry/opentelemetry-log-collection/pull/401))
+- `entry.Resource` data type from `map[string]string` to `map[string]interface{}`. ([PR411](https://github.com/open-telemetry/opentelemetry-log-collection/pull/411))
+
+### Removed
+- `write_to` configuration setting from all input operators. Use `move` operator instead. ([PR412](https://github.com/open-telemetry/opentelemetry-log-collection/pull/412))
+
+
 ## [0.25.0] - 2022-02-21
 
 This release contains a few minor updates as well as a major cleanup of the codebase. See the [Reduce Complexity](https://github.com/open-telemetry/opentelemetry-log-collection/milestone/2?closed=1) milestone for full details on the cleanup.
