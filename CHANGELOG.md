@@ -27,6 +27,7 @@
 ### 🧰 Bug fixes 🧰
 
 - `prometheusreceiver`: Fix segfault that can occur after receiving stale metrics (#8056)
+- `filelogreceiver`: Fix issue where logs could occasionally be duplicated (#8123)
 
 ### 🚀 New components 🚀
 
