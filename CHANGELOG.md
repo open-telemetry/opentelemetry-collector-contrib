@@ -20,6 +20,7 @@
 
 - Remove deprecated functions from jaeger translator (#8032)
 - `internal/stanza`: Remove `write_to` setting from input operators (#8081)
+- `mongodbatlasreceiver`: rename `mongodb.atlas.*` attributes to `mongodb_atlas.*` adhering to naming guidelines. Adding 3 new attributes (#7960)
 
 ### 🚩 Deprecations 🚩
 
