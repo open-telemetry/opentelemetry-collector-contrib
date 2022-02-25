@@ -75,15 +75,15 @@ func (t *traceTransformer) Span(orig pdata.Span) (span, error) {
 	tags[labelSpanKind] = spanKind(orig)
 
 	if droppedEventsCount := orig.DroppedEventsCount(); droppedEventsCount > 0 {
-		tags[labelDroppedEventsCount] = strconv.Itoa(int(droppedEventsCount))
+		tags[labelDroppedEventsCount] = strconv.FormatUint(uint64(droppedEventsCount), 10)
 	}
 
 	if droppedLinksCount := orig.DroppedLinksCount(); droppedLinksCount > 0 {
-		tags[labelDroppedLinksCount] = strconv.Itoa(int(droppedLinksCount))
+		tags[labelDroppedLinksCount] = strconv.FormatUint(uint64(droppedLinksCount), 10)
 	}
 
 	if droppedAttrsCount := orig.DroppedAttributesCount(); droppedAttrsCount > 0 {
-		tags[labelDroppedAttrsCount] = strconv.Itoa(int(droppedAttrsCount))
+		tags[labelDroppedAttrsCount] = strconv.FormatUint(uint64(droppedAttrsCount), 10)
 	}
 
 	errorTags := errorTagsFromStatus(orig.Status())

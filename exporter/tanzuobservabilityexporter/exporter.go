@@ -109,16 +109,8 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td pdata.Traces) err
 			ispans := rspans.InstrumentationLibrarySpans().At(j)
 			transform := newTraceTransformer(resource)
 
-			var libraryName string
-			var libraryVersion string
-
-			if len(ispans.InstrumentationLibrary().Name()) > 0 {
-				libraryName = ispans.InstrumentationLibrary().Name()
-			}
-
-			if len(ispans.InstrumentationLibrary().Version()) > 0 {
-				libraryVersion = ispans.InstrumentationLibrary().Version()
-			}
+			libraryName := ispans.InstrumentationLibrary().Name()
+			libraryVersion := ispans.InstrumentationLibrary().Version()
 
 			for k := 0; k < ispans.Spans().Len(); k++ {
 				select {
@@ -131,11 +123,11 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td pdata.Traces) err
 						continue
 					}
 
-					if len(libraryName) > 0 {
+					if libraryName != "" {
 						transformedSpan.Tags[labelOtelSpanName] = libraryName
 					}
 
-					if len(libraryVersion) > 0 {
+					if libraryVersion != "" {
 						transformedSpan.Tags[labelOtelSpanVersion] = libraryVersion
 					}
 

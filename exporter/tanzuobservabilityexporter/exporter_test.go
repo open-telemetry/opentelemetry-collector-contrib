@@ -201,10 +201,10 @@ func TestExportTraceDataWithInstrumentationDetails(t *testing.T) {
 	)
 	traces := constructTraces([]pdata.Span{minSpan})
 
-	traces.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).InstrumentationLibrary().
-		SetName("instrumentation_name")
-	traces.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).InstrumentationLibrary().
-		SetVersion("v0.0.1")
+	instrumentationLibrary := traces.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).
+		InstrumentationLibrary()
+	instrumentationLibrary.SetName("instrumentation_name")
+	instrumentationLibrary.SetVersion("v0.0.1")
 
 	expected := []*span{{
 		Name:    "root",
