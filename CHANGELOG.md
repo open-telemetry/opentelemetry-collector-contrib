@@ -13,10 +13,12 @@
 - `sapmexporter`: Add validation for `sending_queue` setting (#8023)
 - `signalfxexporter`: Add validation for `sending_queue` setting (#8026)
 - `resourcedetectionprocessor`: Add confighttp.HTTPClientSettings To Resource Detection Config Fixes (#7397)
+- `honeycombexporter`: Add validation for `sending_queue` setting (#8113)
 
 ### 🛑 Breaking changes 🛑
 
 - Remove deprecated functions from jaeger translator (#8032)
+- `mongodbatlasreceiver`: rename `mongodb.atlas.*` attributes to `mongodb_atlas.*` adhering to naming guidelines. Adding 3 new attributes (#7960)
 
 ### 🚩 Deprecations 🚩
 
