@@ -6,7 +6,7 @@ require (
 	github.com/observiq/nanojack v0.0.0-20201106172433-343928847ebc
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.45.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza v0.45.1
-	github.com/open-telemetry/opentelemetry-log-collection v0.25.0
+	github.com/open-telemetry/opentelemetry-log-collection v0.25.1-0.20220223175442-26aeee9f1372
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.45.1-0.20220223001941-c9c253193a75
 	go.opentelemetry.io/collector/model v0.45.1-0.20220222185228-27f7607ca13a
