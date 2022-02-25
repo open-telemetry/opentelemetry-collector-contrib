@@ -556,7 +556,7 @@ func HashResource(resource map[string]interface{}) uint64 {
 			fnvHash.Write([]byte(t))
 		case []byte:
 			fnvHash.Write(t)
-		case int, int64:
+		case bool, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
 			binary.Write(fnvHash, binary.BigEndian, t)
 		default:
 			b, _ := json.Marshal(t)
