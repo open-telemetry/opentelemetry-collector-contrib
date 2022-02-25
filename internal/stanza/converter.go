@@ -17,6 +17,7 @@ package stanza // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"context"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"hash/fnv"
@@ -165,7 +166,7 @@ func (c *Converter) OutChannel() <-chan pdata.Logs {
 }
 
 type workerItem struct {
-	Resource   map[string]string
+	Resource   map[string]interface{}
 	LogRecord  pdata.LogRecord
 	ResourceID uint64
 }
@@ -191,7 +192,7 @@ func (c *Converter) workerLoop() {
 
 			for _, e := range entries {
 				lr := convert(e)
-				resourceID := getResourceID(e.Resource)
+				resourceID := HashResource(e.Resource)
 				workerItems = append(workerItems, workerItem{
 					Resource:   e.Resource,
 					ResourceID: resourceID,
@@ -236,11 +237,7 @@ func (c *Converter) aggregationLoop() {
 				rls := logs.AppendEmpty()
 
 				resource := rls.Resource()
-				resourceAtts := resource.Attributes()
-				resourceAtts.EnsureCapacity(len(wi.Resource))
-				for k, v := range wi.Resource {
-					resourceAtts.InsertString(k, v)
-				}
+				insertToAttributeMap(wi.Resource, resource.Attributes())
 
 				ills := rls.InstrumentationLibraryLogs()
 				lr := ills.AppendEmpty().LogRecords().AppendEmpty()
@@ -325,11 +322,7 @@ func Convert(ent *entry.Entry) pdata.Logs {
 	rls := logs.AppendEmpty()
 
 	resource := rls.Resource()
-	resourceAtts := resource.Attributes()
-	resourceAtts.EnsureCapacity(len(ent.Resource))
-	for k, v := range ent.Resource {
-		resourceAtts.InsertString(k, v)
-	}
+	insertToAttributeMap(ent.Resource, resource.Attributes())
 
 	ills := rls.InstrumentationLibraryLogs().AppendEmpty()
 	lr := ills.LogRecords().AppendEmpty()
@@ -343,14 +336,7 @@ func convertInto(ent *entry.Entry, dest pdata.LogRecord) {
 	dest.SetSeverityNumber(sevMap[ent.Severity])
 	dest.SetSeverityText(sevTextMap[ent.Severity])
 
-	if l := len(ent.Attributes); l > 0 {
-		attributes := dest.Attributes()
-		attributes.EnsureCapacity(l)
-		for k, v := range ent.Attributes {
-			attributes.InsertString(k, v)
-		}
-	}
-
+	insertToAttributeMap(ent.Attributes, dest.Attributes())
 	insertToAttributeVal(ent.Body, dest.Body())
 
 	if ent.TraceId != nil {
@@ -417,50 +403,54 @@ func insertToAttributeVal(value interface{}, dest pdata.AttributeValue) {
 func toAttributeMap(obsMap map[string]interface{}) pdata.AttributeValue {
 	attVal := pdata.NewAttributeValueMap()
 	attMap := attVal.MapVal()
-	attMap.EnsureCapacity(len(obsMap))
+	insertToAttributeMap(obsMap, attMap)
+	return attVal
+}
+
+func insertToAttributeMap(obsMap map[string]interface{}, dest pdata.AttributeMap) {
+	dest.EnsureCapacity(len(obsMap))
 	for k, v := range obsMap {
 		switch t := v.(type) {
 		case bool:
-			attMap.InsertBool(k, t)
+			dest.InsertBool(k, t)
 		case string:
-			attMap.InsertString(k, t)
+			dest.InsertString(k, t)
 		case []byte:
-			attMap.InsertString(k, string(t))
+			dest.InsertString(k, string(t))
 		case int64:
-			attMap.InsertInt(k, t)
+			dest.InsertInt(k, t)
 		case int32:
-			attMap.InsertInt(k, int64(t))
+			dest.InsertInt(k, int64(t))
 		case int16:
-			attMap.InsertInt(k, int64(t))
+			dest.InsertInt(k, int64(t))
 		case int8:
-			attMap.InsertInt(k, int64(t))
+			dest.InsertInt(k, int64(t))
 		case int:
-			attMap.InsertInt(k, int64(t))
+			dest.InsertInt(k, int64(t))
 		case uint64:
-			attMap.InsertInt(k, int64(t))
+			dest.InsertInt(k, int64(t))
 		case uint32:
-			attMap.InsertInt(k, int64(t))
+			dest.InsertInt(k, int64(t))
 		case uint16:
-			attMap.InsertInt(k, int64(t))
+			dest.InsertInt(k, int64(t))
 		case uint8:
-			attMap.InsertInt(k, int64(t))
+			dest.InsertInt(k, int64(t))
 		case uint:
-			attMap.InsertInt(k, int64(t))
+			dest.InsertInt(k, int64(t))
 		case float64:
-			attMap.InsertDouble(k, t)
+			dest.InsertDouble(k, t)
 		case float32:
-			attMap.InsertDouble(k, float64(t))
+			dest.InsertDouble(k, float64(t))
 		case map[string]interface{}:
 			subMap := toAttributeMap(t)
-			attMap.Insert(k, subMap)
+			dest.Insert(k, subMap)
 		case []interface{}:
 			arr := toAttributeArray(t)
-			attMap.Insert(k, arr)
+			dest.Insert(k, arr)
 		default:
-			attMap.InsertString(k, fmt.Sprintf("%v", t))
+			dest.InsertString(k, fmt.Sprintf("%v", t))
 		}
 	}
-	return attVal
 }
 
 func toAttributeArray(obsArr []interface{}) pdata.AttributeValue {
@@ -533,11 +523,12 @@ var sevTextMap = map[entry.Severity]string{
 // making it very unlikely to be present in the resource maps keys or values
 var pairSep = []byte{0xfe}
 
-// emptyResourceID is the ID returned by getResourceID when it is passed an empty resource.
+// emptyResourceID is the ID returned by HashResource when it is passed an empty resource.
 // This specific number is chosen as it is the starting offset of fnv64.
 const emptyResourceID uint64 = 14695981039346656037
 
-func getResourceID(resource map[string]string) uint64 {
+// HashResource will hash an entry.Entry.Resource
+func HashResource(resource map[string]interface{}) uint64 {
 	if len(resource) == 0 {
 		return emptyResourceID
 	}
@@ -560,7 +551,18 @@ func getResourceID(resource map[string]string) uint64 {
 		fnvHash.Write([]byte(k))
 		fnvHash.Write(pairSep)
 
-		fnvHash.Write([]byte(resource[k]))
+		switch t := resource[k].(type) {
+		case string:
+			fnvHash.Write([]byte(t))
+		case []byte:
+			fnvHash.Write(t)
+		case bool, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
+			binary.Write(fnvHash, binary.BigEndian, t)
+		default:
+			b, _ := json.Marshal(t)
+			fnvHash.Write(b)
+		}
+
 		fnvHash.Write(pairSep)
 	}
 
