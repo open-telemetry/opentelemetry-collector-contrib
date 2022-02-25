@@ -6,8 +6,8 @@ require (
 	github.com/stretchr/testify v1.7.0
 	go.elastic.co/apm v1.15.0
 	go.elastic.co/fastjson v1.1.0
-	go.opentelemetry.io/collector v0.45.0
-	go.opentelemetry.io/collector/model v0.45.0
+	go.opentelemetry.io/collector v0.45.1-0.20220223001941-c9c253193a75
+	go.opentelemetry.io/collector/model v0.45.1-0.20220222185228-27f7607ca13a
 	go.uber.org/multierr v1.7.0
 	go.uber.org/zap v1.21.0
 )

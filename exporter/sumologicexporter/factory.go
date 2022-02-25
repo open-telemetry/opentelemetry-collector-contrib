@@ -30,16 +30,16 @@ const (
 
 // NewFactory returns a new factory for the sumologic exporter.
 func NewFactory() component.ExporterFactory {
-	return exporterhelper.NewFactory(
+	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithLogs(createLogsExporter),
-		exporterhelper.WithMetrics(createMetricsExporter),
+		component.WithLogsExporter(createLogsExporter),
+		component.WithMetricsExporter(createMetricsExporter),
 	)
 }
 
 func createDefaultConfig() config.Exporter {
-	qs := exporterhelper.DefaultQueueSettings()
+	qs := exporterhelper.NewDefaultQueueSettings()
 	qs.Enabled = false
 
 	return &Config{
@@ -56,7 +56,7 @@ func createDefaultConfig() config.Exporter {
 		GraphiteTemplate:   DefaultGraphiteTemplate,
 
 		HTTPClientSettings: CreateDefaultHTTPClientSettings(),
-		RetrySettings:      exporterhelper.DefaultRetrySettings(),
+		RetrySettings:      exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:      qs,
 	}
 }

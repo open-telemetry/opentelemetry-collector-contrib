@@ -5,15 +5,15 @@ go 1.17
 require (
 	cloud.google.com/go/compute v1.3.0
 	github.com/Showmax/go-fqdn v1.0.0
-	github.com/aws/aws-sdk-go v1.43.1
+	github.com/aws/aws-sdk-go v1.43.4
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/docker/docker v20.10.12+incompatible
 	github.com/hashicorp/consul/api v1.12.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.45.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.45.1
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.45.0
-	go.opentelemetry.io/collector/model v0.45.0
+	go.opentelemetry.io/collector v0.45.1-0.20220223001941-c9c253193a75
+	go.opentelemetry.io/collector/model v0.45.1-0.20220222185228-27f7607ca13a
 	go.uber.org/multierr v1.7.0
 	go.uber.org/zap v1.21.0
 	k8s.io/apimachinery v0.23.4
@@ -47,7 +47,7 @@ require (
 	github.com/hashicorp/serf v0.9.6 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.14.2 // indirect
+	github.com/klauspost/compress v1.14.4 // indirect
 	github.com/knadh/koanf v1.4.0 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect

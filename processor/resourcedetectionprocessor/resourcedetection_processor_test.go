@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
 
@@ -168,10 +169,10 @@ func TestResourceProcessor(t *testing.T) {
 			}
 
 			cfg := &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-				Override:          tt.override,
-				Detectors:         tt.detectorKeys,
-				Timeout:           time.Second,
+				ProcessorSettings:  config.NewProcessorSettings(config.NewComponentID(typeStr)),
+				Override:           tt.override,
+				Detectors:          tt.detectorKeys,
+				HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: time.Second},
 			}
 
 			// Test trace consumer

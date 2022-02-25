@@ -27,11 +27,11 @@ const exporterType = "tanzuobservability"
 
 // NewFactory creates a factory for the exporter.
 func NewFactory() component.ExporterFactory {
-	return exporterhelper.NewFactory(
+	return component.NewExporterFactory(
 		exporterType,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTracesExporter),
-		exporterhelper.WithMetrics(createMetricsExporter),
+		component.WithTracesExporter(createTracesExporter),
+		component.WithMetricsExporter(createMetricsExporter),
 	)
 }
 
@@ -44,8 +44,8 @@ func createDefaultConfig() config.Exporter {
 	}
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(exporterType)),
-		QueueSettings:    exporterhelper.DefaultQueueSettings(),
-		RetrySettings:    exporterhelper.DefaultRetrySettings(),
+		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
+		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
 		Traces:           tracesCfg,
 		Metrics:          metricsCfg,
 	}

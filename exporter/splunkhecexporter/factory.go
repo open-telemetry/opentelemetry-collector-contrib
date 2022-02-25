@@ -50,12 +50,12 @@ type baseLogsExporter struct {
 
 // NewFactory creates a factory for Splunk HEC exporter.
 func NewFactory() component.ExporterFactory {
-	return exporterhelper.NewFactory(
+	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTracesExporter),
-		exporterhelper.WithMetrics(createMetricsExporter),
-		exporterhelper.WithLogs(createLogsExporter))
+		component.WithTracesExporter(createTracesExporter),
+		component.WithMetricsExporter(createMetricsExporter),
+		component.WithLogsExporter(createLogsExporter))
 }
 
 func createDefaultConfig() config.Exporter {
@@ -64,8 +64,8 @@ func createDefaultConfig() config.Exporter {
 		TimeoutSettings: exporterhelper.TimeoutSettings{
 			Timeout: defaultHTTPTimeout,
 		},
-		RetrySettings:           exporterhelper.DefaultRetrySettings(),
-		QueueSettings:           exporterhelper.DefaultQueueSettings(),
+		RetrySettings:           exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:           exporterhelper.NewDefaultQueueSettings(),
 		DisableCompression:      false,
 		MaxConnections:          defaultMaxIdleCons,
 		MaxContentLengthLogs:    maxContentLengthLogsLimit,
