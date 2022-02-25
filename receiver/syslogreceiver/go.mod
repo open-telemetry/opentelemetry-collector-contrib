@@ -6,8 +6,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza v0.45.1
 	github.com/open-telemetry/opentelemetry-log-collection v0.25.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.45.1-0.20220223001941-c9c253193a75
-	go.opentelemetry.io/collector/model v0.45.1-0.20220222185228-27f7607ca13a
+	go.opentelemetry.io/collector v0.45.1-0.20220225200547-7bdb684e27bf
+	go.opentelemetry.io/collector/model v0.45.1-0.20220225200547-7bdb684e27bf
 	gopkg.in/yaml.v2 v2.4.0
 )
 
