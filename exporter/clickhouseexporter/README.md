@@ -34,7 +34,7 @@ WHERE Timestamp >= NOW() - INTERVAL 1 HOUR;
 /* find log with specific attribute .*/
 SELECT Body
 FROM otel_logs 
-WHERE Attributes.Value[indexOf(Attributes.Key, 'http_method')] = 'post' AND Timestamp >= NOW() - INTERVAL 1 HOUR;
+WHERE LogAttributes.Value[indexOf(LogAttributes.Key, 'http_method')] = 'post' AND Timestamp >= NOW() - INTERVAL 1 HOUR;
 ```
 
 ## Configuration options
@@ -95,18 +95,18 @@ CREATE TABLE IF NOT EXISTS otel_logs (
     SeverityText LowCardinality(String) CODEC(ZSTD(1)),
     SeverityNumber Int32,
     Body String CODEC(ZSTD(1)),
-    Attributes Nested
+    ResourceAttributes Nested
         (
         Key LowCardinality(String),
         Value String
         ) CODEC(ZSTD(1)),
-    Resource Nested
+    LogAttributes Nested
         (
         Key LowCardinality(String),
         Value String
         ) CODEC(ZSTD(1)),
-INDEX idx_attr_keys Attributes.Key TYPE bloom_filter(0.01) GRANULARITY 64,
-INDEX idx_res_keys Resource.Key TYPE bloom_filter(0.01) GRANULARITY 64
+INDEX idx_attr_keys ResourceAttributes.Key TYPE bloom_filter(0.01) GRANULARITY 64,
+INDEX idx_res_keys LogAttributes.Key TYPE bloom_filter(0.01) GRANULARITY 64
 ) ENGINE MergeTree()
 TTL Timestamp + INTERVAL 3 DAY
 PARTITION BY toDate(Timestamp)

@@ -134,18 +134,18 @@ CREATE TABLE IF NOT EXISTS %s (
      SeverityText LowCardinality(String) CODEC(ZSTD(1)),
      SeverityNumber Int32,
      Body String CODEC(ZSTD(1)),
-     Attributes Nested
+     ResourceAttributes Nested
      (
          Key LowCardinality(String),
          Value String
      ) CODEC(ZSTD(1)),
-     Resource Nested
+     LogAttributes Nested
      (
          Key LowCardinality(String),
          Value String
      ) CODEC(ZSTD(1)),
-     INDEX idx_attr_keys Attributes.Key TYPE bloom_filter(0.01) GRANULARITY 64,
-     INDEX idx_res_keys Resource.Key TYPE bloom_filter(0.01) GRANULARITY 64
+     INDEX idx_attr_keys ResourceAttributes.Key TYPE bloom_filter(0.01) GRANULARITY 64,
+     INDEX idx_res_keys LogAttributes.Key TYPE bloom_filter(0.01) GRANULARITY 64
 ) ENGINE MergeTree()
 %s
 PARTITION BY toDate(Timestamp)
@@ -160,10 +160,10 @@ ORDER BY (toUnixTimestamp(Timestamp));
                         SeverityText,
                         SeverityNumber,
                         Body,
-                        Attributes.Key,
-                        Attributes.Value,
-                        Resource.Key, 
-                        Resource.Value
+                        ResourceAttributes.Key,
+                        ResourceAttributes.Value,
+                        LogAttributes.Key, 
+                        LogAttributes.Value
                         ) VALUES (
                                   ?,
                                   ?,
