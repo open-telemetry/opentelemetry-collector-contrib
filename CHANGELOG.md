@@ -18,7 +18,7 @@
 ### 🛑 Breaking changes 🛑
 
 - Remove deprecated functions from jaeger translator (#8032)
-- `mongodbatlasreceiver`: modify attributes to adhere to naming guidelines and add 3 new attributes (#7960)
+- `mongodbatlasreceiver`: rename `mongodb.atlas.*` attributes to `mongodb_atlas.*` adhering to naming guidelines. Adding 3 new attributes (#7960)
 
 ### 🚩 Deprecations 🚩
 
