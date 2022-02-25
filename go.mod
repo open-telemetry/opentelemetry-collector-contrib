@@ -123,7 +123,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.45.1
 	github.com/prometheus/prometheus v1.8.2-0.20220117154355-4855a0c067e2
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.45.1-0.20220223001941-c9c253193a75
+	go.opentelemetry.io/collector v0.45.1-0.20220225200547-7bdb684e27bf
 	golang.org/x/sys v0.0.0-20220207234003-57398862261d
 )
 
@@ -265,9 +265,9 @@ require (
 	github.com/iancoleman/strcase v0.2.0 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
-	github.com/influxdata/influxdb-observability/common v0.2.10 // indirect
-	github.com/influxdata/influxdb-observability/influx2otel v0.2.10 // indirect
-	github.com/influxdata/influxdb-observability/otel2influx v0.2.10 // indirect
+	github.com/influxdata/influxdb-observability/common v0.2.13 // indirect
+	github.com/influxdata/influxdb-observability/influx2otel v0.2.13 // indirect
+	github.com/influxdata/influxdb-observability/otel2influx v0.2.13 // indirect
 	github.com/influxdata/line-protocol/v2 v2.2.1 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.11.0 // indirect
@@ -423,7 +423,7 @@ require (
 	go.etcd.io/bbolt v1.3.6 // indirect
 	go.mongodb.org/atlas v0.15.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/model v0.45.1-0.20220222185228-27f7607ca13a // indirect
+	go.opentelemetry.io/collector/model v0.45.1-0.20220225200547-7bdb684e27bf // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.29.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.29.0 // indirect
 	go.opentelemetry.io/contrib/zpages v0.29.0 // indirect
