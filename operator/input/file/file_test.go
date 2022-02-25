@@ -487,6 +487,30 @@ func TestSplitWrite(t *testing.T) {
 	waitForMessage(t, logReceived, "testlog1testlog2")
 }
 
+func TestIgnoreEmptyFiles(t *testing.T) {
+	t.Parallel()
+	operator, logReceived, tempDir := newTestFileOperator(t, nil, nil)
+	operator.persister = testutil.NewMockPersister("test")
+	defer operator.Stop()
+
+	temp := openTemp(t, tempDir)
+	temp2 := openTemp(t, tempDir)
+	temp3 := openTemp(t, tempDir)
+	temp4 := openTemp(t, tempDir)
+
+	writeString(t, temp, "testlog1\n")
+	writeString(t, temp3, "testlog2\n")
+	operator.poll(context.Background())
+
+	waitForMessages(t, logReceived, []string{"testlog1", "testlog2"})
+
+	writeString(t, temp2, "testlog3\n")
+	writeString(t, temp4, "testlog4\n")
+	operator.poll(context.Background())
+
+	waitForMessages(t, logReceived, []string{"testlog3", "testlog4"})
+}
+
 func TestDecodeBufferIsResized(t *testing.T) {
 	t.Parallel()
 	operator, logReceived, tempDir := newTestFileOperator(t, nil, nil)
