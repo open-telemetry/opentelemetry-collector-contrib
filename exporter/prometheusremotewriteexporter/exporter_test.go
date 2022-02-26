@@ -611,46 +611,65 @@ func Test_PushMetrics(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				if tt.reqTestFunc != nil {
-					tt.reqTestFunc(t, r, tt.expectedTimeSeries, tt.isStaleMarker)
-				}
-				w.WriteHeader(tt.httpResponseCode)
-			}))
+	for _, useWAL := range []bool{true, false} {
+		name := "NoWAL"
+		if useWAL {
+			name = "WAL"
+		}
+		t.Run(name, func(t *testing.T) {
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
+					server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						if tt.reqTestFunc != nil {
+							tt.reqTestFunc(t, r, tt.expectedTimeSeries, tt.isStaleMarker)
+						}
+						w.WriteHeader(tt.httpResponseCode)
+					}))
 
-			defer server.Close()
+					defer server.Close()
 
-			cfg := &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-				Namespace:        "",
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: server.URL,
-					// We almost read 0 bytes, so no need to tune ReadBufferSize.
-					ReadBufferSize:  0,
-					WriteBufferSize: 512 * 1024,
-				},
-				RemoteWriteQueue: RemoteWriteQueue{NumConsumers: 5},
+					cfg := &Config{
+						ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+						Namespace:        "",
+						HTTPClientSettings: confighttp.HTTPClientSettings{
+							Endpoint: server.URL,
+							// We almost read 0 bytes, so no need to tune ReadBufferSize.
+							ReadBufferSize:  0,
+							WriteBufferSize: 512 * 1024,
+						},
+						RemoteWriteQueue: RemoteWriteQueue{NumConsumers: 1},
+					}
+
+					if useWAL {
+						cfg.WAL = &WALConfig{
+							Directory: t.TempDir(),
+						}
+					}
+
+					assert.NotNil(t, cfg)
+					buildInfo := component.BuildInfo{
+						Description: "OpenTelemetry Collector",
+						Version:     "1.0",
+					}
+					set := componenttest.NewNopExporterCreateSettings()
+					set.BuildInfo = buildInfo
+					prwe, nErr := newPRWExporter(cfg, set)
+					require.NoError(t, nErr)
+					ctx, cancel := context.WithCancel(context.Background())
+					t.Cleanup(cancel)
+					require.NoError(t, prwe.Start(ctx, componenttest.NewNopHost()))
+					t.Cleanup(func() {
+						require.NoError(t, prwe.Shutdown(ctx))
+					})
+					err := prwe.PushMetrics(ctx, *tt.md)
+					if tt.returnErr {
+						assert.Error(t, err)
+						return
+					}
+					assert.NoError(t, err)
+				})
 			}
-			assert.NotNil(t, cfg)
-			// c, err := config.HTTPClientSettings.ToClient()
-			// assert.Nil(t, err)
-			buildInfo := component.BuildInfo{
-				Description: "OpenTelemetry Collector",
-				Version:     "1.0",
-			}
-			set := componenttest.NewNopExporterCreateSettings()
-			set.BuildInfo = buildInfo
-			prwe, nErr := newPRWExporter(cfg, set)
-			require.NoError(t, nErr)
-			require.NoError(t, prwe.Start(context.Background(), componenttest.NewNopHost()))
-			err := prwe.PushMetrics(context.Background(), *tt.md)
-			if tt.returnErr {
-				assert.Error(t, err)
-				return
-			}
-			assert.NoError(t, err)
 		})
 	}
 }
@@ -826,8 +845,12 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 	nopHost := componenttest.NewNopHost()
 	ctx := context.Background()
 	require.Nil(t, prwe.Start(ctx, nopHost))
-	defer prwe.Shutdown(ctx)
-	defer close(exiting)
+	t.Cleanup(func() {
+		// This should have been shut down during the test
+		// If it does not error then something went wrong.
+		assert.Error(t, prwe.Shutdown(ctx))
+		close(exiting)
+	})
 	require.NotNil(t, prwe.wal)
 
 	ts1 := &prompb.TimeSeries{
@@ -846,14 +869,16 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 	assert.Nil(t, errs)
 	// Shutdown after we've written to the WAL. This ensures that our
 	// exported data in-flight will flushed flushed to the WAL before exiting.
-	prwe.Shutdown(ctx)
+	require.NoError(t, prwe.Shutdown(ctx))
 
 	// 3. Let's now read back all of the WAL records and ensure
 	// that all the prompb.WriteRequest values exist as we sent them.
 	wal, _, werr := cfg.WAL.createWAL()
 	assert.Nil(t, werr)
 	assert.NotNil(t, wal)
-	defer wal.Close()
+	t.Cleanup(func() {
+		assert.NoError(t, wal.Close())
+	})
 
 	// Read all the indices.
 	firstIndex, ierr := wal.FirstIndex()
@@ -895,7 +920,9 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 	prwe2, err := newPRWExporter(cfg, set)
 	assert.Nil(t, err)
 	require.Nil(t, prwe2.Start(ctx, nopHost))
-	defer prwe2.Shutdown(ctx)
+	t.Cleanup(func() {
+		assert.NoError(t, prwe2.Shutdown(ctx))
+	})
 	require.NotNil(t, prwe2.wal)
 
 	snappyEncodedBytes := <-uploadedBytesCh

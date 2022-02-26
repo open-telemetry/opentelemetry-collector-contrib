@@ -138,9 +138,11 @@ func TestWAL_persist(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	err = pwal.start(ctx)
+	err = pwal.retrieveWALIndices()
 	require.Nil(t, err)
-	defer pwal.stop()
+	t.Cleanup(func() {
+		assert.NoError(t, pwal.stop())
+	})
 
 	err = pwal.persistToWAL(reqL)
 	require.Nil(t, err)

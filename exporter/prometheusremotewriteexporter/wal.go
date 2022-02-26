@@ -28,6 +28,7 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/tidwall/wal"
+	"go.uber.org/zap"
 )
 
 type prweWAL struct {
@@ -85,14 +86,14 @@ func newWAL(walConfig *WALConfig, exportSink func(context.Context, []*prompb.Wri
 
 func (wc *WALConfig) createWAL() (*wal.Log, string, error) {
 	walPath := filepath.Join(wc.Directory, "prom_remotewrite")
-	wal, err := wal.Open(walPath, &wal.Options{
+	log, err := wal.Open(walPath, &wal.Options{
 		SegmentCacheSize: wc.bufferSize(),
 		NoCopy:           true,
 	})
 	if err != nil {
 		return nil, "", fmt.Errorf("prometheusremotewriteexporter: failed to open WAL: %w", err)
 	}
-	return wal, walPath, nil
+	return log, walPath, nil
 }
 
 var (
@@ -102,7 +103,7 @@ var (
 )
 
 // retrieveWALIndices queries the WriteAheadLog for its current first and last indices.
-func (prwe *prweWAL) retrieveWALIndices(context.Context) (err error) {
+func (prwe *prweWAL) retrieveWALIndices() (err error) {
 	prwe.mu.Lock()
 	defer prwe.mu.Unlock()
 
@@ -111,22 +112,22 @@ func (prwe *prweWAL) retrieveWALIndices(context.Context) (err error) {
 		return err
 	}
 
-	wal, walPath, err := prwe.walConfig.createWAL()
+	log, walPath, err := prwe.walConfig.createWAL()
 	if err != nil {
 		return err
 	}
 
-	prwe.wal = wal
+	prwe.wal = log
 	prwe.walPath = walPath
 
 	prwe.rWALIndex, err = prwe.wal.FirstIndex()
 	if err != nil {
-		return fmt.Errorf("prometheusremotewriteexporter: failed to retrieve the last WAL index: %w", err)
+		return fmt.Errorf("prometheusremotewriteexporter: failed to retrieve the first WAL index: %w", err)
 	}
 
 	prwe.wWALIndex, err = prwe.wal.LastIndex()
 	if err != nil {
-		return fmt.Errorf("prometheusremotewriteexporter: failed to retrieve the first WAL index: %w", err)
+		return fmt.Errorf("prometheusremotewriteexporter: failed to retrieve the last WAL index: %w", err)
 	}
 	return nil
 }
@@ -143,24 +144,16 @@ func (prwe *prweWAL) stop() error {
 	return err
 }
 
-// start begins reading from the WAL until prwe.stopChan is closed.
-func (prwe *prweWAL) start(ctx context.Context) error {
-	shutdownCtx, cancel := context.WithCancel(ctx)
-	if err := prwe.retrieveWALIndices(shutdownCtx); err != nil {
-		cancel()
-		return err
+// run begins reading from the WAL until prwe.stopChan is closed.
+func (prwe *prweWAL) run(ctx context.Context) (err error) {
+	var logger *zap.Logger
+	logger, err = loggerFromContext(ctx)
+	if err != nil {
+		return
 	}
 
-	go func() {
-		<-prwe.stopChan
-		cancel()
-	}()
-
-	return nil
-}
-
-func (prwe *prweWAL) run(ctx context.Context) (err error) {
-	if err = prwe.start(ctx); err != nil {
+	if err = prwe.retrieveWALIndices(); err != nil {
+		logger.Error("unable to start write-ahead log", zap.Error(err))
 		return
 	}
 
@@ -172,11 +165,20 @@ func (prwe *prweWAL) run(ctx context.Context) (err error) {
 			select {
 			case <-ctx.Done():
 				return
+			case <-prwe.stopChan:
+				return
 			default:
-				err := prwe.continuallyPopWALThenExport(ctx, signalStart)
+				err = prwe.continuallyPopWALThenExport(ctx, signalStart)
 				signalStart = func() {}
 				if err != nil {
 					// log err
+					logger.Error("error processing WAL entries", zap.Error(err))
+					// Restart WAL
+					if errS := prwe.retrieveWALIndices(); errS != nil {
+						logger.Error("unable to re-start write-ahead log after error", zap.Error(errS))
+						err = multierror.Append(err, errS)
+						return
+					}
 				}
 			}
 		}
@@ -223,7 +225,8 @@ func (prwe *prweWAL) continuallyPopWALThenExport(ctx context.Context, signalStar
 		default:
 		}
 
-		req, err := prwe.readPrompbFromWAL(ctx, atomic.LoadUint64(&prwe.rWALIndex))
+		var req *prompb.WriteRequest
+		req, err = prwe.readPrompbFromWAL(ctx, atomic.LoadUint64(&prwe.rWALIndex))
 		if err != nil {
 			return err
 		}
@@ -248,7 +251,7 @@ func (prwe *prweWAL) continuallyPopWALThenExport(ctx context.Context, signalStar
 		timer.Stop()
 		timer = freshTimer()
 
-		if err := prwe.exportThenFrontTruncateWAL(ctx, reqL); err != nil {
+		if err = prwe.exportThenFrontTruncateWAL(ctx, reqL); err != nil {
 			return err
 		}
 		// Reset but reuse the write requests slice.
@@ -294,13 +297,13 @@ func (prwe *prweWAL) exportThenFrontTruncateWAL(ctx context.Context, reqL []*pro
 	}
 
 	if errL := prwe.exportSink(ctx, reqL); errL != nil {
-		return multierror.Append(nil, errL)
+		return errL
 	}
 	if err := prwe.syncAndTruncateFront(); err != nil {
 		return err
 	}
 	// Reset by retrieving the respective read and write WAL indices.
-	return prwe.retrieveWALIndices(ctx)
+	return prwe.retrieveWALIndices()
 }
 
 // persistToWAL is the routine that'll be hooked into the exporter's receiving side and it'll

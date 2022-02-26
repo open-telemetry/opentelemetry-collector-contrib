@@ -86,11 +86,10 @@ func newPRWExporter(cfg *Config, set component.ExporterCreateSettings) (*prwExpo
 		return prwe, nil
 	}
 
-	prweWAL, err := newWAL(cfg.WAL, prwe.export)
+	prwe.wal, err = newWAL(cfg.WAL, prwe.export)
 	if err != nil {
 		return nil, err
 	}
-	prwe.wal = prweWAL
 	return prwe, nil
 }
 
@@ -100,7 +99,7 @@ func (prwe *prwExporter) Start(ctx context.Context, host component.Host) (err er
 	if err != nil {
 		return err
 	}
-	return prwe.turnOnWALIfEnabled(ctx)
+	return prwe.turnOnWALIfEnabled(contextWithLogger(ctx, prwe.settings.Logger.Named("prw.wal")))
 }
 
 func (prwe *prwExporter) shutdownWALIfEnabled() error {
