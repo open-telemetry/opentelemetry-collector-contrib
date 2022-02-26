@@ -5,25 +5,30 @@
 ### 💡 Enhancements 💡
 
 
-- `internal/stanza` : Export metrics from Stanza receivers (#8025)
+- `internal/stanza`: Export metrics from Stanza receivers (#8025)
 - `hostreceiver/pagingscraper`: Migrate the scraper to the mdatagen metrics builder (#7139)
 - Do not drop zero trace/span id spans in the jaeger conversion (#7946)
 - Upgrade to use semantic conventions 1.6.1 (#7926)
 - `dynatraceexporter`: Validate QueueSettings and perform config validation in Validate() instead (#8020)
 - `sapmexporter`: Add validation for `sending_queue` setting (#8023)
 - `signalfxexporter`: Add validation for `sending_queue` setting (#8026)
+- `internal/stanza`: Add support for arbitrary attribute types (#8081)
 - `resourcedetectionprocessor`: Add confighttp.HTTPClientSettings To Resource Detection Config Fixes (#7397)
+- `honeycombexporter`: Add validation for `sending_queue` setting (#8113)
 - `skywalkingreceiver`: Add new skywalking receiver component folder and structure (#8107)
 
 ### 🛑 Breaking changes 🛑
 
 - Remove deprecated functions from jaeger translator (#8032)
+- `internal/stanza`: Remove `write_to` setting from input operators (#8081)
+- `mongodbatlasreceiver`: rename `mongodb.atlas.*` attributes to `mongodb_atlas.*` adhering to naming guidelines. Adding 3 new attributes (#7960)
 
 ### 🚩 Deprecations 🚩
 
 ### 🧰 Bug fixes 🧰
 
 - `prometheusreceiver`: Fix segfault that can occur after receiving stale metrics (#8056)
+- `filelogreceiver`: Fix issue where logs could occasionally be duplicated (#8123)
 
 ### 🚀 New components 🚀
 
@@ -58,12 +63,14 @@
 - `datadogexporter`: Add insecure_skip_verify flag to configuration (#7422)
 - `coralogixexporter`: Update readme (#7785)
 - `awscloudwatchlogsexporter`: Remove name from aws cloudwatch logs exporter (#7554)
+- `tanzuobservabilityexporter`: Update OTel Collector's Exporter to match WF Proxy Handling of source (#7929)
 - `hostreceiver/memoryscraper`: Add memory.utilization (#6221)
 - `awskinesisexporter`: Add Queue Config Validation AWS Kinesis Exporter (#7835)
 - `elasticsearchexporter`: Remove usage of deprecated LogRecord.Name field (#7829).
 - `loadbalancingexporter`: Allow non-exist hostname on startup (#7935)
 - `datadogexporter`: Use exact sum, count and average on Datadog distributions (#7830)
 - `storage/filestorage`: add optional compaction to filestorage (#7768)
+- `tanzuobservabilityexporter`: Add attributes from the Resource to the resulting WF metric tags & set `source` value in WF metric (#8101)
 
 ### 🛑 Breaking changes 🛑
 

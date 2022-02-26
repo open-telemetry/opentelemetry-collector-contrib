@@ -12,7 +12,6 @@ Supported pipeline types: logs
 | Field             | Default          | Description                                                                                                        |
 | ---               | ---              | ---                                                                                                                |
 | `listen_address`  | required         | A listen address of the form `<ip>:<port>`                                                                         |
-| `write_to`        | `$body`          | The body [field](/docs/types/field.md) written to when creating a new log entry                                    |
 | `attributes`      | {}               | A map of `key: value` pairs to add to the entry's attributes                                                       |
 | `resource`        | {}               | A map of `key: value` pairs to add to the entry's resource                                                         |
 | `add_attributes`  | false            | Adds `net.*` attributes according to [semantic convention][https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/span-general.md#general-network-connection-attributes] |
