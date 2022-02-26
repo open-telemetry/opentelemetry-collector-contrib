@@ -127,12 +127,7 @@ require (
 	golang.org/x/sys v0.0.0-20220207234003-57398862261d
 )
 
-require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter v0.0.0-00010101000000-000000000000
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza v0.44.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver v0.44.0
-	github.com/shirou/gopsutil v3.21.10+incompatible // indirect
-)
+require github.com/shirou/gopsutil v3.21.10+incompatible // indirect
 
 require (
 	bitbucket.org/atlassian/go-asap/v2 v2.6.0 // indirect
@@ -384,7 +379,6 @@ require (
 	github.com/santhosh-tekuri/jsonschema v1.2.4 // indirect
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.7.0.20210223165440-c65ae3540d44 // indirect
 	github.com/seccomp/libseccomp-golang v0.9.1 // indirect
-	github.com/shirou/gopsutil v2.20.9+incompatible // indirect
 	github.com/shirou/gopsutil/v3 v3.22.1 // indirect
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3 // indirect
 	github.com/signalfx/gohistogram v0.0.0-20160107210732-1ccfd2ff5083 // indirect

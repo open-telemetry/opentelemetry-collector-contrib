@@ -221,11 +221,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.45.1
 )
 
-require (
-	github.com/go-kit/kit v0.12.0 // indirect
-	go.uber.org/multierr v1.7.0
-)
-
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter => ../exporter/carbonexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter => ../exporter/jaegerexporter
