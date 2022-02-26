@@ -16,8 +16,10 @@ package filestorage
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"sync"
 	"testing"
 
@@ -233,4 +235,153 @@ func newTestExtension(t *testing.T) storage.Extension {
 
 func newTestEntity(name string) config.ComponentID {
 	return config.NewComponentIDWithName("nop", name)
+}
+
+func TestCompaction(t *testing.T) {
+	ctx := context.Background()
+
+	tempDir, err := ioutil.TempDir("", "")
+	require.NoError(t, err)
+
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig().(*Config)
+	cfg.Directory = tempDir
+
+	extension, err := f.CreateExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)
+	require.NoError(t, err)
+
+	se, ok := extension.(storage.Extension)
+	require.True(t, ok)
+
+	client, err := se.GetClient(
+		ctx,
+		component.KindReceiver,
+		newTestEntity("my_component"),
+		"",
+	)
+
+	require.NoError(t, err)
+
+	files, err := ioutil.ReadDir(tempDir)
+	require.NoError(t, err)
+	require.Equal(t, 1, len(files))
+
+	file := files[0]
+	path := filepath.Join(tempDir, file.Name())
+	stats, err := os.Stat(path)
+	require.NoError(t, err)
+	newStats := stats
+
+	var key string
+	i := 0
+
+	// add data until database file changes size (we are checking compacted size)
+	for newStats.Size() <= stats.Size() {
+		key = fmt.Sprintf("key_%d", i)
+		err = client.Set(ctx, key, []byte(key))
+		require.NoError(t, err)
+
+		// compact before checking size
+		c, fok := client.(*fileStorageClient)
+		require.True(t, fok)
+		client, err = c.Compact(ctx, tempDir, cfg.Timeout, 1)
+		require.NoError(t, err)
+
+		// check size after compaction
+		newStats, err = os.Stat(path)
+		require.NoError(t, err)
+		i++
+	}
+
+	stats = newStats
+
+	// compact again just in case
+	c, ok := client.(*fileStorageClient)
+	require.True(t, ok)
+	client, err = c.Compact(ctx, tempDir, cfg.Timeout, 1)
+	require.NoError(t, err)
+
+	// check size after compaction
+	newStats, err = os.Stat(path)
+	require.NoError(t, err)
+	require.Equal(t, stats.Size(), newStats.Size())
+
+	// remove data from database
+	for i = i - 1; i >= 0; i-- {
+		key = fmt.Sprintf("key_%d", i)
+		// Set the data
+		err = client.Delete(ctx, key)
+		require.NoError(t, err)
+	}
+
+	// compact after data removal
+	c, ok = client.(*fileStorageClient)
+	require.True(t, ok)
+	_, err = c.Compact(ctx, tempDir, cfg.Timeout, 1)
+	require.NoError(t, err)
+
+	// check size
+	newStats, err = os.Stat(path)
+	require.NoError(t, err)
+	require.Less(t, newStats.Size(), stats.Size())
+}
+
+// TestCompactionRemoveTemp validates if temporary db used for compaction is removed afterwards
+// test is performed for both: the same and different than storage directories
+func TestCompactionRemoveTemp(t *testing.T) {
+	ctx := context.Background()
+
+	tempDir, err := ioutil.TempDir("", "")
+	require.NoError(t, err)
+
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig().(*Config)
+	cfg.Directory = tempDir
+
+	extension, err := f.CreateExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)
+	require.NoError(t, err)
+
+	se, ok := extension.(storage.Extension)
+	require.True(t, ok)
+
+	client, err := se.GetClient(
+		ctx,
+		component.KindReceiver,
+		newTestEntity("my_component"),
+		"",
+	)
+
+	require.NoError(t, err)
+
+	// check if only db exists in tempDir
+	files, err := ioutil.ReadDir(tempDir)
+	require.NoError(t, err)
+	require.Equal(t, 1, len(files))
+	fileName := files[0].Name()
+
+	// perform compaction in the same directory
+	c, ok := client.(*fileStorageClient)
+	require.True(t, ok)
+	client, err = c.Compact(ctx, tempDir, cfg.Timeout, 1)
+	require.NoError(t, err)
+
+	// check if only db exists in tempDir
+	files, err = ioutil.ReadDir(tempDir)
+	require.NoError(t, err)
+	require.Equal(t, 1, len(files))
+	require.Equal(t, fileName, files[0].Name())
+
+	// perform compaction in different directory
+	emptyTempDir, err := ioutil.TempDir("", "")
+	require.NoError(t, err)
+
+	c, ok = client.(*fileStorageClient)
+	require.True(t, ok)
+	_, err = c.Compact(ctx, emptyTempDir, cfg.Timeout, 1)
+	require.NoError(t, err)
+
+	// check if emptyTempDir is empty after compaction
+	files, err = ioutil.ReadDir(emptyTempDir)
+	require.NoError(t, err)
+	require.Equal(t, 0, len(files))
 }

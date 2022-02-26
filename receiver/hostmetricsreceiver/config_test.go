@@ -74,7 +74,7 @@ func TestLoadConfig(t *testing.T) {
 				cfg.(*loadscraper.Config).CPUAverage = true
 				return cfg
 			})(),
-			filesystemscraper.TypeStr: &filesystemscraper.Config{},
+			filesystemscraper.TypeStr: (&filesystemscraper.Factory{}).CreateDefaultConfig(),
 			memoryscraper.TypeStr:     (&memoryscraper.Factory{}).CreateDefaultConfig(),
 			networkscraper.TypeStr: (func() internal.Config {
 				cfg := (&networkscraper.Factory{}).CreateDefaultConfig()
@@ -85,13 +85,15 @@ func TestLoadConfig(t *testing.T) {
 				return cfg
 			})(),
 			processesscraper.TypeStr: &processesscraper.Config{},
-			pagingscraper.TypeStr:    &pagingscraper.Config{},
-			processscraper.TypeStr: &processscraper.Config{
-				Include: processscraper.MatchConfig{
+			pagingscraper.TypeStr:    (&pagingscraper.Factory{}).CreateDefaultConfig(),
+			processscraper.TypeStr: (func() internal.Config {
+				cfg := (&processscraper.Factory{}).CreateDefaultConfig()
+				cfg.(*processscraper.Config).Include = processscraper.MatchConfig{
 					Names:  []string{"test2", "test3"},
 					Config: filterset.Config{MatchType: "regexp"},
-				},
-			},
+				}
+				return cfg
+			})(),
 		},
 	}
 

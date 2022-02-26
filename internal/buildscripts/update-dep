@@ -5,10 +5,13 @@
 set -e
 
 if grep -q "$MODULE " go.mod; then
-  # If MODULE is "go.opentelemetry.io/collector" need to update "go.opentelemetry.io/collector/model" as well.
   go get "$MODULE"@"$VERSION"
-  if [ "$MODULE" == "go.opentelemetry.io/collector" ]; then
-    MODEL=$MODULE"/model"
+fi
+
+# If MODULE is "go.opentelemetry.io/collector" need to update "go.opentelemetry.io/collector/model" as well.
+if [ "$MODULE" == "go.opentelemetry.io/collector" ]; then
+  MODEL=$MODULE"/model"
+  if grep -q "$MODEL " go.mod; then
     go get "$MODEL"@"$VERSION"
   fi
 fi

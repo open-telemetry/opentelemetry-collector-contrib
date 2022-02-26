@@ -27,7 +27,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -563,9 +563,9 @@ func TestMapDeltaHistogramMetrics(t *testing.T) {
 		newSketch(dims, uint64(ts), summary.Summary{
 			Min: 0,
 			Max: 0,
-			Sum: 0,
-			Avg: 0,
-			Cnt: 20,
+			Sum: point.Sum(),
+			Avg: point.Sum() / float64(point.Count()),
+			Cnt: int64(point.Count()),
 		}),
 	}
 
@@ -573,8 +573,8 @@ func TestMapDeltaHistogramMetrics(t *testing.T) {
 		newSketch(dimsTags, uint64(ts), summary.Summary{
 			Min: 0,
 			Max: 0,
-			Sum: 0,
-			Avg: 0,
+			Sum: point.Sum(),
+			Avg: point.Sum() / float64(point.Count()),
 			Cnt: 20,
 		}),
 	}
@@ -716,8 +716,8 @@ func TestMapCumulativeHistogramMetrics(t *testing.T) {
 		newSketch(dims, uint64(seconds(2)), summary.Summary{
 			Min: 0,
 			Max: 0,
-			Sum: 0,
-			Avg: 0,
+			Sum: 20,
+			Avg: 20.0 / 30.0,
 			Cnt: 30,
 		}),
 	}
@@ -1183,8 +1183,8 @@ func TestMapMetrics(t *testing.T) {
 				newSketchWithHostname("double.histogram", summary.Summary{
 					Min: 0,
 					Max: 0,
-					Sum: 0,
-					Avg: 0,
+					Sum: math.Phi,
+					Avg: math.Phi / 20,
 					Cnt: 20,
 				}, attrTags),
 			},
@@ -1213,8 +1213,8 @@ func TestMapMetrics(t *testing.T) {
 				newSketchWithHostname("double.histogram", summary.Summary{
 					Min: 0,
 					Max: 0,
-					Sum: 0,
-					Avg: 0,
+					Sum: math.Phi,
+					Avg: math.Phi / 20.0,
 					Cnt: 20,
 				}, attrTags),
 			},
@@ -1243,8 +1243,8 @@ func TestMapMetrics(t *testing.T) {
 				newSketchWithHostname("double.histogram", summary.Summary{
 					Min: 0,
 					Max: 0,
-					Sum: 0,
-					Avg: 0,
+					Sum: math.Phi,
+					Avg: math.Phi / 20,
 					Cnt: 20,
 				}, append(attrTags, ilTags...)),
 			},
@@ -1273,8 +1273,8 @@ func TestMapMetrics(t *testing.T) {
 				newSketchWithHostname("double.histogram", summary.Summary{
 					Min: 0,
 					Max: 0,
-					Sum: 0,
-					Avg: 0,
+					Sum: math.Phi,
+					Avg: math.Phi / 20,
 					Cnt: 20,
 				}, append(attrTags, ilTags...)),
 			},
@@ -1428,5 +1428,5 @@ func TestNaNMetrics(t *testing.T) {
 	})
 
 	// One metric type was unknown or unsupported
-	assert.Equal(t, observed.FilterMessage("Unsupported metric value").Len(), 6)
+	assert.Equal(t, observed.FilterMessage("Unsupported metric value").Len(), 7)
 }

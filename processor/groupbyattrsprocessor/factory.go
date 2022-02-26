@@ -46,12 +46,12 @@ func NewFactory() component.ProcessorFactory {
 		_ = view.Register(MetricViews()...)
 	})
 
-	return processorhelper.NewFactory(
+	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		processorhelper.WithTraces(createTracesProcessor),
-		processorhelper.WithLogs(createLogsProcessor),
-		processorhelper.WithMetrics(createMetricsProcessor))
+		component.WithTracesProcessor(createTracesProcessor),
+		component.WithLogsProcessor(createLogsProcessor),
+		component.WithMetricsProcessor(createMetricsProcessor))
 }
 
 // createDefaultConfig creates the default configuration for the processor.

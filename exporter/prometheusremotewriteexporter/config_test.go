@@ -52,7 +52,7 @@ func Test_loadConfig(t *testing.T) {
 	assert.Equal(t, e1,
 		&Config{
 			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "2")),
-			TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
+			TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
 			RetrySettings: exporterhelper.RetrySettings{
 				Enabled:         true,
 				InitialInterval: 10 * time.Second,
@@ -65,6 +65,7 @@ func Test_loadConfig(t *testing.T) {
 				NumConsumers: 10,
 			},
 			Namespace:      "test-space",
+			sanitizeLabel:  false,
 			ExternalLabels: map[string]string{"key1": "value1", "key2": "value2"},
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint: "localhost:8888",

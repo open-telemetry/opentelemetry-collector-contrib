@@ -60,12 +60,11 @@ stability-tests: otelcontribcol
 
 .PHONY: gotidy
 gotidy:
-	$(MAKE) for-all CMD="rm -fr go.sum"
-	$(MAKE) for-all CMD="$(GOCMD) mod tidy -compat=1.17"
+	$(MAKE) for-all-target TARGET="tidy"
 
 .PHONY: gomoddownload
 gomoddownload:
-	@$(MAKE) for-all CMD="$(GOCMD) mod download"
+	$(MAKE) for-all-target TARGET="moddownload"
 
 .PHONY: gotest
 gotest:
@@ -81,7 +80,7 @@ golint:
 
 .PHONY: goporto
 goporto:
-	$(MAKE) for-all-target TARGET="porto"
+	porto -w --include-internal --skip-dirs "^cmd$$" ./
 
 .PHONY: for-all
 for-all:
@@ -234,8 +233,7 @@ otelcontribcol-windows_amd64:
 
 .PHONY: update-dep
 update-dep:
-	$(MAKE) for-all CMD="$(PWD)/internal/buildscripts/update-dep"
-	$(MAKE) gotidy
+	$(MAKE) for-all-target TARGET="updatedep"
 	$(MAKE) otelcontribcol
 
 .PHONY: update-otel
