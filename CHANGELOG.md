@@ -14,6 +14,7 @@
 - `signalfxexporter`: Add validation for `sending_queue` setting (#8026)
 - `resourcedetectionprocessor`: Add confighttp.HTTPClientSettings To Resource Detection Config Fixes (#7397)
 - `honeycombexporter`: Add validation for `sending_queue` setting (#8113)
+- `prometheusremotewriteexporter`: Write-Ahead Log support enabled (#7304)
 
 ### 🛑 Breaking changes 🛑
 
