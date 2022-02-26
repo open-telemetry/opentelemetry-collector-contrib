@@ -9,6 +9,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter v0.45.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsprometheusremotewriteexporter v0.45.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter v0.45.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azureblobexporter v0.45.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter v0.45.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.45.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter v0.45.1
@@ -141,6 +142,9 @@ require (
 	contrib.go.opencensus.io/exporter/prometheus v0.4.0 // indirect
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.10 // indirect
 	github.com/Azure/azure-sdk-for-go v61.1.0+incompatible // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v0.21.1 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/internal v0.8.3 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.3.0 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest v0.11.23 // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.9.18 // indirect
@@ -529,6 +533,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awspr
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter => ./exporter/awsxrayexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter => ./exporter/azuremonitorexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azureblobexporter => ./exporter/azureblobexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter => ./exporter/carbonexporter
 

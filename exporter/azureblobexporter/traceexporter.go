@@ -14,58 +14,39 @@
 
 package azureblobexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azureblobexporter"
 
-// type traceExporter struct {
-// 	config           *Config
-// 	transportChannel transportChannel
-// 	logger           *zap.Logger
-// }
+import (
+	"context"
 
-// type traceVisitor struct {
-// 	processed int
-// 	err       error
-// 	exporter  *traceExporter
-// }
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/model/otlp"
+	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/zap"
+)
 
-// // Called for each tuple of Resource, InstrumentationLibrary, and Span
-// func (v *traceVisitor) visit(
-// 	resource pdata.Resource,
-// 	instrumentationLibrary pdata.InstrumentationLibrary, span pdata.Span) (ok bool) {
+type traceExporter struct {
+	blobClient      *BlobClient
+	logger          *zap.Logger
+	tracesMarshaler pdata.TracesMarshaler
+}
 
-// 	envelope, err := spanToEnvelope(resource, instrumentationLibrary, span, v.exporter.logger)
-// 	if err != nil {
-// 		// record the error and short-circuit
-// 		v.err = consumererror.NewPermanent(err)
-// 		return false
-// 	}
+func (ex *traceExporter) onTraceData(context context.Context, traceData pdata.Traces) error {
+	buf, err := ex.tracesMarshaler.MarshalTraces(traceData)
+	if err != nil {
+		return err
+	}
 
-// 	// apply the instrumentation key to the envelope
-// 	envelope.IKey = v.exporter.config.InstrumentationKey
+	return ex.blobClient.UploadData(buf, config.TracesDataType)
+}
 
-// 	// This is a fire and forget operation
-// 	v.exporter.transportChannel.Send(envelope)
-// 	v.processed++
+// Returns a new instance of the trace exporter
+func newTracesExporter(config *Config, blobClient *BlobClient, set component.ExporterCreateSettings) (component.TracesExporter, error) {
+	exporter := &traceExporter{
+		blobClient:      blobClient,
+		logger:          set.Logger,
+		tracesMarshaler: otlp.NewJSONTracesMarshaler(),
+	}
 
-// 	return true
-// }
-
-// func (exporter *traceExporter) onTraceData(context context.Context, traceData pdata.Traces) error {
-// 	spanCount := traceData.SpanCount()
-// 	if spanCount == 0 {
-// 		return nil
-// 	}
-
-// 	visitor := &traceVisitor{exporter: exporter}
-// 	Accept(traceData, visitor)
-// 	return visitor.err
-// }
-
-// // Returns a new instance of the trace exporter
-// func newTracesExporter(config *Config, transportChannel transportChannel, set component.ExporterCreateSettings) (component.TracesExporter, error) {
-// 	exporter := &traceExporter{
-// 		config:           config,
-// 		transportChannel: transportChannel,
-// 		logger:           set.Logger,
-// 	}
-
-// 	return exporterhelper.NewTracesExporter(config, set, exporter.onTraceData)
-// }
+	return exporterhelper.NewTracesExporter(config, set, exporter.onTraceData)
+}

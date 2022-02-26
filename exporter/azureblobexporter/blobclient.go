@@ -14,20 +14,69 @@
 
 package azureblobexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azureblobexporter"
 
+import (
+	"bytes"
+	"context"
+	"fmt"
+	"strings"
+
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/streaming"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
+	"github.com/google/uuid"
+	"go.opentelemetry.io/collector/config"
+	"go.uber.org/zap"
+)
+
 type BlobClient struct {
-	ConnectionString string,
-	logger           *zap.Logger
+	containerClient azblob.ContainerClient
+	logger          *zap.Logger
 }
 
-func (blobClient *BlobClient) UploadData(data []byte, dataType DataType ) error {
-    logger.log("UploadData")
-    logger.log(data)
-	logger.log("=============")
+const (
+	containerNotFoundError = "ErrorCode=ContainerNotFound"
+)
+
+func (bc *BlobClient) generateBlobName(dataType config.DataType) string {
+	return fmt.Sprintf("%s-%s", dataType, uuid.NewString())
 }
 
-func NewBlobClient(ConnectionString string, logger *zap.Logger) *BlobClient {
-	return &BlobClient{
-		ConnectionString,
-		logger,
+func (bc *BlobClient) checkOrCreateContainer() error {
+	_, err := bc.containerClient.GetProperties(context.TODO(), nil)
+	if err != nil && strings.Contains(err.Error(), containerNotFoundError) {
+		_, err = bc.containerClient.Create(context.TODO(), nil)
 	}
+	return err
+}
+
+func (bc *BlobClient) UploadData(data []byte, dataType config.DataType) error {
+	bc.logger.Info("UploadData")
+	bc.logger.Info(string(data))
+	bc.logger.Info("=============")
+
+	blobName := bc.generateBlobName(dataType)
+
+	blockBlob := bc.containerClient.NewBlockBlobClient(blobName)
+
+	err := bc.checkOrCreateContainer()
+	if err != nil {
+		return err
+	}
+
+	_, err = blockBlob.Upload(context.TODO(), streaming.NopCloser(bytes.NewReader(data)), nil)
+
+	return err
+}
+
+func NewBlobClient(connectionString string, containerName string, logger *zap.Logger) (*BlobClient, error) {
+	serviceClient, err := azblob.NewServiceClientFromConnectionString(connectionString, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	containerClient := serviceClient.NewContainerClient(containerName)
+
+	return &BlobClient{
+		containerClient,
+		logger,
+	}, nil
 }

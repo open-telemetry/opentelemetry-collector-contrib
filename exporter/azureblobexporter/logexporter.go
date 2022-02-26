@@ -18,46 +18,35 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/model/otlp"
 	"go.opentelemetry.io/collector/model/pdata"
+
 	"go.uber.org/zap"
 )
 
 type logExporter struct {
-	blobClient BlobClient
-	logger     *zap.Logger
+	blobClient    *BlobClient
+	logger        *zap.Logger
+	logsMarshaler pdata.LogsMarshaler
 }
 
-func (exporter *logExporter) onLogData(context context.Context, logData pdata.Logs) error {
-	// resourceLogs := logData.ResourceLogs()
-	// logPacker := newLogPacker(exporter.logger)
-
-	// for i := 0; i < resourceLogs.Len(); i++ {
-	// 	instrumentationLibraryLogs := resourceLogs.At(i).InstrumentationLibraryLogs()
-	// 	for j := 0; j < instrumentationLibraryLogs.Len(); j++ {
-	// 		logs := instrumentationLibraryLogs.At(j).LogRecords()
-	// 		for k := 0; k < logs.Len(); k++ {
-	// 			envelope := logPacker.LogRecordToEnvelope(logs.At(k))
-	// 			envelope.IKey = exporter.config.InstrumentationKey
-	// 			exporter.transportChannel.Send(envelope)
-	// 		}
-	// 	}
-	// }
-	buf, err := logsMarshaler.MarshalLogs(logData)
+func (ex *logExporter) onLogData(context context.Context, logData pdata.Logs) error {
+	buf, err := ex.logsMarshaler.MarshalLogs(logData)
 	if err != nil {
 		return err
 	}
 
-	return blobClient(e, buf)
-
-	return nil
+	return ex.blobClient.UploadData(buf, config.LogsDataType)
 }
 
 // Returns a new instance of the log exporter
-func newLogsExporter(config *Config, blobClient *blobClient, set component.ExporterCreateSettings) (component.LogsExporter, error) {
+func newLogsExporter(config *Config, blobClient *BlobClient, set component.ExporterCreateSettings) (component.LogsExporter, error) {
 	exporter := &logExporter{
-		blobClient: blobClient,
-		logger:     set.Logger,
+		blobClient:    blobClient,
+		logger:        set.Logger,
+		logsMarshaler: otlp.NewJSONLogsMarshaler(),
 	}
 
 	return exporterhelper.NewLogsExporter(config, set, exporter.onLogData)

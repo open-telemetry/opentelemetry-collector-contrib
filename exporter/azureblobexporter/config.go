@@ -22,4 +22,6 @@ import (
 type Config struct {
 	config.ExporterSettings `mapstructure:",squash"`
 	ConnectionString        string `mapstructure:"connection_string"`
+	LogsContainerName       string `mapstructure:"logs_container_name"`
+	TracesContainerName     string `mapstructure:"traces_container_name"`
 }

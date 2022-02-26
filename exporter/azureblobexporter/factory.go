@@ -25,7 +25,9 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr = "azureblob"
+	typeStr             = "azureblob"
+	logsContainerName   = "logs"
+	tracesContainerName = "traces"
 )
 
 var (
@@ -34,36 +36,41 @@ var (
 
 // NewFactory returns a factory for Azure Monitor exporter.
 func NewFactory() component.ExporterFactory {
-	f := &factory{}
 	return exporterhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		//		exporterhelper.WithTraces(f.createTracesExporter),
-		exporterhelper.WithLogs(f.createLogsExporter))
+		exporterhelper.WithTraces(createTracesExporter),
+		exporterhelper.WithLogs(createLogsExporter))
 }
 
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ExporterSettings:    config.NewExporterSettings(config.NewComponentID(typeStr)),
+		LogsContainerName:   logsContainerName,
+		TracesContainerName: tracesContainerName,
 	}
 }
 
-// func (f *factory) createTracesExporter(
-// 	ctx context.Context,
-// 	set component.ExporterCreateSettings,
-// 	cfg config.Exporter,
-// ) (component.TracesExporter, error) {
-// 	exporterConfig, ok := cfg.(*Config)
+func createTracesExporter(
+	ctx context.Context,
+	set component.ExporterCreateSettings,
+	cfg config.Exporter,
+) (component.TracesExporter, error) {
+	exporterConfig, ok := cfg.(*Config)
 
-// 	if !ok {
-// 		return nil, errUnexpectedConfigurationType
-// 	}
+	if !ok {
+		return nil, errUnexpectedConfigurationType
+	}
 
-// 	bc := f.getBlobClient(exporterConfig, set.Logger)
-// 	return newTracesExporter(exporterConfig, bc, set)
-// }
+	bc, err := NewBlobClient(exporterConfig.ConnectionString, exporterConfig.TracesContainerName, set.Logger)
+	if err != nil {
+		set.Logger.Error(err.Error())
+	}
 
-func (f *factory) createLogsExporter(
+	return newTracesExporter(exporterConfig, bc, set)
+}
+
+func createLogsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
@@ -74,33 +81,10 @@ func (f *factory) createLogsExporter(
 		return nil, errUnexpectedConfigurationType
 	}
 
-	bc := NewBlobClient(exporterConfig, set.Logger)
+	bc, err := NewBlobClient(exporterConfig.ConnectionString, exporterConfig.LogsContainerName, set.Logger)
+	if err != nil {
+		set.Logger.Error(err.Error())
+	}
+
 	return newLogsExporter(exporterConfig, bc, set)
 }
-
-// // Configures the transport channel.
-// // This method is not thread-safe
-// func (f *factory) getTransportChannel(exporterConfig *Config, logger *zap.Logger) transportChannel {
-
-// 	// The default transport channel uses the default send mechanism from the AppInsights telemetry client.
-// 	// This default channel handles batching, appropriate retries, and is backed by memory.
-// 	if f.tChannel == nil {
-// 		telemetryConfiguration := appinsights.NewTelemetryConfiguration(exporterConfig.InstrumentationKey)
-// 		telemetryConfiguration.EndpointUrl = exporterConfig.Endpoint
-// 		telemetryConfiguration.MaxBatchSize = exporterConfig.MaxBatchSize
-// 		telemetryConfiguration.MaxBatchInterval = exporterConfig.MaxBatchInterval
-// 		telemetryClient := appinsights.NewTelemetryClientFromConfig(telemetryConfiguration)
-
-// 		f.tChannel = telemetryClient.Channel()
-
-// 		// Don't even bother enabling the AppInsights diagnostics listener unless debug logging is enabled
-// 		if checkedEntry := logger.Check(zap.DebugLevel, ""); checkedEntry != nil {
-// 			appinsights.NewDiagnosticsMessageListener(func(msg string) error {
-// 				logger.Debug(msg)
-// 				return nil
-// 			})
-// 		}
-// 	}
-
-// 	return f.tChannel
-// }
