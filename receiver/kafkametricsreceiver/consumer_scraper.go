@@ -125,8 +125,6 @@ func (s *consumerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	ilm := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	ilm.Scope().SetName(instrumentationLibName)
 	for _, group := range consumerGroups {
-		labels := pcommon.NewMap()
-		labels.UpsertString(metadata.A.Group, group.GroupId)
 		s.mb.RecordKafkaConsumerGroupMembersDataPoint(now, int64(len(group.Members)), group.GroupId)
 		groupOffsetFetchResponse, err := s.clusterAdmin.ListConsumerGroupOffsets(group.GroupId, topicPartitions)
 		if err != nil {
@@ -143,12 +141,10 @@ func (s *consumerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 					break
 				}
 			}
-			labels.UpsertString(metadata.A.Topic, topic)
 			if isConsumed {
 				var lagSum int64
 				var offsetSum int64
 				for partition, block := range partitions {
-					labels.UpsertInt(metadata.A.Partition, int64(partition))
 					consumerOffset := block.Offset
 					offsetSum += consumerOffset
 					s.mb.RecordKafkaConsumerGroupOffsetDataPoint(now, consumerOffset, group.GroupId, topic, fmt.Sprintf("%d", partition))
@@ -163,7 +159,6 @@ func (s *consumerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 					}
 					s.mb.RecordKafkaConsumerGroupLagDataPoint(now, consumerLag, group.GroupId, topic, fmt.Sprintf("%d", partition))
 				}
-				labels.Delete(metadata.A.Partition)
 				s.mb.RecordKafkaConsumerGroupOffsetSumDataPoint(now, offsetSum, group.GroupId, topic)
 				s.mb.RecordKafkaConsumerGroupLagSumDataPoint(now, lagSum, group.GroupId, topic)
 			}

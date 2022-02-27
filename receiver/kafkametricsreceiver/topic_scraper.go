@@ -80,11 +80,8 @@ func (s *topicScraper) scrape(context.Context) (pmetric.Metrics, error) {
 			scrapeErrors.Add(err)
 			continue
 		}
-		labels := pcommon.NewMap()
-		labels.UpsertString(metadata.A.Topic, topic)
 		s.mb.RecordKafkaTopicPartitionsDataPoint(now, int64(len(partitions)), topic)
 		for _, partition := range partitions {
-			labels.UpsertInt(metadata.A.Partition, int64(partition))
 			currentOffset, err := s.client.GetOffset(topic, partition, sarama.OffsetNewest)
 			if err != nil {
 				scrapeErrors.AddPartial(1, err)
