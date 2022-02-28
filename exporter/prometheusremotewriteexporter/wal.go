@@ -233,9 +233,6 @@ func (prwe *prweWAL) continuallyPopWALThenExport(ctx context.Context, signalStar
 		}
 		reqL = append(reqL, req)
 
-		// Now increment the WAL's read index.
-		atomic.AddUint64(&prwe.rWALIndex, 1)
-
 		shouldExport := false
 		select {
 		case <-timer.C:
@@ -351,6 +348,10 @@ func (prwe *prweWAL) readPrompbFromWAL(ctx context.Context, index uint64) (wreq 
 			if err = proto.Unmarshal(protoBlob, req); err != nil {
 				return nil, err
 			}
+
+			// Now increment the WAL's read index.
+			atomic.AddUint64(&prwe.rWALIndex, 1)
+
 			return req, nil
 		}
 
