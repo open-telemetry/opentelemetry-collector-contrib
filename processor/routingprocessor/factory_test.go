@@ -16,14 +16,16 @@ package routingprocessor
 
 import (
 	"context"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/service/servicetest"
 	"path/filepath"
 	"testing"
+
+	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -172,10 +174,10 @@ func TestProcessorDoesNotFailToBuildExportersWithMultiplePipelines(t *testing.T)
 		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
 			return map[config.DataType]map[config.ComponentID]component.Exporter{
 				config.TracesDataType: {
-					config.NewComponentID("otlp/traces"):   otlpTracesExporter,
+					config.NewComponentID("otlp/traces"): otlpTracesExporter,
 				},
 				config.MetricsDataType: {
-					config.NewComponentID("otlp/metrics"):   otlpMetricsExporter,
+					config.NewComponentID("otlp/metrics"): otlpMetricsExporter,
 				},
 			}
 		},
@@ -189,6 +191,7 @@ func TestProcessorDoesNotFailToBuildExportersWithMultiplePipelines(t *testing.T)
 		err = exp.Start(context.Background(), host)
 		// assert that no error is thrown due to multiple pipelines and exporters not using the routing processor
 		assert.NoError(t, err)
+		assert.NoError(t, exp.Shutdown(context.Background()))
 	}
 }
 
