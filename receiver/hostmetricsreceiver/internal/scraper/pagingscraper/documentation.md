@@ -11,7 +11,7 @@ These are the metrics available for this scraper.
 | **system.paging.faults** | The number of page faults. | {faults} | Sum(Int) | <ul> <li>type</li> </ul> |
 | **system.paging.operations** | The number of paging operations. | {operations} | Sum(Int) | <ul> <li>direction</li> <li>type</li> </ul> |
 | **system.paging.usage** | Swap (unix) or pagefile (windows) usage. | By | Sum(Int) | <ul> <li>device</li> <li>state</li> </ul> |
-| **system.paging.utilization** | Percentage of Swap (unix) or pagefile (windows) utilization. | 1 | Gauge(Double) | <ul> <li>device</li> <li>state</li> </ul> |
+| system.paging.utilization | Percentage of Swap (unix) or pagefile (windows) utilization. | 1 | Gauge(Double) | <ul> <li>device</li> <li>state</li> </ul> |
 
 **Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
 Any metric can be enabled or disabled with the following scraper configuration:

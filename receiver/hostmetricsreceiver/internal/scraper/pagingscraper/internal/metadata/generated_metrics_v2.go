@@ -33,7 +33,7 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		SystemPagingUtilization: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 	}
 }

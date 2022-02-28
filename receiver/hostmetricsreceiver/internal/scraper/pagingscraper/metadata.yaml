@@ -48,7 +48,7 @@ metrics:
     attributes: [type]
 
   system.paging.utilization:
-    enabled: true
+    enabled: false
     description: Percentage of Swap (unix) or pagefile (windows) utilization.
     unit: 1
     gauge:
