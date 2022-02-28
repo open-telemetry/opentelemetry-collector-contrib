@@ -22,7 +22,6 @@ import (
 	"net/url"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
@@ -807,7 +806,7 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 	exiting := make(chan bool)
 	prweServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		uploaded, err2 := ioutil.ReadAll(req.Body)
-		assert.Nil(t, err2, "Error while reading from HTTP upload")
+		assert.NoError(t, err2, "Error while reading from HTTP upload")
 		select {
 		case uploadedBytesCh <- uploaded:
 		case <-exiting:
@@ -827,9 +826,8 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 		},
 		RemoteWriteQueue: RemoteWriteQueue{NumConsumers: 1},
 		WAL: &WALConfig{
-			Directory:         tempDir,
-			TruncateFrequency: 60 * time.Microsecond,
-			BufferSize:        1,
+			Directory:  tempDir,
+			BufferSize: 1,
 		},
 	}
 
@@ -840,11 +838,11 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 	}
 
 	prwe, perr := newPRWExporter(cfg, set)
-	assert.Nil(t, perr)
+	assert.NoError(t, perr)
 
 	nopHost := componenttest.NewNopHost()
 	ctx := context.Background()
-	require.Nil(t, prwe.Start(ctx, nopHost))
+	require.NoError(t, prwe.Start(ctx, nopHost))
 	t.Cleanup(func() {
 		// This should have been shut down during the test
 		// If it does not error then something went wrong.
@@ -866,7 +864,7 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 		"timeseries2": ts2,
 	}
 	errs := prwe.handleExport(ctx, tsMap)
-	assert.Nil(t, errs)
+	assert.NoError(t, errs)
 	// Shutdown after we've written to the WAL. This ensures that our
 	// exported data in-flight will flushed flushed to the WAL before exiting.
 	require.NoError(t, prwe.Shutdown(ctx))
@@ -874,7 +872,7 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 	// 3. Let's now read back all of the WAL records and ensure
 	// that all the prompb.WriteRequest values exist as we sent them.
 	wal, _, werr := cfg.WAL.createWAL()
-	assert.Nil(t, werr)
+	assert.NoError(t, werr)
 	assert.NotNil(t, wal)
 	t.Cleanup(func() {
 		assert.NoError(t, wal.Close())
@@ -882,18 +880,18 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 
 	// Read all the indices.
 	firstIndex, ierr := wal.FirstIndex()
-	assert.Nil(t, ierr)
+	assert.NoError(t, ierr)
 	lastIndex, ierr := wal.LastIndex()
-	assert.Nil(t, ierr)
+	assert.NoError(t, ierr)
 
 	var reqs []*prompb.WriteRequest
 	for i := firstIndex; i <= lastIndex; i++ {
 		protoBlob, err := wal.Read(i)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assert.NotNil(t, protoBlob)
 		req := new(prompb.WriteRequest)
 		err = proto.Unmarshal(protoBlob, req)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		reqs = append(reqs, req)
 	}
 	assert.Equal(t, 1, len(reqs))
@@ -918,8 +916,8 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 	// Prometheus Remote Write endpoint are exactly as were saved in the WAL.
 	// Read from that same WAL, export to the RWExporter server.
 	prwe2, err := newPRWExporter(cfg, set)
-	assert.Nil(t, err)
-	require.Nil(t, prwe2.Start(ctx, nopHost))
+	assert.NoError(t, err)
+	require.NoError(t, prwe2.Start(ctx, nopHost))
 	t.Cleanup(func() {
 		assert.NoError(t, prwe2.Shutdown(ctx))
 	})
@@ -928,10 +926,10 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 	snappyEncodedBytes := <-uploadedBytesCh
 	decodeBuffer := make([]byte, len(snappyEncodedBytes))
 	uploadedBytes, derr := snappy.Decode(decodeBuffer, snappyEncodedBytes)
-	require.Nil(t, derr)
+	require.NoError(t, derr)
 	gotFromUpload := new(prompb.WriteRequest)
 	uerr := proto.Unmarshal(uploadedBytes, gotFromUpload)
-	assert.Nil(t, uerr)
+	assert.NoError(t, uerr)
 	gotFromUpload.Timeseries = orderBySampleTimestamp(gotFromUpload.Timeseries)
 	// Even after sorting timeseries, we need to sort them
 	// also by Label to ensure deterministic ordering.
