@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/influxdata/influxdb-observability/common v0.2.13
-	github.com/influxdata/influxdb-observability/influx2otel v0.2.13
+	github.com/influxdata/influxdb-observability/influx2otel v0.2.14
 	github.com/influxdata/line-protocol/v2 v2.2.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.45.1
 	go.opentelemetry.io/collector v0.45.1-0.20220225200547-7bdb684e27bf
