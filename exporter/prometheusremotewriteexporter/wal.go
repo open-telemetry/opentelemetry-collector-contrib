@@ -120,15 +120,17 @@ func (prwe *prweWAL) retrieveWALIndices() (err error) {
 	prwe.wal = log
 	prwe.walPath = walPath
 
-	prwe.rWALIndex, err = prwe.wal.FirstIndex()
+	rIndex, err := prwe.wal.FirstIndex()
 	if err != nil {
 		return fmt.Errorf("prometheusremotewriteexporter: failed to retrieve the first WAL index: %w", err)
 	}
+	atomic.StoreUint64(&prwe.rWALIndex, rIndex)
 
-	prwe.wWALIndex, err = prwe.wal.LastIndex()
+	wIndex, err := prwe.wal.LastIndex()
 	if err != nil {
 		return fmt.Errorf("prometheusremotewriteexporter: failed to retrieve the last WAL index: %w", err)
 	}
+	atomic.StoreUint64(&prwe.wWALIndex, wIndex)
 	return nil
 }
 
@@ -168,7 +170,7 @@ func (prwe *prweWAL) run(ctx context.Context) (err error) {
 			case <-prwe.stopChan:
 				return
 			default:
-				err = prwe.continuallyPopWALThenExport(ctx, signalStart)
+				err := prwe.continuallyPopWALThenExport(ctx, signalStart)
 				signalStart = func() {}
 				if err != nil {
 					// log err
