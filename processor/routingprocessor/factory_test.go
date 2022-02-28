@@ -16,24 +16,21 @@ package routingprocessor
 
 import (
 	"context"
-
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.opentelemetry.io/collector/exporter/otlpexporter"
-	"go.uber.org/zap"
-
 	"path/filepath"
 	"testing"
 
-	"go.opentelemetry.io/collector/service/servicetest"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.opentelemetry.io/collector/service/servicetest"
+	"go.uber.org/zap"
 )
 
 func TestProcessorGetsCreatedWithValidConfiguration(t *testing.T) {
