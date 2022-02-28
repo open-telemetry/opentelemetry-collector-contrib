@@ -312,6 +312,9 @@ func (prwe *prweWAL) exportThenFrontTruncateWAL(ctx context.Context, reqL []*pro
 // write them to the Write-Ahead-Log so that shutdowns won't lose data, and that the routine that
 // reads from the WAL can then process the previously serialized requests.
 func (prwe *prweWAL) persistToWAL(requests []*prompb.WriteRequest) error {
+	prwe.mu.Lock()
+	defer prwe.mu.Unlock()
+
 	// Write all the requests to the WAL in a batch.
 	batch := new(wal.Batch)
 	for _, req := range requests {
@@ -322,9 +325,6 @@ func (prwe *prweWAL) persistToWAL(requests []*prompb.WriteRequest) error {
 		wIndex := atomic.AddUint64(&prwe.wWALIndex, 1)
 		batch.Write(wIndex, protoBlob)
 	}
-
-	prwe.mu.Lock()
-	defer prwe.mu.Unlock()
 
 	return prwe.wal.WriteBatch(batch)
 }
