@@ -7,7 +7,7 @@ require (
 	github.com/golangci/golangci-lint v1.44.0
 	github.com/google/addlicense v1.0.0
 	github.com/jcchavezs/porto v0.4.0
-	github.com/jstemmer/go-junit-report v0.9.1
+	github.com/jstemmer/go-junit-report v1.0.0
 	github.com/pavius/impi v0.0.3
 	github.com/stretchr/objx v0.2.0 // indirect
 	github.com/tcnksm/ghr v0.14.0
