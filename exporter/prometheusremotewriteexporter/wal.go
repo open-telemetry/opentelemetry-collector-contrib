@@ -178,7 +178,6 @@ func (prwe *prweWAL) run(ctx context.Context) (err error) {
 					// Restart WAL
 					if errS := prwe.retrieveWALIndices(); errS != nil {
 						logger.Error("unable to re-start write-ahead log after error", zap.Error(errS))
-						err = multierror.Append(err, errS)
 						return
 					}
 				}
