@@ -32,7 +32,7 @@ import (
 
 const (
 	pagingUsageMetricsLen = 1
-	pagingMetricsLen      = 2
+	pagingMetricsLen      = 3
 )
 
 // scraper for Paging Metrics
@@ -89,6 +89,7 @@ func (s *scraper) scrapePagingUsageMetric() error {
 	}
 
 	s.recordPagingUsageDataPoints(now, pageFileStats)
+	s.recordPagingUtilizationDataPoints(now, pageFileStats)
 	return nil
 }
 
@@ -98,6 +99,16 @@ func (s *scraper) recordPagingUsageDataPoints(now pdata.Timestamp, pageFileStats
 		s.mb.RecordSystemPagingUsageDataPoint(now, int64(pageFile.freeBytes), pageFile.deviceName, metadata.AttributeState.Free)
 		if pageFile.cachedBytes != nil {
 			s.mb.RecordSystemPagingUsageDataPoint(now, int64(*pageFile.cachedBytes), pageFile.deviceName, metadata.AttributeState.Cached)
+		}
+	}
+}
+
+func (s *scraper) recordPagingUtilizationDataPoints(now pdata.Timestamp, pageFileStats []*pageFileStats) {
+	for _, pageFile := range pageFileStats {
+		s.mb.RecordSystemPagingUtilizationDataPoint(now, float64(pageFile.usedBytes)/float64(pageFile.totalBytes)*100.0, pageFile.deviceName, metadata.AttributeState.Used)
+		s.mb.RecordSystemPagingUtilizationDataPoint(now, float64(pageFile.freeBytes)/float64(pageFile.totalBytes)*100.0, pageFile.deviceName, metadata.AttributeState.Free)
+		if pageFile.cachedBytes != nil {
+			s.mb.RecordSystemPagingUtilizationDataPoint(now, float64(*pageFile.cachedBytes)/float64(pageFile.totalBytes)*100.0, pageFile.deviceName, metadata.AttributeState.Cached)
 		}
 	}
 }

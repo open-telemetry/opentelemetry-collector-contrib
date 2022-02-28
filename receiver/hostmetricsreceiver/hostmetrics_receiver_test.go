@@ -65,6 +65,7 @@ var standardMetrics = []string{
 	"system.network.packets",
 	"system.paging.operations",
 	"system.paging.usage",
+	"system.paging.utilization",
 }
 
 var resourceMetrics = []string{
