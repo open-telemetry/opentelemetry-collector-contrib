@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkae
 go 1.17
 
 require (
-	github.com/Shopify/sarama v1.31.1
+	github.com/Shopify/sarama v1.32.0
 	github.com/aws/aws-sdk-go v1.43.4
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger v1.31.0
@@ -52,7 +52,7 @@ require (
 	go.opentelemetry.io/otel/metric v0.27.0 // indirect
 	go.opentelemetry.io/otel/trace v1.4.1 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
-	golang.org/x/crypto v0.0.0-20220128200615-198e4374d7ed // indirect
+	golang.org/x/crypto v0.0.0-20220214200702-86341886e292 // indirect
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
 	golang.org/x/text v0.3.7 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
