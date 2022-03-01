@@ -38,20 +38,23 @@ func TestScrape(t *testing.T) {
 		initializationErr string
 	}
 
+	config := metadata.DefaultMetricsSettings()
+	config.SystemPagingUtilization.Enabled = true
+
 	testCases := []testCase{
 		{
 			name:   "Standard",
-			config: Config{Metrics: metadata.DefaultMetricsSettings()},
+			config: Config{Metrics: config},
 		},
 		{
 			name:              "Validate Start Time",
-			config:            Config{Metrics: metadata.DefaultMetricsSettings()},
+			config:            Config{Metrics: config},
 			bootTimeFunc:      func() (uint64, error) { return 100, nil },
 			expectedStartTime: 100 * 1e9,
 		},
 		{
 			name:              "Boot Time Error",
-			config:            Config{Metrics: metadata.DefaultMetricsSettings()},
+			config:            Config{Metrics: config},
 			bootTimeFunc:      func() (uint64, error) { return 0, errors.New("err1") },
 			initializationErr: "err1",
 		},
@@ -138,7 +141,7 @@ func assertPagingUsageMetricValid(t *testing.T, hostPagingUsageMetric pdata.Metr
 func assertPagingUtilizationMetricValid(t *testing.T, hostPagingUtilizationMetric pdata.Metric) {
 	expected := pdata.NewMetric()
 	expected.SetName("system.paging.utilization")
-	expected.SetDescription("Percentage of Swap (unix) or pagefile (windows) utilization.")
+	expected.SetDescription("Swap (unix) or pagefile (windows) utilization.")
 	expected.SetUnit("1")
 	expected.SetDataType(pdata.MetricDataTypeGauge)
 	internal.AssertDescriptorEqual(t, expected, hostPagingUtilizationMetric)
