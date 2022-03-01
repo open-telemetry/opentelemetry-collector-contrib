@@ -15,6 +15,7 @@
 - `internal/stanza`: Add support for arbitrary attribute types (#8081)
 - `resourcedetectionprocessor`: Add confighttp.HTTPClientSettings To Resource Detection Config Fixes (#7397)
 - `honeycombexporter`: Add validation for `sending_queue` setting (#8113)
+- `routingprocessor`: Expand error handling on failure to build exporters (#8125)
 - `skywalkingreceiver`: Add new skywalking receiver component folder and structure (#8107)
 
 ### 🛑 Breaking changes 🛑
@@ -29,6 +30,7 @@
 
 - `prometheusreceiver`: Fix segfault that can occur after receiving stale metrics (#8056)
 - `filelogreceiver`: Fix issue where logs could occasionally be duplicated (#8123)
+- `prometheusremotewriteexporter`: Fix empty non-string resource attributes (#8116)
 
 ### 🚀 New components 🚀
 

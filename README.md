@@ -79,6 +79,8 @@ Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/o
 - [Juraci Paixão Kröhling](https://github.com/jpkrohling), Grafana Labs
 - [Alex Boten](https://github.com/codeboten), Lightstep
 - [Bogdan Drutu](https://github.com/BogdanDrutu), Splunk
+
+Emeritus Maintainers
 - [Tigran Najaryan](https://github.com/tigrannajaryan), Splunk
 
 Learn more about roles in the [community repository](https://github.com/open-telemetry/community/blob/main/community-membership.md).
