@@ -13,7 +13,7 @@ require (
 
 )
 
-require go.uber.org/multierr v1.7.0
+require go.uber.org/multierr v1.8.0
 
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
