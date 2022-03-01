@@ -49,7 +49,7 @@ metrics:
 
   system.paging.utilization:
     enabled: false
-    description: Percentage of Swap (unix) or pagefile (windows) utilization.
+    description: Swap (unix) or pagefile (windows) utilization.
     unit: 1
     gauge:
       value_type: double

@@ -208,7 +208,7 @@ type metricSystemPagingUtilization struct {
 // init fills system.paging.utilization metric with initial data.
 func (m *metricSystemPagingUtilization) init() {
 	m.data.SetName("system.paging.utilization")
-	m.data.SetDescription("Percentage of Swap (unix) or pagefile (windows) utilization.")
+	m.data.SetDescription("Swap (unix) or pagefile (windows) utilization.")
 	m.data.SetUnit("1")
 	m.data.SetDataType(pdata.MetricDataTypeGauge)
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)

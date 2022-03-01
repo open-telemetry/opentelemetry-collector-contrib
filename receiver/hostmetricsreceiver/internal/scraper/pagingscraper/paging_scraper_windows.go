@@ -31,10 +31,8 @@ import (
 )
 
 const (
-	pagingUsageMetricsLen       = 1
-	pagingUtilizationMetricsLen = 1
-
-	pagingMetricsLen = 1
+	pagingUsageMetricsLen = 1
+	pagingMetricsLen      = 1
 
 	memory = "Memory"
 
@@ -112,8 +110,8 @@ func (s *scraper) recordPagingUsageDataPoints(now pdata.Timestamp, pageFiles []*
 
 func (s *scraper) recordPagingUtilizationDataPoints(now pdata.Timestamp, pageFiles []*pageFileStats) {
 	for _, pageFile := range pageFiles {
-		s.mb.RecordSystemPagingUtilizationDataPoint(now, float64(pageFile.usedBytes)/float64(pageFile.totalBytes)*100.0, pageFile.deviceName, metadata.AttributeState.Used)
-		s.mb.RecordSystemPagingUtilizationDataPoint(now, float64(pageFile.freeBytes)/float64(pageFile.totalBytes)*100.0, pageFile.deviceName, metadata.AttributeState.Free)
+		s.mb.RecordSystemPagingUtilizationDataPoint(now, float64(pageFile.usedBytes)/float64(pageFile.totalBytes), pageFile.deviceName, metadata.AttributeState.Used)
+		s.mb.RecordSystemPagingUtilizationDataPoint(now, float64(pageFile.freeBytes)/float64(pageFile.totalBytes), pageFile.deviceName, metadata.AttributeState.Free)
 	}
 }
 
