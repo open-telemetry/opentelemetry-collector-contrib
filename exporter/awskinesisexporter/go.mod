@@ -16,7 +16,7 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/google/uuid v1.3.0
 	github.com/jaegertracing/jaeger v1.31.0
-	go.uber.org/multierr v1.7.0
+	go.uber.org/multierr v1.8.0
 )
 
 require (
