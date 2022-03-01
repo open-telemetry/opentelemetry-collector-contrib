@@ -37,3 +37,5 @@ sqlalchemy>=1.0
 tornado>=5.1.1
 ddtrace>=0.34.0
 httpx>=0.18.0
+markupsafe==2.0.1
+itsdangerous==2.0.1
