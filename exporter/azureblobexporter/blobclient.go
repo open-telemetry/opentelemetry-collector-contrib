@@ -53,10 +53,6 @@ func (bc *AzureBlobClient) checkOrCreateContainer() error {
 }
 
 func (bc *AzureBlobClient) UploadData(data []byte, dataType config.DataType) error {
-	bc.logger.Info("UploadData")
-	bc.logger.Info(string(data))
-	bc.logger.Info("=============")
-
 	blobName := bc.generateBlobName(dataType)
 
 	blockBlob := bc.containerClient.NewBlockBlobClient(blobName)

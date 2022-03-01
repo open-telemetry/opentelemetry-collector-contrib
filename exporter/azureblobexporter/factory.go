@@ -34,7 +34,7 @@ var (
 	errUnexpectedConfigurationType = errors.New("failed to cast configuration to Azure Blob Config")
 )
 
-// NewFactory returns a factory for Azure Monitor exporter.
+// NewFactory returns a factory for Azure Blob exporter.
 func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		typeStr,
