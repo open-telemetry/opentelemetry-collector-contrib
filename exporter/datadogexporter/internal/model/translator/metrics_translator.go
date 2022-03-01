@@ -99,7 +99,7 @@ func (t *Translator) mapNumberMetrics(
 		p := slice.At(i)
 		pointDims := dims.WithAttributeMap(p.Attributes())
 		var val float64
-		switch p.Type() {
+		switch p.ValueType() {
 		case pdata.MetricValueTypeDouble:
 			val = p.DoubleVal()
 		case pdata.MetricValueTypeInt:
@@ -128,7 +128,7 @@ func (t *Translator) mapNumberMonotonicMetrics(
 		pointDims := dims.WithAttributeMap(p.Attributes())
 
 		var val float64
-		switch p.Type() {
+		switch p.ValueType() {
 		case pdata.MetricValueTypeDouble:
 			val = p.DoubleVal()
 		case pdata.MetricValueTypeInt:
