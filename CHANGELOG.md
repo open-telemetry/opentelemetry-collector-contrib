@@ -15,6 +15,7 @@
 - `internal/stanza`: Add support for arbitrary attribute types (#8081)
 - `resourcedetectionprocessor`: Add confighttp.HTTPClientSettings To Resource Detection Config Fixes (#7397)
 - `honeycombexporter`: Add validation for `sending_queue` setting (#8113)
+- `routingprocessor`: Expand error handling on failure to build exporters (#8125)
 
 ### 🛑 Breaking changes 🛑
 
