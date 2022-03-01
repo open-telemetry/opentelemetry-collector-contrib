@@ -22,6 +22,7 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/iancoleman/strcase"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/service/featuregate"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 
@@ -62,25 +63,62 @@ func getMetricsForNode(node *corev1.Node, nodeConditionTypesToReport, allocatabl
 		})
 	}
 	// Adding 'node allocatable type' metrics
-	for _, nodeAllocatableTypeValue := range allocatableTypesToReport {
-		nodeAllocatableMetric := getNodeAllocatableMetric(nodeAllocatableTypeValue)
-		v1NodeAllocatableTypeValue := corev1.ResourceName(nodeAllocatableTypeValue)
-		metricValue, err := nodeAllocatableValue(node, v1NodeAllocatableTypeValue)
+	if featuregate.IsEnabled(reportCPUMetricsAsDoubleFeatureGateID) {
+		for _, nodeAllocatableTypeValue := range allocatableTypesToReport {
+			nodeAllocatableMetric := getNodeAllocatableMetric(nodeAllocatableTypeValue)
+			v1NodeAllocatableTypeValue := corev1.ResourceName(nodeAllocatableTypeValue)
+			v, ok := node.Status.Allocatable[v1NodeAllocatableTypeValue]
+			if !ok {
+				logger.Debug(fmt.Errorf("allocatable type %v not found in node %v", nodeAllocatableTypeValue,
+					node.GetName()).Error())
+				continue
+			}
+			// cpu metrics must be of the double type to adhere to opentelemetry system.cpu metric specifications
+			if v1NodeAllocatableTypeValue == corev1.ResourceCPU {
+				metrics = append(metrics, &metricspb.Metric{
+					MetricDescriptor: &metricspb.MetricDescriptor{
+						Name:        nodeAllocatableMetric,
+						Description: allocatableDesciption[v1NodeAllocatableTypeValue.String()],
+						Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE,
+					},
+					Timeseries: []*metricspb.TimeSeries{
+						utils.GetDoubleSeries(float64(v.MilliValue()) / 1000.0),
+					},
+				})
+			} else {
+				metrics = append(metrics, &metricspb.Metric{
+					MetricDescriptor: &metricspb.MetricDescriptor{
+						Name:        nodeAllocatableMetric,
+						Description: allocatableDesciption[v1NodeAllocatableTypeValue.String()],
+						Type:        metricspb.MetricDescriptor_GAUGE_INT64,
+					},
+					Timeseries: []*metricspb.TimeSeries{
+						utils.GetInt64TimeSeries(v.Value()),
+					},
+				})
+			}
+		}
+	} else {
+		for _, nodeAllocatableTypeValue := range allocatableTypesToReport {
+			nodeAllocatableMetric := getNodeAllocatableMetric(nodeAllocatableTypeValue)
+			v1NodeAllocatableTypeValue := corev1.ResourceName(nodeAllocatableTypeValue)
+			metricValue, err := nodeAllocatableValue(node, v1NodeAllocatableTypeValue)
 
-		// metrics will be skipped if metric not present in node or value is not convertable to int64
-		if err != nil {
-			logger.Debug(err.Error())
-		} else {
-			metrics = append(metrics, &metricspb.Metric{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        nodeAllocatableMetric,
-					Description: allocatableDesciption[v1NodeAllocatableTypeValue.String()],
-					Type:        metricspb.MetricDescriptor_GAUGE_INT64,
-				},
-				Timeseries: []*metricspb.TimeSeries{
-					utils.GetInt64TimeSeries(metricValue),
-				},
-			})
+			// metrics will be skipped if metric not present in node or value is not convertable to int64
+			if err != nil {
+				logger.Debug(err.Error())
+			} else {
+				metrics = append(metrics, &metricspb.Metric{
+					MetricDescriptor: &metricspb.MetricDescriptor{
+						Name:        nodeAllocatableMetric,
+						Description: allocatableDesciption[v1NodeAllocatableTypeValue.String()],
+						Type:        metricspb.MetricDescriptor_GAUGE_INT64,
+					},
+					Timeseries: []*metricspb.TimeSeries{
+						utils.GetInt64TimeSeries(metricValue),
+					},
+				})
+			}
 		}
 	}
 
