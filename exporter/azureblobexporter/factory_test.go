@@ -14,42 +14,57 @@
 
 package azureblobexporter
 
-// // An inappropriate config
-// type badConfig struct {
-// 	config.ExporterSettings `mapstructure:",squash"`
-// }
+import (
+	"context"
+	"testing"
 
-// func TestCreateTracesExporterUsingSpecificTransportChannel(t *testing.T) {
-// 	// mock transport channel creation
-// 	f := factory{tChannel: &mockTransportChannel{}}
-// 	ctx := context.Background()
-// 	params := componenttest.NewNopExporterCreateSettings()
-// 	exporter, err := f.createTracesExporter(ctx, params, createDefaultConfig())
-// 	assert.NotNil(t, exporter)
-// 	assert.Nil(t, err)
-// }
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
+)
 
-// func TestCreateTracesExporterUsingDefaultTransportChannel(t *testing.T) {
-// 	// We get the default transport channel creation, if we don't specify one during f creation
-// 	f := factory{}
-// 	assert.Nil(t, f.tChannel)
-// 	ctx := context.Background()
-// 	exporter, err := f.createTracesExporter(ctx, componenttest.NewNopExporterCreateSettings(), createDefaultConfig())
-// 	assert.NotNil(t, exporter)
-// 	assert.Nil(t, err)
-// 	assert.NotNil(t, f.tChannel)
-// }
+func TestCreateTracesExporterUsingDefaultConfig(t *testing.T) {
+	ctx := context.Background()
+	params := componenttest.NewNopExporterCreateSettings()
+	exporter, err := createTracesExporter(ctx, params, createDefaultConfig())
 
-// func TestCreateTracesExporterUsingBadConfig(t *testing.T) {
-// 	// We get the default transport channel creation, if we don't specify one during factory creation
-// 	f := factory{}
-// 	assert.Nil(t, f.tChannel)
-// 	ctx := context.Background()
-// 	params := componenttest.NewNopExporterCreateSettings()
+	require.Nil(t, err)
+	assert.NotNil(t, exporter)
+}
 
-// 	badConfig := &badConfig{}
+func TestCreateLogsExporterUsingDefaultConfig(t *testing.T) {
+	ctx := context.Background()
+	params := componenttest.NewNopExporterCreateSettings()
+	exporter, err := createLogsExporter(ctx, params, createDefaultConfig())
 
-// 	exporter, err := f.createTracesExporter(ctx, params, badConfig)
-// 	assert.Nil(t, exporter)
-// 	assert.NotNil(t, err)
-// }
+	require.Nil(t, err)
+	assert.NotNil(t, exporter)
+}
+
+func TestCreateTracesExporterUsingSpecificConfig(t *testing.T) {
+	ctx := context.Background()
+	params := componenttest.NewNopExporterCreateSettings()
+	exporter, err := createTracesExporter(ctx, params, createSpecificConfig())
+
+	require.Nil(t, err)
+	assert.NotNil(t, exporter)
+}
+
+func TestCreateLogsExporterUsingSpecificConfig(t *testing.T) {
+	ctx := context.Background()
+	params := componenttest.NewNopExporterCreateSettings()
+	exporter, err := createLogsExporter(ctx, params, createSpecificConfig())
+
+	require.Nil(t, err)
+	assert.NotNil(t, exporter)
+}
+
+func createSpecificConfig() config.Exporter {
+	return &Config{
+		ExporterSettings:    config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ConnectionString:    goodConnectionString,
+		LogsContainerName:   logsContainerName,
+		TracesContainerName: tracesContainerName,
+	}
+}

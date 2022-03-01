@@ -27,7 +27,11 @@ import (
 	"go.uber.org/zap"
 )
 
-type BlobClient struct {
+type BlobClient interface {
+	UploadData(data []byte, dataType config.DataType) error
+}
+
+type AzureBlobClient struct {
 	containerClient azblob.ContainerClient
 	logger          *zap.Logger
 }
@@ -36,11 +40,11 @@ const (
 	containerNotFoundError = "ErrorCode=ContainerNotFound"
 )
 
-func (bc *BlobClient) generateBlobName(dataType config.DataType) string {
+func (bc *AzureBlobClient) generateBlobName(dataType config.DataType) string {
 	return fmt.Sprintf("%s-%s", dataType, uuid.NewString())
 }
 
-func (bc *BlobClient) checkOrCreateContainer() error {
+func (bc *AzureBlobClient) checkOrCreateContainer() error {
 	_, err := bc.containerClient.GetProperties(context.TODO(), nil)
 	if err != nil && strings.Contains(err.Error(), containerNotFoundError) {
 		_, err = bc.containerClient.Create(context.TODO(), nil)
@@ -48,7 +52,7 @@ func (bc *BlobClient) checkOrCreateContainer() error {
 	return err
 }
 
-func (bc *BlobClient) UploadData(data []byte, dataType config.DataType) error {
+func (bc *AzureBlobClient) UploadData(data []byte, dataType config.DataType) error {
 	bc.logger.Info("UploadData")
 	bc.logger.Info(string(data))
 	bc.logger.Info("=============")
@@ -67,7 +71,7 @@ func (bc *BlobClient) UploadData(data []byte, dataType config.DataType) error {
 	return err
 }
 
-func NewBlobClient(connectionString string, containerName string, logger *zap.Logger) (*BlobClient, error) {
+func NewBlobClient(connectionString string, containerName string, logger *zap.Logger) (*AzureBlobClient, error) {
 	serviceClient, err := azblob.NewServiceClientFromConnectionString(connectionString, nil)
 	if err != nil {
 		return nil, err
@@ -75,7 +79,7 @@ func NewBlobClient(connectionString string, containerName string, logger *zap.Lo
 
 	containerClient := serviceClient.NewContainerClient(containerName)
 
-	return &BlobClient{
+	return &AzureBlobClient{
 		containerClient,
 		logger,
 	}, nil

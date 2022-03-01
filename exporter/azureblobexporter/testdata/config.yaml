@@ -6,8 +6,10 @@ processors:
 
 exporters:
   azureblob:
-    connection_string: abcdefg
-
+  azureblob/2:
+    connection_string: DefaultEndpointsProtocol=https;AccountName=accountName;AccountKey=+idLkHYcL0MUWIKYHm2j4Q==;EndpointSuffix=core.windows.net
+    logs_container_name: logs
+    traces_container_name: traces
 
 service:
   pipelines:

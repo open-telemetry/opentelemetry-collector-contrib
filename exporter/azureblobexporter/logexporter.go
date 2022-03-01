@@ -27,7 +27,7 @@ import (
 )
 
 type logExporter struct {
-	blobClient    *BlobClient
+	blobClient    BlobClient
 	logger        *zap.Logger
 	logsMarshaler pdata.LogsMarshaler
 }
@@ -42,7 +42,7 @@ func (ex *logExporter) onLogData(context context.Context, logData pdata.Logs) er
 }
 
 // Returns a new instance of the log exporter
-func newLogsExporter(config *Config, blobClient *BlobClient, set component.ExporterCreateSettings) (component.LogsExporter, error) {
+func newLogsExporter(config *Config, blobClient BlobClient, set component.ExporterCreateSettings) (component.LogsExporter, error) {
 	exporter := &logExporter{
 		blobClient:    blobClient,
 		logger:        set.Logger,

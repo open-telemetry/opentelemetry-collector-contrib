@@ -26,7 +26,7 @@ import (
 )
 
 type traceExporter struct {
-	blobClient      *BlobClient
+	blobClient      BlobClient
 	logger          *zap.Logger
 	tracesMarshaler pdata.TracesMarshaler
 }
@@ -41,7 +41,7 @@ func (ex *traceExporter) onTraceData(context context.Context, traceData pdata.Tr
 }
 
 // Returns a new instance of the trace exporter
-func newTracesExporter(config *Config, blobClient *BlobClient, set component.ExporterCreateSettings) (component.TracesExporter, error) {
+func newTracesExporter(config *Config, blobClient BlobClient, set component.ExporterCreateSettings) (component.TracesExporter, error) {
 	exporter := &traceExporter{
 		blobClient:      blobClient,
 		logger:          set.Logger,
