@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### 💡 Enhancements 💡
+
+- `hostreceiver/pagingscraper`: Add paging.utilization (#6221)
+
 ## v0.46.0
 
 ### 💡 Enhancements 💡
