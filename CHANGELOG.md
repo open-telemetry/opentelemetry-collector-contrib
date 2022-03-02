@@ -17,6 +17,7 @@
 - `honeycombexporter`: Add validation for `sending_queue` setting (#8113)
 - `routingprocessor`: Expand error handling on failure to build exporters (#8125)
 - `skywalkingreceiver`: Add new skywalking receiver component folder and structure (#8107)
+- `groupbyattrsprocesor`: Allow empty keys, which allows to use the processor for compaction (#7793)
 
 ### 🛑 Breaking changes 🛑
 
