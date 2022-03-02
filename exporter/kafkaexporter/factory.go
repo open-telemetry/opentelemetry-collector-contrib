@@ -56,6 +56,24 @@ func WithTracesMarshalers(tracesMarshalers ...TracesMarshaler) FactoryOption {
 	}
 }
 
+// WithMetricsMarshalers adds metricsMarshalers.
+func WithMetricsMarshalers(metricsMarshalers ...MetricsMarshaler) FactoryOption {
+	return func(factory *kafkaExporterFactory) {
+		for _, marshaler := range metricsMarshalers {
+			factory.metricsMarshalers[marshaler.Encoding()] = marshaler
+		}
+	}
+}
+
+// WithLogsMarshalers adds logsMarshalers.
+func WithLogsMarshalers(logsMarshalers ...LogsMarshaler) FactoryOption {
+	return func(factory *kafkaExporterFactory) {
+		for _, marshaler := range logsMarshalers {
+			factory.logsMarshalers[marshaler.Encoding()] = marshaler
+		}
+	}
+}
+
 // NewFactory creates Kafka exporter factory.
 func NewFactory(options ...FactoryOption) component.ExporterFactory {
 	f := &kafkaExporterFactory{
