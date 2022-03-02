@@ -4,14 +4,14 @@ go 1.17
 
 require (
 	github.com/lib/pq v1.10.4
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.45.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.46.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.45.1-0.20220302165729-02d0fe568b21
+	go.opentelemetry.io/collector v0.46.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
 )
 
-require go.opentelemetry.io/collector/model v0.45.1-0.20220302165729-02d0fe568b21
+require go.opentelemetry.io/collector/model v0.46.0
 
 require github.com/testcontainers/testcontainers-go v0.12.0
 
