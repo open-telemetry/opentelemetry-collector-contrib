@@ -6,6 +6,7 @@ require (
 	github.com/go-kit/log v0.2.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/snappy v0.0.4
+	github.com/mitchellh/hashstructure/v2 v2.0.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.45.1
 	github.com/prometheus/common v0.32.1
 	github.com/prometheus/prometheus v1.8.2-0.20220117154355-4855a0c067e2
