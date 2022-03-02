@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Cache Tools
         id: tool-cache
         uses: actions/cache@v2
@@ -40,7 +40,7 @@ jobs:
           key: v1-go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
       - run: make otelcontribcol
       - name: Checkout compliance repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: prometheus/compliance
           path: compliance
