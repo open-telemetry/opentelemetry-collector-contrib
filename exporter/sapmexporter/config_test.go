@@ -89,4 +89,13 @@ func TestInvalidConfig(t *testing.T) {
 	}
 	invalidURLErr := invalid.validate()
 	require.Error(t, invalidURLErr)
+
+	invalid = Config{
+		Endpoint: "abcd1234",
+		QueueSettings: exporterhelper.QueueSettings{
+			Enabled:   true,
+			QueueSize: -1,
+		},
+	}
+	require.Error(t, invalid.Validate())
 }

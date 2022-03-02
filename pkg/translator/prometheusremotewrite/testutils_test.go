@@ -396,11 +396,11 @@ func getSummaryMetric(name string, attributes pdata.AttributeMap, ts uint64, sum
 	return metric
 }
 
-func getResource(resources ...string) pdata.Resource {
+func getResource(resources map[string]pdata.AttributeValue) pdata.Resource {
 	resource := pdata.NewResource()
 
-	for i := 0; i < len(resources); i += 2 {
-		resource.Attributes().Upsert(resources[i], pdata.NewAttributeValueString(resources[i+1]))
+	for k, v := range resources {
+		resource.Attributes().Upsert(k, v)
 	}
 
 	return resource
