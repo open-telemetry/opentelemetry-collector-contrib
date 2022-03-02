@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplog
 go 1.17
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza v0.45.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza v0.46.0
 	github.com/open-telemetry/opentelemetry-log-collection v0.26.0
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.45.1-0.20220302165729-02d0fe568b21

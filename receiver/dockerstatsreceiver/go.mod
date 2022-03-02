@@ -4,8 +4,8 @@ go 1.17
 
 require (
 	github.com/docker/docker v20.10.12+incompatible
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest v0.45.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.45.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest v0.46.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.46.0
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.45.1-0.20220302165729-02d0fe568b21
 	go.opentelemetry.io/collector/model v0.45.1-0.20220302165729-02d0fe568b21
