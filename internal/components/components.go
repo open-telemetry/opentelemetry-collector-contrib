@@ -15,7 +15,6 @@
 package components // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/components"
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/loggingexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
@@ -217,7 +216,6 @@ func Components() (component.Factories, error) {
 		tcplogreceiver.NewFactory(),
 		udplogreceiver.NewFactory(),
 		zipkinreceiver.NewFactory(),
-		skywalkingreceiver.NewFactory(),
 	}
 	receivers = append(receivers, extraReceivers()...)
 	factories.Receivers, err = component.MakeReceiverFactoryMap(receivers...)
