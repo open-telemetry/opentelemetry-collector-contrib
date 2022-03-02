@@ -3,11 +3,11 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubele
 go 1.17
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.45.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.45.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.46.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.46.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.45.1-0.20220302165729-02d0fe568b21
-	go.opentelemetry.io/collector/model v0.45.1-0.20220302165729-02d0fe568b21
+	go.opentelemetry.io/collector v0.46.0
+	go.opentelemetry.io/collector/model v0.46.0
 	go.uber.org/zap v1.21.0
 	k8s.io/api v0.23.4
 	k8s.io/apimachinery v0.23.4
@@ -35,7 +35,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/onsi/ginkgo v1.14.1 // indirect
 	github.com/onsi/gomega v1.10.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.45.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.46.0 // indirect
 	github.com/openshift/api v0.0.0-20210521075222-e273a339932a // indirect
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142 // indirect
 	github.com/pelletier/go-toml v1.9.4 // indirect
