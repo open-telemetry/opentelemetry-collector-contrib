@@ -23,7 +23,6 @@ import (
 	"net"
 	"net/http"
 	"sync"
-	"time"
 
 	"github.com/gorilla/mux"
 	"go.opentelemetry.io/collector/component"
@@ -34,7 +33,7 @@ import (
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/multierr"
 	"google.golang.org/grpc"
-	v1 "skywalking.apache.org/repo/goapi/satellite/data/v1"
+	v3 "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
 )
 
 // configuration defines the behavior and the ports that
@@ -63,6 +62,7 @@ type swReceiver struct {
 
 	grpcObsrecv *obsreport.Receiver
 	httpObsrecv *obsreport.Receiver
+	service     *traceSegmentReportService
 }
 
 const (
@@ -175,7 +175,8 @@ func (sr *swReceiver) startCollector(host component.Host) error {
 			return fmt.Errorf("failed to bind to gRPC address %q: %v", gaddr, gerr)
 		}
 
-		//TODO: RegisterCollectorServiceServer(sr.grpc, sr)
+		sr.service = &traceSegmentReportService{}
+		v3.RegisterTraceSegmentReportServiceServer(sr.grpc, sr.service)
 
 		sr.goroutines.Add(1)
 		go func() {
@@ -196,27 +197,14 @@ type Response struct {
 
 func (sr *swReceiver) httpHandler(rsp http.ResponseWriter, r *http.Request) {
 	rsp.Header().Set("Content-Type", "application/json")
-	b, err := ioutil.ReadAll(r.Body)
+	_, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		response := &Response{Status: failing, Msg: err.Error()}
 		ResponseWithJSON(rsp, response, http.StatusBadRequest)
 		return
 	}
 
-	e := &v1.SniffData{
-		Name:      httpEventName,
-		Timestamp: time.Now().UnixNano() / 1e6,
-		Meta:      nil,
-		Type:      v1.SniffType_TracingType,
-		Remote:    true,
-		Data: &v1.SniffData_Segment{
-			Segment: b,
-		},
-	}
-
 	//TODO: convert to otel trace.
-	sr.settings.Logger.Debug(e.String())
-
 }
 
 func ResponseWithJSON(rsp http.ResponseWriter, response *Response, code int) {
