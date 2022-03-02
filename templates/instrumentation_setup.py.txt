@@ -27,8 +27,8 @@ config = ConfigParser()
 config.read('setup.cfg')
 
 # We provide extras_require parameter to setuptools.setup later which
-# overwrites the extra_require section from setup.cfg. To support extra_require
-# secion in setup.cfg, we load it here and merge it with the extra_require param.
+# overwrites the extras_require section from setup.cfg. To support extras_require
+# section in setup.cfg, we load it here and merge it with the extras_require param.
 extras_require = {}
 if 'options.extras_require' in config:
     for key, value in config['options.extras_require'].items():

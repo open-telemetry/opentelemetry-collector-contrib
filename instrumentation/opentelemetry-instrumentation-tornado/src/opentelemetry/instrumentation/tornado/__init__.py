@@ -45,12 +45,13 @@ A comma separated list of paths that should not be automatically traced. For exa
 
 ::
 
-    export OTEL_PYTHON_TORNADO_EXLUDED_URLS='/healthz,/ping'
+    export OTEL_PYTHON_TORNADO_EXCLUDED_URLS='/healthz,/ping'
 
 Then any requests made to ``/healthz`` and ``/ping`` will not be automatically traced.
 
 Request attributes
-********************
+******************
+
 To extract certain attributes from Tornado's request object and use them as span attributes, set the environment variable ``OTEL_PYTHON_TORNADO_TRACED_REQUEST_ATTRS`` to a comma
 delimited list of request attribute names.
 
