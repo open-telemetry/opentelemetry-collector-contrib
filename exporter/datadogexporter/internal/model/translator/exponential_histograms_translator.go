@@ -1,0 +1,171 @@
+// Copyright The OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/translator"
+
+import (
+	"context"
+	"fmt"
+	"math"
+
+	"github.com/DataDog/datadog-agent/pkg/quantile"
+	"github.com/DataDog/sketches-go/ddsketch"
+	"github.com/DataDog/sketches-go/ddsketch/mapping"
+	"github.com/DataDog/sketches-go/ddsketch/store"
+	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/zap"
+)
+
+func (t *Translator) exponentialHistogramToDDSketch(
+	pointDims metricsDimensions,
+	p pdata.ExponentialHistogramDataPoint,
+	delta bool,
+) (*ddsketch.DDSketch, error) {
+	startTs := uint64(p.StartTimestamp())
+	ts := uint64(p.Timestamp())
+
+	// Create the positive DDSketch store
+	positive := p.Positive()
+	positiveStore := store.NewDenseStore()
+	for j, count := range positive.BucketCounts() {
+		// Find the real index of the bucket by adding the offset
+		index := j + int(positive.Offset())
+
+		// Compute temporary bucketDims to have unique keys in the t.prevPts cache for each bucket
+		bucketDims := pointDims.AddTags(
+			"store:positive",
+			fmt.Sprintf("index:%d", index),
+		)
+
+		if delta {
+			positiveStore.AddWithCount(index, float64(count))
+		} else if dx, ok := t.prevPts.Diff(bucketDims, startTs, ts, float64(count)); ok {
+			positiveStore.AddWithCount(index, float64(dx))
+		}
+	}
+
+	// Create the negative DDSketch store
+	negative := p.Negative()
+	negativeStore := store.NewDenseStore()
+	for j, count := range negative.BucketCounts() {
+		// Find the real index of the bucket by adding the offset
+		index := j + int(negative.Offset())
+
+		// Compute temporary bucketDims to have unique keys in the t.prevPts cache for each bucket
+		bucketDims := pointDims.AddTags(
+			"store:negative",
+			fmt.Sprintf("index:%d", index),
+		)
+
+		if delta {
+			negativeStore.AddWithCount(index, float64(count))
+		} else if dx, ok := t.prevPts.Diff(bucketDims, startTs, ts, float64(count)); ok {
+			negativeStore.AddWithCount(index, float64(dx))
+		}
+	}
+
+	// Create the DDSketch mapping that corresponds to the ExponentialHistogram settings
+	gamma := math.Pow(2, math.Pow(2, float64(-p.Scale())))
+	mapping, err := mapping.NewLogarithmicMappingWithGamma(gamma, 0)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't create LogarithmicMapping for DDSketch: %v", err)
+	}
+
+	// Create DDSketch with the above mapping and stores
+	sketch := ddsketch.NewDDSketch(mapping, positiveStore, negativeStore)
+	sketch.AddWithCount(0, float64(p.ZeroCount()))
+
+	return sketch, nil
+}
+
+// mapExponentialHistogramMetrics maps double exponential histogram metrics slices to Datadog metrics
+//
+// An ExponentialHistogram metric has:
+// - The count of values in the population
+// - The sum of values in the population
+// - A scale, from which the base of the exponential histogram is computed
+// - Two bucket stores, each with:
+//     - an offset
+//     - a list of bucket counts
+// - A count of zero values in the population
+func (t *Translator) mapExponentialHistogramMetrics(
+	ctx context.Context,
+	consumer Consumer,
+	dims metricsDimensions,
+	slice pdata.ExponentialHistogramDataPointSlice,
+	delta bool,
+) {
+	for i := 0; i < slice.Len(); i++ {
+		p := slice.At(i)
+		startTs := uint64(p.StartTimestamp())
+		ts := uint64(p.Timestamp())
+		pointDims := dims.WithAttributeMap(p.Attributes())
+
+		histInfo := histogramInfo{ok: true}
+
+		countDims := pointDims.WithSuffix("count")
+		if delta {
+			histInfo.count = p.Count()
+		} else if dx, ok := t.prevPts.Diff(countDims, startTs, ts, float64(p.Count())); ok {
+			histInfo.count = uint64(dx)
+		} else { // not ok
+			histInfo.ok = false
+		}
+
+		sumDims := pointDims.WithSuffix("sum")
+		if !t.isSkippable(sumDims.name, p.Sum()) {
+			if delta {
+				histInfo.sum = p.Sum()
+			} else if dx, ok := t.prevPts.Diff(sumDims, startTs, ts, p.Sum()); ok {
+				histInfo.sum = dx
+			} else { // not ok
+				histInfo.ok = false
+			}
+		} else { // skippable
+			histInfo.ok = false
+		}
+
+		if t.cfg.SendCountSum && histInfo.ok {
+			// We only send the sum and count if both values were ok.
+			consumer.ConsumeTimeSeries(ctx, countDims.name, Count, ts, float64(histInfo.count), countDims.tags, countDims.host)
+			consumer.ConsumeTimeSeries(ctx, sumDims.name, Count, ts, histInfo.sum, sumDims.tags, sumDims.host)
+		}
+
+		expHistDDSketch, err := t.exponentialHistogramToDDSketch(pointDims, p, delta)
+		if err != nil {
+			t.logger.Debug("Failed to convert ExponentialHistogram into DDSketch",
+				zap.String("metric name", dims.name),
+				zap.Error(err),
+			)
+			continue
+		}
+
+		agentSketch, err := quantile.FromDDSketch(expHistDDSketch)
+		if err != nil {
+			t.logger.Debug("Failed to convert DDSketch into Sketch",
+				zap.String("metric name", dims.name),
+				zap.Error(err),
+			)
+		}
+	
+		if histInfo.ok {
+		 	// override approximate sum, count and average in sketch with exact values if available.
+		 	agentSketch.Basic.Cnt = int64(histInfo.count)
+		 	agentSketch.Basic.Sum = histInfo.sum
+		 	agentSketch.Basic.Avg = agentSketch.Basic.Sum / float64(agentSketch.Basic.Cnt)
+		}
+
+		consumer.ConsumeSketch(ctx, pointDims.name, ts, agentSketch, pointDims.tags, pointDims.host)
+	}
+}
