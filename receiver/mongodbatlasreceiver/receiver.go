@@ -53,9 +53,9 @@ func newMongoDBAtlasScraper(log *zap.Logger, cfg *Config) (scraperhelper.Scraper
 func (s *receiver) scrape(ctx context.Context) (pdata.Metrics, error) {
 	var start time.Time
 	if s.lastRun.IsZero() {
-		start = s.lastRun
-	} else {
 		start = time.Now().Add(s.cfg.CollectionInterval * -1)
+	} else {
+		start = s.lastRun
 	}
 	now := time.Now()
 	timeConstraints := timeconstraints{
