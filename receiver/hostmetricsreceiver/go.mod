@@ -5,10 +5,10 @@ go 1.17
 require (
 	github.com/leoluk/perflib_exporter v0.1.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.45.1
-	github.com/shirou/gopsutil/v3 v3.22.1
+	github.com/shirou/gopsutil/v3 v3.22.2
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.45.0
-	go.opentelemetry.io/collector/model v0.45.0
+	go.opentelemetry.io/collector v0.45.1-0.20220225200547-7bdb684e27bf
+	go.opentelemetry.io/collector/model v0.45.1-0.20220225200547-7bdb684e27bf
 	go.uber.org/zap v1.21.0
 	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9
 
@@ -39,7 +39,7 @@ require (
 	go.opentelemetry.io/otel/metric v0.27.0 // indirect
 	go.opentelemetry.io/otel/trace v1.4.1 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
-	go.uber.org/multierr v1.7.0 // indirect
+	go.uber.org/multierr v1.8.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )

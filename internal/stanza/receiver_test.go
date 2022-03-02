@@ -24,8 +24,8 @@ import (
 	"time"
 
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator"
 	"github.com/open-telemetry/opentelemetry-log-collection/pipeline"
-	"github.com/open-telemetry/opentelemetry-log-collection/testutil"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap"
@@ -116,16 +116,18 @@ func BenchmarkReadLine(b *testing.B) {
   start_at: beginning`,
 		filePath)
 
-	pipelineCfg := pipeline.Config{}
-	require.NoError(b, yaml.Unmarshal([]byte(pipelineYaml), &pipelineCfg))
+	operatorCfgs := []operator.Config{}
+	require.NoError(b, yaml.Unmarshal([]byte(pipelineYaml), &operatorCfgs))
 
 	emitter := NewLogEmitter(
 		LogEmitterWithLogger(zap.NewNop().Sugar()),
 	)
 	defer emitter.Stop()
 
-	buildContext := testutil.NewBuildContext(b)
-	pl, err := pipelineCfg.BuildPipeline(buildContext, emitter)
+	pipe, err := pipeline.Config{
+		Operators:     operatorCfgs,
+		DefaultOutput: emitter,
+	}.Build(zap.NewNop().Sugar())
 	require.NoError(b, err)
 
 	// Populate the file that will be consumed
@@ -137,7 +139,7 @@ func BenchmarkReadLine(b *testing.B) {
 
 	// // Run the actual benchmark
 	b.ResetTimer()
-	require.NoError(b, pl.Start(newMockPersister()))
+	require.NoError(b, pipe.Start(newMockPersister()))
 	for i := 0; i < b.N; i++ {
 		entries := <-emitter.logChan
 		for _, e := range entries {
@@ -179,16 +181,18 @@ func BenchmarkParseAndMap(b *testing.B) {
 
 	pipelineYaml := fmt.Sprintf("%s%s", fileInputYaml, regexParserYaml)
 
-	pipelineCfg := pipeline.Config{}
-	require.NoError(b, yaml.Unmarshal([]byte(pipelineYaml), &pipelineCfg))
+	operatorCfgs := []operator.Config{}
+	require.NoError(b, yaml.Unmarshal([]byte(pipelineYaml), &operatorCfgs))
 
 	emitter := NewLogEmitter(
 		LogEmitterWithLogger(zap.NewNop().Sugar()),
 	)
 	defer emitter.Stop()
 
-	buildContext := testutil.NewBuildContext(b)
-	pl, err := pipelineCfg.BuildPipeline(buildContext, emitter)
+	pipe, err := pipeline.Config{
+		Operators:     operatorCfgs,
+		DefaultOutput: emitter,
+	}.Build(zap.NewNop().Sugar())
 	require.NoError(b, err)
 
 	// Populate the file that will be consumed
@@ -200,7 +204,7 @@ func BenchmarkParseAndMap(b *testing.B) {
 
 	// // Run the actual benchmark
 	b.ResetTimer()
-	require.NoError(b, pl.Start(newMockPersister()))
+	require.NoError(b, pipe.Start(newMockPersister()))
 	for i := 0; i < b.N; i++ {
 		entries := <-emitter.logChan
 		for _, e := range entries {

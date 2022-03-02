@@ -15,7 +15,7 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v2
       - name: Setup Go
-        uses: actions/setup-go@v2.2.0
+        uses: actions/setup-go@v3
         with:
           go-version: 1.17
       - name: Setup Go Environment
@@ -37,7 +37,7 @@ jobs:
           key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
       - name: Install dependencies
         if: steps.module-cache.outputs.hit != 'true'
-        run: make gomoddownload
+        run: make -j2 gomoddownload
       - name: Install Tools
         if: steps.tool-cache.outputs.cache-hit != 'true'
         run: make install-tools
@@ -48,7 +48,7 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v2
       - name: Setup Go
-        uses: actions/setup-go@v2.2.0
+        uses: actions/setup-go@v3
         with:
           go-version: 1.17
       - name: Setup Go Environment
@@ -82,7 +82,7 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v2
       - name: Setup Go
-        uses: actions/setup-go@v2.2.0
+        uses: actions/setup-go@v3
         with:
           go-version: 1.17
       - name: Setup Go Environment
@@ -110,7 +110,9 @@ jobs:
       - name: CheckDoc
         run: make checkdoc
       - name: Porto
-        run: make porto
+        run: |
+          make goporto
+          git diff --exit-code || (echo 'Porto links are out of date, please run "make goporto" and commit the changes in this PR.' && exit 1)
       - name: CodeGen
         run: |
           make generate
@@ -124,7 +126,7 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v2
       - name: Setup Go
-        uses: actions/setup-go@v2.2.0
+        uses: actions/setup-go@v3
         with:
           go-version: 1.17
       - name: Setup Go Environment
@@ -158,7 +160,7 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v2
       - name: Setup Go
-        uses: actions/setup-go@v2.2.0
+        uses: actions/setup-go@v3
         with:
           go-version: 1.17
       - name: Setup Go Environment
@@ -188,7 +190,7 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v2
       - name: Setup Go
-        uses: actions/setup-go@v2.2.0
+        uses: actions/setup-go@v3
         with:
           go-version: 1.17
       - name: Setup Go Environment
@@ -217,7 +219,7 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v2
       - name: Setup Go
-        uses: actions/setup-go@v2.2.0
+        uses: actions/setup-go@v3
         with:
           go-version: 1.17
       - name: Setup Go Environment
@@ -264,7 +266,7 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v2
       - name: Setup Go
-        uses: actions/setup-go@v2.2.0
+        uses: actions/setup-go@v3
         with:
           go-version: 1.17
       - name: Setup Go Environment
@@ -391,7 +393,7 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v2
       - name: Setup Go
-        uses: actions/setup-go@v2.2.0
+        uses: actions/setup-go@v3
         with:
           go-version: 1.17
       - name: Setup Go Environment
@@ -450,7 +452,7 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v2
       - name: Setup Go
-        uses: actions/setup-go@v2.2.0
+        uses: actions/setup-go@v3
         with:
           go-version: 1.17
       - name: Setup Go Environment

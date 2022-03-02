@@ -6,10 +6,10 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.45.1
 	github.com/stretchr/testify v1.7.0
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.45.0
-	go.opentelemetry.io/collector/model v0.45.0
+	go.opentelemetry.io/collector v0.45.1-0.20220225200547-7bdb684e27bf
+	go.opentelemetry.io/collector/model v0.45.1-0.20220225200547-7bdb684e27bf
 	go.opentelemetry.io/otel v1.4.1
-	go.uber.org/multierr v1.7.0
+	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
 	gonum.org/v1/gonum v0.9.3
 )

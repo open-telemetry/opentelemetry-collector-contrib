@@ -7,8 +7,8 @@ require (
 	github.com/jaegertracing/jaeger v1.31.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.45.1
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.45.0
-	go.opentelemetry.io/collector/model v0.45.0
+	go.opentelemetry.io/collector v0.45.1-0.20220225200547-7bdb684e27bf
+	go.opentelemetry.io/collector/model v0.45.1-0.20220225200547-7bdb684e27bf
 )
 
 require (
@@ -21,7 +21,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/klauspost/compress v1.14.2 // indirect
+	github.com/klauspost/compress v1.14.4 // indirect
 	github.com/knadh/koanf v1.4.0 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
@@ -41,7 +41,7 @@ require (
 	go.opentelemetry.io/otel/metric v0.27.0 // indirect
 	go.opentelemetry.io/otel/trace v1.4.1 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
-	go.uber.org/multierr v1.7.0 // indirect
+	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.21.0 // indirect
 	golang.org/x/net v0.0.0-20220105145211-5b0dc2dfae98 // indirect
 	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9 // indirect

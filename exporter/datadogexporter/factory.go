@@ -38,11 +38,11 @@ const (
 
 // NewFactory creates a Datadog exporter factory
 func NewFactory() component.ExporterFactory {
-	return exporterhelper.NewFactory(
+	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithMetrics(createMetricsExporter),
-		exporterhelper.WithTraces(createTracesExporter),
+		component.WithMetricsExporter(createMetricsExporter),
+		component.WithTracesExporter(createTracesExporter),
 	)
 }
 
@@ -57,8 +57,8 @@ func createDefaultConfig() config.Exporter {
 	return &ddconfig.Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		TimeoutSettings:  defaulttimeoutSettings(),
-		RetrySettings:    exporterhelper.DefaultRetrySettings(),
-		QueueSettings:    exporterhelper.DefaultQueueSettings(),
+		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 
 		API: ddconfig.APIConfig{
 			Key:  os.Getenv("DD_API_KEY"), // Must be set if using API

@@ -24,7 +24,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumerhelper"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
@@ -63,10 +62,10 @@ var (
 
 // NewFactory creates a new factory for host metrics receiver.
 func NewFactory() component.ReceiverFactory {
-	return receiverhelper.NewFactory(
+	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithMetrics(createMetricsReceiver))
+		component.WithMetricsReceiver(createMetricsReceiver))
 }
 
 func getScraperFactory(key string) (internal.ScraperFactory, bool) {
@@ -79,7 +78,7 @@ func getScraperFactory(key string) (internal.ScraperFactory, bool) {
 
 // createDefaultConfig creates the default configuration for receiver.
 func createDefaultConfig() config.Receiver {
-	return &Config{ScraperControllerSettings: scraperhelper.DefaultScraperControllerSettings(typeStr)}
+	return &Config{ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr)}
 }
 
 // createMetricsReceiver creates a metrics receiver based on provided config.

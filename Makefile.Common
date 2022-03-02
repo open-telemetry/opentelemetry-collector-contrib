@@ -95,9 +95,10 @@ fmt:
 lint: checklicense impi misspell
 	$(LINT) run --allow-parallel-runners
 
-.PHONY: porto
-porto:
-	porto -w --include-internal --skip-dirs "^cmd$$" ./
+.PHONY: tidy
+tidy:
+	rm -fr go.sum
+	$(GOCMD) mod tidy -compat=1.17
 
 .PHONY: misspell
 misspell:
@@ -112,6 +113,11 @@ misspell-correction:
 impi:
 	@$(IMPI) --local github.com/open-telemetry/opentelemetry-collector-contrib --scheme stdThirdPartyLocal ./...
 
-.PHONY: dep
-dep:
+.PHONY: moddownload
+moddownload:
 	$(GOCMD) mod download
+
+.PHONY: updatedep
+updatedep:
+	$(PWD)/internal/buildscripts/update-dep
+	@$(MAKE) tidy
