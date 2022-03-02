@@ -16,26 +16,10 @@ package filtermetric // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"go.opentelemetry.io/collector/model/pdata"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
 )
 
 type Matcher interface {
 	MatchMetric(metric pdata.Metric) (bool, error)
-}
-
-func CreateMatchPropertiesFromDefault(properties *filterconfig.MatchProperties) *MatchProperties {
-	if properties == nil {
-		return nil
-	}
-
-	return &MatchProperties{
-		MatchType:          MatchType(properties.Config.MatchType),
-		RegexpConfig:       properties.Config.RegexpConfig,
-		MetricNames:        properties.MetricNames,
-		Expressions:        properties.Expressions,
-		ResourceAttributes: properties.ResourceAttributes,
-	}
 }
 
 // NewMatcher constructs a metric Matcher. If an 'expr' match type is specified,
@@ -51,6 +35,10 @@ func NewMatcher(config *MatchProperties) (Matcher, error) {
 	return newNameMatcher(config)
 }
 
+// Filters have the ability to include and exclude metrics based on the metric's properties.
+// The default is to not skip. If include is defined, the metric must match or it will be skipped.
+// If include is not defined but exclude is, metric will be skipped if it matches exclude. Metric
+// is included if neither specified.
 func SkipMetric(include, exclude Matcher, metric pdata.Metric) bool {
 	if include != nil {
 		// A false (or an error) returned in this case means the metric should not be processed.

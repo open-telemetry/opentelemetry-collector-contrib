@@ -24,30 +24,30 @@ import (
 // by the processor, captured under the 'include' and the second, exclude, to
 // define what is excluded from the processor.
 type MatchConfig struct {
-	// Include specifies the set of span/log/metric properties that must be present in order
+	// Include specifies the set of input data properties that must be present in order
 	// for this processor to apply to it.
-	// Note: If `exclude` is specified, the span/log/metric is compared against those
+	// Note: If `exclude` is specified, the input data is compared against those
 	// properties after the `include` properties.
-	// This is an optional field. If neither `include` and `exclude` are set, all spans/logs/metrics
+	// This is an optional field. If neither `include` and `exclude` are set, all input data
 	// are processed. If `include` is set and `exclude` isn't set, then all
-	// spans/logs/metrics matching the properties in this structure are processed.
+	// input data matching the properties in this structure are processed.
 	Include *MatchProperties `mapstructure:"include"`
 
-	// Exclude specifies when this processor will not be applied to the spans/logs/metrics
+	// Exclude specifies when this processor will not be applied to the input data
 	// which match the specified properties.
 	// Note: The `exclude` properties are checked after the `include` properties,
 	// if they exist, are checked.
 	// If `include` isn't specified, the `exclude` properties are checked against
-	// all spans/logs/metrics.
-	// This is an optional field. If neither `include` and `exclude` are set, all spans/logs/metrics
-	// are processed. If `exclude` is set and `include` isn't set, then all
-	// spans/logs/metrics that do not match the properties in this structure are processed.
+	// all input data.
+	// This is an optional field. If neither `include` and `exclude` are set, all input data
+	// is processed. If `exclude` is set and `include` isn't set, then all the
+	// input data that does not match the properties in this structure are processed.
 	Exclude *MatchProperties `mapstructure:"exclude"`
 }
 
 // MatchProperties specifies the set of properties in a spans/log/metric to match
-// against and if the span/log/metric should be included or excluded from the
-// processor. At least one of services (spans only), span/log/metric names or
+// against and if the input data should be included or excluded from the
+// processor. At least one of services (spans only), names or
 // attributes must be specified. It is supported to have all specified, but
 // this requires all the properties to match for the inclusion/exclusion to
 // occur.
@@ -107,7 +107,7 @@ type MatchProperties struct {
 	Attributes []Attribute `mapstructure:"attributes"`
 
 	// Resources specify the list of items to match the resources against.
-	// A match occurs if the span's resources matches at least one item in this list.
+	// A match occurs if the data's resources match at least one item in this list.
 	// This is an optional field.
 	Resources []Attribute `mapstructure:"resources"`
 
@@ -115,14 +115,6 @@ type MatchProperties struct {
 	// A match occurs if the span's implementation library matches at least one item in this list.
 	// This is an optional field.
 	Libraries []InstrumentationLibrary `mapstructure:"libraries"`
-
-	// Expressions specifies the list of expr expressions to match metrics against.
-	// A match occurs if any datapoint in a metric matches at least one expression in this list.
-	Expressions []string `mapstructure:"expressions"`
-
-	// ResourceAttributes defines a list of possible resource attributes to match metrics against.
-	// A match occurs if any resource attribute matches all expressions in this given list.
-	ResourceAttributes []Attribute `mapstructure:"resource_attributes"`
 }
 
 // ValidateForSpans validates properties for spans.
@@ -151,9 +143,6 @@ func (mp *MatchProperties) ValidateForLogs() error {
 
 	return nil
 }
-
-// ValidateForMetrics validates properties for metrics
-// Need to implement method, add comments to new members of MatchProperties
 
 // Attribute specifies the attribute key and optional value to match against.
 type Attribute struct {

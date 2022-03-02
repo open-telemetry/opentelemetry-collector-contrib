@@ -123,7 +123,7 @@ func createMetricsProcessor(
 	_ component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Metrics,
-	) (component.MetricsProcessor, error) {
+) (component.MetricsProcessor, error) {
 
 	oCfg := cfg.(*Config)
 	if len(oCfg.Actions) == 0 {

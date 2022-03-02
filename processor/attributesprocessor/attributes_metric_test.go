@@ -1,19 +1,34 @@
+// Copyright  The OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package attributesprocessor
 
 import (
 	"context"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer/consumertest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
 // Common structure for all the Tests
@@ -213,7 +228,7 @@ func TestAttributes_FilterMetrics(t *testing.T) {
 	}
 	oCfg.Include = &filterconfig.MatchProperties{
 		Resources: []filterconfig.Attribute{{Key: "name", Value: "^[^i].*"}},
-		Config: *createConfig(filterset.Regexp),
+		Config:    *createConfig(filterset.Regexp),
 	}
 	oCfg.Exclude = &filterconfig.MatchProperties{
 		Attributes: []filterconfig.Attribute{
@@ -233,7 +248,7 @@ func TestAttributes_FilterMetrics(t *testing.T) {
 func TestAttributes_FilterMetricsByNameStrict(t *testing.T) {
 	testCases := []metricTestCase{
 		{
-			name: "apply",
+			name:            "apply",
 			inputAttributes: map[string]pdata.AttributeValue{},
 			expectedAttributes: map[string]pdata.AttributeValue{
 				"attribute1": pdata.NewAttributeValueInt(123),
@@ -250,12 +265,12 @@ func TestAttributes_FilterMetricsByNameStrict(t *testing.T) {
 			},
 		},
 		{
-			name: "incorrect_metric_name",
+			name:               "incorrect_metric_name",
 			inputAttributes:    map[string]pdata.AttributeValue{},
 			expectedAttributes: map[string]pdata.AttributeValue{},
 		},
 		{
-			name: "dont_apply",
+			name:               "dont_apply",
 			inputAttributes:    map[string]pdata.AttributeValue{},
 			expectedAttributes: map[string]pdata.AttributeValue{},
 		},
@@ -296,7 +311,7 @@ func TestAttributes_FilterMetricsByNameStrict(t *testing.T) {
 func TestAttributes_FilterMetricsByNameRegexp(t *testing.T) {
 	testCases := []metricTestCase{
 		{
-			name: "apply_to_metric_with_no_attrs",
+			name:            "apply_to_metric_with_no_attrs",
 			inputAttributes: map[string]pdata.AttributeValue{},
 			expectedAttributes: map[string]pdata.AttributeValue{
 				"attribute1": pdata.NewAttributeValueInt(123),
@@ -313,12 +328,12 @@ func TestAttributes_FilterMetricsByNameRegexp(t *testing.T) {
 			},
 		},
 		{
-			name: "incorrect_metric_name",
+			name:               "incorrect_metric_name",
 			inputAttributes:    map[string]pdata.AttributeValue{},
 			expectedAttributes: map[string]pdata.AttributeValue{},
 		},
 		{
-			name: "apply_dont_apply",
+			name:               "apply_dont_apply",
 			inputAttributes:    map[string]pdata.AttributeValue{},
 			expectedAttributes: map[string]pdata.AttributeValue{},
 		},
@@ -418,7 +433,7 @@ func TestMetricAttributes_Hash(t *testing.T) {
 func BenchmarkAttributes_FilterMetricsByName(b *testing.B) {
 	testCases := []metricTestCase{
 		{
-			name: "apply_to_metric_with_no_attrs",
+			name:            "apply_to_metric_with_no_attrs",
 			inputAttributes: map[string]pdata.AttributeValue{},
 			expectedAttributes: map[string]pdata.AttributeValue{
 				"attribute1": pdata.NewAttributeValueInt(123),
@@ -435,7 +450,7 @@ func BenchmarkAttributes_FilterMetricsByName(b *testing.B) {
 			},
 		},
 		{
-			name: "dont_apply",
+			name:               "dont_apply",
 			inputAttributes:    map[string]pdata.AttributeValue{},
 			expectedAttributes: map[string]pdata.AttributeValue{},
 		},

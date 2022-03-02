@@ -23,7 +23,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filtermetric"
 )
 
-type  metricAttributesProcessor struct {
+type metricAttributesProcessor struct {
 	attrProc *attraction.AttrProc
 	include  filtermetric.Matcher
 	exclude  filtermetric.Matcher
