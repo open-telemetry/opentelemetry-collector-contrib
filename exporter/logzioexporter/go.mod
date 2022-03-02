@@ -8,8 +8,8 @@ require (
 	github.com/logzio/jaeger-logzio v1.0.4
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.45.1
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.45.1-0.20220225200547-7bdb684e27bf
-	go.opentelemetry.io/collector/model v0.45.1-0.20220225200547-7bdb684e27bf
+	go.opentelemetry.io/collector v0.45.1-0.20220302165729-02d0fe568b21
+	go.opentelemetry.io/collector/model v0.45.1-0.20220302165729-02d0fe568b21
 	go.uber.org/zap v1.21.0
 )
 
@@ -28,7 +28,7 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/knadh/koanf v1.4.0 // indirect
 	github.com/logzio/logzio-go v1.0.3 // indirect
-	github.com/magiconair/properties v1.8.5 // indirect
+	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
