@@ -17,6 +17,7 @@
 - `honeycombexporter`: Add validation for `sending_queue` setting (#8113)
 - `routingprocessor`: Expand error handling on failure to build exporters (#8125)
 - `skywalkingreceiver`: Add new skywalking receiver component folder and structure (#8107)
+- `hostreceiver/filesystemscraper`: Add filesystem utilization (#8027)
 
 ### 🛑 Breaking changes 🛑
 
@@ -38,7 +39,6 @@
 
 ### 💡 Enhancements 💡
 
-- `hostreceiver/filesystemscraper`: Add filesystem utilization (#8027)
 - `sumologicexporter`: Move validation to Config (#7936)
 - `elasticsearchexporter`: Fix crash with batch processor (#7953).
 - `splunkhecexporter`: Batch metrics payloads (#7760)
