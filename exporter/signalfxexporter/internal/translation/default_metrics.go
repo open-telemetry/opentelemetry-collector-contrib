@@ -149,4 +149,18 @@ exclude_metrics:
 
   # matches k8s.volume.inodes, k8s.volume.inodes and k8s.volume.inodes.used
   - /^k8s\.volume\.inodes(\.free|\.used)*$/
+
+# mongodb atlas include only these metrics
+  - '!mongodbatlas.process.connections'
+  - '!mongodbatlas.process.cursors'
+  - '!mongodbatlas.process.db.document.rate'
+  - '!mongodbatlas.process.db.operations.rate'
+  - '!mongodbatlas.process.db.operations.time'
+  - '!mongodbatlas.process.db.storage'
+  - '!mongodbatlas.process.global_lock'
+  - '!mongodbatlas.process.memory.usage'
+  - '!mongodbatlas.process.network.io'
+  - '!mongodbatlas.process.network.requests'
+  - '!mongodbatlas.process.page_faults'
+  - '!mongodbatlas.system.cpu.normalized.usage.average'
 `
