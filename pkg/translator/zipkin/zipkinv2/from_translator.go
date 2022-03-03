@@ -155,16 +155,8 @@ func spanToZipkinSpan(
 	zs.LocalEndpoint = zipkinEndpointFromTags(tags, localServiceName, false, redundantKeys)
 	zs.RemoteEndpoint = zipkinEndpointFromTags(tags, "", true, redundantKeys)
 
-	removeRedundentTags(redundantKeys, tags)
-
-	status := span.Status()
-	tags[conventions.OtelStatusCode] = status.Code().String()
-	if status.Message() != "" {
-		tags[conventions.OtelStatusDescription] = status.Message()
-		if int32(status.Code()) > 0 {
-			zs.Err = fmt.Errorf("%s", status.Message())
-		}
-	}
+	removeRedundantTags(redundantKeys, tags)
+	populateZipkinSpanError(span.Status(), zs, tags)
 
 	if err := spanEventsToZipkinAnnotations(span.Events(), zs); err != nil {
 		return nil, err
@@ -176,6 +168,20 @@ func spanToZipkinSpan(
 	zs.Tags = tags
 
 	return zs, nil
+}
+
+func populateZipkinSpanError(status pdata.SpanStatus, zs *zipkinmodel.SpanModel, tags map[string]string) {
+	tags[conventions.OtelStatusCode] = status.Code().String()
+	if status.Message() != "" {
+		tags[conventions.OtelStatusDescription] = status.Message()
+		if int32(status.Code()) > 0 {
+			zs.Err = fmt.Errorf("%s", status.Message())
+		}
+	}
+
+	if status.Code() == pdata.StatusCodeError {
+		tags[tracetranslator.TagError] = "true"
+	}
 }
 
 func aggregateSpanTags(span pdata.Span, zTags map[string]string) map[string]string {
@@ -240,7 +246,7 @@ func attributeMapToStringMap(attrMap pdata.AttributeMap) map[string]string {
 	return rawMap
 }
 
-func removeRedundentTags(redundantKeys map[string]bool, zTags map[string]string) {
+func removeRedundantTags(redundantKeys map[string]bool, zTags map[string]string) {
 	for k, v := range redundantKeys {
 		if v {
 			delete(zTags, k)

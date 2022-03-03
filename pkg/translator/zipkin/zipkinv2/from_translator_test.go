@@ -25,6 +25,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 )
 
 func TestInternalTracesToZipkinSpans(t *testing.T) {
@@ -58,7 +59,7 @@ func TestInternalTracesToZipkinSpans(t *testing.T) {
 			err:  nil,
 		},
 		{
-			name: "oneSpanNoResrouce",
+			name: "oneSpanNoResource",
 			td:   testdata.GenerateTracesOneSpanNoResource(),
 			zs:   make([]*zipkinmodel.SpanModel, 0),
 			err:  errors.New("TraceID is invalid"),
@@ -171,6 +172,7 @@ func zipkinOneSpan() *zipkinmodel.SpanModel {
 			"resource-attr":                   "resource-attr-val-1",
 			conventions.OtelStatusCode:        "STATUS_CODE_ERROR",
 			conventions.OtelStatusDescription: "status-cancelled",
+			tracetranslator.TagError:          "true",
 		},
 		Name:      "operationA",
 		Timestamp: testdata.TestSpanStartTime,

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### 🧰 Bug fixes 🧰
+- `zipkinexporter`: Set "error" tag value when status is set to error (#8187)
+
 ## v0.46.0
 
 ### 💡 Enhancements 💡
