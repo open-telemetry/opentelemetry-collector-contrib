@@ -59,8 +59,8 @@ func TestScrape_Errors(t *testing.T) {
 			},
 			expectedUsedValue:            int64(testPageFileData.usedBytes),
 			expectedFreeValue:            int64(testPageFileData.freeBytes),
-			expectedUtilizationFreeValue: 80.0,
-			expectedUtilizationUsedValue: 20.0,
+			expectedUtilizationFreeValue: 0.8,
+			expectedUtilizationUsedValue: 0.2,
 		},
 		{
 			name:             "pageFileError",
