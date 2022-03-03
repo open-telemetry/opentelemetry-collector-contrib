@@ -140,8 +140,8 @@ func TestScrape_Errors(t *testing.T) {
 			assert.Equal(t, test.expectedFreeValue, pagingUsageMetric.Sum().DataPoints().At(1).IntVal())
 
 			pagingUtilizationMetric := metrics.At(1)
-			assert.Equal(t, test.expectedUtilizationUsedValue, pagingUtilizationMetric.Sum().DataPoints().At(0).DoubleVal())
-			assert.Equal(t, test.expectedUtilizationFreeValue, pagingUtilizationMetric.Sum().DataPoints().At(1).DoubleVal())
+			assert.Equal(t, test.expectedUtilizationUsedValue, pagingUtilizationMetric.Gauge().DataPoints().At(0).DoubleVal())
+			assert.Equal(t, test.expectedUtilizationFreeValue, pagingUtilizationMetric.Gauge().DataPoints().At(1).DoubleVal())
 		})
 	}
 }
