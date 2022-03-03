@@ -58,7 +58,6 @@ These instructions are to get you up and running quickly with the GCP exporter i
           exporters: [googlecloud, logging]
         metrics:
           receivers: [otlp]
-          # TODO(dashpole): remove batching when OTLPDirect goes to beta, since the exporter already does it.
           processors: [memory_limiter, batch]
           exporters: [googlecloud, logging]
     ```
@@ -239,6 +238,10 @@ Removed configuration:
 Changes to defaults:
 
 - `prefix`: default is now `workload.googleapis.com`
+
+Additional Behavior:
+
+- Metrics are now batched in the exporter to handle edge cases around summar metrics.  The batch processor is no longer needed in metrics processors.
 
 ## Deprecatations
 
