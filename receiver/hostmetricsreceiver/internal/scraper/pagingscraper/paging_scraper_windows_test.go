@@ -97,7 +97,10 @@ func TestScrape_Errors(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newPagingScraper(context.Background(), &Config{Metrics: metadata.DefaultMetricsSettings()})
+			metricsConfig := metadata.DefaultMetricsSettings()
+			metricsConfig.SystemPagingUtilization.Enabled = true
+
+			scraper := newPagingScraper(context.Background(), &Config{Metrics: metricsConfig})
 			if test.getPageFileStats != nil {
 				scraper.pageFileStats = test.getPageFileStats
 			}
