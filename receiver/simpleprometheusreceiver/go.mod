@@ -3,11 +3,11 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simple
 go 1.17
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.45.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.46.0
 	github.com/prometheus/common v0.32.1
 	github.com/prometheus/prometheus v1.8.2-0.20220117154355-4855a0c067e2
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.45.1-0.20220225200547-7bdb684e27bf
+	go.opentelemetry.io/collector v0.46.0
 	k8s.io/client-go v0.23.4
 )
 
@@ -73,7 +73,7 @@ require (
 	github.com/kolo/xmlrpc v0.0.0-20201022064351-38db28db192b // indirect
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/linode/linodego v1.2.1 // indirect
-	github.com/magiconair/properties v1.8.5 // indirect
+	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
@@ -99,7 +99,7 @@ require (
 	github.com/spf13/cast v1.4.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/model v0.45.1-0.20220225200547-7bdb684e27bf // indirect
+	go.opentelemetry.io/collector/model v0.46.0 // indirect
 	go.opentelemetry.io/otel v1.4.1 // indirect
 	go.opentelemetry.io/otel/metric v0.27.0 // indirect
 	go.opentelemetry.io/otel/trace v1.4.1 // indirect

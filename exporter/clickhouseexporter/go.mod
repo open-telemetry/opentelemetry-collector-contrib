@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickh
 go 1.17
 
 require (
-	go.opentelemetry.io/collector v0.45.1-0.20220225200547-7bdb684e27bf
-	go.opentelemetry.io/collector/model v0.45.1-0.20220225200547-7bdb684e27bf
+	go.opentelemetry.io/collector v0.46.0
+	go.opentelemetry.io/collector/model v0.46.0
 	go.uber.org/zap v1.21.0
 
 )
