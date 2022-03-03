@@ -267,6 +267,16 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 	}
 }
 
+// NewMetricData creates new pdata.Metrics and sets the InstrumentationLibrary
+// name on the ResourceMetrics.
+func (mb *MetricsBuilder) NewMetricData() pdata.Metrics {
+	md := pdata.NewMetrics()
+	rm := md.ResourceMetrics().AppendEmpty()
+	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+	ilm.InstrumentationLibrary().SetName("otelcol/filesystem")
+	return md
+}
+
 // Attributes contains the possible metric attributes that can be used.
 var Attributes = struct {
 	// Device (Identifier of the filesystem.)
