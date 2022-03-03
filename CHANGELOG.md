@@ -143,7 +143,6 @@
 - `tailsamplingprocessor`: Add And sampling policy (#6910)
 - `coralogixexporter`: Add Coralogix Exporter (#7383)
 - `prometheusexecreceiver`: Add default value for `scrape_timeout` option (#7587)
-- `prometheusremotewriteexporter`: Write-Ahead Log support enabled (#7304)
 
 ### 🛑 Breaking changes 🛑
 
