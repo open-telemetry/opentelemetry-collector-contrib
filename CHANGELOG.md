@@ -4,6 +4,11 @@
 
 ### 💡 Enhancements 💡
 
+- `prometheusremotewriteexporter`: Write-Ahead Log support enabled (#7304)
+
+## v0.46.0
+
+### 💡 Enhancements 💡
 
 - `internal/stanza`: Export metrics from Stanza receivers (#8025)
 - `hostreceiver/pagingscraper`: Migrate the scraper to the mdatagen metrics builder (#7139)
@@ -16,15 +21,14 @@
 - `resourcedetectionprocessor`: Add confighttp.HTTPClientSettings To Resource Detection Config Fixes (#7397)
 - `honeycombexporter`: Add validation for `sending_queue` setting (#8113)
 - `routingprocessor`: Expand error handling on failure to build exporters (#8125)
-- `prometheusremotewriteexporter`: Write-Ahead Log support enabled (#7304)
+- `skywalkingreceiver`: Add new skywalking receiver component folder and structure (#8107)
+- `groupbyattrsprocesor`: Allow empty keys, which allows to use the processor for compaction (#7793)
 
 ### 🛑 Breaking changes 🛑
 
 - Remove deprecated functions from jaeger translator (#8032)
 - `internal/stanza`: Remove `write_to` setting from input operators (#8081)
 - `mongodbatlasreceiver`: rename `mongodb.atlas.*` attributes to `mongodb_atlas.*` adhering to naming guidelines. Adding 3 new attributes (#7960)
-
-### 🚩 Deprecations 🚩
 
 ### 🧰 Bug fixes 🧰
 

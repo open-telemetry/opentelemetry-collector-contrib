@@ -4,14 +4,14 @@ go 1.17
 
 require (
 	github.com/lib/pq v1.10.4
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.45.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.46.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.45.1-0.20220225200547-7bdb684e27bf
-	go.uber.org/multierr v1.7.0
+	go.opentelemetry.io/collector v0.46.0
+	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
 )
 
-require go.opentelemetry.io/collector/model v0.45.1-0.20220225200547-7bdb684e27bf
+require go.opentelemetry.io/collector/model v0.46.0
 
 require github.com/testcontainers/testcontainers-go v0.12.0
 
@@ -34,7 +34,7 @@ require (
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/knadh/koanf v1.4.0 // indirect
 	github.com/kr/text v0.2.0 // indirect
-	github.com/magiconair/properties v1.8.5 // indirect
+	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
