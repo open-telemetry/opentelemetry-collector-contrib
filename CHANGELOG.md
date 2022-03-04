@@ -17,6 +17,7 @@
 - `honeycombexporter`: Add validation for `sending_queue` setting (#8113)
 - `routingprocessor`: Expand error handling on failure to build exporters (#8125)
 - `skywalkingreceiver`: Add new skywalking receiver component folder and structure (#8107)
+- `splunkhecexporter`: Add validation for `sending_queue` setting (#8256)
 
 ### 🛑 Breaking changes 🛑
 
