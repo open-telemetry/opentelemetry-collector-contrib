@@ -4,12 +4,12 @@ go 1.17
 
 require (
 	github.com/hashicorp/golang-lru v0.5.4
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter v0.45.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.45.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver v0.45.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter v0.46.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.46.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver v0.46.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.45.1-0.20220225200547-7bdb684e27bf
-	go.opentelemetry.io/collector/model v0.45.1-0.20220225200547-7bdb684e27bf
+	go.opentelemetry.io/collector v0.46.0
+	go.opentelemetry.io/collector/model v0.46.0
 	go.uber.org/zap v1.21.0
 	google.golang.org/grpc v1.44.0
 )
@@ -35,15 +35,15 @@ require (
 	github.com/jaegertracing/jaeger v1.31.0 // indirect
 	github.com/klauspost/compress v1.14.4 // indirect
 	github.com/knadh/koanf v1.4.0 // indirect
-	github.com/magiconair/properties v1.8.5 // indirect
+	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/mostynb/go-grpc-compression v1.1.16 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.45.1 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.45.1 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.45.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.46.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.46.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.46.0 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect

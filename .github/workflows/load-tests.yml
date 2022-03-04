@@ -13,7 +13,7 @@ jobs:
       loadtest_matrix: ${{ steps.splitloadtest.outputs.loadtest_matrix }}
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
@@ -64,7 +64,7 @@ jobs:
       matrix: ${{ fromJson(needs.setup-environment.outputs.loadtest_matrix) }}
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Cache Tools
         id: tool-cache
         uses: actions/cache@v2
