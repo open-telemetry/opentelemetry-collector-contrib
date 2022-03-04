@@ -20,6 +20,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
@@ -70,24 +71,26 @@ func createDefaultConfig() config.Receiver {
 // 	return newTracesExporter(exporterConfig, bc, set)
 // }
 
-func createLogsReeceiver(
+func createLogsReceiver(
 	ctx context.Context,
 	set component.ReceiverCreateSettings,
 	cfg config.Receiver,
-	nextConsumer consumer.Logs
-) (component.LogsReceeiver, error) {
+	nextConsumer consumer.Logs) (component.LogsReceiver, error) {
 	receiverConfig, ok := cfg.(*Config)
 
 	if !ok {
 		return nil, errUnexpectedConfigurationType
 	}
 
-	// bc, err := NewBlobClient(receiverConfig.ConnectionString, receiverConfig.LogsContainerName, set.Logger)
-	// if err != nil {
-	// 	set.Logger.Error(err.Error())
-	// }
+	bc, err := NewBlobClient(receiverConfig.ConnectionString, set.Logger)
+	if err != nil {
+		//set.Logger.Error(err.Error())
+		return nil, err
+	}
 
-	return newLogsReceiver(reeceiverConfig, set, nextConsumer)
+	blobEventHandler := NewBlobEventHandler("Endpoint=sb://oteldata.servicebus.windows.net/;SharedAccessKeyName=otelhubbpollicy;SharedAccessKey=mPJVubIK5dJ6mLfZo1uTuikLysLSQ6N7k542cIcmoEs=;EntityPath=otellhub", bc, set.Logger)
+
+	return NewLogsReceiver(*receiverConfig, set, nextConsumer, blobEventHandler)
 }
 
 // func (f *kafkaReceiverFactory) createLogsReceiver(

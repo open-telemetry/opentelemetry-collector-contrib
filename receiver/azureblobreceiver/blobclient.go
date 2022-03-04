@@ -15,17 +15,47 @@
 package azureblobreceiver
 
 import (
+	"bytes"
+	"context"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"go.uber.org/zap"
 )
 
-// type BlobClient interface {
-// 	UploadData(data []byte, dataType config.DataType) error
-// }
+type BlobClient interface {
+	ReadBlob(ctx context.Context, containerName string, blobName string) (*bytes.Buffer, error)
+	DeleteBlob(ctx context.Context, containerName string, blobName string) error
+}
 
 type AzureBlobClient struct {
-	containerClient azblob.ContainerClient
-	logger          *zap.Logger
+	serviceClient azblob.ServiceClient
+	logger        *zap.Logger
+}
+
+func (bc *AzureBlobClient) getBlockBlob(ctx context.Context, containerName string, blobName string) azblob.BlockBlobClient {
+	containerClient := bc.serviceClient.NewContainerClient(containerName)
+	return containerClient.NewBlockBlobClient(blobName)
+}
+
+func (bc *AzureBlobClient) ReadBlob(ctx context.Context, containerName string, blobName string) (*bytes.Buffer, error) {
+	blockBlob := bc.getBlockBlob(ctx, containerName, blobName)
+
+	get, err := blockBlob.Download(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	downloadedData := &bytes.Buffer{}
+	reader := get.Body(nil)
+	defer reader.Close()
+
+	_, err = downloadedData.ReadFrom(reader)
+
+	return downloadedData, err
+}
+
+func (bc *AzureBlobClient) DeleteBlob(ctx context.Context, containerName string, blobName string) error {
+	return nil
 }
 
 // const (
@@ -59,16 +89,14 @@ type AzureBlobClient struct {
 // 	return err
 // }
 
-// func NewBlobClient(connectionString string, containerName string, logger *zap.Logger) (*AzureBlobClient, error) {
-// 	serviceClient, err := azblob.NewServiceClientFromConnectionString(connectionString, nil)
-// 	if err != nil {
-// 		return nil, err
-// 	}
+func NewBlobClient(connectionString string, logger *zap.Logger) (*AzureBlobClient, error) {
+	serviceClient, err := azblob.NewServiceClientFromConnectionString(connectionString, nil)
+	if err != nil {
+		return nil, err
+	}
 
-// 	containerClient := serviceClient.NewContainerClient(containerName)
-
-// 	return &AzureBlobClient{
-// 		containerClient,
-// 		logger,
-// 	}, nil
-// }
+	return &AzureBlobClient{
+		serviceClient,
+		logger,
+	}, nil
+}
