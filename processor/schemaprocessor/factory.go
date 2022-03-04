@@ -35,17 +35,29 @@ const (
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
+type schemaFetcherFunc func(context context.Context, schemaURL string) (*ast.Schema, error)
+
 type factory struct {
+	schemaFetcher schemaFetcherFunc
+
 	schemasMux sync.RWMutex
 	schemas    map[string]*ast.Schema
 }
 
 // NewFactory returns a new factory for the Attributes processor.
 func NewFactory() component.ProcessorFactory {
-	f := factory{
-		schemas: map[string]*ast.Schema{},
-	}
+	return newFactoryWithFetcher(downloadSchema)
+}
 
+func newFactory(schemaFetcher schemaFetcherFunc) *factory {
+	return &factory{
+		schemaFetcher: schemaFetcher,
+		schemas:       map[string]*ast.Schema{},
+	}
+}
+
+func newFactoryWithFetcher(schemaFetcher schemaFetcherFunc) component.ProcessorFactory {
+	f := newFactory(schemaFetcher)
 	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
@@ -66,10 +78,10 @@ func (f *factory) getSchema(context context.Context, schemaURL string) (*ast.Sch
 	// Try the path with read lock first.
 	f.schemasMux.RLock()
 	if schema, ok := f.schemas[schemaURL]; ok {
-		f.schemasMux.Unlock()
+		f.schemasMux.RUnlock()
 		return schema, nil
 	}
-	f.schemasMux.Unlock()
+	f.schemasMux.RUnlock()
 
 	// Don't have it. Do the full lock and download.
 	f.schemasMux.Lock()
@@ -81,7 +93,7 @@ func (f *factory) getSchema(context context.Context, schemaURL string) (*ast.Sch
 		return schema, nil
 	}
 
-	schema, err := f.downloadSchema(context, schemaURL)
+	schema, err := f.schemaFetcher(context, schemaURL)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +102,7 @@ func (f *factory) getSchema(context context.Context, schemaURL string) (*ast.Sch
 	return schema, nil
 }
 
-func (f *factory) downloadSchema(context context.Context, schemaURL string) (*ast.Schema, error) {
+func downloadSchema(context context.Context, schemaURL string) (*ast.Schema, error) {
 	req, err := http.NewRequestWithContext(context, "GET", schemaURL, nil)
 	if err != nil {
 		return nil, err
