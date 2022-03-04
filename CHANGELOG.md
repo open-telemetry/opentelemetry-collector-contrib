@@ -4,7 +4,14 @@
 
 ### 💡 Enhancements 💡
 
+- `googlecloudexporter`: [Alpha] Translate metrics directly from OTLP to gcm using the `exporter.googlecloud.OTLPDirect` feature-gate (#7177)
 - `simpleprometheusreceiver`: Add support for static labels (#7908)
+
+### 🛑 Breaking changes 🛑
+
+### 🧰 Bug fixes 🧰
+
+### 🚀 New components 🚀
 
 ## v0.46.0
 
