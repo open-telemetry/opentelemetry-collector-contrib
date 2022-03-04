@@ -35,58 +35,9 @@ func TestLoadingConfig(t *testing.T) {
 	assert.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	p0 := cfg.Processors[config.NewComponentIDWithName(typeStr, "insert")]
+	p0 := cfg.Processors[config.NewComponentIDWithName(typeStr, "")]
 	assert.Equal(t, p0, &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "insert")),
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "")),
 	})
 
-	p1 := cfg.Processors[config.NewComponentIDWithName(typeStr, "update")]
-	assert.Equal(t, p1, &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "update")),
-	})
-
-	p2 := cfg.Processors[config.NewComponentIDWithName(typeStr, "upsert")]
-	assert.Equal(t, p2, &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "upsert")),
-	})
-
-	p3 := cfg.Processors[config.NewComponentIDWithName(typeStr, "delete")]
-	assert.Equal(t, p3, &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "delete")),
-	})
-
-	p4 := cfg.Processors[config.NewComponentIDWithName(typeStr, "hash")]
-	assert.Equal(t, p4, &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "hash")),
-	})
-
-	p5 := cfg.Processors[config.NewComponentIDWithName(typeStr, "excludemulti")]
-	assert.Equal(t, p5, &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "excludemulti")),
-	})
-
-	p6 := cfg.Processors[config.NewComponentIDWithName(typeStr, "includeservices")]
-	assert.Equal(t, p6, &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "includeservices")),
-	})
-
-	p7 := cfg.Processors[config.NewComponentIDWithName(typeStr, "selectiveprocessing")]
-	assert.Equal(t, p7, &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "selectiveprocessing")),
-	})
-
-	p8 := cfg.Processors[config.NewComponentIDWithName(typeStr, "complex")]
-	assert.Equal(t, p8, &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "complex")),
-	})
-
-	p9 := cfg.Processors[config.NewComponentIDWithName(typeStr, "example")]
-	assert.Equal(t, p9, &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "example")),
-	})
-
-	p10 := cfg.Processors[config.NewComponentIDWithName(typeStr, "regexp")]
-	assert.Equal(t, p10, &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "regexp")),
-	})
 }

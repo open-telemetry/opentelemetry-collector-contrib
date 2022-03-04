@@ -7,10 +7,11 @@ import (
 )
 
 type schemaProcessor struct {
+	factory *factory
 }
 
-func newSchemaProcessor(_ *Config) *schemaProcessor {
-	return &schemaProcessor{}
+func newSchemaProcessor(factory *factory, _ *Config) *schemaProcessor {
+	return &schemaProcessor{factory: factory}
 }
 
 func (a *schemaProcessor) processTraces(_ context.Context, td pdata.Traces) (pdata.Traces, error) {

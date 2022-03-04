@@ -16,11 +16,16 @@ package schemaprocessor // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"io"
+	"net/http"
+	"sync"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	schemas "go.opentelemetry.io/otel/schema/v1.0"
+	"go.opentelemetry.io/otel/schema/v1.0/ast"
 )
 
 const (
@@ -30,14 +35,23 @@ const (
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
+type factory struct {
+	schemasMux sync.RWMutex
+	schemas    map[string]*ast.Schema
+}
+
 // NewFactory returns a new factory for the Attributes processor.
 func NewFactory() component.ProcessorFactory {
+	f := factory{
+		schemas: map[string]*ast.Schema{},
+	}
+
 	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesProcessor(createTracesProcessor),
-		component.WithMetricsProcessor(createMetricsProcessor),
-		component.WithLogsProcessor(createLogProcessor))
+		component.WithTracesProcessor(f.createTracesProcessor),
+		component.WithMetricsProcessor(f.createMetricsProcessor),
+		component.WithLogsProcessor(f.createLogProcessor))
 }
 
 // Note: This isn't a valid configuration because the processor would do no work.
@@ -47,7 +61,57 @@ func createDefaultConfig() config.Processor {
 	}
 }
 
-func createTracesProcessor(
+func (f *factory) getSchema(context context.Context, schemaURL string) (*ast.Schema, error) {
+
+	// Try the path with read lock first.
+	f.schemasMux.RLock()
+	if schema, ok := f.schemas[schemaURL]; ok {
+		f.schemasMux.Unlock()
+		return schema, nil
+	}
+	f.schemasMux.Unlock()
+
+	// Don't have it. Do the full lock and download.
+	f.schemasMux.Lock()
+	defer f.schemasMux.Unlock()
+
+	if schema, ok := f.schemas[schemaURL]; ok {
+		// Already have the schema. Probably some other goroutine downloaded it before
+		// we acquired the lock.
+		return schema, nil
+	}
+
+	schema, err := f.downloadSchema(context, schemaURL)
+	if err != nil {
+		return nil, err
+	}
+
+	f.schemas[schemaURL] = schema
+	return schema, nil
+}
+
+func (f *factory) downloadSchema(context context.Context, schemaURL string) (*ast.Schema, error) {
+	req, err := http.NewRequestWithContext(context, "GET", schemaURL, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	defer func() {
+		_, _ = io.ReadAll(resp.Body)
+		_ = resp.Body.Close()
+	}()
+
+	schema, err := schemas.Parse(resp.Body)
+
+	return schema, err
+}
+
+func (f *factory) createTracesProcessor(
 	_ context.Context,
 	_ component.ProcessorCreateSettings,
 	cfg config.Processor,
@@ -55,7 +119,7 @@ func createTracesProcessor(
 ) (component.TracesProcessor, error) {
 	oCfg := cfg.(*Config)
 
-	p := newSchemaProcessor(oCfg)
+	p := newSchemaProcessor(f, oCfg)
 
 	return processorhelper.NewTracesProcessor(
 		cfg,
@@ -64,7 +128,7 @@ func createTracesProcessor(
 		processorhelper.WithCapabilities(processorCapabilities))
 }
 
-func createMetricsProcessor(
+func (f *factory) createMetricsProcessor(
 	_ context.Context,
 	_ component.ProcessorCreateSettings,
 	cfg config.Processor,
@@ -72,7 +136,7 @@ func createMetricsProcessor(
 ) (component.MetricsProcessor, error) {
 	oCfg := cfg.(*Config)
 
-	p := newSchemaProcessor(oCfg)
+	p := newSchemaProcessor(f, oCfg)
 
 	return processorhelper.NewMetricsProcessor(
 		cfg,
@@ -81,7 +145,7 @@ func createMetricsProcessor(
 		processorhelper.WithCapabilities(processorCapabilities))
 }
 
-func createLogProcessor(
+func (f *factory) createLogProcessor(
 	_ context.Context,
 	_ component.ProcessorCreateSettings,
 	cfg config.Processor,
@@ -89,7 +153,7 @@ func createLogProcessor(
 ) (component.LogsProcessor, error) {
 	oCfg := cfg.(*Config)
 
-	p := newSchemaProcessor(oCfg)
+	p := newSchemaProcessor(f, oCfg)
 
 	return processorhelper.NewLogsProcessor(
 		cfg,

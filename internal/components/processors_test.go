@@ -93,7 +93,7 @@ func TestDefaultProcessors(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, len(tests)+11 /* not tested */, len(procFactories))
+	assert.Equal(t, len(tests)+12 /* not tested */, len(procFactories))
 	for _, tt := range tests {
 		t.Run(string(tt.processor), func(t *testing.T) {
 			factory, ok := procFactories[tt.processor]
