@@ -37,11 +37,11 @@ var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
 // NewFactory returns a new factory for the Attributes processor.
 func NewFactory() component.ProcessorFactory {
-	return processorhelper.NewFactory(
+	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		processorhelper.WithTraces(createTracesProcessor),
-		processorhelper.WithLogs(createLogProcessor))
+		component.WithTracesProcessor(createTracesProcessor),
+		component.WithLogsProcessor(createLogProcessor))
 }
 
 // Note: This isn't a valid configuration because the processor would do no work.

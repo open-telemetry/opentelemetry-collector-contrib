@@ -31,10 +31,10 @@ const (
 
 // NewFactory creates a factory for the spanmetrics processor.
 func NewFactory() component.ProcessorFactory {
-	return processorhelper.NewFactory(
+	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		processorhelper.WithTraces(createTracesProcessor),
+		component.WithTracesProcessor(createTracesProcessor),
 	)
 }
 

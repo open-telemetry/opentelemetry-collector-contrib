@@ -179,7 +179,7 @@ func checkMetricsAreExpected(t *testing.T, md pdata.Metrics, fields map[string]i
 				dps := m.Gauge().DataPoints()
 				assert.Equal(t, 1, dps.Len())
 				dp := dps.At(0)
-				switch dp.Type() {
+				switch dp.ValueType() {
 				case pdata.MetricValueTypeDouble:
 					assert.Equal(t, convertToFloat64(fields[metricName]), dp.DoubleVal())
 				case pdata.MetricValueTypeInt:

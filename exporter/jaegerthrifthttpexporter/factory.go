@@ -32,17 +32,17 @@ const (
 
 // NewFactory creates a factory for Jaeger Thrift over HTTP exporter.
 func NewFactory() component.ExporterFactory {
-	return exporterhelper.NewFactory(
+	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTracesExporter))
+		component.WithTracesExporter(createTracesExporter))
 }
 
 func createDefaultConfig() config.Exporter {
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Timeout: exporterhelper.DefaultTimeoutSettings().Timeout,
+			Timeout: exporterhelper.NewDefaultTimeoutSettings().Timeout,
 		},
 	}
 }

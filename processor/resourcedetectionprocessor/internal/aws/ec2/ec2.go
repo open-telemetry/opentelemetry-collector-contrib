@@ -17,6 +17,7 @@ package ec2 // import "github.com/open-telemetry/opentelemetry-collector-contrib
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"regexp"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -91,7 +92,8 @@ func (d *Detector) Detect(ctx context.Context) (resource pdata.Resource, schemaU
 	attr.InsertString(conventions.AttributeHostName, hostname)
 
 	if len(d.tagKeyRegexes) != 0 {
-		tags, err := connectAndFetchEc2Tags(meta.Region, meta.InstanceID, d.tagKeyRegexes)
+		client := getHTTPClientSettings(ctx, d.logger)
+		tags, err := connectAndFetchEc2Tags(meta.Region, meta.InstanceID, d.tagKeyRegexes, client)
 		if err != nil {
 			return res, "", fmt.Errorf("failed fetching ec2 instance tags: %w", err)
 		}
@@ -103,9 +105,19 @@ func (d *Detector) Detect(ctx context.Context) (resource pdata.Resource, schemaU
 	return res, conventions.SchemaURL, nil
 }
 
-func connectAndFetchEc2Tags(region string, instanceID string, tagKeyRegexes []*regexp.Regexp) (map[string]string, error) {
+func getHTTPClientSettings(ctx context.Context, logger *zap.Logger) *http.Client {
+	client, err := internal.ClientFromContext(ctx)
+	if err != nil {
+		client = http.DefaultClient
+		logger.Debug("Error retrieving client from context thus creating default", zap.Error(err))
+	}
+	return client
+}
+
+func connectAndFetchEc2Tags(region string, instanceID string, tagKeyRegexes []*regexp.Regexp, client *http.Client) (map[string]string, error) {
 	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(region)},
+		Region:     aws.String(region),
+		HTTPClient: client},
 	)
 	if err != nil {
 		return nil, err

@@ -27,10 +27,10 @@ import (
 func TestDefaultConfig_exporterSettings(t *testing.T) {
 	want := &Config{
 		ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
-		RetrySettings:      exporterhelper.DefaultRetrySettings(),
+		RetrySettings:      exporterhelper.NewDefaultRetrySettings(),
 		AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
 		QueueSettings: QueueSettings{
-			QueueSize: exporterhelper.DefaultQueueSettings().QueueSize,
+			QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize,
 		},
 	}
 	assert.Equal(t, want, createDefaultConfig())

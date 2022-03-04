@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/perfcounters"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper/internal/metadata"
 )
 
 func TestScrape_Errors(t *testing.T) {
@@ -85,14 +86,14 @@ func TestScrape_Errors(t *testing.T) {
 			name:             "multipleErrors",
 			getPageFileStats: func() ([]*pageFileStats, error) { return nil, errors.New("err1") },
 			getObjectErr:     errors.New("err2"),
-			expectedErr:      "[err1; err2]",
+			expectedErr:      "err1; err2",
 			expectedErrCount: pagingUsageMetricsLen + pagingMetricsLen,
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newPagingScraper(context.Background(), &Config{})
+			scraper := newPagingScraper(context.Background(), &Config{Metrics: metadata.DefaultMetricsSettings()})
 			if test.getPageFileStats != nil {
 				scraper.pageFileStats = test.getPageFileStats
 			}

@@ -83,13 +83,14 @@ func (s *receiver) poll(ctx context.Context, time timeconstraints) (pdata.Metric
 		return pdata.Metrics{}, errors.Wrap(err, "error retrieving organizations")
 	}
 	for _, org := range orgs {
-		resourceAttributes.InsertString("mongodb.atlas.org_name", org.Name)
+		resourceAttributes.InsertString("mongodb_atlas.org_name", org.Name)
 		projects, err := s.client.Projects(ctx, org.ID)
 		if err != nil {
 			return pdata.Metrics{}, errors.Wrap(err, "error retrieving projects")
 		}
 		for _, project := range projects {
-			resourceAttributes.InsertString("mongodb.atlas.project", project.Name)
+			resourceAttributes.InsertString("mongodb_atlas.project.name", project.Name)
+			resourceAttributes.InsertString("mongodb_atlas.project.id", project.ID)
 			processes, err := s.client.Processes(ctx, project.ID)
 			if err != nil {
 				return pdata.Metrics{}, errors.Wrap(err, "error retrieving MongoDB Atlas processes")
@@ -99,6 +100,8 @@ func (s *receiver) poll(ctx context.Context, time timeconstraints) (pdata.Metric
 				resourceAttributes.CopyTo(resource.Attributes())
 				resource.Attributes().InsertString("host.name", process.Hostname)
 				resource.Attributes().InsertString("process.port", strconv.Itoa(process.Port))
+				resource.Attributes().InsertString("process.type_name", process.TypeName)
+				resource.Attributes().InsertString("process.id", process.ID)
 				resourceMetrics, err := s.extractProcessMetrics(
 					ctx,
 					time,
@@ -188,7 +191,7 @@ func (s *receiver) extractProcessDatabaseMetrics(
 		dbResource := pdata.NewResource()
 		resource.CopyTo(dbResource)
 		resource.Attributes().
-			InsertString("mongodb.atlas.database_name", db.DatabaseName)
+			InsertString("mongodb_atlas.db.name", db.DatabaseName)
 		metrics, err := s.client.ProcessDatabaseMetrics(
 			ctx,
 			resource,
@@ -223,7 +226,7 @@ func (s *receiver) extractProcessDiskMetrics(
 		diskResource := pdata.NewResource()
 		resource.CopyTo(diskResource)
 		diskResource.Attributes().
-			InsertString("mongodb.atlas.partition", disk.PartitionName)
+			InsertString("mongodb_atlas.disk.partition", disk.PartitionName)
 		metrics, err := s.client.ProcessDiskMetrics(
 			ctx,
 			diskResource,

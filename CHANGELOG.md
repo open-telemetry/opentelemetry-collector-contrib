@@ -2,18 +2,35 @@
 
 ## Unreleased
 
+## v0.46.0
+
 ### 💡 Enhancements 💡
 
+- `internal/stanza`: Export metrics from Stanza receivers (#8025)
+- `hostreceiver/pagingscraper`: Migrate the scraper to the mdatagen metrics builder (#7139)
 - Do not drop zero trace/span id spans in the jaeger conversion (#7946)
 - Upgrade to use semantic conventions 1.6.1 (#7926)
 - `dynatraceexporter`: Validate QueueSettings and perform config validation in Validate() instead (#8020)
+- `sapmexporter`: Add validation for `sending_queue` setting (#8023)
 - `signalfxexporter`: Add validation for `sending_queue` setting (#8026)
+- `internal/stanza`: Add support for arbitrary attribute types (#8081)
+- `resourcedetectionprocessor`: Add confighttp.HTTPClientSettings To Resource Detection Config Fixes (#7397)
+- `honeycombexporter`: Add validation for `sending_queue` setting (#8113)
+- `routingprocessor`: Expand error handling on failure to build exporters (#8125)
+- `skywalkingreceiver`: Add new skywalking receiver component folder and structure (#8107)
+- `groupbyattrsprocesor`: Allow empty keys, which allows to use the processor for compaction (#7793)
 
 ### 🛑 Breaking changes 🛑
 
-### 🚩 Deprecations 🚩
+- Remove deprecated functions from jaeger translator (#8032)
+- `internal/stanza`: Remove `write_to` setting from input operators (#8081)
+- `mongodbatlasreceiver`: rename `mongodb.atlas.*` attributes to `mongodb_atlas.*` adhering to naming guidelines. Adding 3 new attributes (#7960)
 
 ### 🧰 Bug fixes 🧰
+
+- `prometheusreceiver`: Fix segfault that can occur after receiving stale metrics (#8056)
+- `filelogreceiver`: Fix issue where logs could occasionally be duplicated (#8123)
+- `prometheusremotewriteexporter`: Fix empty non-string resource attributes (#8116)
 
 ### 🚀 New components 🚀
 
@@ -48,12 +65,14 @@
 - `datadogexporter`: Add insecure_skip_verify flag to configuration (#7422)
 - `coralogixexporter`: Update readme (#7785)
 - `awscloudwatchlogsexporter`: Remove name from aws cloudwatch logs exporter (#7554)
+- `tanzuobservabilityexporter`: Update OTel Collector's Exporter to match WF Proxy Handling of source (#7929)
 - `hostreceiver/memoryscraper`: Add memory.utilization (#6221)
 - `awskinesisexporter`: Add Queue Config Validation AWS Kinesis Exporter (#7835)
 - `elasticsearchexporter`: Remove usage of deprecated LogRecord.Name field (#7829).
 - `loadbalancingexporter`: Allow non-exist hostname on startup (#7935)
 - `datadogexporter`: Use exact sum, count and average on Datadog distributions (#7830)
 - `storage/filestorage`: add optional compaction to filestorage (#7768)
+- `tanzuobservabilityexporter`: Add attributes from the Resource to the resulting WF metric tags & set `source` value in WF metric (#8101)
 
 ### 🛑 Breaking changes 🛑
 
@@ -66,6 +85,16 @@
     the direct pipeline is the only remaining pipeline.
 - `translator/jaeger`: Cleanup jaeger translator function names (#7775)
   - Deprecate old funcs with Internal word.
+- `mysqlreceiver`: Update data model and names for several metrics (#7924)
+  - Change all metrics to Int values
+  - Remove `mysql.buffer_pool_pages`. Replace with:
+    - `mysql.buffer_pool.pages`
+    - `mysql.buffer_pool.data_pages`
+    - `mysql.buffer_pool.page_flushes`
+  - Remove `mysql.buffer_pool_size`. Replace with:
+    - `mysql.buffer_pool.limit`
+    - `mysql.buffer_pool.usage`
+  - Rename `mysql.buffer_pool_operations` to `mysql.buffer_pool.operations`
 
 ### 🚩 Deprecations 🚩
 

@@ -12,7 +12,14 @@ These are the metrics available for this scraper.
 | **system.paging.operations** | The number of paging operations. | {operations} | Sum(Int) | <ul> <li>direction</li> <li>type</li> </ul> |
 | **system.paging.usage** | Swap (unix) or pagefile (windows) usage. | By | Sum(Int) | <ul> <li>device</li> <li>state</li> </ul> |
 
-**Highlighted metrics** are emitted by default.
+**Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
+Any metric can be enabled or disabled with the following scraper configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: <true|false>
+```
 
 ## Attributes
 

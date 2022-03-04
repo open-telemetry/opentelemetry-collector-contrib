@@ -15,31 +15,43 @@ type MetricSettings struct {
 
 // MetricsSettings provides settings for mysqlreceiver metrics.
 type MetricsSettings struct {
-	MysqlBufferPoolOperations MetricSettings `mapstructure:"mysql.buffer_pool_operations"`
-	MysqlBufferPoolPages      MetricSettings `mapstructure:"mysql.buffer_pool_pages"`
-	MysqlBufferPoolSize       MetricSettings `mapstructure:"mysql.buffer_pool_size"`
-	MysqlCommands             MetricSettings `mapstructure:"mysql.commands"`
-	MysqlDoubleWrites         MetricSettings `mapstructure:"mysql.double_writes"`
-	MysqlHandlers             MetricSettings `mapstructure:"mysql.handlers"`
-	MysqlLocks                MetricSettings `mapstructure:"mysql.locks"`
-	MysqlLogOperations        MetricSettings `mapstructure:"mysql.log_operations"`
-	MysqlOperations           MetricSettings `mapstructure:"mysql.operations"`
-	MysqlPageOperations       MetricSettings `mapstructure:"mysql.page_operations"`
-	MysqlRowLocks             MetricSettings `mapstructure:"mysql.row_locks"`
-	MysqlRowOperations        MetricSettings `mapstructure:"mysql.row_operations"`
-	MysqlSorts                MetricSettings `mapstructure:"mysql.sorts"`
-	MysqlThreads              MetricSettings `mapstructure:"mysql.threads"`
+	MysqlBufferPoolDataPages   MetricSettings `mapstructure:"mysql.buffer_pool.data_pages"`
+	MysqlBufferPoolLimit       MetricSettings `mapstructure:"mysql.buffer_pool.limit"`
+	MysqlBufferPoolOperations  MetricSettings `mapstructure:"mysql.buffer_pool.operations"`
+	MysqlBufferPoolPageFlushes MetricSettings `mapstructure:"mysql.buffer_pool.page_flushes"`
+	MysqlBufferPoolPages       MetricSettings `mapstructure:"mysql.buffer_pool.pages"`
+	MysqlBufferPoolUsage       MetricSettings `mapstructure:"mysql.buffer_pool.usage"`
+	MysqlCommands              MetricSettings `mapstructure:"mysql.commands"`
+	MysqlDoubleWrites          MetricSettings `mapstructure:"mysql.double_writes"`
+	MysqlHandlers              MetricSettings `mapstructure:"mysql.handlers"`
+	MysqlLocks                 MetricSettings `mapstructure:"mysql.locks"`
+	MysqlLogOperations         MetricSettings `mapstructure:"mysql.log_operations"`
+	MysqlOperations            MetricSettings `mapstructure:"mysql.operations"`
+	MysqlPageOperations        MetricSettings `mapstructure:"mysql.page_operations"`
+	MysqlRowLocks              MetricSettings `mapstructure:"mysql.row_locks"`
+	MysqlRowOperations         MetricSettings `mapstructure:"mysql.row_operations"`
+	MysqlSorts                 MetricSettings `mapstructure:"mysql.sorts"`
+	MysqlThreads               MetricSettings `mapstructure:"mysql.threads"`
 }
 
 func DefaultMetricsSettings() MetricsSettings {
 	return MetricsSettings{
+		MysqlBufferPoolDataPages: MetricSettings{
+			Enabled: true,
+		},
+		MysqlBufferPoolLimit: MetricSettings{
+			Enabled: true,
+		},
 		MysqlBufferPoolOperations: MetricSettings{
+			Enabled: true,
+		},
+		MysqlBufferPoolPageFlushes: MetricSettings{
 			Enabled: true,
 		},
 		MysqlBufferPoolPages: MetricSettings{
 			Enabled: true,
 		},
-		MysqlBufferPoolSize: MetricSettings{
+		MysqlBufferPoolUsage: MetricSettings{
 			Enabled: true,
 		},
 		MysqlCommands: MetricSettings{
@@ -78,15 +90,119 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
+type metricMysqlBufferPoolDataPages struct {
+	data     pdata.Metric   // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.buffer_pool.data_pages metric with initial data.
+func (m *metricMysqlBufferPoolDataPages) init() {
+	m.data.SetName("mysql.buffer_pool.data_pages")
+	m.data.SetDescription("The number of data pages in the InnoDB buffer pool.")
+	m.data.SetUnit("1")
+	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricMysqlBufferPoolDataPages) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, bufferPoolDataAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+	dp.Attributes().Insert(A.BufferPoolData, pdata.NewAttributeValueString(bufferPoolDataAttributeValue))
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlBufferPoolDataPages) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlBufferPoolDataPages) emit(metrics pdata.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlBufferPoolDataPages(settings MetricSettings) metricMysqlBufferPoolDataPages {
+	m := metricMysqlBufferPoolDataPages{settings: settings}
+	if settings.Enabled {
+		m.data = pdata.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlBufferPoolLimit struct {
+	data     pdata.Metric   // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.buffer_pool.limit metric with initial data.
+func (m *metricMysqlBufferPoolLimit) init() {
+	m.data.SetName("mysql.buffer_pool.limit")
+	m.data.SetDescription("The configured size of the InnoDB buffer pool.")
+	m.data.SetUnit("By")
+	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlBufferPoolLimit) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlBufferPoolLimit) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlBufferPoolLimit) emit(metrics pdata.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlBufferPoolLimit(settings MetricSettings) metricMysqlBufferPoolLimit {
+	m := metricMysqlBufferPoolLimit{settings: settings}
+	if settings.Enabled {
+		m.data = pdata.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricMysqlBufferPoolOperations struct {
 	data     pdata.Metric   // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills mysql.buffer_pool_operations metric with initial data.
+// init fills mysql.buffer_pool.operations metric with initial data.
 func (m *metricMysqlBufferPoolOperations) init() {
-	m.data.SetName("mysql.buffer_pool_operations")
+	m.data.SetName("mysql.buffer_pool.operations")
 	m.data.SetDescription("The number of operations on the InnoDB buffer pool.")
 	m.data.SetUnit("1")
 	m.data.SetDataType(pdata.MetricDataTypeSum)
@@ -131,15 +247,66 @@ func newMetricMysqlBufferPoolOperations(settings MetricSettings) metricMysqlBuff
 	return m
 }
 
+type metricMysqlBufferPoolPageFlushes struct {
+	data     pdata.Metric   // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.buffer_pool.page_flushes metric with initial data.
+func (m *metricMysqlBufferPoolPageFlushes) init() {
+	m.data.SetName("mysql.buffer_pool.page_flushes")
+	m.data.SetDescription("The number of requests to flush pages from the InnoDB buffer pool.")
+	m.data.SetUnit("1")
+	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+}
+
+func (m *metricMysqlBufferPoolPageFlushes) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlBufferPoolPageFlushes) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlBufferPoolPageFlushes) emit(metrics pdata.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlBufferPoolPageFlushes(settings MetricSettings) metricMysqlBufferPoolPageFlushes {
+	m := metricMysqlBufferPoolPageFlushes{settings: settings}
+	if settings.Enabled {
+		m.data = pdata.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricMysqlBufferPoolPages struct {
 	data     pdata.Metric   // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills mysql.buffer_pool_pages metric with initial data.
+// init fills mysql.buffer_pool.pages metric with initial data.
 func (m *metricMysqlBufferPoolPages) init() {
-	m.data.SetName("mysql.buffer_pool_pages")
+	m.data.SetName("mysql.buffer_pool.pages")
 	m.data.SetDescription("The number of pages in the InnoDB buffer pool.")
 	m.data.SetUnit("1")
 	m.data.SetDataType(pdata.MetricDataTypeSum)
@@ -148,14 +315,14 @@ func (m *metricMysqlBufferPoolPages) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMysqlBufferPoolPages) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val float64, bufferPoolPagesAttributeValue string) {
+func (m *metricMysqlBufferPoolPages) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, bufferPoolPagesAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetIntVal(val)
 	dp.Attributes().Insert(A.BufferPoolPages, pdata.NewAttributeValueString(bufferPoolPagesAttributeValue))
 }
 
@@ -184,15 +351,15 @@ func newMetricMysqlBufferPoolPages(settings MetricSettings) metricMysqlBufferPoo
 	return m
 }
 
-type metricMysqlBufferPoolSize struct {
+type metricMysqlBufferPoolUsage struct {
 	data     pdata.Metric   // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills mysql.buffer_pool_size metric with initial data.
-func (m *metricMysqlBufferPoolSize) init() {
-	m.data.SetName("mysql.buffer_pool_size")
+// init fills mysql.buffer_pool.usage metric with initial data.
+func (m *metricMysqlBufferPoolUsage) init() {
+	m.data.SetName("mysql.buffer_pool.usage")
 	m.data.SetDescription("The number of bytes in the InnoDB buffer pool.")
 	m.data.SetUnit("By")
 	m.data.SetDataType(pdata.MetricDataTypeSum)
@@ -201,26 +368,26 @@ func (m *metricMysqlBufferPoolSize) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMysqlBufferPoolSize) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val float64, bufferPoolSizeAttributeValue string) {
+func (m *metricMysqlBufferPoolUsage) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, bufferPoolDataAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.BufferPoolSize, pdata.NewAttributeValueString(bufferPoolSizeAttributeValue))
+	dp.SetIntVal(val)
+	dp.Attributes().Insert(A.BufferPoolData, pdata.NewAttributeValueString(bufferPoolDataAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricMysqlBufferPoolSize) updateCapacity() {
+func (m *metricMysqlBufferPoolUsage) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricMysqlBufferPoolSize) emit(metrics pdata.MetricSlice) {
+func (m *metricMysqlBufferPoolUsage) emit(metrics pdata.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -228,8 +395,8 @@ func (m *metricMysqlBufferPoolSize) emit(metrics pdata.MetricSlice) {
 	}
 }
 
-func newMetricMysqlBufferPoolSize(settings MetricSettings) metricMysqlBufferPoolSize {
-	m := metricMysqlBufferPoolSize{settings: settings}
+func newMetricMysqlBufferPoolUsage(settings MetricSettings) metricMysqlBufferPoolUsage {
+	m := metricMysqlBufferPoolUsage{settings: settings}
 	if settings.Enabled {
 		m.data = pdata.NewMetric()
 		m.init()
@@ -784,14 +951,14 @@ func (m *metricMysqlThreads) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMysqlThreads) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val float64, threadsAttributeValue string) {
+func (m *metricMysqlThreads) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, threadsAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
+	dp.SetIntVal(val)
 	dp.Attributes().Insert(A.Threads, pdata.NewAttributeValueString(threadsAttributeValue))
 }
 
@@ -823,21 +990,24 @@ func newMetricMysqlThreads(settings MetricSettings) metricMysqlThreads {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	startTime                       pdata.Timestamp
-	metricMysqlBufferPoolOperations metricMysqlBufferPoolOperations
-	metricMysqlBufferPoolPages      metricMysqlBufferPoolPages
-	metricMysqlBufferPoolSize       metricMysqlBufferPoolSize
-	metricMysqlCommands             metricMysqlCommands
-	metricMysqlDoubleWrites         metricMysqlDoubleWrites
-	metricMysqlHandlers             metricMysqlHandlers
-	metricMysqlLocks                metricMysqlLocks
-	metricMysqlLogOperations        metricMysqlLogOperations
-	metricMysqlOperations           metricMysqlOperations
-	metricMysqlPageOperations       metricMysqlPageOperations
-	metricMysqlRowLocks             metricMysqlRowLocks
-	metricMysqlRowOperations        metricMysqlRowOperations
-	metricMysqlSorts                metricMysqlSorts
-	metricMysqlThreads              metricMysqlThreads
+	startTime                        pdata.Timestamp
+	metricMysqlBufferPoolDataPages   metricMysqlBufferPoolDataPages
+	metricMysqlBufferPoolLimit       metricMysqlBufferPoolLimit
+	metricMysqlBufferPoolOperations  metricMysqlBufferPoolOperations
+	metricMysqlBufferPoolPageFlushes metricMysqlBufferPoolPageFlushes
+	metricMysqlBufferPoolPages       metricMysqlBufferPoolPages
+	metricMysqlBufferPoolUsage       metricMysqlBufferPoolUsage
+	metricMysqlCommands              metricMysqlCommands
+	metricMysqlDoubleWrites          metricMysqlDoubleWrites
+	metricMysqlHandlers              metricMysqlHandlers
+	metricMysqlLocks                 metricMysqlLocks
+	metricMysqlLogOperations         metricMysqlLogOperations
+	metricMysqlOperations            metricMysqlOperations
+	metricMysqlPageOperations        metricMysqlPageOperations
+	metricMysqlRowLocks              metricMysqlRowLocks
+	metricMysqlRowOperations         metricMysqlRowOperations
+	metricMysqlSorts                 metricMysqlSorts
+	metricMysqlThreads               metricMysqlThreads
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -852,21 +1022,24 @@ func WithStartTime(startTime pdata.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		startTime:                       pdata.NewTimestampFromTime(time.Now()),
-		metricMysqlBufferPoolOperations: newMetricMysqlBufferPoolOperations(settings.MysqlBufferPoolOperations),
-		metricMysqlBufferPoolPages:      newMetricMysqlBufferPoolPages(settings.MysqlBufferPoolPages),
-		metricMysqlBufferPoolSize:       newMetricMysqlBufferPoolSize(settings.MysqlBufferPoolSize),
-		metricMysqlCommands:             newMetricMysqlCommands(settings.MysqlCommands),
-		metricMysqlDoubleWrites:         newMetricMysqlDoubleWrites(settings.MysqlDoubleWrites),
-		metricMysqlHandlers:             newMetricMysqlHandlers(settings.MysqlHandlers),
-		metricMysqlLocks:                newMetricMysqlLocks(settings.MysqlLocks),
-		metricMysqlLogOperations:        newMetricMysqlLogOperations(settings.MysqlLogOperations),
-		metricMysqlOperations:           newMetricMysqlOperations(settings.MysqlOperations),
-		metricMysqlPageOperations:       newMetricMysqlPageOperations(settings.MysqlPageOperations),
-		metricMysqlRowLocks:             newMetricMysqlRowLocks(settings.MysqlRowLocks),
-		metricMysqlRowOperations:        newMetricMysqlRowOperations(settings.MysqlRowOperations),
-		metricMysqlSorts:                newMetricMysqlSorts(settings.MysqlSorts),
-		metricMysqlThreads:              newMetricMysqlThreads(settings.MysqlThreads),
+		startTime:                        pdata.NewTimestampFromTime(time.Now()),
+		metricMysqlBufferPoolDataPages:   newMetricMysqlBufferPoolDataPages(settings.MysqlBufferPoolDataPages),
+		metricMysqlBufferPoolLimit:       newMetricMysqlBufferPoolLimit(settings.MysqlBufferPoolLimit),
+		metricMysqlBufferPoolOperations:  newMetricMysqlBufferPoolOperations(settings.MysqlBufferPoolOperations),
+		metricMysqlBufferPoolPageFlushes: newMetricMysqlBufferPoolPageFlushes(settings.MysqlBufferPoolPageFlushes),
+		metricMysqlBufferPoolPages:       newMetricMysqlBufferPoolPages(settings.MysqlBufferPoolPages),
+		metricMysqlBufferPoolUsage:       newMetricMysqlBufferPoolUsage(settings.MysqlBufferPoolUsage),
+		metricMysqlCommands:              newMetricMysqlCommands(settings.MysqlCommands),
+		metricMysqlDoubleWrites:          newMetricMysqlDoubleWrites(settings.MysqlDoubleWrites),
+		metricMysqlHandlers:              newMetricMysqlHandlers(settings.MysqlHandlers),
+		metricMysqlLocks:                 newMetricMysqlLocks(settings.MysqlLocks),
+		metricMysqlLogOperations:         newMetricMysqlLogOperations(settings.MysqlLogOperations),
+		metricMysqlOperations:            newMetricMysqlOperations(settings.MysqlOperations),
+		metricMysqlPageOperations:        newMetricMysqlPageOperations(settings.MysqlPageOperations),
+		metricMysqlRowLocks:              newMetricMysqlRowLocks(settings.MysqlRowLocks),
+		metricMysqlRowOperations:         newMetricMysqlRowOperations(settings.MysqlRowOperations),
+		metricMysqlSorts:                 newMetricMysqlSorts(settings.MysqlSorts),
+		metricMysqlThreads:               newMetricMysqlThreads(settings.MysqlThreads),
 	}
 	for _, op := range options {
 		op(mb)
@@ -878,9 +1051,12 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 // another set of data points. This function will be doing all transformations required to produce metric representation
 // defined in metadata and user settings, e.g. delta/cumulative translation.
 func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
+	mb.metricMysqlBufferPoolDataPages.emit(metrics)
+	mb.metricMysqlBufferPoolLimit.emit(metrics)
 	mb.metricMysqlBufferPoolOperations.emit(metrics)
+	mb.metricMysqlBufferPoolPageFlushes.emit(metrics)
 	mb.metricMysqlBufferPoolPages.emit(metrics)
-	mb.metricMysqlBufferPoolSize.emit(metrics)
+	mb.metricMysqlBufferPoolUsage.emit(metrics)
 	mb.metricMysqlCommands.emit(metrics)
 	mb.metricMysqlDoubleWrites.emit(metrics)
 	mb.metricMysqlHandlers.emit(metrics)
@@ -894,19 +1070,34 @@ func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
 	mb.metricMysqlThreads.emit(metrics)
 }
 
-// RecordMysqlBufferPoolOperationsDataPoint adds a data point to mysql.buffer_pool_operations metric.
+// RecordMysqlBufferPoolDataPagesDataPoint adds a data point to mysql.buffer_pool.data_pages metric.
+func (mb *MetricsBuilder) RecordMysqlBufferPoolDataPagesDataPoint(ts pdata.Timestamp, val int64, bufferPoolDataAttributeValue string) {
+	mb.metricMysqlBufferPoolDataPages.recordDataPoint(mb.startTime, ts, val, bufferPoolDataAttributeValue)
+}
+
+// RecordMysqlBufferPoolLimitDataPoint adds a data point to mysql.buffer_pool.limit metric.
+func (mb *MetricsBuilder) RecordMysqlBufferPoolLimitDataPoint(ts pdata.Timestamp, val int64) {
+	mb.metricMysqlBufferPoolLimit.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlBufferPoolOperationsDataPoint adds a data point to mysql.buffer_pool.operations metric.
 func (mb *MetricsBuilder) RecordMysqlBufferPoolOperationsDataPoint(ts pdata.Timestamp, val int64, bufferPoolOperationsAttributeValue string) {
 	mb.metricMysqlBufferPoolOperations.recordDataPoint(mb.startTime, ts, val, bufferPoolOperationsAttributeValue)
 }
 
-// RecordMysqlBufferPoolPagesDataPoint adds a data point to mysql.buffer_pool_pages metric.
-func (mb *MetricsBuilder) RecordMysqlBufferPoolPagesDataPoint(ts pdata.Timestamp, val float64, bufferPoolPagesAttributeValue string) {
+// RecordMysqlBufferPoolPageFlushesDataPoint adds a data point to mysql.buffer_pool.page_flushes metric.
+func (mb *MetricsBuilder) RecordMysqlBufferPoolPageFlushesDataPoint(ts pdata.Timestamp, val int64) {
+	mb.metricMysqlBufferPoolPageFlushes.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMysqlBufferPoolPagesDataPoint adds a data point to mysql.buffer_pool.pages metric.
+func (mb *MetricsBuilder) RecordMysqlBufferPoolPagesDataPoint(ts pdata.Timestamp, val int64, bufferPoolPagesAttributeValue string) {
 	mb.metricMysqlBufferPoolPages.recordDataPoint(mb.startTime, ts, val, bufferPoolPagesAttributeValue)
 }
 
-// RecordMysqlBufferPoolSizeDataPoint adds a data point to mysql.buffer_pool_size metric.
-func (mb *MetricsBuilder) RecordMysqlBufferPoolSizeDataPoint(ts pdata.Timestamp, val float64, bufferPoolSizeAttributeValue string) {
-	mb.metricMysqlBufferPoolSize.recordDataPoint(mb.startTime, ts, val, bufferPoolSizeAttributeValue)
+// RecordMysqlBufferPoolUsageDataPoint adds a data point to mysql.buffer_pool.usage metric.
+func (mb *MetricsBuilder) RecordMysqlBufferPoolUsageDataPoint(ts pdata.Timestamp, val int64, bufferPoolDataAttributeValue string) {
+	mb.metricMysqlBufferPoolUsage.recordDataPoint(mb.startTime, ts, val, bufferPoolDataAttributeValue)
 }
 
 // RecordMysqlCommandsDataPoint adds a data point to mysql.commands metric.
@@ -960,7 +1151,7 @@ func (mb *MetricsBuilder) RecordMysqlSortsDataPoint(ts pdata.Timestamp, val int6
 }
 
 // RecordMysqlThreadsDataPoint adds a data point to mysql.threads metric.
-func (mb *MetricsBuilder) RecordMysqlThreadsDataPoint(ts pdata.Timestamp, val float64, threadsAttributeValue string) {
+func (mb *MetricsBuilder) RecordMysqlThreadsDataPoint(ts pdata.Timestamp, val int64, threadsAttributeValue string) {
 	mb.metricMysqlThreads.recordDataPoint(mb.startTime, ts, val, threadsAttributeValue)
 }
 
@@ -975,12 +1166,12 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 
 // Attributes contains the possible metric attributes that can be used.
 var Attributes = struct {
+	// BufferPoolData (The status of buffer pool data.)
+	BufferPoolData string
 	// BufferPoolOperations (The buffer pool operations types.)
 	BufferPoolOperations string
 	// BufferPoolPages (The buffer pool pages types.)
 	BufferPoolPages string
-	// BufferPoolSize (The buffer pool size types.)
-	BufferPoolSize string
 	// Command (The command types.)
 	Command string
 	// DoubleWrites (The doublewrite types.)
@@ -1004,8 +1195,8 @@ var Attributes = struct {
 	// Threads (The thread count type.)
 	Threads string
 }{
+	"status",
 	"operation",
-	"kind",
 	"kind",
 	"command",
 	"kind",
@@ -1022,6 +1213,15 @@ var Attributes = struct {
 
 // A is an alias for Attributes.
 var A = Attributes
+
+// AttributeBufferPoolData are the possible values that the attribute "buffer_pool_data" can have.
+var AttributeBufferPoolData = struct {
+	Dirty string
+	Clean string
+}{
+	"dirty",
+	"clean",
+}
 
 // AttributeBufferPoolOperations are the possible values that the attribute "buffer_pool_operations" can have.
 var AttributeBufferPoolOperations = struct {
@@ -1044,30 +1244,13 @@ var AttributeBufferPoolOperations = struct {
 
 // AttributeBufferPoolPages are the possible values that the attribute "buffer_pool_pages" can have.
 var AttributeBufferPoolPages = struct {
-	Data    string
-	Dirty   string
-	Flushed string
-	Free    string
-	Misc    string
-	Total   string
+	Data string
+	Free string
+	Misc string
 }{
 	"data",
-	"dirty",
-	"flushed",
 	"free",
 	"misc",
-	"total",
-}
-
-// AttributeBufferPoolSize are the possible values that the attribute "buffer_pool_size" can have.
-var AttributeBufferPoolSize = struct {
-	Data  string
-	Dirty string
-	Total string
-}{
-	"data",
-	"dirty",
-	"total",
 }
 
 // AttributeCommand are the possible values that the attribute "command" can have.

@@ -19,6 +19,7 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"sync"
 	"time"
 
@@ -105,10 +106,10 @@ func NewResourceProvider(logger *zap.Logger, timeout time.Duration, detectors ..
 	}
 }
 
-func (p *ResourceProvider) Get(ctx context.Context) (resource pdata.Resource, schemaURL string, err error) {
+func (p *ResourceProvider) Get(ctx context.Context, client *http.Client) (resource pdata.Resource, schemaURL string, err error) {
 	p.once.Do(func() {
 		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, p.timeout)
+		ctx, cancel = context.WithTimeout(ctx, client.Timeout)
 		defer cancel()
 		p.detectResource(ctx)
 	})
