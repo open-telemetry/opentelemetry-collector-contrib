@@ -338,6 +338,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver v0.45.1 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.45.1 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver v0.45.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver v0.45.1 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver v0.45.1 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver v0.45.1 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver v0.45.1 // indirect
@@ -468,7 +469,7 @@ require (
 	sigs.k8s.io/json v0.0.0-20211020170558-c049b76a60c6 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.1 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
-	skywalking.apache.org/repo/goapi v0.0.0-20211122071111-ffc517fbfe21 // indirect
+	skywalking.apache.org/repo/goapi v0.0.0-20220121092418-9c455d0dda3f // indirect
 )
 
 // Replace references to modules that are in this repository with their relateive paths
@@ -747,6 +748,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmr
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver => ../../receiver/signalfxreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver => ../../receiver/simpleprometheusreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver => ../../receiver/skywalkingreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver => ../../receiver/splunkhecreceiver
 

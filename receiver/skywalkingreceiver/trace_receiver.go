@@ -174,7 +174,7 @@ func (sr *swReceiver) startCollector(host component.Host) error {
 			return fmt.Errorf("failed to bind to gRPC address %q: %v", gaddr, gerr)
 		}
 
-		sr.service = &traceSegmentReportService{}
+		sr.service = &traceSegmentReportService{sr: sr}
 		v3.RegisterTraceSegmentReportServiceServer(sr.grpc, sr.service)
 
 		sr.goroutines.Add(1)
@@ -196,13 +196,16 @@ type Response struct {
 
 func (sr *swReceiver) httpHandler(rsp http.ResponseWriter, r *http.Request) {
 	rsp.Header().Set("Content-Type", "application/json")
-	_, err := ioutil.ReadAll(r.Body)
+	b, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		response := &Response{Status: failing, Msg: err.Error()}
 		ResponseWithJSON(rsp, response, http.StatusBadRequest)
 		return
 	}
-
+	_, err = consumeTraces(context.Background(), segment, sr.nextConsumer)
+	if err != nil {
+		fmt.Printf("cannot consume traces, %v", err)
+	}
 	//TODO: convert to otel trace.
 }
 
