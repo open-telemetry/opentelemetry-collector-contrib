@@ -5,6 +5,7 @@
 ### 💡 Enhancements 💡
 
 - `googlecloudexporter`: [Alpha] Translate metrics directly from OTLP to gcm using the `exporter.googlecloud.OTLPDirect` feature-gate (#7177)
+- `simpleprometheusreceiver`: Add support for static labels (#7908)
 
 ### 🛑 Breaking changes 🛑
 
@@ -29,6 +30,7 @@
 - `routingprocessor`: Expand error handling on failure to build exporters (#8125)
 - `skywalkingreceiver`: Add new skywalking receiver component folder and structure (#8107)
 - `groupbyattrsprocesor`: Allow empty keys, which allows to use the processor for compaction (#7793)
+- `datadogexporter`: Add rbac to example k8s manifest file (#8186)
 
 ### 🛑 Breaking changes 🛑
 
