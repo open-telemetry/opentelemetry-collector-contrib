@@ -40,6 +40,7 @@ func (exporter *logExporter) onLogData(context context.Context, logData pdata.Lo
 			for k := 0; k < logs.Len(); k++ {
 				envelope := logPacker.LogRecordToEnvelope(logs.At(k))
 				envelope.IKey = exporter.config.InstrumentationKey
+				exporter.logger.Info("send")
 				exporter.transportChannel.Send(envelope)
 			}
 		}

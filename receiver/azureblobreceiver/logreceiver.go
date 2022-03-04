@@ -21,17 +21,20 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/model/otlp"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
 )
 
 type LogsConsumer interface {
-	ConsumeLogsJson(ctx context.Context, json string) error
+	ConsumeLogsJson(ctx context.Context, json []byte) error
 }
 
 type logRceiver struct {
 	blobEventHandler BlobEventHandler
 	logger           *zap.Logger
 	logsUnmarshaler  pdata.LogsUnmarshaler
+	nextConsumer     consumer.Logs
+	obsrecv          *obsreport.Receiver
 }
 
 // func (ex *logExporter) onLogData(context context.Context, logData pdata.Logs) error {
@@ -57,10 +60,21 @@ func (l *logRceiver) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-func (l *logRceiver) ConsumeLogsJson(ctx context.Context, json string) error {
+func (l *logRceiver) ConsumeLogsJson(ctx context.Context, json []byte) error {
 	l.logger.Info("========logs===========")
-	l.logger.Info(json)
-	return nil
+	l.logger.Info(string(json))
+	logsContext := l.obsrecv.StartLogsOp(ctx)
+
+	logs, err := l.logsUnmarshaler.UnmarshalLogs(json)
+	if err == nil {
+		err = l.nextConsumer.ConsumeLogs(logsContext, logs)
+	} else {
+		l.logger.Error(err.Error())
+	}
+
+	l.obsrecv.EndLogsOp(logsContext, typeStr, 1, err)
+
+	return err
 }
 
 // Returns a new instance of the log receiver
@@ -69,6 +83,12 @@ func NewLogsReceiver(config Config, set component.ReceiverCreateSettings, nextCo
 		blobEventHandler: blobEventHandler,
 		logger:           set.Logger,
 		logsUnmarshaler:  otlp.NewJSONLogsUnmarshaler(),
+		nextConsumer:     nextConsumer,
+		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             config.ID(),
+			Transport:              "event",
+			ReceiverCreateSettings: set,
+		}),
 	}
 
 	return logRceiver, nil

@@ -89,7 +89,7 @@ func (p *azureBlobEventHandler) newMessageHangdler(ctx context.Context, event *e
 			return err
 		}
 		if containerName == "logs" {
-			p.logsConsumer.ConsumeLogsJson(ctx, blobData.String())
+			p.logsConsumer.ConsumeLogsJson(ctx, blobData.Bytes())
 		}
 	}
 
