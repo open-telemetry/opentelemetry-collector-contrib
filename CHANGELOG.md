@@ -130,6 +130,7 @@
 
 ### 💡 Enhancements 💡
 
+- `kafkaexporter`: Add compression and flush max messages options.
 - `dynatraceexporter`: Write error logs using plugin logger (#7360)
 - `dynatraceexporter`: Fix docs for TLS settings (#7568)
 - `tanzuobservabilityexporter`: Turn on metrics exporter (#7281)
