@@ -156,7 +156,7 @@ func spanToZipkinSpan(
 	zs.RemoteEndpoint = zipkinEndpointFromTags(tags, "", true, redundantKeys)
 
 	removeRedundantTags(redundantKeys, tags)
-	populateZipkinSpanError(span.Status(), zs, tags)
+	populateStatus(span.Status(), zs, tags)
 
 	if err := spanEventsToZipkinAnnotations(span.Events(), zs); err != nil {
 		return nil, err
@@ -170,17 +170,27 @@ func spanToZipkinSpan(
 	return zs, nil
 }
 
-func populateZipkinSpanError(status pdata.SpanStatus, zs *zipkinmodel.SpanModel, tags map[string]string) {
+func populateStatus(status pdata.SpanStatus, zs *zipkinmodel.SpanModel, tags map[string]string) {
+	if status.Code() == pdata.StatusCodeError {
+		tags[tracetranslator.TagError] = "true"
+	} else {
+		// The error tag should only be set if Status is Error. If a boolean version
+		// ({"error":false} or {"error":"false"}) is present, it SHOULD be removed.
+		// Zipkin will treat any span with error sent as failed.
+		delete(tags, tracetranslator.TagError)
+	}
+
+	// Per specs, Span Status MUST be reported as a key-value pair in tags to Zipkin, unless it is UNSET.
+	// In the latter case it MUST NOT be reported.
+	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/sdk_exporters/zipkin.md#status
+	if status.Code() == pdata.StatusCodeUnset {
+		return
+	}
+
 	tags[conventions.OtelStatusCode] = status.Code().String()
 	if status.Message() != "" {
 		tags[conventions.OtelStatusDescription] = status.Message()
-		if int32(status.Code()) > 0 {
-			zs.Err = fmt.Errorf("%s", status.Message())
-		}
-	}
-
-	if status.Code() == pdata.StatusCodeError {
-		tags[tracetranslator.TagError] = "true"
+		zs.Err = fmt.Errorf("%s", status.Message())
 	}
 }
 
