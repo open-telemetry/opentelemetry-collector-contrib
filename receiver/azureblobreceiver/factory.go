@@ -36,13 +36,13 @@ var (
 	errUnexpectedConfigurationType = errors.New("failed to cast configuration to Azure Blob Config")
 )
 
-type factory struct {
+type blobReceiverFactory struct {
 	blobEventHandler BlobEventHandler
 }
 
 // NewFactory returns a factory for Azure Blob receiver.
 func NewFactory() component.ReceiverFactory {
-	f := &factory{}
+	f := &blobReceiverFactory{}
 	return receiverhelper.NewFactory(
 		typeStr,
 		f.createDefaultConfig,
@@ -50,7 +50,7 @@ func NewFactory() component.ReceiverFactory {
 		receiverhelper.WithLogs(f.createLogsReceiver))
 }
 
-func (f *factory) createDefaultConfig() config.Receiver {
+func (f *blobReceiverFactory) createDefaultConfig() config.Receiver {
 	return &Config{
 		ReceiverSettings:    config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		LogsContainerName:   logsContainerName,
@@ -77,7 +77,7 @@ func (f *factory) createDefaultConfig() config.Receiver {
 // 	return newTracesExporter(exporterConfig, bc, set)
 // }
 
-func (f *factory) createLogsReceiver(
+func (f *blobReceiverFactory) createLogsReceiver(
 	ctx context.Context,
 	set component.ReceiverCreateSettings,
 	cfg config.Receiver,
@@ -96,7 +96,7 @@ func (f *factory) createLogsReceiver(
 
 	return NewLogsReceiver(*receiverConfig, set, nextConsumer, blobEventHandler)
 }
-func (f *factory) createTracesReceiver(
+func (f *blobReceiverFactory) createTracesReceiver(
 	ctx context.Context,
 	set component.ReceiverCreateSettings,
 	cfg config.Receiver,
@@ -116,7 +116,7 @@ func (f *factory) createTracesReceiver(
 	return NewTraceReceiver(*receiverConfig, set, nextConsumer, blobEventHandler)
 }
 
-func (f *factory) getBlobEventHandler(cfg *Config, logger *zap.Logger) (BlobEventHandler, error) {
+func (f *blobReceiverFactory) getBlobEventHandler(cfg *Config, logger *zap.Logger) (BlobEventHandler, error) {
 	if f.blobEventHandler == nil {
 		bc, err := NewBlobClient(cfg.ConnectionString, logger)
 		if err != nil {

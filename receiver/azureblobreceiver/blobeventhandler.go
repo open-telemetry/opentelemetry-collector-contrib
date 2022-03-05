@@ -98,9 +98,13 @@ func (p *azureBlobEventHandler) newMessageHangdler(ctx context.Context, event *e
 			return err
 		}
 		if containerName == p.logsContainerName {
-			p.logsConsumer.ConsumeLogsJson(ctx, blobData.Bytes())
+			if p.logsConsumer != nil {
+				p.logsConsumer.ConsumeLogsJson(ctx, blobData.Bytes())
+			}
 		} else if containerName == p.tracesContainerName {
-			p.tracesConsumer.ConsumeTracesJson(ctx, blobData.Bytes())
+			if p.tracesConsumer != nil {
+				p.tracesConsumer.ConsumeTracesJson(ctx, blobData.Bytes())
+			}
 		} else {
 			p.logger.Debug(fmt.Sprintf("Unknown container name %s", containerName))
 		}
