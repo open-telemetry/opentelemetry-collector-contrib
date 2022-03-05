@@ -14,28 +14,71 @@
 
 package azureblobreceiver
 
-// type traceExporter struct {
-// 	blobClient      BlobClient
-// 	logger          *zap.Logger
-// 	tracesMarshaler pdata.TracesMarshaler
-// }
+import (
+	"context"
 
-// func (ex *traceExporter) onTraceData(context context.Context, traceData pdata.Traces) error {
-// 	buf, err := ex.tracesMarshaler.MarshalTraces(traceData)
-// 	if err != nil {
-// 		return err
-// 	}
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/model/otlp"
+	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/obsreport"
+	"go.uber.org/zap"
+)
 
-// 	return ex.blobClient.UploadData(buf, config.TracesDataType)
-// }
+type TracesConsumer interface {
+	ConsumeTracesJson(ctx context.Context, json []byte) error
+}
 
-// // Returns a new instance of the trace exporter
-// func newTracesExporter(config *Config, blobClient BlobClient, set component.ExporterCreateSettings) (component.TracesExporter, error) {
-// 	exporter := &traceExporter{
-// 		blobClient:      blobClient,
-// 		logger:          set.Logger,
-// 		tracesMarshaler: otlp.NewJSONTracesMarshaler(),
-// 	}
+type traceRceiver struct {
+	blobEventHandler  BlobEventHandler
+	logger            *zap.Logger
+	tracesUnmarshaler pdata.TracesUnmarshaler
+	nextConsumer      consumer.Traces
+	obsrecv           *obsreport.Receiver
+}
 
-// 	return exporterhelper.NewTracesExporter(config, set, exporter.onTraceData)
-// }
+func (t *traceRceiver) Start(ctx context.Context, host component.Host) error {
+	t.blobEventHandler.SetTracesConsumer(t)
+
+	t.blobEventHandler.Run(ctx)
+
+	return nil
+}
+
+func (t *traceRceiver) Shutdown(ctx context.Context) error {
+	t.blobEventHandler.Close(ctx)
+
+	return nil
+}
+
+func (t *traceRceiver) ConsumeTracesJson(ctx context.Context, json []byte) error {
+	tracesContext := t.obsrecv.StartTracesOp(ctx)
+
+	traces, err := t.tracesUnmarshaler.UnmarshalTraces(json)
+	if err == nil {
+		err = t.nextConsumer.ConsumeTraces(tracesContext, traces)
+	} else {
+		t.logger.Error(err.Error())
+	}
+
+	t.obsrecv.EndTracesOp(tracesContext, typeStr, 1, err)
+
+	return err
+}
+
+// Returns a new instance of the traces receiver
+func NewTraceReceiver(config Config, set component.ReceiverCreateSettings, nextConsumer consumer.Traces, blobEventHandler BlobEventHandler) (component.TracesReceiver, error) {
+	traceRceiver := &traceRceiver{
+		blobEventHandler:  blobEventHandler,
+		logger:            set.Logger,
+		tracesUnmarshaler: otlp.NewJSONTracesUnmarshaler(),
+		nextConsumer:      nextConsumer,
+		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
+			ReceiverID:             config.ID(),
+			Transport:              "event",
+			ReceiverCreateSettings: set,
+		}),
+	}
+
+	return traceRceiver, nil
+}

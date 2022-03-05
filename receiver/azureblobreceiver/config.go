@@ -21,6 +21,7 @@ import (
 type Config struct {
 	config.ReceiverSettings `mapstructure:",squash"`
 	ConnectionString        string `mapstructure:"connection_string"`
+	EventHubEndPoint        string `mapstructure:"event_hub_end_point"`
 	LogsContainerName       string `mapstructure:"logs_container_name"`
 	TracesContainerName     string `mapstructure:"traces_container_name"`
 }

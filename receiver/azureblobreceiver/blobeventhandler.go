@@ -17,7 +17,9 @@ package azureblobreceiver
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
+	"sync"
 
 	eventhub "github.com/Azure/azure-event-hubs-go/v3"
 	"go.uber.org/zap"
@@ -27,14 +29,19 @@ type BlobEventHandler interface {
 	Run(ctx context.Context) error
 	Close(ctx context.Context) error
 	SetLogsConsumer(logsConsumer LogsConsumer)
+	SetTracesConsumer(tracesConsumer TracesConsumer)
 }
 
 type azureBlobEventHandler struct {
 	blobClient               BlobClient
 	logsConsumer             LogsConsumer
+	logsContainerName        string
+	tracesConsumer           TracesConsumer
+	tracesContainerName      string
 	eventHubSonnectionString string
 	hub                      *eventhub.Hub
 	logger                   *zap.Logger
+	mu                       sync.Mutex
 }
 
 const (
@@ -42,6 +49,13 @@ const (
 )
 
 func (p *azureBlobEventHandler) Run(ctx context.Context) error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if p.hub != nil {
+		return nil
+	}
+
 	hub, err := eventhub.NewHubFromConnectionString(p.eventHubSonnectionString)
 	if err != nil {
 		return err
@@ -70,10 +84,6 @@ func (p *azureBlobEventHandler) newMessageHangdler(ctx context.Context, event *e
 	p.logger.Info(string(event.Data))
 	p.logger.Info("===========message end=========")
 
-	// var event map[string]interface{}
-	// json.Unmarshal((event.Data, &event)
-	// p.logger.Info(event.)
-
 	var eventDataSlice []map[string]interface{}
 	json.Unmarshal(event.Data, &eventDataSlice)
 
@@ -84,12 +94,15 @@ func (p *azureBlobEventHandler) newMessageHangdler(ctx context.Context, event *e
 
 	if eventType == blobCreatedEventType {
 		blobData, err := p.blobClient.ReadBlob(ctx, containerName, blobName)
-		defer p.blobClient.DeleteBlob(ctx, containerName, blobName)
 		if err != nil {
 			return err
 		}
-		if containerName == "logs" {
+		if containerName == p.logsContainerName {
 			p.logsConsumer.ConsumeLogsJson(ctx, blobData.Bytes())
+		} else if containerName == p.tracesContainerName {
+			p.tracesConsumer.ConsumeTracesJson(ctx, blobData.Bytes())
+		} else {
+			p.logger.Debug(fmt.Sprintf("Unknown container name %s", containerName))
 		}
 	}
 
@@ -97,17 +110,32 @@ func (p *azureBlobEventHandler) newMessageHangdler(ctx context.Context, event *e
 }
 
 func (p *azureBlobEventHandler) Close(ctx context.Context) error {
-	err := p.hub.Close(ctx)
-	return err
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if p.hub != nil {
+		err := p.hub.Close(ctx)
+		if err != nil {
+			return err
+		}
+		p.hub = nil
+	}
+	return nil
 }
 
 func (p *azureBlobEventHandler) SetLogsConsumer(logsConsumer LogsConsumer) {
 	p.logsConsumer = logsConsumer
 }
 
-func NewBlobEventHandler(eventHubSonnectionString string, blobClient BlobClient, logger *zap.Logger) *azureBlobEventHandler {
+func (p *azureBlobEventHandler) SetTracesConsumer(tracesConsumer TracesConsumer) {
+	p.tracesConsumer = tracesConsumer
+}
+
+func NewBlobEventHandler(eventHubSonnectionString string, logsContainerName string, tracesContainerName string, blobClient BlobClient, logger *zap.Logger) *azureBlobEventHandler {
 	return &azureBlobEventHandler{
 		blobClient:               blobClient,
+		logsContainerName:        logsContainerName,
+		tracesContainerName:      tracesContainerName,
 		eventHubSonnectionString: eventHubSonnectionString,
 		logger:                   logger,
 	}

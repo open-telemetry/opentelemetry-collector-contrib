@@ -24,7 +24,7 @@ import (
 
 type BlobClient interface {
 	ReadBlob(ctx context.Context, containerName string, blobName string) (*bytes.Buffer, error)
-	DeleteBlob(ctx context.Context, containerName string, blobName string) error
+	//DeleteBlob(ctx context.Context, containerName string, blobName string) error
 }
 
 type AzureBlobClient struct {
@@ -39,6 +39,7 @@ func (bc *AzureBlobClient) getBlockBlob(ctx context.Context, containerName strin
 
 func (bc *AzureBlobClient) ReadBlob(ctx context.Context, containerName string, blobName string) (*bytes.Buffer, error) {
 	blockBlob := bc.getBlockBlob(ctx, containerName, blobName)
+	defer blockBlob.Delete(ctx, nil)
 
 	get, err := blockBlob.Download(ctx, nil)
 	if err != nil {
@@ -52,10 +53,6 @@ func (bc *AzureBlobClient) ReadBlob(ctx context.Context, containerName string, b
 	_, err = downloadedData.ReadFrom(reader)
 
 	return downloadedData, err
-}
-
-func (bc *AzureBlobClient) DeleteBlob(ctx context.Context, containerName string, blobName string) error {
-	return nil
 }
 
 // const (

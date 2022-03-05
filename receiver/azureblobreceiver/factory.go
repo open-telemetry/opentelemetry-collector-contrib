@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.uber.org/zap"
 )
 
 const (
@@ -35,16 +36,21 @@ var (
 	errUnexpectedConfigurationType = errors.New("failed to cast configuration to Azure Blob Config")
 )
 
-// NewFactory returns a factory for Azure Blob receiver.
-func NewFactory() component.ReceiverFactory {
-	return receiverhelper.NewFactory(
-		typeStr,
-		createDefaultConfig,
-		// receiverhelper.WithTraces(createTracesReceiver),
-		receiverhelper.WithLogs(createLogsReceiver))
+type factory struct {
+	blobEventHandler BlobEventHandler
 }
 
-func createDefaultConfig() config.Receiver {
+// NewFactory returns a factory for Azure Blob receiver.
+func NewFactory() component.ReceiverFactory {
+	f := &factory{}
+	return receiverhelper.NewFactory(
+		typeStr,
+		f.createDefaultConfig,
+		receiverhelper.WithTraces(f.createTracesReceiver),
+		receiverhelper.WithLogs(f.createLogsReceiver))
+}
+
+func (f *factory) createDefaultConfig() config.Receiver {
 	return &Config{
 		ReceiverSettings:    config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		LogsContainerName:   logsContainerName,
@@ -71,7 +77,7 @@ func createDefaultConfig() config.Receiver {
 // 	return newTracesExporter(exporterConfig, bc, set)
 // }
 
-func createLogsReceiver(
+func (f *factory) createLogsReceiver(
 	ctx context.Context,
 	set component.ReceiverCreateSettings,
 	cfg config.Receiver,
@@ -82,15 +88,46 @@ func createLogsReceiver(
 		return nil, errUnexpectedConfigurationType
 	}
 
-	bc, err := NewBlobClient(receiverConfig.ConnectionString, set.Logger)
+	blobEventHandler, err := f.getBlobEventHandler(receiverConfig, set.Logger)
+
 	if err != nil {
-		//set.Logger.Error(err.Error())
 		return nil, err
 	}
 
-	blobEventHandler := NewBlobEventHandler("Endpoint=sb://oteldata.servicebus.windows.net/;SharedAccessKeyName=otelhubbpollicy;SharedAccessKey=mPJVubIK5dJ6mLfZo1uTuikLysLSQ6N7k542cIcmoEs=;EntityPath=otellhub", bc, set.Logger)
-
 	return NewLogsReceiver(*receiverConfig, set, nextConsumer, blobEventHandler)
+}
+func (f *factory) createTracesReceiver(
+	ctx context.Context,
+	set component.ReceiverCreateSettings,
+	cfg config.Receiver,
+	nextConsumer consumer.Traces) (component.TracesReceiver, error) {
+	receiverConfig, ok := cfg.(*Config)
+
+	if !ok {
+		return nil, errUnexpectedConfigurationType
+	}
+
+	blobEventHandler, err := f.getBlobEventHandler(receiverConfig, set.Logger)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return NewTraceReceiver(*receiverConfig, set, nextConsumer, blobEventHandler)
+}
+
+func (f *factory) getBlobEventHandler(cfg *Config, logger *zap.Logger) (BlobEventHandler, error) {
+	if f.blobEventHandler == nil {
+		bc, err := NewBlobClient(cfg.ConnectionString, logger)
+		if err != nil {
+			return nil, err
+		}
+
+		f.blobEventHandler = NewBlobEventHandler(cfg.EventHubEndPoint, cfg.LogsContainerName, cfg.TracesContainerName, bc, logger)
+
+	}
+
+	return f.blobEventHandler, nil
 }
 
 // func (f *kafkaReceiverFactory) createLogsReceiver(
