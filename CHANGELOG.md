@@ -4,6 +4,18 @@
 
 ### 💡 Enhancements 💡
 
+- `googlecloudexporter`: [Alpha] Translate metrics directly from OTLP to gcm using the `exporter.googlecloud.OTLPDirect` feature-gate (#7177)
+- `simpleprometheusreceiver`: Add support for static labels (#7908)
+
+### 🛑 Breaking changes 🛑
+
+### 🧰 Bug fixes 🧰
+
+### 🚀 New components 🚀
+
+## v0.46.0
+
+### 💡 Enhancements 💡
 
 - `internal/stanza`: Export metrics from Stanza receivers (#8025)
 - `hostreceiver/pagingscraper`: Migrate the scraper to the mdatagen metrics builder (#7139)
@@ -15,6 +27,10 @@
 - `internal/stanza`: Add support for arbitrary attribute types (#8081)
 - `resourcedetectionprocessor`: Add confighttp.HTTPClientSettings To Resource Detection Config Fixes (#7397)
 - `honeycombexporter`: Add validation for `sending_queue` setting (#8113)
+- `routingprocessor`: Expand error handling on failure to build exporters (#8125)
+- `skywalkingreceiver`: Add new skywalking receiver component folder and structure (#8107)
+- `groupbyattrsprocesor`: Allow empty keys, which allows to use the processor for compaction (#7793)
+- `datadogexporter`: Add rbac to example k8s manifest file (#8186)
 
 ### 🛑 Breaking changes 🛑
 
@@ -22,12 +38,11 @@
 - `internal/stanza`: Remove `write_to` setting from input operators (#8081)
 - `mongodbatlasreceiver`: rename `mongodb.atlas.*` attributes to `mongodb_atlas.*` adhering to naming guidelines. Adding 3 new attributes (#7960)
 
-### 🚩 Deprecations 🚩
-
 ### 🧰 Bug fixes 🧰
 
 - `prometheusreceiver`: Fix segfault that can occur after receiving stale metrics (#8056)
 - `filelogreceiver`: Fix issue where logs could occasionally be duplicated (#8123)
+- `prometheusremotewriteexporter`: Fix empty non-string resource attributes (#8116)
 
 ### 🚀 New components 🚀
 
@@ -116,6 +131,7 @@
 
 ### 💡 Enhancements 💡
 
+- `kafkaexporter`: Add compression and flush max messages options.
 - `dynatraceexporter`: Write error logs using plugin logger (#7360)
 - `dynatraceexporter`: Fix docs for TLS settings (#7568)
 - `tanzuobservabilityexporter`: Turn on metrics exporter (#7281)

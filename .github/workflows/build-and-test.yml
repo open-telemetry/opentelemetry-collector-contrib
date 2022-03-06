@@ -13,9 +13,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Setup Go
-        uses: actions/setup-go@v2.2.0
+        uses: actions/setup-go@v3
         with:
           go-version: 1.17
       - name: Setup Go Environment
@@ -46,9 +46,9 @@ jobs:
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Setup Go
-        uses: actions/setup-go@v2.2.0
+        uses: actions/setup-go@v3
         with:
           go-version: 1.17
       - name: Setup Go Environment
@@ -80,9 +80,9 @@ jobs:
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Setup Go
-        uses: actions/setup-go@v2.2.0
+        uses: actions/setup-go@v3
         with:
           go-version: 1.17
       - name: Setup Go Environment
@@ -124,9 +124,9 @@ jobs:
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Setup Go
-        uses: actions/setup-go@v2.2.0
+        uses: actions/setup-go@v3
         with:
           go-version: 1.17
       - name: Setup Go Environment
@@ -158,9 +158,9 @@ jobs:
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Setup Go
-        uses: actions/setup-go@v2.2.0
+        uses: actions/setup-go@v3
         with:
           go-version: 1.17
       - name: Setup Go Environment
@@ -188,9 +188,9 @@ jobs:
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Setup Go
-        uses: actions/setup-go@v2.2.0
+        uses: actions/setup-go@v3
         with:
           go-version: 1.17
       - name: Setup Go Environment
@@ -217,9 +217,9 @@ jobs:
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Setup Go
-        uses: actions/setup-go@v2.2.0
+        uses: actions/setup-go@v3
         with:
           go-version: 1.17
       - name: Setup Go Environment
@@ -247,7 +247,7 @@ jobs:
     needs: [setup-environment]
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Build Examples
         run: make build-examples
 
@@ -264,9 +264,9 @@ jobs:
           - windows_amd64
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Setup Go
-        uses: actions/setup-go@v2.2.0
+        uses: actions/setup-go@v3
         with:
           go-version: 1.17
       - name: Setup Go Environment
@@ -297,7 +297,7 @@ jobs:
         package_type: ["deb", "rpm"]
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Install Ruby
@@ -336,7 +336,7 @@ jobs:
     needs: [cross-compile]
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Download Binaries
@@ -372,7 +372,7 @@ jobs:
     needs: [build-package, windows-msi]
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Download Binaries
         uses: actions/download-artifact@v2
         with:
@@ -391,9 +391,9 @@ jobs:
     if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Setup Go
-        uses: actions/setup-go@v2.2.0
+        uses: actions/setup-go@v3
         with:
           go-version: 1.17
       - name: Setup Go Environment
@@ -450,9 +450,9 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v') && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Setup Go
-        uses: actions/setup-go@v2.2.0
+        uses: actions/setup-go@v3
         with:
           go-version: 1.17
       - name: Setup Go Environment

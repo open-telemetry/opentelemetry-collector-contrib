@@ -8,8 +8,8 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
 	github.com/spf13/cast v1.4.1
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.45.1-0.20220225200547-7bdb684e27bf
-	go.opentelemetry.io/collector/model v0.45.1-0.20220225200547-7bdb684e27bf
+	go.opentelemetry.io/collector v0.46.0
+	go.opentelemetry.io/collector/model v0.46.0
 	google.golang.org/protobuf v1.27.1
 )
 
@@ -21,7 +21,7 @@ require (
 	github.com/google/go-cmp v0.5.7 // indirect
 	github.com/knadh/koanf v1.4.0 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
-	github.com/magiconair/properties v1.8.5 // indirect
+	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
@@ -29,7 +29,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
-	go.uber.org/multierr v1.7.0 // indirect
+	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.21.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

@@ -7,7 +7,7 @@ require (
 	github.com/golangci/golangci-lint v1.44.0
 	github.com/google/addlicense v1.0.0
 	github.com/jcchavezs/porto v0.4.0
-	github.com/jstemmer/go-junit-report v0.9.1
+	github.com/jstemmer/go-junit-report v1.0.0
 	github.com/pavius/impi v0.0.3
 	github.com/stretchr/objx v0.2.0 // indirect
 	github.com/tcnksm/ghr v0.14.0
@@ -174,7 +174,7 @@ require (
 	github.com/yeya24/promlinter v0.1.1-0.20210918184747-d757024714a1 // indirect
 	gitlab.com/bosi/decorder v0.2.1 // indirect
 	go.opentelemetry.io/build-tools v0.0.0-20210719163622-92017e64f35b // indirect
-	go.uber.org/multierr v1.7.0 // indirect
+	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.21.0 // indirect
 	golang.org/x/crypto v0.0.0-20220112180741-5e0467b6c7ce // indirect
 	golang.org/x/mod v0.5.1 // indirect
