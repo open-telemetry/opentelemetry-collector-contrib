@@ -3,11 +3,11 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/skywal
 go 1.17
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.45.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.45.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.46.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.46.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.45.1-0.20220225200547-7bdb684e27bf
-	go.opentelemetry.io/collector/model v0.45.1-0.20220225200547-7bdb684e27bf
+	go.opentelemetry.io/collector v0.46.0
+	go.opentelemetry.io/collector/model v0.46.0
 	google.golang.org/grpc v1.44.0
 	skywalking.apache.org/repo/goapi v0.0.0-20211122071111-ffc517fbfe21
 )
@@ -22,7 +22,7 @@ require (
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/klauspost/compress v1.14.4 // indirect
 	github.com/knadh/koanf v1.4.0 // indirect
-	github.com/magiconair/properties v1.8.5 // indirect
+	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
