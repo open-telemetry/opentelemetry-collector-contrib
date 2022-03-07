@@ -12,7 +12,7 @@ require (
 require (
 	github.com/hashicorp/go-version v1.4.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.46.0
-	go.mongodb.org/mongo-driver v1.8.3
+	go.mongodb.org/mongo-driver v1.8.4
 	go.uber.org/zap v1.21.0
 )
 
