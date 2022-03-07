@@ -5,6 +5,14 @@
 ### 💡 Enhancements 💡
 
 - `hostreceiver/pagingscraper`: Add paging.utilization (#6221)
+- `googlecloudexporter`: [Alpha] Translate metrics directly from OTLP to gcm using the `exporter.googlecloud.OTLPDirect` feature-gate (#7177)
+- `simpleprometheusreceiver`: Add support for static labels (#7908)
+
+### 🛑 Breaking changes 🛑
+
+### 🧰 Bug fixes 🧰
+
+### 🚀 New components 🚀
 
 ## v0.46.0
 
@@ -23,6 +31,7 @@
 - `routingprocessor`: Expand error handling on failure to build exporters (#8125)
 - `skywalkingreceiver`: Add new skywalking receiver component folder and structure (#8107)
 - `groupbyattrsprocesor`: Allow empty keys, which allows to use the processor for compaction (#7793)
+- `datadogexporter`: Add rbac to example k8s manifest file (#8186)
 
 ### 🛑 Breaking changes 🛑
 
@@ -122,6 +131,7 @@
 
 ### 💡 Enhancements 💡
 
+- `kafkaexporter`: Add compression and flush max messages options.
 - `dynatraceexporter`: Write error logs using plugin logger (#7360)
 - `dynatraceexporter`: Fix docs for TLS settings (#7568)
 - `tanzuobservabilityexporter`: Turn on metrics exporter (#7281)

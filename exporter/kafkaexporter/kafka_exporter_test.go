@@ -102,6 +102,9 @@ func TestNewExporter_err_auth_type(t *testing.T) {
 		Metadata: Metadata{
 			Full: false,
 		},
+		Producer: Producer{
+			Compression: "none",
+		},
 	}
 	texp, err := newTracesExporter(c, componenttest.NewNopExporterCreateSettings(), tracesMarshalers())
 	assert.Error(t, err)
@@ -116,6 +119,19 @@ func TestNewExporter_err_auth_type(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to load TLS config")
 	assert.Nil(t, lexp)
 
+}
+
+func TestNewExporter_err_compression(t *testing.T) {
+	c := Config{
+		Encoding: defaultEncoding,
+		Producer: Producer{
+			Compression: "idk",
+		},
+	}
+	texp, err := newTracesExporter(c, componenttest.NewNopExporterCreateSettings(), tracesMarshalers())
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "producer.compression should be one of 'none', 'gzip', 'snappy', 'lz4', or 'zstd'. configured value idk")
+	assert.Nil(t, texp)
 }
 
 func TestTracesPusher(t *testing.T) {
