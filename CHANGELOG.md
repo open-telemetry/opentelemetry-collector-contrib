@@ -30,6 +30,7 @@
 - `signalfxexporter`: Add validation for `sending_queue` setting (#8026)
 - `internal/stanza`: Add support for arbitrary attribute types (#8081)
 - `resourcedetectionprocessor`: Add confighttp.HTTPClientSettings To Resource Detection Config Fixes (#7397)
+- `hostmetricsreceiver`: Add cpu.utilization metrics to cpu scrapper (#7130)
 - `honeycombexporter`: Add validation for `sending_queue` setting (#8113)
 - `routingprocessor`: Expand error handling on failure to build exporters (#8125)
 - `skywalkingreceiver`: Add new skywalking receiver component folder and structure (#8107)
