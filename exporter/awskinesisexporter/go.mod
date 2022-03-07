@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskin
 go 1.17
 
 require (
-	github.com/aws/aws-sdk-go v1.43.8
+	github.com/aws/aws-sdk-go v1.43.12
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.46.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.46.0
 	github.com/stretchr/testify v1.7.0
@@ -15,7 +15,7 @@ require (
 require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/google/uuid v1.3.0
-	github.com/jaegertracing/jaeger v1.31.0
+	github.com/jaegertracing/jaeger v1.32.0
 	go.uber.org/multierr v1.8.0
 )
 
