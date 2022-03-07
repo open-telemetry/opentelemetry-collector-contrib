@@ -26,7 +26,7 @@ import (
 
 // Deprecated: [0.45.0] use `prometheusremotewrite.FromMetrics`. It does not wrap the error as `NewPermanent`.
 func MetricsToPRW(namespace string, externalLabels map[string]string, md pdata.Metrics) (map[string]*prompb.TimeSeries, int, error) {
-	tsMap, err := FromMetrics(md, Settings{Namespace: namespace, ExternalLabels: externalLabels})
+	tsMap, err := FromMetrics(md, Settings{Namespace: namespace, ExternalLabels: externalLabels, SanitizeLabel: true})
 	if err != nil {
 		err = consumererror.NewPermanent(err)
 	}
@@ -36,6 +36,7 @@ func MetricsToPRW(namespace string, externalLabels map[string]string, md pdata.M
 type Settings struct {
 	Namespace      string
 	ExternalLabels map[string]string
+	SanitizeLabel  bool
 }
 
 // FromMetrics converts pdata.Metrics to prometheus remote write format.

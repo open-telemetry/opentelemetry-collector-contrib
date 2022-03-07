@@ -43,6 +43,8 @@ var (
 	value32       = "test_value32"
 	label41       = "__test_label41__"
 	value41       = "test_value41"
+	label51       = "_test_label51"
+	value51       = "test_value51"
 	dirty1        = "%"
 	dirty2        = "?"
 	traceIDValue1 = "traceID-value1"
@@ -55,6 +57,7 @@ var (
 
 	lbs1      = getAttributes(label11, value11, label12, value12)
 	lbs2      = getAttributes(label21, value21, label22, value22)
+	lbs3      = getAttributes(label11, value11, label12, value12, label51, value51)
 	lbs1Dirty = getAttributes(label11+dirty1, value11, dirty2+label12, value12)
 
 	exlbs1 = map[string]string{label41: value41}

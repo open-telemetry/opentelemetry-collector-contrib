@@ -44,6 +44,7 @@ const maxBatchByteSize = 3000000
 // prwExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint.
 type prwExporter struct {
 	namespace       string
+	sanitizeLabel   bool
 	externalLabels  map[string]string
 	endpointURL     *url.URL
 	client          *http.Client
@@ -71,6 +72,7 @@ func newPRWExporter(cfg *Config, set component.ExporterCreateSettings) (*prwExpo
 
 	return &prwExporter{
 		namespace:       cfg.Namespace,
+		sanitizeLabel:   cfg.sanitizeLabel,
 		externalLabels:  sanitizedLabels,
 		endpointURL:     endpointURL,
 		wg:              new(sync.WaitGroup),
@@ -107,7 +109,7 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pdata.Metrics) erro
 	case <-prwe.closeChan:
 		return errors.New("shutdown has been called")
 	default:
-		tsMap, err := prometheusremotewrite.FromMetrics(md, prometheusremotewrite.Settings{Namespace: prwe.namespace, ExternalLabels: prwe.externalLabels})
+		tsMap, err := prometheusremotewrite.FromMetrics(md, prometheusremotewrite.Settings{Namespace: prwe.namespace, ExternalLabels: prwe.externalLabels, SanitizeLabel: prwe.sanitizeLabel})
 		if err != nil {
 			err = consumererror.NewPermanent(err)
 		}

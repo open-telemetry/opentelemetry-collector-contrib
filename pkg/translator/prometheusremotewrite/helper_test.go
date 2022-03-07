@@ -184,6 +184,7 @@ func Test_createLabelSet(t *testing.T) {
 		resource       pdata.Resource
 		orig           pdata.AttributeMap
 		externalLabels map[string]string
+		sanitizeLabel  bool
 		extras         []string
 		want           []prompb.Label
 	}{
@@ -192,6 +193,7 @@ func Test_createLabelSet(t *testing.T) {
 			getResource(map[string]pdata.AttributeValue{}),
 			lbs1,
 			map[string]string{},
+			true,
 			[]string{label31, value31, label32, value32},
 			getPromLabels(label11, value11, label12, value12, label31, value31, label32, value32),
 		},
@@ -203,6 +205,7 @@ func Test_createLabelSet(t *testing.T) {
 			}),
 			lbs1,
 			map[string]string{},
+			true,
 			[]string{label31, value31, label32, value32},
 			getPromLabels(label11, value11, label12, value12, label31, value31, label32, value32, "job", "prometheus", "instance", "127.0.0.1:8080"),
 		},
@@ -214,6 +217,7 @@ func Test_createLabelSet(t *testing.T) {
 			}),
 			lbs1,
 			map[string]string{},
+			true,
 			[]string{label31, value31, label32, value32},
 			getPromLabels(label11, value11, label12, value12, label31, value31, label32, value32, "job", "12345", "instance", "true"),
 		},
@@ -222,6 +226,7 @@ func Test_createLabelSet(t *testing.T) {
 			getResource(map[string]pdata.AttributeValue{}),
 			lbs1,
 			map[string]string{},
+			true,
 			[]string{label11, value31},
 			getPromLabels(label11, value31, label12, value12),
 		},
@@ -230,6 +235,7 @@ func Test_createLabelSet(t *testing.T) {
 			getResource(map[string]pdata.AttributeValue{}),
 			lbs1Dirty,
 			map[string]string{},
+			true,
 			[]string{label31 + dirty1, value31, label32, value32},
 			getPromLabels(label11+"_", value11, "key_"+label12, value12, label31+"_", value31, label32, value32),
 		},
@@ -238,6 +244,7 @@ func Test_createLabelSet(t *testing.T) {
 			getResource(map[string]pdata.AttributeValue{}),
 			pdata.NewAttributeMap(),
 			nil,
+			true,
 			[]string{label31, value31, label32, value32},
 			getPromLabels(label31, value31, label32, value32),
 		},
@@ -246,6 +253,7 @@ func Test_createLabelSet(t *testing.T) {
 			getResource(map[string]pdata.AttributeValue{}),
 			lbs1,
 			map[string]string{},
+			true,
 			[]string{"", ""},
 			getPromLabels(label11, value11, label12, value12, "", ""),
 		},
@@ -254,6 +262,7 @@ func Test_createLabelSet(t *testing.T) {
 			getResource(map[string]pdata.AttributeValue{}),
 			lbs1,
 			map[string]string{},
+			true,
 			[]string{label31, value31, label32},
 			getPromLabels(label11, value11, label12, value12, label31, value31),
 		},
@@ -262,6 +271,7 @@ func Test_createLabelSet(t *testing.T) {
 			getResource(map[string]pdata.AttributeValue{}),
 			lbs1,
 			exlbs1,
+			true,
 			[]string{label31, value31, label32, value32},
 			getPromLabels(label11, value11, label12, value12, label41, value41, label31, value31, label32, value32),
 		},
@@ -270,14 +280,33 @@ func Test_createLabelSet(t *testing.T) {
 			getResource(map[string]pdata.AttributeValue{}),
 			lbs1,
 			exlbs2,
+			true,
 			[]string{label31, value31, label32, value32},
 			getPromLabels(label11, value11, label12, value12, label31, value31, label32, value32),
+		},
+		{
+			"sanitize_labels_starts_with_underscore",
+			getResource(map[string]pdata.AttributeValue{}),
+			lbs3,
+			exlbs1,
+			true,
+			[]string{label31, value31, label32, value32},
+			getPromLabels(label11, value11, label12, value12, keyStr+label51, value51, label41, value41, label31, value31, label32, value32),
+		},
+		{
+			"donot_sanitize_labels_starts_with_underscore",
+			getResource(map[string]pdata.AttributeValue{}),
+			lbs3,
+			exlbs1,
+			false,
+			[]string{label31, value31, label32, value32},
+			getPromLabels(label11, value11, label12, value12, label51, value51, label41, value41, label31, value31, label32, value32),
 		},
 	}
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.ElementsMatch(t, tt.want, createAttributes(tt.resource, tt.orig, tt.externalLabels, tt.extras...))
+			assert.ElementsMatch(t, tt.want, createAttributes(tt.resource, tt.orig, tt.externalLabels, tt.sanitizeLabel, tt.extras...))
 		})
 	}
 }
