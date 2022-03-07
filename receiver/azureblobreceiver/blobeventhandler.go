@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"sync"
 
 	eventhub "github.com/Azure/azure-event-hubs-go/v3"
 	"go.uber.org/zap"
@@ -28,20 +27,17 @@ import (
 type BlobEventHandler interface {
 	Run(ctx context.Context) error
 	Close(ctx context.Context) error
-	SetLogsConsumer(logsConsumer LogsConsumer)
-	SetTracesConsumer(tracesConsumer TracesConsumer)
+	SetBlobDataConsumer(blobDataConsumer BlobDataConsumer)
 }
 
 type azureBlobEventHandler struct {
 	blobClient               BlobClient
-	logsConsumer             LogsConsumer
+	blobDataConsumer         BlobDataConsumer
 	logsContainerName        string
-	tracesConsumer           TracesConsumer
 	tracesContainerName      string
 	eventHubSonnectionString string
 	hub                      *eventhub.Hub
 	logger                   *zap.Logger
-	mu                       sync.Mutex
 }
 
 const (
@@ -49,8 +45,6 @@ const (
 )
 
 func (p *azureBlobEventHandler) Run(ctx context.Context) error {
-	p.mu.Lock()
-	defer p.mu.Unlock()
 
 	if p.hub != nil {
 		return nil
@@ -79,10 +73,7 @@ func (p *azureBlobEventHandler) Run(ctx context.Context) error {
 }
 
 func (p *azureBlobEventHandler) newMessageHangdler(ctx context.Context, event *eventhub.Event) error {
-	p.logger.Info("New message has arrived from Event Hub")
-	p.logger.Info("===========message start=========")
-	p.logger.Info(string(event.Data))
-	p.logger.Info("===========message end=========")
+	p.logger.Debug(string(event.Data))
 
 	var eventDataSlice []map[string]interface{}
 	json.Unmarshal(event.Data, &eventDataSlice)
@@ -98,13 +89,9 @@ func (p *azureBlobEventHandler) newMessageHangdler(ctx context.Context, event *e
 			return err
 		}
 		if containerName == p.logsContainerName {
-			if p.logsConsumer != nil {
-				p.logsConsumer.ConsumeLogsJson(ctx, blobData.Bytes())
-			}
+			p.blobDataConsumer.ConsumeLogsJson(ctx, blobData.Bytes())
 		} else if containerName == p.tracesContainerName {
-			if p.tracesConsumer != nil {
-				p.tracesConsumer.ConsumeTracesJson(ctx, blobData.Bytes())
-			}
+			p.blobDataConsumer.ConsumeTracesJson(ctx, blobData.Bytes())
 		} else {
 			p.logger.Debug(fmt.Sprintf("Unknown container name %s", containerName))
 		}
@@ -114,8 +101,6 @@ func (p *azureBlobEventHandler) newMessageHangdler(ctx context.Context, event *e
 }
 
 func (p *azureBlobEventHandler) Close(ctx context.Context) error {
-	p.mu.Lock()
-	defer p.mu.Unlock()
 
 	if p.hub != nil {
 		err := p.hub.Close(ctx)
@@ -127,12 +112,8 @@ func (p *azureBlobEventHandler) Close(ctx context.Context) error {
 	return nil
 }
 
-func (p *azureBlobEventHandler) SetLogsConsumer(logsConsumer LogsConsumer) {
-	p.logsConsumer = logsConsumer
-}
-
-func (p *azureBlobEventHandler) SetTracesConsumer(tracesConsumer TracesConsumer) {
-	p.tracesConsumer = tracesConsumer
+func (p *azureBlobEventHandler) SetBlobDataConsumer(blobDataConsumer BlobDataConsumer) {
+	p.blobDataConsumer = blobDataConsumer
 }
 
 func NewBlobEventHandler(eventHubSonnectionString string, logsContainerName string, tracesContainerName string, blobClient BlobClient, logger *zap.Logger) *azureBlobEventHandler {

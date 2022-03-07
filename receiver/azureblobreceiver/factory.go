@@ -37,7 +37,7 @@ var (
 )
 
 type blobReceiverFactory struct {
-	blobEventHandler BlobEventHandler
+	receiver component.Receiver
 }
 
 // NewFactory returns a factory for Azure Blob receiver.
@@ -58,76 +58,79 @@ func (f *blobReceiverFactory) createDefaultConfig() config.Receiver {
 	}
 }
 
-// func createTracesExporter(
-// 	ctx context.Context,
-// 	set component.ExporterCreateSettings,
-// 	cfg config.Exporter,
-// ) (component.TracesExporter, error) {
-// 	exporterConfig, ok := cfg.(*Config)
-
-// 	if !ok {
-// 		return nil, errUnexpectedConfigurationType
-// 	}
-
-// 	bc, err := NewBlobClient(exporterConfig.ConnectionString, exporterConfig.TracesContainerName, set.Logger)
-// 	if err != nil {
-// 		set.Logger.Error(err.Error())
-// 	}
-
-// 	return newTracesExporter(exporterConfig, bc, set)
-// }
-
 func (f *blobReceiverFactory) createLogsReceiver(
 	ctx context.Context,
 	set component.ReceiverCreateSettings,
 	cfg config.Receiver,
-	nextConsumer consumer.Logs) (component.LogsReceiver, error) {
-	receiverConfig, ok := cfg.(*Config)
+	nextConsumer consumer.Logs,
+) (component.LogsReceiver, error) {
 
-	if !ok {
-		return nil, errUnexpectedConfigurationType
-	}
-
-	blobEventHandler, err := f.getBlobEventHandler(receiverConfig, set.Logger)
+	receiver, err := f.getReceiver(ctx, set, cfg)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return NewLogsReceiver(*receiverConfig, set, nextConsumer, blobEventHandler)
+	receiver.(BlobDataConsumer).SetNextLogsConsumer(nextConsumer)
+
+	return receiver, nil
 }
+
 func (f *blobReceiverFactory) createTracesReceiver(
 	ctx context.Context,
 	set component.ReceiverCreateSettings,
 	cfg config.Receiver,
-	nextConsumer consumer.Traces) (component.TracesReceiver, error) {
-	receiverConfig, ok := cfg.(*Config)
+	nextConsumer consumer.Traces,
+) (component.TracesReceiver, error) {
 
-	if !ok {
-		return nil, errUnexpectedConfigurationType
-	}
-
-	blobEventHandler, err := f.getBlobEventHandler(receiverConfig, set.Logger)
+	receiver, err := f.getReceiver(ctx, set, cfg)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return NewTraceReceiver(*receiverConfig, set, nextConsumer, blobEventHandler)
+	receiver.(BlobDataConsumer).SetNextTracesConsumer(nextConsumer)
+	return receiver, nil
 }
 
-func (f *blobReceiverFactory) getBlobEventHandler(cfg *Config, logger *zap.Logger) (BlobEventHandler, error) {
-	if f.blobEventHandler == nil {
-		bc, err := NewBlobClient(cfg.ConnectionString, logger)
+func (f *blobReceiverFactory) getReceiver(
+	ctx context.Context,
+	set component.ReceiverCreateSettings,
+	cfg config.Receiver) (component.Receiver, error) {
+
+	if f.receiver == nil {
+
+		receiverConfig, ok := cfg.(*Config)
+
+		if !ok {
+			return nil, errUnexpectedConfigurationType
+		}
+
+		blobEventHandler, err := f.getBlobEventHandler(receiverConfig, set.Logger)
+
 		if err != nil {
 			return nil, err
 		}
 
-		f.blobEventHandler = NewBlobEventHandler(cfg.EventHubEndPoint, cfg.LogsContainerName, cfg.TracesContainerName, bc, logger)
+		f.receiver, err = NewReceiver(*receiverConfig, set, blobEventHandler)
+
+		if err != nil {
+			return nil, err
+		}
 
 	}
 
-	return f.blobEventHandler, nil
+	return f.receiver, nil
+}
+
+func (f *blobReceiverFactory) getBlobEventHandler(cfg *Config, logger *zap.Logger) (BlobEventHandler, error) {
+	bc, err := NewBlobClient(cfg.ConnectionString, logger)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewBlobEventHandler(cfg.EventHubEndPoint, cfg.LogsContainerName, cfg.TracesContainerName, bc, logger),
+		nil
 }
 
 // func (f *kafkaReceiverFactory) createLogsReceiver(

@@ -24,7 +24,6 @@ import (
 
 type BlobClient interface {
 	ReadBlob(ctx context.Context, containerName string, blobName string) (*bytes.Buffer, error)
-	//DeleteBlob(ctx context.Context, containerName string, blobName string) error
 }
 
 type AzureBlobClient struct {
