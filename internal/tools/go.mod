@@ -8,7 +8,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.18.1
-	github.com/securego/gosec/v2 v2.9.6
+	github.com/securego/gosec/v2 v2.10.0
 	github.com/tcnksm/ghr v0.14.0
 	github.com/vektra/mockery v1.1.2
 )
