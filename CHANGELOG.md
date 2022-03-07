@@ -8,6 +8,7 @@
 - `googlecloudexporter`: [Alpha] Translate metrics directly from OTLP to gcm using the `exporter.googlecloud.OTLPDirect` feature-gate (#7177)
 - `simpleprometheusreceiver`: Add support for static labels (#7908)
 - `podmanreceiver`: Add container.runtime attribute to container metrics (#8262)
+- `dockerstatsreceiver`: Add container.runtime attribute to container metrics (#8261)
 
 ### 🛑 Breaking changes 🛑
 
