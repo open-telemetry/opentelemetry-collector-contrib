@@ -23,11 +23,6 @@ require (
 require gopkg.in/yaml.v2 v2.4.0
 
 require (
-	github.com/jaegertracing/jaeger v1.31.0 // indirect
-	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9
-)
-
-require (
 	github.com/cenkalti/backoff/v4 v4.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/felixge/httpsnoop v1.0.2 // indirect
@@ -71,6 +66,11 @@ require (
 	google.golang.org/grpc v1.44.0 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+)
+
+require (
+	github.com/jaegertracing/jaeger v1.31.0 // indirect
+	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common

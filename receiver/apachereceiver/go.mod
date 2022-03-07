@@ -11,11 +11,6 @@ require (
 )
 
 require (
-	github.com/rogpeppe/go-internal v1.6.2 // indirect
-	github.com/testcontainers/testcontainers-go v0.12.0
-)
-
-require (
 	github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78 // indirect
 	github.com/Microsoft/go-winio v0.4.17-0.20210211115548-6eac466e5fa3 // indirect
 	github.com/Microsoft/hcsshim v0.8.16 // indirect
@@ -73,6 +68,11 @@ require (
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+)
+
+require (
+	github.com/rogpeppe/go-internal v1.6.2 // indirect
+	github.com/testcontainers/testcontainers-go v0.12.0
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest => ../../internal/scrapertest
