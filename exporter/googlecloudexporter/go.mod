@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.10
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.26.0
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.26.1-0.20220307211504-dc45061a44f9
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.46.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.46.0
