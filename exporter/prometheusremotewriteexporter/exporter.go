@@ -72,7 +72,7 @@ func newPRWExporter(cfg *Config, set component.ExporterCreateSettings) (*prwExpo
 
 	return &prwExporter{
 		namespace:       cfg.Namespace,
-		sanitizeLabel:   cfg.sanitizeLabel,
+		sanitizeLabel:   cfg.SanitizeLabel,
 		externalLabels:  sanitizedLabels,
 		endpointURL:     endpointURL,
 		wg:              new(sync.WaitGroup),
@@ -128,13 +128,13 @@ func validateAndSanitizeExternalLabels(cfg *Config) (map[string]string, error) {
 		// Sanitize label keys to meet Prometheus Requirements
 		// if sanitizeLabel is enabled, invoke sanitizeLabels else sanitize
 		if len(key) > 2 && key[:2] == "__" {
-			if cfg.sanitizeLabel {
+			if cfg.SanitizeLabel {
 				key = "__" + sanitizeLabels(key[2:])
 			} else {
 				key = "__" + sanitize(key[2:])
 			}
 		} else {
-			if cfg.sanitizeLabel {
+			if cfg.SanitizeLabel {
 				key = sanitizeLabels(key)
 			} else {
 				key = sanitize(key)

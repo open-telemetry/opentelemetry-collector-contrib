@@ -30,7 +30,7 @@ type Config struct {
 	config.ExporterSettings        `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
-	sanitizeLabel                  bool
+	SanitizeLabel                  bool
 
 	// prefix attached to each exported metric name
 	// See: https://prometheus.io/docs/practices/naming/#metric-names
