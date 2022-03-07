@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmex
 go 1.17
 
 require (
-	github.com/jaegertracing/jaeger v1.31.0
+	github.com/jaegertracing/jaeger v1.32.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.46.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.46.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.46.0
