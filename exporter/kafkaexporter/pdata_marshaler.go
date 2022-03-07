@@ -17,6 +17,9 @@ package kafkaexporter // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"github.com/Shopify/sarama"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
 )
 
 type pdataLogsMarshaler struct {
@@ -83,16 +86,25 @@ type pdataTracesMarshaler struct {
 }
 
 func (p pdataTracesMarshaler) Marshal(td pdata.Traces, topic string) ([]*sarama.ProducerMessage, error) {
-	bts, err := p.marshaler.MarshalTraces(td)
-	if err != nil {
-		return nil, err
-	}
-	return []*sarama.ProducerMessage{
-		{
+	var messages []*sarama.ProducerMessage
+	var errs error
+	for _, batch := range batchpersignal.SplitTraces(td) {
+		bts, err := p.marshaler.MarshalTraces(td)
+		if err != nil {
+			// continue to process batches that can be serialized
+			errs = multierr.Append(errs, err)
+			continue
+		}
+
+		// every batch should have at least one span
+		traceID := batch.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).TraceID().Bytes()
+		messages = append(messages, &sarama.ProducerMessage{
 			Topic: topic,
+			Key:   sarama.ByteEncoder(traceID[:]),
 			Value: sarama.ByteEncoder(bts),
-		},
-	}, nil
+		})
+	}
+	return messages, errs
 }
 
 func (p pdataTracesMarshaler) Encoding() string {
