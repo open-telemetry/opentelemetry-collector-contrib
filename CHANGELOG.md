@@ -6,6 +6,7 @@
 
 - `googlecloudexporter`: [Alpha] Translate metrics directly from OTLP to gcm using the `exporter.googlecloud.OTLPDirect` feature-gate (#7177)
 - `simpleprometheusreceiver`: Add support for static labels (#7908)
+- `translator/prometheusremotewrite`: Allow to disable sanitize metric labels (#8270)
 
 ### 🛑 Breaking changes 🛑
 
