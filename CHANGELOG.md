@@ -1,3 +1,6 @@
+# DO NOT MERGE 
+## Testing whether GitHub bug was resolved, where non-maintainers can enable auto-merge via iOS app 
+
 # Changelog
 
 ## Unreleased
