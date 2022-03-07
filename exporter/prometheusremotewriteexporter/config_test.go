@@ -65,7 +65,7 @@ func Test_loadConfig(t *testing.T) {
 				NumConsumers: 10,
 			},
 			Namespace:      "test-space",
-			SanitizeLabel:  false,
+			sanitizeLabel:  false,
 			ExternalLabels: map[string]string{"key1": "value1", "key2": "value2"},
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint: "localhost:8888",

@@ -49,7 +49,7 @@ func Test_NewPRWExporter(t *testing.T) {
 		Namespace:          "",
 		ExternalLabels:     map[string]string{},
 		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ""},
-		SanitizeLabel:      true,
+		sanitizeLabel:      true,
 	}
 	buildInfo := component.BuildInfo{
 		Description: "OpenTelemetry Collector",
@@ -742,7 +742,7 @@ func Test_validateAndSanitizeExternalLabels(t *testing.T) {
 	// run tests
 	for _, tt := range tests {
 		cfg := createDefaultConfig().(*Config)
-		cfg.SanitizeLabel = true
+		cfg.sanitizeLabel = true
 		cfg.ExternalLabels = tt.inputLabels
 		t.Run(tt.name, func(t *testing.T) {
 			newLabels, err := validateAndSanitizeExternalLabels(cfg)
@@ -757,8 +757,8 @@ func Test_validateAndSanitizeExternalLabels(t *testing.T) {
 
 	for _, tt := range testsWithoutSanitizelabel {
 		cfg := createDefaultConfig().(*Config)
-		// disable sanitizeLabel flag
-		cfg.SanitizeLabel = false
+		//disable sanitizeLabel flag
+		cfg.sanitizeLabel = false
 		cfg.ExternalLabels = tt.inputLabels
 		t.Run(tt.name, func(t *testing.T) {
 			newLabels, err := validateAndSanitizeExternalLabels(cfg)

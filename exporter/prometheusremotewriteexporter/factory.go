@@ -86,7 +86,7 @@ func createDefaultConfig() config.Exporter {
 		Namespace:        "",
 		ExternalLabels:   map[string]string{},
 		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
-		SanitizeLabel:    featuregate.IsEnabled(dropSanitizationGate.ID),
+		sanitizeLabel:    featuregate.IsEnabled(dropSanitizationGate.ID),
 		RetrySettings: exporterhelper.RetrySettings{
 			Enabled:         true,
 			InitialInterval: 50 * time.Millisecond,
