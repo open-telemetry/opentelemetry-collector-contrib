@@ -35,6 +35,7 @@ func translateStatsToMetrics(stats *containerStats, ts time.Time, rm pdata.Resou
 	pbts := pdata.NewTimestampFromTime(ts)
 
 	resource := rm.Resource()
+	resource.Attributes().InsertString(conventions.AttributeContainerRuntime, "podman")
 	resource.Attributes().InsertString(conventions.AttributeContainerName, stats.Name)
 	resource.Attributes().InsertString(conventions.AttributeContainerID, stats.ContainerID)
 
