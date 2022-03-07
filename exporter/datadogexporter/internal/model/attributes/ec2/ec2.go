@@ -28,6 +28,7 @@ var (
 	clusterTagPrefix = ec2TagPrefix + "kubernetes.io/cluster/"
 )
 
+// HostInfo holds the EC2 host information.
 type HostInfo struct {
 	InstanceID  string
 	EC2Hostname string

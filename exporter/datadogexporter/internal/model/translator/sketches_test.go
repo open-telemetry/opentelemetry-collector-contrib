@@ -36,11 +36,9 @@ type sketchConsumer struct {
 // ConsumeSketch implements the translator.Consumer interface.
 func (c *sketchConsumer) ConsumeSketch(
 	_ context.Context,
-	_ string,
+	_ *Dimensions,
 	_ uint64,
 	sketch *quantile.Sketch,
-	_ []string,
-	_ string,
 ) {
 	c.sk = sketch
 }
