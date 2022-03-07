@@ -15,8 +15,15 @@
 from os import environ
 from re import compile as re_compile
 from re import search
-from typing import Iterable
+from typing import Iterable, List
 from urllib.parse import urlparse, urlunparse
+
+OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST = (
+    "OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST"
+)
+OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE = (
+    "OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE"
+)
 
 
 class ExcludeList:
@@ -98,3 +105,23 @@ def remove_url_credentials(url: str) -> str:
     except ValueError:  # an unparseable url was passed
         pass
     return url
+
+
+def normalise_request_header_name(header: str) -> str:
+    key = header.lower().replace("-", "_")
+    return f"http.request.header.{key}"
+
+
+def normalise_response_header_name(header: str) -> str:
+    key = header.lower().replace("-", "_")
+    return f"http.response.header.{key}"
+
+
+def get_custom_headers(env_var: str) -> List[str]:
+    custom_headers = environ.get(env_var, [])
+    if custom_headers:
+        custom_headers = [
+            custom_headers.strip()
+            for custom_headers in custom_headers.split(",")
+        ]
+    return custom_headers

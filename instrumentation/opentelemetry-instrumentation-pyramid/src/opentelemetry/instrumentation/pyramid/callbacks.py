@@ -161,7 +161,7 @@ def trace_tween_factory(handler, registry):
                 otel_wsgi.add_response_attributes(
                     span,
                     response_or_exception.status,
-                    response_or_exception.headers,
+                    response_or_exception.headerlist,
                 )
 
                 propagator = get_global_response_propagator()

@@ -275,7 +275,7 @@ class _DjangoMiddleware(MiddlewareMixin):
                 add_response_attributes(
                     span,
                     f"{response.status_code} {response.reason_phrase}",
-                    response,
+                    response.items(),
                 )
 
             propagator = get_global_response_propagator()
