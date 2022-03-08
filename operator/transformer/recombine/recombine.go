@@ -220,8 +220,9 @@ func (r *RecombineOperator) Process(ctx context.Context, e *entry.Entry) error {
 		s = DefaultSourceIdentifier
 	}
 
+	switch {
 	// This is the first entry in the next batch
-	if matches && r.matchIndicatesFirst() {
+	case matches && r.matchIndicatesFirst():
 		// Flush the existing batch
 		err := r.flushSource(s)
 		if err != nil {
@@ -231,16 +232,13 @@ func (r *RecombineOperator) Process(ctx context.Context, e *entry.Entry) error {
 		// Add the current log to the new batch
 		r.addToBatch(ctx, e, s)
 		return nil
-	}
-
 	// This is the last entry in a complete batch
-	if matches && r.matchIndicatesLast() {
+	case matches && r.matchIndicatesLast():
+		fallthrough
+	// When matching on first entry, never batch partial first. Just emit immediately
+	case !matches && r.matchIndicatesFirst() && len(r.batchMap[s]) == 0:
 		r.addToBatch(ctx, e, s)
-		err := r.flushSource(s)
-		if err != nil {
-			return err
-		}
-		return nil
+		return r.flushSource(s)
 	}
 
 	// This is neither the first entry of a new log,
