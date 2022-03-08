@@ -58,7 +58,7 @@ func readTestSchema(_ context.Context, schemaURL string) (*ast.Schema, error) {
 }
 
 func TestFactory_GetSchemaConcurrently(t *testing.T) {
-	factory := newFactory(readTestSchema)
+	factory := newFactoryStruct(readTestSchema)
 
 	wg := sync.WaitGroup{}
 	var firstSchema *ast.Schema
@@ -84,7 +84,7 @@ func TestFactory_GetSchemaConcurrently(t *testing.T) {
 }
 
 func TestFactory_GetSchemaFail(t *testing.T) {
-	factory := newFactory(readTestSchema)
+	factory := newFactoryStruct(readTestSchema)
 	schema, err := factory.getSchema(
 		context.Background(), "https://opentelemetry.io/schemas/11.22.33",
 	)
@@ -100,7 +100,7 @@ func readBlockSchema(context context.Context, _ string) (*ast.Schema, error) {
 }
 
 func TestFactory_GetSchemaCancel(t *testing.T) {
-	factory := newFactory(readBlockSchema)
+	factory := newFactoryStruct(readBlockSchema)
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
 
@@ -131,6 +131,14 @@ func TestFactory_GetSchemaCancel(t *testing.T) {
 func TestFactory_ConsumeLogs(t *testing.T) {
 	factory := newFactoryWithFetcher(readTestSchema)
 	cfg := factory.CreateDefaultConfig()
+	pCfg := cfg.(*Config)
+	pCfg.Transform = []TransformConfig{
+		{
+			From: "https://opentelemetry.io/schemas/1.*",
+			To:   "https://opentelemetry.io/schemas/1.7.0",
+		},
+	}
+
 	sink := &consumertest.LogsSink{}
 	proc, err := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateSettings{}, cfg, sink)
 	require.NoError(t, err)

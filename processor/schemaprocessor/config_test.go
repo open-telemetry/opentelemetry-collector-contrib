@@ -38,6 +38,24 @@ func TestLoadingConfig(t *testing.T) {
 	p0 := cfg.Processors[config.NewComponentIDWithName(typeStr, "")]
 	assert.Equal(t, p0, &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "")),
+		Transform:         []TransformConfig{{From: "https://opentelemetry.io/schemas/1.*", To: "https://opentelemetry.io/schemas/1.9.0"}},
 	})
+}
 
+func TestInvalidConfig(t *testing.T) {
+	cfgs := []Config{
+		{
+			Transform: []TransformConfig{},
+		},
+		{
+			Transform: []TransformConfig{
+				{From: "", To: ""},
+			},
+		},
+	}
+
+	for _, cfg := range cfgs {
+		err := cfg.Validate()
+		assert.Error(t, err)
+	}
 }

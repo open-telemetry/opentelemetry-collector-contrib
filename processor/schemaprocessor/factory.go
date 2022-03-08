@@ -44,12 +44,12 @@ type factory struct {
 	schemas    map[string]*ast.Schema
 }
 
-// NewFactory returns a new factory for the Attributes processor.
+// NewFactory returns a new factory for the schema processor.
 func NewFactory() component.ProcessorFactory {
 	return newFactoryWithFetcher(downloadSchema)
 }
 
-func newFactory(schemaFetcher schemaFetcherFunc) *factory {
+func newFactoryStruct(schemaFetcher schemaFetcherFunc) *factory {
 	return &factory{
 		schemaFetcher: schemaFetcher,
 		schemas:       map[string]*ast.Schema{},
@@ -57,7 +57,7 @@ func newFactory(schemaFetcher schemaFetcherFunc) *factory {
 }
 
 func newFactoryWithFetcher(schemaFetcher schemaFetcherFunc) component.ProcessorFactory {
-	f := newFactory(schemaFetcher)
+	f := newFactoryStruct(schemaFetcher)
 	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
@@ -124,14 +124,14 @@ func downloadSchema(context context.Context, schemaURL string) (*ast.Schema, err
 }
 
 func (f *factory) createTracesProcessor(
-	_ context.Context,
+	ctx context.Context,
 	_ component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
 	oCfg := cfg.(*Config)
 
-	p := newSchemaProcessor(f, oCfg)
+	p := newSchemaProcessor(ctx, f, oCfg)
 
 	return processorhelper.NewTracesProcessor(
 		cfg,
@@ -141,14 +141,14 @@ func (f *factory) createTracesProcessor(
 }
 
 func (f *factory) createMetricsProcessor(
-	_ context.Context,
+	ctx context.Context,
 	_ component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
 	oCfg := cfg.(*Config)
 
-	p := newSchemaProcessor(f, oCfg)
+	p := newSchemaProcessor(ctx, f, oCfg)
 
 	return processorhelper.NewMetricsProcessor(
 		cfg,
@@ -158,14 +158,14 @@ func (f *factory) createMetricsProcessor(
 }
 
 func (f *factory) createLogProcessor(
-	_ context.Context,
+	ctx context.Context,
 	_ component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Logs,
 ) (component.LogsProcessor, error) {
 	oCfg := cfg.(*Config)
 
-	p := newSchemaProcessor(f, oCfg)
+	p := newSchemaProcessor(ctx, f, oCfg)
 
 	return processorhelper.NewLogsProcessor(
 		cfg,

@@ -10,7 +10,11 @@ type schemaProcessor struct {
 	factory *factory
 }
 
-func newSchemaProcessor(factory *factory, _ *Config) *schemaProcessor {
+func newSchemaProcessor(ctx context.Context, factory *factory, cfg *Config) *schemaProcessor {
+	// Start prefetching schemas specified in the config.
+	for _, transform := range cfg.Transform {
+		go factory.getSchema(ctx, transform.To)
+	}
 	return &schemaProcessor{factory: factory}
 }
 
