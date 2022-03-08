@@ -43,12 +43,14 @@ func TestGetPageFileStats_ValidFile(t *testing.T) {
 		deviceName: "/dev/dm-2",
 		usedBytes:  502566912,
 		freeBytes:  68128825344,
+		totalBytes: 68631392256,
 	})
 
 	assert.Equal(*stats[1], pageFileStats{
 		deviceName: "/swapfile",
 		usedBytes:  1024,
 		freeBytes:  1024,
+		totalBytes: 2048,
 	})
 }
 
