@@ -44,6 +44,9 @@ type factory struct {
 	schemas    map[string]*ast.Schema
 }
 
+// TODO: check if storage extension is available on the Host and use the storage
+// as a cache for downloaded schemas. Load cached schemas when the processor is started.
+
 // NewFactory returns a new factory for the schema processor.
 func NewFactory() component.ProcessorFactory {
 	return newFactoryWithFetcher(downloadSchema)
@@ -119,6 +122,10 @@ func downloadSchema(context context.Context, schemaURL string) (*ast.Schema, err
 	}()
 
 	schema, err := schemas.Parse(resp.Body)
+
+	// TODO: compile schema into a form that makes data transformation more efficient
+	// todo perform. See for example as an inspiration:
+	// https://github.com/tigrannajaryan/telemetry-schema/tree/main/schema/compiled
 
 	return schema, err
 }

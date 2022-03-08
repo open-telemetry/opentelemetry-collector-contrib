@@ -18,18 +18,37 @@ func newSchemaProcessor(ctx context.Context, factory *factory, cfg *Config) *sch
 	return &schemaProcessor{factory: factory}
 }
 
-func (a *schemaProcessor) processTraces(_ context.Context, td pdata.Traces) (pdata.Traces, error) {
+func (a *schemaProcessor) processTraces(ctx context.Context, td pdata.Traces) (pdata.Traces, error) {
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
 		resource := rs.Resource()
+
+		resourceSchema, err := a.factory.getSchema(ctx, rs.SchemaUrl())
+		if err != nil {
+			// TODO: what do we do if we can't fetch the schema?
+		}
+		// TODO: use resourceSchema to transform the Resource.
+		// See as an inspiration for example:
+		// https://github.com/tigrannajaryan/telemetry-schema/blob/main/schema/converter/converter.go
+		_ = resourceSchema
+
 		ilss := rs.InstrumentationLibrarySpans()
 		for j := 0; j < ilss.Len(); j++ {
 			ils := ilss.At(j)
 			spans := ils.Spans()
 			library := ils.InstrumentationLibrary()
+
+			libSchema, err := a.factory.getSchema(ctx, ils.SchemaUrl())
+			if err != nil {
+				// TODO: what do we do if we can't fetch the schema?
+			}
+			_ = libSchema
+
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
+
+				// TODO: use resourceSchema and libSchema to transform the span.
 
 				_ = resource
 				_ = library
