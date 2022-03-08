@@ -11,6 +11,7 @@ exporters:
     endpoint: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
     private_key: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
     application_name: "APP_NAME"
+    timeout: 5s
 
 
 service:
