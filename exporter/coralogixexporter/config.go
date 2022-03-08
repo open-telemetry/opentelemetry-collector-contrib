@@ -28,9 +28,10 @@ const (
 
 // Config defines by Coralogix.
 type Config struct {
-	config.ExporterSettings      `mapstructure:",squash"`
-	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
-	exporterhelper.RetrySettings `mapstructure:"retry_on_failure"`
+	config.ExporterSettings        `mapstructure:",squash"`
+	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
+	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
+	exporterhelper.TimeoutSettings `mapstructure:",squash"`
 
 	// The Coralogix logs ingress endpoint
 	configgrpc.GRPCClientSettings `mapstructure:",squash"`
@@ -39,9 +40,8 @@ type Config struct {
 	PrivateKey string `mapstructure:"private_key"`
 
 	// Traces emitted by this OpenTelemetry exporter should be tagged
-	// in Coralogix with the following application and subsystem names
-	AppName   string `mapstructure:"application_name"`
-	SubSystem string `mapstructure:"subsystem_name"`
+	// in Coralogix with the following application name
+	AppName string `mapstructure:"application_name"`
 }
 
 func (c *Config) Validate() error {
@@ -55,9 +55,6 @@ func (c *Config) Validate() error {
 	if c.AppName == "" {
 		return fmt.Errorf("`appName` not specified, please fix the configuration file")
 	}
-	if c.SubSystem == "" {
-		return fmt.Errorf("`subSystem` not specified, please fix the configuration file")
-	}
 
 	// check if headers exists
 	if len(c.GRPCClientSettings.Headers) == 0 {
@@ -65,6 +62,5 @@ func (c *Config) Validate() error {
 	}
 	c.GRPCClientSettings.Headers["ACCESS_TOKEN"] = c.PrivateKey
 	c.GRPCClientSettings.Headers["appName"] = c.AppName
-	c.GRPCClientSettings.Headers["subsystemName"] = c.SubSystem
 	return nil
 }

@@ -139,6 +139,8 @@
     - `mysql.buffer_pool.limit`
     - `mysql.buffer_pool.usage`
   - Rename `mysql.buffer_pool_operations` to `mysql.buffer_pool.operations`
+- `coralogixexporter`: Create dynamic subsystem name (#7957)
+  - Deprecate configuration changed. Subsystem option is not available
 
 ### 🚩 Deprecations 🚩
 
