@@ -302,8 +302,8 @@ github.com/aws/aws-sdk-go v1.38.35/go.mod h1:hcU610XS61/+aQV88ixoOzUoG7v3b31pl2z
 github.com/aws/aws-sdk-go v1.38.68/go.mod h1:hcU610XS61/+aQV88ixoOzUoG7v3b31pl2zKMmprdro=
 github.com/aws/aws-sdk-go v1.40.11/go.mod h1:585smgzpB/KqRA+K3y/NL/oYRqQvpNJYvLm+LY1U59Q=
 github.com/aws/aws-sdk-go v1.42.31/go.mod h1:OGr6lGMAKGlG9CVrYnWYDKIyb829c6EVBRjxqjmPepc=
-github.com/aws/aws-sdk-go v1.43.12 h1:wOdx6+reSDpUBFEuJDA6edCrojzy8rOtMzhS2rD9+7M=
-github.com/aws/aws-sdk-go v1.43.12/go.mod h1:y4AeaBuwd2Lk+GepC1E9v0qOiTws0MIWAX4oIKwKHZo=
+github.com/aws/aws-sdk-go v1.43.13 h1:2arj1DkXlGMjyLg9A4+czSy5fx2CyY4oGmHbnfeMP3A=
+github.com/aws/aws-sdk-go v1.43.13/go.mod h1:y4AeaBuwd2Lk+GepC1E9v0qOiTws0MIWAX4oIKwKHZo=
 github.com/aws/aws-sdk-go-v2 v0.18.0/go.mod h1:JWVYvqSMppoMJC0x5wdwiImzgXTI9FuZwxzkQq9wy+g=
 github.com/aws/aws-sdk-go-v2 v1.7.0/go.mod h1:tb9wi5s61kTDA5qCkcDbt3KRVV74GGslQkl/DRdX/P4=
 github.com/aws/aws-sdk-go-v2 v1.9.2/go.mod h1:cK/D0BBs0b/oWPIcX/Z/obahJK1TT7IPVjy53i/mX/4=
@@ -2002,8 +2002,8 @@ github.com/syndtr/goleveldb v1.0.0 h1:fBdIW9lB4Iz0n9khmH8w27SJ3QEJ7+IgjPEwGSZiFd
 github.com/syndtr/goleveldb v1.0.0/go.mod h1:ZVVdQEZoIme9iO1Ch2Jdy24qqXrMMOU6lpPAyBWyWuQ=
 github.com/tchap/go-patricia v2.2.6+incompatible/go.mod h1:bmLyhP68RS6kStMGxByiQ23RP/odRBOTVjwp2cDyi6I=
 github.com/tedsuo/ifrit v0.0.0-20180802180643-bea94bb476cc/go.mod h1:eyZnKCc955uh98WQvzOm0dgAeLnf2O0Rz0LPoC5ze+0=
-github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.357 h1:uaMtRfV/OYPolAldcOuChMPAnmYnG+CONdDAFcaOQGU=
-github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.357/go.mod h1:7sCQWVkxcsR38nffDW057DRGk8mUjK1Ing/EFOK8s8Y=
+github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.360 h1:5emqU7a/7SXVbeaohycbD/cH9St3tMtZWfQY06ZsRXk=
+github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.360/go.mod h1:7sCQWVkxcsR38nffDW057DRGk8mUjK1Ing/EFOK8s8Y=
 github.com/testcontainers/testcontainers-go v0.12.0 h1:SK0NryGHIx7aifF6YqReORL18aGAA4bsDPtikDVCEyg=
 github.com/tg123/go-htpasswd v1.2.0 h1:UKp34m9H467/xklxUxU15wKRru7fwXoTojtxg25ITF0=
 github.com/tg123/go-htpasswd v1.2.0/go.mod h1:h7IzlfpvIWnVJhNZ0nQ9HaFxHb7pn5uFJYLlEUJa2sM=
