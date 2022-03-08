@@ -26,6 +26,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-log-collection/testutil"
 )
 
+const (
+	MatchAll string = "true"
+)
+
 func TestRecombineOperator(t *testing.T) {
 	t1 := time.Date(2020, time.April, 11, 21, 34, 01, 0, time.UTC)
 	t2 := time.Date(2020, time.April, 11, 21, 34, 02, 0, time.UTC)
@@ -56,7 +60,7 @@ func TestRecombineOperator(t *testing.T) {
 			func() *RecombineOperatorConfig {
 				cfg := NewRecombineOperatorConfig("")
 				cfg.CombineField = entry.NewBodyField()
-				cfg.IsFirstEntry = "true"
+				cfg.IsFirstEntry = MatchAll
 				cfg.OutputIDs = []string{"fake"}
 				return cfg
 			}(),
@@ -68,7 +72,7 @@ func TestRecombineOperator(t *testing.T) {
 			func() *RecombineOperatorConfig {
 				cfg := NewRecombineOperatorConfig("")
 				cfg.CombineField = entry.NewBodyField()
-				cfg.IsLastEntry = "true"
+				cfg.IsLastEntry = MatchAll
 				cfg.OutputIDs = []string{"fake"}
 				return cfg
 			}(),
@@ -80,7 +84,7 @@ func TestRecombineOperator(t *testing.T) {
 			func() *RecombineOperatorConfig {
 				cfg := NewRecombineOperatorConfig("")
 				cfg.CombineField = entry.NewBodyField()
-				cfg.IsFirstEntry = "true"
+				cfg.IsFirstEntry = MatchAll
 				cfg.OutputIDs = []string{"fake"}
 				return cfg
 			}(),
@@ -92,7 +96,7 @@ func TestRecombineOperator(t *testing.T) {
 			func() *RecombineOperatorConfig {
 				cfg := NewRecombineOperatorConfig("")
 				cfg.CombineField = entry.NewBodyField()
-				cfg.IsLastEntry = "true"
+				cfg.IsLastEntry = MatchAll
 				cfg.OutputIDs = []string{"fake"}
 				return cfg
 			}(),
@@ -131,6 +135,53 @@ func TestRecombineOperator(t *testing.T) {
 			},
 			[]*entry.Entry{
 				entryWithBody(t2, "test1\ntest2"),
+			},
+		},
+		{
+			"EntriesNonMatchingForFirstEntry",
+			func() *RecombineOperatorConfig {
+				cfg := NewRecombineOperatorConfig("")
+				cfg.CombineField = entry.NewBodyField()
+				cfg.IsFirstEntry = "$body == 'test1'"
+				cfg.OutputIDs = []string{"fake"}
+				cfg.OverwriteWith = "newest"
+				return cfg
+			}(),
+			[]*entry.Entry{
+				entryWithBody(t1, "test2"),
+				entryWithBody(t2, "test3"),
+				entryWithBody(t2, "test4"),
+			},
+			[]*entry.Entry{
+				entryWithBody(t1, "test2"),
+				entryWithBody(t2, "test3"),
+				entryWithBody(t2, "test4"),
+			},
+		},
+		{
+			"EntriesMatchingForFirstEntryOneFileOnly",
+			func() *RecombineOperatorConfig {
+				cfg := NewRecombineOperatorConfig("")
+				cfg.CombineField = entry.NewBodyField()
+				cfg.IsFirstEntry = "$body == 'file1'"
+				cfg.OutputIDs = []string{"fake"}
+				cfg.OverwriteWith = "newest"
+				return cfg
+			}(),
+			[]*entry.Entry{
+				entryWithBodyAttr(t1, "file1", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "file3", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "file1", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t2, "file2", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "file1", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t2, "file2", map[string]string{"file.path": "file2"}),
+				entryWithBodyAttr(t2, "file3", map[string]string{"file.path": "file2"}),
+			},
+			[]*entry.Entry{
+				entryWithBodyAttr(t1, "file1\nfile3", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t2, "file1\nfile2", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t2, "file2", map[string]string{"file.path": "file2"}),
+				entryWithBodyAttr(t2, "file3", map[string]string{"file.path": "file2"}),
 			},
 		},
 		{
@@ -263,7 +314,7 @@ func TestRecombineOperator(t *testing.T) {
 	t.Run("FlushesOnShutdown", func(t *testing.T) {
 		cfg := NewRecombineOperatorConfig("")
 		cfg.CombineField = entry.NewBodyField()
-		cfg.IsFirstEntry = "false"
+		cfg.IsFirstEntry = MatchAll
 		cfg.OutputIDs = []string{"fake"}
 		op, err := cfg.Build(testutil.Logger(t))
 		require.NoError(t, err)
@@ -335,7 +386,7 @@ func TestTimeout(t *testing.T) {
 
 	cfg := NewRecombineOperatorConfig("")
 	cfg.CombineField = entry.NewBodyField()
-	cfg.IsFirstEntry = "false"
+	cfg.IsFirstEntry = MatchAll
 	cfg.OutputIDs = []string{"fake"}
 	cfg.ForceFlushTimeout = 100 * time.Millisecond
 	op, err := cfg.Build(testutil.Logger(t))
