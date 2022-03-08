@@ -41,6 +41,7 @@ func ContainerStatsToMetrics(
 	rs := md.ResourceMetrics().AppendEmpty()
 	rs.SetSchemaUrl(conventions.SchemaURL)
 	resourceAttr := rs.Resource().Attributes()
+	resourceAttr.UpsertString(conventions.AttributeContainerRuntime, "docker")
 	resourceAttr.UpsertString(conventions.AttributeContainerID, container.ID)
 	resourceAttr.UpsertString(conventions.AttributeContainerImageName, container.Config.Image)
 	resourceAttr.UpsertString(conventions.AttributeContainerName, strings.TrimPrefix(container.Name, "/"))

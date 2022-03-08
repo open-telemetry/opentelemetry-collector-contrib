@@ -18,3 +18,11 @@ metrics:
       aggregation: cumulative
       monotonic: true
     attributes: [cpu, state]
+
+  system.cpu.utilization:
+    enabled: false
+    description: Percentage of CPU time broken down by different states.
+    unit: 1
+    gauge:
+      value_type: double
+    attributes: [cpu, state]

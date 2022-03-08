@@ -161,7 +161,7 @@ func createAttributes(resource pdata.Resource, attributes pdata.AttributeMap, ex
 		if isUsefulResourceAttribute(key) {
 			l[key] = prompb.Label{
 				Name:  sanitize(key),
-				Value: value.StringVal(), // TODO(jbd): Decide what to do with non-string attributes.
+				Value: value.AsString(),
 			}
 		}
 

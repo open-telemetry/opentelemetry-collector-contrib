@@ -349,7 +349,7 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) error {
 		return err
 	}
 
-	return prwe.export(context.Background(), testmap)
+	return prwe.handleExport(context.Background(), testmap)
 }
 
 // Test_PushMetrics checks the number of TimeSeries received by server and the number of metrics dropped is the same as
@@ -610,46 +610,65 @@ func Test_PushMetrics(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				if tt.reqTestFunc != nil {
-					tt.reqTestFunc(t, r, tt.expectedTimeSeries, tt.isStaleMarker)
-				}
-				w.WriteHeader(tt.httpResponseCode)
-			}))
+	for _, useWAL := range []bool{true, false} {
+		name := "NoWAL"
+		if useWAL {
+			name = "WAL"
+		}
+		t.Run(name, func(t *testing.T) {
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
+					server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						if tt.reqTestFunc != nil {
+							tt.reqTestFunc(t, r, tt.expectedTimeSeries, tt.isStaleMarker)
+						}
+						w.WriteHeader(tt.httpResponseCode)
+					}))
 
-			defer server.Close()
+					defer server.Close()
 
-			cfg := &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-				Namespace:        "",
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: server.URL,
-					// We almost read 0 bytes, so no need to tune ReadBufferSize.
-					ReadBufferSize:  0,
-					WriteBufferSize: 512 * 1024,
-				},
-				RemoteWriteQueue: RemoteWriteQueue{NumConsumers: 5},
+					cfg := &Config{
+						ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+						Namespace:        "",
+						HTTPClientSettings: confighttp.HTTPClientSettings{
+							Endpoint: server.URL,
+							// We almost read 0 bytes, so no need to tune ReadBufferSize.
+							ReadBufferSize:  0,
+							WriteBufferSize: 512 * 1024,
+						},
+						RemoteWriteQueue: RemoteWriteQueue{NumConsumers: 1},
+					}
+
+					if useWAL {
+						cfg.WAL = &WALConfig{
+							Directory: t.TempDir(),
+						}
+					}
+
+					assert.NotNil(t, cfg)
+					buildInfo := component.BuildInfo{
+						Description: "OpenTelemetry Collector",
+						Version:     "1.0",
+					}
+					set := componenttest.NewNopExporterCreateSettings()
+					set.BuildInfo = buildInfo
+					prwe, nErr := newPRWExporter(cfg, set)
+					require.NoError(t, nErr)
+					ctx, cancel := context.WithCancel(context.Background())
+					t.Cleanup(cancel)
+					require.NoError(t, prwe.Start(ctx, componenttest.NewNopHost()))
+					t.Cleanup(func() {
+						require.NoError(t, prwe.Shutdown(ctx))
+					})
+					err := prwe.PushMetrics(ctx, *tt.md)
+					if tt.returnErr {
+						assert.Error(t, err)
+						return
+					}
+					assert.NoError(t, err)
+				})
 			}
-			assert.NotNil(t, cfg)
-			// c, err := config.HTTPClientSettings.ToClient()
-			// assert.Nil(t, err)
-			buildInfo := component.BuildInfo{
-				Description: "OpenTelemetry Collector",
-				Version:     "1.0",
-			}
-			set := componenttest.NewNopExporterCreateSettings()
-			set.BuildInfo = buildInfo
-			prwe, nErr := newPRWExporter(cfg, set)
-			require.NoError(t, nErr)
-			require.NoError(t, prwe.Start(context.Background(), componenttest.NewNopHost()))
-			err := prwe.PushMetrics(context.Background(), *tt.md)
-			if tt.returnErr {
-				assert.Error(t, err)
-				return
-			}
-			assert.NoError(t, err)
 		})
 	}
 }
@@ -770,4 +789,154 @@ func Test_validateAndSanitizeExternalLabels(t *testing.T) {
 			assert.NoError(t, err)
 		})
 	}
+}
+
+// Ensures that when we attach the Write-Ahead-Log(WAL) to the exporter,
+// that it successfully writes the serialized prompb.WriteRequests to the WAL,
+// and that we can retrieve those exact requests back from the WAL, when the
+// exporter starts up once again, that it picks up where it left off.
+func TestWALOnExporterRoundTrip(t *testing.T) {
+	if testing.Short() {
+		t.Skip("This test could run for long")
+	}
+
+	// 1. Create a mock Prometheus Remote Write Exporter that'll just
+	// receive the bytes uploaded to it by our exporter.
+	uploadedBytesCh := make(chan []byte, 1)
+	exiting := make(chan bool)
+	prweServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		uploaded, err2 := ioutil.ReadAll(req.Body)
+		assert.NoError(t, err2, "Error while reading from HTTP upload")
+		select {
+		case uploadedBytesCh <- uploaded:
+		case <-exiting:
+			return
+		}
+	}))
+	defer prweServer.Close()
+
+	// 2. Create the WAL configuration, create the
+	// exporter and export some time series!
+	tempDir := t.TempDir()
+	cfg := &Config{
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		Namespace:        "test_ns",
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: prweServer.URL,
+		},
+		RemoteWriteQueue: RemoteWriteQueue{NumConsumers: 1},
+		WAL: &WALConfig{
+			Directory:  tempDir,
+			BufferSize: 1,
+		},
+	}
+
+	set := componenttest.NewNopExporterCreateSettings()
+	set.BuildInfo = component.BuildInfo{
+		Description: "OpenTelemetry Collector",
+		Version:     "1.0",
+	}
+
+	prwe, perr := newPRWExporter(cfg, set)
+	assert.NoError(t, perr)
+
+	nopHost := componenttest.NewNopHost()
+	ctx := context.Background()
+	require.NoError(t, prwe.Start(ctx, nopHost))
+	t.Cleanup(func() {
+		// This should have been shut down during the test
+		// If it does not error then something went wrong.
+		assert.Error(t, prwe.Shutdown(ctx))
+		close(exiting)
+	})
+	require.NotNil(t, prwe.wal)
+
+	ts1 := &prompb.TimeSeries{
+		Labels:  []prompb.Label{{Name: "ts1l1", Value: "ts1k1"}},
+		Samples: []prompb.Sample{{Value: 1, Timestamp: 100}},
+	}
+	ts2 := &prompb.TimeSeries{
+		Labels:  []prompb.Label{{Name: "ts2l1", Value: "ts2k1"}},
+		Samples: []prompb.Sample{{Value: 2, Timestamp: 200}},
+	}
+	tsMap := map[string]*prompb.TimeSeries{
+		"timeseries1": ts1,
+		"timeseries2": ts2,
+	}
+	errs := prwe.handleExport(ctx, tsMap)
+	assert.NoError(t, errs)
+	// Shutdown after we've written to the WAL. This ensures that our
+	// exported data in-flight will flushed flushed to the WAL before exiting.
+	require.NoError(t, prwe.Shutdown(ctx))
+
+	// 3. Let's now read back all of the WAL records and ensure
+	// that all the prompb.WriteRequest values exist as we sent them.
+	wal, _, werr := cfg.WAL.createWAL()
+	assert.NoError(t, werr)
+	assert.NotNil(t, wal)
+	t.Cleanup(func() {
+		assert.NoError(t, wal.Close())
+	})
+
+	// Read all the indices.
+	firstIndex, ierr := wal.FirstIndex()
+	assert.NoError(t, ierr)
+	lastIndex, ierr := wal.LastIndex()
+	assert.NoError(t, ierr)
+
+	var reqs []*prompb.WriteRequest
+	for i := firstIndex; i <= lastIndex; i++ {
+		protoBlob, err := wal.Read(i)
+		assert.NoError(t, err)
+		assert.NotNil(t, protoBlob)
+		req := new(prompb.WriteRequest)
+		err = proto.Unmarshal(protoBlob, req)
+		assert.NoError(t, err)
+		reqs = append(reqs, req)
+	}
+	assert.Equal(t, 1, len(reqs))
+	// We MUST have 2 time series as were passed into tsMap.
+	gotFromWAL := reqs[0]
+	assert.Equal(t, 2, len(gotFromWAL.Timeseries))
+	want := &prompb.WriteRequest{
+		Timeseries: orderBySampleTimestamp([]prompb.TimeSeries{
+			*ts1, *ts2,
+		}),
+	}
+
+	// Even after sorting timeseries, we need to sort them
+	// also by Label to ensure deterministic ordering.
+	orderByLabelValue(gotFromWAL)
+	gotFromWAL.Timeseries = orderBySampleTimestamp(gotFromWAL.Timeseries)
+	orderByLabelValue(want)
+
+	assert.Equal(t, want, gotFromWAL)
+
+	// 4. Finally, ensure that the bytes that were uploaded to the
+	// Prometheus Remote Write endpoint are exactly as were saved in the WAL.
+	// Read from that same WAL, export to the RWExporter server.
+	prwe2, err := newPRWExporter(cfg, set)
+	assert.NoError(t, err)
+	require.NoError(t, prwe2.Start(ctx, nopHost))
+	t.Cleanup(func() {
+		assert.NoError(t, prwe2.Shutdown(ctx))
+	})
+	require.NotNil(t, prwe2.wal)
+
+	snappyEncodedBytes := <-uploadedBytesCh
+	decodeBuffer := make([]byte, len(snappyEncodedBytes))
+	uploadedBytes, derr := snappy.Decode(decodeBuffer, snappyEncodedBytes)
+	require.NoError(t, derr)
+	gotFromUpload := new(prompb.WriteRequest)
+	uerr := proto.Unmarshal(uploadedBytes, gotFromUpload)
+	assert.NoError(t, uerr)
+	gotFromUpload.Timeseries = orderBySampleTimestamp(gotFromUpload.Timeseries)
+	// Even after sorting timeseries, we need to sort them
+	// also by Label to ensure deterministic ordering.
+	orderByLabelValue(gotFromUpload)
+
+	// 4.1. Ensure that all the various combinations match up.
+	// To ensure a deterministic ordering, sort the TimeSeries by Label Name.
+	assert.Equal(t, want, gotFromUpload)
+	assert.Equal(t, gotFromWAL, gotFromUpload)
 }

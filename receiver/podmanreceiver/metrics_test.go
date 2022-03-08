@@ -39,8 +39,9 @@ func assertStatsEqualToMetrics(t *testing.T, podmanStats *containerStats, md pda
 	rsm := md.ResourceMetrics().At(0)
 
 	resourceAttrs := map[string]string{
-		"container.id":   "abcd1234",
-		"container.name": "cntrA",
+		"container.runtime": "podman",
+		"container.id":      "abcd1234",
+		"container.name":    "cntrA",
 	}
 	for k, v := range resourceAttrs {
 		attr, exists := rsm.Resource().Attributes().Get(k)

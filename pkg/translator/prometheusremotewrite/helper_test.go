@@ -189,7 +189,7 @@ func Test_createLabelSet(t *testing.T) {
 	}{
 		{
 			"labels_clean",
-			getResource(),
+			getResource(map[string]pdata.AttributeValue{}),
 			lbs1,
 			map[string]string{},
 			[]string{label31, value31, label32, value32},
@@ -197,15 +197,29 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"labels_with_resource",
-			getResource("job", "prometheus", "instance", "127.0.0.1:8080"),
+			getResource(map[string]pdata.AttributeValue{
+				"job":      pdata.NewAttributeValueString("prometheus"),
+				"instance": pdata.NewAttributeValueString("127.0.0.1:8080"),
+			}),
 			lbs1,
 			map[string]string{},
 			[]string{label31, value31, label32, value32},
 			getPromLabels(label11, value11, label12, value12, label31, value31, label32, value32, "job", "prometheus", "instance", "127.0.0.1:8080"),
 		},
 		{
+			"labels_with_nonstring_resource",
+			getResource(map[string]pdata.AttributeValue{
+				"job":      pdata.NewAttributeValueInt(12345),
+				"instance": pdata.NewAttributeValueBool(true),
+			}),
+			lbs1,
+			map[string]string{},
+			[]string{label31, value31, label32, value32},
+			getPromLabels(label11, value11, label12, value12, label31, value31, label32, value32, "job", "12345", "instance", "true"),
+		},
+		{
 			"labels_duplicate_in_extras",
-			getResource(),
+			getResource(map[string]pdata.AttributeValue{}),
 			lbs1,
 			map[string]string{},
 			[]string{label11, value31},
@@ -213,7 +227,7 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"labels_dirty",
-			getResource(),
+			getResource(map[string]pdata.AttributeValue{}),
 			lbs1Dirty,
 			map[string]string{},
 			[]string{label31 + dirty1, value31, label32, value32},
@@ -221,7 +235,7 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"no_original_case",
-			getResource(),
+			getResource(map[string]pdata.AttributeValue{}),
 			pdata.NewAttributeMap(),
 			nil,
 			[]string{label31, value31, label32, value32},
@@ -229,7 +243,7 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"empty_extra_case",
-			getResource(),
+			getResource(map[string]pdata.AttributeValue{}),
 			lbs1,
 			map[string]string{},
 			[]string{"", ""},
@@ -237,7 +251,7 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"single_left_over_case",
-			getResource(),
+			getResource(map[string]pdata.AttributeValue{}),
 			lbs1,
 			map[string]string{},
 			[]string{label31, value31, label32},
@@ -245,7 +259,7 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"valid_external_labels",
-			getResource(),
+			getResource(map[string]pdata.AttributeValue{}),
 			lbs1,
 			exlbs1,
 			[]string{label31, value31, label32, value32},
@@ -253,7 +267,7 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"overwritten_external_labels",
-			getResource(),
+			getResource(map[string]pdata.AttributeValue{}),
 			lbs1,
 			exlbs2,
 			[]string{label31, value31, label32, value32},
