@@ -81,11 +81,11 @@ func createLegacyDefaultConfig() config.Exporter {
 
 // createTracesExporter creates a trace exporter based on this config.
 func createTracesExporter(
-	_ context.Context,
+	ctx context.Context,
 	params component.ExporterCreateSettings,
 	cfg config.Exporter) (component.TracesExporter, error) {
 	eCfg := cfg.(*Config)
-	tExp, err := collector.NewGoogleCloudTracesExporter(eCfg.Config, params.BuildInfo.Version, eCfg.Timeout)
+	tExp, err := collector.NewGoogleCloudTracesExporter(ctx, eCfg.Config, params.BuildInfo.Version, eCfg.Timeout)
 	if err != nil {
 		return nil, err
 	}

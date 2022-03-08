@@ -37,3 +37,11 @@ metrics:
       aggregation: cumulative
       monotonic: false
     attributes: [device, mode, mountpoint, type, state]
+
+  system.filesystem.utilization:
+    enabled: false
+    description: Fraction of filesystem bytes used.
+    unit: 1
+    gauge:
+      value_type: double
+    attributes: [device, mode, mountpoint, type]
