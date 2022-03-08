@@ -402,7 +402,6 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 	msecInt64 := now.UnixNano() / 1e6
 	sec := float64(msecInt64) / 1e3
 	lr.SetTimestamp(pdata.Timestamp(int64(sec * 1e9)))
-	lr.SetName("custom:sourcetype")
 
 	lr.Body().SetStringVal("foo")
 	lr.Attributes().InsertString("com.splunk.sourcetype", "custom:sourcetype")
