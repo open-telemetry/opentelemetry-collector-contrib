@@ -13,6 +13,7 @@
 - `podmanreceiver`: Add container.runtime attribute to container metrics (#8262)
 - `dockerstatsreceiver`: Add container.runtime attribute to container metrics (#8261)
 - `tanzuobservabilityexporter`: instrumentation Library and Dropped Counts to Span Tags (#8120)
+- `clickhouseexporter`: Implement consume log logic. (#9705)
 
 ### 🛑 Breaking changes 🛑
 
