@@ -10,8 +10,13 @@
 - `simpleprometheusreceiver`: Add support for static labels (#7908)
 - `podmanreceiver`: Add container.runtime attribute to container metrics (#8262)
 - `dockerstatsreceiver`: Add container.runtime attribute to container metrics (#8261)
+- Add `NewMetricData` function to `MetricsBuilder` to consistently set instrumentation library name (#8255)
 
 ### 🛑 Breaking changes 🛑
+
+- `nginxreceiver`: instrumentation name updated from `otel/nginx` to `otel/nginxreceiver` (#8255)
+- `postgresqlreceiver`: instrumentation name updated from `otel/postgresql` to `otel/postgresqlreceiver` (#8255)
+- `redisreceiver`: instrumentation name updated from `otel/redis` to `otel/redisreceiver` (#8255)
 
 ### 🧰 Bug fixes 🧰
 
