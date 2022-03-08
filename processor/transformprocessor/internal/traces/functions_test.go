@@ -175,7 +175,11 @@ func Test_newFunctionCall(t *testing.T) {
 
 			evaluate, err := newFunctionCall(tt.inv, DefaultFunctions())
 			assert.NoError(t, err)
-			evaluate(span, pdata.NewInstrumentationLibrary(), pdata.NewResource())
+			evaluate(spanTransformContext{
+				span:     span,
+				il:       pdata.NewInstrumentationLibrary(),
+				resource: pdata.NewResource(),
+			})
 
 			expected := pdata.NewSpan()
 			tt.want(expected)

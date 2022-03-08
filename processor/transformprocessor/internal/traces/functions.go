@@ -33,10 +33,10 @@ func DefaultFunctions() map[string]interface{} {
 }
 
 func set(target setter, value getter) exprFunc {
-	return func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
-		val := value.get(span, il, resource)
+	return func(ctx spanTransformContext) interface{} {
+		val := value.get(ctx)
 		if val != nil {
-			target.set(span, il, resource, val)
+			target.set(ctx, val)
 		}
 		return nil
 	}
@@ -48,8 +48,8 @@ func keepKeys(target getSetter, keys []string) exprFunc {
 		keySet[key] = struct{}{}
 	}
 
-	return func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
-		val := target.get(span, il, resource)
+	return func(ctx spanTransformContext) interface{} {
+		val := target.get(ctx)
 		if val == nil {
 			return nil
 		}
@@ -64,7 +64,7 @@ func keepKeys(target getSetter, keys []string) exprFunc {
 				}
 				return true
 			})
-			target.set(span, il, resource, filtered)
+			target.set(ctx, filtered)
 		}
 		return nil
 	}

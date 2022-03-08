@@ -22,17 +22,23 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
-type exprFunc func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{}
+type spanTransformContext struct {
+	span     pdata.Span
+	il       pdata.InstrumentationLibrary
+	resource pdata.Resource
+}
+
+type exprFunc func(ctx spanTransformContext) interface{}
 
 // getter allows reading a value while processing traces. Note that data is not necessarily read from input
 // telemetry but may be a literal value or a function invocation.
 type getter interface {
-	get(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{}
+	get(ctx spanTransformContext) interface{}
 }
 
 // setter allows writing a value to trace data.
 type setter interface {
-	set(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{})
+	set(ctx spanTransformContext, val interface{})
 }
 
 // getSetter allows reading or writing a value to trace data.
@@ -46,7 +52,7 @@ type literal struct {
 	value interface{}
 }
 
-func (l literal) get(pdata.Span, pdata.InstrumentationLibrary, pdata.Resource) interface{} {
+func (l literal) get(ctx spanTransformContext) interface{} {
 	return l.value
 }
 
@@ -75,8 +81,8 @@ func newGetter(val common.Value, functions map[string]interface{}) (getter, erro
 		return nil, err
 	}
 	return &pathGetSetter{
-		getter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
-			return call(span, il, resource)
+		getter: func(ctx spanTransformContext) interface{} {
+			return call(ctx)
 		},
 	}, nil
 }
