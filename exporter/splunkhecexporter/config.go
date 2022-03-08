@@ -142,6 +142,10 @@ func (cfg *Config) getURL() (out *url.URL, err error) {
 	return
 }
 
+// Validate checks if the exporter configuration is valid.
 func (cfg *Config) Validate() error {
+	if err := cfg.QueueSettings.Validate(); err != nil {
+		return fmt.Errorf("sending_queue settings has invalid configuration: %w", err)
+	}
 	return nil
 }
