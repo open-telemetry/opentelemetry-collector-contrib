@@ -19,15 +19,28 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/service/featuregate"
 	"go.opentelemetry.io/collector/service/servicetest"
 )
 
+// setPdataFeatureGateForTest changes the pdata feature gate during a test.
+// usage: defer SetPdataFeatureGateForTest(true)()
+func setPdataFeatureGateForTest(enabled bool) func() {
+	originalValue := featuregate.IsEnabled(pdataExporterFeatureGate)
+	featuregate.Apply(map[string]bool{pdataExporterFeatureGate: enabled})
+	return func() {
+		featuregate.Apply(map[string]bool{pdataExporterFeatureGate: originalValue})
+	}
+}
+
 func TestLoadConfig(t *testing.T) {
+	defer setPdataFeatureGateForTest(true)()
 	factories, err := componenttest.NopFactories()
 	assert.Nil(t, err)
 
@@ -47,33 +60,29 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, r1,
 		&Config{
 			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "customname")),
-			ProjectID:        "my-project",
-			UserAgent:        "opentelemetry-collector-contrib {{version}}",
-			Endpoint:         "test-endpoint",
-			UseInsecure:      true,
 			TimeoutSettings: exporterhelper.TimeoutSettings{
 				Timeout: 20 * time.Second,
 			},
-			ResourceMappings: []ResourceMapping{
-				{
-					SourceType: "source.resource1",
-					TargetType: "target-resource1",
-					LabelMappings: []LabelMapping{
-						{
-							SourceKey: "contrib.opencensus.io/exporter/googlecloud/project_id",
-							TargetKey: "project_id",
-							Optional:  true,
-						},
-						{
-							SourceKey: "source.label1",
-							TargetKey: "target_label_1",
-							Optional:  false,
-						},
+			Config: collector.Config{
+				ProjectID: "my-project",
+				UserAgent: "opentelemetry-collector-contrib {{version}}",
+				MetricConfig: collector.MetricConfig{
+					Prefix:                           "prefix",
+					SkipCreateMetricDescriptor:       true,
+					KnownDomains:                     []string{"googleapis.com", "kubernetes.io", "istio.io", "knative.dev"},
+					CreateMetricDescriptorBufferSize: 10,
+					InstrumentationLibraryLabels:     true,
+					ServiceResourceLabels:            true,
+					ClientConfig: collector.ClientConfig{
+						Endpoint:    "test-metric-endpoint",
+						UseInsecure: true,
 					},
 				},
-				{
-					SourceType: "source.resource2",
-					TargetType: "target-resource2",
+				TraceConfig: collector.TraceConfig{
+					ClientConfig: collector.ClientConfig{
+						Endpoint:    "test-trace-endpoint",
+						UseInsecure: true,
+					},
 				},
 			},
 			RetrySettings: exporterhelper.RetrySettings{
@@ -86,10 +95,6 @@ func TestLoadConfig(t *testing.T) {
 				Enabled:      true,
 				NumConsumers: 2,
 				QueueSize:    10,
-			},
-			MetricConfig: MetricConfig{
-				Prefix:                     "prefix",
-				SkipCreateMetricDescriptor: true,
 			},
 		})
 }

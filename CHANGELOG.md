@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+### 💡 Enhancements 💡
+
+- `prometheusremotewriteexporter`: Write-Ahead Log support enabled (#7304)
+- `hostreceiver/filesystemscraper`: Add filesystem utilization (#8027)
+- `hostreceiver/pagingscraper`: Add paging.utilization (#6221)
+- `googlecloudexporter`: [Alpha] Translate metrics directly from OTLP to gcm using the `exporter.googlecloud.OTLPDirect` feature-gate (#7177)
+- `simpleprometheusreceiver`: Add support for static labels (#7908)
+- `spanmetricsprocessor`: Dropping the condition to replace _ with key_ as __ label is reserved and _ is not (#8057)
+- `podmanreceiver`: Add container.runtime attribute to container metrics (#8262)
+- `dockerstatsreceiver`: Add container.runtime attribute to container metrics (#8261)
+- `clickhouseexporter`: Implement consume log logic. (#9705)
+- `oauth2clientauthextension`: Add support for EndpointParams (#7307)
+
+### 🛑 Breaking changes 🛑
+
+### 🧰 Bug fixes 🧰
+
+- `zipkinexporter`: Set "error" tag value when status is set to error (#8187)
+
+### 🚀 New components 🚀
+
 ## v0.46.0
 
 ### 💡 Enhancements 💡
@@ -15,11 +36,13 @@
 - `signalfxexporter`: Add validation for `sending_queue` setting (#8026)
 - `internal/stanza`: Add support for arbitrary attribute types (#8081)
 - `resourcedetectionprocessor`: Add confighttp.HTTPClientSettings To Resource Detection Config Fixes (#7397)
+- `hostmetricsreceiver`: Add cpu.utilization metrics to cpu scrapper (#7130)
 - `honeycombexporter`: Add validation for `sending_queue` setting (#8113)
 - `routingprocessor`: Expand error handling on failure to build exporters (#8125)
 - `skywalkingreceiver`: Add new skywalking receiver component folder and structure (#8107)
 - `groupbyattrsprocesor`: Allow empty keys, which allows to use the processor for compaction (#7793)
-- `oauth2clientauthextension`: Add support for EndpointParams (#7307)
+- `datadogexporter`: Add rbac to example k8s manifest file (#8186)
+- `splunkhecexporter`: Add validation for `sending_queue` setting (#8256)
 
 ### 🛑 Breaking changes 🛑
 
@@ -119,6 +142,7 @@
 
 ### 💡 Enhancements 💡
 
+- `kafkaexporter`: Add compression and flush max messages options.
 - `dynatraceexporter`: Write error logs using plugin logger (#7360)
 - `dynatraceexporter`: Fix docs for TLS settings (#7568)
 - `tanzuobservabilityexporter`: Turn on metrics exporter (#7281)
@@ -250,7 +274,6 @@
 - `resourcedetectionprocessor`: add the [consul](https://www.consul.io/) detector (#6382)
 - `awsemfexporter`: refactor cw_client logic into separate `cwlogs` package (#7072)
 - `prometheusexporter`: Dropping the condition to replace _ with key_ as __ label is reserved and _ is not (#7506)
-
 
 ### 🛑 Breaking changes 🛑
 

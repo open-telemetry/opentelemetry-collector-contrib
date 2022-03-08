@@ -15,13 +15,17 @@ type MetricSettings struct {
 
 // MetricsSettings provides settings for cpu metrics.
 type MetricsSettings struct {
-	SystemCPUTime MetricSettings `mapstructure:"system.cpu.time"`
+	SystemCPUTime        MetricSettings `mapstructure:"system.cpu.time"`
+	SystemCPUUtilization MetricSettings `mapstructure:"system.cpu.utilization"`
 }
 
 func DefaultMetricsSettings() MetricsSettings {
 	return MetricsSettings{
 		SystemCPUTime: MetricSettings{
 			Enabled: true,
+		},
+		SystemCPUUtilization: MetricSettings{
+			Enabled: false,
 		},
 	}
 }
@@ -80,11 +84,64 @@ func newMetricSystemCPUTime(settings MetricSettings) metricSystemCPUTime {
 	return m
 }
 
+type metricSystemCPUUtilization struct {
+	data     pdata.Metric   // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills system.cpu.utilization metric with initial data.
+func (m *metricSystemCPUUtilization) init() {
+	m.data.SetName("system.cpu.utilization")
+	m.data.SetDescription("Percentage of CPU time broken down by different states.")
+	m.data.SetUnit("1")
+	m.data.SetDataType(pdata.MetricDataTypeGauge)
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSystemCPUUtilization) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val float64, cpuAttributeValue string, stateAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleVal(val)
+	dp.Attributes().Insert(A.Cpu, pdata.NewAttributeValueString(cpuAttributeValue))
+	dp.Attributes().Insert(A.State, pdata.NewAttributeValueString(stateAttributeValue))
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemCPUUtilization) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemCPUUtilization) emit(metrics pdata.MetricSlice) {
+	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemCPUUtilization(settings MetricSettings) metricSystemCPUUtilization {
+	m := metricSystemCPUUtilization{settings: settings}
+	if settings.Enabled {
+		m.data = pdata.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	startTime           pdata.Timestamp
-	metricSystemCPUTime metricSystemCPUTime
+	startTime                  pdata.Timestamp
+	metricSystemCPUTime        metricSystemCPUTime
+	metricSystemCPUUtilization metricSystemCPUUtilization
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -99,8 +156,9 @@ func WithStartTime(startTime pdata.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		startTime:           pdata.NewTimestampFromTime(time.Now()),
-		metricSystemCPUTime: newMetricSystemCPUTime(settings.SystemCPUTime),
+		startTime:                  pdata.NewTimestampFromTime(time.Now()),
+		metricSystemCPUTime:        newMetricSystemCPUTime(settings.SystemCPUTime),
+		metricSystemCPUUtilization: newMetricSystemCPUUtilization(settings.SystemCPUUtilization),
 	}
 	for _, op := range options {
 		op(mb)
@@ -113,11 +171,17 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 // defined in metadata and user settings, e.g. delta/cumulative translation.
 func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
 	mb.metricSystemCPUTime.emit(metrics)
+	mb.metricSystemCPUUtilization.emit(metrics)
 }
 
 // RecordSystemCPUTimeDataPoint adds a data point to system.cpu.time metric.
 func (mb *MetricsBuilder) RecordSystemCPUTimeDataPoint(ts pdata.Timestamp, val float64, cpuAttributeValue string, stateAttributeValue string) {
 	mb.metricSystemCPUTime.recordDataPoint(mb.startTime, ts, val, cpuAttributeValue, stateAttributeValue)
+}
+
+// RecordSystemCPUUtilizationDataPoint adds a data point to system.cpu.utilization metric.
+func (mb *MetricsBuilder) RecordSystemCPUUtilizationDataPoint(ts pdata.Timestamp, val float64, cpuAttributeValue string, stateAttributeValue string) {
+	mb.metricSystemCPUUtilization.recordDataPoint(mb.startTime, ts, val, cpuAttributeValue, stateAttributeValue)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

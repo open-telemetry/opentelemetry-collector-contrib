@@ -36,7 +36,7 @@ exporter/googlecloudexporter/                        @open-telemetry/collector-c
 exporter/googlecloudpubsubexporter/                  @open-telemetry/collector-contrib-approvers @alexvanboxel
 exporter/honeycombexporter/                          @open-telemetry/collector-contrib-approvers @paulosman @lizthegrey @MikeGoldsmith
 exporter/humioexporter/                              @open-telemetry/collector-contrib-approvers @xitric
-exporter/influxdbexporter/                           @open-telemetry/collector-contrib-approvers @jacobmarble @8none1
+exporter/influxdbexporter/                           @open-telemetry/collector-contrib-approvers @jacobmarble
 exporter/jaegerexporter/                             @open-telemetry/collector-contrib-approvers @jpkrohling
 exporter/jaegerthrifthttpexporter/                   @open-telemetry/collector-contrib-approvers @jpkrohling @pavolloffay
 exporter/kafkaexporter/                              @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
@@ -123,7 +123,7 @@ receiver/fluentforwardreceiver/                      @open-telemetry/collector-c
 receiver/googlecloudpubsubreceiver/                  @open-telemetry/collector-contrib-approvers @alexvanboxel
 receiver/googlecloudspannerreceiver/                 @open-telemetry/collector-contrib-approvers @ydrozhdzhal @asukhyy @khospodarysko @architjugran
 receiver/hostmetricsreceiver                         @open-telemetry/collector-contrib-approvers @dmitryax
-receiver/influxdbreceiver/                           @open-telemetry/collector-contrib-approvers @jacobmarble @8none1
+receiver/influxdbreceiver/                           @open-telemetry/collector-contrib-approvers @jacobmarble
 receiver/jaegerreceiver/                             @open-telemetry/collector-contrib-approvers @jpkrohling
 receiver/jmxreceiver/                                @open-telemetry/collector-contrib-approvers @rmfitzpatrick
 receiver/journaldreceiver/                           @open-telemetry/collector-contrib-approvers @pmm-sumo
