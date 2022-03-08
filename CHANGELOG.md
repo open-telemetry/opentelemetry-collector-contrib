@@ -21,6 +21,7 @@
 - `dynatraceexporter`: add multi-instance deployment note to README.md (#8848)
 - `resourcedetectionprocessor`: Add attribute allowlist (#8547)
 - `datadogexporter`:  Metrics payload data and Sketches payload data will be logged if collector is started in debug mode (#8929)
+- `tanzuobservabilityexporter`: Use resourcetotelemetry helper (#8338)
 
 ### 🛑 Breaking changes 🛑
 
