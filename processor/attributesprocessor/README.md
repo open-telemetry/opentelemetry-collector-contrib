@@ -116,7 +116,7 @@ processors:
 Refer to [config.yaml](./testdata/config.yaml) for detailed
 examples on using the processor.
 
-### Attributes Processor for Metrics vs. Metric Transform Processor
+### Attributes Processor for Metrics vs. [Metric Transform Processor](../metricstransformprocessor)
 
 Regarding metric support, these two processors have overlapping functionality. They can both do simple modifications
 of metric attribute key-value pairs. As a general rule the attributes processor has more attribute related

@@ -120,7 +120,7 @@ func createLogProcessor(
 
 func createMetricsProcessor(
 	_ context.Context,
-	_ component.ProcessorCreateSettings,
+	params component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
@@ -148,6 +148,6 @@ func createMetricsProcessor(
 	return processorhelper.NewMetricsProcessor(
 		cfg,
 		nextConsumer,
-		newMetricAttributesProcessor(attrProc, include, exclude).processMetrics,
+		newMetricAttributesProcessor(params.Logger, attrProc, include, exclude).processMetrics,
 		processorhelper.WithCapabilities(processorCapabilities))
 }

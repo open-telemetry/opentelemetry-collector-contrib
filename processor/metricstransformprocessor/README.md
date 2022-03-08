@@ -312,7 +312,7 @@ operations:
   group_resource_labels: {"resouce.type": "container", "source": "kubelet"}
 ```
 
-### Attributes Processor for Metrics vs. Metric Transform Processor
+### Metric Transform Processor vs. [Attributes Processor for Metrics](../attributesprocessor)
 
 Regarding metric support, these two processors have overlapping functionality. They can both do simple modifications
 of metric attribute key-value pairs. As a general rule the attributes processor has more attribute related

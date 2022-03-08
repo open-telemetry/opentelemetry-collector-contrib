@@ -18,12 +18,14 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filtermetric"
 )
 
 type metricAttributesProcessor struct {
+	logger *zap.Logger
 	attrProc *attraction.AttrProc
 	include  filtermetric.Matcher
 	exclude  filtermetric.Matcher
@@ -32,8 +34,9 @@ type metricAttributesProcessor struct {
 // newMetricAttributesProcessor returns a processor that modifies attributes of a
 // metric record. To construct the attributes processors, the use of the factory
 // methods are required in order to validate the inputs.
-func newMetricAttributesProcessor(attrProc *attraction.AttrProc, include, exclude filtermetric.Matcher) *metricAttributesProcessor {
+func newMetricAttributesProcessor(logger *zap.Logger, attrProc *attraction.AttrProc, include, exclude filtermetric.Matcher) *metricAttributesProcessor {
 	return &metricAttributesProcessor{
+		logger: logger,
 		attrProc: attrProc,
 		include:  include,
 		exclude:  exclude,
@@ -50,7 +53,7 @@ func (a *metricAttributesProcessor) processMetrics(ctx context.Context, md pdata
 			metrics := ils.Metrics()
 			for k := 0; k < metrics.Len(); k++ {
 				mr := metrics.At(k)
-				if filtermetric.SkipMetric(a.include, a.exclude, mr) {
+				if filtermetric.SkipMetric(a.include, a.exclude, mr, a.logger) {
 					continue
 				}
 
