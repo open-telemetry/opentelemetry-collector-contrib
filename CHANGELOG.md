@@ -6,10 +6,13 @@
 
 - `prometheusremotewriteexporter`: Write-Ahead Log support enabled (#7304)
 - `hostreceiver/filesystemscraper`: Add filesystem utilization (#8027)
+- `hostreceiver/pagingscraper`: Add paging.utilization (#6221)
 - `googlecloudexporter`: [Alpha] Translate metrics directly from OTLP to gcm using the `exporter.googlecloud.OTLPDirect` feature-gate (#7177)
 - `simpleprometheusreceiver`: Add support for static labels (#7908)
+- `spanmetricsprocessor`: Dropping the condition to replace _ with key_ as __ label is reserved and _ is not (#8057)
 - `podmanreceiver`: Add container.runtime attribute to container metrics (#8262)
 - `dockerstatsreceiver`: Add container.runtime attribute to container metrics (#8261)
+- `clickhouseexporter`: Implement consume log logic. (#9705)
 - Add `NewMetricData` function to `MetricsBuilder` to consistently set instrumentation library name (#8255)
 
 ### 🛑 Breaking changes 🛑
@@ -275,7 +278,6 @@
 - `resourcedetectionprocessor`: add the [consul](https://www.consul.io/) detector (#6382)
 - `awsemfexporter`: refactor cw_client logic into separate `cwlogs` package (#7072)
 - `prometheusexporter`: Dropping the condition to replace _ with key_ as __ label is reserved and _ is not (#7506)
-
 
 ### 🛑 Breaking changes 🛑
 
