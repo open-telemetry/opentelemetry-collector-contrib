@@ -25,7 +25,7 @@ import (
 )
 
 type metricAttributesProcessor struct {
-	logger *zap.Logger
+	logger   *zap.Logger
 	attrProc *attraction.AttrProc
 	include  filtermetric.Matcher
 	exclude  filtermetric.Matcher
@@ -36,7 +36,7 @@ type metricAttributesProcessor struct {
 // methods are required in order to validate the inputs.
 func newMetricAttributesProcessor(logger *zap.Logger, attrProc *attraction.AttrProc, include, exclude filtermetric.Matcher) *metricAttributesProcessor {
 	return &metricAttributesProcessor{
-		logger: logger,
+		logger:   logger,
 		attrProc: attrProc,
 		include:  include,
 		exclude:  exclude,
