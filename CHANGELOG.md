@@ -6,6 +6,7 @@
 
 - `prometheusremotewriteexporter`: Write-Ahead Log support enabled (#7304)
 - `hostreceiver/filesystemscraper`: Add filesystem utilization (#8027)
+- `hostreceiver/pagingscraper`: Add paging.utilization (#6221)
 - `googlecloudexporter`: [Alpha] Translate metrics directly from OTLP to gcm using the `exporter.googlecloud.OTLPDirect` feature-gate (#7177)
 - `simpleprometheusreceiver`: Add support for static labels (#7908)
 - `spanmetricsprocessor`: Dropping the condition to replace _ with key_ as __ label is reserved and _ is not (#8057)
