@@ -75,15 +75,7 @@ func (si *signingRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 
 	// Use user provided service/region if specified, use inferred service/region if not, then sign the request
 	service, region := si.inferServiceAndRegion(req)
-	if si.service != "" && si.region != "" {
-		err = si.signer.SignHTTP(req.Context(), *si.creds, req2, payloadHash, si.service, si.region, time.Now())
-	} else if si.service != "" && si.region == "" {
-		err = si.signer.SignHTTP(req.Context(), *si.creds, req2, payloadHash, si.service, region, time.Now())
-	} else if si.service == "" && si.region != "" {
-		err = si.signer.SignHTTP(req.Context(), *si.creds, req2, payloadHash, service, si.region, time.Now())
-	} else {
-		err = si.signer.SignHTTP(req.Context(), *si.creds, req2, payloadHash, service, region, time.Now())
-	}
+	err = si.signer.SignHTTP(req.Context(), *si.creds, req2, payloadHash, service, region, time.Now())
 	if err != nil {
 		return nil, fmt.Errorf("error signing the request: %w", err)
 	}
@@ -96,15 +88,26 @@ func (si *signingRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 // and a region from an http.request, and returns either an empty
 // string for both or a valid value for both.
 func (si *signingRoundTripper) inferServiceAndRegion(r *http.Request) (service string, region string) {
+	service = si.service
+	region = si.region
+	
 	h := r.Host
 	if strings.HasPrefix(h, "aps-workspaces") {
-		service = "aps"
+		if service == "" {
+			service = "aps"
+		}
 		rest := h[strings.Index(h, ".")+1:]
-		region = rest[0:strings.Index(rest, ".")]
+		if region == "" {
+			region = rest[0:strings.Index(rest, ".")]
+		}
 	} else if strings.HasPrefix(h, "search-") {
-		service = "es"
+		if service == "" {
+			service = "es"
+		}
 		rest := h[strings.Index(h, ".")+1:]
-		region = rest[0:strings.Index(rest, ".")]
+		if region == "" {
+			region = rest[0:strings.Index(rest, ".")]
+		}
 	} else {
 		si.logger.Warn("Unable to infer region and/or service from the URL. Please provide values for region and/or service in the collector configuration.")
 	}

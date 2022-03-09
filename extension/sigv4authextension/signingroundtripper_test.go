@@ -99,7 +99,7 @@ func TestRoundTrip(t *testing.T) {
 	}
 }
 
-func TestInferServiceAndRegionFromRequestURL(t *testing.T) {
+func TestInferServiceAndRegion(t *testing.T) {
 	req1, err := http.NewRequest("GET", "https://example.com", nil)
 	assert.NoError(t, err)
 
@@ -109,38 +109,60 @@ func TestInferServiceAndRegionFromRequestURL(t *testing.T) {
 	req3, err := http.NewRequest("GET", "https://search-my-domain.us-east-1.es.amazonaws.com/_search?q=house", nil)
 	assert.NoError(t, err)
 
+	req4, err := http.NewRequest("GET", "https://example.com", nil)
+	assert.NoError(t, err)
+
+	req5, err := http.NewRequest("GET", "https://aps-workspaces.us-east-1.amazonaws.com/workspaces/ws-XXX/api/v1/remote_write", nil)
+	assert.NoError(t, err)
+
 	tests := []struct {
 		name            string
 		request         *http.Request
+		cfg             *Config
 		expectedService string
 		expectedRegion  string
 	}{
 		{
-			"no_service_or_region_match",
+			"no_service_or_region_match_with_no_config",
 			req1,
+			createDefaultConfig().(*Config),
 			"",
 			"",
 		},
 		{
-			"amp_service_and_region_match",
+			"amp_service_and_region_match_with_no_config",
 			req2,
+			createDefaultConfig().(*Config),
 			"aps",
 			"us-east-1",
 		},
 		{
-			"es_service_and_region_match",
+			"es_service_and_region_match_with_no_config",
 			req3,
+			createDefaultConfig().(*Config),
 			"es",
 			"us-east-1",
+		},
+		{
+			"no_match_with_config",
+			req4,
+			&Config{Region: "region", Service: "service", RoleARN: "rolearn"},
+			"service",
+			"region",
+		},
+		{
+			"match_with_config",
+			req5,
+			&Config{Region: "region", Service: "service", RoleARN: "rolearn"},
+			"service",
+			"region",
 		},
 	}
 
 	// run tests
 	for _, testcase := range tests {
 		t.Run(testcase.name, func(t *testing.T) {
-			cfg := &Config{Region: "region", Service: "service", RoleARN: "rolearn"}
-
-			sa := newSigv4Extension(cfg, "awsSDKInfo", zap.NewNop())
+			sa := newSigv4Extension(testcase.cfg, "awsSDKInfo", zap.NewNop())
 			assert.NotNil(t, sa)
 
 			rt, err := sa.RoundTripper((http.RoundTripper)(http.DefaultTransport.(*http.Transport).Clone()))
