@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `opentelemetry-instrumentation-wsgi` Capture custom request/response headers in span attributes
   ([#925])(https://github.com/open-telemetry/opentelemetry-python-contrib/pull/925)
 
+- `opentelemetry-instrumentation-flask` Flask: Capture custom request/response headers in span attributes
+  ([#952])(https://github.com/open-telemetry/opentelemetry-python-contrib/pull/952)
+
 ### Added
 
 - `opentelemetry-instrumentation-sqlalchemy` added experimental sql commenter capability

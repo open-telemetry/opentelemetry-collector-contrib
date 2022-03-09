@@ -442,3 +442,101 @@ class TestProgrammaticWrappedWithOtherFramework(
         self.assertEqual(
             span_list[0].parent.span_id, span_list[1].context.span_id
         )
+
+
+class TestCustomRequestResponseHeaders(
+    InstrumentationTest, TestBase, WsgiTestBase
+):
+    def setUp(self):
+        super().setUp()
+
+        self.env_patch = patch.dict(
+            "os.environ",
+            {
+                "OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST": "Custom-Test-Header-1,Custom-Test-Header-2,Custom-Test-Header-3",
+                "OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE": "content-type,content-length,my-custom-header,invalid-header",
+            },
+        )
+        self.env_patch.start()
+        self.app = Flask(__name__)
+        FlaskInstrumentor().instrument_app(self.app)
+
+        self._common_initialization()
+
+    def tearDown(self):
+        super().tearDown()
+        self.env_patch.stop()
+        with self.disable_logging():
+            FlaskInstrumentor().uninstrument_app(self.app)
+
+    def test_custom_request_header_added_in_server_span(self):
+        headers = {
+            "Custom-Test-Header-1": "Test Value 1",
+            "Custom-Test-Header-2": "TestValue2,TestValue3",
+        }
+        resp = self.client.get("/hello/123", headers=headers)
+        self.assertEqual(200, resp.status_code)
+        span = self.memory_exporter.get_finished_spans()[0]
+        expected = {
+            "http.request.header.custom_test_header_1": ("Test Value 1",),
+            "http.request.header.custom_test_header_2": (
+                "TestValue2,TestValue3",
+            ),
+        }
+        self.assertEqual(span.kind, trace.SpanKind.SERVER)
+        self.assertSpanHasAttributes(span, expected)
+
+    def test_custom_request_header_not_added_in_internal_span(self):
+        tracer = trace.get_tracer(__name__)
+        with tracer.start_as_current_span("test", kind=trace.SpanKind.SERVER):
+            headers = {
+                "Custom-Test-Header-1": "Test Value 1",
+                "Custom-Test-Header-2": "TestValue2,TestValue3",
+            }
+            resp = self.client.get("/hello/123", headers=headers)
+            self.assertEqual(200, resp.status_code)
+            span = self.memory_exporter.get_finished_spans()[0]
+            not_expected = {
+                "http.request.header.custom_test_header_1": ("Test Value 1",),
+                "http.request.header.custom_test_header_2": (
+                    "TestValue2,TestValue3",
+                ),
+            }
+            self.assertEqual(span.kind, trace.SpanKind.INTERNAL)
+            for key, _ in not_expected.items():
+                self.assertNotIn(key, span.attributes)
+
+    def test_custom_response_header_added_in_server_span(self):
+        resp = self.client.get("/test_custom_response_headers")
+        self.assertEqual(resp.status_code, 200)
+        span = self.memory_exporter.get_finished_spans()[0]
+        expected = {
+            "http.response.header.content_type": (
+                "text/plain; charset=utf-8",
+            ),
+            "http.response.header.content_length": ("13",),
+            "http.response.header.my_custom_header": (
+                "my-custom-value-1,my-custom-header-2",
+            ),
+        }
+        self.assertEqual(span.kind, trace.SpanKind.SERVER)
+        self.assertSpanHasAttributes(span, expected)
+
+    def test_custom_response_header_not_added_in_internal_span(self):
+        tracer = trace.get_tracer(__name__)
+        with tracer.start_as_current_span("test", kind=trace.SpanKind.SERVER):
+            resp = self.client.get("/test_custom_response_headers")
+            self.assertEqual(resp.status_code, 200)
+            span = self.memory_exporter.get_finished_spans()[0]
+            not_expected = {
+                "http.response.header.content_type": (
+                    "text/plain; charset=utf-8",
+                ),
+                "http.response.header.content_length": ("13",),
+                "http.response.header.my_custom_header": (
+                    "my-custom-value-1,my-custom-header-2",
+                ),
+            }
+            self.assertEqual(span.kind, trace.SpanKind.INTERNAL)
+            for key, _ in not_expected.items():
+                self.assertNotIn(key, span.attributes)
