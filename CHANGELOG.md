@@ -17,9 +17,9 @@
 
 ### 🛑 Breaking changes 🛑
 
-- `nginxreceiver`: instrumentation name updated from `otel/nginx` to `otel/nginxreceiver` (#8255)
-- `postgresqlreceiver`: instrumentation name updated from `otel/postgresql` to `otel/postgresqlreceiver` (#8255)
-- `redisreceiver`: instrumentation name updated from `otel/redis` to `otel/redisreceiver` (#8255)
+- `nginxreceiver`: instrumentation name updated from `otelcol/nginx` to `otelcol/nginxreceiver` (#8255)
+- `postgresqlreceiver`: instrumentation name updated from `otelcol/postgresql` to `otelcol/postgresqlreceiver` (#8255)
+- `redisreceiver`: instrumentation name updated from `otelcol/redis` to `otelcol/redisreceiver` (#8255)
 
 ### 🧰 Bug fixes 🧰
 
