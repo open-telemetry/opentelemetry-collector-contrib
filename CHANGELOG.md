@@ -13,6 +13,7 @@
 - `podmanreceiver`: Add container.runtime attribute to container metrics (#8262)
 - `dockerstatsreceiver`: Add container.runtime attribute to container metrics (#8261)
 - `clickhouseexporter`: Implement consume log logic. (#9705)
+- `influxdbexporter`: Add support for cumulative, non-monotonic metrics. (#8348)
 - `oauth2clientauthextension`: Add support for EndpointParams (#7307)
 
 ### 🛑 Breaking changes 🛑
