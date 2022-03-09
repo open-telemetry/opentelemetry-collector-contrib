@@ -32,13 +32,13 @@ import (
 
 // signingRoundTripper is a custom RoundTripper that performs AWS Sigv4.
 type signingRoundTripper struct {
-	transport  http.RoundTripper
-	signer     *sigv4.Signer
-	region     string
-	service    string
-	creds      *aws.Credentials
-	awsSDKInfo string
-	logger     *zap.Logger
+	transport     http.RoundTripper
+	signer        *sigv4.Signer
+	region        string
+	service       string
+	credsProvider *aws.CredentialsProvider
+	awsSDKInfo    string
+	logger        *zap.Logger
 }
 
 // RoundTrip() executes a single HTTP transaction and returns an HTTP response, signing
@@ -75,7 +75,11 @@ func (si *signingRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 
 	// Use user provided service/region if specified, use inferred service/region if not, then sign the request
 	service, region := si.inferServiceAndRegion(req)
-	err = si.signer.SignHTTP(req.Context(), *si.creds, req2, payloadHash, service, region, time.Now())
+	creds, err := (*si.credsProvider).Retrieve(req.Context())
+	if err != nil {
+		return nil, errBadCreds
+	}
+	err = si.signer.SignHTTP(req.Context(), creds, req2, payloadHash, service, region, time.Now())
 	if err != nil {
 		return nil, fmt.Errorf("error signing the request: %w", err)
 	}
@@ -90,7 +94,7 @@ func (si *signingRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 func (si *signingRoundTripper) inferServiceAndRegion(r *http.Request) (service string, region string) {
 	service = si.service
 	region = si.region
-	
+
 	h := r.Host
 	if strings.HasPrefix(h, "aps-workspaces") {
 		if service == "" {

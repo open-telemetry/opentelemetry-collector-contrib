@@ -31,7 +31,7 @@ type Config struct {
 	Region                   string `mapstructure:"region"`
 	Service                  string `mapstructure:"service"`
 	RoleARN                  string `mapstructure:"role_arn,omitempty"`
-	creds                    *aws.Credentials
+	credsProvider            *aws.CredentialsProvider
 }
 
 // compile time check that the Config struct satisfies the config.Extension interface
@@ -41,11 +41,11 @@ var _ config.Extension = (*Config)(nil)
 // We aim to catch most errors here to ensure that we
 // fail early and to avoid revalidating static data.
 func (cfg *Config) Validate() error {
-	creds, err := getCredsFromConfig(cfg)
-	if creds == nil || err != nil {
+	credsProvider, err := getCredsProviderFromConfig(cfg)
+	if credsProvider == nil || err != nil {
 		return errBadCreds
 	}
-	cfg.creds = creds
+	cfg.credsProvider = credsProvider
 
 	return nil
 }

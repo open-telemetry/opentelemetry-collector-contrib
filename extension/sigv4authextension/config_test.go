@@ -15,6 +15,7 @@
 package sigv4authextension
 
 import (
+	"context"
 	"path"
 	"testing"
 
@@ -26,7 +27,9 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
-	awsCreds := mockCredentials()
+	awsCredsProvider := mockCredentials()
+	awsCreds, _ := (*awsCredsProvider).Retrieve(context.Background())
+
 	t.Setenv("AWS_ACCESS_KEY_ID", awsCreds.AccessKeyID)
 	t.Setenv("AWS_SECRET_ACCESS_KEY", awsCreds.SecretAccessKey)
 
@@ -46,7 +49,7 @@ func TestLoadConfig(t *testing.T) {
 
 	ext := cfg.Extensions[config.NewComponentID(typeStr)]
 	// Ensure creds are the same for load config test; tested in extension_test.go
-	expected.creds = ext.(*Config).creds
+	expected.credsProvider = ext.(*Config).credsProvider
 	assert.Equal(t, expected, ext)
 
 	assert.Equal(t, 1, len(cfg.Service.Extensions))

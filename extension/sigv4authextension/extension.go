@@ -53,13 +53,13 @@ func (sa *sigv4Auth) RoundTripper(base http.RoundTripper) (http.RoundTripper, er
 
 	// Create the signingRoundTripper struct
 	rt := signingRoundTripper{
-		transport:  base,
-		signer:     signer,
-		region:     cfg.Region,
-		service:    cfg.Service,
-		creds:      cfg.creds,
-		awsSDKInfo: sa.awsSDKInfo,
-		logger:     sa.logger,
+		transport:     base,
+		signer:        signer,
+		region:        cfg.Region,
+		service:       cfg.Service,
+		credsProvider: cfg.credsProvider,
+		awsSDKInfo:    sa.awsSDKInfo,
+		logger:        sa.logger,
 	}
 
 	return &rt, nil
@@ -81,9 +81,9 @@ func newSigv4Extension(cfg *Config, awsSDKInfo string, logger *zap.Logger) *sigv
 	}
 }
 
-// getCredsFromConfig() is a helper function that gets AWS credentials
+// getCredsProviderFromConfig() is a helper function that gets AWS credentials
 // from the Config.
-func getCredsFromConfig(cfg *Config) (*aws.Credentials, error) {
+func getCredsProviderFromConfig(cfg *Config) (*aws.CredentialsProvider, error) {
 	awscfg, err := awsconfig.LoadDefaultConfig(context.Background(),
 		awsconfig.WithRegion(cfg.Region),
 	)
@@ -95,15 +95,13 @@ func getCredsFromConfig(cfg *Config) (*aws.Credentials, error) {
 		provider := stscreds.NewAssumeRoleProvider(stsSvc, cfg.RoleARN, func(o *stscreds.AssumeRoleOptions) {
 			o.RoleSessionName = "otel-" + strconv.FormatInt(time.Now().Unix(), 10)
 		})
-		creds, err := provider.Retrieve(context.Background())
-		if err != nil {
-			return nil, err
-		}
-		return &creds, nil
+		awscfg.Credentials = aws.NewCredentialsCache(provider)
 	}
-	creds, err := awscfg.Credentials.Retrieve(context.Background())
+
+	_, err = awscfg.Credentials.Retrieve(context.Background())
 	if err != nil {
 		return nil, err
 	}
-	return &creds, nil
+
+	return &awscfg.Credentials, nil
 }

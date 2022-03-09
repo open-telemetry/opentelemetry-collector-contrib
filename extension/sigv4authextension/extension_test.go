@@ -15,10 +15,12 @@
 package sigv4authextension
 
 import (
+	"context"
 	"net/http"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -35,12 +37,13 @@ func TestNewSigv4Extension(t *testing.T) {
 }
 
 func TestRoundTripper(t *testing.T) {
-	awsCreds := mockCredentials()
+	awsCredsProvider := mockCredentials()
+
 	base := (http.RoundTripper)(http.DefaultTransport.(*http.Transport).Clone())
 	awsSDKInfo := "awsSDKInfo"
-	cfg := &Config{Region: "region", Service: "service", RoleARN: "rolearn", creds: awsCreds}
+	cfg := &Config{Region: "region", Service: "service", RoleARN: "rolearn", credsProvider: awsCredsProvider}
 
-	sa:= newSigv4Extension(cfg, awsSDKInfo, zap.NewNop())
+	sa := newSigv4Extension(cfg, awsSDKInfo, zap.NewNop())
 	assert.NotNil(t, sa)
 
 	rt, err := sa.RoundTripper(base)
@@ -63,10 +66,7 @@ func TestPerRPCCredentials(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestGetCredsFromConfig(t *testing.T) {
-	awsCreds := mockCredentials()
-	t.Setenv("AWS_ACCESS_KEY_ID", awsCreds.AccessKeyID)
-	t.Setenv("AWS_SECRET_ACCESS_KEY", awsCreds.SecretAccessKey)
+func TestGetCredsProviderFromConfig(t *testing.T) {
 	tests := []struct {
 		name string
 		cfg  *Config
@@ -79,8 +79,9 @@ func TestGetCredsFromConfig(t *testing.T) {
 	// run tests
 	for _, testcase := range tests {
 		t.Run(testcase.name, func(t *testing.T) {
-			creds, err := getCredsFromConfig(testcase.cfg)
-			require.NoError(t, err, "Failed getCredsFromConfig")
+			credsProvider, err := getCredsProviderFromConfig(testcase.cfg)
+			creds, err := (*credsProvider).Retrieve(context.Background())
+			require.NoError(t, err, "Failed getCredsProviderFromConfig")
 			require.NotNil(t, creds)
 		})
 	}
@@ -117,11 +118,15 @@ func TestCloneRequest(t *testing.T) {
 	}
 }
 
-func mockCredentials() *aws.Credentials {
+func mockCredentials() *aws.CredentialsProvider {
+	awscfg, _ := awsconfig.LoadDefaultConfig(context.Background())
 	provider := credentials.NewStaticCredentialsProvider(
 		"MOCK_AWS_ACCESS_KEY",
 		"MOCK_AWS_SECRET_ACCESS_KEY",
 		"MOCK_TOKEN",
 	)
-	return &provider.Value
+
+	awscfg.Credentials = aws.NewCredentialsCache(provider)
+
+	return &awscfg.Credentials
 }
