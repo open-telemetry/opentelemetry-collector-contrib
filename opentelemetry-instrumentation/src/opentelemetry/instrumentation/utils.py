@@ -23,7 +23,7 @@ from opentelemetry import context, trace
 # pylint: disable=E0611
 from opentelemetry.context import _SUPPRESS_INSTRUMENTATION_KEY  # noqa: F401
 from opentelemetry.propagate import extract
-from opentelemetry.trace import StatusCode
+from opentelemetry.trace import Span, StatusCode
 
 
 def extract_attributes_from_object(
@@ -152,3 +152,14 @@ def _url_quote(s):  # pylint: disable=invalid-name
     # thus in our quoting, we need to escape it too to finally give
     #      foo,bar --> foo%%2Cbar
     return quoted.replace("%", "%%")
+
+
+def _generate_opentelemetry_traceparent(span: Span) -> str:
+    meta = {}
+    _version = "00"
+    _span_id = trace.format_span_id(span.context.span_id)
+    _trace_id = trace.format_trace_id(span.context.trace_id)
+    _flags = str(trace.TraceFlags.SAMPLED)
+    _traceparent = _version + "-" + _trace_id + "-" + _span_id + "-" + _flags
+    meta.update({"traceparent": _traceparent})
+    return meta

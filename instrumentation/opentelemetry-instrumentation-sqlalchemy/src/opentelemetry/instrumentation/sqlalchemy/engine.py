@@ -17,7 +17,12 @@ from sqlalchemy.event import listen  # pylint: disable=no-name-in-module
 
 from opentelemetry import trace
 from opentelemetry.instrumentation.sqlalchemy.version import __version__
+from opentelemetry.instrumentation.utils import (
+    _generate_opentelemetry_traceparent,
+    _generate_sql_comment,
+)
 from opentelemetry.semconv.trace import NetTransportValues, SpanAttributes
+from opentelemetry.trace import Span
 from opentelemetry.trace.status import Status, StatusCode
 
 
@@ -70,12 +75,15 @@ def _wrap_create_engine(tracer_provider=None):
 
 
 class EngineTracer:
-    def __init__(self, tracer, engine):
+    def __init__(self, tracer, engine, enable_commenter=False):
         self.tracer = tracer
         self.engine = engine
         self.vendor = _normalize_vendor(engine.name)
+        self.enable_commenter = enable_commenter
 
-        listen(engine, "before_cursor_execute", self._before_cur_exec)
+        listen(
+            engine, "before_cursor_execute", self._before_cur_exec, retval=True
+        )
         listen(engine, "after_cursor_execute", _after_cur_exec)
         listen(engine, "handle_error", _handle_error)
 
@@ -115,6 +123,18 @@ class EngineTracer:
                     span.set_attribute(key, value)
 
         context._otel_span = span
+        if self.enable_commenter:
+            statement = statement + EngineTracer._generate_comment(span=span)
+
+        return statement, params
+
+    @staticmethod
+    def _generate_comment(span: Span) -> str:
+        span_context = span.get_span_context()
+        meta = {}
+        if span_context.is_valid:
+            meta.update(_generate_opentelemetry_traceparent(span))
+        return _generate_sql_comment(**meta)
 
 
 # pylint: disable=unused-argument

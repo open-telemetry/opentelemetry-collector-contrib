@@ -106,6 +106,7 @@ class SQLAlchemyInstrumentor(BaseInstrumentor):
             return EngineTracer(
                 _get_tracer(kwargs.get("engine"), tracer_provider),
                 kwargs.get("engine"),
+                kwargs.get("enable_commenter", False),
             )
         return None
 
