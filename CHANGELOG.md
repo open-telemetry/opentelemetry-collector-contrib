@@ -17,6 +17,7 @@
 - `clickhouseexporter`: Implement consume log logic. (#9705)
 - `influxdbexporter`: Add support for cumulative, non-monotonic metrics. (#8348)
 - `oauth2clientauthextension`: Add support for EndpointParams (#7307)
+- `kafkaexporter`: Set partition key for OTLP traces (#8272)
 - Add `NewMetricData` function to `MetricsBuilder` to consistently set instrumentation library name (#8255)
 - `coralogixexporter` Allow exporter timeout to be configured (#7957)
 
