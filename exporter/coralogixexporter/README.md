@@ -25,6 +25,9 @@ exporters:
     # Traces emitted by this OpenTelemetry exporter should be tagged
     # in Coralogix with the following application name
     application_name: "MyBusinessEnvironment"
+
+    # Timeout is the timeout for every attempt to send data to the backend.
+    timeout: 30s
 ```
 ### Coralogix's Endpoints 
 | Region  | Traces Endpoint                          | Metrics Endpoint                        |
