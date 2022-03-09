@@ -50,17 +50,20 @@ func TestNewExporter(t *testing.T) {
 		},
 	}
 	params := componenttest.NewNopExporterCreateSettings()
+	f := NewFactory()
 
 	// The client should have been created correctly
-	exp, err := newMetricsExporter(context.Background(), params, cfg)
+	exp, err := f.CreateMetricsExporter(context.Background(), params, cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, exp)
-	_ = exp.PushMetricsData(context.Background(), testutils.TestMetrics.Clone())
+	err = exp.ConsumeMetrics(context.Background(), testutils.TestMetrics.Clone())
+	require.NoError(t, err)
 	assert.Equal(t, len(server.MetadataChan), 0)
 
 	cfg.SendMetadata = true
 	cfg.UseResourceMetadata = true
-	_ = exp.PushMetricsData(context.Background(), testutils.TestMetrics.Clone())
+	err = exp.ConsumeMetrics(context.Background(), testutils.TestMetrics.Clone())
+	require.NoError(t, err)
 	body := <-server.MetadataChan
 	var recvMetadata metadata.HostMetadata
 	err = json.Unmarshal(body, &recvMetadata)
