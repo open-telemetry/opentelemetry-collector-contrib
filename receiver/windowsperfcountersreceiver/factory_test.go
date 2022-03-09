@@ -34,7 +34,23 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, configtest.CheckConfigStruct(cfg))
 
-	cfg.(*Config).PerfCounters = []PerfCounterConfig{{Object: "object", Counters: []string{"counter"}}}
+	cfg.(*Config).PerfCounters = []PerfCounterConfig{
+		{
+			Object:   "object",
+			Counters: []CounterConfig{{CounterName: "counter", MetricName: "metric"}},
+		},
+	}
+
+	cfg.(*Config).MetricMetaData = []MetricConfig{
+		{
+			MetricName:  "metric",
+			Description: "desc",
+			Unit:        "1",
+			Gauge: GaugeMetric{
+				ValueType: "double",
+			},
+		},
+	}
 
 	assert.NoError(t, cfg.Validate())
 }
@@ -42,8 +58,23 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateTracesReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	cfg.(*Config).PerfCounters = []PerfCounterConfig{{Object: "object", Counters: []string{"counter"}}}
+	cfg.(*Config).PerfCounters = []PerfCounterConfig{
+		{
+			Object:   "object",
+			Counters: []CounterConfig{{CounterName: "counter", MetricName: "metric"}},
+		},
+	}
 
+	cfg.(*Config).MetricMetaData = []MetricConfig{
+		{
+			MetricName:  "metric",
+			Description: "desc",
+			Unit:        "1",
+			Gauge: GaugeMetric{
+				ValueType: "double",
+			},
+		},
+	}
 	tReceiver, err := factory.CreateTracesReceiver(context.Background(), creationParams, cfg, consumertest.NewNop())
 
 	assert.ErrorIs(t, err, componenterror.ErrDataTypeIsNotSupported)
@@ -53,7 +84,23 @@ func TestCreateTracesReceiver(t *testing.T) {
 func TestCreateLogsReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	cfg.(*Config).PerfCounters = []PerfCounterConfig{{Object: "object", Counters: []string{"counter"}}}
+	cfg.(*Config).PerfCounters = []PerfCounterConfig{
+		{
+			Object:   "object",
+			Counters: []CounterConfig{{CounterName: "counter", MetricName: "metric"}},
+		},
+	}
+
+	cfg.(*Config).MetricMetaData = []MetricConfig{
+		{
+			MetricName:  "metric",
+			Description: "desc",
+			Unit:        "1",
+			Gauge: GaugeMetric{
+				ValueType: "double",
+			},
+		},
+	}
 
 	tReceiver, err := factory.CreateLogsReceiver(context.Background(), creationParams, cfg, consumertest.NewNop())
 

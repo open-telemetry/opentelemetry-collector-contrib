@@ -46,7 +46,19 @@ type PerfCounterScraper interface {
 type scraper struct {
 	cfg      *Config
 	logger   *zap.Logger
-	counters []PerfCounterScraper
+	counters []PerfCounterMetrics
+}
+
+type PerfCounterMetrics struct {
+	CounterScraper PerfCounterScraper
+	Attributes     map[string]string
+	Metric         string
+}
+
+type PerfCounterScrapedMetrics struct {
+	CounterScraper PerfCounterScraper
+	Attributes     map[string]string
+	Metric         string
 }
 
 func newScraper(cfg *Config, logger *zap.Logger) (*scraper, error) {
@@ -63,14 +75,14 @@ func (s *scraper) start(context.Context, component.Host) error {
 
 	for _, perfCounterCfg := range s.cfg.PerfCounters {
 		for _, instance := range perfCounterCfg.instances() {
-			for _, counterName := range perfCounterCfg.Counters {
-				counterPath := counterPath(perfCounterCfg.Object, instance, counterName)
+			for _, counterCfg := range perfCounterCfg.Counters {
+				counterPath := counterPath(perfCounterCfg.Object, instance, counterCfg.CounterName)
 
 				c, err := pdh.NewPerfCounter(counterPath, true)
 				if err != nil {
 					errs = multierr.Append(errs, fmt.Errorf("counter %v: %w", counterPath, err))
 				} else {
-					s.counters = append(s.counters, c)
+					s.counters = append(s.counters, PerfCounterMetrics{CounterScraper: c, Metric: counterCfg.MetricName, Attributes: counterCfg.Attributes})
 				}
 			}
 		}
@@ -96,7 +108,7 @@ func (s *scraper) shutdown(context.Context) error {
 	var errs error
 
 	for _, counter := range s.counters {
-		errs = multierr.Append(errs, counter.Close())
+		errs = multierr.Append(errs, counter.CounterScraper.Close())
 	}
 
 	return errs
@@ -106,40 +118,76 @@ func (s *scraper) scrape(context.Context) (pdata.Metrics, error) {
 	md := pdata.NewMetrics()
 	metrics := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics()
 	now := pdata.NewTimestampFromTime(time.Now())
-
 	var errs error
 
 	metrics.EnsureCapacity(len(s.counters))
-	for _, counter := range s.counters {
-		counterValues, err := counter.ScrapeData()
-		if err != nil {
-			errs = multierr.Append(errs, err)
-			continue
+
+	for _, metricCfg := range s.cfg.MetricMetaData {
+		builtMetric := metrics.AppendEmpty()
+
+		builtMetric.SetName(metricCfg.MetricName)
+		builtMetric.SetDescription(metricCfg.Description)
+		builtMetric.SetUnit(metricCfg.Unit)
+
+		if (metricCfg.Gauge != GaugeMetric{}) {
+			builtMetric.SetDataType(pdata.MetricDataTypeGauge)
+		} else if (metricCfg.Sum != SumMetric{}) {
+			builtMetric.SetDataType(pdata.MetricDataTypeSum)
+			builtMetric.Sum().SetIsMonotonic(metricCfg.Sum.Monotonic)
+
+			switch metricCfg.Sum.Aggregation {
+			case "cumulative":
+				builtMetric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+			case "delta":
+				builtMetric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
+			default:
+				builtMetric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+			}
 		}
 
-		initializeDoubleGaugeMetric(metrics.AppendEmpty(), now, counter.Path(), counterValues)
+		for _, counter := range s.counters {
+			if counter.Metric == builtMetric.Name() {
+				counterValues, err := counter.CounterScraper.ScrapeData()
+				if err != nil {
+					errs = multierr.Append(errs, err)
+					continue
+				}
+				initializeMetricDps(metricCfg, builtMetric, now, counterValues, counter.Attributes)
+			}
+		}
 	}
 
 	return md, errs
 }
 
-func initializeDoubleGaugeMetric(metric pdata.Metric, now pdata.Timestamp, name string, counterValues []win_perf_counters.CounterValue) {
-	metric.SetName(name)
-	metric.SetDataType(pdata.MetricDataTypeGauge)
+func initializeMetricDps(metricCfg MetricConfig, metric pdata.Metric, now pdata.Timestamp, counterValues []win_perf_counters.CounterValue, attributes map[string]string) {
+	var dps pdata.NumberDataPointSlice
+	var valueType string
 
-	dg := metric.Gauge()
-	ddps := dg.DataPoints()
-	ddps.EnsureCapacity(len(counterValues))
+	if metric.DataType() == pdata.MetricDataTypeGauge {
+		dps = metric.Gauge().DataPoints()
+		valueType = metricCfg.Gauge.ValueType
+	} else {
+		dps = metric.Sum().DataPoints()
+		valueType = metricCfg.Sum.ValueType
+	}
+
+	dps.EnsureCapacity(len(counterValues))
 	for _, counterValue := range counterValues {
-		initializeNumberDataPointAsDouble(ddps.AppendEmpty(), now, counterValue.InstanceName, counterValue.Value)
-	}
-}
+		dp := dps.AppendEmpty()
 
-func initializeNumberDataPointAsDouble(dataPoint pdata.NumberDataPoint, now pdata.Timestamp, instanceLabel string, value float64) {
-	if instanceLabel != "" {
-		dataPoint.Attributes().InsertString(instanceLabelName, instanceLabel)
-	}
+		for attKey, attVal := range attributes {
+			dp.Attributes().InsertString(attKey, attVal)
+		}
+		if counterValue.InstanceName != "" {
+			dp.Attributes().InsertString(instanceLabelName, counterValue.InstanceName)
+		}
 
-	dataPoint.SetTimestamp(now)
-	dataPoint.SetDoubleVal(value)
+		dp.SetTimestamp(now)
+		if valueType == "int" {
+			dp.SetIntVal(int64(counterValue.Value))
+		} else if valueType == "double" {
+			dp.SetDoubleVal(counterValue.Value)
+		}
+	}
 }

@@ -25,14 +25,40 @@ import (
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 
-	PerfCounters []PerfCounterConfig `mapstructure:"perfcounters"`
+	MetricMetaData []MetricConfig      `mapstructure:"metric_metadata"`
+	PerfCounters   []PerfCounterConfig `mapstructure:"perfcounters"`
 }
 
 // PerfCounterConfig defines configuration for a perf counter object.
 type PerfCounterConfig struct {
-	Object    string   `mapstructure:"object"`
-	Instances []string `mapstructure:"instances"`
-	Counters  []string `mapstructure:"counters"`
+	Object    string          `mapstructure:"object"`
+	Instances []string        `mapstructure:"instances"`
+	Counters  []CounterConfig `mapstructure:"counters"`
+}
+
+// MetricsConfig defines the configuration for a metric to be created.
+type MetricConfig struct {
+	MetricName  string      `mapstructure:"metric_name"`
+	Unit        string      `mapstructure:"unit"`
+	Description string      `mapstructure:"description"`
+	Gauge       GaugeMetric `mapstructure:"gauge"`
+	Sum         SumMetric   `mapstructure:"sum"`
+}
+
+type GaugeMetric struct {
+	ValueType string `mapstructure:"value_type"`
+}
+
+type SumMetric struct {
+	ValueType   string `mapstructure:"value_type"`
+	Aggregation string `mapstructure:"aggregation"`
+	Monotonic   bool   `mapstructure:"monotonic"`
+}
+
+type CounterConfig struct {
+	MetricName  string            `mapstructure:"metric_name"`
+	CounterName string            `mapstructure:"counter_name"`
+	Attributes  map[string]string `mapstructure:"attributes"`
 }
 
 func (c *Config) Validate() error {
@@ -46,6 +72,10 @@ func (c *Config) Validate() error {
 		errs = multierr.Append(errs, fmt.Errorf("must specify at least one perf counter"))
 	}
 
+	if len(c.MetricMetaData) == 0 {
+		errs = multierr.Append(errs, fmt.Errorf("must specify at least one metric"))
+	}
+
 	var perfCounterMissingObjectName bool
 	for _, pc := range c.PerfCounters {
 		if pc.Object == "" {
@@ -53,15 +83,27 @@ func (c *Config) Validate() error {
 			continue
 		}
 
+		if len(pc.Counters) == 0 {
+			errs = multierr.Append(errs, fmt.Errorf("perf counter for object %q does not specify any counters", pc.Object))
+		}
+
+		for _, counter := range pc.Counters {
+			foundMatchingMetric := false
+			for _, metric := range c.MetricMetaData {
+				if counter.MetricName == metric.MetricName {
+					foundMatchingMetric = true
+				}
+			}
+			if !foundMatchingMetric {
+				errs = multierr.Append(errs, fmt.Errorf("perf counter for object %q includes an undefined metric", pc.Object))
+			}
+		}
+
 		for _, instance := range pc.Instances {
 			if instance == "" {
 				errs = multierr.Append(errs, fmt.Errorf("perf counter for object %q includes an empty instance", pc.Object))
 				break
 			}
-		}
-
-		if len(pc.Counters) == 0 {
-			errs = multierr.Append(errs, fmt.Errorf("perf counter for object %q does not specify any counters", pc.Object))
 		}
 	}
 

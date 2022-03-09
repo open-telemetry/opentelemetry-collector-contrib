@@ -28,7 +28,23 @@ import (
 func TestCreateMetricsReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	cfg.(*Config).PerfCounters = []PerfCounterConfig{{Object: "object", Counters: []string{"counter"}}}
+	cfg.(*Config).PerfCounters = []PerfCounterConfig{
+		{
+			Object:   "object",
+			Counters: []CounterConfig{{CounterName: "counter", MetricName: "metric"}},
+		},
+	}
+
+	cfg.(*Config).MetricMetaData = []MetricConfig{
+		{
+			MetricName:  "metric",
+			Description: "desc",
+			Unit:        "1",
+			Gauge: GaugeMetric{
+				ValueType: "double",
+			},
+		},
+	}
 
 	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), creationParams, cfg, consumertest.NewNop())
 

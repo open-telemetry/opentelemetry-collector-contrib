@@ -43,9 +43,29 @@ func TestLoadConfig(t *testing.T) {
 
 	r0 := cfg.Receivers[config.NewComponentID(typeStr)]
 	defaultConfigSingleObject := factory.CreateDefaultConfig()
-	defaultConfigSingleObject.(*Config).PerfCounters = []PerfCounterConfig{{Object: "object", Counters: []string{"counter"}}}
+
+	counterConfig := CounterConfig{
+		CounterName: "counter1",
+		MetricName:  "metric",
+	}
+	defaultConfigSingleObject.(*Config).PerfCounters = []PerfCounterConfig{{Object: "object", Counters: []CounterConfig{counterConfig}}}
+	defaultConfigSingleObject.(*Config).MetricMetaData = []MetricConfig{
+		{
+			MetricName:  "metric",
+			Description: "desc",
+			Unit:        "1",
+			Gauge: GaugeMetric{
+				ValueType: "double",
+			},
+		},
+	}
 
 	assert.Equal(t, defaultConfigSingleObject, r0)
+
+	counterConfig2 := CounterConfig{
+		CounterName: "counter2",
+		MetricName:  "metric2",
+	}
 
 	r1 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "customname")].(*Config)
 	expectedConfig := &Config{
@@ -56,11 +76,29 @@ func TestLoadConfig(t *testing.T) {
 		PerfCounters: []PerfCounterConfig{
 			{
 				Object:   "object1",
-				Counters: []string{"counter1"},
+				Counters: []CounterConfig{counterConfig},
 			},
 			{
 				Object:   "object2",
-				Counters: []string{"counter1", "counter2"},
+				Counters: []CounterConfig{counterConfig, counterConfig2},
+			},
+		},
+		MetricMetaData: []MetricConfig{
+			{
+				MetricName:  "metric",
+				Description: "desc",
+				Unit:        "1",
+				Gauge: GaugeMetric{
+					ValueType: "double",
+				},
+			},
+			{
+				MetricName:  "metric2",
+				Description: "desc",
+				Unit:        "1",
+				Gauge: GaugeMetric{
+					ValueType: "double",
+				},
 			},
 		},
 	}
@@ -82,6 +120,12 @@ func TestLoadConfig_Error(t *testing.T) {
 		noObjectNameErr               = "must specify object name for all perf counters"
 		noCountersErr                 = `perf counter for object "%s" does not specify any counters`
 		emptyInstanceErr              = `perf counter for object "%s" includes an empty instance`
+		undefinedMetricErr            = `perf counter for object "%s" includes an undefined metric`
+		missingMetricName             = `a metric does not include a name`
+		missingMetricDesc             = `metric "%s" does not include a description"`
+		missingMetricUnit             = `metric "%s" does not include a unit"`
+		missingMetricMetricType       = `metric "%s" does not include a metric type"`
+		missingMetrics                = `must specify at least one metric`
 	)
 
 	testCases := []testCase{
@@ -111,14 +155,35 @@ func TestLoadConfig_Error(t *testing.T) {
 			expectedErr: fmt.Sprintf("%s: %s", errorPrefix, fmt.Sprintf(emptyInstanceErr, "object")),
 		},
 		{
+			name:        "EmptyMetricDescription",
+			cfgFile:     "config-emptymetricdesc.yaml",
+			expectedErr: fmt.Sprintf("%s: %s", errorPrefix, fmt.Sprintf(missingMetricDesc, "metric")),
+		},
+		{
+			name:        "EmptyMetricUnit",
+			cfgFile:     "config-emptymetricunit.yaml",
+			expectedErr: fmt.Sprintf("%s: %s", errorPrefix, fmt.Sprintf(missingMetricUnit, "metric")),
+		},
+		{
+			name:        "EmptyMetricMetricType",
+			cfgFile:     "config-emptymetricdesc.yaml",
+			expectedErr: fmt.Sprintf("%s: %s", errorPrefix, fmt.Sprintf(missingMetricMetricType, "metric")),
+		},
+		{
+			name:        "EmptyMetricName",
+			cfgFile:     "config-emptymetricdesc.yaml",
+			expectedErr: fmt.Sprintf("%s: %s", errorPrefix, missingMetricName),
+		},
+		{
 			name:    "AllErrors",
 			cfgFile: "config-allerrors.yaml",
 			expectedErr: fmt.Sprintf(
-				"%s: %s; %s; %s; %s",
+				"%s: %s; %s; %s; %s; %s",
 				errorPrefix,
 				negativeCollectionIntervalErr,
-				fmt.Sprintf(emptyInstanceErr, "object"),
+				missingMetrics,
 				fmt.Sprintf(noCountersErr, "object"),
+				fmt.Sprintf(emptyInstanceErr, "object"),
 				noObjectNameErr,
 			),
 		},

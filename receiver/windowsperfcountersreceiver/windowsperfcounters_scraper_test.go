@@ -81,7 +81,20 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 
 	defaultConfig := &Config{
 		PerfCounters: []PerfCounterConfig{
-			{Object: "Memory", Counters: []string{"Committed Bytes"}},
+			{
+				Object:   "object",
+				Counters: []CounterConfig{{CounterName: "Committed Bytes", MetricName: "commited.bytes"}},
+			},
+		},
+		MetricMetaData: []MetricConfig{
+			{
+				MetricName:  "metric",
+				Description: "desc",
+				Unit:        "1",
+				Gauge: GaugeMetric{
+					ValueType: "double",
+				},
+			},
 		},
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{CollectionInterval: time.Minute},
 	}
@@ -91,17 +104,17 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 			name: "Standard",
 			cfg: &Config{
 				PerfCounters: []PerfCounterConfig{
-					{Object: "Memory", Counters: []string{"Committed Bytes"}},
-					{Object: "Processor", Instances: []string{"*"}, Counters: []string{"% Processor Time"}},
-					{Object: "Processor", Instances: []string{"1", "2"}, Counters: []string{"% Idle Time"}},
+					{Object: "Memory", Counters: []CounterConfig{{CounterName: "Committed Bytes", MetricName: "Committed Bytes"}}},
+					{Object: "Processor", Instances: []string{"*"}, Counters: []CounterConfig{{CounterName: "% Idle Time", MetricName: "cpu.idle"}}},
+					{Object: "Processor", Instances: []string{"1", "2"}, Counters: []CounterConfig{{CounterName: "% Processor Time", MetricName: "bytes.commited"}}},
 				},
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{CollectionInterval: time.Minute},
 			},
 			expectedMetrics: []expectedMetric{
 				{name: `\Memory\Committed Bytes`},
-				{name: `\Processor(*)\% Processor Time`, instanceLabelValues: []string{"*"}},
-				{name: `\Processor(1)\% Idle Time`, instanceLabelValues: []string{"1"}},
-				{name: `\Processor(2)\% Idle Time`, instanceLabelValues: []string{"2"}},
+				{name: `cpu.idle`, instanceLabelValues: []string{"*"}},
+				{name: `bytes.commited"`, instanceLabelValues: []string{"1"}},
+				{name: `bytes.commited"`, instanceLabelValues: []string{"2"}},
 			},
 		},
 		{
@@ -110,11 +123,11 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 				PerfCounters: []PerfCounterConfig{
 					{
 						Object:   "Memory",
-						Counters: []string{"Committed Bytes"},
+						Counters: []CounterConfig{{CounterName: "Committed Bytes", MetricName: "Committed Bytes"}},
 					},
 					{
 						Object:   "Invalid Object",
-						Counters: []string{"Invalid Counter"},
+						Counters: []CounterConfig{{CounterName: "Invalid Counter", MetricName: "invalid"}},
 					},
 				},
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{CollectionInterval: time.Minute},
@@ -163,7 +176,7 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 
 			if test.mockCounterPath != "" || test.scrapeErr != nil || test.shutdownErr != nil {
 				for i := range scraper.counters {
-					scraper.counters[i] = newMockPerfCounter(test.mockCounterPath, test.scrapeErr, test.shutdownErr)
+					scraper.counters[i].CounterScraper = newMockPerfCounter(test.mockCounterPath, test.scrapeErr, test.shutdownErr)
 				}
 			}
 
