@@ -151,11 +151,11 @@ require (
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
 	github.com/ClickHouse/clickhouse-go v1.5.4 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.16 // indirect
-	github.com/DataDog/datadog-agent/pkg/quantile v0.35.0-rc.3.0.20220303094750-2385c437349c // indirect
+	github.com/DataDog/datadog-agent/pkg/quantile v0.35.0-rc.3.0.20220304122852-21ae7cd710ce // indirect
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/log v0.0.0-20201009092105-58e18918b2db // indirect
 	github.com/DataDog/datadog-go v4.8.2+incompatible // indirect
-	github.com/DataDog/sketches-go v1.3.0 // indirect
+	github.com/DataDog/sketches-go v1.3.1-0.20220304105750-276ddff4f205 // indirect
 	github.com/GehirnInc/crypt v0.0.0-20200316065508-bb7000b8a962 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.26.1-0.20220307211504-dc45061a44f9 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.3.0 // indirect
