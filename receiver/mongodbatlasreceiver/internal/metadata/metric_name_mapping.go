@@ -608,19 +608,19 @@ var metricNameMapping = map[string]metricMappingData{
 
 	// Measures latency per operation type of the disk partition used by MongoDB.
 	"DISK_PARTITION_SPACE_FREE": {"mongodbatlas.disk.partition.space.average", map[string]pdata.AttributeValue{
-		"memory_state": pdata.NewAttributeValueString("free"),
+		"disk_status": pdata.NewAttributeValueString("free"),
 	}},
 
 	"MAX_DISK_PARTITION_SPACE_FREE": {"mongodbatlas.disk.partition.space.max", map[string]pdata.AttributeValue{
-		"memory_state": pdata.NewAttributeValueString("free"),
+		"disk_status": pdata.NewAttributeValueString("free"),
 	}},
 
 	"DISK_PARTITION_SPACE_USED": {"mongodbatlas.disk.partition.space.average", map[string]pdata.AttributeValue{
-		"memory_state": pdata.NewAttributeValueString("used"),
+		"disk_status": pdata.NewAttributeValueString("used"),
 	}},
 
 	"MAX_DISK_PARTITION_SPACE_USED": {"mongodbatlas.disk.partition.space.max", map[string]pdata.AttributeValue{
-		"memory_state": pdata.NewAttributeValueString("used"),
+		"disk_status": pdata.NewAttributeValueString("used"),
 	}},
 
 	"DISK_PARTITION_SPACE_PERCENT_FREE": {"mongodbatlas.disk.partition.utilization.average", map[string]pdata.AttributeValue{

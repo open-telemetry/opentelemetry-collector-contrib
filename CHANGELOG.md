@@ -12,11 +12,15 @@
 - `spanmetricsprocessor`: Dropping the condition to replace _ with key_ as __ label is reserved and _ is not (#8057)
 - `podmanreceiver`: Add container.runtime attribute to container metrics (#8262)
 - `dockerstatsreceiver`: Add container.runtime attribute to container metrics (#8261)
+- `tanzuobservabilityexporter`: instrumentation Library and Dropped Counts to Span Tags (#8120)
 - `clickhouseexporter`: Implement consume log logic. (#9705)
+- `influxdbexporter`: Add support for cumulative, non-monotonic metrics. (#8348)
+- `oauth2clientauthextension`: Add support for EndpointParams (#7307)
 - Add `NewMetricData` function to `MetricsBuilder` to consistently set instrumentation library name (#8255)
 
 ### 🛑 Breaking changes 🛑
 
+- `mongodbatlasreceiver`: rename mislabeled attribute `memory_state` to correct `disk_status` on partition disk metrics (#7747)
 - `nginxreceiver`: instrumentation name updated from `otelcol/nginx` to `otelcol/nginxreceiver` (#8255)
 - `postgresqlreceiver`: instrumentation name updated from `otelcol/postgresql` to `otelcol/postgresqlreceiver` (#8255)
 - `redisreceiver`: instrumentation name updated from `otelcol/redis` to `otelcol/redisreceiver` (#8255)
