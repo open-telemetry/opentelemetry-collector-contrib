@@ -80,7 +80,6 @@ func (c *coralogixClient) newPost(ctx context.Context, td pdata.Traces) error {
 		} else {
 			return fmt.Errorf("Failed to push trace data via Coralogix exporter because batch.process.serviceName is empty or nil")
 		}
-
 	}
 	return nil
 }
