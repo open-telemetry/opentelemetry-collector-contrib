@@ -1,4 +1,4 @@
-name: cpu
+name: hostmetricsreceiver/cpu
 
 attributes:
   cpu:

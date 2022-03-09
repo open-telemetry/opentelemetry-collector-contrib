@@ -13,7 +13,7 @@ type MetricSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// MetricsSettings provides settings for disk metrics.
+// MetricsSettings provides settings for hostmetricsreceiver/disk metrics.
 type MetricsSettings struct {
 	SystemDiskIo                MetricSettings `mapstructure:"system.disk.io"`
 	SystemDiskIoTime            MetricSettings `mapstructure:"system.disk.io_time"`
@@ -520,6 +520,16 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 	for _, op := range options {
 		op(mb)
 	}
+}
+
+// NewMetricData creates new pdata.Metrics and sets the InstrumentationLibrary
+// name on the ResourceMetrics.
+func (mb *MetricsBuilder) NewMetricData() pdata.Metrics {
+	md := pdata.NewMetrics()
+	rm := md.ResourceMetrics().AppendEmpty()
+	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+	ilm.InstrumentationLibrary().SetName("otelcol/hostmetricsreceiver/disk")
+	return md
 }
 
 // Attributes contains the possible metric attributes that can be used.

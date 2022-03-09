@@ -75,9 +75,7 @@ func (r *nginxScraper) scrape(context.Context) (pdata.Metrics, error) {
 	}
 
 	now := pdata.NewTimestampFromTime(time.Now())
-	md := pdata.NewMetrics()
-	ilm := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName("otelcol/nginx")
+	md := r.mb.NewMetricData()
 
 	r.mb.RecordNginxRequestsDataPoint(now, stats.Requests)
 	r.mb.RecordNginxConnectionsAcceptedDataPoint(now, stats.Connections.Accepted)
@@ -87,6 +85,6 @@ func (r *nginxScraper) scrape(context.Context) (pdata.Metrics, error) {
 	r.mb.RecordNginxConnectionsCurrentDataPoint(now, stats.Connections.Writing, metadata.AttributeState.Writing)
 	r.mb.RecordNginxConnectionsCurrentDataPoint(now, stats.Connections.Waiting, metadata.AttributeState.Waiting)
 
-	r.mb.Emit(ilm.Metrics())
+	r.mb.Emit(md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
 	return md, nil
 }
