@@ -294,6 +294,35 @@ func TestSpanForSourceTag(t *testing.T) {
 	assert.Equal(t, "source_from_span_attribute", actual.Tags["_source"])
 }
 
+func TestSpanForDroppedCount(t *testing.T) {
+	inNanos := int64(50000000)
+
+	//TestCase: 1 count tags are not set
+	resAttrs := pdata.NewAttributeMap()
+	transform := transformerFromAttributes(resAttrs)
+	span := pdata.NewSpan()
+	span.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+	span.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	span.SetStartTimestamp(pdata.Timestamp(inNanos))
+
+	actual, err := transform.Span(span)
+	require.NoError(t, err, "transforming span to wavefront format")
+	assert.NotContains(t, actual.Tags, "otel.dropped_events_count")
+	assert.NotContains(t, actual.Tags, "otel.dropped_links_count")
+	assert.NotContains(t, actual.Tags, "otel.dropped_attributes_count")
+
+	//TestCase2: count tags are set
+	span.SetDroppedEventsCount(123)
+	span.SetDroppedLinksCount(456)
+	span.SetDroppedAttributesCount(789)
+
+	actual, err = transform.Span(span)
+	require.NoError(t, err, "transforming span to wavefront format")
+	assert.Equal(t, "123", actual.Tags["otel.dropped_events_count"])
+	assert.Equal(t, "456", actual.Tags["otel.dropped_links_count"])
+	assert.Equal(t, "789", actual.Tags["otel.dropped_attributes_count"])
+}
+
 func TestGetSourceAndResourceTags(t *testing.T) {
 	resAttrs := pdata.NewAttributeMap()
 	resAttrs.InsertString(labelSource, "test_source")
