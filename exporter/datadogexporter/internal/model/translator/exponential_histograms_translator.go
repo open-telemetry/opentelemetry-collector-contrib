@@ -28,12 +28,12 @@ import (
 )
 
 func (t *Translator) exponentialHistogramToDDSketch(
-	pointDims metricsDimensions,
 	p pdata.ExponentialHistogramDataPoint,
 	delta bool,
 ) (*ddsketch.DDSketch, error) {
-	startTs := uint64(p.StartTimestamp())
-	ts := uint64(p.Timestamp())
+	if !delta {
+		return nil, fmt.Errorf("cumulative exponential histograms are not supported")
+	}
 
 	// Create the positive DDSketch store
 	positive := p.Positive()
@@ -42,17 +42,7 @@ func (t *Translator) exponentialHistogramToDDSketch(
 		// Find the real index of the bucket by adding the offset
 		index := j + int(positive.Offset())
 
-		// Compute temporary bucketDims to have unique keys in the t.prevPts cache for each bucket
-		bucketDims := pointDims.AddTags(
-			"store:positive",
-			fmt.Sprintf("index:%d", index),
-		)
-
-		if delta {
-			positiveStore.AddWithCount(index, float64(count))
-		} else if dx, ok := t.prevPts.Diff(bucketDims, startTs, ts, float64(count)); ok {
-			positiveStore.AddWithCount(index, float64(dx))
-		}
+		positiveStore.AddWithCount(index, float64(count))
 	}
 
 	// Create the negative DDSketch store
@@ -62,17 +52,7 @@ func (t *Translator) exponentialHistogramToDDSketch(
 		// Find the real index of the bucket by adding the offset
 		index := j + int(negative.Offset())
 
-		// Compute temporary bucketDims to have unique keys in the t.prevPts cache for each bucket
-		bucketDims := pointDims.AddTags(
-			"store:negative",
-			fmt.Sprintf("index:%d", index),
-		)
-
-		if delta {
-			negativeStore.AddWithCount(index, float64(count))
-		} else if dx, ok := t.prevPts.Diff(bucketDims, startTs, ts, float64(count)); ok {
-			negativeStore.AddWithCount(index, float64(dx))
-		}
+		negativeStore.AddWithCount(index, float64(count))
 	}
 
 	// Create the DDSketch mapping that corresponds to the ExponentialHistogram settings
@@ -89,7 +69,7 @@ func (t *Translator) exponentialHistogramToDDSketch(
 	return sketch, nil
 }
 
-// mapExponentialHistogramMetrics maps double exponential histogram metrics slices to Datadog metrics
+// mapExponentialHistogramMetrics maps exponential histogram metrics slices to Datadog metrics
 //
 // An ExponentialHistogram metric has:
 // - The count of values in the population
@@ -142,7 +122,7 @@ func (t *Translator) mapExponentialHistogramMetrics(
 			consumer.ConsumeTimeSeries(ctx, sumDims.name, Count, ts, histInfo.sum, sumDims.tags, sumDims.host)
 		}
 
-		expHistDDSketch, err := t.exponentialHistogramToDDSketch(pointDims, p, delta)
+		expHistDDSketch, err := t.exponentialHistogramToDDSketch(p, delta)
 		if err != nil {
 			t.logger.Debug("Failed to convert ExponentialHistogram into DDSketch",
 				zap.String("metric name", dims.name),
@@ -158,12 +138,12 @@ func (t *Translator) mapExponentialHistogramMetrics(
 				zap.Error(err),
 			)
 		}
-	
+
 		if histInfo.ok {
-		 	// override approximate sum, count and average in sketch with exact values if available.
-		 	agentSketch.Basic.Cnt = int64(histInfo.count)
-		 	agentSketch.Basic.Sum = histInfo.sum
-		 	agentSketch.Basic.Avg = agentSketch.Basic.Sum / float64(agentSketch.Basic.Cnt)
+			// override approximate sum, count and average in sketch with exact values if available.
+			agentSketch.Basic.Cnt = int64(histInfo.count)
+			agentSketch.Basic.Sum = histInfo.sum
+			agentSketch.Basic.Avg = agentSketch.Basic.Sum / float64(agentSketch.Basic.Cnt)
 		}
 
 		consumer.ConsumeSketch(ctx, pointDims.name, ts, agentSketch, pointDims.tags, pointDims.host)

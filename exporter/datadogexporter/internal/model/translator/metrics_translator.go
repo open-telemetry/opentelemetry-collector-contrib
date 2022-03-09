@@ -474,10 +474,10 @@ func (t *Translator) MapMetrics(ctx context.Context, md pdata.Metrics, consumer 
 					}
 				case pdata.MetricDataTypeExponentialHistogram:
 					switch md.Histogram().AggregationTemporality() {
-					case pdata.MetricAggregationTemporalityCumulative, pdata.MetricAggregationTemporalityDelta:
+					case pdata.MetricAggregationTemporalityDelta:
 						delta := md.Histogram().AggregationTemporality() == pdata.MetricAggregationTemporalityDelta
 						t.mapExponentialHistogramMetrics(ctx, consumer, baseDims, md.ExponentialHistogram().DataPoints(), delta)
-					default: // pdata.AggregationTemporalityUnspecified or any other not supported type
+					default: // pdata.MetricAggregationTemporalityCumulative, pdata.AggregationTemporalityUnspecified or any other not supported type
 						t.logger.Debug("Unknown or unsupported aggregation temporality",
 							zap.String("metric name", md.Name()),
 							zap.Any("aggregation temporality", md.Histogram().AggregationTemporality()),

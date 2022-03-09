@@ -3,8 +3,8 @@ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03
 github.com/DataDog/agent-payload/v5 v5.0.16 h1:/+qs2PTECI2qtFZsg0I/Dp5C8eG3mrujzD+//urHqLw=
 github.com/DataDog/agent-payload/v5 v5.0.16/go.mod h1:2gapp8p4Vd548JI+axD8kCExklNvVI6AMF5/+IfN/4g=
 github.com/DataDog/datadog-agent/pkg/obfuscate v0.0.0-20211129110424-6491aa3bf583/go.mod h1:EP9f4GqaDJyP1F5jTNMtzdIpw3JpNs3rMSJOnYywCiw=
-github.com/DataDog/datadog-agent/pkg/quantile v0.35.0-rc.3.0.20220303094750-2385c437349c h1:qater0HC/5MwLsHXhERGDfMdGUVIMPX8+kFBd49ZPOY=
-github.com/DataDog/datadog-agent/pkg/quantile v0.35.0-rc.3.0.20220303094750-2385c437349c/go.mod h1:nEd4G/YP6rc88/7DounQw5xLTqxsDRa66avqkj4/J2Q=
+github.com/DataDog/datadog-agent/pkg/quantile v0.35.0-rc.3.0.20220304122852-21ae7cd710ce h1:qPTwBQ+yBYXSMZX7x94o0Gvl9te0JFcHcQnHTQ8OoGs=
+github.com/DataDog/datadog-agent/pkg/quantile v0.35.0-rc.3.0.20220304122852-21ae7cd710ce/go.mod h1:SGtgee0QwVvsFnmabLuzcdp/j1eT9OTezUBIotBYy3Y=
 github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02 h1:N2BRKjJ/c+ipDwt5b+ijqEc2EsmK3zXq2lNeIPnSwMI=
 github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02/go.mod h1:EalMiS87Guu6PkLdxz7gmWqi+dRs9sjYLTOyTrM/aVU=
 github.com/DataDog/datadog-agent/pkg/util/log v0.0.0-20201009091607-ce4e57cdf8f4/go.mod h1:cRy7lwapA3jcjnX74kU6NFkXaRGQyB0l/QZA0IwYGEQ=
@@ -17,8 +17,8 @@ github.com/DataDog/datadog-go v4.8.2+incompatible/go.mod h1:LButxg5PwREeZtORoXG3
 github.com/DataDog/datadog-go/v5 v5.0.2/go.mod h1:ZI9JFB4ewXbw1sBnF4sxsR2k1H3xjV+PUAOUsHvKpcU=
 github.com/DataDog/gostackparse v0.5.0/go.mod h1:lTfqcJKqS9KnXQGnyQMCugq3u1FP6UZMfWR0aitKFMM=
 github.com/DataDog/sketches-go v1.0.0/go.mod h1:O+XkJHWk9w4hDwY2ZUDU31ZC9sNYlYo8DiFsxjYeo1k=
-github.com/DataDog/sketches-go v1.3.0 h1:VOaiZiifXh4VRoOz3ZNoFQAPRAZpppH1FPvcarsvBqg=
-github.com/DataDog/sketches-go v1.3.0/go.mod h1:1xYmPLY1So10AwxV6MJV0J53XVH+WL9Ad1KetxVivVI=
+github.com/DataDog/sketches-go v1.3.1-0.20220304105750-276ddff4f205 h1:BbSCEDtdThQKopS6qNbS9v1GiYskhswgiUb3qnqdeUA=
+github.com/DataDog/sketches-go v1.3.1-0.20220304105750-276ddff4f205/go.mod h1:1xYmPLY1So10AwxV6MJV0J53XVH+WL9Ad1KetxVivVI=
 github.com/Microsoft/go-winio v0.5.0/go.mod h1:JPGBdM1cNvN/6ISo+n8V5iA4v8pBzdOpzfwIujj1a84=
 github.com/Microsoft/go-winio v0.5.1 h1:aPJp2QD7OOrhO5tQXqQoGSJc+DjDtWTGLOmNyAm6FgY=
 github.com/Microsoft/go-winio v0.5.1/go.mod h1:JPGBdM1cNvN/6ISo+n8V5iA4v8pBzdOpzfwIujj1a84=
@@ -380,9 +380,9 @@ google.golang.org/protobuf v1.25.0/go.mod h1:9JNX74DMeImyA3h4bdi1ymwjUzf21/xIlba
 google.golang.org/protobuf v1.26.0-rc.1/go.mod h1:jlhhOSvTdKEhbULTjvd4ARK9grFBp09yW+WbY/TyQbw=
 google.golang.org/protobuf v1.26.0/go.mod h1:9q0QmTI4eRPtz6boOQmLYwt+qCgq0jsYwAQnmE0givc=
 google.golang.org/protobuf v1.27.1 h1:SnqbnDw1V7RiZcXPx5MEeqPv2s79L9i7BJUlG/+RurQ=
+google.golang.org/protobuf v1.27.1/go.mod h1:9q0QmTI4eRPtz6boOQmLYwt+qCgq0jsYwAQnmE0givc=
 gopkg.in/DataDog/dd-trace-go.v1 v1.36.2 h1:eDbrrRNAHY15yoftLKGMtgq0vuTXp897QEzAJh368jY=
 gopkg.in/DataDog/dd-trace-go.v1 v1.36.2/go.mod h1:Cv0Bzs/zTzzrUDSw8Q+q/vC+uwPD+R530npGo0lfiCE=
-google.golang.org/protobuf v1.27.1/go.mod h1:9q0QmTI4eRPtz6boOQmLYwt+qCgq0jsYwAQnmE0givc=
 gopkg.in/asn1-ber.v1 v1.0.0-20181015200546-f715ec2f112d/go.mod h1:cuepJuh7vyXfUyUwEgHQXw849cJrilpS5NeIjOWESAw=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
