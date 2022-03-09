@@ -47,7 +47,7 @@ func (af *awsFactory) Type() config.Type {
 
 func (af *awsFactory) CreateMetricsExporter(ctx context.Context, params component.ExporterCreateSettings,
 	cfg config.Exporter) (component.MetricsExporter, error) {
-	params.Logger.Warn("Deprecation notice: The AWS PRW Exporter will be removed in 0.47, see the README and the CHANGELOG for more information.")
+	params.Logger.Warn("Deprecation notice: The AWS PRW Exporter will be removed in the near future, see the README and the CHANGELOG for more information.")
 	return af.ExporterFactory.CreateMetricsExporter(ctx, params, &cfg.(*Config).Config)
 }
 
