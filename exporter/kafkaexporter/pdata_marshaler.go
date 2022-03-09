@@ -85,9 +85,7 @@ type pdataTracesMarshaler struct {
 	encoding  string
 }
 
-func (p pdataTracesMarshaler) Marshal(td pdata.Traces, topic string) ([]*sarama.ProducerMessage, error) {
-	var messages []*sarama.ProducerMessage
-	var errs error
+func (p pdataTracesMarshaler) Marshal(td pdata.Traces, topic string) (messages []*sarama.ProducerMessage, errs error) {
 	for _, batch := range batchpersignal.SplitTraces(td) {
 		bts, err := p.marshaler.MarshalTraces(td)
 		if err != nil {
@@ -96,11 +94,17 @@ func (p pdataTracesMarshaler) Marshal(td pdata.Traces, topic string) ([]*sarama.
 			continue
 		}
 
-		// every batch should have at least one span
-		traceID := batch.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).TraceID().Bytes()
+		var key sarama.Encoder
+		if batch.ResourceSpans().Len() > 0 &&
+			batch.ResourceSpans().At(0).InstrumentationLibrarySpans().Len() > 0 &&
+			batch.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().Len() > 0 {
+			traceID := batch.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).TraceID().Bytes()
+			key = sarama.ByteEncoder(traceID[:])
+		}
+
 		messages = append(messages, &sarama.ProducerMessage{
 			Topic: topic,
-			Key:   sarama.ByteEncoder(traceID[:]),
+			Key:   key,
 			Value: sarama.ByteEncoder(bts),
 		})
 	}
