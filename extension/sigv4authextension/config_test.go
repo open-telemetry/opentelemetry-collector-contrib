@@ -26,7 +26,7 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
-	awsCreds := fetchMockCredentials()
+	awsCreds := mockCredentials()
 	t.Setenv("AWS_ACCESS_KEY_ID", awsCreds.AccessKeyID)
 	t.Setenv("AWS_SECRET_ACCESS_KEY", awsCreds.SecretAccessKey)
 

@@ -26,19 +26,19 @@ import (
 )
 
 func TestNewSigv4Extension(t *testing.T) {
-	cfg := &Config{Region: "region", Service: "service", RoleArn: "rolearn"}
+	cfg := &Config{Region: "region", Service: "service", RoleARN: "rolearn"}
 
 	sa := newSigv4Extension(cfg, "awsSDKInfo", zap.NewNop())
 	assert.Equal(t, cfg.Region, sa.cfg.Region)
 	assert.Equal(t, cfg.Service, sa.cfg.Service)
-	assert.Equal(t, cfg.RoleArn, sa.cfg.RoleArn)
+	assert.Equal(t, cfg.RoleARN, sa.cfg.RoleARN)
 }
 
 func TestRoundTripper(t *testing.T) {
-	awsCreds := fetchMockCredentials()
+	awsCreds := mockCredentials()
 	base := (http.RoundTripper)(http.DefaultTransport.(*http.Transport).Clone())
 	awsSDKInfo := "awsSDKInfo"
-	cfg := &Config{Region: "region", Service: "service", RoleArn: "rolearn", creds: awsCreds}
+	cfg := &Config{Region: "region", Service: "service", RoleARN: "rolearn", creds: awsCreds}
 
 	sa:= newSigv4Extension(cfg, awsSDKInfo, zap.NewNop())
 	assert.NotNil(t, sa)
@@ -46,7 +46,7 @@ func TestRoundTripper(t *testing.T) {
 	rt, err := sa.RoundTripper(base)
 	assert.Nil(t, err)
 
-	si := rt.(*SigningRoundTripper)
+	si := rt.(*signingRoundTripper)
 	assert.Equal(t, base, si.transport)
 	assert.Equal(t, cfg.Region, si.region)
 	assert.Equal(t, cfg.Service, si.service)
@@ -55,7 +55,7 @@ func TestRoundTripper(t *testing.T) {
 }
 
 func TestPerRPCCredentials(t *testing.T) {
-	cfg := &Config{Region: "region", Service: "service", RoleArn: "rolearn"}
+	cfg := &Config{Region: "region", Service: "service", RoleARN: "rolearn"}
 	sa := newSigv4Extension(cfg, "", zap.NewNop())
 
 	rpc, err := sa.PerRPCCredentials()
@@ -64,7 +64,7 @@ func TestPerRPCCredentials(t *testing.T) {
 }
 
 func TestGetCredsFromConfig(t *testing.T) {
-	awsCreds := fetchMockCredentials()
+	awsCreds := mockCredentials()
 	t.Setenv("AWS_ACCESS_KEY_ID", awsCreds.AccessKeyID)
 	t.Setenv("AWS_SECRET_ACCESS_KEY", awsCreds.SecretAccessKey)
 	tests := []struct {
@@ -117,7 +117,7 @@ func TestCloneRequest(t *testing.T) {
 	}
 }
 
-func fetchMockCredentials() *aws.Credentials {
+func mockCredentials() *aws.Credentials {
 	provider := credentials.NewStaticCredentialsProvider(
 		"MOCK_AWS_ACCESS_KEY",
 		"MOCK_AWS_SECRET_ACCESS_KEY",

@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	errBadCreds = errors.New("Bad AWS credentials")
+	errBadCreds = errors.New("bad AWS credentials")
 )
 
 // Config stores the configuration for the Sigv4 Authenticator
@@ -30,7 +30,7 @@ type Config struct {
 	config.ExtensionSettings `mapstructure:",squash"`
 	Region                   string `mapstructure:"region"`
 	Service                  string `mapstructure:"service"`
-	RoleArn                  string `mapstructure:"role_arn,omitempty"`
+	RoleARN                  string `mapstructure:"role_arn,omitempty"`
 	creds                    *aws.Credentials
 }
 

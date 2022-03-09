@@ -49,9 +49,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreateExtension(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Region = "region"
-	cfg.Service = "service"
-	cfg.RoleArn = "rolearn"
 
 	ext, err := createExtension(context.Background(), componenttest.NewNopExtensionCreateSettings(), cfg)
 	assert.Nil(t, err)

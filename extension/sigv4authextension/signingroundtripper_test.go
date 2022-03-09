@@ -27,17 +27,17 @@ import (
 	"go.uber.org/zap"
 )
 
-type ErrorRoundTripper struct{}
+type errorRoundTripper struct{}
 
-func (ert *ErrorRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
+func (ert *errorRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
 	return nil, errors.New("error")
 }
 
 func TestRoundTrip(t *testing.T) {
-	awsCreds := fetchMockCredentials()
+	awsCreds := mockCredentials()
 
 	defaultRoundTripper := (http.RoundTripper)(http.DefaultTransport.(*http.Transport).Clone())
-	errorRoundTripper := &ErrorRoundTripper{}
+	errorRoundTripper := &errorRoundTripper{}
 
 	tests := []struct {
 		name        string
@@ -55,7 +55,7 @@ func TestRoundTrip(t *testing.T) {
 			"error_round_tripper",
 			errorRoundTripper,
 			true,
-			&Config{Region: "region", Service: "service", RoleArn: "rolearn"},
+			&Config{Region: "region", Service: "service", RoleARN: "rolearn"},
 		},
 	}
 
@@ -138,16 +138,16 @@ func TestInferServiceAndRegionFromRequestURL(t *testing.T) {
 	// run tests
 	for _, testcase := range tests {
 		t.Run(testcase.name, func(t *testing.T) {
-			cfg := &Config{Region: "region", Service: "service", RoleArn: "rolearn"}
+			cfg := &Config{Region: "region", Service: "service", RoleARN: "rolearn"}
 
 			sa := newSigv4Extension(cfg, "awsSDKInfo", zap.NewNop())
 			assert.NotNil(t, sa)
 
 			rt, err := sa.RoundTripper((http.RoundTripper)(http.DefaultTransport.(*http.Transport).Clone()))
 			assert.Nil(t, err)
-			si := rt.(*SigningRoundTripper)
+			si := rt.(*signingRoundTripper)
 
-			service, region := si.inferServiceAndRegionFromRequestURL(testcase.request)
+			service, region := si.inferServiceAndRegion(testcase.request)
 			assert.EqualValues(t, testcase.expectedService, service)
 			assert.EqualValues(t, testcase.expectedRegion, region)
 		})

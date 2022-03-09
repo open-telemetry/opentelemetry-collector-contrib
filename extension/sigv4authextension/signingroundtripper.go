@@ -16,7 +16,6 @@ package sigv4authextension // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"bytes"
-	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -31,8 +30,8 @@ import (
 	"go.uber.org/zap"
 )
 
-// SigningRoundTripper is a custom RoundTripper that performs AWS Sigv4.
-type SigningRoundTripper struct {
+// signingRoundTripper is a custom RoundTripper that performs AWS Sigv4.
+type signingRoundTripper struct {
 	transport  http.RoundTripper
 	signer     *sigv4.Signer
 	region     string
@@ -44,7 +43,7 @@ type SigningRoundTripper struct {
 
 // RoundTrip() executes a single HTTP transaction and returns an HTTP response, signing
 // the request with Sigv4.
-func (si *SigningRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+func (si *signingRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	reqBody, err := req.GetBody()
 	if err != nil {
 		return nil, err
@@ -69,39 +68,34 @@ func (si *SigningRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 	}
 	req2.Header.Set("User-Agent", ua)
 
-	// Sign the request
+	// Hash the request
 	h := sha256.New()
 	_, _ = io.Copy(h, body)
 	payloadHash := hex.EncodeToString(h.Sum(nil))
 
-	// Use user provided service/region if specified, use inferred service/region if not
-	service, region := si.inferServiceAndRegionFromRequestURL(req)
+	// Use user provided service/region if specified, use inferred service/region if not, then sign the request
+	service, region := si.inferServiceAndRegion(req)
 	if si.service != "" && si.region != "" {
-		err = si.signer.SignHTTP(context.Background(), *si.creds, req2, payloadHash, si.service, si.region, time.Now())
+		err = si.signer.SignHTTP(req.Context(), *si.creds, req2, payloadHash, si.service, si.region, time.Now())
 	} else if si.service != "" && si.region == "" {
-		err = si.signer.SignHTTP(context.Background(), *si.creds, req2, payloadHash, si.service, region, time.Now())
+		err = si.signer.SignHTTP(req.Context(), *si.creds, req2, payloadHash, si.service, region, time.Now())
 	} else if si.service == "" && si.region != "" {
-		err = si.signer.SignHTTP(context.Background(), *si.creds, req2, payloadHash, service, si.region, time.Now())
+		err = si.signer.SignHTTP(req.Context(), *si.creds, req2, payloadHash, service, si.region, time.Now())
 	} else {
-		err = si.signer.SignHTTP(context.Background(), *si.creds, req2, payloadHash, service, region, time.Now())
+		err = si.signer.SignHTTP(req.Context(), *si.creds, req2, payloadHash, service, region, time.Now())
 	}
 	if err != nil {
-		return nil, fmt.Errorf("error signing the request: %v", err)
+		return nil, fmt.Errorf("error signing the request: %w", err)
 	}
 
 	// Send the request
-	resp, err := si.transport.RoundTrip(req2)
-	if err != nil {
-		return nil, err
-	}
-
-	return resp, nil
+	return si.transport.RoundTrip(req2)
 }
 
-// inferServiceAndRegionFromRequestURL attempts to infer a service
+// inferServiceAndRegion attempts to infer a service
 // and a region from an http.request, and returns either an empty
 // string for both or a valid value for both.
-func (si *SigningRoundTripper) inferServiceAndRegionFromRequestURL(r *http.Request) (service string, region string) {
+func (si *signingRoundTripper) inferServiceAndRegion(r *http.Request) (service string, region string) {
 	h := r.Host
 	if strings.HasPrefix(h, "aps-workspaces") {
 		service = "aps"
@@ -112,7 +106,21 @@ func (si *SigningRoundTripper) inferServiceAndRegionFromRequestURL(r *http.Reque
 		rest := h[strings.Index(h, ".")+1:]
 		region = rest[0:strings.Index(rest, ".")]
 	} else {
-		si.logger.Warn("User must explicitly set service and region in configuration")
+		si.logger.Warn("Unable to infer region and/or service from the URL. Please provide values for region and/or service in the collector configuration.")
 	}
 	return service, region
+}
+
+// cloneRequest() is a helper function that makes a shallow copy of the request and a
+// deep copy of the header, for thread safety purposes.
+func cloneRequest(r *http.Request) *http.Request {
+	// shallow copy of the struct
+	r2 := new(http.Request)
+	*r2 = *r
+	// deep copy of the Header
+	r2.Header = make(http.Header, len(r.Header))
+	for k, s := range r.Header {
+		r2.Header[k] = append([]string(nil), s...)
+	}
+	return r2
 }

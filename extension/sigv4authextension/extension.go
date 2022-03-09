@@ -23,7 +23,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	sigv4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
-	"github.com/aws/aws-sdk-go-v2/config"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"go.opentelemetry.io/collector/component/componenthelper"
@@ -32,9 +32,9 @@ import (
 	grpcCredentials "google.golang.org/grpc/credentials"
 )
 
-// Sigv4Auth is a struct that implements the configauth.ClientAuthenticator interface.
+// sigv4Auth is a struct that implements the configauth.ClientAuthenticator interface.
 // It provides the implementation for providing Sigv4 authentication for HTTP requests only.
-type Sigv4Auth struct {
+type sigv4Auth struct {
 	cfg                          *Config
 	logger                       *zap.Logger
 	awsSDKInfo                   string
@@ -42,17 +42,17 @@ type Sigv4Auth struct {
 	componenthelper.ShutdownFunc // embedded default behavior to do nothing with Shutdown()
 }
 
-// compile time check that the Sigv4Auth struct satisfies the configauth.ClientAuthenticator interface
-var _ configauth.ClientAuthenticator = (*Sigv4Auth)(nil)
+// compile time check that the sigv4Auth struct satisfies the configauth.ClientAuthenticator interface
+var _ configauth.ClientAuthenticator = (*sigv4Auth)(nil)
 
-// RoundTripper() returns a custom SigningRoundTripper.
-func (sa *Sigv4Auth) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
+// RoundTripper() returns a custom signingRoundTripper.
+func (sa *sigv4Auth) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
 	cfg := sa.cfg
 
 	signer := sigv4.NewSigner()
 
-	// Create the SigningRoundTripper struct
-	rt := SigningRoundTripper{
+	// Create the signingRoundTripper struct
+	rt := signingRoundTripper{
 		transport:  base,
 		signer:     signer,
 		region:     cfg.Region,
@@ -67,14 +67,14 @@ func (sa *Sigv4Auth) RoundTripper(base http.RoundTripper) (http.RoundTripper, er
 
 // PerRPCCredentials() is implemented to satisfy the configauth.ClientAuthenticator
 // interface but will not be implemented.
-func (sa *Sigv4Auth) PerRPCCredentials() (grpcCredentials.PerRPCCredentials, error) {
+func (sa *sigv4Auth) PerRPCCredentials() (grpcCredentials.PerRPCCredentials, error) {
 	return nil, errors.New("Not Implemented")
 }
 
 // newSigv4Extension() is called by createExtension() in factory.go and
-// returns a new Sigv4Auth struct.
-func newSigv4Extension(cfg *Config, awsSDKInfo string, logger *zap.Logger) *Sigv4Auth {
-	return &Sigv4Auth{
+// returns a new sigv4Auth struct.
+func newSigv4Extension(cfg *Config, awsSDKInfo string, logger *zap.Logger) *sigv4Auth {
+	return &sigv4Auth{
 		cfg:        cfg,
 		logger:     logger,
 		awsSDKInfo: awsSDKInfo,
@@ -84,15 +84,15 @@ func newSigv4Extension(cfg *Config, awsSDKInfo string, logger *zap.Logger) *Sigv
 // getCredsFromConfig() is a helper function that gets AWS credentials
 // from the Config.
 func getCredsFromConfig(cfg *Config) (*aws.Credentials, error) {
-	awscfg, err := config.LoadDefaultConfig(context.Background(),
-		config.WithRegion(cfg.Region),
+	awscfg, err := awsconfig.LoadDefaultConfig(context.Background(),
+		awsconfig.WithRegion(cfg.Region),
 	)
 	if err != nil {
 		return nil, err
 	}
-	if cfg.RoleArn != "" {
+	if cfg.RoleARN != "" {
 		stsSvc := sts.NewFromConfig(awscfg)
-		provider := stscreds.NewAssumeRoleProvider(stsSvc, cfg.RoleArn, func(o *stscreds.AssumeRoleOptions) {
+		provider := stscreds.NewAssumeRoleProvider(stsSvc, cfg.RoleARN, func(o *stscreds.AssumeRoleOptions) {
 			o.RoleSessionName = "otel-" + strconv.FormatInt(time.Now().Unix(), 10)
 		})
 		creds, err := provider.Retrieve(context.Background())
@@ -101,24 +101,9 @@ func getCredsFromConfig(cfg *Config) (*aws.Credentials, error) {
 		}
 		return &creds, nil
 	}
-	// Get Credentials, either from ./aws or from environmental variables.
 	creds, err := awscfg.Credentials.Retrieve(context.Background())
 	if err != nil {
 		return nil, err
 	}
 	return &creds, nil
-}
-
-// cloneRequest() is a helper function that makes a shallow copy of the request and a
-// deep copy of the header, for thread safety purposes.
-func cloneRequest(r *http.Request) *http.Request {
-	// shallow copy of the struct
-	r2 := new(http.Request)
-	*r2 = *r
-	// deep copy of the Header
-	r2.Header = make(http.Header, len(r.Header))
-	for k, s := range r.Header {
-		r2.Header[k] = append([]string(nil), s...)
-	}
-	return r2
 }
