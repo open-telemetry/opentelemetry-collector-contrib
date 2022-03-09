@@ -13,7 +13,7 @@ type MetricSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// MetricsSettings provides settings for cpu metrics.
+// MetricsSettings provides settings for hostmetricsreceiver/cpu metrics.
 type MetricsSettings struct {
 	SystemCPUTime        MetricSettings `mapstructure:"system.cpu.time"`
 	SystemCPUUtilization MetricSettings `mapstructure:"system.cpu.utilization"`
@@ -199,7 +199,7 @@ func (mb *MetricsBuilder) NewMetricData() pdata.Metrics {
 	md := pdata.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
 	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName("otelcol/cpu")
+	ilm.InstrumentationLibrary().SetName("otelcol/hostmetricsreceiver/cpu")
 	return md
 }
 

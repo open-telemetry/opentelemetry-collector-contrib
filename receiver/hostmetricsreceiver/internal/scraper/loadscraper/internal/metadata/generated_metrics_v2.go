@@ -13,7 +13,7 @@ type MetricSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// MetricsSettings provides settings for load metrics.
+// MetricsSettings provides settings for hostmetricsreceiver/load metrics.
 type MetricsSettings struct {
 	SystemCPULoadAverage15m MetricSettings `mapstructure:"system.cpu.load_average.15m"`
 	SystemCPULoadAverage1m  MetricSettings `mapstructure:"system.cpu.load_average.1m"`
@@ -252,7 +252,7 @@ func (mb *MetricsBuilder) NewMetricData() pdata.Metrics {
 	md := pdata.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
 	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName("otelcol/load")
+	ilm.InstrumentationLibrary().SetName("otelcol/hostmetricsreceiver/load")
 	return md
 }
 

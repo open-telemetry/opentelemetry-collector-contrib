@@ -13,7 +13,7 @@ type MetricSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// MetricsSettings provides settings for paging metrics.
+// MetricsSettings provides settings for hostmetricsreceiver/paging metrics.
 type MetricsSettings struct {
 	SystemPagingFaults      MetricSettings `mapstructure:"system.paging.faults"`
 	SystemPagingOperations  MetricSettings `mapstructure:"system.paging.operations"`
@@ -330,7 +330,7 @@ func (mb *MetricsBuilder) NewMetricData() pdata.Metrics {
 	md := pdata.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
 	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName("otelcol/paging")
+	ilm.InstrumentationLibrary().SetName("otelcol/hostmetricsreceiver/paging")
 	return md
 }
 

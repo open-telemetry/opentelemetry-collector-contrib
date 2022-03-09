@@ -13,7 +13,7 @@ type MetricSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// MetricsSettings provides settings for process metrics.
+// MetricsSettings provides settings for hostmetricsreceiver/process metrics.
 type MetricsSettings struct {
 	ProcessCPUTime             MetricSettings `mapstructure:"process.cpu.time"`
 	ProcessDiskIo              MetricSettings `mapstructure:"process.disk.io"`
@@ -325,7 +325,7 @@ func (mb *MetricsBuilder) NewMetricData() pdata.Metrics {
 	md := pdata.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
 	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName("otelcol/process")
+	ilm.InstrumentationLibrary().SetName("otelcol/hostmetricsreceiver/process")
 	return md
 }
 

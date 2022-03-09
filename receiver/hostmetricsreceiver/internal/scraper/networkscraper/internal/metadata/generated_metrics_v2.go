@@ -13,7 +13,7 @@ type MetricSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// MetricsSettings provides settings for network metrics.
+// MetricsSettings provides settings for hostmetricsreceiver/network metrics.
 type MetricsSettings struct {
 	SystemNetworkConnections MetricSettings `mapstructure:"system.network.connections"`
 	SystemNetworkDropped     MetricSettings `mapstructure:"system.network.dropped"`
@@ -399,7 +399,7 @@ func (mb *MetricsBuilder) NewMetricData() pdata.Metrics {
 	md := pdata.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
 	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName("otelcol/network")
+	ilm.InstrumentationLibrary().SetName("otelcol/hostmetricsreceiver/network")
 	return md
 }
 

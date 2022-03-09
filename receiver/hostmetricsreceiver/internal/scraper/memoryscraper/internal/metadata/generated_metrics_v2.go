@@ -13,7 +13,7 @@ type MetricSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// MetricsSettings provides settings for memory metrics.
+// MetricsSettings provides settings for hostmetricsreceiver/memory metrics.
 type MetricsSettings struct {
 	SystemMemoryUsage       MetricSettings `mapstructure:"system.memory.usage"`
 	SystemMemoryUtilization MetricSettings `mapstructure:"system.memory.utilization"`
@@ -197,7 +197,7 @@ func (mb *MetricsBuilder) NewMetricData() pdata.Metrics {
 	md := pdata.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
 	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName("otelcol/memory")
+	ilm.InstrumentationLibrary().SetName("otelcol/hostmetricsreceiver/memory")
 	return md
 }
 

@@ -13,7 +13,7 @@ type MetricSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// MetricsSettings provides settings for filesystem metrics.
+// MetricsSettings provides settings for hostmetricsreceiver/filesystem metrics.
 type MetricsSettings struct {
 	SystemFilesystemInodesUsage MetricSettings `mapstructure:"system.filesystem.inodes.usage"`
 	SystemFilesystemUsage       MetricSettings `mapstructure:"system.filesystem.usage"`
@@ -273,7 +273,7 @@ func (mb *MetricsBuilder) NewMetricData() pdata.Metrics {
 	md := pdata.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
 	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName("otelcol/filesystem")
+	ilm.InstrumentationLibrary().SetName("otelcol/hostmetricsreceiver/filesystem")
 	return md
 }
 
