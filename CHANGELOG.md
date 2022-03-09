@@ -19,6 +19,7 @@
 ### 🛑 Breaking changes 🛑
 
 - `mongodbatlasreceiver`: rename mislabeled attribute `memory_state` to correct `disk_status` on partition disk metrics (#7747)
+- `mongodbatlasreceiver`: disable several metrics from collection by default (#8357)
 
 ### 🧰 Bug fixes 🧰
 
