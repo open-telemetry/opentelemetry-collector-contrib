@@ -16,6 +16,7 @@ package filesystemscraper // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/shirou/gopsutil/v3/disk"
@@ -90,7 +91,7 @@ func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 		}
 		usage, usageErr := s.usage(partition.Mountpoint)
 		if usageErr != nil {
-			errors.AddPartial(0, usageErr)
+			errors.AddPartial(0, fmt.Errorf("failed to read usage at %s: %w", partition.Mountpoint, usageErr))
 			continue
 		}
 

@@ -19,6 +19,7 @@ package pagingscraper // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/shirou/gopsutil/v3/host"
@@ -85,7 +86,7 @@ func (s *scraper) scrapePagingUsageMetric() error {
 	now := pdata.NewTimestampFromTime(time.Now())
 	pageFileStats, err := s.getPageFileStats()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to read page file stats: %w", err)
 	}
 
 	s.recordPagingUsageDataPoints(now, pageFileStats)
@@ -117,7 +118,7 @@ func (s *scraper) scrapePagingMetrics() error {
 	now := pdata.NewTimestampFromTime(time.Now())
 	swap, err := s.swapMemory()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to read swap info: %w", err)
 	}
 
 	s.recordPagingOperationsDataPoints(now, swap)
