@@ -1,3 +1,17 @@
+// Copyright  OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package mongodbatlasreceiver
 
 import (
@@ -33,13 +47,6 @@ func TestDefaultConfig(t *testing.T) {
 }
 
 func TestTimeConstraints(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
-
-	recv := receiver{
-		cfg: cfg,
-	}
-
 	tt := []struct {
 		name string
 		run  func(t *testing.T)
@@ -47,18 +54,29 @@ func TestTimeConstraints(t *testing.T) {
 		{
 			name: "initial lookback is now() - collection_interval",
 			run: func(t *testing.T) {
+				factory := NewFactory()
+				cfg := factory.CreateDefaultConfig().(*Config)
+				// lastRun is nil
+				recv := receiver{
+					cfg: cfg,
+				}
 				now := time.Now()
 				tc := recv.timeConstraints(now)
 				require.NotNil(t, tc)
 				require.Equal(t, tc.start, now.Add(cfg.CollectionInterval*-1).UTC().Format(time.RFC3339))
-				// set lookback for next test after this one is done
-				recv.lastRun = now
 			},
 		},
 		{
 			name: "lookback for subsequent runs is now() - lastRun",
 			run: func(t *testing.T) {
+				factory := NewFactory()
+				cfg := factory.CreateDefaultConfig().(*Config)
 				now := time.Now()
+				recv := receiver{
+					cfg: cfg,
+					// set last run to 1 collection ago
+					lastRun: now.Add(cfg.CollectionInterval * -1),
+				}
 				tc := recv.timeConstraints(now)
 				require.NotNil(t, tc)
 				require.Equal(t, tc.start, recv.lastRun.UTC().Format(time.RFC3339))

@@ -18,6 +18,7 @@
 ### 🛑 Breaking changes 🛑
 
 - `mongodbatlasreceiver`: rename mislabeled attribute `memory_state` to correct `disk_status` on partition disk metrics (#7747)
+- `mongodbatlasreceiver`: Correctly set initial lookback for querying mongodb atlas api (#8246)
 
 ### 🧰 Bug fixes 🧰
 
@@ -57,7 +58,6 @@
 - `prometheusreceiver`: Fix segfault that can occur after receiving stale metrics (#8056)
 - `filelogreceiver`: Fix issue where logs could occasionally be duplicated (#8123)
 - `prometheusremotewriteexporter`: Fix empty non-string resource attributes (#8116)
-- `mongodbatlasreceiver`: Correctly set initial lookback for querying mongodb atlas api (#8246)
 
 ### 🚀 New components 🚀
 
