@@ -82,7 +82,7 @@ func (t *Translator) exponentialHistogramToDDSketch(
 func (t *Translator) mapExponentialHistogramMetrics(
 	ctx context.Context,
 	consumer Consumer,
-	dims metricsDimensions,
+	dims *Dimensions,
 	slice pdata.ExponentialHistogramDataPointSlice,
 	delta bool,
 ) {
@@ -118,8 +118,8 @@ func (t *Translator) mapExponentialHistogramMetrics(
 
 		if t.cfg.SendCountSum && histInfo.ok {
 			// We only send the sum and count if both values were ok.
-			consumer.ConsumeTimeSeries(ctx, countDims.name, Count, ts, float64(histInfo.count), countDims.tags, countDims.host)
-			consumer.ConsumeTimeSeries(ctx, sumDims.name, Count, ts, histInfo.sum, sumDims.tags, sumDims.host)
+			consumer.ConsumeTimeSeries(ctx, countDims, Count, ts, float64(histInfo.count))
+			consumer.ConsumeTimeSeries(ctx, sumDims, Count, ts, histInfo.sum)
 		}
 
 		expHistDDSketch, err := t.exponentialHistogramToDDSketch(p, delta)
@@ -146,6 +146,6 @@ func (t *Translator) mapExponentialHistogramMetrics(
 			agentSketch.Basic.Avg = agentSketch.Basic.Sum / float64(agentSketch.Basic.Cnt)
 		}
 
-		consumer.ConsumeSketch(ctx, pointDims.name, ts, agentSketch, pointDims.tags, pointDims.host)
+		consumer.ConsumeSketch(ctx, pointDims, ts, agentSketch)
 	}
 }

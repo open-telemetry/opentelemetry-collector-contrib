@@ -184,7 +184,7 @@ func TestMapDeltaExponentialHistogramMetrics(t *testing.T) {
 			tr := newTranslator(t, zap.NewNop())
 			tr.cfg.SendCountSum = testInstance.sendCountSum
 			consumer := &mockFullConsumer{}
-			dims := metricsDimensions{name: "expHist.test", tags: testInstance.tags}
+			dims := &Dimensions{name: "expHist.test", tags: testInstance.tags}
 			tr.mapExponentialHistogramMetrics(ctx, consumer, dims, slice, delta)
 			assert.ElementsMatch(t, testInstance.expectedMetrics, consumer.metrics)
 			assert.Equal(t, len(testInstance.expectedSketches), len(consumer.sketches), "sketches list doesn't have the expected size")
