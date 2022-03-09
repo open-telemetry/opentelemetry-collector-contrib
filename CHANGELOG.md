@@ -17,6 +17,8 @@
 
 ### 🛑 Breaking changes 🛑
 
+- `mongodbatlasreceiver`: rename mislabeled attribute `memory_state` to correct `disk_status` on partition disk metrics (#7747)
+
 ### 🧰 Bug fixes 🧰
 
 - `zipkinexporter`: Set "error" tag value when status is set to error (#8187)
