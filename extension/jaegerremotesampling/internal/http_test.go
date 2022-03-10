@@ -51,13 +51,8 @@ func TestStartAndStop(t *testing.T) {
 	require.NotNil(t, s)
 
 	// test
-	t.Run("start", func(t *testing.T) {
-		assert.NoError(t, s.Start(context.Background(), componenttest.NewNopHost()))
-	})
-
-	t.Run("shutdown", func(t *testing.T) {
-		assert.NoError(t, s.Shutdown(context.Background()))
-	})
+	assert.NoError(t, s.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, s.Shutdown(context.Background()))
 }
 
 func TestEndpointsAreWired(t *testing.T) {
