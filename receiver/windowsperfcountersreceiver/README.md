@@ -63,7 +63,7 @@ If you would like to scrape some counters at a different frequency than others,
 you can configure multiple `windowsperfcounters` receivers with different
 `collection_interval` values. For example:
 
-```yaml
+```yaml 
 receivers:
   windowsperfcounters/memory:
     metric_metadata:
