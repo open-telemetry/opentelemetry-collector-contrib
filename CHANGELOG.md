@@ -33,6 +33,7 @@
 
 - `zipkinexporter`: Set "error" tag value when status is set to error (#8187)
 - `prometheusremotewriteexporter`: Correctly handle metric labels which collide after sanitization (#8378)
+- `prometheusremotewriteexporter`: Drop labels when exemplar attributes exceed the max number of characters (#8379)
 
 ### 🚀 New components 🚀
 

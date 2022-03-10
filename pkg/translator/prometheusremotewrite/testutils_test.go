@@ -50,6 +50,7 @@ var (
 	colliding1         = "test.colliding"
 	colliding2         = "test/colliding"
 	collidingSanitized = "test_colliding"
+	keyWith129Chars    = "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii"
 
 	intVal1   int64 = 1
 	intVal2   int64 = 2

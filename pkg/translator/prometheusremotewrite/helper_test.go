@@ -434,6 +434,16 @@ func Test_getPromExemplars(t *testing.T) {
 			},
 		},
 		{
+			"too_many_characters_drops_labels",
+			getHistogramDataPointWithExemplars(tnow, floatVal1, keyWith129Chars, traceIDValue1),
+			[]prompb.Exemplar{
+				{
+					Value:     floatVal1,
+					Timestamp: timestamp.FromTime(tnow),
+				},
+			},
+		},
+		{
 			"without_exemplar",
 			getHistogramDataPoint(),
 			nil,

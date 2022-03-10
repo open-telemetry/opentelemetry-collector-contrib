@@ -39,6 +39,9 @@ const (
 	quantileStr = "quantile"
 	pInfStr     = "+Inf"
 	keyStr      = "key"
+	// The maximum number of exemplar characters according to the prometheus specification
+	// https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#exemplars
+	maxExemplarChars = 128
 )
 
 type bucketBoundsData struct {
@@ -362,16 +365,22 @@ func getPromExemplars(pt pdata.HistogramDataPoint) []prompb.Exemplar {
 			Timestamp: timestamp.FromTime(exemplar.Timestamp().AsTime()),
 		}
 
+		exemplarChars := 0
 		exemplar.FilteredAttributes().Range(func(key string, value pdata.AttributeValue) bool {
+			val := value.AsString()
+			exemplarChars += len(key) + len(val)
 			promLabel := prompb.Label{
 				Name:  key,
-				Value: value.AsString(),
+				Value: val,
 			}
 
 			promExemplar.Labels = append(promExemplar.Labels, promLabel)
 
 			return true
 		})
+		if exemplarChars > maxExemplarChars {
+			promExemplar.Labels = nil
+		}
 
 		promExemplars = append(promExemplars, *promExemplar)
 	}
