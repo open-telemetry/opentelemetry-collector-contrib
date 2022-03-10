@@ -478,6 +478,29 @@ class TestAdditionOfCustomRequestResponseHeaders(WsgiTestBase, TestBase):
     @mock.patch.dict(
         "os.environ",
         {
+            OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST: "Custom-Test-Header-1,Custom-Test-Header-2,Custom-Test-Header-3",
+        },
+    )
+    def test_custom_request_headers_non_recording_span(self):
+        try:
+            tracer_provider = trace_api.NoOpTracerProvider()
+            self.environ.update(
+                {
+                    "HTTP_CUSTOM_TEST_HEADER_1": "Test Value 2",
+                    "HTTP_CUSTOM_TEST_HEADER_2": "TestValue2,TestValue3",
+                }
+            )
+            app = otel_wsgi.OpenTelemetryMiddleware(
+                simple_wsgi, tracer_provider=tracer_provider
+            )
+            response = app(self.environ, self.start_response)
+            self.iterate_response(response)
+        except Exception as exc:  # pylint: disable=W0703
+            self.fail(f"Exception raised with NonRecordingSpan {exc}")
+
+    @mock.patch.dict(
+        "os.environ",
+        {
             OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST: "Custom-Test-Header-1,Custom-Test-Header-2,Custom-Test-Header-3"
         },
     )

@@ -313,7 +313,7 @@ class OpenTelemetryMiddleware:
         @functools.wraps(start_response)
         def _start_response(status, response_headers, *args, **kwargs):
             add_response_attributes(span, status, response_headers)
-            if span.kind == trace.SpanKind.SERVER:
+            if span.is_recording() and span.kind == trace.SpanKind.SERVER:
                 add_custom_response_headers(span, response_headers)
             if response_hook:
                 response_hook(status, response_headers)
@@ -336,7 +336,7 @@ class OpenTelemetryMiddleware:
             context_getter=wsgi_getter,
             attributes=collect_request_attributes(environ),
         )
-        if span.kind == trace.SpanKind.SERVER:
+        if span.is_recording() and span.kind == trace.SpanKind.SERVER:
             add_custom_request_headers(span, environ)
 
         if self.request_hook:
