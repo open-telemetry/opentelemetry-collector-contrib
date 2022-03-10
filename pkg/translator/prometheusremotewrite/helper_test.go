@@ -434,12 +434,23 @@ func Test_getPromExemplars(t *testing.T) {
 			},
 		},
 		{
-			"too_many_characters_drops_labels",
-			getHistogramDataPointWithExemplars(tnow, floatVal1, keyWith129Chars, traceIDValue1),
+			"too_many_runes_drops_labels",
+			getHistogramDataPointWithExemplars(tnow, floatVal1, keyWith129Runes, ""),
 			[]prompb.Exemplar{
 				{
 					Value:     floatVal1,
 					Timestamp: timestamp.FromTime(tnow),
+				},
+			},
+		},
+		{
+			"runes_at_limit_bytes_over_keeps_labels",
+			getHistogramDataPointWithExemplars(tnow, floatVal1, keyWith128Runes, ""),
+			[]prompb.Exemplar{
+				{
+					Value:     floatVal1,
+					Timestamp: timestamp.FromTime(tnow),
+					Labels:    []prompb.Label{getLabel(keyWith128Runes, "")},
 				},
 			},
 		},
