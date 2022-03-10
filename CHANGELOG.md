@@ -21,6 +21,7 @@
 ### 🛑 Breaking changes 🛑
 
 - `mongodbatlasreceiver`: rename mislabeled attribute `memory_state` to correct `disk_status` on partition disk metrics (#7747)
+- `mongodbatlasreceiver`: Correctly set initial lookback for querying mongodb atlas api (#8246)
 - `nginxreceiver`: instrumentation name updated from `otelcol/nginx` to `otelcol/nginxreceiver` (#8255)
 - `postgresqlreceiver`: instrumentation name updated from `otelcol/postgresql` to `otelcol/postgresqlreceiver` (#8255)
 - `redisreceiver`: instrumentation name updated from `otelcol/redis` to `otelcol/redisreceiver` (#8255)
