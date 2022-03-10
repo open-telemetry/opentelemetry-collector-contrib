@@ -24,6 +24,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes"
 )
 
 const (
@@ -72,10 +74,33 @@ func TestExponentialHistogramToDDSketch(t *testing.T) {
 	assert.InDelta(t, accuracy, sketch.RelativeAccuracy(), acceptableFloatError)
 }
 
-func TestMapDeltaExponentialHistogramMetrics(t *testing.T) {
-	ts := pdata.NewTimestampFromTime(time.Now())
-	slice := pdata.NewExponentialHistogramDataPointSlice()
-	point := slice.AppendEmpty()
+func createExponentialHistogramMetrics(additionalResourceAttributes map[string]string, additionalDatapointAttributes map[string]string) pdata.Metrics {
+	md := pdata.NewMetrics()
+	rms := md.ResourceMetrics()
+	rm := rms.AppendEmpty()
+
+	resourceAttrs := rm.Resource().Attributes()
+	resourceAttrs.InsertString(attributes.AttributeDatadogHostname, testHostname)
+	for attr, val := range additionalResourceAttributes {
+		resourceAttrs.InsertString(attr, val)
+	}
+
+	ilms := rm.InstrumentationLibraryMetrics()
+	ilm := ilms.AppendEmpty()
+	metricsArray := ilm.Metrics()
+
+	met := metricsArray.AppendEmpty()
+	met.SetName("expHist.test")
+	met.SetDataType(pdata.MetricDataTypeExponentialHistogram)
+	met.ExponentialHistogram().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
+	points := met.ExponentialHistogram().DataPoints()
+	point := points.AppendEmpty()
+
+	datapointAttrs := point.Attributes()
+	for attr, val := range additionalDatapointAttributes {
+		datapointAttrs.InsertString(attr, val)
+	}
+
 	point.SetScale(6)
 
 	point.SetCount(30)
@@ -86,27 +111,29 @@ func TestMapDeltaExponentialHistogramMetrics(t *testing.T) {
 	point.Negative().SetBucketCounts([]uint64{3, 2, 5})
 
 	point.Positive().SetOffset(3)
-	point.Positive().SetBucketCounts([]uint64{7, 1, 1, 1})
+	point.Positive().SetBucketCounts([]uint64{1, 1, 1, 2, 2, 3})
 
-	point.SetTimestamp(ts)
+	point.SetTimestamp(seconds(0))
 
+	return md
+}
+
+func TestMapDeltaExponentialHistogramMetrics(t *testing.T) {
+	metrics := createExponentialHistogramMetrics(map[string]string{}, map[string]string{
+		"attribute_tag": "attribute_value",
+	})
+
+	point := metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).ExponentialHistogram().DataPoints().At(0)
 	// gamma = 2^(2^-scale)
 	gamma := math.Pow(2, math.Pow(2, -float64(point.Scale())))
 
-	dims := newDims("expHist.test")
-	dimsTags := dims.AddTags("attribute_tag:attribute_value")
 	counts := []metric{
-		newCount(dims.WithSuffix("count"), uint64(ts), 30),
-		newCount(dims.WithSuffix("sum"), uint64(ts), math.Pi),
-	}
-
-	countsAttributeTags := []metric{
-		newCount(dimsTags.WithSuffix("count"), uint64(ts), 30),
-		newCount(dimsTags.WithSuffix("sum"), uint64(ts), math.Pi),
+		newCountWithHostname("expHist.test.count", 30, uint64(seconds(0)), []string{"attribute_tag:attribute_value"}),
+		newCountWithHostname("expHist.test.sum", math.Pi, uint64(seconds(0)), []string{"attribute_tag:attribute_value"}),
 	}
 
 	sketches := []sketch{
-		newSketch(dims, uint64(ts), summary.Summary{
+		newSketchWithHostname("expHist.test", summary.Summary{
 			// Expected min: lower bound of the highest negative bucket
 			Min: -math.Pow(gamma, float64(int(point.Negative().Offset())+len(point.Negative().BucketCounts()))),
 			// Expected max: upper bound of the highest positive bucket
@@ -114,23 +141,10 @@ func TestMapDeltaExponentialHistogramMetrics(t *testing.T) {
 			Sum: point.Sum(),
 			Avg: point.Sum() / float64(point.Count()),
 			Cnt: int64(point.Count()),
-		}),
-	}
-
-	sketchesAttributeTags := []sketch{
-		newSketch(dimsTags, uint64(ts), summary.Summary{
-			// Expected min: lower bound of the highest negative bucket
-			Min: -math.Pow(gamma, float64(int(point.Negative().Offset())+len(point.Negative().BucketCounts()))),
-			// Expected max: upper bound of the highest positive bucket
-			Max: math.Pow(gamma, float64(int(point.Positive().Offset())+len(point.Positive().BucketCounts()))),
-			Sum: point.Sum(),
-			Avg: point.Sum() / float64(point.Count()),
-			Cnt: int64(point.Count()),
-		}),
+		}, []string{"attribute_tag:attribute_value"}),
 	}
 
 	ctx := context.Background()
-	delta := true
 
 	tests := []struct {
 		name             string
@@ -140,30 +154,18 @@ func TestMapDeltaExponentialHistogramMetrics(t *testing.T) {
 		expectedSketches []sketch
 	}{
 		{
-			name:             "Send count & sum metrics, no attribute tags",
+			name:             "Send count & sum metrics",
 			sendCountSum:     true,
+			tags:             []string{"attribute_tag:attribute_value"},
 			expectedMetrics:  counts,
 			expectedSketches: sketches,
 		},
 		{
-			name:             "Send count & sum metrics, attribute tags",
-			sendCountSum:     true,
-			tags:             []string{"attribute_tag:attribute_value"},
-			expectedMetrics:  countsAttributeTags,
-			expectedSketches: sketchesAttributeTags,
-		},
-		{
-			name:             "Don't send count & sum metrics, no attribute tags",
+			name:             "Don't send count & sum metrics",
 			sendCountSum:     false,
+			tags:             []string{"attribute_tag:attribute_value"},
 			expectedMetrics:  []metric{},
 			expectedSketches: sketches,
-		},
-		{
-			name:             "Don't send count & sum metrics, attribute tags",
-			sendCountSum:     false,
-			tags:             []string{"attribute_tag:attribute_value"},
-			expectedMetrics:  []metric{},
-			expectedSketches: sketchesAttributeTags,
 		},
 	}
 
@@ -172,8 +174,7 @@ func TestMapDeltaExponentialHistogramMetrics(t *testing.T) {
 			tr := newTranslator(t, zap.NewNop())
 			tr.cfg.SendCountSum = testInstance.sendCountSum
 			consumer := &mockFullConsumer{}
-			dims := &Dimensions{name: "expHist.test", tags: testInstance.tags}
-			tr.mapExponentialHistogramMetrics(ctx, consumer, dims, slice, delta)
+			tr.MapMetrics(ctx, metrics, consumer)
 			assert.ElementsMatch(t, testInstance.expectedMetrics, consumer.metrics)
 			// We don't necessarily have strict equality between expected and actual sketches
 			// for ExponentialHistograms, therefore we use testMatchingSketches to compare the
