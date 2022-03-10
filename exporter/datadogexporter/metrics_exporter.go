@@ -174,7 +174,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metric
 		return fmt.Errorf("failed to map metrics: %w", err)
 	}
 	ms, sl := consumer.All(pushTime, exp.params.BuildInfo)
-	metrics.ProcessMetrics(ms, exp.cfg)
+	metrics.ProcessMetrics(ms)
 
 	err = nil
 	if len(ms) > 0 {
