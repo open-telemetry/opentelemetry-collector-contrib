@@ -53,18 +53,38 @@ The full list of settings exposed for this receiver are documented [here](./conf
 with detailed sample configurations [here](./testdata/config.yaml).
 
 ### Feature Gate Configurations
-- `receiver.k8sclusterreceiver.reportCpuMetricsAsDouble`  (default = `false`): The k8s container and node cpu metrics 
-being reported by the k8sclusterreceiver are transitioning from being reported as integer millicpu units to being 
-reported as double cpu units to adhere to opentelemetry cpu metric specifications. Please update any monitoring this 
-might affect, the change will cause cpu metrics to be double instead of integer values as well as metric values will 
-be scaled down by 1000x. You can control whether the k8sclusterreceiver reports container and node cpu metrics in 
-double cpu units instead of integer millicpu units with the feature gate listed below. Note, feature gate identifiers 
-prefixed with - will disable the gate and prefixing with + or with no prefix will enable the gate.
-  - Start otelcol with feature gate enabled:
-    - otelcol {other_arguments} --feature-gates=receiver.k8sclusterreceiver.reportCpuMetricsAsDouble 
-  - Start otelcol with feature gate disabled:
-    - otelcol {other_arguments} --feature-gates=-receiver.k8sclusterreceiver.reportCpuMetricsAsDouble 
-  - For more details see:
+- `receiver.k8sclusterreceiver.reportCpuMetricsAsDouble` 
+  - Description
+    - The k8s container and node cpu metrics being reported by the k8sclusterreceiver are transitioning from being 
+    reported as integer millicpu units to being reported as double cpu units to adhere to opentelemetry cpu metric 
+    specifications. Please update any monitoring this might affect, the change will cause cpu metrics to be double 
+    instead of integer values as well as metric values will be scaled down by 1000x. You can control whether the 
+    k8sclusterreceiver reports container and node cpu metrics in double cpu units instead of integer millicpu units 
+    with the feature gate listed below. 
+  - Affected Metrics
+    - k8s.container.cpu_request
+    - k8s.container.cpu_limit
+    - k8s.node.allocatable_cpu
+  - Stages and Timeline
+    - Alpha
+      - In this stage the feature is disabled by default and must be enabled by the user.
+      - Target version
+        - v0.47.0
+    - Beta
+      - In this stage the feature enabled by default but can be disabled by the user.
+      - Target version
+        - v0.50.0
+    - Generally Available
+      - In this stage the feature is permanently enabled and the feature gate is no longer available.
+      - Target version
+        - v0.53.0
+  - Usage
+    - Feature gate identifiers prefixed with - will disable the gate and prefixing with + or with no prefix will enable the gate.
+    - Start the otelcol with the feature gate enabled:
+      - otelcol {other_arguments} --feature-gates=receiver.k8sclusterreceiver.reportCpuMetricsAsDouble 
+    - Start the otelcol with the feature gate disabled:
+      - otelcol {other_arguments} --feature-gates=-receiver.k8sclusterreceiver.reportCpuMetricsAsDouble
+  - More Information
     - [collector.go where the the feature gate is registered](./internal/collection/collector.go)
     - https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8115
     - https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/semantic_conventions/system-metrics.md#systemcpu---processor-metrics

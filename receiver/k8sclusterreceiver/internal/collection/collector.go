@@ -89,9 +89,9 @@ var reportCPUMetricsAsDoubleFeatureGate = featuregate.Gate{
 		"from being reported as integer millicpu units to being reported as double cpu units to adhere to " +
 		"opentelemetry cpu metric specifications. You can control whether the k8sclusterreceiver reports container " +
 		"and node cpu metrics in double cpu units instead of integer millicpu units with the " +
-		"receiver.k8sclusterreceiver.reportCpuMetricsAsDouble feature gate." +
-		"For more details see:\n" +
-		"\thttps://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/k8sclusterreceiver/README.md#feature-gate-configurations\n",
+		"receiver.k8sclusterreceiver.reportCpuMetricsAsDouble feature gate. " +
+		"For more details see: " +
+		"https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/k8sclusterreceiver/README.md#feature-gate-configurations ",
 }
 
 func init() {

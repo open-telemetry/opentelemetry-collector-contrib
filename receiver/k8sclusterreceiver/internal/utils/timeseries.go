@@ -27,7 +27,7 @@ func GetInt64TimeSeriesWithLabels(val int64, labelVals []*v1.LabelValue) *v1.Tim
 	}
 }
 
-func GetDoubleSeries(val float64) *v1.TimeSeries {
+func GetDoubleTimeSeries(val float64) *v1.TimeSeries {
 	return GetDoubleTimeSeriesWithLabels(val, nil)
 }
 
