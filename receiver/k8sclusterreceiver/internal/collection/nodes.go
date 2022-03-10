@@ -67,30 +67,30 @@ func getMetricsForNode(node *corev1.Node, nodeConditionTypesToReport, allocatabl
 	for _, nodeAllocatableTypeValue := range allocatableTypesToReport {
 		nodeAllocatableMetric := getNodeAllocatableMetric(nodeAllocatableTypeValue)
 		v1NodeAllocatableTypeValue := corev1.ResourceName(nodeAllocatableTypeValue)
-		metricValue, err := nodeAllocatableValue(node, v1NodeAllocatableTypeValue)
-		val := utils.GetInt64TimeSeries(metricValue)
 		valType := metricspb.MetricDescriptor_GAUGE_INT64
+		quantity, ok := node.Status.Allocatable[v1NodeAllocatableTypeValue]
+		if !ok {
+			logger.Debug(fmt.Errorf("allocatable type %v not found in node %v", nodeAllocatableTypeValue,
+				node.GetName()).Error())
+			continue
+		}
+		val := utils.GetInt64TimeSeries(quantity.Value())
 
 		if featuregate.IsEnabled(reportCPUMetricsAsDoubleFeatureGateID) {
-			metricQuantity, ok := node.Status.Allocatable[v1NodeAllocatableTypeValue]
-			if !ok {
-				logger.Debug(fmt.Errorf("allocatable type %v not found in node %v", nodeAllocatableTypeValue,
-					node.GetName()).Error())
-				continue
-			}
 			// cpu metrics must be of the double type to adhere to opentelemetry system.cpu metric specifications
 			if v1NodeAllocatableTypeValue == corev1.ResourceCPU {
-				val = utils.GetDoubleTimeSeries(float64(metricQuantity.MilliValue()) / 1000.0)
+				val = utils.GetDoubleTimeSeries(float64(quantity.MilliValue()) / 1000.0)
 				valType = metricspb.MetricDescriptor_GAUGE_DOUBLE
-			} else {
-				val = utils.GetInt64TimeSeries(metricQuantity.Value())
 			}
 		} else {
 			// metrics will be skipped if metric not present in node or value is not convertable to int64
-			if err != nil {
-				logger.Debug(err.Error())
+			valInt64, ok := quantity.AsInt64()
+			if !ok {
+				logger.Debug(fmt.Errorf("metric %s has value %v which is not convertable to int64",
+					v1NodeAllocatableTypeValue, node.GetName()).Error())
 				continue
 			}
+			val = utils.GetInt64TimeSeries(valInt64)
 		}
 		metrics = append(metrics, &metricspb.Metric{
 			MetricDescriptor: &metricspb.MetricDescriptor{
@@ -135,19 +135,6 @@ var nodeConditionValues = map[corev1.ConditionStatus]int64{
 	corev1.ConditionTrue:    1,
 	corev1.ConditionFalse:   0,
 	corev1.ConditionUnknown: -1,
-}
-
-func nodeAllocatableValue(node *corev1.Node, allocatableType corev1.ResourceName) (int64, error) {
-	value, ok := node.Status.Allocatable[allocatableType]
-	if !ok {
-		return 0, fmt.Errorf("allocatable type %v not found in node %v", allocatableType, node.GetName())
-	}
-
-	val, ok := value.AsInt64()
-	if !ok {
-		return 0, fmt.Errorf("metric %s has value %v which is not convertable to int64", allocatableType, value)
-	}
-	return val, nil
 }
 
 func nodeConditionValue(node *corev1.Node, condType corev1.NodeConditionType) int64 {
