@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### 🛑 Breaking changes 🛑
+
+- `windowsperfcountersreceiver`: Added metrics configuration (#8376)
+
 ## v0.46.0
 
 ### 💡 Enhancements 💡
