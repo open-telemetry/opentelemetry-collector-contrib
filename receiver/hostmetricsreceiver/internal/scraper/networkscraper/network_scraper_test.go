@@ -95,13 +95,13 @@ func TestScrape(t *testing.T) {
 		{
 			name:             "IOCounters Error",
 			ioCountersFunc:   func(bool) ([]net.IOCountersStat, error) { return nil, errors.New("err2") },
-			expectedErr:      "err2",
+			expectedErr:      "failed to read network IO stats: err2",
 			expectedErrCount: networkMetricsLen,
 		},
 		{
 			name:             "Connections Error",
 			connectionsFunc:  func(string) ([]net.ConnectionStat, error) { return nil, errors.New("err3") },
-			expectedErr:      "err3",
+			expectedErr:      "failed to read TCP connections: err3",
 			expectedErrCount: connectionsMetricsLen,
 		},
 	}
