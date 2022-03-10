@@ -27,13 +27,13 @@ windowsperfcounters:
     description: <description>
     unit: <unit type>
     gauge:
-      value_type: <value type>
+      value_type: <int or double>
   - metric_name: <metric name>
     description: <description>
     unit: <unit type>
-    sum:
-      value_type: <value type>
-      aggregation: <aggregation type>
+    sum: 
+      value_type: <int or double>
+      aggregation: <cumulative or delta>
       monotonic: <true or false>
   perfcounters:
     - object: <object name>
