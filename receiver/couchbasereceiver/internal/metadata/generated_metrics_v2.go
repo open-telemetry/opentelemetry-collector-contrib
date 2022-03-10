@@ -74,6 +74,14 @@ func (mb *MetricsBuilder) IncreaseCapacity(length int) {
 	mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().EnsureCapacity(length + mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Len())
 }
 
+// Resource gives access the Resource object for scrapers to inject attributes.
+func (mb *MetricsBuilder) Resource() pdata.Resource {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
+	return mb.data.ResourceMetrics().At(0).Resource()
+}
+
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
 // and metrics builder should update its startTime and reset it's internal state accordingly.
 func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {

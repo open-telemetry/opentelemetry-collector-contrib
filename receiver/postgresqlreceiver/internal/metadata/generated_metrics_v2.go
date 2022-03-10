@@ -501,6 +501,14 @@ func (mb *MetricsBuilder) IncreaseCapacity(length int) {
 	mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().EnsureCapacity(length + mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Len())
 }
 
+// Resource gives access the Resource object for scrapers to inject attributes.
+func (mb *MetricsBuilder) Resource() pdata.Resource {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
+	return mb.data.ResourceMetrics().At(0).Resource()
+}
+
 // RecordPostgresqlBackendsDataPoint adds a data point to postgresql.backends metric.
 func (mb *MetricsBuilder) RecordPostgresqlBackendsDataPoint(ts pdata.Timestamp, val int64, databaseAttributeValue string) {
 	if mb.data == nil {
