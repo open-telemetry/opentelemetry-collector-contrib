@@ -21,6 +21,7 @@
 - `googlecloudpubsubreceiver` Added implementation of Google Cloud Pubsub receiver. (#8391)
 - `googlecloudpubsubexporter` Added implementation of Google Cloud Pubsub exporter. (#8391)
 - `coralogixexporter` Allow exporter timeout to be configured (#7957)
+- `prometheusremotewriteexporter` support adding trace id and span id attached to exemplars (#8380)
 
 ### 🛑 Breaking changes 🛑
 
