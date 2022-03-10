@@ -67,8 +67,8 @@ you can configure multiple `windowsperfcounters` receivers with different
 receivers:
   windowsperfcounters/memory:
     metric_metadata:
-      - metric_name: bytes.commited
-        description: the number of bytes commited to memory
+      - metric_name: bytes.committed
+        description: the number of bytes committed to memory
         unit: By
         gauge:
           value_type: int
@@ -77,7 +77,7 @@ receivers:
       - object: Memory
         counters:
           - counter_name: Committed Bytes
-            metric_name: bytes.commited
+            metric_name: bytes.committed
 
   windowsperfcounters/processor:
     collection_interval: 1m
@@ -114,14 +114,14 @@ service:
 To report metrics in the desired output format, build a metric the metric and reference it in the given counter with any applicable attributes.
 
 e.g. To output the `Memory/Committed Bytes` counter as a metric with the name
-`bytes.commited`:
+`bytes.committed`:
 
 ```yaml
 receivers:
   windowsperfcounters:
     metric_metadata:
-    - metric_name: bytes.commited
-      description: the number of bytes commited to memory
+    - metric_name: bytes.committed
+      description: the number of bytes committed to memory
       unit: By
       gauge:
         value_type: int
