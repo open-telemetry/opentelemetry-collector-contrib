@@ -97,6 +97,7 @@ Approvers ([@open-telemetry/python-approvers](https://github.com/orgs/open-telem
 - [Aaron Abbott](https://github.com/aabmass), Google
 - [Alex Boten](https://github.com/codeboten), Lightstep
 - [Nathaniel Ruiz Nowell](https://github.com/NathanielRN), AWS
+- [Owais Lone](https://github.com/owais), Splunk
 - [Srikanth Chekuri](https://github.com/lonewolf3739)
 
 *Find more about the approver role in [community repository](https://github.com/open-telemetry/community/blob/main/community-membership.md#approver).*
@@ -105,7 +106,6 @@ Maintainers ([@open-telemetry/python-maintainers](https://github.com/orgs/open-t
 
 - [Diego Hurtado](https://github.com/ocelotl), Lightstep
 - [Leighton Chen](https://github.com/lzchen), Microsoft
-- [Owais Lone](https://github.com/owais), Splunk
 
 *Find more about the maintainer role in [community repository](https://github.com/open-telemetry/community/blob/main/community-membership.md#maintainer).*
 
