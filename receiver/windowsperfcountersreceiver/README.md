@@ -6,9 +6,6 @@ interface](https://docs.microsoft.com/en-us/windows/win32/perfctrs/using-the-pdh
 It is based on the [Telegraf Windows Performance Counters Input
 Plugin](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/win_perf_counters).
 
-Metrics will be generated with names and labels that match the performance
-counter path, i.e.
-
 - `Memory\Committed Bytes`
 - `Processor\% Processor Time`, with a datapoint for each `Instance` label = (`_Total`, `1`, `2`, `3`, ... )
 
@@ -25,11 +22,25 @@ be configured:
 ```yaml
 windowsperfcounters:
   collection_interval: <duration> # default = "1m"
+  metric_metadata:
+  - metric_name: <metric name>
+    description: <description>
+    unit: <unit type>
+    gauge:
+      value_type: <value type>
+  - metric_name: <metric name>
+    description: <description>
+    unit: <unit type>
+    sum:
+      value_type: <value type>
+      aggregation: <aggregation type>
+      monotonic: <true or false>
   perfcounters:
     - object: <object name>
       instances: [<instance name>]*
       counters:
-        - <counter name>
+        - counter_name: <counter name>
+          metric_name: <metric name>
 ```
 
 *Note `instances` can have several special values depending on the type of
@@ -53,23 +64,42 @@ you can configure multiple `windowsperfcounters` receivers with different
 ```yaml
 receivers:
   windowsperfcounters/memory:
+    metric_metadata:
+      - metric_name: bytes.commited
+        description: the number of bytes commited to memory
+        unit: By
+        gauge:
+          value_type: int
     collection_interval: 30s
     perfcounters:
       - object: Memory
         counters:
-          - Committed Bytes
+          - counter_name: Committed Bytes
+            metric_name: bytes.commited
 
   windowsperfcounters/processor:
     collection_interval: 1m
+    metric_metadata:
+      - metric_name: processor.time
+        description: active and idle time of the processor
+        unit: "%"
+        gauge:
+          value_type: double
     perfcounters:
       - object: "Processor"
         instances: "*"
         counters:
-          - "% Processor Time"
+          - counter_name: "% Processor Time"
+            metric_name: processor.time
+            attributes:
+              state: active
       - object: "Processor"
         instances: [1, 2]
         counters:
-          - "% Idle Time"
+          - counter_name: "% Idle Time"
+            metric_name: processor.time
+            attributes:
+              state: idle
 
 service:
   pipelines:
@@ -77,36 +107,32 @@ service:
       receivers: [windowsperfcounters/memory, windowsperfcounters/processor]
 ```
 
-### Changing metric format
+### Defining metric format
 
-To report metrics in the desired output format, it's recommended you use this
-receiver with the [metrics transform
-processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/metricstransformprocessor).
+To report metrics in the desired output format, build a metric the metric and reference it in the given counter with any applicable attributes.
 
 e.g. To output the `Memory/Committed Bytes` counter as a metric with the name
-`system.memory.usage`:
+`bytes.commited`:
 
 ```yaml
 receivers:
   windowsperfcounters:
+    metric_metadata:
+    - metric_name: bytes.commited
+      description: the number of bytes commited to memory
+      unit: By
+      gauge:
+        value_type: int
     collection_interval: 30s
     perfcounters:
     - object: Memory
       counters:
         - Committed Bytes
 
-processors:
-  metricstransformprocessor:
-    transforms:
-      - metric_name: "Memory/Committed Bytes"
-        action: update
-        new_name: system.memory.usage
-
 service:
   pipelines:
     metrics:
       receivers: [windowsperfcounters]
-      processors: [metricstransformprocessor]
 ```
 
 ## Recommended configuration for common applications

@@ -93,13 +93,19 @@ func (c *Config) Validate() error {
 		} else if (metric.Gauge != GaugeMetric{}) {
 			if metric.Gauge.ValueType == "" {
 				errs = multierr.Append(errs, fmt.Errorf("gauge metric %q does not include a value type", metric.MetricName))
+			} else if metric.Gauge.ValueType != "int" && metric.Gauge.ValueType != "double" {
+				errs = multierr.Append(errs, fmt.Errorf("gauge metric %q includes an invalid value type", metric.MetricName))
 			}
 		} else if (metric.Sum != SumMetric{}) {
 			if metric.Sum.ValueType == "" {
 				errs = multierr.Append(errs, fmt.Errorf("sum metric %q does not include a value type", metric.MetricName))
+			} else if metric.Sum.ValueType != "int" && metric.Sum.ValueType != "double" {
+				errs = multierr.Append(errs, fmt.Errorf("sum metric %q includes an invalid value type", metric.MetricName))
 			}
 			if metric.Sum.Aggregation == "" {
 				errs = multierr.Append(errs, fmt.Errorf("sum metric %q does not include an aggregation", metric.MetricName))
+			} else if metric.Sum.Aggregation != "cumulative" && metric.Sum.Aggregation != "delta" {
+				errs = multierr.Append(errs, fmt.Errorf("sum metric %q includes an invalid aggregation", metric.MetricName))
 			}
 		}
 	}
