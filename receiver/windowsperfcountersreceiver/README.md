@@ -41,6 +41,8 @@ windowsperfcounters:
       counters:
         - counter_name: <counter name>
           metric_name: <metric name>
+          attributes:
+            <key>: <value>
 ```
 
 *Note `instances` can have several special values depending on the type of
