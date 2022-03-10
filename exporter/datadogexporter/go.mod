@@ -6,18 +6,18 @@ require (
 	github.com/DataDog/agent-payload/v5 v5.0.16
 	github.com/DataDog/datadog-agent/pkg/quantile v0.33.1
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02
-	github.com/aws/aws-sdk-go v1.43.8
+	github.com/aws/aws-sdk-go v1.43.13
 	github.com/cenkalti/backoff/v4 v4.1.2
 	github.com/gogo/protobuf v1.3.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.46.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.46.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.46.0
-	go.opentelemetry.io/collector/model v0.46.0
+	go.opentelemetry.io/collector v0.46.1-0.20220307173244-f980c9ef25b1
+	go.opentelemetry.io/collector/model v0.46.1-0.20220307173244-f980c9ef25b1
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
-	gopkg.in/DataDog/dd-trace-go.v1 v1.36.0
+	gopkg.in/DataDog/dd-trace-go.v1 v1.36.2
 	gopkg.in/zorkian/go-datadog-api.v2 v2.30.0
 )
 

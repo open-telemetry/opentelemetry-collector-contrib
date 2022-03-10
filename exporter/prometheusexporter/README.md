@@ -8,7 +8,7 @@ Supported pipeline types: metrics
 
 The following settings are required:
 
-- `endpoint` (no default): Where to send metric data
+- `endpoint` (no default): the address on which the Prometheus scrape handler will be run on.
 
 The following settings can be optionally configured:
 

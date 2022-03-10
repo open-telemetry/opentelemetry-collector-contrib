@@ -42,7 +42,7 @@ func TestRedisRunnable(t *testing.T) {
 	rm := md.ResourceMetrics().At(0)
 	ilm := rm.InstrumentationLibraryMetrics().At(0)
 	il := ilm.InstrumentationLibrary()
-	assert.Equal(t, "otelcol/redis", il.Name())
+	assert.Equal(t, "otelcol/redisreceiver", il.Name())
 }
 
 func TestNewReceiver_invalid_auth_error(t *testing.T) {

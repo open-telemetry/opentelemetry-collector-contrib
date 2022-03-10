@@ -2,9 +2,38 @@
 
 ## Unreleased
 
+### 💡 Enhancements 💡
+
+- `prometheusremotewriteexporter`: Write-Ahead Log support enabled (#7304)
+- `hostreceiver/filesystemscraper`: Add filesystem utilization (#8027)
+- `hostreceiver/pagingscraper`: Add paging.utilization (#6221)
+- `googlecloudexporter`: [Alpha] Translate metrics directly from OTLP to gcm using the `exporter.googlecloud.OTLPDirect` feature-gate (#7177)
+- `simpleprometheusreceiver`: Add support for static labels (#7908)
+- `spanmetricsprocessor`: Dropping the condition to replace _ with key_ as __ label is reserved and _ is not (#8057)
+- `podmanreceiver`: Add container.runtime attribute to container metrics (#8262)
+- `dockerstatsreceiver`: Add container.runtime attribute to container metrics (#8261)
+- `tanzuobservabilityexporter`: instrumentation Library and Dropped Counts to Span Tags (#8120)
+- `clickhouseexporter`: Implement consume log logic. (#9705)
+- `influxdbexporter`: Add support for cumulative, non-monotonic metrics. (#8348)
+- `oauth2clientauthextension`: Add support for EndpointParams (#7307)
+- Add `NewMetricData` function to `MetricsBuilder` to consistently set instrumentation library name (#8255)
+
 ### 🛑 Breaking changes 🛑
 
 - `windowsperfcountersreceiver`: Added metrics configuration (#8376)
+- `mongodbatlasreceiver`: rename mislabeled attribute `memory_state` to correct `disk_status` on partition disk metrics (#7747)
+- `mongodbatlasreceiver`: Correctly set initial lookback for querying mongodb atlas api (#8246)
+- `nginxreceiver`: instrumentation name updated from `otelcol/nginx` to `otelcol/nginxreceiver` (#8255)
+- `postgresqlreceiver`: instrumentation name updated from `otelcol/postgresql` to `otelcol/postgresqlreceiver` (#8255)
+- `redisreceiver`: instrumentation name updated from `otelcol/redis` to `otelcol/redisreceiver` (#8255)
+- `apachereceiver`: Update instrumentation library name from `otelcol/apache` to `otelcol/apachereceiver` ()
+- `couchdbreceiver`: instrumentation name updated from `otelcol/couchdb` to `otelcol/couchdbreceiver` (#8366)
+
+### 🧰 Bug fixes 🧰
+
+- `zipkinexporter`: Set "error" tag value when status is set to error (#8187)
+
+### 🚀 New components 🚀
 
 ## v0.46.0
 
@@ -19,10 +48,13 @@
 - `signalfxexporter`: Add validation for `sending_queue` setting (#8026)
 - `internal/stanza`: Add support for arbitrary attribute types (#8081)
 - `resourcedetectionprocessor`: Add confighttp.HTTPClientSettings To Resource Detection Config Fixes (#7397)
+- `hostmetricsreceiver`: Add cpu.utilization metrics to cpu scrapper (#7130)
 - `honeycombexporter`: Add validation for `sending_queue` setting (#8113)
 - `routingprocessor`: Expand error handling on failure to build exporters (#8125)
 - `skywalkingreceiver`: Add new skywalking receiver component folder and structure (#8107)
 - `groupbyattrsprocesor`: Allow empty keys, which allows to use the processor for compaction (#7793)
+- `datadogexporter`: Add rbac to example k8s manifest file (#8186)
+- `splunkhecexporter`: Add validation for `sending_queue` setting (#8256)
 
 ### 🛑 Breaking changes 🛑
 
@@ -122,6 +154,7 @@
 
 ### 💡 Enhancements 💡
 
+- `kafkaexporter`: Add compression and flush max messages options.
 - `dynatraceexporter`: Write error logs using plugin logger (#7360)
 - `dynatraceexporter`: Fix docs for TLS settings (#7568)
 - `tanzuobservabilityexporter`: Turn on metrics exporter (#7281)
@@ -253,7 +286,6 @@
 - `resourcedetectionprocessor`: add the [consul](https://www.consul.io/) detector (#6382)
 - `awsemfexporter`: refactor cw_client logic into separate `cwlogs` package (#7072)
 - `prometheusexporter`: Dropping the condition to replace _ with key_ as __ label is reserved and _ is not (#7506)
-
 
 ### 🛑 Breaking changes 🛑
 

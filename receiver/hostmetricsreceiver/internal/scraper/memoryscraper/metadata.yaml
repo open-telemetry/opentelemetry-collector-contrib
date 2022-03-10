@@ -1,4 +1,4 @@
-name: memory
+name: hostmetricsreceiver/memory
 
 attributes:
   state:
