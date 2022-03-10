@@ -22,6 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `opentelemetry-instrumentation-requests` make span attribute available to samplers
   ([#931](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/931))
 
+- `opentelemetry-datadog-exporter` add deprecation note to example.
+  ([#900](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/900))
+
 ### Fixed
 
 - `opentelemetry-instrumentation-logging` retrieves service name defensively.
