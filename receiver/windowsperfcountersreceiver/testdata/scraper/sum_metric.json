@@ -6,8 +6,8 @@
                "instrumentationLibrary": {},
                "metrics": [
                   {
-                     "description": "number of bytes commited to memory",
-                     "name": "bytes.commited",
+                     "description": "number of bytes committed to memory",
+                     "name": "bytes.committed",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [

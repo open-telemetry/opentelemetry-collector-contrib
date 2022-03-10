@@ -111,7 +111,7 @@
                      "unit": "%"
                   },
                   {
-                     "description": "number of bytes commited to memory",
+                     "description": "number of bytes committed to memory",
                      "gauge": {
                         "dataPoints": [
                            {
@@ -120,7 +120,7 @@
                            }
                         ]
                      },
-                     "name": "bytes.commited",
+                     "name": "bytes.committed",
                      "unit": "By"
                   },
                   {

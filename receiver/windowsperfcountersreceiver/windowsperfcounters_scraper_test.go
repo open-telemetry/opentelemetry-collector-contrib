@@ -101,8 +101,8 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 						},
 					},
 					{
-						MetricName:  "bytes.commited",
-						Description: "number of bytes commited to memory",
+						MetricName:  "bytes.committed",
+						Description: "number of bytes committed to memory",
 						Unit:        "By",
 						Gauge: GaugeMetric{
 							ValueType: "double",
@@ -118,7 +118,7 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 					},
 				},
 				PerfCounters: []PerfCounterConfig{
-					{Object: "Memory", Counters: []CounterConfig{{CounterName: "Committed Bytes", MetricName: "bytes.commited"}}},
+					{Object: "Memory", Counters: []CounterConfig{{CounterName: "Committed Bytes", MetricName: "bytes.committed"}}},
 					{Object: "Processor", Instances: []string{"*"}, Counters: []CounterConfig{{CounterName: "% Idle Time", MetricName: "cpu.idle"}}},
 					{Object: "Processor", Instances: []string{"1", "2"}, Counters: []CounterConfig{{CounterName: "% Processor Time", MetricName: "processor.time"}}},
 				},
@@ -131,8 +131,8 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 			cfg: &Config{
 				MetricMetaData: []MetricConfig{
 					{
-						MetricName:  "bytes.commited",
-						Description: "number of bytes commited to memory",
+						MetricName:  "bytes.committed",
+						Description: "number of bytes committed to memory",
 						Unit:        "By",
 						Sum: SumMetric{
 							ValueType: "int",
@@ -140,7 +140,7 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 					},
 				},
 				PerfCounters: []PerfCounterConfig{
-					{Object: "Memory", Counters: []CounterConfig{{CounterName: "Committed Bytes", MetricName: "bytes.commited"}}},
+					{Object: "Memory", Counters: []CounterConfig{{CounterName: "Committed Bytes", MetricName: "bytes.committed"}}},
 				},
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{CollectionInterval: time.Minute},
 			},
