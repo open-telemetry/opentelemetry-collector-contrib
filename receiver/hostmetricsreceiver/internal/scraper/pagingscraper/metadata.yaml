@@ -1,4 +1,4 @@
-name: paging
+name: hostmetricsreceiver/paging
 
 attributes:
   device:
