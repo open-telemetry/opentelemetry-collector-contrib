@@ -36,7 +36,8 @@ type Config struct {
     Region string `mapstructure:"region,omitempty"`
     Service string `mapstructure:"service,omitempty"`
     RoleArn string `mapstructure:"role_arn,omitempty"`
-    creds *aws.Credentials 
+	RoleSessionName string `mapstructure:"role_session_name,omitempty"`
+	credsProvider *aws.CredentialsProvider
 }
 ```
 
@@ -47,7 +48,8 @@ type Config struct {
 * `Service` is the AWS service for AWS Sigv4. This is an optional field.
     * Note that an attempt will be made to obtain a valid service from the endpoint of the service you are exporting to
 * `RoleArn` is the Amazon Resource Name (ARN) of a role to assume. This is an optional field.
-* `creds` holds the necessary AWS Credentials. This is a private field and will not be configured by the user.
+* `role_session_name`: The name of a role session. If not provided, one will be constructed with a semi-random identifier. This is an optional field.
+* `credsProvider` holds the necessary AWS CredentialsProvider. This is a private field and will not be configured by the user. We store the provider instead of the credentials themselves so we can ensure we have refreshed credentials when we sign a request.
 
 
 `Validate()` is a method that checks if the Extension configuration is valid. We aim to catch most errors here, so we can ensure that we fail early and to avoid revalidating static data. We also set our AWS credentials here after we check them.
@@ -55,11 +57,11 @@ type Config struct {
 
 ```go
 func (cfg *Config) Validate() error {
-	creds, err := getCredsFromConfig(cfg)
-	if creds == nil || err != nil {
+	credsProvider, err := getCredsFromConfig(cfg)
+	if credsProvider == nil || err != nil {
 		return errBadCreds
 	} else {
-		cfg.creds = creds
+		cfg.credsProvider = credsProvider
 	}
 
     return nil
@@ -98,7 +100,7 @@ func (sa *Sigv4Auth) RoundTripper(base http.RoundTripper) (http.RoundTripper, er
         signer:
         region:
         service:
-        creds:
+        credsProvider:
         awsSDKInfo:
         logger:
     }
@@ -138,29 +140,34 @@ func newSigv4Extension(cfg *Config, awsSDKInfo string, logger *zap.logger) (*Sig
 
 ```go
 func getCredsFromConfig(cfg *Config) (*aws.Credentials, error) {
-	awscfg, err := config.LoadDefaultConfig(context.Background(),
-		config.WithRegion(cfg.Region),
+	awscfg, err := awsconfig.LoadDefaultConfig(context.Background(),
+		awsconfig.WithRegion(cfg.Region),
 	)
 	if err != nil {
 		return nil, err
 	}
-	if cfg.RoleArn != "" {
+	if cfg.RoleARN != "" {
 		stsSvc := sts.NewFromConfig(awscfg)
-		provider := stscreds.NewAssumeRoleProvider(stsSvc, cfg.RoleArn, func(o *stscreds.AssumeRoleOptions) {
-			o.RoleSessionName = "otel-" + strconv.FormatInt(time.Now().Unix(), 10)
-		})
-		creds, err := provider.Retrieve(context.Background())
-		if err != nil {
-			return nil, err
+
+		identifier := cfg.RoleSessionName
+		if identifier == "" {
+			b := make([]byte, 5)
+			rand.Read(b)
+			identifier = base32.StdEncoding.EncodeToString(b)
 		}
-		return &creds, nil
+
+		provider := stscreds.NewAssumeRoleProvider(stsSvc, cfg.RoleARN, func(o *stscreds.AssumeRoleOptions) {
+			o.RoleSessionName = "otel-" + identifier
+		})
+		awscfg.Credentials = aws.NewCredentialsCache(provider)
 	}
-	// Get Credentials, either from ./aws or from environmental variables.
-	creds, err := awscfg.Credentials.Retrieve(context.Background())
+
+	_, err = awscfg.Credentials.Retrieve(context.Background())
 	if err != nil {
 		return nil, err
 	}
-	return &creds, nil
+
+	return &awscfg.Credentials, nil
 }
 ```
 
@@ -196,7 +203,7 @@ type SigningRoundTripper struct {
     signer *v4.Signer
     region string
     service string
-    creds *aws.Credentials
+    credsProvider *aws.CredentialsProvider
     awsSDKInfo string
 	logger *zap.Logger
 }
@@ -233,39 +240,24 @@ func (si *SigningRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
     }
     req2.Header.Set("User-Agent", ua)
 
-    // Sign the request
-    h := sha256.New()
+	// Hash the request
+	h := sha256.New()
 	_, _ = io.Copy(h, body)
 	payloadHash := hex.EncodeToString(h.Sum(nil))
 
-    // Use user provided service/region if specified, use inferred service/region if not
-	service, region := si.inferServiceAndRegionFromRequestURL(req)
-	if si.service != "" && si.region != "" {
-		err = si.signer.SignHTTP(context.Background(), *si.creds, req2, payloadHash, si.service, si.region, time.Now())
-	} else if si.service != "" && si.region == "" {
-		err = si.signer.SignHTTP(context.Background(), *si.creds, req2, payloadHash, si.service, region, time.Now())
-	} else if si.service == "" && si.region != "" {
-		err = si.signer.SignHTTP(context.Background(), *si.creds, req2, payloadHash, service, si.region, time.Now())
-	} else {
-		err = si.signer.SignHTTP(context.Background(), *si.creds, req2, payloadHash, service, region, time.Now())
-	}
+	// Use user provided service/region if specified, use inferred service/region if not, then sign the request
+	service, region := si.inferServiceAndRegion(req)
+	creds, err := (*si.credsProvider).Retrieve(req.Context())
 	if err != nil {
-		return nil, fmt.Errorf("error signing the request: %v", err)
+		return nil, errBadCreds
+	}
+	err = si.signer.SignHTTP(req.Context(), creds, req2, payloadHash, service, region, time.Now())
+	if err != nil {
+		return nil, fmt.Errorf("error signing the request: %w", err)
 	}
 
-    _, err = si.signer.Sign(req2, body, si.service, si.region, time.Now())
-    if err != nil {
-        return nil, fmt.Errorf("error signing the request: %v", err)
-    }
-
-    // Send the request
-    resp, err := si.transport.RoundTrip(req2)
-    if err != nil {
-        return nil, err
-    }
-
-
-    return resp, nil
+	// Send the request
+	return si.transport.RoundTrip(req2)
 } 
 ```
 
@@ -318,7 +310,7 @@ Next, we clone the request and also add runtime information to the User-Agent he
 	_, _ = io.Copy(h, body)
 	payloadHash := hex.EncodeToString(h.Sum(nil))
 
-    err = si.signer.SignHTTP(context.Background(), *si.creds, req2, payloadHash, si.service, si.region, time.Now())
+    err = si.signer.SignHTTP(req.Context(), creds, req2, payloadHash, service, region, time.Now())
     resp, err := si.transport.RoundTrip(req2)
     return resp, nil
 ```

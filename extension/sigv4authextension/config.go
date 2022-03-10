@@ -28,9 +28,10 @@ var (
 // Config stores the configuration for the Sigv4 Authenticator
 type Config struct {
 	config.ExtensionSettings `mapstructure:",squash"`
-	Region                   string `mapstructure:"region"`
-	Service                  string `mapstructure:"service"`
+	Region                   string `mapstructure:"region,omitempty"`
+	Service                  string `mapstructure:"service,omitempty"`
 	RoleARN                  string `mapstructure:"role_arn,omitempty"`
+	RoleSessionName          string `mapstructure:"role_session_name,omitempty"`
 	credsProvider            *aws.CredentialsProvider
 }
 

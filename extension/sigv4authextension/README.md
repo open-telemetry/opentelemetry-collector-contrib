@@ -12,6 +12,7 @@ The configuration fields are as follows:
     * [List of AWS regions](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.RegionsAndAvailabilityZones.html)
 * `service`: **Optional**. The AWS service for AWS Sigv4
     * Note that an attempt will be made to obtain a valid service from the endpoint of the service you are exporting to
+* `role_session_name`: **Optional**. The name of a role session. If not provided, one will be constructed with a semi-random identifier.
 
 
 ```yaml
