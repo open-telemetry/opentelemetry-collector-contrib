@@ -25,6 +25,7 @@
 - `postgresqlreceiver`: instrumentation name updated from `otelcol/postgresql` to `otelcol/postgresqlreceiver` (#8255)
 - `redisreceiver`: instrumentation name updated from `otelcol/redis` to `otelcol/redisreceiver` (#8255)
 - `apachereceiver`: Update instrumentation library name from `otelcol/apache` to `otelcol/apachereceiver` ()
+- `couchdbreceiver`: instrumentation name updated from `otelcol/couchdb` to `otelcol/couchdbreceiver` (#8366)
 
 ### 🧰 Bug fixes 🧰
 
