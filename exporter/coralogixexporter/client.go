@@ -68,7 +68,7 @@ func (c *coralogixClient) newPost(ctx context.Context, td pdata.Traces) error {
 
 	ctx = metadata.NewOutgoingContext(ctx, metadata.New(c.cfg.GRPCClientSettings.Headers))
 	for _, batch := range batches {
-		if batch.GetProcess().GetServiceName() != nil && batch.GetProcess().GetServiceName() != "" {
+		if batch.GetProcess().GetServiceName() != "" {
 			_, err := c.client.PostSpans(ctx, &cxpb.PostSpansRequest{
 				Batch:    *batch,
 				Metadata: &cxpb.Metadata{ApplicationName: c.cfg.AppName, SubsystemName: batch.GetProcess().GetServiceName()},
@@ -78,7 +78,7 @@ func (c *coralogixClient) newPost(ctx context.Context, td pdata.Traces) error {
 			}
 			c.logger.Debug("Trace was sent successfully")
 		} else {
-			return fmt.Errorf("Failed to push trace data via Coralogix exporter because batch.process.serviceName is empty or nil")
+			return fmt.Errorf("Failed to push trace data via Coralogix exporter because batch.process.serviceName is empty")
 		}
 	}
 	return nil
