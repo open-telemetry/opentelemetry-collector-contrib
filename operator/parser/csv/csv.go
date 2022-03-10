@@ -145,23 +145,56 @@ func generateParseFunc(headers []string, fieldDelimiter rune, lazyQuotes bool) p
 		reader.Comma = fieldDelimiter
 		reader.FieldsPerRecord = len(headers)
 		reader.LazyQuotes = lazyQuotes
-		parsedValues := make(map[string]interface{})
 
+		// Typically only need one
+		lines := make([][]string, 0, 1)
 		for {
-			body, err := reader.Read()
+			line, err := reader.Read()
 			if err == io.EOF {
 				break
 			}
 
-			if err != nil {
-				return nil, err
+			if err != nil && len(line) == 0 {
+				return nil, errors.New("failed to parse entry")
 			}
 
-			for i, key := range headers {
-				parsedValues[key] = body[i]
+			lines = append(lines, line)
+		}
+
+		/*
+			This parser is parsing a single value, which came from a single log entry.
+			Therefore, if there are multiple lines here, it should be assumed that each
+			subsequent line contains a continuation of the last field in the previous line.
+
+			Given a file w/ headers "A,B,C,D,E" and contents "aa,b\nb,cc,d\nd,ee",
+			expect reader.Read() to return bodies:
+			- ["aa","b"]
+			- ["b","cc","d"]
+			- ["d","ee"]
+		*/
+
+		joinedLine := lines[0]
+		for i := 1; i < len(lines); i++ {
+			nextLine := lines[i]
+
+			// The first element of the next line is a continuation of the previous line's last element
+			joinedLine[len(joinedLine)-1] += "\n" + nextLine[0]
+
+			// The remainder are separate elements
+			for n := 1; n < len(nextLine); n++ {
+				joinedLine = append(joinedLine, nextLine[n])
 			}
 		}
 
+		parsedValues := make(map[string]interface{})
+
+		if len(joinedLine) != len(headers) {
+			return nil, errors.New("wrong number of fields")
+		}
+
+		for i, val := range joinedLine {
+			parsedValues[headers[i]] = val
+		}
 		return parsedValues, nil
 	}
 }
