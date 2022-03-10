@@ -149,14 +149,6 @@ func createAttributes(resource pdata.Resource, attributes pdata.AttributeMap, ex
 	// map ensures no duplicate label name
 	l := map[string]prompb.Label{}
 
-	for key, value := range externalLabels {
-		// External labels have already been sanitized
-		l[key] = prompb.Label{
-			Name:  key,
-			Value: value,
-		}
-	}
-
 	resource.Attributes().Range(func(key string, value pdata.AttributeValue) bool {
 		if isUsefulResourceAttribute(key) {
 			l[key] = prompb.Label{
@@ -168,14 +160,34 @@ func createAttributes(resource pdata.Resource, attributes pdata.AttributeMap, ex
 		return true
 	})
 
+	// Ensure attributes are sorted by key for consistent merging of keys which
+	// collide when sanitized.
+	attributes.Sort()
 	attributes.Range(func(key string, value pdata.AttributeValue) bool {
-		l[key] = prompb.Label{
-			Name:  sanitize(key),
-			Value: value.AsString(),
+		if existingLabel, alreadyExists := l[sanitize(key)]; alreadyExists {
+			existingLabel.Value = existingLabel.Value + ";" + value.AsString()
+			l[sanitize(key)] = existingLabel
+		} else {
+			l[sanitize(key)] = prompb.Label{
+				Name:  sanitize(key),
+				Value: value.AsString(),
+			}
 		}
 
 		return true
 	})
+
+	for key, value := range externalLabels {
+		// External labels have already been sanitized
+		if _, alreadyExists := l[key]; alreadyExists {
+			// Skip external labels if they are overridden by metric attributes
+			continue
+		}
+		l[key] = prompb.Label{
+			Name:  key,
+			Value: value,
+		}
+	}
 
 	for i := 0; i < len(extras); i += 2 {
 		if i+1 >= len(extras) {
@@ -190,7 +202,7 @@ func createAttributes(resource pdata.Resource, attributes pdata.AttributeMap, ex
 		if !(len(name) > 4 && name[:2] == "__" && name[len(name)-2:] == "__") {
 			name = sanitize(name)
 		}
-		l[extras[i]] = prompb.Label{
+		l[name] = prompb.Label{
 			Name:  name,
 			Value: extras[i+1],
 		}

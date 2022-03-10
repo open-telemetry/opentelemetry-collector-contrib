@@ -273,6 +273,14 @@ func Test_createLabelSet(t *testing.T) {
 			[]string{label31, value31, label32, value32},
 			getPromLabels(label11, value11, label12, value12, label31, value31, label32, value32),
 		},
+		{
+			"colliding attributes",
+			getResource(map[string]pdata.AttributeValue{}),
+			lbsColliding,
+			nil,
+			[]string{label31, value31, label32, value32},
+			getPromLabels(collidingSanitized, value11+";"+value12, label31, value31, label32, value32),
+		},
 	}
 	// run tests
 	for _, tt := range tests {
