@@ -10,6 +10,8 @@
 
 ## 💡 Enhancements 💡
 
+-  `awsprometheusremotewriteexporter` Add an option to configure STS endpoint (#6713)
+
 ## v0.41.0
 
 ## 🛑 Breaking changes 🛑
