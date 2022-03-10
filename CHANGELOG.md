@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## [0.26.1] - 2022-03-10
+
+### Added
+- `csv_parser` can now handle fields containing line breaks. ([PR425]https://github.com/open-telemetry/opentelemetry-log-collection/pull/425)
+
+### Fixed
+- Issue where `recombine` operator would combine entire file in certain specific circumstances. ([PR416]https://github.com/open-telemetry/opentelemetry-log-collection/pull/416)
+
+
 ## [0.26.0] - 2022-02-25
 
 ### Added
