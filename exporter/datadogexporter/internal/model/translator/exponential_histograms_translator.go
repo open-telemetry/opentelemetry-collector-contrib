@@ -27,6 +27,20 @@ import (
 	"go.uber.org/zap"
 )
 
+func toStore(b pdata.Buckets) store.Store {
+	offset := b.Offset()
+	bucketCounts := b.BucketCounts()
+
+	store := store.NewDenseStore()
+	for j, count := range bucketCounts {
+		// Find the real index of the bucket by adding the offset
+		index := j + int(offset)
+
+		store.AddWithCount(index, float64(count))
+	}
+	return store
+}
+
 func (t *Translator) exponentialHistogramToDDSketch(
 	p pdata.ExponentialHistogramDataPoint,
 	delta bool,
@@ -35,31 +49,15 @@ func (t *Translator) exponentialHistogramToDDSketch(
 		return nil, fmt.Errorf("cumulative exponential histograms are not supported")
 	}
 
-	// Create the positive DDSketch store
-	positive := p.Positive()
-	positiveStore := store.NewDenseStore()
-	for j, count := range positive.BucketCounts() {
-		// Find the real index of the bucket by adding the offset
-		index := j + int(positive.Offset())
-
-		positiveStore.AddWithCount(index, float64(count))
-	}
-
-	// Create the negative DDSketch store
-	negative := p.Negative()
-	negativeStore := store.NewDenseStore()
-	for j, count := range negative.BucketCounts() {
-		// Find the real index of the bucket by adding the offset
-		index := j + int(negative.Offset())
-
-		negativeStore.AddWithCount(index, float64(count))
-	}
+	// Create the DDSketch stores
+	positiveStore := toStore(p.Positive())
+	negativeStore := toStore(p.Negative())
 
 	// Create the DDSketch mapping that corresponds to the ExponentialHistogram settings
 	gamma := math.Pow(2, math.Pow(2, float64(-p.Scale())))
 	mapping, err := mapping.NewLogarithmicMappingWithGamma(gamma, 0)
 	if err != nil {
-		return nil, fmt.Errorf("couldn't create LogarithmicMapping for DDSketch: %v", err)
+		return nil, fmt.Errorf("couldn't create LogarithmicMapping for DDSketch: %w", err)
 	}
 
 	// Create DDSketch with the above mapping and stores
