@@ -57,6 +57,8 @@
 
 ### 🚀 New components 🚀
 
+- `schemaprocessor`: Starting the initial work to allow from translating from semantic convention to another (#8371)
+
 ### 🧰 Bug fixes 🧰
 
 - `prometheusreceiver`: Fix issues with relabelling the `job` and `instance` labels. (#8780)

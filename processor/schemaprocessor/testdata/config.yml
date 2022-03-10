@@ -1,0 +1,36 @@
+receivers:
+  nop:
+
+processors:
+  schema/with-all-options:
+    # Pre Cache is an optional field that allows
+    # the collector to fetch the defined schema files
+    # as the collector starts.
+    precache:
+    - https://opentelemetry.io/schemas/1.9.0
+    
+    # Targets is a required field that will enable
+    # the processor to convert all telemetry sent 
+    # via the semantic convention family (ie. opentelemetry.io/schemas/*)
+    # to the defined schema identifier set in the target (ie 1.4.2 for all opentelemetry.io/schemas/)
+    targets:
+    - https://opentelemetry.io/schemas/1.4.2
+    - https://internal.fobar.org/otel/schemas/1.2.0
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [schema/with-all-options]
+      exporters: [nop]
+    logs:
+      receivers: [nop]
+      processors: [schema/with-all-options]
+      exporters: [nop]
+    metrics:
+      receivers: [nop]
+      processors: [schema/with-all-options]
+      exporters: [nop]
