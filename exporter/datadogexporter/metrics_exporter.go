@@ -55,7 +55,7 @@ type hostProvider struct {
 }
 
 func (p *hostProvider) Hostname(context.Context) (string, error) {
-	return metadata.GetHost(p.logger, p.cfg), nil
+	return metadata.GetHost(p.logger, p.cfg.Hostname), nil
 }
 
 // translatorFromConfig creates a new metrics translator from the exporter config.
