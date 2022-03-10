@@ -3,6 +3,8 @@ extensions:
     client_id: someclientid
     client_secret: someclientsecret
     token_url: https://example.com/oauth2/default/v1/token
+    endpoint_params:
+      audience: someaudience
     scopes: ["api.metrics"]
     timeout: 1s
 
