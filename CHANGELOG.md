@@ -25,6 +25,10 @@
 
 - `zipkinexporter`: Set "error" tag value when status is set to error (#8187)
 
+### 🚩 Deprecations 🚩
+
+- `datadogexporter`: Deprecate `OnlyMetadata` method from `Config` struct (#8359)
+
 ### 🚀 New components 🚀
 
 ## v0.46.0
