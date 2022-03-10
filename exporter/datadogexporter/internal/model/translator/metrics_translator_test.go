@@ -128,6 +128,29 @@ type sketch struct {
 	host      string
 }
 
+func testMatchingSketches(t *testing.T, expected, actual []sketch) {
+	assert.Equal(t, len(expected), len(actual), "sketches list doesn't have the expected size")
+	if len(expected) == len(actual) {
+		for i := 0; i < len(expected); i++ {
+			expectedSketch := expected[i]
+			actualSketch := actual[i]
+			assert.Equal(t, expectedSketch.name, actualSketch.name, "expected and actual sketch names do not match")
+			assert.Equal(t, expectedSketch.host, actualSketch.host, "expected and actual sketch hosts do not match")
+			assert.Equal(t, expectedSketch.timestamp, actualSketch.timestamp, "expected and actual sketch timestamps do not match")
+			assert.Equal(t, expectedSketch.basic.Sum, actualSketch.basic.Sum, "expected and actual sketch sums do not match")
+			assert.Equal(t, expectedSketch.basic.Cnt, actualSketch.basic.Cnt, "expected and actual sketch counts do not match")
+			assert.Equal(t, expectedSketch.basic.Avg, actualSketch.basic.Avg, "expected and actual sketch averages do not match")
+			assert.ElementsMatch(t, expectedSketch.tags, actualSketch.tags, "expected and actual sketch tags do not match")
+
+			// For ExponentialHistograms, we can't do exact comparisons for Min and Max, given that they're inferred from the sketch
+			// TODO: once exact min and max are provided, use them: https://github.com/open-telemetry/opentelemetry-proto/pull/279
+			// Note: 0.01 delta taken at random, may not work with any exponential histogram input
+			assert.InDelta(t, expectedSketch.basic.Max, actualSketch.basic.Max, 0.01, "expected and actual sketch maximums do not match")
+			assert.InDelta(t, expectedSketch.basic.Min, actualSketch.basic.Min, 0.01, "expected and actual sketch minimums do not match")
+		}
+	}
+}
+
 var _ TimeSeriesConsumer = (*mockTimeSeriesConsumer)(nil)
 
 type mockTimeSeriesConsumer struct {
@@ -1042,6 +1065,51 @@ func createTestMetrics(additionalAttributes map[string]string, name, version str
 	dpDoubleHist.SetExplicitBounds([]float64{0})
 	dpDoubleHist.SetTimestamp(seconds(0))
 
+	// Exponential Histogram (delta)
+	met = metricsArray.AppendEmpty()
+	met.SetName("double.exponentialHistogram")
+	met.SetDataType(pdata.MetricDataTypeExponentialHistogram)
+	met.ExponentialHistogram().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
+	dpsDoubleExpHist := met.ExponentialHistogram().DataPoints()
+	dpDoubleExpHist := dpsDoubleExpHist.AppendEmpty()
+	dpDoubleExpHist.SetScale(6)
+	dpDoubleExpHist.SetCount(25)
+	dpDoubleExpHist.SetZeroCount(5)
+	dpDoubleExpHist.SetSum(math.Phi)
+	dpDoubleExpHist.Negative().SetOffset(4)
+	dpDoubleExpHist.Negative().SetBucketCounts([]uint64{3, 2, 5})
+	dpDoubleExpHist.Positive().SetOffset(1)
+	dpDoubleExpHist.Positive().SetBucketCounts([]uint64{7, 1, 1, 1})
+	dpDoubleExpHist.SetTimestamp(seconds(0))
+
+	// Exponential Histogram (cumulative)
+	met = metricsArray.AppendEmpty()
+	met.SetName("double.cumulative.exponentialHistogram")
+	met.SetDataType(pdata.MetricDataTypeExponentialHistogram)
+	met.ExponentialHistogram().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	dpsDoubleExpHist = met.ExponentialHistogram().DataPoints()
+	dpDoubleExpHist = dpsDoubleExpHist.AppendEmpty()
+	dpDoubleExpHist.SetScale(6)
+	dpDoubleExpHist.SetCount(25)
+	dpDoubleExpHist.SetZeroCount(5)
+	dpDoubleExpHist.SetSum(math.Phi)
+	dpDoubleExpHist.Negative().SetOffset(4)
+	dpDoubleExpHist.Negative().SetBucketCounts([]uint64{3, 2, 5})
+	dpDoubleExpHist.Positive().SetOffset(1)
+	dpDoubleExpHist.Positive().SetBucketCounts([]uint64{7, 1, 1, 1})
+	dpDoubleExpHist.SetTimestamp(seconds(0))
+
+	dpDoubleExpHist = dpsDoubleExpHist.AppendEmpty()
+	dpDoubleExpHist.SetScale(6)
+	dpDoubleExpHist.SetCount(44)
+	dpDoubleExpHist.SetZeroCount(10)
+	dpDoubleExpHist.SetSum(math.Pi + math.Phi)
+	dpDoubleExpHist.Negative().SetOffset(3)
+	dpDoubleExpHist.Negative().SetBucketCounts([]uint64{2, 3, 5, 6})
+	dpDoubleExpHist.Positive().SetOffset(1)
+	dpDoubleExpHist.Positive().SetBucketCounts([]uint64{7, 2, 2, 3, 4})
+	dpDoubleExpHist.SetTimestamp(seconds(2))
+
 	// Int Sum (cumulative)
 	met = metricsArray.AppendEmpty()
 	met.SetName("int.cumulative.sum")
@@ -1187,9 +1255,18 @@ func TestMapMetrics(t *testing.T) {
 					Avg: math.Phi / 20,
 					Cnt: 20,
 				}, attrTags),
+				newSketchWithHostname("double.exponentialHistogram", summary.Summary{
+					// Expected min: lower bound of the highest negative bucket
+					Min: -math.Pow(math.Pow(2, math.Pow(2, -6)), 7),
+					// Expected max: upper bound of the highest positive bucket
+					Max: math.Pow(math.Pow(2, math.Pow(2, -6)), 5),
+					Sum: math.Phi,
+					Avg: math.Phi / 25,
+					Cnt: 25,
+				}, attrTags),
 			},
 			expectedUnknownMetricType:                 1,
-			expectedUnsupportedAggregationTemporality: 2,
+			expectedUnsupportedAggregationTemporality: 3,
 		},
 		{
 			name:                                 "ResourceAttributesAsTags: true, InstrumentationLibraryMetadataAsTags: false",
@@ -1217,9 +1294,18 @@ func TestMapMetrics(t *testing.T) {
 					Avg: math.Phi / 20.0,
 					Cnt: 20,
 				}, attrTags),
+				newSketchWithHostname("double.exponentialHistogram", summary.Summary{
+					// Expected min: lower bound of the highest negative bucket
+					Min: -math.Pow(math.Pow(2, math.Pow(2, -6)), 7),
+					// Expected max: upper bound of the highest positive bucket
+					Max: math.Pow(math.Pow(2, math.Pow(2, -6)), 5),
+					Sum: math.Phi,
+					Avg: math.Phi / 25,
+					Cnt: 25,
+				}, attrTags),
 			},
 			expectedUnknownMetricType:                 1,
-			expectedUnsupportedAggregationTemporality: 2,
+			expectedUnsupportedAggregationTemporality: 3,
 		},
 		{
 			name:                                 "ResourceAttributesAsTags: false, InstrumentationLibraryMetadataAsTags: true",
@@ -1247,9 +1333,18 @@ func TestMapMetrics(t *testing.T) {
 					Avg: math.Phi / 20,
 					Cnt: 20,
 				}, append(attrTags, ilTags...)),
+				newSketchWithHostname("double.exponentialHistogram", summary.Summary{
+					// Expected min: lower bound of the highest negative bucket
+					Min: -math.Pow(math.Pow(2, math.Pow(2, -6)), 7),
+					// Expected max: upper bound of the highest positive bucket
+					Max: math.Pow(math.Pow(2, math.Pow(2, -6)), 5),
+					Sum: math.Phi,
+					Avg: math.Phi / 25,
+					Cnt: 25,
+				}, append(attrTags, ilTags...)),
 			},
 			expectedUnknownMetricType:                 1,
-			expectedUnsupportedAggregationTemporality: 2,
+			expectedUnsupportedAggregationTemporality: 3,
 		},
 		{
 			name:                                 "ResourceAttributesAsTags: true, InstrumentationLibraryMetadataAsTags: true",
@@ -1277,9 +1372,18 @@ func TestMapMetrics(t *testing.T) {
 					Avg: math.Phi / 20,
 					Cnt: 20,
 				}, append(attrTags, ilTags...)),
+				newSketchWithHostname("double.exponentialHistogram", summary.Summary{
+					// Expected min: lower bound of the highest negative bucket
+					Min: -math.Pow(math.Pow(2, math.Pow(2, -6)), 7),
+					// Expected max: upper bound of the highest positive bucket
+					Max: math.Pow(math.Pow(2, math.Pow(2, -6)), 5),
+					Sum: math.Phi,
+					Avg: math.Phi / 25,
+					Cnt: 25,
+				}, append(attrTags, ilTags...)),
 			},
 			expectedUnknownMetricType:                 1,
-			expectedUnsupportedAggregationTemporality: 2,
+			expectedUnsupportedAggregationTemporality: 3,
 		},
 	}
 
@@ -1304,7 +1408,10 @@ func TestMapMetrics(t *testing.T) {
 			require.NoError(t, err)
 
 			assert.ElementsMatch(t, consumer.metrics, testInstance.expectedMetrics)
-			assert.ElementsMatch(t, consumer.sketches, testInstance.expectedSketches)
+			// We don't necessarily have strict equality between expected and actual sketches
+			// for ExponentialHistograms, therefore we use testMatchingSketches to compare the
+			// sketches with more lenient comparisons.
+			testMatchingSketches(t, testInstance.expectedSketches, consumer.sketches)
 			assert.Equal(t, observed.FilterMessage("Unknown or unsupported metric type").Len(), testInstance.expectedUnknownMetricType)
 			assert.Equal(t, observed.FilterMessage("Unknown or unsupported aggregation temporality").Len(), testInstance.expectedUnsupportedAggregationTemporality)
 		})
@@ -1364,6 +1471,23 @@ func createNaNMetrics() pdata.Metrics {
 	dpDoubleHist.SetExplicitBounds([]float64{0})
 	dpDoubleHist.SetTimestamp(seconds(0))
 
+	// Exponential Histogram (delta)
+	met = metricsArray.AppendEmpty()
+	met.SetName("nan.exponentialHistogram")
+	met.SetDataType(pdata.MetricDataTypeExponentialHistogram)
+	met.ExponentialHistogram().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
+	dpsDoubleExpHist := met.ExponentialHistogram().DataPoints()
+	dpDoubleExpHist := dpsDoubleExpHist.AppendEmpty()
+	dpDoubleExpHist.SetScale(6)
+	dpDoubleExpHist.SetCount(20)
+	dpDoubleExpHist.SetZeroCount(5)
+	dpDoubleExpHist.SetSum(math.NaN())
+	dpDoubleExpHist.Negative().SetOffset(0)
+	dpDoubleExpHist.Negative().SetBucketCounts([]uint64{5})
+	dpDoubleExpHist.Positive().SetOffset(0)
+	dpDoubleExpHist.Positive().SetBucketCounts([]uint64{2, 8})
+	dpDoubleExpHist.SetTimestamp(seconds(0))
+
 	// Double Sum (cumulative)
 	met = metricsArray.AppendEmpty()
 	met.SetName("nan.cumulative.sum")
@@ -1417,7 +1541,10 @@ func TestNaNMetrics(t *testing.T) {
 		newCountWithHostname("nan.summary.count", 100, 2, []string{}),
 	})
 
-	assert.ElementsMatch(t, consumer.sketches, []sketch{
+	// We don't necessarily have strict equality between expected and actual sketches
+	// for ExponentialHistograms, therefore we use testMatchingSketches to compare the
+	// sketches with more lenient comparisons.
+	testMatchingSketches(t, []sketch{
 		newSketchWithHostname("nan.histogram", summary.Summary{
 			Min: 0,
 			Max: 0,
@@ -1425,8 +1552,23 @@ func TestNaNMetrics(t *testing.T) {
 			Avg: 0,
 			Cnt: 20,
 		}, []string{}),
-	})
+		newSketchWithHostname("nan.exponentialHistogram", summary.Summary{
+			// Expected min: lower bound of the highest negative bucket
+			Min: -math.Pow(math.Pow(2, math.Pow(2, -6)), 1),
+			// Expected max: upper bound of the highest positive bucket
+			Max: math.Pow(math.Pow(2, math.Pow(2, -6)), 2),
+			// When the sum of the histogram isn't valid, the sum computed
+			// by the sketch is used.
+			// TODO: this makes this test fragile, as the sum could change
+			// if the DDSketch or pkg/quantile library internals change.
+			Sum: 5.111471450182479,
+			Avg: 0.25557357250912394,
+			Cnt: 20,
+		}, []string{}),
+	},
+		consumer.sketches,
+	)
 
 	// One metric type was unknown or unsupported
-	assert.Equal(t, observed.FilterMessage("Unsupported metric value").Len(), 7)
+	assert.Equal(t, 8, observed.FilterMessage("Unsupported metric value").Len())
 }

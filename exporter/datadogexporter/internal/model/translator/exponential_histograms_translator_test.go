@@ -42,7 +42,7 @@ func TestExponentialHistogramToDDSketch(t *testing.T) {
 	point.Negative().SetOffset(2)
 	point.Negative().SetBucketCounts([]uint64{3, 2, 5})
 
-	point.Positive().SetOffset(int32(3))
+	point.Positive().SetOffset(3)
 	point.Positive().SetBucketCounts([]uint64{1, 1, 1, 2, 2, 3})
 
 	point.SetTimestamp(ts)
@@ -53,39 +53,23 @@ func TestExponentialHistogramToDDSketch(t *testing.T) {
 	assert.NoError(t, err)
 
 	sketch.GetPositiveValueStore().ForEach(func(index int, count float64) bool {
-		assert.Equal(t, float64(point.Positive().BucketCounts()[index-int(point.Positive().Offset())]), count)
+		expectedCount := float64(point.Positive().BucketCounts()[index-int(point.Positive().Offset())])
+		assert.Equal(t, expectedCount, count)
 		return false
 	})
 
 	sketch.GetNegativeValueStore().ForEach(func(index int, count float64) bool {
-		assert.Equal(t, float64(point.Negative().BucketCounts()[index-int(point.Negative().Offset())]), count)
+		expectedCount := float64(point.Negative().BucketCounts()[index-int(point.Negative().Offset())])
+		assert.Equal(t, expectedCount, count)
 		return false
 	})
 
 	assert.Equal(t, float64(point.Count()), sketch.GetCount())
-
 	assert.Equal(t, float64(point.ZeroCount()), sketch.GetCount()-sketch.GetPositiveValueStore().TotalCount()-sketch.GetNegativeValueStore().TotalCount())
 
 	gamma := math.Pow(2, math.Pow(2, float64(-point.Scale())))
 	accuracy := (gamma - 1) / (gamma + 1)
 	assert.InDelta(t, accuracy, sketch.RelativeAccuracy(), acceptableFloatError)
-
-}
-
-func testMatchingSketch(t *testing.T, expected, actual sketch) {
-	assert.Equal(t, expected.name, actual.name, "expected and actual sketch names do not match")
-	assert.Equal(t, expected.host, actual.host, "expected and actual sketch hosts do not match")
-	assert.Equal(t, expected.timestamp, actual.timestamp, "expected and actual sketch timestamps do not match")
-	assert.Equal(t, expected.basic.Sum, actual.basic.Sum, "expected and actual sketch sums do not match")
-	assert.Equal(t, expected.basic.Cnt, actual.basic.Cnt, "expected and actual sketch counts do not match")
-	assert.Equal(t, expected.basic.Avg, actual.basic.Avg, "expected and actual sketch averages do not match")
-	assert.ElementsMatch(t, expected.tags, actual.tags, "expected and actual sketch tags do not match")
-
-	// We can't do exact comparisons for Min and Max, given that they're inferred from the sketch
-	// TODO: once exact min and max are provided, use them: https://github.com/open-telemetry/opentelemetry-proto/pull/279
-	// Note: 0.01 delta taken at random, may not work with any exponential histogram input
-	assert.InDelta(t, actual.basic.Max, expected.basic.Max, 0.01, "expected and actual sketch maximums do not match")
-	assert.InDelta(t, actual.basic.Min, expected.basic.Min, 0.01, "expected and actual sketch minimums do not match")
 }
 
 func TestMapDeltaExponentialHistogramMetrics(t *testing.T) {
@@ -93,13 +77,17 @@ func TestMapDeltaExponentialHistogramMetrics(t *testing.T) {
 	slice := pdata.NewExponentialHistogramDataPointSlice()
 	point := slice.AppendEmpty()
 	point.SetScale(6)
+
 	point.SetCount(30)
+	point.SetZeroCount(10)
+	point.SetSum(math.Pi)
+
 	point.Negative().SetOffset(2)
 	point.Negative().SetBucketCounts([]uint64{3, 2, 5})
+
 	point.Positive().SetOffset(3)
 	point.Positive().SetBucketCounts([]uint64{7, 1, 1, 1})
-	point.SetSum(math.Pi)
-	point.SetZeroCount(10)
+
 	point.SetTimestamp(ts)
 
 	// gamma = 2^(2^-scale)
@@ -121,7 +109,7 @@ func TestMapDeltaExponentialHistogramMetrics(t *testing.T) {
 		newSketch(dims, uint64(ts), summary.Summary{
 			// Expected min: lower bound of the highest negative bucket
 			Min: -math.Pow(gamma, float64(int(point.Negative().Offset())+len(point.Negative().BucketCounts()))),
-			// Expected max: upper bound of the highest negative bucket
+			// Expected max: upper bound of the highest positive bucket
 			Max: math.Pow(gamma, float64(int(point.Positive().Offset())+len(point.Positive().BucketCounts()))),
 			Sum: point.Sum(),
 			Avg: point.Sum() / float64(point.Count()),
@@ -133,7 +121,7 @@ func TestMapDeltaExponentialHistogramMetrics(t *testing.T) {
 		newSketch(dimsTags, uint64(ts), summary.Summary{
 			// Expected min: lower bound of the highest negative bucket
 			Min: -math.Pow(gamma, float64(int(point.Negative().Offset())+len(point.Negative().BucketCounts()))),
-			// Expected max: upper bound of the highest negative bucket
+			// Expected max: upper bound of the highest positive bucket
 			Max: math.Pow(gamma, float64(int(point.Positive().Offset())+len(point.Positive().BucketCounts()))),
 			Sum: point.Sum(),
 			Avg: point.Sum() / float64(point.Count()),
@@ -187,10 +175,10 @@ func TestMapDeltaExponentialHistogramMetrics(t *testing.T) {
 			dims := &Dimensions{name: "expHist.test", tags: testInstance.tags}
 			tr.mapExponentialHistogramMetrics(ctx, consumer, dims, slice, delta)
 			assert.ElementsMatch(t, testInstance.expectedMetrics, consumer.metrics)
-			assert.Equal(t, len(testInstance.expectedSketches), len(consumer.sketches), "sketches list doesn't have the expected size")
-			for i := range consumer.sketches {
-				testMatchingSketch(t, testInstance.expectedSketches[i], consumer.sketches[i])
-			}
+			// We don't necessarily have strict equality between expected and actual sketches
+			// for ExponentialHistograms, therefore we use testMatchingSketches to compare the
+			// sketches with more lenient comparisons.
+			testMatchingSketches(t, testInstance.expectedSketches, consumer.sketches)
 		})
 	}
 }
