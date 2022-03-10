@@ -40,8 +40,10 @@ type Config struct {
 	PrivateKey string `mapstructure:"private_key"`
 
 	// Traces emitted by this OpenTelemetry exporter should be tagged
-	// in Coralogix with the following application name
+	// in Coralogix with the following application and subsystem names
 	AppName string `mapstructure:"application_name"`
+	// Deprecated: [v0.47.0] SubSystem will remove in the next version
+	SubSystem string `mapstructure:"subsystem_name"`
 }
 
 func (c *Config) Validate() error {
@@ -54,6 +56,9 @@ func (c *Config) Validate() error {
 	}
 	if c.AppName == "" {
 		return fmt.Errorf("`appName` not specified, please fix the configuration file")
+	}
+	if c.SubSystem == "" {
+		return fmt.Errorf("`subSystem` not specified, please fix the configuration file.\nPay attention: deprecated subsystem will be removed in the next version")
 	}
 
 	// check if headers exists

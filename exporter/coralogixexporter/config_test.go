@@ -46,7 +46,9 @@ func TestLoadConfig(t *testing.T) {
 		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
 		PrivateKey:       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 		AppName:          "APP_NAME",
-		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
+		// Deprecated: [v0.47.0] SubSystem will remove in the next version
+		SubSystem:       "SUBSYSTEM_NAME",
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 			Compression: "",

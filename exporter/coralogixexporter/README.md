@@ -23,8 +23,10 @@ exporters:
     private_key: "xxx"
 
     # Traces emitted by this OpenTelemetry exporter should be tagged
-    # in Coralogix with the following application name
+    # in Coralogix with the following application and subsystem names
     application_name: "MyBusinessEnvironment"
+    # Deprecated: [v0.47.0] SubSystem will remove in the next version
+    subsystem_name: "MyBusinessSystem"
 
     # Timeout is the timeout for every attempt to send data to the backend.
     timeout: 30s
