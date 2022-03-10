@@ -369,6 +369,7 @@ func newMetricApacheWorkers(settings MetricSettings) metricApacheWorkers {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
+	data                           *pdata.Metrics // data buffer for generated metric.
 	startTime                      pdata.Timestamp
 	metricApacheCurrentConnections metricApacheCurrentConnections
 	metricApacheRequests           metricApacheRequests
@@ -407,42 +408,80 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 // Emit appends generated metrics to a pdata.MetricsSlice and updates the internal state to be ready for recording
 // another set of data points. This function will be doing all transformations required to produce metric representation
 // defined in metadata and user settings, e.g. delta/cumulative translation.
-func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
-	mb.metricApacheCurrentConnections.emit(metrics)
-	mb.metricApacheRequests.emit(metrics)
-	mb.metricApacheScoreboard.emit(metrics)
-	mb.metricApacheTraffic.emit(metrics)
-	mb.metricApacheUptime.emit(metrics)
-	mb.metricApacheWorkers.emit(metrics)
+func (mb *MetricsBuilder) Emit() pdata.Metrics {
+	if mb.data == nil {
+		return pdata.NewMetrics()
+	}
+	mb.metricApacheCurrentConnections.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	mb.metricApacheRequests.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	mb.metricApacheScoreboard.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	mb.metricApacheTraffic.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	mb.metricApacheUptime.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	mb.metricApacheWorkers.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	return *mb.data
+}
+
+// EnsureCapacity TODO
+func (mb *MetricsBuilder) EnsureCapacity(length int) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
+	mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().EnsureCapacity(length)
+}
+
+// IncreaseCapacity TODO
+func (mb *MetricsBuilder) IncreaseCapacity(length int) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
+	mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().EnsureCapacity(length + mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Len())
 }
 
 // RecordApacheCurrentConnectionsDataPoint adds a data point to apache.current_connections metric.
 func (mb *MetricsBuilder) RecordApacheCurrentConnectionsDataPoint(ts pdata.Timestamp, val int64, serverNameAttributeValue string) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
 	mb.metricApacheCurrentConnections.recordDataPoint(mb.startTime, ts, val, serverNameAttributeValue)
 }
 
 // RecordApacheRequestsDataPoint adds a data point to apache.requests metric.
 func (mb *MetricsBuilder) RecordApacheRequestsDataPoint(ts pdata.Timestamp, val int64, serverNameAttributeValue string) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
 	mb.metricApacheRequests.recordDataPoint(mb.startTime, ts, val, serverNameAttributeValue)
 }
 
 // RecordApacheScoreboardDataPoint adds a data point to apache.scoreboard metric.
 func (mb *MetricsBuilder) RecordApacheScoreboardDataPoint(ts pdata.Timestamp, val int64, serverNameAttributeValue string, scoreboardStateAttributeValue string) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
 	mb.metricApacheScoreboard.recordDataPoint(mb.startTime, ts, val, serverNameAttributeValue, scoreboardStateAttributeValue)
 }
 
 // RecordApacheTrafficDataPoint adds a data point to apache.traffic metric.
 func (mb *MetricsBuilder) RecordApacheTrafficDataPoint(ts pdata.Timestamp, val int64, serverNameAttributeValue string) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
 	mb.metricApacheTraffic.recordDataPoint(mb.startTime, ts, val, serverNameAttributeValue)
 }
 
 // RecordApacheUptimeDataPoint adds a data point to apache.uptime metric.
 func (mb *MetricsBuilder) RecordApacheUptimeDataPoint(ts pdata.Timestamp, val int64, serverNameAttributeValue string) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
 	mb.metricApacheUptime.recordDataPoint(mb.startTime, ts, val, serverNameAttributeValue)
 }
 
 // RecordApacheWorkersDataPoint adds a data point to apache.workers metric.
 func (mb *MetricsBuilder) RecordApacheWorkersDataPoint(ts pdata.Timestamp, val int64, serverNameAttributeValue string, workersStateAttributeValue string) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
 	mb.metricApacheWorkers.recordDataPoint(mb.startTime, ts, val, serverNameAttributeValue, workersStateAttributeValue)
 }
 
@@ -455,14 +494,14 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 	}
 }
 
-// NewMetricData creates new pdata.Metrics and sets the InstrumentationLibrary
+// newMetricData creates new pdata.Metrics and sets the InstrumentationLibrary
 // name on the ResourceMetrics.
-func (mb *MetricsBuilder) NewMetricData() pdata.Metrics {
+func (mb *MetricsBuilder) newMetricData() *pdata.Metrics {
 	md := pdata.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
 	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
 	ilm.InstrumentationLibrary().SetName("otelcol/apachereceiver")
-	return md
+	return &md
 }
 
 // Attributes contains the possible metric attributes that can be used.

@@ -990,6 +990,7 @@ func newMetricMysqlThreads(settings MetricSettings) metricMysqlThreads {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
+	data                             *pdata.Metrics // data buffer for generated metric.
 	startTime                        pdata.Timestamp
 	metricMysqlBufferPoolDataPages   metricMysqlBufferPoolDataPages
 	metricMysqlBufferPoolLimit       metricMysqlBufferPoolLimit
@@ -1050,108 +1051,179 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 // Emit appends generated metrics to a pdata.MetricsSlice and updates the internal state to be ready for recording
 // another set of data points. This function will be doing all transformations required to produce metric representation
 // defined in metadata and user settings, e.g. delta/cumulative translation.
-func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
-	mb.metricMysqlBufferPoolDataPages.emit(metrics)
-	mb.metricMysqlBufferPoolLimit.emit(metrics)
-	mb.metricMysqlBufferPoolOperations.emit(metrics)
-	mb.metricMysqlBufferPoolPageFlushes.emit(metrics)
-	mb.metricMysqlBufferPoolPages.emit(metrics)
-	mb.metricMysqlBufferPoolUsage.emit(metrics)
-	mb.metricMysqlCommands.emit(metrics)
-	mb.metricMysqlDoubleWrites.emit(metrics)
-	mb.metricMysqlHandlers.emit(metrics)
-	mb.metricMysqlLocks.emit(metrics)
-	mb.metricMysqlLogOperations.emit(metrics)
-	mb.metricMysqlOperations.emit(metrics)
-	mb.metricMysqlPageOperations.emit(metrics)
-	mb.metricMysqlRowLocks.emit(metrics)
-	mb.metricMysqlRowOperations.emit(metrics)
-	mb.metricMysqlSorts.emit(metrics)
-	mb.metricMysqlThreads.emit(metrics)
+func (mb *MetricsBuilder) Emit() pdata.Metrics {
+	if mb.data == nil {
+		return pdata.NewMetrics()
+	}
+	mb.metricMysqlBufferPoolDataPages.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	mb.metricMysqlBufferPoolLimit.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	mb.metricMysqlBufferPoolOperations.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	mb.metricMysqlBufferPoolPageFlushes.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	mb.metricMysqlBufferPoolPages.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	mb.metricMysqlBufferPoolUsage.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	mb.metricMysqlCommands.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	mb.metricMysqlDoubleWrites.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	mb.metricMysqlHandlers.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	mb.metricMysqlLocks.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	mb.metricMysqlLogOperations.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	mb.metricMysqlOperations.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	mb.metricMysqlPageOperations.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	mb.metricMysqlRowLocks.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	mb.metricMysqlRowOperations.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	mb.metricMysqlSorts.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	mb.metricMysqlThreads.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	return *mb.data
+}
+
+// EnsureCapacity TODO
+func (mb *MetricsBuilder) EnsureCapacity(length int) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
+	mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().EnsureCapacity(length)
+}
+
+// IncreaseCapacity TODO
+func (mb *MetricsBuilder) IncreaseCapacity(length int) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
+	mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().EnsureCapacity(length + mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Len())
 }
 
 // RecordMysqlBufferPoolDataPagesDataPoint adds a data point to mysql.buffer_pool.data_pages metric.
 func (mb *MetricsBuilder) RecordMysqlBufferPoolDataPagesDataPoint(ts pdata.Timestamp, val int64, bufferPoolDataAttributeValue string) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
 	mb.metricMysqlBufferPoolDataPages.recordDataPoint(mb.startTime, ts, val, bufferPoolDataAttributeValue)
 }
 
 // RecordMysqlBufferPoolLimitDataPoint adds a data point to mysql.buffer_pool.limit metric.
 func (mb *MetricsBuilder) RecordMysqlBufferPoolLimitDataPoint(ts pdata.Timestamp, val int64) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
 	mb.metricMysqlBufferPoolLimit.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordMysqlBufferPoolOperationsDataPoint adds a data point to mysql.buffer_pool.operations metric.
 func (mb *MetricsBuilder) RecordMysqlBufferPoolOperationsDataPoint(ts pdata.Timestamp, val int64, bufferPoolOperationsAttributeValue string) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
 	mb.metricMysqlBufferPoolOperations.recordDataPoint(mb.startTime, ts, val, bufferPoolOperationsAttributeValue)
 }
 
 // RecordMysqlBufferPoolPageFlushesDataPoint adds a data point to mysql.buffer_pool.page_flushes metric.
 func (mb *MetricsBuilder) RecordMysqlBufferPoolPageFlushesDataPoint(ts pdata.Timestamp, val int64) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
 	mb.metricMysqlBufferPoolPageFlushes.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordMysqlBufferPoolPagesDataPoint adds a data point to mysql.buffer_pool.pages metric.
 func (mb *MetricsBuilder) RecordMysqlBufferPoolPagesDataPoint(ts pdata.Timestamp, val int64, bufferPoolPagesAttributeValue string) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
 	mb.metricMysqlBufferPoolPages.recordDataPoint(mb.startTime, ts, val, bufferPoolPagesAttributeValue)
 }
 
 // RecordMysqlBufferPoolUsageDataPoint adds a data point to mysql.buffer_pool.usage metric.
 func (mb *MetricsBuilder) RecordMysqlBufferPoolUsageDataPoint(ts pdata.Timestamp, val int64, bufferPoolDataAttributeValue string) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
 	mb.metricMysqlBufferPoolUsage.recordDataPoint(mb.startTime, ts, val, bufferPoolDataAttributeValue)
 }
 
 // RecordMysqlCommandsDataPoint adds a data point to mysql.commands metric.
 func (mb *MetricsBuilder) RecordMysqlCommandsDataPoint(ts pdata.Timestamp, val int64, commandAttributeValue string) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
 	mb.metricMysqlCommands.recordDataPoint(mb.startTime, ts, val, commandAttributeValue)
 }
 
 // RecordMysqlDoubleWritesDataPoint adds a data point to mysql.double_writes metric.
 func (mb *MetricsBuilder) RecordMysqlDoubleWritesDataPoint(ts pdata.Timestamp, val int64, doubleWritesAttributeValue string) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
 	mb.metricMysqlDoubleWrites.recordDataPoint(mb.startTime, ts, val, doubleWritesAttributeValue)
 }
 
 // RecordMysqlHandlersDataPoint adds a data point to mysql.handlers metric.
 func (mb *MetricsBuilder) RecordMysqlHandlersDataPoint(ts pdata.Timestamp, val int64, handlerAttributeValue string) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
 	mb.metricMysqlHandlers.recordDataPoint(mb.startTime, ts, val, handlerAttributeValue)
 }
 
 // RecordMysqlLocksDataPoint adds a data point to mysql.locks metric.
 func (mb *MetricsBuilder) RecordMysqlLocksDataPoint(ts pdata.Timestamp, val int64, locksAttributeValue string) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
 	mb.metricMysqlLocks.recordDataPoint(mb.startTime, ts, val, locksAttributeValue)
 }
 
 // RecordMysqlLogOperationsDataPoint adds a data point to mysql.log_operations metric.
 func (mb *MetricsBuilder) RecordMysqlLogOperationsDataPoint(ts pdata.Timestamp, val int64, logOperationsAttributeValue string) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
 	mb.metricMysqlLogOperations.recordDataPoint(mb.startTime, ts, val, logOperationsAttributeValue)
 }
 
 // RecordMysqlOperationsDataPoint adds a data point to mysql.operations metric.
 func (mb *MetricsBuilder) RecordMysqlOperationsDataPoint(ts pdata.Timestamp, val int64, operationsAttributeValue string) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
 	mb.metricMysqlOperations.recordDataPoint(mb.startTime, ts, val, operationsAttributeValue)
 }
 
 // RecordMysqlPageOperationsDataPoint adds a data point to mysql.page_operations metric.
 func (mb *MetricsBuilder) RecordMysqlPageOperationsDataPoint(ts pdata.Timestamp, val int64, pageOperationsAttributeValue string) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
 	mb.metricMysqlPageOperations.recordDataPoint(mb.startTime, ts, val, pageOperationsAttributeValue)
 }
 
 // RecordMysqlRowLocksDataPoint adds a data point to mysql.row_locks metric.
 func (mb *MetricsBuilder) RecordMysqlRowLocksDataPoint(ts pdata.Timestamp, val int64, rowLocksAttributeValue string) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
 	mb.metricMysqlRowLocks.recordDataPoint(mb.startTime, ts, val, rowLocksAttributeValue)
 }
 
 // RecordMysqlRowOperationsDataPoint adds a data point to mysql.row_operations metric.
 func (mb *MetricsBuilder) RecordMysqlRowOperationsDataPoint(ts pdata.Timestamp, val int64, rowOperationsAttributeValue string) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
 	mb.metricMysqlRowOperations.recordDataPoint(mb.startTime, ts, val, rowOperationsAttributeValue)
 }
 
 // RecordMysqlSortsDataPoint adds a data point to mysql.sorts metric.
 func (mb *MetricsBuilder) RecordMysqlSortsDataPoint(ts pdata.Timestamp, val int64, sortsAttributeValue string) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
 	mb.metricMysqlSorts.recordDataPoint(mb.startTime, ts, val, sortsAttributeValue)
 }
 
 // RecordMysqlThreadsDataPoint adds a data point to mysql.threads metric.
 func (mb *MetricsBuilder) RecordMysqlThreadsDataPoint(ts pdata.Timestamp, val int64, threadsAttributeValue string) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
 	mb.metricMysqlThreads.recordDataPoint(mb.startTime, ts, val, threadsAttributeValue)
 }
 
@@ -1164,14 +1236,14 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 	}
 }
 
-// NewMetricData creates new pdata.Metrics and sets the InstrumentationLibrary
+// newMetricData creates new pdata.Metrics and sets the InstrumentationLibrary
 // name on the ResourceMetrics.
-func (mb *MetricsBuilder) NewMetricData() pdata.Metrics {
+func (mb *MetricsBuilder) newMetricData() *pdata.Metrics {
 	md := pdata.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
 	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
 	ilm.InstrumentationLibrary().SetName("otelcol/mysqlreceiver")
-	return md
+	return &md
 }
 
 // Attributes contains the possible metric attributes that can be used.

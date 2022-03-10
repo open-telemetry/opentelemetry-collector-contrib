@@ -59,13 +59,13 @@ func (r *apacheScraper) start(_ context.Context, host component.Host) error {
 
 func (r *apacheScraper) scrape(context.Context) (pdata.Metrics, error) {
 	if r.httpClient == nil {
-		return pdata.Metrics{}, errors.New("failed to connect to Apache HTTPd")
+		return pdata.NewMetrics(), errors.New("failed to connect to Apache HTTPd")
 	}
 
 	stats, err := r.GetStats()
 	if err != nil {
 		r.settings.Logger.Error("failed to fetch Apache Httpd stats", zap.Error(err))
-		return pdata.Metrics{}, err
+		return pdata.NewMetrics(), err
 	}
 
 	now := pdata.NewTimestampFromTime(time.Now())
@@ -103,9 +103,7 @@ func (r *apacheScraper) scrape(context.Context) (pdata.Metrics, error) {
 		}
 	}
 
-	md := r.mb.NewMetricData()
-	r.mb.Emit(md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	return md, nil
+	return r.mb.Emit(), nil
 }
 
 // GetStats collects metric stats by making a get request at an endpoint.

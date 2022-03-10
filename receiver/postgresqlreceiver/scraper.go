@@ -82,7 +82,6 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 	}
 
 	// metric initialization
-	md := p.mb.NewMetricData()
 	now := pdata.NewTimestampFromTime(time.Now())
 
 	var errors scrapererror.ScrapeErrors
@@ -104,8 +103,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 		p.collectDatabaseTableMetrics(ctx, now, dbClient, errors)
 	}
 
-	p.mb.Emit(md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	return md, errors.Combine()
+	return p.mb.Emit(), errors.Combine()
 }
 
 func (p *postgreSQLScraper) collectBlockReads(

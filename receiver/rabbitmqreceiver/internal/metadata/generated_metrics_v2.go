@@ -357,6 +357,7 @@ func newMetricRabbitmqMessagePublished(settings MetricSettings) metricRabbitmqMe
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
+	data                              *pdata.Metrics // data buffer for generated metric.
 	startTime                         pdata.Timestamp
 	metricRabbitmqConsumerCount       metricRabbitmqConsumerCount
 	metricRabbitmqMessageAcknowledged metricRabbitmqMessageAcknowledged
@@ -395,42 +396,80 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 // Emit appends generated metrics to a pdata.MetricsSlice and updates the internal state to be ready for recording
 // another set of data points. This function will be doing all transformations required to produce metric representation
 // defined in metadata and user settings, e.g. delta/cumulative translation.
-func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
-	mb.metricRabbitmqConsumerCount.emit(metrics)
-	mb.metricRabbitmqMessageAcknowledged.emit(metrics)
-	mb.metricRabbitmqMessageCurrent.emit(metrics)
-	mb.metricRabbitmqMessageDelivered.emit(metrics)
-	mb.metricRabbitmqMessageDropped.emit(metrics)
-	mb.metricRabbitmqMessagePublished.emit(metrics)
+func (mb *MetricsBuilder) Emit() pdata.Metrics {
+	if mb.data == nil {
+		return pdata.NewMetrics()
+	}
+	mb.metricRabbitmqConsumerCount.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	mb.metricRabbitmqMessageAcknowledged.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	mb.metricRabbitmqMessageCurrent.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	mb.metricRabbitmqMessageDelivered.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	mb.metricRabbitmqMessageDropped.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	mb.metricRabbitmqMessagePublished.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	return *mb.data
+}
+
+// EnsureCapacity TODO
+func (mb *MetricsBuilder) EnsureCapacity(length int) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
+	mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().EnsureCapacity(length)
+}
+
+// IncreaseCapacity TODO
+func (mb *MetricsBuilder) IncreaseCapacity(length int) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
+	mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().EnsureCapacity(length + mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Len())
 }
 
 // RecordRabbitmqConsumerCountDataPoint adds a data point to rabbitmq.consumer.count metric.
 func (mb *MetricsBuilder) RecordRabbitmqConsumerCountDataPoint(ts pdata.Timestamp, val int64) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
 	mb.metricRabbitmqConsumerCount.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordRabbitmqMessageAcknowledgedDataPoint adds a data point to rabbitmq.message.acknowledged metric.
 func (mb *MetricsBuilder) RecordRabbitmqMessageAcknowledgedDataPoint(ts pdata.Timestamp, val int64) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
 	mb.metricRabbitmqMessageAcknowledged.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordRabbitmqMessageCurrentDataPoint adds a data point to rabbitmq.message.current metric.
 func (mb *MetricsBuilder) RecordRabbitmqMessageCurrentDataPoint(ts pdata.Timestamp, val int64, messageStateAttributeValue string) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
 	mb.metricRabbitmqMessageCurrent.recordDataPoint(mb.startTime, ts, val, messageStateAttributeValue)
 }
 
 // RecordRabbitmqMessageDeliveredDataPoint adds a data point to rabbitmq.message.delivered metric.
 func (mb *MetricsBuilder) RecordRabbitmqMessageDeliveredDataPoint(ts pdata.Timestamp, val int64) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
 	mb.metricRabbitmqMessageDelivered.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordRabbitmqMessageDroppedDataPoint adds a data point to rabbitmq.message.dropped metric.
 func (mb *MetricsBuilder) RecordRabbitmqMessageDroppedDataPoint(ts pdata.Timestamp, val int64) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
 	mb.metricRabbitmqMessageDropped.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordRabbitmqMessagePublishedDataPoint adds a data point to rabbitmq.message.published metric.
 func (mb *MetricsBuilder) RecordRabbitmqMessagePublishedDataPoint(ts pdata.Timestamp, val int64) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
 	mb.metricRabbitmqMessagePublished.recordDataPoint(mb.startTime, ts, val)
 }
 
@@ -443,14 +482,14 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 	}
 }
 
-// NewMetricData creates new pdata.Metrics and sets the InstrumentationLibrary
+// newMetricData creates new pdata.Metrics and sets the InstrumentationLibrary
 // name on the ResourceMetrics.
-func (mb *MetricsBuilder) NewMetricData() pdata.Metrics {
+func (mb *MetricsBuilder) newMetricData() *pdata.Metrics {
 	md := pdata.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
 	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
 	ilm.InstrumentationLibrary().SetName("otelcol/rabbitmqreceiver")
-	return md
+	return &md
 }
 
 // Attributes contains the possible metric attributes that can be used.
