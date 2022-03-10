@@ -37,7 +37,7 @@ require (
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
 	github.com/ClickHouse/clickhouse-go v1.5.4 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.16 // indirect
-	github.com/DataDog/datadog-agent/pkg/quantile v0.35.0-rc.3.0.20220304122852-21ae7cd710ce // indirect
+	github.com/DataDog/datadog-agent/pkg/quantile v0.35.0-rc.3.0.20220310123627-13ca4c295211 // indirect
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/log v0.0.0-20201009092105-58e18918b2db // indirect
 	github.com/DataDog/datadog-go v4.8.2+incompatible // indirect
