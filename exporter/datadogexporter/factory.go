@@ -129,7 +129,7 @@ func createMetricsExporter(
 				if md.ResourceMetrics().Len() > 0 {
 					attrs = md.ResourceMetrics().At(0).Resource().Attributes()
 				}
-				go metadata.Pusher(ctx, set, cfg, attrs)
+				go metadata.Pusher(ctx, set, newMetadataConfigfromConfig(cfg), attrs)
 			})
 			return nil
 		}
@@ -189,7 +189,7 @@ func createTracesExporter(
 				if td.ResourceSpans().Len() > 0 {
 					attrs = td.ResourceSpans().At(0).Resource().Attributes()
 				}
-				go metadata.Pusher(ctx, set, cfg, attrs)
+				go metadata.Pusher(ctx, set, newMetadataConfigfromConfig(cfg), attrs)
 			})
 			return nil
 		}
