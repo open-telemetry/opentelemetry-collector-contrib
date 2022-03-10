@@ -65,14 +65,14 @@ func TestCSVParserByteFailure(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parse([]byte("invalid"))
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "record on line 1: wrong number of fields")
+	require.Contains(t, err.Error(), "wrong number of fields")
 }
 
 func TestCSVParserStringFailure(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parse("invalid")
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "record on line 1: wrong number of fields")
+	require.Contains(t, err.Error(), "wrong number of fields")
 }
 
 func TestCSVParserInvalidType(t *testing.T) {
@@ -572,29 +572,234 @@ func TestParserCSV(t *testing.T) {
 	}
 }
 
-func TestParserCSVMultipleBodies(t *testing.T) {
-	t.Run("basic", func(t *testing.T) {
-		cfg := NewCSVParserConfig("test")
-		cfg.OutputIDs = []string{"fake"}
-		cfg.Header = testHeader
+func TestParserCSVMultiline(t *testing.T) {
+	cases := []struct {
+		name     string
+		input    string
+		expected map[string]interface{}
+	}{
+		{
+			"no_newlines",
+			"aaaa,bbbb,cccc,dddd,eeee",
+			map[string]interface{}{
+				"A": "aaaa",
+				"B": "bbbb",
+				"C": "cccc",
+				"D": "dddd",
+				"E": "eeee",
+			},
+		},
+		{
+			"first_field",
+			"aa\naa,bbbb,cccc,dddd,eeee",
+			map[string]interface{}{
+				"A": "aa\naa",
+				"B": "bbbb",
+				"C": "cccc",
+				"D": "dddd",
+				"E": "eeee",
+			},
+		},
+		{
+			"middle_field",
+			"aaaa,bbbb,cc\ncc,dddd,eeee",
+			map[string]interface{}{
+				"A": "aaaa",
+				"B": "bbbb",
+				"C": "cc\ncc",
+				"D": "dddd",
+				"E": "eeee",
+			},
+		},
+		{
+			"last_field",
+			"aaaa,bbbb,cccc,dddd,e\neee",
+			map[string]interface{}{
+				"A": "aaaa",
+				"B": "bbbb",
+				"C": "cccc",
+				"D": "dddd",
+				"E": "e\neee",
+			},
+		},
+		{
+			"multiple_fields",
+			"aaaa,bb\nbb,ccc\nc,dddd,e\neee",
+			map[string]interface{}{
+				"A": "aaaa",
+				"B": "bb\nbb",
+				"C": "ccc\nc",
+				"D": "dddd",
+				"E": "e\neee",
+			},
+		},
+		{
+			"multiple_first_field",
+			"a\na\na\na,bbbb,cccc,dddd,eeee",
+			map[string]interface{}{
+				"A": "a\na\na\na",
+				"B": "bbbb",
+				"C": "cccc",
+				"D": "dddd",
+				"E": "eeee",
+			},
+		},
+		{
+			"multiple_middle_field",
+			"aaaa,bbbb,c\nc\nc\nc,dddd,eeee",
+			map[string]interface{}{
+				"A": "aaaa",
+				"B": "bbbb",
+				"C": "c\nc\nc\nc",
+				"D": "dddd",
+				"E": "eeee",
+			},
+		},
+		{
+			"multiple_last_field",
+			"aaaa,bbbb,cccc,dddd,e\ne\ne\ne",
+			map[string]interface{}{
+				"A": "aaaa",
+				"B": "bbbb",
+				"C": "cccc",
+				"D": "dddd",
+				"E": "e\ne\ne\ne",
+			},
+		},
+		{
+			"leading_newline",
+			"\naaaa,bbbb,cccc,dddd,eeee",
+			map[string]interface{}{
+				"A": "aaaa",
+				"B": "bbbb",
+				"C": "cccc",
+				"D": "dddd",
+				"E": "eeee",
+			},
+		},
+		{
+			"trailing_newline",
+			"aaaa,bbbb,cccc,dddd,eeee\n",
+			map[string]interface{}{
+				"A": "aaaa",
+				"B": "bbbb",
+				"C": "cccc",
+				"D": "dddd",
+				"E": "eeee",
+			},
+		},
+		{
+			"leading_newline_field",
+			"aaaa,\nbbbb,\ncccc,\ndddd,eeee",
+			map[string]interface{}{
+				"A": "aaaa",
+				"B": "\nbbbb",
+				"C": "\ncccc",
+				"D": "\ndddd",
+				"E": "eeee",
+			},
+		},
+		{
+			"trailing_newline_field",
+			"aaaa,bbbb\n,cccc\n,dddd\n,eeee",
+			map[string]interface{}{
+				"A": "aaaa",
+				"B": "bbbb\n",
+				"C": "cccc\n",
+				"D": "dddd\n",
+				"E": "eeee",
+			},
+		},
+		{
+			"empty_lines_unquoted",
+			"aa\n\naa,bbbb,c\n\nccc,dddd,eee\n\ne",
+			map[string]interface{}{
+				"A": "aa\naa",
+				"B": "bbbb",
+				"C": "c\nccc",
+				"D": "dddd",
+				"E": "eee\ne",
+			},
+		},
+		{
+			"empty_lines_quoted",
+			"\"aa\n\naa\",bbbb,\"c\n\nccc\",dddd,\"eee\n\ne\"",
+			map[string]interface{}{
+				"A": "aa\n\naa",
+				"B": "bbbb",
+				"C": "c\n\nccc",
+				"D": "dddd",
+				"E": "eee\n\ne",
+			},
+		},
+		{
+			"everything",
+			"\n\na\na\n\naa,\n\nbb\nbb\n\n,\"cc\ncc\n\n\",\ndddd\n,eeee\n\n",
+			map[string]interface{}{
+				"A": "a\na\naa",
+				"B": "\nbb\nbb\n",
+				"C": "cc\ncc\n\n",
+				"D": "\ndddd\n",
+				"E": "eeee",
+			},
+		},
+		{
+			"literal_return",
+			`aaaa,bb
+bb,cccc,dd
+dd,eeee`,
+			map[string]interface{}{
+				"A": "aaaa",
+				"B": "bb\nbb",
+				"C": "cccc",
+				"D": "dd\ndd",
+				"E": "eeee",
+			},
+		},
+		{
+			"return_in_quotes",
+			"aaaa,\"bbbb\",\"cc\ncc\",dddd,eeee",
+			map[string]interface{}{
+				"A": "aaaa",
+				"B": "bbbb",
+				"C": "cc\ncc",
+				"D": "dddd",
+				"E": "eeee",
+			},
+		},
+		{
+			"return_in_double_quotes",
+			`aaaa,"""bbbb""","""cc
+cc""",dddd,eeee`,
+			map[string]interface{}{
+				"A": "aaaa",
+				"B": "\"bbbb\"",
+				"C": "\"cc\ncc\"",
+				"D": "dddd",
+				"E": "eeee",
+			},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := NewCSVParserConfig("test")
+			cfg.OutputIDs = []string{"fake"}
+			cfg.Header = "A,B,C,D,E"
 
-		op, err := cfg.Build(testutil.Logger(t))
-		require.NoError(t, err)
+			op, err := cfg.Build(testutil.Logger(t))
+			require.NoError(t, err)
 
-		fake := testutil.NewFakeOutput(t)
-		op.SetOutputs([]operator.Operator{fake})
+			fake := testutil.NewFakeOutput(t)
+			op.SetOutputs([]operator.Operator{fake})
 
-		entry := entry.New()
-		entry.Body = "stanza,INFO,started agent\nstanza,DEBUG,started agent"
-		err = op.Process(context.Background(), entry)
-		require.NoError(t, err)
-		fake.ExpectBody(t, map[string]interface{}{
-			"name": "stanza",
-			"sev":  "DEBUG",
-			"msg":  "started agent",
+			entry := entry.New()
+			entry.Body = tc.input
+			err = op.Process(context.Background(), entry)
+			require.NoError(t, err)
+			fake.ExpectBody(t, tc.expected)
+			fake.ExpectNoEntry(t, 100*time.Millisecond)
 		})
-		fake.ExpectNoEntry(t, 100*time.Millisecond)
-	})
+	}
 }
 
 func TestParserCSVInvalidJSONInput(t *testing.T) {
