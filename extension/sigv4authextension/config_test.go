@@ -65,7 +65,7 @@ func TestLoadConfigError(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			"bad_credentials",
+			"missing_credentials",
 			errBadCreds,
 		},
 	}

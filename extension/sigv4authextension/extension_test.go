@@ -54,6 +54,7 @@ func TestRoundTripper(t *testing.T) {
 	assert.Equal(t, cfg.Region, si.region)
 	assert.Equal(t, cfg.Service, si.service)
 	assert.Equal(t, awsSDKInfo, si.awsSDKInfo)
+	assert.Equal(t, cfg.credsProvider, si.credsProvider)
 
 }
 
@@ -68,20 +69,45 @@ func TestPerRPCCredentials(t *testing.T) {
 
 func TestGetCredsProviderFromConfig(t *testing.T) {
 	tests := []struct {
-		name string
-		cfg  *Config
+		name            string
+		cfg             *Config
+		AccessKeyID     string
+		SecretAccessKey string
+		shouldError     bool
 	}{
 		{
 			"success_case_without_role",
 			&Config{Region: "region", Service: "service"},
+			"AccessKeyID",
+			"SecretAccessKey",
+			false,
+		},
+		{
+			"failure_case_without_role",
+			&Config{Region: "region", Service: "service"},
+			"",
+			"",
+			true,
 		},
 	}
 	// run tests
 	for _, testcase := range tests {
 		t.Run(testcase.name, func(t *testing.T) {
+			t.Setenv("AWS_ACCESS_KEY_ID", testcase.AccessKeyID)
+			t.Setenv("AWS_SECRET_ACCESS_KEY", testcase.SecretAccessKey)
 			credsProvider, err := getCredsProviderFromConfig(testcase.cfg)
+
+			if testcase.shouldError {
+				assert.Error(t, err)
+				assert.Nil(t, credsProvider)
+				return
+			}
+
+			require.NoError(t, err)
+			require.NotNil(t, credsProvider)
+
 			creds, err := (*credsProvider).Retrieve(context.Background())
-			require.NoError(t, err, "Failed getCredsProviderFromConfig")
+			require.NoError(t, err)
 			require.NotNil(t, creds)
 		})
 	}
