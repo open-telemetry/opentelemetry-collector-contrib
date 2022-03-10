@@ -2,11 +2,9 @@ receivers:
   windowsperfcounters:
     metric_metadata:
       - metric_name: metric
-        description: desc
         unit: "1"
         gauge:
           value_type: double
-    collection_interval: -1m
     perfcounters:
       - object: "object"
         counters:

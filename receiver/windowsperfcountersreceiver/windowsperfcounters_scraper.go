@@ -45,7 +45,7 @@ type PerfCounterScraper interface {
 // scraper is the type that scrapes various host metrics.
 type scraper struct {
 	cfg      *Config
-	logger   *zap.Logger
+	settings component.TelemetrySettings
 	counters []PerfCounterMetrics
 }
 
@@ -61,13 +61,9 @@ type PerfCounterScrapedMetrics struct {
 	Metric         string
 }
 
-func newScraper(cfg *Config, logger *zap.Logger) (*scraper, error) {
-	if err := cfg.Validate(); err != nil {
-		return nil, err
-	}
-
-	s := &scraper{cfg: cfg, logger: logger}
-	return s, nil
+func newScraper(cfg *Config, settings component.TelemetrySettings) *scraper {
+	s := &scraper{cfg: cfg, settings: settings}
+	return s
 }
 
 func (s *scraper) start(context.Context, component.Host) error {
@@ -90,7 +86,7 @@ func (s *scraper) start(context.Context, component.Host) error {
 
 	// log a warning if some counters cannot be loaded, but do not crash the app
 	if errs != nil {
-		s.logger.Warn("some performance counters could not be initialized", zap.Error(errs))
+		s.settings.Logger.Warn("some performance counters could not be initialized", zap.Error(errs))
 	}
 
 	return nil

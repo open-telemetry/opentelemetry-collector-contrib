@@ -5,8 +5,7 @@ receivers:
         description: desc
         unit: "1"
         gauge:
-          value_type: double
-    collection_interval: -1m
+          value_type: ""
     perfcounters:
       - object: "object"
         counters:

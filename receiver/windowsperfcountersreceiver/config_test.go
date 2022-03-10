@@ -122,9 +122,12 @@ func TestLoadConfig_Error(t *testing.T) {
 		emptyInstanceErr              = `perf counter for object "%s" includes an empty instance`
 		undefinedMetricErr            = `perf counter for object "%s" includes an undefined metric`
 		missingMetricName             = `a metric does not include a name`
-		missingMetricDesc             = `metric "%s" does not include a description"`
-		missingMetricUnit             = `metric "%s" does not include a unit"`
-		missingMetricMetricType       = `metric "%s" does not include a metric type"`
+		missingMetricDesc             = `metric "%s" does not include a description`
+		missingMetricUnit             = `metric "%s" does not include a unit`
+		missingMetricMetricType       = `metric "%s" does not include a metric definition`
+		missingGaugeValueType         = `gauge metric "%s" does not include a value type`
+		missingSumValueType           = `sum metric "%s" does not include a value type`
+		missingSumAggregation         = `sum metric "%s" does not include an aggregation`
 		missingMetrics                = `must specify at least one metric`
 	)
 
@@ -156,23 +159,33 @@ func TestLoadConfig_Error(t *testing.T) {
 		},
 		{
 			name:        "EmptyMetricDescription",
-			cfgFile:     "config-emptymetricdesc.yaml",
+			cfgFile:     "config-missingmetricdescription.yaml",
 			expectedErr: fmt.Sprintf("%s: %s", errorPrefix, fmt.Sprintf(missingMetricDesc, "metric")),
 		},
 		{
 			name:        "EmptyMetricUnit",
-			cfgFile:     "config-emptymetricunit.yaml",
+			cfgFile:     "config-missingmetricunit.yaml",
 			expectedErr: fmt.Sprintf("%s: %s", errorPrefix, fmt.Sprintf(missingMetricUnit, "metric")),
 		},
 		{
 			name:        "EmptyMetricMetricType",
-			cfgFile:     "config-emptymetricdesc.yaml",
+			cfgFile:     "config-missingdatatype.yaml",
 			expectedErr: fmt.Sprintf("%s: %s", errorPrefix, fmt.Sprintf(missingMetricMetricType, "metric")),
 		},
 		{
 			name:        "EmptyMetricName",
-			cfgFile:     "config-emptymetricdesc.yaml",
-			expectedErr: fmt.Sprintf("%s: %s", errorPrefix, missingMetricName),
+			cfgFile:     "config-missingmetricname.yaml",
+			expectedErr: fmt.Sprintf("%s: %s; %s", errorPrefix, missingMetricName, fmt.Sprintf(undefinedMetricErr, "object")),
+		},
+		{
+			name:        "EmptySumValueType",
+			cfgFile:     "config-missingsumvaluetype.yaml",
+			expectedErr: fmt.Sprintf("%s: %s", errorPrefix, fmt.Sprintf(missingSumValueType, "metric")),
+		},
+		{
+			name:        "EmptySumAggregation",
+			cfgFile:     "config-missingsumaggregation.yaml",
+			expectedErr: fmt.Sprintf("%s: %s", errorPrefix, fmt.Sprintf(missingSumAggregation, "metric")),
 		},
 		{
 			name:    "AllErrors",

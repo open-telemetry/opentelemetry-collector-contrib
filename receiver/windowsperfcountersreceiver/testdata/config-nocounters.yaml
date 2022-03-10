@@ -1,11 +1,11 @@
 receivers:
   windowsperfcounters:
-    metrics:
-    - metric_name: metric
-      description: desc
-      unit: "1"
-      metric_data_type: gauge
-      metric_value_type: double
+    metric_metadata:
+      - metric_name: metric
+        description: desc
+        unit: "1"
+        gauge:
+          value_type: double
     perfcounters:
       - object: "object"
 

@@ -76,6 +76,34 @@ func (c *Config) Validate() error {
 		errs = multierr.Append(errs, fmt.Errorf("must specify at least one metric"))
 	}
 
+	for _, metric := range c.MetricMetaData {
+		if metric.MetricName == "" {
+			errs = multierr.Append(errs, fmt.Errorf("a metric does not include a name"))
+			continue
+		}
+		if metric.Description == "" {
+			errs = multierr.Append(errs, fmt.Errorf("metric %q does not include a description", metric.MetricName))
+		}
+		if metric.Unit == "" {
+			errs = multierr.Append(errs, fmt.Errorf("metric %q does not include a unit", metric.MetricName))
+		}
+
+		if (metric.Gauge == GaugeMetric{}) && (metric.Sum == SumMetric{}) {
+			errs = multierr.Append(errs, fmt.Errorf("metric %q does not include a metric definition", metric.MetricName))
+		} else if (metric.Gauge != GaugeMetric{}) {
+			if metric.Gauge.ValueType == "" {
+				errs = multierr.Append(errs, fmt.Errorf("gauge metric %q does not include a value type", metric.MetricName))
+			}
+		} else if (metric.Sum != SumMetric{}) {
+			if metric.Sum.ValueType == "" {
+				errs = multierr.Append(errs, fmt.Errorf("sum metric %q does not include a value type", metric.MetricName))
+			}
+			if metric.Sum.Aggregation == "" {
+				errs = multierr.Append(errs, fmt.Errorf("sum metric %q does not include an aggregation", metric.MetricName))
+			}
+		}
+	}
+
 	var perfCounterMissingObjectName bool
 	for _, pc := range c.PerfCounters {
 		if pc.Object == "" {
