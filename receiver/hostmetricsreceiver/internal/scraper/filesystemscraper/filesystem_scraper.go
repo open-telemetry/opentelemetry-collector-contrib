@@ -95,8 +95,9 @@ func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 		usages = append(usages, &deviceUsage{partition, usage})
 	}
 
+	length := 0
 	if len(usages) > 0 {
-		s.mb.EnsureCapacity(metricsLen)
+		length = metricsLen
 		s.recordFileSystemUsageMetric(now, usages)
 		s.recordSystemSpecificMetrics(now, usages)
 	}
@@ -106,7 +107,7 @@ func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 		err = scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
-	return s.mb.Emit(), err
+	return s.mb.Emit(metadata.WithCapacity(length)), err
 }
 
 func getMountMode(opts []string) string {

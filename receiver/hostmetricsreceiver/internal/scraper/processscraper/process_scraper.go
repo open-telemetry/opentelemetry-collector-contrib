@@ -85,7 +85,7 @@ func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 
 	var errs scrapererror.ScrapeErrors
 
-	metadata, err := s.getProcessMetadata()
+	mdata, err := s.getProcessMetadata()
 	if err != nil {
 		partialErr, isPartial := err.(scrapererror.PartialScrapeError)
 		if !isPartial {
@@ -95,9 +95,11 @@ func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 		errs.AddPartial(partialErr.Failed, partialErr)
 	}
 
-	for _, md := range metadata {
+	resource := pdata.NewResource()
 
-		md.initializeResource(s.mb.Resource())
+	for _, md := range mdata {
+
+		md.initializeResource(resource)
 
 		now := pdata.NewTimestampFromTime(time.Now())
 
@@ -114,7 +116,7 @@ func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 		}
 	}
 
-	return s.mb.Emit(), errs.Combine()
+	return s.mb.Emit(metadata.WithResource(resource)), errs.Combine()
 }
 
 // getProcessMetadata returns a slice of processMetadata, including handles,

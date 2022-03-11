@@ -472,7 +472,6 @@ func newMetricCouchdbHttpdViews(settings MetricSettings) metricCouchdbHttpdViews
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	data                            *pdata.Metrics // data buffer for generated metric.
 	startTime                       pdata.Timestamp
 	metricCouchdbAverageRequestTime metricCouchdbAverageRequestTime
 	metricCouchdbDatabaseOpen       metricCouchdbDatabaseOpen
@@ -512,110 +511,84 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 	return mb
 }
 
+// emitOption applies changes to pdata.Metrics emitted.
+type emitOption func(*pdata.Metrics)
+
+// WithResource copies the pdata.Resource into the emitted pdata.Metrics.
+func WithResource(resource pdata.Resource) emitOption {
+	return func(md *pdata.Metrics) {
+		resource.CopyTo(md.ResourceMetrics().At(0).Resource())
+	}
+}
+
+// WithCapacity calls EnsureCapacity on the pdata.Metrics.
+func WithCapacity(capacity int) emitOption {
+	return func(md *pdata.Metrics) {
+		if capacity > 0 {
+			md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().EnsureCapacity(capacity)
+		}
+	}
+}
+
 // Emit appends generated metrics to a pdata.MetricsSlice and updates the internal state to be ready for recording
 // another set of data points. This function will be doing all transformations required to produce metric representation
 // defined in metadata and user settings, e.g. delta/cumulative translation.
-func (mb *MetricsBuilder) Emit() pdata.Metrics {
-	if mb.data == nil {
-		return pdata.NewMetrics()
-	}
-	mb.metricCouchdbAverageRequestTime.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricCouchdbDatabaseOpen.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricCouchdbDatabaseOperations.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricCouchdbFileDescriptorOpen.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricCouchdbHttpdBulkRequests.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricCouchdbHttpdRequests.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricCouchdbHttpdResponses.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricCouchdbHttpdViews.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	defer func() { mb.data = nil }()
-	return *mb.data
-}
+func (mb *MetricsBuilder) Emit(options ...emitOption) pdata.Metrics {
+	md := mb.newMetricData()
 
-// EnsureCapacity TODO
-func (mb *MetricsBuilder) EnsureCapacity(length int) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
+	for _, op := range options {
+		op(&md)
 	}
-	mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().EnsureCapacity(length)
-}
+	metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
-// IncreaseCapacity TODO
-func (mb *MetricsBuilder) IncreaseCapacity(length int) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
-	mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().EnsureCapacity(length + mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Len())
-}
-
-// Resource gives access the Resource object for scrapers to inject attributes.
-func (mb *MetricsBuilder) Resource() pdata.Resource {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
-	return mb.data.ResourceMetrics().At(0).Resource()
+	mb.metricCouchdbAverageRequestTime.emit(metrics)
+	mb.metricCouchdbDatabaseOpen.emit(metrics)
+	mb.metricCouchdbDatabaseOperations.emit(metrics)
+	mb.metricCouchdbFileDescriptorOpen.emit(metrics)
+	mb.metricCouchdbHttpdBulkRequests.emit(metrics)
+	mb.metricCouchdbHttpdRequests.emit(metrics)
+	mb.metricCouchdbHttpdResponses.emit(metrics)
+	mb.metricCouchdbHttpdViews.emit(metrics)
+	return md
 }
 
 // RecordCouchdbAverageRequestTimeDataPoint adds a data point to couchdb.average_request_time metric.
 func (mb *MetricsBuilder) RecordCouchdbAverageRequestTimeDataPoint(ts pdata.Timestamp, val float64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricCouchdbAverageRequestTime.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordCouchdbDatabaseOpenDataPoint adds a data point to couchdb.database.open metric.
 func (mb *MetricsBuilder) RecordCouchdbDatabaseOpenDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricCouchdbDatabaseOpen.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordCouchdbDatabaseOperationsDataPoint adds a data point to couchdb.database.operations metric.
 func (mb *MetricsBuilder) RecordCouchdbDatabaseOperationsDataPoint(ts pdata.Timestamp, val int64, operationAttributeValue string) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricCouchdbDatabaseOperations.recordDataPoint(mb.startTime, ts, val, operationAttributeValue)
 }
 
 // RecordCouchdbFileDescriptorOpenDataPoint adds a data point to couchdb.file_descriptor.open metric.
 func (mb *MetricsBuilder) RecordCouchdbFileDescriptorOpenDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricCouchdbFileDescriptorOpen.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordCouchdbHttpdBulkRequestsDataPoint adds a data point to couchdb.httpd.bulk_requests metric.
 func (mb *MetricsBuilder) RecordCouchdbHttpdBulkRequestsDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricCouchdbHttpdBulkRequests.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordCouchdbHttpdRequestsDataPoint adds a data point to couchdb.httpd.requests metric.
 func (mb *MetricsBuilder) RecordCouchdbHttpdRequestsDataPoint(ts pdata.Timestamp, val int64, httpMethodAttributeValue string) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricCouchdbHttpdRequests.recordDataPoint(mb.startTime, ts, val, httpMethodAttributeValue)
 }
 
 // RecordCouchdbHttpdResponsesDataPoint adds a data point to couchdb.httpd.responses metric.
 func (mb *MetricsBuilder) RecordCouchdbHttpdResponsesDataPoint(ts pdata.Timestamp, val int64, httpStatusCodeAttributeValue string) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricCouchdbHttpdResponses.recordDataPoint(mb.startTime, ts, val, httpStatusCodeAttributeValue)
 }
 
 // RecordCouchdbHttpdViewsDataPoint adds a data point to couchdb.httpd.views metric.
 func (mb *MetricsBuilder) RecordCouchdbHttpdViewsDataPoint(ts pdata.Timestamp, val int64, viewAttributeValue string) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricCouchdbHttpdViews.recordDataPoint(mb.startTime, ts, val, viewAttributeValue)
 }
 
@@ -626,18 +599,17 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 	for _, op := range options {
 		op(mb)
 	}
-	mb.data = mb.newMetricData()
 }
 
 // newMetricData creates new pdata.Metrics and sets the InstrumentationLibrary
 // name on the ResourceMetrics.
-func (mb *MetricsBuilder) newMetricData() *pdata.Metrics {
+func (mb *MetricsBuilder) newMetricData() pdata.Metrics {
 	md := pdata.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
 	rm.SetSchemaUrl(conventions.SchemaURL)
 	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
 	ilm.InstrumentationLibrary().SetName("otelcol/couchdbreceiver")
-	return &md
+	return md
 }
 
 // Attributes contains the possible metric attributes that can be used.

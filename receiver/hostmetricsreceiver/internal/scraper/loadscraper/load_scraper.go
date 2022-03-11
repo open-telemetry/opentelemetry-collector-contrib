@@ -78,10 +78,8 @@ func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 		avgLoadValues.Load15 = avgLoadValues.Load1 / divisor
 	}
 
-	s.mb.EnsureCapacity(metricsLen)
-
 	s.mb.RecordSystemCPULoadAverage1mDataPoint(now, avgLoadValues.Load1)
 	s.mb.RecordSystemCPULoadAverage5mDataPoint(now, avgLoadValues.Load5)
 	s.mb.RecordSystemCPULoadAverage15mDataPoint(now, avgLoadValues.Load15)
-	return s.mb.Emit(), nil
+	return s.mb.Emit(metadata.WithCapacity(metricsLen)), nil
 }

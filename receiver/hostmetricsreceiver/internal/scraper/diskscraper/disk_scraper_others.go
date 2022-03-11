@@ -94,8 +94,9 @@ func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 	// filter devices by name
 	ioCounters = s.filterByDevice(ioCounters)
 
+	length := 0
 	if len(ioCounters) > 0 {
-		s.mb.EnsureCapacity(metricsLen)
+		length = metricsLen
 		s.recordDiskIOMetric(now, ioCounters)
 		s.recordDiskOperationsMetric(now, ioCounters)
 		s.recordDiskIOTimeMetric(now, ioCounters)
@@ -104,7 +105,7 @@ func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 		s.recordSystemSpecificDataPoints(now, ioCounters)
 	}
 
-	return s.mb.Emit(), nil
+	return s.mb.Emit(metadata.WithCapacity(length)), nil
 }
 
 func (s *scraper) recordDiskIOMetric(now pdata.Timestamp, ioCounters map[string]disk.IOCountersStat) {

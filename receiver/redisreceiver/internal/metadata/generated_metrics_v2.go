@@ -1601,7 +1601,6 @@ func newMetricRedisUptime(settings MetricSettings) metricRedisUptime {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	data                                         *pdata.Metrics // data buffer for generated metric.
 	startTime                                    pdata.Timestamp
 	metricRedisClientsBlocked                    metricRedisClientsBlocked
 	metricRedisClientsConnected                  metricRedisClientsConnected
@@ -1683,299 +1682,210 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 	return mb
 }
 
+// emitOption applies changes to pdata.Metrics emitted.
+type emitOption func(*pdata.Metrics)
+
+// WithResource copies the pdata.Resource into the emitted pdata.Metrics.
+func WithResource(resource pdata.Resource) emitOption {
+	return func(md *pdata.Metrics) {
+		resource.CopyTo(md.ResourceMetrics().At(0).Resource())
+	}
+}
+
+// WithCapacity calls EnsureCapacity on the pdata.Metrics.
+func WithCapacity(capacity int) emitOption {
+	return func(md *pdata.Metrics) {
+		if capacity > 0 {
+			md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().EnsureCapacity(capacity)
+		}
+	}
+}
+
 // Emit appends generated metrics to a pdata.MetricsSlice and updates the internal state to be ready for recording
 // another set of data points. This function will be doing all transformations required to produce metric representation
 // defined in metadata and user settings, e.g. delta/cumulative translation.
-func (mb *MetricsBuilder) Emit() pdata.Metrics {
-	if mb.data == nil {
-		return pdata.NewMetrics()
-	}
-	mb.metricRedisClientsBlocked.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricRedisClientsConnected.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricRedisClientsMaxInputBuffer.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricRedisClientsMaxOutputBuffer.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricRedisCommands.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricRedisCommandsProcessed.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricRedisConnectionsReceived.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricRedisConnectionsRejected.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricRedisCPUTime.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricRedisDbAvgTTL.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricRedisDbExpires.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricRedisDbKeys.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricRedisKeysEvicted.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricRedisKeysExpired.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricRedisKeyspaceHits.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricRedisKeyspaceMisses.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricRedisLatestFork.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricRedisMemoryFragmentationRatio.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricRedisMemoryLua.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricRedisMemoryPeak.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricRedisMemoryRss.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricRedisMemoryUsed.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricRedisNetInput.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricRedisNetOutput.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricRedisRdbChangesSinceLastSave.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricRedisReplicationBacklogFirstByteOffset.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricRedisReplicationOffset.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricRedisSlavesConnected.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricRedisUptime.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	defer func() { mb.data = nil }()
-	return *mb.data
-}
+func (mb *MetricsBuilder) Emit(options ...emitOption) pdata.Metrics {
+	md := mb.newMetricData()
 
-// EnsureCapacity TODO
-func (mb *MetricsBuilder) EnsureCapacity(length int) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
+	for _, op := range options {
+		op(&md)
 	}
-	mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().EnsureCapacity(length)
-}
+	metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
-// IncreaseCapacity TODO
-func (mb *MetricsBuilder) IncreaseCapacity(length int) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
-	mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().EnsureCapacity(length + mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Len())
-}
-
-// Resource gives access the Resource object for scrapers to inject attributes.
-func (mb *MetricsBuilder) Resource() pdata.Resource {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
-	return mb.data.ResourceMetrics().At(0).Resource()
+	mb.metricRedisClientsBlocked.emit(metrics)
+	mb.metricRedisClientsConnected.emit(metrics)
+	mb.metricRedisClientsMaxInputBuffer.emit(metrics)
+	mb.metricRedisClientsMaxOutputBuffer.emit(metrics)
+	mb.metricRedisCommands.emit(metrics)
+	mb.metricRedisCommandsProcessed.emit(metrics)
+	mb.metricRedisConnectionsReceived.emit(metrics)
+	mb.metricRedisConnectionsRejected.emit(metrics)
+	mb.metricRedisCPUTime.emit(metrics)
+	mb.metricRedisDbAvgTTL.emit(metrics)
+	mb.metricRedisDbExpires.emit(metrics)
+	mb.metricRedisDbKeys.emit(metrics)
+	mb.metricRedisKeysEvicted.emit(metrics)
+	mb.metricRedisKeysExpired.emit(metrics)
+	mb.metricRedisKeyspaceHits.emit(metrics)
+	mb.metricRedisKeyspaceMisses.emit(metrics)
+	mb.metricRedisLatestFork.emit(metrics)
+	mb.metricRedisMemoryFragmentationRatio.emit(metrics)
+	mb.metricRedisMemoryLua.emit(metrics)
+	mb.metricRedisMemoryPeak.emit(metrics)
+	mb.metricRedisMemoryRss.emit(metrics)
+	mb.metricRedisMemoryUsed.emit(metrics)
+	mb.metricRedisNetInput.emit(metrics)
+	mb.metricRedisNetOutput.emit(metrics)
+	mb.metricRedisRdbChangesSinceLastSave.emit(metrics)
+	mb.metricRedisReplicationBacklogFirstByteOffset.emit(metrics)
+	mb.metricRedisReplicationOffset.emit(metrics)
+	mb.metricRedisSlavesConnected.emit(metrics)
+	mb.metricRedisUptime.emit(metrics)
+	return md
 }
 
 // RecordRedisClientsBlockedDataPoint adds a data point to redis.clients.blocked metric.
 func (mb *MetricsBuilder) RecordRedisClientsBlockedDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricRedisClientsBlocked.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordRedisClientsConnectedDataPoint adds a data point to redis.clients.connected metric.
 func (mb *MetricsBuilder) RecordRedisClientsConnectedDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricRedisClientsConnected.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordRedisClientsMaxInputBufferDataPoint adds a data point to redis.clients.max_input_buffer metric.
 func (mb *MetricsBuilder) RecordRedisClientsMaxInputBufferDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricRedisClientsMaxInputBuffer.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordRedisClientsMaxOutputBufferDataPoint adds a data point to redis.clients.max_output_buffer metric.
 func (mb *MetricsBuilder) RecordRedisClientsMaxOutputBufferDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricRedisClientsMaxOutputBuffer.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordRedisCommandsDataPoint adds a data point to redis.commands metric.
 func (mb *MetricsBuilder) RecordRedisCommandsDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricRedisCommands.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordRedisCommandsProcessedDataPoint adds a data point to redis.commands.processed metric.
 func (mb *MetricsBuilder) RecordRedisCommandsProcessedDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricRedisCommandsProcessed.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordRedisConnectionsReceivedDataPoint adds a data point to redis.connections.received metric.
 func (mb *MetricsBuilder) RecordRedisConnectionsReceivedDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricRedisConnectionsReceived.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordRedisConnectionsRejectedDataPoint adds a data point to redis.connections.rejected metric.
 func (mb *MetricsBuilder) RecordRedisConnectionsRejectedDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricRedisConnectionsRejected.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordRedisCPUTimeDataPoint adds a data point to redis.cpu.time metric.
 func (mb *MetricsBuilder) RecordRedisCPUTimeDataPoint(ts pdata.Timestamp, val float64, stateAttributeValue string) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricRedisCPUTime.recordDataPoint(mb.startTime, ts, val, stateAttributeValue)
 }
 
 // RecordRedisDbAvgTTLDataPoint adds a data point to redis.db.avg_ttl metric.
 func (mb *MetricsBuilder) RecordRedisDbAvgTTLDataPoint(ts pdata.Timestamp, val int64, dbAttributeValue string) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricRedisDbAvgTTL.recordDataPoint(mb.startTime, ts, val, dbAttributeValue)
 }
 
 // RecordRedisDbExpiresDataPoint adds a data point to redis.db.expires metric.
 func (mb *MetricsBuilder) RecordRedisDbExpiresDataPoint(ts pdata.Timestamp, val int64, dbAttributeValue string) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricRedisDbExpires.recordDataPoint(mb.startTime, ts, val, dbAttributeValue)
 }
 
 // RecordRedisDbKeysDataPoint adds a data point to redis.db.keys metric.
 func (mb *MetricsBuilder) RecordRedisDbKeysDataPoint(ts pdata.Timestamp, val int64, dbAttributeValue string) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricRedisDbKeys.recordDataPoint(mb.startTime, ts, val, dbAttributeValue)
 }
 
 // RecordRedisKeysEvictedDataPoint adds a data point to redis.keys.evicted metric.
 func (mb *MetricsBuilder) RecordRedisKeysEvictedDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricRedisKeysEvicted.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordRedisKeysExpiredDataPoint adds a data point to redis.keys.expired metric.
 func (mb *MetricsBuilder) RecordRedisKeysExpiredDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricRedisKeysExpired.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordRedisKeyspaceHitsDataPoint adds a data point to redis.keyspace.hits metric.
 func (mb *MetricsBuilder) RecordRedisKeyspaceHitsDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricRedisKeyspaceHits.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordRedisKeyspaceMissesDataPoint adds a data point to redis.keyspace.misses metric.
 func (mb *MetricsBuilder) RecordRedisKeyspaceMissesDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricRedisKeyspaceMisses.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordRedisLatestForkDataPoint adds a data point to redis.latest_fork metric.
 func (mb *MetricsBuilder) RecordRedisLatestForkDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricRedisLatestFork.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordRedisMemoryFragmentationRatioDataPoint adds a data point to redis.memory.fragmentation_ratio metric.
 func (mb *MetricsBuilder) RecordRedisMemoryFragmentationRatioDataPoint(ts pdata.Timestamp, val float64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricRedisMemoryFragmentationRatio.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordRedisMemoryLuaDataPoint adds a data point to redis.memory.lua metric.
 func (mb *MetricsBuilder) RecordRedisMemoryLuaDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricRedisMemoryLua.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordRedisMemoryPeakDataPoint adds a data point to redis.memory.peak metric.
 func (mb *MetricsBuilder) RecordRedisMemoryPeakDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricRedisMemoryPeak.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordRedisMemoryRssDataPoint adds a data point to redis.memory.rss metric.
 func (mb *MetricsBuilder) RecordRedisMemoryRssDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricRedisMemoryRss.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordRedisMemoryUsedDataPoint adds a data point to redis.memory.used metric.
 func (mb *MetricsBuilder) RecordRedisMemoryUsedDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricRedisMemoryUsed.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordRedisNetInputDataPoint adds a data point to redis.net.input metric.
 func (mb *MetricsBuilder) RecordRedisNetInputDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricRedisNetInput.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordRedisNetOutputDataPoint adds a data point to redis.net.output metric.
 func (mb *MetricsBuilder) RecordRedisNetOutputDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricRedisNetOutput.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordRedisRdbChangesSinceLastSaveDataPoint adds a data point to redis.rdb.changes_since_last_save metric.
 func (mb *MetricsBuilder) RecordRedisRdbChangesSinceLastSaveDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricRedisRdbChangesSinceLastSave.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordRedisReplicationBacklogFirstByteOffsetDataPoint adds a data point to redis.replication.backlog_first_byte_offset metric.
 func (mb *MetricsBuilder) RecordRedisReplicationBacklogFirstByteOffsetDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricRedisReplicationBacklogFirstByteOffset.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordRedisReplicationOffsetDataPoint adds a data point to redis.replication.offset metric.
 func (mb *MetricsBuilder) RecordRedisReplicationOffsetDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricRedisReplicationOffset.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordRedisSlavesConnectedDataPoint adds a data point to redis.slaves.connected metric.
 func (mb *MetricsBuilder) RecordRedisSlavesConnectedDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricRedisSlavesConnected.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordRedisUptimeDataPoint adds a data point to redis.uptime metric.
 func (mb *MetricsBuilder) RecordRedisUptimeDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricRedisUptime.recordDataPoint(mb.startTime, ts, val)
 }
 
@@ -1986,18 +1896,17 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 	for _, op := range options {
 		op(mb)
 	}
-	mb.data = mb.newMetricData()
 }
 
 // newMetricData creates new pdata.Metrics and sets the InstrumentationLibrary
 // name on the ResourceMetrics.
-func (mb *MetricsBuilder) newMetricData() *pdata.Metrics {
+func (mb *MetricsBuilder) newMetricData() pdata.Metrics {
 	md := pdata.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
 	rm.SetSchemaUrl(conventions.SchemaURL)
 	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
 	ilm.InstrumentationLibrary().SetName("otelcol/redisreceiver")
-	return &md
+	return md
 }
 
 // Attributes contains the possible metric attributes that can be used.

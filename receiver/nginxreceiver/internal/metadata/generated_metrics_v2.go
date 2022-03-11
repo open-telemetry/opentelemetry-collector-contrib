@@ -246,7 +246,6 @@ func newMetricNginxRequests(settings MetricSettings) metricNginxRequests {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	data                           *pdata.Metrics // data buffer for generated metric.
 	startTime                      pdata.Timestamp
 	metricNginxConnectionsAccepted metricNginxConnectionsAccepted
 	metricNginxConnectionsCurrent  metricNginxConnectionsCurrent
@@ -278,74 +277,60 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 	return mb
 }
 
+// emitOption applies changes to pdata.Metrics emitted.
+type emitOption func(*pdata.Metrics)
+
+// WithResource copies the pdata.Resource into the emitted pdata.Metrics.
+func WithResource(resource pdata.Resource) emitOption {
+	return func(md *pdata.Metrics) {
+		resource.CopyTo(md.ResourceMetrics().At(0).Resource())
+	}
+}
+
+// WithCapacity calls EnsureCapacity on the pdata.Metrics.
+func WithCapacity(capacity int) emitOption {
+	return func(md *pdata.Metrics) {
+		if capacity > 0 {
+			md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().EnsureCapacity(capacity)
+		}
+	}
+}
+
 // Emit appends generated metrics to a pdata.MetricsSlice and updates the internal state to be ready for recording
 // another set of data points. This function will be doing all transformations required to produce metric representation
 // defined in metadata and user settings, e.g. delta/cumulative translation.
-func (mb *MetricsBuilder) Emit() pdata.Metrics {
-	if mb.data == nil {
-		return pdata.NewMetrics()
-	}
-	mb.metricNginxConnectionsAccepted.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricNginxConnectionsCurrent.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricNginxConnectionsHandled.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricNginxRequests.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	defer func() { mb.data = nil }()
-	return *mb.data
-}
+func (mb *MetricsBuilder) Emit(options ...emitOption) pdata.Metrics {
+	md := mb.newMetricData()
 
-// EnsureCapacity TODO
-func (mb *MetricsBuilder) EnsureCapacity(length int) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
+	for _, op := range options {
+		op(&md)
 	}
-	mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().EnsureCapacity(length)
-}
+	metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
-// IncreaseCapacity TODO
-func (mb *MetricsBuilder) IncreaseCapacity(length int) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
-	mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().EnsureCapacity(length + mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Len())
-}
-
-// Resource gives access the Resource object for scrapers to inject attributes.
-func (mb *MetricsBuilder) Resource() pdata.Resource {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
-	return mb.data.ResourceMetrics().At(0).Resource()
+	mb.metricNginxConnectionsAccepted.emit(metrics)
+	mb.metricNginxConnectionsCurrent.emit(metrics)
+	mb.metricNginxConnectionsHandled.emit(metrics)
+	mb.metricNginxRequests.emit(metrics)
+	return md
 }
 
 // RecordNginxConnectionsAcceptedDataPoint adds a data point to nginx.connections_accepted metric.
 func (mb *MetricsBuilder) RecordNginxConnectionsAcceptedDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricNginxConnectionsAccepted.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordNginxConnectionsCurrentDataPoint adds a data point to nginx.connections_current metric.
 func (mb *MetricsBuilder) RecordNginxConnectionsCurrentDataPoint(ts pdata.Timestamp, val int64, stateAttributeValue string) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricNginxConnectionsCurrent.recordDataPoint(mb.startTime, ts, val, stateAttributeValue)
 }
 
 // RecordNginxConnectionsHandledDataPoint adds a data point to nginx.connections_handled metric.
 func (mb *MetricsBuilder) RecordNginxConnectionsHandledDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricNginxConnectionsHandled.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordNginxRequestsDataPoint adds a data point to nginx.requests metric.
 func (mb *MetricsBuilder) RecordNginxRequestsDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricNginxRequests.recordDataPoint(mb.startTime, ts, val)
 }
 
@@ -356,18 +341,17 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 	for _, op := range options {
 		op(mb)
 	}
-	mb.data = mb.newMetricData()
 }
 
 // newMetricData creates new pdata.Metrics and sets the InstrumentationLibrary
 // name on the ResourceMetrics.
-func (mb *MetricsBuilder) newMetricData() *pdata.Metrics {
+func (mb *MetricsBuilder) newMetricData() pdata.Metrics {
 	md := pdata.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
 	rm.SetSchemaUrl(conventions.SchemaURL)
 	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
 	ilm.InstrumentationLibrary().SetName("otelcol/nginxreceiver")
-	return &md
+	return md
 }
 
 // Attributes contains the possible metric attributes that can be used.

@@ -72,8 +72,8 @@ func (c *couchdbScraper) getResourceMetrics() (pdata.Metrics, error) {
 	}
 
 	now := pdata.NewTimestampFromTime(time.Now())
-
-	c.mb.Resource().Attributes().UpsertString(metadata.A.CouchdbNodeName, c.config.Endpoint)
+	resource := pdata.NewResource()
+	resource.Attributes().UpsertString(metadata.A.CouchdbNodeName, c.config.Endpoint)
 
 	var errors scrapererror.ScrapeErrors
 	c.recordCouchdbAverageRequestTimeDataPoint(now, stats, errors)
@@ -85,5 +85,5 @@ func (c *couchdbScraper) getResourceMetrics() (pdata.Metrics, error) {
 	c.recordCouchdbFileDescriptorOpenDataPoint(now, stats, errors)
 	c.recordCouchdbDatabaseOperationsDataPoint(now, stats, errors)
 
-	return c.mb.Emit(), errors.Combine()
+	return c.mb.Emit(metadata.WithResource(resource)), errors.Combine()
 }

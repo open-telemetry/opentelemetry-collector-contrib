@@ -1635,7 +1635,6 @@ func newMetricJvmThreadsCount(settings MetricSettings) metricJvmThreadsCount {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	data                                           *pdata.Metrics // data buffer for generated metric.
 	startTime                                      pdata.Timestamp
 	metricElasticsearchClusterDataNodes            metricElasticsearchClusterDataNodes
 	metricElasticsearchClusterHealth               metricElasticsearchClusterHealth
@@ -1717,299 +1716,210 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 	return mb
 }
 
+// emitOption applies changes to pdata.Metrics emitted.
+type emitOption func(*pdata.Metrics)
+
+// WithResource copies the pdata.Resource into the emitted pdata.Metrics.
+func WithResource(resource pdata.Resource) emitOption {
+	return func(md *pdata.Metrics) {
+		resource.CopyTo(md.ResourceMetrics().At(0).Resource())
+	}
+}
+
+// WithCapacity calls EnsureCapacity on the pdata.Metrics.
+func WithCapacity(capacity int) emitOption {
+	return func(md *pdata.Metrics) {
+		if capacity > 0 {
+			md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().EnsureCapacity(capacity)
+		}
+	}
+}
+
 // Emit appends generated metrics to a pdata.MetricsSlice and updates the internal state to be ready for recording
 // another set of data points. This function will be doing all transformations required to produce metric representation
 // defined in metadata and user settings, e.g. delta/cumulative translation.
-func (mb *MetricsBuilder) Emit() pdata.Metrics {
-	if mb.data == nil {
-		return pdata.NewMetrics()
-	}
-	mb.metricElasticsearchClusterDataNodes.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricElasticsearchClusterHealth.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricElasticsearchClusterNodes.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricElasticsearchClusterShards.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricElasticsearchNodeCacheEvictions.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricElasticsearchNodeCacheMemoryUsage.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricElasticsearchNodeClusterConnections.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricElasticsearchNodeClusterIo.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricElasticsearchNodeDocuments.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricElasticsearchNodeFsDiskAvailable.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricElasticsearchNodeHTTPConnections.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricElasticsearchNodeOpenFiles.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricElasticsearchNodeOperationsCompleted.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricElasticsearchNodeOperationsTime.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricElasticsearchNodeShardsSize.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricElasticsearchNodeThreadPoolTasksFinished.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricElasticsearchNodeThreadPoolTasksQueued.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricElasticsearchNodeThreadPoolThreads.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricJvmClassesLoaded.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricJvmGcCollectionsCount.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricJvmGcCollectionsElapsed.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricJvmMemoryHeapCommitted.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricJvmMemoryHeapMax.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricJvmMemoryHeapUsed.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricJvmMemoryNonheapCommitted.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricJvmMemoryNonheapUsed.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricJvmMemoryPoolMax.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricJvmMemoryPoolUsed.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricJvmThreadsCount.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	defer func() { mb.data = nil }()
-	return *mb.data
-}
+func (mb *MetricsBuilder) Emit(options ...emitOption) pdata.Metrics {
+	md := mb.newMetricData()
 
-// EnsureCapacity TODO
-func (mb *MetricsBuilder) EnsureCapacity(length int) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
+	for _, op := range options {
+		op(&md)
 	}
-	mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().EnsureCapacity(length)
-}
+	metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
-// IncreaseCapacity TODO
-func (mb *MetricsBuilder) IncreaseCapacity(length int) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
-	mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().EnsureCapacity(length + mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Len())
-}
-
-// Resource gives access the Resource object for scrapers to inject attributes.
-func (mb *MetricsBuilder) Resource() pdata.Resource {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
-	return mb.data.ResourceMetrics().At(0).Resource()
+	mb.metricElasticsearchClusterDataNodes.emit(metrics)
+	mb.metricElasticsearchClusterHealth.emit(metrics)
+	mb.metricElasticsearchClusterNodes.emit(metrics)
+	mb.metricElasticsearchClusterShards.emit(metrics)
+	mb.metricElasticsearchNodeCacheEvictions.emit(metrics)
+	mb.metricElasticsearchNodeCacheMemoryUsage.emit(metrics)
+	mb.metricElasticsearchNodeClusterConnections.emit(metrics)
+	mb.metricElasticsearchNodeClusterIo.emit(metrics)
+	mb.metricElasticsearchNodeDocuments.emit(metrics)
+	mb.metricElasticsearchNodeFsDiskAvailable.emit(metrics)
+	mb.metricElasticsearchNodeHTTPConnections.emit(metrics)
+	mb.metricElasticsearchNodeOpenFiles.emit(metrics)
+	mb.metricElasticsearchNodeOperationsCompleted.emit(metrics)
+	mb.metricElasticsearchNodeOperationsTime.emit(metrics)
+	mb.metricElasticsearchNodeShardsSize.emit(metrics)
+	mb.metricElasticsearchNodeThreadPoolTasksFinished.emit(metrics)
+	mb.metricElasticsearchNodeThreadPoolTasksQueued.emit(metrics)
+	mb.metricElasticsearchNodeThreadPoolThreads.emit(metrics)
+	mb.metricJvmClassesLoaded.emit(metrics)
+	mb.metricJvmGcCollectionsCount.emit(metrics)
+	mb.metricJvmGcCollectionsElapsed.emit(metrics)
+	mb.metricJvmMemoryHeapCommitted.emit(metrics)
+	mb.metricJvmMemoryHeapMax.emit(metrics)
+	mb.metricJvmMemoryHeapUsed.emit(metrics)
+	mb.metricJvmMemoryNonheapCommitted.emit(metrics)
+	mb.metricJvmMemoryNonheapUsed.emit(metrics)
+	mb.metricJvmMemoryPoolMax.emit(metrics)
+	mb.metricJvmMemoryPoolUsed.emit(metrics)
+	mb.metricJvmThreadsCount.emit(metrics)
+	return md
 }
 
 // RecordElasticsearchClusterDataNodesDataPoint adds a data point to elasticsearch.cluster.data_nodes metric.
 func (mb *MetricsBuilder) RecordElasticsearchClusterDataNodesDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricElasticsearchClusterDataNodes.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordElasticsearchClusterHealthDataPoint adds a data point to elasticsearch.cluster.health metric.
 func (mb *MetricsBuilder) RecordElasticsearchClusterHealthDataPoint(ts pdata.Timestamp, val int64, healthStatusAttributeValue string) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricElasticsearchClusterHealth.recordDataPoint(mb.startTime, ts, val, healthStatusAttributeValue)
 }
 
 // RecordElasticsearchClusterNodesDataPoint adds a data point to elasticsearch.cluster.nodes metric.
 func (mb *MetricsBuilder) RecordElasticsearchClusterNodesDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricElasticsearchClusterNodes.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordElasticsearchClusterShardsDataPoint adds a data point to elasticsearch.cluster.shards metric.
 func (mb *MetricsBuilder) RecordElasticsearchClusterShardsDataPoint(ts pdata.Timestamp, val int64, shardStateAttributeValue string) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricElasticsearchClusterShards.recordDataPoint(mb.startTime, ts, val, shardStateAttributeValue)
 }
 
 // RecordElasticsearchNodeCacheEvictionsDataPoint adds a data point to elasticsearch.node.cache.evictions metric.
 func (mb *MetricsBuilder) RecordElasticsearchNodeCacheEvictionsDataPoint(ts pdata.Timestamp, val int64, cacheNameAttributeValue string) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricElasticsearchNodeCacheEvictions.recordDataPoint(mb.startTime, ts, val, cacheNameAttributeValue)
 }
 
 // RecordElasticsearchNodeCacheMemoryUsageDataPoint adds a data point to elasticsearch.node.cache.memory.usage metric.
 func (mb *MetricsBuilder) RecordElasticsearchNodeCacheMemoryUsageDataPoint(ts pdata.Timestamp, val int64, cacheNameAttributeValue string) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricElasticsearchNodeCacheMemoryUsage.recordDataPoint(mb.startTime, ts, val, cacheNameAttributeValue)
 }
 
 // RecordElasticsearchNodeClusterConnectionsDataPoint adds a data point to elasticsearch.node.cluster.connections metric.
 func (mb *MetricsBuilder) RecordElasticsearchNodeClusterConnectionsDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricElasticsearchNodeClusterConnections.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordElasticsearchNodeClusterIoDataPoint adds a data point to elasticsearch.node.cluster.io metric.
 func (mb *MetricsBuilder) RecordElasticsearchNodeClusterIoDataPoint(ts pdata.Timestamp, val int64, directionAttributeValue string) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricElasticsearchNodeClusterIo.recordDataPoint(mb.startTime, ts, val, directionAttributeValue)
 }
 
 // RecordElasticsearchNodeDocumentsDataPoint adds a data point to elasticsearch.node.documents metric.
 func (mb *MetricsBuilder) RecordElasticsearchNodeDocumentsDataPoint(ts pdata.Timestamp, val int64, documentStateAttributeValue string) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricElasticsearchNodeDocuments.recordDataPoint(mb.startTime, ts, val, documentStateAttributeValue)
 }
 
 // RecordElasticsearchNodeFsDiskAvailableDataPoint adds a data point to elasticsearch.node.fs.disk.available metric.
 func (mb *MetricsBuilder) RecordElasticsearchNodeFsDiskAvailableDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricElasticsearchNodeFsDiskAvailable.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordElasticsearchNodeHTTPConnectionsDataPoint adds a data point to elasticsearch.node.http.connections metric.
 func (mb *MetricsBuilder) RecordElasticsearchNodeHTTPConnectionsDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricElasticsearchNodeHTTPConnections.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordElasticsearchNodeOpenFilesDataPoint adds a data point to elasticsearch.node.open_files metric.
 func (mb *MetricsBuilder) RecordElasticsearchNodeOpenFilesDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricElasticsearchNodeOpenFiles.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordElasticsearchNodeOperationsCompletedDataPoint adds a data point to elasticsearch.node.operations.completed metric.
 func (mb *MetricsBuilder) RecordElasticsearchNodeOperationsCompletedDataPoint(ts pdata.Timestamp, val int64, operationAttributeValue string) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricElasticsearchNodeOperationsCompleted.recordDataPoint(mb.startTime, ts, val, operationAttributeValue)
 }
 
 // RecordElasticsearchNodeOperationsTimeDataPoint adds a data point to elasticsearch.node.operations.time metric.
 func (mb *MetricsBuilder) RecordElasticsearchNodeOperationsTimeDataPoint(ts pdata.Timestamp, val int64, operationAttributeValue string) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricElasticsearchNodeOperationsTime.recordDataPoint(mb.startTime, ts, val, operationAttributeValue)
 }
 
 // RecordElasticsearchNodeShardsSizeDataPoint adds a data point to elasticsearch.node.shards.size metric.
 func (mb *MetricsBuilder) RecordElasticsearchNodeShardsSizeDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricElasticsearchNodeShardsSize.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordElasticsearchNodeThreadPoolTasksFinishedDataPoint adds a data point to elasticsearch.node.thread_pool.tasks.finished metric.
 func (mb *MetricsBuilder) RecordElasticsearchNodeThreadPoolTasksFinishedDataPoint(ts pdata.Timestamp, val int64, threadPoolNameAttributeValue string, taskStateAttributeValue string) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricElasticsearchNodeThreadPoolTasksFinished.recordDataPoint(mb.startTime, ts, val, threadPoolNameAttributeValue, taskStateAttributeValue)
 }
 
 // RecordElasticsearchNodeThreadPoolTasksQueuedDataPoint adds a data point to elasticsearch.node.thread_pool.tasks.queued metric.
 func (mb *MetricsBuilder) RecordElasticsearchNodeThreadPoolTasksQueuedDataPoint(ts pdata.Timestamp, val int64, threadPoolNameAttributeValue string) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricElasticsearchNodeThreadPoolTasksQueued.recordDataPoint(mb.startTime, ts, val, threadPoolNameAttributeValue)
 }
 
 // RecordElasticsearchNodeThreadPoolThreadsDataPoint adds a data point to elasticsearch.node.thread_pool.threads metric.
 func (mb *MetricsBuilder) RecordElasticsearchNodeThreadPoolThreadsDataPoint(ts pdata.Timestamp, val int64, threadPoolNameAttributeValue string, threadStateAttributeValue string) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricElasticsearchNodeThreadPoolThreads.recordDataPoint(mb.startTime, ts, val, threadPoolNameAttributeValue, threadStateAttributeValue)
 }
 
 // RecordJvmClassesLoadedDataPoint adds a data point to jvm.classes.loaded metric.
 func (mb *MetricsBuilder) RecordJvmClassesLoadedDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricJvmClassesLoaded.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordJvmGcCollectionsCountDataPoint adds a data point to jvm.gc.collections.count metric.
 func (mb *MetricsBuilder) RecordJvmGcCollectionsCountDataPoint(ts pdata.Timestamp, val int64, collectorNameAttributeValue string) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricJvmGcCollectionsCount.recordDataPoint(mb.startTime, ts, val, collectorNameAttributeValue)
 }
 
 // RecordJvmGcCollectionsElapsedDataPoint adds a data point to jvm.gc.collections.elapsed metric.
 func (mb *MetricsBuilder) RecordJvmGcCollectionsElapsedDataPoint(ts pdata.Timestamp, val int64, collectorNameAttributeValue string) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricJvmGcCollectionsElapsed.recordDataPoint(mb.startTime, ts, val, collectorNameAttributeValue)
 }
 
 // RecordJvmMemoryHeapCommittedDataPoint adds a data point to jvm.memory.heap.committed metric.
 func (mb *MetricsBuilder) RecordJvmMemoryHeapCommittedDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricJvmMemoryHeapCommitted.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordJvmMemoryHeapMaxDataPoint adds a data point to jvm.memory.heap.max metric.
 func (mb *MetricsBuilder) RecordJvmMemoryHeapMaxDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricJvmMemoryHeapMax.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordJvmMemoryHeapUsedDataPoint adds a data point to jvm.memory.heap.used metric.
 func (mb *MetricsBuilder) RecordJvmMemoryHeapUsedDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricJvmMemoryHeapUsed.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordJvmMemoryNonheapCommittedDataPoint adds a data point to jvm.memory.nonheap.committed metric.
 func (mb *MetricsBuilder) RecordJvmMemoryNonheapCommittedDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricJvmMemoryNonheapCommitted.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordJvmMemoryNonheapUsedDataPoint adds a data point to jvm.memory.nonheap.used metric.
 func (mb *MetricsBuilder) RecordJvmMemoryNonheapUsedDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricJvmMemoryNonheapUsed.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordJvmMemoryPoolMaxDataPoint adds a data point to jvm.memory.pool.max metric.
 func (mb *MetricsBuilder) RecordJvmMemoryPoolMaxDataPoint(ts pdata.Timestamp, val int64, memoryPoolNameAttributeValue string) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricJvmMemoryPoolMax.recordDataPoint(mb.startTime, ts, val, memoryPoolNameAttributeValue)
 }
 
 // RecordJvmMemoryPoolUsedDataPoint adds a data point to jvm.memory.pool.used metric.
 func (mb *MetricsBuilder) RecordJvmMemoryPoolUsedDataPoint(ts pdata.Timestamp, val int64, memoryPoolNameAttributeValue string) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricJvmMemoryPoolUsed.recordDataPoint(mb.startTime, ts, val, memoryPoolNameAttributeValue)
 }
 
 // RecordJvmThreadsCountDataPoint adds a data point to jvm.threads.count metric.
 func (mb *MetricsBuilder) RecordJvmThreadsCountDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricJvmThreadsCount.recordDataPoint(mb.startTime, ts, val)
 }
 
@@ -2020,18 +1930,17 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 	for _, op := range options {
 		op(mb)
 	}
-	mb.data = mb.newMetricData()
 }
 
 // newMetricData creates new pdata.Metrics and sets the InstrumentationLibrary
 // name on the ResourceMetrics.
-func (mb *MetricsBuilder) newMetricData() *pdata.Metrics {
+func (mb *MetricsBuilder) newMetricData() pdata.Metrics {
 	md := pdata.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
 	rm.SetSchemaUrl(conventions.SchemaURL)
 	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
 	ilm.InstrumentationLibrary().SetName("otelcol/elasticsearchreceiver")
-	return &md
+	return md
 }
 
 // Attributes contains the possible metric attributes that can be used.

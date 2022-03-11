@@ -847,7 +847,6 @@ func newMetricZookeeperZnodeCount(settings MetricSettings) metricZookeeperZnodeC
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	data                                       *pdata.Metrics // data buffer for generated metric.
 	startTime                                  pdata.Timestamp
 	metricZookeeperConnectionActive            metricZookeeperConnectionActive
 	metricZookeeperDataTreeEphemeralNodeCount  metricZookeeperDataTreeEphemeralNodeCount
@@ -901,173 +900,126 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 	return mb
 }
 
+// emitOption applies changes to pdata.Metrics emitted.
+type emitOption func(*pdata.Metrics)
+
+// WithResource copies the pdata.Resource into the emitted pdata.Metrics.
+func WithResource(resource pdata.Resource) emitOption {
+	return func(md *pdata.Metrics) {
+		resource.CopyTo(md.ResourceMetrics().At(0).Resource())
+	}
+}
+
+// WithCapacity calls EnsureCapacity on the pdata.Metrics.
+func WithCapacity(capacity int) emitOption {
+	return func(md *pdata.Metrics) {
+		if capacity > 0 {
+			md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().EnsureCapacity(capacity)
+		}
+	}
+}
+
 // Emit appends generated metrics to a pdata.MetricsSlice and updates the internal state to be ready for recording
 // another set of data points. This function will be doing all transformations required to produce metric representation
 // defined in metadata and user settings, e.g. delta/cumulative translation.
-func (mb *MetricsBuilder) Emit() pdata.Metrics {
-	if mb.data == nil {
-		return pdata.NewMetrics()
-	}
-	mb.metricZookeeperConnectionActive.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricZookeeperDataTreeEphemeralNodeCount.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricZookeeperDataTreeSize.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricZookeeperFileDescriptorLimit.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricZookeeperFileDescriptorOpen.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricZookeeperFollowerCount.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricZookeeperFsyncExceededThresholdCount.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricZookeeperLatencyAvg.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricZookeeperLatencyMax.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricZookeeperLatencyMin.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricZookeeperPacketCount.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricZookeeperRequestActive.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricZookeeperSyncPending.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricZookeeperWatchCount.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	mb.metricZookeeperZnodeCount.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	defer func() { mb.data = nil }()
-	return *mb.data
-}
+func (mb *MetricsBuilder) Emit(options ...emitOption) pdata.Metrics {
+	md := mb.newMetricData()
 
-// EnsureCapacity TODO
-func (mb *MetricsBuilder) EnsureCapacity(length int) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
+	for _, op := range options {
+		op(&md)
 	}
-	mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().EnsureCapacity(length)
-}
+	metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
-// IncreaseCapacity TODO
-func (mb *MetricsBuilder) IncreaseCapacity(length int) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
-	mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().EnsureCapacity(length + mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Len())
-}
-
-// Resource gives access the Resource object for scrapers to inject attributes.
-func (mb *MetricsBuilder) Resource() pdata.Resource {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
-	return mb.data.ResourceMetrics().At(0).Resource()
+	mb.metricZookeeperConnectionActive.emit(metrics)
+	mb.metricZookeeperDataTreeEphemeralNodeCount.emit(metrics)
+	mb.metricZookeeperDataTreeSize.emit(metrics)
+	mb.metricZookeeperFileDescriptorLimit.emit(metrics)
+	mb.metricZookeeperFileDescriptorOpen.emit(metrics)
+	mb.metricZookeeperFollowerCount.emit(metrics)
+	mb.metricZookeeperFsyncExceededThresholdCount.emit(metrics)
+	mb.metricZookeeperLatencyAvg.emit(metrics)
+	mb.metricZookeeperLatencyMax.emit(metrics)
+	mb.metricZookeeperLatencyMin.emit(metrics)
+	mb.metricZookeeperPacketCount.emit(metrics)
+	mb.metricZookeeperRequestActive.emit(metrics)
+	mb.metricZookeeperSyncPending.emit(metrics)
+	mb.metricZookeeperWatchCount.emit(metrics)
+	mb.metricZookeeperZnodeCount.emit(metrics)
+	return md
 }
 
 // RecordZookeeperConnectionActiveDataPoint adds a data point to zookeeper.connection.active metric.
 func (mb *MetricsBuilder) RecordZookeeperConnectionActiveDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricZookeeperConnectionActive.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordZookeeperDataTreeEphemeralNodeCountDataPoint adds a data point to zookeeper.data_tree.ephemeral_node.count metric.
 func (mb *MetricsBuilder) RecordZookeeperDataTreeEphemeralNodeCountDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricZookeeperDataTreeEphemeralNodeCount.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordZookeeperDataTreeSizeDataPoint adds a data point to zookeeper.data_tree.size metric.
 func (mb *MetricsBuilder) RecordZookeeperDataTreeSizeDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricZookeeperDataTreeSize.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordZookeeperFileDescriptorLimitDataPoint adds a data point to zookeeper.file_descriptor.limit metric.
 func (mb *MetricsBuilder) RecordZookeeperFileDescriptorLimitDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricZookeeperFileDescriptorLimit.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordZookeeperFileDescriptorOpenDataPoint adds a data point to zookeeper.file_descriptor.open metric.
 func (mb *MetricsBuilder) RecordZookeeperFileDescriptorOpenDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricZookeeperFileDescriptorOpen.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordZookeeperFollowerCountDataPoint adds a data point to zookeeper.follower.count metric.
 func (mb *MetricsBuilder) RecordZookeeperFollowerCountDataPoint(ts pdata.Timestamp, val int64, stateAttributeValue string) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricZookeeperFollowerCount.recordDataPoint(mb.startTime, ts, val, stateAttributeValue)
 }
 
 // RecordZookeeperFsyncExceededThresholdCountDataPoint adds a data point to zookeeper.fsync.exceeded_threshold.count metric.
 func (mb *MetricsBuilder) RecordZookeeperFsyncExceededThresholdCountDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricZookeeperFsyncExceededThresholdCount.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordZookeeperLatencyAvgDataPoint adds a data point to zookeeper.latency.avg metric.
 func (mb *MetricsBuilder) RecordZookeeperLatencyAvgDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricZookeeperLatencyAvg.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordZookeeperLatencyMaxDataPoint adds a data point to zookeeper.latency.max metric.
 func (mb *MetricsBuilder) RecordZookeeperLatencyMaxDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricZookeeperLatencyMax.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordZookeeperLatencyMinDataPoint adds a data point to zookeeper.latency.min metric.
 func (mb *MetricsBuilder) RecordZookeeperLatencyMinDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricZookeeperLatencyMin.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordZookeeperPacketCountDataPoint adds a data point to zookeeper.packet.count metric.
 func (mb *MetricsBuilder) RecordZookeeperPacketCountDataPoint(ts pdata.Timestamp, val int64, directionAttributeValue string) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricZookeeperPacketCount.recordDataPoint(mb.startTime, ts, val, directionAttributeValue)
 }
 
 // RecordZookeeperRequestActiveDataPoint adds a data point to zookeeper.request.active metric.
 func (mb *MetricsBuilder) RecordZookeeperRequestActiveDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricZookeeperRequestActive.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordZookeeperSyncPendingDataPoint adds a data point to zookeeper.sync.pending metric.
 func (mb *MetricsBuilder) RecordZookeeperSyncPendingDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricZookeeperSyncPending.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordZookeeperWatchCountDataPoint adds a data point to zookeeper.watch.count metric.
 func (mb *MetricsBuilder) RecordZookeeperWatchCountDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricZookeeperWatchCount.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordZookeeperZnodeCountDataPoint adds a data point to zookeeper.znode.count metric.
 func (mb *MetricsBuilder) RecordZookeeperZnodeCountDataPoint(ts pdata.Timestamp, val int64) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metricZookeeperZnodeCount.recordDataPoint(mb.startTime, ts, val)
 }
 
@@ -1078,18 +1030,17 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 	for _, op := range options {
 		op(mb)
 	}
-	mb.data = mb.newMetricData()
 }
 
 // newMetricData creates new pdata.Metrics and sets the InstrumentationLibrary
 // name on the ResourceMetrics.
-func (mb *MetricsBuilder) newMetricData() *pdata.Metrics {
+func (mb *MetricsBuilder) newMetricData() pdata.Metrics {
 	md := pdata.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
 	rm.SetSchemaUrl(conventions.SchemaURL)
 	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
 	ilm.InstrumentationLibrary().SetName("otelcol/zookeeperreceiver")
-	return &md
+	return md
 }
 
 // Attributes contains the possible metric attributes that can be used.

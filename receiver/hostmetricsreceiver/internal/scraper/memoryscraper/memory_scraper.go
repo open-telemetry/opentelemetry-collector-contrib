@@ -66,13 +66,14 @@ func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 		return pdata.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
+	length := 0
 	if memInfo != nil {
-		s.mb.EnsureCapacity(metricsLen)
+		length = metricsLen
 		s.recordMemoryUsageMetric(now, memInfo)
 		if memInfo.Total <= 0 {
 			return pdata.NewMetrics(), scrapererror.NewPartialScrapeError(fmt.Errorf("%w: %d", ErrInvalidTotalMem, memInfo.Total), metricsLen)
 		}
 		s.recordMemoryUtilizationMetric(now, memInfo)
 	}
-	return s.mb.Emit(), nil
+	return s.mb.Emit(metadata.WithCapacity(length)), nil
 }

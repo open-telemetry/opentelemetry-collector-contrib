@@ -85,32 +85,32 @@ func (s *scraper) start(context.Context, component.Host) error {
 func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 	var errors scrapererror.ScrapeErrors
 
-	err := s.recordNetworkCounterMetrics()
+	netCounterLength, err := s.recordNetworkCounterMetrics()
 	if err != nil {
 		errors.AddPartial(networkMetricsLen, err)
 	}
 
-	err = s.recordNetworkConnectionsMetrics()
+	netConnectionLength, err := s.recordNetworkConnectionsMetrics()
 	if err != nil {
 		errors.AddPartial(connectionsMetricsLen, err)
 	}
-	return s.mb.Emit(), errors.Combine()
+	return s.mb.Emit(metadata.WithCapacity(netCounterLength + netConnectionLength)), errors.Combine()
 }
 
-func (s *scraper) recordNetworkCounterMetrics() error {
+func (s *scraper) recordNetworkCounterMetrics() (int, error) {
 	now := pdata.NewTimestampFromTime(time.Now())
-
+	length := 0
 	// get total stats only
 	ioCounters, err := s.ioCounters( /*perNetworkInterfaceController=*/ true)
 	if err != nil {
-		return fmt.Errorf("failed to read network IO stats: %w", err)
+		return length, fmt.Errorf("failed to read network IO stats: %w", err)
 	}
 
 	// filter network interfaces by name
 	ioCounters = s.filterByInterface(ioCounters)
 
 	if len(ioCounters) > 0 {
-		s.mb.IncreaseCapacity(networkMetricsLen)
+		length = networkMetricsLen
 
 		s.recordNetworkPacketsMetric(now, ioCounters)
 		s.recordNetworkDroppedPacketsMetric(now, ioCounters)
@@ -118,7 +118,7 @@ func (s *scraper) recordNetworkCounterMetrics() error {
 		s.recordNetworkIOMetric(now, ioCounters)
 	}
 
-	return nil
+	return length, nil
 }
 
 func (s *scraper) recordNetworkPacketsMetric(now pdata.Timestamp, ioCountersSlice []net.IOCountersStat) {
@@ -149,19 +149,18 @@ func (s *scraper) recordNetworkIOMetric(now pdata.Timestamp, ioCountersSlice []n
 	}
 }
 
-func (s *scraper) recordNetworkConnectionsMetrics() error {
+func (s *scraper) recordNetworkConnectionsMetrics() (int, error) {
 	now := pdata.NewTimestampFromTime(time.Now())
 
 	connections, err := s.connections("tcp")
 	if err != nil {
-		return fmt.Errorf("failed to read TCP connections: %w", err)
+		return 0, fmt.Errorf("failed to read TCP connections: %w", err)
 	}
 
 	tcpConnectionStatusCounts := getTCPConnectionStatusCounts(connections)
 
-	s.mb.IncreaseCapacity(connectionsMetricsLen)
 	s.recordNetworkConnectionsMetric(now, tcpConnectionStatusCounts)
-	return nil
+	return connectionsMetricsLen, nil
 }
 
 func getTCPConnectionStatusCounts(connections []net.ConnectionStat) map[string]int64 {

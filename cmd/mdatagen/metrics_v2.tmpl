@@ -102,7 +102,6 @@ func newMetric{{ $name.Render }}(settings MetricSettings) metric{{ $name.Render 
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	data                     *pdata.Metrics  // data buffer for generated metric.
 	startTime                pdata.Timestamp
 	{{- range $name, $metric := .Metrics }}
 	metric{{ $name.Render }} metric{{ $name.Render }}
@@ -132,42 +131,40 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 	return mb
 }
 
+// emitOption applies changes to pdata.Metrics emitted.
+type emitOption func(*pdata.Metrics)
+
+// WithResource copies the pdata.Resource into the emitted pdata.Metrics.
+func WithResource(resource pdata.Resource) emitOption {
+	return func(md *pdata.Metrics) {
+		resource.CopyTo(md.ResourceMetrics().At(0).Resource())
+	}
+}
+
+// WithCapacity calls EnsureCapacity on the pdata.Metrics.
+func WithCapacity(capacity int) emitOption {
+	return func(md *pdata.Metrics) {
+		if capacity > 0 {
+			md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().EnsureCapacity(capacity)
+		}
+	}
+}
+
 // Emit appends generated metrics to a pdata.MetricsSlice and updates the internal state to be ready for recording
 // another set of data points. This function will be doing all transformations required to produce metric representation
 // defined in metadata and user settings, e.g. delta/cumulative translation.
-func (mb *MetricsBuilder) Emit() pdata.Metrics{
-	if mb.data == nil {
-		return pdata.NewMetrics()
+func (mb *MetricsBuilder) Emit(options ...emitOption) pdata.Metrics{
+	md := mb.newMetricData()
+	{{ $length := len .Metrics }} {{ if ne $length 0 }}
+	for _, op := range options {
+		op(&md)
 	}
+	metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+	{{ end }}
 	{{- range $name, $metric := .Metrics }}
-	mb.metric{{- $name.Render }}.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	mb.metric{{- $name.Render }}.emit(metrics)
 	{{- end }}
-	defer func() {mb.data = nil}()
-	return *mb.data
-}
-
-// EnsureCapacity TODO
-func (mb *MetricsBuilder) EnsureCapacity(length int) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
-	mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().EnsureCapacity(length)
-}
-
-// IncreaseCapacity TODO
-func (mb *MetricsBuilder) IncreaseCapacity(length int) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
-	mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().EnsureCapacity(length+mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Len())
-}
-
-// Resource gives access the Resource object for scrapers to inject attributes.
-func (mb *MetricsBuilder) Resource() pdata.Resource{
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
-	return mb.data.ResourceMetrics().At(0).Resource()
+	return md
 }
 
 {{ range $name, $metric := .Metrics -}}
@@ -175,9 +172,6 @@ func (mb *MetricsBuilder) Resource() pdata.Resource{
 func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pdata.Timestamp
 	{{- if $metric.Data.HasMetricValueType }}, val {{ $metric.Data.MetricValueType.BasicType }}{{ end }}
 	{{- range $metric.Attributes -}} , {{ .RenderUnexported }}AttributeValue string{{ end }}) {
-	if mb.data == nil {
-		mb.data = mb.newMetricData()
-	}
 	mb.metric{{ $name.Render }}.recordDataPoint(mb.startTime, ts
 		{{- if $metric.Data.HasMetricValueType }}, val {{ end }}
 		{{- range $metric.Attributes -}} , {{ .RenderUnexported }}AttributeValue{{ end }})
@@ -191,18 +185,17 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 	for _, op := range options {
 		op(mb)
 	}
-	mb.data = mb.newMetricData()
 }
 
 // newMetricData creates new pdata.Metrics and sets the InstrumentationLibrary
 // name on the ResourceMetrics.
-func (mb *MetricsBuilder) newMetricData() *pdata.Metrics {
+func (mb *MetricsBuilder) newMetricData() pdata.Metrics {
 	md := pdata.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
 	rm.SetSchemaUrl(conventions.SchemaURL)
 	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
 	ilm.InstrumentationLibrary().SetName("otelcol/{{ .Name }}")
-	return &md
+	return md
 }
 
 // Attributes contains the possible metric attributes that can be used.
