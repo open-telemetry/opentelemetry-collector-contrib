@@ -83,24 +83,21 @@ func (s *scraper) start(context.Context, component.Host) error {
 }
 
 func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
-	md := pdata.NewMetrics()
-	metrics := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics()
 	var errors scrapererror.ScrapeErrors
 
-	err := s.recordNetworkCounterMetrics(metrics)
+	err := s.recordNetworkCounterMetrics()
 	if err != nil {
 		errors.AddPartial(networkMetricsLen, err)
 	}
 
-	err = s.recordNetworkConnectionsMetrics(metrics)
+	err = s.recordNetworkConnectionsMetrics()
 	if err != nil {
 		errors.AddPartial(connectionsMetricsLen, err)
 	}
-	s.mb.Emit(metrics)
-	return md, errors.Combine()
+	return s.mb.Emit(), errors.Combine()
 }
 
-func (s *scraper) recordNetworkCounterMetrics(metrics pdata.MetricSlice) error {
+func (s *scraper) recordNetworkCounterMetrics() error {
 	now := pdata.NewTimestampFromTime(time.Now())
 
 	// get total stats only
@@ -113,8 +110,7 @@ func (s *scraper) recordNetworkCounterMetrics(metrics pdata.MetricSlice) error {
 	ioCounters = s.filterByInterface(ioCounters)
 
 	if len(ioCounters) > 0 {
-		startIdx := metrics.Len()
-		metrics.EnsureCapacity(startIdx + networkMetricsLen)
+		s.mb.IncreaseCapacity(networkMetricsLen)
 
 		s.recordNetworkPacketsMetric(now, ioCounters)
 		s.recordNetworkDroppedPacketsMetric(now, ioCounters)
@@ -153,7 +149,7 @@ func (s *scraper) recordNetworkIOMetric(now pdata.Timestamp, ioCountersSlice []n
 	}
 }
 
-func (s *scraper) recordNetworkConnectionsMetrics(metrics pdata.MetricSlice) error {
+func (s *scraper) recordNetworkConnectionsMetrics() error {
 	now := pdata.NewTimestampFromTime(time.Now())
 
 	connections, err := s.connections("tcp")
@@ -163,8 +159,7 @@ func (s *scraper) recordNetworkConnectionsMetrics(metrics pdata.MetricSlice) err
 
 	tcpConnectionStatusCounts := getTCPConnectionStatusCounts(connections)
 
-	startIdx := metrics.Len()
-	metrics.EnsureCapacity(startIdx + connectionsMetricsLen)
+	s.mb.IncreaseCapacity(connectionsMetricsLen)
 	s.recordNetworkConnectionsMetric(now, tcpConnectionStatusCounts)
 	return nil
 }

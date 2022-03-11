@@ -59,23 +59,20 @@ func (s *scraper) start(context.Context, component.Host) error {
 }
 
 func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
-	md := pdata.NewMetrics()
-	metrics := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics()
 
 	now := pdata.NewTimestampFromTime(time.Now())
 	memInfo, err := s.virtualMemory()
 	if err != nil {
-		return md, scrapererror.NewPartialScrapeError(err, metricsLen)
+		return pdata.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
 	if memInfo != nil {
-		metrics.EnsureCapacity(metricsLen)
+		s.mb.EnsureCapacity(metricsLen)
 		s.recordMemoryUsageMetric(now, memInfo)
 		if memInfo.Total <= 0 {
-			return md, scrapererror.NewPartialScrapeError(fmt.Errorf("%w: %d", ErrInvalidTotalMem, memInfo.Total), metricsLen)
+			return pdata.NewMetrics(), scrapererror.NewPartialScrapeError(fmt.Errorf("%w: %d", ErrInvalidTotalMem, memInfo.Total), metricsLen)
 		}
 		s.recordMemoryUtilizationMetric(now, memInfo)
 	}
-	s.mb.Emit(metrics)
-	return md, nil
+	return s.mb.Emit(), nil
 }

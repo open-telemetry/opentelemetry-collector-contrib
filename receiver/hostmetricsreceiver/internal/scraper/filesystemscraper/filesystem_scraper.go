@@ -72,15 +72,12 @@ func (s *scraper) start(context.Context, component.Host) error {
 }
 
 func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
-	md := pdata.NewMetrics()
-	metrics := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics()
-
 	now := pdata.NewTimestampFromTime(time.Now())
 
 	// omit logical (virtual) filesystems (not relevant for windows)
 	partitions, err := s.partitions( /*all=*/ false)
 	if err != nil {
-		return md, scrapererror.NewPartialScrapeError(err, metricsLen)
+		return pdata.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
 	var errors scrapererror.ScrapeErrors
@@ -99,10 +96,9 @@ func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 	}
 
 	if len(usages) > 0 {
-		metrics.EnsureCapacity(metricsLen)
+		s.mb.EnsureCapacity(metricsLen)
 		s.recordFileSystemUsageMetric(now, usages)
 		s.recordSystemSpecificMetrics(now, usages)
-		s.mb.Emit(metrics)
 	}
 
 	err = errors.Combine()
@@ -110,7 +106,7 @@ func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 		err = scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
-	return md, err
+	return s.mb.Emit(), err
 }
 
 func getMountMode(opts []string) string {
