@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -516,7 +517,7 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 // defined in metadata and user settings, e.g. delta/cumulative translation.
 func (mb *MetricsBuilder) Emit() pdata.Metrics {
 	if mb.data == nil {
-		return pdata.Metrics{}
+		return pdata.NewMetrics()
 	}
 	mb.metricCouchdbAverageRequestTime.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
 	mb.metricCouchdbDatabaseOpen.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
@@ -526,6 +527,7 @@ func (mb *MetricsBuilder) Emit() pdata.Metrics {
 	mb.metricCouchdbHttpdRequests.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
 	mb.metricCouchdbHttpdResponses.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
 	mb.metricCouchdbHttpdViews.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	defer func() { mb.data = nil }()
 	return *mb.data
 }
 
@@ -543,6 +545,14 @@ func (mb *MetricsBuilder) IncreaseCapacity(length int) {
 		mb.data = mb.newMetricData()
 	}
 	mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().EnsureCapacity(length + mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Len())
+}
+
+// Resource gives access the Resource object for scrapers to inject attributes.
+func (mb *MetricsBuilder) Resource() pdata.Resource {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
+	return mb.data.ResourceMetrics().At(0).Resource()
 }
 
 // RecordCouchdbAverageRequestTimeDataPoint adds a data point to couchdb.average_request_time metric.
@@ -616,6 +626,7 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 	for _, op := range options {
 		op(mb)
 	}
+	mb.data = mb.newMetricData()
 }
 
 // newMetricData creates new pdata.Metrics and sets the InstrumentationLibrary
@@ -623,6 +634,7 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 func (mb *MetricsBuilder) newMetricData() *pdata.Metrics {
 	md := pdata.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
+	rm.SetSchemaUrl(conventions.SchemaURL)
 	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
 	ilm.InstrumentationLibrary().SetName("otelcol/couchdbreceiver")
 	return &md

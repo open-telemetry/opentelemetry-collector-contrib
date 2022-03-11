@@ -71,16 +71,9 @@ func (c *couchdbScraper) getResourceMetrics() (pdata.Metrics, error) {
 		return pdata.NewMetrics(), err
 	}
 
-	md := pdata.NewMetrics()
-	err = c.appendMetrics(stats, md.ResourceMetrics())
-	return md, err
-}
-
-func (c *couchdbScraper) appendMetrics(stats map[string]interface{}, rms pdata.ResourceMetricsSlice) error {
 	now := pdata.NewTimestampFromTime(time.Now())
-	md := c.mb.NewMetricData()
 
-	md.ResourceMetrics().At(0).Resource().Attributes().UpsertString(metadata.A.CouchdbNodeName, c.config.Endpoint)
+	c.mb.Resource().Attributes().UpsertString(metadata.A.CouchdbNodeName, c.config.Endpoint)
 
 	var errors scrapererror.ScrapeErrors
 	c.recordCouchdbAverageRequestTimeDataPoint(now, stats, errors)
@@ -92,10 +85,5 @@ func (c *couchdbScraper) appendMetrics(stats map[string]interface{}, rms pdata.R
 	c.recordCouchdbFileDescriptorOpenDataPoint(now, stats, errors)
 	c.recordCouchdbDatabaseOperationsDataPoint(now, stats, errors)
 
-	c.mb.Emit(md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	if md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Len() > 0 {
-		md.ResourceMetrics().At(0).CopyTo(rms.AppendEmpty())
-	}
-
-	return errors.Combine()
+	return c.mb.Emit(), errors.Combine()
 }
