@@ -26,8 +26,9 @@
 - `nginxreceiver`: instrumentation name updated from `otelcol/nginx` to `otelcol/nginxreceiver` (#8255)
 - `postgresqlreceiver`: instrumentation name updated from `otelcol/postgresql` to `otelcol/postgresqlreceiver` (#8255)
 - `redisreceiver`: instrumentation name updated from `otelcol/redis` to `otelcol/redisreceiver` (#8255)
-- `apachereceiver`: Update instrumentation library name from `otelcol/apache` to `otelcol/apachereceiver` ()
+- `apachereceiver`: instrumentation name updated from `otelcol/apache` to `otelcol/apachereceiver` ()
 - `couchdbreceiver`: instrumentation name updated from `otelcol/couchdb` to `otelcol/couchdbreceiver` (#8366)
+- `mysqlreceiver`: instrumentation name updated from `otel/mysql` to `otelcol/mysqlreceiver` (#8387)
 - `zookeeperreceiver`: instrumentation name updated from `otelcol/zookeeper` to `otelcol/zookeeperreceiver` (#8389)
 
 ### 🧰 Bug fixes 🧰
