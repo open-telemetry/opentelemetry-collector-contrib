@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -776,6 +777,7 @@ func (mb *MetricsBuilder) Emit() pdata.Metrics {
 	mb.metricMongodbObjectCount.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
 	mb.metricMongodbOperationCount.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
 	mb.metricMongodbStorageSize.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	defer func() { mb.data = nil }()
 	return *mb.data
 }
 
@@ -906,6 +908,7 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 	for _, op := range options {
 		op(mb)
 	}
+	mb.data = mb.newMetricData()
 }
 
 // newMetricData creates new pdata.Metrics and sets the InstrumentationLibrary
@@ -913,6 +916,7 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 func (mb *MetricsBuilder) newMetricData() *pdata.Metrics {
 	md := pdata.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
+	rm.SetSchemaUrl(conventions.SchemaURL)
 	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
 	ilm.InstrumentationLibrary().SetName("otelcol/mongodbreceiver")
 	return &md
