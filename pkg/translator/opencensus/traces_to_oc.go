@@ -280,26 +280,30 @@ func eventToOC(event pdata.SpanEvent) *octrace.Span_TimeEvent {
 	}
 	// TODO: Find a better way to check for message_event. Maybe use the event.Name.
 	if attrs.Len() == len(ocMessageEventAttrs) {
-		ocMessageEventAttrValues := map[string]pdata.AttributeValue{}
+		ocMessageEventAttrValues := map[string]uint64{}
+		var ocMessageEventType string
 		var ocMessageEventAttrFound bool
+		if val, ok := attrs.Get("message.type"); ok && val.Type() == pdata.AttributeValueTypeString {
+			ocMessageEventAttrFound = true
+			ocMessageEventType = val.StringVal()
+		}
 		for _, attr := range ocMessageEventAttrs {
 			akv, found := attrs.Get(attr)
-			if found {
+			if found && akv.Type() == pdata.AttributeValueTypeInt {
 				ocMessageEventAttrFound = true
+				ocMessageEventAttrValues[attr] = uint64(akv.IntVal())
 			}
-			ocMessageEventAttrValues[attr] = akv
 		}
 		if ocMessageEventAttrFound {
-			ocMessageEventType := ocMessageEventAttrValues["message.type"]
-			ocMessageEventTypeVal := octrace.Span_TimeEvent_MessageEvent_Type_value[ocMessageEventType.StringVal()]
+			ocMessageEventTypeVal := octrace.Span_TimeEvent_MessageEvent_Type_value[ocMessageEventType]
 			return &octrace.Span_TimeEvent{
 				Time: timestampAsTimestampPb(event.Timestamp()),
 				Value: &octrace.Span_TimeEvent_MessageEvent_{
 					MessageEvent: &octrace.Span_TimeEvent_MessageEvent{
 						Type:             octrace.Span_TimeEvent_MessageEvent_Type(ocMessageEventTypeVal),
-						Id:               uint64(ocMessageEventAttrValues[conventions.AttributeMessagingMessageID].IntVal()),
-						UncompressedSize: uint64(ocMessageEventAttrValues[conventions.AttributeMessagingMessagePayloadSizeBytes].IntVal()),
-						CompressedSize:   uint64(ocMessageEventAttrValues[conventions.AttributeMessagingMessagePayloadCompressedSizeBytes].IntVal()),
+						Id:               ocMessageEventAttrValues[conventions.AttributeMessagingMessageID],
+						UncompressedSize: ocMessageEventAttrValues[conventions.AttributeMessagingMessagePayloadSizeBytes],
+						CompressedSize:   ocMessageEventAttrValues[conventions.AttributeMessagingMessagePayloadCompressedSizeBytes],
 					},
 				},
 			}
