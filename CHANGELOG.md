@@ -33,6 +33,7 @@
 
 - `zipkinexporter`: Set "error" tag value when status is set to error (#8187)
 - `prometheusremotewriteexporter`: Correctly handle metric labels which collide after sanitization (#8378)
+- `tanzuobservabilityexporter`: Fix a typo in Instrumentation Library name and version tags (#8384)
 
 ### 🚀 New components 🚀
 
