@@ -187,11 +187,19 @@ def _instrument(
             lambda_event, event_context_extractor
         )
 
-        # See more:
-        # https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html
+        span_kind = None
         try:
-            if lambda_event["Records"][0]["eventSource"] == "aws:sqs":
+            if lambda_event["Records"][0]["eventSource"] in set(
+                ["aws:sqs", "aws:s3", "aws:sns", "aws:dynamodb"]
+            ):
+                # See more:
+                # https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html
+                # https://docs.aws.amazon.com/lambda/latest/dg/with-sns.html
+                # https://docs.aws.amazon.com/AmazonS3/latest/userguide/notification-content-structure.html
+                # https://docs.aws.amazon.com/lambda/latest/dg/with-ddb.html
                 span_kind = SpanKind.CONSUMER
+            else:
+                span_kind = SpanKind.SERVER
         except (IndexError, KeyError, TypeError):
             span_kind = SpanKind.SERVER
 

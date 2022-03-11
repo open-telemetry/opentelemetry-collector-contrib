@@ -274,3 +274,29 @@ class TestAwsLambdaInstrumentor(TestBase):
         self.assertEqual(len(spans), 1)
 
         test_env_patch.stop()
+
+    def test_lambda_handles_multiple_consumers(self):
+        test_env_patch = mock.patch.dict(
+            "os.environ",
+            {
+                **os.environ,
+                # NOT Active Tracing
+                _X_AMZN_TRACE_ID: MOCK_XRAY_TRACE_CONTEXT_NOT_SAMPLED,
+                # NOT using the X-Ray Propagator
+                OTEL_PROPAGATORS: "tracecontext",
+            },
+        )
+        test_env_patch.start()
+
+        AwsLambdaInstrumentor().instrument()
+
+        mock_execute_lambda({"Records": [{"eventSource": "aws:sqs"}]})
+        mock_execute_lambda({"Records": [{"eventSource": "aws:s3"}]})
+        mock_execute_lambda({"Records": [{"eventSource": "aws:sns"}]})
+        mock_execute_lambda({"Records": [{"eventSource": "aws:dynamodb"}]})
+
+        spans = self.memory_exporter.get_finished_spans()
+
+        assert spans
+
+        test_env_patch.stop()
