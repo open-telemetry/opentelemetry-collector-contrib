@@ -28,8 +28,8 @@
 - `redisreceiver`: instrumentation name updated from `otelcol/redis` to `otelcol/redisreceiver` (#8255)
 - `apachereceiver`: Update instrumentation library name from `otelcol/apache` to `otelcol/apachereceiver` ()
 - `couchdbreceiver`: instrumentation name updated from `otelcol/couchdb` to `otelcol/couchdbreceiver` (#8366)
-- `prometheusreceiver` Produces different resource attributes when converting metrics to OTLP (#8266)
-- `prometheusremotewriteexporter` Relies on `service.*` attributes when adding job and instance to metrics (#8266)
+- `prometheusreceiver` Change resource attributes on metrics: `instance` -> `service.instance.id`, `host.name` -> `net.host.name`,  `port` -> `net.host.port`, `scheme` -> `http.scheme`, `job` removed (#8266)
+- `prometheusremotewriteexporter` Use `service.*` resource attributes instead of `job` and `instance` resource attributes when adding job and instance labels to metrics (#8266)
 
 ### 🧰 Bug fixes 🧰
 
