@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -249,6 +250,7 @@ func newMetricProcessMemoryVirtualUsage(settings MetricSettings) metricProcessMe
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
+	data                             *pdata.Metrics // data buffer for generated metric.
 	startTime                        pdata.Timestamp
 	metricProcessCPUTime             metricProcessCPUTime
 	metricProcessDiskIo              metricProcessDiskIo
@@ -283,30 +285,71 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 // Emit appends generated metrics to a pdata.MetricsSlice and updates the internal state to be ready for recording
 // another set of data points. This function will be doing all transformations required to produce metric representation
 // defined in metadata and user settings, e.g. delta/cumulative translation.
-func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
-	mb.metricProcessCPUTime.emit(metrics)
-	mb.metricProcessDiskIo.emit(metrics)
-	mb.metricProcessMemoryPhysicalUsage.emit(metrics)
-	mb.metricProcessMemoryVirtualUsage.emit(metrics)
+func (mb *MetricsBuilder) Emit() pdata.Metrics {
+	if mb.data == nil {
+		return pdata.NewMetrics()
+	}
+	mb.metricProcessCPUTime.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	mb.metricProcessDiskIo.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	mb.metricProcessMemoryPhysicalUsage.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	mb.metricProcessMemoryVirtualUsage.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	defer func() { mb.data = nil }()
+	return *mb.data
+}
+
+// EnsureCapacity TODO
+func (mb *MetricsBuilder) EnsureCapacity(length int) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
+	mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().EnsureCapacity(length)
+}
+
+// IncreaseCapacity TODO
+func (mb *MetricsBuilder) IncreaseCapacity(length int) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
+	mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().EnsureCapacity(length + mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Len())
+}
+
+// Resource gives access the Resource object for scrapers to inject attributes.
+func (mb *MetricsBuilder) Resource() pdata.Resource {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
+	return mb.data.ResourceMetrics().At(0).Resource()
 }
 
 // RecordProcessCPUTimeDataPoint adds a data point to process.cpu.time metric.
 func (mb *MetricsBuilder) RecordProcessCPUTimeDataPoint(ts pdata.Timestamp, val float64, stateAttributeValue string) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
 	mb.metricProcessCPUTime.recordDataPoint(mb.startTime, ts, val, stateAttributeValue)
 }
 
 // RecordProcessDiskIoDataPoint adds a data point to process.disk.io metric.
 func (mb *MetricsBuilder) RecordProcessDiskIoDataPoint(ts pdata.Timestamp, val int64, directionAttributeValue string) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
 	mb.metricProcessDiskIo.recordDataPoint(mb.startTime, ts, val, directionAttributeValue)
 }
 
 // RecordProcessMemoryPhysicalUsageDataPoint adds a data point to process.memory.physical_usage metric.
 func (mb *MetricsBuilder) RecordProcessMemoryPhysicalUsageDataPoint(ts pdata.Timestamp, val int64) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
 	mb.metricProcessMemoryPhysicalUsage.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordProcessMemoryVirtualUsageDataPoint adds a data point to process.memory.virtual_usage metric.
 func (mb *MetricsBuilder) RecordProcessMemoryVirtualUsageDataPoint(ts pdata.Timestamp, val int64) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
 	mb.metricProcessMemoryVirtualUsage.recordDataPoint(mb.startTime, ts, val)
 }
 
@@ -317,16 +360,18 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 	for _, op := range options {
 		op(mb)
 	}
+	mb.data = mb.newMetricData()
 }
 
-// NewMetricData creates new pdata.Metrics and sets the InstrumentationLibrary
+// newMetricData creates new pdata.Metrics and sets the InstrumentationLibrary
 // name on the ResourceMetrics.
-func (mb *MetricsBuilder) NewMetricData() pdata.Metrics {
+func (mb *MetricsBuilder) newMetricData() *pdata.Metrics {
 	md := pdata.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
+	rm.SetSchemaUrl(conventions.SchemaURL)
 	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
 	ilm.InstrumentationLibrary().SetName("otelcol/hostmetricsreceiver/process")
-	return md
+	return &md
 }
 
 // Attributes contains the possible metric attributes that can be used.

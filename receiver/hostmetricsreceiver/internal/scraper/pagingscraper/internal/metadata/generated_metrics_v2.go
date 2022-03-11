@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -254,6 +255,7 @@ func newMetricSystemPagingUtilization(settings MetricSettings) metricSystemPagin
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
+	data                          *pdata.Metrics // data buffer for generated metric.
 	startTime                     pdata.Timestamp
 	metricSystemPagingFaults      metricSystemPagingFaults
 	metricSystemPagingOperations  metricSystemPagingOperations
@@ -288,30 +290,71 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 // Emit appends generated metrics to a pdata.MetricsSlice and updates the internal state to be ready for recording
 // another set of data points. This function will be doing all transformations required to produce metric representation
 // defined in metadata and user settings, e.g. delta/cumulative translation.
-func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
-	mb.metricSystemPagingFaults.emit(metrics)
-	mb.metricSystemPagingOperations.emit(metrics)
-	mb.metricSystemPagingUsage.emit(metrics)
-	mb.metricSystemPagingUtilization.emit(metrics)
+func (mb *MetricsBuilder) Emit() pdata.Metrics {
+	if mb.data == nil {
+		return pdata.NewMetrics()
+	}
+	mb.metricSystemPagingFaults.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	mb.metricSystemPagingOperations.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	mb.metricSystemPagingUsage.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	mb.metricSystemPagingUtilization.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	defer func() { mb.data = nil }()
+	return *mb.data
+}
+
+// EnsureCapacity TODO
+func (mb *MetricsBuilder) EnsureCapacity(length int) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
+	mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().EnsureCapacity(length)
+}
+
+// IncreaseCapacity TODO
+func (mb *MetricsBuilder) IncreaseCapacity(length int) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
+	mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().EnsureCapacity(length + mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Len())
+}
+
+// Resource gives access the Resource object for scrapers to inject attributes.
+func (mb *MetricsBuilder) Resource() pdata.Resource {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
+	return mb.data.ResourceMetrics().At(0).Resource()
 }
 
 // RecordSystemPagingFaultsDataPoint adds a data point to system.paging.faults metric.
 func (mb *MetricsBuilder) RecordSystemPagingFaultsDataPoint(ts pdata.Timestamp, val int64, typeAttributeValue string) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
 	mb.metricSystemPagingFaults.recordDataPoint(mb.startTime, ts, val, typeAttributeValue)
 }
 
 // RecordSystemPagingOperationsDataPoint adds a data point to system.paging.operations metric.
 func (mb *MetricsBuilder) RecordSystemPagingOperationsDataPoint(ts pdata.Timestamp, val int64, directionAttributeValue string, typeAttributeValue string) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
 	mb.metricSystemPagingOperations.recordDataPoint(mb.startTime, ts, val, directionAttributeValue, typeAttributeValue)
 }
 
 // RecordSystemPagingUsageDataPoint adds a data point to system.paging.usage metric.
 func (mb *MetricsBuilder) RecordSystemPagingUsageDataPoint(ts pdata.Timestamp, val int64, deviceAttributeValue string, stateAttributeValue string) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
 	mb.metricSystemPagingUsage.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, stateAttributeValue)
 }
 
 // RecordSystemPagingUtilizationDataPoint adds a data point to system.paging.utilization metric.
 func (mb *MetricsBuilder) RecordSystemPagingUtilizationDataPoint(ts pdata.Timestamp, val float64, deviceAttributeValue string, stateAttributeValue string) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
 	mb.metricSystemPagingUtilization.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, stateAttributeValue)
 }
 
@@ -322,16 +365,18 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 	for _, op := range options {
 		op(mb)
 	}
+	mb.data = mb.newMetricData()
 }
 
-// NewMetricData creates new pdata.Metrics and sets the InstrumentationLibrary
+// newMetricData creates new pdata.Metrics and sets the InstrumentationLibrary
 // name on the ResourceMetrics.
-func (mb *MetricsBuilder) NewMetricData() pdata.Metrics {
+func (mb *MetricsBuilder) newMetricData() *pdata.Metrics {
 	md := pdata.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
+	rm.SetSchemaUrl(conventions.SchemaURL)
 	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
 	ilm.InstrumentationLibrary().SetName("otelcol/hostmetricsreceiver/paging")
-	return md
+	return &md
 }
 
 // Attributes contains the possible metric attributes that can be used.

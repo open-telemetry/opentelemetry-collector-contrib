@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -428,6 +429,7 @@ func newMetricSystemDiskWeightedIoTime(settings MetricSettings) metricSystemDisk
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
+	data                              *pdata.Metrics // data buffer for generated metric.
 	startTime                         pdata.Timestamp
 	metricSystemDiskIo                metricSystemDiskIo
 	metricSystemDiskIoTime            metricSystemDiskIoTime
@@ -468,48 +470,98 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 // Emit appends generated metrics to a pdata.MetricsSlice and updates the internal state to be ready for recording
 // another set of data points. This function will be doing all transformations required to produce metric representation
 // defined in metadata and user settings, e.g. delta/cumulative translation.
-func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
-	mb.metricSystemDiskIo.emit(metrics)
-	mb.metricSystemDiskIoTime.emit(metrics)
-	mb.metricSystemDiskMerged.emit(metrics)
-	mb.metricSystemDiskOperationTime.emit(metrics)
-	mb.metricSystemDiskOperations.emit(metrics)
-	mb.metricSystemDiskPendingOperations.emit(metrics)
-	mb.metricSystemDiskWeightedIoTime.emit(metrics)
+func (mb *MetricsBuilder) Emit() pdata.Metrics {
+	if mb.data == nil {
+		return pdata.NewMetrics()
+	}
+	mb.metricSystemDiskIo.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	mb.metricSystemDiskIoTime.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	mb.metricSystemDiskMerged.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	mb.metricSystemDiskOperationTime.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	mb.metricSystemDiskOperations.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	mb.metricSystemDiskPendingOperations.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	mb.metricSystemDiskWeightedIoTime.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	defer func() { mb.data = nil }()
+	return *mb.data
+}
+
+// EnsureCapacity TODO
+func (mb *MetricsBuilder) EnsureCapacity(length int) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
+	mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().EnsureCapacity(length)
+}
+
+// IncreaseCapacity TODO
+func (mb *MetricsBuilder) IncreaseCapacity(length int) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
+	mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().EnsureCapacity(length + mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Len())
+}
+
+// Resource gives access the Resource object for scrapers to inject attributes.
+func (mb *MetricsBuilder) Resource() pdata.Resource {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
+	return mb.data.ResourceMetrics().At(0).Resource()
 }
 
 // RecordSystemDiskIoDataPoint adds a data point to system.disk.io metric.
 func (mb *MetricsBuilder) RecordSystemDiskIoDataPoint(ts pdata.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue string) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
 	mb.metricSystemDiskIo.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, directionAttributeValue)
 }
 
 // RecordSystemDiskIoTimeDataPoint adds a data point to system.disk.io_time metric.
 func (mb *MetricsBuilder) RecordSystemDiskIoTimeDataPoint(ts pdata.Timestamp, val float64, deviceAttributeValue string) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
 	mb.metricSystemDiskIoTime.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue)
 }
 
 // RecordSystemDiskMergedDataPoint adds a data point to system.disk.merged metric.
 func (mb *MetricsBuilder) RecordSystemDiskMergedDataPoint(ts pdata.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue string) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
 	mb.metricSystemDiskMerged.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, directionAttributeValue)
 }
 
 // RecordSystemDiskOperationTimeDataPoint adds a data point to system.disk.operation_time metric.
 func (mb *MetricsBuilder) RecordSystemDiskOperationTimeDataPoint(ts pdata.Timestamp, val float64, deviceAttributeValue string, directionAttributeValue string) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
 	mb.metricSystemDiskOperationTime.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, directionAttributeValue)
 }
 
 // RecordSystemDiskOperationsDataPoint adds a data point to system.disk.operations metric.
 func (mb *MetricsBuilder) RecordSystemDiskOperationsDataPoint(ts pdata.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue string) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
 	mb.metricSystemDiskOperations.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, directionAttributeValue)
 }
 
 // RecordSystemDiskPendingOperationsDataPoint adds a data point to system.disk.pending_operations metric.
 func (mb *MetricsBuilder) RecordSystemDiskPendingOperationsDataPoint(ts pdata.Timestamp, val int64, deviceAttributeValue string) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
 	mb.metricSystemDiskPendingOperations.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue)
 }
 
 // RecordSystemDiskWeightedIoTimeDataPoint adds a data point to system.disk.weighted_io_time metric.
 func (mb *MetricsBuilder) RecordSystemDiskWeightedIoTimeDataPoint(ts pdata.Timestamp, val float64, deviceAttributeValue string) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
 	mb.metricSystemDiskWeightedIoTime.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue)
 }
 
@@ -520,16 +572,18 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 	for _, op := range options {
 		op(mb)
 	}
+	mb.data = mb.newMetricData()
 }
 
-// NewMetricData creates new pdata.Metrics and sets the InstrumentationLibrary
+// newMetricData creates new pdata.Metrics and sets the InstrumentationLibrary
 // name on the ResourceMetrics.
-func (mb *MetricsBuilder) NewMetricData() pdata.Metrics {
+func (mb *MetricsBuilder) newMetricData() *pdata.Metrics {
 	md := pdata.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
+	rm.SetSchemaUrl(conventions.SchemaURL)
 	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
 	ilm.InstrumentationLibrary().SetName("otelcol/hostmetricsreceiver/disk")
-	return md
+	return &md
 }
 
 // Attributes contains the possible metric attributes that can be used.

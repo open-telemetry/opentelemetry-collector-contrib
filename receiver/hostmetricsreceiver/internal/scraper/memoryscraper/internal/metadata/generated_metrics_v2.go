@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -137,6 +138,7 @@ func newMetricSystemMemoryUtilization(settings MetricSettings) metricSystemMemor
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
+	data                          *pdata.Metrics // data buffer for generated metric.
 	startTime                     pdata.Timestamp
 	metricSystemMemoryUsage       metricSystemMemoryUsage
 	metricSystemMemoryUtilization metricSystemMemoryUtilization
@@ -167,18 +169,53 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 // Emit appends generated metrics to a pdata.MetricsSlice and updates the internal state to be ready for recording
 // another set of data points. This function will be doing all transformations required to produce metric representation
 // defined in metadata and user settings, e.g. delta/cumulative translation.
-func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
-	mb.metricSystemMemoryUsage.emit(metrics)
-	mb.metricSystemMemoryUtilization.emit(metrics)
+func (mb *MetricsBuilder) Emit() pdata.Metrics {
+	if mb.data == nil {
+		return pdata.NewMetrics()
+	}
+	mb.metricSystemMemoryUsage.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	mb.metricSystemMemoryUtilization.emit(mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	defer func() { mb.data = nil }()
+	return *mb.data
+}
+
+// EnsureCapacity TODO
+func (mb *MetricsBuilder) EnsureCapacity(length int) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
+	mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().EnsureCapacity(length)
+}
+
+// IncreaseCapacity TODO
+func (mb *MetricsBuilder) IncreaseCapacity(length int) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
+	mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().EnsureCapacity(length + mb.data.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Len())
+}
+
+// Resource gives access the Resource object for scrapers to inject attributes.
+func (mb *MetricsBuilder) Resource() pdata.Resource {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
+	return mb.data.ResourceMetrics().At(0).Resource()
 }
 
 // RecordSystemMemoryUsageDataPoint adds a data point to system.memory.usage metric.
 func (mb *MetricsBuilder) RecordSystemMemoryUsageDataPoint(ts pdata.Timestamp, val int64, stateAttributeValue string) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
 	mb.metricSystemMemoryUsage.recordDataPoint(mb.startTime, ts, val, stateAttributeValue)
 }
 
 // RecordSystemMemoryUtilizationDataPoint adds a data point to system.memory.utilization metric.
 func (mb *MetricsBuilder) RecordSystemMemoryUtilizationDataPoint(ts pdata.Timestamp, val float64, stateAttributeValue string) {
+	if mb.data == nil {
+		mb.data = mb.newMetricData()
+	}
 	mb.metricSystemMemoryUtilization.recordDataPoint(mb.startTime, ts, val, stateAttributeValue)
 }
 
@@ -189,16 +226,18 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 	for _, op := range options {
 		op(mb)
 	}
+	mb.data = mb.newMetricData()
 }
 
-// NewMetricData creates new pdata.Metrics and sets the InstrumentationLibrary
+// newMetricData creates new pdata.Metrics and sets the InstrumentationLibrary
 // name on the ResourceMetrics.
-func (mb *MetricsBuilder) NewMetricData() pdata.Metrics {
+func (mb *MetricsBuilder) newMetricData() *pdata.Metrics {
 	md := pdata.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
+	rm.SetSchemaUrl(conventions.SchemaURL)
 	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
 	ilm.InstrumentationLibrary().SetName("otelcol/hostmetricsreceiver/memory")
-	return md
+	return &md
 }
 
 // Attributes contains the possible metric attributes that can be used.
