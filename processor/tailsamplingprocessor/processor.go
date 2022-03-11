@@ -319,7 +319,7 @@ func (tsp *tailSamplingSpanProcessor) groupResourceSpansByTraceID(rsSource pdata
 	// split by trace ID
 	for traceID := range idToResourceSpans {
 		rs := idToResourceSpans[traceID]
-		rsSource.Resource().CopyTo(rs.Resource())
+		rsSource.Resource().MoveTo(rs.Resource())
 		rs.SetSchemaUrl(rsSource.SchemaUrl())
 
 		ilss := rsSource.InstrumentationLibrarySpans()
@@ -327,7 +327,7 @@ func (tsp *tailSamplingSpanProcessor) groupResourceSpansByTraceID(rsSource pdata
 			ilsSource := ilss.At(i)
 
 			ils := pdata.NewInstrumentationLibrarySpans()
-			ilsSource.InstrumentationLibrary().CopyTo(ils.InstrumentationLibrary())
+			ilsSource.InstrumentationLibrary().MoveTo(ils.InstrumentationLibrary())
 			ils.SetSchemaUrl(ilsSource.SchemaUrl())
 
 			spansSource := ilsSource.Spans()
