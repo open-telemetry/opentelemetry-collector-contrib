@@ -198,8 +198,8 @@ func Test_createLabelSet(t *testing.T) {
 		{
 			"labels_with_resource",
 			getResource(map[string]pdata.AttributeValue{
-				"job":      pdata.NewAttributeValueString("prometheus"),
-				"instance": pdata.NewAttributeValueString("127.0.0.1:8080"),
+				"service.name":        pdata.NewAttributeValueString("prometheus"),
+				"service.instance.id": pdata.NewAttributeValueString("127.0.0.1:8080"),
 			}),
 			lbs1,
 			map[string]string{},
@@ -209,8 +209,8 @@ func Test_createLabelSet(t *testing.T) {
 		{
 			"labels_with_nonstring_resource",
 			getResource(map[string]pdata.AttributeValue{
-				"job":      pdata.NewAttributeValueInt(12345),
-				"instance": pdata.NewAttributeValueBool(true),
+				"service.name":        pdata.NewAttributeValueInt(12345),
+				"service.instance.id": pdata.NewAttributeValueBool(true),
 			}),
 			lbs1,
 			map[string]string{},
