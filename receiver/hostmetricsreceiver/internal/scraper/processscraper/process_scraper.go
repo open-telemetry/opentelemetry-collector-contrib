@@ -22,7 +22,6 @@ import (
 	"github.com/shirou/gopsutil/v3/host"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
@@ -83,8 +82,6 @@ func (s *scraper) start(context.Context, component.Host) error {
 }
 
 func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
-	md := pdata.NewMetrics()
-	rms := md.ResourceMetrics()
 
 	var errs scrapererror.ScrapeErrors
 
@@ -92,18 +89,15 @@ func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 	if err != nil {
 		partialErr, isPartial := err.(scrapererror.PartialScrapeError)
 		if !isPartial {
-			return md, err
+			return pdata.NewMetrics(), err
 		}
 
 		errs.AddPartial(partialErr.Failed, partialErr)
 	}
 
-	rms.EnsureCapacity(len(metadata))
 	for _, md := range metadata {
-		rm := rms.AppendEmpty()
-		rm.SetSchemaUrl(conventions.SchemaURL)
-		md.initializeResource(rm.Resource())
-		metrics := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics()
+
+		md.initializeResource(s.mb.Resource())
 
 		now := pdata.NewTimestampFromTime(time.Now())
 
@@ -118,10 +112,9 @@ func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 		if err = s.scrapeAndAppendDiskIOMetric(now, md.handle); err != nil {
 			errs.AddPartial(diskMetricsLen, fmt.Errorf("error reading disk usage for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
-		s.mb.Emit(metrics)
 	}
 
-	return md, errs.Combine()
+	return s.mb.Emit(), errs.Combine()
 }
 
 // getProcessMetadata returns a slice of processMetadata, including handles,
