@@ -28,6 +28,7 @@
 - `redisreceiver`: instrumentation name updated from `otelcol/redis` to `otelcol/redisreceiver` (#8255)
 - `apachereceiver`: Update instrumentation library name from `otelcol/apache` to `otelcol/apachereceiver` ()
 - `couchdbreceiver`: instrumentation name updated from `otelcol/couchdb` to `otelcol/couchdbreceiver` (#8366)
+- `zookeeperreceiver`: instrumentation name updated from `otelcol/zookeeper` to `otelcol/zookeeperreceiver` (#8389)
 
 ### 🧰 Bug fixes 🧰
 
