@@ -28,7 +28,7 @@
 - `redisreceiver`: instrumentation name updated from `otelcol/redis` to `otelcol/redisreceiver` (#8255)
 - `apachereceiver`: Update instrumentation library name from `otelcol/apache` to `otelcol/apachereceiver` ()
 - `couchdbreceiver`: instrumentation name updated from `otelcol/couchdb` to `otelcol/couchdbreceiver` (#8366)
-- `mysqlreceiver`: instrumentation name updated from `otel/mysql` to `otelcol/mysqlreceiver` ()
+- `mysqlreceiver`: instrumentation name updated from `otel/mysql` to `otelcol/mysqlreceiver` (#8387)
 
 ### 🧰 Bug fixes 🧰
 
