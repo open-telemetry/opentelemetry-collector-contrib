@@ -21,7 +21,7 @@ The supported actions are:
   to target keys specified in the rule. If a target key already exists, it will
   be overridden. Note: It behaves similar to the Span Processor `to_attributes`
   setting with the existing attribute as the source.
-- `convert`: Converts an existing attribute in spans/logs to a specified type.
+- `convert`: Converts an existing attribute to a specified type.
 
 For the actions `insert`, `update` and `upsert`,
  - `key`  is required
