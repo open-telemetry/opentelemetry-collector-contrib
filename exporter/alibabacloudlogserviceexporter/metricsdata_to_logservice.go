@@ -176,7 +176,7 @@ func numberMetricsToLogs(name string, data pdata.NumberDataPointSlice, defaultLa
 			labels.Append(k, v.AsString())
 			return true
 		})
-		switch dataPoint.Type() {
+		switch dataPoint.ValueType() {
 		case pdata.MetricValueTypeInt:
 			logs = append(logs,
 				newMetricLogFromRaw(name,

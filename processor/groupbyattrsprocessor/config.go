@@ -23,6 +23,6 @@ type Config struct {
 	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// GroupByKeys describes the attribute names that are going to be used for grouping.
-	// Must include at least one attribute name.
+	// Empty value is allowed, since processor in such case can compact data
 	GroupByKeys []string `mapstructure:"keys"`
 }

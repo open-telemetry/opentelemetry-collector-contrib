@@ -79,6 +79,11 @@ func TestPrometheusMetricDataTypeIntGauge(t *testing.T) {
 	expected := `gauge_metric_name{foo="bar",remote_name="156920",url="http://example_url"} 124 1608124661166
 gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1608124662166`
 	assert.Equal(t, expected, result)
+
+	metric = buildExampleIntGaugeMetric(false)
+	result = f.metric2String(metric)
+	expected = ""
+	assert.Equal(t, expected, result)
 }
 
 func TestPrometheusMetricDataTypeDoubleGauge(t *testing.T) {
@@ -89,6 +94,11 @@ func TestPrometheusMetricDataTypeDoubleGauge(t *testing.T) {
 	result := f.metric2String(metric)
 	expected := `gauge_metric_name_double_test{foo="bar",local_name="156720",endpoint="http://example_url"} 33.4 1608124661169
 gauge_metric_name_double_test{foo="bar",local_name="156155",endpoint="http://another_url"} 56.8 1608124662186`
+	assert.Equal(t, expected, result)
+
+	metric = buildExampleDoubleGaugeMetric(false)
+	result = f.metric2String(metric)
+	expected = ""
 	assert.Equal(t, expected, result)
 }
 
@@ -101,6 +111,11 @@ func TestPrometheusMetricDataTypeIntSum(t *testing.T) {
 	expected := `sum_metric_int_test{foo="bar",name="156720",address="http://example_url"} 45 1608124444169
 sum_metric_int_test{foo="bar",name="156155",address="http://another_url"} 1238 1608124699186`
 	assert.Equal(t, expected, result)
+
+	metric = buildExampleIntSumMetric(false)
+	result = f.metric2String(metric)
+	expected = ""
+	assert.Equal(t, expected, result)
 }
 
 func TestPrometheusMetricDataTypeDoubleSum(t *testing.T) {
@@ -111,6 +126,11 @@ func TestPrometheusMetricDataTypeDoubleSum(t *testing.T) {
 	result := f.metric2String(metric)
 	expected := `sum_metric_double_test{foo="bar",pod_name="lorem",namespace="default"} 45.6 1618124444169
 sum_metric_double_test{foo="bar",pod_name="opsum",namespace="kube-config"} 1238.1 1608424699186`
+	assert.Equal(t, expected, result)
+
+	metric = buildExampleDoubleSumMetric(false)
+	result = f.metric2String(metric)
+	expected = ""
 	assert.Equal(t, expected, result)
 }
 
@@ -126,6 +146,11 @@ summary_metric_double_test_sum{foo="bar",pod_name="dolor",namespace="sumologic"}
 summary_metric_double_test_count{foo="bar",pod_name="dolor",namespace="sumologic"} 3 1618124444169
 summary_metric_double_test_sum{foo="bar",pod_name="sit",namespace="main"} 1238.1 1608424699186
 summary_metric_double_test_count{foo="bar",pod_name="sit",namespace="main"} 7 1608424699186`
+	assert.Equal(t, expected, result)
+
+	metric = buildExampleSummaryMetric(false)
+	result = f.metric2String(metric)
+	expected = ""
 	assert.Equal(t, expected, result)
 }
 
@@ -151,5 +176,11 @@ histogram_metric_double_test{bar="foo",le="1",container="sit",branch="main"} 16 
 histogram_metric_double_test{bar="foo",le="+Inf",container="sit",branch="main"} 22 1608424699186
 histogram_metric_double_test_sum{bar="foo",container="sit",branch="main"} 54.1 1608424699186
 histogram_metric_double_test_count{bar="foo",container="sit",branch="main"} 98 1608424699186`
+	assert.Equal(t, expected, result)
+
+	metric = buildExampleHistogramMetric(false)
+	result = f.metric2String(metric)
+	expected = ""
+
 	assert.Equal(t, expected, result)
 }

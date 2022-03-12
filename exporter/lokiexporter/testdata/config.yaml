@@ -40,6 +40,8 @@ exporters:
     headers:
       "X-Custom-Header": "loki_rocks"
     labels:
+      record:
+        traceID: traceid
       attributes:
         container.name: "container_name"
         k8s.cluster.name: "k8s_cluster_name"

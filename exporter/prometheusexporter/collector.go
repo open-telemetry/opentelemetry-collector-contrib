@@ -27,18 +27,20 @@ type collector struct {
 	accumulator accumulator
 	logger      *zap.Logger
 
-	sendTimestamps bool
-	namespace      string
-	constLabels    prometheus.Labels
+	sendTimestamps    bool
+	namespace         string
+	constLabels       prometheus.Labels
+	skipSanitizeLabel bool
 }
 
 func newCollector(config *Config, logger *zap.Logger) *collector {
 	return &collector{
-		accumulator:    newAccumulator(logger, config.MetricExpiration),
-		logger:         logger,
-		namespace:      sanitize(config.Namespace),
-		sendTimestamps: config.SendTimestamps,
-		constLabels:    config.ConstLabels,
+		accumulator:       newAccumulator(logger, config.MetricExpiration),
+		logger:            logger,
+		namespace:         sanitize(config.Namespace, config.skipSanitizeLabel),
+		sendTimestamps:    config.SendTimestamps,
+		constLabels:       config.ConstLabels,
+		skipSanitizeLabel: config.skipSanitizeLabel,
 	}
 }
 
@@ -70,11 +72,11 @@ func (c *collector) convertMetric(metric pdata.Metric) (prometheus.Metric, error
 	return nil, errUnknownMetricType
 }
 
-func metricName(namespace string, metric pdata.Metric) string {
+func (c *collector) metricName(namespace string, metric pdata.Metric) string {
 	if namespace != "" {
-		return namespace + "_" + sanitize(metric.Name())
+		return namespace + "_" + sanitize(metric.Name(), c.skipSanitizeLabel)
 	}
-	return sanitize(metric.Name())
+	return sanitize(metric.Name(), c.skipSanitizeLabel)
 }
 
 func (c *collector) getMetricMetadata(metric pdata.Metric, attributes pdata.AttributeMap) (*prometheus.Desc, []string) {
@@ -82,13 +84,13 @@ func (c *collector) getMetricMetadata(metric pdata.Metric, attributes pdata.Attr
 	values := make([]string, 0, attributes.Len())
 
 	attributes.Range(func(k string, v pdata.AttributeValue) bool {
-		keys = append(keys, sanitize(k))
+		keys = append(keys, sanitize(k, c.skipSanitizeLabel))
 		values = append(values, v.AsString())
 		return true
 	})
 
 	return prometheus.NewDesc(
-		metricName(c.namespace, metric),
+		c.metricName(c.namespace, metric),
 		metric.Description(),
 		keys,
 		c.constLabels,
@@ -100,7 +102,7 @@ func (c *collector) convertGauge(metric pdata.Metric) (prometheus.Metric, error)
 
 	desc, attributes := c.getMetricMetadata(metric, ip.Attributes())
 	var value float64
-	switch ip.Type() {
+	switch ip.ValueType() {
 	case pdata.MetricValueTypeInt:
 		value = float64(ip.IntVal())
 	case pdata.MetricValueTypeDouble:
@@ -127,7 +129,7 @@ func (c *collector) convertSum(metric pdata.Metric) (prometheus.Metric, error) {
 
 	desc, attributes := c.getMetricMetadata(metric, ip.Attributes())
 	var value float64
-	switch ip.Type() {
+	switch ip.ValueType() {
 	case pdata.MetricValueTypeInt:
 		value = float64(ip.IntVal())
 	case pdata.MetricValueTypeDouble:

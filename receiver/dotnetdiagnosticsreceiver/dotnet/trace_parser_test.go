@@ -15,7 +15,7 @@
 package dotnet
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -24,7 +24,7 @@ import (
 )
 
 func TestTraceParser(t *testing.T) {
-	data, err := network.ReadBlobData(path.Join("..", "testdata"), 2)
+	data, err := network.ReadBlobData(filepath.Join("..", "testdata"), 2)
 	require.NoError(t, err)
 	rw := network.NewBlobReader(data)
 	reader := network.NewMultiReader(rw, &network.NopBlobWriter{})
@@ -36,7 +36,7 @@ func TestTraceParser(t *testing.T) {
 }
 
 func TestTraceParser_Errors(t *testing.T) {
-	data, err := network.ReadBlobData(path.Join("..", "testdata"), 2)
+	data, err := network.ReadBlobData(filepath.Join("..", "testdata"), 2)
 	require.NoError(t, err)
 	for i := 0; i < 7; i++ {
 		testTraceParserReadError(t, data, i)

@@ -19,7 +19,7 @@ package journaldreceiver // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
-	"github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/input/journald"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator/input/journald"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"gopkg.in/yaml.v2"

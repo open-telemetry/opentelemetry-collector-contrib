@@ -308,6 +308,8 @@ func (mf *metricFamilyPdata) ToMetricPdata(metrics *pdata.MetricSlice) (int, int
 	metric := pdata.NewMetric()
 	metric.SetDataType(mf.mtype)
 	metric.SetName(mf.name)
+	metric.SetDescription(mf.metadata.Help)
+	metric.SetUnit(mf.metadata.Unit)
 
 	pointCount := 0
 

@@ -84,15 +84,6 @@ func NewComposite(
 	}
 }
 
-// OnLateArrivingSpans notifies the evaluator that the given list of spans arrived
-// after the sampling decision was already taken for the trace.
-// This gives the evaluator a chance to log any message/metrics and/or update any
-// related internal state.
-func (c *Composite) OnLateArrivingSpans(Decision, []*pdata.Span) error {
-	c.logger.Debug("Spans are arriving late, decision is already made!!!")
-	return nil
-}
-
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
 func (c *Composite) Evaluate(traceID pdata.TraceID, trace *TraceData) (Decision, error) {
 	// Rate limiting works by counting spans that are sampled during each 1 second

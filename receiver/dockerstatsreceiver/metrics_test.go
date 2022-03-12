@@ -17,14 +17,14 @@ package dockerstatsreceiver
 import (
 	"encoding/json"
 	"io/ioutil"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
 	dtypes "github.com/docker/docker/api/types"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 )
@@ -102,6 +102,7 @@ func metricsData(
 
 func defaultLabels() map[string]string {
 	return map[string]string{
+		"container.runtime":    "docker",
 		"container.hostname":   "abcdef012345",
 		"container.id":         "a2596076ca048f02bcd16a8acd12a7ea2d3bc430d1cde095357239dd3925a4c3",
 		"container.image.name": "myImage",
@@ -232,7 +233,7 @@ func TestZeroValueStats(t *testing.T) {
 }
 
 func statsJSON(t *testing.T) *dtypes.StatsJSON {
-	statsRaw, err := ioutil.ReadFile(path.Join(".", "testdata", "stats.json"))
+	statsRaw, err := ioutil.ReadFile(filepath.Join("testdata", "stats.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -246,7 +247,7 @@ func statsJSON(t *testing.T) *dtypes.StatsJSON {
 }
 
 func containerJSON(t *testing.T) docker.Container {
-	containerRaw, err := ioutil.ReadFile(path.Join(".", "testdata", "container.json"))
+	containerRaw, err := ioutil.ReadFile(filepath.Join("testdata", "container.json"))
 	if err != nil {
 		t.Fatal(err)
 	}

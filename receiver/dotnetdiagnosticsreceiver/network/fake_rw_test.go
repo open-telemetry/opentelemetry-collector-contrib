@@ -15,7 +15,7 @@
 package network
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -70,7 +70,7 @@ func TestNewDefaultFakeRW(t *testing.T) {
 }
 
 func TestBlobReader(t *testing.T) {
-	data, err := ReadBlobData(path.Join("..", "testdata"), 2)
+	data, err := ReadBlobData(filepath.Join("..", "testdata"), 2)
 	require.NoError(t, err)
 	r := NewBlobReader(data)
 	p := make([]byte, 6)
@@ -85,7 +85,7 @@ func TestBlobReader(t *testing.T) {
 }
 
 func TestBlobReader_MultiChunkRead(t *testing.T) {
-	data, err := ReadBlobData(path.Join("..", "testdata"), 2)
+	data, err := ReadBlobData(filepath.Join("..", "testdata"), 2)
 	require.NoError(t, err)
 	r := NewBlobReader(data)
 	bigSlice := make([]byte, len(data[0])+len(data[1]))
@@ -98,12 +98,12 @@ func TestBlobReader_MultiChunkRead(t *testing.T) {
 }
 
 func TestReadBlobData_ReadErr(t *testing.T) {
-	_, err := ReadBlobData(path.Join("foo", "bar"), 2)
+	_, err := ReadBlobData(filepath.Join("foo", "bar"), 2)
 	require.Error(t, err)
 }
 
 func TestBlobReader_ReadAllChunks(t *testing.T) {
-	data, err := ReadBlobData(path.Join("..", "testdata"), 1)
+	data, err := ReadBlobData(filepath.Join("..", "testdata"), 1)
 	require.NoError(t, err)
 	r := NewBlobReader(data)
 	p := make([]byte, len(data[0]))
@@ -115,7 +115,7 @@ func TestBlobReader_ReadAllChunks(t *testing.T) {
 }
 
 func TestBlobReader_StopOnRead(t *testing.T) {
-	data, err := ReadBlobData(path.Join("..", "testdata"), 1)
+	data, err := ReadBlobData(filepath.Join("..", "testdata"), 1)
 	require.NoError(t, err)
 	r := NewBlobReader(data)
 	p := make([]byte, len(data[0]))

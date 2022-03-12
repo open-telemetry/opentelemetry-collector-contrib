@@ -18,7 +18,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"os"
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -30,7 +30,7 @@ import (
 
 func TestBlobWriter(t *testing.T) {
 	maxFiles := 4
-	dir := path.Join(os.TempDir(), "blobtest")
+	dir := filepath.Join(os.TempDir(), "blobtest")
 	w := NewBlobWriter(dir, maxFiles, zap.NewNop())
 	err := w.Init()
 	require.NoError(t, err)

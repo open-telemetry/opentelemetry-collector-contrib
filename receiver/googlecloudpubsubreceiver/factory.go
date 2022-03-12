@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
 const (
@@ -36,12 +35,12 @@ func NewFactory() component.ReceiverFactory {
 	f := &pubsubReceiverFactory{
 		receivers: make(map[*Config]*pubsubReceiver),
 	}
-	return receiverhelper.NewFactory(
+	return component.NewReceiverFactory(
 		typeStr,
 		f.CreateDefaultConfig,
-		receiverhelper.WithTraces(f.CreateTracesReceiver),
-		receiverhelper.WithMetrics(f.CreateMetricsReceiver),
-		receiverhelper.WithLogs(f.CreateLogsReceiver),
+		component.WithTracesReceiver(f.CreateTracesReceiver),
+		component.WithMetricsReceiver(f.CreateMetricsReceiver),
+		component.WithLogsReceiver(f.CreateLogsReceiver),
 	)
 }
 

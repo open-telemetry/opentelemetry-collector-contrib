@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
@@ -635,6 +635,9 @@ func TestSpanProcessor_setStatusCodeConditionally(t *testing.T) {
 	}
 	// This test numer two include rule for applying rule only for status code 400
 	oCfg.Include = &filterconfig.MatchProperties{
+		Config: filterset.Config{
+			MatchType: filterset.Strict,
+		},
 		Attributes: []filterconfig.Attribute{
 			{Key: "http.status_code", Value: 400},
 		},

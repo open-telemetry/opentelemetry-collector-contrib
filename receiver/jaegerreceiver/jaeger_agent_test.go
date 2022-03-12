@@ -37,10 +37,10 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"google.golang.org/grpc"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
@@ -191,21 +191,30 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *configu
 	jr := newJaegerReceiver(jaegerAgent, receiverConfig, sink, set)
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 
-	assert.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()), "Start failed")
+	var err error
+	for i := 0; i < 3; i++ {
+		err = jr.Start(context.Background(), componenttest.NewNopHost())
+		if err == nil {
+			break
+		} else {
+			time.Sleep(50 * time.Millisecond)
+		}
+	}
+	require.NoError(t, err, "Start failed")
 
 	// 2. Then send spans to the Jaeger receiver.
 	jexp, err := newClientUDP(agentEndpoint, jr.agentBinaryThriftEnabled())
-	assert.NoError(t, err, "Failed to create the Jaeger OpenCensus exporter for the live application")
+	require.NoError(t, err, "Failed to create the Jaeger OpenTelemetry exporter for the live application")
 
 	// 3. Now finally send some spans
 	td := generateTraceData()
-	batches, err := jaeger.InternalTracesToJaegerProto(td)
+	batches, err := jaeger.ProtoFromTraces(td)
 	require.NoError(t, err)
 	for _, batch := range batches {
 		require.NoError(t, jexp.EmitBatch(context.Background(), modelToThrift(batch)))
 	}
 
-	assert.Eventually(t, func() bool {
+	require.Eventually(t, func() bool {
 		return sink.SpanCount() > 0
 	}, 10*time.Second, 5*time.Millisecond)
 

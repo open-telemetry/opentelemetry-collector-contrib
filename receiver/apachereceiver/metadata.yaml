@@ -74,7 +74,7 @@ metrics:
   apache.scoreboard:
     enabled: true
     description: The number of connections in each state.
-    extended_documentation: >
+    extended_documentation: >-
       The apache scoreboard is an encoded representation of the state of all the server's workers.
       This metric decodes the scoreboard and presents a count of workers in each state.
       Additional details can be found [here](https://support.cpanel.net/hc/en-us/articles/360052040234-Understanding-the-Apache-scoreboard).

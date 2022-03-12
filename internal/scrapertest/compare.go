@@ -233,8 +233,8 @@ func CompareNumberDataPointSlices(expected, actual pdata.NumberDataPointSlice) e
 // CompareNumberDataPoints compares each part of two given NumberDataPoints and returns
 // an error if they don't match. The error describes what didn't match.
 func CompareNumberDataPoints(expected, actual pdata.NumberDataPoint) error {
-	if expected.Type() != actual.Type() {
-		return fmt.Errorf("metric datapoint types don't match: expected type: %s, actual type: %s", numberTypeToString(expected.Type()), numberTypeToString(actual.Type()))
+	if expected.ValueType() != actual.ValueType() {
+		return fmt.Errorf("metric datapoint types don't match: expected type: %s, actual type: %s", numberTypeToString(expected.ValueType()), numberTypeToString(actual.ValueType()))
 	}
 	if expected.IntVal() != actual.IntVal() {
 		return fmt.Errorf("metric datapoint IntVal doesn't match expected: %d, actual: %d", expected.IntVal(), actual.IntVal())

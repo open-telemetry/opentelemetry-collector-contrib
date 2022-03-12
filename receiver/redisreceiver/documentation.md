@@ -8,35 +8,44 @@ These are the metrics available for this scraper.
 
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
-| redis.clients.blocked | Number of clients pending on a blocking call |  | Sum(Int) | <ul> </ul> |
-| redis.clients.connected | Number of client connections (excluding connections from replicas) |  | Sum(Int) | <ul> </ul> |
-| redis.clients.max_input_buffer | Biggest input buffer among current client connections |  | Gauge(Int) | <ul> </ul> |
-| redis.clients.max_output_buffer | Longest output list among current client connections |  | Gauge(Int) | <ul> </ul> |
-| redis.commands | Number of commands processed per second | {ops}/s | Gauge(Int) | <ul> </ul> |
-| redis.commands.processed | Total number of commands processed by the server |  | Sum(Int) | <ul> </ul> |
-| redis.connections.received | Total number of connections accepted by the server |  | Sum(Int) | <ul> </ul> |
-| redis.connections.rejected | Number of connections rejected because of maxclients limit |  | Sum(Int) | <ul> </ul> |
-| redis.cpu.time | System CPU consumed by the Redis server in seconds since server start | s | Sum(Double) | <ul> <li>state</li> </ul> |
-| redis.db.avg_ttl | Average keyspace keys TTL | ms | Gauge(Int) | <ul> <li>db</li> </ul> |
-| redis.db.expires | Number of keyspace keys with an expiration |  | Gauge(Int) | <ul> <li>db</li> </ul> |
-| redis.db.keys | Number of keyspace keys |  | Gauge(Int) | <ul> <li>db</li> </ul> |
-| redis.keys.evicted | Number of evicted keys due to maxmemory limit |  | Sum(Int) | <ul> </ul> |
-| redis.keys.expired | Total number of key expiration events |  | Sum(Int) | <ul> </ul> |
-| redis.keyspace.hits | Number of successful lookup of keys in the main dictionary |  | Sum(Int) | <ul> </ul> |
-| redis.keyspace.misses | Number of failed lookup of keys in the main dictionary |  | Sum(Int) | <ul> </ul> |
-| redis.latest_fork | Duration of the latest fork operation in microseconds | us | Gauge(Int) | <ul> </ul> |
-| redis.memory.fragmentation_ratio | Ratio between used_memory_rss and used_memory |  | Gauge(Double) | <ul> </ul> |
-| redis.memory.lua | Number of bytes used by the Lua engine | By | Gauge(Int) | <ul> </ul> |
-| redis.memory.peak | Peak memory consumed by Redis (in bytes) | By | Gauge(Int) | <ul> </ul> |
-| redis.memory.rss | Number of bytes that Redis allocated as seen by the operating system | By | Gauge(Int) | <ul> </ul> |
-| redis.memory.used | Total number of bytes allocated by Redis using its allocator | By | Gauge(Int) | <ul> </ul> |
-| redis.net.input | The total number of bytes read from the network | By | Sum(Int) | <ul> </ul> |
-| redis.net.output | The total number of bytes written to the network | By | Sum(Int) | <ul> </ul> |
-| redis.rdb.changes_since_last_save | Number of changes since the last dump |  | Sum(Int) | <ul> </ul> |
-| redis.replication.backlog_first_byte_offset | The master offset of the replication backlog buffer |  | Gauge(Int) | <ul> </ul> |
-| redis.replication.offset | The server's current replication offset |  | Gauge(Int) | <ul> </ul> |
-| redis.slaves.connected | Number of connected replicas |  | Sum(Int) | <ul> </ul> |
-| redis.uptime | Number of seconds since Redis server start | s | Sum(Int) | <ul> </ul> |
+| **redis.clients.blocked** | Number of clients pending on a blocking call |  | Sum(Int) | <ul> </ul> |
+| **redis.clients.connected** | Number of client connections (excluding connections from replicas) |  | Sum(Int) | <ul> </ul> |
+| **redis.clients.max_input_buffer** | Biggest input buffer among current client connections |  | Gauge(Int) | <ul> </ul> |
+| **redis.clients.max_output_buffer** | Longest output list among current client connections |  | Gauge(Int) | <ul> </ul> |
+| **redis.commands** | Number of commands processed per second | {ops}/s | Gauge(Int) | <ul> </ul> |
+| **redis.commands.processed** | Total number of commands processed by the server |  | Sum(Int) | <ul> </ul> |
+| **redis.connections.received** | Total number of connections accepted by the server |  | Sum(Int) | <ul> </ul> |
+| **redis.connections.rejected** | Number of connections rejected because of maxclients limit |  | Sum(Int) | <ul> </ul> |
+| **redis.cpu.time** | System CPU consumed by the Redis server in seconds since server start | s | Sum(Double) | <ul> <li>state</li> </ul> |
+| **redis.db.avg_ttl** | Average keyspace keys TTL | ms | Gauge(Int) | <ul> <li>db</li> </ul> |
+| **redis.db.expires** | Number of keyspace keys with an expiration |  | Gauge(Int) | <ul> <li>db</li> </ul> |
+| **redis.db.keys** | Number of keyspace keys |  | Gauge(Int) | <ul> <li>db</li> </ul> |
+| **redis.keys.evicted** | Number of evicted keys due to maxmemory limit |  | Sum(Int) | <ul> </ul> |
+| **redis.keys.expired** | Total number of key expiration events |  | Sum(Int) | <ul> </ul> |
+| **redis.keyspace.hits** | Number of successful lookup of keys in the main dictionary |  | Sum(Int) | <ul> </ul> |
+| **redis.keyspace.misses** | Number of failed lookup of keys in the main dictionary |  | Sum(Int) | <ul> </ul> |
+| **redis.latest_fork** | Duration of the latest fork operation in microseconds | us | Gauge(Int) | <ul> </ul> |
+| **redis.memory.fragmentation_ratio** | Ratio between used_memory_rss and used_memory |  | Gauge(Double) | <ul> </ul> |
+| **redis.memory.lua** | Number of bytes used by the Lua engine | By | Gauge(Int) | <ul> </ul> |
+| **redis.memory.peak** | Peak memory consumed by Redis (in bytes) | By | Gauge(Int) | <ul> </ul> |
+| **redis.memory.rss** | Number of bytes that Redis allocated as seen by the operating system | By | Gauge(Int) | <ul> </ul> |
+| **redis.memory.used** | Total number of bytes allocated by Redis using its allocator | By | Gauge(Int) | <ul> </ul> |
+| **redis.net.input** | The total number of bytes read from the network | By | Sum(Int) | <ul> </ul> |
+| **redis.net.output** | The total number of bytes written to the network | By | Sum(Int) | <ul> </ul> |
+| **redis.rdb.changes_since_last_save** | Number of changes since the last dump |  | Sum(Int) | <ul> </ul> |
+| **redis.replication.backlog_first_byte_offset** | The master offset of the replication backlog buffer |  | Gauge(Int) | <ul> </ul> |
+| **redis.replication.offset** | The server's current replication offset |  | Gauge(Int) | <ul> </ul> |
+| **redis.slaves.connected** | Number of connected replicas |  | Sum(Int) | <ul> </ul> |
+| **redis.uptime** | Number of seconds since Redis server start | s | Sum(Int) | <ul> </ul> |
+
+**Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
+Any metric can be enabled or disabled with the following scraper configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: <true|false>
+```
 
 ## Attributes
 

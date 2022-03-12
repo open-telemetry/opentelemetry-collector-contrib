@@ -39,7 +39,7 @@ type jaegerEncoder struct {
 var _ Encoder = (*jaegerEncoder)(nil)
 
 func (je jaegerEncoder) Traces(td pdata.Traces) (*Batch, error) {
-	traces, err := jaeger.InternalTracesToJaegerProto(td)
+	traces, err := jaeger.ProtoFromTraces(td)
 	if err != nil {
 		return nil, consumererror.NewTraces(err, td)
 	}

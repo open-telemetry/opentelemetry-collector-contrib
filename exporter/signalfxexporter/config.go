@@ -203,3 +203,12 @@ func (cfg *Config) Unmarshal(componentParser *config.Map) (err error) {
 
 	return nil
 }
+
+// Validate checks if the exporter configuration is valid.
+// TODO: Move other validations here.
+func (cfg *Config) Validate() error {
+	if err := cfg.QueueSettings.Validate(); err != nil {
+		return fmt.Errorf("sending_queue settings has invalid configuration: %w", err)
+	}
+	return nil
+}

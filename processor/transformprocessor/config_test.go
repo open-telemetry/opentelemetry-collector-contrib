@@ -23,6 +23,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/service/servicetest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
 )
 
 func TestLoadingConfig(t *testing.T) {
@@ -41,8 +43,26 @@ func TestLoadingConfig(t *testing.T) {
 		Traces: TracesConfig{
 			Queries: []string{
 				`set(name, "bear") where attributes["http.path"] == "/animal"`,
-				`keep(attributes, "http.method", "http.path")`,
+				`keep_keys(attributes, "http.method", "http.path")`,
 			},
+
+			functions: traces.DefaultFunctions(),
 		},
 	})
+}
+
+func TestLoadInvalidConfig(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Processors[typeStr] = factory
+
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "invalid_config_bad_syntax.yaml"), factories)
+	assert.Error(t, err)
+	assert.NotNil(t, cfg)
+
+	cfg, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "invalid_config_unknown_function.yaml"), factories)
+	assert.Error(t, err)
+	assert.NotNil(t, cfg)
 }

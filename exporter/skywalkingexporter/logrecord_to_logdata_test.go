@@ -20,7 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	logpb "skywalking.apache.org/repo/goapi/collect/logging/v3"
 )
 
@@ -64,7 +64,6 @@ func createLogData(numberOfLogs int) pdata.Logs {
 		logRecord.SetFlags(uint32(0x01))
 		logRecord.SetSeverityText("INFO")
 		logRecord.SetSeverityNumber(pdata.SeverityNumberINFO)
-		logRecord.SetName("test_name")
 		logRecord.SetTimestamp(ts)
 		switch i {
 		case 0:
@@ -106,7 +105,6 @@ func TestLogsDataToLogService(t *testing.T) {
 			assert.Equal(t, searchLogTag(flags, log), "1")
 			assert.Equal(t, searchLogTag(severityText, log), "INFO")
 			assert.Equal(t, searchLogTag(severityNumber, log), "9")
-			assert.Equal(t, searchLogTag(name, log), "test_name")
 			assert.Equal(t, log.Timestamp, pdata.Timestamp(int64(i)*time.Millisecond.Nanoseconds()).AsTime().UnixMilli())
 			if i == 1 {
 				assert.Equal(t, log.GetBody().GetText().GetText(), "true")

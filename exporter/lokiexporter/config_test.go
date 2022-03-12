@@ -15,7 +15,7 @@
 package lokiexporter
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.opentelemetry.io/collector/service/servicetest"
 )
 
@@ -37,7 +37,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -86,6 +86,9 @@ func TestLoadConfig(t *testing.T) {
 				"resource.name": "resource_name",
 				"severity":      "severity",
 			},
+			RecordAttributes: map[string]string{
+				"traceID": "traceid",
+			},
 		},
 		Format: "body",
 	}
@@ -98,7 +101,7 @@ func TestJSONLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[config.Type(typeStr)] = factory
-	cfg, err := servicetest.LoadConfig(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfig(filepath.Join("testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -202,7 +205,7 @@ func TestConfig_validate(t *testing.T) {
 					ResourceAttributes: nil,
 				},
 			},
-			errorMessage: "\"labels.attributes\" or \"labels.resource\" must be configured with at least one attribute",
+			errorMessage: "\"labels.attributes\", \"labels.resource\", or \"labels.record\" must be configured with at least one attribute",
 			shouldError:  true,
 		},
 		{
@@ -220,6 +223,33 @@ func TestConfig_validate(t *testing.T) {
 				Labels:   validAttribLabelsConfig,
 			},
 			shouldError: false,
+		},
+		{
+			name: "with valid `labels.record`",
+			fields: fields{
+				Endpoint: validEndpoint,
+				Labels: LabelsConfig{
+					RecordAttributes: map[string]string{
+						"traceID":   "traceID",
+						"spanID":    "spanID",
+						"severity":  "severity",
+						"severityN": "severityN",
+					},
+				},
+			},
+			shouldError: false,
+		},
+		{
+			name: "with invalid `labels.record`",
+			fields: fields{
+				Endpoint: validEndpoint,
+				Labels: LabelsConfig{
+					RecordAttributes: map[string]string{
+						"invalid": "Invalid",
+					},
+				},
+			},
+			shouldError: true,
 		},
 	}
 
@@ -260,7 +290,7 @@ func TestLabelsConfig_validate(t *testing.T) {
 				Attributes:         map[string]string{},
 				ResourceAttributes: map[string]string{},
 			},
-			errorMessage: "\"labels.attributes\" or \"labels.resource\" must be configured with at least one attribute",
+			errorMessage: "\"labels.attributes\", \"labels.resource\", or \"labels.record\" must be configured with at least one attribute",
 			shouldError:  true,
 		},
 		{

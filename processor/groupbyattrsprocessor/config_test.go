@@ -15,7 +15,7 @@
 package groupbyattrsprocessor
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -23,7 +23,10 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/service/servicetest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -31,20 +34,31 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	factories.Processors[typeStr] = factory
+
+	factories.Processors["batch"] = batchprocessor.NewFactory()
+	factories.Processors["groupbytrace"] = groupbytraceprocessor.NewFactory()
+
 	require.NoError(t, err)
 
 	err = configtest.CheckConfigStruct(factory.CreateDefaultConfig())
 	require.NoError(t, err)
 
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
 
-	conf := cfg.Processors[config.NewComponentIDWithName(typeStr, "custom")]
-	assert.Equal(t, conf,
+	groupingConf := cfg.Processors[config.NewComponentIDWithName(typeStr, "grouping")]
+	assert.Equal(t, groupingConf,
 		&Config{
-			ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "custom")),
+			ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "grouping")),
 			GroupByKeys:       []string{"key1", "key2"},
+		})
+
+	compactionConf := cfg.Processors[config.NewComponentIDWithName(typeStr, "compaction")]
+	assert.Equal(t, compactionConf,
+		&Config{
+			ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "compaction")),
+			GroupByKeys:       []string{},
 		})
 }

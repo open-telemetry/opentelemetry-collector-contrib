@@ -28,13 +28,13 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/otlp"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testing/container"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 )
 
 func TestIntegration(t *testing.T) {
-	cs := container.New(t)
-	c := cs.StartImage("memcached:1.6-alpine", container.WithPortReady(11211))
+	cs := containertest.New(t)
+	c := cs.StartImage("memcached:1.6-alpine", containertest.WithPortReady(11211))
 
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)

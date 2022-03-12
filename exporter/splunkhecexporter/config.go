@@ -29,8 +29,9 @@ import (
 
 const (
 	// hecPath is the default HEC path on the Splunk instance.
-	hecPath                   = "services/collector"
-	maxContentLengthLogsLimit = 2 * 1024 * 1024
+	hecPath                      = "services/collector"
+	maxContentLengthLogsLimit    = 2 * 1024 * 1024
+	maxContentLengthMetricsLimit = 2 * 1024 * 1024
 )
 
 // OtelToHecFields defines the mapping of attributes to HEC fields
@@ -75,6 +76,9 @@ type Config struct {
 	// Maximum log data size in bytes per HTTP post. Defaults to the backend limit of 2097152 bytes (2MiB).
 	MaxContentLengthLogs uint `mapstructure:"max_content_length_logs"`
 
+	// Maximum metric data size in bytes per HTTP post. Defaults to the backend limit of 2097152 bytes (2MiB).
+	MaxContentLengthMetrics uint `mapstructure:"max_content_length_metrics"`
+
 	// TLSSetting struct exposes TLS client configuration.
 	TLSSetting configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
 
@@ -118,6 +122,10 @@ func (cfg *Config) validateConfig() error {
 		return fmt.Errorf(`requires "max_content_length_logs" <= %d`, maxContentLengthLogsLimit)
 	}
 
+	if cfg.MaxContentLengthMetrics > maxContentLengthMetricsLimit {
+		return fmt.Errorf(`requires "max_content_length_metrics" <= %d`, maxContentLengthMetricsLimit)
+	}
+
 	return nil
 }
 
@@ -132,4 +140,12 @@ func (cfg *Config) getURL() (out *url.URL, err error) {
 	}
 
 	return
+}
+
+// Validate checks if the exporter configuration is valid.
+func (cfg *Config) Validate() error {
+	if err := cfg.QueueSettings.Validate(); err != nil {
+		return fmt.Errorf("sending_queue settings has invalid configuration: %w", err)
+	}
+	return nil
 }

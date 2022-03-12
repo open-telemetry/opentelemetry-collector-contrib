@@ -15,6 +15,8 @@
 package awskinesisexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter"
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -43,6 +45,15 @@ type Config struct {
 	AWS                AWSConfig `mapstructure:"aws"`
 	MaxRecordsPerBatch int       `mapstructure:"max_records_per_batch"`
 	MaxRecordSize      int       `mapstructure:"max_record_size"`
+}
+
+// Validate checks if the exporter configuration is valid
+func (cfg *Config) Validate() error {
+	if err := cfg.QueueSettings.Validate(); err != nil {
+		return fmt.Errorf("queue settings has invalid configuration: %w", err)
+	}
+
+	return nil
 }
 
 var _ config.Exporter = (*Config)(nil)

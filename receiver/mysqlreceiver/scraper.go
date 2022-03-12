@@ -74,9 +74,7 @@ func (m *mySQLScraper) scrape(context.Context) (pdata.Metrics, error) {
 	}
 
 	// metric initialization
-	md := pdata.NewMetrics()
-	ilm := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName("otel/mysql")
+	md := m.mb.NewMetricData()
 	now := pdata.NewTimestampFromTime(time.Now())
 
 	// collect innodb metrics.
@@ -90,10 +88,10 @@ func (m *mySQLScraper) scrape(context.Context) (pdata.Metrics, error) {
 		if k != "buffer_pool_size" {
 			continue
 		}
-		if f, err := parseFloat(v); err != nil {
+		if i, err := parseInt(v); err != nil {
 			errors.AddPartial(1, err)
 		} else {
-			m.mb.RecordMysqlBufferPoolSizeDataPoint(now, f, "total")
+			m.mb.RecordMysqlBufferPoolLimitDataPoint(now, i)
 		}
 	}
 
@@ -104,48 +102,41 @@ func (m *mySQLScraper) scrape(context.Context) (pdata.Metrics, error) {
 		return pdata.Metrics{}, err
 	}
 
+	m.recordDataPages(now, globalStats, errors)
+	m.recordDataUsage(now, globalStats, errors)
+
 	for k, v := range globalStats {
 		switch k {
 
-		// buffer_pool_pages
+		// buffer_pool.pages
 		case "Innodb_buffer_pool_pages_data":
-			if f, err := parseFloat(v); err != nil {
+			if i, err := parseInt(v); err != nil {
 				errors.AddPartial(1, err)
 			} else {
-				m.mb.RecordMysqlBufferPoolPagesDataPoint(now, f, "data")
-			}
-		case "Innodb_buffer_pool_pages_dirty":
-			if f, err := parseFloat(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlBufferPoolPagesDataPoint(now, f, "dirty")
-			}
-		case "Innodb_buffer_pool_pages_flushed":
-			if f, err := parseFloat(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlBufferPoolPagesDataPoint(now, f, "flushed")
+				m.mb.RecordMysqlBufferPoolPagesDataPoint(now, i, "data")
 			}
 		case "Innodb_buffer_pool_pages_free":
-			if f, err := parseFloat(v); err != nil {
+			if i, err := parseInt(v); err != nil {
 				errors.AddPartial(1, err)
 			} else {
-				m.mb.RecordMysqlBufferPoolPagesDataPoint(now, f, "free")
+				m.mb.RecordMysqlBufferPoolPagesDataPoint(now, i, "free")
 			}
 		case "Innodb_buffer_pool_pages_misc":
-			if f, err := parseFloat(v); err != nil {
+			if i, err := parseInt(v); err != nil {
 				errors.AddPartial(1, err)
 			} else {
-				m.mb.RecordMysqlBufferPoolPagesDataPoint(now, f, "misc")
-			}
-		case "Innodb_buffer_pool_pages_total":
-			if f, err := parseFloat(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlBufferPoolPagesDataPoint(now, f, "total")
+				m.mb.RecordMysqlBufferPoolPagesDataPoint(now, i, "misc")
 			}
 
-		// buffer_pool_operations
+		// buffer_pool.page_flushes
+		case "Innodb_buffer_pool_pages_flushed":
+			if i, err := parseInt(v); err != nil {
+				errors.AddPartial(1, err)
+			} else {
+				m.mb.RecordMysqlBufferPoolPageFlushesDataPoint(now, i)
+			}
+
+		// buffer_pool.operations
 		case "Innodb_buffer_pool_read_ahead_rnd":
 			if i, err := parseInt(v); err != nil {
 				errors.AddPartial(1, err)
@@ -187,20 +178,6 @@ func (m *mySQLScraper) scrape(context.Context) (pdata.Metrics, error) {
 				errors.AddPartial(1, err)
 			} else {
 				m.mb.RecordMysqlBufferPoolOperationsDataPoint(now, i, "write_requests")
-			}
-
-		// buffer_pool_size
-		case "Innodb_buffer_pool_bytes_data":
-			if f, err := parseFloat(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlBufferPoolSizeDataPoint(now, f, "data")
-			}
-		case "Innodb_buffer_pool_bytes_dirty":
-			if f, err := parseFloat(v); err != nil {
-				errors.AddPartial(1, err)
-			} else {
-				m.mb.RecordMysqlBufferPoolSizeDataPoint(now, f, "dirty")
 			}
 
 		// commands
@@ -507,39 +484,66 @@ func (m *mySQLScraper) scrape(context.Context) (pdata.Metrics, error) {
 
 		// threads
 		case "Threads_cached":
-			if f, err := parseFloat(v); err != nil {
+			if i, err := parseInt(v); err != nil {
 				errors.AddPartial(1, err)
 			} else {
-				m.mb.RecordMysqlThreadsDataPoint(now, f, "cached")
+				m.mb.RecordMysqlThreadsDataPoint(now, i, "cached")
 			}
 		case "Threads_connected":
-			if f, err := parseFloat(v); err != nil {
+			if i, err := parseInt(v); err != nil {
 				errors.AddPartial(1, err)
 			} else {
-				m.mb.RecordMysqlThreadsDataPoint(now, f, "connected")
+				m.mb.RecordMysqlThreadsDataPoint(now, i, "connected")
 			}
 		case "Threads_created":
-			if f, err := parseFloat(v); err != nil {
+			if i, err := parseInt(v); err != nil {
 				errors.AddPartial(1, err)
 			} else {
-				m.mb.RecordMysqlThreadsDataPoint(now, f, "created")
+				m.mb.RecordMysqlThreadsDataPoint(now, i, "created")
 			}
 		case "Threads_running":
-			if f, err := parseFloat(v); err != nil {
+			if i, err := parseInt(v); err != nil {
 				errors.AddPartial(1, err)
 			} else {
-				m.mb.RecordMysqlThreadsDataPoint(now, f, "running")
+				m.mb.RecordMysqlThreadsDataPoint(now, i, "running")
 			}
 		}
 	}
 
-	m.mb.Emit(ilm.Metrics())
+	m.mb.Emit(md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
 	return md, errors.Combine()
 }
 
-// parseFloat converts string to float64.
-func parseFloat(value string) (float64, error) {
-	return strconv.ParseFloat(value, 64)
+func (m *mySQLScraper) recordDataPages(now pdata.Timestamp, globalStats map[string]string, errors scrapererror.ScrapeErrors) {
+	dirty, err := parseInt(globalStats["Innodb_buffer_pool_pages_dirty"])
+	if err != nil {
+		errors.AddPartial(2, err) // we need dirty to calculate free, so 2 data points lost here
+		return
+	}
+	m.mb.RecordMysqlBufferPoolDataPagesDataPoint(now, dirty, "dirty")
+
+	data, err := parseInt(globalStats["Innodb_buffer_pool_pages_data"])
+	if err != nil {
+		errors.AddPartial(1, err)
+		return
+	}
+	m.mb.RecordMysqlBufferPoolDataPagesDataPoint(now, data-dirty, "clean")
+}
+
+func (m *mySQLScraper) recordDataUsage(now pdata.Timestamp, globalStats map[string]string, errors scrapererror.ScrapeErrors) {
+	dirty, err := parseInt(globalStats["Innodb_buffer_pool_bytes_dirty"])
+	if err != nil {
+		errors.AddPartial(2, err) // we need dirty to calculate free, so 2 data points lost here
+		return
+	}
+	m.mb.RecordMysqlBufferPoolUsageDataPoint(now, dirty, "dirty")
+
+	data, err := parseInt(globalStats["Innodb_buffer_pool_bytes_data"])
+	if err != nil {
+		errors.AddPartial(1, err)
+		return
+	}
+	m.mb.RecordMysqlBufferPoolUsageDataPoint(now, data-dirty, "clean")
 }
 
 // parseInt converts string to int64.

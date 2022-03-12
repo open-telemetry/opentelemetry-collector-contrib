@@ -15,7 +15,7 @@
 package dotnetdiagnosticsreceiver
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -30,7 +30,7 @@ func TestLoadConfig(t *testing.T) {
 	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 	factories.Receivers[typeStr] = NewFactory()
-	collectorCfg, err := servicetest.LoadConfigAndValidate(path.Join("testdata", "config.yaml"), factories)
+	collectorCfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, collectorCfg)
 

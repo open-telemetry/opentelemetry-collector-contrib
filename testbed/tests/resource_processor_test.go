@@ -16,7 +16,6 @@ package tests
 
 import (
 	"context"
-	"path"
 	"path/filepath"
 	"testing"
 
@@ -118,7 +117,7 @@ func TestMetricResourceProcessor(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			resultDir, err := filepath.Abs(path.Join("results", t.Name()))
+			resultDir, err := filepath.Abs(filepath.Join("results", t.Name()))
 			require.NoError(t, err)
 
 			agentProc := testbed.NewChildProcessCollector()

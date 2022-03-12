@@ -41,7 +41,7 @@ func serializeSum(name, prefix string, dims dimensions.NormalizedDimensionList, 
 func serializeDeltaCounter(name, prefix string, dims dimensions.NormalizedDimensionList, dp pdata.NumberDataPoint) (string, error) {
 	var valueOpt dtMetric.MetricOption
 
-	switch dp.Type() {
+	switch dp.ValueType() {
 	case pdata.MetricValueTypeNone:
 		return "", fmt.Errorf("unsupported value type none")
 	case pdata.MetricValueTypeInt:
@@ -105,17 +105,17 @@ func convertTotalCounterToDelta(name, prefix string, dims dimensions.NormalizedD
 
 	var valueOpt dtMetric.MetricOption
 
-	if dp.Type() != oldCount.Type() {
+	if dp.ValueType() != oldCount.ValueType() {
 		prevCounters.Put(id, dp)
-		return nil, fmt.Errorf("expected %s to be type %s but got %s - count reset", name, metricValueTypeToString(oldCount.Type()), metricValueTypeToString(dp.Type()))
+		return nil, fmt.Errorf("expected %s to be type %s but got %s - count reset", name, metricValueTypeToString(oldCount.ValueType()), metricValueTypeToString(dp.ValueType()))
 	}
 
-	if dp.Type() == pdata.MetricValueTypeInt {
+	if dp.ValueType() == pdata.MetricValueTypeInt {
 		valueOpt = dtMetric.WithIntCounterValueDelta(dp.IntVal() - oldCount.IntVal())
-	} else if dp.Type() == pdata.MetricValueTypeDouble {
+	} else if dp.ValueType() == pdata.MetricValueTypeDouble {
 		valueOpt = dtMetric.WithFloatCounterValueDelta(dp.DoubleVal() - oldCount.DoubleVal())
 	} else {
-		return nil, fmt.Errorf("%s value type %s not supported", name, metricValueTypeToString(dp.Type()))
+		return nil, fmt.Errorf("%s value type %s not supported", name, metricValueTypeToString(dp.ValueType()))
 	}
 
 	dm, err := dtMetric.NewMetric(

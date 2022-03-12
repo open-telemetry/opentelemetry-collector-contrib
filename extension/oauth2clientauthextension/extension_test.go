@@ -47,11 +47,12 @@ func TestOAuthClientSettings(t *testing.T) {
 		{
 			name: "all_valid_settings",
 			settings: &Config{
-				ClientID:     "testclientid",
-				ClientSecret: "testsecret",
-				TokenURL:     "https://example.com/v1/token",
-				Scopes:       []string{"resource.read"},
-				Timeout:      2,
+				ClientID:       "testclientid",
+				ClientSecret:   "testsecret",
+				EndpointParams: url.Values{"audience": []string{"someaudience"}},
+				TokenURL:       "https://example.com/v1/token",
+				Scopes:         []string{"resource.read"},
+				Timeout:        2,
 				TLSSetting: configtls.TLSClientSetting{
 					TLSSetting: configtls.TLSSetting{
 						CAFile:   testCAFile,
@@ -132,6 +133,7 @@ func TestOAuthClientSettings(t *testing.T) {
 			assert.Equal(t, test.settings.ClientSecret, rc.clientCredentials.ClientSecret)
 			assert.Equal(t, test.settings.ClientID, rc.clientCredentials.ClientID)
 			assert.Equal(t, test.settings.Timeout, rc.client.Timeout)
+			assert.Equal(t, test.settings.EndpointParams, rc.clientCredentials.EndpointParams)
 
 			// test tls settings
 			transport := rc.client.Transport.(*http.Transport)

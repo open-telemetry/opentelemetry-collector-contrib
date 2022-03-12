@@ -8,35 +8,44 @@ These are the metrics available for this scraper.
 
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
-| elasticsearch.cluster.data_nodes | The number of data nodes in the cluster. | {nodes} | Sum(Int) | <ul> </ul> |
-| elasticsearch.cluster.health | The health status of the cluster. Health status is based on the state of its primary and replica shards. Green indicates all shards are assigned. Yellow indicates that one or more replica shards are unassigned. Red indicates that one or more primary shards are unassigned, making some data unavailable.  | {status} | Sum(Int) | <ul> <li>health_status</li> </ul> |
-| elasticsearch.cluster.nodes | The total number of nodes in the cluster. | {nodes} | Sum(Int) | <ul> </ul> |
-| elasticsearch.cluster.shards | The number of shards in the cluster. | {shards} | Sum(Int) | <ul> <li>shard_state</li> </ul> |
-| elasticsearch.node.cache.evictions | The number of evictions from the cache. | {evictions} | Sum(Int) | <ul> <li>cache_name</li> </ul> |
-| elasticsearch.node.cache.memory.usage | The size in bytes of the cache. | By | Sum(Int) | <ul> <li>cache_name</li> </ul> |
-| elasticsearch.node.cluster.connections | The number of open tcp connections for internal cluster communication. | {connections} | Sum(Int) | <ul> </ul> |
-| elasticsearch.node.cluster.io | The number of bytes sent and received on the network for internal cluster communication. | By | Sum(Int) | <ul> <li>direction</li> </ul> |
-| elasticsearch.node.documents | The number of documents on the node. | {documents} | Sum(Int) | <ul> <li>document_state</li> </ul> |
-| elasticsearch.node.fs.disk.available | The amount of disk space available across all file stores for this node. | By | Sum(Int) | <ul> </ul> |
-| elasticsearch.node.http.connections | The number of HTTP connections to the node. | {connections} | Sum(Int) | <ul> </ul> |
-| elasticsearch.node.open_files | The number of open file descriptors held by the node. | {files} | Sum(Int) | <ul> </ul> |
-| elasticsearch.node.operations.completed | The number of operations completed. | {operations} | Sum(Int) | <ul> <li>operation</li> </ul> |
-| elasticsearch.node.operations.time | Time spent on operations. | ms | Sum(Int) | <ul> <li>operation</li> </ul> |
-| elasticsearch.node.shards.size | The size of the shards assigned to this node. | By | Sum(Int) | <ul> </ul> |
-| elasticsearch.node.thread_pool.tasks.finished | The number of tasks finished by the thread pool. | {tasks} | Sum(Int) | <ul> <li>thread_pool_name</li> <li>task_state</li> </ul> |
-| elasticsearch.node.thread_pool.tasks.queued | The number of queued tasks in the thread pool. | {tasks} | Sum(Int) | <ul> <li>thread_pool_name</li> </ul> |
-| elasticsearch.node.thread_pool.threads | The number of threads in the thread pool. | {threads} | Sum(Int) | <ul> <li>thread_pool_name</li> <li>thread_state</li> </ul> |
-| jvm.classes.loaded | The number of loaded classes | 1 | Gauge(Int) | <ul> </ul> |
-| jvm.gc.collections.count | The total number of garbage collections that have occurred | 1 | Sum(Int) | <ul> <li>collector_name</li> </ul> |
-| jvm.gc.collections.elapsed | The approximate accumulated collection elapsed time | ms | Sum(Int) | <ul> <li>collector_name</li> </ul> |
-| jvm.memory.heap.committed | The amount of memory that is guaranteed to be available for the heap | By | Gauge(Int) | <ul> </ul> |
-| jvm.memory.heap.max | The maximum amount of memory can be used for the heap | By | Gauge(Int) | <ul> </ul> |
-| jvm.memory.heap.used | The current heap memory usage | By | Gauge(Int) | <ul> </ul> |
-| jvm.memory.nonheap.committed | The amount of memory that is guaranteed to be available for non-heap purposes | By | Gauge(Int) | <ul> </ul> |
-| jvm.memory.nonheap.used | The current non-heap memory usage | By | Gauge(Int) | <ul> </ul> |
-| jvm.memory.pool.max | The maximum amount of memory can be used for the memory pool | By | Gauge(Int) | <ul> <li>memory_pool_name</li> </ul> |
-| jvm.memory.pool.used | The current memory pool memory usage | By | Gauge(Int) | <ul> <li>memory_pool_name</li> </ul> |
-| jvm.threads.count | The current number of threads | 1 | Gauge(Int) | <ul> </ul> |
+| **elasticsearch.cluster.data_nodes** | The number of data nodes in the cluster. | {nodes} | Sum(Int) | <ul> </ul> |
+| **elasticsearch.cluster.health** | The health status of the cluster. Health status is based on the state of its primary and replica shards. Green indicates all shards are assigned. Yellow indicates that one or more replica shards are unassigned. Red indicates that one or more primary shards are unassigned, making some data unavailable. | {status} | Sum(Int) | <ul> <li>health_status</li> </ul> |
+| **elasticsearch.cluster.nodes** | The total number of nodes in the cluster. | {nodes} | Sum(Int) | <ul> </ul> |
+| **elasticsearch.cluster.shards** | The number of shards in the cluster. | {shards} | Sum(Int) | <ul> <li>shard_state</li> </ul> |
+| **elasticsearch.node.cache.evictions** | The number of evictions from the cache. | {evictions} | Sum(Int) | <ul> <li>cache_name</li> </ul> |
+| **elasticsearch.node.cache.memory.usage** | The size in bytes of the cache. | By | Sum(Int) | <ul> <li>cache_name</li> </ul> |
+| **elasticsearch.node.cluster.connections** | The number of open tcp connections for internal cluster communication. | {connections} | Sum(Int) | <ul> </ul> |
+| **elasticsearch.node.cluster.io** | The number of bytes sent and received on the network for internal cluster communication. | By | Sum(Int) | <ul> <li>direction</li> </ul> |
+| **elasticsearch.node.documents** | The number of documents on the node. | {documents} | Sum(Int) | <ul> <li>document_state</li> </ul> |
+| **elasticsearch.node.fs.disk.available** | The amount of disk space available across all file stores for this node. | By | Sum(Int) | <ul> </ul> |
+| **elasticsearch.node.http.connections** | The number of HTTP connections to the node. | {connections} | Sum(Int) | <ul> </ul> |
+| **elasticsearch.node.open_files** | The number of open file descriptors held by the node. | {files} | Sum(Int) | <ul> </ul> |
+| **elasticsearch.node.operations.completed** | The number of operations completed. | {operations} | Sum(Int) | <ul> <li>operation</li> </ul> |
+| **elasticsearch.node.operations.time** | Time spent on operations. | ms | Sum(Int) | <ul> <li>operation</li> </ul> |
+| **elasticsearch.node.shards.size** | The size of the shards assigned to this node. | By | Sum(Int) | <ul> </ul> |
+| **elasticsearch.node.thread_pool.tasks.finished** | The number of tasks finished by the thread pool. | {tasks} | Sum(Int) | <ul> <li>thread_pool_name</li> <li>task_state</li> </ul> |
+| **elasticsearch.node.thread_pool.tasks.queued** | The number of queued tasks in the thread pool. | {tasks} | Sum(Int) | <ul> <li>thread_pool_name</li> </ul> |
+| **elasticsearch.node.thread_pool.threads** | The number of threads in the thread pool. | {threads} | Sum(Int) | <ul> <li>thread_pool_name</li> <li>thread_state</li> </ul> |
+| **jvm.classes.loaded** | The number of loaded classes | 1 | Gauge(Int) | <ul> </ul> |
+| **jvm.gc.collections.count** | The total number of garbage collections that have occurred | 1 | Sum(Int) | <ul> <li>collector_name</li> </ul> |
+| **jvm.gc.collections.elapsed** | The approximate accumulated collection elapsed time | ms | Sum(Int) | <ul> <li>collector_name</li> </ul> |
+| **jvm.memory.heap.committed** | The amount of memory that is guaranteed to be available for the heap | By | Gauge(Int) | <ul> </ul> |
+| **jvm.memory.heap.max** | The maximum amount of memory can be used for the heap | By | Gauge(Int) | <ul> </ul> |
+| **jvm.memory.heap.used** | The current heap memory usage | By | Gauge(Int) | <ul> </ul> |
+| **jvm.memory.nonheap.committed** | The amount of memory that is guaranteed to be available for non-heap purposes | By | Gauge(Int) | <ul> </ul> |
+| **jvm.memory.nonheap.used** | The current non-heap memory usage | By | Gauge(Int) | <ul> </ul> |
+| **jvm.memory.pool.max** | The maximum amount of memory can be used for the memory pool | By | Gauge(Int) | <ul> <li>memory_pool_name</li> </ul> |
+| **jvm.memory.pool.used** | The current memory pool memory usage | By | Gauge(Int) | <ul> <li>memory_pool_name</li> </ul> |
+| **jvm.threads.count** | The current number of threads | 1 | Gauge(Int) | <ul> </ul> |
+
+**Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
+Any metric can be enabled or disabled with the following scraper configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: <true|false>
+```
 
 ## Attributes
 

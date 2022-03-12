@@ -86,6 +86,10 @@ func (m metric) Data() MetricData {
 	return nil
 }
 
+func (m metric) IsEnabled() bool {
+	return *m.Enabled
+}
+
 type attribute struct {
 	// Description describes the purpose of the attribute.
 	Description string `validate:"notblank"`
@@ -110,8 +114,9 @@ type templateContext struct {
 	metadata
 	// Package name for generated code.
 	Package string
-	// ExpFileNote contains a note about experimental metrics builder.
-	ExpFileNote string
+	// ExpGen identifies whether the experimental metrics generator is used.
+	// TODO: Remove once the old mdata generator is gone.
+	ExpGen bool
 }
 
 func loadMetadata(filePath string) (metadata, error) {
@@ -119,13 +124,9 @@ func loadMetadata(filePath string) (metadata, error) {
 	if err != nil {
 		return metadata{}, err
 	}
-	mdMap, err := cp.Get(context.Background())
-	if err != nil {
-		return metadata{}, err
-	}
 
 	var md metadata
-	if err := mdMap.UnmarshalExact(&md); err != nil {
+	if err := cp.Map.UnmarshalExact(&md); err != nil {
 		return metadata{}, err
 	}
 

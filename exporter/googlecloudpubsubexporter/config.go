@@ -58,7 +58,7 @@ type WatermarkConfig struct {
 	AllowedDrift time.Duration `mapstructure:"allowed_drift"`
 }
 
-func (config *Config) validate() error {
+func (config *Config) Validate() error {
 	if !topicMatcher.MatchString(config.Topic) {
 		return fmt.Errorf("topic '%s' is not a valid format, use 'projects/<project_id>/topics/<name>'", config.Topic)
 	}

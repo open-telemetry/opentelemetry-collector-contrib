@@ -114,7 +114,7 @@ func (dps numberDataPointSlice) At(i int) (dataPoint, bool) {
 	timestampMs := unixNanoToMilliseconds(metric.Timestamp())
 
 	var metricVal float64
-	switch metric.Type() {
+	switch metric.ValueType() {
 	case pdata.MetricValueTypeDouble:
 		metricVal = metric.DoubleVal()
 	case pdata.MetricValueTypeInt:

@@ -77,6 +77,8 @@ func getSubPolicyEvaluator(logger *zap.Logger, cfg *SubPolicyCfg) (sampling.Poli
 	case RateLimiting:
 		rlfCfg := cfg.RateLimitingCfg
 		return sampling.NewRateLimiting(logger, rlfCfg.SpansPerSecond), nil
+	case And:
+		return getNewAndPolicy(logger, cfg.AndCfg)
 	default:
 		return nil, fmt.Errorf("unknown sampling policy type %s", cfg.Type)
 	}

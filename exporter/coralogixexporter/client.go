@@ -66,7 +66,7 @@ func (c *coralogixClient) startConnection(ctx context.Context, host component.Ho
 }
 
 func (c *coralogixClient) newPost(ctx context.Context, td pdata.Traces) error {
-	batches, err := jaeger.InternalTracesToJaegerProto(td)
+	batches, err := jaeger.ProtoFromTraces(td)
 	if err != nil {
 		return fmt.Errorf("can't translate to jaeger proto: %w", err)
 	}

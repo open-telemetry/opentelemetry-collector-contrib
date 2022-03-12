@@ -84,17 +84,14 @@ func (rs *redisScraper) Scrape(context.Context) (pdata.Metrics, error) {
 	}
 	rs.uptime = currentUptime
 
-	pdm := pdata.NewMetrics()
-	rm := pdm.ResourceMetrics().AppendEmpty()
-	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName("otelcol/" + typeStr)
+	md := rs.mb.NewMetricData()
 
 	rs.recordCommonMetrics(now, inf)
 	rs.recordKeyspaceMetrics(now, inf)
 
-	rs.mb.Emit(ilm.Metrics())
+	rs.mb.Emit(md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
 
-	return pdm, nil
+	return md, nil
 }
 
 // recordCommonMetrics records metrics from Redis info key-value pairs.

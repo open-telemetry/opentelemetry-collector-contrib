@@ -30,6 +30,7 @@ var (
 	errNoExporters                  = errors.New("no exporters defined for the route")
 	errNoTableItems                 = errors.New("the routing table is empty")
 	errNoMissingFromAttribute       = errors.New("the FromAttribute property is empty")
+	errDefaultExporterNotFound      = errors.New("default exporter not found")
 	errExporterNotFound             = errors.New("exporter not found")
 	errNoExportersAfterRegistration = errors.New("provided configuration resulted in no exporter available to accept data")
 )

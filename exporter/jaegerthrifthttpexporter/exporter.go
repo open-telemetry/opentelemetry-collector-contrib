@@ -74,7 +74,7 @@ func (s *jaegerThriftHTTPSender) pushTraceData(
 	ctx context.Context,
 	td pdata.Traces,
 ) error {
-	batches, err := jaegertranslator.InternalTracesToJaegerProto(td)
+	batches, err := jaegertranslator.ProtoFromTraces(td)
 	if err != nil {
 		return consumererror.NewPermanent(fmt.Errorf("failed to push trace data via Jaeger Thrift HTTP exporter: %w", err))
 	}

@@ -51,7 +51,7 @@ type Client struct {
 	config               *Config
 	containers           map[string]Container
 	containersLock       sync.Mutex
-	excludedImageMatcher *StringMatcher
+	excludedImageMatcher *stringMatcher
 	logger               *zap.Logger
 }
 
@@ -65,7 +65,7 @@ func NewDockerClient(config *Config, logger *zap.Logger) (*Client, error) {
 		return nil, fmt.Errorf("could not create docker client: %w", err)
 	}
 
-	excludedImageMatcher, err := NewStringMatcher(config.ExcludedImages)
+	excludedImageMatcher, err := newStringMatcher(config.ExcludedImages)
 	if err != nil {
 		return nil, fmt.Errorf("could not determine docker client excluded images: %w", err)
 	}
@@ -331,7 +331,7 @@ func (dc *Client) RemoveContainer(cid string) {
 }
 
 func (dc *Client) shouldBeExcluded(image string) bool {
-	return dc.excludedImageMatcher != nil && dc.excludedImageMatcher.Matches(image)
+	return dc.excludedImageMatcher != nil && dc.excludedImageMatcher.matches(image)
 }
 
 func ContainerEnvToMap(env []string) map[string]string {

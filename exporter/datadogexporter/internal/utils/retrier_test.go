@@ -29,7 +29,7 @@ import (
 
 func TestDoWithRetries(t *testing.T) {
 	scrubber := scrub.NewScrubber()
-	retrier := NewRetrier(zap.NewNop(), exporterhelper.DefaultRetrySettings(), scrubber)
+	retrier := NewRetrier(zap.NewNop(), exporterhelper.NewDefaultRetrySettings(), scrubber)
 	ctx := context.Background()
 
 	err := retrier.DoWithRetries(ctx, func(context.Context) error { return nil })

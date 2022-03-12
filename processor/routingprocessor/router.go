@@ -16,12 +16,12 @@ package routingprocessor // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -316,13 +316,34 @@ func (r *router) routeLogsForContext(ctx context.Context, tl pdata.Logs) routedL
 // registerExporters registers the exporters as per the configured routing table
 // taking into account the provided map of available exporters.
 func (r *router) registerExporters(hostExporters map[config.DataType]map[config.ComponentID]component.Exporter) error {
-	err := multierr.Combine(
-		r.registerTracesExporters(hostExporters[config.TracesDataType]),
-		r.registerMetricsExporters(hostExporters[config.MetricsDataType]),
-		r.registerLogsExporters(hostExporters[config.LogsDataType]),
-	)
-	if err != nil {
-		return err
+	for _, reg := range []struct {
+		registerFunc func(map[config.ComponentID]component.Exporter) error
+		typ          config.Type
+	}{
+		{
+			r.registerTracesExporters,
+			config.TracesDataType,
+		},
+		{
+			r.registerMetricsExporters,
+			config.MetricsDataType,
+		},
+		{
+			r.registerLogsExporters,
+			config.LogsDataType,
+		},
+	} {
+		if err := reg.registerFunc(hostExporters[reg.typ]); err != nil {
+			if errors.Is(err, errDefaultExporterNotFound) || errors.Is(err, errExporterNotFound) {
+				r.logger.Warn("can't find the exporter for the routing processor for this pipeline type. This is OK if you did not specify this processor for that pipeline type",
+					zap.Any("pipeline_type", reg.typ),
+					zap.Error(err),
+				)
+			} else {
+				// this seems to be more serious than what expected
+				return err
+			}
+		}
 	}
 
 	if len(r.defaultLogsExporters) == 0 &&
@@ -418,7 +439,7 @@ func (r *router) registerExportersForDefaultRoute(available ExporterMap) error {
 		v, ok := available[exp]
 		if !ok {
 			return fmt.Errorf("error registering default exporter %q: %w",
-				exp, errExporterNotFound,
+				exp, errDefaultExporterNotFound,
 			)
 		}
 

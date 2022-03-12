@@ -53,9 +53,3 @@ func TestRateLimiter(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, decision, Sampled)
 }
-
-func TestOnLateArrivingSpans_RateLimiter(t *testing.T) {
-	rateLimiter := NewRateLimiting(zap.NewNop(), 3)
-	err := rateLimiter.OnLateArrivingSpans(NotSampled, nil)
-	assert.Nil(t, err)
-}

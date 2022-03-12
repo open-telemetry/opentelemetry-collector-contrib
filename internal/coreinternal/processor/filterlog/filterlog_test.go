@@ -40,14 +40,14 @@ func TestLogRecord_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 		{
 			name:        "empty_property",
 			property:    filterconfig.MatchProperties{},
-			errorString: "at least one of \"log_names\", \"attributes\", \"libraries\" or \"resources\" field must be specified",
+			errorString: "at least one of \"attributes\", \"libraries\" or \"resources\" field must be specified",
 		},
 		{
 			name: "empty_log_names_and_attributes",
 			property: filterconfig.MatchProperties{
 				LogNames: []string{},
 			},
-			errorString: "at least one of \"log_names\", \"attributes\", \"libraries\" or \"resources\" field must be specified",
+			errorString: "at least one of \"attributes\", \"libraries\" or \"resources\" field must be specified",
 		},
 		{
 			name: "span_properties",
@@ -59,33 +59,25 @@ func TestLogRecord_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 		{
 			name: "invalid_match_type",
 			property: filterconfig.MatchProperties{
-				Config:   *createConfig("wrong_match_type"),
-				LogNames: []string{"abc"},
+				Config:     *createConfig("wrong_match_type"),
+				Attributes: []filterconfig.Attribute{{Key: "abc", Value: "def"}},
 			},
-			errorString: "error creating log record name filters: unrecognized match_type: 'wrong_match_type', valid types are: [regexp strict]",
+			errorString: "error creating attribute filters: unrecognized match_type: 'wrong_match_type', valid types are: [regexp strict]",
 		},
 		{
 			name: "missing_match_type",
 			property: filterconfig.MatchProperties{
-				LogNames: []string{"abc"},
+				Attributes: []filterconfig.Attribute{{Key: "abc", Value: "def"}},
 			},
-			errorString: "error creating log record name filters: unrecognized match_type: '', valid types are: [regexp strict]",
+			errorString: "error creating attribute filters: unrecognized match_type: '', valid types are: [regexp strict]",
 		},
 		{
 			name: "invalid_regexp_pattern",
 			property: filterconfig.MatchProperties{
-				Config:   *createConfig(filterset.Regexp),
-				LogNames: []string{"["},
+				Config:     *createConfig(filterset.Regexp),
+				Attributes: []filterconfig.Attribute{{Key: "abc", Value: "["}},
 			},
-			errorString: "error creating log record name filters: error parsing regexp: missing closing ]: `[`",
-		},
-		{
-			name: "invalid_regexp_pattern2",
-			property: filterconfig.MatchProperties{
-				Config:   *createConfig(filterset.Regexp),
-				LogNames: []string{"["},
-			},
-			errorString: "error creating log record name filters: error parsing regexp: missing closing ]: `[`",
+			errorString: "error creating attribute filters: error parsing regexp: missing closing ]: `[`",
 		},
 	}
 	for _, tc := range testcases {
@@ -104,35 +96,32 @@ func TestLogRecord_Matching_False(t *testing.T) {
 		properties *filterconfig.MatchProperties
 	}{
 		{
-			name: "log_name_doesnt_match",
+			name: "attributes_dont_match",
 			properties: &filterconfig.MatchProperties{
-				Config:     *createConfig(filterset.Regexp),
-				LogNames:   []string{"logNo.*Name"},
-				Attributes: []filterconfig.Attribute{},
+				Config: *createConfig(filterset.Regexp),
+				Attributes: []filterconfig.Attribute{
+					{Key: "abc", Value: "def"},
+				},
 			},
 		},
 
 		{
-			name: "log_name_doesnt_match_any",
+			name: "attributes_dont_match_regex",
 			properties: &filterconfig.MatchProperties{
 				Config: *createConfig(filterset.Regexp),
-				LogNames: []string{
-					"logNo.*Name",
-					"non-matching?pattern",
-					"regular string",
+				Attributes: []filterconfig.Attribute{
+					{Key: "ab.*c", Value: "def"},
 				},
-				Attributes: []filterconfig.Attribute{},
 			},
 		},
 	}
 
 	lr := pdata.NewLogRecord()
-	lr.SetName("logName")
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
 			matcher, err := NewMatcher(tc.properties)
 			assert.Nil(t, err)
-			assert.NotNil(t, matcher)
+			require.NotNil(t, matcher)
 
 			assert.False(t, matcher.MatchLogRecord(lr, pdata.Resource{}, pdata.InstrumentationLibrary{}))
 		})
@@ -145,36 +134,31 @@ func TestLogRecord_Matching_True(t *testing.T) {
 		properties *filterconfig.MatchProperties
 	}{
 		{
-			name: "log_name_match",
+			name: "attribute_strict_match",
 			properties: &filterconfig.MatchProperties{
-				Config:     *createConfig(filterset.Regexp),
-				LogNames:   []string{"log.*"},
-				Attributes: []filterconfig.Attribute{},
+				Config:     *createConfig(filterset.Strict),
+				Attributes: []filterconfig.Attribute{{Key: "abc", Value: "def"}},
 			},
 		},
 		{
-			name: "log_name_second_match",
+			name: "attribute_regex_match",
 			properties: &filterconfig.MatchProperties{
 				Config: *createConfig(filterset.Regexp),
-				LogNames: []string{
-					"wrong.*pattern",
-					"log.*",
-					"yet another?pattern",
-					"regularstring",
+				Attributes: []filterconfig.Attribute{
+					{Key: "abc", Value: "d.f"},
 				},
-				Attributes: []filterconfig.Attribute{},
 			},
 		},
 	}
 
 	lr := pdata.NewLogRecord()
-	lr.SetName("logName")
+	lr.Attributes().InsertString("abc", "def")
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
 			mp, err := NewMatcher(tc.properties)
-			assert.Nil(t, err)
-			assert.NotNil(t, mp)
+			assert.NoError(t, err)
+			require.NotNil(t, mp)
 
 			assert.NotNil(t, lr)
 			assert.True(t, mp.MatchLogRecord(lr, pdata.Resource{}, pdata.InstrumentationLibrary{}))

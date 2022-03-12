@@ -25,23 +25,26 @@ import (
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/ucal"
 )
 
-const metricsLen = 1
+const metricsLen = 2
 
 // scraper for CPU Metrics
 type scraper struct {
 	config *Config
 	mb     *metadata.MetricsBuilder
+	ucal   *ucal.CPUUtilizationCalculator
 
 	// for mocking
 	bootTime func() (uint64, error)
 	times    func(bool) ([]cpu.TimesStat, error)
+	now      func() time.Time
 }
 
 // newCPUScraper creates a set of CPU related metrics
 func newCPUScraper(_ context.Context, cfg *Config) *scraper {
-	return &scraper{config: cfg, bootTime: host.BootTime, times: cpu.Times}
+	return &scraper{config: cfg, bootTime: host.BootTime, times: cpu.Times, ucal: &ucal.CPUUtilizationCalculator{}, now: time.Now}
 }
 
 func (s *scraper) start(context.Context, component.Host) error {
@@ -57,7 +60,7 @@ func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 	md := pdata.NewMetrics()
 	metrics := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics()
 
-	now := pdata.NewTimestampFromTime(time.Now())
+	now := pdata.NewTimestampFromTime(s.now())
 	cpuTimes, err := s.times( /*percpu=*/ true)
 	if err != nil {
 		return md, scrapererror.NewPartialScrapeError(err, metricsLen)
@@ -66,6 +69,12 @@ func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 	for _, cpuTime := range cpuTimes {
 		s.recordCPUTimeStateDataPoints(now, cpuTime)
 	}
+
+	err = s.ucal.CalculateAndRecord(now, cpuTimes, s.recordCPUUtilization)
+	if err != nil {
+		return md, scrapererror.NewPartialScrapeError(err, metricsLen)
+	}
+
 	s.mb.Emit(metrics)
 	return md, nil
 }

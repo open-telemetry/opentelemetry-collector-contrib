@@ -39,7 +39,7 @@ func getMetricValue(metric pdata.Metric) float64 {
 	if metric.DataType() == pdata.MetricDataTypeGauge {
 		dataPoints := metric.Gauge().DataPoints()
 		if dataPoints.Len() > 0 {
-			switch dataPoints.At(0).Type() {
+			switch dataPoints.At(0).ValueType() {
 			case pdata.MetricValueTypeDouble:
 				return dataPoints.At(0).DoubleVal()
 			case pdata.MetricValueTypeInt:
@@ -75,7 +75,7 @@ func addDoubleGaugeDataPoints(from pdata.Metric, to pdata.Metric, operand2 float
 	for i := 0; i < dataPoints.Len(); i++ {
 		fromDataPoint := dataPoints.At(i)
 		var operand1 float64
-		switch fromDataPoint.Type() {
+		switch fromDataPoint.ValueType() {
 		case pdata.MetricValueTypeDouble:
 			operand1 = fromDataPoint.DoubleVal()
 		case pdata.MetricValueTypeInt:

@@ -18,7 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -547,7 +547,7 @@ func TestTraceBodyUnMarshalling(t *testing.T) {
 	}{
 		{
 			testCase:   "TestTraceBodyCorrectlyUnmarshalledForInstrumentedApp",
-			samplePath: path.Join("testdata", "ddbSample.txt"),
+			samplePath: filepath.Join("testdata", "ddbSample.txt"),
 			verification: func(testCase string, actualSeg Segment, err error) {
 				assert.NoError(t, err, testCase+": JSON Unmarshalling should've succeeded")
 
@@ -557,7 +557,7 @@ func TestTraceBodyUnMarshalling(t *testing.T) {
 		},
 		{
 			testCase:   "TestTraceBodyInProgressUnmarshalled",
-			samplePath: path.Join("testdata", "minInProgress.txt"),
+			samplePath: filepath.Join("testdata", "minInProgress.txt"),
 			verification: func(testCase string, actualSeg Segment, err error) {
 				assert.NoError(t, err, testCase+": JSON Unmarshalling should've succeeded")
 
@@ -572,7 +572,7 @@ func TestTraceBodyUnMarshalling(t *testing.T) {
 		},
 		{
 			testCase:   "TestTraceBodyOtherTopLevelFieldsUnmarshalled",
-			samplePath: path.Join("testdata", "minOtherFields.txt"),
+			samplePath: filepath.Join("testdata", "minOtherFields.txt"),
 			verification: func(testCase string, actualSeg Segment, err error) {
 				assert.NoError(t, err, testCase+": JSON Unmarshalling should've succeeded")
 
@@ -593,7 +593,7 @@ func TestTraceBodyUnMarshalling(t *testing.T) {
 		},
 		{
 			testCase:   "TestTraceBodyCauseIsExceptionIdUnmarshalled",
-			samplePath: path.Join("testdata", "minCauseIsExceptionId.txt"),
+			samplePath: filepath.Join("testdata", "minCauseIsExceptionId.txt"),
 			verification: func(testCase string, actualSeg Segment, err error) {
 				assert.NoError(t, err, testCase+": JSON Unmarshalling should've succeeded")
 
@@ -614,7 +614,7 @@ func TestTraceBodyUnMarshalling(t *testing.T) {
 		},
 		{
 			testCase:   "TestTraceBodyInvalidCauseUnmarshalled",
-			samplePath: path.Join("testdata", "minCauseIsInvalid.txt"),
+			samplePath: filepath.Join("testdata", "minCauseIsInvalid.txt"),
 			verification: func(testCase string, _ Segment, err error) {
 				assert.EqualError(t, err,
 					fmt.Sprintf(
@@ -626,7 +626,7 @@ func TestTraceBodyUnMarshalling(t *testing.T) {
 		},
 		{
 			testCase:   "TestTraceBodyCorrectlyUnmarshalledForInstrumentedServer",
-			samplePath: path.Join("testdata", "serverSample.txt"),
+			samplePath: filepath.Join("testdata", "serverSample.txt"),
 			verification: func(testCase string, actualSeg Segment, err error) {
 				assert.NoError(t, err, testCase+": JSON Unmarshalling should've succeeded")
 

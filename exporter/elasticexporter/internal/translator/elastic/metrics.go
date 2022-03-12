@@ -44,7 +44,7 @@ func EncodeMetrics(otlpMetrics pdata.MetricSlice, otlpLibrary pdata.Instrumentat
 			for i := 0; i < dps.Len(); i++ {
 				dp := dps.At(i)
 				var val float64
-				switch dp.Type() {
+				switch dp.ValueType() {
 				case pdata.MetricValueTypeDouble:
 					val = dp.DoubleVal()
 				case pdata.MetricValueTypeInt:
@@ -64,7 +64,7 @@ func EncodeMetrics(otlpMetrics pdata.MetricSlice, otlpLibrary pdata.Instrumentat
 			for i := 0; i < dps.Len(); i++ {
 				dp := dps.At(i)
 				var val float64
-				switch dp.Type() {
+				switch dp.ValueType() {
 				case pdata.MetricValueTypeDouble:
 					val = dp.DoubleVal()
 				case pdata.MetricValueTypeInt:
