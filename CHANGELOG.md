@@ -4,6 +4,7 @@
 
 ### 💡 Enhancements 💡
 
+- `attributesprocessor`: Add convert action (#7930)
 - `attributesprocessor`: Add metric support (#8111)
 - `prometheusremotewriteexporter`: Write-Ahead Log support enabled (#7304)
 - `hostreceiver/filesystemscraper`: Add filesystem utilization (#8027)
@@ -87,7 +88,6 @@
 - `splunkhecexporter`: Batch metrics payloads (#7760)
 - `tanzuobservabilityexporter`: Add internal SDK metric tag (#7826)
 - `hostreceiver/processscraper`: Migrate the scraper to the mdatagen metrics builder (#7287)
-- `attributesprocessor`: Add convert action (#7930)
 
 ### 🧰 Bug fixes 🧰
 
