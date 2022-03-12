@@ -101,8 +101,8 @@ func TestCreateLogsExporter_err(t *testing.T) {
 	assert.Nil(t, mr)
 }
 
-func TestWithMarshalers(t *testing.T) {
-	cm := &customMarshaler{}
+func TestWithTracesMarshalers(t *testing.T) {
+	cm := &customTracesMarshaler{}
 	f := NewFactory(WithTracesMarshalers(cm))
 	cfg := createDefaultConfig().(*Config)
 	// disable contacting broker
@@ -122,15 +122,81 @@ func TestWithMarshalers(t *testing.T) {
 	})
 }
 
-type customMarshaler struct {
-}
+type customTracesMarshaler struct {}
 
-var _ TracesMarshaler = (*customMarshaler)(nil)
+var _ TracesMarshaler = (*customTracesMarshaler)(nil)
 
-func (c customMarshaler) Marshal(_ pdata.Traces, topic string) ([]*sarama.ProducerMessage, error) {
+func (c customTracesMarshaler) Marshal(_ pdata.Traces, topic string) ([]*sarama.ProducerMessage, error) {
 	panic("implement me")
 }
 
-func (c customMarshaler) Encoding() string {
+func (c customTracesMarshaler) Encoding() string {
 	return "custom"
 }
+
+func TestWithLogsMarshalers(t *testing.T) {
+	cm := &customLogsMarshaler{}
+	f := NewFactory(WithLogsMarshalers(cm))
+	cfg := createDefaultConfig().(*Config)
+	// disable contacting broker
+	cfg.Metadata.Full = false
+
+	t.Run("custom_encoding", func(t *testing.T) {
+		cfg.Encoding = cm.Encoding()
+		exporter, err := f.CreateLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
+		require.NoError(t, err)
+		require.NotNil(t, exporter)
+	})
+	t.Run("default_encoding", func(t *testing.T) {
+		cfg.Encoding = defaultEncoding
+		exporter, err := f.CreateLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
+		require.NoError(t, err)
+		assert.NotNil(t, exporter)
+	})
+}
+
+type customLogsMarshaler struct {}
+
+var _ LogsMarshaler = (*customLogsMarshaler)(nil)
+
+func (c customLogsMarshaler) Marshal(logs pdata.Logs, topic string) ([]*sarama.ProducerMessage, error) {
+	panic("implement me")
+}
+
+func (c customLogsMarshaler) Encoding() string {
+	return "custom"
+}
+
+func TestWithMetricsMarshalers(t *testing.T) {
+	cm := &customMetricsMarshaler{}
+	f := NewFactory(WithMetricsMarshalers(cm))
+	cfg := createDefaultConfig().(*Config)
+	// disable contacting broker
+	cfg.Metadata.Full = false
+
+	t.Run("custom_encoding", func(t *testing.T) {
+		cfg.Encoding = cm.Encoding()
+		exporter, err := f.CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
+		require.NoError(t, err)
+		require.NotNil(t, exporter)
+	})
+	t.Run("default_encoding", func(t *testing.T) {
+		cfg.Encoding = defaultEncoding
+		exporter, err := f.CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
+		require.NoError(t, err)
+		assert.NotNil(t, exporter)
+	})
+}
+
+type customMetricsMarshaler struct {}
+
+var _ MetricsMarshaler = (*customMetricsMarshaler)(nil)
+
+func (c customMetricsMarshaler) Marshal(metrics pdata.Metrics, topic string) ([]*sarama.ProducerMessage, error) {
+	panic("implement me")
+}
+
+func (c customMetricsMarshaler) Encoding() string {
+	return "custom"
+}
+
