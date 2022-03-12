@@ -16,7 +16,7 @@ package attributes // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes/azure"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes/ec2"

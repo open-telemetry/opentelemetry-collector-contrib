@@ -118,17 +118,10 @@ func (z *zookeeperMetricsScraper) getResourceMetrics(conn net.Conn) (pdata.Metri
 		return pdata.NewMetrics(), err
 	}
 
-	md := pdata.NewMetrics()
-	z.appendMetrics(scanner, md.ResourceMetrics())
-	return md, nil
-}
-
-func (z *zookeeperMetricsScraper) appendMetrics(scanner *bufio.Scanner, rms pdata.ResourceMetricsSlice) {
+	md := z.mb.NewMetricData()
 	creator := newMetricCreator(z.mb)
 	now := pdata.NewTimestampFromTime(time.Now())
-	rm := pdata.NewResourceMetrics()
-	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName("otelcol/zookeeper")
+	rm := md.ResourceMetrics().At(0)
 	for scanner.Scan() {
 		line := scanner.Text()
 		parts := zookeeperFormatRE.FindStringSubmatch(line)
@@ -171,10 +164,8 @@ func (z *zookeeperMetricsScraper) appendMetrics(scanner *bufio.Scanner, rms pdat
 	// Generate computed metrics
 	creator.generateComputedMetrics(z.logger, now)
 
-	z.mb.Emit(ilm.Metrics())
-	if ilm.Metrics().Len() > 0 {
-		rm.CopyTo(rms.AppendEmpty())
-	}
+	z.mb.Emit(rm.InstrumentationLibraryMetrics().At(0).Metrics())
+	return md, nil
 }
 
 func closeConnection(conn net.Conn) error {

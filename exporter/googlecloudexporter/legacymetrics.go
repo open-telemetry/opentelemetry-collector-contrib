@@ -20,17 +20,17 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
-	cloudtrace "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace"
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"go.opencensus.io/plugin/ocgrpc"
+	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -38,18 +38,9 @@ import (
 	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
-// traceExporter is a wrapper struct of OT cloud trace exporter
-type traceExporter struct {
-	texporter *cloudtrace.Exporter
-}
-
 // metricsExporter is a wrapper struct of OC stackdriver exporter
 type metricsExporter struct {
 	mexporter *stackdriver.Exporter
-}
-
-func (te *traceExporter) Shutdown(ctx context.Context) error {
-	return te.texporter.Shutdown(ctx)
 }
 
 func (me *metricsExporter) Shutdown(context.Context) error {
@@ -58,11 +49,11 @@ func (me *metricsExporter) Shutdown(context.Context) error {
 	return me.mexporter.Close()
 }
 
-func setVersionInUserAgent(cfg *Config, version string) {
+func setVersionInUserAgent(cfg *LegacyConfig, version string) {
 	cfg.UserAgent = strings.ReplaceAll(cfg.UserAgent, "{{version}}", version)
 }
 
-func generateClientOptions(cfg *Config) ([]option.ClientOption, error) {
+func generateClientOptions(cfg *LegacyConfig) ([]option.ClientOption, error) {
 	var copts []option.ClientOption
 	// option.WithUserAgent is used by the Trace exporter, but not the Metric exporter (see comment below)
 	if cfg.UserAgent != "" {
@@ -91,40 +82,14 @@ func generateClientOptions(cfg *Config) ([]option.ClientOption, error) {
 	return copts, nil
 }
 
-func newGoogleCloudTracesExporter(cfg *Config, set component.ExporterCreateSettings) (component.TracesExporter, error) {
-	setVersionInUserAgent(cfg, set.BuildInfo.Version)
+var once sync.Once
 
-	topts := []cloudtrace.Option{
-		cloudtrace.WithProjectID(cfg.ProjectID),
-		cloudtrace.WithTimeout(cfg.Timeout),
-	}
-
-	copts, err := generateClientOptions(cfg)
-	if err != nil {
-		return nil, err
-	}
-	topts = append(topts, cloudtrace.WithTraceClientOptions(copts))
-
-	exp, err := cloudtrace.New(topts...)
-	if err != nil {
-		return nil, fmt.Errorf("error creating GoogleCloud Trace exporter: %w", err)
-	}
-
-	tExp := &traceExporter{texporter: exp}
-
-	return exporterhelper.NewTracesExporter(
-		cfg,
-		set,
-		tExp.pushTraces,
-		exporterhelper.WithShutdown(tExp.Shutdown),
-		// Disable exporterhelper Timeout, since we are using a custom mechanism
-		// within exporter itself
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithQueue(cfg.QueueSettings),
-		exporterhelper.WithRetry(cfg.RetrySettings))
-}
-
-func newGoogleCloudMetricsExporter(cfg *Config, set component.ExporterCreateSettings) (component.MetricsExporter, error) {
+func newLegacyGoogleCloudMetricsExporter(cfg *LegacyConfig, set component.ExporterCreateSettings) (component.MetricsExporter, error) {
+	// register view for self-observability
+	once.Do(func() {
+		view.Register(viewPointCount)
+		view.Register(ocgrpc.DefaultClientViews...)
+	})
 	setVersionInUserAgent(cfg, set.BuildInfo.Version)
 
 	// TODO:  For each ProjectID, create a different exporter
@@ -233,18 +198,6 @@ func exportAdditionalLabels(mds []*agentmetricspb.ExportMetricsServiceRequest) [
 		md.Resource.Labels[conventions.AttributeHostName] = md.Node.Identifier.HostName
 	}
 	return mds
-}
-
-// pushTraces calls texporter.ExportSpan for each span in the given traces
-func (te *traceExporter) pushTraces(ctx context.Context, td pdata.Traces) error {
-	resourceSpans := td.ResourceSpans()
-	spans := make([]sdktrace.ReadOnlySpan, 0, td.SpanCount())
-	for i := 0; i < resourceSpans.Len(); i++ {
-		sd := pdataResourceSpansToOTSpanData(resourceSpans.At(i))
-		spans = append(spans, sd...)
-	}
-
-	return te.texporter.ExportSpans(ctx, spans)
 }
 
 func numPoints(metrics []*metricspb.Metric) int {

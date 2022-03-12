@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 )
 
 // HumioLink represents a relation between two spans
@@ -163,10 +163,10 @@ func (e *humioTracesExporter) tracesToHumioEvents(td pdata.Traces) ([]*HumioStru
 func (e *humioTracesExporter) spanToHumioEvent(span pdata.Span, inst pdata.InstrumentationLibrary, res pdata.Resource) *HumioStructuredEvent {
 	attr := toHumioAttributes(span.Attributes(), res.Attributes())
 	if instName := inst.Name(); instName != "" {
-		attr[conventions.InstrumentationLibraryName] = instName
+		attr[conventions.OtelLibraryName] = instName
 	}
 	if instVer := inst.Version(); instVer != "" {
-		attr[conventions.InstrumentationLibraryVersion] = instVer
+		attr[conventions.OtelLibraryVersion] = instVer
 	}
 
 	serviceName := ""

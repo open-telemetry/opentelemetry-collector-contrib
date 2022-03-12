@@ -20,7 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 )
 
 func TestTagsFromAttributes(t *testing.T) {
@@ -80,4 +80,46 @@ func TestContainerTagFromAttributesEmpty(t *testing.T) {
 	attributeMap := map[string]string{}
 
 	assert.Equal(t, empty, ContainerTagFromAttributes(attributeMap))
+}
+
+func TestOriginIDFromAttributes(t *testing.T) {
+	tests := []struct {
+		name     string
+		attrs    pdata.AttributeMap
+		originID string
+	}{
+		{
+			name: "pod UID and container ID",
+			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
+				conventions.AttributeContainerID: pdata.NewAttributeValueString("container_id_goes_here"),
+				conventions.AttributeK8SPodUID:   pdata.NewAttributeValueString("k8s_pod_uid_goes_here"),
+			}),
+			originID: "container_id://container_id_goes_here",
+		},
+		{
+			name: "only container ID",
+			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
+				conventions.AttributeContainerID: pdata.NewAttributeValueString("container_id_goes_here"),
+			}),
+			originID: "container_id://container_id_goes_here",
+		},
+		{
+			name: "only pod UID",
+			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
+				conventions.AttributeK8SPodUID: pdata.NewAttributeValueString("k8s_pod_uid_goes_here"),
+			}),
+			originID: "kubernetes_pod_uid://k8s_pod_uid_goes_here",
+		},
+		{
+			name:  "none",
+			attrs: pdata.NewAttributeMap(),
+		},
+	}
+
+	for _, testInstance := range tests {
+		t.Run(testInstance.name, func(t *testing.T) {
+			originID := OriginIDFromAttributes(testInstance.attrs)
+			assert.Equal(t, testInstance.originID, originID)
+		})
+	}
 }

@@ -42,8 +42,8 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, apiConfig, &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID("coralogix")),
-		QueueSettings:    exporterhelper.DefaultQueueSettings(),
-		RetrySettings:    exporterhelper.DefaultRetrySettings(),
+		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
+		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
 		PrivateKey:       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 		AppName:          "APP_NAME",
 		SubSystem:        "SUBSYSTEM_NAME",

@@ -44,16 +44,16 @@ func TestDaemonsetMetrics(t *testing.T) {
 		},
 	)
 
-	testutils.AssertMetrics(t, rm.metrics[0], "k8s.daemonset.current_scheduled_nodes",
+	testutils.AssertMetricsInt(t, rm.metrics[0], "k8s.daemonset.current_scheduled_nodes",
 		metricspb.MetricDescriptor_GAUGE_INT64, 3)
 
-	testutils.AssertMetrics(t, rm.metrics[1], "k8s.daemonset.desired_scheduled_nodes",
+	testutils.AssertMetricsInt(t, rm.metrics[1], "k8s.daemonset.desired_scheduled_nodes",
 		metricspb.MetricDescriptor_GAUGE_INT64, 5)
 
-	testutils.AssertMetrics(t, rm.metrics[2], "k8s.daemonset.misscheduled_nodes",
+	testutils.AssertMetricsInt(t, rm.metrics[2], "k8s.daemonset.misscheduled_nodes",
 		metricspb.MetricDescriptor_GAUGE_INT64, 1)
 
-	testutils.AssertMetrics(t, rm.metrics[3], "k8s.daemonset.ready_nodes",
+	testutils.AssertMetricsInt(t, rm.metrics[3], "k8s.daemonset.ready_nodes",
 		metricspb.MetricDescriptor_GAUGE_INT64, 2)
 }
 

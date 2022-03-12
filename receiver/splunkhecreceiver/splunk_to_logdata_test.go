@@ -19,7 +19,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -189,7 +189,6 @@ func Test_SplunkHecToLogData(t *testing.T) {
 				lr := lrs.AppendEmpty()
 				ill := lr.InstrumentationLibraryLogs().AppendEmpty()
 				logRecord := ill.LogRecords().AppendEmpty()
-				logRecord.SetName("mysourcetype")
 				logRecord.Body().SetStringVal("value")
 				logRecord.SetTimestamp(pdata.Timestamp(0))
 				logRecord.Attributes().InsertString("myhost", "localhost")
@@ -217,7 +216,6 @@ func createLogsSlice(nanoseconds int) pdata.ResourceLogsSlice {
 	lr := lrs.AppendEmpty()
 	ill := lr.InstrumentationLibraryLogs().AppendEmpty()
 	logRecord := ill.LogRecords().AppendEmpty()
-	logRecord.SetName("mysourcetype")
 	logRecord.Body().SetStringVal("value")
 	logRecord.SetTimestamp(pdata.Timestamp(nanoseconds))
 	logRecord.Attributes().InsertString("host.name", "localhost")

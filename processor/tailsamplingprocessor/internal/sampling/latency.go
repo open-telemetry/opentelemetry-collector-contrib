@@ -34,15 +34,6 @@ func NewLatency(logger *zap.Logger, thresholdMs int64) PolicyEvaluator {
 	}
 }
 
-// OnLateArrivingSpans notifies the evaluator that the given list of spans arrived
-// after the sampling decision was already taken for the trace.
-// This gives the evaluator a chance to log any message/metrics and/or update any
-// related internal state.
-func (l *latency) OnLateArrivingSpans(Decision, []*pdata.Span) error {
-	l.logger.Debug("Triggering action for late arriving spans in latency filter")
-	return nil
-}
-
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
 func (l *latency) Evaluate(_ pdata.TraceID, traceData *TraceData) (Decision, error) {
 	l.logger.Debug("Evaluating spans in latency filter")

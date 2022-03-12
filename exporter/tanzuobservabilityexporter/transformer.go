@@ -16,6 +16,7 @@ package tanzuobservabilityexporter // import "github.com/open-telemetry/opentele
 
 import (
 	"errors"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -51,6 +52,7 @@ type span struct {
 	StartMillis    int64
 	DurationMillis int64
 	SpanLogs       []senders.SpanLog
+	Source         string
 }
 
 func (t *traceTransformer) Span(orig pdata.Span) (span, error) {
@@ -66,10 +68,23 @@ func (t *traceTransformer) Span(orig pdata.Span) (span, error) {
 
 	startMillis, durationMillis := calculateTimes(orig)
 
-	tags := attributesToTags(t.resAttrs, orig.Attributes())
+	source, attributesWithoutSource := getSourceAndResourceTags(t.resAttrs)
+	tags := attributesToTags(attributesWithoutSource, orig.Attributes())
 	t.setRequiredTags(tags)
 
 	tags[labelSpanKind] = spanKind(orig)
+
+	if droppedEventsCount := orig.DroppedEventsCount(); droppedEventsCount > 0 {
+		tags[labelDroppedEventsCount] = strconv.FormatUint(uint64(droppedEventsCount), 10)
+	}
+
+	if droppedLinksCount := orig.DroppedLinksCount(); droppedLinksCount > 0 {
+		tags[labelDroppedLinksCount] = strconv.FormatUint(uint64(droppedLinksCount), 10)
+	}
+
+	if droppedAttrsCount := orig.DroppedAttributesCount(); droppedAttrsCount > 0 {
+		tags[labelDroppedAttrsCount] = strconv.FormatUint(uint64(droppedAttrsCount), 10)
+	}
 
 	errorTags := errorTagsFromStatus(orig.Status())
 	for k, v := range errorTags {
@@ -86,10 +101,36 @@ func (t *traceTransformer) Span(orig pdata.Span) (span, error) {
 		SpanID:         spanID,
 		ParentSpanID:   parentSpanIDtoUUID(orig.ParentSpanID()),
 		Tags:           tags,
+		Source:         source,
 		StartMillis:    startMillis,
 		DurationMillis: durationMillis,
 		SpanLogs:       eventsToLogs(orig.Events()),
 	}, nil
+}
+
+func getSourceAndResourceTags(attributes pdata.AttributeMap) (string, map[string]string) {
+	candidateKeys := []string{labelSource, conventions.AttributeHostName, "hostname", conventions.AttributeHostID}
+
+	attributesWithoutSource := map[string]string{}
+	var source string
+
+	extractTag := func(k string, v pdata.AttributeValue) bool {
+		attributesWithoutSource[k] = v.AsString()
+		return true
+	}
+
+	attributes.Range(extractTag)
+
+	for _, key := range candidateKeys {
+		if value, isFound := attributesWithoutSource[key]; isFound {
+			source = value
+			delete(attributesWithoutSource, key)
+			break
+		}
+	}
+
+	//returning an empty source is fine as wavefront.go.sdk will set it up to a default value(os.hostname())
+	return source, attributesWithoutSource
 }
 
 func spanKind(span pdata.Span) string {
@@ -129,7 +170,7 @@ func eventsToLogs(events pdata.SpanEventSlice) []senders.SpanLog {
 	var result []senders.SpanLog
 	for i := 0; i < events.Len(); i++ {
 		e := events.At(i)
-		fields := attributesToTags(e.Attributes())
+		fields := attributesToTags(nil, e.Attributes())
 		fields[labelEventName] = e.Name()
 		result = append(result, senders.SpanLog{
 			Timestamp: int64(e.Timestamp()) / time.Microsecond.Nanoseconds(), // Timestamp is in microseconds
@@ -151,19 +192,24 @@ func calculateTimes(span pdata.Span) (int64, int64) {
 	return startMillis, durationMillis
 }
 
-func attributesToTags(attributes ...pdata.AttributeMap) map[string]string {
-	tags := map[string]string{}
+func attributesToTags(attributesWithoutSource map[string]string, attributes pdata.AttributeMap) map[string]string {
+	tags := make(map[string]string)
 
-	extractTag := func(k string, v pdata.AttributeValue) bool {
-		tags[k] = v.AsString()
+	for key, val := range attributesWithoutSource {
+		tags[key] = val
+	}
+
+	// Since AttributeMaps are processed later, its values overwrite earlier ones
+	attributes.Range(func(key string, value pdata.AttributeValue) bool {
+		tags[key] = value.AsString()
 		return true
-	}
+	})
 
-	// Since AttributeMaps are processed in the order received, later values overwrite earlier ones
-	for _, att := range attributes {
-		att.Range(extractTag)
+	if value, isFound := tags[labelSource]; isFound {
+		source := value
+		delete(tags, labelSource)
+		tags["_source"] = source
 	}
-
 	return tags
 }
 

@@ -15,9 +15,8 @@
 package resourcedetectionprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 
 import (
-	"time"
-
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confighttp"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
@@ -32,14 +31,14 @@ type Config struct {
 	// Detectors is an ordered list of named detectors that should be
 	// run to attempt to detect resource information.
 	Detectors []string `mapstructure:"detectors"`
-	// Timeout specifies the maximum amount of time that we will wait
-	// before assuming a detector has failed. Defaults to 5s.
-	Timeout time.Duration `mapstructure:"timeout"`
 	// Override indicates whether any existing resource attributes
 	// should be overridden or preserved. Defaults to true.
 	Override bool `mapstructure:"override"`
 	// DetectorConfig is a list of settings specific to all detectors
 	DetectorConfig DetectorConfig `mapstructure:",squash"`
+	// HTTP client settings for the detector
+	// Timeout default is 5s
+	confighttp.HTTPClientSettings `mapstructure:",squash"`
 }
 
 // DetectorConfig contains user-specified configurations unique to all individual detectors

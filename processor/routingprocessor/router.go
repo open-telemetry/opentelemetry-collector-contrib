@@ -334,8 +334,8 @@ func (r *router) registerExporters(hostExporters map[config.DataType]map[config.
 		},
 	} {
 		if err := reg.registerFunc(hostExporters[reg.typ]); err != nil {
-			if errors.Is(err, errDefaultExporterNotFound) {
-				r.logger.Warn("can't find the default exporter for the routing processor for this pipeline type. This is OK if you did not specify this processor for that pipeline type",
+			if errors.Is(err, errDefaultExporterNotFound) || errors.Is(err, errExporterNotFound) {
+				r.logger.Warn("can't find the exporter for the routing processor for this pipeline type. This is OK if you did not specify this processor for that pipeline type",
 					zap.Any("pipeline_type", reg.typ),
 					zap.Error(err),
 				)

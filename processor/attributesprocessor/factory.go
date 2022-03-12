@@ -25,6 +25,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterlog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filtermetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterspan"
 )
 
@@ -37,11 +38,12 @@ var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
 // NewFactory returns a new factory for the Attributes processor.
 func NewFactory() component.ProcessorFactory {
-	return processorhelper.NewFactory(
+	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		processorhelper.WithTraces(createTracesProcessor),
-		processorhelper.WithLogs(createLogProcessor))
+		component.WithTracesProcessor(createTracesProcessor),
+		component.WithLogsProcessor(createLogProcessor),
+		component.WithMetricsProcessor(createMetricsProcessor))
 }
 
 // Note: This isn't a valid configuration because the processor would do no work.
@@ -113,5 +115,39 @@ func createLogProcessor(
 		cfg,
 		nextConsumer,
 		newLogAttributesProcessor(attrProc, include, exclude).processLogs,
+		processorhelper.WithCapabilities(processorCapabilities))
+}
+
+func createMetricsProcessor(
+	_ context.Context,
+	params component.ProcessorCreateSettings,
+	cfg config.Processor,
+	nextConsumer consumer.Metrics,
+) (component.MetricsProcessor, error) {
+
+	oCfg := cfg.(*Config)
+	if len(oCfg.Actions) == 0 {
+		return nil, fmt.Errorf("error creating \"attributes\" processor due to missing required field \"actions\" of processor %v", cfg.ID())
+	}
+
+	attrProc, err := attraction.NewAttrProc(&oCfg.Settings)
+	if err != nil {
+		return nil, fmt.Errorf("error creating \"attributes\" processor: %w of processor %v", err, cfg.ID())
+	}
+
+	include, err := filtermetric.NewMatcher(filtermetric.CreateMatchPropertiesFromDefault(oCfg.Include))
+	if err != nil {
+		return nil, err
+	}
+
+	exclude, err := filtermetric.NewMatcher(filtermetric.CreateMatchPropertiesFromDefault(oCfg.Exclude))
+	if err != nil {
+		return nil, err
+	}
+
+	return processorhelper.NewMetricsProcessor(
+		cfg,
+		nextConsumer,
+		newMetricAttributesProcessor(params.Logger, attrProc, include, exclude).processMetrics,
 		processorhelper.WithCapabilities(processorCapabilities))
 }

@@ -8,7 +8,7 @@ import (
 )
 
 // Type is the component type name.
-const Type config.Type = "processes"
+const Type config.Type = "hostmetricsreceiver/processes"
 
 // MetricIntf is an interface to generically interact with generated metric.
 type MetricIntf interface {

@@ -256,9 +256,3 @@ func newTraceStringAttrs(nodeAttrs map[string]pdata.AttributeValue, spanAttrKey 
 		ReceivedBatches: traceBatches,
 	}
 }
-
-func TestOnLateArrivingSpans_StringAttribute(t *testing.T) {
-	filter := NewStringAttributeFilter(zap.NewNop(), "example", []string{"value"}, false, defaultCacheSize, false)
-	err := filter.OnLateArrivingSpans(NotSampled, nil)
-	assert.Nil(t, err)
-}

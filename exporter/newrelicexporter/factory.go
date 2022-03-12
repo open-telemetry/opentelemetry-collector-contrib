@@ -35,12 +35,12 @@ var once sync.Once
 func NewFactory() component.ExporterFactory {
 	view.Register(MetricViews()...)
 
-	return exporterhelper.NewFactory(
+	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTracesExporter),
-		exporterhelper.WithMetrics(createMetricsExporter),
-		exporterhelper.WithLogs(createLogsExporter),
+		component.WithTracesExporter(createTracesExporter),
+		component.WithMetricsExporter(createMetricsExporter),
+		component.WithLogsExporter(createLogsExporter),
 	)
 }
 
@@ -51,12 +51,12 @@ func logDeprecation(logger *zap.Logger) {
 }
 
 func createDefaultConfig() config.Exporter {
-	defaultRetry := exporterhelper.DefaultRetrySettings()
+	defaultRetry := exporterhelper.NewDefaultRetrySettings()
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 
 		CommonConfig: EndpointConfig{
-			TimeoutSettings: exporterhelper.DefaultTimeoutSettings(),
+			TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 			RetrySettings:   defaultRetry,
 		},
 	}

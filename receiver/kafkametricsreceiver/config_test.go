@@ -41,7 +41,7 @@ func TestLoadConfig(t *testing.T) {
 
 	r := cfg.Receivers[config.NewComponentID(typeStr)].(*Config)
 	assert.Equal(t, &Config{
-		ScraperControllerSettings: scraperhelper.DefaultScraperControllerSettings(typeStr),
+		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
 		Brokers:                   []string{"10.10.10.10:9092"},
 		ProtocolVersion:           "2.0.0",
 		TopicMatch:                "test_\\w+",

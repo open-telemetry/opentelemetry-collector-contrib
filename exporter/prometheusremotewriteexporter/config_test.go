@@ -52,7 +52,7 @@ func Test_loadConfig(t *testing.T) {
 	assert.Equal(t, e1,
 		&Config{
 			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "2")),
-			TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
+			TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
 			RetrySettings: exporterhelper.RetrySettings{
 				Enabled:         true,
 				InitialInterval: 10 * time.Second,

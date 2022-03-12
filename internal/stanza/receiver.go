@@ -19,11 +19,12 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/open-telemetry/opentelemetry-log-collection/agent"
+	"github.com/open-telemetry/opentelemetry-log-collection/pipeline"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
@@ -33,12 +34,13 @@ type receiver struct {
 	wg     sync.WaitGroup
 	cancel context.CancelFunc
 
-	agent         *agent.LogAgent
+	pipe          pipeline.Pipeline
 	emitter       *LogEmitter
 	consumer      consumer.Logs
 	storageClient storage.Client
 	converter     *Converter
 	logger        *zap.Logger
+	obsrecv       *obsreport.Receiver
 }
 
 // Ensure this receiver adheres to required interface
@@ -54,7 +56,7 @@ func (r *receiver) Start(ctx context.Context, host component.Host) error {
 		return fmt.Errorf("storage client: %s", setErr)
 	}
 
-	if obsErr := r.agent.Start(r.getPersister()); obsErr != nil {
+	if obsErr := r.pipe.Start(r.getPersister()); obsErr != nil {
 		return fmt.Errorf("start stanza: %s", obsErr)
 	}
 
@@ -113,7 +115,6 @@ func (r *receiver) consumerLoop(ctx context.Context) {
 	// Don't create done channel on every iteration.
 	doneChan := ctx.Done()
 	pLogsChan := r.converter.OutChannel()
-
 	for {
 		select {
 		case <-doneChan:
@@ -125,9 +126,12 @@ func (r *receiver) consumerLoop(ctx context.Context) {
 				r.logger.Debug("Converter channel got closed")
 				continue
 			}
-			if cErr := r.consumer.ConsumeLogs(ctx, pLogs); cErr != nil {
+			obsrecvCtx := r.obsrecv.StartLogsOp(ctx)
+			cErr := r.consumer.ConsumeLogs(ctx, pLogs)
+			if cErr != nil {
 				r.logger.Error("ConsumeLogs() failed", zap.Error(cErr))
 			}
+			r.obsrecv.EndLogsOp(obsrecvCtx, "stanza", pLogs.LogRecordCount(), cErr)
 		}
 	}
 }
@@ -135,11 +139,11 @@ func (r *receiver) consumerLoop(ctx context.Context) {
 // Shutdown is invoked during service shutdown
 func (r *receiver) Shutdown(ctx context.Context) error {
 	r.logger.Info("Stopping stanza receiver")
-	agentErr := r.agent.Stop()
+	pipelineErr := r.pipe.Stop()
 	r.converter.Stop()
 	r.cancel()
 	r.wg.Wait()
 
 	clientErr := r.storageClient.Close(ctx)
-	return multierr.Combine(agentErr, clientErr)
+	return multierr.Combine(pipelineErr, clientErr)
 }

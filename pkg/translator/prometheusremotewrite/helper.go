@@ -15,6 +15,7 @@
 package prometheusremotewrite // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
 
 import (
+	"fmt"
 	"log"
 	"math"
 	"sort"
@@ -28,6 +29,7 @@ import (
 	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/prompb"
 	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 )
 
 const (
@@ -149,33 +151,53 @@ func createAttributes(resource pdata.Resource, attributes pdata.AttributeMap, ex
 	// map ensures no duplicate label name
 	l := map[string]prompb.Label{}
 
-	for key, value := range externalLabels {
-		// External labels have already been sanitized
-		l[key] = prompb.Label{
-			Name:  key,
-			Value: value,
+	// Map service.name + service.namespace to job
+	if serviceName, ok := resource.Attributes().Get(conventions.AttributeServiceName); ok {
+		val := serviceName.AsString()
+		if serviceNamespace, ok := resource.Attributes().Get(conventions.AttributeServiceNamespace); ok {
+			val = fmt.Sprintf("%s/%s", serviceNamespace.AsString(), val)
+		}
+		l[model.JobLabel] = prompb.Label{
+			Name:  model.JobLabel,
+			Value: val,
+		}
+	}
+	// Map service.instance.id to instance
+	if instance, ok := resource.Attributes().Get(conventions.AttributeServiceInstanceID); ok {
+		l[model.InstanceLabel] = prompb.Label{
+			Name:  model.InstanceLabel,
+			Value: instance.AsString(),
 		}
 	}
 
-	resource.Attributes().Range(func(key string, value pdata.AttributeValue) bool {
-		if isUsefulResourceAttribute(key) {
-			l[key] = prompb.Label{
+	// Ensure attributes are sorted by key for consistent merging of keys which
+	// collide when sanitized.
+	attributes.Sort()
+	attributes.Range(func(key string, value pdata.AttributeValue) bool {
+		if existingLabel, alreadyExists := l[sanitize(key)]; alreadyExists {
+			existingLabel.Value = existingLabel.Value + ";" + value.AsString()
+			l[sanitize(key)] = existingLabel
+		} else {
+			l[sanitize(key)] = prompb.Label{
 				Name:  sanitize(key),
-				Value: value.StringVal(), // TODO(jbd): Decide what to do with non-string attributes.
+				Value: value.AsString(),
 			}
 		}
 
 		return true
 	})
 
-	attributes.Range(func(key string, value pdata.AttributeValue) bool {
-		l[key] = prompb.Label{
-			Name:  sanitize(key),
-			Value: value.AsString(),
+	for key, value := range externalLabels {
+		// External labels have already been sanitized
+		if _, alreadyExists := l[key]; alreadyExists {
+			// Skip external labels if they are overridden by metric attributes
+			continue
 		}
-
-		return true
-	})
+		l[key] = prompb.Label{
+			Name:  key,
+			Value: value,
+		}
+	}
 
 	for i := 0; i < len(extras); i += 2 {
 		if i+1 >= len(extras) {
@@ -190,7 +212,7 @@ func createAttributes(resource pdata.Resource, attributes pdata.AttributeMap, ex
 		if !(len(name) > 4 && name[:2] == "__" && name[len(name)-2:] == "__") {
 			name = sanitize(name)
 		}
-		l[extras[i]] = prompb.Label{
+		l[name] = prompb.Label{
 			Name:  name,
 			Value: extras[i+1],
 		}
@@ -202,20 +224,6 @@ func createAttributes(resource pdata.Resource, attributes pdata.AttributeMap, ex
 	}
 
 	return s
-}
-
-func isUsefulResourceAttribute(key string) bool {
-	// TODO(jbd): Allow users to configure what other resource
-	// attributes to be included.
-	// Decide what to do with non-string attributes.
-	// We should always output "job" and "instance".
-	switch key {
-	case model.InstanceLabel:
-		return true
-	case model.JobLabel:
-		return true
-	}
-	return false
 }
 
 // getPromMetricName creates a Prometheus metric name by attaching namespace prefix for Monotonic metrics.

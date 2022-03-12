@@ -21,7 +21,6 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/transport"
@@ -36,10 +35,10 @@ const (
 
 // NewFactory creates a factory for Carbon receiver.
 func NewFactory() component.ReceiverFactory {
-	return receiverhelper.NewFactory(
+	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithMetrics(createMetricsReceiver))
+		component.WithMetricsReceiver(createMetricsReceiver))
 }
 
 func createDefaultConfig() config.Receiver {

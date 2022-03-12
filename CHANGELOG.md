@@ -4,16 +4,90 @@
 
 ### 💡 Enhancements 💡
 
+- `attributesprocessor`: Add metric support (#8111)
+- `prometheusremotewriteexporter`: Write-Ahead Log support enabled (#7304)
+- `hostreceiver/filesystemscraper`: Add filesystem utilization (#8027)
+- `hostreceiver/pagingscraper`: Add paging.utilization (#6221)
+- `googlecloudexporter`: [Alpha] Translate metrics directly from OTLP to gcm using the `exporter.googlecloud.OTLPDirect` feature-gate (#7177)
+- `simpleprometheusreceiver`: Add support for static labels (#7908)
+- `spanmetricsprocessor`: Dropping the condition to replace _ with key_ as __ label is reserved and _ is not (#8057)
+- `podmanreceiver`: Add container.runtime attribute to container metrics (#8262)
+- `dockerstatsreceiver`: Add container.runtime attribute to container metrics (#8261)
+- `tanzuobservabilityexporter`: instrumentation Library and Dropped Counts to Span Tags (#8120)
+- `clickhouseexporter`: Implement consume log logic. (#9705)
+- `influxdbexporter`: Add support for cumulative, non-monotonic metrics. (#8348)
+- `oauth2clientauthextension`: Add support for EndpointParams (#7307)
+- Add `NewMetricData` function to `MetricsBuilder` to consistently set instrumentation library name (#8255)
+
+### 🛑 Breaking changes 🛑
+
+- `mongodbatlasreceiver`: rename mislabeled attribute `memory_state` to correct `disk_status` on partition disk metrics (#7747)
+- `mongodbatlasreceiver`: Correctly set initial lookback for querying mongodb atlas api (#8246)
+- `nginxreceiver`: instrumentation name updated from `otelcol/nginx` to `otelcol/nginxreceiver` (#8255)
+- `postgresqlreceiver`: instrumentation name updated from `otelcol/postgresql` to `otelcol/postgresqlreceiver` (#8255)
+- `redisreceiver`: instrumentation name updated from `otelcol/redis` to `otelcol/redisreceiver` (#8255)
+- `apachereceiver`: instrumentation name updated from `otelcol/apache` to `otelcol/apachereceiver` ()
+- `couchdbreceiver`: instrumentation name updated from `otelcol/couchdb` to `otelcol/couchdbreceiver` (#8366)
+- `prometheusreceiver` Change resource attributes on metrics: `instance` -> `service.instance.id`, `host.name` -> `net.host.name`,  `port` -> `net.host.port`, `scheme` -> `http.scheme`, `job` removed (#8266)
+- `prometheusremotewriteexporter` Use `service.*` resource attributes instead of `job` and `instance` resource attributes when adding job and instance labels to metrics (#8266)
+- `mysqlreceiver`: instrumentation name updated from `otel/mysql` to `otelcol/mysqlreceiver` (#8387)
+- `zookeeperreceiver`: instrumentation name updated from `otelcol/zookeeper` to `otelcol/zookeeperreceiver` (#8389)
+
+### 🧰 Bug fixes 🧰
+
+- `zipkinexporter`: Set "error" tag value when status is set to error (#8187)
+- `prometheusremotewriteexporter`: Correctly handle metric labels which collide after sanitization (#8378)
+- `k8sclusterreceiver`: Add support to enable k8s node and container cpu metrics to be reported as double values (#8245)
+  - Use "--feature-gates=receiver.k8sclusterreceiver.reportCpuMetricsAsDouble" to enable reporting node and container
+    cpu metrics as a double values.
+
+### 🚀 New components 🚀
+
+## v0.46.0
+
+### 💡 Enhancements 💡
+
+- `internal/stanza`: Export metrics from Stanza receivers (#8025)
+- `hostreceiver/pagingscraper`: Migrate the scraper to the mdatagen metrics builder (#7139)
+- Do not drop zero trace/span id spans in the jaeger conversion (#7946)
+- Upgrade to use semantic conventions 1.6.1 (#7926)
+- `dynatraceexporter`: Validate QueueSettings and perform config validation in Validate() instead (#8020)
+- `sapmexporter`: Add validation for `sending_queue` setting (#8023)
+- `signalfxexporter`: Add validation for `sending_queue` setting (#8026)
+- `internal/stanza`: Add support for arbitrary attribute types (#8081)
+- `resourcedetectionprocessor`: Add confighttp.HTTPClientSettings To Resource Detection Config Fixes (#7397)
+- `hostmetricsreceiver`: Add cpu.utilization metrics to cpu scrapper (#7130)
+- `honeycombexporter`: Add validation for `sending_queue` setting (#8113)
+- `routingprocessor`: Expand error handling on failure to build exporters (#8125)
+- `skywalkingreceiver`: Add new skywalking receiver component folder and structure (#8107)
+- `groupbyattrsprocesor`: Allow empty keys, which allows to use the processor for compaction (#7793)
+- `datadogexporter`: Add rbac to example k8s manifest file (#8186)
+- `splunkhecexporter`: Add validation for `sending_queue` setting (#8256)
+
+### 🛑 Breaking changes 🛑
+
+- Remove deprecated functions from jaeger translator (#8032)
+- `internal/stanza`: Remove `write_to` setting from input operators (#8081)
+- `mongodbatlasreceiver`: rename `mongodb.atlas.*` attributes to `mongodb_atlas.*` adhering to naming guidelines. Adding 3 new attributes (#7960)
+
+### 🧰 Bug fixes 🧰
+
+- `prometheusreceiver`: Fix segfault that can occur after receiving stale metrics (#8056)
+- `filelogreceiver`: Fix issue where logs could occasionally be duplicated (#8123)
+- `prometheusremotewriteexporter`: Fix empty non-string resource attributes (#8116)
+
+### 🚀 New components 🚀
+
+## v0.45.1
+
+### 💡 Enhancements 💡
+
 - `sumologicexporter`: Move validation to Config (#7936)
 - `elasticsearchexporter`: Fix crash with batch processor (#7953).
 - `splunkhecexporter`: Batch metrics payloads (#7760)
 - `tanzuobservabilityexporter`: Add internal SDK metric tag (#7826)
 - `hostreceiver/processscraper`: Migrate the scraper to the mdatagen metrics builder (#7287)
 - `attributesprocessor`: Add convert action (#7930)
-
-### 🛑 Breaking changes 🛑
-
-### 🚩 Deprecations 🚩
 
 ### 🧰 Bug fixes 🧰
 
@@ -36,12 +110,14 @@
 - `datadogexporter`: Add insecure_skip_verify flag to configuration (#7422)
 - `coralogixexporter`: Update readme (#7785)
 - `awscloudwatchlogsexporter`: Remove name from aws cloudwatch logs exporter (#7554)
+- `tanzuobservabilityexporter`: Update OTel Collector's Exporter to match WF Proxy Handling of source (#7929)
 - `hostreceiver/memoryscraper`: Add memory.utilization (#6221)
 - `awskinesisexporter`: Add Queue Config Validation AWS Kinesis Exporter (#7835)
 - `elasticsearchexporter`: Remove usage of deprecated LogRecord.Name field (#7829).
 - `loadbalancingexporter`: Allow non-exist hostname on startup (#7935)
 - `datadogexporter`: Use exact sum, count and average on Datadog distributions (#7830)
 - `storage/filestorage`: add optional compaction to filestorage (#7768)
+- `tanzuobservabilityexporter`: Add attributes from the Resource to the resulting WF metric tags & set `source` value in WF metric (#8101)
 
 ### 🛑 Breaking changes 🛑
 
@@ -54,6 +130,16 @@
     the direct pipeline is the only remaining pipeline.
 - `translator/jaeger`: Cleanup jaeger translator function names (#7775)
   - Deprecate old funcs with Internal word.
+- `mysqlreceiver`: Update data model and names for several metrics (#7924)
+  - Change all metrics to Int values
+  - Remove `mysql.buffer_pool_pages`. Replace with:
+    - `mysql.buffer_pool.pages`
+    - `mysql.buffer_pool.data_pages`
+    - `mysql.buffer_pool.page_flushes`
+  - Remove `mysql.buffer_pool_size`. Replace with:
+    - `mysql.buffer_pool.limit`
+    - `mysql.buffer_pool.usage`
+  - Rename `mysql.buffer_pool_operations` to `mysql.buffer_pool.operations`
 
 ### 🚩 Deprecations 🚩
 
@@ -77,6 +163,7 @@
 
 ### 💡 Enhancements 💡
 
+- `kafkaexporter`: Add compression and flush max messages options.
 - `dynatraceexporter`: Write error logs using plugin logger (#7360)
 - `dynatraceexporter`: Fix docs for TLS settings (#7568)
 - `tanzuobservabilityexporter`: Turn on metrics exporter (#7281)
@@ -208,7 +295,6 @@
 - `resourcedetectionprocessor`: add the [consul](https://www.consul.io/) detector (#6382)
 - `awsemfexporter`: refactor cw_client logic into separate `cwlogs` package (#7072)
 - `prometheusexporter`: Dropping the condition to replace _ with key_ as __ label is reserved and _ is not (#7506)
-
 
 ### 🛑 Breaking changes 🛑
 
