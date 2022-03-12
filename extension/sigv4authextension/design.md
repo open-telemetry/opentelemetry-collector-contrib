@@ -75,11 +75,11 @@ func (cfg *Config) Validate() error {
 Next, we introduce `extension.go`, which contains the bulk of the implementation of the Sigv4 authenticator. This includes implementing the `ClientAuthenticator` interface and its necessary methods.
 
 
-`Sigv4Auth` is a struct that implements the `ClientAuthenticator` interface. It must implement two methods, `RoundTripper()` and `PerRPCCredentials()`. Additionally, it must also implement a `Start()` and a `Shutdown()` method. For our Sigv4 authenticator, both of these methods won’t do anything, so we instead embed `componenthelper.StartFunc` and `componenthelper.ShutdownFunc` to get that default behavior.
+`sigv4Auth` is a struct that implements the `ClientAuthenticator` interface. It must implement two methods, `RoundTripper()` and `PerRPCCredentials()`. Additionally, it must also implement a `Start()` and a `Shutdown()` method. For our Sigv4 authenticator, both of these methods won’t do anything, so we instead embed `componenthelper.StartFunc` and `componenthelper.ShutdownFunc` to get that default behavior.
 
 
 ```go
-type Sigv4Auth struct {
+type sigv4Auth struct {
     cfg *Config
     logger *zap.logger
     awsSDKInfo string
@@ -89,13 +89,13 @@ type Sigv4Auth struct {
 ```
 
 
-`RoundTripper()` is a method that returns a custom `SigningRoundTripper`. We use the `Sigv4Auth` struct here instead of the `SigningRoundTripper` struct for `RoundTripper()` because `Sigv4Auth` is the struct that implements the `ClientAuthenticator` interface. Additionally, it makes it so that `RoundTripper()` creates a new round tripper every time for concurrency purposes. 
+`RoundTripper()` is a method that returns a custom `signingRoundTripper`. We use the `sigv4Auth` struct here instead of the `signingRoundTripper` struct for `RoundTripper()` because `sigv4Auth` is the struct that implements the `ClientAuthenticator` interface. Additionally, it makes it so that `RoundTripper()` creates a new round tripper every time for concurrency purposes. 
 
 
 ```go
-func (sa *Sigv4Auth) RoundTripper(base http.RoundTripper) (http.RoundTripper, error)
-    // Create a SigningRoundTripper struct
-    rt := SigningRoundTripper {
+func (sa *sigv4Auth) RoundTripper(base http.RoundTripper) (http.RoundTripper, error)
+    // Create a signingRoundTripper struct
+    rt := signingRoundTripper {
         transport: base
         signer:
         region:
@@ -105,7 +105,7 @@ func (sa *Sigv4Auth) RoundTripper(base http.RoundTripper) (http.RoundTripper, er
         logger:
     }
 
-    // return the address of the SigningRoundTripper and no error if
+    // return the address of the signingRoundTripper and no error if
     return &rt, nil
 }
 ```
@@ -115,18 +115,18 @@ func (sa *Sigv4Auth) RoundTripper(base http.RoundTripper) (http.RoundTripper, er
 
 
 ```go
-func (sa *Sigv4Auth) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
+func (sa *sigv4Auth) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
     return nil, errors.New("Not Implemented")
 }
 ```
 
 
-`newSigv4Extension()` is a function called by `createExtension()` in `factory.go`. It returns a new `Sigv4Auth` struct.
+`newSigv4Extension()` is a function called by `createExtension()` in `factory.go`. It returns a new `sigv4Auth` struct.
 
 
 ```go
-func newSigv4Extension(cfg *Config, awsSDKInfo string, logger *zap.logger) (*Sigv4Auth, error) {
-    return &Sigv4Auth{
+func newSigv4Extension(cfg *Config, awsSDKInfo string, logger *zap.logger) (*sigv4Auth, error) {
+    return &sigv4Auth{
         cfg: cfg,
         logger: logger,
         awsSDKInfo: awsSDKInfo,
@@ -194,11 +194,11 @@ func cloneRequest(r *http.Request) *http.Request {
 `signingroundtripper.go` contains the rest of the implementation of the Sigv4 authenticator. We implement the `RoundTripper` interface and its necessary methods.
 
 
-`SigningRoundTripper` is a custom `RoundTripper` struct (i.e. a custom `http.RoundTripper`). This struct implements the [RoundTripper interface](https://pkg.go.dev/net/http#RoundTripper.RoundTrip) and will implement the method `RoundTrip()`.
+`signingRoundTripper` is a custom `RoundTripper` struct (i.e. a custom `http.RoundTripper`). This struct implements the [RoundTripper interface](https://pkg.go.dev/net/http#RoundTripper.RoundTrip) and will implement the method `RoundTrip()`.
 
 
 ```go
-type SigningRoundTripper struct {
+type signingRoundTripper struct {
     transport http.RoundTripper
     signer *v4.Signer
     region string
@@ -214,7 +214,7 @@ type SigningRoundTripper struct {
 
 
 ```go
-func (si *SigningRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+func (si *signingRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
     reqBody, err := req.GetBody()
     if err != nil {
         return nil, err
@@ -302,7 +302,9 @@ First, we obtain the body. This should not have an impact on runtime performance
 Next, we clone the request and also add runtime information to the User-Agent header. `cloneRequest()` is a helper function that makes a shallow copy of the request and a deep copy of the header. While this may slow the performance of `RoundTrip()`, it is necessary to ensure thread safety*. Overall, this should not have a large impact on either runtime or memory performance, as again we do not expect to handle http requests that are exponentially large in size. Adding runtime information to the header also will not impact memory or runtime performance either. `req2` will be passed into `Sign()`.
 
 
-**Design Decision: The necessity of `cloneRequest()` is unknown; for now we will leave it in, as this implementation of `RoundTrip()` is taken directly from the AWS PRW Exporter. However, if we want to avoid reading the body, that can only happen if we avoid using `cloneRequest()`.*
+**Design Decision: The necessity of `cloneRequest()` is unknown; for now we will leave it in, as this implementation of `RoundTrip()` is taken directly from the AWS PRW Exporter. However, if we want to avoid using `cloneRequest()`, that can only be done by avoiding reading the body.*
+
+
 
 
 ```go
@@ -316,14 +318,14 @@ Next, we clone the request and also add runtime information to the User-Agent he
 ```
 
 
-Lastly, we compute the has, sign the request, send the request, and return the response. These are all necessary for the authenticator, and while this is the main point of consideration for the performance of `RoundTrip()`, it cannot be optimized further.
+Lastly, we compute the hash, sign the request, send the request, and return the response. These are all necessary for the authenticator, and while this is the main point of consideration for the performance of `RoundTrip()`, it cannot be optimized further.
 
 
 `inferServiceAndRegionFromRequestURL()` attempts to infer a region and a service from the URL in the `http.request`.
 
 
 ```go
-func (si *SigningRoundTripper) inferServiceAndRegionFromRequestURL(r *http.Request) (service string, region string) {
+func (si *signingRoundTripper) inferServiceAndRegionFromRequestURL(r *http.Request) (service string, region string) {
     // check for service and region from URL
 
 	return service, region
@@ -362,7 +364,7 @@ func createDefaultConfig() config.Extension {
 ```
 
 
-`createExtension()` calls `newSigv4Extension()` in `extension.go` to create the extension. Here, we add `awsSDKInfo` that will be used later to add that info to our `SigningRoundTripper` in our `RoundTripper()` method.
+`createExtension()` calls `newSigv4Extension()` in `extension.go` to create the extension. Here, we add `awsSDKInfo` that will be used later to add that info to our `signingRoundTripper` in our `RoundTripper()` method.
 
 
 ```go
@@ -420,7 +422,7 @@ func TestLoadConfigError(t *testing.T) {
 
 ```go
 func TestNewSigv4Extension(t *testing.T) {
-    // assert that newSigv4Extension() returns a non nil, correct Sigv4Auth 
+    // assert that newSigv4Extension() returns a non nil, correct sigv4Auth 
     // struct
 }
 ```
