@@ -32,6 +32,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
 )
 
 const (
@@ -88,7 +90,7 @@ func NewServer(cfg *Config, logger *zap.Logger) (Server, error) {
 		// Handler for modifying and forwarding requests
 		Director: func(req *http.Request) {
 			if req != nil && req.URL != nil {
-				logger.Debug("Received request on X-Ray receiver TCP proxy server", zap.String("URL", req.URL.String()))
+				logger.Debug("Received request on X-Ray receiver TCP proxy server", zap.String("URL", sanitize.URL(req.URL)))
 			}
 
 			// Remove connection header before signing request, otherwise the

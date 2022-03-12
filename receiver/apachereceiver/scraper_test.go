@@ -34,11 +34,8 @@ import (
 
 func TestScraper(t *testing.T) {
 	apacheMock := newMockServer(t)
-	cfg := &Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Endpoint: fmt.Sprintf("%s%s", apacheMock.URL, "/server-status?auto"),
-		},
-	}
+	cfg := createDefaultConfig().(*Config)
+	cfg.Endpoint = fmt.Sprintf("%s%s", apacheMock.URL, "/server-status?auto")
 	require.NoError(t, cfg.Validate())
 
 	scraper := newApacheScraper(componenttest.NewNopTelemetrySettings(), cfg)

@@ -24,7 +24,22 @@ import (
 	"go.uber.org/multierr"
 )
 
-func MetricsToPRW(namespace string, externalLabels map[string]string, md pdata.Metrics) (tsMap map[string]*prompb.TimeSeries, dropped int, errs error) {
+// Deprecated: [0.45.0] use `prometheusremotewrite.FromMetrics`. It does not wrap the error as `NewPermanent`.
+func MetricsToPRW(namespace string, externalLabels map[string]string, md pdata.Metrics) (map[string]*prompb.TimeSeries, int, error) {
+	tsMap, err := FromMetrics(md, Settings{Namespace: namespace, ExternalLabels: externalLabels})
+	if err != nil {
+		err = consumererror.NewPermanent(err)
+	}
+	return tsMap, md.MetricCount() - len(tsMap), err
+}
+
+type Settings struct {
+	Namespace      string
+	ExternalLabels map[string]string
+}
+
+// FromMetrics converts pdata.Metrics to prometheus remote write format.
+func FromMetrics(md pdata.Metrics, settings Settings) (tsMap map[string]*prompb.TimeSeries, errs error) {
 	tsMap = make(map[string]*prompb.TimeSeries)
 
 	resourceMetricsSlice := md.ResourceMetrics()
@@ -43,8 +58,7 @@ func MetricsToPRW(namespace string, externalLabels map[string]string, md pdata.M
 
 				// check for valid type and temporality combination and for matching data field and type
 				if ok := validateMetrics(metric); !ok {
-					dropped++
-					errs = multierr.Append(errs, consumererror.NewPermanent(errors.New("invalid temporality and type combination")))
+					errs = multierr.Append(errs, errors.New("invalid temporality and type combination"))
 					continue
 				}
 
@@ -52,38 +66,33 @@ func MetricsToPRW(namespace string, externalLabels map[string]string, md pdata.M
 				switch metric.DataType() {
 				case pdata.MetricDataTypeGauge:
 					dataPoints := metric.Gauge().DataPoints()
-					if err := addNumberDataPointSlice(dataPoints, tsMap, namespace, externalLabels, resource, metric); err != nil {
-						dropped++
+					if err := addNumberDataPointSlice(dataPoints, resource, metric, settings, tsMap); err != nil {
 						errs = multierr.Append(errs, err)
 					}
 				case pdata.MetricDataTypeSum:
 					dataPoints := metric.Sum().DataPoints()
-					if err := addNumberDataPointSlice(dataPoints, tsMap, namespace, externalLabels, resource, metric); err != nil {
-						dropped++
+					if err := addNumberDataPointSlice(dataPoints, resource, metric, settings, tsMap); err != nil {
 						errs = multierr.Append(errs, err)
 					}
 
 				case pdata.MetricDataTypeHistogram:
 					dataPoints := metric.Histogram().DataPoints()
 					if dataPoints.Len() == 0 {
-						dropped++
-						errs = multierr.Append(errs, consumererror.NewPermanent(fmt.Errorf("empty data points. %s is dropped", metric.Name())))
+						errs = multierr.Append(errs, fmt.Errorf("empty data points. %s is dropped", metric.Name()))
 					}
 					for x := 0; x < dataPoints.Len(); x++ {
-						addSingleHistogramDataPoint(dataPoints.At(x), resource, metric, namespace, tsMap, externalLabels)
+						addSingleHistogramDataPoint(dataPoints.At(x), resource, metric, settings, tsMap)
 					}
 				case pdata.MetricDataTypeSummary:
 					dataPoints := metric.Summary().DataPoints()
 					if dataPoints.Len() == 0 {
-						dropped++
-						errs = multierr.Append(errs, consumererror.NewPermanent(fmt.Errorf("empty data points. %s is dropped", metric.Name())))
+						errs = multierr.Append(errs, fmt.Errorf("empty data points. %s is dropped", metric.Name()))
 					}
 					for x := 0; x < dataPoints.Len(); x++ {
-						addSingleSummaryDataPoint(dataPoints.At(x), resource, metric, namespace, tsMap, externalLabels)
+						addSingleSummaryDataPoint(dataPoints.At(x), resource, metric, settings, tsMap)
 					}
 				default:
-					dropped++
-					errs = multierr.Append(errs, consumererror.NewPermanent(errors.New("unsupported metric type")))
+					errs = multierr.Append(errs, errors.New("unsupported metric type"))
 				}
 			}
 		}
@@ -93,13 +102,13 @@ func MetricsToPRW(namespace string, externalLabels map[string]string, md pdata.M
 }
 
 func addNumberDataPointSlice(dataPoints pdata.NumberDataPointSlice,
-	tsMap map[string]*prompb.TimeSeries, namespace string, externalLabels map[string]string,
-	resource pdata.Resource, metric pdata.Metric) error {
+	resource pdata.Resource, metric pdata.Metric,
+	settings Settings, tsMap map[string]*prompb.TimeSeries) error {
 	if dataPoints.Len() == 0 {
-		return consumererror.NewPermanent(fmt.Errorf("empty data points. %s is dropped", metric.Name()))
+		return fmt.Errorf("empty data points. %s is dropped", metric.Name())
 	}
 	for x := 0; x < dataPoints.Len(); x++ {
-		addSingleNumberDataPoint(dataPoints.At(x), resource, metric, namespace, tsMap, externalLabels)
+		addSingleNumberDataPoint(dataPoints.At(x), resource, metric, settings, tsMap)
 	}
 	return nil
 }

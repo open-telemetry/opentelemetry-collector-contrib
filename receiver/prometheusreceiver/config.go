@@ -31,7 +31,6 @@ import (
 	"github.com/prometheus/prometheus/discovery/kubernetes"
 	"github.com/prometheus/prometheus/discovery/targetgroup"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/service/featuregate"
 	"gopkg.in/yaml.v2"
 )
 
@@ -40,25 +39,20 @@ const (
 	prometheusConfigKey = "config"
 )
 
-var pdataPipelineGate = featuregate.Gate{
-	ID:          "receiver.prometheus.OTLPDirect",
-	Enabled:     true,
-	Description: "Controls whether to use a new translation directly from Prometheus timeseries to pdata, without an intermediate representation as OpenCensus data.",
-}
-
-func init() {
-	featuregate.Register(pdataPipelineGate)
-}
-
 // Config defines configuration for Prometheus receiver.
 type Config struct {
 	config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 	PrometheusConfig        *promconfig.Config       `mapstructure:"-"`
 	BufferPeriod            time.Duration            `mapstructure:"buffer_period"`
 	BufferCount             int                      `mapstructure:"buffer_count"`
-	UseStartTimeMetric      bool                     `mapstructure:"use_start_time_metric"`
-	StartTimeMetricRegex    string                   `mapstructure:"start_time_metric_regex"`
-	pdataDirect             bool
+	// UseStartTimeMetric enables retrieving the start time of all counter metrics
+	// from the process_start_time_seconds metric. This is only correct if all counters on that endpoint
+	// started after the process start time, and the process is the only actor exporting the metric after
+	// the process started. It should not be used in "exporters" which export counters that may have
+	// started before the process itself. Use only if you know what you are doing, as this may result
+	// in incorrect rate calculations.
+	UseStartTimeMetric   bool   `mapstructure:"use_start_time_metric"`
+	StartTimeMetricRegex string `mapstructure:"start_time_metric_regex"`
 
 	// ConfigPlaceholder is just an entry to make the configuration pass a check
 	// that requires that all keys present in the config actually exist on the

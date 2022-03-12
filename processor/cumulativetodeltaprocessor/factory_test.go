@@ -17,7 +17,7 @@ package cumulativetodeltaprocessor
 import (
 	"context"
 	"fmt"
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -61,7 +61,7 @@ func TestCreateProcessors(t *testing.T) {
 
 		factory := NewFactory()
 		factories.Processors[typeStr] = factory
-		config, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", test.configName), factories)
+		config, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", test.configName), factories)
 		assert.NoError(t, err)
 
 		for name, cfg := range config.Processors {

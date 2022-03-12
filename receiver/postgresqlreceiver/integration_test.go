@@ -44,7 +44,7 @@ type testCase struct {
 
 func TestPostgreSQLIntegration(t *testing.T) {
 	testCases := []testCase{
-		testCase{
+		{
 			name: "single_db",
 			cfg: func(hostname string) *Config {
 				f := NewFactory()
@@ -58,7 +58,7 @@ func TestPostgreSQLIntegration(t *testing.T) {
 			},
 			expectedFile: filepath.Join("testdata", "integration", "expected_single_db.json"),
 		},
-		testCase{
+		{
 			name: "multi_db",
 			cfg: func(hostname string) *Config {
 				f := NewFactory()
@@ -72,7 +72,7 @@ func TestPostgreSQLIntegration(t *testing.T) {
 			},
 			expectedFile: filepath.Join("testdata", "integration", "expected_multi_db.json"),
 		},
-		testCase{
+		{
 			name: "all_db",
 			cfg: func(hostname string) *Config {
 				f := NewFactory()

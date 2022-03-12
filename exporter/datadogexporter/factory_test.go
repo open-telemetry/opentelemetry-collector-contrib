@@ -18,7 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"os"
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -66,8 +66,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, &ddconfig.Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		TimeoutSettings:  defaulttimeoutSettings(),
-		RetrySettings:    exporterhelper.DefaultRetrySettings(),
-		QueueSettings:    exporterhelper.DefaultQueueSettings(),
+		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 
 		API: ddconfig.APIConfig{
 			Key:  "API_KEY",
@@ -118,7 +118,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -130,8 +130,8 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, &ddconfig.Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "api")),
 		TimeoutSettings:  defaulttimeoutSettings(),
-		RetrySettings:    exporterhelper.DefaultRetrySettings(),
-		QueueSettings:    exporterhelper.DefaultQueueSettings(),
+		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 
 		TagsConfig: ddconfig.TagsConfig{
 			Hostname:   "customhostname",
@@ -179,8 +179,8 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, &ddconfig.Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "default")),
 		TimeoutSettings:  defaulttimeoutSettings(),
-		RetrySettings:    exporterhelper.DefaultRetrySettings(),
-		QueueSettings:    exporterhelper.DefaultQueueSettings(),
+		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 
 		TagsConfig: ddconfig.TagsConfig{
 			Hostname:   "",
@@ -255,7 +255,7 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -268,8 +268,8 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 	assert.Equal(t, &ddconfig.Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "api2")),
 		TimeoutSettings:  defaulttimeoutSettings(),
-		RetrySettings:    exporterhelper.DefaultRetrySettings(),
-		QueueSettings:    exporterhelper.DefaultQueueSettings(),
+		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 
 		TagsConfig: ddconfig.TagsConfig{
 			Hostname:   "customhostname",
@@ -320,8 +320,8 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 	assert.Equal(t, &ddconfig.Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "default2")),
 		TimeoutSettings:  defaulttimeoutSettings(),
-		RetrySettings:    exporterhelper.DefaultRetrySettings(),
-		QueueSettings:    exporterhelper.DefaultQueueSettings(),
+		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 
 		TagsConfig: ddconfig.TagsConfig{
 			Hostname:   "testhost",
@@ -371,7 +371,7 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -401,7 +401,7 @@ func TestCreateAPITracesExporter(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -436,8 +436,8 @@ func TestOnlyMetadata(t *testing.T) {
 	cfg := &ddconfig.Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		TimeoutSettings:  defaulttimeoutSettings(),
-		RetrySettings:    exporterhelper.DefaultRetrySettings(),
-		QueueSettings:    exporterhelper.DefaultQueueSettings(),
+		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 
 		API:     ddconfig.APIConfig{Key: "notnull"},
 		Metrics: ddconfig.MetricsConfig{TCPAddr: confignet.TCPAddr{Endpoint: server.URL}},

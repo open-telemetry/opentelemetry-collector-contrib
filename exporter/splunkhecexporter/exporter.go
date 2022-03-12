@@ -71,6 +71,10 @@ func createExporter(
 		config.SplunkAppVersion = buildinfo.Version
 	}
 
+	if config.HecFields.Name != "" {
+		logger.Warn("otel_to_hec_fields.name setting is deprecated and will be removed soon.")
+	}
+
 	options, err := config.getOptionsFromConfig()
 	if err != nil {
 		return nil,

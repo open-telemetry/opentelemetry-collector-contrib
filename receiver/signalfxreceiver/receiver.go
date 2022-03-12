@@ -33,11 +33,12 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx"
 )
 
 const (
@@ -235,7 +236,10 @@ func (r *sfxReceiver) handleDatapointReq(resp http.ResponseWriter, req *http.Req
 		return
 	}
 
-	md, _ := signalFxV2ToMetrics(r.settings.Logger, msg.Datapoints)
+	md, err := signalfx.ToMetrics(msg.Datapoints)
+	if err != nil {
+		r.settings.Logger.Debug("SignalFx conversion error", zap.Error(err))
+	}
 
 	if r.config.AccessTokenPassthrough {
 		if accessToken := req.Header.Get(splunk.SFxAccessTokenHeader); accessToken != "" {
@@ -247,12 +251,8 @@ func (r *sfxReceiver) handleDatapointReq(resp http.ResponseWriter, req *http.Req
 		}
 	}
 
-	err := r.metricsConsumer.ConsumeMetrics(ctx, md)
-	r.obsrecv.EndMetricsOp(
-		ctx,
-		typeStr,
-		len(msg.Datapoints),
-		err)
+	err = r.metricsConsumer.ConsumeMetrics(ctx, md)
+	r.obsrecv.EndMetricsOp(ctx, typeStr, len(msg.Datapoints), err)
 
 	r.writeResponse(ctx, resp, err)
 }

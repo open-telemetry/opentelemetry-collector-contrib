@@ -19,9 +19,9 @@ import (
 	"github.com/alecthomas/participle/v2/lexer"
 )
 
-// Query represents a parsed query. It is the entry point into the query DSL.
+// ParsedQuery represents a parsed query. It is the entry point into the query DSL.
 // nolint:govet
-type Query struct {
+type ParsedQuery struct {
 	Invocation Invocation `@@`
 	Condition  *Condition `( "where" @@ )?`
 }
@@ -65,29 +65,20 @@ type Field struct {
 	MapKey *string `( "[" @String "]" )?`
 }
 
-func Parse(rawQueries []string) ([]Query, error) {
-	parser, err := newParser()
+var parser = newParser()
+
+func Parse(raw string) (*ParsedQuery, error) {
+	parsed := &ParsedQuery{}
+	err := parser.ParseString("", raw, parsed)
 	if err != nil {
-		return []Query{}, err
+		return nil, err
 	}
-
-	parsed := make([]Query, 0)
-
-	for _, raw := range rawQueries {
-		query := Query{}
-		err = parser.ParseString("", raw, &query)
-		if err != nil {
-			return []Query{}, err
-		}
-		parsed = append(parsed, query)
-	}
-
 	return parsed, nil
 }
 
-// newParser returns a parser that can be used to read a string into a Query. An error will be returned if the string
+// newParser returns a parser that can be used to read a string into a ParsedQuery. An error will be returned if the string
 // is not formatted for the DSL.
-func newParser() (*participle.Parser, error) {
+func newParser() *participle.Parser {
 	lex := lexer.MustSimple([]lexer.Rule{
 		{Name: `Ident`, Pattern: `[a-zA-Z_][a-zA-Z0-9_]*`, Action: nil},
 		{Name: `Float`, Pattern: `[-+]?\d*\.\d+([eE][-+]?\d+)?`, Action: nil},
@@ -96,9 +87,13 @@ func newParser() (*participle.Parser, error) {
 		{Name: `Operators`, Pattern: `==|!=|[,.()\[\]]`, Action: nil},
 		{Name: "whitespace", Pattern: `\s+`, Action: nil},
 	})
-	return participle.Build(&Query{},
+	parser, err := participle.Build(&ParsedQuery{},
 		participle.Lexer(lex),
 		participle.Unquote("String"),
 		participle.Elide("whitespace"),
 	)
+	if err != nil {
+		panic("Unable to initialize parser, this is a programming error in the transformprocesor")
+	}
+	return parser
 }

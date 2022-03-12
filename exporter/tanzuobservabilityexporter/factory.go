@@ -27,11 +27,11 @@ const exporterType = "tanzuobservability"
 
 // NewFactory creates a factory for the exporter.
 func NewFactory() component.ExporterFactory {
-	return exporterhelper.NewFactory(
+	return component.NewExporterFactory(
 		exporterType,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTracesExporter),
-		exporterhelper.WithMetrics(createMetricsExporter),
+		component.WithTracesExporter(createTracesExporter),
+		component.WithMetricsExporter(createMetricsExporter),
 	)
 }
 
@@ -44,8 +44,8 @@ func createDefaultConfig() config.Exporter {
 	}
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(exporterType)),
-		QueueSettings:    exporterhelper.DefaultQueueSettings(),
-		RetrySettings:    exporterhelper.DefaultRetrySettings(),
+		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
+		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
 		Traces:           tracesCfg,
 		Metrics:          metricsCfg,
 	}
@@ -58,7 +58,7 @@ func createTracesExporter(
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.TracesExporter, error) {
-	exp, err := newTracesExporter(set.Logger, cfg)
+	exp, err := newTracesExporter(set, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +80,7 @@ func createMetricsExporter(
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.MetricsExporter, error) {
-	exp, err := newMetricsExporter(set.TelemetrySettings, cfg, createMetricsConsumer)
+	exp, err := newMetricsExporter(set, cfg, createMetricsConsumer)
 	if err != nil {
 		return nil, err
 	}

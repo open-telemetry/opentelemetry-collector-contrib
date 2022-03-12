@@ -28,9 +28,3 @@ func TestEvaluate_AlwaysSample(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, decision, Sampled)
 }
-
-func TestOnLateArrivingSpans_AlwaysSample(t *testing.T) {
-	filter := NewAlwaysSample(zap.NewNop())
-	err := filter.OnLateArrivingSpans(NotSampled, nil)
-	assert.Nil(t, err)
-}

@@ -25,7 +25,6 @@ func exampleLog() (pdata.LogRecord, pdata.Resource) {
 
 	buffer := pdata.NewLogRecord()
 	buffer.Body().SetStringVal("Example log")
-	buffer.SetName("name")
 	buffer.SetSeverityText("error")
 	buffer.Attributes().Insert("attr1", pdata.NewAttributeValueString("1"))
 	buffer.Attributes().Insert("attr2", pdata.NewAttributeValueString("2"))
@@ -39,7 +38,7 @@ func exampleLog() (pdata.LogRecord, pdata.Resource) {
 }
 
 func TestConvertWithStringBody(t *testing.T) {
-	in := `{"name":"name","body":"Example log","traceid":"01020304000000000000000000000000","spanid":"0506070800000000","severity":"error","attributes":{"attr1":"1","attr2":"2"},"resources":{"host.name":"something"}}`
+	in := `{"body":"Example log","traceid":"01020304000000000000000000000000","spanid":"0506070800000000","severity":"error","attributes":{"attr1":"1","attr2":"2"},"resources":{"host.name":"something"}}`
 
 	out, err := encodeJSON(exampleLog())
 	assert.NoError(t, err)
@@ -47,7 +46,7 @@ func TestConvertWithStringBody(t *testing.T) {
 }
 
 func TestConvertWithMapBody(t *testing.T) {
-	in := `{"name":"name","body":{"key1":"value","key2":"value"},"traceid":"01020304000000000000000000000000","spanid":"0506070800000000","severity":"error","attributes":{"attr1":"1","attr2":"2"},"resources":{"host.name":"something"}}`
+	in := `{"body":{"key1":"value","key2":"value"},"traceid":"01020304000000000000000000000000","spanid":"0506070800000000","severity":"error","attributes":{"attr1":"1","attr2":"2"},"resources":{"host.name":"something"}}`
 
 	log, resource := exampleLog()
 	mapVal := pdata.NewAttributeValueMap()

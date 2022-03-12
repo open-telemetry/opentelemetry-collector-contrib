@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 )
 
 func TestSpanStartTimeIsConvertedToMilliseconds(t *testing.T) {
@@ -221,6 +222,118 @@ func TestTraceStateTranslatedToTag(t *testing.T) {
 	require.NoError(t, err, "transforming span to wavefront format")
 	_, ok = spanWithEmptyState.Tags["w3c.tracestate"]
 	assert.False(t, ok)
+}
+
+func TestSpanForSourceTag(t *testing.T) {
+	inNanos := int64(50000000)
+
+	//TestCase1: default value for source
+	resAttrs := pdata.NewAttributeMap()
+	transform := transformerFromAttributes(resAttrs)
+	span := pdata.NewSpan()
+	span.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+	span.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	span.SetStartTimestamp(pdata.Timestamp(inNanos))
+
+	actual, err := transform.Span(span)
+	require.NoError(t, err, "transforming span to wavefront format")
+	assert.Equal(t, "", actual.Source)
+
+	//TestCase2: source value from resAttrs.source
+	resAttrs = pdata.NewAttributeMap()
+	resAttrs.InsertString(labelSource, "test_source")
+	resAttrs.InsertString(conventions.AttributeHostName, "test_host.name")
+	transform = transformerFromAttributes(resAttrs)
+	span = pdata.NewSpan()
+	span.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+	span.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	span.SetStartTimestamp(pdata.Timestamp(inNanos))
+
+	actual, err = transform.Span(span)
+	require.NoError(t, err, "transforming span to wavefront format")
+	assert.Equal(t, "test_source", actual.Source)
+	assert.Equal(t, "test_host.name", actual.Tags[conventions.AttributeHostName])
+	if value, isFound := actual.Tags[labelSource]; isFound {
+		t.Logf("Tag Source with value " + value + " not expected.")
+		t.Fail()
+	}
+
+	//TestCase2: source value from resAttrs.host.name when source is not present
+	resAttrs = pdata.NewAttributeMap()
+	resAttrs.InsertString("hostname", "test_hostname")
+	resAttrs.InsertString(conventions.AttributeHostName, "test_host.name")
+	transform = transformerFromAttributes(resAttrs)
+	span = pdata.NewSpan()
+	span.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+	span.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	span.SetStartTimestamp(pdata.Timestamp(inNanos))
+
+	actual, err = transform.Span(span)
+	require.NoError(t, err, "transforming span to wavefront format")
+	assert.Equal(t, "test_host.name", actual.Source)
+	assert.Equal(t, "test_hostname", actual.Tags["hostname"])
+	if value, isFound := actual.Tags[conventions.AttributeHostName]; isFound {
+		t.Logf("Tag host.name with value " + value + " not expected.")
+		t.Fail()
+	}
+
+	//TestCase4: source value from resAttrs.source when spanAttrs.source is present
+	resAttrs = pdata.NewAttributeMap()
+	span.Attributes().InsertString(labelSource, "source_from_span_attribute")
+	resAttrs.InsertString(labelSource, "test_source")
+	resAttrs.InsertString(conventions.AttributeHostName, "test_host.name")
+	transform = transformerFromAttributes(resAttrs)
+	actual, err = transform.Span(span)
+	require.NoError(t, err, "transforming span to wavefront format")
+	assert.Equal(t, "test_source", actual.Source)
+	assert.Equal(t, "test_host.name", actual.Tags[conventions.AttributeHostName])
+	if value, isFound := actual.Tags[labelSource]; isFound {
+		t.Logf("Tag Source with value " + value + " not expected.")
+		t.Fail()
+	}
+	assert.Equal(t, "source_from_span_attribute", actual.Tags["_source"])
+}
+
+func TestSpanForDroppedCount(t *testing.T) {
+	inNanos := int64(50000000)
+
+	//TestCase: 1 count tags are not set
+	resAttrs := pdata.NewAttributeMap()
+	transform := transformerFromAttributes(resAttrs)
+	span := pdata.NewSpan()
+	span.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+	span.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	span.SetStartTimestamp(pdata.Timestamp(inNanos))
+
+	actual, err := transform.Span(span)
+	require.NoError(t, err, "transforming span to wavefront format")
+	assert.NotContains(t, actual.Tags, "otel.dropped_events_count")
+	assert.NotContains(t, actual.Tags, "otel.dropped_links_count")
+	assert.NotContains(t, actual.Tags, "otel.dropped_attributes_count")
+
+	//TestCase2: count tags are set
+	span.SetDroppedEventsCount(123)
+	span.SetDroppedLinksCount(456)
+	span.SetDroppedAttributesCount(789)
+
+	actual, err = transform.Span(span)
+	require.NoError(t, err, "transforming span to wavefront format")
+	assert.Equal(t, "123", actual.Tags["otel.dropped_events_count"])
+	assert.Equal(t, "456", actual.Tags["otel.dropped_links_count"])
+	assert.Equal(t, "789", actual.Tags["otel.dropped_attributes_count"])
+}
+
+func TestGetSourceAndResourceTags(t *testing.T) {
+	resAttrs := pdata.NewAttributeMap()
+	resAttrs.InsertString(labelSource, "test_source")
+	resAttrs.InsertString(conventions.AttributeHostName, "test_host.name")
+
+	actualSource, actualAttrsWithoutSource := getSourceAndResourceTags(resAttrs)
+	assert.Equal(t, "test_source", actualSource)
+	if value, isFound := actualAttrsWithoutSource[labelSource]; isFound {
+		t.Logf("Tag Source with value " + value + " not expected.")
+		t.Fail()
+	}
 }
 
 func spanWithKind(kind pdata.SpanKind) pdata.Span {

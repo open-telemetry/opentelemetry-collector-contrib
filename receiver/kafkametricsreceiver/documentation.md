@@ -8,17 +8,19 @@ These are the metrics available for this scraper.
 
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
-| kafka.brokers | Number of brokers in the cluster. | {brokers} | Gauge(Int) | <ul> </ul> |
-| kafka.consumer_group.lag | Current approximate lag of consumer group at partition of topic | 1 | Gauge(Int) | <ul> <li>group</li> <li>topic</li> <li>partition</li> </ul> |
-| kafka.consumer_group.lag_sum | Current approximate sum of consumer group lag across all partitions of topic | 1 | Gauge(Int) | <ul> <li>group</li> <li>topic</li> </ul> |
-| kafka.consumer_group.members | Count of members in the consumer group | {members} | Gauge(Int) | <ul> <li>group</li> </ul> |
-| kafka.consumer_group.offset | Current offset of the consumer group at partition of topic | 1 | Gauge(Int) | <ul> <li>group</li> <li>topic</li> <li>partition</li> </ul> |
-| kafka.consumer_group.offset_sum | Sum of consumer group offset across partitions of topic | 1 | Gauge(Int) | <ul> <li>group</li> <li>topic</li> </ul> |
-| kafka.partition.current_offset | Current offset of partition of topic. | 1 | Gauge(Int) | <ul> <li>topic</li> <li>partition</li> </ul> |
-| kafka.partition.oldest_offset | Oldest offset of partition of topic | 1 | Gauge(Int) | <ul> <li>topic</li> <li>partition</li> </ul> |
-| kafka.partition.replicas | Number of replicas for partition of topic | {replicas} | Gauge(Int) | <ul> <li>topic</li> <li>partition</li> </ul> |
-| kafka.partition.replicas_in_sync | Number of synchronized replicas of partition | {replicas} | Gauge(Int) | <ul> <li>topic</li> <li>partition</li> </ul> |
-| kafka.topic.partitions | Number of partitions in topic. | {partitions} | Gauge(Int) | <ul> <li>topic</li> </ul> |
+| **kafka.brokers** | Number of brokers in the cluster. | {brokers} | Gauge(Int) | <ul> </ul> |
+| **kafka.consumer_group.lag** | Current approximate lag of consumer group at partition of topic | 1 | Gauge(Int) | <ul> <li>group</li> <li>topic</li> <li>partition</li> </ul> |
+| **kafka.consumer_group.lag_sum** | Current approximate sum of consumer group lag across all partitions of topic | 1 | Gauge(Int) | <ul> <li>group</li> <li>topic</li> </ul> |
+| **kafka.consumer_group.members** | Count of members in the consumer group | {members} | Gauge(Int) | <ul> <li>group</li> </ul> |
+| **kafka.consumer_group.offset** | Current offset of the consumer group at partition of topic | 1 | Gauge(Int) | <ul> <li>group</li> <li>topic</li> <li>partition</li> </ul> |
+| **kafka.consumer_group.offset_sum** | Sum of consumer group offset across partitions of topic | 1 | Gauge(Int) | <ul> <li>group</li> <li>topic</li> </ul> |
+| **kafka.partition.current_offset** | Current offset of partition of topic. | 1 | Gauge(Int) | <ul> <li>topic</li> <li>partition</li> </ul> |
+| **kafka.partition.oldest_offset** | Oldest offset of partition of topic | 1 | Gauge(Int) | <ul> <li>topic</li> <li>partition</li> </ul> |
+| **kafka.partition.replicas** | Number of replicas for partition of topic | {replicas} | Gauge(Int) | <ul> <li>topic</li> <li>partition</li> </ul> |
+| **kafka.partition.replicas_in_sync** | Number of synchronized replicas of partition | {replicas} | Gauge(Int) | <ul> <li>topic</li> <li>partition</li> </ul> |
+| **kafka.topic.partitions** | Number of partitions in topic. | {partitions} | Gauge(Int) | <ul> <li>topic</li> </ul> |
+
+**Highlighted metrics** are emitted by default.
 
 ## Attributes
 

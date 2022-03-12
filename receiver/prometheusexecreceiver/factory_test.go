@@ -16,9 +16,8 @@ package prometheusexecreceiver
 
 import (
 	"context"
-	"path"
+	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/prometheus/common/model"
 	promconfig "github.com/prometheus/prometheus/config"
@@ -46,7 +45,7 @@ func TestCreateTraceAndMetricsReceiver(t *testing.T) {
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
 
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, cfg)
@@ -77,8 +76,8 @@ func TestCreateTraceAndMetricsReceiver(t *testing.T) {
 			PrometheusConfig: &promconfig.Config{
 				ScrapeConfigs: []*promconfig.ScrapeConfig{
 					{
-						ScrapeInterval:  model.Duration(60 * time.Second),
-						ScrapeTimeout:   model.Duration(10 * time.Second),
+						ScrapeInterval:  model.Duration(defaultCollectionInterval),
+						ScrapeTimeout:   model.Duration(defaultTimeoutInterval),
 						Scheme:          "http",
 						MetricsPath:     "/metrics",
 						JobName:         "test",

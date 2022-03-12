@@ -27,11 +27,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/attributes"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/attributes/azure"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes/azure"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils/cache"
 )
@@ -54,6 +54,11 @@ var (
 	mockBuildInfo = component.BuildInfo{
 		Command: "otelcontribcol",
 		Version: "1.0",
+	}
+
+	mockExporterCreateSettings = component.ExporterCreateSettings{
+		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+		BuildInfo:         mockBuildInfo,
 	}
 )
 
@@ -171,7 +176,7 @@ func TestPushMetadata(t *testing.T) {
 	defer ts.Close()
 	cfg.Metrics.Endpoint = ts.URL
 
-	err := pushMetadata(cfg, mockBuildInfo, &mockMetadata)
+	err := pushMetadata(cfg, mockExporterCreateSettings, &mockMetadata)
 	require.NoError(t, err)
 }
 
@@ -185,7 +190,7 @@ func TestFailPushMetadata(t *testing.T) {
 	defer ts.Close()
 	cfg.Metrics.Endpoint = ts.URL
 
-	err := pushMetadata(cfg, mockBuildInfo, &mockMetadata)
+	err := pushMetadata(cfg, mockExporterCreateSettings, &mockMetadata)
 	require.Error(t, err)
 }
 

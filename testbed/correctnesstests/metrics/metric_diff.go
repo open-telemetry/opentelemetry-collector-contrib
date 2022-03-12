@@ -139,11 +139,11 @@ func diffNumberPts(
 		return diffs
 	}
 	for i := 0; i < expected.Len(); i++ {
-		diffs, mismatch = diffValues(diffs, expected.At(i).Type(), actual.At(i).Type(), "NumberDataPoint Value Type")
+		diffs, mismatch = diffValues(diffs, expected.At(i).ValueType(), actual.At(i).ValueType(), "NumberDataPoint Value Type")
 		if mismatch {
 			return diffs
 		}
-		switch expected.At(i).Type() {
+		switch expected.At(i).ValueType() {
 		case pdata.MetricValueTypeInt:
 			diffs = diff(diffs, expected.At(i).IntVal(), actual.At(i).IntVal(), "NumberDataPoint Value")
 		case pdata.MetricValueTypeDouble:
@@ -194,8 +194,8 @@ func diffExemplars(
 		return diffs
 	}
 	for i := 0; i < expected.Len(); i++ {
-		diffs = diff(diffs, expected.At(i).Type(), actual.At(i).Type(), "Exemplar Value Type")
-		switch expected.At(i).Type() {
+		diffs = diff(diffs, expected.At(i).ValueType(), actual.At(i).ValueType(), "Exemplar Value Type")
+		switch expected.At(i).ValueType() {
 		case pdata.MetricValueTypeInt:
 			diffs = diff(diffs, expected.At(i).IntVal(), actual.At(i).IntVal(), "Exemplar Value")
 		case pdata.MetricValueTypeDouble:

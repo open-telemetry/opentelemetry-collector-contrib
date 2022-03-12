@@ -181,7 +181,7 @@ func (lb *loadBalancerImp) Endpoint(traceID pdata.TraceID) string {
 }
 
 func (lb *loadBalancerImp) Exporter(endpoint string) (component.Exporter, error) {
-	// NOTE: make rolling updates of next tier of collectors work. currently this may cause
+	// NOTE: make rolling updates of next tier of collectors work. currently, this may cause
 	// data loss because the latest batches sent to outdated backend will never find their way out.
 	// for details: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/1690
 	lb.updateLock.RLock()

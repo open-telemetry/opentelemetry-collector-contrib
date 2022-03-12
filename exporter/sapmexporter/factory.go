@@ -31,10 +31,10 @@ const (
 
 // NewFactory creates a factory for SAPM exporter.
 func NewFactory() component.ExporterFactory {
-	return exporterhelper.NewFactory(
+	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTracesExporter))
+		component.WithTracesExporter(createTracesExporter))
 }
 
 func createDefaultConfig() config.Exporter {
@@ -44,9 +44,9 @@ func createDefaultConfig() config.Exporter {
 		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 			AccessTokenPassthrough: true,
 		},
-		TimeoutSettings: exporterhelper.DefaultTimeoutSettings(),
-		RetrySettings:   exporterhelper.DefaultRetrySettings(),
-		QueueSettings:   exporterhelper.DefaultQueueSettings(),
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 	}
 }
 

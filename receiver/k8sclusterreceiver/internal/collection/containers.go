@@ -19,12 +19,13 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/service/featuregate"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/docker"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testing/util"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/maps"
 	metadataPkg "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/utils"
 )
@@ -110,20 +111,26 @@ func getSpecMetricsForContainer(c corev1.Container) []*metricspb.Metric {
 		},
 	} {
 		for k, v := range t.rl {
-			val := v.Value()
+			val := utils.GetInt64TimeSeries(v.Value())
+			valType := metricspb.MetricDescriptor_GAUGE_INT64
 			if k == corev1.ResourceCPU {
-				val = v.MilliValue()
+				if featuregate.IsEnabled(reportCPUMetricsAsDoubleFeatureGateID) {
+					// cpu metrics must be of the double type to adhere to opentelemetry system.cpu metric specifications
+					valType = metricspb.MetricDescriptor_GAUGE_DOUBLE
+					val = utils.GetDoubleTimeSeries(float64(v.MilliValue()) / 1000.0)
+				} else {
+					val = utils.GetInt64TimeSeries(v.MilliValue())
+				}
 			}
-
 			metrics = append(metrics,
 				&metricspb.Metric{
 					MetricDescriptor: &metricspb.MetricDescriptor{
 						Name:        fmt.Sprintf("k8s.container.%s_%s", k, t.typ),
 						Description: t.description,
-						Type:        metricspb.MetricDescriptor_GAUGE_INT64,
+						Type:        valType,
 					},
 					Timeseries: []*metricspb.TimeSeries{
-						utils.GetInt64TimeSeries(val),
+						val,
 					},
 				},
 			)
@@ -151,7 +158,7 @@ func getAllContainerLabels(cs corev1.ContainerStatus,
 		docker.LogParseError(err, cs.Image, logger)
 	}
 
-	out := util.CloneStringMap(dims)
+	out := maps.CloneStringMap(dims)
 
 	out[conventions.AttributeContainerID] = utils.StripContainerID(cs.ContainerID)
 	out[conventions.AttributeK8SContainerName] = cs.Name

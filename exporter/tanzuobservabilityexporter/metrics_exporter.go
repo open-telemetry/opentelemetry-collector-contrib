@@ -30,12 +30,12 @@ type metricsExporter struct {
 	consumer *metricsConsumer
 }
 
-func createMetricsConsumer(
-	hostName string, port int, settings component.TelemetrySettings) (*metricsConsumer, error) {
+func createMetricsConsumer(hostName string, port int, settings component.TelemetrySettings, otelVersion string) (*metricsConsumer, error) {
 	s, err := senders.NewProxySender(&senders.ProxyConfiguration{
 		Host:                 hostName,
 		MetricsPort:          port,
 		FlushIntervalSeconds: 1,
+		SDKMetricsTags:       map[string]string{"otel.metrics.collector_version": otelVersion},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create proxy sender: %v", err)
@@ -54,12 +54,10 @@ func createMetricsConsumer(
 		true), nil
 }
 
-type metricsConsumerCreator func(hostName string, port int, settings component.TelemetrySettings) (
+type metricsConsumerCreator func(hostName string, port int, settings component.TelemetrySettings, otelVersion string) (
 	*metricsConsumer, error)
 
-func newMetricsExporter(
-	settings component.TelemetrySettings, c config.Exporter, creator metricsConsumerCreator) (
-	*metricsExporter, error) {
+func newMetricsExporter(settings component.ExporterCreateSettings, c config.Exporter, creator metricsConsumerCreator) (*metricsExporter, error) {
 	cfg, ok := c.(*Config)
 	if !ok {
 		return nil, fmt.Errorf("invalid config: %#v", c)
@@ -73,7 +71,7 @@ func newMetricsExporter(
 		// The port is empty, otherwise url.Parse would have failed above
 		return nil, fmt.Errorf("metrics.endpoint requires a port")
 	}
-	consumer, err := creator(endpoint.Hostname(), metricsPort, settings)
+	consumer, err := creator(endpoint.Hostname(), metricsPort, settings.TelemetrySettings, settings.BuildInfo.Version)
 	if err != nil {
 		return nil, err
 	}

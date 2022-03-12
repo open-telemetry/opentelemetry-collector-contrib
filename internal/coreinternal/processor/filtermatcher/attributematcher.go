@@ -70,8 +70,10 @@ func NewAttributesMatcher(config filterset.Config, attributes []filterconfig.Att
 					return nil, err
 				}
 				entry.StringFilter = filter
-			} else {
+			} else if config.MatchType == filterset.Strict {
 				entry.AttributeValue = &val
+			} else {
+				return nil, filterset.NewUnrecognizedMatchTypeError(config.MatchType)
 			}
 		}
 

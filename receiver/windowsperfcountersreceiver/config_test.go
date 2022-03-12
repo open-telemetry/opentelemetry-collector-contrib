@@ -16,7 +16,7 @@ package windowsperfcountersreceiver
 
 import (
 	"fmt"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -34,7 +34,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -131,7 +131,7 @@ func TestLoadConfig_Error(t *testing.T) {
 
 			factory := NewFactory()
 			factories.Receivers[typeStr] = factory
-			_, err = servicetest.LoadConfigAndValidate(path.Join(".", "testdata", test.cfgFile), factories)
+			_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", test.cfgFile), factories)
 
 			require.EqualError(t, err, test.expectedErr)
 		})

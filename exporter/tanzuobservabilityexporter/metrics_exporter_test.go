@@ -60,7 +60,7 @@ func createMockMetricsExporter(
 	sender *mockMetricSender) (component.MetricsExporter, error) {
 	cfg := createDefaultConfig()
 	creator := func(
-		hostName string, port int, settings component.TelemetrySettings) (*metricsConsumer, error) {
+		hostName string, port int, settings component.TelemetrySettings, otelVersion string) (*metricsConsumer, error) {
 		return newMetricsConsumer(
 			[]typedMetricConsumer{
 				newGaugeConsumer(sender, settings),
@@ -69,7 +69,8 @@ func createMockMetricsExporter(
 			false,
 		), nil
 	}
-	exp, err := newMetricsExporter(componenttest.NewNopTelemetrySettings(), cfg, creator)
+
+	exp, err := newMetricsExporter(componenttest.NewNopExporterCreateSettings(), cfg, creator)
 	if err != nil {
 		return nil, err
 	}

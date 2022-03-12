@@ -92,7 +92,7 @@ func requireMetricOk(t *testing.T, m pdata.Metric) {
 
 func requirePointOk(t *testing.T, point pdata.NumberDataPoint) {
 	require.NotZero(t, point.Timestamp())
-	require.NotEqual(t, pdata.MetricValueTypeNone, point.Type())
+	require.NotEqual(t, pdata.MetricValueTypeNone, point.ValueType())
 }
 
 func requireResourceOk(t *testing.T, resource pdata.Resource) {

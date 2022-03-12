@@ -22,3 +22,7 @@ service:
       receivers: [nop]
       processors: [nop]
       exporters: [azuremonitor]
+    logs:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [azuremonitor]

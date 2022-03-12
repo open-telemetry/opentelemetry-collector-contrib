@@ -24,7 +24,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -90,7 +90,7 @@ func cassandraContainer(t *testing.T) testcontainers.Container {
 	ctx := context.Background()
 	req := testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
-			Context:    path.Join(".", "testdata"),
+			Context:    filepath.Join("testdata"),
 			Dockerfile: "Dockerfile.cassandra",
 		},
 		ExposedPorts: []string{"7199:7199"},
@@ -157,7 +157,7 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 				CollectionInterval: 100 * time.Millisecond,
 				Endpoint:           fmt.Sprintf("%v:7199", hostname),
 				JARPath:            jar,
-				GroovyScript:       path.Join(".", "testdata", "script.groovy"),
+				GroovyScript:       filepath.Join("testdata", "script.groovy"),
 				OTLPExporterConfig: otlpExporterConfig{
 					Endpoint: "127.0.0.1:0",
 					TimeoutSettings: exporterhelper.TimeoutSettings{
@@ -259,7 +259,7 @@ func TestJMXReceiverInvalidOTLPEndpointIntegration(t *testing.T) {
 		Endpoint:           fmt.Sprintf("service:jmx:rmi:///jndi/rmi://localhost:7199/jmxrmi"),
 		JARPath:            "/notavalidpath",
 		Properties:         make(map[string]string),
-		GroovyScript:       path.Join(".", "testdata", "script.groovy"),
+		GroovyScript:       filepath.Join("testdata", "script.groovy"),
 		OTLPExporterConfig: otlpExporterConfig{
 			Endpoint: "<invalid>:123",
 			TimeoutSettings: exporterhelper.TimeoutSettings{

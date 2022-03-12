@@ -17,9 +17,12 @@ package nginxreceiver // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver/internal/metadata"
 )
 
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	confighttp.HTTPClientSettings           `mapstructure:",squash"`
+	Metrics                                 metadata.MetricsSettings `mapstructure:"metrics"`
 }

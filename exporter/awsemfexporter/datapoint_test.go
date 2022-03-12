@@ -666,7 +666,7 @@ func TestGetDataPoints(t *testing.T) {
 				assert.Equal(t, expectedDPS.deltaMetricMetadata, convertedDPS.deltaMetricMetadata)
 				assert.Equal(t, 1, convertedDPS.Len())
 				dp := convertedDPS.NumberDataPointSlice.At(0)
-				switch dp.Type() {
+				switch dp.ValueType() {
 				case pdata.MetricValueTypeDouble:
 					assert.Equal(t, 0.1, dp.DoubleVal())
 				case pdata.MetricValueTypeInt:

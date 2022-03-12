@@ -652,7 +652,6 @@ func TestExportLogs(t *testing.T) {
 	rlog.Resource().Attributes().InsertString("resource", "R1")
 	rlog.Resource().Attributes().InsertString("service.name", "test-service")
 	l := rlog.InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty()
-	l.SetName("logname")
 	l.SetTimestamp(pdata.NewTimestampFromTime(timestamp))
 	l.Body().SetStringVal("log body")
 	l.Attributes().InsertString("foo", "bar")
@@ -672,8 +671,7 @@ func TestExportLogs(t *testing.T) {
 					Message:   "log body",
 					Timestamp: timestamp.UnixNano() / (1000 * 1000),
 					Attributes: map[string]interface{}{
-						"foo":  "bar",
-						"name": "logname",
+						"foo": "bar",
 					},
 				},
 			},

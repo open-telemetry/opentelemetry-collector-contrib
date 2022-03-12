@@ -31,16 +31,6 @@ const (
 	traceIDFieldKey = "trace_id"
 )
 
-// Composite index of a log record in pdata.Logs.
-type logIndex struct {
-	// Index in orig list (i.e. root parent index).
-	resource int
-	// Index in InstrumentationLibraryLogs list (i.e. immediate parent index).
-	library int
-	// Index in Logs list (i.e. the log record index).
-	record int
-}
-
 func mapLogRecordToSplunkEvent(res pdata.Resource, lr pdata.LogRecord, config *Config, logger *zap.Logger) *splunk.Event {
 	host := unknownHostName
 	source := config.Source

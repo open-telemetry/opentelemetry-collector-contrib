@@ -26,6 +26,7 @@ The following configuration options can also be configured:
 - `cert_file` (no default) Path to the TLS cert to use for client connections when TLS client auth is required.
 - `key_file` (no default) Path to the TLS key to use for TLS required connections.
 - `max_content_length_logs` (default: 2097152): Maximum log data size in bytes per HTTP post limited to 2097152 bytes (2 MiB).
+- `max_content_length_metrics` (default: 2097152): Maximum metric data size in bytes per HTTP post limited to 2097152 bytes (2 MiB).
 - `splunk_app_name` (default: "OpenTelemetry Collector Contrib") App name is used to track telemetry information for Splunk App's using HEC by App name.
 - `splunk_app_version` (default: Current OpenTelemetry Collector Contrib Build Version): App version is used to track telemetry information for Splunk App's using HEC by App version.
 - `hec_metadata_to_otel_attrs/source` (default = 'com.splunk.source'): Specifies the mapping of a specific unified model attribute value to the standard source field of a HEC event.

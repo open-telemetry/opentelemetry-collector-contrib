@@ -55,7 +55,8 @@ func TestFactory(t *testing.T) {
 			config: func() *Config {
 				tempDir, _ := ioutil.TempDir("", "")
 				return &Config{
-					Directory: tempDir,
+					Directory:  tempDir,
+					Compaction: &CompactionConfig{},
 				}
 			}(),
 		},

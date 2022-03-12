@@ -17,8 +17,8 @@ package collection // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
-	"k8s.io/api/autoscaling/v2beta1"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
 
 	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/utils"
@@ -52,7 +52,7 @@ var hpaDesiredReplicasMetric = &metricspb.MetricDescriptor{
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 }
 
-func getMetricsForHPA(hpa *v2beta1.HorizontalPodAutoscaler) []*resourceMetrics {
+func getMetricsForHPA(hpa *autoscalingv2beta2.HorizontalPodAutoscaler) []*resourceMetrics {
 	metrics := []*metricspb.Metric{
 		{
 			MetricDescriptor: hpaMaxReplicasMetric,
@@ -88,7 +88,7 @@ func getMetricsForHPA(hpa *v2beta1.HorizontalPodAutoscaler) []*resourceMetrics {
 	}
 }
 
-func getResourceForHPA(hpa *v2beta1.HorizontalPodAutoscaler) *resourcepb.Resource {
+func getResourceForHPA(hpa *autoscalingv2beta2.HorizontalPodAutoscaler) *resourcepb.Resource {
 	return &resourcepb.Resource{
 		Type: k8sType,
 		Labels: map[string]string{
@@ -100,7 +100,7 @@ func getResourceForHPA(hpa *v2beta1.HorizontalPodAutoscaler) *resourcepb.Resourc
 	}
 }
 
-func getMetadataForHPA(hpa *v2beta1.HorizontalPodAutoscaler) map[metadata.ResourceID]*KubernetesMetadata {
+func getMetadataForHPA(hpa *autoscalingv2beta2.HorizontalPodAutoscaler) map[metadata.ResourceID]*KubernetesMetadata {
 	return map[metadata.ResourceID]*KubernetesMetadata{
 		metadata.ResourceID(hpa.UID): getGenericMetadata(&hpa.ObjectMeta, "HPA"),
 	}

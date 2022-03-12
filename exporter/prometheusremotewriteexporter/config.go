@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/service/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
@@ -29,6 +30,7 @@ type Config struct {
 	config.ExporterSettings        `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
+	sanitizeLabel                  bool
 
 	// prefix attached to each exported metric name
 	// See: https://prometheus.io/docs/practices/naming/#metric-names
@@ -47,6 +49,7 @@ type Config struct {
 	// "Enabled" - A boolean field to enable/disable this option. Default is `false`.
 	// If enabled, all the resource attributes will be converted to metric labels by default.
 	ResourceToTelemetrySettings resourcetotelemetry.Settings `mapstructure:"resource_to_telemetry_conversion"`
+	WAL                         *WALConfig                   `mapstructure:"wal"`
 }
 
 // RemoteWriteQueue allows to configure the remote write queue.
@@ -62,6 +65,16 @@ type RemoteWriteQueue struct {
 	// NumWorkers configures the number of workers used by
 	// the collector to fan out remote write requests.
 	NumConsumers int `mapstructure:"num_consumers"`
+}
+
+var dropSanitizationGate = featuregate.Gate{
+	ID:          "exporter.prometheusremotewrite.PermissiveLabelSanitization",
+	Enabled:     false,
+	Description: "Controls whether to change labels starting with '_' to 'key_'",
+}
+
+func init() {
+	featuregate.Register(dropSanitizationGate)
 }
 
 // TODO(jbd): Add capacity, max_samples_per_send to QueueConfig.

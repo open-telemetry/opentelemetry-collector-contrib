@@ -25,7 +25,7 @@ import (
 func serializeGauge(name, prefix string, dims dimensions.NormalizedDimensionList, dp pdata.NumberDataPoint) (string, error) {
 	var metricOption dtMetric.MetricOption
 
-	switch dp.Type() {
+	switch dp.ValueType() {
 	case pdata.MetricValueTypeNone:
 		return "", fmt.Errorf("unsupported value type none")
 	case pdata.MetricValueTypeInt:

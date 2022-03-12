@@ -28,9 +28,8 @@ import (
 	"go.uber.org/atomic"
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/api/autoscaling/v2beta1"
+	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
 	batchv1 "k8s.io/api/batch/v1"
-	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/informers"
@@ -98,9 +97,9 @@ func (rw *resourceWatcher) prepareSharedInformerFactory() {
 	rw.setupInformers(&appsv1.ReplicaSet{}, factory.Apps().V1().ReplicaSets().Informer())
 	rw.setupInformers(&appsv1.StatefulSet{}, factory.Apps().V1().StatefulSets().Informer())
 	rw.setupInformers(&batchv1.Job{}, factory.Batch().V1().Jobs().Informer())
-	rw.setupInformers(&batchv1beta1.CronJob{}, factory.Batch().V1beta1().CronJobs().Informer())
-	rw.setupInformers(&v2beta1.HorizontalPodAutoscaler{},
-		factory.Autoscaling().V2beta1().HorizontalPodAutoscalers().Informer(),
+	rw.setupInformers(&batchv1.CronJob{}, factory.Batch().V1().CronJobs().Informer())
+	rw.setupInformers(&autoscalingv2beta2.HorizontalPodAutoscaler{},
+		factory.Autoscaling().V2beta2().HorizontalPodAutoscalers().Informer(),
 	)
 
 	if rw.osQuotaClient != nil {

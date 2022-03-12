@@ -42,8 +42,9 @@ func TestDefaultProcessors(t *testing.T) {
 	procFactories := allFactories.Processors
 
 	tests := []struct {
-		processor   config.Type
-		getConfigFn getProcessorConfigFn
+		processor     config.Type
+		getConfigFn   getProcessorConfigFn
+		skipLifecycle bool
 	}{
 		{
 			processor: "attributes",
@@ -59,7 +60,20 @@ func TestDefaultProcessors(t *testing.T) {
 			processor: "batch",
 		},
 		{
+			processor: "deltatorate",
+		},
+		{
 			processor: "filter",
+		},
+		{
+			processor: "groupbyattrs",
+		},
+		{
+			processor: "groupbytrace",
+		},
+		{
+			processor:     "k8sattributes",
+			skipLifecycle: true, // Requires a k8s API to communicate with
 		},
 		{
 			processor: "memory_limiter",
@@ -71,7 +85,16 @@ func TestDefaultProcessors(t *testing.T) {
 			},
 		},
 		{
+			processor: "metricstransform",
+		},
+		{
+			processor: "experimental_metricsgeneration",
+		},
+		{
 			processor: "probabilistic_sampler",
+		},
+		{
+			processor: "resourcedetection",
 		},
 		{
 			processor: "resource",
@@ -84,6 +107,10 @@ func TestDefaultProcessors(t *testing.T) {
 			},
 		},
 		{
+			processor:     "routing",
+			skipLifecycle: true, // Requires external exporters to be configured to route data
+		},
+		{
 			processor: "span",
 			getConfigFn: func() config.Processor {
 				cfg := procFactories["span"].CreateDefaultConfig().(*spanprocessor.Config)
@@ -91,9 +118,19 @@ func TestDefaultProcessors(t *testing.T) {
 				return cfg
 			},
 		},
+		{
+			processor:     "spanmetrics",
+			skipLifecycle: true, // Requires a running exporter to convert data to/from
+		},
+		{
+			processor: "cumulativetodelta",
+		},
+		{
+			processor: "tail_sampling",
+		},
 	}
 
-	assert.Equal(t, len(tests)+11 /* not tested */, len(procFactories))
+	assert.Len(t, tests, len(procFactories), "All processors MUST be added to lifecycle tests")
 	for _, tt := range tests {
 		t.Run(string(tt.processor), func(t *testing.T) {
 			factory, ok := procFactories[tt.processor]
@@ -101,6 +138,10 @@ func TestDefaultProcessors(t *testing.T) {
 			assert.Equal(t, tt.processor, factory.Type())
 			assert.EqualValues(t, config.NewComponentID(tt.processor), factory.CreateDefaultConfig().ID())
 
+			if tt.skipLifecycle {
+				t.Skip("Skipping lifecycle processor check for:", tt.processor)
+				return
+			}
 			verifyProcessorLifecycle(t, factory, tt.getConfigFn)
 		})
 	}

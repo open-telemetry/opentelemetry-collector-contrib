@@ -397,7 +397,7 @@ func getMetricProperties(metric pdata.Metric) (
 		attributes = metric.Gauge().DataPoints().At(0).Attributes()
 		ts = metric.Gauge().DataPoints().At(0).Timestamp().AsTime()
 		dp := metric.Gauge().DataPoints().At(0)
-		switch dp.Type() {
+		switch dp.ValueType() {
 		case pdata.MetricValueTypeInt:
 			value = float64(dp.IntVal())
 		case pdata.MetricValueTypeDouble:
@@ -409,7 +409,7 @@ func getMetricProperties(metric pdata.Metric) (
 		attributes = metric.Sum().DataPoints().At(0).Attributes()
 		ts = metric.Sum().DataPoints().At(0).Timestamp().AsTime()
 		dp := metric.Sum().DataPoints().At(0)
-		switch dp.Type() {
+		switch dp.ValueType() {
 		case pdata.MetricValueTypeInt:
 			value = float64(dp.IntVal())
 		case pdata.MetricValueTypeDouble:

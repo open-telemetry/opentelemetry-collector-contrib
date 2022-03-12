@@ -52,6 +52,23 @@ func AssertSumMetricStartTimeEquals(t *testing.T, metric pdata.Metric, startTime
 	}
 }
 
+func AssertGaugeMetricHasAttributeValue(t *testing.T, metric pdata.Metric, index int, labelName string, expectedVal pdata.AttributeValue) {
+	val, ok := metric.Gauge().DataPoints().At(index).Attributes().Get(labelName)
+	assert.Truef(t, ok, "Missing attribute %q in metric %q", labelName, metric.Name())
+	assert.Equal(t, expectedVal, val)
+}
+
+func AssertGaugeMetricHasAttribute(t *testing.T, metric pdata.Metric, index int, labelName string) {
+	_, ok := metric.Gauge().DataPoints().At(index).Attributes().Get(labelName)
+	assert.Truef(t, ok, "Missing attribute %q in metric %q", labelName, metric.Name())
+}
+
+func AssertGaugeMetricStartTimeEquals(t *testing.T, metric pdata.Metric, startTime pdata.Timestamp) {
+	ddps := metric.Gauge().DataPoints()
+	for i := 0; i < ddps.Len(); i++ {
+		require.Equal(t, startTime, ddps.At(i).StartTimestamp())
+	}
+}
 func AssertSameTimeStampForAllMetrics(t *testing.T, metrics pdata.MetricSlice) {
 	AssertSameTimeStampForMetrics(t, metrics, 0, metrics.Len())
 }

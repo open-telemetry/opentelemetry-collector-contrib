@@ -22,7 +22,7 @@ import (
 // sanitize replaces non-alphanumeric characters with underscores in s.
 // The code for sanitize is mostly copied from:
 //  https://github.com/census-instrumentation/opencensus-go/blob/950a67f393d867cfbe91414063b69e511f42fefb/internal/sanitize.go#L1-L50
-func sanitize(s string) string {
+func sanitize(s string, skipSanitizeLabel bool) string {
 	if len(s) == 0 {
 		return s
 	}
@@ -35,7 +35,12 @@ func sanitize(s string) string {
 	if unicode.IsDigit(rune(s[0])) {
 		s = "key_" + s
 	}
-	if s[0] == '_' {
+	//replace labels starting with _ only when skipSanitizeLabel is disabled
+	if !skipSanitizeLabel && s[0] == '_' {
+		s = "key" + s
+	}
+
+	if s[0] == '_' && s[1] == '_' {
 		s = "key" + s
 	}
 	return s

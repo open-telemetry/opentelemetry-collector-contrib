@@ -29,33 +29,37 @@ var (
 	msTime1 = int64(time1 / uint64(int64(time.Millisecond)/int64(time.Nanosecond)))
 	msTime2 = int64(time2 / uint64(int64(time.Millisecond)/int64(time.Nanosecond)))
 
-	label11       = "test_label11"
-	value11       = "test_value11"
-	label12       = "test_label12"
-	value12       = "test_value12"
-	label21       = "test_label21"
-	value21       = "test_value21"
-	label22       = "test_label22"
-	value22       = "test_value22"
-	label31       = "test_label31"
-	value31       = "test_value31"
-	label32       = "test_label32"
-	value32       = "test_value32"
-	label41       = "__test_label41__"
-	value41       = "test_value41"
-	dirty1        = "%"
-	dirty2        = "?"
-	traceIDValue1 = "traceID-value1"
-	traceIDKey    = "trace_id"
+	label11            = "test_label11"
+	value11            = "test_value11"
+	label12            = "test_label12"
+	value12            = "test_value12"
+	label21            = "test_label21"
+	value21            = "test_value21"
+	label22            = "test_label22"
+	value22            = "test_value22"
+	label31            = "test_label31"
+	value31            = "test_value31"
+	label32            = "test_label32"
+	value32            = "test_value32"
+	label41            = "__test_label41__"
+	value41            = "test_value41"
+	dirty1             = "%"
+	dirty2             = "?"
+	traceIDValue1      = "traceID-value1"
+	traceIDKey         = "trace_id"
+	colliding1         = "test.colliding"
+	colliding2         = "test/colliding"
+	collidingSanitized = "test_colliding"
 
 	intVal1   int64 = 1
 	intVal2   int64 = 2
 	floatVal1       = 1.0
 	floatVal2       = 2.0
 
-	lbs1      = getAttributes(label11, value11, label12, value12)
-	lbs2      = getAttributes(label21, value21, label22, value22)
-	lbs1Dirty = getAttributes(label11+dirty1, value11, dirty2+label12, value12)
+	lbs1         = getAttributes(label11, value11, label12, value12)
+	lbs2         = getAttributes(label21, value21, label22, value22)
+	lbs1Dirty    = getAttributes(label11+dirty1, value11, dirty2+label12, value12)
+	lbsColliding = getAttributes(colliding1, value11, colliding2, value12)
 
 	exlbs1 = map[string]string{label41: value41}
 	exlbs2 = map[string]string{label11: value41}
@@ -396,11 +400,11 @@ func getSummaryMetric(name string, attributes pdata.AttributeMap, ts uint64, sum
 	return metric
 }
 
-func getResource(resources ...string) pdata.Resource {
+func getResource(resources map[string]pdata.AttributeValue) pdata.Resource {
 	resource := pdata.NewResource()
 
-	for i := 0; i < len(resources); i += 2 {
-		resource.Attributes().Upsert(resources[i], pdata.NewAttributeValueString(resources[i+1]))
+	for k, v := range resources {
+		resource.Attributes().Upsert(k, v)
 	}
 
 	return resource

@@ -15,7 +15,7 @@
 package bearertokenauthextension
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -31,7 +31,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Extensions[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -60,6 +60,6 @@ func TestLoadConfigError(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Extensions[typeStr] = factory
-	_, err = servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config_missing_token.yaml"), factories)
+	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config_missing_token.yaml"), factories)
 	require.Error(t, err)
 }

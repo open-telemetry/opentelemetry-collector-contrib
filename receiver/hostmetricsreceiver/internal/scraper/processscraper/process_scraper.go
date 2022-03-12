@@ -19,12 +19,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/host"
-	"github.com/shirou/gopsutil/v3/process"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
@@ -42,7 +40,7 @@ const (
 // scraper for Process Metrics
 type scraper struct {
 	config    *Config
-	startTime pdata.Timestamp
+	mb        *metadata.MetricsBuilder
 	includeFS filterset.FilterSet
 	excludeFS filterset.FilterSet
 
@@ -80,7 +78,7 @@ func (s *scraper) start(context.Context, component.Host) error {
 		return err
 	}
 
-	s.startTime = pdata.Timestamp(bootTime * 1e9)
+	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, metadata.WithStartTime(pdata.Timestamp(bootTime*1e9)))
 	return nil
 }
 
@@ -109,17 +107,18 @@ func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 
 		now := pdata.NewTimestampFromTime(time.Now())
 
-		if err = scrapeAndAppendCPUTimeMetric(metrics, s.startTime, now, md.handle); err != nil {
+		if err = s.scrapeAndAppendCPUTimeMetric(now, md.handle); err != nil {
 			errs.AddPartial(cpuMetricsLen, fmt.Errorf("error reading cpu times for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 
-		if err = scrapeAndAppendMemoryUsageMetrics(metrics, now, md.handle); err != nil {
+		if err = s.scrapeAndAppendMemoryUsageMetrics(now, md.handle); err != nil {
 			errs.AddPartial(memoryMetricsLen, fmt.Errorf("error reading memory info for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 
-		if err = scrapeAndAppendDiskIOMetric(metrics, s.startTime, now, md.handle); err != nil {
+		if err = s.scrapeAndAppendDiskIOMetric(now, md.handle); err != nil {
 			errs.AddPartial(diskMetricsLen, fmt.Errorf("error reading disk usage for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
+		s.mb.Emit(metrics)
 	}
 
 	return md, errs.Combine()
@@ -180,66 +179,34 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 	return metadata, errs.Combine()
 }
 
-func scrapeAndAppendCPUTimeMetric(metrics pdata.MetricSlice, startTime, now pdata.Timestamp, handle processHandle) error {
+func (s *scraper) scrapeAndAppendCPUTimeMetric(now pdata.Timestamp, handle processHandle) error {
 	times, err := handle.Times()
 	if err != nil {
 		return err
 	}
 
-	initializeCPUTimeMetric(metrics.AppendEmpty(), startTime, now, times)
+	s.recordCPUTimeMetric(now, times)
 	return nil
 }
 
-func initializeCPUTimeMetric(metric pdata.Metric, startTime, now pdata.Timestamp, times *cpu.TimesStat) {
-	metadata.Metrics.ProcessCPUTime.Init(metric)
-
-	ddps := metric.Sum().DataPoints()
-	ddps.EnsureCapacity(cpuStatesLen)
-	appendCPUTimeStateDataPoints(ddps, startTime, now, times)
-}
-
-func scrapeAndAppendMemoryUsageMetrics(metrics pdata.MetricSlice, now pdata.Timestamp, handle processHandle) error {
+func (s *scraper) scrapeAndAppendMemoryUsageMetrics(now pdata.Timestamp, handle processHandle) error {
 	mem, err := handle.MemoryInfo()
 	if err != nil {
 		return err
 	}
 
-	initializeMemoryUsageMetric(metrics.AppendEmpty(), metadata.Metrics.ProcessMemoryPhysicalUsage, now, int64(mem.RSS))
-	initializeMemoryUsageMetric(metrics.AppendEmpty(), metadata.Metrics.ProcessMemoryVirtualUsage, now, int64(mem.VMS))
+	s.mb.RecordProcessMemoryPhysicalUsageDataPoint(now, int64(mem.RSS))
+	s.mb.RecordProcessMemoryVirtualUsageDataPoint(now, int64(mem.VMS))
 	return nil
 }
 
-func initializeMemoryUsageMetric(metric pdata.Metric, metricIntf metadata.MetricIntf, now pdata.Timestamp, usage int64) {
-	metricIntf.Init(metric)
-	initializeMemoryUsageDataPoint(metric.Sum().DataPoints().AppendEmpty(), now, usage)
-}
-
-func initializeMemoryUsageDataPoint(dataPoint pdata.NumberDataPoint, now pdata.Timestamp, usage int64) {
-	dataPoint.SetTimestamp(now)
-	dataPoint.SetIntVal(usage)
-}
-
-func scrapeAndAppendDiskIOMetric(metrics pdata.MetricSlice, startTime, now pdata.Timestamp, handle processHandle) error {
+func (s *scraper) scrapeAndAppendDiskIOMetric(now pdata.Timestamp, handle processHandle) error {
 	io, err := handle.IOCounters()
 	if err != nil {
 		return err
 	}
 
-	initializeDiskIOMetric(metrics.AppendEmpty(), startTime, now, io)
+	s.mb.RecordProcessDiskIoDataPoint(now, int64(io.ReadBytes), metadata.AttributeDirection.Read)
+	s.mb.RecordProcessDiskIoDataPoint(now, int64(io.WriteBytes), metadata.AttributeDirection.Write)
 	return nil
-}
-
-func initializeDiskIOMetric(metric pdata.Metric, startTime, now pdata.Timestamp, io *process.IOCountersStat) {
-	metadata.Metrics.ProcessDiskIo.Init(metric)
-
-	idps := metric.Sum().DataPoints()
-	initializeDiskIODataPoint(idps.AppendEmpty(), startTime, now, int64(io.ReadBytes), metadata.AttributeDirection.Read)
-	initializeDiskIODataPoint(idps.AppendEmpty(), startTime, now, int64(io.WriteBytes), metadata.AttributeDirection.Write)
-}
-
-func initializeDiskIODataPoint(dataPoint pdata.NumberDataPoint, startTime, now pdata.Timestamp, value int64, directionLabel string) {
-	dataPoint.Attributes().InsertString(metadata.Attributes.Direction, directionLabel)
-	dataPoint.SetStartTimestamp(startTime)
-	dataPoint.SetTimestamp(now)
-	dataPoint.SetIntVal(value)
 }

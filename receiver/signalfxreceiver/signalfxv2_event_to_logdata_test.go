@@ -51,9 +51,9 @@ func TestSignalFxV2EventsToLogData(t *testing.T) {
 	buildDefaultLogs := func() pdata.LogRecordSlice {
 		logSlice := pdata.NewLogRecordSlice()
 		l := logSlice.AppendEmpty()
-		l.SetName("shutdown")
 		l.SetTimestamp(pdata.NewTimestampFromTime(now.Truncate(time.Millisecond)))
 		attrs := l.Attributes()
+		attrs.InsertString("com.splunk.signalfx.event_type", "shutdown")
 		attrs.InsertString("k0", "v0")
 		attrs.InsertString("k1", "v1")
 		attrs.InsertString("k2", "v2")

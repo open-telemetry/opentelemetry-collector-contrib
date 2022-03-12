@@ -17,7 +17,7 @@ package dockerobserver
 import (
 	"encoding/json"
 	"io/ioutil"
-	"path"
+	"path/filepath"
 	"testing"
 
 	dtypes "github.com/docker/docker/api/types"
@@ -32,7 +32,7 @@ import (
 )
 
 func containerJSON(t *testing.T) dtypes.ContainerJSON {
-	containerRaw, err := ioutil.ReadFile(path.Join(".", "testdata", "container.json"))
+	containerRaw, err := ioutil.ReadFile(filepath.Join("testdata", "container.json"))
 	require.NoError(t, err)
 
 	var container dtypes.ContainerJSON
@@ -112,7 +112,7 @@ func TestCollectEndpointsAllConfigSettings(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Extensions[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
@@ -160,7 +160,7 @@ func TestCollectEndpointsUseHostnameIfPresent(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Extensions[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
@@ -208,7 +208,7 @@ func TestCollectEndpointsUseHostBindings(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Extensions[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
@@ -256,7 +256,7 @@ func TestCollectEndpointsIgnoreNonHostBindings(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Extensions[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
 	require.Nil(t, err)
 	require.NotNil(t, cfg)

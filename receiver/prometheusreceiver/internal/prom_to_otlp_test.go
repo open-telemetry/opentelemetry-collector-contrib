@@ -17,36 +17,9 @@ package internal
 import (
 	"testing"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/model/pdata"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
-
-// Parity test to ensure that createNodeAndResource produces identical results to createNodeAndResourcePdata.
-func TestCreateNodeAndResourceEquivalence(t *testing.T) {
-	job, instance, scheme := "converter", "ocmetrics", "http"
-	ocNode, ocResource := createNodeAndResource(job, instance, scheme)
-	mdFromOC := opencensus.OCToMetrics(ocNode, ocResource,
-		// We need to pass in a dummy set of metrics
-		// just to populate and allow for full conversion.
-		[]*metricspb.Metric{
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "m1",
-					Description: "d1",
-					Unit:        "By",
-				},
-			},
-		},
-	)
-
-	fromOCResource := mdFromOC.ResourceMetrics().At(0).Resource().Attributes().Sort()
-	byDirectOTLPResource := CreateNodeAndResourcePdata(job, instance, scheme).Attributes().Sort()
-
-	require.Equal(t, byDirectOTLPResource, fromOCResource)
-}
 
 type jobInstanceDefinition struct {
 	job, instance, host, scheme, port string
@@ -59,12 +32,11 @@ func makeResourceWithJobInstanceScheme(def *jobInstanceDefinition, hasHost bool)
 	// when variables change, these tests will fail and we'll have reports.
 	attrs.UpsertString("service.name", def.job)
 	if hasHost {
-		attrs.UpsertString("host.name", def.host)
+		attrs.UpsertString("net.host.name", def.host)
 	}
-	attrs.UpsertString("job", def.job)
-	attrs.UpsertString("instance", def.instance)
-	attrs.UpsertString("port", def.port)
-	attrs.UpsertString("scheme", def.scheme)
+	attrs.UpsertString("service.instance.id", def.instance)
+	attrs.UpsertString("net.host.port", def.port)
+	attrs.UpsertString("http.scheme", def.scheme)
 	return &resource
 }
 

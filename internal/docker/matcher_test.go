@@ -147,9 +147,9 @@ func TestStringMatcher(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			f, err := NewStringMatcher(tc.items)
+			f, err := newStringMatcher(tc.items)
 			assert.Nil(t, err)
-			assert.Equal(t, tc.shouldMatch, f.Matches(tc.input))
+			assert.Equal(t, tc.shouldMatch, f.matches(tc.input))
 		})
 	}
 }
@@ -195,7 +195,7 @@ func TestInvalidStringMatchers(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			f, err := NewStringMatcher(tc.filter)
+			f, err := newStringMatcher(tc.filter)
 			assert.Nil(t, f)
 			require.Error(t, err)
 			assert.Equal(t, tc.expectedError, err.Error())
