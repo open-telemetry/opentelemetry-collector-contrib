@@ -144,6 +144,19 @@ func (mp *MatchProperties) ValidateForLogs() error {
 	return nil
 }
 
+// ValidateForLogs validates properties for metrics.
+func (mp *MatchProperties) ValidateForMetrics() error {
+	if len(mp.SpanNames) > 0 || len(mp.Services) > 0 || len(mp.LogNames) > 0 {
+		return errors.New("none of services, span_names nor log_names should be specified for metrics records")
+	}
+
+	if len(mp.Attributes) == 0 && len(mp.Libraries) == 0 && len(mp.Resources) == 0 && len(mp.MetricNames) == 0 {
+		return errors.New(`at least one of "attributes", "libraries", "resources" or "metric_names" field must be specified`)
+	}
+
+	return nil
+}
+
 // Attribute specifies the attribute key and optional value to match against.
 type Attribute struct {
 	// Key specifies the attribute key.

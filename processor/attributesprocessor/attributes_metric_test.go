@@ -52,42 +52,60 @@ func runIndividualMetricTestCase(t *testing.T, mt metricTestCase, mp component.M
 func generateMetricData(resourceName string, attrs map[string]pdata.AttributeValue) pdata.Metrics {
 	md := pdata.NewMetrics()
 	res := md.ResourceMetrics().AppendEmpty()
-	res.Resource().Attributes().InsertString("name", resourceName)
+	res.Resource().Attributes().InsertString("resource_attr_name", resourceName)
 	ill := res.InstrumentationLibraryMetrics().AppendEmpty()
-	m := ill.Metrics().AppendEmpty()
 
-	switch m.DataType() {
-	case pdata.MetricDataTypeGauge:
-		dps := m.Gauge().DataPoints()
-		for i := 0; i < dps.Len(); i++ {
-			pdata.NewAttributeMapFromMap(attrs).CopyTo(dps.At(i).Attributes())
-			dps.At(i).Attributes().Sort()
-		}
-	case pdata.MetricDataTypeSum:
-		dps := m.Sum().DataPoints()
-		for i := 0; i < dps.Len(); i++ {
-			pdata.NewAttributeMapFromMap(attrs).CopyTo(dps.At(i).Attributes())
-			dps.At(i).Attributes().Sort()
-		}
-	case pdata.MetricDataTypeHistogram:
-		dps := m.Histogram().DataPoints()
-		for i := 0; i < dps.Len(); i++ {
-			pdata.NewAttributeMapFromMap(attrs).CopyTo(dps.At(i).Attributes())
-			dps.At(i).Attributes().Sort()
-		}
-	case pdata.MetricDataTypeExponentialHistogram:
-		dps := m.ExponentialHistogram().DataPoints()
-		for i := 0; i < dps.Len(); i++ {
-			pdata.NewAttributeMapFromMap(attrs).CopyTo(dps.At(i).Attributes())
-			dps.At(i).Attributes().Sort()
-		}
-	case pdata.MetricDataTypeSummary:
-		dps := m.Summary().DataPoints()
-		for i := 0; i < dps.Len(); i++ {
-			pdata.NewAttributeMapFromMap(attrs).CopyTo(dps.At(i).Attributes())
-			dps.At(i).Attributes().Sort()
-		}
-	}
+	// Add one of each type of data
+	gauge := ill.Metrics().AppendEmpty()
+	gauge.SetName(resourceName)
+	gauge.SetDataType(pdata.MetricDataTypeGauge)
+	gauge_dps := gauge.Gauge().DataPoints()
+	gauge_dp := gauge_dps.AppendEmpty()
+	gauge_dp.SetIntVal(123)
+	pdata.NewAttributeMapFromMap(attrs).CopyTo(gauge_dp.Attributes())
+	gauge_dp.Attributes().Sort()
+
+	sum := ill.Metrics().AppendEmpty()
+	sum.SetName(resourceName)
+	sum.SetDataType(pdata.MetricDataTypeSum)
+	sum_dps := sum.Sum().DataPoints()
+	sum_dp := sum_dps.AppendEmpty()
+	sum_dp.SetIntVal(123)
+	pdata.NewAttributeMapFromMap(attrs).CopyTo(sum_dp.Attributes())
+	sum_dp.Attributes().Sort()
+
+	histo := ill.Metrics().AppendEmpty()
+	histo.SetName(resourceName)
+	histo.SetDataType(pdata.MetricDataTypeHistogram)
+	histo_dps := histo.Histogram().DataPoints()
+	histo_dp := histo_dps.AppendEmpty()
+	// histo 1,1,1,1,1,10,10,10,10,55
+	histo_dp.SetCount(10)
+	histo_dp.SetSum(100)
+	histo_dp.SetExplicitBounds([]float64{0, 10, 50})
+	histo_dp.SetBucketCounts([]uint64{5, 4, 1})
+	pdata.NewAttributeMapFromMap(attrs).CopyTo(histo_dp.Attributes())
+	histo_dp.Attributes().Sort()
+
+	expo_histo := ill.Metrics().AppendEmpty()
+	expo_histo.SetName(resourceName)
+	expo_histo.SetDataType(pdata.MetricDataTypeExponentialHistogram)
+	expo_histo_dps := expo_histo.ExponentialHistogram().DataPoints()
+	expo_histo_dp := expo_histo_dps.AppendEmpty()
+	expo_histo_dp.SetCount(10)
+	expo_histo_dp.SetSum(100)
+	pdata.NewAttributeMapFromMap(attrs).CopyTo(expo_histo_dp.Attributes())
+	expo_histo_dp.Attributes().Sort()
+
+	summary := ill.Metrics().AppendEmpty()
+	summary.SetName(resourceName)
+	summary.SetDataType(pdata.MetricDataTypeSummary)
+	summary_dps := summary.Summary().DataPoints()
+	summary_dp := summary_dps.AppendEmpty()
+	summary_dp.SetCount(10)
+	summary_dp.SetSum(100)
+	pdata.NewAttributeMapFromMap(attrs).CopyTo(summary_dp.Attributes())
+	summary_dp.Attributes().Sort()
 
 	return md
 }
@@ -227,7 +245,7 @@ func TestAttributes_FilterMetrics(t *testing.T) {
 		{Key: "attribute1", Action: attraction.INSERT, Value: 123},
 	}
 	oCfg.Include = &filterconfig.MatchProperties{
-		Resources: []filterconfig.Attribute{{Key: "name", Value: "^[^i].*"}},
+		Resources: []filterconfig.Attribute{{Key: "resource_attr_name", Value: "^[^i].*"}},
 		Config:    *createConfig(filterset.Regexp),
 	}
 	oCfg.Exclude = &filterconfig.MatchProperties{
@@ -292,12 +310,12 @@ func TestAttributes_FilterMetricsByNameStrict(t *testing.T) {
 		{Key: "attribute1", Action: attraction.INSERT, Value: 123},
 	}
 	oCfg.Include = &filterconfig.MatchProperties{
-		Resources: []filterconfig.Attribute{{Key: "name", Value: "apply"}},
-		Config:    *createConfig(filterset.Strict),
+		MetricNames: []string{"apply"},
+		Config:      *createConfig(filterset.Strict),
 	}
 	oCfg.Exclude = &filterconfig.MatchProperties{
-		Resources: []filterconfig.Attribute{{Key: "name", Value: "dont_apply"}},
-		Config:    *createConfig(filterset.Strict),
+		MetricNames: []string{"dont_apply"},
+		Config:      *createConfig(filterset.Strict),
 	}
 	mp, err := factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
 	require.Nil(t, err)
@@ -355,12 +373,12 @@ func TestAttributes_FilterMetricsByNameRegexp(t *testing.T) {
 		{Key: "attribute1", Action: attraction.INSERT, Value: 123},
 	}
 	oCfg.Include = &filterconfig.MatchProperties{
-		Resources: []filterconfig.Attribute{{Key: "name", Value: "^apply.*"}},
-		Config:    *createConfig(filterset.Regexp),
+		MetricNames: []string{"^apply.*"},
+		Config:      *createConfig(filterset.Regexp),
 	}
 	oCfg.Exclude = &filterconfig.MatchProperties{
-		Resources: []filterconfig.Attribute{{Key: "name", Value: ".*dont_apply$"}},
-		Config:    *createConfig(filterset.Regexp),
+		MetricNames: []string{".*dont_apply$"},
+		Config:      *createConfig(filterset.Regexp),
 	}
 	mp, err := factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
 	require.Nil(t, err)
@@ -463,8 +481,8 @@ func BenchmarkAttributes_FilterMetricsByName(b *testing.B) {
 		{Key: "attribute1", Action: attraction.INSERT, Value: 123},
 	}
 	oCfg.Include = &filterconfig.MatchProperties{
-		Config:    *createConfig(filterset.Regexp),
-		Resources: []filterconfig.Attribute{{Key: "name", Value: "^apply.*"}},
+		MetricNames: []string{"^apply.*"},
+		Config:      *createConfig(filterset.Regexp),
 	}
 	mp, err := factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
 	require.NoError(b, err)

@@ -47,13 +47,15 @@ func (a *metricAttributesProcessor) processMetrics(ctx context.Context, md pdata
 	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		rs := rms.At(i)
+		resource := rs.Resource()
 		ilms := rs.InstrumentationLibraryMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			ils := ilms.At(j)
 			metrics := ils.Metrics()
+			library := ils.InstrumentationLibrary()
 			for k := 0; k < metrics.Len(); k++ {
 				mr := metrics.At(k)
-				if filtermetric.SkipMetric(a.include, a.exclude, mr, a.logger) {
+				if filtermetric.SkipMetric(a.include, a.exclude, mr, resource, library, a.logger) {
 					continue
 				}
 
