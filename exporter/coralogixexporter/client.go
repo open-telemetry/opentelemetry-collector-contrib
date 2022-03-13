@@ -74,11 +74,11 @@ func (c *coralogixClient) newPost(ctx context.Context, td pdata.Traces) error {
 				Metadata: &cxpb.Metadata{ApplicationName: c.cfg.AppName, SubsystemName: batch.GetProcess().GetServiceName()},
 			}, grpc.WaitForReady(c.cfg.WaitForReady))
 			if err != nil {
-				return fmt.Errorf("Failed to push trace data via Coralogix exporter %w", err)
+				return fmt.Errorf("failed to push trace data via Coralogix exporter %w", err)
 			}
-			c.logger.Debug("Trace was sent successfully")
+			c.logger.Debug("trace was sent successfully")
 		} else {
-			return fmt.Errorf("Failed to push trace data via Coralogix exporter because batch.process.serviceName is empty")
+			return fmt.Errorf("failed to push trace data via Coralogix exporter because batch.process.serviceName is empty")
 		}
 	}
 	return nil
