@@ -10,8 +10,10 @@ The following configuration options are supported:
 * `subscription` (Required): The subscription name to receive OTLP data from. The subscription name  should be a 
   fully qualified resource name (eg: `projects/otel-project/subscriptions/otlp`).
 * `encoding` (Optional): The encoding that will be used to received data from the subscription. This can either be
-  `otlp_proto_trace`, `otlp_proto_metric`, `otlp_proto_log`, or `raw_text` (see `encoding`)
-* `compression` (Optional): TODO
+  `otlp_proto_trace`, `otlp_proto_metric`, `otlp_proto_log`, or `raw_text` (see `encoding`).  This will only be used as 
+  a fallback, when no `content-type` attribute is present.
+* `compression` (Optional): The compression that will be used on received data from the subscription. When set it can 
+  only be `gzip`. This will only be used as a fallback, when no `content-encoding` attribute is present.
 
 ```yaml
 receivers:
