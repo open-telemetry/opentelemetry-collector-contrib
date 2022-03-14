@@ -24,8 +24,20 @@ import (
 	"go.uber.org/zap"
 )
 
+type FilterType int
+
+const (
+	INCLUDE FilterType = iota + 1
+	EXCLUDE
+)
+
 type Matcher interface {
-	MatchMetric(metric pdata.Metric, resource pdata.Resource, library pdata.InstrumentationLibrary) (bool, error)
+	MatchMetric(metric pdata.Metric) (bool, error)
+}
+type AttrMatcher interface {
+	MatchWholeMetric(metric pdata.Metric, resource pdata.Resource, library pdata.InstrumentationLibrary, filterType FilterType) (bool, error)
+	MatchAttributes(atts pdata.AttributeMap, resource pdata.Resource, library pdata.InstrumentationLibrary) bool
+	ChecksAttributes() bool
 }
 
 // propertiesMatcher allows matching a metric against various metric properties.
@@ -39,10 +51,20 @@ type propertiesMatcher struct {
 	nameFilters filterset.FilterSet
 }
 
+func NewMatcher(config *MatchProperties) (Matcher, error) {
+	if config == nil {
+		return nil, nil
+	}
+	if config.MatchType == Expr {
+		return newExprMatcher(config.Expressions)
+	}
+	return newNameMatcher(config)
+}
+
 // NewMatcher constructs a metric Matcher. If an 'expr' match type is specified,
 // returns an expr matcher, otherwise a name matcher.
 // NewMatcher creates a span Matcher that matches based on the given MatchProperties.
-func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
+func NewAttrMatcher(mp *filterconfig.MatchProperties) (AttrMatcher, error) {
 	if mp == nil {
 		return nil, nil
 	}
@@ -83,13 +105,13 @@ func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 // The default is to not skip. If include is defined, the metric must match or it will be skipped.
 // If include is not defined but exclude is, metric will be skipped if it matches exclude. Metric
 // is included if neither specified.
-func SkipMetric(include, exclude Matcher, metric pdata.Metric, resource pdata.Resource, library pdata.InstrumentationLibrary, logger *zap.Logger) bool {
+func SkipMetric(include, exclude AttrMatcher, metric pdata.Metric, resource pdata.Resource, library pdata.InstrumentationLibrary, logger *zap.Logger) bool {
 	if include != nil {
 		// A false (or an error) returned in this case means the metric should not be processed.
-		i, err := include.MatchMetric(metric, resource, library)
+		i, err := include.MatchWholeMetric(metric, resource, library, INCLUDE)
 		if !i || err != nil {
 			logger.Debug("Skipping metric",
-				zap.String("metric_name", (metric.Name())),
+				zap.String("metric_name", metric.Name()),
 				zap.Error(err)) // zap.Error handles case where err is nil
 			return true
 		}
@@ -97,10 +119,10 @@ func SkipMetric(include, exclude Matcher, metric pdata.Metric, resource pdata.Re
 
 	if exclude != nil {
 		// A true (or an error) returned in this case means the metric should not be processed.
-		e, err := exclude.MatchMetric(metric, resource, library)
+		e, err := exclude.MatchWholeMetric(metric, resource, library, EXCLUDE)
 		if e || err != nil {
 			logger.Debug("Skipping metric",
-				zap.String("metric_name", (metric.Name())),
+				zap.String("metric_name", metric.Name()),
 				zap.Error(err)) // zap.Error handles case where err is nil
 			return true
 		}
@@ -109,9 +131,13 @@ func SkipMetric(include, exclude Matcher, metric pdata.Metric, resource pdata.Re
 	return false
 }
 
-// MatchSpan matches a span and service to a set of properties.
+func (mp *propertiesMatcher) MatchMetric(metric pdata.Metric) (bool, error) {
+	return mp.nameFilters != nil && mp.nameFilters.Matches(metric.Name()), nil
+}
+
+// MatchMetric matches a metric and service to a set of properties.
 // see filterconfig.MatchProperties for more details
-func (mp *propertiesMatcher) MatchMetric(metric pdata.Metric, resource pdata.Resource, library pdata.InstrumentationLibrary) (bool, error) {
+func (mp *propertiesMatcher) MatchWholeMetric(metric pdata.Metric, resource pdata.Resource, library pdata.InstrumentationLibrary, filterType FilterType) (bool, error) {
 	// If a set of properties was not in the mp, all spans are considered to match on that property
 	if mp.serviceFilters != nil {
 		serviceName := serviceNameForResource(resource)
@@ -124,21 +150,23 @@ func (mp *propertiesMatcher) MatchMetric(metric pdata.Metric, resource pdata.Res
 		return false, nil
 	}
 
-	var atts pdata.AttributeMap
-	switch metric.DataType() {
-	// TODO: Blugh
-	case pdata.MetricDataTypeGauge:
-		atts = metric.Gauge().DataPoints().At(0).Attributes()
-	case pdata.MetricDataTypeSum:
-		atts = metric.Sum().DataPoints().At(0).Attributes()
-	case pdata.MetricDataTypeHistogram:
-		atts = metric.Histogram().DataPoints().At(0).Attributes()
-	case pdata.MetricDataTypeExponentialHistogram:
-		atts = metric.ExponentialHistogram().DataPoints().At(0).Attributes()
-	case pdata.MetricDataTypeSummary:
-		atts = metric.Summary().DataPoints().At(0).Attributes()
+	// checking individual datapoints is less efficient. Skip it if possible
+	if !mp.PropertiesMatcher.ChecksAttributes() {
+		return mp.PropertiesMatcher.Match(pdata.AttributeMap{}, resource, library), nil
 	}
-	return mp.PropertiesMatcher.Match(atts, resource, library), nil
+
+	// if we check the attributes to determine matching, then we need to default to 'includes' to be safe
+	if filterType == EXCLUDE {
+		return false, nil
+	}
+	if filterType == INCLUDE {
+		return true, nil
+	}
+	return false, fmt.Errorf("unrecognised filterType")
+}
+
+func (mp *propertiesMatcher) MatchAttributes(atts pdata.AttributeMap, resource pdata.Resource, library pdata.InstrumentationLibrary) bool {
+	return mp.PropertiesMatcher.Match(atts, resource, library)
 }
 
 // serviceNameForResource gets the service name for a specified Resource.

@@ -130,3 +130,7 @@ func attributeStringValue(attr pdata.AttributeValue) (string, error) {
 		return "", errUnexpectedAttributeType
 	}
 }
+
+func (ma AttributesMatcher) isEmpty() bool {
+	return len(ma) == 0
+}

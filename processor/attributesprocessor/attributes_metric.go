@@ -16,7 +16,6 @@ package attributesprocessor // import "github.com/open-telemetry/opentelemetry-c
 
 import (
 	"context"
-
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
@@ -27,14 +26,14 @@ import (
 type metricAttributesProcessor struct {
 	logger   *zap.Logger
 	attrProc *attraction.AttrProc
-	include  filtermetric.Matcher
-	exclude  filtermetric.Matcher
+	include  filtermetric.AttrMatcher
+	exclude  filtermetric.AttrMatcher
 }
 
 // newMetricAttributesProcessor returns a processor that modifies attributes of a
 // metric record. To construct the attributes processors, the use of the factory
 // methods are required in order to validate the inputs.
-func newMetricAttributesProcessor(logger *zap.Logger, attrProc *attraction.AttrProc, include, exclude filtermetric.Matcher) *metricAttributesProcessor {
+func newMetricAttributesProcessor(logger *zap.Logger, attrProc *attraction.AttrProc, include, exclude filtermetric.AttrMatcher) *metricAttributesProcessor {
 	return &metricAttributesProcessor{
 		logger:   logger,
 		attrProc: attrProc,
@@ -59,16 +58,36 @@ func (a *metricAttributesProcessor) processMetrics(ctx context.Context, md pdata
 					continue
 				}
 
-				a.processMetricAttributes(ctx, mr)
+				a.processMetricAttributes(ctx, mr, resource, library)
 			}
 		}
 	}
 	return md, nil
 }
 
+func (a *metricAttributesProcessor) excluded(atts pdata.AttributeMap, resource pdata.Resource, library pdata.InstrumentationLibrary) bool {
+	// Name filters and serviceFilters should already have been applied.
+	// If ChecksAttributes() == false, then we'll have already applied resource and library filtering, too.
+	if a.include != nil && a.include.ChecksAttributes() {
+		if !a.include.MatchAttributes(atts, resource, library) {
+			return true
+		}
+	}
+	if a.exclude != nil && a.exclude.ChecksAttributes() {
+		return a.exclude.MatchAttributes(atts, resource, library)
+	}
+	return false
+}
+
+func (a *metricAttributesProcessor) processMatching(ctx context.Context, atts pdata.AttributeMap, resource pdata.Resource, library pdata.InstrumentationLibrary) {
+	if !a.excluded(atts, resource, library) {
+		a.attrProc.Process(ctx, atts)
+	}
+}
+
 // Attributes are provided for each log and trace, but not at the metric level
 // Need to process attributes for every data point within a metric.
-func (a *metricAttributesProcessor) processMetricAttributes(ctx context.Context, m pdata.Metric) {
+func (a *metricAttributesProcessor) processMetricAttributes(ctx context.Context, m pdata.Metric, resource pdata.Resource, library pdata.InstrumentationLibrary) {
 
 	// This is a lot of repeated code, but since there is no single parent superclass
 	// between metric data types, we can't use polymorphism.
@@ -76,27 +95,27 @@ func (a *metricAttributesProcessor) processMetricAttributes(ctx context.Context,
 	case pdata.MetricDataTypeGauge:
 		dps := m.Gauge().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
-			a.attrProc.Process(ctx, dps.At(i).Attributes())
+			a.processMatching(ctx, dps.At(i).Attributes(), resource, library)
 		}
 	case pdata.MetricDataTypeSum:
 		dps := m.Sum().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
-			a.attrProc.Process(ctx, dps.At(i).Attributes())
+			a.processMatching(ctx, dps.At(i).Attributes(), resource, library)
 		}
 	case pdata.MetricDataTypeHistogram:
 		dps := m.Histogram().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
-			a.attrProc.Process(ctx, dps.At(i).Attributes())
+			a.processMatching(ctx, dps.At(i).Attributes(), resource, library)
 		}
 	case pdata.MetricDataTypeExponentialHistogram:
 		dps := m.ExponentialHistogram().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
-			a.attrProc.Process(ctx, dps.At(i).Attributes())
+			a.processMatching(ctx, dps.At(i).Attributes(), resource, library)
 		}
 	case pdata.MetricDataTypeSummary:
 		dps := m.Summary().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
-			a.attrProc.Process(ctx, dps.At(i).Attributes())
+			a.processMatching(ctx, dps.At(i).Attributes(), resource, library)
 		}
 	}
 }

@@ -15,6 +15,7 @@
 package filtermetric
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
 	"path/filepath"
 	"testing"
 
@@ -86,6 +87,82 @@ func TestConfig(t *testing.T) {
 			matcher, err := NewMatcher(&cfg)
 			assert.NotNil(t, matcher)
 			assert.NoError(t, err)
+		})
+	}
+}
+
+func TestAttrConfig(t *testing.T) {
+	testFile := filepath.Join("testdata", "config.yaml")
+	v, err := configtest.LoadConfigMap(testFile)
+	require.NoError(t, err)
+	testYamls := map[string]filterconfig.MatchProperties{}
+	require.NoErrorf(t, v.UnmarshalExact(&testYamls), "unable to unmarshal yaml from file %v", testFile)
+
+	tests := []struct {
+		name   string
+		expCfg *filterconfig.MatchProperties
+	}{
+		{
+			name: "config/regexp",
+			expCfg: &filterconfig.MatchProperties{
+				Config:      filterset.Config{MatchType: filterset.Regexp},
+				MetricNames: regexpNameMatches,
+			},
+		}, {
+			name: "config/regexpoptions",
+			expCfg: &filterconfig.MatchProperties{
+				Config: filterset.Config{
+					MatchType: filterset.Regexp,
+					RegexpConfig: &regexp.Config{
+						CacheEnabled:       true,
+						CacheMaxNumEntries: 5,
+					},
+				},
+				MetricNames: regexpNameMatches,
+			},
+		}, {
+			name: "config/strict",
+			expCfg: &filterconfig.MatchProperties{
+				Config:      filterset.Config{MatchType: filterset.Strict},
+				MetricNames: strictNameMatches,
+			},
+		},
+	}
+
+	errorTests := []struct {
+		name   string
+		expCfg *filterconfig.MatchProperties
+		msg    string
+	}{
+		{
+			name: "config/emptyproperties",
+			expCfg: &filterconfig.MatchProperties{
+				Config: filterset.Config{MatchType: filterset.Regexp},
+			},
+			msg: "at least one of \"attributes\", \"libraries\", \"resources\" or \"metric_names\" field must be specified",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := testYamls[test.name]
+			assert.Equal(t, *test.expCfg, cfg)
+
+			matcher, err := NewAttrMatcher(&cfg)
+			assert.NotNil(t, matcher)
+			assert.NoError(t, err)
+		})
+	}
+
+	for _, test := range errorTests {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := testYamls[test.name]
+			assert.Equal(t, *test.expCfg, cfg)
+
+			matcher, err := NewAttrMatcher(&cfg)
+			assert.Nil(t, matcher)
+			assert.Error(t, err)
+			assert.Equal(t, test.msg, err.Error())
 		})
 	}
 }

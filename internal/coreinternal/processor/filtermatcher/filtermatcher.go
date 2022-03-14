@@ -102,3 +102,7 @@ func (mp *PropertiesMatcher) Match(attributes pdata.AttributeMap, resource pdata
 
 	return mp.attributes.Match(attributes)
 }
+
+func (mp PropertiesMatcher) ChecksAttributes() bool {
+	return !mp.attributes.isEmpty()
+}

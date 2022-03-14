@@ -228,7 +228,7 @@ func TestAttributes_FilterMetrics(t *testing.T) {
 			expectedAttributes: map[string]pdata.AttributeValue{},
 		},
 		{
-			name: "attribute match for exclude property",
+			name: "apply processor",
 			inputAttributes: map[string]pdata.AttributeValue{
 				"NoModification": pdata.NewAttributeValueBool(true),
 			},
