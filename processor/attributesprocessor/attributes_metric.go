@@ -16,6 +16,7 @@ package attributesprocessor // import "github.com/open-telemetry/opentelemetry-c
 
 import (
 	"context"
+
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 

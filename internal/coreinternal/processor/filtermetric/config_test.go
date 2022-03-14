@@ -15,9 +15,10 @@
 package filtermetric
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
 	"path/filepath"
 	"testing"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
