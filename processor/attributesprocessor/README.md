@@ -98,7 +98,7 @@ For the `convert` action,
 # Key specifies the attribute to act upon.
 - key: <key>
   action: convert
-  converted_type: <type>
+  converted_type: <int|double|string>
 ```
 
 The list of actions can be composed to create rich scenarios, such as
