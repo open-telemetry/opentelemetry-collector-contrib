@@ -28,14 +28,57 @@ class TestUtils(TestCase):
     @mock.patch("opentelemetry.instrumentation.kafka.utils._enrich_span")
     @mock.patch("opentelemetry.trace.set_span_in_context")
     @mock.patch("opentelemetry.propagate.inject")
-    def test_wrap_send(
+    def test_wrap_send_with_topic_as_arg(
         self,
         inject: mock.MagicMock,
         set_span_in_context: mock.MagicMock,
         enrich_span: mock.MagicMock,
         extract_send_partition: mock.MagicMock,
         extract_bootstrap_servers: mock.MagicMock,
-    ):
+    ) -> None:
+        self.wrap_send_helper(
+            inject,
+            set_span_in_context,
+            enrich_span,
+            extract_send_partition,
+            extract_bootstrap_servers,
+        )
+
+    @mock.patch(
+        "opentelemetry.instrumentation.kafka.utils.KafkaPropertiesExtractor.extract_bootstrap_servers"
+    )
+    @mock.patch(
+        "opentelemetry.instrumentation.kafka.utils.KafkaPropertiesExtractor.extract_send_partition"
+    )
+    @mock.patch("opentelemetry.instrumentation.kafka.utils._enrich_span")
+    @mock.patch("opentelemetry.trace.set_span_in_context")
+    @mock.patch("opentelemetry.propagate.inject")
+    def test_wrap_send_with_topic_as_kwarg(
+        self,
+        inject: mock.MagicMock,
+        set_span_in_context: mock.MagicMock,
+        enrich_span: mock.MagicMock,
+        extract_send_partition: mock.MagicMock,
+        extract_bootstrap_servers: mock.MagicMock,
+    ) -> None:
+        self.args = []
+        self.kwargs["topic"] = self.topic_name
+        self.wrap_send_helper(
+            inject,
+            set_span_in_context,
+            enrich_span,
+            extract_send_partition,
+            extract_bootstrap_servers,
+        )
+
+    def wrap_send_helper(
+        self,
+        inject: mock.MagicMock,
+        set_span_in_context: mock.MagicMock,
+        enrich_span: mock.MagicMock,
+        extract_send_partition: mock.MagicMock,
+        extract_bootstrap_servers: mock.MagicMock,
+    ) -> None:
         tracer = mock.MagicMock()
         produce_hook = mock.MagicMock()
         original_send_callback = mock.MagicMock()
