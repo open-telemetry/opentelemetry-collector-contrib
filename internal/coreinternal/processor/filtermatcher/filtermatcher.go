@@ -71,8 +71,14 @@ func NewMatcher(mp *filterconfig.MatchProperties) (PropertiesMatcher, error) {
 	}
 
 	var rm AttributesMatcher
-	if len(mp.Resources) > 0 {
-		rm, err = NewAttributesMatcher(mp.Config, mp.Resources)
+	if len(mp.Resources) > 0 || len(mp.ResourceAttributes) > 0 {
+		var atts []filterconfig.Attribute
+		if len(mp.ResourceAttributes) > 0 {
+			atts = mp.ResourceAttributes
+		} else {
+			atts = mp.Resources
+		}
+		rm, err = NewAttributesMatcher(mp.Config, atts)
 		if err != nil {
 			return PropertiesMatcher{}, fmt.Errorf("error creating resource filters: %v", err)
 		}

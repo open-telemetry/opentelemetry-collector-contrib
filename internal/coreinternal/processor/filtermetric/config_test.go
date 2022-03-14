@@ -42,57 +42,7 @@ var (
 	}
 )
 
-func createConfigWithRegexpOptions(filters []string, rCfg *regexp.Config) *MatchProperties {
-	cfg := createConfig(filters, filterset.Regexp)
-	cfg.RegexpConfig = rCfg
-	return cfg
-}
-
 func TestConfig(t *testing.T) {
-	testFile := filepath.Join("testdata", "config.yaml")
-	v, err := configtest.LoadConfigMap(testFile)
-	require.NoError(t, err)
-	testYamls := map[string]MatchProperties{}
-	require.NoErrorf(t, v.UnmarshalExact(&testYamls), "unable to unmarshal yaml from file %v", testFile)
-
-	tests := []struct {
-		name   string
-		expCfg *MatchProperties
-	}{
-		{
-			name:   "config/regexp",
-			expCfg: createConfig(regexpNameMatches, filterset.Regexp),
-		}, {
-			name: "config/regexpoptions",
-			expCfg: createConfigWithRegexpOptions(
-				regexpNameMatches,
-				&regexp.Config{
-					CacheEnabled:       true,
-					CacheMaxNumEntries: 5,
-				},
-			),
-		}, {
-			name:   "config/strict",
-			expCfg: createConfig(strictNameMatches, filterset.Strict),
-		}, {
-			name:   "config/emptyproperties",
-			expCfg: createConfig(nil, filterset.Regexp),
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			cfg := testYamls[test.name]
-			assert.Equal(t, *test.expCfg, cfg)
-
-			matcher, err := NewMatcher(&cfg)
-			assert.NotNil(t, matcher)
-			assert.NoError(t, err)
-		})
-	}
-}
-
-func TestAttrConfig(t *testing.T) {
 	testFile := filepath.Join("testdata", "config.yaml")
 	v, err := configtest.LoadConfigMap(testFile)
 	require.NoError(t, err)
@@ -149,7 +99,7 @@ func TestAttrConfig(t *testing.T) {
 			cfg := testYamls[test.name]
 			assert.Equal(t, *test.expCfg, cfg)
 
-			matcher, err := NewAttrMatcher(&cfg)
+			matcher, err := NewMatcher(&cfg)
 			assert.NotNil(t, matcher)
 			assert.NoError(t, err)
 		})
@@ -160,7 +110,7 @@ func TestAttrConfig(t *testing.T) {
 			cfg := testYamls[test.name]
 			assert.Equal(t, *test.expCfg, cfg)
 
-			matcher, err := NewAttrMatcher(&cfg)
+			matcher, err := NewMatcher(&cfg)
 			assert.Nil(t, matcher)
 			assert.Error(t, err)
 			assert.Equal(t, test.msg, err.Error())

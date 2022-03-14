@@ -115,12 +115,26 @@ type MatchProperties struct {
 	// A match occurs if the span's implementation library matches at least one item in this list.
 	// This is an optional field.
 	Libraries []InstrumentationLibrary `mapstructure:"libraries"`
+
+	// Expressions specifies the list of expr expressions to match metrics against,
+	// and is not supported for other data types.
+	// A match occurs if any datapoint in a metric matches at least one expression in this list.
+	Expressions []string `mapstructure:"expressions"`
+
+	// ResourceAttributes specify the list of items to match metrics resources against.
+	// A match occurs if the data's resources match at least one item in this list.
+	// Deprecated: use Resources field instead
+	ResourceAttributes []Attribute `mapstructure:"resource_attributes"`
 }
 
 // ValidateForSpans validates properties for spans.
 func (mp *MatchProperties) ValidateForSpans() error {
-	if len(mp.LogNames) > 0 {
-		return errors.New("log_names should not be specified for trace spans")
+	if len(mp.LogNames) > 0 || len(mp.MetricNames) > 0 || len(mp.Expressions) > 0 || len(mp.ResourceAttributes) > 0 {
+		return errors.New("none of log_names, metric_names, expressions or resource_attributes should be specified for trace spans")
+	}
+
+	if mp.MatchType == filterset.Expr {
+		return errors.New("expr match type can only be used with metrics")
 	}
 
 	if len(mp.Services) == 0 && len(mp.SpanNames) == 0 && len(mp.Attributes) == 0 &&
@@ -133,8 +147,12 @@ func (mp *MatchProperties) ValidateForSpans() error {
 
 // ValidateForLogs validates properties for logs.
 func (mp *MatchProperties) ValidateForLogs() error {
-	if len(mp.SpanNames) > 0 || len(mp.Services) > 0 {
-		return errors.New("neither services nor span_names should be specified for log records")
+	if len(mp.Services) > 0 || len(mp.SpanNames) > 0 || len(mp.MetricNames) > 0 || len(mp.Expressions) > 0 || len(mp.ResourceAttributes) > 0 {
+		return errors.New("none of services, span_names, metric_names, expressions or resource_attributes should be specified for log records")
+	}
+
+	if mp.MatchType == filterset.Expr {
+		return errors.New("expr match type can only be used with metrics")
 	}
 
 	if len(mp.Attributes) == 0 && len(mp.Libraries) == 0 && len(mp.Resources) == 0 {
@@ -146,8 +164,11 @@ func (mp *MatchProperties) ValidateForLogs() error {
 
 // ValidateForMetrics validates properties for metrics.
 func (mp *MatchProperties) ValidateForMetrics() error {
-	if len(mp.SpanNames) > 0 || len(mp.Services) > 0 || len(mp.LogNames) > 0 {
+	if len(mp.Services) > 0 || len(mp.SpanNames) > 0 || len(mp.LogNames) > 0 {
 		return errors.New("none of services, span_names nor log_names should be specified for metrics records")
+	}
+	if len(mp.ResourceAttributes) > 0 && len(mp.Resources) > 0 {
+		return errors.New("cannot specify both resources and resource_attributes - prefer resources")
 	}
 
 	if len(mp.Attributes) == 0 && len(mp.Libraries) == 0 && len(mp.Resources) == 0 && len(mp.MetricNames) == 0 {
@@ -155,6 +176,24 @@ func (mp *MatchProperties) ValidateForMetrics() error {
 	}
 
 	return nil
+}
+
+func (mp *MatchProperties) ChecksMetrics() bool {
+	if mp == nil {
+		return false
+	} else if mp.MatchType == filterset.Expr {
+		return len(mp.Expressions) > 0
+	} else {
+		return len(mp.MetricNames) > 0 || len(mp.Attributes) > 0
+	}
+}
+
+func (mp *MatchProperties) ChecksResourceAtributes() bool {
+	if mp == nil {
+		return false
+	} else {
+		return len(mp.Resources) > 0 || len(mp.ResourceAttributes) > 0
+	}
 }
 
 // Attribute specifies the attribute key and optional value to match against.

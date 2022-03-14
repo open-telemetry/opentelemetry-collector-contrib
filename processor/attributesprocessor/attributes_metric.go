@@ -27,14 +27,14 @@ import (
 type metricAttributesProcessor struct {
 	logger   *zap.Logger
 	attrProc *attraction.AttrProc
-	include  filtermetric.AttrMatcher
-	exclude  filtermetric.AttrMatcher
+	include  filtermetric.Matcher
+	exclude  filtermetric.Matcher
 }
 
 // newMetricAttributesProcessor returns a processor that modifies attributes of a
 // metric record. To construct the attributes processors, the use of the factory
 // methods are required in order to validate the inputs.
-func newMetricAttributesProcessor(logger *zap.Logger, attrProc *attraction.AttrProc, include, exclude filtermetric.AttrMatcher) *metricAttributesProcessor {
+func newMetricAttributesProcessor(logger *zap.Logger, attrProc *attraction.AttrProc, include, exclude filtermetric.Matcher) *metricAttributesProcessor {
 	return &metricAttributesProcessor{
 		logger:   logger,
 		attrProc: attrProc,

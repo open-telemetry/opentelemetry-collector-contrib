@@ -73,7 +73,7 @@ func newFilterMetricProcessor(logger *zap.Logger, cfg *Config) (*filterMetricPro
 	}
 
 	checksMetrics := cfg.Metrics.Exclude.ChecksMetrics() || cfg.Metrics.Include.ChecksMetrics()
-	checksResouces := cfg.Metrics.Exclude.ChecksResourceAtributes() || cfg.Metrics.Include.ChecksResourceAtributes()
+	checksResources := cfg.Metrics.Exclude.ChecksResourceAtributes() || cfg.Metrics.Include.ChecksResourceAtributes()
 
 	logger.Info(
 		"Metric filter configured",
@@ -86,7 +86,7 @@ func newFilterMetricProcessor(logger *zap.Logger, cfg *Config) (*filterMetricPro
 		zap.Strings("exclude metric names", excludeMetricNames),
 		zap.Any("exclude metrics with resource attributes", excludeResourceAttributes),
 		zap.Bool("checksMetrics", checksMetrics),
-		zap.Bool("checkResouces", checksResouces),
+		zap.Bool("checkResouces", checksResources),
 	)
 
 	return &filterMetricProcessor{
@@ -101,18 +101,24 @@ func newFilterMetricProcessor(logger *zap.Logger, cfg *Config) (*filterMetricPro
 	}, nil
 }
 
-func createMatcher(mp *filtermetric.MatchProperties) (filtermetric.Matcher, filtermatcher.AttributesMatcher, error) {
+func createMatcher(mp *filterconfig.MatchProperties) (filtermetric.Matcher, filtermatcher.AttributesMatcher, error) {
 	// Nothing specified in configuration
 	if mp == nil {
 		return nil, nil, nil
 	}
+	var rscAttrs []filterconfig.Attribute
+	if mp.Resources != nil {
+		rscAttrs = mp.Resources
+	} else {
+		rscAttrs = mp.ResourceAttributes
+	}
 	var attributeMatcher filtermatcher.AttributesMatcher
 	attributeMatcher, err := filtermatcher.NewAttributesMatcher(
 		filterset.Config{
-			MatchType:    filterset.MatchType(mp.MatchType),
+			MatchType:    mp.MatchType,
 			RegexpConfig: mp.RegexpConfig,
 		},
-		mp.ResourceAttributes,
+		rscAttrs,
 	)
 	if err != nil {
 		return nil, attributeMatcher, err
