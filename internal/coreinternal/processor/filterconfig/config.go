@@ -171,10 +171,7 @@ func (mp *MatchProperties) ValidateForMetrics() error {
 		return errors.New("cannot specify both resources and resource_attributes - prefer resources")
 	}
 
-	if len(mp.Attributes) == 0 && len(mp.Libraries) == 0 && len(mp.Resources) == 0 && len(mp.MetricNames) == 0 && len(mp.Expressions) == 0 {
-		return errors.New(`at least one of "attributes", "libraries", "resources", "metric_names" or "expressions" field must be specified`)
-	}
-
+	// Existing tests make use of empty metrics filters, so we don't currently validate that this has relevant fields set
 	return nil
 }
 

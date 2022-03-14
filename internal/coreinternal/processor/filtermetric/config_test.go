@@ -78,19 +78,11 @@ func TestConfig(t *testing.T) {
 				MetricNames: strictNameMatches,
 			},
 		},
-	}
-
-	errorTests := []struct {
-		name   string
-		expCfg *filterconfig.MatchProperties
-		msg    string
-	}{
 		{
 			name: "config/emptyproperties",
 			expCfg: &filterconfig.MatchProperties{
 				Config: filterset.Config{MatchType: filterset.Regexp},
 			},
-			msg: "at least one of \"attributes\", \"libraries\", \"resources\" or \"metric_names\" field must be specified",
 		},
 	}
 
@@ -102,18 +94,6 @@ func TestConfig(t *testing.T) {
 			matcher, err := NewMatcher(&cfg)
 			assert.NotNil(t, matcher)
 			assert.NoError(t, err)
-		})
-	}
-
-	for _, test := range errorTests {
-		t.Run(test.name, func(t *testing.T) {
-			cfg := testYamls[test.name]
-			assert.Equal(t, *test.expCfg, cfg)
-
-			matcher, err := NewMatcher(&cfg)
-			assert.Nil(t, matcher)
-			assert.Error(t, err)
-			assert.Equal(t, test.msg, err.Error())
 		})
 	}
 }

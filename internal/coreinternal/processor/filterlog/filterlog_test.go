@@ -54,7 +54,7 @@ func TestLogRecord_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 			property: filterconfig.MatchProperties{
 				SpanNames: []string{"span"},
 			},
-			errorString: "neither services nor span_names should be specified for log records",
+			errorString: "none of services, span_names, metric_names, expressions or resource_attributes should be specified for log records",
 		},
 		{
 			name: "invalid_match_type",
