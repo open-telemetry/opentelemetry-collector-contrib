@@ -171,8 +171,8 @@ func (mp *MatchProperties) ValidateForMetrics() error {
 		return errors.New("cannot specify both resources and resource_attributes - prefer resources")
 	}
 
-	if len(mp.Attributes) == 0 && len(mp.Libraries) == 0 && len(mp.Resources) == 0 && len(mp.MetricNames) == 0 {
-		return errors.New(`at least one of "attributes", "libraries", "resources" or "metric_names" field must be specified`)
+	if len(mp.Attributes) == 0 && len(mp.Libraries) == 0 && len(mp.Resources) == 0 && len(mp.MetricNames) == 0 && len(mp.Expressions) == 0 {
+		return errors.New(`at least one of "attributes", "libraries", "resources", "metric_names" or "expressions" field must be specified`)
 	}
 
 	return nil

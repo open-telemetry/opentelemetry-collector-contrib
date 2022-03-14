@@ -17,6 +17,8 @@ package filterprocessor
 import (
 	"context"
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -30,7 +32,6 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filtermetric"
 )
 
 const filteredMetric = "p0_metric_1"
@@ -161,14 +162,14 @@ func exprConfig(factory component.ProcessorFactory, include []string, exclude []
 	pCfg := cfg.(*Config)
 	pCfg.Metrics = MetricFilters{}
 	if include != nil {
-		pCfg.Metrics.Include = &filtermetric.MatchProperties{
-			MatchType:   "expr",
+		pCfg.Metrics.Include = &filterconfig.MatchProperties{
+			Config:      filterset.Config{MatchType: "expr"},
 			Expressions: include,
 		}
 	}
 	if exclude != nil {
-		pCfg.Metrics.Exclude = &filtermetric.MatchProperties{
-			MatchType:   "expr",
+		pCfg.Metrics.Exclude = &filterconfig.MatchProperties{
+			Config:      filterset.Config{MatchType: "expr"},
 			Expressions: exclude,
 		}
 	}

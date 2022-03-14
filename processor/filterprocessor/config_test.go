@@ -15,6 +15,7 @@
 package filterprocessor
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 	"path/filepath"
 	"testing"
 
@@ -25,7 +26,6 @@ import (
 	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filtermetric"
 	fsregexp "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset/regexp"
 )
 
@@ -37,8 +37,8 @@ func TestLoadingConfigStrict(t *testing.T) {
 		"hello/world",
 	}
 
-	testDataMetricProperties := &filtermetric.MatchProperties{
-		MatchType:   filtermetric.Strict,
+	testDataMetricProperties := &filterconfig.MatchProperties{
+		Config:      filterset.Config{MatchType: filterset.Strict},
 		MetricNames: testDataFilters,
 	}
 
@@ -61,8 +61,8 @@ func TestLoadingConfigStrict(t *testing.T) {
 			expCfg: &Config{
 				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "empty")),
 				Metrics: MetricFilters{
-					Include: &filtermetric.MatchProperties{
-						MatchType: filtermetric.Strict,
+					Include: &filterconfig.MatchProperties{
+						Config: filterset.Config{MatchType: filterset.Strict},
 					},
 				},
 			},
@@ -88,8 +88,8 @@ func TestLoadingConfigStrict(t *testing.T) {
 				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "includeexclude")),
 				Metrics: MetricFilters{
 					Include: testDataMetricProperties,
-					Exclude: &filtermetric.MatchProperties{
-						MatchType:   filtermetric.Strict,
+					Exclude: &filterconfig.MatchProperties{
+						Config:      filterset.Config{MatchType: filterset.Strict},
 						MetricNames: []string{"hello_world"},
 					},
 				},
@@ -202,8 +202,8 @@ func TestLoadingConfigRegexp(t *testing.T) {
 		"full_name_match",
 	}
 
-	testDataMetricProperties := &filtermetric.MatchProperties{
-		MatchType:   filtermetric.Regexp,
+	testDataMetricProperties := &filterconfig.MatchProperties{
+		Config:      filterset.Config{MatchType: filterset.Regexp},
 		MetricNames: testDataFilters,
 	}
 
@@ -238,10 +238,12 @@ func TestLoadingConfigRegexp(t *testing.T) {
 			expCfg: &Config{
 				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "unlimitedcache")),
 				Metrics: MetricFilters{
-					Include: &filtermetric.MatchProperties{
-						MatchType: filtermetric.Regexp,
-						RegexpConfig: &fsregexp.Config{
-							CacheEnabled: true,
+					Include: &filterconfig.MatchProperties{
+						Config: filterset.Config{
+							MatchType: filterset.Regexp,
+							RegexpConfig: &fsregexp.Config{
+								CacheEnabled: true,
+							},
 						},
 						MetricNames: testDataFilters,
 					},
@@ -251,11 +253,13 @@ func TestLoadingConfigRegexp(t *testing.T) {
 			expCfg: &Config{
 				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "limitedcache")),
 				Metrics: MetricFilters{
-					Exclude: &filtermetric.MatchProperties{
-						MatchType: filtermetric.Regexp,
-						RegexpConfig: &fsregexp.Config{
-							CacheEnabled:       true,
-							CacheMaxNumEntries: 10,
+					Exclude: &filterconfig.MatchProperties{
+						Config: filterset.Config{
+							MatchType: filterset.Regexp,
+							RegexpConfig: &fsregexp.Config{
+								CacheEnabled:       true,
+								CacheMaxNumEntries: 10,
+							},
 						},
 						MetricNames: testDataFilters,
 					},
@@ -288,8 +292,8 @@ func TestLoadingConfigExpr(t *testing.T) {
 			expCfg: &Config{
 				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "empty")),
 				Metrics: MetricFilters{
-					Include: &filtermetric.MatchProperties{
-						MatchType: filtermetric.Expr,
+					Include: &filterconfig.MatchProperties{
+						Config: filterset.Config{MatchType: filterset.Expr},
 					},
 				},
 			},
@@ -298,8 +302,8 @@ func TestLoadingConfigExpr(t *testing.T) {
 			expCfg: &Config{
 				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "include")),
 				Metrics: MetricFilters{
-					Include: &filtermetric.MatchProperties{
-						MatchType: filtermetric.Expr,
+					Include: &filterconfig.MatchProperties{
+						Config: filterset.Config{MatchType: filterset.Expr},
 						Expressions: []string{
 							`Label("foo") == "bar"`,
 							`HasLabel("baz")`,
@@ -312,8 +316,8 @@ func TestLoadingConfigExpr(t *testing.T) {
 			expCfg: &Config{
 				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "exclude")),
 				Metrics: MetricFilters{
-					Exclude: &filtermetric.MatchProperties{
-						MatchType: filtermetric.Expr,
+					Exclude: &filterconfig.MatchProperties{
+						Config: filterset.Config{MatchType: filterset.Expr},
 						Expressions: []string{
 							`Label("foo") == "bar"`,
 							`HasLabel("baz")`,
@@ -326,14 +330,14 @@ func TestLoadingConfigExpr(t *testing.T) {
 			expCfg: &Config{
 				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "includeexclude")),
 				Metrics: MetricFilters{
-					Include: &filtermetric.MatchProperties{
-						MatchType: filtermetric.Expr,
+					Include: &filterconfig.MatchProperties{
+						Config: filterset.Config{MatchType: filterset.Expr},
 						Expressions: []string{
 							`HasLabel("foo")`,
 						},
 					},
-					Exclude: &filtermetric.MatchProperties{
-						MatchType: filtermetric.Expr,
+					Exclude: &filterconfig.MatchProperties{
+						Config: filterset.Config{MatchType: filterset.Expr},
 						Expressions: []string{
 							`HasLabel("bar")`,
 						},
