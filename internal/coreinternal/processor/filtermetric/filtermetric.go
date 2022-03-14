@@ -53,6 +53,8 @@ type propertiesMatcher struct {
 	nameFilters filterset.FilterSet
 }
 
+// NewMatcher constructs a metric Matcher. If an 'expr' match type is specified,
+// returns an expr matcher, otherwise a name matcher.
 func NewMatcher(config *MatchProperties) (Matcher, error) {
 	if config == nil {
 		return nil, nil
@@ -63,9 +65,7 @@ func NewMatcher(config *MatchProperties) (Matcher, error) {
 	return newNameMatcher(config)
 }
 
-// NewMatcher constructs a metric Matcher. If an 'expr' match type is specified,
-// returns an expr matcher, otherwise a name matcher.
-// NewMatcher creates a span Matcher that matches based on the given MatchProperties.
+// NewAttrMatcher creates a span Matcher that matches based on the given filterconfig.MatchProperties.
 func NewAttrMatcher(mp *filterconfig.MatchProperties) (AttrMatcher, error) {
 	if mp == nil {
 		return nil, nil
@@ -133,11 +133,17 @@ func SkipMetric(include, exclude AttrMatcher, metric pdata.Metric, resource pdat
 	return false
 }
 
+// MatchMetric matches a metric and service to a set of properties.
+// see filterconfig.MatchProperties for more details
 func (mp *propertiesMatcher) MatchMetric(metric pdata.Metric) (bool, error) {
 	return mp.nameFilters != nil && mp.nameFilters.Matches(metric.Name()), nil
 }
 
-// MatchMetric matches a metric and service to a set of properties.
+// MatchWholeMetric matches a metric, resource and libraries.
+// To avoid double-traversal through all data points when we revisit it in the attributesprocessor,
+// we omit checking attributes on individual data points in this function.
+// This is the reason we also take a FilterType as an argument - so as not to exclude
+// data points prematurely.
 // see filterconfig.MatchProperties for more details
 func (mp *propertiesMatcher) MatchWholeMetric(metric pdata.Metric, resource pdata.Resource, library pdata.InstrumentationLibrary, filterType FilterType) (bool, error) {
 	// If a set of properties was not in the mp, all spans are considered to match on that property
@@ -167,6 +173,8 @@ func (mp *propertiesMatcher) MatchWholeMetric(metric pdata.Metric, resource pdat
 	return false, fmt.Errorf("unrecognised filterType")
 }
 
+// MatchAttributes matches metric attributes, resource and libraries.
+// It omits checks on metrics name and services.
 func (mp *propertiesMatcher) MatchAttributes(atts pdata.AttributeMap, resource pdata.Resource, library pdata.InstrumentationLibrary) bool {
 	return mp.PropertiesMatcher.Match(atts, resource, library)
 }
