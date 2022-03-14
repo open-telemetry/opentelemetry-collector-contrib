@@ -35,6 +35,7 @@
 - `zookeeperreceiver`: instrumentation name updated from `otelcol/zookeeper` to `otelcol/zookeeperreceiver` (#8389)
 - `coralogixexporter`: Create dynamic subsystem name (#7957)
   - Deprecate configuration changed. Dynamic subsystem name from traces service name property.
+- `rabbitmqreceiver`: instrumentation name updated from `otelcol/rabbitmq` to `otelcol/rabbitmqreceiver` (#8400)
 
 ### 🧰 Bug fixes 🧰
 
