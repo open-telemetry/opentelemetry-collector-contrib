@@ -41,6 +41,10 @@
   - Use "--feature-gates=receiver.k8sclusterreceiver.reportCpuMetricsAsDouble" to enable reporting node and container
     cpu metrics as a double values.
 
+### 🚩 Deprecations 🚩
+
+- `datadogexporter`: Deprecate automatic environment variable detection (#8397)
+
 ### 🚀 New components 🚀
 
 ## v0.46.0
