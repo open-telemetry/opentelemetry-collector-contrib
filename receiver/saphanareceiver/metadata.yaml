@@ -1,0 +1,22 @@
+name: saphanareceiver
+
+attributes:
+  host:
+    description: The SAP HANA host.
+  column_memory_type:
+    value: type
+    description: The type of column store memory.
+    enum:
+    - main
+    - delta
+
+metrics:
+ saphana.column.memory.used:
+    description: The memory used in all columns.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [host, column_memory_type]
+    enabled: true
