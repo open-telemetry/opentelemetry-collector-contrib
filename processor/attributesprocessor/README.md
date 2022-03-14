@@ -155,7 +155,7 @@ with a non-empty value for a valid configuration. The `log_names`, `expressions`
 - For logs, one of `log_names`, `attributes`, `resources`, or `libraries` must be specified with a
 non-empty value for a valid configuration. The `span_names`, `metric_names`, `expressions`, `resource_attributes`,
 and `services` fields are invalid.
-- For metrics, one of `metric_names`, `resources` must be specified
+- For metrics, at least one of `attributes`, `libraries`, `resources` or `metric_names` must be specified
 with a valid non-empty value for a valid configuration. The `span_names`, `log_names`, and
 `services` fields are invalid.
 
