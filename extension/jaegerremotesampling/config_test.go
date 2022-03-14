@@ -23,6 +23,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/service/servicetest"
 )
 
@@ -40,9 +42,13 @@ func TestLoadConfig(t *testing.T) {
 	ext0 := cfg.Extensions[config.NewComponentID(typeStr)]
 	assert.Equal(t,
 		&Config{
-			ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
-			GRPCClientSettings: configgrpc.GRPCClientSettings{
-				Endpoint: "jaeger-collector:14250",
+			ExtensionSettings:  config.NewExtensionSettings(config.NewComponentID(typeStr)),
+			HTTPServerSettings: &confighttp.HTTPServerSettings{Endpoint: ":5778"},
+			GRPCServerSettings: &configgrpc.GRPCServerSettings{NetAddr: confignet.NetAddr{Endpoint: ":14250"}},
+			Source: Source{
+				Remote: &configgrpc.GRPCClientSettings{
+					Endpoint: "jaeger-collector:14250",
+				},
 			},
 		},
 		ext0)
@@ -50,11 +56,53 @@ func TestLoadConfig(t *testing.T) {
 	ext1 := cfg.Extensions[config.NewComponentIDWithName(typeStr, "1")]
 	assert.Equal(t,
 		&Config{
-			ExtensionSettings: config.NewExtensionSettings(config.NewComponentIDWithName(typeStr, "1")),
-			StrategyFile:      "/etc/otel/sampling_strategies.json",
+			ExtensionSettings:  config.NewExtensionSettings(config.NewComponentIDWithName(typeStr, "1")),
+			HTTPServerSettings: &confighttp.HTTPServerSettings{Endpoint: ":5778"},
+			GRPCServerSettings: &configgrpc.GRPCServerSettings{NetAddr: confignet.NetAddr{Endpoint: ":14250"}},
+			Source: Source{
+				File: "/etc/otel/sampling_strategies.json",
+			},
 		},
 		ext1)
-
 	assert.Equal(t, 1, len(cfg.Service.Extensions))
 	assert.Equal(t, config.NewComponentIDWithName(typeStr, "1"), cfg.Service.Extensions[0])
+}
+
+func TestValidate(t *testing.T) {
+
+	testCases := []struct {
+		desc     string
+		cfg      Config
+		expected error
+	}{
+		{
+			desc:     "no receiving protocols",
+			cfg:      Config{},
+			expected: errAtLeastOneProtocol,
+		},
+		{
+			desc: "no sources",
+			cfg: Config{
+				GRPCServerSettings: &configgrpc.GRPCServerSettings{},
+			},
+			expected: errNoSources,
+		},
+		{
+			desc: "too many sources",
+			cfg: Config{
+				GRPCServerSettings: &configgrpc.GRPCServerSettings{},
+				Source: Source{
+					Remote: &configgrpc.GRPCClientSettings{},
+					File:   "/tmp/some-file",
+				},
+			},
+			expected: errTooManySources,
+		},
+	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			res := tC.cfg.Validate()
+			assert.Equal(t, tC.expected, res)
+		})
+	}
 }
