@@ -15,6 +15,7 @@
 package filtermetric
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -51,7 +52,7 @@ func createMetric(name string) pdata.Metric {
 func TestMatcherMatches(t *testing.T) {
 	tests := []struct {
 		name        string
-		cfg         *MatchProperties
+		cfg         *filterconfig.MatchProperties
 		metric      pdata.Metric
 		shouldMatch bool
 	}{

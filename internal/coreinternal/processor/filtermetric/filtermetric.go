@@ -17,6 +17,7 @@ package filtermetric // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"fmt"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterexpr"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filtermatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -33,8 +34,6 @@ const (
 
 type Matcher interface {
 	MatchMetric(metric pdata.Metric) (bool, error)
-}
-type AttrMatcher interface {
 	MatchWholeMetric(metric pdata.Metric, resource pdata.Resource, library pdata.InstrumentationLibrary, filterType FilterType) (bool, error)
 	MatchAttributes(atts pdata.AttributeMap, resource pdata.Resource, library pdata.InstrumentationLibrary) bool
 	ChecksAttributes() bool
@@ -49,22 +48,15 @@ type propertiesMatcher struct {
 
 	// Span names to compare to.
 	nameFilters filterset.FilterSet
-}
 
-func NewMatcher(config *MatchProperties) (Matcher, error) {
-	if config == nil {
-		return nil, nil
-	}
-	if config.MatchType == Expr {
-		return newExprMatcher(config.Expressions)
-	}
-	return newNameMatcher(config)
+	// expr matchers
+	exprMatchers []filterexpr.Matcher
 }
 
 // NewMatcher constructs a metric Matcher. If an 'expr' match type is specified,
 // returns an expr matcher, otherwise a name matcher.
 // NewMatcher creates a span Matcher that matches based on the given MatchProperties.
-func NewAttrMatcher(mp *filterconfig.MatchProperties) (AttrMatcher, error) {
+func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 	if mp == nil {
 		return nil, nil
 	}
@@ -94,10 +86,22 @@ func NewAttrMatcher(mp *filterconfig.MatchProperties) (AttrMatcher, error) {
 		}
 	}
 
+	var em []filterexpr.Matcher
+	if mp.MatchType == filterset.Expr {
+		for _, e := range mp.Expressions {
+			expr, err := filterexpr.NewMatcher(e)
+			if err != nil {
+				return nil, fmt.Errorf("error creating expression filters: %v", err)
+			}
+			em = append(em, *expr)
+		}
+	}
+
 	return &propertiesMatcher{
 		PropertiesMatcher: rm,
 		serviceFilters:    serviceFS,
 		nameFilters:       nameFS,
+		exprMatchers:      em,
 	}, nil
 }
 
@@ -105,7 +109,7 @@ func NewAttrMatcher(mp *filterconfig.MatchProperties) (AttrMatcher, error) {
 // The default is to not skip. If include is defined, the metric must match or it will be skipped.
 // If include is not defined but exclude is, metric will be skipped if it matches exclude. Metric
 // is included if neither specified.
-func SkipMetric(include, exclude AttrMatcher, metric pdata.Metric, resource pdata.Resource, library pdata.InstrumentationLibrary, logger *zap.Logger) bool {
+func SkipMetric(include, exclude Matcher, metric pdata.Metric, resource pdata.Resource, library pdata.InstrumentationLibrary, logger *zap.Logger) bool {
 	if include != nil {
 		// A false (or an error) returned in this case means the metric should not be processed.
 		i, err := include.MatchWholeMetric(metric, resource, library, INCLUDE)
@@ -132,7 +136,22 @@ func SkipMetric(include, exclude AttrMatcher, metric pdata.Metric, resource pdat
 }
 
 func (mp *propertiesMatcher) MatchMetric(metric pdata.Metric) (bool, error) {
-	return mp.nameFilters != nil && mp.nameFilters.Matches(metric.Name()), nil
+	if len(mp.exprMatchers) > 0 {
+		for _, matcher := range mp.exprMatchers {
+			matched, err := matcher.MatchMetric(metric)
+			if err != nil {
+				return false, err
+			}
+			if matched {
+				return true, nil
+			}
+		}
+	}
+	if mp.nameFilters != nil {
+		return mp.nameFilters.Matches(metric.Name()), nil
+	} else {
+		return false, nil
+	}
 }
 
 // MatchMetric matches a metric and service to a set of properties.

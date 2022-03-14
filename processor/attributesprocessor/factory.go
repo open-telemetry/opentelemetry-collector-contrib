@@ -135,12 +135,12 @@ func createMetricsProcessor(
 		return nil, fmt.Errorf("error creating \"attributes\" processor: %w of processor %v", err, cfg.ID())
 	}
 
-	include, err := filtermetric.NewAttrMatcher(oCfg.Include)
+	include, err := filtermetric.NewMatcher(oCfg.Include)
 	if err != nil {
 		return nil, err
 	}
 
-	exclude, err := filtermetric.NewAttrMatcher(oCfg.Exclude)
+	exclude, err := filtermetric.NewMatcher(oCfg.Exclude)
 	if err != nil {
 		return nil, err
 	}

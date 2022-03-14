@@ -18,7 +18,6 @@ import (
 	"go.opentelemetry.io/collector/config"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filtermetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 )
 
@@ -36,12 +35,12 @@ type MetricFilters struct {
 	// Include match properties describe metrics that should be included in the Collector Service pipeline,
 	// all other metrics should be dropped from further processing.
 	// If both Include and Exclude are specified, Include filtering occurs first.
-	Include *filtermetric.MatchProperties `mapstructure:"include"`
+	Include *filterconfig.MatchProperties `mapstructure:"include"`
 
 	// Exclude match properties describe metrics that should be excluded from the Collector Service pipeline,
 	// all other metrics should be included.
 	// If both Include and Exclude are specified, Include filtering occurs first.
-	Exclude *filtermetric.MatchProperties `mapstructure:"exclude"`
+	Exclude *filterconfig.MatchProperties `mapstructure:"exclude"`
 }
 
 // LogFilters filters by Log properties.

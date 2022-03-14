@@ -101,18 +101,24 @@ func newFilterMetricProcessor(logger *zap.Logger, cfg *Config) (*filterMetricPro
 	}, nil
 }
 
-func createMatcher(mp *filtermetric.MatchProperties) (filtermetric.Matcher, filtermatcher.AttributesMatcher, error) {
+func createMatcher(mp *filterconfig.MatchProperties) (filtermetric.Matcher, filtermatcher.AttributesMatcher, error) {
 	// Nothing specified in configuration
 	if mp == nil {
 		return nil, nil, nil
 	}
+	var rscAttrs []filterconfig.Attribute
+	if mp.Resources != nil {
+		rscAttrs = mp.Resources
+	} else {
+		rscAttrs = mp.ResourceAttributes
+	}
 	var attributeMatcher filtermatcher.AttributesMatcher
 	attributeMatcher, err := filtermatcher.NewAttributesMatcher(
 		filterset.Config{
-			MatchType:    filterset.MatchType(mp.MatchType),
+			MatchType:    mp.MatchType,
 			RegexpConfig: mp.RegexpConfig,
 		},
-		mp.ResourceAttributes,
+		rscAttrs,
 	)
 	if err != nil {
 		return nil, attributeMatcher, err

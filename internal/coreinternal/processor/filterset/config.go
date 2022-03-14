@@ -29,6 +29,8 @@ const (
 	Regexp MatchType = "regexp"
 	// Strict is the FilterType for filtering by exact string matches.
 	Strict MatchType = "strict"
+	// Expr is the FilterType for filtering by metric expression matches.
+	Expr MatchType = "expr"
 	// MatchTypeFieldName is the mapstructure field name for MatchType field.
 	MatchTypeFieldName = "match_type"
 )
