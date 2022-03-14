@@ -55,12 +55,6 @@ type PerfCounterMetrics struct {
 	Metric         string
 }
 
-type PerfCounterScrapedMetrics struct {
-	CounterScraper PerfCounterScraper
-	Attributes     map[string]string
-	Metric         string
-}
-
 func newScraper(cfg *Config, settings component.TelemetrySettings) *scraper {
 	s := &scraper{cfg: cfg, settings: settings}
 	return s
@@ -72,13 +66,13 @@ func (s *scraper) start(context.Context, component.Host) error {
 	for _, perfCounterCfg := range s.cfg.PerfCounters {
 		for _, instance := range perfCounterCfg.instances() {
 			for _, counterCfg := range perfCounterCfg.Counters {
-				counterPath := counterPath(perfCounterCfg.Object, instance, counterCfg.CounterName)
+				counterPath := counterPath(perfCounterCfg.Object, instance, counterCfg.Name)
 
 				c, err := pdh.NewPerfCounter(counterPath, true)
 				if err != nil {
 					errs = multierr.Append(errs, fmt.Errorf("counter %v: %w", counterPath, err))
 				} else {
-					s.counters = append(s.counters, PerfCounterMetrics{CounterScraper: c, Metric: counterCfg.MetricName, Attributes: counterCfg.Attributes})
+					s.counters = append(s.counters, PerfCounterMetrics{CounterScraper: c, Metric: counterCfg.Metric, Attributes: counterCfg.Attributes})
 				}
 			}
 		}
@@ -136,8 +130,6 @@ func (s *scraper) scrape(context.Context) (pdata.Metrics, error) {
 				builtMetric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 			case "delta":
 				builtMetric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
-			default:
-				builtMetric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 			}
 		}
 
@@ -171,7 +163,6 @@ func initializeMetricDps(metricCfg MetricConfig, metric pdata.Metric, now pdata.
 	dps.EnsureCapacity(len(counterValues))
 	for _, counterValue := range counterValues {
 		dp := dps.AppendEmpty()
-
 		for attKey, attVal := range attributes {
 			dp.Attributes().InsertString(attKey, attVal)
 		}

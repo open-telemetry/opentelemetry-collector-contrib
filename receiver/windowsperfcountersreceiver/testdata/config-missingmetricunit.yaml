@@ -8,8 +8,8 @@ receivers:
     perfcounters:
       - object: "object"
         counters:
-          - counter_name: counter1
-            metric_name: metric
+          - name: counter1
+            metric: metric
 
 processors:
   nop:

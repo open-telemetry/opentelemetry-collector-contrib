@@ -118,9 +118,9 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 					},
 				},
 				PerfCounters: []PerfCounterConfig{
-					{Object: "Memory", Counters: []CounterConfig{{CounterName: "Committed Bytes", MetricName: "bytes.committed"}}},
-					{Object: "Processor", Instances: []string{"*"}, Counters: []CounterConfig{{CounterName: "% Idle Time", MetricName: "cpu.idle"}}},
-					{Object: "Processor", Instances: []string{"1", "2"}, Counters: []CounterConfig{{CounterName: "% Processor Time", MetricName: "processor.time"}}},
+					{Object: "Memory", Counters: []CounterConfig{{Name: "Committed Bytes", Metric: "bytes.committed"}}},
+					{Object: "Processor", Instances: []string{"*"}, Counters: []CounterConfig{{Name: "% Idle Time", Metric: "cpu.idle"}}},
+					{Object: "Processor", Instances: []string{"1", "2"}, Counters: []CounterConfig{{Name: "% Processor Time", Metric: "processor.time"}}},
 				},
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{CollectionInterval: time.Minute},
 			},
@@ -140,7 +140,7 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 					},
 				},
 				PerfCounters: []PerfCounterConfig{
-					{Object: "Memory", Counters: []CounterConfig{{CounterName: "Committed Bytes", MetricName: "bytes.committed"}}},
+					{Object: "Memory", Counters: []CounterConfig{{Name: "Committed Bytes", Metric: "bytes.committed"}}},
 				},
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{CollectionInterval: time.Minute},
 			},
@@ -152,11 +152,11 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 				PerfCounters: []PerfCounterConfig{
 					{
 						Object:   "Memory",
-						Counters: []CounterConfig{{CounterName: "Committed Bytes", MetricName: "Committed Bytes"}},
+						Counters: []CounterConfig{{Name: "Committed Bytes", Metric: "Committed Bytes"}},
 					},
 					{
 						Object:   "Invalid Object",
-						Counters: []CounterConfig{{CounterName: "Invalid Counter", MetricName: "invalid"}},
+						Counters: []CounterConfig{{Name: "Invalid Counter", Metric: "invalid"}},
 					},
 				},
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{CollectionInterval: time.Minute},

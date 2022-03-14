@@ -39,7 +39,7 @@ windowsperfcounters:
     - object: <object name>
       instances: [<instance name>]*
       counters:
-        - counter_name: <counter name>
+        - name: <counter name>
           metric_name: <metric name>
           attributes:
             <key>: <value>
@@ -76,7 +76,7 @@ receivers:
     perfcounters:
       - object: Memory
         counters:
-          - counter_name: Committed Bytes
+          - name: Committed Bytes
             metric_name: bytes.committed
 
   windowsperfcounters/processor:
@@ -91,14 +91,14 @@ receivers:
       - object: "Processor"
         instances: "*"
         counters:
-          - counter_name: "% Processor Time"
+          - name: "% Processor Time"
             metric_name: processor.time
             attributes:
               state: active
       - object: "Processor"
         instances: [1, 2]
         counters:
-          - counter_name: "% Idle Time"
+          - name: "% Idle Time"
             metric_name: processor.time
             attributes:
               state: idle

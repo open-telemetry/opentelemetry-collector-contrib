@@ -10,8 +10,8 @@ receivers:
       - object: "object"
         instances: [""]
         counters:
-          - counter_name: counter
-            metric_name: metric
+          - name: counter
+            metric: metric
 
 processors:
   nop:

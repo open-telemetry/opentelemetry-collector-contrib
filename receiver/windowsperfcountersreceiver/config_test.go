@@ -45,8 +45,8 @@ func TestLoadConfig(t *testing.T) {
 	defaultConfigSingleObject := factory.CreateDefaultConfig()
 
 	counterConfig := CounterConfig{
-		CounterName: "counter1",
-		MetricName:  "metric",
+		Name:   "counter1",
+		Metric: "metric",
 	}
 	defaultConfigSingleObject.(*Config).PerfCounters = []PerfCounterConfig{{Object: "object", Counters: []CounterConfig{counterConfig}}}
 	defaultConfigSingleObject.(*Config).MetricMetaData = []MetricConfig{
@@ -63,8 +63,8 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, defaultConfigSingleObject, r0)
 
 	counterConfig2 := CounterConfig{
-		CounterName: "counter2",
-		MetricName:  "metric2",
+		Name:   "counter2",
+		Metric: "metric2",
 	}
 
 	r1 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "customname")].(*Config)
@@ -129,6 +129,7 @@ func TestLoadConfig_Error(t *testing.T) {
 		missingSumValueType           = `sum metric "%s" does not include a value type`
 		missingSumAggregation         = `sum metric "%s" does not include an aggregation`
 		missingMetrics                = `must specify at least one metric`
+		gaugeAndSum                   = `metric "%s" provides both a sum config and a gauge config`
 	)
 
 	testCases := []testCase{
@@ -185,6 +186,11 @@ func TestLoadConfig_Error(t *testing.T) {
 		{
 			name:        "EmptySumAggregation",
 			cfgFile:     "config-missingsumaggregation.yaml",
+			expectedErr: fmt.Sprintf("%s: %s", errorPrefix, fmt.Sprintf(missingSumAggregation, "metric")),
+		},
+		{
+			name:        "GaugeAndSum",
+			cfgFile:     "config-gaugeandsum.yaml",
 			expectedErr: fmt.Sprintf("%s: %s", errorPrefix, fmt.Sprintf(missingSumAggregation, "metric")),
 		},
 		{

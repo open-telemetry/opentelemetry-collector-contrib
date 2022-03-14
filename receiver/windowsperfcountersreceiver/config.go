@@ -56,9 +56,9 @@ type SumMetric struct {
 }
 
 type CounterConfig struct {
-	MetricName  string            `mapstructure:"metric_name"`
-	CounterName string            `mapstructure:"counter_name"`
-	Attributes  map[string]string `mapstructure:"attributes"`
+	Metric     string            `mapstructure:"metric"`
+	Name       string            `mapstructure:"name"`
+	Attributes map[string]string `mapstructure:"attributes"`
 }
 
 func (c *Config) Validate() error {
@@ -107,6 +107,8 @@ func (c *Config) Validate() error {
 			} else if metric.Sum.Aggregation != "cumulative" && metric.Sum.Aggregation != "delta" {
 				errs = multierr.Append(errs, fmt.Errorf("sum metric %q includes an invalid aggregation", metric.MetricName))
 			}
+		} else if (metric.Sum != SumMetric{}) && (metric.Gauge != GaugeMetric{}) {
+			errs = multierr.Append(errs, fmt.Errorf("metric %q provides both a sum config and a gauge config", metric.MetricName))
 		}
 	}
 
@@ -124,7 +126,7 @@ func (c *Config) Validate() error {
 		for _, counter := range pc.Counters {
 			foundMatchingMetric := false
 			for _, metric := range c.MetricMetaData {
-				if counter.MetricName == metric.MetricName {
+				if counter.Metric == metric.MetricName {
 					foundMatchingMetric = true
 				}
 			}

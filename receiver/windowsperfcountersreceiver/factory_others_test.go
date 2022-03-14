@@ -31,7 +31,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	cfg.(*Config).PerfCounters = []PerfCounterConfig{
 		{
 			Object:   "object",
-			Counters: []CounterConfig{{CounterName: "counter", MetricName: "metric"}},
+			Counters: []CounterConfig{{Name: "counter", Metric: "metric"}},
 		},
 	}
 
