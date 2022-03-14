@@ -73,7 +73,7 @@ func newFilterMetricProcessor(logger *zap.Logger, cfg *Config) (*filterMetricPro
 	}
 
 	checksMetrics := cfg.Metrics.Exclude.ChecksMetrics() || cfg.Metrics.Include.ChecksMetrics()
-	checksResources := cfg.Metrics.Exclude.ChecksResourceAtributes() || cfg.Metrics.Include.ChecksResourceAtributes()
+	checksResouces := cfg.Metrics.Exclude.ChecksResourceAtributes() || cfg.Metrics.Include.ChecksResourceAtributes()
 
 	logger.Info(
 		"Metric filter configured",
@@ -86,7 +86,7 @@ func newFilterMetricProcessor(logger *zap.Logger, cfg *Config) (*filterMetricPro
 		zap.Strings("exclude metric names", excludeMetricNames),
 		zap.Any("exclude metrics with resource attributes", excludeResourceAttributes),
 		zap.Bool("checksMetrics", checksMetrics),
-		zap.Bool("checkResouces", checksResources),
+		zap.Bool("checkResouces", checksResouces),
 	)
 
 	return &filterMetricProcessor{
