@@ -55,7 +55,6 @@ func generateMetricData(resourceName string, attrs map[string]pdata.AttributeVal
 	res.Resource().Attributes().InsertString("name", resourceName)
 	ill := res.InstrumentationLibraryMetrics().AppendEmpty()
 	m := ill.Metrics().AppendEmpty()
-	m.SetName(resourceName)
 
 	switch m.DataType() {
 	case pdata.MetricDataTypeGauge:
@@ -88,14 +87,8 @@ func generateMetricData(resourceName string, attrs map[string]pdata.AttributeVal
 			pdata.NewAttributeMapFromMap(attrs).CopyTo(dps.At(i).Attributes())
 			dps.At(i).Attributes().Sort()
 		}
-	default:
-		m.SetDataType(pdata.MetricDataTypeGauge)
-		dps := m.Gauge().DataPoints()
-		dp := dps.AppendEmpty()
-		dp.SetIntVal(123)
-		pdata.NewAttributeMapFromMap(attrs).CopyTo(dp.Attributes())
-		dp.Attributes().Sort()
 	}
+
 	return md
 }
 
@@ -194,23 +187,23 @@ func TestMetricProcessor_NilEmptyData(t *testing.T) {
 
 func TestAttributes_FilterMetrics(t *testing.T) {
 	testCases := []metricTestCase{
-		//{
-		//	name:            "apply processor",
-		//	inputAttributes: map[string]pdata.AttributeValue{},
-		//	expectedAttributes: map[string]pdata.AttributeValue{
-		//		"attribute1": pdata.NewAttributeValueInt(123),
-		//	},
-		//},
-		//{
-		//	name: "apply processor with different value for exclude property",
-		//	inputAttributes: map[string]pdata.AttributeValue{
-		//		"NoModification": pdata.NewAttributeValueBool(false),
-		//	},
-		//	expectedAttributes: map[string]pdata.AttributeValue{
-		//		"attribute1":     pdata.NewAttributeValueInt(123),
-		//		"NoModification": pdata.NewAttributeValueBool(false),
-		//	},
-		//},
+		{
+			name:            "apply processor",
+			inputAttributes: map[string]pdata.AttributeValue{},
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"attribute1": pdata.NewAttributeValueInt(123),
+			},
+		},
+		{
+			name: "apply processor with different value for exclude property",
+			inputAttributes: map[string]pdata.AttributeValue{
+				"NoModification": pdata.NewAttributeValueBool(false),
+			},
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"attribute1":     pdata.NewAttributeValueInt(123),
+				"NoModification": pdata.NewAttributeValueBool(false),
+			},
+		},
 		{
 			name:               "incorrect name for include property",
 			inputAttributes:    map[string]pdata.AttributeValue{},
@@ -299,12 +292,12 @@ func TestAttributes_FilterMetricsByNameStrict(t *testing.T) {
 		{Key: "attribute1", Action: attraction.INSERT, Value: 123},
 	}
 	oCfg.Include = &filterconfig.MatchProperties{
-		MetricNames: []string{"apply"},
-		Config:      *createConfig(filterset.Strict),
+		Resources: []filterconfig.Attribute{{Key: "name", Value: "apply"}},
+		Config:    *createConfig(filterset.Strict),
 	}
 	oCfg.Exclude = &filterconfig.MatchProperties{
-		MetricNames: []string{"dont_apply"},
-		Config:      *createConfig(filterset.Strict),
+		Resources: []filterconfig.Attribute{{Key: "name", Value: "dont_apply"}},
+		Config:    *createConfig(filterset.Strict),
 	}
 	mp, err := factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
 	require.Nil(t, err)
@@ -362,12 +355,12 @@ func TestAttributes_FilterMetricsByNameRegexp(t *testing.T) {
 		{Key: "attribute1", Action: attraction.INSERT, Value: 123},
 	}
 	oCfg.Include = &filterconfig.MatchProperties{
-		MetricNames: []string{"^apply.*"},
-		Config:      *createConfig(filterset.Regexp),
+		Resources: []filterconfig.Attribute{{Key: "name", Value: "^apply.*"}},
+		Config:    *createConfig(filterset.Regexp),
 	}
 	oCfg.Exclude = &filterconfig.MatchProperties{
-		MetricNames: []string{".*dont_apply$"},
-		Config:      *createConfig(filterset.Regexp),
+		Resources: []filterconfig.Attribute{{Key: "name", Value: ".*dont_apply$"}},
+		Config:    *createConfig(filterset.Regexp),
 	}
 	mp, err := factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
 	require.Nil(t, err)
