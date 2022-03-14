@@ -18,6 +18,7 @@
 - `influxdbexporter`: Add support for cumulative, non-monotonic metrics. (#8348)
 - `oauth2clientauthextension`: Add support for EndpointParams (#7307)
 - Add `NewMetricData` function to `MetricsBuilder` to consistently set instrumentation library name (#8255)
+- `coralogixexporter` Allow exporter timeout to be configured (#7957)
 
 ### 🛑 Breaking changes 🛑
 
@@ -32,6 +33,8 @@
 - `prometheusremotewriteexporter` Use `service.*` resource attributes instead of `job` and `instance` resource attributes when adding job and instance labels to metrics (#8266)
 - `mysqlreceiver`: instrumentation name updated from `otel/mysql` to `otelcol/mysqlreceiver` (#8387)
 - `zookeeperreceiver`: instrumentation name updated from `otelcol/zookeeper` to `otelcol/zookeeperreceiver` (#8389)
+- `coralogixexporter`: Create dynamic subsystem name (#7957)
+  - Deprecate configuration changed. Dynamic subsystem name from traces service name property.
 
 ### 🧰 Bug fixes 🧰
 
