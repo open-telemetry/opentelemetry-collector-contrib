@@ -144,7 +144,7 @@ func (mp *MatchProperties) ValidateForLogs() error {
 	return nil
 }
 
-// ValidateForLogs validates properties for metrics.
+// ValidateForMetrics validates properties for metrics.
 func (mp *MatchProperties) ValidateForMetrics() error {
 	if len(mp.SpanNames) > 0 || len(mp.Services) > 0 || len(mp.LogNames) > 0 {
 		return errors.New("none of services, span_names nor log_names should be specified for metrics records")
