@@ -619,7 +619,8 @@ func Test_PushMetrics(t *testing.T) {
 			if useWAL {
 				t.Skip("Flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9124")
 			}
-			for _, tt := range tests {
+			for _, ttt := range tests {
+				tt := ttt
 				t.Run(tt.name, func(t *testing.T) {
 					t.Parallel()
 					server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
