@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/prometheus/prometheus/prompb"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
@@ -236,18 +237,14 @@ func getHistogramDataPointWithExemplars(t *testing.T, time time.Time, value floa
 	if traceID != "" {
 		var traceIDBytes [16]byte
 		traceIDBytesSlice, err := hex.DecodeString(traceID)
-		if err != nil {
-			t.Fatalf("error decoding trace id: %v", err)
-		}
+		require.NoErrorf(t, err, "error decoding trace id: %v", err)
 		copy(traceIDBytes[:], traceIDBytesSlice)
 		e.SetTraceID(pdata.NewTraceID(traceIDBytes))
 	}
 	if spanID != "" {
 		var spanIDBytes [8]byte
 		spanIDBytesSlice, err := hex.DecodeString(spanID)
-		if err != nil {
-			t.Fatalf("error decoding span id: %v", err)
-		}
+		require.NoErrorf(t, err, "error decoding span id: %v", err)
 		copy(spanIDBytes[:], spanIDBytesSlice)
 		e.SetSpanID(pdata.NewSpanID(spanIDBytes))
 	}
