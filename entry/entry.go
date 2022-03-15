@@ -16,29 +16,10 @@ package entry
 
 import (
 	"fmt"
-	"os"
 	"time"
 )
 
-const defaultTimestampEnv = "STANZA_DEFAULT_TIMESTAMP"
-
-func getNow() func() time.Time {
-	env := os.Getenv(defaultTimestampEnv)
-	if env == "" {
-		return time.Now
-	}
-
-	parsed, err := time.Parse(time.RFC3339, env)
-	if err != nil {
-		panic(fmt.Sprintf("failed parsing default timestamp: %s", err))
-	}
-
-	return func() time.Time {
-		return parsed
-	}
-}
-
-var now = getNow()
+var now = time.Now
 
 // Entry is a flexible representation of log data associated with a timestamp.
 type Entry struct {
