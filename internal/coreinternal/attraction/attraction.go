@@ -20,6 +20,8 @@ import (
 	"regexp"
 	"strings"
 
+	"go.uber.org/zap"
+
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/model/pdata"
 
@@ -272,7 +274,7 @@ func NewAttrProc(settings *Settings) (*AttrProc, error) {
 }
 
 // Process applies the AttrProc to an attribute map.
-func (ap *AttrProc) Process(ctx context.Context, attrs pdata.AttributeMap) {
+func (ap *AttrProc) Process(ctx context.Context, logger *zap.Logger, attrs pdata.AttributeMap) {
 	for _, action := range ap.actions {
 		// TODO https://go.opentelemetry.io/collector/issues/296
 		// Do benchmark testing between having action be of type string vs integer.
@@ -304,7 +306,7 @@ func (ap *AttrProc) Process(ctx context.Context, attrs pdata.AttributeMap) {
 		case EXTRACT:
 			extractAttributes(action, attrs)
 		case CONVERT:
-			convertAttribute(action, attrs)
+			convertAttribute(logger, action, attrs)
 		}
 	}
 }
@@ -339,9 +341,9 @@ func hashAttribute(action attributeAction, attrs pdata.AttributeMap) {
 	}
 }
 
-func convertAttribute(action attributeAction, attrs pdata.AttributeMap) {
+func convertAttribute(logger *zap.Logger, action attributeAction, attrs pdata.AttributeMap) {
 	if value, exists := attrs.Get(action.Key); exists {
-		convertValue(action.ConvertedType, value)
+		convertValue(logger, action.Key, action.ConvertedType, value)
 	}
 }
 

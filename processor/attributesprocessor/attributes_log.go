@@ -17,6 +17,8 @@ package attributesprocessor // import "github.com/open-telemetry/opentelemetry-c
 import (
 	"context"
 
+	"go.uber.org/zap"
+
 	"go.opentelemetry.io/collector/model/pdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
@@ -24,6 +26,7 @@ import (
 )
 
 type logAttributesProcessor struct {
+	logger   *zap.Logger
 	attrProc *attraction.AttrProc
 	include  filterlog.Matcher
 	exclude  filterlog.Matcher
@@ -32,8 +35,9 @@ type logAttributesProcessor struct {
 // newLogAttributesProcessor returns a processor that modifies attributes of a
 // log record. To construct the attributes processors, the use of the factory
 // methods are required in order to validate the inputs.
-func newLogAttributesProcessor(attrProc *attraction.AttrProc, include, exclude filterlog.Matcher) *logAttributesProcessor {
+func newLogAttributesProcessor(logger *zap.Logger, attrProc *attraction.AttrProc, include, exclude filterlog.Matcher) *logAttributesProcessor {
 	return &logAttributesProcessor{
+		logger:   logger,
 		attrProc: attrProc,
 		include:  include,
 		exclude:  exclude,
@@ -56,7 +60,7 @@ func (a *logAttributesProcessor) processLogs(ctx context.Context, ld pdata.Logs)
 					continue
 				}
 
-				a.attrProc.Process(ctx, lr.Attributes())
+				a.attrProc.Process(ctx, a.logger, lr.Attributes())
 			}
 		}
 	}

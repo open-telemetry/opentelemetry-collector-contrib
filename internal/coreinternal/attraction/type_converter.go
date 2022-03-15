@@ -17,6 +17,8 @@ package attraction // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	"strconv"
 
+	"go.uber.org/zap"
+
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
@@ -26,7 +28,7 @@ const (
 	doubleConversionTarget = "double"
 )
 
-func convertValue(to string, v pdata.AttributeValue) {
+func convertValue(logger *zap.Logger, key string, to string, v pdata.AttributeValue) {
 	switch to {
 	case stringConversionTarget:
 		switch v.Type() {
@@ -50,7 +52,9 @@ func convertValue(to string, v pdata.AttributeValue) {
 			n, err := strconv.ParseInt(s, 10, 64)
 			if err == nil {
 				v.SetIntVal(n)
-			} // else leave original value
+			} else {
+				logger.Debug("String could not be converted to int", zap.String("key", key), zap.String("value", s), zap.Error(err))
+			}
 		default: // leave original value
 		}
 	case doubleConversionTarget:
@@ -69,7 +73,9 @@ func convertValue(to string, v pdata.AttributeValue) {
 			n, err := strconv.ParseFloat(s, 64)
 			if err == nil {
 				v.SetDoubleVal(n)
-			} // else leave original value
+			} else {
+				logger.Debug("String could not be converted to double", zap.String("key", key), zap.String("value", s), zap.Error(err))
+			}
 		default: // leave original value
 		}
 	default: // No-op
