@@ -50,6 +50,9 @@ var (
 	colliding1         = "test.colliding"
 	colliding2         = "test/colliding"
 	collidingSanitized = "test_colliding"
+	keyWith129Runes    = "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii"
+	// because of the special characters, this has 132 bytes and 128 runes
+	keyWith128Runes = "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii世界"
 
 	intVal1   int64 = 1
 	intVal2   int64 = 2
