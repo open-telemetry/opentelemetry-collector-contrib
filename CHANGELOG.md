@@ -18,8 +18,8 @@
 - `influxdbexporter`: Add support for cumulative, non-monotonic metrics. (#8348)
 - `oauth2clientauthextension`: Add support for EndpointParams (#7307)
 - Add `NewMetricData` function to `MetricsBuilder` to consistently set instrumentation library name (#8255)
-- `googlecloudpubsubreceiver` Added implementation of Google Cloud Pubsub receiver. (#1802)
-- `googlecloudpubsubexporter` Added implementation of Google Cloud Pubsub exporter. (#1802)
+- `googlecloudpubsubreceiver` Added implementation of Google Cloud Pubsub receiver. (#8391)
+- `googlecloudpubsubexporter` Added implementation of Google Cloud Pubsub exporter. (#8391)
 
 ### 🛑 Breaking changes 🛑
 
