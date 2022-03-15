@@ -86,9 +86,10 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 
 	var errors scrapererror.ScrapeErrors
 
-	p.collectCommitsAndRollbacks(ctx, now, listClient, databases, errors)
-	p.collectDatabaseSize(ctx, now, listClient, databases, errors)
-	p.collectBackends(ctx, now, listClient, databases, errors)
+	rb := p.mb.NewResourceBuilder()
+	p.collectCommitsAndRollbacks(ctx, now, listClient, databases, errors, rb)
+	p.collectDatabaseSize(ctx, now, listClient, databases, errors, rb)
+	p.collectBackends(ctx, now, listClient, databases, errors, rb)
 
 	for _, database := range databases {
 		dbClient, err := p.clientFactory.getClient(p.config, database)
@@ -99,8 +100,8 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 		}
 		defer dbClient.Close()
 
-		p.collectBlockReads(ctx, now, dbClient, errors)
-		p.collectDatabaseTableMetrics(ctx, now, dbClient, errors)
+		p.collectBlockReads(ctx, now, dbClient, errors, rb)
+		p.collectDatabaseTableMetrics(ctx, now, dbClient, errors, rb)
 	}
 
 	return p.mb.Emit(), errors.Combine()
@@ -111,6 +112,7 @@ func (p *postgreSQLScraper) collectBlockReads(
 	now pdata.Timestamp,
 	client client,
 	errors scrapererror.ScrapeErrors,
+	rb *metadata.ResourceBuilder,
 ) {
 	blocksReadByTableMetrics, err := client.getBlocksReadByTable(ctx)
 	if err != nil {
@@ -129,7 +131,7 @@ func (p *postgreSQLScraper) collectBlockReads(
 				errors.AddPartial(0, err)
 				continue
 			}
-			p.mb.RecordPostgresqlBlocksReadDataPoint(now, i, table.database, table.table, k)
+			rb.RecordPostgresqlBlocksReadDataPoint(now, i, table.database, table.table, k)
 		}
 	}
 }
@@ -139,6 +141,7 @@ func (p *postgreSQLScraper) collectDatabaseTableMetrics(
 	now pdata.Timestamp,
 	client client,
 	errors scrapererror.ScrapeErrors,
+	rb *metadata.ResourceBuilder,
 ) {
 	databaseTableMetrics, err := client.getDatabaseTableMetrics(ctx)
 	if err != nil {
@@ -162,7 +165,7 @@ func (p *postgreSQLScraper) collectDatabaseTableMetrics(
 				errors.AddPartial(0, err)
 				continue
 			}
-			p.mb.RecordPostgresqlRowsDataPoint(now, i, table.database, table.table, key)
+			rb.RecordPostgresqlRowsDataPoint(now, i, table.database, table.table, key)
 		}
 
 		for _, key := range []string{"ins", "upd", "del", "hot_upd"} {
@@ -176,7 +179,7 @@ func (p *postgreSQLScraper) collectDatabaseTableMetrics(
 				errors.AddPartial(0, err)
 				continue
 			}
-			p.mb.RecordPostgresqlOperationsDataPoint(now, i, table.database, table.table, key)
+			rb.RecordPostgresqlOperationsDataPoint(now, i, table.database, table.table, key)
 		}
 	}
 }
@@ -187,6 +190,7 @@ func (p *postgreSQLScraper) collectCommitsAndRollbacks(
 	client client,
 	databases []string,
 	errors scrapererror.ScrapeErrors,
+	rb *metadata.ResourceBuilder,
 ) {
 	xactMetrics, err := client.getCommitsAndRollbacks(ctx, databases)
 	if err != nil {
@@ -204,7 +208,7 @@ func (p *postgreSQLScraper) collectCommitsAndRollbacks(
 			errors.AddPartial(0, err)
 			continue
 		} else {
-			p.mb.RecordPostgresqlCommitsDataPoint(now, i, metric.database)
+			rb.RecordPostgresqlCommitsDataPoint(now, i, metric.database)
 		}
 
 		rollbackValue := metric.stats["xact_rollback"]
@@ -212,7 +216,7 @@ func (p *postgreSQLScraper) collectCommitsAndRollbacks(
 			errors.AddPartial(0, err)
 			continue
 		} else {
-			p.mb.RecordPostgresqlRollbacksDataPoint(now, i, metric.database)
+			rb.RecordPostgresqlRollbacksDataPoint(now, i, metric.database)
 		}
 	}
 }
@@ -223,6 +227,7 @@ func (p *postgreSQLScraper) collectDatabaseSize(
 	client client,
 	databases []string,
 	errors scrapererror.ScrapeErrors,
+	rb *metadata.ResourceBuilder,
 ) {
 	databaseSizeMetric, err := client.getDatabaseSize(ctx, databases)
 	if err != nil {
@@ -241,7 +246,7 @@ func (p *postgreSQLScraper) collectDatabaseSize(
 				errors.AddPartial(0, err)
 				continue
 			}
-			p.mb.RecordPostgresqlDbSizeDataPoint(now, i, metric.database)
+			rb.RecordPostgresqlDbSizeDataPoint(now, i, metric.database)
 		}
 	}
 }
@@ -252,6 +257,7 @@ func (p *postgreSQLScraper) collectBackends(
 	client client,
 	databases []string,
 	errors scrapererror.ScrapeErrors,
+	rb *metadata.ResourceBuilder,
 ) {
 	backendsMetric, err := client.getBackends(ctx, databases)
 	if err != nil {
@@ -270,7 +276,7 @@ func (p *postgreSQLScraper) collectBackends(
 				errors.AddPartial(0, err)
 				continue
 			}
-			p.mb.RecordPostgresqlBackendsDataPoint(now, i, metric.database)
+			rb.RecordPostgresqlBackendsDataPoint(now, i, metric.database)
 		}
 	}
 }

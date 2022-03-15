@@ -1635,36 +1635,9 @@ func newMetricJvmThreadsCount(settings MetricSettings) metricJvmThreadsCount {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	startTime                                      pdata.Timestamp
-	metricElasticsearchClusterDataNodes            metricElasticsearchClusterDataNodes
-	metricElasticsearchClusterHealth               metricElasticsearchClusterHealth
-	metricElasticsearchClusterNodes                metricElasticsearchClusterNodes
-	metricElasticsearchClusterShards               metricElasticsearchClusterShards
-	metricElasticsearchNodeCacheEvictions          metricElasticsearchNodeCacheEvictions
-	metricElasticsearchNodeCacheMemoryUsage        metricElasticsearchNodeCacheMemoryUsage
-	metricElasticsearchNodeClusterConnections      metricElasticsearchNodeClusterConnections
-	metricElasticsearchNodeClusterIo               metricElasticsearchNodeClusterIo
-	metricElasticsearchNodeDocuments               metricElasticsearchNodeDocuments
-	metricElasticsearchNodeFsDiskAvailable         metricElasticsearchNodeFsDiskAvailable
-	metricElasticsearchNodeHTTPConnections         metricElasticsearchNodeHTTPConnections
-	metricElasticsearchNodeOpenFiles               metricElasticsearchNodeOpenFiles
-	metricElasticsearchNodeOperationsCompleted     metricElasticsearchNodeOperationsCompleted
-	metricElasticsearchNodeOperationsTime          metricElasticsearchNodeOperationsTime
-	metricElasticsearchNodeShardsSize              metricElasticsearchNodeShardsSize
-	metricElasticsearchNodeThreadPoolTasksFinished metricElasticsearchNodeThreadPoolTasksFinished
-	metricElasticsearchNodeThreadPoolTasksQueued   metricElasticsearchNodeThreadPoolTasksQueued
-	metricElasticsearchNodeThreadPoolThreads       metricElasticsearchNodeThreadPoolThreads
-	metricJvmClassesLoaded                         metricJvmClassesLoaded
-	metricJvmGcCollectionsCount                    metricJvmGcCollectionsCount
-	metricJvmGcCollectionsElapsed                  metricJvmGcCollectionsElapsed
-	metricJvmMemoryHeapCommitted                   metricJvmMemoryHeapCommitted
-	metricJvmMemoryHeapMax                         metricJvmMemoryHeapMax
-	metricJvmMemoryHeapUsed                        metricJvmMemoryHeapUsed
-	metricJvmMemoryNonheapCommitted                metricJvmMemoryNonheapCommitted
-	metricJvmMemoryNonheapUsed                     metricJvmMemoryNonheapUsed
-	metricJvmMemoryPoolMax                         metricJvmMemoryPoolMax
-	metricJvmMemoryPoolUsed                        metricJvmMemoryPoolUsed
-	metricJvmThreadsCount                          metricJvmThreadsCount
+	startTime        pdata.Timestamp
+	settings         MetricsSettings
+	resourceBuilders []*ResourceBuilder
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -1679,36 +1652,8 @@ func WithStartTime(startTime pdata.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		startTime:                                      pdata.NewTimestampFromTime(time.Now()),
-		metricElasticsearchClusterDataNodes:            newMetricElasticsearchClusterDataNodes(settings.ElasticsearchClusterDataNodes),
-		metricElasticsearchClusterHealth:               newMetricElasticsearchClusterHealth(settings.ElasticsearchClusterHealth),
-		metricElasticsearchClusterNodes:                newMetricElasticsearchClusterNodes(settings.ElasticsearchClusterNodes),
-		metricElasticsearchClusterShards:               newMetricElasticsearchClusterShards(settings.ElasticsearchClusterShards),
-		metricElasticsearchNodeCacheEvictions:          newMetricElasticsearchNodeCacheEvictions(settings.ElasticsearchNodeCacheEvictions),
-		metricElasticsearchNodeCacheMemoryUsage:        newMetricElasticsearchNodeCacheMemoryUsage(settings.ElasticsearchNodeCacheMemoryUsage),
-		metricElasticsearchNodeClusterConnections:      newMetricElasticsearchNodeClusterConnections(settings.ElasticsearchNodeClusterConnections),
-		metricElasticsearchNodeClusterIo:               newMetricElasticsearchNodeClusterIo(settings.ElasticsearchNodeClusterIo),
-		metricElasticsearchNodeDocuments:               newMetricElasticsearchNodeDocuments(settings.ElasticsearchNodeDocuments),
-		metricElasticsearchNodeFsDiskAvailable:         newMetricElasticsearchNodeFsDiskAvailable(settings.ElasticsearchNodeFsDiskAvailable),
-		metricElasticsearchNodeHTTPConnections:         newMetricElasticsearchNodeHTTPConnections(settings.ElasticsearchNodeHTTPConnections),
-		metricElasticsearchNodeOpenFiles:               newMetricElasticsearchNodeOpenFiles(settings.ElasticsearchNodeOpenFiles),
-		metricElasticsearchNodeOperationsCompleted:     newMetricElasticsearchNodeOperationsCompleted(settings.ElasticsearchNodeOperationsCompleted),
-		metricElasticsearchNodeOperationsTime:          newMetricElasticsearchNodeOperationsTime(settings.ElasticsearchNodeOperationsTime),
-		metricElasticsearchNodeShardsSize:              newMetricElasticsearchNodeShardsSize(settings.ElasticsearchNodeShardsSize),
-		metricElasticsearchNodeThreadPoolTasksFinished: newMetricElasticsearchNodeThreadPoolTasksFinished(settings.ElasticsearchNodeThreadPoolTasksFinished),
-		metricElasticsearchNodeThreadPoolTasksQueued:   newMetricElasticsearchNodeThreadPoolTasksQueued(settings.ElasticsearchNodeThreadPoolTasksQueued),
-		metricElasticsearchNodeThreadPoolThreads:       newMetricElasticsearchNodeThreadPoolThreads(settings.ElasticsearchNodeThreadPoolThreads),
-		metricJvmClassesLoaded:                         newMetricJvmClassesLoaded(settings.JvmClassesLoaded),
-		metricJvmGcCollectionsCount:                    newMetricJvmGcCollectionsCount(settings.JvmGcCollectionsCount),
-		metricJvmGcCollectionsElapsed:                  newMetricJvmGcCollectionsElapsed(settings.JvmGcCollectionsElapsed),
-		metricJvmMemoryHeapCommitted:                   newMetricJvmMemoryHeapCommitted(settings.JvmMemoryHeapCommitted),
-		metricJvmMemoryHeapMax:                         newMetricJvmMemoryHeapMax(settings.JvmMemoryHeapMax),
-		metricJvmMemoryHeapUsed:                        newMetricJvmMemoryHeapUsed(settings.JvmMemoryHeapUsed),
-		metricJvmMemoryNonheapCommitted:                newMetricJvmMemoryNonheapCommitted(settings.JvmMemoryNonheapCommitted),
-		metricJvmMemoryNonheapUsed:                     newMetricJvmMemoryNonheapUsed(settings.JvmMemoryNonheapUsed),
-		metricJvmMemoryPoolMax:                         newMetricJvmMemoryPoolMax(settings.JvmMemoryPoolMax),
-		metricJvmMemoryPoolUsed:                        newMetricJvmMemoryPoolUsed(settings.JvmMemoryPoolUsed),
-		metricJvmThreadsCount:                          newMetricJvmThreadsCount(settings.JvmThreadsCount),
+		startTime: pdata.NewTimestampFromTime(time.Now()),
+		settings:  settings,
 	}
 	for _, op := range options {
 		op(mb)
@@ -1744,183 +1689,271 @@ func (mb *MetricsBuilder) Emit(options ...emitOption) pdata.Metrics {
 	for _, op := range options {
 		op(&md)
 	}
-	metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
-	mb.metricElasticsearchClusterDataNodes.emit(metrics)
-	mb.metricElasticsearchClusterHealth.emit(metrics)
-	mb.metricElasticsearchClusterNodes.emit(metrics)
-	mb.metricElasticsearchClusterShards.emit(metrics)
-	mb.metricElasticsearchNodeCacheEvictions.emit(metrics)
-	mb.metricElasticsearchNodeCacheMemoryUsage.emit(metrics)
-	mb.metricElasticsearchNodeClusterConnections.emit(metrics)
-	mb.metricElasticsearchNodeClusterIo.emit(metrics)
-	mb.metricElasticsearchNodeDocuments.emit(metrics)
-	mb.metricElasticsearchNodeFsDiskAvailable.emit(metrics)
-	mb.metricElasticsearchNodeHTTPConnections.emit(metrics)
-	mb.metricElasticsearchNodeOpenFiles.emit(metrics)
-	mb.metricElasticsearchNodeOperationsCompleted.emit(metrics)
-	mb.metricElasticsearchNodeOperationsTime.emit(metrics)
-	mb.metricElasticsearchNodeShardsSize.emit(metrics)
-	mb.metricElasticsearchNodeThreadPoolTasksFinished.emit(metrics)
-	mb.metricElasticsearchNodeThreadPoolTasksQueued.emit(metrics)
-	mb.metricElasticsearchNodeThreadPoolThreads.emit(metrics)
-	mb.metricJvmClassesLoaded.emit(metrics)
-	mb.metricJvmGcCollectionsCount.emit(metrics)
-	mb.metricJvmGcCollectionsElapsed.emit(metrics)
-	mb.metricJvmMemoryHeapCommitted.emit(metrics)
-	mb.metricJvmMemoryHeapMax.emit(metrics)
-	mb.metricJvmMemoryHeapUsed.emit(metrics)
-	mb.metricJvmMemoryNonheapCommitted.emit(metrics)
-	mb.metricJvmMemoryNonheapUsed.emit(metrics)
-	mb.metricJvmMemoryPoolMax.emit(metrics)
-	mb.metricJvmMemoryPoolUsed.emit(metrics)
-	mb.metricJvmThreadsCount.emit(metrics)
+	for _, rb := range mb.resourceBuilders {
+		rm := md.ResourceMetrics().AppendEmpty()
+		ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+		ilm.InstrumentationLibrary().SetName("otelcol/elasticsearchreceiver")
+		rm.SetSchemaUrl(conventions.SchemaURL)
+		rb.emit(rm)
+	}
 	return md
 }
 
+type ResourceBuilder struct {
+	resource                                       pdata.Resource
+	startTime                                      pdata.Timestamp
+	metricElasticsearchClusterDataNodes            metricElasticsearchClusterDataNodes
+	metricElasticsearchClusterHealth               metricElasticsearchClusterHealth
+	metricElasticsearchClusterNodes                metricElasticsearchClusterNodes
+	metricElasticsearchClusterShards               metricElasticsearchClusterShards
+	metricElasticsearchNodeCacheEvictions          metricElasticsearchNodeCacheEvictions
+	metricElasticsearchNodeCacheMemoryUsage        metricElasticsearchNodeCacheMemoryUsage
+	metricElasticsearchNodeClusterConnections      metricElasticsearchNodeClusterConnections
+	metricElasticsearchNodeClusterIo               metricElasticsearchNodeClusterIo
+	metricElasticsearchNodeDocuments               metricElasticsearchNodeDocuments
+	metricElasticsearchNodeFsDiskAvailable         metricElasticsearchNodeFsDiskAvailable
+	metricElasticsearchNodeHTTPConnections         metricElasticsearchNodeHTTPConnections
+	metricElasticsearchNodeOpenFiles               metricElasticsearchNodeOpenFiles
+	metricElasticsearchNodeOperationsCompleted     metricElasticsearchNodeOperationsCompleted
+	metricElasticsearchNodeOperationsTime          metricElasticsearchNodeOperationsTime
+	metricElasticsearchNodeShardsSize              metricElasticsearchNodeShardsSize
+	metricElasticsearchNodeThreadPoolTasksFinished metricElasticsearchNodeThreadPoolTasksFinished
+	metricElasticsearchNodeThreadPoolTasksQueued   metricElasticsearchNodeThreadPoolTasksQueued
+	metricElasticsearchNodeThreadPoolThreads       metricElasticsearchNodeThreadPoolThreads
+	metricJvmClassesLoaded                         metricJvmClassesLoaded
+	metricJvmGcCollectionsCount                    metricJvmGcCollectionsCount
+	metricJvmGcCollectionsElapsed                  metricJvmGcCollectionsElapsed
+	metricJvmMemoryHeapCommitted                   metricJvmMemoryHeapCommitted
+	metricJvmMemoryHeapMax                         metricJvmMemoryHeapMax
+	metricJvmMemoryHeapUsed                        metricJvmMemoryHeapUsed
+	metricJvmMemoryNonheapCommitted                metricJvmMemoryNonheapCommitted
+	metricJvmMemoryNonheapUsed                     metricJvmMemoryNonheapUsed
+	metricJvmMemoryPoolMax                         metricJvmMemoryPoolMax
+	metricJvmMemoryPoolUsed                        metricJvmMemoryPoolUsed
+	metricJvmThreadsCount                          metricJvmThreadsCount
+}
+
+func (rb *ResourceBuilder) Attributes() pdata.AttributeMap {
+	return rb.resource.Attributes()
+}
+
+func (rb *ResourceBuilder) emit(rm pdata.ResourceMetrics) {
+	rb.resource.CopyTo(rm.Resource())
+
+	metrics := rm.InstrumentationLibraryMetrics().At(0).Metrics()
+
+	rb.metricElasticsearchClusterDataNodes.emit(metrics)
+	rb.metricElasticsearchClusterHealth.emit(metrics)
+	rb.metricElasticsearchClusterNodes.emit(metrics)
+	rb.metricElasticsearchClusterShards.emit(metrics)
+	rb.metricElasticsearchNodeCacheEvictions.emit(metrics)
+	rb.metricElasticsearchNodeCacheMemoryUsage.emit(metrics)
+	rb.metricElasticsearchNodeClusterConnections.emit(metrics)
+	rb.metricElasticsearchNodeClusterIo.emit(metrics)
+	rb.metricElasticsearchNodeDocuments.emit(metrics)
+	rb.metricElasticsearchNodeFsDiskAvailable.emit(metrics)
+	rb.metricElasticsearchNodeHTTPConnections.emit(metrics)
+	rb.metricElasticsearchNodeOpenFiles.emit(metrics)
+	rb.metricElasticsearchNodeOperationsCompleted.emit(metrics)
+	rb.metricElasticsearchNodeOperationsTime.emit(metrics)
+	rb.metricElasticsearchNodeShardsSize.emit(metrics)
+	rb.metricElasticsearchNodeThreadPoolTasksFinished.emit(metrics)
+	rb.metricElasticsearchNodeThreadPoolTasksQueued.emit(metrics)
+	rb.metricElasticsearchNodeThreadPoolThreads.emit(metrics)
+	rb.metricJvmClassesLoaded.emit(metrics)
+	rb.metricJvmGcCollectionsCount.emit(metrics)
+	rb.metricJvmGcCollectionsElapsed.emit(metrics)
+	rb.metricJvmMemoryHeapCommitted.emit(metrics)
+	rb.metricJvmMemoryHeapMax.emit(metrics)
+	rb.metricJvmMemoryHeapUsed.emit(metrics)
+	rb.metricJvmMemoryNonheapCommitted.emit(metrics)
+	rb.metricJvmMemoryNonheapUsed.emit(metrics)
+	rb.metricJvmMemoryPoolMax.emit(metrics)
+	rb.metricJvmMemoryPoolUsed.emit(metrics)
+	rb.metricJvmThreadsCount.emit(metrics)
+}
+
+func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
+	rb := ResourceBuilder{
+		metricElasticsearchClusterDataNodes:            newMetricElasticsearchClusterDataNodes(mb.settings.ElasticsearchClusterDataNodes),
+		metricElasticsearchClusterHealth:               newMetricElasticsearchClusterHealth(mb.settings.ElasticsearchClusterHealth),
+		metricElasticsearchClusterNodes:                newMetricElasticsearchClusterNodes(mb.settings.ElasticsearchClusterNodes),
+		metricElasticsearchClusterShards:               newMetricElasticsearchClusterShards(mb.settings.ElasticsearchClusterShards),
+		metricElasticsearchNodeCacheEvictions:          newMetricElasticsearchNodeCacheEvictions(mb.settings.ElasticsearchNodeCacheEvictions),
+		metricElasticsearchNodeCacheMemoryUsage:        newMetricElasticsearchNodeCacheMemoryUsage(mb.settings.ElasticsearchNodeCacheMemoryUsage),
+		metricElasticsearchNodeClusterConnections:      newMetricElasticsearchNodeClusterConnections(mb.settings.ElasticsearchNodeClusterConnections),
+		metricElasticsearchNodeClusterIo:               newMetricElasticsearchNodeClusterIo(mb.settings.ElasticsearchNodeClusterIo),
+		metricElasticsearchNodeDocuments:               newMetricElasticsearchNodeDocuments(mb.settings.ElasticsearchNodeDocuments),
+		metricElasticsearchNodeFsDiskAvailable:         newMetricElasticsearchNodeFsDiskAvailable(mb.settings.ElasticsearchNodeFsDiskAvailable),
+		metricElasticsearchNodeHTTPConnections:         newMetricElasticsearchNodeHTTPConnections(mb.settings.ElasticsearchNodeHTTPConnections),
+		metricElasticsearchNodeOpenFiles:               newMetricElasticsearchNodeOpenFiles(mb.settings.ElasticsearchNodeOpenFiles),
+		metricElasticsearchNodeOperationsCompleted:     newMetricElasticsearchNodeOperationsCompleted(mb.settings.ElasticsearchNodeOperationsCompleted),
+		metricElasticsearchNodeOperationsTime:          newMetricElasticsearchNodeOperationsTime(mb.settings.ElasticsearchNodeOperationsTime),
+		metricElasticsearchNodeShardsSize:              newMetricElasticsearchNodeShardsSize(mb.settings.ElasticsearchNodeShardsSize),
+		metricElasticsearchNodeThreadPoolTasksFinished: newMetricElasticsearchNodeThreadPoolTasksFinished(mb.settings.ElasticsearchNodeThreadPoolTasksFinished),
+		metricElasticsearchNodeThreadPoolTasksQueued:   newMetricElasticsearchNodeThreadPoolTasksQueued(mb.settings.ElasticsearchNodeThreadPoolTasksQueued),
+		metricElasticsearchNodeThreadPoolThreads:       newMetricElasticsearchNodeThreadPoolThreads(mb.settings.ElasticsearchNodeThreadPoolThreads),
+		metricJvmClassesLoaded:                         newMetricJvmClassesLoaded(mb.settings.JvmClassesLoaded),
+		metricJvmGcCollectionsCount:                    newMetricJvmGcCollectionsCount(mb.settings.JvmGcCollectionsCount),
+		metricJvmGcCollectionsElapsed:                  newMetricJvmGcCollectionsElapsed(mb.settings.JvmGcCollectionsElapsed),
+		metricJvmMemoryHeapCommitted:                   newMetricJvmMemoryHeapCommitted(mb.settings.JvmMemoryHeapCommitted),
+		metricJvmMemoryHeapMax:                         newMetricJvmMemoryHeapMax(mb.settings.JvmMemoryHeapMax),
+		metricJvmMemoryHeapUsed:                        newMetricJvmMemoryHeapUsed(mb.settings.JvmMemoryHeapUsed),
+		metricJvmMemoryNonheapCommitted:                newMetricJvmMemoryNonheapCommitted(mb.settings.JvmMemoryNonheapCommitted),
+		metricJvmMemoryNonheapUsed:                     newMetricJvmMemoryNonheapUsed(mb.settings.JvmMemoryNonheapUsed),
+		metricJvmMemoryPoolMax:                         newMetricJvmMemoryPoolMax(mb.settings.JvmMemoryPoolMax),
+		metricJvmMemoryPoolUsed:                        newMetricJvmMemoryPoolUsed(mb.settings.JvmMemoryPoolUsed),
+		metricJvmThreadsCount:                          newMetricJvmThreadsCount(mb.settings.JvmThreadsCount),
+		resource:                                       pdata.NewResource(),
+	}
+	mb.resourceBuilders = append(mb.resourceBuilders, &rb)
+	return &rb
+}
+
 // RecordElasticsearchClusterDataNodesDataPoint adds a data point to elasticsearch.cluster.data_nodes metric.
-func (mb *MetricsBuilder) RecordElasticsearchClusterDataNodesDataPoint(ts pdata.Timestamp, val int64) {
-	mb.metricElasticsearchClusterDataNodes.recordDataPoint(mb.startTime, ts, val)
+func (rb *ResourceBuilder) RecordElasticsearchClusterDataNodesDataPoint(ts pdata.Timestamp, val int64) {
+	rb.metricElasticsearchClusterDataNodes.recordDataPoint(rb.startTime, ts, val)
 }
 
 // RecordElasticsearchClusterHealthDataPoint adds a data point to elasticsearch.cluster.health metric.
-func (mb *MetricsBuilder) RecordElasticsearchClusterHealthDataPoint(ts pdata.Timestamp, val int64, healthStatusAttributeValue string) {
-	mb.metricElasticsearchClusterHealth.recordDataPoint(mb.startTime, ts, val, healthStatusAttributeValue)
+func (rb *ResourceBuilder) RecordElasticsearchClusterHealthDataPoint(ts pdata.Timestamp, val int64, healthStatusAttributeValue string) {
+	rb.metricElasticsearchClusterHealth.recordDataPoint(rb.startTime, ts, val, healthStatusAttributeValue)
 }
 
 // RecordElasticsearchClusterNodesDataPoint adds a data point to elasticsearch.cluster.nodes metric.
-func (mb *MetricsBuilder) RecordElasticsearchClusterNodesDataPoint(ts pdata.Timestamp, val int64) {
-	mb.metricElasticsearchClusterNodes.recordDataPoint(mb.startTime, ts, val)
+func (rb *ResourceBuilder) RecordElasticsearchClusterNodesDataPoint(ts pdata.Timestamp, val int64) {
+	rb.metricElasticsearchClusterNodes.recordDataPoint(rb.startTime, ts, val)
 }
 
 // RecordElasticsearchClusterShardsDataPoint adds a data point to elasticsearch.cluster.shards metric.
-func (mb *MetricsBuilder) RecordElasticsearchClusterShardsDataPoint(ts pdata.Timestamp, val int64, shardStateAttributeValue string) {
-	mb.metricElasticsearchClusterShards.recordDataPoint(mb.startTime, ts, val, shardStateAttributeValue)
+func (rb *ResourceBuilder) RecordElasticsearchClusterShardsDataPoint(ts pdata.Timestamp, val int64, shardStateAttributeValue string) {
+	rb.metricElasticsearchClusterShards.recordDataPoint(rb.startTime, ts, val, shardStateAttributeValue)
 }
 
 // RecordElasticsearchNodeCacheEvictionsDataPoint adds a data point to elasticsearch.node.cache.evictions metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeCacheEvictionsDataPoint(ts pdata.Timestamp, val int64, cacheNameAttributeValue string) {
-	mb.metricElasticsearchNodeCacheEvictions.recordDataPoint(mb.startTime, ts, val, cacheNameAttributeValue)
+func (rb *ResourceBuilder) RecordElasticsearchNodeCacheEvictionsDataPoint(ts pdata.Timestamp, val int64, cacheNameAttributeValue string) {
+	rb.metricElasticsearchNodeCacheEvictions.recordDataPoint(rb.startTime, ts, val, cacheNameAttributeValue)
 }
 
 // RecordElasticsearchNodeCacheMemoryUsageDataPoint adds a data point to elasticsearch.node.cache.memory.usage metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeCacheMemoryUsageDataPoint(ts pdata.Timestamp, val int64, cacheNameAttributeValue string) {
-	mb.metricElasticsearchNodeCacheMemoryUsage.recordDataPoint(mb.startTime, ts, val, cacheNameAttributeValue)
+func (rb *ResourceBuilder) RecordElasticsearchNodeCacheMemoryUsageDataPoint(ts pdata.Timestamp, val int64, cacheNameAttributeValue string) {
+	rb.metricElasticsearchNodeCacheMemoryUsage.recordDataPoint(rb.startTime, ts, val, cacheNameAttributeValue)
 }
 
 // RecordElasticsearchNodeClusterConnectionsDataPoint adds a data point to elasticsearch.node.cluster.connections metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeClusterConnectionsDataPoint(ts pdata.Timestamp, val int64) {
-	mb.metricElasticsearchNodeClusterConnections.recordDataPoint(mb.startTime, ts, val)
+func (rb *ResourceBuilder) RecordElasticsearchNodeClusterConnectionsDataPoint(ts pdata.Timestamp, val int64) {
+	rb.metricElasticsearchNodeClusterConnections.recordDataPoint(rb.startTime, ts, val)
 }
 
 // RecordElasticsearchNodeClusterIoDataPoint adds a data point to elasticsearch.node.cluster.io metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeClusterIoDataPoint(ts pdata.Timestamp, val int64, directionAttributeValue string) {
-	mb.metricElasticsearchNodeClusterIo.recordDataPoint(mb.startTime, ts, val, directionAttributeValue)
+func (rb *ResourceBuilder) RecordElasticsearchNodeClusterIoDataPoint(ts pdata.Timestamp, val int64, directionAttributeValue string) {
+	rb.metricElasticsearchNodeClusterIo.recordDataPoint(rb.startTime, ts, val, directionAttributeValue)
 }
 
 // RecordElasticsearchNodeDocumentsDataPoint adds a data point to elasticsearch.node.documents metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeDocumentsDataPoint(ts pdata.Timestamp, val int64, documentStateAttributeValue string) {
-	mb.metricElasticsearchNodeDocuments.recordDataPoint(mb.startTime, ts, val, documentStateAttributeValue)
+func (rb *ResourceBuilder) RecordElasticsearchNodeDocumentsDataPoint(ts pdata.Timestamp, val int64, documentStateAttributeValue string) {
+	rb.metricElasticsearchNodeDocuments.recordDataPoint(rb.startTime, ts, val, documentStateAttributeValue)
 }
 
 // RecordElasticsearchNodeFsDiskAvailableDataPoint adds a data point to elasticsearch.node.fs.disk.available metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeFsDiskAvailableDataPoint(ts pdata.Timestamp, val int64) {
-	mb.metricElasticsearchNodeFsDiskAvailable.recordDataPoint(mb.startTime, ts, val)
+func (rb *ResourceBuilder) RecordElasticsearchNodeFsDiskAvailableDataPoint(ts pdata.Timestamp, val int64) {
+	rb.metricElasticsearchNodeFsDiskAvailable.recordDataPoint(rb.startTime, ts, val)
 }
 
 // RecordElasticsearchNodeHTTPConnectionsDataPoint adds a data point to elasticsearch.node.http.connections metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeHTTPConnectionsDataPoint(ts pdata.Timestamp, val int64) {
-	mb.metricElasticsearchNodeHTTPConnections.recordDataPoint(mb.startTime, ts, val)
+func (rb *ResourceBuilder) RecordElasticsearchNodeHTTPConnectionsDataPoint(ts pdata.Timestamp, val int64) {
+	rb.metricElasticsearchNodeHTTPConnections.recordDataPoint(rb.startTime, ts, val)
 }
 
 // RecordElasticsearchNodeOpenFilesDataPoint adds a data point to elasticsearch.node.open_files metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeOpenFilesDataPoint(ts pdata.Timestamp, val int64) {
-	mb.metricElasticsearchNodeOpenFiles.recordDataPoint(mb.startTime, ts, val)
+func (rb *ResourceBuilder) RecordElasticsearchNodeOpenFilesDataPoint(ts pdata.Timestamp, val int64) {
+	rb.metricElasticsearchNodeOpenFiles.recordDataPoint(rb.startTime, ts, val)
 }
 
 // RecordElasticsearchNodeOperationsCompletedDataPoint adds a data point to elasticsearch.node.operations.completed metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeOperationsCompletedDataPoint(ts pdata.Timestamp, val int64, operationAttributeValue string) {
-	mb.metricElasticsearchNodeOperationsCompleted.recordDataPoint(mb.startTime, ts, val, operationAttributeValue)
+func (rb *ResourceBuilder) RecordElasticsearchNodeOperationsCompletedDataPoint(ts pdata.Timestamp, val int64, operationAttributeValue string) {
+	rb.metricElasticsearchNodeOperationsCompleted.recordDataPoint(rb.startTime, ts, val, operationAttributeValue)
 }
 
 // RecordElasticsearchNodeOperationsTimeDataPoint adds a data point to elasticsearch.node.operations.time metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeOperationsTimeDataPoint(ts pdata.Timestamp, val int64, operationAttributeValue string) {
-	mb.metricElasticsearchNodeOperationsTime.recordDataPoint(mb.startTime, ts, val, operationAttributeValue)
+func (rb *ResourceBuilder) RecordElasticsearchNodeOperationsTimeDataPoint(ts pdata.Timestamp, val int64, operationAttributeValue string) {
+	rb.metricElasticsearchNodeOperationsTime.recordDataPoint(rb.startTime, ts, val, operationAttributeValue)
 }
 
 // RecordElasticsearchNodeShardsSizeDataPoint adds a data point to elasticsearch.node.shards.size metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeShardsSizeDataPoint(ts pdata.Timestamp, val int64) {
-	mb.metricElasticsearchNodeShardsSize.recordDataPoint(mb.startTime, ts, val)
+func (rb *ResourceBuilder) RecordElasticsearchNodeShardsSizeDataPoint(ts pdata.Timestamp, val int64) {
+	rb.metricElasticsearchNodeShardsSize.recordDataPoint(rb.startTime, ts, val)
 }
 
 // RecordElasticsearchNodeThreadPoolTasksFinishedDataPoint adds a data point to elasticsearch.node.thread_pool.tasks.finished metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeThreadPoolTasksFinishedDataPoint(ts pdata.Timestamp, val int64, threadPoolNameAttributeValue string, taskStateAttributeValue string) {
-	mb.metricElasticsearchNodeThreadPoolTasksFinished.recordDataPoint(mb.startTime, ts, val, threadPoolNameAttributeValue, taskStateAttributeValue)
+func (rb *ResourceBuilder) RecordElasticsearchNodeThreadPoolTasksFinishedDataPoint(ts pdata.Timestamp, val int64, threadPoolNameAttributeValue string, taskStateAttributeValue string) {
+	rb.metricElasticsearchNodeThreadPoolTasksFinished.recordDataPoint(rb.startTime, ts, val, threadPoolNameAttributeValue, taskStateAttributeValue)
 }
 
 // RecordElasticsearchNodeThreadPoolTasksQueuedDataPoint adds a data point to elasticsearch.node.thread_pool.tasks.queued metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeThreadPoolTasksQueuedDataPoint(ts pdata.Timestamp, val int64, threadPoolNameAttributeValue string) {
-	mb.metricElasticsearchNodeThreadPoolTasksQueued.recordDataPoint(mb.startTime, ts, val, threadPoolNameAttributeValue)
+func (rb *ResourceBuilder) RecordElasticsearchNodeThreadPoolTasksQueuedDataPoint(ts pdata.Timestamp, val int64, threadPoolNameAttributeValue string) {
+	rb.metricElasticsearchNodeThreadPoolTasksQueued.recordDataPoint(rb.startTime, ts, val, threadPoolNameAttributeValue)
 }
 
 // RecordElasticsearchNodeThreadPoolThreadsDataPoint adds a data point to elasticsearch.node.thread_pool.threads metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeThreadPoolThreadsDataPoint(ts pdata.Timestamp, val int64, threadPoolNameAttributeValue string, threadStateAttributeValue string) {
-	mb.metricElasticsearchNodeThreadPoolThreads.recordDataPoint(mb.startTime, ts, val, threadPoolNameAttributeValue, threadStateAttributeValue)
+func (rb *ResourceBuilder) RecordElasticsearchNodeThreadPoolThreadsDataPoint(ts pdata.Timestamp, val int64, threadPoolNameAttributeValue string, threadStateAttributeValue string) {
+	rb.metricElasticsearchNodeThreadPoolThreads.recordDataPoint(rb.startTime, ts, val, threadPoolNameAttributeValue, threadStateAttributeValue)
 }
 
 // RecordJvmClassesLoadedDataPoint adds a data point to jvm.classes.loaded metric.
-func (mb *MetricsBuilder) RecordJvmClassesLoadedDataPoint(ts pdata.Timestamp, val int64) {
-	mb.metricJvmClassesLoaded.recordDataPoint(mb.startTime, ts, val)
+func (rb *ResourceBuilder) RecordJvmClassesLoadedDataPoint(ts pdata.Timestamp, val int64) {
+	rb.metricJvmClassesLoaded.recordDataPoint(rb.startTime, ts, val)
 }
 
 // RecordJvmGcCollectionsCountDataPoint adds a data point to jvm.gc.collections.count metric.
-func (mb *MetricsBuilder) RecordJvmGcCollectionsCountDataPoint(ts pdata.Timestamp, val int64, collectorNameAttributeValue string) {
-	mb.metricJvmGcCollectionsCount.recordDataPoint(mb.startTime, ts, val, collectorNameAttributeValue)
+func (rb *ResourceBuilder) RecordJvmGcCollectionsCountDataPoint(ts pdata.Timestamp, val int64, collectorNameAttributeValue string) {
+	rb.metricJvmGcCollectionsCount.recordDataPoint(rb.startTime, ts, val, collectorNameAttributeValue)
 }
 
 // RecordJvmGcCollectionsElapsedDataPoint adds a data point to jvm.gc.collections.elapsed metric.
-func (mb *MetricsBuilder) RecordJvmGcCollectionsElapsedDataPoint(ts pdata.Timestamp, val int64, collectorNameAttributeValue string) {
-	mb.metricJvmGcCollectionsElapsed.recordDataPoint(mb.startTime, ts, val, collectorNameAttributeValue)
+func (rb *ResourceBuilder) RecordJvmGcCollectionsElapsedDataPoint(ts pdata.Timestamp, val int64, collectorNameAttributeValue string) {
+	rb.metricJvmGcCollectionsElapsed.recordDataPoint(rb.startTime, ts, val, collectorNameAttributeValue)
 }
 
 // RecordJvmMemoryHeapCommittedDataPoint adds a data point to jvm.memory.heap.committed metric.
-func (mb *MetricsBuilder) RecordJvmMemoryHeapCommittedDataPoint(ts pdata.Timestamp, val int64) {
-	mb.metricJvmMemoryHeapCommitted.recordDataPoint(mb.startTime, ts, val)
+func (rb *ResourceBuilder) RecordJvmMemoryHeapCommittedDataPoint(ts pdata.Timestamp, val int64) {
+	rb.metricJvmMemoryHeapCommitted.recordDataPoint(rb.startTime, ts, val)
 }
 
 // RecordJvmMemoryHeapMaxDataPoint adds a data point to jvm.memory.heap.max metric.
-func (mb *MetricsBuilder) RecordJvmMemoryHeapMaxDataPoint(ts pdata.Timestamp, val int64) {
-	mb.metricJvmMemoryHeapMax.recordDataPoint(mb.startTime, ts, val)
+func (rb *ResourceBuilder) RecordJvmMemoryHeapMaxDataPoint(ts pdata.Timestamp, val int64) {
+	rb.metricJvmMemoryHeapMax.recordDataPoint(rb.startTime, ts, val)
 }
 
 // RecordJvmMemoryHeapUsedDataPoint adds a data point to jvm.memory.heap.used metric.
-func (mb *MetricsBuilder) RecordJvmMemoryHeapUsedDataPoint(ts pdata.Timestamp, val int64) {
-	mb.metricJvmMemoryHeapUsed.recordDataPoint(mb.startTime, ts, val)
+func (rb *ResourceBuilder) RecordJvmMemoryHeapUsedDataPoint(ts pdata.Timestamp, val int64) {
+	rb.metricJvmMemoryHeapUsed.recordDataPoint(rb.startTime, ts, val)
 }
 
 // RecordJvmMemoryNonheapCommittedDataPoint adds a data point to jvm.memory.nonheap.committed metric.
-func (mb *MetricsBuilder) RecordJvmMemoryNonheapCommittedDataPoint(ts pdata.Timestamp, val int64) {
-	mb.metricJvmMemoryNonheapCommitted.recordDataPoint(mb.startTime, ts, val)
+func (rb *ResourceBuilder) RecordJvmMemoryNonheapCommittedDataPoint(ts pdata.Timestamp, val int64) {
+	rb.metricJvmMemoryNonheapCommitted.recordDataPoint(rb.startTime, ts, val)
 }
 
 // RecordJvmMemoryNonheapUsedDataPoint adds a data point to jvm.memory.nonheap.used metric.
-func (mb *MetricsBuilder) RecordJvmMemoryNonheapUsedDataPoint(ts pdata.Timestamp, val int64) {
-	mb.metricJvmMemoryNonheapUsed.recordDataPoint(mb.startTime, ts, val)
+func (rb *ResourceBuilder) RecordJvmMemoryNonheapUsedDataPoint(ts pdata.Timestamp, val int64) {
+	rb.metricJvmMemoryNonheapUsed.recordDataPoint(rb.startTime, ts, val)
 }
 
 // RecordJvmMemoryPoolMaxDataPoint adds a data point to jvm.memory.pool.max metric.
-func (mb *MetricsBuilder) RecordJvmMemoryPoolMaxDataPoint(ts pdata.Timestamp, val int64, memoryPoolNameAttributeValue string) {
-	mb.metricJvmMemoryPoolMax.recordDataPoint(mb.startTime, ts, val, memoryPoolNameAttributeValue)
+func (rb *ResourceBuilder) RecordJvmMemoryPoolMaxDataPoint(ts pdata.Timestamp, val int64, memoryPoolNameAttributeValue string) {
+	rb.metricJvmMemoryPoolMax.recordDataPoint(rb.startTime, ts, val, memoryPoolNameAttributeValue)
 }
 
 // RecordJvmMemoryPoolUsedDataPoint adds a data point to jvm.memory.pool.used metric.
-func (mb *MetricsBuilder) RecordJvmMemoryPoolUsedDataPoint(ts pdata.Timestamp, val int64, memoryPoolNameAttributeValue string) {
-	mb.metricJvmMemoryPoolUsed.recordDataPoint(mb.startTime, ts, val, memoryPoolNameAttributeValue)
+func (rb *ResourceBuilder) RecordJvmMemoryPoolUsedDataPoint(ts pdata.Timestamp, val int64, memoryPoolNameAttributeValue string) {
+	rb.metricJvmMemoryPoolUsed.recordDataPoint(rb.startTime, ts, val, memoryPoolNameAttributeValue)
 }
 
 // RecordJvmThreadsCountDataPoint adds a data point to jvm.threads.count metric.
-func (mb *MetricsBuilder) RecordJvmThreadsCountDataPoint(ts pdata.Timestamp, val int64) {
-	mb.metricJvmThreadsCount.recordDataPoint(mb.startTime, ts, val)
+func (rb *ResourceBuilder) RecordJvmThreadsCountDataPoint(ts pdata.Timestamp, val int64) {
+	rb.metricJvmThreadsCount.recordDataPoint(rb.startTime, ts, val)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
@@ -1936,10 +1969,6 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 // name on the ResourceMetrics.
 func (mb *MetricsBuilder) newMetricData() pdata.Metrics {
 	md := pdata.NewMetrics()
-	rm := md.ResourceMetrics().AppendEmpty()
-	rm.SetSchemaUrl(conventions.SchemaURL)
-	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName("otelcol/elasticsearchreceiver")
 	return md
 }
 

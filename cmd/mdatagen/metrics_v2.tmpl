@@ -102,10 +102,9 @@ func newMetric{{ $name.Render }}(settings MetricSettings) metric{{ $name.Render 
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	startTime                pdata.Timestamp
-	{{- range $name, $metric := .Metrics }}
-	metric{{ $name.Render }} metric{{ $name.Render }}
-	{{- end }}
+	startTime        pdata.Timestamp
+	settings         MetricsSettings
+	resourceBuilders []*ResourceBuilder
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -120,10 +119,8 @@ func WithStartTime(startTime pdata.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		startTime:                pdata.NewTimestampFromTime(time.Now()),
-		{{- range $name, $metric := .Metrics }}
-		metric{{ $name.Render }}: newMetric{{ $name.Render }}(settings.{{ $name.Render }}),
-		{{- end }}
+		startTime: pdata.NewTimestampFromTime(time.Now()),
+		settings:  settings,
 	}
 	for _, op := range options {
 		op(mb)
@@ -159,20 +156,59 @@ func (mb *MetricsBuilder) Emit(options ...emitOption) pdata.Metrics{
 	for _, op := range options {
 		op(&md)
 	}
-	metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+	{{ end }}
+	for _, rb := range(mb.resourceBuilders) {
+		rm := md.ResourceMetrics().AppendEmpty()
+		ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+		ilm.InstrumentationLibrary().SetName("otelcol/{{ .Name }}")
+		rm.SetSchemaUrl(conventions.SchemaURL)
+		rb.emit(rm)
+	}
+	return md
+}
+
+
+type ResourceBuilder struct {
+	resource                 pdata.Resource
+	startTime                pdata.Timestamp
+	{{- range $name, $metric := .Metrics }}
+	metric{{ $name.Render }} metric{{ $name.Render }}
+	{{- end }}
+}
+
+
+func (rb *ResourceBuilder) Attributes() pdata.AttributeMap {
+	return rb.resource.Attributes()
+}
+
+func (rb *ResourceBuilder) emit(rm pdata.ResourceMetrics) {
+	rb.resource.CopyTo(rm.Resource())
+	{{ $length := len .Metrics }} {{ if ne $length 0 }}
+	metrics := rm.InstrumentationLibraryMetrics().At(0).Metrics()
 	{{ end }}
 	{{- range $name, $metric := .Metrics }}
-	mb.metric{{- $name.Render }}.emit(metrics)
+	rb.metric{{- $name.Render }}.emit(metrics)
 	{{- end }}
-	return md
+}
+
+
+func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
+	rb := ResourceBuilder{
+		{{- range $name, $metric := .Metrics }}
+		metric{{ $name.Render }}: newMetric{{ $name.Render }}(mb.settings.{{ $name.Render }}),
+		{{- end }}
+		resource:                 pdata.NewResource(),
+	}
+	mb.resourceBuilders = append(mb.resourceBuilders, &rb)
+	return &rb
 }
 
 {{ range $name, $metric := .Metrics -}}
 // Record{{ $name.Render }}DataPoint adds a data point to {{ $name }} metric.
-func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pdata.Timestamp
+func (rb *ResourceBuilder) Record{{ $name.Render }}DataPoint(ts pdata.Timestamp
 	{{- if $metric.Data.HasMetricValueType }}, val {{ $metric.Data.MetricValueType.BasicType }}{{ end }}
 	{{- range $metric.Attributes -}} , {{ .RenderUnexported }}AttributeValue string{{ end }}) {
-	mb.metric{{ $name.Render }}.recordDataPoint(mb.startTime, ts
+	rb.metric{{ $name.Render }}.recordDataPoint(rb.startTime, ts
 		{{- if $metric.Data.HasMetricValueType }}, val {{ end }}
 		{{- range $metric.Attributes -}} , {{ .RenderUnexported }}AttributeValue{{ end }})
 }
@@ -191,10 +227,6 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 // name on the ResourceMetrics.
 func (mb *MetricsBuilder) newMetricData() pdata.Metrics {
 	md := pdata.NewMetrics()
-	rm := md.ResourceMetrics().AppendEmpty()
-	rm.SetSchemaUrl(conventions.SchemaURL)
-	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName("otelcol/{{ .Name }}")
 	return md
 }
 

@@ -22,45 +22,45 @@ import (
 // we want to extract from Redis INFO.
 func (rs *redisScraper) dataPointRecorders() map[string]interface{} {
 	return map[string]interface{}{
-		"blocked_clients":                 rs.mb.RecordRedisClientsBlockedDataPoint,
-		"client_recent_max_input_buffer":  rs.mb.RecordRedisClientsMaxInputBufferDataPoint,
-		"client_recent_max_output_buffer": rs.mb.RecordRedisClientsMaxOutputBufferDataPoint,
-		"connected_clients":               rs.mb.RecordRedisClientsConnectedDataPoint,
-		"connected_slaves":                rs.mb.RecordRedisSlavesConnectedDataPoint,
-		"evicted_keys":                    rs.mb.RecordRedisKeysEvictedDataPoint,
-		"expired_keys":                    rs.mb.RecordRedisKeysExpiredDataPoint,
-		"instantaneous_ops_per_sec":       rs.mb.RecordRedisCommandsDataPoint,
-		"keyspace_hits":                   rs.mb.RecordRedisKeyspaceHitsDataPoint,
-		"keyspace_misses":                 rs.mb.RecordRedisKeyspaceMissesDataPoint,
-		"latest_fork_usec":                rs.mb.RecordRedisLatestForkDataPoint,
-		"master_repl_offset":              rs.mb.RecordRedisReplicationOffsetDataPoint,
-		"mem_fragmentation_ratio":         rs.mb.RecordRedisMemoryFragmentationRatioDataPoint,
-		"rdb_changes_since_last_save":     rs.mb.RecordRedisRdbChangesSinceLastSaveDataPoint,
-		"rejected_connections":            rs.mb.RecordRedisConnectionsRejectedDataPoint,
-		"repl_backlog_first_byte_offset":  rs.mb.RecordRedisReplicationBacklogFirstByteOffsetDataPoint,
-		"total_commands_processed":        rs.mb.RecordRedisCommandsProcessedDataPoint,
-		"total_connections_received":      rs.mb.RecordRedisConnectionsReceivedDataPoint,
-		"total_net_input_bytes":           rs.mb.RecordRedisNetInputDataPoint,
-		"total_net_output_bytes":          rs.mb.RecordRedisNetOutputDataPoint,
-		"uptime_in_seconds":               rs.mb.RecordRedisUptimeDataPoint,
+		"blocked_clients":                 rs.rb.RecordRedisClientsBlockedDataPoint,
+		"client_recent_max_input_buffer":  rs.rb.RecordRedisClientsMaxInputBufferDataPoint,
+		"client_recent_max_output_buffer": rs.rb.RecordRedisClientsMaxOutputBufferDataPoint,
+		"connected_clients":               rs.rb.RecordRedisClientsConnectedDataPoint,
+		"connected_slaves":                rs.rb.RecordRedisSlavesConnectedDataPoint,
+		"evicted_keys":                    rs.rb.RecordRedisKeysEvictedDataPoint,
+		"expired_keys":                    rs.rb.RecordRedisKeysExpiredDataPoint,
+		"instantaneous_ops_per_sec":       rs.rb.RecordRedisCommandsDataPoint,
+		"keyspace_hits":                   rs.rb.RecordRedisKeyspaceHitsDataPoint,
+		"keyspace_misses":                 rs.rb.RecordRedisKeyspaceMissesDataPoint,
+		"latest_fork_usec":                rs.rb.RecordRedisLatestForkDataPoint,
+		"master_repl_offset":              rs.rb.RecordRedisReplicationOffsetDataPoint,
+		"mem_fragmentation_ratio":         rs.rb.RecordRedisMemoryFragmentationRatioDataPoint,
+		"rdb_changes_since_last_save":     rs.rb.RecordRedisRdbChangesSinceLastSaveDataPoint,
+		"rejected_connections":            rs.rb.RecordRedisConnectionsRejectedDataPoint,
+		"repl_backlog_first_byte_offset":  rs.rb.RecordRedisReplicationBacklogFirstByteOffsetDataPoint,
+		"total_commands_processed":        rs.rb.RecordRedisCommandsProcessedDataPoint,
+		"total_connections_received":      rs.rb.RecordRedisConnectionsReceivedDataPoint,
+		"total_net_input_bytes":           rs.rb.RecordRedisNetInputDataPoint,
+		"total_net_output_bytes":          rs.rb.RecordRedisNetOutputDataPoint,
+		"uptime_in_seconds":               rs.rb.RecordRedisUptimeDataPoint,
 		"used_cpu_sys":                    rs.recordUsedCPUSys,
 		"used_cpu_sys_children":           rs.recordUsedCPUSysChildren,
 		"used_cpu_user":                   rs.recordUsedCPUSysUser,
-		"used_memory":                     rs.mb.RecordRedisMemoryUsedDataPoint,
-		"used_memory_lua":                 rs.mb.RecordRedisMemoryLuaDataPoint,
-		"used_memory_peak":                rs.mb.RecordRedisMemoryPeakDataPoint,
-		"used_memory_rss":                 rs.mb.RecordRedisMemoryRssDataPoint,
+		"used_memory":                     rs.rb.RecordRedisMemoryUsedDataPoint,
+		"used_memory_lua":                 rs.rb.RecordRedisMemoryLuaDataPoint,
+		"used_memory_peak":                rs.rb.RecordRedisMemoryPeakDataPoint,
+		"used_memory_rss":                 rs.rb.RecordRedisMemoryRssDataPoint,
 	}
 }
 
 func (rs *redisScraper) recordUsedCPUSys(now pdata.Timestamp, val float64) {
-	rs.mb.RecordRedisCPUTimeDataPoint(now, val, "sys")
+	rs.rb.RecordRedisCPUTimeDataPoint(now, val, "sys")
 }
 
 func (rs *redisScraper) recordUsedCPUSysChildren(now pdata.Timestamp, val float64) {
-	rs.mb.RecordRedisCPUTimeDataPoint(now, val, "children")
+	rs.rb.RecordRedisCPUTimeDataPoint(now, val, "children")
 }
 
 func (rs *redisScraper) recordUsedCPUSysUser(now pdata.Timestamp, val float64) {
-	rs.mb.RecordRedisCPUTimeDataPoint(now, val, "user")
+	rs.rb.RecordRedisCPUTimeDataPoint(now, val, "user")
 }

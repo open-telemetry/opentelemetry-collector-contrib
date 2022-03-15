@@ -34,6 +34,7 @@ type redisScraper struct {
 	redisSvc *redisSvc
 	settings component.ReceiverCreateSettings
 	mb       *metadata.MetricsBuilder
+	rb       *metadata.ResourceBuilder
 	uptime   time.Duration
 }
 
@@ -54,10 +55,12 @@ func newRedisScraper(cfg *Config, settings component.ReceiverCreateSettings) (sc
 }
 
 func newRedisScraperWithClient(client client, settings component.ReceiverCreateSettings, cfg *Config) (scraperhelper.Scraper, error) {
+	mb := metadata.NewMetricsBuilder(cfg.Metrics)
 	rs := &redisScraper{
 		redisSvc: newRedisSvc(client),
 		settings: settings,
-		mb:       metadata.NewMetricsBuilder(cfg.Metrics),
+		mb:       mb,
+		rb:       mb.NewResourceBuilder(),
 	}
 	return scraperhelper.NewScraper(typeStr, rs.Scrape)
 }
@@ -133,8 +136,8 @@ func (rs *redisScraper) recordKeyspaceMetrics(ts pdata.Timestamp, inf info) {
 				zap.String("val", str), zap.Error(parsingError))
 			continue
 		}
-		rs.mb.RecordRedisDbKeysDataPoint(ts, int64(keyspace.keys), keyspace.db)
-		rs.mb.RecordRedisDbExpiresDataPoint(ts, int64(keyspace.expires), keyspace.db)
-		rs.mb.RecordRedisDbAvgTTLDataPoint(ts, int64(keyspace.avgTTL), keyspace.db)
+		rs.rb.RecordRedisDbKeysDataPoint(ts, int64(keyspace.keys), keyspace.db)
+		rs.rb.RecordRedisDbExpiresDataPoint(ts, int64(keyspace.expires), keyspace.db)
+		rs.rb.RecordRedisDbAvgTTLDataPoint(ts, int64(keyspace.avgTTL), keyspace.db)
 	}
 }

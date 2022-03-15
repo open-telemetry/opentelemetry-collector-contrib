@@ -73,15 +73,16 @@ func (r *nginxScraper) scrape(context.Context) (pdata.Metrics, error) {
 		r.settings.Logger.Error("Failed to fetch nginx stats", zap.Error(err))
 		return pdata.Metrics{}, err
 	}
+	rb := r.mb.NewResourceBuilder()
 
 	now := pdata.NewTimestampFromTime(time.Now())
-	r.mb.RecordNginxRequestsDataPoint(now, stats.Requests)
-	r.mb.RecordNginxConnectionsAcceptedDataPoint(now, stats.Connections.Accepted)
-	r.mb.RecordNginxConnectionsHandledDataPoint(now, stats.Connections.Handled)
-	r.mb.RecordNginxConnectionsCurrentDataPoint(now, stats.Connections.Active, metadata.AttributeState.Active)
-	r.mb.RecordNginxConnectionsCurrentDataPoint(now, stats.Connections.Reading, metadata.AttributeState.Reading)
-	r.mb.RecordNginxConnectionsCurrentDataPoint(now, stats.Connections.Writing, metadata.AttributeState.Writing)
-	r.mb.RecordNginxConnectionsCurrentDataPoint(now, stats.Connections.Waiting, metadata.AttributeState.Waiting)
+	rb.RecordNginxRequestsDataPoint(now, stats.Requests)
+	rb.RecordNginxConnectionsAcceptedDataPoint(now, stats.Connections.Accepted)
+	rb.RecordNginxConnectionsHandledDataPoint(now, stats.Connections.Handled)
+	rb.RecordNginxConnectionsCurrentDataPoint(now, stats.Connections.Active, metadata.AttributeState.Active)
+	rb.RecordNginxConnectionsCurrentDataPoint(now, stats.Connections.Reading, metadata.AttributeState.Reading)
+	rb.RecordNginxConnectionsCurrentDataPoint(now, stats.Connections.Writing, metadata.AttributeState.Writing)
+	rb.RecordNginxConnectionsCurrentDataPoint(now, stats.Connections.Waiting, metadata.AttributeState.Waiting)
 
 	return r.mb.Emit(), nil
 }

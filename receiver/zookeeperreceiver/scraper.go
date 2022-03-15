@@ -118,8 +118,8 @@ func (z *zookeeperMetricsScraper) getResourceMetrics(conn net.Conn) (pdata.Metri
 		return pdata.NewMetrics(), err
 	}
 
-	resource := pdata.NewResource()
-	creator := newMetricCreator(z.mb)
+	rb := z.mb.NewResourceBuilder()
+	creator := newMetricCreator(rb)
 	now := pdata.NewTimestampFromTime(time.Now())
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -136,10 +136,10 @@ func (z *zookeeperMetricsScraper) getResourceMetrics(conn net.Conn) (pdata.Metri
 		metricValue := parts[2]
 		switch metricKey {
 		case zkVersionKey:
-			resource.Attributes().UpsertString(metadata.Attributes.ZkVersion, metricValue)
+			rb.Attributes().UpsertString(metadata.Attributes.ZkVersion, metricValue)
 			continue
 		case serverStateKey:
-			resource.Attributes().UpsertString(metadata.Attributes.ServerState, metricValue)
+			rb.Attributes().UpsertString(metadata.Attributes.ServerState, metricValue)
 			continue
 		default:
 			// Skip metric if there is no descriptor associated with it.
@@ -162,7 +162,7 @@ func (z *zookeeperMetricsScraper) getResourceMetrics(conn net.Conn) (pdata.Metri
 
 	// Generate computed metrics
 	creator.generateComputedMetrics(z.logger, now)
-	return z.mb.Emit(metadata.WithResource(resource)), nil
+	return z.mb.Emit(), nil
 }
 
 func closeConnection(conn net.Conn) error {

@@ -246,11 +246,9 @@ func newMetricNginxRequests(settings MetricSettings) metricNginxRequests {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	startTime                      pdata.Timestamp
-	metricNginxConnectionsAccepted metricNginxConnectionsAccepted
-	metricNginxConnectionsCurrent  metricNginxConnectionsCurrent
-	metricNginxConnectionsHandled  metricNginxConnectionsHandled
-	metricNginxRequests            metricNginxRequests
+	startTime        pdata.Timestamp
+	settings         MetricsSettings
+	resourceBuilders []*ResourceBuilder
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -265,11 +263,8 @@ func WithStartTime(startTime pdata.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		startTime:                      pdata.NewTimestampFromTime(time.Now()),
-		metricNginxConnectionsAccepted: newMetricNginxConnectionsAccepted(settings.NginxConnectionsAccepted),
-		metricNginxConnectionsCurrent:  newMetricNginxConnectionsCurrent(settings.NginxConnectionsCurrent),
-		metricNginxConnectionsHandled:  newMetricNginxConnectionsHandled(settings.NginxConnectionsHandled),
-		metricNginxRequests:            newMetricNginxRequests(settings.NginxRequests),
+		startTime: pdata.NewTimestampFromTime(time.Now()),
+		settings:  settings,
 	}
 	for _, op := range options {
 		op(mb)
@@ -305,33 +300,71 @@ func (mb *MetricsBuilder) Emit(options ...emitOption) pdata.Metrics {
 	for _, op := range options {
 		op(&md)
 	}
-	metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
-	mb.metricNginxConnectionsAccepted.emit(metrics)
-	mb.metricNginxConnectionsCurrent.emit(metrics)
-	mb.metricNginxConnectionsHandled.emit(metrics)
-	mb.metricNginxRequests.emit(metrics)
+	for _, rb := range mb.resourceBuilders {
+		rm := md.ResourceMetrics().AppendEmpty()
+		ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+		ilm.InstrumentationLibrary().SetName("otelcol/nginxreceiver")
+		rm.SetSchemaUrl(conventions.SchemaURL)
+		rb.emit(rm)
+	}
 	return md
 }
 
+type ResourceBuilder struct {
+	resource                       pdata.Resource
+	startTime                      pdata.Timestamp
+	metricNginxConnectionsAccepted metricNginxConnectionsAccepted
+	metricNginxConnectionsCurrent  metricNginxConnectionsCurrent
+	metricNginxConnectionsHandled  metricNginxConnectionsHandled
+	metricNginxRequests            metricNginxRequests
+}
+
+func (rb *ResourceBuilder) Attributes() pdata.AttributeMap {
+	return rb.resource.Attributes()
+}
+
+func (rb *ResourceBuilder) emit(rm pdata.ResourceMetrics) {
+	rb.resource.CopyTo(rm.Resource())
+
+	metrics := rm.InstrumentationLibraryMetrics().At(0).Metrics()
+
+	rb.metricNginxConnectionsAccepted.emit(metrics)
+	rb.metricNginxConnectionsCurrent.emit(metrics)
+	rb.metricNginxConnectionsHandled.emit(metrics)
+	rb.metricNginxRequests.emit(metrics)
+}
+
+func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
+	rb := ResourceBuilder{
+		metricNginxConnectionsAccepted: newMetricNginxConnectionsAccepted(mb.settings.NginxConnectionsAccepted),
+		metricNginxConnectionsCurrent:  newMetricNginxConnectionsCurrent(mb.settings.NginxConnectionsCurrent),
+		metricNginxConnectionsHandled:  newMetricNginxConnectionsHandled(mb.settings.NginxConnectionsHandled),
+		metricNginxRequests:            newMetricNginxRequests(mb.settings.NginxRequests),
+		resource:                       pdata.NewResource(),
+	}
+	mb.resourceBuilders = append(mb.resourceBuilders, &rb)
+	return &rb
+}
+
 // RecordNginxConnectionsAcceptedDataPoint adds a data point to nginx.connections_accepted metric.
-func (mb *MetricsBuilder) RecordNginxConnectionsAcceptedDataPoint(ts pdata.Timestamp, val int64) {
-	mb.metricNginxConnectionsAccepted.recordDataPoint(mb.startTime, ts, val)
+func (rb *ResourceBuilder) RecordNginxConnectionsAcceptedDataPoint(ts pdata.Timestamp, val int64) {
+	rb.metricNginxConnectionsAccepted.recordDataPoint(rb.startTime, ts, val)
 }
 
 // RecordNginxConnectionsCurrentDataPoint adds a data point to nginx.connections_current metric.
-func (mb *MetricsBuilder) RecordNginxConnectionsCurrentDataPoint(ts pdata.Timestamp, val int64, stateAttributeValue string) {
-	mb.metricNginxConnectionsCurrent.recordDataPoint(mb.startTime, ts, val, stateAttributeValue)
+func (rb *ResourceBuilder) RecordNginxConnectionsCurrentDataPoint(ts pdata.Timestamp, val int64, stateAttributeValue string) {
+	rb.metricNginxConnectionsCurrent.recordDataPoint(rb.startTime, ts, val, stateAttributeValue)
 }
 
 // RecordNginxConnectionsHandledDataPoint adds a data point to nginx.connections_handled metric.
-func (mb *MetricsBuilder) RecordNginxConnectionsHandledDataPoint(ts pdata.Timestamp, val int64) {
-	mb.metricNginxConnectionsHandled.recordDataPoint(mb.startTime, ts, val)
+func (rb *ResourceBuilder) RecordNginxConnectionsHandledDataPoint(ts pdata.Timestamp, val int64) {
+	rb.metricNginxConnectionsHandled.recordDataPoint(rb.startTime, ts, val)
 }
 
 // RecordNginxRequestsDataPoint adds a data point to nginx.requests metric.
-func (mb *MetricsBuilder) RecordNginxRequestsDataPoint(ts pdata.Timestamp, val int64) {
-	mb.metricNginxRequests.recordDataPoint(mb.startTime, ts, val)
+func (rb *ResourceBuilder) RecordNginxRequestsDataPoint(ts pdata.Timestamp, val int64) {
+	rb.metricNginxRequests.recordDataPoint(rb.startTime, ts, val)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
@@ -347,10 +380,6 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 // name on the ResourceMetrics.
 func (mb *MetricsBuilder) newMetricData() pdata.Metrics {
 	md := pdata.NewMetrics()
-	rm := md.ResourceMetrics().AppendEmpty()
-	rm.SetSchemaUrl(conventions.SchemaURL)
-	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName("otelcol/nginxreceiver")
 	return md
 }
 

@@ -370,13 +370,9 @@ func newMetricApacheWorkers(settings MetricSettings) metricApacheWorkers {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	startTime                      pdata.Timestamp
-	metricApacheCurrentConnections metricApacheCurrentConnections
-	metricApacheRequests           metricApacheRequests
-	metricApacheScoreboard         metricApacheScoreboard
-	metricApacheTraffic            metricApacheTraffic
-	metricApacheUptime             metricApacheUptime
-	metricApacheWorkers            metricApacheWorkers
+	startTime        pdata.Timestamp
+	settings         MetricsSettings
+	resourceBuilders []*ResourceBuilder
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -391,13 +387,8 @@ func WithStartTime(startTime pdata.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		startTime:                      pdata.NewTimestampFromTime(time.Now()),
-		metricApacheCurrentConnections: newMetricApacheCurrentConnections(settings.ApacheCurrentConnections),
-		metricApacheRequests:           newMetricApacheRequests(settings.ApacheRequests),
-		metricApacheScoreboard:         newMetricApacheScoreboard(settings.ApacheScoreboard),
-		metricApacheTraffic:            newMetricApacheTraffic(settings.ApacheTraffic),
-		metricApacheUptime:             newMetricApacheUptime(settings.ApacheUptime),
-		metricApacheWorkers:            newMetricApacheWorkers(settings.ApacheWorkers),
+		startTime: pdata.NewTimestampFromTime(time.Now()),
+		settings:  settings,
 	}
 	for _, op := range options {
 		op(mb)
@@ -433,45 +424,87 @@ func (mb *MetricsBuilder) Emit(options ...emitOption) pdata.Metrics {
 	for _, op := range options {
 		op(&md)
 	}
-	metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
-	mb.metricApacheCurrentConnections.emit(metrics)
-	mb.metricApacheRequests.emit(metrics)
-	mb.metricApacheScoreboard.emit(metrics)
-	mb.metricApacheTraffic.emit(metrics)
-	mb.metricApacheUptime.emit(metrics)
-	mb.metricApacheWorkers.emit(metrics)
+	for _, rb := range mb.resourceBuilders {
+		rm := md.ResourceMetrics().AppendEmpty()
+		ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+		ilm.InstrumentationLibrary().SetName("otelcol/apachereceiver")
+		rm.SetSchemaUrl(conventions.SchemaURL)
+		rb.emit(rm)
+	}
 	return md
 }
 
+type ResourceBuilder struct {
+	resource                       pdata.Resource
+	startTime                      pdata.Timestamp
+	metricApacheCurrentConnections metricApacheCurrentConnections
+	metricApacheRequests           metricApacheRequests
+	metricApacheScoreboard         metricApacheScoreboard
+	metricApacheTraffic            metricApacheTraffic
+	metricApacheUptime             metricApacheUptime
+	metricApacheWorkers            metricApacheWorkers
+}
+
+func (rb *ResourceBuilder) Attributes() pdata.AttributeMap {
+	return rb.resource.Attributes()
+}
+
+func (rb *ResourceBuilder) emit(rm pdata.ResourceMetrics) {
+	rb.resource.CopyTo(rm.Resource())
+
+	metrics := rm.InstrumentationLibraryMetrics().At(0).Metrics()
+
+	rb.metricApacheCurrentConnections.emit(metrics)
+	rb.metricApacheRequests.emit(metrics)
+	rb.metricApacheScoreboard.emit(metrics)
+	rb.metricApacheTraffic.emit(metrics)
+	rb.metricApacheUptime.emit(metrics)
+	rb.metricApacheWorkers.emit(metrics)
+}
+
+func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
+	rb := ResourceBuilder{
+		metricApacheCurrentConnections: newMetricApacheCurrentConnections(mb.settings.ApacheCurrentConnections),
+		metricApacheRequests:           newMetricApacheRequests(mb.settings.ApacheRequests),
+		metricApacheScoreboard:         newMetricApacheScoreboard(mb.settings.ApacheScoreboard),
+		metricApacheTraffic:            newMetricApacheTraffic(mb.settings.ApacheTraffic),
+		metricApacheUptime:             newMetricApacheUptime(mb.settings.ApacheUptime),
+		metricApacheWorkers:            newMetricApacheWorkers(mb.settings.ApacheWorkers),
+		resource:                       pdata.NewResource(),
+	}
+	mb.resourceBuilders = append(mb.resourceBuilders, &rb)
+	return &rb
+}
+
 // RecordApacheCurrentConnectionsDataPoint adds a data point to apache.current_connections metric.
-func (mb *MetricsBuilder) RecordApacheCurrentConnectionsDataPoint(ts pdata.Timestamp, val int64, serverNameAttributeValue string) {
-	mb.metricApacheCurrentConnections.recordDataPoint(mb.startTime, ts, val, serverNameAttributeValue)
+func (rb *ResourceBuilder) RecordApacheCurrentConnectionsDataPoint(ts pdata.Timestamp, val int64, serverNameAttributeValue string) {
+	rb.metricApacheCurrentConnections.recordDataPoint(rb.startTime, ts, val, serverNameAttributeValue)
 }
 
 // RecordApacheRequestsDataPoint adds a data point to apache.requests metric.
-func (mb *MetricsBuilder) RecordApacheRequestsDataPoint(ts pdata.Timestamp, val int64, serverNameAttributeValue string) {
-	mb.metricApacheRequests.recordDataPoint(mb.startTime, ts, val, serverNameAttributeValue)
+func (rb *ResourceBuilder) RecordApacheRequestsDataPoint(ts pdata.Timestamp, val int64, serverNameAttributeValue string) {
+	rb.metricApacheRequests.recordDataPoint(rb.startTime, ts, val, serverNameAttributeValue)
 }
 
 // RecordApacheScoreboardDataPoint adds a data point to apache.scoreboard metric.
-func (mb *MetricsBuilder) RecordApacheScoreboardDataPoint(ts pdata.Timestamp, val int64, serverNameAttributeValue string, scoreboardStateAttributeValue string) {
-	mb.metricApacheScoreboard.recordDataPoint(mb.startTime, ts, val, serverNameAttributeValue, scoreboardStateAttributeValue)
+func (rb *ResourceBuilder) RecordApacheScoreboardDataPoint(ts pdata.Timestamp, val int64, serverNameAttributeValue string, scoreboardStateAttributeValue string) {
+	rb.metricApacheScoreboard.recordDataPoint(rb.startTime, ts, val, serverNameAttributeValue, scoreboardStateAttributeValue)
 }
 
 // RecordApacheTrafficDataPoint adds a data point to apache.traffic metric.
-func (mb *MetricsBuilder) RecordApacheTrafficDataPoint(ts pdata.Timestamp, val int64, serverNameAttributeValue string) {
-	mb.metricApacheTraffic.recordDataPoint(mb.startTime, ts, val, serverNameAttributeValue)
+func (rb *ResourceBuilder) RecordApacheTrafficDataPoint(ts pdata.Timestamp, val int64, serverNameAttributeValue string) {
+	rb.metricApacheTraffic.recordDataPoint(rb.startTime, ts, val, serverNameAttributeValue)
 }
 
 // RecordApacheUptimeDataPoint adds a data point to apache.uptime metric.
-func (mb *MetricsBuilder) RecordApacheUptimeDataPoint(ts pdata.Timestamp, val int64, serverNameAttributeValue string) {
-	mb.metricApacheUptime.recordDataPoint(mb.startTime, ts, val, serverNameAttributeValue)
+func (rb *ResourceBuilder) RecordApacheUptimeDataPoint(ts pdata.Timestamp, val int64, serverNameAttributeValue string) {
+	rb.metricApacheUptime.recordDataPoint(rb.startTime, ts, val, serverNameAttributeValue)
 }
 
 // RecordApacheWorkersDataPoint adds a data point to apache.workers metric.
-func (mb *MetricsBuilder) RecordApacheWorkersDataPoint(ts pdata.Timestamp, val int64, serverNameAttributeValue string, workersStateAttributeValue string) {
-	mb.metricApacheWorkers.recordDataPoint(mb.startTime, ts, val, serverNameAttributeValue, workersStateAttributeValue)
+func (rb *ResourceBuilder) RecordApacheWorkersDataPoint(ts pdata.Timestamp, val int64, serverNameAttributeValue string, workersStateAttributeValue string) {
+	rb.metricApacheWorkers.recordDataPoint(rb.startTime, ts, val, serverNameAttributeValue, workersStateAttributeValue)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
@@ -487,10 +520,6 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 // name on the ResourceMetrics.
 func (mb *MetricsBuilder) newMetricData() pdata.Metrics {
 	md := pdata.NewMetrics()
-	rm := md.ResourceMetrics().AppendEmpty()
-	rm.SetSchemaUrl(conventions.SchemaURL)
-	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName("otelcol/apachereceiver")
 	return md
 }
 

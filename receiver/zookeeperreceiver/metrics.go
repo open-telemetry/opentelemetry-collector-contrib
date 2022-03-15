@@ -52,13 +52,13 @@ const (
 // metricCreator handles generation of metric and metric recording
 type metricCreator struct {
 	computedMetricStore map[string]int64
-	mb                  *metadata.MetricsBuilder
+	rb                  *metadata.ResourceBuilder
 }
 
-func newMetricCreator(mb *metadata.MetricsBuilder) *metricCreator {
+func newMetricCreator(rb *metadata.ResourceBuilder) *metricCreator {
 	return &metricCreator{
 		computedMetricStore: make(map[string]int64),
-		mb:                  mb,
+		rb:                  rb,
 	}
 }
 
@@ -71,41 +71,41 @@ func (m *metricCreator) recordDataPointsFunc(metric string) func(ts pdata.Timest
 	case syncedFollowersMetricKey:
 		return func(ts pdata.Timestamp, val int64) {
 			m.computedMetricStore[syncedFollowersMetricKey] = val
-			m.mb.RecordZookeeperFollowerCountDataPoint(ts, val, metadata.AttributeState.Synced)
+			m.rb.RecordZookeeperFollowerCountDataPoint(ts, val, metadata.AttributeState.Synced)
 		}
 	case pendingSyncsMetricKey:
-		return m.mb.RecordZookeeperSyncPendingDataPoint
+		return m.rb.RecordZookeeperSyncPendingDataPoint
 	case avgLatencyMetricKey:
-		return m.mb.RecordZookeeperLatencyAvgDataPoint
+		return m.rb.RecordZookeeperLatencyAvgDataPoint
 	case maxLatencyMetricKey:
-		return m.mb.RecordZookeeperLatencyMaxDataPoint
+		return m.rb.RecordZookeeperLatencyMaxDataPoint
 	case minLatencyMetricKey:
-		return m.mb.RecordZookeeperLatencyMinDataPoint
+		return m.rb.RecordZookeeperLatencyMinDataPoint
 	case numAliveConnectionsMetricKey:
-		return m.mb.RecordZookeeperConnectionActiveDataPoint
+		return m.rb.RecordZookeeperConnectionActiveDataPoint
 	case outstandingRequestsMetricKey:
-		return m.mb.RecordZookeeperRequestActiveDataPoint
+		return m.rb.RecordZookeeperRequestActiveDataPoint
 	case zNodeCountMetricKey:
-		return m.mb.RecordZookeeperZnodeCountDataPoint
+		return m.rb.RecordZookeeperZnodeCountDataPoint
 	case watchCountMetricKey:
-		return m.mb.RecordZookeeperWatchCountDataPoint
+		return m.rb.RecordZookeeperWatchCountDataPoint
 	case ephemeralsCountMetricKey:
-		return m.mb.RecordZookeeperDataTreeEphemeralNodeCountDataPoint
+		return m.rb.RecordZookeeperDataTreeEphemeralNodeCountDataPoint
 	case approximateDataSizeMetricKey:
-		return m.mb.RecordZookeeperDataTreeSizeDataPoint
+		return m.rb.RecordZookeeperDataTreeSizeDataPoint
 	case openFileDescriptorCountMetricKey:
-		return m.mb.RecordZookeeperFileDescriptorOpenDataPoint
+		return m.rb.RecordZookeeperFileDescriptorOpenDataPoint
 	case maxFileDescriptorCountMetricKey:
-		return m.mb.RecordZookeeperFileDescriptorLimitDataPoint
+		return m.rb.RecordZookeeperFileDescriptorLimitDataPoint
 	case fSyncThresholdExceedCountMetricKey:
-		return m.mb.RecordZookeeperFsyncExceededThresholdCountDataPoint
+		return m.rb.RecordZookeeperFsyncExceededThresholdCountDataPoint
 	case packetsReceivedMetricKey:
 		return func(ts pdata.Timestamp, val int64) {
-			m.mb.RecordZookeeperPacketCountDataPoint(ts, val, metadata.AttributeDirection.Received)
+			m.rb.RecordZookeeperPacketCountDataPoint(ts, val, metadata.AttributeDirection.Received)
 		}
 	case packetsSentMetricKey:
 		return func(ts pdata.Timestamp, val int64) {
-			m.mb.RecordZookeeperPacketCountDataPoint(ts, val, metadata.AttributeDirection.Sent)
+			m.rb.RecordZookeeperPacketCountDataPoint(ts, val, metadata.AttributeDirection.Sent)
 		}
 	}
 
@@ -132,7 +132,7 @@ func (m *metricCreator) computeNotSyncedFollowersMetric(ts pdata.Timestamp) erro
 	}
 
 	val := followersTotal - syncedFollowers
-	m.mb.RecordZookeeperFollowerCountDataPoint(ts, val, metadata.AttributeState.Unsynced)
+	m.rb.RecordZookeeperFollowerCountDataPoint(ts, val, metadata.AttributeState.Unsynced)
 
 	return nil
 }

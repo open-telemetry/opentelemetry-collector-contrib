@@ -25,7 +25,9 @@ func DefaultMetricsSettings() MetricsSettings {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	startTime pdata.Timestamp
+	startTime        pdata.Timestamp
+	settings         MetricsSettings
+	resourceBuilders []*ResourceBuilder
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -41,6 +43,7 @@ func WithStartTime(startTime pdata.Timestamp) metricBuilderOption {
 func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime: pdata.NewTimestampFromTime(time.Now()),
+		settings:  settings,
 	}
 	for _, op := range options {
 		op(mb)
@@ -73,7 +76,36 @@ func WithCapacity(capacity int) emitOption {
 func (mb *MetricsBuilder) Emit(options ...emitOption) pdata.Metrics {
 	md := mb.newMetricData()
 
+	for _, rb := range mb.resourceBuilders {
+		rm := md.ResourceMetrics().AppendEmpty()
+		ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+		ilm.InstrumentationLibrary().SetName("otelcol/couchbasereceiver")
+		rm.SetSchemaUrl(conventions.SchemaURL)
+		rb.emit(rm)
+	}
 	return md
+}
+
+type ResourceBuilder struct {
+	resource  pdata.Resource
+	startTime pdata.Timestamp
+}
+
+func (rb *ResourceBuilder) Attributes() pdata.AttributeMap {
+	return rb.resource.Attributes()
+}
+
+func (rb *ResourceBuilder) emit(rm pdata.ResourceMetrics) {
+	rb.resource.CopyTo(rm.Resource())
+
+}
+
+func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
+	rb := ResourceBuilder{
+		resource: pdata.NewResource(),
+	}
+	mb.resourceBuilders = append(mb.resourceBuilders, &rb)
+	return &rb
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
@@ -89,10 +121,6 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 // name on the ResourceMetrics.
 func (mb *MetricsBuilder) newMetricData() pdata.Metrics {
 	md := pdata.NewMetrics()
-	rm := md.ResourceMetrics().AppendEmpty()
-	rm.SetSchemaUrl(conventions.SchemaURL)
-	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName("otelcol/couchbasereceiver")
 	return md
 }
 

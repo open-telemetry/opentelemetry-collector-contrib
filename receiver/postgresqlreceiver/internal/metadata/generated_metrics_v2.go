@@ -431,14 +431,9 @@ func newMetricPostgresqlRows(settings MetricSettings) metricPostgresqlRows {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	startTime                  pdata.Timestamp
-	metricPostgresqlBackends   metricPostgresqlBackends
-	metricPostgresqlBlocksRead metricPostgresqlBlocksRead
-	metricPostgresqlCommits    metricPostgresqlCommits
-	metricPostgresqlDbSize     metricPostgresqlDbSize
-	metricPostgresqlOperations metricPostgresqlOperations
-	metricPostgresqlRollbacks  metricPostgresqlRollbacks
-	metricPostgresqlRows       metricPostgresqlRows
+	startTime        pdata.Timestamp
+	settings         MetricsSettings
+	resourceBuilders []*ResourceBuilder
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -453,14 +448,8 @@ func WithStartTime(startTime pdata.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		startTime:                  pdata.NewTimestampFromTime(time.Now()),
-		metricPostgresqlBackends:   newMetricPostgresqlBackends(settings.PostgresqlBackends),
-		metricPostgresqlBlocksRead: newMetricPostgresqlBlocksRead(settings.PostgresqlBlocksRead),
-		metricPostgresqlCommits:    newMetricPostgresqlCommits(settings.PostgresqlCommits),
-		metricPostgresqlDbSize:     newMetricPostgresqlDbSize(settings.PostgresqlDbSize),
-		metricPostgresqlOperations: newMetricPostgresqlOperations(settings.PostgresqlOperations),
-		metricPostgresqlRollbacks:  newMetricPostgresqlRollbacks(settings.PostgresqlRollbacks),
-		metricPostgresqlRows:       newMetricPostgresqlRows(settings.PostgresqlRows),
+		startTime: pdata.NewTimestampFromTime(time.Now()),
+		settings:  settings,
 	}
 	for _, op := range options {
 		op(mb)
@@ -496,51 +485,95 @@ func (mb *MetricsBuilder) Emit(options ...emitOption) pdata.Metrics {
 	for _, op := range options {
 		op(&md)
 	}
-	metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
-	mb.metricPostgresqlBackends.emit(metrics)
-	mb.metricPostgresqlBlocksRead.emit(metrics)
-	mb.metricPostgresqlCommits.emit(metrics)
-	mb.metricPostgresqlDbSize.emit(metrics)
-	mb.metricPostgresqlOperations.emit(metrics)
-	mb.metricPostgresqlRollbacks.emit(metrics)
-	mb.metricPostgresqlRows.emit(metrics)
+	for _, rb := range mb.resourceBuilders {
+		rm := md.ResourceMetrics().AppendEmpty()
+		ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+		ilm.InstrumentationLibrary().SetName("otelcol/postgresqlreceiver")
+		rm.SetSchemaUrl(conventions.SchemaURL)
+		rb.emit(rm)
+	}
 	return md
 }
 
+type ResourceBuilder struct {
+	resource                   pdata.Resource
+	startTime                  pdata.Timestamp
+	metricPostgresqlBackends   metricPostgresqlBackends
+	metricPostgresqlBlocksRead metricPostgresqlBlocksRead
+	metricPostgresqlCommits    metricPostgresqlCommits
+	metricPostgresqlDbSize     metricPostgresqlDbSize
+	metricPostgresqlOperations metricPostgresqlOperations
+	metricPostgresqlRollbacks  metricPostgresqlRollbacks
+	metricPostgresqlRows       metricPostgresqlRows
+}
+
+func (rb *ResourceBuilder) Attributes() pdata.AttributeMap {
+	return rb.resource.Attributes()
+}
+
+func (rb *ResourceBuilder) emit(rm pdata.ResourceMetrics) {
+	rb.resource.CopyTo(rm.Resource())
+
+	metrics := rm.InstrumentationLibraryMetrics().At(0).Metrics()
+
+	rb.metricPostgresqlBackends.emit(metrics)
+	rb.metricPostgresqlBlocksRead.emit(metrics)
+	rb.metricPostgresqlCommits.emit(metrics)
+	rb.metricPostgresqlDbSize.emit(metrics)
+	rb.metricPostgresqlOperations.emit(metrics)
+	rb.metricPostgresqlRollbacks.emit(metrics)
+	rb.metricPostgresqlRows.emit(metrics)
+}
+
+func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
+	rb := ResourceBuilder{
+		metricPostgresqlBackends:   newMetricPostgresqlBackends(mb.settings.PostgresqlBackends),
+		metricPostgresqlBlocksRead: newMetricPostgresqlBlocksRead(mb.settings.PostgresqlBlocksRead),
+		metricPostgresqlCommits:    newMetricPostgresqlCommits(mb.settings.PostgresqlCommits),
+		metricPostgresqlDbSize:     newMetricPostgresqlDbSize(mb.settings.PostgresqlDbSize),
+		metricPostgresqlOperations: newMetricPostgresqlOperations(mb.settings.PostgresqlOperations),
+		metricPostgresqlRollbacks:  newMetricPostgresqlRollbacks(mb.settings.PostgresqlRollbacks),
+		metricPostgresqlRows:       newMetricPostgresqlRows(mb.settings.PostgresqlRows),
+		resource:                   pdata.NewResource(),
+	}
+	mb.resourceBuilders = append(mb.resourceBuilders, &rb)
+	return &rb
+}
+
 // RecordPostgresqlBackendsDataPoint adds a data point to postgresql.backends metric.
-func (mb *MetricsBuilder) RecordPostgresqlBackendsDataPoint(ts pdata.Timestamp, val int64, databaseAttributeValue string) {
-	mb.metricPostgresqlBackends.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue)
+func (rb *ResourceBuilder) RecordPostgresqlBackendsDataPoint(ts pdata.Timestamp, val int64, databaseAttributeValue string) {
+	rb.metricPostgresqlBackends.recordDataPoint(rb.startTime, ts, val, databaseAttributeValue)
 }
 
 // RecordPostgresqlBlocksReadDataPoint adds a data point to postgresql.blocks_read metric.
-func (mb *MetricsBuilder) RecordPostgresqlBlocksReadDataPoint(ts pdata.Timestamp, val int64, databaseAttributeValue string, tableAttributeValue string, sourceAttributeValue string) {
-	mb.metricPostgresqlBlocksRead.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, tableAttributeValue, sourceAttributeValue)
+func (rb *ResourceBuilder) RecordPostgresqlBlocksReadDataPoint(ts pdata.Timestamp, val int64, databaseAttributeValue string, tableAttributeValue string, sourceAttributeValue string) {
+	rb.metricPostgresqlBlocksRead.recordDataPoint(rb.startTime, ts, val, databaseAttributeValue, tableAttributeValue, sourceAttributeValue)
 }
 
 // RecordPostgresqlCommitsDataPoint adds a data point to postgresql.commits metric.
-func (mb *MetricsBuilder) RecordPostgresqlCommitsDataPoint(ts pdata.Timestamp, val int64, databaseAttributeValue string) {
-	mb.metricPostgresqlCommits.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue)
+func (rb *ResourceBuilder) RecordPostgresqlCommitsDataPoint(ts pdata.Timestamp, val int64, databaseAttributeValue string) {
+	rb.metricPostgresqlCommits.recordDataPoint(rb.startTime, ts, val, databaseAttributeValue)
 }
 
 // RecordPostgresqlDbSizeDataPoint adds a data point to postgresql.db_size metric.
-func (mb *MetricsBuilder) RecordPostgresqlDbSizeDataPoint(ts pdata.Timestamp, val int64, databaseAttributeValue string) {
-	mb.metricPostgresqlDbSize.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue)
+func (rb *ResourceBuilder) RecordPostgresqlDbSizeDataPoint(ts pdata.Timestamp, val int64, databaseAttributeValue string) {
+	rb.metricPostgresqlDbSize.recordDataPoint(rb.startTime, ts, val, databaseAttributeValue)
 }
 
 // RecordPostgresqlOperationsDataPoint adds a data point to postgresql.operations metric.
-func (mb *MetricsBuilder) RecordPostgresqlOperationsDataPoint(ts pdata.Timestamp, val int64, databaseAttributeValue string, tableAttributeValue string, operationAttributeValue string) {
-	mb.metricPostgresqlOperations.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, tableAttributeValue, operationAttributeValue)
+func (rb *ResourceBuilder) RecordPostgresqlOperationsDataPoint(ts pdata.Timestamp, val int64, databaseAttributeValue string, tableAttributeValue string, operationAttributeValue string) {
+	rb.metricPostgresqlOperations.recordDataPoint(rb.startTime, ts, val, databaseAttributeValue, tableAttributeValue, operationAttributeValue)
 }
 
 // RecordPostgresqlRollbacksDataPoint adds a data point to postgresql.rollbacks metric.
-func (mb *MetricsBuilder) RecordPostgresqlRollbacksDataPoint(ts pdata.Timestamp, val int64, databaseAttributeValue string) {
-	mb.metricPostgresqlRollbacks.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue)
+func (rb *ResourceBuilder) RecordPostgresqlRollbacksDataPoint(ts pdata.Timestamp, val int64, databaseAttributeValue string) {
+	rb.metricPostgresqlRollbacks.recordDataPoint(rb.startTime, ts, val, databaseAttributeValue)
 }
 
 // RecordPostgresqlRowsDataPoint adds a data point to postgresql.rows metric.
-func (mb *MetricsBuilder) RecordPostgresqlRowsDataPoint(ts pdata.Timestamp, val int64, databaseAttributeValue string, tableAttributeValue string, stateAttributeValue string) {
-	mb.metricPostgresqlRows.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, tableAttributeValue, stateAttributeValue)
+func (rb *ResourceBuilder) RecordPostgresqlRowsDataPoint(ts pdata.Timestamp, val int64, databaseAttributeValue string, tableAttributeValue string, stateAttributeValue string) {
+	rb.metricPostgresqlRows.recordDataPoint(rb.startTime, ts, val, databaseAttributeValue, tableAttributeValue, stateAttributeValue)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
@@ -556,10 +589,6 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 // name on the ResourceMetrics.
 func (mb *MetricsBuilder) newMetricData() pdata.Metrics {
 	md := pdata.NewMetrics()
-	rm := md.ResourceMetrics().AppendEmpty()
-	rm.SetSchemaUrl(conventions.SchemaURL)
-	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName("otelcol/postgresqlreceiver")
 	return md
 }
 

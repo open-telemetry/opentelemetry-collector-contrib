@@ -847,22 +847,9 @@ func newMetricZookeeperZnodeCount(settings MetricSettings) metricZookeeperZnodeC
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	startTime                                  pdata.Timestamp
-	metricZookeeperConnectionActive            metricZookeeperConnectionActive
-	metricZookeeperDataTreeEphemeralNodeCount  metricZookeeperDataTreeEphemeralNodeCount
-	metricZookeeperDataTreeSize                metricZookeeperDataTreeSize
-	metricZookeeperFileDescriptorLimit         metricZookeeperFileDescriptorLimit
-	metricZookeeperFileDescriptorOpen          metricZookeeperFileDescriptorOpen
-	metricZookeeperFollowerCount               metricZookeeperFollowerCount
-	metricZookeeperFsyncExceededThresholdCount metricZookeeperFsyncExceededThresholdCount
-	metricZookeeperLatencyAvg                  metricZookeeperLatencyAvg
-	metricZookeeperLatencyMax                  metricZookeeperLatencyMax
-	metricZookeeperLatencyMin                  metricZookeeperLatencyMin
-	metricZookeeperPacketCount                 metricZookeeperPacketCount
-	metricZookeeperRequestActive               metricZookeeperRequestActive
-	metricZookeeperSyncPending                 metricZookeeperSyncPending
-	metricZookeeperWatchCount                  metricZookeeperWatchCount
-	metricZookeeperZnodeCount                  metricZookeeperZnodeCount
+	startTime        pdata.Timestamp
+	settings         MetricsSettings
+	resourceBuilders []*ResourceBuilder
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -877,22 +864,8 @@ func WithStartTime(startTime pdata.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		startTime:                                  pdata.NewTimestampFromTime(time.Now()),
-		metricZookeeperConnectionActive:            newMetricZookeeperConnectionActive(settings.ZookeeperConnectionActive),
-		metricZookeeperDataTreeEphemeralNodeCount:  newMetricZookeeperDataTreeEphemeralNodeCount(settings.ZookeeperDataTreeEphemeralNodeCount),
-		metricZookeeperDataTreeSize:                newMetricZookeeperDataTreeSize(settings.ZookeeperDataTreeSize),
-		metricZookeeperFileDescriptorLimit:         newMetricZookeeperFileDescriptorLimit(settings.ZookeeperFileDescriptorLimit),
-		metricZookeeperFileDescriptorOpen:          newMetricZookeeperFileDescriptorOpen(settings.ZookeeperFileDescriptorOpen),
-		metricZookeeperFollowerCount:               newMetricZookeeperFollowerCount(settings.ZookeeperFollowerCount),
-		metricZookeeperFsyncExceededThresholdCount: newMetricZookeeperFsyncExceededThresholdCount(settings.ZookeeperFsyncExceededThresholdCount),
-		metricZookeeperLatencyAvg:                  newMetricZookeeperLatencyAvg(settings.ZookeeperLatencyAvg),
-		metricZookeeperLatencyMax:                  newMetricZookeeperLatencyMax(settings.ZookeeperLatencyMax),
-		metricZookeeperLatencyMin:                  newMetricZookeeperLatencyMin(settings.ZookeeperLatencyMin),
-		metricZookeeperPacketCount:                 newMetricZookeeperPacketCount(settings.ZookeeperPacketCount),
-		metricZookeeperRequestActive:               newMetricZookeeperRequestActive(settings.ZookeeperRequestActive),
-		metricZookeeperSyncPending:                 newMetricZookeeperSyncPending(settings.ZookeeperSyncPending),
-		metricZookeeperWatchCount:                  newMetricZookeeperWatchCount(settings.ZookeeperWatchCount),
-		metricZookeeperZnodeCount:                  newMetricZookeeperZnodeCount(settings.ZookeeperZnodeCount),
+		startTime: pdata.NewTimestampFromTime(time.Now()),
+		settings:  settings,
 	}
 	for _, op := range options {
 		op(mb)
@@ -928,99 +901,159 @@ func (mb *MetricsBuilder) Emit(options ...emitOption) pdata.Metrics {
 	for _, op := range options {
 		op(&md)
 	}
-	metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
-	mb.metricZookeeperConnectionActive.emit(metrics)
-	mb.metricZookeeperDataTreeEphemeralNodeCount.emit(metrics)
-	mb.metricZookeeperDataTreeSize.emit(metrics)
-	mb.metricZookeeperFileDescriptorLimit.emit(metrics)
-	mb.metricZookeeperFileDescriptorOpen.emit(metrics)
-	mb.metricZookeeperFollowerCount.emit(metrics)
-	mb.metricZookeeperFsyncExceededThresholdCount.emit(metrics)
-	mb.metricZookeeperLatencyAvg.emit(metrics)
-	mb.metricZookeeperLatencyMax.emit(metrics)
-	mb.metricZookeeperLatencyMin.emit(metrics)
-	mb.metricZookeeperPacketCount.emit(metrics)
-	mb.metricZookeeperRequestActive.emit(metrics)
-	mb.metricZookeeperSyncPending.emit(metrics)
-	mb.metricZookeeperWatchCount.emit(metrics)
-	mb.metricZookeeperZnodeCount.emit(metrics)
+	for _, rb := range mb.resourceBuilders {
+		rm := md.ResourceMetrics().AppendEmpty()
+		ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+		ilm.InstrumentationLibrary().SetName("otelcol/zookeeperreceiver")
+		rm.SetSchemaUrl(conventions.SchemaURL)
+		rb.emit(rm)
+	}
 	return md
 }
 
+type ResourceBuilder struct {
+	resource                                   pdata.Resource
+	startTime                                  pdata.Timestamp
+	metricZookeeperConnectionActive            metricZookeeperConnectionActive
+	metricZookeeperDataTreeEphemeralNodeCount  metricZookeeperDataTreeEphemeralNodeCount
+	metricZookeeperDataTreeSize                metricZookeeperDataTreeSize
+	metricZookeeperFileDescriptorLimit         metricZookeeperFileDescriptorLimit
+	metricZookeeperFileDescriptorOpen          metricZookeeperFileDescriptorOpen
+	metricZookeeperFollowerCount               metricZookeeperFollowerCount
+	metricZookeeperFsyncExceededThresholdCount metricZookeeperFsyncExceededThresholdCount
+	metricZookeeperLatencyAvg                  metricZookeeperLatencyAvg
+	metricZookeeperLatencyMax                  metricZookeeperLatencyMax
+	metricZookeeperLatencyMin                  metricZookeeperLatencyMin
+	metricZookeeperPacketCount                 metricZookeeperPacketCount
+	metricZookeeperRequestActive               metricZookeeperRequestActive
+	metricZookeeperSyncPending                 metricZookeeperSyncPending
+	metricZookeeperWatchCount                  metricZookeeperWatchCount
+	metricZookeeperZnodeCount                  metricZookeeperZnodeCount
+}
+
+func (rb *ResourceBuilder) Attributes() pdata.AttributeMap {
+	return rb.resource.Attributes()
+}
+
+func (rb *ResourceBuilder) emit(rm pdata.ResourceMetrics) {
+	rb.resource.CopyTo(rm.Resource())
+
+	metrics := rm.InstrumentationLibraryMetrics().At(0).Metrics()
+
+	rb.metricZookeeperConnectionActive.emit(metrics)
+	rb.metricZookeeperDataTreeEphemeralNodeCount.emit(metrics)
+	rb.metricZookeeperDataTreeSize.emit(metrics)
+	rb.metricZookeeperFileDescriptorLimit.emit(metrics)
+	rb.metricZookeeperFileDescriptorOpen.emit(metrics)
+	rb.metricZookeeperFollowerCount.emit(metrics)
+	rb.metricZookeeperFsyncExceededThresholdCount.emit(metrics)
+	rb.metricZookeeperLatencyAvg.emit(metrics)
+	rb.metricZookeeperLatencyMax.emit(metrics)
+	rb.metricZookeeperLatencyMin.emit(metrics)
+	rb.metricZookeeperPacketCount.emit(metrics)
+	rb.metricZookeeperRequestActive.emit(metrics)
+	rb.metricZookeeperSyncPending.emit(metrics)
+	rb.metricZookeeperWatchCount.emit(metrics)
+	rb.metricZookeeperZnodeCount.emit(metrics)
+}
+
+func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
+	rb := ResourceBuilder{
+		metricZookeeperConnectionActive:            newMetricZookeeperConnectionActive(mb.settings.ZookeeperConnectionActive),
+		metricZookeeperDataTreeEphemeralNodeCount:  newMetricZookeeperDataTreeEphemeralNodeCount(mb.settings.ZookeeperDataTreeEphemeralNodeCount),
+		metricZookeeperDataTreeSize:                newMetricZookeeperDataTreeSize(mb.settings.ZookeeperDataTreeSize),
+		metricZookeeperFileDescriptorLimit:         newMetricZookeeperFileDescriptorLimit(mb.settings.ZookeeperFileDescriptorLimit),
+		metricZookeeperFileDescriptorOpen:          newMetricZookeeperFileDescriptorOpen(mb.settings.ZookeeperFileDescriptorOpen),
+		metricZookeeperFollowerCount:               newMetricZookeeperFollowerCount(mb.settings.ZookeeperFollowerCount),
+		metricZookeeperFsyncExceededThresholdCount: newMetricZookeeperFsyncExceededThresholdCount(mb.settings.ZookeeperFsyncExceededThresholdCount),
+		metricZookeeperLatencyAvg:                  newMetricZookeeperLatencyAvg(mb.settings.ZookeeperLatencyAvg),
+		metricZookeeperLatencyMax:                  newMetricZookeeperLatencyMax(mb.settings.ZookeeperLatencyMax),
+		metricZookeeperLatencyMin:                  newMetricZookeeperLatencyMin(mb.settings.ZookeeperLatencyMin),
+		metricZookeeperPacketCount:                 newMetricZookeeperPacketCount(mb.settings.ZookeeperPacketCount),
+		metricZookeeperRequestActive:               newMetricZookeeperRequestActive(mb.settings.ZookeeperRequestActive),
+		metricZookeeperSyncPending:                 newMetricZookeeperSyncPending(mb.settings.ZookeeperSyncPending),
+		metricZookeeperWatchCount:                  newMetricZookeeperWatchCount(mb.settings.ZookeeperWatchCount),
+		metricZookeeperZnodeCount:                  newMetricZookeeperZnodeCount(mb.settings.ZookeeperZnodeCount),
+		resource:                                   pdata.NewResource(),
+	}
+	mb.resourceBuilders = append(mb.resourceBuilders, &rb)
+	return &rb
+}
+
 // RecordZookeeperConnectionActiveDataPoint adds a data point to zookeeper.connection.active metric.
-func (mb *MetricsBuilder) RecordZookeeperConnectionActiveDataPoint(ts pdata.Timestamp, val int64) {
-	mb.metricZookeeperConnectionActive.recordDataPoint(mb.startTime, ts, val)
+func (rb *ResourceBuilder) RecordZookeeperConnectionActiveDataPoint(ts pdata.Timestamp, val int64) {
+	rb.metricZookeeperConnectionActive.recordDataPoint(rb.startTime, ts, val)
 }
 
 // RecordZookeeperDataTreeEphemeralNodeCountDataPoint adds a data point to zookeeper.data_tree.ephemeral_node.count metric.
-func (mb *MetricsBuilder) RecordZookeeperDataTreeEphemeralNodeCountDataPoint(ts pdata.Timestamp, val int64) {
-	mb.metricZookeeperDataTreeEphemeralNodeCount.recordDataPoint(mb.startTime, ts, val)
+func (rb *ResourceBuilder) RecordZookeeperDataTreeEphemeralNodeCountDataPoint(ts pdata.Timestamp, val int64) {
+	rb.metricZookeeperDataTreeEphemeralNodeCount.recordDataPoint(rb.startTime, ts, val)
 }
 
 // RecordZookeeperDataTreeSizeDataPoint adds a data point to zookeeper.data_tree.size metric.
-func (mb *MetricsBuilder) RecordZookeeperDataTreeSizeDataPoint(ts pdata.Timestamp, val int64) {
-	mb.metricZookeeperDataTreeSize.recordDataPoint(mb.startTime, ts, val)
+func (rb *ResourceBuilder) RecordZookeeperDataTreeSizeDataPoint(ts pdata.Timestamp, val int64) {
+	rb.metricZookeeperDataTreeSize.recordDataPoint(rb.startTime, ts, val)
 }
 
 // RecordZookeeperFileDescriptorLimitDataPoint adds a data point to zookeeper.file_descriptor.limit metric.
-func (mb *MetricsBuilder) RecordZookeeperFileDescriptorLimitDataPoint(ts pdata.Timestamp, val int64) {
-	mb.metricZookeeperFileDescriptorLimit.recordDataPoint(mb.startTime, ts, val)
+func (rb *ResourceBuilder) RecordZookeeperFileDescriptorLimitDataPoint(ts pdata.Timestamp, val int64) {
+	rb.metricZookeeperFileDescriptorLimit.recordDataPoint(rb.startTime, ts, val)
 }
 
 // RecordZookeeperFileDescriptorOpenDataPoint adds a data point to zookeeper.file_descriptor.open metric.
-func (mb *MetricsBuilder) RecordZookeeperFileDescriptorOpenDataPoint(ts pdata.Timestamp, val int64) {
-	mb.metricZookeeperFileDescriptorOpen.recordDataPoint(mb.startTime, ts, val)
+func (rb *ResourceBuilder) RecordZookeeperFileDescriptorOpenDataPoint(ts pdata.Timestamp, val int64) {
+	rb.metricZookeeperFileDescriptorOpen.recordDataPoint(rb.startTime, ts, val)
 }
 
 // RecordZookeeperFollowerCountDataPoint adds a data point to zookeeper.follower.count metric.
-func (mb *MetricsBuilder) RecordZookeeperFollowerCountDataPoint(ts pdata.Timestamp, val int64, stateAttributeValue string) {
-	mb.metricZookeeperFollowerCount.recordDataPoint(mb.startTime, ts, val, stateAttributeValue)
+func (rb *ResourceBuilder) RecordZookeeperFollowerCountDataPoint(ts pdata.Timestamp, val int64, stateAttributeValue string) {
+	rb.metricZookeeperFollowerCount.recordDataPoint(rb.startTime, ts, val, stateAttributeValue)
 }
 
 // RecordZookeeperFsyncExceededThresholdCountDataPoint adds a data point to zookeeper.fsync.exceeded_threshold.count metric.
-func (mb *MetricsBuilder) RecordZookeeperFsyncExceededThresholdCountDataPoint(ts pdata.Timestamp, val int64) {
-	mb.metricZookeeperFsyncExceededThresholdCount.recordDataPoint(mb.startTime, ts, val)
+func (rb *ResourceBuilder) RecordZookeeperFsyncExceededThresholdCountDataPoint(ts pdata.Timestamp, val int64) {
+	rb.metricZookeeperFsyncExceededThresholdCount.recordDataPoint(rb.startTime, ts, val)
 }
 
 // RecordZookeeperLatencyAvgDataPoint adds a data point to zookeeper.latency.avg metric.
-func (mb *MetricsBuilder) RecordZookeeperLatencyAvgDataPoint(ts pdata.Timestamp, val int64) {
-	mb.metricZookeeperLatencyAvg.recordDataPoint(mb.startTime, ts, val)
+func (rb *ResourceBuilder) RecordZookeeperLatencyAvgDataPoint(ts pdata.Timestamp, val int64) {
+	rb.metricZookeeperLatencyAvg.recordDataPoint(rb.startTime, ts, val)
 }
 
 // RecordZookeeperLatencyMaxDataPoint adds a data point to zookeeper.latency.max metric.
-func (mb *MetricsBuilder) RecordZookeeperLatencyMaxDataPoint(ts pdata.Timestamp, val int64) {
-	mb.metricZookeeperLatencyMax.recordDataPoint(mb.startTime, ts, val)
+func (rb *ResourceBuilder) RecordZookeeperLatencyMaxDataPoint(ts pdata.Timestamp, val int64) {
+	rb.metricZookeeperLatencyMax.recordDataPoint(rb.startTime, ts, val)
 }
 
 // RecordZookeeperLatencyMinDataPoint adds a data point to zookeeper.latency.min metric.
-func (mb *MetricsBuilder) RecordZookeeperLatencyMinDataPoint(ts pdata.Timestamp, val int64) {
-	mb.metricZookeeperLatencyMin.recordDataPoint(mb.startTime, ts, val)
+func (rb *ResourceBuilder) RecordZookeeperLatencyMinDataPoint(ts pdata.Timestamp, val int64) {
+	rb.metricZookeeperLatencyMin.recordDataPoint(rb.startTime, ts, val)
 }
 
 // RecordZookeeperPacketCountDataPoint adds a data point to zookeeper.packet.count metric.
-func (mb *MetricsBuilder) RecordZookeeperPacketCountDataPoint(ts pdata.Timestamp, val int64, directionAttributeValue string) {
-	mb.metricZookeeperPacketCount.recordDataPoint(mb.startTime, ts, val, directionAttributeValue)
+func (rb *ResourceBuilder) RecordZookeeperPacketCountDataPoint(ts pdata.Timestamp, val int64, directionAttributeValue string) {
+	rb.metricZookeeperPacketCount.recordDataPoint(rb.startTime, ts, val, directionAttributeValue)
 }
 
 // RecordZookeeperRequestActiveDataPoint adds a data point to zookeeper.request.active metric.
-func (mb *MetricsBuilder) RecordZookeeperRequestActiveDataPoint(ts pdata.Timestamp, val int64) {
-	mb.metricZookeeperRequestActive.recordDataPoint(mb.startTime, ts, val)
+func (rb *ResourceBuilder) RecordZookeeperRequestActiveDataPoint(ts pdata.Timestamp, val int64) {
+	rb.metricZookeeperRequestActive.recordDataPoint(rb.startTime, ts, val)
 }
 
 // RecordZookeeperSyncPendingDataPoint adds a data point to zookeeper.sync.pending metric.
-func (mb *MetricsBuilder) RecordZookeeperSyncPendingDataPoint(ts pdata.Timestamp, val int64) {
-	mb.metricZookeeperSyncPending.recordDataPoint(mb.startTime, ts, val)
+func (rb *ResourceBuilder) RecordZookeeperSyncPendingDataPoint(ts pdata.Timestamp, val int64) {
+	rb.metricZookeeperSyncPending.recordDataPoint(rb.startTime, ts, val)
 }
 
 // RecordZookeeperWatchCountDataPoint adds a data point to zookeeper.watch.count metric.
-func (mb *MetricsBuilder) RecordZookeeperWatchCountDataPoint(ts pdata.Timestamp, val int64) {
-	mb.metricZookeeperWatchCount.recordDataPoint(mb.startTime, ts, val)
+func (rb *ResourceBuilder) RecordZookeeperWatchCountDataPoint(ts pdata.Timestamp, val int64) {
+	rb.metricZookeeperWatchCount.recordDataPoint(rb.startTime, ts, val)
 }
 
 // RecordZookeeperZnodeCountDataPoint adds a data point to zookeeper.znode.count metric.
-func (mb *MetricsBuilder) RecordZookeeperZnodeCountDataPoint(ts pdata.Timestamp, val int64) {
-	mb.metricZookeeperZnodeCount.recordDataPoint(mb.startTime, ts, val)
+func (rb *ResourceBuilder) RecordZookeeperZnodeCountDataPoint(ts pdata.Timestamp, val int64) {
+	rb.metricZookeeperZnodeCount.recordDataPoint(rb.startTime, ts, val)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
@@ -1036,10 +1069,6 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 // name on the ResourceMetrics.
 func (mb *MetricsBuilder) newMetricData() pdata.Metrics {
 	md := pdata.NewMetrics()
-	rm := md.ResourceMetrics().AppendEmpty()
-	rm.SetSchemaUrl(conventions.SchemaURL)
-	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName("otelcol/zookeeperreceiver")
 	return md
 }
 

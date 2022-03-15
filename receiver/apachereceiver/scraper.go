@@ -35,16 +35,19 @@ type apacheScraper struct {
 	cfg        *Config
 	httpClient *http.Client
 	mb         *metadata.MetricsBuilder
+	rb         *metadata.ResourceBuilder
 }
 
 func newApacheScraper(
 	settings component.TelemetrySettings,
 	cfg *Config,
 ) *apacheScraper {
+	mb := metadata.NewMetricsBuilder(cfg.Metrics)
 	return &apacheScraper{
 		settings: settings,
 		cfg:      cfg,
-		mb:       metadata.NewMetricsBuilder(cfg.Metrics),
+		mb:       mb,
+		rb:       mb.NewResourceBuilder(),
 	}
 }
 
@@ -73,32 +76,32 @@ func (r *apacheScraper) scrape(context.Context) (pdata.Metrics, error) {
 		switch metricKey {
 		case "ServerUptimeSeconds":
 			if i, ok := r.parseInt(metricKey, metricValue); ok {
-				r.mb.RecordApacheUptimeDataPoint(now, i, r.cfg.serverName)
+				r.rb.RecordApacheUptimeDataPoint(now, i, r.cfg.serverName)
 			}
 		case "ConnsTotal":
 			if i, ok := r.parseInt(metricKey, metricValue); ok {
-				r.mb.RecordApacheCurrentConnectionsDataPoint(now, i, r.cfg.serverName)
+				r.rb.RecordApacheCurrentConnectionsDataPoint(now, i, r.cfg.serverName)
 			}
 		case "BusyWorkers":
 			if i, ok := r.parseInt(metricKey, metricValue); ok {
-				r.mb.RecordApacheWorkersDataPoint(now, i, r.cfg.serverName, "busy")
+				r.rb.RecordApacheWorkersDataPoint(now, i, r.cfg.serverName, "busy")
 			}
 		case "IdleWorkers":
 			if i, ok := r.parseInt(metricKey, metricValue); ok {
-				r.mb.RecordApacheWorkersDataPoint(now, i, r.cfg.serverName, "idle")
+				r.rb.RecordApacheWorkersDataPoint(now, i, r.cfg.serverName, "idle")
 			}
 		case "Total Accesses":
 			if i, ok := r.parseInt(metricKey, metricValue); ok {
-				r.mb.RecordApacheRequestsDataPoint(now, i, r.cfg.serverName)
+				r.rb.RecordApacheRequestsDataPoint(now, i, r.cfg.serverName)
 			}
 		case "Total kBytes":
 			if i, ok := r.parseInt(metricKey, metricValue); ok {
-				r.mb.RecordApacheTrafficDataPoint(now, kbytesToBytes(i), r.cfg.serverName)
+				r.rb.RecordApacheTrafficDataPoint(now, kbytesToBytes(i), r.cfg.serverName)
 			}
 		case "Scoreboard":
 			scoreboardMap := parseScoreboard(metricValue)
 			for state, score := range scoreboardMap {
-				r.mb.RecordApacheScoreboardDataPoint(now, score, r.cfg.serverName, state)
+				r.rb.RecordApacheScoreboardDataPoint(now, score, r.cfg.serverName, state)
 			}
 		}
 	}
