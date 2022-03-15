@@ -236,7 +236,7 @@ func warnDeprecatedMetadataConfig(logger *zap.Logger, cfg config.Processor) {
 			logger.Warn("k8s.cluster.name metadata param has been deprecated and will be removed soon")
 		}
 		if oldName != "" {
-			logger.Warn(fmt.Sprintf("%s has been deprecated in favor of %s for k8sattributes processor", oldName, newName))
+			logger.Warn(fmt.Sprintf("%s has been deprecated in favor of %s for k8s-tagger processor", oldName, newName))
 		}
 	}
 
