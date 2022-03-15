@@ -21,7 +21,7 @@ import (
 	"fmt"
 
 	"github.com/SAP/go-hdb/driver"
-	"go.opentelemetry.io/opentelemetry-collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 // Interface for a SAP HANA client. Implementation can be faked for testing.
@@ -38,14 +38,14 @@ type MetricStat struct {
 
 // Wraps a SAP HANA database connection, implements `client` interface.
 type sapHanaClient struct {
-	receiverConfig Config
+	receiverConfig *Config
 	client         *sql.DB
 }
 
 var _ client = (*sapHanaClient)(nil)
 
 // Creates a SAP HANA database client
-func newSapHanaClient(cfg Config) client {
+func newSapHanaClient(cfg *Config) client {
 	return &sapHanaClient{
 		receiverConfig: cfg,
 	}

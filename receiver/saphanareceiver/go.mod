@@ -1,14 +1,14 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver
+module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver
 
 go 1.17
 
 require (
+	github.com/SAP/go-hdb v0.105.5
 	go.opentelemetry.io/collector v0.46.1-0.20220307173244-f980c9ef25b1
 	go.opentelemetry.io/collector/model v0.46.1-0.20220307173244-f980c9ef25b1
 )
 
 require (
-	github.com/SAP/go-hdb v0.105.5 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/knadh/koanf v1.4.0 // indirect
