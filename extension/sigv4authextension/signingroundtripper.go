@@ -112,8 +112,8 @@ func (si *signingRoundTripper) inferServiceAndRegion(r *http.Request) (service s
 		if region == "" {
 			region = rest[0:strings.Index(rest, ".")]
 		}
-	} 
-	
+	}
+
 	if service == "" || region == "" {
 		si.logger.Warn("Unable to infer region and/or service from the URL. Please provide values for region and/or service in the collector configuration.")
 	}
