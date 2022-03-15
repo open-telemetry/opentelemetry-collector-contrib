@@ -112,7 +112,6 @@ func TestLoadConfig_Error(t *testing.T) {
 		noCountersErr                 = `perf counter for object "%s" does not specify any counters`
 		emptyInstanceErr              = `perf counter for object "%s" includes an empty instance`
 		undefinedMetricErr            = `perf counter for object "%s" includes an undefined metric`
-		missingSumAggregation         = `sum metric "%s" does not include an aggregation`
 		missingMetrics                = `must specify at least one metric`
 		gaugeAndSum                   = `metric "%s" provides both a sum config and a gauge config`
 	)
@@ -142,11 +141,6 @@ func TestLoadConfig_Error(t *testing.T) {
 			name:        "EmptyInstance",
 			cfgFile:     "config-emptyinstance.yaml",
 			expectedErr: fmt.Sprintf("%s: %s", errorPrefix, fmt.Sprintf(emptyInstanceErr, "object")),
-		},
-		{
-			name:        "EmptySumAggregation",
-			cfgFile:     "config-missingsumaggregation.yaml",
-			expectedErr: fmt.Sprintf("%s: %s", errorPrefix, fmt.Sprintf(missingSumAggregation, "metric")),
 		},
 		{
 			name:    "AllErrors",

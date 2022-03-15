@@ -58,7 +58,6 @@ func (prw *prometheusReceiverWrapper) Start(ctx context.Context, host component.
 
 	prw.prometheusRecever = pr
 	return prw.prometheusRecever.Start(ctx, host)
-	return prw.prometheusRecever.(ctx, host)
 }
 
 func getPrometheusConfig(cfg *Config) (*prometheusreceiver.Config, error) {
