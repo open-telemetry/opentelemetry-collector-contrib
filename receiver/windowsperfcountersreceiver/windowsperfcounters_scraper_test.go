@@ -78,38 +78,26 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 
 	defaultConfig := createDefaultConfig().(*Config)
 
-	defaultMetric := MetricConfig{
-		MetricName:  "metric",
-		Description: "desc",
-		Unit:        "1",
-		Gauge: GaugeMetric{
-			ValueType: "double",
-		},
-	}
-
 	testCases := []testCase{
 		{
 			name: "Standard",
 			cfg: &Config{
-				MetricMetaData: []MetricConfig{
-					{
-						MetricName:  "cpu.idle",
+				MetricMetaData: map[string]MetricConfig{
+					"cpu.idle": {
 						Description: "percentage of time CPU is idle.",
 						Unit:        "%",
 						Gauge: GaugeMetric{
 							ValueType: "double",
 						},
 					},
-					{
-						MetricName:  "bytes.committed",
+					"bytes.committed": {
 						Description: "number of bytes committed to memory",
 						Unit:        "By",
 						Gauge: GaugeMetric{
 							ValueType: "double",
 						},
 					},
-					{
-						MetricName:  "processor.time",
+					"processor.time": {
 						Description: "amount of time processor is busy",
 						Unit:        "%",
 						Gauge: GaugeMetric{
@@ -129,9 +117,8 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 		{
 			name: "SumMetric",
 			cfg: &Config{
-				MetricMetaData: []MetricConfig{
-					{
-						MetricName:  "bytes.committed",
+				MetricMetaData: map[string]MetricConfig{
+					"bytes.committed": {
 						Description: "number of bytes committed to memory",
 						Unit:        "By",
 						Sum: SumMetric{
@@ -200,7 +187,15 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 			require.NoError(t, err)
 
 			if test.mockCounterPath != "" || test.scrapeErr != nil || test.shutdownErr != nil {
-				scraper.cfg.MetricMetaData = []MetricConfig{defaultMetric}
+				scraper.cfg.MetricMetaData = map[string]MetricConfig{
+					"metric": {
+						Description: "desc",
+						Unit:        "1",
+						Gauge: GaugeMetric{
+							ValueType: "double",
+						},
+					},
+				}
 				scraper.counters = []PerfCounterMetrics{
 					{
 						CounterScraper: newMockPerfCounter(test.mockCounterPath, test.scrapeErr, test.shutdownErr),

@@ -1,7 +1,7 @@
 receivers:
   windowsperfcounters:
-    metric_metadata:
-      - metric_name: metric
+    metrics:
+      metric: 
         description: desc
         unit: "1"
     perfcounters:

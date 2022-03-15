@@ -41,9 +41,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 		},
 	}
 
-	cfg.(*Config).MetricMetaData = []MetricConfig{
-		{
-			MetricName:  "metric",
+	cfg.(*Config).MetricMetaData = map[string]MetricConfig{
+		"metric": {
 			Description: "desc",
 			Unit:        "1",
 			Gauge: GaugeMetric{
@@ -65,9 +64,8 @@ func TestCreateTracesReceiver(t *testing.T) {
 		},
 	}
 
-	cfg.(*Config).MetricMetaData = []MetricConfig{
-		{
-			MetricName:  "metric",
+	cfg.(*Config).MetricMetaData = map[string]MetricConfig{
+		"metric": {
 			Description: "desc",
 			Unit:        "1",
 			Gauge: GaugeMetric{
@@ -91,9 +89,8 @@ func TestCreateLogsReceiver(t *testing.T) {
 		},
 	}
 
-	cfg.(*Config).MetricMetaData = []MetricConfig{
-		{
-			MetricName:  "metric",
+	cfg.(*Config).MetricMetaData = map[string]MetricConfig{
+		"metric": {
 			Description: "desc",
 			Unit:        "1",
 			Gauge: GaugeMetric{

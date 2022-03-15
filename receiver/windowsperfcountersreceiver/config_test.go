@@ -49,9 +49,8 @@ func TestLoadConfig(t *testing.T) {
 		Metric: "metric",
 	}
 	defaultConfigSingleObject.(*Config).PerfCounters = []PerfCounterConfig{{Object: "object", Counters: []CounterConfig{counterConfig}}}
-	defaultConfigSingleObject.(*Config).MetricMetaData = []MetricConfig{
-		{
-			MetricName:  "metric",
+	defaultConfigSingleObject.(*Config).MetricMetaData = map[string]MetricConfig{
+		"metric": {
 			Description: "desc",
 			Unit:        "1",
 			Gauge: GaugeMetric{
@@ -83,17 +82,15 @@ func TestLoadConfig(t *testing.T) {
 				Counters: []CounterConfig{counterConfig, counterConfig2},
 			},
 		},
-		MetricMetaData: []MetricConfig{
-			{
-				MetricName:  "metric",
+		MetricMetaData: map[string]MetricConfig{
+			"metric": {
 				Description: "desc",
 				Unit:        "1",
 				Gauge: GaugeMetric{
 					ValueType: "double",
 				},
 			},
-			{
-				MetricName:  "metric2",
+			"metric2": {
 				Description: "desc",
 				Unit:        "1",
 				Gauge: GaugeMetric{
@@ -121,12 +118,7 @@ func TestLoadConfig_Error(t *testing.T) {
 		noCountersErr                 = `perf counter for object "%s" does not specify any counters`
 		emptyInstanceErr              = `perf counter for object "%s" includes an empty instance`
 		undefinedMetricErr            = `perf counter for object "%s" includes an undefined metric`
-		missingMetricName             = `a metric does not include a name`
-		missingMetricDesc             = `metric "%s" does not include a description`
-		missingMetricUnit             = `metric "%s" does not include a unit`
 		missingMetricMetricType       = `metric "%s" does not include a metric definition`
-		missingGaugeValueType         = `gauge metric "%s" does not include a value type`
-		missingSumValueType           = `sum metric "%s" does not include a value type`
 		missingSumAggregation         = `sum metric "%s" does not include an aggregation`
 		missingMetrics                = `must specify at least one metric`
 		gaugeAndSum                   = `metric "%s" provides both a sum config and a gauge config`
@@ -159,29 +151,9 @@ func TestLoadConfig_Error(t *testing.T) {
 			expectedErr: fmt.Sprintf("%s: %s", errorPrefix, fmt.Sprintf(emptyInstanceErr, "object")),
 		},
 		{
-			name:        "EmptyMetricDescription",
-			cfgFile:     "config-missingmetricdescription.yaml",
-			expectedErr: fmt.Sprintf("%s: %s", errorPrefix, fmt.Sprintf(missingMetricDesc, "metric")),
-		},
-		{
-			name:        "EmptyMetricUnit",
-			cfgFile:     "config-missingmetricunit.yaml",
-			expectedErr: fmt.Sprintf("%s: %s", errorPrefix, fmt.Sprintf(missingMetricUnit, "metric")),
-		},
-		{
 			name:        "EmptyMetricMetricType",
 			cfgFile:     "config-missingdatatype.yaml",
 			expectedErr: fmt.Sprintf("%s: %s", errorPrefix, fmt.Sprintf(missingMetricMetricType, "metric")),
-		},
-		{
-			name:        "EmptyMetricName",
-			cfgFile:     "config-missingmetricname.yaml",
-			expectedErr: fmt.Sprintf("%s: %s; %s", errorPrefix, missingMetricName, fmt.Sprintf(undefinedMetricErr, "object")),
-		},
-		{
-			name:        "EmptySumValueType",
-			cfgFile:     "config-missingsumvaluetype.yaml",
-			expectedErr: fmt.Sprintf("%s: %s", errorPrefix, fmt.Sprintf(missingSumValueType, "metric")),
 		},
 		{
 			name:        "EmptySumAggregation",

@@ -25,8 +25,8 @@ import (
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 
-	MetricMetaData []MetricConfig      `mapstructure:"metric_metadata"`
-	PerfCounters   []PerfCounterConfig `mapstructure:"perfcounters"`
+	MetricMetaData map[string]MetricConfig `mapstructure:"metrics"`
+	PerfCounters   []PerfCounterConfig     `mapstructure:"perfcounters"`
 }
 
 // PerfCounterConfig defines configuration for a perf counter object.
@@ -38,7 +38,6 @@ type PerfCounterConfig struct {
 
 // MetricsConfig defines the configuration for a metric to be created.
 type MetricConfig struct {
-	MetricName  string      `mapstructure:"metric_name"`
 	Unit        string      `mapstructure:"unit"`
 	Description string      `mapstructure:"description"`
 	Gauge       GaugeMetric `mapstructure:"gauge"`
@@ -76,39 +75,39 @@ func (c *Config) Validate() error {
 		errs = multierr.Append(errs, fmt.Errorf("must specify at least one metric"))
 	}
 
-	for _, metric := range c.MetricMetaData {
-		if metric.MetricName == "" {
+	for name, metric := range c.MetricMetaData {
+		if name == "" {
 			errs = multierr.Append(errs, fmt.Errorf("a metric does not include a name"))
 			continue
 		}
 		if metric.Description == "" {
-			errs = multierr.Append(errs, fmt.Errorf("metric %q does not include a description", metric.MetricName))
+			errs = multierr.Append(errs, fmt.Errorf("metric %q does not include a description", name))
 		}
 		if metric.Unit == "" {
-			errs = multierr.Append(errs, fmt.Errorf("metric %q does not include a unit", metric.MetricName))
+			errs = multierr.Append(errs, fmt.Errorf("metric %q does not include a unit", name))
 		}
 
 		if (metric.Gauge == GaugeMetric{}) && (metric.Sum == SumMetric{}) {
-			errs = multierr.Append(errs, fmt.Errorf("metric %q does not include a metric definition", metric.MetricName))
+			errs = multierr.Append(errs, fmt.Errorf("metric %q does not include a metric definition", name))
 		} else if (metric.Gauge != GaugeMetric{}) {
 			if metric.Gauge.ValueType == "" {
-				errs = multierr.Append(errs, fmt.Errorf("gauge metric %q does not include a value type", metric.MetricName))
+				errs = multierr.Append(errs, fmt.Errorf("gauge metric %q does not include a value type", name))
 			} else if metric.Gauge.ValueType != "int" && metric.Gauge.ValueType != "double" {
-				errs = multierr.Append(errs, fmt.Errorf("gauge metric %q includes an invalid value type", metric.MetricName))
+				errs = multierr.Append(errs, fmt.Errorf("gauge metric %q includes an invalid value type", name))
 			}
 		} else if (metric.Sum != SumMetric{}) {
 			if metric.Sum.ValueType == "" {
-				errs = multierr.Append(errs, fmt.Errorf("sum metric %q does not include a value type", metric.MetricName))
+				errs = multierr.Append(errs, fmt.Errorf("sum metric %q does not include a value type", name))
 			} else if metric.Sum.ValueType != "int" && metric.Sum.ValueType != "double" {
-				errs = multierr.Append(errs, fmt.Errorf("sum metric %q includes an invalid value type", metric.MetricName))
+				errs = multierr.Append(errs, fmt.Errorf("sum metric %q includes an invalid value type", name))
 			}
 			if metric.Sum.Aggregation == "" {
-				errs = multierr.Append(errs, fmt.Errorf("sum metric %q does not include an aggregation", metric.MetricName))
+				errs = multierr.Append(errs, fmt.Errorf("sum metric %q does not include an aggregation", name))
 			} else if metric.Sum.Aggregation != "cumulative" && metric.Sum.Aggregation != "delta" {
-				errs = multierr.Append(errs, fmt.Errorf("sum metric %q includes an invalid aggregation", metric.MetricName))
+				errs = multierr.Append(errs, fmt.Errorf("sum metric %q includes an invalid aggregation", name))
 			}
 		} else if (metric.Sum != SumMetric{}) && (metric.Gauge != GaugeMetric{}) {
-			errs = multierr.Append(errs, fmt.Errorf("metric %q provides both a sum config and a gauge config", metric.MetricName))
+			errs = multierr.Append(errs, fmt.Errorf("metric %q provides both a sum config and a gauge config", name))
 		}
 	}
 
@@ -125,8 +124,8 @@ func (c *Config) Validate() error {
 
 		for _, counter := range pc.Counters {
 			foundMatchingMetric := false
-			for _, metric := range c.MetricMetaData {
-				if counter.Metric == metric.MetricName {
+			for name := range c.MetricMetaData {
+				if counter.Metric == name {
 					foundMatchingMetric = true
 				}
 			}

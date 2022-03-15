@@ -112,10 +112,10 @@ func (s *scraper) scrape(context.Context) (pdata.Metrics, error) {
 
 	metrics.EnsureCapacity(len(s.counters))
 
-	for _, metricCfg := range s.cfg.MetricMetaData {
+	for name, metricCfg := range s.cfg.MetricMetaData {
 		builtMetric := metrics.AppendEmpty()
 
-		builtMetric.SetName(metricCfg.MetricName)
+		builtMetric.SetName(name)
 		builtMetric.SetDescription(metricCfg.Description)
 		builtMetric.SetUnit(metricCfg.Unit)
 
