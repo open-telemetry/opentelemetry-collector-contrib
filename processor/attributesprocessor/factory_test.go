@@ -20,7 +20,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
@@ -92,9 +91,31 @@ func TestFactory_CreateMetricsProcessor(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	mp, err := factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, nil)
+	// Create should fail without any actions
+	mp, err := factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
 	require.Nil(t, mp)
-	assert.Equal(t, err, componenterror.ErrDataTypeIsNotSupported)
+	assert.Error(t, err)
+
+	cfg.(*Config).Actions = []attraction.ActionKeyValue{
+		{Key: "fake_key", Action: attraction.INSERT, Value: "100"},
+	}
+
+	mp, err = factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
+	require.NotNil(t, mp)
+	require.NoError(t, err)
+
+	mp, err = factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, nil)
+	require.Nil(t, mp)
+	require.Error(t, err)
+
+	cfg.(*Config).Actions = []attraction.ActionKeyValue{
+		{Key: "fake_key", Action: attraction.UPSERT},
+	}
+
+	// Upsert should fail on non-existent key
+	mp, err = factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
+	require.Nil(t, mp)
+	require.Error(t, err)
 }
 
 func TestFactoryCreateLogsProcessor_EmptyActions(t *testing.T) {
