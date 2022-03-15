@@ -20,13 +20,10 @@
 // The rules for associating the data passing through the processor (spans, metrics and logs) with specific Pod Metadata are configured via "pod_association" key.
 // It represents a list of associations that are executed in the specified order until the first one is able to do the match.
 //
-// Each association is specified as a object containing three fields:
-//  - name - name of the association. Result of association is going to be saved as resource attribute with this name.
-//  - sources - sources of association. It represents list of rules. All rules are going to be executed and concatenated using delimiter.
-//              Metadata are going to be saved in the cache using created key
-//  - delimiter - string which is going to be used for sources concatenation
+// Each association is specified as a list of sources of association.
+// Sources represents list of rules. All rules are going to be executed and combination of result is going to be a pod metadata cache key.
 //
-// Each sources rule is specified as a pair of from (representing the rule type) and name (representing the attribute name if from is set to resource_attribute).
+// Each sources rule is specified as a pair of `from` (representing the rule type) and `name` (representing the attribute name if `From` is set to `resource_attribute`).
 // Following rule types are available:
 //   from: "connection" - takes the IP attribute from connection context (if available)
 //   from: "resource_attribute" - allows to specify the attribute name to lookup up in the list of attributes of the received Resource.
@@ -34,18 +31,11 @@
 //
 // Pod association configuration.
 // pod_association:
-//  - delimiter: ''
-//    sources:
+//  - sources:
 //     - from: resource_attribute
 //       name: k8s.pod.ip
-//  - delimiter: ''
-//    sources:
-//    - from: resource_attribute
-//      name: k8s.pod.ip
-//  # below association are going to be saved as `pod_name_namespace` with value of `<k8s.pod.name>.<k8s.namespace.name>` if executed
-//  - delimiter: '.'
-//    name: pod_name_namespace
-//    sources:
+//  # below association matches for pair `k8s.pod.name` and `k8s.namespace.name`
+//  - sources:
 //    - from: resource_attribute
 //      name: k8s.pod.name
 //    - from: resource_attribute

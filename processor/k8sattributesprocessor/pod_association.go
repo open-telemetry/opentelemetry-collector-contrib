@@ -54,7 +54,7 @@ func extractPodID(ctx context.Context, attrs pcommon.Map, associations []kube.As
 
 		// If all association sources has been resolved, return result
 		if len(ret) == len(asso.Sources) {
-			return asso.Name, kube.PodIdentifier(strings.Join(ret, asso.Delimiter))
+			return asso.Name, kube.PodIdentifier(strings.Join(ret, kube.PodIdentifierDelimiter))
 		}
 	}
 	return "", ""

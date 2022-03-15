@@ -223,9 +223,8 @@ type Associations struct {
 
 // Association represents one association rule
 type Association struct {
-	Delimiter string
-	Name      string
-	Sources   []AssociationSource
+	Name    string
+	Sources []AssociationSource
 }
 
 // Excludes represent a list of Pods to ignore
