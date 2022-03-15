@@ -9,7 +9,10 @@
 ### 🚩 Deprecations 🚩
 
 ### 🚀 New components 🚀
+
 - `iisreceiver`: Add implementation of IIS Metric Receiver (#8832)
+- `sqlserverreceiver`: Add implementation of SQL Server Metric Receiver (#8398)
+
 ### 💡 Enhancements 💡
 
 ### 🧰 Bug fixes 🧰
