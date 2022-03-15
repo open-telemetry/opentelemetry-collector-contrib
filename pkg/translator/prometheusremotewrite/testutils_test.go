@@ -15,11 +15,14 @@
 package prometheusremotewrite
 
 import (
+	"encoding/hex"
 	"math"
 	"strings"
+	"testing"
 	"time"
 
 	"github.com/prometheus/prometheus/prompb"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
@@ -45,14 +48,16 @@ var (
 	value41            = "test_value41"
 	dirty1             = "%"
 	dirty2             = "?"
-	traceIDValue1      = "traceID-value1"
-	traceIDKey         = "trace_id"
+	traceIDValue1      = "4303853f086f4f8c86cf198b6551df84"
+	spanIDValue1       = "e5513c32795c41b9"
 	colliding1         = "test.colliding"
 	colliding2         = "test/colliding"
 	collidingSanitized = "test_colliding"
 	keyWith129Runes    = "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii"
 	// because of the special characters, this has 132 bytes and 128 runes
 	keyWith128Runes = "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii世界"
+	// 64 + trace id + span id = 129 characters
+	keyWith64Runes = "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii"
 
 	intVal1   int64 = 1
 	intVal2   int64 = 2
@@ -221,13 +226,28 @@ func getTimeSeriesWithSamplesAndExemplars(labels []prompb.Label, samples []promp
 	}
 }
 
-func getHistogramDataPointWithExemplars(time time.Time, value float64, attributeKey string, attributeValue string) *pdata.HistogramDataPoint {
+func getHistogramDataPointWithExemplars(t *testing.T, time time.Time, value float64, traceID string, spanID string, attributeKey string, attributeValue string) *pdata.HistogramDataPoint {
 	h := pdata.NewHistogramDataPoint()
 
 	e := h.Exemplars().AppendEmpty()
 	e.SetDoubleVal(value)
 	e.SetTimestamp(pdata.NewTimestampFromTime(time))
 	e.FilteredAttributes().Insert(attributeKey, pdata.NewAttributeValueString(attributeValue))
+
+	if traceID != "" {
+		var traceIDBytes [16]byte
+		traceIDBytesSlice, err := hex.DecodeString(traceID)
+		require.NoErrorf(t, err, "error decoding trace id: %v", err)
+		copy(traceIDBytes[:], traceIDBytesSlice)
+		e.SetTraceID(pdata.NewTraceID(traceIDBytes))
+	}
+	if spanID != "" {
+		var spanIDBytes [8]byte
+		spanIDBytesSlice, err := hex.DecodeString(spanID)
+		require.NoErrorf(t, err, "error decoding span id: %v", err)
+		copy(spanIDBytes[:], spanIDBytesSlice)
+		e.SetSpanID(pdata.NewSpanID(spanIDBytes))
+	}
 
 	return &h
 }
