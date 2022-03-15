@@ -179,9 +179,9 @@ func (m *PostSpansResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_PostSpansResponse proto.InternalMessageInfo
 
 func init() {
-	proto.RegisterType((*PostSpansRequest)(nil), "jaeger.api_v2.PostSpansRequest")
-	proto.RegisterType((*Metadata)(nil), "jaeger.api_v2.Metadata")
-	proto.RegisterType((*PostSpansResponse)(nil), "jaeger.api_v2.PostSpansResponse")
+	proto.RegisterType((*PostSpansRequest)(nil), "coralogix.api_v2.PostSpansRequest")
+	proto.RegisterType((*Metadata)(nil), "coralogix.api_v2.Metadata")
+	proto.RegisterType((*PostSpansResponse)(nil), "coralogix.api_v2.PostSpansResponse")
 }
 
 func init() { proto.RegisterFile("collector.proto", fileDescriptor_9305884a292fdf82) }
