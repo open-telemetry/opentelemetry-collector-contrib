@@ -20,6 +20,7 @@
 - Add `NewMetricData` function to `MetricsBuilder` to consistently set instrumentation library name (#8255)
 - `googlecloudpubsubreceiver` Added implementation of Google Cloud Pubsub receiver. (#8391)
 - `googlecloudpubsubexporter` Added implementation of Google Cloud Pubsub exporter. (#8391)
+- `coralogixexporter` Allow exporter timeout to be configured (#7957)
 
 ### 🛑 Breaking changes 🛑
 
@@ -34,6 +35,9 @@
 - `prometheusremotewriteexporter` Use `service.*` resource attributes instead of `job` and `instance` resource attributes when adding job and instance labels to metrics (#8266)
 - `mysqlreceiver`: instrumentation name updated from `otel/mysql` to `otelcol/mysqlreceiver` (#8387)
 - `zookeeperreceiver`: instrumentation name updated from `otelcol/zookeeper` to `otelcol/zookeeperreceiver` (#8389)
+- `coralogixexporter`: Create dynamic subsystem name (#7957)
+  - Deprecate configuration changed. Dynamic subsystem name from traces service name property.
+- `rabbitmqreceiver`: instrumentation name updated from `otelcol/rabbitmq` to `otelcol/rabbitmqreceiver` (#8400)
 
 ### 🧰 Bug fixes 🧰
 
