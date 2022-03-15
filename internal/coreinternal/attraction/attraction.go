@@ -20,10 +20,9 @@ import (
 	"regexp"
 	"strings"
 
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterhelper"
 )

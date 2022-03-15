@@ -17,9 +17,8 @@ package resourceprocessor // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 )

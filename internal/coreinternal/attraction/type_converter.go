@@ -17,9 +17,8 @@ package attraction // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	"strconv"
 
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/zap"
 )
 
 const (
