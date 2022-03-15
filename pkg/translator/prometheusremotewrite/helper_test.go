@@ -200,8 +200,8 @@ func Test_createLabelSet(t *testing.T) {
 		{
 			"labels_with_resource",
 			getResource(map[string]pdata.AttributeValue{
-				"job":      pdata.NewAttributeValueString("prometheus"),
-				"instance": pdata.NewAttributeValueString("127.0.0.1:8080"),
+				"service.name":        pdata.NewAttributeValueString("prometheus"),
+				"service.instance.id": pdata.NewAttributeValueString("127.0.0.1:8080"),
 			}),
 			lbs1,
 			map[string]string{},
@@ -212,8 +212,8 @@ func Test_createLabelSet(t *testing.T) {
 		{
 			"labels_with_nonstring_resource",
 			getResource(map[string]pdata.AttributeValue{
-				"job":      pdata.NewAttributeValueInt(12345),
-				"instance": pdata.NewAttributeValueBool(true),
+				"service.name":        pdata.NewAttributeValueInt(12345),
+				"service.instance.id": pdata.NewAttributeValueBool(true),
 			}),
 			lbs1,
 			map[string]string{},
@@ -301,6 +301,15 @@ func Test_createLabelSet(t *testing.T) {
 			false,
 			[]string{label31, value31, label32, value32},
 			getPromLabels(label11, value11, label12, value12, label51, value51, label41, value41, label31, value31, label32, value32),
+		},
+		{
+			"colliding attributes",
+			getResource(map[string]pdata.AttributeValue{}),
+			lbsColliding,
+			nil,
+			true,
+			[]string{label31, value31, label32, value32},
+			getPromLabels(collidingSanitized, value11+";"+value12, label31, value31, label32, value32),
 		},
 	}
 	// run tests

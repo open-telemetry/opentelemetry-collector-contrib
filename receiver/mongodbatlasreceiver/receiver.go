@@ -51,24 +51,27 @@ func newMongoDBAtlasScraper(log *zap.Logger, cfg *Config) (scraperhelper.Scraper
 }
 
 func (s *receiver) scrape(ctx context.Context) (pdata.Metrics, error) {
-	var start time.Time
-	if s.lastRun.IsZero() {
-		start = s.lastRun
-	} else {
-		start = time.Now().Add(s.cfg.CollectionInterval * -1)
-	}
 	now := time.Now()
-	timeConstraints := timeconstraints{
-		start.UTC().Format(time.RFC3339),
-		now.UTC().Format(time.RFC3339),
-		s.cfg.Granularity,
-	}
-	metrics, err := s.poll(ctx, timeConstraints)
+	metrics, err := s.poll(ctx, s.timeConstraints(now))
 	if err != nil {
 		return pdata.Metrics{}, err
 	}
 	s.lastRun = now
 	return metrics, nil
+}
+
+func (s *receiver) timeConstraints(now time.Time) timeconstraints {
+	var start time.Time
+	if s.lastRun.IsZero() {
+		start = now.Add(s.cfg.CollectionInterval * -1)
+	} else {
+		start = s.lastRun
+	}
+	return timeconstraints{
+		start.UTC().Format(time.RFC3339),
+		now.UTC().Format(time.RFC3339),
+		s.cfg.Granularity,
+	}
 }
 
 func (s *receiver) shutdown(context.Context) error {

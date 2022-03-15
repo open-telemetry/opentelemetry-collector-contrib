@@ -19,6 +19,7 @@ package pagingscraper // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/shirou/gopsutil/v3/host"
@@ -31,7 +32,7 @@ import (
 )
 
 const (
-	pagingUsageMetricsLen = 1
+	pagingUsageMetricsLen = 2
 	pagingMetricsLen      = 2
 )
 
@@ -85,10 +86,11 @@ func (s *scraper) scrapePagingUsageMetric() error {
 	now := pdata.NewTimestampFromTime(time.Now())
 	pageFileStats, err := s.getPageFileStats()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to read page file stats: %w", err)
 	}
 
 	s.recordPagingUsageDataPoints(now, pageFileStats)
+	s.recordPagingUtilizationDataPoints(now, pageFileStats)
 	return nil
 }
 
@@ -102,11 +104,21 @@ func (s *scraper) recordPagingUsageDataPoints(now pdata.Timestamp, pageFileStats
 	}
 }
 
+func (s *scraper) recordPagingUtilizationDataPoints(now pdata.Timestamp, pageFileStats []*pageFileStats) {
+	for _, pageFile := range pageFileStats {
+		s.mb.RecordSystemPagingUtilizationDataPoint(now, float64(pageFile.usedBytes)/float64(pageFile.totalBytes), pageFile.deviceName, metadata.AttributeState.Used)
+		s.mb.RecordSystemPagingUtilizationDataPoint(now, float64(pageFile.freeBytes)/float64(pageFile.totalBytes), pageFile.deviceName, metadata.AttributeState.Free)
+		if pageFile.cachedBytes != nil {
+			s.mb.RecordSystemPagingUtilizationDataPoint(now, float64(*pageFile.cachedBytes)/float64(pageFile.totalBytes), pageFile.deviceName, metadata.AttributeState.Cached)
+		}
+	}
+}
+
 func (s *scraper) scrapePagingMetrics() error {
 	now := pdata.NewTimestampFromTime(time.Now())
 	swap, err := s.swapMemory()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to read swap info: %w", err)
 	}
 
 	s.recordPagingOperationsDataPoints(now, swap)

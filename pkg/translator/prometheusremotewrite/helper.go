@@ -15,6 +15,7 @@
 package prometheusremotewrite // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
 
 import (
+	"fmt"
 	"log"
 	"math"
 	"sort"
@@ -28,6 +29,7 @@ import (
 	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/prompb"
 	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 )
 
 const (
@@ -149,47 +151,59 @@ func createAttributes(resource pdata.Resource, attributes pdata.AttributeMap, ex
 	// map ensures no duplicate label name
 	l := map[string]prompb.Label{}
 
+	// Map service.name + service.namespace to job
+	if serviceName, ok := resource.Attributes().Get(conventions.AttributeServiceName); ok {
+		val := serviceName.AsString()
+		if serviceNamespace, ok := resource.Attributes().Get(conventions.AttributeServiceNamespace); ok {
+			val = fmt.Sprintf("%s/%s", serviceNamespace.AsString(), val)
+		}
+		l[model.JobLabel] = prompb.Label{
+			Name:  model.JobLabel,
+			Value: val,
+		}
+	}
+	// Map service.instance.id to instance
+	if instance, ok := resource.Attributes().Get(conventions.AttributeServiceInstanceID); ok {
+		l[model.InstanceLabel] = prompb.Label{
+			Name:  model.InstanceLabel,
+			Value: instance.AsString(),
+		}
+	}
+
+	// Ensure attributes are sorted by key for consistent merging of keys which
+	// collide when sanitized.
+	attributes.Sort()
+	attributes.Range(func(key string, value pdata.AttributeValue) bool {
+		var finalKey string
+		if sanitizeLabel {
+			finalKey = sanitize(key)
+		} else {
+			finalKey = sanitizeLabels(key)
+		}
+		if existingLabel, alreadyExists := l[finalKey]; alreadyExists {
+			existingLabel.Value = existingLabel.Value + ";" + value.AsString()
+			l[finalKey] = existingLabel
+		} else {
+			l[finalKey] = prompb.Label{
+				Name:  finalKey,
+				Value: value.AsString(),
+			}
+		}
+
+		return true
+	})
+
 	for key, value := range externalLabels {
 		// External labels have already been sanitized
+		if _, alreadyExists := l[key]; alreadyExists {
+			// Skip external labels if they are overridden by metric attributes
+			continue
+		}
 		l[key] = prompb.Label{
 			Name:  key,
 			Value: value,
 		}
 	}
-
-	resource.Attributes().Range(func(key string, value pdata.AttributeValue) bool {
-		if isUsefulResourceAttribute(key) {
-			if sanitizeLabel {
-				l[key] = prompb.Label{
-					Name:  sanitize(key),
-					Value: value.AsString(),
-				}
-			} else {
-				l[key] = prompb.Label{
-					Name:  sanitizeLabels(key),
-					Value: value.AsString(),
-				}
-			}
-		}
-
-		return true
-	})
-
-	attributes.Range(func(key string, value pdata.AttributeValue) bool {
-		if sanitizeLabel {
-			l[key] = prompb.Label{
-				Name:  sanitize(key),
-				Value: value.AsString(),
-			}
-		} else {
-			l[key] = prompb.Label{
-				Name:  sanitizeLabels(key),
-				Value: value.AsString(),
-			}
-		}
-
-		return true
-	})
 
 	for i := 0; i < len(extras); i += 2 {
 		if i+1 >= len(extras) {
@@ -204,7 +218,7 @@ func createAttributes(resource pdata.Resource, attributes pdata.AttributeMap, ex
 		if !(len(name) > 4 && name[:2] == "__" && name[len(name)-2:] == "__") {
 			name = sanitize(name)
 		}
-		l[extras[i]] = prompb.Label{
+		l[name] = prompb.Label{
 			Name:  name,
 			Value: extras[i+1],
 		}
@@ -216,20 +230,6 @@ func createAttributes(resource pdata.Resource, attributes pdata.AttributeMap, ex
 	}
 
 	return s
-}
-
-func isUsefulResourceAttribute(key string) bool {
-	// TODO(jbd): Allow users to configure what other resource
-	// attributes to be included.
-	// Decide what to do with non-string attributes.
-	// We should always output "job" and "instance".
-	switch key {
-	case model.InstanceLabel:
-		return true
-	case model.JobLabel:
-		return true
-	}
-	return false
 }
 
 // getPromMetricName creates a Prometheus metric name by attaching namespace prefix for Monotonic metrics.
@@ -445,6 +445,7 @@ func sanitize(s string) string {
 	return s
 }
 
+// copied from prometheus-go-metric-exporter
 func sanitizeLabels(s string) string {
 	if len(s) == 0 {
 		return s

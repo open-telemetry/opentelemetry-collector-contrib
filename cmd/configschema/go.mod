@@ -35,6 +35,7 @@ require (
 	github.com/Azure/go-autorest/autorest/validation v0.3.1 // indirect
 	github.com/Azure/go-autorest/logger v0.2.1 // indirect
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
+	github.com/ClickHouse/clickhouse-go v1.5.4 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.16 // indirect
 	github.com/DataDog/datadog-agent/pkg/quantile v0.33.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02 // indirect
@@ -68,6 +69,7 @@ require (
 	github.com/checkpoint-restore/go-criu/v5 v5.3.0 // indirect
 	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575 // indirect
 	github.com/cilium/ebpf v0.7.0 // indirect
+	github.com/cloudflare/golz4 v0.0.0-20150217214814-ef862a3cdc58 // indirect
 	github.com/cloudfoundry-incubator/uaago v0.0.0-20190307164349-8136b7bbe76e // indirect
 	github.com/cncf/udpa/go v0.0.0-20210930031921-04548b0d99d4 // indirect
 	github.com/cncf/xds/go v0.0.0-20211130200136-a8f946100490 // indirect
@@ -149,9 +151,9 @@ require (
 	github.com/honeycombio/libhoney-go v1.15.8 // indirect
 	github.com/iancoleman/strcase v0.2.0 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
-	github.com/influxdata/influxdb-observability/common v0.2.14 // indirect
-	github.com/influxdata/influxdb-observability/influx2otel v0.2.14 // indirect
-	github.com/influxdata/influxdb-observability/otel2influx v0.2.14 // indirect
+	github.com/influxdata/influxdb-observability/common v0.2.15 // indirect
+	github.com/influxdata/influxdb-observability/influx2otel v0.2.15 // indirect
+	github.com/influxdata/influxdb-observability/otel2influx v0.2.15 // indirect
 	github.com/influxdata/line-protocol/v2 v2.2.1 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.11.0 // indirect
