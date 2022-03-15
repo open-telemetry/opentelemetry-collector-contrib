@@ -16,9 +16,7 @@ package sigv4authextension // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
-	"encoding/base32"
 	"errors"
-	"math/rand"
 	"net/http"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -93,16 +91,7 @@ func getCredsProviderFromConfig(cfg *Config) (*aws.CredentialsProvider, error) {
 	if cfg.AssumeRole.ARN != "" {
 		stsSvc := sts.NewFromConfig(awscfg)
 
-		identifier := cfg.AssumeRole.SessionName
-		if identifier == "" {
-			b := make([]byte, 5)
-			rand.Read(b)
-			identifier = base32.StdEncoding.EncodeToString(b)
-		}
-
-		provider := stscreds.NewAssumeRoleProvider(stsSvc, cfg.AssumeRole.ARN, func(o *stscreds.AssumeRoleOptions) {
-			o.RoleSessionName = "otel-" + identifier
-		})
+		provider := stscreds.NewAssumeRoleProvider(stsSvc, cfg.AssumeRole.ARN)
 		awscfg.Credentials = aws.NewCredentialsCache(provider)
 	}
 
