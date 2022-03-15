@@ -56,7 +56,8 @@
 // Not all the attributes are guaranteed to be added.
 //
 //
-// Only attribute names from `metadata` should be used for pod_association's `resource_attribute`
+// Only attribute names from `metadata` should be used for pod_association's `resource_attribute`,
+// because empty or non-existing values will be ignored.
 //
 // The following container level attributes require additional attributes to identify a particular container in a pod:
 //   1. Container spec attributes - will be set only if container identifying attribute `k8s.container.name` is set
