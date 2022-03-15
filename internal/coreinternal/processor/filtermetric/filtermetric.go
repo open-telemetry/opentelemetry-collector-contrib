@@ -200,7 +200,11 @@ func (mp *propertiesMatcher) MatchAttributes(atts pdata.AttributeMap, resource p
 func serviceNameForResource(resource pdata.Resource) string {
 	service, found := resource.Attributes().Get(conventions.AttributeServiceName)
 	if !found {
-		return "<nil-service-name>"
+		executable, found := resource.Attributes().Get(conventions.AttributeProcessExecutableName)
+		if !found {
+			return "unknown_service"
+		}
+		return fmt.Sprintf("unknown_service:%s", executable.StringVal())
 	}
 
 	return service.StringVal()
