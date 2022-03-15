@@ -41,6 +41,7 @@
 
 - `zipkinexporter`: Set "error" tag value when status is set to error (#8187)
 - `prometheusremotewriteexporter`: Correctly handle metric labels which collide after sanitization (#8378)
+- `prometheusremotewriteexporter`: Drop labels when exemplar attributes exceed the max number of characters (#8379)
 - `k8sclusterreceiver`: Add support to enable k8s node and container cpu metrics to be reported as double values (#8245)
   - Use "--feature-gates=receiver.k8sclusterreceiver.reportCpuMetricsAsDouble" to enable reporting node and container
     cpu metrics as a double values.
