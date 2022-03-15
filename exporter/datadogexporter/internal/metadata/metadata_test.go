@@ -66,13 +66,13 @@ func TestFillHostMetadata(t *testing.T) {
 	params := componenttest.NewNopExporterCreateSettings()
 	params.BuildInfo = mockBuildInfo
 
-	mcfg := PusherConfig{
+	pcfg := PusherConfig{
 		ConfigHostname: "hostname",
 		ConfigTags:     []string{"key1:tag1", "key2:tag2", "env:prod"},
 	}
 
 	metadata := &HostMetadata{Meta: &Meta{}, Tags: &HostTags{}}
-	fillHostMetadata(params, mcfg, metadata)
+	fillHostMetadata(params, pcfg, metadata)
 
 	assert.Equal(t, metadata.InternalHostname, "hostname")
 	assert.Equal(t, metadata.Flavor, "otelcontribcol")
@@ -86,7 +86,7 @@ func TestFillHostMetadata(t *testing.T) {
 		Tags:             &HostTags{},
 	}
 
-	fillHostMetadata(params, mcfg, metadataWithVals)
+	fillHostMetadata(params, pcfg, metadataWithVals)
 	assert.Equal(t, metadataWithVals.InternalHostname, "my-custom-hostname")
 	assert.Equal(t, metadataWithVals.Flavor, "otelcontribcol")
 	assert.Equal(t, metadataWithVals.Version, "1.0")
@@ -154,7 +154,7 @@ func TestMetadataFromAttributes(t *testing.T) {
 }
 
 func TestPushMetadata(t *testing.T) {
-	mcfg := PusherConfig{
+	pcfg := PusherConfig{
 		APIKey: "apikey",
 	}
 
@@ -174,14 +174,14 @@ func TestPushMetadata(t *testing.T) {
 
 	ts := httptest.NewServer(handler)
 	defer ts.Close()
-	mcfg.MetricsEndpoint = ts.URL
+	pcfg.MetricsEndpoint = ts.URL
 
-	err := pushMetadata(mcfg, mockExporterCreateSettings, &mockMetadata)
+	err := pushMetadata(pcfg, mockExporterCreateSettings, &mockMetadata)
 	require.NoError(t, err)
 }
 
 func TestFailPushMetadata(t *testing.T) {
-	mcfg := PusherConfig{
+	pcfg := PusherConfig{
 		APIKey: "apikey",
 	}
 	handler := http.NewServeMux()
@@ -189,14 +189,14 @@ func TestFailPushMetadata(t *testing.T) {
 
 	ts := httptest.NewServer(handler)
 	defer ts.Close()
-	mcfg.MetricsEndpoint = ts.URL
+	pcfg.MetricsEndpoint = ts.URL
 
-	err := pushMetadata(mcfg, mockExporterCreateSettings, &mockMetadata)
+	err := pushMetadata(pcfg, mockExporterCreateSettings, &mockMetadata)
 	require.Error(t, err)
 }
 
 func TestPusher(t *testing.T) {
-	mcfg := PusherConfig{
+	pcfg := PusherConfig{
 		APIKey:              "apikey",
 		UseResourceMetadata: true,
 	}
@@ -211,9 +211,9 @@ func TestPusher(t *testing.T) {
 
 	server := testutils.DatadogServerMock()
 	defer server.Close()
-	mcfg.MetricsEndpoint = server.URL
+	pcfg.MetricsEndpoint = server.URL
 
-	go Pusher(ctx, params, mcfg, attrs)
+	go Pusher(ctx, params, pcfg, attrs)
 
 	body := <-server.MetadataChan
 	var recvMetadata HostMetadata
