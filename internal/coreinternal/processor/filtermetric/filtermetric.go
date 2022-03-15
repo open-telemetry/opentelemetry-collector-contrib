@@ -55,7 +55,6 @@ type propertiesMatcher struct {
 	exprMatchers []filterexpr.Matcher
 }
 
-// NewAttrMatcher creates a span Matcher that matches based on the given filterconfig.MatchProperties.
 // NewMatcher creates a span Matcher that matches based on the given MatchProperties.
 func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 	if mp == nil {
