@@ -96,10 +96,16 @@ func warnUseOfEnvVars(configMap *config.Map, cfg *Config) (warnings []error) {
 	// Any differences will be due to the change in default configuration.
 	futureCfg := futureDefaultConfig()
 	err := configMap.UnmarshalExact(futureCfg)
+
+	errIssue := fmt.Errorf("see github.com/open-telemetry/opentelemetry-collector-contrib/issues/8396 for more details")
+
 	if err != nil {
 		// This should never happen, since unmarshaling passed with the original config.
-		// If it happens, bail out.
-		return
+		// If it happens, report the error and instruct users to check the issue.
+		return []error{
+			fmt.Errorf("failed to determine usage of env variable defaults: %w", err),
+			errIssue,
+		}
 	}
 
 	// We could probably do this with reflection but I don't want to risk
@@ -133,7 +139,7 @@ func warnUseOfEnvVars(configMap *config.Map, cfg *Config) (warnings []error) {
 	}
 
 	if len(warnings) > 0 {
-		warnings = append(warnings, fmt.Errorf("see github.com/open-telemetry/opentelemetry-collector-contrib/issues/8396 for more details"))
+		warnings = append(warnings, errIssue)
 	}
 	return
 }
