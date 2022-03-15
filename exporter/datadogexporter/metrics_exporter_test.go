@@ -47,6 +47,9 @@ func TestNewExporter(t *testing.T) {
 				Mode:         string(translator.HistogramModeDistributions),
 				SendCountSum: false,
 			},
+			SumConfig: config.SumConfig{
+				CumulativeMonotonicMode: config.CumulativeMonotonicSumModeToDelta,
+			},
 		},
 	}
 	params := componenttest.NewNopExporterCreateSettings()

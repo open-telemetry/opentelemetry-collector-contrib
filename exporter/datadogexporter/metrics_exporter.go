@@ -84,11 +84,13 @@ func translatorFromConfig(logger *zap.Logger, cfg *config.Config) (*translator.T
 	options = append(options, translator.WithHistogramMode(translator.HistogramMode(cfg.Metrics.HistConfig.Mode)))
 
 	var numberMode translator.NumberMode
-	if cfg.Metrics.SendMonotonic {
-		numberMode = translator.NumberModeCumulativeToDelta
-	} else {
+	switch cfg.Metrics.SumConfig.CumulativeMonotonicMode {
+	case config.CumulativeMonotonicSumModeRawValue:
 		numberMode = translator.NumberModeRawValue
+	case config.CumulativeMonotonicSumModeToDelta:
+		numberMode = translator.NumberModeCumulativeToDelta
 	}
+
 	options = append(options, translator.WithNumberMode(numberMode))
 
 	return translator.New(logger, options...)
