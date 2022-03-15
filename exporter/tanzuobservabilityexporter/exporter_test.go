@@ -211,10 +211,10 @@ func TestExportTraceDataWithInstrumentationDetails(t *testing.T) {
 		TraceID: uuid.MustParse("01010101-0101-0101-0101-010101010101"),
 		SpanID:  uuid.MustParse("00000000-0000-0000-0909-090909090909"),
 		Tags: map[string]string{
-			labelApplication:     "defaultApp",
-			labelService:         "defaultService",
-			labelOtelSpanName:    "instrumentation_name",
-			labelOtelSpanVersion: "v0.0.1",
+			labelApplication:      "defaultApp",
+			labelService:          "defaultService",
+			labelOtelScopeName:    "instrumentation_name",
+			labelOtelScopeVersion: "v0.0.1",
 		},
 	}}
 

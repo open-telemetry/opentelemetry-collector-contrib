@@ -47,6 +47,7 @@
 - `k8sclusterreceiver`: Add support to enable k8s node and container cpu metrics to be reported as double values (#8245)
   - Use "--feature-gates=receiver.k8sclusterreceiver.reportCpuMetricsAsDouble" to enable reporting node and container
     cpu metrics as a double values.
+- `tanzuobservabilityexporter`: Fix a typo in Instrumentation Library name and version tags (#8384)
 
 ### 🚩 Deprecations 🚩
 
