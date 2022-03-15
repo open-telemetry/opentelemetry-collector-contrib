@@ -55,7 +55,7 @@ func TestRoundTrip(t *testing.T) {
 			"error_round_tripper",
 			errorRoundTripper,
 			true,
-			&Config{Region: "region", Service: "service", RoleARN: "rolearn"},
+			&Config{Region: "region", Service: "service", AssumeRole: AssumeRole{ARN: "rolearn"}},
 		},
 	}
 
@@ -146,14 +146,14 @@ func TestInferServiceAndRegion(t *testing.T) {
 		{
 			"no_match_with_config",
 			req4,
-			&Config{Region: "region", Service: "service", RoleARN: "rolearn"},
+			&Config{Region: "region", Service: "service", AssumeRole: AssumeRole{ARN: "rolearn"}},
 			"service",
 			"region",
 		},
 		{
 			"match_with_config",
 			req5,
-			&Config{Region: "region", Service: "service", RoleARN: "rolearn"},
+			&Config{Region: "region", Service: "service", AssumeRole: AssumeRole{ARN: "rolearn"}},
 			"service",
 			"region",
 		},

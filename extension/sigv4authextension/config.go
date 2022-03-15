@@ -28,11 +28,16 @@ var (
 // Config stores the configuration for the Sigv4 Authenticator
 type Config struct {
 	config.ExtensionSettings `mapstructure:",squash"`
-	Region                   string `mapstructure:"region,omitempty"`
-	Service                  string `mapstructure:"service,omitempty"`
-	RoleARN                  string `mapstructure:"role_arn,omitempty"`
-	RoleSessionName          string `mapstructure:"role_session_name,omitempty"`
+	Region                   string     `mapstructure:"region,omitempty"`
+	Service                  string     `mapstructure:"service,omitempty"`
+	AssumeRole               AssumeRole `mapstructure:"assume_role"`
 	credsProvider            *aws.CredentialsProvider
+}
+
+// AssumeRole holds the configuration needed to assume a role
+type AssumeRole struct {
+	ARN         string `mapstructure:"arn,omitempty"`
+	SessionName string `mapstructure:"session_name,omitempty"`
 }
 
 // compile time check that the Config struct satisfies the config.Extension interface

@@ -6,19 +6,21 @@ This extension provides Sigv4 authentication for making requests to AWS services
 
 The configuration fields are as follows:
 
-* `role_arn`: **Optional**. The Amazon Resource Name (ARN) of a role to assume
+* `assume_role`: Specifies the configuration needed to assume a role
+  * `arn`: **Optional**. The Amazon Resource Name (ARN) of a role to assume
+  * `session_name`: **Optional**. The name of a role session
 * `region`: **Optional**. The AWS region for AWS Sigv4
     * Note that an attempt will be made to obtain a valid region from the endpoint of the service you are exporting to
     * [List of AWS regions](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.RegionsAndAvailabilityZones.html)
 * `service`: **Optional**. The AWS service for AWS Sigv4
     * Note that an attempt will be made to obtain a valid service from the endpoint of the service you are exporting to
-* `role_session_name`: **Optional**. The name of a role session. If not provided, one will be constructed with a semi-random identifier.
 
 
 ```yaml
 extensions:
   sigv4auth:
-    role_arn: "arn:aws:iam::123456789012:role/aws-service-role/access"
+    assume_role:
+      arn: "arn:aws:iam::123456789012:role/aws-service-role/access"
 
 receivers:
   hostmetrics:

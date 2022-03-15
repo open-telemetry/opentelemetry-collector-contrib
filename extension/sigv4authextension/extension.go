@@ -90,17 +90,17 @@ func getCredsProviderFromConfig(cfg *Config) (*aws.CredentialsProvider, error) {
 	if err != nil {
 		return nil, err
 	}
-	if cfg.RoleARN != "" {
+	if cfg.AssumeRole.ARN != "" {
 		stsSvc := sts.NewFromConfig(awscfg)
 
-		identifier := cfg.RoleSessionName
+		identifier := cfg.AssumeRole.SessionName
 		if identifier == "" {
 			b := make([]byte, 5)
 			rand.Read(b)
 			identifier = base32.StdEncoding.EncodeToString(b)
 		}
 
-		provider := stscreds.NewAssumeRoleProvider(stsSvc, cfg.RoleARN, func(o *stscreds.AssumeRoleOptions) {
+		provider := stscreds.NewAssumeRoleProvider(stsSvc, cfg.AssumeRole.ARN, func(o *stscreds.AssumeRoleOptions) {
 			o.RoleSessionName = "otel-" + identifier
 		})
 		awscfg.Credentials = aws.NewCredentialsCache(provider)

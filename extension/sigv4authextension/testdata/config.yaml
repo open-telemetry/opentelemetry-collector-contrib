@@ -2,7 +2,8 @@ extensions:
   sigv4auth:
     region: "region"
     service: "service"
-    role_session_name: "role_session_name"
+    assume_role:
+      session_name: "role_session_name"
 
 
 # Data pipeline is required to load the config.

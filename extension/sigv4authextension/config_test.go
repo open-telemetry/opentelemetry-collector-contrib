@@ -46,7 +46,7 @@ func TestLoadConfig(t *testing.T) {
 	expected := factory.CreateDefaultConfig().(*Config)
 	expected.Region = "region"
 	expected.Service = "service"
-	expected.RoleSessionName = "role_session_name"
+	expected.AssumeRole.SessionName = "role_session_name"
 
 	ext := cfg.Extensions[config.NewComponentID(typeStr)]
 	// Ensure creds are the same for load config test; tested in extension_test.go

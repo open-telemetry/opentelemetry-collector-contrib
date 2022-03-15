@@ -35,8 +35,7 @@ type Config struct {
     config.ExtensionSettings `mapstructure:",squash"`
     Region string `mapstructure:"region,omitempty"`
     Service string `mapstructure:"service,omitempty"`
-    RoleArn string `mapstructure:"role_arn,omitempty"`
-	RoleSessionName string `mapstructure:"role_session_name,omitempty"`
+    AssumeRole AssumeRole `mapstructure:"assume_role"`
 	credsProvider *aws.CredentialsProvider
 }
 ```
@@ -47,9 +46,22 @@ type Config struct {
     * Note that an attempt will be made to obtain a valid region from the endpoint of the service you are exporting to
 * `Service` is the AWS service for AWS Sigv4. This is an optional field.
     * Note that an attempt will be made to obtain a valid service from the endpoint of the service you are exporting to
-* `RoleArn` is the Amazon Resource Name (ARN) of a role to assume. This is an optional field.
-* `role_session_name`: The name of a role session. If not provided, one will be constructed with a semi-random identifier. This is an optional field.
+* `AssumeRole` is the AssumeRole struct that holds the configuration needed to assume a role, which includes the ARN and SessionName
 * `credsProvider` holds the necessary AWS CredentialsProvider. This is a private field and will not be configured by the user. We store the provider instead of the credentials themselves so we can ensure we have refreshed credentials when we sign a request.
+
+`AssumeRole` is a struct that holds the configuration needed to assume a role. 
+
+
+```go
+type AssumeRole struct {
+	ARN                  string `mapstructure:"arn,omitempty"`
+	SessionName          string `mapstructure:"session_name,omitempty"`
+}
+```
+
+
+* `ARN` is the Amazon Resource Name (ARN) of a role to assume. This is an optional field.
+* `SessionName`: The name of a role session. This is an optional field.
 
 
 `Validate()` is a method that checks if the Extension configuration is valid. We aim to catch most errors here, so we can ensure that we fail early and to avoid revalidating static data. We also set our AWS credentials here after we check them.
@@ -302,7 +314,7 @@ First, we obtain the body. This should not have an impact on runtime performance
 Next, we clone the request and also add runtime information to the User-Agent header. `cloneRequest()` is a helper function that makes a shallow copy of the request and a deep copy of the header. While this may slow the performance of `RoundTrip()`, it is necessary to ensure thread safety*. Overall, this should not have a large impact on either runtime or memory performance, as again we do not expect to handle http requests that are exponentially large in size. Adding runtime information to the header also will not impact memory or runtime performance either. `req2` will be passed into `Sign()`.
 
 
-**Design Decision: The necessity of `cloneRequest()` is unknown; for now we will leave it in, as this implementation of `RoundTrip()` is taken directly from the AWS PRW Exporter. However, if we want to avoid using `cloneRequest()`, that can only be done by avoiding reading the body.*
+**Design Decision: The necessity of `cloneRequest()` is due to the necessity to read the body. If we want to avoid using `cloneRequest()`, that can only be done by avoiding reading the body.*
 
 
 
@@ -451,7 +463,7 @@ func TestPerRPCCredentials(t *testing.T) {
 ```go
 func TestGetCredsFromConfig(t *testing.T) {
     // assert that credentials can be fetched properly and no error is thrown
-    // will not test for fetching credentials when a RoleArn is provided, due to
+    // will not test for fetching credentials when a ARN is provided, due to
     // it needing to fetch a token from AWS.
 }
 ```
