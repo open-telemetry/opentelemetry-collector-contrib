@@ -73,7 +73,7 @@ type ExtractConfig struct {
 	// documentation for more details.
 	Annotations []FieldExtractConfig `mapstructure:"annotations"`
 
-	// Labels allows extracting data from pod labels and record it
+	// Annotations allows extracting data from pod labels and record it
 	// as resource attributes.
 	// It is a list of FieldExtractConfig type. See FieldExtractConfig
 	// documentation for more details.
