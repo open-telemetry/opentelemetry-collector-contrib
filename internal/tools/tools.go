@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build tools
 // +build tools
 
 package tools
@@ -24,9 +25,6 @@ package tools
 import (
 	_ "github.com/golangci/golangci-lint/cmd/golangci-lint"
 	_ "github.com/google/addlicense"
-	_ "github.com/google/uuid"
-	_ "github.com/onsi/ginkgo"
-	_ "github.com/onsi/gomega"
 	_ "github.com/securego/gosec/v2"
 	_ "github.com/securego/gosec/v2/report/sarif"
 	_ "github.com/securego/gosec/v2/report/text"
