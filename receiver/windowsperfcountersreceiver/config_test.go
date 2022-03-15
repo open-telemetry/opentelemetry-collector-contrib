@@ -149,11 +149,6 @@ func TestLoadConfig_Error(t *testing.T) {
 			expectedErr: fmt.Sprintf("%s: %s", errorPrefix, fmt.Sprintf(missingSumAggregation, "metric")),
 		},
 		{
-			name:        "GaugeAndSum",
-			cfgFile:     "config-gaugeandsum.yaml",
-			expectedErr: fmt.Sprintf("%s: %s", errorPrefix, fmt.Sprintf(missingSumAggregation, "metric")),
-		},
-		{
 			name:    "AllErrors",
 			cfgFile: "config-allerrors.yaml",
 			expectedErr: fmt.Sprintf(
