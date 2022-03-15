@@ -340,7 +340,7 @@ def _start_span(tracer, handler, start_time) -> _TraceContext:
         for key, value in attributes.items():
             span.set_attribute(key, value)
         span.set_attribute("tornado.handler", _get_full_handler_name(handler))
-        if span.kind == trace.SpanKind.SERVER:
+        if span.is_recording() and span.kind == trace.SpanKind.SERVER:
             _add_custom_request_headers(span, handler.request.headers)
 
     activation = trace.use_span(span, end_on_exit=True)
@@ -395,7 +395,7 @@ def _finish_span(tracer, handler, error=None):
                 description=otel_status_description,
             )
         )
-        if ctx.span.kind == trace.SpanKind.SERVER:
+        if ctx.span.is_recording() and ctx.span.kind == trace.SpanKind.SERVER:
             _add_custom_response_headers(ctx.span, handler._headers)
 
     ctx.activation.__exit__(*finish_args)  # pylint: disable=E1101

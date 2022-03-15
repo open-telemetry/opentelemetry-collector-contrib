@@ -153,7 +153,10 @@ def _rewrapped_app(wsgi_app, response_hook=None, excluded_urls=None):
                     otel_wsgi.add_response_attributes(
                         span, status, response_headers
                     )
-                    if span.kind == trace.SpanKind.SERVER:
+                    if (
+                        span.is_recording()
+                        and span.kind == trace.SpanKind.SERVER
+                    ):
                         otel_wsgi.add_custom_response_headers(
                             span, response_headers
                         )
@@ -204,7 +207,7 @@ def _wrapped_before_request(
                 ] = flask.request.url_rule.rule
             for key, value in attributes.items():
                 span.set_attribute(key, value)
-            if span.kind == trace.SpanKind.SERVER:
+            if span.is_recording() and span.kind == trace.SpanKind.SERVER:
                 otel_wsgi.add_custom_request_headers(
                     span, flask_request_environ
                 )
