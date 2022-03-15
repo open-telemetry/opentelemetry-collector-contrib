@@ -45,11 +45,9 @@ type MetricConfig struct {
 }
 
 type GaugeMetric struct {
-	ValueType string `mapstructure:"value_type"`
 }
 
 type SumMetric struct {
-	ValueType   string `mapstructure:"value_type"`
 	Aggregation string `mapstructure:"aggregation"`
 	Monotonic   bool   `mapstructure:"monotonic"`
 }
@@ -76,34 +74,12 @@ func (c *Config) Validate() error {
 	}
 
 	for name, metric := range c.MetricMetaData {
-		if name == "" {
-			errs = multierr.Append(errs, fmt.Errorf("a metric does not include a name"))
-			continue
-		}
-		if metric.Description == "" {
-			errs = multierr.Append(errs, fmt.Errorf("metric %q does not include a description", name))
-		}
 		if metric.Unit == "" {
-			errs = multierr.Append(errs, fmt.Errorf("metric %q does not include a unit", name))
+			metric.Unit = "1"
 		}
 
-		if (metric.Gauge == GaugeMetric{}) && (metric.Sum == SumMetric{}) {
-			errs = multierr.Append(errs, fmt.Errorf("metric %q does not include a metric definition", name))
-		} else if (metric.Gauge != GaugeMetric{}) {
-			if metric.Gauge.ValueType == "" {
-				errs = multierr.Append(errs, fmt.Errorf("gauge metric %q does not include a value type", name))
-			} else if metric.Gauge.ValueType != "int" && metric.Gauge.ValueType != "double" {
-				errs = multierr.Append(errs, fmt.Errorf("gauge metric %q includes an invalid value type", name))
-			}
-		} else if (metric.Sum != SumMetric{}) {
-			if metric.Sum.ValueType == "" {
-				errs = multierr.Append(errs, fmt.Errorf("sum metric %q does not include a value type", name))
-			} else if metric.Sum.ValueType != "int" && metric.Sum.ValueType != "double" {
-				errs = multierr.Append(errs, fmt.Errorf("sum metric %q includes an invalid value type", name))
-			}
-			if metric.Sum.Aggregation == "" {
-				errs = multierr.Append(errs, fmt.Errorf("sum metric %q does not include an aggregation", name))
-			} else if metric.Sum.Aggregation != "cumulative" && metric.Sum.Aggregation != "delta" {
+		if (metric.Sum != SumMetric{}) {
+			if metric.Sum.Aggregation != "cumulative" && metric.Sum.Aggregation != "delta" {
 				errs = multierr.Append(errs, fmt.Errorf("sum metric %q includes an invalid aggregation", name))
 			}
 		} else if (metric.Sum != SumMetric{}) && (metric.Gauge != GaugeMetric{}) {

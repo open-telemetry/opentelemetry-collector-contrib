@@ -86,23 +86,17 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 					"cpu.idle": {
 						Description: "percentage of time CPU is idle.",
 						Unit:        "%",
-						Gauge: GaugeMetric{
-							ValueType: "double",
-						},
+						Gauge:       GaugeMetric{},
 					},
 					"bytes.committed": {
 						Description: "number of bytes committed to memory",
 						Unit:        "By",
-						Gauge: GaugeMetric{
-							ValueType: "double",
-						},
+						Gauge:       GaugeMetric{},
 					},
 					"processor.time": {
 						Description: "amount of time processor is busy",
 						Unit:        "%",
-						Gauge: GaugeMetric{
-							ValueType: "double",
-						},
+						Gauge:       GaugeMetric{},
 					},
 				},
 				PerfCounters: []PerfCounterConfig{
@@ -121,9 +115,7 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 					"bytes.committed": {
 						Description: "number of bytes committed to memory",
 						Unit:        "By",
-						Sum: SumMetric{
-							ValueType: "int",
-						},
+						Sum:         SumMetric{},
 					},
 				},
 				PerfCounters: []PerfCounterConfig{
@@ -191,9 +183,7 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 					"metric": {
 						Description: "desc",
 						Unit:        "1",
-						Gauge: GaugeMetric{
-							ValueType: "double",
-						},
+						Gauge:       GaugeMetric{},
 					},
 				}
 				scraper.counters = []PerfCounterMetrics{

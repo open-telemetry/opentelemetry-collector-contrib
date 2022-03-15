@@ -5,7 +5,6 @@ receivers:
         description: desc
         unit: "1"
         sum:
-          value_type: "double"
     perfcounters:
       - object: "object"
         counters:

@@ -119,9 +119,7 @@ func (s *scraper) scrape(context.Context) (pdata.Metrics, error) {
 		builtMetric.SetDescription(metricCfg.Description)
 		builtMetric.SetUnit(metricCfg.Unit)
 
-		if (metricCfg.Gauge != GaugeMetric{}) {
-			builtMetric.SetDataType(pdata.MetricDataTypeGauge)
-		} else if (metricCfg.Sum != SumMetric{}) {
+		if (metricCfg.Sum != SumMetric{}) {
 			builtMetric.SetDataType(pdata.MetricDataTypeSum)
 			builtMetric.Sum().SetIsMonotonic(metricCfg.Sum.Monotonic)
 
@@ -131,6 +129,8 @@ func (s *scraper) scrape(context.Context) (pdata.Metrics, error) {
 			case "delta":
 				builtMetric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 			}
+		} else {
+			builtMetric.SetDataType(pdata.MetricDataTypeGauge)
 		}
 
 		for _, counter := range s.counters {
@@ -150,14 +150,11 @@ func (s *scraper) scrape(context.Context) (pdata.Metrics, error) {
 
 func initializeMetricDps(metricCfg MetricConfig, metric pdata.Metric, now pdata.Timestamp, counterValues []win_perf_counters.CounterValue, attributes map[string]string) {
 	var dps pdata.NumberDataPointSlice
-	var valueType string
 
 	if metric.DataType() == pdata.MetricDataTypeGauge {
 		dps = metric.Gauge().DataPoints()
-		valueType = metricCfg.Gauge.ValueType
 	} else {
 		dps = metric.Sum().DataPoints()
-		valueType = metricCfg.Sum.ValueType
 	}
 
 	dps.EnsureCapacity(len(counterValues))
@@ -171,10 +168,6 @@ func initializeMetricDps(metricCfg MetricConfig, metric pdata.Metric, now pdata.
 		}
 
 		dp.SetTimestamp(now)
-		if valueType == "int" {
-			dp.SetIntVal(int64(counterValue.Value))
-		} else if valueType == "double" {
-			dp.SetDoubleVal(counterValue.Value)
-		}
+		dp.SetIntVal(int64(counterValue.Value))
 	}
 }

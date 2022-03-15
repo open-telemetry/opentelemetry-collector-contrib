@@ -27,12 +27,10 @@ windowsperfcounters:
     description: <description>
     unit: <unit type>
     gauge:
-      value_type: <int or double>
   - metric_name: <metric name>
     description: <description>
     unit: <unit type>
-    sum: 
-      value_type: <int or double>
+    sum:
       aggregation: <cumulative or delta>
       monotonic: <true or false>
   perfcounters:

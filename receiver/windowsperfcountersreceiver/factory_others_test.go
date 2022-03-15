@@ -39,9 +39,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 		"metric": {
 			Description: "desc",
 			Unit:        "1",
-			Gauge: GaugeMetric{
-				ValueType: "double",
-			},
+			Gauge:       GaugeMetric{},
 		},
 	}
 	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), creationParams, cfg, consumertest.NewNop())

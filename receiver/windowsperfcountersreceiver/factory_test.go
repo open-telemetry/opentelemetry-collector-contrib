@@ -45,9 +45,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 		"metric": {
 			Description: "desc",
 			Unit:        "1",
-			Gauge: GaugeMetric{
-				ValueType: "double",
-			},
+			Gauge:       GaugeMetric{},
 		},
 	}
 
@@ -68,9 +66,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 		"metric": {
 			Description: "desc",
 			Unit:        "1",
-			Gauge: GaugeMetric{
-				ValueType: "double",
-			},
+			Gauge:       GaugeMetric{},
 		},
 	}
 	tReceiver, err := factory.CreateTracesReceiver(context.Background(), creationParams, cfg, consumertest.NewNop())
@@ -93,9 +89,7 @@ func TestCreateLogsReceiver(t *testing.T) {
 		"metric": {
 			Description: "desc",
 			Unit:        "1",
-			Gauge: GaugeMetric{
-				ValueType: "double",
-			},
+			Gauge:       GaugeMetric{},
 		},
 	}
 
