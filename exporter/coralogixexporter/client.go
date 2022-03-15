@@ -34,19 +34,14 @@ type coralogixClient struct {
 	logger            *zap.Logger
 	conn              *grpc.ClientConn
 	client            cxpb.CollectorServiceClient
-	metadata          cxpb.Metadata
 	telemetrySettings component.TelemetrySettings
 }
 
 // NewCoralogixClient by Coralogix
 func newCoralogixClient(cfg *Config, set component.ExporterCreateSettings) *coralogixClient {
 	c := &coralogixClient{
-		cfg:    *cfg,
-		logger: set.Logger,
-		metadata: cxpb.Metadata{
-			ApplicationName: cfg.AppName,
-			SubsystemName:   cfg.SubSystem,
-		},
+		cfg:               *cfg,
+		logger:            set.Logger,
 		telemetrySettings: set.TelemetrySettings,
 	}
 	return c
@@ -70,12 +65,20 @@ func (c *coralogixClient) newPost(ctx context.Context, td pdata.Traces) error {
 	if err != nil {
 		return fmt.Errorf("can't translate to jaeger proto: %w", err)
 	}
+
 	ctx = metadata.NewOutgoingContext(ctx, metadata.New(c.cfg.GRPCClientSettings.Headers))
 	for _, batch := range batches {
-
-		_, err := c.client.PostSpans(ctx, &cxpb.PostSpansRequest{Batch: *batch, Metadata: &c.metadata}, grpc.WaitForReady(false))
-		if err != nil {
-			return fmt.Errorf("failed to push trace data via Coralogix exporter %w", err)
+		if batch.GetProcess().GetServiceName() != "" {
+			_, err := c.client.PostSpans(ctx, &cxpb.PostSpansRequest{
+				Batch:    *batch,
+				Metadata: &cxpb.Metadata{ApplicationName: c.cfg.AppName, SubsystemName: batch.GetProcess().GetServiceName()},
+			}, grpc.WaitForReady(c.cfg.WaitForReady))
+			if err != nil {
+				return fmt.Errorf("failed to push trace data via Coralogix exporter %w", err)
+			}
+			c.logger.Debug("trace was sent successfully")
+		} else {
+			return fmt.Errorf("failed to push trace data via Coralogix exporter because batch.process.serviceName is empty")
 		}
 	}
 	return nil

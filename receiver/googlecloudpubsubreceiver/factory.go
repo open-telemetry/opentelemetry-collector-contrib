@@ -26,8 +26,9 @@ import (
 )
 
 const (
-	typeStr         = "googlecloudpubsub"
-	reportTransport = "pubsub"
+	typeStr              = "googlecloudpubsub"
+	reportTransport      = "pubsub"
+	reportFormatProtobuf = "protobuf"
 )
 
 func NewFactory() component.ReceiverFactory {
@@ -45,10 +46,6 @@ func NewFactory() component.ReceiverFactory {
 
 type pubsubReceiverFactory struct {
 	receivers map[*Config]*pubsubReceiver
-}
-
-func (factory *pubsubReceiverFactory) Type() config.Type {
-	return typeStr
 }
 
 func (factory *pubsubReceiverFactory) CreateDefaultConfig() config.Receiver {

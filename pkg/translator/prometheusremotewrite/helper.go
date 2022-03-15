@@ -23,6 +23,7 @@ import (
 	"strings"
 	"time"
 	"unicode"
+	"unicode/utf8"
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/timestamp"
@@ -41,6 +42,10 @@ const (
 	quantileStr = "quantile"
 	pInfStr     = "+Inf"
 	keyStr      = "key"
+	// maxExemplarRunes is the maximum number of UTF-8 exemplar characters
+	// according to the prometheus specification
+	// https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#exemplars
+	maxExemplarRunes = 128
 )
 
 type bucketBoundsData struct {
@@ -358,16 +363,22 @@ func getPromExemplars(pt pdata.HistogramDataPoint) []prompb.Exemplar {
 			Timestamp: timestamp.FromTime(exemplar.Timestamp().AsTime()),
 		}
 
+		exemplarRunes := 0
 		exemplar.FilteredAttributes().Range(func(key string, value pdata.AttributeValue) bool {
+			val := value.AsString()
+			exemplarRunes += utf8.RuneCountInString(key) + utf8.RuneCountInString(val)
 			promLabel := prompb.Label{
 				Name:  key,
-				Value: value.AsString(),
+				Value: val,
 			}
 
 			promExemplar.Labels = append(promExemplar.Labels, promLabel)
 
 			return true
 		})
+		if exemplarRunes > maxExemplarRunes {
+			promExemplar.Labels = nil
+		}
 
 		promExemplars = append(promExemplars, *promExemplar)
 	}
