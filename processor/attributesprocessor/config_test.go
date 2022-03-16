@@ -201,4 +201,14 @@ func TestLoadingConfig(t *testing.T) {
 		},
 	})
 
+	p11 := cfg.Processors[config.NewComponentIDWithName(typeStr, "convert")]
+	assert.Equal(t, p11, &Config{
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "convert")),
+		Settings: attraction.Settings{
+			Actions: []attraction.ActionKeyValue{
+				{Key: "http.status_code", Action: attraction.CONVERT, ConvertedType: "int"},
+			},
+		},
+	})
+
 }

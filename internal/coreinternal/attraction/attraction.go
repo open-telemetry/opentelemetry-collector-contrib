@@ -22,6 +22,7 @@ import (
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterhelper"
 )
@@ -29,7 +30,7 @@ import (
 // Settings specifies the processor settings.
 type Settings struct {
 	// Actions specifies the list of attributes to act on.
-	// The set of actions are {INSERT, UPDATE, UPSERT, DELETE, HASH, EXTRACT}.
+	// The set of actions are {INSERT, UPDATE, UPSERT, DELETE, HASH, EXTRACT, CONVERT}.
 	// This is a required field.
 	Actions []ActionKeyValue `mapstructure:"actions"`
 }
@@ -64,6 +65,11 @@ type ActionKeyValue struct {
 	// If the key has multiple values the values will be joined with `;` separator.
 	FromContext string `mapstructure:"from_context"`
 
+	// ConvertedType specifies the target type of an attribute to be converted
+	// If the key doesn't exist, no action is performed.
+	// If the value cannot be converted, the original value will be left as-is
+	ConvertedType string `mapstructure:"converted_type"`
+
 	// Action specifies the type of action to perform.
 	// The set of values are {INSERT, UPDATE, UPSERT, DELETE, HASH}.
 	// Both lower case and upper case are supported.
@@ -85,6 +91,7 @@ type ActionKeyValue struct {
 	// EXTRACT - Extracts values using a regular expression rule from the input
 	//           'key' to target keys specified in the 'rule'. If a target key
 	//           already exists, it will be overridden.
+	// CONVERT  - converts the type of an existing attribute, if convertable
 	// This is a required field.
 	Action Action `mapstructure:"action"`
 }
@@ -134,12 +141,16 @@ const (
 	// 'key' to target keys specified in the 'rule'. If a target key already
 	// exists, it will be overridden.
 	EXTRACT Action = "extract"
+
+	// CONVERT converts the type of an existing attribute, if convertable
+	CONVERT Action = "convert"
 )
 
 type attributeAction struct {
 	Key           string
 	FromAttribute string
 	FromContext   string
+	ConvertedType string
 	// Compiled regex if provided
 	Regex *regexp.Regexp
 	// Attribute names extracted from the regexp's subexpressions.
@@ -190,7 +201,9 @@ func NewAttrProc(settings *Settings) (*AttrProc, error) {
 			}
 			if a.RegexPattern != "" {
 				return nil, fmt.Errorf("error creating AttrProc. Action \"%s\" does not use the \"pattern\" field. This must not be specified for %d-th action", a.Action, i)
-
+			}
+			if a.ConvertedType != "" {
+				return nil, fmt.Errorf("error creating AttrProc. Action \"%s\" does not use the \"converted_type\" field. This must not be specified for %d-th action", a.Action, i)
 			}
 			// Convert the raw value from the configuration to the internal trace representation of the value.
 			if a.Value != nil {
@@ -207,13 +220,18 @@ func NewAttrProc(settings *Settings) (*AttrProc, error) {
 			if valueSourceCount > 0 || a.RegexPattern != "" {
 				return nil, fmt.Errorf("error creating AttrProc. Action \"%s\" does not use value sources or \"pattern\" field. These must not be specified for %d-th action", a.Action, i)
 			}
+			if a.ConvertedType != "" {
+				return nil, fmt.Errorf("error creating AttrProc. Action \"%s\" does not use the \"converted_type\" field. This must not be specified for %d-th action", a.Action, i)
+			}
 		case EXTRACT:
 			if valueSourceCount > 0 {
 				return nil, fmt.Errorf("error creating AttrProc. Action \"%s\" does not use a value source field. These must not be specified for %d-th action", a.Action, i)
 			}
 			if a.RegexPattern == "" {
 				return nil, fmt.Errorf("error creating AttrProc due to missing required field \"pattern\" for action \"%s\" at the %d-th action", a.Action, i)
-
+			}
+			if a.ConvertedType != "" {
+				return nil, fmt.Errorf("error creating AttrProc. Action \"%s\" does not use the \"converted_type\" field. This must not be specified for %d-th action", a.Action, i)
 			}
 			re, err := regexp.Compile(a.RegexPattern)
 			if err != nil {
@@ -231,6 +249,20 @@ func NewAttrProc(settings *Settings) (*AttrProc, error) {
 			}
 			action.Regex = re
 			action.AttrNames = attrNames
+		case CONVERT:
+			if valueSourceCount > 0 || a.RegexPattern != "" {
+				return nil, fmt.Errorf("error creating AttrProc. Action \"%s\" does not use value sources or \"pattern\" field. These must not be specified for %d-th action", a.Action, i)
+			}
+			switch a.ConvertedType {
+			case stringConversionTarget:
+			case intConversionTarget:
+			case doubleConversionTarget:
+			case "":
+				return nil, fmt.Errorf("error creating AttrProc due to missing required field \"converted_type\" for action \"%s\" at the %d-th action", a.Action, i)
+			default:
+				return nil, fmt.Errorf("error creating AttrProc due to invalid value \"%s\" in field \"converted_type\" for action \"%s\" at the %d-th action", a.ConvertedType, a.Action, i)
+			}
+			action.ConvertedType = a.ConvertedType
 		default:
 			return nil, fmt.Errorf("error creating AttrProc due to unsupported action %q at the %d-th actions", a.Action, i)
 		}
@@ -241,7 +273,7 @@ func NewAttrProc(settings *Settings) (*AttrProc, error) {
 }
 
 // Process applies the AttrProc to an attribute map.
-func (ap *AttrProc) Process(ctx context.Context, attrs pdata.AttributeMap) {
+func (ap *AttrProc) Process(ctx context.Context, logger *zap.Logger, attrs pdata.AttributeMap) {
 	for _, action := range ap.actions {
 		// TODO https://go.opentelemetry.io/collector/issues/296
 		// Do benchmark testing between having action be of type string vs integer.
@@ -272,6 +304,8 @@ func (ap *AttrProc) Process(ctx context.Context, attrs pdata.AttributeMap) {
 			hashAttribute(action, attrs)
 		case EXTRACT:
 			extractAttributes(action, attrs)
+		case CONVERT:
+			convertAttribute(logger, action, attrs)
 		}
 	}
 }
@@ -303,6 +337,12 @@ func getSourceAttributeValue(ctx context.Context, action attributeAction, attrs 
 func hashAttribute(action attributeAction, attrs pdata.AttributeMap) {
 	if value, exists := attrs.Get(action.Key); exists {
 		sha1Hasher(value)
+	}
+}
+
+func convertAttribute(logger *zap.Logger, action attributeAction, attrs pdata.AttributeMap) {
+	if value, exists := attrs.Get(action.Key); exists {
+		convertValue(logger, action.Key, action.ConvertedType, value)
 	}
 }
 
