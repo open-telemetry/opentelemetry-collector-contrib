@@ -4,15 +4,15 @@ go 1.17
 
 require (
 	github.com/gorilla/mux v1.8.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.46.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.46.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.46.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.46.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.47.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.47.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.47.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.47.0
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3
 	github.com/stretchr/testify v1.7.0
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.46.1-0.20220307173244-f980c9ef25b1
-	go.opentelemetry.io/collector/model v0.46.1-0.20220307173244-f980c9ef25b1
+	go.opentelemetry.io/collector v0.47.0
+	go.opentelemetry.io/collector/model v0.47.0
 	go.uber.org/zap v1.21.0
 
 )
@@ -41,8 +41,8 @@ require (
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.46.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.46.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.47.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.47.0 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect

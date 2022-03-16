@@ -3,12 +3,12 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookee
 go 1.17
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.46.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest v0.46.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.46.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.47.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest v0.47.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.47.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.46.1-0.20220307173244-f980c9ef25b1
-	go.opentelemetry.io/collector/model v0.46.1-0.20220307173244-f980c9ef25b1
+	go.opentelemetry.io/collector v0.47.0
+	go.opentelemetry.io/collector/model v0.47.0
 	go.uber.org/zap v1.21.0
 
 )
