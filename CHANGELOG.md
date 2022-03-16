@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.47.0
+
 ### 💡 Enhancements 💡
 
 - `attributesprocessor`: Add convert action (#7930)
