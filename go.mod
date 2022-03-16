@@ -123,7 +123,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.46.0
 	github.com/prometheus/prometheus v1.8.2-0.20220117154355-4855a0c067e2
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.46.1-0.20220307173244-f980c9ef25b1
+	go.opentelemetry.io/collector v0.46.1-0.20220316072811-e214f7172b45
 	golang.org/x/sys v0.0.0-20220310020820-b874c991c1a5
 )
 
@@ -390,7 +390,7 @@ require (
 	github.com/soheilhy/cmux v0.1.5 // indirect
 	github.com/spf13/afero v1.6.0 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
-	github.com/spf13/cobra v1.3.0 // indirect
+	github.com/spf13/cobra v1.4.0 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.10.1 // indirect
@@ -425,7 +425,7 @@ require (
 	go.etcd.io/bbolt v1.3.6 // indirect
 	go.mongodb.org/atlas v0.15.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/model v0.46.1-0.20220307173244-f980c9ef25b1 // indirect
+	go.opentelemetry.io/collector/model v0.46.1-0.20220316072811-e214f7172b45 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.29.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.29.0 // indirect
 	go.opentelemetry.io/contrib/zpages v0.29.0 // indirect

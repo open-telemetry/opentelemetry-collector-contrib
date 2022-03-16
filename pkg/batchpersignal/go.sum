@@ -12,8 +12,8 @@ github.com/stretchr/testify v1.7.0 h1:nwc3DEeHmmLAfoZucVR881uASk0Mfjw8xYJ99tb5Cc
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
-go.opentelemetry.io/collector/model v0.46.1-0.20220307173244-f980c9ef25b1 h1:pqCaE5Ue6DCSlIU7EZjyC1QJ9iZBywMXZ+BKihwX6UU=
-go.opentelemetry.io/collector/model v0.46.1-0.20220307173244-f980c9ef25b1/go.mod h1:uyiyyq8lV45zrJ94MnLip26sorfNLP6J9XmOvaEmy7w=
+go.opentelemetry.io/collector/model v0.46.1-0.20220316072811-e214f7172b45 h1:TWVN0z1TvbTTvhLG2//Muv3/8IqmrKZlldg/RB/52Gs=
+go.opentelemetry.io/collector/model v0.46.1-0.20220316072811-e214f7172b45/go.mod h1:tyZ1XdPtljZ9I09pJGcz5ktV9G1AAZ/HDmf6YOMHebc=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550/go.mod h1:yigFU9vqHzYiE8UmvKecakEJjdnWj3jj499lnFckfCI=
 golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9/go.mod h1:LzIPMQfyMNhhGPhUkYOs5KpL4U8rLKemX1yGLhDgUto=
