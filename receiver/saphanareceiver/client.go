@@ -27,13 +27,8 @@ import (
 // Interface for a SAP HANA client. Implementation can be faked for testing.
 type client interface {
 	Connect() error
-	collectStatsFromQuery(ctx context.Context, query string, orderedLabels []string, orderedFields ...string) ([]MetricStat, error)
+	collectDataFromQuery(ctx context.Context, query string, columns []string) ([]map[string]string, error)
 	Close() error
-}
-
-type MetricStat struct {
-	labels map[string]string
-	stats  map[string]string
 }
 
 // Wraps a SAP HANA database connection, implements `client` interface.
@@ -81,7 +76,7 @@ func (c *sapHanaClient) Close() error {
 	return nil
 }
 
-func (c *sapHanaClient) collectStatsFromQuery(ctx context.Context, query string, orderedLabels []string, orderedFields ...string) ([]MetricStat, error) {
+func (c *sapHanaClient) collectDataFromQuery(ctx context.Context, query string, columns []string) ([]map[string]string, error) {
 	rows, err := c.client.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
@@ -89,16 +84,12 @@ func (c *sapHanaClient) collectStatsFromQuery(ctx context.Context, query string,
 	defer rows.Close()
 
 	errors := scrapererror.ScrapeErrors{}
-	metricStats := []MetricStat{}
+	metricStats := []map[string]string{}
 	for rows.Next() {
 		rowFields := make([]interface{}, 0)
 
 		// Build a list of addresses that rows.Scan will load column data into
-		for range orderedLabels {
-			var val string
-			rowFields = append(rowFields, &val)
-		}
-		for range orderedFields {
+		for range columns {
 			var val string
 			rowFields = append(rowFields, &val)
 		}
@@ -107,31 +98,18 @@ func (c *sapHanaClient) collectStatsFromQuery(ctx context.Context, query string,
 			return nil, err
 		}
 
-		rowLabels := map[string]string{}
-		for _, label := range orderedLabels {
+		values := map[string]string{}
+		for _, label := range columns {
 			v, err := convertInterfaceToString(rowFields[0])
 			if err != nil {
 				errors.AddPartial(0, err)
 				continue
 			}
-			rowLabels[label] = v
+			values[label] = v
 			rowFields = rowFields[1:]
 		}
 
-		stats := map[string]string{}
-		for idx, val := range rowFields {
-			v, err := convertInterfaceToString(val)
-			if err != nil {
-				errors.AddPartial(0, err)
-				continue
-			}
-			stats[orderedFields[idx]] = v
-		}
-
-		metricStats = append(metricStats, MetricStat{
-			labels: rowLabels,
-			stats:  stats,
-		})
+		metricStats = append(metricStats, values)
 	}
 	return metricStats, errors.Combine()
 }

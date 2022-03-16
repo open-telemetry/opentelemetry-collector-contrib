@@ -16,6 +16,7 @@ package saphanareceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -48,6 +49,85 @@ func newSapHanaScraper(settings component.TelemetrySettings, cfg *Config) (scrap
 	return scraperhelper.NewScraper(typeStr, rs.scrape)
 }
 
+type queryStat struct {
+	key                     string
+	dataType                string
+	addIntMetricFunction    func(*sapHanaScraper, pdata.Timestamp, int64, map[string]string)
+	addDoubleMetricFunction func(*sapHanaScraper, pdata.Timestamp, float64, map[string]string)
+}
+
+func (q *queryStat) collectStat(s *sapHanaScraper, now pdata.Timestamp, row map[string]string) error {
+	switch q.dataType {
+	case "int":
+		if i, ok := s.parseInt(q.key, row[q.key]); ok {
+			q.addIntMetricFunction(s, now, i, row)
+		} else {
+			return fmt.Errorf("Unable to parse '%s' as an integer for query key %s", row[q.key], q.key)
+		}
+	case "double":
+		if f, ok := s.parseDouble(q.key, row[q.key]); ok {
+			q.addDoubleMetricFunction(s, now, f, row)
+		} else {
+			return fmt.Errorf("Unable to parse '%s' as a double for query key %s", row[q.key], q.key)
+		}
+	default:
+		return fmt.Errorf("Incorrectly configured query, type provided must be 'int' or 'double' but was %s", q.dataType)
+	}
+	return nil
+}
+
+type monitoringQuery struct {
+	query         string
+	orderedLabels []string
+	orderedStats  []queryStat
+}
+
+var queries = []monitoringQuery{
+	{
+		query:         "SELECT HOST as host, SUM(MEMORY_SIZE_IN_MAIN) as main, SUM(MEMORY_SIZE_IN_DELTA) as delta FROM M_CS_ALL_COLUMNS GROUP BY HOST",
+		orderedLabels: []string{"host"},
+		orderedStats: []queryStat{
+			{
+				key:      "main",
+				dataType: "int",
+				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
+					s.mb.RecordSaphanaColumnMemoryUsedDataPoint(now, i, row["host"], metadata.AttributeColumnMemoryType.Main)
+				},
+			},
+			{
+				key:      "delta",
+				dataType: "int",
+				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
+					s.mb.RecordSaphanaColumnMemoryUsedDataPoint(now, i, row["host"], metadata.AttributeColumnMemoryType.Delta)
+				},
+			},
+		},
+	},
+}
+
+func (m *monitoringQuery) columns() []string {
+	output := make([]string, len(m.orderedLabels))
+	copy(output, m.orderedLabels)
+	for _, stat := range m.orderedStats {
+		output = append(output, stat.key)
+	}
+	return output
+}
+
+func (m *monitoringQuery) CollectMetrics(s *sapHanaScraper, ctx context.Context, client client, now pdata.Timestamp) error {
+	if rows, err := client.collectDataFromQuery(ctx, m.query, m.columns()); err != nil {
+		return err
+	} else {
+		for _, data := range rows {
+			for _, stat := range m.orderedStats {
+				stat.collectStat(s, now, data)
+			}
+		}
+	}
+
+	return nil
+}
+
 // Scrape is called periodically, querying SAP HANA and building Metrics to send to
 // the next consumer.
 func (s *sapHanaScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
@@ -64,36 +144,15 @@ func (s *sapHanaScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 	ilms := metrics.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
 	ilms.InstrumentationLibrary().SetName(instrumentationLibraryName)
 
-	if err := s.collectColumnMemoryMetric(ctx, client, now); err != nil {
-		errs.AddPartial(1, err)
+	for _, query := range queries {
+		if err := query.CollectMetrics(s, ctx, client, now); err != nil {
+			errs.AddPartial(len(query.orderedStats), err)
+		}
 	}
 
 	s.mb.Emit(ilms.Metrics())
 
 	return metrics, errs.Combine()
-}
-
-func (s *sapHanaScraper) collectColumnMemoryMetric(ctx context.Context, client client, now pdata.Timestamp) error {
-	if rows, err := client.collectStatsFromQuery(
-		ctx,
-		"SELECT HOST as host, SUM(MEMORY_SIZE_IN_MAIN) as main, SUM(MEMORY_SIZE_IN_DELTA) as delta FROM M_CS_ALL_COLUMNS GROUP BY HOST",
-		[]string{"host"},
-		"main", "delta",
-	); err != nil {
-		return err
-	} else {
-		for _, data := range rows {
-			host := data.labels["host"]
-			if i, ok := s.parseInt("main", data.stats["main"]); ok {
-				s.mb.RecordSaphanaColumnMemoryUsedDataPoint(now, i, host, metadata.AttributeColumnMemoryType.Main)
-			}
-			if i, ok := s.parseInt("delta", data.stats["delta"]); ok {
-				s.mb.RecordSaphanaColumnMemoryUsedDataPoint(now, i, host, metadata.AttributeColumnMemoryType.Delta)
-			}
-		}
-	}
-
-	return nil
 }
 
 // parseInt converts string to int64.
@@ -104,6 +163,16 @@ func (s *sapHanaScraper) parseInt(key, value string) (int64, bool) {
 		return 0, false
 	}
 	return i, true
+}
+
+// parseDouble converts string to float64.
+func (s *sapHanaScraper) parseDouble(key, value string) (float64, bool) {
+	f, err := strconv.ParseFloat(value, 64)
+	if err != nil {
+		s.logInvalid("float", key, value)
+		return 0, false
+	}
+	return f, true
 }
 
 func (s *sapHanaScraper) logInvalid(expectedType, key, value string) {
