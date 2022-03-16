@@ -1,0 +1,173 @@
+// Copyright  The OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package riakreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver"
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
+	"path/filepath"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configtls"
+	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver/internal/models"
+)
+
+const (
+	statsAPIResponseFile = "get_stats_response.json"
+)
+
+func TestNewClient(t *testing.T) {
+	testCase := []struct {
+		desc        string
+		cfg         *Config
+		host        component.Host
+		settings    component.TelemetrySettings
+		logger      *zap.Logger
+		expectError error
+	}{
+		{
+			desc: "Invalid HTTP config",
+			cfg: &Config{
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: defaultEndpoint,
+					TLSSetting: configtls.TLSClientSetting{
+						TLSSetting: configtls.TLSSetting{
+							CAFile: "/non/existent",
+						},
+					},
+				},
+			},
+			host:        componenttest.NewNopHost(),
+			settings:    componenttest.NewNopTelemetrySettings(),
+			logger:      zap.NewNop(),
+			expectError: errors.New("failed to create HTTP Client"),
+		},
+		{
+			desc: "Valid Configuration",
+			cfg: &Config{
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					TLSSetting: configtls.TLSClientSetting{},
+					Endpoint:   defaultEndpoint,
+				},
+			},
+			host:        componenttest.NewNopHost(),
+			settings:    componenttest.NewNopTelemetrySettings(),
+			logger:      zap.NewNop(),
+			expectError: nil,
+		},
+	}
+
+	for _, tc := range testCase {
+		t.Run(tc.desc, func(t *testing.T) {
+			ac, err := newClient(tc.cfg, tc.host, tc.settings, tc.logger)
+			if tc.expectError != nil {
+				require.Nil(t, ac)
+				require.Contains(t, err.Error(), tc.expectError.Error())
+			} else {
+				require.NoError(t, err)
+
+				actualClient, ok := ac.(*riakClient)
+				require.True(t, ok)
+
+				require.Equal(t, tc.cfg.Username, actualClient.creds.username)
+				require.Equal(t, tc.cfg.Password, actualClient.creds.password)
+				require.Equal(t, tc.cfg.Endpoint, actualClient.hostEndpoint)
+				require.Equal(t, tc.logger, actualClient.logger)
+				require.NotNil(t, actualClient.client)
+			}
+		})
+	}
+}
+
+func TestGetStatsDetails(t *testing.T) {
+	testCases := []struct {
+		desc     string
+		testFunc func(*testing.T)
+	}{
+		{
+			desc: "Non-200 Response",
+			testFunc: func(t *testing.T) {
+				// Setup test server
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					w.WriteHeader(http.StatusUnauthorized)
+				}))
+				defer ts.Close()
+
+				tc := createTestClient(t, ts.URL)
+
+				clusters, err := tc.GetStats(context.Background())
+				require.Nil(t, clusters)
+				require.EqualError(t, err, "non 200 code returned 401")
+			},
+		},
+		{
+			desc: "Successful call",
+			testFunc: func(t *testing.T) {
+				data := loadAPIResponseData(t, statsAPIResponseFile)
+
+				// Setup test server
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					w.Write(data)
+				}))
+				defer ts.Close()
+
+				tc := createTestClient(t, ts.URL)
+
+				// Load the valid data into a struct to compare
+				var expected *models.Stats
+				err := json.Unmarshal(data, &expected)
+				require.NoError(t, err)
+
+				clusters, err := tc.GetStats(context.Background())
+				require.NoError(t, err)
+				require.Equal(t, expected, clusters)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, tc.testFunc)
+	}
+}
+
+func createTestClient(t *testing.T, baseEndpoint string) client {
+	t.Helper()
+	cfg := createDefaultConfig().(*Config)
+	cfg.Endpoint = baseEndpoint
+
+	testClient, err := newClient(cfg, componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), zap.NewNop())
+	require.NoError(t, err)
+	return testClient
+}
+
+func loadAPIResponseData(t *testing.T, fileName string) []byte {
+	t.Helper()
+	fullPath := filepath.Join("testdata", "apiresponses", fileName)
+
+	data, err := ioutil.ReadFile(fullPath)
+	require.NoError(t, err)
+
+	return data
+}
