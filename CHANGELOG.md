@@ -36,6 +36,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `opentelemetry-instrumentation-dbapi` Changed the format of traceparent id.
+  ([#941](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/941))
 - `opentelemetry-instrumentation-logging` retrieves service name defensively.
   ([#890](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/890))
 - `opentelemetry-instrumentation-wsgi` WSGI: Conditionally create SERVER spans
