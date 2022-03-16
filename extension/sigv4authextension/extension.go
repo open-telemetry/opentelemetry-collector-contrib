@@ -24,7 +24,7 @@ import (
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
-	"go.opentelemetry.io/collector/component/componenthelper"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.uber.org/zap"
 	grpcCredentials "google.golang.org/grpc/credentials"
@@ -33,11 +33,11 @@ import (
 // sigv4Auth is a struct that implements the configauth.ClientAuthenticator interface.
 // It provides the implementation for providing Sigv4 authentication for HTTP requests only.
 type sigv4Auth struct {
-	cfg                          *Config
-	logger                       *zap.Logger
-	awsSDKInfo                   string
-	componenthelper.StartFunc    // embedded default behavior to do nothing with Start()
-	componenthelper.ShutdownFunc // embedded default behavior to do nothing with Shutdown()
+	cfg                    *Config
+	logger                 *zap.Logger
+	awsSDKInfo             string
+	component.StartFunc    // embedded default behavior to do nothing with Start()
+	component.ShutdownFunc // embedded default behavior to do nothing with Shutdown()
 }
 
 // compile time check that the sigv4Auth struct satisfies the configauth.ClientAuthenticator interface
