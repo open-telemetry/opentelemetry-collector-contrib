@@ -55,6 +55,7 @@
 - `datadogexporter`: Deprecate automatic environment variable detection (#8397)
 
 ### 🚀 New components 🚀
+- `sigv4authextension`: New Component: Sigv4 Authenticator Extension (#8263)
 
 ## v0.46.0
 
@@ -205,6 +206,8 @@
 ### 🛑 Breaking changes 🛑
 
 - `resourcedetectionprocessor`: Update `os.type` attribute values according to semantic conventions (#7544)
+- `awsprometheusremotewriteexporter`: Deprecation notice; may be removed after v0.49.0
+  - Switch to using the `prometheusremotewriteexporter` + `sigv4authextension` instead
 
 ### 🧰 Bug fixes 🧰
 
