@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/awspr
 go 1.17
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy v0.46.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.46.0
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.46.1-0.20220307173244-f980c9ef25b1
@@ -11,7 +11,7 @@ require (
 )
 
 require (
-	github.com/aws/aws-sdk-go v1.43.13 // indirect
+	github.com/aws/aws-sdk-go v1.43.17 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect

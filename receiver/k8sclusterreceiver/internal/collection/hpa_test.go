@@ -44,16 +44,16 @@ func TestHPAMetrics(t *testing.T) {
 		},
 	)
 
-	testutils.AssertMetrics(t, rm.metrics[0], "k8s.hpa.max_replicas",
+	testutils.AssertMetricsInt(t, rm.metrics[0], "k8s.hpa.max_replicas",
 		metricspb.MetricDescriptor_GAUGE_INT64, 10)
 
-	testutils.AssertMetrics(t, rm.metrics[1], "k8s.hpa.min_replicas",
+	testutils.AssertMetricsInt(t, rm.metrics[1], "k8s.hpa.min_replicas",
 		metricspb.MetricDescriptor_GAUGE_INT64, 2)
 
-	testutils.AssertMetrics(t, rm.metrics[2], "k8s.hpa.current_replicas",
+	testutils.AssertMetricsInt(t, rm.metrics[2], "k8s.hpa.current_replicas",
 		metricspb.MetricDescriptor_GAUGE_INT64, 5)
 
-	testutils.AssertMetrics(t, rm.metrics[3], "k8s.hpa.desired_replicas",
+	testutils.AssertMetricsInt(t, rm.metrics[3], "k8s.hpa.desired_replicas",
 		metricspb.MetricDescriptor_GAUGE_INT64, 7)
 }
 

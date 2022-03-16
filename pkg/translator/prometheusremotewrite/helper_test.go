@@ -198,8 +198,8 @@ func Test_createLabelSet(t *testing.T) {
 		{
 			"labels_with_resource",
 			getResource(map[string]pdata.AttributeValue{
-				"job":      pdata.NewAttributeValueString("prometheus"),
-				"instance": pdata.NewAttributeValueString("127.0.0.1:8080"),
+				"service.name":        pdata.NewAttributeValueString("prometheus"),
+				"service.instance.id": pdata.NewAttributeValueString("127.0.0.1:8080"),
 			}),
 			lbs1,
 			map[string]string{},
@@ -209,8 +209,8 @@ func Test_createLabelSet(t *testing.T) {
 		{
 			"labels_with_nonstring_resource",
 			getResource(map[string]pdata.AttributeValue{
-				"job":      pdata.NewAttributeValueInt(12345),
-				"instance": pdata.NewAttributeValueBool(true),
+				"service.name":        pdata.NewAttributeValueInt(12345),
+				"service.instance.id": pdata.NewAttributeValueBool(true),
 			}),
 			lbs1,
 			map[string]string{},
@@ -272,6 +272,14 @@ func Test_createLabelSet(t *testing.T) {
 			exlbs2,
 			[]string{label31, value31, label32, value32},
 			getPromLabels(label11, value11, label12, value12, label31, value31, label32, value32),
+		},
+		{
+			"colliding attributes",
+			getResource(map[string]pdata.AttributeValue{}),
+			lbsColliding,
+			nil,
+			[]string{label31, value31, label32, value32},
+			getPromLabels(collidingSanitized, value11+";"+value12, label31, value31, label32, value32),
 		},
 	}
 	// run tests
@@ -416,12 +424,55 @@ func Test_getPromExemplars(t *testing.T) {
 	}{
 		{
 			"with_exemplars",
-			getHistogramDataPointWithExemplars(tnow, floatVal1, traceIDKey, traceIDValue1),
+			getHistogramDataPointWithExemplars(t, tnow, floatVal1, traceIDValue1, spanIDValue1, label11, value11),
 			[]prompb.Exemplar{
 				{
 					Value:     floatVal1,
 					Timestamp: timestamp.FromTime(tnow),
-					Labels:    []prompb.Label{getLabel(traceIDKey, traceIDValue1)},
+					Labels:    []prompb.Label{getLabel(traceIDKey, traceIDValue1), getLabel(spanIDKey, spanIDValue1), getLabel(label11, value11)},
+				},
+			},
+		},
+		{
+			"with_exemplars_without_trace_or_span",
+			getHistogramDataPointWithExemplars(t, tnow, floatVal1, "", "", label11, value11),
+			[]prompb.Exemplar{
+				{
+					Value:     floatVal1,
+					Timestamp: timestamp.FromTime(tnow),
+					Labels:    []prompb.Label{getLabel(label11, value11)},
+				},
+			},
+		},
+		{
+			"too_many_runes_drops_labels",
+			getHistogramDataPointWithExemplars(t, tnow, floatVal1, "", "", keyWith129Runes, ""),
+			[]prompb.Exemplar{
+				{
+					Value:     floatVal1,
+					Timestamp: timestamp.FromTime(tnow),
+				},
+			},
+		},
+		{
+			"runes_at_limit_bytes_over_keeps_labels",
+			getHistogramDataPointWithExemplars(t, tnow, floatVal1, "", "", keyWith128Runes, ""),
+			[]prompb.Exemplar{
+				{
+					Value:     floatVal1,
+					Timestamp: timestamp.FromTime(tnow),
+					Labels:    []prompb.Label{getLabel(keyWith128Runes, "")},
+				},
+			},
+		},
+		{
+			"too_many_runes_with_exemplar_drops_attrs_keeps_exemplar",
+			getHistogramDataPointWithExemplars(t, tnow, floatVal1, traceIDValue1, spanIDValue1, keyWith64Runes, ""),
+			[]prompb.Exemplar{
+				{
+					Value:     floatVal1,
+					Timestamp: timestamp.FromTime(tnow),
+					Labels:    []prompb.Label{getLabel(traceIDKey, traceIDValue1), getLabel(spanIDKey, spanIDValue1)},
 				},
 			},
 		},

@@ -43,19 +43,19 @@ func TestJobMetrics(t *testing.T) {
 		},
 	)
 
-	testutils.AssertMetrics(t, actualResourceMetrics[0].metrics[0], "k8s.job.active_pods",
+	testutils.AssertMetricsInt(t, actualResourceMetrics[0].metrics[0], "k8s.job.active_pods",
 		metricspb.MetricDescriptor_GAUGE_INT64, 2)
 
-	testutils.AssertMetrics(t, actualResourceMetrics[0].metrics[1], "k8s.job.failed_pods",
+	testutils.AssertMetricsInt(t, actualResourceMetrics[0].metrics[1], "k8s.job.failed_pods",
 		metricspb.MetricDescriptor_GAUGE_INT64, 0)
 
-	testutils.AssertMetrics(t, actualResourceMetrics[0].metrics[2], "k8s.job.successful_pods",
+	testutils.AssertMetricsInt(t, actualResourceMetrics[0].metrics[2], "k8s.job.successful_pods",
 		metricspb.MetricDescriptor_GAUGE_INT64, 3)
 
-	testutils.AssertMetrics(t, actualResourceMetrics[0].metrics[3], "k8s.job.desired_successful_pods",
+	testutils.AssertMetricsInt(t, actualResourceMetrics[0].metrics[3], "k8s.job.desired_successful_pods",
 		metricspb.MetricDescriptor_GAUGE_INT64, 10)
 
-	testutils.AssertMetrics(t, actualResourceMetrics[0].metrics[4], "k8s.job.max_parallel_pods",
+	testutils.AssertMetricsInt(t, actualResourceMetrics[0].metrics[4], "k8s.job.max_parallel_pods",
 		metricspb.MetricDescriptor_GAUGE_INT64, 2)
 
 	// Test with nil values.
@@ -65,13 +65,13 @@ func TestJobMetrics(t *testing.T) {
 	require.Equal(t, 1, len(actualResourceMetrics))
 	require.Equal(t, 3, len(actualResourceMetrics[0].metrics))
 
-	testutils.AssertMetrics(t, actualResourceMetrics[0].metrics[0], "k8s.job.active_pods",
+	testutils.AssertMetricsInt(t, actualResourceMetrics[0].metrics[0], "k8s.job.active_pods",
 		metricspb.MetricDescriptor_GAUGE_INT64, 2)
 
-	testutils.AssertMetrics(t, actualResourceMetrics[0].metrics[1], "k8s.job.failed_pods",
+	testutils.AssertMetricsInt(t, actualResourceMetrics[0].metrics[1], "k8s.job.failed_pods",
 		metricspb.MetricDescriptor_GAUGE_INT64, 0)
 
-	testutils.AssertMetrics(t, actualResourceMetrics[0].metrics[2], "k8s.job.successful_pods",
+	testutils.AssertMetricsInt(t, actualResourceMetrics[0].metrics[2], "k8s.job.successful_pods",
 		metricspb.MetricDescriptor_GAUGE_INT64, 3)
 }
 

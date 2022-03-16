@@ -106,7 +106,7 @@ func (s *scraper) recordNetworkCounterMetrics(metrics pdata.MetricSlice) error {
 	// get total stats only
 	ioCounters, err := s.ioCounters( /*perNetworkInterfaceController=*/ true)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to read network IO stats: %w", err)
 	}
 
 	// filter network interfaces by name
@@ -158,7 +158,7 @@ func (s *scraper) recordNetworkConnectionsMetrics(metrics pdata.MetricSlice) err
 
 	connections, err := s.connections("tcp")
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to read TCP connections: %w", err)
 	}
 
 	tcpConnectionStatusCounts := getTCPConnectionStatusCounts(connections)
