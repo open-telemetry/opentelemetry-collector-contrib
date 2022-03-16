@@ -5,6 +5,7 @@
 
 ### 💡 Enhancements 💡
 
+- `riakreceiver`: Added implementation of Riak Metric Receiver (#8548)
 - `k8seventsreceiver`: Add Api_version and resource_version (#8539)
 - `dynatraceexporter`: add multi-instance deployment note to README.md (#8848)
 
