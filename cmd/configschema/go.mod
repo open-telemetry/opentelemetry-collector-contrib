@@ -265,6 +265,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver v0.46.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension v0.46.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.46.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension v0.46.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.46.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.46.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.46.0 // indirect
