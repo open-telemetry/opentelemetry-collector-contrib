@@ -15,12 +15,12 @@
 package translator
 
 import (
-	"github.com/stretchr/testify/require"
-	"math"
 	"context"
 	"fmt"
+	"math"
 	"testing"
 
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
@@ -43,7 +43,8 @@ func newBenchmarkTranslator(b *testing.B, logger *zap.Logger, opts ...Option) *T
 	return tr
 }
 
-func createBenchmarkGaugeMetrics(n int, additionalAttributes map[string]string, name, version string) pdata.Metrics {
+// createBenchmarkGaugeMetrics creates n Gauge data points.
+func createBenchmarkGaugeMetrics(n int, additionalAttributes map[string]string) pdata.Metrics {
 	md := pdata.NewMetrics()
 	rms := md.ResourceMetrics()
 	rm := rms.AppendEmpty()
@@ -56,12 +57,10 @@ func createBenchmarkGaugeMetrics(n int, additionalAttributes map[string]string, 
 	ilms := rm.InstrumentationLibraryMetrics()
 
 	ilm := ilms.AppendEmpty()
-	ilm.InstrumentationLibrary().SetName(name)
-	ilm.InstrumentationLibrary().SetVersion(version)
 	metricsArray := ilm.Metrics()
 	metricsArray.AppendEmpty() // first one is TypeNone to test that it's ignored
 
-	for i := 0; i < n; i ++ {
+	for i := 0; i < n; i++ {
 		// IntGauge
 		met := metricsArray.AppendEmpty()
 		met.SetName(fmt.Sprintf("int.gauge.%d", i))
@@ -75,7 +74,9 @@ func createBenchmarkGaugeMetrics(n int, additionalAttributes map[string]string, 
 	return md
 }
 
-func createBenchmarkExponentialHistogramMetrics(n int, t int, additionalAttributes map[string]string) pdata.Metrics {
+// createBenchmarkDeltaExponentialHistogramMetrics creates n ExponentialHistogram data points, each with b buckets
+// in each store, with a delta aggregation temporality.
+func createBenchmarkDeltaExponentialHistogramMetrics(n int, b int, additionalAttributes map[string]string) pdata.Metrics {
 	md := pdata.NewMetrics()
 	rms := md.ResourceMetrics()
 	rm := rms.AppendEmpty()
@@ -104,8 +105,8 @@ func createBenchmarkExponentialHistogramMetrics(n int, t int, additionalAttribut
 		point.SetZeroCount(10)
 		point.SetSum(math.Pi)
 
-		buckets := make([]uint64, t)
-		for i := 0; i < t; i++ {
+		buckets := make([]uint64, b)
+		for i := 0; i < b; i++ {
 			buckets[i] = 10
 		}
 
@@ -121,8 +122,8 @@ func createBenchmarkExponentialHistogramMetrics(n int, t int, additionalAttribut
 	return md
 }
 
-
-func createBenchmarkDeltaSumMetrics(n int, additionalAttributes map[string]string, name, version string) pdata.Metrics {
+// createBenchmarkDeltaSumMetrics creates n Sum data points with a delta aggregation temporality.
+func createBenchmarkDeltaSumMetrics(n int, additionalAttributes map[string]string) pdata.Metrics {
 	md := pdata.NewMetrics()
 	rms := md.ResourceMetrics()
 	rm := rms.AppendEmpty()
@@ -135,12 +136,10 @@ func createBenchmarkDeltaSumMetrics(n int, additionalAttributes map[string]strin
 	ilms := rm.InstrumentationLibraryMetrics()
 
 	ilm := ilms.AppendEmpty()
-	ilm.InstrumentationLibrary().SetName(name)
-	ilm.InstrumentationLibrary().SetVersion(version)
 	metricsArray := ilm.Metrics()
 	metricsArray.AppendEmpty() // first one is TypeNone to test that it's ignored
 
-	for i := 0; i < n; i ++ {
+	for i := 0; i < n; i++ {
 		met := metricsArray.AppendEmpty()
 		met.SetName("double.delta.monotonic.sum")
 		met.SetDataType(pdata.MetricDataTypeSum)
@@ -165,7 +164,7 @@ func benchmarkMapMetrics(metrics pdata.Metrics, b *testing.B) {
 }
 
 func BenchmarkMapDeltaExponentialHistogramMetrics1_5(b *testing.B) {
-	metrics := createBenchmarkExponentialHistogramMetrics(1, 5, map[string]string{
+	metrics := createBenchmarkDeltaExponentialHistogramMetrics(1, 5, map[string]string{
 		"attribute_tag": "attribute_value",
 	})
 
@@ -173,7 +172,7 @@ func BenchmarkMapDeltaExponentialHistogramMetrics1_5(b *testing.B) {
 }
 
 func BenchmarkMapDeltaExponentialHistogramMetrics10_5(b *testing.B) {
-	metrics := createBenchmarkExponentialHistogramMetrics(10, 5, map[string]string{
+	metrics := createBenchmarkDeltaExponentialHistogramMetrics(10, 5, map[string]string{
 		"attribute_tag": "attribute_value",
 	})
 
@@ -181,7 +180,7 @@ func BenchmarkMapDeltaExponentialHistogramMetrics10_5(b *testing.B) {
 }
 
 func BenchmarkMapDeltaExponentialHistogramMetrics100_5(b *testing.B) {
-	metrics := createBenchmarkExponentialHistogramMetrics(100, 5, map[string]string{
+	metrics := createBenchmarkDeltaExponentialHistogramMetrics(100, 5, map[string]string{
 		"attribute_tag": "attribute_value",
 	})
 
@@ -189,7 +188,7 @@ func BenchmarkMapDeltaExponentialHistogramMetrics100_5(b *testing.B) {
 }
 
 func BenchmarkMapDeltaExponentialHistogramMetrics1000_5(b *testing.B) {
-	metrics := createBenchmarkExponentialHistogramMetrics(1000, 5, map[string]string{
+	metrics := createBenchmarkDeltaExponentialHistogramMetrics(1000, 5, map[string]string{
 		"attribute_tag": "attribute_value",
 	})
 
@@ -197,7 +196,7 @@ func BenchmarkMapDeltaExponentialHistogramMetrics1000_5(b *testing.B) {
 }
 
 func BenchmarkMapDeltaExponentialHistogramMetrics10000_5(b *testing.B) {
-	metrics := createBenchmarkExponentialHistogramMetrics(10000, 5, map[string]string{
+	metrics := createBenchmarkDeltaExponentialHistogramMetrics(10000, 5, map[string]string{
 		"attribute_tag": "attribute_value",
 	})
 
@@ -205,7 +204,7 @@ func BenchmarkMapDeltaExponentialHistogramMetrics10000_5(b *testing.B) {
 }
 
 func BenchmarkMapDeltaExponentialHistogramMetrics1_50(b *testing.B) {
-	metrics := createBenchmarkExponentialHistogramMetrics(1, 50, map[string]string{
+	metrics := createBenchmarkDeltaExponentialHistogramMetrics(1, 50, map[string]string{
 		"attribute_tag": "attribute_value",
 	})
 
@@ -213,7 +212,7 @@ func BenchmarkMapDeltaExponentialHistogramMetrics1_50(b *testing.B) {
 }
 
 func BenchmarkMapDeltaExponentialHistogramMetrics10_50(b *testing.B) {
-	metrics := createBenchmarkExponentialHistogramMetrics(10, 50, map[string]string{
+	metrics := createBenchmarkDeltaExponentialHistogramMetrics(10, 50, map[string]string{
 		"attribute_tag": "attribute_value",
 	})
 
@@ -221,7 +220,7 @@ func BenchmarkMapDeltaExponentialHistogramMetrics10_50(b *testing.B) {
 }
 
 func BenchmarkMapDeltaExponentialHistogramMetrics100_50(b *testing.B) {
-	metrics := createBenchmarkExponentialHistogramMetrics(100, 50, map[string]string{
+	metrics := createBenchmarkDeltaExponentialHistogramMetrics(100, 50, map[string]string{
 		"attribute_tag": "attribute_value",
 	})
 
@@ -229,7 +228,7 @@ func BenchmarkMapDeltaExponentialHistogramMetrics100_50(b *testing.B) {
 }
 
 func BenchmarkMapDeltaExponentialHistogramMetrics1000_50(b *testing.B) {
-	metrics := createBenchmarkExponentialHistogramMetrics(1000, 50, map[string]string{
+	metrics := createBenchmarkDeltaExponentialHistogramMetrics(1000, 50, map[string]string{
 		"attribute_tag": "attribute_value",
 	})
 
@@ -237,7 +236,7 @@ func BenchmarkMapDeltaExponentialHistogramMetrics1000_50(b *testing.B) {
 }
 
 func BenchmarkMapDeltaExponentialHistogramMetrics10000_50(b *testing.B) {
-	metrics := createBenchmarkExponentialHistogramMetrics(10000, 50, map[string]string{
+	metrics := createBenchmarkDeltaExponentialHistogramMetrics(10000, 50, map[string]string{
 		"attribute_tag": "attribute_value",
 	})
 
@@ -245,7 +244,7 @@ func BenchmarkMapDeltaExponentialHistogramMetrics10000_50(b *testing.B) {
 }
 
 func BenchmarkMapDeltaExponentialHistogramMetrics1_500(b *testing.B) {
-	metrics := createBenchmarkExponentialHistogramMetrics(1, 500, map[string]string{
+	metrics := createBenchmarkDeltaExponentialHistogramMetrics(1, 500, map[string]string{
 		"attribute_tag": "attribute_value",
 	})
 
@@ -253,7 +252,7 @@ func BenchmarkMapDeltaExponentialHistogramMetrics1_500(b *testing.B) {
 }
 
 func BenchmarkMapDeltaExponentialHistogramMetrics10_500(b *testing.B) {
-	metrics := createBenchmarkExponentialHistogramMetrics(10, 500, map[string]string{
+	metrics := createBenchmarkDeltaExponentialHistogramMetrics(10, 500, map[string]string{
 		"attribute_tag": "attribute_value",
 	})
 
@@ -261,7 +260,7 @@ func BenchmarkMapDeltaExponentialHistogramMetrics10_500(b *testing.B) {
 }
 
 func BenchmarkMapDeltaExponentialHistogramMetrics100_500(b *testing.B) {
-	metrics := createBenchmarkExponentialHistogramMetrics(100, 500, map[string]string{
+	metrics := createBenchmarkDeltaExponentialHistogramMetrics(100, 500, map[string]string{
 		"attribute_tag": "attribute_value",
 	})
 
@@ -269,7 +268,7 @@ func BenchmarkMapDeltaExponentialHistogramMetrics100_500(b *testing.B) {
 }
 
 func BenchmarkMapDeltaExponentialHistogramMetrics1000_500(b *testing.B) {
-	metrics := createBenchmarkExponentialHistogramMetrics(1000, 500, map[string]string{
+	metrics := createBenchmarkDeltaExponentialHistogramMetrics(1000, 500, map[string]string{
 		"attribute_tag": "attribute_value",
 	})
 
@@ -277,7 +276,7 @@ func BenchmarkMapDeltaExponentialHistogramMetrics1000_500(b *testing.B) {
 }
 
 func BenchmarkMapDeltaExponentialHistogramMetrics10000_500(b *testing.B) {
-	metrics := createBenchmarkExponentialHistogramMetrics(10000, 500, map[string]string{
+	metrics := createBenchmarkDeltaExponentialHistogramMetrics(10000, 500, map[string]string{
 		"attribute_tag": "attribute_value",
 	})
 
@@ -285,7 +284,7 @@ func BenchmarkMapDeltaExponentialHistogramMetrics10000_500(b *testing.B) {
 }
 
 func BenchmarkMapDeltaExponentialHistogramMetrics1_5000(b *testing.B) {
-	metrics := createBenchmarkExponentialHistogramMetrics(1, 5000, map[string]string{
+	metrics := createBenchmarkDeltaExponentialHistogramMetrics(1, 5000, map[string]string{
 		"attribute_tag": "attribute_value",
 	})
 
@@ -293,7 +292,7 @@ func BenchmarkMapDeltaExponentialHistogramMetrics1_5000(b *testing.B) {
 }
 
 func BenchmarkMapDeltaExponentialHistogramMetrics10_5000(b *testing.B) {
-	metrics := createBenchmarkExponentialHistogramMetrics(10, 5000, map[string]string{
+	metrics := createBenchmarkDeltaExponentialHistogramMetrics(10, 5000, map[string]string{
 		"attribute_tag": "attribute_value",
 	})
 
@@ -301,7 +300,7 @@ func BenchmarkMapDeltaExponentialHistogramMetrics10_5000(b *testing.B) {
 }
 
 func BenchmarkMapDeltaExponentialHistogramMetrics100_5000(b *testing.B) {
-	metrics := createBenchmarkExponentialHistogramMetrics(100, 5000, map[string]string{
+	metrics := createBenchmarkDeltaExponentialHistogramMetrics(100, 5000, map[string]string{
 		"attribute_tag": "attribute_value",
 	})
 
@@ -309,7 +308,7 @@ func BenchmarkMapDeltaExponentialHistogramMetrics100_5000(b *testing.B) {
 }
 
 func BenchmarkMapDeltaExponentialHistogramMetrics1000_5000(b *testing.B) {
-	metrics := createBenchmarkExponentialHistogramMetrics(1000, 5000, map[string]string{
+	metrics := createBenchmarkDeltaExponentialHistogramMetrics(1000, 5000, map[string]string{
 		"attribute_tag": "attribute_value",
 	})
 
@@ -319,7 +318,7 @@ func BenchmarkMapDeltaExponentialHistogramMetrics1000_5000(b *testing.B) {
 func BenchmarkMapGaugeMetrics10(b *testing.B) {
 	metrics := createBenchmarkGaugeMetrics(10, map[string]string{
 		"attribute_tag": "attribute_value",
-	}, "test-name", "test-version")
+	})
 
 	benchmarkMapMetrics(metrics, b)
 }
@@ -327,7 +326,7 @@ func BenchmarkMapGaugeMetrics10(b *testing.B) {
 func BenchmarkMapGaugeMetrics100(b *testing.B) {
 	metrics := createBenchmarkGaugeMetrics(100, map[string]string{
 		"attribute_tag": "attribute_value",
-	}, "test-name", "test-version")
+	})
 
 	benchmarkMapMetrics(metrics, b)
 }
@@ -335,7 +334,7 @@ func BenchmarkMapGaugeMetrics100(b *testing.B) {
 func BenchmarkMapGaugeMetrics1000(b *testing.B) {
 	metrics := createBenchmarkGaugeMetrics(1000, map[string]string{
 		"attribute_tag": "attribute_value",
-	}, "test-name", "test-version")
+	})
 
 	benchmarkMapMetrics(metrics, b)
 }
@@ -343,7 +342,7 @@ func BenchmarkMapGaugeMetrics1000(b *testing.B) {
 func BenchmarkMapGaugeMetrics10000(b *testing.B) {
 	metrics := createBenchmarkGaugeMetrics(10000, map[string]string{
 		"attribute_tag": "attribute_value",
-	}, "test-name", "test-version")
+	})
 
 	benchmarkMapMetrics(metrics, b)
 }
@@ -351,7 +350,7 @@ func BenchmarkMapGaugeMetrics10000(b *testing.B) {
 func BenchmarkMapGaugeMetrics100000(b *testing.B) {
 	metrics := createBenchmarkGaugeMetrics(100000, map[string]string{
 		"attribute_tag": "attribute_value",
-	}, "test-name", "test-version")
+	})
 
 	benchmarkMapMetrics(metrics, b)
 }
@@ -359,7 +358,7 @@ func BenchmarkMapGaugeMetrics100000(b *testing.B) {
 func BenchmarkMapGaugeMetrics1000000(b *testing.B) {
 	metrics := createBenchmarkGaugeMetrics(1000000, map[string]string{
 		"attribute_tag": "attribute_value",
-	}, "test-name", "test-version")
+	})
 
 	benchmarkMapMetrics(metrics, b)
 }
@@ -367,7 +366,7 @@ func BenchmarkMapGaugeMetrics1000000(b *testing.B) {
 func BenchmarkMapGaugeMetrics10000000(b *testing.B) {
 	metrics := createBenchmarkGaugeMetrics(10000000, map[string]string{
 		"attribute_tag": "attribute_value",
-	}, "test-name", "test-version")
+	})
 
 	benchmarkMapMetrics(metrics, b)
 }
@@ -375,7 +374,7 @@ func BenchmarkMapGaugeMetrics10000000(b *testing.B) {
 func BenchmarkMapDeltaSumMetrics10(b *testing.B) {
 	metrics := createBenchmarkDeltaSumMetrics(10, map[string]string{
 		"attribute_tag": "attribute_value",
-	}, "test-name", "test-version")
+	})
 
 	benchmarkMapMetrics(metrics, b)
 }
@@ -383,7 +382,7 @@ func BenchmarkMapDeltaSumMetrics10(b *testing.B) {
 func BenchmarkMapDeltaSumMetrics100(b *testing.B) {
 	metrics := createBenchmarkDeltaSumMetrics(100, map[string]string{
 		"attribute_tag": "attribute_value",
-	}, "test-name", "test-version")
+	})
 
 	benchmarkMapMetrics(metrics, b)
 }
@@ -391,7 +390,7 @@ func BenchmarkMapDeltaSumMetrics100(b *testing.B) {
 func BenchmarkMapDeltaSumMetrics1000(b *testing.B) {
 	metrics := createBenchmarkDeltaSumMetrics(1000, map[string]string{
 		"attribute_tag": "attribute_value",
-	}, "test-name", "test-version")
+	})
 
 	benchmarkMapMetrics(metrics, b)
 }
@@ -399,7 +398,7 @@ func BenchmarkMapDeltaSumMetrics1000(b *testing.B) {
 func BenchmarkMapDeltaSumMetrics10000(b *testing.B) {
 	metrics := createBenchmarkDeltaSumMetrics(10000, map[string]string{
 		"attribute_tag": "attribute_value",
-	}, "test-name", "test-version")
+	})
 
 	benchmarkMapMetrics(metrics, b)
 }
@@ -407,7 +406,7 @@ func BenchmarkMapDeltaSumMetrics10000(b *testing.B) {
 func BenchmarkMapDeltaSumMetrics100000(b *testing.B) {
 	metrics := createBenchmarkDeltaSumMetrics(100000, map[string]string{
 		"attribute_tag": "attribute_value",
-	}, "test-name", "test-version")
+	})
 
 	benchmarkMapMetrics(metrics, b)
 }
@@ -415,7 +414,7 @@ func BenchmarkMapDeltaSumMetrics100000(b *testing.B) {
 func BenchmarkMapDeltaSumMetrics1000000(b *testing.B) {
 	metrics := createBenchmarkDeltaSumMetrics(1000000, map[string]string{
 		"attribute_tag": "attribute_value",
-	}, "test-name", "test-version")
+	})
 
 	benchmarkMapMetrics(metrics, b)
 }
@@ -423,7 +422,7 @@ func BenchmarkMapDeltaSumMetrics1000000(b *testing.B) {
 func BenchmarkMapDeltaSumMetrics10000000(b *testing.B) {
 	metrics := createBenchmarkDeltaSumMetrics(10000000, map[string]string{
 		"attribute_tag": "attribute_value",
-	}, "test-name", "test-version")
+	})
 
 	benchmarkMapMetrics(metrics, b)
 }
