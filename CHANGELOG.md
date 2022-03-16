@@ -7,6 +7,7 @@
 - `cmd/mdatagen`: Add resource attributes definition to metadata.yaml and move `pdata.Metrics` creation to the
   generated code (#5270) 
 - Add `make crosslink` target to ensure replace statements are included in `go.mod` for all transitive dependencies within repository (#8822)
+- `prometheusremotewriteexporter`: Translate resource attributes to the target info metric (#8493)
 
 ### 🛑 Breaking changes 🛑
 
