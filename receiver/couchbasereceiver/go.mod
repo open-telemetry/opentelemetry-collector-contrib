@@ -4,11 +4,11 @@ go 1.17
 
 require (
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.46.1-0.20220316072811-e214f7172b45
+	go.opentelemetry.io/collector v0.47.0
 	go.uber.org/multierr v1.8.0
 )
 
-require go.opentelemetry.io/collector/model v0.46.1-0.20220316072811-e214f7172b45
+require go.opentelemetry.io/collector/model v0.47.0
 
 require go.uber.org/zap v1.21.0
 

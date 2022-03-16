@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/gorilla/mux v1.8.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.46.1-0.20220316072811-e214f7172b45
+	go.opentelemetry.io/collector v0.47.0
 	go.uber.org/multierr v1.8.0
 	google.golang.org/grpc v1.45.0
 	google.golang.org/protobuf v1.27.1
@@ -35,7 +35,7 @@ require (
 	github.com/rs/cors v1.8.2 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/model v0.46.1-0.20220316072811-e214f7172b45 // indirect
+	go.opentelemetry.io/collector/model v0.47.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.29.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.29.0 // indirect
 	go.opentelemetry.io/otel v1.4.1 // indirect
