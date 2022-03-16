@@ -27,7 +27,7 @@ import (
 // Interface for a SAP HANA client. Implementation can be faked for testing.
 type client interface {
 	Connect() error
-	collectDataFromQuery(ctx context.Context, query string, columns []string) ([]map[string]string, error)
+	collectDataFromQuery(ctx context.Context, query monitoringQuery) ([]map[string]string, error)
 	Close() error
 }
 
@@ -76,20 +76,20 @@ func (c *sapHanaClient) Close() error {
 	return nil
 }
 
-func (c *sapHanaClient) collectDataFromQuery(ctx context.Context, query string, columns []string) ([]map[string]string, error) {
-	rows, err := c.client.QueryContext(ctx, query)
+func (c *sapHanaClient) collectDataFromQuery(ctx context.Context, query monitoringQuery) ([]map[string]string, error) {
+	rows, err := c.client.QueryContext(ctx, query.query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
 	errors := scrapererror.ScrapeErrors{}
-	metricStats := []map[string]string{}
+	data := []map[string]string{}
 	for rows.Next() {
 		rowFields := make([]interface{}, 0)
 
 		// Build a list of addresses that rows.Scan will load column data into
-		for range columns {
+		for range query.columns() {
 			var val string
 			rowFields = append(rowFields, &val)
 		}
@@ -99,7 +99,7 @@ func (c *sapHanaClient) collectDataFromQuery(ctx context.Context, query string, 
 		}
 
 		values := map[string]string{}
-		for _, label := range columns {
+		for _, label := range query.columns() {
 			v, err := convertInterfaceToString(rowFields[0])
 			if err != nil {
 				errors.AddPartial(0, err)
@@ -109,9 +109,9 @@ func (c *sapHanaClient) collectDataFromQuery(ctx context.Context, query string, 
 			rowFields = rowFields[1:]
 		}
 
-		metricStats = append(metricStats, values)
+		data = append(data, values)
 	}
-	return metricStats, errors.Combine()
+	return data, errors.Combine()
 }
 
 func convertInterfaceToString(input interface{}) (string, error) {

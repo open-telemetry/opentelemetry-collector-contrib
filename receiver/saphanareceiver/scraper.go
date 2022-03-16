@@ -115,7 +115,7 @@ func (m *monitoringQuery) columns() []string {
 }
 
 func (m *monitoringQuery) CollectMetrics(s *sapHanaScraper, ctx context.Context, client client, now pdata.Timestamp) error {
-	if rows, err := client.collectDataFromQuery(ctx, m.query, m.columns()); err != nil {
+	if rows, err := client.collectDataFromQuery(ctx, m); err != nil {
 		return err
 	} else {
 		for _, data := range rows {
@@ -151,6 +151,10 @@ func (s *sapHanaScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 	}
 
 	s.mb.Emit(ilms.Metrics())
+
+	if err := client.Close(); err != nil {
+		errs.AddPartial(0, err)
+	}
 
 	return metrics, errs.Combine()
 }
