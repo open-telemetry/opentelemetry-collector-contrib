@@ -143,10 +143,9 @@ func TestLoadConfig_Error(t *testing.T) {
 			name:    "AllErrors",
 			cfgFile: "config-allerrors.yaml",
 			expectedErr: fmt.Sprintf(
-				"%s: %s; %s; %s; %s; %s",
+				"%s: %s; %s; %s; %s",
 				errorPrefix,
 				negativeCollectionIntervalErr,
-				missingMetrics,
 				fmt.Sprintf(noCountersErr, "object"),
 				fmt.Sprintf(emptyInstanceErr, "object"),
 				noObjectNameErr,

@@ -126,6 +126,16 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 			expectedMetricPath: filepath.Join("testdata", "scraper", "sum_metric.json"),
 		},
 		{
+			name: "NoMetricDefinition",
+			cfg: &Config{
+				PerfCounters: []PerfCounterConfig{
+					{Object: "Memory", Counters: []CounterConfig{{Name: "Committed Bytes"}}},
+				},
+				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{CollectionInterval: time.Minute},
+			},
+			expectedMetricPath: filepath.Join("testdata", "scraper", "no_metric_def.json"),
+		},
+		{
 			name: "InvalidCounter",
 			cfg: &Config{
 				PerfCounters: []PerfCounterConfig{
