@@ -16,6 +16,7 @@ package saphanareceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -24,10 +25,12 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver/internal/metadata"
 )
 
 const (
-	typeStr = "sap_hana"
+	typeStr = "saphana"
 )
 
 // NewFactory creates a factory for SAP HANA receiver.
@@ -49,9 +52,11 @@ func createDefaultConfig() config.Receiver {
 			Insecure: true,
 		},
 		ScraperControllerSettings: scs,
-		//Metrics:                   metadata.DefaultMetricsSettings(),
+		Metrics:                   metadata.DefaultMetricsSettings(),
 	}
 }
+
+var errConfigNotSAPHANA = errors.New("config was not an sap hana receiver config")
 
 func createMetricsReceiver(
 	ctx context.Context,
@@ -59,8 +64,14 @@ func createMetricsReceiver(
 	cfg config.Receiver,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
-	//oCfg := cfg.(*Config)
+	c, ok := cfg.(*Config)
+	if !ok {
+		return nil, errConfigNotSAPHANA
+	}
+	scraper, err := newSapHanaScraper(set.TelemetrySettings, c)
+	if err != nil {
+		return nil, err
+	}
 
-	return nil, nil
-	//return scraperhelper.NewScraperControllerReceiver(&oCfg.ScraperControllerSettings, set, consumer, scraperhelper.AddScraper(scrp))
+	return scraperhelper.NewScraperControllerReceiver(&c.ScraperControllerSettings, set, consumer, scraperhelper.AddScraper(scraper))
 }
