@@ -111,9 +111,6 @@ func TestLoadConfig_Error(t *testing.T) {
 		noObjectNameErr               = "must specify object name for all perf counters"
 		noCountersErr                 = `perf counter for object "%s" does not specify any counters`
 		emptyInstanceErr              = `perf counter for object "%s" includes an empty instance`
-		undefinedMetricErr            = `perf counter for object "%s" includes an undefined metric`
-		missingMetrics                = `must specify at least one metric`
-		gaugeAndSum                   = `metric "%s" provides both a sum config and a gauge config`
 	)
 
 	testCases := []testCase{

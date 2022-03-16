@@ -44,9 +44,10 @@ type PerfCounterScraper interface {
 
 // scraper is the type that scrapes various host metrics.
 type scraper struct {
-	cfg      *Config
-	settings component.TelemetrySettings
-	counters []PerfCounterMetrics
+	cfg                     *Config
+	settings                component.TelemetrySettings
+	counters                []PerfCounterMetrics
+	undefinedMetricCounters []PerfCounterScraper
 }
 
 type PerfCounterMetrics struct {
@@ -72,6 +73,9 @@ func (s *scraper) start(context.Context, component.Host) error {
 				if err != nil {
 					errs = multierr.Append(errs, fmt.Errorf("counter %v: %w", counterPath, err))
 				} else {
+					if counterCfg.Metric == "" {
+						s.undefinedMetricCounters = append(s.undefinedMetricCounters, c)
+					}
 					s.counters = append(s.counters, PerfCounterMetrics{CounterScraper: c, Metric: counterCfg.Metric, Attributes: counterCfg.Attributes})
 				}
 			}
@@ -140,15 +144,37 @@ func (s *scraper) scrape(context.Context) (pdata.Metrics, error) {
 					errs = multierr.Append(errs, err)
 					continue
 				}
-				initializeMetricDps(metricCfg, builtMetric, now, counterValues, counter.Attributes)
+				initializeMetricDps(builtMetric, now, counterValues, counter.Attributes)
 			}
 		}
+	}
+
+	for _, counter := range s.undefinedMetricCounters {
+		counterValues, err := counter.ScrapeData()
+		if err != nil {
+			errs = multierr.Append(errs, err)
+			continue
+		}
+
+		builtMetric := metrics.AppendEmpty()
+		builtMetric.SetName(counter.Path())
+		builtMetric.SetDataType(pdata.MetricDataTypeGauge)
+		initializeMetricDps(builtMetric, now, counterValues, nil)
 	}
 
 	return md, errs
 }
 
-func initializeMetricDps(metricCfg MetricConfig, metric pdata.Metric, now pdata.Timestamp, counterValues []win_perf_counters.CounterValue, attributes map[string]string) {
+func initializeNumberDataPointAsDouble(dataPoint pdata.NumberDataPoint, now pdata.Timestamp, instanceLabel string, value float64) {
+	if instanceLabel != "" {
+		dataPoint.Attributes().InsertString(instanceLabelName, instanceLabel)
+	}
+
+	dataPoint.SetTimestamp(now)
+	dataPoint.SetDoubleVal(value)
+}
+
+func initializeMetricDps(metric pdata.Metric, now pdata.Timestamp, counterValues []win_perf_counters.CounterValue, attributes map[string]string) {
 	var dps pdata.NumberDataPointSlice
 
 	if metric.DataType() == pdata.MetricDataTypeGauge {
@@ -160,9 +186,12 @@ func initializeMetricDps(metricCfg MetricConfig, metric pdata.Metric, now pdata.
 	dps.EnsureCapacity(len(counterValues))
 	for _, counterValue := range counterValues {
 		dp := dps.AppendEmpty()
-		for attKey, attVal := range attributes {
-			dp.Attributes().InsertString(attKey, attVal)
+		if attributes != nil {
+			for attKey, attVal := range attributes {
+				dp.Attributes().InsertString(attKey, attVal)
+			}
 		}
+
 		if counterValue.InstanceName != "" {
 			dp.Attributes().InsertString(instanceLabelName, counterValue.InstanceName)
 		}

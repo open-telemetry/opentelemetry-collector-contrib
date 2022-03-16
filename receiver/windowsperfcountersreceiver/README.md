@@ -14,7 +14,13 @@ warning will be printed, but the application will not fail fast. It is expected
 that some performance counters may not exist on some systems due to different OS
 configuration.
 
+
+
 ## Configuration
+
+
+
+
 
 The collection interval and the list of performance counters to be scraped can
 be configured:
@@ -22,23 +28,23 @@ be configured:
 ```yaml
 windowsperfcounters:
   collection_interval: <duration> # default = "1m"
-  metric_metadata:
-  - metric_name: <metric name>
-    description: <description>
-    unit: <unit type>
-    gauge:
-  - metric_name: <metric name>
-    description: <description>
-    unit: <unit type>
-    sum:
-      aggregation: <cumulative or delta>
-      monotonic: <true or false>
+  metrics:
+    <metric name>:
+      description: <description>
+      unit: <unit type>
+      gauge:
+    <metric name>:
+      description: <description>
+      unit: <unit type>
+      sum:
+        aggregation: <cumulative or delta>
+        monotonic: <true or false>
   perfcounters:
     - object: <object name>
       instances: [<instance name>]*
       counters:
         - name: <counter name>
-          metric_name: <metric name>
+          metric: <metric name>
           attributes:
             <key>: <value>
 ```
@@ -64,40 +70,38 @@ you can configure multiple `windowsperfcounters` receivers with different
 ```yaml 
 receivers:
   windowsperfcounters/memory:
-    metric_metadata:
-      - metric_name: bytes.committed
+    metrics:
+      bytes.committed:
         description: the number of bytes committed to memory
         unit: By
         gauge:
-          value_type: int
     collection_interval: 30s
     perfcounters:
       - object: Memory
         counters:
           - name: Committed Bytes
-            metric_name: bytes.committed
+            metric: bytes.committed
 
   windowsperfcounters/processor:
     collection_interval: 1m
-    metric_metadata:
-      - metric_name: processor.time
+    metrics:
+      processor.time:
         description: active and idle time of the processor
         unit: "%"
         gauge:
-          value_type: double
     perfcounters:
       - object: "Processor"
         instances: "*"
         counters:
           - name: "% Processor Time"
-            metric_name: processor.time
+            metric: processor.time
             attributes:
               state: active
       - object: "Processor"
         instances: [1, 2]
         counters:
           - name: "% Idle Time"
-            metric_name: processor.time
+            metric: processor.time
             attributes:
               state: idle
 
@@ -109,7 +113,29 @@ service:
 
 ### Defining metric format
 
-To report metrics in the desired output format, build a metric the metric and reference it in the given counter with any applicable attributes.
+To report metrics in the desired output format, build a metric the metric and reference it in the given counter with any applicable attributes. Metrics will default to gauges if no other metric type is defined. 
+
+| Field Name  | Description                              | Value        | Default      |
+| --          | --                                       | --           | --           |
+| name        | The key for the metric.                  | string       | Counter Name |
+| description | definition of what the metric measures.  | string       |              |
+| unit        | what is being measured.                  | string       | `1`          |
+| sum         | representation of a sum metric.          | Sum Config   |              |
+| gauge       | representation of a gauge metric.        | Gauge Config |              |
+
+
+#### Sum Config
+
+| Field Name   | Description                                           | Value                           | Default |
+| --           | --                                                    | --                              | --      |
+| aggregation  | The type of aggregation temporality for the metric.   | [`cumulative` or `delta`]       |         |
+| monotonic    | whether or not the metric value can decrease.         | false                           |         |
+
+#### Gauge Config
+
+| Field Name   | Description                                           | Value                           | Default |
+| --           | --                                                    | --                              | --      |
+|||||
 
 e.g. To output the `Memory/Committed Bytes` counter as a metric with the name
 `bytes.committed`:
@@ -117,17 +143,18 @@ e.g. To output the `Memory/Committed Bytes` counter as a metric with the name
 ```yaml
 receivers:
   windowsperfcounters:
-    metric_metadata:
-    - metric_name: bytes.committed
-      description: the number of bytes committed to memory
-      unit: By
-      gauge:
-        value_type: int
+    metrics:
+      bytes.committed:
+        description: the number of bytes committed to memory
+        unit: By
+        gauge:
+          value_type: int
     collection_interval: 30s
     perfcounters:
     - object: Memory
       counters:
-        - Committed Bytes
+        - name: Committed Bytes
+          metric: bytes.committed
 
 service:
   pipelines:

@@ -69,10 +69,6 @@ func (c *Config) Validate() error {
 		errs = multierr.Append(errs, fmt.Errorf("must specify at least one perf counter"))
 	}
 
-	if len(c.MetricMetaData) == 0 {
-		errs = multierr.Append(errs, fmt.Errorf("must specify at least one metric"))
-	}
-
 	for name, metric := range c.MetricMetaData {
 		if metric.Unit == "" {
 			metric.Unit = "1"
@@ -99,6 +95,10 @@ func (c *Config) Validate() error {
 		}
 
 		for _, counter := range pc.Counters {
+			if counter.Metric == "" {
+				continue
+			}
+
 			foundMatchingMetric := false
 			for name := range c.MetricMetaData {
 				if counter.Metric == name {
