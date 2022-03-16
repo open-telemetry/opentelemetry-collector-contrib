@@ -41,7 +41,7 @@ type testCase struct {
 func runIndividualTestCase(t *testing.T, tt testCase, ap *AttrProc) {
 	t.Run(tt.name, func(t *testing.T) {
 		attrMap := pdata.NewAttributeMapFromMap(tt.inputAttributes)
-		ap.Process(context.TODO(), attrMap)
+		ap.Process(context.TODO(), nil, attrMap)
 		attrMap.Sort()
 		require.Equal(t, pdata.NewAttributeMapFromMap(tt.expectedAttributes).Sort(), attrMap)
 	})
@@ -930,7 +930,7 @@ func TestFromContext(t *testing.T) {
 			require.Nil(t, err)
 			require.NotNil(t, ap)
 			attrMap := pdata.NewAttributeMap()
-			ap.Process(tc.ctx, attrMap)
+			ap.Process(tc.ctx, nil, attrMap)
 			attrMap.Sort()
 			require.Equal(t, pdata.NewAttributeMapFromMap(tc.expectedAttributes).Sort(), attrMap)
 		})
