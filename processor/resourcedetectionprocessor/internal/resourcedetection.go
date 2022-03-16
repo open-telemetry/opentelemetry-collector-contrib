@@ -62,16 +62,14 @@ func (f *ResourceProviderFactory) CreateResourceProvider(
 		return nil, err
 	}
 
-	attributesMap := make(map[string]struct{}, len(attributes))
+	attributesToKeep := make(map[string]struct{})
 	if attributes != nil && len(attributes) > 0 {
 		for _, attribute := range attributes {
-			attributesMap[attribute] = struct{}{}
+			attributesToKeep[attribute] = struct{}{}
 		}
-	} else {
-		attributesMap = nil
 	}
 
-	provider := NewResourceProvider(params.Logger, timeout, attributesMap, detectors...)
+	provider := NewResourceProvider(params.Logger, timeout, attributesToKeep, detectors...)
 	return provider, nil
 }
 
@@ -100,7 +98,7 @@ type ResourceProvider struct {
 	detectors        []Detector
 	detectedResource *resourceResult
 	once             sync.Once
-	attributes       map[string]struct{}
+	attributesToKeep map[string]struct{}
 }
 
 type resourceResult struct {
@@ -109,12 +107,12 @@ type resourceResult struct {
 	err       error
 }
 
-func NewResourceProvider(logger *zap.Logger, timeout time.Duration, attributes map[string]struct{}, detectors ...Detector) *ResourceProvider {
+func NewResourceProvider(logger *zap.Logger, timeout time.Duration, attributesToKeep map[string]struct{}, detectors ...Detector) *ResourceProvider {
 	return &ResourceProvider{
-		logger:     logger,
-		timeout:    timeout,
-		detectors:  detectors,
-		attributes: attributes,
+		logger:           logger,
+		timeout:          timeout,
+		detectors:        detectors,
+		attributesToKeep: attributesToKeep,
 	}
 }
 
@@ -143,11 +141,11 @@ func (p *ResourceProvider) detectResource(ctx context.Context) {
 			p.logger.Warn("failed to detect resource", zap.Error(err))
 		} else {
 			mergedSchemaURL = MergeSchemaURL(mergedSchemaURL, schemaURL)
-			FilterAttributes(res.Attributes(), p.attributes)
 			MergeResource(res, r, false)
 		}
-
 	}
+
+	FilterAttributes(res.Attributes(), p.attributesToKeep)
 
 	p.logger.Info("detected resource information", zap.Any("resource", AttributesToMap(res.Attributes())))
 
@@ -208,7 +206,7 @@ func MergeSchemaURL(currentSchemaURL string, newSchemaURL string) string {
 }
 
 func FilterAttributes(am pdata.AttributeMap, attributesToKeep map[string]struct{}) {
-	if attributesToKeep != nil {
+	if attributesToKeep != nil && len(attributesToKeep) > 0 {
 		am.RemoveIf(func(k string, v pdata.AttributeValue) bool {
 			_, keep := attributesToKeep[k]
 			return !keep

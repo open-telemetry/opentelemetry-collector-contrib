@@ -52,6 +52,7 @@ func TestDetect(t *testing.T) {
 		name              string
 		detectedResources []pdata.Resource
 		expectedResource  pdata.Resource
+		attributes        []string
 	}{
 		{
 			name: "Detect three resources",
@@ -61,6 +62,7 @@ func TestDetect(t *testing.T) {
 				NewResource(map[string]interface{}{"a": "12", "c": "3"}),
 			},
 			expectedResource: NewResource(map[string]interface{}{"a": "1", "b": "2", "c": "3"}),
+			attributes:       nil,
 		}, {
 			name: "Detect empty resources",
 			detectedResources: []pdata.Resource{
@@ -69,6 +71,7 @@ func TestDetect(t *testing.T) {
 				NewResource(map[string]interface{}{"a": "11"}),
 			},
 			expectedResource: NewResource(map[string]interface{}{"a": "1", "b": "2"}),
+			attributes:       nil,
 		}, {
 			name: "Detect non-string resources",
 			detectedResources: []pdata.Resource{
@@ -77,6 +80,16 @@ func TestDetect(t *testing.T) {
 				NewResource(map[string]interface{}{"a": "11"}),
 			},
 			expectedResource: NewResource(map[string]interface{}{"a": "11", "bool": true, "int": int64(2), "double": 0.5}),
+			attributes:       nil,
+		}, {
+			name: "Filter to one attribute",
+			detectedResources: []pdata.Resource{
+				NewResource(map[string]interface{}{"a": "1", "b": "2"}),
+				NewResource(map[string]interface{}{"a": "11", "c": "3"}),
+				NewResource(map[string]interface{}{"a": "12", "c": "3"}),
+			},
+			expectedResource: NewResource(map[string]interface{}{"a": "1"}),
+			attributes:       []string{"a"},
 		},
 	}
 
@@ -97,7 +110,7 @@ func TestDetect(t *testing.T) {
 			}
 
 			f := NewProviderFactory(mockDetectors)
-			p, err := f.CreateResourceProvider(componenttest.NewNopProcessorCreateSettings(), time.Second, nil, &mockDetectorConfig{}, mockDetectorTypes...)
+			p, err := f.CreateResourceProvider(componenttest.NewNopProcessorCreateSettings(), time.Second, tt.attributes, &mockDetectorConfig{}, mockDetectorTypes...)
 			require.NoError(t, err)
 
 			got, _, err := p.Get(context.Background(), http.DefaultClient)
@@ -233,6 +246,87 @@ func TestDetectResource_Parallel(t *testing.T) {
 	md1.AssertNumberOfCalls(t, "Detect", 1)
 	md2.AssertNumberOfCalls(t, "Detect", 1)
 	md3.AssertNumberOfCalls(t, "Detect", 1)
+}
+
+func TestFilterAttributes_Match(t *testing.T) {
+	m := map[string]struct{}{
+		"host.name": {},
+		"host.id":   {},
+	}
+	attr := pdata.NewAttributeMap()
+	attr.InsertString("host.name", "test")
+	attr.InsertString("host.id", "test")
+	attr.InsertString("drop.this", "test")
+
+	FilterAttributes(attr, m)
+
+	_, ok := attr.Get("host.name")
+	assert.True(t, ok)
+
+	_, ok = attr.Get("host.id")
+	assert.True(t, ok)
+
+	_, ok = attr.Get("drop.this")
+	assert.False(t, ok)
+}
+
+func TestFilterAttributes_NoMatch(t *testing.T) {
+	m := map[string]struct{}{
+		"cloud.region": {},
+	}
+	attr := pdata.NewAttributeMap()
+	attr.InsertString("host.name", "test")
+	attr.InsertString("host.id", "test")
+	attr.InsertString("drop.this", "test")
+
+	FilterAttributes(attr, m)
+
+	_, ok := attr.Get("host.name")
+	assert.False(t, ok)
+
+	_, ok = attr.Get("host.id")
+	assert.False(t, ok)
+
+	_, ok = attr.Get("drop.this")
+	assert.False(t, ok)
+}
+
+func TestFilterAttributes_NilAttributes(t *testing.T) {
+	var m map[string]struct{}
+	attr := pdata.NewAttributeMap()
+	attr.InsertString("host.name", "test")
+	attr.InsertString("host.id", "test")
+	attr.InsertString("drop.this", "test")
+
+	FilterAttributes(attr, m)
+
+	_, ok := attr.Get("host.name")
+	assert.True(t, ok)
+
+	_, ok = attr.Get("host.id")
+	assert.True(t, ok)
+
+	_, ok = attr.Get("drop.this")
+	assert.True(t, ok)
+}
+
+func TestFilterAttributes_NoAttributes(t *testing.T) {
+	m := make(map[string]struct{})
+	attr := pdata.NewAttributeMap()
+	attr.InsertString("host.name", "test")
+	attr.InsertString("host.id", "test")
+	attr.InsertString("drop.this", "test")
+
+	FilterAttributes(attr, m)
+
+	_, ok := attr.Get("host.name")
+	assert.True(t, ok)
+
+	_, ok = attr.Get("host.id")
+	assert.True(t, ok)
+
+	_, ok = attr.Get("drop.this")
+	assert.True(t, ok)
 }
 
 func TestAttributesToMap(t *testing.T) {
