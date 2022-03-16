@@ -97,7 +97,7 @@ func TestDetect(t *testing.T) {
 			}
 
 			f := NewProviderFactory(mockDetectors)
-			p, err := f.CreateResourceProvider(componenttest.NewNopProcessorCreateSettings(), time.Second, &mockDetectorConfig{}, mockDetectorTypes...)
+			p, err := f.CreateResourceProvider(componenttest.NewNopProcessorCreateSettings(), time.Second, nil, &mockDetectorConfig{}, mockDetectorTypes...)
 			require.NoError(t, err)
 
 			got, _, err := p.Get(context.Background(), http.DefaultClient)
@@ -113,7 +113,7 @@ func TestDetect(t *testing.T) {
 func TestDetectResource_InvalidDetectorType(t *testing.T) {
 	mockDetectorKey := DetectorType("mock")
 	p := NewProviderFactory(map[DetectorType]DetectorFactory{})
-	_, err := p.CreateResourceProvider(componenttest.NewNopProcessorCreateSettings(), time.Second, &mockDetectorConfig{}, mockDetectorKey)
+	_, err := p.CreateResourceProvider(componenttest.NewNopProcessorCreateSettings(), time.Second, nil, &mockDetectorConfig{}, mockDetectorKey)
 	require.EqualError(t, err, fmt.Sprintf("invalid detector key: %v", mockDetectorKey))
 }
 
@@ -124,7 +124,7 @@ func TestDetectResource_DetectoryFactoryError(t *testing.T) {
 			return nil, errors.New("creation failed")
 		},
 	})
-	_, err := p.CreateResourceProvider(componenttest.NewNopProcessorCreateSettings(), time.Second, &mockDetectorConfig{}, mockDetectorKey)
+	_, err := p.CreateResourceProvider(componenttest.NewNopProcessorCreateSettings(), time.Second, nil, &mockDetectorConfig{}, mockDetectorKey)
 	require.EqualError(t, err, fmt.Sprintf("failed creating detector type %q: %v", mockDetectorKey, "creation failed"))
 }
 
@@ -135,7 +135,7 @@ func TestDetectResource_Error(t *testing.T) {
 	md2 := &MockDetector{}
 	md2.On("Detect").Return(pdata.NewResource(), errors.New("err1"))
 
-	p := NewResourceProvider(zap.NewNop(), time.Second, md1, md2)
+	p := NewResourceProvider(zap.NewNop(), time.Second, nil, md1, md2)
 	_, _, err := p.Get(context.Background(), http.DefaultClient)
 	require.NoError(t, err)
 }
@@ -205,7 +205,7 @@ func TestDetectResource_Parallel(t *testing.T) {
 	expectedResource := NewResource(map[string]interface{}{"a": "1", "b": "2", "c": "3"})
 	expectedResource.Attributes().Sort()
 
-	p := NewResourceProvider(zap.NewNop(), time.Second, md1, md2, md3)
+	p := NewResourceProvider(zap.NewNop(), time.Second, nil, md1, md2, md3)
 
 	// call p.Get multiple times
 	wg := &sync.WaitGroup{}

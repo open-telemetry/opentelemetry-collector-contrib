@@ -54,6 +54,7 @@ func NewProviderFactory(detectors map[DetectorType]DetectorFactory) *ResourcePro
 func (f *ResourceProviderFactory) CreateResourceProvider(
 	params component.ProcessorCreateSettings,
 	timeout time.Duration,
+	attributes []string,
 	detectorConfigs ResourceDetectorConfig,
 	detectorTypes ...DetectorType) (*ResourceProvider, error) {
 	detectors, err := f.getDetectors(params, detectorConfigs, detectorTypes)
@@ -61,7 +62,16 @@ func (f *ResourceProviderFactory) CreateResourceProvider(
 		return nil, err
 	}
 
-	provider := NewResourceProvider(params.Logger, timeout, detectors...)
+	attributesMap := make(map[string]struct{}, len(attributes))
+	if attributes != nil && len(attributes) > 0 {
+		for _, attribute := range attributes {
+			attributesMap[attribute] = struct{}{}
+		}
+	} else {
+		attributesMap = nil
+	}
+
+	provider := NewResourceProvider(params.Logger, timeout, attributesMap, detectors...)
 	return provider, nil
 }
 
@@ -90,6 +100,7 @@ type ResourceProvider struct {
 	detectors        []Detector
 	detectedResource *resourceResult
 	once             sync.Once
+	attributes       map[string]struct{}
 }
 
 type resourceResult struct {
@@ -98,11 +109,12 @@ type resourceResult struct {
 	err       error
 }
 
-func NewResourceProvider(logger *zap.Logger, timeout time.Duration, detectors ...Detector) *ResourceProvider {
+func NewResourceProvider(logger *zap.Logger, timeout time.Duration, attributes map[string]struct{}, detectors ...Detector) *ResourceProvider {
 	return &ResourceProvider{
-		logger:    logger,
-		timeout:   timeout,
-		detectors: detectors,
+		logger:     logger,
+		timeout:    timeout,
+		detectors:  detectors,
+		attributes: attributes,
 	}
 }
 
@@ -131,6 +143,7 @@ func (p *ResourceProvider) detectResource(ctx context.Context) {
 			p.logger.Warn("failed to detect resource", zap.Error(err))
 		} else {
 			mergedSchemaURL = MergeSchemaURL(mergedSchemaURL, schemaURL)
+			FilterAttributes(res.Attributes(), p.attributes)
 			MergeResource(res, r, false)
 		}
 
@@ -192,6 +205,15 @@ func MergeSchemaURL(currentSchemaURL string, newSchemaURL string) string {
 	// TODO: handle the case when the schema URLs are different by performing
 	// schema conversion. For now we simply ignore the new schema URL.
 	return currentSchemaURL
+}
+
+func FilterAttributes(am pdata.AttributeMap, attributesToKeep map[string]struct{}) {
+	if attributesToKeep != nil {
+		am.RemoveIf(func(k string, v pdata.AttributeValue) bool {
+			_, keep := attributesToKeep[k]
+			return !keep
+		})
+	}
 }
 
 func MergeResource(to, from pdata.Resource, overrideTo bool) {
