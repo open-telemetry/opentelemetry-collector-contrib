@@ -148,9 +148,8 @@ func (s *sapHanaScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 		if err := query.CollectMetrics(s, ctx, client, now); err != nil {
 			errs.AddPartial(len(query.orderedStats), err)
 		}
+		s.mb.Emit(ilms.Metrics())
 	}
-
-	s.mb.Emit(ilms.Metrics())
 
 	if err := client.Close(); err != nil {
 		errs.AddPartial(0, err)

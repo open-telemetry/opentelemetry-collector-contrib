@@ -27,7 +27,7 @@ import (
 // Interface for a SAP HANA client. Implementation can be faked for testing.
 type client interface {
 	Connect() error
-	collectDataFromQuery(ctx context.Context, query monitoringQuery) ([]map[string]string, error)
+	collectDataFromQuery(ctx context.Context, query *monitoringQuery) ([]map[string]string, error)
 	Close() error
 }
 
@@ -76,7 +76,7 @@ func (c *sapHanaClient) Close() error {
 	return nil
 }
 
-func (c *sapHanaClient) collectDataFromQuery(ctx context.Context, query monitoringQuery) ([]map[string]string, error) {
+func (c *sapHanaClient) collectDataFromQuery(ctx context.Context, query *monitoringQuery) ([]map[string]string, error) {
 	rows, err := c.client.QueryContext(ctx, query.query)
 	if err != nil {
 		return nil, err
