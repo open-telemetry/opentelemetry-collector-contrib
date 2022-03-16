@@ -54,7 +54,8 @@ func convertValue(logger *zap.Logger, key string, to string, v pdata.AttributeVa
 			} else {
 				logger.Debug("String could not be converted to int", zap.String("key", key), zap.String("value", s), zap.Error(err))
 			}
-		default: // leave original value
+		default:
+			logger.Debug("Unable to convert type", zap.String("key", key), zap.String("from", v.Type().String()), zap.String("to", intConversionTarget))
 		}
 	case doubleConversionTarget:
 		switch v.Type() {
@@ -75,7 +76,8 @@ func convertValue(logger *zap.Logger, key string, to string, v pdata.AttributeVa
 			} else {
 				logger.Debug("String could not be converted to double", zap.String("key", key), zap.String("value", s), zap.Error(err))
 			}
-		default: // leave original value
+		default:
+			logger.Debug("Unable to convert type", zap.String("key", key), zap.String("from", v.Type().String()), zap.String("to", doubleConversionTarget))
 		}
 	default: // No-op
 	}
