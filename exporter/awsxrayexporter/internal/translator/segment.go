@@ -318,7 +318,7 @@ func timestampToFloatSeconds(ts pdata.Timestamp) float64 {
 	return float64(ts) / float64(time.Second)
 }
 
-func makeXRayAttributes(attributes map[string]pdata.AttributeValue, resource pdata.Resource, storeResource bool, indexedAttrs []string, indexAllAttrs bool) (
+func makeXRayAttributes(attributes map[string]pdata.Value, resource pdata.Resource, storeResource bool, indexedAttrs []string, indexAllAttrs bool) (
 	string, map[string]interface{}, map[string]map[string]interface{}) {
 	var (
 		annotations = map[string]interface{}{}
@@ -345,7 +345,7 @@ func makeXRayAttributes(attributes map[string]pdata.AttributeValue, resource pda
 	}
 
 	if storeResource {
-		resource.Attributes().Range(func(key string, value pdata.AttributeValue) bool {
+		resource.Attributes().Range(func(key string, value pdata.Value) bool {
 			key = "otel.resource." + key
 			annoVal := annotationValue(value)
 			indexed := indexAllAttrs || indexedKeys[key]
@@ -394,38 +394,38 @@ func makeXRayAttributes(attributes map[string]pdata.AttributeValue, resource pda
 	return user, annotations, metadata
 }
 
-func annotationValue(value pdata.AttributeValue) interface{} {
+func annotationValue(value pdata.Value) interface{} {
 	switch value.Type() {
-	case pdata.AttributeValueTypeString:
+	case pdata.ValueTypeString:
 		return value.StringVal()
-	case pdata.AttributeValueTypeInt:
+	case pdata.ValueTypeInt:
 		return value.IntVal()
-	case pdata.AttributeValueTypeDouble:
+	case pdata.ValueTypeDouble:
 		return value.DoubleVal()
-	case pdata.AttributeValueTypeBool:
+	case pdata.ValueTypeBool:
 		return value.BoolVal()
 	}
 	return nil
 }
 
-func metadataValue(value pdata.AttributeValue) interface{} {
+func metadataValue(value pdata.Value) interface{} {
 	switch value.Type() {
-	case pdata.AttributeValueTypeString:
+	case pdata.ValueTypeString:
 		return value.StringVal()
-	case pdata.AttributeValueTypeInt:
+	case pdata.ValueTypeInt:
 		return value.IntVal()
-	case pdata.AttributeValueTypeDouble:
+	case pdata.ValueTypeDouble:
 		return value.DoubleVal()
-	case pdata.AttributeValueTypeBool:
+	case pdata.ValueTypeBool:
 		return value.BoolVal()
-	case pdata.AttributeValueTypeMap:
+	case pdata.ValueTypeMap:
 		converted := map[string]interface{}{}
-		value.MapVal().Range(func(key string, value pdata.AttributeValue) bool {
+		value.MapVal().Range(func(key string, value pdata.Value) bool {
 			converted[key] = metadataValue(value)
 			return true
 		})
 		return converted
-	case pdata.AttributeValueTypeArray:
+	case pdata.ValueTypeArray:
 		arrVal := value.SliceVal()
 		converted := make([]interface{}, arrVal.Len())
 		for i := 0; i < arrVal.Len(); i++ {

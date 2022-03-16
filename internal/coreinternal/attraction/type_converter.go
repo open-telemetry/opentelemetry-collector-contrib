@@ -27,26 +27,26 @@ const (
 	doubleConversionTarget = "double"
 )
 
-func convertValue(logger *zap.Logger, key string, to string, v pdata.AttributeValue) {
+func convertValue(logger *zap.Logger, key string, to string, v pdata.Value) {
 	switch to {
 	case stringConversionTarget:
 		switch v.Type() {
-		case pdata.AttributeValueTypeString:
+		case pdata.ValueTypeString:
 		default:
 			v.SetStringVal(v.AsString())
 		}
 	case intConversionTarget:
 		switch v.Type() {
-		case pdata.AttributeValueTypeInt:
-		case pdata.AttributeValueTypeDouble:
+		case pdata.ValueTypeInt:
+		case pdata.ValueTypeDouble:
 			v.SetIntVal(int64(v.DoubleVal()))
-		case pdata.AttributeValueTypeBool:
+		case pdata.ValueTypeBool:
 			if v.BoolVal() {
 				v.SetIntVal(1)
 			} else {
 				v.SetIntVal(0)
 			}
-		case pdata.AttributeValueTypeString:
+		case pdata.ValueTypeString:
 			s := v.StringVal()
 			n, err := strconv.ParseInt(s, 10, 64)
 			if err == nil {
@@ -59,16 +59,16 @@ func convertValue(logger *zap.Logger, key string, to string, v pdata.AttributeVa
 		}
 	case doubleConversionTarget:
 		switch v.Type() {
-		case pdata.AttributeValueTypeInt:
+		case pdata.ValueTypeInt:
 			v.SetDoubleVal(float64(v.IntVal()))
-		case pdata.AttributeValueTypeDouble:
-		case pdata.AttributeValueTypeBool:
+		case pdata.ValueTypeDouble:
+		case pdata.ValueTypeBool:
 			if v.BoolVal() {
 				v.SetDoubleVal(1)
 			} else {
 				v.SetDoubleVal(0)
 			}
-		case pdata.AttributeValueTypeString:
+		case pdata.ValueTypeString:
 			s := v.StringVal()
 			n, err := strconv.ParseFloat(s, 64)
 			if err == nil {

@@ -34,8 +34,8 @@ import (
 // Common structure for all the Tests
 type metricTestCase struct {
 	name               string
-	inputAttributes    map[string]pdata.AttributeValue
-	expectedAttributes map[string]pdata.AttributeValue
+	inputAttributes    map[string]pdata.Value
+	expectedAttributes map[string]pdata.Value
 }
 
 // runIndividualMetricTestCase is the common logic of passing metric data through a configured attributes processor.
@@ -49,7 +49,7 @@ func runIndividualMetricTestCase(t *testing.T, mt metricTestCase, mp component.M
 	})
 }
 
-func generateMetricData(resourceName string, attrs map[string]pdata.AttributeValue) pdata.Metrics {
+func generateMetricData(resourceName string, attrs map[string]pdata.Value) pdata.Metrics {
 	md := pdata.NewMetrics()
 	res := md.ResourceMetrics().AppendEmpty()
 	res.Resource().Attributes().InsertString("name", resourceName)
@@ -189,33 +189,33 @@ func TestAttributes_FilterMetrics(t *testing.T) {
 	testCases := []metricTestCase{
 		{
 			name:            "apply processor",
-			inputAttributes: map[string]pdata.AttributeValue{},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"attribute1": pdata.NewAttributeValueInt(123),
+			inputAttributes: map[string]pdata.Value{},
+			expectedAttributes: map[string]pdata.Value{
+				"attribute1": pdata.NewValueInt(123),
 			},
 		},
 		{
 			name: "apply processor with different value for exclude property",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"NoModification": pdata.NewAttributeValueBool(false),
+			inputAttributes: map[string]pdata.Value{
+				"NoModification": pdata.NewValueBool(false),
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"attribute1":     pdata.NewAttributeValueInt(123),
-				"NoModification": pdata.NewAttributeValueBool(false),
+			expectedAttributes: map[string]pdata.Value{
+				"attribute1":     pdata.NewValueInt(123),
+				"NoModification": pdata.NewValueBool(false),
 			},
 		},
 		{
 			name:               "incorrect name for include property",
-			inputAttributes:    map[string]pdata.AttributeValue{},
-			expectedAttributes: map[string]pdata.AttributeValue{},
+			inputAttributes:    map[string]pdata.Value{},
+			expectedAttributes: map[string]pdata.Value{},
 		},
 		{
 			name: "attribute match for exclude property",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"NoModification": pdata.NewAttributeValueBool(true),
+			inputAttributes: map[string]pdata.Value{
+				"NoModification": pdata.NewValueBool(true),
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"NoModification": pdata.NewAttributeValueBool(true),
+			expectedAttributes: map[string]pdata.Value{
+				"NoModification": pdata.NewValueBool(true),
 			},
 		},
 	}
@@ -249,38 +249,38 @@ func TestAttributes_FilterMetricsByNameStrict(t *testing.T) {
 	testCases := []metricTestCase{
 		{
 			name:            "apply",
-			inputAttributes: map[string]pdata.AttributeValue{},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"attribute1": pdata.NewAttributeValueInt(123),
+			inputAttributes: map[string]pdata.Value{},
+			expectedAttributes: map[string]pdata.Value{
+				"attribute1": pdata.NewValueInt(123),
 			},
 		},
 		{
 			name: "apply",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"NoModification": pdata.NewAttributeValueBool(false),
+			inputAttributes: map[string]pdata.Value{
+				"NoModification": pdata.NewValueBool(false),
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"attribute1":     pdata.NewAttributeValueInt(123),
-				"NoModification": pdata.NewAttributeValueBool(false),
+			expectedAttributes: map[string]pdata.Value{
+				"attribute1":     pdata.NewValueInt(123),
+				"NoModification": pdata.NewValueBool(false),
 			},
 		},
 		{
 			name:               "incorrect_metric_name",
-			inputAttributes:    map[string]pdata.AttributeValue{},
-			expectedAttributes: map[string]pdata.AttributeValue{},
+			inputAttributes:    map[string]pdata.Value{},
+			expectedAttributes: map[string]pdata.Value{},
 		},
 		{
 			name:               "dont_apply",
-			inputAttributes:    map[string]pdata.AttributeValue{},
-			expectedAttributes: map[string]pdata.AttributeValue{},
+			inputAttributes:    map[string]pdata.Value{},
+			expectedAttributes: map[string]pdata.Value{},
 		},
 		{
 			name: "incorrect_metric_name_with_attr",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"NoModification": pdata.NewAttributeValueBool(true),
+			inputAttributes: map[string]pdata.Value{
+				"NoModification": pdata.NewValueBool(true),
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"NoModification": pdata.NewAttributeValueBool(true),
+			expectedAttributes: map[string]pdata.Value{
+				"NoModification": pdata.NewValueBool(true),
 			},
 		},
 	}
@@ -312,38 +312,38 @@ func TestAttributes_FilterMetricsByNameRegexp(t *testing.T) {
 	testCases := []metricTestCase{
 		{
 			name:            "apply_to_metric_with_no_attrs",
-			inputAttributes: map[string]pdata.AttributeValue{},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"attribute1": pdata.NewAttributeValueInt(123),
+			inputAttributes: map[string]pdata.Value{},
+			expectedAttributes: map[string]pdata.Value{
+				"attribute1": pdata.NewValueInt(123),
 			},
 		},
 		{
 			name: "apply_to_metric_with_attr",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"NoModification": pdata.NewAttributeValueBool(false),
+			inputAttributes: map[string]pdata.Value{
+				"NoModification": pdata.NewValueBool(false),
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"attribute1":     pdata.NewAttributeValueInt(123),
-				"NoModification": pdata.NewAttributeValueBool(false),
+			expectedAttributes: map[string]pdata.Value{
+				"attribute1":     pdata.NewValueInt(123),
+				"NoModification": pdata.NewValueBool(false),
 			},
 		},
 		{
 			name:               "incorrect_metric_name",
-			inputAttributes:    map[string]pdata.AttributeValue{},
-			expectedAttributes: map[string]pdata.AttributeValue{},
+			inputAttributes:    map[string]pdata.Value{},
+			expectedAttributes: map[string]pdata.Value{},
 		},
 		{
 			name:               "apply_dont_apply",
-			inputAttributes:    map[string]pdata.AttributeValue{},
-			expectedAttributes: map[string]pdata.AttributeValue{},
+			inputAttributes:    map[string]pdata.Value{},
+			expectedAttributes: map[string]pdata.Value{},
 		},
 		{
 			name: "incorrect_metric_name_with_attr",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"NoModification": pdata.NewAttributeValueBool(true),
+			inputAttributes: map[string]pdata.Value{
+				"NoModification": pdata.NewValueBool(true),
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"NoModification": pdata.NewAttributeValueBool(true),
+			expectedAttributes: map[string]pdata.Value{
+				"NoModification": pdata.NewValueBool(true),
 			},
 		},
 	}
@@ -375,38 +375,38 @@ func TestMetricAttributes_Hash(t *testing.T) {
 	testCases := []metricTestCase{
 		{
 			name: "String",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"user.email": pdata.NewAttributeValueString("john.doe@example.com"),
+			inputAttributes: map[string]pdata.Value{
+				"user.email": pdata.NewValueString("john.doe@example.com"),
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"user.email": pdata.NewAttributeValueString("73ec53c4ba1747d485ae2a0d7bfafa6cda80a5a9"),
+			expectedAttributes: map[string]pdata.Value{
+				"user.email": pdata.NewValueString("73ec53c4ba1747d485ae2a0d7bfafa6cda80a5a9"),
 			},
 		},
 		{
 			name: "Int",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"user.id": pdata.NewAttributeValueInt(10),
+			inputAttributes: map[string]pdata.Value{
+				"user.id": pdata.NewValueInt(10),
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"user.id": pdata.NewAttributeValueString("71aa908aff1548c8c6cdecf63545261584738a25"),
+			expectedAttributes: map[string]pdata.Value{
+				"user.id": pdata.NewValueString("71aa908aff1548c8c6cdecf63545261584738a25"),
 			},
 		},
 		{
 			name: "Double",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"user.balance": pdata.NewAttributeValueDouble(99.1),
+			inputAttributes: map[string]pdata.Value{
+				"user.balance": pdata.NewValueDouble(99.1),
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"user.balance": pdata.NewAttributeValueString("76429edab4855b03073f9429fd5d10313c28655e"),
+			expectedAttributes: map[string]pdata.Value{
+				"user.balance": pdata.NewValueString("76429edab4855b03073f9429fd5d10313c28655e"),
 			},
 		},
 		{
 			name: "Bool",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"user.authenticated": pdata.NewAttributeValueBool(true),
+			inputAttributes: map[string]pdata.Value{
+				"user.authenticated": pdata.NewValueBool(true),
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"user.authenticated": pdata.NewAttributeValueString("bf8b4530d8d246dd74ac53a13471bba17941dff7"),
+			expectedAttributes: map[string]pdata.Value{
+				"user.authenticated": pdata.NewValueString("bf8b4530d8d246dd74ac53a13471bba17941dff7"),
 			},
 		},
 	}
@@ -433,38 +433,38 @@ func TestMetricAttributes_Convert(t *testing.T) {
 	testCases := []metricTestCase{
 		{
 			name: "String to int (good)",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"to.int": pdata.NewAttributeValueString("123"),
+			inputAttributes: map[string]pdata.Value{
+				"to.int": pdata.NewValueString("123"),
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"to.int": pdata.NewAttributeValueInt(123),
+			expectedAttributes: map[string]pdata.Value{
+				"to.int": pdata.NewValueInt(123),
 			},
 		},
 		{
 			name: "String to int (bad)",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"to.int": pdata.NewAttributeValueString("int-10"),
+			inputAttributes: map[string]pdata.Value{
+				"to.int": pdata.NewValueString("int-10"),
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"to.int": pdata.NewAttributeValueString("int-10"),
+			expectedAttributes: map[string]pdata.Value{
+				"to.int": pdata.NewValueString("int-10"),
 			},
 		},
 		{
 			name: "String to double",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"to.double": pdata.NewAttributeValueString("3.141e2"),
+			inputAttributes: map[string]pdata.Value{
+				"to.double": pdata.NewValueString("3.141e2"),
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"to.double": pdata.NewAttributeValueDouble(314.1),
+			expectedAttributes: map[string]pdata.Value{
+				"to.double": pdata.NewValueDouble(314.1),
 			},
 		},
 		{
 			name: "Double to string",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"to.string": pdata.NewAttributeValueDouble(99.1),
+			inputAttributes: map[string]pdata.Value{
+				"to.string": pdata.NewValueDouble(99.1),
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"to.string": pdata.NewAttributeValueString("99.1"),
+			expectedAttributes: map[string]pdata.Value{
+				"to.string": pdata.NewValueString("99.1"),
 			},
 		},
 	}
@@ -491,25 +491,25 @@ func BenchmarkAttributes_FilterMetricsByName(b *testing.B) {
 	testCases := []metricTestCase{
 		{
 			name:            "apply_to_metric_with_no_attrs",
-			inputAttributes: map[string]pdata.AttributeValue{},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"attribute1": pdata.NewAttributeValueInt(123),
+			inputAttributes: map[string]pdata.Value{},
+			expectedAttributes: map[string]pdata.Value{
+				"attribute1": pdata.NewValueInt(123),
 			},
 		},
 		{
 			name: "apply_to_metric_with_attr",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"NoModification": pdata.NewAttributeValueBool(false),
+			inputAttributes: map[string]pdata.Value{
+				"NoModification": pdata.NewValueBool(false),
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"attribute1":     pdata.NewAttributeValueInt(123),
-				"NoModification": pdata.NewAttributeValueBool(false),
+			expectedAttributes: map[string]pdata.Value{
+				"attribute1":     pdata.NewValueInt(123),
+				"NoModification": pdata.NewValueBool(false),
 			},
 		},
 		{
 			name:               "dont_apply",
-			inputAttributes:    map[string]pdata.AttributeValue{},
-			expectedAttributes: map[string]pdata.AttributeValue{},
+			inputAttributes:    map[string]pdata.Value{},
+			expectedAttributes: map[string]pdata.Value{},
 		},
 	}
 

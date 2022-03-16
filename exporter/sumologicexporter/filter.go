@@ -45,7 +45,7 @@ func newFilter(flds []string) (filter, error) {
 func (f *filter) filterIn(attributes pdata.AttributeMap) fields {
 	returnValue := pdata.NewAttributeMap()
 
-	attributes.Range(func(k string, v pdata.AttributeValue) bool {
+	attributes.Range(func(k string, v pdata.Value) bool {
 		for _, regex := range f.regexes {
 			if regex.MatchString(k) {
 				returnValue.Insert(k, v)
@@ -62,7 +62,7 @@ func (f *filter) filterIn(attributes pdata.AttributeMap) fields {
 func (f *filter) filterOut(attributes pdata.AttributeMap) fields {
 	returnValue := pdata.NewAttributeMap()
 
-	attributes.Range(func(k string, v pdata.AttributeValue) bool {
+	attributes.Range(func(k string, v pdata.Value) bool {
 		for _, regex := range f.regexes {
 			if regex.MatchString(k) {
 				return true

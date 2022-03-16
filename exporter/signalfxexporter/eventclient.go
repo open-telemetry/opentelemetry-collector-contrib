@@ -117,7 +117,7 @@ func (s *sfxEventClient) encodeBody(events []*sfxpb.Event) (bodyReader io.Reader
 
 func (s *sfxEventClient) retrieveAccessToken(rl pdata.ResourceLogs) string {
 	attrs := rl.Resource().Attributes()
-	if accessToken, ok := attrs.Get(splunk.SFxAccessTokenLabel); ok && accessToken.Type() == pdata.AttributeValueTypeString {
+	if accessToken, ok := attrs.Get(splunk.SFxAccessTokenLabel); ok && accessToken.Type() == pdata.ValueTypeString {
 		return accessToken.StringVal()
 	}
 	return ""

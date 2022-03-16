@@ -25,12 +25,12 @@ import (
 
 func simpleResource() pdata.Resource {
 	rs := pdata.NewResource()
-	rs.Attributes().Insert("somekey1", pdata.NewAttributeValueString("some-string-value"))
-	rs.Attributes().Insert("somekey2", pdata.NewAttributeValueInt(123))
+	rs.Attributes().Insert("somekey1", pdata.NewValueString("some-string-value"))
+	rs.Attributes().Insert("somekey2", pdata.NewValueInt(123))
 	for i := 0; i < 10; i++ {
 		k := fmt.Sprint("random-", i)
 		v := fmt.Sprint("value-", rand.Intn(100))
-		rs.Attributes().Insert(k, pdata.NewAttributeValueString(v))
+		rs.Attributes().Insert(k, pdata.NewValueString(v))
 	}
 	return rs
 }

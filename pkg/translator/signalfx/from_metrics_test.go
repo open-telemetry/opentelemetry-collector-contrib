@@ -490,10 +490,10 @@ func mergeDPs(dps ...[]*sfxpb.DataPoint) []*sfxpb.DataPoint {
 	return out
 }
 
-func stringMapToAttributeMap(m map[string]string) map[string]pdata.AttributeValue {
-	ret := map[string]pdata.AttributeValue{}
+func stringMapToAttributeMap(m map[string]string) map[string]pdata.Value {
+	ret := map[string]pdata.Value{}
 	for k, v := range m {
-		ret[k] = pdata.NewAttributeValueString(v)
+		ret[k] = pdata.NewValueString(v)
 	}
 	return ret
 }

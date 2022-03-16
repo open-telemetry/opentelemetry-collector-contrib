@@ -67,7 +67,7 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pdata.Timestamp, ts pda
 	dp.Set{{ $metric.Data.MetricValueType }}Val(val)
 	{{- end }}
 	{{- range $metric.Attributes }}
-	dp.Attributes().Insert(A.{{ .Render }}, pdata.NewAttributeValueString({{ .RenderUnexported }}AttributeValue))
+	dp.Attributes().Insert(A.{{ .Render }}, pdata.NewValueString({{ .RenderUnexported }}AttributeValue))
 	{{- end }}
 }
 

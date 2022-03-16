@@ -416,7 +416,7 @@ func (v *CorrectnessTestValidator) diffSpanStatus(sentSpan pdata.Span, recdSpan 
 
 func (v *CorrectnessTestValidator) diffAttributeMap(spanName string,
 	sentAttrs pdata.AttributeMap, recdAttrs pdata.AttributeMap, fmtStr string) {
-	sentAttrs.Range(func(sentKey string, sentVal pdata.AttributeValue) bool {
+	sentAttrs.Range(func(sentKey string, sentVal pdata.Value) bool {
 		recdVal, ok := recdAttrs.Get(sentKey)
 		if !ok {
 			af := &TraceAssertionFailure{
@@ -430,7 +430,7 @@ func (v *CorrectnessTestValidator) diffAttributeMap(spanName string,
 			return true
 		}
 		switch sentVal.Type() {
-		case pdata.AttributeValueTypeMap:
+		case pdata.ValueTypeMap:
 			v.compareKeyValueList(spanName, sentVal, recdVal, fmtStr, sentKey)
 		default:
 			v.compareSimpleValues(spanName, sentVal, recdVal, fmtStr, sentKey)
@@ -439,7 +439,7 @@ func (v *CorrectnessTestValidator) diffAttributeMap(spanName string,
 	})
 }
 
-func (v *CorrectnessTestValidator) compareSimpleValues(spanName string, sentVal pdata.AttributeValue, recdVal pdata.AttributeValue,
+func (v *CorrectnessTestValidator) compareSimpleValues(spanName string, sentVal pdata.Value, recdVal pdata.Value,
 	fmtStr string, attrKey string) {
 	if !sentVal.Equal(recdVal) {
 		sentStr := sentVal.AsString()
@@ -458,11 +458,11 @@ func (v *CorrectnessTestValidator) compareSimpleValues(spanName string, sentVal 
 }
 
 func (v *CorrectnessTestValidator) compareKeyValueList(
-	spanName string, sentVal pdata.AttributeValue, recdVal pdata.AttributeValue, fmtStr string, attrKey string) {
+	spanName string, sentVal pdata.Value, recdVal pdata.Value, fmtStr string, attrKey string) {
 	switch recdVal.Type() {
-	case pdata.AttributeValueTypeMap:
+	case pdata.ValueTypeMap:
 		v.diffAttributeMap(spanName, sentVal.MapVal(), recdVal.MapVal(), fmtStr)
-	case pdata.AttributeValueTypeString:
+	case pdata.ValueTypeString:
 		v.compareSimpleValues(spanName, sentVal, recdVal, fmtStr, attrKey)
 	default:
 		af := &TraceAssertionFailure{

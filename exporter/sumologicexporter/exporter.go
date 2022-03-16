@@ -172,7 +172,7 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) er
 
 				// copy resource attributes into logs attributes
 				// log attributes have precedence over resource attributes
-				rl.Resource().Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+				rl.Resource().Attributes().Range(func(k string, v pdata.Value) bool {
 					log.Attributes().Insert(k, v)
 					return true
 				})
