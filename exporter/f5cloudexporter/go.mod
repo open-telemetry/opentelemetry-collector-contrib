@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5clou
 go 1.17
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.46.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.47.0
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.46.1-0.20220316072811-e214f7172b45
 	golang.org/x/oauth2 v0.0.0-20220309155454-6242fa91716a
