@@ -75,6 +75,21 @@ func TestCreateTracesReceiver(t *testing.T) {
 	assert.Nil(t, tReceiver)
 }
 
+func TestCreateTracesReceiverNoMetrics(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	cfg.(*Config).PerfCounters = []PerfCounterConfig{
+		{
+			Object:   "object",
+			Counters: []CounterConfig{{Name: "counter"}},
+		},
+	}
+	tReceiver, err := factory.CreateTracesReceiver(context.Background(), creationParams, cfg, consumertest.NewNop())
+
+	assert.ErrorIs(t, err, componenterror.ErrDataTypeIsNotSupported)
+	assert.Nil(t, tReceiver)
+}
+
 func TestCreateLogsReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
