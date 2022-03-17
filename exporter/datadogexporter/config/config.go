@@ -269,7 +269,7 @@ type Config struct {
 }
 
 // OnceMetadata gets a sync.Once instance used for initializing the host metadata.
-// Deprecated: [v0.47.0] do not use, will be removed on v0.48.0.
+// Deprecated: [v0.48.0] do not use, will be removed on v0.49.0.
 // TODO (#8373): Remove this method.
 func (c *Config) OnceMetadata() *sync.Once {
 	return &c.onceMetadata
