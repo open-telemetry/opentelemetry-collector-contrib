@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- `resourcedetectionprocessor`: Add attribute allowlist (#8547)
+
 ## v0.47.0
 
 ### 💡 Enhancements 💡
