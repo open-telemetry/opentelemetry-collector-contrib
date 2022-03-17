@@ -57,8 +57,7 @@ type PerfCounterMetrics struct {
 }
 
 func newScraper(cfg *Config, settings component.TelemetrySettings) *scraper {
-	s := &scraper{cfg: cfg, settings: settings}
-	return s
+	return &scraper{cfg: cfg, settings: settings}
 }
 
 func (s *scraper) start(context.Context, component.Host) error {
@@ -75,6 +74,7 @@ func (s *scraper) start(context.Context, component.Host) error {
 				} else {
 					if counterCfg.Metric == "" {
 						s.undefinedMetricCounters = append(s.undefinedMetricCounters, c)
+						continue
 					}
 					s.counters = append(s.counters, PerfCounterMetrics{CounterScraper: c, Metric: counterCfg.Metric, Attributes: counterCfg.Attributes})
 				}

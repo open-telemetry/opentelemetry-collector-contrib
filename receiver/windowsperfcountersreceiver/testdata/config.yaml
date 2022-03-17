@@ -45,4 +45,3 @@ service:
       receivers: [windowsperfcounters]
       processors: [nop]
       exporters: [nop]
-      

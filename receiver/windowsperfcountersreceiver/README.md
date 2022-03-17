@@ -14,13 +14,7 @@ warning will be printed, but the application will not fail fast. It is expected
 that some performance counters may not exist on some systems due to different OS
 configuration.
 
-
-
 ## Configuration
-
-
-
-
 
 The collection interval and the list of performance counters to be scraped can
 be configured:
@@ -113,7 +107,7 @@ service:
 
 ### Defining metric format
 
-To report metrics in the desired output format, build a metric the metric and reference it in the given counter with any applicable attributes. Metrics will default to gauges if no other metric type is defined. 
+To report metrics in the desired output format, define a metric and reference it in the corresponding counter, along with any applicable attributes. The metric's data type can either be `gauge` (default) or `sum`. 
 
 | Field Name  | Description                              | Value        | Default      |
 | --          | --                                       | --           | --           |
@@ -133,9 +127,7 @@ To report metrics in the desired output format, build a metric the metric and re
 
 #### Gauge Config
 
-| Field Name   | Description                                           | Value                           | Default |
-| --           | --                                                    | --                              | --      |
-|||||
+A `gauge` config currently accepts no settings. It is specified as an object for forwards compatibility.
 
 e.g. To output the `Memory/Committed Bytes` counter as a metric with the name
 `bytes.committed`:

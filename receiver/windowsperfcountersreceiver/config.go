@@ -75,11 +75,13 @@ func (c *Config) Validate() error {
 		}
 
 		if (metric.Sum != SumMetric{}) {
+			if (metric.Gauge != GaugeMetric{}) {
+				errs = multierr.Append(errs, fmt.Errorf("metric %q provides both a sum config and a gauge config", name))
+			}
+
 			if metric.Sum.Aggregation != "cumulative" && metric.Sum.Aggregation != "delta" {
 				errs = multierr.Append(errs, fmt.Errorf("sum metric %q includes an invalid aggregation", name))
 			}
-		} else if (metric.Sum != SumMetric{}) && (metric.Gauge != GaugeMetric{}) {
-			errs = multierr.Append(errs, fmt.Errorf("metric %q provides both a sum config and a gauge config", name))
 		}
 	}
 
