@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### 🚩 Deprecations 🚩
+
+- `datadogexporter`: Deprecate `OnlyMetadata` method from `Config` struct (#8359)
+
 ## v0.47.0
 
 ### 💡 Enhancements 💡
@@ -58,10 +62,6 @@
 ### 🚩 Deprecations 🚩
 
 - `datadogexporter`: Deprecate automatic environment variable detection (#8397)
-
-### 🚩 Deprecations 🚩
-
-- `datadogexporter`: Deprecate `OnlyMetadata` method from `Config` struct (#8359)
 
 ### 🚀 New components 🚀
 - `sigv4authextension`: New Component: Sigv4 Authenticator Extension (#8263)
