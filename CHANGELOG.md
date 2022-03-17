@@ -4,6 +4,7 @@
 
 ### 💡 Enhancements 💡
 
+- `k8seventsreceiver`: Add Api_version and resource_version (#8539)
 - `prometheusremotewriteexporter`: Write-Ahead Log support enabled (#7304)
 - `hostreceiver/filesystemscraper`: Add filesystem utilization (#8027)
 - `googlecloudexporter`: [Alpha] Translate metrics directly from OTLP to gcm using the `exporter.googlecloud.OTLPDirect` feature-gate (#7177)
