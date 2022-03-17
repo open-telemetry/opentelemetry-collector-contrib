@@ -15,12 +15,19 @@
 package prometheusreceiver
 
 import (
+	"context"
 	"testing"
 	"time"
 
+	commonconfig "github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
-	"github.com/prometheus/prometheus/config"
+	promConfig "github.com/prometheus/prometheus/config"
+	promHTTP "github.com/prometheus/prometheus/discovery/http"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -1053,18 +1060,18 @@ func verifyUntypedMetrics(t *testing.T, td *testData, resourceMetrics []*pdata.R
 func TestGCInterval(t *testing.T) {
 	for _, tc := range []struct {
 		desc  string
-		input *config.Config
+		input *promConfig.Config
 		want  time.Duration
 	}{
 		{
 			desc:  "default",
-			input: &config.Config{},
+			input: &promConfig.Config{},
 			want:  defaultGCInterval,
 		},
 		{
 			desc: "global override",
-			input: &config.Config{
-				GlobalConfig: config.GlobalConfig{
+			input: &promConfig.Config{
+				GlobalConfig: promConfig.GlobalConfig{
 					ScrapeInterval: model.Duration(10 * time.Minute),
 				},
 			},
@@ -1072,8 +1079,8 @@ func TestGCInterval(t *testing.T) {
 		},
 		{
 			desc: "scrape config override",
-			input: &config.Config{
-				ScrapeConfigs: []*config.ScrapeConfig{
+			input: &promConfig.Config{
+				ScrapeConfigs: []*promConfig.ScrapeConfig{
 					{
 						ScrapeInterval: model.Duration(10 * time.Minute),
 					},
@@ -1089,4 +1096,66 @@ func TestGCInterval(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestTargetAllocatorJobRetrieval(t *testing.T) {
+	ctx := context.Background()
+	allocator, err := setupMockTargetAllocator(map[string][]mockTargetAllocatorResponseRaw{
+		"/jobs": {
+			mockTargetAllocatorResponseRaw{code: 200, data: map[string]LinkJSON{
+				"job1": {Link: "/jobs/job1/targets"},
+				"job2": {Link: "/jobs/job2/targets"},
+			}},
+		},
+		"/jobs/job1/targets": {
+			mockTargetAllocatorResponseRaw{code: 200, data: []HTTPSDResponse{
+				{Targets: []string{"10.0.10.2:9100", "10.0.10.3:9100", "10.0.10.4:9100", "10.0.10.5:9100"},
+					Labels: map[model.LabelName]model.LabelValue{
+						"__meta_datacenter":     "london",
+						"__meta_prometheus_job": "node",
+					}},
+			}},
+		},
+		"/jobs/job2/targets": {
+			mockTargetAllocatorResponseRaw{code: 200, data: []HTTPSDResponse{
+				{Targets: []string{"10.0.40.2:9100", "10.0.40.3:9100"},
+					Labels: map[model.LabelName]model.LabelValue{
+						"__meta_datacenter":     "london",
+						"__meta_prometheus_job": "alertmanager",
+					}},
+			}},
+		},
+	})
+	if err != nil {
+		return
+	}
+
+	allocator.Start()
+
+	cms := new(consumertest.MetricsSink)
+	receiver := newPrometheusReceiver(componenttest.NewNopReceiverCreateSettings(), &Config{
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+		PrometheusConfig: &promConfig.Config{},
+		TargetAllocator: &TargetAllocator{
+			Endpoint:    allocator.srv.URL,
+			Interval:    10 * time.Second,
+			CollectorID: "collector-1",
+			HttpSDConfig: &promHTTP.SDConfig{
+				HTTPClientConfig: commonconfig.HTTPClientConfig{
+					BasicAuth: &commonconfig.BasicAuth{
+						Username: "user",
+						Password: "aPassword",
+					},
+				},
+				RefreshInterval: model.Duration(10 * time.Second),
+			},
+		},
+	}, cms)
+
+	require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
+
+	allocator.wg.Wait()
+
+	//TODO find a way to check result.
+	allocator.Stop()
 }
