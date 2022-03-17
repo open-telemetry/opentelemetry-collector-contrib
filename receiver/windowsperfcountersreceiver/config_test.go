@@ -109,7 +109,7 @@ func TestLoadConfigNoMetrics(t *testing.T) {
 			Expected: Config{
 				PerfCounters: []PerfCounterConfig{
 					{
-						Object:   "object1",
+						Object:   "object",
 						Counters: []CounterConfig{{Name: "counter1"}},
 					},
 				},
@@ -121,7 +121,7 @@ func TestLoadConfigNoMetrics(t *testing.T) {
 			Expected: Config{
 				PerfCounters: []PerfCounterConfig{
 					{
-						Object:   "object1",
+						Object:   "object",
 						Counters: []CounterConfig{{Name: "counter1"}},
 					},
 				},
@@ -147,7 +147,7 @@ func TestLoadConfigNoMetrics(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, cfg)
 
-			assert.Equal(t, len(cfg.Receivers), 2)
+			assert.Equal(t, len(cfg.Receivers), 1)
 
 			actualReceiver := cfg.Receivers[config.NewComponentID(typeStr)]
 			expectedReceiver := factory.CreateDefaultConfig()
