@@ -3,18 +3,18 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscon
 go 1.17
 
 require (
-	github.com/aws/aws-sdk-go v1.43.17
+	github.com/aws/aws-sdk-go v1.43.20
 	github.com/google/cadvisor v0.44.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.46.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.46.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s v0.46.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.46.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.46.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.46.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.47.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.47.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s v0.47.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.47.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.47.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.47.0
 	github.com/shirou/gopsutil/v3 v3.22.2
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.46.1-0.20220307173244-f980c9ef25b1
-	go.opentelemetry.io/collector/model v0.46.1-0.20220307173244-f980c9ef25b1
+	go.opentelemetry.io/collector v0.47.0
+	go.opentelemetry.io/collector/model v0.47.0
 	go.uber.org/zap v1.21.0
 	k8s.io/api v0.23.4
 	k8s.io/apimachinery v0.23.4
@@ -57,7 +57,7 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/karrick/godirwalk v1.16.1 // indirect
-	github.com/klauspost/compress v1.15.0 // indirect
+	github.com/klauspost/compress v1.15.1 // indirect
 	github.com/knadh/koanf v1.4.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
@@ -71,7 +71,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mrunalp/fileutils v0.5.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.46.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.47.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/opencontainers/runc v1.1.0 // indirect
