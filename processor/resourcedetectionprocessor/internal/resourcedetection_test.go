@@ -277,7 +277,6 @@ func TestFilterAttributes_NoMatch(t *testing.T) {
 	attr := pdata.NewAttributeMap()
 	attr.InsertString("host.name", "test")
 	attr.InsertString("host.id", "test")
-	attr.InsertString("drop.this", "test")
 
 	FilterAttributes(attr, m)
 
@@ -285,9 +284,6 @@ func TestFilterAttributes_NoMatch(t *testing.T) {
 	assert.False(t, ok)
 
 	_, ok = attr.Get("host.id")
-	assert.False(t, ok)
-
-	_, ok = attr.Get("drop.this")
 	assert.False(t, ok)
 }
 
@@ -296,7 +292,6 @@ func TestFilterAttributes_NilAttributes(t *testing.T) {
 	attr := pdata.NewAttributeMap()
 	attr.InsertString("host.name", "test")
 	attr.InsertString("host.id", "test")
-	attr.InsertString("drop.this", "test")
 
 	FilterAttributes(attr, m)
 
@@ -304,9 +299,6 @@ func TestFilterAttributes_NilAttributes(t *testing.T) {
 	assert.True(t, ok)
 
 	_, ok = attr.Get("host.id")
-	assert.True(t, ok)
-
-	_, ok = attr.Get("drop.this")
 	assert.True(t, ok)
 }
 
@@ -315,7 +307,6 @@ func TestFilterAttributes_NoAttributes(t *testing.T) {
 	attr := pdata.NewAttributeMap()
 	attr.InsertString("host.name", "test")
 	attr.InsertString("host.id", "test")
-	attr.InsertString("drop.this", "test")
 
 	FilterAttributes(attr, m)
 
@@ -323,9 +314,6 @@ func TestFilterAttributes_NoAttributes(t *testing.T) {
 	assert.True(t, ok)
 
 	_, ok = attr.Get("host.id")
-	assert.True(t, ok)
-
-	_, ok = attr.Get("drop.this")
 	assert.True(t, ok)
 }
 
