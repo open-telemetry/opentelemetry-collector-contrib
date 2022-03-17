@@ -65,7 +65,7 @@ extension/bearertokenauthextension/                  @open-telemetry/collector-c
 extension/healthcheckextension/                      @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/jaegerremotesampling/                      @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/oauth2clientauthextension/                 @open-telemetry/collector-contrib-approvers @pavankrish123 @jpkrohling
-extension/observer/                                  @open-telemetry/collector-contrib-approvers @jrcamp
+extension/observer/                                  @open-telemetry/collector-contrib-approvers @dmitryax @rmfitzpatrick
 extension/observer/dockerobserver/                   @open-telemetry/collector-contrib-approvers @MovieStoreGuy
 extension/observer/ecstaskobserver/                  @open-telemetry/collector-contrib-approvers @rmfitzpatrick
 extension/observer/hostobserver/                     @open-telemetry/collector-contrib-approvers @MovieStoreGuy
