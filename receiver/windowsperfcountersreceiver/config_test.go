@@ -97,6 +97,25 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, expectedConfig, r1)
 }
 
+func TestLoadConfigNoMetrics(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Receivers[typeStr] = factory
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config-nometrics.yaml"), factories)
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	assert.Equal(t, len(cfg.Receivers), 1)
+
+	r0 := cfg.Receivers[config.NewComponentID(typeStr)]
+	defaultConfigSingleObject := factory.CreateDefaultConfig()
+
+	defaultConfigSingleObject.(*Config).PerfCounters = []PerfCounterConfig{{Object: "object", Counters: []CounterConfig{{Name: "counter1"}}}}
+	assert.Equal(t, defaultConfigSingleObject, r0)
+}
+
 func TestLoadConfig_Error(t *testing.T) {
 	type testCase struct {
 		name        string
