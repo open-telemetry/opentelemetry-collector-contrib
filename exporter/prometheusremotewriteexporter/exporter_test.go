@@ -427,6 +427,7 @@ func Test_PushMetrics(t *testing.T) {
 		httpResponseCode   int
 		returnErr          bool
 		isStaleMarker      bool
+		skipForWAL         bool
 	}{
 		{
 			name:             "invalid_type_case",
@@ -490,6 +491,8 @@ func Test_PushMetrics(t *testing.T) {
 			expectedTimeSeries: 5,
 			httpResponseCode:   http.StatusServiceUnavailable,
 			returnErr:          true,
+			// When using the WAL, it returns success once the data is persisted to the WAL
+			skipForWAL: true,
 		},
 		{
 			name:             "emptyGauge_case",
@@ -588,6 +591,9 @@ func Test_PushMetrics(t *testing.T) {
 			}
 			for _, ttt := range tests {
 				tt := ttt
+				if useWAL && tt.skipForWAL {
+					t.Skip("test not supported when using WAL")
+				}
 				t.Run(tt.name, func(t *testing.T) {
 					t.Parallel()
 					server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
