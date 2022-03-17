@@ -18,12 +18,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/go-kit/log"
-	"github.com/mitchellh/hashstructure/v2"
 	"net/http"
 	"net/url"
 	"time"
 
+	"github.com/go-kit/log"
+	"github.com/mitchellh/hashstructure/v2"
 	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
 	"github.com/prometheus/prometheus/scrape"
@@ -76,72 +76,79 @@ func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 	r.discoveryManager = discovery.NewManager(discoveryCtx, logger)
 
 	baseDiscoveryCfg := make(map[string]discovery.Configs)
-	for _, scrapeConfig := range r.cfg.PrometheusConfig.ScrapeConfigs {
-		baseDiscoveryCfg[scrapeConfig.JobName] = scrapeConfig.ServiceDiscoveryConfigs
+
+	// add scrape configs defined by the collector configs
+	if r.cfg.PrometheusConfig != nil && r.cfg.PrometheusConfig.ScrapeConfigs != nil {
+		for _, scrapeConfig := range r.cfg.PrometheusConfig.ScrapeConfigs {
+			baseDiscoveryCfg[scrapeConfig.JobName] = scrapeConfig.ServiceDiscoveryConfigs
+		}
+	}
+
+	err := r.initPrometheusComponents(host, logger)
+	if err != nil {
+		r.settings.Logger.Error("Failed to initPrometheusComponents Prometheus compnents", zap.Error(err))
+		return err
+	}
+
+	err = r.applyCfg(baseDiscoveryCfg)
+	if err != nil {
+		r.settings.Logger.Error("Failed to apply new scrape configuration", zap.Error(err))
+		return err
 	}
 
 	allocConf := r.cfg.TargetAllocator
-	if allocConf == nil {
-		return r.applyCfg(baseDiscoveryCfg, host, nil)
-	}
+	if allocConf != nil {
+		r.targetAllocatorIntervalTicker = time.NewTicker(allocConf.Interval)
 
-	r.targetAllocatorIntervalTicker = time.NewTicker(allocConf.Interval)
+		go func() {
+			savedHash := uint64(0)
 
-	go func() {
-		savedHash := uint64(0)
-
-		for {
-			select {
-			case <-r.targetAllocatorIntervalTicker.C:
-				jobObject, err := getJobResponse(allocConf.Endpoint)
-				if err != nil {
-					r.settings.Logger.Error("Failed to retrieve job list", zap.Error(err))
-					return
-				}
-
-				hash, err := hashstructure.Hash(jobObject, hashstructure.FormatV2, nil)
-				if err != nil {
-					r.settings.Logger.Error("Failed to hash job list", zap.Error(err))
-					return
-				}
-				if hash == savedHash {
-					// no update needed
-					return
-				}
-
-				discoveryCfg := baseDiscoveryCfg
-
-				for key, linkJSON := range *jobObject {
-					httpSD := allocConf.HttpSDConfig
-					httpSD.URL = fmt.Sprintf("%s%s?collector_id=%s", allocConf.Endpoint, linkJSON.Link, allocConf.CollectorID)
-					discoveryCfg[key] = discovery.Configs{
-						httpSD,
+			for {
+				select {
+				case <-r.targetAllocatorIntervalTicker.C:
+					jobObject, err := getJobResponse(allocConf.Endpoint)
+					if err != nil {
+						r.settings.Logger.Error("Failed to retrieve job list", zap.Error(err))
+						continue
 					}
-				}
 
-				err = r.applyCfg(discoveryCfg, host, logger)
-				if err != nil {
-					r.settings.Logger.Error("Failed to apply new scrape configuration", zap.Error(err))
-					return
-				}
+					hash, err := hashstructure.Hash(jobObject, hashstructure.FormatV2, nil)
+					if err != nil {
+						r.settings.Logger.Error("Failed to hash job list", zap.Error(err))
+						continue
+					}
+					if hash == savedHash {
+						// no update needed
+						continue
+					}
 
-				savedHash = hash
+					discoveryCfg := baseDiscoveryCfg
+
+					for key, linkJSON := range *jobObject {
+						httpSD := *allocConf.HttpSDConfig
+						httpSD.URL = fmt.Sprintf("%s%s?collector_id=%s", allocConf.Endpoint, linkJSON.Link, allocConf.CollectorID)
+						discoveryCfg[key] = discovery.Configs{
+							&httpSD,
+						}
+					}
+
+					err = r.applyCfg(discoveryCfg)
+					if err != nil {
+						r.settings.Logger.Error("Failed to apply new scrape configuration", zap.Error(err))
+						continue
+					}
+
+					savedHash = hash
+				}
 			}
-		}
-	}()
-
-	go func() {
-		if err := r.scrapeManager.Run(r.discoveryManager.SyncCh()); err != nil {
-			r.settings.Logger.Error("Scrape manager failed", zap.Error(err))
-			host.ReportFatalError(err)
-		}
-	}()
+		}()
+	}
 
 	return nil
 }
 
 func getJobResponse(baseURL string) (*map[string]LinkJSON, error) {
-	jobURLString := fmt.Sprintf("%s/job", baseURL)
+	jobURLString := fmt.Sprintf("%s/jobs", baseURL)
 	_, err := url.Parse(jobURLString) // check if valid
 	if err != nil {
 		return nil, err
@@ -162,10 +169,14 @@ func getJobResponse(baseURL string) (*map[string]LinkJSON, error) {
 	return jobObject, nil
 }
 
-func (r *pReceiver) applyCfg(discoveryCfg map[string]discovery.Configs, host component.Host, logger log.Logger) error {
+func (r *pReceiver) applyCfg(discoveryCfg map[string]discovery.Configs) error {
 	if err := r.discoveryManager.ApplyConfig(discoveryCfg); err != nil {
 		return err
 	}
+	return nil
+}
+
+func (r *pReceiver) initPrometheusComponents(host component.Host, logger log.Logger) error {
 	go func() {
 		if err := r.discoveryManager.Run(); err != nil {
 			r.settings.Logger.Error("Discovery manager failed", zap.Error(err))
@@ -183,6 +194,12 @@ func (r *pReceiver) applyCfg(discoveryCfg map[string]discovery.Configs, host com
 		r.cfg.PrometheusConfig.GlobalConfig.ExternalLabels,
 	)
 	r.scrapeManager = scrape.NewManager(&scrape.Options{PassMetadataInContext: true}, logger, store)
+	go func() {
+		if err := r.scrapeManager.Run(r.discoveryManager.SyncCh()); err != nil {
+			r.settings.Logger.Error("Scrape manager failed", zap.Error(err))
+			host.ReportFatalError(err)
+		}
+	}()
 	if err := r.scrapeManager.ApplyConfig(r.cfg.PrometheusConfig); err != nil {
 		return err
 	}
