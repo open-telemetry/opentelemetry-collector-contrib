@@ -98,22 +98,65 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestLoadConfigNoMetrics(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	require.NoError(t, err)
+	testCases := []struct {
+		TestName string
+		TestPath string
+		Expected Config
+	}{
+		{
+			TestName: "NoMetricsDefined",
+			TestPath: filepath.Join("testdata", "config-nometrics.yaml"),
+			Expected: Config{
+				PerfCounters: []PerfCounterConfig{
+					{
+						Object:   "object1",
+						Counters: []CounterConfig{{Name: "counter1"}},
+					},
+				},
+			},
+		},
+		{
+			TestName: "NoMetricSpecified",
+			TestPath: filepath.Join("testdata", "config-nometricspecified.yaml"),
+			Expected: Config{
+				PerfCounters: []PerfCounterConfig{
+					{
+						Object:   "object1",
+						Counters: []CounterConfig{{Name: "counter1"}},
+					},
+				},
+				MetricMetaData: map[string]MetricConfig{
+					"metric": {
+						Description: "desc",
+						Unit:        "1",
+						Gauge:       GaugeMetric{},
+					},
+				},
+			},
+		},
+	}
+	for _, test := range testCases {
+		t.Run(test.TestName, func(t *testing.T) {
+			factories, err := componenttest.NopFactories()
+			require.NoError(t, err)
 
-	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config-nometrics.yaml"), factories)
-	require.NoError(t, err)
-	require.NotNil(t, cfg)
+			factory := NewFactory()
+			factories.Receivers[typeStr] = factory
+			cfg, err := servicetest.LoadConfigAndValidate(test.TestPath, factories)
 
-	assert.Equal(t, len(cfg.Receivers), 1)
+			require.NoError(t, err)
+			require.NotNil(t, cfg)
 
-	r0 := cfg.Receivers[config.NewComponentID(typeStr)]
-	defaultConfigSingleObject := factory.CreateDefaultConfig()
+			assert.Equal(t, len(cfg.Receivers), 2)
 
-	defaultConfigSingleObject.(*Config).PerfCounters = []PerfCounterConfig{{Object: "object", Counters: []CounterConfig{{Name: "counter1"}}}}
-	assert.Equal(t, defaultConfigSingleObject, r0)
+			actualReceiver := cfg.Receivers[config.NewComponentID(typeStr)]
+			expectedReceiver := factory.CreateDefaultConfig()
+			expectedReceiver.(*Config).PerfCounters = test.Expected.PerfCounters
+			expectedReceiver.(*Config).MetricMetaData = test.Expected.MetricMetaData
+
+			assert.Equal(t, expectedReceiver, actualReceiver)
+		})
+	}
 }
 
 func TestLoadConfig_Error(t *testing.T) {
