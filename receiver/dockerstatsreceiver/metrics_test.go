@@ -110,72 +110,76 @@ func defaultLabels() map[string]string {
 	}
 }
 
-func defaultMetrics() []Metric {
+func defaultMetrics(container docker.Container, config *Config) []Metric {
+	labels := getLabelsFromConfig(container, config)
+	keys := getLabelKeys(labels)
+	values := getLabelValues(labels)
+
 	return []Metric{
-		{name: "container.blockio.io_service_bytes_recursive.read", mtype: MetricTypeCumulative, unit: "By", labelKeys: []string{"device_major", "device_minor"}, values: []Value{{labelValues: []string{"202", "0"}, value: 56500224}}},
-		{name: "container.blockio.io_service_bytes_recursive.write", mtype: MetricTypeCumulative, unit: "By", labelKeys: []string{"device_major", "device_minor"}, values: []Value{{labelValues: []string{"202", "0"}, value: 12103680}}},
-		{name: "container.blockio.io_service_bytes_recursive.sync", mtype: MetricTypeCumulative, unit: "By", labelKeys: []string{"device_major", "device_minor"}, values: []Value{{labelValues: []string{"202", "0"}, value: 65314816}}},
-		{name: "container.blockio.io_service_bytes_recursive.async", mtype: MetricTypeCumulative, unit: "By", labelKeys: []string{"device_major", "device_minor"}, values: []Value{{labelValues: []string{"202", "0"}, value: 3289088}}},
-		{name: "container.blockio.io_service_bytes_recursive.discard", mtype: MetricTypeCumulative, unit: "By", labelKeys: []string{"device_major", "device_minor"}, values: []Value{{labelValues: []string{"202", "0"}, value: 0}}},
-		{name: "container.blockio.io_service_bytes_recursive.total", mtype: MetricTypeCumulative, unit: "By", labelKeys: []string{"device_major", "device_minor"}, values: []Value{{labelValues: []string{"202", "0"}, value: 68603904}}},
-		{name: "container.blockio.io_serviced_recursive.read", mtype: MetricTypeCumulative, unit: "1", labelKeys: []string{"device_major", "device_minor"}, values: []Value{{labelValues: []string{"202", "0"}, value: 985}}},
-		{name: "container.blockio.io_serviced_recursive.write", mtype: MetricTypeCumulative, unit: "1", labelKeys: []string{"device_major", "device_minor"}, values: []Value{{labelValues: []string{"202", "0"}, value: 2073}}},
-		{name: "container.blockio.io_serviced_recursive.sync", mtype: MetricTypeCumulative, unit: "1", labelKeys: []string{"device_major", "device_minor"}, values: []Value{{labelValues: []string{"202", "0"}, value: 2902}}},
-		{name: "container.blockio.io_serviced_recursive.async", mtype: MetricTypeCumulative, unit: "1", labelKeys: []string{"device_major", "device_minor"}, values: []Value{{labelValues: []string{"202", "0"}, value: 156}}},
-		{name: "container.blockio.io_serviced_recursive.discard", mtype: MetricTypeCumulative, unit: "1", labelKeys: []string{"device_major", "device_minor"}, values: []Value{{labelValues: []string{"202", "0"}, value: 0}}},
-		{name: "container.blockio.io_serviced_recursive.total", mtype: MetricTypeCumulative, unit: "1", labelKeys: []string{"device_major", "device_minor"}, values: []Value{{labelValues: []string{"202", "0"}, value: 3058}}},
-		{name: "container.cpu.usage.system", mtype: MetricTypeCumulative, unit: "ns", labelKeys: nil, values: []Value{{labelValues: nil, value: 4525290000000}}},
-		{name: "container.cpu.usage.total", mtype: MetricTypeCumulative, unit: "ns", labelKeys: nil, values: []Value{{labelValues: nil, value: 8043152341}}},
-		{name: "container.cpu.usage.kernelmode", mtype: MetricTypeCumulative, unit: "ns", labelKeys: nil, values: []Value{{labelValues: nil, value: 970000000}}},
-		{name: "container.cpu.usage.usermode", mtype: MetricTypeCumulative, unit: "ns", labelKeys: nil, values: []Value{{labelValues: nil, value: 3510000000}}},
-		{name: "container.cpu.throttling_data.periods", mtype: MetricTypeCumulative, unit: "1", labelKeys: nil, values: []Value{{labelValues: nil, value: 0}}},
-		{name: "container.cpu.throttling_data.throttled_periods", mtype: MetricTypeCumulative, unit: "1", labelKeys: nil, values: []Value{{labelValues: nil, value: 0}}},
-		{name: "container.cpu.throttling_data.throttled_time", mtype: MetricTypeCumulative, unit: "ns", labelKeys: nil, values: []Value{{labelValues: nil, value: 0}}},
-		{name: "container.cpu.percent", mtype: MetricTypeDoubleGauge, unit: "1", labelKeys: nil, values: []Value{{labelValues: nil, doubleValue: 0.19316}}},
-		{name: "container.memory.usage.limit", mtype: MetricTypeGauge, unit: "By", labelKeys: nil, values: []Value{{labelValues: nil, value: 1026359296}}},
-		{name: "container.memory.usage.total", mtype: MetricTypeGauge, unit: "By", labelKeys: nil, values: []Value{{labelValues: nil, value: 75915264}}},
-		{name: "container.memory.percent", mtype: MetricTypeDoubleGauge, unit: "1", labelKeys: nil, values: []Value{{labelValues: nil, doubleValue: 7.396558329608582}}},
-		{name: "container.memory.usage.max", mtype: MetricTypeGauge, unit: "By", labelKeys: nil, values: []Value{{labelValues: nil, value: 325246976}}},
-		{name: "container.memory.active_anon", mtype: MetricTypeGauge, unit: "By", labelKeys: nil, values: []Value{{labelValues: nil, value: 72585216}}},
-		{name: "container.memory.active_file", mtype: MetricTypeGauge, unit: "By", labelKeys: nil, values: []Value{{labelValues: nil, value: 40316928}}},
-		{name: "container.memory.cache", mtype: MetricTypeGauge, unit: "By", labelKeys: nil, values: []Value{{labelValues: nil, value: 80760832}}},
-		{name: "container.memory.dirty", mtype: MetricTypeGauge, unit: "By", labelKeys: nil, values: []Value{{labelValues: nil, value: 0}}},
-		{name: "container.memory.hierarchical_memory_limit", mtype: MetricTypeGauge, unit: "By", labelKeys: nil, values: []Value{{labelValues: nil, value: 9223372036854771712}}},
-		{name: "container.memory.hierarchical_memsw_limit", mtype: MetricTypeGauge, unit: "By", labelKeys: nil, values: []Value{{labelValues: nil, value: 0}}},
-		{name: "container.memory.inactive_anon", mtype: MetricTypeGauge, unit: "By", labelKeys: nil, values: []Value{{labelValues: nil, value: 0}}},
-		{name: "container.memory.inactive_file", mtype: MetricTypeGauge, unit: "By", labelKeys: nil, values: []Value{{labelValues: nil, value: 40579072}}},
-		{name: "container.memory.mapped_file", mtype: MetricTypeGauge, unit: "By", labelKeys: nil, values: []Value{{labelValues: nil, value: 37711872}}},
-		{name: "container.memory.pgfault", mtype: MetricTypeCumulative, unit: "1", labelKeys: nil, values: []Value{{labelValues: nil, value: 21714}}},
-		{name: "container.memory.pgmajfault", mtype: MetricTypeCumulative, unit: "1", labelKeys: nil, values: []Value{{labelValues: nil, value: 396}}},
-		{name: "container.memory.pgpgin", mtype: MetricTypeCumulative, unit: "1", labelKeys: nil, values: []Value{{labelValues: nil, value: 85140}}},
-		{name: "container.memory.pgpgout", mtype: MetricTypeCumulative, unit: "1", labelKeys: nil, values: []Value{{labelValues: nil, value: 47694}}},
-		{name: "container.memory.rss", mtype: MetricTypeGauge, unit: "By", labelKeys: nil, values: []Value{{labelValues: nil, value: 72568832}}},
-		{name: "container.memory.rss_huge", mtype: MetricTypeGauge, unit: "By", labelKeys: nil, values: []Value{{labelValues: nil, value: 0}}},
-		{name: "container.memory.total_active_anon", mtype: MetricTypeGauge, unit: "By", labelKeys: nil, values: []Value{{labelValues: nil, value: 72585216}}},
-		{name: "container.memory.total_active_file", mtype: MetricTypeGauge, unit: "By", labelKeys: nil, values: []Value{{labelValues: nil, value: 40316928}}},
-		{name: "container.memory.total_cache", mtype: MetricTypeGauge, unit: "By", labelKeys: nil, values: []Value{{labelValues: nil, value: 80760832}}},
-		{name: "container.memory.total_dirty", mtype: MetricTypeGauge, unit: "By", labelKeys: nil, values: []Value{{labelValues: nil, value: 0}}},
-		{name: "container.memory.total_inactive_anon", mtype: MetricTypeGauge, unit: "By", labelKeys: nil, values: []Value{{labelValues: nil, value: 0}}},
-		{name: "container.memory.total_inactive_file", mtype: MetricTypeGauge, unit: "By", labelKeys: nil, values: []Value{{labelValues: nil, value: 40579072}}},
-		{name: "container.memory.total_mapped_file", mtype: MetricTypeGauge, unit: "By", labelKeys: nil, values: []Value{{labelValues: nil, value: 37711872}}},
-		{name: "container.memory.total_pgfault", mtype: MetricTypeCumulative, unit: "1", labelKeys: nil, values: []Value{{labelValues: nil, value: 21714}}},
-		{name: "container.memory.total_pgmajfault", mtype: MetricTypeCumulative, unit: "1", labelKeys: nil, values: []Value{{labelValues: nil, value: 396}}},
-		{name: "container.memory.total_pgpgin", mtype: MetricTypeCumulative, unit: "1", labelKeys: nil, values: []Value{{labelValues: nil, value: 85140}}},
-		{name: "container.memory.total_pgpgout", mtype: MetricTypeCumulative, unit: "1", labelKeys: nil, values: []Value{{labelValues: nil, value: 47694}}},
-		{name: "container.memory.total_rss", mtype: MetricTypeGauge, unit: "By", labelKeys: nil, values: []Value{{labelValues: nil, value: 72568832}}},
-		{name: "container.memory.total_rss_huge", mtype: MetricTypeGauge, unit: "By", labelKeys: nil, values: []Value{{labelValues: nil, value: 0}}},
-		{name: "container.memory.total_unevictable", mtype: MetricTypeGauge, unit: "By", labelKeys: nil, values: []Value{{labelValues: nil, value: 0}}},
-		{name: "container.memory.total_writeback", mtype: MetricTypeGauge, unit: "By", labelKeys: nil, values: []Value{{labelValues: nil, value: 0}}},
-		{name: "container.memory.unevictable", mtype: MetricTypeGauge, unit: "By", labelKeys: nil, values: []Value{{labelValues: nil, value: 0}}},
-		{name: "container.memory.writeback", mtype: MetricTypeGauge, unit: "By", labelKeys: nil, values: []Value{{labelValues: nil, value: 0}}},
-		{name: "container.network.io.usage.rx_bytes", mtype: MetricTypeCumulative, unit: "By", labelKeys: []string{"interface"}, values: []Value{{labelValues: []string{"eth0"}, value: 2787669}}},
-		{name: "container.network.io.usage.tx_bytes", mtype: MetricTypeCumulative, unit: "By", labelKeys: []string{"interface"}, values: []Value{{labelValues: []string{"eth0"}, value: 2275281}}},
-		{name: "container.network.io.usage.rx_dropped", mtype: MetricTypeCumulative, unit: "1", labelKeys: []string{"interface"}, values: []Value{{labelValues: []string{"eth0"}, value: 0}}},
-		{name: "container.network.io.usage.rx_errors", mtype: MetricTypeCumulative, unit: "1", labelKeys: []string{"interface"}, values: []Value{{labelValues: []string{"eth0"}, value: 0}}},
-		{name: "container.network.io.usage.rx_packets", mtype: MetricTypeCumulative, unit: "1", labelKeys: []string{"interface"}, values: []Value{{labelValues: []string{"eth0"}, value: 16598}}},
-		{name: "container.network.io.usage.tx_dropped", mtype: MetricTypeCumulative, unit: "1", labelKeys: []string{"interface"}, values: []Value{{labelValues: []string{"eth0"}, value: 0}}},
-		{name: "container.network.io.usage.tx_errors", mtype: MetricTypeCumulative, unit: "1", labelKeys: []string{"interface"}, values: []Value{{labelValues: []string{"eth0"}, value: 0}}},
-		{name: "container.network.io.usage.tx_packets", mtype: MetricTypeCumulative, unit: "1", labelKeys: []string{"interface"}, values: []Value{{labelValues: []string{"eth0"}, value: 9050}}},
+		{name: "container.blockio.io_service_bytes_recursive.read", mtype: MetricTypeCumulative, unit: "By", labelKeys: append(keys, "device_major", "device_minor"), values: []Value{{labelValues: append(values, "202", "0"), value: 56500224}}},
+		{name: "container.blockio.io_service_bytes_recursive.write", mtype: MetricTypeCumulative, unit: "By", labelKeys: append(keys, "device_major", "device_minor"), values: []Value{{labelValues: append(values, "202", "0"), value: 12103680}}},
+		{name: "container.blockio.io_service_bytes_recursive.sync", mtype: MetricTypeCumulative, unit: "By", labelKeys: append(keys, "device_major", "device_minor"), values: []Value{{labelValues: append(values, "202", "0"), value: 65314816}}},
+		{name: "container.blockio.io_service_bytes_recursive.async", mtype: MetricTypeCumulative, unit: "By", labelKeys: append(keys, "device_major", "device_minor"), values: []Value{{labelValues: append(values, "202", "0"), value: 3289088}}},
+		{name: "container.blockio.io_service_bytes_recursive.discard", mtype: MetricTypeCumulative, unit: "By", labelKeys: append(keys, "device_major", "device_minor"), values: []Value{{labelValues: append(values, "202", "0"), value: 0}}},
+		{name: "container.blockio.io_service_bytes_recursive.total", mtype: MetricTypeCumulative, unit: "By", labelKeys: append(keys, "device_major", "device_minor"), values: []Value{{labelValues: append(values, "202", "0"), value: 68603904}}},
+		{name: "container.blockio.io_serviced_recursive.read", mtype: MetricTypeCumulative, unit: "1", labelKeys: append(keys, "device_major", "device_minor"), values: []Value{{labelValues: append(values, "202", "0"), value: 985}}},
+		{name: "container.blockio.io_serviced_recursive.write", mtype: MetricTypeCumulative, unit: "1", labelKeys: append(keys, "device_major", "device_minor"), values: []Value{{labelValues: append(values, "202", "0"), value: 2073}}},
+		{name: "container.blockio.io_serviced_recursive.sync", mtype: MetricTypeCumulative, unit: "1", labelKeys: append(keys, "device_major", "device_minor"), values: []Value{{labelValues: append(values, "202", "0"), value: 2902}}},
+		{name: "container.blockio.io_serviced_recursive.async", mtype: MetricTypeCumulative, unit: "1", labelKeys: append(keys, "device_major", "device_minor"), values: []Value{{labelValues: append(values, "202", "0"), value: 156}}},
+		{name: "container.blockio.io_serviced_recursive.discard", mtype: MetricTypeCumulative, unit: "1", labelKeys: append(keys, "device_major", "device_minor"), values: []Value{{labelValues: append(values, "202", "0"), value: 0}}},
+		{name: "container.blockio.io_serviced_recursive.total", mtype: MetricTypeCumulative, unit: "1", labelKeys: append(keys, "device_major", "device_minor"), values: []Value{{labelValues: append(values, "202", "0"), value: 3058}}},
+		{name: "container.cpu.usage.system", mtype: MetricTypeCumulative, unit: "ns", labelKeys: keys, values: []Value{{labelValues: values, value: 4525290000000}}},
+		{name: "container.cpu.usage.total", mtype: MetricTypeCumulative, unit: "ns", labelKeys: keys, values: []Value{{labelValues: values, value: 8043152341}}},
+		{name: "container.cpu.usage.kernelmode", mtype: MetricTypeCumulative, unit: "ns", labelKeys: keys, values: []Value{{labelValues: values, value: 970000000}}},
+		{name: "container.cpu.usage.usermode", mtype: MetricTypeCumulative, unit: "ns", labelKeys: keys, values: []Value{{labelValues: values, value: 3510000000}}},
+		{name: "container.cpu.throttling_data.periods", mtype: MetricTypeCumulative, unit: "1", labelKeys: keys, values: []Value{{labelValues: values, value: 0}}},
+		{name: "container.cpu.throttling_data.throttled_periods", mtype: MetricTypeCumulative, unit: "1", labelKeys: keys, values: []Value{{labelValues: values, value: 0}}},
+		{name: "container.cpu.throttling_data.throttled_time", mtype: MetricTypeCumulative, unit: "ns", labelKeys: keys, values: []Value{{labelValues: values, value: 0}}},
+		{name: "container.cpu.percent", mtype: MetricTypeDoubleGauge, unit: "1", labelKeys: keys, values: []Value{{labelValues: values, doubleValue: 0.19316}}},
+		{name: "container.memory.usage.limit", mtype: MetricTypeGauge, unit: "By", labelKeys: keys, values: []Value{{labelValues: values, value: 1026359296}}},
+		{name: "container.memory.usage.total", mtype: MetricTypeGauge, unit: "By", labelKeys: keys, values: []Value{{labelValues: values, value: 75915264}}},
+		{name: "container.memory.percent", mtype: MetricTypeDoubleGauge, unit: "1", labelKeys: keys, values: []Value{{labelValues: values, doubleValue: 7.396558329608582}}},
+		{name: "container.memory.usage.max", mtype: MetricTypeGauge, unit: "By", labelKeys: keys, values: []Value{{labelValues: values, value: 325246976}}},
+		{name: "container.memory.active_anon", mtype: MetricTypeGauge, unit: "By", labelKeys: keys, values: []Value{{labelValues: values, value: 72585216}}},
+		{name: "container.memory.active_file", mtype: MetricTypeGauge, unit: "By", labelKeys: keys, values: []Value{{labelValues: values, value: 40316928}}},
+		{name: "container.memory.cache", mtype: MetricTypeGauge, unit: "By", labelKeys: keys, values: []Value{{labelValues: values, value: 80760832}}},
+		{name: "container.memory.dirty", mtype: MetricTypeGauge, unit: "By", labelKeys: keys, values: []Value{{labelValues: values, value: 0}}},
+		{name: "container.memory.hierarchical_memory_limit", mtype: MetricTypeGauge, unit: "By", labelKeys: keys, values: []Value{{labelValues: values, value: 9223372036854771712}}},
+		{name: "container.memory.hierarchical_memsw_limit", mtype: MetricTypeGauge, unit: "By", labelKeys: keys, values: []Value{{labelValues: values, value: 0}}},
+		{name: "container.memory.inactive_anon", mtype: MetricTypeGauge, unit: "By", labelKeys: keys, values: []Value{{labelValues: values, value: 0}}},
+		{name: "container.memory.inactive_file", mtype: MetricTypeGauge, unit: "By", labelKeys: keys, values: []Value{{labelValues: values, value: 40579072}}},
+		{name: "container.memory.mapped_file", mtype: MetricTypeGauge, unit: "By", labelKeys: keys, values: []Value{{labelValues: values, value: 37711872}}},
+		{name: "container.memory.pgfault", mtype: MetricTypeCumulative, unit: "1", labelKeys: keys, values: []Value{{labelValues: values, value: 21714}}},
+		{name: "container.memory.pgmajfault", mtype: MetricTypeCumulative, unit: "1", labelKeys: keys, values: []Value{{labelValues: values, value: 396}}},
+		{name: "container.memory.pgpgin", mtype: MetricTypeCumulative, unit: "1", labelKeys: keys, values: []Value{{labelValues: values, value: 85140}}},
+		{name: "container.memory.pgpgout", mtype: MetricTypeCumulative, unit: "1", labelKeys: keys, values: []Value{{labelValues: values, value: 47694}}},
+		{name: "container.memory.rss", mtype: MetricTypeGauge, unit: "By", labelKeys: keys, values: []Value{{labelValues: values, value: 72568832}}},
+		{name: "container.memory.rss_huge", mtype: MetricTypeGauge, unit: "By", labelKeys: keys, values: []Value{{labelValues: values, value: 0}}},
+		{name: "container.memory.total_active_anon", mtype: MetricTypeGauge, unit: "By", labelKeys: keys, values: []Value{{labelValues: values, value: 72585216}}},
+		{name: "container.memory.total_active_file", mtype: MetricTypeGauge, unit: "By", labelKeys: keys, values: []Value{{labelValues: values, value: 40316928}}},
+		{name: "container.memory.total_cache", mtype: MetricTypeGauge, unit: "By", labelKeys: keys, values: []Value{{labelValues: values, value: 80760832}}},
+		{name: "container.memory.total_dirty", mtype: MetricTypeGauge, unit: "By", labelKeys: keys, values: []Value{{labelValues: values, value: 0}}},
+		{name: "container.memory.total_inactive_anon", mtype: MetricTypeGauge, unit: "By", labelKeys: keys, values: []Value{{labelValues: values, value: 0}}},
+		{name: "container.memory.total_inactive_file", mtype: MetricTypeGauge, unit: "By", labelKeys: keys, values: []Value{{labelValues: values, value: 40579072}}},
+		{name: "container.memory.total_mapped_file", mtype: MetricTypeGauge, unit: "By", labelKeys: keys, values: []Value{{labelValues: values, value: 37711872}}},
+		{name: "container.memory.total_pgfault", mtype: MetricTypeCumulative, unit: "1", labelKeys: keys, values: []Value{{labelValues: values, value: 21714}}},
+		{name: "container.memory.total_pgmajfault", mtype: MetricTypeCumulative, unit: "1", labelKeys: keys, values: []Value{{labelValues: values, value: 396}}},
+		{name: "container.memory.total_pgpgin", mtype: MetricTypeCumulative, unit: "1", labelKeys: keys, values: []Value{{labelValues: values, value: 85140}}},
+		{name: "container.memory.total_pgpgout", mtype: MetricTypeCumulative, unit: "1", labelKeys: keys, values: []Value{{labelValues: values, value: 47694}}},
+		{name: "container.memory.total_rss", mtype: MetricTypeGauge, unit: "By", labelKeys: keys, values: []Value{{labelValues: values, value: 72568832}}},
+		{name: "container.memory.total_rss_huge", mtype: MetricTypeGauge, unit: "By", labelKeys: keys, values: []Value{{labelValues: values, value: 0}}},
+		{name: "container.memory.total_unevictable", mtype: MetricTypeGauge, unit: "By", labelKeys: keys, values: []Value{{labelValues: values, value: 0}}},
+		{name: "container.memory.total_writeback", mtype: MetricTypeGauge, unit: "By", labelKeys: keys, values: []Value{{labelValues: values, value: 0}}},
+		{name: "container.memory.unevictable", mtype: MetricTypeGauge, unit: "By", labelKeys: keys, values: []Value{{labelValues: values, value: 0}}},
+		{name: "container.memory.writeback", mtype: MetricTypeGauge, unit: "By", labelKeys: keys, values: []Value{{labelValues: values, value: 0}}},
+		{name: "container.network.io.usage.rx_bytes", mtype: MetricTypeCumulative, unit: "By", labelKeys: append(keys, "interface"), values: []Value{{labelValues: append(values, "eth0"), value: 2787669}}},
+		{name: "container.network.io.usage.tx_bytes", mtype: MetricTypeCumulative, unit: "By", labelKeys: append(keys, "interface"), values: []Value{{labelValues: append(values, "eth0"), value: 2275281}}},
+		{name: "container.network.io.usage.rx_dropped", mtype: MetricTypeCumulative, unit: "1", labelKeys: append(keys, "interface"), values: []Value{{labelValues: append(values, "eth0"), value: 0}}},
+		{name: "container.network.io.usage.rx_errors", mtype: MetricTypeCumulative, unit: "1", labelKeys: append(keys, "interface"), values: []Value{{labelValues: append(values, "eth0"), value: 0}}},
+		{name: "container.network.io.usage.rx_packets", mtype: MetricTypeCumulative, unit: "1", labelKeys: append(keys, "interface"), values: []Value{{labelValues: append(values, "eth0"), value: 16598}}},
+		{name: "container.network.io.usage.tx_dropped", mtype: MetricTypeCumulative, unit: "1", labelKeys: append(keys, "interface"), values: []Value{{labelValues: append(values, "eth0"), value: 0}}},
+		{name: "container.network.io.usage.tx_errors", mtype: MetricTypeCumulative, unit: "1", labelKeys: append(keys, "interface"), values: []Value{{labelValues: append(values, "eth0"), value: 0}}},
+		{name: "container.network.io.usage.tx_packets", mtype: MetricTypeCumulative, unit: "1", labelKeys: append(keys, "interface"), values: []Value{{labelValues: append(values, "eth0"), value: 9050}}},
 	}
 }
 
@@ -271,7 +275,7 @@ func TestStatsToDefaultMetrics(t *testing.T) {
 	now := pdata.NewTimestampFromTime(time.Now())
 	md := ContainerStatsToMetrics(now, stats, containers, config)
 
-	assertMetricsDataEqual(t, now, defaultMetrics(), nil, md)
+	assertMetricsDataEqual(t, now, defaultMetrics(containers, config), nil, md)
 }
 
 func TestStatsToAllMetrics(t *testing.T) {
@@ -388,7 +392,7 @@ func TestEnvVarToMetricLabels(t *testing.T) {
 		"my.other.env.to.metric.label": "my_other_env_var_value",
 	}
 
-	assertMetricsDataEqual(t, now, defaultMetrics(), expectedLabels, md)
+	assertMetricsDataEqual(t, now, defaultMetrics(containers, config), expectedLabels, md)
 }
 
 func TestContainerLabelToMetricLabels(t *testing.T) {
@@ -409,5 +413,5 @@ func TestContainerLabelToMetricLabels(t *testing.T) {
 		"my.other.docker.to.metric.label": "other_specified_docker_label_value",
 	}
 
-	assertMetricsDataEqual(t, now, defaultMetrics(), expectedLabels, md)
+	assertMetricsDataEqual(t, now, defaultMetrics(containers, config), expectedLabels, md)
 }
