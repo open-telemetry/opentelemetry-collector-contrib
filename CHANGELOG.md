@@ -52,6 +52,7 @@
   - Use "--feature-gates=receiver.k8sclusterreceiver.reportCpuMetricsAsDouble" to enable reporting node and container
     cpu metrics as a double values.
 - `tanzuobservabilityexporter`: Fix a typo in Instrumentation Library name and version tags (#8384)
+- `logreceivers`: Fix an issue where receiver would sometimes fail to build using Go 1.18 (#8521)
 
 ### 🚩 Deprecations 🚩
 
