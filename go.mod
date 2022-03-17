@@ -57,6 +57,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver v0.47.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension v0.47.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.47.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension v0.47.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.47.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.47.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.47.0
