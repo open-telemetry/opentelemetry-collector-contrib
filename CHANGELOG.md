@@ -25,6 +25,7 @@
 - `googlecloudpubsubexporter` Added implementation of Google Cloud Pubsub exporter. (#8391)
 - `coralogixexporter` Allow exporter timeout to be configured (#7957)
 - `prometheusremotewriteexporter` support adding trace id and span id attached to exemplars (#8380)
+- `influxdbexporter`: accept histogram metric missing infinity bucket. (#8462)
 
 ### 🛑 Breaking changes 🛑
 
@@ -52,6 +53,7 @@
   - Use "--feature-gates=receiver.k8sclusterreceiver.reportCpuMetricsAsDouble" to enable reporting node and container
     cpu metrics as a double values.
 - `tanzuobservabilityexporter`: Fix a typo in Instrumentation Library name and version tags (#8384)
+- `logreceivers`: Fix an issue where receiver would sometimes fail to build using Go 1.18 (#8521)
 
 ### 🚩 Deprecations 🚩
 
