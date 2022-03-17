@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/consumer/consumerhelper"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/model/pdata"
 
@@ -38,11 +38,11 @@ const (
 
 // NewFactory creates a Datadog exporter factory
 func NewFactory() component.ExporterFactory {
-	return exporterhelper.NewFactory(
+	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithMetrics(createMetricsExporter),
-		exporterhelper.WithTraces(createTracesExporter),
+		component.WithMetricsExporter(createMetricsExporter),
+		component.WithTracesExporter(createTracesExporter),
 	)
 }
 
@@ -53,12 +53,13 @@ func defaulttimeoutSettings() exporterhelper.TimeoutSettings {
 }
 
 // createDefaultConfig creates the default exporter configuration
+// TODO (#8396): Remove `os.Getenv` everywhere.
 func createDefaultConfig() config.Exporter {
 	return &ddconfig.Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		TimeoutSettings:  defaulttimeoutSettings(),
-		RetrySettings:    exporterhelper.DefaultRetrySettings(),
-		QueueSettings:    exporterhelper.DefaultQueueSettings(),
+		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 
 		API: ddconfig.APIConfig{
 			Key:  os.Getenv("DD_API_KEY"), // Must be set if using API
@@ -118,7 +119,7 @@ func createMetricsExporter(
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
-	var pushMetricsFn consumerhelper.ConsumeMetricsFunc
+	var pushMetricsFn consumer.ConsumeMetricsFunc
 
 	if cfg.OnlyMetadata {
 		pushMetricsFn = func(_ context.Context, md pdata.Metrics) error {
@@ -178,7 +179,7 @@ func createTracesExporter(
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
-	var pushTracesFn consumerhelper.ConsumeTracesFunc
+	var pushTracesFn consumer.ConsumeTracesFunc
 
 	if cfg.OnlyMetadata {
 		pushTracesFn = func(_ context.Context, td pdata.Traces) error {

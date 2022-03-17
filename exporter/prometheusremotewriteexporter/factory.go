@@ -35,10 +35,10 @@ const (
 
 // NewFactory creates a new Prometheus Remote Write exporter.
 func NewFactory() component.ExporterFactory {
-	return exporterhelper.NewFactory(
+	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithMetrics(createMetricsExporter))
+		component.WithMetricsExporter(createMetricsExporter))
 }
 
 func createMetricsExporter(_ context.Context, set component.ExporterCreateSettings,
@@ -85,7 +85,7 @@ func createDefaultConfig() config.Exporter {
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		Namespace:        "",
 		ExternalLabels:   map[string]string{},
-		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
+		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
 		sanitizeLabel:    featuregate.IsEnabled(dropSanitizationGate.ID),
 		RetrySettings: exporterhelper.RetrySettings{
 			Enabled:         true,
@@ -98,7 +98,7 @@ func createDefaultConfig() config.Exporter {
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
 			ReadBufferSize:  0,
 			WriteBufferSize: 512 * 1024,
-			Timeout:         exporterhelper.DefaultTimeoutSettings().Timeout,
+			Timeout:         exporterhelper.NewDefaultTimeoutSettings().Timeout,
 			Headers:         map[string]string{},
 		},
 		// TODO(jbd): Adjust the default queue size.

@@ -3,11 +3,11 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubele
 go 1.17
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.45.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.45.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.47.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.47.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.45.0
-	go.opentelemetry.io/collector/model v0.45.0
+	go.opentelemetry.io/collector v0.47.0
+	go.opentelemetry.io/collector/model v0.47.0
 	go.uber.org/zap v1.21.0
 	k8s.io/api v0.23.4
 	k8s.io/apimachinery v0.23.4
@@ -27,7 +27,7 @@ require (
 	github.com/imdario/mergo v0.3.11 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/knadh/koanf v1.4.0 // indirect
-	github.com/magiconair/properties v1.8.5 // indirect
+	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
@@ -35,7 +35,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/onsi/ginkgo v1.14.1 // indirect
 	github.com/onsi/gomega v1.10.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.45.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.47.0 // indirect
 	github.com/openshift/api v0.0.0-20210521075222-e273a339932a // indirect
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142 // indirect
 	github.com/pelletier/go-toml v1.9.4 // indirect
@@ -49,7 +49,7 @@ require (
 	go.opentelemetry.io/otel/metric v0.27.0 // indirect
 	go.opentelemetry.io/otel/trace v1.4.1 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
-	go.uber.org/multierr v1.7.0 // indirect
+	go.uber.org/multierr v1.8.0 // indirect
 	golang.org/x/net v0.0.0-20211209124913-491a49abca63 // indirect
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
 	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9 // indirect

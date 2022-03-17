@@ -24,12 +24,13 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
-	"github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/transformer/noop"
 	"github.com/open-telemetry/opentelemetry-log-collection/operator/helper"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator/transformer/noop"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/zap"
 )
 
 // This file implements some useful testing components
@@ -61,9 +62,9 @@ func NewUnstartableConfig() *UnstartableConfig {
 }
 
 // Build will build an unstartable operator
-func (c *UnstartableConfig) Build(context operator.BuildContext) ([]operator.Operator, error) {
-	o, _ := c.OutputConfig.Build(context)
-	return []operator.Operator{&UnstartableOperator{OutputOperator: o}}, nil
+func (c *UnstartableConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+	o, _ := c.OutputConfig.Build(logger)
+	return &UnstartableOperator{OutputOperator: o}, nil
 }
 
 // Start will return an error

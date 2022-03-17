@@ -16,7 +16,7 @@ package udplogreceiver // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"github.com/open-telemetry/opentelemetry-log-collection/operator"
-	"github.com/open-telemetry/opentelemetry-log-collection/operator/builtin/input/udp"
+	"github.com/open-telemetry/opentelemetry-log-collection/operator/input/udp"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"gopkg.in/yaml.v2"

@@ -7,9 +7,15 @@
 # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/12dbcfc3faf80ec532d832fc7e6650222be33ff9/processor/k8sattributesprocessor/doc.go#L26-L28
 ---
 apiVersion: v1
+kind: Namespace
+metadata:
+  name: open-telemetry
+---
+apiVersion: v1
 kind: ConfigMap
 metadata:
   name: otel-agent-conf
+  namespace: open-telemetry
   labels:
     app: opentelemetry
     component: otel-agent-conf
@@ -32,7 +38,7 @@ data:
       zipkin:
     exporters:
       otlp:
-        endpoint: "otel-collector.default:4317"
+        endpoint: "otel-collector.open-telemetry:4317"
         tls:
           insecure: true
     processors:
@@ -79,6 +85,7 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: otel-agent
+  namespace: open-telemetry
   labels:
     app: opentelemetry
     component: otel-agent
@@ -147,6 +154,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: otel-collector-conf
+  namespace: open-telemetry
   labels:
     app: opentelemetry
     component: otel-collector-conf
@@ -187,6 +195,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: otel-collector
+  namespace: open-telemetry
   labels:
     app: opentelemetry
     component: otel-collector
@@ -205,6 +214,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: otel-collector
+  namespace: open-telemetry
   labels:
     app: opentelemetry
     component: otel-collector
@@ -257,3 +267,32 @@ spec:
               - key: otel-collector-config
                 path: otel-collector-config.yaml
           name: otel-collector-config-vol
+      serviceAccountName: opentelemetry-collector
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: opentelemetry-collector
+  namespace: open-telemetry
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: otel-collector-role
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["watch", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: otel-collector-role-binding
+subjects:
+- kind: ServiceAccount
+  name: opentelemetry-collector
+  namespace: open-telemetry
+roleRef:
+  kind: ClusterRole
+  name: otel-collector-role
+  apiGroup: rbac.authorization.k8s.io

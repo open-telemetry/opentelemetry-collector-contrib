@@ -25,16 +25,16 @@ Support time-series graph, table and logs.
 ```clickhouse
 /* get error count about my service last 1 hour.*/
 SELECT count(*)
-FROM logs
-WHERE SeverityText="ERROR" AND timestamp >= NOW() - INTERVAL 1 HOUR;
-/* find error log.*/
+FROM otel_logs
+WHERE SeverityText='ERROR' AND Timestamp >= NOW() - INTERVAL 1 HOUR;
+/* find log.*/
 SELECT * 
-FROM logs 
-WHERE SeverityText="ERROR" AND timestamp >= NOW() - INTERVAL 1 HOUR;
+FROM otel_logs 
+WHERE Timestamp >= NOW() - INTERVAL 1 HOUR;
 /* find log with specific attribute .*/
 SELECT Body
-FROM logs 
-WHERE Attributes.value[indexOf(Attributes.key, 'http.method')] = 'post' AND timestamp >= NOW() - INTERVAL 1 HOUR;
+FROM otel_logs 
+WHERE LogAttributes.Value[indexOf(LogAttributes.Key, 'http_method')] = 'post' AND Timestamp >= NOW() - INTERVAL 1 HOUR;
 ```
 
 ## Configuration options
@@ -47,7 +47,8 @@ The following settings are required:
 
 The following settings can be optionally configured:
 
-- `ttl_days` (default=0): The data time-to-live in days, 0 means no ttl.
+- `ttl_days` (defaul t= 0): The data time-to-live in days, 0 means no ttl.
+- `logs_table_name` (default = otel_logs): The table name for logs.
 - `timeout` (default = 5s): The timeout for every attempt to send data to the backend.
 - `sending_queue`
   - `queue_size` (default = 5000): Maximum number of batches kept in memory before dropping data.
@@ -86,29 +87,28 @@ service:
 ## Schema
 
 ```clickhouse
-CREATE TABLE IF NOT EXISTS logs (
-     timestamp DateTime CODEC(Delta, ZSTD(1)),
-     TraceId String CODEC(ZSTD(1)),
-     SpanId String CODEC(ZSTD(1)),
-     TraceFlags Int64,
-     SeverityText LowCardinality(String) CODEC(ZSTD(1)),
-     SeverityNumber Int64,
-     Name LowCardinality(String) CODEC(ZSTD(1)),
-     Body String CODEC(ZSTD(1)),
-     Attributes Nested
-     (
-         key LowCardinality(String),
-         value String
-     ) CODEC(ZSTD(1)),
-     Resource Nested
-     (
-         key LowCardinality(String),
-         value String
-     ) CODEC(ZSTD(1)),
-     INDEX idx_attr_keys Attributes.key TYPE bloom_filter(0.01) GRANULARITY 64,
-     INDEX idx_res_keys Resource.key TYPE bloom_filter(0.01) GRANULARITY 64
+CREATE TABLE IF NOT EXISTS otel_logs (
+    Timestamp DateTime CODEC(Delta, ZSTD(1)),
+    TraceId String CODEC(ZSTD(1)),
+    SpanId String CODEC(ZSTD(1)),
+    TraceFlags UInt32,
+    SeverityText LowCardinality(String) CODEC(ZSTD(1)),
+    SeverityNumber Int32,
+    Body String CODEC(ZSTD(1)),
+    ResourceAttributes Nested
+        (
+        Key LowCardinality(String),
+        Value String
+        ) CODEC(ZSTD(1)),
+    LogAttributes Nested
+        (
+        Key LowCardinality(String),
+        Value String
+        ) CODEC(ZSTD(1)),
+INDEX idx_attr_keys ResourceAttributes.Key TYPE bloom_filter(0.01) GRANULARITY 64,
+INDEX idx_res_keys LogAttributes.Key TYPE bloom_filter(0.01) GRANULARITY 64
 ) ENGINE MergeTree()
-TTL timestamp + INTERVAL 3 DAY
-PARTITION BY toDate(timestamp)
-ORDER BY (Name, -toUnixTimestamp(timestamp))
+TTL Timestamp + INTERVAL 3 DAY
+PARTITION BY toDate(Timestamp)
+ORDER BY (toUnixTimestamp(Timestamp));
 ```

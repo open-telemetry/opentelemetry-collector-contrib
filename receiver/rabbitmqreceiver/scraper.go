@@ -27,7 +27,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver/internal/models"
 )
 
-const instrumentationLibraryName = "otelcol/rabbitmq"
+const instrumentationLibraryName = "otelcol/rabbitmqreceiver"
 
 var errClientNotInit = errors.New("client not initialized")
 

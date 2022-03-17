@@ -21,10 +21,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerhelper"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
@@ -63,10 +61,10 @@ var (
 
 // NewFactory creates a new factory for host metrics receiver.
 func NewFactory() component.ReceiverFactory {
-	return receiverhelper.NewFactory(
+	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithMetrics(createMetricsReceiver))
+		component.WithMetricsReceiver(createMetricsReceiver))
 }
 
 func getScraperFactory(key string) (internal.ScraperFactory, bool) {
@@ -79,7 +77,7 @@ func getScraperFactory(key string) (internal.ScraperFactory, bool) {
 
 // createDefaultConfig creates the default configuration for receiver.
 func createDefaultConfig() config.Receiver {
-	return &Config{ScraperControllerSettings: scraperhelper.DefaultScraperControllerSettings(typeStr)}
+	return &Config{ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr)}
 }
 
 // createMetricsReceiver creates a metrics receiver based on provided config.
@@ -111,8 +109,8 @@ func createMetricsReceiver(
 
 // This function wraps the consumer and returns a new consumer such that the schema URL
 // of all metrics that pass through the new consumer is set correctly.
-func wrapBySchemaURLSetterConsumer(consumer consumer.Metrics) (consumer.Metrics, error) {
-	return consumerhelper.NewMetrics(func(ctx context.Context, md pdata.Metrics) error {
+func wrapBySchemaURLSetterConsumer(cm consumer.Metrics) (consumer.Metrics, error) {
+	return consumer.NewMetrics(func(ctx context.Context, md pdata.Metrics) error {
 		rms := md.ResourceMetrics()
 		for i := 0; i < rms.Len(); i++ {
 			rm := rms.At(i)
@@ -126,7 +124,7 @@ func wrapBySchemaURLSetterConsumer(consumer consumer.Metrics) (consumer.Metrics,
 			// Else if the SchemaURL is set we assume the producer of the metric knows
 			// what it does. We won't touch it.
 		}
-		return consumer.ConsumeMetrics(ctx, md)
+		return cm.ConsumeMetrics(ctx, md)
 	})
 }
 

@@ -20,7 +20,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/extension/extensionhelper"
 )
 
 // The value of extension "type" in configuration.
@@ -28,7 +27,7 @@ const typeStr config.Type = "file_storage"
 
 // NewFactory creates a factory for HostObserver extension.
 func NewFactory() component.ExtensionFactory {
-	return extensionhelper.NewFactory(
+	return component.NewExtensionFactory(
 		typeStr,
 		createDefaultConfig,
 		createExtension)

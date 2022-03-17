@@ -39,8 +39,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 	assert.Equal(t, &dtconfig.Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		RetrySettings:    exporterhelper.DefaultRetrySettings(),
-		QueueSettings:    exporterhelper.DefaultQueueSettings(),
+		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 		ResourceToTelemetrySettings: resourcetotelemetry.Settings{
 			Enabled: false,
 		},
@@ -70,8 +70,8 @@ func TestLoadConfig(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, &dtconfig.Config{
 			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "defaults")),
-			RetrySettings:    exporterhelper.DefaultRetrySettings(),
-			QueueSettings:    exporterhelper.DefaultQueueSettings(),
+			RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
+			QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint: apiconstants.GetDefaultOneAgentEndpoint(),
@@ -90,8 +90,8 @@ func TestLoadConfig(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, &dtconfig.Config{
 			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "valid")),
-			RetrySettings:    exporterhelper.DefaultRetrySettings(),
-			QueueSettings:    exporterhelper.DefaultQueueSettings(),
+			RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
+			QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint: "http://example.com/api/v2/metrics/ingest",
@@ -117,8 +117,8 @@ func TestLoadConfig(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, &dtconfig.Config{
 			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "valid_tags")),
-			RetrySettings:    exporterhelper.DefaultRetrySettings(),
-			QueueSettings:    exporterhelper.DefaultQueueSettings(),
+			RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
+			QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint: "http://example.com/api/v2/metrics/ingest",

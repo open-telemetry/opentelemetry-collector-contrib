@@ -41,7 +41,7 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Exporters), 2)
 
-	defaultRetrySettings := exporterhelper.DefaultRetrySettings()
+	defaultRetrySettings := exporterhelper.NewDefaultRetrySettings()
 
 	e1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "e1-defaults")].(*Config)
 
@@ -54,7 +54,7 @@ func TestLoadConfig(t *testing.T) {
 			Endpoint:           "",
 			AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
 			QueueSettings: QueueSettings{
-				QueueSize: exporterhelper.DefaultQueueSettings().QueueSize,
+				QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize,
 			},
 		},
 		e1,

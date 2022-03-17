@@ -42,11 +42,13 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, apiConfig, &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID("coralogix")),
-		QueueSettings:    exporterhelper.DefaultQueueSettings(),
-		RetrySettings:    exporterhelper.DefaultRetrySettings(),
+		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
+		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
 		PrivateKey:       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 		AppName:          "APP_NAME",
-		SubSystem:        "SUBSYSTEM_NAME",
+		// Deprecated: [v0.47.0] SubSystem will remove in the next version
+		SubSystem:       "SUBSYSTEM_NAME",
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 			Compression: "",
@@ -59,7 +61,7 @@ func TestLoadConfig(t *testing.T) {
 			ReadBufferSize:  0,
 			WriteBufferSize: 0,
 			WaitForReady:    false,
-			Headers:         map[string]string{"ACCESS_TOKEN": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", "appName": "APP_NAME", "subsystemName": "SUBSYSTEM_NAME"},
+			Headers:         map[string]string{"ACCESS_TOKEN": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", "appName": "APP_NAME"},
 			BalancerName:    "",
 		},
 	})

@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
@@ -32,10 +31,10 @@ const (
 
 // NewFactory creates a factory for k8s_cluster receiver.
 func NewFactory() component.ReceiverFactory {
-	return receiverhelper.NewFactory(
+	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithLogs(createLogsReceiver))
+		component.WithLogsReceiver(createLogsReceiver))
 }
 
 func createDefaultConfig() config.Receiver {

@@ -78,11 +78,9 @@ func (c *couchdbScraper) getResourceMetrics() (pdata.Metrics, error) {
 
 func (c *couchdbScraper) appendMetrics(stats map[string]interface{}, rms pdata.ResourceMetricsSlice) error {
 	now := pdata.NewTimestampFromTime(time.Now())
-	rm := pdata.NewResourceMetrics()
-	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName("otelcol/couchdb")
+	md := c.mb.NewMetricData()
 
-	rm.Resource().Attributes().UpsertString(metadata.A.CouchdbNodeName, c.config.Endpoint)
+	md.ResourceMetrics().At(0).Resource().Attributes().UpsertString(metadata.A.CouchdbNodeName, c.config.Endpoint)
 
 	var errors scrapererror.ScrapeErrors
 	c.recordCouchdbAverageRequestTimeDataPoint(now, stats, errors)
@@ -94,9 +92,9 @@ func (c *couchdbScraper) appendMetrics(stats map[string]interface{}, rms pdata.R
 	c.recordCouchdbFileDescriptorOpenDataPoint(now, stats, errors)
 	c.recordCouchdbDatabaseOperationsDataPoint(now, stats, errors)
 
-	c.mb.Emit(ilm.Metrics())
-	if ilm.Metrics().Len() > 0 {
-		rm.CopyTo(rms.AppendEmpty())
+	c.mb.Emit(md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
+	if md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Len() > 0 {
+		md.ResourceMetrics().At(0).CopyTo(rms.AppendEmpty())
 	}
 
 	return errors.Combine()
