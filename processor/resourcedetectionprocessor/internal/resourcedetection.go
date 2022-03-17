@@ -63,7 +63,7 @@ func (f *ResourceProviderFactory) CreateResourceProvider(
 	}
 
 	attributesToKeep := make(map[string]struct{})
-	if attributes != nil && len(attributes) > 0 {
+	if len(attributes) > 0 {
 		for _, attribute := range attributes {
 			attributesToKeep[attribute] = struct{}{}
 		}
@@ -206,7 +206,7 @@ func MergeSchemaURL(currentSchemaURL string, newSchemaURL string) string {
 }
 
 func FilterAttributes(am pdata.AttributeMap, attributesToKeep map[string]struct{}) {
-	if attributesToKeep != nil && len(attributesToKeep) > 0 {
+	if len(attributesToKeep) > 0 {
 		am.RemoveIf(func(k string, v pdata.AttributeValue) bool {
 			_, keep := attributesToKeep[k]
 			return !keep
