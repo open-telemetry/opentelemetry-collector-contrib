@@ -25,6 +25,7 @@
 - `googlecloudpubsubexporter` Added implementation of Google Cloud Pubsub exporter. (#8391)
 - `coralogixexporter` Allow exporter timeout to be configured (#7957)
 - `prometheusremotewriteexporter` support adding trace id and span id attached to exemplars (#8380)
+- `influxdbexporter`: accept histogram metric missing infinity bucket. (#8462)
 
 ### 🛑 Breaking changes 🛑
 
