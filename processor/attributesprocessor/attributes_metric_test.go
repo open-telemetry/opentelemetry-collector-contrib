@@ -447,6 +447,63 @@ func TestMetricAttributes_Hash(t *testing.T) {
 		runIndividualMetricTestCase(t, tc, mp)
 	}
 }
+func TestMetricAttributes_Convert(t *testing.T) {
+	testCases := []metricTestCase{
+		{
+			name: "String to int (good)",
+			inputAttributes: map[string]pdata.AttributeValue{
+				"to.int": pdata.NewAttributeValueString("123"),
+			},
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"to.int": pdata.NewAttributeValueInt(123),
+			},
+		},
+		{
+			name: "String to int (bad)",
+			inputAttributes: map[string]pdata.AttributeValue{
+				"to.int": pdata.NewAttributeValueString("int-10"),
+			},
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"to.int": pdata.NewAttributeValueString("int-10"),
+			},
+		},
+		{
+			name: "String to double",
+			inputAttributes: map[string]pdata.AttributeValue{
+				"to.double": pdata.NewAttributeValueString("3.141e2"),
+			},
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"to.double": pdata.NewAttributeValueDouble(314.1),
+			},
+		},
+		{
+			name: "Double to string",
+			inputAttributes: map[string]pdata.AttributeValue{
+				"to.string": pdata.NewAttributeValueDouble(99.1),
+			},
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"to.string": pdata.NewAttributeValueString("99.1"),
+			},
+		},
+	}
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	oCfg := cfg.(*Config)
+	oCfg.Actions = []attraction.ActionKeyValue{
+		{Key: "to.int", Action: attraction.CONVERT, ConvertedType: "int"},
+		{Key: "to.double", Action: attraction.CONVERT, ConvertedType: "double"},
+		{Key: "to.string", Action: attraction.CONVERT, ConvertedType: "string"},
+	}
+
+	tp, err := factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
+	require.Nil(t, err)
+	require.NotNil(t, tp)
+
+	for _, tt := range testCases {
+		runIndividualMetricTestCase(t, tt, tp)
+	}
+}
 
 func BenchmarkAttributes_FilterMetricsByName(b *testing.B) {
 	testCases := []metricTestCase{

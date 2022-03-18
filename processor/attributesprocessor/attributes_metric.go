@@ -82,7 +82,7 @@ func (a *metricAttributesProcessor) excluded(atts pdata.AttributeMap, resource p
 
 func (a *metricAttributesProcessor) processMatching(ctx context.Context, atts pdata.AttributeMap, resource pdata.Resource, library pdata.InstrumentationLibrary) {
 	if !a.excluded(atts, resource, library) {
-		a.attrProc.Process(ctx, atts)
+		a.attrProc.Process(ctx, a.logger, atts)
 	}
 }
 

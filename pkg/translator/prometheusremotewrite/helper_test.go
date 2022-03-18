@@ -424,12 +424,55 @@ func Test_getPromExemplars(t *testing.T) {
 	}{
 		{
 			"with_exemplars",
-			getHistogramDataPointWithExemplars(tnow, floatVal1, traceIDKey, traceIDValue1),
+			getHistogramDataPointWithExemplars(t, tnow, floatVal1, traceIDValue1, spanIDValue1, label11, value11),
 			[]prompb.Exemplar{
 				{
 					Value:     floatVal1,
 					Timestamp: timestamp.FromTime(tnow),
-					Labels:    []prompb.Label{getLabel(traceIDKey, traceIDValue1)},
+					Labels:    []prompb.Label{getLabel(traceIDKey, traceIDValue1), getLabel(spanIDKey, spanIDValue1), getLabel(label11, value11)},
+				},
+			},
+		},
+		{
+			"with_exemplars_without_trace_or_span",
+			getHistogramDataPointWithExemplars(t, tnow, floatVal1, "", "", label11, value11),
+			[]prompb.Exemplar{
+				{
+					Value:     floatVal1,
+					Timestamp: timestamp.FromTime(tnow),
+					Labels:    []prompb.Label{getLabel(label11, value11)},
+				},
+			},
+		},
+		{
+			"too_many_runes_drops_labels",
+			getHistogramDataPointWithExemplars(t, tnow, floatVal1, "", "", keyWith129Runes, ""),
+			[]prompb.Exemplar{
+				{
+					Value:     floatVal1,
+					Timestamp: timestamp.FromTime(tnow),
+				},
+			},
+		},
+		{
+			"runes_at_limit_bytes_over_keeps_labels",
+			getHistogramDataPointWithExemplars(t, tnow, floatVal1, "", "", keyWith128Runes, ""),
+			[]prompb.Exemplar{
+				{
+					Value:     floatVal1,
+					Timestamp: timestamp.FromTime(tnow),
+					Labels:    []prompb.Label{getLabel(keyWith128Runes, "")},
+				},
+			},
+		},
+		{
+			"too_many_runes_with_exemplar_drops_attrs_keeps_exemplar",
+			getHistogramDataPointWithExemplars(t, tnow, floatVal1, traceIDValue1, spanIDValue1, keyWith64Runes, ""),
+			[]prompb.Exemplar{
+				{
+					Value:     floatVal1,
+					Timestamp: timestamp.FromTime(tnow),
+					Labels:    []prompb.Label{getLabel(traceIDKey, traceIDValue1), getLabel(spanIDKey, spanIDValue1)},
 				},
 			},
 		},

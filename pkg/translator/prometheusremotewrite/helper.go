@@ -23,6 +23,7 @@ import (
 	"strings"
 	"time"
 	"unicode"
+	"unicode/utf8"
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/timestamp"
@@ -41,6 +42,14 @@ const (
 	quantileStr = "quantile"
 	pInfStr     = "+Inf"
 	keyStr      = "key"
+	// maxExemplarRunes is the maximum number of UTF-8 exemplar characters
+	// according to the prometheus specification
+	// https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#exemplars
+	maxExemplarRunes = 128
+	// Trace and Span id keys are defined as part of the spec:
+	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification%2Fmetrics%2Fdatamodel.md#exemplars-2
+	traceIDKey = "trace_id"
+	spanIDKey  = "span_id"
 )
 
 type bucketBoundsData struct {
@@ -352,22 +361,49 @@ func getPromExemplars(pt pdata.HistogramDataPoint) []prompb.Exemplar {
 
 	for i := 0; i < pt.Exemplars().Len(); i++ {
 		exemplar := pt.Exemplars().At(i)
+		exemplarRunes := 0
 
 		promExemplar := &prompb.Exemplar{
 			Value:     exemplar.DoubleVal(),
 			Timestamp: timestamp.FromTime(exemplar.Timestamp().AsTime()),
 		}
+		if !exemplar.TraceID().IsEmpty() {
+			val := exemplar.TraceID().HexString()
+			exemplarRunes += utf8.RuneCountInString(traceIDKey) + utf8.RuneCountInString(val)
+			promLabel := prompb.Label{
+				Name:  traceIDKey,
+				Value: val,
+			}
+			promExemplar.Labels = append(promExemplar.Labels, promLabel)
+		}
+		if !exemplar.SpanID().IsEmpty() {
+			val := exemplar.SpanID().HexString()
+			exemplarRunes += utf8.RuneCountInString(spanIDKey) + utf8.RuneCountInString(val)
+			promLabel := prompb.Label{
+				Name:  spanIDKey,
+				Value: val,
+			}
+			promExemplar.Labels = append(promExemplar.Labels, promLabel)
+		}
+		var labelsFromAttributes []prompb.Label
 
 		exemplar.FilteredAttributes().Range(func(key string, value pdata.AttributeValue) bool {
+			val := value.AsString()
+			exemplarRunes += utf8.RuneCountInString(key) + utf8.RuneCountInString(val)
 			promLabel := prompb.Label{
 				Name:  key,
-				Value: value.AsString(),
+				Value: val,
 			}
 
-			promExemplar.Labels = append(promExemplar.Labels, promLabel)
+			labelsFromAttributes = append(labelsFromAttributes, promLabel)
 
 			return true
 		})
+		if exemplarRunes <= maxExemplarRunes {
+			// only append filtered attributes if it does not cause exemplar
+			// labels to exceed the max number of runes
+			promExemplar.Labels = append(promExemplar.Labels, labelsFromAttributes...)
+		}
 
 		promExemplars = append(promExemplars, *promExemplar)
 	}
