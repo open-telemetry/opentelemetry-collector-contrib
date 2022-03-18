@@ -4,7 +4,7 @@
          "instrumentationLibraryMetrics": [
             {
                "instrumentationLibrary": {
-                  "name": "otelcol/rabbitmq"
+                  "name": "otelcol/rabbitmqreceiver"
                },
                "metrics": [
                   {
@@ -88,7 +88,7 @@
          "instrumentationLibraryMetrics": [
             {
                "instrumentationLibrary": {
-                  "name": "otelcol/rabbitmq"
+                  "name": "otelcol/rabbitmqreceiver"
                },
                "metrics": [
                   {

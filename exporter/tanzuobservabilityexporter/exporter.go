@@ -31,14 +31,19 @@ import (
 )
 
 const (
-	defaultApplicationName = "defaultApp"
-	defaultServiceName     = "defaultService"
-	labelApplication       = "application"
-	labelError             = "error"
-	labelEventName         = "name"
-	labelService           = "service"
-	labelSpanKind          = "span.kind"
-	labelSource            = "source"
+	defaultApplicationName  = "defaultApp"
+	defaultServiceName      = "defaultService"
+	labelApplication        = "application"
+	labelError              = "error"
+	labelEventName          = "name"
+	labelService            = "service"
+	labelSpanKind           = "span.kind"
+	labelSource             = "source"
+	labelDroppedEventsCount = "otel.dropped_events_count"
+	labelDroppedLinksCount  = "otel.dropped_links_count"
+	labelDroppedAttrsCount  = "otel.dropped_attributes_count"
+	labelOtelScopeName      = "otel.scope.name"
+	labelOtelScopeVersion   = "otel.scope.version"
 )
 
 // spanSender Interface for sending tracing spans to Tanzu Observability
@@ -103,6 +108,10 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td pdata.Traces) err
 		for j := 0; j < rspans.InstrumentationLibrarySpans().Len(); j++ {
 			ispans := rspans.InstrumentationLibrarySpans().At(j)
 			transform := newTraceTransformer(resource)
+
+			libraryName := ispans.InstrumentationLibrary().Name()
+			libraryVersion := ispans.InstrumentationLibrary().Version()
+
 			for k := 0; k < ispans.Spans().Len(); k++ {
 				select {
 				case <-ctx.Done():
@@ -112,6 +121,14 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td pdata.Traces) err
 					if err != nil {
 						errs = multierr.Append(errs, err)
 						continue
+					}
+
+					if libraryName != "" {
+						transformedSpan.Tags[labelOtelScopeName] = libraryName
+					}
+
+					if libraryVersion != "" {
+						transformedSpan.Tags[labelOtelScopeVersion] = libraryVersion
 					}
 
 					if err := e.recordSpan(transformedSpan); err != nil {

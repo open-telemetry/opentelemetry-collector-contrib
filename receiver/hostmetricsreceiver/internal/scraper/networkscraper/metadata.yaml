@@ -1,4 +1,4 @@
-name: network
+name: hostmetricsreceiver/network
 
 attributes:
   device:
