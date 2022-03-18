@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils/cache"
 )
 
@@ -34,15 +33,11 @@ func TestHost(t *testing.T) {
 	// if the cache key is already set.
 	cache.Cache.Delete(cache.CanonicalHostnameKey)
 
-	host := GetHost(logger, &config.Config{
-		TagsConfig: config.TagsConfig{Hostname: "test-host"},
-	})
+	host := GetHost(logger, "test-host")
 	assert.Equal(t, host, "test-host")
 
 	// config.Config.Hostname does not get stored in the cache
-	host = GetHost(logger, &config.Config{
-		TagsConfig: config.TagsConfig{Hostname: "test-host-2"},
-	})
+	host = GetHost(logger, "test-host-2")
 	assert.Equal(t, host, "test-host-2")
 
 	// Disable EC2 Metadata service to prevent fetching hostname from there,
@@ -53,7 +48,7 @@ func TestHost(t *testing.T) {
 	require.NoError(t, err)
 	defer os.Setenv(awsEc2MetadataDisabled, curr)
 
-	host = GetHost(logger, &config.Config{})
+	host = GetHost(logger, "")
 	osHostname, err := os.Hostname()
 	require.NoError(t, err)
 	// TODO: Investigate why the returned host contains more data on github actions.

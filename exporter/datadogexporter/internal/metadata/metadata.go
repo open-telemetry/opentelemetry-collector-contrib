@@ -27,7 +27,6 @@ import (
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/ec2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/system"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes"
@@ -120,10 +119,10 @@ func metadataFromAttributes(attrs pdata.AttributeMap) *HostMetadata {
 	return hm
 }
 
-func fillHostMetadata(params component.ExporterCreateSettings, cfg *config.Config, hm *HostMetadata) {
+func fillHostMetadata(params component.ExporterCreateSettings, pcfg PusherConfig, hm *HostMetadata) {
 	// Could not get hostname from attributes
 	if hm.InternalHostname == "" {
-		hostname := GetHost(params.Logger, cfg)
+		hostname := GetHost(params.Logger, pcfg.ConfigHostname)
 		hm.InternalHostname = hostname
 		hm.Meta.Hostname = hostname
 	}
@@ -132,7 +131,7 @@ func fillHostMetadata(params component.ExporterCreateSettings, cfg *config.Confi
 	// since it does not come from OTEL conventions
 	hm.Flavor = params.BuildInfo.Command
 	hm.Version = params.BuildInfo.Version
-	hm.Tags.OTel = append(hm.Tags.OTel, cfg.GetHostTags()...)
+	hm.Tags.OTel = append(hm.Tags.OTel, pcfg.ConfigTags...)
 
 	// EC2 data was not set from attributes
 	if hm.Meta.EC2Hostname == "" {
@@ -149,19 +148,19 @@ func fillHostMetadata(params component.ExporterCreateSettings, cfg *config.Confi
 	}
 }
 
-func pushMetadata(cfg *config.Config, params component.ExporterCreateSettings, metadata *HostMetadata) error {
+func pushMetadata(pcfg PusherConfig, params component.ExporterCreateSettings, metadata *HostMetadata) error {
 	if metadata.Meta.Hostname == "" {
 		// if the hostname is empty, don't send metadata; we don't need it.
 		params.Logger.Debug("Skipping host metadata since the hostname is empty")
 		return nil
 	}
 
-	path := cfg.Metrics.TCPAddr.Endpoint + "/intake"
+	path := pcfg.MetricsEndpoint + "/intake"
 	buf, _ := json.Marshal(metadata)
 	req, _ := http.NewRequest(http.MethodPost, path, bytes.NewBuffer(buf))
-	utils.SetDDHeaders(req.Header, params.BuildInfo, cfg.API.Key)
+	utils.SetDDHeaders(req.Header, params.BuildInfo, pcfg.APIKey)
 	utils.SetExtraHeaders(req.Header, utils.JSONHeaders)
-	client := utils.NewHTTPClient(cfg.TimeoutSettings, cfg.LimitedHTTPClientSettings)
+	client := utils.NewHTTPClient(pcfg.TimeoutSettings, pcfg.InsecureSkipVerify)
 	resp, err := client.Do(req)
 
 	if err != nil {
@@ -181,11 +180,11 @@ func pushMetadata(cfg *config.Config, params component.ExporterCreateSettings, m
 	return nil
 }
 
-func pushMetadataWithRetry(retrier *utils.Retrier, params component.ExporterCreateSettings, cfg *config.Config, hostMetadata *HostMetadata) {
+func pushMetadataWithRetry(retrier *utils.Retrier, params component.ExporterCreateSettings, pcfg PusherConfig, hostMetadata *HostMetadata) {
 	params.Logger.Debug("Sending host metadata payload", zap.Any("payload", hostMetadata))
 
 	err := retrier.DoWithRetries(context.Background(), func(context.Context) error {
-		return pushMetadata(cfg, params, hostMetadata)
+		return pushMetadata(pcfg, params, hostMetadata)
 	})
 
 	if err != nil {
@@ -197,12 +196,12 @@ func pushMetadataWithRetry(retrier *utils.Retrier, params component.ExporterCrea
 }
 
 // Pusher pushes host metadata payloads periodically to Datadog intake
-func Pusher(ctx context.Context, params component.ExporterCreateSettings, cfg *config.Config, attrs pdata.AttributeMap) {
+func Pusher(ctx context.Context, params component.ExporterCreateSettings, pcfg PusherConfig, attrs pdata.AttributeMap) {
 	// Push metadata every 30 minutes
 	ticker := time.NewTicker(30 * time.Minute)
 	defer ticker.Stop()
 	defer params.Logger.Debug("Shut down host metadata routine")
-	retrier := utils.NewRetrier(params.Logger, cfg.RetrySettings, scrub.NewScrubber())
+	retrier := utils.NewRetrier(params.Logger, pcfg.RetrySettings, scrub.NewScrubber())
 
 	// Get host metadata from resources and fill missing info using our exporter.
 	// Currently we only retrieve it once but still send the same payload
@@ -212,20 +211,20 @@ func Pusher(ctx context.Context, params component.ExporterCreateSettings, cfg *c
 	// do not change over time. If this ever changes `hostMetadata`
 	// *must* be deep copied before calling `fillHostMetadata`.
 	hostMetadata := &HostMetadata{Meta: &Meta{}, Tags: &HostTags{}}
-	if cfg.UseResourceMetadata {
+	if pcfg.UseResourceMetadata {
 		hostMetadata = metadataFromAttributes(attrs)
 	}
-	fillHostMetadata(params, cfg, hostMetadata)
+	fillHostMetadata(params, pcfg, hostMetadata)
 
 	// Run one first time at startup
-	pushMetadataWithRetry(retrier, params, cfg, hostMetadata)
+	pushMetadataWithRetry(retrier, params, pcfg, hostMetadata)
 
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C: // Send host metadata
-			pushMetadataWithRetry(retrier, params, cfg, hostMetadata)
+			pushMetadataWithRetry(retrier, params, pcfg, hostMetadata)
 		}
 	}
 }
