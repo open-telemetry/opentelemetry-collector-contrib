@@ -16,6 +16,7 @@ package skywalkingreceiver
 
 import (
 	"context"
+
 	v3c "skywalking.apache.org/repo/goapi/collect/agent/configuration/v3"
 	common "skywalking.apache.org/repo/goapi/collect/common/v3"
 	event "skywalking.apache.org/repo/goapi/collect/event/v3"

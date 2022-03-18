@@ -112,6 +112,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver v0.47.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.47.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver v0.47.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver v0.47.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver v0.47.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver v0.47.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver v0.47.0
@@ -124,7 +125,7 @@ require (
 	github.com/prometheus/prometheus v1.8.2-0.20220117154355-4855a0c067e2
 	github.com/stretchr/testify v1.7.0
 	go.opentelemetry.io/collector v0.47.0
-	skywalking.apache.org/repo/goapi v0.0.0-20220121092418-9c455d0dda3f
+	golang.org/x/sys v0.0.0-20220310020820-b874c991c1a5
 )
 
 require (
@@ -477,6 +478,7 @@ require (
 	sigs.k8s.io/json v0.0.0-20211208200746-9f7c6b3444d2 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.1 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
+	skywalking.apache.org/repo/goapi v0.0.0-20220121092418-9c455d0dda3f // indirect
 )
 
 // Replace references to modules that are in this repository with their relateive paths

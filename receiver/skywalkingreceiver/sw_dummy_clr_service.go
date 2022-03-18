@@ -16,6 +16,7 @@ package skywalkingreceiver
 
 import (
 	"context"
+
 	common "skywalking.apache.org/repo/goapi/collect/common/v3"
 	agent "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
 )
