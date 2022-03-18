@@ -22,8 +22,8 @@ import (
 // See Logs for rationale.
 type Log struct {
 	Timestamp  int64
-	Body       pdata.AttributeValue
-	Attributes map[string]pdata.AttributeValue
+	Body       pdata.Value
+	Attributes map[string]pdata.Value
 }
 
 // Logs is a convenience function for constructing logs for tests in a way that is

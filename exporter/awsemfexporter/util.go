@@ -72,11 +72,11 @@ func getNamespace(rm *pdata.ResourceMetrics, namespace string) string {
 	if len(namespace) == 0 {
 		serviceName, svcNameOk := rm.Resource().Attributes().Get(conventions.AttributeServiceName)
 		serviceNamespace, svcNsOk := rm.Resource().Attributes().Get(conventions.AttributeServiceNamespace)
-		if svcNameOk && svcNsOk && serviceName.Type() == pdata.AttributeValueTypeString && serviceNamespace.Type() == pdata.AttributeValueTypeString {
+		if svcNameOk && svcNsOk && serviceName.Type() == pdata.ValueTypeString && serviceNamespace.Type() == pdata.ValueTypeString {
 			namespace = fmt.Sprintf("%s/%s", serviceNamespace.StringVal(), serviceName.StringVal())
-		} else if svcNameOk && serviceName.Type() == pdata.AttributeValueTypeString {
+		} else if svcNameOk && serviceName.Type() == pdata.ValueTypeString {
 			namespace = serviceName.StringVal()
-		} else if svcNsOk && serviceNamespace.Type() == pdata.AttributeValueTypeString {
+		} else if svcNsOk && serviceNamespace.Type() == pdata.ValueTypeString {
 			namespace = serviceNamespace.StringVal()
 		}
 	}
@@ -171,7 +171,7 @@ func unixNanoToMilliseconds(timestamp pdata.Timestamp) int64 {
 func attrMaptoStringMap(attrMap pdata.AttributeMap) map[string]string {
 	strMap := make(map[string]string, attrMap.Len())
 
-	attrMap.Range(func(k string, v pdata.AttributeValue) bool {
+	attrMap.Range(func(k string, v pdata.Value) bool {
 		strMap[k] = v.AsString()
 		return true
 	})

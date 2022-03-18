@@ -2261,8 +2261,8 @@ func BenchmarkTranslateCWMetricToEMF(b *testing.B) {
 type testMetric struct {
 	metricNames          []string
 	metricValues         [][]float64
-	resourceAttributeMap map[string]pdata.AttributeValue
-	attributeMap         map[string]pdata.AttributeValue
+	resourceAttributeMap map[string]pdata.Value
+	attributeMap         map[string]pdata.Value
 }
 
 type logGroupStreamTest struct {
@@ -2292,9 +2292,9 @@ var (
 			inputMetrics: generateTestMetrics(testMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
 				metricValues: [][]float64{{100}, {4}},
-				resourceAttributeMap: map[string]pdata.AttributeValue{
-					"ClusterName": pdata.NewAttributeValueString("test-cluster"),
-					"PodName":     pdata.NewAttributeValueString("test-pod"),
+				resourceAttributeMap: map[string]pdata.Value{
+					"ClusterName": pdata.NewValueString("test-cluster"),
+					"PodName":     pdata.NewValueString("test-pod"),
 				},
 			}),
 			inLogGroupName:   "test-log-group-{ClusterName}",
@@ -2307,9 +2307,9 @@ var (
 			inputMetrics: generateTestMetrics(testMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
 				metricValues: [][]float64{{100}, {4}},
-				resourceAttributeMap: map[string]pdata.AttributeValue{
-					"ClusterName": pdata.NewAttributeValueString("test-cluster"),
-					"PodName":     pdata.NewAttributeValueString("test-pod"),
+				resourceAttributeMap: map[string]pdata.Value{
+					"ClusterName": pdata.NewValueString("test-cluster"),
+					"PodName":     pdata.NewValueString("test-pod"),
 				},
 			}),
 			inLogGroupName:   "test-log-group",
@@ -2322,9 +2322,9 @@ var (
 			inputMetrics: generateTestMetrics(testMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
 				metricValues: [][]float64{{100}, {4}},
-				attributeMap: map[string]pdata.AttributeValue{
-					"ClusterName": pdata.NewAttributeValueString("test-cluster"),
-					"PodName":     pdata.NewAttributeValueString("test-pod"),
+				attributeMap: map[string]pdata.Value{
+					"ClusterName": pdata.NewValueString("test-cluster"),
+					"PodName":     pdata.NewValueString("test-pod"),
 				},
 			}),
 			inLogGroupName:   "test-log-group-{ClusterName}",
@@ -2337,9 +2337,9 @@ var (
 			inputMetrics: generateTestMetrics(testMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
 				metricValues: [][]float64{{100}, {4}},
-				attributeMap: map[string]pdata.AttributeValue{
-					"ClusterName": pdata.NewAttributeValueString("test-cluster"),
-					"PodName":     pdata.NewAttributeValueString("test-pod"),
+				attributeMap: map[string]pdata.Value{
+					"ClusterName": pdata.NewValueString("test-cluster"),
+					"PodName":     pdata.NewValueString("test-pod"),
 				},
 			}),
 			inLogGroupName:   "test-log-group",
@@ -2352,11 +2352,11 @@ var (
 			inputMetrics: generateTestMetrics(testMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
 				metricValues: [][]float64{{100}, {4}},
-				resourceAttributeMap: map[string]pdata.AttributeValue{
-					"ClusterName": pdata.NewAttributeValueString("test-cluster"),
+				resourceAttributeMap: map[string]pdata.Value{
+					"ClusterName": pdata.NewValueString("test-cluster"),
 				},
-				attributeMap: map[string]pdata.AttributeValue{
-					"PodName": pdata.NewAttributeValueString("test-pod"),
+				attributeMap: map[string]pdata.Value{
+					"PodName": pdata.NewValueString("test-pod"),
 				},
 			}),
 			inLogGroupName:   "test-log-group-{ClusterName}",
@@ -2380,8 +2380,8 @@ var (
 			inputMetrics: generateTestMetrics(testMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
 				metricValues: [][]float64{{100}, {4}},
-				attributeMap: map[string]pdata.AttributeValue{
-					"PodName": pdata.NewAttributeValueString("test-pod"),
+				attributeMap: map[string]pdata.Value{
+					"PodName": pdata.NewValueString("test-pod"),
 				},
 			}),
 			inLogGroupName:   "test-log-group-{ClusterName}",

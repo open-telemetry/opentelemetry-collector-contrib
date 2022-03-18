@@ -578,10 +578,10 @@ func verifyHonorLabelsTrue(t *testing.T, td *testData, rms []*pdata.ResourceMetr
 
 	//job and instance label values should be honored from honorLabelsTarget
 	expectedAttributes := td.attributes
-	expectedAttributes.Update("job", pdata.NewAttributeValueString("honor_labels_test"))
-	expectedAttributes.Update("instance", pdata.NewAttributeValueString("hostname:8080"))
-	expectedAttributes.Update("host.name", pdata.NewAttributeValueString("hostname"))
-	expectedAttributes.Update("port", pdata.NewAttributeValueString("8080"))
+	expectedAttributes.Update("job", pdata.NewValueString("honor_labels_test"))
+	expectedAttributes.Update("instance", pdata.NewValueString("hostname:8080"))
+	expectedAttributes.Update("host.name", pdata.NewValueString("hostname"))
+	expectedAttributes.Update("port", pdata.NewValueString("8080"))
 
 	metrics1 := rms[0].InstrumentationLibraryMetrics().At(0).Metrics()
 	ts1 := metrics1.At(0).Gauge().DataPoints().At(0).Timestamp()

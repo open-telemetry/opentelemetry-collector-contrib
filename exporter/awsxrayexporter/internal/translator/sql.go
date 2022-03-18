@@ -21,9 +21,9 @@ import (
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
-func makeSQL(attributes map[string]pdata.AttributeValue) (map[string]pdata.AttributeValue, *awsxray.SQLData) {
+func makeSQL(attributes map[string]pdata.Value) (map[string]pdata.Value, *awsxray.SQLData) {
 	var (
-		filtered    = make(map[string]pdata.AttributeValue)
+		filtered    = make(map[string]pdata.Value)
 		sqlData     awsxray.SQLData
 		dbURL       string
 		dbSystem    string

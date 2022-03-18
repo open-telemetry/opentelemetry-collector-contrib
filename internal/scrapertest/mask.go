@@ -125,7 +125,7 @@ func maskDataPointSliceAttributeValues(dataPoints pdata.NumberDataPointSlice, at
 		attribute, ok := attributes.Get(attributeName)
 		if ok {
 			switch attribute.Type() {
-			case pdata.AttributeValueTypeString:
+			case pdata.ValueTypeString:
 				attributes.UpdateString(attributeName, "")
 			default:
 				panic(fmt.Sprintf("data type not supported: %s", attribute.Type()))

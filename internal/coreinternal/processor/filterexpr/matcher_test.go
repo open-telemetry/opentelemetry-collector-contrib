@@ -139,20 +139,20 @@ func TestNonMatchGaugeDataPointByMetricAndHasLabel(t *testing.T) {
 
 func TestMatchGaugeDataPointByMetricAndHasLabel(t *testing.T) {
 	expression := `MetricName == 'my.metric' && HasLabel("foo")`
-	assert.True(t, testMatchGauge(t, "my.metric", expression, map[string]pdata.AttributeValue{"foo": pdata.NewAttributeValueString("")}))
+	assert.True(t, testMatchGauge(t, "my.metric", expression, map[string]pdata.Value{"foo": pdata.NewValueString("")}))
 }
 
 func TestMatchGaugeDataPointByMetricAndLabelValue(t *testing.T) {
 	expression := `MetricName == 'my.metric' && Label("foo") == "bar"`
-	assert.False(t, testMatchGauge(t, "my.metric", expression, map[string]pdata.AttributeValue{"foo": pdata.NewAttributeValueString("")}))
+	assert.False(t, testMatchGauge(t, "my.metric", expression, map[string]pdata.Value{"foo": pdata.NewValueString("")}))
 }
 
 func TestNonMatchGaugeDataPointByMetricAndLabelValue(t *testing.T) {
 	expression := `MetricName == 'my.metric' && Label("foo") == "bar"`
-	assert.False(t, testMatchGauge(t, "my.metric", expression, map[string]pdata.AttributeValue{"foo": pdata.NewAttributeValueString("")}))
+	assert.False(t, testMatchGauge(t, "my.metric", expression, map[string]pdata.Value{"foo": pdata.NewValueString("")}))
 }
 
-func testMatchGauge(t *testing.T, metricName, expression string, lbls map[string]pdata.AttributeValue) bool {
+func testMatchGauge(t *testing.T, metricName, expression string, lbls map[string]pdata.Value) bool {
 	matcher, err := NewMatcher(expression)
 	require.NoError(t, err)
 	m := pdata.NewMetric()

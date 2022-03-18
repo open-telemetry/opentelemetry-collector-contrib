@@ -360,7 +360,7 @@ func (m *metricZookeeperFollowerCount) recordDataPoint(start pdata.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.State, pdata.NewAttributeValueString(stateAttributeValue))
+	dp.Attributes().Insert(A.State, pdata.NewValueString(stateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -611,7 +611,7 @@ func (m *metricZookeeperPacketCount) recordDataPoint(start pdata.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Direction, pdata.NewAttributeValueString(directionAttributeValue))
+	dp.Attributes().Insert(A.Direction, pdata.NewValueString(directionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.

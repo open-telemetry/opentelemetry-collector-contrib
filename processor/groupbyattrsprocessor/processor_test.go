@@ -30,9 +30,9 @@ var (
 )
 
 func prepareAttributeMap() pdata.AttributeMap {
-	attributeValues := map[string]pdata.AttributeValue{
-		"xx": pdata.NewAttributeValueString("aa"),
-		"yy": pdata.NewAttributeValueInt(11),
+	attributeValues := map[string]pdata.Value{
+		"xx": pdata.NewValueString("aa"),
+		"yy": pdata.NewValueInt(11),
 	}
 
 	am := pdata.NewAttributeMap()
@@ -137,7 +137,7 @@ func someComplexMetrics(withResourceAttrIndex bool, rmCount int, ilmCount int, d
 }
 
 func assertResourceContainsAttributes(t *testing.T, resource pdata.Resource, attributeMap pdata.AttributeMap) {
-	attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
+	attributeMap.Range(func(k string, v pdata.Value) bool {
 		rv, found := resource.Attributes().Get(k)
 		assert.True(t, found)
 		assert.Equal(t, v, rv)
