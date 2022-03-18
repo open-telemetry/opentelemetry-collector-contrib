@@ -2,13 +2,16 @@
 
 ## Unreleased
 
+### 💡 Enhancements 💡
+
+- `k8seventsreceiver`: Add Api_version and resource_version (#8539)
+
 ## v0.47.0
 
 ### 💡 Enhancements 💡
 
 - `attributesprocessor`: Add convert action (#7930)
 - `attributesprocessor`: Add metric support (#8111)
-- `k8seventsreceiver`: Add Api_version and resource_version (#8539)
 - `prometheusremotewriteexporter`: Write-Ahead Log support enabled (#7304)
 - `hostreceiver/filesystemscraper`: Add filesystem utilization (#8027)
 - `hostreceiver/pagingscraper`: Add paging.utilization (#6221)
