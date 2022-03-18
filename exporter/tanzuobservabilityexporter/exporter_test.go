@@ -192,6 +192,35 @@ func validateTraces(t *testing.T, expected []*span, traces pdata.Traces) {
 	}
 }
 
+func TestExportTraceDataWithInstrumentationDetails(t *testing.T) {
+	minSpan := createSpan(
+		"root",
+		pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}),
+		pdata.NewSpanID([8]byte{9, 9, 9, 9, 9, 9, 9, 9}),
+		pdata.SpanID{},
+	)
+	traces := constructTraces([]pdata.Span{minSpan})
+
+	instrumentationLibrary := traces.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).
+		InstrumentationLibrary()
+	instrumentationLibrary.SetName("instrumentation_name")
+	instrumentationLibrary.SetVersion("v0.0.1")
+
+	expected := []*span{{
+		Name:    "root",
+		TraceID: uuid.MustParse("01010101-0101-0101-0101-010101010101"),
+		SpanID:  uuid.MustParse("00000000-0000-0000-0909-090909090909"),
+		Tags: map[string]string{
+			labelApplication:      "defaultApp",
+			labelService:          "defaultService",
+			labelOtelScopeName:    "instrumentation_name",
+			labelOtelScopeVersion: "v0.0.1",
+		},
+	}}
+
+	validateTraces(t, expected, traces)
+}
+
 func TestExportTraceDataRespectsContext(t *testing.T) {
 	traces := constructTraces([]pdata.Span{createSpan(
 		"root",

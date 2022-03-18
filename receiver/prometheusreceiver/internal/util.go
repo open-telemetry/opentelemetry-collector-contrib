@@ -30,11 +30,6 @@ const (
 	startTimeMetricName = "process_start_time_seconds"
 	scrapeUpMetricName  = "up"
 
-	portAttr     = "port"
-	schemeAttr   = "scheme"
-	jobAttr      = "job"
-	instanceAttr = "instance"
-
 	transport  = "http"
 	dataformat = "prometheus"
 )

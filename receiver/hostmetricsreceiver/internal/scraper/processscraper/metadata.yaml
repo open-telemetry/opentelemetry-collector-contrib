@@ -1,4 +1,4 @@
-name: process
+name: hostmetricsreceiver/process
 
 attributes:
   direction:

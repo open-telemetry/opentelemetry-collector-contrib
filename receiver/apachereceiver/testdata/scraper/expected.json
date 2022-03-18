@@ -5,7 +5,7 @@
       "instrumentationLibraryMetrics": [
         {
           "instrumentationLibrary": {
-            "name": "otelcol/apache"
+            "name": "otelcol/apachereceiver"
           },
           "metrics": [
             {

@@ -103,10 +103,8 @@ func (r *apacheScraper) scrape(context.Context) (pdata.Metrics, error) {
 		}
 	}
 
-	md := pdata.NewMetrics()
-	ilm := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName("otelcol/apache")
-	r.mb.Emit(ilm.Metrics())
+	md := r.mb.NewMetricData()
+	r.mb.Emit(md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
 	return md, nil
 }
 

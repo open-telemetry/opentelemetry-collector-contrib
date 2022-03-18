@@ -87,7 +87,14 @@ processors:
   attributes/hash:
     actions:
       - key: user.email
-        action: hash 
+        action: hash
+
+  # The following demonstrates converting the type of existing attribute values.
+  attributes/convert:
+    actions:
+      - key: http.status_code
+        action: convert
+        converted_type: int
 
 
   # The following demonstrates excluding spans from this attributes processor.
