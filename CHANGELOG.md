@@ -21,6 +21,7 @@
 - `transformprocessor`: Include transform processor in components (#10134)
 - `kubeletstatsreceiver`: Update receiver to use new Metrics Builder. All emitted metrics remain the same. (#9744)
 - `transformprocessor`: Add new `replace_match` and `replace_all_matches` functions (#10132)
+- `prometheusreceiver`: Add ability to request HTTP_SD jobs from OpenTelemetryOperator TargetAllocator (#8055)
 
 ### 🧰 Bug fixes 🧰
 
