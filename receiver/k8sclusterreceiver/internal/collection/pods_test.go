@@ -22,6 +22,7 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/service/featuregate"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -34,7 +35,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
 )
 
-func TestPodAndContainerMetrics(t *testing.T) {
+func TestPodAndContainerMetricsReportCPUMetricsAsInt(t *testing.T) {
+	// disable the feature gate
+	featuregate.Apply(map[string]bool{reportCPUMetricsAsDoubleFeatureGateID: false})
+
 	pod := newPodWithContainer(
 		"1",
 		podSpecWithContainer("container-name"),
@@ -60,7 +64,7 @@ func TestPodAndContainerMetrics(t *testing.T) {
 		},
 	)
 
-	testutils.AssertMetrics(t, rm.Metrics[0], "k8s.pod.phase",
+	testutils.AssertMetricsInt(t, rm.Metrics[0], "k8s.pod.phase",
 		metricspb.MetricDescriptor_GAUGE_INT64, 3)
 
 	rm = rms[1]
@@ -80,17 +84,79 @@ func TestPodAndContainerMetrics(t *testing.T) {
 		},
 	)
 
-	testutils.AssertMetrics(t, rm.Metrics[0], "k8s.container.restarts",
+	testutils.AssertMetricsInt(t, rm.Metrics[0], "k8s.container.restarts",
 		metricspb.MetricDescriptor_GAUGE_INT64, 3)
 
-	testutils.AssertMetrics(t, rm.Metrics[1], "k8s.container.ready",
+	testutils.AssertMetricsInt(t, rm.Metrics[1], "k8s.container.ready",
 		metricspb.MetricDescriptor_GAUGE_INT64, 1)
 
-	testutils.AssertMetrics(t, rm.Metrics[2], "k8s.container.cpu_request",
+	testutils.AssertMetricsInt(t, rm.Metrics[2], "k8s.container.cpu_request",
 		metricspb.MetricDescriptor_GAUGE_INT64, 10000)
 
-	testutils.AssertMetrics(t, rm.Metrics[3], "k8s.container.cpu_limit",
+	testutils.AssertMetricsInt(t, rm.Metrics[3], "k8s.container.cpu_limit",
 		metricspb.MetricDescriptor_GAUGE_INT64, 20000)
+}
+
+func TestPodAndContainerMetricsReportCPUMetricsAsDouble(t *testing.T) {
+	// enable the feature gate
+	featuregate.Apply(map[string]bool{reportCPUMetricsAsDoubleFeatureGateID: true})
+
+	pod := newPodWithContainer(
+		"1",
+		podSpecWithContainer("container-name"),
+		podStatusWithContainer("container-name", containerIDWithPreifx("container-id")),
+	)
+	dc := NewDataCollector(zap.NewNop(), []string{}, []string{})
+
+	dc.SyncMetrics(pod)
+	actualResourceMetrics := dc.metricsStore.metricsCache
+
+	rms := actualResourceMetrics["test-pod-1-uid"]
+	require.NotNil(t, rms)
+
+	rm := rms[0]
+	require.Equal(t, 1, len(rm.Metrics))
+	testutils.AssertResource(t, rm.Resource, k8sType,
+		map[string]string{
+			"k8s.pod.uid":        "test-pod-1-uid",
+			"k8s.pod.name":       "test-pod-1",
+			"k8s.node.name":      "test-node",
+			"k8s.namespace.name": "test-namespace",
+			"k8s.cluster.name":   "test-cluster",
+		},
+	)
+
+	testutils.AssertMetricsInt(t, rm.Metrics[0], "k8s.pod.phase",
+		metricspb.MetricDescriptor_GAUGE_INT64, 3)
+
+	rm = rms[1]
+
+	require.Equal(t, 4, len(rm.Metrics))
+	testutils.AssertResource(t, rm.Resource, "container",
+		map[string]string{
+			"container.id":         "container-id",
+			"k8s.container.name":   "container-name",
+			"container.image.name": "container-image-name",
+			"container.image.tag":  "latest",
+			"k8s.pod.uid":          "test-pod-1-uid",
+			"k8s.pod.name":         "test-pod-1",
+			"k8s.node.name":        "test-node",
+			"k8s.namespace.name":   "test-namespace",
+			"k8s.cluster.name":     "test-cluster",
+		},
+	)
+
+	testutils.AssertMetricsInt(t, rm.Metrics[0], "k8s.container.restarts",
+		metricspb.MetricDescriptor_GAUGE_INT64, 3)
+
+	testutils.AssertMetricsInt(t, rm.Metrics[1], "k8s.container.ready",
+		metricspb.MetricDescriptor_GAUGE_INT64, 1)
+
+	testutils.AssertMetricsDouble(t, rm.Metrics[2], "k8s.container.cpu_request",
+		metricspb.MetricDescriptor_GAUGE_DOUBLE, 10.0)
+
+	testutils.AssertMetricsDouble(t, rm.Metrics[3], "k8s.container.cpu_limit",
+		metricspb.MetricDescriptor_GAUGE_DOUBLE, 20.0)
 }
 
 func newPodWithContainer(id string, spec *corev1.PodSpec, status *corev1.PodStatus) *corev1.Pod {

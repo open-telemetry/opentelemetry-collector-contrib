@@ -44,16 +44,16 @@ func TestStatefulsettMetrics(t *testing.T) {
 		},
 	)
 
-	testutils.AssertMetrics(t, rm.metrics[0], "k8s.statefulset.desired_pods",
+	testutils.AssertMetricsInt(t, rm.metrics[0], "k8s.statefulset.desired_pods",
 		metricspb.MetricDescriptor_GAUGE_INT64, 10)
 
-	testutils.AssertMetrics(t, rm.metrics[1], "k8s.statefulset.ready_pods",
+	testutils.AssertMetricsInt(t, rm.metrics[1], "k8s.statefulset.ready_pods",
 		metricspb.MetricDescriptor_GAUGE_INT64, 7)
 
-	testutils.AssertMetrics(t, rm.metrics[2], "k8s.statefulset.current_pods",
+	testutils.AssertMetricsInt(t, rm.metrics[2], "k8s.statefulset.current_pods",
 		metricspb.MetricDescriptor_GAUGE_INT64, 5)
 
-	testutils.AssertMetrics(t, rm.metrics[3], "k8s.statefulset.updated_pods",
+	testutils.AssertMetricsInt(t, rm.metrics[3], "k8s.statefulset.updated_pods",
 		metricspb.MetricDescriptor_GAUGE_INT64, 3)
 }
 

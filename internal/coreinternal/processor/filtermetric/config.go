@@ -56,7 +56,20 @@ type MatchProperties struct {
 	ResourceAttributes []filterconfig.Attribute `mapstructure:"resource_attributes"`
 }
 
-// ChecksMetrics returns whether or not the check should iterate through all the metrics
+func CreateMatchPropertiesFromDefault(properties *filterconfig.MatchProperties) *MatchProperties {
+	if properties == nil {
+		return nil
+	}
+
+	return &MatchProperties{
+		MatchType:          MatchType(properties.Config.MatchType),
+		RegexpConfig:       properties.Config.RegexpConfig,
+		MetricNames:        properties.MetricNames,
+		ResourceAttributes: properties.Resources,
+	}
+}
+
+// ChecksMetrics returns whether the check should iterate through all the metrics
 func (mp *MatchProperties) ChecksMetrics() bool {
 	if mp == nil {
 		return false

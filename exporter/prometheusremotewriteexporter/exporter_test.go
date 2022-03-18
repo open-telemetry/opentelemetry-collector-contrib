@@ -656,11 +656,11 @@ func Test_PushMetrics(t *testing.T) {
 					prwe, nErr := newPRWExporter(cfg, set)
 					require.NoError(t, nErr)
 					ctx, cancel := context.WithCancel(context.Background())
-					t.Cleanup(cancel)
+					defer cancel()
 					require.NoError(t, prwe.Start(ctx, componenttest.NewNopHost()))
-					t.Cleanup(func() {
+					defer func() {
 						require.NoError(t, prwe.Shutdown(ctx))
-					})
+					}()
 					err := prwe.PushMetrics(ctx, *tt.md)
 					if tt.returnErr {
 						assert.Error(t, err)
