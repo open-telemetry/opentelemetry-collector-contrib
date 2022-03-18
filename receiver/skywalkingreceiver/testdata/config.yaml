@@ -15,14 +15,14 @@ receivers:
         endpoint: 0.0.0.0:12801
 
 exporters:
-  logging:
+  nop:
 
 processors:
-  batch:
+  nop:
 
 service:
   pipelines:
     traces:
       receivers: [skywalking]
-      processors: [batch]
-      exporters: [logging]
+      processors: [nop]
+      exporters: [nop]

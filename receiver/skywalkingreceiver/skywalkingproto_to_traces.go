@@ -18,11 +18,12 @@ import (
 	"encoding/binary"
 	"fmt"
 	"reflect"
+	"time"
 	"unsafe"
 
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.8.0"
-	v3 "skywalking.apache.org/repo/goapi/collect/common/v3"
+	common "skywalking.apache.org/repo/goapi/collect/common/v3"
 	agentV3 "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
 )
 
@@ -32,52 +33,6 @@ var OtSpanTagsMapping = map[string]string{
 	"db.type":     conventions.AttributeDBSystem,
 	"db.instance": conventions.AttributeDBName,
 	"mq.broker":   conventions.AttributeNetPeerName,
-}
-
-//TODO: delete it.
-func initSpanEventAttributes(dest pdata.AttributeMap) {
-	dest.Clear()
-	//spanEventAttributes.CopyTo(dest)
-}
-
-//TODO: delete it.
-func compositeOtlpTraces(swSpan agentV3.SpanObject) pdata.Traces {
-	td := pdata.NewTraces()
-	td.ResourceSpans().AppendEmpty()
-	rs0 := td.ResourceSpans().At(0)
-	rs0.Resource()
-
-	attriMap := rs0.Resource().Attributes()
-	attriMap.Clear()
-	//resourceAttributes1.CopyTo(attriMap)
-
-	td.ResourceSpans().At(0).InstrumentationLibrarySpans().AppendEmpty()
-	rs0ils0 := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0)
-
-	sppendSpan := rs0ils0.Spans().AppendEmpty()
-	sppendSpan.SetName("operationA")
-	//sppendSpan.SetStartTimestamp(TestSpanStartTimestamp)
-	//sppendSpan.SetEndTimestamp(TestSpanEndTimestamp)
-	sppendSpan.SetDroppedAttributesCount(1)
-	sppendSpan.SetTraceID(pdata.NewTraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10}))
-	sppendSpan.SetSpanID(pdata.NewSpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18}))
-	evs := sppendSpan.Events()
-	ev0 := evs.AppendEmpty()
-	//ev0.SetTimestamp(TestSpanEventTimestamp)
-	ev0.SetName("event-with-attr")
-
-	initSpanEventAttributes(ev0.Attributes())
-	ev0.SetDroppedAttributesCount(2)
-	ev1 := evs.AppendEmpty()
-	//ev1.SetTimestamp(TestSpanEventTimestamp)
-	ev1.SetName("event")
-	ev1.SetDroppedAttributesCount(2)
-	sppendSpan.SetDroppedEventsCount(1)
-	status := sppendSpan.Status()
-	status.SetCode(pdata.StatusCodeError)
-	status.SetMessage("status-cancelled")
-
-	return td
 }
 
 func SkywalkingToOtlpTraces(segment *agentV3.SegmentObject) pdata.Traces {
@@ -98,30 +53,6 @@ func SkywalkingToOtlpTraces(segment *agentV3.SegmentObject) pdata.Traces {
 
 	il := resourceSpan.InstrumentationLibrarySpans().AppendEmpty()
 	swSpansToOtlpSpans(segment.GetTraceId(), swSpans, il.Spans())
-
-	return traceData
-}
-
-func SkywalkingToOtlpTracesArray(segment *agentV3.SegmentCollection) pdata.Traces {
-	traceData := pdata.NewTraces()
-
-	//TODO:
-	return traceData
-}
-
-func ToOtlpTraces(spans []*agentV3.SpanObject) pdata.Traces {
-	traceData := pdata.NewTraces()
-
-	if spans == nil && len(spans) == 0 {
-		return traceData
-	}
-
-	rs := traceData.ResourceSpans().AppendEmpty()
-	for _, span := range spans {
-		swTagsToInternalResource(span, rs.Resource())
-	}
-	ilss := rs.InstrumentationLibrarySpans().AppendEmpty()
-	swSpansToOtlpSpans("", spans, ilss.Spans())
 
 	return traceData
 }
@@ -162,22 +93,17 @@ func swSpansToOtlpSpans(traceId string, spans []*agentV3.SpanObject, dest pdata.
 }
 
 func swSpanToOtelSpan(traceId string, span *agentV3.SpanObject, dest pdata.Span) {
-	// TODO: fix traceId
 	dest.SetTraceID(stringToTraceID(traceId))
-	dest.SetTraceID(pdata.NewTraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10}))
-
 	dest.SetSpanID(uInt32ToSpanID(uint32(span.GetSpanId())))
-	//dest.SetTraceState()
 
 	// parent spanid = -1, means(root span) no parent span in skywalking,so just make otlp's parent span id empty.
-	if span.ParentSpanId > -1 {
+	if span.ParentSpanId != -1 {
 		dest.SetParentSpanID(uInt32ToSpanID(uint32(span.GetParentSpanId())))
 	}
 
 	dest.SetName(span.OperationName)
-
-	dest.SetStartTimestamp(microsecondsToUnixNano(span.GetStartTime()))
-	dest.SetEndTimestamp(microsecondsToUnixNano(span.GetEndTime()))
+	dest.SetStartTimestamp(microsecondsToTimestamp(span.GetStartTime()))
+	dest.SetEndTimestamp(microsecondsToTimestamp(span.GetEndTime()))
 
 	attrs := dest.Attributes()
 	attrs.EnsureCapacity(len(span.Tags))
@@ -189,15 +115,21 @@ func swSpanToOtelSpan(traceId string, span *agentV3.SpanObject, dest pdata.Span)
 
 	setInternalSpanStatus(span, dest.Status())
 
-	switch span.GetSpanType() {
-	case agentV3.SpanType_Exit:
+	switch {
+	case span.SpanLayer == agentV3.SpanLayer_MQ:
+		if span.SpanType == agentV3.SpanType_Entry {
+			dest.SetKind(pdata.SpanKindConsumer)
+		} else if span.SpanType == agentV3.SpanType_Exit {
+			dest.SetKind(pdata.SpanKindProducer)
+		}
+	case span.GetSpanType() == agentV3.SpanType_Exit:
 		dest.SetKind(pdata.SpanKindClient)
-	case agentV3.SpanType_Entry:
+	case span.GetSpanType() == agentV3.SpanType_Entry:
 		dest.SetKind(pdata.SpanKindServer)
-	case agentV3.SpanType_Local:
+	case span.GetSpanType() == agentV3.SpanType_Local:
 		dest.SetKind(pdata.SpanKindInternal)
 	default:
-		dest.SetKind(pdata.SpanKindInternal)
+		dest.SetKind(pdata.SpanKindUnspecified)
 	}
 
 	swLogsToSpanEvents(span.GetLogs(), dest.Events())
@@ -219,7 +151,6 @@ func swReferencesToSpanLinks(refs []*agentV3.SegmentReference, excludeParentID i
 		}
 		link := dest.AppendEmpty()
 		link.SetTraceID(stringToTraceID(ref.TraceId))
-		//link.SetTraceState()
 		link.SetSpanID(stringToParentSpanId(ref.ParentTraceSegmentId))
 	}
 }
@@ -229,11 +160,11 @@ func setInternalSpanStatus(span *agentV3.SpanObject, dest pdata.SpanStatus) {
 	statusMessage := ""
 
 	if span.GetIsError() {
-		statusCode = pdata.StatusCodeOk
-		statusMessage = "SUCCESS"
-	} else {
 		statusCode = pdata.StatusCodeError
 		statusMessage = "ERROR"
+	} else {
+		statusCode = pdata.StatusCodeOk
+		statusMessage = "SUCCESS"
 	}
 
 	dest.SetCode(statusCode)
@@ -255,7 +186,7 @@ func swLogsToSpanEvents(logs []*agentV3.Log, dest pdata.SpanEventSlice) {
 		}
 
 		event.SetName("logs")
-		event.SetTimestamp(microsecondsToUnixNano(log.GetTime()))
+		event.SetTimestamp(microsecondsToTimestamp(log.GetTime()))
 		if len(log.GetData()) == 0 {
 			continue
 		}
@@ -267,7 +198,7 @@ func swLogsToSpanEvents(logs []*agentV3.Log, dest pdata.SpanEventSlice) {
 	}
 }
 
-func swKvPairsToInternalAttributes(pairs []*v3.KeyStringValuePair, dest pdata.AttributeMap) {
+func swKvPairsToInternalAttributes(pairs []*common.KeyStringValuePair, dest pdata.AttributeMap) {
 	if pairs == nil {
 		return
 	}
@@ -277,25 +208,18 @@ func swKvPairsToInternalAttributes(pairs []*v3.KeyStringValuePair, dest pdata.At
 	}
 }
 
-// microsecondsToUnixNano converts epoch microseconds to pdata.Timestamp
-func microsecondsToUnixNano(ms int64) pdata.Timestamp {
-	return pdata.Timestamp(uint64(ms) * 1000)
+// microsecondsToTimestamp converts epoch microseconds to pdata.Timestamp
+func microsecondsToTimestamp(ms int64) pdata.Timestamp {
+	return pdata.NewTimestampFromTime(time.UnixMilli(ms))
 }
 
 func stringToTraceID(traceId string) pdata.TraceID {
-	traceID := stringToBytes(traceId)
-	return pdata.NewTraceID(traceID)
+	return pdata.NewTraceID(stringToBytes(traceId))
 }
 
 func stringToParentSpanId(traceId string) pdata.SpanID {
 	traceID := stringTo8Bytes(traceId)
 	return pdata.NewSpanID(traceID)
-}
-
-// TraceIDToUInt64Pair converts the pdata.TraceID to a pair of uint64 representation.
-func TraceIDToUInt64Pair(traceID pdata.TraceID) (uint64, uint64) {
-	bytes := traceID.Bytes()
-	return binary.BigEndian.Uint64(bytes[:8]), binary.BigEndian.Uint64(bytes[8:])
 }
 
 // uInt32ToSpanID converts the uint64 representation of a SpanID to pdata.SpanID.

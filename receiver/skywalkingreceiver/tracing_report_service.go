@@ -32,15 +32,18 @@ type traceSegmentReportService struct {
 
 func (s *traceSegmentReportService) Collect(stream agent.TraceSegmentReportService_CollectServer) error {
 	for {
-		var recData []byte
-		err := stream.RecvMsg(recData)
-		if err == io.EOF {
-			return stream.SendAndClose(&common.Commands{})
-		}
+		segmentObject, err := stream.Recv()
 		if err != nil {
+			if err == io.EOF {
+				return stream.SendAndClose(&common.Commands{})
+			}
 			return err
 		}
-		//TODO: convert to otel trace.
+
+		_, err = consumeTraces(context.Background(), segmentObject, s.sr.nextConsumer)
+		if err != nil {
+			return stream.SendAndClose(&common.Commands{})
+		}
 	}
 }
 
@@ -64,6 +67,5 @@ func consumeTraces(ctx context.Context, segment *agent.SegmentObject, consumer c
 		return 0, nil
 	}
 	ptd := SkywalkingToOtlpTraces(segment)
-	//TODO: error handle
 	return len(segment.Spans), consumer.ConsumeTraces(ctx, ptd)
 }

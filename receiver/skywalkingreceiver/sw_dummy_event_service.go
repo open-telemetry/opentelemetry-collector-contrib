@@ -1,10 +1,10 @@
-// Copyright The OpenTelemetry Authors
+// Copyright  OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//       http://www.apache.org/licenses/LICENSE-2.0
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,15 +15,13 @@
 package skywalkingreceiver
 
 import (
-	"github.com/stretchr/testify/assert"
-	"testing"
+	event "skywalking.apache.org/repo/goapi/collect/event/v3"
 )
 
-func TestSwProtoToTraces(t *testing.T) {
-	swSpan := mockGrpcTraceSegment(1)
-	td := SkywalkingToOtlpTraces(swSpan)
+type eventService struct {
+	event.UnimplementedEventServiceServer
+}
 
-	assert.Equal(t, 1, td.ResourceSpans().Len())
-	assert.Equal(t, 2, td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().Len())
-
+func (e *eventService) Collect(stream event.EventService_CollectServer) error {
+	return nil
 }
