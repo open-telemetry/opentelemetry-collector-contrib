@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- `sigv4authextension`: Enable component (#8518)
 
 ## v0.47.0
 
