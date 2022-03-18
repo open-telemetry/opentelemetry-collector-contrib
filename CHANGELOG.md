@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### 💡 Enhancements 💡
+
+- `prometheusreceiver`: Add ability to request HTTP_SD jobs from OpenTelemetryOperator TargetAllocator (#8055)
+
 ## v0.47.0
 
 ### 💡 Enhancements 💡
