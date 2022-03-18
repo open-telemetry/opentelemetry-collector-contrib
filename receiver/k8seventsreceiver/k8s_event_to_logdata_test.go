@@ -45,11 +45,11 @@ func TestK8sEventToLogDataWithApiAndResourceVersion(t *testing.T) {
 
 	ld := k8sEventToLogData(zap.NewNop(), k8sEvent)
 	attrs := ld.ResourceLogs().At(0).Resource().Attributes()
-	attr, ok :=  attrs.Get("k8s.object.api_version")
+	attr, ok := attrs.Get("k8s.object.api_version")
 	assert.Equal(t, true, ok)
 	assert.Equal(t, "v1", attr.AsString())
 
-	attr, ok =  attrs.Get("k8s.object.resource_version")
+	attr, ok = attrs.Get("k8s.object.resource_version")
 	assert.Equal(t, true, ok)
 	assert.Equal(t, "", attr.AsString())
 
@@ -57,9 +57,9 @@ func TestK8sEventToLogDataWithApiAndResourceVersion(t *testing.T) {
 	k8sEvent.InvolvedObject.ResourceVersion = "7387066320"
 	ld = k8sEventToLogData(zap.NewNop(), k8sEvent)
 	attrs = ld.ResourceLogs().At(0).Resource().Attributes()
-	attr, ok =  attrs.Get("k8s.object.resource_version")
+	attr, ok = attrs.Get("k8s.object.resource_version")
 	assert.Equal(t, true, ok)
-	assert.Equal(t,"7387066320", attr.AsString())
+	assert.Equal(t, "7387066320", attr.AsString())
 }
 
 func TestUnknownSeverity(t *testing.T) {
