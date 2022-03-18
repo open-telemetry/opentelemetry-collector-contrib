@@ -149,7 +149,7 @@ func initSpan(name string, ts *pdata.Timestamp, span pdata.Span) {
 	spanLink.SetSpanID(pdata.NewSpanID(spanID))
 	spanLink.Attributes().InsertInt("foo", 1)
 	spanLink.Attributes().InsertBool("bar", false)
-	foobarContents := pdata.NewAttributeValueArray()
+	foobarContents := pdata.NewValueArray()
 	foobarContents.SliceVal().AppendEmpty().SetStringVal("a")
 	foobarContents.SliceVal().AppendEmpty().SetStringVal("b")
 	spanLink.Attributes().Insert("foobar", foobarContents)

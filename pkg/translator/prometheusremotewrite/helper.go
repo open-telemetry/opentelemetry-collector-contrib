@@ -15,6 +15,7 @@
 package prometheusremotewrite // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
 
 import (
+	"fmt"
 	"log"
 	"math"
 	"sort"
@@ -22,12 +23,14 @@ import (
 	"strings"
 	"time"
 	"unicode"
+	"unicode/utf8"
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/timestamp"
 	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/prompb"
 	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 )
 
 const (
@@ -39,6 +42,14 @@ const (
 	quantileStr = "quantile"
 	pInfStr     = "+Inf"
 	keyStr      = "key"
+	// maxExemplarRunes is the maximum number of UTF-8 exemplar characters
+	// according to the prometheus specification
+	// https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#exemplars
+	maxExemplarRunes = 128
+	// Trace and Span id keys are defined as part of the spec:
+	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification%2Fmetrics%2Fdatamodel.md#exemplars-2
+	traceIDKey = "trace_id"
+	spanIDKey  = "span_id"
 )
 
 type bucketBoundsData struct {
@@ -149,17 +160,34 @@ func createAttributes(resource pdata.Resource, attributes pdata.AttributeMap, ex
 	// map ensures no duplicate label name
 	l := map[string]prompb.Label{}
 
-	for key, value := range externalLabels {
-		// External labels have already been sanitized
-		l[key] = prompb.Label{
-			Name:  key,
-			Value: value,
+	// Map service.name + service.namespace to job
+	if serviceName, ok := resource.Attributes().Get(conventions.AttributeServiceName); ok {
+		val := serviceName.AsString()
+		if serviceNamespace, ok := resource.Attributes().Get(conventions.AttributeServiceNamespace); ok {
+			val = fmt.Sprintf("%s/%s", serviceNamespace.AsString(), val)
+		}
+		l[model.JobLabel] = prompb.Label{
+			Name:  model.JobLabel,
+			Value: val,
+		}
+	}
+	// Map service.instance.id to instance
+	if instance, ok := resource.Attributes().Get(conventions.AttributeServiceInstanceID); ok {
+		l[model.InstanceLabel] = prompb.Label{
+			Name:  model.InstanceLabel,
+			Value: instance.AsString(),
 		}
 	}
 
-	resource.Attributes().Range(func(key string, value pdata.AttributeValue) bool {
-		if isUsefulResourceAttribute(key) {
-			l[key] = prompb.Label{
+	// Ensure attributes are sorted by key for consistent merging of keys which
+	// collide when sanitized.
+	attributes.Sort()
+	attributes.Range(func(key string, value pdata.Value) bool {
+		if existingLabel, alreadyExists := l[sanitize(key)]; alreadyExists {
+			existingLabel.Value = existingLabel.Value + ";" + value.AsString()
+			l[sanitize(key)] = existingLabel
+		} else {
+			l[sanitize(key)] = prompb.Label{
 				Name:  sanitize(key),
 				Value: value.AsString(),
 			}
@@ -168,14 +196,17 @@ func createAttributes(resource pdata.Resource, attributes pdata.AttributeMap, ex
 		return true
 	})
 
-	attributes.Range(func(key string, value pdata.AttributeValue) bool {
-		l[key] = prompb.Label{
-			Name:  sanitize(key),
-			Value: value.AsString(),
+	for key, value := range externalLabels {
+		// External labels have already been sanitized
+		if _, alreadyExists := l[key]; alreadyExists {
+			// Skip external labels if they are overridden by metric attributes
+			continue
 		}
-
-		return true
-	})
+		l[key] = prompb.Label{
+			Name:  key,
+			Value: value,
+		}
+	}
 
 	for i := 0; i < len(extras); i += 2 {
 		if i+1 >= len(extras) {
@@ -190,7 +221,7 @@ func createAttributes(resource pdata.Resource, attributes pdata.AttributeMap, ex
 		if !(len(name) > 4 && name[:2] == "__" && name[len(name)-2:] == "__") {
 			name = sanitize(name)
 		}
-		l[extras[i]] = prompb.Label{
+		l[name] = prompb.Label{
 			Name:  name,
 			Value: extras[i+1],
 		}
@@ -202,20 +233,6 @@ func createAttributes(resource pdata.Resource, attributes pdata.AttributeMap, ex
 	}
 
 	return s
-}
-
-func isUsefulResourceAttribute(key string) bool {
-	// TODO(jbd): Allow users to configure what other resource
-	// attributes to be included.
-	// Decide what to do with non-string attributes.
-	// We should always output "job" and "instance".
-	switch key {
-	case model.InstanceLabel:
-		return true
-	case model.JobLabel:
-		return true
-	}
-	return false
 }
 
 // getPromMetricName creates a Prometheus metric name by attaching namespace prefix for Monotonic metrics.
@@ -344,22 +361,49 @@ func getPromExemplars(pt pdata.HistogramDataPoint) []prompb.Exemplar {
 
 	for i := 0; i < pt.Exemplars().Len(); i++ {
 		exemplar := pt.Exemplars().At(i)
+		exemplarRunes := 0
 
 		promExemplar := &prompb.Exemplar{
 			Value:     exemplar.DoubleVal(),
 			Timestamp: timestamp.FromTime(exemplar.Timestamp().AsTime()),
 		}
+		if !exemplar.TraceID().IsEmpty() {
+			val := exemplar.TraceID().HexString()
+			exemplarRunes += utf8.RuneCountInString(traceIDKey) + utf8.RuneCountInString(val)
+			promLabel := prompb.Label{
+				Name:  traceIDKey,
+				Value: val,
+			}
+			promExemplar.Labels = append(promExemplar.Labels, promLabel)
+		}
+		if !exemplar.SpanID().IsEmpty() {
+			val := exemplar.SpanID().HexString()
+			exemplarRunes += utf8.RuneCountInString(spanIDKey) + utf8.RuneCountInString(val)
+			promLabel := prompb.Label{
+				Name:  spanIDKey,
+				Value: val,
+			}
+			promExemplar.Labels = append(promExemplar.Labels, promLabel)
+		}
+		var labelsFromAttributes []prompb.Label
 
-		exemplar.FilteredAttributes().Range(func(key string, value pdata.AttributeValue) bool {
+		exemplar.FilteredAttributes().Range(func(key string, value pdata.Value) bool {
+			val := value.AsString()
+			exemplarRunes += utf8.RuneCountInString(key) + utf8.RuneCountInString(val)
 			promLabel := prompb.Label{
 				Name:  key,
-				Value: value.AsString(),
+				Value: val,
 			}
 
-			promExemplar.Labels = append(promExemplar.Labels, promLabel)
+			labelsFromAttributes = append(labelsFromAttributes, promLabel)
 
 			return true
 		})
+		if exemplarRunes <= maxExemplarRunes {
+			// only append filtered attributes if it does not cause exemplar
+			// labels to exceed the max number of runes
+			promExemplar.Labels = append(promExemplar.Labels, labelsFromAttributes...)
+		}
 
 		promExemplars = append(promExemplars, *promExemplar)
 	}

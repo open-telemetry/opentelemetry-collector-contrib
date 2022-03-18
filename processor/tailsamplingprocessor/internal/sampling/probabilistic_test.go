@@ -78,7 +78,7 @@ func TestProbabilisticSampling(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			traceCount := 100_000
 
-			var emptyAttrs = map[string]pdata.AttributeValue{}
+			var emptyAttrs = map[string]pdata.Value{}
 
 			probabilisticSampler := NewProbabilisticSampler(zap.NewNop(), tt.hashSalt, tt.samplingPercentage)
 

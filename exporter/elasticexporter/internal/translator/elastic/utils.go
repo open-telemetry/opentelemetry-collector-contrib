@@ -28,15 +28,15 @@ var (
 	labelKeyReplacer         = strings.NewReplacer(`.`, `_`, `*`, `_`, `"`, `_`)
 )
 
-func ifaceAttributeValue(v pdata.AttributeValue) interface{} {
+func ifaceAttributeValue(v pdata.Value) interface{} {
 	switch v.Type() {
-	case pdata.AttributeValueTypeString:
+	case pdata.ValueTypeString:
 		return truncate(v.StringVal())
-	case pdata.AttributeValueTypeInt:
+	case pdata.ValueTypeInt:
 		return v.IntVal()
-	case pdata.AttributeValueTypeDouble:
+	case pdata.ValueTypeDouble:
 		return v.DoubleVal()
-	case pdata.AttributeValueTypeBool:
+	case pdata.ValueTypeBool:
 		return v.BoolVal()
 	}
 	return nil

@@ -32,8 +32,8 @@ import (
 // TODO: Remove this when collector defines this semantic convention.
 const ExceptionEventName = "exception"
 
-func makeCause(span pdata.Span, attributes map[string]pdata.AttributeValue, resource pdata.Resource) (isError, isFault, isThrottle bool,
-	filtered map[string]pdata.AttributeValue, cause *awsxray.CauseData) {
+func makeCause(span pdata.Span, attributes map[string]pdata.Value, resource pdata.Resource) (isError, isFault, isThrottle bool,
+	filtered map[string]pdata.Value, cause *awsxray.CauseData) {
 	status := span.Status()
 	if status.Code() != pdata.StatusCodeError {
 		return false, false, false, attributes, nil
@@ -91,7 +91,7 @@ func makeCause(span pdata.Span, attributes map[string]pdata.AttributeValue, reso
 	} else {
 		// Use OpenCensus behavior if we didn't find any exception events to ease migration.
 		message = status.Message()
-		filtered = make(map[string]pdata.AttributeValue)
+		filtered = make(map[string]pdata.Value)
 		for key, value := range attributes {
 			switch key {
 			case "http.status_text":

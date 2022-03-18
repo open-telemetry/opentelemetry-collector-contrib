@@ -13,7 +13,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.4.1
 	go.uber.org/zap v1.21.0
 	golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba
-	google.golang.org/grpc v1.44.0
+	google.golang.org/grpc v1.45.0
 )
 
 require (

@@ -95,7 +95,7 @@ func (m *metricMongodbCacheOperations) recordDataPoint(start pdata.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Type, pdata.NewAttributeValueString(typeAttributeValue))
+	dp.Attributes().Insert(A.Type, pdata.NewValueString(typeAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -148,7 +148,7 @@ func (m *metricMongodbCollectionCount) recordDataPoint(start pdata.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pdata.NewAttributeValueString(databaseAttributeValue))
+	dp.Attributes().Insert(A.Database, pdata.NewValueString(databaseAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -201,8 +201,8 @@ func (m *metricMongodbConnectionCount) recordDataPoint(start pdata.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pdata.NewAttributeValueString(databaseAttributeValue))
-	dp.Attributes().Insert(A.ConnectionType, pdata.NewAttributeValueString(connectionTypeAttributeValue))
+	dp.Attributes().Insert(A.Database, pdata.NewValueString(databaseAttributeValue))
+	dp.Attributes().Insert(A.ConnectionType, pdata.NewValueString(connectionTypeAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -255,7 +255,7 @@ func (m *metricMongodbDataSize) recordDataPoint(start pdata.Timestamp, ts pdata.
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pdata.NewAttributeValueString(databaseAttributeValue))
+	dp.Attributes().Insert(A.Database, pdata.NewValueString(databaseAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -308,7 +308,7 @@ func (m *metricMongodbExtentCount) recordDataPoint(start pdata.Timestamp, ts pda
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pdata.NewAttributeValueString(databaseAttributeValue))
+	dp.Attributes().Insert(A.Database, pdata.NewValueString(databaseAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -412,7 +412,7 @@ func (m *metricMongodbIndexCount) recordDataPoint(start pdata.Timestamp, ts pdat
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pdata.NewAttributeValueString(databaseAttributeValue))
+	dp.Attributes().Insert(A.Database, pdata.NewValueString(databaseAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -465,7 +465,7 @@ func (m *metricMongodbIndexSize) recordDataPoint(start pdata.Timestamp, ts pdata
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pdata.NewAttributeValueString(databaseAttributeValue))
+	dp.Attributes().Insert(A.Database, pdata.NewValueString(databaseAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -518,8 +518,8 @@ func (m *metricMongodbMemoryUsage) recordDataPoint(start pdata.Timestamp, ts pda
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pdata.NewAttributeValueString(databaseAttributeValue))
-	dp.Attributes().Insert(A.MemoryType, pdata.NewAttributeValueString(memoryTypeAttributeValue))
+	dp.Attributes().Insert(A.Database, pdata.NewValueString(databaseAttributeValue))
+	dp.Attributes().Insert(A.MemoryType, pdata.NewValueString(memoryTypeAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -572,7 +572,7 @@ func (m *metricMongodbObjectCount) recordDataPoint(start pdata.Timestamp, ts pda
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pdata.NewAttributeValueString(databaseAttributeValue))
+	dp.Attributes().Insert(A.Database, pdata.NewValueString(databaseAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -625,7 +625,7 @@ func (m *metricMongodbOperationCount) recordDataPoint(start pdata.Timestamp, ts 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Operation, pdata.NewAttributeValueString(operationAttributeValue))
+	dp.Attributes().Insert(A.Operation, pdata.NewValueString(operationAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -678,7 +678,7 @@ func (m *metricMongodbStorageSize) recordDataPoint(start pdata.Timestamp, ts pda
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pdata.NewAttributeValueString(databaseAttributeValue))
+	dp.Attributes().Insert(A.Database, pdata.NewValueString(databaseAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.

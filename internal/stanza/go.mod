@@ -3,11 +3,11 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza
 go 1.17
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.46.0
-	github.com/open-telemetry/opentelemetry-log-collection v0.26.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.47.0
+	github.com/open-telemetry/opentelemetry-log-collection v0.27.2
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.46.1-0.20220307173244-f980c9ef25b1
-	go.opentelemetry.io/collector/model v0.46.1-0.20220307173244-f980c9ef25b1
+	go.opentelemetry.io/collector v0.47.1-0.20220316214317-e6ea17cf27a8
+	go.opentelemetry.io/collector/model v0.47.1-0.20220316214317-e6ea17cf27a8
 	go.opentelemetry.io/otel/metric v0.27.0
 	go.opentelemetry.io/otel/trace v1.4.1
 	go.uber.org/multierr v1.8.0
@@ -36,9 +36,9 @@ require (
 	go.opencensus.io v0.23.0 // indirect
 	go.opentelemetry.io/otel v1.4.1 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
-	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9 // indirect
+	golang.org/x/sys v0.0.0-20220307203707-22a9840ba4d7 // indirect
 	golang.org/x/text v0.3.7 // indirect
-	gonum.org/v1/gonum v0.9.3 // indirect
+	gonum.org/v1/gonum v0.11.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
 

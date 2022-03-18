@@ -39,7 +39,7 @@ type perSpanProperties struct {
 	spanKind     pdata.SpanKind
 	spanStatus   spanSt
 	eventsProps  []eventProps
-	attrs        map[string]pdata.AttributeValue
+	attrs        map[string]pdata.Value
 }
 
 type spanSt struct {
@@ -49,23 +49,23 @@ type spanSt struct {
 
 type eventProps struct {
 	name  string
-	attrs map[string]pdata.AttributeValue
+	attrs map[string]pdata.Value
 }
 
 func TestTranslation(t *testing.T) {
-	var defaultServerSpanAttrs = func(seg *awsxray.Segment) map[string]pdata.AttributeValue {
-		attrs := make(map[string]pdata.AttributeValue)
-		attrs[conventions.AttributeHTTPMethod] = pdata.NewAttributeValueString(
+	var defaultServerSpanAttrs = func(seg *awsxray.Segment) map[string]pdata.Value {
+		attrs := make(map[string]pdata.Value)
+		attrs[conventions.AttributeHTTPMethod] = pdata.NewValueString(
 			*seg.HTTP.Request.Method)
-		attrs[conventions.AttributeHTTPClientIP] = pdata.NewAttributeValueString(
+		attrs[conventions.AttributeHTTPClientIP] = pdata.NewValueString(
 			*seg.HTTP.Request.ClientIP)
-		attrs[conventions.AttributeHTTPUserAgent] = pdata.NewAttributeValueString(
+		attrs[conventions.AttributeHTTPUserAgent] = pdata.NewValueString(
 			*seg.HTTP.Request.UserAgent)
-		attrs[awsxray.AWSXRayXForwardedForAttribute] = pdata.NewAttributeValueBool(
+		attrs[awsxray.AWSXRayXForwardedForAttribute] = pdata.NewValueBool(
 			*seg.HTTP.Request.XForwardedFor)
-		attrs[conventions.AttributeHTTPStatusCode] = pdata.NewAttributeValueInt(
+		attrs[conventions.AttributeHTTPStatusCode] = pdata.NewValueInt(
 			*seg.HTTP.Response.Status)
-		attrs[conventions.AttributeHTTPURL] = pdata.NewAttributeValueString(
+		attrs[conventions.AttributeHTTPURL] = pdata.NewValueString(
 			*seg.HTTP.Request.URL)
 
 		return attrs
@@ -75,7 +75,7 @@ func TestTranslation(t *testing.T) {
 		testCase                  string
 		expectedUnmarshallFailure bool
 		samplePath                string
-		expectedResourceAttrs     func(seg *awsxray.Segment) map[string]pdata.AttributeValue
+		expectedResourceAttrs     func(seg *awsxray.Segment) map[string]pdata.Value
 		propsPerSpan              func(testCase string, t *testing.T, seg *awsxray.Segment) []perSpanProperties
 		verification              func(testCase string,
 			actualSeg *awsxray.Segment,
@@ -86,19 +86,19 @@ func TestTranslation(t *testing.T) {
 		{
 			testCase:   "TranslateInstrumentedServerSegment",
 			samplePath: filepath.Join("../../../../internal/aws/xray", "testdata", "serverSample.txt"),
-			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]pdata.AttributeValue {
-				attrs := make(map[string]pdata.AttributeValue)
-				attrs[conventions.AttributeCloudProvider] = pdata.NewAttributeValueString(conventions.AttributeCloudProviderAWS)
-				attrs[conventions.AttributeTelemetrySDKVersion] = pdata.NewAttributeValueString(
+			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]pdata.Value {
+				attrs := make(map[string]pdata.Value)
+				attrs[conventions.AttributeCloudProvider] = pdata.NewValueString(conventions.AttributeCloudProviderAWS)
+				attrs[conventions.AttributeTelemetrySDKVersion] = pdata.NewValueString(
 					*seg.AWS.XRay.SDKVersion)
-				attrs[conventions.AttributeTelemetrySDKName] = pdata.NewAttributeValueString(
+				attrs[conventions.AttributeTelemetrySDKName] = pdata.NewValueString(
 					*seg.AWS.XRay.SDK)
-				attrs[conventions.AttributeTelemetrySDKLanguage] = pdata.NewAttributeValueString("Go")
-				attrs[conventions.AttributeK8SClusterName] = pdata.NewAttributeValueString(
+				attrs[conventions.AttributeTelemetrySDKLanguage] = pdata.NewValueString("Go")
+				attrs[conventions.AttributeK8SClusterName] = pdata.NewValueString(
 					*seg.AWS.EKS.ClusterName)
-				attrs[conventions.AttributeK8SPodName] = pdata.NewAttributeValueString(
+				attrs[conventions.AttributeK8SPodName] = pdata.NewValueString(
 					*seg.AWS.EKS.Pod)
-				attrs[conventions.AttributeContainerID] = pdata.NewAttributeValueString(
+				attrs[conventions.AttributeContainerID] = pdata.NewValueString(
 					*seg.AWS.EKS.ContainerID)
 				return attrs
 			},
@@ -132,20 +132,20 @@ func TestTranslation(t *testing.T) {
 		{
 			testCase:   "TranslateInstrumentedClientSegment",
 			samplePath: filepath.Join("../../../../internal/aws/xray", "testdata", "ddbSample.txt"),
-			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]pdata.AttributeValue {
-				attrs := make(map[string]pdata.AttributeValue)
-				attrs[conventions.AttributeCloudProvider] = pdata.NewAttributeValueString(conventions.AttributeCloudProviderAWS)
-				attrs[conventions.AttributeTelemetrySDKVersion] = pdata.NewAttributeValueString(
+			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]pdata.Value {
+				attrs := make(map[string]pdata.Value)
+				attrs[conventions.AttributeCloudProvider] = pdata.NewValueString(conventions.AttributeCloudProviderAWS)
+				attrs[conventions.AttributeTelemetrySDKVersion] = pdata.NewValueString(
 					*seg.AWS.XRay.SDKVersion)
-				attrs[conventions.AttributeTelemetrySDKName] = pdata.NewAttributeValueString(
+				attrs[conventions.AttributeTelemetrySDKName] = pdata.NewValueString(
 					*seg.AWS.XRay.SDK)
-				attrs[conventions.AttributeTelemetrySDKLanguage] = pdata.NewAttributeValueString("java")
+				attrs[conventions.AttributeTelemetrySDKLanguage] = pdata.NewValueString("java")
 
 				return attrs
 			},
 			propsPerSpan: func(testCase string, t *testing.T, seg *awsxray.Segment) []perSpanProperties {
-				rootSpanAttrs := make(map[string]pdata.AttributeValue)
-				rootSpanAttrs[conventions.AttributeEnduserID] = pdata.NewAttributeValueString(*seg.User)
+				rootSpanAttrs := make(map[string]pdata.Value)
+				rootSpanAttrs[conventions.AttributeEnduserID] = pdata.NewValueString(*seg.User)
 				rootSpanEvts := initExceptionEvents(seg)
 				assert.Len(t, rootSpanEvts, 1, testCase+": rootSpanEvts has incorrect size")
 				rootSpan := perSpanProperties{
@@ -164,15 +164,15 @@ func TestTranslation(t *testing.T) {
 
 				// this is the subsegment with ID that starts with 7df6
 				subseg7df6 := seg.Subsegments[0]
-				childSpan7df6Attrs := make(map[string]pdata.AttributeValue)
+				childSpan7df6Attrs := make(map[string]pdata.Value)
 				for k, v := range subseg7df6.Annotations {
-					childSpan7df6Attrs[k] = pdata.NewAttributeValueString(
+					childSpan7df6Attrs[k] = pdata.NewValueString(
 						v.(string))
 				}
 				for k, v := range subseg7df6.Metadata {
 					m, err := json.Marshal(v)
 					assert.NoError(t, err, "metadata marshaling failed")
-					childSpan7df6Attrs[awsxray.AWSXraySegmentMetadataAttributePrefix+k] = pdata.NewAttributeValueString(
+					childSpan7df6Attrs[awsxray.AWSXraySegmentMetadataAttributePrefix+k] = pdata.NewValueString(
 						string(m))
 				}
 				assert.Len(t, childSpan7df6Attrs, 2, testCase+": childSpan7df6Attrs has incorrect size")
@@ -194,23 +194,23 @@ func TestTranslation(t *testing.T) {
 				}
 
 				subseg7318 := seg.Subsegments[0].Subsegments[0]
-				childSpan7318Attrs := make(map[string]pdata.AttributeValue)
-				childSpan7318Attrs[awsxray.AWSServiceAttribute] = pdata.NewAttributeValueString(
+				childSpan7318Attrs := make(map[string]pdata.Value)
+				childSpan7318Attrs[awsxray.AWSServiceAttribute] = pdata.NewValueString(
 					*subseg7318.Name)
-				childSpan7318Attrs[conventions.AttributeHTTPStatusCode] = pdata.NewAttributeValueInt(
+				childSpan7318Attrs[conventions.AttributeHTTPStatusCode] = pdata.NewValueInt(
 					*subseg7318.HTTP.Response.Status)
 
 				contentLength := subseg7318.HTTP.Response.ContentLength.(float64)
-				childSpan7318Attrs[conventions.AttributeHTTPResponseContentLength] = pdata.NewAttributeValueInt(int64(contentLength))
-				childSpan7318Attrs[awsxray.AWSOperationAttribute] = pdata.NewAttributeValueString(
+				childSpan7318Attrs[conventions.AttributeHTTPResponseContentLength] = pdata.NewValueInt(int64(contentLength))
+				childSpan7318Attrs[awsxray.AWSOperationAttribute] = pdata.NewValueString(
 					*subseg7318.AWS.Operation)
-				childSpan7318Attrs[awsxray.AWSRegionAttribute] = pdata.NewAttributeValueString(
+				childSpan7318Attrs[awsxray.AWSRegionAttribute] = pdata.NewValueString(
 					*subseg7318.AWS.RemoteRegion)
-				childSpan7318Attrs[awsxray.AWSRequestIDAttribute] = pdata.NewAttributeValueString(
+				childSpan7318Attrs[awsxray.AWSRequestIDAttribute] = pdata.NewValueString(
 					*subseg7318.AWS.RequestID)
-				childSpan7318Attrs[awsxray.AWSTableNameAttribute] = pdata.NewAttributeValueString(
+				childSpan7318Attrs[awsxray.AWSTableNameAttribute] = pdata.NewValueString(
 					*subseg7318.AWS.TableName)
-				childSpan7318Attrs[awsxray.AWSXrayRetriesAttribute] = pdata.NewAttributeValueInt(
+				childSpan7318Attrs[awsxray.AWSXrayRetriesAttribute] = pdata.NewValueInt(
 					*subseg7318.AWS.Retries)
 
 				childSpan7318 := perSpanProperties{
@@ -261,11 +261,11 @@ func TestTranslation(t *testing.T) {
 				}
 
 				subseg417b := seg.Subsegments[0].Subsegments[0].Subsegments[1].Subsegments[0]
-				childSpan417bAttrs := make(map[string]pdata.AttributeValue)
+				childSpan417bAttrs := make(map[string]pdata.Value)
 				for k, v := range subseg417b.Metadata {
 					m, err := json.Marshal(v)
 					assert.NoError(t, err, "metadata marshaling failed")
-					childSpan417bAttrs[awsxray.AWSXraySegmentMetadataAttributePrefix+k] = pdata.NewAttributeValueString(
+					childSpan417bAttrs[awsxray.AWSXraySegmentMetadataAttributePrefix+k] = pdata.NewValueString(
 						string(m))
 				}
 				childSpan417b := perSpanProperties{
@@ -284,11 +284,11 @@ func TestTranslation(t *testing.T) {
 				}
 
 				subseg0cab := seg.Subsegments[0].Subsegments[0].Subsegments[1].Subsegments[0].Subsegments[0]
-				childSpan0cabAttrs := make(map[string]pdata.AttributeValue)
+				childSpan0cabAttrs := make(map[string]pdata.Value)
 				for k, v := range subseg0cab.Metadata {
 					m, err := json.Marshal(v)
 					assert.NoError(t, err, "metadata marshaling failed")
-					childSpan0cabAttrs[awsxray.AWSXraySegmentMetadataAttributePrefix+k] = pdata.NewAttributeValueString(
+					childSpan0cabAttrs[awsxray.AWSXraySegmentMetadataAttributePrefix+k] = pdata.NewValueString(
 						string(m))
 				}
 				childSpan0cab := perSpanProperties{
@@ -307,11 +307,11 @@ func TestTranslation(t *testing.T) {
 				}
 
 				subsegF8db := seg.Subsegments[0].Subsegments[0].Subsegments[1].Subsegments[0].Subsegments[1]
-				childSpanF8dbAttrs := make(map[string]pdata.AttributeValue)
+				childSpanF8dbAttrs := make(map[string]pdata.Value)
 				for k, v := range subsegF8db.Metadata {
 					m, err := json.Marshal(v)
 					assert.NoError(t, err, "metadata marshaling failed")
-					childSpanF8dbAttrs[awsxray.AWSXraySegmentMetadataAttributePrefix+k] = pdata.NewAttributeValueString(
+					childSpanF8dbAttrs[awsxray.AWSXraySegmentMetadataAttributePrefix+k] = pdata.NewValueString(
 						string(m))
 				}
 				childSpanF8db := perSpanProperties{
@@ -330,11 +330,11 @@ func TestTranslation(t *testing.T) {
 				}
 
 				subsegE2de := seg.Subsegments[0].Subsegments[0].Subsegments[1].Subsegments[0].Subsegments[2]
-				childSpanE2deAttrs := make(map[string]pdata.AttributeValue)
+				childSpanE2deAttrs := make(map[string]pdata.Value)
 				for k, v := range subsegE2de.Metadata {
 					m, err := json.Marshal(v)
 					assert.NoError(t, err, "metadata marshaling failed")
-					childSpanE2deAttrs[awsxray.AWSXraySegmentMetadataAttributePrefix+k] = pdata.NewAttributeValueString(
+					childSpanE2deAttrs[awsxray.AWSXraySegmentMetadataAttributePrefix+k] = pdata.NewValueString(
 						string(m))
 				}
 				childSpanE2de := perSpanProperties{
@@ -401,22 +401,22 @@ func TestTranslation(t *testing.T) {
 				}
 
 				subseg7163 := seg.Subsegments[0].Subsegments[1]
-				childSpan7163Attrs := make(map[string]pdata.AttributeValue)
-				childSpan7163Attrs[awsxray.AWSServiceAttribute] = pdata.NewAttributeValueString(
+				childSpan7163Attrs := make(map[string]pdata.Value)
+				childSpan7163Attrs[awsxray.AWSServiceAttribute] = pdata.NewValueString(
 					*subseg7163.Name)
-				childSpan7163Attrs[conventions.AttributeHTTPStatusCode] = pdata.NewAttributeValueInt(
+				childSpan7163Attrs[conventions.AttributeHTTPStatusCode] = pdata.NewValueInt(
 					*subseg7163.HTTP.Response.Status)
 				contentLength = subseg7163.HTTP.Response.ContentLength.(float64)
-				childSpan7163Attrs[conventions.AttributeHTTPResponseContentLength] = pdata.NewAttributeValueInt(int64(contentLength))
-				childSpan7163Attrs[awsxray.AWSOperationAttribute] = pdata.NewAttributeValueString(
+				childSpan7163Attrs[conventions.AttributeHTTPResponseContentLength] = pdata.NewValueInt(int64(contentLength))
+				childSpan7163Attrs[awsxray.AWSOperationAttribute] = pdata.NewValueString(
 					*subseg7163.AWS.Operation)
-				childSpan7163Attrs[awsxray.AWSRegionAttribute] = pdata.NewAttributeValueString(
+				childSpan7163Attrs[awsxray.AWSRegionAttribute] = pdata.NewValueString(
 					*subseg7163.AWS.RemoteRegion)
-				childSpan7163Attrs[awsxray.AWSRequestIDAttribute] = pdata.NewAttributeValueString(
+				childSpan7163Attrs[awsxray.AWSRequestIDAttribute] = pdata.NewValueString(
 					*subseg7163.AWS.RequestID)
-				childSpan7163Attrs[awsxray.AWSTableNameAttribute] = pdata.NewAttributeValueString(
+				childSpan7163Attrs[awsxray.AWSTableNameAttribute] = pdata.NewValueString(
 					*subseg7163.AWS.TableName)
-				childSpan7163Attrs[awsxray.AWSXrayRetriesAttribute] = pdata.NewAttributeValueInt(
+				childSpan7163Attrs[awsxray.AWSXrayRetriesAttribute] = pdata.NewValueInt(
 					*subseg7163.AWS.Retries)
 
 				childSpan7163Evts := initExceptionEvents(&subseg7163)
@@ -554,9 +554,9 @@ func TestTranslation(t *testing.T) {
 		{
 			testCase:   "[aws] TranslateMissingAWSFieldSegment",
 			samplePath: filepath.Join("../../../../internal/aws/xray", "testdata", "awsMissingAwsField.txt"),
-			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]pdata.AttributeValue {
-				attrs := make(map[string]pdata.AttributeValue)
-				attrs[conventions.AttributeCloudProvider] = pdata.NewAttributeValueString("unknown")
+			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]pdata.Value {
+				attrs := make(map[string]pdata.Value)
+				attrs[conventions.AttributeCloudProvider] = pdata.NewValueString("unknown")
 				return attrs
 			},
 			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
@@ -589,41 +589,41 @@ func TestTranslation(t *testing.T) {
 		{
 			testCase:   "[aws] TranslateEC2AWSFieldsSegment",
 			samplePath: filepath.Join("../../../../internal/aws/xray", "testdata", "awsValidAwsFields.txt"),
-			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]pdata.AttributeValue {
-				attrs := make(map[string]pdata.AttributeValue)
-				attrs[conventions.AttributeCloudProvider] = pdata.NewAttributeValueString(conventions.AttributeCloudProviderAWS)
-				attrs[conventions.AttributeCloudAccountID] = pdata.NewAttributeValueString(
+			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]pdata.Value {
+				attrs := make(map[string]pdata.Value)
+				attrs[conventions.AttributeCloudProvider] = pdata.NewValueString(conventions.AttributeCloudProviderAWS)
+				attrs[conventions.AttributeCloudAccountID] = pdata.NewValueString(
 					*seg.AWS.AccountID)
-				attrs[conventions.AttributeCloudAvailabilityZone] = pdata.NewAttributeValueString(
+				attrs[conventions.AttributeCloudAvailabilityZone] = pdata.NewValueString(
 					*seg.AWS.EC2.AvailabilityZone)
-				attrs[conventions.AttributeHostID] = pdata.NewAttributeValueString(
+				attrs[conventions.AttributeHostID] = pdata.NewValueString(
 					*seg.AWS.EC2.InstanceID)
-				attrs[conventions.AttributeHostType] = pdata.NewAttributeValueString(
+				attrs[conventions.AttributeHostType] = pdata.NewValueString(
 					*seg.AWS.EC2.InstanceSize)
-				attrs[conventions.AttributeHostImageID] = pdata.NewAttributeValueString(
+				attrs[conventions.AttributeHostImageID] = pdata.NewValueString(
 					*seg.AWS.EC2.AmiID)
-				attrs[conventions.AttributeContainerName] = pdata.NewAttributeValueString(
+				attrs[conventions.AttributeContainerName] = pdata.NewValueString(
 					*seg.AWS.ECS.ContainerName)
-				attrs[conventions.AttributeContainerID] = pdata.NewAttributeValueString(
+				attrs[conventions.AttributeContainerID] = pdata.NewValueString(
 					*seg.AWS.ECS.ContainerID)
-				attrs[conventions.AttributeCloudAvailabilityZone] = pdata.NewAttributeValueString(
+				attrs[conventions.AttributeCloudAvailabilityZone] = pdata.NewValueString(
 					*seg.AWS.ECS.AvailabilityZone)
-				attrs[conventions.AttributeServiceNamespace] = pdata.NewAttributeValueString(
+				attrs[conventions.AttributeServiceNamespace] = pdata.NewValueString(
 					*seg.AWS.Beanstalk.Environment)
-				attrs[conventions.AttributeServiceInstanceID] = pdata.NewAttributeValueString(
+				attrs[conventions.AttributeServiceInstanceID] = pdata.NewValueString(
 					"32")
-				attrs[conventions.AttributeServiceVersion] = pdata.NewAttributeValueString(
+				attrs[conventions.AttributeServiceVersion] = pdata.NewValueString(
 					*seg.AWS.Beanstalk.VersionLabel)
-				attrs[conventions.AttributeTelemetrySDKVersion] = pdata.NewAttributeValueString(
+				attrs[conventions.AttributeTelemetrySDKVersion] = pdata.NewValueString(
 					*seg.AWS.XRay.SDKVersion)
-				attrs[conventions.AttributeTelemetrySDKName] = pdata.NewAttributeValueString(
+				attrs[conventions.AttributeTelemetrySDKName] = pdata.NewValueString(
 					*seg.AWS.XRay.SDK)
-				attrs[conventions.AttributeTelemetrySDKLanguage] = pdata.NewAttributeValueString("Go")
+				attrs[conventions.AttributeTelemetrySDKLanguage] = pdata.NewValueString("Go")
 				return attrs
 			},
 			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
 				attrs := defaultServerSpanAttrs(seg)
-				attrs[awsxray.AWSAccountAttribute] = pdata.NewAttributeValueString(
+				attrs[awsxray.AWSAccountAttribute] = pdata.NewValueString(
 					*seg.AWS.AccountID)
 				res := perSpanProperties{
 					traceID:      *seg.TraceID,
@@ -653,9 +653,9 @@ func TestTranslation(t *testing.T) {
 		{
 			testCase:   "TranslateCauseIsExceptionId",
 			samplePath: filepath.Join("../../../../internal/aws/xray", "testdata", "minCauseIsExceptionId.txt"),
-			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]pdata.AttributeValue {
-				attrs := make(map[string]pdata.AttributeValue)
-				attrs[conventions.AttributeCloudProvider] = pdata.NewAttributeValueString("unknown")
+			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]pdata.Value {
+				attrs := make(map[string]pdata.Value)
+				attrs[conventions.AttributeCloudProvider] = pdata.NewValueString("unknown")
 				return attrs
 			},
 			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
@@ -688,7 +688,7 @@ func TestTranslation(t *testing.T) {
 		{
 			testCase:   "TranslateInvalidNamespace",
 			samplePath: filepath.Join("../../../../internal/aws/xray", "testdata", "invalidNamespace.txt"),
-			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]pdata.AttributeValue {
+			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]pdata.Value {
 				return nil
 			},
 			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
@@ -706,22 +706,22 @@ func TestTranslation(t *testing.T) {
 		{
 			testCase:   "TranslateIndepSubsegment",
 			samplePath: filepath.Join("../../../../internal/aws/xray", "testdata", "indepSubsegment.txt"),
-			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]pdata.AttributeValue {
-				attrs := make(map[string]pdata.AttributeValue)
-				attrs[conventions.AttributeCloudProvider] = pdata.NewAttributeValueString("unknown")
+			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]pdata.Value {
+				attrs := make(map[string]pdata.Value)
+				attrs[conventions.AttributeCloudProvider] = pdata.NewValueString("unknown")
 				return attrs
 			},
 			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
-				attrs := make(map[string]pdata.AttributeValue)
-				attrs[conventions.AttributeHTTPMethod] = pdata.NewAttributeValueString(
+				attrs := make(map[string]pdata.Value)
+				attrs[conventions.AttributeHTTPMethod] = pdata.NewValueString(
 					*seg.HTTP.Request.Method)
-				attrs[conventions.AttributeHTTPStatusCode] = pdata.NewAttributeValueInt(
+				attrs[conventions.AttributeHTTPStatusCode] = pdata.NewValueInt(
 					*seg.HTTP.Response.Status)
-				attrs[conventions.AttributeHTTPURL] = pdata.NewAttributeValueString(
+				attrs[conventions.AttributeHTTPURL] = pdata.NewValueString(
 					*seg.HTTP.Request.URL)
 				contentLength := seg.HTTP.Response.ContentLength.(float64)
-				attrs[conventions.AttributeHTTPResponseContentLength] = pdata.NewAttributeValueInt(int64(contentLength))
-				attrs[awsxray.AWSXRayTracedAttribute] = pdata.NewAttributeValueBool(true)
+				attrs[conventions.AttributeHTTPResponseContentLength] = pdata.NewValueInt(int64(contentLength))
+				attrs[awsxray.AWSXRayTracedAttribute] = pdata.NewValueBool(true)
 				res := perSpanProperties{
 					traceID:      *seg.TraceID,
 					spanID:       *seg.ID,
@@ -751,24 +751,24 @@ func TestTranslation(t *testing.T) {
 		{
 			testCase:   "TranslateIndepSubsegmentForContentLengthString",
 			samplePath: filepath.Join("../../../../internal/aws/xray", "testdata", "indepSubsegmentWithContentLengthString.txt"),
-			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]pdata.AttributeValue {
-				attrs := make(map[string]pdata.AttributeValue)
-				attrs[conventions.AttributeCloudProvider] = pdata.NewAttributeValueString("unknown")
+			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]pdata.Value {
+				attrs := make(map[string]pdata.Value)
+				attrs[conventions.AttributeCloudProvider] = pdata.NewValueString("unknown")
 				return attrs
 			},
 			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
-				attrs := make(map[string]pdata.AttributeValue)
-				attrs[conventions.AttributeHTTPMethod] = pdata.NewAttributeValueString(
+				attrs := make(map[string]pdata.Value)
+				attrs[conventions.AttributeHTTPMethod] = pdata.NewValueString(
 					*seg.HTTP.Request.Method)
-				attrs[conventions.AttributeHTTPStatusCode] = pdata.NewAttributeValueInt(
+				attrs[conventions.AttributeHTTPStatusCode] = pdata.NewValueInt(
 					*seg.HTTP.Response.Status)
-				attrs[conventions.AttributeHTTPURL] = pdata.NewAttributeValueString(
+				attrs[conventions.AttributeHTTPURL] = pdata.NewValueString(
 					*seg.HTTP.Request.URL)
 
 				contentLength := seg.HTTP.Response.ContentLength.(string)
-				attrs[conventions.AttributeHTTPResponseContentLength] = pdata.NewAttributeValueString(contentLength)
+				attrs[conventions.AttributeHTTPResponseContentLength] = pdata.NewValueString(contentLength)
 
-				attrs[awsxray.AWSXRayTracedAttribute] = pdata.NewAttributeValueBool(true)
+				attrs[awsxray.AWSXRayTracedAttribute] = pdata.NewValueBool(true)
 				res := perSpanProperties{
 					traceID:      *seg.TraceID,
 					spanID:       *seg.ID,
@@ -798,21 +798,21 @@ func TestTranslation(t *testing.T) {
 		{
 			testCase:   "TranslateSql",
 			samplePath: filepath.Join("../../../../internal/aws/xray", "testdata", "indepSubsegmentWithSql.txt"),
-			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]pdata.AttributeValue {
-				attrs := make(map[string]pdata.AttributeValue)
-				attrs[conventions.AttributeCloudProvider] = pdata.NewAttributeValueString("unknown")
+			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]pdata.Value {
+				attrs := make(map[string]pdata.Value)
+				attrs[conventions.AttributeCloudProvider] = pdata.NewValueString("unknown")
 				return attrs
 			},
 			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
-				attrs := make(map[string]pdata.AttributeValue)
-				attrs[conventions.AttributeDBConnectionString] = pdata.NewAttributeValueString(
+				attrs := make(map[string]pdata.Value)
+				attrs[conventions.AttributeDBConnectionString] = pdata.NewValueString(
 					"jdbc:postgresql://aawijb5u25wdoy.cpamxznpdoq8.us-west-2.rds.amazonaws.com:5432")
-				attrs[conventions.AttributeDBName] = pdata.NewAttributeValueString("ebdb")
-				attrs[conventions.AttributeDBSystem] = pdata.NewAttributeValueString(
+				attrs[conventions.AttributeDBName] = pdata.NewValueString("ebdb")
+				attrs[conventions.AttributeDBSystem] = pdata.NewValueString(
 					*seg.SQL.DatabaseType)
-				attrs[conventions.AttributeDBStatement] = pdata.NewAttributeValueString(
+				attrs[conventions.AttributeDBStatement] = pdata.NewValueString(
 					*seg.SQL.SanitizedQuery)
-				attrs[conventions.AttributeDBUser] = pdata.NewAttributeValueString(
+				attrs[conventions.AttributeDBUser] = pdata.NewValueString(
 					*seg.SQL.User)
 				res := perSpanProperties{
 					traceID:      *seg.TraceID,
@@ -843,7 +843,7 @@ func TestTranslation(t *testing.T) {
 		{
 			testCase:   "TranslateInvalidSqlUrl",
 			samplePath: filepath.Join("../../../../internal/aws/xray", "testdata", "indepSubsegmentWithInvalidSqlUrl.txt"),
-			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]pdata.AttributeValue {
+			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]pdata.Value {
 				return nil
 			},
 			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
@@ -864,7 +864,7 @@ func TestTranslation(t *testing.T) {
 			testCase:                  "TranslateJsonUnmarshallFailed",
 			expectedUnmarshallFailure: true,
 			samplePath:                filepath.Join("../../../../internal/aws/xray", "testdata", "minCauseIsInvalid.txt"),
-			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]pdata.AttributeValue {
+			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]pdata.Value {
 				return nil
 			},
 			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
@@ -884,7 +884,7 @@ func TestTranslation(t *testing.T) {
 		{
 			testCase:   "TranslateRootSegValidationFailed",
 			samplePath: filepath.Join("../../../../internal/aws/xray", "testdata", "segmentValidationFailed.txt"),
-			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]pdata.AttributeValue {
+			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]pdata.Value {
 				return nil
 			},
 			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
@@ -935,41 +935,41 @@ func TestTranslation(t *testing.T) {
 func initExceptionEvents(expectedSeg *awsxray.Segment) []eventProps {
 	res := make([]eventProps, 0, len(expectedSeg.Cause.Exceptions))
 	for _, excp := range expectedSeg.Cause.Exceptions {
-		attrs := make(map[string]pdata.AttributeValue)
-		attrs[awsxray.AWSXrayExceptionIDAttribute] = pdata.NewAttributeValueString(
+		attrs := make(map[string]pdata.Value)
+		attrs[awsxray.AWSXrayExceptionIDAttribute] = pdata.NewValueString(
 			*excp.ID)
 		if excp.Message != nil {
-			attrs[conventions.AttributeExceptionMessage] = pdata.NewAttributeValueString(
+			attrs[conventions.AttributeExceptionMessage] = pdata.NewValueString(
 				*excp.Message)
 		}
 
 		if excp.Type != nil {
-			attrs[conventions.AttributeExceptionType] = pdata.NewAttributeValueString(
+			attrs[conventions.AttributeExceptionType] = pdata.NewValueString(
 				*excp.Type)
 		}
 
 		if excp.Remote != nil {
-			attrs[awsxray.AWSXrayExceptionRemoteAttribute] = pdata.NewAttributeValueBool(
+			attrs[awsxray.AWSXrayExceptionRemoteAttribute] = pdata.NewValueBool(
 				*excp.Remote)
 		}
 
 		if excp.Truncated != nil {
-			attrs[awsxray.AWSXrayExceptionTruncatedAttribute] = pdata.NewAttributeValueInt(
+			attrs[awsxray.AWSXrayExceptionTruncatedAttribute] = pdata.NewValueInt(
 				*excp.Truncated)
 		}
 
 		if excp.Skipped != nil {
-			attrs[awsxray.AWSXrayExceptionSkippedAttribute] = pdata.NewAttributeValueInt(
+			attrs[awsxray.AWSXrayExceptionSkippedAttribute] = pdata.NewValueInt(
 				*excp.Skipped)
 		}
 
 		if excp.Cause != nil {
-			attrs[awsxray.AWSXrayExceptionCauseAttribute] = pdata.NewAttributeValueString(
+			attrs[awsxray.AWSXrayExceptionCauseAttribute] = pdata.NewValueString(
 				*excp.Cause)
 		}
 
 		if len(excp.Stack) > 0 {
-			attrs[conventions.AttributeExceptionStacktrace] = pdata.NewAttributeValueString(
+			attrs[conventions.AttributeExceptionStacktrace] = pdata.NewValueString(
 				convertStackFramesToStackTraceStr(excp))
 		}
 		res = append(res, eventProps{
@@ -981,7 +981,7 @@ func initExceptionEvents(expectedSeg *awsxray.Segment) []eventProps {
 }
 
 func initResourceSpans(expectedSeg *awsxray.Segment,
-	resourceAttrs map[string]pdata.AttributeValue,
+	resourceAttrs map[string]pdata.Value,
 	propsPerSpan []perSpanProperties,
 ) *pdata.ResourceSpans {
 	if expectedSeg == nil {

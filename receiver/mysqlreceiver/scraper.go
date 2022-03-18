@@ -74,9 +74,7 @@ func (m *mySQLScraper) scrape(context.Context) (pdata.Metrics, error) {
 	}
 
 	// metric initialization
-	md := pdata.NewMetrics()
-	ilm := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName("otel/mysql")
+	md := m.mb.NewMetricData()
 	now := pdata.NewTimestampFromTime(time.Now())
 
 	// collect innodb metrics.
@@ -512,7 +510,7 @@ func (m *mySQLScraper) scrape(context.Context) (pdata.Metrics, error) {
 		}
 	}
 
-	m.mb.Emit(ilm.Metrics())
+	m.mb.Emit(md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
 	return md, errors.Combine()
 }
 

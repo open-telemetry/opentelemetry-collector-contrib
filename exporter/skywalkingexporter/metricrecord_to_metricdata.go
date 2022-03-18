@@ -29,7 +29,7 @@ const (
 func resourceToMetricLabels(resource pdata.Resource) []*metricpb.Label {
 	attrs := resource.Attributes()
 	labels := make([]*metricpb.Label, 0, attrs.Len())
-	attrs.Range(func(k string, v pdata.AttributeValue) bool {
+	attrs.Range(func(k string, v pdata.Value) bool {
 		labels = append(labels,
 			&metricpb.Label{
 				Name:  k,
@@ -61,7 +61,7 @@ func numberMetricsToData(name string, data pdata.NumberDataPointSlice, defaultLa
 		dataPoint := data.At(i)
 		attributeMap := dataPoint.Attributes()
 		labels := make([]*metricpb.Label, 0, attributeMap.Len()+len(defaultLabels))
-		attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
+		attributeMap.Range(func(k string, v pdata.Value) bool {
 			labels = append(labels, &metricpb.Label{Name: k, Value: v.AsString()})
 			return true
 		})
@@ -92,7 +92,7 @@ func doubleHistogramMetricsToData(name string, data pdata.HistogramDataPointSlic
 		dataPoint := data.At(i)
 		attributeMap := dataPoint.Attributes()
 		labels := make([]*metricpb.Label, 0, attributeMap.Len()+len(defaultLabels))
-		attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
+		attributeMap.Range(func(k string, v pdata.Value) bool {
 			labels = append(labels, &metricpb.Label{Name: k, Value: v.AsString()})
 			return true
 		})
@@ -146,7 +146,7 @@ func doubleSummaryMetricsToData(name string, data pdata.SummaryDataPointSlice, d
 		dataPoint := data.At(i)
 		attributeMap := dataPoint.Attributes()
 		labels := make([]*metricpb.Label, 0, attributeMap.Len()+len(defaultLabels))
-		attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
+		attributeMap.Range(func(k string, v pdata.Value) bool {
 			labels = append(labels, &metricpb.Label{Name: k, Value: v.AsString()})
 			return true
 		})

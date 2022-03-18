@@ -19,6 +19,7 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/service/featuregate"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -28,7 +29,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
 )
 
-func TestNodeMetrics(t *testing.T) {
+func TestNodeMetricsReportCPUMetricsAsInt(t *testing.T) {
+	// disable the feature gate
+	featuregate.Apply(map[string]bool{reportCPUMetricsAsDoubleFeatureGateID: false})
 	n := newNode("1")
 
 	actualResourceMetrics := getMetricsForNode(n, []string{"Ready", "MemoryPressure"}, []string{"cpu", "memory", "ephemeral-storage", "storage"}, zap.NewNop())
@@ -44,24 +47,87 @@ func TestNodeMetrics(t *testing.T) {
 		},
 	)
 
-	testutils.AssertMetrics(t, actualResourceMetrics[0].metrics[0], "k8s.node.condition_ready",
+	testutils.AssertMetricsInt(t, actualResourceMetrics[0].metrics[0], "k8s.node.condition_ready",
 		metricspb.MetricDescriptor_GAUGE_INT64, 1)
 
-	testutils.AssertMetrics(t, actualResourceMetrics[0].metrics[1], "k8s.node.condition_memory_pressure",
+	testutils.AssertMetricsInt(t, actualResourceMetrics[0].metrics[1], "k8s.node.condition_memory_pressure",
 		metricspb.MetricDescriptor_GAUGE_INT64, 0)
 
-	testutils.AssertMetrics(t, actualResourceMetrics[0].metrics[2], "k8s.node.allocatable_cpu",
+	testutils.AssertMetricsInt(t, actualResourceMetrics[0].metrics[2], "k8s.node.allocatable_cpu",
 		metricspb.MetricDescriptor_GAUGE_INT64, 123)
 
-	testutils.AssertMetrics(t, actualResourceMetrics[0].metrics[3], "k8s.node.allocatable_memory",
+	testutils.AssertMetricsInt(t, actualResourceMetrics[0].metrics[3], "k8s.node.allocatable_memory",
 		metricspb.MetricDescriptor_GAUGE_INT64, 456)
 
-	testutils.AssertMetrics(t, actualResourceMetrics[0].metrics[4], "k8s.node.allocatable_ephemeral_storage",
+	testutils.AssertMetricsInt(t, actualResourceMetrics[0].metrics[4], "k8s.node.allocatable_ephemeral_storage",
 		metricspb.MetricDescriptor_GAUGE_INT64, 1234)
+}
 
+func TestNodeMetricsReportCPUMetricsAsDouble(t *testing.T) {
+	// enable the feature gate
+	featuregate.Apply(map[string]bool{reportCPUMetricsAsDoubleFeatureGateID: true})
+	n := newNode("1")
+
+	actualResourceMetrics := getMetricsForNode(n, []string{"Ready", "MemoryPressure"}, []string{"cpu", "memory", "ephemeral-storage", "storage"}, zap.NewNop())
+
+	require.Equal(t, 1, len(actualResourceMetrics))
+
+	require.Equal(t, 5, len(actualResourceMetrics[0].metrics))
+	testutils.AssertResource(t, actualResourceMetrics[0].resource, k8sType,
+		map[string]string{
+			"k8s.node.uid":     "test-node-1-uid",
+			"k8s.node.name":    "test-node-1",
+			"k8s.cluster.name": "test-cluster",
+		},
+	)
+
+	testutils.AssertMetricsInt(t, actualResourceMetrics[0].metrics[0], "k8s.node.condition_ready",
+		metricspb.MetricDescriptor_GAUGE_INT64, 1)
+
+	testutils.AssertMetricsInt(t, actualResourceMetrics[0].metrics[1], "k8s.node.condition_memory_pressure",
+		metricspb.MetricDescriptor_GAUGE_INT64, 0)
+
+	testutils.AssertMetricsDouble(t, actualResourceMetrics[0].metrics[2], "k8s.node.allocatable_cpu",
+		metricspb.MetricDescriptor_GAUGE_DOUBLE, 3.14)
+
+	testutils.AssertMetricsInt(t, actualResourceMetrics[0].metrics[3], "k8s.node.allocatable_memory",
+		metricspb.MetricDescriptor_GAUGE_INT64, 456)
+
+	testutils.AssertMetricsInt(t, actualResourceMetrics[0].metrics[4], "k8s.node.allocatable_ephemeral_storage",
+		metricspb.MetricDescriptor_GAUGE_INT64, 1234)
 }
 
 func newNode(id string) *corev1.Node {
+	if featuregate.IsEnabled(reportCPUMetricsAsDoubleFeatureGateID) {
+		return &corev1.Node{
+			ObjectMeta: v1.ObjectMeta{
+				Name:        "test-node-" + id,
+				UID:         types.UID("test-node-" + id + "-uid"),
+				ClusterName: "test-cluster",
+				Labels: map[string]string{
+					"foo":  "bar",
+					"foo1": "",
+				},
+			},
+			Status: corev1.NodeStatus{
+				Conditions: []corev1.NodeCondition{
+					{
+						Type:   corev1.NodeReady,
+						Status: corev1.ConditionTrue,
+					},
+					{
+						Status: corev1.ConditionFalse,
+						Type:   corev1.NodeMemoryPressure,
+					},
+				},
+				Allocatable: corev1.ResourceList{
+					corev1.ResourceCPU:              *resource.NewMilliQuantity(3140, resource.DecimalSI),
+					corev1.ResourceMemory:           *resource.NewQuantity(456, resource.DecimalSI),
+					corev1.ResourceEphemeralStorage: *resource.NewQuantity(1234, resource.DecimalSI),
+				},
+			},
+		}
+	}
 	return &corev1.Node{
 		ObjectMeta: v1.ObjectMeta{
 			Name:        "test-node-" + id,

@@ -104,7 +104,7 @@ func (f *SyslogWriter) Send(lr pdata.LogRecord) error {
 	sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", "trace_id", lr.TraceID().HexString()))
 	sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", "span_id", lr.SpanID().HexString()))
 	sdid.WriteString(fmt.Sprintf("%s=\"%d\" ", "trace_flags", lr.Flags()))
-	lr.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+	lr.Attributes().Range(func(k string, v pdata.Value) bool {
 		sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", k, v.StringVal()))
 		return true
 	})
