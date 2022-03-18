@@ -16,6 +16,7 @@ package processscraper // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset/regexp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
 )
@@ -36,10 +37,22 @@ type Config struct {
 	// collector does not have permission for.
 	// See https://github.com/open-telemetry/opentelemetry-collector/issues/3004 for more information.
 	MuteProcessNameError bool `mapstructure:"mute_process_name_error,omitempty"`
+
+	Filters []FilterConfig `mapstructure:"filters"`
 }
 
 type MatchConfig struct {
 	filterset.Config `mapstructure:",squash"`
 
 	Names []string `mapstructure:"names"`
+}
+
+type FilterConfig struct {
+	ExecutableName string `mapstructure:"executable_name"`
+	ExecutablePath string `mapstructure:"executable_path"`
+	Command string `mapstructure:"process_command"`
+	CommandLine string `mapstructure:"process_command_line"`
+	Owner string `mapstructure:"process_owner"`
+	PID int32 `mapstructure:"process_pid"`
+	RegexpConfig *regexp.Config `mapstructure:"regexp"`
 }

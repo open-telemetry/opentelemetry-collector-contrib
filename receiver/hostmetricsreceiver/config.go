@@ -83,6 +83,7 @@ func (cfg *Config) Unmarshal(componentParser *config.Map) error {
 			return fmt.Errorf("error reading settings for scraper type %q: %v", key, err)
 		}
 
+		fmt.Printf("++++++++Scraper %s: %v\n", key, collectorCfg)
 		cfg.Scrapers[key] = collectorCfg
 	}
 
