@@ -216,9 +216,16 @@ func NewAttrProc(settings *Settings) (*AttrProc, error) {
 				action.FromAttribute = a.FromAttribute
 				action.FromContext = a.FromContext
 			}
-		case HASH, DELETE:
+		case HASH:
 			if valueSourceCount > 0 || a.RegexPattern != "" {
 				return nil, fmt.Errorf("error creating AttrProc. Action \"%s\" does not use value sources or \"pattern\" field. These must not be specified for %d-th action", a.Action, i)
+			}
+			if a.ConvertedType != "" {
+				return nil, fmt.Errorf("error creating AttrProc. Action \"%s\" does not use the \"converted_type\" field. This must not be specified for %d-th action", a.Action, i)
+			}
+		case DELETE:
+			if valueSourceCount > 0 {
+				return nil, fmt.Errorf("error creating AttrProc. Action \"%s\" does not use value sources. This must not be specified for %d-th action", a.Action, i)
 			}
 			if a.ConvertedType != "" {
 				return nil, fmt.Errorf("error creating AttrProc. Action \"%s\" does not use the \"converted_type\" field. This must not be specified for %d-th action", a.Action, i)
