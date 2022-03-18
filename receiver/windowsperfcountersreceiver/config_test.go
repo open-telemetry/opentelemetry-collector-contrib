@@ -97,7 +97,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, expectedConfig, r1)
 }
 
-func TestLoadConfigNoMetrics(t *testing.T) {
+func TestLoadConfigMetrics(t *testing.T) {
 	testCases := []struct {
 		TestName string
 		TestPath string
@@ -123,6 +123,47 @@ func TestLoadConfigNoMetrics(t *testing.T) {
 					{
 						Object:   "object",
 						Counters: []CounterConfig{{Name: "counter1"}},
+					},
+				},
+				MetricMetaData: map[string]MetricConfig{
+					"metric": {
+						Description: "desc",
+						Unit:        "1",
+						Gauge:       GaugeMetric{},
+					},
+				},
+			},
+		},
+		{
+			TestName: "SumMetric",
+			TestPath: filepath.Join("testdata", "config-summetric.yaml"),
+			Expected: Config{
+				PerfCounters: []PerfCounterConfig{
+					{
+						Object:   "object",
+						Counters: []CounterConfig{{Name: "counter1", Metric: "metric"}},
+					},
+				},
+				MetricMetaData: map[string]MetricConfig{
+					"metric": {
+						Description: "desc",
+						Unit:        "1",
+						Sum: SumMetric{
+							Aggregation: "cumulative",
+							Monotonic:   false,
+						},
+					},
+				},
+			},
+		},
+		{
+			TestName: "MetricUnspecifiedType",
+			TestPath: filepath.Join("testdata", "config-unspecifiedmetrictype.yaml"),
+			Expected: Config{
+				PerfCounters: []PerfCounterConfig{
+					{
+						Object:   "object",
+						Counters: []CounterConfig{{Name: "counter1", Metric: "metric"}},
 					},
 				},
 				MetricMetaData: map[string]MetricConfig{

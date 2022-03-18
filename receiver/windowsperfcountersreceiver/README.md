@@ -61,7 +61,7 @@ If you would like to scrape some counters at a different frequency than others,
 you can configure multiple `windowsperfcounters` receivers with different
 `collection_interval` values. For example:
 
-```yaml 
+```yaml
 receivers:
   windowsperfcounters/memory:
     metrics:
@@ -140,7 +140,6 @@ receivers:
         description: the number of bytes committed to memory
         unit: By
         gauge:
-          value_type: int
     collection_interval: 30s
     perfcounters:
     - object: Memory
