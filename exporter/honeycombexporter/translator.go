@@ -25,15 +25,15 @@ import (
 func spanAttributesToMap(spanAttrs pdata.AttributeMap) map[string]interface{} {
 	var attrs = make(map[string]interface{}, spanAttrs.Len())
 
-	spanAttrs.Range(func(key string, value pdata.AttributeValue) bool {
+	spanAttrs.Range(func(key string, value pdata.Value) bool {
 		switch value.Type() {
-		case pdata.AttributeValueTypeString:
+		case pdata.ValueTypeString:
 			attrs[key] = value.StringVal()
-		case pdata.AttributeValueTypeBool:
+		case pdata.ValueTypeBool:
 			attrs[key] = value.BoolVal()
-		case pdata.AttributeValueTypeInt:
+		case pdata.ValueTypeInt:
 			attrs[key] = value.IntVal()
-		case pdata.AttributeValueTypeDouble:
+		case pdata.ValueTypeDouble:
 			attrs[key] = value.DoubleVal()
 		}
 		return true

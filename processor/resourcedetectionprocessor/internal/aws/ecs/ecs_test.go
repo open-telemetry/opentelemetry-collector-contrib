@@ -122,10 +122,10 @@ func Test_ecsDetectV4(t *testing.T) {
 	attribVals := []string{"group", "arn:aws:logs:us-east-1:123456789123:log-group:group", "stream", "arn:aws:logs:us-east-1:123456789123:log-group:group:log-stream:stream"}
 
 	for i, field := range attribFields {
-		ava := pdata.NewAttributeValueArray()
+		ava := pdata.NewValueArray()
 		av := ava.SliceVal()
 		avs := av.AppendEmpty()
-		pdata.NewAttributeValueString(attribVals[i]).CopyTo(avs)
+		pdata.NewValueString(attribVals[i]).CopyTo(avs)
 		attr.Insert(field, ava)
 	}
 

@@ -299,7 +299,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 			name: "with map body",
 			logRecordFn: func() pdata.LogRecord {
 				logRecord := pdata.NewLogRecord()
-				attVal := pdata.NewAttributeValueMap()
+				attVal := pdata.NewValueMap()
 				attMap := attVal.MapVal()
 				attMap.InsertDouble("23", 45)
 				attMap.InsertString("foo", "bar")
@@ -351,7 +351,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 			name: "with array body",
 			logRecordFn: func() pdata.LogRecord {
 				logRecord := pdata.NewLogRecord()
-				attVal := pdata.NewAttributeValueArray()
+				attVal := pdata.NewValueArray()
 				attArray := attVal.SliceVal()
 				attArray.AppendEmpty().SetStringVal("foo")
 				attVal.CopyTo(logRecord.Body())

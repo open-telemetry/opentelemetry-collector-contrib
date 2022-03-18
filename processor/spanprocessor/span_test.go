@@ -50,9 +50,9 @@ func TestNewTracesProcessor(t *testing.T) {
 type testCase struct {
 	serviceName      string
 	inputName        string
-	inputAttributes  map[string]pdata.AttributeValue
+	inputAttributes  map[string]pdata.Value
 	outputName       string
-	outputAttributes map[string]pdata.AttributeValue
+	outputAttributes map[string]pdata.Value
 }
 
 // runIndividualTestCase is the common logic of passing trace data through a configured attributes processor.
@@ -78,7 +78,7 @@ func runIndividualTestCase(t *testing.T, tt testCase, tp component.TracesProcess
 	})
 }
 
-func generateTraceData(serviceName, inputName string, attrs map[string]pdata.AttributeValue) pdata.Traces {
+func generateTraceData(serviceName, inputName string, attrs map[string]pdata.Value) pdata.Traces {
 	td := pdata.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
 	if serviceName != "" {
@@ -160,48 +160,48 @@ func TestSpanProcessor_Values(t *testing.T) {
 		},
 		{
 			inputName:        "empty-attributes",
-			inputAttributes:  map[string]pdata.AttributeValue{},
+			inputAttributes:  map[string]pdata.Value{},
 			outputName:       "empty-attributes",
-			outputAttributes: map[string]pdata.AttributeValue{},
+			outputAttributes: map[string]pdata.Value{},
 		},
 		{
 			inputName: "string-type",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"key1": pdata.NewAttributeValueString("bob"),
+			inputAttributes: map[string]pdata.Value{
+				"key1": pdata.NewValueString("bob"),
 			},
 			outputName: "bob",
-			outputAttributes: map[string]pdata.AttributeValue{
-				"key1": pdata.NewAttributeValueString("bob"),
+			outputAttributes: map[string]pdata.Value{
+				"key1": pdata.NewValueString("bob"),
 			},
 		},
 		{
 			inputName: "int-type",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"key1": pdata.NewAttributeValueInt(123),
+			inputAttributes: map[string]pdata.Value{
+				"key1": pdata.NewValueInt(123),
 			},
 			outputName: "123",
-			outputAttributes: map[string]pdata.AttributeValue{
-				"key1": pdata.NewAttributeValueInt(123),
+			outputAttributes: map[string]pdata.Value{
+				"key1": pdata.NewValueInt(123),
 			},
 		},
 		{
 			inputName: "double-type",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"key1": pdata.NewAttributeValueDouble(234.129312),
+			inputAttributes: map[string]pdata.Value{
+				"key1": pdata.NewValueDouble(234.129312),
 			},
 			outputName: "234.129312",
-			outputAttributes: map[string]pdata.AttributeValue{
-				"key1": pdata.NewAttributeValueDouble(234.129312),
+			outputAttributes: map[string]pdata.Value{
+				"key1": pdata.NewValueDouble(234.129312),
 			},
 		},
 		{
 			inputName: "bool-type",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"key1": pdata.NewAttributeValueBool(true),
+			inputAttributes: map[string]pdata.Value{
+				"key1": pdata.NewValueBool(true),
 			},
 			outputName: "true",
-			outputAttributes: map[string]pdata.AttributeValue{
-				"key1": pdata.NewAttributeValueBool(true),
+			outputAttributes: map[string]pdata.Value{
+				"key1": pdata.NewValueBool(true),
 			},
 		},
 		// TODO: What do we do when AttributeMap contains a nil entry? Is that possible?
@@ -247,60 +247,60 @@ func TestSpanProcessor_MissingKeys(t *testing.T) {
 	testCases := []testCase{
 		{
 			inputName: "first-keys-missing",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"key2": pdata.NewAttributeValueInt(123),
-				"key3": pdata.NewAttributeValueDouble(234.129312),
-				"key4": pdata.NewAttributeValueBool(true),
+			inputAttributes: map[string]pdata.Value{
+				"key2": pdata.NewValueInt(123),
+				"key3": pdata.NewValueDouble(234.129312),
+				"key4": pdata.NewValueBool(true),
 			},
 			outputName: "first-keys-missing",
-			outputAttributes: map[string]pdata.AttributeValue{
-				"key2": pdata.NewAttributeValueInt(123),
-				"key3": pdata.NewAttributeValueDouble(234.129312),
-				"key4": pdata.NewAttributeValueBool(true),
+			outputAttributes: map[string]pdata.Value{
+				"key2": pdata.NewValueInt(123),
+				"key3": pdata.NewValueDouble(234.129312),
+				"key4": pdata.NewValueBool(true),
 			},
 		},
 		{
 			inputName: "middle-key-missing",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"key1": pdata.NewAttributeValueString("bob"),
-				"key2": pdata.NewAttributeValueInt(123),
-				"key4": pdata.NewAttributeValueBool(true),
+			inputAttributes: map[string]pdata.Value{
+				"key1": pdata.NewValueString("bob"),
+				"key2": pdata.NewValueInt(123),
+				"key4": pdata.NewValueBool(true),
 			},
 			outputName: "middle-key-missing",
-			outputAttributes: map[string]pdata.AttributeValue{
-				"key1": pdata.NewAttributeValueString("bob"),
-				"key2": pdata.NewAttributeValueInt(123),
-				"key4": pdata.NewAttributeValueBool(true),
+			outputAttributes: map[string]pdata.Value{
+				"key1": pdata.NewValueString("bob"),
+				"key2": pdata.NewValueInt(123),
+				"key4": pdata.NewValueBool(true),
 			},
 		},
 		{
 			inputName: "last-key-missing",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"key1": pdata.NewAttributeValueString("bob"),
-				"key2": pdata.NewAttributeValueInt(123),
-				"key3": pdata.NewAttributeValueDouble(234.129312),
+			inputAttributes: map[string]pdata.Value{
+				"key1": pdata.NewValueString("bob"),
+				"key2": pdata.NewValueInt(123),
+				"key3": pdata.NewValueDouble(234.129312),
 			},
 			outputName: "last-key-missing",
-			outputAttributes: map[string]pdata.AttributeValue{
-				"key1": pdata.NewAttributeValueString("bob"),
-				"key2": pdata.NewAttributeValueInt(123),
-				"key3": pdata.NewAttributeValueDouble(234.129312),
+			outputAttributes: map[string]pdata.Value{
+				"key1": pdata.NewValueString("bob"),
+				"key2": pdata.NewValueInt(123),
+				"key3": pdata.NewValueDouble(234.129312),
 			},
 		},
 		{
 			inputName: "all-keys-exists",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"key1": pdata.NewAttributeValueString("bob"),
-				"key2": pdata.NewAttributeValueInt(123),
-				"key3": pdata.NewAttributeValueDouble(234.129312),
-				"key4": pdata.NewAttributeValueBool(true),
+			inputAttributes: map[string]pdata.Value{
+				"key1": pdata.NewValueString("bob"),
+				"key2": pdata.NewValueInt(123),
+				"key3": pdata.NewValueDouble(234.129312),
+				"key4": pdata.NewValueBool(true),
 			},
 			outputName: "bob::123::234.129312::true",
-			outputAttributes: map[string]pdata.AttributeValue{
-				"key1": pdata.NewAttributeValueString("bob"),
-				"key2": pdata.NewAttributeValueInt(123),
-				"key3": pdata.NewAttributeValueDouble(234.129312),
-				"key4": pdata.NewAttributeValueBool(true),
+			outputAttributes: map[string]pdata.Value{
+				"key1": pdata.NewValueString("bob"),
+				"key2": pdata.NewValueInt(123),
+				"key3": pdata.NewValueDouble(234.129312),
+				"key4": pdata.NewValueBool(true),
 			},
 		},
 	}
@@ -335,16 +335,16 @@ func TestSpanProcessor_Separator(t *testing.T) {
 	traceData := generateTraceData(
 		"",
 		"ensure no separator in the rename with one key",
-		map[string]pdata.AttributeValue{
-			"key1": pdata.NewAttributeValueString("bob"),
+		map[string]pdata.Value{
+			"key1": pdata.NewValueString("bob"),
 		})
 	assert.NoError(t, tp.ConsumeTraces(context.Background(), traceData))
 
 	assert.Equal(t, generateTraceData(
 		"",
 		"bob",
-		map[string]pdata.AttributeValue{
-			"key1": pdata.NewAttributeValueString("bob"),
+		map[string]pdata.Value{
+			"key1": pdata.NewValueString("bob"),
 		}), traceData)
 }
 
@@ -363,18 +363,18 @@ func TestSpanProcessor_NoSeparatorMultipleKeys(t *testing.T) {
 
 	traceData := generateTraceData(
 		"",
-		"ensure no separator in the rename with two keys", map[string]pdata.AttributeValue{
-			"key1": pdata.NewAttributeValueString("bob"),
-			"key2": pdata.NewAttributeValueInt(123),
+		"ensure no separator in the rename with two keys", map[string]pdata.Value{
+			"key1": pdata.NewValueString("bob"),
+			"key2": pdata.NewValueInt(123),
 		})
 	assert.NoError(t, tp.ConsumeTraces(context.Background(), traceData))
 
 	assert.Equal(t, generateTraceData(
 		"",
 		"bob123",
-		map[string]pdata.AttributeValue{
-			"key1": pdata.NewAttributeValueString("bob"),
-			"key2": pdata.NewAttributeValueInt(123),
+		map[string]pdata.Value{
+			"key1": pdata.NewValueString("bob"),
+			"key2": pdata.NewValueInt(123),
 		}), traceData)
 }
 
@@ -394,22 +394,22 @@ func TestSpanProcessor_SeparatorMultipleKeys(t *testing.T) {
 	traceData := generateTraceData(
 		"",
 		"rename with separators and multiple keys",
-		map[string]pdata.AttributeValue{
-			"key1": pdata.NewAttributeValueString("bob"),
-			"key2": pdata.NewAttributeValueInt(123),
-			"key3": pdata.NewAttributeValueDouble(234.129312),
-			"key4": pdata.NewAttributeValueBool(true),
+		map[string]pdata.Value{
+			"key1": pdata.NewValueString("bob"),
+			"key2": pdata.NewValueInt(123),
+			"key3": pdata.NewValueDouble(234.129312),
+			"key4": pdata.NewValueBool(true),
 		})
 	assert.NoError(t, tp.ConsumeTraces(context.Background(), traceData))
 
 	assert.Equal(t, generateTraceData(
 		"",
 		"bob::123::234.129312::true",
-		map[string]pdata.AttributeValue{
-			"key1": pdata.NewAttributeValueString("bob"),
-			"key2": pdata.NewAttributeValueInt(123),
-			"key3": pdata.NewAttributeValueDouble(234.129312),
-			"key4": pdata.NewAttributeValueBool(true),
+		map[string]pdata.Value{
+			"key1": pdata.NewValueString("bob"),
+			"key2": pdata.NewValueInt(123),
+			"key3": pdata.NewValueDouble(234.129312),
+			"key4": pdata.NewValueBool(true),
 		}), traceData)
 }
 
@@ -429,16 +429,16 @@ func TestSpanProcessor_NilName(t *testing.T) {
 	traceData := generateTraceData(
 		"",
 		"",
-		map[string]pdata.AttributeValue{
-			"key1": pdata.NewAttributeValueString("bob"),
+		map[string]pdata.Value{
+			"key1": pdata.NewValueString("bob"),
 		})
 	assert.NoError(t, tp.ConsumeTraces(context.Background(), traceData))
 
 	assert.Equal(t, generateTraceData(
 		"",
 		"bob",
-		map[string]pdata.AttributeValue{
-			"key1": pdata.NewAttributeValueString("bob"),
+		map[string]pdata.Value{
+			"key1": pdata.NewValueString("bob"),
 		}), traceData)
 }
 
@@ -454,10 +454,10 @@ func TestSpanProcessor_ToAttributes(t *testing.T) {
 			rules: []string{`^\/api\/v1\/document\/(?P<documentId>.*)\/update\/1$`},
 			testCase: testCase{
 				inputName:       "/api/v1/document/321083210/update/1",
-				inputAttributes: map[string]pdata.AttributeValue{},
+				inputAttributes: map[string]pdata.Value{},
 				outputName:      "/api/v1/document/{documentId}/update/1",
-				outputAttributes: map[string]pdata.AttributeValue{
-					"documentId": pdata.NewAttributeValueString("321083210"),
+				outputAttributes: map[string]pdata.Value{
+					"documentId": pdata.NewValueString("321083210"),
 				},
 			},
 		},
@@ -467,9 +467,9 @@ func TestSpanProcessor_ToAttributes(t *testing.T) {
 			testCase: testCase{
 				inputName:  "/api/v1/document/321083210/update/2",
 				outputName: "/api/{version}/document/{documentId}/update/2",
-				outputAttributes: map[string]pdata.AttributeValue{
-					"documentId": pdata.NewAttributeValueString("321083210"),
-					"version":    pdata.NewAttributeValueString("v1"),
+				outputAttributes: map[string]pdata.Value{
+					"documentId": pdata.NewValueString("321083210"),
+					"version":    pdata.NewValueString("v1"),
 				},
 			},
 		},
@@ -480,9 +480,9 @@ func TestSpanProcessor_ToAttributes(t *testing.T) {
 			testCase: testCase{
 				inputName:  "/api/v1/document/321083210/update/3",
 				outputName: "/api/{version}/document/{documentId}/update/3",
-				outputAttributes: map[string]pdata.AttributeValue{
-					"documentId": pdata.NewAttributeValueString("321083210"),
-					"version":    pdata.NewAttributeValueString("v1"),
+				outputAttributes: map[string]pdata.Value{
+					"documentId": pdata.NewValueString("321083210"),
+					"version":    pdata.NewValueString("v1"),
 				},
 			},
 			breakAfterMatch: false,
@@ -494,8 +494,8 @@ func TestSpanProcessor_ToAttributes(t *testing.T) {
 			testCase: testCase{
 				inputName:  "/api/v1/document/321083210/update/4",
 				outputName: "/api/v1/document/{documentId}/update/4",
-				outputAttributes: map[string]pdata.AttributeValue{
-					"documentId": pdata.NewAttributeValueString("321083210"),
+				outputAttributes: map[string]pdata.Value{
+					"documentId": pdata.NewValueString("321083210"),
 				},
 			},
 			breakAfterMatch: true,
@@ -543,30 +543,30 @@ func TestSpanProcessor_skipSpan(t *testing.T) {
 			serviceName: "banks",
 			inputName:   "www.test.com/code",
 			outputName:  "{operation_website}",
-			outputAttributes: map[string]pdata.AttributeValue{
-				"operation_website": pdata.NewAttributeValueString("www.test.com/code"),
+			outputAttributes: map[string]pdata.Value{
+				"operation_website": pdata.NewValueString("www.test.com/code"),
 			},
 		},
 		{
 			serviceName: "banks",
 			inputName:   "donot/",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"operation_website": pdata.NewAttributeValueString("www.test.com/code"),
+			inputAttributes: map[string]pdata.Value{
+				"operation_website": pdata.NewValueString("www.test.com/code"),
 			},
 			outputName: "{operation_website}",
-			outputAttributes: map[string]pdata.AttributeValue{
-				"operation_website": pdata.NewAttributeValueString("donot/"),
+			outputAttributes: map[string]pdata.Value{
+				"operation_website": pdata.NewValueString("donot/"),
 			},
 		},
 		{
 			serviceName: "banks",
 			inputName:   "donot/change",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"operation_website": pdata.NewAttributeValueString("www.test.com/code"),
+			inputAttributes: map[string]pdata.Value{
+				"operation_website": pdata.NewValueString("www.test.com/code"),
 			},
 			outputName: "donot/change",
-			outputAttributes: map[string]pdata.AttributeValue{
-				"operation_website": pdata.NewAttributeValueString("www.test.com/code"),
+			outputAttributes: map[string]pdata.Value{
+				"operation_website": pdata.NewValueString("www.test.com/code"),
 			},
 		},
 	}
@@ -595,7 +595,7 @@ func TestSpanProcessor_skipSpan(t *testing.T) {
 	}
 }
 
-func generateTraceDataSetStatus(code pdata.StatusCode, description string, attrs map[string]pdata.AttributeValue) pdata.Traces {
+func generateTraceDataSetStatus(code pdata.StatusCode, description string, attrs map[string]pdata.Value) pdata.Traces {
 	td := pdata.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
 	span := rs.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
@@ -647,7 +647,7 @@ func TestSpanProcessor_setStatusCodeConditionally(t *testing.T) {
 	require.NotNil(t, tp)
 
 	testCases := []struct {
-		inputAttributes         map[string]pdata.AttributeValue
+		inputAttributes         map[string]pdata.Value
 		inputStatusCode         pdata.StatusCode
 		outputStatusCode        pdata.StatusCode
 		outputStatusDescription string
@@ -658,8 +658,8 @@ func TestSpanProcessor_setStatusCodeConditionally(t *testing.T) {
 			outputStatusCode: pdata.StatusCodeOk,
 		},
 		{
-			inputAttributes: map[string]pdata.AttributeValue{
-				"http.status_code": pdata.NewAttributeValueInt(400),
+			inputAttributes: map[string]pdata.Value{
+				"http.status_code": pdata.NewValueInt(400),
 			},
 			inputStatusCode:         pdata.StatusCodeOk,
 			outputStatusCode:        pdata.StatusCodeError,

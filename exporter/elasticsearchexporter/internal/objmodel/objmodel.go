@@ -160,11 +160,11 @@ func (doc *Document) AddAttributes(key string, attributes pdata.AttributeMap) {
 
 // AddAttribute converts and adds a AttributeValue to the document. If the attribute represents a map,
 // the fields will be flattened.
-func (doc *Document) AddAttribute(key string, attribute pdata.AttributeValue) {
+func (doc *Document) AddAttribute(key string, attribute pdata.Value) {
 	switch attribute.Type() {
-	case pdata.AttributeValueTypeEmpty:
+	case pdata.ValueTypeEmpty:
 		// do not add 'null'
-	case pdata.AttributeValueTypeMap:
+	case pdata.ValueTypeMap:
 		doc.AddAttributes(key, attribute.MapVal())
 	default:
 		doc.Add(key, ValueFromAttribute(attribute))
@@ -367,20 +367,20 @@ func TimestampValue(ts time.Time) Value {
 }
 
 // ValueFromAttribute converts a AttributeValue into a value.
-func ValueFromAttribute(attr pdata.AttributeValue) Value {
+func ValueFromAttribute(attr pdata.Value) Value {
 	switch attr.Type() {
-	case pdata.AttributeValueTypeInt:
+	case pdata.ValueTypeInt:
 		return IntValue(attr.IntVal())
-	case pdata.AttributeValueTypeDouble:
+	case pdata.ValueTypeDouble:
 		return DoubleValue(attr.DoubleVal())
-	case pdata.AttributeValueTypeString:
+	case pdata.ValueTypeString:
 		return StringValue(attr.StringVal())
-	case pdata.AttributeValueTypeBool:
+	case pdata.ValueTypeBool:
 		return BoolValue(attr.BoolVal())
-	case pdata.AttributeValueTypeArray:
+	case pdata.ValueTypeArray:
 		sub := arrFromAttributes(attr.SliceVal())
 		return ArrValue(sub...)
-	case pdata.AttributeValueTypeMap:
+	case pdata.ValueTypeMap:
 		sub := DocumentFromAttributes(attr.MapVal())
 		return Value{kind: KindObject, doc: sub}
 	default:
@@ -477,19 +477,19 @@ func arrFromAttributes(aa pdata.AttributeValueSlice) []Value {
 }
 
 func appendAttributeFields(fields []field, path string, am pdata.AttributeMap) []field {
-	am.Range(func(k string, val pdata.AttributeValue) bool {
+	am.Range(func(k string, val pdata.Value) bool {
 		fields = appendAttributeValue(fields, path, k, val)
 		return true
 	})
 	return fields
 }
 
-func appendAttributeValue(fields []field, path string, key string, attr pdata.AttributeValue) []field {
-	if attr.Type() == pdata.AttributeValueTypeEmpty {
+func appendAttributeValue(fields []field, path string, key string, attr pdata.Value) []field {
+	if attr.Type() == pdata.ValueTypeEmpty {
 		return fields
 	}
 
-	if attr.Type() == pdata.AttributeValueTypeMap {
+	if attr.Type() == pdata.ValueTypeMap {
 		return appendAttributeFields(fields, flattenKey(path, key), attr.MapVal())
 	}
 

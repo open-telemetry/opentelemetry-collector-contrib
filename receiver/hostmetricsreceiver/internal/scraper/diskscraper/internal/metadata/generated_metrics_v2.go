@@ -75,8 +75,8 @@ func (m *metricSystemDiskIo) recordDataPoint(start pdata.Timestamp, ts pdata.Tim
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Device, pdata.NewAttributeValueString(deviceAttributeValue))
-	dp.Attributes().Insert(A.Direction, pdata.NewAttributeValueString(directionAttributeValue))
+	dp.Attributes().Insert(A.Device, pdata.NewValueString(deviceAttributeValue))
+	dp.Attributes().Insert(A.Direction, pdata.NewValueString(directionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -129,7 +129,7 @@ func (m *metricSystemDiskIoTime) recordDataPoint(start pdata.Timestamp, ts pdata
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.Device, pdata.NewAttributeValueString(deviceAttributeValue))
+	dp.Attributes().Insert(A.Device, pdata.NewValueString(deviceAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -182,8 +182,8 @@ func (m *metricSystemDiskMerged) recordDataPoint(start pdata.Timestamp, ts pdata
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Device, pdata.NewAttributeValueString(deviceAttributeValue))
-	dp.Attributes().Insert(A.Direction, pdata.NewAttributeValueString(directionAttributeValue))
+	dp.Attributes().Insert(A.Device, pdata.NewValueString(deviceAttributeValue))
+	dp.Attributes().Insert(A.Direction, pdata.NewValueString(directionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -236,8 +236,8 @@ func (m *metricSystemDiskOperationTime) recordDataPoint(start pdata.Timestamp, t
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.Device, pdata.NewAttributeValueString(deviceAttributeValue))
-	dp.Attributes().Insert(A.Direction, pdata.NewAttributeValueString(directionAttributeValue))
+	dp.Attributes().Insert(A.Device, pdata.NewValueString(deviceAttributeValue))
+	dp.Attributes().Insert(A.Direction, pdata.NewValueString(directionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -290,8 +290,8 @@ func (m *metricSystemDiskOperations) recordDataPoint(start pdata.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Device, pdata.NewAttributeValueString(deviceAttributeValue))
-	dp.Attributes().Insert(A.Direction, pdata.NewAttributeValueString(directionAttributeValue))
+	dp.Attributes().Insert(A.Device, pdata.NewValueString(deviceAttributeValue))
+	dp.Attributes().Insert(A.Direction, pdata.NewValueString(directionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -344,7 +344,7 @@ func (m *metricSystemDiskPendingOperations) recordDataPoint(start pdata.Timestam
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Device, pdata.NewAttributeValueString(deviceAttributeValue))
+	dp.Attributes().Insert(A.Device, pdata.NewValueString(deviceAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -397,7 +397,7 @@ func (m *metricSystemDiskWeightedIoTime) recordDataPoint(start pdata.Timestamp, 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.Device, pdata.NewAttributeValueString(deviceAttributeValue))
+	dp.Attributes().Insert(A.Device, pdata.NewValueString(deviceAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.

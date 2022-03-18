@@ -57,7 +57,7 @@ func newPrometheusFormatter() (prometheusFormatter, error) {
 func (f *prometheusFormatter) tags2String(attr pdata.AttributeMap, labels pdata.AttributeMap) prometheusTags {
 	mergedAttributes := pdata.NewAttributeMap()
 	attr.CopyTo(mergedAttributes)
-	labels.Range(func(k string, v pdata.AttributeValue) bool {
+	labels.Range(func(k string, v pdata.Value) bool {
 		mergedAttributes.UpsertString(k, v.StringVal())
 		return true
 	})
@@ -68,7 +68,7 @@ func (f *prometheusFormatter) tags2String(attr pdata.AttributeMap, labels pdata.
 	}
 
 	returnValue := make([]string, 0, length)
-	mergedAttributes.Range(func(k string, v pdata.AttributeValue) bool {
+	mergedAttributes.Range(func(k string, v pdata.Value) bool {
 		returnValue = append(
 			returnValue,
 			fmt.Sprintf(
@@ -185,7 +185,7 @@ func (f *prometheusFormatter) countMetric(name string) string {
 func (f *prometheusFormatter) mergeAttributes(attributes pdata.AttributeMap, additionalAttributes pdata.AttributeMap) pdata.AttributeMap {
 	mergedAttributes := pdata.NewAttributeMap()
 	attributes.CopyTo(mergedAttributes)
-	additionalAttributes.Range(func(k string, v pdata.AttributeValue) bool {
+	additionalAttributes.Range(func(k string, v pdata.Value) bool {
 		mergedAttributes.Upsert(k, v)
 		return true
 	})

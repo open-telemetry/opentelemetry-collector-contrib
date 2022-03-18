@@ -103,7 +103,7 @@ func (tsm *timeseriesMapPdata) get(metric *pdata.Metric, kv pdata.AttributeMap) 
 // Create a unique timeseries signature consisting of the metric name and label values.
 func getTimeseriesSignaturePdata(name string, kv pdata.AttributeMap) string {
 	labelValues := make([]string, 0, kv.Len())
-	kv.Sort().Range(func(_ string, attrValue pdata.AttributeValue) bool {
+	kv.Sort().Range(func(_ string, attrValue pdata.Value) bool {
 		value := attrValue.StringVal()
 		if value != "" {
 			labelValues = append(labelValues, value)

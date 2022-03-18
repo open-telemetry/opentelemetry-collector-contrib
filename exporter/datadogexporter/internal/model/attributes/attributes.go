@@ -124,7 +124,7 @@ func TagsFromAttributes(attrs pdata.AttributeMap) []string {
 	var processAttributes processAttributes
 	var systemAttributes systemAttributes
 
-	attrs.Range(func(key string, value pdata.AttributeValue) bool {
+	attrs.Range(func(key string, value pdata.Value) bool {
 		switch key {
 		// Process attributes
 		case conventions.AttributeProcessExecutableName:

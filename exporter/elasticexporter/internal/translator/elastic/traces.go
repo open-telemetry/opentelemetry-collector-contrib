@@ -106,7 +106,7 @@ func setTransactionProperties(
 		netPeerPort int
 	)
 
-	otlpSpan.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+	otlpSpan.Attributes().Range(func(k string, v pdata.Value) bool {
 		var storeTag bool
 		switch k {
 		// http.*
@@ -226,7 +226,7 @@ func setSpanProperties(otlpSpan pdata.Span, span *model.Span) error {
 		netPeerPort int
 	)
 
-	otlpSpan.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+	otlpSpan.Attributes().Range(func(k string, v pdata.Value) bool {
 		var storeTag bool
 		switch k {
 		// http.*
@@ -381,7 +381,7 @@ func encodeSpanEvents(
 		}
 		var exceptionEscaped bool
 		var exceptionMessage, exceptionStacktrace, exceptionType string
-		event.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+		event.Attributes().Range(func(k string, v pdata.Value) bool {
 			switch k {
 			case conventions.AttributeExceptionMessage:
 				exceptionMessage = v.StringVal()

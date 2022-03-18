@@ -115,7 +115,7 @@ func addAttributesToExponentialHistogramDataPoints(ps pdata.ExponentialHistogram
 }
 
 func joinAttributeMaps(from, to pdata.AttributeMap) {
-	from.Range(func(k string, v pdata.AttributeValue) bool {
+	from.Range(func(k string, v pdata.Value) bool {
 		to.Upsert(k, v)
 		return true
 	})
