@@ -145,7 +145,10 @@ func (p *ResourceProvider) detectResource(ctx context.Context) {
 		}
 	}
 
-	FilterAttributes(res.Attributes(), p.attributesToKeep)
+	droppedAttributes := FilterAttributes(res.Attributes(), p.attributesToKeep)
+	if len(droppedAttributes) > 0 {
+		p.logger.Info("dropped resource information", zap.Strings("resource keys", droppedAttributes))
+	}
 
 	p.logger.Info("detected resource information", zap.Any("resource", AttributesToMap(res.Attributes())))
 
@@ -205,13 +208,19 @@ func MergeSchemaURL(currentSchemaURL string, newSchemaURL string) string {
 	return currentSchemaURL
 }
 
-func FilterAttributes(am pdata.AttributeMap, attributesToKeep map[string]struct{}) {
+func FilterAttributes(am pdata.AttributeMap, attributesToKeep map[string]struct{}) []string {
 	if len(attributesToKeep) > 0 {
+		droppedAttributes := make([]string, 0)
 		am.RemoveIf(func(k string, v pdata.AttributeValue) bool {
 			_, keep := attributesToKeep[k]
+			if !keep {
+				droppedAttributes = append(droppedAttributes, k)
+			}
 			return !keep
 		})
+		return droppedAttributes
 	}
+	return nil
 }
 
 func MergeResource(to, from pdata.Resource, overrideTo bool) {
