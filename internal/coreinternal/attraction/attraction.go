@@ -227,6 +227,13 @@ func NewAttrProc(settings *Settings) (*AttrProc, error) {
 			if valueSourceCount > 0 {
 				return nil, fmt.Errorf("error creating AttrProc. Action \"%s\" does not use value sources. This must not be specified for %d-th action", a.Action, i)
 			}
+			if a.RegexPattern != "" {
+				re, err := regexp.Compile(a.RegexPattern)
+				if err != nil {
+					return nil, fmt.Errorf("error creating AttrProc. Field \"pattern\" has invalid pattern: \"%s\" to be set at the %d-th actions", a.RegexPattern, i)
+				}
+				action.Regex = re
+			}
 			if a.ConvertedType != "" {
 				return nil, fmt.Errorf("error creating AttrProc. Action \"%s\" does not use the \"converted_type\" field. This must not be specified for %d-th action", a.Action, i)
 			}
