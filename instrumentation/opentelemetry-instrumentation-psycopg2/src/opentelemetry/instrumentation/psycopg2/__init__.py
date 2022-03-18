@@ -76,7 +76,7 @@ class Psycopg2Instrumentor(BaseInstrumentor):
         Psycopg: http://initd.org/psycopg/
         """
         tracer_provider = kwargs.get("tracer_provider")
-
+        enable_sqlcommenter = kwargs.get("enable_commenter", False)
         dbapi.wrap_connect(
             __name__,
             psycopg2,
@@ -86,6 +86,7 @@ class Psycopg2Instrumentor(BaseInstrumentor):
             version=__version__,
             tracer_provider=tracer_provider,
             db_api_integration_factory=DatabaseApiIntegration,
+            enable_commenter=enable_sqlcommenter,
         )
 
     def _uninstrument(self, **kwargs):

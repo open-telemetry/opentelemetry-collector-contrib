@@ -155,3 +155,28 @@ class TestFunctionalPsycopg(TestBase):
             span.attributes[SpanAttributes.DB_STATEMENT],
             'SELECT FROM "users" where "name"=\'"abc"\'',
         )
+
+    def test_commenter_enabled(self):
+
+        stmt = "CREATE TABLE IF NOT EXISTS users (id integer, name varchar)"
+        with self._tracer.start_as_current_span("rootSpan"):
+            self._cursor.execute(stmt)
+        self.validate_spans("CREATE")
+        Psycopg2Instrumentor().uninstrument()
+        Psycopg2Instrumentor().instrument(enable_commenter=True)
+
+        self._cursor.execute(
+            sql.SQL("SELECT FROM {table} where {field}='{value}'").format(
+                table=sql.Identifier("users"),
+                field=sql.Identifier("name"),
+                value=sql.Identifier("abc"),
+            )
+        )
+
+        spans = self.memory_exporter.get_finished_spans()
+        span = spans[2]
+        self.assertEqual(span.name, "SELECT")
+        self.assertEqual(
+            span.attributes[SpanAttributes.DB_STATEMENT],
+            'SELECT FROM "users" where "name"=\'"abc"\'',
+        )

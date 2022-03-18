@@ -224,3 +224,23 @@ class TestPostgresqlIntegration(TestBase):
 
         spans_list = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(spans_list), 1)
+
+    @mock.patch("opentelemetry.instrumentation.dbapi.wrap_connect")
+    def test_sqlcommenter_enabled(self, event_mocked):
+        cnx = psycopg2.connect(database="test")
+        Psycopg2Instrumentor().instrument(enable_commenter=True)
+        query = "SELECT * FROM test"
+        cursor = cnx.cursor()
+        cursor.execute(query)
+        kwargs = event_mocked.call_args[1]
+        self.assertEqual(kwargs["enable_commenter"], True)
+
+    @mock.patch("opentelemetry.instrumentation.dbapi.wrap_connect")
+    def test_sqlcommenter_disabled(self, event_mocked):
+        cnx = psycopg2.connect(database="test")
+        Psycopg2Instrumentor().instrument()
+        query = "SELECT * FROM test"
+        cursor = cnx.cursor()
+        cursor.execute(query)
+        kwargs = event_mocked.call_args[1]
+        self.assertEqual(kwargs["enable_commenter"], False)
