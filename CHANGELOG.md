@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### 🛑 Breaking changes 🛑
+
+- `windowsperfcountersreceiver`: Added metrics configuration (#8376)
+
 ## v0.47.0
 
 ### 💡 Enhancements 💡
@@ -29,7 +33,6 @@
 
 ### 🛑 Breaking changes 🛑
 
-- `windowsperfcountersreceiver`: Added metrics configuration (#8376)
 - `mongodbatlasreceiver`: rename mislabeled attribute `memory_state` to correct `disk_status` on partition disk metrics (#7747)
 - `mongodbatlasreceiver`: Correctly set initial lookback for querying mongodb atlas api (#8246)
 - `nginxreceiver`: instrumentation name updated from `otelcol/nginx` to `otelcol/nginxreceiver` (#8255)
