@@ -349,7 +349,7 @@ func TestAccumulateMetrics(t *testing.T) {
 
 			require.Equal(t, v.instrumentationLibrary.Name(), "test")
 			require.Equal(t, v.value.DataType(), ilm2.Metrics().At(0).DataType())
-			vLabels.Range(func(k string, v pdata.AttributeValue) bool {
+			vLabels.Range(func(k string, v pdata.Value) bool {
 				r, _ := m2Labels.Get(k)
 				require.Equal(t, r, v)
 				return true

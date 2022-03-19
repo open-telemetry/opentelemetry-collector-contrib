@@ -60,7 +60,7 @@ func (d *Dimensions) OriginID() string {
 // getTags maps an attributeMap into a slice of Datadog tags
 func getTags(labels pdata.AttributeMap) []string {
 	tags := make([]string, 0, labels.Len())
-	labels.Range(func(key string, value pdata.AttributeValue) bool {
+	labels.Range(func(key string, value pdata.Value) bool {
 		v := value.AsString()
 		tags = append(tags, utils.FormatKeyValueTag(key, v))
 		return true

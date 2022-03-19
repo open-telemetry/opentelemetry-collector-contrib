@@ -116,7 +116,7 @@ func spanToEnvelope(
 	resourceAttributes := resource.Attributes()
 
 	// Copy all the resource labels into the base data properties. Resource values are always strings
-	resourceAttributes.Range(func(k string, v pdata.AttributeValue) bool {
+	resourceAttributes.Range(func(k string, v pdata.Value) bool {
 		dataProperties[k] = v.StringVal()
 		return true
 	})
@@ -494,9 +494,9 @@ func copyAndMapAttributes(
 	attributeMap pdata.AttributeMap,
 	properties map[string]string,
 	measurements map[string]float64,
-	mappingFunc func(k string, v pdata.AttributeValue)) {
+	mappingFunc func(k string, v pdata.Value)) {
 
-	attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
+	attributeMap.Range(func(k string, v pdata.Value) bool {
 		setAttributeValueAsPropertyOrMeasurement(k, v, properties, measurements)
 		if mappingFunc != nil {
 			mappingFunc(k, v)
@@ -525,7 +525,7 @@ func copyAndExtractHTTPAttributes(
 		attributeMap,
 		properties,
 		measurements,
-		func(k string, v pdata.AttributeValue) { attrs.MapAttribute(k, v) })
+		func(k string, v pdata.Value) { attrs.MapAttribute(k, v) })
 
 	return attrs
 }
@@ -541,7 +541,7 @@ func copyAndExtractRPCAttributes(
 		attributeMap,
 		properties,
 		measurements,
-		func(k string, v pdata.AttributeValue) { attrs.MapAttribute(k, v) })
+		func(k string, v pdata.Value) { attrs.MapAttribute(k, v) })
 
 	return attrs
 }
@@ -557,7 +557,7 @@ func copyAndExtractDatabaseAttributes(
 		attributeMap,
 		properties,
 		measurements,
-		func(k string, v pdata.AttributeValue) { attrs.MapAttribute(k, v) })
+		func(k string, v pdata.Value) { attrs.MapAttribute(k, v) })
 
 	return attrs
 }
@@ -573,7 +573,7 @@ func copyAndExtractMessagingAttributes(
 		attributeMap,
 		properties,
 		measurements,
-		func(k string, v pdata.AttributeValue) { attrs.MapAttribute(k, v) })
+		func(k string, v pdata.Value) { attrs.MapAttribute(k, v) })
 
 	return attrs
 }
@@ -641,21 +641,21 @@ func writeFormattedPeerAddressFromNetworkAttributes(networkAttributes *NetworkAt
 
 func setAttributeValueAsPropertyOrMeasurement(
 	key string,
-	attributeValue pdata.AttributeValue,
+	attributeValue pdata.Value,
 	properties map[string]string,
 	measurements map[string]float64) {
 
 	switch attributeValue.Type() {
-	case pdata.AttributeValueTypeBool:
+	case pdata.ValueTypeBool:
 		properties[key] = strconv.FormatBool(attributeValue.BoolVal())
 
-	case pdata.AttributeValueTypeString:
+	case pdata.ValueTypeString:
 		properties[key] = attributeValue.StringVal()
 
-	case pdata.AttributeValueTypeInt:
+	case pdata.ValueTypeInt:
 		measurements[key] = float64(attributeValue.IntVal())
 
-	case pdata.AttributeValueTypeDouble:
+	case pdata.ValueTypeDouble:
 		measurements[key] = attributeValue.DoubleVal()
 	}
 }

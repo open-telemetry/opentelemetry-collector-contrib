@@ -345,13 +345,13 @@ func tagsToAttributeMap(tags map[string]string, dest pdata.AttributeMap, parseSt
 
 		if parseStringTags {
 			switch zipkin.DetermineValueType(val) {
-			case pdata.AttributeValueTypeInt:
+			case pdata.ValueTypeInt:
 				iValue, _ := strconv.ParseInt(val, 10, 64)
 				dest.UpsertInt(key, iValue)
-			case pdata.AttributeValueTypeDouble:
+			case pdata.ValueTypeDouble:
 				fValue, _ := strconv.ParseFloat(val, 64)
 				dest.UpsertDouble(key, fValue)
-			case pdata.AttributeValueTypeBool:
+			case pdata.ValueTypeBool:
 				bValue, _ := strconv.ParseBool(val)
 				dest.UpsertBool(key, bValue)
 			default:

@@ -77,14 +77,14 @@ func testMetrics() pdata.MetricSlice {
 
 	dp := dps.AppendEmpty()
 	attributes := pdata.NewAttributeMap()
-	attributes.Insert("testKey1", pdata.NewAttributeValueString("teststringvalue1"))
-	attributes.Insert("testKey2", pdata.NewAttributeValueString("testvalue1"))
+	attributes.Insert("testKey1", pdata.NewValueString("teststringvalue1"))
+	attributes.Insert("testKey2", pdata.NewValueString("testvalue1"))
 	setDPDoubleVal(dp, 2, attributes, time.Time{})
 
 	dp = dps.AppendEmpty()
 	attributes = pdata.NewAttributeMap()
-	attributes.Insert("testKey1", pdata.NewAttributeValueString("teststringvalue2"))
-	attributes.Insert("testKey2", pdata.NewAttributeValueString("testvalue2"))
+	attributes.Insert("testKey1", pdata.NewValueString("teststringvalue2"))
+	attributes.Insert("testKey2", pdata.NewValueString("testvalue2"))
 	setDPDoubleVal(dp, 2, attributes, time.Time{})
 
 	// Gauge with one int dp
@@ -94,7 +94,7 @@ func testMetrics() pdata.MetricSlice {
 
 	dp = dps.AppendEmpty()
 	attributes = pdata.NewAttributeMap()
-	attributes.Insert("testKey2", pdata.NewAttributeValueString("teststringvalue2"))
+	attributes.Insert("testKey2", pdata.NewValueString("teststringvalue2"))
 	setDPIntVal(dp, 2, attributes, time.Time{})
 
 	// Delta Sum with two int dps
@@ -104,12 +104,12 @@ func testMetrics() pdata.MetricSlice {
 
 	dp = dps.AppendEmpty()
 	attributes = pdata.NewAttributeMap()
-	attributes.Insert("testKey2", pdata.NewAttributeValueString("teststringvalue2"))
+	attributes.Insert("testKey2", pdata.NewValueString("teststringvalue2"))
 	setDPIntVal(dp, 2, attributes, time.Time{})
 
 	dp = dps.AppendEmpty()
 	attributes = pdata.NewAttributeMap()
-	attributes.Insert("testKey2", pdata.NewAttributeValueString("teststringvalue2"))
+	attributes.Insert("testKey2", pdata.NewValueString("teststringvalue2"))
 	setDPIntVal(dp, 2, attributes, time.Time{})
 
 	// Cumulative Sum with one double dp
