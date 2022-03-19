@@ -92,7 +92,7 @@ func swSpansToSpanSlice(traceId string, spans []*agentV3.SpanObject, dest pdata.
 	}
 }
 
-func swSpanToOtelSpan(traceId string, span *agentV3.SpanObject, dest pdata.Span) {
+func swSpanToSpan(traceId string, span *agentV3.SpanObject, dest pdata.Span) {
 	dest.SetTraceID(stringToTraceID(traceId))
 	dest.SetSpanID(uInt32ToSpanID(uint32(span.GetSpanId())))
 
