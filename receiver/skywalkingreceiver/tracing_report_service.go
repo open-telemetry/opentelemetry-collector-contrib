@@ -66,6 +66,6 @@ func consumeTraces(ctx context.Context, segment *agent.SegmentObject, consumer c
 	if segment == nil {
 		return 0, nil
 	}
-	ptd := SkywalkingToOtlpTraces(segment)
+	ptd := SkywalkingToTraces(segment)
 	return len(segment.Spans), consumer.ConsumeTraces(ctx, ptd)
 }

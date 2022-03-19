@@ -27,7 +27,7 @@ import (
 	agentV3 "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
 )
 
-var OtSpanTagsMapping = map[string]string{
+var otSpanTagsMapping = map[string]string{
 	"url":         conventions.AttributeHTTPURL,
 	"status_code": conventions.AttributeHTTPStatusCode,
 	"db.type":     conventions.AttributeDBSystem,
@@ -52,7 +52,7 @@ func SkywalkingToTraces(segment *agentV3.SegmentObject) pdata.Traces {
 	}
 
 	il := resourceSpan.InstrumentationLibrarySpans().AppendEmpty()
-	swSpansToOtlpSpans(segment.GetTraceId(), swSpans, il.Spans())
+	swSpansToSpanSlice(segment.GetTraceId(), swSpans, il.Spans())
 
 	return traceData
 }
@@ -71,7 +71,7 @@ func swTagsToInternalResource(span *agentV3.SpanObject, dest pdata.Resource) {
 	}
 
 	for _, tag := range tags {
-		otKey, ok := OtSpanTagsMapping[tag.Key]
+		otKey, ok := otSpanTagsMapping[tag.Key]
 		if ok {
 			attrs.UpsertString(otKey, tag.Value)
 		}
@@ -88,7 +88,7 @@ func swSpansToSpanSlice(traceId string, spans []*agentV3.SpanObject, dest pdata.
 		if span == nil {
 			continue
 		}
-		swSpanToOtelSpan(traceId, span, dest.AppendEmpty())
+		swSpanToSpan(traceId, span, dest.AppendEmpty())
 	}
 }
 

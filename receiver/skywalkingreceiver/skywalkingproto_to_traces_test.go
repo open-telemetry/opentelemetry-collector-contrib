@@ -22,7 +22,7 @@ import (
 
 func TestSwProtoToTraces(t *testing.T) {
 	swSpan := mockGrpcTraceSegment(1)
-	td := SkywalkingToOtlpTraces(swSpan)
+	td := SkywalkingToTraces(swSpan)
 
 	assert.Equal(t, 1, td.ResourceSpans().Len())
 	assert.Equal(t, 2, td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().Len())
