@@ -183,19 +183,13 @@ func swReferencesToSpanLinks(refs []*agentV3.SegmentReference, dest pdata.SpanLi
 }
 
 func setInternalSpanStatus(span *agentV3.SpanObject, dest pdata.SpanStatus) {
-	statusCode := pdata.StatusCodeUnset
-	statusMessage := ""
-
 	if span.GetIsError() {
-		statusCode = pdata.StatusCodeError
-		statusMessage = "ERROR"
+		dest.SetCode(pdata.StatusCodeError)
+		dest.SetMessage("ERROR")
 	} else {
-		statusCode = pdata.StatusCodeOk
-		statusMessage = "SUCCESS"
+		dest.SetCode(pdata.StatusCodeOk)
+		dest.SetMessage("SUCCESS")
 	}
-
-	dest.SetCode(statusCode)
-	dest.SetMessage(statusMessage)
 }
 
 func swLogsToSpanEvents(logs []*agentV3.Log, dest pdata.SpanEventSlice) {
