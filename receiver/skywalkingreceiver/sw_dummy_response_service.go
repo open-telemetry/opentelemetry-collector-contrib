@@ -21,9 +21,8 @@ import (
 	common "skywalking.apache.org/repo/goapi/collect/common/v3"
 	event "skywalking.apache.org/repo/goapi/collect/event/v3"
 	agent "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
-	management "skywalking.apache.org/repo/goapi/collect/management/v3"
-
 	profile "skywalking.apache.org/repo/goapi/collect/language/profile/v3"
+	management "skywalking.apache.org/repo/goapi/collect/management/v3"
 )
 
 type dummyReportService struct {
