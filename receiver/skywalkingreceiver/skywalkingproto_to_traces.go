@@ -78,7 +78,7 @@ func swTagsToInternalResource(span *agentV3.SpanObject, dest pdata.Resource) {
 	}
 }
 
-func swSpansToOtlpSpans(traceId string, spans []*agentV3.SpanObject, dest pdata.SpanSlice) {
+func swSpansToSpanSlice(traceId string, spans []*agentV3.SpanObject, dest pdata.SpanSlice) {
 	if len(spans) == 0 {
 		return
 	}
