@@ -35,7 +35,7 @@ var OtSpanTagsMapping = map[string]string{
 	"mq.broker":   conventions.AttributeNetPeerName,
 }
 
-func SkywalkingToOtlpTraces(segment *agentV3.SegmentObject) pdata.Traces {
+func SkywalkingToTraces(segment *agentV3.SegmentObject) pdata.Traces {
 	traceData := pdata.NewTraces()
 
 	swSpans := segment.Spans
