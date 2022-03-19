@@ -4,15 +4,15 @@ go 1.17
 
 require (
 	github.com/Shopify/sarama v1.32.0
-	github.com/aws/aws-sdk-go v1.43.13
+	github.com/aws/aws-sdk-go v1.43.20
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger v1.32.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.46.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.46.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.47.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.47.0
 	github.com/stretchr/testify v1.7.0
 	github.com/xdg-go/scram v1.1.1
-	go.opentelemetry.io/collector v0.46.1-0.20220307173244-f980c9ef25b1
-	go.opentelemetry.io/collector/model v0.46.1-0.20220307173244-f980c9ef25b1
+	go.opentelemetry.io/collector v0.47.1-0.20220316214317-e6ea17cf27a8
+	go.opentelemetry.io/collector/model v0.47.1-0.20220316214317-e6ea17cf27a8
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
 )
@@ -32,7 +32,7 @@ require (
 	github.com/jcmturner/gokrb5/v8 v8.4.2 // indirect
 	github.com/jcmturner/rpc/v2 v2.0.3 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
-	github.com/klauspost/compress v1.15.0 // indirect
+	github.com/klauspost/compress v1.15.1 // indirect
 	github.com/knadh/koanf v1.4.0 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect

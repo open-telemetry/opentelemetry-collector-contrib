@@ -49,7 +49,7 @@ exporter/prometheusexporter/                         @open-telemetry/collector-c
 exporter/prometheusremotewriteexporter/              @open-telemetry/collector-contrib-approvers @Aneurysm9
 exporter/sapmexporter/                               @open-telemetry/collector-contrib-approvers @owais @dmitryax
 exporter/sentryexporter/                             @open-telemetry/collector-contrib-approvers @AbhiPrasad
-exporter/signalfxexporter/                           @open-telemetry/collector-contrib-approvers @pmcollins @asuresh4 @dmitryax
+exporter/signalfxexporter/                           @open-telemetry/collector-contrib-approvers @pmcollins @dmitryax
 exporter/skywalkingexporter/                         @open-telemetry/collector-contrib-approvers @liqiangz
 exporter/splunkhecexporter/                          @open-telemetry/collector-contrib-approvers @atoulme @dmitryax
 exporter/stackdriverexporter/                        @open-telemetry/collector-contrib-approvers @aabmass @dashpole @jsuereth @punya @tbarker25
@@ -63,15 +63,15 @@ extension/awsproxy/                                  @open-telemetry/collector-c
 extension/basicauthextension/                        @open-telemetry/collector-contrib-approvers @jpkrohling @svrakitin
 extension/bearertokenauthextension/                  @open-telemetry/collector-contrib-approvers @jpkrohling @pavankrish123
 extension/healthcheckextension/                      @open-telemetry/collector-contrib-approvers @jpkrohling
-extension/httpforwarder/                             @open-telemetry/collector-contrib-approvers @asuresh4
 extension/jaegerremotesampling/                      @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/oauth2clientauthextension/                 @open-telemetry/collector-contrib-approvers @pavankrish123 @jpkrohling
-extension/observer/                                  @open-telemetry/collector-contrib-approvers @asuresh4 @jrcamp
+extension/observer/                                  @open-telemetry/collector-contrib-approvers @dmitryax @rmfitzpatrick
 extension/observer/dockerobserver/                   @open-telemetry/collector-contrib-approvers @MovieStoreGuy
 extension/observer/ecstaskobserver/                  @open-telemetry/collector-contrib-approvers @rmfitzpatrick
 extension/observer/hostobserver/                     @open-telemetry/collector-contrib-approvers @MovieStoreGuy
 extension/observer/k8sobserver/                      @open-telemetry/collector-contrib-approvers @rmfitzpatrick @dmitryax
 extension/oidcauthextension/                         @open-telemetry/collector-contrib-approvers @jpkrohling
+extension/sigv4authextention/                        @open-telemetry/collector-contrib-approvers @Aneurysm9 @anuraaga @erichsueh3
 extension/pprofextension/                            @open-telemetry/collector-contrib-approvers @MovieStoreGuy
 extension/storage/dbstorage/                         @open-telemetry/collector-contrib-approvers @dmitryax @atoulme
 extension/storage/filestorage/                       @open-telemetry/collector-contrib-approvers @djaglowski
@@ -145,7 +145,6 @@ receiver/receivercreator/                            @open-telemetry/collector-c
 receiver/redisreceiver/                              @open-telemetry/collector-contrib-approvers @pmcollins @dmitryax
 receiver/sapmreceiver/                               @open-telemetry/collector-contrib-approvers @owais
 receiver/signalfxreceiver/                           @open-telemetry/collector-contrib-approvers @pjanotti @dmitryax
-receiver/simpleprometheusreceiver/                   @open-telemetry/collector-contrib-approvers @asuresh4
 receiver/splunkhecreceiver/                          @open-telemetry/collector-contrib-approvers @atoulme @keitwb
 receiver/statsdreceiver/                             @open-telemetry/collector-contrib-approvers @jmacd @dmitryax
 receiver/syslogreceiver/                             @open-telemetry/collector-contrib-approvers @djaglowski

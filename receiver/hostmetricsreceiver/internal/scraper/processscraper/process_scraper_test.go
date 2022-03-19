@@ -103,10 +103,10 @@ func assertCPUTimeMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetric
 	if startTime != 0 {
 		internal.AssertSumMetricStartTimeEquals(t, cpuTimeMetric, startTime)
 	}
-	internal.AssertSumMetricHasAttributeValue(t, cpuTimeMetric, 0, "state", pdata.NewAttributeValueString(metadata.AttributeState.User))
-	internal.AssertSumMetricHasAttributeValue(t, cpuTimeMetric, 1, "state", pdata.NewAttributeValueString(metadata.AttributeState.System))
+	internal.AssertSumMetricHasAttributeValue(t, cpuTimeMetric, 0, "state", pdata.NewValueString(metadata.AttributeState.User))
+	internal.AssertSumMetricHasAttributeValue(t, cpuTimeMetric, 1, "state", pdata.NewValueString(metadata.AttributeState.System))
 	if runtime.GOOS == "linux" {
-		internal.AssertSumMetricHasAttributeValue(t, cpuTimeMetric, 2, "state", pdata.NewAttributeValueString(metadata.AttributeState.Wait))
+		internal.AssertSumMetricHasAttributeValue(t, cpuTimeMetric, 2, "state", pdata.NewValueString(metadata.AttributeState.Wait))
 	}
 }
 
@@ -128,8 +128,8 @@ func assertDiskIOMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetrics
 	if startTime != 0 {
 		internal.AssertSumMetricStartTimeEquals(t, diskIOMetric, startTime)
 	}
-	internal.AssertSumMetricHasAttributeValue(t, diskIOMetric, 0, "direction", pdata.NewAttributeValueString(metadata.AttributeDirection.Read))
-	internal.AssertSumMetricHasAttributeValue(t, diskIOMetric, 1, "direction", pdata.NewAttributeValueString(metadata.AttributeDirection.Write))
+	internal.AssertSumMetricHasAttributeValue(t, diskIOMetric, 0, "direction", pdata.NewValueString(metadata.AttributeDirection.Read))
+	internal.AssertSumMetricHasAttributeValue(t, diskIOMetric, 1, "direction", pdata.NewValueString(metadata.AttributeDirection.Write))
 }
 
 func assertSameTimeStampForAllMetricsWithinResource(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice) {

@@ -93,8 +93,8 @@ func TestInitAttributeMapFromOC(t *testing.T) {
 	initAttributeMapFromOC(ocAttrs, attrs)
 	assert.EqualValues(t,
 		pdata.NewAttributeMapFromMap(
-			map[string]pdata.AttributeValue{
-				"abc": pdata.NewAttributeValueString("def"),
+			map[string]pdata.Value{
+				"abc": pdata.NewValueString("def"),
 			}),
 		attrs)
 	assert.EqualValues(t, 234, ocAttrsToDroppedAttributes(ocAttrs))
@@ -111,11 +111,11 @@ func TestInitAttributeMapFromOC(t *testing.T) {
 	attrs = pdata.NewAttributeMap()
 	initAttributeMapFromOC(ocAttrs, attrs)
 
-	expectedAttr := pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
-		"abc":       pdata.NewAttributeValueString("def"),
-		"intval":    pdata.NewAttributeValueInt(345),
-		"boolval":   pdata.NewAttributeValueBool(true),
-		"doubleval": pdata.NewAttributeValueDouble(4.5),
+	expectedAttr := pdata.NewAttributeMapFromMap(map[string]pdata.Value{
+		"abc":       pdata.NewValueString("def"),
+		"intval":    pdata.NewValueInt(345),
+		"boolval":   pdata.NewValueBool(true),
+		"doubleval": pdata.NewValueDouble(4.5),
 	})
 	assert.EqualValues(t, expectedAttr.Sort(), attrs.Sort())
 	assert.EqualValues(t, 234, ocAttrsToDroppedAttributes(ocAttrs))
@@ -398,14 +398,14 @@ func TestOcSameProcessAsParentSpanToInternal(t *testing.T) {
 	assert.Equal(t, 1, span.Attributes().Len())
 	v, ok := span.Attributes().Get(occonventions.AttributeSameProcessAsParentSpan)
 	assert.True(t, ok)
-	assert.EqualValues(t, pdata.AttributeValueTypeBool, v.Type())
+	assert.EqualValues(t, pdata.ValueTypeBool, v.Type())
 	assert.False(t, v.BoolVal())
 
 	ocSameProcessAsParentSpanToInternal(wrapperspb.Bool(true), span)
 	assert.Equal(t, 1, span.Attributes().Len())
 	v, ok = span.Attributes().Get(occonventions.AttributeSameProcessAsParentSpan)
 	assert.True(t, ok)
-	assert.EqualValues(t, pdata.AttributeValueTypeBool, v.Type())
+	assert.EqualValues(t, pdata.ValueTypeBool, v.Type())
 	assert.True(t, v.BoolVal())
 }
 

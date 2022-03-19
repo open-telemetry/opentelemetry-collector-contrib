@@ -92,7 +92,7 @@ func resourceToLogContents(resource pdata.Resource) []*sls.LogContent {
 	}
 
 	fields := map[string]interface{}{}
-	attrs.Range(func(k string, v pdata.AttributeValue) bool {
+	attrs.Range(func(k string, v pdata.Value) bool {
 		if k == conventions.AttributeServiceName || k == conventions.AttributeHostName {
 			return true
 		}
@@ -124,7 +124,7 @@ func instrumentationLibraryToLogContents(instrumentationLibrary pdata.Instrument
 func mapLogRecordToLogService(lr pdata.LogRecord,
 	resourceContents,
 	instrumentationLibraryContents []*sls.LogContent) *sls.Log {
-	if lr.Body().Type() == pdata.AttributeValueTypeEmpty {
+	if lr.Body().Type() == pdata.ValueTypeEmpty {
 		return nil
 	}
 	var slsLog sls.Log
@@ -153,7 +153,7 @@ func mapLogRecordToLogService(lr pdata.LogRecord,
 	})
 
 	fields := map[string]interface{}{}
-	lr.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+	lr.Attributes().Range(func(k string, v pdata.Value) bool {
 		fields[k] = v.AsString()
 		return true
 	})

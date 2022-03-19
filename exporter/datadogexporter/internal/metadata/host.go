@@ -17,7 +17,6 @@ package metadata // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/ec2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/system"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/valid"
@@ -30,9 +29,9 @@ import (
 // 2. Cache
 // 3. EC2 instance metadata
 // 4. System
-func GetHost(logger *zap.Logger, cfg *config.Config) string {
-	if cfg.Hostname != "" {
-		return cfg.Hostname
+func GetHost(logger *zap.Logger, configHostname string) string {
+	if configHostname != "" {
+		return configHostname
 	}
 
 	if cacheVal, ok := cache.Cache.Get(cache.CanonicalHostnameKey); ok {

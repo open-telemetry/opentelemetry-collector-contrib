@@ -38,8 +38,8 @@ type logNameTest struct {
 
 type logWithResource struct {
 	logNames           []string
-	resourceAttributes map[string]pdata.AttributeValue
-	recordAttributes   map[string]pdata.AttributeValue
+	resourceAttributes map[string]pdata.Value
+	recordAttributes   map[string]pdata.Value
 }
 
 var (
@@ -51,10 +51,10 @@ var (
 	inLogForResourceTest = []logWithResource{
 		{
 			logNames: []string{"log1", "log2"},
-			resourceAttributes: map[string]pdata.AttributeValue{
-				"attr1": pdata.NewAttributeValueString("attr1/val1"),
-				"attr2": pdata.NewAttributeValueString("attr2/val2"),
-				"attr3": pdata.NewAttributeValueString("attr3/val3"),
+			resourceAttributes: map[string]pdata.Value{
+				"attr1": pdata.NewValueString("attr1/val1"),
+				"attr2": pdata.NewValueString("attr2/val2"),
+				"attr3": pdata.NewValueString("attr3/val3"),
 			},
 		},
 	}
@@ -62,14 +62,14 @@ var (
 	inLogForTwoResource = []logWithResource{
 		{
 			logNames: []string{"log1", "log2"},
-			resourceAttributes: map[string]pdata.AttributeValue{
-				"attr1": pdata.NewAttributeValueString("attr1/val1"),
+			resourceAttributes: map[string]pdata.Value{
+				"attr1": pdata.NewValueString("attr1/val1"),
 			},
 		},
 		{
 			logNames: []string{"log3", "log4"},
-			resourceAttributes: map[string]pdata.AttributeValue{
-				"attr1": pdata.NewAttributeValueString("attr1/val2"),
+			resourceAttributes: map[string]pdata.Value{
+				"attr1": pdata.NewValueString("attr1/val2"),
 			},
 		},
 	}
@@ -77,49 +77,49 @@ var (
 	inLogForTwoResourceWithRecordAttributes = []logWithResource{
 		{
 			logNames: []string{"log1", "log2"},
-			resourceAttributes: map[string]pdata.AttributeValue{
-				"attr1": pdata.NewAttributeValueString("attr1/val1"),
+			resourceAttributes: map[string]pdata.Value{
+				"attr1": pdata.NewValueString("attr1/val1"),
 			},
-			recordAttributes: map[string]pdata.AttributeValue{
-				"rec": pdata.NewAttributeValueString("rec/val1"),
+			recordAttributes: map[string]pdata.Value{
+				"rec": pdata.NewValueString("rec/val1"),
 			},
 		},
 		{
 			logNames: []string{"log3", "log4"},
-			resourceAttributes: map[string]pdata.AttributeValue{
-				"attr1": pdata.NewAttributeValueString("attr1/val2"),
+			resourceAttributes: map[string]pdata.Value{
+				"attr1": pdata.NewValueString("attr1/val2"),
 			},
-			recordAttributes: map[string]pdata.AttributeValue{
-				"rec": pdata.NewAttributeValueString("rec/val2"),
+			recordAttributes: map[string]pdata.Value{
+				"rec": pdata.NewValueString("rec/val2"),
 			},
 		},
 	}
 	inLogForThreeResourceWithRecordAttributes = []logWithResource{
 		{
 			logNames: []string{"log1", "log2"},
-			resourceAttributes: map[string]pdata.AttributeValue{
-				"attr1": pdata.NewAttributeValueString("attr1/val1"),
+			resourceAttributes: map[string]pdata.Value{
+				"attr1": pdata.NewValueString("attr1/val1"),
 			},
-			recordAttributes: map[string]pdata.AttributeValue{
-				"rec": pdata.NewAttributeValueString("rec/val1"),
+			recordAttributes: map[string]pdata.Value{
+				"rec": pdata.NewValueString("rec/val1"),
 			},
 		},
 		{
 			logNames: []string{"log3", "log4"},
-			resourceAttributes: map[string]pdata.AttributeValue{
-				"attr1": pdata.NewAttributeValueString("attr1/val2"),
+			resourceAttributes: map[string]pdata.Value{
+				"attr1": pdata.NewValueString("attr1/val2"),
 			},
-			recordAttributes: map[string]pdata.AttributeValue{
-				"rec": pdata.NewAttributeValueString("rec/val2"),
+			recordAttributes: map[string]pdata.Value{
+				"rec": pdata.NewValueString("rec/val2"),
 			},
 		},
 		{
 			logNames: []string{"log5"},
-			resourceAttributes: map[string]pdata.AttributeValue{
-				"attr1": pdata.NewAttributeValueString("attr1/val5"),
+			resourceAttributes: map[string]pdata.Value{
+				"attr1": pdata.NewValueString("attr1/val5"),
 			},
-			recordAttributes: map[string]pdata.AttributeValue{
-				"rec": pdata.NewAttributeValueString("rec/val5"),
+			recordAttributes: map[string]pdata.Value{
+				"rec": pdata.NewValueString("rec/val5"),
 			},
 		},
 	}
@@ -127,26 +127,26 @@ var (
 	inLogForFourResource = []logWithResource{
 		{
 			logNames: []string{"log1"},
-			resourceAttributes: map[string]pdata.AttributeValue{
-				"attr": pdata.NewAttributeValueString("attr/val1"),
+			resourceAttributes: map[string]pdata.Value{
+				"attr": pdata.NewValueString("attr/val1"),
 			},
 		},
 		{
 			logNames: []string{"log2"},
-			resourceAttributes: map[string]pdata.AttributeValue{
-				"attr": pdata.NewAttributeValueString("attr/val2"),
+			resourceAttributes: map[string]pdata.Value{
+				"attr": pdata.NewValueString("attr/val2"),
 			},
 		},
 		{
 			logNames: []string{"log3"},
-			resourceAttributes: map[string]pdata.AttributeValue{
-				"attr": pdata.NewAttributeValueString("attr/val3"),
+			resourceAttributes: map[string]pdata.Value{
+				"attr": pdata.NewValueString("attr/val3"),
 			},
 		},
 		{
 			logNames: []string{"log4"},
-			resourceAttributes: map[string]pdata.AttributeValue{
-				"attr": pdata.NewAttributeValueString("attr/val4"),
+			resourceAttributes: map[string]pdata.Value{
+				"attr": pdata.NewValueString("attr/val4"),
 			},
 		},
 	}

@@ -146,7 +146,7 @@ func exampleTwoDifferentLogs() []pdata.LogRecord {
 func exampleMultitypeLogs() []pdata.LogRecord {
 	buffer := make([]pdata.LogRecord, 2)
 
-	attVal := pdata.NewAttributeValueMap()
+	attVal := pdata.NewValueMap()
 	attMap := attVal.MapVal()
 	attMap.InsertString("lk1", "lv1")
 	attMap.InsertInt("lk2", 13)
@@ -159,11 +159,11 @@ func exampleMultitypeLogs() []pdata.LogRecord {
 
 	buffer[1] = pdata.NewLogRecord()
 
-	attVal = pdata.NewAttributeValueArray()
+	attVal = pdata.NewValueArray()
 	attArr := attVal.SliceVal()
-	strVal := pdata.NewAttributeValueEmpty()
+	strVal := pdata.NewValueEmpty()
 	strVal.SetStringVal("lv2")
-	intVal := pdata.NewAttributeValueEmpty()
+	intVal := pdata.NewValueEmpty()
 	intVal.SetIntVal(13)
 
 	strTgt := attArr.AppendEmpty()

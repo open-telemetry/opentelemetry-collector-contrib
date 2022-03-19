@@ -89,22 +89,22 @@ func (f *FileLogWriter) convertLogToTextLine(lr pdata.LogRecord) []byte {
 	sb.WriteString(lr.SeverityText())
 	sb.WriteString(" ")
 
-	if lr.Body().Type() == pdata.AttributeValueTypeString {
+	if lr.Body().Type() == pdata.ValueTypeString {
 		sb.WriteString(lr.Body().StringVal())
 	}
 
-	lr.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+	lr.Attributes().Range(func(k string, v pdata.Value) bool {
 		sb.WriteString(" ")
 		sb.WriteString(k)
 		sb.WriteString("=")
 		switch v.Type() {
-		case pdata.AttributeValueTypeString:
+		case pdata.ValueTypeString:
 			sb.WriteString(v.StringVal())
-		case pdata.AttributeValueTypeInt:
+		case pdata.ValueTypeInt:
 			sb.WriteString(strconv.FormatInt(v.IntVal(), 10))
-		case pdata.AttributeValueTypeDouble:
+		case pdata.ValueTypeDouble:
 			sb.WriteString(strconv.FormatFloat(v.DoubleVal(), 'f', -1, 64))
-		case pdata.AttributeValueTypeBool:
+		case pdata.ValueTypeBool:
 			sb.WriteString(strconv.FormatBool(v.BoolVal()))
 		default:
 			panic("missing case")

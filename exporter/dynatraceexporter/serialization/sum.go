@@ -84,7 +84,7 @@ func serializeCumulativeCounter(name, prefix string, dims dimensions.NormalizedD
 func convertTotalCounterToDelta(name, prefix string, dims dimensions.NormalizedDimensionList, dp pdata.NumberDataPoint, prevCounters *ttlmap.TTLMap) (*dtMetric.Metric, error) {
 	id := name
 
-	dp.Attributes().Sort().Range(func(k string, v pdata.AttributeValue) bool {
+	dp.Attributes().Sort().Range(func(k string, v pdata.Value) bool {
 		id += fmt.Sprintf(",%s=%s", k, v.AsString())
 		return true
 	})

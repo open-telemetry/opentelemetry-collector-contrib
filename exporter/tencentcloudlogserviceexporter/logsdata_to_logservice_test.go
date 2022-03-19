@@ -38,19 +38,19 @@ func (kv logKeyValuePairs) Len() int           { return len(kv) }
 func (kv logKeyValuePairs) Swap(i, j int)      { kv[i], kv[j] = kv[j], kv[i] }
 func (kv logKeyValuePairs) Less(i, j int) bool { return kv[i].Key < kv[j].Key }
 
-func getComplexAttributeValueMap() pdata.AttributeValue {
-	mapVal := pdata.NewAttributeValueMap()
+func getComplexAttributeValueMap() pdata.Value {
+	mapVal := pdata.NewValueMap()
 	mapValReal := mapVal.MapVal()
 	mapValReal.InsertBool("result", true)
 	mapValReal.InsertString("status", "ok")
 	mapValReal.InsertDouble("value", 1.3)
 	mapValReal.InsertInt("code", 200)
 	mapValReal.InsertNull("null")
-	arrayVal := pdata.NewAttributeValueArray()
+	arrayVal := pdata.NewValueArray()
 	arrayVal.SliceVal().AppendEmpty().SetStringVal("array")
 	mapValReal.Insert("array", arrayVal)
 
-	subMapVal := pdata.NewAttributeValueMap()
+	subMapVal := pdata.NewValueMap()
 	subMapVal.MapVal().InsertString("data", "hello world")
 	mapValReal.Insert("map", subMapVal)
 
@@ -88,7 +88,7 @@ func createLogData(numberOfLogs int) pdata.Logs {
 			logRecord.Attributes().Insert("map-value", getComplexAttributeValueMap())
 			logRecord.Body().SetStringVal("log contents")
 		case 6:
-			arrayVal := pdata.NewAttributeValueArray()
+			arrayVal := pdata.NewValueArray()
 			arrayVal.SliceVal().AppendEmpty().SetStringVal("array")
 			logRecord.Attributes().Insert("array-value", arrayVal)
 			logRecord.Body().SetStringVal("log contents")

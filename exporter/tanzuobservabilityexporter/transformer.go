@@ -114,7 +114,7 @@ func getSourceAndResourceTags(attributes pdata.AttributeMap) (string, map[string
 	attributesWithoutSource := map[string]string{}
 	var source string
 
-	extractTag := func(k string, v pdata.AttributeValue) bool {
+	extractTag := func(k string, v pdata.Value) bool {
 		attributesWithoutSource[k] = v.AsString()
 		return true
 	}
@@ -200,7 +200,7 @@ func attributesToTags(attributesWithoutSource map[string]string, attributes pdat
 	}
 
 	// Since AttributeMaps are processed later, its values overwrite earlier ones
-	attributes.Range(func(key string, value pdata.AttributeValue) bool {
+	attributes.Range(func(key string, value pdata.Value) bool {
 		tags[key] = value.AsString()
 		return true
 	})
