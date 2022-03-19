@@ -22,7 +22,7 @@ import (
 )
 
 // Type is the component type name.
-const Type config.Type = "hostmetricsreceiver/processes"
+const Type config.Type = "nginxreceiver"
 
 // MetricIntf is an interface to generically interact with generated metric.
 type MetricIntf interface {
@@ -55,21 +55,27 @@ func (m *metricImpl) Init(metric pdata.Metric) {
 }
 
 type metricStruct struct {
-	SystemProcessesCount   MetricIntf
-	SystemProcessesCreated MetricIntf
+	NginxConnectionsAccepted MetricIntf
+	NginxConnectionsCurrent  MetricIntf
+	NginxConnectionsHandled  MetricIntf
+	NginxRequests            MetricIntf
 }
 
 // Names returns a list of all the metric name strings.
 func (m *metricStruct) Names() []string {
 	return []string{
-		"system.processes.count",
-		"system.processes.created",
+		"nginx.connections_accepted",
+		"nginx.connections_current",
+		"nginx.connections_handled",
+		"nginx.requests",
 	}
 }
 
 var metricsByName = map[string]MetricIntf{
-	"system.processes.count":   Metrics.SystemProcessesCount,
-	"system.processes.created": Metrics.SystemProcessesCreated,
+	"nginx.connections_accepted": Metrics.NginxConnectionsAccepted,
+	"nginx.connections_current":  Metrics.NginxConnectionsCurrent,
+	"nginx.connections_handled":  Metrics.NginxConnectionsHandled,
+	"nginx.requests":             Metrics.NginxRequests,
 }
 
 func (m *metricStruct) ByName(n string) MetricIntf {
@@ -80,22 +86,42 @@ func (m *metricStruct) ByName(n string) MetricIntf {
 // manipulating those metrics.
 var Metrics = &metricStruct{
 	&metricImpl{
-		"system.processes.count",
+		"nginx.connections_accepted",
 		func(metric pdata.Metric) {
-			metric.SetName("system.processes.count")
-			metric.SetDescription("Total number of processes in each state.")
-			metric.SetUnit("{processes}")
+			metric.SetName("nginx.connections_accepted")
+			metric.SetDescription("The total number of accepted client connections")
+			metric.SetUnit("connections")
 			metric.SetDataType(pdata.MetricDataTypeSum)
-			metric.Sum().SetIsMonotonic(false)
+			metric.Sum().SetIsMonotonic(true)
 			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{
-		"system.processes.created",
+		"nginx.connections_current",
 		func(metric pdata.Metric) {
-			metric.SetName("system.processes.created")
-			metric.SetDescription("Total number of created processes.")
-			metric.SetUnit("{processes}")
+			metric.SetName("nginx.connections_current")
+			metric.SetDescription("The current number of nginx connections by state")
+			metric.SetUnit("connections")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"nginx.connections_handled",
+		func(metric pdata.Metric) {
+			metric.SetName("nginx.connections_handled")
+			metric.SetDescription("The total number of handled connections. Generally, the parameter value is the same as nginx.connections_accepted unless some resource limits have been reached (for example, the worker_connections limit).")
+			metric.SetUnit("connections")
+			metric.SetDataType(pdata.MetricDataTypeSum)
+			metric.Sum().SetIsMonotonic(true)
+			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+		},
+	},
+	&metricImpl{
+		"nginx.requests",
+		func(metric pdata.Metric) {
+			metric.SetName("nginx.requests")
+			metric.SetDescription("Total number of requests made to the server since it started")
+			metric.SetUnit("requests")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(true)
 			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
@@ -109,42 +135,24 @@ var M = Metrics
 
 // Attributes contains the possible metric attributes that can be used.
 var Attributes = struct {
-	// Status (Breakdown status of the processes.)
-	Status string
+	// State (The state of a connection)
+	State string
 }{
-	"status",
+	"state",
 }
 
 // A is an alias for Attributes.
 var A = Attributes
 
-// AttributeStatus are the possible values that the attribute "status" can have.
-var AttributeStatus = struct {
-	Blocked  string
-	Daemon   string
-	Detached string
-	Idle     string
-	Locked   string
-	Orphan   string
-	Paging   string
-	Running  string
-	Sleeping string
-	Stopped  string
-	System   string
-	Unknown  string
-	Zombies  string
+// AttributeState are the possible values that the attribute "state" can have.
+var AttributeState = struct {
+	Active  string
+	Reading string
+	Writing string
+	Waiting string
 }{
-	"blocked",
-	"daemon",
-	"detached",
-	"idle",
-	"locked",
-	"orphan",
-	"paging",
-	"running",
-	"sleeping",
-	"stopped",
-	"system",
-	"unknown",
-	"zombies",
+	"active",
+	"reading",
+	"writing",
+	"waiting",
 }

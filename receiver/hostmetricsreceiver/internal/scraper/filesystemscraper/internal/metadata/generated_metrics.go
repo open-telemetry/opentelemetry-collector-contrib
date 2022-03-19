@@ -22,7 +22,7 @@ import (
 )
 
 // Type is the component type name.
-const Type config.Type = "hostmetricsreceiver/processes"
+const Type config.Type = "filesystem"
 
 // MetricIntf is an interface to generically interact with generated metric.
 type MetricIntf interface {
@@ -55,21 +55,21 @@ func (m *metricImpl) Init(metric pdata.Metric) {
 }
 
 type metricStruct struct {
-	SystemProcessesCount   MetricIntf
-	SystemProcessesCreated MetricIntf
+	SystemFilesystemInodesUsage MetricIntf
+	SystemFilesystemUsage       MetricIntf
 }
 
 // Names returns a list of all the metric name strings.
 func (m *metricStruct) Names() []string {
 	return []string{
-		"system.processes.count",
-		"system.processes.created",
+		"system.filesystem.inodes.usage",
+		"system.filesystem.usage",
 	}
 }
 
 var metricsByName = map[string]MetricIntf{
-	"system.processes.count":   Metrics.SystemProcessesCount,
-	"system.processes.created": Metrics.SystemProcessesCreated,
+	"system.filesystem.inodes.usage": Metrics.SystemFilesystemInodesUsage,
+	"system.filesystem.usage":        Metrics.SystemFilesystemUsage,
 }
 
 func (m *metricStruct) ByName(n string) MetricIntf {
@@ -80,24 +80,24 @@ func (m *metricStruct) ByName(n string) MetricIntf {
 // manipulating those metrics.
 var Metrics = &metricStruct{
 	&metricImpl{
-		"system.processes.count",
+		"system.filesystem.inodes.usage",
 		func(metric pdata.Metric) {
-			metric.SetName("system.processes.count")
-			metric.SetDescription("Total number of processes in each state.")
-			metric.SetUnit("{processes}")
+			metric.SetName("system.filesystem.inodes.usage")
+			metric.SetDescription("FileSystem inodes used.")
+			metric.SetUnit("{inodes}")
 			metric.SetDataType(pdata.MetricDataTypeSum)
 			metric.Sum().SetIsMonotonic(false)
 			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
 	&metricImpl{
-		"system.processes.created",
+		"system.filesystem.usage",
 		func(metric pdata.Metric) {
-			metric.SetName("system.processes.created")
-			metric.SetDescription("Total number of created processes.")
-			metric.SetUnit("{processes}")
+			metric.SetName("system.filesystem.usage")
+			metric.SetDescription("Filesystem bytes used.")
+			metric.SetUnit("By")
 			metric.SetDataType(pdata.MetricDataTypeSum)
-			metric.Sum().SetIsMonotonic(true)
+			metric.Sum().SetIsMonotonic(false)
 			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
 		},
 	},
@@ -109,42 +109,34 @@ var M = Metrics
 
 // Attributes contains the possible metric attributes that can be used.
 var Attributes = struct {
-	// Status (Breakdown status of the processes.)
-	Status string
+	// Device (Identifier of the filesystem.)
+	Device string
+	// Mode (Mountpoint mode such "ro", "rw", etc.)
+	Mode string
+	// Mountpoint (Mountpoint path.)
+	Mountpoint string
+	// State (Breakdown of filesystem usage by type.)
+	State string
+	// Type (Filesystem type, such as, "ext4", "tmpfs", etc.)
+	Type string
 }{
-	"status",
+	"device",
+	"mode",
+	"mountpoint",
+	"state",
+	"type",
 }
 
 // A is an alias for Attributes.
 var A = Attributes
 
-// AttributeStatus are the possible values that the attribute "status" can have.
-var AttributeStatus = struct {
-	Blocked  string
-	Daemon   string
-	Detached string
-	Idle     string
-	Locked   string
-	Orphan   string
-	Paging   string
-	Running  string
-	Sleeping string
-	Stopped  string
-	System   string
-	Unknown  string
-	Zombies  string
+// AttributeState are the possible values that the attribute "state" can have.
+var AttributeState = struct {
+	Free     string
+	Reserved string
+	Used     string
 }{
-	"blocked",
-	"daemon",
-	"detached",
-	"idle",
-	"locked",
-	"orphan",
-	"paging",
-	"running",
-	"sleeping",
-	"stopped",
-	"system",
-	"unknown",
-	"zombies",
+	"free",
+	"reserved",
+	"used",
 }

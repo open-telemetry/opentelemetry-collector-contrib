@@ -22,7 +22,7 @@ import (
 )
 
 // Type is the component type name.
-const Type config.Type = "hostmetricsreceiver/processes"
+const Type config.Type = "load"
 
 // MetricIntf is an interface to generically interact with generated metric.
 type MetricIntf interface {
@@ -55,21 +55,24 @@ func (m *metricImpl) Init(metric pdata.Metric) {
 }
 
 type metricStruct struct {
-	SystemProcessesCount   MetricIntf
-	SystemProcessesCreated MetricIntf
+	SystemCPULoadAverage15m MetricIntf
+	SystemCPULoadAverage1m  MetricIntf
+	SystemCPULoadAverage5m  MetricIntf
 }
 
 // Names returns a list of all the metric name strings.
 func (m *metricStruct) Names() []string {
 	return []string{
-		"system.processes.count",
-		"system.processes.created",
+		"system.cpu.load_average.15m",
+		"system.cpu.load_average.1m",
+		"system.cpu.load_average.5m",
 	}
 }
 
 var metricsByName = map[string]MetricIntf{
-	"system.processes.count":   Metrics.SystemProcessesCount,
-	"system.processes.created": Metrics.SystemProcessesCreated,
+	"system.cpu.load_average.15m": Metrics.SystemCPULoadAverage15m,
+	"system.cpu.load_average.1m":  Metrics.SystemCPULoadAverage1m,
+	"system.cpu.load_average.5m":  Metrics.SystemCPULoadAverage5m,
 }
 
 func (m *metricStruct) ByName(n string) MetricIntf {
@@ -80,25 +83,30 @@ func (m *metricStruct) ByName(n string) MetricIntf {
 // manipulating those metrics.
 var Metrics = &metricStruct{
 	&metricImpl{
-		"system.processes.count",
+		"system.cpu.load_average.15m",
 		func(metric pdata.Metric) {
-			metric.SetName("system.processes.count")
-			metric.SetDescription("Total number of processes in each state.")
-			metric.SetUnit("{processes}")
-			metric.SetDataType(pdata.MetricDataTypeSum)
-			metric.Sum().SetIsMonotonic(false)
-			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+			metric.SetName("system.cpu.load_average.15m")
+			metric.SetDescription("Average CPU Load over 15 minutes.")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
-		"system.processes.created",
+		"system.cpu.load_average.1m",
 		func(metric pdata.Metric) {
-			metric.SetName("system.processes.created")
-			metric.SetDescription("Total number of created processes.")
-			metric.SetUnit("{processes}")
-			metric.SetDataType(pdata.MetricDataTypeSum)
-			metric.Sum().SetIsMonotonic(true)
-			metric.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+			metric.SetName("system.cpu.load_average.1m")
+			metric.SetDescription("Average CPU Load over 1 minute.")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+		},
+	},
+	&metricImpl{
+		"system.cpu.load_average.5m",
+		func(metric pdata.Metric) {
+			metric.SetName("system.cpu.load_average.5m")
+			metric.SetDescription("Average CPU Load over 5 minutes.")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeGauge)
 		},
 	},
 }
@@ -109,42 +117,7 @@ var M = Metrics
 
 // Attributes contains the possible metric attributes that can be used.
 var Attributes = struct {
-	// Status (Breakdown status of the processes.)
-	Status string
-}{
-	"status",
-}
+}{}
 
 // A is an alias for Attributes.
 var A = Attributes
-
-// AttributeStatus are the possible values that the attribute "status" can have.
-var AttributeStatus = struct {
-	Blocked  string
-	Daemon   string
-	Detached string
-	Idle     string
-	Locked   string
-	Orphan   string
-	Paging   string
-	Running  string
-	Sleeping string
-	Stopped  string
-	System   string
-	Unknown  string
-	Zombies  string
-}{
-	"blocked",
-	"daemon",
-	"detached",
-	"idle",
-	"locked",
-	"orphan",
-	"paging",
-	"running",
-	"sleeping",
-	"stopped",
-	"system",
-	"unknown",
-	"zombies",
-}
