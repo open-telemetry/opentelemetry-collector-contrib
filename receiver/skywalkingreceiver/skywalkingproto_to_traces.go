@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package skywalkingreceiver
+package skywalkingreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver"
 
 import (
 	"encoding/binary"
@@ -256,21 +256,22 @@ func uInt32ToSpanID(id uint32) pdata.SpanID {
 }
 
 func unsafeStringToBytes(s string) [16]byte {
-	sh := (*reflect.StringHeader)(unsafe.Pointer(&s))
-	sliceHeader := reflect.SliceHeader{
-		Data: sh.Data,
-		Len:  sh.Len,
-		Cap:  sh.Len,
-	}
-	return *(*[16]byte)(unsafe.Pointer(&sliceHeader))
+	p := unsafe.Pointer((*reflect.StringHeader)(unsafe.Pointer(&s)).Data)
+
+	var b [16]byte
+	hdr := (*reflect.SliceHeader)(unsafe.Pointer(&b))
+	hdr.Data = uintptr(p)
+	hdr.Cap = len(s)
+	hdr.Len = len(s)
+	return b
 }
 
 func unsafeStringTo8Bytes(s string) [8]byte {
-	sh := (*reflect.StringHeader)(unsafe.Pointer(&s))
-	sliceHeader := reflect.SliceHeader{
-		Data: sh.Data,
-		Len:  sh.Len,
-		Cap:  sh.Len,
-	}
-	return *(*[8]byte)(unsafe.Pointer(&sliceHeader))
+	p := unsafe.Pointer((*reflect.StringHeader)(unsafe.Pointer(&s)).Data)
+	var b [8]byte
+	hdr := (*reflect.SliceHeader)(unsafe.Pointer(&b))
+	hdr.Data = uintptr(p)
+	hdr.Cap = len(s)
+	hdr.Len = len(s)
+	return b
 }

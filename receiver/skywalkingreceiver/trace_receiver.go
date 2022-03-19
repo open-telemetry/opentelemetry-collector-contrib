@@ -217,7 +217,7 @@ func (sr *swReceiver) httpHandler(rsp http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var data []*v3.SegmentObject
-	if err := json.Unmarshal(b, &data); err != nil {
+	if err = json.Unmarshal(b, &data); err != nil {
 		fmt.Printf("cannot Unmarshal skywalking segment collection, %v", err)
 	}
 

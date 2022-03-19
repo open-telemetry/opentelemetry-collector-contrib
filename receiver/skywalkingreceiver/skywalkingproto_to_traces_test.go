@@ -18,10 +18,9 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
 	agentV3 "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestSetInternalSpanStatus(t *testing.T) {
