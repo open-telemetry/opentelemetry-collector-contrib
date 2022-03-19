@@ -108,7 +108,7 @@ func newMetricsGroupedByAttrs() *metricsGroupedByAttrs {
 func buildReferenceAttributes(originResource pdata.Resource, requiredAttributes pdata.AttributeMap) pdata.AttributeMap {
 	referenceAttributes := pdata.NewAttributeMap()
 	originResource.Attributes().CopyTo(referenceAttributes)
-	requiredAttributes.Range(func(k string, v pdata.AttributeValue) bool {
+	requiredAttributes.Range(func(k string, v pdata.Value) bool {
 		referenceAttributes.Upsert(k, v)
 		return true
 	})
@@ -126,7 +126,7 @@ func resourceMatches(resource pdata.Resource, referenceAttributes pdata.Attribut
 
 	// Go through each attribute and check the corresponding attribute value in the tested Resource
 	matching := true
-	referenceAttributes.Range(func(referenceKey string, referenceValue pdata.AttributeValue) bool {
+	referenceAttributes.Range(func(referenceKey string, referenceValue pdata.Value) bool {
 		testedValue, foundKey := resource.Attributes().Get(referenceKey)
 		if !foundKey || !referenceValue.Equal(testedValue) {
 			// One difference is enough to consider it doesn't match, so fail early
@@ -181,7 +181,7 @@ func updateResourceToMatch(newResource pdata.Resource, originResource pdata.Reso
 
 	// This prioritizes required attributes over the original resource attributes, if they overlap
 	attrs := newResource.Attributes()
-	requiredAttributes.Range(func(k string, v pdata.AttributeValue) bool {
+	requiredAttributes.Range(func(k string, v pdata.Value) bool {
 		attrs.Upsert(k, v)
 		return true
 	})

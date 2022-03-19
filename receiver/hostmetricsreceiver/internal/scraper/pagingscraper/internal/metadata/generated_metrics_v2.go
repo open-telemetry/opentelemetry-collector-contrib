@@ -63,7 +63,7 @@ func (m *metricSystemPagingFaults) recordDataPoint(start pdata.Timestamp, ts pda
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Type, pdata.NewAttributeValueString(typeAttributeValue))
+	dp.Attributes().Insert(A.Type, pdata.NewValueString(typeAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -116,8 +116,8 @@ func (m *metricSystemPagingOperations) recordDataPoint(start pdata.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Direction, pdata.NewAttributeValueString(directionAttributeValue))
-	dp.Attributes().Insert(A.Type, pdata.NewAttributeValueString(typeAttributeValue))
+	dp.Attributes().Insert(A.Direction, pdata.NewValueString(directionAttributeValue))
+	dp.Attributes().Insert(A.Type, pdata.NewValueString(typeAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -170,8 +170,8 @@ func (m *metricSystemPagingUsage) recordDataPoint(start pdata.Timestamp, ts pdat
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Device, pdata.NewAttributeValueString(deviceAttributeValue))
-	dp.Attributes().Insert(A.State, pdata.NewAttributeValueString(stateAttributeValue))
+	dp.Attributes().Insert(A.Device, pdata.NewValueString(deviceAttributeValue))
+	dp.Attributes().Insert(A.State, pdata.NewValueString(stateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -222,8 +222,8 @@ func (m *metricSystemPagingUtilization) recordDataPoint(start pdata.Timestamp, t
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.Device, pdata.NewAttributeValueString(deviceAttributeValue))
-	dp.Attributes().Insert(A.State, pdata.NewAttributeValueString(stateAttributeValue))
+	dp.Attributes().Insert(A.Device, pdata.NewValueString(deviceAttributeValue))
+	dp.Attributes().Insert(A.State, pdata.NewValueString(stateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.

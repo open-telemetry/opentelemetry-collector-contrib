@@ -249,7 +249,7 @@ func spanLinksToZipkinTags(links pdata.SpanLinkSlice, zTags map[string]string) e
 
 func attributeMapToStringMap(attrMap pdata.AttributeMap) map[string]string {
 	rawMap := make(map[string]string)
-	attrMap.Range(func(k string, v pdata.AttributeValue) bool {
+	attrMap.Range(func(k string, v pdata.Value) bool {
 		rawMap[k] = v.AsString()
 		return true
 	})
@@ -273,7 +273,7 @@ func resourceToZipkinEndpointServiceNameAndAttributeMap(
 		return tracetranslator.ResourceNoServiceName, zTags
 	}
 
-	attrs.Range(func(k string, v pdata.AttributeValue) bool {
+	attrs.Range(func(k string, v pdata.Value) bool {
 		zTags[k] = v.AsString()
 		return true
 	})

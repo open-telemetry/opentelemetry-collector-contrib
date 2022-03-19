@@ -67,8 +67,8 @@ func (m *metricSystemNetworkConnections) recordDataPoint(start pdata.Timestamp, 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Protocol, pdata.NewAttributeValueString(protocolAttributeValue))
-	dp.Attributes().Insert(A.State, pdata.NewAttributeValueString(stateAttributeValue))
+	dp.Attributes().Insert(A.Protocol, pdata.NewValueString(protocolAttributeValue))
+	dp.Attributes().Insert(A.State, pdata.NewValueString(stateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -121,8 +121,8 @@ func (m *metricSystemNetworkDropped) recordDataPoint(start pdata.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Device, pdata.NewAttributeValueString(deviceAttributeValue))
-	dp.Attributes().Insert(A.Direction, pdata.NewAttributeValueString(directionAttributeValue))
+	dp.Attributes().Insert(A.Device, pdata.NewValueString(deviceAttributeValue))
+	dp.Attributes().Insert(A.Direction, pdata.NewValueString(directionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -175,8 +175,8 @@ func (m *metricSystemNetworkErrors) recordDataPoint(start pdata.Timestamp, ts pd
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Device, pdata.NewAttributeValueString(deviceAttributeValue))
-	dp.Attributes().Insert(A.Direction, pdata.NewAttributeValueString(directionAttributeValue))
+	dp.Attributes().Insert(A.Device, pdata.NewValueString(deviceAttributeValue))
+	dp.Attributes().Insert(A.Direction, pdata.NewValueString(directionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -229,8 +229,8 @@ func (m *metricSystemNetworkIo) recordDataPoint(start pdata.Timestamp, ts pdata.
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Device, pdata.NewAttributeValueString(deviceAttributeValue))
-	dp.Attributes().Insert(A.Direction, pdata.NewAttributeValueString(directionAttributeValue))
+	dp.Attributes().Insert(A.Device, pdata.NewValueString(deviceAttributeValue))
+	dp.Attributes().Insert(A.Direction, pdata.NewValueString(directionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -283,8 +283,8 @@ func (m *metricSystemNetworkPackets) recordDataPoint(start pdata.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Device, pdata.NewAttributeValueString(deviceAttributeValue))
-	dp.Attributes().Insert(A.Direction, pdata.NewAttributeValueString(directionAttributeValue))
+	dp.Attributes().Insert(A.Device, pdata.NewValueString(deviceAttributeValue))
+	dp.Attributes().Insert(A.Direction, pdata.NewValueString(directionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.

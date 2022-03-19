@@ -8,8 +8,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib v0.47.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.47.0
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.47.0
-	go.opentelemetry.io/collector/model v0.47.0
+	go.opentelemetry.io/collector v0.47.1-0.20220316214317-e6ea17cf27a8
+	go.opentelemetry.io/collector/model v0.47.1-0.20220316214317-e6ea17cf27a8
 	go.uber.org/multierr v1.8.0
 	golang.org/x/mod v0.5.1
 )
@@ -208,7 +208,7 @@ require (
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
 	github.com/newrelic/newrelic-telemetry-sdk-go v0.8.1 // indirect
 	github.com/observiq/ctimefmt v1.0.0 // indirect
-	github.com/observiq/go-syslog/v3 v3.1.0 // indirect
+	github.com/observiq/go-syslog/v3 v3.0.2 // indirect
 	github.com/olivere/elastic v6.2.37+incompatible // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.47.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter v0.47.0 // indirect
@@ -350,7 +350,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver v0.47.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.47.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.47.0 // indirect
-	github.com/open-telemetry/opentelemetry-log-collection v0.27.1 // indirect
+	github.com/open-telemetry/opentelemetry-log-collection v0.27.2 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/opencontainers/runc v1.1.0 // indirect

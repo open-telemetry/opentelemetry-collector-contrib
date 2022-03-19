@@ -565,7 +565,7 @@ func (m *metricRedisCPUTime) recordDataPoint(start pdata.Timestamp, ts pdata.Tim
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.State, pdata.NewAttributeValueString(stateAttributeValue))
+	dp.Attributes().Insert(A.State, pdata.NewValueString(stateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -616,7 +616,7 @@ func (m *metricRedisDbAvgTTL) recordDataPoint(start pdata.Timestamp, ts pdata.Ti
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Db, pdata.NewAttributeValueString(dbAttributeValue))
+	dp.Attributes().Insert(A.Db, pdata.NewValueString(dbAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -667,7 +667,7 @@ func (m *metricRedisDbExpires) recordDataPoint(start pdata.Timestamp, ts pdata.T
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Db, pdata.NewAttributeValueString(dbAttributeValue))
+	dp.Attributes().Insert(A.Db, pdata.NewValueString(dbAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -718,7 +718,7 @@ func (m *metricRedisDbKeys) recordDataPoint(start pdata.Timestamp, ts pdata.Time
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Db, pdata.NewAttributeValueString(dbAttributeValue))
+	dp.Attributes().Insert(A.Db, pdata.NewValueString(dbAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.

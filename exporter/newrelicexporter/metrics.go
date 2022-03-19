@@ -130,7 +130,7 @@ func (al attributeLocation) String() string {
 
 type attributeStatsKey struct {
 	location      attributeLocation
-	attributeType pdata.AttributeValueType
+	attributeType pdata.ValueType
 }
 
 type exportMetadata struct {

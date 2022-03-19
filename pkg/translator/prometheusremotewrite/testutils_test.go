@@ -232,7 +232,7 @@ func getHistogramDataPointWithExemplars(t *testing.T, time time.Time, value floa
 	e := h.Exemplars().AppendEmpty()
 	e.SetDoubleVal(value)
 	e.SetTimestamp(pdata.NewTimestampFromTime(time))
-	e.FilteredAttributes().Insert(attributeKey, pdata.NewAttributeValueString(attributeValue))
+	e.FilteredAttributes().Insert(attributeKey, pdata.NewValueString(attributeValue))
 
 	if traceID != "" {
 		var traceIDBytes [16]byte
@@ -410,7 +410,7 @@ func getSummaryMetric(name string, attributes pdata.AttributeMap, ts uint64, sum
 	}
 	dp.SetCount(count)
 	dp.SetSum(sum)
-	attributes.Range(func(k string, v pdata.AttributeValue) bool {
+	attributes.Range(func(k string, v pdata.Value) bool {
 		dp.Attributes().Upsert(k, v)
 		return true
 	})
@@ -423,7 +423,7 @@ func getSummaryMetric(name string, attributes pdata.AttributeMap, ts uint64, sum
 	return metric
 }
 
-func getResource(resources map[string]pdata.AttributeValue) pdata.Resource {
+func getResource(resources map[string]pdata.Value) pdata.Resource {
 	resource := pdata.NewResource()
 
 	for k, v := range resources {
