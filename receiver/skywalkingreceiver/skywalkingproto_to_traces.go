@@ -16,7 +16,6 @@ package skywalkingreceiver
 
 import (
 	"encoding/binary"
-	"fmt"
 	"reflect"
 	"time"
 	"unsafe"
@@ -25,6 +24,14 @@ import (
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.8.0"
 	common "skywalking.apache.org/repo/goapi/collect/common/v3"
 	agentV3 "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
+)
+
+const (
+	AttributeRefType                  = "refType"
+	AttributeParentService            = "parent.service"
+	AttributeParentInstance           = "parent.service.instance"
+	AttributeParentEndpoint           = "parent.endpoint"
+	AttributeNetworkAddressUsedAtPeer = "network.AddressUsedAtPeer"
 )
 
 var otSpanTagsMapping = map[string]string{
@@ -47,8 +54,8 @@ func SkywalkingToTraces(segment *agentV3.SegmentObject) pdata.Traces {
 	rs := resourceSpan.Resource()
 	for _, span := range swSpans {
 		swTagsToInternalResource(span, rs)
-		rs.Attributes().Insert(conventions.AttributeServiceName, pdata.NewAttributeValueString(segment.GetService()))
-		rs.Attributes().Insert(conventions.AttributeServiceInstanceID, pdata.NewAttributeValueString(segment.GetServiceInstance()))
+		rs.Attributes().Insert(conventions.AttributeServiceName, pdata.NewValueString(segment.GetService()))
+		rs.Attributes().Insert(conventions.AttributeServiceInstanceID, pdata.NewValueString(segment.GetServiceInstance()))
 	}
 
 	il := resourceSpan.InstrumentationLibrarySpans().AppendEmpty()
@@ -78,7 +85,7 @@ func swTagsToInternalResource(span *agentV3.SpanObject, dest pdata.Resource) {
 	}
 }
 
-func swSpansToSpanSlice(traceId string, spans []*agentV3.SpanObject, dest pdata.SpanSlice) {
+func swSpansToSpanSlice(traceID string, spans []*agentV3.SpanObject, dest pdata.SpanSlice) {
 	if len(spans) == 0 {
 		return
 	}
@@ -88,12 +95,12 @@ func swSpansToSpanSlice(traceId string, spans []*agentV3.SpanObject, dest pdata.
 		if span == nil {
 			continue
 		}
-		swSpanToSpan(traceId, span, dest.AppendEmpty())
+		swSpanToSpan(traceID, span, dest.AppendEmpty())
 	}
 }
 
-func swSpanToSpan(traceId string, span *agentV3.SpanObject, dest pdata.Span) {
-	dest.SetTraceID(stringToTraceID(traceId))
+func swSpanToSpan(traceID string, span *agentV3.SpanObject, dest pdata.Span) {
+	dest.SetTraceID(stringToTraceID(traceID))
 	dest.SetSpanID(uInt32ToSpanID(uint32(span.GetSpanId())))
 
 	// parent spanid = -1, means(root span) no parent span in skywalking,so just make otlp's parent span id empty.
@@ -134,10 +141,10 @@ func swSpanToSpan(traceId string, span *agentV3.SpanObject, dest pdata.Span) {
 
 	swLogsToSpanEvents(span.GetLogs(), dest.Events())
 	// skywalking: In the across thread and across processes, these references target the parent segments.
-	swReferencesToSpanLinks(span.Refs, int64(span.ParentSpanId), dest.Links())
+	swReferencesToSpanLinks(span.Refs, dest.Links())
 }
 
-func swReferencesToSpanLinks(refs []*agentV3.SegmentReference, excludeParentID int64, dest pdata.SpanLinkSlice) {
+func swReferencesToSpanLinks(refs []*agentV3.SegmentReference, dest pdata.SpanLinkSlice) {
 	if len(refs) == 0 {
 		return
 	}
@@ -145,13 +152,33 @@ func swReferencesToSpanLinks(refs []*agentV3.SegmentReference, excludeParentID i
 	dest.EnsureCapacity(len(refs))
 
 	for _, ref := range refs {
-		parentTraceSegmentID := ""
-		for _, part := range ref.ParentTraceSegmentId {
-			parentTraceSegmentID += fmt.Sprintf("%d", part)
-		}
 		link := dest.AppendEmpty()
 		link.SetTraceID(stringToTraceID(ref.TraceId))
-		link.SetSpanID(stringToParentSpanId(ref.ParentTraceSegmentId))
+		link.SetSpanID(stringToParentSpanID(ref.ParentTraceSegmentId))
+		link.SetTraceState("")
+		kvParis := []*common.KeyStringValuePair{
+			{
+				Key:   AttributeParentService,
+				Value: ref.ParentService,
+			},
+			{
+				Key:   AttributeParentInstance,
+				Value: ref.ParentServiceInstance,
+			},
+			{
+				Key:   AttributeParentEndpoint,
+				Value: ref.ParentEndpoint,
+			},
+			{
+				Key:   AttributeNetworkAddressUsedAtPeer,
+				Value: ref.NetworkAddressUsedAtPeer,
+			},
+			{
+				Key:   AttributeRefType,
+				Value: ref.RefType.String(),
+			},
+		}
+		swKvPairsToInternalAttributes(kvParis, link.Attributes())
 	}
 }
 
@@ -213,13 +240,12 @@ func microsecondsToTimestamp(ms int64) pdata.Timestamp {
 	return pdata.NewTimestampFromTime(time.UnixMilli(ms))
 }
 
-func stringToTraceID(traceId string) pdata.TraceID {
-	return pdata.NewTraceID(stringToBytes(traceId))
+func stringToTraceID(traceID string) pdata.TraceID {
+	return pdata.NewTraceID(unsafeStringToBytes(traceID))
 }
 
-func stringToParentSpanId(traceId string) pdata.SpanID {
-	traceID := stringTo8Bytes(traceId)
-	return pdata.NewSpanID(traceID)
+func stringToParentSpanID(traceID string) pdata.SpanID {
+	return pdata.NewSpanID(unsafeStringTo8Bytes(traceID))
 }
 
 // uInt32ToSpanID converts the uint64 representation of a SpanID to pdata.SpanID.
@@ -229,22 +255,22 @@ func uInt32ToSpanID(id uint32) pdata.SpanID {
 	return pdata.NewSpanID(spanID)
 }
 
-func stringToBytes(s string) [16]byte {
+func unsafeStringToBytes(s string) [16]byte {
 	sh := (*reflect.StringHeader)(unsafe.Pointer(&s))
-	bh := reflect.SliceHeader{
+	sliceHeader := reflect.SliceHeader{
 		Data: sh.Data,
 		Len:  sh.Len,
 		Cap:  sh.Len,
 	}
-	return *(*[16]byte)(unsafe.Pointer(&bh))
+	return *(*[16]byte)(unsafe.Pointer(&sliceHeader))
 }
 
-func stringTo8Bytes(s string) [8]byte {
+func unsafeStringTo8Bytes(s string) [8]byte {
 	sh := (*reflect.StringHeader)(unsafe.Pointer(&s))
-	bh := reflect.SliceHeader{
+	sliceHeader := reflect.SliceHeader{
 		Data: sh.Data,
 		Len:  sh.Len,
 		Cap:  sh.Len,
 	}
-	return *(*[8]byte)(unsafe.Pointer(&bh))
+	return *(*[8]byte)(unsafe.Pointer(&sliceHeader))
 }

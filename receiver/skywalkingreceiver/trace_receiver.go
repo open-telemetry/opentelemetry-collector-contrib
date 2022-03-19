@@ -222,7 +222,7 @@ func (sr *swReceiver) httpHandler(rsp http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, segment := range data {
-		_, err = consumeTraces(context.Background(), segment, sr.nextConsumer)
+		err = consumeTraces(context.Background(), segment, sr.nextConsumer)
 		if err != nil {
 			fmt.Printf("cannot consume traces, %v", err)
 		}

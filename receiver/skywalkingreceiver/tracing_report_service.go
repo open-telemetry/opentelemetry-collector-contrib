@@ -40,7 +40,7 @@ func (s *traceSegmentReportService) Collect(stream agent.TraceSegmentReportServi
 			return err
 		}
 
-		_, err = consumeTraces(context.Background(), segmentObject, s.sr.nextConsumer)
+		err = consumeTraces(context.Background(), segmentObject, s.sr.nextConsumer)
 		if err != nil {
 			return stream.SendAndClose(&common.Commands{})
 		}
@@ -53,7 +53,7 @@ func (s *traceSegmentReportService) CollectInSync(ctx context.Context, segments 
 		if err != nil {
 			fmt.Printf("cannot marshal segemnt from sync, %v", err)
 		}
-		_, err = consumeTraces(ctx, segment, s.sr.nextConsumer)
+		err = consumeTraces(ctx, segment, s.sr.nextConsumer)
 		if err != nil {
 			fmt.Printf("cannot consume traces, %v", err)
 		}
@@ -62,10 +62,10 @@ func (s *traceSegmentReportService) CollectInSync(ctx context.Context, segments 
 	return &common.Commands{}, nil
 }
 
-func consumeTraces(ctx context.Context, segment *agent.SegmentObject, consumer consumer.Traces) (int, error) {
+func consumeTraces(ctx context.Context, segment *agent.SegmentObject, consumer consumer.Traces) error {
 	if segment == nil {
-		return 0, nil
+		return nil
 	}
 	ptd := SkywalkingToTraces(segment)
-	return len(segment.Spans), consumer.ConsumeTraces(ctx, ptd)
+	return consumer.ConsumeTraces(ctx, ptd)
 }
