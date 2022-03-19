@@ -133,7 +133,7 @@ func swSpanToSpan(traceId string, span *agentV3.SpanObject, dest pdata.Span) {
 	}
 
 	swLogsToSpanEvents(span.GetLogs(), dest.Events())
-	// swkyalking: In the across thread and across process, these references targeting the parent segments.
+	// skywalking: In the across thread and across processes, these references target the parent segments.
 	swReferencesToSpanLinks(span.Refs, int64(span.ParentSpanId), dest.Links())
 }
 
