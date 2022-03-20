@@ -135,8 +135,7 @@ func TestMetricsFromFile(t *testing.T) {
 		agentProc,
 		&testbed.PerfTestValidator{},
 		performanceResultsSummary,
-		//increase ExpectedMaxRAM from 94 to 96 since api_version and resource_version were added to k8seventsreceiver
-		testbed.WithResourceLimits(testbed.ResourceSpec{ExpectedMaxCPU: 120, ExpectedMaxRAM: 96}),
+		testbed.WithResourceLimits(testbed.ResourceSpec{ExpectedMaxCPU: 120, ExpectedMaxRAM: 94}),
 	)
 	defer tc.Stop()
 
