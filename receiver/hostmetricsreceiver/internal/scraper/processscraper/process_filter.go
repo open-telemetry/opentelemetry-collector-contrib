@@ -18,24 +18,31 @@ type processFilter struct {
 	pidFilter            int32
 }
 
+// MatchesExecutable return a boolean value indicating if executableName and executablePath matches the filter.
 func (p *processFilter) MatchesExecutable(executableName string, executablePath string) bool {
 	return (p.executableNameFilter == nil || p.executableNameFilter.Matches(executableName)) &&
 		(p.executablePathFilter == nil || p.executablePathFilter.Matches(executablePath))
 }
 
+// MatchesCommand return a boolean value indicating if command and commandLine matches the filter.
 func (p *processFilter) MatchesCommand(command string, commandLine string) bool {
 	return (p.commandFilter == nil || p.commandFilter.Matches(command)) &&
 		(p.commandLineFilter == nil || p.commandLineFilter.Matches(commandLine))
 }
 
+
+// MatchOwner return a boolean value indicating if owner matches the filter.
 func (p *processFilter) MatchOwner(owner string) bool {
 	return p.ownerFilter == nil || p.ownerFilter.Matches(owner)
 }
 
+// MatchesPid return a boolean value indicating if the pid matches the filter.
 func (p *processFilter) MatchesPid(pid int32) bool {
 	return p.pidFilter == 0 || (p.pidFilter == pid)
 }
 
+// regexParse indicates if a filter string is a regex.  The return value is
+// the filter string and a boolean indicating if the input string is a regex string.
 func regexParse(regexp string) (string, bool) {
 	// this is not a regular expression
 	if !strings.HasPrefix(regexp, RegExPrefix) {
@@ -54,6 +61,7 @@ func regexParse(regexp string) (string, bool) {
 	return regexp, true
 }
 
+// createFilter receives a filter config and createa a processFilter based on the config settings
 func createFilter(filterConfig FilterConfig) (processFilter, error) {
 	var err error
 	filter := processFilter{}

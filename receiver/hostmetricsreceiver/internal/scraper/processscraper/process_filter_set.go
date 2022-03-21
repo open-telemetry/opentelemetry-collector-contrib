@@ -4,6 +4,8 @@ type processFilterSet struct {
 	filters [] processFilter
 }
 
+// MatchesExecutable returns an int array with the index of all filters that match the input executable values
+// only indexes provided in indexList are checked
 func (p *processFilterSet) MatchesExecutable(executableName string, executablePath string, indexList []int) []int {
 	var matches []int
 
@@ -16,6 +18,8 @@ func (p *processFilterSet) MatchesExecutable(executableName string, executablePa
 	return matches
 }
 
+// MatchesCommand returns an int array with the index of all filters that match the input command values
+// only indexes provided in indexList are checked
 func (p *processFilterSet) MatchesCommand(command string, commandLine string, indexList []int) []int {
 	var matches []int
 
@@ -28,6 +32,8 @@ func (p *processFilterSet) MatchesCommand(command string, commandLine string, in
 	return matches
 }
 
+// MatchesOwner returns an int array with the index of all filters that match the input owner value
+// only indexes provided in indexList are checked
 func (p *processFilterSet) MatchesOwner(owner string, indexList []int) []int {
 	var matches []int
 
@@ -40,6 +46,7 @@ func (p *processFilterSet) MatchesOwner(owner string, indexList []int) []int {
 	return matches
 }
 
+// MatchesExecutable returns an int array with the index of all filters that match the input pid value
 func (p *processFilterSet) MatchesPid(pid int32) []int {
 	var matches []int
 
@@ -52,6 +59,7 @@ func (p *processFilterSet) MatchesPid(pid int32) []int {
 	return matches
 }
 
+// createFilters creates a processFilterSet based on an input config.
 func createFilters(filterConfigs []FilterConfig) (*processFilterSet, error) {
 	var filters []processFilter
 	for _, filterConfig := range filterConfigs {
