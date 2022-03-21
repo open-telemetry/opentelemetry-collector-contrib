@@ -43,7 +43,7 @@ type metricNameTest struct {
 
 type metricWithResource struct {
 	metricNames        []string
-	resourceAttributes map[string]pdata.AttributeValue
+	resourceAttributes map[string]pdata.Value
 }
 
 var (
@@ -78,10 +78,10 @@ var (
 	inMetricForResourceTest = []metricWithResource{
 		{
 			metricNames: []string{"metric1", "metric2"},
-			resourceAttributes: map[string]pdata.AttributeValue{
-				"attr1": pdata.NewAttributeValueString("attr1/val1"),
-				"attr2": pdata.NewAttributeValueString("attr2/val2"),
-				"attr3": pdata.NewAttributeValueString("attr3/val3"),
+			resourceAttributes: map[string]pdata.Value{
+				"attr1": pdata.NewValueString("attr1/val1"),
+				"attr2": pdata.NewValueString("attr2/val2"),
+				"attr3": pdata.NewValueString("attr3/val3"),
 			},
 		},
 	}
@@ -89,14 +89,14 @@ var (
 	inMetricForTwoResource = []metricWithResource{
 		{
 			metricNames: []string{"metric1", "metric2"},
-			resourceAttributes: map[string]pdata.AttributeValue{
-				"attr1": pdata.NewAttributeValueString("attr1/val1"),
+			resourceAttributes: map[string]pdata.Value{
+				"attr1": pdata.NewValueString("attr1/val1"),
 			},
 		},
 		{
 			metricNames: []string{"metric3", "metric4"},
-			resourceAttributes: map[string]pdata.AttributeValue{
-				"attr1": pdata.NewAttributeValueString("attr1/val2"),
+			resourceAttributes: map[string]pdata.Value{
+				"attr1": pdata.NewValueString("attr1/val2"),
 			},
 		},
 	}

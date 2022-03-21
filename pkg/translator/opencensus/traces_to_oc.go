@@ -112,38 +112,38 @@ func attributesMapToOCAttributeMap(attributes pdata.AttributeMap) map[string]*oc
 	}
 
 	ocAttributes := make(map[string]*octrace.AttributeValue, attributes.Len())
-	attributes.Range(func(k string, v pdata.AttributeValue) bool {
+	attributes.Range(func(k string, v pdata.Value) bool {
 		ocAttributes[k] = attributeValueToOC(v)
 		return true
 	})
 	return ocAttributes
 }
 
-func attributeValueToOC(attr pdata.AttributeValue) *octrace.AttributeValue {
+func attributeValueToOC(attr pdata.Value) *octrace.AttributeValue {
 	a := &octrace.AttributeValue{}
 
 	switch attr.Type() {
-	case pdata.AttributeValueTypeString:
+	case pdata.ValueTypeString:
 		a.Value = &octrace.AttributeValue_StringValue{
 			StringValue: stringToTruncatableString(attr.StringVal()),
 		}
-	case pdata.AttributeValueTypeBool:
+	case pdata.ValueTypeBool:
 		a.Value = &octrace.AttributeValue_BoolValue{
 			BoolValue: attr.BoolVal(),
 		}
-	case pdata.AttributeValueTypeDouble:
+	case pdata.ValueTypeDouble:
 		a.Value = &octrace.AttributeValue_DoubleValue{
 			DoubleValue: attr.DoubleVal(),
 		}
-	case pdata.AttributeValueTypeInt:
+	case pdata.ValueTypeInt:
 		a.Value = &octrace.AttributeValue_IntValue{
 			IntValue: attr.IntVal(),
 		}
-	case pdata.AttributeValueTypeMap:
+	case pdata.ValueTypeMap:
 		a.Value = &octrace.AttributeValue_StringValue{
 			StringValue: stringToTruncatableString(attr.AsString()),
 		}
-	case pdata.AttributeValueTypeArray:
+	case pdata.ValueTypeArray:
 		a.Value = &octrace.AttributeValue_StringValue{
 			StringValue: stringToTruncatableString(attr.AsString()),
 		}
@@ -190,7 +190,7 @@ func stringAttributeValue(val string) *octrace.AttributeValue {
 
 func attributesMapToOCSameProcessAsParentSpan(attr pdata.AttributeMap) *wrapperspb.BoolValue {
 	val, ok := attr.Get(occonventions.AttributeSameProcessAsParentSpan)
-	if !ok || val.Type() != pdata.AttributeValueTypeBool {
+	if !ok || val.Type() != pdata.ValueTypeBool {
 		return nil
 	}
 	return wrapperspb.Bool(val.BoolVal())
@@ -280,7 +280,7 @@ func eventToOC(event pdata.SpanEvent) *octrace.Span_TimeEvent {
 	}
 	// TODO: Find a better way to check for message_event. Maybe use the event.Name.
 	if attrs.Len() == len(ocMessageEventAttrs) {
-		ocMessageEventAttrValues := map[string]pdata.AttributeValue{}
+		ocMessageEventAttrValues := map[string]pdata.Value{}
 		var ocMessageEventAttrFound bool
 		for _, attr := range ocMessageEventAttrs {
 			akv, found := attrs.Get(attr)

@@ -24,17 +24,17 @@ import (
 )
 
 func TestTagsFromAttributes(t *testing.T) {
-	attributeMap := map[string]pdata.AttributeValue{
-		conventions.AttributeProcessExecutableName: pdata.NewAttributeValueString("otelcol"),
-		conventions.AttributeProcessExecutablePath: pdata.NewAttributeValueString("/usr/bin/cmd/otelcol"),
-		conventions.AttributeProcessCommand:        pdata.NewAttributeValueString("cmd/otelcol"),
-		conventions.AttributeProcessCommandLine:    pdata.NewAttributeValueString("cmd/otelcol --config=\"/path/to/config.yaml\""),
-		conventions.AttributeProcessPID:            pdata.NewAttributeValueInt(1),
-		conventions.AttributeProcessOwner:          pdata.NewAttributeValueString("root"),
-		conventions.AttributeOSType:                pdata.NewAttributeValueString("linux"),
-		conventions.AttributeK8SDaemonSetName:      pdata.NewAttributeValueString("daemon_set_name"),
-		conventions.AttributeAWSECSClusterARN:      pdata.NewAttributeValueString("cluster_arn"),
-		"tags.datadoghq.com/service":               pdata.NewAttributeValueString("service_name"),
+	attributeMap := map[string]pdata.Value{
+		conventions.AttributeProcessExecutableName: pdata.NewValueString("otelcol"),
+		conventions.AttributeProcessExecutablePath: pdata.NewValueString("/usr/bin/cmd/otelcol"),
+		conventions.AttributeProcessCommand:        pdata.NewValueString("cmd/otelcol"),
+		conventions.AttributeProcessCommandLine:    pdata.NewValueString("cmd/otelcol --config=\"/path/to/config.yaml\""),
+		conventions.AttributeProcessPID:            pdata.NewValueInt(1),
+		conventions.AttributeProcessOwner:          pdata.NewValueString("root"),
+		conventions.AttributeOSType:                pdata.NewValueString("linux"),
+		conventions.AttributeK8SDaemonSetName:      pdata.NewValueString("daemon_set_name"),
+		conventions.AttributeAWSECSClusterARN:      pdata.NewValueString("cluster_arn"),
+		"tags.datadoghq.com/service":               pdata.NewValueString("service_name"),
 	}
 	attrs := pdata.NewAttributeMapFromMap(attributeMap)
 
@@ -90,23 +90,23 @@ func TestOriginIDFromAttributes(t *testing.T) {
 	}{
 		{
 			name: "pod UID and container ID",
-			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
-				conventions.AttributeContainerID: pdata.NewAttributeValueString("container_id_goes_here"),
-				conventions.AttributeK8SPodUID:   pdata.NewAttributeValueString("k8s_pod_uid_goes_here"),
+			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.Value{
+				conventions.AttributeContainerID: pdata.NewValueString("container_id_goes_here"),
+				conventions.AttributeK8SPodUID:   pdata.NewValueString("k8s_pod_uid_goes_here"),
 			}),
 			originID: "container_id://container_id_goes_here",
 		},
 		{
 			name: "only container ID",
-			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
-				conventions.AttributeContainerID: pdata.NewAttributeValueString("container_id_goes_here"),
+			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.Value{
+				conventions.AttributeContainerID: pdata.NewValueString("container_id_goes_here"),
 			}),
 			originID: "container_id://container_id_goes_here",
 		},
 		{
 			name: "only pod UID",
-			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
-				conventions.AttributeK8SPodUID: pdata.NewAttributeValueString("k8s_pod_uid_goes_here"),
+			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.Value{
+				conventions.AttributeK8SPodUID: pdata.NewValueString("k8s_pod_uid_goes_here"),
 			}),
 			originID: "kubernetes_pod_uid://k8s_pod_uid_goes_here",
 		},

@@ -1,0 +1,25 @@
+{
+   "resourceMetrics": [
+      {
+         "instrumentationLibraryMetrics": [
+            {
+               "instrumentationLibrary": {},
+               "metrics": [
+                  {
+                     "gauge": {
+                        "dataPoints": [
+                           {
+                              "asInt": "25089622016",
+                              "timeUnixNano": "1647459021285009300"
+                           }
+                        ]
+                     },
+                     "name": "\\Memory\\Committed Bytes"
+                  }
+               ]
+            }
+         ],
+         "resource": {}
+      }
+   ]
+}

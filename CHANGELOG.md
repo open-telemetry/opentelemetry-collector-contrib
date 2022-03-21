@@ -6,6 +6,10 @@
 
 - `k8seventsreceiver`: Add Api_version and resource_version (#8539)
 
+### 🛑 Breaking changes 🛑
+
+- `windowsperfcountersreceiver`: Added metrics configuration (#8376)
+
 ## v0.47.0
 
 ### 💡 Enhancements 💡

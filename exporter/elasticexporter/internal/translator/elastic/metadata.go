@@ -35,7 +35,7 @@ func EncodeResourceMetadata(resource pdata.Resource, w *fastjson.Writer) {
 	var k8sPod model.KubernetesPod
 	var labels model.IfaceMap
 
-	resource.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+	resource.Attributes().Range(func(k string, v pdata.Value) bool {
 		switch k {
 		case conventions.AttributeServiceName:
 			service.Name = cleanServiceName(v.StringVal())

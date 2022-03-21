@@ -104,7 +104,7 @@ func asTime(in pdata.Timestamp) model.Time {
 func asStringMap(in pdata.AttributeMap) model.StringMap {
 	var out model.StringMap
 	in.Sort()
-	in.Range(func(k string, v pdata.AttributeValue) bool {
+	in.Range(func(k string, v pdata.Value) bool {
 		out = append(out, model.StringMapItem{
 			Key:   k,
 			Value: v.AsString(),

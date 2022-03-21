@@ -186,7 +186,7 @@ func TestConvert(t *testing.T) {
 		m.InsertInt("int", 123)
 		m.InsertDouble("double", 12.34)
 		m.InsertString("string", "hello")
-		m.Insert("object", pdata.NewAttributeValueMap())
+		m.Insert("object", pdata.NewValueMap())
 		assert.EqualValues(t, m.Sort(), resAtts.Sort())
 	}
 
@@ -207,11 +207,11 @@ func TestConvert(t *testing.T) {
 		m.InsertInt("int", 123)
 		m.InsertDouble("double", 12.34)
 		m.InsertString("string", "hello")
-		m.Insert("object", pdata.NewAttributeValueMap())
+		m.Insert("object", pdata.NewValueMap())
 		assert.EqualValues(t, m.Sort(), atts.Sort())
 	}
 
-	if assert.Equal(t, pdata.AttributeValueTypeMap, lr.Body().Type()) {
+	if assert.Equal(t, pdata.ValueTypeMap, lr.Body().Type()) {
 		m := pdata.NewAttributeMap()
 		// Don't include a nested object because AttributeValueMap sorting
 		// doesn't sort recursively.
@@ -582,7 +582,7 @@ func TestConvertMetadata(t *testing.T) {
 	require.Equal(t, "hello", attVal.StringVal())
 
 	bod := result.Body()
-	require.Equal(t, pdata.AttributeValueTypeBool, bod.Type())
+	require.Equal(t, pdata.ValueTypeBool, bod.Type())
 	require.True(t, bod.BoolVal())
 }
 
@@ -736,7 +736,7 @@ func TestConvertNestedMapBody(t *testing.T) {
 	require.Equal(t, fmt.Sprintf("%v", unknownType), unknownAttVal.StringVal())
 }
 
-func anyToBody(body interface{}) pdata.AttributeValue {
+func anyToBody(body interface{}) pdata.Value {
 	entry := entry.New()
 	entry.Body = body
 	return convertAndDrill(entry).Body()

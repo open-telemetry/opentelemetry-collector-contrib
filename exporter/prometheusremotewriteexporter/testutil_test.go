@@ -324,7 +324,7 @@ func getSummaryMetric(name string, attributes pdata.AttributeMap, ts uint64, sum
 	}
 	dp.SetCount(count)
 	dp.SetSum(sum)
-	attributes.Range(func(k string, v pdata.AttributeValue) bool {
+	attributes.Range(func(k string, v pdata.Value) bool {
 		dp.Attributes().Upsert(k, v)
 		return true
 	})

@@ -472,18 +472,18 @@ func verifyConsumeMetricsInput(t testing.TB, input pdata.Metrics, expectedTempor
 
 func verifyMetricLabels(dp metricDataPoint, t testing.TB, seenMetricIDs map[metricID]bool) {
 	mID := metricID{}
-	wantDimensions := map[string]pdata.AttributeValue{
-		stringAttrName:         pdata.NewAttributeValueString("stringAttrValue"),
-		intAttrName:            pdata.NewAttributeValueInt(99),
-		doubleAttrName:         pdata.NewAttributeValueDouble(99.99),
-		boolAttrName:           pdata.NewAttributeValueBool(true),
-		nullAttrName:           pdata.NewAttributeValueEmpty(),
-		arrayAttrName:          pdata.NewAttributeValueArray(),
-		mapAttrName:            pdata.NewAttributeValueMap(),
-		notInSpanAttrName0:     pdata.NewAttributeValueString("defaultNotInSpanAttrVal"),
-		regionResourceAttrName: pdata.NewAttributeValueString(sampleRegion),
+	wantDimensions := map[string]pdata.Value{
+		stringAttrName:         pdata.NewValueString("stringAttrValue"),
+		intAttrName:            pdata.NewValueInt(99),
+		doubleAttrName:         pdata.NewValueDouble(99.99),
+		boolAttrName:           pdata.NewValueBool(true),
+		nullAttrName:           pdata.NewValueEmpty(),
+		arrayAttrName:          pdata.NewValueArray(),
+		mapAttrName:            pdata.NewValueMap(),
+		notInSpanAttrName0:     pdata.NewValueString("defaultNotInSpanAttrVal"),
+		regionResourceAttrName: pdata.NewValueString(sampleRegion),
 	}
-	dp.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+	dp.Attributes().Range(func(k string, v pdata.Value) bool {
 		switch k {
 		case serviceNameKey:
 			mID.service = v.StringVal()
@@ -572,8 +572,8 @@ func initSpan(span span, s pdata.Span) {
 	s.Attributes().InsertDouble(doubleAttrName, 99.99)
 	s.Attributes().InsertBool(boolAttrName, true)
 	s.Attributes().InsertNull(nullAttrName)
-	s.Attributes().Insert(mapAttrName, pdata.NewAttributeValueMap())
-	s.Attributes().Insert(arrayAttrName, pdata.NewAttributeValueArray())
+	s.Attributes().Insert(mapAttrName, pdata.NewValueMap())
+	s.Attributes().Insert(arrayAttrName, pdata.NewValueArray())
 	s.SetTraceID(pdata.NewTraceID([16]byte{byte(42)}))
 }
 
@@ -612,8 +612,8 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 	for _, tc := range []struct {
 		name            string
 		optionalDims    []Dimension
-		resourceAttrMap map[string]pdata.AttributeValue
-		spanAttrMap     map[string]pdata.AttributeValue
+		resourceAttrMap map[string]pdata.Value
+		spanAttrMap     map[string]pdata.Value
 		wantKey         string
 	}{
 		{
@@ -639,8 +639,8 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 			optionalDims: []Dimension{
 				{Name: "foo"},
 			},
-			spanAttrMap: map[string]pdata.AttributeValue{
-				"foo": pdata.NewAttributeValueInt(99),
+			spanAttrMap: map[string]pdata.Value{
+				"foo": pdata.NewValueInt(99),
 			},
 			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u000099",
 		},
@@ -649,8 +649,8 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 			optionalDims: []Dimension{
 				{Name: "foo"},
 			},
-			resourceAttrMap: map[string]pdata.AttributeValue{
-				"foo": pdata.NewAttributeValueInt(99),
+			resourceAttrMap: map[string]pdata.Value{
+				"foo": pdata.NewValueInt(99),
 			},
 			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u000099",
 		},
@@ -659,11 +659,11 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 			optionalDims: []Dimension{
 				{Name: "foo"},
 			},
-			spanAttrMap: map[string]pdata.AttributeValue{
-				"foo": pdata.NewAttributeValueInt(100),
+			spanAttrMap: map[string]pdata.Value{
+				"foo": pdata.NewValueInt(100),
 			},
-			resourceAttrMap: map[string]pdata.AttributeValue{
-				"foo": pdata.NewAttributeValueInt(99),
+			resourceAttrMap: map[string]pdata.Value{
+				"foo": pdata.NewValueInt(99),
 			},
 			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000100",
 		},
