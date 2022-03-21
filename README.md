@@ -1,7 +1,7 @@
 ---
 <p align="center">
   <strong>
-    <a href="https://opentelemetry-python-contrib.readthedocs.io/en/latest/getting-started.html">Getting Started<a/>
+    <a href="https://opentelemetry.io/docs/instrumentation/python/getting-started/">Getting Started<a/>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="https://opentelemetry-python-contrib.readthedocs.io/">API Documentation<a/>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
