@@ -204,9 +204,9 @@ func Test_Matching_False(t *testing.T) {
 		},
 	}
 
-	atts := pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
-		"keyInt": pdata.NewAttributeValueInt(123),
-		"keyMap": pdata.NewAttributeValueMap(),
+	atts := pdata.NewAttributeMapFromMap(map[string]pdata.Value{
+		"keyInt": pdata.NewValueInt(123),
+		"keyMap": pdata.NewValueMap(),
 	})
 
 	library := pdata.NewInstrumentationLibrary()
@@ -358,12 +358,12 @@ func Test_Matching_True(t *testing.T) {
 		},
 	}
 
-	atts := pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
-		"keyString": pdata.NewAttributeValueString("arithmetic"),
-		"keyInt":    pdata.NewAttributeValueInt(123),
-		"keyDouble": pdata.NewAttributeValueDouble(3245.6),
-		"keyBool":   pdata.NewAttributeValueBool(true),
-		"keyExists": pdata.NewAttributeValueString("present"),
+	atts := pdata.NewAttributeMapFromMap(map[string]pdata.Value{
+		"keyString": pdata.NewValueString("arithmetic"),
+		"keyInt":    pdata.NewValueInt(123),
+		"keyDouble": pdata.NewValueDouble(3245.6),
+		"keyBool":   pdata.NewValueBool(true),
+		"keyExists": pdata.NewValueString("present"),
 	})
 
 	resource := pdata.NewResource()

@@ -87,7 +87,7 @@ func internalResourceToOC(resource pdata.Resource) (*occommon.Node, *ocresource.
 	ocNode := &occommon.Node{}
 	ocResource := &ocresource.Resource{}
 	labels := make(map[string]string, attrs.Len())
-	attrs.Range(func(k string, v pdata.AttributeValue) bool {
+	attrs.Range(func(k string, v pdata.Value) bool {
 		val := v.AsString()
 
 		switch k {

@@ -42,7 +42,7 @@ func TestScrape(t *testing.T) {
 		usageFunc                func(string) (*disk.UsageStat, error)
 		expectMetrics            bool
 		expectedDeviceDataPoints int
-		expectedDeviceAttributes []map[string]pdata.AttributeValue
+		expectedDeviceAttributes []map[string]pdata.Value
 		newErrRegex              string
 		initializationErr        string
 		expectedErr              string
@@ -131,18 +131,18 @@ func TestScrape(t *testing.T) {
 			},
 			expectMetrics:            true,
 			expectedDeviceDataPoints: 2,
-			expectedDeviceAttributes: []map[string]pdata.AttributeValue{
+			expectedDeviceAttributes: []map[string]pdata.Value{
 				{
-					"device":     pdata.NewAttributeValueString("device_a"),
-					"mountpoint": pdata.NewAttributeValueString("mount_point_a"),
-					"type":       pdata.NewAttributeValueString("fs_type_a"),
-					"mode":       pdata.NewAttributeValueString("unknown"),
+					"device":     pdata.NewValueString("device_a"),
+					"mountpoint": pdata.NewValueString("mount_point_a"),
+					"type":       pdata.NewValueString("fs_type_a"),
+					"mode":       pdata.NewValueString("unknown"),
 				},
 				{
-					"device":     pdata.NewAttributeValueString("device_b"),
-					"mountpoint": pdata.NewAttributeValueString("mount_point_d"),
-					"type":       pdata.NewAttributeValueString("fs_type_c"),
-					"mode":       pdata.NewAttributeValueString("unknown"),
+					"device":     pdata.NewValueString("device_b"),
+					"mountpoint": pdata.NewValueString("mount_point_d"),
+					"type":       pdata.NewValueString("fs_type_c"),
+					"mode":       pdata.NewValueString("unknown"),
 				},
 			},
 		},
@@ -294,7 +294,7 @@ func assertFileSystemUsageMetricValid(
 	t *testing.T,
 	metric pdata.Metric,
 	expectedDeviceDataPoints int,
-	expectedDeviceAttributes []map[string]pdata.AttributeValue) {
+	expectedDeviceAttributes []map[string]pdata.Value) {
 	for i := 0; i < metric.Sum().DataPoints().Len(); i++ {
 		for _, label := range []string{"device", "type", "mode", "mountpoint"} {
 			internal.AssertSumMetricHasAttribute(t, metric, i, label)
@@ -320,12 +320,12 @@ func assertFileSystemUsageMetricValid(
 	} else {
 		assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), fileSystemStatesLen)
 	}
-	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "state", pdata.NewAttributeValueString(metadata.AttributeState.Used))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "state", pdata.NewAttributeValueString(metadata.AttributeState.Free))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "state", pdata.NewValueString(metadata.AttributeState.Used))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "state", pdata.NewValueString(metadata.AttributeState.Free))
 }
 
 func assertFileSystemUsageMetricHasUnixSpecificStateLabels(t *testing.T, metric pdata.Metric) {
-	internal.AssertSumMetricHasAttributeValue(t, metric, 2, "state", pdata.NewAttributeValueString(metadata.AttributeState.Reserved))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 2, "state", pdata.NewValueString(metadata.AttributeState.Reserved))
 }
 
 func isUnix() bool {

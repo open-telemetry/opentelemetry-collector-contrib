@@ -19,11 +19,11 @@ import (
 )
 
 var (
-	resourceAttributes1 = map[string]pdata.AttributeValue{"resource-attr": pdata.NewAttributeValueString("resource-attr-val-1")}
-	resourceAttributes2 = map[string]pdata.AttributeValue{"resource-attr": pdata.NewAttributeValueString("resource-attr-val-2")}
-	spanEventAttributes = map[string]pdata.AttributeValue{"span-event-attr": pdata.NewAttributeValueString("span-event-attr-val")}
-	spanLinkAttributes  = map[string]pdata.AttributeValue{"span-link-attr": pdata.NewAttributeValueString("span-link-attr-val")}
-	spanAttributes      = map[string]pdata.AttributeValue{"span-attr": pdata.NewAttributeValueString("span-attr-val")}
+	resourceAttributes1 = map[string]pdata.Value{"resource-attr": pdata.NewValueString("resource-attr-val-1")}
+	resourceAttributes2 = map[string]pdata.Value{"resource-attr": pdata.NewValueString("resource-attr-val-2")}
+	spanEventAttributes = map[string]pdata.Value{"span-event-attr": pdata.NewValueString("span-event-attr-val")}
+	spanLinkAttributes  = map[string]pdata.Value{"span-link-attr": pdata.NewValueString("span-link-attr-val")}
+	spanAttributes      = map[string]pdata.Value{"span-attr": pdata.NewValueString("span-attr-val")}
 )
 
 const (

@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/consumer/consumerhelper"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/model/pdata"
 
@@ -53,6 +53,7 @@ func defaulttimeoutSettings() exporterhelper.TimeoutSettings {
 }
 
 // createDefaultConfig creates the default exporter configuration
+// TODO (#8396): Remove `os.Getenv` everywhere.
 func createDefaultConfig() config.Exporter {
 	return &ddconfig.Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
@@ -118,7 +119,7 @@ func createMetricsExporter(
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
-	var pushMetricsFn consumerhelper.ConsumeMetricsFunc
+	var pushMetricsFn consumer.ConsumeMetricsFunc
 
 	if cfg.OnlyMetadata {
 		pushMetricsFn = func(_ context.Context, md pdata.Metrics) error {
@@ -129,7 +130,7 @@ func createMetricsExporter(
 				if md.ResourceMetrics().Len() > 0 {
 					attrs = md.ResourceMetrics().At(0).Resource().Attributes()
 				}
-				go metadata.Pusher(ctx, set, cfg, attrs)
+				go metadata.Pusher(ctx, set, newMetadataConfigfromConfig(cfg), attrs)
 			})
 			return nil
 		}
@@ -178,7 +179,7 @@ func createTracesExporter(
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
-	var pushTracesFn consumerhelper.ConsumeTracesFunc
+	var pushTracesFn consumer.ConsumeTracesFunc
 
 	if cfg.OnlyMetadata {
 		pushTracesFn = func(_ context.Context, td pdata.Traces) error {
@@ -189,7 +190,7 @@ func createTracesExporter(
 				if td.ResourceSpans().Len() > 0 {
 					attrs = td.ResourceSpans().At(0).Resource().Attributes()
 				}
-				go metadata.Pusher(ctx, set, cfg, attrs)
+				go metadata.Pusher(ctx, set, newMetadataConfigfromConfig(cfg), attrs)
 			})
 			return nil
 		}

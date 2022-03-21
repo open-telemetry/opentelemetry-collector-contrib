@@ -33,7 +33,7 @@ type TestStringAttributeCfg struct {
 
 func TestStringTagFilter(t *testing.T) {
 
-	var empty = map[string]pdata.AttributeValue{}
+	var empty = map[string]pdata.Value{}
 
 	cases := []struct {
 		Desc      string
@@ -43,19 +43,19 @@ func TestStringTagFilter(t *testing.T) {
 	}{
 		{
 			Desc:      "nonmatching node attribute key",
-			Trace:     newTraceStringAttrs(map[string]pdata.AttributeValue{"non_matching": pdata.NewAttributeValueString("value")}, "", ""),
+			Trace:     newTraceStringAttrs(map[string]pdata.Value{"non_matching": pdata.NewValueString("value")}, "", ""),
 			filterCfg: &TestStringAttributeCfg{Key: "example", Values: []string{"value"}, EnabledRegexMatching: false, CacheMaxSize: defaultCacheSize},
 			Decision:  NotSampled,
 		},
 		{
 			Desc:      "nonmatching node attribute value",
-			Trace:     newTraceStringAttrs(map[string]pdata.AttributeValue{"example": pdata.NewAttributeValueString("non_matching")}, "", ""),
+			Trace:     newTraceStringAttrs(map[string]pdata.Value{"example": pdata.NewValueString("non_matching")}, "", ""),
 			filterCfg: &TestStringAttributeCfg{Key: "example", Values: []string{"value"}, EnabledRegexMatching: false, CacheMaxSize: defaultCacheSize},
 			Decision:  NotSampled,
 		},
 		{
 			Desc:      "matching node attribute",
-			Trace:     newTraceStringAttrs(map[string]pdata.AttributeValue{"example": pdata.NewAttributeValueString("value")}, "", ""),
+			Trace:     newTraceStringAttrs(map[string]pdata.Value{"example": pdata.NewValueString("value")}, "", ""),
 			filterCfg: &TestStringAttributeCfg{Key: "example", Values: []string{"value"}, EnabledRegexMatching: false, CacheMaxSize: defaultCacheSize},
 			Decision:  Sampled,
 		},
@@ -97,7 +97,7 @@ func TestStringTagFilter(t *testing.T) {
 		},
 		{
 			Desc:      "matching plain text node attribute in regex",
-			Trace:     newTraceStringAttrs(map[string]pdata.AttributeValue{"example": pdata.NewAttributeValueString("value")}, "", ""),
+			Trace:     newTraceStringAttrs(map[string]pdata.Value{"example": pdata.NewValueString("value")}, "", ""),
 			filterCfg: &TestStringAttributeCfg{Key: "example", Values: []string{"value"}, EnabledRegexMatching: true, CacheMaxSize: defaultCacheSize},
 			Decision:  Sampled,
 		},
@@ -109,31 +109,31 @@ func TestStringTagFilter(t *testing.T) {
 		},
 		{
 			Desc:      "invert nonmatching node attribute key",
-			Trace:     newTraceStringAttrs(map[string]pdata.AttributeValue{"non_matching": pdata.NewAttributeValueString("value")}, "", ""),
+			Trace:     newTraceStringAttrs(map[string]pdata.Value{"non_matching": pdata.NewValueString("value")}, "", ""),
 			filterCfg: &TestStringAttributeCfg{Key: "example", Values: []string{"value"}, EnabledRegexMatching: false, CacheMaxSize: defaultCacheSize, InvertMatch: true},
 			Decision:  InvertSampled,
 		},
 		{
 			Desc:      "invert nonmatching node attribute value",
-			Trace:     newTraceStringAttrs(map[string]pdata.AttributeValue{"example": pdata.NewAttributeValueString("non_matching")}, "", ""),
+			Trace:     newTraceStringAttrs(map[string]pdata.Value{"example": pdata.NewValueString("non_matching")}, "", ""),
 			filterCfg: &TestStringAttributeCfg{Key: "example", Values: []string{"value"}, EnabledRegexMatching: false, CacheMaxSize: defaultCacheSize, InvertMatch: true},
 			Decision:  InvertSampled,
 		},
 		{
 			Desc:      "invert nonmatching node attribute list",
-			Trace:     newTraceStringAttrs(map[string]pdata.AttributeValue{"example": pdata.NewAttributeValueString("non_matching")}, "", ""),
+			Trace:     newTraceStringAttrs(map[string]pdata.Value{"example": pdata.NewValueString("non_matching")}, "", ""),
 			filterCfg: &TestStringAttributeCfg{Key: "example", Values: []string{"first_value", "value", "last_value"}, EnabledRegexMatching: false, CacheMaxSize: defaultCacheSize, InvertMatch: true},
 			Decision:  InvertSampled,
 		},
 		{
 			Desc:      "invert matching node attribute",
-			Trace:     newTraceStringAttrs(map[string]pdata.AttributeValue{"example": pdata.NewAttributeValueString("value")}, "", ""),
+			Trace:     newTraceStringAttrs(map[string]pdata.Value{"example": pdata.NewValueString("value")}, "", ""),
 			filterCfg: &TestStringAttributeCfg{Key: "example", Values: []string{"value"}, EnabledRegexMatching: false, CacheMaxSize: defaultCacheSize, InvertMatch: true},
 			Decision:  InvertNotSampled,
 		},
 		{
 			Desc:      "invert matching node attribute list",
-			Trace:     newTraceStringAttrs(map[string]pdata.AttributeValue{"example": pdata.NewAttributeValueString("value")}, "", ""),
+			Trace:     newTraceStringAttrs(map[string]pdata.Value{"example": pdata.NewValueString("value")}, "", ""),
 			filterCfg: &TestStringAttributeCfg{Key: "example", Values: []string{"first_value", "value", "last_value"}, EnabledRegexMatching: false, CacheMaxSize: defaultCacheSize, InvertMatch: true},
 			Decision:  InvertNotSampled,
 		},
@@ -193,13 +193,13 @@ func TestStringTagFilter(t *testing.T) {
 		},
 		{
 			Desc:      "invert matching plain text node attribute in regex",
-			Trace:     newTraceStringAttrs(map[string]pdata.AttributeValue{"example": pdata.NewAttributeValueString("value")}, "", ""),
+			Trace:     newTraceStringAttrs(map[string]pdata.Value{"example": pdata.NewValueString("value")}, "", ""),
 			filterCfg: &TestStringAttributeCfg{Key: "example", Values: []string{"value"}, EnabledRegexMatching: true, CacheMaxSize: defaultCacheSize, InvertMatch: true},
 			Decision:  InvertNotSampled,
 		},
 		{
 			Desc:      "invert matching plain text node attribute in regex list",
-			Trace:     newTraceStringAttrs(map[string]pdata.AttributeValue{"example": pdata.NewAttributeValueString("value")}, "", ""),
+			Trace:     newTraceStringAttrs(map[string]pdata.Value{"example": pdata.NewValueString("value")}, "", ""),
 			filterCfg: &TestStringAttributeCfg{Key: "example", Values: []string{"first_value", "value", "last_value"}, EnabledRegexMatching: true, CacheMaxSize: defaultCacheSize, InvertMatch: true},
 			Decision:  InvertNotSampled,
 		},
@@ -222,7 +222,7 @@ func TestStringTagFilter(t *testing.T) {
 }
 
 func BenchmarkStringTagFilterEvaluatePlainText(b *testing.B) {
-	trace := newTraceStringAttrs(map[string]pdata.AttributeValue{"example": pdata.NewAttributeValueString("value")}, "", "")
+	trace := newTraceStringAttrs(map[string]pdata.Value{"example": pdata.NewValueString("value")}, "", "")
 	filter := NewStringAttributeFilter(zap.NewNop(), "example", []string{"value"}, false, 0, false)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -231,7 +231,7 @@ func BenchmarkStringTagFilterEvaluatePlainText(b *testing.B) {
 }
 
 func BenchmarkStringTagFilterEvaluateRegex(b *testing.B) {
-	trace := newTraceStringAttrs(map[string]pdata.AttributeValue{"example": pdata.NewAttributeValueString("grpc.health.v1.HealthCheck")}, "", "")
+	trace := newTraceStringAttrs(map[string]pdata.Value{"example": pdata.NewValueString("grpc.health.v1.HealthCheck")}, "", "")
 	filter := NewStringAttributeFilter(zap.NewNop(), "example", []string{"v[0-9]+.HealthCheck$"}, true, 0, false)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -239,7 +239,7 @@ func BenchmarkStringTagFilterEvaluateRegex(b *testing.B) {
 	}
 }
 
-func newTraceStringAttrs(nodeAttrs map[string]pdata.AttributeValue, spanAttrKey string, spanAttrValue string) *TraceData {
+func newTraceStringAttrs(nodeAttrs map[string]pdata.Value, spanAttrKey string, spanAttrValue string) *TraceData {
 	var traceBatches []pdata.Traces
 	traces := pdata.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
@@ -248,8 +248,8 @@ func newTraceStringAttrs(nodeAttrs map[string]pdata.AttributeValue, spanAttrKey 
 	span := ils.Spans().AppendEmpty()
 	span.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
 	span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
-	attributes := make(map[string]pdata.AttributeValue)
-	attributes[spanAttrKey] = pdata.NewAttributeValueString(spanAttrValue)
+	attributes := make(map[string]pdata.Value)
+	attributes[spanAttrKey] = pdata.NewValueString(spanAttrValue)
 	pdata.NewAttributeMapFromMap(attributes).CopyTo(span.Attributes())
 	traceBatches = append(traceBatches, traces)
 	return &TraceData{

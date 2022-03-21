@@ -39,7 +39,7 @@ func TestDetailedPVCLabels(t *testing.T) {
 		volumeSource                    v1.VolumeSource
 		pod                             pod
 		detailedPVCLabelsSetterOverride func(volCacheID, volumeClaim, namespace string, labels map[string]string) error
-		want                            map[string]pdata.AttributeValue
+		want                            map[string]pdata.Value
 	}{
 		{
 			name:       "persistentVolumeClaim - with detailed PVC labels (AWS)",
@@ -60,16 +60,16 @@ func TestDetailedPVCLabels(t *testing.T) {
 				}, labels)
 				return nil
 			},
-			want: map[string]pdata.AttributeValue{
-				"k8s.volume.name":                pdata.NewAttributeValueString("volume0"),
-				"k8s.volume.type":                pdata.NewAttributeValueString("awsElasticBlockStore"),
-				"aws.volume.id":                  pdata.NewAttributeValueString("volume_id"),
-				"fs.type":                        pdata.NewAttributeValueString("fs_type"),
-				"partition":                      pdata.NewAttributeValueString("10"),
-				"k8s.persistentvolumeclaim.name": pdata.NewAttributeValueString("claim-name"),
-				"k8s.pod.uid":                    pdata.NewAttributeValueString("uid-1234"),
-				"k8s.pod.name":                   pdata.NewAttributeValueString("pod-name"),
-				"k8s.namespace.name":             pdata.NewAttributeValueString("pod-namespace"),
+			want: map[string]pdata.Value{
+				"k8s.volume.name":                pdata.NewValueString("volume0"),
+				"k8s.volume.type":                pdata.NewValueString("awsElasticBlockStore"),
+				"aws.volume.id":                  pdata.NewValueString("volume_id"),
+				"fs.type":                        pdata.NewValueString("fs_type"),
+				"partition":                      pdata.NewValueString("10"),
+				"k8s.persistentvolumeclaim.name": pdata.NewValueString("claim-name"),
+				"k8s.pod.uid":                    pdata.NewValueString("uid-1234"),
+				"k8s.pod.name":                   pdata.NewValueString("pod-name"),
+				"k8s.namespace.name":             pdata.NewValueString("pod-namespace"),
 			},
 		},
 		{
@@ -91,16 +91,16 @@ func TestDetailedPVCLabels(t *testing.T) {
 				}, labels)
 				return nil
 			},
-			want: map[string]pdata.AttributeValue{
-				"k8s.volume.name":                pdata.NewAttributeValueString("volume0"),
-				"k8s.volume.type":                pdata.NewAttributeValueString("gcePersistentDisk"),
-				"gce.pd.name":                    pdata.NewAttributeValueString("pd_name"),
-				"fs.type":                        pdata.NewAttributeValueString("fs_type"),
-				"partition":                      pdata.NewAttributeValueString("10"),
-				"k8s.persistentvolumeclaim.name": pdata.NewAttributeValueString("claim-name"),
-				"k8s.pod.uid":                    pdata.NewAttributeValueString("uid-1234"),
-				"k8s.pod.name":                   pdata.NewAttributeValueString("pod-name"),
-				"k8s.namespace.name":             pdata.NewAttributeValueString("pod-namespace"),
+			want: map[string]pdata.Value{
+				"k8s.volume.name":                pdata.NewValueString("volume0"),
+				"k8s.volume.type":                pdata.NewValueString("gcePersistentDisk"),
+				"gce.pd.name":                    pdata.NewValueString("pd_name"),
+				"fs.type":                        pdata.NewValueString("fs_type"),
+				"partition":                      pdata.NewValueString("10"),
+				"k8s.persistentvolumeclaim.name": pdata.NewValueString("claim-name"),
+				"k8s.pod.uid":                    pdata.NewValueString("uid-1234"),
+				"k8s.pod.name":                   pdata.NewValueString("pod-name"),
+				"k8s.namespace.name":             pdata.NewValueString("pod-namespace"),
 			},
 		},
 		{
@@ -121,15 +121,15 @@ func TestDetailedPVCLabels(t *testing.T) {
 				}, labels)
 				return nil
 			},
-			want: map[string]pdata.AttributeValue{
-				"k8s.volume.name":                pdata.NewAttributeValueString("volume0"),
-				"k8s.volume.type":                pdata.NewAttributeValueString("glusterfs"),
-				"glusterfs.endpoints.name":       pdata.NewAttributeValueString("endpoints_name"),
-				"glusterfs.path":                 pdata.NewAttributeValueString("path"),
-				"k8s.persistentvolumeclaim.name": pdata.NewAttributeValueString("claim-name"),
-				"k8s.pod.uid":                    pdata.NewAttributeValueString("uid-1234"),
-				"k8s.pod.name":                   pdata.NewAttributeValueString("pod-name"),
-				"k8s.namespace.name":             pdata.NewAttributeValueString("pod-namespace"),
+			want: map[string]pdata.Value{
+				"k8s.volume.name":                pdata.NewValueString("volume0"),
+				"k8s.volume.type":                pdata.NewValueString("glusterfs"),
+				"glusterfs.endpoints.name":       pdata.NewValueString("endpoints_name"),
+				"glusterfs.path":                 pdata.NewValueString("path"),
+				"k8s.persistentvolumeclaim.name": pdata.NewValueString("claim-name"),
+				"k8s.pod.uid":                    pdata.NewValueString("uid-1234"),
+				"k8s.pod.name":                   pdata.NewValueString("pod-name"),
+				"k8s.namespace.name":             pdata.NewValueString("pod-namespace"),
 			},
 		},
 		{
@@ -149,13 +149,13 @@ func TestDetailedPVCLabels(t *testing.T) {
 				}, labels)
 				return nil
 			},
-			want: map[string]pdata.AttributeValue{
-				"k8s.volume.name":                pdata.NewAttributeValueString("volume0"),
-				"k8s.volume.type":                pdata.NewAttributeValueString("local"),
-				"k8s.persistentvolumeclaim.name": pdata.NewAttributeValueString("claim-name"),
-				"k8s.pod.uid":                    pdata.NewAttributeValueString("uid-1234"),
-				"k8s.pod.name":                   pdata.NewAttributeValueString("pod-name"),
-				"k8s.namespace.name":             pdata.NewAttributeValueString("pod-namespace"),
+			want: map[string]pdata.Value{
+				"k8s.volume.name":                pdata.NewValueString("volume0"),
+				"k8s.volume.type":                pdata.NewValueString("local"),
+				"k8s.persistentvolumeclaim.name": pdata.NewValueString("claim-name"),
+				"k8s.pod.uid":                    pdata.NewValueString("uid-1234"),
+				"k8s.pod.name":                   pdata.NewValueString("pod-name"),
+				"k8s.namespace.name":             pdata.NewValueString("pod-namespace"),
 			},
 		},
 	}

@@ -89,7 +89,7 @@ func fillAttributeMap(attrs pdata.AttributeMap, mp map[string]string) {
 	attrs.Clear()
 	attrs.EnsureCapacity(len(mp))
 	for k, v := range mp {
-		attrs.Insert(k, pdata.NewAttributeValueString(v))
+		attrs.Insert(k, pdata.NewValueString(v))
 	}
 }
 
