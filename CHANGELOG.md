@@ -7,6 +7,10 @@
 
 - `windowsperfcountersreceiver`: Added metrics configuration (#8376)
 
+### 🚩 Deprecations 🚩
+
+- `datadogexporter`: Deprecate `OnlyMetadata` method from `Config` struct (#8359)
+
 ## v0.47.0
 
 ### 💡 Enhancements 💡
