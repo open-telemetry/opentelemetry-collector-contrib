@@ -190,6 +190,8 @@ class _InstrumentedFalconAPI(getattr(falcon, _instrument_app)):
             attributes = otel_wsgi.collect_request_attributes(env)
             for key, value in attributes.items():
                 span.set_attribute(key, value)
+            if span.is_recording() and span.kind == trace.SpanKind.SERVER:
+                otel_wsgi.add_custom_request_headers(span, env)
 
         activation = trace.use_span(span, end_on_exit=True)
         activation.__enter__()
@@ -295,6 +297,10 @@ class _TraceMiddleware:
                     description=reason,
                 )
             )
+            if span.is_recording() and span.kind == trace.SpanKind.SERVER:
+                otel_wsgi.add_custom_response_headers(
+                    span, resp.headers.items()
+                )
         except ValueError:
             pass
 

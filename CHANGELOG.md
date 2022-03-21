@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#999])(https://github.com/open-telemetry/opentelemetry-python-contrib/pull/999)
 - `opentelemetry-instrumentation-tornado` Fix non-recording span bug
   ([#999])(https://github.com/open-telemetry/opentelemetry-python-contrib/pull/999)
+- `opentelemetry-instrumentation-falcon` Falcon: Capture custom request/response headers in span attributes
+  ([#1003])(https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1003)
 
 ## [1.10.0-0.29b0](https://github.com/open-telemetry/opentelemetry-python/releases/tag/v1.10.0-0.29b0) - 2022-03-10
 
