@@ -1,8 +1,14 @@
 receivers:
   windowsperfcounters:
+    metrics:
+      metric:
+        description: desc
+        unit: "1"
+        gauge:
     perfcounters:
       - counters:
-          - "counter"
+      
+          
 
 processors:
   nop:
