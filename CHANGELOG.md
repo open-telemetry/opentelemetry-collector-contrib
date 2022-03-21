@@ -1,11 +1,26 @@
 # Changelog
 
 ## Unreleased
+- `sigv4authextension`: Enable component (#8518)
+- `prometheusremotewriteexporter`: Allow to disable sanitize metric labels (#8270)
+
+### 💡 Enhancements 💡
+
+- `k8seventsreceiver`: Add Api_version and resource_version (#8539)
+
+### 🛑 Breaking changes 🛑
+
+- `windowsperfcountersreceiver`: Added metrics configuration (#8376)
+
+### 🚩 Deprecations 🚩
+
+- `datadogexporter`: Deprecate `OnlyMetadata` method from `Config` struct (#8359)
 
 ## v0.47.0
 
 ### 💡 Enhancements 💡
 
+- `googlecloudexporter`: Add Validate method in config (#8559)
 - `attributesprocessor`: Add convert action (#7930)
 - `attributesprocessor`: Add metric support (#8111)
 - `prometheusremotewriteexporter`: Write-Ahead Log support enabled (#7304)
@@ -26,7 +41,7 @@
 - `coralogixexporter` Allow exporter timeout to be configured (#7957)
 - `prometheusremotewriteexporter` support adding trace id and span id attached to exemplars (#8380)
 - `influxdbexporter`: accept histogram metric missing infinity bucket. (#8462)
-- `prometheusremotewriteexporter`: Allow to disable sanitize metric labels (#8270)
+- `skywalkingreceiver`: Added implementation of Skywalking receiver. (#8549)
 
 ### 🛑 Breaking changes 🛑
 

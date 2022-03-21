@@ -145,6 +145,7 @@ receiver/receivercreator/                            @open-telemetry/collector-c
 receiver/redisreceiver/                              @open-telemetry/collector-contrib-approvers @pmcollins @dmitryax
 receiver/sapmreceiver/                               @open-telemetry/collector-contrib-approvers @owais
 receiver/signalfxreceiver/                           @open-telemetry/collector-contrib-approvers @pjanotti @dmitryax
+receiver/skywalkingreceiver                          @open-telemetry/collector-contrib-approvers @JaredTan95
 receiver/splunkhecreceiver/                          @open-telemetry/collector-contrib-approvers @atoulme @keitwb
 receiver/statsdreceiver/                             @open-telemetry/collector-contrib-approvers @jmacd @dmitryax
 receiver/syslogreceiver/                             @open-telemetry/collector-contrib-approvers @djaglowski
