@@ -16,6 +16,7 @@ package saphanareceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -37,7 +38,6 @@ type sapHanaScraper struct {
 	settings component.TelemetrySettings
 	cfg      *Config
 	mb       *metadata.MetricsBuilder
-	uptime   time.Duration
 }
 
 func newSapHanaScraper(settings component.TelemetrySettings, cfg *Config) (scraperhelper.Scraper, error) {
@@ -51,27 +51,25 @@ func newSapHanaScraper(settings component.TelemetrySettings, cfg *Config) (scrap
 
 type queryStat struct {
 	key                     string
-	dataType                string
 	addIntMetricFunction    func(*sapHanaScraper, pdata.Timestamp, int64, map[string]string)
 	addDoubleMetricFunction func(*sapHanaScraper, pdata.Timestamp, float64, map[string]string)
 }
 
 func (q *queryStat) collectStat(s *sapHanaScraper, now pdata.Timestamp, row map[string]string) error {
-	switch q.dataType {
-	case "int":
+	if q.addIntMetricFunction != nil {
 		if i, ok := s.parseInt(q.key, row[q.key]); ok {
 			q.addIntMetricFunction(s, now, i, row)
 		} else {
 			return fmt.Errorf("Unable to parse '%s' as an integer for query key %s", row[q.key], q.key)
 		}
-	case "double":
+	} else if q.addDoubleMetricFunction != nil {
 		if f, ok := s.parseDouble(q.key, row[q.key]); ok {
 			q.addDoubleMetricFunction(s, now, f, row)
 		} else {
 			return fmt.Errorf("Unable to parse '%s' as a double for query key %s", row[q.key], q.key)
 		}
-	default:
-		return fmt.Errorf("Incorrectly configured query, type provided must be 'int' or 'double' but was %s", q.dataType)
+	} else {
+		return errors.New("Incorrectly configured query, either addIntMetricFunction or addDoubleMetricFunction must be provided")
 	}
 	return nil
 }
@@ -88,15 +86,13 @@ var queries = []monitoringQuery{
 		orderedLabels: []string{"host"},
 		orderedStats: []queryStat{
 			{
-				key:      "main",
-				dataType: "int",
+				key: "main",
 				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
 					s.mb.RecordSaphanaColumnMemoryUsedDataPoint(now, i, row["host"], metadata.AttributeColumnMemoryType.Main)
 				},
 			},
 			{
-				key:      "delta",
-				dataType: "int",
+				key: "delta",
 				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
 					s.mb.RecordSaphanaColumnMemoryUsedDataPoint(now, i, row["host"], metadata.AttributeColumnMemoryType.Delta)
 				},
@@ -133,8 +129,8 @@ func (m *monitoringQuery) CollectMetrics(s *sapHanaScraper, ctx context.Context,
 func (s *sapHanaScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 	metrics := pdata.NewMetrics()
 
-	client := newSapHanaClient(s.cfg)
-	if err := client.Connect(); err != nil {
+	client := newSapHanaClient(s.cfg, &defaultConnectionFactory{})
+	if err := client.Connect(ctx); err != nil {
 		return metrics, err
 	}
 
