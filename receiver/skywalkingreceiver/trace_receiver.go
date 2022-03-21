@@ -33,7 +33,11 @@ import (
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/multierr"
 	"google.golang.org/grpc"
+	cds "skywalking.apache.org/repo/goapi/collect/agent/configuration/v3"
+	event "skywalking.apache.org/repo/goapi/collect/event/v3"
 	v3 "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
+	profile "skywalking.apache.org/repo/goapi/collect/language/profile/v3"
+	management "skywalking.apache.org/repo/goapi/collect/management/v3"
 )
 
 // configuration defines the behavior and the ports that
@@ -60,9 +64,10 @@ type swReceiver struct {
 
 	settings component.ReceiverCreateSettings
 
-	grpcObsrecv *obsreport.Receiver
-	httpObsrecv *obsreport.Receiver
-	service     *traceSegmentReportService
+	grpcObsrecv          *obsreport.Receiver
+	httpObsrecv          *obsreport.Receiver
+	segmentReportService *traceSegmentReportService
+	dummyReportService   *dummyReportService
 }
 
 const (
@@ -113,7 +118,6 @@ func (sr *swReceiver) collectorHTTPEnabled() bool {
 }
 
 func (sr *swReceiver) Start(_ context.Context, host component.Host) error {
-
 	return sr.startCollector(host)
 }
 
@@ -174,8 +178,18 @@ func (sr *swReceiver) startCollector(host component.Host) error {
 			return fmt.Errorf("failed to bind to gRPC address %q: %v", gaddr, gerr)
 		}
 
-		sr.service = &traceSegmentReportService{}
-		v3.RegisterTraceSegmentReportServiceServer(sr.grpc, sr.service)
+		sr.segmentReportService = &traceSegmentReportService{sr: sr}
+		v3.RegisterTraceSegmentReportServiceServer(sr.grpc, sr.segmentReportService)
+		sr.dummyReportService = &dummyReportService{}
+
+		management.RegisterManagementServiceServer(sr.grpc, sr.dummyReportService)
+		cds.RegisterConfigurationDiscoveryServiceServer(sr.grpc, sr.dummyReportService)
+		event.RegisterEventServiceServer(sr.grpc, &eventService{})
+		profile.RegisterProfileTaskServer(sr.grpc, sr.dummyReportService)
+		v3.RegisterJVMMetricReportServiceServer(sr.grpc, sr.dummyReportService)
+		v3.RegisterMeterReportServiceServer(sr.grpc, &meterService{})
+		v3.RegisterCLRMetricReportServiceServer(sr.grpc, &clrService{})
+		v3.RegisterBrowserPerfServiceServer(sr.grpc, sr.dummyReportService)
 
 		sr.goroutines.Add(1)
 		go func() {
@@ -196,14 +210,23 @@ type Response struct {
 
 func (sr *swReceiver) httpHandler(rsp http.ResponseWriter, r *http.Request) {
 	rsp.Header().Set("Content-Type", "application/json")
-	_, err := ioutil.ReadAll(r.Body)
+	b, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		response := &Response{Status: failing, Msg: err.Error()}
 		ResponseWithJSON(rsp, response, http.StatusBadRequest)
 		return
 	}
+	var data []*v3.SegmentObject
+	if err = json.Unmarshal(b, &data); err != nil {
+		fmt.Printf("cannot Unmarshal skywalking segment collection, %v", err)
+	}
 
-	//TODO: convert to otel trace.
+	for _, segment := range data {
+		err = consumeTraces(context.Background(), segment, sr.nextConsumer)
+		if err != nil {
+			fmt.Printf("cannot consume traces, %v", err)
+		}
+	}
 }
 
 func ResponseWithJSON(rsp http.ResponseWriter, response *Response, code int) {
