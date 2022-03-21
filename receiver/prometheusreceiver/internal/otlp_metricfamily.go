@@ -130,6 +130,8 @@ func (mg *metricGroupPdata) toDistributionPoint(orderedLabelKeys []string, dest 
 	bounds := make([]float64, len(mg.complexValue)-1)
 	bucketCounts := make([]uint64, len(mg.complexValue))
 
+	pointIsStale := value.IsStaleNaN(mg.sum) || value.IsStaleNaN(mg.count)
+
 	for i := 0; i < len(mg.complexValue); i++ {
 		if i != len(mg.complexValue)-1 {
 			// not need to add +inf as bound to oc proto
@@ -139,19 +141,26 @@ func (mg *metricGroupPdata) toDistributionPoint(orderedLabelKeys []string, dest 
 		if i != 0 {
 			adjustedCount -= mg.complexValue[i-1].value
 		}
+		// Buckets still need to be sent to know to set them as stale,
+		// but a staleness NaN converted to uint64 would be an extremely large number.
+		// Setting to 0 instead.
+		if pointIsStale {
+			adjustedCount = 0
+		}
 		bucketCounts[i] = uint64(adjustedCount)
 	}
 
 	point := dest.AppendEmpty()
 
-	if value.IsStaleNaN(mg.sum) || value.IsStaleNaN(mg.count) {
+	if pointIsStale {
 		point.SetFlags(pdataStaleFlags)
 	} else {
-		point.SetExplicitBounds(bounds)
 		point.SetCount(uint64(mg.count))
 		point.SetSum(mg.sum)
-		point.SetBucketCounts(bucketCounts)
 	}
+
+	point.SetExplicitBounds(bounds)
+	point.SetBucketCounts(bucketCounts)
 
 	// The timestamp MUST be in retrieved from milliseconds and converted to nanoseconds.
 	tsNanos := pdataTimestampFromMs(mg.ts)
@@ -180,17 +189,26 @@ func (mg *metricGroupPdata) toSummaryPoint(orderedLabelKeys []string, dest *pdat
 	mg.sortPoints()
 
 	point := dest.AppendEmpty()
-	if value.IsStaleNaN(mg.sum) || value.IsStaleNaN(mg.count) {
+	pointIsStale := value.IsStaleNaN(mg.sum) || value.IsStaleNaN(mg.count)
+	if pointIsStale {
 		point.SetFlags(pdataStaleFlags)
 	} else {
-		quantileValues := point.QuantileValues()
-		for _, p := range mg.complexValue {
-			quantile := quantileValues.AppendEmpty()
-			quantile.SetValue(p.value)
-			quantile.SetQuantile(p.boundary)
-		}
 		point.SetSum(mg.sum)
 		point.SetCount(uint64(mg.count))
+	}
+
+	quantileValues := point.QuantileValues()
+	for _, p := range mg.complexValue {
+		quantile := quantileValues.AppendEmpty()
+		// Quantiles still need to be sent to know to set them as stale,
+		// but a staleness NaN converted to uint64 would be an extremely large number.
+		// Setting to 0 instead.
+		if pointIsStale {
+			quantile.SetValue(0)
+		} else {
+			quantile.SetValue(p.value)
+		}
+		quantile.SetQuantile(p.boundary)
 	}
 
 	// Based on the summary description from https://prometheus.io/docs/concepts/metric_types/#summary
