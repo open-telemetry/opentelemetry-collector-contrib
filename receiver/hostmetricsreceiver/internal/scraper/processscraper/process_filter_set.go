@@ -46,7 +46,7 @@ func (p *processFilterSet) MatchesOwner(owner string, indexList []int) []int {
 	return matches
 }
 
-// MatchesExecutable returns an int array with the index of all filters that match the input pid value
+// MatchesPid returns an int array with the index of all filters that match the input pid value
 func (p *processFilterSet) MatchesPid(pid int32) []int {
 	var matches []int
 
