@@ -258,7 +258,7 @@ func TestFilterAttributes_Match(t *testing.T) {
 	attr.InsertString("host.id", "test")
 	attr.InsertString("drop.this", "test")
 
-	droppedAttributes := FilterAttributes(attr, m)
+	droppedAttributes := filterAttributes(attr, m)
 
 	_, ok := attr.Get("host.name")
 	assert.True(t, ok)
@@ -280,7 +280,7 @@ func TestFilterAttributes_NoMatch(t *testing.T) {
 	attr.InsertString("host.name", "test")
 	attr.InsertString("host.id", "test")
 
-	droppedAttributes := FilterAttributes(attr, m)
+	droppedAttributes := filterAttributes(attr, m)
 
 	_, ok := attr.Get("host.name")
 	assert.False(t, ok)
@@ -297,7 +297,7 @@ func TestFilterAttributes_NilAttributes(t *testing.T) {
 	attr.InsertString("host.name", "test")
 	attr.InsertString("host.id", "test")
 
-	droppedAttributes := FilterAttributes(attr, m)
+	droppedAttributes := filterAttributes(attr, m)
 
 	_, ok := attr.Get("host.name")
 	assert.True(t, ok)
@@ -314,7 +314,7 @@ func TestFilterAttributes_NoAttributes(t *testing.T) {
 	attr.InsertString("host.name", "test")
 	attr.InsertString("host.id", "test")
 
-	droppedAttributes := FilterAttributes(attr, m)
+	droppedAttributes := filterAttributes(attr, m)
 
 	_, ok := attr.Get("host.name")
 	assert.True(t, ok)
