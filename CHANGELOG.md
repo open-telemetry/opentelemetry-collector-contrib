@@ -6,6 +6,7 @@
 
 ### 💡 Enhancements 💡
 
+- `googlecloudexporter`: Add Validate method in config (#8558)
 - `attributesprocessor`: Add convert action (#7930)
 - `attributesprocessor`: Add metric support (#8111)
 - `prometheusremotewriteexporter`: Write-Ahead Log support enabled (#7304)

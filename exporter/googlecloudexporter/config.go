@@ -15,6 +15,8 @@
 package googlecloudexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter"
 
 import (
+	"fmt"
+
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -32,5 +34,8 @@ type Config struct {
 }
 
 func (cfg *Config) Validate() error {
+	if err := cfg.ExporterSettings.Validate(); err != nil {
+		return fmt.Errorf("exporter settings are invalid :%w", err)
+	}
 	return nil
 }
