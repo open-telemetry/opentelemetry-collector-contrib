@@ -495,11 +495,11 @@ func Test_getPromExemplars(t *testing.T) {
 }
 
 func TestAddResourceTargetInfo(t *testing.T) {
-	resourceAttrMap := map[string]pdata.AttributeValue{
-		conventions.AttributeServiceName:       pdata.NewAttributeValueString("service-name"),
-		conventions.AttributeServiceNamespace:  pdata.NewAttributeValueString("service-namespace"),
-		conventions.AttributeServiceInstanceID: pdata.NewAttributeValueString("service-instance-id"),
-		"resource_attr":                        pdata.NewAttributeValueString("resource-attr-val-1"),
+	resourceAttrMap := map[string]pdata.Value{
+		conventions.AttributeServiceName:       pdata.NewValueString("service-name"),
+		conventions.AttributeServiceNamespace:  pdata.NewValueString("service-namespace"),
+		conventions.AttributeServiceInstanceID: pdata.NewValueString("service-instance-id"),
+		"resource_attr":                        pdata.NewValueString("resource-attr-val-1"),
 	}
 	resourceWithServiceAttrs := pdata.NewResource()
 	pdata.NewAttributeMapFromMap(resourceAttrMap).CopyTo(resourceWithServiceAttrs.Attributes())

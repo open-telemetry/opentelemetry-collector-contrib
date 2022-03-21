@@ -165,7 +165,7 @@ func createAttributes(resource pdata.Resource, attributes pdata.Map, externalLab
 	// Ensure attributes are sorted by key for consistent merging of keys which
 	// collide when sanitized.
 	attributes.Sort()
-	attributes.Range(func(key string, value pdata.AttributeValue) bool {
+	attributes.Range(func(key string, value pdata.Value) bool {
 		if existingLabel, alreadyExists := l[sanitize(key)]; alreadyExists {
 			existingLabel.Value = existingLabel.Value + ";" + value.AsString()
 			l[sanitize(key)] = existingLabel
@@ -506,7 +506,7 @@ func addResourceTargetInfo(resource pdata.Resource, settings Settings, timestamp
 	// metric labels for the target info metric
 	attributes := pdata.NewAttributeMap()
 	resource.Attributes().CopyTo(attributes)
-	attributes.RemoveIf(func(k string, _ pdata.AttributeValue) bool {
+	attributes.RemoveIf(func(k string, _ pdata.Value) bool {
 		switch k {
 		case conventions.AttributeServiceName, conventions.AttributeServiceNamespace, conventions.AttributeServiceInstanceID:
 			// Remove resource attributes used for job + instance
