@@ -48,6 +48,8 @@ type scraper struct {
 	// for mocking
 	bootTime          func() (uint64, error)
 	getProcessHandles func() (processHandles, error)
+	getProcessExecutable func(processHandle) (*executableMetadata, error)
+	getProcessCommand func(processHandle) (*commandMetadata, error)
 }
 
 // newProcessScraper creates a Process Scraper
@@ -66,6 +68,9 @@ func newProcessScraper(cfg *Config) (*scraper, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error creating process filters: %w", err)
 	}
+
+	scraper.getProcessExecutable = getProcessExecutable
+	scraper.getProcessCommand = getProcessCommand
 
 	return scraper, nil
 }
@@ -138,14 +143,14 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 	for i := 0; i < handles.Len(); i++ {
 		pid := handles.Pid(i)
 
-		// filter by executable
+		// filter by pid
 		matches := s.filterSet.MatchesPid(pid)
 		if len(matches) == 0 {
 			continue
 		}
 		handle := handles.At(i)
 
-		executable, err := getProcessExecutable(handle)
+		executable, err := s.getProcessExecutable(handle)
 		if err != nil {
 			if !s.config.MuteProcessNameError {
 				errs.AddPartial(1, fmt.Errorf("error reading process name for pid %v: %w", pid, err))
@@ -158,7 +163,7 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 			continue
 		}
 
-		command, err := getProcessCommand(handle)
+		command, err := s.getProcessCommand(handle)
 		if err != nil {
 			errs.AddPartial(0, fmt.Errorf("error reading command for process %q (pid %v): %w", executable.name, pid, err))
 		}
