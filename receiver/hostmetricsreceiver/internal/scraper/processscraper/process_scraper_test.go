@@ -499,6 +499,8 @@ func getExpectedScrapeFailures(nameError, exeError, timeError, memError, diskErr
 }
 
 func TestScrapeMetrics_MuteProcessNameError(t *testing.T) {
+	skipTestOnUnsupportedOS(t)
+
 	processNameError := errors.New("err1")
 
 	type testCase struct {
