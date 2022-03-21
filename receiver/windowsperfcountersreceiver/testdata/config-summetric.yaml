@@ -1,10 +1,17 @@
 receivers:
   windowsperfcounters:
     metrics:
-      metric: 
+      metric:
         description: desc
         unit: "1"
-        gauge:
+        sum:
+          aggregation: cumulative
+    perfcounters:
+      - object: "object"
+        counters:
+          - name: counter1
+            metric: metric
+
 processors:
   nop:
 
