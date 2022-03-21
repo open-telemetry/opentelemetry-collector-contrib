@@ -394,15 +394,25 @@ func (c *WatchClient) getPodFromAPI(pod *api_v1.Pod) *Pod {
 }
 
 func (c *WatchClient) getIdentifiersFromAssoc(newPod *Pod) []PodIdentifier {
+	if newPod.Attributes == nil {
+		newPod.Attributes = map[string]string{}
+	}
+
 	ids := []PodIdentifier{}
 	for _, assoc := range c.Associations {
-		ret := []string{}
-		for _, source := range assoc.Sources {
+		ret := PodIdentifier{}
+		skip := false
+		for i, source := range assoc.Sources {
 			// If association configured to take IP address from connection
 			switch {
 			case source.From == "connection":
-				if newPod.Address != "" {
-					ret = append(ret, newPod.Address)
+				if newPod.Address == "" {
+					skip = true
+				} else {
+					ret[i] = GetPodIdentifierAttribute(source, newPod.Address)
+					if source.Name != "" {
+						newPod.Attributes[source.Name] = newPod.Address
+					}
 				}
 			case source.From == "resource_attribute":
 				attr := ""
@@ -421,24 +431,30 @@ func (c *WatchClient) getIdentifiersFromAssoc(newPod *Pod) []PodIdentifier {
 					}
 				}
 
-				if attr != "" {
-					ret = append(ret, attr)
+				if attr == "" {
+					skip = true
+				} else {
+					ret[i] = GetPodIdentifierAttribute(source, attr)
 				}
 			}
 		}
 
-		if len(ret) == len(assoc.Sources) {
-			ids = append(ids, PodIdentifier(strings.Join(ret, PodIdentifierDelimiter)))
+		if !skip {
+			ids = append(ids, ret)
 		}
 	}
 
 	// Ensure backward compatibility
 	if newPod.PodUID != "" {
-		ids = append(ids, PodIdentifier(newPod.PodUID))
+		ids = append(ids, PodIdentifier{
+			BuildPodIdentifierAttribute("resource_attribute", conventions.AttributeK8SPodUID, newPod.PodUID),
+		})
 	}
 
 	if newPod.Address != "" {
-		ids = append(ids, PodIdentifier(newPod.Address))
+		ids = append(ids, PodIdentifier{
+			BuildPodIdentifierAttribute("connection", "k8s.pod.ip", newPod.Address),
+		})
 	}
 
 	return ids

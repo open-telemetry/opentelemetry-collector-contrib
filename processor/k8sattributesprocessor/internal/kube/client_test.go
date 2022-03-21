@@ -41,6 +41,18 @@ func newFakeAPIClientset(_ k8sconfig.APIConfig) (kubernetes.Interface, error) {
 	return fake.NewSimpleClientset(), nil
 }
 
+func newPodIdentifier(from string, name string, value string) PodIdentifier {
+	return PodIdentifier{
+		{
+			Source: AssociationSource{
+				From: from,
+				Name: name,
+			},
+			Value: value,
+		},
+	}
+}
+
 func podAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj interface{})) {
 	assert.Equal(t, len(c.Pods), 0)
 
@@ -54,7 +66,7 @@ func podAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj interfac
 	pod.Status.PodIP = "1.1.1.1"
 	handler(pod)
 	assert.Equal(t, len(c.Pods), 1)
-	got := c.Pods["1.1.1.1"]
+	got := c.Pods[newPodIdentifier("connection", "k8s.pod.ip", "1.1.1.1")]
 	assert.Equal(t, got.Address, "1.1.1.1")
 	assert.Equal(t, got.Name, "podA")
 	assert.Equal(t, got.PodUID, "")
@@ -64,7 +76,7 @@ func podAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj interfac
 	pod.Status.PodIP = "1.1.1.1"
 	handler(pod)
 	assert.Equal(t, len(c.Pods), 1)
-	got = c.Pods["1.1.1.1"]
+	got = c.Pods[newPodIdentifier("connection", "k8s.pod.ip", "1.1.1.1")]
 	assert.Equal(t, got.Address, "1.1.1.1")
 	assert.Equal(t, got.Name, "podB")
 	assert.Equal(t, got.PodUID, "")
@@ -75,11 +87,11 @@ func podAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj interfac
 	pod.UID = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 	handler(pod)
 	assert.Equal(t, len(c.Pods), 3)
-	got = c.Pods["2.2.2.2"]
+	got = c.Pods[newPodIdentifier("connection", "k8s.pod.ip", "2.2.2.2")]
 	assert.Equal(t, got.Address, "2.2.2.2")
 	assert.Equal(t, got.Name, "podC")
 	assert.Equal(t, got.PodUID, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
-	got = c.Pods["aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"]
+	got = c.Pods[newPodIdentifier("resource_attribute", "k8s.pod.uid", "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")]
 	assert.Equal(t, got.Address, "2.2.2.2")
 	assert.Equal(t, got.Name, "podC")
 	assert.Equal(t, got.PodUID, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
@@ -197,7 +209,7 @@ func TestPodHostNetwork(t *testing.T) {
 	pod.Spec.HostNetwork = true
 	c.handlePodAdd(pod)
 	assert.Equal(t, len(c.Pods), 1)
-	got := c.Pods["1.1.1.1"]
+	got := c.Pods[newPodIdentifier("connection", "k8s.pod.ip", "1.1.1.1")]
 	assert.Equal(t, got.Address, "1.1.1.1")
 	assert.Equal(t, got.Name, "podA")
 	assert.True(t, got.Ignore)
@@ -214,7 +226,7 @@ func TestPodAddOutOfSync(t *testing.T) {
 	pod.Status.StartTime = &startTime
 	c.handlePodAdd(pod)
 	assert.Equal(t, len(c.Pods), 1)
-	got := c.Pods["1.1.1.1"]
+	got := c.Pods[newPodIdentifier("connection", "k8s.pod.ip", "1.1.1.1")]
 	assert.Equal(t, got.Address, "1.1.1.1")
 	assert.Equal(t, got.Name, "podA")
 
@@ -225,7 +237,7 @@ func TestPodAddOutOfSync(t *testing.T) {
 	pod.Status.StartTime = &startTime2
 	c.handlePodAdd(pod)
 	assert.Equal(t, len(c.Pods), 1)
-	got = c.Pods["1.1.1.1"]
+	got = c.Pods[newPodIdentifier("connection", "k8s.pod.ip", "1.1.1.1")]
 	assert.Equal(t, got.Address, "1.1.1.1")
 	assert.Equal(t, got.Name, "podA")
 }
@@ -250,7 +262,7 @@ func TestPodDelete(t *testing.T) {
 	c, _ := newTestClient(t)
 	podAddAndUpdateTest(t, c, c.handlePodAdd)
 	assert.Equal(t, len(c.Pods), 3)
-	assert.Equal(t, c.Pods["1.1.1.1"].Address, "1.1.1.1")
+	assert.Equal(t, c.Pods[newPodIdentifier("connection", "k8s.pod.ip", "1.1.1.1")].Address, "1.1.1.1")
 
 	// delete empty IP pod
 	c.handlePodDelete(&api_v1.Pod{})
@@ -261,7 +273,7 @@ func TestPodDelete(t *testing.T) {
 	pod.Status.PodIP = "9.9.9.9"
 	c.handlePodDelete(pod)
 	assert.Equal(t, len(c.Pods), 3)
-	got := c.Pods["1.1.1.1"]
+	got := c.Pods[newPodIdentifier("connection", "k8s.pod.ip", "1.1.1.1")]
 	assert.Equal(t, got.Address, "1.1.1.1")
 	assert.Equal(t, len(c.deleteQueue), 0)
 
@@ -270,7 +282,7 @@ func TestPodDelete(t *testing.T) {
 	pod = &api_v1.Pod{}
 	pod.Status.PodIP = "1.1.1.1"
 	c.handlePodDelete(pod)
-	got = c.Pods["1.1.1.1"]
+	got = c.Pods[newPodIdentifier("connection", "k8s.pod.ip", "1.1.1.1")]
 	assert.Equal(t, len(c.Pods), 3)
 	assert.Equal(t, got.Address, "1.1.1.1")
 	assert.Equal(t, len(c.deleteQueue), 0)
@@ -285,7 +297,7 @@ func TestPodDelete(t *testing.T) {
 	assert.Equal(t, len(c.Pods), 3)
 	assert.Equal(t, len(c.deleteQueue), 2)
 	deleteRequest := c.deleteQueue[0]
-	assert.Equal(t, deleteRequest.id, PodIdentifier("1.1.1.1"))
+	assert.Equal(t, deleteRequest.id, newPodIdentifier("connection", "k8s.pod.ip", "1.1.1.1"))
 	assert.Equal(t, deleteRequest.podName, "podB")
 	assert.False(t, deleteRequest.ts.Before(tsBeforeDelete))
 	assert.False(t, deleteRequest.ts.After(time.Now()))
@@ -300,12 +312,12 @@ func TestPodDelete(t *testing.T) {
 	assert.Equal(t, len(c.Pods), 3)
 	assert.Equal(t, len(c.deleteQueue), 4)
 	deleteRequest = c.deleteQueue[0]
-	assert.Equal(t, deleteRequest.id, PodIdentifier("2.2.2.2"))
+	assert.Equal(t, deleteRequest.id, newPodIdentifier("connection", "k8s.pod.ip", "2.2.2.2"))
 	assert.Equal(t, deleteRequest.podName, "podC")
 	assert.False(t, deleteRequest.ts.Before(tsBeforeDelete))
 	assert.False(t, deleteRequest.ts.After(time.Now()))
 	deleteRequest = c.deleteQueue[1]
-	assert.Equal(t, deleteRequest.id, PodIdentifier("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"))
+	assert.Equal(t, deleteRequest.id, newPodIdentifier("resource_attribute", "k8s.pod.uid", "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"))
 	assert.Equal(t, deleteRequest.podName, "podC")
 	assert.False(t, deleteRequest.ts.Before(tsBeforeDelete))
 	assert.False(t, deleteRequest.ts.After(time.Now()))
@@ -333,7 +345,7 @@ func TestDeleteQueue(t *testing.T) {
 	c, _ := newTestClient(t)
 	podAddAndUpdateTest(t, c, c.handlePodAdd)
 	assert.Equal(t, len(c.Pods), 3)
-	assert.Equal(t, c.Pods["1.1.1.1"].Address, "1.1.1.1")
+	assert.Equal(t, c.Pods[newPodIdentifier("connection", "k8s.pod.ip", "1.1.1.1")].Address, "1.1.1.1")
 
 	// delete pod
 	pod := &api_v1.Pod{}
@@ -386,8 +398,8 @@ func TestGetIgnoredPod(t *testing.T) {
 	pod := &api_v1.Pod{}
 	pod.Status.PodIP = "1.1.1.1"
 	c.handlePodAdd(pod)
-	c.Pods[PodIdentifier(pod.Status.PodIP)].Ignore = true
-	got, ok := c.GetPod(PodIdentifier(pod.Status.PodIP))
+	c.Pods[newPodIdentifier("connection", "k8s.pod.ip", pod.Status.PodIP)].Ignore = true
+	got, ok := c.GetPod(newPodIdentifier("connection", "k8s.pod.ip", pod.Status.PodIP))
 	assert.Nil(t, got)
 	assert.False(t, ok)
 }
@@ -406,6 +418,8 @@ func TestHandlerWrongType(t *testing.T) {
 
 func TestExtractionRules(t *testing.T) {
 	c, _ := newTestClientWithRulesAndFilters(t, ExtractionRules{}, Filters{})
+	// Disable saving ip into k8s.pod.ip
+	c.Associations[0].Sources[0].Name = ""
 
 	pod := &api_v1.Pod{
 		ObjectMeta: meta_v1.ObjectMeta{
@@ -576,7 +590,7 @@ func TestExtractionRules(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			c.Rules = tc.rules
 			c.handlePodAdd(pod)
-			p, ok := c.GetPod(PodIdentifier(pod.Status.PodIP))
+			p, ok := c.GetPod(newPodIdentifier("connection", "", pod.Status.PodIP))
 			require.True(t, ok)
 
 			assert.Equal(t, len(tc.attributes), len(p.Attributes))
@@ -1152,6 +1166,7 @@ func newTestClientWithRulesAndFilters(t *testing.T, e ExtractionRules, f Filters
 			Sources: []AssociationSource{
 				{
 					From: "connection",
+					Name: "k8s.pod.ip",
 				},
 			},
 		},

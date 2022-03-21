@@ -35,11 +35,37 @@ const (
 	// MetadataFromPod is used to specify to extract metadata/labels/annotations from pod
 	MetadataFromPod = "pod"
 	// MetadataFromNamespace is used to specify to extract metadata/labels/annotations from namespace
-	MetadataFromNamespace = "namespace"
+	MetadataFromNamespace  = "namespace"
+	PodIdentifierMaxLength = 16
 )
 
-// PodIdentifier is a custom type to represent IP Address or Pod UID
-type PodIdentifier string
+// PodIdentifierAttribute represents AssociationSource with matching value for pod
+type PodIdentifierAttribute struct {
+	Source AssociationSource
+	Value  string
+}
+
+// PodIdentifier is a custom type to represent Pod identification
+type PodIdentifier [PodIdentifierMaxLength]PodIdentifierAttribute
+
+// GetPodIdentifierAttribute builds PodIdentifierAttribute using AssociationSource and value
+func GetPodIdentifierAttribute(source AssociationSource, value string) PodIdentifierAttribute {
+	return PodIdentifierAttribute{
+		Source: source,
+		Value:  value,
+	}
+}
+
+// GetPodIdentifierAttribute builds PodIdentifierAttribute using from, name (in order to build AssociationSource) and value
+func BuildPodIdentifierAttribute(from string, name string, value string) PodIdentifierAttribute {
+	return GetPodIdentifierAttribute(
+		AssociationSource{
+			From: from,
+			Name: name,
+		},
+		value,
+	)
+}
 
 var (
 	// TODO: move these to config with default values
