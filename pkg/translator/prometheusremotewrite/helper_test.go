@@ -286,7 +286,7 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"sanitize_labels_starts_with_underscore",
-			getResource(map[string]pdata.AttributeValue{}),
+			getResource(map[string]pdata.Value{}),
 			lbs3,
 			exlbs1,
 			true,
@@ -295,7 +295,7 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"donot_sanitize_labels_starts_with_underscore",
-			getResource(map[string]pdata.AttributeValue{}),
+			getResource(map[string]pdata.Value{}),
 			lbs3,
 			exlbs1,
 			false,

@@ -192,10 +192,6 @@ func createAttributes(resource pdata.Resource, attributes pdata.AttributeMap, ex
 		if existingLabel, alreadyExists := l[finalKey]; alreadyExists {
 			existingLabel.Value = existingLabel.Value + ";" + value.AsString()
 			l[finalKey] = existingLabel
-		}
-		if existingLabel, alreadyExists := l[finalKey]; alreadyExists {
-			existingLabel.Value = existingLabel.Value + ";" + value.AsString()
-			l[finalKey] = existingLabel
 		} else {
 			l[finalKey] = prompb.Label{
 				Name:  finalKey,
