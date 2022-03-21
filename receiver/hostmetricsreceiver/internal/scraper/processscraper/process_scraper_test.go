@@ -60,7 +60,7 @@ func TestScrape(t *testing.T) {
 	// a) read native system processes on Windows (e.g. Registry process)
 	// b) read info on processes that have just terminated
 	//
-	// so validate that we have at some errors & some valid data
+	// so validate that we have at least some errors & some valid data
 	if err != nil {
 		require.True(t, scrapererror.IsPartialScrapeError(err))
 		noProcessesScraped := md.ResourceMetrics().Len()
@@ -534,12 +534,20 @@ func TestScrapeMetrics_MuteProcessNameError(t *testing.T) {
 			scraper, err := newProcessScraper(config)
 			require.NoError(t, err, "Failed to create process scraper: %v", err)
 
-			handleMock := &processHandleMock{}
+			handleMock := newDefaultHandleMock()
 			handleMock.On("Name").Return("test", processNameError)
+
+			scraper.getProcessExecutable = mockGetProcessExecutable
+			scraper.getProcessCommand = mockGetProcessCommand
 
 			scraper.getProcessHandles = func() (processHandles, error) {
 				return &processHandlesMock{handles: []*processHandleMock{handleMock}}, nil
 			}
+			scraper.filterSet, err = createFilters(config.Filters)
+			assert.Nil(t, err)
+
+			scraper.start(context.Background(), componenttest.NewNopHost())
+
 			md, err := scraper.scrape(context.Background())
 
 			assert.Zero(t, md.MetricCount())
@@ -550,4 +558,22 @@ func TestScrapeMetrics_MuteProcessNameError(t *testing.T) {
 			}
 		})
 	}
+}
+
+
+func mockGetProcessExecutable(handle processHandle) (*executableMetadata, error) {
+	name, err := handle.Name()
+	if err != nil {
+		return nil, err
+	}
+
+	return &executableMetadata{
+		name: name,
+		path: "testPath"}, nil
+}
+
+func mockGetProcessCommand(handle processHandle) (*commandMetadata, error) {
+	return &commandMetadata{
+		command: "testCommand",
+		commandLineSlice: []string{"arg1", "arg2"}}, nil
 }
