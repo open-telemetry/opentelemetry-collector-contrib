@@ -117,13 +117,14 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver v0.46.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver v0.46.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver v0.46.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vmwarevcenterreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver v0.46.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver v0.46.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.46.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.46.0
 	github.com/prometheus/prometheus v1.8.2-0.20220117154355-4855a0c067e2
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.46.1-0.20220307173244-f980c9ef25b1
+	go.opentelemetry.io/collector v0.47.0
 	golang.org/x/sys v0.0.0-20220209214540-3681064d5158
 )
 
@@ -291,7 +292,7 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/karrick/godirwalk v1.16.1 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
-	github.com/klauspost/compress v1.15.0 // indirect
+	github.com/klauspost/compress v1.15.1 // indirect
 	github.com/knadh/koanf v1.4.0 // indirect
 	github.com/kolo/xmlrpc v0.0.0-20201022064351-38db28db192b // indirect
 	github.com/leoluk/perflib_exporter v0.1.0 // indirect
@@ -390,7 +391,7 @@ require (
 	github.com/soheilhy/cmux v0.1.5 // indirect
 	github.com/spf13/afero v1.6.0 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
-	github.com/spf13/cobra v1.3.0 // indirect
+	github.com/spf13/cobra v1.4.0 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.10.1 // indirect
@@ -415,6 +416,7 @@ require (
 	github.com/vishvananda/netns v0.0.0-20200728191858-db3c7e526aae // indirect
 	github.com/vmihailenco/msgpack/v5 v5.3.5 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
+	github.com/vmware/govmomi v0.27.4 // indirect
 	github.com/wavefronthq/wavefront-sdk-go v0.9.10 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.1 // indirect
@@ -425,7 +427,7 @@ require (
 	go.etcd.io/bbolt v1.3.6 // indirect
 	go.mongodb.org/atlas v0.15.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/model v0.46.1-0.20220307173244-f980c9ef25b1 // indirect
+	go.opentelemetry.io/collector/model v0.47.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.29.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.29.0 // indirect
 	go.opentelemetry.io/contrib/zpages v0.29.0 // indirect
@@ -454,7 +456,7 @@ require (
 	google.golang.org/api v0.70.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20220222213610-43724f9ea8cf // indirect
-	google.golang.org/grpc v1.44.0 // indirect
+	google.golang.org/grpc v1.45.0 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/DataDog/dd-trace-go.v1 v1.36.2 // indirect
 	gopkg.in/alexcesaro/statsd.v2 v2.0.0 // indirect
@@ -766,6 +768,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslo
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver => ./receiver/tcplogreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver => ./receiver/udplogreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vmwarevcenterreceiver => ./receiver/vmwarevcenterreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver => ./receiver/wavefrontreceiver
 
