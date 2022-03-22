@@ -256,22 +256,27 @@ func errWrongKeyConfig(cfg config.Processor) error {
 
 func warnDeprecatedPodAssociationConfig(logger *zap.Logger, cfg config.Processor) {
 	oCfg := cfg.(*Config)
-	warnFrom := false
-	warnName := false
+	deprecated := ""
+	actual := ""
 	for _, assoc := range oCfg.Association {
-		if assoc.From != "" {
-			warnFrom = true
-		}
-		if assoc.Name != "" {
-			warnName = true
+		if assoc.From != "" || assoc.Name != "" {
+			deprecated += fmt.Sprintf(`
+- from: %s
+  name: %s`, assoc.From, assoc.Name)
+			actual += fmt.Sprintf(`
+- sources:
+  - from: %s
+  - name: %s`, assoc.From, assoc.Name)
 		}
 	}
 
-	if warnFrom {
-		logger.Warn("pod_association.From has been deprecated in favor of pod_association.sources.From for k8sattributes processor")
-	}
+	if deprecated != "" {
+		logger.Warn(fmt.Sprintf(`Deprecated pod_association configuration detected. Please replace:
 
-	if warnName {
-		logger.Warn("pod_association.Name has been deprecated in favor of pod_association.sources.Name for k8sattributes processor")
+pod_association:%s
+
+with
+
+pod_association:%s`, deprecated, actual))
 	}
 }
