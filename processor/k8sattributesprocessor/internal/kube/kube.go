@@ -37,6 +37,9 @@ const (
 	// MetadataFromNamespace is used to specify to extract metadata/labels/annotations from namespace
 	MetadataFromNamespace  = "namespace"
 	PodIdentifierMaxLength = 4
+
+	ResourceSource   = "resource_attribute"
+	ConnectionSource = "connection"
 )
 
 // PodIdentifierAttribute represents AssociationSource with matching value for pod

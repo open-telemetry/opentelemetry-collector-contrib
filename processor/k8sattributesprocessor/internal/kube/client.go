@@ -406,13 +406,13 @@ func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 		for i, source := range assoc.Sources {
 			// If association configured to take IP address from connection
 			switch {
-			case source.From == "connection":
+			case source.From == ConnectionSource:
 				if pod.Address == "" {
 					skip = true
 				} else {
 					ret[i] = PodIdentifierAttributeFromSource(source, pod.Address)
 				}
-			case source.From == "resource_attribute":
+			case source.From == ResourceSource:
 				attr := ""
 				switch source.Name {
 				case conventions.AttributeK8SNamespaceName:
