@@ -6,6 +6,7 @@
 ### 💡 Enhancements 💡
 
 - `k8seventsreceiver`: Add Api_version and resource_version (#8539)
+- `coralogixexporter` Fix `duplicate repo` message bug (#8782)
 
 ### 🛑 Breaking changes 🛑
 
