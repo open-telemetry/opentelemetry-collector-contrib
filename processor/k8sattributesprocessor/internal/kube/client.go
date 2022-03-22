@@ -410,7 +410,7 @@ func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 				if pod.Address == "" {
 					skip = true
 				} else {
-					ret[i] = GetPodIdentifierAttribute(source, pod.Address)
+					ret[i] = PodIdentifierAttributeFromSource(source, pod.Address)
 				}
 			case source.From == "resource_attribute":
 				attr := ""
@@ -432,7 +432,7 @@ func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 				if attr == "" {
 					skip = true
 				} else {
-					ret[i] = GetPodIdentifierAttribute(source, attr)
+					ret[i] = PodIdentifierAttributeFromSource(source, attr)
 				}
 			}
 		}

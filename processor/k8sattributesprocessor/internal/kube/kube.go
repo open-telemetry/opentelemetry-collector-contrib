@@ -48,17 +48,17 @@ type PodIdentifierAttribute struct {
 // PodIdentifier is a custom type to represent Pod identification
 type PodIdentifier [PodIdentifierMaxLength]PodIdentifierAttribute
 
-// GetPodIdentifierAttribute builds PodIdentifierAttribute using AssociationSource and value
-func GetPodIdentifierAttribute(source AssociationSource, value string) PodIdentifierAttribute {
+// PodIdentifierAttributeFromSource builds PodIdentifierAttribute using AssociationSource and value
+func PodIdentifierAttributeFromSource(source AssociationSource, value string) PodIdentifierAttribute {
 	return PodIdentifierAttribute{
 		Source: source,
 		Value:  value,
 	}
 }
 
-// GetPodIdentifierAttribute builds PodIdentifierAttribute using from, name (in order to build AssociationSource) and value
+// PodIdentifierAttributeFromSource builds PodIdentifierAttribute using from, name (in order to build AssociationSource) and value
 func BuildPodIdentifierAttribute(from string, name string, value string) PodIdentifierAttribute {
-	return GetPodIdentifierAttribute(
+	return PodIdentifierAttributeFromSource(
 		AssociationSource{
 			From: from,
 			Name: name,
