@@ -31,6 +31,7 @@ import (
 	_ "github.com/pavius/impi/cmd/impi"
 	_ "github.com/tcnksm/ghr"
 	_ "go.opentelemetry.io/build-tools/checkdoc"
+	_ "go.opentelemetry.io/build-tools/crosslink"
 	_ "go.opentelemetry.io/build-tools/issuegenerator"
 	_ "go.opentelemetry.io/build-tools/multimod"
 	_ "golang.org/x/tools/cmd/goimports"
