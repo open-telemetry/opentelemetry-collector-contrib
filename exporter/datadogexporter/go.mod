@@ -3,16 +3,16 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datado
 go 1.17
 
 require (
-	github.com/DataDog/agent-payload/v5 v5.0.18
+	github.com/DataDog/agent-payload/v5 v5.0.19
 	github.com/DataDog/datadog-agent/pkg/quantile v0.33.1
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02
-	github.com/aws/aws-sdk-go v1.43.20
+	github.com/aws/aws-sdk-go v1.43.22
 	github.com/cenkalti/backoff/v4 v4.1.2
 	github.com/gogo/protobuf v1.3.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.47.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.47.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.7.1
 	go.opentelemetry.io/collector v0.47.1-0.20220316214317-e6ea17cf27a8
 	go.opentelemetry.io/collector/model v0.47.1-0.20220316214317-e6ea17cf27a8
 	go.uber.org/multierr v1.8.0
