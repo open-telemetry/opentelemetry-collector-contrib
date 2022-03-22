@@ -18,8 +18,6 @@ import (
 	"context"
 	"fmt"
 
-	// cxpb "github.com/coralogix/opentelemetry-cx-protobuf-api/coralogixpb"
-	// cxpb "proto/"
 	cxpb "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter/internal/coralogixpb"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
