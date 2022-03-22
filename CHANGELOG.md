@@ -5,6 +5,7 @@
 ### 💡 Enhancements 💡
 
 - `datadogexporter`: Add `metrics::sums::cumulative_monotonic_mode` to specify export mode for cumulative monotonic sums (#8490)
+
 ### 🚩 Deprecations 🚩
 
 - `datadogexporter`: Deprecate `metrics::send_monotonic_counter` in favor of `metrics::sums::cumulative_monotonic_mode` (#8490)
