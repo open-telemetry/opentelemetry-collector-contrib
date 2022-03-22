@@ -211,7 +211,7 @@ func MergeSchemaURL(currentSchemaURL string, newSchemaURL string) string {
 func filterAttributes(am pdata.AttributeMap, attributesToKeep map[string]struct{}) []string {
 	if len(attributesToKeep) > 0 {
 		droppedAttributes := make([]string, 0)
-		am.RemoveIf(func(k string, v pdata.AttributeValue) bool {
+		am.RemoveIf(func(k string, v pdata.Value) bool {
 			_, keep := attributesToKeep[k]
 			if !keep {
 				droppedAttributes = append(droppedAttributes, k)
