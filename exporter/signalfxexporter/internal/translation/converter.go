@@ -138,7 +138,7 @@ func resourceToDimensions(res pdata.Resource) []*sfxpb.Dimension {
 		})
 	}
 
-	res.Attributes().Range(func(k string, val pdata.AttributeValue) bool {
+	res.Attributes().Range(func(k string, val pdata.Value) bool {
 		// Never send the SignalFX token
 		if k == splunk.SFxAccessTokenLabel {
 			return true

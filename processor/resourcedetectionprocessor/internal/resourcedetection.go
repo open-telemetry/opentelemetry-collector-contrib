@@ -158,26 +158,26 @@ func (p *ResourceProvider) detectResource(ctx context.Context) {
 
 func AttributesToMap(am pdata.AttributeMap) map[string]interface{} {
 	mp := make(map[string]interface{}, am.Len())
-	am.Range(func(k string, v pdata.AttributeValue) bool {
+	am.Range(func(k string, v pdata.Value) bool {
 		mp[k] = UnwrapAttribute(v)
 		return true
 	})
 	return mp
 }
 
-func UnwrapAttribute(v pdata.AttributeValue) interface{} {
+func UnwrapAttribute(v pdata.Value) interface{} {
 	switch v.Type() {
-	case pdata.AttributeValueTypeBool:
+	case pdata.ValueTypeBool:
 		return v.BoolVal()
-	case pdata.AttributeValueTypeInt:
+	case pdata.ValueTypeInt:
 		return v.IntVal()
-	case pdata.AttributeValueTypeDouble:
+	case pdata.ValueTypeDouble:
 		return v.DoubleVal()
-	case pdata.AttributeValueTypeString:
+	case pdata.ValueTypeString:
 		return v.StringVal()
-	case pdata.AttributeValueTypeArray:
+	case pdata.ValueTypeArray:
 		return getSerializableArray(v.SliceVal())
-	case pdata.AttributeValueTypeMap:
+	case pdata.ValueTypeMap:
 		return AttributesToMap(v.MapVal())
 	default:
 		return nil
@@ -229,7 +229,7 @@ func MergeResource(to, from pdata.Resource, overrideTo bool) {
 	}
 
 	toAttr := to.Attributes()
-	from.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+	from.Attributes().Range(func(k string, v pdata.Value) bool {
 		if overrideTo {
 			toAttr.Upsert(k, v)
 		} else {

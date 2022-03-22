@@ -119,7 +119,7 @@ func getConnectionIP(ctx context.Context) kube.PodIdentifier {
 
 func stringAttributeFromMap(attrs pdata.AttributeMap, key string) string {
 	if val, ok := attrs.Get(key); ok {
-		if val.Type() == pdata.AttributeValueTypeString {
+		if val.Type() == pdata.ValueTypeString {
 			return val.StringVal()
 		}
 	}

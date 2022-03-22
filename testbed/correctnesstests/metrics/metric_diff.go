@@ -243,7 +243,7 @@ func diffValues(
 
 func attrMapToString(m pdata.AttributeMap) string {
 	out := ""
-	m.Range(func(k string, v pdata.AttributeValue) bool {
+	m.Range(func(k string, v pdata.Value) bool {
 		out += "[" + k + "=" + v.StringVal() + "]"
 		return true
 	})

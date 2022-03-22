@@ -57,6 +57,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver v0.47.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension v0.47.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.47.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension v0.47.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.47.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.47.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.47.0
@@ -112,6 +113,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver v0.47.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.47.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver v0.47.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver v0.47.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver v0.47.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver v0.47.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver v0.47.0
@@ -123,7 +125,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.47.0
 	github.com/prometheus/prometheus v1.8.2-0.20220117154355-4855a0c067e2
 	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.47.0
+	go.opentelemetry.io/collector v0.47.1-0.20220316214317-e6ea17cf27a8
 	golang.org/x/sys v0.0.0-20220310020820-b874c991c1a5
 )
 
@@ -171,6 +173,15 @@ require (
 	github.com/armon/go-metrics v0.3.10 // indirect
 	github.com/avast/retry-go v3.0.0+incompatible // indirect
 	github.com/aws/aws-sdk-go v1.43.20 // indirect
+	github.com/aws/aws-sdk-go-v2 v1.9.2 // indirect
+	github.com/aws/aws-sdk-go-v2/config v1.8.3 // indirect
+	github.com/aws/aws-sdk-go-v2/credentials v1.4.3 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.6.0 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/ini v1.2.4 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.3.2 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.4.2 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sts v1.7.2 // indirect
+	github.com/aws/smithy-go v1.11.0 // indirect
 	github.com/beeker1121/goque v2.1.0+incompatible // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver v3.5.1+incompatible // indirect
@@ -425,7 +436,7 @@ require (
 	go.etcd.io/bbolt v1.3.6 // indirect
 	go.mongodb.org/atlas v0.15.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/model v0.47.0 // indirect
+	go.opentelemetry.io/collector/model v0.47.1-0.20220316214317-e6ea17cf27a8 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.29.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.29.0 // indirect
 	go.opentelemetry.io/contrib/zpages v0.29.0 // indirect
@@ -477,7 +488,7 @@ require (
 	sigs.k8s.io/json v0.0.0-20211208200746-9f7c6b3444d2 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.1 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
-	skywalking.apache.org/repo/goapi v0.0.0-20211122071111-ffc517fbfe21 // indirect
+	skywalking.apache.org/repo/goapi v0.0.0-20220121092418-9c455d0dda3f // indirect
 )
 
 // Replace references to modules that are in this repository with their relateive paths
@@ -630,6 +641,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/obse
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension => ./extension/oidcauthextension
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension => ./extension/pprofextension
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension => ./extension/sigv4authextension
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ./extension/storage
 

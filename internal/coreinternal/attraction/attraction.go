@@ -162,7 +162,7 @@ type attributeAction struct {
 	// The reason is attributes processor will most likely be commonly used
 	// and could impact performance.
 	Action         Action
-	AttributeValue *pdata.AttributeValue
+	AttributeValue *pdata.Value
 }
 
 // AttrProc is an attribute processor.
@@ -310,18 +310,18 @@ func (ap *AttrProc) Process(ctx context.Context, logger *zap.Logger, attrs pdata
 	}
 }
 
-func getAttributeValueFromContext(ctx context.Context, key string) (pdata.AttributeValue, bool) {
+func getAttributeValueFromContext(ctx context.Context, key string) (pdata.Value, bool) {
 	ci := client.FromContext(ctx)
 	vals := ci.Metadata.Get(key)
 
 	if len(vals) == 0 {
-		return pdata.AttributeValue{}, false
+		return pdata.Value{}, false
 	}
 
-	return pdata.NewAttributeValueString(strings.Join(vals, ";")), true
+	return pdata.NewValueString(strings.Join(vals, ";")), true
 }
 
-func getSourceAttributeValue(ctx context.Context, action attributeAction, attrs pdata.AttributeMap) (pdata.AttributeValue, bool) {
+func getSourceAttributeValue(ctx context.Context, action attributeAction, attrs pdata.AttributeMap) (pdata.Value, bool) {
 	// Set the key with a value from the configuration.
 	if action.AttributeValue != nil {
 		return *action.AttributeValue, true
@@ -350,7 +350,7 @@ func extractAttributes(action attributeAction, attrs pdata.AttributeMap) {
 	value, found := attrs.Get(action.Key)
 
 	// Extracting values only functions on strings.
-	if !found || value.Type() != pdata.AttributeValueTypeString {
+	if !found || value.Type() != pdata.ValueTypeString {
 		return
 	}
 

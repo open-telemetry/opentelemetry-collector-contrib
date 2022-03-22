@@ -96,7 +96,7 @@ func (g *metricGenerator) genMetricFromCfg(cfg MetricsCfg) pdata.Metrics {
 		for j := 0; j < cfg.NumResourceAttrs; j++ {
 			resource.Attributes().Insert(
 				fmt.Sprintf("resource-attr-name-%d", j),
-				pdata.NewAttributeValueString(fmt.Sprintf("resource-attr-val-%d", j)),
+				pdata.NewValueString(fmt.Sprintf("resource-attr-val-%d", j)),
 			)
 		}
 		g.populateIlm(cfg, rm)

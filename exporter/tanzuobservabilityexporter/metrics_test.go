@@ -1465,17 +1465,17 @@ func setDataPointValue(value interface{}, dataPoint pdata.NumberDataPoint) {
 }
 
 func setTags(tags map[string]interface{}, attributes pdata.AttributeMap) {
-	valueMap := make(map[string]pdata.AttributeValue, len(tags))
+	valueMap := make(map[string]pdata.Value, len(tags))
 	for key, value := range tags {
 		switch v := value.(type) {
 		case int:
-			valueMap[key] = pdata.NewAttributeValueInt(int64(v))
+			valueMap[key] = pdata.NewValueInt(int64(v))
 		case int64:
-			valueMap[key] = pdata.NewAttributeValueInt(v)
+			valueMap[key] = pdata.NewValueInt(v)
 		case float64:
-			valueMap[key] = pdata.NewAttributeValueDouble(v)
+			valueMap[key] = pdata.NewValueDouble(v)
 		case string:
-			valueMap[key] = pdata.NewAttributeValueString(v)
+			valueMap[key] = pdata.NewValueString(v)
 		default:
 			panic("Invalid value type")
 		}

@@ -36,8 +36,8 @@ import (
 type testCase struct {
 	name               string
 	serviceName        string
-	inputAttributes    map[string]pdata.AttributeValue
-	expectedAttributes map[string]pdata.AttributeValue
+	inputAttributes    map[string]pdata.Value
+	expectedAttributes map[string]pdata.Value
 }
 
 // runIndividualTestCase is the common logic of passing trace data through a configured attributes processor.
@@ -51,7 +51,7 @@ func runIndividualTestCase(t *testing.T, tt testCase, tp component.TracesProcess
 	})
 }
 
-func generateTraceData(serviceName, spanName string, attrs map[string]pdata.AttributeValue) pdata.Traces {
+func generateTraceData(serviceName, spanName string, attrs map[string]pdata.Value) pdata.Traces {
 	td := pdata.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
 	if serviceName != "" {
@@ -134,36 +134,36 @@ func TestAttributes_FilterSpans(t *testing.T) {
 		{
 			name:            "apply processor",
 			serviceName:     "svcB",
-			inputAttributes: map[string]pdata.AttributeValue{},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"attribute1": pdata.NewAttributeValueInt(123),
+			inputAttributes: map[string]pdata.Value{},
+			expectedAttributes: map[string]pdata.Value{
+				"attribute1": pdata.NewValueInt(123),
 			},
 		},
 		{
 			name:        "apply processor with different value for exclude property",
 			serviceName: "svcB",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"NoModification": pdata.NewAttributeValueBool(false),
+			inputAttributes: map[string]pdata.Value{
+				"NoModification": pdata.NewValueBool(false),
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"attribute1":     pdata.NewAttributeValueInt(123),
-				"NoModification": pdata.NewAttributeValueBool(false),
+			expectedAttributes: map[string]pdata.Value{
+				"attribute1":     pdata.NewValueInt(123),
+				"NoModification": pdata.NewValueBool(false),
 			},
 		},
 		{
 			name:               "incorrect name for include property",
 			serviceName:        "noname",
-			inputAttributes:    map[string]pdata.AttributeValue{},
-			expectedAttributes: map[string]pdata.AttributeValue{},
+			inputAttributes:    map[string]pdata.Value{},
+			expectedAttributes: map[string]pdata.Value{},
 		},
 		{
 			name:        "attribute match for exclude property",
 			serviceName: "svcB",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"NoModification": pdata.NewAttributeValueBool(true),
+			inputAttributes: map[string]pdata.Value{
+				"NoModification": pdata.NewValueBool(true),
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"NoModification": pdata.NewAttributeValueBool(true),
+			expectedAttributes: map[string]pdata.Value{
+				"NoModification": pdata.NewValueBool(true),
 			},
 		},
 	}
@@ -198,42 +198,42 @@ func TestAttributes_FilterSpansByNameStrict(t *testing.T) {
 		{
 			name:            "apply",
 			serviceName:     "svcB",
-			inputAttributes: map[string]pdata.AttributeValue{},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"attribute1": pdata.NewAttributeValueInt(123),
+			inputAttributes: map[string]pdata.Value{},
+			expectedAttributes: map[string]pdata.Value{
+				"attribute1": pdata.NewValueInt(123),
 			},
 		},
 		{
 			name:        "apply",
 			serviceName: "svcB",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"NoModification": pdata.NewAttributeValueBool(false),
+			inputAttributes: map[string]pdata.Value{
+				"NoModification": pdata.NewValueBool(false),
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"attribute1":     pdata.NewAttributeValueInt(123),
-				"NoModification": pdata.NewAttributeValueBool(false),
+			expectedAttributes: map[string]pdata.Value{
+				"attribute1":     pdata.NewValueInt(123),
+				"NoModification": pdata.NewValueBool(false),
 			},
 		},
 		{
 			name:               "incorrect_span_name",
 			serviceName:        "svcB",
-			inputAttributes:    map[string]pdata.AttributeValue{},
-			expectedAttributes: map[string]pdata.AttributeValue{},
+			inputAttributes:    map[string]pdata.Value{},
+			expectedAttributes: map[string]pdata.Value{},
 		},
 		{
 			name:               "dont_apply",
 			serviceName:        "svcB",
-			inputAttributes:    map[string]pdata.AttributeValue{},
-			expectedAttributes: map[string]pdata.AttributeValue{},
+			inputAttributes:    map[string]pdata.Value{},
+			expectedAttributes: map[string]pdata.Value{},
 		},
 		{
 			name:        "incorrect_span_name_with_attr",
 			serviceName: "svcB",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"NoModification": pdata.NewAttributeValueBool(true),
+			inputAttributes: map[string]pdata.Value{
+				"NoModification": pdata.NewValueBool(true),
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"NoModification": pdata.NewAttributeValueBool(true),
+			expectedAttributes: map[string]pdata.Value{
+				"NoModification": pdata.NewValueBool(true),
 			},
 		},
 	}
@@ -266,42 +266,42 @@ func TestAttributes_FilterSpansByNameRegexp(t *testing.T) {
 		{
 			name:            "apply_to_span_with_no_attrs",
 			serviceName:     "svcB",
-			inputAttributes: map[string]pdata.AttributeValue{},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"attribute1": pdata.NewAttributeValueInt(123),
+			inputAttributes: map[string]pdata.Value{},
+			expectedAttributes: map[string]pdata.Value{
+				"attribute1": pdata.NewValueInt(123),
 			},
 		},
 		{
 			name:        "apply_to_span_with_attr",
 			serviceName: "svcB",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"NoModification": pdata.NewAttributeValueBool(false),
+			inputAttributes: map[string]pdata.Value{
+				"NoModification": pdata.NewValueBool(false),
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"attribute1":     pdata.NewAttributeValueInt(123),
-				"NoModification": pdata.NewAttributeValueBool(false),
+			expectedAttributes: map[string]pdata.Value{
+				"attribute1":     pdata.NewValueInt(123),
+				"NoModification": pdata.NewValueBool(false),
 			},
 		},
 		{
 			name:               "incorrect_span_name",
 			serviceName:        "svcB",
-			inputAttributes:    map[string]pdata.AttributeValue{},
-			expectedAttributes: map[string]pdata.AttributeValue{},
+			inputAttributes:    map[string]pdata.Value{},
+			expectedAttributes: map[string]pdata.Value{},
 		},
 		{
 			name:               "apply_dont_apply",
 			serviceName:        "svcB",
-			inputAttributes:    map[string]pdata.AttributeValue{},
-			expectedAttributes: map[string]pdata.AttributeValue{},
+			inputAttributes:    map[string]pdata.Value{},
+			expectedAttributes: map[string]pdata.Value{},
 		},
 		{
 			name:        "incorrect_span_name_with_attr",
 			serviceName: "svcB",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"NoModification": pdata.NewAttributeValueBool(true),
+			inputAttributes: map[string]pdata.Value{
+				"NoModification": pdata.NewValueBool(true),
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"NoModification": pdata.NewAttributeValueBool(true),
+			expectedAttributes: map[string]pdata.Value{
+				"NoModification": pdata.NewValueBool(true),
 			},
 		},
 	}
@@ -333,38 +333,38 @@ func TestAttributes_Hash(t *testing.T) {
 	testCases := []testCase{
 		{
 			name: "String",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"user.email": pdata.NewAttributeValueString("john.doe@example.com"),
+			inputAttributes: map[string]pdata.Value{
+				"user.email": pdata.NewValueString("john.doe@example.com"),
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"user.email": pdata.NewAttributeValueString("73ec53c4ba1747d485ae2a0d7bfafa6cda80a5a9"),
+			expectedAttributes: map[string]pdata.Value{
+				"user.email": pdata.NewValueString("73ec53c4ba1747d485ae2a0d7bfafa6cda80a5a9"),
 			},
 		},
 		{
 			name: "Int",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"user.id": pdata.NewAttributeValueInt(10),
+			inputAttributes: map[string]pdata.Value{
+				"user.id": pdata.NewValueInt(10),
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"user.id": pdata.NewAttributeValueString("71aa908aff1548c8c6cdecf63545261584738a25"),
+			expectedAttributes: map[string]pdata.Value{
+				"user.id": pdata.NewValueString("71aa908aff1548c8c6cdecf63545261584738a25"),
 			},
 		},
 		{
 			name: "Double",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"user.balance": pdata.NewAttributeValueDouble(99.1),
+			inputAttributes: map[string]pdata.Value{
+				"user.balance": pdata.NewValueDouble(99.1),
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"user.balance": pdata.NewAttributeValueString("76429edab4855b03073f9429fd5d10313c28655e"),
+			expectedAttributes: map[string]pdata.Value{
+				"user.balance": pdata.NewValueString("76429edab4855b03073f9429fd5d10313c28655e"),
 			},
 		},
 		{
 			name: "Bool",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"user.authenticated": pdata.NewAttributeValueBool(true),
+			inputAttributes: map[string]pdata.Value{
+				"user.authenticated": pdata.NewValueBool(true),
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"user.authenticated": pdata.NewAttributeValueString("bf8b4530d8d246dd74ac53a13471bba17941dff7"),
+			expectedAttributes: map[string]pdata.Value{
+				"user.authenticated": pdata.NewValueString("bf8b4530d8d246dd74ac53a13471bba17941dff7"),
 			},
 		},
 	}
@@ -392,83 +392,83 @@ func TestAttributes_Convert(t *testing.T) {
 	testCases := []testCase{
 		{
 			name: "int to int",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"to.int": pdata.NewAttributeValueInt(1),
+			inputAttributes: map[string]pdata.Value{
+				"to.int": pdata.NewValueInt(1),
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"to.int": pdata.NewAttributeValueInt(1),
+			expectedAttributes: map[string]pdata.Value{
+				"to.int": pdata.NewValueInt(1),
 			},
 		},
 		{
 			name: "true to int",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"to.int": pdata.NewAttributeValueBool(true),
+			inputAttributes: map[string]pdata.Value{
+				"to.int": pdata.NewValueBool(true),
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"to.int": pdata.NewAttributeValueInt(1),
+			expectedAttributes: map[string]pdata.Value{
+				"to.int": pdata.NewValueInt(1),
 			},
 		},
 		{
 			name: "false to int",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"to.int": pdata.NewAttributeValueBool(false),
+			inputAttributes: map[string]pdata.Value{
+				"to.int": pdata.NewValueBool(false),
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"to.int": pdata.NewAttributeValueInt(0),
+			expectedAttributes: map[string]pdata.Value{
+				"to.int": pdata.NewValueInt(0),
 			},
 		},
 		{
 			name: "String to int (good)",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"to.int": pdata.NewAttributeValueString("123"),
+			inputAttributes: map[string]pdata.Value{
+				"to.int": pdata.NewValueString("123"),
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"to.int": pdata.NewAttributeValueInt(123),
+			expectedAttributes: map[string]pdata.Value{
+				"to.int": pdata.NewValueInt(123),
 			},
 		},
 		{
 			name: "String to int (bad)",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"to.int": pdata.NewAttributeValueString("int-10"),
+			inputAttributes: map[string]pdata.Value{
+				"to.int": pdata.NewValueString("int-10"),
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"to.int": pdata.NewAttributeValueString("int-10"),
+			expectedAttributes: map[string]pdata.Value{
+				"to.int": pdata.NewValueString("int-10"),
 			},
 		},
 		{
 			name: "String to double (int-ish)",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"to.double": pdata.NewAttributeValueString("123"),
+			inputAttributes: map[string]pdata.Value{
+				"to.double": pdata.NewValueString("123"),
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"to.double": pdata.NewAttributeValueDouble(123),
+			expectedAttributes: map[string]pdata.Value{
+				"to.double": pdata.NewValueDouble(123),
 			},
 		},
 		{
 			name: "String to double (double-ish)",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"to.double": pdata.NewAttributeValueString("123.6"),
+			inputAttributes: map[string]pdata.Value{
+				"to.double": pdata.NewValueString("123.6"),
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"to.double": pdata.NewAttributeValueDouble(123.6),
+			expectedAttributes: map[string]pdata.Value{
+				"to.double": pdata.NewValueDouble(123.6),
 			},
 		},
 		{
 			name: "String to double (bad)",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"to.double": pdata.NewAttributeValueString("int-10"),
+			inputAttributes: map[string]pdata.Value{
+				"to.double": pdata.NewValueString("int-10"),
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"to.double": pdata.NewAttributeValueString("int-10"),
+			expectedAttributes: map[string]pdata.Value{
+				"to.double": pdata.NewValueString("int-10"),
 			},
 		},
 		{
 			name: "Double to string",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"to.string": pdata.NewAttributeValueDouble(99.1),
+			inputAttributes: map[string]pdata.Value{
+				"to.string": pdata.NewValueDouble(99.1),
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"to.string": pdata.NewAttributeValueString("99.1"),
+			expectedAttributes: map[string]pdata.Value{
+				"to.string": pdata.NewValueString("99.1"),
 			},
 		},
 	}
@@ -495,25 +495,25 @@ func BenchmarkAttributes_FilterSpansByName(b *testing.B) {
 	testCases := []testCase{
 		{
 			name:            "apply_to_span_with_no_attrs",
-			inputAttributes: map[string]pdata.AttributeValue{},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"attribute1": pdata.NewAttributeValueInt(123),
+			inputAttributes: map[string]pdata.Value{},
+			expectedAttributes: map[string]pdata.Value{
+				"attribute1": pdata.NewValueInt(123),
 			},
 		},
 		{
 			name: "apply_to_span_with_attr",
-			inputAttributes: map[string]pdata.AttributeValue{
-				"NoModification": pdata.NewAttributeValueBool(false),
+			inputAttributes: map[string]pdata.Value{
+				"NoModification": pdata.NewValueBool(false),
 			},
-			expectedAttributes: map[string]pdata.AttributeValue{
-				"attribute1":     pdata.NewAttributeValueInt(123),
-				"NoModification": pdata.NewAttributeValueBool(false),
+			expectedAttributes: map[string]pdata.Value{
+				"attribute1":     pdata.NewValueInt(123),
+				"NoModification": pdata.NewValueBool(false),
 			},
 		},
 		{
 			name:               "dont_apply",
-			inputAttributes:    map[string]pdata.AttributeValue{},
-			expectedAttributes: map[string]pdata.AttributeValue{},
+			inputAttributes:    map[string]pdata.Value{},
+			expectedAttributes: map[string]pdata.Value{},
 		},
 	}
 
