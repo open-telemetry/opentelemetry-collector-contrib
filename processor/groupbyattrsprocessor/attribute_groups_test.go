@@ -35,8 +35,8 @@ func simpleResource() pdata.Resource {
 	return rs
 }
 
-func randomAttributeMap() pdata.AttributeMap {
-	attrs := pdata.NewAttributeMap()
+func randomAttributeMap() pdata.Map {
+	attrs := pdata.NewMap()
 	for i := 0; i < 10; i++ {
 		k := fmt.Sprint("key-", i)
 		v := fmt.Sprint("value-", rand.Intn(500000))
@@ -45,8 +45,8 @@ func randomAttributeMap() pdata.AttributeMap {
 	return attrs
 }
 
-func randomGroups(count int) []pdata.AttributeMap {
-	entries := make([]pdata.AttributeMap, count)
+func randomGroups(count int) []pdata.Map {
+	entries := make([]pdata.Map, count)
 	for i := 0; i < count; i++ {
 		entries[i] = randomAttributeMap()
 	}
@@ -64,13 +64,13 @@ func TestResourceAttributeScenarios(t *testing.T) {
 	tests := []struct {
 		name                    string
 		baseResource            pdata.Resource
-		fillRecordAttributesFun func(attributeMap pdata.AttributeMap)
+		fillRecordAttributesFun func(attributeMap pdata.Map)
 		fillExpectedResourceFun func(baseResource pdata.Resource, expectedResource pdata.Resource)
 	}{
 		{
 			name:         "When the same key is present at Resource and Record level, the latter value should be used",
 			baseResource: simpleResource(),
-			fillRecordAttributesFun: func(attributeMap pdata.AttributeMap) {
+			fillRecordAttributesFun: func(attributeMap pdata.Map) {
 				attributeMap.InsertString("somekey1", "replaced-value")
 			},
 			fillExpectedResourceFun: func(baseResource pdata.Resource, expectedResource pdata.Resource) {
@@ -87,7 +87,7 @@ func TestResourceAttributeScenarios(t *testing.T) {
 		{
 			name:         "Empty Resource",
 			baseResource: pdata.NewResource(),
-			fillRecordAttributesFun: func(attributeMap pdata.AttributeMap) {
+			fillRecordAttributesFun: func(attributeMap pdata.Map) {
 				attributeMap.InsertString("somekey1", "some-value")
 			},
 			fillExpectedResourceFun: func(_ pdata.Resource, expectedResource pdata.Resource) {
@@ -106,7 +106,7 @@ func TestResourceAttributeScenarios(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			recordAttributeMap := pdata.NewAttributeMap()
+			recordAttributeMap := pdata.NewMap()
 			if tt.fillRecordAttributesFun != nil {
 				tt.fillRecordAttributesFun(recordAttributeMap)
 			}

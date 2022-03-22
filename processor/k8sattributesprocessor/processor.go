@@ -132,7 +132,7 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pda
 }
 
 // addContainerAttributes looks if pod has any container identifiers and adds additional container attributes
-func (kp *kubernetesprocessor) addContainerAttributes(attrs pdata.AttributeMap, pod *kube.Pod) {
+func (kp *kubernetesprocessor) addContainerAttributes(attrs pdata.Map, pod *kube.Pod) {
 	containerName := stringAttributeFromMap(attrs, conventions.AttributeK8SContainerName)
 	if containerName == "" {
 		return

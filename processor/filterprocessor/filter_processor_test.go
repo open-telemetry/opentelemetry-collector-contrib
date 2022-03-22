@@ -43,7 +43,7 @@ type metricNameTest struct {
 
 type metricWithResource struct {
 	metricNames        []string
-	resourceAttributes map[string]pdata.Value
+	resourceAttributes map[string]interface{}
 }
 
 var (
@@ -78,10 +78,10 @@ var (
 	inMetricForResourceTest = []metricWithResource{
 		{
 			metricNames: []string{"metric1", "metric2"},
-			resourceAttributes: map[string]pdata.Value{
-				"attr1": pdata.NewValueString("attr1/val1"),
-				"attr2": pdata.NewValueString("attr2/val2"),
-				"attr3": pdata.NewValueString("attr3/val3"),
+			resourceAttributes: map[string]interface{}{
+				"attr1": "attr1/val1",
+				"attr2": "attr2/val2",
+				"attr3": "attr3/val3",
 			},
 		},
 	}
@@ -89,14 +89,14 @@ var (
 	inMetricForTwoResource = []metricWithResource{
 		{
 			metricNames: []string{"metric1", "metric2"},
-			resourceAttributes: map[string]pdata.Value{
-				"attr1": pdata.NewValueString("attr1/val1"),
+			resourceAttributes: map[string]interface{}{
+				"attr1": "attr1/val1",
 			},
 		},
 		{
 			metricNames: []string{"metric3", "metric4"},
-			resourceAttributes: map[string]pdata.Value{
-				"attr1": pdata.NewValueString("attr1/val2"),
+			resourceAttributes: map[string]interface{}{
+				"attr1": "attr1/val2",
 			},
 		},
 	}
@@ -384,7 +384,7 @@ func testResourceMetrics(mwrs []metricWithResource) pdata.Metrics {
 
 	for _, mwr := range mwrs {
 		rm := md.ResourceMetrics().AppendEmpty()
-		pdata.NewAttributeMapFromMap(mwr.resourceAttributes).CopyTo(rm.Resource().Attributes())
+		pdata.NewMapFromRaw(mwr.resourceAttributes).CopyTo(rm.Resource().Attributes())
 		ms := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics()
 		for _, name := range mwr.metricNames {
 			m := ms.AppendEmpty()

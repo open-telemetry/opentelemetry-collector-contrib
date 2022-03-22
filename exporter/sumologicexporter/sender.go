@@ -37,7 +37,7 @@ type appendResponse struct {
 
 // metricPair represents information required to send one metric to the Sumo Logic
 type metricPair struct {
-	attributes pdata.AttributeMap
+	attributes pdata.Map
 	metric     pdata.Metric
 }
 

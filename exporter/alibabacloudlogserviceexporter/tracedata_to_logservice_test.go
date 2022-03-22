@@ -164,8 +164,8 @@ func fillHTTPServerSpan(span pdata.Span) {
 	status.SetMessage("something error")
 }
 
-func constructSpanAttributes(attributes map[string]interface{}) pdata.AttributeMap {
-	attrs := pdata.NewAttributeMap()
+func constructSpanAttributes(attributes map[string]interface{}) pdata.Map {
+	attrs := pdata.NewMap()
 	for key, value := range attributes {
 		if cast, ok := value.(int); ok {
 			attrs.InsertInt(key, int64(cast))

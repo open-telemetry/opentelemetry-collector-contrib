@@ -92,7 +92,7 @@ type Meta struct {
 
 // metadataFromAttributes gets metadata info from attributes following
 // OpenTelemetry semantic conventions
-func metadataFromAttributes(attrs pdata.AttributeMap) *HostMetadata {
+func metadataFromAttributes(attrs pdata.Map) *HostMetadata {
 	hm := &HostMetadata{Meta: &Meta{}, Tags: &HostTags{}}
 
 	if hostname, ok := attributes.HostnameFromAttributes(attrs); ok {
@@ -196,7 +196,7 @@ func pushMetadataWithRetry(retrier *utils.Retrier, params component.ExporterCrea
 }
 
 // Pusher pushes host metadata payloads periodically to Datadog intake
-func Pusher(ctx context.Context, params component.ExporterCreateSettings, pcfg PusherConfig, attrs pdata.AttributeMap) {
+func Pusher(ctx context.Context, params component.ExporterCreateSettings, pcfg PusherConfig, attrs pdata.Map) {
 	// Push metadata every 30 minutes
 	ticker := time.NewTicker(30 * time.Minute)
 	defer ticker.Stop()

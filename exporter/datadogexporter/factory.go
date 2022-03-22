@@ -131,7 +131,7 @@ func (f *factory) createMetricsExporter(
 		pushMetricsFn = func(_ context.Context, md pdata.Metrics) error {
 			// only sending metadata use only metrics
 			f.onceMetadata.Do(func() {
-				attrs := pdata.NewAttributeMap()
+				attrs := pdata.NewMap()
 				if md.ResourceMetrics().Len() > 0 {
 					attrs = md.ResourceMetrics().At(0).Resource().Attributes()
 				}
@@ -194,7 +194,7 @@ func (f *factory) createTracesExporter(
 		pushTracesFn = func(_ context.Context, td pdata.Traces) error {
 			// only sending metadata, use only attributes
 			f.onceMetadata.Do(func() {
-				attrs := pdata.NewAttributeMap()
+				attrs := pdata.NewMap()
 				if td.ResourceSpans().Len() > 0 {
 					attrs = td.ResourceSpans().At(0).Resource().Attributes()
 				}
