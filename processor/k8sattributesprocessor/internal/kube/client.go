@@ -393,9 +393,10 @@ func (c *WatchClient) getPodFromAPI(pod *api_v1.Pod) *Pod {
 	return newPod
 }
 
-func (c *WatchClient) getIdentifiersFromAssoc(newPod *Pod) []PodIdentifier {
-	if newPod.Attributes == nil {
-		newPod.Attributes = map[string]string{}
+// getIdentifiersFromAssoc returns list of PodIdentifiers for given pod
+func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
+	if pod.Attributes == nil {
+		pod.Attributes = map[string]string{}
 	}
 
 	ids := []PodIdentifier{}
@@ -406,27 +407,24 @@ func (c *WatchClient) getIdentifiersFromAssoc(newPod *Pod) []PodIdentifier {
 			// If association configured to take IP address from connection
 			switch {
 			case source.From == "connection":
-				if newPod.Address == "" {
+				if pod.Address == "" {
 					skip = true
 				} else {
-					ret[i] = GetPodIdentifierAttribute(source, newPod.Address)
-					if source.Name != "" {
-						newPod.Attributes[source.Name] = newPod.Address
-					}
+					ret[i] = GetPodIdentifierAttribute(source, pod.Address)
 				}
 			case source.From == "resource_attribute":
 				attr := ""
 				switch source.Name {
 				case conventions.AttributeK8SNamespaceName:
-					attr = newPod.Namespace
+					attr = pod.Namespace
 				case conventions.AttributeK8SPodName:
-					attr = newPod.Name
+					attr = pod.Name
 				case conventions.AttributeK8SPodUID:
-					attr = newPod.PodUID
+					attr = pod.PodUID
 				case conventions.AttributeHostName:
-					attr = newPod.Address
+					attr = pod.Address
 				default:
-					if v, ok := newPod.Attributes[source.Name]; ok {
+					if v, ok := pod.Attributes[source.Name]; ok {
 						attr = v
 					}
 				}
