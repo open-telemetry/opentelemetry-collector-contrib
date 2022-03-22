@@ -138,14 +138,13 @@ func (mg *metricGroupPdata) toDistributionPoint(orderedLabelKeys []string, dest 
 			bounds[i] = mg.complexValue[i].boundary
 		}
 		adjustedCount := mg.complexValue[i].value
-		if i != 0 {
-			adjustedCount -= mg.complexValue[i-1].value
-		}
 		// Buckets still need to be sent to know to set them as stale,
 		// but a staleness NaN converted to uint64 would be an extremely large number.
 		// Setting to 0 instead.
 		if pointIsStale {
 			adjustedCount = 0
+		} else if i != 0 {
+			adjustedCount -= mg.complexValue[i-1].value
 		}
 		bucketCounts[i] = uint64(adjustedCount)
 	}
@@ -202,10 +201,8 @@ func (mg *metricGroupPdata) toSummaryPoint(orderedLabelKeys []string, dest *pdat
 		quantile := quantileValues.AppendEmpty()
 		// Quantiles still need to be sent to know to set them as stale,
 		// but a staleness NaN converted to uint64 would be an extremely large number.
-		// Setting to 0 instead.
-		if pointIsStale {
-			quantile.SetValue(0)
-		} else {
+		// By not setting the quantile value, it will default to 0.
+		if !pointIsStale {
 			quantile.SetValue(p.value)
 		}
 		quantile.SetQuantile(p.boundary)

@@ -26,6 +26,7 @@
 - `coralogixexporter` Allow exporter timeout to be configured (#7957)
 - `prometheusremotewriteexporter` support adding trace id and span id attached to exemplars (#8380)
 - `influxdbexporter`: accept histogram metric missing infinity bucket. (#8462)
+- `prometheusreceiver`: Fix staleness bug for histograms and summaries (#8561)
 
 ### 🛑 Breaking changes 🛑
 
