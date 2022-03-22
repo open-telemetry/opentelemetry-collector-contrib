@@ -125,7 +125,7 @@ func (c *HistogramConfig) validate() error {
 type CumulativeMonotonicSumMode string
 
 const (
-	// SumModeCumulativeToDelta calculates delta for
+	// CumulativeMonotonicSumModeToDelta calculates delta for
 	// cumulative monotonic sum metrics in the client side and reports
 	// them as Datadog counts.
 	CumulativeMonotonicSumModeToDelta CumulativeMonotonicSumMode = "to_delta"
