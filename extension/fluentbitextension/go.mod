@@ -5,8 +5,8 @@ go 1.17
 require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/shirou/gopsutil/v3 v3.22.2
-	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.47.0
+	github.com/stretchr/testify v1.7.1
+	go.opentelemetry.io/collector v0.47.1-0.20220316214317-e6ea17cf27a8
 	go.uber.org/zap v1.21.0
 
 )
@@ -30,7 +30,7 @@ require (
 	github.com/tklauser/go-sysconf v0.3.9 // indirect
 	github.com/tklauser/numcpus v0.3.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
-	go.opentelemetry.io/collector/model v0.47.0 // indirect
+	go.opentelemetry.io/collector/model v0.47.1-0.20220316214317-e6ea17cf27a8 // indirect
 	go.opentelemetry.io/otel v1.4.1 // indirect
 	go.opentelemetry.io/otel/metric v0.27.0 // indirect
 	go.opentelemetry.io/otel/trace v1.4.1 // indirect

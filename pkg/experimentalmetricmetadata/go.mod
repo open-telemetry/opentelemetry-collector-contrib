@@ -2,7 +2,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimenta
 
 go 1.17
 
-require github.com/stretchr/testify v1.7.0
+require github.com/stretchr/testify v1.7.1
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect

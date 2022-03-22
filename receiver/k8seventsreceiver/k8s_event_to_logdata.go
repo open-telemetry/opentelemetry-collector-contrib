@@ -56,6 +56,8 @@ func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event) pdata.Logs {
 	resourceAttrs.InsertString("k8s.object.name", ev.InvolvedObject.Name)
 	resourceAttrs.InsertString("k8s.object.uid", string(ev.InvolvedObject.UID))
 	resourceAttrs.InsertString("k8s.object.fieldpath", ev.InvolvedObject.FieldPath)
+	resourceAttrs.InsertString("k8s.object.api_version", ev.InvolvedObject.APIVersion)
+	resourceAttrs.InsertString("k8s.object.resource_version", ev.InvolvedObject.ResourceVersion)
 
 	lr.SetTimestamp(pdata.NewTimestampFromTime(getEventTimestamp(ev)))
 

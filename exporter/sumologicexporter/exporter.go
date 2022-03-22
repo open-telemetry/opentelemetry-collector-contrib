@@ -134,8 +134,8 @@ func (se *sumologicexporter) start(_ context.Context, host component.Host) (err 
 // so they can be handled by OTC retry mechanism
 func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) error {
 	var (
-		currentMetadata  fields = newFields(pdata.NewAttributeMap())
-		previousMetadata fields = newFields(pdata.NewAttributeMap())
+		currentMetadata  = newFields(pdata.NewAttributeMap())
+		previousMetadata = newFields(pdata.NewAttributeMap())
 		errs             error
 		droppedRecords   []pdata.LogRecord
 		err              error
@@ -172,7 +172,7 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) er
 
 				// copy resource attributes into logs attributes
 				// log attributes have precedence over resource attributes
-				rl.Resource().Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+				rl.Resource().Attributes().Range(func(k string, v pdata.Value) bool {
 					log.Attributes().Insert(k, v)
 					return true
 				})
@@ -234,8 +234,8 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) er
 // so they can be handle by the OTC retry mechanism
 func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pdata.Metrics) error {
 	var (
-		currentMetadata  fields = newFields(pdata.NewAttributeMap())
-		previousMetadata fields = newFields(pdata.NewAttributeMap())
+		currentMetadata  = newFields(pdata.NewAttributeMap())
+		previousMetadata = newFields(pdata.NewAttributeMap())
 		errs             error
 		droppedRecords   []metricPair
 		attributes       pdata.AttributeMap

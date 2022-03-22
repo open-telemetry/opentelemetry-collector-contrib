@@ -263,7 +263,7 @@ func TestIntDataPointSliceAt(t *testing.T) {
 	setupDataPointCache()
 
 	instrLibName := "cloudwatch-otel"
-	labels := map[string]pdata.AttributeValue{"label": pdata.NewAttributeValueString("value")}
+	labels := map[string]pdata.Value{"label": pdata.NewValueString("value")}
 
 	testDeltaCases := []struct {
 		testName        string
@@ -334,7 +334,7 @@ func TestDoubleDataPointSliceAt(t *testing.T) {
 	setupDataPointCache()
 
 	instrLibName := "cloudwatch-otel"
-	labels := map[string]pdata.AttributeValue{"label1": pdata.NewAttributeValueString("value1")}
+	labels := map[string]pdata.Value{"label1": pdata.NewValueString("value1")}
 
 	testDeltaCases := []struct {
 		testName        string
@@ -394,7 +394,7 @@ func TestDoubleDataPointSliceAt(t *testing.T) {
 
 func TestHistogramDataPointSliceAt(t *testing.T) {
 	instrLibName := "cloudwatch-otel"
-	labels := map[string]pdata.AttributeValue{"label1": pdata.NewAttributeValueString("value1")}
+	labels := map[string]pdata.Value{"label1": pdata.NewValueString("value1")}
 
 	testDPS := pdata.NewHistogramDataPointSlice()
 	testDP := testDPS.AppendEmpty()
@@ -429,7 +429,7 @@ func TestSummaryDataPointSliceAt(t *testing.T) {
 	setupDataPointCache()
 
 	instrLibName := "cloudwatch-otel"
-	labels := map[string]pdata.AttributeValue{"label1": pdata.NewAttributeValueString("value1")}
+	labels := map[string]pdata.Value{"label1": pdata.NewValueString("value1")}
 	metadataTimeStamp := time.Now().UnixNano() / int64(time.Millisecond)
 
 	testCases := []struct {
@@ -518,10 +518,10 @@ func TestCreateLabels(t *testing.T) {
 		"b": "B",
 		"c": "C",
 	}
-	labelsMap := pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
-		"a": pdata.NewAttributeValueString("A"),
-		"b": pdata.NewAttributeValueString("B"),
-		"c": pdata.NewAttributeValueString("C"),
+	labelsMap := pdata.NewAttributeMapFromMap(map[string]pdata.Value{
+		"a": pdata.NewValueString("A"),
+		"b": pdata.NewValueString("B"),
+		"c": pdata.NewValueString("C"),
 	})
 
 	labels := createLabels(labelsMap, noInstrumentationLibraryName)
@@ -646,7 +646,7 @@ func TestGetDataPoints(t *testing.T) {
 
 		logger := zap.NewNop()
 
-		expectedAttributes := pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{"label1": pdata.NewAttributeValueString("value1")})
+		expectedAttributes := pdata.NewAttributeMapFromMap(map[string]pdata.Value{"label1": pdata.NewValueString("value1")})
 
 		t.Run(tc.testName, func(t *testing.T) {
 			setupDataPointCache()

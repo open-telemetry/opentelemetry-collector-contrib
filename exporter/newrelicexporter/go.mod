@@ -7,10 +7,10 @@ require (
 	github.com/golang/protobuf v1.5.2
 	github.com/newrelic/newrelic-telemetry-sdk-go v0.8.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.47.0
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.7.1
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.47.0
-	go.opentelemetry.io/collector/model v0.47.0
+	go.opentelemetry.io/collector v0.47.1-0.20220316214317-e6ea17cf27a8
+	go.opentelemetry.io/collector/model v0.47.1-0.20220316214317-e6ea17cf27a8
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
 	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa

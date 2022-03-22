@@ -46,7 +46,7 @@ func appendOnpremVMAttributes(attrMap pdata.AttributeMap) {
 	attrMap.UpsertString(conventions.AttributeServiceName, "customers")
 	attrMap.UpsertString(conventions.AttributeServiceNamespace, "production")
 	attrMap.UpsertString(conventions.AttributeServiceVersion, "semver:0.7.3")
-	subMap := pdata.NewAttributeValueMap()
+	subMap := pdata.NewValueMap()
 	subMap.MapVal().InsertString("public", "tc-prod9.internal.example.com")
 	subMap.MapVal().InsertString("internal", "172.18.36.18")
 	attrMap.Upsert(conventions.AttributeHostName, subMap)
@@ -118,7 +118,7 @@ func appendFassAttributes(attrMap pdata.AttributeMap) {
 
 func appendExecAttributes(attrMap pdata.AttributeMap) {
 	attrMap.UpsertString(conventions.AttributeProcessExecutableName, "otelcol")
-	parts := pdata.NewAttributeValueArray()
+	parts := pdata.NewValueArray()
 	parts.SliceVal().AppendEmpty().SetStringVal("otelcol")
 	parts.SliceVal().AppendEmpty().SetStringVal("--config=/etc/otel-collector-config.yaml")
 	attrMap.Upsert(conventions.AttributeProcessCommandLine, parts)

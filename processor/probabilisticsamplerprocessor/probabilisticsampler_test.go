@@ -221,7 +221,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange_MultipleResourceSpans(t 
 
 // Test_tracesamplerprocessor_SpanSamplingPriority checks if handling of "sampling.priority" is correct.
 func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
-	singleSpanWithAttrib := func(key string, attribValue pdata.AttributeValue) pdata.Traces {
+	singleSpanWithAttrib := func(key string, attribValue pdata.Value) pdata.Traces {
 		traces := pdata.NewTraces()
 		initSpanWithAttributes(key, attribValue, traces.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty())
 		return traces
@@ -240,7 +240,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"sampling.priority",
-				pdata.NewAttributeValueInt(2)),
+				pdata.NewValueInt(2)),
 			sampled: true,
 		},
 		{
@@ -251,7 +251,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"sampling.priority",
-				pdata.NewAttributeValueDouble(1)),
+				pdata.NewValueDouble(1)),
 			sampled: true,
 		},
 		{
@@ -262,7 +262,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"sampling.priority",
-				pdata.NewAttributeValueString("1")),
+				pdata.NewValueString("1")),
 			sampled: true,
 		},
 		{
@@ -273,7 +273,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"sampling.priority",
-				pdata.NewAttributeValueInt(0)),
+				pdata.NewValueInt(0)),
 		},
 		{
 			name: "must_not_sample_double",
@@ -283,7 +283,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"sampling.priority",
-				pdata.NewAttributeValueDouble(0)),
+				pdata.NewValueDouble(0)),
 		},
 		{
 			name: "must_not_sample_string",
@@ -293,7 +293,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"sampling.priority",
-				pdata.NewAttributeValueString("0")),
+				pdata.NewValueString("0")),
 		},
 		{
 			name: "defer_sample_expect_not_sampled",
@@ -303,7 +303,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"no.sampling.priority",
-				pdata.NewAttributeValueInt(2)),
+				pdata.NewValueInt(2)),
 		},
 		{
 			name: "defer_sample_expect_sampled",
@@ -313,7 +313,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 			},
 			td: singleSpanWithAttrib(
 				"no.sampling.priority",
-				pdata.NewAttributeValueInt(2)),
+				pdata.NewValueInt(2)),
 			sampled: true,
 		},
 	}
@@ -358,57 +358,57 @@ func Test_parseSpanSamplingPriority(t *testing.T) {
 		},
 		{
 			name: "no_sampling_priority",
-			span: getSpanWithAttributes("key", pdata.NewAttributeValueBool(true)),
+			span: getSpanWithAttributes("key", pdata.NewValueBool(true)),
 			want: deferDecision,
 		},
 		{
 			name: "sampling_priority_int_zero",
-			span: getSpanWithAttributes("sampling.priority", pdata.NewAttributeValueInt(0)),
+			span: getSpanWithAttributes("sampling.priority", pdata.NewValueInt(0)),
 			want: doNotSampleSpan,
 		},
 		{
 			name: "sampling_priority_int_gt_zero",
-			span: getSpanWithAttributes("sampling.priority", pdata.NewAttributeValueInt(1)),
+			span: getSpanWithAttributes("sampling.priority", pdata.NewValueInt(1)),
 			want: mustSampleSpan,
 		},
 		{
 			name: "sampling_priority_int_lt_zero",
-			span: getSpanWithAttributes("sampling.priority", pdata.NewAttributeValueInt(-1)),
+			span: getSpanWithAttributes("sampling.priority", pdata.NewValueInt(-1)),
 			want: deferDecision,
 		},
 		{
 			name: "sampling_priority_double_zero",
-			span: getSpanWithAttributes("sampling.priority", pdata.NewAttributeValueDouble(0)),
+			span: getSpanWithAttributes("sampling.priority", pdata.NewValueDouble(0)),
 			want: doNotSampleSpan,
 		},
 		{
 			name: "sampling_priority_double_gt_zero",
-			span: getSpanWithAttributes("sampling.priority", pdata.NewAttributeValueDouble(1)),
+			span: getSpanWithAttributes("sampling.priority", pdata.NewValueDouble(1)),
 			want: mustSampleSpan,
 		},
 		{
 			name: "sampling_priority_double_lt_zero",
-			span: getSpanWithAttributes("sampling.priority", pdata.NewAttributeValueDouble(-1)),
+			span: getSpanWithAttributes("sampling.priority", pdata.NewValueDouble(-1)),
 			want: deferDecision,
 		},
 		{
 			name: "sampling_priority_string_zero",
-			span: getSpanWithAttributes("sampling.priority", pdata.NewAttributeValueString("0.0")),
+			span: getSpanWithAttributes("sampling.priority", pdata.NewValueString("0.0")),
 			want: doNotSampleSpan,
 		},
 		{
 			name: "sampling_priority_string_gt_zero",
-			span: getSpanWithAttributes("sampling.priority", pdata.NewAttributeValueString("0.5")),
+			span: getSpanWithAttributes("sampling.priority", pdata.NewValueString("0.5")),
 			want: mustSampleSpan,
 		},
 		{
 			name: "sampling_priority_string_lt_zero",
-			span: getSpanWithAttributes("sampling.priority", pdata.NewAttributeValueString("-0.5")),
+			span: getSpanWithAttributes("sampling.priority", pdata.NewValueString("-0.5")),
 			want: deferDecision,
 		},
 		{
 			name: "sampling_priority_string_NaN",
-			span: getSpanWithAttributes("sampling.priority", pdata.NewAttributeValueString("NaN")),
+			span: getSpanWithAttributes("sampling.priority", pdata.NewValueString("NaN")),
 			want: deferDecision,
 		},
 	}
@@ -419,15 +419,15 @@ func Test_parseSpanSamplingPriority(t *testing.T) {
 	}
 }
 
-func getSpanWithAttributes(key string, value pdata.AttributeValue) pdata.Span {
+func getSpanWithAttributes(key string, value pdata.Value) pdata.Span {
 	span := pdata.NewSpan()
 	initSpanWithAttributes(key, value, span)
 	return span
 }
 
-func initSpanWithAttributes(key string, value pdata.AttributeValue, dest pdata.Span) {
+func initSpanWithAttributes(key string, value pdata.Value, dest pdata.Span) {
 	dest.SetName("spanName")
-	pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{key: value}).CopyTo(dest.Attributes())
+	pdata.NewAttributeMapFromMap(map[string]pdata.Value{key: value}).CopyTo(dest.Attributes())
 }
 
 // Test_hash ensures that the hash function supports different key lengths even if in
@@ -469,9 +469,9 @@ func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string, re
 				span := ils.Spans().AppendEmpty()
 				span.SetTraceID(idutils.UInt64ToTraceID(r.Uint64(), r.Uint64()))
 				span.SetSpanID(idutils.UInt64ToSpanID(r.Uint64()))
-				attributes := make(map[string]pdata.AttributeValue)
-				attributes[conventions.AttributeHTTPStatusCode] = pdata.NewAttributeValueInt(404)
-				attributes["http.status_text"] = pdata.NewAttributeValueString("Not Found")
+				attributes := make(map[string]pdata.Value)
+				attributes[conventions.AttributeHTTPStatusCode] = pdata.NewValueInt(404)
+				attributes["http.status_text"] = pdata.NewValueString("Not Found")
 				pdata.NewAttributeMapFromMap(attributes).CopyTo(span.Attributes())
 			}
 		}

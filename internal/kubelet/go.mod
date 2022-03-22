@@ -5,8 +5,8 @@ go 1.17
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.47.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.47.0
-	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.47.0
+	github.com/stretchr/testify v1.7.1
+	go.opentelemetry.io/collector v0.47.1-0.20220316214317-e6ea17cf27a8
 	go.uber.org/zap v1.21.0
 )
 
@@ -41,9 +41,9 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
-	k8s.io/api v0.23.4 // indirect
-	k8s.io/apimachinery v0.23.4 // indirect
-	k8s.io/client-go v0.23.4 // indirect
+	k8s.io/api v0.23.5 // indirect
+	k8s.io/apimachinery v0.23.5 // indirect
+	k8s.io/client-go v0.23.5 // indirect
 	k8s.io/klog/v2 v2.30.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20211115234752-e816edb12b65 // indirect
 	k8s.io/utils v0.0.0-20211116205334-6203023598ed // indirect

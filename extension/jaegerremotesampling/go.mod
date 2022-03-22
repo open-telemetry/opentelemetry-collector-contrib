@@ -4,8 +4,8 @@ go 1.17
 
 require (
 	github.com/jaegertracing/jaeger v1.32.0
-	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.47.0
+	github.com/stretchr/testify v1.7.1
+	go.opentelemetry.io/collector v0.47.1-0.20220316214317-e6ea17cf27a8
 )
 
 require (
@@ -29,7 +29,7 @@ require (
 	github.com/rs/cors v1.8.2 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
-	go.opentelemetry.io/collector/model v0.47.0 // indirect
+	go.opentelemetry.io/collector/model v0.47.1-0.20220316214317-e6ea17cf27a8 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.29.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.29.0 // indirect
 	go.opentelemetry.io/otel v1.4.1 // indirect

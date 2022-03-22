@@ -480,7 +480,7 @@ func makeSampleResourceLogs() pdata.Logs {
 	attrs.InsertString("k1", "v1")
 	attrs.InsertString("k2", "v2")
 
-	propMapVal := pdata.NewAttributeValueMap()
+	propMapVal := pdata.NewValueMap()
 	propMap := propMapVal.MapVal()
 	propMap.InsertString("env", "prod")
 	propMap.InsertBool("isActive", true)
@@ -488,8 +488,8 @@ func makeSampleResourceLogs() pdata.Logs {
 	propMap.InsertDouble("temp", 40.5)
 	propMap.Sort()
 	attrs.Insert("com.splunk.signalfx.event_properties", propMapVal)
-	attrs.Insert("com.splunk.signalfx.event_category", pdata.NewAttributeValueInt(int64(sfxpb.EventCategory_USER_DEFINED)))
-	attrs.Insert("com.splunk.signalfx.event_type", pdata.NewAttributeValueString("shutdown"))
+	attrs.Insert("com.splunk.signalfx.event_category", pdata.NewValueInt(int64(sfxpb.EventCategory_USER_DEFINED)))
+	attrs.Insert("com.splunk.signalfx.event_type", pdata.NewValueString("shutdown"))
 
 	l.Attributes().Sort()
 
@@ -530,7 +530,7 @@ func TestConsumeEventData(t *testing.T) {
 				out := makeSampleResourceLogs()
 
 				attrs := out.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(0).Attributes()
-				mapAttr := pdata.NewAttributeValueMap()
+				mapAttr := pdata.NewValueMap()
 				attrs.Insert("map", mapAttr)
 
 				propsAttrs, _ := attrs.Get("com.splunk.signalfx.event_properties")

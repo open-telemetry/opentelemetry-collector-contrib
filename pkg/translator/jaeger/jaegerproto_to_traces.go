@@ -273,12 +273,12 @@ func extractStatusDescFromAttr(attrs pdata.AttributeMap) (string, bool) {
 // codeFromAttr returns the integer code value from attrVal. An error is
 // returned if the code is not represented by an integer or string value in
 // the attrVal or the value is outside the bounds of an int representation.
-func codeFromAttr(attrVal pdata.AttributeValue) (int64, error) {
+func codeFromAttr(attrVal pdata.Value) (int64, error) {
 	var val int64
 	switch attrVal.Type() {
-	case pdata.AttributeValueTypeInt:
+	case pdata.ValueTypeInt:
 		val = attrVal.IntVal()
-	case pdata.AttributeValueTypeString:
+	case pdata.ValueTypeString:
 		var err error
 		val, err = strconv.ParseInt(attrVal.StringVal(), 10, 0)
 		if err != nil {
@@ -290,7 +290,7 @@ func codeFromAttr(attrVal pdata.AttributeValue) (int64, error) {
 	return val, nil
 }
 
-func getStatusCodeFromHTTPStatusAttr(attrVal pdata.AttributeValue) (pdata.StatusCode, error) {
+func getStatusCodeFromHTTPStatusAttr(attrVal pdata.Value) (pdata.StatusCode, error) {
 	statusCode, err := codeFromAttr(attrVal)
 	if err != nil {
 		return pdata.StatusCodeUnset, err
