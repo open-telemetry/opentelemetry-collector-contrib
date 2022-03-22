@@ -7,7 +7,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.47.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.47.0
 	github.com/openzipkin/zipkin-go v0.4.0
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.7.1
 	go.opentelemetry.io/collector v0.47.1-0.20220316214317-e6ea17cf27a8
 	go.opentelemetry.io/collector/model v0.47.1-0.20220316214317-e6ea17cf27a8
 )
