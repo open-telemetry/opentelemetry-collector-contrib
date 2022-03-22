@@ -15,6 +15,8 @@
 
 - `datadogexporter`: Deprecate `OnlyMetadata` method from `Config` struct (#8359)
 
+- `resourcedetectionprocessor`: Add attribute allowlist (#8547)
+
 ## v0.47.0
 
 ### 💡 Enhancements 💡
