@@ -136,13 +136,8 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 			if err := getScannerError(scanner); err != nil {
 				r.Errorw("Failed during scan", zap.Error(err))
 			}
-
-			// Force flush eventually in next iteration
-			r.splitter.CheckAndFlush()
 			break
 		}
-		// Update information about last flush time
-		r.splitter.Flushed()
 
 		if err := r.emit(ctx, scanner.Bytes()); err != nil {
 			r.Error("Failed to emit entry", zap.Error(err))

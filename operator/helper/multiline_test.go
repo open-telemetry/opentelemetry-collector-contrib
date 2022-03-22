@@ -151,10 +151,6 @@ func TestLineStartSplitFunc(t *testing.T) {
 			Pattern:           `^LOGSTART \d+`,
 			Raw:               []byte("LOGPART log1\nLOGPART log1\t   \n"),
 			ExpectedTokenized: []string{},
-			Flusher: &Flusher{
-				force:           false,
-				lastForcedFlush: time.Now(),
-			},
 		},
 		{
 			Name:    "LogsWithFlusher",
@@ -164,8 +160,39 @@ func TestLineStartSplitFunc(t *testing.T) {
 				"LOGPART log1\nLOGPART log1",
 			},
 			Flusher: &Flusher{
-				force:           true,
-				lastForcedFlush: time.Now(),
+				// We assume than in previous iteration we had same data length
+				previousDataLength: len("LOGPART log1\nLOGPART log1\t   \n"),
+				lastDataChange:     time.Unix(0, 0),
+				forcePeriod:        time.Second,
+			},
+		},
+		{
+			Name:    "LogsWithFlusherWithMultipleLogsInBuffer",
+			Pattern: `^LOGSTART \d+`,
+			Raw:     []byte("LOGPART log1\nLOGSTART 123\nLOGPART log1\t   \n"),
+			ExpectedTokenized: []string{
+				// We expect all logs except last one, as it will be flushed in next iteration
+				"LOGPART log1",
+			},
+			Flusher: &Flusher{
+				forcePeriod:    time.Second,
+				lastDataChange: time.Unix(0, 0),
+				// Assume this is next iteration with that data
+				previousDataLength: len("LOGPART log1\nLOGSTART 123\nLOGPART log1\t   \n"),
+			},
+		},
+		{
+			Name:    "LogsWithFlusherWithLogStartingWithWhiteChars",
+			Pattern: `^LOGSTART \d+`,
+			Raw:     []byte("\nLOGSTART 333"),
+			ExpectedTokenized: []string{
+				"LOGSTART 333",
+			},
+			Flusher: &Flusher{
+				forcePeriod:    time.Second,
+				lastDataChange: time.Unix(0, 0),
+				// assume this is next iteration with this log
+				previousDataLength: len("\nLOGSTART 333"),
 			},
 		},
 	}
@@ -181,7 +208,7 @@ func TestLineStartSplitFunc(t *testing.T) {
 	}
 
 	t.Run("FirstMatchHitsEndOfBuffer", func(t *testing.T) {
-		splitFunc := NewLineStartSplitFunc(regexp.MustCompile("LOGSTART"), false, nil)
+		splitFunc := NewLineStartSplitFunc(regexp.MustCompile("LOGSTART"), false)
 		data := []byte(`LOGSTART`)
 
 		t.Run("NotAtEOF", func(t *testing.T) {
@@ -291,10 +318,7 @@ func TestLineEndSplitFunc(t *testing.T) {
 			Pattern:           `^LOGEND.*$`,
 			Raw:               []byte("LOGPART log1\nLOGPART log1\t   \n"),
 			ExpectedTokenized: []string{},
-			Flusher: &Flusher{
-				force:           false,
-				lastForcedFlush: time.Now(),
-			},
+			Flusher:           &Flusher{},
 		},
 		{
 			Name:    "LogsWithFlusher",
@@ -304,8 +328,37 @@ func TestLineEndSplitFunc(t *testing.T) {
 				"LOGPART log1\nLOGPART log1",
 			},
 			Flusher: &Flusher{
-				force:           true,
-				lastForcedFlush: time.Now(),
+				previousDataLength: len("LOGPART log1\nLOGPART log1"),
+				lastDataChange:     time.Unix(0, 0),
+				forcePeriod:        time.Second,
+			},
+		},
+		{
+			Name:    "LogsWithFlusherWithMultipleLogsInBuffer",
+			Pattern: `^LOGEND.*$`,
+			Raw:     []byte("LOGPART log1\nLOGEND\nLOGPART log1\t   \n"),
+			ExpectedTokenized: []string{
+				// We expect to get all logs except last one which will be returned eventually in next scanning
+				"LOGPART log1\nLOGEND",
+			},
+			Flusher: &Flusher{
+				forcePeriod:    time.Second,
+				lastDataChange: time.Unix(0, 0),
+				// Assume this is next iteration with that data
+				previousDataLength: len("LOGPART log1\nLOGEND\nLOGPART log1\t   \n"),
+			},
+		},
+		{
+			Name:    "LogsWithFlusherWithLogStartingWithWhiteChars",
+			Pattern: `LOGEND \d+$`,
+			Raw:     []byte("\nLOGEND 333"),
+			ExpectedTokenized: []string{
+				"LOGEND 333",
+			},
+			Flusher: &Flusher{
+				forcePeriod:        time.Second,
+				lastDataChange:     time.Unix(0, 0),
+				previousDataLength: -1,
 			},
 		},
 	}
@@ -392,24 +445,21 @@ func TestNewlineSplitFunc(t *testing.T) {
 		},
 		{
 			Name:              "LogsWithoutFlusher",
-			Pattern:           `^LOGEND.*$`,
 			Raw:               []byte("LOGPART log1"),
 			ExpectedTokenized: []string{},
-			Flusher: &Flusher{
-				force:           false,
-				lastForcedFlush: time.Now(),
-			},
+			Flusher:           &Flusher{},
 		},
 		{
-			Name:    "LogsWithFlusher",
-			Pattern: `^LOGEND.*$`,
-			Raw:     []byte("LOGPART log1"),
+			Name: "LogsWithFlusher",
+			Raw:  []byte("LOGPART log1"),
 			ExpectedTokenized: []string{
 				"LOGPART log1",
 			},
 			Flusher: &Flusher{
-				force:           true,
-				lastForcedFlush: time.Now(),
+				// Assume same data length in previous iteration
+				previousDataLength: len("LOGPART log1"),
+				lastDataChange:     time.Unix(0, 0),
+				forcePeriod:        time.Second,
 			},
 		},
 		{
@@ -419,16 +469,22 @@ func TestNewlineSplitFunc(t *testing.T) {
 				"log1",
 				"log2",
 			},
-			Flusher: &Flusher{
-				force:           true,
-				lastForcedFlush: time.Now(),
+		},
+		{
+			Name: "LogsWithLogStartingWithWhiteChars",
+			Raw:  []byte("\nLOGEND 333\nAnother one"),
+			ExpectedTokenized: []string{
+				"LOGEND 333",
 			},
 		},
 	}
 
 	for _, tc := range testCases {
-		splitFunc, err := NewNewlineSplitFunc(unicode.UTF8, false, tc.Flusher)
+		splitFunc, err := NewNewlineSplitFunc(unicode.UTF8, false)
 		require.NoError(t, err)
+		if tc.Flusher != nil {
+			splitFunc = tc.Flusher.SplitFunc(splitFunc)
+		}
 		t.Run(tc.Name, tc.RunFunc(splitFunc))
 	}
 }
@@ -584,11 +640,20 @@ func TestNewlineSplitFunc_Encodings(t *testing.T) {
 				{0, 108, 0, 111, 0, 103, 0, 50}, // log2
 			},
 		},
+		{
+			"MultiCarriageReturnUTF16StartingWithWhiteChars",
+			unicode.UTF16(unicode.BigEndian, unicode.IgnoreBOM),
+			[]byte{0, 13, 0, 10, 0, 108, 0, 111, 0, 103, 0, 49, 0, 13, 0, 10, 0, 108, 0, 111, 0, 103, 0, 50, 0, 13, 0, 10}, // \r\nlog1\r\nlog2\r\n
+			[][]byte{
+				{0, 108, 0, 111, 0, 103, 0, 49}, // log1
+				{0, 108, 0, 111, 0, 103, 0, 50}, // log2
+			},
+		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			splitFunc, err := NewNewlineSplitFunc(tc.encoding, false, nil)
+			splitFunc, err := NewNewlineSplitFunc(tc.encoding, false)
 			require.NoError(t, err)
 			scanner := bufio.NewScanner(bytes.NewReader(tc.input))
 			scanner.Split(splitFunc)
