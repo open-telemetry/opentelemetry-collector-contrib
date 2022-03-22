@@ -104,7 +104,7 @@ func (s *redaction) processAttrs(_ context.Context, attributes *pdata.AttributeM
 	// This sequence satisfies these performance constraints:
 	// - Only range through all attributes once
 	// - Don't mask any values if the whole attribute is slated for deletion
-	attributes.Range(func(k string, value pdata.AttributeValue) bool {
+	attributes.Range(func(k string, value pdata.Value) bool {
 		// Make a list of attribute keys to redact
 		if _, allowed := s.allowList[k]; !allowed {
 			toDelete = append(toDelete, k)
@@ -120,7 +120,7 @@ func (s *redaction) processAttrs(_ context.Context, attributes *pdata.AttributeM
 
 				valueCopy := value.StringVal()
 				maskedValue := compiledRE.ReplaceAllString(valueCopy, "****")
-				attributes.Update(k, pdata.NewAttributeValueString(maskedValue))
+				attributes.Update(k, pdata.NewValueString(maskedValue))
 			}
 		}
 		return true
@@ -128,7 +128,7 @@ func (s *redaction) processAttrs(_ context.Context, attributes *pdata.AttributeM
 
 	// Delete the attributes on the redaction list
 	for _, k := range toDelete {
-		attributes.Delete(k)
+		attributes.Remove(k)
 	}
 	// Add diagnostic information to the span
 	s.summarizeRedactedSpan(toDelete, attributes)
@@ -155,10 +155,10 @@ func (s *redaction) summarizeRedactedSpan(toDelete []string, attributes *pdata.A
 	// Record summary as span attributes
 	if s.config.Summary == debug {
 		sort.Strings(toDelete)
-		attributes.Insert(redactedKeys, pdata.NewAttributeValueString(strings.Join(toDelete, ",")))
+		attributes.Insert(redactedKeys, pdata.NewValueString(strings.Join(toDelete, ",")))
 	}
 	if s.config.Summary == info || s.config.Summary == debug {
-		attributes.Insert(redactedKeyCount, pdata.NewAttributeValueInt(redactedSpanCount))
+		attributes.Insert(redactedKeyCount, pdata.NewValueInt(redactedSpanCount))
 	}
 }
 
@@ -171,10 +171,10 @@ func (s *redaction) summarizeMaskedSpan(toBlock []string, attributes *pdata.Attr
 	// Records summary as span attributes
 	if s.config.Summary == debug {
 		sort.Strings(toBlock)
-		attributes.Insert(maskedValues, pdata.NewAttributeValueString(strings.Join(toBlock, ",")))
+		attributes.Insert(maskedValues, pdata.NewValueString(strings.Join(toBlock, ",")))
 	}
 	if s.config.Summary == info || s.config.Summary == debug {
-		attributes.Insert(maskedValueCount, pdata.NewAttributeValueInt(maskedSpanCount))
+		attributes.Insert(maskedValueCount, pdata.NewValueInt(maskedSpanCount))
 	}
 }
 

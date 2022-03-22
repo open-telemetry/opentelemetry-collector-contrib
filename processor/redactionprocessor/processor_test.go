@@ -56,13 +56,13 @@ func TestRedactUnknownAttributes(t *testing.T) {
 	config := &Config{
 		AllowedKeys: []string{"group", "id", "name"},
 	}
-	allowed := map[string]pdata.AttributeValue{
-		"group": pdata.NewAttributeValueString("temporary"),
-		"id":    pdata.NewAttributeValueInt(5),
-		"name":  pdata.NewAttributeValueString("placeholder"),
+	allowed := map[string]pdata.Value{
+		"group": pdata.NewValueString("temporary"),
+		"id":    pdata.NewValueInt(5),
+		"name":  pdata.NewValueString("placeholder"),
 	}
-	redacted := map[string]pdata.AttributeValue{
-		"credit_card": pdata.NewAttributeValueString("4111111111111111"),
+	redacted := map[string]pdata.Value{
+		"credit_card": pdata.NewValueString("4111111111111111"),
 	}
 
 	library, span, next := runTest(t, allowed, redacted, nil, config)
@@ -93,16 +93,16 @@ func TestRedactSummaryDebug(t *testing.T) {
 		BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?"},
 		Summary:       "debug",
 	}
-	allowed := map[string]pdata.AttributeValue{
-		"id":          pdata.NewAttributeValueInt(5),
-		"group.id":    pdata.NewAttributeValueString("some.valid.id"),
-		"member (id)": pdata.NewAttributeValueString("some other valid id"),
+	allowed := map[string]pdata.Value{
+		"id":          pdata.NewValueInt(5),
+		"group.id":    pdata.NewValueString("some.valid.id"),
+		"member (id)": pdata.NewValueString("some other valid id"),
 	}
-	masked := map[string]pdata.AttributeValue{
-		"name": pdata.NewAttributeValueString("placeholder 4111111111111111"),
+	masked := map[string]pdata.Value{
+		"name": pdata.NewValueString("placeholder 4111111111111111"),
 	}
-	redacted := map[string]pdata.AttributeValue{
-		"credit_card": pdata.NewAttributeValueString("4111111111111111"),
+	redacted := map[string]pdata.Value{
+		"credit_card": pdata.NewValueString("4111111111111111"),
 	}
 
 	_, _, next := runTest(t, allowed, redacted, masked, config)
@@ -143,14 +143,14 @@ func TestRedactSummaryInfo(t *testing.T) {
 		AllowedKeys:   []string{"id", "name", "group"},
 		BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?"},
 		Summary:       "info"}
-	allowed := map[string]pdata.AttributeValue{
-		"id": pdata.NewAttributeValueInt(5),
+	allowed := map[string]pdata.Value{
+		"id": pdata.NewValueInt(5),
 	}
-	masked := map[string]pdata.AttributeValue{
-		"name": pdata.NewAttributeValueString("placeholder 4111111111111111"),
+	masked := map[string]pdata.Value{
+		"name": pdata.NewValueString("placeholder 4111111111111111"),
 	}
-	redacted := map[string]pdata.AttributeValue{
-		"credit_card": pdata.NewAttributeValueString("4111111111111111"),
+	redacted := map[string]pdata.Value{
+		"credit_card": pdata.NewValueString("4111111111111111"),
 	}
 
 	_, _, next := runTest(t, allowed, redacted, masked, config)
@@ -184,14 +184,14 @@ func TestRedactSummarySilent(t *testing.T) {
 	config := &Config{AllowedKeys: []string{"id", "name", "group"},
 		BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?"},
 		Summary:       "silent"}
-	allowed := map[string]pdata.AttributeValue{
-		"id": pdata.NewAttributeValueInt(5),
+	allowed := map[string]pdata.Value{
+		"id": pdata.NewValueInt(5),
 	}
-	masked := map[string]pdata.AttributeValue{
-		"name": pdata.NewAttributeValueString("placeholder 4111111111111111"),
+	masked := map[string]pdata.Value{
+		"name": pdata.NewValueString("placeholder 4111111111111111"),
 	}
-	redacted := map[string]pdata.AttributeValue{
-		"credit_card": pdata.NewAttributeValueString("4111111111111111"),
+	redacted := map[string]pdata.Value{
+		"credit_card": pdata.NewValueString("4111111111111111"),
 	}
 
 	_, _, next := runTest(t, allowed, redacted, masked, config)
@@ -218,11 +218,11 @@ func TestRedactSummarySilent(t *testing.T) {
 // summary attributes by default
 func TestRedactSummaryDefault(t *testing.T) {
 	config := &Config{AllowedKeys: []string{"id", "name", "group"}}
-	allowed := map[string]pdata.AttributeValue{
-		"id": pdata.NewAttributeValueInt(5),
+	allowed := map[string]pdata.Value{
+		"id": pdata.NewValueInt(5),
 	}
-	masked := map[string]pdata.AttributeValue{
-		"name": pdata.NewAttributeValueString("placeholder 4111111111111111"),
+	masked := map[string]pdata.Value{
+		"name": pdata.NewValueString("placeholder 4111111111111111"),
 	}
 
 	_, _, next := runTest(t, allowed, nil, masked, config)
@@ -245,15 +245,15 @@ func TestMultipleBlockValues(t *testing.T) {
 	config := &Config{AllowedKeys: []string{"id", "name", "mystery"},
 		BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?", "(5[1-5][0-9]{3})"},
 		Summary:       "debug"}
-	allowed := map[string]pdata.AttributeValue{
-		"id":      pdata.NewAttributeValueInt(5),
-		"mystery": pdata.NewAttributeValueString("mystery 52000"),
+	allowed := map[string]pdata.Value{
+		"id":      pdata.NewValueInt(5),
+		"mystery": pdata.NewValueString("mystery 52000"),
 	}
-	masked := map[string]pdata.AttributeValue{
-		"name": pdata.NewAttributeValueString("placeholder 4111111111111111"),
+	masked := map[string]pdata.Value{
+		"name": pdata.NewValueString("placeholder 4111111111111111"),
 	}
-	redacted := map[string]pdata.AttributeValue{
-		"credit_card": pdata.NewAttributeValueString("4111111111111111"),
+	redacted := map[string]pdata.Value{
+		"credit_card": pdata.NewValueString("4111111111111111"),
 	}
 
 	_, _, next := runTest(t, allowed, redacted, masked, config)
@@ -278,7 +278,7 @@ func TestMultipleBlockValues(t *testing.T) {
 	assert.True(t, ok)
 	sort.Strings(blockedKeys)
 	assert.Equal(t, strings.Join(blockedKeys, ","), maskedValues.StringVal())
-	maskedValues.Equal(pdata.NewAttributeValueString(strings.Join(blockedKeys, ",")))
+	maskedValues.Equal(pdata.NewValueString(strings.Join(blockedKeys, ",")))
 	maskedValueCount, ok := attr.Get(maskedValueCount)
 	assert.True(t, ok)
 	assert.Equal(t, int64(len(blockedKeys)), maskedValueCount.IntVal())
@@ -291,9 +291,9 @@ func TestMultipleBlockValues(t *testing.T) {
 // runTest transforms the test input data and passes it through the processor
 func runTest(
 	t *testing.T,
-	allowed map[string]pdata.AttributeValue,
-	redacted map[string]pdata.AttributeValue,
-	masked map[string]pdata.AttributeValue,
+	allowed map[string]pdata.Value,
+	redacted map[string]pdata.Value,
+	masked map[string]pdata.Value,
 	config *Config,
 ) (pdata.InstrumentationLibrary, pdata.Span, *consumertest.TracesSink) {
 	inBatch := pdata.NewTraces()
@@ -307,7 +307,7 @@ func runTest(
 	span.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4}))
 
 	length := len(allowed) + len(masked) + len(redacted)
-	attrMap := make(map[string]pdata.AttributeValue, length)
+	attrMap := make(map[string]pdata.Value, length)
 	for k, v := range allowed {
 		attrMap[k] = v
 	}
@@ -345,16 +345,16 @@ func BenchmarkRedactSummaryDebug(b *testing.B) {
 		BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?"},
 		Summary:       "debug",
 	}
-	allowed := map[string]pdata.AttributeValue{
-		"id":          pdata.NewAttributeValueInt(5),
-		"group.id":    pdata.NewAttributeValueString("some.valid.id"),
-		"member (id)": pdata.NewAttributeValueString("some other valid id"),
+	allowed := map[string]pdata.Value{
+		"id":          pdata.NewValueInt(5),
+		"group.id":    pdata.NewValueString("some.valid.id"),
+		"member (id)": pdata.NewValueString("some other valid id"),
 	}
-	masked := map[string]pdata.AttributeValue{
-		"name": pdata.NewAttributeValueString("placeholder 4111111111111111"),
+	masked := map[string]pdata.Value{
+		"name": pdata.NewValueString("placeholder 4111111111111111"),
 	}
-	redacted := map[string]pdata.AttributeValue{
-		"credit_card": pdata.NewAttributeValueString("would be nice"),
+	redacted := map[string]pdata.Value{
+		"credit_card": pdata.NewValueString("would be nice"),
 	}
 	ctx := context.Background()
 	next := new(consumertest.TracesSink)
@@ -374,14 +374,14 @@ func BenchmarkMaskSummaryDebug(b *testing.B) {
 		BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?", "(http|https|ftp):[\\/]{2}([a-zA-Z0-9\\-\\.]+\\.[a-zA-Z]{2,4})(:[0-9]+)?\\/?([a-zA-Z0-9\\-\\._\\?\\,\\'\\/\\\\\\+&amp;%\\$#\\=~]*)"},
 		Summary:       "debug",
 	}
-	allowed := map[string]pdata.AttributeValue{
-		"id":          pdata.NewAttributeValueInt(5),
-		"group.id":    pdata.NewAttributeValueString("some.valid.id"),
-		"member (id)": pdata.NewAttributeValueString("some other valid id"),
+	allowed := map[string]pdata.Value{
+		"id":          pdata.NewValueInt(5),
+		"group.id":    pdata.NewValueString("some.valid.id"),
+		"member (id)": pdata.NewValueString("some other valid id"),
 	}
-	masked := map[string]pdata.AttributeValue{
-		"name": pdata.NewAttributeValueString("placeholder 4111111111111111"),
-		"url":  pdata.NewAttributeValueString("https://www.this_is_testing_url.com"),
+	masked := map[string]pdata.Value{
+		"name": pdata.NewValueString("placeholder 4111111111111111"),
+		"url":  pdata.NewValueString("https://www.this_is_testing_url.com"),
 	}
 	ctx := context.Background()
 	next := new(consumertest.TracesSink)
@@ -394,9 +394,9 @@ func BenchmarkMaskSummaryDebug(b *testing.B) {
 
 // runBenchmark transform benchmark input and runs it through the processor
 func runBenchmark(
-	allowed map[string]pdata.AttributeValue,
-	redacted map[string]pdata.AttributeValue,
-	masked map[string]pdata.AttributeValue,
+	allowed map[string]pdata.Value,
+	redacted map[string]pdata.Value,
+	masked map[string]pdata.Value,
 	processor *redaction,
 ) {
 	inBatch := pdata.NewTraces()
@@ -410,7 +410,7 @@ func runBenchmark(
 	span.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4}))
 
 	length := len(allowed) + len(masked) + len(redacted)
-	attrMap := make(map[string]pdata.AttributeValue, length)
+	attrMap := make(map[string]pdata.Value, length)
 	for k, v := range allowed {
 		attrMap[k] = v
 	}
