@@ -8,8 +8,6 @@ exporters:
   datadog/api:
     hostname: customhostname
     env: prod
-    service: myservice
-    version: myversion
 
     tags:
       - example:tag
@@ -24,8 +22,6 @@ exporters:
   datadog/api2:
     hostname: customhostname
     env: prod
-    service: myservice
-    version: myversion
 
     tags:
       - example:tag
