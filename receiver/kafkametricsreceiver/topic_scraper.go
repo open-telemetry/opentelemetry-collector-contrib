@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
@@ -43,10 +42,13 @@ func (s *topicScraper) Name() string {
 	return topicsScraperName
 }
 
-func (s *topicScraper) start(context.Context, component.Host) error {
+func (s *topicScraper) setupClient() error {
+	if s.client != nil {
+		return nil
+	}
 	client, err := newSaramaClient(s.config.Brokers, s.saramaConfig)
 	if err != nil {
-		return fmt.Errorf("failed to create client while starting topics scraper: %w", err)
+		return fmt.Errorf("failed to create client in topics scraper: %w", err)
 	}
 	s.client = client
 	return nil
@@ -60,6 +62,10 @@ func (s *topicScraper) shutdown(context.Context) error {
 }
 
 func (s *topicScraper) scrape(context.Context) (pmetric.Metrics, error) {
+	if err := s.setupClient(); err != nil {
+		return pmetric.Metrics{}, err
+	}
+
 	topics, err := s.client.Topics()
 	if err != nil {
 		s.logger.Error("Error fetching cluster topics ", zap.Error(err))
@@ -130,7 +136,6 @@ func createTopicsScraper(_ context.Context, cfg Config, saramaConfig *sarama.Con
 		s.Name(),
 		s.scrape,
 		scraperhelper.WithShutdown(s.shutdown),
-		scraperhelper.WithStart(s.start),
 	)
 }
 

@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -45,17 +44,20 @@ func (s *consumerScraper) Name() string {
 	return consumersScraperName
 }
 
-func (s *consumerScraper) start(context.Context, component.Host) error {
+func (s *consumerScraper) setupClient() error {
+	if s.client != nil {
+		return nil
+	}
 	client, err := newSaramaClient(s.config.Brokers, s.saramaConfig)
 	if err != nil {
-		return fmt.Errorf("failed to create client while starting consumer scraper: %w", err)
+		return fmt.Errorf("failed to create client in consumer scraper: %w", err)
 	}
 	clusterAdmin, err := newClusterAdmin(s.config.Brokers, s.saramaConfig)
 	if err != nil {
 		if client != nil {
 			_ = client.Close()
 		}
-		return fmt.Errorf("failed to create cluster admin while starting consumer scraper: %w", err)
+		return fmt.Errorf("failed to create cluster admin in consumer scraper: %w", err)
 	}
 	s.client = client
 	s.clusterAdmin = clusterAdmin
@@ -70,6 +72,9 @@ func (s *consumerScraper) shutdown(_ context.Context) error {
 }
 
 func (s *consumerScraper) scrape(context.Context) (pmetric.Metrics, error) {
+	if err := s.setupClient(); err != nil {
+		return pmetric.Metrics{}, err
+	}
 	cgs, listErr := s.clusterAdmin.ListConsumerGroups()
 	if listErr != nil {
 		return pmetric.Metrics{}, listErr
@@ -194,6 +199,5 @@ func createConsumerScraper(_ context.Context, cfg Config, saramaConfig *sarama.C
 		s.Name(),
 		s.scrape,
 		scraperhelper.WithShutdown(s.shutdown),
-		scraperhelper.WithStart(s.start),
 	)
 }
