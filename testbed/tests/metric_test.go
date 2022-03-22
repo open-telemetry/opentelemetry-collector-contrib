@@ -70,7 +70,7 @@ func TestMetric10kDPS(t *testing.T) {
 			testbed.NewOTLPHTTPDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 55,
-				ExpectedMaxRAM: 92,
+				ExpectedMaxRAM: 100,
 			},
 		},
 		{
