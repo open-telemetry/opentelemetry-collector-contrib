@@ -42,6 +42,10 @@ func newFakeAPIClientset(_ k8sconfig.APIConfig) (kubernetes.Interface, error) {
 }
 
 func newPodIdentifier(from string, name string, value string) PodIdentifier {
+	if from == "connection" {
+		name = ""
+	}
+
 	return PodIdentifier{
 		{
 			Source: AssociationSource{
@@ -1166,7 +1170,6 @@ func newTestClientWithRulesAndFilters(t *testing.T, e ExtractionRules, f Filters
 			Sources: []AssociationSource{
 				{
 					From: "connection",
-					Name: "k8s.pod.ip",
 				},
 			},
 		},

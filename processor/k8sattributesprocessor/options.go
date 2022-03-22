@@ -287,20 +287,31 @@ func withExtractPodAssociations(podAssociations ...PodAssociationConfig) option 
 		var assoc kube.Association
 		for _, association := range podAssociations {
 			assoc = kube.Association{
-				Name:    association.Name,
 				Sources: []kube.AssociationSource{},
 			}
 
+			var name string
+
 			if association.From != "" {
+				if association.From == kube.ConnectionSource {
+					name = ""
+				} else {
+					name = association.Name
+				}
 				assoc.Sources = append(assoc.Sources, kube.AssociationSource{
 					From: association.From,
-					Name: association.Name,
+					Name: name,
 				})
 			} else {
 				for _, associationSource := range association.Sources {
+					if associationSource.From == kube.ConnectionSource {
+						name = ""
+					} else {
+						name = associationSource.Name
+					}
 					assoc.Sources = append(assoc.Sources, kube.AssociationSource{
 						From: associationSource.From,
-						Name: associationSource.Name,
+						Name: name,
 					})
 				}
 			}

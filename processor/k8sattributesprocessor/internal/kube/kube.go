@@ -59,12 +59,23 @@ func PodIdentifierAttributeFromSource(source AssociationSource, value string) Po
 	}
 }
 
-// PodIdentifierAttributeFromSource builds PodIdentifierAttribute using from, name (in order to build AssociationSource) and value
-func BuildPodIdentifierAttribute(from string, name string, value string) PodIdentifierAttribute {
+// PodIdentifierAttributeFromSource builds PodIdentifierAttribute for connection with given value
+func PodIdentifierAttributeFromConnection(value string) PodIdentifierAttribute {
 	return PodIdentifierAttributeFromSource(
 		AssociationSource{
-			From: from,
-			Name: name,
+			From: ConnectionSource,
+			Name: "",
+		},
+		value,
+	)
+}
+
+// PodIdentifierAttributeFromSource builds PodIdentifierAttribute for given resource_attribute name and value
+func PodIdentifierAttributeFromResourceAttribute(key string, value string) PodIdentifierAttribute {
+	return PodIdentifierAttributeFromSource(
+		AssociationSource{
+			From: ResourceSource,
+			Name: key,
 		},
 		value,
 	)

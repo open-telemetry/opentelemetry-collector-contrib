@@ -445,13 +445,13 @@ func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 	// Ensure backward compatibility
 	if pod.PodUID != "" {
 		ids = append(ids, PodIdentifier{
-			BuildPodIdentifierAttribute("resource_attribute", conventions.AttributeK8SPodUID, pod.PodUID),
+			PodIdentifierAttributeFromResourceAttribute(conventions.AttributeK8SPodUID, pod.PodUID),
 		})
 	}
 
 	if pod.Address != "" {
 		ids = append(ids, PodIdentifier{
-			BuildPodIdentifierAttribute("connection", "k8s.pod.ip", pod.Address),
+			PodIdentifierAttributeFromConnection(pod.Address),
 		})
 	}
 

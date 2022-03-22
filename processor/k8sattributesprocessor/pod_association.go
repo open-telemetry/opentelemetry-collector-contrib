@@ -32,9 +32,9 @@ import (
 func extractPodID(ctx context.Context, attrs pcommon.Map, associations []kube.Association) (string, kube.PodIdentifier) {
 	// If pod association is not set
 	if len(associations) == 0 {
-		label, id := extractPodIDNoAssociations(ctx, attrs)
+		_, id := extractPodIDNoAssociations(ctx, attrs)
 		return "", kube.PodIdentifier{
-			kube.BuildPodIdentifierAttribute("connection", label, id),
+			kube.PodIdentifierAttributeFromConnection(id),
 		}
 	}
 
