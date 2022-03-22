@@ -110,8 +110,8 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 	_, podIdentifierValue := extractPodID(ctx, resource.Attributes(), kp.podAssociations)
 	kp.logger.Debug("evaluating pod identifier", zap.Any("value", podIdentifierValue))
 	for i := range podIdentifierValue {
-		if podIdentifierValue[i].Source.From == "connection" && podIdentifierValue[i].Source.Name != "" {
-			resource.Attributes().InsertString(podIdentifierValue[i].Source.Name, podIdentifierValue[i].Value)
+		if podIdentifierValue[i].Source.From == "connection" && podIdentifierValue[i].Value != "" {
+			resource.Attributes().InsertString(k8sIPLabelName, podIdentifierValue[i].Value)
 		}
 	}
 	if kp.passthroughMode {
