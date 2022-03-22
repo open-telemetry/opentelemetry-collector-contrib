@@ -58,7 +58,7 @@ type renameError struct {
 // Error implements the error interface.
 func (e renameError) Error() string {
 	return fmt.Sprintf(
-		"%q has been deprecated in favor of %q and will be removed in %s. See github.com/open-telemetry/opentelemetry-collector-contrib/issues/%d for details",
+		"%q has been deprecated in favor of %q and will be removed in %s.\n\nSee github.com/open-telemetry/opentelemetry-collector-contrib/issues/%d for details",
 		e.oldName,
 		e.newName,
 		e.oldRemovedIn,
