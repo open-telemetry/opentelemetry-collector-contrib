@@ -569,7 +569,7 @@ type histogramDataPoint interface {
 	Count() uint64
 	ExplicitBounds() []float64
 	BucketCounts() []uint64
-	Attributes() pdata.AttributeMap
+	Attributes() pdata.Map
 	Timestamp() pdata.Timestamp
 }
 

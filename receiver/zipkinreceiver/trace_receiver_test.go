@@ -403,17 +403,17 @@ func TestReceiverConvertsStringsToTypes(t *testing.T) {
 	td := next.AllTraces()[0]
 	span := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
 
-	expected := pdata.NewAttributeMapFromMap(map[string]pdata.Value{
-		"cache_hit":            pdata.NewValueBool(true),
-		"ping_count":           pdata.NewValueInt(25),
-		"timeout":              pdata.NewValueDouble(12.3),
-		"clnt/finagle.version": pdata.NewValueString("6.45.0"),
-		"http.path":            pdata.NewValueString("/api"),
-		"http.status_code":     pdata.NewValueInt(500),
-		"net.host.ip":          pdata.NewValueString("7::80:807f"),
-		"peer.service":         pdata.NewValueString("backend"),
-		"net.peer.ip":          pdata.NewValueString("192.168.99.101"),
-		"net.peer.port":        pdata.NewValueInt(9000),
+	expected := pdata.NewMapFromRaw(map[string]interface{}{
+		"cache_hit":            true,
+		"ping_count":           25,
+		"timeout":              12.3,
+		"clnt/finagle.version": "6.45.0",
+		"http.path":            "/api",
+		"http.status_code":     500,
+		"net.host.ip":          "7::80:807f",
+		"peer.service":         "backend",
+		"net.peer.ip":          "192.168.99.101",
+		"net.peer.port":        9000,
 	}).Sort()
 
 	actual := span.Attributes().Sort()

@@ -91,7 +91,7 @@ func (s *redaction) processResourceSpan(ctx context.Context, rs pdata.ResourceSp
 }
 
 // processAttrs redacts the attributes of a resource span or a span
-func (s *redaction) processAttrs(_ context.Context, attributes *pdata.AttributeMap) {
+func (s *redaction) processAttrs(_ context.Context, attributes *pdata.Map) {
 	// TODO: Use the context for recording metrics
 	var toDelete []string
 	var toBlock []string
@@ -147,7 +147,7 @@ func (s *redaction) ConsumeTraces(ctx context.Context, batch pdata.Traces) error
 }
 
 // summarizeRedactedSpan adds diagnostic information about redacted attribute keys
-func (s *redaction) summarizeRedactedSpan(toDelete []string, attributes *pdata.AttributeMap) {
+func (s *redaction) summarizeRedactedSpan(toDelete []string, attributes *pdata.Map) {
 	redactedSpanCount := int64(len(toDelete))
 	if redactedSpanCount == 0 {
 		return
@@ -163,7 +163,7 @@ func (s *redaction) summarizeRedactedSpan(toDelete []string, attributes *pdata.A
 }
 
 // summarizeMaskedSpan adds diagnostic information about masked attribute values
-func (s *redaction) summarizeMaskedSpan(toBlock []string, attributes *pdata.AttributeMap) {
+func (s *redaction) summarizeMaskedSpan(toBlock []string, attributes *pdata.Map) {
 	maskedSpanCount := int64(len(toBlock))
 	if maskedSpanCount == 0 {
 		return

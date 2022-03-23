@@ -241,7 +241,7 @@ func convertSummaryDataPoints(
 	return out
 }
 
-func attributesToDimensions(attributes pdata.AttributeMap, extraDims []*sfxpb.Dimension) []*sfxpb.Dimension {
+func attributesToDimensions(attributes pdata.Map, extraDims []*sfxpb.Dimension) []*sfxpb.Dimension {
 	dimensions := make([]*sfxpb.Dimension, len(extraDims), attributes.Len()+len(extraDims))
 	copy(dimensions, extraDims)
 	if attributes.Len() == 0 {

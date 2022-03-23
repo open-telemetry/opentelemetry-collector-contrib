@@ -713,7 +713,7 @@ func TestCumulativeHistogramDataPointConsumer(t *testing.T) {
 	// Creates bounds of -Inf to <=2.0; >2.0 to <=5.0; >5.0 to <=10.0; >10.0 to +Inf
 	histogramDataPoint.SetExplicitBounds([]float64{2.0, 5.0, 10.0})
 	histogramDataPoint.SetBucketCounts([]uint64{5, 1, 3, 2})
-	setTags(map[string]interface{}{"foo": "bar"}, histogramDataPoint.Attributes())
+	histogramDataPoint.Attributes().UpsertString("foo", "bar")
 	sender := &mockGaugeSender{}
 	report := newHistogramReporting(componenttest.NewNopTelemetrySettings())
 	consumer := newCumulativeHistogramDataPointConsumer(sender)
@@ -761,7 +761,8 @@ func TestCumulativeHistogramDataPointConsumerWithSourceInDataPoint(t *testing.T)
 	// Creates bounds of -Inf to <=2.0; >2.0 to <=5.0; >5.0 to <=10.0; >10.0 to +Inf
 	histogramDataPoint.SetExplicitBounds([]float64{2.0, 5.0, 10.0})
 	histogramDataPoint.SetBucketCounts([]uint64{5, 1, 3, 2})
-	setTags(map[string]interface{}{"foo": "bar", "source": "dp_source"}, histogramDataPoint.Attributes())
+	histogramDataPoint.Attributes().UpsertString("foo", "bar")
+	histogramDataPoint.Attributes().UpsertString("source", "dp_source")
 	sender := &mockGaugeSender{}
 	report := newHistogramReporting(componenttest.NewNopTelemetrySettings())
 	consumer := newCumulativeHistogramDataPointConsumer(sender)
@@ -826,7 +827,7 @@ func TestCumulativeHistogramDataPointConsumerLeInUse(t *testing.T) {
 	histogramDataPoint := pdata.NewHistogramDataPoint()
 	histogramDataPoint.SetExplicitBounds([]float64{10.0})
 	histogramDataPoint.SetBucketCounts([]uint64{4, 12})
-	setTags(map[string]interface{}{"le": 8}, histogramDataPoint.Attributes())
+	histogramDataPoint.Attributes().UpsertInt("le", 8)
 	sender := &mockGaugeSender{}
 	report := newHistogramReporting(componenttest.NewNopTelemetrySettings())
 	consumer := newCumulativeHistogramDataPointConsumer(sender)
@@ -879,9 +880,7 @@ func TestDeltaHistogramDataPointConsumer(t *testing.T) {
 	histogramDataPoint.SetExplicitBounds([]float64{2.0, 5.0, 10.0})
 	histogramDataPoint.SetBucketCounts([]uint64{5, 1, 3, 2})
 	setDataPointTimestamp(1631234567, histogramDataPoint)
-	setTags(
-		map[string]interface{}{"bar": "baz"},
-		histogramDataPoint.Attributes())
+	histogramDataPoint.Attributes().UpsertString("bar", "baz")
 	sender := &mockDistributionSender{}
 	report := newHistogramReporting(componenttest.NewNopTelemetrySettings())
 	consumer := newDeltaHistogramDataPointConsumer(sender)
@@ -920,9 +919,8 @@ func TestDeltaHistogramDataPointConsumerWithSourceInDataPoint(t *testing.T) {
 	histogramDataPoint.SetExplicitBounds([]float64{2.0, 5.0, 10.0})
 	histogramDataPoint.SetBucketCounts([]uint64{5, 1, 3, 2})
 	setDataPointTimestamp(1631234567, histogramDataPoint)
-	setTags(
-		map[string]interface{}{"bar": "baz", "source": "dp_source"},
-		histogramDataPoint.Attributes())
+	histogramDataPoint.Attributes().UpsertString("bar", "baz")
+	histogramDataPoint.Attributes().UpsertString("source", "dp_source")
 	sender := &mockDistributionSender{}
 	report := newHistogramReporting(componenttest.NewNopTelemetrySettings())
 	consumer := newDeltaHistogramDataPointConsumer(sender)
@@ -1029,14 +1027,14 @@ func TestSummaries(t *testing.T) {
 	mi := createMetricInfo(summaryMetric)
 	dataPoint := dataPoints.AppendEmpty()
 	setQuantileValues(dataPoint, 0.1, 100.0, 0.5, 200.0, 0.9, 300.0, 0.99, 400.0)
-	setTags(map[string]interface{}{"foo": "bar"}, dataPoint.Attributes())
+	dataPoint.Attributes().UpsertString("foo", "bar")
 	dataPoint.SetCount(10)
 	dataPoint.SetSum(5000.0)
 	setDataPointTimestamp(1645123456, dataPoint)
 
 	dataPoint = dataPoints.AppendEmpty()
 	setQuantileValues(dataPoint, 0.2, 75.0, 0.5, 125.0, 0.8, 175.0, 0.95, 225.0)
-	setTags(map[string]interface{}{"bar": "baz"}, dataPoint.Attributes())
+	dataPoint.Attributes().UpsertString("bar", "baz")
 	dataPoint.SetCount(15)
 	dataPoint.SetSum(3000.0)
 	setDataPointTimestamp(1645123556, dataPoint)
@@ -1149,7 +1147,7 @@ func TestSummaries_QuantileTagExists(t *testing.T) {
 	mi := createMetricInfo(summaryMetric)
 	dataPoint := dataPoints.AppendEmpty()
 	setQuantileValues(dataPoint, 0.5, 300.0)
-	setTags(map[string]interface{}{"quantile": "exists"}, dataPoint.Attributes())
+	dataPoint.Attributes().UpsertString("quantile", "exists")
 	dataPoint.SetCount(12)
 	dataPoint.SetSum(4000.0)
 	setDataPointTimestamp(1650123456, dataPoint)
@@ -1195,7 +1193,7 @@ func TestSummariesSourceInDataPoint(t *testing.T) {
 	mi := createMetricInfo(summaryMetric)
 	dataPoint := dataPoints.AppendEmpty()
 	setQuantileValues(dataPoint, 0.5, 300.0)
-	setTags(map[string]interface{}{"source": "dp_source"}, dataPoint.Attributes())
+	dataPoint.Attributes().UpsertString("source", "dp_source")
 	dataPoint.SetCount(12)
 	dataPoint.SetSum(4000.0)
 	setDataPointTimestamp(1650123456, dataPoint)
@@ -1285,7 +1283,8 @@ func TestExponentialHistogramDataPoint(t *testing.T) {
 	dataPoint.Positive().SetOffset(3)
 	dataPoint.Positive().SetBucketCounts([]uint64{5, 6, 7, 8})
 	dataPoint.SetZeroCount(2)
-	setTags(map[string]interface{}{"foo": "bar", "baz": "7"}, dataPoint.Attributes())
+	dataPoint.Attributes().UpsertString("foo", "bar")
+	dataPoint.Attributes().UpsertString("baz", "7")
 	setDataPointTimestamp(1640198765, dataPoint)
 	h := newExponentialHistogramDataPoint(dataPoint)
 	assert.Equal(t, []uint64{0, 17, 16, 15, 2, 5, 6, 7, 8, 0}, h.BucketCounts())
@@ -1439,7 +1438,7 @@ func addDataPoint(
 		setDataPointValue(value, dataPoint)
 	}
 	setDataPointTimestamp(ts, dataPoint)
-	setTags(tags, dataPoint.Attributes())
+	pdata.NewMapFromRaw(tags).CopyTo(dataPoint.Attributes())
 }
 
 type dataPointWithTimestamp interface {
@@ -1462,26 +1461,6 @@ func setDataPointValue(value interface{}, dataPoint pdata.NumberDataPoint) {
 	default:
 		panic("Unsupported value type")
 	}
-}
-
-func setTags(tags map[string]interface{}, attributes pdata.AttributeMap) {
-	valueMap := make(map[string]pdata.Value, len(tags))
-	for key, value := range tags {
-		switch v := value.(type) {
-		case int:
-			valueMap[key] = pdata.NewValueInt(int64(v))
-		case int64:
-			valueMap[key] = pdata.NewValueInt(v)
-		case float64:
-			valueMap[key] = pdata.NewValueDouble(v)
-		case string:
-			valueMap[key] = pdata.NewValueString(v)
-		default:
-			panic("Invalid value type")
-		}
-	}
-	attributeMap := pdata.NewAttributeMapFromMap(valueMap)
-	attributeMap.CopyTo(attributes)
 }
 
 type tobsMetric struct {

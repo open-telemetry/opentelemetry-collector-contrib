@@ -139,7 +139,7 @@ func accessResourceAttributes() pathGetSetter {
 			return resource.Attributes()
 		},
 		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
-			if attrs, ok := val.(pdata.AttributeMap); ok {
+			if attrs, ok := val.(pdata.Map); ok {
 				resource.Attributes().Clear()
 				attrs.CopyTo(resource.Attributes())
 			}
@@ -316,7 +316,7 @@ func accessAttributes() pathGetSetter {
 			return span.Attributes()
 		},
 		setter: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource, val interface{}) {
-			if attrs, ok := val.(pdata.AttributeMap); ok {
+			if attrs, ok := val.(pdata.Map); ok {
 				span.Attributes().Clear()
 				attrs.CopyTo(span.Attributes())
 			}
@@ -445,7 +445,7 @@ func accessStatusMessage() pathGetSetter {
 	}
 }
 
-func getAttr(attrs pdata.AttributeMap, mapKey string) interface{} {
+func getAttr(attrs pdata.Map, mapKey string) interface{} {
 	val, ok := attrs.Get(mapKey)
 	if !ok {
 		return nil
@@ -469,7 +469,7 @@ func getAttr(attrs pdata.AttributeMap, mapKey string) interface{} {
 	return nil
 }
 
-func setAttr(attrs pdata.AttributeMap, mapKey string, val interface{}) {
+func setAttr(attrs pdata.Map, mapKey string, val interface{}) {
 	switch v := val.(type) {
 	case string:
 		attrs.UpsertString(mapKey, v)

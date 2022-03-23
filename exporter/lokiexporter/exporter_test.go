@@ -54,7 +54,7 @@ var (
 	}
 )
 
-func createLogData(numberOfLogs int, attributes pdata.AttributeMap) pdata.Logs {
+func createLogData(numberOfLogs int, attributes pdata.Map) pdata.Logs {
 	logs := pdata.NewLogs()
 	ill := logs.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty()
 
@@ -107,11 +107,11 @@ func TestExporter_pushLogData(t *testing.T) {
 
 	genericGenLogsFunc := func() pdata.Logs {
 		return createLogData(10,
-			pdata.NewAttributeMapFromMap(map[string]pdata.Value{
-				conventions.AttributeContainerName:  pdata.NewValueString("api"),
-				conventions.AttributeK8SClusterName: pdata.NewValueString("local"),
-				"resource.name":                     pdata.NewValueString("myresource"),
-				"severity":                          pdata.NewValueString("debug"),
+			pdata.NewMapFromRaw(map[string]interface{}{
+				conventions.AttributeContainerName:  "api",
+				conventions.AttributeK8SClusterName: "local",
+				"resource.name":                     "myresource",
+				"severity":                          "debug",
 			}))
 	}
 
@@ -186,8 +186,8 @@ func TestExporter_pushLogData(t *testing.T) {
 			testServer:       true,
 			genLogsFunc: func() pdata.Logs {
 				return createLogData(10,
-					pdata.NewAttributeMapFromMap(map[string]pdata.Value{
-						"not.a.match": pdata.NewValueString("random"),
+					pdata.NewMapFromRaw(map[string]interface{}{
+						"not.a.match": "random",
 					}))
 			},
 			errFunc: func(err error) {
@@ -205,16 +205,16 @@ func TestExporter_pushLogData(t *testing.T) {
 				outLogs := pdata.NewLogs()
 
 				matchingLogs := createLogData(10,
-					pdata.NewAttributeMapFromMap(map[string]pdata.Value{
-						conventions.AttributeContainerName:  pdata.NewValueString("api"),
-						conventions.AttributeK8SClusterName: pdata.NewValueString("local"),
-						"severity":                          pdata.NewValueString("debug"),
+					pdata.NewMapFromRaw(map[string]interface{}{
+						conventions.AttributeContainerName:  "api",
+						conventions.AttributeK8SClusterName: "local",
+						"severity":                          "debug",
 					}))
 				matchingLogs.ResourceLogs().MoveAndAppendTo(outLogs.ResourceLogs())
 
 				nonMatchingLogs := createLogData(5,
-					pdata.NewAttributeMapFromMap(map[string]pdata.Value{
-						"not.a.match": pdata.NewValueString("random"),
+					pdata.NewMapFromRaw(map[string]interface{}{
+						"not.a.match": "random",
 					}))
 				nonMatchingLogs.ResourceLogs().MoveAndAppendTo(outLogs.ResourceLogs())
 
@@ -419,11 +419,11 @@ func TestExporter_convertAttributesToLabels(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("with attributes that match", func(t *testing.T) {
-		am := pdata.NewAttributeMap()
+		am := pdata.NewMap()
 		am.InsertString(conventions.AttributeContainerName, "mycontainer")
 		am.InsertString(conventions.AttributeK8SClusterName, "mycluster")
 		am.InsertString("severity", "debug")
-		ram := pdata.NewAttributeMap()
+		ram := pdata.NewMap()
 		ram.InsertString("resource.name", "myresource")
 		// this should overwrite log attribute of the same name
 		ram.InsertString("severity", "info")
@@ -439,33 +439,33 @@ func TestExporter_convertAttributesToLabels(t *testing.T) {
 	})
 
 	t.Run("with attribute matches and the value is a boolean", func(t *testing.T) {
-		am := pdata.NewAttributeMap()
+		am := pdata.NewMap()
 		am.InsertBool("severity", false)
-		ram := pdata.NewAttributeMap()
+		ram := pdata.NewMap()
 		ls, _ := exp.convertAttributesAndMerge(am, ram)
 		require.Nil(t, ls)
 	})
 
 	t.Run("with attribute that matches and the value is a double", func(t *testing.T) {
-		am := pdata.NewAttributeMap()
+		am := pdata.NewMap()
 		am.InsertDouble("severity", float64(0))
-		ram := pdata.NewAttributeMap()
+		ram := pdata.NewMap()
 		ls, _ := exp.convertAttributesAndMerge(am, ram)
 		require.Nil(t, ls)
 	})
 
 	t.Run("with attribute that matches and the value is an int", func(t *testing.T) {
-		am := pdata.NewAttributeMap()
+		am := pdata.NewMap()
 		am.InsertInt("severity", 0)
-		ram := pdata.NewAttributeMap()
+		ram := pdata.NewMap()
 		ls, _ := exp.convertAttributesAndMerge(am, ram)
 		require.Nil(t, ls)
 	})
 
 	t.Run("with attribute that matches and the value is null", func(t *testing.T) {
-		am := pdata.NewAttributeMap()
+		am := pdata.NewMap()
 		am.InsertNull("severity")
-		ram := pdata.NewAttributeMap()
+		ram := pdata.NewMap()
 		ls, _ := exp.convertAttributesAndMerge(am, ram)
 		require.Nil(t, ls)
 	})

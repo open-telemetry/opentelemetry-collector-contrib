@@ -181,7 +181,7 @@ func TestConvert(t *testing.T) {
 	rls := pLogs.ResourceLogs().At(0)
 
 	if resAtts := rls.Resource().Attributes(); assert.Equal(t, 5, resAtts.Len()) {
-		m := pdata.NewAttributeMap()
+		m := pdata.NewMap()
 		m.InsertBool("bool", true)
 		m.InsertInt("int", 123)
 		m.InsertDouble("double", 12.34)
@@ -202,7 +202,7 @@ func TestConvert(t *testing.T) {
 	assert.Equal(t, "Error", lr.SeverityText())
 
 	if atts := lr.Attributes(); assert.Equal(t, 5, atts.Len()) {
-		m := pdata.NewAttributeMap()
+		m := pdata.NewMap()
 		m.InsertBool("bool", true)
 		m.InsertInt("int", 123)
 		m.InsertDouble("double", 12.34)
@@ -212,7 +212,7 @@ func TestConvert(t *testing.T) {
 	}
 
 	if assert.Equal(t, pdata.ValueTypeMap, lr.Body().Type()) {
-		m := pdata.NewAttributeMap()
+		m := pdata.NewMap()
 		// Don't include a nested object because AttributeValueMap sorting
 		// doesn't sort recursively.
 		m.InsertBool("bool", true)

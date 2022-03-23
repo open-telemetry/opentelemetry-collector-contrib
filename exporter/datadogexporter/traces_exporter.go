@@ -118,7 +118,7 @@ func (exp *traceExporter) pushTraceData(
 	// the first payload.
 	if exp.cfg.SendMetadata {
 		exp.onceMetadata.Do(func() {
-			attrs := pdata.NewAttributeMap()
+			attrs := pdata.NewMap()
 			if td.ResourceSpans().Len() > 0 {
 				attrs = td.ResourceSpans().At(0).Resource().Attributes()
 			}

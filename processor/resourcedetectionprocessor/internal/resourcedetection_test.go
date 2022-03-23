@@ -253,7 +253,7 @@ func TestFilterAttributes_Match(t *testing.T) {
 		"host.name": {},
 		"host.id":   {},
 	}
-	attr := pdata.NewAttributeMap()
+	attr := pdata.NewMap()
 	attr.InsertString("host.name", "test")
 	attr.InsertString("host.id", "test")
 	attr.InsertString("drop.this", "test")
@@ -276,7 +276,7 @@ func TestFilterAttributes_NoMatch(t *testing.T) {
 	m := map[string]struct{}{
 		"cloud.region": {},
 	}
-	attr := pdata.NewAttributeMap()
+	attr := pdata.NewMap()
 	attr.InsertString("host.name", "test")
 	attr.InsertString("host.id", "test")
 
@@ -293,7 +293,7 @@ func TestFilterAttributes_NoMatch(t *testing.T) {
 
 func TestFilterAttributes_NilAttributes(t *testing.T) {
 	var m map[string]struct{}
-	attr := pdata.NewAttributeMap()
+	attr := pdata.NewMap()
 	attr.InsertString("host.name", "test")
 	attr.InsertString("host.id", "test")
 
@@ -310,7 +310,7 @@ func TestFilterAttributes_NilAttributes(t *testing.T) {
 
 func TestFilterAttributes_NoAttributes(t *testing.T) {
 	m := make(map[string]struct{})
-	attr := pdata.NewAttributeMap()
+	attr := pdata.NewMap()
 	attr.InsertString("host.name", "test")
 	attr.InsertString("host.id", "test")
 
@@ -339,7 +339,7 @@ func TestAttributesToMap(t *testing.T) {
 			int64(42),
 		},
 	}
-	attr := pdata.NewAttributeMap()
+	attr := pdata.NewMap()
 	attr.InsertString("str", "a")
 	attr.InsertInt("int", 5)
 	attr.InsertDouble("double", 5.0)

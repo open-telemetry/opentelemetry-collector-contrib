@@ -427,7 +427,8 @@ func getSpanWithAttributes(key string, value pdata.Value) pdata.Span {
 
 func initSpanWithAttributes(key string, value pdata.Value, dest pdata.Span) {
 	dest.SetName("spanName")
-	pdata.NewAttributeMapFromMap(map[string]pdata.Value{key: value}).CopyTo(dest.Attributes())
+	dest.Attributes().Clear()
+	dest.Attributes().Insert(key, value)
 }
 
 // Test_hash ensures that the hash function supports different key lengths even if in
@@ -469,10 +470,8 @@ func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string, re
 				span := ils.Spans().AppendEmpty()
 				span.SetTraceID(idutils.UInt64ToTraceID(r.Uint64(), r.Uint64()))
 				span.SetSpanID(idutils.UInt64ToSpanID(r.Uint64()))
-				attributes := make(map[string]pdata.Value)
-				attributes[conventions.AttributeHTTPStatusCode] = pdata.NewValueInt(404)
-				attributes["http.status_text"] = pdata.NewValueString("Not Found")
-				pdata.NewAttributeMapFromMap(attributes).CopyTo(span.Attributes())
+				span.Attributes().UpsertInt(conventions.AttributeHTTPStatusCode, 404)
+				span.Attributes().UpsertString("http.status_text", "Not Found")
 			}
 		}
 		traceBatches = append(traceBatches, traces)

@@ -105,8 +105,8 @@ func newMetricsGroupedByAttrs() *metricsGroupedByAttrs {
 
 // Build the Attributes that we'll be looking for in existing Resources as a merge of the Attributes
 // of the original Resource with the requested Attributes
-func buildReferenceAttributes(originResource pdata.Resource, requiredAttributes pdata.AttributeMap) pdata.AttributeMap {
-	referenceAttributes := pdata.NewAttributeMap()
+func buildReferenceAttributes(originResource pdata.Resource, requiredAttributes pdata.Map) pdata.Map {
+	referenceAttributes := pdata.NewMap()
 	originResource.Attributes().CopyTo(referenceAttributes)
 	requiredAttributes.Range(func(k string, v pdata.Value) bool {
 		referenceAttributes.Upsert(k, v)
@@ -117,7 +117,7 @@ func buildReferenceAttributes(originResource pdata.Resource, requiredAttributes 
 
 // resourceMatches verifies if given pdata.Resource attributes strictly match with the specified
 // reference Attributes (all attributes must match strictly)
-func resourceMatches(resource pdata.Resource, referenceAttributes pdata.AttributeMap) bool {
+func resourceMatches(resource pdata.Resource, referenceAttributes pdata.Map) bool {
 
 	// If not the same number of attributes, it doesn't match
 	if referenceAttributes.Len() != resource.Attributes().Len() {
@@ -141,7 +141,7 @@ func resourceMatches(resource pdata.Resource, referenceAttributes pdata.Attribut
 
 // findResource searches for an existing pdata.ResourceLogs that strictly matches with the specified reference
 // Attributes. Returns the matching pdata.ResourceLogs and bool value which is set to true if found
-func (lgba logsGroupedByAttrs) findResource(referenceAttributes pdata.AttributeMap) (pdata.ResourceLogs, bool) {
+func (lgba logsGroupedByAttrs) findResource(referenceAttributes pdata.Map) (pdata.ResourceLogs, bool) {
 	for i := 0; i < lgba.Len(); i++ {
 		if resourceMatches(lgba.At(i).Resource(), referenceAttributes) {
 			return lgba.At(i), true
@@ -152,7 +152,7 @@ func (lgba logsGroupedByAttrs) findResource(referenceAttributes pdata.AttributeM
 
 // findResource searches for an existing pdata.ResourceLogs that strictly matches with the specified reference
 // Attributes. Returns the matching pdata.ResourceLogs and bool value which is set to true if found
-func (sgba spansGroupedByAttrs) findResource(referenceAttributes pdata.AttributeMap) (pdata.ResourceSpans, bool) {
+func (sgba spansGroupedByAttrs) findResource(referenceAttributes pdata.Map) (pdata.ResourceSpans, bool) {
 	for i := 0; i < sgba.Len(); i++ {
 		if resourceMatches(sgba.At(i).Resource(), referenceAttributes) {
 			return sgba.At(i), true
@@ -163,7 +163,7 @@ func (sgba spansGroupedByAttrs) findResource(referenceAttributes pdata.Attribute
 
 // findResource searches for an existing pdata.ResourceMetrics that strictly matches with the specified reference
 // Attributes. Returns the matching pdata.ResourceMetrics and bool value which is set to true if found
-func (mgba metricsGroupedByAttrs) findResource(referenceAttributes pdata.AttributeMap) (pdata.ResourceMetrics, bool) {
+func (mgba metricsGroupedByAttrs) findResource(referenceAttributes pdata.Map) (pdata.ResourceMetrics, bool) {
 
 	for i := 0; i < mgba.Len(); i++ {
 		if resourceMatches(mgba.At(i).Resource(), referenceAttributes) {
@@ -175,7 +175,7 @@ func (mgba metricsGroupedByAttrs) findResource(referenceAttributes pdata.Attribu
 
 // Update the specified (and new) Resource with the properties of the original Resource, and with the
 // required Attributes
-func updateResourceToMatch(newResource pdata.Resource, originResource pdata.Resource, requiredAttributes pdata.AttributeMap) {
+func updateResourceToMatch(newResource pdata.Resource, originResource pdata.Resource, requiredAttributes pdata.Map) {
 
 	originResource.CopyTo(newResource)
 
@@ -189,7 +189,7 @@ func updateResourceToMatch(newResource pdata.Resource, originResource pdata.Reso
 }
 
 // findOrCreateResource searches for a Resource with matching attributes and returns it. If nothing is found, it is being created
-func (sgba *spansGroupedByAttrs) findOrCreateResource(originResource pdata.Resource, requiredAttributes pdata.AttributeMap) pdata.ResourceSpans {
+func (sgba *spansGroupedByAttrs) findOrCreateResource(originResource pdata.Resource, requiredAttributes pdata.Map) pdata.ResourceSpans {
 
 	// Build the reference attributes that we're looking for in Resources
 	referenceAttributes := buildReferenceAttributes(originResource, requiredAttributes)
@@ -208,7 +208,7 @@ func (sgba *spansGroupedByAttrs) findOrCreateResource(originResource pdata.Resou
 }
 
 // findResourceOrElseCreate searches for a Resource with matching attributes and returns it. If nothing is found, it is being created
-func (lgba *logsGroupedByAttrs) findResourceOrElseCreate(originResource pdata.Resource, requiredAttributes pdata.AttributeMap) pdata.ResourceLogs {
+func (lgba *logsGroupedByAttrs) findResourceOrElseCreate(originResource pdata.Resource, requiredAttributes pdata.Map) pdata.ResourceLogs {
 
 	// Build the reference attributes that we're looking for in Resources
 	referenceAttributes := buildReferenceAttributes(originResource, requiredAttributes)
@@ -227,7 +227,7 @@ func (lgba *logsGroupedByAttrs) findResourceOrElseCreate(originResource pdata.Re
 }
 
 // findResourceOrElseCreate searches for a Resource with matching attributes and returns it. If nothing is found, it is being created
-func (mgba *metricsGroupedByAttrs) findResourceOrElseCreate(originResource pdata.Resource, requiredAttributes pdata.AttributeMap) pdata.ResourceMetrics {
+func (mgba *metricsGroupedByAttrs) findResourceOrElseCreate(originResource pdata.Resource, requiredAttributes pdata.Map) pdata.ResourceMetrics {
 
 	// Build the reference attributes that we're looking for in Resources
 	referenceAttributes := buildReferenceAttributes(originResource, requiredAttributes)

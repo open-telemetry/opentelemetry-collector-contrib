@@ -16,7 +16,7 @@ package testutils // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import "go.opentelemetry.io/collector/model/pdata"
 
-func fillAttributeMap(attrs pdata.AttributeMap, mp map[string]string) {
+func fillAttributeMap(attrs pdata.Map, mp map[string]string) {
 	attrs.Clear()
 	attrs.EnsureCapacity(len(mp))
 	for k, v := range mp {
@@ -26,8 +26,8 @@ func fillAttributeMap(attrs pdata.AttributeMap, mp map[string]string) {
 
 // NewAttributeMap creates a new attribute map (string only)
 // from a Go map
-func NewAttributeMap(mp map[string]string) pdata.AttributeMap {
-	attrs := pdata.NewAttributeMap()
+func NewAttributeMap(mp map[string]string) pdata.Map {
+	attrs := pdata.NewMap()
 	fillAttributeMap(attrs, mp)
 	return attrs
 }

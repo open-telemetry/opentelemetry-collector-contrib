@@ -204,9 +204,9 @@ func Test_Matching_False(t *testing.T) {
 		},
 	}
 
-	atts := pdata.NewAttributeMapFromMap(map[string]pdata.Value{
-		"keyInt": pdata.NewValueInt(123),
-		"keyMap": pdata.NewValueMap(),
+	atts := pdata.NewMapFromRaw(map[string]interface{}{
+		"keyInt": 123,
+		"keyMap": map[string]interface{}{},
 	})
 
 	library := pdata.NewInstrumentationLibrary()
@@ -239,7 +239,7 @@ func Test_MatchingCornerCases(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, mp)
 
-	assert.False(t, mp.Match(pdata.NewAttributeMap(), resource("svcA"), pdata.NewInstrumentationLibrary()))
+	assert.False(t, mp.Match(pdata.NewMap(), resource("svcA"), pdata.NewInstrumentationLibrary()))
 }
 
 func Test_Matching_True(t *testing.T) {
@@ -358,12 +358,12 @@ func Test_Matching_True(t *testing.T) {
 		},
 	}
 
-	atts := pdata.NewAttributeMapFromMap(map[string]pdata.Value{
-		"keyString": pdata.NewValueString("arithmetic"),
-		"keyInt":    pdata.NewValueInt(123),
-		"keyDouble": pdata.NewValueDouble(3245.6),
-		"keyBool":   pdata.NewValueBool(true),
-		"keyExists": pdata.NewValueString("present"),
+	atts := pdata.NewMapFromRaw(map[string]interface{}{
+		"keyString": "arithmetic",
+		"keyInt":    123,
+		"keyDouble": 3245.6,
+		"keyBool":   true,
+		"keyExists": "present",
 	})
 
 	resource := pdata.NewResource()

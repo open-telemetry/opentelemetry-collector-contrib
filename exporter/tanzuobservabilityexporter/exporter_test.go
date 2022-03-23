@@ -94,7 +94,7 @@ func TestExportTraceDataFullTrace(t *testing.T) {
 	status.SetMessage("an error event occurred")
 	status.CopyTo(clientSpan.Status())
 
-	clientAttrs := pdata.NewAttributeMap()
+	clientAttrs := pdata.NewMap()
 	clientAttrs.InsertString(labelApplication, "test-app")
 	clientAttrs.CopyTo(clientSpan.Attributes())
 
@@ -106,7 +106,7 @@ func TestExportTraceDataFullTrace(t *testing.T) {
 	)
 	serverSpan.SetKind(pdata.SpanKindServer)
 	serverSpan.SetTraceState("key=val")
-	serverAttrs := pdata.NewAttributeMap()
+	serverAttrs := pdata.NewMap()
 	serverAttrs.InsertString(conventions.AttributeServiceName, "the-server")
 	serverAttrs.InsertString(conventions.AttributeHTTPMethod, "POST")
 	serverAttrs.InsertInt(conventions.AttributeHTTPStatusCode, 403)
@@ -114,7 +114,7 @@ func TestExportTraceDataFullTrace(t *testing.T) {
 	serverAttrs.CopyTo(serverSpan.Attributes())
 
 	traces := constructTraces([]pdata.Span{rootSpan, clientSpan, serverSpan})
-	resourceAttrs := pdata.NewAttributeMap()
+	resourceAttrs := pdata.NewMap()
 	resourceAttrs.InsertString("resource", "R1")
 	resourceAttrs.InsertString(conventions.AttributeServiceName, "test-service")
 	resourceAttrs.InsertString(labelSource, "test-source")

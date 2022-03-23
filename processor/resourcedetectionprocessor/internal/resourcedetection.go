@@ -156,7 +156,7 @@ func (p *ResourceProvider) detectResource(ctx context.Context) {
 	p.detectedResource.schemaURL = mergedSchemaURL
 }
 
-func AttributesToMap(am pdata.AttributeMap) map[string]interface{} {
+func AttributesToMap(am pdata.Map) map[string]interface{} {
 	mp := make(map[string]interface{}, am.Len())
 	am.Range(func(k string, v pdata.Value) bool {
 		mp[k] = UnwrapAttribute(v)
@@ -184,7 +184,7 @@ func UnwrapAttribute(v pdata.Value) interface{} {
 	}
 }
 
-func getSerializableArray(inArr pdata.AttributeValueSlice) []interface{} {
+func getSerializableArray(inArr pdata.Slice) []interface{} {
 	var outArr []interface{}
 	for i := 0; i < inArr.Len(); i++ {
 		outArr = append(outArr, UnwrapAttribute(inArr.At(i)))
@@ -208,7 +208,7 @@ func MergeSchemaURL(currentSchemaURL string, newSchemaURL string) string {
 	return currentSchemaURL
 }
 
-func filterAttributes(am pdata.AttributeMap, attributesToKeep map[string]struct{}) []string {
+func filterAttributes(am pdata.Map, attributesToKeep map[string]struct{}) []string {
 	if len(attributesToKeep) > 0 {
 		droppedAttributes := make([]string, 0)
 		am.RemoveIf(func(k string, v pdata.Value) bool {

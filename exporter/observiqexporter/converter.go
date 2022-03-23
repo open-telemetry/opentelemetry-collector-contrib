@@ -192,7 +192,7 @@ func severityFromRecord(log pdata.LogRecord) string {
 /*
 	Transform AttributeMap to native Go map, skipping keys with nil values, and replacing dots in keys with _
 */
-func attributeMapToBaseType(m pdata.AttributeMap) map[string]interface{} {
+func attributeMapToBaseType(m pdata.Map) map[string]interface{} {
 	mapOut := make(map[string]interface{}, m.Len())
 	m.Range(func(k string, v pdata.Value) bool {
 		val := attributeValueToBaseType(v)
