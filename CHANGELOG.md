@@ -43,6 +43,7 @@
 - `prometheusremotewriteexporter` support adding trace id and span id attached to exemplars (#8380)
 - `influxdbexporter`: accept histogram metric missing infinity bucket. (#8462)
 - `skywalkingreceiver`: Added implementation of Skywalking receiver. (#8549)
+- `prometheusreceiver`: Fix staleness bug for histograms and summaries (#8561)
 
 ### 🛑 Breaking changes 🛑
 
