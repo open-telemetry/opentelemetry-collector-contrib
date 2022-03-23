@@ -6,10 +6,12 @@
 ### 💡 Enhancements 💡
 
 - `k8seventsreceiver`: Add Api_version and resource_version (#8539)
+- Add `make crosslink` target to ensure replace statements are included in `go.mod` for all transitive dependencies within repository (#8822)
 
 ### 🛑 Breaking changes 🛑
 
 - `windowsperfcountersreceiver`: Added metrics configuration (#8376)
+
 
 ### 🚩 Deprecations 🚩
 
