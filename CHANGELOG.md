@@ -31,6 +31,7 @@
 - `fluentforwardreceiver`: Release port on shutdown (#9111)
 - `prometheusexporter`: Prometheus fails to generate logs when prometheus exporter produced a check exception occurs. (#8949)
 - `resourcedetectionprocessor`: Wire docker detector (#9372)
+- `kafkametricsreceiver`: Do not crash collector if Kafka is unavailable during startup (#8817)
 
 ## v0.49.0
 
