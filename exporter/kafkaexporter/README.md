@@ -3,7 +3,9 @@
 Kafka exporter exports traces to Kafka. This exporter uses a synchronous producer
 that blocks and does not batch messages, therefore it should be used with batch and queued retry
 processors for higher throughput and resiliency. Message payload encoding is configurable.
- 
+
+Supported pipeline types: logs, metrics, traces
+
 The following settings are required:
 - `protocol_version` (no default): Kafka protocol version e.g. 2.0.0
 
