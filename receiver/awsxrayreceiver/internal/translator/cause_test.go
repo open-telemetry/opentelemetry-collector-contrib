@@ -81,7 +81,7 @@ func TestConvertStackFramesToStackTraceStrNoLine(t *testing.T) {
 		},
 	}
 	actual := convertStackFramesToStackTraceStr(excp)
-	assert.Equal(t, actual, "exceptionType: exceptionMessage\n\tat label0(path0: 10)\n\tat label1(path1: )\n")
+	assert.Equal(t, actual, "exceptionType: exceptionMessage\n\tat label0(path0: 10)\n\tat label1(path1: <unknown>)\n")
 }
 
 func TestConvertStackFramesToStackTraceStrNoLabel(t *testing.T) {
