@@ -24,9 +24,8 @@ import (
 	"github.com/vmware/govmomi"
 	"github.com/vmware/govmomi/find"
 	"github.com/vmware/govmomi/object"
-	"github.com/vmware/govmomi/view"
+	"github.com/vmware/govmomi/property"
 	"github.com/vmware/govmomi/vim25"
-	"github.com/vmware/govmomi/vim25/mo"
 	vt "github.com/vmware/govmomi/vim25/types"
 	"github.com/vmware/govmomi/vsan"
 	"github.com/vmware/govmomi/vsan/types"
@@ -38,6 +37,8 @@ type VmwareVcenterClient struct {
 	moClient   *govmomi.Client
 	vimDriver  *vim25.Client
 	vsanDriver *vsan.Client
+	finder     *find.Finder
+	pc         *property.Collector
 	cfg        *Config
 	logger     *zap.Logger
 }
@@ -71,6 +72,8 @@ func (vc *VmwareVcenterClient) Connect(ctx context.Context) error {
 		}
 		vc.moClient = client
 		vc.vimDriver = client.Client
+		vc.pc = property.DefaultCollector(vc.vimDriver)
+		vc.finder = find.NewFinder(vc.vimDriver)
 	}
 	return nil
 }
@@ -91,27 +94,44 @@ func (vc *VmwareVcenterClient) ConnectVSAN(ctx context.Context) error {
 	return nil
 }
 
-func (vc *VmwareVcenterClient) Clusters(ctx context.Context) ([]mo.ClusterComputeResource, error) {
-	m := view.NewManager(vc.moClient.Client)
-	v, err := m.CreateContainerView(ctx, vc.vimDriver.ServiceContent.RootFolder, []string{"ClusterComputeResource"}, true)
+func (vc *VmwareVcenterClient) Clusters(ctx context.Context) ([]*object.ClusterComputeResource, error) {
+	clusters, err := vc.finder.ClusterComputeResourceList(ctx, "*")
 	if err != nil {
-		return []mo.ClusterComputeResource{}, err
-	}
-	var clusters []mo.ClusterComputeResource
-	err = v.Retrieve(ctx, []string{"ClusterComputeResource"}, []string{"summary", "name"}, &clusters)
-	if err != nil {
-		return []mo.ClusterComputeResource{}, err
+		return []*object.ClusterComputeResource{}, err
 	}
 	return clusters, nil
 }
 
 func (vc *VmwareVcenterClient) Hosts(ctx context.Context) ([]*object.HostSystem, error) {
-	finder := find.NewFinder(vc.vimDriver)
-	hss, err := finder.HostSystemList(ctx, "*")
+	hss, err := vc.finder.HostSystemList(ctx, "*")
 	if err != nil {
 		return nil, fmt.Errorf("unable to retrieve host list %w", err)
 	}
 	return hss, nil
+}
+
+func (vc *VmwareVcenterClient) DataStores(ctx context.Context) ([]*object.Datastore, error) {
+	dss, err := vc.finder.DatastoreList(ctx, "*")
+	if err != nil {
+		return nil, fmt.Errorf("unable to retrieve datastores %w", err)
+	}
+	return dss, err
+}
+
+func (vc *VmwareVcenterClient) ResourcePools(ctx context.Context) ([]*object.ResourcePool, error) {
+	rps, err := vc.finder.ResourcePoolList(ctx, "*")
+	if err != nil {
+		return nil, fmt.Errorf("unable to retrieve resource pools: %w", err)
+	}
+	return rps, err
+}
+
+func (vc *VmwareVcenterClient) VMs(ctx context.Context) ([]*object.VirtualMachine, error) {
+	rps, err := vc.finder.VirtualMachineList(ctx, "*")
+	if err != nil {
+		return nil, fmt.Errorf("unable to retrieve resource pools: %w", err)
+	}
+	return rps, err
 }
 
 func (vc *VmwareVcenterClient) CollectVSANCluster(ctx context.Context, clusterRef *vt.ManagedObjectReference, startTime time.Time, endTime time.Time) (*[]types.VsanPerfEntityMetricCSV, error) {
@@ -128,7 +148,16 @@ func (vc *VmwareVcenterClient) CollectVSANCluster(ctx context.Context, clusterRe
 	return vc.queryVsan(ctx, clusterRef, querySpec)
 }
 
-func (vc *VmwareVcenterClient) CollectVSANHost(ctx context.Context, hostRef *vt.ManagedObjectReference, startTime time.Time, endTime time.Time) (*[]types.VsanPerfEntityMetricCSV, error) {
+func (vc *VmwareVcenterClient) RetrieveProperty(
+	ctx context.Context,
+	ref vt.ManagedObjectReference,
+	path []string,
+	dst interface{},
+) error {
+	return vc.pc.RetrieveOne(ctx, ref, path, dst)
+}
+
+func (vc *VmwareVcenterClient) CollectVSANHosts(ctx context.Context, clusterRef *vt.ManagedObjectReference, startTime time.Time, endTime time.Time) (*[]types.VsanPerfEntityMetricCSV, error) {
 	if vc.vsanDriver == nil {
 		return nil, errors.New("vsan client not instantiated")
 	}
@@ -139,10 +168,15 @@ func (vc *VmwareVcenterClient) CollectVSANHost(ctx context.Context, hostRef *vt.
 			EndTime:     &endTime,
 		},
 	}
-	return vc.queryVsan(ctx, hostRef, querySpec)
+	return vc.queryVsan(ctx, clusterRef, querySpec)
 }
 
-func (vc *VmwareVcenterClient) CollectVSANVirtualMachine(ctx context.Context, vmRef *vt.ManagedObjectReference, startTime time.Time, endTime time.Time) (*[]types.VsanPerfEntityMetricCSV, error) {
+func (vc *VmwareVcenterClient) CollectVSANVirtualMachine(
+	ctx context.Context,
+	clusterRef *vt.ManagedObjectReference,
+	startTime time.Time,
+	endTime time.Time,
+) (*[]types.VsanPerfEntityMetricCSV, error) {
 	if vc.vsanDriver == nil {
 		return nil, errors.New("vsan client not instantiated")
 	}
@@ -154,8 +188,7 @@ func (vc *VmwareVcenterClient) CollectVSANVirtualMachine(ctx context.Context, vm
 			EndTime:     &endTime,
 		},
 	}
-
-	return vc.queryVsan(ctx, vmRef, querySpec)
+	return vc.queryVsan(ctx, clusterRef, querySpec)
 }
 
 func (vc *VmwareVcenterClient) queryVsan(ctx context.Context, ref *vt.ManagedObjectReference, qs []types.VsanPerfQuerySpec) (*[]types.VsanPerfEntityMetricCSV, error) {

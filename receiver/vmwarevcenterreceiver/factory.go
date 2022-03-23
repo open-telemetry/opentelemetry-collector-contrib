@@ -44,12 +44,15 @@ func NewFactory() component.ReceiverFactory {
 
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)), CollectionInterval: time.Minute},
-		TLSClientSetting:          configtls.TLSClientSetting{},
-		Metrics:                   metadata.DefaultMetricsSettings(),
-		Endpoint:                  "",
-		Username:                  "",
-		Password:                  "",
+		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
+			CollectionInterval: 5 * time.Minute,
+		},
+		TLSClientSetting: configtls.TLSClientSetting{},
+		Metrics:          metadata.DefaultMetricsSettings(),
+		Endpoint:         "",
+		Username:         "",
+		Password:         "",
 	}
 }
 

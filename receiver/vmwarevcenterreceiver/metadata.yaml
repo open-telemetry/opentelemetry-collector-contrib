@@ -369,14 +369,14 @@ metrics:
       monotonic: false
       value_type: int
       aggregation: cumulative
-    attributes: [instance_name]
+    attributes: [instance_name, vsan_operation_type]
   vcenter.vm.vsan.throughput:
     enabled: true
     description: The VSAN throughput of a virtual machine
     unit: By/s
     gauge:
       value_type: int
-    attributes: [instance_name]
+    attributes: [instance_name, vsan_throughput_direction]
   vcenter.vm.vsan.congestions:
     enabled: true
     description: todo
@@ -397,4 +397,4 @@ metrics:
     unit: us
     gauge:
       value_type: int
-    attributes: [instance_name]
+    attributes: [instance_name, vsan_latency_type]

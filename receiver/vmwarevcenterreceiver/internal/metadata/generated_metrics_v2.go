@@ -2262,7 +2262,7 @@ func (m *metricVcenterVMVsanLatencyAvg) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricVcenterVMVsanLatencyAvg) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, instanceNameAttributeValue string) {
+func (m *metricVcenterVMVsanLatencyAvg) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, instanceNameAttributeValue string, vsanLatencyTypeAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -2271,6 +2271,7 @@ func (m *metricVcenterVMVsanLatencyAvg) recordDataPoint(start pdata.Timestamp, t
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
 	dp.Attributes().Insert(A.InstanceName, pdata.NewAttributeValueString(instanceNameAttributeValue))
+	dp.Attributes().Insert(A.VsanLatencyType, pdata.NewAttributeValueString(vsanLatencyTypeAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2315,7 +2316,7 @@ func (m *metricVcenterVMVsanOperations) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricVcenterVMVsanOperations) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, instanceNameAttributeValue string) {
+func (m *metricVcenterVMVsanOperations) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, instanceNameAttributeValue string, vsanOperationTypeAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -2324,6 +2325,7 @@ func (m *metricVcenterVMVsanOperations) recordDataPoint(start pdata.Timestamp, t
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
 	dp.Attributes().Insert(A.InstanceName, pdata.NewAttributeValueString(instanceNameAttributeValue))
+	dp.Attributes().Insert(A.VsanOperationType, pdata.NewAttributeValueString(vsanOperationTypeAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2417,7 +2419,7 @@ func (m *metricVcenterVMVsanThroughput) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricVcenterVMVsanThroughput) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, instanceNameAttributeValue string) {
+func (m *metricVcenterVMVsanThroughput) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, instanceNameAttributeValue string, vsanThroughputDirectionAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -2426,6 +2428,7 @@ func (m *metricVcenterVMVsanThroughput) recordDataPoint(start pdata.Timestamp, t
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
 	dp.Attributes().Insert(A.InstanceName, pdata.NewAttributeValueString(instanceNameAttributeValue))
+	dp.Attributes().Insert(A.VsanThroughputDirection, pdata.NewAttributeValueString(vsanThroughputDirectionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2810,13 +2813,13 @@ func (mb *MetricsBuilder) RecordVcenterVMVsanCongestionsDataPoint(ts pdata.Times
 }
 
 // RecordVcenterVMVsanLatencyAvgDataPoint adds a data point to vcenter.vm.vsan.latency.avg metric.
-func (mb *MetricsBuilder) RecordVcenterVMVsanLatencyAvgDataPoint(ts pdata.Timestamp, val int64, instanceNameAttributeValue string) {
-	mb.metricVcenterVMVsanLatencyAvg.recordDataPoint(mb.startTime, ts, val, instanceNameAttributeValue)
+func (mb *MetricsBuilder) RecordVcenterVMVsanLatencyAvgDataPoint(ts pdata.Timestamp, val int64, instanceNameAttributeValue string, vsanLatencyTypeAttributeValue string) {
+	mb.metricVcenterVMVsanLatencyAvg.recordDataPoint(mb.startTime, ts, val, instanceNameAttributeValue, vsanLatencyTypeAttributeValue)
 }
 
 // RecordVcenterVMVsanOperationsDataPoint adds a data point to vcenter.vm.vsan.operations metric.
-func (mb *MetricsBuilder) RecordVcenterVMVsanOperationsDataPoint(ts pdata.Timestamp, val int64, instanceNameAttributeValue string) {
-	mb.metricVcenterVMVsanOperations.recordDataPoint(mb.startTime, ts, val, instanceNameAttributeValue)
+func (mb *MetricsBuilder) RecordVcenterVMVsanOperationsDataPoint(ts pdata.Timestamp, val int64, instanceNameAttributeValue string, vsanOperationTypeAttributeValue string) {
+	mb.metricVcenterVMVsanOperations.recordDataPoint(mb.startTime, ts, val, instanceNameAttributeValue, vsanOperationTypeAttributeValue)
 }
 
 // RecordVcenterVMVsanOutstandingIoDataPoint adds a data point to vcenter.vm.vsan.outstanding_io metric.
@@ -2825,8 +2828,8 @@ func (mb *MetricsBuilder) RecordVcenterVMVsanOutstandingIoDataPoint(ts pdata.Tim
 }
 
 // RecordVcenterVMVsanThroughputDataPoint adds a data point to vcenter.vm.vsan.throughput metric.
-func (mb *MetricsBuilder) RecordVcenterVMVsanThroughputDataPoint(ts pdata.Timestamp, val int64, instanceNameAttributeValue string) {
-	mb.metricVcenterVMVsanThroughput.recordDataPoint(mb.startTime, ts, val, instanceNameAttributeValue)
+func (mb *MetricsBuilder) RecordVcenterVMVsanThroughputDataPoint(ts pdata.Timestamp, val int64, instanceNameAttributeValue string, vsanThroughputDirectionAttributeValue string) {
+	mb.metricVcenterVMVsanThroughput.recordDataPoint(mb.startTime, ts, val, instanceNameAttributeValue, vsanThroughputDirectionAttributeValue)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
