@@ -25,7 +25,18 @@ metrics:
 ```
 {{- end }}
 
-## Attributes
+{{- if .ResourceAttributes }}
+
+## Resource attributes
+
+| Name | Description | Type |
+| ---- | ----------- | ---- |
+{{- range $attributeName, $attributeInfo := .ResourceAttributes }}
+| {{ $attributeName }} | {{ $attributeInfo.Description }} | {{ $attributeInfo.Type }} |
+{{- end }}
+{{- end }}
+
+## Metric attributes
 
 | Name | Description |
 | ---- | ----------- |

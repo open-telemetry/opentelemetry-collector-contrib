@@ -17,6 +17,11 @@
 
 - `resourcedetectionprocessor`: Add attribute allowlist (#8547)
 
+### 💡 Enhancements 💡
+
+- `cmd/mdatagen`: Add resource attributes definition to metadata.yaml and move `pdata.Metrics` creation to the
+  generated code (#5270) 
+
 ## v0.47.0
 
 ### 💡 Enhancements 💡
