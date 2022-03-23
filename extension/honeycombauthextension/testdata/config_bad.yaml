@@ -1,0 +1,21 @@
+extensions:
+  honeycombauth/missing-team:
+    dataset: test-dataset
+
+  honeycombauth/missing-dataset:
+    team: test-team
+
+service:
+  extensions: [honeycombauth/missing-team, honeycombauth/missing-dataset]
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [nop]
+
+receivers:
+  nop:
+processors:
+  nop:
+exporters:
+  nop:

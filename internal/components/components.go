@@ -15,6 +15,7 @@
 package components // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/components"
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/honeycombauthextension"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/loggingexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
@@ -160,6 +161,7 @@ func Components() (component.Factories, error) {
 		fluentbitextension.NewFactory(),
 		healthcheckextension.NewFactory(),
 		hostobserver.NewFactory(),
+		honeycombauthextension.NewFactory(),
 		httpforwarder.NewFactory(),
 		k8sobserver.NewFactory(),
 		pprofextension.NewFactory(),

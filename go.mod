@@ -51,6 +51,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/fluentbitextension v0.47.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension v0.47.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder v0.47.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/honeycombauthextension v0.47.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension v0.47.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver v0.47.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver v0.47.0
@@ -625,6 +626,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/flue
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension => ./extension/healthcheckextension
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder => ./extension/httpforwarder
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/honeycombauthextension => ./extension/honeycombauthextension
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling => ./extension/jaegerremotesampling
 

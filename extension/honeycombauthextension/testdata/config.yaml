@@ -1,0 +1,19 @@
+extensions:
+  honeycombauth:
+    team: test-team
+    dataset: test-dataset
+
+service:
+  extensions: [honeycombauth]
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [nop]
+
+receivers:
+  nop:
+processors:
+  nop:
+exporters:
+  nop:
