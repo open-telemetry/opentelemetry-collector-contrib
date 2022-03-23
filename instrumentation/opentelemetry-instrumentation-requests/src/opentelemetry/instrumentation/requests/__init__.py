@@ -255,7 +255,7 @@ class RequestsInstrumentor(BaseInstrumentor):
                 ``name_callback``: Callback which calculates a generic span name for an
                     outgoing HTTP request based on the method and url.
                     Optional: Defaults to get_default_span_name.
-                ``excluded_urls``: A string containing a comma-delimitted
+                ``excluded_urls``: A string containing a comma-delimited
                     list of regexes used to exclude URLs from tracking
         """
         tracer_provider = kwargs.get("tracer_provider")

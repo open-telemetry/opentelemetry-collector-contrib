@@ -50,7 +50,7 @@ will exclude requests such as ``https://site/client/123/info`` and ``https://sit
 Request/Response hooks
 **********************
 
-Utilize request/reponse hooks to execute custom logic to be performed before/after performing a request. The server request hook takes in a server span and ASGI
+Utilize request/response hooks to execute custom logic to be performed before/after performing a request. The server request hook takes in a server span and ASGI
 scope object for every incoming request. The client request hook is called with the internal span and an ASGI scope which is sent as a dictionary for when the method recieve is called.
 The client response hook is called with the internal span and an ASGI event which is sent as a dictionary for when the method send is called.
 

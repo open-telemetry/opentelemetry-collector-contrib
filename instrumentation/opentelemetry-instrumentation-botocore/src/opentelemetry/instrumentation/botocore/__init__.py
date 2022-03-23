@@ -257,7 +257,7 @@ def _apply_response_attributes(span: Span, result):
 
     retry_attempts = metadata.get("RetryAttempts")
     if retry_attempts is not None:
-        # TODO: update when semantic conventinos exists
+        # TODO: update when semantic conventions exists
         span.set_attribute("retry_attempts", retry_attempts)
 
     status_code = metadata.get("HTTPStatusCode")

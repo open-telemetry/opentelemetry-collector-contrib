@@ -176,7 +176,7 @@ class TornadoInstrumentor(BaseInstrumentor):
 
         In order to work around this, we patch the __init__ method of RequestHandler and then dynamically patch
         the prepare, on_finish and log_exception methods of the derived classes _only_ the first time we see them.
-        Note that the patch does not apply on every single __init__ call, only the first one for the enture
+        Note that the patch does not apply on every single __init__ call, only the first one for the entire
         process lifetime.
         """
         tracer_provider = kwargs.get("tracer_provider")

@@ -168,7 +168,7 @@ class TestURLLib3Instrumentor(TestBase):
         # instrument again to avoid warning message on tearDown
         URLLib3Instrumentor().instrument()
 
-    def test_suppress_instrumntation(self):
+    def test_suppress_instrumentation(self):
         suppression_keys = (
             _SUPPRESS_HTTP_INSTRUMENTATION_KEY,
             _SUPPRESS_INSTRUMENTATION_KEY,

@@ -52,7 +52,7 @@ Environment variables
 This env var must be set to ``true`` in order to enable trace context injection into logs by calling ``logging.basicConfig()`` and
 setting a logging format that makes use of the injected tracing variables.
 
-Alternatively, ``set_logging_format`` argument can be set to ``True`` when initializing the ``LoggingInstrumentor`` class to acheive the
+Alternatively, ``set_logging_format`` argument can be set to ``True`` when initializing the ``LoggingInstrumentor`` class to achieve the
 same effect.
 
 .. code-block::
@@ -65,7 +65,7 @@ The default value is ``false``.
 
 This env var can be used to instruct the instrumentation to use a custom logging format.
 
-Alternatively, a custom logging format can be passed to the ``LoggingInsrumentor`` as the ``logging_format`` argument. For example:
+Alternatively, a custom logging format can be passed to the ``LoggingInstrumentor`` as the ``logging_format`` argument. For example:
 
 .. code-block::
 
@@ -108,7 +108,7 @@ environment variables respectively.
 
 If you code or some other library/framework you are using calls logging.basicConfig before this integration is enabled, then this integration's logging
 format will not be used and log statements will not contain tracing context. For this reason, you'll need to make sure this integration is enabled as early
-as possible in the service lifecycle or your framework is configured to use a logging format with placeholders for tracing context. This can be acheived by
+as possible in the service lifecycle or your framework is configured to use a logging format with placeholders for tracing context. This can be achieved by
 adding the following placeholders to your logging format:
 
 .. code-block::
