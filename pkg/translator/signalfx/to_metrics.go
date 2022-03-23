@@ -96,7 +96,7 @@ func fillNumberDataPoint(sfxDataPoint *model.DataPoint, dps pdata.NumberDataPoin
 
 func fillInAttributes(
 	dimensions []*model.Dimension,
-	attributes pdata.AttributeMap,
+	attributes pdata.Map,
 ) {
 	attributes.Clear()
 	attributes.EnsureCapacity(len(dimensions))

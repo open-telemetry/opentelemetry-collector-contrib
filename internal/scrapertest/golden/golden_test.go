@@ -76,13 +76,13 @@ func testMetrics() pdata.MetricSlice {
 	dps := metric.Gauge().DataPoints()
 
 	dp := dps.AppendEmpty()
-	attributes := pdata.NewAttributeMap()
+	attributes := pdata.NewMap()
 	attributes.Insert("testKey1", pdata.NewValueString("teststringvalue1"))
 	attributes.Insert("testKey2", pdata.NewValueString("testvalue1"))
 	setDPDoubleVal(dp, 2, attributes, time.Time{})
 
 	dp = dps.AppendEmpty()
-	attributes = pdata.NewAttributeMap()
+	attributes = pdata.NewMap()
 	attributes.Insert("testKey1", pdata.NewValueString("teststringvalue2"))
 	attributes.Insert("testKey2", pdata.NewValueString("testvalue2"))
 	setDPDoubleVal(dp, 2, attributes, time.Time{})
@@ -93,7 +93,7 @@ func testMetrics() pdata.MetricSlice {
 	dps = metric.Gauge().DataPoints()
 
 	dp = dps.AppendEmpty()
-	attributes = pdata.NewAttributeMap()
+	attributes = pdata.NewMap()
 	attributes.Insert("testKey2", pdata.NewValueString("teststringvalue2"))
 	setDPIntVal(dp, 2, attributes, time.Time{})
 
@@ -103,12 +103,12 @@ func testMetrics() pdata.MetricSlice {
 	dps = metric.Sum().DataPoints()
 
 	dp = dps.AppendEmpty()
-	attributes = pdata.NewAttributeMap()
+	attributes = pdata.NewMap()
 	attributes.Insert("testKey2", pdata.NewValueString("teststringvalue2"))
 	setDPIntVal(dp, 2, attributes, time.Time{})
 
 	dp = dps.AppendEmpty()
-	attributes = pdata.NewAttributeMap()
+	attributes = pdata.NewMap()
 	attributes.Insert("testKey2", pdata.NewValueString("teststringvalue2"))
 	setDPIntVal(dp, 2, attributes, time.Time{})
 
@@ -118,18 +118,18 @@ func testMetrics() pdata.MetricSlice {
 	dps = metric.Sum().DataPoints()
 
 	dp = dps.AppendEmpty()
-	attributes = pdata.NewAttributeMap()
+	attributes = pdata.NewMap()
 	setDPDoubleVal(dp, 2, attributes, time.Date(1997, 07, 27, 1, 1, 1, 1, &time.Location{}))
 	return slice
 }
 
-func setDPDoubleVal(dp pdata.NumberDataPoint, value float64, attributes pdata.AttributeMap, timeStamp time.Time) {
+func setDPDoubleVal(dp pdata.NumberDataPoint, value float64, attributes pdata.Map, timeStamp time.Time) {
 	dp.SetDoubleVal(value)
 	dp.SetTimestamp(pdata.NewTimestampFromTime(timeStamp))
 	attributes.CopyTo(dp.Attributes())
 }
 
-func setDPIntVal(dp pdata.NumberDataPoint, value int64, attributes pdata.AttributeMap, timeStamp time.Time) {
+func setDPIntVal(dp pdata.NumberDataPoint, value int64, attributes pdata.Map, timeStamp time.Time) {
 	dp.SetIntVal(value)
 	dp.SetTimestamp(pdata.NewTimestampFromTime(timeStamp))
 	attributes.CopyTo(dp.Attributes())

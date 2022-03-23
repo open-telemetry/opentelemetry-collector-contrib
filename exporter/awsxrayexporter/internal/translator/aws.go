@@ -56,8 +56,8 @@ func makeAws(attributes map[string]pdata.Value, resource pdata.Resource) (map[st
 		taskArn      string
 		taskFamily   string
 		launchType   string
-		logGroups    pdata.AttributeValueSlice
-		logGroupArns pdata.AttributeValueSlice
+		logGroups    pdata.Slice
+		logGroupArns pdata.Slice
 		cwl          []awsxray.LogGroupMetadata
 		ec2          *awsxray.EC2Metadata
 		ecs          *awsxray.ECSMetadata
@@ -212,9 +212,9 @@ func makeAws(attributes map[string]pdata.Value, resource pdata.Resource) (map[st
 
 	// Since we must couple log group ARNs and Log Group Names in the same CWLogs object, we first try to derive the
 	// names from the ARN, then fall back to just recording the names
-	if logGroupArns != (pdata.AttributeValueSlice{}) && logGroupArns.Len() > 0 {
+	if logGroupArns != (pdata.Slice{}) && logGroupArns.Len() > 0 {
 		cwl = getLogGroupMetadata(logGroupArns, true)
-	} else if logGroups != (pdata.AttributeValueSlice{}) && logGroups.Len() > 0 {
+	} else if logGroups != (pdata.Slice{}) && logGroups.Len() > 0 {
 		cwl = getLogGroupMetadata(logGroups, false)
 	}
 
@@ -251,7 +251,7 @@ func makeAws(attributes map[string]pdata.Value, resource pdata.Resource) (map[st
 
 // Given an array of log group ARNs, create a corresponding amount of LogGroupMetadata objects with log_group and arn
 // populated, or given an array of just log group names, create the LogGroupMetadata objects with arn omitted
-func getLogGroupMetadata(logGroups pdata.AttributeValueSlice, isArn bool) []awsxray.LogGroupMetadata {
+func getLogGroupMetadata(logGroups pdata.Slice, isArn bool) []awsxray.LogGroupMetadata {
 	var lgm []awsxray.LogGroupMetadata
 	for i := 0; i < logGroups.Len(); i++ {
 		if isArn {

@@ -103,7 +103,7 @@ func resourceToJaegerProtoProcess(resource pdata.Resource) *model.Process {
 
 }
 
-func appendTagsFromResourceAttributes(dest []model.KeyValue, attrs pdata.AttributeMap) []model.KeyValue {
+func appendTagsFromResourceAttributes(dest []model.KeyValue, attrs pdata.Map) []model.KeyValue {
 	if attrs.Len() == 0 {
 		return dest
 	}
@@ -118,7 +118,7 @@ func appendTagsFromResourceAttributes(dest []model.KeyValue, attrs pdata.Attribu
 	return dest
 }
 
-func appendTagsFromAttributes(dest []model.KeyValue, attrs pdata.AttributeMap) []model.KeyValue {
+func appendTagsFromAttributes(dest []model.KeyValue, attrs pdata.Map) []model.KeyValue {
 	if attrs.Len() == 0 {
 		return dest
 	}

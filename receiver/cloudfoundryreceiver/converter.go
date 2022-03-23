@@ -53,7 +53,7 @@ func convertEnvelopeToMetrics(envelope *loggregator_v2.Envelope, metricSlice pda
 	}
 }
 
-func copyEnvelopeAttributes(attributes pdata.AttributeMap, envelope *loggregator_v2.Envelope) {
+func copyEnvelopeAttributes(attributes pdata.Map, envelope *loggregator_v2.Envelope) {
 	for key, value := range envelope.Tags {
 		attributes.InsertString(attributeNamePrefix+key, value)
 	}

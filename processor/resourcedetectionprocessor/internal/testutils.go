@@ -23,13 +23,13 @@ func NewResource(mp map[string]interface{}) pdata.Resource {
 	return res
 }
 
-func NewAttributeMap(mp map[string]interface{}) pdata.AttributeMap {
-	attr := pdata.NewAttributeMap()
+func NewAttributeMap(mp map[string]interface{}) pdata.Map {
+	attr := pdata.NewMap()
 	fillAttributeMap(mp, attr)
 	return attr
 }
 
-func fillAttributeMap(mp map[string]interface{}, attr pdata.AttributeMap) {
+func fillAttributeMap(mp map[string]interface{}, attr pdata.Map) {
 	attr.Clear()
 	attr.EnsureCapacity(len(mp))
 	for k, v := range mp {

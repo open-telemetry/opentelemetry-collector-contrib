@@ -209,7 +209,7 @@ func toHumioLinks(pLinks pdata.SpanLinkSlice) []*HumioLink {
 	return links
 }
 
-func toHumioAttributes(attrMaps ...pdata.AttributeMap) map[string]interface{} {
+func toHumioAttributes(attrMaps ...pdata.Map) map[string]interface{} {
 	attr := make(map[string]interface{})
 	for _, attrMap := range attrMaps {
 		attrMap.Range(func(k string, v pdata.Value) bool {

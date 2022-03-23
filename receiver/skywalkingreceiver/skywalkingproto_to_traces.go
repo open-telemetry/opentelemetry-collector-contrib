@@ -219,7 +219,7 @@ func swLogsToSpanEvents(logs []*agentV3.Log, dest pdata.SpanEventSlice) {
 	}
 }
 
-func swKvPairsToInternalAttributes(pairs []*common.KeyStringValuePair, dest pdata.AttributeMap) {
+func swKvPairsToInternalAttributes(pairs []*common.KeyStringValuePair, dest pdata.Map) {
 	if pairs == nil {
 		return
 	}

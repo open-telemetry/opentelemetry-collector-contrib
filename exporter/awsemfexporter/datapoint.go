@@ -198,7 +198,7 @@ func (dps summaryDataPointSlice) At(i int) (dataPoint, bool) {
 
 // createLabels converts OTel AttributesMap attributes to a map
 // and optionally adds in the OTel instrumentation library name
-func createLabels(attributes pdata.AttributeMap, instrLibName string) map[string]string {
+func createLabels(attributes pdata.Map, instrLibName string) map[string]string {
 	labels := make(map[string]string, attributes.Len()+1)
 	attributes.Range(func(k string, v pdata.Value) bool {
 		labels[k] = v.AsString()

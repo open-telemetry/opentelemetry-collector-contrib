@@ -337,9 +337,9 @@ func (p *processorImp) collectCallMetrics(ilm pdata.InstrumentationLibraryMetric
 }
 
 // getDimensionsByMetricKey gets dimensions from `metricKeyToDimensions` cache.
-func (p *processorImp) getDimensionsByMetricKey(k metricKey) (*pdata.AttributeMap, error) {
+func (p *processorImp) getDimensionsByMetricKey(k metricKey) (*pdata.Map, error) {
 	if item, ok := p.metricKeyToDimensions.Get(k); ok {
-		if attributeMap, ok := item.(pdata.AttributeMap); ok {
+		if attributeMap, ok := item.(pdata.Map); ok {
 			return &attributeMap, nil
 		}
 		return nil, fmt.Errorf("type assertion of metricKeyToDimensions attributes failed, the key is %q", k)
@@ -378,7 +378,7 @@ func (p *processorImp) aggregateMetricsForServiceSpans(rspans pdata.ResourceSpan
 	}
 }
 
-func (p *processorImp) aggregateMetricsForSpan(serviceName string, span pdata.Span, resourceAttr pdata.AttributeMap) {
+func (p *processorImp) aggregateMetricsForSpan(serviceName string, span pdata.Span, resourceAttr pdata.Map) {
 	latencyInMilliseconds := float64(span.EndTimestamp()-span.StartTimestamp()) / float64(time.Millisecond.Nanoseconds())
 
 	// Binary search to find the latencyInMilliseconds bucket index.
@@ -439,8 +439,8 @@ func (p *processorImp) updateLatencyMetrics(key metricKey, latency float64, inde
 	p.latencyBucketCounts[key][index]++
 }
 
-func (p *processorImp) buildDimensionKVs(serviceName string, span pdata.Span, optionalDims []Dimension, resourceAttrs pdata.AttributeMap) pdata.AttributeMap {
-	dims := pdata.NewAttributeMap()
+func (p *processorImp) buildDimensionKVs(serviceName string, span pdata.Span, optionalDims []Dimension, resourceAttrs pdata.Map) pdata.Map {
+	dims := pdata.NewMap()
 	dims.UpsertString(serviceNameKey, serviceName)
 	dims.UpsertString(operationKey, span.Name())
 	dims.UpsertString(spanKindKey, span.Kind().String())
@@ -467,7 +467,7 @@ func concatDimensionValue(metricKeyBuilder *strings.Builder, value string, prefi
 // or resource attributes. If the dimension exists in both, the span's attributes, being the most specific, takes precedence.
 //
 // The metric key is a simple concatenation of dimension values, delimited by a null character.
-func buildKey(serviceName string, span pdata.Span, optionalDims []Dimension, resourceAttrs pdata.AttributeMap) metricKey {
+func buildKey(serviceName string, span pdata.Span, optionalDims []Dimension, resourceAttrs pdata.Map) metricKey {
 	var metricKeyBuilder strings.Builder
 	concatDimensionValue(&metricKeyBuilder, serviceName, false)
 	concatDimensionValue(&metricKeyBuilder, span.Name(), true)
@@ -491,7 +491,7 @@ func buildKey(serviceName string, span pdata.Span, optionalDims []Dimension, res
 //
 // The ok flag indicates if a dimension value was fetched in order to differentiate
 // an empty string value from a state where no value was found.
-func getDimensionValue(d Dimension, spanAttr pdata.AttributeMap, resourceAttr pdata.AttributeMap) (v pdata.Value, ok bool) {
+func getDimensionValue(d Dimension, spanAttr pdata.Map, resourceAttr pdata.Map) (v pdata.Value, ok bool) {
 	// The more specific span attribute should take precedence.
 	if attr, exists := spanAttr.Get(d.Name); exists {
 		return attr, true
@@ -509,7 +509,7 @@ func getDimensionValue(d Dimension, spanAttr pdata.AttributeMap, resourceAttr pd
 // cache the dimension key-value map for the metricKey if there is a cache miss.
 // This enables a lookup of the dimension key-value map when constructing the metric like so:
 //   LabelsMap().InitFromMap(p.metricKeyToDimensions[key])
-func (p *processorImp) cache(serviceName string, span pdata.Span, k metricKey, resourceAttrs pdata.AttributeMap) {
+func (p *processorImp) cache(serviceName string, span pdata.Span, k metricKey, resourceAttrs pdata.Map) {
 	p.metricKeyToDimensions.ContainsOrAdd(k, p.buildDimensionKVs(serviceName, span, p.dimensions, resourceAttrs))
 }
 

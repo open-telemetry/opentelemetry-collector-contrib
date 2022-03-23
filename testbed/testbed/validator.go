@@ -415,7 +415,7 @@ func (v *CorrectnessTestValidator) diffSpanStatus(sentSpan pdata.Span, recdSpan 
 }
 
 func (v *CorrectnessTestValidator) diffAttributeMap(spanName string,
-	sentAttrs pdata.AttributeMap, recdAttrs pdata.AttributeMap, fmtStr string) {
+	sentAttrs pdata.Map, recdAttrs pdata.Map, fmtStr string) {
 	sentAttrs.Range(func(sentKey string, sentVal pdata.Value) bool {
 		recdVal, ok := recdAttrs.Get(sentKey)
 		if !ok {

@@ -244,7 +244,7 @@ func (mg *metricGroupPdata) toNumberDataPoint(orderedLabelKeys []string, dest *p
 	return true
 }
 
-func populateAttributesPdata(orderedKeys []string, ls labels.Labels, dest pdata.AttributeMap) {
+func populateAttributesPdata(orderedKeys []string, ls labels.Labels, dest pdata.Map) {
 	src := ls.Map()
 	for _, key := range orderedKeys {
 		if src[key] == "" {

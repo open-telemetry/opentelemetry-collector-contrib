@@ -140,7 +140,7 @@ func extractResponseSizeFromEvents(span pdata.Span) int64 {
 	return size
 }
 
-func extractResponseSizeFromAttributes(attributes pdata.AttributeMap) int64 {
+func extractResponseSizeFromAttributes(attributes pdata.Map) int64 {
 	typeVal, ok := attributes.Get("message.type")
 	if ok && typeVal.StringVal() == "RECEIVED" {
 		if sizeVal, ok := attributes.Get(conventions.AttributeMessagingMessagePayloadSizeBytes); ok {

@@ -307,18 +307,16 @@ func runTest(
 	span.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4}))
 
 	length := len(allowed) + len(masked) + len(redacted)
-	attrMap := make(map[string]pdata.Value, length)
 	for k, v := range allowed {
-		attrMap[k] = v
+		span.Attributes().Upsert(k, v)
 	}
 	for k, v := range masked {
-		attrMap[k] = v
+		span.Attributes().Upsert(k, v)
 	}
 	for k, v := range redacted {
-		attrMap[k] = v
+		span.Attributes().Upsert(k, v)
 	}
 
-	pdata.NewAttributeMapFromMap(attrMap).CopyTo(span.Attributes())
 	assert.Equal(t, span.Attributes().Len(), length)
 	assert.Equal(t, ils.Spans().At(0).Attributes().Len(), length)
 	assert.Equal(t, inBatch.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).Attributes().Len(), length)
@@ -409,18 +407,15 @@ func runBenchmark(
 	span.SetName("first-batch-first-span")
 	span.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4}))
 
-	length := len(allowed) + len(masked) + len(redacted)
-	attrMap := make(map[string]pdata.Value, length)
 	for k, v := range allowed {
-		attrMap[k] = v
+		span.Attributes().Upsert(k, v)
 	}
 	for k, v := range masked {
-		attrMap[k] = v
+		span.Attributes().Upsert(k, v)
 	}
 	for k, v := range redacted {
-		attrMap[k] = v
+		span.Attributes().Upsert(k, v)
 	}
 
-	pdata.NewAttributeMapFromMap(attrMap).CopyTo(span.Attributes())
 	_ = processor.ConsumeTraces(context.Background(), inBatch)
 }
