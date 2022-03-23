@@ -72,6 +72,7 @@
     cpu metrics as a double values.
 - `tanzuobservabilityexporter`: Fix a typo in Instrumentation Library name and version tags (#8384)
 - `logreceivers`: Fix an issue where receiver would sometimes fail to build using Go 1.18 (#8521)
+- `awsxrayreceiver`: Add defaults for optional stack frame parameters (#8790)
 
 ### 🚩 Deprecations 🚩
 
