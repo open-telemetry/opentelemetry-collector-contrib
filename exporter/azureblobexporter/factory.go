@@ -56,18 +56,20 @@ func createTracesExporter(
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.TracesExporter, error) {
-	exporterConfig, ok := cfg.(*Config)
+	// exporterConfig, ok := cfg.(*Config)
 
-	if !ok {
-		return nil, errUnexpectedConfigurationType
-	}
+	// if !ok {
+	// 	return nil, errUnexpectedConfigurationType
+	// }
 
-	bc, err := NewBlobClient(exporterConfig.ConnectionString, exporterConfig.TracesContainerName, set.Logger)
-	if err != nil {
-		set.Logger.Error(err.Error())
-	}
+	// bc, err := NewBlobClient(exporterConfig.ConnectionString, exporterConfig.TracesContainerName, set.Logger)
+	// if err != nil {
+	// 	set.Logger.Error(err.Error())
+	// }
 
-	return newTracesExporter(exporterConfig, bc, set)
+	// return newTracesExporter(exporterConfig, bc, set)
+
+	return exporterhelper.NewTracesExporter(cfg, set, onTraceData)
 }
 
 func createLogsExporter(
@@ -75,16 +77,17 @@ func createLogsExporter(
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.LogsExporter, error) {
-	exporterConfig, ok := cfg.(*Config)
+	// exporterConfig, ok := cfg.(*Config)
 
-	if !ok {
-		return nil, errUnexpectedConfigurationType
-	}
+	// if !ok {
+	// 	return nil, errUnexpectedConfigurationType
+	// }
 
-	bc, err := NewBlobClient(exporterConfig.ConnectionString, exporterConfig.LogsContainerName, set.Logger)
-	if err != nil {
-		set.Logger.Error(err.Error())
-	}
+	// bc, err := NewBlobClient(exporterConfig.ConnectionString, exporterConfig.LogsContainerName, set.Logger)
+	// if err != nil {
+	// 	set.Logger.Error(err.Error())
+	// }
 
-	return newLogsExporter(exporterConfig, bc, set)
+	// return newLogsExporter(exporterConfig, bc, set)
+	return exporterhelper.NewLogsExporter(config, set, onLogData)
 }

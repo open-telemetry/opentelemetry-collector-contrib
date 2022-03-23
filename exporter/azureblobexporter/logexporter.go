@@ -17,36 +17,9 @@ package azureblobexporter // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/model/otlp"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.uber.org/zap"
 )
 
-type logExporter struct {
-	blobClient    BlobClient
-	logger        *zap.Logger
-	logsMarshaler pdata.LogsMarshaler
-}
-
-func (ex *logExporter) onLogData(context context.Context, logData pdata.Logs) error {
-	buf, err := ex.logsMarshaler.MarshalLogs(logData)
-	if err != nil {
-		return err
-	}
-
-	return ex.blobClient.UploadData(buf, config.LogsDataType)
-}
-
-// Returns a new instance of the log exporter
-func newLogsExporter(config *Config, blobClient BlobClient, set component.ExporterCreateSettings) (component.LogsExporter, error) {
-	exporter := &logExporter{
-		blobClient:    blobClient,
-		logger:        set.Logger,
-		logsMarshaler: otlp.NewJSONLogsMarshaler(),
-	}
-
-	return exporterhelper.NewLogsExporter(config, set, exporter.onLogData)
+func onLogData(context context.Context, logData pdata.Logs) error {
+	return nil
 }
