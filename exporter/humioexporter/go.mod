@@ -4,8 +4,8 @@ go 1.17
 
 require (
 	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.47.1-0.20220322153344-4c3b824aca1d
-	go.opentelemetry.io/collector/model v0.47.1-0.20220322153344-4c3b824aca1d
+	go.opentelemetry.io/collector v0.47.1-0.20220323200141-1b7618728835
+	go.opentelemetry.io/collector/model v0.47.1-0.20220323200141-1b7618728835
 
 )
 
@@ -22,7 +22,6 @@ require (
 	github.com/klauspost/compress v1.15.1 // indirect
 	github.com/knadh/koanf v1.4.0 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
-	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect

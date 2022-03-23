@@ -10,8 +10,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.47.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.47.0
 	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.47.1-0.20220322153344-4c3b824aca1d
-	go.opentelemetry.io/collector/model v0.47.1-0.20220322153344-4c3b824aca1d
+	go.opentelemetry.io/collector v0.47.1-0.20220323200141-1b7618728835
+	go.opentelemetry.io/collector/model v0.47.1-0.20220323200141-1b7618728835
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
 	google.golang.org/protobuf v1.27.1
@@ -26,7 +26,6 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
 	github.com/knadh/koanf v1.4.0 // indirect
-	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect

@@ -112,7 +112,7 @@ func convertInterfaceToAttributeValue(logger *zap.Logger, originalValue interfac
 }
 
 func convertToSliceVal(logger *zap.Logger, value []interface{}) (pdata.Value, error) {
-	attrVal := pdata.NewValueArray()
+	attrVal := pdata.NewValueSlice()
 	arr := attrVal.SliceVal()
 	for _, elt := range value {
 		translatedElt, err := convertInterfaceToAttributeValue(logger, elt)
