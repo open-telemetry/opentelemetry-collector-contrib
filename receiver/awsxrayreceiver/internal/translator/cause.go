@@ -99,7 +99,7 @@ func convertStackFramesToStackTraceStr(excp awsxray.Exception) string {
 	for _, frame := range excp.Stack {
 		label := awsxray.StringOrEmpty(frame.Label)
 		path := awsxray.StringOrEmpty(frame.Path)
-		line := ""
+		line := "<unknown>"
 		if frame.Line != nil {
 			line = strconv.Itoa(*frame.Line)
 		}
