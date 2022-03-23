@@ -8,8 +8,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib v0.47.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.47.0
 	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.47.1-0.20220316214317-e6ea17cf27a8
-	go.opentelemetry.io/collector/model v0.47.1-0.20220316214317-e6ea17cf27a8
+	go.opentelemetry.io/collector v0.47.1-0.20220321233732-3cec6d3d98d9
+	go.opentelemetry.io/collector/model v0.47.1-0.20220321233732-3cec6d3d98d9
 	go.uber.org/multierr v1.8.0
 	golang.org/x/mod v0.5.1
 )
@@ -56,7 +56,7 @@ require (
 	github.com/apache/thrift v0.16.0 // indirect
 	github.com/armon/go-metrics v0.3.10 // indirect
 	github.com/avast/retry-go v3.0.0+incompatible // indirect
-	github.com/aws/aws-sdk-go v1.43.22 // indirect
+	github.com/aws/aws-sdk-go v1.43.23 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.9.2 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.8.3 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.4.3 // indirect
@@ -409,7 +409,7 @@ require (
 	github.com/subosito/gotenv v1.2.0 // indirect
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635 // indirect
 	github.com/syndtr/goleveldb v1.0.0 // indirect
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.369 // indirect
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.370 // indirect
 	github.com/tg123/go-htpasswd v1.2.0 // indirect
 	github.com/tidwall/gjson v1.12.1 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
