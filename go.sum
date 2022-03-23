@@ -148,8 +148,8 @@ github.com/DATA-DOG/go-sqlmock v1.4.1/go.mod h1:f/Ixk793poVmq4qj/V1dPUg2JEAKC73Q
 github.com/DataDog/agent-payload/v5 v5.0.19 h1:Qm89IzxFz1tUlhg6XZLEePENOlUlXmd/MPs8tOsWOeQ=
 github.com/DataDog/agent-payload/v5 v5.0.19/go.mod h1:2gapp8p4Vd548JI+axD8kCExklNvVI6AMF5/+IfN/4g=
 github.com/DataDog/datadog-agent/pkg/obfuscate v0.0.0-20211129110424-6491aa3bf583/go.mod h1:EP9f4GqaDJyP1F5jTNMtzdIpw3JpNs3rMSJOnYywCiw=
-github.com/DataDog/datadog-agent/pkg/quantile v0.33.1 h1:cXKBMCO7J5cdtFT86gZp7bnD4t4Cq0YSEm4CS/DTgz0=
-github.com/DataDog/datadog-agent/pkg/quantile v0.33.1/go.mod h1:AJEOJwqKBG7f1e3/jtxjb1tUdW4RG30PhllTgKg1fDc=
+github.com/DataDog/datadog-agent/pkg/quantile v0.34.0 h1:dBYKcH1Y5bHz7Clo3AaQt9Hr/10opMpUFXXuBu+t9vA=
+github.com/DataDog/datadog-agent/pkg/quantile v0.34.0/go.mod h1:AJEOJwqKBG7f1e3/jtxjb1tUdW4RG30PhllTgKg1fDc=
 github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02 h1:N2BRKjJ/c+ipDwt5b+ijqEc2EsmK3zXq2lNeIPnSwMI=
 github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02/go.mod h1:EalMiS87Guu6PkLdxz7gmWqi+dRs9sjYLTOyTrM/aVU=
 github.com/DataDog/datadog-agent/pkg/util/log v0.0.0-20201009091607-ce4e57cdf8f4/go.mod h1:cRy7lwapA3jcjnX74kU6NFkXaRGQyB0l/QZA0IwYGEQ=
