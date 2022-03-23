@@ -4,6 +4,8 @@
 
 ### 💡 Enhancements 💡
 
+- Add `make crosslink` target to ensure replace statements are included in `go.mod` for all transitive dependencies within repository (#8822)
+
 ### 🛑 Breaking changes 🛑
 
 ### 🚩 Deprecations 🚩
