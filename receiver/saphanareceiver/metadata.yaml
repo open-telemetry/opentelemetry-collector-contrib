@@ -3,15 +3,164 @@ name: saphanareceiver
 attributes:
   host:
     description: The SAP HANA host.
+  component:
+    description: The SAP HANA component.
+  schema:
+    description: The SAP HANA schema.
+  service:
+    description: The SAP HANA service.
+  disk:
+    description: The SAP HANA disk.
+  volume:
+    description: The SAP HANA volume.
+  connection_status:
+    value: status
+    description: The connection status.
+    enum:
+    - running
+    - idle
+    - queueing
   column_memory_type:
     value: type
     description: The type of column store memory.
     enum:
     - main
     - delta
+  schema_memory_type:
+    value: type
+    description: The type of schema memory.
+    enum:
+    - main
+    - delta
+    - history_main
+    - history_delta
+  memory_state_used_free:
+    value: state
+    description: The state of memory.
+    enum:
+    - used
+    - free
+  disk_state_used_free:
+    value: state
+    description: The state of the disk storage.
+    enum:
+    - used
+    - free
+  host_swap_state:
+    value: state
+    description: The state of swap data.
+    enum:
+    - used
+    - free
+  operation_type:
+    value: type
+    description: The type of operation.
+    enum:
+    - read
+    - write
+    - merge
+  service_status:
+    value: status
+    description: The status of services.
+    enum:
+    - active
+    - inactive
+  thread_status:
+    value: status
+    description: The status of threads.
+    enum:
+    - active
+    - inactive
+  service_memory_used_type:
+    value: type
+    description: The type of service memory.
+    enum:
+    - logical
+    - physical
+  operation_type:
+    value: type
+    description: The type of operation.
+    enum:
+    - read
+    - write
+  active_pending_request_state:
+    value: state
+    description: The state of network request.
+    enum:
+    - active
+    - pending
+  internal_external_request_type:
+    value: type
+    description: The type of network request.
+    enum:
+    - internal
+    - external
 
 metrics:
- saphana.column.memory.used:
+  saphana.connection.count:
+    description: The number of current connections.
+    unit: '{connections}'
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [host, column_memory_type]
+    enabled: true
+  saphana.instance.memory.current:
+    description: The size of the memory pool for all SAP HANA processes.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [host, memory_state_used_free]
+    enabled: true
+  saphana.instance.memory.used.peak:
+    description: The peak memory from the memory pool used by SAP HANA processes since the instance started (this is a sample-based value).
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [host]
+    enabled: true
+  saphana.instance.code_size:
+    description: The instance code size, including shared libraries of SAP HANA processes.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [host]
+    enabled: true
+  saphana.instance.memory.shared.allocated:
+    description: The shared memory size of SAP HANA processes.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [host]
+    enabled: true
+  saphana.host.memory.current:
+    description: The amount of physical memory on the host.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [host, memory_state_used_free]
+    enabled: true
+  saphana.host.swap.current:
+    description: The amount of swap space on the host.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [host, host_swap_state]
+    enabled: true
+  saphana.column.memory.used:
     description: The memory used in all columns.
     unit: By
     sum:
@@ -19,4 +168,220 @@ metrics:
       aggregation: cumulative
       value_type: int
     attributes: [host, column_memory_type]
+    enabled: true
+  saphana.component.memory.used:
+    description: The memory used in components.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [host, component]
+    enabled: true
+  saphana.schema.memory.used.current:
+    description: The memory size for all tables in schema.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [host, schema, schema_memory_type]
+    enabled: true
+  saphana.schema.memory.used.max:
+    description: The estimated maximum memory consumption for all fully loaded tables in schema (data for open transactions is not included).
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [host, schema]
+    enabled: true
+  saphana.schema.record.count:
+    description: The number of records for all tables in schema.
+    unit: '{records}'
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [host, schema]
+    enabled: true
+  saphana.schema.record.compressed.count:
+    description: The number of entries in main during the last optimize compression run for all tables in schema.
+    unit: '{records}'
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [host, schema]
+    enabled: true
+  saphana.schema.operation.count:
+    description: The number of operations done on all tables in schema.
+    unit: '{operations}'
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [host, schema, operation_type]
+    enabled: true
+  saphana.service.count:
+    description: The number of services in a given status.
+    unit: '{services}'
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [host, service_status]
+    enabled: true
+  saphana.service.thread.count:
+    description: The number of service threads in a given status.
+    unit: '{threads}'
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [host, thread_status]
+    enabled: true
+  saphana.service.memory.used:
+    description: The used memory from the operating system perspective.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [host, service, service_memory_used_type]
+    enabled: true
+  saphana.service.code_size:
+    description: The service code size, including shared libraries.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [host, service]
+    enabled: true
+  saphana.service.stack_size:
+    description: The service stack size.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [host, service]
+    enabled: true
+  saphana.service.memory.heap.current:
+    description: The size of the heap portion of the memory pool.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [host, service, memory_state_used_free]
+    enabled: true
+  saphana.service.memory.shared.current:
+    description: The size of the shared portion of the memory pool.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [host, service, memory_state_used_free]
+    enabled: true
+  saphana.service.memory.compactors.allocated:
+    description: The part of the memory pool that can potentially (if unpinned) be freed during a memory shortage.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [host, service]
+    enabled: true
+  saphana.service.memory.compactors.freeable:
+    description: The memory that can be freed during a memory shortage.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [host, service]
+    enabled: true
+  saphana.service.memory.limit:
+    description: The configured maximum memory pool size.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [host, service]
+    enabled: true
+  saphana.service.memory.effective_limit:
+    description: The effective maximum memory pool size, calculated considering the pool sizes of other processes.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [host, service]
+    enabled: true
+  saphana.disk.size.current:
+    description: The disk size.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [host, disk, disk_state_used_free]
+    enabled: true
+  saphana.volume.operation.count:
+    description: The number of operations executed.
+    unit: '{operations}'
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [host, volume, operation_type]
+    enabled: true
+  saphana.volume.operation.size:
+    description: The size of operations executed.
+    unit: By
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [host, volume, operation_type]
+    enabled: true
+  saphana.volume.operation.time:
+    description: The time spent executing operations.
+    unit: ms
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [host, volume, operation_type]
+    enabled: true
+  saphana.network.request.count:
+    description: The number of active and pending service requests.
+    unit: '{requests}'
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [host, active_pending_request_state]
+    enabled: true
+  saphana.network.request.finished.count:
+    description: The number of service requests that have completed.
+    unit: '{requests}'
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [host, internal_external_request_type]
+    enabled: true
+  saphana.network.request.finished.time:
+    description: The total response time of all completed service requests.
+    unit: ms
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [host]
     enabled: true

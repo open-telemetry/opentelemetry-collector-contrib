@@ -60,16 +60,16 @@ func (q *queryStat) collectStat(s *sapHanaScraper, now pdata.Timestamp, row map[
 		if i, ok := s.parseInt(q.key, row[q.key]); ok {
 			q.addIntMetricFunction(s, now, i, row)
 		} else {
-			return fmt.Errorf("Unable to parse '%s' as an integer for query key %s", row[q.key], q.key)
+			return fmt.Errorf("unable to parse '%s' as an integer for query key %s", row[q.key], q.key)
 		}
 	} else if q.addDoubleMetricFunction != nil {
 		if f, ok := s.parseDouble(q.key, row[q.key]); ok {
 			q.addDoubleMetricFunction(s, now, f, row)
 		} else {
-			return fmt.Errorf("Unable to parse '%s' as a double for query key %s", row[q.key], q.key)
+			return fmt.Errorf("unable to parse '%s' as a double for query key %s", row[q.key], q.key)
 		}
 	} else {
-		return errors.New("Incorrectly configured query, either addIntMetricFunction or addDoubleMetricFunction must be provided")
+		return errors.New("incorrectly configured query, either addIntMetricFunction or addDoubleMetricFunction must be provided")
 	}
 	return nil
 }
@@ -82,7 +82,7 @@ type monitoringQuery struct {
 
 var queries = []monitoringQuery{
 	{
-		query:         "SELECT HOST as host, SUM(MEMORY_SIZE_IN_MAIN) as main, SUM(MEMORY_SIZE_IN_DELTA) as delta FROM M_CS_ALL_COLUMNS GROUP BY HOST",
+		query:         "SELECT HOST, SUM(MEMORY_SIZE_IN_MAIN) as main, SUM(MEMORY_SIZE_IN_DELTA) as delta FROM M_CS_ALL_COLUMNS GROUP BY HOST",
 		orderedLabels: []string{"host"},
 		orderedStats: []queryStat{
 			{

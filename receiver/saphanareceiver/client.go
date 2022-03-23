@@ -55,7 +55,7 @@ func (w *standardResultWrapper) Next() bool {
 }
 
 func (w *standardResultWrapper) Scan(dest ...interface{}) error {
-	return w.rows.Scan(dest)
+	return w.rows.Scan(dest...)
 }
 
 func (w *standardResultWrapper) Close() error {
