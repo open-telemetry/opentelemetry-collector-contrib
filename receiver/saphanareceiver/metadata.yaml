@@ -3,6 +3,17 @@ name: saphanareceiver
 attributes:
   host:
     description: The SAP HANA host.
+  license:
+    description: The SAP HANA license.
+  primary_host:
+    value: primary
+    description: The primary SAP HANA host in replication.
+  secondary_host:
+    value: secondary
+    description: The secondary SAP HANA host in replication.
+  replication_mode:
+    value: mode
+    description: The replication mode.
   component:
     description: The SAP HANA component.
   schema:
@@ -13,6 +24,13 @@ attributes:
     description: The SAP HANA disk.
   volume:
     description: The SAP HANA volume.
+  transaction_type:
+    value: type
+    description: The transaction type.
+    enum:
+    - update
+    - commit
+    - rollback
   connection_status:
     value: status
     description: The connection status.
@@ -20,12 +38,29 @@ attributes:
     - running
     - idle
     - queueing
+  cpu_type:
+    value: type
+    description: The type of cpu.
+    enum:
+    - user
+    - system
+    - io_wait
+    - idle
+  alert_rating:
+    value: rating
+    description: The alert rating.
   column_memory_type:
     value: type
     description: The type of column store memory.
     enum:
     - main
     - delta
+  row_memory_type:
+    value: type
+    description: The type of row store memory.
+    enum:
+    - fixed
+    - variable
   schema_memory_type:
     value: type
     description: The type of schema memory.
@@ -104,7 +139,102 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [host, column_memory_type]
+    attributes: [host, connection_status]
+    enabled: true
+  saphana.cpu.used:
+    description: Total CPU time spent.
+    unit: ms
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [host, cpu_type]
+    enabled: true
+  saphana.alert.count:
+    description: Number of current alerts.
+    unit: '{alerts}'
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [alert_rating]
+    enabled: true
+  saphana.uptime:
+    description: The uptime of the database.
+    unit: s
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [host]
+    enabled: true
+  saphana.replication.backlog.time:
+    description: The current replication backlog.
+    unit: us
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [primary_host, secondary_host, replication_mode]
+    enabled: true
+  saphana.replication.backlog.size:
+    description: The current replication backlog size.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [primary_host, secondary_host, replication_mode]
+    enabled: true
+  saphana.backup.latest:
+    description: The age of the latest backup by start time.
+    unit: s
+    gauge:
+      value_type: int
+    attributes: [host]
+    enabled: true
+  saphana.transaction.count:
+    description: The number of transactions.
+    unit: '{transactions}'
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [host, transaction_type]
+    enabled: true
+  saphana.transaction.blocked:
+    description: The number of transactions waiting for a lock.
+    unit: '{transactions}'
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [host]
+    enabled: true
+  saphana.license.expiration.time:
+    description: The amount of time remaining before license expiration.
+    unit: s
+    gauge:
+      value_type: int
+    attributes: [license]
+    enabled: true
+  saphana.license.limit:
+    description: The allowed product usage as specified by the license (for example, main memory).
+    unit: '1'
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [license]
+    enabled: true
+  saphana.license.peak:
+    description: The peak product usage value during last 13 months, measured periodically.
+    unit: '1'
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [license]
     enabled: true
   saphana.instance.memory.current:
     description: The size of the memory pool for all SAP HANA processes.
@@ -168,6 +298,15 @@ metrics:
       aggregation: cumulative
       value_type: int
     attributes: [host, column_memory_type]
+    enabled: true
+  saphana.row_store.memory.used:
+    description: The used memory for all row tables.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [host, row_memory_type]
     enabled: true
   saphana.component.memory.used:
     description: The memory used in components.

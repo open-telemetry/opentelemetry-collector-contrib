@@ -8,9 +8,12 @@ These are the metrics available for this scraper.
 
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
+| **saphana.alert.count** | Number of current alerts. | {alerts} | Sum(Int) | <ul> <li>alert_rating</li> </ul> |
+| **saphana.backup.latest** | The age of the latest backup by start time. | s | Gauge(Int) | <ul> <li>host</li> </ul> |
 | **saphana.column.memory.used** | The memory used in all columns. | By | Sum(Int) | <ul> <li>host</li> <li>column_memory_type</li> </ul> |
 | **saphana.component.memory.used** | The memory used in components. | By | Sum(Int) | <ul> <li>host</li> <li>component</li> </ul> |
-| **saphana.connection.count** | The number of current connections. | {connections} | Sum(Int) | <ul> <li>host</li> <li>column_memory_type</li> </ul> |
+| **saphana.connection.count** | The number of current connections. | {connections} | Sum(Int) | <ul> <li>host</li> <li>connection_status</li> </ul> |
+| **saphana.cpu.used** | Total CPU time spent. | ms | Sum(Int) | <ul> <li>host</li> <li>cpu_type</li> </ul> |
 | **saphana.disk.size.current** | The disk size. | By | Sum(Int) | <ul> <li>host</li> <li>disk</li> <li>disk_state_used_free</li> </ul> |
 | **saphana.host.memory.current** | The amount of physical memory on the host. | By | Sum(Int) | <ul> <li>host</li> <li>memory_state_used_free</li> </ul> |
 | **saphana.host.swap.current** | The amount of swap space on the host. | By | Sum(Int) | <ul> <li>host</li> <li>host_swap_state</li> </ul> |
@@ -18,9 +21,15 @@ These are the metrics available for this scraper.
 | **saphana.instance.memory.current** | The size of the memory pool for all SAP HANA processes. | By | Sum(Int) | <ul> <li>host</li> <li>memory_state_used_free</li> </ul> |
 | **saphana.instance.memory.shared.allocated** | The shared memory size of SAP HANA processes. | By | Sum(Int) | <ul> <li>host</li> </ul> |
 | **saphana.instance.memory.used.peak** | The peak memory from the memory pool used by SAP HANA processes since the instance started (this is a sample-based value). | By | Sum(Int) | <ul> <li>host</li> </ul> |
+| **saphana.license.expiration.time** | The amount of time remaining before license expiration. | s | Gauge(Int) | <ul> <li>license</li> </ul> |
+| **saphana.license.limit** | The allowed product usage as specified by the license (for example, main memory). | 1 | Sum(Int) | <ul> <li>license</li> </ul> |
+| **saphana.license.peak** | The peak product usage value during last 13 months, measured periodically. | 1 | Sum(Int) | <ul> <li>license</li> </ul> |
 | **saphana.network.request.count** | The number of active and pending service requests. | {requests} | Sum(Int) | <ul> <li>host</li> <li>active_pending_request_state</li> </ul> |
 | **saphana.network.request.finished.count** | The number of service requests that have completed. | {requests} | Sum(Int) | <ul> <li>host</li> <li>internal_external_request_type</li> </ul> |
 | **saphana.network.request.finished.time** | The total response time of all completed service requests. | ms | Sum(Int) | <ul> <li>host</li> </ul> |
+| **saphana.replication.backlog.size** | The current replication backlog size. | By | Sum(Int) | <ul> <li>primary_host</li> <li>secondary_host</li> <li>replication_mode</li> </ul> |
+| **saphana.replication.backlog.time** | The current replication backlog. | us | Sum(Int) | <ul> <li>primary_host</li> <li>secondary_host</li> <li>replication_mode</li> </ul> |
+| **saphana.row_store.memory.used** | The used memory for all row tables. | By | Sum(Int) | <ul> <li>host</li> <li>row_memory_type</li> </ul> |
 | **saphana.schema.memory.used.current** | The memory size for all tables in schema. | By | Sum(Int) | <ul> <li>host</li> <li>schema</li> <li>schema_memory_type</li> </ul> |
 | **saphana.schema.memory.used.max** | The estimated maximum memory consumption for all fully loaded tables in schema (data for open transactions is not included). | By | Sum(Int) | <ul> <li>host</li> <li>schema</li> </ul> |
 | **saphana.schema.operation.count** | The number of operations done on all tables in schema. | {operations} | Sum(Int) | <ul> <li>host</li> <li>schema</li> <li>operation_type</li> </ul> |
@@ -37,6 +46,9 @@ These are the metrics available for this scraper.
 | **saphana.service.memory.used** | The used memory from the operating system perspective. | By | Sum(Int) | <ul> <li>host</li> <li>service</li> <li>service_memory_used_type</li> </ul> |
 | **saphana.service.stack_size** | The service stack size. | By | Sum(Int) | <ul> <li>host</li> <li>service</li> </ul> |
 | **saphana.service.thread.count** | The number of service threads in a given status. | {threads} | Sum(Int) | <ul> <li>host</li> <li>thread_status</li> </ul> |
+| **saphana.transaction.blocked** | The number of transactions waiting for a lock. | {transactions} | Sum(Int) | <ul> <li>host</li> </ul> |
+| **saphana.transaction.count** | The number of transactions. | {transactions} | Sum(Int) | <ul> <li>host</li> <li>transaction_type</li> </ul> |
+| **saphana.uptime** | The uptime of the database. | s | Sum(Int) | <ul> <li>host</li> </ul> |
 | **saphana.volume.operation.count** | The number of operations executed. | {operations} | Sum(Int) | <ul> <li>host</li> <li>volume</li> <li>operation_type</li> </ul> |
 | **saphana.volume.operation.size** | The size of operations executed. | By | Sum(Int) | <ul> <li>host</li> <li>volume</li> <li>operation_type</li> </ul> |
 | **saphana.volume.operation.time** | The time spent executing operations. | ms | Sum(Int) | <ul> <li>host</li> <li>volume</li> <li>operation_type</li> </ul> |
@@ -55,20 +67,28 @@ metrics:
 | Name | Description |
 | ---- | ----------- |
 | active_pending_request_state | The state of network request. |
+| alert_rating | The alert rating. |
 | column_memory_type | The type of column store memory. |
 | component | The SAP HANA component. |
 | connection_status | The connection status. |
+| cpu_type | The type of cpu. |
 | disk | The SAP HANA disk. |
 | disk_state_used_free | The state of the disk storage. |
 | host | The SAP HANA host. |
 | host_swap_state | The state of swap data. |
 | internal_external_request_type | The type of network request. |
+| license | The SAP HANA license. |
 | memory_state_used_free | The state of memory. |
 | operation_type | The type of operation. |
+| primary_host | The primary SAP HANA host in replication. |
+| replication_mode | The replication mode. |
+| row_memory_type | The type of row store memory. |
 | schema | The SAP HANA schema. |
 | schema_memory_type | The type of schema memory. |
+| secondary_host | The secondary SAP HANA host in replication. |
 | service | The SAP HANA service. |
 | service_memory_used_type | The type of service memory. |
 | service_status | The status of services. |
 | thread_status | The status of threads. |
+| transaction_type | The transaction type. |
 | volume | The SAP HANA volume. |

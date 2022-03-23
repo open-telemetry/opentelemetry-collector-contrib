@@ -15,9 +15,12 @@ type MetricSettings struct {
 
 // MetricsSettings provides settings for saphanareceiver metrics.
 type MetricsSettings struct {
+	SaphanaAlertCount                       MetricSettings `mapstructure:"saphana.alert.count"`
+	SaphanaBackupLatest                     MetricSettings `mapstructure:"saphana.backup.latest"`
 	SaphanaColumnMemoryUsed                 MetricSettings `mapstructure:"saphana.column.memory.used"`
 	SaphanaComponentMemoryUsed              MetricSettings `mapstructure:"saphana.component.memory.used"`
 	SaphanaConnectionCount                  MetricSettings `mapstructure:"saphana.connection.count"`
+	SaphanaCPUUsed                          MetricSettings `mapstructure:"saphana.cpu.used"`
 	SaphanaDiskSizeCurrent                  MetricSettings `mapstructure:"saphana.disk.size.current"`
 	SaphanaHostMemoryCurrent                MetricSettings `mapstructure:"saphana.host.memory.current"`
 	SaphanaHostSwapCurrent                  MetricSettings `mapstructure:"saphana.host.swap.current"`
@@ -25,9 +28,15 @@ type MetricsSettings struct {
 	SaphanaInstanceMemoryCurrent            MetricSettings `mapstructure:"saphana.instance.memory.current"`
 	SaphanaInstanceMemorySharedAllocated    MetricSettings `mapstructure:"saphana.instance.memory.shared.allocated"`
 	SaphanaInstanceMemoryUsedPeak           MetricSettings `mapstructure:"saphana.instance.memory.used.peak"`
+	SaphanaLicenseExpirationTime            MetricSettings `mapstructure:"saphana.license.expiration.time"`
+	SaphanaLicenseLimit                     MetricSettings `mapstructure:"saphana.license.limit"`
+	SaphanaLicensePeak                      MetricSettings `mapstructure:"saphana.license.peak"`
 	SaphanaNetworkRequestCount              MetricSettings `mapstructure:"saphana.network.request.count"`
 	SaphanaNetworkRequestFinishedCount      MetricSettings `mapstructure:"saphana.network.request.finished.count"`
 	SaphanaNetworkRequestFinishedTime       MetricSettings `mapstructure:"saphana.network.request.finished.time"`
+	SaphanaReplicationBacklogSize           MetricSettings `mapstructure:"saphana.replication.backlog.size"`
+	SaphanaReplicationBacklogTime           MetricSettings `mapstructure:"saphana.replication.backlog.time"`
+	SaphanaRowStoreMemoryUsed               MetricSettings `mapstructure:"saphana.row_store.memory.used"`
 	SaphanaSchemaMemoryUsedCurrent          MetricSettings `mapstructure:"saphana.schema.memory.used.current"`
 	SaphanaSchemaMemoryUsedMax              MetricSettings `mapstructure:"saphana.schema.memory.used.max"`
 	SaphanaSchemaOperationCount             MetricSettings `mapstructure:"saphana.schema.operation.count"`
@@ -44,6 +53,9 @@ type MetricsSettings struct {
 	SaphanaServiceMemoryUsed                MetricSettings `mapstructure:"saphana.service.memory.used"`
 	SaphanaServiceStackSize                 MetricSettings `mapstructure:"saphana.service.stack_size"`
 	SaphanaServiceThreadCount               MetricSettings `mapstructure:"saphana.service.thread.count"`
+	SaphanaTransactionBlocked               MetricSettings `mapstructure:"saphana.transaction.blocked"`
+	SaphanaTransactionCount                 MetricSettings `mapstructure:"saphana.transaction.count"`
+	SaphanaUptime                           MetricSettings `mapstructure:"saphana.uptime"`
 	SaphanaVolumeOperationCount             MetricSettings `mapstructure:"saphana.volume.operation.count"`
 	SaphanaVolumeOperationSize              MetricSettings `mapstructure:"saphana.volume.operation.size"`
 	SaphanaVolumeOperationTime              MetricSettings `mapstructure:"saphana.volume.operation.time"`
@@ -51,6 +63,12 @@ type MetricsSettings struct {
 
 func DefaultMetricsSettings() MetricsSettings {
 	return MetricsSettings{
+		SaphanaAlertCount: MetricSettings{
+			Enabled: true,
+		},
+		SaphanaBackupLatest: MetricSettings{
+			Enabled: true,
+		},
 		SaphanaColumnMemoryUsed: MetricSettings{
 			Enabled: true,
 		},
@@ -58,6 +76,9 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		SaphanaConnectionCount: MetricSettings{
+			Enabled: true,
+		},
+		SaphanaCPUUsed: MetricSettings{
 			Enabled: true,
 		},
 		SaphanaDiskSizeCurrent: MetricSettings{
@@ -81,6 +102,15 @@ func DefaultMetricsSettings() MetricsSettings {
 		SaphanaInstanceMemoryUsedPeak: MetricSettings{
 			Enabled: true,
 		},
+		SaphanaLicenseExpirationTime: MetricSettings{
+			Enabled: true,
+		},
+		SaphanaLicenseLimit: MetricSettings{
+			Enabled: true,
+		},
+		SaphanaLicensePeak: MetricSettings{
+			Enabled: true,
+		},
 		SaphanaNetworkRequestCount: MetricSettings{
 			Enabled: true,
 		},
@@ -88,6 +118,15 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		SaphanaNetworkRequestFinishedTime: MetricSettings{
+			Enabled: true,
+		},
+		SaphanaReplicationBacklogSize: MetricSettings{
+			Enabled: true,
+		},
+		SaphanaReplicationBacklogTime: MetricSettings{
+			Enabled: true,
+		},
+		SaphanaRowStoreMemoryUsed: MetricSettings{
 			Enabled: true,
 		},
 		SaphanaSchemaMemoryUsedCurrent: MetricSettings{
@@ -138,6 +177,15 @@ func DefaultMetricsSettings() MetricsSettings {
 		SaphanaServiceThreadCount: MetricSettings{
 			Enabled: true,
 		},
+		SaphanaTransactionBlocked: MetricSettings{
+			Enabled: true,
+		},
+		SaphanaTransactionCount: MetricSettings{
+			Enabled: true,
+		},
+		SaphanaUptime: MetricSettings{
+			Enabled: true,
+		},
 		SaphanaVolumeOperationCount: MetricSettings{
 			Enabled: true,
 		},
@@ -148,6 +196,110 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 	}
+}
+
+type metricSaphanaAlertCount struct {
+	data     pdata.Metric   // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills saphana.alert.count metric with initial data.
+func (m *metricSaphanaAlertCount) init() {
+	m.data.SetName("saphana.alert.count")
+	m.data.SetDescription("Number of current alerts.")
+	m.data.SetUnit("{alerts}")
+	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSaphanaAlertCount) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, alertRatingAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+	dp.Attributes().Insert(A.AlertRating, pdata.NewAttributeValueString(alertRatingAttributeValue))
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSaphanaAlertCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSaphanaAlertCount) emit(metrics pdata.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSaphanaAlertCount(settings MetricSettings) metricSaphanaAlertCount {
+	m := metricSaphanaAlertCount{settings: settings}
+	if settings.Enabled {
+		m.data = pdata.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSaphanaBackupLatest struct {
+	data     pdata.Metric   // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills saphana.backup.latest metric with initial data.
+func (m *metricSaphanaBackupLatest) init() {
+	m.data.SetName("saphana.backup.latest")
+	m.data.SetDescription("The age of the latest backup by start time.")
+	m.data.SetUnit("s")
+	m.data.SetDataType(pdata.MetricDataTypeGauge)
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSaphanaBackupLatest) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, hostAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+	dp.Attributes().Insert(A.Host, pdata.NewAttributeValueString(hostAttributeValue))
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSaphanaBackupLatest) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSaphanaBackupLatest) emit(metrics pdata.MetricSlice) {
+	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSaphanaBackupLatest(settings MetricSettings) metricSaphanaBackupLatest {
+	m := metricSaphanaBackupLatest{settings: settings}
+	if settings.Enabled {
+		m.data = pdata.NewMetric()
+		m.init()
+	}
+	return m
 }
 
 type metricSaphanaColumnMemoryUsed struct {
@@ -275,7 +427,7 @@ func (m *metricSaphanaConnectionCount) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSaphanaConnectionCount) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, hostAttributeValue string, columnMemoryTypeAttributeValue string) {
+func (m *metricSaphanaConnectionCount) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, hostAttributeValue string, connectionStatusAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -284,7 +436,7 @@ func (m *metricSaphanaConnectionCount) recordDataPoint(start pdata.Timestamp, ts
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
 	dp.Attributes().Insert(A.Host, pdata.NewAttributeValueString(hostAttributeValue))
-	dp.Attributes().Insert(A.ColumnMemoryType, pdata.NewAttributeValueString(columnMemoryTypeAttributeValue))
+	dp.Attributes().Insert(A.ConnectionStatus, pdata.NewAttributeValueString(connectionStatusAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -305,6 +457,60 @@ func (m *metricSaphanaConnectionCount) emit(metrics pdata.MetricSlice) {
 
 func newMetricSaphanaConnectionCount(settings MetricSettings) metricSaphanaConnectionCount {
 	m := metricSaphanaConnectionCount{settings: settings}
+	if settings.Enabled {
+		m.data = pdata.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSaphanaCPUUsed struct {
+	data     pdata.Metric   // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills saphana.cpu.used metric with initial data.
+func (m *metricSaphanaCPUUsed) init() {
+	m.data.SetName("saphana.cpu.used")
+	m.data.SetDescription("Total CPU time spent.")
+	m.data.SetUnit("ms")
+	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSaphanaCPUUsed) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, hostAttributeValue string, cpuTypeAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+	dp.Attributes().Insert(A.Host, pdata.NewAttributeValueString(hostAttributeValue))
+	dp.Attributes().Insert(A.CPUType, pdata.NewAttributeValueString(cpuTypeAttributeValue))
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSaphanaCPUUsed) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSaphanaCPUUsed) emit(metrics pdata.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSaphanaCPUUsed(settings MetricSettings) metricSaphanaCPUUsed {
+	m := metricSaphanaCPUUsed{settings: settings}
 	if settings.Enabled {
 		m.data = pdata.NewMetric()
 		m.init()
@@ -688,6 +894,163 @@ func newMetricSaphanaInstanceMemoryUsedPeak(settings MetricSettings) metricSapha
 	return m
 }
 
+type metricSaphanaLicenseExpirationTime struct {
+	data     pdata.Metric   // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills saphana.license.expiration.time metric with initial data.
+func (m *metricSaphanaLicenseExpirationTime) init() {
+	m.data.SetName("saphana.license.expiration.time")
+	m.data.SetDescription("The amount of time remaining before license expiration.")
+	m.data.SetUnit("s")
+	m.data.SetDataType(pdata.MetricDataTypeGauge)
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSaphanaLicenseExpirationTime) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, licenseAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+	dp.Attributes().Insert(A.License, pdata.NewAttributeValueString(licenseAttributeValue))
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSaphanaLicenseExpirationTime) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSaphanaLicenseExpirationTime) emit(metrics pdata.MetricSlice) {
+	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSaphanaLicenseExpirationTime(settings MetricSettings) metricSaphanaLicenseExpirationTime {
+	m := metricSaphanaLicenseExpirationTime{settings: settings}
+	if settings.Enabled {
+		m.data = pdata.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSaphanaLicenseLimit struct {
+	data     pdata.Metric   // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills saphana.license.limit metric with initial data.
+func (m *metricSaphanaLicenseLimit) init() {
+	m.data.SetName("saphana.license.limit")
+	m.data.SetDescription("The allowed product usage as specified by the license (for example, main memory).")
+	m.data.SetUnit("1")
+	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSaphanaLicenseLimit) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, licenseAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+	dp.Attributes().Insert(A.License, pdata.NewAttributeValueString(licenseAttributeValue))
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSaphanaLicenseLimit) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSaphanaLicenseLimit) emit(metrics pdata.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSaphanaLicenseLimit(settings MetricSettings) metricSaphanaLicenseLimit {
+	m := metricSaphanaLicenseLimit{settings: settings}
+	if settings.Enabled {
+		m.data = pdata.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSaphanaLicensePeak struct {
+	data     pdata.Metric   // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills saphana.license.peak metric with initial data.
+func (m *metricSaphanaLicensePeak) init() {
+	m.data.SetName("saphana.license.peak")
+	m.data.SetDescription("The peak product usage value during last 13 months, measured periodically.")
+	m.data.SetUnit("1")
+	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSaphanaLicensePeak) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, licenseAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+	dp.Attributes().Insert(A.License, pdata.NewAttributeValueString(licenseAttributeValue))
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSaphanaLicensePeak) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSaphanaLicensePeak) emit(metrics pdata.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSaphanaLicensePeak(settings MetricSettings) metricSaphanaLicensePeak {
+	m := metricSaphanaLicensePeak{settings: settings}
+	if settings.Enabled {
+		m.data = pdata.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricSaphanaNetworkRequestCount struct {
 	data     pdata.Metric   // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -842,6 +1205,170 @@ func (m *metricSaphanaNetworkRequestFinishedTime) emit(metrics pdata.MetricSlice
 
 func newMetricSaphanaNetworkRequestFinishedTime(settings MetricSettings) metricSaphanaNetworkRequestFinishedTime {
 	m := metricSaphanaNetworkRequestFinishedTime{settings: settings}
+	if settings.Enabled {
+		m.data = pdata.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSaphanaReplicationBacklogSize struct {
+	data     pdata.Metric   // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills saphana.replication.backlog.size metric with initial data.
+func (m *metricSaphanaReplicationBacklogSize) init() {
+	m.data.SetName("saphana.replication.backlog.size")
+	m.data.SetDescription("The current replication backlog size.")
+	m.data.SetUnit("By")
+	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSaphanaReplicationBacklogSize) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, primaryHostAttributeValue string, secondaryHostAttributeValue string, replicationModeAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+	dp.Attributes().Insert(A.PrimaryHost, pdata.NewAttributeValueString(primaryHostAttributeValue))
+	dp.Attributes().Insert(A.SecondaryHost, pdata.NewAttributeValueString(secondaryHostAttributeValue))
+	dp.Attributes().Insert(A.ReplicationMode, pdata.NewAttributeValueString(replicationModeAttributeValue))
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSaphanaReplicationBacklogSize) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSaphanaReplicationBacklogSize) emit(metrics pdata.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSaphanaReplicationBacklogSize(settings MetricSettings) metricSaphanaReplicationBacklogSize {
+	m := metricSaphanaReplicationBacklogSize{settings: settings}
+	if settings.Enabled {
+		m.data = pdata.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSaphanaReplicationBacklogTime struct {
+	data     pdata.Metric   // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills saphana.replication.backlog.time metric with initial data.
+func (m *metricSaphanaReplicationBacklogTime) init() {
+	m.data.SetName("saphana.replication.backlog.time")
+	m.data.SetDescription("The current replication backlog.")
+	m.data.SetUnit("us")
+	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSaphanaReplicationBacklogTime) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, primaryHostAttributeValue string, secondaryHostAttributeValue string, replicationModeAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+	dp.Attributes().Insert(A.PrimaryHost, pdata.NewAttributeValueString(primaryHostAttributeValue))
+	dp.Attributes().Insert(A.SecondaryHost, pdata.NewAttributeValueString(secondaryHostAttributeValue))
+	dp.Attributes().Insert(A.ReplicationMode, pdata.NewAttributeValueString(replicationModeAttributeValue))
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSaphanaReplicationBacklogTime) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSaphanaReplicationBacklogTime) emit(metrics pdata.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSaphanaReplicationBacklogTime(settings MetricSettings) metricSaphanaReplicationBacklogTime {
+	m := metricSaphanaReplicationBacklogTime{settings: settings}
+	if settings.Enabled {
+		m.data = pdata.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSaphanaRowStoreMemoryUsed struct {
+	data     pdata.Metric   // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills saphana.row_store.memory.used metric with initial data.
+func (m *metricSaphanaRowStoreMemoryUsed) init() {
+	m.data.SetName("saphana.row_store.memory.used")
+	m.data.SetDescription("The used memory for all row tables.")
+	m.data.SetUnit("By")
+	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSaphanaRowStoreMemoryUsed) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, hostAttributeValue string, rowMemoryTypeAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+	dp.Attributes().Insert(A.Host, pdata.NewAttributeValueString(hostAttributeValue))
+	dp.Attributes().Insert(A.RowMemoryType, pdata.NewAttributeValueString(rowMemoryTypeAttributeValue))
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSaphanaRowStoreMemoryUsed) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSaphanaRowStoreMemoryUsed) emit(metrics pdata.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSaphanaRowStoreMemoryUsed(settings MetricSettings) metricSaphanaRowStoreMemoryUsed {
+	m := metricSaphanaRowStoreMemoryUsed{settings: settings}
 	if settings.Enabled {
 		m.data = pdata.NewMetric()
 		m.init()
@@ -1718,6 +2245,166 @@ func newMetricSaphanaServiceThreadCount(settings MetricSettings) metricSaphanaSe
 	return m
 }
 
+type metricSaphanaTransactionBlocked struct {
+	data     pdata.Metric   // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills saphana.transaction.blocked metric with initial data.
+func (m *metricSaphanaTransactionBlocked) init() {
+	m.data.SetName("saphana.transaction.blocked")
+	m.data.SetDescription("The number of transactions waiting for a lock.")
+	m.data.SetUnit("{transactions}")
+	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSaphanaTransactionBlocked) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, hostAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+	dp.Attributes().Insert(A.Host, pdata.NewAttributeValueString(hostAttributeValue))
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSaphanaTransactionBlocked) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSaphanaTransactionBlocked) emit(metrics pdata.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSaphanaTransactionBlocked(settings MetricSettings) metricSaphanaTransactionBlocked {
+	m := metricSaphanaTransactionBlocked{settings: settings}
+	if settings.Enabled {
+		m.data = pdata.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSaphanaTransactionCount struct {
+	data     pdata.Metric   // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills saphana.transaction.count metric with initial data.
+func (m *metricSaphanaTransactionCount) init() {
+	m.data.SetName("saphana.transaction.count")
+	m.data.SetDescription("The number of transactions.")
+	m.data.SetUnit("{transactions}")
+	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSaphanaTransactionCount) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, hostAttributeValue string, transactionTypeAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+	dp.Attributes().Insert(A.Host, pdata.NewAttributeValueString(hostAttributeValue))
+	dp.Attributes().Insert(A.TransactionType, pdata.NewAttributeValueString(transactionTypeAttributeValue))
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSaphanaTransactionCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSaphanaTransactionCount) emit(metrics pdata.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSaphanaTransactionCount(settings MetricSettings) metricSaphanaTransactionCount {
+	m := metricSaphanaTransactionCount{settings: settings}
+	if settings.Enabled {
+		m.data = pdata.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSaphanaUptime struct {
+	data     pdata.Metric   // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills saphana.uptime metric with initial data.
+func (m *metricSaphanaUptime) init() {
+	m.data.SetName("saphana.uptime")
+	m.data.SetDescription("The uptime of the database.")
+	m.data.SetUnit("s")
+	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSaphanaUptime) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, hostAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+	dp.Attributes().Insert(A.Host, pdata.NewAttributeValueString(hostAttributeValue))
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSaphanaUptime) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSaphanaUptime) emit(metrics pdata.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSaphanaUptime(settings MetricSettings) metricSaphanaUptime {
+	m := metricSaphanaUptime{settings: settings}
+	if settings.Enabled {
+		m.data = pdata.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricSaphanaVolumeOperationCount struct {
 	data     pdata.Metric   // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -1887,9 +2574,12 @@ func newMetricSaphanaVolumeOperationTime(settings MetricSettings) metricSaphanaV
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
 	startTime                                     pdata.Timestamp
+	metricSaphanaAlertCount                       metricSaphanaAlertCount
+	metricSaphanaBackupLatest                     metricSaphanaBackupLatest
 	metricSaphanaColumnMemoryUsed                 metricSaphanaColumnMemoryUsed
 	metricSaphanaComponentMemoryUsed              metricSaphanaComponentMemoryUsed
 	metricSaphanaConnectionCount                  metricSaphanaConnectionCount
+	metricSaphanaCPUUsed                          metricSaphanaCPUUsed
 	metricSaphanaDiskSizeCurrent                  metricSaphanaDiskSizeCurrent
 	metricSaphanaHostMemoryCurrent                metricSaphanaHostMemoryCurrent
 	metricSaphanaHostSwapCurrent                  metricSaphanaHostSwapCurrent
@@ -1897,9 +2587,15 @@ type MetricsBuilder struct {
 	metricSaphanaInstanceMemoryCurrent            metricSaphanaInstanceMemoryCurrent
 	metricSaphanaInstanceMemorySharedAllocated    metricSaphanaInstanceMemorySharedAllocated
 	metricSaphanaInstanceMemoryUsedPeak           metricSaphanaInstanceMemoryUsedPeak
+	metricSaphanaLicenseExpirationTime            metricSaphanaLicenseExpirationTime
+	metricSaphanaLicenseLimit                     metricSaphanaLicenseLimit
+	metricSaphanaLicensePeak                      metricSaphanaLicensePeak
 	metricSaphanaNetworkRequestCount              metricSaphanaNetworkRequestCount
 	metricSaphanaNetworkRequestFinishedCount      metricSaphanaNetworkRequestFinishedCount
 	metricSaphanaNetworkRequestFinishedTime       metricSaphanaNetworkRequestFinishedTime
+	metricSaphanaReplicationBacklogSize           metricSaphanaReplicationBacklogSize
+	metricSaphanaReplicationBacklogTime           metricSaphanaReplicationBacklogTime
+	metricSaphanaRowStoreMemoryUsed               metricSaphanaRowStoreMemoryUsed
 	metricSaphanaSchemaMemoryUsedCurrent          metricSaphanaSchemaMemoryUsedCurrent
 	metricSaphanaSchemaMemoryUsedMax              metricSaphanaSchemaMemoryUsedMax
 	metricSaphanaSchemaOperationCount             metricSaphanaSchemaOperationCount
@@ -1916,6 +2612,9 @@ type MetricsBuilder struct {
 	metricSaphanaServiceMemoryUsed                metricSaphanaServiceMemoryUsed
 	metricSaphanaServiceStackSize                 metricSaphanaServiceStackSize
 	metricSaphanaServiceThreadCount               metricSaphanaServiceThreadCount
+	metricSaphanaTransactionBlocked               metricSaphanaTransactionBlocked
+	metricSaphanaTransactionCount                 metricSaphanaTransactionCount
+	metricSaphanaUptime                           metricSaphanaUptime
 	metricSaphanaVolumeOperationCount             metricSaphanaVolumeOperationCount
 	metricSaphanaVolumeOperationSize              metricSaphanaVolumeOperationSize
 	metricSaphanaVolumeOperationTime              metricSaphanaVolumeOperationTime
@@ -1934,9 +2633,12 @@ func WithStartTime(startTime pdata.Timestamp) metricBuilderOption {
 func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                                     pdata.NewTimestampFromTime(time.Now()),
+		metricSaphanaAlertCount:                       newMetricSaphanaAlertCount(settings.SaphanaAlertCount),
+		metricSaphanaBackupLatest:                     newMetricSaphanaBackupLatest(settings.SaphanaBackupLatest),
 		metricSaphanaColumnMemoryUsed:                 newMetricSaphanaColumnMemoryUsed(settings.SaphanaColumnMemoryUsed),
 		metricSaphanaComponentMemoryUsed:              newMetricSaphanaComponentMemoryUsed(settings.SaphanaComponentMemoryUsed),
 		metricSaphanaConnectionCount:                  newMetricSaphanaConnectionCount(settings.SaphanaConnectionCount),
+		metricSaphanaCPUUsed:                          newMetricSaphanaCPUUsed(settings.SaphanaCPUUsed),
 		metricSaphanaDiskSizeCurrent:                  newMetricSaphanaDiskSizeCurrent(settings.SaphanaDiskSizeCurrent),
 		metricSaphanaHostMemoryCurrent:                newMetricSaphanaHostMemoryCurrent(settings.SaphanaHostMemoryCurrent),
 		metricSaphanaHostSwapCurrent:                  newMetricSaphanaHostSwapCurrent(settings.SaphanaHostSwapCurrent),
@@ -1944,9 +2646,15 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 		metricSaphanaInstanceMemoryCurrent:            newMetricSaphanaInstanceMemoryCurrent(settings.SaphanaInstanceMemoryCurrent),
 		metricSaphanaInstanceMemorySharedAllocated:    newMetricSaphanaInstanceMemorySharedAllocated(settings.SaphanaInstanceMemorySharedAllocated),
 		metricSaphanaInstanceMemoryUsedPeak:           newMetricSaphanaInstanceMemoryUsedPeak(settings.SaphanaInstanceMemoryUsedPeak),
+		metricSaphanaLicenseExpirationTime:            newMetricSaphanaLicenseExpirationTime(settings.SaphanaLicenseExpirationTime),
+		metricSaphanaLicenseLimit:                     newMetricSaphanaLicenseLimit(settings.SaphanaLicenseLimit),
+		metricSaphanaLicensePeak:                      newMetricSaphanaLicensePeak(settings.SaphanaLicensePeak),
 		metricSaphanaNetworkRequestCount:              newMetricSaphanaNetworkRequestCount(settings.SaphanaNetworkRequestCount),
 		metricSaphanaNetworkRequestFinishedCount:      newMetricSaphanaNetworkRequestFinishedCount(settings.SaphanaNetworkRequestFinishedCount),
 		metricSaphanaNetworkRequestFinishedTime:       newMetricSaphanaNetworkRequestFinishedTime(settings.SaphanaNetworkRequestFinishedTime),
+		metricSaphanaReplicationBacklogSize:           newMetricSaphanaReplicationBacklogSize(settings.SaphanaReplicationBacklogSize),
+		metricSaphanaReplicationBacklogTime:           newMetricSaphanaReplicationBacklogTime(settings.SaphanaReplicationBacklogTime),
+		metricSaphanaRowStoreMemoryUsed:               newMetricSaphanaRowStoreMemoryUsed(settings.SaphanaRowStoreMemoryUsed),
 		metricSaphanaSchemaMemoryUsedCurrent:          newMetricSaphanaSchemaMemoryUsedCurrent(settings.SaphanaSchemaMemoryUsedCurrent),
 		metricSaphanaSchemaMemoryUsedMax:              newMetricSaphanaSchemaMemoryUsedMax(settings.SaphanaSchemaMemoryUsedMax),
 		metricSaphanaSchemaOperationCount:             newMetricSaphanaSchemaOperationCount(settings.SaphanaSchemaOperationCount),
@@ -1963,6 +2671,9 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 		metricSaphanaServiceMemoryUsed:                newMetricSaphanaServiceMemoryUsed(settings.SaphanaServiceMemoryUsed),
 		metricSaphanaServiceStackSize:                 newMetricSaphanaServiceStackSize(settings.SaphanaServiceStackSize),
 		metricSaphanaServiceThreadCount:               newMetricSaphanaServiceThreadCount(settings.SaphanaServiceThreadCount),
+		metricSaphanaTransactionBlocked:               newMetricSaphanaTransactionBlocked(settings.SaphanaTransactionBlocked),
+		metricSaphanaTransactionCount:                 newMetricSaphanaTransactionCount(settings.SaphanaTransactionCount),
+		metricSaphanaUptime:                           newMetricSaphanaUptime(settings.SaphanaUptime),
 		metricSaphanaVolumeOperationCount:             newMetricSaphanaVolumeOperationCount(settings.SaphanaVolumeOperationCount),
 		metricSaphanaVolumeOperationSize:              newMetricSaphanaVolumeOperationSize(settings.SaphanaVolumeOperationSize),
 		metricSaphanaVolumeOperationTime:              newMetricSaphanaVolumeOperationTime(settings.SaphanaVolumeOperationTime),
@@ -1977,9 +2688,12 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 // another set of data points. This function will be doing all transformations required to produce metric representation
 // defined in metadata and user settings, e.g. delta/cumulative translation.
 func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
+	mb.metricSaphanaAlertCount.emit(metrics)
+	mb.metricSaphanaBackupLatest.emit(metrics)
 	mb.metricSaphanaColumnMemoryUsed.emit(metrics)
 	mb.metricSaphanaComponentMemoryUsed.emit(metrics)
 	mb.metricSaphanaConnectionCount.emit(metrics)
+	mb.metricSaphanaCPUUsed.emit(metrics)
 	mb.metricSaphanaDiskSizeCurrent.emit(metrics)
 	mb.metricSaphanaHostMemoryCurrent.emit(metrics)
 	mb.metricSaphanaHostSwapCurrent.emit(metrics)
@@ -1987,9 +2701,15 @@ func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
 	mb.metricSaphanaInstanceMemoryCurrent.emit(metrics)
 	mb.metricSaphanaInstanceMemorySharedAllocated.emit(metrics)
 	mb.metricSaphanaInstanceMemoryUsedPeak.emit(metrics)
+	mb.metricSaphanaLicenseExpirationTime.emit(metrics)
+	mb.metricSaphanaLicenseLimit.emit(metrics)
+	mb.metricSaphanaLicensePeak.emit(metrics)
 	mb.metricSaphanaNetworkRequestCount.emit(metrics)
 	mb.metricSaphanaNetworkRequestFinishedCount.emit(metrics)
 	mb.metricSaphanaNetworkRequestFinishedTime.emit(metrics)
+	mb.metricSaphanaReplicationBacklogSize.emit(metrics)
+	mb.metricSaphanaReplicationBacklogTime.emit(metrics)
+	mb.metricSaphanaRowStoreMemoryUsed.emit(metrics)
 	mb.metricSaphanaSchemaMemoryUsedCurrent.emit(metrics)
 	mb.metricSaphanaSchemaMemoryUsedMax.emit(metrics)
 	mb.metricSaphanaSchemaOperationCount.emit(metrics)
@@ -2006,9 +2726,22 @@ func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
 	mb.metricSaphanaServiceMemoryUsed.emit(metrics)
 	mb.metricSaphanaServiceStackSize.emit(metrics)
 	mb.metricSaphanaServiceThreadCount.emit(metrics)
+	mb.metricSaphanaTransactionBlocked.emit(metrics)
+	mb.metricSaphanaTransactionCount.emit(metrics)
+	mb.metricSaphanaUptime.emit(metrics)
 	mb.metricSaphanaVolumeOperationCount.emit(metrics)
 	mb.metricSaphanaVolumeOperationSize.emit(metrics)
 	mb.metricSaphanaVolumeOperationTime.emit(metrics)
+}
+
+// RecordSaphanaAlertCountDataPoint adds a data point to saphana.alert.count metric.
+func (mb *MetricsBuilder) RecordSaphanaAlertCountDataPoint(ts pdata.Timestamp, val int64, alertRatingAttributeValue string) {
+	mb.metricSaphanaAlertCount.recordDataPoint(mb.startTime, ts, val, alertRatingAttributeValue)
+}
+
+// RecordSaphanaBackupLatestDataPoint adds a data point to saphana.backup.latest metric.
+func (mb *MetricsBuilder) RecordSaphanaBackupLatestDataPoint(ts pdata.Timestamp, val int64, hostAttributeValue string) {
+	mb.metricSaphanaBackupLatest.recordDataPoint(mb.startTime, ts, val, hostAttributeValue)
 }
 
 // RecordSaphanaColumnMemoryUsedDataPoint adds a data point to saphana.column.memory.used metric.
@@ -2022,8 +2755,13 @@ func (mb *MetricsBuilder) RecordSaphanaComponentMemoryUsedDataPoint(ts pdata.Tim
 }
 
 // RecordSaphanaConnectionCountDataPoint adds a data point to saphana.connection.count metric.
-func (mb *MetricsBuilder) RecordSaphanaConnectionCountDataPoint(ts pdata.Timestamp, val int64, hostAttributeValue string, columnMemoryTypeAttributeValue string) {
-	mb.metricSaphanaConnectionCount.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, columnMemoryTypeAttributeValue)
+func (mb *MetricsBuilder) RecordSaphanaConnectionCountDataPoint(ts pdata.Timestamp, val int64, hostAttributeValue string, connectionStatusAttributeValue string) {
+	mb.metricSaphanaConnectionCount.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, connectionStatusAttributeValue)
+}
+
+// RecordSaphanaCPUUsedDataPoint adds a data point to saphana.cpu.used metric.
+func (mb *MetricsBuilder) RecordSaphanaCPUUsedDataPoint(ts pdata.Timestamp, val int64, hostAttributeValue string, cpuTypeAttributeValue string) {
+	mb.metricSaphanaCPUUsed.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, cpuTypeAttributeValue)
 }
 
 // RecordSaphanaDiskSizeCurrentDataPoint adds a data point to saphana.disk.size.current metric.
@@ -2061,6 +2799,21 @@ func (mb *MetricsBuilder) RecordSaphanaInstanceMemoryUsedPeakDataPoint(ts pdata.
 	mb.metricSaphanaInstanceMemoryUsedPeak.recordDataPoint(mb.startTime, ts, val, hostAttributeValue)
 }
 
+// RecordSaphanaLicenseExpirationTimeDataPoint adds a data point to saphana.license.expiration.time metric.
+func (mb *MetricsBuilder) RecordSaphanaLicenseExpirationTimeDataPoint(ts pdata.Timestamp, val int64, licenseAttributeValue string) {
+	mb.metricSaphanaLicenseExpirationTime.recordDataPoint(mb.startTime, ts, val, licenseAttributeValue)
+}
+
+// RecordSaphanaLicenseLimitDataPoint adds a data point to saphana.license.limit metric.
+func (mb *MetricsBuilder) RecordSaphanaLicenseLimitDataPoint(ts pdata.Timestamp, val int64, licenseAttributeValue string) {
+	mb.metricSaphanaLicenseLimit.recordDataPoint(mb.startTime, ts, val, licenseAttributeValue)
+}
+
+// RecordSaphanaLicensePeakDataPoint adds a data point to saphana.license.peak metric.
+func (mb *MetricsBuilder) RecordSaphanaLicensePeakDataPoint(ts pdata.Timestamp, val int64, licenseAttributeValue string) {
+	mb.metricSaphanaLicensePeak.recordDataPoint(mb.startTime, ts, val, licenseAttributeValue)
+}
+
 // RecordSaphanaNetworkRequestCountDataPoint adds a data point to saphana.network.request.count metric.
 func (mb *MetricsBuilder) RecordSaphanaNetworkRequestCountDataPoint(ts pdata.Timestamp, val int64, hostAttributeValue string, activePendingRequestStateAttributeValue string) {
 	mb.metricSaphanaNetworkRequestCount.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, activePendingRequestStateAttributeValue)
@@ -2074,6 +2827,21 @@ func (mb *MetricsBuilder) RecordSaphanaNetworkRequestFinishedCountDataPoint(ts p
 // RecordSaphanaNetworkRequestFinishedTimeDataPoint adds a data point to saphana.network.request.finished.time metric.
 func (mb *MetricsBuilder) RecordSaphanaNetworkRequestFinishedTimeDataPoint(ts pdata.Timestamp, val int64, hostAttributeValue string) {
 	mb.metricSaphanaNetworkRequestFinishedTime.recordDataPoint(mb.startTime, ts, val, hostAttributeValue)
+}
+
+// RecordSaphanaReplicationBacklogSizeDataPoint adds a data point to saphana.replication.backlog.size metric.
+func (mb *MetricsBuilder) RecordSaphanaReplicationBacklogSizeDataPoint(ts pdata.Timestamp, val int64, primaryHostAttributeValue string, secondaryHostAttributeValue string, replicationModeAttributeValue string) {
+	mb.metricSaphanaReplicationBacklogSize.recordDataPoint(mb.startTime, ts, val, primaryHostAttributeValue, secondaryHostAttributeValue, replicationModeAttributeValue)
+}
+
+// RecordSaphanaReplicationBacklogTimeDataPoint adds a data point to saphana.replication.backlog.time metric.
+func (mb *MetricsBuilder) RecordSaphanaReplicationBacklogTimeDataPoint(ts pdata.Timestamp, val int64, primaryHostAttributeValue string, secondaryHostAttributeValue string, replicationModeAttributeValue string) {
+	mb.metricSaphanaReplicationBacklogTime.recordDataPoint(mb.startTime, ts, val, primaryHostAttributeValue, secondaryHostAttributeValue, replicationModeAttributeValue)
+}
+
+// RecordSaphanaRowStoreMemoryUsedDataPoint adds a data point to saphana.row_store.memory.used metric.
+func (mb *MetricsBuilder) RecordSaphanaRowStoreMemoryUsedDataPoint(ts pdata.Timestamp, val int64, hostAttributeValue string, rowMemoryTypeAttributeValue string) {
+	mb.metricSaphanaRowStoreMemoryUsed.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, rowMemoryTypeAttributeValue)
 }
 
 // RecordSaphanaSchemaMemoryUsedCurrentDataPoint adds a data point to saphana.schema.memory.used.current metric.
@@ -2156,6 +2924,21 @@ func (mb *MetricsBuilder) RecordSaphanaServiceThreadCountDataPoint(ts pdata.Time
 	mb.metricSaphanaServiceThreadCount.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, threadStatusAttributeValue)
 }
 
+// RecordSaphanaTransactionBlockedDataPoint adds a data point to saphana.transaction.blocked metric.
+func (mb *MetricsBuilder) RecordSaphanaTransactionBlockedDataPoint(ts pdata.Timestamp, val int64, hostAttributeValue string) {
+	mb.metricSaphanaTransactionBlocked.recordDataPoint(mb.startTime, ts, val, hostAttributeValue)
+}
+
+// RecordSaphanaTransactionCountDataPoint adds a data point to saphana.transaction.count metric.
+func (mb *MetricsBuilder) RecordSaphanaTransactionCountDataPoint(ts pdata.Timestamp, val int64, hostAttributeValue string, transactionTypeAttributeValue string) {
+	mb.metricSaphanaTransactionCount.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, transactionTypeAttributeValue)
+}
+
+// RecordSaphanaUptimeDataPoint adds a data point to saphana.uptime metric.
+func (mb *MetricsBuilder) RecordSaphanaUptimeDataPoint(ts pdata.Timestamp, val int64, hostAttributeValue string) {
+	mb.metricSaphanaUptime.recordDataPoint(mb.startTime, ts, val, hostAttributeValue)
+}
+
 // RecordSaphanaVolumeOperationCountDataPoint adds a data point to saphana.volume.operation.count metric.
 func (mb *MetricsBuilder) RecordSaphanaVolumeOperationCountDataPoint(ts pdata.Timestamp, val int64, hostAttributeValue string, volumeAttributeValue string, operationTypeAttributeValue string) {
 	mb.metricSaphanaVolumeOperationCount.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, volumeAttributeValue, operationTypeAttributeValue)
@@ -2194,12 +2977,16 @@ func (mb *MetricsBuilder) NewMetricData() pdata.Metrics {
 var Attributes = struct {
 	// ActivePendingRequestState (The state of network request.)
 	ActivePendingRequestState string
+	// AlertRating (The alert rating.)
+	AlertRating string
 	// ColumnMemoryType (The type of column store memory.)
 	ColumnMemoryType string
 	// Component (The SAP HANA component.)
 	Component string
 	// ConnectionStatus (The connection status.)
 	ConnectionStatus string
+	// CPUType (The type of cpu.)
+	CPUType string
 	// Disk (The SAP HANA disk.)
 	Disk string
 	// DiskStateUsedFree (The state of the disk storage.)
@@ -2210,14 +2997,24 @@ var Attributes = struct {
 	HostSwapState string
 	// InternalExternalRequestType (The type of network request.)
 	InternalExternalRequestType string
+	// License (The SAP HANA license.)
+	License string
 	// MemoryStateUsedFree (The state of memory.)
 	MemoryStateUsedFree string
 	// OperationType (The type of operation.)
 	OperationType string
+	// PrimaryHost (The primary SAP HANA host in replication.)
+	PrimaryHost string
+	// ReplicationMode (The replication mode.)
+	ReplicationMode string
+	// RowMemoryType (The type of row store memory.)
+	RowMemoryType string
 	// Schema (The SAP HANA schema.)
 	Schema string
 	// SchemaMemoryType (The type of schema memory.)
 	SchemaMemoryType string
+	// SecondaryHost (The secondary SAP HANA host in replication.)
+	SecondaryHost string
 	// Service (The SAP HANA service.)
 	Service string
 	// ServiceMemoryUsedType (The type of service memory.)
@@ -2226,26 +3023,36 @@ var Attributes = struct {
 	ServiceStatus string
 	// ThreadStatus (The status of threads.)
 	ThreadStatus string
+	// TransactionType (The transaction type.)
+	TransactionType string
 	// Volume (The SAP HANA volume.)
 	Volume string
 }{
 	"state",
+	"rating",
 	"type",
 	"component",
 	"status",
+	"type",
 	"disk",
 	"state",
 	"host",
 	"state",
 	"type",
+	"license",
 	"state",
+	"type",
+	"primary",
+	"mode",
 	"type",
 	"schema",
 	"type",
+	"secondary",
 	"service",
 	"type",
 	"status",
 	"status",
+	"type",
 	"volume",
 }
 
@@ -2279,6 +3086,19 @@ var AttributeConnectionStatus = struct {
 	"running",
 	"idle",
 	"queueing",
+}
+
+// AttributeCPUType are the possible values that the attribute "cpu_type" can have.
+var AttributeCPUType = struct {
+	User   string
+	System string
+	IoWait string
+	Idle   string
+}{
+	"user",
+	"system",
+	"io_wait",
+	"idle",
 }
 
 // AttributeDiskStateUsedFree are the possible values that the attribute "disk_state_used_free" can have.
@@ -2326,6 +3146,15 @@ var AttributeOperationType = struct {
 	"write",
 }
 
+// AttributeRowMemoryType are the possible values that the attribute "row_memory_type" can have.
+var AttributeRowMemoryType = struct {
+	Fixed    string
+	Variable string
+}{
+	"fixed",
+	"variable",
+}
+
 // AttributeSchemaMemoryType are the possible values that the attribute "schema_memory_type" can have.
 var AttributeSchemaMemoryType = struct {
 	Main         string
@@ -2364,4 +3193,15 @@ var AttributeThreadStatus = struct {
 }{
 	"active",
 	"inactive",
+}
+
+// AttributeTransactionType are the possible values that the attribute "transaction_type" can have.
+var AttributeTransactionType = struct {
+	Update   string
+	Commit   string
+	Rollback string
+}{
+	"update",
+	"commit",
+	"rollback",
 }
