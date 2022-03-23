@@ -6,7 +6,7 @@
 ### 💡 Enhancements 💡
 
 - `k8seventsreceiver`: Add Api_version and resource_version (#8539)
-- `kafkaexporter`: Updated the README file to indicate supported pipeline types (#8813)
+- `kafkaexporter`: Updated the README file to indicate supported pipeline types (#8814)
 
 ### 🛑 Breaking changes 🛑
 
