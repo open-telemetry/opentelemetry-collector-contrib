@@ -3,9 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongod
 go 1.17
 
 require (
-	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.47.1-0.20220316214317-e6ea17cf27a8
-	go.opentelemetry.io/collector/model v0.47.1-0.20220316214317-e6ea17cf27a8
+	github.com/stretchr/testify v1.7.1
+	go.opentelemetry.io/collector v0.47.1-0.20220322153344-4c3b824aca1d
+	go.opentelemetry.io/collector/model v0.47.1-0.20220322153344-4c3b824aca1d
 	go.uber.org/multierr v1.8.0
 )
 
@@ -40,9 +40,9 @@ require (
 	github.com/xdg-go/stringprep v1.0.3 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/otel v1.4.1 // indirect
+	go.opentelemetry.io/otel v1.5.0 // indirect
 	go.opentelemetry.io/otel/metric v0.27.0 // indirect
-	go.opentelemetry.io/otel/trace v1.4.1 // indirect
+	go.opentelemetry.io/otel/trace v1.5.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect

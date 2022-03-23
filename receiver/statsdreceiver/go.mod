@@ -4,14 +4,14 @@ go 1.17
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.47.0
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.7.1
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.47.1-0.20220316214317-e6ea17cf27a8
-	go.opentelemetry.io/collector/model v0.47.1-0.20220316214317-e6ea17cf27a8
-	go.opentelemetry.io/otel v1.4.1
+	go.opentelemetry.io/collector v0.47.1-0.20220322153344-4c3b824aca1d
+	go.opentelemetry.io/collector/model v0.47.1-0.20220322153344-4c3b824aca1d
+	go.opentelemetry.io/otel v1.5.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
-	gonum.org/v1/gonum v0.9.3
+	gonum.org/v1/gonum v0.11.0
 )
 
 require (
@@ -31,8 +31,8 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
 	go.opentelemetry.io/otel/metric v0.27.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.4.1 // indirect
-	go.opentelemetry.io/otel/trace v1.4.1 // indirect
+	go.opentelemetry.io/otel/sdk v1.5.0 // indirect
+	go.opentelemetry.io/otel/trace v1.5.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	golang.org/x/exp v0.0.0-20200224162631-6cc2880d07d6 // indirect
 	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9 // indirect

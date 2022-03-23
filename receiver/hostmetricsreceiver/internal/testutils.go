@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
-func AssertContainsAttribute(t *testing.T, attr pdata.AttributeMap, key string) {
+func AssertContainsAttribute(t *testing.T, attr pdata.Map, key string) {
 	_, ok := attr.Get(key)
 	assert.True(t, ok)
 }

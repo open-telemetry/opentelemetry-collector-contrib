@@ -167,8 +167,8 @@ func unixNanoToMilliseconds(timestamp pdata.Timestamp) int64 {
 	return int64(uint64(timestamp) / uint64(time.Millisecond))
 }
 
-// attrMaptoStringMap converts a pdata.AttributeMap to a map[string]string
-func attrMaptoStringMap(attrMap pdata.AttributeMap) map[string]string {
+// attrMaptoStringMap converts a pdata.Map to a map[string]string
+func attrMaptoStringMap(attrMap pdata.Map) map[string]string {
 	strMap := make(map[string]string, attrMap.Len())
 
 	attrMap.Range(func(k string, v pdata.Value) bool {

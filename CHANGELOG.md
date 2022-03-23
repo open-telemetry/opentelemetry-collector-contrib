@@ -15,6 +15,8 @@
 
 - `datadogexporter`: Deprecate `OnlyMetadata` method from `Config` struct (#8359)
 
+- `resourcedetectionprocessor`: Add attribute allowlist (#8547)
+
 ## v0.47.0
 
 ### 💡 Enhancements 💡
@@ -41,6 +43,7 @@
 - `prometheusremotewriteexporter` support adding trace id and span id attached to exemplars (#8380)
 - `influxdbexporter`: accept histogram metric missing infinity bucket. (#8462)
 - `skywalkingreceiver`: Added implementation of Skywalking receiver. (#8549)
+- `prometheusreceiver`: Fix staleness bug for histograms and summaries (#8561)
 
 ### 🛑 Breaking changes 🛑
 
@@ -69,6 +72,7 @@
     cpu metrics as a double values.
 - `tanzuobservabilityexporter`: Fix a typo in Instrumentation Library name and version tags (#8384)
 - `logreceivers`: Fix an issue where receiver would sometimes fail to build using Go 1.18 (#8521)
+- `awsxrayreceiver`: Add defaults for optional stack frame parameters (#8790)
 
 ### 🚩 Deprecations 🚩
 
@@ -346,6 +350,7 @@
 - `mongodbreceiver`: Establish codebase for MongoDB metrics receiver (#6972)
 - `couchbasereceiver`: Establish codebase for Couchbase metrics receiver (#7046)
 - `dbstorage`: New experimental dbstorage extension (#7061)
+- `redactionprocessor`: Remove sensitive data from traces (#6495)
 
 ### 🧰 Bug fixes 🧰
 

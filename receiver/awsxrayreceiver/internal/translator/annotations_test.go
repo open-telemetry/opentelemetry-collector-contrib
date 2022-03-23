@@ -30,18 +30,18 @@ func TestAddAnnotations(t *testing.T) {
 	input["float32"] = float32(4.5)
 	input["float64"] = 5.5
 
-	attrMap := pdata.NewAttributeMap()
+	attrMap := pdata.NewMap()
 	attrMap.EnsureCapacity(initAttrCapacity)
 	addAnnotations(input, &attrMap)
 
-	expectedAttrMap := pdata.NewAttributeMapFromMap(
-		map[string]pdata.Value{
-			"int":     pdata.NewValueInt(int64(0)),
-			"int32":   pdata.NewValueInt(int64(1)),
-			"int64":   pdata.NewValueInt(int64(2)),
-			"bool":    pdata.NewValueBool(false),
-			"float32": pdata.NewValueDouble(4.5),
-			"float64": pdata.NewValueDouble(5.5),
+	expectedAttrMap := pdata.NewMapFromRaw(
+		map[string]interface{}{
+			"int":     0,
+			"int32":   int32(1),
+			"int64":   int64(2),
+			"bool":    false,
+			"float32": 4.5,
+			"float64": 5.5,
 		},
 	)
 	assert.Equal(t, expectedAttrMap.Sort(), attrMap.Sort(), "attribute maps differ")

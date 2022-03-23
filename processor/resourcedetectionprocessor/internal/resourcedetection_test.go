@@ -52,6 +52,7 @@ func TestDetect(t *testing.T) {
 		name              string
 		detectedResources []pdata.Resource
 		expectedResource  pdata.Resource
+		attributes        []string
 	}{
 		{
 			name: "Detect three resources",
@@ -61,6 +62,7 @@ func TestDetect(t *testing.T) {
 				NewResource(map[string]interface{}{"a": "12", "c": "3"}),
 			},
 			expectedResource: NewResource(map[string]interface{}{"a": "1", "b": "2", "c": "3"}),
+			attributes:       nil,
 		}, {
 			name: "Detect empty resources",
 			detectedResources: []pdata.Resource{
@@ -69,6 +71,7 @@ func TestDetect(t *testing.T) {
 				NewResource(map[string]interface{}{"a": "11"}),
 			},
 			expectedResource: NewResource(map[string]interface{}{"a": "1", "b": "2"}),
+			attributes:       nil,
 		}, {
 			name: "Detect non-string resources",
 			detectedResources: []pdata.Resource{
@@ -77,6 +80,16 @@ func TestDetect(t *testing.T) {
 				NewResource(map[string]interface{}{"a": "11"}),
 			},
 			expectedResource: NewResource(map[string]interface{}{"a": "11", "bool": true, "int": int64(2), "double": 0.5}),
+			attributes:       nil,
+		}, {
+			name: "Filter to one attribute",
+			detectedResources: []pdata.Resource{
+				NewResource(map[string]interface{}{"a": "1", "b": "2"}),
+				NewResource(map[string]interface{}{"a": "11", "c": "3"}),
+				NewResource(map[string]interface{}{"a": "12", "c": "3"}),
+			},
+			expectedResource: NewResource(map[string]interface{}{"a": "1"}),
+			attributes:       []string{"a"},
 		},
 	}
 
@@ -97,7 +110,7 @@ func TestDetect(t *testing.T) {
 			}
 
 			f := NewProviderFactory(mockDetectors)
-			p, err := f.CreateResourceProvider(componenttest.NewNopProcessorCreateSettings(), time.Second, &mockDetectorConfig{}, mockDetectorTypes...)
+			p, err := f.CreateResourceProvider(componenttest.NewNopProcessorCreateSettings(), time.Second, tt.attributes, &mockDetectorConfig{}, mockDetectorTypes...)
 			require.NoError(t, err)
 
 			got, _, err := p.Get(context.Background(), http.DefaultClient)
@@ -113,7 +126,7 @@ func TestDetect(t *testing.T) {
 func TestDetectResource_InvalidDetectorType(t *testing.T) {
 	mockDetectorKey := DetectorType("mock")
 	p := NewProviderFactory(map[DetectorType]DetectorFactory{})
-	_, err := p.CreateResourceProvider(componenttest.NewNopProcessorCreateSettings(), time.Second, &mockDetectorConfig{}, mockDetectorKey)
+	_, err := p.CreateResourceProvider(componenttest.NewNopProcessorCreateSettings(), time.Second, nil, &mockDetectorConfig{}, mockDetectorKey)
 	require.EqualError(t, err, fmt.Sprintf("invalid detector key: %v", mockDetectorKey))
 }
 
@@ -124,7 +137,7 @@ func TestDetectResource_DetectoryFactoryError(t *testing.T) {
 			return nil, errors.New("creation failed")
 		},
 	})
-	_, err := p.CreateResourceProvider(componenttest.NewNopProcessorCreateSettings(), time.Second, &mockDetectorConfig{}, mockDetectorKey)
+	_, err := p.CreateResourceProvider(componenttest.NewNopProcessorCreateSettings(), time.Second, nil, &mockDetectorConfig{}, mockDetectorKey)
 	require.EqualError(t, err, fmt.Sprintf("failed creating detector type %q: %v", mockDetectorKey, "creation failed"))
 }
 
@@ -135,7 +148,7 @@ func TestDetectResource_Error(t *testing.T) {
 	md2 := &MockDetector{}
 	md2.On("Detect").Return(pdata.NewResource(), errors.New("err1"))
 
-	p := NewResourceProvider(zap.NewNop(), time.Second, md1, md2)
+	p := NewResourceProvider(zap.NewNop(), time.Second, nil, md1, md2)
 	_, _, err := p.Get(context.Background(), http.DefaultClient)
 	require.NoError(t, err)
 }
@@ -205,7 +218,7 @@ func TestDetectResource_Parallel(t *testing.T) {
 	expectedResource := NewResource(map[string]interface{}{"a": "1", "b": "2", "c": "3"})
 	expectedResource.Attributes().Sort()
 
-	p := NewResourceProvider(zap.NewNop(), time.Second, md1, md2, md3)
+	p := NewResourceProvider(zap.NewNop(), time.Second, nil, md1, md2, md3)
 
 	// call p.Get multiple times
 	wg := &sync.WaitGroup{}
@@ -235,6 +248,83 @@ func TestDetectResource_Parallel(t *testing.T) {
 	md3.AssertNumberOfCalls(t, "Detect", 1)
 }
 
+func TestFilterAttributes_Match(t *testing.T) {
+	m := map[string]struct{}{
+		"host.name": {},
+		"host.id":   {},
+	}
+	attr := pdata.NewMap()
+	attr.InsertString("host.name", "test")
+	attr.InsertString("host.id", "test")
+	attr.InsertString("drop.this", "test")
+
+	droppedAttributes := filterAttributes(attr, m)
+
+	_, ok := attr.Get("host.name")
+	assert.True(t, ok)
+
+	_, ok = attr.Get("host.id")
+	assert.True(t, ok)
+
+	_, ok = attr.Get("drop.this")
+	assert.False(t, ok)
+
+	assert.Contains(t, droppedAttributes, "drop.this")
+}
+
+func TestFilterAttributes_NoMatch(t *testing.T) {
+	m := map[string]struct{}{
+		"cloud.region": {},
+	}
+	attr := pdata.NewMap()
+	attr.InsertString("host.name", "test")
+	attr.InsertString("host.id", "test")
+
+	droppedAttributes := filterAttributes(attr, m)
+
+	_, ok := attr.Get("host.name")
+	assert.False(t, ok)
+
+	_, ok = attr.Get("host.id")
+	assert.False(t, ok)
+
+	assert.EqualValues(t, droppedAttributes, []string{"host.name", "host.id"})
+}
+
+func TestFilterAttributes_NilAttributes(t *testing.T) {
+	var m map[string]struct{}
+	attr := pdata.NewMap()
+	attr.InsertString("host.name", "test")
+	attr.InsertString("host.id", "test")
+
+	droppedAttributes := filterAttributes(attr, m)
+
+	_, ok := attr.Get("host.name")
+	assert.True(t, ok)
+
+	_, ok = attr.Get("host.id")
+	assert.True(t, ok)
+
+	assert.Equal(t, len(droppedAttributes), 0)
+}
+
+func TestFilterAttributes_NoAttributes(t *testing.T) {
+	m := make(map[string]struct{})
+	attr := pdata.NewMap()
+	attr.InsertString("host.name", "test")
+	attr.InsertString("host.id", "test")
+
+	droppedAttributes := filterAttributes(attr, m)
+
+	_, ok := attr.Get("host.name")
+	assert.True(t, ok)
+
+	_, ok = attr.Get("host.id")
+	assert.True(t, ok)
+
+	assert.Equal(t, len(droppedAttributes), 0)
+}
+
 func TestAttributesToMap(t *testing.T) {
 	m := map[string]interface{}{
 		"str":    "a",
@@ -249,7 +339,7 @@ func TestAttributesToMap(t *testing.T) {
 			int64(42),
 		},
 	}
-	attr := pdata.NewAttributeMap()
+	attr := pdata.NewMap()
 	attr.InsertString("str", "a")
 	attr.InsertInt("int", 5)
 	attr.InsertDouble("double", 5.0)

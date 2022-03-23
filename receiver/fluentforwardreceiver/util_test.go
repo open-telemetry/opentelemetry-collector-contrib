@@ -23,7 +23,7 @@ import (
 type Log struct {
 	Timestamp  int64
 	Body       pdata.Value
-	Attributes map[string]pdata.Value
+	Attributes map[string]interface{}
 }
 
 // Logs is a convenience function for constructing logs for tests in a way that is
@@ -38,7 +38,7 @@ func Logs(recs ...Log) pdata.Logs {
 		l := logSlice.AppendEmpty()
 		recs[i].Body.CopyTo(l.Body())
 		l.SetTimestamp(pdata.Timestamp(recs[i].Timestamp))
-		pdata.NewAttributeMapFromMap(recs[i].Attributes).CopyTo(l.Attributes())
+		pdata.NewMapFromRaw(recs[i].Attributes).CopyTo(l.Attributes())
 		l.Attributes().Sort()
 	}
 

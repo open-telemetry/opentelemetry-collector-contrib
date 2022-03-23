@@ -58,7 +58,7 @@ func (d *Dimensions) OriginID() string {
 }
 
 // getTags maps an attributeMap into a slice of Datadog tags
-func getTags(labels pdata.AttributeMap) []string {
+func getTags(labels pdata.Map) []string {
 	tags := make([]string, 0, labels.Len())
 	labels.Range(func(key string, value pdata.Value) bool {
 		v := value.AsString()
@@ -83,7 +83,7 @@ func (d *Dimensions) AddTags(tags ...string) *Dimensions {
 }
 
 // WithAttributeMap creates a new metricDimensions struct with additional tags from attributes.
-func (d *Dimensions) WithAttributeMap(labels pdata.AttributeMap) *Dimensions {
+func (d *Dimensions) WithAttributeMap(labels pdata.Map) *Dimensions {
 	return d.AddTags(getTags(labels)...)
 }
 

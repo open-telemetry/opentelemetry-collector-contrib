@@ -116,7 +116,7 @@ func testFilter(t *testing.T, mdType pdata.MetricDataType, mvType pdata.MetricVa
 	assert.Equal(t, expectedMetricCount, filteredMetricCount)
 }
 
-func assertFiltered(t *testing.T, lm pdata.AttributeMap) {
+func assertFiltered(t *testing.T, lm pdata.Map) {
 	lm.Range(func(k string, v pdata.Value) bool {
 		if k == filteredAttrKey && v.Equal(filteredAttrVal) {
 			assert.Fail(t, "found metric that should have been filtered out")

@@ -96,7 +96,7 @@ func encodeJSON(lr pdata.LogRecord, res pdata.Resource) (string, error) {
 }
 
 // Copied from pdata (es AttributeValueSlice) asRaw() since its not exported
-func attributeValueSliceAsRaw(es pdata.AttributeValueSlice) []interface{} {
+func attributeValueSliceAsRaw(es pdata.Slice) []interface{} {
 	rawSlice := make([]interface{}, 0, es.Len())
 	for i := 0; i < es.Len(); i++ {
 		v := es.At(i)

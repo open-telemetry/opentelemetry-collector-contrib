@@ -161,7 +161,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metric
 	// the first payload.
 	if exp.cfg.SendMetadata {
 		exp.onceMetadata.Do(func() {
-			attrs := pdata.NewAttributeMap()
+			attrs := pdata.NewMap()
 			if md.ResourceMetrics().Len() > 0 {
 				attrs = md.ResourceMetrics().At(0).Resource().Attributes()
 			}
