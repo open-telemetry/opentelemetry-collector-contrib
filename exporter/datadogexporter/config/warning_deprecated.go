@@ -21,23 +21,6 @@ import (
 	"go.uber.org/multierr"
 )
 
-// List of settings that are deprecated.
-var renamedSettings = []renameError{
-	{
-		oldName:      "metrics::send_monotonic_counter",
-		newName:      "metrics::sums::cumulative_monotonic_mode",
-		oldRemovedIn: "v0.50.0",
-		issueNumber:  8489,
-		updateFn: func(c *Config) {
-			if c.Metrics.SendMonotonic {
-				c.Metrics.SumConfig.CumulativeMonotonicMode = CumulativeMonotonicSumModeToDelta
-			} else {
-				c.Metrics.SumConfig.CumulativeMonotonicMode = CumulativeMonotonicSumModeRawValue
-			}
-		},
-	},
-}
-
 var _ error = (*renameError)(nil)
 
 // renameError is an error related to a renamed setting.
@@ -53,6 +36,23 @@ type renameError struct {
 	updateFn func(*Config)
 	// issueNumber on opentelemetry-collector-contrib for tracking
 	issueNumber uint
+}
+
+// List of settings that are deprecated.
+var renamedSettings = []renameError{
+	{
+		oldName:      "metrics::send_monotonic_counter",
+		newName:      "metrics::sums::cumulative_monotonic_mode",
+		oldRemovedIn: "v0.50.0",
+		issueNumber:  8489,
+		updateFn: func(c *Config) {
+			if c.Metrics.SendMonotonic {
+				c.Metrics.SumConfig.CumulativeMonotonicMode = CumulativeMonotonicSumModeToDelta
+			} else {
+				c.Metrics.SumConfig.CumulativeMonotonicMode = CumulativeMonotonicSumModeRawValue
+			}
+		},
+	},
 }
 
 // Error implements the error interface.
@@ -84,10 +84,10 @@ func (e renameError) UpdateCfg(cfg *Config) {
 // Error out if any pair of old-new options are set at the same time.
 func handleRenamedSettings(configMap *config.Map, cfg *Config) (warnings []error, err error) {
 	for _, renaming := range renamedSettings {
-		ok, errCheck := renaming.Check(configMap)
+		isOldNameUsed, errCheck := renaming.Check(configMap)
 		err = multierr.Append(err, errCheck)
 
-		if errCheck == nil && ok {
+		if errCheck == nil && isOldNameUsed {
 			warnings = append(warnings, renaming)
 			// only update config if old name is in use
 			renaming.UpdateCfg(cfg)
