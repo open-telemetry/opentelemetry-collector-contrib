@@ -48,12 +48,14 @@ func TestSyslogParser(t *testing.T) {
 			require.NoError(t, err)
 
 			newEntry := entry.New()
+			ots := newEntry.ObservedTimestamp
 			newEntry.Body = tc.InputBody
 			err = op.Process(context.Background(), newEntry)
 			require.NoError(t, err)
 
 			select {
 			case e := <-fake.Received:
+				require.Equal(t, ots, e.ObservedTimestamp)
 				require.Equal(t, tc.ExpectedBody, e.Body)
 				require.Equal(t, tc.ExpectedTimestamp, e.Timestamp)
 				require.Equal(t, tc.ExpectedSeverity, e.Severity)

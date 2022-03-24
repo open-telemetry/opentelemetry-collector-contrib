@@ -19,25 +19,26 @@ import (
 	"time"
 )
 
-var now = time.Now
+var timeNow = time.Now
 
 // Entry is a flexible representation of log data associated with a timestamp.
 type Entry struct {
-	Timestamp    time.Time              `json:"timestamp"               yaml:"timestamp"`
-	Body         interface{}            `json:"body"                    yaml:"body"`
-	Attributes   map[string]interface{} `json:"attributes,omitempty"    yaml:"attributes,omitempty"`
-	Resource     map[string]interface{} `json:"resource,omitempty"      yaml:"resource,omitempty"`
-	SeverityText string                 `json:"severity_text,omitempty" yaml:"severity_text,omitempty"`
-	SpanId       []byte                 `json:"span_id,omitempty"       yaml:"span_id,omitempty"`
-	TraceId      []byte                 `json:"trace_id,omitempty"      yaml:"trace_id,omitempty"`
-	TraceFlags   []byte                 `json:"trace_flags,omitempty"   yaml:"trace_flags,omitempty"`
-	Severity     Severity               `json:"severity"                yaml:"severity"`
+	ObservedTimestamp time.Time              `json:"observed_timestamp"      yaml:"observed_timestamp"`
+	Timestamp         time.Time              `json:"timestamp"               yaml:"timestamp"`
+	Body              interface{}            `json:"body"                    yaml:"body"`
+	Attributes        map[string]interface{} `json:"attributes,omitempty"    yaml:"attributes,omitempty"`
+	Resource          map[string]interface{} `json:"resource,omitempty"      yaml:"resource,omitempty"`
+	SeverityText      string                 `json:"severity_text,omitempty" yaml:"severity_text,omitempty"`
+	SpanId            []byte                 `json:"span_id,omitempty"       yaml:"span_id,omitempty"`
+	TraceId           []byte                 `json:"trace_id,omitempty"      yaml:"trace_id,omitempty"`
+	TraceFlags        []byte                 `json:"trace_flags,omitempty"   yaml:"trace_flags,omitempty"`
+	Severity          Severity               `json:"severity"                yaml:"severity"`
 }
 
 // New will create a new log entry with current timestamp and an empty body.
 func New() *Entry {
 	return &Entry{
-		Timestamp: now(),
+		ObservedTimestamp: timeNow(),
 	}
 }
 
@@ -174,14 +175,15 @@ func (entry *Entry) readToStringMap(field FieldInterface, dest *map[string]strin
 // Copy will return a deep copy of the entry.
 func (entry *Entry) Copy() *Entry {
 	return &Entry{
-		Timestamp:    entry.Timestamp,
-		Severity:     entry.Severity,
-		SeverityText: entry.SeverityText,
-		Attributes:   copyInterfaceMap(entry.Attributes),
-		Resource:     copyInterfaceMap(entry.Resource),
-		Body:         copyValue(entry.Body),
-		TraceId:      copyByteArray(entry.TraceId),
-		SpanId:       copyByteArray(entry.SpanId),
-		TraceFlags:   copyByteArray(entry.TraceFlags),
+		ObservedTimestamp: entry.ObservedTimestamp,
+		Timestamp:         entry.Timestamp,
+		Severity:          entry.Severity,
+		SeverityText:      entry.SeverityText,
+		Attributes:        copyInterfaceMap(entry.Attributes),
+		Resource:          copyInterfaceMap(entry.Resource),
+		Body:              copyValue(entry.Body),
+		TraceId:           copyByteArray(entry.TraceId),
+		SpanId:            copyByteArray(entry.SpanId),
+		TraceFlags:        copyByteArray(entry.TraceFlags),
 	}
 }

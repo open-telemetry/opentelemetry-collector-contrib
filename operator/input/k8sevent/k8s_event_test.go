@@ -86,11 +86,11 @@ func TestWatchNamespace(t *testing.T) {
 	defer op.Stop()
 
 	select {
-	case entry := <-fake.Received:
-		require.Equal(t, entry.Timestamp, fakeTime)
-		require.Equal(t, entry.Resource["k8s.namespace.name"], "testnamespace")
-		require.Equal(t, entry.Resource["k8s.pod.uid"], "testuid")
-		require.Equal(t, entry.Resource["k8s.pod.name"], "testpodname")
+	case e := <-fake.Received:
+		require.Equal(t, e.Timestamp, fakeTime)
+		require.Equal(t, e.Resource["k8s.namespace.name"], "testnamespace")
+		require.Equal(t, e.Resource["k8s.pod.uid"], "testuid")
+		require.Equal(t, e.Resource["k8s.pod.name"], "testpodname")
 	case <-time.After(time.Second):
 		require.FailNow(t, "Timed out waiting for entry")
 	}

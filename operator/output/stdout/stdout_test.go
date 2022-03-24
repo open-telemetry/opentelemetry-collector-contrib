@@ -44,17 +44,22 @@ func TestStdoutOperator(t *testing.T) {
 	var buf bytes.Buffer
 	op.(*StdoutOperator).encoder = json.NewEncoder(&buf)
 
+	ots := time.Unix(1591043864, 0)
 	ts := time.Unix(1591042864, 0)
 	e := &entry.Entry{
-		Timestamp: ts,
-		Body:      "test body",
+		ObservedTimestamp: ots,
+		Timestamp:         ts,
+		Body:              "test body",
 	}
 	err = op.Process(context.Background(), e)
 	require.NoError(t, err)
 
-	marshalledTimestamp, err := json.Marshal(ts)
+	marshalledOTS, err := json.Marshal(ots)
 	require.NoError(t, err)
 
-	expected := `{"timestamp":` + string(marshalledTimestamp) + `,"body":"test body","severity":0}` + "\n"
+	marshalledTs, err := json.Marshal(ts)
+	require.NoError(t, err)
+
+	expected := `{"observed_timestamp":` + string(marshalledOTS) + `,"timestamp":` + string(marshalledTs) + `,"body":"test body","severity":0}` + "\n"
 	require.Equal(t, expected, buf.String())
 }

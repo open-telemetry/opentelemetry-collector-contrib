@@ -90,6 +90,7 @@ func (p *RetainOperator) Process(ctx context.Context, entry *entry.Entry) error 
 // Transform will apply the retain operation to an entry
 func (p *RetainOperator) Transform(e *entry.Entry) error {
 	newEntry := entry.New()
+	newEntry.ObservedTimestamp = e.ObservedTimestamp
 	newEntry.Timestamp = e.Timestamp
 
 	if !p.AllResourceFields {
