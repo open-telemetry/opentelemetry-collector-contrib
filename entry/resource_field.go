@@ -60,9 +60,9 @@ func (r ResourceField) Delete(entry *Entry) (interface{}, bool) {
 
 func (r ResourceField) String() string {
 	if strings.Contains(r.key, ".") {
-		return fmt.Sprintf(`$resource['%s']`, r.key)
+		return fmt.Sprintf(`resource['%s']`, r.key)
 	}
-	return "$resource." + r.key
+	return "resource." + r.key
 }
 
 // NewResourceField will creat a new resource field from a key

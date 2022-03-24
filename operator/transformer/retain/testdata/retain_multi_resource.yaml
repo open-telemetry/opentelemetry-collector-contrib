@@ -1,4 +1,4 @@
 type: retain
 fields:
-  - $resource.key1
-  - $resource.key2
+  - resource.key1
+  - resource.key2

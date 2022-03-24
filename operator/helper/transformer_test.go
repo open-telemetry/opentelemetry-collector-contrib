@@ -179,19 +179,19 @@ func TestTransformerIf(t *testing.T) {
 		},
 		{
 			name:      "EvaluatedTrue",
-			ifExpr:    "$body == 'test'",
+			ifExpr:    "body == 'test'",
 			inputBody: "test",
 			expected:  "parsed",
 		},
 		{
 			name:      "EvaluatedFalse",
-			ifExpr:    "$body == 'notest'",
+			ifExpr:    "body == 'notest'",
 			inputBody: "test",
 			expected:  "test",
 		},
 		{
 			name:        "FailingExpressionEvaluation",
-			ifExpr:      "$body.test.noexist == 'notest'",
+			ifExpr:      "body.test.noexist == 'notest'",
 			inputBody:   "test",
 			expected:    "test",
 			errExpected: true,

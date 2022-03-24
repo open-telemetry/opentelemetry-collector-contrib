@@ -104,7 +104,7 @@ Move a value from the body to attributes
 ```yaml
 - type: move
   from: ip
-  to: $attributes.ip
+  to: attributes.ip
 ```
 
 <table>
@@ -145,7 +145,7 @@ Replace the body with an individual value nested within the body
 ```yaml
 - type: move
   from: log
-  to: $body
+  to: body
 ```
 
 <table>
@@ -184,7 +184,7 @@ Remove a layer from the body
 ```yaml
 - type: move
   from: wrapper
-  to: $body
+  to: body
 ```
 
 <table>
@@ -232,7 +232,7 @@ Merge a layer to the body
 ```yaml
 - type: move
   from: object
-  to: $body
+  to: body
 ```
 
 <table>

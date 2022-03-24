@@ -115,8 +115,8 @@ Retain fields from resource
 ```yaml
 - type: retain
   fields:
-    - $resource.key1
-    - $resource.key2
+    - resource.key1
+    - resource.key2
 ```
 
 <table>
@@ -165,8 +165,8 @@ Retain fields from attributes
 ```yaml
 - type: retain
   fields:
-    - $attributes.key1
-    - $attributes.key2
+    - attributes.key1
+    - attributes.key2
 ```
 
 <table>
@@ -214,8 +214,8 @@ Retain fields from all sources
 ```yaml
 - type: retain
   fields:
-    - $resource.key1
-    - $attributes.key3
+    - resource.key1
+    - attributes.key3
     - key5
 ```
 

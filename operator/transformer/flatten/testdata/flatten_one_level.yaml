@@ -1,2 +1,2 @@
 type: flatten
-field: nested
+field: body.nested

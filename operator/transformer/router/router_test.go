@@ -87,12 +87,12 @@ func TestRouterOperator(t *testing.T) {
 			[]*RouterOperatorRouteConfig{
 				{
 					helper.NewAttributerConfig(),
-					`$.message == "non_match"`,
+					`body.message == "non_match"`,
 					[]string{"output1"},
 				},
 				{
 					helper.NewAttributerConfig(),
-					`$.message == "test_message"`,
+					`body.message == "test_message"`,
 					[]string{"output2"},
 				},
 			},
@@ -110,7 +110,7 @@ func TestRouterOperator(t *testing.T) {
 			[]*RouterOperatorRouteConfig{
 				{
 					helper.NewAttributerConfig(),
-					`$.message == "non_match"`,
+					`body.message == "non_match"`,
 					[]string{"output1"},
 				},
 				{
@@ -119,7 +119,7 @@ func TestRouterOperator(t *testing.T) {
 							"label-key": "label-value",
 						},
 					},
-					`$.message == "test_message"`,
+					`body.message == "test_message"`,
 					[]string{"output2"},
 				},
 			},

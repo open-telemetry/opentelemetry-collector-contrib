@@ -1,3 +1,3 @@
 type: move
-from: $attributes.new
-to: $body.new
+from: attributes.new
+to: body.new

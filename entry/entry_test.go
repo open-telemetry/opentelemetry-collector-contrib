@@ -200,32 +200,44 @@ func TestFieldFromString(t *testing.T) {
 		expectedError bool
 	}{
 		{
-			"SimpleBody",
-			"test",
-			Field{BodyField{[]string{"test"}}},
+			"Body",
+			"body",
+			Field{BodyField{[]string{}}},
 			false,
 		},
 		{
 			"PrefixedBody",
-			"$.test",
+			"body.test",
 			Field{BodyField{[]string{"test"}}},
 			false,
 		},
 		{
 			"FullPrefixedBody",
-			"$body.test",
+			"body.test",
 			Field{BodyField{[]string{"test"}}},
 			false,
 		},
 		{
 			"SimpleAttribute",
-			"$attributes.test",
+			"attributes.test",
 			Field{AttributeField{"test"}},
 			false,
 		},
 		{
 			"AttributesTooManyFields",
-			"$attributes.test.bar",
+			"attributes.test.bar",
+			Field{},
+			true,
+		},
+		{
+			"SimpleResource",
+			"resource.test",
+			Field{ResourceField{"test"}},
+			false,
+		},
+		{
+			"ResourceTooManyFields",
+			"resource.test.bar",
 			Field{},
 			true,
 		},

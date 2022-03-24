@@ -6,13 +6,13 @@ Many [operators](/docs/operators/README.md) use fields in their configurations. 
 
 Fields are `.`-delimited strings which allow you to select attributes or body on the entry. 
 
-Fields can be used to select body, resource, or attribute values. For values on the body, use the prefix `$body` such as `$body.my_value`. To select an attributes, prefix your field with `$attributes` such as with `$attributes.my_attribute`. For resource values, use the prefix `$resource`.
+Fields can be used to select body, resource, or attribute values. For values on the body, use the prefix `body` such as `body.my_value`. To select an attributes, prefix your field with `attributes` such as with `attributes.my_attribute`. For resource values, use the prefix `resource`.
 
-If a field contains a dot in it, a field can alternatively use bracket syntax for traversing through a map. For example, to select the key `k8s.cluster.name` on the entry's body, you can use the field `$body["k8s.cluster.name"]`.
+If a field contains a dot in it, a field can alternatively use bracket syntax for traversing through a map. For example, to select the key `k8s.cluster.name` on the entry's body, you can use the field `body["k8s.cluster.name"]`.
 
-Body fields can be nested arbitrarily deeply, such as `$body.my_value.my_nested_value`.
+Body fields can be nested arbitrarily deeply, such as `body.my_value.my_nested_value`.
 
-If a field does not start with `$resource`, `$attributes`, or `$body`, then `$body` is assumed. For example, `my_value` is equivalent to `$body.my_value`.
+If a field does not start with `resource`, `attributes`, or `body`, then `body` is assumed. For example, `my_value` is equivalent to `body.my_value`.
 
 ## Examples
 
@@ -25,9 +25,9 @@ Config:
     - add:
         field: "key3"
         value: "value3"
-    - remove: "$body.key2.nested_key1"
+    - remove: "body.key2.nested_key1"
     - add:
-        field: "$attributes.my_attribute"
+        field: "attributes.my_attribute"
         value: "my_attribute_value"
 ```
 
@@ -98,8 +98,8 @@ Given the following entry, we can use fields as follows:
 
 | Field                  | Refers to Value                           |
 | ---                    | ---                                       |
-| $body.message        | `"Something happened."`                   |
+| body.message        | `"Something happened."`                   |
 | message                | `"Something happened."`                   |
-| $body.details.count  | `100`                                     |
-| $attributes.env        | `"prod"`                                  |
-| $resource.uuid         | `"11112222-3333-4444-5555-666677778888"`  |
+| body.details.count  | `100`                                     |
+| attributes.env        | `"prod"`                                  |
+| resource.uuid         | `"11112222-3333-4444-5555-666677778888"`  |

@@ -1,2 +1,2 @@
 type: remove
-field: nested
+field: body.nested

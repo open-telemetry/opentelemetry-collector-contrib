@@ -80,15 +80,15 @@ func TestExprString(t *testing.T) {
 			")EXPR(",
 		},
 		{
-			"my EXPR( $.test )",
+			"my EXPR( body.test )",
 			"my value",
 		},
 		{
-			"my EXPR($.test )",
+			"my EXPR(body.test )",
 			"my value",
 		},
 		{
-			"my EXPR($.test)",
+			"my EXPR(body.test)",
 			"my value",
 		},
 		{
@@ -96,7 +96,7 @@ func TestExprString(t *testing.T) {
 			"my foo",
 		},
 		{
-			"EXPR( $resource.id )",
+			"EXPR( resource.id )",
 			"value",
 		},
 	}

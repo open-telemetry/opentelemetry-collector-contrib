@@ -1,5 +1,5 @@
 type: add 
-field: $body.new
+field: body.new
 value: 
   nest:
     key: val

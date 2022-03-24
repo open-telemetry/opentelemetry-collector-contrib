@@ -37,7 +37,7 @@ func TestGoldenConfig(t *testing.T) {
 			Expect: func() *AddOperatorConfig {
 				cfg := defaultCfg()
 				cfg.Field = entry.NewBodyField("new")
-				cfg.Value = `EXPR($.key + "_suffix")`
+				cfg.Value = `EXPR(body.key + "_suffix")`
 				return cfg
 			}(),
 		},
@@ -75,7 +75,7 @@ func TestGoldenConfig(t *testing.T) {
 			Expect: func() *AddOperatorConfig {
 				cfg := defaultCfg()
 				cfg.Field = entry.NewResourceField("new")
-				cfg.Value = `EXPR($.key + "_suffix")`
+				cfg.Value = `EXPR(body.key + "_suffix")`
 				return cfg
 			}(),
 		},

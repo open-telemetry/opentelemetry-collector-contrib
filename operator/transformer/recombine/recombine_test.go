@@ -108,7 +108,7 @@ func TestRecombineOperator(t *testing.T) {
 			func() *RecombineOperatorConfig {
 				cfg := NewRecombineOperatorConfig("")
 				cfg.CombineField = entry.NewBodyField()
-				cfg.IsLastEntry = "$body == 'test2'"
+				cfg.IsLastEntry = "body == 'test2'"
 				cfg.OutputIDs = []string{"fake"}
 				return cfg
 			}(),
@@ -123,7 +123,7 @@ func TestRecombineOperator(t *testing.T) {
 			func() *RecombineOperatorConfig {
 				cfg := NewRecombineOperatorConfig("")
 				cfg.CombineField = entry.NewBodyField()
-				cfg.IsFirstEntry = "$body == 'test1'"
+				cfg.IsFirstEntry = "body == 'test1'"
 				cfg.OutputIDs = []string{"fake"}
 				cfg.OverwriteWith = "newest"
 				return cfg
@@ -163,7 +163,7 @@ func TestRecombineOperator(t *testing.T) {
 			func() *RecombineOperatorConfig {
 				cfg := NewRecombineOperatorConfig("")
 				cfg.CombineField = entry.NewBodyField()
-				cfg.IsFirstEntry = "$body == 'file1'"
+				cfg.IsFirstEntry = "body == 'file1'"
 				cfg.OutputIDs = []string{"fake"}
 				cfg.OverwriteWith = "newest"
 				return cfg
@@ -190,7 +190,7 @@ func TestRecombineOperator(t *testing.T) {
 				cfg := NewRecombineOperatorConfig("")
 				cfg.CombineField = entry.NewBodyField()
 				cfg.CombineWith = ""
-				cfg.IsLastEntry = "$body == 'test2'"
+				cfg.IsLastEntry = "body == 'test2'"
 				cfg.OutputIDs = []string{"fake"}
 				return cfg
 			}(),
@@ -205,7 +205,7 @@ func TestRecombineOperator(t *testing.T) {
 			func() *RecombineOperatorConfig {
 				cfg := NewRecombineOperatorConfig("")
 				cfg.CombineField = entry.NewBodyField()
-				cfg.IsLastEntry = "$body == 'end'"
+				cfg.IsLastEntry = "body == 'end'"
 				cfg.OutputIDs = []string{"fake"}
 				return cfg
 			}(),
@@ -225,7 +225,7 @@ func TestRecombineOperator(t *testing.T) {
 			func() *RecombineOperatorConfig {
 				cfg := NewRecombineOperatorConfig("")
 				cfg.CombineField = entry.NewBodyField()
-				cfg.IsLastEntry = "$body == 'end'"
+				cfg.IsLastEntry = "body == 'end'"
 				cfg.OutputIDs = []string{"fake"}
 				cfg.SourceIdentifier = entry.NewAttributeField("custom_source")
 				return cfg
@@ -246,7 +246,7 @@ func TestRecombineOperator(t *testing.T) {
 			func() *RecombineOperatorConfig {
 				cfg := NewRecombineOperatorConfig("")
 				cfg.CombineField = entry.NewBodyField()
-				cfg.IsLastEntry = "$body == 'end'"
+				cfg.IsLastEntry = "body == 'end'"
 				cfg.OutputIDs = []string{"fake"}
 				cfg.MaxSources = 1
 				return cfg
@@ -265,7 +265,7 @@ func TestRecombineOperator(t *testing.T) {
 			func() *RecombineOperatorConfig {
 				cfg := NewRecombineOperatorConfig("")
 				cfg.CombineField = entry.NewBodyField()
-				cfg.IsLastEntry = "$body == 'end'"
+				cfg.IsLastEntry = "body == 'end'"
 				cfg.OutputIDs = []string{"fake"}
 				cfg.MaxBatchSize = 2
 				return cfg

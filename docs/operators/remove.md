@@ -8,7 +8,7 @@ The `remove` operator removes a field from a record.
 | ---        | ---              | ---         |
 | `id`       | `remove`         | A unique identifier for the operator. |
 | `output`   | Next in pipeline | The connected operator(s) that will receive all outbound entries. |
-| `field`    | required         | The [field](/docs/types/field.md) to remove. if '$attributes' or '$resource' is specified, all fields of that type will be removed. |
+| `field`    | required         | The [field](/docs/types/field.md) to remove. if 'attributes' or 'resource' is specified, all fields of that type will be removed. |
 | `on_error` | `send`           | The behavior of the operator if it encounters an error. See [on_error](/docs/types/on_error.md). |
 | `if`       |                  | An [expression](/docs/types/expression.md) that, when set, will be evaluated to determine whether this operator should be used for the given entry. This allows you to do easy conditional parsing without branching logic with routers. |
 
@@ -100,7 +100,7 @@ Remove an object from the body
 Remove a value from attributes
 ```yaml
 - type: remove 
-  field: $attributes.otherkey
+  field: attributes.otherkey
 ```
 
 <table>
@@ -142,7 +142,7 @@ Remove a value from attributes
 Remove a value from resource
 ```yaml
 - type: remove 
-  field: $resource.otherkey
+  field: resource.otherkey
 ```
 
 <table>
@@ -184,7 +184,7 @@ Remove a value from resource
 Remove all resource fields
 ```yaml
 - type: remove 
-  field: $resource
+  field: resource
 ```
 
 <table>
@@ -227,7 +227,7 @@ Remove all resource fields
 Remove all attributes
 ```yaml
 - type: remove 
-  field: $attributes
+  field: attributes
 ```
 
 <table>

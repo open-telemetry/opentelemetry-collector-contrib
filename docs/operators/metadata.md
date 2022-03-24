@@ -74,7 +74,7 @@ Configuration:
 - type: metadata
   output: metadata_receiver
   attributes:
-    environment: 'EXPR( $.environment == "production" ? "prod" : "dev" )'
+    environment: 'EXPR( body.environment == "production" ? "prod" : "dev" )'
 ```
 
 <table>

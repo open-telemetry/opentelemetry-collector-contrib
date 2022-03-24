@@ -33,9 +33,9 @@ An entry that does not match any of the routes is dropped and not processed furt
 - type: router
   routes:
     - output: my_json_parser
-      expr: '$.format == "json"'
+      expr: 'body.format == "json"'
     - output: my_syslog_parser
-      expr: '$.format == "syslog"'
+      expr: 'body.format == "syslog"'
 ```
 
 #### Drop entries based on content
@@ -44,7 +44,7 @@ An entry that does not match any of the routes is dropped and not processed furt
 - type: router
   routes:
     - output: my_output
-      expr: '$.message matches "^LOG: .* END$"'
+      expr: 'body.message matches "^LOG: .* END$"'
 ```
 
 #### Route with a default
@@ -53,6 +53,6 @@ An entry that does not match any of the routes is dropped and not processed furt
 - type: router
   routes:
     - output: my_json_parser
-      expr: '$.format == "json"'
+      expr: 'body.format == "json"'
   default: catchall
 ```

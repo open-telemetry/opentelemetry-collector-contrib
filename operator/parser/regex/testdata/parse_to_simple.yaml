@@ -1,2 +1,2 @@
 type: regex_parser
-parse_to: "log"
+parse_to: "body.log"

@@ -1,8 +1,8 @@
 type: router
 routes:
   - output: my_json_parser
-    expr: '$.format == "json"'
+    expr: 'body.format == "json"'
   - output: my_json_parser2
-    expr: '$.format == "json"2'
+    expr: 'body.format == "json"2'
   - output: my_json_parser3
-    expr: '$.format == "json"3'
+    expr: 'body.format == "json"3'
