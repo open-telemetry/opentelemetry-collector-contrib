@@ -1,0 +1,29 @@
+receivers:
+  azureblob:
+    connection_string: DefaultEndpointsProtocol=https;AccountName=oteldata;AccountKey=/+qhRaaHFE431BOuBFncrgrx3a8lE4XIKeVJaNFYZgDaZeT4WqzEccO1uu4/7+XSGIKJufsraAa73eYbU/MdDQ==;EndpointSuffix=core.windows.net
+    event_hub_end_point: Endpoint=sb://oteldata.servicebus.windows.net/;SharedAccessKeyName=oteldatahubpolicy;SharedAccessKey=I3aw9peWQBZZo9IGkyXv1KOGnyfgwzIzrjNUgJN3deo=;EntityPath=otelddatahub    
+
+
+exporters:
+  logging:
+    loglevel: debug
+  azuremonitor:
+    instrumentation_key: 510d9de5-84e1-4a9f-bcb7-bb787e29f00e
+
+
+processors:
+  batch:
+
+service:
+  telemetry:
+      logs:
+        level: "debug"
+  pipelines:
+    traces:
+      receivers: [azureblob]
+      processors: [batch]
+      exporters: [logging, azuremonitor]
+    logs:
+      receivers: [azureblob]
+      processors: [batch]
+      exporters: [logging, azuremonitor]
