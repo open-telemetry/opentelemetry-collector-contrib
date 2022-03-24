@@ -58,7 +58,7 @@ func TestBuild(t *testing.T) {
 			"basic",
 			func() (*TimeParserConfig, error) {
 				cfg := NewTimeParserConfig("test_id")
-				parseFrom, err := entry.NewField("app_time")
+				parseFrom, err := entry.NewField("body.app_time")
 				if err != nil {
 					return cfg, err
 				}
@@ -97,7 +97,7 @@ func TestProcess(t *testing.T) {
 			"promote",
 			func() (*TimeParserConfig, error) {
 				cfg := NewTimeParserConfig("test_id")
-				parseFrom, err := entry.NewField("app_time")
+				parseFrom, err := entry.NewField("body.app_time")
 				if err != nil {
 					return nil, err
 				}
@@ -122,7 +122,7 @@ func TestProcess(t *testing.T) {
 			"promote-and-preserve",
 			func() (*TimeParserConfig, error) {
 				cfg := NewTimeParserConfig("test_id")
-				parseFrom, err := entry.NewField("app_time")
+				parseFrom, err := entry.NewField("body.app_time")
 				if err != nil {
 					return nil, err
 				}
@@ -584,7 +584,7 @@ func TestTimeParserConfig(t *testing.T) {
 			"on_error":    "send",
 			"layout":      "Mon Jan 2 15:04:05 MST 2006",
 			"layout_type": "gotime",
-			"parse_from":  "$.from",
+			"parse_from":  "body.from",
 		}
 		var actual TimeParserConfig
 		err := helper.UnmarshalMapstructure(input, &actual)
@@ -597,7 +597,7 @@ func TestTimeParserConfig(t *testing.T) {
 type: time_parser
 id: test_operator_id
 on_error: "send"
-parse_from: $.from
+parse_from: body.from
 layout_type: gotime
 layout: "Mon Jan 2 15:04:05 MST 2006" 
 output:

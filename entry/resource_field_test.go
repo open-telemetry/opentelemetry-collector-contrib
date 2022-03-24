@@ -195,12 +195,12 @@ func TestResourceFieldString(t *testing.T) {
 		{
 			"Simple",
 			ResourceField{"foo"},
-			"$resource.foo",
+			"resource.foo",
 		},
 		{
 			"Empty",
 			ResourceField{""},
-			"$resource.",
+			"resource.",
 		},
 	}
 

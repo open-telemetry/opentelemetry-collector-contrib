@@ -1,4 +1,4 @@
 type: retain
 fields:
-  - $attributes.key1
-  - $attributes.key2
+  - attributes.key1
+  - attributes.key2

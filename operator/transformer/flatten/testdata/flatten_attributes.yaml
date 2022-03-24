@@ -1,2 +1,2 @@
 type: flatten
-field: $attributes.errField
+field: attributes.errField

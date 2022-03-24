@@ -254,7 +254,7 @@ func TestBuildAndProcess(t *testing.T) {
 			func() *FlattenOperatorConfig {
 				cfg := defaultCfg()
 				cfg.Field = entry.BodyField{
-					Keys: []string{"$resource", "invalid"},
+					Keys: []string{"resource", "invalid"},
 				}
 				return cfg
 			}(),

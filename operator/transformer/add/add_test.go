@@ -68,7 +68,7 @@ func TestProcessAndBuild(t *testing.T) {
 			func() *AddOperatorConfig {
 				cfg := defaultCfg()
 				cfg.Field = entry.NewBodyField("new")
-				cfg.Value = `EXPR($.key + "_suffix")`
+				cfg.Value = `EXPR(body.key + "_suffix")`
 				return cfg
 			}(),
 			newTestEntry,
@@ -146,7 +146,7 @@ func TestProcessAndBuild(t *testing.T) {
 			func() *AddOperatorConfig {
 				cfg := defaultCfg()
 				cfg.Field = entry.NewResourceField("new")
-				cfg.Value = `EXPR($.key + "_suffix")`
+				cfg.Value = `EXPR(body.key + "_suffix")`
 				return cfg
 			}(),
 			newTestEntry,

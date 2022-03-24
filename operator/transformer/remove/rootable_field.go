@@ -22,7 +22,7 @@ import (
 
 // RootableField represents a potential field on an entry.
 // It differs from a normal Field in that it allows users to
-// specify `$resource` or `$attributes` with the intention
+// specify `resource` or `attributes` with the intention
 // of referring to "all" fields within those groups.
 // It is used to get, set, and delete values at this field.
 // It is deserialized from JSON dot notation.

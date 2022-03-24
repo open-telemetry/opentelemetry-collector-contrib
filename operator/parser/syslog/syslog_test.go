@@ -76,8 +76,8 @@ func TestSyslogParserConfig(t *testing.T) {
 			"id":         "test",
 			"type":       "syslog_parser",
 			"protocol":   RFC3164,
-			"parse_from": "$.from",
-			"parse_to":   "$.to",
+			"parse_from": "body.from",
+			"parse_to":   "body.to",
 			"on_error":   "send",
 		}
 		var actual SyslogParserConfig
@@ -92,8 +92,8 @@ type: syslog_parser
 id: test
 on_error: "send"
 protocol: rfc3164
-parse_from: $.from
-parse_to: $.to`
+parse_from: body.from
+parse_to: body.to`
 		var actual SyslogParserConfig
 		err := yaml.Unmarshal([]byte(input), &actual)
 		require.NoError(t, err)

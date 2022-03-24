@@ -25,6 +25,16 @@ type BodyField struct {
 	Keys []string
 }
 
+// NewBodyField creates a new field from an ordered array of keys.
+func NewBodyField(keys ...string) Field {
+	if keys == nil {
+		keys = []string{}
+	}
+	return Field{BodyField{
+		Keys: keys,
+	}}
+}
+
 // Parent returns the parent of the current field.
 // In the case that the body field points to the root node, it is a no-op.
 func (f BodyField) Parent() BodyField {
@@ -181,7 +191,11 @@ func (f *BodyField) UnmarshalJSON(raw []byte) error {
 		return fmt.Errorf("the field is not a string: %s", err)
 	}
 
-	*f = fromJSONDot(value)
+	field, err := fromJSONDot(value)
+	if err != nil {
+		return err
+	}
+	*f = *field
 	return nil
 }
 
@@ -198,7 +212,11 @@ func (f *BodyField) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		return fmt.Errorf("the field is not a string: %s", err)
 	}
 
-	*f = fromJSONDot(value)
+	field, err := fromJSONDot(value)
+	if err != nil {
+		return err
+	}
+	*f = *field
 	return nil
 }
 
@@ -208,14 +226,21 @@ func (f BodyField) MarshalYAML() (interface{}, error) {
 }
 
 // fromJSONDot creates a field from JSON dot notation.
-func fromJSONDot(value string) BodyField {
-	keys := strings.Split(value, ".")
-
-	if keys[0] == "$" || keys[0] == BodyPrefix {
-		keys = keys[1:]
+func fromJSONDot(value string) (*BodyField, error) {
+	keys, err := splitField(value)
+	if err != nil {
+		return nil, err
 	}
 
-	return BodyField{keys}
+	if keys[0] == "$body" || keys[0] == "$" {
+		keys[0] = BodyPrefix
+	}
+
+	if keys[0] != BodyPrefix {
+		return nil, fmt.Errorf("must start with 'body': %s", value)
+	}
+
+	return &BodyField{keys[1:]}, nil
 }
 
 // toJSONDot returns the JSON dot notation for a field.
@@ -232,14 +257,15 @@ func toJSONDot(field BodyField) string {
 	}
 
 	var b strings.Builder
+	b.WriteString(BodyPrefix)
 	if containsDots {
-		b.WriteString(BodyPrefix)
 		for _, key := range field.Keys {
 			b.WriteString(`['`)
 			b.WriteString(key)
 			b.WriteString(`']`)
 		}
 	} else {
+		b.WriteString(".")
 		for i, key := range field.Keys {
 			if i != 0 {
 				b.WriteString(".")
@@ -249,14 +275,4 @@ func toJSONDot(field BodyField) string {
 	}
 
 	return b.String()
-}
-
-// NewBodyField creates a new field from an ordered array of keys.
-func NewBodyField(keys ...string) Field {
-	if keys == nil {
-		keys = []string{}
-	}
-	return Field{BodyField{
-		Keys: keys,
-	}}
 }

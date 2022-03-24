@@ -161,8 +161,8 @@ func TestRegexParserConfig(t *testing.T) {
 			"id":         "test",
 			"type":       "regex_parser",
 			"regex":      "test123",
-			"parse_from": "$.from",
-			"parse_to":   "$.to",
+			"parse_from": "body.from",
+			"parse_to":   "body.to",
 			"on_error":   "send",
 		}
 		var actual RegexParserConfig
@@ -177,8 +177,8 @@ type: regex_parser
 id: test
 on_error: "send"
 regex: "test123"
-parse_from: $.from
-parse_to: $.to`
+parse_from: body.from
+parse_to: body.to`
 		var actual RegexParserConfig
 		err := yaml.Unmarshal([]byte(input), &actual)
 		require.NoError(t, err)

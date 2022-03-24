@@ -16,6 +16,7 @@ package entry
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -313,55 +314,143 @@ func TestBodyFieldMerge(t *testing.T) {
 	require.Equal(t, expected, entry.Body)
 }
 
-func TestBodyFieldMarshalJSON(t *testing.T) {
-	bodyField := BodyField{Keys: []string{"test"}}
-	json, err := bodyField.MarshalJSON()
-	require.NoError(t, err)
-	require.Equal(t, []byte(`"test"`), json)
+// TODO add more test cases
+// 1. fields with dots `body["file.name"]`
+// 2. fields with deprecated "$body" or "$." prefix
+func TestBodyFieldMarshal(t *testing.T) {
+	cases := []struct {
+		name    string
+		keys    []string
+		jsonDot string
+	}{
+		{
+			"standard",
+			[]string{"test"},
+			"body.test",
+		},
+		{
+			"bracketed",
+			[]string{"test.foo"},
+			"body['test.foo']",
+		},
+		{
+			"double_bracketed",
+			[]string{"test.foo", "bar"},
+			"body['test.foo']['bar']",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			field := BodyField{Keys: tc.keys}
+			yaml, err := field.MarshalYAML()
+			require.NoError(t, err)
+			require.Equal(t, tc.jsonDot, yaml)
+
+			json, err := field.MarshalJSON()
+			require.NoError(t, err)
+			require.Equal(t, []byte(fmt.Sprintf(`"%s"`, tc.jsonDot)), json)
+		})
+	}
 }
 
-func TestBodyFieldUnmarshalJSON(t *testing.T) {
-	fieldString := []byte(`"test"`)
-	var f BodyField
-	err := json.Unmarshal(fieldString, &f)
-	require.NoError(t, err)
-	require.Equal(t, BodyField{Keys: []string{"test"}}, f)
+func TestBodyFieldUnmarshal(t *testing.T) {
+	cases := []struct {
+		name    string
+		jsonDot string
+		keys    []string
+	}{
+		{
+			"standard",
+			"body.test",
+			[]string{"test"},
+		},
+		{
+			"bracketed",
+			"body['test.foo']",
+			[]string{"test.foo"},
+		},
+		{
+			"double_bracketed",
+			"body['test.foo']['bar']",
+			[]string{"test.foo", "bar"},
+		},
+		{
+			"mixed",
+			"body['test.foo'].bar",
+			[]string{"test.foo", "bar"},
+		},
+		{
+			"deprecated_prefix",
+			"$body.test",
+			[]string{"test"},
+		},
+		{
+			"deprecated_prefix_bracketed",
+			"$body['test.foo']",
+			[]string{"test.foo"},
+		},
+		{
+			"deprecated_shorthand",
+			"$.test",
+			[]string{"test"},
+		},
+		{
+			"deprecated_shorthand_bracketed",
+			"$['test.foo']",
+			[]string{"test.foo"},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var fy BodyField
+			err := yaml.UnmarshalStrict([]byte(tc.jsonDot), &fy)
+			require.NoError(t, err)
+			require.Equal(t, tc.keys, fy.Keys)
+
+			var fj BodyField
+			err = json.Unmarshal([]byte(fmt.Sprintf(`"%s"`, tc.jsonDot)), &fj)
+			require.NoError(t, err)
+			require.Equal(t, tc.keys, fy.Keys)
+		})
+	}
 }
 
-func TestBodyFieldUnmarshalJSONFailure(t *testing.T) {
-	invalidField := []byte(`{"key":"value"}`)
-	var f BodyField
-	err := json.Unmarshal(invalidField, &f)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "the field is not a string: json")
-}
+func TestBodyFieldUnmarshalFailure(t *testing.T) {
+	cases := []struct {
+		name        string
+		invalid     []byte
+		expectedErr string
+	}{
+		{
+			"must_be_string",
+			[]byte(`{"key":"value"}`),
+			"the field is not a string",
+		},
+		{
+			"must_start_with_prefix",
+			[]byte(`"test"`),
+			"must start with 'body'",
+		},
+		{
+			"invalid_syntax",
+			[]byte(`"test['foo'"`),
+			"found unclosed left bracket",
+		},
+	}
 
-func TestBodyFieldMarshalYAML(t *testing.T) {
-	bodyField := BodyField{Keys: []string{"test"}}
-	yaml, err := bodyField.MarshalYAML()
-	require.NoError(t, err)
-	require.Equal(t, "test", yaml)
-}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var fy BodyField
+			err := yaml.UnmarshalStrict(tc.invalid, &fy)
+			require.Error(t, err)
+			require.Contains(t, err.Error(), tc.expectedErr)
 
-func TestBodyFieldUnmarshalYAML(t *testing.T) {
-	invalidField := []byte("test")
-	var f BodyField
-	err := yaml.UnmarshalStrict(invalidField, &f)
-	require.NoError(t, err)
-	require.Equal(t, BodyField{Keys: []string{"test"}}, f)
-}
-
-func TestBodyFieldUnmarshalYAMLFailure(t *testing.T) {
-	invalidField := []byte(`{"key":"value"}`)
-	var f BodyField
-	err := yaml.UnmarshalStrict(invalidField, &f)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "the field is not a string: yaml")
-}
-
-func TestBodyFieldFromJSONDot(t *testing.T) {
-	jsonDot := "$.test"
-	bodyField := fromJSONDot(jsonDot)
-	expectedField := BodyField{Keys: []string{"test"}}
-	require.Equal(t, expectedField, bodyField)
+			var fj BodyField
+			err = json.Unmarshal(tc.invalid, &fj)
+			require.Error(t, err)
+			require.Contains(t, err.Error(), tc.expectedErr)
+		})
+	}
 }

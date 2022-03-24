@@ -142,10 +142,10 @@ var envPool = sync.Pool{
 func GetExprEnv(e *entry.Entry) map[string]interface{} {
 	env := envPool.Get().(map[string]interface{})
 	env["$"] = e.Body
-	env["$body"] = e.Body
-	env["$attributes"] = e.Attributes
-	env["$resource"] = e.Resource
-	env["$timestamp"] = e.Timestamp
+	env["body"] = e.Body
+	env["attributes"] = e.Attributes
+	env["resource"] = e.Resource
+	env["timestamp"] = e.Timestamp
 
 	return env
 }

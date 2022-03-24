@@ -1,3 +1,3 @@
 type: move
-from: $resource.new
-to: $attributes.new
+from: resource.new
+to: attributes.new

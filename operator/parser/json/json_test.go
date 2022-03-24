@@ -238,8 +238,8 @@ func TestJsonParserConfig(t *testing.T) {
 		input := map[string]interface{}{
 			"id":         "test",
 			"type":       "json_parser",
-			"parse_from": "$.from",
-			"parse_to":   "$.to",
+			"parse_from": "body.from",
+			"parse_to":   "body.to",
 			"on_error":   "send",
 		}
 		var actual JSONParserConfig
@@ -252,8 +252,8 @@ func TestJsonParserConfig(t *testing.T) {
 		input := `type: json_parser
 id: test
 on_error: "send"
-parse_from: $.from
-parse_to: $.to`
+parse_from: body.from
+parse_to: body.to`
 		var actual JSONParserConfig
 		err := yaml.Unmarshal([]byte(input), &actual)
 		require.NoError(t, err)

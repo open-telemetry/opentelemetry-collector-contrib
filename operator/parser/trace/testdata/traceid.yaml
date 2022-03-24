@@ -1,4 +1,4 @@
 type: trace_parser
 trace_id: 
-  parse_from: "app_trace_id"
-  preserve_to: "orig_trace_id"
+  parse_from: body.app_trace_id
+  preserve_to: body.orig_trace_id

@@ -1,2 +1,2 @@
 type: json_parser
-parse_from: $.from
+parse_from: body.from

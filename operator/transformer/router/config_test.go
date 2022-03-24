@@ -31,7 +31,7 @@ func TestRouterGoldenConfig(t *testing.T) {
 			Expect: func() *RouterOperatorConfig {
 				cfg := defaultCfg()
 				newRoute := &RouterOperatorRouteConfig{
-					Expression: `$.format == "json"`,
+					Expression: `body.format == "json"`,
 					OutputIDs:  []string{"my_json_parser"},
 				}
 				cfg.Routes = append(cfg.Routes, newRoute)
@@ -44,15 +44,15 @@ func TestRouterGoldenConfig(t *testing.T) {
 				cfg := defaultCfg()
 				newRoute := []*RouterOperatorRouteConfig{
 					{
-						Expression: `$.format == "json"`,
+						Expression: `body.format == "json"`,
 						OutputIDs:  []string{"my_json_parser"},
 					},
 					{
-						Expression: `$.format == "json"2`,
+						Expression: `body.format == "json"2`,
 						OutputIDs:  []string{"my_json_parser2"},
 					},
 					{
-						Expression: `$.format == "json"3`,
+						Expression: `body.format == "json"3`,
 						OutputIDs:  []string{"my_json_parser3"},
 					},
 				}
@@ -72,7 +72,7 @@ func TestRouterGoldenConfig(t *testing.T) {
 
 				cfg.Routes = []*RouterOperatorRouteConfig{
 					{
-						Expression:       `$.format == "json"`,
+						Expression:       `body.format == "json"`,
 						OutputIDs:        []string{"my_json_parser"},
 						AttributerConfig: attVal,
 					},
@@ -85,7 +85,7 @@ func TestRouterGoldenConfig(t *testing.T) {
 			Expect: func() *RouterOperatorConfig {
 				cfg := defaultCfg()
 				newRoute := &RouterOperatorRouteConfig{
-					Expression: `$.format == "json"`,
+					Expression: `body.format == "json"`,
 					OutputIDs:  []string{"my_json_parser"},
 				}
 				cfg.Routes = append(cfg.Routes, newRoute)

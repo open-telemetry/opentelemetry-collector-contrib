@@ -1,4 +1,4 @@
 type: retain
 fields:
-  - "key"
-  - "nested2"
+  - body.key
+  - body.nested2

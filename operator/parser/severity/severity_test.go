@@ -288,7 +288,7 @@ func TestSeverityParserConfig(t *testing.T) {
 		input := map[string]interface{}{
 			"id":         "test",
 			"type":       "severity_parser",
-			"parse_from": "$.from",
+			"parse_from": "body.from",
 			"on_error":   "send",
 			"preset":     "test",
 		}
@@ -303,7 +303,7 @@ func TestSeverityParserConfig(t *testing.T) {
 type: severity_parser
 id: test
 on_error: "send"
-parse_from: $.from
+parse_from: body.from
 preset: test
 `
 		var actual SeverityParserConfig

@@ -133,33 +133,6 @@ func TestGoldenConfig(t *testing.T) {
 			}(),
 		},
 		{
-			Name: "implicit_body_from",
-			Expect: func() *MoveOperatorConfig {
-				cfg := defaultCfg()
-				cfg.From = entry.NewBodyField("implicitkey")
-				cfg.To = entry.NewAttributeField("new")
-				return cfg
-			}(),
-		},
-		{
-			Name: "implicit_body_to",
-			Expect: func() *MoveOperatorConfig {
-				cfg := defaultCfg()
-				cfg.From = entry.NewAttributeField("new")
-				cfg.To = entry.NewBodyField("implicitkey")
-				return cfg
-			}(),
-		},
-		{
-			Name: "implicit_nested_key",
-			Expect: func() *MoveOperatorConfig {
-				cfg := defaultCfg()
-				cfg.From = entry.NewAttributeField("new")
-				cfg.To = entry.NewBodyField("key", "key2")
-				return cfg
-			}(),
-		},
-		{
 			Name: "replace_body",
 			Expect: func() *MoveOperatorConfig {
 				cfg := defaultCfg()

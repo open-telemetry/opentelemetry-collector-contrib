@@ -441,8 +441,8 @@ func TestMapStructureDecodeParserConfigWithHook(t *testing.T) {
 		"id":         "parser_config",
 		"type":       "test_type",
 		"on_error":   "send",
-		"parse_from": "$body.from",
-		"parse_to":   "$body.to",
+		"parse_from": "body.from",
+		"parse_to":   "body.to",
 		"timestamp": map[string]interface{}{
 			"layout_type": "strptime",
 		},

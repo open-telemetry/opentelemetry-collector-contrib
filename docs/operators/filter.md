@@ -17,7 +17,7 @@ The `filter` operator filters incoming entries that match an expression.
 
 ```yaml
 - type: filter
-  expr: '$body.message matches "^LOG: .* END$"'
+  expr: 'body.message matches "^LOG: .* END$"'
   output: my_output
 ```
 
@@ -25,7 +25,7 @@ The `filter` operator filters incoming entries that match an expression.
 
 ```yaml
 - type: filter
-  expr: '$attributes.env == "production"'
+  expr: 'attributes.env == "production"'
   output: my_output
 ```
 
@@ -33,6 +33,6 @@ The `filter` operator filters incoming entries that match an expression.
 
 ```yaml
 - type: filter
-  expr: '$body.message == env("MY_ENV_VARIABLE")'
+  expr: 'body.message == env("MY_ENV_VARIABLE")'
   output: my_output
 ```

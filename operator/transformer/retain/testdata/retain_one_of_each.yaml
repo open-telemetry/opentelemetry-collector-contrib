@@ -1,5 +1,5 @@
 type: retain
 fields:
-  - $resource.key1
-  - $attributes.key3
-  - $body.key
+  - resource.key1
+  - attributes.key3
+  - body.key

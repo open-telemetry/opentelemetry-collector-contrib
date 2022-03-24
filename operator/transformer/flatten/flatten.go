@@ -51,7 +51,7 @@ func (c FlattenOperatorConfig) Build(logger *zap.SugaredLogger) (operator.Operat
 		return nil, err
 	}
 
-	if strings.Contains(c.Field.String(), "$attributes") || strings.Contains(c.Field.String(), "$resource") {
+	if strings.Contains(c.Field.String(), "attributes") || strings.Contains(c.Field.String(), "resource") {
 		return nil, fmt.Errorf("flatten: field cannot be a resource or attribute")
 	}
 

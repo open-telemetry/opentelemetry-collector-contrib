@@ -195,12 +195,12 @@ func TestAttributeFieldString(t *testing.T) {
 		{
 			"Simple",
 			AttributeField{"foo"},
-			"$attributes.foo",
+			"attributes.foo",
 		},
 		{
 			"Empty",
 			AttributeField{""},
-			"$attributes.",
+			"attributes.",
 		},
 	}
 

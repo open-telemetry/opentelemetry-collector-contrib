@@ -63,11 +63,11 @@ func TestGoldenConfig(t *testing.T) {
 			func() *FlattenOperatorConfig {
 				cfg := defaultCfg()
 				cfg.Field = entry.BodyField{
-					Keys: []string{"$attributes", "errField"},
+					Keys: []string{"attributes", "errField"},
 				}
 				return cfg
 			}(),
-			false,
+			true,
 		},
 	}
 	for _, tc := range cases {

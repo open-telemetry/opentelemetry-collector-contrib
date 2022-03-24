@@ -1,3 +1,0 @@
-type: move
-from: $attributes.new 
-to: key.key2 

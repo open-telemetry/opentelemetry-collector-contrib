@@ -1,4 +1,4 @@
 type: trace_parser
 trace_flags: 
-  parse_from: "app_trace_flags_id"
-  preserve_to: "orig_race_flags_id"
+  parse_from: body.app_trace_flags_id
+  preserve_to: body.orig_race_flags_id

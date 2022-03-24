@@ -60,9 +60,9 @@ func (l AttributeField) Delete(entry *Entry) (interface{}, bool) {
 
 func (l AttributeField) String() string {
 	if strings.Contains(l.key, ".") {
-		return fmt.Sprintf(`$attributes['%s']`, l.key)
+		return fmt.Sprintf(`attributes['%s']`, l.key)
 	}
-	return "$attributes." + l.key
+	return "attributes." + l.key
 }
 
 // NewAttributeField will creat a new attribute field from a key
