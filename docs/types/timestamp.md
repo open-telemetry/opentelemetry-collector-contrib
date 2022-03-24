@@ -21,7 +21,7 @@ If a timestamp block is specified, the parser operator will perform the timestam
 - type: regex_parser
   regexp: '^Time=(?P<timestamp_field>\d{4}-\d{2}-\d{2}), Host=(?P<host>[^,]+)'
   timestamp:
-    parse_from: timestamp_field
+    parse_from: body.timestamp_field
     layout_type: strptime
     layout: '%Y-%m-%d'
 ```
@@ -31,7 +31,7 @@ If a timestamp block is specified, the parser operator will perform the timestam
 As a special case, the [`time_parser`](/docs/operators/time_parser.md) operator supports these fields inline. This is because time parsing is the primary purpose of the operator.
 ```yaml
 - type: time_parser
-  parse_from: timestamp_field
+  parse_from: body.timestamp_field
   layout_type: strptime
   layout: '%Y-%m-%d'
 ```
@@ -45,7 +45,7 @@ The default `layout_type` is `strptime`, which uses "directives" such as `%Y` (4
 Configuration:
 ```yaml
 - type: time_parser
-  parse_from: timestamp_field
+  parse_from: body.timestamp_field
   layout_type: strptime
   layout: '%a %b %e %H:%M:%S %Z %Y'
 ```
@@ -85,7 +85,7 @@ The `gotime` layout type uses Golang's native time parsing capabilities. Golang 
 Configuration:
 ```yaml
 - type: time_parser
-  parse_from: timestamp_field
+  parse_from: body.timestamp_field
   layout_type: gotime
   layout: Jan 2 15:04:05 MST 2006
 ```
@@ -140,7 +140,7 @@ The `epoch` layout type uses can consume epoch-based timestamps. The following l
 Configuration:
 ```yaml
 - type: time_parser
-  parse_from: timestamp_field
+  parse_from: body.timestamp_field
   layout_type: epoch
   layout: s
   preserve: true

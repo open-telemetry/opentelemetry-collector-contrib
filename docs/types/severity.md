@@ -155,7 +155,7 @@ If a severity block is specified, the parser operator will perform the severity 
 - type: regex_parser
   regexp: '^StatusCode=(?P<severity_field>\d{3}), Host=(?P<host>[^,]+)'
   severity:
-    parse_from: severity_field
+    parse_from: body.severity_field
     mapping:
       warn: 5xx
       error: 4xx
@@ -168,7 +168,7 @@ If a severity block is specified, the parser operator will perform the severity 
 As a special case, the [`severity_parser`](/docs/operators/severity_parser.md) operator supports these fields inline. This is because severity parsing is the primary purpose of the operator.
 ```yaml
 - type: severity_parser
-  parse_from: severity_field
+  parse_from: body.severity_field
   mapping:
     warn: 5xx
     error: 4xx
@@ -183,7 +183,7 @@ As a special case, the [`severity_parser`](/docs/operators/severity_parser.md) o
 Configuration:
 ```yaml
 - type: severity_parser
-  parse_from: severity_field
+  parse_from: body.severity_field
 ```
 
 Note that the default `preset` is in place, and no additional values have been specified.
@@ -221,7 +221,7 @@ Note that the default `preset` is in place, and no additional values have been s
 Configuration:
 ```yaml
 - type: severity_parser
-  parse_from: severity_field
+  parse_from: body.severity_field
   mapping:
     error: nooo!
 ```
@@ -285,7 +285,7 @@ Note that the default `preset` is in place, and one additional values has been s
 Configuration:
 ```yaml
 - type: severity_parser
-  parse_from: severity_field
+  parse_from: body.severity_field
   mapping:
     error:
       - nooo!
@@ -423,7 +423,7 @@ Configuration:
 Configuration:
 ```yaml
 - type: severity_parser
-  parse_from: severity_field
+  parse_from: body.severity_field
   mapping:
     error:
       - min: 1
@@ -523,7 +523,7 @@ Special values are provided to represent http status code ranges.
 Configuration:
 ```yaml
 - type: severity_parser
-  parse_from: severity_field
+  parse_from: body.severity_field
   mapping:
     warn: 5xx
     error: 4xx
@@ -535,7 +535,7 @@ Equivalent Configuration:
 ```yaml
 - id: my_severity_parser
   type: severity_parser
-  parse_from: severity_field
+  parse_from: body.severity_field
   mapping:
     warn:
       - min: 500
@@ -633,7 +633,7 @@ Equivalent Configuration:
 Configuration:
 ```yaml
 - type: severity_parser
-  parse_from: severity_field
+  parse_from: body.severity_field
   preset: none
   mapping:
     error: nooo!

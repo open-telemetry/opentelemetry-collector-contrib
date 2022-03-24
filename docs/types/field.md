@@ -21,7 +21,7 @@ If a field does not start with `resource`, `attributes`, or `body`, then `body` 
 Config:
 ```yaml
 - type: add
-  field: key3
+  field: body.key3
   value: val3
 - type: remove
   field: body.key2.nested_key1

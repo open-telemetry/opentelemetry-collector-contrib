@@ -38,7 +38,7 @@ Configuration:
 - type: regex_parser
   regex: '^(?P<timestamp>[^\s]+) (?P<stream>\w+) (?P<logtag>\w) (?P<message>.*)'
 - type: recombine
-  combine_field: message
+  combine_field: body.message
   combine_with: ""
   is_last_entry: "body.logtag == 'F'"
   overwrite_with: "newest"
@@ -100,7 +100,7 @@ This can be expressed with the following configuration:
 
 ```yaml
 - type: recombine
-  combine_field: message
+  combine_field: body.message
   is_first_entry: body.message matches "^[^\s]"
 ```
 

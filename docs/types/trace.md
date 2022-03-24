@@ -25,11 +25,11 @@ If a `trace` block is specified, the parser operator will perform the trace pars
   regexp: '^TraceID=(?P<trace_id>\S*) SpanID=(?P<span_id>\S*) TraceFlags=(?P<trace_flags>\d*)'
   trace:
     trace_id:
-      parse_from: trace_id
+      parse_from: body.trace_id
     span_id:
-      parse_from: span_id
+      parse_from: body.span_id
     trace_flags:
-      parse_from: trace_flags
+      parse_from: body.trace_flags
 ```
 
 ---
@@ -39,9 +39,9 @@ As a special case, the [`trace_parser`](/docs/operators/trace_parser.md) operato
 ```yaml
 - type: trace_parser
   trace_id:
-    parse_from: trace_id
+    parse_from: body.trace_id
   span_id:
-    parse_from: span_id
+    parse_from: body.span_id
   trace_flags:
-    parse_from: trace_flags
+    parse_from: body.trace_flags
 ```

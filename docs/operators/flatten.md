@@ -22,7 +22,7 @@ Flatten an object to the base of the body
 
 ```yaml
 - type: flatten
-  field: key1
+  field: body.key1
 ```
 
 <table>
@@ -70,7 +70,7 @@ Flatten an object within another object
 
 ```yaml
 - type: flatten
-  field: wrapper.key1
+  field: body.wrapper.key1
 ```
 
 <table>

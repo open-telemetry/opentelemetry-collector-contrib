@@ -41,12 +41,12 @@ The following fields are returned. Empty fields are not returned.
 ### Example Configurations
 
 
-#### Parse the field `message` as absolute URI
+#### Parse the field `body.message` as absolute URI
 
 Configuration:
 ```yaml
 - type: uri_parser
-  parse_from: message
+  parse_from: body.message
 ```
 
 <table>
@@ -90,12 +90,12 @@ Configuration:
 </tr>
 </table>
 
-#### Parse the field `message` as relative URI
+#### Parse the field `body.message` as relative URI
 
 Configuration:
 ```yaml
 - type: uri_parser
-  parse_from: message
+  parse_from: body.message
 ```
 
 <table>
@@ -133,12 +133,12 @@ Configuration:
 </tr>
 </table>
 
-#### Parse the field `query` as URI query string
+#### Parse the field `body.query` as URI query string
 
 Configuration:
 ```yaml
 - type: uri_parser
-  parse_from: query
+  parse_from: body.query
 ```
 
 <table>
