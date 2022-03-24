@@ -386,7 +386,7 @@ require (
 	github.com/prometheus/common v0.33.0 // indirect
 	github.com/prometheus/common/sigv4 v0.1.0 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
-	github.com/prometheus/prometheus v1.8.2-0.20220316123618-f68ec42b8387 // indirect
+	github.com/prometheus/prometheus v1.8.2-0.20220324155304-4d8bbfd4164c // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/rs/cors v1.8.2 // indirect
 	github.com/santhosh-tekuri/jsonschema v1.2.4 // indirect
