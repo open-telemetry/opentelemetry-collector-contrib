@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package azureblobreceiver
+package azureblobreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver"
 
 // func TestLoadConfig(t *testing.T) {
 // 	factories, err := componenttest.NopFactories()
