@@ -14,6 +14,7 @@
 ### 🚩 Deprecations 🚩
 
 - `datadogexporter`: Deprecate `OnlyMetadata` method from `Config` struct (#8359)
+- `datadogexporter`: Deprecate `GetCensoredKey` method from `APIConfig` struct (#8830)
 
 ## v0.47.0
 
