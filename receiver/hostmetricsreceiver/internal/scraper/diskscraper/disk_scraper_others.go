@@ -85,30 +85,25 @@ func (s *scraper) start(context.Context, component.Host) error {
 }
 
 func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
-	md := pdata.NewMetrics()
-	metrics := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics()
-
 	now := pdata.NewTimestampFromTime(time.Now())
 	ioCounters, err := s.ioCounters()
 	if err != nil {
-		return md, scrapererror.NewPartialScrapeError(err, metricsLen)
+		return pdata.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
 	// filter devices by name
 	ioCounters = s.filterByDevice(ioCounters)
 
 	if len(ioCounters) > 0 {
-		metrics.EnsureCapacity(metricsLen)
 		s.recordDiskIOMetric(now, ioCounters)
 		s.recordDiskOperationsMetric(now, ioCounters)
 		s.recordDiskIOTimeMetric(now, ioCounters)
 		s.recordDiskOperationTimeMetric(now, ioCounters)
 		s.recordDiskPendingOperationsMetric(now, ioCounters)
 		s.recordSystemSpecificDataPoints(now, ioCounters)
-		s.mb.Emit(metrics)
 	}
 
-	return md, nil
+	return s.mb.Emit(), nil
 }
 
 func (s *scraper) recordDiskIOMetric(now pdata.Timestamp, ioCounters map[string]disk.IOCountersStat) {

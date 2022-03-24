@@ -57,13 +57,10 @@ func (s *scraper) start(context.Context, component.Host) error {
 }
 
 func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
-	md := pdata.NewMetrics()
-	metrics := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics()
-
 	now := pdata.NewTimestampFromTime(s.now())
 	cpuTimes, err := s.times( /*percpu=*/ true)
 	if err != nil {
-		return md, scrapererror.NewPartialScrapeError(err, metricsLen)
+		return pdata.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
 	for _, cpuTime := range cpuTimes {
@@ -72,9 +69,8 @@ func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 
 	err = s.ucal.CalculateAndRecord(now, cpuTimes, s.recordCPUUtilization)
 	if err != nil {
-		return md, scrapererror.NewPartialScrapeError(err, metricsLen)
+		return pdata.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
-	s.mb.Emit(metrics)
-	return md, nil
+	return s.mb.Emit(), nil
 }
