@@ -135,22 +135,22 @@ func (c InputConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error)
 
 	fileNameField := entry.NewNilField()
 	if c.IncludeFileName {
-		fileNameField = entry.NewAttributeField("file.name")
+		fileNameField = entry.NewAttributeField("log.file.name")
 	}
 
 	filePathField := entry.NewNilField()
 	if c.IncludeFilePath {
-		filePathField = entry.NewAttributeField("file.path")
+		filePathField = entry.NewAttributeField("log.file.path")
 	}
 
 	fileNameResolvedField := entry.NewNilField()
 	if c.IncludeFileNameResolved {
-		fileNameResolvedField = entry.NewAttributeField("file.name.resolved")
+		fileNameResolvedField = entry.NewAttributeField("log.file.name_resolved")
 	}
 
 	filePathResolvedField := entry.NewNilField()
 	if c.IncludeFilePathResolved {
-		filePathResolvedField = entry.NewAttributeField("file.path.resolved")
+		filePathResolvedField = entry.NewAttributeField("log.file.path_resolved")
 	}
 
 	return &InputOperator{
