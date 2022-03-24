@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/recevier/azureblobreceiver
+module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver
 
 go 1.17
 
