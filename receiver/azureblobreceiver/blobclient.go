@@ -54,37 +54,6 @@ func (bc *AzureBlobClient) ReadBlob(ctx context.Context, containerName string, b
 	return downloadedData, err
 }
 
-// const (
-// 	containerNotFoundError = "ErrorCode=ContainerNotFound"
-// )
-
-// func (bc *AzureBlobClient) generateBlobName(dataType config.DataType) string {
-// 	return fmt.Sprintf("%s-%s", dataType, uuid.NewString())
-// }
-
-// func (bc *AzureBlobClient) checkOrCreateContainer() error {
-// 	_, err := bc.containerClient.GetProperties(context.TODO(), nil)
-// 	if err != nil && strings.Contains(err.Error(), containerNotFoundError) {
-// 		_, err = bc.containerClient.Create(context.TODO(), nil)
-// 	}
-// 	return err
-// }
-
-// func (bc *AzureBlobClient) UploadData(data []byte, dataType config.DataType) error {
-// 	blobName := bc.generateBlobName(dataType)
-
-// 	blockBlob := bc.containerClient.NewBlockBlobClient(blobName)
-
-// 	err := bc.checkOrCreateContainer()
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	_, err = blockBlob.Upload(context.TODO(), streaming.NopCloser(bytes.NewReader(data)), nil)
-
-// 	return err
-// }
-
 func NewBlobClient(connectionString string, logger *zap.Logger) (*AzureBlobClient, error) {
 	serviceClient, err := azblob.NewServiceClientFromConnectionString(connectionString, nil)
 	if err != nil {
