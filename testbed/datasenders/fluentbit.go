@@ -112,15 +112,15 @@ func (f *FluentBitFileLogWriter) convertLogToJSON(lr pdata.LogRecord) []byte {
 	}
 	rec["log"] = lr.Body().StringVal()
 
-	lr.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+	lr.Attributes().Range(func(k string, v pdata.Value) bool {
 		switch v.Type() {
-		case pdata.AttributeValueTypeString:
+		case pdata.ValueTypeString:
 			rec[k] = v.StringVal()
-		case pdata.AttributeValueTypeInt:
+		case pdata.ValueTypeInt:
 			rec[k] = strconv.FormatInt(v.IntVal(), 10)
-		case pdata.AttributeValueTypeDouble:
+		case pdata.ValueTypeDouble:
 			rec[k] = strconv.FormatFloat(v.DoubleVal(), 'f', -1, 64)
-		case pdata.AttributeValueTypeBool:
+		case pdata.ValueTypeBool:
 			rec[k] = strconv.FormatBool(v.BoolVal())
 		default:
 			panic("missing case")

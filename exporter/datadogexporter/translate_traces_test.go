@@ -95,18 +95,18 @@ func NewResourceSpansData(mockTraceID [16]byte, mockSpanID [8]byte, mockParentSp
 	evt.SetTimestamp(pdataEndTime)
 	evt.SetName("end")
 	evt.Attributes().InsertBool("flag", false)
-	attribs := map[string]pdata.AttributeValue{
-		"cache_hit":  pdata.NewAttributeValueBool(true),
-		"timeout_ns": pdata.NewAttributeValueInt(12e9),
-		"ping_count": pdata.NewAttributeValueInt(25),
-		"agent":      pdata.NewAttributeValueString("ocagent"),
+	attribs := map[string]interface{}{
+		"cache_hit":  true,
+		"timeout_ns": 12e9,
+		"ping_count": 25,
+		"agent":      "ocagent",
 	}
 
 	if statusCode == pdata.StatusCodeError {
-		attribs["http.status_code"] = pdata.NewAttributeValueString("501")
+		attribs["http.status_code"] = "501"
 	}
 
-	pdata.NewAttributeMapFromMap(attribs).CopyTo(span.Attributes())
+	pdata.NewMapFromRaw(attribs).CopyTo(span.Attributes())
 
 	resource := rs.Resource()
 
@@ -159,15 +159,15 @@ func TestRunningTraces(t *testing.T) {
 
 	rt := rts.AppendEmpty()
 	resAttrs := rt.Resource().Attributes()
-	resAttrs.Insert(attributes.AttributeDatadogHostname, pdata.NewAttributeValueString("resource-hostname-1"))
+	resAttrs.Insert(attributes.AttributeDatadogHostname, pdata.NewValueString("resource-hostname-1"))
 
 	rt = rts.AppendEmpty()
 	resAttrs = rt.Resource().Attributes()
-	resAttrs.Insert(attributes.AttributeDatadogHostname, pdata.NewAttributeValueString("resource-hostname-1"))
+	resAttrs.Insert(attributes.AttributeDatadogHostname, pdata.NewValueString("resource-hostname-1"))
 
 	rt = rts.AppendEmpty()
 	resAttrs = rt.Resource().Attributes()
-	resAttrs.Insert(attributes.AttributeDatadogHostname, pdata.NewAttributeValueString("resource-hostname-2"))
+	resAttrs.Insert(attributes.AttributeDatadogHostname, pdata.NewValueString("resource-hostname-2"))
 
 	rts.AppendEmpty()
 
@@ -479,10 +479,10 @@ func TestTracesTranslationErrorsFromEventsUsesLast(t *testing.T) {
 	mockSpanID := [8]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8}
 	mockParentSpanID := [8]byte{0xEF, 0xEE, 0xED, 0xEC, 0xEB, 0xEA, 0xE9, 0xE8}
 
-	attribs := map[string]pdata.AttributeValue{
-		conventions.AttributeExceptionType:       pdata.NewAttributeValueString("HttpError"),
-		conventions.AttributeExceptionStacktrace: pdata.NewAttributeValueString("HttpError at line 67\nthing at line 45"),
-		conventions.AttributeExceptionMessage:    pdata.NewAttributeValueString("HttpError error occurred"),
+	attribs := map[string]interface{}{
+		conventions.AttributeExceptionType:       "HttpError",
+		conventions.AttributeExceptionStacktrace: "HttpError at line 67\nthing at line 45",
+		conventions.AttributeExceptionMessage:    "HttpError error occurred",
 	}
 
 	mockEndTime := time.Now().Round(time.Second)
@@ -503,7 +503,7 @@ func TestTracesTranslationErrorsFromEventsUsesLast(t *testing.T) {
 
 	event = events.AppendEmpty()
 	event.SetName(AttributeExceptionEventName)
-	pdata.NewAttributeMapFromMap(attribs).CopyTo(event.Attributes())
+	pdata.NewMapFromRaw(attribs).CopyTo(event.Attributes())
 
 	event = events.AppendEmpty()
 	event.SetName("end")
@@ -519,13 +519,14 @@ func TestTracesTranslationErrorsFromEventsUsesLast(t *testing.T) {
 	datadogPayload := resourceSpansToDatadogSpans(rs, hostname, &cfg, denylister, map[string]string{})
 
 	// Ensure the error type is copied over from the last error event logged
-	assert.Equal(t, attribs[conventions.AttributeExceptionType].StringVal(), datadogPayload.Traces[0].Spans[0].Meta[ext.ErrorType])
+	assert.Equal(t, attribs[conventions.AttributeExceptionType].(string), datadogPayload.Traces[0].Spans[0].Meta[ext.ErrorType])
 
 	// Ensure the stack trace is copied over from the last error event logged
-	assert.Equal(t, attribs[conventions.AttributeExceptionStacktrace].StringVal(), datadogPayload.Traces[0].Spans[0].Meta[ext.ErrorStack])
+	assert.Equal(t, attribs[conventions.AttributeExceptionStacktrace].(string),
+		datadogPayload.Traces[0].Spans[0].Meta[ext.ErrorStack])
 
 	// Ensure the error message is copied over from the last error event logged
-	assert.Equal(t, attribs[conventions.AttributeExceptionMessage].StringVal(), datadogPayload.Traces[0].Spans[0].Meta[ext.ErrorMsg])
+	assert.Equal(t, attribs[conventions.AttributeExceptionMessage].(string), datadogPayload.Traces[0].Spans[0].Meta[ext.ErrorMsg])
 }
 
 // Ensures that if the first or last event in the list is the error, that translation still behaves properly
@@ -548,15 +549,15 @@ func TestTracesTranslationErrorsFromEventsBounds(t *testing.T) {
 	events.EnsureCapacity(3)
 
 	// Start with the error as the first element in the list...
-	attribs := map[string]pdata.AttributeValue{
-		conventions.AttributeExceptionType:       pdata.NewAttributeValueString("HttpError"),
-		conventions.AttributeExceptionStacktrace: pdata.NewAttributeValueString("HttpError at line 67\nthing at line 45"),
-		conventions.AttributeExceptionMessage:    pdata.NewAttributeValueString("HttpError error occurred"),
+	attribs := map[string]interface{}{
+		conventions.AttributeExceptionType:       "HttpError",
+		conventions.AttributeExceptionStacktrace: "HttpError at line 67\nthing at line 45",
+		conventions.AttributeExceptionMessage:    "HttpError error occurred",
 	}
 
 	evt := events.AppendEmpty()
 	evt.SetName(AttributeExceptionEventName)
-	pdata.NewAttributeMapFromMap(attribs).CopyTo(evt.Attributes())
+	pdata.NewMapFromRaw(attribs).CopyTo(evt.Attributes())
 
 	evt = events.AppendEmpty()
 	evt.SetName("start")
@@ -575,33 +576,34 @@ func TestTracesTranslationErrorsFromEventsBounds(t *testing.T) {
 	datadogPayload := resourceSpansToDatadogSpans(rs, hostname, &cfg, denylister, map[string]string{})
 
 	// Ensure the error type is copied over
-	assert.Equal(t, attribs[conventions.AttributeExceptionType].StringVal(), datadogPayload.Traces[0].Spans[0].Meta[ext.ErrorType])
+	assert.Equal(t, attribs[conventions.AttributeExceptionType].(string), datadogPayload.Traces[0].Spans[0].Meta[ext.ErrorType])
 
 	// Ensure the stack trace is copied over
-	assert.Equal(t, attribs[conventions.AttributeExceptionStacktrace].StringVal(), datadogPayload.Traces[0].Spans[0].Meta[ext.ErrorStack])
+	assert.Equal(t, attribs[conventions.AttributeExceptionStacktrace].(string),
+		datadogPayload.Traces[0].Spans[0].Meta[ext.ErrorStack])
 
 	// Ensure the error message is copied over
-	assert.Equal(t, attribs[conventions.AttributeExceptionMessage].StringVal(), datadogPayload.Traces[0].Spans[0].Meta[ext.ErrorMsg])
+	assert.Equal(t, attribs[conventions.AttributeExceptionMessage].(string), datadogPayload.Traces[0].Spans[0].Meta[ext.ErrorMsg])
 
 	// Now with the error event at the end of the list...
 	events.At(0).SetName("start")
 	// Reset the attributes
-	pdata.NewAttributeMap().CopyTo(events.At(0).Attributes())
+	pdata.NewMap().CopyTo(events.At(0).Attributes())
 
 	events.At(1).SetName("end")
 	events.At(1).Attributes().InsertBool("flag", false)
 
 	events.At(2).SetName(AttributeExceptionEventName)
-	pdata.NewAttributeMapFromMap(attribs).CopyTo(events.At(2).Attributes())
+	pdata.NewMapFromRaw(attribs).CopyTo(events.At(2).Attributes())
 
 	// Ensure the error type is copied over
-	assert.Equal(t, attribs[conventions.AttributeExceptionType].StringVal(), datadogPayload.Traces[0].Spans[0].Meta[ext.ErrorType])
+	assert.Equal(t, attribs[conventions.AttributeExceptionType].(string), datadogPayload.Traces[0].Spans[0].Meta[ext.ErrorType])
 
 	// Ensure the stack trace is copied over
-	assert.Equal(t, attribs[conventions.AttributeExceptionStacktrace].StringVal(), datadogPayload.Traces[0].Spans[0].Meta[ext.ErrorStack])
+	assert.Equal(t, attribs[conventions.AttributeExceptionStacktrace].(string), datadogPayload.Traces[0].Spans[0].Meta[ext.ErrorStack])
 
 	// Ensure the error message is copied over
-	assert.Equal(t, attribs[conventions.AttributeExceptionMessage].StringVal(), datadogPayload.Traces[0].Spans[0].Meta[ext.ErrorMsg])
+	assert.Equal(t, attribs[conventions.AttributeExceptionMessage].(string), datadogPayload.Traces[0].Spans[0].Meta[ext.ErrorMsg])
 }
 
 func TestTracesTranslationOkStatus(t *testing.T) {
@@ -1555,11 +1557,11 @@ func TestSpanRateLimitTag(t *testing.T) {
 	instrumentationLibrary.SetVersion("v1")
 	span := ilss.Spans().AppendEmpty()
 
-	attribs := map[string]pdata.AttributeValue{
-		"_sample_rate": pdata.NewAttributeValueString("0.5"),
+	attribs := map[string]interface{}{
+		"_sample_rate": "0.5",
 	}
 
-	pdata.NewAttributeMapFromMap(attribs).CopyTo(span.Attributes())
+	pdata.NewMapFromRaw(attribs).CopyTo(span.Attributes())
 
 	traceID := pdata.NewTraceID(mockTraceID)
 	spanID := pdata.NewSpanID(mockSpanID)

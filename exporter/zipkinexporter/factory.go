@@ -38,10 +38,10 @@ const (
 
 // NewFactory creates a factory for Zipkin exporter.
 func NewFactory() component.ExporterFactory {
-	return exporterhelper.NewFactory(
+	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTracesExporter))
+		component.WithTracesExporter(createTracesExporter))
 }
 
 func createDefaultConfig() config.Exporter {

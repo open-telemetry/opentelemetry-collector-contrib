@@ -91,7 +91,7 @@ func splunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resource
 	return md, numDroppedTimeSeries
 }
 
-func convertString(logger *zap.Logger, numDroppedTimeSeries *int, metrics pdata.MetricSlice, metricName string, pointTimestamp pdata.Timestamp, s string, attributes pdata.AttributeMap) {
+func convertString(logger *zap.Logger, numDroppedTimeSeries *int, metrics pdata.MetricSlice, metricName string, pointTimestamp pdata.Timestamp, s string, attributes pdata.Map) {
 	// best effort, cast to string and turn into a number
 	dbl, err := strconv.ParseFloat(s, 64)
 	if err != nil {
@@ -103,7 +103,7 @@ func convertString(logger *zap.Logger, numDroppedTimeSeries *int, metrics pdata.
 	}
 }
 
-func addIntGauge(metrics pdata.MetricSlice, metricName string, value int64, ts pdata.Timestamp, attributes pdata.AttributeMap) {
+func addIntGauge(metrics pdata.MetricSlice, metricName string, value int64, ts pdata.Timestamp, attributes pdata.Map) {
 	metric := metrics.AppendEmpty()
 	metric.SetName(metricName)
 	metric.SetDataType(pdata.MetricDataTypeGauge)
@@ -113,7 +113,7 @@ func addIntGauge(metrics pdata.MetricSlice, metricName string, value int64, ts p
 	attributes.CopyTo(intPt.Attributes())
 }
 
-func addDoubleGauge(metrics pdata.MetricSlice, metricName string, value float64, ts pdata.Timestamp, attributes pdata.AttributeMap) {
+func addDoubleGauge(metrics pdata.MetricSlice, metricName string, value float64, ts pdata.Timestamp, attributes pdata.Map) {
 	metric := metrics.AppendEmpty()
 	metric.SetName(metricName)
 	metric.SetDataType(pdata.MetricDataTypeGauge)
@@ -132,8 +132,8 @@ func convertTimestamp(sec *float64) pdata.Timestamp {
 }
 
 // Extract dimensions from the Splunk event fields to populate metric data point attributes.
-func buildAttributes(dimensions map[string]interface{}) pdata.AttributeMap {
-	attributes := pdata.NewAttributeMap()
+func buildAttributes(dimensions map[string]interface{}) pdata.Map {
+	attributes := pdata.NewMap()
 	attributes.EnsureCapacity(len(dimensions))
 	for key, val := range dimensions {
 

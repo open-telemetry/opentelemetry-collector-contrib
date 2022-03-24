@@ -15,11 +15,13 @@
 package internal
 
 import (
+	"math"
 	"testing"
 	"time"
 
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/textparse"
+	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -62,8 +64,20 @@ var mc = byLookupMetadataCache{
 		Help:   "This is some help for a histogram",
 		Unit:   "ms",
 	},
+	"histogram_stale": scrape.MetricMetadata{
+		Metric: "hg_stale",
+		Type:   textparse.MetricTypeHistogram,
+		Help:   "This is some help for a histogram",
+		Unit:   "ms",
+	},
 	"summary": scrape.MetricMetadata{
 		Metric: "s",
+		Type:   textparse.MetricTypeSummary,
+		Help:   "This is some help for a summary",
+		Unit:   "ms",
+	},
+	"summary_stale": scrape.MetricMetadata{
+		Metric: "s_stale",
 		Type:   textparse.MetricTypeSummary,
 		Help:   "This is some help for a summary",
 		Unit:   "ms",
@@ -106,6 +120,29 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 				point.SetSum(1004.78)
 				point.SetTimestamp(pdata.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				point.SetBucketCounts([]uint64{33})
+				point.SetExplicitBounds([]float64{})
+				point.SetStartTimestamp(pdata.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
+				attributes := point.Attributes()
+				attributes.InsertString("a", "A")
+				attributes.InsertString("b", "B")
+				return point
+			},
+		},
+		{
+			name:                "histogram that is stale",
+			metricName:          "histogram_stale",
+			intervalStartTimeMs: 11,
+			labels:              labels.Labels{{Name: "a", Value: "A"}, {Name: "le", Value: "0.75"}, {Name: "b", Value: "B"}},
+			scrapes: []*scrape{
+				{at: 11, value: math.Float64frombits(value.StaleNaN), metric: "histogram_stale_count"},
+				{at: 11, value: math.Float64frombits(value.StaleNaN), metric: "histogram_stale_sum"},
+				{at: 13, value: math.Float64frombits(value.StaleNaN), metric: "value"},
+			},
+			want: func() pdata.HistogramDataPoint {
+				point := pdata.NewHistogramDataPoint()
+				point.SetTimestamp(pdata.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
+				point.SetFlags(pdataStaleFlags)
+				point.SetBucketCounts([]uint64{0})
 				point.SetExplicitBounds([]float64{})
 				point.SetStartTimestamp(pdata.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				attributes := point.Attributes()
@@ -235,6 +272,87 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 				qn99 := qtL.AppendEmpty()
 				qn99.SetQuantile(.99)
 				qn99.SetValue(82)
+				point.SetTimestamp(pdata.Timestamp(14 * time.Millisecond))      // the time in milliseconds -> nanoseconds.
+				point.SetStartTimestamp(pdata.Timestamp(14 * time.Millisecond)) // the time in milliseconds -> nanoseconds
+				attributes := point.Attributes()
+				attributes.InsertString("a", "A")
+				attributes.InsertString("b", "B")
+				return point
+			},
+		},
+		{
+			name: "summary_stale",
+			labelsScrapes: []*labelsScrapes{
+				{
+					labels: labels.Labels{
+						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.0"}, {Name: "b", Value: "B"},
+					},
+					scrapes: []*scrape{
+						{at: 10, value: 10, metric: "summary_stale_count"},
+						{at: 10, value: 12, metric: "summary_stale_sum"},
+						{at: 10, value: 8, metric: "value"},
+					},
+				},
+				{
+					labels: labels.Labels{
+						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.75"}, {Name: "b", Value: "B"},
+					},
+					scrapes: []*scrape{
+						{at: 11, value: 10, metric: "summary_stale_count"},
+						{at: 11, value: 1004.78, metric: "summary_stale_sum"},
+						{at: 11, value: 33.7, metric: "value"},
+					},
+				},
+				{
+					labels: labels.Labels{
+						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.50"}, {Name: "b", Value: "B"},
+					},
+					scrapes: []*scrape{
+						{at: 12, value: 10, metric: "summary_stale_count"},
+						{at: 12, value: 13, metric: "summary_stale_sum"},
+						{at: 12, value: 27, metric: "value"},
+					},
+				},
+				{
+					labels: labels.Labels{
+						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.90"}, {Name: "b", Value: "B"},
+					},
+					scrapes: []*scrape{
+						{at: 13, value: 10, metric: "summary_stale_count"},
+						{at: 13, value: 14, metric: "summary_stale_sum"},
+						{at: 13, value: 56, metric: "value"},
+					},
+				},
+				{
+					labels: labels.Labels{
+						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.99"}, {Name: "b", Value: "B"},
+					},
+					scrapes: []*scrape{
+						{at: 14, value: math.Float64frombits(value.StaleNaN), metric: "summary_stale_count"},
+						{at: 14, value: math.Float64frombits(value.StaleNaN), metric: "summary_stale_sum"},
+						{at: 14, value: math.Float64frombits(value.StaleNaN), metric: "value"},
+					},
+				},
+			},
+			want: func() pdata.SummaryDataPoint {
+				point := pdata.NewSummaryDataPoint()
+				qtL := point.QuantileValues()
+				qn0 := qtL.AppendEmpty()
+				point.SetFlags(pdataStaleFlags)
+				qn0.SetQuantile(0)
+				qn0.SetValue(0)
+				qn50 := qtL.AppendEmpty()
+				qn50.SetQuantile(.5)
+				qn50.SetValue(0)
+				qn75 := qtL.AppendEmpty()
+				qn75.SetQuantile(.75)
+				qn75.SetValue(0)
+				qn90 := qtL.AppendEmpty()
+				qn90.SetQuantile(.9)
+				qn90.SetValue(0)
+				qn99 := qtL.AppendEmpty()
+				qn99.SetQuantile(.99)
+				qn99.SetValue(0)
 				point.SetTimestamp(pdata.Timestamp(14 * time.Millisecond))      // the time in milliseconds -> nanoseconds.
 				point.SetStartTimestamp(pdata.Timestamp(14 * time.Millisecond)) // the time in milliseconds -> nanoseconds
 				attributes := point.Attributes()

@@ -35,6 +35,8 @@ type Config struct {
 	// For tcp protocol reference: [ClickHouse/clickhouse-go#dsn](https://github.com/ClickHouse/clickhouse-go#dsn).
 	// For http protocol reference: [mailru/go-clickhouse/#dsn](https://github.com/mailru/go-clickhouse/#dsn).
 	DSN string `mapstructure:"dsn"`
+	// LogsTableName is the table name for logs. default is `otel_logs`.
+	LogsTableName string `mapstructure:"logs_table_name"`
 	// TTLDays is The data time-to-live in days, 0 means no ttl.
 	TTLDays uint `mapstructure:"ttl_days"`
 }

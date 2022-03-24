@@ -565,7 +565,7 @@ func (m *metricRedisCPUTime) recordDataPoint(start pdata.Timestamp, ts pdata.Tim
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.State, pdata.NewAttributeValueString(stateAttributeValue))
+	dp.Attributes().Insert(A.State, pdata.NewValueString(stateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -616,7 +616,7 @@ func (m *metricRedisDbAvgTTL) recordDataPoint(start pdata.Timestamp, ts pdata.Ti
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Db, pdata.NewAttributeValueString(dbAttributeValue))
+	dp.Attributes().Insert(A.Db, pdata.NewValueString(dbAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -667,7 +667,7 @@ func (m *metricRedisDbExpires) recordDataPoint(start pdata.Timestamp, ts pdata.T
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Db, pdata.NewAttributeValueString(dbAttributeValue))
+	dp.Attributes().Insert(A.Db, pdata.NewValueString(dbAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -718,7 +718,7 @@ func (m *metricRedisDbKeys) recordDataPoint(start pdata.Timestamp, ts pdata.Time
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Db, pdata.NewAttributeValueString(dbAttributeValue))
+	dp.Attributes().Insert(A.Db, pdata.NewValueString(dbAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1600,7 +1600,10 @@ func newMetricRedisUptime(settings MetricSettings) metricRedisUptime {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	startTime                                    pdata.Timestamp
+	startTime                                    pdata.Timestamp // start time that will be applied to all recorded data points.
+	metricsCapacity                              int             // maximum observed number of metrics per resource.
+	resourceCapacity                             int             // maximum observed number of resource attributes.
+	metricsBuffer                                pdata.Metrics   // accumulates metrics data before emitting.
 	metricRedisClientsBlocked                    metricRedisClientsBlocked
 	metricRedisClientsConnected                  metricRedisClientsConnected
 	metricRedisClientsMaxInputBuffer             metricRedisClientsMaxInputBuffer
@@ -1645,6 +1648,7 @@ func WithStartTime(startTime pdata.Timestamp) metricBuilderOption {
 func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                                    pdata.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                                pdata.NewMetrics(),
 		metricRedisClientsBlocked:                    newMetricRedisClientsBlocked(settings.RedisClientsBlocked),
 		metricRedisClientsConnected:                  newMetricRedisClientsConnected(settings.RedisClientsConnected),
 		metricRedisClientsMaxInputBuffer:             newMetricRedisClientsMaxInputBuffer(settings.RedisClientsMaxInputBuffer),
@@ -1681,39 +1685,75 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 	return mb
 }
 
-// Emit appends generated metrics to a pdata.MetricsSlice and updates the internal state to be ready for recording
-// another set of data points. This function will be doing all transformations required to produce metric representation
-// defined in metadata and user settings, e.g. delta/cumulative translation.
-func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
-	mb.metricRedisClientsBlocked.emit(metrics)
-	mb.metricRedisClientsConnected.emit(metrics)
-	mb.metricRedisClientsMaxInputBuffer.emit(metrics)
-	mb.metricRedisClientsMaxOutputBuffer.emit(metrics)
-	mb.metricRedisCommands.emit(metrics)
-	mb.metricRedisCommandsProcessed.emit(metrics)
-	mb.metricRedisConnectionsReceived.emit(metrics)
-	mb.metricRedisConnectionsRejected.emit(metrics)
-	mb.metricRedisCPUTime.emit(metrics)
-	mb.metricRedisDbAvgTTL.emit(metrics)
-	mb.metricRedisDbExpires.emit(metrics)
-	mb.metricRedisDbKeys.emit(metrics)
-	mb.metricRedisKeysEvicted.emit(metrics)
-	mb.metricRedisKeysExpired.emit(metrics)
-	mb.metricRedisKeyspaceHits.emit(metrics)
-	mb.metricRedisKeyspaceMisses.emit(metrics)
-	mb.metricRedisLatestFork.emit(metrics)
-	mb.metricRedisMemoryFragmentationRatio.emit(metrics)
-	mb.metricRedisMemoryLua.emit(metrics)
-	mb.metricRedisMemoryPeak.emit(metrics)
-	mb.metricRedisMemoryRss.emit(metrics)
-	mb.metricRedisMemoryUsed.emit(metrics)
-	mb.metricRedisNetInput.emit(metrics)
-	mb.metricRedisNetOutput.emit(metrics)
-	mb.metricRedisRdbChangesSinceLastSave.emit(metrics)
-	mb.metricRedisReplicationBacklogFirstByteOffset.emit(metrics)
-	mb.metricRedisReplicationOffset.emit(metrics)
-	mb.metricRedisSlavesConnected.emit(metrics)
-	mb.metricRedisUptime.emit(metrics)
+// updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
+func (mb *MetricsBuilder) updateCapacity(rm pdata.ResourceMetrics) {
+	if mb.metricsCapacity < rm.InstrumentationLibraryMetrics().At(0).Metrics().Len() {
+		mb.metricsCapacity = rm.InstrumentationLibraryMetrics().At(0).Metrics().Len()
+	}
+	if mb.resourceCapacity < rm.Resource().Attributes().Len() {
+		mb.resourceCapacity = rm.Resource().Attributes().Len()
+	}
+}
+
+// ResourceOption applies changes to provided resource.
+type ResourceOption func(pdata.Resource)
+
+// EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
+// recording another set of data points as part of another resource. This function can be helpful when one scraper
+// needs to emit metrics from several resources. Otherwise calling this function is not required,
+// just `Emit` function can be called instead. Resource attributes should be provided as ResourceOption arguments.
+func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
+	rm := pdata.NewResourceMetrics()
+	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
+	for _, op := range ro {
+		op(rm.Resource())
+	}
+	ils := rm.InstrumentationLibraryMetrics().AppendEmpty()
+	ils.InstrumentationLibrary().SetName("otelcol/redisreceiver")
+	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
+	mb.metricRedisClientsBlocked.emit(ils.Metrics())
+	mb.metricRedisClientsConnected.emit(ils.Metrics())
+	mb.metricRedisClientsMaxInputBuffer.emit(ils.Metrics())
+	mb.metricRedisClientsMaxOutputBuffer.emit(ils.Metrics())
+	mb.metricRedisCommands.emit(ils.Metrics())
+	mb.metricRedisCommandsProcessed.emit(ils.Metrics())
+	mb.metricRedisConnectionsReceived.emit(ils.Metrics())
+	mb.metricRedisConnectionsRejected.emit(ils.Metrics())
+	mb.metricRedisCPUTime.emit(ils.Metrics())
+	mb.metricRedisDbAvgTTL.emit(ils.Metrics())
+	mb.metricRedisDbExpires.emit(ils.Metrics())
+	mb.metricRedisDbKeys.emit(ils.Metrics())
+	mb.metricRedisKeysEvicted.emit(ils.Metrics())
+	mb.metricRedisKeysExpired.emit(ils.Metrics())
+	mb.metricRedisKeyspaceHits.emit(ils.Metrics())
+	mb.metricRedisKeyspaceMisses.emit(ils.Metrics())
+	mb.metricRedisLatestFork.emit(ils.Metrics())
+	mb.metricRedisMemoryFragmentationRatio.emit(ils.Metrics())
+	mb.metricRedisMemoryLua.emit(ils.Metrics())
+	mb.metricRedisMemoryPeak.emit(ils.Metrics())
+	mb.metricRedisMemoryRss.emit(ils.Metrics())
+	mb.metricRedisMemoryUsed.emit(ils.Metrics())
+	mb.metricRedisNetInput.emit(ils.Metrics())
+	mb.metricRedisNetOutput.emit(ils.Metrics())
+	mb.metricRedisRdbChangesSinceLastSave.emit(ils.Metrics())
+	mb.metricRedisReplicationBacklogFirstByteOffset.emit(ils.Metrics())
+	mb.metricRedisReplicationOffset.emit(ils.Metrics())
+	mb.metricRedisSlavesConnected.emit(ils.Metrics())
+	mb.metricRedisUptime.emit(ils.Metrics())
+	if ils.Metrics().Len() > 0 {
+		mb.updateCapacity(rm)
+		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
+	}
+}
+
+// Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
+// recording another set of metrics. This function will be responsible for applying all the transformations required to
+// produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
+func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pdata.Metrics {
+	mb.EmitForResource(ro...)
+	metrics := pdata.NewMetrics()
+	mb.metricsBuffer.MoveTo(metrics)
+	return metrics
 }
 
 // RecordRedisClientsBlockedDataPoint adds a data point to redis.clients.blocked metric.

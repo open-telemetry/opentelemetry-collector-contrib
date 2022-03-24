@@ -11,6 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package gcp // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes/gcp"
 
 import (
@@ -20,6 +21,7 @@ import (
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 )
 
+// HostInfo holds the GCP host information.
 type HostInfo struct {
 	HostAliases []string
 	GCPTags     []string
@@ -27,7 +29,7 @@ type HostInfo struct {
 
 // HostnameFromAttributes gets a valid hostname from labels
 // if available
-func HostnameFromAttributes(attrs pdata.AttributeMap) (string, bool) {
+func HostnameFromAttributes(attrs pdata.Map) (string, bool) {
 	if hostName, ok := attrs.Get(conventions.AttributeHostName); ok {
 		return hostName.StringVal(), true
 	}
@@ -37,7 +39,7 @@ func HostnameFromAttributes(attrs pdata.AttributeMap) (string, bool) {
 
 // HostInfoFromAttributes gets GCP host info from attributes following
 // OpenTelemetry semantic conventions
-func HostInfoFromAttributes(attrs pdata.AttributeMap) (hostInfo *HostInfo) {
+func HostInfoFromAttributes(attrs pdata.Map) (hostInfo *HostInfo) {
 	hostInfo = &HostInfo{}
 
 	if hostID, ok := attrs.Get(conventions.AttributeHostID); ok {

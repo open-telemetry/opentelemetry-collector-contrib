@@ -34,12 +34,12 @@ const (
 
 // NewFactory creates a factory for Kinesis exporter.
 func NewFactory() component.ExporterFactory {
-	return exporterhelper.NewFactory(
+	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(NewTracesExporter),
-		exporterhelper.WithMetrics(NewMetricsExporter),
-		exporterhelper.WithLogs(NewLogsExporter),
+		component.WithTracesExporter(NewTracesExporter),
+		component.WithMetricsExporter(NewMetricsExporter),
+		component.WithLogsExporter(NewLogsExporter),
 	)
 }
 

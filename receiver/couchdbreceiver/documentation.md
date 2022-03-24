@@ -26,11 +26,16 @@ metrics:
     enabled: <true|false>
 ```
 
-## Attributes
+## Resource attributes
+
+| Name | Description | Type |
+| ---- | ----------- | ---- |
+| couchdb.node.name | The name of the node. | String |
+
+## Metric attributes
 
 | Name | Description |
 | ---- | ----------- |
-| couchdb.node.name | The name of the node. |
 | http.method | An HTTP request method. |
 | http.status_code | An HTTP status code. |
 | operation | The operation type. |

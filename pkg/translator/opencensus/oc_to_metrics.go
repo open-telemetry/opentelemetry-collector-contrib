@@ -202,7 +202,7 @@ func setDataPoints(ocMetric *ocmetrics.Metric, metric pdata.Metric, valType pdat
 	}
 }
 
-func fillAttributesMap(ocLabelsKeys []*ocmetrics.LabelKey, ocLabelValues []*ocmetrics.LabelValue, attributesMap pdata.AttributeMap) {
+func fillAttributesMap(ocLabelsKeys []*ocmetrics.LabelKey, ocLabelValues []*ocmetrics.LabelValue, attributesMap pdata.Map) {
 	if len(ocLabelsKeys) == 0 || len(ocLabelValues) == 0 {
 		return
 	}

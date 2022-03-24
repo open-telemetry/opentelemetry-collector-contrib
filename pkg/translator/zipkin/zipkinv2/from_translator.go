@@ -155,16 +155,8 @@ func spanToZipkinSpan(
 	zs.LocalEndpoint = zipkinEndpointFromTags(tags, localServiceName, false, redundantKeys)
 	zs.RemoteEndpoint = zipkinEndpointFromTags(tags, "", true, redundantKeys)
 
-	removeRedundentTags(redundantKeys, tags)
-
-	status := span.Status()
-	tags[conventions.OtelStatusCode] = status.Code().String()
-	if status.Message() != "" {
-		tags[conventions.OtelStatusDescription] = status.Message()
-		if int32(status.Code()) > 0 {
-			zs.Err = fmt.Errorf("%s", status.Message())
-		}
-	}
+	removeRedundantTags(redundantKeys, tags)
+	populateStatus(span.Status(), zs, tags)
 
 	if err := spanEventsToZipkinAnnotations(span.Events(), zs); err != nil {
 		return nil, err
@@ -176,6 +168,30 @@ func spanToZipkinSpan(
 	zs.Tags = tags
 
 	return zs, nil
+}
+
+func populateStatus(status pdata.SpanStatus, zs *zipkinmodel.SpanModel, tags map[string]string) {
+	if status.Code() == pdata.StatusCodeError {
+		tags[tracetranslator.TagError] = "true"
+	} else {
+		// The error tag should only be set if Status is Error. If a boolean version
+		// ({"error":false} or {"error":"false"}) is present, it SHOULD be removed.
+		// Zipkin will treat any span with error sent as failed.
+		delete(tags, tracetranslator.TagError)
+	}
+
+	// Per specs, Span Status MUST be reported as a key-value pair in tags to Zipkin, unless it is UNSET.
+	// In the latter case it MUST NOT be reported.
+	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/sdk_exporters/zipkin.md#status
+	if status.Code() == pdata.StatusCodeUnset {
+		return
+	}
+
+	tags[conventions.OtelStatusCode] = status.Code().String()
+	if status.Message() != "" {
+		tags[conventions.OtelStatusDescription] = status.Message()
+		zs.Err = fmt.Errorf("%s", status.Message())
+	}
 }
 
 func aggregateSpanTags(span pdata.Span, zTags map[string]string) map[string]string {
@@ -231,16 +247,16 @@ func spanLinksToZipkinTags(links pdata.SpanLinkSlice, zTags map[string]string) e
 	return nil
 }
 
-func attributeMapToStringMap(attrMap pdata.AttributeMap) map[string]string {
+func attributeMapToStringMap(attrMap pdata.Map) map[string]string {
 	rawMap := make(map[string]string)
-	attrMap.Range(func(k string, v pdata.AttributeValue) bool {
+	attrMap.Range(func(k string, v pdata.Value) bool {
 		rawMap[k] = v.AsString()
 		return true
 	})
 	return rawMap
 }
 
-func removeRedundentTags(redundantKeys map[string]bool, zTags map[string]string) {
+func removeRedundantTags(redundantKeys map[string]bool, zTags map[string]string) {
 	for k, v := range redundantKeys {
 		if v {
 			delete(zTags, k)
@@ -257,7 +273,7 @@ func resourceToZipkinEndpointServiceNameAndAttributeMap(
 		return tracetranslator.ResourceNoServiceName, zTags
 	}
 
-	attrs.Range(func(k string, v pdata.AttributeValue) bool {
+	attrs.Range(func(k string, v pdata.Value) bool {
 		zTags[k] = v.AsString()
 		return true
 	})

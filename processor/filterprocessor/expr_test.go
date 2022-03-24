@@ -36,7 +36,7 @@ import (
 const filteredMetric = "p0_metric_1"
 const filteredAttrKey = "pt-label-key-1"
 
-var filteredAttrVal = pdata.NewAttributeValueString("pt-label-val-1")
+var filteredAttrVal = pdata.NewValueString("pt-label-val-1")
 
 func TestExprError(t *testing.T) {
 	testMatchError(t, pdata.MetricDataTypeGauge, pdata.MetricValueTypeInt)
@@ -116,8 +116,8 @@ func testFilter(t *testing.T, mdType pdata.MetricDataType, mvType pdata.MetricVa
 	assert.Equal(t, expectedMetricCount, filteredMetricCount)
 }
 
-func assertFiltered(t *testing.T, lm pdata.AttributeMap) {
-	lm.Range(func(k string, v pdata.AttributeValue) bool {
+func assertFiltered(t *testing.T, lm pdata.Map) {
+	lm.Range(func(k string, v pdata.Value) bool {
 		if k == filteredAttrKey && v.Equal(filteredAttrVal) {
 			assert.Fail(t, "found metric that should have been filtered out")
 			return false

@@ -275,13 +275,13 @@ func parseAnnotationValue(value string, parseStringTags bool) *tracepb.Attribute
 
 	if parseStringTags {
 		switch zipkin.DetermineValueType(value) {
-		case pdata.AttributeValueTypeInt:
+		case pdata.ValueTypeInt:
 			iValue, _ := strconv.ParseInt(value, 10, 64)
 			pbAttrib.Value = &tracepb.AttributeValue_IntValue{IntValue: iValue}
-		case pdata.AttributeValueTypeDouble:
+		case pdata.ValueTypeDouble:
 			fValue, _ := strconv.ParseFloat(value, 64)
 			pbAttrib.Value = &tracepb.AttributeValue_DoubleValue{DoubleValue: fValue}
-		case pdata.AttributeValueTypeBool:
+		case pdata.ValueTypeBool:
 			bValue, _ := strconv.ParseBool(value)
 			pbAttrib.Value = &tracepb.AttributeValue_BoolValue{BoolValue: bValue}
 		default:

@@ -214,7 +214,7 @@ func (m *metricElasticsearchClusterHealth) recordDataPoint(start pdata.Timestamp
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.HealthStatus, pdata.NewAttributeValueString(healthStatusAttributeValue))
+	dp.Attributes().Insert(A.HealthStatus, pdata.NewValueString(healthStatusAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -318,7 +318,7 @@ func (m *metricElasticsearchClusterShards) recordDataPoint(start pdata.Timestamp
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.ShardState, pdata.NewAttributeValueString(shardStateAttributeValue))
+	dp.Attributes().Insert(A.ShardState, pdata.NewValueString(shardStateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -371,7 +371,7 @@ func (m *metricElasticsearchNodeCacheEvictions) recordDataPoint(start pdata.Time
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.CacheName, pdata.NewAttributeValueString(cacheNameAttributeValue))
+	dp.Attributes().Insert(A.CacheName, pdata.NewValueString(cacheNameAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -424,7 +424,7 @@ func (m *metricElasticsearchNodeCacheMemoryUsage) recordDataPoint(start pdata.Ti
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.CacheName, pdata.NewAttributeValueString(cacheNameAttributeValue))
+	dp.Attributes().Insert(A.CacheName, pdata.NewValueString(cacheNameAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -528,7 +528,7 @@ func (m *metricElasticsearchNodeClusterIo) recordDataPoint(start pdata.Timestamp
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Direction, pdata.NewAttributeValueString(directionAttributeValue))
+	dp.Attributes().Insert(A.Direction, pdata.NewValueString(directionAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -581,7 +581,7 @@ func (m *metricElasticsearchNodeDocuments) recordDataPoint(start pdata.Timestamp
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.DocumentState, pdata.NewAttributeValueString(documentStateAttributeValue))
+	dp.Attributes().Insert(A.DocumentState, pdata.NewValueString(documentStateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -787,7 +787,7 @@ func (m *metricElasticsearchNodeOperationsCompleted) recordDataPoint(start pdata
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Operation, pdata.NewAttributeValueString(operationAttributeValue))
+	dp.Attributes().Insert(A.Operation, pdata.NewValueString(operationAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -840,7 +840,7 @@ func (m *metricElasticsearchNodeOperationsTime) recordDataPoint(start pdata.Time
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Operation, pdata.NewAttributeValueString(operationAttributeValue))
+	dp.Attributes().Insert(A.Operation, pdata.NewValueString(operationAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -944,8 +944,8 @@ func (m *metricElasticsearchNodeThreadPoolTasksFinished) recordDataPoint(start p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.ThreadPoolName, pdata.NewAttributeValueString(threadPoolNameAttributeValue))
-	dp.Attributes().Insert(A.TaskState, pdata.NewAttributeValueString(taskStateAttributeValue))
+	dp.Attributes().Insert(A.ThreadPoolName, pdata.NewValueString(threadPoolNameAttributeValue))
+	dp.Attributes().Insert(A.TaskState, pdata.NewValueString(taskStateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -998,7 +998,7 @@ func (m *metricElasticsearchNodeThreadPoolTasksQueued) recordDataPoint(start pda
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.ThreadPoolName, pdata.NewAttributeValueString(threadPoolNameAttributeValue))
+	dp.Attributes().Insert(A.ThreadPoolName, pdata.NewValueString(threadPoolNameAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1051,8 +1051,8 @@ func (m *metricElasticsearchNodeThreadPoolThreads) recordDataPoint(start pdata.T
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.ThreadPoolName, pdata.NewAttributeValueString(threadPoolNameAttributeValue))
-	dp.Attributes().Insert(A.ThreadState, pdata.NewAttributeValueString(threadStateAttributeValue))
+	dp.Attributes().Insert(A.ThreadPoolName, pdata.NewValueString(threadPoolNameAttributeValue))
+	dp.Attributes().Insert(A.ThreadState, pdata.NewValueString(threadStateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1154,7 +1154,7 @@ func (m *metricJvmGcCollectionsCount) recordDataPoint(start pdata.Timestamp, ts 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.CollectorName, pdata.NewAttributeValueString(collectorNameAttributeValue))
+	dp.Attributes().Insert(A.CollectorName, pdata.NewValueString(collectorNameAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1207,7 +1207,7 @@ func (m *metricJvmGcCollectionsElapsed) recordDataPoint(start pdata.Timestamp, t
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.CollectorName, pdata.NewAttributeValueString(collectorNameAttributeValue))
+	dp.Attributes().Insert(A.CollectorName, pdata.NewValueString(collectorNameAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1503,7 +1503,7 @@ func (m *metricJvmMemoryPoolMax) recordDataPoint(start pdata.Timestamp, ts pdata
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.MemoryPoolName, pdata.NewAttributeValueString(memoryPoolNameAttributeValue))
+	dp.Attributes().Insert(A.MemoryPoolName, pdata.NewValueString(memoryPoolNameAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1554,7 +1554,7 @@ func (m *metricJvmMemoryPoolUsed) recordDataPoint(start pdata.Timestamp, ts pdat
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.MemoryPoolName, pdata.NewAttributeValueString(memoryPoolNameAttributeValue))
+	dp.Attributes().Insert(A.MemoryPoolName, pdata.NewValueString(memoryPoolNameAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1634,7 +1634,10 @@ func newMetricJvmThreadsCount(settings MetricSettings) metricJvmThreadsCount {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	startTime                                      pdata.Timestamp
+	startTime                                      pdata.Timestamp // start time that will be applied to all recorded data points.
+	metricsCapacity                                int             // maximum observed number of metrics per resource.
+	resourceCapacity                               int             // maximum observed number of resource attributes.
+	metricsBuffer                                  pdata.Metrics   // accumulates metrics data before emitting.
 	metricElasticsearchClusterDataNodes            metricElasticsearchClusterDataNodes
 	metricElasticsearchClusterHealth               metricElasticsearchClusterHealth
 	metricElasticsearchClusterNodes                metricElasticsearchClusterNodes
@@ -1679,6 +1682,7 @@ func WithStartTime(startTime pdata.Timestamp) metricBuilderOption {
 func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                                      pdata.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                                  pdata.NewMetrics(),
 		metricElasticsearchClusterDataNodes:            newMetricElasticsearchClusterDataNodes(settings.ElasticsearchClusterDataNodes),
 		metricElasticsearchClusterHealth:               newMetricElasticsearchClusterHealth(settings.ElasticsearchClusterHealth),
 		metricElasticsearchClusterNodes:                newMetricElasticsearchClusterNodes(settings.ElasticsearchClusterNodes),
@@ -1715,39 +1719,75 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 	return mb
 }
 
-// Emit appends generated metrics to a pdata.MetricsSlice and updates the internal state to be ready for recording
-// another set of data points. This function will be doing all transformations required to produce metric representation
-// defined in metadata and user settings, e.g. delta/cumulative translation.
-func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
-	mb.metricElasticsearchClusterDataNodes.emit(metrics)
-	mb.metricElasticsearchClusterHealth.emit(metrics)
-	mb.metricElasticsearchClusterNodes.emit(metrics)
-	mb.metricElasticsearchClusterShards.emit(metrics)
-	mb.metricElasticsearchNodeCacheEvictions.emit(metrics)
-	mb.metricElasticsearchNodeCacheMemoryUsage.emit(metrics)
-	mb.metricElasticsearchNodeClusterConnections.emit(metrics)
-	mb.metricElasticsearchNodeClusterIo.emit(metrics)
-	mb.metricElasticsearchNodeDocuments.emit(metrics)
-	mb.metricElasticsearchNodeFsDiskAvailable.emit(metrics)
-	mb.metricElasticsearchNodeHTTPConnections.emit(metrics)
-	mb.metricElasticsearchNodeOpenFiles.emit(metrics)
-	mb.metricElasticsearchNodeOperationsCompleted.emit(metrics)
-	mb.metricElasticsearchNodeOperationsTime.emit(metrics)
-	mb.metricElasticsearchNodeShardsSize.emit(metrics)
-	mb.metricElasticsearchNodeThreadPoolTasksFinished.emit(metrics)
-	mb.metricElasticsearchNodeThreadPoolTasksQueued.emit(metrics)
-	mb.metricElasticsearchNodeThreadPoolThreads.emit(metrics)
-	mb.metricJvmClassesLoaded.emit(metrics)
-	mb.metricJvmGcCollectionsCount.emit(metrics)
-	mb.metricJvmGcCollectionsElapsed.emit(metrics)
-	mb.metricJvmMemoryHeapCommitted.emit(metrics)
-	mb.metricJvmMemoryHeapMax.emit(metrics)
-	mb.metricJvmMemoryHeapUsed.emit(metrics)
-	mb.metricJvmMemoryNonheapCommitted.emit(metrics)
-	mb.metricJvmMemoryNonheapUsed.emit(metrics)
-	mb.metricJvmMemoryPoolMax.emit(metrics)
-	mb.metricJvmMemoryPoolUsed.emit(metrics)
-	mb.metricJvmThreadsCount.emit(metrics)
+// updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
+func (mb *MetricsBuilder) updateCapacity(rm pdata.ResourceMetrics) {
+	if mb.metricsCapacity < rm.InstrumentationLibraryMetrics().At(0).Metrics().Len() {
+		mb.metricsCapacity = rm.InstrumentationLibraryMetrics().At(0).Metrics().Len()
+	}
+	if mb.resourceCapacity < rm.Resource().Attributes().Len() {
+		mb.resourceCapacity = rm.Resource().Attributes().Len()
+	}
+}
+
+// ResourceOption applies changes to provided resource.
+type ResourceOption func(pdata.Resource)
+
+// EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
+// recording another set of data points as part of another resource. This function can be helpful when one scraper
+// needs to emit metrics from several resources. Otherwise calling this function is not required,
+// just `Emit` function can be called instead. Resource attributes should be provided as ResourceOption arguments.
+func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
+	rm := pdata.NewResourceMetrics()
+	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
+	for _, op := range ro {
+		op(rm.Resource())
+	}
+	ils := rm.InstrumentationLibraryMetrics().AppendEmpty()
+	ils.InstrumentationLibrary().SetName("otelcol/elasticsearchreceiver")
+	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
+	mb.metricElasticsearchClusterDataNodes.emit(ils.Metrics())
+	mb.metricElasticsearchClusterHealth.emit(ils.Metrics())
+	mb.metricElasticsearchClusterNodes.emit(ils.Metrics())
+	mb.metricElasticsearchClusterShards.emit(ils.Metrics())
+	mb.metricElasticsearchNodeCacheEvictions.emit(ils.Metrics())
+	mb.metricElasticsearchNodeCacheMemoryUsage.emit(ils.Metrics())
+	mb.metricElasticsearchNodeClusterConnections.emit(ils.Metrics())
+	mb.metricElasticsearchNodeClusterIo.emit(ils.Metrics())
+	mb.metricElasticsearchNodeDocuments.emit(ils.Metrics())
+	mb.metricElasticsearchNodeFsDiskAvailable.emit(ils.Metrics())
+	mb.metricElasticsearchNodeHTTPConnections.emit(ils.Metrics())
+	mb.metricElasticsearchNodeOpenFiles.emit(ils.Metrics())
+	mb.metricElasticsearchNodeOperationsCompleted.emit(ils.Metrics())
+	mb.metricElasticsearchNodeOperationsTime.emit(ils.Metrics())
+	mb.metricElasticsearchNodeShardsSize.emit(ils.Metrics())
+	mb.metricElasticsearchNodeThreadPoolTasksFinished.emit(ils.Metrics())
+	mb.metricElasticsearchNodeThreadPoolTasksQueued.emit(ils.Metrics())
+	mb.metricElasticsearchNodeThreadPoolThreads.emit(ils.Metrics())
+	mb.metricJvmClassesLoaded.emit(ils.Metrics())
+	mb.metricJvmGcCollectionsCount.emit(ils.Metrics())
+	mb.metricJvmGcCollectionsElapsed.emit(ils.Metrics())
+	mb.metricJvmMemoryHeapCommitted.emit(ils.Metrics())
+	mb.metricJvmMemoryHeapMax.emit(ils.Metrics())
+	mb.metricJvmMemoryHeapUsed.emit(ils.Metrics())
+	mb.metricJvmMemoryNonheapCommitted.emit(ils.Metrics())
+	mb.metricJvmMemoryNonheapUsed.emit(ils.Metrics())
+	mb.metricJvmMemoryPoolMax.emit(ils.Metrics())
+	mb.metricJvmMemoryPoolUsed.emit(ils.Metrics())
+	mb.metricJvmThreadsCount.emit(ils.Metrics())
+	if ils.Metrics().Len() > 0 {
+		mb.updateCapacity(rm)
+		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
+	}
+}
+
+// Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
+// recording another set of metrics. This function will be responsible for applying all the transformations required to
+// produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
+func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pdata.Metrics {
+	mb.EmitForResource(ro...)
+	metrics := pdata.NewMetrics()
+	mb.metricsBuffer.MoveTo(metrics)
+	return metrics
 }
 
 // RecordElasticsearchClusterDataNodesDataPoint adds a data point to elasticsearch.cluster.data_nodes metric.

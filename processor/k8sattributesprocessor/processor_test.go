@@ -1093,38 +1093,38 @@ func TestStartStop(t *testing.T) {
 func assertResourceHasStringAttribute(t *testing.T, r pdata.Resource, k, v string) {
 	got, ok := r.Attributes().Get(k)
 	require.True(t, ok, fmt.Sprintf("resource does not contain attribute %s", k))
-	assert.EqualValues(t, pdata.AttributeValueTypeString, got.Type(), "attribute %s is not of type string", k)
+	assert.EqualValues(t, pdata.ValueTypeString, got.Type(), "attribute %s is not of type string", k)
 	assert.EqualValues(t, v, got.StringVal(), "attribute %s is not equal to %s", k, v)
 }
 
 func Test_intFromAttribute(t *testing.T) {
 	tests := []struct {
 		name    string
-		attrVal pdata.AttributeValue
+		attrVal pdata.Value
 		wantInt int
 		wantErr bool
 	}{
 		{
 			name:    "wrong-type",
-			attrVal: pdata.NewAttributeValueBool(true),
+			attrVal: pdata.NewValueBool(true),
 			wantInt: 0,
 			wantErr: true,
 		},
 		{
 			name:    "wrong-string-number",
-			attrVal: pdata.NewAttributeValueString("NaN"),
+			attrVal: pdata.NewValueString("NaN"),
 			wantInt: 0,
 			wantErr: true,
 		},
 		{
 			name:    "valid-string-number",
-			attrVal: pdata.NewAttributeValueString("3"),
+			attrVal: pdata.NewValueString("3"),
 			wantInt: 3,
 			wantErr: false,
 		},
 		{
 			name:    "valid-int-number",
-			attrVal: pdata.NewAttributeValueInt(1),
+			attrVal: pdata.NewValueInt(1),
 			wantInt: 1,
 			wantErr: false,
 		},

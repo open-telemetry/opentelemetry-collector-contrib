@@ -114,7 +114,7 @@ var (
 type testData struct {
 	name            string
 	pages           []mockPrometheusResponse
-	attributes      pdata.AttributeMap
+	attributes      pdata.Map
 	validateScrapes bool
 	validateFunc    func(t *testing.T, td *testData, result []*pdata.ResourceMetrics)
 }
@@ -319,7 +319,7 @@ type dataPointExpectation struct {
 
 type testExpectation func(*testing.T, *pdata.ResourceMetrics)
 
-func doCompare(t *testing.T, name string, want pdata.AttributeMap, got *pdata.ResourceMetrics, expectations []testExpectation) {
+func doCompare(t *testing.T, name string, want pdata.Map, got *pdata.ResourceMetrics, expectations []testExpectation) {
 	t.Run(name, func(t *testing.T) {
 		assert.Equal(t, expectedScrapeMetricCount, countScrapeMetricsRM(got))
 		assert.Equal(t, want.Len(), got.Resource().Attributes().Len())

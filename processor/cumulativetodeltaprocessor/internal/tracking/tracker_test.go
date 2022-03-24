@@ -33,7 +33,7 @@ func TestMetricTracker_Convert(t *testing.T) {
 		MetricIsMonotonic:      true,
 		MetricName:             "",
 		MetricUnit:             "",
-		Attributes:             pdata.NewAttributeMap(),
+		Attributes:             pdata.NewMap(),
 	}
 	miIntSum := miSum
 	miIntSum.MetricValueType = pdata.MetricValueTypeInt

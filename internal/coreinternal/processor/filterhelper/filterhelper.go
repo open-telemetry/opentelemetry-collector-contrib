@@ -23,17 +23,17 @@ import (
 
 // NewAttributeValueRaw is used to convert the raw `value` from ActionKeyValue to the supported trace attribute values.
 // If error different than nil the return value is invalid. Calling any functions on the invalid value will cause a panic.
-func NewAttributeValueRaw(value interface{}) (pdata.AttributeValue, error) {
+func NewAttributeValueRaw(value interface{}) (pdata.Value, error) {
 	switch val := value.(type) {
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
-		return pdata.NewAttributeValueInt(cast.ToInt64(val)), nil
+		return pdata.NewValueInt(cast.ToInt64(val)), nil
 	case float32, float64:
-		return pdata.NewAttributeValueDouble(cast.ToFloat64(val)), nil
+		return pdata.NewValueDouble(cast.ToFloat64(val)), nil
 	case string:
-		return pdata.NewAttributeValueString(val), nil
+		return pdata.NewValueString(val), nil
 	case bool:
-		return pdata.NewAttributeValueBool(val), nil
+		return pdata.NewValueBool(val), nil
 	default:
-		return pdata.AttributeValue{}, fmt.Errorf("error unsupported value type \"%T\"", value)
+		return pdata.Value{}, fmt.Errorf("error unsupported value type \"%T\"", value)
 	}
 }

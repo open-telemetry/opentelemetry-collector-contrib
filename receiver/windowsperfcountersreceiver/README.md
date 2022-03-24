@@ -6,9 +6,6 @@ interface](https://docs.microsoft.com/en-us/windows/win32/perfctrs/using-the-pdh
 It is based on the [Telegraf Windows Performance Counters Input
 Plugin](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/win_perf_counters).
 
-Metrics will be generated with names and labels that match the performance
-counter path, i.e.
-
 - `Memory\Committed Bytes`
 - `Processor\% Processor Time`, with a datapoint for each `Instance` label = (`_Total`, `1`, `2`, `3`, ... )
 
@@ -25,11 +22,25 @@ be configured:
 ```yaml
 windowsperfcounters:
   collection_interval: <duration> # default = "1m"
+  metrics:
+    <metric name>:
+      description: <description>
+      unit: <unit type>
+      gauge:
+    <metric name>:
+      description: <description>
+      unit: <unit type>
+      sum:
+        aggregation: <cumulative or delta>
+        monotonic: <true or false>
   perfcounters:
     - object: <object name>
       instances: [<instance name>]*
       counters:
-        - <counter name>
+        - name: <counter name>
+          metric: <metric name>
+          attributes:
+            <key>: <value>
 ```
 
 *Note `instances` can have several special values depending on the type of
@@ -53,23 +64,40 @@ you can configure multiple `windowsperfcounters` receivers with different
 ```yaml
 receivers:
   windowsperfcounters/memory:
+    metrics:
+      bytes.committed:
+        description: the number of bytes committed to memory
+        unit: By
+        gauge:
     collection_interval: 30s
     perfcounters:
       - object: Memory
         counters:
-          - Committed Bytes
+          - name: Committed Bytes
+            metric: bytes.committed
 
   windowsperfcounters/processor:
     collection_interval: 1m
+    metrics:
+      processor.time:
+        description: active and idle time of the processor
+        unit: "%"
+        gauge:
     perfcounters:
       - object: "Processor"
         instances: "*"
         counters:
-          - "% Processor Time"
+          - name: "% Processor Time"
+            metric: processor.time
+            attributes:
+              state: active
       - object: "Processor"
         instances: [1, 2]
         counters:
-          - "% Idle Time"
+          - name: "% Idle Time"
+            metric: processor.time
+            attributes:
+              state: idle
 
 service:
   pipelines:
@@ -77,36 +105,52 @@ service:
       receivers: [windowsperfcounters/memory, windowsperfcounters/processor]
 ```
 
-### Changing metric format
+### Defining metric format
 
-To report metrics in the desired output format, it's recommended you use this
-receiver with the [metrics transform
-processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/metricstransformprocessor).
+To report metrics in the desired output format, define a metric and reference it in the corresponding counter, along with any applicable attributes. The metric's data type can either be `gauge` (default) or `sum`. 
+
+| Field Name  | Description                              | Value        | Default      |
+| --          | --                                       | --           | --           |
+| name        | The key for the metric.                  | string       | Counter Name |
+| description | definition of what the metric measures.  | string       |              |
+| unit        | what is being measured.                  | string       | `1`          |
+| sum         | representation of a sum metric.          | Sum Config   |              |
+| gauge       | representation of a gauge metric.        | Gauge Config |              |
+
+
+#### Sum Config
+
+| Field Name   | Description                                           | Value                           | Default |
+| --           | --                                                    | --                              | --      |
+| aggregation  | The type of aggregation temporality for the metric.   | [`cumulative` or `delta`]       |         |
+| monotonic    | whether or not the metric value can decrease.         | false                           |         |
+
+#### Gauge Config
+
+A `gauge` config currently accepts no settings. It is specified as an object for forwards compatibility.
 
 e.g. To output the `Memory/Committed Bytes` counter as a metric with the name
-`system.memory.usage`:
+`bytes.committed`:
 
 ```yaml
 receivers:
   windowsperfcounters:
+    metrics:
+      bytes.committed:
+        description: the number of bytes committed to memory
+        unit: By
+        gauge:
     collection_interval: 30s
     perfcounters:
     - object: Memory
       counters:
-        - Committed Bytes
-
-processors:
-  metricstransformprocessor:
-    transforms:
-      - metric_name: "Memory/Committed Bytes"
-        action: update
-        new_name: system.memory.usage
+        - name: Committed Bytes
+          metric: bytes.committed
 
 service:
   pipelines:
     metrics:
       receivers: [windowsperfcounters]
-      processors: [metricstransformprocessor]
 ```
 
 ## Recommended configuration for common applications

@@ -1,0 +1,31 @@
+receivers:
+  nop:
+
+processors:
+  routing:
+    attribute_source: resource
+    from_attribute: X-Tenant
+    table:
+      - value: acme
+        exporters:
+          - otlp/traces
+
+exporters:
+  otlp/metrics:
+  otlp/traces:
+
+service:
+  pipelines:
+    traces:
+      receivers:
+        - nop
+      processors:
+        - routing
+      exporters:
+        - otlp/traces
+    metrics:
+      receivers:
+        - nop
+      processors: []
+      exporters:
+        - otlp/metrics
