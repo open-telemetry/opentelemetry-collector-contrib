@@ -21,5 +21,5 @@ import (
 )
 
 func onTraceData(context context.Context, traceData pdata.Traces) error {
-	return nill
+	return nil
 }
