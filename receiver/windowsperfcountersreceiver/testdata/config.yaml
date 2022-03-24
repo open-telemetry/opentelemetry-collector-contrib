@@ -1,19 +1,37 @@
 receivers:
   windowsperfcounters:
+    metrics:
+      metric:
+        description: desc
+        unit: "1"
+        gauge:
     perfcounters:
       - object: "object"
         counters:
-          - "counter"
+          - name: counter1
+            metric: metric
   windowsperfcounters/customname:
+    metrics:
+      metric:
+        description: desc
+        unit: "1"
+        gauge:
+      metric2:
+        description: desc
+        unit: "1"
+        gauge:
     collection_interval: 30s
     perfcounters:
-      - object: "object1"
+      - object: object1
         counters:
-          - "counter1"
-      - object: "object2"
+          - name: counter1
+            metric: metric
+      - object: object2
         counters:
-          - "counter1"
-          - "counter2"
+          - name: counter1
+            metric: metric
+          - name: counter2
+            metric: metric2
 
 processors:
   nop:

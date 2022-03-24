@@ -57,7 +57,7 @@ func ContainerStatsToMetrics(
 	return md
 }
 
-func updateConfiguredResourceAttributes(resourceAttr pdata.AttributeMap, container docker.Container, config *Config) {
+func updateConfiguredResourceAttributes(resourceAttr pdata.Map, container docker.Container, config *Config) {
 	for k, label := range config.EnvVarsToMetricLabels {
 		if v := container.EnvMap[k]; v != "" {
 			resourceAttr.UpsertString(label, v)
@@ -276,7 +276,7 @@ func populateMetricMetadata(dest pdata.Metric, name string, unit string, ty pdat
 	dest.SetDataType(ty)
 }
 
-func populateAttributes(dest pdata.AttributeMap, labelKeys []string, labelValues []string) {
+func populateAttributes(dest pdata.Map, labelKeys []string, labelValues []string) {
 	for i := range labelKeys {
 		dest.UpsertString(labelKeys[i], labelValues[i])
 	}

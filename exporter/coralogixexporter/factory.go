@@ -37,10 +37,10 @@ func createDefaultConfig() config.Exporter {
 		ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typestr)),
 		QueueSettings:      exporterhelper.NewDefaultQueueSettings(),
 		RetrySettings:      exporterhelper.NewDefaultRetrySettings(),
+		TimeoutSettings:    exporterhelper.NewDefaultTimeoutSettings(),
 		GRPCClientSettings: configgrpc.GRPCClientSettings{Endpoint: "https://"},
 		PrivateKey:         "",
 		AppName:            "",
-		SubSystem:          "",
 	}
 }
 
@@ -54,6 +54,7 @@ func createTraceExporter(_ context.Context, set component.ExporterCreateSettings
 		exporter.tracesPusher,
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithTimeout(cfg.TimeoutSettings),
 		exporterhelper.WithStart(exporter.client.startConnection),
 	)
 }

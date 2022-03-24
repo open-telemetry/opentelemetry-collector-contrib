@@ -1,9 +1,29 @@
 # Changelog
 
 ## Unreleased
+- `sigv4authextension`: Enable component (#8518)
 
 ### 💡 Enhancements 💡
 
+- `k8seventsreceiver`: Add Api_version and resource_version (#8539)
+
+### 🛑 Breaking changes 🛑
+
+- `windowsperfcountersreceiver`: Added metrics configuration (#8376)
+
+### 🚩 Deprecations 🚩
+
+- `datadogexporter`: Deprecate `OnlyMetadata` method from `Config` struct (#8359)
+
+- `resourcedetectionprocessor`: Add attribute allowlist (#8547)
+
+## v0.47.0
+
+### 💡 Enhancements 💡
+
+- `googlecloudexporter`: Add Validate method in config (#8559)
+- `attributesprocessor`: Add convert action (#7930)
+- `attributesprocessor`: Add metric support (#8111)
 - `prometheusremotewriteexporter`: Write-Ahead Log support enabled (#7304)
 - `hostreceiver/filesystemscraper`: Add filesystem utilization (#8027)
 - `hostreceiver/pagingscraper`: Add paging.utilization (#6221)
@@ -17,19 +37,49 @@
 - `influxdbexporter`: Add support for cumulative, non-monotonic metrics. (#8348)
 - `oauth2clientauthextension`: Add support for EndpointParams (#7307)
 - Add `NewMetricData` function to `MetricsBuilder` to consistently set instrumentation library name (#8255)
+- `googlecloudpubsubreceiver` Added implementation of Google Cloud Pubsub receiver. (#8391)
+- `googlecloudpubsubexporter` Added implementation of Google Cloud Pubsub exporter. (#8391)
+- `coralogixexporter` Allow exporter timeout to be configured (#7957)
+- `prometheusremotewriteexporter` support adding trace id and span id attached to exemplars (#8380)
+- `influxdbexporter`: accept histogram metric missing infinity bucket. (#8462)
+- `skywalkingreceiver`: Added implementation of Skywalking receiver. (#8549)
+- `prometheusreceiver`: Fix staleness bug for histograms and summaries (#8561)
 
 ### 🛑 Breaking changes 🛑
 
 - `mongodbatlasreceiver`: rename mislabeled attribute `memory_state` to correct `disk_status` on partition disk metrics (#7747)
+- `mongodbatlasreceiver`: Correctly set initial lookback for querying mongodb atlas api (#8246)
 - `nginxreceiver`: instrumentation name updated from `otelcol/nginx` to `otelcol/nginxreceiver` (#8255)
 - `postgresqlreceiver`: instrumentation name updated from `otelcol/postgresql` to `otelcol/postgresqlreceiver` (#8255)
 - `redisreceiver`: instrumentation name updated from `otelcol/redis` to `otelcol/redisreceiver` (#8255)
+- `apachereceiver`: instrumentation name updated from `otelcol/apache` to `otelcol/apachereceiver` ()
+- `couchdbreceiver`: instrumentation name updated from `otelcol/couchdb` to `otelcol/couchdbreceiver` (#8366)
+- `prometheusreceiver` Change resource attributes on metrics: `instance` -> `service.instance.id`, `host.name` -> `net.host.name`,  `port` -> `net.host.port`, `scheme` -> `http.scheme`, `job` removed (#8266)
+- `prometheusremotewriteexporter` Use `service.*` resource attributes instead of `job` and `instance` resource attributes when adding job and instance labels to metrics (#8266)
+- `mysqlreceiver`: instrumentation name updated from `otel/mysql` to `otelcol/mysqlreceiver` (#8387)
+- `zookeeperreceiver`: instrumentation name updated from `otelcol/zookeeper` to `otelcol/zookeeperreceiver` (#8389)
+- `coralogixexporter`: Create dynamic subsystem name (#7957)
+  - Deprecate configuration changed. Dynamic subsystem name from traces service name property.
+- `rabbitmqreceiver`: instrumentation name updated from `otelcol/rabbitmq` to `otelcol/rabbitmqreceiver` (#8400)
 
 ### 🧰 Bug fixes 🧰
 
 - `zipkinexporter`: Set "error" tag value when status is set to error (#8187)
+- `prometheusremotewriteexporter`: Correctly handle metric labels which collide after sanitization (#8378)
+- `prometheusremotewriteexporter`: Drop labels when exemplar attributes exceed the max number of characters (#8379)
+- `k8sclusterreceiver`: Add support to enable k8s node and container cpu metrics to be reported as double values (#8245)
+  - Use "--feature-gates=receiver.k8sclusterreceiver.reportCpuMetricsAsDouble" to enable reporting node and container
+    cpu metrics as a double values.
+- `tanzuobservabilityexporter`: Fix a typo in Instrumentation Library name and version tags (#8384)
+- `logreceivers`: Fix an issue where receiver would sometimes fail to build using Go 1.18 (#8521)
+- `awsxrayreceiver`: Add defaults for optional stack frame parameters (#8790)
+
+### 🚩 Deprecations 🚩
+
+- `datadogexporter`: Deprecate automatic environment variable detection (#8397)
 
 ### 🚀 New components 🚀
+- `sigv4authextension`: New Component: Sigv4 Authenticator Extension (#8263)
 
 ## v0.46.0
 
@@ -180,6 +230,8 @@
 ### 🛑 Breaking changes 🛑
 
 - `resourcedetectionprocessor`: Update `os.type` attribute values according to semantic conventions (#7544)
+- `awsprometheusremotewriteexporter`: Deprecation notice; may be removed after v0.49.0
+  - Switch to using the `prometheusremotewriteexporter` + `sigv4authextension` instead
 
 ### 🧰 Bug fixes 🧰
 
@@ -298,6 +350,7 @@
 - `mongodbreceiver`: Establish codebase for MongoDB metrics receiver (#6972)
 - `couchbasereceiver`: Establish codebase for Couchbase metrics receiver (#7046)
 - `dbstorage`: New experimental dbstorage extension (#7061)
+- `redactionprocessor`: Remove sensitive data from traces (#6495)
 
 ### 🧰 Bug fixes 🧰
 

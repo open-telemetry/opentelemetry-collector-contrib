@@ -181,12 +181,12 @@ func TestConvert(t *testing.T) {
 	rls := pLogs.ResourceLogs().At(0)
 
 	if resAtts := rls.Resource().Attributes(); assert.Equal(t, 5, resAtts.Len()) {
-		m := pdata.NewAttributeMap()
+		m := pdata.NewMap()
 		m.InsertBool("bool", true)
 		m.InsertInt("int", 123)
 		m.InsertDouble("double", 12.34)
 		m.InsertString("string", "hello")
-		m.Insert("object", pdata.NewAttributeValueMap())
+		m.Insert("object", pdata.NewValueMap())
 		assert.EqualValues(t, m.Sort(), resAtts.Sort())
 	}
 
@@ -202,17 +202,17 @@ func TestConvert(t *testing.T) {
 	assert.Equal(t, "Error", lr.SeverityText())
 
 	if atts := lr.Attributes(); assert.Equal(t, 5, atts.Len()) {
-		m := pdata.NewAttributeMap()
+		m := pdata.NewMap()
 		m.InsertBool("bool", true)
 		m.InsertInt("int", 123)
 		m.InsertDouble("double", 12.34)
 		m.InsertString("string", "hello")
-		m.Insert("object", pdata.NewAttributeValueMap())
+		m.Insert("object", pdata.NewValueMap())
 		assert.EqualValues(t, m.Sort(), atts.Sort())
 	}
 
-	if assert.Equal(t, pdata.AttributeValueTypeMap, lr.Body().Type()) {
-		m := pdata.NewAttributeMap()
+	if assert.Equal(t, pdata.ValueTypeMap, lr.Body().Type()) {
+		m := pdata.NewMap()
 		// Don't include a nested object because AttributeValueMap sorting
 		// doesn't sort recursively.
 		m.InsertBool("bool", true)
@@ -582,7 +582,7 @@ func TestConvertMetadata(t *testing.T) {
 	require.Equal(t, "hello", attVal.StringVal())
 
 	bod := result.Body()
-	require.Equal(t, pdata.AttributeValueTypeBool, bod.Type())
+	require.Equal(t, pdata.ValueTypeBool, bod.Type())
 	require.True(t, bod.BoolVal())
 }
 
@@ -736,7 +736,7 @@ func TestConvertNestedMapBody(t *testing.T) {
 	require.Equal(t, fmt.Sprintf("%v", unknownType), unknownAttVal.StringVal())
 }
 
-func anyToBody(body interface{}) pdata.AttributeValue {
+func anyToBody(body interface{}) pdata.Value {
 	entry := entry.New()
 	entry.Body = body
 	return convertAndDrill(entry).Body()

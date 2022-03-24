@@ -19,26 +19,31 @@ import (
 	"fmt"
 	"io"
 
+	"go.opentelemetry.io/collector/consumer"
 	"google.golang.org/protobuf/proto"
 	common "skywalking.apache.org/repo/goapi/collect/common/v3"
 	agent "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
 )
 
 type traceSegmentReportService struct {
+	sr *swReceiver
 	agent.UnimplementedTraceSegmentReportServiceServer
 }
 
 func (s *traceSegmentReportService) Collect(stream agent.TraceSegmentReportService_CollectServer) error {
 	for {
-		var recData []byte
-		err := stream.RecvMsg(recData)
-		if err == io.EOF {
-			return stream.SendAndClose(&common.Commands{})
-		}
+		segmentObject, err := stream.Recv()
 		if err != nil {
+			if err == io.EOF {
+				return stream.SendAndClose(&common.Commands{})
+			}
 			return err
 		}
-		//TODO: convert to otel trace.
+
+		err = consumeTraces(context.Background(), segmentObject, s.sr.nextConsumer)
+		if err != nil {
+			return stream.SendAndClose(&common.Commands{})
+		}
 	}
 }
 
@@ -48,8 +53,19 @@ func (s *traceSegmentReportService) CollectInSync(ctx context.Context, segments 
 		if err != nil {
 			fmt.Printf("cannot marshal segemnt from sync, %v", err)
 		}
-		//TODO: convert to otel trace.
+		err = consumeTraces(ctx, segment, s.sr.nextConsumer)
+		if err != nil {
+			fmt.Printf("cannot consume traces, %v", err)
+		}
 		fmt.Printf("receivec data:%s", marshaledSegment)
 	}
 	return &common.Commands{}, nil
+}
+
+func consumeTraces(ctx context.Context, segment *agent.SegmentObject, consumer consumer.Traces) error {
+	if segment == nil {
+		return nil
+	}
+	ptd := SkywalkingToTraces(segment)
+	return consumer.ConsumeTraces(ctx, ptd)
 }

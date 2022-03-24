@@ -2261,8 +2261,8 @@ func BenchmarkTranslateCWMetricToEMF(b *testing.B) {
 type testMetric struct {
 	metricNames          []string
 	metricValues         [][]float64
-	resourceAttributeMap map[string]pdata.AttributeValue
-	attributeMap         map[string]pdata.AttributeValue
+	resourceAttributeMap map[string]interface{}
+	attributeMap         map[string]interface{}
 }
 
 type logGroupStreamTest struct {
@@ -2292,9 +2292,9 @@ var (
 			inputMetrics: generateTestMetrics(testMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
 				metricValues: [][]float64{{100}, {4}},
-				resourceAttributeMap: map[string]pdata.AttributeValue{
-					"ClusterName": pdata.NewAttributeValueString("test-cluster"),
-					"PodName":     pdata.NewAttributeValueString("test-pod"),
+				resourceAttributeMap: map[string]interface{}{
+					"ClusterName": "test-cluster",
+					"PodName":     "test-pod",
 				},
 			}),
 			inLogGroupName:   "test-log-group-{ClusterName}",
@@ -2307,9 +2307,9 @@ var (
 			inputMetrics: generateTestMetrics(testMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
 				metricValues: [][]float64{{100}, {4}},
-				resourceAttributeMap: map[string]pdata.AttributeValue{
-					"ClusterName": pdata.NewAttributeValueString("test-cluster"),
-					"PodName":     pdata.NewAttributeValueString("test-pod"),
+				resourceAttributeMap: map[string]interface{}{
+					"ClusterName": "test-cluster",
+					"PodName":     "test-pod",
 				},
 			}),
 			inLogGroupName:   "test-log-group",
@@ -2322,9 +2322,9 @@ var (
 			inputMetrics: generateTestMetrics(testMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
 				metricValues: [][]float64{{100}, {4}},
-				attributeMap: map[string]pdata.AttributeValue{
-					"ClusterName": pdata.NewAttributeValueString("test-cluster"),
-					"PodName":     pdata.NewAttributeValueString("test-pod"),
+				attributeMap: map[string]interface{}{
+					"ClusterName": "test-cluster",
+					"PodName":     "test-pod",
 				},
 			}),
 			inLogGroupName:   "test-log-group-{ClusterName}",
@@ -2337,9 +2337,9 @@ var (
 			inputMetrics: generateTestMetrics(testMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
 				metricValues: [][]float64{{100}, {4}},
-				attributeMap: map[string]pdata.AttributeValue{
-					"ClusterName": pdata.NewAttributeValueString("test-cluster"),
-					"PodName":     pdata.NewAttributeValueString("test-pod"),
+				attributeMap: map[string]interface{}{
+					"ClusterName": "test-cluster",
+					"PodName":     "test-pod",
 				},
 			}),
 			inLogGroupName:   "test-log-group",
@@ -2352,11 +2352,11 @@ var (
 			inputMetrics: generateTestMetrics(testMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
 				metricValues: [][]float64{{100}, {4}},
-				resourceAttributeMap: map[string]pdata.AttributeValue{
-					"ClusterName": pdata.NewAttributeValueString("test-cluster"),
+				resourceAttributeMap: map[string]interface{}{
+					"ClusterName": "test-cluster",
 				},
-				attributeMap: map[string]pdata.AttributeValue{
-					"PodName": pdata.NewAttributeValueString("test-pod"),
+				attributeMap: map[string]interface{}{
+					"PodName": "test-pod",
 				},
 			}),
 			inLogGroupName:   "test-log-group-{ClusterName}",
@@ -2380,8 +2380,8 @@ var (
 			inputMetrics: generateTestMetrics(testMetric{
 				metricNames:  []string{"metric_1", "metric_2"},
 				metricValues: [][]float64{{100}, {4}},
-				attributeMap: map[string]pdata.AttributeValue{
-					"PodName": pdata.NewAttributeValueString("test-pod"),
+				attributeMap: map[string]interface{}{
+					"PodName": "test-pod",
 				},
 			}),
 			inLogGroupName:   "test-log-group-{ClusterName}",
@@ -2426,7 +2426,7 @@ func generateTestMetrics(tm testMetric) pdata.Metrics {
 	now := time.Now()
 
 	rm := md.ResourceMetrics().AppendEmpty()
-	pdata.NewAttributeMapFromMap(tm.resourceAttributeMap).CopyTo(rm.Resource().Attributes())
+	pdata.NewMapFromRaw(tm.resourceAttributeMap).CopyTo(rm.Resource().Attributes())
 	ms := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics()
 
 	for i, name := range tm.metricNames {
@@ -2437,7 +2437,7 @@ func generateTestMetrics(tm testMetric) pdata.Metrics {
 			dp := m.Gauge().DataPoints().AppendEmpty()
 			dp.SetTimestamp(pdata.NewTimestampFromTime(now.Add(10 * time.Second)))
 			dp.SetDoubleVal(value)
-			pdata.NewAttributeMapFromMap(tm.attributeMap).CopyTo(dp.Attributes())
+			pdata.NewMapFromRaw(tm.attributeMap).CopyTo(dp.Attributes())
 		}
 	}
 	return md

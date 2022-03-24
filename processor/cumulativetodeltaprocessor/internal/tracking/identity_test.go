@@ -30,7 +30,7 @@ func TestMetricIdentity_Write(t *testing.T) {
 	il.SetName("ilm_name")
 	il.SetVersion("ilm_version")
 
-	attributes := pdata.NewAttributeMap()
+	attributes := pdata.NewMap()
 	attributes.InsertString("label", "value")
 	type fields struct {
 		Resource               pdata.Resource
@@ -40,7 +40,7 @@ func TestMetricIdentity_Write(t *testing.T) {
 		MetricName             string
 		MetricUnit             string
 		StartTimestamp         pdata.Timestamp
-		Attributes             pdata.AttributeMap
+		Attributes             pdata.Map
 		MetricValueType        pdata.MetricValueType
 	}
 	tests := []struct {
@@ -126,7 +126,7 @@ func TestMetricIdentity_IsFloatVal(t *testing.T) {
 			mi := &MetricIdentity{
 				Resource:               pdata.NewResource(),
 				InstrumentationLibrary: pdata.NewInstrumentationLibrary(),
-				Attributes:             pdata.NewAttributeMap(),
+				Attributes:             pdata.NewMap(),
 				MetricDataType:         pdata.MetricDataTypeSum,
 				MetricValueType:        tt.fields.MetricValueType,
 			}
@@ -166,7 +166,7 @@ func TestMetricIdentity_IsSupportedMetricType(t *testing.T) {
 			mi := &MetricIdentity{
 				Resource:               pdata.NewResource(),
 				InstrumentationLibrary: pdata.NewInstrumentationLibrary(),
-				Attributes:             pdata.NewAttributeMap(),
+				Attributes:             pdata.NewMap(),
 				MetricDataType:         tt.fields.MetricDataType,
 			}
 			if got := mi.IsSupportedMetricType(); got != tt.want {

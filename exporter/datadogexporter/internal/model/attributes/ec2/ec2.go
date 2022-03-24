@@ -48,7 +48,7 @@ func isDefaultHostname(hostname string) bool {
 
 // HostnameFromAttributes gets a valid hostname from labels
 // if available
-func HostnameFromAttributes(attrs pdata.AttributeMap) (string, bool) {
+func HostnameFromAttributes(attrs pdata.Map) (string, bool) {
 	hostName, ok := attrs.Get(conventions.AttributeHostName)
 	if ok && !isDefaultHostname(hostName.StringVal()) {
 		return hostName.StringVal(), true
@@ -63,7 +63,7 @@ func HostnameFromAttributes(attrs pdata.AttributeMap) (string, bool) {
 
 // HostInfoFromAttributes gets EC2 host info from attributes following
 // OpenTelemetry semantic conventions
-func HostInfoFromAttributes(attrs pdata.AttributeMap) (hostInfo *HostInfo) {
+func HostInfoFromAttributes(attrs pdata.Map) (hostInfo *HostInfo) {
 	hostInfo = &HostInfo{}
 
 	if hostID, ok := attrs.Get(conventions.AttributeHostID); ok {
@@ -74,7 +74,7 @@ func HostInfoFromAttributes(attrs pdata.AttributeMap) (hostInfo *HostInfo) {
 		hostInfo.EC2Hostname = hostName.StringVal()
 	}
 
-	attrs.Range(func(k string, v pdata.AttributeValue) bool {
+	attrs.Range(func(k string, v pdata.Value) bool {
 		if strings.HasPrefix(k, ec2TagPrefix) {
 			tag := fmt.Sprintf("%s:%s", strings.TrimPrefix(k, ec2TagPrefix), v.StringVal())
 			hostInfo.EC2Tags = append(hostInfo.EC2Tags, tag)
@@ -86,10 +86,10 @@ func HostInfoFromAttributes(attrs pdata.AttributeMap) (hostInfo *HostInfo) {
 }
 
 // ClusterNameFromAttributes gets the AWS cluster name from attributes
-func ClusterNameFromAttributes(attrs pdata.AttributeMap) (clusterName string, ok bool) {
+func ClusterNameFromAttributes(attrs pdata.Map) (clusterName string, ok bool) {
 	// Get cluster name from tag keys
 	// https://github.com/DataDog/datadog-agent/blob/1c94b11/pkg/util/ec2/ec2.go#L238
-	attrs.Range(func(k string, _ pdata.AttributeValue) bool {
+	attrs.Range(func(k string, _ pdata.Value) bool {
 		if strings.HasPrefix(k, clusterTagPrefix) {
 			clusterName = strings.Split(k, "/")[2]
 			ok = true

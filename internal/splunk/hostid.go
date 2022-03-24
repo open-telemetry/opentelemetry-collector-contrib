@@ -113,7 +113,7 @@ func ResourceToHostID(res pdata.Resource) (HostID, bool) {
 	return HostID{}, false
 }
 
-func azureID(attrs pdata.AttributeMap, cloudAccount string) string {
+func azureID(attrs pdata.Map, cloudAccount string) string {
 	var resourceGroupName string
 	if attr, ok := attrs.Get("azure.resourcegroup.name"); ok {
 		resourceGroupName = attr.StringVal()

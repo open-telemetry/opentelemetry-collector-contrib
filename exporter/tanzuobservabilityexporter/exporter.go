@@ -42,8 +42,8 @@ const (
 	labelDroppedEventsCount = "otel.dropped_events_count"
 	labelDroppedLinksCount  = "otel.dropped_links_count"
 	labelDroppedAttrsCount  = "otel.dropped_attributes_count"
-	labelOtelSpanName       = "otel.span.name"
-	labelOtelSpanVersion    = "otel.span.version"
+	labelOtelScopeName      = "otel.scope.name"
+	labelOtelScopeVersion   = "otel.scope.version"
 )
 
 // spanSender Interface for sending tracing spans to Tanzu Observability
@@ -124,11 +124,11 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td pdata.Traces) err
 					}
 
 					if libraryName != "" {
-						transformedSpan.Tags[labelOtelSpanName] = libraryName
+						transformedSpan.Tags[labelOtelScopeName] = libraryName
 					}
 
 					if libraryVersion != "" {
-						transformedSpan.Tags[labelOtelSpanVersion] = libraryVersion
+						transformedSpan.Tags[labelOtelScopeVersion] = libraryVersion
 					}
 
 					if err := e.recordSpan(transformedSpan); err != nil {

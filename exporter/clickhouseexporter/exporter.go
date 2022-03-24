@@ -108,10 +108,10 @@ func (e *clickhouseExporter) pushLogsData(ctx context.Context, ld pdata.Logs) er
 	return err
 }
 
-func attributesToSlice(attributes pdata.AttributeMap) ([]string, []string) {
+func attributesToSlice(attributes pdata.Map) ([]string, []string) {
 	keys := make([]string, 0, attributes.Len())
 	values := make([]string, 0, attributes.Len())
-	attributes.Range(func(k string, v pdata.AttributeValue) bool {
+	attributes.Range(func(k string, v pdata.Value) bool {
 		keys = append(keys, formatKey(k))
 		values = append(values, v.AsString())
 		return true

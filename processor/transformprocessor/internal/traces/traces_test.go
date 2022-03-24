@@ -35,7 +35,7 @@ var (
 func Test_newPathGetSetter(t *testing.T) {
 	refSpan, _, _ := createTelemetry()
 
-	newAttrs := pdata.NewAttributeMap()
+	newAttrs := pdata.NewMap()
 	newAttrs.UpsertString("hello", "world")
 
 	newEvents := pdata.NewSpanEventSlice()
@@ -47,19 +47,19 @@ func Test_newPathGetSetter(t *testing.T) {
 	newStatus := pdata.NewSpanStatus()
 	newStatus.SetMessage("new status")
 
-	newArrStr := pdata.NewAttributeValueArray()
+	newArrStr := pdata.NewValueSlice()
 	newArrStr.SliceVal().AppendEmpty().SetStringVal("new")
 
-	newArrBool := pdata.NewAttributeValueArray()
+	newArrBool := pdata.NewValueSlice()
 	newArrBool.SliceVal().AppendEmpty().SetBoolVal(false)
 
-	newArrInt := pdata.NewAttributeValueArray()
+	newArrInt := pdata.NewValueSlice()
 	newArrInt.SliceVal().AppendEmpty().SetIntVal(20)
 
-	newArrFloat := pdata.NewAttributeValueArray()
+	newArrFloat := pdata.NewValueSlice()
 	newArrFloat.SliceVal().AppendEmpty().SetDoubleVal(2.0)
 
-	newArrBytes := pdata.NewAttributeValueArray()
+	newArrBytes := pdata.NewValueSlice()
 	newArrBytes.SliceVal().AppendEmpty().SetBytesVal([]byte{9, 6, 4})
 
 	tests := []struct {
@@ -265,7 +265,7 @@ func Test_newPathGetSetter(t *testing.T) {
 					MapKey: strp("arr_str"),
 				},
 			},
-			orig: func() pdata.AttributeValueSlice {
+			orig: func() pdata.Slice {
 				val, _ := refSpan.Attributes().Get("arr_str")
 				return val.SliceVal()
 			}(),
@@ -282,7 +282,7 @@ func Test_newPathGetSetter(t *testing.T) {
 					MapKey: strp("arr_bool"),
 				},
 			},
-			orig: func() pdata.AttributeValueSlice {
+			orig: func() pdata.Slice {
 				val, _ := refSpan.Attributes().Get("arr_bool")
 				return val.SliceVal()
 			}(),
@@ -299,7 +299,7 @@ func Test_newPathGetSetter(t *testing.T) {
 					MapKey: strp("arr_int"),
 				},
 			},
-			orig: func() pdata.AttributeValueSlice {
+			orig: func() pdata.Slice {
 				val, _ := refSpan.Attributes().Get("arr_int")
 				return val.SliceVal()
 			}(),
@@ -316,7 +316,7 @@ func Test_newPathGetSetter(t *testing.T) {
 					MapKey: strp("arr_float"),
 				},
 			},
-			orig: func() pdata.AttributeValueSlice {
+			orig: func() pdata.Slice {
 				val, _ := refSpan.Attributes().Get("arr_float")
 				return val.SliceVal()
 			}(),
@@ -333,7 +333,7 @@ func Test_newPathGetSetter(t *testing.T) {
 					MapKey: strp("arr_bytes"),
 				},
 			},
-			orig: func() pdata.AttributeValueSlice {
+			orig: func() pdata.Slice {
 				val, _ := refSpan.Attributes().Get("arr_bytes")
 				return val.SliceVal()
 			}(),
@@ -571,7 +571,7 @@ func Test_newPathGetSetter(t *testing.T) {
 					MapKey: strp("arr_str"),
 				},
 			},
-			orig: func() pdata.AttributeValueSlice {
+			orig: func() pdata.Slice {
 				val, _ := refSpan.Attributes().Get("arr_str")
 				return val.SliceVal()
 			}(),
@@ -591,7 +591,7 @@ func Test_newPathGetSetter(t *testing.T) {
 					MapKey: strp("arr_bool"),
 				},
 			},
-			orig: func() pdata.AttributeValueSlice {
+			orig: func() pdata.Slice {
 				val, _ := refSpan.Attributes().Get("arr_bool")
 				return val.SliceVal()
 			}(),
@@ -611,7 +611,7 @@ func Test_newPathGetSetter(t *testing.T) {
 					MapKey: strp("arr_int"),
 				},
 			},
-			orig: func() pdata.AttributeValueSlice {
+			orig: func() pdata.Slice {
 				val, _ := refSpan.Attributes().Get("arr_int")
 				return val.SliceVal()
 			}(),
@@ -631,7 +631,7 @@ func Test_newPathGetSetter(t *testing.T) {
 					MapKey: strp("arr_float"),
 				},
 			},
-			orig: func() pdata.AttributeValueSlice {
+			orig: func() pdata.Slice {
 				val, _ := refSpan.Attributes().Get("arr_float")
 				return val.SliceVal()
 			}(),
@@ -651,7 +651,7 @@ func Test_newPathGetSetter(t *testing.T) {
 					MapKey: strp("arr_bytes"),
 				},
 			},
-			orig: func() pdata.AttributeValueSlice {
+			orig: func() pdata.Slice {
 				val, _ := refSpan.Attributes().Get("arr_bytes")
 				return val.SliceVal()
 			}(),
@@ -699,27 +699,27 @@ func createTelemetry() (pdata.Span, pdata.InstrumentationLibrary, pdata.Resource
 	span.Attributes().UpsertDouble("double", 1.2)
 	span.Attributes().UpsertBytes("bytes", []byte{1, 3, 2})
 
-	arrStr := pdata.NewAttributeValueArray()
+	arrStr := pdata.NewValueSlice()
 	arrStr.SliceVal().AppendEmpty().SetStringVal("one")
 	arrStr.SliceVal().AppendEmpty().SetStringVal("two")
 	span.Attributes().Upsert("arr_str", arrStr)
 
-	arrBool := pdata.NewAttributeValueArray()
+	arrBool := pdata.NewValueSlice()
 	arrBool.SliceVal().AppendEmpty().SetBoolVal(true)
 	arrBool.SliceVal().AppendEmpty().SetBoolVal(false)
 	span.Attributes().Upsert("arr_bool", arrBool)
 
-	arrInt := pdata.NewAttributeValueArray()
+	arrInt := pdata.NewValueSlice()
 	arrInt.SliceVal().AppendEmpty().SetIntVal(2)
 	arrInt.SliceVal().AppendEmpty().SetIntVal(3)
 	span.Attributes().Upsert("arr_int", arrInt)
 
-	arrFloat := pdata.NewAttributeValueArray()
+	arrFloat := pdata.NewValueSlice()
 	arrFloat.SliceVal().AppendEmpty().SetDoubleVal(1.0)
 	arrFloat.SliceVal().AppendEmpty().SetDoubleVal(2.0)
 	span.Attributes().Upsert("arr_float", arrFloat)
 
-	arrBytes := pdata.NewAttributeValueArray()
+	arrBytes := pdata.NewValueSlice()
 	arrBytes.SliceVal().AppendEmpty().SetBytesVal([]byte{1, 2, 3})
 	arrBytes.SliceVal().AppendEmpty().SetBytesVal([]byte{2, 3, 4})
 	span.Attributes().Upsert("arr_bytes", arrBytes)

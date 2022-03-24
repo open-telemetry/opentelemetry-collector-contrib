@@ -139,20 +139,20 @@ func TestNonMatchGaugeDataPointByMetricAndHasLabel(t *testing.T) {
 
 func TestMatchGaugeDataPointByMetricAndHasLabel(t *testing.T) {
 	expression := `MetricName == 'my.metric' && HasLabel("foo")`
-	assert.True(t, testMatchGauge(t, "my.metric", expression, map[string]pdata.AttributeValue{"foo": pdata.NewAttributeValueString("")}))
+	assert.True(t, testMatchGauge(t, "my.metric", expression, map[string]interface{}{"foo": ""}))
 }
 
 func TestMatchGaugeDataPointByMetricAndLabelValue(t *testing.T) {
 	expression := `MetricName == 'my.metric' && Label("foo") == "bar"`
-	assert.False(t, testMatchGauge(t, "my.metric", expression, map[string]pdata.AttributeValue{"foo": pdata.NewAttributeValueString("")}))
+	assert.False(t, testMatchGauge(t, "my.metric", expression, map[string]interface{}{"foo": ""}))
 }
 
 func TestNonMatchGaugeDataPointByMetricAndLabelValue(t *testing.T) {
 	expression := `MetricName == 'my.metric' && Label("foo") == "bar"`
-	assert.False(t, testMatchGauge(t, "my.metric", expression, map[string]pdata.AttributeValue{"foo": pdata.NewAttributeValueString("")}))
+	assert.False(t, testMatchGauge(t, "my.metric", expression, map[string]interface{}{"foo": ""}))
 }
 
-func testMatchGauge(t *testing.T, metricName, expression string, lbls map[string]pdata.AttributeValue) bool {
+func testMatchGauge(t *testing.T, metricName, expression string, lbls map[string]interface{}) bool {
 	matcher, err := NewMatcher(expression)
 	require.NoError(t, err)
 	m := pdata.NewMetric()
@@ -161,7 +161,7 @@ func testMatchGauge(t *testing.T, metricName, expression string, lbls map[string
 	dps := m.Gauge().DataPoints()
 	pt := dps.AppendEmpty()
 	if lbls != nil {
-		pdata.NewAttributeMapFromMap(lbls).CopyTo(pt.Attributes())
+		pdata.NewMapFromRaw(lbls).CopyTo(pt.Attributes())
 	}
 	match, err := matcher.MatchMetric(m)
 	assert.NoError(t, err)

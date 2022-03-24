@@ -25,7 +25,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/go-playground/validator/v10/non-standard/validators"
 	en_translations "github.com/go-playground/validator/v10/translations/en"
-	"go.opentelemetry.io/collector/config/configmapprovider"
+	"go.opentelemetry.io/collector/config/mapprovider/filemapprovider"
 )
 
 type metricName string
@@ -120,7 +120,7 @@ type templateContext struct {
 }
 
 func loadMetadata(filePath string) (metadata, error) {
-	cp, err := configmapprovider.NewFile().Retrieve(context.Background(), "file:"+filePath, nil)
+	cp, err := filemapprovider.New().Retrieve(context.Background(), "file:"+filePath, nil)
 	if err != nil {
 		return metadata{}, err
 	}

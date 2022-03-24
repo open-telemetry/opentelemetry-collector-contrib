@@ -76,7 +76,7 @@ func (d *Detector) Detect(context.Context) (resource pdata.Resource, schemaURL s
 // string. Captures the trimmed key & value parts, and ignores any superfluous spaces.
 var labelRegex = regexp.MustCompile(`\s*([[:ascii:]]{1,256}?)\s*=\s*([[:ascii:]]{0,256}?)\s*(?:,|$)`)
 
-func initializeAttributeMap(am pdata.AttributeMap, s string) error {
+func initializeAttributeMap(am pdata.Map, s string) error {
 	matches := labelRegex.FindAllStringSubmatchIndex(s, -1)
 
 	for len(matches) == 0 {

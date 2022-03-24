@@ -65,7 +65,7 @@ type metricID struct {
 }
 
 type metricDataPoint interface {
-	Attributes() pdata.AttributeMap
+	Attributes() pdata.Map
 }
 
 type serviceSpans struct {
@@ -472,18 +472,18 @@ func verifyConsumeMetricsInput(t testing.TB, input pdata.Metrics, expectedTempor
 
 func verifyMetricLabels(dp metricDataPoint, t testing.TB, seenMetricIDs map[metricID]bool) {
 	mID := metricID{}
-	wantDimensions := map[string]pdata.AttributeValue{
-		stringAttrName:         pdata.NewAttributeValueString("stringAttrValue"),
-		intAttrName:            pdata.NewAttributeValueInt(99),
-		doubleAttrName:         pdata.NewAttributeValueDouble(99.99),
-		boolAttrName:           pdata.NewAttributeValueBool(true),
-		nullAttrName:           pdata.NewAttributeValueEmpty(),
-		arrayAttrName:          pdata.NewAttributeValueArray(),
-		mapAttrName:            pdata.NewAttributeValueMap(),
-		notInSpanAttrName0:     pdata.NewAttributeValueString("defaultNotInSpanAttrVal"),
-		regionResourceAttrName: pdata.NewAttributeValueString(sampleRegion),
+	wantDimensions := map[string]pdata.Value{
+		stringAttrName:         pdata.NewValueString("stringAttrValue"),
+		intAttrName:            pdata.NewValueInt(99),
+		doubleAttrName:         pdata.NewValueDouble(99.99),
+		boolAttrName:           pdata.NewValueBool(true),
+		nullAttrName:           pdata.NewValueEmpty(),
+		arrayAttrName:          pdata.NewValueSlice(),
+		mapAttrName:            pdata.NewValueMap(),
+		notInSpanAttrName0:     pdata.NewValueString("defaultNotInSpanAttrVal"),
+		regionResourceAttrName: pdata.NewValueString(sampleRegion),
 	}
-	dp.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+	dp.Attributes().Range(func(k string, v pdata.Value) bool {
 		switch k {
 		case serviceNameKey:
 			mID.service = v.StringVal()
@@ -572,8 +572,8 @@ func initSpan(span span, s pdata.Span) {
 	s.Attributes().InsertDouble(doubleAttrName, 99.99)
 	s.Attributes().InsertBool(boolAttrName, true)
 	s.Attributes().InsertNull(nullAttrName)
-	s.Attributes().Insert(mapAttrName, pdata.NewAttributeValueMap())
-	s.Attributes().Insert(arrayAttrName, pdata.NewAttributeValueArray())
+	s.Attributes().Insert(mapAttrName, pdata.NewValueMap())
+	s.Attributes().Insert(arrayAttrName, pdata.NewValueSlice())
 	s.SetTraceID(pdata.NewTraceID([16]byte{byte(42)}))
 }
 
@@ -596,11 +596,11 @@ func newOTLPExporters(t *testing.T) (*otlpexporter.Config, component.MetricsExpo
 func TestBuildKeySameServiceOperationCharSequence(t *testing.T) {
 	span0 := pdata.NewSpan()
 	span0.SetName("c")
-	k0 := buildKey("ab", span0, nil, pdata.NewAttributeMap())
+	k0 := buildKey("ab", span0, nil, pdata.NewMap())
 
 	span1 := pdata.NewSpan()
 	span1.SetName("bc")
-	k1 := buildKey("a", span1, nil, pdata.NewAttributeMap())
+	k1 := buildKey("a", span1, nil, pdata.NewMap())
 
 	assert.NotEqual(t, k0, k1)
 	assert.Equal(t, metricKey("ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET"), k0)
@@ -612,8 +612,8 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 	for _, tc := range []struct {
 		name            string
 		optionalDims    []Dimension
-		resourceAttrMap map[string]pdata.AttributeValue
-		spanAttrMap     map[string]pdata.AttributeValue
+		resourceAttrMap map[string]interface{}
+		spanAttrMap     map[string]interface{}
 		wantKey         string
 	}{
 		{
@@ -639,8 +639,8 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 			optionalDims: []Dimension{
 				{Name: "foo"},
 			},
-			spanAttrMap: map[string]pdata.AttributeValue{
-				"foo": pdata.NewAttributeValueInt(99),
+			spanAttrMap: map[string]interface{}{
+				"foo": 99,
 			},
 			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u000099",
 		},
@@ -649,8 +649,8 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 			optionalDims: []Dimension{
 				{Name: "foo"},
 			},
-			resourceAttrMap: map[string]pdata.AttributeValue{
-				"foo": pdata.NewAttributeValueInt(99),
+			resourceAttrMap: map[string]interface{}{
+				"foo": 99,
 			},
 			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u000099",
 		},
@@ -659,19 +659,19 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 			optionalDims: []Dimension{
 				{Name: "foo"},
 			},
-			spanAttrMap: map[string]pdata.AttributeValue{
-				"foo": pdata.NewAttributeValueInt(100),
+			spanAttrMap: map[string]interface{}{
+				"foo": 100,
 			},
-			resourceAttrMap: map[string]pdata.AttributeValue{
-				"foo": pdata.NewAttributeValueInt(99),
+			resourceAttrMap: map[string]interface{}{
+				"foo": 99,
 			},
 			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000100",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			resAttr := pdata.NewAttributeMapFromMap(tc.resourceAttrMap)
+			resAttr := pdata.NewMapFromRaw(tc.resourceAttrMap)
 			span0 := pdata.NewSpan()
-			pdata.NewAttributeMapFromMap(tc.spanAttrMap).CopyTo(span0.Attributes())
+			pdata.NewMapFromRaw(tc.spanAttrMap).CopyTo(span0.Attributes())
 			span0.SetName("c")
 			k := buildKey("ab", span0, tc.optionalDims, resAttr)
 

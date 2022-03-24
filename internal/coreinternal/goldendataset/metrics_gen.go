@@ -96,7 +96,7 @@ func (g *metricGenerator) genMetricFromCfg(cfg MetricsCfg) pdata.Metrics {
 		for j := 0; j < cfg.NumResourceAttrs; j++ {
 			resource.Attributes().Insert(
 				fmt.Sprintf("resource-attr-name-%d", j),
-				pdata.NewAttributeValueString(fmt.Sprintf("resource-attr-val-%d", j)),
+				pdata.NewValueString(fmt.Sprintf("resource-attr-val-%d", j)),
 			)
 		}
 		g.populateIlm(cfg, rm)
@@ -200,7 +200,7 @@ func addDoubleHistogramVal(hdp pdata.HistogramDataPoint, val float64) {
 	}
 }
 
-func populatePtAttributes(cfg MetricsCfg, lm pdata.AttributeMap) {
+func populatePtAttributes(cfg MetricsCfg, lm pdata.Map) {
 	for i := 0; i < cfg.NumPtLabels; i++ {
 		k := fmt.Sprintf("pt-label-key-%d", i)
 		v := fmt.Sprintf("pt-label-val-%d", i)

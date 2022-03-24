@@ -18,6 +18,8 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"sort"
+	"strings"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -60,18 +62,125 @@ func newRedaction(ctx context.Context, config *Config, logger *zap.Logger, next 
 
 // processTraces implements ProcessMetricsFunc. It processes the incoming data
 // and returns the data to be sent to the next component
-func (s *redaction) processTraces(_ context.Context, batch pdata.Traces) (pdata.Traces, error) {
-	// TODO: Implementation to follow in the next PR
+func (s *redaction) processTraces(ctx context.Context, batch pdata.Traces) (pdata.Traces, error) {
+	for i := 0; i < batch.ResourceSpans().Len(); i++ {
+		rs := batch.ResourceSpans().At(i)
+		s.processResourceSpan(ctx, rs)
+	}
 	return batch, nil
 }
 
+// processResourceSpan processes the RS and all of its spans and then returns the last
+// view metric context. The context can be used for tests
+func (s *redaction) processResourceSpan(ctx context.Context, rs pdata.ResourceSpans) {
+	rsAttrs := rs.Resource().Attributes()
+
+	// Attributes can be part of a resource span
+	s.processAttrs(ctx, &rsAttrs)
+
+	for j := 0; j < rs.InstrumentationLibrarySpans().Len(); j++ {
+		ils := rs.InstrumentationLibrarySpans().At(j)
+		for k := 0; k < ils.Spans().Len(); k++ {
+			span := ils.Spans().At(k)
+			spanAttrs := span.Attributes()
+
+			// Attributes can also be part of span
+			s.processAttrs(ctx, &spanAttrs)
+		}
+	}
+}
+
+// processAttrs redacts the attributes of a resource span or a span
+func (s *redaction) processAttrs(_ context.Context, attributes *pdata.Map) {
+	// TODO: Use the context for recording metrics
+	var toDelete []string
+	var toBlock []string
+
+	// Identify attributes to redact and mask in the following sequence
+	// 1. Make a list of attribute keys to redact
+	// 2. Mask any blocked values for the other attributes
+	// 3. Delete the attributes from 1
+	//
+	// This sequence satisfies these performance constraints:
+	// - Only range through all attributes once
+	// - Don't mask any values if the whole attribute is slated for deletion
+	attributes.Range(func(k string, value pdata.Value) bool {
+		// Make a list of attribute keys to redact
+		if _, allowed := s.allowList[k]; !allowed {
+			toDelete = append(toDelete, k)
+			// Skip to the next attribute
+			return true
+		}
+
+		// Mask any blocked values for the other attributes
+		for _, compiledRE := range s.blockRegexList {
+			match := compiledRE.MatchString(value.StringVal())
+			if match {
+				toBlock = append(toBlock, k)
+
+				valueCopy := value.StringVal()
+				maskedValue := compiledRE.ReplaceAllString(valueCopy, "****")
+				attributes.Update(k, pdata.NewValueString(maskedValue))
+			}
+		}
+		return true
+	})
+
+	// Delete the attributes on the redaction list
+	for _, k := range toDelete {
+		attributes.Remove(k)
+	}
+	// Add diagnostic information to the span
+	s.summarizeRedactedSpan(toDelete, attributes)
+	s.summarizeMaskedSpan(toBlock, attributes)
+}
+
 // ConsumeTraces implements the SpanProcessor interface
-func (s *redaction) ConsumeTraces(_ context.Context, _ pdata.Traces) error {
-	// TODO: Implementation to follow in the next PR
-	return nil
+func (s *redaction) ConsumeTraces(ctx context.Context, batch pdata.Traces) error {
+	batch, err := s.processTraces(ctx, batch)
+	if err != nil {
+		return err
+	}
+
+	err = s.next.ConsumeTraces(ctx, batch)
+	return err
+}
+
+// summarizeRedactedSpan adds diagnostic information about redacted attribute keys
+func (s *redaction) summarizeRedactedSpan(toDelete []string, attributes *pdata.Map) {
+	redactedSpanCount := int64(len(toDelete))
+	if redactedSpanCount == 0 {
+		return
+	}
+	// Record summary as span attributes
+	if s.config.Summary == debug {
+		sort.Strings(toDelete)
+		attributes.Insert(redactedKeys, pdata.NewValueString(strings.Join(toDelete, ",")))
+	}
+	if s.config.Summary == info || s.config.Summary == debug {
+		attributes.Insert(redactedKeyCount, pdata.NewValueInt(redactedSpanCount))
+	}
+}
+
+// summarizeMaskedSpan adds diagnostic information about masked attribute values
+func (s *redaction) summarizeMaskedSpan(toBlock []string, attributes *pdata.Map) {
+	maskedSpanCount := int64(len(toBlock))
+	if maskedSpanCount == 0 {
+		return
+	}
+	// Records summary as span attributes
+	if s.config.Summary == debug {
+		sort.Strings(toBlock)
+		attributes.Insert(maskedValues, pdata.NewValueString(strings.Join(toBlock, ",")))
+	}
+	if s.config.Summary == info || s.config.Summary == debug {
+		attributes.Insert(maskedValueCount, pdata.NewValueInt(maskedSpanCount))
+	}
 }
 
 const (
+	debug            = "debug"
+	info             = "info"
 	redactedKeys     = "redaction.redacted.keys"
 	redactedKeyCount = "redaction.redacted.count"
 	maskedValues     = "redaction.masked.keys"

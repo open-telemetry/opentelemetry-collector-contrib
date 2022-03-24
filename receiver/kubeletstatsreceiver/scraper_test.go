@@ -389,7 +389,7 @@ func requireExpectedVolume(t *testing.T, ev expectedVolume, resource pdata.Resou
 	}
 }
 
-func requireAttribute(t *testing.T, attr pdata.AttributeMap, key string, value string) {
+func requireAttribute(t *testing.T, attr pdata.Map, key string, value string) {
 	val, ok := attr.Get(key)
 	require.True(t, ok)
 	require.Equal(t, value, val.StringVal())

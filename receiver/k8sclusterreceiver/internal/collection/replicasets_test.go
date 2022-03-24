@@ -44,10 +44,10 @@ func TestReplicasetMetrics(t *testing.T) {
 		},
 	)
 
-	testutils.AssertMetrics(t, rm.metrics[0], "k8s.replicaset.desired",
+	testutils.AssertMetricsInt(t, rm.metrics[0], "k8s.replicaset.desired",
 		metricspb.MetricDescriptor_GAUGE_INT64, 3)
 
-	testutils.AssertMetrics(t, rm.metrics[1], "k8s.replicaset.available",
+	testutils.AssertMetricsInt(t, rm.metrics[1], "k8s.replicaset.available",
 		metricspb.MetricDescriptor_GAUGE_INT64, 2)
 }
 
