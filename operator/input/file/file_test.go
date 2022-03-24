@@ -45,7 +45,7 @@ See this issue for details: https://github.com/census-instrumentation/opencensus
 	operator.Stop()
 }
 
-// AddFields tests that the `file.name` and `file.path` fields are included
+// AddFields tests that the `log.file.name` and `log.file.path` fields are included
 // when IncludeFileName and IncludeFilePath are set to true
 func TestAddFileFields(t *testing.T) {
 	t.Parallel()
@@ -62,11 +62,11 @@ func TestAddFileFields(t *testing.T) {
 	defer operator.Stop()
 
 	e := waitForOne(t, logReceived)
-	require.Equal(t, filepath.Base(temp.Name()), e.Attributes["file.name"])
-	require.Equal(t, temp.Name(), e.Attributes["file.path"])
+	require.Equal(t, filepath.Base(temp.Name()), e.Attributes["log.file.name"])
+	require.Equal(t, temp.Name(), e.Attributes["log.file.path"])
 }
 
-// AddFileResolvedFields tests that the `file.name.resolved` and `file.path.resolved` fields are included
+// AddFileResolvedFields tests that the `log.file.name_resolved` and `log.file.path_resolved` fields are included
 // when IncludeFileNameResolved and IncludeFilePathResolved are set to true
 func TestAddFileResolvedFields(t *testing.T) {
 	t.Parallel()
@@ -102,17 +102,17 @@ func TestAddFileResolvedFields(t *testing.T) {
 	defer operator.Stop()
 
 	e := waitForOne(t, logReceived)
-	require.Equal(t, filepath.Base(symLinkPath), e.Attributes["file.name"])
-	require.Equal(t, symLinkPath, e.Attributes["file.path"])
-	require.Equal(t, filepath.Base(resolved), e.Attributes["file.name.resolved"])
-	require.Equal(t, resolved, e.Attributes["file.path.resolved"])
+	require.Equal(t, filepath.Base(symLinkPath), e.Attributes["log.file.name"])
+	require.Equal(t, symLinkPath, e.Attributes["log.file.path"])
+	require.Equal(t, filepath.Base(resolved), e.Attributes["log.file.name_resolved"])
+	require.Equal(t, resolved, e.Attributes["log.file.path_resolved"])
 
 	// Clean up (linux based host)
 	// Ignore error on windows host (The process cannot access the file because it is being used by another process.)
 	os.RemoveAll(dir)
 }
 
-// AddFileResolvedFields tests that the `file.name.resolved` and `file.path.resolved` fields are included
+// AddFileResolvedFields tests that the `log.file.name_resolved` and `log.file.path_resolved` fields are included
 // when IncludeFileNameResolved and IncludeFilePathResolved are set to true and underlaying symlink change
 // Scenario:
 // monitored file (symlink) -> middleSymlink -> file_1
@@ -163,10 +163,10 @@ func TestAddFileResolvedFieldsWithChangeOfSymlinkTarget(t *testing.T) {
 	defer operator.Stop()
 
 	e := waitForOne(t, logReceived)
-	require.Equal(t, filepath.Base(symLinkPath), e.Attributes["file.name"])
-	require.Equal(t, symLinkPath, e.Attributes["file.path"])
-	require.Equal(t, filepath.Base(resolved1), e.Attributes["file.name.resolved"])
-	require.Equal(t, resolved1, e.Attributes["file.path.resolved"])
+	require.Equal(t, filepath.Base(symLinkPath), e.Attributes["log.file.name"])
+	require.Equal(t, symLinkPath, e.Attributes["log.file.path"])
+	require.Equal(t, filepath.Base(resolved1), e.Attributes["log.file.name_resolved"])
+	require.Equal(t, resolved1, e.Attributes["log.file.path_resolved"])
 
 	// Change middleSymLink to point to file2
 	err = os.Remove(middleSymLinkPath)
@@ -178,10 +178,10 @@ func TestAddFileResolvedFieldsWithChangeOfSymlinkTarget(t *testing.T) {
 	writeString(t, file2, "testlog2\n")
 
 	e = waitForOne(t, logReceived)
-	require.Equal(t, filepath.Base(symLinkPath), e.Attributes["file.name"])
-	require.Equal(t, symLinkPath, e.Attributes["file.path"])
-	require.Equal(t, filepath.Base(resolved2), e.Attributes["file.name.resolved"])
-	require.Equal(t, resolved2, e.Attributes["file.path.resolved"])
+	require.Equal(t, filepath.Base(symLinkPath), e.Attributes["log.file.name"])
+	require.Equal(t, symLinkPath, e.Attributes["log.file.path"])
+	require.Equal(t, filepath.Base(resolved2), e.Attributes["log.file.name_resolved"])
+	require.Equal(t, resolved2, e.Attributes["log.file.path_resolved"])
 
 	// Clean up (linux based host)
 	// Ignore error on windows host (The process cannot access the file because it is being used by another process.)
