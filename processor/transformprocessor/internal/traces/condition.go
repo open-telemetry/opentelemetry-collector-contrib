@@ -17,14 +17,12 @@ package traces // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/model/pdata"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
-type condFunc = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) bool
+type condFunc = func(ctx spanTransformContext) bool
 
-var alwaysTrue = func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) bool {
+var alwaysTrue = func(ctx spanTransformContext) bool {
 	return true
 }
 
@@ -44,15 +42,15 @@ func newConditionEvaluator(cond *common.Condition, functions map[string]interfac
 
 	switch cond.Op {
 	case "==":
-		return func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) bool {
-			a := left.get(span, il, resource)
-			b := right.get(span, il, resource)
+		return func(ctx spanTransformContext) bool {
+			a := left.get(ctx)
+			b := right.get(ctx)
 			return a == b
 		}, nil
 	case "!=":
-		return func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) bool {
-			a := left.get(span, il, resource)
-			b := right.get(span, il, resource)
+		return func(ctx spanTransformContext) bool {
+			a := left.get(ctx)
+			b := right.get(ctx)
 			return a != b
 		}, nil
 	}
