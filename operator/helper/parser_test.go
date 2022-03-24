@@ -421,22 +421,27 @@ func TestParserPreserve(t *testing.T) {
 	}
 }
 func NewTestParserConfig() ParserConfig {
-	except := NewParserConfig("parser_config", "test_type")
-	except.ParseFrom = entry.NewBodyField("from")
-	except.ParseTo = entry.NewBodyField("to")
+	expect := NewParserConfig("parser_config", "test_type")
+	expect.ParseFrom = entry.NewBodyField("from")
+	expect.ParseTo = entry.NewBodyField("to")
 	tp := NewTimeParser()
+	expect.TimeParser = &tp
+
 	sp := NewSeverityParserConfig()
 	sp.Mapping = map[interface{}]interface{}{
 		"info": "3xx",
-		"warn": "4xx"}
-	except.TimeParser = &tp
-	except.SeverityParserConfig = &sp
+		"warn": "4xx",
+	}
+	expect.SeverityParserConfig = &sp
 
-	return except
+	lnp := NewScopeNameParser()
+	lnp.ParseFrom = entry.NewBodyField("logger")
+	expect.ScopeNameParser = &lnp
+	return expect
 }
 
 func TestMapStructureDecodeParserConfigWithHook(t *testing.T) {
-	except := NewTestParserConfig()
+	expect := NewTestParserConfig()
 	input := map[string]interface{}{
 		"id":         "parser_config",
 		"type":       "test_type",
@@ -452,6 +457,9 @@ func TestMapStructureDecodeParserConfigWithHook(t *testing.T) {
 				"warn": "4xx",
 			},
 		},
+		"scope_name": map[string]interface{}{
+			"parse_from": "body.logger",
+		},
 	}
 
 	var actual ParserConfig
@@ -460,11 +468,11 @@ func TestMapStructureDecodeParserConfigWithHook(t *testing.T) {
 	require.NoError(t, err)
 	err = ms.Decode(input)
 	require.NoError(t, err)
-	require.Equal(t, except, actual)
+	require.Equal(t, expect, actual)
 }
 
 func TestMapStructureDecodeParserConfig(t *testing.T) {
-	except := NewTestParserConfig()
+	expect := NewTestParserConfig()
 	input := map[string]interface{}{
 		"id":         "parser_config",
 		"type":       "test_type",
@@ -480,12 +488,15 @@ func TestMapStructureDecodeParserConfig(t *testing.T) {
 				"warn": "4xx",
 			},
 		},
+		"scope_name": map[string]interface{}{
+			"parse_from": entry.NewBodyField("logger"),
+		},
 	}
 
 	var actual ParserConfig
 	err := mapstructure.Decode(input, &actual)
 	require.NoError(t, err)
-	require.Equal(t, except, actual)
+	require.Equal(t, expect, actual)
 }
 
 func writerWithFakeOut(t *testing.T) (*WriterOperator, *testutil.FakeOutput) {

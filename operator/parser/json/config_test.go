@@ -70,16 +70,16 @@ func TestJSONParserConfig(t *testing.T) {
 			Expect: func() *JSONParserConfig {
 				cfg := defaultCfg()
 				parseField := entry.NewBodyField("severity_field")
-				severityField := helper.NewSeverityParserConfig()
-				severityField.ParseFrom = &parseField
+				severityParser := helper.NewSeverityParserConfig()
+				severityParser.ParseFrom = &parseField
 				mapping := map[interface{}]interface{}{
 					"critical": "5xx",
 					"error":    "4xx",
 					"info":     "3xx",
 					"debug":    "2xx",
 				}
-				severityField.Mapping = mapping
-				cfg.SeverityParserConfig = &severityField
+				severityParser.Mapping = mapping
+				cfg.SeverityParserConfig = &severityParser
 				return cfg
 			}(),
 		},
@@ -89,6 +89,16 @@ func TestJSONParserConfig(t *testing.T) {
 				cfg := defaultCfg()
 				preserve := entry.NewBodyField("aField")
 				cfg.PreserveTo = &preserve
+				return cfg
+			}(),
+		},
+		{
+			Name: "scope_name",
+			Expect: func() *JSONParserConfig {
+				cfg := defaultCfg()
+				loggerNameParser := helper.NewScopeNameParser()
+				loggerNameParser.ParseFrom = entry.NewBodyField("logger_name_field")
+				cfg.ScopeNameParser = &loggerNameParser
 				return cfg
 			}(),
 		},

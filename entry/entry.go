@@ -33,6 +33,7 @@ type Entry struct {
 	TraceId           []byte                 `json:"trace_id,omitempty"      yaml:"trace_id,omitempty"`
 	TraceFlags        []byte                 `json:"trace_flags,omitempty"   yaml:"trace_flags,omitempty"`
 	Severity          Severity               `json:"severity"                yaml:"severity"`
+	ScopeName         string                 `json:"scope_name"              yaml:"scope_name"`
 }
 
 // New will create a new log entry with current timestamp and an empty body.
@@ -185,5 +186,6 @@ func (entry *Entry) Copy() *Entry {
 		TraceId:           copyByteArray(entry.TraceId),
 		SpanId:            copyByteArray(entry.SpanId),
 		TraceFlags:        copyByteArray(entry.TraceFlags),
+		ScopeName:         entry.ScopeName,
 	}
 }
