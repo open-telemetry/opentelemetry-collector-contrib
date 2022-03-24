@@ -47,19 +47,19 @@ func Test_newPathGetSetter(t *testing.T) {
 	newStatus := pdata.NewSpanStatus()
 	newStatus.SetMessage("new status")
 
-	newArrStr := pdata.NewValueArray()
+	newArrStr := pdata.NewValueSlice()
 	newArrStr.SliceVal().AppendEmpty().SetStringVal("new")
 
-	newArrBool := pdata.NewValueArray()
+	newArrBool := pdata.NewValueSlice()
 	newArrBool.SliceVal().AppendEmpty().SetBoolVal(false)
 
-	newArrInt := pdata.NewValueArray()
+	newArrInt := pdata.NewValueSlice()
 	newArrInt.SliceVal().AppendEmpty().SetIntVal(20)
 
-	newArrFloat := pdata.NewValueArray()
+	newArrFloat := pdata.NewValueSlice()
 	newArrFloat.SliceVal().AppendEmpty().SetDoubleVal(2.0)
 
-	newArrBytes := pdata.NewValueArray()
+	newArrBytes := pdata.NewValueSlice()
 	newArrBytes.SliceVal().AppendEmpty().SetBytesVal([]byte{9, 6, 4})
 
 	tests := []struct {
@@ -699,27 +699,27 @@ func createTelemetry() (pdata.Span, pdata.InstrumentationLibrary, pdata.Resource
 	span.Attributes().UpsertDouble("double", 1.2)
 	span.Attributes().UpsertBytes("bytes", []byte{1, 3, 2})
 
-	arrStr := pdata.NewValueArray()
+	arrStr := pdata.NewValueSlice()
 	arrStr.SliceVal().AppendEmpty().SetStringVal("one")
 	arrStr.SliceVal().AppendEmpty().SetStringVal("two")
 	span.Attributes().Upsert("arr_str", arrStr)
 
-	arrBool := pdata.NewValueArray()
+	arrBool := pdata.NewValueSlice()
 	arrBool.SliceVal().AppendEmpty().SetBoolVal(true)
 	arrBool.SliceVal().AppendEmpty().SetBoolVal(false)
 	span.Attributes().Upsert("arr_bool", arrBool)
 
-	arrInt := pdata.NewValueArray()
+	arrInt := pdata.NewValueSlice()
 	arrInt.SliceVal().AppendEmpty().SetIntVal(2)
 	arrInt.SliceVal().AppendEmpty().SetIntVal(3)
 	span.Attributes().Upsert("arr_int", arrInt)
 
-	arrFloat := pdata.NewValueArray()
+	arrFloat := pdata.NewValueSlice()
 	arrFloat.SliceVal().AppendEmpty().SetDoubleVal(1.0)
 	arrFloat.SliceVal().AppendEmpty().SetDoubleVal(2.0)
 	span.Attributes().Upsert("arr_float", arrFloat)
 
-	arrBytes := pdata.NewValueArray()
+	arrBytes := pdata.NewValueSlice()
 	arrBytes.SliceVal().AppendEmpty().SetBytesVal([]byte{1, 2, 3})
 	arrBytes.SliceVal().AppendEmpty().SetBytesVal([]byte{2, 3, 4})
 	span.Attributes().Upsert("arr_bytes", arrBytes)

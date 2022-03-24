@@ -220,7 +220,7 @@ func TestResourceToOCAndBack(t *testing.T) {
 					} else {
 						assert.Equal(t, strconv.FormatInt(v.IntVal(), 10), a.StringVal())
 					}
-				case pdata.ValueTypeMap, pdata.ValueTypeArray:
+				case pdata.ValueTypeMap, pdata.ValueTypeSlice:
 					assert.Equal(t, a, a)
 				default:
 					assert.Equal(t, v, a)

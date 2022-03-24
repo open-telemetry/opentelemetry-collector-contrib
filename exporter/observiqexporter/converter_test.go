@@ -106,7 +106,7 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 				mapVal.MapVal().Insert("mapKey", pdata.NewValueString("value"))
 				logRecord.Attributes().Insert("map", mapVal)
 
-				arrVal := pdata.NewValueArray()
+				arrVal := pdata.NewValueSlice()
 				arrVal.SliceVal().EnsureCapacity(2)
 				arrVal.SliceVal().AppendEmpty().SetIntVal(1)
 				arrVal.SliceVal().AppendEmpty().SetIntVal(2)
@@ -128,7 +128,7 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 				mapVal.MapVal().InsertNull("null")
 				res.Attributes().Insert("map", mapVal)
 
-				arrVal := pdata.NewValueArray()
+				arrVal := pdata.NewValueSlice()
 				arrVal.SliceVal().EnsureCapacity(2)
 				arrVal.SliceVal().AppendEmpty().SetIntVal(1)
 				arrVal.SliceVal().AppendEmpty().SetDoubleVal(2.0)
@@ -219,7 +219,7 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 			func() pdata.LogRecord {
 				logRecord := pdata.NewLogRecord()
 
-				pdata.NewValueArray().CopyTo(logRecord.Body())
+				pdata.NewValueSlice().CopyTo(logRecord.Body())
 				logRecord.Body().SliceVal().EnsureCapacity(2)
 				logRecord.Body().SliceVal().AppendEmpty().SetStringVal("string")
 				logRecord.Body().SliceVal().AppendEmpty().SetDoubleVal(1.0)

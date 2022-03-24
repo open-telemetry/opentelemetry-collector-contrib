@@ -478,7 +478,7 @@ func verifyMetricLabels(dp metricDataPoint, t testing.TB, seenMetricIDs map[metr
 		doubleAttrName:         pdata.NewValueDouble(99.99),
 		boolAttrName:           pdata.NewValueBool(true),
 		nullAttrName:           pdata.NewValueEmpty(),
-		arrayAttrName:          pdata.NewValueArray(),
+		arrayAttrName:          pdata.NewValueSlice(),
 		mapAttrName:            pdata.NewValueMap(),
 		notInSpanAttrName0:     pdata.NewValueString("defaultNotInSpanAttrVal"),
 		regionResourceAttrName: pdata.NewValueString(sampleRegion),
@@ -573,7 +573,7 @@ func initSpan(span span, s pdata.Span) {
 	s.Attributes().InsertBool(boolAttrName, true)
 	s.Attributes().InsertNull(nullAttrName)
 	s.Attributes().Insert(mapAttrName, pdata.NewValueMap())
-	s.Attributes().Insert(arrayAttrName, pdata.NewValueArray())
+	s.Attributes().Insert(arrayAttrName, pdata.NewValueSlice())
 	s.SetTraceID(pdata.NewTraceID([16]byte{byte(42)}))
 }
 

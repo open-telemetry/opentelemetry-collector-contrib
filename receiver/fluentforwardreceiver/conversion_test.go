@@ -255,7 +255,7 @@ func TestBodyConversion(t *testing.T) {
 	body := pdata.NewValueMap()
 	body.MapVal().InsertString("a", "value")
 
-	bv := pdata.NewValueArray()
+	bv := pdata.NewValueSlice()
 	bv.SliceVal().EnsureCapacity(2)
 	bv.SliceVal().AppendEmpty().SetStringVal("first")
 	bv.SliceVal().AppendEmpty().SetStringVal("second")

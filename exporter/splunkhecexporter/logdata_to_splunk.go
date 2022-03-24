@@ -124,7 +124,7 @@ func convertAttributeValue(value pdata.Value, logger *zap.Logger) interface{} {
 			return true
 		})
 		return values
-	case pdata.ValueTypeArray:
+	case pdata.ValueTypeSlice:
 		arrayVal := value.SliceVal()
 		values := make([]interface{}, arrayVal.Len())
 		for i := 0; i < arrayVal.Len(); i++ {
