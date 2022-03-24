@@ -361,7 +361,7 @@ func appendMaxCountAttributes(includeStatus bool, attrMap pdata.Map) {
 	attrMap.UpsertBool("ai-sampler.absolute", false)
 	attrMap.UpsertInt("ai-sampler.maxhops", 6)
 	attrMap.UpsertString("application.create.location", "https://api.opentelemetry.io/blog/posts/806673B9-4F4D-4284-9635-3A3E3E3805BE")
-	stages := pdata.NewValueArray()
+	stages := pdata.NewValueSlice()
 	stages.SliceVal().AppendEmpty().SetStringVal("Launch")
 	stages.SliceVal().AppendEmpty().SetStringVal("Injestion")
 	stages.SliceVal().AppendEmpty().SetStringVal("Validation")

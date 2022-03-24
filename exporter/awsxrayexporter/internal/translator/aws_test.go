@@ -374,7 +374,7 @@ func TestLogGroups(t *testing.T) {
 
 	attributes := make(map[string]pdata.Value)
 	resource := pdata.NewResource()
-	lg := pdata.NewValueArray()
+	lg := pdata.NewValueSlice()
 	ava := lg.SliceVal()
 	ava.EnsureCapacity(2)
 	ava.AppendEmpty().SetStringVal("group1")
@@ -405,7 +405,7 @@ func TestLogGroupsFromArns(t *testing.T) {
 
 	attributes := make(map[string]pdata.Value)
 	resource := pdata.NewResource()
-	lga := pdata.NewValueArray()
+	lga := pdata.NewValueSlice()
 	ava := lga.SliceVal()
 	ava.EnsureCapacity(2)
 	ava.AppendEmpty().SetStringVal(group1)

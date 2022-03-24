@@ -461,7 +461,7 @@ func getAttr(attrs pdata.Map, mapKey string) interface{} {
 		return val.DoubleVal()
 	case pdata.ValueTypeMap:
 		return val.MapVal()
-	case pdata.ValueTypeArray:
+	case pdata.ValueTypeSlice:
 		return val.SliceVal()
 	case pdata.ValueTypeBytes:
 		return val.BytesVal()
@@ -482,31 +482,31 @@ func setAttr(attrs pdata.Map, mapKey string, val interface{}) {
 	case []byte:
 		attrs.UpsertBytes(mapKey, v)
 	case []string:
-		arr := pdata.NewValueArray()
+		arr := pdata.NewValueSlice()
 		for _, str := range v {
 			arr.SliceVal().AppendEmpty().SetStringVal(str)
 		}
 		attrs.Upsert(mapKey, arr)
 	case []bool:
-		arr := pdata.NewValueArray()
+		arr := pdata.NewValueSlice()
 		for _, b := range v {
 			arr.SliceVal().AppendEmpty().SetBoolVal(b)
 		}
 		attrs.Upsert(mapKey, arr)
 	case []int64:
-		arr := pdata.NewValueArray()
+		arr := pdata.NewValueSlice()
 		for _, i := range v {
 			arr.SliceVal().AppendEmpty().SetIntVal(i)
 		}
 		attrs.Upsert(mapKey, arr)
 	case []float64:
-		arr := pdata.NewValueArray()
+		arr := pdata.NewValueSlice()
 		for _, f := range v {
 			arr.SliceVal().AppendEmpty().SetDoubleVal(f)
 		}
 		attrs.Upsert(mapKey, arr)
 	case [][]byte:
-		arr := pdata.NewValueArray()
+		arr := pdata.NewValueSlice()
 		for _, b := range v {
 			arr.SliceVal().AppendEmpty().SetBytesVal(b)
 		}

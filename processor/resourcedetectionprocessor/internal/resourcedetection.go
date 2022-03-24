@@ -175,7 +175,7 @@ func UnwrapAttribute(v pdata.Value) interface{} {
 		return v.DoubleVal()
 	case pdata.ValueTypeString:
 		return v.StringVal()
-	case pdata.ValueTypeArray:
+	case pdata.ValueTypeSlice:
 		return getSerializableArray(v.SliceVal())
 	case pdata.ValueTypeMap:
 		return AttributesToMap(v.MapVal())
