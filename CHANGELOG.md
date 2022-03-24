@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#999])(https://github.com/open-telemetry/opentelemetry-python-contrib/pull/999)
 - `opentelemetry-instrumentation-falcon` Falcon: Capture custom request/response headers in span attributes
   ([#1003])(https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1003)
+- `opentelemetry-instrumentation-elasticsearch` no longer creates unique span names by including search target, replaces them with `<target>` and puts the value in attribute `elasticsearch.target`
+  ([#1018](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1018))
 
 ## [1.10.0-0.29b0](https://github.com/open-telemetry/opentelemetry-python/releases/tag/v1.10.0-0.29b0) - 2022-03-10
 

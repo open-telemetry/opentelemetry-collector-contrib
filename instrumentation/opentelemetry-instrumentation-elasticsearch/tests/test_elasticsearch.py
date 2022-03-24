@@ -237,7 +237,7 @@ class TestElasticsearchIntegration(TestBase):
         spans = self.get_finished_spans()
         span = spans[0]
         self.assertEqual(1, len(spans))
-        self.assertEqual(span.name, "Elasticsearch/test-index/_search")
+        self.assertEqual(span.name, "Elasticsearch/<target>/_search")
         self.assertIsNotNone(span.end_time)
         self.assertEqual(
             span.attributes,
@@ -245,6 +245,7 @@ class TestElasticsearchIntegration(TestBase):
                 SpanAttributes.DB_SYSTEM: "elasticsearch",
                 "elasticsearch.url": "/test-index/_search",
                 "elasticsearch.method": helpers.dsl_search_method,
+                "elasticsearch.target": "test-index",
                 SpanAttributes.DB_STATEMENT: str(
                     {
                         "query": {

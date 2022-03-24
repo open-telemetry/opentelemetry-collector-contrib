@@ -150,11 +150,14 @@ class ElasticsearchInstrumentor(BaseInstrumentor):
 
 _regex_doc_url = re.compile(r"/_doc/([^/]+)")
 
+# search api https://www.elastic.co/guide/en/elasticsearch/reference/current/search-search.html
+_regex_search_url = re.compile(r"/([^/]+)/_search[/]?")
+
 
 def _wrap_perform_request(
     tracer, span_name_prefix, request_hook=None, response_hook=None
 ):
-    # pylint: disable=R0912
+    # pylint: disable=R0912,R0914
     def wrapper(wrapped, _, args, kwargs):
         method = url = None
         try:
@@ -167,7 +170,10 @@ def _wrap_perform_request(
             )
 
         op_name = span_name_prefix + (url or method or _DEFAULT_OP_NAME)
+
         doc_id = None
+        search_target = None
+
         if url:
             # TODO: This regex-based solution avoids creating an unbounded number of span names, but should be replaced by instrumenting individual Elasticsearch methods instead of Transport.perform_request()
             # A limitation of the regex is that only the '_doc' mapping type is supported. Mapping types are deprecated since Elasticsearch 7
@@ -184,6 +190,11 @@ def _wrap_perform_request(
                 )
                 # Put the document ID in attributes
                 doc_id = match.group(1)
+            match = _regex_search_url.search(url)
+            if match is not None:
+                op_name = span_name_prefix + "/<target>/_search"
+                search_target = match.group(1)
+
         params = kwargs.get("params", {})
         body = kwargs.get("body", None)
 
@@ -209,6 +220,8 @@ def _wrap_perform_request(
                     attributes["elasticsearch.params"] = str(params)
                 if doc_id:
                     attributes["elasticsearch.id"] = doc_id
+                if search_target:
+                    attributes["elasticsearch.target"] = search_target
                 for key, value in attributes.items():
                     span.set_attribute(key, value)
 
