@@ -19,9 +19,9 @@ import (
 	"fmt"
 	"time"
 
-	sl "github.com/observiq/go-syslog/v3"
-	"github.com/observiq/go-syslog/v3/rfc3164"
-	"github.com/observiq/go-syslog/v3/rfc5424"
+	sl "github.com/influxdata/go-syslog/v3"
+	"github.com/influxdata/go-syslog/v3/rfc3164"
+	"github.com/influxdata/go-syslog/v3/rfc5424"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"

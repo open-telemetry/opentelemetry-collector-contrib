@@ -144,33 +144,6 @@ func CreateCases(basicConfig func() *SyslogParserConfig) ([]Case, error) {
 			entry.Info,
 			"info",
 		},
-		{
-			"RFC5424LongSDName",
-			func() *SyslogParserConfig {
-				cfg := basicConfig()
-				cfg.Protocol = RFC5424
-				return cfg
-			}(),
-			`<86>1 2015-08-05T21:58:59.693Z 192.168.2.132 SecureAuth0 23108 ID52020 [verylongsdnamethatisgreaterthan32bytes@12345 UserHostAddress="192.168.2.132"] my message`,
-			time.Date(2015, 8, 5, 21, 58, 59, 693000000, time.UTC),
-			map[string]interface{}{
-				"appname":  "SecureAuth0",
-				"facility": 10,
-				"hostname": "192.168.2.132",
-				"message":  "my message",
-				"msg_id":   "ID52020",
-				"priority": 86,
-				"proc_id":  "23108",
-				"structured_data": map[string]map[string]string{
-					"verylongsdnamethatisgreaterthan32bytes@12345": {
-						"UserHostAddress": "192.168.2.132",
-					},
-				},
-				"version": 1,
-			},
-			entry.Info,
-			"info",
-		},
 	}
 
 	return cases, nil
