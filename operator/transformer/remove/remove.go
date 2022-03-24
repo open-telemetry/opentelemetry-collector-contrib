@@ -71,7 +71,7 @@ func (p *RemoveOperator) Process(ctx context.Context, entry *entry.Entry) error 
 	return p.ProcessWith(ctx, entry, p.Transform)
 }
 
-// Transform will apply the restructure operations to an entry
+// Transform will apply the remove operation to an entry
 func (p *RemoveOperator) Transform(entry *entry.Entry) error {
 	if p.Field.allAttributes {
 		entry.Attributes = nil

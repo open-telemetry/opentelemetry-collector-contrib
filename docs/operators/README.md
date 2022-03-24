@@ -40,7 +40,6 @@ General purpose:
 - [move](/docs/operators/move.md)
 - [recombine](/docs/operators/recombine.md)
 - [remove](/docs/operators/remove.md)
-- [restructure](/docs/operators/restructure.md)
 - [retain](/docs/operators/retain.md)
 - [router](/docs/operators/router.md)
 
