@@ -34,10 +34,16 @@ type traceExporter struct {
 func (ex *traceExporter) onTraceData(context context.Context, traceData pdata.Traces) error {
 	buf, err := ex.tracesMarshaler.MarshalTraces(traceData)
 	if err != nil {
+		ex.logger.Error(err.Error())
 		return err
 	}
 
-	return ex.blobClient.UploadData(buf, config.TracesDataType)
+	err = ex.blobClient.UploadData(context, buf, config.TracesDataType)
+	if err != nil {
+		ex.logger.Error(err.Error())
+	}
+
+	return err
 }
 
 // Returns a new instance of the trace exporter

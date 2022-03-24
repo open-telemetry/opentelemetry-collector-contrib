@@ -65,6 +65,7 @@ func createTracesExporter(
 	bc, err := NewBlobClient(exporterConfig.ConnectionString, exporterConfig.TracesContainerName, set.Logger)
 	if err != nil {
 		set.Logger.Error(err.Error())
+		return nil, err
 	}
 
 	return newTracesExporter(exporterConfig, bc, set)
@@ -84,6 +85,7 @@ func createLogsExporter(
 	bc, err := NewBlobClient(exporterConfig.ConnectionString, exporterConfig.LogsContainerName, set.Logger)
 	if err != nil {
 		set.Logger.Error(err.Error())
+		return nil, err
 	}
 
 	return newLogsExporter(exporterConfig, bc, set)

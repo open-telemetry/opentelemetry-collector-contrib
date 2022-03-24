@@ -28,7 +28,7 @@ import (
 )
 
 type BlobClient interface {
-	UploadData(data []byte, dataType config.DataType) error
+	UploadData(ctx context.Context, data []byte, dataType config.DataType) error
 }
 
 type AzureBlobClient struct {
@@ -52,7 +52,7 @@ func (bc *AzureBlobClient) checkOrCreateContainer() error {
 	return err
 }
 
-func (bc *AzureBlobClient) UploadData(data []byte, dataType config.DataType) error {
+func (bc *AzureBlobClient) UploadData(ctx context.Context, data []byte, dataType config.DataType) error {
 	blobName := bc.generateBlobName(dataType)
 
 	blockBlob := bc.containerClient.NewBlockBlobClient(blobName)
@@ -62,7 +62,7 @@ func (bc *AzureBlobClient) UploadData(data []byte, dataType config.DataType) err
 		return err
 	}
 
-	_, err = blockBlob.Upload(context.TODO(), streaming.NopCloser(bytes.NewReader(data)), nil)
+	_, err = blockBlob.Upload(ctx, streaming.NopCloser(bytes.NewReader(data)), nil)
 
 	return err
 }

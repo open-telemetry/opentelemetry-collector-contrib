@@ -34,10 +34,16 @@ type logExporter struct {
 func (ex *logExporter) onLogData(context context.Context, logData pdata.Logs) error {
 	buf, err := ex.logsMarshaler.MarshalLogs(logData)
 	if err != nil {
+		ex.logger.Error(err.Error())
 		return err
 	}
 
-	return ex.blobClient.UploadData(buf, config.LogsDataType)
+	err = ex.blobClient.UploadData(context, buf, config.LogsDataType)
+	if err != nil {
+		ex.logger.Error(err.Error())
+	}
+
+	return err
 }
 
 // Returns a new instance of the log exporter
