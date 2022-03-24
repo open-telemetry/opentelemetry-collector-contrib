@@ -16,19 +16,18 @@ If a field does not start with `resource`, `attributes`, or `body`, then `body` 
 
 ## Examples
 
-#### Using fields with the restructure operator.
+#### Using fields with the add and remove operators.
 
 Config:
 ```yaml
-- type: restructure
-  ops:
-    - add:
-        field: "key3"
-        value: "value3"
-    - remove: "body.key2.nested_key1"
-    - add:
-        field: "attributes.my_attribute"
-        value: "my_attribute_value"
+- type: add
+  field: key3
+  value: val3
+- type: remove
+  field: body.key2.nested_key1
+- type: add
+  field: attributes.my_attribute
+  value: my_attribute_value
 ```
 
 <table>
