@@ -31,9 +31,10 @@ type MetricsSettings struct {
 	SaphanaLicenseExpirationTime            MetricSettings `mapstructure:"saphana.license.expiration.time"`
 	SaphanaLicenseLimit                     MetricSettings `mapstructure:"saphana.license.limit"`
 	SaphanaLicensePeak                      MetricSettings `mapstructure:"saphana.license.peak"`
+	SaphanaNetworkRequestAverageTime        MetricSettings `mapstructure:"saphana.network.request.average_time"`
 	SaphanaNetworkRequestCount              MetricSettings `mapstructure:"saphana.network.request.count"`
 	SaphanaNetworkRequestFinishedCount      MetricSettings `mapstructure:"saphana.network.request.finished.count"`
-	SaphanaNetworkRequestFinishedTime       MetricSettings `mapstructure:"saphana.network.request.finished.time"`
+	SaphanaReplicationAverageTime           MetricSettings `mapstructure:"saphana.replication.average_time"`
 	SaphanaReplicationBacklogSize           MetricSettings `mapstructure:"saphana.replication.backlog.size"`
 	SaphanaReplicationBacklogTime           MetricSettings `mapstructure:"saphana.replication.backlog.time"`
 	SaphanaRowStoreMemoryUsed               MetricSettings `mapstructure:"saphana.row_store.memory.used"`
@@ -111,13 +112,16 @@ func DefaultMetricsSettings() MetricsSettings {
 		SaphanaLicensePeak: MetricSettings{
 			Enabled: true,
 		},
+		SaphanaNetworkRequestAverageTime: MetricSettings{
+			Enabled: true,
+		},
 		SaphanaNetworkRequestCount: MetricSettings{
 			Enabled: true,
 		},
 		SaphanaNetworkRequestFinishedCount: MetricSettings{
 			Enabled: true,
 		},
-		SaphanaNetworkRequestFinishedTime: MetricSettings{
+		SaphanaReplicationAverageTime: MetricSettings{
 			Enabled: true,
 		},
 		SaphanaReplicationBacklogSize: MetricSettings{
@@ -263,10 +267,9 @@ func (m *metricSaphanaBackupLatest) init() {
 	m.data.SetDescription("The age of the latest backup by start time.")
 	m.data.SetUnit("s")
 	m.data.SetDataType(pdata.MetricDataTypeGauge)
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSaphanaBackupLatest) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, hostAttributeValue string) {
+func (m *metricSaphanaBackupLatest) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -274,7 +277,6 @@ func (m *metricSaphanaBackupLatest) recordDataPoint(start pdata.Timestamp, ts pd
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Host, pdata.NewAttributeValueString(hostAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -535,7 +537,7 @@ func (m *metricSaphanaDiskSizeCurrent) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSaphanaDiskSizeCurrent) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, hostAttributeValue string, diskAttributeValue string, diskStateUsedFreeAttributeValue string) {
+func (m *metricSaphanaDiskSizeCurrent) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, hostAttributeValue string, pathAttributeValue string, diskUsageTypeAttributeValue string, diskStateUsedFreeAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -544,7 +546,8 @@ func (m *metricSaphanaDiskSizeCurrent) recordDataPoint(start pdata.Timestamp, ts
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
 	dp.Attributes().Insert(A.Host, pdata.NewAttributeValueString(hostAttributeValue))
-	dp.Attributes().Insert(A.Disk, pdata.NewAttributeValueString(diskAttributeValue))
+	dp.Attributes().Insert(A.Path, pdata.NewAttributeValueString(pathAttributeValue))
+	dp.Attributes().Insert(A.DiskUsageType, pdata.NewAttributeValueString(diskUsageTypeAttributeValue))
 	dp.Attributes().Insert(A.DiskStateUsedFree, pdata.NewAttributeValueString(diskStateUsedFreeAttributeValue))
 }
 
@@ -909,7 +912,7 @@ func (m *metricSaphanaLicenseExpirationTime) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSaphanaLicenseExpirationTime) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, licenseAttributeValue string) {
+func (m *metricSaphanaLicenseExpirationTime) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, systemAttributeValue string, productAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -917,7 +920,8 @@ func (m *metricSaphanaLicenseExpirationTime) recordDataPoint(start pdata.Timesta
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.License, pdata.NewAttributeValueString(licenseAttributeValue))
+	dp.Attributes().Insert(A.System, pdata.NewAttributeValueString(systemAttributeValue))
+	dp.Attributes().Insert(A.Product, pdata.NewAttributeValueString(productAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -962,7 +966,7 @@ func (m *metricSaphanaLicenseLimit) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSaphanaLicenseLimit) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, licenseAttributeValue string) {
+func (m *metricSaphanaLicenseLimit) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, systemAttributeValue string, productAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -970,7 +974,8 @@ func (m *metricSaphanaLicenseLimit) recordDataPoint(start pdata.Timestamp, ts pd
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.License, pdata.NewAttributeValueString(licenseAttributeValue))
+	dp.Attributes().Insert(A.System, pdata.NewAttributeValueString(systemAttributeValue))
+	dp.Attributes().Insert(A.Product, pdata.NewAttributeValueString(productAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1015,7 +1020,7 @@ func (m *metricSaphanaLicensePeak) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSaphanaLicensePeak) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, licenseAttributeValue string) {
+func (m *metricSaphanaLicensePeak) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, systemAttributeValue string, productAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1023,7 +1028,8 @@ func (m *metricSaphanaLicensePeak) recordDataPoint(start pdata.Timestamp, ts pda
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.License, pdata.NewAttributeValueString(licenseAttributeValue))
+	dp.Attributes().Insert(A.System, pdata.NewAttributeValueString(systemAttributeValue))
+	dp.Attributes().Insert(A.Product, pdata.NewAttributeValueString(productAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1044,6 +1050,57 @@ func (m *metricSaphanaLicensePeak) emit(metrics pdata.MetricSlice) {
 
 func newMetricSaphanaLicensePeak(settings MetricSettings) metricSaphanaLicensePeak {
 	m := metricSaphanaLicensePeak{settings: settings}
+	if settings.Enabled {
+		m.data = pdata.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSaphanaNetworkRequestAverageTime struct {
+	data     pdata.Metric   // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills saphana.network.request.average_time metric with initial data.
+func (m *metricSaphanaNetworkRequestAverageTime) init() {
+	m.data.SetName("saphana.network.request.average_time")
+	m.data.SetDescription("The average response time calculated over recent requests")
+	m.data.SetUnit("ms")
+	m.data.SetDataType(pdata.MetricDataTypeGauge)
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSaphanaNetworkRequestAverageTime) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val float64, hostAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleVal(val)
+	dp.Attributes().Insert(A.Host, pdata.NewAttributeValueString(hostAttributeValue))
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSaphanaNetworkRequestAverageTime) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSaphanaNetworkRequestAverageTime) emit(metrics pdata.MetricSlice) {
+	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSaphanaNetworkRequestAverageTime(settings MetricSettings) metricSaphanaNetworkRequestAverageTime {
+	m := metricSaphanaNetworkRequestAverageTime{settings: settings}
 	if settings.Enabled {
 		m.data = pdata.NewMetric()
 		m.init()
@@ -1159,52 +1216,53 @@ func newMetricSaphanaNetworkRequestFinishedCount(settings MetricSettings) metric
 	return m
 }
 
-type metricSaphanaNetworkRequestFinishedTime struct {
+type metricSaphanaReplicationAverageTime struct {
 	data     pdata.Metric   // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills saphana.network.request.finished.time metric with initial data.
-func (m *metricSaphanaNetworkRequestFinishedTime) init() {
-	m.data.SetName("saphana.network.request.finished.time")
-	m.data.SetDescription("The total response time of all completed service requests.")
-	m.data.SetUnit("ms")
-	m.data.SetDataType(pdata.MetricDataTypeSum)
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+// init fills saphana.replication.average_time metric with initial data.
+func (m *metricSaphanaReplicationAverageTime) init() {
+	m.data.SetName("saphana.replication.average_time")
+	m.data.SetDescription("The average amount of time consumed replicating a log.")
+	m.data.SetUnit("us")
+	m.data.SetDataType(pdata.MetricDataTypeGauge)
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSaphanaNetworkRequestFinishedTime) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, hostAttributeValue string) {
+func (m *metricSaphanaReplicationAverageTime) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val float64, primaryHostAttributeValue string, secondaryHostAttributeValue string, portAttributeValue string, replicationModeAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Host, pdata.NewAttributeValueString(hostAttributeValue))
+	dp.SetDoubleVal(val)
+	dp.Attributes().Insert(A.PrimaryHost, pdata.NewAttributeValueString(primaryHostAttributeValue))
+	dp.Attributes().Insert(A.SecondaryHost, pdata.NewAttributeValueString(secondaryHostAttributeValue))
+	dp.Attributes().Insert(A.Port, pdata.NewAttributeValueString(portAttributeValue))
+	dp.Attributes().Insert(A.ReplicationMode, pdata.NewAttributeValueString(replicationModeAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSaphanaNetworkRequestFinishedTime) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
+func (m *metricSaphanaReplicationAverageTime) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSaphanaNetworkRequestFinishedTime) emit(metrics pdata.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+func (m *metricSaphanaReplicationAverageTime) emit(metrics pdata.MetricSlice) {
+	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSaphanaNetworkRequestFinishedTime(settings MetricSettings) metricSaphanaNetworkRequestFinishedTime {
-	m := metricSaphanaNetworkRequestFinishedTime{settings: settings}
+func newMetricSaphanaReplicationAverageTime(settings MetricSettings) metricSaphanaReplicationAverageTime {
+	m := metricSaphanaReplicationAverageTime{settings: settings}
 	if settings.Enabled {
 		m.data = pdata.NewMetric()
 		m.init()
@@ -1229,7 +1287,7 @@ func (m *metricSaphanaReplicationBacklogSize) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSaphanaReplicationBacklogSize) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, primaryHostAttributeValue string, secondaryHostAttributeValue string, replicationModeAttributeValue string) {
+func (m *metricSaphanaReplicationBacklogSize) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, primaryHostAttributeValue string, secondaryHostAttributeValue string, portAttributeValue string, replicationModeAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1239,6 +1297,7 @@ func (m *metricSaphanaReplicationBacklogSize) recordDataPoint(start pdata.Timest
 	dp.SetIntVal(val)
 	dp.Attributes().Insert(A.PrimaryHost, pdata.NewAttributeValueString(primaryHostAttributeValue))
 	dp.Attributes().Insert(A.SecondaryHost, pdata.NewAttributeValueString(secondaryHostAttributeValue))
+	dp.Attributes().Insert(A.Port, pdata.NewAttributeValueString(portAttributeValue))
 	dp.Attributes().Insert(A.ReplicationMode, pdata.NewAttributeValueString(replicationModeAttributeValue))
 }
 
@@ -1284,7 +1343,7 @@ func (m *metricSaphanaReplicationBacklogTime) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSaphanaReplicationBacklogTime) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, primaryHostAttributeValue string, secondaryHostAttributeValue string, replicationModeAttributeValue string) {
+func (m *metricSaphanaReplicationBacklogTime) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, primaryHostAttributeValue string, secondaryHostAttributeValue string, portAttributeValue string, replicationModeAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1294,6 +1353,7 @@ func (m *metricSaphanaReplicationBacklogTime) recordDataPoint(start pdata.Timest
 	dp.SetIntVal(val)
 	dp.Attributes().Insert(A.PrimaryHost, pdata.NewAttributeValueString(primaryHostAttributeValue))
 	dp.Attributes().Insert(A.SecondaryHost, pdata.NewAttributeValueString(secondaryHostAttributeValue))
+	dp.Attributes().Insert(A.Port, pdata.NewAttributeValueString(portAttributeValue))
 	dp.Attributes().Insert(A.ReplicationMode, pdata.NewAttributeValueString(replicationModeAttributeValue))
 }
 
@@ -1502,7 +1562,7 @@ func (m *metricSaphanaSchemaOperationCount) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSaphanaSchemaOperationCount) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, hostAttributeValue string, schemaAttributeValue string, operationTypeAttributeValue string) {
+func (m *metricSaphanaSchemaOperationCount) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, hostAttributeValue string, schemaAttributeValue string, schemaOperationTypeAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1512,7 +1572,7 @@ func (m *metricSaphanaSchemaOperationCount) recordDataPoint(start pdata.Timestam
 	dp.SetIntVal(val)
 	dp.Attributes().Insert(A.Host, pdata.NewAttributeValueString(hostAttributeValue))
 	dp.Attributes().Insert(A.Schema, pdata.NewAttributeValueString(schemaAttributeValue))
-	dp.Attributes().Insert(A.OperationType, pdata.NewAttributeValueString(operationTypeAttributeValue))
+	dp.Attributes().Insert(A.SchemaOperationType, pdata.NewAttributeValueString(schemaOperationTypeAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1611,7 +1671,7 @@ func (m *metricSaphanaSchemaRecordCount) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSaphanaSchemaRecordCount) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, hostAttributeValue string, schemaAttributeValue string) {
+func (m *metricSaphanaSchemaRecordCount) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, hostAttributeValue string, schemaAttributeValue string, schemaRecordTypeAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1621,6 +1681,7 @@ func (m *metricSaphanaSchemaRecordCount) recordDataPoint(start pdata.Timestamp, 
 	dp.SetIntVal(val)
 	dp.Attributes().Insert(A.Host, pdata.NewAttributeValueString(hostAttributeValue))
 	dp.Attributes().Insert(A.Schema, pdata.NewAttributeValueString(schemaAttributeValue))
+	dp.Attributes().Insert(A.SchemaRecordType, pdata.NewAttributeValueString(schemaRecordTypeAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2369,7 +2430,7 @@ func (m *metricSaphanaUptime) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSaphanaUptime) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, hostAttributeValue string) {
+func (m *metricSaphanaUptime) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, hostAttributeValue string, systemAttributeValue string, databaseAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -2378,6 +2439,8 @@ func (m *metricSaphanaUptime) recordDataPoint(start pdata.Timestamp, ts pdata.Ti
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
 	dp.Attributes().Insert(A.Host, pdata.NewAttributeValueString(hostAttributeValue))
+	dp.Attributes().Insert(A.System, pdata.NewAttributeValueString(systemAttributeValue))
+	dp.Attributes().Insert(A.Database, pdata.NewAttributeValueString(databaseAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2422,7 +2485,7 @@ func (m *metricSaphanaVolumeOperationCount) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSaphanaVolumeOperationCount) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, hostAttributeValue string, volumeAttributeValue string, operationTypeAttributeValue string) {
+func (m *metricSaphanaVolumeOperationCount) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, hostAttributeValue string, pathAttributeValue string, diskUsageTypeAttributeValue string, volumeOperationTypeAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -2431,8 +2494,9 @@ func (m *metricSaphanaVolumeOperationCount) recordDataPoint(start pdata.Timestam
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
 	dp.Attributes().Insert(A.Host, pdata.NewAttributeValueString(hostAttributeValue))
-	dp.Attributes().Insert(A.Volume, pdata.NewAttributeValueString(volumeAttributeValue))
-	dp.Attributes().Insert(A.OperationType, pdata.NewAttributeValueString(operationTypeAttributeValue))
+	dp.Attributes().Insert(A.Path, pdata.NewAttributeValueString(pathAttributeValue))
+	dp.Attributes().Insert(A.DiskUsageType, pdata.NewAttributeValueString(diskUsageTypeAttributeValue))
+	dp.Attributes().Insert(A.VolumeOperationType, pdata.NewAttributeValueString(volumeOperationTypeAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2477,7 +2541,7 @@ func (m *metricSaphanaVolumeOperationSize) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSaphanaVolumeOperationSize) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, hostAttributeValue string, volumeAttributeValue string, operationTypeAttributeValue string) {
+func (m *metricSaphanaVolumeOperationSize) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, hostAttributeValue string, pathAttributeValue string, diskUsageTypeAttributeValue string, volumeOperationTypeAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -2486,8 +2550,9 @@ func (m *metricSaphanaVolumeOperationSize) recordDataPoint(start pdata.Timestamp
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
 	dp.Attributes().Insert(A.Host, pdata.NewAttributeValueString(hostAttributeValue))
-	dp.Attributes().Insert(A.Volume, pdata.NewAttributeValueString(volumeAttributeValue))
-	dp.Attributes().Insert(A.OperationType, pdata.NewAttributeValueString(operationTypeAttributeValue))
+	dp.Attributes().Insert(A.Path, pdata.NewAttributeValueString(pathAttributeValue))
+	dp.Attributes().Insert(A.DiskUsageType, pdata.NewAttributeValueString(diskUsageTypeAttributeValue))
+	dp.Attributes().Insert(A.VolumeOperationType, pdata.NewAttributeValueString(volumeOperationTypeAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2532,7 +2597,7 @@ func (m *metricSaphanaVolumeOperationTime) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSaphanaVolumeOperationTime) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, hostAttributeValue string, volumeAttributeValue string, operationTypeAttributeValue string) {
+func (m *metricSaphanaVolumeOperationTime) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, hostAttributeValue string, pathAttributeValue string, diskUsageTypeAttributeValue string, volumeOperationTypeAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -2541,8 +2606,9 @@ func (m *metricSaphanaVolumeOperationTime) recordDataPoint(start pdata.Timestamp
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
 	dp.Attributes().Insert(A.Host, pdata.NewAttributeValueString(hostAttributeValue))
-	dp.Attributes().Insert(A.Volume, pdata.NewAttributeValueString(volumeAttributeValue))
-	dp.Attributes().Insert(A.OperationType, pdata.NewAttributeValueString(operationTypeAttributeValue))
+	dp.Attributes().Insert(A.Path, pdata.NewAttributeValueString(pathAttributeValue))
+	dp.Attributes().Insert(A.DiskUsageType, pdata.NewAttributeValueString(diskUsageTypeAttributeValue))
+	dp.Attributes().Insert(A.VolumeOperationType, pdata.NewAttributeValueString(volumeOperationTypeAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2590,9 +2656,10 @@ type MetricsBuilder struct {
 	metricSaphanaLicenseExpirationTime            metricSaphanaLicenseExpirationTime
 	metricSaphanaLicenseLimit                     metricSaphanaLicenseLimit
 	metricSaphanaLicensePeak                      metricSaphanaLicensePeak
+	metricSaphanaNetworkRequestAverageTime        metricSaphanaNetworkRequestAverageTime
 	metricSaphanaNetworkRequestCount              metricSaphanaNetworkRequestCount
 	metricSaphanaNetworkRequestFinishedCount      metricSaphanaNetworkRequestFinishedCount
-	metricSaphanaNetworkRequestFinishedTime       metricSaphanaNetworkRequestFinishedTime
+	metricSaphanaReplicationAverageTime           metricSaphanaReplicationAverageTime
 	metricSaphanaReplicationBacklogSize           metricSaphanaReplicationBacklogSize
 	metricSaphanaReplicationBacklogTime           metricSaphanaReplicationBacklogTime
 	metricSaphanaRowStoreMemoryUsed               metricSaphanaRowStoreMemoryUsed
@@ -2649,9 +2716,10 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 		metricSaphanaLicenseExpirationTime:            newMetricSaphanaLicenseExpirationTime(settings.SaphanaLicenseExpirationTime),
 		metricSaphanaLicenseLimit:                     newMetricSaphanaLicenseLimit(settings.SaphanaLicenseLimit),
 		metricSaphanaLicensePeak:                      newMetricSaphanaLicensePeak(settings.SaphanaLicensePeak),
+		metricSaphanaNetworkRequestAverageTime:        newMetricSaphanaNetworkRequestAverageTime(settings.SaphanaNetworkRequestAverageTime),
 		metricSaphanaNetworkRequestCount:              newMetricSaphanaNetworkRequestCount(settings.SaphanaNetworkRequestCount),
 		metricSaphanaNetworkRequestFinishedCount:      newMetricSaphanaNetworkRequestFinishedCount(settings.SaphanaNetworkRequestFinishedCount),
-		metricSaphanaNetworkRequestFinishedTime:       newMetricSaphanaNetworkRequestFinishedTime(settings.SaphanaNetworkRequestFinishedTime),
+		metricSaphanaReplicationAverageTime:           newMetricSaphanaReplicationAverageTime(settings.SaphanaReplicationAverageTime),
 		metricSaphanaReplicationBacklogSize:           newMetricSaphanaReplicationBacklogSize(settings.SaphanaReplicationBacklogSize),
 		metricSaphanaReplicationBacklogTime:           newMetricSaphanaReplicationBacklogTime(settings.SaphanaReplicationBacklogTime),
 		metricSaphanaRowStoreMemoryUsed:               newMetricSaphanaRowStoreMemoryUsed(settings.SaphanaRowStoreMemoryUsed),
@@ -2704,9 +2772,10 @@ func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
 	mb.metricSaphanaLicenseExpirationTime.emit(metrics)
 	mb.metricSaphanaLicenseLimit.emit(metrics)
 	mb.metricSaphanaLicensePeak.emit(metrics)
+	mb.metricSaphanaNetworkRequestAverageTime.emit(metrics)
 	mb.metricSaphanaNetworkRequestCount.emit(metrics)
 	mb.metricSaphanaNetworkRequestFinishedCount.emit(metrics)
-	mb.metricSaphanaNetworkRequestFinishedTime.emit(metrics)
+	mb.metricSaphanaReplicationAverageTime.emit(metrics)
 	mb.metricSaphanaReplicationBacklogSize.emit(metrics)
 	mb.metricSaphanaReplicationBacklogTime.emit(metrics)
 	mb.metricSaphanaRowStoreMemoryUsed.emit(metrics)
@@ -2740,8 +2809,8 @@ func (mb *MetricsBuilder) RecordSaphanaAlertCountDataPoint(ts pdata.Timestamp, v
 }
 
 // RecordSaphanaBackupLatestDataPoint adds a data point to saphana.backup.latest metric.
-func (mb *MetricsBuilder) RecordSaphanaBackupLatestDataPoint(ts pdata.Timestamp, val int64, hostAttributeValue string) {
-	mb.metricSaphanaBackupLatest.recordDataPoint(mb.startTime, ts, val, hostAttributeValue)
+func (mb *MetricsBuilder) RecordSaphanaBackupLatestDataPoint(ts pdata.Timestamp, val int64) {
+	mb.metricSaphanaBackupLatest.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordSaphanaColumnMemoryUsedDataPoint adds a data point to saphana.column.memory.used metric.
@@ -2765,8 +2834,8 @@ func (mb *MetricsBuilder) RecordSaphanaCPUUsedDataPoint(ts pdata.Timestamp, val 
 }
 
 // RecordSaphanaDiskSizeCurrentDataPoint adds a data point to saphana.disk.size.current metric.
-func (mb *MetricsBuilder) RecordSaphanaDiskSizeCurrentDataPoint(ts pdata.Timestamp, val int64, hostAttributeValue string, diskAttributeValue string, diskStateUsedFreeAttributeValue string) {
-	mb.metricSaphanaDiskSizeCurrent.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, diskAttributeValue, diskStateUsedFreeAttributeValue)
+func (mb *MetricsBuilder) RecordSaphanaDiskSizeCurrentDataPoint(ts pdata.Timestamp, val int64, hostAttributeValue string, pathAttributeValue string, diskUsageTypeAttributeValue string, diskStateUsedFreeAttributeValue string) {
+	mb.metricSaphanaDiskSizeCurrent.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, pathAttributeValue, diskUsageTypeAttributeValue, diskStateUsedFreeAttributeValue)
 }
 
 // RecordSaphanaHostMemoryCurrentDataPoint adds a data point to saphana.host.memory.current metric.
@@ -2800,18 +2869,23 @@ func (mb *MetricsBuilder) RecordSaphanaInstanceMemoryUsedPeakDataPoint(ts pdata.
 }
 
 // RecordSaphanaLicenseExpirationTimeDataPoint adds a data point to saphana.license.expiration.time metric.
-func (mb *MetricsBuilder) RecordSaphanaLicenseExpirationTimeDataPoint(ts pdata.Timestamp, val int64, licenseAttributeValue string) {
-	mb.metricSaphanaLicenseExpirationTime.recordDataPoint(mb.startTime, ts, val, licenseAttributeValue)
+func (mb *MetricsBuilder) RecordSaphanaLicenseExpirationTimeDataPoint(ts pdata.Timestamp, val int64, systemAttributeValue string, productAttributeValue string) {
+	mb.metricSaphanaLicenseExpirationTime.recordDataPoint(mb.startTime, ts, val, systemAttributeValue, productAttributeValue)
 }
 
 // RecordSaphanaLicenseLimitDataPoint adds a data point to saphana.license.limit metric.
-func (mb *MetricsBuilder) RecordSaphanaLicenseLimitDataPoint(ts pdata.Timestamp, val int64, licenseAttributeValue string) {
-	mb.metricSaphanaLicenseLimit.recordDataPoint(mb.startTime, ts, val, licenseAttributeValue)
+func (mb *MetricsBuilder) RecordSaphanaLicenseLimitDataPoint(ts pdata.Timestamp, val int64, systemAttributeValue string, productAttributeValue string) {
+	mb.metricSaphanaLicenseLimit.recordDataPoint(mb.startTime, ts, val, systemAttributeValue, productAttributeValue)
 }
 
 // RecordSaphanaLicensePeakDataPoint adds a data point to saphana.license.peak metric.
-func (mb *MetricsBuilder) RecordSaphanaLicensePeakDataPoint(ts pdata.Timestamp, val int64, licenseAttributeValue string) {
-	mb.metricSaphanaLicensePeak.recordDataPoint(mb.startTime, ts, val, licenseAttributeValue)
+func (mb *MetricsBuilder) RecordSaphanaLicensePeakDataPoint(ts pdata.Timestamp, val int64, systemAttributeValue string, productAttributeValue string) {
+	mb.metricSaphanaLicensePeak.recordDataPoint(mb.startTime, ts, val, systemAttributeValue, productAttributeValue)
+}
+
+// RecordSaphanaNetworkRequestAverageTimeDataPoint adds a data point to saphana.network.request.average_time metric.
+func (mb *MetricsBuilder) RecordSaphanaNetworkRequestAverageTimeDataPoint(ts pdata.Timestamp, val float64, hostAttributeValue string) {
+	mb.metricSaphanaNetworkRequestAverageTime.recordDataPoint(mb.startTime, ts, val, hostAttributeValue)
 }
 
 // RecordSaphanaNetworkRequestCountDataPoint adds a data point to saphana.network.request.count metric.
@@ -2824,19 +2898,19 @@ func (mb *MetricsBuilder) RecordSaphanaNetworkRequestFinishedCountDataPoint(ts p
 	mb.metricSaphanaNetworkRequestFinishedCount.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, internalExternalRequestTypeAttributeValue)
 }
 
-// RecordSaphanaNetworkRequestFinishedTimeDataPoint adds a data point to saphana.network.request.finished.time metric.
-func (mb *MetricsBuilder) RecordSaphanaNetworkRequestFinishedTimeDataPoint(ts pdata.Timestamp, val int64, hostAttributeValue string) {
-	mb.metricSaphanaNetworkRequestFinishedTime.recordDataPoint(mb.startTime, ts, val, hostAttributeValue)
+// RecordSaphanaReplicationAverageTimeDataPoint adds a data point to saphana.replication.average_time metric.
+func (mb *MetricsBuilder) RecordSaphanaReplicationAverageTimeDataPoint(ts pdata.Timestamp, val float64, primaryHostAttributeValue string, secondaryHostAttributeValue string, portAttributeValue string, replicationModeAttributeValue string) {
+	mb.metricSaphanaReplicationAverageTime.recordDataPoint(mb.startTime, ts, val, primaryHostAttributeValue, secondaryHostAttributeValue, portAttributeValue, replicationModeAttributeValue)
 }
 
 // RecordSaphanaReplicationBacklogSizeDataPoint adds a data point to saphana.replication.backlog.size metric.
-func (mb *MetricsBuilder) RecordSaphanaReplicationBacklogSizeDataPoint(ts pdata.Timestamp, val int64, primaryHostAttributeValue string, secondaryHostAttributeValue string, replicationModeAttributeValue string) {
-	mb.metricSaphanaReplicationBacklogSize.recordDataPoint(mb.startTime, ts, val, primaryHostAttributeValue, secondaryHostAttributeValue, replicationModeAttributeValue)
+func (mb *MetricsBuilder) RecordSaphanaReplicationBacklogSizeDataPoint(ts pdata.Timestamp, val int64, primaryHostAttributeValue string, secondaryHostAttributeValue string, portAttributeValue string, replicationModeAttributeValue string) {
+	mb.metricSaphanaReplicationBacklogSize.recordDataPoint(mb.startTime, ts, val, primaryHostAttributeValue, secondaryHostAttributeValue, portAttributeValue, replicationModeAttributeValue)
 }
 
 // RecordSaphanaReplicationBacklogTimeDataPoint adds a data point to saphana.replication.backlog.time metric.
-func (mb *MetricsBuilder) RecordSaphanaReplicationBacklogTimeDataPoint(ts pdata.Timestamp, val int64, primaryHostAttributeValue string, secondaryHostAttributeValue string, replicationModeAttributeValue string) {
-	mb.metricSaphanaReplicationBacklogTime.recordDataPoint(mb.startTime, ts, val, primaryHostAttributeValue, secondaryHostAttributeValue, replicationModeAttributeValue)
+func (mb *MetricsBuilder) RecordSaphanaReplicationBacklogTimeDataPoint(ts pdata.Timestamp, val int64, primaryHostAttributeValue string, secondaryHostAttributeValue string, portAttributeValue string, replicationModeAttributeValue string) {
+	mb.metricSaphanaReplicationBacklogTime.recordDataPoint(mb.startTime, ts, val, primaryHostAttributeValue, secondaryHostAttributeValue, portAttributeValue, replicationModeAttributeValue)
 }
 
 // RecordSaphanaRowStoreMemoryUsedDataPoint adds a data point to saphana.row_store.memory.used metric.
@@ -2855,8 +2929,8 @@ func (mb *MetricsBuilder) RecordSaphanaSchemaMemoryUsedMaxDataPoint(ts pdata.Tim
 }
 
 // RecordSaphanaSchemaOperationCountDataPoint adds a data point to saphana.schema.operation.count metric.
-func (mb *MetricsBuilder) RecordSaphanaSchemaOperationCountDataPoint(ts pdata.Timestamp, val int64, hostAttributeValue string, schemaAttributeValue string, operationTypeAttributeValue string) {
-	mb.metricSaphanaSchemaOperationCount.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, schemaAttributeValue, operationTypeAttributeValue)
+func (mb *MetricsBuilder) RecordSaphanaSchemaOperationCountDataPoint(ts pdata.Timestamp, val int64, hostAttributeValue string, schemaAttributeValue string, schemaOperationTypeAttributeValue string) {
+	mb.metricSaphanaSchemaOperationCount.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, schemaAttributeValue, schemaOperationTypeAttributeValue)
 }
 
 // RecordSaphanaSchemaRecordCompressedCountDataPoint adds a data point to saphana.schema.record.compressed.count metric.
@@ -2865,8 +2939,8 @@ func (mb *MetricsBuilder) RecordSaphanaSchemaRecordCompressedCountDataPoint(ts p
 }
 
 // RecordSaphanaSchemaRecordCountDataPoint adds a data point to saphana.schema.record.count metric.
-func (mb *MetricsBuilder) RecordSaphanaSchemaRecordCountDataPoint(ts pdata.Timestamp, val int64, hostAttributeValue string, schemaAttributeValue string) {
-	mb.metricSaphanaSchemaRecordCount.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, schemaAttributeValue)
+func (mb *MetricsBuilder) RecordSaphanaSchemaRecordCountDataPoint(ts pdata.Timestamp, val int64, hostAttributeValue string, schemaAttributeValue string, schemaRecordTypeAttributeValue string) {
+	mb.metricSaphanaSchemaRecordCount.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, schemaAttributeValue, schemaRecordTypeAttributeValue)
 }
 
 // RecordSaphanaServiceCodeSizeDataPoint adds a data point to saphana.service.code_size metric.
@@ -2935,23 +3009,23 @@ func (mb *MetricsBuilder) RecordSaphanaTransactionCountDataPoint(ts pdata.Timest
 }
 
 // RecordSaphanaUptimeDataPoint adds a data point to saphana.uptime metric.
-func (mb *MetricsBuilder) RecordSaphanaUptimeDataPoint(ts pdata.Timestamp, val int64, hostAttributeValue string) {
-	mb.metricSaphanaUptime.recordDataPoint(mb.startTime, ts, val, hostAttributeValue)
+func (mb *MetricsBuilder) RecordSaphanaUptimeDataPoint(ts pdata.Timestamp, val int64, hostAttributeValue string, systemAttributeValue string, databaseAttributeValue string) {
+	mb.metricSaphanaUptime.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, systemAttributeValue, databaseAttributeValue)
 }
 
 // RecordSaphanaVolumeOperationCountDataPoint adds a data point to saphana.volume.operation.count metric.
-func (mb *MetricsBuilder) RecordSaphanaVolumeOperationCountDataPoint(ts pdata.Timestamp, val int64, hostAttributeValue string, volumeAttributeValue string, operationTypeAttributeValue string) {
-	mb.metricSaphanaVolumeOperationCount.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, volumeAttributeValue, operationTypeAttributeValue)
+func (mb *MetricsBuilder) RecordSaphanaVolumeOperationCountDataPoint(ts pdata.Timestamp, val int64, hostAttributeValue string, pathAttributeValue string, diskUsageTypeAttributeValue string, volumeOperationTypeAttributeValue string) {
+	mb.metricSaphanaVolumeOperationCount.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, pathAttributeValue, diskUsageTypeAttributeValue, volumeOperationTypeAttributeValue)
 }
 
 // RecordSaphanaVolumeOperationSizeDataPoint adds a data point to saphana.volume.operation.size metric.
-func (mb *MetricsBuilder) RecordSaphanaVolumeOperationSizeDataPoint(ts pdata.Timestamp, val int64, hostAttributeValue string, volumeAttributeValue string, operationTypeAttributeValue string) {
-	mb.metricSaphanaVolumeOperationSize.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, volumeAttributeValue, operationTypeAttributeValue)
+func (mb *MetricsBuilder) RecordSaphanaVolumeOperationSizeDataPoint(ts pdata.Timestamp, val int64, hostAttributeValue string, pathAttributeValue string, diskUsageTypeAttributeValue string, volumeOperationTypeAttributeValue string) {
+	mb.metricSaphanaVolumeOperationSize.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, pathAttributeValue, diskUsageTypeAttributeValue, volumeOperationTypeAttributeValue)
 }
 
 // RecordSaphanaVolumeOperationTimeDataPoint adds a data point to saphana.volume.operation.time metric.
-func (mb *MetricsBuilder) RecordSaphanaVolumeOperationTimeDataPoint(ts pdata.Timestamp, val int64, hostAttributeValue string, volumeAttributeValue string, operationTypeAttributeValue string) {
-	mb.metricSaphanaVolumeOperationTime.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, volumeAttributeValue, operationTypeAttributeValue)
+func (mb *MetricsBuilder) RecordSaphanaVolumeOperationTimeDataPoint(ts pdata.Timestamp, val int64, hostAttributeValue string, pathAttributeValue string, diskUsageTypeAttributeValue string, volumeOperationTypeAttributeValue string) {
+	mb.metricSaphanaVolumeOperationTime.recordDataPoint(mb.startTime, ts, val, hostAttributeValue, pathAttributeValue, diskUsageTypeAttributeValue, volumeOperationTypeAttributeValue)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
@@ -2987,24 +3061,28 @@ var Attributes = struct {
 	ConnectionStatus string
 	// CPUType (The type of cpu.)
 	CPUType string
-	// Disk (The SAP HANA disk.)
-	Disk string
+	// Database (The SAP HANA database.)
+	Database string
 	// DiskStateUsedFree (The state of the disk storage.)
 	DiskStateUsedFree string
+	// DiskUsageType (The SAP HANA disk & volume usage type.)
+	DiskUsageType string
 	// Host (The SAP HANA host.)
 	Host string
 	// HostSwapState (The state of swap data.)
 	HostSwapState string
 	// InternalExternalRequestType (The type of network request.)
 	InternalExternalRequestType string
-	// License (The SAP HANA license.)
-	License string
 	// MemoryStateUsedFree (The state of memory.)
 	MemoryStateUsedFree string
-	// OperationType (The type of operation.)
-	OperationType string
+	// Path (The SAP HANA disk path.)
+	Path string
+	// Port (The SAP HANA port.)
+	Port string
 	// PrimaryHost (The primary SAP HANA host in replication.)
 	PrimaryHost string
+	// Product (The SAP HANA product.)
+	Product string
 	// ReplicationMode (The replication mode.)
 	ReplicationMode string
 	// RowMemoryType (The type of row store memory.)
@@ -3013,6 +3091,10 @@ var Attributes = struct {
 	Schema string
 	// SchemaMemoryType (The type of schema memory.)
 	SchemaMemoryType string
+	// SchemaOperationType (The type of operation.)
+	SchemaOperationType string
+	// SchemaRecordType (The type of schema record.)
+	SchemaRecordType string
 	// SecondaryHost (The secondary SAP HANA host in replication.)
 	SecondaryHost string
 	// Service (The SAP HANA service.)
@@ -3021,12 +3103,14 @@ var Attributes = struct {
 	ServiceMemoryUsedType string
 	// ServiceStatus (The status of services.)
 	ServiceStatus string
+	// System (The SAP HANA system.)
+	System string
 	// ThreadStatus (The status of threads.)
 	ThreadStatus string
 	// TransactionType (The transaction type.)
 	TransactionType string
-	// Volume (The SAP HANA volume.)
-	Volume string
+	// VolumeOperationType (The type of operation.)
+	VolumeOperationType string
 }{
 	"state",
 	"rating",
@@ -3034,26 +3118,31 @@ var Attributes = struct {
 	"component",
 	"status",
 	"type",
-	"disk",
+	"database",
 	"state",
+	"usage_type",
 	"host",
 	"state",
 	"type",
-	"license",
 	"state",
-	"type",
+	"path",
+	"port",
 	"primary",
+	"product",
 	"mode",
 	"type",
 	"schema",
+	"type",
+	"type",
 	"type",
 	"secondary",
 	"service",
 	"type",
 	"status",
+	"system",
 	"status",
 	"type",
-	"volume",
+	"type",
 }
 
 // A is an alias for Attributes.
@@ -3137,15 +3226,6 @@ var AttributeMemoryStateUsedFree = struct {
 	"free",
 }
 
-// AttributeOperationType are the possible values that the attribute "operation_type" can have.
-var AttributeOperationType = struct {
-	Read  string
-	Write string
-}{
-	"read",
-	"write",
-}
-
 // AttributeRowMemoryType are the possible values that the attribute "row_memory_type" can have.
 var AttributeRowMemoryType = struct {
 	Fixed    string
@@ -3157,6 +3237,30 @@ var AttributeRowMemoryType = struct {
 
 // AttributeSchemaMemoryType are the possible values that the attribute "schema_memory_type" can have.
 var AttributeSchemaMemoryType = struct {
+	Main         string
+	Delta        string
+	HistoryMain  string
+	HistoryDelta string
+}{
+	"main",
+	"delta",
+	"history_main",
+	"history_delta",
+}
+
+// AttributeSchemaOperationType are the possible values that the attribute "schema_operation_type" can have.
+var AttributeSchemaOperationType = struct {
+	Read  string
+	Write string
+	Merge string
+}{
+	"read",
+	"write",
+	"merge",
+}
+
+// AttributeSchemaRecordType are the possible values that the attribute "schema_record_type" can have.
+var AttributeSchemaRecordType = struct {
 	Main         string
 	Delta        string
 	HistoryMain  string
@@ -3204,4 +3308,13 @@ var AttributeTransactionType = struct {
 	"update",
 	"commit",
 	"rollback",
+}
+
+// AttributeVolumeOperationType are the possible values that the attribute "volume_operation_type" can have.
+var AttributeVolumeOperationType = struct {
+	Read  string
+	Write string
+}{
+	"read",
+	"write",
 }

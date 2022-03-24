@@ -3,14 +3,20 @@ name: saphanareceiver
 attributes:
   host:
     description: The SAP HANA host.
-  license:
-    description: The SAP HANA license.
+  database:
+    description: The SAP HANA database.
+  system:
+    description: The SAP HANA system.
+  product:
+    description: The SAP HANA product.
   primary_host:
     value: primary
     description: The primary SAP HANA host in replication.
   secondary_host:
     value: secondary
     description: The secondary SAP HANA host in replication.
+  port:
+    description: The SAP HANA port.
   replication_mode:
     value: mode
     description: The replication mode.
@@ -20,10 +26,11 @@ attributes:
     description: The SAP HANA schema.
   service:
     description: The SAP HANA service.
-  disk:
-    description: The SAP HANA disk.
-  volume:
-    description: The SAP HANA volume.
+  path:
+    description: The SAP HANA disk path.
+  disk_usage_type:
+    value: usage_type
+    description: The SAP HANA disk & volume usage type.
   transaction_type:
     value: type
     description: The transaction type.
@@ -69,6 +76,14 @@ attributes:
     - delta
     - history_main
     - history_delta
+  schema_record_type:
+    value: type
+    description: The type of schema record.
+    enum:
+    - main
+    - delta
+    - history_main
+    - history_delta
   memory_state_used_free:
     value: state
     description: The state of memory.
@@ -87,7 +102,7 @@ attributes:
     enum:
     - used
     - free
-  operation_type:
+  schema_operation_type:
     value: type
     description: The type of operation.
     enum:
@@ -112,7 +127,7 @@ attributes:
     enum:
     - logical
     - physical
-  operation_type:
+  volume_operation_type:
     value: type
     description: The type of operation.
     enum:
@@ -166,7 +181,7 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [host]
+    attributes: [host, system, database]
     enabled: true
   saphana.replication.backlog.time:
     description: The current replication backlog.
@@ -175,7 +190,7 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [primary_host, secondary_host, replication_mode]
+    attributes: [primary_host, secondary_host, port, replication_mode]
     enabled: true
   saphana.replication.backlog.size:
     description: The current replication backlog size.
@@ -184,14 +199,21 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [primary_host, secondary_host, replication_mode]
+    attributes: [primary_host, secondary_host, port, replication_mode]
+    enabled: true
+  saphana.replication.average_time:
+    description: The average amount of time consumed replicating a log.
+    unit: us
+    gauge:
+      value_type: double
+    attributes: [primary_host, secondary_host, port, replication_mode]
     enabled: true
   saphana.backup.latest:
     description: The age of the latest backup by start time.
     unit: s
     gauge:
       value_type: int
-    attributes: [host]
+    attributes: []
     enabled: true
   saphana.transaction.count:
     description: The number of transactions.
@@ -216,7 +238,7 @@ metrics:
     unit: s
     gauge:
       value_type: int
-    attributes: [license]
+    attributes: [system, product]
     enabled: true
   saphana.license.limit:
     description: The allowed product usage as specified by the license (for example, main memory).
@@ -225,7 +247,7 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [license]
+    attributes: [system, product]
     enabled: true
   saphana.license.peak:
     description: The peak product usage value during last 13 months, measured periodically.
@@ -234,7 +256,7 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [license]
+    attributes: [system, product]
     enabled: true
   saphana.instance.memory.current:
     description: The size of the memory pool for all SAP HANA processes.
@@ -342,7 +364,7 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [host, schema]
+    attributes: [host, schema, schema_record_type]
     enabled: true
   saphana.schema.record.compressed.count:
     description: The number of entries in main during the last optimize compression run for all tables in schema.
@@ -360,7 +382,7 @@ metrics:
       monotonic: true
       aggregation: cumulative
       value_type: int
-    attributes: [host, schema, operation_type]
+    attributes: [host, schema, schema_operation_type]
     enabled: true
   saphana.service.count:
     description: The number of services in a given status.
@@ -468,7 +490,7 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [host, disk, disk_state_used_free]
+    attributes: [host, path, disk_usage_type, disk_state_used_free]
     enabled: true
   saphana.volume.operation.count:
     description: The number of operations executed.
@@ -477,7 +499,7 @@ metrics:
       monotonic: true
       aggregation: cumulative
       value_type: int
-    attributes: [host, volume, operation_type]
+    attributes: [host, path, disk_usage_type, volume_operation_type]
     enabled: true
   saphana.volume.operation.size:
     description: The size of operations executed.
@@ -486,7 +508,7 @@ metrics:
       monotonic: true
       aggregation: cumulative
       value_type: int
-    attributes: [host, volume, operation_type]
+    attributes: [host, path, disk_usage_type, volume_operation_type]
     enabled: true
   saphana.volume.operation.time:
     description: The time spent executing operations.
@@ -495,7 +517,7 @@ metrics:
       monotonic: true
       aggregation: cumulative
       value_type: int
-    attributes: [host, volume, operation_type]
+    attributes: [host, path, disk_usage_type, volume_operation_type]
     enabled: true
   saphana.network.request.count:
     description: The number of active and pending service requests.
@@ -515,12 +537,10 @@ metrics:
       value_type: int
     attributes: [host, internal_external_request_type]
     enabled: true
-  saphana.network.request.finished.time:
-    description: The total response time of all completed service requests.
+  saphana.network.request.average_time:
+    description: The average response time calculated over recent requests
     unit: ms
-    sum:
-      monotonic: true
-      aggregation: cumulative
-      value_type: int
+    gauge:
+      value_type: double
     attributes: [host]
     enabled: true

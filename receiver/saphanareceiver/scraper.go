@@ -16,8 +16,6 @@ package saphanareceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"strconv"
 	"time"
 
@@ -25,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver/internal/metadata"
@@ -49,81 +48,6 @@ func newSapHanaScraper(settings component.TelemetrySettings, cfg *Config) (scrap
 	return scraperhelper.NewScraper(typeStr, rs.scrape)
 }
 
-type queryStat struct {
-	key                     string
-	addIntMetricFunction    func(*sapHanaScraper, pdata.Timestamp, int64, map[string]string)
-	addDoubleMetricFunction func(*sapHanaScraper, pdata.Timestamp, float64, map[string]string)
-}
-
-func (q *queryStat) collectStat(s *sapHanaScraper, now pdata.Timestamp, row map[string]string) error {
-	if q.addIntMetricFunction != nil {
-		if i, ok := s.parseInt(q.key, row[q.key]); ok {
-			q.addIntMetricFunction(s, now, i, row)
-		} else {
-			return fmt.Errorf("unable to parse '%s' as an integer for query key %s", row[q.key], q.key)
-		}
-	} else if q.addDoubleMetricFunction != nil {
-		if f, ok := s.parseDouble(q.key, row[q.key]); ok {
-			q.addDoubleMetricFunction(s, now, f, row)
-		} else {
-			return fmt.Errorf("unable to parse '%s' as a double for query key %s", row[q.key], q.key)
-		}
-	} else {
-		return errors.New("incorrectly configured query, either addIntMetricFunction or addDoubleMetricFunction must be provided")
-	}
-	return nil
-}
-
-type monitoringQuery struct {
-	query         string
-	orderedLabels []string
-	orderedStats  []queryStat
-}
-
-var queries = []monitoringQuery{
-	{
-		query:         "SELECT HOST, SUM(MEMORY_SIZE_IN_MAIN) as main, SUM(MEMORY_SIZE_IN_DELTA) as delta FROM M_CS_ALL_COLUMNS GROUP BY HOST",
-		orderedLabels: []string{"host"},
-		orderedStats: []queryStat{
-			{
-				key: "main",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaColumnMemoryUsedDataPoint(now, i, row["host"], metadata.AttributeColumnMemoryType.Main)
-				},
-			},
-			{
-				key: "delta",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaColumnMemoryUsedDataPoint(now, i, row["host"], metadata.AttributeColumnMemoryType.Delta)
-				},
-			},
-		},
-	},
-}
-
-func (m *monitoringQuery) columns() []string {
-	output := make([]string, len(m.orderedLabels))
-	copy(output, m.orderedLabels)
-	for _, stat := range m.orderedStats {
-		output = append(output, stat.key)
-	}
-	return output
-}
-
-func (m *monitoringQuery) CollectMetrics(s *sapHanaScraper, ctx context.Context, client client, now pdata.Timestamp) error {
-	if rows, err := client.collectDataFromQuery(ctx, m); err != nil {
-		return err
-	} else {
-		for _, data := range rows {
-			for _, stat := range m.orderedStats {
-				stat.collectStat(s, now, data)
-			}
-		}
-	}
-
-	return nil
-}
-
 // Scrape is called periodically, querying SAP HANA and building Metrics to send to
 // the next consumer.
 func (s *sapHanaScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
@@ -133,6 +57,8 @@ func (s *sapHanaScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 	if err := client.Connect(ctx); err != nil {
 		return metrics, err
 	}
+
+	defer client.Close()
 
 	errs := &scrapererror.ScrapeErrors{}
 	now := pdata.NewTimestampFromTime(time.Now())
@@ -145,10 +71,6 @@ func (s *sapHanaScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 			errs.AddPartial(len(query.orderedStats), err)
 		}
 		s.mb.Emit(ilms.Metrics())
-	}
-
-	if err := client.Close(); err != nil {
-		errs.AddPartial(0, err)
 	}
 
 	return metrics, errs.Combine()

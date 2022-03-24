@@ -130,6 +130,8 @@ func (c *sapHanaClient) Connect(ctx context.Context) error {
 	err = client.PingContext(ctx)
 	if err == nil {
 		c.client = client
+	} else {
+		client.Close()
 	}
 
 	return err
@@ -153,12 +155,18 @@ func (c *sapHanaClient) collectDataFromQuery(ctx context.Context, query *monitor
 
 	errors := scrapererror.ScrapeErrors{}
 	data := []map[string]string{}
+
+ROW_ITERATOR:
 	for rows.Next() {
 		rowFields := make([]interface{}, 0)
 
 		// Build a list of addresses that rows.Scan will load column data into
-		for range query.columns() {
-			var val string
+		for range query.orderedLabels {
+			var val sql.NullString
+			rowFields = append(rowFields, &val)
+		}
+		for range query.orderedStats {
+			var val sql.NullString
 			rowFields = append(rowFields, &val)
 		}
 
@@ -167,13 +175,30 @@ func (c *sapHanaClient) collectDataFromQuery(ctx context.Context, query *monitor
 		}
 
 		values := map[string]string{}
-		for _, label := range query.columns() {
+		for _, label := range query.orderedLabels {
+			v, err := convertInterfaceToString(rowFields[0])
+			if err != nil {
+				errors.AddPartial(0, err)
+				continue ROW_ITERATOR
+			}
+			// If value was null, we can't use this row
+			if !v.Valid {
+				errors.AddPartial(0, fmt.Errorf("database row NULL value for required label %s", label))
+				continue ROW_ITERATOR
+			}
+			values[label] = v.String
+			rowFields = rowFields[1:]
+		}
+		for _, stat := range query.orderedStats {
 			v, err := convertInterfaceToString(rowFields[0])
 			if err != nil {
 				errors.AddPartial(0, err)
 				continue
 			}
-			values[label] = v
+			// Only report stat if value was not NULL
+			if v.Valid {
+				values[stat.key] = v.String
+			}
 			rowFields = rowFields[1:]
 		}
 
@@ -182,9 +207,9 @@ func (c *sapHanaClient) collectDataFromQuery(ctx context.Context, query *monitor
 	return data, errors.Combine()
 }
 
-func convertInterfaceToString(input interface{}) (string, error) {
-	if val, ok := input.(*string); ok {
+func convertInterfaceToString(input interface{}) (sql.NullString, error) {
+	if val, ok := input.(*sql.NullString); ok {
 		return *val, nil
 	}
-	return "", errors.New("issue converting interface into string")
+	return sql.NullString{}, errors.New("issue converting interface into string")
 }
