@@ -16,7 +16,6 @@ package azureblobexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
-	"errors"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -28,10 +27,6 @@ const (
 	typeStr             = "azureblob"
 	logsContainerName   = "logs"
 	tracesContainerName = "traces"
-)
-
-var (
-	errUnexpectedConfigurationType = errors.New("failed to cast configuration to Azure Blob Config")
 )
 
 // NewFactory returns a factory for Azure Blob exporter.
@@ -56,19 +51,6 @@ func createTracesExporter(
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.TracesExporter, error) {
-	// exporterConfig, ok := cfg.(*Config)
-
-	// if !ok {
-	// 	return nil, errUnexpectedConfigurationType
-	// }
-
-	// bc, err := NewBlobClient(exporterConfig.ConnectionString, exporterConfig.TracesContainerName, set.Logger)
-	// if err != nil {
-	// 	set.Logger.Error(err.Error())
-	// }
-
-	// return newTracesExporter(exporterConfig, bc, set)
-
 	return exporterhelper.NewTracesExporter(cfg, set, onTraceData)
 }
 
@@ -77,17 +59,5 @@ func createLogsExporter(
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.LogsExporter, error) {
-	// exporterConfig, ok := cfg.(*Config)
-
-	// if !ok {
-	// 	return nil, errUnexpectedConfigurationType
-	// }
-
-	// bc, err := NewBlobClient(exporterConfig.ConnectionString, exporterConfig.LogsContainerName, set.Logger)
-	// if err != nil {
-	// 	set.Logger.Error(err.Error())
-	// }
-
-	// return newLogsExporter(exporterConfig, bc, set)
 	return exporterhelper.NewLogsExporter(config, set, onLogData)
 }
