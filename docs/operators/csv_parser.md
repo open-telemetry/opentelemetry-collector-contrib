@@ -64,7 +64,7 @@ Configuration:
 
 ```yaml
 - type: csv_parser
-  parse_from: message
+  parse_from: body.message
   header: id,severity,message
   delimiter: "\t"
 ```
@@ -107,7 +107,7 @@ Configuration:
 - type: csv_parser
   header: 'timestamp_field,severity,message'
   timestamp:
-    parse_from: timestamp_field
+    parse_from: body.timestamp_field
     layout_type: strptime
     layout: '%Y-%m-%d'
 ```

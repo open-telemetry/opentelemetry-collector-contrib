@@ -21,8 +21,8 @@ Add a string to the body
 
 ```yaml
 - type: add
-  field: key2
-  value: val2
+  field: body.key2
+  value: body.val2
 ```
 
 <table>
@@ -63,7 +63,7 @@ Add a value to the body using an expression
 
 ```yaml
 - type: add
-  field: key2
+  field: body.key2
   value: EXPR(body.key1 + "_suffix")
 ```
 
@@ -105,7 +105,7 @@ Add an object to the body
 
 ```yaml
 - type: add
-  field: key2
+  field: body.key2
   value: 
     nestedkey: nestedvalue
 ```

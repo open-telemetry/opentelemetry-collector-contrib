@@ -25,7 +25,7 @@ The `json_parser` operator parses the string-type field selected by `parse_from`
 Configuration:
 ```yaml
 - type: json_parser
-  parse_from: message
+  parse_from: body.message
 ```
 
 <table>
@@ -63,9 +63,9 @@ Configuration:
 Configuration:
 ```yaml
 - type: json_parser
-  parse_from: message.embedded
-  parse_to: parsed
-  preserve_to: message.embedded
+  parse_from: body.message.embedded
+  parse_to: body.parsed
+  preserve_to: body.message.embedded
 ```
 
 <table>
@@ -110,9 +110,9 @@ Configuration:
 Configuration:
 ```yaml
 - type: json_parser
-  parse_from: message
+  parse_from: body.message
   timestamp:
-    parse_from: seconds_since_epoch
+    parse_from: body.seconds_since_epoch
     layout_type: epoch
     layout: s
 ```

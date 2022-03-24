@@ -29,7 +29,7 @@ This operator makes use of [Go regular expression](https://github.com/google/re2
 Configuration:
 ```yaml
 - type: regex_parser
-  parse_from: message
+  parse_from: body.message
   regex: '^Host=(?P<host>[^,]+), Type=(?P<type>.*)$'
 ```
 
@@ -69,10 +69,10 @@ Configuration:
 Configuration:
 ```yaml
 - type: regex_parser
-  parse_from: message.embedded
-  parse_to: parsed
+  parse_from: body.message.embedded
+  parse_to: body.parsed
   regex: '^Host=(?P<host>[^,]+), Type=(?P<type>.*)$'
-  preserve_to: message.embedded
+  preserve_to: body.message.embedded
 ```
 
 <table>
@@ -121,7 +121,7 @@ Configuration:
 - type: regex_parser
   regex: '^Time=(?P<timestamp_field>\d{4}-\d{2}-\d{2}), Host=(?P<host>[^,]+), Type=(?P<type>.*)$'
   timestamp:
-    parse_from: timestamp_field
+    parse_from: body.timestamp_field
     layout_type: strptime
     layout: '%Y-%m-%d'
 ```
@@ -161,7 +161,7 @@ Configuration:
 ```yaml
 - type: regex_parser
   regex: '^Host=(?<host>)$'
-  parse_from: message
+  parse_from: body.message
   if: 'body.type == "hostname"'
 ```
 
@@ -228,7 +228,7 @@ Configuration:
 ```yaml
 - type: regex_parser
   regex: '^Host=(?<host>)$'
-  parse_from: message
+  parse_from: body.message
   if: 'body.type == "hostname"'
 ```
 
