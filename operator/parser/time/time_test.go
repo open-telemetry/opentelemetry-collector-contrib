@@ -87,6 +87,8 @@ func TestBuild(t *testing.T) {
 }
 
 func TestProcess(t *testing.T) {
+	now := time.Now()
+
 	testCases := []struct {
 		name   string
 		config func() (*TimeParserConfig, error)
@@ -94,8 +96,8 @@ func TestProcess(t *testing.T) {
 		expect *entry.Entry
 	}{
 		{
-			"promote",
-			func() (*TimeParserConfig, error) {
+			name: "promote",
+			config: func() (*TimeParserConfig, error) {
 				cfg := NewTimeParserConfig("test_id")
 				parseFrom, err := entry.NewField("body.app_time")
 				if err != nil {
@@ -106,21 +108,23 @@ func TestProcess(t *testing.T) {
 				cfg.Layout = "Mon Jan 2 15:04:05 MST 2006"
 				return cfg, nil
 			},
-			func() *entry.Entry {
+			input: func() *entry.Entry {
 				e := entry.New()
+				e.ObservedTimestamp = now
 				e.Body = map[string]interface{}{
 					"app_time": "Mon Jan 2 15:04:05 UTC 2006",
 				}
 				return e
 			}(),
-			&entry.Entry{
-				Timestamp: time.Date(2006, time.January, 2, 15, 4, 5, 0, time.UTC),
-				Body:      map[string]interface{}{},
+			expect: &entry.Entry{
+				ObservedTimestamp: now,
+				Timestamp:         time.Date(2006, time.January, 2, 15, 4, 5, 0, time.UTC),
+				Body:              map[string]interface{}{},
 			},
 		},
 		{
-			"promote-and-preserve",
-			func() (*TimeParserConfig, error) {
+			name: "promote-and-preserve",
+			config: func() (*TimeParserConfig, error) {
 				cfg := NewTimeParserConfig("test_id")
 				parseFrom, err := entry.NewField("body.app_time")
 				if err != nil {
@@ -132,15 +136,17 @@ func TestProcess(t *testing.T) {
 				cfg.Layout = "Mon Jan 2 15:04:05 MST 2006"
 				return cfg, nil
 			},
-			func() *entry.Entry {
+			input: func() *entry.Entry {
 				e := entry.New()
+				e.ObservedTimestamp = now
 				e.Body = map[string]interface{}{
 					"app_time": "Mon Jan 2 15:04:05 UTC 2006",
 				}
 				return e
 			}(),
-			&entry.Entry{
-				Timestamp: time.Date(2006, time.January, 2, 15, 4, 5, 0, time.UTC),
+			expect: &entry.Entry{
+				ObservedTimestamp: now,
+				Timestamp:         time.Date(2006, time.January, 2, 15, 4, 5, 0, time.UTC),
 				Body: map[string]interface{}{
 					"app_time": "Mon Jan 2 15:04:05 UTC 2006",
 				},
@@ -551,12 +557,14 @@ func runLossyTimeParseTest(_ *testing.T, cfg *TimeParserConfig, ent *entry.Entry
 		timeParser := op.(*TimeParserOperator)
 		timeParser.OutputOperators = []operator.Operator{mockOutput}
 
+		ots := ent.ObservedTimestamp
 		err = timeParser.Parse(ent)
 		if parseErr {
 			require.Error(t, err, "expected error when configuring operator")
 			return
 		}
 		require.NoError(t, err)
+		require.Equal(t, ots, ent.ObservedTimestamp, "time parsing should not change observed timestamp")
 
 		diff := time.Duration(math.Abs(float64(expected.Sub(ent.Timestamp))))
 		require.True(t, diff <= maxLoss)

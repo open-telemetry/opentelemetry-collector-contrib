@@ -31,11 +31,13 @@ const (
 )
 
 func TestRecombineOperator(t *testing.T) {
+	now := time.Now()
 	t1 := time.Date(2020, time.April, 11, 21, 34, 01, 0, time.UTC)
 	t2 := time.Date(2020, time.April, 11, 21, 34, 02, 0, time.UTC)
 
 	entryWithBody := func(ts time.Time, body interface{}) *entry.Entry {
 		e := entry.New()
+		e.ObservedTimestamp = now
 		e.Timestamp = ts
 		e.Body = body
 		return e

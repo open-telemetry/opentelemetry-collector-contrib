@@ -133,9 +133,12 @@ func TestRead(t *testing.T) {
 }
 
 func TestCopy(t *testing.T) {
+	now := time.Now()
+
 	entry := New()
 	entry.Severity = Severity(0)
 	entry.SeverityText = "ok"
+	entry.ObservedTimestamp = now
 	entry.Timestamp = time.Time{}
 	entry.Body = "test"
 	entry.Attributes = map[string]interface{}{"label": "value"}
@@ -155,6 +158,7 @@ func TestCopy(t *testing.T) {
 	entry.SpanId[0] = 0xff
 	entry.TraceFlags[0] = 0xff
 
+	require.Equal(t, now, copy.ObservedTimestamp)
 	require.Equal(t, time.Time{}, copy.Timestamp)
 	require.Equal(t, Severity(0), copy.Severity)
 	require.Equal(t, "ok", copy.SeverityText)
@@ -167,8 +171,9 @@ func TestCopy(t *testing.T) {
 }
 
 func TestCopyNil(t *testing.T) {
+	now := time.Now()
 	entry := New()
-	entry.Timestamp = time.Time{}
+	entry.ObservedTimestamp = now
 	copy := entry.Copy()
 
 	entry.Severity = Severity(1)
@@ -181,6 +186,7 @@ func TestCopyNil(t *testing.T) {
 	entry.SpanId = []byte{0x04, 0x05, 0x06, 0x07, 0x08, 0x00, 0x01, 0x02, 0x03}
 	entry.TraceFlags = []byte{0x01}
 
+	require.Equal(t, now, copy.ObservedTimestamp)
 	require.Equal(t, time.Time{}, copy.Timestamp)
 	require.Equal(t, Severity(0), copy.Severity)
 	require.Equal(t, "", copy.SeverityText)
@@ -295,4 +301,14 @@ func TestReadToInterfaceMissingField(t *testing.T) {
 	err := entry.readToInterface(field, &dest)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "can not be read as a interface{}")
+}
+
+func TestDefaultTimestamps(t *testing.T) {
+	now := time.Now()
+	timeNow = func() time.Time { return now }
+	defer func() { timeNow = time.Now }()
+
+	e := New()
+	require.Equal(t, now, e.ObservedTimestamp)
+	require.True(t, e.Timestamp.IsZero())
 }
