@@ -37,13 +37,15 @@ type sapHanaScraper struct {
 	settings component.TelemetrySettings
 	cfg      *Config
 	mb       *metadata.MetricsBuilder
+	factory  sapHanaConnectionFactory
 }
 
-func newSapHanaScraper(settings component.TelemetrySettings, cfg *Config) (scraperhelper.Scraper, error) {
+func newSapHanaScraper(settings component.TelemetrySettings, cfg *Config, factory sapHanaConnectionFactory) (scraperhelper.Scraper, error) {
 	rs := &sapHanaScraper{
 		settings: settings,
 		cfg:      cfg,
 		mb:       metadata.NewMetricsBuilder(cfg.Metrics),
+		factory:  factory,
 	}
 	return scraperhelper.NewScraper(typeStr, rs.scrape)
 }
@@ -53,7 +55,7 @@ func newSapHanaScraper(settings component.TelemetrySettings, cfg *Config) (scrap
 func (s *sapHanaScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 	metrics := pdata.NewMetrics()
 
-	client := newSapHanaClient(s.cfg, &defaultConnectionFactory{})
+	client := newSapHanaClient(s.cfg, s.factory)
 	if err := client.Connect(ctx); err != nil {
 		return metrics, err
 	}

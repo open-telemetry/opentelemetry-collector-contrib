@@ -68,7 +68,7 @@ func createMetricsReceiver(
 	if !ok {
 		return nil, errConfigNotSAPHANA
 	}
-	scraper, err := newSapHanaScraper(set.TelemetrySettings, c)
+	scraper, err := newSapHanaScraper(set.TelemetrySettings, c, &defaultConnectionFactory{})
 	if err != nil {
 		return nil, err
 	}

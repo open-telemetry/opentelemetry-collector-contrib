@@ -168,7 +168,7 @@ var queries = []monitoringQuery{
 		},
 	},
 	{
-		query:         "SSELECT HOST, SYSTEM_ID, DATABASE_NAME, seconds_between(START_TIME, CURRENT_TIMESTAMP) age  FROM M_DATABASE",
+		query:         "SELECT HOST, SYSTEM_ID, DATABASE_NAME, seconds_between(START_TIME, CURRENT_TIMESTAMP) age FROM M_DATABASE",
 		orderedLabels: []string{"host", "system", "database"},
 		orderedStats: []queryStat{
 			{
@@ -614,18 +614,6 @@ var queries = []monitoringQuery{
 				key: "cpu_idle",
 				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
 					s.mb.RecordSaphanaCPUUsedDataPoint(now, i, row["host"], metadata.AttributeCPUType.Idle)
-				},
-			},
-		},
-	},
-	{
-		query:         "SELECT HOST, CONNECTION_STATUS, COUNT(*) AS connections FROM M_CONNECTIONS WHERE CONNECTION_STATUS != '' GROUP BY HOST, CONNECTION_STATUS",
-		orderedLabels: []string{"host", "connection_status"},
-		orderedStats: []queryStat{
-			{
-				key: "connections",
-				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaConnectionCountDataPoint(now, i, row["host"], strings.ToLower(row["connection_status"]))
 				},
 			},
 		},
