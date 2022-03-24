@@ -22,7 +22,6 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
-	"go.uber.org/zap"
 )
 
 const (
@@ -43,6 +42,7 @@ type blobReceiverFactory struct {
 // NewFactory returns a factory for Azure Blob receiver.
 func NewFactory() component.ReceiverFactory {
 	f := &blobReceiverFactory{}
+
 	return receiverhelper.NewFactory(
 		typeStr,
 		f.createDefaultConfig,
@@ -71,8 +71,6 @@ func (f *blobReceiverFactory) createLogsReceiver(
 		return nil, err
 	}
 
-	receiver.(BlobDataConsumer).SetNextLogsConsumer(nextConsumer)
-
 	return receiver, nil
 }
 
@@ -89,7 +87,6 @@ func (f *blobReceiverFactory) createTracesReceiver(
 		return nil, err
 	}
 
-	receiver.(BlobDataConsumer).SetNextTracesConsumer(nextConsumer)
 	return receiver, nil
 }
 
@@ -106,15 +103,12 @@ func (f *blobReceiverFactory) getReceiver(
 			return nil, errUnexpectedConfigurationType
 		}
 
-		blobEventHandler, err := f.getBlobEventHandler(receiverConfig, set.Logger)
+		var err error
+
+		f.receiver, err = NewReceiver(*receiverConfig, set)
 
 		if err != nil {
-			return nil, err
-		}
-
-		f.receiver, err = NewReceiver(*receiverConfig, set, blobEventHandler)
-
-		if err != nil {
+			set.Logger.Error(err.Error())
 			return nil, err
 		}
 
@@ -122,27 +116,3 @@ func (f *blobReceiverFactory) getReceiver(
 
 	return f.receiver, nil
 }
-
-func (f *blobReceiverFactory) getBlobEventHandler(cfg *Config, logger *zap.Logger) (BlobEventHandler, error) {
-	bc, err := NewBlobClient(cfg.ConnectionString, logger)
-	if err != nil {
-		return nil, err
-	}
-
-	return NewBlobEventHandler(cfg.EventHubEndPoint, cfg.LogsContainerName, cfg.TracesContainerName, bc, logger),
-		nil
-}
-
-// func (f *kafkaReceiverFactory) createLogsReceiver(
-// 	_ context.Context,
-// 	set component.ReceiverCreateSettings,
-// 	cfg config.Receiver,
-// 	nextConsumer consumer.Logs,
-// ) (component.LogsReceiver, error) {
-// 	c := cfg.(*Config)
-// 	r, err := newLogsReceiver(*c, set, f.logsUnmarshalers, nextConsumer)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return r, nil
-// }
