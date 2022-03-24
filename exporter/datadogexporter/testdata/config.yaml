@@ -8,6 +8,10 @@ exporters:
   datadog/api:
     hostname: customhostname
     env: prod
+    # Deprecated; kept here to avoid regressions.
+    service: myservice
+    # Deprecated; kept here to avoid regressions.
+    version: myversion
 
     tags:
       - example:tag

@@ -127,48 +127,44 @@ func TestLoadConfig(t *testing.T) {
 	err = apiConfig.Sanitize(zap.NewNop())
 
 	require.NoError(t, err)
-	assert.Equal(t, &ddconfig.Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "api")),
-		TimeoutSettings:  defaulttimeoutSettings(),
-		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
-
-		TagsConfig: ddconfig.TagsConfig{
-			Hostname:   "customhostname",
-			Env:        "prod",
-			EnvVarTags: "",
-			Tags:       []string{"example:tag"},
+	assert.Equal(t, config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "api")), apiConfig.ExporterSettings)
+	assert.Equal(t, defaulttimeoutSettings(), apiConfig.TimeoutSettings)
+	assert.Equal(t, exporterhelper.NewDefaultRetrySettings(), apiConfig.RetrySettings)
+	assert.Equal(t, exporterhelper.NewDefaultQueueSettings(), apiConfig.QueueSettings)
+	assert.Equal(t, ddconfig.TagsConfig{
+		Hostname:   "customhostname",
+		Env:        "prod",
+		Service:    "myservice",
+		Version:    "myversion",
+		EnvVarTags: "",
+		Tags:       []string{"example:tag"},
+	}, apiConfig.TagsConfig)
+	assert.Equal(t, ddconfig.APIConfig{
+		Key:  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		Site: "datadoghq.eu",
+	}, apiConfig.API)
+	assert.Equal(t, ddconfig.MetricsConfig{
+		TCPAddr: confignet.TCPAddr{
+			Endpoint: "https://api.datadoghq.eu",
 		},
-
-		API: ddconfig.APIConfig{
-			Key:  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-			Site: "datadoghq.eu",
+		DeltaTTL:      3600,
+		SendMonotonic: true,
+		Quantiles:     true,
+		HistConfig: ddconfig.HistogramConfig{
+			Mode:         "distributions",
+			SendCountSum: false,
 		},
-
-		Metrics: ddconfig.MetricsConfig{
-			TCPAddr: confignet.TCPAddr{
-				Endpoint: "https://api.datadoghq.eu",
-			},
-			DeltaTTL:      3600,
-			SendMonotonic: true,
-			Quantiles:     true,
-			HistConfig: ddconfig.HistogramConfig{
-				Mode:         "distributions",
-				SendCountSum: false,
-			},
+	}, apiConfig.Metrics)
+	assert.Equal(t, ddconfig.TracesConfig{
+		SampleRate: 1,
+		TCPAddr: confignet.TCPAddr{
+			Endpoint: "https://trace.agent.datadoghq.eu",
 		},
-
-		Traces: ddconfig.TracesConfig{
-			SampleRate: 1,
-			TCPAddr: confignet.TCPAddr{
-				Endpoint: "https://trace.agent.datadoghq.eu",
-			},
-			IgnoreResources: []string{},
-		},
-		SendMetadata:        true,
-		OnlyMetadata:        false,
-		UseResourceMetadata: true,
-	}, apiConfig)
+		IgnoreResources: []string{},
+	}, apiConfig.Traces)
+	assert.True(t, apiConfig.SendMetadata)
+	assert.False(t, apiConfig.OnlyMetadata)
+	assert.True(t, apiConfig.UseResourceMetadata)
 
 	defaultConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "default")].(*ddconfig.Config)
 	err = defaultConfig.Sanitize(zap.NewNop())
