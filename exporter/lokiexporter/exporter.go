@@ -213,7 +213,7 @@ func (l *lokiExporter) logDataToLoki(ld pdata.Logs) (pr *logproto.PushRequest, n
 	return pr, numDroppedLogs
 }
 
-func (l *lokiExporter) convertAttributesAndMerge(logAttrs pdata.AttributeMap, resourceAttrs pdata.AttributeMap) (mergedAttributes model.LabelSet, dropped bool) {
+func (l *lokiExporter) convertAttributesAndMerge(logAttrs pdata.Map, resourceAttrs pdata.Map) (mergedAttributes model.LabelSet, dropped bool) {
 	logRecordAttributes := l.convertAttributesToLabels(logAttrs, l.config.Labels.Attributes)
 	resourceAttributes := l.convertAttributesToLabels(resourceAttrs, l.config.Labels.ResourceAttributes)
 
@@ -226,7 +226,7 @@ func (l *lokiExporter) convertAttributesAndMerge(logAttrs pdata.AttributeMap, re
 	return mergedAttributes, false
 }
 
-func (l *lokiExporter) convertAttributesToLabels(attributes pdata.AttributeMap, allowedAttributes map[string]string) model.LabelSet {
+func (l *lokiExporter) convertAttributesToLabels(attributes pdata.Map, allowedAttributes map[string]string) model.LabelSet {
 	ls := model.LabelSet{}
 
 	allowedLabels := l.config.Labels.getAttributes(allowedAttributes)
@@ -234,7 +234,7 @@ func (l *lokiExporter) convertAttributesToLabels(attributes pdata.AttributeMap, 
 	for attr, attrLabelName := range allowedLabels {
 		av, ok := attributes.Get(attr)
 		if ok {
-			if av.Type() != pdata.AttributeValueTypeString {
+			if av.Type() != pdata.ValueTypeString {
 				l.settings.Logger.Debug("Failed to convert attribute value to Loki label value, value is not a string", zap.String("attribute", attr))
 				continue
 			}
@@ -293,7 +293,7 @@ func (l *lokiExporter) convertLogBodyToEntry(lr pdata.LogRecord, res pdata.Resou
 
 	// fields not added to the accept-list as part of the component's config
 	// are added to the body, so that they can still be seen under "detected fields"
-	lr.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+	lr.Attributes().Range(func(k string, v pdata.Value) bool {
 		if _, found := l.config.Labels.Attributes[k]; !found {
 			b.WriteString(k)
 			b.WriteString("=")
@@ -305,7 +305,7 @@ func (l *lokiExporter) convertLogBodyToEntry(lr pdata.LogRecord, res pdata.Resou
 
 	// same for resources: include all, except the ones that are explicitly added
 	// as part of the config, which are showing up at the top-level already
-	res.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+	res.Attributes().Range(func(k string, v pdata.Value) bool {
 		if _, found := l.config.Labels.ResourceAttributes[k]; !found {
 			b.WriteString(k)
 			b.WriteString("=")

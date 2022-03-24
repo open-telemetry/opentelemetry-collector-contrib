@@ -25,7 +25,7 @@ import (
 
 type dataPoint interface {
 	Timestamp() pdata.Timestamp
-	Attributes() pdata.AttributeMap
+	Attributes() pdata.Map
 }
 
 type prometheusFormatter struct {
@@ -54,10 +54,10 @@ func newPrometheusFormatter() (prometheusFormatter, error) {
 }
 
 // PrometheusLabels returns all attributes as sanitized prometheus labels string
-func (f *prometheusFormatter) tags2String(attr pdata.AttributeMap, labels pdata.AttributeMap) prometheusTags {
-	mergedAttributes := pdata.NewAttributeMap()
+func (f *prometheusFormatter) tags2String(attr pdata.Map, labels pdata.Map) prometheusTags {
+	mergedAttributes := pdata.NewMap()
 	attr.CopyTo(mergedAttributes)
-	labels.Range(func(k string, v pdata.AttributeValue) bool {
+	labels.Range(func(k string, v pdata.Value) bool {
 		mergedAttributes.UpsertString(k, v.StringVal())
 		return true
 	})
@@ -68,7 +68,7 @@ func (f *prometheusFormatter) tags2String(attr pdata.AttributeMap, labels pdata.
 	}
 
 	returnValue := make([]string, 0, length)
-	mergedAttributes.Range(func(k string, v pdata.AttributeValue) bool {
+	mergedAttributes.Range(func(k string, v pdata.Value) bool {
 		returnValue = append(
 			returnValue,
 			fmt.Sprintf(
@@ -131,7 +131,7 @@ func (f *prometheusFormatter) uintLine(name string, attributes prometheusTags, v
 }
 
 // doubleValueLine returns prometheus line with given value
-func (f *prometheusFormatter) doubleValueLine(name string, value float64, dp dataPoint, attributes pdata.AttributeMap) string {
+func (f *prometheusFormatter) doubleValueLine(name string, value float64, dp dataPoint, attributes pdata.Map) string {
 	return f.doubleLine(
 		name,
 		f.tags2String(attributes, dp.Attributes()),
@@ -141,7 +141,7 @@ func (f *prometheusFormatter) doubleValueLine(name string, value float64, dp dat
 }
 
 // uintValueLine returns prometheus line with given value
-func (f *prometheusFormatter) uintValueLine(name string, value uint64, dp dataPoint, attributes pdata.AttributeMap) string {
+func (f *prometheusFormatter) uintValueLine(name string, value uint64, dp dataPoint, attributes pdata.Map) string {
 	return f.uintLine(
 		name,
 		f.tags2String(attributes, dp.Attributes()),
@@ -151,7 +151,7 @@ func (f *prometheusFormatter) uintValueLine(name string, value uint64, dp dataPo
 }
 
 // numberDataPointValueLine returns prometheus line with value from pdata.NumberDataPoint
-func (f *prometheusFormatter) numberDataPointValueLine(name string, dp pdata.NumberDataPoint, attributes pdata.AttributeMap) string {
+func (f *prometheusFormatter) numberDataPointValueLine(name string, dp pdata.NumberDataPoint, attributes pdata.Map) string {
 	switch dp.ValueType() {
 	case pdata.MetricValueTypeDouble:
 		return f.doubleValueLine(
@@ -181,11 +181,11 @@ func (f *prometheusFormatter) countMetric(name string) string {
 	return fmt.Sprintf("%s_count", name)
 }
 
-// mergeAttributes gets two pdata.AttributeMaps and returns new which contains values from both of them
-func (f *prometheusFormatter) mergeAttributes(attributes pdata.AttributeMap, additionalAttributes pdata.AttributeMap) pdata.AttributeMap {
-	mergedAttributes := pdata.NewAttributeMap()
+// mergeAttributes gets two pdata.Map and returns new which contains values from both of them
+func (f *prometheusFormatter) mergeAttributes(attributes pdata.Map, additionalAttributes pdata.Map) pdata.Map {
+	mergedAttributes := pdata.NewMap()
 	attributes.CopyTo(mergedAttributes)
-	additionalAttributes.Range(func(k string, v pdata.AttributeValue) bool {
+	additionalAttributes.Range(func(k string, v pdata.Value) bool {
 		mergedAttributes.Upsert(k, v)
 		return true
 	})
@@ -237,7 +237,7 @@ func (f *prometheusFormatter) summary2Strings(record metricPair) []string {
 	for i := 0; i < dps.Len(); i++ {
 		dp := dps.At(i)
 		qs := dp.QuantileValues()
-		additionalAttributes := pdata.NewAttributeMap()
+		additionalAttributes := pdata.NewMap()
 		for i := 0; i < qs.Len(); i++ {
 			q := qs.At(i)
 			additionalAttributes.UpsertDouble(prometheusQuantileTag, q.Quantile())
@@ -285,7 +285,7 @@ func (f *prometheusFormatter) histogram2Strings(record metricPair) []string {
 		}
 
 		var cumulative uint64
-		additionalAttributes := pdata.NewAttributeMap()
+		additionalAttributes := pdata.NewMap()
 
 		for i, bound := range explicitBounds {
 			cumulative += dp.BucketCounts()[i]

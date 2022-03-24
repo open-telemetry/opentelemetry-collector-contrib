@@ -4,7 +4,7 @@
          "instrumentationLibraryMetrics": [
             {
                "instrumentationLibrary": {
-                  "name": "otelcol/couchdb"
+                  "name": "otelcol/couchdbreceiver"
                },
                "metrics": [
                   {

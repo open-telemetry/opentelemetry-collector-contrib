@@ -29,20 +29,20 @@ var (
 	attrMap = prepareAttributeMap()
 )
 
-func prepareAttributeMap() pdata.AttributeMap {
-	attributeValues := map[string]pdata.AttributeValue{
-		"xx": pdata.NewAttributeValueString("aa"),
-		"yy": pdata.NewAttributeValueInt(11),
+func prepareAttributeMap() pdata.Map {
+	attributeValues := map[string]interface{}{
+		"xx": "aa",
+		"yy": 11,
 	}
 
-	am := pdata.NewAttributeMap()
-	pdata.NewAttributeMapFromMap(attributeValues).CopyTo(am)
+	am := pdata.NewMap()
+	pdata.NewMapFromRaw(attributeValues).CopyTo(am)
 
 	am.Sort()
 	return am
 }
 
-func prepareResource(attrMap pdata.AttributeMap, selectedKeys []string) pdata.Resource {
+func prepareResource(attrMap pdata.Map, selectedKeys []string) pdata.Resource {
 	res := pdata.NewResource()
 	for _, key := range selectedKeys {
 		val, found := attrMap.Get(key)
@@ -54,8 +54,8 @@ func prepareResource(attrMap pdata.AttributeMap, selectedKeys []string) pdata.Re
 	return res
 }
 
-func filterAttributeMap(attrMap pdata.AttributeMap, selectedKeys []string) pdata.AttributeMap {
-	filteredAttrMap := pdata.NewAttributeMap()
+func filterAttributeMap(attrMap pdata.Map, selectedKeys []string) pdata.Map {
+	filteredAttrMap := pdata.NewMap()
 	if len(selectedKeys) == 0 {
 		return filteredAttrMap
 	}
@@ -136,8 +136,8 @@ func someComplexMetrics(withResourceAttrIndex bool, rmCount int, ilmCount int, d
 	return metrics
 }
 
-func assertResourceContainsAttributes(t *testing.T, resource pdata.Resource, attributeMap pdata.AttributeMap) {
-	attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
+func assertResourceContainsAttributes(t *testing.T, resource pdata.Resource, attributeMap pdata.Map) {
+	attributeMap.Range(func(k string, v pdata.Value) bool {
 		rv, found := resource.Attributes().Get(k)
 		assert.True(t, found)
 		assert.Equal(t, v, rv)
@@ -240,8 +240,8 @@ func TestComplexAttributeGrouping(t *testing.T) {
 			assert.NoError(t, err)
 
 			// Following are record-level attributes that should be preserved after processing
-			outputRecordAttrs := pdata.NewAttributeMap()
-			outputResourceAttrs := pdata.NewAttributeMap()
+			outputRecordAttrs := pdata.NewMap()
+			outputResourceAttrs := pdata.NewMap()
 			if tt.shouldMoveCommonGroupedAttr {
 				// This was present at record level and should be found on Resource level after the processor
 				outputResourceAttrs.InsertString("commonGroupedAttr", "abc")
@@ -460,7 +460,7 @@ func TestAttributeGrouping(t *testing.T) {
 	}
 }
 
-func someSpans(attrs pdata.AttributeMap, instrumentationLibraryCount int, spanCount int) pdata.Traces {
+func someSpans(attrs pdata.Map, instrumentationLibraryCount int, spanCount int) pdata.Traces {
 	traces := pdata.NewTraces()
 	for i := 0; i < instrumentationLibraryCount; i++ {
 		ilName := fmt.Sprint("ils-", i)
@@ -476,7 +476,7 @@ func someSpans(attrs pdata.AttributeMap, instrumentationLibraryCount int, spanCo
 	return traces
 }
 
-func someLogs(attrs pdata.AttributeMap, instrumentationLibraryCount int, logCount int) pdata.Logs {
+func someLogs(attrs pdata.Map, instrumentationLibraryCount int, logCount int) pdata.Logs {
 	logs := pdata.NewLogs()
 	for i := 0; i < instrumentationLibraryCount; i++ {
 		ilName := fmt.Sprint("ils-", i)
@@ -492,7 +492,7 @@ func someLogs(attrs pdata.AttributeMap, instrumentationLibraryCount int, logCoun
 	return logs
 }
 
-func someGaugeMetrics(attrs pdata.AttributeMap, instrumentationLibraryCount int, metricCount int) pdata.Metrics {
+func someGaugeMetrics(attrs pdata.Map, instrumentationLibraryCount int, metricCount int) pdata.Metrics {
 	metrics := pdata.NewMetrics()
 	for i := 0; i < instrumentationLibraryCount; i++ {
 		ilName := fmt.Sprint("ils-", i)
@@ -510,7 +510,7 @@ func someGaugeMetrics(attrs pdata.AttributeMap, instrumentationLibraryCount int,
 	return metrics
 }
 
-func someSumMetrics(attrs pdata.AttributeMap, instrumentationLibraryCount int, metricCount int) pdata.Metrics {
+func someSumMetrics(attrs pdata.Map, instrumentationLibraryCount int, metricCount int) pdata.Metrics {
 	metrics := pdata.NewMetrics()
 	for i := 0; i < instrumentationLibraryCount; i++ {
 		ilName := fmt.Sprint("ils-", i)
@@ -528,7 +528,7 @@ func someSumMetrics(attrs pdata.AttributeMap, instrumentationLibraryCount int, m
 	return metrics
 }
 
-func someSummaryMetrics(attrs pdata.AttributeMap, instrumentationLibraryCount int, metricCount int) pdata.Metrics {
+func someSummaryMetrics(attrs pdata.Map, instrumentationLibraryCount int, metricCount int) pdata.Metrics {
 	metrics := pdata.NewMetrics()
 	for i := 0; i < instrumentationLibraryCount; i++ {
 		ilName := fmt.Sprint("ils-", i)
@@ -546,7 +546,7 @@ func someSummaryMetrics(attrs pdata.AttributeMap, instrumentationLibraryCount in
 	return metrics
 }
 
-func someHistogramMetrics(attrs pdata.AttributeMap, instrumentationLibraryCount int, metricCount int) pdata.Metrics {
+func someHistogramMetrics(attrs pdata.Map, instrumentationLibraryCount int, metricCount int) pdata.Metrics {
 	metrics := pdata.NewMetrics()
 	for i := 0; i < instrumentationLibraryCount; i++ {
 		ilName := fmt.Sprint("ils-", i)
@@ -564,7 +564,7 @@ func someHistogramMetrics(attrs pdata.AttributeMap, instrumentationLibraryCount 
 	return metrics
 }
 
-func someExponentialHistogramMetrics(attrs pdata.AttributeMap, instrumentationLibraryCount int, metricCount int) pdata.Metrics {
+func someExponentialHistogramMetrics(attrs pdata.Map, instrumentationLibraryCount int, metricCount int) pdata.Metrics {
 	metrics := pdata.NewMetrics()
 	for i := 0; i < instrumentationLibraryCount; i++ {
 		ilName := fmt.Sprint("ils-", i)

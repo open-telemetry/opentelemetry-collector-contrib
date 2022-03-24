@@ -94,7 +94,7 @@ func TestExportTraceDataFullTrace(t *testing.T) {
 	status.SetMessage("an error event occurred")
 	status.CopyTo(clientSpan.Status())
 
-	clientAttrs := pdata.NewAttributeMap()
+	clientAttrs := pdata.NewMap()
 	clientAttrs.InsertString(labelApplication, "test-app")
 	clientAttrs.CopyTo(clientSpan.Attributes())
 
@@ -106,7 +106,7 @@ func TestExportTraceDataFullTrace(t *testing.T) {
 	)
 	serverSpan.SetKind(pdata.SpanKindServer)
 	serverSpan.SetTraceState("key=val")
-	serverAttrs := pdata.NewAttributeMap()
+	serverAttrs := pdata.NewMap()
 	serverAttrs.InsertString(conventions.AttributeServiceName, "the-server")
 	serverAttrs.InsertString(conventions.AttributeHTTPMethod, "POST")
 	serverAttrs.InsertInt(conventions.AttributeHTTPStatusCode, 403)
@@ -114,7 +114,7 @@ func TestExportTraceDataFullTrace(t *testing.T) {
 	serverAttrs.CopyTo(serverSpan.Attributes())
 
 	traces := constructTraces([]pdata.Span{rootSpan, clientSpan, serverSpan})
-	resourceAttrs := pdata.NewAttributeMap()
+	resourceAttrs := pdata.NewMap()
 	resourceAttrs.InsertString("resource", "R1")
 	resourceAttrs.InsertString(conventions.AttributeServiceName, "test-service")
 	resourceAttrs.InsertString(labelSource, "test-source")
@@ -190,6 +190,35 @@ func validateTraces(t *testing.T, expected []*span, traces pdata.Traces) {
 		assert.Equal(t, expected[i].SpanLogs, actual[i].SpanLogs)
 		assert.Equal(t, expected[i].Source, actual[i].Source)
 	}
+}
+
+func TestExportTraceDataWithInstrumentationDetails(t *testing.T) {
+	minSpan := createSpan(
+		"root",
+		pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}),
+		pdata.NewSpanID([8]byte{9, 9, 9, 9, 9, 9, 9, 9}),
+		pdata.SpanID{},
+	)
+	traces := constructTraces([]pdata.Span{minSpan})
+
+	instrumentationLibrary := traces.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).
+		InstrumentationLibrary()
+	instrumentationLibrary.SetName("instrumentation_name")
+	instrumentationLibrary.SetVersion("v0.0.1")
+
+	expected := []*span{{
+		Name:    "root",
+		TraceID: uuid.MustParse("01010101-0101-0101-0101-010101010101"),
+		SpanID:  uuid.MustParse("00000000-0000-0000-0909-090909090909"),
+		Tags: map[string]string{
+			labelApplication:      "defaultApp",
+			labelService:          "defaultService",
+			labelOtelScopeName:    "instrumentation_name",
+			labelOtelScopeVersion: "v0.0.1",
+		},
+	}}
+
+	validateTraces(t, expected, traces)
 }
 
 func TestExportTraceDataRespectsContext(t *testing.T) {

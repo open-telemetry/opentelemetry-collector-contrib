@@ -159,18 +159,21 @@ func (prwe *prweWAL) run(ctx context.Context) (err error) {
 		return
 	}
 
+	runCtx, cancel := context.WithCancel(ctx)
+
 	// Start the process of exporting but wait until the exporting has started.
 	waitUntilStartedCh := make(chan bool)
 	go func() {
 		signalStart := func() { close(waitUntilStartedCh) }
+		defer cancel()
 		for {
 			select {
-			case <-ctx.Done():
+			case <-runCtx.Done():
 				return
 			case <-prwe.stopChan:
 				return
 			default:
-				err := prwe.continuallyPopWALThenExport(ctx, signalStart)
+				err := prwe.continuallyPopWALThenExport(runCtx, signalStart)
 				signalStart = func() {}
 				if err != nil {
 					// log err
@@ -335,11 +338,17 @@ func (prwe *prweWAL) readPrompbFromWAL(ctx context.Context, index uint64) (wreq 
 		select {
 		case <-ctx.Done():
 			return nil, ctx.Err()
+		case <-prwe.stopChan:
+			return nil, fmt.Errorf("attempt to read from WAL after stopped")
 		default:
 		}
 
 		if index <= 0 {
 			index = 1
+		}
+
+		if prwe.wal == nil {
+			return nil, fmt.Errorf("attempt to read from closed WAL")
 		}
 
 		protoBlob, err = prwe.wal.Read(index)

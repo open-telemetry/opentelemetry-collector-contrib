@@ -139,7 +139,7 @@ func accessResourceAttributes() pathGetSetter {
 			return ctx.resource.Attributes()
 		},
 		setter: func(ctx spanTransformContext, val interface{}) {
-			if attrs, ok := val.(pdata.AttributeMap); ok {
+			if attrs, ok := val.(pdata.Map); ok {
 				ctx.resource.Attributes().Clear()
 				attrs.CopyTo(ctx.resource.Attributes())
 			}
@@ -316,7 +316,7 @@ func accessAttributes() pathGetSetter {
 			return ctx.span.Attributes()
 		},
 		setter: func(ctx spanTransformContext, val interface{}) {
-			if attrs, ok := val.(pdata.AttributeMap); ok {
+			if attrs, ok := val.(pdata.Map); ok {
 				ctx.span.Attributes().Clear()
 				attrs.CopyTo(ctx.span.Attributes())
 			}
@@ -445,31 +445,31 @@ func accessStatusMessage() pathGetSetter {
 	}
 }
 
-func getAttr(attrs pdata.AttributeMap, mapKey string) interface{} {
+func getAttr(attrs pdata.Map, mapKey string) interface{} {
 	val, ok := attrs.Get(mapKey)
 	if !ok {
 		return nil
 	}
 	switch val.Type() {
-	case pdata.AttributeValueTypeString:
+	case pdata.ValueTypeString:
 		return val.StringVal()
-	case pdata.AttributeValueTypeBool:
+	case pdata.ValueTypeBool:
 		return val.BoolVal()
-	case pdata.AttributeValueTypeInt:
+	case pdata.ValueTypeInt:
 		return val.IntVal()
-	case pdata.AttributeValueTypeDouble:
+	case pdata.ValueTypeDouble:
 		return val.DoubleVal()
-	case pdata.AttributeValueTypeMap:
+	case pdata.ValueTypeMap:
 		return val.MapVal()
-	case pdata.AttributeValueTypeArray:
+	case pdata.ValueTypeSlice:
 		return val.SliceVal()
-	case pdata.AttributeValueTypeBytes:
+	case pdata.ValueTypeBytes:
 		return val.BytesVal()
 	}
 	return nil
 }
 
-func setAttr(attrs pdata.AttributeMap, mapKey string, val interface{}) {
+func setAttr(attrs pdata.Map, mapKey string, val interface{}) {
 	switch v := val.(type) {
 	case string:
 		attrs.UpsertString(mapKey, v)
@@ -482,31 +482,31 @@ func setAttr(attrs pdata.AttributeMap, mapKey string, val interface{}) {
 	case []byte:
 		attrs.UpsertBytes(mapKey, v)
 	case []string:
-		arr := pdata.NewAttributeValueArray()
+		arr := pdata.NewValueSlice()
 		for _, str := range v {
 			arr.SliceVal().AppendEmpty().SetStringVal(str)
 		}
 		attrs.Upsert(mapKey, arr)
 	case []bool:
-		arr := pdata.NewAttributeValueArray()
+		arr := pdata.NewValueSlice()
 		for _, b := range v {
 			arr.SliceVal().AppendEmpty().SetBoolVal(b)
 		}
 		attrs.Upsert(mapKey, arr)
 	case []int64:
-		arr := pdata.NewAttributeValueArray()
+		arr := pdata.NewValueSlice()
 		for _, i := range v {
 			arr.SliceVal().AppendEmpty().SetIntVal(i)
 		}
 		attrs.Upsert(mapKey, arr)
 	case []float64:
-		arr := pdata.NewAttributeValueArray()
+		arr := pdata.NewValueSlice()
 		for _, f := range v {
 			arr.SliceVal().AppendEmpty().SetDoubleVal(f)
 		}
 		attrs.Upsert(mapKey, arr)
 	case [][]byte:
-		arr := pdata.NewAttributeValueArray()
+		arr := pdata.NewValueSlice()
 		for _, b := range v {
 			arr.SliceVal().AppendEmpty().SetBytesVal(b)
 		}

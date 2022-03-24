@@ -23,7 +23,7 @@ import (
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
-func addAWSToResource(aws *awsxray.AWSData, attrs *pdata.AttributeMap) {
+func addAWSToResource(aws *awsxray.AWSData, attrs *pdata.Map) {
 	if aws == nil {
 		// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/c615d2db351929b99e46f7b427f39c12afe15b54/exporter/awsxrayexporter/translator/aws.go#L121
 		// this implies that the current segment being processed is not generated
@@ -66,7 +66,7 @@ func addAWSToResource(aws *awsxray.AWSData, attrs *pdata.AttributeMap) {
 	}
 }
 
-func addAWSToSpan(aws *awsxray.AWSData, attrs *pdata.AttributeMap) {
+func addAWSToSpan(aws *awsxray.AWSData, attrs *pdata.Map) {
 	if aws != nil {
 		addString(aws.AccountID, awsxray.AWSAccountAttribute, attrs)
 		addString(aws.Operation, awsxray.AWSOperationAttribute, attrs)

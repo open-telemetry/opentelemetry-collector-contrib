@@ -54,11 +54,11 @@ func keepKeys(target getSetter, keys []string) exprFunc {
 			return nil
 		}
 
-		if attrs, ok := val.(pdata.AttributeMap); ok {
+		if attrs, ok := val.(pdata.Map); ok {
 			// TODO(anuraaga): Avoid copying when filtering keys https://github.com/open-telemetry/opentelemetry-collector/issues/4756
-			filtered := pdata.NewAttributeMap()
+			filtered := pdata.NewMap()
 			filtered.EnsureCapacity(attrs.Len())
-			attrs.Range(func(key string, val pdata.AttributeValue) bool {
+			attrs.Range(func(key string, val pdata.Value) bool {
 				if _, ok := keySet[key]; ok {
 					filtered.Insert(key, val)
 				}

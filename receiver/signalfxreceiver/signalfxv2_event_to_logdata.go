@@ -57,7 +57,7 @@ func signalFxV2EventsToLogRecords(events []*sfxpb.Event, lrs pdata.LogRecordSlic
 		}
 
 		if len(event.Properties) > 0 {
-			propMapVal := pdata.NewAttributeValueMap()
+			propMapVal := pdata.NewValueMap()
 			propMap := propMapVal.MapVal()
 			propMap.EnsureCapacity(len(event.Properties))
 

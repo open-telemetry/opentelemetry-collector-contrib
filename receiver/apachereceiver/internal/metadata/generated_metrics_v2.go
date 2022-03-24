@@ -71,7 +71,7 @@ func (m *metricApacheCurrentConnections) recordDataPoint(start pdata.Timestamp, 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.ServerName, pdata.NewAttributeValueString(serverNameAttributeValue))
+	dp.Attributes().Insert(A.ServerName, pdata.NewValueString(serverNameAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -124,7 +124,7 @@ func (m *metricApacheRequests) recordDataPoint(start pdata.Timestamp, ts pdata.T
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.ServerName, pdata.NewAttributeValueString(serverNameAttributeValue))
+	dp.Attributes().Insert(A.ServerName, pdata.NewValueString(serverNameAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -177,8 +177,8 @@ func (m *metricApacheScoreboard) recordDataPoint(start pdata.Timestamp, ts pdata
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.ServerName, pdata.NewAttributeValueString(serverNameAttributeValue))
-	dp.Attributes().Insert(A.ScoreboardState, pdata.NewAttributeValueString(scoreboardStateAttributeValue))
+	dp.Attributes().Insert(A.ServerName, pdata.NewValueString(serverNameAttributeValue))
+	dp.Attributes().Insert(A.ScoreboardState, pdata.NewValueString(scoreboardStateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -231,7 +231,7 @@ func (m *metricApacheTraffic) recordDataPoint(start pdata.Timestamp, ts pdata.Ti
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.ServerName, pdata.NewAttributeValueString(serverNameAttributeValue))
+	dp.Attributes().Insert(A.ServerName, pdata.NewValueString(serverNameAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -284,7 +284,7 @@ func (m *metricApacheUptime) recordDataPoint(start pdata.Timestamp, ts pdata.Tim
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.ServerName, pdata.NewAttributeValueString(serverNameAttributeValue))
+	dp.Attributes().Insert(A.ServerName, pdata.NewValueString(serverNameAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -337,8 +337,8 @@ func (m *metricApacheWorkers) recordDataPoint(start pdata.Timestamp, ts pdata.Ti
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.ServerName, pdata.NewAttributeValueString(serverNameAttributeValue))
-	dp.Attributes().Insert(A.WorkersState, pdata.NewAttributeValueString(workersStateAttributeValue))
+	dp.Attributes().Insert(A.ServerName, pdata.NewValueString(serverNameAttributeValue))
+	dp.Attributes().Insert(A.WorkersState, pdata.NewValueString(workersStateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -453,6 +453,16 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 	for _, op := range options {
 		op(mb)
 	}
+}
+
+// NewMetricData creates new pdata.Metrics and sets the InstrumentationLibrary
+// name on the ResourceMetrics.
+func (mb *MetricsBuilder) NewMetricData() pdata.Metrics {
+	md := pdata.NewMetrics()
+	rm := md.ResourceMetrics().AppendEmpty()
+	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+	ilm.InstrumentationLibrary().SetName("otelcol/apachereceiver")
+	return md
 }
 
 // Attributes contains the possible metric attributes that can be used.

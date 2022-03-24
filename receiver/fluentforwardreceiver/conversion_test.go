@@ -39,12 +39,12 @@ func TestMessageEventConversion(t *testing.T) {
 	expected := Logs(
 		Log{
 			Timestamp: 1593031012000000000,
-			Body:      pdata.NewAttributeValueString("..."),
-			Attributes: map[string]pdata.AttributeValue{
-				"container_id":   pdata.NewAttributeValueString("b00a67eb645849d6ab38ff8beb4aad035cc7e917bf123c3e9057c7e89fc73d2d"),
-				"container_name": pdata.NewAttributeValueString("/unruffled_cannon"),
-				"fluent.tag":     pdata.NewAttributeValueString("b00a67eb6458"),
-				"source":         pdata.NewAttributeValueString("stdout"),
+			Body:      pdata.NewValueString("..."),
+			Attributes: map[string]interface{}{
+				"container_id":   "b00a67eb645849d6ab38ff8beb4aad035cc7e917bf123c3e9057c7e89fc73d2d",
+				"container_name": "/unruffled_cannon",
+				"fluent.tag":     "b00a67eb6458",
+				"source":         "stdout",
 			},
 		},
 	)
@@ -104,33 +104,28 @@ func TestAttributeTypeConversion(t *testing.T) {
 	le := event.LogRecords().At(0)
 	le.Attributes().Sort()
 
-	nv := pdata.NewAttributeValueArray()
-	nv.SliceVal().EnsureCapacity(2)
-	nv.SliceVal().AppendEmpty().SetStringVal("first")
-	nv.SliceVal().AppendEmpty().SetStringVal("second")
-
 	require.EqualValues(t, Logs(
 		Log{
 			Timestamp: 5000000000000,
-			Body:      pdata.NewAttributeValueEmpty(),
-			Attributes: map[string]pdata.AttributeValue{
-				"a":          pdata.NewAttributeValueDouble(5.0),
-				"b":          pdata.NewAttributeValueDouble(6.0),
-				"c":          pdata.NewAttributeValueBool(true),
-				"d":          pdata.NewAttributeValueInt(1),
-				"e":          pdata.NewAttributeValueInt(2),
-				"f":          pdata.NewAttributeValueInt(3),
-				"fluent.tag": pdata.NewAttributeValueString("my-tag"),
-				"g":          pdata.NewAttributeValueInt(4),
-				"h":          pdata.NewAttributeValueInt(255),
-				"i":          pdata.NewAttributeValueInt(65535),
-				"j":          pdata.NewAttributeValueInt(4294967295),
-				"k":          pdata.NewAttributeValueInt(-1),
-				"l":          pdata.NewAttributeValueString("(0+0i)"),
-				"m":          pdata.NewAttributeValueString("\001e\002"),
-				"n":          nv,
-				"o":          pdata.NewAttributeValueString("cde"),
-				"p":          pdata.NewAttributeValueEmpty(),
+			Body:      pdata.NewValueEmpty(),
+			Attributes: map[string]interface{}{
+				"a":          5.0,
+				"b":          6.0,
+				"c":          true,
+				"d":          1,
+				"e":          2,
+				"f":          3,
+				"fluent.tag": "my-tag",
+				"g":          4,
+				"h":          255,
+				"i":          65535,
+				"j":          4294967295,
+				"k":          -1,
+				"l":          "(0+0i)",
+				"m":          "\001e\002",
+				"n":          []interface{}{"first", "second"},
+				"o":          "cde",
+				"p":          nil,
 			},
 		},
 	).ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(0), le)
@@ -257,28 +252,28 @@ func TestBodyConversion(t *testing.T) {
 	le := event.LogRecords().At(0)
 	le.Attributes().Sort()
 
-	body := pdata.NewAttributeValueMap()
+	body := pdata.NewValueMap()
 	body.MapVal().InsertString("a", "value")
 
-	bv := pdata.NewAttributeValueArray()
+	bv := pdata.NewValueSlice()
 	bv.SliceVal().EnsureCapacity(2)
 	bv.SliceVal().AppendEmpty().SetStringVal("first")
 	bv.SliceVal().AppendEmpty().SetStringVal("second")
 	body.MapVal().Insert("b", bv)
 
-	cv := pdata.NewAttributeValueMap()
+	cv := pdata.NewValueMap()
 	cv.MapVal().InsertInt("d", 24)
 	body.MapVal().Insert("c", cv)
 
 	// Sort the map, sometimes may get in a different order.
-	require.Equal(t, pdata.AttributeValueTypeMap, le.Body().Type())
+	require.Equal(t, pdata.ValueTypeMap, le.Body().Type())
 	le.Body().MapVal().Sort()
 	assert.EqualValues(t, Logs(
 		Log{
 			Timestamp: 5000000000000,
 			Body:      body,
-			Attributes: map[string]pdata.AttributeValue{
-				"fluent.tag": pdata.NewAttributeValueString("my-tag"),
+			Attributes: map[string]interface{}{
+				"fluent.tag": "my-tag",
 			},
 		},
 	).ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(0), le)

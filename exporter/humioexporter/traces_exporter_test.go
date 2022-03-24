@@ -366,13 +366,13 @@ func TestToHumioAttributes(t *testing.T) {
 	// Arrange
 	testCases := []struct {
 		desc     string
-		attr     func() pdata.AttributeMap
+		attr     func() pdata.Map
 		expected interface{}
 	}{
 		{
 			desc: "Simple types",
-			attr: func() pdata.AttributeMap {
-				attrMap := pdata.NewAttributeMap()
+			attr: func() pdata.Map {
+				attrMap := pdata.NewMap()
 				attrMap.InsertString("string", "val")
 				attrMap.InsertInt("integer", 42)
 				attrMap.InsertDouble("double", 4.2)
@@ -388,8 +388,8 @@ func TestToHumioAttributes(t *testing.T) {
 		},
 		{
 			desc: "Nil element",
-			attr: func() pdata.AttributeMap {
-				attrMap := pdata.NewAttributeMap()
+			attr: func() pdata.Map {
+				attrMap := pdata.NewMap()
 				attrMap.InsertNull("key")
 				return attrMap
 			},
@@ -399,9 +399,9 @@ func TestToHumioAttributes(t *testing.T) {
 		},
 		{
 			desc: "Array element",
-			attr: func() pdata.AttributeMap {
-				attrMap := pdata.NewAttributeMap()
-				arr := pdata.NewAttributeValueArray()
+			attr: func() pdata.Map {
+				attrMap := pdata.NewMap()
+				arr := pdata.NewValueSlice()
 				arr.SliceVal().AppendEmpty().SetStringVal("a")
 				arr.SliceVal().AppendEmpty().SetStringVal("b")
 				arr.SliceVal().AppendEmpty().SetIntVal(4)
@@ -416,9 +416,9 @@ func TestToHumioAttributes(t *testing.T) {
 		},
 		{
 			desc: "Nested map",
-			attr: func() pdata.AttributeMap {
-				attrMap := pdata.NewAttributeMap()
-				nested := pdata.NewAttributeValueMap()
+			attr: func() pdata.Map {
+				attrMap := pdata.NewMap()
+				nested := pdata.NewValueMap()
 				nested.MapVal().InsertString("key", "val")
 				attrMap.Insert("nested", nested)
 				attrMap.InsertBool("active", true)
@@ -445,11 +445,11 @@ func TestToHumioAttributes(t *testing.T) {
 
 func TestToHumioAttributesShaded(t *testing.T) {
 	// Arrange
-	attrMapA := pdata.NewAttributeMap()
+	attrMapA := pdata.NewMap()
 	attrMapA.InsertString("string", "val")
 	attrMapA.InsertInt("integer", 42)
 
-	attrMapB := pdata.NewAttributeMap()
+	attrMapB := pdata.NewMap()
 	attrMapB.InsertInt("integer", 0)
 	attrMapB.InsertString("key", "val")
 

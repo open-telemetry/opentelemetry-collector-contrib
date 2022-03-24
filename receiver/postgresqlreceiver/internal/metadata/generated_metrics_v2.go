@@ -75,7 +75,7 @@ func (m *metricPostgresqlBackends) recordDataPoint(start pdata.Timestamp, ts pda
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pdata.NewAttributeValueString(databaseAttributeValue))
+	dp.Attributes().Insert(A.Database, pdata.NewValueString(databaseAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -128,9 +128,9 @@ func (m *metricPostgresqlBlocksRead) recordDataPoint(start pdata.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pdata.NewAttributeValueString(databaseAttributeValue))
-	dp.Attributes().Insert(A.Table, pdata.NewAttributeValueString(tableAttributeValue))
-	dp.Attributes().Insert(A.Source, pdata.NewAttributeValueString(sourceAttributeValue))
+	dp.Attributes().Insert(A.Database, pdata.NewValueString(databaseAttributeValue))
+	dp.Attributes().Insert(A.Table, pdata.NewValueString(tableAttributeValue))
+	dp.Attributes().Insert(A.Source, pdata.NewValueString(sourceAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -183,7 +183,7 @@ func (m *metricPostgresqlCommits) recordDataPoint(start pdata.Timestamp, ts pdat
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pdata.NewAttributeValueString(databaseAttributeValue))
+	dp.Attributes().Insert(A.Database, pdata.NewValueString(databaseAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -236,7 +236,7 @@ func (m *metricPostgresqlDbSize) recordDataPoint(start pdata.Timestamp, ts pdata
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pdata.NewAttributeValueString(databaseAttributeValue))
+	dp.Attributes().Insert(A.Database, pdata.NewValueString(databaseAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -289,9 +289,9 @@ func (m *metricPostgresqlOperations) recordDataPoint(start pdata.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pdata.NewAttributeValueString(databaseAttributeValue))
-	dp.Attributes().Insert(A.Table, pdata.NewAttributeValueString(tableAttributeValue))
-	dp.Attributes().Insert(A.Operation, pdata.NewAttributeValueString(operationAttributeValue))
+	dp.Attributes().Insert(A.Database, pdata.NewValueString(databaseAttributeValue))
+	dp.Attributes().Insert(A.Table, pdata.NewValueString(tableAttributeValue))
+	dp.Attributes().Insert(A.Operation, pdata.NewValueString(operationAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -344,7 +344,7 @@ func (m *metricPostgresqlRollbacks) recordDataPoint(start pdata.Timestamp, ts pd
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pdata.NewAttributeValueString(databaseAttributeValue))
+	dp.Attributes().Insert(A.Database, pdata.NewValueString(databaseAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -397,9 +397,9 @@ func (m *metricPostgresqlRows) recordDataPoint(start pdata.Timestamp, ts pdata.T
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pdata.NewAttributeValueString(databaseAttributeValue))
-	dp.Attributes().Insert(A.Table, pdata.NewAttributeValueString(tableAttributeValue))
-	dp.Attributes().Insert(A.State, pdata.NewAttributeValueString(stateAttributeValue))
+	dp.Attributes().Insert(A.Database, pdata.NewValueString(databaseAttributeValue))
+	dp.Attributes().Insert(A.Table, pdata.NewValueString(tableAttributeValue))
+	dp.Attributes().Insert(A.State, pdata.NewValueString(stateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -522,6 +522,16 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 	for _, op := range options {
 		op(mb)
 	}
+}
+
+// NewMetricData creates new pdata.Metrics and sets the InstrumentationLibrary
+// name on the ResourceMetrics.
+func (mb *MetricsBuilder) NewMetricData() pdata.Metrics {
+	md := pdata.NewMetrics()
+	rm := md.ResourceMetrics().AppendEmpty()
+	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+	ilm.InstrumentationLibrary().SetName("otelcol/postgresqlreceiver")
+	return md
 }
 
 // Attributes contains the possible metric attributes that can be used.

@@ -13,7 +13,7 @@ type MetricSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// MetricsSettings provides settings for filesystem metrics.
+// MetricsSettings provides settings for hostmetricsreceiver/filesystem metrics.
 type MetricsSettings struct {
 	SystemFilesystemInodesUsage MetricSettings `mapstructure:"system.filesystem.inodes.usage"`
 	SystemFilesystemUsage       MetricSettings `mapstructure:"system.filesystem.usage"`
@@ -59,11 +59,11 @@ func (m *metricSystemFilesystemInodesUsage) recordDataPoint(start pdata.Timestam
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Device, pdata.NewAttributeValueString(deviceAttributeValue))
-	dp.Attributes().Insert(A.Mode, pdata.NewAttributeValueString(modeAttributeValue))
-	dp.Attributes().Insert(A.Mountpoint, pdata.NewAttributeValueString(mountpointAttributeValue))
-	dp.Attributes().Insert(A.Type, pdata.NewAttributeValueString(typeAttributeValue))
-	dp.Attributes().Insert(A.State, pdata.NewAttributeValueString(stateAttributeValue))
+	dp.Attributes().Insert(A.Device, pdata.NewValueString(deviceAttributeValue))
+	dp.Attributes().Insert(A.Mode, pdata.NewValueString(modeAttributeValue))
+	dp.Attributes().Insert(A.Mountpoint, pdata.NewValueString(mountpointAttributeValue))
+	dp.Attributes().Insert(A.Type, pdata.NewValueString(typeAttributeValue))
+	dp.Attributes().Insert(A.State, pdata.NewValueString(stateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -116,11 +116,11 @@ func (m *metricSystemFilesystemUsage) recordDataPoint(start pdata.Timestamp, ts 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Device, pdata.NewAttributeValueString(deviceAttributeValue))
-	dp.Attributes().Insert(A.Mode, pdata.NewAttributeValueString(modeAttributeValue))
-	dp.Attributes().Insert(A.Mountpoint, pdata.NewAttributeValueString(mountpointAttributeValue))
-	dp.Attributes().Insert(A.Type, pdata.NewAttributeValueString(typeAttributeValue))
-	dp.Attributes().Insert(A.State, pdata.NewAttributeValueString(stateAttributeValue))
+	dp.Attributes().Insert(A.Device, pdata.NewValueString(deviceAttributeValue))
+	dp.Attributes().Insert(A.Mode, pdata.NewValueString(modeAttributeValue))
+	dp.Attributes().Insert(A.Mountpoint, pdata.NewValueString(mountpointAttributeValue))
+	dp.Attributes().Insert(A.Type, pdata.NewValueString(typeAttributeValue))
+	dp.Attributes().Insert(A.State, pdata.NewValueString(stateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -171,10 +171,10 @@ func (m *metricSystemFilesystemUtilization) recordDataPoint(start pdata.Timestam
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert(A.Device, pdata.NewAttributeValueString(deviceAttributeValue))
-	dp.Attributes().Insert(A.Mode, pdata.NewAttributeValueString(modeAttributeValue))
-	dp.Attributes().Insert(A.Mountpoint, pdata.NewAttributeValueString(mountpointAttributeValue))
-	dp.Attributes().Insert(A.Type, pdata.NewAttributeValueString(typeAttributeValue))
+	dp.Attributes().Insert(A.Device, pdata.NewValueString(deviceAttributeValue))
+	dp.Attributes().Insert(A.Mode, pdata.NewValueString(modeAttributeValue))
+	dp.Attributes().Insert(A.Mountpoint, pdata.NewValueString(mountpointAttributeValue))
+	dp.Attributes().Insert(A.Type, pdata.NewValueString(typeAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -265,6 +265,16 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 	for _, op := range options {
 		op(mb)
 	}
+}
+
+// NewMetricData creates new pdata.Metrics and sets the InstrumentationLibrary
+// name on the ResourceMetrics.
+func (mb *MetricsBuilder) NewMetricData() pdata.Metrics {
+	md := pdata.NewMetrics()
+	rm := md.ResourceMetrics().AppendEmpty()
+	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+	ilm.InstrumentationLibrary().SetName("otelcol/hostmetricsreceiver/filesystem")
+	return md
 }
 
 // Attributes contains the possible metric attributes that can be used.

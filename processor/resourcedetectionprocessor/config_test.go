@@ -78,6 +78,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: 2 * time.Second, MaxIdleConns: p2.MaxIdleConns, IdleConnTimeout: p2.IdleConnTimeout},
 		Override:           false,
+		Attributes:         []string{"a", "b"},
 	}
 	assert.Equal(t, p4, p4e)
 }
