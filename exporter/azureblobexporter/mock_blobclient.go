@@ -3,6 +3,8 @@
 package azureblobexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azureblobexporter"
 
 import (
+	"context"
+
 	mock "github.com/stretchr/testify/mock"
 	config "go.opentelemetry.io/collector/config"
 )
@@ -13,7 +15,7 @@ type MockBlobClient struct {
 }
 
 // UploadData provides a mock function with given fields: data, dataType
-func (_m *MockBlobClient) UploadData(data []byte, dataType config.Type) error {
+func (_m *MockBlobClient) UploadData(ctx context.Context, data []byte, dataType config.Type) error {
 	ret := _m.Called(data, dataType)
 
 	var r0 error
