@@ -1,6 +1,14 @@
 # Required: name of the receiver.
 name:
 
+# Optional: map of resource attribute definitions with the key being the attribute name.
+resource_attributes:
+  <attribute.name>:
+    # Required: description of the attribute.
+    description:
+    # Required: attribute type.
+    type: <string|int|double|bool|bytes>
+
 # Optional: map of attribute definitions with the key being the attribute name and value
 # being described below.
 attributes:

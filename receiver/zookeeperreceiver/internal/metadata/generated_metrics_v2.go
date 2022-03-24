@@ -846,7 +846,10 @@ func newMetricZookeeperZnodeCount(settings MetricSettings) metricZookeeperZnodeC
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	startTime                                  pdata.Timestamp
+	startTime                                  pdata.Timestamp // start time that will be applied to all recorded data points.
+	metricsCapacity                            int             // maximum observed number of metrics per resource.
+	resourceCapacity                           int             // maximum observed number of resource attributes.
+	metricsBuffer                              pdata.Metrics   // accumulates metrics data before emitting.
 	metricZookeeperConnectionActive            metricZookeeperConnectionActive
 	metricZookeeperDataTreeEphemeralNodeCount  metricZookeeperDataTreeEphemeralNodeCount
 	metricZookeeperDataTreeSize                metricZookeeperDataTreeSize
@@ -876,8 +879,9 @@ func WithStartTime(startTime pdata.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		startTime:                                  pdata.NewTimestampFromTime(time.Now()),
-		metricZookeeperConnectionActive:            newMetricZookeeperConnectionActive(settings.ZookeeperConnectionActive),
+		startTime:                       pdata.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                   pdata.NewMetrics(),
+		metricZookeeperConnectionActive: newMetricZookeeperConnectionActive(settings.ZookeeperConnectionActive),
 		metricZookeeperDataTreeEphemeralNodeCount:  newMetricZookeeperDataTreeEphemeralNodeCount(settings.ZookeeperDataTreeEphemeralNodeCount),
 		metricZookeeperDataTreeSize:                newMetricZookeeperDataTreeSize(settings.ZookeeperDataTreeSize),
 		metricZookeeperFileDescriptorLimit:         newMetricZookeeperFileDescriptorLimit(settings.ZookeeperFileDescriptorLimit),
@@ -899,25 +903,75 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 	return mb
 }
 
-// Emit appends generated metrics to a pdata.MetricsSlice and updates the internal state to be ready for recording
-// another set of data points. This function will be doing all transformations required to produce metric representation
-// defined in metadata and user settings, e.g. delta/cumulative translation.
-func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
-	mb.metricZookeeperConnectionActive.emit(metrics)
-	mb.metricZookeeperDataTreeEphemeralNodeCount.emit(metrics)
-	mb.metricZookeeperDataTreeSize.emit(metrics)
-	mb.metricZookeeperFileDescriptorLimit.emit(metrics)
-	mb.metricZookeeperFileDescriptorOpen.emit(metrics)
-	mb.metricZookeeperFollowerCount.emit(metrics)
-	mb.metricZookeeperFsyncExceededThresholdCount.emit(metrics)
-	mb.metricZookeeperLatencyAvg.emit(metrics)
-	mb.metricZookeeperLatencyMax.emit(metrics)
-	mb.metricZookeeperLatencyMin.emit(metrics)
-	mb.metricZookeeperPacketCount.emit(metrics)
-	mb.metricZookeeperRequestActive.emit(metrics)
-	mb.metricZookeeperSyncPending.emit(metrics)
-	mb.metricZookeeperWatchCount.emit(metrics)
-	mb.metricZookeeperZnodeCount.emit(metrics)
+// updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
+func (mb *MetricsBuilder) updateCapacity(rm pdata.ResourceMetrics) {
+	if mb.metricsCapacity < rm.InstrumentationLibraryMetrics().At(0).Metrics().Len() {
+		mb.metricsCapacity = rm.InstrumentationLibraryMetrics().At(0).Metrics().Len()
+	}
+	if mb.resourceCapacity < rm.Resource().Attributes().Len() {
+		mb.resourceCapacity = rm.Resource().Attributes().Len()
+	}
+}
+
+// ResourceOption applies changes to provided resource.
+type ResourceOption func(pdata.Resource)
+
+// WithServerState sets provided value as "server.state" attribute for current resource.
+func WithServerState(val string) ResourceOption {
+	return func(r pdata.Resource) {
+		r.Attributes().UpsertString("server.state", val)
+	}
+}
+
+// WithZkVersion sets provided value as "zk.version" attribute for current resource.
+func WithZkVersion(val string) ResourceOption {
+	return func(r pdata.Resource) {
+		r.Attributes().UpsertString("zk.version", val)
+	}
+}
+
+// EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
+// recording another set of data points as part of another resource. This function can be helpful when one scraper
+// needs to emit metrics from several resources. Otherwise calling this function is not required,
+// just `Emit` function can be called instead. Resource attributes should be provided as ResourceOption arguments.
+func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
+	rm := pdata.NewResourceMetrics()
+	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
+	for _, op := range ro {
+		op(rm.Resource())
+	}
+	ils := rm.InstrumentationLibraryMetrics().AppendEmpty()
+	ils.InstrumentationLibrary().SetName("otelcol/zookeeperreceiver")
+	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
+	mb.metricZookeeperConnectionActive.emit(ils.Metrics())
+	mb.metricZookeeperDataTreeEphemeralNodeCount.emit(ils.Metrics())
+	mb.metricZookeeperDataTreeSize.emit(ils.Metrics())
+	mb.metricZookeeperFileDescriptorLimit.emit(ils.Metrics())
+	mb.metricZookeeperFileDescriptorOpen.emit(ils.Metrics())
+	mb.metricZookeeperFollowerCount.emit(ils.Metrics())
+	mb.metricZookeeperFsyncExceededThresholdCount.emit(ils.Metrics())
+	mb.metricZookeeperLatencyAvg.emit(ils.Metrics())
+	mb.metricZookeeperLatencyMax.emit(ils.Metrics())
+	mb.metricZookeeperLatencyMin.emit(ils.Metrics())
+	mb.metricZookeeperPacketCount.emit(ils.Metrics())
+	mb.metricZookeeperRequestActive.emit(ils.Metrics())
+	mb.metricZookeeperSyncPending.emit(ils.Metrics())
+	mb.metricZookeeperWatchCount.emit(ils.Metrics())
+	mb.metricZookeeperZnodeCount.emit(ils.Metrics())
+	if ils.Metrics().Len() > 0 {
+		mb.updateCapacity(rm)
+		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
+	}
+}
+
+// Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
+// recording another set of metrics. This function will be responsible for applying all the transformations required to
+// produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
+func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pdata.Metrics {
+	mb.EmitForResource(ro...)
+	metrics := pdata.NewMetrics()
+	mb.metricsBuffer.MoveTo(metrics)
+	return metrics
 }
 
 // RecordZookeeperConnectionActiveDataPoint adds a data point to zookeeper.connection.active metric.
@@ -1004,31 +1058,15 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 	}
 }
 
-// NewMetricData creates new pdata.Metrics and sets the InstrumentationLibrary
-// name on the ResourceMetrics.
-func (mb *MetricsBuilder) NewMetricData() pdata.Metrics {
-	md := pdata.NewMetrics()
-	rm := md.ResourceMetrics().AppendEmpty()
-	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName("otelcol/zookeeperreceiver")
-	return md
-}
-
 // Attributes contains the possible metric attributes that can be used.
 var Attributes = struct {
 	// Direction (State of a packet based on io direction.)
 	Direction string
-	// ServerState (State of the Zookeeper server (leader, standalone or follower).)
-	ServerState string
 	// State (State of followers)
 	State string
-	// ZkVersion (Zookeeper version of the instance.)
-	ZkVersion string
 }{
 	"direction",
-	"server.state",
 	"state",
-	"zk.version",
 }
 
 // A is an alias for Attributes.
