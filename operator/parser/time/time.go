@@ -65,11 +65,6 @@ type TimeParserOperator struct {
 	helper.TimeParser
 }
 
-// CanOutput will always return true for a parser operator.
-func (t *TimeParserOperator) CanOutput() bool {
-	return true
-}
-
 // Process will parse time from an entry.
 func (t *TimeParserOperator) Process(ctx context.Context, entry *entry.Entry) error {
 	return t.ProcessWith(ctx, entry, t.TimeParser.Parse)

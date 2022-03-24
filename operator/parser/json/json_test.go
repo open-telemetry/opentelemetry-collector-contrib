@@ -229,6 +229,80 @@ func TestJSONParserWithEmbeddedTimeParser(t *testing.T) {
 	}
 }
 
+func TestJSONParserWithEmbeddedScopeNameParser(t *testing.T) {
+	cases := []struct {
+		name          string
+		inputBody     map[string]interface{}
+		outputBody    map[string]interface{}
+		errorExpected bool
+		preserveTo    *entry.Field
+	}{
+		{
+			"simple",
+			map[string]interface{}{
+				"testfield": `{"logger_name":"logger"}`,
+			},
+			map[string]interface{}{
+				"testparsed": map[string]interface{}{},
+			},
+			false,
+			nil,
+		},
+		{
+			"preserve",
+			map[string]interface{}{
+				"testfield": `{"logger_name":"logger"}`,
+			},
+			map[string]interface{}{
+				"testparsed":           map[string]interface{}{},
+				"original_logger_name": "logger",
+			},
+			false,
+			func() *entry.Field {
+				f := entry.NewBodyField("original_logger_name")
+				return &f
+			}(),
+		},
+		{
+			"nested",
+			map[string]interface{}{
+				"testfield": `{"superkey":"superval","logger_name":"logger"}`,
+			},
+			map[string]interface{}{
+				"testparsed": map[string]interface{}{
+					"superkey": "superval",
+				},
+			},
+			false,
+			nil,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			input := entry.New()
+			input.Body = tc.inputBody
+
+			output := entry.New()
+			output.Body = tc.outputBody
+
+			parser, mockOutput := NewFakeJSONOperator()
+			parseFrom := entry.NewBodyField("testparsed", "logger_name")
+			parser.ParserOperator.ScopeNameParser = &helper.ScopeNameParser{
+				ParseFrom:  parseFrom,
+				PreserveTo: tc.preserveTo,
+			}
+			mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+				e := args[1].(*entry.Entry)
+				require.Equal(t, tc.outputBody, e.Body)
+			}).Return(nil)
+
+			err := parser.Process(context.Background(), input)
+			require.NoError(t, err)
+		})
+	}
+}
+
 func TestJsonParserConfig(t *testing.T) {
 	expect := NewJSONParserConfig("test")
 	expect.ParseFrom = entry.NewBodyField("from")

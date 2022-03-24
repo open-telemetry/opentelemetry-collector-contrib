@@ -42,7 +42,7 @@ type SeverityParserConfig struct {
 	helper.SeverityParserConfig `mapstructure:",omitempty,squash" yaml:",omitempty,inline"`
 }
 
-// Build will build a time parser operator.
+// Build will build a severity parser operator.
 func (c SeverityParserConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	transformerOperator, err := c.TransformerConfig.Build(logger)
 	if err != nil {
@@ -60,13 +60,13 @@ func (c SeverityParserConfig) Build(logger *zap.SugaredLogger) (operator.Operato
 	}, nil
 }
 
-// SeverityParserOperator is an operator that parses time from a field to an entry.
+// SeverityParserOperator is an operator that parses severity from a field to an entry.
 type SeverityParserOperator struct {
 	helper.TransformerOperator
 	helper.SeverityParser
 }
 
-// Process will parse time from an entry.
+// Process will parse severity from an entry.
 func (p *SeverityParserOperator) Process(ctx context.Context, entry *entry.Entry) error {
 	return p.ProcessWith(ctx, entry, p.Parse)
 }
