@@ -787,6 +787,10 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zooke
 // see https://github.com/google/gnostic/issues/262
 replace github.com/googleapis/gnostic v0.5.6 => github.com/googleapis/gnostic v0.5.5
 
+// see https://github.com/go-chi/chi/issues/713
+// see https://github.com/DataDog/dd-trace-go/issues/1220
+replace github.com/go-chi/chi/v4 => github.com/go-chi/chi v4.0.0+incompatible
+
 // see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/4433
 exclude github.com/StackExchange/wmi v1.2.0
 
