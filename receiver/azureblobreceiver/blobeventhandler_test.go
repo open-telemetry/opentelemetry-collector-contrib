@@ -127,11 +127,20 @@ const (
 	eventHubString = "Endpoint=sb://oteldata.servicebus.windows.net/;SharedAccessKeyName=oteldatahubpolicy;SharedAccessKey=sharedAccessKey;EntityPath=otelddatahub"
 )
 
+var (
+	logsEvent = []byte(`[{"topic":"someTopic","subject":"/blobServices/default/containers/logs/blobs/logs-1	","eventType":"Microsoft.Storage.BlobCreated","id":"1","data":{"api":"PutBlob","clientRequestId":"1","requestId":"1","eTag":"1","contentType":"text","contentLength":10,"blobType":"BlockBlob","url":"https://oteldata.blob.core.windows.net/logs/logs-1","sequencer":"1","storageDiagnostics":{"batchId":"1"}},"dataVersion":"","metadataVersion":"1","eventTime":"2022-03-25T15:59:50.9251748Z"}]`)
+)
+
 func TestNewBlobEventHandler(t *testing.T) {
 	blobClient := NewMockBlobClient()
 
-	blobEventHandler := NewBlobEventHandler(eventHubString, logsContainerName, tracesContainerName, blobClient, zaptest.NewLogger(t))
+	blobEventHandler := getBlobEventHandler(t)
 
 	require.NotNil(t, blobEventHandler)
 	assert.Equal(t, blobEventHandler.blobClient, blobClient)
+}
+
+
+func getBlobEventHandler(tb *testing.TB) {
+  retrun NewBlobEventHandler(eventHubString, logsContainerName, tracesContainerName, blobClient, zaptest.NewLogger(tb))
 }
