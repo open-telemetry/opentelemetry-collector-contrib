@@ -5,9 +5,8 @@ package azureblobreceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	context "context"
 
-	consumer "go.opentelemetry.io/collector/consumer"
-
 	mock "github.com/stretchr/testify/mock"
+	consumer "go.opentelemetry.io/collector/consumer"
 )
 
 type MockTracesDataConsumer struct {
