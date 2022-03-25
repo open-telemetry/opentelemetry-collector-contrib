@@ -192,16 +192,42 @@ func TestSpanNameRemappingsValidation(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestInvalidSumMode(t *testing.T) {
-	cfgMap := config.NewMapFromStringMap(map[string]interface{}{
-		"metrics": map[string]interface{}{
-			"sums": map[string]interface{}{
-				"cumulative_monotonic_mode": "invalid_mode",
-			},
-		},
-	})
+func TestUnmarshal(t *testing.T) {
 
-	cfg := futureDefaultConfig()
-	err := cfg.Unmarshal(cfgMap)
-	assert.EqualError(t, err, "1 error(s) decoding:\n\n* error decoding 'metrics.sums.cumulative_monotonic_mode': invalid cumulative monotonic sum mode \"invalid_mode\"")
+	tests := []struct {
+		name   string
+		cfgMap *config.Map
+		err    string
+	}{
+		{
+			name: "invalid cumulative monotonic mode",
+			cfgMap: config.NewMapFromStringMap(map[string]interface{}{
+				"metrics": map[string]interface{}{
+					"sums": map[string]interface{}{
+						"cumulative_monotonic_mode": "invalid_mode",
+					},
+				},
+			}),
+			err: "1 error(s) decoding:\n\n* error decoding 'metrics.sums.cumulative_monotonic_mode': invalid cumulative monotonic sum mode \"invalid_mode\"",
+		},
+		{
+			name: "invalid summary mode",
+			cfgMap: config.NewMapFromStringMap(map[string]interface{}{
+				"metrics": map[string]interface{}{
+					"summaries": map[string]interface{}{
+						"mode": "invalid_mode",
+					},
+				},
+			}),
+			err: "1 error(s) decoding:\n\n* error decoding 'metrics.summaries.mode': invalid summary mode \"invalid_mode\"",
+		},
+	}
+
+	for _, testInstance := range tests {
+		t.Run(testInstance.name, func(t *testing.T) {
+			cfg := futureDefaultConfig()
+			err := cfg.Unmarshal(testInstance.cfgMap)
+			assert.EqualError(t, err, testInstance.err)
+		})
+	}
 }

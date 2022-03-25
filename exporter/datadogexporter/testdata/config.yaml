@@ -36,6 +36,7 @@ exporters:
 
     metrics:
       endpoint: https://api.datadoghq.test
+      # Deprecated; kept here to avoid regressions
       report_quantiles: false
 
     traces:

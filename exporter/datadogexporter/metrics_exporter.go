@@ -71,7 +71,8 @@ func translatorFromConfig(logger *zap.Logger, cfg *config.Config) (*translator.T
 		options = append(options, translator.WithCountSumMetrics())
 	}
 
-	if cfg.Metrics.Quantiles {
+	switch cfg.Metrics.SummaryConfig.Mode {
+	case config.SummaryModeGauges:
 		options = append(options, translator.WithQuantiles())
 	}
 

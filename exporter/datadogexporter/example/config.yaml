@@ -79,6 +79,12 @@ exporters:
       #
       # send_monotonic_counter: true
 
+      ## @param report_quantiles - boolean - optional - default: true
+      ## Deprecated: [v0.48.0] Use `metrics::summaries::mode` instead.
+      ## Whether to report quantiles for summary metrics.
+      #
+      # report_quantiles: true
+
       ## @param - delta_ttl - integer - optional - default: 3600
       ## The amount of time (in seconds) that values are kept in memory for
       ## calculating deltas for cumulative monotonic metrics.
@@ -129,6 +135,16 @@ exporters:
         ## - `raw_value` to report the raw value as a Datadog gauge.
         #
         # cumulative_monotonic_mode: to_delta
+
+      ## @param summaries - custom object - optional
+      ## Summaries specific configuration.
+        ## @param mode - string - optional - default: gauges
+        ## How to report summaries. Valid values are:
+        ## 
+        ## - `noquantiles` to not report quantile metrics
+        ## - `gauges` to report one gauge metric per quantile.
+        #
+        # mode: gauges
 
     ## @param traces - custom object - optional
     ## Trace exporter specific configuration.
