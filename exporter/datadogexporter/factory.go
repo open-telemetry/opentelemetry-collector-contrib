@@ -95,6 +95,9 @@ func (*factory) createDefaultConfig() config.Exporter {
 				Mode:         "distributions",
 				SendCountSum: false,
 			},
+			SumConfig: ddconfig.SumConfig{
+				CumulativeMonotonicMode: ddconfig.CumulativeMonotonicSumModeToDelta,
+			},
 		},
 
 		Traces: ddconfig.TracesConfig{
