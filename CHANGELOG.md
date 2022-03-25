@@ -23,6 +23,14 @@
 - `cmd/mdatagen`: Add resource attributes definition to metadata.yaml and move `pdata.Metrics` creation to the
   generated code (#5270) 
 
+### 💡 Enhancements 💡
+
+- `datadogexporter`: Add `metrics::sums::cumulative_monotonic_mode` to specify export mode for cumulative monotonic sums (#8490)
+
+### 🚩 Deprecations 🚩
+
+- `datadogexporter`: Deprecate `metrics::send_monotonic_counter` in favor of `metrics::sums::cumulative_monotonic_mode` (#8490)
+
 ## v0.47.0
 
 ### 💡 Enhancements 💡
