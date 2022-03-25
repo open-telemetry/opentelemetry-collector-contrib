@@ -28,7 +28,7 @@ import (
 
 func TestLoadConfig(t *testing.T) {
 	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory

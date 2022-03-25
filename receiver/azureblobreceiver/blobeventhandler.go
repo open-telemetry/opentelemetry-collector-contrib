@@ -85,9 +85,14 @@ func (p *AzureBlobEventHandler) newMessageHangdler(ctx context.Context, event *e
 	eventType := eventDataSlice[0]["eventType"].(string)
 	blobName := strings.SplitN(subject, "blobs/", -1)[1]
 
+	p.logger.Debug(fmt.Sprintf("containerName: %s", containerName))
+	p.logger.Debug(fmt.Sprintf("blobName: %s", blobName))
+
 	if eventType == blobCreatedEventType {
 		blobData, err := p.blobClient.ReadBlob(ctx, containerName, blobName)
+
 		if err != nil {
+			p.logger.Error(err.Error())
 			return err
 		}
 		if containerName == p.logsContainerName {

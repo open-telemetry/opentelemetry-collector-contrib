@@ -15,132 +15,60 @@
 package azureblobreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver"
 
 import (
+	"context"
 	"testing"
 
+	eventhub "github.com/Azure/azure-event-hubs-go/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 )
 
-// type BlobEventHandler interface {
-// 	Run(ctx context.Context) error
-// 	Close(ctx context.Context) error
-// 	SetBlobDataConsumer(blobDataConsumer BlobDataConsumer)
-// }
-
-// type azureBlobEventHandler struct {
-// 	blobClient               BlobClient
-// 	blobDataConsumer         BlobDataConsumer
-// 	logsContainerName        string
-// 	tracesContainerName      string
-// 	eventHubSonnectionString string
-// 	hub                      *eventhub.Hub
-// 	logger                   *zap.Logger
-// }
-
-// const (
-// 	blobCreatedEventType = "Microsoft.Storage.BlobCreated"
-// )
-
-// func (p *azureBlobEventHandler) Run(ctx context.Context) error {
-
-// 	if p.hub != nil {
-// 		return nil
-// 	}
-
-// 	hub, err := eventhub.NewHubFromConnectionString(p.eventHubSonnectionString)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	p.hub = hub
-
-// 	runtimeInfo, err := hub.GetRuntimeInformation(ctx)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	for _, partitionID := range runtimeInfo.PartitionIDs {
-// 		_, err := hub.Receive(ctx, partitionID, p.newMessageHangdler, eventhub.ReceiveWithLatestOffset())
-// 		if err != nil {
-// 			return err
-// 		}
-// 	}
-
-// 	return nil
-// }
-
-// func (p *azureBlobEventHandler) newMessageHangdler(ctx context.Context, event *eventhub.Event) error {
-// 	p.logger.Debug(string(event.Data))
-
-// 	var eventDataSlice []map[string]interface{}
-// 	json.Unmarshal(event.Data, &eventDataSlice)
-
-// 	subject := eventDataSlice[0]["subject"].(string)
-// 	containerName := strings.SplitN(strings.SplitN(subject, "containers/", -1)[1], "/", -1)[0]
-// 	eventType := eventDataSlice[0]["eventType"].(string)
-// 	blobName := strings.SplitN(subject, "blobs/", -1)[1]
-
-// 	if eventType == blobCreatedEventType {
-// 		blobData, err := p.blobClient.ReadBlob(ctx, containerName, blobName)
-// 		if err != nil {
-// 			return err
-// 		}
-// 		if containerName == p.logsContainerName {
-// 			p.blobDataConsumer.ConsumeLogsJson(ctx, blobData.Bytes())
-// 		} else if containerName == p.tracesContainerName {
-// 			p.blobDataConsumer.ConsumeTracesJson(ctx, blobData.Bytes())
-// 		} else {
-// 			p.logger.Debug(fmt.Sprintf("Unknown container name %s", containerName))
-// 		}
-// 	}
-
-// 	return nil
-// }
-
-// func (p *azureBlobEventHandler) Close(ctx context.Context) error {
-
-// 	if p.hub != nil {
-// 		err := p.hub.Close(ctx)
-// 		if err != nil {
-// 			return err
-// 		}
-// 		p.hub = nil
-// 	}
-// 	return nil
-// }
-
-// func (p *azureBlobEventHandler) SetBlobDataConsumer(blobDataConsumer BlobDataConsumer) {
-// 	p.blobDataConsumer = blobDataConsumer
-// }
-
-// func NewBlobEventHandler(eventHubSonnectionString string, logsContainerName string, tracesContainerName string, blobClient BlobClient, logger *zap.Logger) *azureBlobEventHandler {
-// 	return &azureBlobEventHandler{
-// 		blobClient:               blobClient,
-// 		logsContainerName:        logsContainerName,
-// 		tracesContainerName:      tracesContainerName,
-// 		eventHubSonnectionString: eventHubSonnectionString,
-// 		logger:                   logger,
-// 	}
-// }
 const (
 	eventHubString = "Endpoint=sb://oteldata.servicebus.windows.net/;SharedAccessKeyName=oteldatahubpolicy;SharedAccessKey=sharedAccessKey;EntityPath=otelddatahub"
 )
 
 var (
-	logsEvent = []byte(`[{"topic":"someTopic","subject":"/blobServices/default/containers/logs/blobs/logs-1	","eventType":"Microsoft.Storage.BlobCreated","id":"1","data":{"api":"PutBlob","clientRequestId":"1","requestId":"1","eTag":"1","contentType":"text","contentLength":10,"blobType":"BlockBlob","url":"https://oteldata.blob.core.windows.net/logs/logs-1","sequencer":"1","storageDiagnostics":{"batchId":"1"}},"dataVersion":"","metadataVersion":"1","eventTime":"2022-03-25T15:59:50.9251748Z"}]`)
+	logEventData   = []byte(`[{"topic":"someTopic","subject":"/blobServices/default/containers/logs/blobs/logs-1","eventType":"Microsoft.Storage.BlobCreated","id":"1","data":{"api":"PutBlob","clientRequestId":"1","requestId":"1","eTag":"1","contentType":"text","contentLength":10,"blobType":"BlockBlob","url":"https://oteldata.blob.core.windows.net/logs/logs-1","sequencer":"1","storageDiagnostics":{"batchId":"1"}},"dataVersion":"","metadataVersion":"1","eventTime":"2022-03-25T15:59:50.9251748Z"}]`)
+	traceEventData = []byte(`[{"topic":"someTopic","subject":"/blobServices/default/containers/traces/blobs/traces-1","eventType":"Microsoft.Storage.BlobCreated","id":"1","data":{"api":"PutBlob","clientRequestId":"1","requestId":"1","eTag":"1","contentType":"text","contentLength":10,"blobType":"BlockBlob","url":"https://oteldata.blob.core.windows.net/traces/traces-1","sequencer":"1","storageDiagnostics":{"batchId":"1"}},"dataVersion":"","metadataVersion":"1","eventTime":"2022-03-25T15:59:50.9251748Z"}]`)
 )
 
 func TestNewBlobEventHandler(t *testing.T) {
 	blobClient := NewMockBlobClient()
-
-	blobEventHandler := getBlobEventHandler(t)
+	blobEventHandler := getBlobEventHandler(t, blobClient)
 
 	require.NotNil(t, blobEventHandler)
-	assert.Equal(t, blobEventHandler.blobClient, blobClient)
+	assert.Equal(t, blobClient, blobEventHandler.blobClient)
 }
 
+func TestNewMessageHangdler(t *testing.T) {
+	blobClient := NewMockBlobClient()
+	blobEventHandler := getBlobEventHandler(t, blobClient)
 
-func getBlobEventHandler(tb *testing.TB) {
-  retrun NewBlobEventHandler(eventHubString, logsContainerName, tracesContainerName, blobClient, zaptest.NewLogger(tb))
+	logsDataConsumer := NewMockLogsDataConsumer()
+	tracesDataConsumer := NewMockTracesDataConsumer()
+	blobEventHandler.SetLogsDataConsumer(logsDataConsumer)
+	blobEventHandler.SetTracesDataConsumer(tracesDataConsumer)
+
+	logEvent := getEvent(logEventData)
+	err := blobEventHandler.newMessageHangdler(context.Background(), logEvent)
+	require.NoError(t, err)
+
+	traceEvent := getEvent(traceEventData)
+	err = blobEventHandler.newMessageHangdler(context.Background(), traceEvent)
+	require.NoError(t, err)
+
+	logsDataConsumer.AssertNumberOfCalls(t, "ConsumeLogsJSON", 1)
+	tracesDataConsumer.AssertNumberOfCalls(t, "ConsumeTracesJSON", 1)
+	blobClient.AssertNumberOfCalls(t, "ReadBlob", 2)
+
+}
+
+func getEvent(eventData []byte) *eventhub.Event {
+	return &eventhub.Event{Data: eventData}
+}
+
+func getBlobEventHandler(tb testing.TB, blobClient BlobClient) *AzureBlobEventHandler {
+	blobEventHandler := NewBlobEventHandler(eventHubString, logsContainerName, tracesContainerName, blobClient, zaptest.NewLogger(tb))
+	return blobEventHandler
 }

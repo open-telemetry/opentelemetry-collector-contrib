@@ -37,7 +37,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 	params := componenttest.NewNopReceiverCreateSettings()
 	receiver, err := f.CreateTracesReceiver(ctx, params, getConfig(), consumertest.NewNop())
 
-	require.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, receiver)
 }
 
@@ -47,7 +47,7 @@ func TestCreateLogsReceiver(t *testing.T) {
 	params := componenttest.NewNopReceiverCreateSettings()
 	receiver, err := f.CreateLogsReceiver(ctx, params, getConfig(), consumertest.NewNop())
 
-	require.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, receiver)
 }
 
@@ -57,10 +57,10 @@ func TestTracesAndLogsReceiversAreSame(t *testing.T) {
 	params := componenttest.NewNopReceiverCreateSettings()
 	config := getConfig()
 	logsReceiver, err := f.CreateLogsReceiver(ctx, params, config, consumertest.NewNop())
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	tracesReceiver, err := f.CreateTracesReceiver(ctx, params, config, consumertest.NewNop())
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, logsReceiver, tracesReceiver)
 }

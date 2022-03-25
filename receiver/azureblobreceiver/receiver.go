@@ -108,7 +108,7 @@ func (b *blobReceiver) ConsumeTracesJSON(ctx context.Context, json []byte) error
 }
 
 // Returns a new instance of the log receiver
-func NewReceiver(config Config, set component.ReceiverCreateSettings, blobEventHandler BlobEventHandler) (component.LogsReceiver, error) {
+func NewReceiver(config Config, set component.ReceiverCreateSettings, blobEventHandler BlobEventHandler) (component.Receiver, error) {
 	blobReceiver := &blobReceiver{
 		blobEventHandler:  blobEventHandler,
 		logger:            set.Logger,

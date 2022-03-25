@@ -68,6 +68,7 @@ func (f *blobReceiverFactory) createLogsReceiver(
 	receiver, err := f.getReceiver(set, cfg)
 
 	if err != nil {
+		set.Logger.Error(err.Error())
 		return nil, err
 	}
 
@@ -86,6 +87,7 @@ func (f *blobReceiverFactory) createTracesReceiver(
 	receiver, err := f.getReceiver(set, cfg)
 
 	if err != nil {
+		set.Logger.Error(err.Error())
 		return nil, err
 	}
 
@@ -108,12 +110,14 @@ func (f *blobReceiverFactory) getReceiver(
 		blobEventHandler, err := f.getBlobEventHandler(receiverConfig, set.Logger)
 
 		if err != nil {
+			set.Logger.Error(err.Error())
 			return nil, err
 		}
 
 		f.receiver, err = NewReceiver(*receiverConfig, set, blobEventHandler)
 
 		if err != nil {
+			set.Logger.Error(err.Error())
 			return nil, err
 		}
 
@@ -125,6 +129,7 @@ func (f *blobReceiverFactory) getReceiver(
 func (f *blobReceiverFactory) getBlobEventHandler(cfg *Config, logger *zap.Logger) (BlobEventHandler, error) {
 	bc, err := NewBlobClient(cfg.ConnectionString, logger)
 	if err != nil {
+		logger.Error(err.Error())
 		return nil, err
 	}
 
