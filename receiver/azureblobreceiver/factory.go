@@ -65,13 +65,13 @@ func (f *blobReceiverFactory) createLogsReceiver(
 	nextConsumer consumer.Logs,
 ) (component.LogsReceiver, error) {
 
-	receiver, err := f.getReceiver(ctx, set, cfg)
+	receiver, err := f.getReceiver(set, cfg)
 
 	if err != nil {
 		return nil, err
 	}
 
-	receiver.(BlobDataConsumer).SetNextLogsConsumer(nextConsumer)
+	receiver.(LogsDataConsumer).SetNextLogsConsumer(nextConsumer)
 
 	return receiver, nil
 }
@@ -83,18 +83,17 @@ func (f *blobReceiverFactory) createTracesReceiver(
 	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
 
-	receiver, err := f.getReceiver(ctx, set, cfg)
+	receiver, err := f.getReceiver(set, cfg)
 
 	if err != nil {
 		return nil, err
 	}
 
-	receiver.(BlobDataConsumer).SetNextTracesConsumer(nextConsumer)
+	receiver.(TracesDataConsumer).SetNextTracesConsumer(nextConsumer)
 	return receiver, nil
 }
 
 func (f *blobReceiverFactory) getReceiver(
-	ctx context.Context,
 	set component.ReceiverCreateSettings,
 	cfg config.Receiver) (component.Receiver, error) {
 
@@ -132,17 +131,3 @@ func (f *blobReceiverFactory) getBlobEventHandler(cfg *Config, logger *zap.Logge
 	return NewBlobEventHandler(cfg.EventHubEndPoint, cfg.LogsContainerName, cfg.TracesContainerName, bc, logger),
 		nil
 }
-
-// func (f *kafkaReceiverFactory) createLogsReceiver(
-// 	_ context.Context,
-// 	set component.ReceiverCreateSettings,
-// 	cfg config.Receiver,
-// 	nextConsumer consumer.Logs,
-// ) (component.LogsReceiver, error) {
-// 	c := cfg.(*Config)
-// 	r, err := newLogsReceiver(*c, set, f.logsUnmarshalers, nextConsumer)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return r, nil
-// }

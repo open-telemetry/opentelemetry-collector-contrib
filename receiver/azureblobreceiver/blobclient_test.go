@@ -14,42 +14,30 @@
 
 package azureblobreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver"
 
-// const (
-// 	goodConnectionString = "DefaultEndpointsProtocol=https;AccountName=accountName;AccountKey=+idLkHYcL0MUWIKYHm2j4Q==;EndpointSuffix=core.windows.net"
-// 	badConnectionString  = "DefaultEndpointsProtocol=https;AccountName=accountName;AccountKey=accountkey;EndpointSuffix=core.windows.net"
-// )
+import (
+	"testing"
 
-// func TestNewBlobClient(t *testing.T) {
-// 	blobClient, err := NewBlobClient(goodConnectionString, logsContainerName, zaptest.NewLogger(t))
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap/zaptest"
+)
 
-// 	require.Nil(t, err)
-// 	require.NotNil(t, blobClient)
-// 	assert.NotNil(t, blobClient.containerClient)
-// }
+const (
+	goodConnectionString = "DefaultEndpointsProtocol=https;AccountName=accountName;AccountKey=+idLkHYcL0MUWIKYHm2j4Q==;EndpointSuffix=core.windows.net"
+	badConnectionString  = "DefaultEndpointsProtocol=https;AccountName=accountName;AccountKey=accountkey;EndpointSuffix=core.windows.net"
+)
 
-// func TestNewBlobClientError(t *testing.T) {
-// 	blobClient, err := NewBlobClient(badConnectionString, logsContainerName, zaptest.NewLogger(t))
+func TestNewBlobClient(t *testing.T) {
+	blobClient, err := NewBlobClient(goodConnectionString, zaptest.NewLogger(t))
 
-// 	assert.NotNil(t, err)
-// 	assert.Nil(t, blobClient)
-// }
+	require.Nil(t, err)
+	require.NotNil(t, blobClient)
+	assert.NotNil(t, blobClient.serviceClient)
+}
 
-// func TestGenerateBlobName(t *testing.T) {
-// 	blobClient, err := NewBlobClient(goodConnectionString, logsContainerName, zaptest.NewLogger(t))
-// 	require.Nil(t, err)
+func TestNewBlobClientError(t *testing.T) {
+	blobClient, err := NewBlobClient(badConnectionString, zaptest.NewLogger(t))
 
-// 	blobName := blobClient.generateBlobName(config.LogsDataType)
-// 	assert.True(t, strings.Contains(blobName, fmt.Sprintf("%s-", config.LogsDataType)))
-// }
-
-// func TestCheckOrCreateContainer(t *testing.T) {
-// 	blobClient, err := NewBlobClient(goodConnectionString, logsContainerName, zaptest.NewLogger(t))
-// 	require.Nil(t, err)
-
-// 	err = blobClient.checkOrCreateContainer()
-
-// 	assert.NotNil(t, err)
-
-// 	assert.False(t, strings.Contains(err.Error(), containerNotFoundError))
-
-// }
+	assert.NotNil(t, err)
+	assert.Nil(t, blobClient)
+}

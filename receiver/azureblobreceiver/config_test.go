@@ -14,31 +14,43 @@
 
 package azureblobreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver"
 
-// func TestLoadConfig(t *testing.T) {
-// 	factories, err := componenttest.NopFactories()
-// 	assert.Nil(t, err)
+import (
+	"path/filepath"
+	"testing"
 
-// 	factory := NewFactory()
-// 	factories.Exporters[typeStr] = factory
-// 	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/service/servicetest"
+)
 
-// 	require.NoError(t, err)
-// 	require.NotNil(t, cfg)
+func TestLoadConfig(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.Nil(t, err)
 
-// 	assert.Equal(t, len(cfg.Exporters), 2)
+	factory := NewFactory()
+	factories.Receivers[typeStr] = factory
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
-// 	exporter := cfg.Exporters[config.NewComponentID(typeStr)]
-// 	assert.Equal(t, factory.CreateDefaultConfig(), exporter)
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
 
-// 	exporter = cfg.Exporters[config.NewComponentIDWithName(typeStr, "2")].(*Config)
-// 	assert.NoError(t, configtest.CheckConfigStruct(exporter))
-// 	assert.Equal(
-// 		t,
-// 		&Config{
-// 			ExporterSettings:    config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "2")),
-// 			ConnectionString:    goodConnectionString,
-// 			LogsContainerName:   logsContainerName,
-// 			TracesContainerName: tracesContainerName,
-// 		},
-// 		exporter)
-// }
+	assert.Equal(t, len(cfg.Receivers), 2)
+
+	receiver := cfg.Receivers[config.NewComponentID(typeStr)]
+	assert.Equal(t, factory.CreateDefaultConfig(), receiver)
+
+	receiver = cfg.Receivers[config.NewComponentIDWithName(typeStr, "2")].(*Config)
+	assert.NoError(t, configtest.CheckConfigStruct(receiver))
+	assert.Equal(
+		t,
+		&Config{
+			ReceiverSettings:    config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "2")),
+			ConnectionString:    goodConnectionString,
+			LogsContainerName:   logsContainerName,
+			TracesContainerName: tracesContainerName,
+		},
+		receiver)
+}

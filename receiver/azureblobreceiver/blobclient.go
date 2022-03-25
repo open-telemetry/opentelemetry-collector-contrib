@@ -31,13 +31,13 @@ type AzureBlobClient struct {
 	logger        *zap.Logger
 }
 
-func (bc *AzureBlobClient) getBlockBlob(ctx context.Context, containerName string, blobName string) azblob.BlockBlobClient {
+func (bc *AzureBlobClient) getBlockBlob(containerName string, blobName string) azblob.BlockBlobClient {
 	containerClient := bc.serviceClient.NewContainerClient(containerName)
 	return containerClient.NewBlockBlobClient(blobName)
 }
 
 func (bc *AzureBlobClient) ReadBlob(ctx context.Context, containerName string, blobName string) (*bytes.Buffer, error) {
-	blockBlob := bc.getBlockBlob(ctx, containerName, blobName)
+	blockBlob := bc.getBlockBlob(containerName, blobName)
 	defer blockBlob.Delete(ctx, nil)
 
 	get, err := blockBlob.Download(ctx, nil)

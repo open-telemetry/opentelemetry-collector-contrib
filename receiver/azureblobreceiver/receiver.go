@@ -25,10 +25,13 @@ import (
 	"go.uber.org/zap"
 )
 
-type BlobDataConsumer interface {
-	ConsumeLogsJson(ctx context.Context, json []byte) error
-	ConsumeTracesJson(ctx context.Context, json []byte) error
+type LogsDataConsumer interface {
+	ConsumeLogsJSON(ctx context.Context, json []byte) error
 	SetNextLogsConsumer(nextLogsConsumer consumer.Logs)
+}
+
+type TracesDataConsumer interface {
+	ConsumeTracesJSON(ctx context.Context, json []byte) error
 	SetNextTracesConsumer(nextracesConsumer consumer.Traces)
 }
 
@@ -44,7 +47,8 @@ type blobReceiver struct {
 
 func (b *blobReceiver) Start(ctx context.Context, host component.Host) error {
 
-	b.blobEventHandler.SetBlobDataConsumer(b)
+	b.blobEventHandler.SetLogsDataConsumer(b)
+	b.blobEventHandler.SetTracesDataConsumer(b)
 
 	b.blobEventHandler.Run(ctx)
 
@@ -64,7 +68,7 @@ func (b *blobReceiver) SetNextTracesConsumer(nextTracesConsumer consumer.Traces)
 	b.nextTracesConsumer = nextTracesConsumer
 }
 
-func (b *blobReceiver) ConsumeLogsJson(ctx context.Context, json []byte) error {
+func (b *blobReceiver) ConsumeLogsJSON(ctx context.Context, json []byte) error {
 
 	if b.nextLogsConsumer == nil {
 		return nil
@@ -84,7 +88,7 @@ func (b *blobReceiver) ConsumeLogsJson(ctx context.Context, json []byte) error {
 	return err
 }
 
-func (b *blobReceiver) ConsumeTracesJson(ctx context.Context, json []byte) error {
+func (b *blobReceiver) ConsumeTracesJSON(ctx context.Context, json []byte) error {
 	if b.nextTracesConsumer == nil {
 		return nil
 	}

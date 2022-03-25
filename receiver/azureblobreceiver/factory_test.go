@@ -14,47 +14,62 @@
 
 package azureblobreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver"
 
-// func TestCreateTracesExporterUsingDefaultConfig(t *testing.T) {
-// 	ctx := context.Background()
-// 	params := componenttest.NewNopExporterCreateSettings()
-// 	exporter, err := createTracesExporter(ctx, params, createDefaultConfig())
+import (
+	"context"
+	"testing"
 
-// 	require.Nil(t, err)
-// 	assert.NotNil(t, exporter)
-// }
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/consumer/consumertest"
+)
 
-// func TestCreateLogsExporterUsingDefaultConfig(t *testing.T) {
-// 	ctx := context.Background()
-// 	params := componenttest.NewNopExporterCreateSettings()
-// 	exporter, err := createLogsExporter(ctx, params, createDefaultConfig())
+func TestNewFactory(t *testing.T) {
+	f := NewFactory()
 
-// 	require.Nil(t, err)
-// 	assert.NotNil(t, exporter)
-// }
+	assert.NotNil(t, f)
+}
 
-// func TestCreateTracesExporterUsingSpecificConfig(t *testing.T) {
-// 	ctx := context.Background()
-// 	params := componenttest.NewNopExporterCreateSettings()
-// 	exporter, err := createTracesExporter(ctx, params, createSpecificConfig())
+func TestCreateTracesReceiver(t *testing.T) {
+	f := NewFactory()
+	ctx := context.Background()
+	params := componenttest.NewNopReceiverCreateSettings()
+	receiver, err := f.CreateTracesReceiver(ctx, params, getConfig(), consumertest.NewNop())
 
-// 	require.Nil(t, err)
-// 	assert.NotNil(t, exporter)
-// }
+	require.Nil(t, err)
+	assert.NotNil(t, receiver)
+}
 
-// func TestCreateLogsExporterUsingSpecificConfig(t *testing.T) {
-// 	ctx := context.Background()
-// 	params := componenttest.NewNopExporterCreateSettings()
-// 	exporter, err := createLogsExporter(ctx, params, createSpecificConfig())
+func TestCreateLogsReceiver(t *testing.T) {
+	f := NewFactory()
+	ctx := context.Background()
+	params := componenttest.NewNopReceiverCreateSettings()
+	receiver, err := f.CreateLogsReceiver(ctx, params, getConfig(), consumertest.NewNop())
 
-// 	require.Nil(t, err)
-// 	assert.NotNil(t, exporter)
-// }
+	require.Nil(t, err)
+	assert.NotNil(t, receiver)
+}
 
-// func createSpecificConfig() config.Exporter {
-// 	return &Config{
-// 		ExporterSettings:    config.NewExporterSettings(config.NewComponentID(typeStr)),
-// 		ConnectionString:    goodConnectionString,
-// 		LogsContainerName:   logsContainerName,
-// 		TracesContainerName: tracesContainerName,
-// 	}
-// }
+func TestTracesAndLogsReceiversAreSame(t *testing.T) {
+	f := NewFactory()
+	ctx := context.Background()
+	params := componenttest.NewNopReceiverCreateSettings()
+	config := getConfig()
+	logsReceiver, err := f.CreateLogsReceiver(ctx, params, config, consumertest.NewNop())
+	require.Nil(t, err)
+
+	tracesReceiver, err := f.CreateTracesReceiver(ctx, params, config, consumertest.NewNop())
+	require.Nil(t, err)
+
+	assert.Equal(t, logsReceiver, tracesReceiver)
+}
+
+func getConfig() config.Receiver {
+	return &Config{
+		ReceiverSettings:    config.NewReceiverSettings(config.NewComponentID(typeStr)),
+		ConnectionString:    goodConnectionString,
+		LogsContainerName:   logsContainerName,
+		TracesContainerName: tracesContainerName,
+	}
+}

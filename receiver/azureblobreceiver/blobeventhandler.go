@@ -27,12 +27,14 @@ import (
 type BlobEventHandler interface {
 	Run(ctx context.Context) error
 	Close(ctx context.Context) error
-	SetBlobDataConsumer(blobDataConsumer BlobDataConsumer)
+	SetLogsDataConsumer(logsDataConsumer LogsDataConsumer)
+	SetTracesDataConsumer(tracesDataConsumer TracesDataConsumer)
 }
 
-type azureBlobEventHandler struct {
+type AzureBlobEventHandler struct {
 	blobClient               BlobClient
-	blobDataConsumer         BlobDataConsumer
+	logsDataConsumer         LogsDataConsumer
+	tracesDataConsumer       TracesDataConsumer
 	logsContainerName        string
 	tracesContainerName      string
 	eventHubSonnectionString string
@@ -44,7 +46,7 @@ const (
 	blobCreatedEventType = "Microsoft.Storage.BlobCreated"
 )
 
-func (p *azureBlobEventHandler) Run(ctx context.Context) error {
+func (p *AzureBlobEventHandler) Run(ctx context.Context) error {
 
 	if p.hub != nil {
 		return nil
@@ -72,7 +74,7 @@ func (p *azureBlobEventHandler) Run(ctx context.Context) error {
 	return nil
 }
 
-func (p *azureBlobEventHandler) newMessageHangdler(ctx context.Context, event *eventhub.Event) error {
+func (p *AzureBlobEventHandler) newMessageHangdler(ctx context.Context, event *eventhub.Event) error {
 	p.logger.Debug(string(event.Data))
 
 	var eventDataSlice []map[string]interface{}
@@ -89,9 +91,9 @@ func (p *azureBlobEventHandler) newMessageHangdler(ctx context.Context, event *e
 			return err
 		}
 		if containerName == p.logsContainerName {
-			p.blobDataConsumer.ConsumeLogsJson(ctx, blobData.Bytes())
+			p.logsDataConsumer.ConsumeLogsJSON(ctx, blobData.Bytes())
 		} else if containerName == p.tracesContainerName {
-			p.blobDataConsumer.ConsumeTracesJson(ctx, blobData.Bytes())
+			p.tracesDataConsumer.ConsumeTracesJSON(ctx, blobData.Bytes())
 		} else {
 			p.logger.Debug(fmt.Sprintf("Unknown container name %s", containerName))
 		}
@@ -100,7 +102,7 @@ func (p *azureBlobEventHandler) newMessageHangdler(ctx context.Context, event *e
 	return nil
 }
 
-func (p *azureBlobEventHandler) Close(ctx context.Context) error {
+func (p *AzureBlobEventHandler) Close(ctx context.Context) error {
 
 	if p.hub != nil {
 		err := p.hub.Close(ctx)
@@ -112,12 +114,16 @@ func (p *azureBlobEventHandler) Close(ctx context.Context) error {
 	return nil
 }
 
-func (p *azureBlobEventHandler) SetBlobDataConsumer(blobDataConsumer BlobDataConsumer) {
-	p.blobDataConsumer = blobDataConsumer
+func (p *AzureBlobEventHandler) SetLogsDataConsumer(logsDataConsumer LogsDataConsumer) {
+	p.logsDataConsumer = logsDataConsumer
 }
 
-func NewBlobEventHandler(eventHubSonnectionString string, logsContainerName string, tracesContainerName string, blobClient BlobClient, logger *zap.Logger) *azureBlobEventHandler {
-	return &azureBlobEventHandler{
+func (p *AzureBlobEventHandler) SetTracesDataConsumer(tracesDataConsumer TracesDataConsumer) {
+	p.tracesDataConsumer = tracesDataConsumer
+}
+
+func NewBlobEventHandler(eventHubSonnectionString string, logsContainerName string, tracesContainerName string, blobClient BlobClient, logger *zap.Logger) *AzureBlobEventHandler {
+	return &AzureBlobEventHandler{
 		blobClient:               blobClient,
 		logsContainerName:        logsContainerName,
 		tracesContainerName:      tracesContainerName,
