@@ -32,6 +32,9 @@
 
 - `datadogexporter`: Deprecate `metrics::send_monotonic_counter` in favor of `metrics::sums::cumulative_monotonic_mode` (#8490)
 
+### 🚀 New components 🚀
+- `azureblobreceiver`: reads logs and traces from Azure Blob Storage
+
 ## v0.47.0
 
 ### 💡 Enhancements 💡
