@@ -26,7 +26,7 @@ To see all available options, see [Advanced Configuration](#advanced-configurati
 
 > When using this exporter, it is strongly RECOMMENDED to configure the OpenTelemetry SDKs to export metrics 
 > with DELTA temporality. If you are exporting Sum or Histogram metrics with CUMULATIVE temporality, read
-> about possible limitations of this exporter [here](#considerations-when-exporting-cumulative-data-points).
+> about possible limitations of this exporter [below](#considerations-when-exporting-cumulative-data-points).
 
 ### Running alongside Dynatrace OneAgent (preferred)
 
