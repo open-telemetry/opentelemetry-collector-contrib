@@ -75,7 +75,7 @@ func (p *AzureBlobEventHandler) Run(ctx context.Context) error {
 }
 
 func (p *AzureBlobEventHandler) newMessageHangdler(ctx context.Context, event *eventhub.Event) error {
-	p.logger.Debug(string(event.Data))
+	p.logger.Debug(fmt.Sprintf("New event: %s", string(event.Data)))
 
 	var eventDataSlice []map[string]interface{}
 	json.Unmarshal(event.Data, &eventDataSlice)
