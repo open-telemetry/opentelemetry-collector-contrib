@@ -31,11 +31,11 @@ const (
 
 // NewFactory creates a factory for Skywalking exporter.
 func NewFactory() component.ExporterFactory {
-	return exporterhelper.NewFactory(
+	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithLogs(createLogsExporter),
-		exporterhelper.WithMetrics(createMetricsExporter))
+		component.WithLogsExporter(createLogsExporter),
+		component.WithMetricsExporter(createMetricsExporter))
 }
 
 func createDefaultConfig() config.Exporter {

@@ -19,6 +19,7 @@ package pagingscraper // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/shirou/gopsutil/v3/host"
@@ -31,7 +32,7 @@ import (
 )
 
 const (
-	pagingUsageMetricsLen = 1
+	pagingUsageMetricsLen = 2
 	pagingMetricsLen      = 2
 )
 
@@ -62,9 +63,6 @@ func (s *scraper) start(context.Context, component.Host) error {
 }
 
 func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
-	md := pdata.NewMetrics()
-	metrics := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics()
-
 	var errors scrapererror.ScrapeErrors
 
 	err := s.scrapePagingUsageMetric()
@@ -77,18 +75,18 @@ func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 		errors.AddPartial(pagingMetricsLen, err)
 	}
 
-	s.mb.Emit(metrics)
-	return md, errors.Combine()
+	return s.mb.Emit(), errors.Combine()
 }
 
 func (s *scraper) scrapePagingUsageMetric() error {
 	now := pdata.NewTimestampFromTime(time.Now())
 	pageFileStats, err := s.getPageFileStats()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to read page file stats: %w", err)
 	}
 
 	s.recordPagingUsageDataPoints(now, pageFileStats)
+	s.recordPagingUtilizationDataPoints(now, pageFileStats)
 	return nil
 }
 
@@ -102,11 +100,21 @@ func (s *scraper) recordPagingUsageDataPoints(now pdata.Timestamp, pageFileStats
 	}
 }
 
+func (s *scraper) recordPagingUtilizationDataPoints(now pdata.Timestamp, pageFileStats []*pageFileStats) {
+	for _, pageFile := range pageFileStats {
+		s.mb.RecordSystemPagingUtilizationDataPoint(now, float64(pageFile.usedBytes)/float64(pageFile.totalBytes), pageFile.deviceName, metadata.AttributeState.Used)
+		s.mb.RecordSystemPagingUtilizationDataPoint(now, float64(pageFile.freeBytes)/float64(pageFile.totalBytes), pageFile.deviceName, metadata.AttributeState.Free)
+		if pageFile.cachedBytes != nil {
+			s.mb.RecordSystemPagingUtilizationDataPoint(now, float64(*pageFile.cachedBytes)/float64(pageFile.totalBytes), pageFile.deviceName, metadata.AttributeState.Cached)
+		}
+	}
+}
+
 func (s *scraper) scrapePagingMetrics() error {
 	now := pdata.NewTimestampFromTime(time.Now())
 	swap, err := s.swapMemory()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to read swap info: %w", err)
 	}
 
 	s.recordPagingOperationsDataPoints(now, swap)

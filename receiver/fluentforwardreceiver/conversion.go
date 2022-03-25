@@ -82,8 +82,8 @@ func (em EventMode) String() string {
 
 // parseInterfaceToMap takes map of interface objects and returns
 // AttributeValueMap
-func parseInterfaceToMap(msi map[string]interface{}) pdata.AttributeValue {
-	rv := pdata.NewAttributeValueMap()
+func parseInterfaceToMap(msi map[string]interface{}) pdata.Value {
+	rv := pdata.NewValueMap()
 	am := rv.MapVal()
 	am.EnsureCapacity(len(msi))
 	for k, value := range msi {
@@ -94,8 +94,8 @@ func parseInterfaceToMap(msi map[string]interface{}) pdata.AttributeValue {
 
 // parseInterfaceToArray takes array of interface objects and returns
 // AttributeValueArray
-func parseInterfaceToArray(ai []interface{}) pdata.AttributeValue {
-	iv := pdata.NewAttributeValueArray()
+func parseInterfaceToArray(ai []interface{}) pdata.Value {
+	iv := pdata.NewValueSlice()
 	av := iv.SliceVal()
 	av.EnsureCapacity(len(ai))
 	for _, value := range ai {
@@ -105,32 +105,32 @@ func parseInterfaceToArray(ai []interface{}) pdata.AttributeValue {
 }
 
 // parseToAttributeValue converts interface object to AttributeValue
-func parseToAttributeValue(val interface{}) pdata.AttributeValue {
+func parseToAttributeValue(val interface{}) pdata.Value {
 	// See https://github.com/tinylib/msgp/wiki/Type-Mapping-Rules
 	switch r := val.(type) {
 	case bool:
-		return pdata.NewAttributeValueBool(r)
+		return pdata.NewValueBool(r)
 	case string:
-		return pdata.NewAttributeValueString(r)
+		return pdata.NewValueString(r)
 	case uint64:
-		return pdata.NewAttributeValueInt(int64(r))
+		return pdata.NewValueInt(int64(r))
 	case int64:
-		return pdata.NewAttributeValueInt(r)
+		return pdata.NewValueInt(r)
 	// Sometimes strings come in as bytes array
 	case []byte:
-		return pdata.NewAttributeValueString(string(r))
+		return pdata.NewValueString(string(r))
 	case map[string]interface{}:
 		return parseInterfaceToMap(r)
 	case []interface{}:
 		return parseInterfaceToArray(r)
 	case float32:
-		return pdata.NewAttributeValueDouble(float64(r))
+		return pdata.NewValueDouble(float64(r))
 	case float64:
-		return pdata.NewAttributeValueDouble(r)
+		return pdata.NewValueDouble(r)
 	case nil:
-		return pdata.NewAttributeValueEmpty()
+		return pdata.NewValueEmpty()
 	default:
-		return pdata.NewAttributeValueString(fmt.Sprintf("%v", val))
+		return pdata.NewValueString(fmt.Sprintf("%v", val))
 	}
 }
 

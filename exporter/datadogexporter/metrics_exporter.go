@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -37,13 +38,14 @@ import (
 )
 
 type metricsExporter struct {
-	params   component.ExporterCreateSettings
-	cfg      *config.Config
-	ctx      context.Context
-	client   *datadog.Client
-	tr       *translator.Translator
-	scrubber scrub.Scrubber
-	retrier  *utils.Retrier
+	params       component.ExporterCreateSettings
+	cfg          *config.Config
+	ctx          context.Context
+	client       *datadog.Client
+	tr           *translator.Translator
+	scrubber     scrub.Scrubber
+	retrier      *utils.Retrier
+	onceMetadata *sync.Once
 }
 
 // assert `hostProvider` implements HostnameProvider interface
@@ -55,7 +57,7 @@ type hostProvider struct {
 }
 
 func (p *hostProvider) Hostname(context.Context) (string, error) {
-	return metadata.GetHost(p.logger, p.cfg), nil
+	return metadata.GetHost(p.logger, p.cfg.Hostname), nil
 }
 
 // translatorFromConfig creates a new metrics translator from the exporter config.
@@ -84,20 +86,22 @@ func translatorFromConfig(logger *zap.Logger, cfg *config.Config) (*translator.T
 	options = append(options, translator.WithHistogramMode(translator.HistogramMode(cfg.Metrics.HistConfig.Mode)))
 
 	var numberMode translator.NumberMode
-	if cfg.Metrics.SendMonotonic {
-		numberMode = translator.NumberModeCumulativeToDelta
-	} else {
+	switch cfg.Metrics.SumConfig.CumulativeMonotonicMode {
+	case config.CumulativeMonotonicSumModeRawValue:
 		numberMode = translator.NumberModeRawValue
+	case config.CumulativeMonotonicSumModeToDelta:
+		numberMode = translator.NumberModeCumulativeToDelta
 	}
+
 	options = append(options, translator.WithNumberMode(numberMode))
 
 	return translator.New(logger, options...)
 }
 
-func newMetricsExporter(ctx context.Context, params component.ExporterCreateSettings, cfg *config.Config) (*metricsExporter, error) {
+func newMetricsExporter(ctx context.Context, params component.ExporterCreateSettings, cfg *config.Config, onceMetadata *sync.Once) (*metricsExporter, error) {
 	client := utils.CreateClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
 	client.ExtraHeader["User-Agent"] = utils.UserAgent(params.BuildInfo)
-	client.HttpClient = utils.NewHTTPClient(cfg.TimeoutSettings, cfg.LimitedHTTPClientSettings)
+	client.HttpClient = utils.NewHTTPClient(cfg.TimeoutSettings, cfg.LimitedHTTPClientSettings.TLSSetting.InsecureSkipVerify)
 
 	utils.ValidateAPIKey(params.Logger, client)
 
@@ -108,13 +112,14 @@ func newMetricsExporter(ctx context.Context, params component.ExporterCreateSett
 
 	scrubber := scrub.NewScrubber()
 	return &metricsExporter{
-		params:   params,
-		cfg:      cfg,
-		ctx:      ctx,
-		client:   client,
-		tr:       tr,
-		scrubber: scrubber,
-		retrier:  utils.NewRetrier(params.Logger, cfg.RetrySettings, scrubber),
+		params:       params,
+		cfg:          cfg,
+		ctx:          ctx,
+		client:       client,
+		tr:           tr,
+		scrubber:     scrubber,
+		retrier:      utils.NewRetrier(params.Logger, cfg.RetrySettings, scrubber),
+		onceMetadata: onceMetadata,
 	}, nil
 }
 
@@ -157,14 +162,17 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metric
 	// Start host metadata with resource attributes from
 	// the first payload.
 	if exp.cfg.SendMetadata {
-		once := exp.cfg.OnceMetadata()
-		once.Do(func() {
-			attrs := pdata.NewAttributeMap()
+		exp.onceMetadata.Do(func() {
+			attrs := pdata.NewMap()
 			if md.ResourceMetrics().Len() > 0 {
 				attrs = md.ResourceMetrics().At(0).Resource().Attributes()
 			}
-			go metadata.Pusher(exp.ctx, exp.params, exp.cfg, attrs)
+			go metadata.Pusher(exp.ctx, exp.params, newMetadataConfigfromConfig(exp.cfg), attrs)
 		})
+
+		// Consume configuration's sync.Once to preserve behavior.
+		// TODO (#8373): Remove this function call.
+		exp.cfg.OnceMetadata().Do(func() {})
 	}
 
 	consumer := metrics.NewConsumer()
@@ -174,7 +182,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metric
 		return fmt.Errorf("failed to map metrics: %w", err)
 	}
 	ms, sl := consumer.All(pushTime, exp.params.BuildInfo)
-	metrics.ProcessMetrics(ms, exp.cfg)
+	metrics.ProcessMetrics(ms)
 
 	err = nil
 	if len(ms) > 0 {

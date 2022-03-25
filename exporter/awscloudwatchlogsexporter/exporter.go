@@ -211,43 +211,43 @@ func logToCWLog(resourceAttrs map[string]interface{}, log pdata.LogRecord) (*clo
 	}, nil
 }
 
-func attrsValue(attrs pdata.AttributeMap) map[string]interface{} {
+func attrsValue(attrs pdata.Map) map[string]interface{} {
 	if attrs.Len() == 0 {
 		return nil
 	}
 	out := make(map[string]interface{}, attrs.Len())
-	attrs.Range(func(k string, v pdata.AttributeValue) bool {
+	attrs.Range(func(k string, v pdata.Value) bool {
 		out[k] = attrValue(v)
 		return true
 	})
 	return out
 }
 
-func attrValue(value pdata.AttributeValue) interface{} {
+func attrValue(value pdata.Value) interface{} {
 	switch value.Type() {
-	case pdata.AttributeValueTypeInt:
+	case pdata.ValueTypeInt:
 		return value.IntVal()
-	case pdata.AttributeValueTypeBool:
+	case pdata.ValueTypeBool:
 		return value.BoolVal()
-	case pdata.AttributeValueTypeDouble:
+	case pdata.ValueTypeDouble:
 		return value.DoubleVal()
-	case pdata.AttributeValueTypeString:
+	case pdata.ValueTypeString:
 		return value.StringVal()
-	case pdata.AttributeValueTypeMap:
+	case pdata.ValueTypeMap:
 		values := map[string]interface{}{}
-		value.MapVal().Range(func(k string, v pdata.AttributeValue) bool {
+		value.MapVal().Range(func(k string, v pdata.Value) bool {
 			values[k] = attrValue(v)
 			return true
 		})
 		return values
-	case pdata.AttributeValueTypeArray:
+	case pdata.ValueTypeSlice:
 		arrayVal := value.SliceVal()
 		values := make([]interface{}, arrayVal.Len())
 		for i := 0; i < arrayVal.Len(); i++ {
 			values[i] = attrValue(arrayVal.At(i))
 		}
 		return values
-	case pdata.AttributeValueTypeEmpty:
+	case pdata.ValueTypeEmpty:
 		return nil
 	default:
 		return nil

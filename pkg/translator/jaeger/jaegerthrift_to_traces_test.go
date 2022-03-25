@@ -61,14 +61,14 @@ func TestJThriftTagsToInternalAttributes(t *testing.T) {
 		},
 	}
 
-	expected := pdata.NewAttributeMap()
+	expected := pdata.NewMap()
 	expected.InsertBool("bool-val", true)
 	expected.InsertInt("int-val", 123)
 	expected.InsertString("string-val", "abc")
 	expected.InsertDouble("double-val", 1.23)
 	expected.InsertString("binary-val", "AAAAAABkfZg=")
 
-	got := pdata.NewAttributeMap()
+	got := pdata.NewMap()
 	jThriftTagsToInternalAttributes(tags, got)
 
 	require.EqualValues(t, expected, got)

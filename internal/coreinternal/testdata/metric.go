@@ -94,8 +94,8 @@ func GenerateMetricsOneCounterOneSummaryMetrics() pdata.Metrics {
 func GenerateMetricsOneMetricNoAttributes() pdata.Metrics {
 	md := GenerateMetricsOneMetric()
 	dps := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Sum().DataPoints()
-	pdata.NewAttributeMap().CopyTo(dps.At(0).Attributes())
-	pdata.NewAttributeMap().CopyTo(dps.At(1).Attributes())
+	pdata.NewMap().CopyTo(dps.At(0).Attributes())
+	pdata.NewMap().CopyTo(dps.At(1).Attributes())
 	return md
 }
 

@@ -18,22 +18,27 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/model/pdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
 type resourceDetectionProcessor struct {
-	provider  *internal.ResourceProvider
-	resource  pdata.Resource
-	schemaURL string
-	override  bool
+	provider           *internal.ResourceProvider
+	resource           pdata.Resource
+	schemaURL          string
+	override           bool
+	httpClientSettings confighttp.HTTPClientSettings
+	telemetrySettings  component.TelemetrySettings
 }
 
 // Start is invoked during service startup.
-func (rdp *resourceDetectionProcessor) Start(ctx context.Context, _ component.Host) error {
+func (rdp *resourceDetectionProcessor) Start(ctx context.Context, host component.Host) error {
+	client, _ := rdp.httpClientSettings.ToClient(host.GetExtensions(), rdp.telemetrySettings)
+	ctx = internal.ContextWithClient(ctx, client)
 	var err error
-	rdp.resource, rdp.schemaURL, err = rdp.provider.Get(ctx)
+	rdp.resource, rdp.schemaURL, err = rdp.provider.Get(ctx, client)
 	return err
 }
 

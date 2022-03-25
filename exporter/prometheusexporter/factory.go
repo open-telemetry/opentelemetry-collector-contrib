@@ -34,10 +34,10 @@ const (
 
 // NewFactory creates a new Prometheus exporter factory.
 func NewFactory() component.ExporterFactory {
-	return exporterhelper.NewFactory(
+	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithMetrics(createMetricsExporter))
+		component.WithMetricsExporter(createMetricsExporter))
 }
 
 func createDefaultConfig() config.Exporter {

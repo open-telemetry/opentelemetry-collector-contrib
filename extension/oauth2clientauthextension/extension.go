@@ -72,10 +72,11 @@ func newClientCredentialsExtension(cfg *Config, logger *zap.Logger) (*ClientCred
 
 	return &ClientCredentialsAuthenticator{
 		clientCredentials: &clientcredentials.Config{
-			ClientID:     cfg.ClientID,
-			ClientSecret: cfg.ClientSecret,
-			TokenURL:     cfg.TokenURL,
-			Scopes:       cfg.Scopes,
+			ClientID:       cfg.ClientID,
+			ClientSecret:   cfg.ClientSecret,
+			TokenURL:       cfg.TokenURL,
+			Scopes:         cfg.Scopes,
+			EndpointParams: cfg.EndpointParams,
 		},
 		logger: logger,
 		client: &http.Client{

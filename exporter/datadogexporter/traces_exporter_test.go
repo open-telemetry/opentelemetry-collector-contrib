@@ -85,8 +85,8 @@ func testTracesExporterHelper(td pdata.Traces, t *testing.T) []string {
 	}
 
 	params := componenttest.NewNopExporterCreateSettings()
-
-	exporter, err := createTracesExporter(context.Background(), params, &cfg)
+	f := NewFactory()
+	exporter, err := f.CreateTracesExporter(context.Background(), params, &cfg)
 
 	assert.NoError(t, err)
 
@@ -163,7 +163,9 @@ func TestNewTracesExporter(t *testing.T) {
 	params := componenttest.NewNopExporterCreateSettings()
 
 	// The client should have been created correctly
-	exp := newTracesExporter(context.Background(), params, cfg)
+	f := NewFactory()
+	exp, err := f.CreateTracesExporter(context.Background(), params, cfg)
+	assert.NoError(t, err)
 	assert.NotNil(t, exp)
 }
 
@@ -175,7 +177,7 @@ func TestPushTraceData(t *testing.T) {
 			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		},
 		TagsConfig: config.TagsConfig{
-			Hostname: "test_host",
+			Hostname: "test-host",
 			Env:      "test_env",
 			Tags:     []string{"key:val"},
 		},
@@ -191,9 +193,11 @@ func TestPushTraceData(t *testing.T) {
 	}
 
 	params := componenttest.NewNopExporterCreateSettings()
-	exp := newTracesExporter(context.Background(), params, cfg)
+	f := NewFactory()
+	exp, err := f.CreateTracesExporter(context.Background(), params, cfg)
+	assert.NoError(t, err)
 
-	err := exp.pushTraceData(context.Background(), testutils.TestTraces.Clone())
+	err = exp.ConsumeTraces(context.Background(), testutils.TestTraces.Clone())
 	assert.NoError(t, err)
 
 	body := <-server.MetadataChan

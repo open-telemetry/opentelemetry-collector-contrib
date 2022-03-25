@@ -200,6 +200,9 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "prometheus_simple",
 		},
 		{
+			receiver: "skywalking",
+		},
+		{
 			receiver: "splunk_hec",
 		},
 		{

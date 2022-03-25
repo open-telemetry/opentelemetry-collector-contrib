@@ -125,7 +125,7 @@ func (s *consumerScraper) scrape(context.Context) (pdata.Metrics, error) {
 	ilm := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
 	ilm.InstrumentationLibrary().SetName(instrumentationLibName)
 	for _, group := range consumerGroups {
-		labels := pdata.NewAttributeMap()
+		labels := pdata.NewMap()
 		labels.UpsertString(metadata.A.Group, group.GroupId)
 		addIntGauge(ilm.Metrics(), metadata.M.KafkaConsumerGroupMembers.Name(), now, labels, int64(len(group.Members)))
 		groupOffsetFetchResponse, err := s.clusterAdmin.ListConsumerGroupOffsets(group.GroupId, topicPartitions)

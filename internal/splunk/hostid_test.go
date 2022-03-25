@@ -258,10 +258,10 @@ func TestResourceToHostID(t *testing.T) {
 }
 
 func TestAzureID(t *testing.T) {
-	attrs := pdata.NewAttributeMap()
-	attrs.Insert("azure.resourcegroup.name", pdata.NewAttributeValueString("myResourceGroup"))
-	attrs.Insert("azure.vm.scaleset.name", pdata.NewAttributeValueString("myScalesetName"))
-	attrs.Insert(conventions.AttributeHostName, pdata.NewAttributeValueString("myScalesetName_1"))
+	attrs := pdata.NewMap()
+	attrs.Insert("azure.resourcegroup.name", pdata.NewValueString("myResourceGroup"))
+	attrs.Insert("azure.vm.scaleset.name", pdata.NewValueString("myScalesetName"))
+	attrs.Insert(conventions.AttributeHostName, pdata.NewValueString("myScalesetName_1"))
 	id := azureID(attrs, "myCloudAccount")
 	expected := "mycloudaccount/myresourcegroup/microsoft.compute/virtualmachinescalesets/myscalesetname/virtualmachines/1"
 	assert.Equal(t, expected, id)

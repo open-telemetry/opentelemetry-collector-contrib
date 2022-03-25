@@ -19,6 +19,7 @@ package pagingscraper // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/shirou/gopsutil/v3/host"
@@ -69,9 +70,6 @@ func (s *scraper) start(context.Context, component.Host) error {
 }
 
 func (s *scraper) scrape(context.Context) (pdata.Metrics, error) {
-	md := pdata.NewMetrics()
-	metrics := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics()
-
 	var errors scrapererror.ScrapeErrors
 
 	err := s.scrapePagingUsageMetric()
@@ -84,18 +82,19 @@ func (s *scraper) scrape(context.Context) (pdata.Metrics, error) {
 		errors.AddPartial(pagingMetricsLen, err)
 	}
 
-	s.mb.Emit(metrics)
-	return md, errors.Combine()
+	return s.mb.Emit(), errors.Combine()
 }
 
 func (s *scraper) scrapePagingUsageMetric() error {
 	now := pdata.NewTimestampFromTime(time.Now())
 	pageFiles, err := s.pageFileStats()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to read page file stats: %w", err)
 	}
 
 	s.recordPagingUsageDataPoints(now, pageFiles)
+	s.recordPagingUtilizationDataPoints(now, pageFiles)
+
 	return nil
 }
 
@@ -103,6 +102,13 @@ func (s *scraper) recordPagingUsageDataPoints(now pdata.Timestamp, pageFiles []*
 	for _, pageFile := range pageFiles {
 		s.mb.RecordSystemPagingUsageDataPoint(now, int64(pageFile.usedBytes), pageFile.deviceName, metadata.AttributeState.Used)
 		s.mb.RecordSystemPagingUsageDataPoint(now, int64(pageFile.freeBytes), pageFile.deviceName, metadata.AttributeState.Free)
+	}
+}
+
+func (s *scraper) recordPagingUtilizationDataPoints(now pdata.Timestamp, pageFiles []*pageFileStats) {
+	for _, pageFile := range pageFiles {
+		s.mb.RecordSystemPagingUtilizationDataPoint(now, float64(pageFile.usedBytes)/float64(pageFile.totalBytes), pageFile.deviceName, metadata.AttributeState.Used)
+		s.mb.RecordSystemPagingUtilizationDataPoint(now, float64(pageFile.freeBytes)/float64(pageFile.totalBytes), pageFile.deviceName, metadata.AttributeState.Free)
 	}
 }
 

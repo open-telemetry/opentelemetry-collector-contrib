@@ -3,7 +3,7 @@
 The Coralogix exporter sends traces to [Coralogix](https://coralogix.com/) as
 Coralogix logs.
 
-Supported pipeline types: traces 
+Supported pipeline types: traces, metrics
 
 > Please review the Collector's [security
 > documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security.md),
@@ -25,13 +25,17 @@ exporters:
     # Traces emitted by this OpenTelemetry exporter should be tagged
     # in Coralogix with the following application and subsystem names
     application_name: "MyBusinessEnvironment"
+    # Deprecated: [v0.47.0] SubSystem will remove in the next version
     subsystem_name: "MyBusinessSystem"
+
+    # Timeout is the timeout for every attempt to send data to the backend.
+    timeout: 30s
 ```
 ### Coralogix's Endpoints 
 | Region  | Traces Endpoint                          | Metrics Endpoint                        |
 |---------|------------------------------------------|-----------------------------------------|
-| USA1    | `tracing-ingress.coralogix.us:9443`      | `https://metircs-api.coralogix.us`      |
-| APAC1   | `tracing-ingress.app.coralogix.in:9443`  | `https://metircs-api.coralogix.in`      |
+| USA1    | `tracing-ingress.coralogix.us:9443`      | `https://metrics-api.coralogix.us`      |
+| APAC1   | `tracing-ingress.app.coralogix.in:9443`  | `https://metrics-api.coralogix.in`      |
 | APAC2   | `tracing-ingress.coralogixsg.com:9443`   | `https://metrics-api.coralogixsg.com`   |
 | EUROPE1 | `tracing-ingress.coralogix.com:9443`     | `https://metrics-api.coralogix.com`     |
 | EUROPE2 | `tracing-ingress.eu2.coralogix.com:9443` | `https://metrics-api.eu2.coralogix.com` |

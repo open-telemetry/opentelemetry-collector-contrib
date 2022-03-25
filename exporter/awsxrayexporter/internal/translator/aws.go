@@ -25,7 +25,7 @@ import (
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
-func makeAws(attributes map[string]pdata.AttributeValue, resource pdata.Resource) (map[string]pdata.AttributeValue, *awsxray.AWSData) {
+func makeAws(attributes map[string]pdata.Value, resource pdata.Resource) (map[string]pdata.Value, *awsxray.AWSData) {
 	var (
 		cloud        string
 		service      string
@@ -56,8 +56,8 @@ func makeAws(attributes map[string]pdata.AttributeValue, resource pdata.Resource
 		taskArn      string
 		taskFamily   string
 		launchType   string
-		logGroups    pdata.AttributeValueSlice
-		logGroupArns pdata.AttributeValueSlice
+		logGroups    pdata.Slice
+		logGroupArns pdata.Slice
 		cwl          []awsxray.LogGroupMetadata
 		ec2          *awsxray.EC2Metadata
 		ecs          *awsxray.ECSMetadata
@@ -65,8 +65,8 @@ func makeAws(attributes map[string]pdata.AttributeValue, resource pdata.Resource
 		eks          *awsxray.EKSMetadata
 	)
 
-	filtered := make(map[string]pdata.AttributeValue)
-	resource.Attributes().Range(func(key string, value pdata.AttributeValue) bool {
+	filtered := make(map[string]pdata.Value)
+	resource.Attributes().Range(func(key string, value pdata.Value) bool {
 		switch key {
 		case conventions.AttributeCloudProvider:
 			cloud = value.StringVal()
@@ -137,7 +137,7 @@ func makeAws(attributes map[string]pdata.AttributeValue, resource pdata.Resource
 		case awsxray.AWSOperationAttribute:
 			// Determinstically handled with if else above
 		case awsxray.AWSAccountAttribute:
-			if value.Type() != pdata.AttributeValueTypeEmpty {
+			if value.Type() != pdata.ValueTypeEmpty {
 				account = value.StringVal()
 			}
 		case awsxray.AWSRegionAttribute:
@@ -212,9 +212,9 @@ func makeAws(attributes map[string]pdata.AttributeValue, resource pdata.Resource
 
 	// Since we must couple log group ARNs and Log Group Names in the same CWLogs object, we first try to derive the
 	// names from the ARN, then fall back to just recording the names
-	if logGroupArns != (pdata.AttributeValueSlice{}) && logGroupArns.Len() > 0 {
+	if logGroupArns != (pdata.Slice{}) && logGroupArns.Len() > 0 {
 		cwl = getLogGroupMetadata(logGroupArns, true)
-	} else if logGroups != (pdata.AttributeValueSlice{}) && logGroups.Len() > 0 {
+	} else if logGroups != (pdata.Slice{}) && logGroups.Len() > 0 {
 		cwl = getLogGroupMetadata(logGroups, false)
 	}
 
@@ -251,7 +251,7 @@ func makeAws(attributes map[string]pdata.AttributeValue, resource pdata.Resource
 
 // Given an array of log group ARNs, create a corresponding amount of LogGroupMetadata objects with log_group and arn
 // populated, or given an array of just log group names, create the LogGroupMetadata objects with arn omitted
-func getLogGroupMetadata(logGroups pdata.AttributeValueSlice, isArn bool) []awsxray.LogGroupMetadata {
+func getLogGroupMetadata(logGroups pdata.Slice, isArn bool) []awsxray.LogGroupMetadata {
 	var lgm []awsxray.LogGroupMetadata
 	for i := 0; i < logGroups.Len(); i++ {
 		if isArn {

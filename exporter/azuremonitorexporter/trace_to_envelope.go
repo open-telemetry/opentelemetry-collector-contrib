@@ -116,7 +116,7 @@ func spanToEnvelope(
 	resourceAttributes := resource.Attributes()
 
 	// Copy all the resource labels into the base data properties. Resource values are always strings
-	resourceAttributes.Range(func(k string, v pdata.AttributeValue) bool {
+	resourceAttributes.Range(func(k string, v pdata.Value) bool {
 		dataProperties[k] = v.StringVal()
 		return true
 	})
@@ -491,12 +491,12 @@ func fillRemoteDependencyDataMessaging(span pdata.Span, data *contracts.RemoteDe
 
 // Copies all attributes to either properties or measurements and passes the key/value to another mapping function
 func copyAndMapAttributes(
-	attributeMap pdata.AttributeMap,
+	attributeMap pdata.Map,
 	properties map[string]string,
 	measurements map[string]float64,
-	mappingFunc func(k string, v pdata.AttributeValue)) {
+	mappingFunc func(k string, v pdata.Value)) {
 
-	attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
+	attributeMap.Range(func(k string, v pdata.Value) bool {
 		setAttributeValueAsPropertyOrMeasurement(k, v, properties, measurements)
 		if mappingFunc != nil {
 			mappingFunc(k, v)
@@ -507,7 +507,7 @@ func copyAndMapAttributes(
 
 // Copies all attributes to either properties or measurements without any kind of mapping to a known set of attributes
 func copyAttributesWithoutMapping(
-	attributeMap pdata.AttributeMap,
+	attributeMap pdata.Map,
 	properties map[string]string,
 	measurements map[string]float64) {
 
@@ -516,7 +516,7 @@ func copyAttributesWithoutMapping(
 
 // Attribute extraction logic for HTTP Span attributes
 func copyAndExtractHTTPAttributes(
-	attributeMap pdata.AttributeMap,
+	attributeMap pdata.Map,
 	properties map[string]string,
 	measurements map[string]float64) *HTTPAttributes {
 
@@ -525,14 +525,14 @@ func copyAndExtractHTTPAttributes(
 		attributeMap,
 		properties,
 		measurements,
-		func(k string, v pdata.AttributeValue) { attrs.MapAttribute(k, v) })
+		func(k string, v pdata.Value) { attrs.MapAttribute(k, v) })
 
 	return attrs
 }
 
 // Attribute extraction logic for RPC Span attributes
 func copyAndExtractRPCAttributes(
-	attributeMap pdata.AttributeMap,
+	attributeMap pdata.Map,
 	properties map[string]string,
 	measurements map[string]float64) *RPCAttributes {
 
@@ -541,14 +541,14 @@ func copyAndExtractRPCAttributes(
 		attributeMap,
 		properties,
 		measurements,
-		func(k string, v pdata.AttributeValue) { attrs.MapAttribute(k, v) })
+		func(k string, v pdata.Value) { attrs.MapAttribute(k, v) })
 
 	return attrs
 }
 
 // Attribute extraction logic for Database Span attributes
 func copyAndExtractDatabaseAttributes(
-	attributeMap pdata.AttributeMap,
+	attributeMap pdata.Map,
 	properties map[string]string,
 	measurements map[string]float64) *DatabaseAttributes {
 
@@ -557,14 +557,14 @@ func copyAndExtractDatabaseAttributes(
 		attributeMap,
 		properties,
 		measurements,
-		func(k string, v pdata.AttributeValue) { attrs.MapAttribute(k, v) })
+		func(k string, v pdata.Value) { attrs.MapAttribute(k, v) })
 
 	return attrs
 }
 
 // Attribute extraction logic for Messaging Span attributes
 func copyAndExtractMessagingAttributes(
-	attributeMap pdata.AttributeMap,
+	attributeMap pdata.Map,
 	properties map[string]string,
 	measurements map[string]float64) *MessagingAttributes {
 
@@ -573,7 +573,7 @@ func copyAndExtractMessagingAttributes(
 		attributeMap,
 		properties,
 		measurements,
-		func(k string, v pdata.AttributeValue) { attrs.MapAttribute(k, v) })
+		func(k string, v pdata.Value) { attrs.MapAttribute(k, v) })
 
 	return attrs
 }
@@ -585,7 +585,7 @@ func formatSpanDuration(span pdata.Span) string {
 }
 
 // Maps incoming Span to a type defined in the specification
-func mapIncomingSpanToType(attributeMap pdata.AttributeMap) spanType {
+func mapIncomingSpanToType(attributeMap pdata.Map) spanType {
 	// No attributes
 	if attributeMap.Len() == 0 {
 		return unknownSpanType
@@ -641,21 +641,21 @@ func writeFormattedPeerAddressFromNetworkAttributes(networkAttributes *NetworkAt
 
 func setAttributeValueAsPropertyOrMeasurement(
 	key string,
-	attributeValue pdata.AttributeValue,
+	attributeValue pdata.Value,
 	properties map[string]string,
 	measurements map[string]float64) {
 
 	switch attributeValue.Type() {
-	case pdata.AttributeValueTypeBool:
+	case pdata.ValueTypeBool:
 		properties[key] = strconv.FormatBool(attributeValue.BoolVal())
 
-	case pdata.AttributeValueTypeString:
+	case pdata.ValueTypeString:
 		properties[key] = attributeValue.StringVal()
 
-	case pdata.AttributeValueTypeInt:
+	case pdata.ValueTypeInt:
 		measurements[key] = float64(attributeValue.IntVal())
 
-	case pdata.AttributeValueTypeDouble:
+	case pdata.ValueTypeDouble:
 		measurements[key] = attributeValue.DoubleVal()
 	}
 }
