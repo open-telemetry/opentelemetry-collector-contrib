@@ -221,17 +221,21 @@ func TestScrape_CpuUtilization(t *testing.T) {
 	}
 }
 
+//Error in calculation should be returned as PartialScrapeError
 func TestScrape_CpuUtilizationError(t *testing.T) {
 	scraper := newCPUScraper(context.Background(), &Config{Metrics: metadata.DefaultMetricsSettings()})
+	//mock times function to force an error in next scrape
+	scraper.times = func(bool) ([]cpu.TimesStat, error) {
+		return []cpu.TimesStat{{CPU: "1", System: 1, User: 2}}, nil
+	}
 	err := scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err, "Failed to initialize cpu scraper: %v", err)
 
-	scraper.now = func() time.Time {
-		now, _ := time.Parse(time.RFC3339, "2021-12-21 00:23:21")
-		return now
-	}
-
 	_, err = scraper.scrape(context.Background())
+	//Force error not finding CPU info
+	scraper.times = func(bool) ([]cpu.TimesStat, error) {
+		return []cpu.TimesStat{}, nil
+	}
 	require.NoError(t, err, "Failed to scrape metrics: %v", err)
 	//2nd scrape will trigger utilization metrics calculation
 	md, err := scraper.scrape(context.Background())

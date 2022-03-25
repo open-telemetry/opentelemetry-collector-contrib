@@ -12,6 +12,10 @@
 
 - `windowsperfcountersreceiver`: Added metrics configuration (#8376)
 
+### 🧰 Bug fixes 🧰
+
+- `hostmetricsreceiver`: Use cpu times for time delta in cpu.utilization calculation (#8856)
+
 ### 🚩 Deprecations 🚩
 
 - `datadogexporter`: Deprecate `OnlyMetadata` method from `Config` struct (#8359)

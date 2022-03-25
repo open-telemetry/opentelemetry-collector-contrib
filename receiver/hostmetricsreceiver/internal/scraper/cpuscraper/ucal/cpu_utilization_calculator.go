@@ -22,7 +22,6 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
-var ErrInvalidElapsed = errors.New("invalid elapsed seconds")
 var ErrTimeStatNotFound = errors.New("cannot find TimesStat for cpu")
 
 // CPUUtilization stores the utilization percents [0-1] for the different cpu states
@@ -41,7 +40,6 @@ type CPUUtilization struct {
 // CPUUtilizationCalculator calculates the cpu utilization percents for the different cpu states
 // It requires 2 []cpu.TimesStat and spend time to be able to calculate the difference
 type CPUUtilizationCalculator struct {
-	previousTime     pdata.Timestamp
 	previousCPUTimes []cpu.TimesStat
 }
 
@@ -50,36 +48,35 @@ type CPUUtilizationCalculator struct {
 // If no previous data is stored it will return empty slice of CPUUtilization and no error
 func (c *CPUUtilizationCalculator) CalculateAndRecord(now pdata.Timestamp, cpuTimes []cpu.TimesStat, recorder func(pdata.Timestamp, CPUUtilization)) error {
 	if c.previousCPUTimes != nil {
-		elapsedSeconds := now.AsTime().Sub(c.previousTime.AsTime()).Seconds()
-		if elapsedSeconds <= 0 {
-			return fmt.Errorf("%f: %w", elapsedSeconds, ErrInvalidElapsed)
-		}
 		for _, previousCPUTime := range c.previousCPUTimes {
 			currentCPUTime, err := cpuTimeForCPU(previousCPUTime.CPU, cpuTimes)
 			if err != nil {
 				return fmt.Errorf("getting time for cpu %s: %w", previousCPUTime.CPU, err)
 			}
-			recorder(now, cpuUtilization(previousCPUTime, currentCPUTime, elapsedSeconds))
+			recorder(now, cpuUtilization(previousCPUTime, currentCPUTime))
 		}
 	}
 	c.previousCPUTimes = cpuTimes
-	c.previousTime = now
 
 	return nil
 }
 
 // cpuUtilization calculates the difference between 2 cpu.TimesStat using spent time between them
-func cpuUtilization(timeStart cpu.TimesStat, timeEnd cpu.TimesStat, elapsedSeconds float64) CPUUtilization {
+func cpuUtilization(timeStart cpu.TimesStat, timeEnd cpu.TimesStat) CPUUtilization {
+	totalSeconds := timeEnd.Total() - timeStart.Total()
+	if totalSeconds <= 0 {
+		return CPUUtilization{CPU: timeStart.CPU}
+	}
 	return CPUUtilization{
 		CPU:     timeStart.CPU,
-		User:    (timeEnd.User - timeStart.User) / elapsedSeconds,
-		System:  (timeEnd.System - timeStart.System) / elapsedSeconds,
-		Idle:    (timeEnd.Idle - timeStart.Idle) / elapsedSeconds,
-		Nice:    (timeEnd.Nice - timeStart.Nice) / elapsedSeconds,
-		Iowait:  (timeEnd.Iowait - timeStart.Iowait) / elapsedSeconds,
-		Irq:     (timeEnd.Irq - timeStart.Irq) / elapsedSeconds,
-		Softirq: (timeEnd.Softirq - timeStart.Softirq) / elapsedSeconds,
-		Steal:   (timeEnd.Steal - timeStart.Steal) / elapsedSeconds,
+		User:    (timeEnd.User - timeStart.User) / totalSeconds,
+		System:  (timeEnd.System - timeStart.System) / totalSeconds,
+		Idle:    (timeEnd.Idle - timeStart.Idle) / totalSeconds,
+		Nice:    (timeEnd.Nice - timeStart.Nice) / totalSeconds,
+		Iowait:  (timeEnd.Iowait - timeStart.Iowait) / totalSeconds,
+		Irq:     (timeEnd.Irq - timeStart.Irq) / totalSeconds,
+		Softirq: (timeEnd.Softirq - timeStart.Softirq) / totalSeconds,
+		Steal:   (timeEnd.Steal - timeStart.Steal) / totalSeconds,
 	}
 }
 
