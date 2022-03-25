@@ -26,7 +26,7 @@ import (
 func Test_newFunctionCall(t *testing.T) {
 	input := pdata.NewSpan()
 	input.SetName("bear")
-	attrs := pdata.NewAttributeMap()
+	attrs := pdata.NewMap()
 	attrs.InsertString("test", "1")
 	attrs.InsertInt("test2", 3)
 	attrs.InsertBool("test3", true)
@@ -110,7 +110,7 @@ func Test_newFunctionCall(t *testing.T) {
 			want: func(span pdata.Span) {
 				input.CopyTo(span)
 				span.Attributes().Clear()
-				attrs := pdata.NewAttributeMap()
+				attrs := pdata.NewMap()
 				attrs.InsertString("test", "1")
 				attrs.CopyTo(span.Attributes())
 			},
@@ -140,7 +140,7 @@ func Test_newFunctionCall(t *testing.T) {
 			want: func(span pdata.Span) {
 				input.CopyTo(span)
 				span.Attributes().Clear()
-				attrs := pdata.NewAttributeMap()
+				attrs := pdata.NewMap()
 				attrs.InsertString("test", "1")
 				attrs.InsertInt("test2", 3)
 				attrs.CopyTo(span.Attributes())
@@ -175,7 +175,11 @@ func Test_newFunctionCall(t *testing.T) {
 
 			evaluate, err := newFunctionCall(tt.inv, DefaultFunctions())
 			assert.NoError(t, err)
-			evaluate(span, pdata.NewInstrumentationLibrary(), pdata.NewResource())
+			evaluate(spanTransformContext{
+				span:     span,
+				il:       pdata.NewInstrumentationLibrary(),
+				resource: pdata.NewResource(),
+			})
 
 			expected := pdata.NewSpan()
 			tt.want(expected)

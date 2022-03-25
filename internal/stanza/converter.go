@@ -407,7 +407,7 @@ func toAttributeMap(obsMap map[string]interface{}) pdata.Value {
 	return attVal
 }
 
-func insertToAttributeMap(obsMap map[string]interface{}, dest pdata.AttributeMap) {
+func insertToAttributeMap(obsMap map[string]interface{}, dest pdata.Map) {
 	dest.EnsureCapacity(len(obsMap))
 	for k, v := range obsMap {
 		switch t := v.(type) {
@@ -454,7 +454,7 @@ func insertToAttributeMap(obsMap map[string]interface{}, dest pdata.AttributeMap
 }
 
 func toAttributeArray(obsArr []interface{}) pdata.Value {
-	arrVal := pdata.NewValueArray()
+	arrVal := pdata.NewValueSlice()
 	arr := arrVal.SliceVal()
 	arr.EnsureCapacity(len(obsArr))
 	for _, v := range obsArr {

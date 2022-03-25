@@ -203,7 +203,7 @@ func TestAttrValue(t *testing.T) {
 		{
 			name: "array",
 			builder: func() pdata.Value {
-				arrAttr := pdata.NewValueArray()
+				arrAttr := pdata.NewValueSlice()
 				arr := arrAttr.SliceVal()
 				for _, av := range []pdata.Value{
 					pdata.NewValueDouble(1.2),

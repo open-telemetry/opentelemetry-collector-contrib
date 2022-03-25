@@ -54,7 +54,7 @@ func (d *Detector) Detect(context.Context) (resource pdata.Resource, schemaURL s
 	return res, conventions.SchemaURL, multierr.Append(cloudErr, hostErr)
 }
 
-func (d *Detector) initializeCloudAttributes(attr pdata.AttributeMap) []error {
+func (d *Detector) initializeCloudAttributes(attr pdata.Map) []error {
 	attr.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderGCP)
 	attr.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPComputeEngine)
 
@@ -77,7 +77,7 @@ func (d *Detector) initializeCloudAttributes(attr pdata.AttributeMap) []error {
 	return errors
 }
 
-func (d *Detector) initializeHostAttributes(attr pdata.AttributeMap) []error {
+func (d *Detector) initializeHostAttributes(attr pdata.Map) []error {
 	var errors []error
 
 	hostname, err := d.metadata.Hostname()

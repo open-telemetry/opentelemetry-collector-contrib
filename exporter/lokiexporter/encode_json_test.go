@@ -61,7 +61,7 @@ func TestConvertWithMapBody(t *testing.T) {
 
 func TestSerializeBody(t *testing.T) {
 
-	arrayval := pdata.NewValueArray()
+	arrayval := pdata.NewValueSlice()
 	arrayval.SliceVal().AppendEmpty().SetStringVal("a")
 	arrayval.SliceVal().AppendEmpty().SetStringVal("b")
 

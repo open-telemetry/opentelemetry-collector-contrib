@@ -30,7 +30,7 @@ func TestAwsFromEc2Resource(t *testing.T) {
 	hostType := "m5.xlarge"
 	imageID := "ami-0123456789"
 	resource := pdata.NewResource()
-	attrs := pdata.NewAttributeMap()
+	attrs := pdata.NewMap()
 	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
 	attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSEC2)
 	attrs.InsertString(conventions.AttributeCloudAccountID, "123456789")
@@ -70,7 +70,7 @@ func TestAwsFromEcsResource(t *testing.T) {
 	clusterArn := "arn:aws:ecs:us-west-2:123456789123:cluster/my-cluster"
 	containerArn := "arn:aws:ecs:us-west-2:123456789123:container-instance/123"
 	resource := pdata.NewResource()
-	attrs := pdata.NewAttributeMap()
+	attrs := pdata.NewMap()
 	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
 	attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSECS)
 	attrs.InsertString(conventions.AttributeCloudAccountID, "123456789")
@@ -115,7 +115,7 @@ func TestAwsFromBeanstalkResource(t *testing.T) {
 	deployID := "232"
 	versionLabel := "4"
 	resource := pdata.NewResource()
-	attrs := pdata.NewAttributeMap()
+	attrs := pdata.NewMap()
 	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
 	attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSElasticBeanstalk)
 	attrs.InsertString(conventions.AttributeCloudAccountID, "123456789")
@@ -147,7 +147,7 @@ func TestAwsFromEksResource(t *testing.T) {
 	containerName := "signup_aggregator-x82ufje83"
 	containerID := "0123456789A"
 	resource := pdata.NewResource()
-	attrs := pdata.NewAttributeMap()
+	attrs := pdata.NewMap()
 	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
 	attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSEKS)
 	attrs.InsertString(conventions.AttributeCloudAccountID, "123456789")
@@ -186,7 +186,7 @@ func TestAwsWithAwsSqsResources(t *testing.T) {
 	containerName := "signup_aggregator-x82ufje83"
 	containerID := "0123456789A"
 	resource := pdata.NewResource()
-	attrs := pdata.NewAttributeMap()
+	attrs := pdata.NewMap()
 	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
 	attrs.InsertString(conventions.AttributeCloudAccountID, "123456789")
 	attrs.InsertString(conventions.AttributeCloudAvailabilityZone, "us-east-1c")
@@ -246,7 +246,7 @@ func TestAwsWithAwsDynamoDbResources(t *testing.T) {
 	containerName := "signup_aggregator-x82ufje83"
 	containerID := "0123456789A"
 	resource := pdata.NewResource()
-	attrs := pdata.NewAttributeMap()
+	attrs := pdata.NewMap()
 	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
 	attrs.InsertString(conventions.AttributeCloudAccountID, "123456789")
 	attrs.InsertString(conventions.AttributeCloudAvailabilityZone, "us-east-1c")
@@ -374,7 +374,7 @@ func TestLogGroups(t *testing.T) {
 
 	attributes := make(map[string]pdata.Value)
 	resource := pdata.NewResource()
-	lg := pdata.NewValueArray()
+	lg := pdata.NewValueSlice()
 	ava := lg.SliceVal()
 	ava.EnsureCapacity(2)
 	ava.AppendEmpty().SetStringVal("group1")
@@ -405,7 +405,7 @@ func TestLogGroupsFromArns(t *testing.T) {
 
 	attributes := make(map[string]pdata.Value)
 	resource := pdata.NewResource()
-	lga := pdata.NewValueArray()
+	lga := pdata.NewValueSlice()
 	ava := lga.SliceVal()
 	ava.EnsureCapacity(2)
 	ava.AppendEmpty().SetStringVal(group1)

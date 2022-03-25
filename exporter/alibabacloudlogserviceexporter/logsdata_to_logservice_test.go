@@ -33,7 +33,7 @@ func getComplexAttributeValueMap() pdata.Value {
 	mapValReal.InsertDouble("value", 1.3)
 	mapValReal.InsertInt("code", 200)
 	mapValReal.InsertNull("null")
-	arrayVal := pdata.NewValueArray()
+	arrayVal := pdata.NewValueSlice()
 	arrayVal.SliceVal().AppendEmpty().SetStringVal("array")
 	mapValReal.Insert("array", arrayVal)
 
@@ -75,7 +75,7 @@ func createLogData(numberOfLogs int) pdata.Logs {
 			logRecord.Attributes().Insert("map-value", getComplexAttributeValueMap())
 			logRecord.Body().SetStringVal("log contents")
 		case 6:
-			arrayVal := pdata.NewValueArray()
+			arrayVal := pdata.NewValueSlice()
 			arrayVal.SliceVal().AppendEmpty().SetStringVal("array")
 			logRecord.Attributes().Insert("array-value", arrayVal)
 			logRecord.Body().SetStringVal("log contents")

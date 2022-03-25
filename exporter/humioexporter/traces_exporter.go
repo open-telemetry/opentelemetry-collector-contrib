@@ -209,7 +209,7 @@ func toHumioLinks(pLinks pdata.SpanLinkSlice) []*HumioLink {
 	return links
 }
 
-func toHumioAttributes(attrMaps ...pdata.AttributeMap) map[string]interface{} {
+func toHumioAttributes(attrMaps ...pdata.Map) map[string]interface{} {
 	attr := make(map[string]interface{})
 	for _, attrMap := range attrMaps {
 		attrMap.Range(func(k string, v pdata.Value) bool {
@@ -232,7 +232,7 @@ func toHumioAttributeValue(rawVal pdata.Value) interface{} {
 		return rawVal.BoolVal()
 	case pdata.ValueTypeMap:
 		return toHumioAttributes(rawVal.MapVal())
-	case pdata.ValueTypeArray:
+	case pdata.ValueTypeSlice:
 		arrVal := rawVal.SliceVal()
 		arr := make([]interface{}, 0, arrVal.Len())
 		for i := 0; i < arrVal.Len(); i++ {

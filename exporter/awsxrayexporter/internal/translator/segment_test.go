@@ -389,7 +389,7 @@ func TestServerSpanWithNilAttributes(t *testing.T) {
 	span := constructServerSpan(parentSpanID, spanName, pdata.StatusCodeError, "OK", attributes)
 	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTimestamp())
 	timeEvents.CopyTo(span.Events())
-	pdata.NewAttributeMap().CopyTo(span.Attributes())
+	pdata.NewMap().CopyTo(span.Attributes())
 
 	segment, _ := MakeSegment(span, resource, nil, false)
 
@@ -540,7 +540,7 @@ func TestOriginNotAws(t *testing.T) {
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]interface{})
 	resource := pdata.NewResource()
-	attrs := pdata.NewAttributeMap()
+	attrs := pdata.NewMap()
 	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderGCP)
 	attrs.InsertString(conventions.AttributeHostID, "instance-123")
 	attrs.CopyTo(resource.Attributes())
@@ -557,7 +557,7 @@ func TestOriginEc2(t *testing.T) {
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]interface{})
 	resource := pdata.NewResource()
-	attrs := pdata.NewAttributeMap()
+	attrs := pdata.NewMap()
 	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
 	attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSEC2)
 	attrs.InsertString(conventions.AttributeHostID, "instance-123")
@@ -575,7 +575,7 @@ func TestOriginEcs(t *testing.T) {
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]interface{})
 	resource := pdata.NewResource()
-	attrs := pdata.NewAttributeMap()
+	attrs := pdata.NewMap()
 	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
 	attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSECS)
 	attrs.InsertString(conventions.AttributeHostID, "instance-123")
@@ -594,7 +594,7 @@ func TestOriginEcsEc2(t *testing.T) {
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]interface{})
 	resource := pdata.NewResource()
-	attrs := pdata.NewAttributeMap()
+	attrs := pdata.NewMap()
 	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
 	attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSECS)
 	attrs.InsertString(conventions.AttributeAWSECSLaunchtype, conventions.AttributeAWSECSLaunchtypeEC2)
@@ -614,7 +614,7 @@ func TestOriginEcsFargate(t *testing.T) {
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]interface{})
 	resource := pdata.NewResource()
-	attrs := pdata.NewAttributeMap()
+	attrs := pdata.NewMap()
 	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
 	attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSECS)
 	attrs.InsertString(conventions.AttributeAWSECSLaunchtype, conventions.AttributeAWSECSLaunchtypeFargate)
@@ -634,7 +634,7 @@ func TestOriginEb(t *testing.T) {
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]interface{})
 	resource := pdata.NewResource()
-	attrs := pdata.NewAttributeMap()
+	attrs := pdata.NewMap()
 	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
 	attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSElasticBeanstalk)
 	attrs.InsertString(conventions.AttributeHostID, "instance-123")
@@ -657,7 +657,7 @@ func TestOriginEks(t *testing.T) {
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]interface{})
 	resource := pdata.NewResource()
-	attrs := pdata.NewAttributeMap()
+	attrs := pdata.NewMap()
 	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
 	attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSEKS)
 	attrs.InsertString(conventions.AttributeCloudAccountID, "123456789")
@@ -686,7 +686,7 @@ func TestOriginAppRunner(t *testing.T) {
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]interface{})
 	resource := pdata.NewResource()
-	attrs := pdata.NewAttributeMap()
+	attrs := pdata.NewMap()
 	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
 	attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSAppRunner)
 	attrs.CopyTo(resource.Attributes())
@@ -703,7 +703,7 @@ func TestOriginBlank(t *testing.T) {
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]interface{})
 	resource := pdata.NewResource()
-	attrs := pdata.NewAttributeMap()
+	attrs := pdata.NewMap()
 	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
 	attrs.CopyTo(resource.Attributes())
 	span := constructServerSpan(parentSpanID, spanName, pdata.StatusCodeError, "OK", attributes)
@@ -719,7 +719,7 @@ func TestOriginPrefersInfraService(t *testing.T) {
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]interface{})
 	resource := pdata.NewResource()
-	attrs := pdata.NewAttributeMap()
+	attrs := pdata.NewMap()
 	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
 	attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSEC2)
 	attrs.InsertString(conventions.AttributeK8SClusterName, "cluster-123")
@@ -741,14 +741,14 @@ func TestFilteredAttributesMetadata(t *testing.T) {
 	attributes := make(map[string]interface{})
 	resource := pdata.NewResource()
 
-	attrs := pdata.NewAttributeMap()
+	attrs := pdata.NewMap()
 	attrs.InsertString("string_value", "value")
 	attrs.InsertInt("int_value", 123)
 	attrs.InsertDouble("float_value", 456.78)
 	attrs.InsertBool("bool_value", false)
 	attrs.InsertNull("null_value")
 
-	arrayValue := pdata.NewValueArray()
+	arrayValue := pdata.NewValueSlice()
 	arrayValue.SliceVal().AppendEmpty().SetIntVal(12)
 	arrayValue.SliceVal().AppendEmpty().SetIntVal(34)
 	arrayValue.SliceVal().AppendEmpty().SetIntVal(56)
@@ -831,8 +831,8 @@ func constructServerSpan(parentSpanID pdata.SpanID, name string, code pdata.Stat
 	return span
 }
 
-func constructSpanAttributes(attributes map[string]interface{}) pdata.AttributeMap {
-	attrs := pdata.NewAttributeMap()
+func constructSpanAttributes(attributes map[string]interface{}) pdata.Map {
+	attrs := pdata.NewMap()
 	for key, value := range attributes {
 		if cast, ok := value.(int); ok {
 			attrs.InsertInt(key, int64(cast))
@@ -847,7 +847,7 @@ func constructSpanAttributes(attributes map[string]interface{}) pdata.AttributeM
 
 func constructDefaultResource() pdata.Resource {
 	resource := pdata.NewResource()
-	attrs := pdata.NewAttributeMap()
+	attrs := pdata.NewMap()
 	attrs.InsertString(conventions.AttributeServiceName, "signup_aggregator")
 	attrs.InsertString(conventions.AttributeServiceVersion, "semver:1.1.4")
 	attrs.InsertString(conventions.AttributeContainerName, "signup_aggregator")
@@ -872,7 +872,7 @@ func constructDefaultResource() pdata.Resource {
 	resourceMap.InsertString("key2", "value")
 	attrs.Insert(resourceMapKey, resourceMapVal)
 
-	resourceArrayVal := pdata.NewValueArray()
+	resourceArrayVal := pdata.NewValueSlice()
 	resourceArray := resourceArrayVal.SliceVal()
 	resourceArray.AppendEmpty().SetStringVal("foo")
 	resourceArray.AppendEmpty().SetStringVal("bar")
@@ -882,7 +882,7 @@ func constructDefaultResource() pdata.Resource {
 }
 
 func constructTimedEventsWithReceivedMessageEvent(tm pdata.Timestamp) pdata.SpanEventSlice {
-	eventAttr := pdata.NewAttributeMap()
+	eventAttr := pdata.NewMap()
 	eventAttr.InsertString("message.type", "RECEIVED")
 	eventAttr.InsertInt(conventions.AttributeMessagingMessageID, 1)
 	eventAttr.InsertInt(conventions.AttributeMessagingMessagePayloadCompressedSizeBytes, 6478)
@@ -899,7 +899,7 @@ func constructTimedEventsWithReceivedMessageEvent(tm pdata.Timestamp) pdata.Span
 }
 
 func constructTimedEventsWithSentMessageEvent(tm pdata.Timestamp) pdata.SpanEventSlice {
-	eventAttr := pdata.NewAttributeMap()
+	eventAttr := pdata.NewMap()
 	eventAttr.InsertString("message.type", "SENT")
 	eventAttr.InsertInt(conventions.AttributeMessagingMessageID, 1)
 	eventAttr.InsertInt(conventions.AttributeMessagingMessagePayloadSizeBytes, 7480)

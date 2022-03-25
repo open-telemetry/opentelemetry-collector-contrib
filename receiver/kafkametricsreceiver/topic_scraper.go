@@ -80,7 +80,7 @@ func (s *topicScraper) scrape(context.Context) (pdata.Metrics, error) {
 			scrapeErrors.Add(err)
 			continue
 		}
-		labels := pdata.NewAttributeMap()
+		labels := pdata.NewMap()
 		labels.UpsertString(metadata.A.Topic, topic)
 		addIntGauge(ilm.Metrics(), metadata.M.KafkaTopicPartitions.Name(), now, labels, int64(len(partitions)))
 		for _, partition := range partitions {
@@ -133,7 +133,7 @@ func createTopicsScraper(_ context.Context, cfg Config, saramaConfig *sarama.Con
 	)
 }
 
-func addIntGauge(ms pdata.MetricSlice, name string, now pdata.Timestamp, labels pdata.AttributeMap, value int64) {
+func addIntGauge(ms pdata.MetricSlice, name string, now pdata.Timestamp, labels pdata.Map, value int64) {
 	m := ms.AppendEmpty()
 	m.SetName(name)
 	m.SetDataType(pdata.MetricDataTypeGauge)

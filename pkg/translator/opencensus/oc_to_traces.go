@@ -213,7 +213,7 @@ func ocAttrsToDroppedAttributes(ocAttrs *octrace.Span_Attributes) uint32 {
 }
 
 // initAttributeMapFromOC initialize AttributeMap from OC attributes
-func initAttributeMapFromOC(ocAttrs *octrace.Span_Attributes, dest pdata.AttributeMap) {
+func initAttributeMapFromOC(ocAttrs *octrace.Span_Attributes, dest pdata.Map) {
 	if ocAttrs == nil || len(ocAttrs.AttributeMap) == 0 {
 		return
 	}
@@ -347,7 +347,7 @@ func ocLinksToInternal(ocLinks *octrace.Span_Links, dest pdata.Span) {
 	}
 }
 
-func ocMessageEventToInternalAttrs(msgEvent *octrace.Span_TimeEvent_MessageEvent, dest pdata.AttributeMap) {
+func ocMessageEventToInternalAttrs(msgEvent *octrace.Span_TimeEvent_MessageEvent, dest pdata.Map) {
 	if msgEvent == nil {
 		return
 	}

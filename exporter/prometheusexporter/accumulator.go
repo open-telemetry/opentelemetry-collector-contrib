@@ -271,7 +271,7 @@ func (a *lastValueAccumulator) Collect() []pdata.Metric {
 	return res
 }
 
-func timeseriesSignature(ilmName string, metric pdata.Metric, attributes pdata.AttributeMap) string {
+func timeseriesSignature(ilmName string, metric pdata.Metric, attributes pdata.Map) string {
 	var b strings.Builder
 	b.WriteString(metric.DataType().String())
 	b.WriteString("*" + ilmName)

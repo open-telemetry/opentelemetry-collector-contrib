@@ -990,7 +990,10 @@ func newMetricMysqlThreads(settings MetricSettings) metricMysqlThreads {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	startTime                        pdata.Timestamp
+	startTime                        pdata.Timestamp // start time that will be applied to all recorded data points.
+	metricsCapacity                  int             // maximum observed number of metrics per resource.
+	resourceCapacity                 int             // maximum observed number of resource attributes.
+	metricsBuffer                    pdata.Metrics   // accumulates metrics data before emitting.
 	metricMysqlBufferPoolDataPages   metricMysqlBufferPoolDataPages
 	metricMysqlBufferPoolLimit       metricMysqlBufferPoolLimit
 	metricMysqlBufferPoolOperations  metricMysqlBufferPoolOperations
@@ -1023,6 +1026,7 @@ func WithStartTime(startTime pdata.Timestamp) metricBuilderOption {
 func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                        pdata.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                    pdata.NewMetrics(),
 		metricMysqlBufferPoolDataPages:   newMetricMysqlBufferPoolDataPages(settings.MysqlBufferPoolDataPages),
 		metricMysqlBufferPoolLimit:       newMetricMysqlBufferPoolLimit(settings.MysqlBufferPoolLimit),
 		metricMysqlBufferPoolOperations:  newMetricMysqlBufferPoolOperations(settings.MysqlBufferPoolOperations),
@@ -1047,27 +1051,63 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 	return mb
 }
 
-// Emit appends generated metrics to a pdata.MetricsSlice and updates the internal state to be ready for recording
-// another set of data points. This function will be doing all transformations required to produce metric representation
-// defined in metadata and user settings, e.g. delta/cumulative translation.
-func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
-	mb.metricMysqlBufferPoolDataPages.emit(metrics)
-	mb.metricMysqlBufferPoolLimit.emit(metrics)
-	mb.metricMysqlBufferPoolOperations.emit(metrics)
-	mb.metricMysqlBufferPoolPageFlushes.emit(metrics)
-	mb.metricMysqlBufferPoolPages.emit(metrics)
-	mb.metricMysqlBufferPoolUsage.emit(metrics)
-	mb.metricMysqlCommands.emit(metrics)
-	mb.metricMysqlDoubleWrites.emit(metrics)
-	mb.metricMysqlHandlers.emit(metrics)
-	mb.metricMysqlLocks.emit(metrics)
-	mb.metricMysqlLogOperations.emit(metrics)
-	mb.metricMysqlOperations.emit(metrics)
-	mb.metricMysqlPageOperations.emit(metrics)
-	mb.metricMysqlRowLocks.emit(metrics)
-	mb.metricMysqlRowOperations.emit(metrics)
-	mb.metricMysqlSorts.emit(metrics)
-	mb.metricMysqlThreads.emit(metrics)
+// updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
+func (mb *MetricsBuilder) updateCapacity(rm pdata.ResourceMetrics) {
+	if mb.metricsCapacity < rm.InstrumentationLibraryMetrics().At(0).Metrics().Len() {
+		mb.metricsCapacity = rm.InstrumentationLibraryMetrics().At(0).Metrics().Len()
+	}
+	if mb.resourceCapacity < rm.Resource().Attributes().Len() {
+		mb.resourceCapacity = rm.Resource().Attributes().Len()
+	}
+}
+
+// ResourceOption applies changes to provided resource.
+type ResourceOption func(pdata.Resource)
+
+// EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
+// recording another set of data points as part of another resource. This function can be helpful when one scraper
+// needs to emit metrics from several resources. Otherwise calling this function is not required,
+// just `Emit` function can be called instead. Resource attributes should be provided as ResourceOption arguments.
+func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
+	rm := pdata.NewResourceMetrics()
+	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
+	for _, op := range ro {
+		op(rm.Resource())
+	}
+	ils := rm.InstrumentationLibraryMetrics().AppendEmpty()
+	ils.InstrumentationLibrary().SetName("otelcol/mysqlreceiver")
+	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
+	mb.metricMysqlBufferPoolDataPages.emit(ils.Metrics())
+	mb.metricMysqlBufferPoolLimit.emit(ils.Metrics())
+	mb.metricMysqlBufferPoolOperations.emit(ils.Metrics())
+	mb.metricMysqlBufferPoolPageFlushes.emit(ils.Metrics())
+	mb.metricMysqlBufferPoolPages.emit(ils.Metrics())
+	mb.metricMysqlBufferPoolUsage.emit(ils.Metrics())
+	mb.metricMysqlCommands.emit(ils.Metrics())
+	mb.metricMysqlDoubleWrites.emit(ils.Metrics())
+	mb.metricMysqlHandlers.emit(ils.Metrics())
+	mb.metricMysqlLocks.emit(ils.Metrics())
+	mb.metricMysqlLogOperations.emit(ils.Metrics())
+	mb.metricMysqlOperations.emit(ils.Metrics())
+	mb.metricMysqlPageOperations.emit(ils.Metrics())
+	mb.metricMysqlRowLocks.emit(ils.Metrics())
+	mb.metricMysqlRowOperations.emit(ils.Metrics())
+	mb.metricMysqlSorts.emit(ils.Metrics())
+	mb.metricMysqlThreads.emit(ils.Metrics())
+	if ils.Metrics().Len() > 0 {
+		mb.updateCapacity(rm)
+		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
+	}
+}
+
+// Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
+// recording another set of metrics. This function will be responsible for applying all the transformations required to
+// produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
+func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pdata.Metrics {
+	mb.EmitForResource(ro...)
+	metrics := pdata.NewMetrics()
+	mb.metricsBuffer.MoveTo(metrics)
+	return metrics
 }
 
 // RecordMysqlBufferPoolDataPagesDataPoint adds a data point to mysql.buffer_pool.data_pages metric.
@@ -1162,16 +1202,6 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 	for _, op := range options {
 		op(mb)
 	}
-}
-
-// NewMetricData creates new pdata.Metrics and sets the InstrumentationLibrary
-// name on the ResourceMetrics.
-func (mb *MetricsBuilder) NewMetricData() pdata.Metrics {
-	md := pdata.NewMetrics()
-	rm := md.ResourceMetrics().AppendEmpty()
-	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName("otelcol/mysqlreceiver")
-	return md
 }
 
 // Attributes contains the possible metric attributes that can be used.

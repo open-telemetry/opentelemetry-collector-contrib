@@ -209,7 +209,7 @@ func diffResource(diffs []*MetricDiff, expected pdata.Resource, actual pdata.Res
 	return diffAttrs(diffs, expected.Attributes(), actual.Attributes())
 }
 
-func diffAttrs(diffs []*MetricDiff, expected pdata.AttributeMap, actual pdata.AttributeMap) []*MetricDiff {
+func diffAttrs(diffs []*MetricDiff, expected pdata.Map, actual pdata.Map) []*MetricDiff {
 	if !reflect.DeepEqual(expected, actual) {
 		diffs = append(diffs, &MetricDiff{
 			ExpectedValue: attrMapToString(expected),
@@ -241,7 +241,7 @@ func diffValues(
 	return diffs, false
 }
 
-func attrMapToString(m pdata.AttributeMap) string {
+func attrMapToString(m pdata.Map) string {
 	out := ""
 	m.Range(func(k string, v pdata.Value) bool {
 		out += "[" + k + "=" + v.StringVal() + "]"

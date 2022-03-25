@@ -351,7 +351,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 			name: "with array body",
 			logRecordFn: func() pdata.LogRecord {
 				logRecord := pdata.NewLogRecord()
-				attVal := pdata.NewValueArray()
+				attVal := pdata.NewValueSlice()
 				attArray := attVal.SliceVal()
 				attArray.AppendEmpty().SetStringVal("foo")
 				attVal.CopyTo(logRecord.Body())

@@ -271,7 +271,7 @@ func convertToSentrySpan(span pdata.Span, library pdata.InstrumentationLibrary, 
 //
 // See https://github.com/open-telemetry/opentelemetry-specification/tree/5b78ee1/specification/trace/semantic_conventions
 // for more details about the semantic conventions.
-func generateSpanDescriptors(name string, attrs pdata.AttributeMap, spanKind pdata.SpanKind) (op string, description string) {
+func generateSpanDescriptors(name string, attrs pdata.Map, spanKind pdata.SpanKind) (op string, description string) {
 	var opBuilder strings.Builder
 	var dBuilder strings.Builder
 
@@ -339,7 +339,7 @@ func generateTagsFromResource(resource pdata.Resource) map[string]string {
 	return generateTagsFromAttributes(resource.Attributes())
 }
 
-func generateTagsFromAttributes(attrs pdata.AttributeMap) map[string]string {
+func generateTagsFromAttributes(attrs pdata.Map) map[string]string {
 	tags := make(map[string]string)
 
 	attrs.Range(func(key string, attr pdata.Value) bool {

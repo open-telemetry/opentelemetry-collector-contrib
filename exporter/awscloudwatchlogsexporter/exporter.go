@@ -211,7 +211,7 @@ func logToCWLog(resourceAttrs map[string]interface{}, log pdata.LogRecord) (*clo
 	}, nil
 }
 
-func attrsValue(attrs pdata.AttributeMap) map[string]interface{} {
+func attrsValue(attrs pdata.Map) map[string]interface{} {
 	if attrs.Len() == 0 {
 		return nil
 	}
@@ -240,7 +240,7 @@ func attrValue(value pdata.Value) interface{} {
 			return true
 		})
 		return values
-	case pdata.ValueTypeArray:
+	case pdata.ValueTypeSlice:
 		arrayVal := value.SliceVal()
 		values := make([]interface{}, arrayVal.Len())
 		for i := 0; i < arrayVal.Len(); i++ {

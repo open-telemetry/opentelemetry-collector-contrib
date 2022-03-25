@@ -172,7 +172,7 @@ func (gap *groupByAttrsProcessor) processMetrics(ctx context.Context, md pdata.M
 	return groupedMetrics, nil
 }
 
-func deleteAttributes(attrsForRemoval, targetAttrs pdata.AttributeMap) {
+func deleteAttributes(attrsForRemoval, targetAttrs pdata.Map) {
 	attrsForRemoval.Range(func(key string, _ pdata.Value) bool {
 		targetAttrs.Delete(key)
 		return true
@@ -184,9 +184,9 @@ func deleteAttributes(attrsForRemoval, targetAttrs pdata.AttributeMap) {
 // Returns:
 //  - whether any attribute matched (true) or none (false)
 //  - the extracted AttributeMap of matching keys and their corresponding values
-func (gap *groupByAttrsProcessor) extractGroupingAttributes(attrMap pdata.AttributeMap) (bool, pdata.AttributeMap) {
+func (gap *groupByAttrsProcessor) extractGroupingAttributes(attrMap pdata.Map) (bool, pdata.Map) {
 
-	groupingAttributes := pdata.NewAttributeMap()
+	groupingAttributes := pdata.NewMap()
 	foundMatch := false
 
 	for _, attrKey := range gap.groupByKeys {
@@ -229,7 +229,7 @@ func (gap *groupByAttrsProcessor) getGroupedMetricsFromAttributes(
 	originResourceMetrics pdata.ResourceMetrics,
 	ilm pdata.InstrumentationLibraryMetrics,
 	metric pdata.Metric,
-	attributes pdata.AttributeMap,
+	attributes pdata.Map,
 ) pdata.Metric {
 
 	toBeGrouped, requiredAttributes := gap.extractGroupingAttributes(attributes)

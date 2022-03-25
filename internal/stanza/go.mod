@@ -5,11 +5,11 @@ go 1.17
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.47.0
 	github.com/open-telemetry/opentelemetry-log-collection v0.27.2
-	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.47.1-0.20220316214317-e6ea17cf27a8
-	go.opentelemetry.io/collector/model v0.47.1-0.20220316214317-e6ea17cf27a8
+	github.com/stretchr/testify v1.7.1
+	go.opentelemetry.io/collector v0.47.1-0.20220323200141-1b7618728835
+	go.opentelemetry.io/collector/model v0.47.1-0.20220323200141-1b7618728835
 	go.opentelemetry.io/otel/metric v0.27.0
-	go.opentelemetry.io/otel/trace v1.4.1
+	go.opentelemetry.io/otel/trace v1.5.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -34,7 +34,7 @@ require (
 	github.com/spf13/cast v1.4.1 // indirect
 	go.etcd.io/bbolt v1.3.6 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/otel v1.4.1 // indirect
+	go.opentelemetry.io/otel v1.5.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	golang.org/x/sys v0.0.0-20220307203707-22a9840ba4d7 // indirect
 	golang.org/x/text v0.3.7 // indirect

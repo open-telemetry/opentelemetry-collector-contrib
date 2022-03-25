@@ -1,8 +1,11 @@
 name: couchdbreceiver
 
-attributes:
+resource_attributes:
   couchdb.node.name:
     description: The name of the node.
+    type: string
+
+attributes:
   http.method:
     description: An HTTP request method.
     enum: [ COPY, DELETE, GET, HEAD, OPTIONS, POST, PUT ]

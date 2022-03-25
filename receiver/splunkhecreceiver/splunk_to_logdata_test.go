@@ -102,7 +102,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 			hecConfig: defaultTestingHecConfig,
 			output: func() pdata.ResourceLogsSlice {
 				logsSlice := createLogsSlice(nanoseconds)
-				arrVal := pdata.NewValueArray()
+				arrVal := pdata.NewValueSlice()
 				arr := arrVal.SliceVal()
 				arr.AppendEmpty().SetStringVal("foo")
 				arr.AppendEmpty().SetStringVal("bar")
@@ -127,7 +127,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 			hecConfig: defaultTestingHecConfig,
 			output: func() pdata.ResourceLogsSlice {
 				logsSlice := createLogsSlice(nanoseconds)
-				foosArr := pdata.NewValueArray()
+				foosArr := pdata.NewValueSlice()
 				foos := foosArr.SliceVal()
 				foos.EnsureCapacity(3)
 				foos.AppendEmpty().SetStringVal("foo")
@@ -263,7 +263,7 @@ func Test_ConvertAttributeValueMap(t *testing.T) {
 func Test_ConvertAttributeValueArray(t *testing.T) {
 	value, err := convertInterfaceToAttributeValue(zap.NewNop(), []interface{}{"foo"})
 	assert.NoError(t, err)
-	arrValue := pdata.NewValueArray()
+	arrValue := pdata.NewValueSlice()
 	arr := arrValue.SliceVal()
 	arr.AppendEmpty().SetStringVal("foo")
 	assert.Equal(t, arrValue, value)

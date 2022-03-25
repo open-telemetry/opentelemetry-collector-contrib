@@ -98,19 +98,16 @@ func (s *scraper) start(context.Context, component.Host) error {
 }
 
 func (s *scraper) scrape(ctx context.Context) (pdata.Metrics, error) {
-	md := pdata.NewMetrics()
-	metrics := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics()
-
 	now := pdata.NewTimestampFromTime(time.Now())
 
 	counters, err := s.perfCounterScraper.Scrape()
 	if err != nil {
-		return md, scrapererror.NewPartialScrapeError(err, metricsLen)
+		return pdata.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
 	logicalDiskObject, err := counters.GetObject(logicalDisk)
 	if err != nil {
-		return md, scrapererror.NewPartialScrapeError(err, metricsLen)
+		return pdata.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
 	// filter devices by name
@@ -118,20 +115,18 @@ func (s *scraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 
 	logicalDiskCounterValues, err := logicalDiskObject.GetValues(readsPerSec, writesPerSec, readBytesPerSec, writeBytesPerSec, idleTime, avgDiskSecsPerRead, avgDiskSecsPerWrite, queueLength)
 	if err != nil {
-		return md, scrapererror.NewPartialScrapeError(err, metricsLen)
+		return pdata.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
 	if len(logicalDiskCounterValues) > 0 {
-		metrics.EnsureCapacity(metricsLen)
 		s.recordDiskIOMetric(now, logicalDiskCounterValues)
 		s.recordDiskOperationsMetric(now, logicalDiskCounterValues)
 		s.recordDiskIOTimeMetric(now, logicalDiskCounterValues)
 		s.recordDiskOperationTimeMetric(now, logicalDiskCounterValues)
 		s.recordDiskPendingOperationsMetric(now, logicalDiskCounterValues)
-		s.mb.Emit(metrics)
 	}
 
-	return md, nil
+	return s.mb.Emit(), nil
 }
 
 func (s *scraper) recordDiskIOMetric(now pdata.Timestamp, logicalDiskCounterValues []*perfcounters.CounterValues) {

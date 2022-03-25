@@ -29,7 +29,7 @@ type MetricIdentity struct {
 	MetricName             string
 	MetricUnit             string
 	StartTimestamp         pdata.Timestamp
-	Attributes             pdata.AttributeMap
+	Attributes             pdata.Map
 	MetricValueType        pdata.MetricValueType
 }
 

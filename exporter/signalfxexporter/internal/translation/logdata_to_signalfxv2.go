@@ -27,7 +27,7 @@ import (
 func LogRecordSliceToSignalFxV2(
 	logger *zap.Logger,
 	logs pdata.LogRecordSlice,
-	resourceAttrs pdata.AttributeMap,
+	resourceAttrs pdata.Map,
 ) ([]*sfxpb.Event, int) {
 	events := make([]*sfxpb.Event, 0, logs.Len())
 	numDroppedLogRecords := 0
@@ -45,7 +45,7 @@ func LogRecordSliceToSignalFxV2(
 	return events, numDroppedLogRecords
 }
 
-func convertLogRecord(lr pdata.LogRecord, resourceAttrs pdata.AttributeMap, logger *zap.Logger) (*sfxpb.Event, bool) {
+func convertLogRecord(lr pdata.LogRecord, resourceAttrs pdata.Map, logger *zap.Logger) (*sfxpb.Event, bool) {
 	attrs := lr.Attributes()
 
 	categoryVal, ok := attrs.Get(splunk.SFxEventCategoryKey)
@@ -78,7 +78,7 @@ func convertLogRecord(lr pdata.LogRecord, resourceAttrs pdata.AttributeMap, logg
 
 	// keep a record of Resource attributes to add as dimensions
 	// so as not to modify LogRecord attributes
-	resourceAttrsForDimensions := pdata.NewAttributeMap()
+	resourceAttrsForDimensions := pdata.NewMap()
 	resourceAttrs.Range(func(k string, v pdata.Value) bool {
 		// LogRecord attribute takes priority
 		if _, ok := attrs.Get(k); !ok {

@@ -182,7 +182,7 @@ func Test_createLabelSet(t *testing.T) {
 	tests := []struct {
 		name           string
 		resource       pdata.Resource
-		orig           pdata.AttributeMap
+		orig           pdata.Map
 		externalLabels map[string]string
 		extras         []string
 		want           []prompb.Label
@@ -236,7 +236,7 @@ func Test_createLabelSet(t *testing.T) {
 		{
 			"no_original_case",
 			getResource(map[string]pdata.Value{}),
-			pdata.NewAttributeMap(),
+			pdata.NewMap(),
 			nil,
 			[]string{label31, value31, label32, value32},
 			getPromLabels(label31, value31, label32, value32),

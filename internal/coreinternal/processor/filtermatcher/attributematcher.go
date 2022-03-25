@@ -83,7 +83,7 @@ func NewAttributesMatcher(config filterset.Config, attributes []filterconfig.Att
 }
 
 // Match attributes specification against a span/log.
-func (ma AttributesMatcher) Match(attrs pdata.AttributeMap) bool {
+func (ma AttributesMatcher) Match(attrs pdata.Map) bool {
 	// If there are no attributes to match against, the span/log matches.
 	if len(ma) == 0 {
 		return true

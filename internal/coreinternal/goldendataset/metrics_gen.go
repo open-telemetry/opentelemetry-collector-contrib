@@ -200,7 +200,7 @@ func addDoubleHistogramVal(hdp pdata.HistogramDataPoint, val float64) {
 	}
 }
 
-func populatePtAttributes(cfg MetricsCfg, lm pdata.AttributeMap) {
+func populatePtAttributes(cfg MetricsCfg, lm pdata.Map) {
 	for i := 0; i < cfg.NumPtLabels; i++ {
 		k := fmt.Sprintf("pt-label-key-%d", i)
 		v := fmt.Sprintf("pt-label-val-%d", i)

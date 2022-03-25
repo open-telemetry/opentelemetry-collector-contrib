@@ -95,7 +95,7 @@ processor/groupbytraceprocessor/                     @open-telemetry/collector-c
 processor/k8sattributesprocessor/                    @open-telemetry/collector-contrib-approvers @owais @dmitryax @pmm-sumo
 processor/metricstransformprocessor/                 @open-telemetry/collector-contrib-approvers @punya
 processor/probabilisticsamplerprocessor/             @open-telemetry/collector-contrib-approvers @jpkrohling
-processor/redactionprocessor/                        @open-telemetry/collector-contrib-approvers @MovieStoreGuy
+processor/redactionprocessor/                        @open-telemetry/collector-contrib-approvers @leonsp-ai @dmitryax @mx-psi
 processor/resourcedetectionprocessor/                @open-telemetry/collector-contrib-approvers @jrcamp @pmm-sumo @anuraaga @dashpole
 processor/resourceprocessor                          @open-telemetry/collector-contrib-approvers @dmitryax
 processor/resourcedetectionprocessor/internal/azure  @open-telemetry/collector-contrib-approvers @mx-psi

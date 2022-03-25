@@ -60,7 +60,8 @@ type APIConfig struct {
 	Site string `mapstructure:"site"`
 }
 
-// GetCensoredKey returns the API key censored for logging purposes
+// GetCensoredKey returns the API key censored for logging purposes.
+// Deprecated: [v0.48.0] Will be removed in v0.49.0.
 func (api *APIConfig) GetCensoredKey() string {
 	if len(api.Key) <= 5 {
 		return api.Key

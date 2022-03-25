@@ -103,9 +103,7 @@ func (r *apacheScraper) scrape(context.Context) (pdata.Metrics, error) {
 		}
 	}
 
-	md := r.mb.NewMetricData()
-	r.mb.Emit(md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	return md, nil
+	return r.mb.Emit(), nil
 }
 
 // GetStats collects metric stats by making a get request at an endpoint.

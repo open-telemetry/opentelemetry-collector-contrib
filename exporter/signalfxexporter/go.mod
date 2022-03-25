@@ -13,9 +13,9 @@ require (
 	github.com/shirou/gopsutil/v3 v3.22.2
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3
 	github.com/signalfx/signalfx-agent/pkg/apm v0.0.0-20201202163743-65b4fa925fc8
-	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.47.1-0.20220316214317-e6ea17cf27a8
-	go.opentelemetry.io/collector/model v0.47.1-0.20220316214317-e6ea17cf27a8
+	github.com/stretchr/testify v1.7.1
+	go.opentelemetry.io/collector v0.47.1-0.20220323200141-1b7618728835
+	go.opentelemetry.io/collector/model v0.47.1-0.20220323200141-1b7618728835
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
 )
@@ -37,7 +37,6 @@ require (
 	github.com/klauspost/compress v1.15.1 // indirect
 	github.com/knadh/koanf v1.4.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
-	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
@@ -58,10 +57,10 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.29.0 // indirect
-	go.opentelemetry.io/otel v1.4.1 // indirect
+	go.opentelemetry.io/otel v1.5.0 // indirect
 	go.opentelemetry.io/otel/internal/metric v0.27.0 // indirect
 	go.opentelemetry.io/otel/metric v0.27.0 // indirect
-	go.opentelemetry.io/otel/trace v1.4.1 // indirect
+	go.opentelemetry.io/otel/trace v1.5.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	google.golang.org/grpc v1.45.0 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect

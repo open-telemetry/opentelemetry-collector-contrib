@@ -94,7 +94,7 @@ func TestAccumulateDeltaAggregation(t *testing.T) {
 			n := a.Accumulate(resourceMetrics)
 			require.Equal(t, 0, n)
 
-			signature := timeseriesSignature(ilm.InstrumentationLibrary().Name(), ilm.Metrics().At(0), pdata.NewAttributeMap())
+			signature := timeseriesSignature(ilm.InstrumentationLibrary().Name(), ilm.Metrics().At(0), pdata.NewMap())
 			v, ok := a.registeredMetrics.Load(signature)
 			require.False(t, ok)
 			require.Nil(t, v)
@@ -386,7 +386,7 @@ func TestAccumulateMetrics(t *testing.T) {
 }
 
 func getMetricProperties(metric pdata.Metric) (
-	attributes pdata.AttributeMap,
+	attributes pdata.Map,
 	ts time.Time,
 	value float64,
 	temporality pdata.MetricAggregationTemporality,
