@@ -15,7 +15,7 @@
 
 - `datadogexporter`: Deprecate `OnlyMetadata` method from `Config` struct (#8359)
 - `datadogexporter`: Deprecate `GetCensoredKey` method from `APIConfig` struct (#8830)
-
+- `datadogexporter`: Deprecate `metrics::report_quantiles` in favor of `metrics::summaries::mode` (#8846)
 - `resourcedetectionprocessor`: Add attribute allowlist (#8547)
 
 ### 💡 Enhancements 💡
@@ -26,6 +26,7 @@
 ### 💡 Enhancements 💡
 
 - `datadogexporter`: Add `metrics::sums::cumulative_monotonic_mode` to specify export mode for cumulative monotonic sums (#8490)
+- `datadogexporter`: Add `metrics::summaries::mode` to specify export mode for summaries (#8846)
 
 ### 🚩 Deprecations 🚩
 
