@@ -19,6 +19,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"testing"
 
@@ -127,6 +128,18 @@ func TestBasicAuth_InvalidPrefix(t *testing.T) {
 	assert.Equal(t, errInvalidSchemePrefix, err)
 }
 
+func TestBasicAuth_NoFile(t *testing.T) {
+	ext, err := newExtension(&Config{
+		Htpasswd: HtpasswdSettings{
+			File: "/non/existing/file",
+		},
+	})
+	require.NoError(t, err)
+	require.NotNil(t, ext)
+
+	require.Error(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+}
+
 func TestBasicAuth_InvalidFormat(t *testing.T) {
 	ext, err := newExtension(&Config{
 		Htpasswd: HtpasswdSettings{
@@ -191,5 +204,110 @@ func TestBasicAuth_SupportedHeaders(t *testing.T) {
 	} {
 		_, err = ext.Authenticate(context.Background(), map[string][]string{k: {"Basic " + auth}})
 		assert.NoError(t, err)
+	}
+}
+
+type mockRoundTripper struct{}
+
+func (m *mockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	resp := &http.Response{StatusCode: http.StatusOK, Header: map[string][]string{}}
+	for k, v := range req.Header {
+		resp.Header[k] = v
+	}
+	return resp, nil
+}
+
+func TestBasicAuth_ClientValid(t *testing.T) {
+	creds := "username:password"
+	ext, err := newExtension(&Config{
+		Htpasswd: HtpasswdSettings{
+			Inline: creds,
+		},
+	})
+	assert.NotNil(t, ext)
+	require.NoError(t, err)
+
+	assert.Nil(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+
+	base := &mockRoundTripper{}
+	c, err := ext.RoundTripper(base)
+	assert.NoError(t, err)
+	assert.NotNil(t, c)
+
+	authCreds := base64.StdEncoding.EncodeToString([]byte(creds))
+	orgHeaders := http.Header{
+		"Test-Header-1": []string{"test-value-1"},
+	}
+	expectedHeaders := http.Header{
+		"Test-Header-1": []string{"test-value-1"},
+		"Authorization": {fmt.Sprintf("Basic %s", authCreds)},
+	}
+
+	resp, err := c.RoundTrip(&http.Request{Header: orgHeaders})
+	assert.NoError(t, err)
+	assert.Equal(t, expectedHeaders, resp.Header)
+	assert.Nil(t, ext.Shutdown(context.Background()))
+}
+
+func TestBasicAuth_ClientInValid(t *testing.T) {
+	creds := "invalid"
+	ext, err := newExtension(&Config{
+		Htpasswd: HtpasswdSettings{
+			Inline: creds,
+		},
+	})
+	assert.NotNil(t, ext)
+	require.NoError(t, err)
+
+	assert.Nil(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+
+	base := &mockRoundTripper{}
+	_, err = ext.RoundTripper(base)
+	assert.Error(t, err)
+}
+
+func Test_GetBasicAuth(t *testing.T) {
+	tests := []struct {
+		name    string
+		auth    string
+		want    *authData
+		wantErr bool
+	}{
+		{
+			name: "valid",
+			auth: "username:password",
+			want: &authData{
+				username: "username",
+				password: "password",
+			},
+		},
+		{
+			name:    "invalid",
+			auth:    "invalid",
+			wantErr: true,
+		},
+		{
+			name:    "empty",
+			auth:    "",
+			wantErr: true,
+		},
+		{
+			name: "multiple colons",
+			auth: "username:password:extra",
+			want: &authData{
+				username: "username",
+				password: "password:extra",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := getBasicAuth(tt.auth)
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.Equal(t, tt.want, got)
+		})
 	}
 }

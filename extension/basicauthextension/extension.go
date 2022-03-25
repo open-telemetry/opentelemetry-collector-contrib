@@ -15,18 +15,19 @@
 package basicauthextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension"
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"io"
-	"os"
+	"io/ioutil"
+	"net/http"
 	"strings"
 
 	"github.com/tg123/go-htpasswd"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configauth"
+	creds "google.golang.org/grpc/credentials"
 )
 
 var (
@@ -38,50 +39,54 @@ var (
 )
 
 type basicAuth struct {
-	htpasswd  HtpasswdSettings
-	matchFunc func(username, password string) bool
+	htpasswd     HtpasswdSettings
+	matchFunc    func(username, password string) bool
+	userPassPair string
 }
 
-func newExtension(cfg *Config) (configauth.ServerAuthenticator, error) {
+func newExtension(cfg *Config) (*basicAuth, error) {
 	if cfg.Htpasswd.File == "" && cfg.Htpasswd.Inline == "" {
 		return nil, errNoCredentialSource
 	}
 	ba := basicAuth{
 		htpasswd: cfg.Htpasswd,
 	}
-	return configauth.NewServerAuthenticator(configauth.WithStart(ba.start), configauth.WithAuthenticate(ba.authenticate)), nil
+	return &ba, nil
 }
 
-func (ba *basicAuth) start(ctx context.Context, host component.Host) error {
-	var rs []io.Reader
+func (ba *basicAuth) Start(ctx context.Context, host component.Host) error {
+	var buff bytes.Buffer
 
 	if ba.htpasswd.File != "" {
-		f, err := os.Open(ba.htpasswd.File)
+		bytes, err := ioutil.ReadFile(ba.htpasswd.File)
 		if err != nil {
-			return fmt.Errorf("open htpasswd file: %w", err)
+			return fmt.Errorf("open file error: %w", err)
 		}
-		defer f.Close()
-
-		rs = append(rs, f)
-		rs = append(rs, strings.NewReader("\n"))
+		buff.Write(bytes)
+		buff.WriteString("\n")
 	}
 
 	// Ensure that the inline content is read the last.
 	// This way the inline content will override the content from file.
-	rs = append(rs, strings.NewReader(ba.htpasswd.Inline))
-	mr := io.MultiReader(rs...)
+	if len(ba.htpasswd.Inline) > 0 {
+		buff.Truncate(buff.Len())
+		buff.WriteString(ba.htpasswd.Inline)
+	}
 
-	htp, err := htpasswd.NewFromReader(mr, htpasswd.DefaultSystems, nil)
+	htp, err := htpasswd.NewFromReader(bytes.NewBuffer(buff.Bytes()), htpasswd.DefaultSystems, nil)
 	if err != nil {
 		return fmt.Errorf("read htpasswd content: %w", err)
 	}
-
+	ba.userPassPair = buff.String()
 	ba.matchFunc = htp.Match
-
 	return nil
 }
 
-func (ba *basicAuth) authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
+func (ba *basicAuth) Shutdown(ctx context.Context) error {
+	return nil
+}
+
+func (ba *basicAuth) Authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
 	auth := getAuthHeader(headers)
 	if auth == "" {
 		return ctx, errNoAuth
@@ -155,6 +160,17 @@ func parseBasicAuth(auth string) (*authData, error) {
 	}, nil
 }
 
+func getBasicAuth(auth string) (*authData, error) {
+	si := strings.Index(auth, ":")
+	if si < 0 {
+		return nil, errInvalidFormat
+	}
+	return &authData{
+		username: auth[:si],
+		password: auth[si+1:],
+	}, nil
+}
+
 var _ client.AuthData = (*authData)(nil)
 
 type authData struct {
@@ -176,4 +192,30 @@ func (a *authData) GetAttribute(name string) interface{} {
 
 func (*authData) GetAttributeNames() []string {
 	return []string{"username", "raw"}
+}
+
+type basicAuthRoundTripper struct {
+	base     http.RoundTripper
+	authData *authData
+}
+
+func (b *basicAuthRoundTripper) RoundTrip(request *http.Request) (*http.Response, error) {
+	newRequest := request.Clone(request.Context())
+	newRequest.SetBasicAuth(b.authData.username, b.authData.password)
+	return b.base.RoundTrip(newRequest)
+}
+
+func (ba *basicAuth) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
+	authData, err := getBasicAuth(ba.userPassPair)
+	if err != nil {
+		return nil, err
+	}
+	return &basicAuthRoundTripper{
+		base:     base,
+		authData: authData,
+	}, nil
+}
+
+func (ba *basicAuth) PerRPCCredentials() (creds.PerRPCCredentials, error) {
+	return nil, nil
 }
