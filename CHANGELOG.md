@@ -24,6 +24,8 @@
 
 ### 🚀 New components 🚀
 
+- `azureblobexporter`: exports logs and traces to Azure Blob Storage
+
 ## v0.45.1
 
 ### 💡 Enhancements 💡
@@ -100,8 +102,7 @@
 
 - `clickhouse` exporter: Add ClickHouse Exporter (#6907)
 - `pkg/translator/signalfx`: Extract signalfx to metrics conversion in a separate package (#7778)
-  - Extract FromMetrics to SignalFx translator package (#7823)
-- `azureblobexporter`: exports logs and traces to Azure Blob Storage  
+  - Extract FromMetrics to SignalFx translator package (#7823)  
 
 ## v0.44.0
 
