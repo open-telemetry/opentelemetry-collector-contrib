@@ -1,8 +1,8 @@
 # Basic Authenticator
 
-This extension implements `configauth.ServerAuthenticator` to authenticate clients using HTTP Basic Authentication. The authenticator type has to be set to `basicauth`.
+This extension implements both `configauth.ServerAuthenticator` and `configauth.ClientAuthenticator` to authenticate clients and servers using HTTP Basic Authentication. The authenticator type has to be set to `basicauth`.
 
-If authentication is successful `client.Info.Auth` will expose the following attributes:
+When used as ServerAuthenticator, if the authentication is successful `client.Info.Auth` will expose the following attributes:
 
 - `username`: The username of the authenticated user.
 - `raw`: Raw base64 encoded credentials.
@@ -27,8 +27,9 @@ receivers:
 processors:
 
 exporters:
-  logging:
-    logLevel: debug
+  otlphttp:
+    auth:
+      authenticator: basicauth    
 
 service:
   extensions: [basicauth]
@@ -36,7 +37,7 @@ service:
     traces:
       receivers: [otlp]
       processors: []
-      exporters: [logging]
+      exporters: [otlphttp]
 ```
 
 ### htpasswd 
