@@ -56,6 +56,7 @@ type monitoringQuery struct {
 	query         string
 	orderedLabels []string
 	orderedStats  []queryStat
+	Enabled       func(c *Config) bool
 }
 
 var queries = []monitoringQuery{
@@ -76,6 +77,9 @@ var queries = []monitoringQuery{
 				},
 			},
 		},
+		Enabled: func(c *Config) bool {
+			return c.Metrics.SaphanaServiceCount.Enabled
+		},
 	},
 	{
 		query:         "SELECT HOST, SUM(CASE WHEN IS_ACTIVE = 'TRUE' THEN 1 ELSE 0 END) AS active_threads, SUM(CASE WHEN IS_ACTIVE = 'TRUE' THEN 0 ELSE 1 END) AS inactive_threads FROM M_SERVICE_THREADS GROUP BY HOST",
@@ -93,6 +97,9 @@ var queries = []monitoringQuery{
 					s.mb.RecordSaphanaServiceThreadCountDataPoint(now, i, row["host"], metadata.AttributeThreadStatus.Inactive)
 				},
 			},
+		},
+		Enabled: func(c *Config) bool {
+			return c.Metrics.SaphanaServiceThreadCount.Enabled
 		},
 	},
 	{
@@ -112,6 +119,9 @@ var queries = []monitoringQuery{
 				},
 			},
 		},
+		Enabled: func(c *Config) bool {
+			return c.Metrics.SaphanaColumnMemoryUsed.Enabled
+		},
 	},
 	{
 		query:         "SELECT HOST, SUM(USED_FIXED_PART_SIZE) fixed, SUM(USED_VARIABLE_PART_SIZE) variable FROM M_RS_TABLES GROUP BY HOST",
@@ -130,6 +140,9 @@ var queries = []monitoringQuery{
 				},
 			},
 		},
+		Enabled: func(c *Config) bool {
+			return c.Metrics.SaphanaRowStoreMemoryUsed.Enabled
+		},
 	},
 	{
 		query:         "SELECT HOST, COMPONENT, sum(USED_MEMORY_SIZE) used_mem_size FROM M_SERVICE_COMPONENT_MEMORY GROUP BY HOST, COMPONENT",
@@ -141,6 +154,9 @@ var queries = []monitoringQuery{
 					s.mb.RecordSaphanaComponentMemoryUsedDataPoint(now, i, row["host"], row["component"])
 				},
 			},
+		},
+		Enabled: func(c *Config) bool {
+			return c.Metrics.SaphanaComponentMemoryUsed.Enabled
 		},
 	},
 	{
@@ -154,6 +170,9 @@ var queries = []monitoringQuery{
 				},
 			},
 		},
+		Enabled: func(c *Config) bool {
+			return c.Metrics.SaphanaConnectionCount.Enabled
+		},
 	},
 	{
 		query:         "SELECT seconds_between(CURRENT_TIMESTAMP, UTC_START_TIME) age FROM M_BACKUP_CATALOG WHERE STATE_NAME = 'successful' ORDER BY UTC_START_TIME DESC LIMIT 1",
@@ -165,6 +184,9 @@ var queries = []monitoringQuery{
 					s.mb.RecordSaphanaBackupLatestDataPoint(now, i)
 				},
 			},
+		},
+		Enabled: func(c *Config) bool {
+			return c.Metrics.SaphanaBackupLatest.Enabled
 		},
 	},
 	{
@@ -178,6 +200,9 @@ var queries = []monitoringQuery{
 				},
 			},
 		},
+		Enabled: func(c *Config) bool {
+			return c.Metrics.SaphanaUptime.Enabled
+		},
 	},
 	{
 		query:         "SELECT ALERT_RATING, COUNT(*) AS alerts FROM _SYS_STATISTICS.STATISTICS_CURRENT_ALERTS GROUP BY ALERT_RATING",
@@ -189,6 +214,9 @@ var queries = []monitoringQuery{
 					s.mb.RecordSaphanaAlertCountDataPoint(now, i, row["alert_rating"])
 				},
 			},
+		},
+		Enabled: func(c *Config) bool {
+			return c.Metrics.SaphanaAlertCount.Enabled
 		},
 	},
 	{
@@ -214,6 +242,9 @@ var queries = []monitoringQuery{
 				},
 			},
 		},
+		Enabled: func(c *Config) bool {
+			return c.Metrics.SaphanaTransactionCount.Enabled
+		},
 	},
 	{
 		query:         "SELECT HOST, COUNT(*) blocks FROM m_blocked_transactions GROUP BY HOST",
@@ -225,6 +256,9 @@ var queries = []monitoringQuery{
 					s.mb.RecordSaphanaTransactionBlockedDataPoint(now, i, row["host"])
 				},
 			},
+		},
+		Enabled: func(c *Config) bool {
+			return c.Metrics.SaphanaTransactionBlocked.Enabled
 		},
 	},
 	{
@@ -243,6 +277,9 @@ var queries = []monitoringQuery{
 					s.mb.RecordSaphanaDiskSizeCurrentDataPoint(now, i, row["host"], row["path"], row["usage_type"], metadata.AttributeDiskStateUsedFree.Used)
 				},
 			},
+		},
+		Enabled: func(c *Config) bool {
+			return c.Metrics.SaphanaDiskSizeCurrent.Enabled
 		},
 	},
 	{
@@ -268,6 +305,11 @@ var queries = []monitoringQuery{
 				},
 			},
 		},
+		Enabled: func(c *Config) bool {
+			return c.Metrics.SaphanaLicenseExpirationTime.Enabled ||
+				c.Metrics.SaphanaLicenseLimit.Enabled ||
+				c.Metrics.SaphanaLicensePeak.Enabled
+		},
 	},
 	{
 		query:         "SELECT HOST, PORT, SECONDARY_HOST, REPLICATION_MODE, BACKLOG_SIZE, BACKLOG_TIME, TO_DECIMAL(IFNULL(MAP(SHIPPED_LOG_BUFFERS_COUNT, 0, 0, SHIPPED_LOG_BUFFERS_DURATION / SHIPPED_LOG_BUFFERS_COUNT), 0), 10, 2) avg_replication_time FROM M_SERVICE_REPLICATION",
@@ -291,6 +333,11 @@ var queries = []monitoringQuery{
 					s.mb.RecordSaphanaReplicationAverageTimeDataPoint(now, f, row["host"], row["secondary"], row["port"], row["mode"])
 				},
 			},
+		},
+		Enabled: func(c *Config) bool {
+			return c.Metrics.SaphanaReplicationAverageTime.Enabled ||
+				c.Metrics.SaphanaReplicationBacklogSize.Enabled ||
+				c.Metrics.SaphanaReplicationBacklogTime.Enabled
 		},
 	},
 	{
@@ -327,6 +374,11 @@ var queries = []monitoringQuery{
 					s.mb.RecordSaphanaNetworkRequestAverageTimeDataPoint(now, f, row["host"])
 				},
 			},
+		},
+		Enabled: func(c *Config) bool {
+			return c.Metrics.SaphanaNetworkRequestFinishedCount.Enabled ||
+				c.Metrics.SaphanaNetworkRequestCount.Enabled ||
+				c.Metrics.SaphanaNetworkRequestAverageTime.Enabled
 		},
 	},
 	//SELECT HOST, SUM(FINISHED_NON_INTERNAL_REQUEST_COUNT) "external", SUM(ALL_FINISHED_REQUEST_COUNT-FINISHED_NON_INTERNAL_REQUEST_COUNT) internal, SUM(ACTIVE_REQUEST_COUNT) active, SUM(PENDING_REQUEST_COUNT) pending FROM M_SERVICE_STATISTICS WHERE ACTIVE_REQUEST_COUNT > -1 GROUP BY HOST
@@ -370,6 +422,11 @@ var queries = []monitoringQuery{
 					s.mb.RecordSaphanaVolumeOperationTimeDataPoint(now, i, row["host"], row["path"], row["type"], metadata.AttributeVolumeOperationType.Write)
 				},
 			},
+		},
+		Enabled: func(c *Config) bool {
+			return c.Metrics.SaphanaVolumeOperationCount.Enabled ||
+				c.Metrics.SaphanaVolumeOperationSize.Enabled ||
+				c.Metrics.SaphanaVolumeOperationTime.Enabled
 		},
 	},
 	{
@@ -448,6 +505,17 @@ var queries = []monitoringQuery{
 					s.mb.RecordSaphanaServiceMemoryEffectiveLimitDataPoint(now, i, row["host"], row["service"])
 				},
 			},
+		},
+		Enabled: func(c *Config) bool {
+			return c.Metrics.SaphanaServiceMemoryUsed.Enabled ||
+				c.Metrics.SaphanaServiceCodeSize.Enabled ||
+				c.Metrics.SaphanaServiceStackSize.Enabled ||
+				c.Metrics.SaphanaServiceMemoryHeapCurrent.Enabled ||
+				c.Metrics.SaphanaServiceMemorySharedCurrent.Enabled ||
+				c.Metrics.SaphanaServiceMemoryCompactorsAllocated.Enabled ||
+				c.Metrics.SaphanaServiceMemoryCompactorsFreeable.Enabled ||
+				c.Metrics.SaphanaServiceMemoryLimit.Enabled ||
+				c.Metrics.SaphanaServiceMemoryEffectiveLimit.Enabled
 		},
 	},
 	{
@@ -533,6 +601,13 @@ var queries = []monitoringQuery{
 				},
 			},
 		},
+		Enabled: func(c *Config) bool {
+			return c.Metrics.SaphanaSchemaMemoryUsedMax.Enabled ||
+				c.Metrics.SaphanaSchemaRecordCompressedCount.Enabled ||
+				c.Metrics.SaphanaSchemaOperationCount.Enabled ||
+				c.Metrics.SaphanaSchemaMemoryUsedCurrent.Enabled ||
+				c.Metrics.SaphanaSchemaRecordCount.Enabled
+		},
 	},
 	{
 		query:         "SELECT HOST, FREE_PHYSICAL_MEMORY, USED_PHYSICAL_MEMORY, FREE_SWAP_SPACE, USED_SWAP_SPACE, INSTANCE_TOTAL_MEMORY_USED_SIZE, INSTANCE_TOTAL_MEMORY_PEAK_USED_SIZE, INSTANCE_TOTAL_MEMORY_ALLOCATED_SIZE-INSTANCE_TOTAL_MEMORY_USED_SIZE total_free, INSTANCE_CODE_SIZE, INSTANCE_SHARED_MEMORY_ALLOCATED_SIZE, TOTAL_CPU_USER_TIME, TOTAL_CPU_SYSTEM_TIME, TOTAL_CPU_WIO_TIME, TOTAL_CPU_IDLE_TIME FROM M_HOST_RESOURCE_UTILIZATION",
@@ -616,6 +691,15 @@ var queries = []monitoringQuery{
 					s.mb.RecordSaphanaCPUUsedDataPoint(now, i, row["host"], metadata.AttributeCPUType.Idle)
 				},
 			},
+		},
+		Enabled: func(c *Config) bool {
+			return c.Metrics.SaphanaHostMemoryCurrent.Enabled ||
+				c.Metrics.SaphanaHostSwapCurrent.Enabled ||
+				c.Metrics.SaphanaInstanceMemoryCurrent.Enabled ||
+				c.Metrics.SaphanaInstanceMemoryUsedPeak.Enabled ||
+				c.Metrics.SaphanaInstanceCodeSize.Enabled ||
+				c.Metrics.SaphanaInstanceMemorySharedAllocated.Enabled ||
+				c.Metrics.SaphanaCPUUsed.Enabled
 		},
 	},
 }

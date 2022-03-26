@@ -69,10 +69,12 @@ func (s *sapHanaScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 	ilms.InstrumentationLibrary().SetName(instrumentationLibraryName)
 
 	for _, query := range queries {
-		if err := query.CollectMetrics(s, ctx, client, now); err != nil {
-			errs.AddPartial(len(query.orderedStats), err)
+		if query.Enabled == nil || query.Enabled(s.cfg) {
+			if err := query.CollectMetrics(s, ctx, client, now); err != nil {
+				errs.AddPartial(len(query.orderedStats), err)
+			}
+			s.mb.Emit(ilms.Metrics())
 		}
-		s.mb.Emit(ilms.Metrics())
 	}
 
 	return metrics, errs.Combine()
