@@ -1,10 +1,52 @@
 # SAP HANA Receiver
 
-This receiver can fetch stats from a SAP HANA instance.
+This receiver can fetch stats from a SAP HANA instance. It leverages the [driver](https://github.com/SAP/go-hdb) written by SAP for connecting to SAP HANA with the golang sql module to execute several monitoring queries.
+
+Supported pipeline types: `metrics`
 
 > :construction: This receiver is currently in **BETA**.
 
-## Details
+### Prerequisites
+
+> The receiver is intended to support SAP HANA 2, older versions have not been tested.
+
+A monitoring user requires `SELECT` access to the relevant monitoring views. The following sql script should create a monitoring role and apply it to a monitoring user if executed by a user with sufficient permissions connected to the SAP HANA instance.
+
+```sql
+--Create the user
+CREATE RESTRICTED USER otel_monitoring_user PASSWORD <password>;
+
+--Enable user login
+ALTER USER otel_monitoring_user ENABLE CLIENT CONNECT;
+
+--Create the monitoring role
+CREATE ROLE OTEL_MONITOR;
+
+--Grant permissions to the relevant views
+GRANT CATALOG READ TO OTEL_MONITOR;
+GRANT SELECT ON SYS.M_SERVICES TO OTEL_MONITOR;
+GRANT SELECT ON SYS.M_SERVICE_THREADS TO OTEL_MONITOR;
+GRANT SELECT ON SYS.M_CS_ALL_COLUMNS TO OTEL_MONITOR;
+GRANT SELECT ON SYS.M_RS_TABLES TO OTEL_MONITOR;
+GRANT SELECT ON SYS.M_SERVICE_COMPONENT_MEMORY TO OTEL_MONITOR;
+GRANT SELECT ON SYS.M_CONNECTIONS TO OTEL_MONITOR;
+GRANT SELECT ON SYS.M_BACKUP_CATALOG TO OTEL_MONITOR;
+GRANT SELECT ON SYS.M_DATABASE TO OTEL_MONITOR;
+GRANT SELECT ON _SYS_STATISTICS.STATISTICS_CURRENT_ALERTS TO OTEL_MONITOR;
+GRANT SELECT ON SYS.M_WORKLOAD TO OTEL_MONITOR;
+GRANT SELECT ON SYS.M_BLOCKED_TRANSACTIONS TO OTEL_MONITOR;
+GRANT SELECT ON SYS.M_DISKS TO OTEL_MONITOR;
+GRANT SELECT ON SYS.M_LICENSES TO OTEL_MONITOR;
+GRANT SELECT ON SYS.M_SERVICE_REPLICATION TO OTEL_MONITOR;
+GRANT SELECT ON SYS.M_SERVICE_STATISTICS TO OTEL_MONITOR;
+GRANT SELECT ON SYS.M_VOLUME_IO_TOTAL_STATISTICS TO OTEL_MONITOR;
+GRANT SELECT ON SYS.M_SERVICE_MEMORY TO OTEL_MONITOR;
+GRANT SELECT ON SYS.M_CS_TABLES TO OTEL_MONITOR;
+GRANT SELECT ON SYS.M_HOST_RESOURCE_UTILIZATION TO OTEL_MONITOR;
+
+--Add the OTEL_MONITOR role to the monitoring user
+GRANT OTEL_MONITOR TO otel_monitoring_user;
+```
 
 ## Configuration
 
@@ -18,7 +60,7 @@ The following settings are required:
 
 The following settings are optional:
 
-- `collection_interval` (default = `10s`): This receiver runs on an interval.
+- `collection_interval` (default = `60s`): This receiver runs on an interval.
 Each time it runs, it queries memcached, creates metrics, and sends them to the
 next consumer. The `collection_interval` configuration option tells this
 receiver the duration between runs. This value must be a string readable by
@@ -36,8 +78,18 @@ Example:
 receivers:
   saphana:
     endpoint: "localhost:33015"
-    collection_interval: 10s
+    collection_interval: 60s
+    metrics:
+      saphana.cpu.used:
+        enabled: false
 ```
 
 The full list of settings exposed for this receiver are documented [here](./config.go)
 with detailed sample configurations [here](./testdata/config.yaml).
+
+## Metrics
+
+Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml). Further details of the monitoring queries used to collect them may be found in [queries.go](./queries.go).
+
+> If all of the metrics collected by a given monitoring query are marked as `enabled: false` in the receiver configration, the monitoring query will not be executed.
+
