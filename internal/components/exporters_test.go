@@ -342,6 +342,9 @@ func TestDefaultExporters(t *testing.T) {
 			skipLifecycle: true, // Requires credentials to be able to successfully load the exporter
 		},
 		{
+			exporter: "googlecloudpubsub",
+		},
+		{
 			exporter: "honeycomb",
 			getConfigFn: func() config.Exporter {
 				cfg := expFactories["honeycomb"].CreateDefaultConfig().(*honeycombexporter.Config)

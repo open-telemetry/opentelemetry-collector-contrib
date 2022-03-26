@@ -34,6 +34,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver"
@@ -112,6 +113,14 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver: "googlecloudspanner",
+		},
+		{
+			receiver: "googlecloudpubsub",
+			getConfigFn: func() config.Receiver {
+				cfg := rcvrFactories["googlecloudpubsub"].CreateDefaultConfig().(*googlecloudpubsubreceiver.Config)
+				cfg.Subscription = "projects/otel/subscriptions/test"
+				return cfg
+			},
 		},
 		{
 			receiver: "hostmetrics",
