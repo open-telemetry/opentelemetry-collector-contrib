@@ -63,20 +63,20 @@ func (c *CPUUtilizationCalculator) CalculateAndRecord(now pdata.Timestamp, cpuTi
 
 // cpuUtilization calculates the difference between 2 cpu.TimesStat using spent time between them
 func cpuUtilization(timeStart cpu.TimesStat, timeEnd cpu.TimesStat) CPUUtilization {
-	totalSeconds := timeEnd.Total() - timeStart.Total()
-	if totalSeconds <= 0 {
+	elapsedSeconds := timeEnd.Total() - timeStart.Total()
+	if elapsedSeconds <= 0 {
 		return CPUUtilization{CPU: timeStart.CPU}
 	}
 	return CPUUtilization{
 		CPU:     timeStart.CPU,
-		User:    (timeEnd.User - timeStart.User) / totalSeconds,
-		System:  (timeEnd.System - timeStart.System) / totalSeconds,
-		Idle:    (timeEnd.Idle - timeStart.Idle) / totalSeconds,
-		Nice:    (timeEnd.Nice - timeStart.Nice) / totalSeconds,
-		Iowait:  (timeEnd.Iowait - timeStart.Iowait) / totalSeconds,
-		Irq:     (timeEnd.Irq - timeStart.Irq) / totalSeconds,
-		Softirq: (timeEnd.Softirq - timeStart.Softirq) / totalSeconds,
-		Steal:   (timeEnd.Steal - timeStart.Steal) / totalSeconds,
+		User:    (timeEnd.User - timeStart.User) / elapsedSeconds,
+		System:  (timeEnd.System - timeStart.System) / elapsedSeconds,
+		Idle:    (timeEnd.Idle - timeStart.Idle) / elapsedSeconds,
+		Nice:    (timeEnd.Nice - timeStart.Nice) / elapsedSeconds,
+		Iowait:  (timeEnd.Iowait - timeStart.Iowait) / elapsedSeconds,
+		Irq:     (timeEnd.Irq - timeStart.Irq) / elapsedSeconds,
+		Softirq: (timeEnd.Softirq - timeStart.Softirq) / elapsedSeconds,
+		Steal:   (timeEnd.Steal - timeStart.Steal) / elapsedSeconds,
 	}
 }
 
