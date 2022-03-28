@@ -4,28 +4,57 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.28.0] - 2022-03-17
+## [0.28.0] - 2022-03-28
 
-### Changed
-- Switch to original go-syslog library, restoring strict enforcement of SD-NAME length. ([PR439](https://github.com/open-telemetry/opentelemetry-log-collection/pull/439))
+### Breaking Changes
+- `$` has been removed from [field](/docs/types/field.md) syntax. ([PR364](https://github.com/open-telemetry/opentelemetry-log-collection/pull/364))
+  - Use `body` instead of `$body`.
+    - e.g. `body.foo`.
+  - Use `attributes` instead of `$attributes`.
+    - e.g. `attributes.["log.file.name"]`
+  - Use `resource` instead of `$resource`.
+    - e.g. `resource.["host.name"]`
+  - There is no longer a default top-level field. 
+    - i.e. `foo` is no longer equivalent to `$body.foo`. (It is invalid.)
+  - A top-level field MUST be specified at the beginning of each field. 
+    - e.g. `body.foo`, `attributes.foo`, or `resource.foo`.
+- `entry.Entry.Timestamp` field is no longer required and is not initialized by default. ([PR370](https://github.com/open-telemetry/opentelemetry-log-collection/pull/370))
+  - The value can be set using the `timestamp` block on any parser, or the using the standalone `time_parser` operator.
+- Removed `metadata` operator. ([PR429](https://github.com/open-telemetry/opentelemetry-log-collection/pull/429))
+  - Use `add`, `copy`, or `move` operators instead.
+- Removed `restructure` operator. ([PR371](https://github.com/open-telemetry/opentelemetry-log-collection/pull/371))
+  - Use `add`, `copy`, `flatten`, `move`, `remove`, and `retain` operators instead.
+- Changed the names of attributes added by `file_input` operator to match new [semantic conventions](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/semantic_conventions/media.md#log-file). ([PR372](https://github.com/open-telemetry/opentelemetry-log-collection/pull/372))
+- Switch to original `go-syslog` library, restoring strict enforcement of SD-NAME length. ([PR439](https://github.com/open-telemetry/opentelemetry-log-collection/pull/439))
+
 
 ## [0.27.2] - 2022-03-17
 
 ### Fixed
 - Revert version update on go-syslog, which introduced incompatibility with 386 architecture. ([PR438](https://github.com/open-telemetry/opentelemetry-log-collection/pull/438))
 
+
 ## [0.27.1] - 2022-03-16
 
 ### Fixed
 - Issue where pipelines could fail to build when running on Go 1.18. ([PR347](https://github.com/open-telemetry/opentelemetry-log-collection/pull/347))
 
+
 ## [0.27.0] - 2022-03-10
 
 ### Added
-- `csv_parser` can now handle fields containing line breaks. ([PR425]https://github.com/open-telemetry/opentelemetry-log-collection/pull/425)
+- `entry.Entry.ObservedTimestamp` field. This is initialized automatically when an entry is created. ([PR370](https://github.com/open-telemetry/opentelemetry-log-collection/pull/370))
+- `entry.Entry.ScopeName` field. This field will be used in the collector to group related log entries. ([PR397](https://github.com/open-telemetry/opentelemetry-log-collection/pull/397))
+  - A `scope_name` block is now supported by every parser. Alternately, use the standalone `scope_name_parser` operator.
+
+
+## [0.27.0] - 2022-03-10
+
+### Added
+- `csv_parser` can now handle fields containing line breaks. ([PR425](https://github.com/open-telemetry/opentelemetry-log-collection/pull/425))
 
 ### Fixed
-- Issue where `recombine` operator would combine entire file in certain specific circumstances. ([PR416]https://github.com/open-telemetry/opentelemetry-log-collection/pull/416)
+- Issue where `recombine` operator would combine entire file in certain specific circumstances. ([PR416](https://github.com/open-telemetry/opentelemetry-log-collection/pull/416))
 
 
 ## [0.26.0] - 2022-02-25
