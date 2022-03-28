@@ -1,8 +1,11 @@
 name: riakreceiver
 
-attributes:
+resource_attributes:
   riak.node.name:
     description: The name this node uses to identify itself.
+    type: string
+
+attributes:
   request:
     description: The request operation type.
     enum:

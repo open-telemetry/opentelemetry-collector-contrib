@@ -74,10 +74,6 @@ func (r *riakScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 // collectStats collects metrics
 func (r *riakScraper) collectStats(stat *model.Stats) (pdata.Metrics, error) {
 	now := pdata.NewTimestampFromTime(time.Now())
-	md := r.mb.NewMetricData()
-
-	md.ResourceMetrics().At(0).Resource().Attributes().UpsertString(metadata.A.RiakNodeName, stat.Node)
-
 	var errors scrapererror.ScrapeErrors
 	//scrape node.operation.count metric
 	r.mb.RecordRiakNodeOperationCountDataPoint(now, stat.NodeGets, metadata.AttributeRequest.Get)
@@ -102,6 +98,5 @@ func (r *riakScraper) collectStats(stat *model.Stats) (pdata.Metrics, error) {
 	r.mb.RecordRiakVnodeIndexOperationCountDataPoint(now, stat.VnodeIndexWrites, metadata.AttributeOperation.Write)
 	r.mb.RecordRiakVnodeIndexOperationCountDataPoint(now, stat.VnodeIndexDeletes, metadata.AttributeOperation.Delete)
 
-	r.mb.Emit(md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics())
-	return md, errors.Combine()
+	return r.mb.Emit(metadata.WithRiakNodeName(stat.Node)), errors.Combine()
 }

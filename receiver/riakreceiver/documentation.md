@@ -24,10 +24,15 @@ metrics:
     enabled: <true|false>
 ```
 
-## Attributes
+## Resource attributes
+
+| Name | Description | Type |
+| ---- | ----------- | ---- |
+| riak.node.name | The name this node uses to identify itself. | String |
+
+## Metric attributes
 
 | Name | Description |
 | ---- | ----------- |
 | operation | The operation type for index operations. |
 | request | The request operation type. |
-| riak.node.name | The name this node uses to identify itself. |
