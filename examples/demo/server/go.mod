@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/examples/demo/s
 go 1.17
 
 require (
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.30.0
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.31.0
 	go.opentelemetry.io/otel v1.6.1
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric v0.28.0
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v0.28.0
