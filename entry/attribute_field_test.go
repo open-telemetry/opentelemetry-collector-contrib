@@ -15,42 +15,81 @@
 package entry
 
 import (
+	"encoding/json"
+	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	yaml "gopkg.in/yaml.v2"
 )
 
 func TestAttributeFieldGet(t *testing.T) {
 	cases := []struct {
 		name       string
-		attributes map[string]interface{}
 		field      Field
+		attributes map[string]interface{}
 		expected   interface{}
 		expectedOK bool
 	}{
 		{
+			"Uninitialized",
+			NewAttributeField("nonexistent"),
+			nil,
+			"",
+			false,
+		},
+		{
+			"RootField",
+			NewAttributeField(),
+			testMap(),
+			testMap(),
+			true,
+		},
+		{
 			"Simple",
+			NewAttributeField("test"),
 			map[string]interface{}{
 				"test": "val",
 			},
-			NewAttributeField("test"),
 			"val",
 			true,
 		},
 		{
 			"NonexistentKey",
+			NewAttributeField("nonexistent"),
 			map[string]interface{}{
 				"test": "val",
 			},
-			NewAttributeField("nonexistent"),
 			nil,
 			false,
 		},
 		{
-			"NilMap",
+			"MapField",
+			NewAttributeField("map_key"),
+			testMap(),
+			nestedMap(),
+			true,
+		},
+		{
+			"NestedField",
+			NewAttributeField("map_key", "nested_key"),
+			testMap(),
+			"nested_value",
+			true,
+		},
+		{
+			"MissingField",
+			NewAttributeField("invalid"),
+			testMap(),
 			nil,
-			NewAttributeField("nonexistent"),
-			"",
+			false,
+		},
+		{
+			"InvalidField",
+			NewAttributeField("simple_key", "nested_key"),
+			testMap(),
+			nil,
 			false,
 		},
 	}
@@ -69,41 +108,82 @@ func TestAttributeFieldGet(t *testing.T) {
 func TestAttributeFieldDelete(t *testing.T) {
 	cases := []struct {
 		name               string
-		attributes         map[string]interface{}
 		field              Field
-		expected           interface{}
-		expectedOK         bool
+		attributes         map[string]interface{}
 		expectedAttributes map[string]interface{}
+		expectedReturned   interface{}
+		expectedOK         bool
 	}{
 		{
-			"Simple",
-			map[string]interface{}{
-				"test": "val",
-			},
-			NewAttributeField("test"),
-			"val",
-			true,
-			map[string]interface{}{},
-		},
-		{
-			"NonexistentKey",
-			map[string]interface{}{
-				"test": "val",
-			},
+			"Uninitialized",
 			NewAttributeField("nonexistent"),
 			nil,
-			false,
-			map[string]interface{}{
-				"test": "val",
-			},
-		},
-		{
-			"NilMap",
 			nil,
-			NewAttributeField("nonexistent"),
 			"",
 			false,
+		},
+		{
+			"SimpleKey",
+			NewAttributeField("simple_key"),
+			testMap(),
+			map[string]interface{}{
+				"map_key": nestedMap(),
+			},
+			"simple_value",
+			true,
+		},
+		{
+			"EmptyAttributesAndField",
+			NewAttributeField(),
+			map[string]interface{}{},
 			nil,
+			map[string]interface{}{},
+			true,
+		},
+		{
+			"EmptyField",
+			NewAttributeField(),
+			testMap(),
+			nil,
+			testMap(),
+			true,
+		},
+		{
+			"MissingKey",
+			NewAttributeField("missing_key"),
+			testMap(),
+			testMap(),
+			nil,
+			false,
+		},
+		{
+			"NestedKey",
+			NewAttributeField("map_key", "nested_key"),
+			testMap(),
+			map[string]interface{}{
+				"simple_key": "simple_value",
+				"map_key":    map[string]interface{}{},
+			},
+			"nested_value",
+			true,
+		},
+		{
+			"MapKey",
+			NewAttributeField("map_key"),
+			testMap(),
+			map[string]interface{}{
+				"simple_key": "simple_value",
+			},
+			nestedMap(),
+			true,
+		},
+		{
+			"InvalidNestedKey",
+			NewAttributeField("simple_key", "missing"),
+			testMap(),
+			testMap(),
+			nil,
+			false,
 		},
 	}
 
@@ -113,7 +193,8 @@ func TestAttributeFieldDelete(t *testing.T) {
 			entry.Attributes = tc.attributes
 			val, ok := entry.Delete(tc.field)
 			require.Equal(t, tc.expectedOK, ok)
-			require.Equal(t, tc.expected, val)
+			require.Equal(t, tc.expectedReturned, val)
+			assert.Equal(t, tc.expectedAttributes, entry.Attributes)
 		})
 	}
 }
@@ -121,16 +202,16 @@ func TestAttributeFieldDelete(t *testing.T) {
 func TestAttributeFieldSet(t *testing.T) {
 	cases := []struct {
 		name        string
-		attributes  map[string]interface{}
 		field       Field
+		attributes  map[string]interface{}
 		val         interface{}
 		expected    map[string]interface{}
 		expectedErr bool
 	}{
 		{
-			"Simple",
-			map[string]interface{}{},
+			"Uninitialized",
 			NewAttributeField("test"),
+			nil,
 			"val",
 			map[string]interface{}{
 				"test": "val",
@@ -138,21 +219,52 @@ func TestAttributeFieldSet(t *testing.T) {
 			false,
 		},
 		{
-			"Overwrite",
+			"OverwriteRoot",
+			NewAttributeField(),
+			testMap(),
+			"val",
+			testMap(),
+			true,
+		},
+		{
+			"OverwriteRootWithMap",
+			NewAttributeField(),
+			map[string]interface{}{},
+			testMap(),
+			testMap(),
+			false,
+		},
+		{
+			"MergeOverRoot",
+			NewAttributeField(),
+			map[string]interface{}{
+				"simple_key": "clobbered",
+				"hello":      "world",
+			},
+			testMap(),
+			map[string]interface{}{
+				"simple_key": "simple_value",
+				"map_key":    nestedMap(),
+				"hello":      "world",
+			},
+			false,
+		},
+		{
+			"Simple",
+			NewAttributeField("test"),
+			map[string]interface{}{},
+			"val",
+			map[string]interface{}{
+				"test": "val",
+			},
+			false,
+		},
+		{
+			"OverwriteString",
+			NewAttributeField("test"),
 			map[string]interface{}{
 				"test": "original",
 			},
-			NewAttributeField("test"),
-			"val",
-			map[string]interface{}{
-				"test": "val",
-			},
-			false,
-		},
-		{
-			"NilMap",
-			nil,
-			NewAttributeField("test"),
 			"val",
 			map[string]interface{}{
 				"test": "val",
@@ -161,13 +273,84 @@ func TestAttributeFieldSet(t *testing.T) {
 		},
 		{
 			"NonString",
-			map[string]interface{}{},
 			NewAttributeField("test"),
+			map[string]interface{}{},
 			123,
 			map[string]interface{}{
-				"test": "val",
+				"test": 123,
 			},
-			true,
+			false,
+		},
+		{
+			"Map",
+			NewAttributeField("test"),
+			map[string]interface{}{},
+			map[string]interface{}{
+				"test": 123,
+			},
+			map[string]interface{}{
+				"test": map[string]interface{}{
+					"test": 123,
+				},
+			},
+			false,
+		},
+		{
+			"NewMapValue",
+			NewAttributeField(),
+			map[string]interface{}{},
+			testMap(),
+			testMap(),
+			false,
+		},
+		{
+			"NewRootField",
+			NewAttributeField("new_key"),
+			map[string]interface{}{},
+			"new_value",
+			map[string]interface{}{
+				"new_key": "new_value",
+			},
+			false,
+		},
+		{
+			"NewNestedField",
+			NewAttributeField("new_key", "nested_key"),
+			map[string]interface{}{},
+			"nested_value",
+			map[string]interface{}{
+				"new_key": map[string]interface{}{
+					"nested_key": "nested_value",
+				},
+			},
+			false,
+		},
+		{
+			"OverwriteNestedMap",
+			NewAttributeField("map_key"),
+			testMap(),
+			"new_value",
+			map[string]interface{}{
+				"simple_key": "simple_value",
+				"map_key":    "new_value",
+			},
+			false,
+		},
+		{
+			"MergedNestedValue",
+			NewAttributeField("map_key"),
+			testMap(),
+			map[string]interface{}{
+				"merged_key": "merged_value",
+			},
+			map[string]interface{}{
+				"simple_key": "simple_value",
+				"map_key": map[string]interface{}{
+					"nested_key": "nested_value",
+					"merged_key": "merged_value",
+				},
+			},
+			false,
 		},
 	}
 
@@ -186,27 +369,157 @@ func TestAttributeFieldSet(t *testing.T) {
 	}
 }
 
-func TestAttributeFieldString(t *testing.T) {
+func TestAttributeFieldParent(t *testing.T) {
+	t.Run("Simple", func(t *testing.T) {
+		field := AttributeField{[]string{"child"}}
+		require.Equal(t, AttributeField{[]string{}}, field.Parent())
+	})
+
+	t.Run("Root", func(t *testing.T) {
+		field := AttributeField{[]string{}}
+		require.Equal(t, AttributeField{[]string{}}, field.Parent())
+	})
+}
+
+func TestAttributeFieldChild(t *testing.T) {
+	field := AttributeField{[]string{"parent"}}
+	require.Equal(t, AttributeField{[]string{"parent", "child"}}, field.Child("child"))
+}
+
+func TestAttributeFieldMerge(t *testing.T) {
+	entry := &Entry{}
+	entry.Attributes = map[string]interface{}{"old": "values"}
+	field := AttributeField{[]string{"embedded"}}
+	values := map[string]interface{}{"new": "values"}
+	field.Merge(entry, values)
+	expected := map[string]interface{}{"embedded": values, "old": "values"}
+	require.Equal(t, expected, entry.Attributes)
+}
+
+func TestAttributeFieldMarshal(t *testing.T) {
 	cases := []struct {
-		name     string
-		field    AttributeField
-		expected string
+		name    string
+		keys    []string
+		jsonDot string
 	}{
 		{
-			"Simple",
-			AttributeField{"foo"},
-			"attributes.foo",
+			"root",
+			[]string{},
+			"attributes",
 		},
 		{
-			"Empty",
-			AttributeField{""},
-			"attributes.",
+			"standard",
+			[]string{"test"},
+			"attributes.test",
+		},
+		{
+			"bracketed",
+			[]string{"test.foo"},
+			"attributes['test.foo']",
+		},
+		{
+			"double_bracketed",
+			[]string{"test.foo", "bar"},
+			"attributes['test.foo']['bar']",
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			require.Equal(t, tc.expected, tc.field.String())
+			field := AttributeField{Keys: tc.keys}
+			yaml, err := field.MarshalYAML()
+			require.NoError(t, err)
+			require.Equal(t, tc.jsonDot, yaml)
+
+			json, err := field.MarshalJSON()
+			require.NoError(t, err)
+			require.Equal(t, []byte(fmt.Sprintf(`"%s"`, tc.jsonDot)), json)
+		})
+	}
+}
+
+func TestAttributeFieldUnmarshal(t *testing.T) {
+	cases := []struct {
+		name    string
+		jsonDot string
+		keys    []string
+	}{
+		{
+			"root",
+			"attributes",
+			[]string{},
+		},
+		{
+			"standard",
+			"attributes.test",
+			[]string{"test"},
+		},
+		{
+			"bracketed",
+			"attributes['test.foo']",
+			[]string{"test.foo"},
+		},
+		{
+			"double_bracketed",
+			"attributes['test.foo']['bar']",
+			[]string{"test.foo", "bar"},
+		},
+		{
+			"mixed",
+			"attributes['test.foo'].bar",
+			[]string{"test.foo", "bar"},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var fy AttributeField
+			err := yaml.UnmarshalStrict([]byte(tc.jsonDot), &fy)
+			require.NoError(t, err)
+			require.Equal(t, tc.keys, fy.Keys)
+
+			var fj AttributeField
+			err = json.Unmarshal([]byte(fmt.Sprintf(`"%s"`, tc.jsonDot)), &fj)
+			require.NoError(t, err)
+			require.Equal(t, tc.keys, fy.Keys)
+		})
+	}
+}
+
+func TestAttributeFieldUnmarshalFailure(t *testing.T) {
+	cases := []struct {
+		name        string
+		invalid     []byte
+		expectedErr string
+	}{
+		{
+			"must_be_string",
+			[]byte(`{"key":"value"}`),
+			"the field is not a string",
+		},
+		{
+			"must_start_with_prefix",
+			[]byte(`"test"`),
+			"must start with 'attributes'",
+		},
+		{
+			"invalid_syntax",
+			[]byte(`"test['foo'"`),
+			"found unclosed left bracket",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var fy AttributeField
+			err := yaml.UnmarshalStrict(tc.invalid, &fy)
+			require.Error(t, err)
+			require.Contains(t, err.Error(), tc.expectedErr)
+
+			var fj AttributeField
+			err = json.Unmarshal(tc.invalid, &fj)
+			require.Error(t, err)
+			require.Contains(t, err.Error(), tc.expectedErr)
 		})
 	}
 }

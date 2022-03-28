@@ -139,6 +139,56 @@ func TestBuildAndProcess(t *testing.T) {
 			},
 		},
 		{
+			"body_to_nested_attribute",
+			false,
+			func() *CopyOperatorConfig {
+				cfg := defaultCfg()
+				cfg.From = entry.NewBodyField()
+				cfg.To = entry.NewAttributeField("one", "two")
+				return cfg
+			}(),
+			newTestEntry,
+			func() *entry.Entry {
+				e := newTestEntry()
+				e.Attributes = map[string]interface{}{
+					"one": map[string]interface{}{
+						"two": map[string]interface{}{
+							"key": "val",
+							"nested": map[string]interface{}{
+								"nestedkey": "nestedval",
+							},
+						},
+					},
+				}
+				return e
+			},
+		},
+		{
+			"body_to_nested_resource",
+			false,
+			func() *CopyOperatorConfig {
+				cfg := defaultCfg()
+				cfg.From = entry.NewBodyField()
+				cfg.To = entry.NewResourceField("one", "two")
+				return cfg
+			}(),
+			newTestEntry,
+			func() *entry.Entry {
+				e := newTestEntry()
+				e.Resource = map[string]interface{}{
+					"one": map[string]interface{}{
+						"two": map[string]interface{}{
+							"key": "val",
+							"nested": map[string]interface{}{
+								"nestedkey": "nestedval",
+							},
+						},
+					},
+				}
+				return e
+			},
+		},
+		{
 			"attribute_to_body",
 			false,
 			func() *CopyOperatorConfig {
@@ -206,24 +256,24 @@ func TestBuildAndProcess(t *testing.T) {
 			},
 		},
 		{
-			"invalid_copy_obj_to_resource",
+			"invalid_copy_to_attribute_root",
 			true,
 			func() *CopyOperatorConfig {
 				cfg := defaultCfg()
-				cfg.From = entry.NewBodyField("nested")
-				cfg.To = entry.NewResourceField("invalid")
+				cfg.From = entry.NewBodyField("key")
+				cfg.To = entry.NewAttributeField()
 				return cfg
 			}(),
 			newTestEntry,
 			nil,
 		},
 		{
-			"invalid_copy_obj_to_attributes",
+			"invalid_copy_to_resource_root",
 			true,
 			func() *CopyOperatorConfig {
 				cfg := defaultCfg()
-				cfg.From = entry.NewBodyField("nested")
-				cfg.To = entry.NewAttributeField("invalid")
+				cfg.From = entry.NewBodyField("key")
+				cfg.To = entry.NewResourceField()
 				return cfg
 			}(),
 			newTestEntry,

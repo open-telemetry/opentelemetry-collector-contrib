@@ -41,6 +41,19 @@ func TestGoldenConfigs(t *testing.T) {
 			}(),
 		},
 		{
+			Name: "retain_multilevel",
+			Expect: func() *RetainOperatorConfig {
+				cfg := defaultCfg()
+				cfg.Fields = append(cfg.Fields, entry.NewBodyField("foo"))
+				cfg.Fields = append(cfg.Fields, entry.NewBodyField("one", "two"))
+				cfg.Fields = append(cfg.Fields, entry.NewAttributeField("foo"))
+				cfg.Fields = append(cfg.Fields, entry.NewAttributeField("one", "two"))
+				cfg.Fields = append(cfg.Fields, entry.NewResourceField("foo"))
+				cfg.Fields = append(cfg.Fields, entry.NewResourceField("one", "two"))
+				return cfg
+			}(),
+		},
+		{
 			Name: "retain_single_attribute",
 			Expect: func() *RetainOperatorConfig {
 				cfg := defaultCfg()

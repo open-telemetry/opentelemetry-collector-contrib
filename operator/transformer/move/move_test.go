@@ -336,7 +336,7 @@ func TestProcessAndBuild(t *testing.T) {
 		},
 		{
 			"MoveNestToResource",
-			true,
+			false,
 			func() *MoveOperatorConfig {
 				cfg := defaultCfg()
 				cfg.From = entry.NewBodyField("nested")
@@ -344,11 +344,22 @@ func TestProcessAndBuild(t *testing.T) {
 				return cfg
 			}(),
 			newTestEntry,
-			nil,
+			func() *entry.Entry {
+				e := newTestEntry()
+				e.Body = map[string]interface{}{
+					"key": "val",
+				}
+				e.Resource = map[string]interface{}{
+					"NewNested": map[string]interface{}{
+						"nestedkey": "nestedval",
+					},
+				}
+				return e
+			},
 		},
 		{
 			"MoveNestToAttribute",
-			true,
+			false,
 			func() *MoveOperatorConfig {
 				cfg := defaultCfg()
 				cfg.From = entry.NewBodyField("nested")
@@ -357,7 +368,77 @@ func TestProcessAndBuild(t *testing.T) {
 				return cfg
 			}(),
 			newTestEntry,
-			nil,
+			func() *entry.Entry {
+				e := newTestEntry()
+				e.Body = map[string]interface{}{
+					"key": "val",
+				}
+				e.Attributes = map[string]interface{}{
+					"NewNested": map[string]interface{}{
+						"nestedkey": "nestedval",
+					},
+				}
+				return e
+			},
+		},
+		{
+			"MoveNestedBodyStringToNestedAttribute",
+			false,
+			func() *MoveOperatorConfig {
+				cfg := defaultCfg()
+				cfg.From = entry.NewBodyField("nested", "nestedkey")
+				cfg.To = entry.NewAttributeField("one", "two", "three")
+
+				return cfg
+			}(),
+			newTestEntry,
+			func() *entry.Entry {
+				e := newTestEntry()
+				e.Body = map[string]interface{}{
+					"key":    "val",
+					"nested": map[string]interface{}{},
+				}
+				e.Attributes = map[string]interface{}{
+					"one": map[string]interface{}{
+						"two": map[string]interface{}{
+							"three": "nestedval",
+						},
+					},
+				}
+				return e
+			},
+		},
+		{
+			"MoveAttributeTodBody",
+			false,
+			func() *MoveOperatorConfig {
+				cfg := defaultCfg()
+				cfg.From = entry.NewAttributeField("one", "two", "three")
+				cfg.To = entry.NewBodyField()
+
+				return cfg
+			}(),
+			func() *entry.Entry {
+				e := newTestEntry()
+				e.Attributes = map[string]interface{}{
+					"one": map[string]interface{}{
+						"two": map[string]interface{}{
+							"three": "nestedval",
+						},
+					},
+				}
+				return e
+			},
+			func() *entry.Entry {
+				e := newTestEntry()
+				e.Body = "nestedval"
+				e.Attributes = map[string]interface{}{
+					"one": map[string]interface{}{
+						"two": map[string]interface{}{},
+					},
+				}
+				return e
+			},
 		},
 		{
 			"ReplaceBodyObj",

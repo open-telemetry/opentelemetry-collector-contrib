@@ -73,6 +73,69 @@ func TestFilterOperator(t *testing.T) {
 			true,
 		},
 		{
+			"MatchBodyNested",
+			&entry.Entry{
+				Body: map[string]interface{}{
+					"one": map[string]interface{}{
+						"two": map[string]interface{}{
+							"key": "value",
+						},
+					},
+				},
+			},
+			`body.one.two.key == "value"`,
+			true,
+		},
+		{
+			"MatchAttributeNested",
+			&entry.Entry{
+				Body: map[string]interface{}{
+					"message": "test_message",
+				},
+				Attributes: map[string]interface{}{
+					"one": map[string]interface{}{
+						"two": map[string]interface{}{
+							"key": "value",
+						},
+					},
+				},
+			},
+			`attributes.one.two.key == "value"`,
+			true,
+		},
+		{
+			"MatchResourceNested",
+			&entry.Entry{
+				Body: map[string]interface{}{
+					"message": "test_message",
+				},
+				Resource: map[string]interface{}{
+					"one": map[string]interface{}{
+						"two": map[string]interface{}{
+							"key": "value",
+						},
+					},
+				},
+			},
+			`resource.one.two.key == "value"`,
+			true,
+		},
+		{
+			"MatchResourceBracketed",
+			&entry.Entry{
+				Body: map[string]interface{}{
+					"message": "test_message",
+				},
+				Resource: map[string]interface{}{
+					"one": map[string]interface{}{
+						"two.stilltwo": "value",
+					},
+				},
+			},
+			`resource.one["two.stilltwo"] == "value"`,
+			true,
+		},
+		{
 			"NoMatchAttribute",
 			&entry.Entry{
 				Body: map[string]interface{}{

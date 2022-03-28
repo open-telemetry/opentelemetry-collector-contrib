@@ -59,6 +59,24 @@ func TestGoldenConfig(t *testing.T) {
 				return cfg
 			}(),
 		},
+		{
+			Name: "attribute_to_nested_attribute",
+			Expect: func() *CopyOperatorConfig {
+				cfg := defaultCfg()
+				cfg.From = entry.NewAttributeField("key")
+				cfg.To = entry.NewAttributeField("one", "two", "three")
+				return cfg
+			}(),
+		},
+		{
+			Name: "resource_to_nested_resource",
+			Expect: func() *CopyOperatorConfig {
+				cfg := defaultCfg()
+				cfg.From = entry.NewResourceField("key")
+				cfg.To = entry.NewResourceField("one", "two", "three")
+				return cfg
+			}(),
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
