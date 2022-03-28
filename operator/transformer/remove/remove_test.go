@@ -88,6 +88,60 @@ func TestProcessAndBuild(t *testing.T) {
 			false,
 		},
 		{
+			"remove_nested_attribute",
+			func() *RemoveOperatorConfig {
+				cfg := defaultCfg()
+				cfg.Field = newAttributeField("nested", "nestedkey")
+				return cfg
+			}(),
+			func() *entry.Entry {
+				e := newTestEntry()
+				e.Attributes = map[string]interface{}{
+					"key": "val",
+					"nested": map[string]interface{}{
+						"nestedkey": "nestedval",
+					},
+				}
+				return e
+			},
+			func() *entry.Entry {
+				e := newTestEntry()
+				e.Attributes = map[string]interface{}{
+					"key":    "val",
+					"nested": map[string]interface{}{},
+				}
+				return e
+			},
+			false,
+		},
+		{
+			"remove_nested_resource",
+			func() *RemoveOperatorConfig {
+				cfg := defaultCfg()
+				cfg.Field = newResourceField("nested", "nestedkey")
+				return cfg
+			}(),
+			func() *entry.Entry {
+				e := newTestEntry()
+				e.Resource = map[string]interface{}{
+					"key": "val",
+					"nested": map[string]interface{}{
+						"nestedkey": "nestedval",
+					},
+				}
+				return e
+			},
+			func() *entry.Entry {
+				e := newTestEntry()
+				e.Resource = map[string]interface{}{
+					"key":    "val",
+					"nested": map[string]interface{}{},
+				}
+				return e
+			},
+			false,
+		},
+		{
 			"remove_obj",
 			func() *RemoveOperatorConfig {
 				cfg := defaultCfg()

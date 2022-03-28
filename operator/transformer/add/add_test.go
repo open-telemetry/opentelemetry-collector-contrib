@@ -116,13 +116,13 @@ func TestProcessAndBuild(t *testing.T) {
 			func() *AddOperatorConfig {
 				cfg := defaultCfg()
 				cfg.Field = entry.NewAttributeField("new")
-				cfg.Value = "newVal"
+				cfg.Value = "some.attribute"
 				return cfg
 			}(),
 			newTestEntry,
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Attributes = map[string]interface{}{"new": "newVal"}
+				e.Attributes = map[string]interface{}{"new": "some.attribute"}
 				return e
 			},
 			false,
@@ -132,13 +132,13 @@ func TestProcessAndBuild(t *testing.T) {
 			func() *AddOperatorConfig {
 				cfg := defaultCfg()
 				cfg.Field = entry.NewResourceField("new")
-				cfg.Value = "newVal"
+				cfg.Value = "some.resource"
 				return cfg
 			}(),
 			newTestEntry,
 			func() *entry.Entry {
 				e := newTestEntry()
-				e.Resource = map[string]interface{}{"new": "newVal"}
+				e.Resource = map[string]interface{}{"new": "some.resource"}
 				return e
 			},
 			false,
@@ -233,8 +233,80 @@ func TestProcessAndBuild(t *testing.T) {
 				return cfg
 			}(),
 			newTestEntry,
-			nil,
-			true,
+			func() *entry.Entry {
+				e := newTestEntry()
+				e.Resource = map[string]interface{}{
+					"new": 1,
+				}
+				return e
+			},
+			false,
+		},
+		{
+			"add_int_to_attributes",
+			func() *AddOperatorConfig {
+				cfg := defaultCfg()
+				cfg.Field = entry.NewAttributeField("new")
+				cfg.Value = 1
+				return cfg
+			}(),
+			newTestEntry,
+			func() *entry.Entry {
+				e := newTestEntry()
+				e.Attributes = map[string]interface{}{
+					"new": 1,
+				}
+				return e
+			},
+			false,
+		},
+		{
+			"add_nested_to_attributes",
+			func() *AddOperatorConfig {
+				cfg := defaultCfg()
+				cfg.Field = entry.NewAttributeField("one", "two")
+				cfg.Value = map[string]interface{}{
+					"new": 1,
+				}
+				return cfg
+			}(),
+			newTestEntry,
+			func() *entry.Entry {
+				e := newTestEntry()
+				e.Attributes = map[string]interface{}{
+					"one": map[string]interface{}{
+						"two": map[string]interface{}{
+							"new": 1,
+						},
+					},
+				}
+				return e
+			},
+			false,
+		},
+		{
+			"add_nested_to_resource",
+			func() *AddOperatorConfig {
+				cfg := defaultCfg()
+				cfg.Field = entry.NewResourceField("one", "two")
+				cfg.Value = map[string]interface{}{
+					"new": 1,
+				}
+				return cfg
+			}(),
+			newTestEntry,
+			func() *entry.Entry {
+				e := newTestEntry()
+				e.Resource = map[string]interface{}{
+					"one": map[string]interface{}{
+						"two": map[string]interface{}{
+							"new": 1,
+						},
+					},
+				}
+				return e
+			},
+			false,
 		},
 	}
 	for _, tc := range cases {

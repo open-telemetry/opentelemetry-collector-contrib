@@ -29,6 +29,11 @@ func TestFieldUnmarshalJSON(t *testing.T) {
 		expected Field
 	}{
 		{
+			"BodyLong",
+			[]byte(`"body"`),
+			NewBodyField(),
+		},
+		{
 			"SimpleField",
 			[]byte(`"body.test1"`),
 			NewBodyField("test1"),
@@ -39,9 +44,80 @@ func TestFieldUnmarshalJSON(t *testing.T) {
 			NewBodyField("test1", "test2"),
 		},
 		{
-			"BodyLong",
-			[]byte(`"body"`),
-			NewBodyField(),
+			"BracketedField",
+			[]byte(`"body.test1['file.name']"`),
+			NewBodyField("test1", "file.name"),
+		},
+		{
+			"DoubleBracketedField",
+			[]byte(`"body.test1['file.details']['file.name']"`),
+			NewBodyField("test1", "file.details", "file.name"),
+		},
+		{
+			"PostBracketField",
+			[]byte(`"body.test1['file.details'].name"`),
+			NewBodyField("test1", "file.details", "name"),
+		},
+		{
+			"AttributesSimpleField",
+			[]byte(`"attributes.test1"`),
+			NewAttributeField("test1"),
+		},
+		{
+			"AttributesComplexField",
+			[]byte(`"attributes.test1.test2"`),
+			NewAttributeField("test1", "test2"),
+		},
+		{
+			"AttributesBracketedField",
+			[]byte(`"attributes.test1['file.name']"`),
+			NewAttributeField("test1", "file.name"),
+		},
+		{
+			"AttributesDoubleBracketedField",
+			[]byte(`"attributes.test1['file.details']['file.name']"`),
+			NewAttributeField("test1", "file.details", "file.name"),
+		},
+		{
+			"AttributesPostBracketField",
+			[]byte(`"attributes.test1['file.details'].name"`),
+			NewAttributeField("test1", "file.details", "name"),
+		},
+		{
+			"AttributesSimpleField",
+			[]byte(`"attributes.test1"`),
+			NewAttributeField("test1"),
+		},
+
+		{
+			"ResourceSimpleField",
+			[]byte(`"resource.test1"`),
+			NewResourceField("test1"),
+		},
+		{
+			"ResourceComplexField",
+			[]byte(`"resource.test1.test2"`),
+			NewResourceField("test1", "test2"),
+		},
+		{
+			"ResourceBracketedField",
+			[]byte(`"resource.test1['file.name']"`),
+			NewResourceField("test1", "file.name"),
+		},
+		{
+			"ResourceDoubleBracketedField",
+			[]byte(`"resource.test1['file.details']['file.name']"`),
+			NewResourceField("test1", "file.details", "file.name"),
+		},
+		{
+			"ResourcePostBracketField",
+			[]byte(`"resource.test1['file.details'].name"`),
+			NewResourceField("test1", "file.details", "name"),
+		},
+		{
+			"ResourceSimpleField",
+			[]byte(`"resource.test1"`),
+			NewResourceField("test1"),
 		},
 	}
 
@@ -50,18 +126,47 @@ func TestFieldUnmarshalJSON(t *testing.T) {
 			var f Field
 			err := json.Unmarshal(tc.input, &f)
 			require.NoError(t, err)
-
 			require.Equal(t, tc.expected, f)
 		})
 	}
 }
 
 func TestFieldUnmarshalJSONFailure(t *testing.T) {
-	invalidField := []byte(`{"key":"value"}`)
-	var f Field
-	err := json.Unmarshal(invalidField, &f)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "cannot unmarshal object into Go value of type string")
+	cases := []struct {
+		name     string
+		input    []byte
+		expected string
+	}{
+		{
+			"Bool",
+			[]byte(`"bool"`),
+			"unrecognized prefix",
+		},
+		{
+			"Object",
+			[]byte(`{"key":"value"}`),
+			"cannot unmarshal object into Go value of type string",
+		},
+		{
+			"AttributesRoot",
+			[]byte(`"attributes"`),
+			"attributes cannot be referenced without subfield",
+		},
+		{
+			"ResourceRoot",
+			[]byte(`"resource"`),
+			"resource cannot be referenced without subfield",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var f Field
+			err := json.Unmarshal(tc.input, &f)
+			require.Error(t, err)
+			require.Contains(t, err.Error(), tc.expected)
+		})
+	}
 }
 
 func TestFieldMarshalJSON(t *testing.T) {
@@ -71,6 +176,11 @@ func TestFieldMarshalJSON(t *testing.T) {
 		expected []byte
 	}{
 		{
+			"BodyRoot",
+			NewBodyField(),
+			[]byte(`"body"`),
+		},
+		{
 			"SimpleField",
 			NewBodyField("test1"),
 			[]byte(`"body.test1"`),
@@ -80,18 +190,12 @@ func TestFieldMarshalJSON(t *testing.T) {
 			NewBodyField("test1", "test2"),
 			[]byte(`"body.test1.test2"`),
 		},
-		{
-			"BodyLong",
-			NewBodyField(),
-			[]byte(`"body"`),
-		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			res, err := json.Marshal(tc.input)
 			require.NoError(t, err)
-
 			require.Equal(t, tc.expected, res)
 		})
 	}
@@ -104,7 +208,7 @@ func TestFieldUnmarshalYAML(t *testing.T) {
 		expected Field
 	}{
 		{
-			"Root",
+			"BodyRoot",
 			[]byte(`"body"`),
 			NewBodyField(),
 		},
@@ -137,11 +241,41 @@ func TestFieldUnmarshalYAML(t *testing.T) {
 }
 
 func TestFieldUnmarshalYAMLFailure(t *testing.T) {
-	invalidField := []byte(`invalid: field`)
-	var f Field
-	err := yaml.UnmarshalStrict(invalidField, &f)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "cannot unmarshal !!map into string")
+	cases := []struct {
+		name     string
+		input    []byte
+		expected string
+	}{
+		{
+			"Bool",
+			[]byte(`bool`),
+			"unrecognized prefix",
+		},
+		{
+			"Map",
+			[]byte(`invalid: field`),
+			"cannot unmarshal !!map into string",
+		},
+		{
+			"AttributesRoot",
+			[]byte(`attributes`),
+			"attributes cannot be referenced without subfield",
+		},
+		{
+			"ResourceRoot",
+			[]byte(`resource`),
+			"resource cannot be referenced without subfield",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var f Field
+			err := yaml.UnmarshalStrict(tc.input, &f)
+			require.Error(t, err)
+			require.Contains(t, err.Error(), tc.expected)
+		})
+	}
 }
 
 func TestFieldMarshalYAML(t *testing.T) {
@@ -151,7 +285,7 @@ func TestFieldMarshalYAML(t *testing.T) {
 		expected string
 	}{
 		{
-			"Body",
+			"BodyRoot",
 			NewBodyField(),
 			"body\n",
 		},
@@ -212,7 +346,7 @@ func TestFieldMarshalYAML(t *testing.T) {
 	}
 }
 
-func TestSplitField(t *testing.T) {
+func TestFromJSONDot(t *testing.T) {
 	cases := []struct {
 		name      string
 		input     string
@@ -243,7 +377,7 @@ func TestSplitField(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			s, err := splitField(tc.input)
+			s, err := fromJSONDot(tc.input)
 			if tc.expectErr {
 				require.Error(t, err)
 				return
@@ -265,10 +399,4 @@ func TestFieldFromStringWithResource(t *testing.T) {
 	field, err := NewField(`resource["test"]`)
 	require.NoError(t, err)
 	require.Equal(t, "resource.test", field.String())
-}
-
-func TestFieldFromStringWithInvalidResource(t *testing.T) {
-	_, err := NewField(`resource["test"]["key"]`)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "resource fields cannot be nested")
 }

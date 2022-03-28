@@ -133,6 +133,24 @@ func TestGoldenConfig(t *testing.T) {
 			}(),
 		},
 		{
+			Name: "move_nested_body_to_nested_attribute",
+			Expect: func() *MoveOperatorConfig {
+				cfg := defaultCfg()
+				cfg.From = entry.NewBodyField("one", "two")
+				cfg.To = entry.NewAttributeField("three", "four")
+				return cfg
+			}(),
+		},
+		{
+			Name: "move_nested_body_to_nested_resource",
+			Expect: func() *MoveOperatorConfig {
+				cfg := defaultCfg()
+				cfg.From = entry.NewBodyField("one", "two")
+				cfg.To = entry.NewResourceField("three", "four")
+				return cfg
+			}(),
+		},
+		{
 			Name: "replace_body",
 			Expect: func() *MoveOperatorConfig {
 				cfg := defaultCfg()

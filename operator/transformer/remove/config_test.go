@@ -71,6 +71,30 @@ func TestGoldenConfig(t *testing.T) {
 				return cfg
 			}(),
 		},
+		{
+			Name: "remove_nested_body",
+			Expect: func() *RemoveOperatorConfig {
+				cfg := defaultCfg()
+				cfg.Field = newBodyField("one", "two")
+				return cfg
+			}(),
+		},
+		{
+			Name: "remove_nested_attribute",
+			Expect: func() *RemoveOperatorConfig {
+				cfg := defaultCfg()
+				cfg.Field = newAttributeField("one", "two")
+				return cfg
+			}(),
+		},
+		{
+			Name: "remove_nested_resource",
+			Expect: func() *RemoveOperatorConfig {
+				cfg := defaultCfg()
+				cfg.Field = newResourceField("one", "two")
+				return cfg
+			}(),
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
@@ -88,12 +112,12 @@ func newBodyField(keys ...string) rootableField {
 	return rootableField{Field: field}
 }
 
-func newResourceField(key string) rootableField {
-	field := entry.NewResourceField(key)
+func newResourceField(keys ...string) rootableField {
+	field := entry.NewResourceField(keys...)
 	return rootableField{Field: field}
 }
 
-func newAttributeField(key string) rootableField {
-	field := entry.NewAttributeField(key)
+func newAttributeField(keys ...string) rootableField {
+	field := entry.NewAttributeField(keys...)
 	return rootableField{Field: field}
 }

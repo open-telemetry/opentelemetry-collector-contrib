@@ -101,6 +101,82 @@ func TestBuildAndProcess(t *testing.T) {
 			},
 		},
 		{
+			"retain_multilevel",
+			false,
+			func() *RetainOperatorConfig {
+				cfg := defaultCfg()
+				cfg.Fields = append(cfg.Fields, entry.NewBodyField("foo"))
+				cfg.Fields = append(cfg.Fields, entry.NewBodyField("one", "two"))
+				cfg.Fields = append(cfg.Fields, entry.NewAttributeField("foo"))
+				cfg.Fields = append(cfg.Fields, entry.NewAttributeField("one", "two"))
+				cfg.Fields = append(cfg.Fields, entry.NewResourceField("foo"))
+				cfg.Fields = append(cfg.Fields, entry.NewResourceField("one", "two"))
+				return cfg
+			}(),
+			func() *entry.Entry {
+				e := newTestEntry()
+				e.Body = map[string]interface{}{
+					"foo": "bar",
+					"one": map[string]interface{}{
+						"two": map[string]interface{}{
+							"keepme": 1,
+						},
+						"deleteme": "yes",
+					},
+					"hello": "world",
+				}
+				e.Attributes = map[string]interface{}{
+					"foo": "bar",
+					"one": map[string]interface{}{
+						"two": map[string]interface{}{
+							"keepme": 1,
+						},
+						"deleteme": "yes",
+					},
+					"hello": "world",
+				}
+				e.Resource = map[string]interface{}{
+					"foo": "bar",
+					"one": map[string]interface{}{
+						"two": map[string]interface{}{
+							"keepme": 1,
+						},
+						"deleteme": "yes",
+					},
+					"hello": "world",
+				}
+				return e
+			},
+			func() *entry.Entry {
+				e := newTestEntry()
+				e.Body = map[string]interface{}{
+					"foo": "bar",
+					"one": map[string]interface{}{
+						"two": map[string]interface{}{
+							"keepme": 1,
+						},
+					},
+				}
+				e.Attributes = map[string]interface{}{
+					"foo": "bar",
+					"one": map[string]interface{}{
+						"two": map[string]interface{}{
+							"keepme": 1,
+						},
+					},
+				}
+				e.Resource = map[string]interface{}{
+					"foo": "bar",
+					"one": map[string]interface{}{
+						"two": map[string]interface{}{
+							"keepme": 1,
+						},
+					},
+				}
+				return e
+			},
+		},
+		{
 			"retain_nest",
 			false,
 			func() *RetainOperatorConfig {

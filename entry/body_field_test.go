@@ -24,7 +24,7 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-func testBody() map[string]interface{} {
+func testMap() map[string]interface{} {
 	return map[string]interface{}{
 		"simple_key": "simple_value",
 		"map_key":    nestedMap(),
@@ -48,42 +48,42 @@ func TestNewBodyFieldGet(t *testing.T) {
 		{
 			"EmptyField",
 			NewBodyField(),
-			testBody(),
-			testBody(),
+			testMap(),
+			testMap(),
 			true,
 		},
 		{
 			"SimpleField",
 			NewBodyField("simple_key"),
-			testBody(),
+			testMap(),
 			"simple_value",
 			true,
 		},
 		{
 			"MapField",
 			NewBodyField("map_key"),
-			testBody(),
+			testMap(),
 			nestedMap(),
 			true,
 		},
 		{
 			"NestedField",
 			NewBodyField("map_key", "nested_key"),
-			testBody(),
+			testMap(),
 			"nested_value",
 			true,
 		},
 		{
 			"MissingField",
 			NewBodyField("invalid"),
-			testBody(),
+			testMap(),
 			nil,
 			false,
 		},
 		{
 			"InvalidField",
 			NewBodyField("simple_key", "nested_key"),
-			testBody(),
+			testMap(),
 			nil,
 			false,
 		},
@@ -124,7 +124,7 @@ func TestBodyFieldDelete(t *testing.T) {
 		{
 			"SimpleKey",
 			NewBodyField("simple_key"),
-			testBody(),
+			testMap(),
 			map[string]interface{}{
 				"map_key": nestedMap(),
 			},
@@ -142,23 +142,23 @@ func TestBodyFieldDelete(t *testing.T) {
 		{
 			"EmptyField",
 			NewBodyField(),
-			testBody(),
+			testMap(),
 			nil,
-			testBody(),
+			testMap(),
 			true,
 		},
 		{
 			"MissingKey",
 			NewBodyField("missing_key"),
-			testBody(),
-			testBody(),
+			testMap(),
+			testMap(),
 			nil,
 			false,
 		},
 		{
 			"NestedKey",
 			NewBodyField("map_key", "nested_key"),
-			testBody(),
+			testMap(),
 			map[string]interface{}{
 				"simple_key": "simple_value",
 				"map_key":    map[string]interface{}{},
@@ -169,7 +169,7 @@ func TestBodyFieldDelete(t *testing.T) {
 		{
 			"MapKey",
 			NewBodyField("map_key"),
-			testBody(),
+			testMap(),
 			map[string]interface{}{
 				"simple_key": "simple_value",
 			},
@@ -179,8 +179,8 @@ func TestBodyFieldDelete(t *testing.T) {
 		{
 			"InvalidNestedKey",
 			NewBodyField("simple_key", "missing"),
-			testBody(),
-			testBody(),
+			testMap(),
+			testMap(),
 			nil,
 			false,
 		},
@@ -190,7 +190,9 @@ func TestBodyFieldDelete(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			entry := New()
 			entry.Body = tc.body
-			entry.Delete(tc.field)
+			val, ok := entry.Delete(tc.field)
+			require.Equal(t, tc.expectedOk, ok)
+			require.Equal(t, tc.expectedReturned, val)
 			assert.Equal(t, tc.expectedBody, entry.Body)
 		})
 	}
@@ -207,7 +209,7 @@ func TestBodyFieldSet(t *testing.T) {
 		{
 			"OverwriteMap",
 			NewBodyField(),
-			testBody(),
+			testMap(),
 			"new_value",
 			"new_value",
 		},
@@ -223,21 +225,27 @@ func TestBodyFieldSet(t *testing.T) {
 			NewBodyField("embedded", "field"),
 			"raw_value",
 			"new_value",
-			map[string]interface{}{"embedded": map[string]interface{}{"field": "new_value"}},
+			map[string]interface{}{
+				"embedded": map[string]interface{}{
+					"field": "new_value",
+				},
+			},
 		},
 		{
 			"NewMapValue",
 			NewBodyField(),
 			map[string]interface{}{},
-			testBody(),
-			testBody(),
+			testMap(),
+			testMap(),
 		},
 		{
 			"NewRootField",
 			NewBodyField("new_key"),
 			map[string]interface{}{},
 			"new_value",
-			map[string]interface{}{"new_key": "new_value"},
+			map[string]interface{}{
+				"new_key": "new_value",
+			},
 		},
 		{
 			"NewNestedField",
@@ -253,7 +261,7 @@ func TestBodyFieldSet(t *testing.T) {
 		{
 			"OverwriteNestedMap",
 			NewBodyField("map_key"),
-			testBody(),
+			testMap(),
 			"new_value",
 			map[string]interface{}{
 				"simple_key": "simple_value",
@@ -263,7 +271,7 @@ func TestBodyFieldSet(t *testing.T) {
 		{
 			"MergedNestedValue",
 			NewBodyField("map_key"),
-			testBody(),
+			testMap(),
 			map[string]interface{}{
 				"merged_key": "merged_value",
 			},
@@ -314,15 +322,17 @@ func TestBodyFieldMerge(t *testing.T) {
 	require.Equal(t, expected, entry.Body)
 }
 
-// TODO add more test cases
-// 1. fields with dots `body["file.name"]`
-// 2. fields with deprecated "$body" or "$." prefix
 func TestBodyFieldMarshal(t *testing.T) {
 	cases := []struct {
 		name    string
 		keys    []string
 		jsonDot string
 	}{
+		{
+			"root",
+			[]string{},
+			"body",
+		},
 		{
 			"standard",
 			[]string{"test"},
@@ -361,6 +371,11 @@ func TestBodyFieldUnmarshal(t *testing.T) {
 		keys    []string
 	}{
 		{
+			"root",
+			"body",
+			[]string{},
+		},
+		{
 			"standard",
 			"body.test",
 			[]string{"test"},
@@ -379,26 +394,6 @@ func TestBodyFieldUnmarshal(t *testing.T) {
 			"mixed",
 			"body['test.foo'].bar",
 			[]string{"test.foo", "bar"},
-		},
-		{
-			"deprecated_prefix",
-			"$body.test",
-			[]string{"test"},
-		},
-		{
-			"deprecated_prefix_bracketed",
-			"$body['test.foo']",
-			[]string{"test.foo"},
-		},
-		{
-			"deprecated_shorthand",
-			"$.test",
-			[]string{"test"},
-		},
-		{
-			"deprecated_shorthand_bracketed",
-			"$['test.foo']",
-			[]string{"test.foo"},
 		},
 	}
 

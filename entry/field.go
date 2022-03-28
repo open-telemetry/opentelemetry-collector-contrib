@@ -17,6 +17,7 @@ package entry
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 )
 
 const (
@@ -63,24 +64,24 @@ func (f *Field) UnmarshalYAML(unmarshal func(interface{}) error) error {
 }
 
 func NewField(s string) (Field, error) {
-	split, err := splitField(s)
+	keys, err := fromJSONDot(s)
 	if err != nil {
 		return Field{}, fmt.Errorf("splitting field: %s", err)
 	}
 
-	switch split[0] {
+	switch keys[0] {
 	case AttributesPrefix:
-		if len(split) != 2 {
-			return Field{}, fmt.Errorf("attributes cannot be nested")
+		if len(keys) == 1 {
+			return Field{}, fmt.Errorf("attributes cannot be referenced without subfield")
 		}
-		return Field{AttributeField{split[1]}}, nil
+		return NewAttributeField(keys[1:]...), nil
 	case ResourcePrefix:
-		if len(split) != 2 {
-			return Field{}, fmt.Errorf("resource fields cannot be nested")
+		if len(keys) == 1 {
+			return Field{}, fmt.Errorf("resource cannot be referenced without subfield")
 		}
-		return Field{ResourceField{split[1]}}, nil
+		return NewResourceField(keys[1:]...), nil
 	case BodyPrefix:
-		return NewBodyField(split[1:]...), nil
+		return NewBodyField(keys[1:]...), nil
 	default:
 		return Field{}, fmt.Errorf("unrecognized prefix")
 	}
@@ -113,7 +114,7 @@ const (
 	InUnbracketedToken
 )
 
-func splitField(s string) ([]string, error) {
+func fromJSONDot(s string) ([]string, error) {
 	fields := make([]string, 0, 1)
 
 	state := Begin
@@ -184,4 +185,55 @@ func splitField(s string) ([]string, error) {
 	}
 
 	return fields, nil
+}
+
+// toJSONDot returns the JSON dot notation for a field.
+func toJSONDot(prefix string, keys []string) string {
+	if len(keys) == 0 {
+		return prefix
+	}
+
+	containsDots := false
+	for _, key := range keys {
+		if strings.Contains(key, ".") {
+			containsDots = true
+		}
+	}
+
+	var b strings.Builder
+	b.WriteString(prefix)
+	if containsDots {
+		for _, key := range keys {
+			b.WriteString(`['`)
+			b.WriteString(key)
+			b.WriteString(`']`)
+		}
+	} else {
+		b.WriteString(".")
+		for i, key := range keys {
+			if i != 0 {
+				b.WriteString(".")
+			}
+			b.WriteString(key)
+		}
+	}
+
+	return b.String()
+}
+
+// getNestedMap will get a nested map assigned to a key.
+// If the map does not exist, it will create and return it.
+func getNestedMap(currentMap map[string]interface{}, key string) map[string]interface{} {
+	currentValue, ok := currentMap[key]
+	if !ok {
+		currentMap[key] = map[string]interface{}{}
+	}
+
+	nextMap, ok := currentValue.(map[string]interface{})
+	if !ok {
+		nextMap = map[string]interface{}{}
+		currentMap[key] = nextMap
+	}
+
+	return nextMap
 }

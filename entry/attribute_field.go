@@ -15,57 +15,211 @@
 package entry
 
 import (
+	"encoding/json"
 	"fmt"
-	"strings"
 )
 
 // AttributeField is the path to an entry attribute
 type AttributeField struct {
-	key string
-}
-
-// Get will return the attribute value and a boolean indicating if it exists
-func (l AttributeField) Get(entry *Entry) (interface{}, bool) {
-	if entry.Attributes == nil {
-		return "", false
-	}
-	val, ok := entry.Attributes[l.key]
-	return val, ok
-}
-
-// Set will set the attribute value on an entry
-func (l AttributeField) Set(entry *Entry, val interface{}) error {
-	if entry.Attributes == nil {
-		entry.Attributes = make(map[string]interface{}, 1)
-	}
-
-	str, ok := val.(string)
-	if !ok {
-		return fmt.Errorf("cannot set a attribute to a non-string value")
-	}
-	entry.Attributes[l.key] = str
-	return nil
-}
-
-// Delete will delete a attribute from an entry
-func (l AttributeField) Delete(entry *Entry) (interface{}, bool) {
-	if entry.Attributes == nil {
-		return "", false
-	}
-
-	val, ok := entry.Attributes[l.key]
-	delete(entry.Attributes, l.key)
-	return val, ok
-}
-
-func (l AttributeField) String() string {
-	if strings.Contains(l.key, ".") {
-		return fmt.Sprintf(`attributes['%s']`, l.key)
-	}
-	return "attributes." + l.key
+	Keys []string
 }
 
 // NewAttributeField will creat a new attribute field from a key
-func NewAttributeField(key string) Field {
-	return Field{AttributeField{key}}
+func NewAttributeField(keys ...string) Field {
+	if keys == nil {
+		keys = []string{}
+	}
+	return Field{AttributeField{
+		Keys: keys,
+	}}
+}
+
+// Parent returns the parent of the current field.
+// In the case that the attribute field points to the root node, it is a no-op.
+func (f AttributeField) Parent() AttributeField {
+	if f.isRoot() {
+		return f
+	}
+
+	keys := f.Keys[:len(f.Keys)-1]
+	return AttributeField{keys}
+}
+
+// Child returns a child of the current field using the given key.
+func (f AttributeField) Child(key string) AttributeField {
+	child := make([]string, len(f.Keys), len(f.Keys)+1)
+	copy(child, f.Keys)
+	child = append(child, key)
+	return AttributeField{child}
+}
+
+// IsRoot returns a boolean indicating if this is a root level field.
+func (f AttributeField) isRoot() bool {
+	return len(f.Keys) == 0
+}
+
+// String returns the string representation of this field.
+func (f AttributeField) String() string {
+	return toJSONDot(AttributesPrefix, f.Keys)
+}
+
+// Get will return the attribute value and a boolean indicating if it exists
+func (f AttributeField) Get(entry *Entry) (interface{}, bool) {
+	if entry.Attributes == nil {
+		return "", false
+	}
+
+	if f.isRoot() {
+		return entry.Attributes, true
+	}
+
+	currentValue, ok := entry.Attributes[f.Keys[0]]
+	if !ok {
+		return nil, false
+	}
+
+	for _, key := range f.Keys[1:] {
+		currentMap, ok := currentValue.(map[string]interface{})
+		if !ok {
+			return nil, false
+		}
+
+		currentValue, ok = currentMap[key]
+		if !ok {
+			return nil, false
+		}
+	}
+
+	return currentValue, true
+}
+
+// Set will set a value on an entry's attributes using the field.
+// If a key already exists, it will be overwritten.
+func (f AttributeField) Set(entry *Entry, value interface{}) error {
+	if entry.Attributes == nil {
+		entry.Attributes = map[string]interface{}{}
+	}
+
+	mapValue, isMapValue := value.(map[string]interface{})
+	if isMapValue {
+		f.Merge(entry, mapValue)
+		return nil
+	}
+
+	if f.isRoot() {
+		return fmt.Errorf("cannot set attributes root")
+	}
+
+	currentMap := entry.Attributes
+	for i, key := range f.Keys {
+		if i == len(f.Keys)-1 {
+			currentMap[key] = value
+			break
+		}
+		currentMap = getNestedMap(currentMap, key)
+	}
+	return nil
+}
+
+// Merge will attempt to merge the contents of a map into an entry's attributes.
+// It will overwrite any intermediate values as necessary.
+func (f AttributeField) Merge(entry *Entry, mapValues map[string]interface{}) {
+	currentMap := entry.Attributes
+
+	for _, key := range f.Keys {
+		currentMap = getNestedMap(currentMap, key)
+	}
+
+	for key, value := range mapValues {
+		currentMap[key] = value
+	}
+}
+
+// Delete removes a value from an entry's attributes using the field.
+// It will return the deleted value and whether the field existed.
+func (f AttributeField) Delete(entry *Entry) (interface{}, bool) {
+	if entry.Attributes == nil {
+		return "", false
+	}
+
+	if f.isRoot() {
+		oldAttributes := entry.Attributes
+		entry.Attributes = nil
+		return oldAttributes, true
+	}
+
+	currentMap := entry.Attributes
+	for i, key := range f.Keys {
+		currentValue, ok := currentMap[key]
+		if !ok {
+			break
+		}
+
+		if i == len(f.Keys)-1 {
+			delete(currentMap, key)
+			return currentValue, true
+		}
+
+		currentMap, ok = currentValue.(map[string]interface{})
+		if !ok {
+			break
+		}
+	}
+
+	return nil, false
+}
+
+/****************
+  Serialization
+****************/
+
+// UnmarshalJSON will attempt to unmarshal the field from JSON.
+func (f *AttributeField) UnmarshalJSON(raw []byte) error {
+	var value string
+	if err := json.Unmarshal(raw, &value); err != nil {
+		return fmt.Errorf("the field is not a string: %s", err)
+	}
+
+	keys, err := fromJSONDot(value)
+	if err != nil {
+		return err
+	}
+
+	if keys[0] != AttributesPrefix {
+		return fmt.Errorf("must start with 'attributes': %s", value)
+	}
+
+	*f = AttributeField{keys[1:]}
+	return nil
+}
+
+// MarshalJSON will marshal the field for JSON.
+func (f AttributeField) MarshalJSON() ([]byte, error) {
+	json := fmt.Sprintf(`"%s"`, toJSONDot(AttributesPrefix, f.Keys))
+	return []byte(json), nil
+}
+
+// UnmarshalYAML will attempt to unmarshal a field from YAML.
+func (f *AttributeField) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var value string
+	if err := unmarshal(&value); err != nil {
+		return fmt.Errorf("the field is not a string: %s", err)
+	}
+
+	keys, err := fromJSONDot(value)
+	if err != nil {
+		return err
+	}
+
+	if keys[0] != AttributesPrefix {
+		return fmt.Errorf("must start with 'attributes': %s", value)
+	}
+
+	*f = AttributeField{keys[1:]}
+	return nil
+}
+
+// MarshalYAML will marshal the field for YAML.
+func (f AttributeField) MarshalYAML() (interface{}, error) {
+	return toJSONDot(AttributesPrefix, f.Keys), nil
 }
