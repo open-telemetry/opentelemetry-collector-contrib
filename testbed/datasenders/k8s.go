@@ -228,7 +228,7 @@ func NewKubernetesContainerWriter() *FileLogK8sWriter {
       - type: move
         from: body.uid
         to: attributes["k8s.pod.uid"]
-      - move:
+      - type: move
         from: body.log
         to: body
   `)
@@ -276,7 +276,7 @@ func NewKubernetesCRIContainerdWriter() *FileLogK8sWriter {
       - type: move
         from: body.uid
         to: attributes["k8s.pod.uid"]
-      - move:
+      - type: move
         from: body.log
         to: body
   `)
