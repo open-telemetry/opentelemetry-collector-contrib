@@ -64,7 +64,7 @@ for example:
         # failed hook logic
 
     # Instrument pymongo with hooks
-    PymongoInstrumentor().instrument(request_hook=request_hook, response_hooks=response_hook, failed_hook=failed_hook)
+    PymongoInstrumentor().instrument(request_hook=request_hook, response_hook=response_hook, failed_hook=failed_hook)
 
     # This will create a span with pymongo specific attributes, including custom attributes added from the hooks
     client = MongoClient()

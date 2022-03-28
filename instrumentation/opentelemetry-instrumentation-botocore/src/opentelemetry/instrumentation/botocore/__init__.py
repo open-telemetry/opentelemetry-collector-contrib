@@ -67,7 +67,7 @@ for example:
         # response hook logic
 
     # Instrument Botocore with hooks
-    BotocoreInstrumentor().instrument(request_hook=request_hook, response_hooks=response_hook)
+    BotocoreInstrumentor().instrument(request_hook=request_hook, response_hook=response_hook)
 
     # This will create a span with Botocore-specific attributes, including custom attributes added from the hooks
     session = botocore.session.get_session()
