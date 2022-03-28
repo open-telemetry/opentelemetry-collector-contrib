@@ -11,7 +11,7 @@ require (
 	go.uber.org/zap v1.21.0
 )
 
-require google.golang.org/protobuf v1.27.1
+require google.golang.org/protobuf v1.28.0
 
 require (
 	github.com/cenkalti/backoff/v4 v4.1.2 // indirect
