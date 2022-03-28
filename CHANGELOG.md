@@ -6,6 +6,10 @@
 
 ### 🛑 Breaking changes 🛑
 
+- `filelogreceiver`, `journaldreceiver`, `syslogreceiver`, `tcplogreceiver`, `udplogreceiver`:
+  - Updated data model to align with stable logs data model, which includes various breaking changes. (#8835)
+    - A detailed [Upgrade Guide](https://github.com/open-telemetry/opentelemetry-log-collection/releases/tag/v0.28.0) is available in the log-collection v0.28.0 release notes. 
+
 ### 🚩 Deprecations 🚩
 
 ### 🚀 New components 🚀
