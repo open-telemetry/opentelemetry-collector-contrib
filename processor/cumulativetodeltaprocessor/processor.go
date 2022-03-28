@@ -16,6 +16,7 @@ package cumulativetodeltaprocessor // import "github.com/open-telemetry/opentele
 
 import (
 	"context"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 	"math"
 
 	"go.opentelemetry.io/collector/model/pdata"
@@ -26,6 +27,8 @@ import (
 
 type cumulativeToDeltaProcessor struct {
 	metrics         map[string]struct{}
+	includeFS       filterset.FilterSet
+	excludeFS       filterset.FilterSet
 	logger          *zap.Logger
 	deltaCalculator *tracking.MetricTracker
 	cancelFunc      context.CancelFunc
@@ -44,6 +47,12 @@ func newCumulativeToDeltaProcessor(config *Config, logger *zap.Logger) *cumulati
 			p.metrics[m] = struct{}{}
 		}
 	}
+	if len(config.Include.Metrics) > 0 {
+		p.includeFS, _ = filterset.CreateFilterSet(config.Include.Metrics, &config.Include.Config)
+	}
+	if len(config.Exclude.Metrics) > 0 {
+		p.excludeFS, _ = filterset.CreateFilterSet(config.Exclude.Metrics, &config.Exclude.Config)
+	}
 	return p
 }
 
@@ -55,7 +64,7 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pda
 		ilms.RemoveIf(func(ilm pdata.InstrumentationLibraryMetrics) bool {
 			ms := ilm.Metrics()
 			ms.RemoveIf(func(m pdata.Metric) bool {
-				if _, ok := ctdp.metrics[m.Name()]; !ok {
+				if !ctdp.convertMetric(m.Name()) {
 					return false
 				}
 				switch m.DataType() {
@@ -95,6 +104,16 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pda
 func (ctdp *cumulativeToDeltaProcessor) shutdown(context.Context) error {
 	ctdp.cancelFunc()
 	return nil
+}
+
+func (ctdp *cumulativeToDeltaProcessor) convertMetric(metricName string) bool {
+	// Legacy support for deprecated Metrics config
+	if len(ctdp.metrics) > 0 {
+		_, ok := ctdp.metrics[metricName]
+		return ok
+	}
+	return (ctdp.includeFS == nil || ctdp.includeFS.Matches(metricName)) &&
+		(ctdp.excludeFS == nil || !ctdp.excludeFS.Matches(metricName))
 }
 
 func (ctdp *cumulativeToDeltaProcessor) convertDataPoints(in interface{}, baseIdentity tracking.MetricIdentity) {
