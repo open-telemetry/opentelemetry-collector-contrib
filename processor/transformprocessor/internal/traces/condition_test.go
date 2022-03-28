@@ -107,7 +107,7 @@ func Test_newConditionEvaluator(t *testing.T) {
 			assert.NoError(t, err)
 			assert.True(t, evaluate(spanTransformContext{
 				span:     tt.matching,
-				il:       pdata.NewInstrumentationLibrary(),
+				il:       pdata.NewInstrumentationScope(),
 				resource: pdata.NewResource(),
 			}))
 		})

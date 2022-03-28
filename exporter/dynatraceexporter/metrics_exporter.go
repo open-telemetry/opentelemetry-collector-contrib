@@ -125,7 +125,7 @@ func (e *exporter) serializeMetrics(md pdata.Metrics) []string {
 
 	for i := 0; i < resourceMetrics.Len(); i++ {
 		resourceMetric := resourceMetrics.At(i)
-		libraryMetrics := resourceMetric.InstrumentationLibraryMetrics()
+		libraryMetrics := resourceMetric.ScopeMetrics()
 		for j := 0; j < libraryMetrics.Len(); j++ {
 			libraryMetric := libraryMetrics.At(j)
 			metrics := libraryMetric.Metrics()

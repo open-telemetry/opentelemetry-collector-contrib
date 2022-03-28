@@ -55,19 +55,19 @@ func diffRMs(diffs []*MetricDiff, expected pdata.ResourceMetrics, actual pdata.R
 	diffs = diffResource(diffs, expected.Resource(), actual.Resource())
 	diffs = diffILMSlice(
 		diffs,
-		expected.InstrumentationLibraryMetrics(),
-		actual.InstrumentationLibraryMetrics(),
+		expected.ScopeMetrics(),
+		actual.ScopeMetrics(),
 	)
 	return diffs
 }
 
 func diffILMSlice(
 	diffs []*MetricDiff,
-	expected pdata.InstrumentationLibraryMetricsSlice,
-	actual pdata.InstrumentationLibraryMetricsSlice,
+	expected pdata.ScopeMetricsSlice,
+	actual pdata.ScopeMetricsSlice,
 ) []*MetricDiff {
 	var mismatch bool
-	diffs, mismatch = diffValues(diffs, actual.Len(), expected.Len(), "InstrumentationLibraryMetricsSlice len")
+	diffs, mismatch = diffValues(diffs, actual.Len(), expected.Len(), "ScopeMetricsSlice len")
 	if mismatch {
 		return diffs
 	}
@@ -79,8 +79,8 @@ func diffILMSlice(
 
 func diffILM(
 	diffs []*MetricDiff,
-	expected pdata.InstrumentationLibraryMetrics,
-	actual pdata.InstrumentationLibraryMetrics,
+	expected pdata.ScopeMetrics,
+	actual pdata.ScopeMetrics,
 ) []*MetricDiff {
 	return diffMetrics(diffs, expected.Metrics(), actual.Metrics())
 }

@@ -37,7 +37,7 @@ import (
 // TODO(axw) otlpLibrary is currently not used. We should consider recording it as metadata.
 func EncodeSpan(
 	otlpSpan pdata.Span,
-	otlpLibrary pdata.InstrumentationLibrary,
+	otlpLibrary pdata.InstrumentationScope,
 	otlpResource pdata.Resource,
 	w *fastjson.Writer,
 ) error {
@@ -96,7 +96,7 @@ func EncodeSpan(
 
 func setTransactionProperties(
 	otlpSpan pdata.Span,
-	otlpLibrary pdata.InstrumentationLibrary,
+	otlpLibrary pdata.InstrumentationScope,
 	tx *model.Transaction, context *transactionContext,
 ) error {
 	var (

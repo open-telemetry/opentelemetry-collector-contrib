@@ -261,7 +261,7 @@ func metricPairToMetrics(mp []metricPair) pdata.Metrics {
 	for num, record := range mp {
 		record.attributes.CopyTo(metrics.ResourceMetrics().AppendEmpty().Resource().Attributes())
 		// TODO: Change metricPair to have an init metric func.
-		record.metric.CopyTo(metrics.ResourceMetrics().At(num).InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty())
+		record.metric.CopyTo(metrics.ResourceMetrics().At(num).ScopeMetrics().AppendEmpty().Metrics().AppendEmpty())
 	}
 
 	return metrics

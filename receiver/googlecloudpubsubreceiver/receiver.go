@@ -137,7 +137,7 @@ func (receiver *pubsubReceiver) handleLogStrings(ctx context.Context, message *p
 	logs := out.ResourceLogs()
 	rls := logs.AppendEmpty()
 
-	ills := rls.InstrumentationLibraryLogs().AppendEmpty()
+	ills := rls.ScopeLogs().AppendEmpty()
 	lr := ills.LogRecords().AppendEmpty()
 
 	lr.Body().SetStringVal(data)

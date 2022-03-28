@@ -78,8 +78,8 @@ func (s *redaction) processResourceSpan(ctx context.Context, rs pdata.ResourceSp
 	// Attributes can be part of a resource span
 	s.processAttrs(ctx, &rsAttrs)
 
-	for j := 0; j < rs.InstrumentationLibrarySpans().Len(); j++ {
-		ils := rs.InstrumentationLibrarySpans().At(j)
+	for j := 0; j < rs.ScopeSpans().Len(); j++ {
+		ils := rs.ScopeSpans().At(j)
 		for k := 0; k < ils.Spans().Len(); k++ {
 			span := ils.Spans().At(k)
 			spanAttrs := span.Attributes()

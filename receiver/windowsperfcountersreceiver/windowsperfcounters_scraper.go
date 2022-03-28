@@ -110,7 +110,7 @@ func (s *scraper) shutdown(context.Context) error {
 
 func (s *scraper) scrape(context.Context) (pdata.Metrics, error) {
 	md := pdata.NewMetrics()
-	metrics := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics()
+	metrics := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
 	now := pdata.NewTimestampFromTime(time.Now())
 	var errs error
 

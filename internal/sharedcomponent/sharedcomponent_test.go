@@ -21,7 +21,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 )
@@ -33,8 +32,13 @@ func TestNewSharedComponents(t *testing.T) {
 	assert.Len(t, comps.comps, 0)
 }
 
+type mockComponent struct {
+	component.StartFunc
+	component.ShutdownFunc
+}
+
 func TestSharedComponents_GetOrAdd(t *testing.T) {
-	nop := componenthelper.New()
+	nop := mockComponent{}
 	createNop := func() component.Component { return nop }
 
 	comps := NewSharedComponents()
@@ -53,14 +57,16 @@ func TestSharedComponent(t *testing.T) {
 	wantErr := errors.New("my error")
 	calledStart := 0
 	calledStop := 0
-	comp := componenthelper.New(
-		componenthelper.WithStart(func(ctx context.Context, host component.Host) error {
+	comp := mockComponent{
+		StartFunc: func(ctx context.Context, host component.Host) error {
 			calledStart++
 			return wantErr
-		}), componenthelper.WithShutdown(func(ctx context.Context) error {
+		},
+		ShutdownFunc: func(ctx context.Context) error {
 			calledStop++
 			return wantErr
-		}))
+		},
+	}
 	createComp := func() component.Component { return comp }
 
 	comps := NewSharedComponents()

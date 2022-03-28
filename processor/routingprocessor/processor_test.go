@@ -199,17 +199,17 @@ func TestTraces_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 
 	rl := tr.ResourceSpans().AppendEmpty()
 	rl.Resource().Attributes().InsertString("X-Tenant", "acme")
-	span := rl.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName("span")
 
 	rl = tr.ResourceSpans().AppendEmpty()
 	rl.Resource().Attributes().InsertString("X-Tenant", "acme")
-	span = rl.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	span = rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName("span1")
 
 	rl = tr.ResourceSpans().AppendEmpty()
 	rl.Resource().Attributes().InsertString("X-Tenant", "something-else")
-	span = rl.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	span = rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName("span2")
 
 	ctx := context.Background()
@@ -399,19 +399,19 @@ func TestMetrics_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 
 	rm := m.ResourceMetrics().AppendEmpty()
 	rm.Resource().Attributes().InsertString("X-Tenant", "acme")
-	metric := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
+	metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	metric.SetDataType(pdata.MetricDataTypeGauge)
 	metric.SetName("cpu")
 
 	rm = m.ResourceMetrics().AppendEmpty()
 	rm.Resource().Attributes().InsertString("X-Tenant", "acme")
-	metric = rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
+	metric = rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	metric.SetDataType(pdata.MetricDataTypeGauge)
 	metric.SetName("cpu_system")
 
 	rm = m.ResourceMetrics().AppendEmpty()
 	rm.Resource().Attributes().InsertString("X-Tenant", "something-else")
-	metric = rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
+	metric = rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	metric.SetDataType(pdata.MetricDataTypeGauge)
 	metric.SetName("cpu_idle")
 
@@ -707,17 +707,17 @@ func TestLogs_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 
 	rl := l.ResourceLogs().AppendEmpty()
 	rl.Resource().Attributes().InsertString("X-Tenant", "acme")
-	log := rl.InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty()
+	log := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 	log.SetName("mylog")
 
 	rl = l.ResourceLogs().AppendEmpty()
 	rl.Resource().Attributes().InsertString("X-Tenant", "acme")
-	log = rl.InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty()
+	log = rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 	log.SetName("mylog1")
 
 	rl = l.ResourceLogs().AppendEmpty()
 	rl.Resource().Attributes().InsertString("X-Tenant", "something-else")
-	log = rl.InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty()
+	log = rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 	log.SetName("mylog2")
 
 	ctx := context.Background()

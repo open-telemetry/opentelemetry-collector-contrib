@@ -25,7 +25,7 @@ type mockVisitor struct {
 	mock.Mock
 }
 
-func (v *mockVisitor) visit(resource pdata.Resource, instrumentationLibrary pdata.InstrumentationLibrary, span pdata.Span) (ok bool) {
+func (v *mockVisitor) visit(resource pdata.Resource, instrumentationLibrary pdata.InstrumentationScope, span pdata.Span) (ok bool) {
 	args := v.Called(resource, instrumentationLibrary, span)
 	return args.Bool(0)
 }
@@ -53,11 +53,11 @@ func TestTraceDataIterationResourceSpansIsEmpty(t *testing.T) {
 	visitor.AssertNumberOfCalls(t, "visit", 0)
 }
 
-// Tests the iteration logic over a pdata.Traces type when InstrumentationLibrarySpans is nil
-func TestTraceDataIterationInstrumentationLibrarySpansIsEmpty(t *testing.T) {
+// Tests the iteration logic over a pdata.Traces type when ScopeSpans is nil
+func TestTraceDataIterationScopeSpansIsEmpty(t *testing.T) {
 	traces := pdata.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
-	rs.InstrumentationLibrarySpans().AppendEmpty()
+	rs.ScopeSpans().AppendEmpty()
 
 	visitor := getMockVisitor(true)
 
@@ -70,7 +70,7 @@ func TestTraceDataIterationInstrumentationLibrarySpansIsEmpty(t *testing.T) {
 func TestTraceDataIterationNoSpans(t *testing.T) {
 	traces := pdata.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
-	rs.InstrumentationLibrarySpans().AppendEmpty()
+	rs.ScopeSpans().AppendEmpty()
 
 	visitor := getMockVisitor(true)
 
@@ -83,7 +83,7 @@ func TestTraceDataIterationNoSpans(t *testing.T) {
 func TestTraceDataIterationNoShortCircuit(t *testing.T) {
 	traces := pdata.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
-	ilss := rs.InstrumentationLibrarySpans().AppendEmpty()
+	ilss := rs.ScopeSpans().AppendEmpty()
 	ilss.Spans().AppendEmpty()
 	ilss.Spans().AppendEmpty()
 
@@ -98,7 +98,7 @@ func TestTraceDataIterationNoShortCircuit(t *testing.T) {
 func TestTraceDataIterationShortCircuit(t *testing.T) {
 	traces := pdata.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
-	ilss := rs.InstrumentationLibrarySpans().AppendEmpty()
+	ilss := rs.ScopeSpans().AppendEmpty()
 	ilss.Spans().AppendEmpty()
 	ilss.Spans().AppendEmpty()
 
