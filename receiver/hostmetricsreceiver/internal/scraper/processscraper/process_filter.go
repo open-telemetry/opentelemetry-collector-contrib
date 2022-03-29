@@ -32,12 +32,12 @@ func (p *processFilter) includeCommand(command string, commandLine string) bool 
 		includeExcludeMatch(p.includeCommandLineFilter, p.excludeCommandLineFilter, commandLine)
 }
 
-// MatchOwner return a boolean value indicating if owner matches the filter.
+// includeOwner return a boolean value indicating if owner matches the filter.
 func (p *processFilter) includeOwner (owner string) bool {
 	return includeExcludeMatch(p.includeOwnerFilter, p.excludeOwnerFilter, owner)
 }
 
-// MatchesPid return a boolean value indicating if the pid matches the filter.
+// includePid return a boolean value indicating if the pid matches the filter.
 func (p *processFilter) includePid(pid int32) bool {
 	return (len(p.includePidFilter) == 0 || findInt(p.includePidFilter, pid)) &&
 		(len(p.excludePidFilter) == 0 || !findInt(p.excludePidFilter, pid))

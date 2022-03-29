@@ -87,6 +87,5 @@ type FilterConfig struct {
 	ExcludeOwners OwnerMatchConfig `mapstructure:"exclude_process_owner"`
 	IncludePids PidMatchConfig `mapstructure:"include_process_pid"`
 	ExcludePids PidMatchConfig `mapstructure:"exclude_process_pid"`
-	//	RegexpConfig *regexp.Config `mapstructure:"regexp"`
 }
 
