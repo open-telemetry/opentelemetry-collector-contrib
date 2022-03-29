@@ -1,7 +1,6 @@
 package processscraper
 
 import (
-	"fmt"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/filterhelper"
 )
@@ -49,9 +48,7 @@ func (p *processFilter) includePid(pid int32) bool {
 // int is found in the slice return true.  Otherwise return false
 func findInt (intSlice []int32, intMatch int32) bool{
 	for _, val := range intSlice {
-		fmt.Printf("comparing %v to %v\n", intMatch, val)
 		if intMatch == val {
-			fmt.Printf("match\n")
 			return true
 		}
 	}
@@ -121,7 +118,6 @@ func createFilter(filterConfig FilterConfig) (*processFilter, error) {
 
 // includeExcludeMatch checks the include and exclude filter
 func includeExcludeMatch(include filterset.FilterSet, exclude filterset.FilterSet, matchString string) bool {
-	fmt.Printf("MatchString: %s include: %v exclude:%v  includeFilterExist: %v, excludeFilterExist: %v\n", matchString, (include == nil ||  include.Matches(matchString)), (exclude == nil || !exclude.Matches(matchString)), include!=nil, exclude!= nil)
 	return (include == nil ||  include.Matches(matchString)) &&
 		(exclude == nil || !exclude.Matches(matchString))
 }
