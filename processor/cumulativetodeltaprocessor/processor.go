@@ -16,12 +16,12 @@ package cumulativetodeltaprocessor // import "github.com/open-telemetry/opentele
 
 import (
 	"context"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 	"math"
 
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/internal/tracking"
 )
 
@@ -42,6 +42,7 @@ func newCumulativeToDeltaProcessor(config *Config, logger *zap.Logger) *cumulati
 		cancelFunc:      cancel,
 	}
 	if len(config.Metrics) > 0 {
+		p.logger.Warn("The 'metrics' configuration is deprecated. Use 'include'/'exclude' instead.")
 		p.metrics = make(map[string]struct{}, len(config.Metrics))
 		for _, m := range config.Metrics {
 			p.metrics[m] = struct{}{}

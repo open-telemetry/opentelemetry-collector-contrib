@@ -16,7 +16,6 @@ package cumulativetodeltaprocessor
 
 import (
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 	"path/filepath"
 	"testing"
 	"time"
@@ -26,6 +25,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/service/servicetest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 )
 
 const configFile = "config.yaml"
