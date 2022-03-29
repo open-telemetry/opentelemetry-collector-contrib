@@ -11,12 +11,13 @@
 ### 🛑 Breaking changes 🛑
 
 - `windowsperfcountersreceiver`: Added metrics configuration (#8376)
+- `lokiexporter`: Remove deprecated LogRecord.name field ()
+- `splunkhecexporter`: Remove deprecated LogRecord.name field ()
 
 ### 🚩 Deprecations 🚩
 
 - `datadogexporter`: Deprecate `OnlyMetadata` method from `Config` struct (#8359)
 - `datadogexporter`: Deprecate `GetCensoredKey` method from `APIConfig` struct (#8830)
-
 - `resourcedetectionprocessor`: Add attribute allowlist (#8547)
 
 ### 💡 Enhancements 💡
