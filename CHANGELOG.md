@@ -10,10 +10,13 @@
   generated code (#5270) 
 - `datadogexporter`: Add `metrics::sums::cumulative_monotonic_mode` to specify export mode for cumulative monotonic sums (#8490)
 - `dynatraceexporter`: add multi-instance deployment note to README.md (#8848)
+- `resourcedetectionprocessor`: Add attribute allowlist (#8547)
 
 ### 🛑 Breaking changes 🛑
 
 - `windowsperfcountersreceiver`: Added metrics configuration (#8376)
+- `lokiexporter`: Remove deprecated LogRecord.name field (#8951)
+- `splunkhecexporter`: Remove deprecated LogRecord.name field (#8951)
 
 ### 🚩 Deprecations 🚩
 

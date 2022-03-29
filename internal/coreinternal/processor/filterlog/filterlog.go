@@ -77,9 +77,5 @@ func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 // supported to have more than one of these specified, and all specified must
 // evaluate to true for a match to occur.
 func (mp *propertiesMatcher) MatchLogRecord(lr pdata.LogRecord, resource pdata.Resource, library pdata.InstrumentationLibrary) bool {
-	if mp.nameFilters != nil && !mp.nameFilters.Matches(lr.Name()) {
-		return false
-	}
-
 	return mp.PropertiesMatcher.Match(lr.Attributes(), resource, library)
 }
