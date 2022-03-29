@@ -1,4 +1,4 @@
-name: memory
+name: hostmetricsreceiver/memory
 
 attributes:
   state:
@@ -14,4 +14,12 @@ metrics:
       value_type: int
       aggregation: cumulative
       monotonic: false
+    attributes: [state]
+
+  system.memory.utilization:
+    enabled: false
+    description: Percentage of memory bytes in use.
+    unit: 1
+    gauge:
+      value_type: double
     attributes: [state]

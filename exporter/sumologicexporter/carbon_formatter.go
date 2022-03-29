@@ -37,7 +37,7 @@ func carbon2TagString(record metricPair) string {
 	}
 
 	returnValue := make([]string, 0, length)
-	record.attributes.Range(func(k string, v pdata.AttributeValue) bool {
+	record.attributes.Range(func(k string, v pdata.Value) bool {
 		if k == "name" || k == "unit" {
 			k = fmt.Sprintf("_%s", k)
 		}
@@ -66,7 +66,7 @@ func sanitizeCarbonString(text string) string {
 // carbon2NumberRecord converts NumberDataPoint to carbon2 metric string
 // with additional information from metricPair.
 func carbon2NumberRecord(record metricPair, dataPoint pdata.NumberDataPoint) string {
-	switch dataPoint.Type() {
+	switch dataPoint.ValueType() {
 	case pdata.MetricValueTypeDouble:
 		return fmt.Sprintf("%s  %g %d",
 			carbon2TagString(record),

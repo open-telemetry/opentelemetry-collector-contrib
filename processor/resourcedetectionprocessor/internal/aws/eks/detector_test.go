@@ -20,11 +20,22 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
+
+type MockDetectorUtils struct {
+	mock.Mock
+}
+
+func (detectorUtils *MockDetectorUtils) getConfigMap(_ context.Context, namespace string, name string) (map[string]string, error) {
+	args := detectorUtils.Called(namespace, name)
+	return args.Get(0).(map[string]string), args.Error(1)
+}
 
 func TestNewDetector(t *testing.T) {
 	detector, err := NewDetector(componenttest.NewNopProcessorCreateSettings(), nil)
@@ -34,12 +45,13 @@ func TestNewDetector(t *testing.T) {
 
 // Tests EKS resource detector running in EKS environment
 func TestEKS(t *testing.T) {
+	detectorUtils := new(MockDetectorUtils)
 	ctx := context.Background()
 
 	require.NoError(t, os.Setenv("KUBERNETES_SERVICE_HOST", "localhost"))
-
+	detectorUtils.On("getConfigMap", authConfigmapNS, authConfigmapName).Return(map[string]string{"cluster.name": "my-cluster"}, nil)
 	// Call EKS Resource detector to detect resources
-	eksResourceDetector := &Detector{}
+	eksResourceDetector := &detector{utils: detectorUtils, err: nil}
 	res, _, err := eksResourceDetector.Detect(ctx)
 	require.NoError(t, err)
 
@@ -49,11 +61,11 @@ func TestEKS(t *testing.T) {
 	}, internal.AttributesToMap(res.Attributes()), "Resource object returned is incorrect")
 }
 
-// Tests EKS resource detector not running in EKS environment
+// Tests EKS resource detector not running in EKS environment by verifying resource is not running on k8s
 func TestNotEKS(t *testing.T) {
-	detector := Detector{}
+	eksResourceDetector := detector{logger: zap.NewNop()}
 	require.NoError(t, os.Unsetenv("KUBERNETES_SERVICE_HOST"))
-	r, _, err := detector.Detect(context.Background())
+	r, _, err := eksResourceDetector.Detect(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, 0, r.Attributes().Len(), "Resource object should be empty")
 }

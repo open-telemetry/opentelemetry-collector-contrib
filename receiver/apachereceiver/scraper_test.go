@@ -27,7 +27,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
@@ -35,32 +34,27 @@ import (
 
 func TestScraper(t *testing.T) {
 	apacheMock := newMockServer(t)
-	cfg := &Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Endpoint: fmt.Sprintf("%s%s", apacheMock.URL, "/server-status?auto"),
-		},
-	}
+	cfg := createDefaultConfig().(*Config)
+	cfg.Endpoint = fmt.Sprintf("%s%s", apacheMock.URL, "/server-status?auto")
 	require.NoError(t, cfg.Validate())
 
-	scraper := newApacheScraper(zap.NewNop(), cfg)
+	scraper := newApacheScraper(componenttest.NewNopTelemetrySettings(), cfg)
 
 	err := scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
-	aMetricSlice := actualMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
 	expectedFile := filepath.Join("testdata", "scraper", "expected.json")
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
-	eMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
-	require.NoError(t, scrapertest.CompareMetricSlices(eMetricSlice, aMetricSlice))
+	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
 }
 
 func TestScraperFailedStart(t *testing.T) {
-	sc := newApacheScraper(zap.NewNop(), &Config{
+	sc := newApacheScraper(componenttest.NewNopTelemetrySettings(), &Config{
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "localhost:8080",
 			TLSSetting: configtls.TLSClientSetting{
@@ -158,7 +152,7 @@ ConnsTotal: 110
 
 func TestScraperError(t *testing.T) {
 	t.Run("no client", func(t *testing.T) {
-		sc := newApacheScraper(zap.NewNop(), &Config{})
+		sc := newApacheScraper(componenttest.NewNopTelemetrySettings(), &Config{})
 		sc.httpClient = nil
 
 		_, err := sc.scrape(context.Background())

@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
@@ -175,7 +175,7 @@ func TestGetTagFromSpanKind(t *testing.T) {
 
 func TestAttributesToJaegerProtoTags(t *testing.T) {
 
-	attributes := pdata.NewAttributeMap()
+	attributes := pdata.NewMap()
 	attributes.InsertBool("bool-val", true)
 	attributes.InsertInt("int-val", 123)
 	attributes.InsertString("string-val", "abc")
@@ -306,7 +306,7 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			jbs, err := InternalTracesToJaegerProto(test.td)
+			jbs, err := ProtoFromTraces(test.td)
 			assert.EqualValues(t, test.err, err)
 			if test.jb == nil {
 				assert.Len(t, jbs, 0)
@@ -324,10 +324,10 @@ func TestInternalTracesToJaegerProtoBatchesAndBack(t *testing.T) {
 		"../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_spans.txt")
 	assert.NoError(t, err)
 	for _, td := range tds {
-		protoBatches, err := InternalTracesToJaegerProto(td)
+		protoBatches, err := ProtoFromTraces(td)
 		assert.NoError(t, err)
-		tdFromPB := ProtoBatchesToInternalTraces(protoBatches)
-		assert.NotNil(t, tdFromPB)
+		tdFromPB, err := ProtoToTraces(protoBatches)
+		assert.NoError(t, err)
 		assert.Equal(t, td.SpanCount(), tdFromPB.SpanCount())
 	}
 }
@@ -358,6 +358,7 @@ func BenchmarkInternalTracesToJaegerProto(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		InternalTracesToJaegerProto(td) // nolint:errcheck
+		_, err := ProtoFromTraces(td)
+		assert.NoError(b, err)
 	}
 }

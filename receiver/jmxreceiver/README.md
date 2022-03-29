@@ -39,6 +39,8 @@ receivers:
     properties:
       otel.resource.attributes: my.attr=my.value,my.other.attr=my.other.value
       some.system.property: some.system.property.value
+    additional_jars:
+      - /path/to/other.jar
 ```
 
 ### jar_path (default: `/opt/opentelemetry-java-contrib-jmx-metrics.jar`)
@@ -155,3 +157,8 @@ Corresponds to the `otel.jmx.remote.profile` property.
 The realm, as required by remote profile SASL/DIGEST-MD5.
 
 Corresponds to the `otel.jmx.realm` property.
+
+
+### additional_jars
+
+Additional JARs to be included in the java command classpath.

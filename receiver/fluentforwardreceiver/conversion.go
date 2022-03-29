@@ -33,7 +33,7 @@ const tagAttributeKey = "fluent.tag"
 
 type Event interface {
 	DecodeMsg(dc *msgp.Reader) error
-	LogRecords() pdata.LogSlice
+	LogRecords() pdata.LogRecordSlice
 	Chunk() string
 	Compressed() string
 }
@@ -82,8 +82,8 @@ func (em EventMode) String() string {
 
 // parseInterfaceToMap takes map of interface objects and returns
 // AttributeValueMap
-func parseInterfaceToMap(msi map[string]interface{}) pdata.AttributeValue {
-	rv := pdata.NewAttributeValueMap()
+func parseInterfaceToMap(msi map[string]interface{}) pdata.Value {
+	rv := pdata.NewValueMap()
 	am := rv.MapVal()
 	am.EnsureCapacity(len(msi))
 	for k, value := range msi {
@@ -94,8 +94,8 @@ func parseInterfaceToMap(msi map[string]interface{}) pdata.AttributeValue {
 
 // parseInterfaceToArray takes array of interface objects and returns
 // AttributeValueArray
-func parseInterfaceToArray(ai []interface{}) pdata.AttributeValue {
-	iv := pdata.NewAttributeValueArray()
+func parseInterfaceToArray(ai []interface{}) pdata.Value {
+	iv := pdata.NewValueSlice()
 	av := iv.SliceVal()
 	av.EnsureCapacity(len(ai))
 	for _, value := range ai {
@@ -105,32 +105,32 @@ func parseInterfaceToArray(ai []interface{}) pdata.AttributeValue {
 }
 
 // parseToAttributeValue converts interface object to AttributeValue
-func parseToAttributeValue(val interface{}) pdata.AttributeValue {
+func parseToAttributeValue(val interface{}) pdata.Value {
 	// See https://github.com/tinylib/msgp/wiki/Type-Mapping-Rules
 	switch r := val.(type) {
 	case bool:
-		return pdata.NewAttributeValueBool(r)
+		return pdata.NewValueBool(r)
 	case string:
-		return pdata.NewAttributeValueString(r)
+		return pdata.NewValueString(r)
 	case uint64:
-		return pdata.NewAttributeValueInt(int64(r))
+		return pdata.NewValueInt(int64(r))
 	case int64:
-		return pdata.NewAttributeValueInt(r)
+		return pdata.NewValueInt(r)
 	// Sometimes strings come in as bytes array
 	case []byte:
-		return pdata.NewAttributeValueString(string(r))
+		return pdata.NewValueString(string(r))
 	case map[string]interface{}:
 		return parseInterfaceToMap(r)
 	case []interface{}:
 		return parseInterfaceToArray(r)
 	case float32:
-		return pdata.NewAttributeValueDouble(float64(r))
+		return pdata.NewValueDouble(float64(r))
 	case float64:
-		return pdata.NewAttributeValueDouble(r)
+		return pdata.NewValueDouble(r)
 	case nil:
-		return pdata.NewAttributeValueEmpty()
+		return pdata.NewValueEmpty()
 	default:
-		return pdata.NewAttributeValueString(fmt.Sprintf("%v", val))
+		return pdata.NewValueString(fmt.Sprintf("%v", val))
 	}
 }
 
@@ -199,17 +199,17 @@ func parseRecordToLogRecord(dc *msgp.Reader, lr pdata.LogRecord) error {
 }
 
 type MessageEventLogRecord struct {
-	pdata.LogSlice
+	pdata.LogRecordSlice
 	OptionsMap
 }
 
-func (melr *MessageEventLogRecord) LogRecords() pdata.LogSlice {
-	return melr.LogSlice
+func (melr *MessageEventLogRecord) LogRecords() pdata.LogRecordSlice {
+	return melr.LogRecordSlice
 }
 
 func (melr *MessageEventLogRecord) DecodeMsg(dc *msgp.Reader) error {
-	melr.LogSlice = pdata.NewLogSlice()
-	log := melr.LogSlice.AppendEmpty()
+	melr.LogRecordSlice = pdata.NewLogRecordSlice()
+	log := melr.LogRecordSlice.AppendEmpty()
 
 	var arrLen uint32
 	var err error
@@ -273,16 +273,16 @@ func parseOptions(dc *msgp.Reader) (OptionsMap, error) {
 }
 
 type ForwardEventLogRecords struct {
-	pdata.LogSlice
+	pdata.LogRecordSlice
 	OptionsMap
 }
 
-func (fe *ForwardEventLogRecords) LogRecords() pdata.LogSlice {
-	return fe.LogSlice
+func (fe *ForwardEventLogRecords) LogRecords() pdata.LogRecordSlice {
+	return fe.LogRecordSlice
 }
 
 func (fe *ForwardEventLogRecords) DecodeMsg(dc *msgp.Reader) (err error) {
-	fe.LogSlice = pdata.NewLogSlice()
+	fe.LogRecordSlice = pdata.NewLogRecordSlice()
 
 	var arrLen uint32
 	arrLen, err = dc.ReadArrayHeader()
@@ -306,15 +306,15 @@ func (fe *ForwardEventLogRecords) DecodeMsg(dc *msgp.Reader) (err error) {
 		return
 	}
 
-	fe.LogSlice.EnsureCapacity(int(entryLen))
+	fe.LogRecordSlice.EnsureCapacity(int(entryLen))
 	for i := 0; i < int(entryLen); i++ {
-		lr := fe.LogSlice.AppendEmpty()
+		lr := fe.LogRecordSlice.AppendEmpty()
 
 		err = parseEntryToLogRecord(dc, lr)
 		if err != nil {
 			return msgp.WrapError(err, "Entries", i)
 		}
-		fe.LogSlice.At(i).Attributes().InsertString(tagAttributeKey, tag)
+		fe.LogRecordSlice.At(i).Attributes().InsertString(tagAttributeKey, tag)
 	}
 
 	if arrLen == 3 {
@@ -345,18 +345,18 @@ func parseEntryToLogRecord(dc *msgp.Reader, lr pdata.LogRecord) error {
 }
 
 type PackedForwardEventLogRecords struct {
-	pdata.LogSlice
+	pdata.LogRecordSlice
 	OptionsMap
 }
 
-func (pfe *PackedForwardEventLogRecords) LogRecords() pdata.LogSlice {
-	return pfe.LogSlice
+func (pfe *PackedForwardEventLogRecords) LogRecords() pdata.LogRecordSlice {
+	return pfe.LogRecordSlice
 }
 
 // DecodeMsg implements msgp.Decodable.  This was originally code generated but
 // then manually copied here in order to handle the optional Options field.
 func (pfe *PackedForwardEventLogRecords) DecodeMsg(dc *msgp.Reader) error {
-	pfe.LogSlice = pdata.NewLogSlice()
+	pfe.LogRecordSlice = pdata.NewLogRecordSlice()
 
 	arrLen, err := dc.ReadArrayHeader()
 	if err != nil {
@@ -441,7 +441,7 @@ func (pfe *PackedForwardEventLogRecords) parseEntries(entriesRaw []byte, isGzipp
 
 		lr.Attributes().InsertString(tagAttributeKey, tag)
 
-		tgt := pfe.LogSlice.AppendEmpty()
+		tgt := pfe.LogRecordSlice.AppendEmpty()
 		lr.CopyTo(tgt)
 	}
 }

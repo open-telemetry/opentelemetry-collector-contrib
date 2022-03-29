@@ -20,7 +20,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"path"
 	"path/filepath"
 	"sync"
 	"testing"
@@ -53,7 +52,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
@@ -227,7 +226,7 @@ func consumeNLogsFromConverter(ch <-chan pdata.Logs, count int, wg *sync.WaitGro
 
 	n := 0
 	for pLog := range ch {
-		n += pLog.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().Len()
+		n += pLog.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().Len()
 
 		if n == count {
 			return

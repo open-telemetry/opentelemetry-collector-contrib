@@ -15,11 +15,13 @@
 package internal
 
 import (
+	"math"
 	"testing"
 	"time"
 
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/textparse"
+	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/model/pdata"
@@ -41,37 +43,49 @@ var mc = byLookupMetadataCache{
 	"counter": scrape.MetricMetadata{
 		Metric: "cr",
 		Type:   textparse.MetricTypeCounter,
-		Help:   "This is some help",
+		Help:   "This is some help for a counter",
 		Unit:   "By",
 	},
 	"gauge": scrape.MetricMetadata{
 		Metric: "ge",
 		Type:   textparse.MetricTypeGauge,
-		Help:   "This is some help",
+		Help:   "This is some help for a gauge",
 		Unit:   "1",
 	},
 	"gaugehistogram": scrape.MetricMetadata{
 		Metric: "gh",
 		Type:   textparse.MetricTypeGaugeHistogram,
-		Help:   "This is some help",
+		Help:   "This is some help for a gauge histogram",
 		Unit:   "?",
 	},
 	"histogram": scrape.MetricMetadata{
 		Metric: "hg",
 		Type:   textparse.MetricTypeHistogram,
-		Help:   "This is some help",
+		Help:   "This is some help for a histogram",
+		Unit:   "ms",
+	},
+	"histogram_stale": scrape.MetricMetadata{
+		Metric: "hg_stale",
+		Type:   textparse.MetricTypeHistogram,
+		Help:   "This is some help for a histogram",
 		Unit:   "ms",
 	},
 	"summary": scrape.MetricMetadata{
 		Metric: "s",
 		Type:   textparse.MetricTypeSummary,
-		Help:   "This is some help",
+		Help:   "This is some help for a summary",
+		Unit:   "ms",
+	},
+	"summary_stale": scrape.MetricMetadata{
+		Metric: "s_stale",
+		Type:   textparse.MetricTypeSummary,
+		Help:   "This is some help for a summary",
 		Unit:   "ms",
 	},
 	"unknown": scrape.MetricMetadata{
 		Metric: "u",
 		Type:   textparse.MetricTypeUnknown,
-		Help:   "This is some help",
+		Help:   "This is some help for an unknown metric",
 		Unit:   "?",
 	},
 }
@@ -114,6 +128,29 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 				return point
 			},
 		},
+		{
+			name:                "histogram that is stale",
+			metricName:          "histogram_stale",
+			intervalStartTimeMs: 11,
+			labels:              labels.Labels{{Name: "a", Value: "A"}, {Name: "le", Value: "0.75"}, {Name: "b", Value: "B"}},
+			scrapes: []*scrape{
+				{at: 11, value: math.Float64frombits(value.StaleNaN), metric: "histogram_stale_count"},
+				{at: 11, value: math.Float64frombits(value.StaleNaN), metric: "histogram_stale_sum"},
+				{at: 13, value: math.Float64frombits(value.StaleNaN), metric: "value"},
+			},
+			want: func() pdata.HistogramDataPoint {
+				point := pdata.NewHistogramDataPoint()
+				point.SetTimestamp(pdata.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
+				point.SetFlags(pdataStaleFlags)
+				point.SetBucketCounts([]uint64{0})
+				point.SetExplicitBounds([]float64{})
+				point.SetStartTimestamp(pdata.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
+				attributes := point.Attributes()
+				attributes.InsertString("a", "A")
+				attributes.InsertString("b", "B")
+				return point
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -128,8 +165,15 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 			groupKey := mp.getGroupKey(tt.labels.Copy())
 			require.NotNil(t, mp.groups[groupKey], "Expecting the groupKey to have a value given key:: "+groupKey)
 
-			hdpL := pdata.NewHistogramDataPointSlice()
-			require.True(t, mp.groups[groupKey].toDistributionPoint(mp.labelKeysOrdered, &hdpL))
+			sl := pdata.NewMetricSlice()
+			mp.ToMetricPdata(&sl)
+
+			require.Equal(t, 1, sl.Len(), "Exactly one metric expected")
+			metric := sl.At(0)
+			require.Equal(t, mc[tt.metricName].Help, metric.Description(), "Expected help metadata in metric description")
+			require.Equal(t, mc[tt.metricName].Unit, metric.Unit(), "Expected unit metadata in metric")
+
+			hdpL := metric.Histogram().DataPoints()
 			require.Equal(t, 1, hdpL.Len(), "Exactly one point expected")
 			got := hdpL.At(0)
 			want := tt.want()
@@ -236,6 +280,87 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 				return point
 			},
 		},
+		{
+			name: "summary_stale",
+			labelsScrapes: []*labelsScrapes{
+				{
+					labels: labels.Labels{
+						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.0"}, {Name: "b", Value: "B"},
+					},
+					scrapes: []*scrape{
+						{at: 10, value: 10, metric: "summary_stale_count"},
+						{at: 10, value: 12, metric: "summary_stale_sum"},
+						{at: 10, value: 8, metric: "value"},
+					},
+				},
+				{
+					labels: labels.Labels{
+						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.75"}, {Name: "b", Value: "B"},
+					},
+					scrapes: []*scrape{
+						{at: 11, value: 10, metric: "summary_stale_count"},
+						{at: 11, value: 1004.78, metric: "summary_stale_sum"},
+						{at: 11, value: 33.7, metric: "value"},
+					},
+				},
+				{
+					labels: labels.Labels{
+						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.50"}, {Name: "b", Value: "B"},
+					},
+					scrapes: []*scrape{
+						{at: 12, value: 10, metric: "summary_stale_count"},
+						{at: 12, value: 13, metric: "summary_stale_sum"},
+						{at: 12, value: 27, metric: "value"},
+					},
+				},
+				{
+					labels: labels.Labels{
+						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.90"}, {Name: "b", Value: "B"},
+					},
+					scrapes: []*scrape{
+						{at: 13, value: 10, metric: "summary_stale_count"},
+						{at: 13, value: 14, metric: "summary_stale_sum"},
+						{at: 13, value: 56, metric: "value"},
+					},
+				},
+				{
+					labels: labels.Labels{
+						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.99"}, {Name: "b", Value: "B"},
+					},
+					scrapes: []*scrape{
+						{at: 14, value: math.Float64frombits(value.StaleNaN), metric: "summary_stale_count"},
+						{at: 14, value: math.Float64frombits(value.StaleNaN), metric: "summary_stale_sum"},
+						{at: 14, value: math.Float64frombits(value.StaleNaN), metric: "value"},
+					},
+				},
+			},
+			want: func() pdata.SummaryDataPoint {
+				point := pdata.NewSummaryDataPoint()
+				qtL := point.QuantileValues()
+				qn0 := qtL.AppendEmpty()
+				point.SetFlags(pdataStaleFlags)
+				qn0.SetQuantile(0)
+				qn0.SetValue(0)
+				qn50 := qtL.AppendEmpty()
+				qn50.SetQuantile(.5)
+				qn50.SetValue(0)
+				qn75 := qtL.AppendEmpty()
+				qn75.SetQuantile(.75)
+				qn75.SetValue(0)
+				qn90 := qtL.AppendEmpty()
+				qn90.SetQuantile(.9)
+				qn90.SetValue(0)
+				qn99 := qtL.AppendEmpty()
+				qn99.SetQuantile(.99)
+				qn99.SetValue(0)
+				point.SetTimestamp(pdata.Timestamp(14 * time.Millisecond))      // the time in milliseconds -> nanoseconds.
+				point.SetStartTimestamp(pdata.Timestamp(14 * time.Millisecond)) // the time in milliseconds -> nanoseconds
+				attributes := point.Attributes()
+				attributes.InsertString("a", "A")
+				attributes.InsertString("b", "B")
+				return point
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -256,8 +381,15 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 			}
 			require.NotNil(t, mp.groups[groupKey], "Expecting the groupKey to have a value given key:: "+groupKey)
 
-			sdpL := pdata.NewSummaryDataPointSlice()
-			require.True(t, mp.groups[groupKey].toSummaryPoint(mp.labelKeysOrdered, &sdpL))
+			sl := pdata.NewMetricSlice()
+			mp.ToMetricPdata(&sl)
+
+			require.Equal(t, 1, sl.Len(), "Exactly one metric expected")
+			metric := sl.At(0)
+			require.Equal(t, mc[tt.name].Help, metric.Description(), "Expected help metadata in metric description")
+			require.Equal(t, mc[tt.name].Unit, metric.Unit(), "Expected unit metadata in metric")
+
+			sdpL := metric.Summary().DataPoints()
 			require.Equal(t, 1, sdpL.Len(), "Exactly one point expected")
 			got := sdpL.At(0)
 			want := tt.want()
@@ -332,8 +464,15 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 			groupKey := mp.getGroupKey(tt.labels.Copy())
 			require.NotNil(t, mp.groups[groupKey], "Expecting the groupKey to have a value given key:: "+groupKey)
 
-			ndpL := pdata.NewNumberDataPointSlice()
-			require.True(t, mp.groups[groupKey].toNumberDataPoint(mp.labelKeysOrdered, &ndpL))
+			sl := pdata.NewMetricSlice()
+			mp.ToMetricPdata(&sl)
+
+			require.Equal(t, 1, sl.Len(), "Exactly one metric expected")
+			metric := sl.At(0)
+			require.Equal(t, mc[tt.metricKind].Help, metric.Description(), "Expected help metadata in metric description")
+			require.Equal(t, mc[tt.metricKind].Unit, metric.Unit(), "Expected unit metadata in metric")
+
+			ndpL := metric.Sum().DataPoints()
 			require.Equal(t, 1, ndpL.Len(), "Exactly one point expected")
 			got := ndpL.At(0)
 			want := tt.want()

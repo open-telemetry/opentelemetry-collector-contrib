@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/shirou/gopsutil/v3/process"
@@ -32,9 +33,9 @@ type inProcessCollector struct {
 	factories  component.Factories
 	configStr  string
 	svc        *service.Collector
-	appDone    chan struct{}
 	stopped    bool
 	configFile string
+	wg         sync.WaitGroup
 }
 
 // NewInProcessCollector creates a new inProcessCollector using the supplied component factories.
@@ -69,7 +70,7 @@ func (ipp *inProcessCollector) Start(args StartParams) error {
 	settings := service.CollectorSettings{
 		BuildInfo:      component.NewDefaultBuildInfo(),
 		Factories:      ipp.factories,
-		ConfigProvider: service.NewDefaultConfigProvider(ipp.configFile, nil),
+		ConfigProvider: service.MustNewDefaultConfigProvider([]string{ipp.configFile}, nil),
 	}
 
 	ipp.svc, err = service.New(settings)
@@ -77,22 +78,23 @@ func (ipp *inProcessCollector) Start(args StartParams) error {
 		return err
 	}
 
-	ipp.appDone = make(chan struct{})
+	ipp.wg.Add(1)
 	go func() {
-		defer close(ipp.appDone)
+		defer ipp.wg.Done()
 		if appErr := ipp.svc.Run(context.Background()); appErr != nil {
-			err = appErr
+			// TODO: Pass this to the error handler.
+			panic(appErr)
 		}
 	}()
 
 	for {
 		switch state := ipp.svc.GetState(); state {
 		case service.Starting:
-			time.Sleep(10 * time.Millisecond)
+			time.Sleep(time.Second)
 		case service.Running:
-			return err
+			return nil
 		default:
-			err = fmt.Errorf("unable to start, otelcol state is %d", state)
+			return fmt.Errorf("unable to start, otelcol state is %d", state)
 		}
 	}
 }
@@ -103,7 +105,7 @@ func (ipp *inProcessCollector) Stop() (stopped bool, err error) {
 		ipp.svc.Shutdown()
 		os.Remove(ipp.configFile)
 	}
-	<-ipp.appDone
+	ipp.wg.Wait()
 	stopped = ipp.stopped
 	return stopped, err
 }

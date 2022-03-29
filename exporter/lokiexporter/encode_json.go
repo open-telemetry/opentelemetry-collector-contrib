@@ -33,32 +33,32 @@ type lokiEntry struct {
 	Resources  map[string]interface{} `json:"resources,omitempty"`
 }
 
-func serializeBody(body pdata.AttributeValue) ([]byte, error) {
+func serializeBody(body pdata.Value) ([]byte, error) {
 	var str []byte
 	var err error
 	switch body.Type() {
-	case pdata.AttributeValueTypeEmpty:
+	case pdata.ValueTypeEmpty:
 		// no body
 
-	case pdata.AttributeValueTypeString:
+	case pdata.ValueTypeString:
 		str, err = json.Marshal(body.StringVal())
 
-	case pdata.AttributeValueTypeInt:
+	case pdata.ValueTypeInt:
 		str, err = json.Marshal(body.IntVal())
 
-	case pdata.AttributeValueTypeDouble:
+	case pdata.ValueTypeDouble:
 		str, err = json.Marshal(body.DoubleVal())
 
-	case pdata.AttributeValueTypeBool:
+	case pdata.ValueTypeBool:
 		str, err = json.Marshal(body.BoolVal())
 
-	case pdata.AttributeValueTypeMap:
+	case pdata.ValueTypeMap:
 		str, err = json.Marshal(body.MapVal().AsRaw())
 
-	case pdata.AttributeValueTypeArray:
+	case pdata.ValueTypeSlice:
 		str, err = json.Marshal(attributeValueSliceAsRaw(body.SliceVal()))
 
-	case pdata.AttributeValueTypeBytes:
+	case pdata.ValueTypeBytes:
 		str, err = json.Marshal(body.BytesVal())
 
 	default:
@@ -96,22 +96,22 @@ func encodeJSON(lr pdata.LogRecord, res pdata.Resource) (string, error) {
 }
 
 // Copied from pdata (es AttributeValueSlice) asRaw() since its not exported
-func attributeValueSliceAsRaw(es pdata.AttributeValueSlice) []interface{} {
+func attributeValueSliceAsRaw(es pdata.Slice) []interface{} {
 	rawSlice := make([]interface{}, 0, es.Len())
 	for i := 0; i < es.Len(); i++ {
 		v := es.At(i)
 		switch v.Type() {
-		case pdata.AttributeValueTypeString:
+		case pdata.ValueTypeString:
 			rawSlice = append(rawSlice, v.StringVal())
-		case pdata.AttributeValueTypeInt:
+		case pdata.ValueTypeInt:
 			rawSlice = append(rawSlice, v.IntVal())
-		case pdata.AttributeValueTypeDouble:
+		case pdata.ValueTypeDouble:
 			rawSlice = append(rawSlice, v.DoubleVal())
-		case pdata.AttributeValueTypeBool:
+		case pdata.ValueTypeBool:
 			rawSlice = append(rawSlice, v.BoolVal())
-		case pdata.AttributeValueTypeBytes:
+		case pdata.ValueTypeBytes:
 			rawSlice = append(rawSlice, v.BytesVal())
-		case pdata.AttributeValueTypeEmpty:
+		case pdata.ValueTypeEmpty:
 			rawSlice = append(rawSlice, nil)
 		default:
 			rawSlice = append(rawSlice, "<Invalid array value>")

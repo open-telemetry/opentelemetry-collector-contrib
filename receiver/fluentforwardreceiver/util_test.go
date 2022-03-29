@@ -22,8 +22,8 @@ import (
 // See Logs for rationale.
 type Log struct {
 	Timestamp  int64
-	Body       pdata.AttributeValue
-	Attributes map[string]pdata.AttributeValue
+	Body       pdata.Value
+	Attributes map[string]interface{}
 }
 
 // Logs is a convenience function for constructing logs for tests in a way that is
@@ -32,13 +32,13 @@ type Log struct {
 // Attributes are sorted by key name.
 func Logs(recs ...Log) pdata.Logs {
 	out := pdata.NewLogs()
-	logSlice := out.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().Logs()
+	logSlice := out.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().LogRecords()
 	logSlice.EnsureCapacity(len(recs))
 	for i := range recs {
 		l := logSlice.AppendEmpty()
 		recs[i].Body.CopyTo(l.Body())
 		l.SetTimestamp(pdata.Timestamp(recs[i].Timestamp))
-		pdata.NewAttributeMapFromMap(recs[i].Attributes).CopyTo(l.Attributes())
+		pdata.NewMapFromRaw(recs[i].Attributes).CopyTo(l.Attributes())
 		l.Attributes().Sort()
 	}
 

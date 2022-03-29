@@ -8,6 +8,8 @@ exporters:
   tanzuobservability:
     traces:
       endpoint: "http://localhost:40001"
+    metrics:
+      endpoint: "http://localhost:2916"
     retry_on_failure:
       enabled: true
       initial_interval: 10s

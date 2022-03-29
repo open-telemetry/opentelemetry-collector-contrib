@@ -39,7 +39,8 @@ func newTracesExporter(
 	params component.ExporterCreateSettings,
 ) (component.TracesExporter, error) {
 	s := &jaegerThriftHTTPSender{
-		config: config,
+		config:   config,
+		settings: params.TelemetrySettings,
 	}
 
 	return exporterhelper.NewTracesExporter(
@@ -53,13 +54,14 @@ func newTracesExporter(
 // jaegerThriftHTTPSender forwards spans encoded in the jaeger thrift
 // format to a http server.
 type jaegerThriftHTTPSender struct {
-	config *Config
-	client *http.Client
+	config   *Config
+	client   *http.Client
+	settings component.TelemetrySettings
 }
 
 // start starts the exporter
 func (s *jaegerThriftHTTPSender) start(_ context.Context, host component.Host) (err error) {
-	s.client, err = s.config.HTTPClientSettings.ToClient(host.GetExtensions())
+	s.client, err = s.config.HTTPClientSettings.ToClient(host.GetExtensions(), s.settings)
 
 	if err != nil {
 		return consumererror.NewPermanent(err)
@@ -72,7 +74,7 @@ func (s *jaegerThriftHTTPSender) pushTraceData(
 	ctx context.Context,
 	td pdata.Traces,
 ) error {
-	batches, err := jaegertranslator.InternalTracesToJaegerProto(td)
+	batches, err := jaegertranslator.ProtoFromTraces(td)
 	if err != nil {
 		return consumererror.NewPermanent(fmt.Errorf("failed to push trace data via Jaeger Thrift HTTP exporter: %w", err))
 	}

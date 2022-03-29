@@ -130,13 +130,20 @@ func (mg *metricGroupPdata) toDistributionPoint(orderedLabelKeys []string, dest 
 	bounds := make([]float64, len(mg.complexValue)-1)
 	bucketCounts := make([]uint64, len(mg.complexValue))
 
+	pointIsStale := value.IsStaleNaN(mg.sum) || value.IsStaleNaN(mg.count)
+
 	for i := 0; i < len(mg.complexValue); i++ {
 		if i != len(mg.complexValue)-1 {
 			// not need to add +inf as bound to oc proto
 			bounds[i] = mg.complexValue[i].boundary
 		}
 		adjustedCount := mg.complexValue[i].value
-		if i != 0 {
+		// Buckets still need to be sent to know to set them as stale,
+		// but a staleness NaN converted to uint64 would be an extremely large number.
+		// Setting to 0 instead.
+		if pointIsStale {
+			adjustedCount = 0
+		} else if i != 0 {
 			adjustedCount -= mg.complexValue[i-1].value
 		}
 		bucketCounts[i] = uint64(adjustedCount)
@@ -144,14 +151,15 @@ func (mg *metricGroupPdata) toDistributionPoint(orderedLabelKeys []string, dest 
 
 	point := dest.AppendEmpty()
 
-	if value.IsStaleNaN(mg.sum) || value.IsStaleNaN(mg.count) {
+	if pointIsStale {
 		point.SetFlags(pdataStaleFlags)
 	} else {
-		point.SetExplicitBounds(bounds)
 		point.SetCount(uint64(mg.count))
 		point.SetSum(mg.sum)
-		point.SetBucketCounts(bucketCounts)
 	}
+
+	point.SetExplicitBounds(bounds)
+	point.SetBucketCounts(bucketCounts)
 
 	// The timestamp MUST be in retrieved from milliseconds and converted to nanoseconds.
 	tsNanos := pdataTimestampFromMs(mg.ts)
@@ -180,17 +188,24 @@ func (mg *metricGroupPdata) toSummaryPoint(orderedLabelKeys []string, dest *pdat
 	mg.sortPoints()
 
 	point := dest.AppendEmpty()
-	if value.IsStaleNaN(mg.sum) || value.IsStaleNaN(mg.count) {
+	pointIsStale := value.IsStaleNaN(mg.sum) || value.IsStaleNaN(mg.count)
+	if pointIsStale {
 		point.SetFlags(pdataStaleFlags)
 	} else {
-		quantileValues := point.QuantileValues()
-		for _, p := range mg.complexValue {
-			quantile := quantileValues.AppendEmpty()
-			quantile.SetValue(p.value)
-			quantile.SetQuantile(p.boundary)
-		}
 		point.SetSum(mg.sum)
 		point.SetCount(uint64(mg.count))
+	}
+
+	quantileValues := point.QuantileValues()
+	for _, p := range mg.complexValue {
+		quantile := quantileValues.AppendEmpty()
+		// Quantiles still need to be sent to know to set them as stale,
+		// but a staleness NaN converted to uint64 would be an extremely large number.
+		// By not setting the quantile value, it will default to 0.
+		if !pointIsStale {
+			quantile.SetValue(p.value)
+		}
+		quantile.SetQuantile(p.boundary)
 	}
 
 	// Based on the summary description from https://prometheus.io/docs/concepts/metric_types/#summary
@@ -229,7 +244,7 @@ func (mg *metricGroupPdata) toNumberDataPoint(orderedLabelKeys []string, dest *p
 	return true
 }
 
-func populateAttributesPdata(orderedKeys []string, ls labels.Labels, dest pdata.AttributeMap) {
+func populateAttributesPdata(orderedKeys []string, ls labels.Labels, dest pdata.Map) {
 	src := ls.Map()
 	for _, key := range orderedKeys {
 		if src[key] == "" {
@@ -308,6 +323,8 @@ func (mf *metricFamilyPdata) ToMetricPdata(metrics *pdata.MetricSlice) (int, int
 	metric := pdata.NewMetric()
 	metric.SetDataType(mf.mtype)
 	metric.SetName(mf.name)
+	metric.SetDescription(mf.metadata.Help)
+	metric.SetUnit(mf.metadata.Unit)
 
 	pointCount := 0
 

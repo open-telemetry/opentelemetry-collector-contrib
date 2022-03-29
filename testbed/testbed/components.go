@@ -25,6 +25,13 @@ import (
 	"go.opentelemetry.io/collector/processor/memorylimiterprocessor"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver"
 )
 
 // Components returns the set of components for tests
@@ -41,14 +48,20 @@ func Components() (
 	errs = multierr.Append(errs, err)
 
 	receivers, err := component.MakeReceiverFactoryMap(
+		jaegerreceiver.NewFactory(),
+		opencensusreceiver.NewFactory(),
 		otlpreceiver.NewFactory(),
+		zipkinreceiver.NewFactory(),
 	)
 	errs = multierr.Append(errs, err)
 
 	exporters, err := component.MakeExporterFactoryMap(
+		jaegerexporter.NewFactory(),
 		loggingexporter.NewFactory(),
+		opencensusexporter.NewFactory(),
 		otlpexporter.NewFactory(),
 		otlphttpexporter.NewFactory(),
+		zipkinexporter.NewFactory(),
 	)
 	errs = multierr.Append(errs, err)
 

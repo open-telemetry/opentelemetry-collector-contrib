@@ -140,7 +140,7 @@ func collectLabelKeysNumberDataPoints(dps pdata.NumberDataPointSlice, keySet map
 	allInt := true
 	for i := 0; i < dps.Len(); i++ {
 		addLabelKeys(keySet, dps.At(i).Attributes())
-		if dps.At(i).Type() != pdata.MetricValueTypeInt {
+		if dps.At(i).ValueType() != pdata.MetricValueTypeInt {
 			allInt = false
 		}
 	}
@@ -159,8 +159,8 @@ func collectLabelKeysSummaryDataPoints(dhdp pdata.SummaryDataPointSlice, keySet 
 	}
 }
 
-func addLabelKeys(keySet map[string]struct{}, attributes pdata.AttributeMap) {
-	attributes.Range(func(k string, v pdata.AttributeValue) bool {
+func addLabelKeys(keySet map[string]struct{}, attributes pdata.Map) {
+	attributes.Range(func(k string, v pdata.Value) bool {
 		keySet[k] = struct{}{}
 		return true
 	})
@@ -227,7 +227,7 @@ func numberDataPointsToOC(dps pdata.NumberDataPointSlice, labelKeys *labelKeysAn
 		point := &ocmetrics.Point{
 			Timestamp: timestampAsTimestampPb(dp.Timestamp()),
 		}
-		switch dp.Type() {
+		switch dp.ValueType() {
 		case pdata.MetricValueTypeInt:
 			point.Value = &ocmetrics.Point_Int64Value{
 				Int64Value: dp.IntVal(),
@@ -364,7 +364,7 @@ func exemplarsToOC(bounds []float64, ocBuckets []*ocmetrics.DistributionValue_Bu
 	for i := 0; i < exemplars.Len(); i++ {
 		exemplar := exemplars.At(i)
 		var val float64
-		switch exemplar.Type() {
+		switch exemplar.ValueType() {
 		case pdata.MetricValueTypeInt:
 			val = float64(exemplar.IntVal())
 		case pdata.MetricValueTypeDouble:
@@ -381,11 +381,11 @@ func exemplarsToOC(bounds []float64, ocBuckets []*ocmetrics.DistributionValue_Bu
 	}
 }
 
-func exemplarToOC(filteredLabels pdata.AttributeMap, value float64, timestamp pdata.Timestamp) *ocmetrics.DistributionValue_Exemplar {
+func exemplarToOC(filteredLabels pdata.Map, value float64, timestamp pdata.Timestamp) *ocmetrics.DistributionValue_Exemplar {
 	var labels map[string]string
 	if filteredLabels.Len() != 0 {
 		labels = make(map[string]string, filteredLabels.Len())
-		filteredLabels.Range(func(k string, v pdata.AttributeValue) bool {
+		filteredLabels.Range(func(k string, v pdata.Value) bool {
 			labels[k] = v.AsString()
 			return true
 		})
@@ -398,7 +398,7 @@ func exemplarToOC(filteredLabels pdata.AttributeMap, value float64, timestamp pd
 	}
 }
 
-func attributeValuesToOC(labels pdata.AttributeMap, labelKeys *labelKeysAndType) []*ocmetrics.LabelValue {
+func attributeValuesToOC(labels pdata.Map, labelKeys *labelKeysAndType) []*ocmetrics.LabelValue {
 	if len(labelKeys.keys) == 0 {
 		return nil
 	}
@@ -412,7 +412,7 @@ func attributeValuesToOC(labels pdata.AttributeMap, labelKeys *labelKeysAndType)
 	}
 
 	// Visit all defined labels in the point and override defaults with actual values
-	labels.Range(func(k string, v pdata.AttributeValue) bool {
+	labels.Range(func(k string, v pdata.Value) bool {
 		// Find the appropriate label value that we need to update
 		keyIndex := labelKeys.keyIndices[k]
 		labelValue := labelValues[keyIndex]

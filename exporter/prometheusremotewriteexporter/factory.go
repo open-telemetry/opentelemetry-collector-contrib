@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/service/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
@@ -34,10 +35,10 @@ const (
 
 // NewFactory creates a new Prometheus Remote Write exporter.
 func NewFactory() component.ExporterFactory {
-	return exporterhelper.NewFactory(
+	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithMetrics(createMetricsExporter))
+		component.WithMetricsExporter(createMetricsExporter))
 }
 
 func createMetricsExporter(_ context.Context, set component.ExporterCreateSettings,
@@ -48,7 +49,7 @@ func createMetricsExporter(_ context.Context, set component.ExporterCreateSettin
 		return nil, errors.New("invalid configuration")
 	}
 
-	prwe, err := NewPRWExporter(prwCfg, set.BuildInfo)
+	prwe, err := newPRWExporter(prwCfg, set)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +85,8 @@ func createDefaultConfig() config.Exporter {
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		Namespace:        "",
 		ExternalLabels:   map[string]string{},
-		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
+		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
+		sanitizeLabel:    featuregate.IsEnabled(dropSanitizationGate.ID),
 		RetrySettings: exporterhelper.RetrySettings{
 			Enabled:         true,
 			InitialInterval: 50 * time.Millisecond,
@@ -96,7 +98,7 @@ func createDefaultConfig() config.Exporter {
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
 			ReadBufferSize:  0,
 			WriteBufferSize: 512 * 1024,
-			Timeout:         exporterhelper.DefaultTimeoutSettings().Timeout,
+			Timeout:         exporterhelper.NewDefaultTimeoutSettings().Timeout,
 			Headers:         map[string]string{},
 		},
 		// TODO(jbd): Adjust the default queue size.

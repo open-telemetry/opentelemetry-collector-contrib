@@ -471,9 +471,8 @@ func TestNewEventExporter(t *testing.T) {
 
 func makeSampleResourceLogs() pdata.Logs {
 	out := pdata.NewLogs()
-	l := out.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().Logs().AppendEmpty()
+	l := out.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty()
 
-	l.SetName("shutdown")
 	l.SetTimestamp(pdata.Timestamp(1000))
 	attrs := l.Attributes()
 
@@ -481,7 +480,7 @@ func makeSampleResourceLogs() pdata.Logs {
 	attrs.InsertString("k1", "v1")
 	attrs.InsertString("k2", "v2")
 
-	propMapVal := pdata.NewAttributeValueMap()
+	propMapVal := pdata.NewValueMap()
 	propMap := propMapVal.MapVal()
 	propMap.InsertString("env", "prod")
 	propMap.InsertBool("isActive", true)
@@ -489,7 +488,8 @@ func makeSampleResourceLogs() pdata.Logs {
 	propMap.InsertDouble("temp", 40.5)
 	propMap.Sort()
 	attrs.Insert("com.splunk.signalfx.event_properties", propMapVal)
-	attrs.Insert("com.splunk.signalfx.event_category", pdata.NewAttributeValueInt(int64(sfxpb.EventCategory_USER_DEFINED)))
+	attrs.Insert("com.splunk.signalfx.event_category", pdata.NewValueInt(int64(sfxpb.EventCategory_USER_DEFINED)))
+	attrs.Insert("com.splunk.signalfx.event_type", pdata.NewValueString("shutdown"))
 
 	l.Attributes().Sort()
 
@@ -515,7 +515,9 @@ func TestConsumeEventData(t *testing.T) {
 			name: "no_event_attribute",
 			resourceLogs: func() pdata.Logs {
 				out := makeSampleResourceLogs()
-				out.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Attributes().Delete("com.splunk.signalfx.event_category")
+				attrs := out.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(0).Attributes()
+				attrs.Delete("com.splunk.signalfx.event_category")
+				attrs.Delete("com.splunk.signalfx.event_type")
 				return out
 			}(),
 			reqTestFunc:          nil,
@@ -527,8 +529,8 @@ func TestConsumeEventData(t *testing.T) {
 			resourceLogs: func() pdata.Logs {
 				out := makeSampleResourceLogs()
 
-				attrs := out.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Attributes()
-				mapAttr := pdata.NewAttributeValueMap()
+				attrs := out.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(0).Attributes()
+				mapAttr := pdata.NewValueMap()
 				attrs.Insert("map", mapAttr)
 
 				propsAttrs, _ := attrs.Get("com.splunk.signalfx.event_properties")
@@ -706,14 +708,13 @@ func generateLargeDPBatch() pdata.Metrics {
 
 func generateLargeEventBatch() pdata.Logs {
 	out := pdata.NewLogs()
-	logs := out.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().Logs()
+	logs := out.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().LogRecords()
 
 	batchSize := 65000
 	logs.EnsureCapacity(batchSize)
 	ts := time.Now()
 	for i := 0; i < batchSize; i++ {
 		lr := logs.AppendEmpty()
-		lr.SetName("test_" + strconv.Itoa(i))
 		lr.Attributes().InsertString("k0", "k1")
 		lr.Attributes().InsertNull("com.splunk.signalfx.event_category")
 		lr.SetTimestamp(pdata.NewTimestampFromTime(ts))
@@ -992,7 +993,7 @@ func BenchmarkExporterConsumeData(b *testing.B) {
 	metrics := pdata.NewMetrics()
 	tmd := testMetricsData()
 	for i := 0; i < batchSize; i++ {
-		tmd.CopyTo(metrics.ResourceMetrics().AppendEmpty())
+		tmd.ResourceMetrics().At(0).CopyTo(metrics.ResourceMetrics().AppendEmpty())
 	}
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

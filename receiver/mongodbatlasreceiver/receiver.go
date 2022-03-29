@@ -42,28 +42,17 @@ type timeconstraints struct {
 }
 
 func newMongoDBAtlasScraper(log *zap.Logger, cfg *Config) (scraperhelper.Scraper, error) {
-	client, err := internal.NewMongoDBAtlasClient(cfg.PublicKey, cfg.PrivateKey, log)
+	client, err := internal.NewMongoDBAtlasClient(cfg.PublicKey, cfg.PrivateKey, cfg.RetrySettings, log)
 	if err != nil {
 		return nil, err
 	}
 	recv := &receiver{log: log, cfg: cfg, client: client}
-	return scraperhelper.NewScraper(typeStr, recv.scrape)
+	return scraperhelper.NewScraper(typeStr, recv.scrape, scraperhelper.WithShutdown(recv.shutdown))
 }
 
 func (s *receiver) scrape(ctx context.Context) (pdata.Metrics, error) {
-	var start time.Time
-	if s.lastRun.IsZero() {
-		start = s.lastRun
-	} else {
-		start = time.Now().Add(s.cfg.CollectionInterval * -1)
-	}
 	now := time.Now()
-	timeConstraints := timeconstraints{
-		start.UTC().Format(time.RFC3339),
-		now.UTC().Format(time.RFC3339),
-		s.cfg.Granularity,
-	}
-	metrics, err := s.poll(ctx, timeConstraints)
+	metrics, err := s.poll(ctx, s.timeConstraints(now))
 	if err != nil {
 		return pdata.Metrics{}, err
 	}
@@ -71,21 +60,40 @@ func (s *receiver) scrape(ctx context.Context) (pdata.Metrics, error) {
 	return metrics, nil
 }
 
+func (s *receiver) timeConstraints(now time.Time) timeconstraints {
+	var start time.Time
+	if s.lastRun.IsZero() {
+		start = now.Add(s.cfg.CollectionInterval * -1)
+	} else {
+		start = s.lastRun
+	}
+	return timeconstraints{
+		start.UTC().Format(time.RFC3339),
+		now.UTC().Format(time.RFC3339),
+		s.cfg.Granularity,
+	}
+}
+
+func (s *receiver) shutdown(context.Context) error {
+	return s.client.Shutdown()
+}
+
 func (s *receiver) poll(ctx context.Context, time timeconstraints) (pdata.Metrics, error) {
-	resourceAttributes := pdata.NewAttributeMap()
+	resourceAttributes := pdata.NewMap()
 	allMetrics := pdata.NewMetrics()
 	orgs, err := s.client.Organizations(ctx)
 	if err != nil {
 		return pdata.Metrics{}, errors.Wrap(err, "error retrieving organizations")
 	}
 	for _, org := range orgs {
-		resourceAttributes.InsertString("mongodb.atlas.org_name", org.Name)
+		resourceAttributes.InsertString("mongodb_atlas.org_name", org.Name)
 		projects, err := s.client.Projects(ctx, org.ID)
 		if err != nil {
 			return pdata.Metrics{}, errors.Wrap(err, "error retrieving projects")
 		}
 		for _, project := range projects {
-			resourceAttributes.InsertString("mongodb.atlas.project", project.Name)
+			resourceAttributes.InsertString("mongodb_atlas.project.name", project.Name)
+			resourceAttributes.InsertString("mongodb_atlas.project.id", project.ID)
 			processes, err := s.client.Processes(ctx, project.ID)
 			if err != nil {
 				return pdata.Metrics{}, errors.Wrap(err, "error retrieving MongoDB Atlas processes")
@@ -95,6 +103,8 @@ func (s *receiver) poll(ctx context.Context, time timeconstraints) (pdata.Metric
 				resourceAttributes.CopyTo(resource.Attributes())
 				resource.Attributes().InsertString("host.name", process.Hostname)
 				resource.Attributes().InsertString("process.port", strconv.Itoa(process.Port))
+				resource.Attributes().InsertString("process.type_name", process.TypeName)
+				resource.Attributes().InsertString("process.id", process.ID)
 				resourceMetrics, err := s.extractProcessMetrics(
 					ctx,
 					time,
@@ -184,7 +194,7 @@ func (s *receiver) extractProcessDatabaseMetrics(
 		dbResource := pdata.NewResource()
 		resource.CopyTo(dbResource)
 		resource.Attributes().
-			InsertString("mongodb.atlas.database_name", db.DatabaseName)
+			InsertString("mongodb_atlas.db.name", db.DatabaseName)
 		metrics, err := s.client.ProcessDatabaseMetrics(
 			ctx,
 			resource,
@@ -219,7 +229,7 @@ func (s *receiver) extractProcessDiskMetrics(
 		diskResource := pdata.NewResource()
 		resource.CopyTo(diskResource)
 		diskResource.Attributes().
-			InsertString("mongodb.atlas.partition", disk.PartitionName)
+			InsertString("mongodb_atlas.disk.partition", disk.PartitionName)
 		metrics, err := s.client.ProcessDiskMetrics(
 			ctx,
 			diskResource,

@@ -23,6 +23,8 @@ receivers:
     properties:
       property.one: value.one
       property.two: value.two.a=value.two.b,value.two.c=value.two.d
+    additional_jars:
+      - /path/to/additional.jar
   jmx/missingendpoint:
     groovy_script: mygroovyscriptpath
   jmx/missinggroovy:

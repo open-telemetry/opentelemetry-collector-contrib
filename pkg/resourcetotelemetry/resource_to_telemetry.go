@@ -75,7 +75,7 @@ func convertToMetricsAttributes(md pdata.Metrics) pdata.Metrics {
 }
 
 // addAttributesToMetric adds additional labels to the given metric
-func addAttributesToMetric(metric *pdata.Metric, labelMap pdata.AttributeMap) {
+func addAttributesToMetric(metric *pdata.Metric, labelMap pdata.Map) {
 	switch metric.DataType() {
 	case pdata.MetricDataTypeGauge:
 		addAttributesToNumberDataPoints(metric.Gauge().DataPoints(), labelMap)
@@ -83,23 +83,39 @@ func addAttributesToMetric(metric *pdata.Metric, labelMap pdata.AttributeMap) {
 		addAttributesToNumberDataPoints(metric.Sum().DataPoints(), labelMap)
 	case pdata.MetricDataTypeHistogram:
 		addAttributesToHistogramDataPoints(metric.Histogram().DataPoints(), labelMap)
+	case pdata.MetricDataTypeSummary:
+		addAttributesToSummaryDataPoints(metric.Summary().DataPoints(), labelMap)
+	case pdata.MetricDataTypeExponentialHistogram:
+		addAttributesToExponentialHistogramDataPoints(metric.ExponentialHistogram().DataPoints(), labelMap)
 	}
 }
 
-func addAttributesToNumberDataPoints(ps pdata.NumberDataPointSlice, newAttributeMap pdata.AttributeMap) {
+func addAttributesToNumberDataPoints(ps pdata.NumberDataPointSlice, newAttributeMap pdata.Map) {
 	for i := 0; i < ps.Len(); i++ {
 		joinAttributeMaps(newAttributeMap, ps.At(i).Attributes())
 	}
 }
 
-func addAttributesToHistogramDataPoints(ps pdata.HistogramDataPointSlice, newAttributeMap pdata.AttributeMap) {
+func addAttributesToHistogramDataPoints(ps pdata.HistogramDataPointSlice, newAttributeMap pdata.Map) {
 	for i := 0; i < ps.Len(); i++ {
 		joinAttributeMaps(newAttributeMap, ps.At(i).Attributes())
 	}
 }
 
-func joinAttributeMaps(from, to pdata.AttributeMap) {
-	from.Range(func(k string, v pdata.AttributeValue) bool {
+func addAttributesToSummaryDataPoints(ps pdata.SummaryDataPointSlice, newAttributeMap pdata.Map) {
+	for i := 0; i < ps.Len(); i++ {
+		joinAttributeMaps(newAttributeMap, ps.At(i).Attributes())
+	}
+}
+
+func addAttributesToExponentialHistogramDataPoints(ps pdata.ExponentialHistogramDataPointSlice, newAttributeMap pdata.Map) {
+	for i := 0; i < ps.Len(); i++ {
+		joinAttributeMaps(newAttributeMap, ps.At(i).Attributes())
+	}
+}
+
+func joinAttributeMaps(from, to pdata.Map) {
+	from.Range(func(k string, v pdata.Value) bool {
 		to.Upsert(k, v)
 		return true
 	})

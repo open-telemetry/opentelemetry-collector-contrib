@@ -46,11 +46,12 @@ const (
 	// Rule.ScaleFactorsInt key/values as metric_name/divisor
 	ActionDivideInt Action = "divide_int"
 
-	// ActionMultiplyFloat scales integer metric by dividing their values using
+	// ActionMultiplyFloat scales integer metric by multiplying their values using
 	// Rule.ScaleFactorsFloat key/values as metric_name/multiplying_factor
+	// This rule can only be applied to metrics that are a float value
 	ActionMultiplyFloat Action = "multiply_float"
 
-	// ActionConvertValues converts float metrics values to integer values using
+	// ActionConvertValues converts metric values from int to float or float to int
 	// Rule.TypesMapping key/values as metric_name/new_type.
 	ActionConvertValues Action = "convert_values"
 

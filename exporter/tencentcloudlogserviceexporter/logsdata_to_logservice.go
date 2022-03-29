@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"google.golang.org/protobuf/proto"
 
 	cls "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter/proto"
@@ -33,7 +33,6 @@ const (
 	clsLogTimeUnixNano   = "timeUnixNano"
 	clsLogSeverityNumber = "severityNumber"
 	clsLogSeverityText   = "severityText"
-	clsLogName           = "name"
 	clsLogContent        = "content"
 	clsLogAttribute      = "attribute"
 	clsLogFlags          = "flags"
@@ -57,7 +56,7 @@ func convertLogs(ld pdata.Logs) []*cls.Log {
 		for j := 0; j < ills.Len(); j++ {
 			ils := ills.At(j)
 			instrumentationLibraryContents := instrumentationLibraryToLogContents(ils.InstrumentationLibrary())
-			logs := ils.Logs()
+			logs := ils.LogRecords()
 			for j := 0; j < logs.Len(); j++ {
 				clsLog := mapLogRecordToLogService(logs.At(j), resourceContents, instrumentationLibraryContents)
 				if clsLog != nil {
@@ -83,7 +82,7 @@ func resourceToLogContents(resource pdata.Resource) []*cls.Log_Content {
 	}
 
 	fields := map[string]interface{}{}
-	attrs.Range(func(k string, v pdata.AttributeValue) bool {
+	attrs.Range(func(k string, v pdata.Value) bool {
 		if k == conventions.AttributeServiceName || k == conventions.AttributeHostName {
 			return true
 		}
@@ -127,7 +126,7 @@ func instrumentationLibraryToLogContents(instrumentationLibrary pdata.Instrument
 func mapLogRecordToLogService(lr pdata.LogRecord,
 	resourceContents,
 	instrumentationLibraryContents []*cls.Log_Content) *cls.Log {
-	if lr.Body().Type() == pdata.AttributeValueTypeEmpty {
+	if lr.Body().Type() == pdata.ValueTypeEmpty {
 		return nil
 	}
 	var clsLog cls.Log
@@ -137,7 +136,7 @@ func mapLogRecordToLogService(lr pdata.LogRecord,
 	clsLog.Contents = make([]*cls.Log_Content, 0, preAllocCount+len(resourceContents)+len(instrumentationLibraryContents))
 
 	fields := map[string]interface{}{}
-	lr.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+	lr.Attributes().Range(func(k string, v pdata.Value) bool {
 		fields[k] = v.AsString()
 		return true
 	})
@@ -158,10 +157,6 @@ func mapLogRecordToLogService(lr pdata.LogRecord,
 		{
 			Key:   proto.String(clsLogSeverityText),
 			Value: proto.String(lr.SeverityText()),
-		},
-		{
-			Key:   proto.String(clsLogName),
-			Value: proto.String(lr.Name()),
 		},
 		{
 			Key:   proto.String(clsLogAttribute),

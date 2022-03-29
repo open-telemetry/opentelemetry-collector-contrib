@@ -19,7 +19,7 @@ import (
 	"os"
 	"regexp"
 
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"k8s.io/apimachinery/pkg/selection"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -43,31 +43,31 @@ const (
 	metadataPodStartTime = "k8s.pod.start_time"
 )
 
-// Option represents a configuration option that can be passes.
+// option represents a configuration option that can be passes.
 // to the k8s-tagger
-type Option func(*kubernetesprocessor) error
+type option func(*kubernetesprocessor) error
 
-// WithAPIConfig provides k8s API related configuration to the processor.
+// withAPIConfig provides k8s API related configuration to the processor.
 // It defaults the authentication method to in-cluster auth using service accounts.
-func WithAPIConfig(cfg k8sconfig.APIConfig) Option {
+func withAPIConfig(cfg k8sconfig.APIConfig) option {
 	return func(p *kubernetesprocessor) error {
 		p.apiConfig = cfg
 		return p.apiConfig.Validate()
 	}
 }
 
-// WithPassthrough enables passthrough mode. In passthrough mode, the processor
+// withPassthrough enables passthrough mode. In passthrough mode, the processor
 // only detects and tags the pod IP and does not invoke any k8s APIs.
-func WithPassthrough() Option {
+func withPassthrough() option {
 	return func(p *kubernetesprocessor) error {
 		p.passthroughMode = true
 		return nil
 	}
 }
 
-// WithExtractMetadata allows specifying options to control extraction of pod metadata.
+// withExtractMetadata allows specifying options to control extraction of pod metadata.
 // If no fields explicitly provided, all metadata extracted by default.
-func WithExtractMetadata(fields ...string) Option {
+func withExtractMetadata(fields ...string) option {
 	return func(p *kubernetesprocessor) error {
 		if len(fields) == 0 {
 			fields = []string{
@@ -116,8 +116,8 @@ func WithExtractMetadata(fields ...string) Option {
 	}
 }
 
-// WithExtractLabels allows specifying options to control extraction of pod labels.
-func WithExtractLabels(labels ...FieldExtractConfig) Option {
+// withExtractLabels allows specifying options to control extraction of pod labels.
+func withExtractLabels(labels ...FieldExtractConfig) option {
 	return func(p *kubernetesprocessor) error {
 		labels, err := extractFieldRules("labels", labels...)
 		if err != nil {
@@ -128,8 +128,8 @@ func WithExtractLabels(labels ...FieldExtractConfig) Option {
 	}
 }
 
-// WithExtractAnnotations allows specifying options to control extraction of pod annotations tags.
-func WithExtractAnnotations(annotations ...FieldExtractConfig) Option {
+// withExtractAnnotations allows specifying options to control extraction of pod annotations tags.
+func withExtractAnnotations(annotations ...FieldExtractConfig) option {
 	return func(p *kubernetesprocessor) error {
 		annotations, err := extractFieldRules("annotations", annotations...)
 		if err != nil {
@@ -193,8 +193,8 @@ func extractFieldRules(fieldType string, fields ...FieldExtractConfig) ([]kube.F
 	return rules, nil
 }
 
-// WithFilterNode allows specifying options to control filtering pods by a node/host.
-func WithFilterNode(node, nodeFromEnvVar string) Option {
+// withFilterNode allows specifying options to control filtering pods by a node/host.
+func withFilterNode(node, nodeFromEnvVar string) option {
 	return func(p *kubernetesprocessor) error {
 		if nodeFromEnvVar != "" {
 			p.filters.Node = os.Getenv(nodeFromEnvVar)
@@ -205,16 +205,16 @@ func WithFilterNode(node, nodeFromEnvVar string) Option {
 	}
 }
 
-// WithFilterNamespace allows specifying options to control filtering pods by a namespace.
-func WithFilterNamespace(ns string) Option {
+// withFilterNamespace allows specifying options to control filtering pods by a namespace.
+func withFilterNamespace(ns string) option {
 	return func(p *kubernetesprocessor) error {
 		p.filters.Namespace = ns
 		return nil
 	}
 }
 
-// WithFilterLabels allows specifying options to control filtering pods by pod labels.
-func WithFilterLabels(filters ...FieldFilterConfig) Option {
+// withFilterLabels allows specifying options to control filtering pods by pod labels.
+func withFilterLabels(filters ...FieldFilterConfig) option {
 	return func(p *kubernetesprocessor) error {
 		labels := []kube.FieldFilter{}
 		for _, f := range filters {
@@ -246,8 +246,8 @@ func WithFilterLabels(filters ...FieldFilterConfig) Option {
 	}
 }
 
-// WithFilterFields allows specifying options to control filtering pods by pod fields.
-func WithFilterFields(filters ...FieldFilterConfig) Option {
+// withFilterFields allows specifying options to control filtering pods by pod fields.
+func withFilterFields(filters ...FieldFilterConfig) option {
 	return func(p *kubernetesprocessor) error {
 		fields := []kube.FieldFilter{}
 		for _, f := range filters {
@@ -275,8 +275,8 @@ func WithFilterFields(filters ...FieldFilterConfig) Option {
 	}
 }
 
-// WithExtractPodAssociations allows specifying options to associate pod metadata with incoming resource
-func WithExtractPodAssociations(podAssociations ...PodAssociationConfig) Option {
+// withExtractPodAssociations allows specifying options to associate pod metadata with incoming resource
+func withExtractPodAssociations(podAssociations ...PodAssociationConfig) option {
 	return func(p *kubernetesprocessor) error {
 		associations := make([]kube.Association, 0, len(podAssociations))
 		for _, association := range podAssociations {
@@ -290,8 +290,8 @@ func WithExtractPodAssociations(podAssociations ...PodAssociationConfig) Option 
 	}
 }
 
-// WithExcludes allows specifying pods to exclude
-func WithExcludes(podExclude ExcludeConfig) Option {
+// withExcludes allows specifying pods to exclude
+func withExcludes(podExclude ExcludeConfig) option {
 	return func(p *kubernetesprocessor) error {
 		ignoredNames := kube.Excludes{}
 		names := podExclude.Pods

@@ -39,9 +39,8 @@ func splunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCust
 			logger.Debug("Unsupported value conversion", zap.Any("value", event.Event))
 			return ld, errors.New(cannotConvertValue)
 		}
-		logRecord := ill.Logs().AppendEmpty()
+		logRecord := ill.LogRecords().AppendEmpty()
 		// The SourceType field is the most logical "name" of the event.
-		logRecord.SetName(event.SourceType)
 		attrValue.CopyTo(logRecord.Body())
 
 		// Splunk timestamps are in seconds so convert to nanos by multiplying
@@ -83,37 +82,37 @@ func splunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCust
 	return ld, nil
 }
 
-func convertInterfaceToAttributeValue(logger *zap.Logger, originalValue interface{}) (pdata.AttributeValue, error) {
+func convertInterfaceToAttributeValue(logger *zap.Logger, originalValue interface{}) (pdata.Value, error) {
 	if originalValue == nil {
-		return pdata.NewAttributeValueEmpty(), nil
+		return pdata.NewValueEmpty(), nil
 	} else if value, ok := originalValue.(string); ok {
-		return pdata.NewAttributeValueString(value), nil
+		return pdata.NewValueString(value), nil
 	} else if value, ok := originalValue.(int64); ok {
-		return pdata.NewAttributeValueInt(value), nil
+		return pdata.NewValueInt(value), nil
 	} else if value, ok := originalValue.(float64); ok {
-		return pdata.NewAttributeValueDouble(value), nil
+		return pdata.NewValueDouble(value), nil
 	} else if value, ok := originalValue.(bool); ok {
-		return pdata.NewAttributeValueBool(value), nil
+		return pdata.NewValueBool(value), nil
 	} else if value, ok := originalValue.(map[string]interface{}); ok {
 		mapValue, err := convertToAttributeMap(logger, value)
 		if err != nil {
-			return pdata.NewAttributeValueEmpty(), err
+			return pdata.NewValueEmpty(), err
 		}
 		return mapValue, nil
 	} else if value, ok := originalValue.([]interface{}); ok {
 		arrValue, err := convertToSliceVal(logger, value)
 		if err != nil {
-			return pdata.NewAttributeValueEmpty(), err
+			return pdata.NewValueEmpty(), err
 		}
 		return arrValue, nil
 	} else {
 		logger.Debug("Unsupported value conversion", zap.Any("value", originalValue))
-		return pdata.NewAttributeValueEmpty(), errors.New(cannotConvertValue)
+		return pdata.NewValueEmpty(), errors.New(cannotConvertValue)
 	}
 }
 
-func convertToSliceVal(logger *zap.Logger, value []interface{}) (pdata.AttributeValue, error) {
-	attrVal := pdata.NewAttributeValueArray()
+func convertToSliceVal(logger *zap.Logger, value []interface{}) (pdata.Value, error) {
+	attrVal := pdata.NewValueSlice()
 	arr := attrVal.SliceVal()
 	for _, elt := range value {
 		translatedElt, err := convertInterfaceToAttributeValue(logger, elt)
@@ -126,8 +125,8 @@ func convertToSliceVal(logger *zap.Logger, value []interface{}) (pdata.Attribute
 	return attrVal, nil
 }
 
-func convertToAttributeMap(logger *zap.Logger, value map[string]interface{}) (pdata.AttributeValue, error) {
-	attrVal := pdata.NewAttributeValueMap()
+func convertToAttributeMap(logger *zap.Logger, value map[string]interface{}) (pdata.Value, error) {
+	attrVal := pdata.NewValueMap()
 	attrMap := attrVal.MapVal()
 	keys := make([]string, 0, len(value))
 	for k := range value {

@@ -29,7 +29,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.uber.org/zap"
 )
 
 const (
@@ -43,7 +42,7 @@ func TestNewClient(t *testing.T) {
 		desc        string
 		cfg         *Config
 		host        component.Host
-		logger      *zap.Logger
+		settings    component.TelemetrySettings
 		expectError error
 	}{
 		{
@@ -59,7 +58,7 @@ func TestNewClient(t *testing.T) {
 				},
 			},
 			host:        componenttest.NewNopHost(),
-			logger:      zap.NewNop(),
+			settings:    componenttest.NewNopTelemetrySettings(),
 			expectError: errors.New("failed to create HTTP Client"),
 		},
 		{
@@ -71,14 +70,14 @@ func TestNewClient(t *testing.T) {
 				},
 			},
 			host:        componenttest.NewNopHost(),
-			logger:      zap.NewNop(),
+			settings:    componenttest.NewNopTelemetrySettings(),
 			expectError: nil,
 		},
 	}
 
 	for _, tc := range testCase {
 		t.Run(tc.desc, func(t *testing.T) {
-			ac, err := newClient(tc.cfg, tc.host, tc.logger)
+			ac, err := newClient(tc.cfg, tc.host, tc.settings)
 			if tc.expectError != nil {
 				require.Nil(t, ac)
 				require.Contains(t, err.Error(), tc.expectError.Error())
@@ -91,7 +90,7 @@ func TestNewClient(t *testing.T) {
 				require.Equal(t, tc.cfg.Username, actualClient.creds.username)
 				require.Equal(t, tc.cfg.Password, actualClient.creds.password)
 				require.Equal(t, tc.cfg.Endpoint, actualClient.hostEndpoint)
-				require.Equal(t, tc.logger, actualClient.logger)
+				require.Equal(t, tc.settings.Logger, actualClient.logger)
 				require.NotNil(t, actualClient.client)
 			}
 		})
@@ -304,7 +303,7 @@ func createTestClient(t *testing.T, baseEndpoint string) client {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = baseEndpoint
 
-	testClient, err := newClient(cfg, componenttest.NewNopHost(), zap.NewNop())
+	testClient, err := newClient(cfg, componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 	return testClient
 }

@@ -57,15 +57,6 @@ func NewStatusCodeFilter(logger *zap.Logger, statusCodeString []string) (PolicyE
 	}, nil
 }
 
-// OnLateArrivingSpans notifies the evaluator that the given list of spans arrived
-// after the sampling decision was already taken for the trace.
-// This gives the evaluator a chance to log any message/metrics and/or update any
-// related internal state.
-func (r *statusCodeFilter) OnLateArrivingSpans(Decision, []*pdata.Span) error {
-	r.logger.Debug("Triggering action for late arriving spans in status code filter")
-	return nil
-}
-
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
 func (r *statusCodeFilter) Evaluate(_ pdata.TraceID, trace *TraceData) (Decision, error) {
 	r.logger.Debug("Evaluating spans in status code filter")

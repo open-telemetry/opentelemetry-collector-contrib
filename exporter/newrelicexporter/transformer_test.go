@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.uber.org/zap"
 )
 
@@ -48,11 +49,11 @@ func TestCommonAttributes(t *testing.T) {
 	assert.Equal(t, "the-collector", commonAttrs[collectorNameKey])
 	assert.Equal(t, "0.0.1", commonAttrs[collectorVersionKey])
 	assert.Equal(t, "R1", commonAttrs["resource"])
-	assert.Equal(t, "test name", commonAttrs[instrumentationNameKey])
-	assert.Equal(t, "test version", commonAttrs[instrumentationVersionKey])
+	assert.Equal(t, "test name", commonAttrs[conventions.OtelLibraryName])
+	assert.Equal(t, "test version", commonAttrs[conventions.OtelLibraryVersion])
 
 	assert.Equal(t, 1, len(details.attributeMetadataCount))
-	assert.Equal(t, 1, details.attributeMetadataCount[attributeStatsKey{location: attributeLocationResource, attributeType: pdata.AttributeValueTypeString}])
+	assert.Equal(t, 1, details.attributeMetadataCount[attributeStatsKey{location: attributeLocationResource, attributeType: pdata.ValueTypeString}])
 }
 
 func TestDoesNotCaptureResourceAttributeMetadata(t *testing.T) {
@@ -167,8 +168,8 @@ func TestCaptureSpanAttributeMetadata(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, 2, len(details.attributeMetadataCount))
-	assert.Equal(t, 1, details.attributeMetadataCount[attributeStatsKey{location: attributeLocationSpan, attributeType: pdata.AttributeValueTypeInt}])
-	assert.Equal(t, 1, details.attributeMetadataCount[attributeStatsKey{location: attributeLocationSpanEvent, attributeType: pdata.AttributeValueTypeBool}])
+	assert.Equal(t, 1, details.attributeMetadataCount[attributeStatsKey{location: attributeLocationSpan, attributeType: pdata.ValueTypeInt}])
+	assert.Equal(t, 1, details.attributeMetadataCount[attributeStatsKey{location: attributeLocationSpanEvent, attributeType: pdata.ValueTypeBool}])
 }
 
 func TestDoesNotCaptureSpanAttributeMetadata(t *testing.T) {
@@ -807,14 +808,13 @@ func TestTransformer_Log(t *testing.T) {
 			want: telemetry.Log{
 				Message:    "",
 				Timestamp:  time.Unix(0, 0).UTC(),
-				Attributes: map[string]interface{}{"name": ""},
+				Attributes: map[string]interface{}{},
 			},
 		},
 		{
 			name: "With Log attributes",
 			logFunc: func() pdata.LogRecord {
 				log := pdata.NewLogRecord()
-				log.SetName("bloopbleep")
 				log.Attributes().InsertString("foo", "bar")
 				log.Body().SetStringVal("Hello World")
 				return log
@@ -822,35 +822,35 @@ func TestTransformer_Log(t *testing.T) {
 			want: telemetry.Log{
 				Message:    "Hello World",
 				Timestamp:  time.Unix(0, 0).UTC(),
-				Attributes: map[string]interface{}{"foo": "bar", "name": "bloopbleep"},
+				Attributes: map[string]interface{}{"foo": "bar"},
 			},
 		},
 		{
 			name: "With severity number",
 			logFunc: func() pdata.LogRecord {
 				log := pdata.NewLogRecord()
-				log.SetName("bloopbleep")
 				log.SetSeverityNumber(pdata.SeverityNumberWARN)
+				log.Body().SetStringVal("bloopbleep")
 				return log
 			},
 			want: telemetry.Log{
 				Message:    "bloopbleep",
 				Timestamp:  time.Unix(0, 0).UTC(),
-				Attributes: map[string]interface{}{"name": "bloopbleep", "log.levelNum": int32(13)},
+				Attributes: map[string]interface{}{"log.levelNum": int32(13)},
 			},
 		},
 		{
 			name: "With severity text",
 			logFunc: func() pdata.LogRecord {
 				log := pdata.NewLogRecord()
-				log.SetName("bloopbleep")
 				log.SetSeverityText("SEVERE")
+				log.Body().SetStringVal("bloopbleep")
 				return log
 			},
 			want: telemetry.Log{
 				Message:    "bloopbleep",
 				Timestamp:  time.Unix(0, 0).UTC(),
-				Attributes: map[string]interface{}{"name": "bloopbleep", "log.level": "SEVERE"},
+				Attributes: map[string]interface{}{"log.level": "SEVERE"},
 			},
 		},
 		{
@@ -867,7 +867,6 @@ func TestTransformer_Log(t *testing.T) {
 				Message:   "",
 				Timestamp: time.Unix(0, 0).UTC(),
 				Attributes: map[string]interface{}{
-					"name":     "",
 					"trace.id": "01010101010101010101010101010101",
 					"span.id":  "0000000000000001",
 				},
@@ -886,7 +885,6 @@ func TestTransformer_Log(t *testing.T) {
 				Message:   "",
 				Timestamp: time.Unix(0, 0).UTC(),
 				Attributes: map[string]interface{}{
-					"name":                    "",
 					droppedAttributesCountKey: uint32(4),
 				},
 			},
@@ -904,7 +902,6 @@ func TestTransformer_Log(t *testing.T) {
 
 func TestCaptureLogAttributeMetadata(t *testing.T) {
 	log := pdata.NewLogRecord()
-	log.SetName("bloopbleep")
 	log.Attributes().InsertString("foo", "bar")
 	log.Body().SetStringVal("Hello World")
 
@@ -914,12 +911,11 @@ func TestCaptureLogAttributeMetadata(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(details.attributeMetadataCount))
-	assert.Equal(t, 1, details.attributeMetadataCount[attributeStatsKey{location: attributeLocationLog, attributeType: pdata.AttributeValueTypeString}])
+	assert.Equal(t, 1, details.attributeMetadataCount[attributeStatsKey{location: attributeLocationLog, attributeType: pdata.ValueTypeString}])
 }
 
 func TestDoesNotCaptureLogAttributeMetadata(t *testing.T) {
 	log := pdata.NewLogRecord()
-	log.SetName("bloopbleep")
 	log.Body().SetStringVal("Hello World")
 
 	details := newLogMetadata(context.TODO())

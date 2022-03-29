@@ -19,7 +19,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 )
 
 // HostIDKey represents a host identifier.
@@ -113,7 +113,7 @@ func ResourceToHostID(res pdata.Resource) (HostID, bool) {
 	return HostID{}, false
 }
 
-func azureID(attrs pdata.AttributeMap, cloudAccount string) string {
+func azureID(attrs pdata.Map, cloudAccount string) string {
 	var resourceGroupName string
 	if attr, ok := attrs.Get("azure.resourcegroup.name"); ok {
 		resourceGroupName = attr.StringVal()

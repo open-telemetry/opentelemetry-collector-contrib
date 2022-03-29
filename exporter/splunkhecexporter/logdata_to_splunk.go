@@ -31,16 +31,6 @@ const (
 	traceIDFieldKey = "trace_id"
 )
 
-// Composite index of a log record in pdata.Logs.
-type logIndex struct {
-	// Index in orig list (i.e. root parent index).
-	resource int
-	// Index in InstrumentationLibraryLogs list (i.e. immediate parent index).
-	library int
-	// Index in Logs list (i.e. the log record index).
-	record int
-}
-
 func mapLogRecordToSplunkEvent(res pdata.Resource, lr pdata.LogRecord, config *Config, logger *zap.Logger) *splunk.Event {
 	host := unknownHostName
 	source := config.Source
@@ -70,7 +60,7 @@ func mapLogRecordToSplunkEvent(res pdata.Resource, lr pdata.LogRecord, config *C
 		fields[severityNumberKey] = lr.SeverityNumber()
 	}
 
-	res.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+	res.Attributes().Range(func(k string, v pdata.Value) bool {
 		switch k {
 		case hostKey:
 			host = v.StringVal()
@@ -87,7 +77,7 @@ func mapLogRecordToSplunkEvent(res pdata.Resource, lr pdata.LogRecord, config *C
 		}
 		return true
 	})
-	lr.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+	lr.Attributes().Range(func(k string, v pdata.Value) bool {
 		switch k {
 		case hostKey:
 			host = v.StringVal()
@@ -117,31 +107,31 @@ func mapLogRecordToSplunkEvent(res pdata.Resource, lr pdata.LogRecord, config *C
 	}
 }
 
-func convertAttributeValue(value pdata.AttributeValue, logger *zap.Logger) interface{} {
+func convertAttributeValue(value pdata.Value, logger *zap.Logger) interface{} {
 	switch value.Type() {
-	case pdata.AttributeValueTypeInt:
+	case pdata.ValueTypeInt:
 		return value.IntVal()
-	case pdata.AttributeValueTypeBool:
+	case pdata.ValueTypeBool:
 		return value.BoolVal()
-	case pdata.AttributeValueTypeDouble:
+	case pdata.ValueTypeDouble:
 		return value.DoubleVal()
-	case pdata.AttributeValueTypeString:
+	case pdata.ValueTypeString:
 		return value.StringVal()
-	case pdata.AttributeValueTypeMap:
+	case pdata.ValueTypeMap:
 		values := map[string]interface{}{}
-		value.MapVal().Range(func(k string, v pdata.AttributeValue) bool {
+		value.MapVal().Range(func(k string, v pdata.Value) bool {
 			values[k] = convertAttributeValue(v, logger)
 			return true
 		})
 		return values
-	case pdata.AttributeValueTypeArray:
+	case pdata.ValueTypeSlice:
 		arrayVal := value.SliceVal()
 		values := make([]interface{}, arrayVal.Len())
 		for i := 0; i < arrayVal.Len(); i++ {
 			values[i] = convertAttributeValue(arrayVal.At(i), logger)
 		}
 		return values
-	case pdata.AttributeValueTypeEmpty:
+	case pdata.ValueTypeEmpty:
 		return nil
 	default:
 		logger.Debug("Unhandled value type", zap.String("type", value.Type().String()))

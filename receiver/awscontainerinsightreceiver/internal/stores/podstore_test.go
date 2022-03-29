@@ -494,6 +494,7 @@ func TestPodStore_addPodOwnersAndPodName(t *testing.T) {
 	assert.Equal(t, expectedOwner, kubernetesBlob)
 
 	// Test ReplicationController
+	pod.Name = "this should not be in FullPodNameKey"
 	rcName := "ReplicationControllerTest"
 	pod.OwnerReferences[0].Kind = ci.ReplicationController
 	pod.OwnerReferences[0].Name = rcName
@@ -502,20 +503,24 @@ func TestPodStore_addPodOwnersAndPodName(t *testing.T) {
 	expectedOwner["pod_owners"] = []interface{}{map[string]string{"owner_kind": ci.ReplicationController, "owner_name": rcName}}
 	expectedOwnerName = rcName
 	assert.Equal(t, expectedOwnerName, metric.GetTag(ci.PodNameKey))
+	assert.Equal(t, "", metric.GetTag(ci.FullPodNameKey))
 	assert.Equal(t, expectedOwner, kubernetesBlob)
 
 	// Test Job
 	podStore.prefFullPodName = true
+	podStore.addFullPodNameMetricLabel = true
 	metric = generateMetric(fields, tags)
 	jobName := "JobTest"
 	pod.OwnerReferences[0].Kind = ci.Job
 	surfixHash := ".088123x12"
+	pod.Name = jobName + surfixHash
 	pod.OwnerReferences[0].Name = jobName + surfixHash
 	kubernetesBlob = map[string]interface{}{}
 	podStore.addPodOwnersAndPodName(metric, pod, kubernetesBlob)
 	expectedOwner["pod_owners"] = []interface{}{map[string]string{"owner_kind": ci.Job, "owner_name": jobName + surfixHash}}
 	expectedOwnerName = jobName + surfixHash
 	assert.Equal(t, expectedOwnerName, metric.GetTag(ci.PodNameKey))
+	assert.Equal(t, pod.Name, metric.GetTag(ci.FullPodNameKey))
 	assert.Equal(t, expectedOwner, kubernetesBlob)
 
 	podStore.prefFullPodName = false

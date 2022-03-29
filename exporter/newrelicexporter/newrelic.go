@@ -198,9 +198,9 @@ func (e exporter) buildLogBatch(details *exportMetadata, ld pdata.Logs) ([]telem
 				errs = multierr.Append(errs, err)
 				continue
 			}
-			logs := make([]telemetry.Log, 0, ilogs.Logs().Len())
-			for k := 0; k < ilogs.Logs().Len(); k++ {
-				log := ilogs.Logs().At(k)
+			logs := make([]telemetry.Log, 0, ilogs.LogRecords().Len())
+			for k := 0; k < ilogs.LogRecords().Len(); k++ {
+				log := ilogs.LogRecords().At(k)
 				nrLog, err := transform.Log(log)
 				if err != nil {
 					e.logger.Error("Transform of log failed.", zap.Error(err))

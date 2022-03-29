@@ -3,8 +3,7 @@ receivers:
     endpoint: http://localhost:5984
     username: otelu
     password: $COUCHDB_PASSWORD
-    all_nodes: false
-    collection_interval: 10s
+    collection_interval: 60s
 
 processors:
   nop:

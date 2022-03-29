@@ -26,11 +26,11 @@ import (
 
 func TestNumericTagFilter(t *testing.T) {
 
-	var empty = map[string]pdata.AttributeValue{}
+	var empty = map[string]interface{}{}
 	filter := NewNumericAttributeFilter(zap.NewNop(), "example", math.MinInt32, math.MaxInt32)
 
-	resAttr := map[string]pdata.AttributeValue{}
-	resAttr["example"] = pdata.NewAttributeValueInt(8)
+	resAttr := map[string]interface{}{}
+	resAttr["example"] = 8
 
 	cases := []struct {
 		Desc     string
@@ -74,24 +74,16 @@ func TestNumericTagFilter(t *testing.T) {
 	}
 }
 
-func TestOnLateArrivingSpans_NumericTagFilter(t *testing.T) {
-	filter := NewNumericAttributeFilter(zap.NewNop(), "example", math.MinInt32, math.MaxInt32)
-	err := filter.OnLateArrivingSpans(NotSampled, nil)
-	assert.Nil(t, err)
-}
-
-func newTraceIntAttrs(nodeAttrs map[string]pdata.AttributeValue, spanAttrKey string, spanAttrValue int64) *TraceData {
+func newTraceIntAttrs(nodeAttrs map[string]interface{}, spanAttrKey string, spanAttrValue int64) *TraceData {
 	var traceBatches []pdata.Traces
 	traces := pdata.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
-	pdata.NewAttributeMapFromMap(nodeAttrs).CopyTo(rs.Resource().Attributes())
+	pdata.NewMapFromRaw(nodeAttrs).CopyTo(rs.Resource().Attributes())
 	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
 	span := ils.Spans().AppendEmpty()
 	span.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
 	span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
-	attributes := make(map[string]pdata.AttributeValue)
-	attributes[spanAttrKey] = pdata.NewAttributeValueInt(spanAttrValue)
-	pdata.NewAttributeMapFromMap(attributes).CopyTo(span.Attributes())
+	span.Attributes().InsertInt(spanAttrKey, spanAttrValue)
 	traceBatches = append(traceBatches, traces)
 	return &TraceData{
 		ReceivedBatches: traceBatches,

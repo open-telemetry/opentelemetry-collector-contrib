@@ -20,35 +20,25 @@ package nginxreceiver
 import (
 	"context"
 	"fmt"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
 )
-
-type NginxIntegrationSuite struct {
-	suite.Suite
-}
-
-func TestNginxIntegration(t *testing.T) {
-	suite.Run(t, new(NginxIntegrationSuite))
-}
 
 func nginxContainer(t *testing.T) testcontainers.Container {
 	ctx := context.Background()
 	req := testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
-			Context:    path.Join(".", "testdata"),
+			Context:    filepath.Join("testdata", "integration"),
 			Dockerfile: "Dockerfile.nginx",
 		},
 		ExposedPorts: []string{"8080:80"},
@@ -57,89 +47,44 @@ func nginxContainer(t *testing.T) testcontainers.Container {
 
 	require.NoError(t, req.Validate())
 
-	nginx, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
 	})
 	require.NoError(t, err)
 	time.Sleep(time.Second * 6)
-	return nginx
+	return container
 }
 
-func (suite *NginxIntegrationSuite) TestNginxScraperHappyPath() {
-	t := suite.T()
-	nginx := nginxContainer(t)
-	defer nginx.Terminate(context.Background())
-	hostname, err := nginx.Host(context.Background())
+func TestNginxIntegration(t *testing.T) {
+	t.Parallel()
+	container := nginxContainer(t)
+	defer func() {
+		require.NoError(t, container.Terminate(context.Background()))
+	}()
+	hostname, err := container.Host(context.Background())
 	require.NoError(t, err)
 
-	cfg := &Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			CollectionInterval: 100 * time.Millisecond,
-		},
-		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Endpoint: fmt.Sprintf("http://%s:8080/status", hostname),
-		},
-	}
-
-	sc := newNginxScraper(zap.NewNop(), cfg)
-	err = sc.start(context.Background(), componenttest.NewNopHost())
+	expectedFile := filepath.Join("testdata", "integration", "expected.json")
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
-	md, err := sc.scrape(context.Background())
-	require.Nil(t, err)
 
-	require.Equal(t, 1, md.ResourceMetrics().Len())
-	rm := md.ResourceMetrics().At(0)
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig().(*Config)
+	cfg.ScraperControllerSettings.CollectionInterval = 100 * time.Millisecond
+	cfg.Endpoint = fmt.Sprintf("http://%s:8080/status", hostname)
 
-	ilms := rm.InstrumentationLibraryMetrics()
-	require.Equal(t, 1, ilms.Len())
+	consumer := new(consumertest.MetricsSink)
+	settings := componenttest.NewNopReceiverCreateSettings()
 
-	ilm := ilms.At(0)
-	ms := ilm.Metrics()
+	rcvr, err := f.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
+	require.NoError(t, err, "failed creating metrics receiver")
+	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
+	require.Eventuallyf(t, func() bool {
+		return len(consumer.AllMetrics()) > 0
+	}, 2*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
 
-	require.Equal(t, 4, ms.Len())
+	actualMetrics := consumer.AllMetrics()[0]
 
-	for i := 0; i < ms.Len(); i++ {
-		m := ms.At(i)
-
-		switch m.Name() {
-		case metadata.M.NginxRequests.Name():
-			require.Equal(t, 1, m.Sum().DataPoints().Len())
-			require.True(t, m.Sum().IsMonotonic())
-		case metadata.M.NginxConnectionsAccepted.Name():
-			require.Equal(t, 1, m.Sum().DataPoints().Len())
-			require.True(t, m.Sum().IsMonotonic())
-		case metadata.M.NginxConnectionsHandled.Name():
-			require.Equal(t, 1, m.Sum().DataPoints().Len())
-			require.True(t, m.Sum().IsMonotonic())
-		case metadata.M.NginxConnectionsCurrent.Name():
-			dps := m.Gauge().DataPoints()
-			require.Equal(t, 4, dps.Len())
-			present := map[string]bool{}
-			for j := 0; j < dps.Len(); j++ {
-				dp := dps.At(j)
-				state, ok := dp.Attributes().Get("state")
-				if !ok {
-					continue
-				}
-				switch state.StringVal() {
-				case metadata.AttributeState.Active:
-					present[state.StringVal()] = true
-				case metadata.AttributeState.Reading:
-					present[state.StringVal()] = true
-				case metadata.AttributeState.Writing:
-					present[state.StringVal()] = true
-				case metadata.AttributeState.Waiting:
-					present[state.StringVal()] = true
-				default:
-					t.Error(fmt.Sprintf("connections with state %s not expected", state.StringVal()))
-				}
-			}
-			// Ensure all 4 expected states were present
-			require.Equal(t, 4, len(present))
-		default:
-			require.Nil(t, m.Name(), fmt.Sprintf("metric %s not expected", m.Name()))
-		}
-
-	}
+	scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues())
 }

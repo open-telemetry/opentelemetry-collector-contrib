@@ -16,7 +16,7 @@ package dotnet
 
 import (
 	"context"
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -50,7 +50,7 @@ func TestParser(t *testing.T) {
 }
 
 func TestParser_TestData(t *testing.T) {
-	data, err := network.ReadBlobData(path.Join("..", "testdata"), 16)
+	data, err := network.ReadBlobData(filepath.Join("..", "testdata"), 16)
 	require.NoError(t, err)
 	rw := network.NewBlobReader(data)
 	parser := NewParser(rw, func([]Metric) {}, &network.NopBlobWriter{}, zap.NewNop())
@@ -66,7 +66,7 @@ func TestParser_TestData(t *testing.T) {
 }
 
 func TestParser_TestData_Errors(t *testing.T) {
-	data, err := network.ReadBlobData(path.Join("..", "testdata"), 16)
+	data, err := network.ReadBlobData(filepath.Join("..", "testdata"), 16)
 	require.NoError(t, err)
 	// beginPrivateObject
 	testParseBlockError(t, data, 60, 0)
@@ -107,7 +107,7 @@ func testParseBlock(t *testing.T, data [][]byte, offset, errIdx int) error {
 }
 
 func TestParser_ParseAll_Error(t *testing.T) {
-	data, err := network.ReadBlobData(path.Join("..", "testdata"), 16)
+	data, err := network.ReadBlobData(filepath.Join("..", "testdata"), 16)
 	require.NoError(t, err)
 	rw := network.NewBlobReader(data)
 	parser := NewParser(rw, func([]Metric) {}, &network.NopBlobWriter{}, zap.NewNop())
@@ -128,7 +128,7 @@ func TestParser_ParseAll_Error(t *testing.T) {
 }
 
 func TestParser_ParseAll_Cancel(t *testing.T) {
-	data, err := network.ReadBlobData(path.Join("..", "testdata"), 16)
+	data, err := network.ReadBlobData(filepath.Join("..", "testdata"), 16)
 	require.NoError(t, err)
 	rw := network.NewBlobReader(data)
 	parser := NewParser(rw, func([]Metric) {}, &network.NopBlobWriter{}, zap.NewNop())

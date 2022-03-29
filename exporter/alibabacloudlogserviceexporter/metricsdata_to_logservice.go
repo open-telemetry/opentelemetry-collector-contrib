@@ -158,7 +158,7 @@ func min(l, r int) int {
 
 func resourceToMetricLabels(labels *KeyValues, resource pdata.Resource) {
 	attrs := resource.Attributes()
-	attrs.Range(func(k string, v pdata.AttributeValue) bool {
+	attrs.Range(func(k string, v pdata.Value) bool {
 		labels.keyValues = append(labels.keyValues, KeyValue{
 			Key:   k,
 			Value: v.AsString(),
@@ -172,11 +172,11 @@ func numberMetricsToLogs(name string, data pdata.NumberDataPointSlice, defaultLa
 		dataPoint := data.At(i)
 		attributeMap := dataPoint.Attributes()
 		labels := defaultLabels.Clone()
-		attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
+		attributeMap.Range(func(k string, v pdata.Value) bool {
 			labels.Append(k, v.AsString())
 			return true
 		})
-		switch dataPoint.Type() {
+		switch dataPoint.ValueType() {
 		case pdata.MetricValueTypeInt:
 			logs = append(logs,
 				newMetricLogFromRaw(name,
@@ -203,7 +203,7 @@ func doubleHistogramMetricsToLogs(name string, data pdata.HistogramDataPointSlic
 		dataPoint := data.At(i)
 		attributeMap := dataPoint.Attributes()
 		labels := defaultLabels.Clone()
-		attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
+		attributeMap.Range(func(k string, v pdata.Value) bool {
 			labels.Append(k, v.AsString())
 			return true
 		})
@@ -251,7 +251,7 @@ func doubleSummaryMetricsToLogs(name string, data pdata.SummaryDataPointSlice, d
 		dataPoint := data.At(i)
 		attributeMap := dataPoint.Attributes()
 		labels := defaultLabels.Clone()
-		attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
+		attributeMap.Range(func(k string, v pdata.Value) bool {
 			labels.Append(k, v.AsString())
 			return true
 		})

@@ -192,7 +192,7 @@ func TestDefaultTranslationRules(t *testing.T) {
 
 	c, err := translation.NewMetricsConverter(zap.NewNop(), tr, nil, nil, "")
 	require.NoError(t, err)
-	translated := c.MetricDataToSignalFxV2(data)
+	translated := c.MetricsToSignalFxV2(data)
 	require.NotNil(t, translated)
 
 	metrics := make(map[string][]*sfxpb.DataPoint)
@@ -312,9 +312,9 @@ func TestCreateMetricsExporterWithEmptyExcludeMetrics(t *testing.T) {
 	assert.Equal(t, 0, len(config.ExcludeMetrics))
 }
 
-func testMetricsData() pdata.ResourceMetrics {
-	rm := pdata.NewResourceMetrics()
-	ms := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics()
+func testMetricsData() pdata.Metrics {
+	md := pdata.NewMetrics()
+	ms := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics()
 
 	m1 := ms.AppendEmpty()
 	m1.SetName("system.memory.usage")
@@ -526,7 +526,7 @@ func testMetricsData() pdata.ResourceMetrics {
 	dp91.SetTimestamp(pdata.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp91.SetIntVal(1000)
 
-	return rm
+	return md
 }
 
 func TestDefaultDiskTranslations(t *testing.T) {
@@ -632,9 +632,9 @@ func TestDefaultExcludes_translated(t *testing.T) {
 	err = testReadJSON("testdata/json/non_default_metrics.json", &metrics)
 	require.NoError(t, err)
 
-	rms := getResourceMetrics(metrics)
-	require.Equal(t, 9, rms.InstrumentationLibraryMetrics().At(0).Metrics().Len())
-	dps := converter.MetricDataToSignalFxV2(rms)
+	md := getMetrics(metrics)
+	require.Equal(t, 9, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Len())
+	dps := converter.MetricsToSignalFxV2(md)
 
 	// the default cpu.utilization metric is added after applying the default translations
 	// (because cpu.utilization_per_core is supplied) and should not be excluded
@@ -655,15 +655,15 @@ func TestDefaultExcludes_not_translated(t *testing.T) {
 	err = testReadJSON("testdata/json/non_default_metrics_otel_convention.json", &metrics)
 	require.NoError(t, err)
 
-	rms := getResourceMetrics(metrics)
-	require.Equal(t, 71, rms.InstrumentationLibraryMetrics().At(0).Metrics().Len())
-	dps := converter.MetricDataToSignalFxV2(rms)
+	md := getMetrics(metrics)
+	require.Equal(t, 71, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Len())
+	dps := converter.MetricsToSignalFxV2(md)
 	require.Equal(t, 0, len(dps))
 }
 
-func getResourceMetrics(metrics []map[string]string) pdata.ResourceMetrics {
-	rms := pdata.NewResourceMetrics()
-	ilms := rms.InstrumentationLibraryMetrics().AppendEmpty()
+func getMetrics(metrics []map[string]string) pdata.Metrics {
+	md := pdata.NewMetrics()
+	ilms := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
 	ilms.Metrics().EnsureCapacity(len(metrics))
 
 	for _, mp := range metrics {
@@ -681,7 +681,7 @@ func getResourceMetrics(metrics []map[string]string) pdata.ResourceMetrics {
 			attributesMap.InsertString(k, v)
 		}
 	}
-	return rms
+	return md
 }
 
 func testReadJSON(f string, v interface{}) error {

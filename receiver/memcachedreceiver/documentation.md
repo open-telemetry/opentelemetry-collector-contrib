@@ -8,19 +8,21 @@ These are the metrics available for this scraper.
 
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
-| memcached.bytes | Current number of bytes used by this server to store items. | By | Gauge(Int) | <ul> </ul> |
-| memcached.commands | Commands executed. | {commands} | Sum(Int) | <ul> <li>command</li> </ul> |
-| memcached.connections.current | The current number of open connections. | {connections} | Sum(Int) | <ul> </ul> |
-| memcached.connections.total | Total number of connections opened since the server started running. | {connections} | Sum(Int) | <ul> </ul> |
-| memcached.cpu.usage | Accumulated user and system time. | s | Sum(Double) | <ul> <li>state</li> </ul> |
-| memcached.current_items | Number of items currently stored in the cache. | {items} | Sum(Int) | <ul> </ul> |
-| memcached.evictions | Cache item evictions. | {evictions} | Sum(Int) | <ul> </ul> |
-| memcached.network | Bytes transferred over the network. | by | Sum(Int) | <ul> <li>direction</li> </ul> |
-| memcached.operation_hit_ratio | Hit ratio for operations, expressed as a percentage value between 0.0 and 100.0. | % | Gauge(Double) | <ul> <li>operation</li> </ul> |
-| memcached.operations | Operation counts. | {operations} | Sum(Int) | <ul> <li>type</li> <li>operation</li> </ul> |
-| memcached.threads | Number of threads used by the memcached instance. | {threads} | Sum(Int) | <ul> </ul> |
+| **memcached.bytes** | Current number of bytes used by this server to store items. | By | Gauge(Int) | <ul> </ul> |
+| **memcached.commands** | Commands executed. | {commands} | Sum(Int) | <ul> <li>command</li> </ul> |
+| **memcached.connections.current** | The current number of open connections. | {connections} | Sum(Int) | <ul> </ul> |
+| **memcached.connections.total** | Total number of connections opened since the server started running. | {connections} | Sum(Int) | <ul> </ul> |
+| **memcached.cpu.usage** | Accumulated user and system time. | s | Sum(Double) | <ul> <li>state</li> </ul> |
+| **memcached.current_items** | Number of items currently stored in the cache. | {items} | Sum(Int) | <ul> </ul> |
+| **memcached.evictions** | Cache item evictions. | {evictions} | Sum(Int) | <ul> </ul> |
+| **memcached.network** | Bytes transferred over the network. | by | Sum(Int) | <ul> <li>direction</li> </ul> |
+| **memcached.operation_hit_ratio** | Hit ratio for operations, expressed as a percentage value between 0.0 and 100.0. | % | Gauge(Double) | <ul> <li>operation</li> </ul> |
+| **memcached.operations** | Operation counts. | {operations} | Sum(Int) | <ul> <li>type</li> <li>operation</li> </ul> |
+| **memcached.threads** | Number of threads used by the memcached instance. | {threads} | Sum(Int) | <ul> </ul> |
 
-## Attributes
+**Highlighted metrics** are emitted by default.
+
+## Metric attributes
 
 | Name | Description |
 | ---- | ----------- |

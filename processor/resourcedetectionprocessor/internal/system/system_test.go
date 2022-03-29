@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
@@ -78,7 +78,7 @@ func TestNewDetector(t *testing.T) {
 func TestDetectFQDNAvailable(t *testing.T) {
 	md := &mockMetadata{}
 	md.On("FQDN").Return("fqdn", nil)
-	md.On("OSType").Return("DARWIN", nil)
+	md.On("OSType").Return("darwin", nil)
 
 	detector := &Detector{provider: md, logger: zap.NewNop(), hostnameSources: []string{"dns"}}
 	res, schemaURL, err := detector.Detect(context.Background())
@@ -89,7 +89,7 @@ func TestDetectFQDNAvailable(t *testing.T) {
 
 	expected := internal.NewResource(map[string]interface{}{
 		conventions.AttributeHostName: "fqdn",
-		conventions.AttributeOSType:   "DARWIN",
+		conventions.AttributeOSType:   "darwin",
 	})
 	expected.Attributes().Sort()
 
@@ -101,7 +101,7 @@ func TestFallbackHostname(t *testing.T) {
 	mdHostname := &mockMetadata{}
 	mdHostname.On("Hostname").Return("hostname", nil)
 	mdHostname.On("FQDN").Return("", errors.New("err"))
-	mdHostname.On("OSType").Return("DARWIN", nil)
+	mdHostname.On("OSType").Return("darwin", nil)
 
 	detector := &Detector{provider: mdHostname, logger: zap.NewNop(), hostnameSources: []string{"dns", "os"}}
 	res, schemaURL, err := detector.Detect(context.Background())
@@ -112,7 +112,7 @@ func TestFallbackHostname(t *testing.T) {
 
 	expected := internal.NewResource(map[string]interface{}{
 		conventions.AttributeHostName: "hostname",
-		conventions.AttributeOSType:   "DARWIN",
+		conventions.AttributeOSType:   "darwin",
 	})
 	expected.Attributes().Sort()
 
@@ -122,7 +122,7 @@ func TestFallbackHostname(t *testing.T) {
 func TestUseHostname(t *testing.T) {
 	mdHostname := &mockMetadata{}
 	mdHostname.On("Hostname").Return("hostname", nil)
-	mdHostname.On("OSType").Return("DARWIN", nil)
+	mdHostname.On("OSType").Return("darwin", nil)
 
 	detector := &Detector{provider: mdHostname, logger: zap.NewNop(), hostnameSources: []string{"os"}}
 	res, schemaURL, err := detector.Detect(context.Background())
@@ -133,7 +133,7 @@ func TestUseHostname(t *testing.T) {
 
 	expected := internal.NewResource(map[string]interface{}{
 		conventions.AttributeHostName: "hostname",
-		conventions.AttributeOSType:   "DARWIN",
+		conventions.AttributeOSType:   "darwin",
 	})
 	expected.Attributes().Sort()
 
@@ -143,7 +143,7 @@ func TestUseHostname(t *testing.T) {
 func TestDetectError(t *testing.T) {
 	// FQDN and hostname fail with 'hostnameSources' set to 'dns'
 	mdFQDN := &mockMetadata{}
-	mdFQDN.On("OSType").Return("WINDOWS", nil)
+	mdFQDN.On("OSType").Return("windows", nil)
 	mdFQDN.On("FQDN").Return("", errors.New("err"))
 	mdFQDN.On("Hostname").Return("", errors.New("err"))
 
@@ -155,7 +155,7 @@ func TestDetectError(t *testing.T) {
 
 	// hostname fail with 'hostnameSources' set to 'os'
 	mdHostname := &mockMetadata{}
-	mdHostname.On("OSType").Return("WINDOWS", nil)
+	mdHostname.On("OSType").Return("windows", nil)
 	mdHostname.On("Hostname").Return("", errors.New("err"))
 
 	detector = &Detector{provider: mdHostname, logger: zap.NewNop(), hostnameSources: []string{"os"}}

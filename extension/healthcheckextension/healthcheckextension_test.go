@@ -30,7 +30,7 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
 func ensureServerRunning(url string) func() bool {

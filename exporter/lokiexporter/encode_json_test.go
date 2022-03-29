@@ -25,21 +25,20 @@ func exampleLog() (pdata.LogRecord, pdata.Resource) {
 
 	buffer := pdata.NewLogRecord()
 	buffer.Body().SetStringVal("Example log")
-	buffer.SetName("name")
 	buffer.SetSeverityText("error")
-	buffer.Attributes().Insert("attr1", pdata.NewAttributeValueString("1"))
-	buffer.Attributes().Insert("attr2", pdata.NewAttributeValueString("2"))
+	buffer.Attributes().Insert("attr1", pdata.NewValueString("1"))
+	buffer.Attributes().Insert("attr2", pdata.NewValueString("2"))
 	buffer.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4}))
 	buffer.SetSpanID(pdata.NewSpanID([8]byte{5, 6, 7, 8}))
 
 	resource := pdata.NewResource()
-	resource.Attributes().Insert("host.name", pdata.NewAttributeValueString("something"))
+	resource.Attributes().Insert("host.name", pdata.NewValueString("something"))
 
 	return buffer, resource
 }
 
 func TestConvertWithStringBody(t *testing.T) {
-	in := `{"name":"name","body":"Example log","traceid":"01020304000000000000000000000000","spanid":"0506070800000000","severity":"error","attributes":{"attr1":"1","attr2":"2"},"resources":{"host.name":"something"}}`
+	in := `{"body":"Example log","traceid":"01020304000000000000000000000000","spanid":"0506070800000000","severity":"error","attributes":{"attr1":"1","attr2":"2"},"resources":{"host.name":"something"}}`
 
 	out, err := encodeJSON(exampleLog())
 	assert.NoError(t, err)
@@ -47,12 +46,12 @@ func TestConvertWithStringBody(t *testing.T) {
 }
 
 func TestConvertWithMapBody(t *testing.T) {
-	in := `{"name":"name","body":{"key1":"value","key2":"value"},"traceid":"01020304000000000000000000000000","spanid":"0506070800000000","severity":"error","attributes":{"attr1":"1","attr2":"2"},"resources":{"host.name":"something"}}`
+	in := `{"body":{"key1":"value","key2":"value"},"traceid":"01020304000000000000000000000000","spanid":"0506070800000000","severity":"error","attributes":{"attr1":"1","attr2":"2"},"resources":{"host.name":"something"}}`
 
 	log, resource := exampleLog()
-	mapVal := pdata.NewAttributeValueMap()
-	mapVal.MapVal().Insert("key1", pdata.NewAttributeValueString("value"))
-	mapVal.MapVal().Insert("key2", pdata.NewAttributeValueString("value"))
+	mapVal := pdata.NewValueMap()
+	mapVal.MapVal().Insert("key1", pdata.NewValueString("value"))
+	mapVal.MapVal().Insert("key2", pdata.NewValueString("value"))
 	mapVal.CopyTo(log.Body())
 
 	out, err := encodeJSON(log, resource)
@@ -62,14 +61,14 @@ func TestConvertWithMapBody(t *testing.T) {
 
 func TestSerializeBody(t *testing.T) {
 
-	arrayval := pdata.NewAttributeValueArray()
+	arrayval := pdata.NewValueSlice()
 	arrayval.SliceVal().AppendEmpty().SetStringVal("a")
 	arrayval.SliceVal().AppendEmpty().SetStringVal("b")
 
-	simplemap := pdata.NewAttributeValueMap()
+	simplemap := pdata.NewValueMap()
 	simplemap.MapVal().InsertString("key", "val")
 
-	complexmap := pdata.NewAttributeValueMap()
+	complexmap := pdata.NewValueMap()
 	complexmap.MapVal().InsertString("keystr", "val")
 	complexmap.MapVal().InsertInt("keyint", 1)
 	complexmap.MapVal().InsertDouble("keyint", 1)
@@ -77,30 +76,30 @@ func TestSerializeBody(t *testing.T) {
 	complexmap.MapVal().InsertNull("keynull")
 	complexmap.MapVal().Insert("keyarr", arrayval)
 	complexmap.MapVal().Insert("keymap", simplemap)
-	complexmap.MapVal().Insert("keyempty", pdata.NewAttributeValueEmpty())
+	complexmap.MapVal().Insert("keyempty", pdata.NewValueEmpty())
 
 	testcases := []struct {
-		input    pdata.AttributeValue
+		input    pdata.Value
 		expected []byte
 	}{
 		{
-			pdata.NewAttributeValueEmpty(),
+			pdata.NewValueEmpty(),
 			nil,
 		},
 		{
-			pdata.NewAttributeValueString("a"),
+			pdata.NewValueString("a"),
 			[]byte(`"a"`),
 		},
 		{
-			pdata.NewAttributeValueInt(1),
+			pdata.NewValueInt(1),
 			[]byte(`1`),
 		},
 		{
-			pdata.NewAttributeValueDouble(1.1),
+			pdata.NewValueDouble(1.1),
 			[]byte(`1.1`),
 		},
 		{
-			pdata.NewAttributeValueBool(true),
+			pdata.NewValueBool(true),
 			[]byte(`true`),
 		},
 		{
@@ -116,7 +115,7 @@ func TestSerializeBody(t *testing.T) {
 			[]byte(`["a","b"]`),
 		},
 		{
-			pdata.NewAttributeValueBytes([]byte(`abc`)),
+			pdata.NewValueBytes([]byte(`abc`)),
 			[]byte(`"YWJj"`),
 		},
 	}

@@ -19,6 +19,9 @@ import (
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
 
 // Config represent a configuration for the CloudWatch logs exporter.
@@ -35,10 +38,6 @@ type Config struct {
 	// that share the same source.
 	LogStreamName string `mapstructure:"log_stream_name"`
 
-	// Region is the AWS region where the logs are sent to.
-	// Optional.
-	Region string `mapstructure:"region"`
-
 	// Endpoint is the CloudWatch Logs service endpoint which the requests
 	// are forwarded to. https://docs.aws.amazon.com/general/latest/gr/cwl_region.html
 	// e.g. logs.us-east-1.amazonaws.com
@@ -48,6 +47,10 @@ type Config struct {
 	// QueueSettings is a subset of exporterhelper.QueueSettings,
 	// because only QueueSize is user-settable due to how AWS CloudWatch API works
 	QueueSettings QueueSettings `mapstructure:"sending_queue"`
+
+	logger *zap.Logger
+
+	awsutil.AWSSessionSettings `mapstructure:",squash"`
 }
 
 type QueueSettings struct {

@@ -53,8 +53,8 @@ type defaultElasticsearchClient struct {
 
 var _ elasticsearchClient = (*defaultElasticsearchClient)(nil)
 
-func newElasticsearchClient(logger *zap.Logger, c Config, h component.Host) (*defaultElasticsearchClient, error) {
-	client, err := c.HTTPClientSettings.ToClient(h.GetExtensions())
+func newElasticsearchClient(settings component.TelemetrySettings, c Config, h component.Host) (*defaultElasticsearchClient, error) {
+	client, err := c.HTTPClientSettings.ToClient(h.GetExtensions(), settings)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +75,7 @@ func newElasticsearchClient(logger *zap.Logger, c Config, h component.Host) (*de
 		client:     client,
 		authHeader: authHeader,
 		endpoint:   endpoint,
-		logger:     logger,
+		logger:     settings.Logger,
 	}, nil
 }
 

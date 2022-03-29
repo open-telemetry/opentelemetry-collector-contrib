@@ -28,7 +28,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
@@ -48,7 +48,7 @@ func TestScrape(t *testing.T) {
 	const bootTime = 100
 	const expectedStartTime = 100 * 1e9
 
-	scraper, err := newProcessScraper(&Config{})
+	scraper, err := newProcessScraper(&Config{Metrics: metadata.DefaultMetricsSettings()})
 	scraper.bootTime = func() (uint64, error) { return bootTime, nil }
 	require.NoError(t, err, "Failed to create process scraper: %v", err)
 	err = scraper.start(context.Background(), componenttest.NewNopHost())
@@ -70,20 +70,11 @@ func TestScrape(t *testing.T) {
 	}
 
 	require.Greater(t, md.ResourceMetrics().Len(), 1)
-	assertSchemaIsSet(t, md.ResourceMetrics())
 	assertProcessResourceAttributesExist(t, md.ResourceMetrics())
 	assertCPUTimeMetricValid(t, md.ResourceMetrics(), expectedStartTime)
-	assertMemoryUsageMetricValid(t, metadata.Metrics.ProcessMemoryPhysicalUsage.New(), md.ResourceMetrics())
-	assertMemoryUsageMetricValid(t, metadata.Metrics.ProcessMemoryVirtualUsage.New(), md.ResourceMetrics())
+	assertMemoryUsageMetricValid(t, md.ResourceMetrics(), expectedStartTime)
 	assertDiskIOMetricValid(t, md.ResourceMetrics(), expectedStartTime)
 	assertSameTimeStampForAllMetricsWithinResource(t, md.ResourceMetrics())
-}
-
-func assertSchemaIsSet(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice) {
-	for i := 0; i < resourceMetrics.Len(); i++ {
-		rm := resourceMetrics.At(0)
-		assert.EqualValues(t, conventions.SchemaURL, rm.SchemaUrl())
-	}
 }
 
 func assertProcessResourceAttributesExist(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice) {
@@ -99,31 +90,38 @@ func assertProcessResourceAttributesExist(t *testing.T, resourceMetrics pdata.Re
 }
 
 func assertCPUTimeMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice, startTime pdata.Timestamp) {
-	cpuTimeMetric := getMetric(t, metadata.Metrics.ProcessCPUTime.New(), resourceMetrics)
-	internal.AssertDescriptorEqual(t, metadata.Metrics.ProcessCPUTime.New(), cpuTimeMetric)
+	cpuTimeMetric := getMetric(t, "process.cpu.time", resourceMetrics)
+	assert.Equal(t, "process.cpu.time", cpuTimeMetric.Name())
 	if startTime != 0 {
 		internal.AssertSumMetricStartTimeEquals(t, cpuTimeMetric, startTime)
 	}
-	internal.AssertSumMetricHasAttributeValue(t, cpuTimeMetric, 0, "state", pdata.NewAttributeValueString(metadata.AttributeState.User))
-	internal.AssertSumMetricHasAttributeValue(t, cpuTimeMetric, 1, "state", pdata.NewAttributeValueString(metadata.AttributeState.System))
+	internal.AssertSumMetricHasAttributeValue(t, cpuTimeMetric, 0, "state", pdata.NewValueString(metadata.AttributeState.User))
+	internal.AssertSumMetricHasAttributeValue(t, cpuTimeMetric, 1, "state", pdata.NewValueString(metadata.AttributeState.System))
 	if runtime.GOOS == "linux" {
-		internal.AssertSumMetricHasAttributeValue(t, cpuTimeMetric, 2, "state", pdata.NewAttributeValueString(metadata.AttributeState.Wait))
+		internal.AssertSumMetricHasAttributeValue(t, cpuTimeMetric, 2, "state", pdata.NewValueString(metadata.AttributeState.Wait))
 	}
 }
 
-func assertMemoryUsageMetricValid(t *testing.T, descriptor pdata.Metric, resourceMetrics pdata.ResourceMetricsSlice) {
-	memoryUsageMetric := getMetric(t, descriptor, resourceMetrics)
-	internal.AssertDescriptorEqual(t, descriptor, memoryUsageMetric)
+func assertMemoryUsageMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice, startTime pdata.Timestamp) {
+	physicalMemUsageMetric := getMetric(t, "process.memory.physical_usage", resourceMetrics)
+	assert.Equal(t, "process.memory.physical_usage", physicalMemUsageMetric.Name())
+	virtualMemUsageMetric := getMetric(t, "process.memory.virtual_usage", resourceMetrics)
+	assert.Equal(t, "process.memory.virtual_usage", virtualMemUsageMetric.Name())
+
+	if startTime != 0 {
+		internal.AssertSumMetricStartTimeEquals(t, physicalMemUsageMetric, startTime)
+		internal.AssertSumMetricStartTimeEquals(t, virtualMemUsageMetric, startTime)
+	}
 }
 
 func assertDiskIOMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice, startTime pdata.Timestamp) {
-	diskIOMetric := getMetric(t, metadata.Metrics.ProcessDiskIo.New(), resourceMetrics)
-	internal.AssertDescriptorEqual(t, metadata.Metrics.ProcessDiskIo.New(), diskIOMetric)
+	diskIOMetric := getMetric(t, "process.disk.io", resourceMetrics)
+	assert.Equal(t, "process.disk.io", diskIOMetric.Name())
 	if startTime != 0 {
 		internal.AssertSumMetricStartTimeEquals(t, diskIOMetric, startTime)
 	}
-	internal.AssertSumMetricHasAttributeValue(t, diskIOMetric, 0, "direction", pdata.NewAttributeValueString(metadata.AttributeDirection.Read))
-	internal.AssertSumMetricHasAttributeValue(t, diskIOMetric, 1, "direction", pdata.NewAttributeValueString(metadata.AttributeDirection.Write))
+	internal.AssertSumMetricHasAttributeValue(t, diskIOMetric, 0, "direction", pdata.NewValueString(metadata.AttributeDirection.Read))
+	internal.AssertSumMetricHasAttributeValue(t, diskIOMetric, 1, "direction", pdata.NewValueString(metadata.AttributeDirection.Write))
 }
 
 func assertSameTimeStampForAllMetricsWithinResource(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice) {
@@ -135,18 +133,18 @@ func assertSameTimeStampForAllMetricsWithinResource(t *testing.T, resourceMetric
 	}
 }
 
-func getMetric(t *testing.T, descriptor pdata.Metric, rms pdata.ResourceMetricsSlice) pdata.Metric {
+func getMetric(t *testing.T, expectedMetricName string, rms pdata.ResourceMetricsSlice) pdata.Metric {
 	for i := 0; i < rms.Len(); i++ {
 		metrics := getMetricSlice(t, rms.At(i))
 		for j := 0; j < metrics.Len(); j++ {
 			metric := metrics.At(j)
-			if metric.Name() == descriptor.Name() {
+			if metric.Name() == expectedMetricName {
 				return metric
 			}
 		}
 	}
 
-	require.Fail(t, fmt.Sprintf("no metric with name %s was returned", descriptor.Name()))
+	require.Fail(t, fmt.Sprintf("no metric with name %s was returned", expectedMetricName))
 	return pdata.NewMetric()
 }
 
@@ -159,11 +157,11 @@ func getMetricSlice(t *testing.T, rm pdata.ResourceMetrics) pdata.MetricSlice {
 func TestScrapeMetrics_NewError(t *testing.T) {
 	skipTestOnUnsupportedOS(t)
 
-	_, err := newProcessScraper(&Config{Include: MatchConfig{Names: []string{"test"}}})
+	_, err := newProcessScraper(&Config{Include: MatchConfig{Names: []string{"test"}}, Metrics: metadata.DefaultMetricsSettings()})
 	require.Error(t, err)
 	require.Regexp(t, "^error creating process include filters:", err.Error())
 
-	_, err = newProcessScraper(&Config{Exclude: MatchConfig{Names: []string{"test"}}})
+	_, err = newProcessScraper(&Config{Exclude: MatchConfig{Names: []string{"test"}}, Metrics: metadata.DefaultMetricsSettings()})
 	require.Error(t, err)
 	require.Regexp(t, "^error creating process exclude filters:", err.Error())
 }
@@ -171,7 +169,7 @@ func TestScrapeMetrics_NewError(t *testing.T) {
 func TestScrapeMetrics_GetProcessesError(t *testing.T) {
 	skipTestOnUnsupportedOS(t)
 
-	scraper, err := newProcessScraper(&Config{})
+	scraper, err := newProcessScraper(&Config{Metrics: metadata.DefaultMetricsSettings()})
 	require.NoError(t, err, "Failed to create process scraper: %v", err)
 
 	scraper.getProcessHandles = func() (processHandles, error) { return nil, errors.New("err1") }
@@ -303,7 +301,9 @@ func TestScrapeMetrics_Filtered(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			config := &Config{}
+			config := &Config{
+				Metrics: metadata.DefaultMetricsSettings(),
+			}
 
 			if len(test.include) > 0 {
 				config.Include = MatchConfig{
@@ -422,7 +422,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 				t.Skipf("skipping test %v on %v", test.name, runtime.GOOS)
 			}
 
-			scraper, err := newProcessScraper(&Config{})
+			scraper, err := newProcessScraper(&Config{Metrics: metadata.DefaultMetricsSettings()})
 			require.NoError(t, err, "Failed to create process scraper: %v", err)
 			err = scraper.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
@@ -478,14 +478,75 @@ func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError
 	if diskError == nil {
 		expectedLen += diskMetricsLen
 	}
+
+	if expectedLen == 0 {
+		return 0, 0
+	}
 	return 1, expectedLen
 }
 
 func getExpectedScrapeFailures(nameError, exeError, timeError, memError, diskError error) int {
-	expectedResourceMetricsLen, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, diskError)
-	if expectedResourceMetricsLen == 0 {
+	if nameError != nil || exeError != nil {
 		return 1
 	}
-
+	_, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, diskError)
 	return metricsLen - expectedMetricsLen
+}
+
+func TestScrapeMetrics_MuteProcessNameError(t *testing.T) {
+	skipTestOnUnsupportedOS(t)
+
+	processNameError := errors.New("err1")
+
+	type testCase struct {
+		name                 string
+		muteProcessNameError bool
+		omitConfigField      bool
+		expectedError        string
+	}
+
+	testCases := []testCase{
+		{
+			name:                 "Process Name Error Muted",
+			muteProcessNameError: true,
+		},
+		{
+			name:                 "Process Name Error Enabled",
+			muteProcessNameError: false,
+			expectedError:        fmt.Sprintf("error reading process name for pid 1: %v", processNameError),
+		},
+		{
+			name:            "Process Name Error Default (Enabled)",
+			omitConfigField: true,
+			expectedError:   fmt.Sprintf("error reading process name for pid 1: %v", processNameError),
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			config := &Config{Metrics: metadata.DefaultMetricsSettings()}
+			if !test.omitConfigField {
+				config.MuteProcessNameError = test.muteProcessNameError
+			}
+			scraper, err := newProcessScraper(config)
+			require.NoError(t, err, "Failed to create process scraper: %v", err)
+			err = scraper.start(context.Background(), componenttest.NewNopHost())
+			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
+
+			handleMock := &processHandleMock{}
+			handleMock.On("Name").Return("test", processNameError)
+
+			scraper.getProcessHandles = func() (processHandles, error) {
+				return &processHandlesMock{handles: []*processHandleMock{handleMock}}, nil
+			}
+			md, err := scraper.scrape(context.Background())
+
+			assert.Zero(t, md.MetricCount())
+			if config.MuteProcessNameError {
+				assert.Nil(t, err)
+			} else {
+				assert.EqualError(t, err, test.expectedError)
+			}
+		})
+	}
 }

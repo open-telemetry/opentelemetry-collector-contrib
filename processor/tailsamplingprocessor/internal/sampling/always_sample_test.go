@@ -24,13 +24,8 @@ import (
 
 func TestEvaluate_AlwaysSample(t *testing.T) {
 	filter := NewAlwaysSample(zap.NewNop())
-	decision, err := filter.Evaluate(pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}), newTraceStringAttrs(map[string]pdata.AttributeValue{}, "example", "value"))
+	decision, err := filter.Evaluate(pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+		16}), newTraceStringAttrs(pdata.NewMap(), "example", "value"))
 	assert.Nil(t, err)
 	assert.Equal(t, decision, Sampled)
-}
-
-func TestOnLateArrivingSpans_AlwaysSample(t *testing.T) {
-	filter := NewAlwaysSample(zap.NewNop())
-	err := filter.OnLateArrivingSpans(NotSampled, nil)
-	assert.Nil(t, err)
 }

@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
@@ -149,7 +149,7 @@ func constructW3CFormatTraceSpanData(ispans pdata.InstrumentationLibrarySpans) {
 
 func constructResource() pdata.Resource {
 	resource := pdata.NewResource()
-	attrs := pdata.NewAttributeMap()
+	attrs := pdata.NewMap()
 	attrs.InsertString(conventions.AttributeServiceName, "signup_aggregator")
 	attrs.InsertString(conventions.AttributeContainerName, "signup_aggregator")
 	attrs.InsertString(conventions.AttributeContainerImageName, "otel/signupaggregator")
@@ -217,8 +217,8 @@ func constructHTTPServerSpan(traceID pdata.TraceID) pdata.Span {
 	return span
 }
 
-func constructSpanAttributes(attributes map[string]interface{}) pdata.AttributeMap {
-	attrs := pdata.NewAttributeMap()
+func constructSpanAttributes(attributes map[string]interface{}) pdata.Map {
+	attrs := pdata.NewMap()
 	for key, value := range attributes {
 		if cast, ok := value.(int); ok {
 			attrs.InsertInt(key, int64(cast))

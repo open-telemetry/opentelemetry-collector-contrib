@@ -35,7 +35,7 @@ func TestCompositeHelper(t *testing.T) {
 				Type: Composite,
 				CompositeCfg: CompositeCfg{
 					MaxTotalSpansPerSecond: 1000,
-					PolicyOrder:            []string{"test-composite-policy-1", "test-composite-policy-2", "test-composite-policy-3", "test-composite-policy-4", "test-composite-policy-5"},
+					PolicyOrder:            []string{"test-composite-policy-1", "test-composite-policy-2", "test-composite-policy-3", "test-composite-policy-4", "test-composite-policy-5", "test-composite-policy-6", "test-composite-policy-7", "test-composite-policy-8"},
 					SubPolicyCfg: []SubPolicyCfg{
 						{
 							Name:                "test-composite-policy-1",
@@ -53,11 +53,26 @@ func TestCompositeHelper(t *testing.T) {
 							RateLimitingCfg: RateLimitingCfg{SpansPerSecond: 10},
 						},
 						{
-							Name: "test-composite-policy-4",
+							Name:             "test-composite-policy-4",
+							Type:             Probabilistic,
+							ProbabilisticCfg: ProbabilisticCfg{HashSalt: "salt", SamplingPercentage: 10},
+						},
+						{
+							Name:       "test-composite-policy-5",
+							Type:       Latency,
+							LatencyCfg: LatencyCfg{ThresholdMs: 10},
+						},
+						{
+							Name:          "test-composite-policy-6",
+							Type:          StatusCode,
+							StatusCodeCfg: StatusCodeCfg{StatusCodes: []string{"200", "404"}},
+						},
+						{
+							Name: "test-composite-policy-7",
 							Type: AlwaysSample,
 						},
 						{
-							Name: "test-composite-policy-5",
+							Name: "test-composite-policy-8",
 						},
 					},
 					RateAllocation: []RateAllocationCfg{

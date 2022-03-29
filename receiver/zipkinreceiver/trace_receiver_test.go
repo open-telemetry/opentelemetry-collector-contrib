@@ -40,7 +40,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 )
 
 const (
@@ -403,17 +403,17 @@ func TestReceiverConvertsStringsToTypes(t *testing.T) {
 	td := next.AllTraces()[0]
 	span := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
 
-	expected := pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
-		"cache_hit":            pdata.NewAttributeValueBool(true),
-		"ping_count":           pdata.NewAttributeValueInt(25),
-		"timeout":              pdata.NewAttributeValueDouble(12.3),
-		"clnt/finagle.version": pdata.NewAttributeValueString("6.45.0"),
-		"http.path":            pdata.NewAttributeValueString("/api"),
-		"http.status_code":     pdata.NewAttributeValueInt(500),
-		"net.host.ip":          pdata.NewAttributeValueString("7::80:807f"),
-		"peer.service":         pdata.NewAttributeValueString("backend"),
-		"net.peer.ip":          pdata.NewAttributeValueString("192.168.99.101"),
-		"net.peer.port":        pdata.NewAttributeValueInt(9000),
+	expected := pdata.NewMapFromRaw(map[string]interface{}{
+		"cache_hit":            true,
+		"ping_count":           25,
+		"timeout":              12.3,
+		"clnt/finagle.version": "6.45.0",
+		"http.path":            "/api",
+		"http.status_code":     500,
+		"net.host.ip":          "7::80:807f",
+		"peer.service":         "backend",
+		"net.peer.ip":          "192.168.99.101",
+		"net.peer.port":        9000,
 	}).Sort()
 
 	actual := span.Attributes().Sort()

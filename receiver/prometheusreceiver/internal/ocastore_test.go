@@ -27,7 +27,7 @@ import (
 )
 
 func TestOcaStore(t *testing.T) {
-	o := NewOcaStore(context.Background(), nil, testTelemetry.ToReceiverCreateSettings(), 2*time.Minute, false, "", config.NewComponentID("prometheus"), nil, false)
+	o := NewOcaStore(context.Background(), nil, testTelemetry.ToReceiverCreateSettings(), 2*time.Minute, false, "", config.NewComponentID("prometheus"), nil)
 	o.SetScrapeManager(&scrape.Manager{})
 
 	app := o.Appender(context.Background())

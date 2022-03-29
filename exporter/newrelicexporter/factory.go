@@ -17,6 +17,7 @@ package newrelicexporter // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/newrelic/newrelic-telemetry-sdk-go/telemetry"
 	"go.opencensus.io/stats/view"
@@ -28,26 +29,34 @@ import (
 
 const typeStr = "newrelic"
 
+var once sync.Once
+
 // NewFactory creates a factory for New Relic exporter.
 func NewFactory() component.ExporterFactory {
 	view.Register(MetricViews()...)
 
-	return exporterhelper.NewFactory(
+	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTracesExporter),
-		exporterhelper.WithMetrics(createMetricsExporter),
-		exporterhelper.WithLogs(createLogsExporter),
+		component.WithTracesExporter(createTracesExporter),
+		component.WithMetricsExporter(createMetricsExporter),
+		component.WithLogsExporter(createLogsExporter),
 	)
 }
 
+func logDeprecation(logger *zap.Logger) {
+	once.Do(func() {
+		logger.Warn("newrelic exporter is deprecated. Use otlp exporter instead.")
+	})
+}
+
 func createDefaultConfig() config.Exporter {
-	defaultRetry := exporterhelper.DefaultRetrySettings()
+	defaultRetry := exporterhelper.NewDefaultRetrySettings()
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 
 		CommonConfig: EndpointConfig{
-			TimeoutSettings: exporterhelper.DefaultTimeoutSettings(),
+			TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 			RetrySettings:   defaultRetry,
 		},
 	}
@@ -59,6 +68,8 @@ func createTracesExporter(
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.TracesExporter, error) {
+	logDeprecation(set.Logger)
+
 	nrConfig, ok := cfg.(*Config)
 	if !ok {
 		return nil, fmt.Errorf("invalid config: %#v", cfg)
@@ -85,6 +96,8 @@ func createMetricsExporter(
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.MetricsExporter, error) {
+	logDeprecation(set.Logger)
+
 	nrConfig, ok := cfg.(*Config)
 	if !ok {
 		return nil, fmt.Errorf("invalid config: %#v", cfg)
@@ -112,6 +125,8 @@ func createLogsExporter(
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.LogsExporter, error) {
+	logDeprecation(set.Logger)
+
 	nrConfig, ok := cfg.(*Config)
 	if !ok {
 		return nil, fmt.Errorf("invalid config: %#v", cfg)

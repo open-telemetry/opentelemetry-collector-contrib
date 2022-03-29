@@ -25,12 +25,26 @@ import (
 
 const fileSystemStatesLen = 2
 
-func appendFileSystemUsageStateDataPoints(idps pdata.NumberDataPointSlice, now pdata.Timestamp, deviceUsage *deviceUsage) {
-	initializeFileSystemUsageDataPoint(idps.AppendEmpty(), now, deviceUsage.partition, metadata.AttributeState.Used, int64(deviceUsage.usage.Used))
-	initializeFileSystemUsageDataPoint(idps.AppendEmpty(), now, deviceUsage.partition, metadata.AttributeState.Free, int64(deviceUsage.usage.Free))
+func (s *scraper) recordFileSystemUsageMetric(now pdata.Timestamp, deviceUsages []*deviceUsage) {
+	for _, deviceUsage := range deviceUsages {
+		s.mb.RecordSystemFilesystemUsageDataPoint(
+			now, int64(deviceUsage.usage.Used),
+			deviceUsage.partition.Device, getMountMode(deviceUsage.partition.Opts),
+			deviceUsage.partition.Mountpoint, deviceUsage.partition.Fstype,
+			metadata.AttributeState.Used)
+		s.mb.RecordSystemFilesystemUsageDataPoint(
+			now, int64(deviceUsage.usage.Free),
+			deviceUsage.partition.Device, getMountMode(deviceUsage.partition.Opts),
+			deviceUsage.partition.Mountpoint, deviceUsage.partition.Fstype,
+			metadata.AttributeState.Free)
+		s.mb.RecordSystemFilesystemUtilizationDataPoint(
+			now, deviceUsage.usage.UsedPercent/100.0,
+			deviceUsage.partition.Device, getMountMode(deviceUsage.partition.Opts),
+			deviceUsage.partition.Mountpoint, deviceUsage.partition.Fstype)
+	}
 }
 
 const systemSpecificMetricsLen = 0
 
-func appendSystemSpecificMetrics(metrics pdata.MetricSlice, now pdata.Timestamp, deviceUsages []*deviceUsage) {
+func (s *scraper) recordSystemSpecificMetrics(now pdata.Timestamp, deviceUsages []*deviceUsage) {
 }

@@ -24,7 +24,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 )
 
 type logKeyValuePair struct {
@@ -38,19 +38,19 @@ func (kv logKeyValuePairs) Len() int           { return len(kv) }
 func (kv logKeyValuePairs) Swap(i, j int)      { kv[i], kv[j] = kv[j], kv[i] }
 func (kv logKeyValuePairs) Less(i, j int) bool { return kv[i].Key < kv[j].Key }
 
-func getComplexAttributeValueMap() pdata.AttributeValue {
-	mapVal := pdata.NewAttributeValueMap()
+func getComplexAttributeValueMap() pdata.Value {
+	mapVal := pdata.NewValueMap()
 	mapValReal := mapVal.MapVal()
 	mapValReal.InsertBool("result", true)
 	mapValReal.InsertString("status", "ok")
 	mapValReal.InsertDouble("value", 1.3)
 	mapValReal.InsertInt("code", 200)
 	mapValReal.InsertNull("null")
-	arrayVal := pdata.NewAttributeValueArray()
+	arrayVal := pdata.NewValueSlice()
 	arrayVal.SliceVal().AppendEmpty().SetStringVal("array")
 	mapValReal.Insert("array", arrayVal)
 
-	subMapVal := pdata.NewAttributeValueMap()
+	subMapVal := pdata.NewValueMap()
 	subMapVal.MapVal().InsertString("data", "hello world")
 	mapValReal.Insert("map", subMapVal)
 
@@ -71,7 +71,7 @@ func createLogData(numberOfLogs int) pdata.Logs {
 
 	for i := 0; i < numberOfLogs; i++ {
 		ts := pdata.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
-		logRecord := ill.Logs().AppendEmpty()
+		logRecord := ill.LogRecords().AppendEmpty()
 		switch i {
 		case 0:
 			// do nothing, left body null
@@ -88,7 +88,7 @@ func createLogData(numberOfLogs int) pdata.Logs {
 			logRecord.Attributes().Insert("map-value", getComplexAttributeValueMap())
 			logRecord.Body().SetStringVal("log contents")
 		case 6:
-			arrayVal := pdata.NewAttributeValueArray()
+			arrayVal := pdata.NewValueSlice()
 			arrayVal.SliceVal().AppendEmpty().SetStringVal("array")
 			logRecord.Attributes().Insert("array-value", arrayVal)
 			logRecord.Body().SetStringVal("log contents")

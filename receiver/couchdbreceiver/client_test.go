@@ -34,7 +34,7 @@ func defaultClient(t *testing.T, endpoint string) client {
 	couchdbClient, err := newCouchDBClient(
 		cfg,
 		componenttest.NewNopHost(),
-		zap.NewNop())
+		componenttest.NewNopTelemetrySettings())
 	require.Nil(t, err)
 	require.NotNil(t, couchdbClient)
 	return couchdbClient
@@ -53,7 +53,7 @@ func TestNewCouchDBClient(t *testing.T) {
 					},
 				}},
 			componenttest.NewNopHost(),
-			zap.NewNop())
+			componenttest.NewNopTelemetrySettings())
 
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "failed to create HTTP Client: ")
@@ -127,7 +127,7 @@ func TestGet(t *testing.T) {
 				Password: "unauthorized",
 			},
 			componenttest.NewNopHost(),
-			zap.NewNop())
+			componenttest.NewNopTelemetrySettings())
 		require.Nil(t, err)
 		require.NotNil(t, couchdbClient)
 
@@ -144,66 +144,6 @@ func TestGet(t *testing.T) {
 		require.Nil(t, err)
 		require.NotNil(t, result)
 	})
-}
-
-func TestGetNodeNamesSingle(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.Contains(r.URL.Path, "/invalid_json") {
-			w.WriteHeader(200)
-			w.Write([]byte(`{"}`))
-			return
-		}
-
-		if r.URL.Path == nodeNamesPath {
-			w.WriteHeader(200)
-			w.Write([]byte(`{"all_nodes":["nonode@nohost"],"cluster_nodes":["nonode@nohost"]}`))
-			return
-		}
-		w.WriteHeader(404)
-	}))
-	defer ts.Close()
-
-	t.Run("invalid endpoint", func(t *testing.T) {
-		couchdbClient := defaultClient(t, "invalid")
-
-		actualNodeNames, err := couchdbClient.GetNodeNames()
-		require.NotNil(t, err)
-		require.Nil(t, actualNodeNames)
-	})
-	t.Run("invalid json", func(t *testing.T) {
-		couchdbClient := defaultClient(t, ts.URL+"/invalid_json")
-
-		actualNodeNames, err := couchdbClient.GetNodeNames()
-		require.NotNil(t, err)
-		require.Nil(t, actualNodeNames)
-	})
-	t.Run("no error", func(t *testing.T) {
-		expectedNodeNames := []string{"nonode@nohost"}
-		couchdbClient := defaultClient(t, ts.URL)
-
-		actualNodeNames, err := couchdbClient.GetNodeNames()
-		require.Nil(t, err)
-		require.EqualValues(t, expectedNodeNames, actualNodeNames)
-	})
-}
-
-func TestGetNodeNamesMultiple(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == nodeNamesPath {
-			w.WriteHeader(200)
-			w.Write([]byte(`{"all_nodes":["couchdb@couchdb0.otel.com","couchdb@couchdb1.otel.com","couchdb@couchdb2.otel.com"],"cluster_nodes":["couchdb@couchdb0.otel.com","couchdb@couchdb1.otel.com","couchdb@couchdb2.otel.com"]}`))
-			return
-		}
-		w.WriteHeader(404)
-	}))
-	defer ts.Close()
-
-	expectedNodeNames := []string{"couchdb@couchdb0.otel.com", "couchdb@couchdb1.otel.com", "couchdb@couchdb2.otel.com"}
-	couchdbClient := defaultClient(t, ts.URL)
-
-	actualNodeNames, err := couchdbClient.GetNodeNames()
-	require.Nil(t, err)
-	require.EqualValues(t, expectedNodeNames, actualNodeNames)
 }
 
 func TestGetNodeStats(t *testing.T) {
@@ -260,12 +200,13 @@ func TestBuildReq(t *testing.T) {
 		logger: zap.NewNop(),
 	}
 
-	req, err := couchdbClient.buildReq(nodeNamesPath)
+	path := "/_node/_local/_stats/couchdb"
+	req, err := couchdbClient.buildReq(path)
 	require.NoError(t, err)
 	require.NotNil(t, req)
 	require.Equal(t, "application/json", req.Header["Content-Type"][0])
 	require.Equal(t, []string{"Basic b3RlbHU6b3RlbHA="}, req.Header["Authorization"])
-	require.Equal(t, defaultEndpoint+nodeNamesPath, req.URL.String())
+	require.Equal(t, defaultEndpoint+path, req.URL.String())
 }
 
 func TestBuildBadReq(t *testing.T) {

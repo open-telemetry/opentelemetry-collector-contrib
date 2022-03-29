@@ -22,7 +22,7 @@ import (
 	"go.elastic.co/apm/transport/transporttest"
 	"go.elastic.co/fastjson"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticexporter/internal/translator/elastic"
 )
@@ -41,24 +41,24 @@ func TestMetadataDefaults(t *testing.T) {
 }
 
 func TestMetadataServiceName(t *testing.T) {
-	resource := resourceFromAttributesMap(map[string]pdata.AttributeValue{
-		"service.name": pdata.NewAttributeValueString("foo"),
+	resource := resourceFromAttributesMap(map[string]interface{}{
+		"service.name": "foo",
 	})
 	out := metadataWithResource(t, resource)
 	assert.Equal(t, "foo", out.service.Name)
 }
 
 func TestMetadataServiceVersion(t *testing.T) {
-	resource := resourceFromAttributesMap(map[string]pdata.AttributeValue{
-		"service.version": pdata.NewAttributeValueString("1.2.3"),
+	resource := resourceFromAttributesMap(map[string]interface{}{
+		"service.version": "1.2.3",
 	})
 	out := metadataWithResource(t, resource)
 	assert.Equal(t, "1.2.3", out.service.Version)
 }
 
 func TestMetadataServiceInstance(t *testing.T) {
-	resource := resourceFromAttributesMap(map[string]pdata.AttributeValue{
-		"service.instance.id": pdata.NewAttributeValueString("foo-1"),
+	resource := resourceFromAttributesMap(map[string]interface{}{
+		"service.instance.id": "foo-1",
 	})
 	out := metadataWithResource(t, resource)
 	assert.Equal(t, &model.ServiceNode{
@@ -67,24 +67,24 @@ func TestMetadataServiceInstance(t *testing.T) {
 }
 
 func TestMetadataServiceEnvironment(t *testing.T) {
-	resource := resourceFromAttributesMap(map[string]pdata.AttributeValue{
-		"deployment.environment": pdata.NewAttributeValueString("foo"),
+	resource := resourceFromAttributesMap(map[string]interface{}{
+		"deployment.environment": "foo",
 	})
 	out := metadataWithResource(t, resource)
 	assert.Equal(t, "foo", out.service.Environment)
 }
 
 func TestMetadataSystemHostname(t *testing.T) {
-	resource := resourceFromAttributesMap(map[string]pdata.AttributeValue{
-		"host.name": pdata.NewAttributeValueString("foo"),
+	resource := resourceFromAttributesMap(map[string]interface{}{
+		"host.name": "foo",
 	})
 	out := metadataWithResource(t, resource)
 	assert.Equal(t, "foo", out.system.Hostname)
 }
 
 func TestMetadataServiceLanguageName(t *testing.T) {
-	resource := resourceFromAttributesMap(map[string]pdata.AttributeValue{
-		"telemetry.sdk.language": pdata.NewAttributeValueString("java"),
+	resource := resourceFromAttributesMap(map[string]interface{}{
+		"telemetry.sdk.language": "java",
 	})
 	out := metadataWithResource(t, resource)
 	assert.Equal(t, "java", out.service.Language.Name)
@@ -92,9 +92,9 @@ func TestMetadataServiceLanguageName(t *testing.T) {
 }
 
 func TestMetadataAgentName(t *testing.T) {
-	resource := resourceFromAttributesMap(map[string]pdata.AttributeValue{
-		"telemetry.sdk.name":    pdata.NewAttributeValueString("foo"),
-		"telemetry.sdk.version": pdata.NewAttributeValueString("bar"),
+	resource := resourceFromAttributesMap(map[string]interface{}{
+		"telemetry.sdk.name":    "foo",
+		"telemetry.sdk.version": "bar",
 	})
 	out := metadataWithResource(t, resource)
 	assert.Equal(t, &model.Agent{
@@ -104,13 +104,13 @@ func TestMetadataAgentName(t *testing.T) {
 }
 
 func TestMetadataLabels(t *testing.T) {
-	resource := resourceFromAttributesMap(map[string]pdata.AttributeValue{
-		"string": pdata.NewAttributeValueString("abc"),
-		"int":    pdata.NewAttributeValueInt(123),
-		"double": pdata.NewAttributeValueDouble(123.456),
-		"bool":   pdata.NewAttributeValueBool(true),
+	resource := resourceFromAttributesMap(map[string]interface{}{
+		"string": "abc",
+		"int":    123,
+		"double": 123.456,
+		"bool":   true,
 		// well known resource label, not carried across
-		conventions.AttributeServiceVersion: pdata.NewAttributeValueString("..."),
+		conventions.AttributeServiceVersion: "...",
 	})
 	out := metadataWithResource(t, resource)
 	assert.Equal(t, model.IfaceMap{
@@ -122,10 +122,10 @@ func TestMetadataLabels(t *testing.T) {
 }
 
 func TestMetadataKubernetes(t *testing.T) {
-	resource := resourceFromAttributesMap(map[string]pdata.AttributeValue{
-		"k8s.namespace.name": pdata.NewAttributeValueString("namespace_name"),
-		"k8s.pod.name":       pdata.NewAttributeValueString("pod_name"),
-		"k8s.pod.uid":        pdata.NewAttributeValueString("pod_uid"),
+	resource := resourceFromAttributesMap(map[string]interface{}{
+		"k8s.namespace.name": "namespace_name",
+		"k8s.pod.name":       "pod_name",
+		"k8s.pod.uid":        "pod_uid",
 	})
 	out := metadataWithResource(t, resource)
 	assert.Equal(t, &model.Kubernetes{
@@ -137,9 +137,9 @@ func TestMetadataKubernetes(t *testing.T) {
 	}, out.system.Kubernetes)
 }
 
-func resourceFromAttributesMap(attrs map[string]pdata.AttributeValue) pdata.Resource {
+func resourceFromAttributesMap(attrs map[string]interface{}) pdata.Resource {
 	resource := pdata.NewResource()
-	pdata.NewAttributeMapFromMap(attrs).CopyTo(resource.Attributes())
+	pdata.NewMapFromRaw(attrs).CopyTo(resource.Attributes())
 	return resource
 }
 

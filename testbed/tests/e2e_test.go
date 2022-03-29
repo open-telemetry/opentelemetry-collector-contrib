@@ -19,7 +19,6 @@ package tests
 
 import (
 	"fmt"
-	"path"
 	"path/filepath"
 	"testing"
 	"time"
@@ -35,7 +34,7 @@ func TestIdleMode(t *testing.T) {
 	options := testbed.LoadOptions{DataItemsPerSecond: 10_000, ItemsPerBatch: 10}
 	dataProvider := testbed.NewPerfTestDataProvider(options)
 
-	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
+	resultDir, err := filepath.Abs(filepath.Join("results", t.Name()))
 	require.NoError(t, err)
 
 	sender := testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t))
@@ -74,11 +73,11 @@ func TestBallastMemory(t *testing.T) {
 		maxRSS      uint32
 	}{
 		{100, 80},
-		{500, 100},
+		{500, 110},
 		{1000, 120},
 	}
 
-	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
+	resultDir, err := filepath.Abs(filepath.Join("results", t.Name()))
 	require.NoError(t, err)
 
 	options := testbed.LoadOptions{DataItemsPerSecond: 10_000, ItemsPerBatch: 10}

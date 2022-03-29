@@ -17,12 +17,14 @@ package filesystemscraper
 import (
 	"context"
 	"errors"
+	"fmt"
 	"runtime"
 	"testing"
 
 	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
@@ -35,23 +37,29 @@ func TestScrape(t *testing.T) {
 	type testCase struct {
 		name                     string
 		config                   Config
+		bootTimeFunc             func() (uint64, error)
 		partitionsFunc           func(bool) ([]disk.PartitionStat, error)
 		usageFunc                func(string) (*disk.UsageStat, error)
 		expectMetrics            bool
 		expectedDeviceDataPoints int
-		expectedDeviceAttributes []map[string]pdata.AttributeValue
+		expectedDeviceAttributes []map[string]pdata.Value
 		newErrRegex              string
+		initializationErr        string
 		expectedErr              string
 	}
 
 	testCases := []testCase{
 		{
 			name:          "Standard",
+			config:        Config{Metrics: metadata.DefaultMetricsSettings()},
 			expectMetrics: true,
 		},
 		{
-			name:   "Include single device filter",
-			config: Config{IncludeDevices: DeviceMatchConfig{filterset.Config{MatchType: "strict"}, []string{"a"}}},
+			name: "Include single device filter",
+			config: Config{
+				Metrics:        metadata.DefaultMetricsSettings(),
+				IncludeDevices: DeviceMatchConfig{filterset.Config{MatchType: "strict"}, []string{"a"}},
+			},
 			partitionsFunc: func(bool) ([]disk.PartitionStat, error) {
 				return []disk.PartitionStat{{Device: "a"}, {Device: "b"}}, nil
 			},
@@ -62,13 +70,17 @@ func TestScrape(t *testing.T) {
 			expectedDeviceDataPoints: 1,
 		},
 		{
-			name:          "Include Device Filter that matches nothing",
-			config:        Config{IncludeDevices: DeviceMatchConfig{filterset.Config{MatchType: "strict"}, []string{"@*^#&*$^#)"}}},
+			name: "Include Device Filter that matches nothing",
+			config: Config{
+				Metrics:        metadata.DefaultMetricsSettings(),
+				IncludeDevices: DeviceMatchConfig{filterset.Config{MatchType: "strict"}, []string{"@*^#&*$^#)"}},
+			},
 			expectMetrics: false,
 		},
 		{
 			name: "Include filter with devices, filesystem type and mount points",
 			config: Config{
+				Metrics: metadata.DefaultMetricsSettings(),
 				IncludeDevices: DeviceMatchConfig{
 					Config: filterset.Config{
 						MatchType: filterset.Strict,
@@ -119,49 +131,67 @@ func TestScrape(t *testing.T) {
 			},
 			expectMetrics:            true,
 			expectedDeviceDataPoints: 2,
-			expectedDeviceAttributes: []map[string]pdata.AttributeValue{
+			expectedDeviceAttributes: []map[string]pdata.Value{
 				{
-					"device":     pdata.NewAttributeValueString("device_a"),
-					"mountpoint": pdata.NewAttributeValueString("mount_point_a"),
-					"type":       pdata.NewAttributeValueString("fs_type_a"),
-					"mode":       pdata.NewAttributeValueString("unknown"),
+					"device":     pdata.NewValueString("device_a"),
+					"mountpoint": pdata.NewValueString("mount_point_a"),
+					"type":       pdata.NewValueString("fs_type_a"),
+					"mode":       pdata.NewValueString("unknown"),
 				},
 				{
-					"device":     pdata.NewAttributeValueString("device_b"),
-					"mountpoint": pdata.NewAttributeValueString("mount_point_d"),
-					"type":       pdata.NewAttributeValueString("fs_type_c"),
-					"mode":       pdata.NewAttributeValueString("unknown"),
+					"device":     pdata.NewValueString("device_b"),
+					"mountpoint": pdata.NewValueString("mount_point_d"),
+					"type":       pdata.NewValueString("fs_type_c"),
+					"mode":       pdata.NewValueString("unknown"),
 				},
 			},
 		},
 		{
-			name:        "Invalid Include Device Filter",
-			config:      Config{IncludeDevices: DeviceMatchConfig{Devices: []string{"test"}}},
+			name: "Invalid Include Device Filter",
+			config: Config{
+				Metrics:        metadata.DefaultMetricsSettings(),
+				IncludeDevices: DeviceMatchConfig{Devices: []string{"test"}},
+			},
 			newErrRegex: "^error creating device include filters:",
 		},
 		{
-			name:        "Invalid Exclude Device Filter",
-			config:      Config{ExcludeDevices: DeviceMatchConfig{Devices: []string{"test"}}},
+			name: "Invalid Exclude Device Filter",
+			config: Config{
+				Metrics:        metadata.DefaultMetricsSettings(),
+				ExcludeDevices: DeviceMatchConfig{Devices: []string{"test"}},
+			},
 			newErrRegex: "^error creating device exclude filters:",
 		},
 		{
-			name:        "Invalid Include Filesystems Filter",
-			config:      Config{IncludeFSTypes: FSTypeMatchConfig{FSTypes: []string{"test"}}},
+			name: "Invalid Include Filesystems Filter",
+			config: Config{
+				Metrics:        metadata.DefaultMetricsSettings(),
+				IncludeFSTypes: FSTypeMatchConfig{FSTypes: []string{"test"}},
+			},
 			newErrRegex: "^error creating type include filters:",
 		},
 		{
-			name:        "Invalid Exclude Filesystems Filter",
-			config:      Config{ExcludeFSTypes: FSTypeMatchConfig{FSTypes: []string{"test"}}},
+			name: "Invalid Exclude Filesystems Filter",
+			config: Config{
+				Metrics:        metadata.DefaultMetricsSettings(),
+				ExcludeFSTypes: FSTypeMatchConfig{FSTypes: []string{"test"}},
+			},
 			newErrRegex: "^error creating type exclude filters:",
 		},
 		{
-			name:        "Invalid Include Moountpoints Filter",
-			config:      Config{IncludeMountPoints: MountPointMatchConfig{MountPoints: []string{"test"}}},
+			name: "Invalid Include Moountpoints Filter",
+			config: Config{
+				Metrics:            metadata.DefaultMetricsSettings(),
+				IncludeMountPoints: MountPointMatchConfig{MountPoints: []string{"test"}},
+			},
 			newErrRegex: "^error creating mountpoint include filters:",
 		},
 		{
-			name:        "Invalid Exclude Moountpoints Filter",
-			config:      Config{ExcludeMountPoints: MountPointMatchConfig{MountPoints: []string{"test"}}},
+			name: "Invalid Exclude Moountpoints Filter",
+			config: Config{
+				Metrics:            metadata.DefaultMetricsSettings(),
+				ExcludeMountPoints: MountPointMatchConfig{MountPoints: []string{"test"}},
+			},
 			newErrRegex: "^error creating mountpoint exclude filters:",
 		},
 		{
@@ -192,8 +222,18 @@ func TestScrape(t *testing.T) {
 			if test.usageFunc != nil {
 				scraper.usage = test.usageFunc
 			}
+			if test.bootTimeFunc != nil {
+				scraper.bootTime = test.bootTimeFunc
+			}
 
-			md, err := scraper.Scrape(context.Background())
+			err = scraper.start(context.Background(), componenttest.NewNopHost())
+			if test.initializationErr != "" {
+				assert.EqualError(t, err, test.initializationErr)
+				return
+			}
+			require.NoError(t, err, "Failed to initialize file system scraper: %v", err)
+
+			md, err := scraper.scrape(context.Background())
 			if test.expectedErr != "" {
 				assert.Contains(t, err.Error(), test.expectedErr)
 
@@ -215,20 +255,22 @@ func TestScrape(t *testing.T) {
 			assert.GreaterOrEqual(t, md.MetricCount(), 1)
 
 			metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+			m, err := findMetricByName(metrics, "system.filesystem.usage")
+			assert.NoError(t, err)
 			assertFileSystemUsageMetricValid(
 				t,
-				metrics.At(0),
-				metadata.Metrics.SystemFilesystemUsage.New(),
+				m,
 				test.expectedDeviceDataPoints*fileSystemStatesLen,
 				test.expectedDeviceAttributes,
 			)
 
 			if isUnix() {
-				assertFileSystemUsageMetricHasUnixSpecificStateLabels(t, metrics.At(0))
+				assertFileSystemUsageMetricHasUnixSpecificStateLabels(t, m)
+				m, err = findMetricByName(metrics, "system.filesystem.inodes.usage")
+				assert.NoError(t, err)
 				assertFileSystemUsageMetricValid(
 					t,
-					metrics.At(1),
-					metadata.Metrics.SystemFilesystemInodesUsage.New(),
+					m,
 					test.expectedDeviceDataPoints*2,
 					test.expectedDeviceAttributes,
 				)
@@ -239,13 +281,20 @@ func TestScrape(t *testing.T) {
 	}
 }
 
+func findMetricByName(metrics pdata.MetricSlice, name string) (pdata.Metric, error) {
+	for i := 0; i < metrics.Len(); i++ {
+		if metrics.At(i).Name() == name {
+			return metrics.At(i), nil
+		}
+	}
+	return pdata.Metric{}, fmt.Errorf("no metric found with name %s", name)
+}
+
 func assertFileSystemUsageMetricValid(
 	t *testing.T,
 	metric pdata.Metric,
-	descriptor pdata.Metric,
 	expectedDeviceDataPoints int,
-	expectedDeviceAttributes []map[string]pdata.AttributeValue) {
-	internal.AssertDescriptorEqual(t, descriptor, metric)
+	expectedDeviceAttributes []map[string]pdata.Value) {
 	for i := 0; i < metric.Sum().DataPoints().Len(); i++ {
 		for _, label := range []string{"device", "type", "mode", "mountpoint"} {
 			internal.AssertSumMetricHasAttribute(t, metric, i, label)
@@ -271,12 +320,12 @@ func assertFileSystemUsageMetricValid(
 	} else {
 		assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), fileSystemStatesLen)
 	}
-	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "state", pdata.NewAttributeValueString(metadata.AttributeState.Used))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "state", pdata.NewAttributeValueString(metadata.AttributeState.Free))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "state", pdata.NewValueString(metadata.AttributeState.Used))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "state", pdata.NewValueString(metadata.AttributeState.Free))
 }
 
 func assertFileSystemUsageMetricHasUnixSpecificStateLabels(t *testing.T, metric pdata.Metric) {
-	internal.AssertSumMetricHasAttributeValue(t, metric, 2, "state", pdata.NewAttributeValueString(metadata.AttributeState.Reserved))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 2, "state", pdata.NewValueString(metadata.AttributeState.Reserved))
 }
 
 func isUnix() bool {

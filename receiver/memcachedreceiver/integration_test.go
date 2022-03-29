@@ -28,13 +28,13 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/otlp"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testing/container"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 )
 
 func TestIntegration(t *testing.T) {
-	cs := container.New(t)
-	c := cs.StartImage("memcached:1.6-alpine", container.WithPortReady(11211))
+	cs := containertest.New(t)
+	c := cs.StartImage("memcached:1.6-alpine", containertest.WithPortReady(11211))
 
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
@@ -51,24 +51,13 @@ func TestIntegration(t *testing.T) {
 	}, 15*time.Second, 1*time.Second, "failed to receive at least 5 metrics")
 	require.NoError(t, rcvr.Shutdown(context.Background()))
 
-	md := consumer.AllMetrics()[0]
-
-	require.Equal(t, 1, md.ResourceMetrics().Len())
-
-	ilms := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics()
-	require.Equal(t, 1, ilms.Len())
-
-	aMetricSlice := ilms.At(0).Metrics()
-	require.Equal(t, 11, aMetricSlice.Len())
+	actualMetrics := consumer.AllMetrics()[0]
 
 	expectedFileBytes, err := ioutil.ReadFile("./testdata/expected_metrics/test_scraper/expected.json")
 	require.NoError(t, err)
-
 	unmarshaller := otlp.NewJSONMetricsUnmarshaler()
 	expectedMetrics, err := unmarshaller.UnmarshalMetrics(expectedFileBytes)
 	require.NoError(t, err)
 
-	eMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
-
-	require.NoError(t, scrapertest.CompareMetricSlices(eMetricSlice, aMetricSlice, scrapertest.IgnoreValues()))
+	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues()))
 }

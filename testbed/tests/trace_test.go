@@ -22,14 +22,13 @@ package tests
 
 import (
 	"context"
-	"path"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
@@ -118,7 +117,7 @@ func TestTrace10kSPS(t *testing.T) {
 			datareceivers.NewZipkinDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 80,
-				ExpectedMaxRAM: 100,
+				ExpectedMaxRAM: 120,
 			},
 		},
 	}
@@ -401,7 +400,7 @@ func TestTraceAttributesProcessor(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			resultDir, err := filepath.Abs(path.Join("results", t.Name()))
+			resultDir, err := filepath.Abs(filepath.Join("results", t.Name()))
 			require.NoError(t, err)
 
 			// Use processor to add attributes to certain spans.

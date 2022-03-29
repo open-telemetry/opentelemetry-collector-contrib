@@ -16,7 +16,7 @@ package humioexporter
 
 import (
 	"net/url"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -40,7 +40,7 @@ func loadConfig(t *testing.T, file string) (*config.Config, error) {
 	factories.Exporters[typeStr] = factory
 
 	// Load configurations
-	return servicetest.LoadConfigAndValidate(path.Join(".", "testdata", file), factories)
+	return servicetest.LoadConfigAndValidate(filepath.Join("testdata", file), factories)
 }
 
 // Helper method to handle boilerplate of loading exporter configuration from file
@@ -53,7 +53,7 @@ func loadExporterConfig(t *testing.T, file string, id config.ComponentID) (confi
 	factories.Exporters[typeStr] = factory
 
 	// Load configurations
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", file), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", file), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 	actual := cfg.Exporters[id]

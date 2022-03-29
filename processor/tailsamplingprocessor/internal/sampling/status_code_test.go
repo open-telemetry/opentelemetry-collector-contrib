@@ -91,11 +91,3 @@ func TestStatusCodeSampling(t *testing.T) {
 		})
 	}
 }
-
-func TestOnLateArrivingSpans_StatusCodeSampling(t *testing.T) {
-	statusCode, err := NewStatusCodeFilter(zap.NewNop(), []string{"ERROR"})
-	assert.Nil(t, err)
-
-	err = statusCode.OnLateArrivingSpans(NotSampled, nil)
-	assert.Nil(t, err)
-}

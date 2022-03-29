@@ -58,9 +58,18 @@ func complexEntriesForNDifferentHosts(count int, n int) []*entry.Entry {
 	for i := 0; i < count; i++ {
 		e := entry.New()
 		e.Severity = entry.Error
-		e.AddResourceKey("type", "global")
-		e.Resource = map[string]string{
-			"host": fmt.Sprintf("host-%d", i%n),
+		e.Resource = map[string]interface{}{
+			"host":   fmt.Sprintf("host-%d", i%n),
+			"bool":   true,
+			"int":    123,
+			"double": 12.34,
+			"string": "hello",
+			"object": map[string]interface{}{
+				"bool":   true,
+				"int":    123,
+				"double": 12.34,
+				"string": "hello",
+			},
 		}
 		e.Body = map[string]interface{}{
 			"bool":   true,
@@ -91,9 +100,30 @@ func complexEntriesForNDifferentHosts(count int, n int) []*entry.Entry {
 func complexEntry() *entry.Entry {
 	e := entry.New()
 	e.Severity = entry.Error
-	e.AddResourceKey("type", "global")
-	e.AddAttribute("one", "two")
-	e.AddAttribute("two", "three")
+	e.Resource = map[string]interface{}{
+		"bool":   true,
+		"int":    123,
+		"double": 12.34,
+		"string": "hello",
+		"object": map[string]interface{}{
+			"bool":   true,
+			"int":    123,
+			"double": 12.34,
+			"string": "hello",
+		},
+	}
+	e.Attributes = map[string]interface{}{
+		"bool":   true,
+		"int":    123,
+		"double": 12.34,
+		"string": "hello",
+		"object": map[string]interface{}{
+			"bool":   true,
+			"int":    123,
+			"double": 12.34,
+			"string": "hello",
+		},
+	}
 	e.Body = map[string]interface{}{
 		"bool":   true,
 		"int":    123,
@@ -122,9 +152,20 @@ func TestConvert(t *testing.T) {
 	ent := func() *entry.Entry {
 		e := entry.New()
 		e.Severity = entry.Error
-		e.AddResourceKey("type", "global")
-		e.AddAttribute("one", "two")
-		e.AddAttribute("two", "three")
+		e.Resource = map[string]interface{}{
+			"bool":   true,
+			"int":    123,
+			"double": 12.34,
+			"string": "hello",
+			"object": map[string]interface{}{},
+		}
+		e.Attributes = map[string]interface{}{
+			"bool":   true,
+			"int":    123,
+			"double": 12.34,
+			"string": "hello",
+			"object": map[string]interface{}{},
+		}
 		e.Body = map[string]interface{}{
 			"bool":   true,
 			"int":    123,
@@ -138,20 +179,21 @@ func TestConvert(t *testing.T) {
 	pLogs := Convert(ent)
 	require.Equal(t, 1, pLogs.ResourceLogs().Len())
 	rls := pLogs.ResourceLogs().At(0)
-	require.Equal(t, 1, rls.Resource().Attributes().Len())
-	{
-		att, ok := rls.Resource().Attributes().Get("type")
-		if assert.True(t, ok) {
-			if assert.Equal(t, att.Type(), pdata.AttributeValueTypeString) {
-				assert.Equal(t, att.StringVal(), "global")
-			}
-		}
+
+	if resAtts := rls.Resource().Attributes(); assert.Equal(t, 5, resAtts.Len()) {
+		m := pdata.NewMap()
+		m.InsertBool("bool", true)
+		m.InsertInt("int", 123)
+		m.InsertDouble("double", 12.34)
+		m.InsertString("string", "hello")
+		m.Insert("object", pdata.NewValueMap())
+		assert.EqualValues(t, m.Sort(), resAtts.Sort())
 	}
 
 	ills := rls.InstrumentationLibraryLogs()
 	require.Equal(t, 1, ills.Len())
 
-	logs := ills.At(0).Logs()
+	logs := ills.At(0).LogRecords()
 	require.Equal(t, 1, logs.Len())
 
 	lr := logs.At(0)
@@ -159,15 +201,18 @@ func TestConvert(t *testing.T) {
 	assert.Equal(t, pdata.SeverityNumberERROR, lr.SeverityNumber())
 	assert.Equal(t, "Error", lr.SeverityText())
 
-	if atts := lr.Attributes(); assert.Equal(t, 2, atts.Len()) {
-		m := pdata.NewAttributeMap()
-		m.InsertString("one", "two")
-		m.InsertString("two", "three")
+	if atts := lr.Attributes(); assert.Equal(t, 5, atts.Len()) {
+		m := pdata.NewMap()
+		m.InsertBool("bool", true)
+		m.InsertInt("int", 123)
+		m.InsertDouble("double", 12.34)
+		m.InsertString("string", "hello")
+		m.Insert("object", pdata.NewValueMap())
 		assert.EqualValues(t, m.Sort(), atts.Sort())
 	}
 
-	if assert.Equal(t, pdata.AttributeValueTypeMap, lr.Body().Type()) {
-		m := pdata.NewAttributeMap()
+	if assert.Equal(t, pdata.ValueTypeMap, lr.Body().Type()) {
+		m := pdata.NewMap()
 		// Don't include a nested object because AttributeValueMap sorting
 		// doesn't sort recursively.
 		m.InsertBool("bool", true)
@@ -176,6 +221,186 @@ func TestConvert(t *testing.T) {
 		m.InsertString("string", "hello")
 		m.InsertString("bytes", "asdf")
 		assert.EqualValues(t, m.Sort(), lr.Body().MapVal().Sort())
+	}
+}
+
+func TestHashResource(t *testing.T) {
+	testcases := []struct {
+		name     string
+		baseline map[string]interface{}
+		same     []map[string]interface{}
+		diff     []map[string]interface{}
+	}{
+		{
+			name:     "empty",
+			baseline: map[string]interface{}{},
+			same: []map[string]interface{}{
+				{},
+			},
+			diff: []map[string]interface{}{
+				{
+					"a": "b",
+				},
+				{
+					"a": 1,
+				},
+			},
+		},
+		{
+			name: "single_string",
+			baseline: map[string]interface{}{
+				"one": "two",
+			},
+			same: []map[string]interface{}{
+				{
+					"one": "two",
+				},
+			},
+			diff: []map[string]interface{}{
+				{
+					"a": "b",
+				},
+				{
+					"one": 2,
+				},
+				{
+					"one":   "two",
+					"three": "four",
+				},
+			},
+		},
+		{
+			name: "multi_string",
+			baseline: map[string]interface{}{
+				"one": "two",
+				"a":   "b",
+			},
+			same: []map[string]interface{}{
+				{
+					"one": "two",
+					"a":   "b",
+				},
+				{
+					"a":   "b",
+					"one": "two",
+				},
+			},
+			diff: []map[string]interface{}{
+				{
+					"a": "b",
+				},
+				{
+					"one": "two",
+				},
+			},
+		},
+		{
+			name: "multi_type",
+			baseline: map[string]interface{}{
+				"bool":   true,
+				"int":    123,
+				"double": 12.34,
+				"string": "hello",
+				"object": map[string]interface{}{},
+			},
+			same: []map[string]interface{}{
+				{
+					"bool":   true,
+					"int":    123,
+					"double": 12.34,
+					"string": "hello",
+					"object": map[string]interface{}{},
+				},
+				{
+					"object": map[string]interface{}{},
+					"double": 12.34,
+					"int":    123,
+					"bool":   true,
+					"string": "hello",
+				},
+			},
+			diff: []map[string]interface{}{
+				{
+					"bool":   true,
+					"int":    123,
+					"double": 12.34,
+					"string": "hello",
+					"object": map[string]interface{}{
+						"string": "hello",
+					},
+				},
+			},
+		},
+		{
+			name: "nested",
+			baseline: map[string]interface{}{
+				"bool":   true,
+				"int":    123,
+				"double": 12.34,
+				"string": "hello",
+				"object": map[string]interface{}{
+					"bool":   true,
+					"int":    123,
+					"double": 12.34,
+					"string": "hello",
+					"object": map[string]interface{}{
+						"bool":   true,
+						"int":    123,
+						"double": 12.34,
+						"string": "hello",
+						"object": map[string]interface{}{},
+					},
+				},
+			},
+			same: []map[string]interface{}{
+				{
+					"bool":   true,
+					"int":    123,
+					"double": 12.34,
+					"string": "hello",
+					"object": map[string]interface{}{
+						"bool":   true,
+						"int":    123,
+						"double": 12.34,
+						"string": "hello",
+						"object": map[string]interface{}{
+							"bool":   true,
+							"int":    123,
+							"double": 12.34,
+							"string": "hello",
+							"object": map[string]interface{}{},
+						},
+					},
+				},
+			},
+			diff: []map[string]interface{}{
+				{
+					"bool":   true,
+					"int":    123,
+					"double": 12.34,
+					"string": "hello",
+					"object": map[string]interface{}{
+						"bool":   true,
+						"int":    123,
+						"double": 12.34,
+						"string": "hello",
+						"object": map[string]interface{}{},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			base := HashResource(tc.baseline)
+			for _, s := range tc.same {
+				require.Equal(t, base, HashResource(s))
+			}
+			for _, d := range tc.diff {
+				require.NotEqual(t, base, HashResource(d))
+			}
+		})
 	}
 }
 
@@ -251,9 +476,9 @@ func TestAllConvertedEntriesAreSentAndReceived(t *testing.T) {
 
 					ill := ills.At(0)
 
-					actualCount += ill.Logs().Len()
+					actualCount += ill.LogRecords().Len()
 
-					assert.LessOrEqual(t, uint(ill.Logs().Len()), tc.maxFlushCount,
+					assert.LessOrEqual(t, uint(ill.LogRecords().Len()), tc.maxFlushCount,
 						"Received more log records in one flush than configured by maxFlushCount",
 					)
 
@@ -285,7 +510,7 @@ func TestConverterCancelledContextCancellsTheFlush(t *testing.T) {
 		ills := pLogs.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty()
 
 		lr := convert(complexEntry())
-		lr.CopyTo(ills.Logs().AppendEmpty())
+		lr.CopyTo(ills.LogRecords().AppendEmpty())
 
 		assert.Error(t, converter.flush(ctx, pLogs))
 	}()
@@ -299,24 +524,69 @@ func TestConvertMetadata(t *testing.T) {
 	e.Timestamp = now
 	e.Severity = entry.Error
 	e.AddResourceKey("type", "global")
-	e.AddAttribute("one", "two")
+	e.Attributes = map[string]interface{}{
+		"bool":   true,
+		"int":    123,
+		"double": 12.34,
+		"string": "hello",
+		"object": map[string]interface{}{
+			"bool":   true,
+			"int":    123,
+			"double": 12.34,
+			"string": "hello",
+		},
+	}
 	e.Body = true
 
 	result := convert(e)
 
 	atts := result.Attributes()
-	require.Equal(t, 1, atts.Len(), "expected 1 attribute")
-	attVal, ok := atts.Get("one")
-	require.True(t, ok, "expected label with key 'one'")
-	require.Equal(t, "two", attVal.StringVal(), "expected label to have value 'two'")
+	require.Equal(t, 5, atts.Len())
+
+	attVal, ok := atts.Get("bool")
+	require.True(t, ok)
+	require.True(t, attVal.BoolVal())
+
+	attVal, ok = atts.Get("int")
+	require.True(t, ok)
+	require.Equal(t, int64(123), attVal.IntVal())
+
+	attVal, ok = atts.Get("double")
+	require.True(t, ok)
+	require.Equal(t, 12.34, attVal.DoubleVal())
+
+	attVal, ok = atts.Get("string")
+	require.True(t, ok)
+	require.Equal(t, "hello", attVal.StringVal())
+
+	attVal, ok = atts.Get("object")
+	require.True(t, ok)
+
+	mapVal := attVal.MapVal()
+	require.Equal(t, 4, mapVal.Len())
+
+	attVal, ok = mapVal.Get("bool")
+	require.True(t, ok)
+	require.True(t, attVal.BoolVal())
+
+	attVal, ok = mapVal.Get("int")
+	require.True(t, ok)
+	require.Equal(t, int64(123), attVal.IntVal())
+
+	attVal, ok = mapVal.Get("double")
+	require.True(t, ok)
+	require.Equal(t, 12.34, attVal.DoubleVal())
+
+	attVal, ok = mapVal.Get("string")
+	require.True(t, ok)
+	require.Equal(t, "hello", attVal.StringVal())
 
 	bod := result.Body()
-	require.Equal(t, pdata.AttributeValueTypeBool, bod.Type())
+	require.Equal(t, pdata.ValueTypeBool, bod.Type())
 	require.True(t, bod.BoolVal())
 }
 
 func TestConvertSimpleBody(t *testing.T) {
-
 	require.True(t, anyToBody(true).BoolVal())
 	require.False(t, anyToBody(false).BoolVal())
 
@@ -440,7 +710,6 @@ func TestConvertUnknownBody(t *testing.T) {
 }
 
 func TestConvertNestedMapBody(t *testing.T) {
-
 	unknownType := map[string]int{"0": 0, "1": 1}
 
 	structuredBody := map[string]interface{}{
@@ -467,7 +736,7 @@ func TestConvertNestedMapBody(t *testing.T) {
 	require.Equal(t, fmt.Sprintf("%v", unknownType), unknownAttVal.StringVal())
 }
 
-func anyToBody(body interface{}) pdata.AttributeValue {
+func anyToBody(body interface{}) pdata.Value {
 	entry := entry.New()
 	entry.Body = body
 	return convertAndDrill(entry).Body()
@@ -605,7 +874,7 @@ func BenchmarkConverter(b *testing.B) {
 
 						ill := ills.At(0)
 
-						n += ill.Logs().Len()
+						n += ill.LogRecords().Len()
 
 					case <-timeoutTimer.C:
 						break forLoop
@@ -625,30 +894,44 @@ func BenchmarkGetResourceID(b *testing.B) {
 	res := getResource()
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		getResourceID(res)
+		HashResource(res)
 	}
 }
 
 func BenchmarkGetResourceIDEmptyResource(b *testing.B) {
-	res := map[string]string{}
+	res := map[string]interface{}{}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		getResourceID(res)
+		HashResource(res)
 	}
 }
 
 func BenchmarkGetResourceIDSingleResource(b *testing.B) {
-	res := map[string]string{
+	res := map[string]interface{}{
 		"resource": "value",
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		getResourceID(res)
+		HashResource(res)
 	}
 }
 
-func getResource() map[string]string {
-	return map[string]string{
+func BenchmarkGetResourceIDComplexResource(b *testing.B) {
+	res := map[string]interface{}{
+		"resource": "value",
+		"object": map[string]interface{}{
+			"one":   "two",
+			"three": 4,
+		},
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		HashResource(res)
+	}
+}
+
+func getResource() map[string]interface{} {
+	return map[string]interface{}{
 		"file.name":        "filename.log",
 		"file.directory":   "/some_directory",
 		"host.name":        "localhost",
@@ -682,7 +965,7 @@ func (r resourceIDOutputSlice) Swap(i, j int) {
 func TestGetResourceID(t *testing.T) {
 	testCases := []struct {
 		name  string
-		input map[string]string
+		input map[string]interface{}
 	}{
 		{
 			name:  "Typical Resource",
@@ -690,28 +973,28 @@ func TestGetResourceID(t *testing.T) {
 		},
 		{
 			name: "Empty value/key",
-			input: map[string]string{
+			input: map[string]interface{}{
 				"SomeKey": "",
 				"":        "Ooops",
 			},
 		},
 		{
 			name: "Empty value/key (reversed)",
-			input: map[string]string{
+			input: map[string]interface{}{
 				"":      "SomeKey",
 				"Ooops": "",
 			},
 		},
 		{
 			name: "Ambiguous map 1",
-			input: map[string]string{
+			input: map[string]interface{}{
 				"AB": "CD",
 				"EF": "G",
 			},
 		},
 		{
 			name: "Ambiguous map 2",
-			input: map[string]string{
+			input: map[string]interface{}{
 				"ABC": "DE",
 				"F":   "G",
 			},
@@ -722,7 +1005,7 @@ func TestGetResourceID(t *testing.T) {
 		},
 		{
 			name: "Long resource value",
-			input: map[string]string{
+			input: map[string]interface{}{
 				"key": "This is a really long resource value; It's so long that the internal pre-allocated buffer doesn't hold it.",
 			},
 		},
@@ -732,7 +1015,7 @@ func TestGetResourceID(t *testing.T) {
 	for _, testCase := range testCases {
 		outputs = append(outputs, resourceIDOutput{
 			name:   testCase.name,
-			output: getResourceID(testCase.input),
+			output: HashResource(testCase.input),
 		})
 	}
 
@@ -746,7 +1029,7 @@ func TestGetResourceID(t *testing.T) {
 }
 
 func TestGetResourceIDEmptyAndNilAreEqual(t *testing.T) {
-	nilID := getResourceID(nil)
-	emptyID := getResourceID(map[string]string{})
+	nilID := HashResource(nil)
+	emptyID := HashResource(map[string]interface{}{})
 	require.Equal(t, nilID, emptyID)
 }

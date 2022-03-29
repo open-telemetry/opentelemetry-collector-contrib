@@ -25,7 +25,8 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/go-playground/validator/v10/non-standard/validators"
 	en_translations "github.com/go-playground/validator/v10/translations/en"
-	"go.opentelemetry.io/collector/config/configmapprovider"
+	"go.opentelemetry.io/collector/config/mapprovider/filemapprovider"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 type metricName string
@@ -46,6 +47,56 @@ func (mn attributeName) Render() (string, error) {
 
 func (mn attributeName) RenderUnexported() (string, error) {
 	return formatIdentifier(string(mn), false)
+}
+
+// ValueType defines an attribute value type.
+type ValueType struct {
+	// ValueType is type of the metric number, options are "double", "int".
+	ValueType pdata.ValueType
+}
+
+// UnmarshalText implements the encoding.TextUnmarshaler interface.
+func (mvt *ValueType) UnmarshalText(text []byte) error {
+	switch vtStr := string(text); vtStr {
+	case "":
+		mvt.ValueType = pdata.ValueTypeEmpty
+	case "string":
+		mvt.ValueType = pdata.ValueTypeString
+	case "int":
+		mvt.ValueType = pdata.ValueTypeInt
+	case "double":
+		mvt.ValueType = pdata.ValueTypeDouble
+	case "bool":
+		mvt.ValueType = pdata.ValueTypeDouble
+	case "bytes":
+		mvt.ValueType = pdata.ValueTypeDouble
+	default:
+		return fmt.Errorf("invalid type: %q", vtStr)
+	}
+	return nil
+}
+
+// String returns capitalized name of the ValueType.
+func (mvt ValueType) String() string {
+	return strings.Title(strings.ToLower(mvt.ValueType.String()))
+}
+
+// Primitive returns name of primitive type for the ValueType.
+func (mvt ValueType) Primitive() string {
+	switch mvt.ValueType {
+	case pdata.ValueTypeString:
+		return "string"
+	case pdata.ValueTypeInt:
+		return "int64"
+	case pdata.ValueTypeDouble:
+		return "float64"
+	case pdata.ValueTypeBool:
+		return "bool"
+	case pdata.ValueTypeBytes:
+		return "[]byte"
+	default:
+		return ""
+	}
 }
 
 type metric struct {
@@ -86,6 +137,10 @@ func (m metric) Data() MetricData {
 	return nil
 }
 
+func (m metric) IsEnabled() bool {
+	return *m.Enabled
+}
+
 type attribute struct {
 	// Description describes the purpose of the attribute.
 	Description string `validate:"notblank"`
@@ -95,11 +150,15 @@ type attribute struct {
 	Value string
 	// Enum can optionally describe the set of values to which the attribute can belong.
 	Enum []string
+	// Type is an attribute type.
+	Type ValueType `mapstructure:"type"`
 }
 
 type metadata struct {
 	// Name of the component.
 	Name string `validate:"notblank"`
+	// ResourceAttributes that can be emitted by the component.
+	ResourceAttributes map[attributeName]attribute `mapstructure:"resource_attributes" validate:"dive"`
 	// Attributes emitted by one or more metrics.
 	Attributes map[attributeName]attribute `validate:"dive"`
 	// Metrics that can be emitted by the component.
@@ -110,22 +169,19 @@ type templateContext struct {
 	metadata
 	// Package name for generated code.
 	Package string
-	// ExpFileNote contains a note about experimental metrics builder.
-	ExpFileNote string
+	// ExpGen identifies whether the experimental metrics generator is used.
+	// TODO: Remove once the old mdata generator is gone.
+	ExpGen bool
 }
 
 func loadMetadata(filePath string) (metadata, error) {
-	cp, err := configmapprovider.NewFile(filePath).Retrieve(context.Background(), nil)
-	if err != nil {
-		return metadata{}, err
-	}
-	mdMap, err := cp.Get(context.Background())
+	cp, err := filemapprovider.New().Retrieve(context.Background(), "file:"+filePath, nil)
 	if err != nil {
 		return metadata{}, err
 	}
 
 	var md metadata
-	if err := mdMap.UnmarshalExact(&md); err != nil {
+	if err := cp.Map.UnmarshalExact(&md); err != nil {
 		return metadata{}, err
 	}
 

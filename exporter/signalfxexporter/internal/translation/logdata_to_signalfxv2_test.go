@@ -60,10 +60,9 @@ func TestLogDataToSignalFxEvents(t *testing.T) {
 		resourceLog.Resource().Attributes().InsertInt("k4", 123)
 
 		ilLogs := resourceLog.InstrumentationLibraryLogs()
-		logSlice := ilLogs.AppendEmpty().Logs()
+		logSlice := ilLogs.AppendEmpty().LogRecords()
 
 		l := logSlice.AppendEmpty()
-		l.SetName("shutdown")
 		l.SetTimestamp(pdata.NewTimestampFromTime(now.Truncate(time.Millisecond)))
 		attrs := l.Attributes()
 
@@ -71,7 +70,7 @@ func TestLogDataToSignalFxEvents(t *testing.T) {
 		attrs.InsertString("k1", "v1")
 		attrs.InsertString("k2", "v2")
 
-		propMapVal := pdata.NewAttributeValueMap()
+		propMapVal := pdata.NewValueMap()
 		propMap := propMapVal.MapVal()
 		propMap.InsertString("env", "prod")
 		propMap.InsertBool("isActive", true)
@@ -79,7 +78,8 @@ func TestLogDataToSignalFxEvents(t *testing.T) {
 		propMap.InsertDouble("temp", 40.5)
 		propMap.Sort()
 		attrs.Insert("com.splunk.signalfx.event_properties", propMapVal)
-		attrs.Insert("com.splunk.signalfx.event_category", pdata.NewAttributeValueInt(int64(sfxpb.EventCategory_USER_DEFINED)))
+		attrs.Insert("com.splunk.signalfx.event_category", pdata.NewValueInt(int64(sfxpb.EventCategory_USER_DEFINED)))
+		attrs.Insert("com.splunk.signalfx.event_type", pdata.NewValueString("shutdown"))
 
 		l.Attributes().Sort()
 
@@ -106,8 +106,8 @@ func TestLogDataToSignalFxEvents(t *testing.T) {
 			}(),
 			logData: func() pdata.Logs {
 				logs := buildDefaultLogs()
-				lrs := logs.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs()
-				lrs.At(0).Attributes().Upsert("com.splunk.signalfx.event_category", pdata.NewAttributeValueEmpty())
+				lrs := logs.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords()
+				lrs.At(0).Attributes().Upsert("com.splunk.signalfx.event_category", pdata.NewValueEmpty())
 				return logs
 			}(),
 		},
@@ -116,8 +116,8 @@ func TestLogDataToSignalFxEvents(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			resource := tt.logData.ResourceLogs().At(0).Resource()
-			logSlice := tt.logData.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs()
-			events, dropped := LogSliceToSignalFxV2(zap.NewNop(), logSlice, resource.Attributes())
+			logSlice := tt.logData.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords()
+			events, dropped := LogRecordSliceToSignalFxV2(zap.NewNop(), logSlice, resource.Attributes())
 			for i := 0; i < logSlice.Len(); i++ {
 				logSlice.At(i).Attributes().Sort()
 			}

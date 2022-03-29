@@ -25,6 +25,7 @@ const (
 	K8sNamespace     = "Namespace"
 	PodIDKey         = "PodId"
 	PodNameKey       = "PodName"
+	FullPodNameKey   = "FullPodName"
 	K8sPodNameKey    = "K8sPodName"
 	ContainerNamekey = "ContainerName"
 	ContainerIDkey   = "ContainerId"

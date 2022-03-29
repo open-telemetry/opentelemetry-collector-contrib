@@ -16,6 +16,7 @@ package mongodbatlasreceiver // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
@@ -26,4 +27,6 @@ type Config struct {
 	PublicKey                               string `mapstructure:"public_key"`
 	PrivateKey                              string `mapstructure:"private_key"`
 	Granularity                             string `mapstructure:"granularity"`
+
+	RetrySettings exporterhelper.RetrySettings `mapstructure:"retry_on_failure"`
 }

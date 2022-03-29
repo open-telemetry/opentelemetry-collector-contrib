@@ -27,6 +27,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"runtime"
+	"strconv"
 	"testing"
 	"time"
 
@@ -44,7 +45,7 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
 func Test_signalfxeceiver_New(t *testing.T) {
@@ -834,4 +835,33 @@ func newAssertNoErrorHost(t *testing.T) component.Host {
 
 func (aneh *assertNoErrorHost) ReportFatalError(err error) {
 	assert.NoError(aneh, err)
+}
+
+func strPtr(s string) *string {
+	return &s
+}
+
+func int64Ptr(i int64) *int64 {
+	return &i
+}
+
+func sfxTypePtr(t sfxpb.MetricType) *sfxpb.MetricType {
+	return &t
+}
+
+func sfxCategoryPtr(t sfxpb.EventCategory) *sfxpb.EventCategory {
+	return &t
+}
+
+func buildNDimensions(n uint) []*sfxpb.Dimension {
+	d := make([]*sfxpb.Dimension, 0, n)
+	for i := uint(0); i < n; i++ {
+		idx := int(i)
+		suffix := strconv.Itoa(idx)
+		d = append(d, &sfxpb.Dimension{
+			Key:   "k" + suffix,
+			Value: "v" + suffix,
+		})
+	}
+	return d
 }

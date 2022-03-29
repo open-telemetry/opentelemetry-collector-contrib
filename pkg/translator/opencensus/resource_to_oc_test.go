@@ -25,7 +25,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opencensus.io/resource/resourcekeys"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
 
@@ -209,18 +209,18 @@ func TestResourceToOCAndBack(t *testing.T) {
 			// Remove opencensus resource type from actual. This will be added during translation.
 			actual.Attributes().Delete(occonventions.AttributeResourceType)
 			assert.Equal(t, expected.Attributes().Len(), actual.Attributes().Len())
-			expected.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+			expected.Attributes().Range(func(k string, v pdata.Value) bool {
 				a, ok := actual.Attributes().Get(k)
 				assert.True(t, ok)
 				switch v.Type() {
-				case pdata.AttributeValueTypeInt:
+				case pdata.ValueTypeInt:
 					// conventions.AttributeProcessID is special because we preserve the type for this.
 					if k == conventions.AttributeProcessPID {
 						assert.Equal(t, v.IntVal(), a.IntVal())
 					} else {
 						assert.Equal(t, strconv.FormatInt(v.IntVal(), 10), a.StringVal())
 					}
-				case pdata.AttributeValueTypeMap, pdata.AttributeValueTypeArray:
+				case pdata.ValueTypeMap, pdata.ValueTypeSlice:
 					assert.Equal(t, a, a)
 				default:
 					assert.Equal(t, v, a)

@@ -17,14 +17,11 @@ package couchdbreceiver // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 func TestType(t *testing.T) {
@@ -44,22 +41,42 @@ func TestValidConfig(t *testing.T) {
 }
 
 func TestCreateMetricsReceiver(t *testing.T) {
-	factory := NewFactory()
-	_, err := factory.CreateMetricsReceiver(
-		context.Background(),
-		component.ReceiverCreateSettings{},
-		&Config{
-			ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-				ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID("couchdb")),
-				CollectionInterval: 10 * time.Second,
+	testCases := []struct {
+		desc string
+		run  func(t *testing.T)
+	}{
+		{
+			desc: "Default config",
+			run: func(t *testing.T) {
+				t.Parallel()
+
+				_, err := createMetricsReceiver(
+					context.Background(),
+					componenttest.NewNopReceiverCreateSettings(),
+					createDefaultConfig(),
+					consumertest.NewNop(),
+				)
+
+				require.NoError(t, err)
+
 			},
-			HTTPClientSettings: confighttp.HTTPClientSettings{
-				Endpoint: "http://localhost:5984",
-			},
-			Username: "otel",
-			Password: "otel",
 		},
-		consumertest.NewNop(),
-	)
-	require.NoError(t, err)
+		{
+			desc: "Nil consumer",
+			run: func(t *testing.T) {
+				t.Parallel()
+				_, err := createMetricsReceiver(
+					context.Background(),
+					componenttest.NewNopReceiverCreateSettings(),
+					createDefaultConfig(),
+					nil,
+				)
+				require.ErrorIs(t, err, componenterror.ErrNilNextConsumer)
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.desc, testCase.run)
+	}
 }

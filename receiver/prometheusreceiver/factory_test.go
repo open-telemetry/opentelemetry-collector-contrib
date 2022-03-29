@@ -16,7 +16,7 @@ package prometheusreceiver
 
 import (
 	"context"
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -47,7 +47,7 @@ func TestFactoryCanParseServiceDiscoveryConfigs(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	_, err = servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config_sd.yaml"), factories)
+	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config_sd.yaml"), factories)
 
 	assert.NoError(t, err)
 }

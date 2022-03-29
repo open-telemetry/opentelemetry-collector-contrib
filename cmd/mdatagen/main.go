@@ -67,7 +67,7 @@ func run(ymlPath string, useExpGen bool) error {
 	if err = generateMetrics(ymlDir, thisDir, md, useExpGen); err != nil {
 		return err
 	}
-	return generateDocumentation(ymlDir, thisDir, md)
+	return generateDocumentation(ymlDir, thisDir, md, useExpGen)
 }
 
 func generateMetrics(ymlDir string, thisDir string, md metadata, useExpGen bool) error {
@@ -121,7 +121,7 @@ func generateMetrics(ymlDir string, thisDir string, md metadata, useExpGen bool)
 	return nil
 }
 
-func generateDocumentation(ymlDir string, thisDir string, md metadata) error {
+func generateDocumentation(ymlDir string, thisDir string, md metadata, useExpGen bool) error {
 	tmpl := template.Must(
 		template.
 			New("documentation.tmpl").
@@ -134,7 +134,8 @@ func generateDocumentation(ymlDir string, thisDir string, md metadata) error {
 
 	buf := bytes.Buffer{}
 
-	if err := tmpl.Execute(&buf, templateContext{metadata: md, Package: "metadata"}); err != nil {
+	tmplCtx := templateContext{metadata: md, ExpGen: useExpGen, Package: "metadata"}
+	if err := tmpl.Execute(&buf, tmplCtx); err != nil {
 		return fmt.Errorf("failed executing template: %v", err)
 	}
 

@@ -49,11 +49,14 @@ func Test_NewPRWExporter(t *testing.T) {
 		Namespace:          "",
 		ExternalLabels:     map[string]string{},
 		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ""},
+		sanitizeLabel:      true,
 	}
 	buildInfo := component.BuildInfo{
 		Description: "OpenTelemetry Collector",
 		Version:     "1.0",
 	}
+	set := componenttest.NewNopExporterCreateSettings()
+	set.BuildInfo = buildInfo
 
 	tests := []struct {
 		name                string
@@ -63,7 +66,7 @@ func Test_NewPRWExporter(t *testing.T) {
 		concurrency         int
 		externalLabels      map[string]string
 		returnErrorOnCreate bool
-		buildInfo           component.BuildInfo
+		set                 component.ExporterCreateSettings
 	}{
 		{
 			name:                "invalid_URL",
@@ -73,7 +76,7 @@ func Test_NewPRWExporter(t *testing.T) {
 			concurrency:         5,
 			externalLabels:      map[string]string{"Key1": "Val1"},
 			returnErrorOnCreate: true,
-			buildInfo:           buildInfo,
+			set:                 set,
 		},
 		{
 			name:                "invalid_labels_case",
@@ -83,7 +86,7 @@ func Test_NewPRWExporter(t *testing.T) {
 			concurrency:         5,
 			externalLabels:      map[string]string{"Key1": ""},
 			returnErrorOnCreate: true,
-			buildInfo:           buildInfo,
+			set:                 set,
 		},
 		{
 			name:           "success_case",
@@ -92,7 +95,7 @@ func Test_NewPRWExporter(t *testing.T) {
 			endpoint:       "http://some.url:9411/api/prom/push",
 			concurrency:    5,
 			externalLabels: map[string]string{"Key1": "Val1"},
-			buildInfo:      buildInfo,
+			set:            set,
 		},
 		{
 			name:           "success_case_no_labels",
@@ -101,7 +104,7 @@ func Test_NewPRWExporter(t *testing.T) {
 			endpoint:       "http://some.url:9411/api/prom/push",
 			concurrency:    5,
 			externalLabels: map[string]string{},
-			buildInfo:      buildInfo,
+			set:            set,
 		},
 	}
 
@@ -111,7 +114,7 @@ func Test_NewPRWExporter(t *testing.T) {
 			cfg.ExternalLabels = tt.externalLabels
 			cfg.Namespace = tt.namespace
 			cfg.RemoteWriteQueue.NumConsumers = 1
-			prwe, err := NewPRWExporter(cfg, tt.buildInfo)
+			prwe, err := newPRWExporter(cfg, tt.set)
 
 			if tt.returnErrorOnCreate {
 				assert.Error(t, err)
@@ -143,6 +146,8 @@ func Test_Start(t *testing.T) {
 		Description: "OpenTelemetry Collector",
 		Version:     "1.0",
 	}
+	set := componenttest.NewNopExporterCreateSettings()
+	set.BuildInfo = buildInfo
 	tests := []struct {
 		name                 string
 		config               *Config
@@ -150,7 +155,7 @@ func Test_Start(t *testing.T) {
 		concurrency          int
 		externalLabels       map[string]string
 		returnErrorOnStartUp bool
-		buildInfo            component.BuildInfo
+		set                  component.ExporterCreateSettings
 		endpoint             string
 		clientSettings       confighttp.HTTPClientSettings
 	}{
@@ -160,7 +165,7 @@ func Test_Start(t *testing.T) {
 			namespace:      "test",
 			concurrency:    5,
 			externalLabels: map[string]string{"Key1": "Val1"},
-			buildInfo:      buildInfo,
+			set:            set,
 			clientSettings: confighttp.HTTPClientSettings{Endpoint: "https://some.url:9411/api/prom/push"},
 		},
 		{
@@ -169,7 +174,7 @@ func Test_Start(t *testing.T) {
 			namespace:            "test",
 			concurrency:          5,
 			externalLabels:       map[string]string{"Key1": "Val1"},
-			buildInfo:            buildInfo,
+			set:                  set,
 			returnErrorOnStartUp: true,
 			clientSettings: confighttp.HTTPClientSettings{
 				Endpoint: "https://some.url:9411/api/prom/push",
@@ -193,7 +198,7 @@ func Test_Start(t *testing.T) {
 			cfg.RemoteWriteQueue.NumConsumers = 1
 			cfg.HTTPClientSettings = tt.clientSettings
 
-			prwe, err := NewPRWExporter(cfg, tt.buildInfo)
+			prwe, err := newPRWExporter(cfg, tt.set)
 			assert.NoError(t, err)
 			assert.NotNil(t, prwe)
 
@@ -209,7 +214,7 @@ func Test_Start(t *testing.T) {
 
 // Test_Shutdown checks after Shutdown is called, incoming calls to PushMetrics return error.
 func Test_Shutdown(t *testing.T) {
-	prwe := &PRWExporter{
+	prwe := &prwExporter{
 		wg:        new(sync.WaitGroup),
 		closeChan: make(chan struct{}),
 	}
@@ -309,19 +314,17 @@ func Test_export(t *testing.T) {
 			if !tt.serverUp {
 				server.Close()
 			}
-			errs := runExportPipeline(ts1, serverURL)
+			err := runExportPipeline(ts1, serverURL)
 			if tt.returnErrorOnCreate {
-				assert.Error(t, errs[0])
+				assert.Error(t, err)
 				return
 			}
-			assert.Len(t, errs, 0)
+			assert.NoError(t, err)
 		})
 	}
 }
 
-func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) []error {
-	var errs []error
-
+func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) error {
 	// First we will construct a TimeSeries array from the testutils package
 	testmap := make(map[string]*prompb.TimeSeries)
 	testmap["test"] = ts
@@ -334,20 +337,19 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) []error {
 		Description: "OpenTelemetry Collector",
 		Version:     "1.0",
 	}
+	set := componenttest.NewNopExporterCreateSettings()
+	set.BuildInfo = buildInfo
 	// after this, instantiate a CortexExporter with the current HTTP client and endpoint set to passed in endpoint
-	prwe, err := NewPRWExporter(cfg, buildInfo)
+	prwe, err := newPRWExporter(cfg, set)
 	if err != nil {
-		errs = append(errs, err)
-		return errs
+		return err
 	}
 
 	if err = prwe.Start(context.Background(), componenttest.NewNopHost()); err != nil {
-		errs = append(errs, err)
-		return errs
+		return err
 	}
 
-	errs = append(errs, prwe.export(context.Background(), testmap)...)
-	return errs
+	return prwe.handleExport(context.Background(), testmap)
 }
 
 // Test_PushMetrics checks the number of TimeSeries received by server and the number of metrics dropped is the same as
@@ -383,6 +385,7 @@ func Test_PushMetrics(t *testing.T) {
 
 	// staleNaN cases
 	staleNaNHistogramBatch := getMetricsFromMetricList(staleNaNMetrics[staleNaNHistogram])
+	staleNaNEmptyHistogramBatch := getMetricsFromMetricList(staleNaNMetrics[staleNaNEmptyHistogram])
 
 	staleNaNSummaryBatch := getMetricsFromMetricList(staleNaNMetrics[staleNaNSummary])
 
@@ -588,6 +591,15 @@ func Test_PushMetrics(t *testing.T) {
 			true,
 		},
 		{
+			"staleNaNEmptyHistogram_case",
+			&staleNaNEmptyHistogramBatch,
+			checkFunc,
+			3,
+			http.StatusAccepted,
+			false,
+			true,
+		},
+		{
 			"staleNaNSummary_case",
 			&staleNaNSummaryBatch,
 			checkFunc,
@@ -598,44 +610,65 @@ func Test_PushMetrics(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				if tt.reqTestFunc != nil {
-					tt.reqTestFunc(t, r, tt.expectedTimeSeries, tt.isStaleMarker)
-				}
-				w.WriteHeader(tt.httpResponseCode)
-			}))
+	for _, useWAL := range []bool{true, false} {
+		name := "NoWAL"
+		if useWAL {
+			name = "WAL"
+		}
+		t.Run(name, func(t *testing.T) {
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
+					server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						if tt.reqTestFunc != nil {
+							tt.reqTestFunc(t, r, tt.expectedTimeSeries, tt.isStaleMarker)
+						}
+						w.WriteHeader(tt.httpResponseCode)
+					}))
 
-			defer server.Close()
+					defer server.Close()
 
-			cfg := &Config{
-				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-				Namespace:        "",
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: server.URL,
-					// We almost read 0 bytes, so no need to tune ReadBufferSize.
-					ReadBufferSize:  0,
-					WriteBufferSize: 512 * 1024,
-				},
-				RemoteWriteQueue: RemoteWriteQueue{NumConsumers: 5},
+					cfg := &Config{
+						ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+						Namespace:        "",
+						HTTPClientSettings: confighttp.HTTPClientSettings{
+							Endpoint: server.URL,
+							// We almost read 0 bytes, so no need to tune ReadBufferSize.
+							ReadBufferSize:  0,
+							WriteBufferSize: 512 * 1024,
+						},
+						RemoteWriteQueue: RemoteWriteQueue{NumConsumers: 1},
+					}
+
+					if useWAL {
+						cfg.WAL = &WALConfig{
+							Directory: t.TempDir(),
+						}
+					}
+
+					assert.NotNil(t, cfg)
+					buildInfo := component.BuildInfo{
+						Description: "OpenTelemetry Collector",
+						Version:     "1.0",
+					}
+					set := componenttest.NewNopExporterCreateSettings()
+					set.BuildInfo = buildInfo
+					prwe, nErr := newPRWExporter(cfg, set)
+					require.NoError(t, nErr)
+					ctx, cancel := context.WithCancel(context.Background())
+					defer cancel()
+					require.NoError(t, prwe.Start(ctx, componenttest.NewNopHost()))
+					defer func() {
+						require.NoError(t, prwe.Shutdown(ctx))
+					}()
+					err := prwe.PushMetrics(ctx, *tt.md)
+					if tt.returnErr {
+						assert.Error(t, err)
+						return
+					}
+					assert.NoError(t, err)
+				})
 			}
-			assert.NotNil(t, cfg)
-			// c, err := config.HTTPClientSettings.ToClient()
-			// assert.Nil(t, err)
-			buildInfo := component.BuildInfo{
-				Description: "OpenTelemetry Collector",
-				Version:     "1.0",
-			}
-			prwe, nErr := NewPRWExporter(cfg, buildInfo)
-			require.NoError(t, nErr)
-			require.NoError(t, prwe.Start(context.Background(), componenttest.NewNopHost()))
-			err := prwe.PushMetrics(context.Background(), *tt.md)
-			if tt.returnErr {
-				assert.Error(t, err)
-				return
-			}
-			assert.NoError(t, err)
 		})
 	}
 }
@@ -667,6 +700,58 @@ func Test_validateAndSanitizeExternalLabels(t *testing.T) {
 			map[string]string{"__key1_key__": "val1"},
 			false,
 		},
+		{"labels_that_start_with_underscore",
+			map[string]string{"_key_": "val1"},
+			map[string]string{"_key_": "val1"},
+			false,
+		},
+		{"labels_that_start_with_digit",
+			map[string]string{"6key_": "val1"},
+			map[string]string{"key_6key_": "val1"},
+			false,
+		},
+		{"fail_case_empty_label",
+			map[string]string{"": "val1"},
+			map[string]string{},
+			true,
+		},
+	}
+	testsWithoutSanitizelabel := []struct {
+		name                string
+		inputLabels         map[string]string
+		expectedLabels      map[string]string
+		returnErrorOnCreate bool
+	}{
+		{"success_case_no_labels",
+			map[string]string{},
+			map[string]string{},
+			false,
+		},
+		{"success_case_with_labels",
+			map[string]string{"key1": "val1"},
+			map[string]string{"key1": "val1"},
+			false,
+		},
+		{"success_case_2_with_labels",
+			map[string]string{"__key1__": "val1"},
+			map[string]string{"__key1__": "val1"},
+			false,
+		},
+		{"success_case_with_sanitized_labels",
+			map[string]string{"__key1.key__": "val1"},
+			map[string]string{"__key1_key__": "val1"},
+			false,
+		},
+		{"labels_that_start_with_underscore",
+			map[string]string{"_key_": "val1"},
+			map[string]string{"key_key_": "val1"},
+			false,
+		},
+		{"labels_that_start_with_digit",
+			map[string]string{"6key_": "val1"},
+			map[string]string{"key_6key_": "val1"},
+			false,
+		},
 		{"fail_case_empty_label",
 			map[string]string{"": "val1"},
 			map[string]string{},
@@ -675,8 +760,11 @@ func Test_validateAndSanitizeExternalLabels(t *testing.T) {
 	}
 	// run tests
 	for _, tt := range tests {
+		cfg := createDefaultConfig().(*Config)
+		cfg.sanitizeLabel = true
+		cfg.ExternalLabels = tt.inputLabels
 		t.Run(tt.name, func(t *testing.T) {
-			newLabels, err := validateAndSanitizeExternalLabels(tt.inputLabels)
+			newLabels, err := validateAndSanitizeExternalLabels(cfg)
 			if tt.returnErrorOnCreate {
 				assert.Error(t, err)
 				return
@@ -685,4 +773,170 @@ func Test_validateAndSanitizeExternalLabels(t *testing.T) {
 			assert.NoError(t, err)
 		})
 	}
+
+	for _, tt := range testsWithoutSanitizelabel {
+		cfg := createDefaultConfig().(*Config)
+		//disable sanitizeLabel flag
+		cfg.sanitizeLabel = false
+		cfg.ExternalLabels = tt.inputLabels
+		t.Run(tt.name, func(t *testing.T) {
+			newLabels, err := validateAndSanitizeExternalLabels(cfg)
+			if tt.returnErrorOnCreate {
+				assert.Error(t, err)
+				return
+			}
+			assert.EqualValues(t, tt.expectedLabels, newLabels)
+			assert.NoError(t, err)
+		})
+	}
+}
+
+// Ensures that when we attach the Write-Ahead-Log(WAL) to the exporter,
+// that it successfully writes the serialized prompb.WriteRequests to the WAL,
+// and that we can retrieve those exact requests back from the WAL, when the
+// exporter starts up once again, that it picks up where it left off.
+func TestWALOnExporterRoundTrip(t *testing.T) {
+	if testing.Short() {
+		t.Skip("This test could run for long")
+	}
+
+	// 1. Create a mock Prometheus Remote Write Exporter that'll just
+	// receive the bytes uploaded to it by our exporter.
+	uploadedBytesCh := make(chan []byte, 1)
+	exiting := make(chan bool)
+	prweServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		uploaded, err2 := ioutil.ReadAll(req.Body)
+		assert.NoError(t, err2, "Error while reading from HTTP upload")
+		select {
+		case uploadedBytesCh <- uploaded:
+		case <-exiting:
+			return
+		}
+	}))
+	defer prweServer.Close()
+
+	// 2. Create the WAL configuration, create the
+	// exporter and export some time series!
+	tempDir := t.TempDir()
+	cfg := &Config{
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		Namespace:        "test_ns",
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: prweServer.URL,
+		},
+		RemoteWriteQueue: RemoteWriteQueue{NumConsumers: 1},
+		WAL: &WALConfig{
+			Directory:  tempDir,
+			BufferSize: 1,
+		},
+	}
+
+	set := componenttest.NewNopExporterCreateSettings()
+	set.BuildInfo = component.BuildInfo{
+		Description: "OpenTelemetry Collector",
+		Version:     "1.0",
+	}
+
+	prwe, perr := newPRWExporter(cfg, set)
+	assert.NoError(t, perr)
+
+	nopHost := componenttest.NewNopHost()
+	ctx := context.Background()
+	require.NoError(t, prwe.Start(ctx, nopHost))
+	t.Cleanup(func() {
+		// This should have been shut down during the test
+		// If it does not error then something went wrong.
+		assert.Error(t, prwe.Shutdown(ctx))
+		close(exiting)
+	})
+	require.NotNil(t, prwe.wal)
+
+	ts1 := &prompb.TimeSeries{
+		Labels:  []prompb.Label{{Name: "ts1l1", Value: "ts1k1"}},
+		Samples: []prompb.Sample{{Value: 1, Timestamp: 100}},
+	}
+	ts2 := &prompb.TimeSeries{
+		Labels:  []prompb.Label{{Name: "ts2l1", Value: "ts2k1"}},
+		Samples: []prompb.Sample{{Value: 2, Timestamp: 200}},
+	}
+	tsMap := map[string]*prompb.TimeSeries{
+		"timeseries1": ts1,
+		"timeseries2": ts2,
+	}
+	errs := prwe.handleExport(ctx, tsMap)
+	assert.NoError(t, errs)
+	// Shutdown after we've written to the WAL. This ensures that our
+	// exported data in-flight will flushed flushed to the WAL before exiting.
+	require.NoError(t, prwe.Shutdown(ctx))
+
+	// 3. Let's now read back all of the WAL records and ensure
+	// that all the prompb.WriteRequest values exist as we sent them.
+	wal, _, werr := cfg.WAL.createWAL()
+	assert.NoError(t, werr)
+	assert.NotNil(t, wal)
+	t.Cleanup(func() {
+		assert.NoError(t, wal.Close())
+	})
+
+	// Read all the indices.
+	firstIndex, ierr := wal.FirstIndex()
+	assert.NoError(t, ierr)
+	lastIndex, ierr := wal.LastIndex()
+	assert.NoError(t, ierr)
+
+	var reqs []*prompb.WriteRequest
+	for i := firstIndex; i <= lastIndex; i++ {
+		protoBlob, err := wal.Read(i)
+		assert.NoError(t, err)
+		assert.NotNil(t, protoBlob)
+		req := new(prompb.WriteRequest)
+		err = proto.Unmarshal(protoBlob, req)
+		assert.NoError(t, err)
+		reqs = append(reqs, req)
+	}
+	assert.Equal(t, 1, len(reqs))
+	// We MUST have 2 time series as were passed into tsMap.
+	gotFromWAL := reqs[0]
+	assert.Equal(t, 2, len(gotFromWAL.Timeseries))
+	want := &prompb.WriteRequest{
+		Timeseries: orderBySampleTimestamp([]prompb.TimeSeries{
+			*ts1, *ts2,
+		}),
+	}
+
+	// Even after sorting timeseries, we need to sort them
+	// also by Label to ensure deterministic ordering.
+	orderByLabelValue(gotFromWAL)
+	gotFromWAL.Timeseries = orderBySampleTimestamp(gotFromWAL.Timeseries)
+	orderByLabelValue(want)
+
+	assert.Equal(t, want, gotFromWAL)
+
+	// 4. Finally, ensure that the bytes that were uploaded to the
+	// Prometheus Remote Write endpoint are exactly as were saved in the WAL.
+	// Read from that same WAL, export to the RWExporter server.
+	prwe2, err := newPRWExporter(cfg, set)
+	assert.NoError(t, err)
+	require.NoError(t, prwe2.Start(ctx, nopHost))
+	t.Cleanup(func() {
+		assert.NoError(t, prwe2.Shutdown(ctx))
+	})
+	require.NotNil(t, prwe2.wal)
+
+	snappyEncodedBytes := <-uploadedBytesCh
+	decodeBuffer := make([]byte, len(snappyEncodedBytes))
+	uploadedBytes, derr := snappy.Decode(decodeBuffer, snappyEncodedBytes)
+	require.NoError(t, derr)
+	gotFromUpload := new(prompb.WriteRequest)
+	uerr := proto.Unmarshal(uploadedBytes, gotFromUpload)
+	assert.NoError(t, uerr)
+	gotFromUpload.Timeseries = orderBySampleTimestamp(gotFromUpload.Timeseries)
+	// Even after sorting timeseries, we need to sort them
+	// also by Label to ensure deterministic ordering.
+	orderByLabelValue(gotFromUpload)
+
+	// 4.1. Ensure that all the various combinations match up.
+	// To ensure a deterministic ordering, sort the TimeSeries by Label Name.
+	assert.Equal(t, want, gotFromUpload)
+	assert.Equal(t, gotFromWAL, gotFromUpload)
 }

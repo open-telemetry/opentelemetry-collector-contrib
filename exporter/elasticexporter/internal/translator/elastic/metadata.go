@@ -21,7 +21,7 @@ import (
 	"go.elastic.co/apm/model"
 	"go.elastic.co/fastjson"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 )
 
 // EncodeResourceMetadata encodes a metadata line from resource, writing to w.
@@ -35,7 +35,7 @@ func EncodeResourceMetadata(resource pdata.Resource, w *fastjson.Writer) {
 	var k8sPod model.KubernetesPod
 	var labels model.IfaceMap
 
-	resource.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+	resource.Attributes().Range(func(k string, v pdata.Value) bool {
 		switch k {
 		case conventions.AttributeServiceName:
 			service.Name = cleanServiceName(v.StringVal())

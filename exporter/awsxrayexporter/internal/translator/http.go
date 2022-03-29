@@ -19,18 +19,18 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
-func makeHTTP(span pdata.Span) (map[string]pdata.AttributeValue, *awsxray.HTTPData) {
+func makeHTTP(span pdata.Span) (map[string]pdata.Value, *awsxray.HTTPData) {
 	var (
 		info = awsxray.HTTPData{
 			Request:  &awsxray.RequestData{},
 			Response: &awsxray.ResponseData{},
 		}
-		filtered = make(map[string]pdata.AttributeValue)
+		filtered = make(map[string]pdata.Value)
 		urlParts = make(map[string]string)
 	)
 
@@ -41,7 +41,7 @@ func makeHTTP(span pdata.Span) (map[string]pdata.AttributeValue, *awsxray.HTTPDa
 	hasHTTP := false
 	hasHTTPRequestURLAttributes := false
 
-	span.Attributes().Range(func(key string, value pdata.AttributeValue) bool {
+	span.Attributes().Range(func(key string, value pdata.Value) bool {
 		switch key {
 		case conventions.AttributeHTTPMethod:
 			info.Request.Method = awsxray.String(value.StringVal())
@@ -140,7 +140,7 @@ func extractResponseSizeFromEvents(span pdata.Span) int64 {
 	return size
 }
 
-func extractResponseSizeFromAttributes(attributes pdata.AttributeMap) int64 {
+func extractResponseSizeFromAttributes(attributes pdata.Map) int64 {
 	typeVal, ok := attributes.Get("message.type")
 	if ok && typeVal.StringVal() == "RECEIVED" {
 		if sizeVal, ok := attributes.Get(conventions.AttributeMessagingMessagePayloadSizeBytes); ok {

@@ -48,28 +48,43 @@ func TestScrape(t *testing.T) {
 
 	testCases := []testCase{
 		{
-			name:                 "Standard",
+			name: "Standard",
+			config: Config{
+				Metrics: metadata.DefaultMetricsSettings(),
+			},
 			expectNetworkMetrics: true,
 		},
 		{
-			name:                 "Validate Start Time",
+			name: "Validate Start Time",
+			config: Config{
+				Metrics: metadata.DefaultMetricsSettings(),
+			},
 			bootTimeFunc:         func() (uint64, error) { return 100, nil },
 			expectNetworkMetrics: true,
 			expectedStartTime:    100 * 1e9,
 		},
 		{
-			name:                 "Include Filter that matches nothing",
-			config:               Config{Include: MatchConfig{filterset.Config{MatchType: "strict"}, []string{"@*^#&*$^#)"}}},
+			name: "Include Filter that matches nothing",
+			config: Config{
+				Metrics: metadata.DefaultMetricsSettings(),
+				Include: MatchConfig{filterset.Config{MatchType: "strict"}, []string{"@*^#&*$^#)"}},
+			},
 			expectNetworkMetrics: false,
 		},
 		{
-			name:        "Invalid Include Filter",
-			config:      Config{Include: MatchConfig{Interfaces: []string{"test"}}},
+			name: "Invalid Include Filter",
+			config: Config{
+				Metrics: metadata.DefaultMetricsSettings(),
+				Include: MatchConfig{Interfaces: []string{"test"}},
+			},
 			newErrRegex: "^error creating network interface include filters:",
 		},
 		{
-			name:        "Invalid Exclude Filter",
-			config:      Config{Exclude: MatchConfig{Interfaces: []string{"test"}}},
+			name: "Invalid Exclude Filter",
+			config: Config{
+				Metrics: metadata.DefaultMetricsSettings(),
+				Exclude: MatchConfig{Interfaces: []string{"test"}},
+			},
 			newErrRegex: "^error creating network interface exclude filters:",
 		},
 		{
@@ -80,13 +95,13 @@ func TestScrape(t *testing.T) {
 		{
 			name:             "IOCounters Error",
 			ioCountersFunc:   func(bool) ([]net.IOCountersStat, error) { return nil, errors.New("err2") },
-			expectedErr:      "err2",
+			expectedErr:      "failed to read network IO stats: err2",
 			expectedErrCount: networkMetricsLen,
 		},
 		{
 			name:             "Connections Error",
 			connectionsFunc:  func(string) ([]net.ConnectionStat, error) { return nil, errors.New("err3") },
-			expectedErr:      "err3",
+			expectedErr:      "failed to read TCP connections: err3",
 			expectedErrCount: connectionsMetricsLen,
 		},
 	}
@@ -140,35 +155,35 @@ func TestScrape(t *testing.T) {
 
 			metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 			idx := 0
+			assertNetworkConnectionsMetricValid(t, metrics.At(idx))
 			if test.expectNetworkMetrics {
-				assertNetworkIOMetricValid(t, metrics.At(idx+0), metadata.Metrics.SystemNetworkPackets.New(), test.expectedStartTime)
-				assertNetworkIOMetricValid(t, metrics.At(idx+1), metadata.Metrics.SystemNetworkDropped.New(), test.expectedStartTime)
-				assertNetworkIOMetricValid(t, metrics.At(idx+2), metadata.Metrics.SystemNetworkErrors.New(), test.expectedStartTime)
-				assertNetworkIOMetricValid(t, metrics.At(idx+3), metadata.Metrics.SystemNetworkIo.New(), test.expectedStartTime)
-				internal.AssertSameTimeStampForMetrics(t, metrics, 0, 4)
+				assertNetworkIOMetricValid(t, metrics.At(idx+1), "system.network.dropped", test.expectedStartTime)
+				assertNetworkIOMetricValid(t, metrics.At(idx+2), "system.network.errors", test.expectedStartTime)
+				assertNetworkIOMetricValid(t, metrics.At(idx+3), "system.network.io", test.expectedStartTime)
+				assertNetworkIOMetricValid(t, metrics.At(idx+4), "system.network.packets", test.expectedStartTime)
+				internal.AssertSameTimeStampForMetrics(t, metrics, 1, 5)
 				idx += 4
 			}
 
-			assertNetworkConnectionsMetricValid(t, metrics.At(idx+0))
 			internal.AssertSameTimeStampForMetrics(t, metrics, idx, idx+1)
 		})
 	}
 }
 
-func assertNetworkIOMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Metric, startTime pdata.Timestamp) {
-	internal.AssertDescriptorEqual(t, descriptor, metric)
+func assertNetworkIOMetricValid(t *testing.T, metric pdata.Metric, expectedName string, startTime pdata.Timestamp) {
+	assert.Equal(t, expectedName, metric.Name())
 	if startTime != 0 {
 		internal.AssertSumMetricStartTimeEquals(t, metric, startTime)
 	}
 	assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), 2)
 	internal.AssertSumMetricHasAttribute(t, metric, 0, "device")
-	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "direction", pdata.NewAttributeValueString(metadata.AttributeDirection.Transmit))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "direction", pdata.NewAttributeValueString(metadata.AttributeDirection.Receive))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "direction", pdata.NewValueString(metadata.AttributeDirection.Transmit))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "direction", pdata.NewValueString(metadata.AttributeDirection.Receive))
 }
 
 func assertNetworkConnectionsMetricValid(t *testing.T, metric pdata.Metric) {
-	internal.AssertDescriptorEqual(t, metadata.Metrics.SystemNetworkConnections.New(), metric)
-	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "protocol", pdata.NewAttributeValueString(metadata.AttributeProtocol.Tcp))
+	assert.Equal(t, metric.Name(), "system.network.connections")
+	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "protocol", pdata.NewValueString(metadata.AttributeProtocol.Tcp))
 	internal.AssertSumMetricHasAttribute(t, metric, 0, "state")
 	assert.Equal(t, 12, metric.Sum().DataPoints().Len())
 }

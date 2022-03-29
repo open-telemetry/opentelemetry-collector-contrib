@@ -17,7 +17,7 @@ package jaegerexporter
 import (
 	"context"
 	"net"
-	"path"
+	"path/filepath"
 	"sync"
 	"testing"
 	"time"
@@ -181,11 +181,11 @@ func TestNew(t *testing.T) {
 // openssl rsa -in server.key -out temp.key && rm server.key && mv temp.key server.key
 // openssl rsa -in client.key -out temp.key && rm client.key && mv temp.key client.key
 func TestMutualTLS(t *testing.T) {
-	caPath := path.Join(".", "testdata", "ca.crt")
-	serverCertPath := path.Join(".", "testdata", "server.crt")
-	serverKeyPath := path.Join(".", "testdata", "server.key")
-	clientCertPath := path.Join(".", "testdata", "client.crt")
-	clientKeyPath := path.Join(".", "testdata", "client.key")
+	caPath := filepath.Join("testdata", "ca.crt")
+	serverCertPath := filepath.Join("testdata", "server.crt")
+	serverKeyPath := filepath.Join("testdata", "server.key")
+	clientCertPath := filepath.Join("testdata", "client.crt")
+	clientKeyPath := filepath.Join("testdata", "client.key")
 
 	// start gRPC Jaeger server
 	tlsCfgOpts := configtls.TLSServerSetting{

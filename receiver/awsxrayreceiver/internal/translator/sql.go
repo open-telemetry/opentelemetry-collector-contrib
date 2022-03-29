@@ -19,12 +19,12 @@ import (
 	"regexp"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
-func addSQLToSpan(sql *awsxray.SQLData, attrs *pdata.AttributeMap) error {
+func addSQLToSpan(sql *awsxray.SQLData, attrs *pdata.Map) error {
 	if sql == nil {
 		return nil
 	}

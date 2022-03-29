@@ -20,7 +20,6 @@ package mysqlreceiver
 import (
 	"context"
 	"net"
-	"path"
 	"path/filepath"
 	"testing"
 	"time"
@@ -33,11 +32,9 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver/internal/metadata"
 )
 
 func TestMySqlIntegration(t *testing.T) {
-	t.Skip("To be enabled back once open-telemetry/opentelemetry-collector-contrib#7118 is fixed")
 	t.Run("Running mysql version 8.0", func(t *testing.T) {
 		t.Parallel()
 		container := getContainer(t, containerRequest8_0)
@@ -61,15 +58,15 @@ func TestMySqlIntegration(t *testing.T) {
 		require.Eventuallyf(t, func() bool {
 			return len(consumer.AllMetrics()) > 0
 		}, 2*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
-
-		md := consumer.AllMetrics()[0]
-		require.Equal(t, 1, md.ResourceMetrics().Len())
-		ilms := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics()
-		require.Equal(t, 1, ilms.Len())
-		metrics := ilms.At(0).Metrics()
 		require.NoError(t, rcvr.Shutdown(context.Background()))
 
-		require.Equal(t, len(metadata.M.Names()), metrics.Len())
+		actualMetrics := consumer.AllMetrics()[0]
+
+		expectedFile := filepath.Join("testdata", "integration", "expected.8_0.json")
+		expectedMetrics, err := golden.ReadMetrics(expectedFile)
+		require.NoError(t, err)
+
+		scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues())
 	})
 
 	t.Run("Running mysql version 5.7", func(t *testing.T) {
@@ -95,27 +92,22 @@ func TestMySqlIntegration(t *testing.T) {
 		require.Eventuallyf(t, func() bool {
 			return len(consumer.AllMetrics()) > 0
 		}, 2*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
-
-		md := consumer.AllMetrics()[0]
-		require.Equal(t, 1, md.ResourceMetrics().Len())
-		ilms := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics()
-		require.Equal(t, 1, ilms.Len())
-		aMetricSlice := ilms.At(0).Metrics()
 		require.NoError(t, rcvr.Shutdown(context.Background()))
 
-		expectedFile := filepath.Join("testdata", "scraper", "expected.json")
+		actualMetrics := consumer.AllMetrics()[0]
+
+		expectedFile := filepath.Join("testdata", "integration", "expected.5_7.json")
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
-		eMetricSlice := expectedMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 
-		scrapertest.CompareMetricSlices(eMetricSlice, aMetricSlice, scrapertest.IgnoreValues())
+		scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues())
 	})
 }
 
 var (
 	containerRequest5_7 = testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
-			Context:    path.Join(".", "testdata", "integration"),
+			Context:    filepath.Join("testdata", "integration"),
 			Dockerfile: "Dockerfile.mysql.5_7",
 		},
 		ExposedPorts: []string{"3307:3306"},
@@ -124,7 +116,7 @@ var (
 	}
 	containerRequest8_0 = testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
-			Context:    path.Join(".", "testdata", "integration"),
+			Context:    filepath.Join("testdata", "integration"),
 			Dockerfile: "Dockerfile.mysql.8_0",
 		},
 		ExposedPorts: []string{"3306:3306"},

@@ -22,7 +22,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.uber.org/zap"
 
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 )
@@ -48,7 +47,7 @@ func (m *MockK8sAPIServer) GetMetrics() []pdata.Metrics {
 func TestReceiver(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	metricsReceiver, err := newAWSContainerInsightReceiver(
-		zap.NewNop(),
+		componenttest.NewNopTelemetrySettings(),
 		cfg,
 		consumertest.NewNop(),
 	)
@@ -69,7 +68,7 @@ func TestReceiver(t *testing.T) {
 func TestReceiverForNilConsumer(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	metricsReceiver, err := newAWSContainerInsightReceiver(
-		zap.NewNop(),
+		componenttest.NewNopTelemetrySettings(),
 		cfg,
 		nil,
 	)
@@ -81,7 +80,7 @@ func TestReceiverForNilConsumer(t *testing.T) {
 func TestCollectData(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	metricsReceiver, err := newAWSContainerInsightReceiver(
-		zap.NewNop(),
+		componenttest.NewNopTelemetrySettings(),
 		cfg,
 		new(consumertest.MetricsSink),
 	)
@@ -107,7 +106,7 @@ func TestCollectData(t *testing.T) {
 func TestCollectDataWithErrConsumer(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	metricsReceiver, err := newAWSContainerInsightReceiver(
-		zap.NewNop(),
+		componenttest.NewNopTelemetrySettings(),
 		cfg,
 		consumertest.NewErr(errors.New("an error")),
 	)
@@ -129,7 +128,7 @@ func TestCollectDataWithECS(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.ContainerOrchestrator = ci.ECS
 	metricsReceiver, err := newAWSContainerInsightReceiver(
-		zap.NewNop(),
+		componenttest.NewNopTelemetrySettings(),
 		cfg,
 		new(consumertest.MetricsSink),
 	)

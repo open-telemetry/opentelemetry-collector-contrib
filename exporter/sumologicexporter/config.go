@@ -15,6 +15,8 @@
 package sumologicexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter"
 
 import (
+	"errors"
+	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/config"
@@ -133,3 +135,38 @@ const (
 	// DefaultGraphiteTemplate defines default template for Graphite
 	DefaultGraphiteTemplate string = "%{_metric_}"
 )
+
+func (cfg *Config) Validate() error {
+	switch cfg.LogFormat {
+	case JSONFormat:
+	case TextFormat:
+	default:
+		return fmt.Errorf("unexpected log format: %s", cfg.LogFormat)
+	}
+
+	switch cfg.MetricFormat {
+	case GraphiteFormat:
+	case Carbon2Format:
+	case PrometheusFormat:
+	default:
+		return fmt.Errorf("unexpected metric format: %s", cfg.MetricFormat)
+	}
+
+	switch cfg.CompressEncoding {
+	case GZIPCompression:
+	case DeflateCompression:
+	case NoCompression:
+	default:
+		return fmt.Errorf("unexpected compression encoding: %s", cfg.CompressEncoding)
+	}
+
+	if len(cfg.HTTPClientSettings.Endpoint) == 0 {
+		return errors.New("endpoint is not set")
+	}
+
+	if err := cfg.QueueSettings.Validate(); err != nil {
+		return fmt.Errorf("queue settings has invalid configuration: %w", err)
+	}
+
+	return nil
+}

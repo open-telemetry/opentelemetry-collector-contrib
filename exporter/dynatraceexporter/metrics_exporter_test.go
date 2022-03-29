@@ -26,6 +26,7 @@ import (
 
 	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/dimensions"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -119,9 +120,9 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	doubleHistogram.SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 
 	type fields struct {
-		logger *zap.Logger
-		cfg    *config.Config
-		client *http.Client
+		settings component.TelemetrySettings
+		cfg      *config.Config
+		client   *http.Client
 	}
 	type args struct {
 		ctx context.Context
@@ -135,7 +136,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	}{
 		name: "Send metric data",
 		fields: fields{
-			logger: zap.NewNop(),
+			settings: componenttest.NewNopTelemetrySettings(),
 			cfg: &config.Config{
 				APIToken:           "token",
 				HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
@@ -153,9 +154,9 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 
 	t.Run(test.name, func(t *testing.T) {
 		e := &exporter{
-			logger: test.fields.logger,
-			cfg:    test.fields.cfg,
-			client: test.fields.client,
+			settings: test.fields.settings,
+			cfg:      test.fields.cfg,
+			client:   test.fields.client,
 		}
 		err := e.PushMetricsData(test.args.ctx, test.args.md)
 		if (err != nil) != test.wantErr {
@@ -188,7 +189,7 @@ func Test_exporter_PushMetricsData_EmptyPayload(t *testing.T) {
 	noneMetric.SetName("none")
 
 	e := &exporter{
-		logger: zap.NewNop(),
+		settings: componenttest.NewNopTelemetrySettings(),
 		cfg: &config.Config{
 			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
 		},
@@ -226,7 +227,7 @@ func Test_exporter_PushMetricsData_isDisabled(t *testing.T) {
 	intGaugeDataPoint.SetTimestamp(testTimestamp)
 
 	e := &exporter{
-		logger: zap.NewNop(),
+		settings: componenttest.NewNopTelemetrySettings(),
 		cfg: &config.Config{
 			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
 		},
@@ -252,7 +253,7 @@ func Test_exporter_send_BadRequest(t *testing.T) {
 	defer ts.Close()
 
 	e := &exporter{
-		logger: zap.NewNop(),
+		settings: componenttest.NewNopTelemetrySettings(),
 		cfg: &config.Config{
 			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
 		},
@@ -277,7 +278,7 @@ func Test_exporter_send_Unauthorized(t *testing.T) {
 	defer ts.Close()
 
 	e := &exporter{
-		logger: zap.NewNop(),
+		settings: componenttest.NewNopTelemetrySettings(),
 		cfg: &config.Config{
 			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
 		},
@@ -302,7 +303,7 @@ func Test_exporter_send_TooLarge(t *testing.T) {
 	defer ts.Close()
 
 	e := &exporter{
-		logger: zap.NewNop(),
+		settings: componenttest.NewNopTelemetrySettings(),
 		cfg: &config.Config{
 			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
 		},
@@ -327,7 +328,7 @@ func Test_exporter_send_NotFound(t *testing.T) {
 	defer ts.Close()
 
 	e := &exporter{
-		logger: zap.NewNop(),
+		settings: componenttest.NewNopTelemetrySettings(),
 		cfg: &config.Config{
 			APIToken:           "token",
 			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
@@ -362,7 +363,7 @@ func Test_exporter_send_chunking(t *testing.T) {
 	defer ts.Close()
 
 	e := &exporter{
-		logger: zap.NewNop(),
+		settings: componenttest.NewNopTelemetrySettings(),
 		cfg: &config.Config{
 			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
 		},
@@ -448,9 +449,9 @@ func Test_exporter_PushMetricsData_Error(t *testing.T) {
 
 	t.Run(test.name, func(t *testing.T) {
 		e := &exporter{
-			logger: test.fields.logger,
-			cfg:    test.fields.cfg,
-			client: test.fields.client,
+			settings: componenttest.NewNopTelemetrySettings(),
+			cfg:      test.fields.cfg,
+			client:   test.fields.client,
 		}
 		err := e.PushMetricsData(test.args.ctx, test.args.md)
 		if (err != nil) != test.wantErr {

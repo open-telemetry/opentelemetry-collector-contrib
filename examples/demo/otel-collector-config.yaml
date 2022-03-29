@@ -8,6 +8,7 @@ exporters:
     endpoint: "0.0.0.0:8889"
     const_labels:
       label1: value1
+
   logging:
 
   zipkin:

@@ -17,6 +17,8 @@ package mysqlreceiver // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver/internal/metadata"
 )
 
 type Config struct {
@@ -26,4 +28,5 @@ type Config struct {
 	Database                                string `mapstructure:"database,omitempty"`
 	AllowNativePasswords                    bool   `mapstructure:"allow_native_passwords,omitempty"`
 	confignet.NetAddr                       `mapstructure:",squash"`
+	Metrics                                 metadata.MetricsSettings `mapstructure:"metrics"`
 }

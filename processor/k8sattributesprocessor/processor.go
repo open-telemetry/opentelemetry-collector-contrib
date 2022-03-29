@@ -21,7 +21,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.8.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -31,10 +31,6 @@ import (
 const (
 	k8sIPLabelName    string = "k8s.pod.ip"
 	clientIPLabelName string = "ip"
-
-	// TODO: Use semantic convention defined in this PR:
-	//       https://github.com/open-telemetry/opentelemetry-specification/pull/1945
-	k8sContainerRestartCountAttrName string = "k8s.container.restart_count"
 )
 
 type kubernetesprocessor struct {
@@ -136,7 +132,7 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pda
 }
 
 // addContainerAttributes looks if pod has any container identifiers and adds additional container attributes
-func (kp *kubernetesprocessor) addContainerAttributes(attrs pdata.AttributeMap, pod *kube.Pod) {
+func (kp *kubernetesprocessor) addContainerAttributes(attrs pdata.Map, pod *kube.Pod) {
 	containerName := stringAttributeFromMap(attrs, conventions.AttributeK8SContainerName)
 	if containerName == "" {
 		return
@@ -153,7 +149,7 @@ func (kp *kubernetesprocessor) addContainerAttributes(attrs pdata.AttributeMap, 
 		attrs.InsertString(conventions.AttributeContainerImageTag, containerSpec.ImageTag)
 	}
 
-	runIDAttr, ok := attrs.Get(k8sContainerRestartCountAttrName)
+	runIDAttr, ok := attrs.Get(conventions.AttributeK8SContainerRestartCount)
 	if ok {
 		runID, err := intFromAttribute(runIDAttr)
 		if err == nil {
@@ -175,11 +171,11 @@ func (kp *kubernetesprocessor) getAttributesForPodsNamespace(namespace string) m
 }
 
 // intFromAttribute extracts int value from an attribute stored as string or int
-func intFromAttribute(val pdata.AttributeValue) (int, error) {
+func intFromAttribute(val pdata.Value) (int, error) {
 	switch val.Type() {
-	case pdata.AttributeValueTypeInt:
+	case pdata.ValueTypeInt:
 		return int(val.IntVal()), nil
-	case pdata.AttributeValueTypeString:
+	case pdata.ValueTypeString:
 		i, err := strconv.Atoi(val.StringVal())
 		if err != nil {
 			return 0, err

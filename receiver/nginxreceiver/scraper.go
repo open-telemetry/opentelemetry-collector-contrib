@@ -31,22 +31,24 @@ type nginxScraper struct {
 	httpClient *http.Client
 	client     *client.NginxClient
 
-	logger *zap.Logger
-	cfg    *Config
+	settings component.TelemetrySettings
+	cfg      *Config
+	mb       *metadata.MetricsBuilder
 }
 
 func newNginxScraper(
-	logger *zap.Logger,
+	settings component.TelemetrySettings,
 	cfg *Config,
 ) *nginxScraper {
 	return &nginxScraper{
-		logger: logger,
-		cfg:    cfg,
+		settings: settings,
+		cfg:      cfg,
+		mb:       metadata.NewMetricsBuilder(cfg.Metrics),
 	}
 }
 
 func (r *nginxScraper) start(_ context.Context, host component.Host) error {
-	httpClient, err := r.cfg.ToClient(host.GetExtensions())
+	httpClient, err := r.cfg.ToClient(host.GetExtensions(), r.settings)
 	if err != nil {
 		return err
 	}
@@ -56,8 +58,7 @@ func (r *nginxScraper) start(_ context.Context, host component.Host) error {
 }
 
 func (r *nginxScraper) scrape(context.Context) (pdata.Metrics, error) {
-	// Init client in scrape method in case there are transient errors in the
-	// constructor.
+	// Init client in scrape method in case there are transient errors in the constructor.
 	if r.client == nil {
 		var err error
 		r.client, err = client.NewNginxClient(r.httpClient, r.cfg.HTTPClientSettings.Endpoint)
@@ -69,41 +70,19 @@ func (r *nginxScraper) scrape(context.Context) (pdata.Metrics, error) {
 
 	stats, err := r.client.GetStubStats()
 	if err != nil {
-		r.logger.Error("Failed to fetch nginx stats", zap.Error(err))
+		r.settings.Logger.Error("Failed to fetch nginx stats", zap.Error(err))
 		return pdata.Metrics{}, err
 	}
 
 	now := pdata.NewTimestampFromTime(time.Now())
-	md := pdata.NewMetrics()
-	ilm := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName("otelcol/nginx")
 
-	addIntSum(ilm.Metrics(), metadata.M.NginxRequests.Init, now, stats.Requests)
-	addIntSum(ilm.Metrics(), metadata.M.NginxConnectionsAccepted.Init, now, stats.Connections.Accepted)
-	addIntSum(ilm.Metrics(), metadata.M.NginxConnectionsHandled.Init, now, stats.Connections.Handled)
+	r.mb.RecordNginxRequestsDataPoint(now, stats.Requests)
+	r.mb.RecordNginxConnectionsAcceptedDataPoint(now, stats.Connections.Accepted)
+	r.mb.RecordNginxConnectionsHandledDataPoint(now, stats.Connections.Handled)
+	r.mb.RecordNginxConnectionsCurrentDataPoint(now, stats.Connections.Active, metadata.AttributeState.Active)
+	r.mb.RecordNginxConnectionsCurrentDataPoint(now, stats.Connections.Reading, metadata.AttributeState.Reading)
+	r.mb.RecordNginxConnectionsCurrentDataPoint(now, stats.Connections.Writing, metadata.AttributeState.Writing)
+	r.mb.RecordNginxConnectionsCurrentDataPoint(now, stats.Connections.Waiting, metadata.AttributeState.Waiting)
 
-	currConnMetric := ilm.Metrics().AppendEmpty()
-	metadata.M.NginxConnectionsCurrent.Init(currConnMetric)
-	dps := currConnMetric.Gauge().DataPoints()
-	addCurrentConnectionDataPoint(dps, metadata.AttributeState.Active, now, stats.Connections.Active)
-	addCurrentConnectionDataPoint(dps, metadata.AttributeState.Reading, now, stats.Connections.Reading)
-	addCurrentConnectionDataPoint(dps, metadata.AttributeState.Writing, now, stats.Connections.Writing)
-	addCurrentConnectionDataPoint(dps, metadata.AttributeState.Waiting, now, stats.Connections.Waiting)
-
-	return md, nil
-}
-
-func addIntSum(metrics pdata.MetricSlice, initFunc func(pdata.Metric), now pdata.Timestamp, value int64) {
-	metric := metrics.AppendEmpty()
-	initFunc(metric)
-	dp := metric.Sum().DataPoints().AppendEmpty()
-	dp.SetTimestamp(now)
-	dp.SetIntVal(value)
-}
-
-func addCurrentConnectionDataPoint(dps pdata.NumberDataPointSlice, stateValue string, now pdata.Timestamp, value int64) {
-	dp := dps.AppendEmpty()
-	dp.Attributes().UpsertString(metadata.A.State, stateValue)
-	dp.SetTimestamp(now)
-	dp.SetIntVal(value)
+	return r.mb.Emit(), nil
 }

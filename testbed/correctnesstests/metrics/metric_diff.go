@@ -139,11 +139,11 @@ func diffNumberPts(
 		return diffs
 	}
 	for i := 0; i < expected.Len(); i++ {
-		diffs, mismatch = diffValues(diffs, expected.At(i).Type(), actual.At(i).Type(), "NumberDataPoint Value Type")
+		diffs, mismatch = diffValues(diffs, expected.At(i).ValueType(), actual.At(i).ValueType(), "NumberDataPoint Value Type")
 		if mismatch {
 			return diffs
 		}
-		switch expected.At(i).Type() {
+		switch expected.At(i).ValueType() {
 		case pdata.MetricValueTypeInt:
 			diffs = diff(diffs, expected.At(i).IntVal(), actual.At(i).IntVal(), "NumberDataPoint Value")
 		case pdata.MetricValueTypeDouble:
@@ -194,8 +194,8 @@ func diffExemplars(
 		return diffs
 	}
 	for i := 0; i < expected.Len(); i++ {
-		diffs = diff(diffs, expected.At(i).Type(), actual.At(i).Type(), "Exemplar Value Type")
-		switch expected.At(i).Type() {
+		diffs = diff(diffs, expected.At(i).ValueType(), actual.At(i).ValueType(), "Exemplar Value Type")
+		switch expected.At(i).ValueType() {
 		case pdata.MetricValueTypeInt:
 			diffs = diff(diffs, expected.At(i).IntVal(), actual.At(i).IntVal(), "Exemplar Value")
 		case pdata.MetricValueTypeDouble:
@@ -209,7 +209,7 @@ func diffResource(diffs []*MetricDiff, expected pdata.Resource, actual pdata.Res
 	return diffAttrs(diffs, expected.Attributes(), actual.Attributes())
 }
 
-func diffAttrs(diffs []*MetricDiff, expected pdata.AttributeMap, actual pdata.AttributeMap) []*MetricDiff {
+func diffAttrs(diffs []*MetricDiff, expected pdata.Map, actual pdata.Map) []*MetricDiff {
 	if !reflect.DeepEqual(expected, actual) {
 		diffs = append(diffs, &MetricDiff{
 			ExpectedValue: attrMapToString(expected),
@@ -241,9 +241,9 @@ func diffValues(
 	return diffs, false
 }
 
-func attrMapToString(m pdata.AttributeMap) string {
+func attrMapToString(m pdata.Map) string {
 	out := ""
-	m.Range(func(k string, v pdata.AttributeValue) bool {
+	m.Range(func(k string, v pdata.Value) bool {
 		out += "[" + k + "=" + v.StringVal() + "]"
 		return true
 	})

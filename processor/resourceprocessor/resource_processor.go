@@ -18,34 +18,36 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 )
 
 type resourceProcessor struct {
+	logger   *zap.Logger
 	attrProc *attraction.AttrProc
 }
 
-func (rp *resourceProcessor) processTraces(_ context.Context, td pdata.Traces) (pdata.Traces, error) {
+func (rp *resourceProcessor) processTraces(ctx context.Context, td pdata.Traces) (pdata.Traces, error) {
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
-		rp.attrProc.Process(rss.At(i).Resource().Attributes())
+		rp.attrProc.Process(ctx, rp.logger, rss.At(i).Resource().Attributes())
 	}
 	return td, nil
 }
 
-func (rp *resourceProcessor) processMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
+func (rp *resourceProcessor) processMetrics(ctx context.Context, md pdata.Metrics) (pdata.Metrics, error) {
 	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
-		rp.attrProc.Process(rms.At(i).Resource().Attributes())
+		rp.attrProc.Process(ctx, rp.logger, rms.At(i).Resource().Attributes())
 	}
 	return md, nil
 }
 
-func (rp *resourceProcessor) processLogs(_ context.Context, ld pdata.Logs) (pdata.Logs, error) {
+func (rp *resourceProcessor) processLogs(ctx context.Context, ld pdata.Logs) (pdata.Logs, error) {
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
-		rp.attrProc.Process(rls.At(i).Resource().Attributes())
+		rp.attrProc.Process(ctx, rp.logger, rls.At(i).Resource().Attributes())
 	}
 	return ld, nil
 }

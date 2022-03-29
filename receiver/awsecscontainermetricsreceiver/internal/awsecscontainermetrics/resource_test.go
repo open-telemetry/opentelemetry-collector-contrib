@@ -19,7 +19,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
@@ -110,18 +110,20 @@ func TestTaskResource(t *testing.T) {
 	require.NotNil(t, r)
 
 	attrMap := r.Attributes()
-	require.EqualValues(t, 13, attrMap.Len())
+	require.EqualValues(t, 15, attrMap.Len())
 	expected := map[string]string{
 		attributeECSCluster:                        "cluster-1",
-		attributeECSTaskARN:                        "arn:aws:ecs:us-west-2:111122223333:task/default/158d1c8083dd49d6b527399fd6414f5c",
+		conventions.AttributeAWSECSTaskARN:         "arn:aws:ecs:us-west-2:111122223333:task/default/158d1c8083dd49d6b527399fd6414f5c",
 		attributeECSTaskID:                         "158d1c8083dd49d6b527399fd6414f5c",
-		attributeECSTaskFamily:                     "task-def-family-1",
+		conventions.AttributeAWSECSTaskFamily:      "task-def-family-1",
 		attributeECSTaskRevision:                   "v1.2",
+		conventions.AttributeAWSECSTaskRevision:    "v1.2",
 		conventions.AttributeCloudAvailabilityZone: "us-west-2d",
 		attributeECSTaskPullStartedAt:              "2020-10-02T00:43:06.202617438Z",
 		attributeECSTaskPullStoppedAt:              "2020-10-02T00:43:06.31288465Z",
 		attributeECSTaskKnownStatus:                "RUNNING",
 		attributeECSTaskLaunchType:                 "EC2",
+		conventions.AttributeAWSECSLaunchtype:      conventions.AttributeAWSECSLaunchtypeEC2,
 		conventions.AttributeCloudRegion:           "us-west-2",
 		conventions.AttributeCloudAccountID:        "111122223333",
 	}
@@ -145,19 +147,21 @@ func TestTaskResourceWithClusterARN(t *testing.T) {
 	require.NotNil(t, r)
 
 	attrMap := r.Attributes()
-	require.EqualValues(t, 13, attrMap.Len())
+	require.EqualValues(t, 15, attrMap.Len())
 
 	expected := map[string]string{
 		attributeECSCluster:                        "main-cluster",
-		attributeECSTaskARN:                        "arn:aws:ecs:us-west-2:803860917211:cluster/main-cluster/c8083dd49d6b527399fd6414",
+		conventions.AttributeAWSECSTaskARN:         "arn:aws:ecs:us-west-2:803860917211:cluster/main-cluster/c8083dd49d6b527399fd6414",
 		attributeECSTaskID:                         "c8083dd49d6b527399fd6414",
-		attributeECSTaskFamily:                     "task-def-family-1",
+		conventions.AttributeAWSECSTaskFamily:      "task-def-family-1",
 		attributeECSTaskRevision:                   "v1.2",
+		conventions.AttributeAWSECSTaskRevision:    "v1.2",
 		conventions.AttributeCloudAvailabilityZone: "us-west-2d",
 		attributeECSTaskPullStartedAt:              "2020-10-02T00:43:06.202617438Z",
 		attributeECSTaskPullStoppedAt:              "2020-10-02T00:43:06.31288465Z",
 		attributeECSTaskKnownStatus:                "RUNNING",
 		attributeECSTaskLaunchType:                 "EC2",
+		conventions.AttributeAWSECSLaunchtype:      conventions.AttributeAWSECSLaunchtypeEC2,
 		conventions.AttributeCloudRegion:           "us-west-2",
 		conventions.AttributeCloudAccountID:        "803860917211",
 	}
@@ -165,7 +169,7 @@ func TestTaskResourceWithClusterARN(t *testing.T) {
 	verifyAttributeMap(t, expected, attrMap)
 }
 
-func verifyAttributeMap(t *testing.T, expected map[string]string, found pdata.AttributeMap) {
+func verifyAttributeMap(t *testing.T, expected map[string]string, found pdata.Map) {
 	for key, val := range expected {
 		attributeVal, found := found.Get(key)
 		require.EqualValues(t, true, found)

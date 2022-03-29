@@ -51,7 +51,7 @@ func NewTestLogs(logCount int) pdata.Logs {
 	logs := pdata.NewLogs()
 
 	for i := 0; i < logCount; i++ {
-		log := logs.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().Logs().AppendEmpty()
+		log := logs.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty()
 		log.SetName("foo")
 		log.SetSeverityText("bar")
 	}

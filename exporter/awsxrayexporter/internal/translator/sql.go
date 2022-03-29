@@ -16,14 +16,14 @@ package translator // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
-func makeSQL(attributes map[string]pdata.AttributeValue) (map[string]pdata.AttributeValue, *awsxray.SQLData) {
+func makeSQL(attributes map[string]pdata.Value) (map[string]pdata.Value, *awsxray.SQLData) {
 	var (
-		filtered    = make(map[string]pdata.AttributeValue)
+		filtered    = make(map[string]pdata.Value)
 		sqlData     awsxray.SQLData
 		dbURL       string
 		dbSystem    string

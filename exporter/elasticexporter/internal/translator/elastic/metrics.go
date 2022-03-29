@@ -44,7 +44,7 @@ func EncodeMetrics(otlpMetrics pdata.MetricSlice, otlpLibrary pdata.Instrumentat
 			for i := 0; i < dps.Len(); i++ {
 				dp := dps.At(i)
 				var val float64
-				switch dp.Type() {
+				switch dp.ValueType() {
 				case pdata.MetricValueTypeDouble:
 					val = dp.DoubleVal()
 				case pdata.MetricValueTypeInt:
@@ -64,7 +64,7 @@ func EncodeMetrics(otlpMetrics pdata.MetricSlice, otlpLibrary pdata.Instrumentat
 			for i := 0; i < dps.Len(); i++ {
 				dp := dps.At(i)
 				var val float64
-				switch dp.Type() {
+				switch dp.ValueType() {
 				case pdata.MetricValueTypeDouble:
 					val = dp.DoubleVal()
 				case pdata.MetricValueTypeInt:
@@ -101,10 +101,10 @@ func asTime(in pdata.Timestamp) model.Time {
 	return model.Time(time.Unix(0, int64(in)))
 }
 
-func asStringMap(in pdata.AttributeMap) model.StringMap {
+func asStringMap(in pdata.Map) model.StringMap {
 	var out model.StringMap
 	in.Sort()
-	in.Range(func(k string, v pdata.AttributeValue) bool {
+	in.Range(func(k string, v pdata.Value) bool {
 		out = append(out, model.StringMapItem{
 			Key:   k,
 			Value: v.AsString(),

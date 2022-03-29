@@ -18,12 +18,14 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterlog"
 )
 
 type logAttributesProcessor struct {
+	logger   *zap.Logger
 	attrProc *attraction.AttrProc
 	include  filterlog.Matcher
 	exclude  filterlog.Matcher
@@ -32,15 +34,16 @@ type logAttributesProcessor struct {
 // newLogAttributesProcessor returns a processor that modifies attributes of a
 // log record. To construct the attributes processors, the use of the factory
 // methods are required in order to validate the inputs.
-func newLogAttributesProcessor(attrProc *attraction.AttrProc, include, exclude filterlog.Matcher) *logAttributesProcessor {
+func newLogAttributesProcessor(logger *zap.Logger, attrProc *attraction.AttrProc, include, exclude filterlog.Matcher) *logAttributesProcessor {
 	return &logAttributesProcessor{
+		logger:   logger,
 		attrProc: attrProc,
 		include:  include,
 		exclude:  exclude,
 	}
 }
 
-func (a *logAttributesProcessor) processLogs(_ context.Context, ld pdata.Logs) (pdata.Logs, error) {
+func (a *logAttributesProcessor) processLogs(ctx context.Context, ld pdata.Logs) (pdata.Logs, error) {
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		rs := rls.At(i)
@@ -48,7 +51,7 @@ func (a *logAttributesProcessor) processLogs(_ context.Context, ld pdata.Logs) (
 		resource := rs.Resource()
 		for j := 0; j < ilss.Len(); j++ {
 			ils := ilss.At(j)
-			logs := ils.Logs()
+			logs := ils.LogRecords()
 			library := ils.InstrumentationLibrary()
 			for k := 0; k < logs.Len(); k++ {
 				lr := logs.At(k)
@@ -56,7 +59,7 @@ func (a *logAttributesProcessor) processLogs(_ context.Context, ld pdata.Logs) (
 					continue
 				}
 
-				a.attrProc.Process(lr.Attributes())
+				a.attrProc.Process(ctx, a.logger, lr.Attributes())
 			}
 		}
 	}

@@ -19,7 +19,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -299,7 +299,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 			name: "with map body",
 			logRecordFn: func() pdata.LogRecord {
 				logRecord := pdata.NewLogRecord()
-				attVal := pdata.NewAttributeValueMap()
+				attVal := pdata.NewValueMap()
 				attMap := attVal.MapVal()
 				attMap.InsertDouble("23", 45)
 				attMap.InsertString("foo", "bar")
@@ -351,7 +351,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 			name: "with array body",
 			logRecordFn: func() pdata.LogRecord {
 				logRecord := pdata.NewLogRecord()
-				attVal := pdata.NewAttributeValueArray()
+				attVal := pdata.NewValueSlice()
 				attArray := attVal.SliceVal()
 				attArray.AppendEmpty().SetStringVal("foo")
 				attVal.CopyTo(logRecord.Body())

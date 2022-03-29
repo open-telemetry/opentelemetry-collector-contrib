@@ -76,13 +76,13 @@ func (dtrp *deltaToRateProcessor) processMetrics(_ context.Context, md pdata.Met
 
 					durationNanos := time.Duration(fromDataPoint.Timestamp() - fromDataPoint.StartTimestamp())
 					var rate float64
-					switch fromDataPoint.Type() {
+					switch fromDataPoint.ValueType() {
 					case pdata.MetricValueTypeDouble:
 						rate = calculateRate(fromDataPoint.DoubleVal(), durationNanos)
 					case pdata.MetricValueTypeInt:
 						rate = calculateRate(float64(fromDataPoint.IntVal()), durationNanos)
 					default:
-						return md, consumererror.NewPermanent(fmt.Errorf("invalid data point type:%d", fromDataPoint.Type()))
+						return md, consumererror.NewPermanent(fmt.Errorf("invalid data point type:%d", fromDataPoint.ValueType()))
 					}
 					newDp.SetDoubleVal(rate)
 				}

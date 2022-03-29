@@ -16,35 +16,45 @@ package coralogixexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
-	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // NewFactory by Coralogix
 func NewFactory() component.ExporterFactory {
-	return exporterhelper.NewFactory(
+	return component.NewExporterFactory(
 		typestr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTraceExporter),
+		component.WithTracesExporter(createTraceExporter),
 	)
 }
 
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typestr)),
-		QueueSettings:    exporterhelper.DefaultQueueSettings(),
-		RetrySettings:    exporterhelper.DefaultRetrySettings(),
-
-		Endpoint:   "",
-		PrivateKey: "",
-		AppName:    "",
-		SubSystem:  "",
+		ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typestr)),
+		QueueSettings:      exporterhelper.NewDefaultQueueSettings(),
+		RetrySettings:      exporterhelper.NewDefaultRetrySettings(),
+		TimeoutSettings:    exporterhelper.NewDefaultTimeoutSettings(),
+		GRPCClientSettings: configgrpc.GRPCClientSettings{Endpoint: "https://"},
+		PrivateKey:         "",
+		AppName:            "",
 	}
 }
 
 func createTraceExporter(_ context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.TracesExporter, error) {
-	return nil, fmt.Errorf("Coralogix exporter is not implemented yet")
+	cfg := config.(*Config)
+	exporter := newCoralogixExporter(cfg, set)
+
+	return exporterhelper.NewTracesExporter(
+		config,
+		set,
+		exporter.tracesPusher,
+		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithTimeout(cfg.TimeoutSettings),
+		exporterhelper.WithStart(exporter.client.startConnection),
+	)
 }

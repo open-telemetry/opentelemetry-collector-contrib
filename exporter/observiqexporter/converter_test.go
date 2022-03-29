@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 )
 
 func resourceAndLogRecordsToLogs(r pdata.Resource, lrs []pdata.LogRecord) pdata.Logs {
@@ -33,7 +33,7 @@ func resourceAndLogRecordsToLogs(r pdata.Resource, lrs []pdata.LogRecord) pdata.
 	resLog := resLogs.AppendEmpty()
 	resLogRes := resLog.Resource()
 
-	r.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+	r.Attributes().Range(func(k string, v pdata.Value) bool {
 		resLogRes.Attributes().Insert(k, v)
 		return true
 	})
@@ -41,7 +41,7 @@ func resourceAndLogRecordsToLogs(r pdata.Resource, lrs []pdata.LogRecord) pdata.
 	resLog.InstrumentationLibraryLogs().EnsureCapacity(len(lrs))
 	for _, l := range lrs {
 		ills := resLog.InstrumentationLibraryLogs().AppendEmpty()
-		l.CopyTo(ills.Logs().AppendEmpty())
+		l.CopyTo(ills.LogRecords().AppendEmpty())
 	}
 
 	return logs
@@ -102,11 +102,11 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 				logRecord.Attributes().InsertInt("int", 3)
 				logRecord.Attributes().InsertNull("null")
 
-				mapVal := pdata.NewAttributeValueMap()
-				mapVal.MapVal().Insert("mapKey", pdata.NewAttributeValueString("value"))
+				mapVal := pdata.NewValueMap()
+				mapVal.MapVal().Insert("mapKey", pdata.NewValueString("value"))
 				logRecord.Attributes().Insert("map", mapVal)
 
-				arrVal := pdata.NewAttributeValueArray()
+				arrVal := pdata.NewValueSlice()
 				arrVal.SliceVal().EnsureCapacity(2)
 				arrVal.SliceVal().AppendEmpty().SetIntVal(1)
 				arrVal.SliceVal().AppendEmpty().SetIntVal(2)
@@ -122,13 +122,13 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 				res.Attributes().InsertInt("int", 1)
 				res.Attributes().InsertNull("null")
 
-				mapVal := pdata.NewAttributeValueMap()
+				mapVal := pdata.NewValueMap()
 				mapVal.MapVal().InsertDouble("double", 1.1)
 				mapVal.MapVal().InsertBool("bool", false)
 				mapVal.MapVal().InsertNull("null")
 				res.Attributes().Insert("map", mapVal)
 
-				arrVal := pdata.NewAttributeValueArray()
+				arrVal := pdata.NewValueSlice()
 				arrVal.SliceVal().EnsureCapacity(2)
 				arrVal.SliceVal().AppendEmpty().SetIntVal(1)
 				arrVal.SliceVal().AppendEmpty().SetDoubleVal(2.0)
@@ -193,8 +193,8 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 			func() pdata.LogRecord {
 				logRecord := pdata.NewLogRecord()
 
-				mapVal := pdata.NewAttributeValueMap()
-				mapVal.MapVal().Insert("mapKey", pdata.NewAttributeValueString("value"))
+				mapVal := pdata.NewValueMap()
+				mapVal.MapVal().Insert("mapKey", pdata.NewValueString("value"))
 				mapVal.CopyTo(logRecord.Body())
 
 				logRecord.SetTimestamp(nanoTs)
@@ -219,7 +219,7 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 			func() pdata.LogRecord {
 				logRecord := pdata.NewLogRecord()
 
-				pdata.NewAttributeValueArray().CopyTo(logRecord.Body())
+				pdata.NewValueSlice().CopyTo(logRecord.Body())
 				logRecord.Body().SliceVal().EnsureCapacity(2)
 				logRecord.Body().SliceVal().AppendEmpty().SetStringVal("string")
 				logRecord.Body().SliceVal().AppendEmpty().SetDoubleVal(1.0)
@@ -269,8 +269,8 @@ func TestLogdataToObservIQFormat(t *testing.T) {
 			func() pdata.LogRecord {
 				logRecord := pdata.NewLogRecord()
 
-				bodyMapVal := pdata.NewAttributeValueMap()
-				bodyMapVal.MapVal().Insert("mapKey", pdata.NewAttributeValueString("body"))
+				bodyMapVal := pdata.NewValueMap()
+				bodyMapVal.MapVal().Insert("mapKey", pdata.NewValueString("body"))
 				bodyMapVal.CopyTo(logRecord.Body())
 
 				logRecord.Attributes().InsertString("attrib", "logAttrib")

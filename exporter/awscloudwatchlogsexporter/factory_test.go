@@ -20,14 +20,17 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
 
 func TestDefaultConfig_exporterSettings(t *testing.T) {
 	want := &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		RetrySettings:    exporterhelper.DefaultRetrySettings(),
+		ExporterSettings:   config.NewExporterSettings(config.NewComponentID(typeStr)),
+		RetrySettings:      exporterhelper.NewDefaultRetrySettings(),
+		AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
 		QueueSettings: QueueSettings{
-			QueueSize: exporterhelper.DefaultQueueSettings().QueueSize,
+			QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize,
 		},
 	}
 	assert.Equal(t, want, createDefaultConfig())

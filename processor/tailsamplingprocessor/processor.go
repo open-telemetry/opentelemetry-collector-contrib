@@ -139,6 +139,9 @@ func getPolicyEvaluator(logger *zap.Logger, cfg *PolicyCfg) (sampling.PolicyEval
 	case Composite:
 		rlfCfg := cfg.CompositeCfg
 		return getNewCompositePolicy(logger, rlfCfg)
+	case And:
+		andCfg := cfg.AndCfg
+		return getNewAndPolicy(logger, andCfg)
 	default:
 		return nil, fmt.Errorf("unknown sampling policy type %s", cfg.Type)
 	}
@@ -371,9 +374,7 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans pdata.Resource
 						zap.String("policy", p.name),
 						zap.Error(err))
 				}
-				fallthrough // so OnLateArrivingSpans is also called for decision Sampled.
 			case sampling.NotSampled:
-				p.evaluator.OnLateArrivingSpans(actualDecision, spans)
 				stats.Record(tsp.ctx, statLateSpanArrivalAfterDecision.M(int64(time.Since(actualData.DecisionTime)/time.Second)))
 
 			default:

@@ -8,33 +8,33 @@ exporters:
   datadog:
     ## @param hostname - string - optional
     ## A custom hostname.
-    ## If unset it will be determined from the `DD_HOST` environment variable.
+    ## If unset it will be determined from the `DD_HOST` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
     ## If both this and `DD_HOST` are unset, this will be determined automatically if possible.
     #
     # hostname: customhostname
 
     ## @param env - string - optional
     ## The environment for unified service tagging.
-    ## If unset it will be determined from the `DD_ENV` environment variable.
+    ## If unset it will be determined from the `DD_ENV` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
     #
     # env: prod
 
     ## @param service - string - optional
     ## The service for unified service tagging.
-    ## If unset it will be determined from the `DD_SERVICE` environment variable.
+    ## If unset it will be determined from the `DD_SERVICE` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
     #
     # service: myservice
 
     ## @param version - string - optional
     ## The version for unified service tagging.
-    ## If unset it will be determined from the `DD_VERSION` environment variable.
+    ## If unset it will be determined from the `DD_VERSION` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
     #
     # version: myversion
 
     ## @param tags - list of strings - optional - default: []
     ## The list of default tags to add to every metric or trace.
     ## If unset it will be determined from the `DD_TAGS` environment variable, specified
-    ## as a list of space-separated strings.
+    ## as a list of space-separated strings (Deprecated: [v0.47.0] use 'env' config source instead).
     #
     # tags: []
 
@@ -50,22 +50,29 @@ exporters:
       ## @ param key - string - required
       ## The Datadog API key to associate your Agent's data with your organization.
       ## Create a new API key here: https://app.datadoghq.com/account/settings
-      ## If unset it will be determined from the `DD_API_KEY` environment variable.
+      ## If unset it will be determined from the `DD_API_KEY` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
       #
       key: "<YOUR API KEY>"
 
       ## @param site - string - optional - default: datadoghq.com
       ## The site of the Datadog intake to send Agent data to.
       ## Set to 'datadoghq.eu' to send data to the EU site.
-      ## If unset it will be determined from the `DD_SITE` environment variable.
+      ## If unset it will be determined from the `DD_SITE` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
       #
       # site: datadoghq.com
+
+    ## @param tls - custom object - optional
+    # TLS settings for HTTPS communications.
+    # tls:
+      ## @param tls - boolean - optional - default: false
+      # insecure_skip_verify: false
 
     ## @param metrics - custom object - optional
     ## Metric exporter specific configuration.
     #
     # metrics:
       ## @param send_monotonic_counter - boolean - optional - default: true
+      ## Deprecated: [v0.48.0] Use `metrics::sums::cumulative_monotonic_mode` instead.
       ## Whether to report monotonic metrics as counters or gauges (raw value).
       ## See https://docs.datadoghq.com/integrations/guide/prometheus-metrics/#counter
       ## for further details
@@ -80,7 +87,7 @@ exporters:
 
       ## @param endpoint - string - optional
       ## The host of the Datadog intake server to send metrics to.
-      ## If unset it will be determined from the `DD_URL` environment variable.
+      ## If unset it will be determined from the `DD_URL` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
       ## If both this and `DD_URL` are unset, the value is obtained through the `site` parameter in the `api` section.
       #
       # endpoint: https://api.datadoghq.com
@@ -112,6 +119,16 @@ exporters:
         ## Whether to report sum and count as separate histogram metrics.
         #
         # send_count_sum_metrics: false
+      
+      ## @param sums - custom object - optional
+      ## Sums specific configuration.
+        ## @param cumulative_monotonic_mode - string - optional - default: to_delta
+        ## How to report cumulative monotonic sums. Valid values are:
+        ##
+        ## - `to_delta` to calculate delta for sum in the client side and report as Datadog counts.
+        ## - `raw_value` to report the raw value as a Datadog gauge.
+        #
+        # cumulative_monotonic_mode: to_delta
 
     ## @param traces - custom object - optional
     ## Trace exporter specific configuration.
@@ -126,7 +143,7 @@ exporters:
 
       ## @param endpoint - string - optional
       ## The host of the Datadog intake server to send traces to.
-      ## If unset it will be determined from the `DD_APM_URL` environment variable.
+      ## If unset it will be determined from the `DD_APM_URL` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
       ## If both this and `DD_APM_URL` are unset, the value is obtained through the `site` parameter in the `api` section.
       #
       # endpoint: https://api.datadoghq.com

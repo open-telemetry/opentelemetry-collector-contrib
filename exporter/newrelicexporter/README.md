@@ -1,8 +1,8 @@
-# New Relic Exporter
+# Deprecated New Relic Exporter
 
-:sparkles: **[Our OTLP (OpenTelemetry Protocol) endpoint is now available](https://docs.newrelic.com/docs/more-integrations/open-source-telemetry-integrations/opentelemetry/opentelemetry-quick-start/#collector)** :sparkles:
+New Relic native OTLP ingest became Generally Available in September 2021. This vendor specific exporter is being deprecated and will become unavailable May 1st 2022.
 
-This means you can use an [OTLP](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/otlpexporter) exporter and no longer need this exporter to send data to New Relic.
+To send OpenTelemetry data to New Relic, use the [OTLP gRPC Exporter](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/otlpexporter) instead, with configuration as [described here](https://docs.newrelic.com/docs/more-integrations/open-source-telemetry-integrations/opentelemetry/opentelemetry-quick-start/#export).
 
 ## Overview
 

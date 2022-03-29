@@ -41,7 +41,6 @@ type Config struct {
 	confighttp.HTTPClientSettings           `mapstructure:",squash"`
 	Username                                string `mapstructure:"username"`
 	Password                                string `mapstructure:"password"`
-	AllNodes                                bool   `mapstructure:"all_nodes"`
 }
 
 // Validate validates missing and invalid configuration fields.

@@ -18,9 +18,7 @@ package awsecscontainermetrics // import "github.com/open-telemetry/opentelemetr
 const (
 	attributeECSDockerName        = "aws.ecs.docker.name"
 	attributeECSCluster           = "aws.ecs.cluster.name"
-	attributeECSTaskARN           = "aws.ecs.task.arn"
 	attributeECSTaskID            = "aws.ecs.task.id"
-	attributeECSTaskFamily        = "aws.ecs.task.family"
 	attributeECSTaskRevision      = "aws.ecs.task.version"
 	attributeECSServiceName       = "aws.ecs.service.name"
 	attributeECSTaskPullStartedAt = "aws.ecs.task.pull_started_at"
@@ -79,6 +77,6 @@ const (
 	unitBytesPerSec = "Bytes/Second"
 	unitCount       = "Count"
 	unitVCpu        = "vCPU"
-	unitPercent     = "Percent"
 	unitSecond      = "Seconds"
+	unitNone        = "None"
 )

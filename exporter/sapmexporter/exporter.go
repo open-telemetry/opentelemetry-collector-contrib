@@ -109,7 +109,7 @@ func (se *sapmExporter) pushTraceData(ctx context.Context, td pdata.Traces) erro
 
 	// All metrics in the pdata.Metrics will have the same access token because of the BatchPerResourceMetrics.
 	accessToken := se.retrieveAccessToken(rss.At(0))
-	batches, err := jaeger.InternalTracesToJaegerProto(td)
+	batches, err := jaeger.ProtoFromTraces(td)
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}

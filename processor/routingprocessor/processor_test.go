@@ -96,7 +96,7 @@ func TestTraces_ErrorRequestedExporterNotFoundForRoute(t *testing.T) {
 	assert.Truef(t, errors.Is(err, errNoExportersAfterRegistration), "got: %v", err)
 }
 
-func TestTraces_ErrorRequestedExporterNotFoundForDefaultRoute(t *testing.T) {
+func TestTraces_RequestedExporterNotFoundForDefaultRoute(t *testing.T) {
 	//  prepare
 	exp := newProcessor(zap.NewNop(), &Config{
 		DefaultExporters: []string{"non-existing"},
@@ -133,7 +133,7 @@ func TestTraces_ErrorRequestedExporterNotFoundForDefaultRoute(t *testing.T) {
 	err = exp.Start(context.Background(), host)
 
 	// verify
-	assert.True(t, errors.Is(err, errExporterNotFound))
+	assert.True(t, errors.Is(err, errNoExportersAfterRegistration))
 }
 
 func TestTraces_InvalidExporter(t *testing.T) {
@@ -707,17 +707,17 @@ func TestLogs_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 
 	rl := l.ResourceLogs().AppendEmpty()
 	rl.Resource().Attributes().InsertString("X-Tenant", "acme")
-	log := rl.InstrumentationLibraryLogs().AppendEmpty().Logs().AppendEmpty()
+	log := rl.InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty()
 	log.SetName("mylog")
 
 	rl = l.ResourceLogs().AppendEmpty()
 	rl.Resource().Attributes().InsertString("X-Tenant", "acme")
-	log = rl.InstrumentationLibraryLogs().AppendEmpty().Logs().AppendEmpty()
+	log = rl.InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty()
 	log.SetName("mylog1")
 
 	rl = l.ResourceLogs().AppendEmpty()
 	rl.Resource().Attributes().InsertString("X-Tenant", "something-else")
-	log = rl.InstrumentationLibraryLogs().AppendEmpty().Logs().AppendEmpty()
+	log = rl.InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty()
 	log.SetName("mylog2")
 
 	ctx := context.Background()

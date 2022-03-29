@@ -142,13 +142,13 @@ func (sp *spanProcessor) processFromAttributes(span pdata.Span) {
 		}
 
 		switch attr.Type() {
-		case pdata.AttributeValueTypeString:
+		case pdata.ValueTypeString:
 			sb.WriteString(attr.StringVal())
-		case pdata.AttributeValueTypeBool:
+		case pdata.ValueTypeBool:
 			sb.WriteString(strconv.FormatBool(attr.BoolVal()))
-		case pdata.AttributeValueTypeDouble:
+		case pdata.ValueTypeDouble:
 			sb.WriteString(strconv.FormatFloat(attr.DoubleVal(), 'f', -1, 64))
-		case pdata.AttributeValueTypeInt:
+		case pdata.ValueTypeInt:
 			sb.WriteString(strconv.FormatInt(attr.IntVal(), 10))
 		default:
 			sb.WriteString("<unknown-attribute-type>")

@@ -36,6 +36,7 @@ import (
 	"github.com/jaegertracing/jaeger/cmd/agent/app/servers/thriftudp"
 	"github.com/jaegertracing/jaeger/cmd/collector/app/handler"
 	collectorSampling "github.com/jaegertracing/jaeger/cmd/collector/app/sampling"
+	"github.com/jaegertracing/jaeger/model"
 	staticStrategyStore "github.com/jaegertracing/jaeger/plugin/sampling/strategystore/static"
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"github.com/jaegertracing/jaeger/thrift-gen/agent"
@@ -231,7 +232,10 @@ func consumeTraces(ctx context.Context, batch *jaeger.Batch, consumer consumer.T
 	if batch == nil {
 		return 0, nil
 	}
-	td := jaegertranslator.ThriftBatchToInternalTraces(batch)
+	td, err := jaegertranslator.ThriftToTraces(batch)
+	if err != nil {
+		return 0, err
+	}
 	return len(batch.Spans), consumer.ConsumeTraces(ctx, td)
 }
 
@@ -276,10 +280,15 @@ func (jr *jReceiver) GetBaggageRestrictions(ctx context.Context, serviceName str
 func (jr *jReceiver) PostSpans(ctx context.Context, r *api_v2.PostSpansRequest) (*api_v2.PostSpansResponse, error) {
 	ctx = jr.grpcObsrecv.StartTracesOp(ctx)
 
-	td := jaegertranslator.ProtoBatchToInternalTraces(r.GetBatch())
+	batch := r.GetBatch()
+	td, err := jaegertranslator.ProtoToTraces([]*model.Batch{&batch})
+	if err != nil {
+		jr.grpcObsrecv.EndTracesOp(ctx, protobufFormat, len(batch.Spans), err)
+		return nil, err
+	}
 
-	err := jr.nextConsumer.ConsumeTraces(ctx, td)
-	jr.grpcObsrecv.EndTracesOp(ctx, protobufFormat, len(r.GetBatch().Spans), err)
+	err = jr.nextConsumer.ConsumeTraces(ctx, td)
+	jr.grpcObsrecv.EndTracesOp(ctx, protobufFormat, len(batch.Spans), err)
 	if err != nil {
 		return nil, err
 	}

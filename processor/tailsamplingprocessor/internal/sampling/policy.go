@@ -66,12 +66,6 @@ const (
 // PolicyEvaluator implements a tail-based sampling policy evaluator,
 // which makes a sampling decision for a given trace when requested.
 type PolicyEvaluator interface {
-	// OnLateArrivingSpans notifies the evaluator that the given list of spans arrived
-	// after the sampling decision was already taken for the trace.
-	// This gives the evaluator a chance to log any message/metrics and/or update any
-	// related internal state.
-	OnLateArrivingSpans(earlyDecision Decision, spans []*pdata.Span) error
-
 	// Evaluate looks at the trace data and returns a corresponding SamplingDecision.
 	Evaluate(traceID pdata.TraceID, trace *TraceData) (Decision, error)
 }

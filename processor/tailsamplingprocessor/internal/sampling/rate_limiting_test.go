@@ -23,9 +23,7 @@ import (
 )
 
 func TestRateLimiter(t *testing.T) {
-	var empty = map[string]pdata.AttributeValue{}
-
-	trace := newTraceStringAttrs(empty, "example", "value")
+	trace := newTraceStringAttrs(pdata.NewMap(), "example", "value")
 	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 	rateLimiter := NewRateLimiting(zap.NewNop(), 3)
 
@@ -52,10 +50,4 @@ func TestRateLimiter(t *testing.T) {
 	decision, err = rateLimiter.Evaluate(traceID, trace)
 	assert.Nil(t, err)
 	assert.Equal(t, decision, Sampled)
-}
-
-func TestOnLateArrivingSpans_RateLimiter(t *testing.T) {
-	rateLimiter := NewRateLimiting(zap.NewNop(), 3)
-	err := rateLimiter.OnLateArrivingSpans(NotSampled, nil)
-	assert.Nil(t, err)
 }

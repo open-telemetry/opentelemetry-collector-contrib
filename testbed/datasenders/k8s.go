@@ -93,8 +93,8 @@ func (f *FileLogK8sWriter) ConsumeLogs(_ context.Context, logs pdata.Logs) error
 	for i := 0; i < logs.ResourceLogs().Len(); i++ {
 		for j := 0; j < logs.ResourceLogs().At(i).InstrumentationLibraryLogs().Len(); j++ {
 			ills := logs.ResourceLogs().At(i).InstrumentationLibraryLogs().At(j)
-			for k := 0; k < ills.Logs().Len(); k++ {
-				_, err := f.file.Write(append(f.convertLogToTextLine(ills.Logs().At(k)), '\n'))
+			for k := 0; k < ills.LogRecords().Len(); k++ {
+				_, err := f.file.Write(append(f.convertLogToTextLine(ills.LogRecords().At(k)), '\n'))
 				if err != nil {
 					return err
 				}
@@ -115,22 +115,22 @@ func (f *FileLogK8sWriter) convertLogToTextLine(lr pdata.LogRecord) []byte {
 	sb.WriteString(lr.SeverityText())
 	sb.WriteString(" ")
 
-	if lr.Body().Type() == pdata.AttributeValueTypeString {
+	if lr.Body().Type() == pdata.ValueTypeString {
 		sb.WriteString(lr.Body().StringVal())
 	}
 
-	lr.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+	lr.Attributes().Range(func(k string, v pdata.Value) bool {
 		sb.WriteString(" ")
 		sb.WriteString(k)
 		sb.WriteString("=")
 		switch v.Type() {
-		case pdata.AttributeValueTypeString:
+		case pdata.ValueTypeString:
 			sb.WriteString(v.StringVal())
-		case pdata.AttributeValueTypeInt:
+		case pdata.ValueTypeInt:
 			sb.WriteString(strconv.FormatInt(v.IntVal(), 10))
-		case pdata.AttributeValueTypeDouble:
+		case pdata.ValueTypeDouble:
 			sb.WriteString(strconv.FormatFloat(v.DoubleVal(), 'f', -1, 64))
-		case pdata.AttributeValueTypeBool:
+		case pdata.ValueTypeBool:
 			sb.WriteString(strconv.FormatBool(v.BoolVal()))
 		default:
 			panic("missing case")

@@ -31,43 +31,30 @@ import (
 )
 
 type apacheScraper struct {
-	logger     *zap.Logger
+	settings   component.TelemetrySettings
 	cfg        *Config
 	httpClient *http.Client
+	mb         *metadata.MetricsBuilder
 }
 
 func newApacheScraper(
-	logger *zap.Logger,
+	settings component.TelemetrySettings,
 	cfg *Config,
 ) *apacheScraper {
 	return &apacheScraper{
-		logger: logger,
-		cfg:    cfg,
+		settings: settings,
+		cfg:      cfg,
+		mb:       metadata.NewMetricsBuilder(cfg.Metrics),
 	}
 }
 
 func (r *apacheScraper) start(_ context.Context, host component.Host) error {
-	httpClient, err := r.cfg.ToClient(host.GetExtensions())
+	httpClient, err := r.cfg.ToClient(host.GetExtensions(), r.settings)
 	if err != nil {
 		return err
 	}
 	r.httpClient = httpClient
 	return nil
-}
-
-func initMetric(ms pdata.MetricSlice, mi metadata.MetricIntf) pdata.Metric {
-	m := ms.AppendEmpty()
-	mi.Init(m)
-	return m
-}
-
-func addToIntMetric(metric pdata.NumberDataPointSlice, labels pdata.AttributeMap, value int64, ts pdata.Timestamp) {
-	dataPoint := metric.AppendEmpty()
-	dataPoint.SetTimestamp(ts)
-	dataPoint.SetIntVal(value)
-	if labels.Len() > 0 {
-		labels.CopyTo(dataPoint.Attributes())
-	}
 }
 
 func (r *apacheScraper) scrape(context.Context) (pdata.Metrics, error) {
@@ -77,63 +64,46 @@ func (r *apacheScraper) scrape(context.Context) (pdata.Metrics, error) {
 
 	stats, err := r.GetStats()
 	if err != nil {
-		r.logger.Error("failed to fetch Apache Httpd stats", zap.Error(err))
+		r.settings.Logger.Error("failed to fetch Apache Httpd stats", zap.Error(err))
 		return pdata.Metrics{}, err
 	}
-	md := pdata.NewMetrics()
-	ilm := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName("otel/apache")
+
 	now := pdata.NewTimestampFromTime(time.Now())
-
-	uptime := initMetric(ilm.Metrics(), metadata.M.ApacheUptime).Sum().DataPoints()
-	connections := initMetric(ilm.Metrics(), metadata.M.ApacheCurrentConnections).Sum().DataPoints()
-	workers := initMetric(ilm.Metrics(), metadata.M.ApacheWorkers).Sum().DataPoints()
-	requests := initMetric(ilm.Metrics(), metadata.M.ApacheRequests).Sum().DataPoints()
-	traffic := initMetric(ilm.Metrics(), metadata.M.ApacheTraffic).Sum().DataPoints()
-	scoreboard := initMetric(ilm.Metrics(), metadata.M.ApacheScoreboard).Sum().DataPoints()
-
 	for metricKey, metricValue := range parseStats(stats) {
-		labels := pdata.NewAttributeMap()
-		labels.Insert(metadata.A.ServerName, pdata.NewAttributeValueString(r.cfg.serverName))
-
 		switch metricKey {
 		case "ServerUptimeSeconds":
 			if i, ok := r.parseInt(metricKey, metricValue); ok {
-				addToIntMetric(uptime, labels, i, now)
+				r.mb.RecordApacheUptimeDataPoint(now, i, r.cfg.serverName)
 			}
 		case "ConnsTotal":
 			if i, ok := r.parseInt(metricKey, metricValue); ok {
-				addToIntMetric(connections, labels, i, now)
+				r.mb.RecordApacheCurrentConnectionsDataPoint(now, i, r.cfg.serverName)
 			}
 		case "BusyWorkers":
 			if i, ok := r.parseInt(metricKey, metricValue); ok {
-				labels.Insert(metadata.A.WorkersState, pdata.NewAttributeValueString("busy"))
-				addToIntMetric(workers, labels, i, now)
+				r.mb.RecordApacheWorkersDataPoint(now, i, r.cfg.serverName, "busy")
 			}
 		case "IdleWorkers":
 			if i, ok := r.parseInt(metricKey, metricValue); ok {
-				labels.Insert(metadata.A.WorkersState, pdata.NewAttributeValueString("idle"))
-				addToIntMetric(workers, labels, i, now)
+				r.mb.RecordApacheWorkersDataPoint(now, i, r.cfg.serverName, "idle")
 			}
 		case "Total Accesses":
 			if i, ok := r.parseInt(metricKey, metricValue); ok {
-				addToIntMetric(requests, labels, i, now)
+				r.mb.RecordApacheRequestsDataPoint(now, i, r.cfg.serverName)
 			}
 		case "Total kBytes":
 			if i, ok := r.parseInt(metricKey, metricValue); ok {
-				bytes := kbytesToBytes(i)
-				addToIntMetric(traffic, labels, bytes, now)
+				r.mb.RecordApacheTrafficDataPoint(now, kbytesToBytes(i), r.cfg.serverName)
 			}
 		case "Scoreboard":
 			scoreboardMap := parseScoreboard(metricValue)
-			for identifier, score := range scoreboardMap {
-				labels.Upsert(metadata.A.ScoreboardState, pdata.NewAttributeValueString(identifier))
-				addToIntMetric(scoreboard, labels, score, now)
+			for state, score := range scoreboardMap {
+				r.mb.RecordApacheScoreboardDataPoint(now, score, r.cfg.serverName, state)
 			}
 		}
 	}
 
-	return md, nil
+	return r.mb.Emit(), nil
 }
 
 // GetStats collects metric stats by making a get request at an endpoint.
@@ -178,7 +148,7 @@ func (r *apacheScraper) parseInt(key, value string) (int64, bool) {
 }
 
 func (r *apacheScraper) logInvalid(expectedType, key, value string) {
-	r.logger.Info(
+	r.settings.Logger.Info(
 		"invalid value",
 		zap.String("expectedType", expectedType),
 		zap.String("key", key),

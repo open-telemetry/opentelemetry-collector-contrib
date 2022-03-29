@@ -54,7 +54,7 @@ func (s *sfxEventClient) pushLogsData(ctx context.Context, ld pdata.Logs) (int, 
 		ills := rl.InstrumentationLibraryLogs()
 		for j := 0; j < ills.Len(); j++ {
 			ill := ills.At(j)
-			events, dropped := translation.LogSliceToSignalFxV2(s.logger, ill.Logs(), rl.Resource().Attributes())
+			events, dropped := translation.LogRecordSliceToSignalFxV2(s.logger, ill.LogRecords(), rl.Resource().Attributes())
 			sfxEvents = append(sfxEvents, events...)
 			numDroppedLogRecords += dropped
 		}
@@ -117,7 +117,7 @@ func (s *sfxEventClient) encodeBody(events []*sfxpb.Event) (bodyReader io.Reader
 
 func (s *sfxEventClient) retrieveAccessToken(rl pdata.ResourceLogs) string {
 	attrs := rl.Resource().Attributes()
-	if accessToken, ok := attrs.Get(splunk.SFxAccessTokenLabel); ok && accessToken.Type() == pdata.AttributeValueTypeString {
+	if accessToken, ok := attrs.Get(splunk.SFxAccessTokenLabel); ok && accessToken.Type() == pdata.ValueTypeString {
 		return accessToken.StringVal()
 	}
 	return ""

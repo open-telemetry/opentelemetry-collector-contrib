@@ -33,7 +33,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
@@ -143,10 +143,10 @@ func createLogDataWithCustomLibraries(numResources int, libraries []string, numR
 		for j := 0; j < len(libraries); j++ {
 			ill := rl.InstrumentationLibraryLogs().AppendEmpty()
 			ill.InstrumentationLibrary().SetName(libraries[j])
-			ill.Logs().EnsureCapacity(numRecords[j])
+			ill.LogRecords().EnsureCapacity(numRecords[j])
 			for k := 0; k < numRecords[j]; k++ {
 				ts := pdata.Timestamp(int64(k) * time.Millisecond.Nanoseconds())
-				logRecord := ill.Logs().AppendEmpty()
+				logRecord := ill.LogRecords().AppendEmpty()
 				logRecord.SetName(fmt.Sprintf("%d_%d_%d", i, j, k))
 				logRecord.Body().SetStringVal("mylog")
 				logRecord.Attributes().InsertString(splunk.DefaultSourceLabel, "myapp")
@@ -187,16 +187,14 @@ func (c *CapturingData) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(c.statusCode)
 }
 
-func runMetricsExport(disableCompression bool, numberOfDataPoints int, t *testing.T) (string, error) {
+func runMetricsExport(cfg *Config, metrics pdata.Metrics, t *testing.T) ([][]byte, error) {
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		panic(err)
 	}
 
 	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
-	cfg.DisableCompression = disableCompression
 	cfg.Token = "1234-1234"
 
 	receivedRequest := make(chan []byte)
@@ -214,15 +212,19 @@ func runMetricsExport(disableCompression bool, numberOfDataPoints int, t *testin
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
 	defer exporter.Shutdown(context.Background())
 
-	md := createMetricsData(numberOfDataPoints)
-
-	err = exporter.ConsumeMetrics(context.Background(), md)
+	err = exporter.ConsumeMetrics(context.Background(), metrics)
 	assert.NoError(t, err)
-	select {
-	case request := <-receivedRequest:
-		return string(request), nil
-	case <-time.After(1 * time.Second):
-		return "", errors.New("timeout")
+	var requests [][]byte
+	for {
+		select {
+		case request := <-receivedRequest:
+			requests = append(requests, request)
+		case <-time.After(1 * time.Second):
+			if len(requests) == 0 {
+				err = errors.New("timeout")
+			}
+			return requests, err
+		}
 	}
 }
 
@@ -439,11 +441,136 @@ func TestReceiveLogs(t *testing.T) {
 }
 
 func TestReceiveMetrics(t *testing.T) {
-	actual, err := runMetricsExport(true, 3, t)
+	md := createMetricsData(3)
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
+	cfg.DisableCompression = true
+	actual, err := runMetricsExport(cfg, md, t)
+	assert.Len(t, actual, 1)
 	assert.NoError(t, err)
-	assert.Contains(t, actual, "\"event\":\"metric\"")
-	assert.Contains(t, actual, "\"time\":1.001")
-	assert.Contains(t, actual, "\"time\":2.002")
+	msg := string(actual[0])
+	assert.Contains(t, msg, "\"event\":\"metric\"")
+	assert.Contains(t, msg, "\"time\":1.001")
+	assert.Contains(t, msg, "\"time\":2.002")
+}
+
+func TestReceiveBatchedMetrics(t *testing.T) {
+	type wantType struct {
+		batches    [][]string
+		numBatches int
+		compressed bool
+	}
+
+	// The test cases depend on the constant minCompressionLen = 1500.
+	// If the constant changed, the test cases with want.compressed=true must be updated.
+	require.Equal(t, minCompressionLen, 1500)
+
+	tests := []struct {
+		name    string
+		conf    *Config
+		metrics pdata.Metrics
+		want    wantType
+	}{
+		{
+			name:    "all metrics events in payload when max content length unknown (configured max content length 0)",
+			metrics: createMetricsData(4),
+			conf: func() *Config {
+				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.MaxContentLengthMetrics = 0
+				return cfg
+			}(),
+			want: wantType{
+				batches: [][]string{
+					{`"k1":"v1"`, `"time":1.001`, `"time":2.002`, `"time":3.003`},
+				},
+				numBatches: 1,
+			},
+		},
+		{
+			name:    "1 metric event per payload (configured max content length is same as event size)",
+			metrics: createMetricsData(4),
+			conf: func() *Config {
+				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.MaxContentLengthMetrics = 300
+				return cfg
+			}(),
+			want: wantType{
+				batches: [][]string{
+					{`"k1":"v1"`},
+					{`"time":1.001`},
+					{`"time":2.002`},
+					{`"time":3.003`},
+				},
+				numBatches: 4,
+			},
+		},
+		{
+			name:    "2 metric events per payload (configured max content length is twice event size)",
+			metrics: createMetricsData(4),
+			conf: func() *Config {
+				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.MaxContentLengthMetrics = 448
+				return cfg
+			}(),
+			want: wantType{
+				batches: [][]string{
+					{`"k1":"v1"`, `"time":1.001`},
+					{`"time":2.002`, `"time":3.003`},
+				},
+				numBatches: 2,
+			},
+		},
+		{
+			name:    "1 compressed batch of 2037 bytes, make sure the event size is more than minCompressionLen=1500 to trigger compression",
+			metrics: createMetricsData(10),
+			conf: func() *Config {
+				return NewFactory().CreateDefaultConfig().(*Config)
+			}(),
+			want: wantType{
+				batches: [][]string{
+					{`"k1":"v1"`, `"time":1.001`, `"time":2.002`, `"time":3.003`, `"time":4.004`, `"time":5.005`, `"time":6.006`},
+				},
+				numBatches: 1,
+				compressed: true,
+			},
+		},
+		{
+			name:    "2 compressed batches - 2211 bytes each, make sure the event size is more than minCompressionLen=1500 to trigger compression",
+			metrics: createMetricsData(22),
+			conf: func() *Config {
+				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.MaxContentLengthMetrics = 2211
+				return cfg
+			}(),
+			want: wantType{
+				batches: [][]string{
+					{`"k1":"v1"`, `"time":1.001`, `"time":2.002`, `"time":3.003`, `"time":4.004`, `"time":5.005`, `"time":7.007`, `"time":8.008`, `"time":9.009`, `"time":10.01`},
+					{`"time":11.011`, `"time":15.015`, `"time":16.016`, `"time":17.017`, `"time":18.018`, `"time":19.019`, `"time":20.02`, `"time":21.021`},
+				},
+				numBatches: 2,
+				compressed: true,
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := runMetricsExport(test.conf, test.metrics, t)
+
+			require.NoError(t, err)
+			require.Len(t, got, test.want.numBatches)
+
+			for i := 0; i < test.want.numBatches; i++ {
+				require.NotZero(t, got[i])
+				if test.want.compressed {
+					validateCompressedContains(t, test.want.batches[i], got[i])
+				} else {
+					for _, expected := range test.want.batches[i] {
+						assert.Contains(t, string(got[i]), expected)
+					}
+				}
+			}
+		})
+	}
 }
 
 func TestReceiveTracesWithCompression(t *testing.T) {
@@ -453,7 +580,8 @@ func TestReceiveTracesWithCompression(t *testing.T) {
 }
 
 func TestReceiveMetricsWithCompression(t *testing.T) {
-	request, err := runMetricsExport(false, 1000, t)
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
+	request, err := runMetricsExport(cfg, createMetricsData(1000), t)
 	assert.NoError(t, err)
 	assert.NotEqual(t, "", request)
 }
@@ -513,7 +641,8 @@ func TestInvalidLogs(t *testing.T) {
 }
 
 func TestInvalidMetrics(t *testing.T) {
-	_, err := runMetricsExport(false, 0, t)
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
+	_, err := runMetricsExport(cfg, pdata.NewMetrics(), t)
 	assert.Error(t, err)
 }
 
@@ -640,7 +769,7 @@ func Test_pushLogData_nil_Logs(t *testing.T) {
 			requires: func(t *testing.T, logs pdata.Logs) {
 				require.Equal(t, logs.ResourceLogs().Len(), 1)
 				require.Equal(t, logs.ResourceLogs().At(0).InstrumentationLibraryLogs().Len(), 1)
-				require.Zero(t, logs.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().Len())
+				require.Zero(t, logs.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().Len())
 			},
 		},
 	}
@@ -675,7 +804,7 @@ func Test_pushLogData_InvalidLog(t *testing.T) {
 	}
 
 	logs := pdata.NewLogs()
-	log := logs.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().Logs().AppendEmpty()
+	log := logs.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty()
 	// Invalid log value
 	log.Body().SetDoubleVal(math.Inf(1))
 
@@ -908,56 +1037,56 @@ func TestSubLogs(t *testing.T) {
 	logs := createLogData(2, 2, 3)
 
 	// Logs subset from leftmost index (resource 0, library 0, record 0).
-	_0_0_0 := &logIndex{resource: 0, library: 0, record: 0} //revive:disable-line:var-naming
+	_0_0_0 := &index{resource: 0, library: 0, record: 0} //revive:disable-line:var-naming
 	got := subLogs(&logs, _0_0_0, nil)
 
 	// Number of logs in subset should equal original logs.
 	assert.Equal(t, logs.LogRecordCount(), got.LogRecordCount())
 
 	// The name of the leftmost log record should be 0_0_0.
-	assert.Equal(t, "0_0_0", got.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Name())
+	assert.Equal(t, "0_0_0", got.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(0).Name())
 	// The name of the rightmost log record should be 1_1_2.
-	assert.Equal(t, "1_1_2", got.ResourceLogs().At(1).InstrumentationLibraryLogs().At(1).Logs().At(2).Name())
+	assert.Equal(t, "1_1_2", got.ResourceLogs().At(1).InstrumentationLibraryLogs().At(1).LogRecords().At(2).Name())
 
 	// Logs subset from some mid index (resource 0, library 1, log 2).
-	_0_1_2 := &logIndex{resource: 0, library: 1, record: 2} //revive:disable-line:var-naming
+	_0_1_2 := &index{resource: 0, library: 1, record: 2} //revive:disable-line:var-naming
 	got = subLogs(&logs, _0_1_2, nil)
 
 	assert.Equal(t, 7, got.LogRecordCount())
 
 	// The name of the leftmost log record should be 0_1_2.
-	assert.Equal(t, "0_1_2", got.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Name())
+	assert.Equal(t, "0_1_2", got.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(0).Name())
 	// The name of the rightmost log record should be 1_1_2.
-	assert.Equal(t, "1_1_2", got.ResourceLogs().At(1).InstrumentationLibraryLogs().At(1).Logs().At(2).Name())
+	assert.Equal(t, "1_1_2", got.ResourceLogs().At(1).InstrumentationLibraryLogs().At(1).LogRecords().At(2).Name())
 
 	// Logs subset from rightmost index (resource 1, library 1, log 2).
-	_1_1_2 := &logIndex{resource: 1, library: 1, record: 2} //revive:disable-line:var-naming
+	_1_1_2 := &index{resource: 1, library: 1, record: 2} //revive:disable-line:var-naming
 	got = subLogs(&logs, _1_1_2, nil)
 
 	// Number of logs in subset should be 1.
 	assert.Equal(t, 1, got.LogRecordCount())
 
 	// The name of the sole log record should be 1_1_2.
-	assert.Equal(t, "1_1_2", got.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Name())
+	assert.Equal(t, "1_1_2", got.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(0).Name())
 
 	// Now see how profiling and log data are merged
 	logs = createLogDataWithCustomLibraries(2, []string{"otel.logs", "otel.profiling"}, []int{10, 10})
-	slice := &logIndex{resource: 1, library: 0, record: 5}
-	profSlice := &logIndex{resource: 0, library: 1, record: 8}
+	slice := &index{resource: 1, library: 0, record: 5}
+	profSlice := &index{resource: 0, library: 1, record: 8}
 
 	got = subLogs(&logs, slice, profSlice)
 
 	assert.Equal(t, 5+2+10, got.LogRecordCount())
 	assert.Equal(t, "otel.logs", got.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).InstrumentationLibrary().Name())
-	assert.Equal(t, "1_0_5", got.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Name())
-	assert.Equal(t, "1_0_9", got.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().At(4).Name())
+	assert.Equal(t, "1_0_5", got.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(0).Name())
+	assert.Equal(t, "1_0_9", got.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(4).Name())
 
 	assert.Equal(t, "otel.profiling", got.ResourceLogs().At(1).InstrumentationLibraryLogs().At(0).InstrumentationLibrary().Name())
-	assert.Equal(t, "0_1_8", got.ResourceLogs().At(1).InstrumentationLibraryLogs().At(0).Logs().At(0).Name())
-	assert.Equal(t, "0_1_9", got.ResourceLogs().At(1).InstrumentationLibraryLogs().At(0).Logs().At(1).Name())
+	assert.Equal(t, "0_1_8", got.ResourceLogs().At(1).InstrumentationLibraryLogs().At(0).LogRecords().At(0).Name())
+	assert.Equal(t, "0_1_9", got.ResourceLogs().At(1).InstrumentationLibraryLogs().At(0).LogRecords().At(1).Name())
 	assert.Equal(t, "otel.profiling", got.ResourceLogs().At(2).InstrumentationLibraryLogs().At(0).InstrumentationLibrary().Name())
-	assert.Equal(t, "1_1_0", got.ResourceLogs().At(2).InstrumentationLibraryLogs().At(0).Logs().At(0).Name())
-	assert.Equal(t, "1_1_9", got.ResourceLogs().At(2).InstrumentationLibraryLogs().At(0).Logs().At(9).Name())
+	assert.Equal(t, "1_1_0", got.ResourceLogs().At(2).InstrumentationLibraryLogs().At(0).LogRecords().At(0).Name())
+	assert.Equal(t, "1_1_9", got.ResourceLogs().At(2).InstrumentationLibraryLogs().At(0).LogRecords().At(9).Name())
 }
 
 // validateCompressedEqual validates that GZipped `got` contains `expected` strings

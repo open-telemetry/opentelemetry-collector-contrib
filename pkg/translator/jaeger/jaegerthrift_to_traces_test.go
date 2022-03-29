@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
@@ -61,14 +61,14 @@ func TestJThriftTagsToInternalAttributes(t *testing.T) {
 		},
 	}
 
-	expected := pdata.NewAttributeMap()
+	expected := pdata.NewMap()
 	expected.InsertBool("bool-val", true)
 	expected.InsertInt("int-val", 123)
 	expected.InsertString("string-val", "abc")
 	expected.InsertDouble("double-val", 1.23)
 	expected.InsertString("binary-val", "AAAAAABkfZg=")
 
-	got := pdata.NewAttributeMap()
+	got := pdata.NewMap()
 	jThriftTagsToInternalAttributes(tags, got)
 
 	require.EqualValues(t, expected, got)
@@ -129,7 +129,8 @@ func TestThriftBatchToInternalTraces(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			td := ThriftBatchToInternalTraces(test.jb)
+			td, err := ThriftToTraces(test.jb)
+			assert.NoError(t, err)
 			assert.EqualValues(t, test.td, td)
 		})
 	}
@@ -297,6 +298,7 @@ func BenchmarkThriftBatchToInternalTraces(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		ThriftBatchToInternalTraces(jb)
+		_, err := ThriftToTraces(jb)
+		assert.NoError(b, err)
 	}
 }

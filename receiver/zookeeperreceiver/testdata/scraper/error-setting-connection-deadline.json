@@ -4,16 +4,107 @@
          "instrumentationLibraryMetrics": [
             {
                "instrumentationLibrary": {
-                  "name": "otelcol/zookeeper"
+                  "name": "otelcol/zookeeperreceiver"
                },
                "metrics": [
+                  {
+                     "description": "Number of active clients connected to a ZooKeeper server.",
+                     "name": "zookeeper.connection.active",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "1",
+                              "startTimeUnixNano": "1642685966456266000",
+                              "timeUnixNano": "1642685966456364000"
+                           }
+                        ]
+                     },
+                     "unit": "{connections}"
+                  },
+                  {
+                     "description": "Number of ephemeral nodes that a ZooKeeper server has in its data tree.",
+                     "name": "zookeeper.data_tree.ephemeral_node.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "startTimeUnixNano": "1642685966456266000",
+                              "timeUnixNano": "1642685966456364000"
+                           }
+                        ]
+                     },
+                     "unit": "{nodes}"
+                  },
+                  {
+                     "description": "Size of data in bytes that a ZooKeeper server has in its data tree.",
+                     "name": "zookeeper.data_tree.size",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "27",
+                              "startTimeUnixNano": "1642685966456266000",
+                              "timeUnixNano": "1642685966456364000"
+                           }
+                        ]
+                     },
+                     "unit": "By"
+                  },
+                  {
+                     "description": "Maximum number of file descriptors that a ZooKeeper server can open.",
+                     "gauge": {
+                        "dataPoints": [
+                           {
+                              "asInt": "1048576",
+                              "startTimeUnixNano": "1642685966456266000",
+                              "timeUnixNano": "1642685966456364000"
+                           }
+                        ]
+                     },
+                     "name": "zookeeper.file_descriptor.limit",
+                     "unit": "{file_descriptors}"
+                  },
+                  {
+                     "description": "Number of file descriptors that a ZooKeeper server has open.",
+                     "name": "zookeeper.file_descriptor.open",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "26",
+                              "startTimeUnixNano": "1642685966456266000",
+                              "timeUnixNano": "1642685966456364000"
+                           }
+                        ]
+                     },
+                     "unit": "{file_descriptors}"
+                  },
+                  {
+                     "description": "Number of times fsync duration has exceeded warning threshold.",
+                     "name": "zookeeper.fsync.exceeded_threshold.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "startTimeUnixNano": "1642685966456266000",
+                              "timeUnixNano": "1642685966456364000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "{events}"
+                  },
                   {
                      "description": "Average time in milliseconds for requests to be processed.",
                      "gauge": {
                         "dataPoints": [
                            {
                               "asInt": "0",
-                              "timeUnixNano": "1638801349833222000"
+                              "startTimeUnixNano": "1642685966456266000",
+                              "timeUnixNano": "1642685966456364000"
                            }
                         ]
                      },
@@ -26,7 +117,8 @@
                         "dataPoints": [
                            {
                               "asInt": "0",
-                              "timeUnixNano": "1638801349833222000"
+                              "startTimeUnixNano": "1642685966456266000",
+                              "timeUnixNano": "1642685966456364000"
                            }
                         ]
                      },
@@ -39,161 +131,95 @@
                         "dataPoints": [
                            {
                               "asInt": "0",
-                              "timeUnixNano": "1638801349833222000"
+                              "startTimeUnixNano": "1642685966456266000",
+                              "timeUnixNano": "1642685966456364000"
                            }
                         ]
                      },
                      "name": "zookeeper.latency.min",
-                     "unit": "1"
+                     "unit": "ms"
                   },
                   {
-                     "description": "Number of ZooKeeper packets received by a server.",
-                     "name": "zookeeper.packets.received",
+                     "description": "The number of ZooKeeper packets received or sent by a server.",
+                     "name": "zookeeper.packet.count",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
                               "asInt": "1",
-                              "timeUnixNano": "1638801349833222000"
-                           }
-                        ],
-                        "isMonotonic": true
-                     },
-                     "unit": "1"
-                  },
-                  {
-                     "description": "Number of ZooKeeper packets sent by a server.",
-                     "name": "zookeeper.packets.sent",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
+                              "attributes": [
+                                 {
+                                    "key": "direction",
+                                    "value": {
+                                       "stringValue": "received"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642685966456266000",
+                              "timeUnixNano": "1642685966456364000"
+                           },
                            {
                               "asInt": "0",
-                              "timeUnixNano": "1638801349833222000"
+                              "attributes": [
+                                 {
+                                    "key": "direction",
+                                    "value": {
+                                       "stringValue": "sent"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642685966456266000",
+                              "timeUnixNano": "1642685966456364000"
                            }
                         ],
                         "isMonotonic": true
                      },
-                     "unit": "1"
-                  },
-                  {
-                     "description": "Number of active clients connected to a ZooKeeper server.",
-                     "gauge": {
-                        "dataPoints": [
-                           {
-                              "asInt": "1",
-                              "timeUnixNano": "1638801349833222000"
-                           }
-                        ]
-                     },
-                     "name": "zookeeper.connections_alive",
-                     "unit": "1"
+                     "unit": "{packets}"
                   },
                   {
                      "description": "Number of currently executing requests.",
-                     "gauge": {
-                        "dataPoints": [
-                           {
-                              "asInt": "0",
-                              "timeUnixNano": "1638801349833222000"
-                           }
-                        ]
-                     },
-                     "name": "zookeeper.outstanding_requests",
-                     "unit": "1"
-                  },
-                  {
-                     "description": "Number of z-nodes that a ZooKeeper server has in its data tree.",
-                     "gauge": {
-                        "dataPoints": [
-                           {
-                              "asInt": "4",
-                              "timeUnixNano": "1638801349833222000"
-                           }
-                        ]
-                     },
-                     "name": "zookeeper.znodes",
-                     "unit": "1"
-                  },
-                  {
-                     "description": "Number of watches placed on Z-Nodes on a ZooKeeper server.",
-                     "gauge": {
-                        "dataPoints": [
-                           {
-                              "asInt": "0",
-                              "timeUnixNano": "1638801349833222000"
-                           }
-                        ]
-                     },
-                     "name": "zookeeper.watches",
-                     "unit": "1"
-                  },
-                  {
-                     "description": "Number of ephemeral nodes that a ZooKeeper server has in its data tree.",
-                     "gauge": {
-                        "dataPoints": [
-                           {
-                              "asInt": "0",
-                              "timeUnixNano": "1638801349833222000"
-                           }
-                        ]
-                     },
-                     "name": "zookeeper.ephemeral_nodes",
-                     "unit": "1"
-                  },
-                  {
-                     "description": "Size of data in bytes that a ZooKeeper server has in its data tree.",
-                     "gauge": {
-                        "dataPoints": [
-                           {
-                              "asInt": "27",
-                              "timeUnixNano": "1638801349833222000"
-                           }
-                        ]
-                     },
-                     "name": "zookeeper.approximate_date_size",
-                     "unit": "By"
-                  },
-                  {
-                     "description": "Number of file descriptors that a ZooKeeper server has open.",
-                     "gauge": {
-                        "dataPoints": [
-                           {
-                              "asInt": "26",
-                              "timeUnixNano": "1638801349833222000"
-                           }
-                        ]
-                     },
-                     "name": "zookeeper.open_file_descriptors",
-                     "unit": "1"
-                  },
-                  {
-                     "description": "Maximum number of file descriptors that a ZooKeeper server can open.",
-                     "gauge": {
-                        "dataPoints": [
-                           {
-                              "asInt": "1048576",
-                              "timeUnixNano": "1638801349833222000"
-                           }
-                        ]
-                     },
-                     "name": "zookeeper.max_file_descriptors",
-                     "unit": "1"
-                  },
-                  {
-                     "description": "Number of times fsync duration has exceeded warning threshold.",
-                     "name": "zookeeper.fsync_threshold_exceeds",
+                     "name": "zookeeper.request.active",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
                               "asInt": "0",
-                              "timeUnixNano": "1638801349833222000"
+                              "startTimeUnixNano": "1642685966456266000",
+                              "timeUnixNano": "1642685966456364000"
                            }
-                        ],
-                        "isMonotonic": true
+                        ]
                      },
-                     "unit": "1"
+                     "unit": "{requests}"
+                  },
+                  {
+                     "description": "Number of watches placed on Z-Nodes on a ZooKeeper server.",
+                     "name": "zookeeper.watch.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "startTimeUnixNano": "1642685966456266000",
+                              "timeUnixNano": "1642685966456364000"
+                           }
+                        ]
+                     },
+                     "unit": "{watches}"
+                  },
+                  {
+                     "description": "Number of z-nodes that a ZooKeeper server has in its data tree.",
+                     "name": "zookeeper.znode.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "4",
+                              "startTimeUnixNano": "1642685966456266000",
+                              "timeUnixNano": "1642685966456364000"
+                           }
+                        ]
+                     },
+                     "unit": "{znodes}"
                   }
                ]
             }

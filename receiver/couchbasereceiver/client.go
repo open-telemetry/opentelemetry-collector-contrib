@@ -55,8 +55,8 @@ type couchbaseCredentials struct {
 	password string
 }
 
-func newClient(cfg *Config, host component.Host, logger *zap.Logger) (client, error) {
-	httpClient, err := cfg.ToClient(host.GetExtensions())
+func newClient(cfg *Config, host component.Host, settings component.TelemetrySettings) (client, error) {
+	httpClient, err := cfg.ToClient(host.GetExtensions(), settings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTP Client: %w", err)
 	}
@@ -68,7 +68,7 @@ func newClient(cfg *Config, host component.Host, logger *zap.Logger) (client, er
 			username: cfg.Username,
 			password: cfg.Password,
 		},
-		logger: logger,
+		logger: settings.Logger,
 	}, nil
 }
 

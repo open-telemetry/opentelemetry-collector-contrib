@@ -18,7 +18,7 @@ import (
 	"strconv"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	metricpb "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
 )
 
@@ -29,7 +29,7 @@ const (
 func resourceToMetricLabels(resource pdata.Resource) []*metricpb.Label {
 	attrs := resource.Attributes()
 	labels := make([]*metricpb.Label, 0, attrs.Len())
-	attrs.Range(func(k string, v pdata.AttributeValue) bool {
+	attrs.Range(func(k string, v pdata.Value) bool {
 		labels = append(labels,
 			&metricpb.Label{
 				Name:  k,
@@ -61,7 +61,7 @@ func numberMetricsToData(name string, data pdata.NumberDataPointSlice, defaultLa
 		dataPoint := data.At(i)
 		attributeMap := dataPoint.Attributes()
 		labels := make([]*metricpb.Label, 0, attributeMap.Len()+len(defaultLabels))
-		attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
+		attributeMap.Range(func(k string, v pdata.Value) bool {
 			labels = append(labels, &metricpb.Label{Name: k, Value: v.AsString()})
 			return true
 		})
@@ -74,7 +74,7 @@ func numberMetricsToData(name string, data pdata.NumberDataPointSlice, defaultLa
 		sv.SingleValue.Labels = labels
 		meterData.Timestamp = dataPoint.Timestamp().AsTime().UnixMilli()
 		sv.SingleValue.Name = name
-		switch dataPoint.Type() {
+		switch dataPoint.ValueType() {
 		case pdata.MetricValueTypeInt:
 			sv.SingleValue.Value = float64(dataPoint.IntVal())
 		case pdata.MetricValueTypeDouble:
@@ -92,7 +92,7 @@ func doubleHistogramMetricsToData(name string, data pdata.HistogramDataPointSlic
 		dataPoint := data.At(i)
 		attributeMap := dataPoint.Attributes()
 		labels := make([]*metricpb.Label, 0, attributeMap.Len()+len(defaultLabels))
-		attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
+		attributeMap.Range(func(k string, v pdata.Value) bool {
 			labels = append(labels, &metricpb.Label{Name: k, Value: v.AsString()})
 			return true
 		})
@@ -146,7 +146,7 @@ func doubleSummaryMetricsToData(name string, data pdata.SummaryDataPointSlice, d
 		dataPoint := data.At(i)
 		attributeMap := dataPoint.Attributes()
 		labels := make([]*metricpb.Label, 0, attributeMap.Len()+len(defaultLabels))
-		attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
+		attributeMap.Range(func(k string, v pdata.Value) bool {
 			labels = append(labels, &metricpb.Label{Name: k, Value: v.AsString()})
 			return true
 		})

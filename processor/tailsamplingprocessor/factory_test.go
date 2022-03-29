@@ -16,12 +16,15 @@ package tailsamplingprocessor
 
 import (
 	"context"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -34,14 +37,16 @@ func TestCreateProcessor(t *testing.T) {
 	factory := NewFactory()
 
 	cfg := factory.CreateDefaultConfig().(*Config)
+
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+	factories.Processors[factory.Type()] = factory
+	serviceCfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "tail_sampling_config.yaml"), factories)
+	assert.NoError(t, err)
+
 	// Manually set required fields
 	cfg.ExpectedNewTracesPerSec = 64
-	cfg.PolicyCfgs = []PolicyCfg{
-		{
-			Name: "test-policy",
-			Type: AlwaysSample,
-		},
-	}
+	cfg.PolicyCfgs = serviceCfg.Processors[config.NewComponentID(typeStr)].(*Config).PolicyCfgs
 
 	params := componenttest.NewNopProcessorCreateSettings()
 	tp, err := factory.CreateTracesProcessor(context.Background(), params, cfg, consumertest.NewNop())

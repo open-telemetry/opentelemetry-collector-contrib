@@ -14,9 +14,16 @@
 
 package loadscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/loadscraper"
 
-import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
+import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/loadscraper/internal/metadata"
+)
 
 // Config relating to Load Metric Scraper.
 type Config struct {
 	internal.ConfigSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	// If true, metrics will be average load per cpu
+	CPUAverage bool `mapstructure:"cpu_average"`
+	// Metrics allows to customize scraped metrics representation.
+	Metrics metadata.MetricsSettings `mapstructure:"metrics"`
 }

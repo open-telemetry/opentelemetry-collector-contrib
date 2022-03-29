@@ -16,7 +16,6 @@ package sumologicexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -34,34 +33,12 @@ type sumologicexporter struct {
 	filter              filter
 	prometheusFormatter prometheusFormatter
 	graphiteFormatter   graphiteFormatter
+	settings            component.TelemetrySettings
 }
 
-func initExporter(cfg *Config) (*sumologicexporter, error) {
-	switch cfg.LogFormat {
-	case JSONFormat:
-	case TextFormat:
-	default:
-		return nil, fmt.Errorf("unexpected log format: %s", cfg.LogFormat)
-	}
-
-	switch cfg.MetricFormat {
-	case GraphiteFormat:
-	case Carbon2Format:
-	case PrometheusFormat:
-	default:
-		return nil, fmt.Errorf("unexpected metric format: %s", cfg.MetricFormat)
-	}
-
-	switch cfg.CompressEncoding {
-	case GZIPCompression:
-	case DeflateCompression:
-	case NoCompression:
-	default:
-		return nil, fmt.Errorf("unexpected compression encoding: %s", cfg.CompressEncoding)
-	}
-
-	if len(cfg.HTTPClientSettings.Endpoint) == 0 {
-		return nil, errors.New("endpoint is not set")
+func initExporter(cfg *Config, settings component.TelemetrySettings) (*sumologicexporter, error) {
+	if err := cfg.Validate(); err != nil {
+		return nil, err
 	}
 
 	sfs, err := newSourceFormats(cfg)
@@ -90,6 +67,7 @@ func initExporter(cfg *Config) (*sumologicexporter, error) {
 		filter:              f,
 		prometheusFormatter: pf,
 		graphiteFormatter:   gf,
+		settings:            settings,
 	}
 
 	return se, nil
@@ -99,7 +77,7 @@ func newLogsExporter(
 	cfg *Config,
 	set component.ExporterCreateSettings,
 ) (component.LogsExporter, error) {
-	se, err := initExporter(cfg)
+	se, err := initExporter(cfg, set.TelemetrySettings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize the logs exporter: %w", err)
 	}
@@ -121,7 +99,7 @@ func newMetricsExporter(
 	cfg *Config,
 	set component.ExporterCreateSettings,
 ) (component.MetricsExporter, error) {
-	se, err := initExporter(cfg)
+	se, err := initExporter(cfg, set.TelemetrySettings)
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +119,7 @@ func newMetricsExporter(
 
 // start starts the exporter
 func (se *sumologicexporter) start(_ context.Context, host component.Host) (err error) {
-	client, err := se.config.HTTPClientSettings.ToClient(host.GetExtensions())
+	client, err := se.config.HTTPClientSettings.ToClient(host.GetExtensions(), se.settings)
 	if err != nil {
 		return fmt.Errorf("failed to create HTTP Client: %w", err)
 	}
@@ -156,8 +134,8 @@ func (se *sumologicexporter) start(_ context.Context, host component.Host) (err 
 // so they can be handled by OTC retry mechanism
 func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) error {
 	var (
-		currentMetadata  fields = newFields(pdata.NewAttributeMap())
-		previousMetadata fields = newFields(pdata.NewAttributeMap())
+		currentMetadata  = newFields(pdata.NewMap())
+		previousMetadata = newFields(pdata.NewMap())
 		errs             error
 		droppedRecords   []pdata.LogRecord
 		err              error
@@ -188,13 +166,13 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) er
 			ill := ills.At(j)
 
 			// iterate over Logs
-			logs := ill.Logs()
+			logs := ill.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
 				log := logs.At(k)
 
 				// copy resource attributes into logs attributes
 				// log attributes have precedence over resource attributes
-				rl.Resource().Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+				rl.Resource().Attributes().Range(func(k string, v pdata.Value) bool {
 					log.Attributes().Insert(k, v)
 					return true
 				})
@@ -238,7 +216,7 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) er
 		droppedLogs := pdata.NewLogs()
 		rls = droppedLogs.ResourceLogs()
 		ills := rls.AppendEmpty().InstrumentationLibraryLogs()
-		logs := ills.AppendEmpty().Logs()
+		logs := ills.AppendEmpty().LogRecords()
 
 		for _, log := range droppedRecords {
 			tgt := logs.AppendEmpty()
@@ -256,11 +234,11 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) er
 // so they can be handle by the OTC retry mechanism
 func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pdata.Metrics) error {
 	var (
-		currentMetadata  fields = newFields(pdata.NewAttributeMap())
-		previousMetadata fields = newFields(pdata.NewAttributeMap())
+		currentMetadata  = newFields(pdata.NewMap())
+		previousMetadata = newFields(pdata.NewMap())
 		errs             error
 		droppedRecords   []metricPair
-		attributes       pdata.AttributeMap
+		attributes       pdata.Map
 	)
 
 	c, err := newCompressor(se.config.CompressEncoding)

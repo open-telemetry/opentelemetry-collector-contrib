@@ -13,6 +13,8 @@ extensions:
   oauth2client:
     client_id: someclientid
     client_secret: someclientsecret
+    endpoint_params:
+      audience: someaudience
     token_url: https://example.com/oauth2/default/v1/token
     scopes: ["api.metrics"]
     # tls settings for the token client
@@ -58,6 +60,7 @@ Following are the configuration fields
 - [**token_url**](https://datatracker.ietf.org/doc/html/rfc6749#section-3.2) - The resource server's token endpoint URLs.
 - [**client_id**](https://datatracker.ietf.org/doc/html/rfc6749#section-2.2) - The client identifier issued to the client.
 - [**client_secret**](https://datatracker.ietf.org/doc/html/rfc6749#section-2.3.1) - The secret string associated with above identifier.
+- [**endpoint_params**](https://github.com/golang/oauth2/blob/master/clientcredentials/clientcredentials.go#L44) - Additional parameters that are sent to the token endpoint.
 - [**scopes**](https://datatracker.ietf.org/doc/html/rfc6749#section-3.3) - **Optional** optional requested permissions associated for the client.
 - [**timeout**](https://golang.org/src/net/http/client.go#L90) -  **Optional** specifies the timeout on the underlying client to authorization server for fetching the tokens (initial and while refreshing).
   This is optional and not setting this configuration implies there is no timeout on the client.

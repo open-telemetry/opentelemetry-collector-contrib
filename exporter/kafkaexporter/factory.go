@@ -42,6 +42,10 @@ const (
 	defaultProducerMaxMessageBytes = 1000000
 	// default required_acks for the producer
 	defaultProducerRequiredAcks = sarama.WaitForLocal
+	// default from sarama.NewConfig()
+	defaultCompression = "none"
+	// default from sarama.NewConfig()
+	defaultFluxMaxMessages = 0
 )
 
 // FactoryOption applies changes to kafkaExporterFactory.
@@ -66,21 +70,21 @@ func NewFactory(options ...FactoryOption) component.ExporterFactory {
 	for _, o := range options {
 		o(f)
 	}
-	return exporterhelper.NewFactory(
+	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(f.createTracesExporter),
-		exporterhelper.WithMetrics(f.createMetricsExporter),
-		exporterhelper.WithLogs(f.createLogsExporter),
+		component.WithTracesExporter(f.createTracesExporter),
+		component.WithMetricsExporter(f.createMetricsExporter),
+		component.WithLogsExporter(f.createLogsExporter),
 	)
 }
 
 func createDefaultConfig() config.Exporter {
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		TimeoutSettings:  exporterhelper.DefaultTimeoutSettings(),
-		RetrySettings:    exporterhelper.DefaultRetrySettings(),
-		QueueSettings:    exporterhelper.DefaultQueueSettings(),
+		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
+		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 		Brokers:          []string{defaultBroker},
 		// using an empty topic to track when it has not been set by user, default is based on traces or metrics.
 		Topic:    "",
@@ -93,8 +97,10 @@ func createDefaultConfig() config.Exporter {
 			},
 		},
 		Producer: Producer{
-			MaxMessageBytes: defaultProducerMaxMessageBytes,
-			RequiredAcks:    defaultProducerRequiredAcks,
+			MaxMessageBytes:  defaultProducerMaxMessageBytes,
+			RequiredAcks:     defaultProducerRequiredAcks,
+			Compression:      defaultCompression,
+			FlushMaxMessages: defaultFluxMaxMessages,
 		},
 	}
 }

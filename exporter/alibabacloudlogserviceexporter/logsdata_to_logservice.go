@@ -22,14 +22,13 @@ import (
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/gogo/protobuf/proto"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 )
 
 const (
 	slsLogTimeUnixNano   = "timeUnixNano"
 	slsLogSeverityNumber = "severityNumber"
 	slsLogSeverityText   = "severityText"
-	slsLogName           = "name"
 	slsLogContent        = "content"
 	slsLogAttribute      = "attribute"
 	slsLogFlags          = "flags"
@@ -52,7 +51,7 @@ func logDataToLogService(ld pdata.Logs) []*sls.Log {
 		for j := 0; j < ills.Len(); j++ {
 			ils := ills.At(j)
 			instrumentationLibraryContents := instrumentationLibraryToLogContents(ils.InstrumentationLibrary())
-			logs := ils.Logs()
+			logs := ils.LogRecords()
 			for j := 0; j < logs.Len(); j++ {
 				slsLog := mapLogRecordToLogService(logs.At(j), resourceContents, instrumentationLibraryContents)
 				if slsLog != nil {
@@ -93,7 +92,7 @@ func resourceToLogContents(resource pdata.Resource) []*sls.LogContent {
 	}
 
 	fields := map[string]interface{}{}
-	attrs.Range(func(k string, v pdata.AttributeValue) bool {
+	attrs.Range(func(k string, v pdata.Value) bool {
 		if k == conventions.AttributeServiceName || k == conventions.AttributeHostName {
 			return true
 		}
@@ -125,7 +124,7 @@ func instrumentationLibraryToLogContents(instrumentationLibrary pdata.Instrument
 func mapLogRecordToLogService(lr pdata.LogRecord,
 	resourceContents,
 	instrumentationLibraryContents []*sls.LogContent) *sls.Log {
-	if lr.Body().Type() == pdata.AttributeValueTypeEmpty {
+	if lr.Body().Type() == pdata.ValueTypeEmpty {
 		return nil
 	}
 	var slsLog sls.Log
@@ -153,13 +152,8 @@ func mapLogRecordToLogService(lr pdata.LogRecord,
 		Value: proto.String(lr.SeverityText()),
 	})
 
-	contentsBuffer = append(contentsBuffer, sls.LogContent{
-		Key:   proto.String(slsLogName),
-		Value: proto.String(lr.Name()),
-	})
-
 	fields := map[string]interface{}{}
-	lr.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+	lr.Attributes().Range(func(k string, v pdata.Value) bool {
 		fields[k] = v.AsString()
 		return true
 	})

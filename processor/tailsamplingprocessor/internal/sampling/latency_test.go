@@ -80,12 +80,6 @@ func TestEvaluate_Latency(t *testing.T) {
 	}
 }
 
-func TestOnLateArrivingSpans_Latency(t *testing.T) {
-	filter := NewLatency(zap.NewNop(), 5000)
-	err := filter.OnLateArrivingSpans(NotSampled, nil)
-	assert.Nil(t, err)
-}
-
 type spanWithTimeAndDuration struct {
 	StartTime time.Time
 	Duration  time.Duration

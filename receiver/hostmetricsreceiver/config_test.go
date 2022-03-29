@@ -15,7 +15,7 @@
 package hostmetricsreceiver
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -45,7 +45,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -67,25 +67,33 @@ func TestLoadConfig(t *testing.T) {
 			CollectionInterval: 30 * time.Second,
 		},
 		Scrapers: map[string]internal.Config{
-			cpuscraper.TypeStr:        (&cpuscraper.Factory{}).CreateDefaultConfig(),
-			diskscraper.TypeStr:       (&diskscraper.Factory{}).CreateDefaultConfig(),
-			loadscraper.TypeStr:       &loadscraper.Config{},
-			filesystemscraper.TypeStr: &filesystemscraper.Config{},
-			memoryscraper.TypeStr:     &memoryscraper.Config{},
-			networkscraper.TypeStr: &networkscraper.Config{
-				Include: networkscraper.MatchConfig{
+			cpuscraper.TypeStr:  (&cpuscraper.Factory{}).CreateDefaultConfig(),
+			diskscraper.TypeStr: (&diskscraper.Factory{}).CreateDefaultConfig(),
+			loadscraper.TypeStr: (func() internal.Config {
+				cfg := (&loadscraper.Factory{}).CreateDefaultConfig()
+				cfg.(*loadscraper.Config).CPUAverage = true
+				return cfg
+			})(),
+			filesystemscraper.TypeStr: (&filesystemscraper.Factory{}).CreateDefaultConfig(),
+			memoryscraper.TypeStr:     (&memoryscraper.Factory{}).CreateDefaultConfig(),
+			networkscraper.TypeStr: (func() internal.Config {
+				cfg := (&networkscraper.Factory{}).CreateDefaultConfig()
+				cfg.(*networkscraper.Config).Include = networkscraper.MatchConfig{
 					Interfaces: []string{"test1"},
 					Config:     filterset.Config{MatchType: "strict"},
-				},
-			},
+				}
+				return cfg
+			})(),
 			processesscraper.TypeStr: &processesscraper.Config{},
-			pagingscraper.TypeStr:    &pagingscraper.Config{},
-			processscraper.TypeStr: &processscraper.Config{
-				Include: processscraper.MatchConfig{
+			pagingscraper.TypeStr:    (&pagingscraper.Factory{}).CreateDefaultConfig(),
+			processscraper.TypeStr: (func() internal.Config {
+				cfg := (&processscraper.Factory{}).CreateDefaultConfig()
+				cfg.(*processscraper.Config).Include = processscraper.MatchConfig{
 					Names:  []string{"test2", "test3"},
 					Config: filterset.Config{MatchType: "regexp"},
-				},
-			},
+				}
+				return cfg
+			})(),
 		},
 	}
 
@@ -98,7 +106,7 @@ func TestLoadInvalidConfig_NoScrapers(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	_, err = servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config-noscrapers.yaml"), factories)
+	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config-noscrapers.yaml"), factories)
 
 	require.EqualError(t, err, "receiver \"hostmetrics\" has invalid configuration: must specify at least one scraper when using hostmetrics receiver")
 }
@@ -109,7 +117,7 @@ func TestLoadInvalidConfig_InvalidScraperKey(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[typeStr] = factory
-	_, err = servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config-invalidscraperkey.yaml"), factories)
+	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config-invalidscraperkey.yaml"), factories)
 
 	require.EqualError(t, err, "error reading receivers configuration for \"hostmetrics\": invalid scraper key: invalidscraperkey")
 }

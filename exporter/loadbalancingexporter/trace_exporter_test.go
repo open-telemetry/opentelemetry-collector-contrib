@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net"
-	"path"
+	"path/filepath"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -188,6 +188,38 @@ func TestConsumeTracesExporterNotFound(t *testing.T) {
 	assert.EqualError(t, res, fmt.Sprintf("couldn't find the exporter for the endpoint %q", "endpoint-1"))
 }
 
+func TestConsumeTracesExporterNoEndpoint(t *testing.T) {
+	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
+		return newNopMockTracesExporter(), nil
+	}
+	lb, err := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), simpleConfig(), componentFactory)
+	require.NotNil(t, lb)
+	require.NoError(t, err)
+
+	p, err := newTracesExporter(componenttest.NewNopExporterCreateSettings(), simpleConfig())
+	require.NotNil(t, p)
+	require.NoError(t, err)
+
+	lb.res = &mockResolver{
+		triggerCallbacks: true,
+		onResolve: func(ctx context.Context) ([]string, error) {
+			return nil, nil
+		},
+	}
+	p.loadBalancer = lb
+
+	err = p.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer p.Shutdown(context.Background())
+
+	// test
+	res := p.ConsumeTraces(context.Background(), simpleTraces())
+
+	// verify
+	assert.Error(t, res)
+	assert.EqualError(t, res, fmt.Sprintf("couldn't find the exporter for the endpoint %q", ""))
+}
+
 func TestConsumeTracesUnexpectedExporterType(t *testing.T) {
 	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
 		return newNopMockExporter(), nil
@@ -229,7 +261,7 @@ func TestBuildExporterConfig(t *testing.T) {
 
 	factories.Exporters[typeStr] = NewFactory()
 
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "test-build-exporter-config.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "test-build-exporter-config.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 

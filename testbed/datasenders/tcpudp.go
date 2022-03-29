@@ -79,8 +79,8 @@ func (f *TCPUDPWriter) ConsumeLogs(_ context.Context, logs pdata.Logs) error {
 	for i := 0; i < logs.ResourceLogs().Len(); i++ {
 		for j := 0; j < logs.ResourceLogs().At(i).InstrumentationLibraryLogs().Len(); j++ {
 			ills := logs.ResourceLogs().At(i).InstrumentationLibraryLogs().At(j)
-			for k := 0; k < ills.Logs().Len(); k++ {
-				err := f.Send(ills.Logs().At(k))
+			for k := 0; k < ills.LogRecords().Len(); k++ {
+				err := f.Send(ills.LogRecords().At(k))
 				if err != nil {
 					return err
 				}
@@ -102,7 +102,7 @@ func (f *TCPUDPWriter) Send(lr pdata.LogRecord) error {
 	sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", "trace_id", lr.TraceID().HexString()))
 	sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", "span_id", lr.SpanID().HexString()))
 	sdid.WriteString(fmt.Sprintf("%s=\"%d\" ", "trace_flags", lr.Flags()))
-	lr.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+	lr.Attributes().Range(func(k string, v pdata.Value) bool {
 		sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", k, v.StringVal()))
 		return true
 	})

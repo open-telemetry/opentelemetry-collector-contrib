@@ -27,8 +27,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
-	"go.uber.org/zap"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 )
 
 func createSpanID(stringVal string) [8]byte {
@@ -101,11 +100,11 @@ func TestPushTraceData(t *testing.T) {
 	// Act
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			cg := func(cfg *Config, logger *zap.Logger, host component.Host) (exporterClient, error) {
+			cg := func(cfg *Config, settings component.TelemetrySettings, host component.Host) (exporterClient, error) {
 				return tC.client, nil
 			}
 
-			exp := newTracesExporterWithClientGetter(&Config{}, zap.NewNop(), cg)
+			exp := newTracesExporterWithClientGetter(&Config{}, componenttest.NewNopTelemetrySettings(), cg)
 			err := exp.start(context.Background(), componenttest.NewNopHost())
 			if err != nil {
 				t.Errorf("unexpected error when starting component")
@@ -133,10 +132,10 @@ func TestPushTraceData_PermanentOnCompleteFailure(t *testing.T) {
 	traces := pdata.NewTraces()
 	traces.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
 
-	cg := func(cfg *Config, logger *zap.Logger, host component.Host) (exporterClient, error) {
+	cg := func(cfg *Config, settings component.TelemetrySettings, host component.Host) (exporterClient, error) {
 		return &clientMock{}, nil
 	}
-	exp := newTracesExporterWithClientGetter(&Config{}, zap.NewNop(), cg)
+	exp := newTracesExporterWithClientGetter(&Config{}, componenttest.NewNopTelemetrySettings(), cg)
 	err := exp.start(context.Background(), componenttest.NewNopHost())
 	if err != nil {
 		t.Errorf("unexpected error when starting component")
@@ -163,12 +162,12 @@ func TestPushTraceData_TransientOnPartialFailure(t *testing.T) {
 	// ...and one without (partial failure)
 	traces.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
 
-	cg := func(cfg *Config, logger *zap.Logger, host component.Host) (exporterClient, error) {
+	cg := func(cfg *Config, settings component.TelemetrySettings, host component.Host) (exporterClient, error) {
 		return &clientMock{
 			func() error { return nil },
 		}, nil
 	}
-	exp := newTracesExporterWithClientGetter(&Config{}, zap.NewNop(), cg)
+	exp := newTracesExporterWithClientGetter(&Config{}, componenttest.NewNopTelemetrySettings(), cg)
 	err := exp.start(context.Background(), componenttest.NewNopHost())
 	if err != nil {
 		t.Errorf("unexpected error when starting component")
@@ -209,12 +208,12 @@ func TestTracesToHumioEvents_OrganizedByTags(t *testing.T) {
 	res3.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(pdata.NewTraceID(createTraceID("20000000000000000000000000000000")))
 
 	// Organize by trace id
-	cg := func(cfg *Config, logger *zap.Logger, host component.Host) (exporterClient, error) {
+	cg := func(cfg *Config, settings component.TelemetrySettings, host component.Host) (exporterClient, error) {
 		return &clientMock{}, nil
 	}
 	exp := newTracesExporterWithClientGetter(&Config{
 		Tag: TagTraceID,
-	}, zap.NewNop(), cg)
+	}, componenttest.NewNopTelemetrySettings(), cg)
 	err := exp.start(context.Background(), componenttest.NewNopHost())
 	if err != nil {
 		t.Errorf("unexpected error when starting component")
@@ -284,14 +283,14 @@ func TestSpanToHumioEvent(t *testing.T) {
 		},
 	}
 
-	cg := func(cfg *Config, logger *zap.Logger, host component.Host) (exporterClient, error) {
+	cg := func(cfg *Config, settings component.TelemetrySettings, host component.Host) (exporterClient, error) {
 		return &clientMock{}, nil
 	}
 	exp := newTracesExporterWithClientGetter(&Config{
 		Traces: TracesConfig{
 			UnixTimestamps: true,
 		},
-	}, zap.NewNop(), cg)
+	}, componenttest.NewNopTelemetrySettings(), cg)
 	err := exp.start(context.Background(), componenttest.NewNopHost())
 	if err != nil {
 		t.Errorf("unexpected error when starting component")
@@ -310,14 +309,14 @@ func TestSpanToHumioEventNoInstrumentation(t *testing.T) {
 	inst := pdata.NewInstrumentationLibrary()
 	res := pdata.NewResource()
 
-	cg := func(cfg *Config, logger *zap.Logger, host component.Host) (exporterClient, error) {
+	cg := func(cfg *Config, settings component.TelemetrySettings, host component.Host) (exporterClient, error) {
 		return &clientMock{}, nil
 	}
 	exp := newTracesExporterWithClientGetter(&Config{
 		Traces: TracesConfig{
 			UnixTimestamps: true,
 		},
-	}, zap.NewNop(), cg)
+	}, componenttest.NewNopTelemetrySettings(), cg)
 	err := exp.start(context.Background(), componenttest.NewNopHost())
 	if err != nil {
 		t.Errorf("unexpected error when starting component")
@@ -367,13 +366,13 @@ func TestToHumioAttributes(t *testing.T) {
 	// Arrange
 	testCases := []struct {
 		desc     string
-		attr     func() pdata.AttributeMap
+		attr     func() pdata.Map
 		expected interface{}
 	}{
 		{
 			desc: "Simple types",
-			attr: func() pdata.AttributeMap {
-				attrMap := pdata.NewAttributeMap()
+			attr: func() pdata.Map {
+				attrMap := pdata.NewMap()
 				attrMap.InsertString("string", "val")
 				attrMap.InsertInt("integer", 42)
 				attrMap.InsertDouble("double", 4.2)
@@ -389,8 +388,8 @@ func TestToHumioAttributes(t *testing.T) {
 		},
 		{
 			desc: "Nil element",
-			attr: func() pdata.AttributeMap {
-				attrMap := pdata.NewAttributeMap()
+			attr: func() pdata.Map {
+				attrMap := pdata.NewMap()
 				attrMap.InsertNull("key")
 				return attrMap
 			},
@@ -400,9 +399,9 @@ func TestToHumioAttributes(t *testing.T) {
 		},
 		{
 			desc: "Array element",
-			attr: func() pdata.AttributeMap {
-				attrMap := pdata.NewAttributeMap()
-				arr := pdata.NewAttributeValueArray()
+			attr: func() pdata.Map {
+				attrMap := pdata.NewMap()
+				arr := pdata.NewValueSlice()
 				arr.SliceVal().AppendEmpty().SetStringVal("a")
 				arr.SliceVal().AppendEmpty().SetStringVal("b")
 				arr.SliceVal().AppendEmpty().SetIntVal(4)
@@ -417,9 +416,9 @@ func TestToHumioAttributes(t *testing.T) {
 		},
 		{
 			desc: "Nested map",
-			attr: func() pdata.AttributeMap {
-				attrMap := pdata.NewAttributeMap()
-				nested := pdata.NewAttributeValueMap()
+			attr: func() pdata.Map {
+				attrMap := pdata.NewMap()
+				nested := pdata.NewValueMap()
 				nested.MapVal().InsertString("key", "val")
 				attrMap.Insert("nested", nested)
 				attrMap.InsertBool("active", true)
@@ -446,11 +445,11 @@ func TestToHumioAttributes(t *testing.T) {
 
 func TestToHumioAttributesShaded(t *testing.T) {
 	// Arrange
-	attrMapA := pdata.NewAttributeMap()
+	attrMapA := pdata.NewMap()
 	attrMapA.InsertString("string", "val")
 	attrMapA.InsertInt("integer", 42)
 
-	attrMapB := pdata.NewAttributeMap()
+	attrMapB := pdata.NewMap()
 	attrMapB.InsertInt("integer", 0)
 	attrMapB.InsertString("key", "val")
 
@@ -510,10 +509,10 @@ func TestTagFromSpan(t *testing.T) {
 
 func TestShutdown(t *testing.T) {
 	// Arrange
-	cg := func(cfg *Config, logger *zap.Logger, host component.Host) (exporterClient, error) {
+	cg := func(cfg *Config, settings component.TelemetrySettings, host component.Host) (exporterClient, error) {
 		return &clientMock{}, nil
 	}
-	exp := newTracesExporterWithClientGetter(&Config{}, zap.NewNop(), cg)
+	exp := newTracesExporterWithClientGetter(&Config{}, componenttest.NewNopTelemetrySettings(), cg)
 
 	// Act
 	err := exp.shutdown(context.Background())

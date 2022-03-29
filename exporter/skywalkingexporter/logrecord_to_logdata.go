@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	common "skywalking.apache.org/repo/goapi/collect/common/v3"
 	logpb "skywalking.apache.org/repo/goapi/collect/logging/v3"
 )
@@ -28,7 +28,6 @@ const (
 	spanIDField            = "spanID"
 	severityNumber         = "severityNumber"
 	severityText           = "severityText"
-	name                   = "name"
 	flags                  = "flags"
 	instrumentationName    = "otlp.name"
 	instrumentationVersion = "otlp.version"
@@ -44,7 +43,7 @@ func logRecordToLogData(ld pdata.Logs) []*logpb.LogData {
 		resource := rl.Resource()
 		for j := 0; j < ills.Len(); j++ {
 			ils := ills.At(j)
-			logs := ils.Logs()
+			logs := ils.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
 				logData := &logpb.LogData{}
 				logData.Tags = &logpb.LogTags{}
@@ -71,7 +70,7 @@ func resourceToLogData(resource pdata.Resource, logData *logpb.LogData) {
 		logData.ServiceInstance = serviceInstanceID.AsString()
 	}
 
-	attrs.Range(func(k string, v pdata.AttributeValue) bool {
+	attrs.Range(func(k string, v pdata.Value) bool {
 		logData.Tags.Data = append(logData.Tags.Data, &common.KeyStringValuePair{
 			Key:   k,
 			Value: v.AsString(),
@@ -96,7 +95,7 @@ func instrumentationLibraryToLogData(instrumentationLibrary pdata.Instrumentatio
 }
 
 func mapLogRecordToLogData(lr pdata.LogRecord, logData *logpb.LogData) {
-	if lr.Body().Type() == pdata.AttributeValueTypeEmpty {
+	if lr.Body().Type() == pdata.ValueTypeEmpty {
 		return
 	}
 
@@ -118,14 +117,7 @@ func mapLogRecordToLogData(lr pdata.LogRecord, logData *logpb.LogData) {
 		})
 	}
 
-	if ln := lr.Name(); ln != "" {
-		logData.Tags.Data = append(logData.Tags.Data, &common.KeyStringValuePair{
-			Key:   name,
-			Value: ln,
-		})
-	}
-
-	lr.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+	lr.Attributes().Range(func(k string, v pdata.Value) bool {
 		logData.Tags.Data = append(logData.Tags.Data, &common.KeyStringValuePair{
 			Key:   k,
 			Value: v.AsString(),

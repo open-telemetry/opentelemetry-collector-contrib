@@ -15,7 +15,7 @@
 package routingprocessor
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -120,7 +120,7 @@ func TestLoadConfig(t *testing.T) {
 			factories.Processors[typeStr] = NewFactory()
 			factories = tc.factoriesFunc(factories)
 
-			cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", tc.configPath), factories)
+			cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", tc.configPath), factories)
 			require.NoError(t, err)
 			require.NotNil(t, cfg)
 

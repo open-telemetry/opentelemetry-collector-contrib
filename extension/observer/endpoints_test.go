@@ -132,6 +132,7 @@ func TestEndpointEnv(t *testing.T) {
 				Details: &Container{
 					Name:          "otel-collector",
 					Image:         "otel-collector-image",
+					Tag:           "1.0.0",
 					Port:          2379,
 					AlternatePort: 2380,
 					Command:       "./cmd --config config.yaml",
@@ -147,6 +148,7 @@ func TestEndpointEnv(t *testing.T) {
 				"type":           "container",
 				"name":           "otel-collector",
 				"image":          "otel-collector-image",
+				"tag":            "1.0.0",
 				"port":           uint16(2379),
 				"alternate_port": uint16(2380),
 				"command":        "./cmd --config config.yaml",

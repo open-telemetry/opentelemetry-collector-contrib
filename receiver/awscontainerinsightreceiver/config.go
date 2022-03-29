@@ -37,4 +37,9 @@ type Config struct {
 	// If it can not be set that way and PrefFullPodName is true, the "PodName" attribute is set to the pod's own name.
 	// The default value is false
 	PrefFullPodName bool `mapstructure:"prefer_full_pod_name"`
+
+	// The "FullPodName" attribute is the pod name including suffix
+	// If false FullPodName label is not added
+	// The default value is false
+	AddFullPodNameMetricLabel bool `mapstructure:"add_full_pod_name_metric_label"`
 }

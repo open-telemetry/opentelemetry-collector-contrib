@@ -8,15 +8,23 @@ These are the metrics available for this scraper.
 
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
-| apache.current_connections | The number of active connections currently attached to the HTTP server. | connections | Sum(Int) | <ul> <li>server_name</li> </ul> |
-| apache.requests | The number of requests serviced by the HTTP server per second. | 1 | Sum(Int) | <ul> <li>server_name</li> </ul> |
-| apache.scoreboard | The number of connections in each state. The apache scoreboard is an encoded representation of the state of all the server's workers. This metric decodes the scoreboard and presents a count of workers in each state. Additional details can be found [here](https://support.cpanel.net/hc/en-us/articles/360052040234-Understanding-the-Apache-scoreboard).
-  | scoreboard | Sum(Int) | <ul> <li>server_name</li> <li>scoreboard_state</li> </ul> |
-| apache.traffic | Total HTTP server traffic. | By | Sum(Int) | <ul> <li>server_name</li> </ul> |
-| apache.uptime | The amount of time that the server has been running in seconds. | s | Sum(Int) | <ul> <li>server_name</li> </ul> |
-| apache.workers | The number of workers currently attached to the HTTP server. | connections | Sum(Int) | <ul> <li>server_name</li> <li>workers_state</li> </ul> |
+| **apache.current_connections** | The number of active connections currently attached to the HTTP server. | connections | Sum(Int) | <ul> <li>server_name</li> </ul> |
+| **apache.requests** | The number of requests serviced by the HTTP server per second. | 1 | Sum(Int) | <ul> <li>server_name</li> </ul> |
+| **apache.scoreboard** | The number of connections in each state. The apache scoreboard is an encoded representation of the state of all the server's workers. This metric decodes the scoreboard and presents a count of workers in each state. Additional details can be found [here](https://support.cpanel.net/hc/en-us/articles/360052040234-Understanding-the-Apache-scoreboard). | scoreboard | Sum(Int) | <ul> <li>server_name</li> <li>scoreboard_state</li> </ul> |
+| **apache.traffic** | Total HTTP server traffic. | By | Sum(Int) | <ul> <li>server_name</li> </ul> |
+| **apache.uptime** | The amount of time that the server has been running in seconds. | s | Sum(Int) | <ul> <li>server_name</li> </ul> |
+| **apache.workers** | The number of workers currently attached to the HTTP server. | connections | Sum(Int) | <ul> <li>server_name</li> <li>workers_state</li> </ul> |
 
-## Attributes
+**Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
+Any metric can be enabled or disabled with the following scraper configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: <true|false>
+```
+
+## Metric attributes
 
 | Name | Description |
 | ---- | ----------- |
