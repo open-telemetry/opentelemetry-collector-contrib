@@ -32,6 +32,10 @@
 
 - `datadogexporter`: Deprecate `metrics::send_monotonic_counter` in favor of `metrics::sums::cumulative_monotonic_mode` (#8490)
 
+### 🧰 Bug fixes 🧰
+
+- `prometheusexporter`: Prometheus fails to generate logs when prometheus exporter produced a check exception occurs. (#8949)
+
 ## v0.47.0
 
 ### 💡 Enhancements 💡
@@ -320,7 +324,6 @@
 
 ### 🧰 Bug fixes 🧰
 
-- `prometheusexporter`: Prometheus fails to generate logs when prometheus exporter produced a check exception occurs. (#8949)
 - `k8sattributeprocessor`: Parse IP out of net.Addr to correctly tag k8s.pod.ip (#7077)
 - `k8sattributeprocessor`: Process IP correctly for net.Addr instances that are not typed (#7133)
 - `mdatagen`: Fix validation of `enabled` field in metadata.yaml (#7166)
