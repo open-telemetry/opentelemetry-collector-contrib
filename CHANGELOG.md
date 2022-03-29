@@ -4,6 +4,8 @@
 
 ### 💡 Enhancements 💡
 
+- `cumulativetodeltaprocessor`: add new include/exclude configuration options with regex support (#8952)
+
 ### 🛑 Breaking changes 🛑
 
 ### 🚩 Deprecations 🚩
