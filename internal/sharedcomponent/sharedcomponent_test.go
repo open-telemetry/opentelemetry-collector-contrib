@@ -38,7 +38,7 @@ type mockComponent struct {
 }
 
 func TestSharedComponents_GetOrAdd(t *testing.T) {
-	nop := mockComponent{}
+	nop := &mockComponent{}
 	createNop := func() component.Component { return nop }
 
 	comps := NewSharedComponents()
@@ -57,7 +57,7 @@ func TestSharedComponent(t *testing.T) {
 	wantErr := errors.New("my error")
 	calledStart := 0
 	calledStop := 0
-	comp := mockComponent{
+	comp := &mockComponent{
 		StartFunc: func(ctx context.Context, host component.Host) error {
 			calledStart++
 			return wantErr
