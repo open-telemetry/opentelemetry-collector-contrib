@@ -107,7 +107,7 @@ func (ctdp *cumulativeToDeltaProcessor) shutdown(context.Context) error {
 	return nil
 }
 
-func (ctdp *cumulativeToDeltaProcessor) convertMetric(metricName string) bool {
+func (ctdp *cumulativeToDeltaProcessor) shouldConvertMetric(metricName string) bool {
 	// Legacy support for deprecated Metrics config
 	if len(ctdp.metrics) > 0 {
 		_, ok := ctdp.metrics[metricName]
