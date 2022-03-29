@@ -1,6 +1,6 @@
 # Kafka Exporter
 
-Kafka exporter exports traces to Kafka. This exporter uses a synchronous producer
+Kafka exporter exports logs, metrics, and traces to Kafka. This exporter uses a synchronous producer
 that blocks and does not batch messages, therefore it should be used with batch and queued retry
 processors for higher throughput and resiliency. Message payload encoding is configurable.
 
