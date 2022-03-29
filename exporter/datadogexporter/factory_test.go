@@ -150,15 +150,15 @@ func TestLoadConfig(t *testing.T) {
 		TCPAddr: confignet.TCPAddr{
 			Endpoint: "https://api.datadoghq.eu",
 		},
-    DeltaTTL:      3600,
+		DeltaTTL:      3600,
 		SendMonotonic: true,
 		Quantiles:     true,
 		HistConfig: ddconfig.HistogramConfig{
 			Mode:         "distributions",
 			SendCountSum: false,
-    },
+		},
 		SumConfig: ddconfig.SumConfig{
-				CumulativeMonotonicMode: ddconfig.CumulativeMonotonicSumModeToDelta,
+			CumulativeMonotonicMode: ddconfig.CumulativeMonotonicSumModeToDelta,
 		},
 	}, apiConfig.Metrics)
 	assert.Equal(t, ddconfig.TracesConfig{
