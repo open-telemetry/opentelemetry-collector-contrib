@@ -240,6 +240,7 @@ type TagsConfig struct {
 }
 
 // GetHostTags gets the host tags extracted from the configuration
+// Deprecated: [v0.49.0] Access fields explicitly instead.
 func (t *TagsConfig) GetHostTags() []string {
 	tags := t.Tags
 
