@@ -323,7 +323,7 @@
 - `k8sattributeprocessor`: Parse IP out of net.Addr to correctly tag k8s.pod.ip (#7077)
 - `k8sattributeprocessor`: Process IP correctly for net.Addr instances that are not typed (#7133)
 - `mdatagen`: Fix validation of `enabled` field in metadata.yaml (#7166)
-- `prometheusexporter`: Prometheus fails to generate logs when prometheus exporter produced a check exception occurs. (#7252)
+- `prometheusexporter`: Prometheus fails to generate logs when prometheus exporter produced a check exception occurs. (#8949)
 - `elasticsearch`: Fix timestamp for each metric being startup time (#7255)
 - `prometheusremotewriteexporter`: Fix index out of range panic caused by expiring metrics (#7149)
 - `resourcedetection`: Log the error when checking for ec2metadata availability (#7296) 
