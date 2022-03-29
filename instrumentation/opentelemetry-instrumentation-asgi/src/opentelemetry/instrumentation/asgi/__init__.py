@@ -115,7 +115,14 @@ from opentelemetry.propagators.textmap import Getter, Setter
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace import Span, set_span_in_context
 from opentelemetry.trace.status import Status, StatusCode
-from opentelemetry.util.http import remove_url_credentials
+from opentelemetry.util.http import (
+    OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST,
+    OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE,
+    get_custom_headers,
+    normalise_request_header_name,
+    normalise_response_header_name,
+    remove_url_credentials,
+)
 
 _ServerRequestHookT = typing.Optional[typing.Callable[[Span, dict], None]]
 _ClientRequestHookT = typing.Optional[typing.Callable[[Span, dict], None]]
@@ -221,6 +228,41 @@ def collect_request_attributes(scope):
     result = {k: v for k, v in result.items() if v is not None}
 
     return result
+
+
+def collect_custom_request_headers_attributes(scope):
+    """returns custom HTTP request headers to be added into SERVER span as span attributes
+    Refer specification https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/http.md#http-request-and-response-headers"""
+
+    attributes = {}
+    custom_request_headers = get_custom_headers(
+        OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST
+    )
+
+    for header in custom_request_headers:
+        values = asgi_getter.get(scope, header)
+        if values:
+            key = normalise_request_header_name(header)
+            attributes.setdefault(key, []).extend(values)
+
+    return attributes
+
+
+def collect_custom_response_headers_attributes(message):
+    """returns custom HTTP response headers to be added into SERVER span as span attributes
+    Refer specification https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/http.md#http-request-and-response-headers"""
+    attributes = {}
+    custom_response_headers = get_custom_headers(
+        OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE
+    )
+
+    for header in custom_response_headers:
+        values = asgi_getter.get(message, header)
+        if values:
+            key = normalise_response_header_name(header)
+            attributes.setdefault(key, []).extend(values)
+
+    return attributes
 
 
 def get_host_port_url_tuple(scope):
@@ -342,6 +384,13 @@ class OpenTelemetryMiddleware:
                     for key, value in attributes.items():
                         current_span.set_attribute(key, value)
 
+                    if current_span.kind == trace.SpanKind.SERVER:
+                        custom_attributes = (
+                            collect_custom_request_headers_attributes(scope)
+                        )
+                        if len(custom_attributes) > 0:
+                            current_span.set_attributes(custom_attributes)
+
                 if callable(self.server_request_hook):
                     self.server_request_hook(current_span, scope)
 
@@ -395,6 +444,18 @@ class OpenTelemetryMiddleware:
                         set_status_code(server_span, 200)
                         set_status_code(send_span, 200)
                     send_span.set_attribute("type", message["type"])
+                    if (
+                        server_span.is_recording()
+                        and server_span.kind == trace.SpanKind.SERVER
+                        and "headers" in message
+                    ):
+                        custom_response_attributes = (
+                            collect_custom_response_headers_attributes(message)
+                        )
+                        if len(custom_response_attributes) > 0:
+                            server_span.set_attributes(
+                                custom_response_attributes
+                            )
 
                 propagator = get_global_response_propagator()
                 if propagator:
