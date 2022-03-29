@@ -106,7 +106,7 @@ func (f *TCPUDPWriter) Send(lr pdata.LogRecord) error {
 		sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", k, v.StringVal()))
 		return true
 	})
-	msg := fmt.Sprintf("<166> %s localhost %s - - [%s] %s\n", ts, lr.Name(), sdid.String(), lr.Body().StringVal())
+	msg := fmt.Sprintf("<166> %s localhost - - - [%s] %s\n", ts, sdid.String(), lr.Body().StringVal())
 
 	f.buf = append(f.buf, msg)
 	return f.SendCheck()
