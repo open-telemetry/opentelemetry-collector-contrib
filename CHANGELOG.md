@@ -11,8 +11,8 @@
 ### 🛑 Breaking changes 🛑
 
 - `windowsperfcountersreceiver`: Added metrics configuration (#8376)
-- `lokiexporter`: Remove deprecated LogRecord.name field ()
-- `splunkhecexporter`: Remove deprecated LogRecord.name field ()
+- `lokiexporter`: Remove deprecated LogRecord.name field (#8951)
+- `splunkhecexporter`: Remove deprecated LogRecord.name field (#8951)
 
 ### 🚩 Deprecations 🚩
 
