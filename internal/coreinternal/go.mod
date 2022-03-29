@@ -11,7 +11,7 @@ require (
 	go.opentelemetry.io/collector v0.47.1-0.20220323200141-1b7618728835
 	go.opentelemetry.io/collector/model v0.47.1-0.20220323200141-1b7618728835
 	go.uber.org/zap v1.21.0
-	google.golang.org/protobuf v1.27.1
+	google.golang.org/protobuf v1.28.0
 )
 
 require (
