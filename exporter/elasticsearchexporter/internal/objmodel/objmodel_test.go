@@ -250,12 +250,12 @@ func TestValue_FromAttribute(t *testing.T) {
 			want: BoolValue(true),
 		},
 		"empty array": {
-			in:   pdata.NewValueArray(),
+			in:   pdata.NewValueSlice(),
 			want: Value{kind: KindArr},
 		},
 		"non-empty array": {
 			in: func() pdata.Value {
-				v := pdata.NewValueArray()
+				v := pdata.NewValueSlice()
 				tgt := v.SliceVal().AppendEmpty()
 				pdata.NewValueInt(1).CopyTo(tgt)
 				return v

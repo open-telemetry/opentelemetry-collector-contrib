@@ -197,6 +197,10 @@ func TestScrape_CpuUtilization(t *testing.T) {
 			require.NoError(t, err, "Failed to scrape metrics: %v", err)
 
 			assert.Equal(t, test.expectedMetricCount, md.MetricCount())
+			if md.ResourceMetrics().Len() == 0 {
+				return
+			}
+
 			metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
 			internal.AssertSameTimeStampForAllMetrics(t, metrics)
 			if test.times {
@@ -303,7 +307,7 @@ func TestScrape_CpuUtilizationStandard(t *testing.T) {
 		require.NoError(t, err)
 		//no metrics in the first scrape
 		if len(scrapeData.expectedDps) == 0 {
-			assert.Equal(t, 0, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Len())
+			assert.Equal(t, 0, md.ResourceMetrics().Len())
 			continue
 		}
 

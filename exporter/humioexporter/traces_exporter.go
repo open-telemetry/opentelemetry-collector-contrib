@@ -232,7 +232,7 @@ func toHumioAttributeValue(rawVal pdata.Value) interface{} {
 		return rawVal.BoolVal()
 	case pdata.ValueTypeMap:
 		return toHumioAttributes(rawVal.MapVal())
-	case pdata.ValueTypeArray:
+	case pdata.ValueTypeSlice:
 		arrVal := rawVal.SliceVal()
 		arr := make([]interface{}, 0, arrVal.Len())
 		for i := 0; i < arrVal.Len(); i++ {

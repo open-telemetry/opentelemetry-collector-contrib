@@ -748,7 +748,7 @@ func TestFilteredAttributesMetadata(t *testing.T) {
 	attrs.InsertBool("bool_value", false)
 	attrs.InsertNull("null_value")
 
-	arrayValue := pdata.NewValueArray()
+	arrayValue := pdata.NewValueSlice()
 	arrayValue.SliceVal().AppendEmpty().SetIntVal(12)
 	arrayValue.SliceVal().AppendEmpty().SetIntVal(34)
 	arrayValue.SliceVal().AppendEmpty().SetIntVal(56)
@@ -872,7 +872,7 @@ func constructDefaultResource() pdata.Resource {
 	resourceMap.InsertString("key2", "value")
 	attrs.Insert(resourceMapKey, resourceMapVal)
 
-	resourceArrayVal := pdata.NewValueArray()
+	resourceArrayVal := pdata.NewValueSlice()
 	resourceArray := resourceArrayVal.SliceVal()
 	resourceArray.AppendEmpty().SetStringVal("foo")
 	resourceArray.AppendEmpty().SetStringVal("bar")

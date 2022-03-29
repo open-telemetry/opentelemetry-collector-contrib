@@ -55,7 +55,7 @@ func serializeBody(body pdata.Value) ([]byte, error) {
 	case pdata.ValueTypeMap:
 		str, err = json.Marshal(body.MapVal().AsRaw())
 
-	case pdata.ValueTypeArray:
+	case pdata.ValueTypeSlice:
 		str, err = json.Marshal(attributeValueSliceAsRaw(body.SliceVal()))
 
 	case pdata.ValueTypeBytes:

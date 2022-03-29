@@ -349,7 +349,7 @@ func TestAttributesToMap(t *testing.T) {
 	innerAttr.InsertString("inner", "val")
 	attr.Insert("map", avm)
 
-	ava := pdata.NewValueArray()
+	ava := pdata.NewValueSlice()
 	arrayAttr := ava.SliceVal()
 	arrayAttr.EnsureCapacity(2)
 	arrayAttr.AppendEmpty().SetStringVal("inner")

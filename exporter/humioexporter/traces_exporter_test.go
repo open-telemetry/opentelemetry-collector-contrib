@@ -401,7 +401,7 @@ func TestToHumioAttributes(t *testing.T) {
 			desc: "Array element",
 			attr: func() pdata.Map {
 				attrMap := pdata.NewMap()
-				arr := pdata.NewValueArray()
+				arr := pdata.NewValueSlice()
 				arr.SliceVal().AppendEmpty().SetStringVal("a")
 				arr.SliceVal().AppendEmpty().SetStringVal("b")
 				arr.SliceVal().AppendEmpty().SetIntVal(4)

@@ -221,7 +221,7 @@ func attributeValueToBaseType(attrib pdata.Value) interface{} {
 	case pdata.ValueTypeMap:
 		attribMap := attrib.MapVal()
 		return attributeMapToBaseType(attribMap)
-	case pdata.ValueTypeArray:
+	case pdata.ValueTypeSlice:
 		arrayVal := attrib.SliceVal()
 		slice := make([]interface{}, 0, arrayVal.Len())
 		for i := 0; i < arrayVal.Len(); i++ {

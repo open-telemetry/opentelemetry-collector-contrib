@@ -377,7 +377,7 @@ func ValueFromAttribute(attr pdata.Value) Value {
 		return StringValue(attr.StringVal())
 	case pdata.ValueTypeBool:
 		return BoolValue(attr.BoolVal())
-	case pdata.ValueTypeArray:
+	case pdata.ValueTypeSlice:
 		sub := arrFromAttributes(attr.SliceVal())
 		return ArrValue(sub...)
 	case pdata.ValueTypeMap:
