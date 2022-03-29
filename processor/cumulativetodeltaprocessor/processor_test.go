@@ -16,7 +16,6 @@ package cumulativetodeltaprocessor
 
 import (
 	"context"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 	"math"
 	"testing"
 	"time"
@@ -29,6 +28,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 )
 
 type testMetric struct {
