@@ -26,6 +26,7 @@
 ## 🧰 Bug fixes 🧰
 
 - `mdatagen`: Fix validation of `enabled` field in metadata.yaml (#7166)
+- `prometheusexporter`: Fix bug Prometheus fails to generate logs when prometheus exporter produced a check exception occurs. (#7252)
 
 ## 🚀 New components 🚀
 
