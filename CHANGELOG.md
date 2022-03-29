@@ -7,6 +7,7 @@
 
 - `k8seventsreceiver`: Add Api_version and resource_version (#8539)
 - `dynatraceexporter`: add multi-instance deployment note to README.md (#8848)
+- `resourcedetectionprocessor`: Add attribute allowlist (#8547)
 
 ### 🛑 Breaking changes 🛑
 
@@ -20,7 +21,6 @@
 - `datadogexporter`: Deprecate `GetCensoredKey` method from `APIConfig` struct (#8830)
 - `datadogexporter`: Deprecate `service` setting in favor of `service.name` semantic convention (#8784)
 - `datadogexporter`: Deprecate `version` setting in favor of `service.version` semantic convention (#8784)
-- `resourcedetectionprocessor`: Add attribute allowlist (#8547)
 
 ### 💡 Enhancements 💡
 
