@@ -24,6 +24,7 @@ import (
 	"github.com/vmware/govmomi"
 	"github.com/vmware/govmomi/find"
 	"github.com/vmware/govmomi/object"
+	"github.com/vmware/govmomi/performance"
 	"github.com/vmware/govmomi/property"
 	"github.com/vmware/govmomi/vim25"
 	vt "github.com/vmware/govmomi/vim25/types"
@@ -56,16 +57,16 @@ func (vc *VmwareVcenterClient) Connect(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		client, err := govmomi.NewClient(ctx, sdkURL, vc.cfg.Insecure)
+		client, err := govmomi.NewClient(ctx, sdkURL, vc.cfg.MetricsConfig.Insecure)
 		if err != nil {
 			return err
 		}
-		tlsCfg, err := vc.cfg.LoadTLSConfig()
+		tlsCfg, err := vc.cfg.MetricsConfig.LoadTLSConfig()
 		if err != nil {
 			return err
 		}
 		client.DefaultTransport().TLSClientConfig = tlsCfg
-		user := url.UserPassword(vc.cfg.Username, vc.cfg.Password)
+		user := url.UserPassword(vc.cfg.MetricsConfig.Username, vc.cfg.MetricsConfig.Password)
 		err = client.Login(ctx, user)
 		if err != nil {
 			return fmt.Errorf("unable to login to vcenter sdk: %w", err)
@@ -148,15 +149,6 @@ func (vc *VmwareVcenterClient) CollectVSANCluster(ctx context.Context, clusterRe
 	return vc.queryVsan(ctx, clusterRef, querySpec)
 }
 
-func (vc *VmwareVcenterClient) RetrieveProperty(
-	ctx context.Context,
-	ref vt.ManagedObjectReference,
-	path []string,
-	dst interface{},
-) error {
-	return vc.pc.RetrieveOne(ctx, ref, path, dst)
-}
-
 func (vc *VmwareVcenterClient) CollectVSANHosts(ctx context.Context, clusterRef *vt.ManagedObjectReference, startTime time.Time, endTime time.Time) (*[]types.VsanPerfEntityMetricCSV, error) {
 	if vc.vsanDriver == nil {
 		return nil, errors.New("vsan client not instantiated")
@@ -189,6 +181,22 @@ func (vc *VmwareVcenterClient) CollectVSANVirtualMachine(
 		},
 	}
 	return vc.queryVsan(ctx, clusterRef, querySpec)
+}
+
+func (vc *VmwareVcenterClient) PerformanceQuery(
+	ctx context.Context,
+	ent *vt.ManagedObjectReference,
+	specs []vt.PerfQuerySpec,
+	startTime time.Time,
+	endTime time.Time,
+) ([]performance.EntityMetric, error) {
+	mgr := performance.NewManager(vc.vimDriver)
+	metrics, err := mgr.Query(ctx, specs)
+
+	if err != nil {
+		return nil, err
+	}
+	return mgr.ToMetricSeries(ctx, metrics)
 }
 
 func (vc *VmwareVcenterClient) queryVsan(ctx context.Context, ref *vt.ManagedObjectReference, qs []types.VsanPerfQuerySpec) (*[]types.VsanPerfEntityMetricCSV, error) {

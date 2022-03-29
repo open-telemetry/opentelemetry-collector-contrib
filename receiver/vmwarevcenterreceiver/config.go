@@ -28,45 +28,79 @@ import (
 
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	configtls.TLSClientSetting              `mapstructure:"tls,omitempty"`
-	Metrics                                 metadata.MetricsSettings `mapstructure:"metrics"`
-	Endpoint                                string                   `mapstructure:"endpoint"`
-	Username                                string                   `mapstructure:"username"`
-	Password                                string                   `mapstructure:"password"`
+	MetricsConfig                           *MetricsConfig `mapstructure:"metrics,omitempty"`
+	LoggingConfig                           *LoggingConfig `mapstructure:"logging,omitempty"`
+}
+
+type MetricsConfig struct {
+	configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
+	Metrics                    metadata.MetricsSettings `mapstructure:"metrics"`
+	Endpoint                   string                   `mapstructure:"endpoint"`
+	Username                   string                   `mapstructure:"username"`
+	Password                   string                   `mapstructure:"password"`
+}
+
+type LoggingConfig struct {
+	configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
+	ListenAddress              string
 }
 
 // Validate checks to see if the supplied config will work for the vmwarevcenterreceiver
 func (c *Config) Validate() error {
-	if c.Endpoint == "" {
+	var err error
+	metricsErr := c.validateMetricsConfig()
+	if err != nil {
+		multierr.Append(err, metricsErr)
+	}
+	logErr := c.validateLoggingConfig()
+	if err != nil {
+		multierr.Append(err, logErr)
+	}
+
+	return err
+}
+
+func (c *Config) validateMetricsConfig() error {
+	mc := c.MetricsConfig
+	if mc.Endpoint == "" {
 		return errors.New("no endpoint was provided")
 	}
 
 	var err error
-	res, err := url.Parse(c.Endpoint)
+	res, err := url.Parse(mc.Endpoint)
 	if err != nil {
-		err = multierr.Append(err, fmt.Errorf("unable to parse url %s: %w", c.Endpoint, err))
+		err = multierr.Append(err, fmt.Errorf("unable to parse url %s: %w", c.MetricsConfig.Endpoint, err))
 	}
 
 	if res.Scheme != "http" && res.Scheme != "https" {
 		err = multierr.Append(err, errors.New("url scheme must be http or https"))
 	}
 
-	if c.Username != "" && c.Password == "" {
+	if mc.Username != "" && mc.Password == "" {
 		err = multierr.Append(err, errors.New("username provided without password"))
-	} else if c.Username == "" && c.Password != "" {
+	} else if c.MetricsConfig.Username == "" && c.MetricsConfig.Password != "" {
 		err = multierr.Append(err, errors.New("password provided without user"))
 	}
 
-	if _, tlsErr := c.LoadTLSConfig(); err != nil {
+	if _, tlsErr := mc.LoadTLSConfig(); err != nil {
 		err = multierr.Append(err, fmt.Errorf("error loading tls configuration: %w", tlsErr))
 	}
 
 	return err
 }
 
+func (c *Config) validateLoggingConfig() error {
+	var err error
+	lc := c.LoggingConfig
+	if lc != nil {
+		// TODO: validate logging input params
+	}
+	return err
+}
+
 // SDKUrl returns the url for the vCenter SDK
 func (c *Config) SDKUrl() (*url.URL, error) {
-	res, err := url.Parse(c.Endpoint)
+	res, err := url.Parse(c.MetricsConfig.Endpoint)
 	if err != nil {
 		return res, err
 	}

@@ -9,6 +9,31 @@ attributes:
     description: The name of the Datastore
   instance_name:
     description: The name of the Virtual Machine
+  instance_id:
+    description: The instance UUID of the Virtual Machine
+  pool:
+    description: The name of the Resource Pool
+  datacenter:
+    description: The name of the datacenter
+  power_state:
+    description: The power state of the virtual machine instance
+  disk_state:
+    description: The state of storage and whether it is already allocated or free.
+    enum:
+      - available
+      - used
+  latency_type:
+    value: type
+    description: The type of disk latency.
+    enum:
+      - read
+      - write
+  throughput_direction:
+    value: direction
+    description: The direction of network throughput.
+    enum:
+      - transmitted
+      - received
   vsan_latency_type:
     value: type
     description: The type of vSAN latency.
@@ -28,7 +53,6 @@ attributes:
     enum:
       - read
       - write
-
 
 metrics:
   vcenter.cluster.cpu.available:
@@ -156,12 +180,14 @@ metrics:
       monotonic: false
       value_type: int
       aggregation: cumulative
+    attributes: [datastore, disk_state]
   vcenter.datastore.disk.utilization:
     enabled: true
     description: The utilization of the datastore
     unit: "%"
     gauge:
       value_type: double
+    attributes: [datastore]
   vcenter.host.cpu.utilization:
     enabled: true
     description: The CPU utilization of the host system
@@ -291,6 +317,42 @@ metrics:
       value_type: int
       aggregation: cumulative
     attributes: [hostname]
+  vcenter.resource_pool.memory.usage:
+    enabled: true
+    description: The usage of the memory by the resource pool
+    unit: MBy
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation: cumulative
+    attributes: [pool]
+  vcenter.resource_pool.memory.shares:
+    enabled: true
+    description: The amount of shares of memory in the resource pool
+    unit: "{shares}"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation: cumulative
+    attributes: [pool]
+  vcenter.resource_pool.cpu.usage:
+    enabled: true
+    description: The usage of the CPU used by the resource pool
+    unit: "{MHz}"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation: cumulative
+    attributes: [pool]
+  vcenter.resource_pool.cpu.shares:
+    enabled: true
+    description: The amount of shares of memory in the resource pool
+    unit: "{shares}"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation: cumulative
+    attributes: [pool]
   vcenter.vm.memory.ballooned:
     enabled: true
     description: The amount of memory that is ballooned due to virtualization.
@@ -299,7 +361,7 @@ metrics:
       monotonic: false
       value_type: int
       aggregation: cumulative
-    attributes: [instance_name]
+    attributes: [instance_name, instance_id, power_state]
   vcenter.vm.memory.usage:
     enabled: true
     description: The amount of memory that is used by the virtual machine
@@ -308,14 +370,14 @@ metrics:
       monotonic: false
       value_type: int
       aggregation: cumulative
-    attributes: [instance_name]
+    attributes: [instance_name, instance_id, power_state]
   vcenter.vm.cpu.utilization:
     enabled: true
     description: The CPU utilization of the virtual machine
     unit: "%"
     gauge:
       value_type: double
-    attributes: [instance_name]
+    attributes: [instance_name, instance_id, power_state]
   vcenter.vm.disk.usage:
     enabled: true
     description: The amount of storage space the virtual machine is using
@@ -324,7 +386,14 @@ metrics:
       monotonic: false
       value_type: int
       aggregation: cumulative
-    attributes: [instance_name]
+    attributes: [instance_name, instance_id, power_state, disk_state]
+  vcenter.vm.disk.utilization:
+    enabled: true
+    description: The utilization of storage on the virtual machine
+    unit: "%"
+    gauge:
+      value_type: double
+    attributes: [instance_name, instance_id, power_state]
   vcenter.vm.disk.latency:
     enabled: true
     description: The latency of operations to the virtual machine's disk
@@ -333,7 +402,7 @@ metrics:
       monotonic: false
       value_type: int
       aggregation: cumulative
-    attributes: [instance_name]
+    attributes: [instance_name, instance_id, power_state, latency_type]
   vcenter.vm.disk.throughput:
     enabled: true
     description: The throughput of the virtual machine's disk
@@ -342,7 +411,7 @@ metrics:
       monotonic: false
       value_type: int
       aggregation: cumulative
-    attributes: [instance_name]
+    attributes: [instance_name, instance_id, power_state]
   vcenter.vm.network.throughput:
     enabled: true
     description: The amount of data that was received or sent over the network of the virtual machine
@@ -351,7 +420,7 @@ metrics:
       monotonic: false
       value_type: int
       aggregation: cumulative
-    attributes: [instance_name]
+    attributes: [instance_name, instance_id, power_state, throughput_direction]
   vcenter.vm.network.packets:
     enabled: true
     description: The amount of packets that was received or transmitted over the instance's network
@@ -360,7 +429,7 @@ metrics:
       monotonic: false
       value_type: int
       aggregation: cumulative
-    attributes: [instance_name]
+    attributes: [instance_name, instance_id, power_state]
   vcenter.vm.vsan.operations:
     enabled: true
     description: Virtual Machine vSAN IOPs
@@ -369,32 +438,19 @@ metrics:
       monotonic: false
       value_type: int
       aggregation: cumulative
-    attributes: [instance_name, vsan_operation_type]
+    attributes: [instance_name, vsan_operation_type, instance_id, power_state]
   vcenter.vm.vsan.throughput:
     enabled: true
     description: The VSAN throughput of a virtual machine
     unit: By/s
     gauge:
       value_type: int
-    attributes: [instance_name, vsan_throughput_direction]
-  vcenter.vm.vsan.congestions:
-    enabled: true
-    description: todo
-    unit: "{congestions}"
-    gauge:
-      value_type: int
-    attributes: [instance_name]
-  vcenter.vm.vsan.outstanding_io:
-    enabled: true
-    description: The amount of outstanding VSAN I/O operations
-    unit: ""
-    gauge:
-      value_type: int
-    attributes: [instance_name]
+    attributes:
+      [instance_name, vsan_throughput_direction, instance_id, power_state]
   vcenter.vm.vsan.latency.avg:
     enabled: true
     description: The latency while accessing VSAN storage
     unit: us
     gauge:
       value_type: int
-    attributes: [instance_name, vsan_latency_type]
+    attributes: [instance_name, instance_id, power_state, vsan_latency_type]

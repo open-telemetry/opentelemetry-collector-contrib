@@ -21,14 +21,13 @@ func (mb *MetricsBuilder) EmitVM(metrics pdata.MetricSlice) {
 	mb.metricVcenterVMDiskLatency.emit(metrics)
 	mb.metricVcenterVMDiskThroughput.emit(metrics)
 	mb.metricVcenterVMDiskUsage.emit(metrics)
+	mb.metricVcenterVMDiskLatency.emit(metrics)
 	mb.metricVcenterVMMemoryBallooned.emit(metrics)
 	mb.metricVcenterVMMemoryUsage.emit(metrics)
 	mb.metricVcenterVMNetworkPackets.emit(metrics)
 	mb.metricVcenterVMNetworkThroughput.emit(metrics)
-	mb.metricVcenterVMVsanCongestions.emit(metrics)
 	mb.metricVcenterVMVsanLatencyAvg.emit(metrics)
 	mb.metricVcenterVMVsanOperations.emit(metrics)
-	mb.metricVcenterVMVsanOutstandingIo.emit(metrics)
 	mb.metricVcenterVMVsanThroughput.emit(metrics)
 }
 
@@ -48,6 +47,13 @@ func (mb *MetricsBuilder) EmitHost(metrics pdata.MetricSlice) {
 	mb.metricVcenterHostVsanOperations.emit(metrics)
 	mb.metricVcenterHostVsanOutstandingIo.emit(metrics)
 	mb.metricVcenterHostVsanThroughput.emit(metrics)
+}
+
+func (mb *MetricsBuilder) EmitResourcePool(metrics pdata.MetricSlice) {
+	mb.metricVcenterResourcePoolCPUShares.emit(metrics)
+	mb.metricVcenterResourcePoolCPUUsage.emit(metrics)
+	mb.metricVcenterResourcePoolMemoryShares.emit(metrics)
+	mb.metricVcenterResourcePoolMemoryUsage.emit(metrics)
 }
 
 func (mb *MetricsBuilder) EmitDatastore(metrics pdata.MetricSlice) {

@@ -54,7 +54,7 @@ func newVmwareVcenterScraper(
 		logger: logger,
 		client: client,
 		config: config,
-		mb:     metadata.NewMetricsBuilder(config.Metrics),
+		mb:     metadata.NewMetricsBuilder(config.MetricsConfig.Metrics),
 	}
 }
 
@@ -98,7 +98,7 @@ func (v *vmwareVcenterScraper) collectClusters(ctx context.Context, rms pdata.Re
 		v.collectHosts(ctx, now, c, rms, errs)
 		v.collectDatastores(ctx, now, c, rms, errs)
 		v.collectVMs(ctx, now, c, rms, errs)
-		v.collectResourcePools(ctx, rms, errs)
+		v.collectResourcePools(ctx, now, rms, errs)
 	}
 
 	return nil
@@ -126,7 +126,7 @@ func (v *vmwareVcenterScraper) collectClusterVSAN(
 	errs *scrapererror.ScrapeErrors,
 ) {
 	mor := cluster.Reference()
-	csvs, err := v.client.CollectVSANCluster(ctx, &mor, time.Now(), time.Now())
+	csvs, err := v.client.CollectVSANCluster(ctx, &mor, time.Now().UTC(), time.Now().UTC())
 	if err != nil {
 		errs.AddPartial(1, err)
 		return
@@ -138,6 +138,7 @@ func (v *vmwareVcenterScraper) collectClusterVSAN(
 			errs.AddPartial(1, err)
 			continue
 		}
+
 		ts := pdata.NewTimestampFromTime(time)
 
 		for _, val := range r.Value {
@@ -162,14 +163,13 @@ func (v *vmwareVcenterScraper) collectDatastores(
 		return
 	}
 	for _, ds := range datastores {
-		v.logger.Info(fmt.Sprintf("datastore: %s", ds.Name()))
 		v.collectDatastore(ctx, colTime, rms, ds)
 	}
 }
 
 func (v *vmwareVcenterScraper) collectDatastore(
-	_ context.Context,
-	_ pdata.Timestamp,
+	ctx context.Context,
+	now pdata.Timestamp,
 	rms pdata.ResourceMetricsSlice,
 	ds *object.Datastore,
 ) {
@@ -177,9 +177,11 @@ func (v *vmwareVcenterScraper) collectDatastore(
 	ilms := rm.InstrumentationLibraryMetrics().AppendEmpty()
 	resourceAttrs := rm.Resource().Attributes()
 	resourceAttrs.InsertString(metadata.A.Datastore, ds.Name())
-
 	ilms.InstrumentationLibrary().SetName(instrumentationLibraryName)
 
+	var moDS mo.Datastore
+	ds.Properties(ctx, ds.Reference(), []string{"summary"}, &moDS)
+	v.recordDatastoreProperties(now, moDS)
 	v.mb.EmitDatastore(ilms.Metrics())
 }
 
@@ -225,24 +227,29 @@ func (v *vmwareVcenterScraper) collectHost(
 	errs *scrapererror.ScrapeErrors,
 ) {
 	var hwSum mo.HostSystem
-	err := host.Properties(ctx, host.Reference(), []string{"summary.hardware"}, &hwSum)
+	err := host.Properties(ctx, host.Reference(),
+		[]string{
+			"summary.hardware",
+			"summary.quickStats",
+		}, &hwSum)
+
 	if err != nil {
-		v.logger.Error(err.Error())
+		errs.AddPartial(1, err)
 		return
 	}
-	v.recordHostSystemMemoryUsage(now, hwSum, host.Name(), errs)
-
+	v.recordHostSystemMemoryUsage(now, hwSum, host.Name())
 	if vsanCsvs != nil {
 		entityRef := fmt.Sprintf("host-domclient:%v",
 			hwSum.Summary.Hardware.Uuid,
 		)
-		v.addVSAN(*vsanCsvs, entityRef, host.Name(), hostType, errs)
+		v.addVSAN(*vsanCsvs, entityRef, host.Name(), "", hostType, errs)
 	}
 }
 
 func (v *vmwareVcenterScraper) collectResourcePools(
 	ctx context.Context,
-	_ pdata.ResourceMetricsSlice,
+	ts pdata.Timestamp,
+	rms pdata.ResourceMetricsSlice,
 	errs *scrapererror.ScrapeErrors,
 ) {
 	rps, err := v.client.ResourcePools(ctx)
@@ -251,14 +258,28 @@ func (v *vmwareVcenterScraper) collectResourcePools(
 		return
 	}
 	for _, rp := range rps {
-		v.logger.Info(fmt.Sprintf("collecting resource pool: %s", rp.Name()))
-		// v.collectDatastore(ctx, rms, rp)
+		rm := rms.AppendEmpty()
+		resourceAttrs := rm.Resource().Attributes()
+		resourceAttrs.InsertString("resource_pool", rp.Name())
+
+		ilms := rm.InstrumentationLibraryMetrics().AppendEmpty()
+		ilms.InstrumentationLibrary().SetName(instrumentationLibraryName)
+
+		var moRP mo.ResourcePool
+		rp.Properties(ctx, rp.Reference(), []string{
+			"summary",
+			"summary.quickStats",
+			"name",
+		}, &moRP)
+		v.recordResourcePool(ts, moRP)
+
+		v.mb.EmitResourcePool(ilms.Metrics())
 	}
 }
 
 func (v *vmwareVcenterScraper) collectVMs(
 	ctx context.Context,
-	_ pdata.Timestamp,
+	colTime pdata.Timestamp,
 	cluster *object.ClusterComputeResource,
 	rms pdata.ResourceMetricsSlice,
 	errs *scrapererror.ScrapeErrors,
@@ -270,7 +291,7 @@ func (v *vmwareVcenterScraper) collectVMs(
 	}
 
 	clusterRef := cluster.Reference()
-	vsanCsvs, err := v.client.CollectVSANVirtualMachine(ctx, &clusterRef, time.Now(), time.Now())
+	vsanCsvs, err := v.client.CollectVSANVirtualMachine(ctx, &clusterRef, time.Now().UTC(), time.Now().UTC())
 	if err != nil {
 		errs.AddPartial(1, err)
 		return
@@ -282,8 +303,9 @@ func (v *vmwareVcenterScraper) collectVMs(
 		resourceAttrs.InsertString(metadata.A.InstanceName, vm.Name())
 
 		ilms := rm.InstrumentationLibraryMetrics().AppendEmpty()
-		v.logger.Info(fmt.Sprintf("virtual machine: %s %s", vm.Name(), vm.UUID(ctx)))
-		v.collectVM(ctx, vm, vsanCsvs, errs)
+		ilms.InstrumentationLibrary().SetName(instrumentationLibraryName)
+		v.collectVM(ctx, colTime, vm, vsanCsvs, errs)
+
 		v.mb.EmitVM(ilms.Metrics())
 	}
 
@@ -291,14 +313,31 @@ func (v *vmwareVcenterScraper) collectVMs(
 
 func (v *vmwareVcenterScraper) collectVM(
 	ctx context.Context,
+	colTime pdata.Timestamp,
 	vm *object.VirtualMachine,
 	vsanCsvs *[]types.VsanPerfEntityMetricCSV,
 	errs *scrapererror.ScrapeErrors,
 ) {
+	var moVM mo.VirtualMachine
+	err := vm.Properties(ctx, vm.Reference(), []string{
+		"config",
+		"runtime",
+		"summary",
+	}, &moVM)
+	vmUUID := moVM.Config.InstanceUuid
+
+	if err != nil {
+		errs.AddPartial(1, err)
+		return
+	}
+
+	ps := string(moVM.Runtime.PowerState)
+	v.recordVMUsages(colTime, moVM, vmUUID, vm.Name())
+	v.recordVMPerformance(ctx, moVM, vmUUID, ps, time.Now().Add(-15*time.Minute).UTC(), time.Now().Add(-5*time.Minute).UTC(), errs)
+
 	if vsanCsvs != nil {
-		vmUUID := vm.UUID(ctx)
-		entityRef := fmt.Sprintf("virtual-machine: %s %s", vm.Name(), vmUUID)
-		v.addVSAN(*vsanCsvs, entityRef, vm.Name(), vmType, errs)
+		entityRef := fmt.Sprintf("virtual-machine:%s", vmUUID)
+		v.addVSAN(*vsanCsvs, entityRef, vm.Name(), ps, vmType, errs)
 	}
 }
 
@@ -314,12 +353,13 @@ func (v *vmwareVcenterScraper) addVSAN(
 	csvs []types.VsanPerfEntityMetricCSV,
 	entityID string,
 	entityName string,
+	// virtual machine specific
+	powerState string,
 	vsanType vsanType,
 	errs *scrapererror.ScrapeErrors,
 ) {
 	for _, r := range csvs {
-		v.logger.Info(r.EntityRefId)
-		if r.EntityRefId != entityID {
+		if r.EntityRefId != entityID || r.SampleInfo == "" {
 			continue
 		}
 
@@ -339,7 +379,8 @@ func (v *vmwareVcenterScraper) addVSAN(
 				case hostType:
 					v.recordHostVsanMetric(ts, val.MetricId.Label, entityName, value, errs)
 				case vmType:
-					v.recordVMVsanMetric(ts, val.MetricId.Label, entityName, value, errs)
+					instanceUUID := strings.Split(entityID, ":")[1]
+					v.recordVMVsanMetric(ts, val.MetricId.Label, entityName, instanceUUID, powerState, value, errs)
 				}
 			}
 		}

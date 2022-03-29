@@ -18,6 +18,7 @@ package vmwarevcenterreceiver // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -48,21 +49,32 @@ func createDefaultConfig() config.Receiver {
 			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			CollectionInterval: 5 * time.Minute,
 		},
-		TLSClientSetting: configtls.TLSClientSetting{},
-		Metrics:          metadata.DefaultMetricsSettings(),
-		Endpoint:         "",
-		Username:         "",
-		Password:         "",
+		MetricsConfig: &MetricsConfig{
+			TLSClientSetting: configtls.TLSClientSetting{},
+			Metrics:          metadata.DefaultMetricsSettings(),
+			Endpoint:         "",
+			Username:         "",
+			Password:         "",
+		},
+		LoggingConfig: &LoggingConfig{},
 	}
 }
 
+var errConfigNotVcenter = errors.New("config was not an vcenter receiver config")
+
 func createLogsReceiver(
-	_ context.Context,
+	c context.Context,
 	params component.ReceiverCreateSettings,
 	rConf config.Receiver,
 	consumer consumer.Logs,
 ) (component.LogsReceiver, error) {
-	return nil, nil
+	cfg, ok := rConf.(*Config)
+	if !ok {
+		return nil, errConfigNotVcenter
+	}
+
+	vcenterLoggingReceiver := newLogsReceiver(cfg)
+	return vcenterLoggingReceiver, nil
 }
 
 func createMetricsReceiver(
@@ -71,8 +83,10 @@ func createMetricsReceiver(
 	rConf config.Receiver,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
-	cfg := rConf.(*Config)
-
+	cfg, ok := rConf.(*Config)
+	if !ok {
+		return nil, errConfigNotVcenter
+	}
 	vcenterScraper := newVmwareVcenterScraper(params.Logger, cfg)
 	scraper, err := scraperhelper.NewScraper(
 		typeStr,
