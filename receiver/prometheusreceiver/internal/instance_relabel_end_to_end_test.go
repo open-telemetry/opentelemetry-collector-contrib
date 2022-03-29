@@ -22,6 +22,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -199,9 +200,14 @@ service:
 
 			// We are strictly counting series directly included in the scrapes, and no
 			// internal timeseries like "up" nor "scrape_seconds" etc.
+			metricName := ""
 			job := ""
 			instance := ""
 			for _, label := range ts.Labels {
+				if label.Name == "__name__" {
+					metricName = label.Value
+				}
+
 				if label.Name == "job" {
 					job = label.Value
 				}
@@ -209,6 +215,10 @@ service:
 				if label.Name == "instance" {
 					instance = label.Value
 				}
+			}
+
+			if !strings.HasPrefix(metricName, "jvm") {
+				continue
 			}
 
 			require.Equal(t, "not-test", job)
