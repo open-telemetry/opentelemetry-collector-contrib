@@ -6,10 +6,13 @@
 ### 💡 Enhancements 💡
 
 - `k8seventsreceiver`: Add Api_version and resource_version (#8539)
+- `dynatraceexporter`: add multi-instance deployment note to README.md (#8848)
 
 ### 🛑 Breaking changes 🛑
 
 - `windowsperfcountersreceiver`: Added metrics configuration (#8376)
+- `lokiexporter`: Remove deprecated LogRecord.name field (#8951)
+- `splunkhecexporter`: Remove deprecated LogRecord.name field (#8951)
 
 ### 🚩 Deprecations 🚩
 
@@ -23,6 +26,14 @@
 
 - `cmd/mdatagen`: Add resource attributes definition to metadata.yaml and move `pdata.Metrics` creation to the
   generated code (#5270) 
+
+### 💡 Enhancements 💡
+
+- `datadogexporter`: Add `metrics::sums::cumulative_monotonic_mode` to specify export mode for cumulative monotonic sums (#8490)
+
+### 🚩 Deprecations 🚩
+
+- `datadogexporter`: Deprecate `metrics::send_monotonic_counter` in favor of `metrics::sums::cumulative_monotonic_mode` (#8490)
 
 ## v0.47.0
 
