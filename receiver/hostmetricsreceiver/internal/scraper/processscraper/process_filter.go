@@ -33,7 +33,7 @@ func (p *processFilter) includeCommand(command string, commandLine string) bool 
 }
 
 // includeOwner return a boolean value indicating if owner matches the filter.
-func (p *processFilter) includeOwner (owner string) bool {
+func (p *processFilter) includeOwner(owner string) bool {
 	return includeExcludeMatch(p.includeOwnerFilter, p.excludeOwnerFilter, owner)
 }
 
@@ -43,10 +43,9 @@ func (p *processFilter) includePid(pid int32) bool {
 		(len(p.excludePidFilter) == 0 || !findInt(p.excludePidFilter, pid))
 }
 
-
 // findInt searches an int slice for a specific integeter.  If the
 // int is found in the slice return true.  Otherwise return false
-func findInt (intSlice []int32, intMatch int32) bool{
+func findInt(intSlice []int32, intMatch int32) bool {
 	for _, val := range intSlice {
 		if intMatch == val {
 			return true
@@ -118,6 +117,6 @@ func createFilter(filterConfig FilterConfig) (*processFilter, error) {
 
 // includeExcludeMatch checks the include and exclude filter
 func includeExcludeMatch(include filterset.FilterSet, exclude filterset.FilterSet, matchString string) bool {
-	return (include == nil ||  include.Matches(matchString)) &&
+	return (include == nil || include.Matches(matchString)) &&
 		(exclude == nil || !exclude.Matches(matchString))
 }

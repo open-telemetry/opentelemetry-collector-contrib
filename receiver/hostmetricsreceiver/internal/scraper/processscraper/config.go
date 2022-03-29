@@ -36,40 +36,43 @@ type Config struct {
 	Filters []FilterConfig `mapstructure:"filters"`
 }
 
+// ExecutableNameMatchConfig filtesr by executable name
 type ExecutableNameMatchConfig struct {
 	filterset.Config `mapstructure:",squash"`
-	ExecutableNames []string `mapstructure:"executable_name"`
+	ExecutableNames  []string `mapstructure:"executable_name"`
 }
 
-
+// ExecutablePathMatchConfig filters by executable path
 type ExecutablePathMatchConfig struct {
 	filterset.Config `mapstructure:",squash"`
-	ExecutablePaths []string `mapstructure:"executable_path"`
+	ExecutablePaths  []string `mapstructure:"executable_path"`
 }
 
-
+// CommandMatchConfig filters by command
 type CommandMatchConfig struct {
 	filterset.Config `mapstructure:",squash"`
-	Commands []string `mapstructure:"process_command"`
+	Commands         []string `mapstructure:"process_command"`
 }
 
-
+// CommandLineMatchConfig filters by command line arguments
 type CommandLineMatchConfig struct {
 	filterset.Config `mapstructure:",squash"`
-	CommandLines []string `mapstructure:"process_command_line"`
+	CommandLines     []string `mapstructure:"process_command_line"`
 }
 
+// OwnerMatchConfig filters by owner
 type OwnerMatchConfig struct {
 	filterset.Config `mapstructure:",squash"`
-	Owners []string `mapstructure:"process_owner"`
+	Owners           []string `mapstructure:"process_owner"`
 }
 
+// PidMatchConfig filters by PID
 type PidMatchConfig struct {
 	filterset.Config `mapstructure:",squash"`
-	Pids []int32 `mapstructure:"process_pid"`
+	Pids             []int32 `mapstructure:"process_pid"`
 }
 
-
+// FilterConfig is used to filter processes that are reported on
 type FilterConfig struct {
 	// Include specifies a filter on the process names that should be included from the generated metrics.
 	// Exclude specifies a filter on the process names that should be excluded from the generated metrics.
@@ -79,13 +82,12 @@ type FilterConfig struct {
 	ExcludeExecutableNames ExecutableNameMatchConfig `mapstructure:"exclude_executable_name"`
 	IncludeExecutablePaths ExecutablePathMatchConfig `mapstructure:"include_executable_path"`
 	ExcludeExecutablePaths ExecutablePathMatchConfig `mapstructure:"exclude_executable_path"`
-	IncludeCommands CommandMatchConfig `mapstructure:"include_process_command"`
-	ExcludeCommands CommandMatchConfig `mapstructure:"exclude_process_command"`
-	IncludeCommandLines CommandLineMatchConfig `mapstructure:"include_process_command_line"`
-	ExcludeCommandLines CommandLineMatchConfig `mapstructure:"exclude_process_command_line"`
-	IncludeOwners OwnerMatchConfig `mapstructure:"include_process_owner"`
-	ExcludeOwners OwnerMatchConfig `mapstructure:"exclude_process_owner"`
-	IncludePids PidMatchConfig `mapstructure:"include_process_pid"`
-	ExcludePids PidMatchConfig `mapstructure:"exclude_process_pid"`
+	IncludeCommands        CommandMatchConfig        `mapstructure:"include_process_command"`
+	ExcludeCommands        CommandMatchConfig        `mapstructure:"exclude_process_command"`
+	IncludeCommandLines    CommandLineMatchConfig    `mapstructure:"include_process_command_line"`
+	ExcludeCommandLines    CommandLineMatchConfig    `mapstructure:"exclude_process_command_line"`
+	IncludeOwners          OwnerMatchConfig          `mapstructure:"include_process_owner"`
+	ExcludeOwners          OwnerMatchConfig          `mapstructure:"exclude_process_owner"`
+	IncludePids            PidMatchConfig            `mapstructure:"include_process_pid"`
+	ExcludePids            PidMatchConfig            `mapstructure:"exclude_process_pid"`
 }
-

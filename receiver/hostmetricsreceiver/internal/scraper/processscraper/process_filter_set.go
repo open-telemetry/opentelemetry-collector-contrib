@@ -1,7 +1,7 @@
 package processscraper
 
 type processFilterSet struct {
-	filters [] processFilter
+	filters []processFilter
 }
 
 // includeExecutable returns an int array with the index of all filters that match the input executable values
@@ -76,4 +76,3 @@ func createFilters(filterConfigs []FilterConfig) (*processFilterSet, error) {
 	}
 	return &processFilterSet{filters: filters}, nil
 }
-

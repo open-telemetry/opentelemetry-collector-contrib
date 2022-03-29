@@ -168,21 +168,20 @@ func TestScrapeMetrics_NewError(t *testing.T) {
 	includeFilterConfig := FilterConfig{
 		IncludeExecutableNames: ExecutableNameMatchConfig{
 			ExecutableNames: []string{"test"},
-			Config: filterset.Config{MatchType: filterset.Strict},
+			Config:          filterset.Config{MatchType: filterset.Strict},
 		},
 	}
-	_, err := newProcessScraper(&Config{Filters: []FilterConfig {includeFilterConfig}, Metrics: metadata.DefaultMetricsSettings()})
+	_, err := newProcessScraper(&Config{Filters: []FilterConfig{includeFilterConfig}, Metrics: metadata.DefaultMetricsSettings()})
 	require.Error(t, err)
 	require.Regexp(t, "^error creating process include filters:", err.Error())
-
 
 	excludeFilterConfig := FilterConfig{
 		ExcludeExecutableNames: ExecutableNameMatchConfig{
 			ExecutableNames: []string{"test"},
-			Config: filterset.Config{MatchType: filterset.Strict},
+			Config:          filterset.Config{MatchType: filterset.Strict},
 		},
 	}
-	_, err = newProcessScraper(&Config{Filters: []FilterConfig {excludeFilterConfig}, Metrics: metadata.DefaultMetricsSettings()})
+	_, err = newProcessScraper(&Config{Filters: []FilterConfig{excludeFilterConfig}, Metrics: metadata.DefaultMetricsSettings()})
 	require.Error(t, err)
 	require.Regexp(t, "^error creating process exclude filters:", err.Error())
 }
@@ -595,6 +594,6 @@ func mockGetProcessExecutable(handle processHandle) (*executableMetadata, error)
 
 func mockGetProcessCommand(handle processHandle) (*commandMetadata, error) {
 	return &commandMetadata{
-		command: "testCommand",
+		command:          "testCommand",
 		commandLineSlice: []string{"arg1", "arg2"}}, nil
 }

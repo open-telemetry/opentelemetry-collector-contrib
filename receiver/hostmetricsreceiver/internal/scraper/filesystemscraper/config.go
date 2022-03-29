@@ -116,5 +116,3 @@ func (f *fsFilter) setFiltersExist() {
 		f.includeFSTypeFilter != nil || f.excludeFSTypeFilter != nil ||
 		f.includeDeviceFilter != nil || f.excludeDeviceFilter != nil
 }
-
-

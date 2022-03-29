@@ -6,8 +6,8 @@ import (
 	"testing"
 )
 
-func TestProcNameFilter (t *testing.T) {
-	var filterConfigs[] FilterConfig
+func TestProcNameFilter(t *testing.T) {
+	var filterConfigs []FilterConfig
 
 	filterConfigs = append(filterConfigs, FilterConfig{})
 	procFilter, err := createFilters(filterConfigs)
@@ -24,12 +24,12 @@ func TestProcNameFilter (t *testing.T) {
 				MatchType: filterset.Strict,
 			},
 			Commands: []string{"command1Match"},
-		} ,
+		},
 		IncludeCommandLines: CommandLineMatchConfig{
 			Config: filterset.Config{
 				MatchType: filterset.Strict,
 			},
-			CommandLines: []string {"commandLine1Match"},
+			CommandLines: []string{"commandLine1Match"},
 		},
 	}
 
@@ -39,7 +39,7 @@ func TestProcNameFilter (t *testing.T) {
 				MatchType: filterset.Strict,
 			},
 			Commands: []string{"command1Match"},
-		} ,
+		},
 	}
 
 	filter4Config := FilterConfig{
@@ -48,12 +48,12 @@ func TestProcNameFilter (t *testing.T) {
 				MatchType: filterset.Strict,
 			},
 			Commands: []string{"noMatch"},
-		} ,
+		},
 		IncludeCommandLines: CommandLineMatchConfig{
 			Config: filterset.Config{
 				MatchType: filterset.Strict,
 			},
-			CommandLines: []string {"noMatch"},
+			CommandLines: []string{"noMatch"},
 		},
 	}
 
@@ -85,8 +85,8 @@ func TestProcNameFilter (t *testing.T) {
 
 }
 
-func TestProcExecutableFilter (t *testing.T) {
-	var filterConfigs[] FilterConfig
+func TestProcExecutableFilter(t *testing.T) {
+	var filterConfigs []FilterConfig
 
 	filterConfigs = append(filterConfigs, FilterConfig{})
 	procFilter, err := createFilters(filterConfigs)
@@ -97,20 +97,18 @@ func TestProcExecutableFilter (t *testing.T) {
 	assert.True(t, len(matches) == 1)
 	assert.True(t, matches[0] == 0)
 
-
-
 	filter2Config := FilterConfig{
 		IncludeExecutableNames: ExecutableNameMatchConfig{
 			Config: filterset.Config{
 				MatchType: filterset.Strict,
 			},
 			ExecutableNames: []string{"exec1"},
-		} ,
+		},
 		IncludeExecutablePaths: ExecutablePathMatchConfig{
 			Config: filterset.Config{
 				MatchType: filterset.Strict,
 			},
-			ExecutablePaths: []string {"path1"},
+			ExecutablePaths: []string{"path1"},
 		},
 	}
 
@@ -120,7 +118,7 @@ func TestProcExecutableFilter (t *testing.T) {
 				MatchType: filterset.Strict,
 			},
 			ExecutableNames: []string{"exec1"},
-		} ,
+		},
 	}
 
 	filter4Config := FilterConfig{
@@ -129,12 +127,12 @@ func TestProcExecutableFilter (t *testing.T) {
 				MatchType: filterset.Strict,
 			},
 			ExecutableNames: []string{"noMatch"},
-		} ,
+		},
 		IncludeExecutablePaths: ExecutablePathMatchConfig{
 			Config: filterset.Config{
 				MatchType: filterset.Strict,
 			},
-			ExecutablePaths: []string {"noMatch"},
+			ExecutablePaths: []string{"noMatch"},
 		},
 	}
 
@@ -166,8 +164,8 @@ func TestProcExecutableFilter (t *testing.T) {
 
 }
 
-func TestProcOwnerFilter (t *testing.T) {
-	var filterConfigs[] FilterConfig
+func TestProcOwnerFilter(t *testing.T) {
+	var filterConfigs []FilterConfig
 
 	filterConfigs = append(filterConfigs, FilterConfig{})
 	procFilter, err := createFilters(filterConfigs)
@@ -184,7 +182,7 @@ func TestProcOwnerFilter (t *testing.T) {
 				MatchType: filterset.Strict,
 			},
 			Owners: []string{"user1"},
-		} ,
+		},
 	}
 
 	filter3Config := FilterConfig{
@@ -193,7 +191,7 @@ func TestProcOwnerFilter (t *testing.T) {
 				MatchType: filterset.Strict,
 			},
 			Owners: []string{"user2"},
-		} ,
+		},
 	}
 
 	filter4Config := FilterConfig{
@@ -202,7 +200,7 @@ func TestProcOwnerFilter (t *testing.T) {
 				MatchType: filterset.Regexp,
 			},
 			Owners: []string{"^user"},
-		} ,
+		},
 	}
 
 	filterConfigs = append(filterConfigs, filter2Config)
@@ -219,9 +217,8 @@ func TestProcOwnerFilter (t *testing.T) {
 
 }
 
-
-func TestProcPidFilter (t *testing.T) {
-	var filterConfigs[] FilterConfig
+func TestProcPidFilter(t *testing.T) {
+	var filterConfigs []FilterConfig
 
 	filterConfigs = append(filterConfigs, FilterConfig{})
 	procFilter, err := createFilters(filterConfigs)
@@ -234,13 +231,13 @@ func TestProcPidFilter (t *testing.T) {
 
 	filter2Config := FilterConfig{
 		IncludePids: PidMatchConfig{
-			Pids: []int32 {1234},
+			Pids: []int32{1234},
 		},
 	}
 
 	filter3Config := FilterConfig{
 		IncludePids: PidMatchConfig{
-			Pids: []int32 {5678},
+			Pids: []int32{5678},
 		},
 	}
 

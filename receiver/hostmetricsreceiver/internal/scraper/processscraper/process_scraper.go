@@ -44,10 +44,10 @@ type scraper struct {
 	filterSet *processFilterSet
 
 	// for mocking
-	bootTime          func() (uint64, error)
-	getProcessHandles func() (processHandles, error)
+	bootTime             func() (uint64, error)
+	getProcessHandles    func() (processHandles, error)
 	getProcessExecutable func(processHandle) (*executableMetadata, error)
-	getProcessCommand func(processHandle) (*commandMetadata, error)
+	getProcessCommand    func(processHandle) (*commandMetadata, error)
 }
 
 // newProcessScraper creates a Process Scraper
