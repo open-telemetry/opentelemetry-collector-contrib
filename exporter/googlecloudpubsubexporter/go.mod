@@ -6,8 +6,8 @@ require (
 	cloud.google.com/go/pubsub v1.19.0
 	github.com/google/uuid v1.3.0
 	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.47.1-0.20220323200141-1b7618728835
-	go.opentelemetry.io/collector/model v0.47.1-0.20220323200141-1b7618728835
+	go.opentelemetry.io/collector v0.47.1-0.20220329181712-fcdb99368bf7
+	go.opentelemetry.io/collector/model v0.47.1-0.20220329181712-fcdb99368bf7
 	go.uber.org/zap v1.21.0
 	google.golang.org/api v0.73.0
 	google.golang.org/genproto v0.0.0-20220310185008-1973136f34c6
@@ -37,7 +37,7 @@ require (
 	github.com/spf13/cast v1.4.1 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.opentelemetry.io/otel v1.6.1 // indirect
-	go.opentelemetry.io/otel/metric v0.27.0 // indirect
+	go.opentelemetry.io/otel/metric v0.28.0 // indirect
 	go.opentelemetry.io/otel/trace v1.6.1 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect

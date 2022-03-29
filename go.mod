@@ -125,7 +125,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.47.0
 	github.com/prometheus/prometheus v1.8.2-0.20220117154355-4855a0c067e2
 	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.47.1-0.20220323200141-1b7618728835
+	go.opentelemetry.io/collector v0.47.1-0.20220329181712-fcdb99368bf7
 	golang.org/x/sys v0.0.0-20220310020820-b874c991c1a5
 )
 
@@ -436,16 +436,15 @@ require (
 	go.etcd.io/bbolt v1.3.6 // indirect
 	go.mongodb.org/atlas v0.15.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/model v0.47.1-0.20220323200141-1b7618728835 // indirect
+	go.opentelemetry.io/collector/model v0.47.1-0.20220329181712-fcdb99368bf7 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.31.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.29.0 // indirect
-	go.opentelemetry.io/contrib/zpages v0.29.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.31.0 // indirect
+	go.opentelemetry.io/contrib/zpages v0.31.0 // indirect
 	go.opentelemetry.io/otel v1.6.1 // indirect
-	go.opentelemetry.io/otel/exporters/prometheus v0.27.0 // indirect
-	go.opentelemetry.io/otel/internal/metric v0.27.0 // indirect
-	go.opentelemetry.io/otel/metric v0.27.0 // indirect
+	go.opentelemetry.io/otel/exporters/prometheus v0.28.0 // indirect
+	go.opentelemetry.io/otel/metric v0.28.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.6.1 // indirect
-	go.opentelemetry.io/otel/sdk/metric v0.27.0 // indirect
+	go.opentelemetry.io/otel/sdk/metric v0.28.0 // indirect
 	go.opentelemetry.io/otel/trace v1.6.1 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/goleak v1.1.12 // indirect

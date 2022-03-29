@@ -26,8 +26,8 @@ require (
 	github.com/prometheus/prometheus v1.8.2-0.20220117154355-4855a0c067e2
 	github.com/shirou/gopsutil/v3 v3.22.2
 	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.47.1-0.20220323200141-1b7618728835
-	go.opentelemetry.io/collector/model v0.47.1-0.20220323200141-1b7618728835
+	go.opentelemetry.io/collector v0.47.1-0.20220329181712-fcdb99368bf7
+	go.opentelemetry.io/collector/model v0.47.1-0.20220329181712-fcdb99368bf7
 	go.uber.org/atomic v1.9.0
 	go.uber.org/zap v1.21.0
 	golang.org/x/text v0.3.7
@@ -172,14 +172,13 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.31.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.29.0 // indirect
-	go.opentelemetry.io/contrib/zpages v0.29.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.31.0 // indirect
+	go.opentelemetry.io/contrib/zpages v0.31.0 // indirect
 	go.opentelemetry.io/otel v1.6.1 // indirect
-	go.opentelemetry.io/otel/exporters/prometheus v0.27.0 // indirect
-	go.opentelemetry.io/otel/internal/metric v0.27.0 // indirect
-	go.opentelemetry.io/otel/metric v0.27.0 // indirect
+	go.opentelemetry.io/otel/exporters/prometheus v0.28.0 // indirect
+	go.opentelemetry.io/otel/metric v0.28.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.6.1 // indirect
-	go.opentelemetry.io/otel/sdk/metric v0.27.0 // indirect
+	go.opentelemetry.io/otel/sdk/metric v0.28.0 // indirect
 	go.opentelemetry.io/otel/trace v1.6.1 // indirect
 	go.uber.org/goleak v1.1.12 // indirect
 	golang.org/x/crypto v0.0.0-20220214200702-86341886e292 // indirect

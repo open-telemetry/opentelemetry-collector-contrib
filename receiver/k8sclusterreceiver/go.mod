@@ -12,8 +12,8 @@ require (
 	github.com/openshift/api v0.0.0-20210521075222-e273a339932a
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142
 	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.47.1-0.20220323200141-1b7618728835
-	go.opentelemetry.io/collector/model v0.47.1-0.20220323200141-1b7618728835
+	go.opentelemetry.io/collector v0.47.1-0.20220329181712-fcdb99368bf7
+	go.opentelemetry.io/collector/model v0.47.1-0.20220329181712-fcdb99368bf7
 	go.uber.org/atomic v1.9.0
 	go.uber.org/zap v1.21.0
 	google.golang.org/protobuf v1.28.0
@@ -51,7 +51,7 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.opentelemetry.io/otel v1.6.1 // indirect
-	go.opentelemetry.io/otel/metric v0.27.0 // indirect
+	go.opentelemetry.io/otel/metric v0.28.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.6.1 // indirect
 	go.opentelemetry.io/otel/trace v1.6.1 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
