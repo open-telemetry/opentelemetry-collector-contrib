@@ -196,6 +196,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metric
 	}
 
 	if len(sl) > 0 {
+		exp.params.Logger.Debug("exporting sketches payload", zap.Any("sketches", sl))
 		err = multierr.Append(
 			err,
 			exp.retrier.DoWithRetries(ctx, func(ctx context.Context) error {
