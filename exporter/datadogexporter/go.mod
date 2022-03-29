@@ -60,3 +60,7 @@ require (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry => ../../pkg/resourcetotelemetry
+
+// see https://github.com/go-chi/chi/issues/713
+// see https://github.com/DataDog/dd-trace-go/issues/1220
+replace github.com/go-chi/chi/v4 => github.com/go-chi/chi v4.0.0+incompatible
