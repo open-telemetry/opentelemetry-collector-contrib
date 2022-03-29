@@ -65,7 +65,7 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pda
 		ilms.RemoveIf(func(ilm pdata.ScopeMetrics) bool {
 			ms := ilm.Metrics()
 			ms.RemoveIf(func(m pdata.Metric) bool {
-				if !ctdp.convertMetric(m.Name()) {
+				if !ctdp.shouldConvertMetric(m.Name()) {
 					return false
 				}
 				switch m.DataType() {
