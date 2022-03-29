@@ -18,9 +18,12 @@ receivers:
       paging:
       processes:
       process:
-        include:
-          names: ["test2", "test3"]
-          match_type: "regexp"
+      process:
+        filters:
+          -
+            include_executable_name:
+              match_type: "regexp"
+              executable_name: ["test2", "test3"]
 
 processors:
   nop:

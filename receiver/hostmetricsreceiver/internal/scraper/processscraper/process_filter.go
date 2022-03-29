@@ -1,112 +1,127 @@
 package processscraper
 
 import (
+	"fmt"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset/regexp"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset/strict"
-	"strings"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/filterhelper"
 )
 
-const RegExPrefix = "regex "
-
 type processFilter struct {
-	executableNameFilter filterset.FilterSet
-	executablePathFilter filterset.FilterSet
-	commandFilter        filterset.FilterSet
-	commandLineFilter    filterset.FilterSet
-	ownerFilter          filterset.FilterSet
-	pidFilter            int32
+	includeExecutableNameFilter filterset.FilterSet
+	excludeExecutableNameFilter filterset.FilterSet
+	includeExecutablePathFilter filterset.FilterSet
+	excludeExecutablePathFilter filterset.FilterSet
+	includeCommandFilter        filterset.FilterSet
+	excludeCommandFilter        filterset.FilterSet
+	includeCommandLineFilter    filterset.FilterSet
+	excludeCommandLineFilter    filterset.FilterSet
+	includeOwnerFilter          filterset.FilterSet
+	excludeOwnerFilter          filterset.FilterSet
+	includePidFilter            []int32
+	excludePidFilter            []int32
 }
 
-// MatchesExecutable return a boolean value indicating if executableName and executablePath matches the filter.
-func (p *processFilter) MatchesExecutable(executableName string, executablePath string) bool {
-	return (p.executableNameFilter == nil || p.executableNameFilter.Matches(executableName)) &&
-		(p.executablePathFilter == nil || p.executablePathFilter.Matches(executablePath))
+// includeExecutable return a boolean value indicating if executableName and executablePath matches the filter.
+func (p *processFilter) includeExecutable(executableName string, executablePath string) bool {
+	return includeExcludeMatch(p.includeExecutableNameFilter, p.excludeExecutableNameFilter, executableName) &&
+		includeExcludeMatch(p.includeExecutablePathFilter, p.excludeExecutablePathFilter, executablePath)
 }
 
-// MatchesCommand return a boolean value indicating if command and commandLine matches the filter.
-func (p *processFilter) MatchesCommand(command string, commandLine string) bool {
-	return (p.commandFilter == nil || p.commandFilter.Matches(command)) &&
-		(p.commandLineFilter == nil || p.commandLineFilter.Matches(commandLine))
+// includeCommand return a boolean value indicating if command and commandLine matches the filter.
+func (p *processFilter) includeCommand(command string, commandLine string) bool {
+	return includeExcludeMatch(p.includeCommandFilter, p.excludeCommandFilter, command) &&
+		includeExcludeMatch(p.includeCommandLineFilter, p.excludeCommandLineFilter, commandLine)
 }
-
 
 // MatchOwner return a boolean value indicating if owner matches the filter.
-func (p *processFilter) MatchOwner(owner string) bool {
-	return p.ownerFilter == nil || p.ownerFilter.Matches(owner)
+func (p *processFilter) includeOwner (owner string) bool {
+	return includeExcludeMatch(p.includeOwnerFilter, p.excludeOwnerFilter, owner)
 }
 
 // MatchesPid return a boolean value indicating if the pid matches the filter.
-func (p *processFilter) MatchesPid(pid int32) bool {
-	return p.pidFilter == 0 || (p.pidFilter == pid)
+func (p *processFilter) includePid(pid int32) bool {
+	return (len(p.includePidFilter) == 0 || findInt(p.includePidFilter, pid)) &&
+		(len(p.excludePidFilter) == 0 || !findInt(p.excludePidFilter, pid))
 }
 
-// regexParse indicates if a filter string is a regex.  The return value is
-// the filter string and a boolean indicating if the input string is a regex string.
-func regexParse(regexp string) (string, bool) {
-	// this is not a regular expression
-	if !strings.HasPrefix(regexp, RegExPrefix) {
-		return regexp, false
-	}
 
-	// trim regex indicator
-	regexp = strings.TrimPrefix(regexp, RegExPrefix)
-
-	//remove leading and trailing '"' character from a regex string
-	if len(regexp) > 1 && regexp[0] == '"' &&
-		regexp[len(regexp)-1] == '"' {
-		regexp = regexp[1:]
-		regexp = regexp[:len(regexp)-1]
+// findInt searches an int slice for a specific integeter.  If the
+// int is found in the slice return true.  Otherwise return false
+func findInt (intSlice []int32, intMatch int32) bool{
+	for _, val := range intSlice {
+		fmt.Printf("comparing %v to %v\n", intMatch, val)
+		if intMatch == val {
+			fmt.Printf("match\n")
+			return true
+		}
 	}
-	return regexp, true
+	return false
 }
 
 // createFilter receives a filter config and createa a processFilter based on the config settings
-func createFilter(filterConfig FilterConfig) (processFilter, error) {
+func createFilter(filterConfig FilterConfig) (*processFilter, error) {
 	var err error
 	filter := processFilter{}
 
-	if filterConfig.ExecutableName != "" {
-		if executableNameFilter, isRegex := regexParse(filterConfig.ExecutableName); isRegex {
-			filter.executableNameFilter, err = regexp.NewFilterSet([]string{executableNameFilter}, filterConfig.RegexpConfig)
-		} else {
-			filter.executableNameFilter = strict.NewFilterSet([]string{executableNameFilter})
-		}
+	filter.includeExecutableNameFilter, err = filterhelper.NewIncludeFilterHelper(filterConfig.IncludeExecutableNames.ExecutableNames, &filterConfig.IncludeExecutableNames.Config, "executable_name")
+	if err != nil {
+		return nil, err
 	}
 
-	if filterConfig.ExecutablePath != "" {
-		if executablePathFilter, isRegex := regexParse(filterConfig.ExecutablePath); isRegex {
-			filter.executablePathFilter, err = regexp.NewFilterSet([]string{executablePathFilter}, filterConfig.RegexpConfig)
-		} else {
-			filter.executablePathFilter = strict.NewFilterSet([]string{executablePathFilter})
-		}
+	filter.excludeExecutableNameFilter, err = filterhelper.NewExcludeFilterHelper(filterConfig.ExcludeExecutableNames.ExecutableNames, &filterConfig.ExcludeExecutableNames.Config, "executable_name")
+	if err != nil {
+		return nil, err
 	}
 
-	if filterConfig.Command != "" {
-		if commandFilter, isRegex := regexParse(filterConfig.Command); isRegex {
-			filter.commandFilter, err = regexp.NewFilterSet([]string{commandFilter}, filterConfig.RegexpConfig)
-		} else {
-			filter.commandFilter = strict.NewFilterSet([]string{commandFilter})
-		}
+	filter.includeExecutablePathFilter, err = filterhelper.NewIncludeFilterHelper(filterConfig.IncludeExecutablePaths.ExecutablePaths, &filterConfig.IncludeExecutablePaths.Config, "executable_path")
+	if err != nil {
+		return nil, err
 	}
 
-	if filterConfig.CommandLine != "" {
-		if commandLineFilter, isRegex := regexParse(filterConfig.CommandLine); isRegex {
-			filter.commandLineFilter, err = regexp.NewFilterSet([]string{commandLineFilter}, filterConfig.RegexpConfig)
-		} else {
-			filter.commandLineFilter = strict.NewFilterSet([]string{commandLineFilter})
-		}
+	filter.excludeExecutableNameFilter, err = filterhelper.NewExcludeFilterHelper(filterConfig.IncludeExecutablePaths.ExecutablePaths, &filterConfig.IncludeExecutablePaths.Config, "executable_path")
+	if err != nil {
+		return nil, err
 	}
 
-	if filterConfig.Owner != "" {
-		if ownerFilter, isRegex := regexParse(filterConfig.Owner); isRegex {
-			filter.ownerFilter, err = regexp.NewFilterSet([]string{ownerFilter}, filterConfig.RegexpConfig)
-		} else {
-			filter.ownerFilter = strict.NewFilterSet([]string{ownerFilter})
-		}
+	filter.includeCommandFilter, err = filterhelper.NewIncludeFilterHelper(filterConfig.IncludeCommands.Commands, &filterConfig.IncludeCommands.Config, "commands")
+	if err != nil {
+		return nil, err
 	}
 
-	filter.pidFilter = filterConfig.PID
+	filter.excludeCommandFilter, err = filterhelper.NewExcludeFilterHelper(filterConfig.ExcludeCommands.Commands, &filterConfig.ExcludeCommands.Config, "commands")
+	if err != nil {
+		return nil, err
+	}
 
-	return filter, err
+	filter.includeCommandLineFilter, err = filterhelper.NewIncludeFilterHelper(filterConfig.IncludeCommandLines.CommandLines, &filterConfig.IncludeCommandLines.Config, "command_lines")
+	if err != nil {
+		return nil, err
+	}
+
+	filter.excludeCommandLineFilter, err = filterhelper.NewExcludeFilterHelper(filterConfig.ExcludeCommandLines.CommandLines, &filterConfig.ExcludeCommandLines.Config, "command_lines")
+	if err != nil {
+		return nil, err
+	}
+
+	filter.includeOwnerFilter, err = filterhelper.NewIncludeFilterHelper(filterConfig.IncludeOwners.Owners, &filterConfig.IncludeOwners.Config, "owners")
+	if err != nil {
+		return nil, err
+	}
+
+	filter.excludeOwnerFilter, err = filterhelper.NewExcludeFilterHelper(filterConfig.ExcludeOwners.Owners, &filterConfig.ExcludeOwners.Config, "owners")
+	if err != nil {
+		return nil, err
+	}
+
+	filter.includePidFilter = filterConfig.IncludePids.Pids
+	filter.excludePidFilter = filterConfig.ExcludePids.Pids
+
+	return &filter, err
+}
+
+// includeExcludeMatch checks the include and exclude filter
+func includeExcludeMatch(include filterset.FilterSet, exclude filterset.FilterSet, matchString string) bool {
+	fmt.Printf("MatchString: %s include: %v exclude:%v  includeFilterExist: %v, excludeFilterExist: %v\n", matchString, (include == nil ||  include.Matches(matchString)), (exclude == nil || !exclude.Matches(matchString)), include!=nil, exclude!= nil)
+	return (include == nil ||  include.Matches(matchString)) &&
+		(exclude == nil || !exclude.Matches(matchString))
 }

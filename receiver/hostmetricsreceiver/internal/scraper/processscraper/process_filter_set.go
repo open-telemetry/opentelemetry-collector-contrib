@@ -4,13 +4,13 @@ type processFilterSet struct {
 	filters [] processFilter
 }
 
-// MatchesExecutable returns an int array with the index of all filters that match the input executable values
+// includeExecutable returns an int array with the index of all filters that match the input executable values
 // only indexes provided in indexList are checked
-func (p *processFilterSet) MatchesExecutable(executableName string, executablePath string, indexList []int) []int {
+func (p *processFilterSet) includeExecutable(executableName string, executablePath string, indexList []int) []int {
 	var matches []int
 
 	for _, i := range indexList {
-		if p.filters[i].MatchesExecutable(executableName, executablePath) {
+		if p.filters[i].includeExecutable(executableName, executablePath) {
 			matches = append(matches, i)
 		}
 	}
@@ -18,13 +18,13 @@ func (p *processFilterSet) MatchesExecutable(executableName string, executablePa
 	return matches
 }
 
-// MatchesCommand returns an int array with the index of all filters that match the input command values
+// includeCommand returns an int array with the index of all filters that match the input command values
 // only indexes provided in indexList are checked
-func (p *processFilterSet) MatchesCommand(command string, commandLine string, indexList []int) []int {
+func (p *processFilterSet) includeCommand(command string, commandLine string, indexList []int) []int {
 	var matches []int
 
 	for _, i := range indexList {
-		if p.filters[i].MatchesCommand(command, commandLine) {
+		if p.filters[i].includeCommand(command, commandLine) {
 			matches = append(matches, i)
 		}
 	}
@@ -34,11 +34,11 @@ func (p *processFilterSet) MatchesCommand(command string, commandLine string, in
 
 // MatchesOwner returns an int array with the index of all filters that match the input owner value
 // only indexes provided in indexList are checked
-func (p *processFilterSet) MatchesOwner(owner string, indexList []int) []int {
+func (p *processFilterSet) includeOwner(owner string, indexList []int) []int {
 	var matches []int
 
 	for _, i := range indexList {
-		if p.filters[i].MatchOwner(owner) {
+		if p.filters[i].includeOwner(owner) {
 			matches = append(matches, i)
 		}
 	}
@@ -47,11 +47,11 @@ func (p *processFilterSet) MatchesOwner(owner string, indexList []int) []int {
 }
 
 // MatchesPid returns an int array with the index of all filters that match the input pid value
-func (p *processFilterSet) MatchesPid(pid int32) []int {
+func (p *processFilterSet) includePid(pid int32) []int {
 	var matches []int
 
 	for i, f := range p.filters {
-		if f.MatchesPid(pid) {
+		if f.includePid(pid) {
 			matches = append(matches, i)
 		}
 	}
@@ -67,7 +67,7 @@ func createFilters(filterConfigs []FilterConfig) (*processFilterSet, error) {
 		if err != nil {
 			return nil, err
 		}
-		filters = append(filters, filter)
+		filters = append(filters, *filter)
 	}
 
 	// if there are no filters, create an empty filter that matches all processes

@@ -165,11 +165,24 @@ func getMetricSlice(t *testing.T, rm pdata.ResourceMetrics) pdata.MetricSlice {
 func TestScrapeMetrics_NewError(t *testing.T) {
 	skipTestOnUnsupportedOS(t)
 
-	_, err := newProcessScraper(&Config{Include: MatchConfig{Names: []string{"test"}}, Metrics: metadata.DefaultMetricsSettings()})
+	includeFilterConfig := FilterConfig{
+		IncludeExecutableNames: ExecutableNameMatchConfig{
+			ExecutableNames: []string{"test"},
+			Config: filterset.Config{MatchType: filterset.Strict},
+		},
+	}
+	_, err := newProcessScraper(&Config{Filters: []FilterConfig {includeFilterConfig}, Metrics: metadata.DefaultMetricsSettings()})
 	require.Error(t, err)
 	require.Regexp(t, "^error creating process include filters:", err.Error())
 
-	_, err = newProcessScraper(&Config{Exclude: MatchConfig{Names: []string{"test"}}, Metrics: metadata.DefaultMetricsSettings()})
+
+	excludeFilterConfig := FilterConfig{
+		ExcludeExecutableNames: ExecutableNameMatchConfig{
+			ExecutableNames: []string{"test"},
+			Config: filterset.Config{MatchType: filterset.Strict},
+		},
+	}
+	_, err = newProcessScraper(&Config{Filters: []FilterConfig {excludeFilterConfig}, Metrics: metadata.DefaultMetricsSettings()})
 	require.Error(t, err)
 	require.Regexp(t, "^error creating process exclude filters:", err.Error())
 }
@@ -314,15 +327,24 @@ func TestScrapeMetrics_Filtered(t *testing.T) {
 			}
 
 			if len(test.include) > 0 {
-				config.Include = MatchConfig{
-					Names:  test.include,
-					Config: filterset.Config{MatchType: filterset.Regexp},
+				config.Filters = []FilterConfig{
+					FilterConfig{
+						IncludeExecutableNames: ExecutableNameMatchConfig{
+							ExecutableNames: test.include,
+							Config:          filterset.Config{MatchType: filterset.Regexp},
+						},
+					},
 				}
 			}
+
 			if len(test.exclude) > 0 {
-				config.Exclude = MatchConfig{
-					Names:  test.exclude,
-					Config: filterset.Config{MatchType: filterset.Regexp},
+				config.Filters = []FilterConfig{
+					FilterConfig{
+						ExcludeExecutableNames: ExecutableNameMatchConfig{
+							ExecutableNames: test.exclude,
+							Config:          filterset.Config{MatchType: filterset.Regexp},
+						},
+					},
 				}
 			}
 
@@ -559,7 +581,6 @@ func TestScrapeMetrics_MuteProcessNameError(t *testing.T) {
 		})
 	}
 }
-
 
 func mockGetProcessExecutable(handle processHandle) (*executableMetadata, error) {
 	name, err := handle.Name()
