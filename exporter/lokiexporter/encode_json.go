@@ -78,7 +78,6 @@ func encodeJSON(lr pdata.LogRecord, res pdata.Resource) (string, error) {
 		return "", err
 	}
 	logRecord = lokiEntry{
-		Name:       lr.Name(),
 		Body:       body,
 		TraceID:    lr.TraceID().HexString(),
 		SpanID:     lr.SpanID().HexString(),
