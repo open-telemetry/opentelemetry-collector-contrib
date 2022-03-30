@@ -377,6 +377,79 @@ func TestSeverityParser(t *testing.T) {
 	}
 }
 
+func TestOtelPreset(t *testing.T) {
+	expected := map[string]entry.Severity{
+		"trace":  entry.Trace,
+		"1":      entry.Trace,
+		"trace2": entry.Trace2,
+		"2":      entry.Trace2,
+		"trace3": entry.Trace3,
+		"3":      entry.Trace3,
+		"trace4": entry.Trace4,
+		"4":      entry.Trace4,
+		"debug":  entry.Debug,
+		"5":      entry.Debug,
+		"debug2": entry.Debug2,
+		"6":      entry.Debug2,
+		"debug3": entry.Debug3,
+		"7":      entry.Debug3,
+		"debug4": entry.Debug4,
+		"8":      entry.Debug4,
+		"info":   entry.Info,
+		"9":      entry.Info,
+		"info2":  entry.Info2,
+		"10":     entry.Info2,
+		"info3":  entry.Info3,
+		"11":     entry.Info3,
+		"info4":  entry.Info4,
+		"12":     entry.Info4,
+		"warn":   entry.Warn,
+		"13":     entry.Warn,
+		"warn2":  entry.Warn2,
+		"14":     entry.Warn2,
+		"warn3":  entry.Warn3,
+		"15":     entry.Warn3,
+		"warn4":  entry.Warn4,
+		"16":     entry.Warn4,
+		"error":  entry.Error,
+		"17":     entry.Error,
+		"error2": entry.Error2,
+		"18":     entry.Error2,
+		"error3": entry.Error3,
+		"19":     entry.Error3,
+		"error4": entry.Error4,
+		"20":     entry.Error4,
+		"fatal":  entry.Fatal,
+		"21":     entry.Fatal,
+		"fatal2": entry.Fatal2,
+		"22":     entry.Fatal2,
+		"fatal3": entry.Fatal3,
+		"23":     entry.Fatal3,
+		"fatal4": entry.Fatal4,
+		"24":     entry.Fatal4,
+	}
+
+	testCases := make([]severityTestCase, 0, len(expected))
+	for k, v := range expected {
+		testCases = append(testCases, severityTestCase{
+			name:       fmt.Sprintf("otel-%s", k),
+			sample:     k,
+			mappingSet: "otel",
+			expected:   v,
+		})
+	}
+
+	rootField := entry.NewBodyField()
+	someField := entry.NewBodyField("some_field")
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Run("root", tc.run(rootField))
+			t.Run("non-root", tc.run(someField))
+		})
+	}
+}
+
 func (tc severityTestCase) run(parseFrom entry.Field) func(*testing.T) {
 	return func(t *testing.T) {
 		t.Parallel()
