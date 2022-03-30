@@ -16,6 +16,7 @@ package datadogexporter // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -162,7 +163,8 @@ func (exp *traceExporter) pushWithRetry(ctx context.Context, ddTracePayload *pb.
 	err := exp.edgeConnection.SendTraces(ctx, ddTracePayload, maxRetries)
 
 	if err != nil {
-		exp.params.Logger.Info("failed to send traces", zap.Error(err))
+		exp.params.Logger.Warn("failed to send traces", zap.Error(err))
+		exp.logFailedTracePostInfo(ddTracePayload)
 	}
 
 	// this is for generating metrics like hits, errors, and latency, it uses a separate endpoint than Traces
@@ -170,8 +172,74 @@ func (exp *traceExporter) pushWithRetry(ctx context.Context, ddTracePayload *pb.
 	errStats := exp.edgeConnection.SendStats(context.Background(), stats, maxRetries)
 
 	if errStats != nil {
-		exp.params.Logger.Info("failed to send trace stats", zap.Error(errStats))
+		exp.params.Logger.Warn("failed to send trace stats", zap.Error(errStats))
 	}
 
 	return fn()
+}
+
+func (exp *traceExporter) logFailedTracePostInfo(ddTracePayload *pb.TracePayload) {
+	envServices := map[string]struct{}{}
+	operationsPerEnvService := map[string]map[string]struct{}{}
+	resourcePerOpService := map[string]map[string]map[string]struct{}{}
+	versions := map[string]struct{}{}
+	maxTagCount := 0
+	spanCount := 0
+
+	for _, trace := range ddTracePayload.Traces {
+		spanCount += len(trace.Spans)
+		for _, span := range trace.Spans {
+			envService := fmt.Sprintf("%s:%s", ddTracePayload.Env, span.Service)
+			envServices[envService] = struct{}{}
+
+			if _, ok := operationsPerEnvService[envService]; !ok {
+				operationsPerEnvService[envService] = map[string]struct{}{}
+				resourcePerOpService[envService] = map[string]map[string]struct{}{}
+			}
+			operationsPerEnvService[envService][span.Name] = struct{}{}
+
+			if _, ok := resourcePerOpService[envService][span.Name]; !ok {
+				resourcePerOpService[envService][span.Name] = map[string]struct{}{}
+			}
+
+			resourcePerOpService[envService][span.Name][span.Resource] = struct{}{}
+
+			versions[span.Meta["version"]] = struct{}{}
+
+			tagCount := len(span.Meta)
+			if tagCount > maxTagCount {
+				maxTagCount = tagCount
+			}
+
+		}
+	}
+
+	maxOpCountPerEnvService := 0
+	for _, operations := range operationsPerEnvService {
+		if len(operations) > maxOpCountPerEnvService {
+			maxOpCountPerEnvService = len(operations)
+		}
+	}
+
+	maxResourceCountPerOpEnvService := 0
+	for _, operations := range resourcePerOpService {
+		for _, resources := range operations {
+			if len(resources) > maxResourceCountPerOpEnvService {
+				maxResourceCountPerOpEnvService = len(resources)
+			}
+		}
+	}
+
+	exp.params.Logger.Warn(
+		"info about the failed payload",
+
+		zap.Int("payload.size", ddTracePayload.Size()),
+		zap.Int("payload.traceCount", len(ddTracePayload.Traces)),
+		zap.Int("payload.spanCount", spanCount),
+
+		zap.Int("payload.envServices", len(envServices)),
+		zap.Int("payload.maxOpCountPerEnvService", maxOpCountPerEnvService),
+		zap.Int("payload.maxResourceCountPerOpEnvService", maxResourceCountPerOpEnvService),
+		zap.Int("payload.versions", len(versions)),
+	)
 }
