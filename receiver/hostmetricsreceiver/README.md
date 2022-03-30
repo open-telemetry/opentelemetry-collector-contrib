@@ -83,13 +83,51 @@ network:
 ```
 
 ### Process
-
+Process can be configured to have multiple filters.  Each filter operates
+on an and basis.  If a process matches any one filter then it will be 
+included, even if another filter explicitly excludes it.
 ```yaml
 process:
-  <include|exclude>:
-    names: [ <process name>, ... ]
-    match_type: <strict|regexp>
   mute_process_name_error: <true|false>
+  filters:
+    -
+      <include_executable_name|exclude_executable_name>:
+        match_type: <strict|regexp>
+        executable_name: [<executable name>, ... ]
+      <include_executable_path|exclude_executable_path>:
+        match_type: <strict|regexp>
+        executable_path: [<executable path>, ... ]
+      <include_process_command|exclude_process_command>:
+        match_type: <strict|regexp>
+        process_command: [<command>, ... ]
+      <include_process_command_line|exclude_process_command_line>:
+        match_type: <strict|regexp>
+        process_command_line: [<command line>, ... ]
+      <include_process_owner|exclude_process_owner>:
+        match_type: <strict|regexp>
+        process_owner: [<owner>, ... ]
+      <include_process_pid|exclude_process_pid>:
+        process_pid: [<pid>, ... ]        
+    -
+      <include_executable_name|exclude_executable_name>:
+        match_type: <strict|regexp>
+        executable_name: [<executable name>, ... ]
+      <include_executable_path|exclude_executable_path>:
+        match_type: <strict|regexp>
+        executable_path: [<executable path>, ... ]
+      <include_process_command|exclude_process_command>:
+        match_type: <strict|regexp>
+        process_command: [<command>, ... ]
+      <include_process_command_line|exclude_process_command_line>:
+        match_type: <strict|regexp>
+        process_command_line: [<command line>, ... ]
+      <include_process_owner|exclude_process_owner>:
+        match_type: <strict|regexp>
+        process_owner: [<owner>, ... ]
+      <include_process_pid|exclude_process_pid>:
+        process_pid: [<pid>, ... ]        
+    -
+      <create as many filters as desired>:
 ```
 
 ## Advanced Configuration

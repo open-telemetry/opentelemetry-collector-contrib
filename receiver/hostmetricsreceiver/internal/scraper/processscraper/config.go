@@ -16,7 +16,6 @@ package processscraper // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset/regexp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
 )
@@ -27,32 +26,68 @@ type Config struct {
 
 	// Metrics allows to customize scraped metrics representation.
 	Metrics metadata.MetricsSettings `mapstructure:"metrics"`
-	// Include specifies a filter on the process names that should be included from the generated metrics.
-	// Exclude specifies a filter on the process names that should be excluded from the generated metrics.
-	// If neither `include` or `exclude` are set, process metrics will be generated for all processes.
-	Include MatchConfig `mapstructure:"include"`
-	Exclude MatchConfig `mapstructure:"exclude"`
 
 	// MuteProcessNameError is a flag that will mute the error encountered when trying to read a process the
 	// collector does not have permission for.
 	// See https://github.com/open-telemetry/opentelemetry-collector/issues/3004 for more information.
 	MuteProcessNameError bool `mapstructure:"mute_process_name_error,omitempty"`
 
+	// FilterConfig is used to filter the set of processes that are reported on
 	Filters []FilterConfig `mapstructure:"filters"`
 }
 
-type MatchConfig struct {
+// ExecutableNameMatchConfig filters by executable name
+type ExecutableNameMatchConfig struct {
 	filterset.Config `mapstructure:",squash"`
-
-	Names []string `mapstructure:"names"`
+	ExecutableNames  []string `mapstructure:"executable_name"`
 }
 
+// ExecutablePathMatchConfig filters by executable path
+type ExecutablePathMatchConfig struct {
+	filterset.Config `mapstructure:",squash"`
+	ExecutablePaths  []string `mapstructure:"executable_path"`
+}
+
+// CommandMatchConfig filters by command
+type CommandMatchConfig struct {
+	filterset.Config `mapstructure:",squash"`
+	Commands         []string `mapstructure:"process_command"`
+}
+
+// CommandLineMatchConfig filters by command line arguments
+type CommandLineMatchConfig struct {
+	filterset.Config `mapstructure:",squash"`
+	CommandLines     []string `mapstructure:"process_command_line"`
+}
+
+// OwnerMatchConfig filters by owner
+type OwnerMatchConfig struct {
+	filterset.Config `mapstructure:",squash"`
+	Owners           []string `mapstructure:"process_owner"`
+}
+
+// PidMatchConfig filters by PID
+type PidMatchConfig struct {
+	filterset.Config `mapstructure:",squash"`
+	Pids             []int32 `mapstructure:"process_pid"`
+}
+
+// FilterConfig is used to filter processes that are reported on
 type FilterConfig struct {
-	ExecutableName string `mapstructure:"executable_name"`
-	ExecutablePath string `mapstructure:"executable_path"`
-	Command string `mapstructure:"process_command"`
-	CommandLine string `mapstructure:"process_command_line"`
-	Owner string `mapstructure:"process_owner"`
-	PID int32 `mapstructure:"process_pid"`
-	RegexpConfig *regexp.Config `mapstructure:"regexp"`
+	// Include specifies a filter on the process names that should be included from the generated metrics.
+	// Exclude specifies a filter on the process names that should be excluded from the generated metrics.
+	// If neither `include` or `exclude` are set, process metrics will be generated for all processes.
+
+	IncludeExecutableNames ExecutableNameMatchConfig `mapstructure:"include_executable_name"`
+	ExcludeExecutableNames ExecutableNameMatchConfig `mapstructure:"exclude_executable_name"`
+	IncludeExecutablePaths ExecutablePathMatchConfig `mapstructure:"include_executable_path"`
+	ExcludeExecutablePaths ExecutablePathMatchConfig `mapstructure:"exclude_executable_path"`
+	IncludeCommands        CommandMatchConfig        `mapstructure:"include_process_command"`
+	ExcludeCommands        CommandMatchConfig        `mapstructure:"exclude_process_command"`
+	IncludeCommandLines    CommandLineMatchConfig    `mapstructure:"include_process_command_line"`
+	ExcludeCommandLines    CommandLineMatchConfig    `mapstructure:"exclude_process_command_line"`
+	IncludeOwners          OwnerMatchConfig          `mapstructure:"include_process_owner"`
+	ExcludeOwners          OwnerMatchConfig          `mapstructure:"exclude_process_owner"`
+	IncludePids            PidMatchConfig            `mapstructure:"include_process_pid"`
+	ExcludePids            PidMatchConfig            `mapstructure:"exclude_process_pid"`
 }
