@@ -223,7 +223,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange_MultipleResourceSpans(t 
 func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 	singleSpanWithAttrib := func(key string, attribValue pdata.Value) pdata.Traces {
 		traces := pdata.NewTraces()
-		initSpanWithAttributes(key, attribValue, traces.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty())
+		initSpanWithAttributes(key, attribValue, traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty())
 		return traces
 	}
 	tests := []struct {
@@ -463,7 +463,7 @@ func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string, re
 			rs.Resource().Attributes().InsertBool("bool", true)
 			rs.Resource().Attributes().InsertString("string", "yes")
 			rs.Resource().Attributes().InsertInt("int64", 10000000)
-			ils := rs.InstrumentationLibrarySpans().AppendEmpty()
+			ils := rs.ScopeSpans().AppendEmpty()
 			ils.Spans().EnsureCapacity(numTracesPerBatch)
 
 			for k := 0; k < numTracesPerBatch; k++ {
@@ -488,7 +488,7 @@ func assertSampledData(t *testing.T, sampled []pdata.Traces, serviceName string)
 		rspans := td.ResourceSpans()
 		for i := 0; i < rspans.Len(); i++ {
 			rspan := rspans.At(i)
-			ilss := rspan.InstrumentationLibrarySpans()
+			ilss := rspan.ScopeSpans()
 			for j := 0; j < ilss.Len(); j++ {
 				ils := ilss.At(j)
 				if svcNameAttr, _ := rspan.Resource().Attributes().Get("service.name"); svcNameAttr.StringVal() != serviceName {

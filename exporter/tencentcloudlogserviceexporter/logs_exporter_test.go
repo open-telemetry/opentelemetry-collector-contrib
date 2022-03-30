@@ -31,12 +31,12 @@ func createSimpleLogData(numberOfLogs int) pdata.Logs {
 	logs := pdata.NewLogs()
 	logs.ResourceLogs().AppendEmpty() // Add an empty ResourceLogs
 	rl := logs.ResourceLogs().AppendEmpty()
-	rl.InstrumentationLibraryLogs().AppendEmpty() // Add an empty InstrumentationLibraryLogs
-	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
+	rl.ScopeLogs().AppendEmpty() // Add an empty ScopeLogs
+	sl := rl.ScopeLogs().AppendEmpty()
 
 	for i := 0; i < numberOfLogs; i++ {
 		ts := pdata.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
-		logRecord := ill.LogRecords().AppendEmpty()
+		logRecord := sl.LogRecords().AppendEmpty()
 		logRecord.Body().SetStringVal("mylog")
 		logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
 		logRecord.Attributes().InsertString("my-label", "myapp-type")
@@ -44,7 +44,7 @@ func createSimpleLogData(numberOfLogs int) pdata.Logs {
 		logRecord.Attributes().InsertString("custom", "custom")
 		logRecord.SetTimestamp(ts)
 	}
-	ill.LogRecords().AppendEmpty()
+	sl.LogRecords().AppendEmpty()
 
 	return logs
 }

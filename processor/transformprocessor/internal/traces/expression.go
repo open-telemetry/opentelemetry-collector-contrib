@@ -24,7 +24,7 @@ import (
 
 type spanTransformContext struct {
 	span     pdata.Span
-	il       pdata.InstrumentationLibrary
+	il       pdata.InstrumentationScope
 	resource pdata.Resource
 }
 

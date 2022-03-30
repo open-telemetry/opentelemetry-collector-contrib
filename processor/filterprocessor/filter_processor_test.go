@@ -367,7 +367,7 @@ func TestFilterMetricProcessor(t *testing.T) {
 			require.Equal(t, 1, len(got))
 			require.Equal(t, len(test.outMN), got[0].ResourceMetrics().Len())
 			for i, wantOut := range test.outMN {
-				gotMetrics := got[0].ResourceMetrics().At(i).InstrumentationLibraryMetrics().At(0).Metrics()
+				gotMetrics := got[0].ResourceMetrics().At(i).ScopeMetrics().At(0).Metrics()
 				assert.Equal(t, len(wantOut), gotMetrics.Len())
 				for idx := range wantOut {
 					assert.Equal(t, wantOut[idx], gotMetrics.At(idx).Name())
@@ -385,7 +385,7 @@ func testResourceMetrics(mwrs []metricWithResource) pdata.Metrics {
 	for _, mwr := range mwrs {
 		rm := md.ResourceMetrics().AppendEmpty()
 		pdata.NewMapFromRaw(mwr.resourceAttributes).CopyTo(rm.Resource().Attributes())
-		ms := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics()
+		ms := rm.ScopeMetrics().AppendEmpty().Metrics()
 		for _, name := range mwr.metricNames {
 			m := ms.AppendEmpty()
 			m.SetName(name)
@@ -481,7 +481,7 @@ func TestNilILM(t *testing.T) {
 	metrics := pdata.NewMetrics()
 	rms := metrics.ResourceMetrics()
 	rm := rms.AppendEmpty()
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 	ilms.AppendEmpty()
 	requireNotPanics(t, metrics)
 }
@@ -490,7 +490,7 @@ func TestNilMetric(t *testing.T) {
 	metrics := pdata.NewMetrics()
 	rms := metrics.ResourceMetrics()
 	rm := rms.AppendEmpty()
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 	ilm := ilms.AppendEmpty()
 	ms := ilm.Metrics()
 	ms.AppendEmpty()

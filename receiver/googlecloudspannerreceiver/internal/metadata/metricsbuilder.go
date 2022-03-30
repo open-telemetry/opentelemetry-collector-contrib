@@ -53,9 +53,9 @@ func (b *metricsFromDataPointBuilder) Build(dataPoints []*MetricsDataPoint) (pda
 	rms := metrics.ResourceMetrics()
 	rm := rms.AppendEmpty()
 
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 	ilm := ilms.AppendEmpty()
-	ilm.InstrumentationLibrary().SetName(instrumentationLibraryName)
+	ilm.Scope().SetName(instrumentationLibraryName)
 
 	for key, points := range groupedDataPoints {
 		metric := ilm.Metrics().AppendEmpty()

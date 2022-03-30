@@ -30,7 +30,7 @@ type metricsReceivedIndex struct {
 func newMetricsReceivedIndex(pdms []pdata.Metrics) *metricsReceivedIndex {
 	mi := &metricsReceivedIndex{m: map[string]*metricReceived{}}
 	for _, pdm := range pdms {
-		metrics := pdm.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+		metrics := pdm.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 		name := metrics.At(0).Name()
 		mi.m[name] = &metricReceived{pdm: pdm}
 	}

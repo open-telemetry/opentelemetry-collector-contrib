@@ -239,7 +239,7 @@ func sortTraces(tds []pdata.Traces, attrKey string) {
 func fillResourceSpans(rs pdata.ResourceSpans, key string, val pdata.Value) {
 	rs.Resource().Attributes().Upsert(key, val)
 	rs.Resource().Attributes().Upsert("__other_key__", pdata.NewValueInt(123))
-	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
+	ils := rs.ScopeSpans().AppendEmpty()
 	firstSpan := ils.Spans().AppendEmpty()
 	firstSpan.SetName("first-span")
 	firstSpan.SetTraceID(pdata.NewTraceID([16]byte{byte(rand.Int())}))
@@ -273,7 +273,7 @@ func sortMetrics(tds []pdata.Metrics, attrKey string) {
 func fillResourceMetrics(rs pdata.ResourceMetrics, key string, val pdata.Value) {
 	rs.Resource().Attributes().Upsert(key, val)
 	rs.Resource().Attributes().Upsert("__other_key__", pdata.NewValueInt(123))
-	ils := rs.InstrumentationLibraryMetrics().AppendEmpty()
+	ils := rs.ScopeMetrics().AppendEmpty()
 	firstMetric := ils.Metrics().AppendEmpty()
 	firstMetric.SetName("first-metric")
 	firstMetric.SetDataType(pdata.MetricDataType(rand.Int() % 4))
@@ -307,7 +307,7 @@ func sortLogs(tds []pdata.Logs, attrKey string) {
 func fillResourceLogs(rs pdata.ResourceLogs, key string, val pdata.Value) {
 	rs.Resource().Attributes().Upsert(key, val)
 	rs.Resource().Attributes().Upsert("__other_key__", pdata.NewValueInt(123))
-	ils := rs.InstrumentationLibraryLogs().AppendEmpty()
+	ils := rs.ScopeLogs().AppendEmpty()
 	firstLogRecord := ils.LogRecords().AppendEmpty()
 	firstLogRecord.SetName("first-log-record")
 	firstLogRecord.SetFlags(rand.Uint32())

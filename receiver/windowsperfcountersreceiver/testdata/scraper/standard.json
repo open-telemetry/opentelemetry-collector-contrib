@@ -1,9 +1,9 @@
 {
    "resourceMetrics": [
       {
-         "instrumentationLibraryMetrics": [
+         "scopeMetrics": [
             {
-               "instrumentationLibrary": {},
+               "scope": {},
                "metrics": [
                   {
                      "description": "percentage of time CPU is idle.",

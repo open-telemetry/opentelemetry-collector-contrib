@@ -85,9 +85,9 @@ func TestOTLPTracesJsonMarshaling(t *testing.T) {
 
 	rs := traces.ResourceSpans().At(0)
 	rs.SetSchemaUrl(semconv.SchemaURL)
-	rs.InstrumentationLibrarySpans().AppendEmpty()
+	rs.ScopeSpans().AppendEmpty()
 
-	ils := rs.InstrumentationLibrarySpans().At(0)
+	ils := rs.ScopeSpans().At(0)
 	ils.SetSchemaUrl(semconv.SchemaURL)
 	ils.Spans().AppendEmpty()
 
@@ -116,9 +116,9 @@ func TestOTLPTracesJsonMarshaling(t *testing.T) {
 		"resourceSpans": []interface{}{
 			map[string]interface{}{
 				"resource": map[string]interface{}{},
-				"instrumentationLibrarySpans": []interface{}{
+				"scopeSpans": []interface{}{
 					map[string]interface{}{
-						"instrumentationLibrary": map[string]interface{}{},
+						"scope": map[string]interface{}{},
 						"spans": []interface{}{
 							map[string]interface{}{
 								"traceId":           "",

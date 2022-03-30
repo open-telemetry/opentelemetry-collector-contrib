@@ -1395,8 +1395,8 @@ func constructMetrics(metricList ...pdata.Metric) pdata.Metrics {
 	result := pdata.NewMetrics()
 	result.ResourceMetrics().EnsureCapacity(1)
 	rm := result.ResourceMetrics().AppendEmpty()
-	rm.InstrumentationLibraryMetrics().EnsureCapacity(1)
-	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+	rm.ScopeMetrics().EnsureCapacity(1)
+	ilm := rm.ScopeMetrics().AppendEmpty()
 	ilm.Metrics().EnsureCapacity(len(metricList))
 	for _, metric := range metricList {
 		metric.CopyTo(ilm.Metrics().AppendEmpty())
@@ -1411,8 +1411,8 @@ func constructMetricsWithTags(tags map[string]string, metricList ...pdata.Metric
 	for key, val := range tags {
 		rm.Resource().Attributes().InsertString(key, val)
 	}
-	rm.InstrumentationLibraryMetrics().EnsureCapacity(1)
-	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+	rm.ScopeMetrics().EnsureCapacity(1)
+	ilm := rm.ScopeMetrics().AppendEmpty()
 	ilm.Metrics().EnsureCapacity(len(metricList))
 	for _, metric := range metricList {
 		metric.CopyTo(ilm.Metrics().AppendEmpty())

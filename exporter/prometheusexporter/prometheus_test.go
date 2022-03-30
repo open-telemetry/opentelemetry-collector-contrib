@@ -309,7 +309,7 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 
 func metricBuilder(delta int64, prefix string) pdata.Metrics {
 	md := pdata.NewMetrics()
-	ms := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics()
+	ms := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
 
 	m1 := ms.AppendEmpty()
 	m1.SetName(prefix + "this/one/there(where)")

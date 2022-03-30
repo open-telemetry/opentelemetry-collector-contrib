@@ -56,8 +56,8 @@ func TestExporterTraceDataCallbackSingleSpan(t *testing.T) {
 	rs := traces.ResourceSpans().AppendEmpty()
 	r := rs.Resource()
 	resource.CopyTo(r)
-	ilss := rs.InstrumentationLibrarySpans().AppendEmpty()
-	instrumentationLibrary.CopyTo(ilss.InstrumentationLibrary())
+	ilss := rs.ScopeSpans().AppendEmpty()
+	instrumentationLibrary.CopyTo(ilss.Scope())
 	span.CopyTo(ilss.Spans().AppendEmpty())
 
 	assert.NoError(t, exporter.onTraceData(context.Background(), traces))
@@ -83,8 +83,8 @@ func TestExporterTraceDataCallbackSingleSpanNoEnvelope(t *testing.T) {
 	rs := traces.ResourceSpans().AppendEmpty()
 	r := rs.Resource()
 	resource.CopyTo(r)
-	ilss := rs.InstrumentationLibrarySpans().AppendEmpty()
-	instrumentationLibrary.CopyTo(ilss.InstrumentationLibrary())
+	ilss := rs.ScopeSpans().AppendEmpty()
+	instrumentationLibrary.CopyTo(ilss.Scope())
 	span.CopyTo(ilss.Spans().AppendEmpty())
 
 	err := exporter.onTraceData(context.Background(), traces)

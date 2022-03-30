@@ -308,10 +308,10 @@ func metricsDataToLogServiceData(
 		resMetricSlice := resMetrics.At(i)
 		var defaultLabels KeyValues
 		resourceToMetricLabels(&defaultLabels, resMetricSlice.Resource())
-		insMetricSlice := resMetricSlice.InstrumentationLibraryMetrics()
+		insMetricSlice := resMetricSlice.ScopeMetrics()
 		for j := 0; j < insMetricSlice.Len(); j++ {
 			insMetrics := insMetricSlice.At(j)
-			// ignore insMetrics.InstrumentationLibrary()
+			// ignore insMetrics.Scope()
 			metricSlice := insMetrics.Metrics()
 			for k := 0; k < metricSlice.Len(); k++ {
 				oneMetric := metricSlice.At(k)

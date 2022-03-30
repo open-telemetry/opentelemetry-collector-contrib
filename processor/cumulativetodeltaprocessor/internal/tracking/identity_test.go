@@ -26,7 +26,7 @@ func TestMetricIdentity_Write(t *testing.T) {
 	resource := pdata.NewResource()
 	resource.Attributes().InsertBool("resource", true)
 
-	il := pdata.NewInstrumentationLibrary()
+	il := pdata.NewInstrumentationScope()
 	il.SetName("ilm_name")
 	il.SetVersion("ilm_version")
 
@@ -34,7 +34,7 @@ func TestMetricIdentity_Write(t *testing.T) {
 	attributes.InsertString("label", "value")
 	type fields struct {
 		Resource               pdata.Resource
-		InstrumentationLibrary pdata.InstrumentationLibrary
+		InstrumentationLibrary pdata.InstrumentationScope
 		MetricDataType         pdata.MetricDataType
 		MetricIsMonotonic      bool
 		MetricName             string
@@ -125,7 +125,7 @@ func TestMetricIdentity_IsFloatVal(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mi := &MetricIdentity{
 				Resource:               pdata.NewResource(),
-				InstrumentationLibrary: pdata.NewInstrumentationLibrary(),
+				InstrumentationLibrary: pdata.NewInstrumentationScope(),
 				Attributes:             pdata.NewMap(),
 				MetricDataType:         pdata.MetricDataTypeSum,
 				MetricValueType:        tt.fields.MetricValueType,
@@ -165,7 +165,7 @@ func TestMetricIdentity_IsSupportedMetricType(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mi := &MetricIdentity{
 				Resource:               pdata.NewResource(),
-				InstrumentationLibrary: pdata.NewInstrumentationLibrary(),
+				InstrumentationLibrary: pdata.NewInstrumentationScope(),
 				Attributes:             pdata.NewMap(),
 				MetricDataType:         tt.fields.MetricDataType,
 			}
