@@ -77,8 +77,8 @@ func (f *SyslogWriter) Start() (err error) {
 
 func (f *SyslogWriter) ConsumeLogs(_ context.Context, logs pdata.Logs) error {
 	for i := 0; i < logs.ResourceLogs().Len(); i++ {
-		for j := 0; j < logs.ResourceLogs().At(i).InstrumentationLibraryLogs().Len(); j++ {
-			ills := logs.ResourceLogs().At(i).InstrumentationLibraryLogs().At(j)
+		for j := 0; j < logs.ResourceLogs().At(i).ScopeLogs().Len(); j++ {
+			ills := logs.ResourceLogs().At(i).ScopeLogs().At(j)
 			for k := 0; k < ills.LogRecords().Len(); k++ {
 				err := f.Send(ills.LogRecords().At(k))
 				if err != nil {
@@ -108,7 +108,7 @@ func (f *SyslogWriter) Send(lr pdata.LogRecord) error {
 		sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", k, v.StringVal()))
 		return true
 	})
-	msg := fmt.Sprintf("<166> %s localhost %s - - [%s] %s\n", ts, lr.Name(), sdid.String(), lr.Body().StringVal())
+	msg := fmt.Sprintf("<166> %s localhost - - - [%s] %s\n", ts, sdid.String(), lr.Body().StringVal())
 
 	f.buf = append(f.buf, msg)
 	return f.SendCheck()

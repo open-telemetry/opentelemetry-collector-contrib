@@ -221,9 +221,9 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 				require.True(t, ok)
 				require.Equal(t, "myothervalue", anotherCustomAttr.StringVal())
 
-				ilm := rm.InstrumentationLibraryMetrics().At(0)
-				require.Equal(t, "io.opentelemetry.contrib.jmxmetrics", ilm.InstrumentationLibrary().Name())
-				require.Equal(t, "1.0.0-alpha", ilm.InstrumentationLibrary().Version())
+				ilm := rm.ScopeMetrics().At(0)
+				require.Equal(t, "io.opentelemetry.contrib.jmxmetrics", ilm.Scope().Name())
+				require.Equal(t, "1.0.0-alpha", ilm.Scope().Version())
 
 				met := ilm.Metrics().At(0)
 

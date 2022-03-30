@@ -48,11 +48,11 @@ func (a *spanAttributesProcessor) processTraces(ctx context.Context, td pdata.Tr
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
 		resource := rs.Resource()
-		ilss := rs.InstrumentationLibrarySpans()
+		ilss := rs.ScopeSpans()
 		for j := 0; j < ilss.Len(); j++ {
 			ils := ilss.At(j)
 			spans := ils.Spans()
-			library := ils.InstrumentationLibrary()
+			library := ils.Scope()
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
 				if filterspan.SkipSpan(a.include, a.exclude, span, resource, library) {

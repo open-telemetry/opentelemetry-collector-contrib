@@ -42,8 +42,8 @@ var severityMap = map[string]pdata.SeverityNumber{
 func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event) pdata.Logs {
 	ld := pdata.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
-	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
-	lr := ill.LogRecords().AppendEmpty()
+	sl := rl.ScopeLogs().AppendEmpty()
+	lr := sl.LogRecords().AppendEmpty()
 
 	resourceAttrs := rl.Resource().Attributes()
 	resourceAttrs.EnsureCapacity(totalResourceAttributes)

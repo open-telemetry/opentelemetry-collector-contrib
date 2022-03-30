@@ -184,7 +184,7 @@ func assertIncludesExpectedMetrics(t *testing.T, got pdata.Metrics) {
 }
 
 func getMetricSlice(t *testing.T, rm pdata.ResourceMetrics) pdata.MetricSlice {
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 	require.Equal(t, 1, ilms.Len())
 	return ilms.At(0).Metrics()
 }

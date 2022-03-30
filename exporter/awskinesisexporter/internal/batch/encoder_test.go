@@ -22,7 +22,7 @@ func NewTestTraces(spanCount int) pdata.Traces {
 	traces := pdata.NewTraces()
 
 	for i := 0; i < spanCount; i++ {
-		span := traces.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+		span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 		span.SetName("foo")
 		span.SetStartTimestamp(pdata.Timestamp(10))
 		span.SetEndTimestamp(pdata.Timestamp(20))
@@ -37,7 +37,7 @@ func NewTestMetrics(metricCount int) pdata.Metrics {
 	metrics := pdata.NewMetrics()
 
 	for i := 0; i < metricCount; i++ {
-		metric := metrics.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
+		metric := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 		metric.SetName("foo")
 		metric.SetUnit("bar")
 		metric.SetDataType(pdata.MetricDataTypeGauge)
@@ -51,7 +51,7 @@ func NewTestLogs(logCount int) pdata.Logs {
 	logs := pdata.NewLogs()
 
 	for i := 0; i < logCount; i++ {
-		log := logs.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty()
+		log := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 		log.SetName("foo")
 		log.SetSeverityText("bar")
 	}

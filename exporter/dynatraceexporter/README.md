@@ -24,6 +24,10 @@ The Dynatrace exporter is enabled by adding a `dynatrace` entry to the `exporter
 All configurations are optional, but if an `endpoint` other than the OneAgent metric ingestion endpoint is specified then an `api_token` is required.
 To see all available options, see [Advanced Configuration](#advanced-configuration) below.
 
+> When using this exporter, it is strongly RECOMMENDED to configure the OpenTelemetry SDKs to export metrics 
+> with DELTA temporality. If you are exporting Sum or Histogram metrics with CUMULATIVE temporality, read
+> about possible limitations of this exporter [below](#considerations-when-exporting-cumulative-data-points).
+
 ### Running alongside Dynatrace OneAgent (preferred)
 
 If you run the Collector on a host or VM that is monitored by the Dynatrace OneAgent then you only need to enable the exporter. No further configurations needed. The Dynatrace exporter will send all metrics to the OneAgent which will use its secure and load balanced connection to send the metrics to your Dynatrace SaaS or Managed environment.
@@ -249,3 +253,22 @@ Default: `5000`
 ### tags (Deprecated, Optional)
 
 **Deprecated: Please use [default_dimensions](#default_dimensions-optional) instead**
+
+# Considerations when exporting Cumulative Data Points
+
+When receiving Sum or Histogram metrics with CUMULATIVE temporality, this exporter
+performs CUMULATIVE to DELTA conversion. This conversion can lead to missing
+or inconsistent data, as described below:
+
+## First Data Points are dropped
+
+Due to the conversion, the exporter will drop the first received data point,
+as there is no previous data point to compare it to. This can be circumvented
+by configuring the OpenTelemetry SDK to export DELTA values.
+
+## Multi-instance collector deployment
+
+In a multiple-instance deployment of the OpenTelemetry Collector, the conversion 
+can produce inconsistent data unless it can be guaranteed that metrics from the 
+same source are processed by the same collector instance. This can be circumvented 
+by configuring the OpenTelemetry SDK to export DELTA values.

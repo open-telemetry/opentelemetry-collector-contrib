@@ -59,7 +59,7 @@ func TestLogDataToSignalFxEvents(t *testing.T) {
 		resourceLog.Resource().Attributes().InsertString("k3", "v3")
 		resourceLog.Resource().Attributes().InsertInt("k4", 123)
 
-		ilLogs := resourceLog.InstrumentationLibraryLogs()
+		ilLogs := resourceLog.ScopeLogs()
 		logSlice := ilLogs.AppendEmpty().LogRecords()
 
 		l := logSlice.AppendEmpty()
@@ -106,7 +106,7 @@ func TestLogDataToSignalFxEvents(t *testing.T) {
 			}(),
 			logData: func() pdata.Logs {
 				logs := buildDefaultLogs()
-				lrs := logs.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords()
+				lrs := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 				lrs.At(0).Attributes().Upsert("com.splunk.signalfx.event_category", pdata.NewValueEmpty())
 				return logs
 			}(),
@@ -116,7 +116,7 @@ func TestLogDataToSignalFxEvents(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			resource := tt.logData.ResourceLogs().At(0).Resource()
-			logSlice := tt.logData.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords()
+			logSlice := tt.logData.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 			events, dropped := LogRecordSliceToSignalFxV2(zap.NewNop(), logSlice, resource.Attributes())
 			for i := 0; i < logSlice.Len(); i++ {
 				logSlice.At(i).Attributes().Sort()

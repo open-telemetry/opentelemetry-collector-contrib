@@ -118,7 +118,7 @@ func TestNew(t *testing.T) {
 func TestConsumeMetrics(t *testing.T) {
 	smallBatch := pdata.NewMetrics()
 	rm := smallBatch.ResourceMetrics().AppendEmpty()
-	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+	ilm := rm.ScopeMetrics().AppendEmpty()
 	m := ilm.Metrics().AppendEmpty()
 
 	m.SetName("test_gauge")
@@ -249,7 +249,7 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			rm.Resource().Attributes().InsertString("com.splunk.signalfx.access_token", token)
 		}
 
-		ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+		ilm := rm.ScopeMetrics().AppendEmpty()
 		m := ilm.Metrics().AppendEmpty()
 
 		m.SetName("test_gauge")
@@ -313,7 +313,7 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			metrics: func() pdata.Metrics {
 				out := pdata.NewMetrics()
 				rm := out.ResourceMetrics().AppendEmpty()
-				ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+				ilm := rm.ScopeMetrics().AppendEmpty()
 				m := ilm.Metrics().AppendEmpty()
 
 				m.SetName("test_gauge")
@@ -471,7 +471,7 @@ func TestNewEventExporter(t *testing.T) {
 
 func makeSampleResourceLogs() pdata.Logs {
 	out := pdata.NewLogs()
-	l := out.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty()
+	l := out.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
 	l.SetTimestamp(pdata.Timestamp(1000))
 	attrs := l.Attributes()
@@ -515,7 +515,7 @@ func TestConsumeEventData(t *testing.T) {
 			name: "no_event_attribute",
 			resourceLogs: func() pdata.Logs {
 				out := makeSampleResourceLogs()
-				attrs := out.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(0).Attributes()
+				attrs := out.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
 				attrs.Delete("com.splunk.signalfx.event_category")
 				attrs.Delete("com.splunk.signalfx.event_type")
 				return out
@@ -529,7 +529,7 @@ func TestConsumeEventData(t *testing.T) {
 			resourceLogs: func() pdata.Logs {
 				out := makeSampleResourceLogs()
 
-				attrs := out.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(0).Attributes()
+				attrs := out.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
 				mapAttr := pdata.NewValueMap()
 				attrs.Insert("map", mapAttr)
 
@@ -690,7 +690,7 @@ func generateLargeDPBatch() pdata.Metrics {
 	ts := time.Now()
 	for i := 0; i < 6500; i++ {
 		rm := md.ResourceMetrics().AppendEmpty()
-		ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+		ilm := rm.ScopeMetrics().AppendEmpty()
 		m := ilm.Metrics().AppendEmpty()
 
 		m.SetName("test_" + strconv.Itoa(i))
@@ -708,7 +708,7 @@ func generateLargeDPBatch() pdata.Metrics {
 
 func generateLargeEventBatch() pdata.Logs {
 	out := pdata.NewLogs()
-	logs := out.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().LogRecords()
+	logs := out.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
 
 	batchSize := 65000
 	logs.EnsureCapacity(batchSize)

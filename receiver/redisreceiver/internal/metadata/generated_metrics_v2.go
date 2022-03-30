@@ -1687,8 +1687,8 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
 func (mb *MetricsBuilder) updateCapacity(rm pdata.ResourceMetrics) {
-	if mb.metricsCapacity < rm.InstrumentationLibraryMetrics().At(0).Metrics().Len() {
-		mb.metricsCapacity = rm.InstrumentationLibraryMetrics().At(0).Metrics().Len()
+	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
+		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
 	}
 	if mb.resourceCapacity < rm.Resource().Attributes().Len() {
 		mb.resourceCapacity = rm.Resource().Attributes().Len()
@@ -1708,8 +1708,8 @@ func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
 	for _, op := range ro {
 		op(rm.Resource())
 	}
-	ils := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ils.InstrumentationLibrary().SetName("otelcol/redisreceiver")
+	ils := rm.ScopeMetrics().AppendEmpty()
+	ils.Scope().SetName("otelcol/redisreceiver")
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricRedisClientsBlocked.emit(ils.Metrics())
 	mb.metricRedisClientsConnected.emit(ils.Metrics())

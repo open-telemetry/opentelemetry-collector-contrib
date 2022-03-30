@@ -65,8 +65,8 @@ func (a *metricDataAccumulator) nodeStats(s stats.NodeStats) {
 	rm := md.ResourceMetrics().AppendEmpty()
 	fillNodeResource(rm.Resource(), s)
 
-	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName(a.typeStr)
+	ilm := rm.ScopeMetrics().AppendEmpty()
+	ilm.Scope().SetName(a.typeStr)
 
 	startTime := pdata.NewTimestampFromTime(s.StartTime.Time)
 	currentTime := pdata.NewTimestampFromTime(a.time)
@@ -88,8 +88,8 @@ func (a *metricDataAccumulator) podStats(s stats.PodStats) {
 	rm := md.ResourceMetrics().AppendEmpty()
 	fillPodResource(rm.Resource(), s)
 
-	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName(a.typeStr)
+	ilm := rm.ScopeMetrics().AppendEmpty()
+	ilm.Scope().SetName(a.typeStr)
 
 	startTime := pdata.NewTimestampFromTime(s.StartTime.Time)
 	currentTime := pdata.NewTimestampFromTime(a.time)
@@ -118,8 +118,8 @@ func (a *metricDataAccumulator) containerStats(sPod stats.PodStats, s stats.Cont
 		return
 	}
 
-	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName(a.typeStr)
+	ilm := rm.ScopeMetrics().AppendEmpty()
+	ilm.Scope().SetName(a.typeStr)
 
 	startTime := pdata.NewTimestampFromTime(s.StartTime.Time)
 	currentTime := pdata.NewTimestampFromTime(a.time)
@@ -146,8 +146,8 @@ func (a *metricDataAccumulator) volumeStats(sPod stats.PodStats, s stats.VolumeS
 		return
 	}
 
-	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName(a.typeStr)
+	ilm := rm.ScopeMetrics().AppendEmpty()
+	ilm.Scope().SetName(a.typeStr)
 
 	currentTime := pdata.NewTimestampFromTime(a.time)
 	addVolumeMetrics(ilm.Metrics(), k8sPrefix, s, currentTime)

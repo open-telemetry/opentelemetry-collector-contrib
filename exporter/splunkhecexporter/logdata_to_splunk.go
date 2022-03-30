@@ -41,12 +41,8 @@ func mapLogRecordToSplunkEvent(res pdata.Resource, lr pdata.LogRecord, config *C
 	sourceTypeKey := config.HecToOtelAttrs.SourceType
 	indexKey := config.HecToOtelAttrs.Index
 	hostKey := config.HecToOtelAttrs.Host
-	nameKey := config.HecFields.Name
 	severityTextKey := config.HecFields.SeverityText
 	severityNumberKey := config.HecFields.SeverityNumber
-	if lr.Name() != "" {
-		fields[nameKey] = lr.Name()
-	}
 	if spanID := lr.SpanID().HexString(); spanID != "" {
 		fields[spanIDFieldKey] = spanID
 	}

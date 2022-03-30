@@ -951,11 +951,11 @@ func createTestMetrics(additionalAttributes map[string]string, name, version str
 	for attr, val := range additionalAttributes {
 		attrs.InsertString(attr, val)
 	}
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 
 	ilm := ilms.AppendEmpty()
-	ilm.InstrumentationLibrary().SetName(name)
-	ilm.InstrumentationLibrary().SetVersion(version)
+	ilm.Scope().SetName(name)
+	ilm.Scope().SetVersion(version)
 	metricsArray := ilm.Metrics()
 	metricsArray.AppendEmpty() // first one is TypeNone to test that it's ignored
 
@@ -1318,7 +1318,7 @@ func createNaNMetrics() pdata.Metrics {
 
 	attrs := rm.Resource().Attributes()
 	attrs.InsertString(attributes.AttributeDatadogHostname, testHostname)
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 
 	metricsArray := ilms.AppendEmpty().Metrics()
 

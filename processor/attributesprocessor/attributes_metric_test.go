@@ -53,8 +53,8 @@ func generateMetricData(resourceName string, attrs map[string]interface{}) pdata
 	md := pdata.NewMetrics()
 	res := md.ResourceMetrics().AppendEmpty()
 	res.Resource().Attributes().InsertString("name", resourceName)
-	ill := res.InstrumentationLibraryMetrics().AppendEmpty()
-	m := ill.Metrics().AppendEmpty()
+	sl := res.ScopeMetrics().AppendEmpty()
+	m := sl.Metrics().AppendEmpty()
 
 	switch m.DataType() {
 	case pdata.MetricDataTypeGauge:
@@ -97,7 +97,7 @@ func sortMetricAttributes(md pdata.Metrics) {
 	for i := 0; i < rms.Len(); i++ {
 		rs := rms.At(i)
 		rs.Resource().Attributes().Sort()
-		ilms := rs.InstrumentationLibraryMetrics()
+		ilms := rs.ScopeMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			metrics := ilms.At(j).Metrics()
 			for k := 0; k < metrics.Len(); k++ {
