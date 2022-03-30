@@ -19,6 +19,7 @@ import (
 
 	promcfg "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/model/labels"
+	"github.com/prometheus/prometheus/model/relabel"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/model/pdata"
 )
@@ -617,5 +618,72 @@ func TestHonorLabelsTrueConfig(t *testing.T) {
 		for _, scrapeCfg := range cfg.ScrapeConfigs {
 			scrapeCfg.HonorLabels = true
 		}
+	})
+}
+
+const targetRelabelJobInstance = `
+# HELP jvm_memory_bytes_used Used bytes of a given JVM memory area.
+# TYPE jvm_memory_bytes_used gauge
+jvm_memory_bytes_used{area="heap"} 100
+`
+
+func TestRelabelJobInstance(t *testing.T) {
+	targets := []*testData{
+		{
+			name:         "target1",
+			relabeledJob: "not-target1",
+			pages: []mockPrometheusResponse{
+				{code: 200, data: targetRelabelJobInstance},
+			},
+			validateFunc: verifyRelabelJobInstance,
+		},
+	}
+
+	testComponent(t, targets, false, "", func(cfg *promcfg.Config) {
+		for _, scrapeConfig := range cfg.ScrapeConfigs {
+			scrapeConfig.MetricRelabelConfigs = []*relabel.Config{
+				{
+					// this config should replace the instance label with 'relabeled-instance'
+					Action:      relabel.Replace,
+					Regex:       relabel.MustNewRegexp("(.*)"),
+					TargetLabel: "instance",
+					Replacement: "relabeled-instance",
+				},
+				{
+					// this config should replace the instance label with 'relabeled-instance'
+					Action:      relabel.Replace,
+					Regex:       relabel.MustNewRegexp("(.*)"),
+					TargetLabel: "job",
+					Replacement: "not-target1",
+				},
+			}
+		}
+	})
+}
+
+func verifyRelabelJobInstance(t *testing.T, td *testData, rms []*pdata.ResourceMetrics) {
+	verifyNumValidScrapeResults(t, td, rms)
+	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
+
+	wantAttributes := td.attributes
+	wantAttributes.Update("service.name", pdata.NewValueString("not-target1"))
+	wantAttributes.Update("service.instance.id", pdata.NewValueString("relabeled-instance"))
+	wantAttributes.Update("net.host.port", pdata.NewValueString(""))
+	wantAttributes.Insert("net.host.name", pdata.NewValueString("relabeled-instance"))
+
+	metrics1 := rms[0].InstrumentationLibraryMetrics().At(0).Metrics()
+	ts1 := metrics1.At(0).Gauge().DataPoints().At(0).Timestamp()
+	doCompare(t, "relabel-job-instance", wantAttributes, rms[0], []testExpectation{
+		assertMetricPresent("jvm_memory_bytes_used",
+			compareMetricType(pdata.MetricDataTypeGauge),
+			[]dataPointExpectation{
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(100),
+						compareAttributes(map[string]string{"area": "heap"}),
+					},
+				},
+			}),
 	})
 }
