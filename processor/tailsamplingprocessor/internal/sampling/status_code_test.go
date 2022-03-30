@@ -69,7 +69,7 @@ func TestStatusCodeSampling(t *testing.T) {
 		t.Run(c.Desc, func(t *testing.T) {
 			traces := pdata.NewTraces()
 			rs := traces.ResourceSpans().AppendEmpty()
-			ils := rs.InstrumentationLibrarySpans().AppendEmpty()
+			ils := rs.ScopeSpans().AppendEmpty()
 
 			for _, statusCode := range c.StatusCodesPresent {
 				span := ils.Spans().AppendEmpty()

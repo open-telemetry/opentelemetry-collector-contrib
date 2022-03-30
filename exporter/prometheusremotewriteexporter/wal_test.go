@@ -25,20 +25,20 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func doNothingExportSink(_ context.Context, reqL []*prompb.WriteRequest) []error {
+func doNothingExportSink(_ context.Context, reqL []*prompb.WriteRequest) error {
 	_ = reqL
 	return nil
 }
 
 func TestWALCreation_nilConfig(t *testing.T) {
-	config := (*walConfig)(nil)
+	config := (*WALConfig)(nil)
 	pwal, err := newWAL(config, doNothingExportSink)
 	require.Equal(t, err, errNilConfig)
 	require.Nil(t, pwal)
 }
 
 func TestWALCreation_nonNilConfig(t *testing.T) {
-	config := &walConfig{Directory: t.TempDir()}
+	config := &WALConfig{Directory: t.TempDir()}
 	pwal, err := newWAL(config, doNothingExportSink)
 	require.NotNil(t, pwal)
 	assert.Nil(t, err)
@@ -75,14 +75,21 @@ func orderByLabelValue(wreq *prompb.WriteRequest) {
 			timeSeries.Samples[i] = *bMsgs[i].sample
 		}
 	}
+
+	// Now finally sort stably by timeseries value for
+	// which just .String() is good enough for comparison.
+	sort.Slice(wreq.Timeseries, func(i, j int) bool {
+		ti, tj := wreq.Timeseries[i], wreq.Timeseries[j]
+		return ti.String() < tj.String()
+	})
 }
 
 func TestWALStopManyTimes(t *testing.T) {
 	tempDir := t.TempDir()
-	config := &walConfig{
+	config := &WALConfig{
 		Directory:         tempDir,
 		TruncateFrequency: 60 * time.Microsecond,
-		NBeforeTruncation: 1,
+		BufferSize:        1,
 	}
 	pwal, err := newWAL(config, doNothingExportSink)
 	require.Nil(t, err)
@@ -101,7 +108,7 @@ func TestWALStopManyTimes(t *testing.T) {
 
 func TestWAL_persist(t *testing.T) {
 	// Unit tests that requests written to the WAL persist.
-	config := &walConfig{Directory: t.TempDir()}
+	config := &WALConfig{Directory: t.TempDir()}
 
 	pwal, err := newWAL(config, doNothingExportSink)
 	require.Nil(t, err)
@@ -131,9 +138,11 @@ func TestWAL_persist(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	err = pwal.start(ctx)
+	err = pwal.retrieveWALIndices()
 	require.Nil(t, err)
-	defer pwal.stop()
+	t.Cleanup(func() {
+		assert.NoError(t, pwal.stop())
+	})
 
 	err = pwal.persistToWAL(reqL)
 	require.Nil(t, err)

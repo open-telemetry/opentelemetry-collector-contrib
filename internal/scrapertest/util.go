@@ -42,14 +42,14 @@ func getDataPointSlice(metric pdata.Metric) pdata.NumberDataPointSlice {
 	return dataPointSlice
 }
 
-func sortInstrumentationLibrary(a, b pdata.InstrumentationLibraryMetrics) bool {
+func sortInstrumentationLibrary(a, b pdata.ScopeMetrics) bool {
 	if a.SchemaUrl() < b.SchemaUrl() {
 		return true
 	}
-	if a.InstrumentationLibrary().Name() < b.InstrumentationLibrary().Name() {
+	if a.Scope().Name() < b.Scope().Name() {
 		return true
 	}
-	if a.InstrumentationLibrary().Version() < b.InstrumentationLibrary().Version() {
+	if a.Scope().Version() < b.Scope().Version() {
 		return true
 	}
 	return false

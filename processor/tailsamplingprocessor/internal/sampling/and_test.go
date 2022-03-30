@@ -34,7 +34,7 @@ func TestAndEvaluatorNotSampled(t *testing.T) {
 
 	traces := pdata.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
-	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
+	ils := rs.ScopeSpans().AppendEmpty()
 
 	span := ils.Spans().AppendEmpty()
 	span.Status().SetCode(pdata.StatusCodeError)
@@ -61,7 +61,7 @@ func TestAndEvaluatorSampled(t *testing.T) {
 
 	traces := pdata.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
-	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
+	ils := rs.ScopeSpans().AppendEmpty()
 
 	span := ils.Spans().AppendEmpty()
 	span.Attributes().InsertString("attribute_name", "attribute_value")

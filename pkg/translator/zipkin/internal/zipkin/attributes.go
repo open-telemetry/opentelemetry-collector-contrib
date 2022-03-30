@@ -28,20 +28,20 @@ const (
 )
 
 var attrValDescriptions = []*attrValDescript{
-	constructAttrValDescript("^$", pdata.AttributeValueTypeEmpty),
-	constructAttrValDescript(`^-?\d+$`, pdata.AttributeValueTypeInt),
-	constructAttrValDescript(`^-?\d+\.\d+$`, pdata.AttributeValueTypeDouble),
-	constructAttrValDescript(`^(true|false)$`, pdata.AttributeValueTypeBool),
-	constructAttrValDescript(`^\{"\w+":.+\}$`, pdata.AttributeValueTypeMap),
-	constructAttrValDescript(`^\[.*\]$`, pdata.AttributeValueTypeArray),
+	constructAttrValDescript("^$", pdata.ValueTypeEmpty),
+	constructAttrValDescript(`^-?\d+$`, pdata.ValueTypeInt),
+	constructAttrValDescript(`^-?\d+\.\d+$`, pdata.ValueTypeDouble),
+	constructAttrValDescript(`^(true|false)$`, pdata.ValueTypeBool),
+	constructAttrValDescript(`^\{"\w+":.+\}$`, pdata.ValueTypeMap),
+	constructAttrValDescript(`^\[.*\]$`, pdata.ValueTypeSlice),
 }
 
 type attrValDescript struct {
 	regex    *regexp.Regexp
-	attrType pdata.AttributeValueType
+	attrType pdata.ValueType
 }
 
-func constructAttrValDescript(regex string, attrType pdata.AttributeValueType) *attrValDescript {
+func constructAttrValDescript(regex string, attrType pdata.ValueType) *attrValDescript {
 	regexc := regexp.MustCompile(regex)
 	return &attrValDescript{
 		regex:    regexc,
@@ -50,11 +50,11 @@ func constructAttrValDescript(regex string, attrType pdata.AttributeValueType) *
 }
 
 // DetermineValueType returns the native OTLP attribute type the string translates to.
-func DetermineValueType(value string) pdata.AttributeValueType {
+func DetermineValueType(value string) pdata.ValueType {
 	for _, desc := range attrValDescriptions {
 		if desc.regex.MatchString(value) {
 			return desc.attrType
 		}
 	}
-	return pdata.AttributeValueTypeString
+	return pdata.ValueTypeString
 }

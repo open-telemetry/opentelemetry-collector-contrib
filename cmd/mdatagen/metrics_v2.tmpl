@@ -67,7 +67,7 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pdata.Timestamp, ts pda
 	dp.Set{{ $metric.Data.MetricValueType }}Val(val)
 	{{- end }}
 	{{- range $metric.Attributes }}
-	dp.Attributes().Insert(A.{{ .Render }}, pdata.NewAttributeValueString({{ .RenderUnexported }}AttributeValue))
+	dp.Attributes().Insert(A.{{ .Render }}, pdata.NewValueString({{ .RenderUnexported }}AttributeValue))
 	{{- end }}
 }
 
@@ -101,7 +101,10 @@ func newMetric{{ $name.Render }}(settings MetricSettings) metric{{ $name.Render 
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	startTime                pdata.Timestamp
+	startTime                pdata.Timestamp // start time that will be applied to all recorded data points.
+	metricsCapacity          int             // maximum observed number of metrics per resource.
+	resourceCapacity         int             // maximum observed number of resource attributes.
+	metricsBuffer            pdata.Metrics   // accumulates metrics data before emitting.
 	{{- range $name, $metric := .Metrics }}
 	metric{{ $name.Render }} metric{{ $name.Render }}
 	{{- end }}
@@ -120,6 +123,7 @@ func WithStartTime(startTime pdata.Timestamp) metricBuilderOption {
 func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                pdata.NewTimestampFromTime(time.Now()),
+		metricsBuffer:            pdata.NewMetrics(),
 		{{- range $name, $metric := .Metrics }}
 		metric{{ $name.Render }}: newMetric{{ $name.Render }}(settings.{{ $name.Render }}),
 		{{- end }}
@@ -130,13 +134,58 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 	return mb
 }
 
-// Emit appends generated metrics to a pdata.MetricsSlice and updates the internal state to be ready for recording
-// another set of data points. This function will be doing all transformations required to produce metric representation
-// defined in metadata and user settings, e.g. delta/cumulative translation.
-func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
+// updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
+func (mb *MetricsBuilder) updateCapacity(rm pdata.ResourceMetrics) {
+	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
+		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
+	}
+	if mb.resourceCapacity < rm.Resource().Attributes().Len() {
+		mb.resourceCapacity = rm.Resource().Attributes().Len()
+	}
+}
+
+// ResourceOption applies changes to provided resource.
+type ResourceOption func(pdata.Resource)
+
+{{- range $name, $attr := .ResourceAttributes }}
+// With{{ $name.Render }} sets provided value as "{{ $name }}" attribute for current resource.
+func With{{ $name.Render }}(val {{ $attr.Type.Primitive }}) ResourceOption {
+	return func(r pdata.Resource) {
+		r.Attributes().Upsert{{ $attr.Type }}("{{ $name }}", val)
+	}
+}
+{{ end }}
+
+// EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
+// recording another set of data points as part of another resource. This function can be helpful when one scraper
+// needs to emit metrics from several resources. Otherwise calling this function is not required,
+// just `Emit` function can be called instead. Resource attributes should be provided as ResourceOption arguments.
+func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
+	rm := pdata.NewResourceMetrics()
+	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
+	for _, op := range ro {
+		op(rm.Resource())
+	}
+	ils := rm.ScopeMetrics().AppendEmpty()
+	ils.Scope().SetName("otelcol/{{ .Name }}")
+	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	{{- range $name, $metric := .Metrics }}
-	mb.metric{{- $name.Render }}.emit(metrics)
+	mb.metric{{- $name.Render }}.emit(ils.Metrics())
 	{{- end }}
+	if ils.Metrics().Len() > 0 {
+		mb.updateCapacity(rm)
+		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
+	}
+}
+
+// Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
+// recording another set of metrics. This function will be responsible for applying all the transformations required to
+// produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
+func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pdata.Metrics {
+	mb.EmitForResource(ro...)
+	metrics := pdata.NewMetrics()
+	mb.metricsBuffer.MoveTo(metrics)
+	return metrics
 }
 
 {{ range $name, $metric := .Metrics -}}

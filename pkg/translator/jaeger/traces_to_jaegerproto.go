@@ -46,7 +46,7 @@ func ProtoFromTraces(td pdata.Traces) ([]*model.Batch, error) {
 
 func resourceSpansToJaegerProto(rs pdata.ResourceSpans) *model.Batch {
 	resource := rs.Resource()
-	ilss := rs.InstrumentationLibrarySpans()
+	ilss := rs.ScopeSpans()
 
 	if resource.Attributes().Len() == 0 && ilss.Len() == 0 {
 		return nil
@@ -69,7 +69,7 @@ func resourceSpansToJaegerProto(rs pdata.ResourceSpans) *model.Batch {
 		spans := ils.Spans()
 		for j := 0; j < spans.Len(); j++ {
 			span := spans.At(j)
-			jSpan := spanToJaegerProto(span, ils.InstrumentationLibrary())
+			jSpan := spanToJaegerProto(span, ils.Scope())
 			if jSpan != nil {
 				jSpans = append(jSpans, jSpan)
 			}
@@ -103,12 +103,12 @@ func resourceToJaegerProtoProcess(resource pdata.Resource) *model.Process {
 
 }
 
-func appendTagsFromResourceAttributes(dest []model.KeyValue, attrs pdata.AttributeMap) []model.KeyValue {
+func appendTagsFromResourceAttributes(dest []model.KeyValue, attrs pdata.Map) []model.KeyValue {
 	if attrs.Len() == 0 {
 		return dest
 	}
 
-	attrs.Range(func(key string, attr pdata.AttributeValue) bool {
+	attrs.Range(func(key string, attr pdata.Value) bool {
 		if key == conventions.AttributeServiceName {
 			return true
 		}
@@ -118,42 +118,42 @@ func appendTagsFromResourceAttributes(dest []model.KeyValue, attrs pdata.Attribu
 	return dest
 }
 
-func appendTagsFromAttributes(dest []model.KeyValue, attrs pdata.AttributeMap) []model.KeyValue {
+func appendTagsFromAttributes(dest []model.KeyValue, attrs pdata.Map) []model.KeyValue {
 	if attrs.Len() == 0 {
 		return dest
 	}
-	attrs.Range(func(key string, attr pdata.AttributeValue) bool {
+	attrs.Range(func(key string, attr pdata.Value) bool {
 		dest = append(dest, attributeToJaegerProtoTag(key, attr))
 		return true
 	})
 	return dest
 }
 
-func attributeToJaegerProtoTag(key string, attr pdata.AttributeValue) model.KeyValue {
+func attributeToJaegerProtoTag(key string, attr pdata.Value) model.KeyValue {
 	tag := model.KeyValue{Key: key}
 	switch attr.Type() {
-	case pdata.AttributeValueTypeString:
+	case pdata.ValueTypeString:
 		// Jaeger-to-Internal maps binary tags to string attributes and encodes them as
 		// base64 strings. Blindingly attempting to decode base64 seems too much.
 		tag.VType = model.ValueType_STRING
 		tag.VStr = attr.StringVal()
-	case pdata.AttributeValueTypeInt:
+	case pdata.ValueTypeInt:
 		tag.VType = model.ValueType_INT64
 		tag.VInt64 = attr.IntVal()
-	case pdata.AttributeValueTypeBool:
+	case pdata.ValueTypeBool:
 		tag.VType = model.ValueType_BOOL
 		tag.VBool = attr.BoolVal()
-	case pdata.AttributeValueTypeDouble:
+	case pdata.ValueTypeDouble:
 		tag.VType = model.ValueType_FLOAT64
 		tag.VFloat64 = attr.DoubleVal()
-	case pdata.AttributeValueTypeMap, pdata.AttributeValueTypeArray:
+	case pdata.ValueTypeMap, pdata.ValueTypeSlice:
 		tag.VType = model.ValueType_STRING
 		tag.VStr = attr.AsString()
 	}
 	return tag
 }
 
-func spanToJaegerProto(span pdata.Span, libraryTags pdata.InstrumentationLibrary) *model.Span {
+func spanToJaegerProto(span pdata.Span, libraryTags pdata.InstrumentationScope) *model.Span {
 	traceID := traceIDToJaegerProto(span.TraceID())
 	jReferences := makeJaegerProtoReferences(span.Links(), span.ParentSpanID(), traceID)
 
@@ -170,7 +170,7 @@ func spanToJaegerProto(span pdata.Span, libraryTags pdata.InstrumentationLibrary
 	}
 }
 
-func getJaegerProtoSpanTags(span pdata.Span, instrumentationLibrary pdata.InstrumentationLibrary) []model.KeyValue {
+func getJaegerProtoSpanTags(span pdata.Span, instrumentationLibrary pdata.InstrumentationScope) []model.KeyValue {
 	var spanKindTag, statusCodeTag, errorTag, statusMsgTag model.KeyValue
 	var spanKindTagFound, statusCodeTagFound, errorTagFound, statusMsgTagFound bool
 
@@ -388,7 +388,7 @@ func getTagsFromTraceState(traceState pdata.TraceState) ([]model.KeyValue, bool)
 	return keyValues, exists
 }
 
-func getTagsFromInstrumentationLibrary(il pdata.InstrumentationLibrary) ([]model.KeyValue, bool) {
+func getTagsFromInstrumentationLibrary(il pdata.InstrumentationScope) ([]model.KeyValue, bool) {
 	keyValues := make([]model.KeyValue, 0)
 	if ilName := il.Name(); ilName != "" {
 		kv := model.KeyValue{

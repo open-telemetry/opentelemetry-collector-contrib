@@ -1,10 +1,10 @@
 {
    "resourceMetrics": [
       {
-         "instrumentationLibraryMetrics": [
+         "scopeMetrics": [
             {
-               "instrumentationLibrary": {
-                  "name": "otelcol/rabbitmq"
+               "scope": {
+                  "name": "otelcol/rabbitmqreceiver"
                },
                "metrics": [
                   {
@@ -85,10 +85,10 @@
          }
       },
       {
-         "instrumentationLibraryMetrics": [
+         "scopeMetrics": [
             {
-               "instrumentationLibrary": {
-                  "name": "otelcol/rabbitmq"
+               "scope": {
+                  "name": "otelcol/rabbitmqreceiver"
                },
                "metrics": [
                   {

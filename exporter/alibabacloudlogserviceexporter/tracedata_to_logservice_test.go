@@ -86,10 +86,10 @@ func constructSpanData() pdata.Traces {
 	traces.ResourceSpans().EnsureCapacity(1)
 	rspans := traces.ResourceSpans().AppendEmpty()
 	fillResource(rspans.Resource())
-	rspans.InstrumentationLibrarySpans().EnsureCapacity(1)
-	ispans := rspans.InstrumentationLibrarySpans().AppendEmpty()
-	ispans.InstrumentationLibrary().SetName("golang-sls-exporter")
-	ispans.InstrumentationLibrary().SetVersion("v0.1.0")
+	rspans.ScopeSpans().EnsureCapacity(1)
+	ispans := rspans.ScopeSpans().AppendEmpty()
+	ispans.Scope().SetName("golang-sls-exporter")
+	ispans.Scope().SetVersion("v0.1.0")
 	ispans.Spans().EnsureCapacity(2)
 	fillHTTPClientSpan(ispans.Spans().AppendEmpty())
 	fillHTTPServerSpan(ispans.Spans().AppendEmpty())
@@ -164,8 +164,8 @@ func fillHTTPServerSpan(span pdata.Span) {
 	status.SetMessage("something error")
 }
 
-func constructSpanAttributes(attributes map[string]interface{}) pdata.AttributeMap {
-	attrs := pdata.NewAttributeMap()
+func constructSpanAttributes(attributes map[string]interface{}) pdata.Map {
+	attrs := pdata.NewMap()
 	for key, value := range attributes {
 		if cast, ok := value.(int); ok {
 			attrs.InsertInt(key, int64(cast))

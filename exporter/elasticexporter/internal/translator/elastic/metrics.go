@@ -31,7 +31,7 @@ import (
 //
 // TODO(axw) otlpLibrary is currently not used. We should consider recording
 // it as metadata.
-func EncodeMetrics(otlpMetrics pdata.MetricSlice, otlpLibrary pdata.InstrumentationLibrary, w *fastjson.Writer) (dropped int, _ error) {
+func EncodeMetrics(otlpMetrics pdata.MetricSlice, otlpLibrary pdata.InstrumentationScope, w *fastjson.Writer) (dropped int, _ error) {
 	var metricsets metricsets
 	for i := 0; i < otlpMetrics.Len(); i++ {
 		metric := otlpMetrics.At(i)
@@ -101,10 +101,10 @@ func asTime(in pdata.Timestamp) model.Time {
 	return model.Time(time.Unix(0, int64(in)))
 }
 
-func asStringMap(in pdata.AttributeMap) model.StringMap {
+func asStringMap(in pdata.Map) model.StringMap {
 	var out model.StringMap
 	in.Sort()
-	in.Range(func(k string, v pdata.AttributeValue) bool {
+	in.Range(func(k string, v pdata.Value) bool {
 		out = append(out, model.StringMapItem{
 			Key:   k,
 			Value: v.AsString(),

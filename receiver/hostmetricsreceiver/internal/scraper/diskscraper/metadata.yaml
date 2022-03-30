@@ -1,4 +1,4 @@
-name: disk
+name: hostmetricsreceiver/disk
 
 attributes:
   device:

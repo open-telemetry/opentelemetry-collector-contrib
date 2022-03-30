@@ -20,6 +20,7 @@ package windowsperfcountersreceiver
 import (
 	"context"
 	"errors"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -31,6 +32,8 @@ import (
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver/internal/third_party/telegraf/win_perf_counters"
 )
 
@@ -60,49 +63,77 @@ func (mpc *mockPerfCounter) Close() error {
 }
 
 func Test_WindowsPerfCounterScraper(t *testing.T) {
-	type expectedMetric struct {
-		name                string
-		instanceLabelValues []string
-	}
-
 	type testCase struct {
 		name string
 		cfg  *Config
 
-		newErr          string
 		mockCounterPath string
 		startMessage    string
 		startErr        string
 		scrapeErr       error
 		shutdownErr     error
 
-		expectedMetrics []expectedMetric
+		expectedMetricPath string
 	}
 
-	defaultConfig := &Config{
-		PerfCounters: []PerfCounterConfig{
-			{Object: "Memory", Counters: []string{"Committed Bytes"}},
-		},
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{CollectionInterval: time.Minute},
-	}
+	defaultConfig := createDefaultConfig().(*Config)
 
 	testCases := []testCase{
 		{
 			name: "Standard",
 			cfg: &Config{
+				MetricMetaData: map[string]MetricConfig{
+					"cpu.idle": {
+						Description: "percentage of time CPU is idle.",
+						Unit:        "%",
+						Gauge:       GaugeMetric{},
+					},
+					"bytes.committed": {
+						Description: "number of bytes committed to memory",
+						Unit:        "By",
+						Gauge:       GaugeMetric{},
+					},
+					"processor.time": {
+						Description: "amount of time processor is busy",
+						Unit:        "%",
+						Gauge:       GaugeMetric{},
+					},
+				},
 				PerfCounters: []PerfCounterConfig{
-					{Object: "Memory", Counters: []string{"Committed Bytes"}},
-					{Object: "Processor", Instances: []string{"*"}, Counters: []string{"% Processor Time"}},
-					{Object: "Processor", Instances: []string{"1", "2"}, Counters: []string{"% Idle Time"}},
+					{Object: "Memory", Counters: []CounterConfig{{Name: "Committed Bytes", Metric: "bytes.committed"}}},
+					{Object: "Processor", Instances: []string{"*"}, Counters: []CounterConfig{{Name: "% Idle Time", Metric: "cpu.idle"}}},
+					{Object: "Processor", Instances: []string{"1", "2"}, Counters: []CounterConfig{{Name: "% Processor Time", Metric: "processor.time"}}},
 				},
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{CollectionInterval: time.Minute},
 			},
-			expectedMetrics: []expectedMetric{
-				{name: `\Memory\Committed Bytes`},
-				{name: `\Processor(*)\% Processor Time`, instanceLabelValues: []string{"*"}},
-				{name: `\Processor(1)\% Idle Time`, instanceLabelValues: []string{"1"}},
-				{name: `\Processor(2)\% Idle Time`, instanceLabelValues: []string{"2"}},
+			expectedMetricPath: filepath.Join("testdata", "scraper", "standard.json"),
+		},
+		{
+			name: "SumMetric",
+			cfg: &Config{
+				MetricMetaData: map[string]MetricConfig{
+					"bytes.committed": {
+						Description: "number of bytes committed to memory",
+						Unit:        "By",
+						Sum:         SumMetric{},
+					},
+				},
+				PerfCounters: []PerfCounterConfig{
+					{Object: "Memory", Counters: []CounterConfig{{Name: "Committed Bytes", Metric: "bytes.committed"}}},
+				},
+				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{CollectionInterval: time.Minute},
 			},
+			expectedMetricPath: filepath.Join("testdata", "scraper", "sum_metric.json"),
+		},
+		{
+			name: "NoMetricDefinition",
+			cfg: &Config{
+				PerfCounters: []PerfCounterConfig{
+					{Object: "Memory", Counters: []CounterConfig{{Name: "Committed Bytes"}}},
+				},
+				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{CollectionInterval: time.Minute},
+			},
+			expectedMetricPath: filepath.Join("testdata", "scraper", "no_metric_def.json"),
 		},
 		{
 			name: "InvalidCounter",
@@ -110,11 +141,11 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 				PerfCounters: []PerfCounterConfig{
 					{
 						Object:   "Memory",
-						Counters: []string{"Committed Bytes"},
+						Counters: []CounterConfig{{Name: "Committed Bytes", Metric: "Committed Bytes"}},
 					},
 					{
 						Object:   "Invalid Object",
-						Counters: []string{"Invalid Counter"},
+						Counters: []CounterConfig{{Name: "Invalid Counter", Metric: "invalid"}},
 					},
 				},
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{CollectionInterval: time.Minute},
@@ -124,12 +155,11 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 		},
 		{
 			name:      "ScrapeError",
-			scrapeErr: errors.New("err1"),
+			scrapeErr: errors.New("err2"),
 		},
 		{
-			name:            "CloseError",
-			expectedMetrics: []expectedMetric{{name: ""}},
-			shutdownErr:     errors.New("err1"),
+			name:        "CloseError",
+			shutdownErr: errors.New("err1"),
 		},
 	}
 
@@ -142,14 +172,11 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 
 			core, obs := observer.New(zapcore.WarnLevel)
 			logger := zap.New(core)
-			scraper, err := newScraper(cfg, logger)
-			if test.newErr != "" {
-				require.EqualError(t, err, test.newErr)
-				return
-			}
+			settings := componenttest.NewNopTelemetrySettings()
+			settings.Logger = logger
+			scraper := newScraper(cfg, settings)
 
-			err = scraper.start(context.Background(), componenttest.NewNopHost())
-			require.NoError(t, err)
+			err := scraper.start(context.Background(), componenttest.NewNopHost())
 			if test.startErr != "" {
 				require.Equal(t, 1, obs.Len())
 				log := obs.All()[0]
@@ -162,66 +189,37 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 			require.NoError(t, err)
 
 			if test.mockCounterPath != "" || test.scrapeErr != nil || test.shutdownErr != nil {
-				for i := range scraper.counters {
-					scraper.counters[i] = newMockPerfCounter(test.mockCounterPath, test.scrapeErr, test.shutdownErr)
+				scraper.cfg.MetricMetaData = map[string]MetricConfig{
+					"metric": {
+						Description: "desc",
+						Unit:        "1",
+						Gauge:       GaugeMetric{},
+					},
+				}
+				scraper.counters = []PerfCounterMetrics{
+					{
+						CounterScraper: newMockPerfCounter(test.mockCounterPath, test.scrapeErr, test.shutdownErr),
+						Metric:         "metric",
+					},
 				}
 			}
 
-			md, err := scraper.scrape(context.Background())
+			actualMetrics, err := scraper.scrape(context.Background())
 			if test.scrapeErr != nil {
-				assert.Equal(t, err, test.scrapeErr)
-			} else {
-				require.NoError(t, err)
+				require.Equal(t, test.scrapeErr, err)
+				return
 			}
-			metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
-			require.Equal(t, len(test.expectedMetrics), metrics.Len())
-			for i, e := range test.expectedMetrics {
-				metric := metrics.At(i)
-				assert.Equal(t, e.name, metric.Name())
-
-				ddp := metric.Gauge().DataPoints()
-
-				var allInstances bool
-				for _, v := range e.instanceLabelValues {
-					if v == "*" {
-						allInstances = true
-						break
-					}
-				}
-
-				if allInstances {
-					require.GreaterOrEqual(t, ddp.Len(), 1)
-				} else {
-					expectedDataPoints := 1
-					if len(e.instanceLabelValues) > 0 {
-						expectedDataPoints = len(e.instanceLabelValues)
-					}
-
-					require.Equal(t, expectedDataPoints, ddp.Len())
-				}
-
-				if len(e.instanceLabelValues) > 0 {
-					instanceLabelValues := make([]string, 0, ddp.Len())
-					for i := 0; i < ddp.Len(); i++ {
-						instanceLabelValue, ok := ddp.At(i).Attributes().Get(instanceLabelName)
-						require.Truef(t, ok, "data point was missing %q label", instanceLabelName)
-						instanceLabelValues = append(instanceLabelValues, instanceLabelValue.StringVal())
-					}
-
-					if !allInstances {
-						for _, v := range e.instanceLabelValues {
-							assert.Contains(t, instanceLabelValues, v)
-						}
-					}
-				}
-			}
+			require.NoError(t, err)
 
 			err = scraper.shutdown(context.Background())
 			if test.shutdownErr != nil {
-				assert.Equal(t, err, test.shutdownErr)
-			} else {
-				require.NoError(t, err)
+				assert.Equal(t, test.shutdownErr, err)
+				return
 			}
+			require.NoError(t, err)
+			expectedMetrics, err := golden.ReadMetrics(test.expectedMetricPath)
+			scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues)
+			require.NoError(t, err)
 		})
 	}
 }

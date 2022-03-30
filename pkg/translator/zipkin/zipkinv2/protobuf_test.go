@@ -41,7 +41,7 @@ func TestProtobuf_UnmarshalTracesError(t *testing.T) {
 func TestProtobuf_MarshalTracesError(t *testing.T) {
 	invalidTD := pdata.NewTraces()
 	// Add one span with empty trace ID.
-	invalidTD.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	invalidTD.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	marshaler := NewProtobufTracesMarshaler()
 	buf, err := marshaler.MarshalTraces(invalidTD)
 	assert.Nil(t, buf)

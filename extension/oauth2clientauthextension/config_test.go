@@ -15,6 +15,7 @@
 package oauth2clientauthextension
 
 import (
+	"net/url"
 	"path/filepath"
 	"testing"
 	"time"
@@ -50,6 +51,7 @@ func TestLoadConfig(t *testing.T) {
 			ExtensionSettings: config.NewExtensionSettings(config.NewComponentIDWithName(typeStr, "1")),
 			ClientSecret:      "someclientsecret",
 			ClientID:          "someclientid",
+			EndpointParams:    url.Values{"audience": []string{"someaudience"}},
 			Scopes:            []string{"api.metrics"},
 			TokenURL:          "https://example.com/oauth2/default/v1/token",
 			Timeout:           time.Second,

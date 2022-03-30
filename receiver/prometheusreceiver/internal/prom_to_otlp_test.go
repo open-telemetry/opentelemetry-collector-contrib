@@ -32,12 +32,11 @@ func makeResourceWithJobInstanceScheme(def *jobInstanceDefinition, hasHost bool)
 	// when variables change, these tests will fail and we'll have reports.
 	attrs.UpsertString("service.name", def.job)
 	if hasHost {
-		attrs.UpsertString("host.name", def.host)
+		attrs.UpsertString("net.host.name", def.host)
 	}
-	attrs.UpsertString("job", def.job)
-	attrs.UpsertString("instance", def.instance)
-	attrs.UpsertString("port", def.port)
-	attrs.UpsertString("scheme", def.scheme)
+	attrs.UpsertString("service.instance.id", def.instance)
+	attrs.UpsertString("net.host.port", def.port)
+	attrs.UpsertString("http.scheme", def.scheme)
 	return &resource
 }
 

@@ -25,20 +25,20 @@ import (
 
 func TestSpanAttributesToMap(t *testing.T) {
 
-	spanAttrs := []pdata.AttributeMap{
-		pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
-			"foo": pdata.NewAttributeValueString("bar"),
+	spanAttrs := []pdata.Map{
+		pdata.NewMapFromRaw(map[string]interface{}{
+			"foo": "bar",
 		}),
-		pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
-			"foo": pdata.NewAttributeValueInt(1234),
+		pdata.NewMapFromRaw(map[string]interface{}{
+			"foo": 1234,
 		}),
-		pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
-			"foo": pdata.NewAttributeValueBool(true),
+		pdata.NewMapFromRaw(map[string]interface{}{
+			"foo": true,
 		}),
-		pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
-			"foo": pdata.NewAttributeValueDouble(0.3145),
+		pdata.NewMapFromRaw(map[string]interface{}{
+			"foo": 0.3145,
 		}),
-		pdata.NewAttributeMap(),
+		pdata.NewMap(),
 	}
 
 	wantResults := []map[string]interface{}{

@@ -1,10 +1,10 @@
 {
    "resourceMetrics": [
       {
-         "instrumentationLibraryMetrics": [
+         "scopeMetrics": [
             {
-               "instrumentationLibrary": {
-                  "name": "otelcol/couchdb"
+               "scope": {
+                  "name": "otelcol/couchdbreceiver"
                },
                "metrics": [
                   {

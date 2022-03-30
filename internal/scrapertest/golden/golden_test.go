@@ -27,7 +27,7 @@ import (
 func TestWriteMetrics(t *testing.T) {
 	metricslice := testMetrics()
 	metrics := pdata.NewMetrics()
-	metricslice.CopyTo(metrics.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics())
+	metricslice.CopyTo(metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics())
 
 	tempDir := filepath.Join(t.TempDir(), "metrics.json")
 	WriteMetrics(tempDir, metrics)
@@ -45,7 +45,7 @@ func TestWriteMetrics(t *testing.T) {
 func TestReadMetrics(t *testing.T) {
 	metricslice := testMetrics()
 	expectedMetrics := pdata.NewMetrics()
-	metricslice.CopyTo(expectedMetrics.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics())
+	metricslice.CopyTo(expectedMetrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics())
 
 	expectedFile := filepath.Join("testdata", "roundtrip", "expected.json")
 	actualMetrics, err := ReadMetrics(expectedFile)
@@ -56,7 +56,7 @@ func TestReadMetrics(t *testing.T) {
 func TestRoundTrip(t *testing.T) {
 	metricslice := testMetrics()
 	expectedMetrics := pdata.NewMetrics()
-	metricslice.CopyTo(expectedMetrics.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics())
+	metricslice.CopyTo(expectedMetrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics())
 
 	tempDir := filepath.Join(t.TempDir(), "metrics.json")
 	err := WriteMetrics(tempDir, expectedMetrics)
@@ -76,15 +76,15 @@ func testMetrics() pdata.MetricSlice {
 	dps := metric.Gauge().DataPoints()
 
 	dp := dps.AppendEmpty()
-	attributes := pdata.NewAttributeMap()
-	attributes.Insert("testKey1", pdata.NewAttributeValueString("teststringvalue1"))
-	attributes.Insert("testKey2", pdata.NewAttributeValueString("testvalue1"))
+	attributes := pdata.NewMap()
+	attributes.Insert("testKey1", pdata.NewValueString("teststringvalue1"))
+	attributes.Insert("testKey2", pdata.NewValueString("testvalue1"))
 	setDPDoubleVal(dp, 2, attributes, time.Time{})
 
 	dp = dps.AppendEmpty()
-	attributes = pdata.NewAttributeMap()
-	attributes.Insert("testKey1", pdata.NewAttributeValueString("teststringvalue2"))
-	attributes.Insert("testKey2", pdata.NewAttributeValueString("testvalue2"))
+	attributes = pdata.NewMap()
+	attributes.Insert("testKey1", pdata.NewValueString("teststringvalue2"))
+	attributes.Insert("testKey2", pdata.NewValueString("testvalue2"))
 	setDPDoubleVal(dp, 2, attributes, time.Time{})
 
 	// Gauge with one int dp
@@ -93,8 +93,8 @@ func testMetrics() pdata.MetricSlice {
 	dps = metric.Gauge().DataPoints()
 
 	dp = dps.AppendEmpty()
-	attributes = pdata.NewAttributeMap()
-	attributes.Insert("testKey2", pdata.NewAttributeValueString("teststringvalue2"))
+	attributes = pdata.NewMap()
+	attributes.Insert("testKey2", pdata.NewValueString("teststringvalue2"))
 	setDPIntVal(dp, 2, attributes, time.Time{})
 
 	// Delta Sum with two int dps
@@ -103,13 +103,13 @@ func testMetrics() pdata.MetricSlice {
 	dps = metric.Sum().DataPoints()
 
 	dp = dps.AppendEmpty()
-	attributes = pdata.NewAttributeMap()
-	attributes.Insert("testKey2", pdata.NewAttributeValueString("teststringvalue2"))
+	attributes = pdata.NewMap()
+	attributes.Insert("testKey2", pdata.NewValueString("teststringvalue2"))
 	setDPIntVal(dp, 2, attributes, time.Time{})
 
 	dp = dps.AppendEmpty()
-	attributes = pdata.NewAttributeMap()
-	attributes.Insert("testKey2", pdata.NewAttributeValueString("teststringvalue2"))
+	attributes = pdata.NewMap()
+	attributes.Insert("testKey2", pdata.NewValueString("teststringvalue2"))
 	setDPIntVal(dp, 2, attributes, time.Time{})
 
 	// Cumulative Sum with one double dp
@@ -118,18 +118,18 @@ func testMetrics() pdata.MetricSlice {
 	dps = metric.Sum().DataPoints()
 
 	dp = dps.AppendEmpty()
-	attributes = pdata.NewAttributeMap()
+	attributes = pdata.NewMap()
 	setDPDoubleVal(dp, 2, attributes, time.Date(1997, 07, 27, 1, 1, 1, 1, &time.Location{}))
 	return slice
 }
 
-func setDPDoubleVal(dp pdata.NumberDataPoint, value float64, attributes pdata.AttributeMap, timeStamp time.Time) {
+func setDPDoubleVal(dp pdata.NumberDataPoint, value float64, attributes pdata.Map, timeStamp time.Time) {
 	dp.SetDoubleVal(value)
 	dp.SetTimestamp(pdata.NewTimestampFromTime(timeStamp))
 	attributes.CopyTo(dp.Attributes())
 }
 
-func setDPIntVal(dp pdata.NumberDataPoint, value int64, attributes pdata.AttributeMap, timeStamp time.Time) {
+func setDPIntVal(dp pdata.NumberDataPoint, value int64, attributes pdata.Map, timeStamp time.Time) {
 	dp.SetIntVal(value)
 	dp.SetTimestamp(pdata.NewTimestampFromTime(timeStamp))
 	attributes.CopyTo(dp.Attributes())

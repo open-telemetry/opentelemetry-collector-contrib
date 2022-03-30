@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
@@ -113,13 +112,18 @@ func (*nopWithEndpointFactory) CreateDefaultConfig() config.Receiver {
 	}
 }
 
+type mockComponent struct {
+	component.StartFunc
+	component.ShutdownFunc
+}
+
 func (*nopWithEndpointFactory) CreateMetricsReceiver(
 	ctx context.Context,
 	_ component.ReceiverCreateSettings,
 	_ config.Receiver,
 	nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
 	return &nopWithEndpointReceiver{
-		Component: componenthelper.New(),
+		Component: mockComponent{},
 		Metrics:   nextConsumer,
 	}, nil
 }

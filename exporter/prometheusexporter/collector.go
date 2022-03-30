@@ -79,11 +79,11 @@ func (c *collector) metricName(namespace string, metric pdata.Metric) string {
 	return sanitize(metric.Name(), c.skipSanitizeLabel)
 }
 
-func (c *collector) getMetricMetadata(metric pdata.Metric, attributes pdata.AttributeMap) (*prometheus.Desc, []string) {
+func (c *collector) getMetricMetadata(metric pdata.Metric, attributes pdata.Map) (*prometheus.Desc, []string) {
 	keys := make([]string, 0, attributes.Len())
 	values := make([]string, 0, attributes.Len())
 
-	attributes.Range(func(k string, v pdata.AttributeValue) bool {
+	attributes.Range(func(k string, v pdata.Value) bool {
 		keys = append(keys, sanitize(k, c.skipSanitizeLabel))
 		values = append(values, v.AsString())
 		return true

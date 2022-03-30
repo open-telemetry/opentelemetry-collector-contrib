@@ -44,7 +44,7 @@ func TestCronJobMetrics(t *testing.T) {
 		},
 	)
 
-	testutils.AssertMetrics(t, actualResourceMetrics[0].metrics[0], "k8s.cronjob.active_jobs",
+	testutils.AssertMetricsInt(t, actualResourceMetrics[0].metrics[0], "k8s.cronjob.active_jobs",
 		metricspb.MetricDescriptor_GAUGE_INT64, 2)
 }
 

@@ -1,10 +1,10 @@
 {
    "resourceMetrics": [
       {
-         "instrumentationLibraryMetrics": [
+         "scopeMetrics": [
             {
-               "instrumentationLibrary": {
-                  "name": "otel/mysql"
+               "scope": {
+                  "name": "otelcol/mysqlreceiver"
                },
                "metrics": [
                   {

@@ -66,7 +66,7 @@ func metricsData(
 	}
 	rsAttr.Sort()
 
-	mdMetrics := rs.InstrumentationLibraryMetrics().AppendEmpty().Metrics()
+	mdMetrics := rs.ScopeMetrics().AppendEmpty().Metrics()
 	mdMetrics.EnsureCapacity(len(metrics))
 	for _, m := range metrics {
 		mdMetric := mdMetrics.AppendEmpty()
@@ -102,6 +102,7 @@ func metricsData(
 
 func defaultLabels() map[string]string {
 	return map[string]string{
+		"container.runtime":    "docker",
 		"container.hostname":   "abcdef012345",
 		"container.id":         "a2596076ca048f02bcd16a8acd12a7ea2d3bc430d1cde095357239dd3925a4c3",
 		"container.image.name": "myImage",

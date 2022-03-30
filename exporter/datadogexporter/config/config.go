@@ -15,6 +15,7 @@
 package config // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 
 import (
+	"encoding"
 	"errors"
 	"fmt"
 	"regexp"
@@ -50,16 +51,18 @@ const (
 type APIConfig struct {
 	// Key is the Datadog API key to associate your Agent's data with your organization.
 	// Create a new API key here: https://app.datadoghq.com/account/settings
-	// It can also be set through the `DD_API_KEY` environment variable.
+	//
+	// It can also be set through the `DD_API_KEY` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
 	Key string `mapstructure:"key"`
 
 	// Site is the site of the Datadog intake to send data to.
-	// It can also be set through the `DD_SITE` environment variable.
+	// It can also be set through the `DD_SITE` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
 	// The default value is "datadoghq.com".
 	Site string `mapstructure:"site"`
 }
 
-// GetCensoredKey returns the API key censored for logging purposes
+// GetCensoredKey returns the API key censored for logging purposes.
+// Deprecated: [v0.48.0] Will be removed in v0.49.0.
 func (api *APIConfig) GetCensoredKey() string {
 	if len(api.Key) <= 5 {
 		return api.Key
@@ -75,6 +78,7 @@ type MetricsConfig struct {
 
 	// SendMonotonic states whether to report cumulative monotonic metrics as counters
 	// or gauges
+	// Deprecated: [v0.48.0] Use `metrics::sums::cumulative_monotonic_mode` (SumConfig.CumulativeMonotonicMode) instead.
 	SendMonotonic bool `mapstructure:"send_monotonic_counter"`
 
 	// DeltaTTL defines the time that previous points of a cumulative monotonic
@@ -82,7 +86,7 @@ type MetricsConfig struct {
 	DeltaTTL int64 `mapstructure:"delta_ttl"`
 
 	// TCPAddr.Endpoint is the host of the Datadog intake server to send metrics to.
-	// It can also be set through the `DD_URL` environment variable.
+	// It can also be set through the `DD_URL` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead)..
 	// If unset, the value is obtained from the Site.
 	confignet.TCPAddr `mapstructure:",squash"`
 
@@ -90,6 +94,9 @@ type MetricsConfig struct {
 
 	// HistConfig defines the export of OTLP Histograms.
 	HistConfig HistogramConfig `mapstructure:"histograms"`
+
+	// SumConfig defines the export of OTLP Sums.
+	SumConfig SumConfig `mapstructure:"sums"`
 }
 
 // HistogramConfig customizes export of OTLP Histograms.
@@ -115,6 +122,46 @@ func (c *HistogramConfig) validate() error {
 	return nil
 }
 
+// CumulativeMonotonicSumMode is the export mode for OTLP Sum metrics.
+type CumulativeMonotonicSumMode string
+
+const (
+	// CumulativeMonotonicSumModeToDelta calculates delta for
+	// cumulative monotonic sum metrics in the client side and reports
+	// them as Datadog counts.
+	CumulativeMonotonicSumModeToDelta CumulativeMonotonicSumMode = "to_delta"
+
+	// CumulativeMonotonicSumModeRawValue reports the raw value for
+	// cumulative monotonic sum metrics as a Datadog gauge.
+	CumulativeMonotonicSumModeRawValue CumulativeMonotonicSumMode = "raw_value"
+)
+
+var _ encoding.TextUnmarshaler = (*CumulativeMonotonicSumMode)(nil)
+
+// UnmarshalText implements the encoding.TextUnmarshaler interface.
+func (sm *CumulativeMonotonicSumMode) UnmarshalText(in []byte) error {
+	switch mode := CumulativeMonotonicSumMode(in); mode {
+	case CumulativeMonotonicSumModeToDelta,
+		CumulativeMonotonicSumModeRawValue:
+		*sm = mode
+		return nil
+	default:
+		return fmt.Errorf("invalid cumulative monotonic sum mode %q", mode)
+	}
+}
+
+// SumConfig customizes export of OTLP Sums.
+type SumConfig struct {
+	// CumulativeMonotonicMode is the mode for exporting OTLP Cumulative Monotonic Sums.
+	// Valid values are 'to_delta' or 'raw_value'.
+	//  - 'to_delta' calculates delta for cumulative monotonic sums and sends it as a Datadog count.
+	//  - 'raw_value' sends the raw value of cumulative monotonic sums as Datadog gauges.
+	//
+	// The default is 'to_delta'.
+	// See https://docs.datadoghq.com/metrics/otlp/?tab=sum#mapping for details and examples.
+	CumulativeMonotonicMode CumulativeMonotonicSumMode `mapstructure:"cumulative_monotonic_mode"`
+}
+
 // MetricsExporterConfig provides options for a user to customize the behavior of the
 // metrics exporter
 type MetricsExporterConfig struct {
@@ -130,7 +177,7 @@ type MetricsExporterConfig struct {
 // TracesConfig defines the traces exporter specific configuration options
 type TracesConfig struct {
 	// TCPAddr.Endpoint is the host of the Datadog intake server to send traces to.
-	// It can also be set through the `DD_APM_URL` environment variable.
+	// It can also be set through the `DD_APM_URL` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
 	// If unset, the value is obtained from the Site.
 	confignet.TCPAddr `mapstructure:",squash"`
 
@@ -163,27 +210,29 @@ type TracesConfig struct {
 // It is embedded in the configuration
 type TagsConfig struct {
 	// Hostname is the host name for unified service tagging.
-	// It can also be set through the `DD_HOST` environment variable.
+	// It can also be set through the `DD_HOST` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
 	// If unset, it is determined automatically.
 	// See https://docs.datadoghq.com/agent/faq/how-datadog-agent-determines-the-hostname
 	// for more details.
 	Hostname string `mapstructure:"hostname"`
 
 	// Env is the environment for unified service tagging.
-	// It can also be set through the `DD_ENV` environment variable.
+	// It can also be set through the `DD_ENV` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
 	Env string `mapstructure:"env"`
 
 	// Service is the service for unified service tagging.
-	// It can also be set through the `DD_SERVICE` environment variable.
+	// It can also be set through the `DD_SERVICE` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
 	Service string `mapstructure:"service"`
 
 	// Version is the version for unified service tagging.
-	// It can also be set through the `DD_VERSION` environment variable.
+	// It can also be set through the `DD_VERSION` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
 	Version string `mapstructure:"version"`
 
 	// EnvVarTags is the list of space-separated tags passed by the `DD_TAGS` environment variable
 	// Superseded by Tags if the latter is set.
 	// Should not be set in the user-provided config.
+	//
+	// Deprecated: [v0.47.0] Use Tags instead.
 	EnvVarTags string `mapstructure:"envvartags"`
 
 	// Tags is the list of default tags to add to every metric or trace.
@@ -265,6 +314,9 @@ type Config struct {
 	warnings []error
 }
 
+// OnceMetadata gets a sync.Once instance used for initializing the host metadata.
+// Deprecated: [v0.48.0] do not use, will be removed on v0.49.0.
+// TODO (#8373): Remove this method.
 func (c *Config) OnceMetadata() *sync.Once {
 	return &c.onceMetadata
 }
@@ -304,7 +356,7 @@ func (c *Config) Sanitize(logger *zap.Logger) error {
 	}
 
 	for _, err := range c.warnings {
-		logger.Warn("deprecation warning", zap.Error(err))
+		logger.Warn(fmt.Sprintf("Deprecated: %v", err))
 	}
 
 	return nil
@@ -345,12 +397,22 @@ func (c *Config) Unmarshal(configMap *config.Map) error {
 		return err
 	}
 
+	// Add deprecation warnings for deprecated settings.
+	renamingWarnings, err := handleRenamedSettings(configMap, c)
+	if err != nil {
+		return err
+	}
+	c.warnings = append(c.warnings, renamingWarnings...)
+
 	switch c.Metrics.HistConfig.Mode {
 	case histogramModeCounters, histogramModeNoBuckets, histogramModeDistributions:
 		// Do nothing
 	default:
 		return fmt.Errorf("invalid `mode` %s", c.Metrics.HistConfig.Mode)
 	}
+
+	// Add warnings about autodetected environment variables.
+	c.warnings = append(c.warnings, warnUseOfEnvVars(configMap, c)...)
 
 	return nil
 }

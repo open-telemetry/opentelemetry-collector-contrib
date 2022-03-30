@@ -20,8 +20,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"gopkg.in/zorkian/go-datadog-api.v2"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 )
 
 type MetricDataType string
@@ -94,7 +92,7 @@ func DefaultMetrics(exporterType string, hostname string, timestamp uint64, buil
 
 // ProcessMetrics adds the hostname to the metric and prefixes it with the "otel"
 // namespace as the Datadog backend expects
-func ProcessMetrics(ms []datadog.Metric, cfg *config.Config) {
+func ProcessMetrics(ms []datadog.Metric) {
 	addNamespace(ms, otelNamespacePrefix)
 }
 

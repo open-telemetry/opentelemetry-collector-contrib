@@ -70,19 +70,11 @@ func TestScrape(t *testing.T) {
 	}
 
 	require.Greater(t, md.ResourceMetrics().Len(), 1)
-	assertSchemaIsSet(t, md.ResourceMetrics())
 	assertProcessResourceAttributesExist(t, md.ResourceMetrics())
 	assertCPUTimeMetricValid(t, md.ResourceMetrics(), expectedStartTime)
 	assertMemoryUsageMetricValid(t, md.ResourceMetrics(), expectedStartTime)
 	assertDiskIOMetricValid(t, md.ResourceMetrics(), expectedStartTime)
 	assertSameTimeStampForAllMetricsWithinResource(t, md.ResourceMetrics())
-}
-
-func assertSchemaIsSet(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice) {
-	for i := 0; i < resourceMetrics.Len(); i++ {
-		rm := resourceMetrics.At(0)
-		assert.EqualValues(t, conventions.SchemaURL, rm.SchemaUrl())
-	}
 }
 
 func assertProcessResourceAttributesExist(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice) {
@@ -103,10 +95,10 @@ func assertCPUTimeMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetric
 	if startTime != 0 {
 		internal.AssertSumMetricStartTimeEquals(t, cpuTimeMetric, startTime)
 	}
-	internal.AssertSumMetricHasAttributeValue(t, cpuTimeMetric, 0, "state", pdata.NewAttributeValueString(metadata.AttributeState.User))
-	internal.AssertSumMetricHasAttributeValue(t, cpuTimeMetric, 1, "state", pdata.NewAttributeValueString(metadata.AttributeState.System))
+	internal.AssertSumMetricHasAttributeValue(t, cpuTimeMetric, 0, "state", pdata.NewValueString(metadata.AttributeState.User))
+	internal.AssertSumMetricHasAttributeValue(t, cpuTimeMetric, 1, "state", pdata.NewValueString(metadata.AttributeState.System))
 	if runtime.GOOS == "linux" {
-		internal.AssertSumMetricHasAttributeValue(t, cpuTimeMetric, 2, "state", pdata.NewAttributeValueString(metadata.AttributeState.Wait))
+		internal.AssertSumMetricHasAttributeValue(t, cpuTimeMetric, 2, "state", pdata.NewValueString(metadata.AttributeState.Wait))
 	}
 }
 
@@ -128,13 +120,13 @@ func assertDiskIOMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetrics
 	if startTime != 0 {
 		internal.AssertSumMetricStartTimeEquals(t, diskIOMetric, startTime)
 	}
-	internal.AssertSumMetricHasAttributeValue(t, diskIOMetric, 0, "direction", pdata.NewAttributeValueString(metadata.AttributeDirection.Read))
-	internal.AssertSumMetricHasAttributeValue(t, diskIOMetric, 1, "direction", pdata.NewAttributeValueString(metadata.AttributeDirection.Write))
+	internal.AssertSumMetricHasAttributeValue(t, diskIOMetric, 0, "direction", pdata.NewValueString(metadata.AttributeDirection.Read))
+	internal.AssertSumMetricHasAttributeValue(t, diskIOMetric, 1, "direction", pdata.NewValueString(metadata.AttributeDirection.Write))
 }
 
 func assertSameTimeStampForAllMetricsWithinResource(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice) {
 	for i := 0; i < resourceMetrics.Len(); i++ {
-		ilms := resourceMetrics.At(i).InstrumentationLibraryMetrics()
+		ilms := resourceMetrics.At(i).ScopeMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			internal.AssertSameTimeStampForAllMetrics(t, ilms.At(j).Metrics())
 		}
@@ -157,7 +149,7 @@ func getMetric(t *testing.T, expectedMetricName string, rms pdata.ResourceMetric
 }
 
 func getMetricSlice(t *testing.T, rm pdata.ResourceMetrics) pdata.MetricSlice {
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 	require.Equal(t, 1, ilms.Len())
 	return ilms.At(0).Metrics()
 }
@@ -486,19 +478,24 @@ func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError
 	if diskError == nil {
 		expectedLen += diskMetricsLen
 	}
+
+	if expectedLen == 0 {
+		return 0, 0
+	}
 	return 1, expectedLen
 }
 
 func getExpectedScrapeFailures(nameError, exeError, timeError, memError, diskError error) int {
-	expectedResourceMetricsLen, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, diskError)
-	if expectedResourceMetricsLen == 0 {
+	if nameError != nil || exeError != nil {
 		return 1
 	}
-
+	_, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, diskError)
 	return metricsLen - expectedMetricsLen
 }
 
 func TestScrapeMetrics_MuteProcessNameError(t *testing.T) {
+	skipTestOnUnsupportedOS(t)
+
 	processNameError := errors.New("err1")
 
 	type testCase struct {
@@ -533,6 +530,8 @@ func TestScrapeMetrics_MuteProcessNameError(t *testing.T) {
 			}
 			scraper, err := newProcessScraper(config)
 			require.NoError(t, err, "Failed to create process scraper: %v", err)
+			err = scraper.start(context.Background(), componenttest.NewNopHost())
+			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
 
 			handleMock := newDefaultHandleMock()
 			handleMock.On("Name").Return("test", processNameError)

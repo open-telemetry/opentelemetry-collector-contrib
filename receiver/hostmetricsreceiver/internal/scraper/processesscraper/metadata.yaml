@@ -1,4 +1,4 @@
-name: processes
+name: hostmetricsreceiver/processes
 
 attributes:
   status:

@@ -135,7 +135,7 @@ func (flp *filterLogProcessor) ProcessLogs(ctx context.Context, logs pdata.Logs)
 
 func (flp *filterLogProcessor) filterByRecordAttributes(rLogs pdata.ResourceLogsSlice) {
 	for i := 0; i < rLogs.Len(); i++ {
-		ills := rLogs.At(i).InstrumentationLibraryLogs()
+		ills := rLogs.At(i).ScopeLogs()
 
 		for j := 0; j < ills.Len(); j++ {
 			ls := ills.At(j).LogRecords()
@@ -145,13 +145,13 @@ func (flp *filterLogProcessor) filterByRecordAttributes(rLogs pdata.ResourceLogs
 			})
 		}
 
-		ills.RemoveIf(func(ill pdata.InstrumentationLibraryLogs) bool {
-			return ill.LogRecords().Len() == 0
+		ills.RemoveIf(func(sl pdata.ScopeLogs) bool {
+			return sl.LogRecords().Len() == 0
 		})
 	}
 
 	rLogs.RemoveIf(func(rl pdata.ResourceLogs) bool {
-		return rl.InstrumentationLibraryLogs().Len() == 0
+		return rl.ScopeLogs().Len() == 0
 	})
 }
 

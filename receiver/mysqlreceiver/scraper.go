@@ -73,10 +73,6 @@ func (m *mySQLScraper) scrape(context.Context) (pdata.Metrics, error) {
 		return pdata.Metrics{}, errors.New("failed to connect to http client")
 	}
 
-	// metric initialization
-	md := pdata.NewMetrics()
-	ilm := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName("otel/mysql")
 	now := pdata.NewTimestampFromTime(time.Now())
 
 	// collect innodb metrics.
@@ -512,8 +508,7 @@ func (m *mySQLScraper) scrape(context.Context) (pdata.Metrics, error) {
 		}
 	}
 
-	m.mb.Emit(ilm.Metrics())
-	return md, errors.Combine()
+	return m.mb.Emit(), errors.Combine()
 }
 
 func (m *mySQLScraper) recordDataPages(now pdata.Timestamp, globalStats map[string]string, errors scrapererror.ScrapeErrors) {

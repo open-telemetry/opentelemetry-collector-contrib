@@ -46,7 +46,7 @@ func ThriftToTraces(batches *jaeger.Batch) (pdata.Traces, error) {
 		return traceData, nil
 	}
 
-	jThriftSpansToInternal(jSpans, rs.InstrumentationLibrarySpans().AppendEmpty().Spans())
+	jThriftSpansToInternal(jSpans, rs.ScopeSpans().AppendEmpty().Spans())
 
 	return traceData, nil
 }
@@ -122,7 +122,7 @@ func jThriftSpanToInternal(span *jaeger.Span, dest pdata.Span) {
 }
 
 // jThriftTagsToInternalAttributes sets internal span links based on jaeger span references skipping excludeParentID
-func jThriftTagsToInternalAttributes(tags []*jaeger.Tag, dest pdata.AttributeMap) {
+func jThriftTagsToInternalAttributes(tags []*jaeger.Tag, dest pdata.Map) {
 	for _, tag := range tags {
 		switch tag.GetVType() {
 		case jaeger.TagType_STRING:

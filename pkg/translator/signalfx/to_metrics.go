@@ -28,7 +28,7 @@ func ToMetrics(sfxDataPoints []*model.DataPoint) (pdata.Metrics, error) {
 	// 	data point.
 	md := pdata.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
-	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+	ilm := rm.ScopeMetrics().AppendEmpty()
 
 	ms := ilm.Metrics()
 	ms.EnsureCapacity(len(sfxDataPoints))
@@ -96,7 +96,7 @@ func fillNumberDataPoint(sfxDataPoint *model.DataPoint, dps pdata.NumberDataPoin
 
 func fillInAttributes(
 	dimensions []*model.Dimension,
-	attributes pdata.AttributeMap,
+	attributes pdata.Map,
 ) {
 	attributes.Clear()
 	attributes.EnsureCapacity(len(dimensions))

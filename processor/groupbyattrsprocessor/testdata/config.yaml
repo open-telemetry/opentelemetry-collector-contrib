@@ -2,10 +2,13 @@ receivers:
   nop:
 
 processors:
-  groupbyattrs/custom:
+  batch:
+  groupbyattrs/grouping:
     keys:
       - key1
       - key2
+  groupbyattrs/compaction:
+  groupbytrace:
 
 exporters:
   nop:
@@ -14,5 +17,9 @@ service:
   pipelines:
     traces:
       receivers: [nop]
-      processors: [groupbyattrs/custom]
+      processors: [groupbyattrs/grouping]
+      exporters: [nop]
+    traces/compaction:
+      receivers: [nop]
+      processors: [groupbytrace, batch, groupbyattrs/compaction]
       exporters: [nop]

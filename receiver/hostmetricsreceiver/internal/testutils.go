@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
-func AssertContainsAttribute(t *testing.T, attr pdata.AttributeMap, key string) {
+func AssertContainsAttribute(t *testing.T, attr pdata.Map, key string) {
 	_, ok := attr.Get(key)
 	assert.True(t, ok)
 }
@@ -34,7 +34,7 @@ func AssertDescriptorEqual(t *testing.T, expected pdata.Metric, actual pdata.Met
 	assert.Equal(t, expected.DataType(), actual.DataType())
 }
 
-func AssertSumMetricHasAttributeValue(t *testing.T, metric pdata.Metric, index int, labelName string, expectedVal pdata.AttributeValue) {
+func AssertSumMetricHasAttributeValue(t *testing.T, metric pdata.Metric, index int, labelName string, expectedVal pdata.Value) {
 	val, ok := metric.Sum().DataPoints().At(index).Attributes().Get(labelName)
 	assert.Truef(t, ok, "Missing attribute %q in metric %q", labelName, metric.Name())
 	assert.Equal(t, expectedVal, val)
@@ -52,7 +52,7 @@ func AssertSumMetricStartTimeEquals(t *testing.T, metric pdata.Metric, startTime
 	}
 }
 
-func AssertGaugeMetricHasAttributeValue(t *testing.T, metric pdata.Metric, index int, labelName string, expectedVal pdata.AttributeValue) {
+func AssertGaugeMetricHasAttributeValue(t *testing.T, metric pdata.Metric, index int, labelName string, expectedVal pdata.Value) {
 	val, ok := metric.Gauge().DataPoints().At(index).Attributes().Get(labelName)
 	assert.Truef(t, ok, "Missing attribute %q in metric %q", labelName, metric.Name())
 	assert.Equal(t, expectedVal, val)

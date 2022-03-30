@@ -16,6 +16,7 @@ package tanzuobservabilityexporter // import "github.com/open-telemetry/opentele
 
 import (
 	"errors"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -27,7 +28,7 @@ import (
 )
 
 type traceTransformer struct {
-	resAttrs pdata.AttributeMap
+	resAttrs pdata.Map
 }
 
 func newTraceTransformer(resource pdata.Resource) *traceTransformer {
@@ -73,6 +74,18 @@ func (t *traceTransformer) Span(orig pdata.Span) (span, error) {
 
 	tags[labelSpanKind] = spanKind(orig)
 
+	if droppedEventsCount := orig.DroppedEventsCount(); droppedEventsCount > 0 {
+		tags[labelDroppedEventsCount] = strconv.FormatUint(uint64(droppedEventsCount), 10)
+	}
+
+	if droppedLinksCount := orig.DroppedLinksCount(); droppedLinksCount > 0 {
+		tags[labelDroppedLinksCount] = strconv.FormatUint(uint64(droppedLinksCount), 10)
+	}
+
+	if droppedAttrsCount := orig.DroppedAttributesCount(); droppedAttrsCount > 0 {
+		tags[labelDroppedAttrsCount] = strconv.FormatUint(uint64(droppedAttrsCount), 10)
+	}
+
 	errorTags := errorTagsFromStatus(orig.Status())
 	for k, v := range errorTags {
 		tags[k] = v
@@ -95,13 +108,13 @@ func (t *traceTransformer) Span(orig pdata.Span) (span, error) {
 	}, nil
 }
 
-func getSourceAndResourceTags(attributes pdata.AttributeMap) (string, map[string]string) {
+func getSourceAndResourceTags(attributes pdata.Map) (string, map[string]string) {
 	candidateKeys := []string{labelSource, conventions.AttributeHostName, "hostname", conventions.AttributeHostID}
 
 	attributesWithoutSource := map[string]string{}
 	var source string
 
-	extractTag := func(k string, v pdata.AttributeValue) bool {
+	extractTag := func(k string, v pdata.Value) bool {
 		attributesWithoutSource[k] = v.AsString()
 		return true
 	}
@@ -179,7 +192,7 @@ func calculateTimes(span pdata.Span) (int64, int64) {
 	return startMillis, durationMillis
 }
 
-func attributesToTags(attributesWithoutSource map[string]string, attributes pdata.AttributeMap) map[string]string {
+func attributesToTags(attributesWithoutSource map[string]string, attributes pdata.Map) map[string]string {
 	tags := make(map[string]string)
 
 	for key, val := range attributesWithoutSource {
@@ -187,7 +200,7 @@ func attributesToTags(attributesWithoutSource map[string]string, attributes pdat
 	}
 
 	// Since AttributeMaps are processed later, its values overwrite earlier ones
-	attributes.Range(func(key string, value pdata.AttributeValue) bool {
+	attributes.Range(func(key string, value pdata.Value) bool {
 		tags[key] = value.AsString()
 		return true
 	})
