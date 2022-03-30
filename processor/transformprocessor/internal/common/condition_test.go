@@ -12,15 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package traces
+package common
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
 func Test_newConditionEvaluator(t *testing.T) {
@@ -28,16 +27,16 @@ func Test_newConditionEvaluator(t *testing.T) {
 	span.SetName("bear")
 	tests := []struct {
 		name     string
-		cond     *common.Condition
+		cond     *Condition
 		matching pdata.Span
 	}{
 		{
 			name: "literals match",
-			cond: &common.Condition{
-				Left: common.Value{
+			cond: &Condition{
+				Left: Value{
 					String: strp("hello"),
 				},
-				Right: common.Value{
+				Right: Value{
 					String: strp("hello"),
 				},
 				Op: "==",
@@ -46,11 +45,11 @@ func Test_newConditionEvaluator(t *testing.T) {
 		},
 		{
 			name: "literals don't match",
-			cond: &common.Condition{
-				Left: common.Value{
+			cond: &Condition{
+				Left: Value{
 					String: strp("hello"),
 				},
-				Right: common.Value{
+				Right: Value{
 					String: strp("goodbye"),
 				},
 				Op: "!=",
@@ -59,17 +58,17 @@ func Test_newConditionEvaluator(t *testing.T) {
 		},
 		{
 			name: "path expression matches",
-			cond: &common.Condition{
-				Left: common.Value{
-					Path: &common.Path{
-						Fields: []common.Field{
+			cond: &Condition{
+				Left: Value{
+					Path: &Path{
+						Fields: []Field{
 							{
 								Name: "name",
 							},
 						},
 					},
 				},
-				Right: common.Value{
+				Right: Value{
 					String: strp("bear"),
 				},
 				Op: "==",
@@ -78,17 +77,17 @@ func Test_newConditionEvaluator(t *testing.T) {
 		},
 		{
 			name: "path expression not matches",
-			cond: &common.Condition{
-				Left: common.Value{
-					Path: &common.Path{
-						Fields: []common.Field{
+			cond: &Condition{
+				Left: Value{
+					Path: &Path{
+						Fields: []Field{
 							{
 								Name: "name",
 							},
 						},
 					},
 				},
-				Right: common.Value{
+				Right: Value{
 					String: strp("cat"),
 				},
 				Op: "!=",
@@ -103,9 +102,9 @@ func Test_newConditionEvaluator(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			evaluate, err := newConditionEvaluator(tt.cond, DefaultFunctions())
+			evaluate, err := newConditionEvaluator(tt.cond, DefaultFunctions(), testParsePath)
 			assert.NoError(t, err)
-			assert.True(t, evaluate(spanTransformContext{
+			assert.True(t, evaluate(testTransformContext{
 				span:     tt.matching,
 				il:       pdata.NewInstrumentationLibrary(),
 				resource: pdata.NewResource(),
@@ -114,27 +113,63 @@ func Test_newConditionEvaluator(t *testing.T) {
 	}
 
 	t.Run("invalid", func(t *testing.T) {
-		_, err := newConditionEvaluator(&common.Condition{
-			Left: common.Value{
+		_, err := newConditionEvaluator(&Condition{
+			Left: Value{
 				String: strp("bear"),
 			},
 			Op: "<>",
-			Right: common.Value{
+			Right: Value{
 				String: strp("cat"),
 			},
-		}, DefaultFunctions())
+		}, DefaultFunctions(), testParsePath)
 		assert.Error(t, err)
 	})
 }
 
-func strp(s string) *string {
-	return &s
+// Small copy of traces data model for use in common tests
+
+type testTransformContext struct {
+	span     pdata.Span
+	il       pdata.InstrumentationLibrary
+	resource pdata.Resource
 }
 
-func intp(i int64) *int64 {
-	return &i
+func (ctx testTransformContext) GetItem() interface{} {
+	return ctx.span
 }
 
-func floatp(f float64) *float64 {
-	return &f
+func (ctx testTransformContext) GetInstrumentationLibrary() pdata.InstrumentationLibrary {
+	return ctx.il
+}
+
+func (ctx testTransformContext) GetResource() pdata.Resource {
+	return ctx.resource
+}
+
+// pathGetSetter is a getSetter which has been resolved using a path expression provided by a user.
+type testGetSetter struct {
+	getter ExprFunc
+	setter func(ctx TransformContext, val interface{})
+}
+
+func (path testGetSetter) Get(ctx TransformContext) interface{} {
+	return path.getter(ctx)
+}
+
+func (path testGetSetter) Set(ctx TransformContext, val interface{}) {
+	path.setter(ctx, val)
+}
+
+func testParsePath(val *Path) (GetSetter, error) {
+	if val != nil && len(val.Fields) > 0 && val.Fields[0].Name == "name" {
+		return &testGetSetter{
+			getter: func(ctx TransformContext) interface{} {
+				return ctx.GetItem().(pdata.Span).Name()
+			},
+			setter: func(ctx TransformContext, val interface{}) {
+				ctx.GetItem().(pdata.Span).SetName(val.(string))
+			},
+		}, nil
+	}
+	return nil, fmt.Errorf("bad path %v", val)
 }

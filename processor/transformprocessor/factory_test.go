@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
 func TestFactory_Type(t *testing.T) {
@@ -41,7 +41,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 		Traces: TracesConfig{
 			Queries: []string{},
 
-			functions: traces.DefaultFunctions(),
+			functions: common.DefaultFunctions(),
 		},
 	})
 	assert.NoError(t, configtest.CheckConfigStruct(cfg))

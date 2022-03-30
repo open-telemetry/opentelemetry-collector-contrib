@@ -12,15 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package traces // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
+package common
 
 import (
 	"fmt"
 	"reflect"
 
 	"go.opentelemetry.io/collector/model/pdata"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
 var registry = map[string]interface{}{
@@ -28,28 +26,30 @@ var registry = map[string]interface{}{
 	"set":       set,
 }
 
+type PathExpressionParser func(*Path) (GetSetter, error)
+
 func DefaultFunctions() map[string]interface{} {
 	return registry
 }
 
-func set(target setter, value getter) exprFunc {
-	return func(ctx spanTransformContext) interface{} {
-		val := value.get(ctx)
+func set(target Setter, value Getter) ExprFunc {
+	return func(ctx TransformContext) interface{} {
+		val := value.Get(ctx)
 		if val != nil {
-			target.set(ctx, val)
+			target.Set(ctx, val)
 		}
 		return nil
 	}
 }
 
-func keepKeys(target getSetter, keys []string) exprFunc {
+func keepKeys(target GetSetter, keys []string) ExprFunc {
 	keySet := make(map[string]struct{}, len(keys))
 	for _, key := range keys {
 		keySet[key] = struct{}{}
 	}
 
-	return func(ctx spanTransformContext) interface{} {
-		val := target.get(ctx)
+	return func(ctx TransformContext) interface{} {
+		val := target.Get(ctx)
 		if val == nil {
 			return nil
 		}
@@ -64,14 +64,15 @@ func keepKeys(target getSetter, keys []string) exprFunc {
 				}
 				return true
 			})
-			target.set(ctx, filtered)
+			target.Set(ctx, filtered)
 		}
 		return nil
 	}
 }
 
 // TODO(anuraaga): See if reflection can be avoided without complicating definition of transform functions.
-func newFunctionCall(inv common.Invocation, functions map[string]interface{}) (exprFunc, error) {
+// Visible for testing
+func NewFunctionCall(inv Invocation, functions map[string]interface{}, pathParser PathExpressionParser) (ExprFunc, error) {
 	if f, ok := functions[inv.Function]; ok {
 		fType := reflect.TypeOf(f)
 		args := make([]reflect.Value, 0)
@@ -100,17 +101,17 @@ func newFunctionCall(inv common.Invocation, functions map[string]interface{}) (e
 			}
 			argDef := inv.Arguments[i]
 			switch argType.Name() {
-			case "setter":
+			case "Setter":
 				fallthrough
-			case "getSetter":
-				arg, err := newGetSetter(argDef)
+			case "GetSetter":
+				arg, err := pathParser(argDef.Path)
 				if err != nil {
 					return nil, fmt.Errorf("invalid argument at position %v %w", i, err)
 				}
 				args = append(args, reflect.ValueOf(arg))
 				continue
-			case "getter":
-				arg, err := newGetter(argDef, functions)
+			case "Getter":
+				arg, err := NewGetter(argDef, functions, pathParser)
 				if err != nil {
 					return nil, fmt.Errorf("invalid argument at position %v %w", i, err)
 				}
@@ -120,7 +121,7 @@ func newFunctionCall(inv common.Invocation, functions map[string]interface{}) (e
 		}
 		val := reflect.ValueOf(f)
 		ret := val.Call(args)
-		return ret[0].Interface().(exprFunc), nil
+		return ret[0].Interface().(ExprFunc), nil
 	}
 	return nil, fmt.Errorf("undefined function %v", inv.Function)
 }
