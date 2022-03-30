@@ -8,6 +8,7 @@
 - `k8seventsreceiver`: Add Api_version and resource_version (#8539)
 - `dynatraceexporter`: add multi-instance deployment note to README.md (#8848)
 - `resourcedetectionprocessor`: Add attribute allowlist (#8547)
+- `datadogexporter`:  Metrics payload data and Sketches payload data will be logged if collector is started in debug mode (#8929)
 
 ### 🛑 Breaking changes 🛑
 
