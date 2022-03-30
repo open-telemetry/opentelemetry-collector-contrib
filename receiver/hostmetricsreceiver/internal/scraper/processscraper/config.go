@@ -36,7 +36,7 @@ type Config struct {
 	Filters []FilterConfig `mapstructure:"filters"`
 }
 
-// ExecutableNameMatchConfig filtesr by executable name
+// ExecutableNameMatchConfig filters by executable name
 type ExecutableNameMatchConfig struct {
 	filterset.Config `mapstructure:",squash"`
 	ExecutableNames  []string `mapstructure:"executable_name"`

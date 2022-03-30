@@ -32,7 +32,7 @@ func (p *processFilterSet) includeCommand(command string, commandLine string, in
 	return matches
 }
 
-// MatchesOwner returns an int array with the index of all filters that match the input owner value
+// includeOwner returns an int array with the index of all filters that match the input owner value
 // only indexes provided in indexList are checked
 func (p *processFilterSet) includeOwner(owner string, indexList []int) []int {
 	var matches []int
@@ -46,7 +46,7 @@ func (p *processFilterSet) includeOwner(owner string, indexList []int) []int {
 	return matches
 }
 
-// MatchesPid returns an int array with the index of all filters that match the input pid value
+// includePid returns an int array with the index of all filters that match the input pid value
 func (p *processFilterSet) includePid(pid int32) []int {
 	var matches []int
 

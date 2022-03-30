@@ -15,7 +15,7 @@ func NewIncludeFilterHelper(items []string, filterSet *filterset.Config, typ str
 	return newFilterHelper(items, filterSet, includeKey, typ)
 }
 
-// NewIncludeFilterHelper creates a FilterSet based on a config
+// NewExcludeFilterHelper creates a FilterSet based on a config
 func NewExcludeFilterHelper(items []string, filterSet *filterset.Config, typ string) (filterset.FilterSet, error) {
 	return newFilterHelper(items, filterSet, excludeKey, typ)
 }

@@ -16,8 +16,8 @@ type processFilter struct {
 	excludeCommandLineFilter    filterset.FilterSet
 	includeOwnerFilter          filterset.FilterSet
 	excludeOwnerFilter          filterset.FilterSet
-	includePidFilter            []int32
-	excludePidFilter            []int32
+	includePidFilter            map[int32]struct{}
+	excludePidFilter            map[int32]struct{}
 }
 
 // includeExecutable return a boolean value indicating if executableName and executablePath matches the filter.
@@ -43,15 +43,11 @@ func (p *processFilter) includePid(pid int32) bool {
 		(len(p.excludePidFilter) == 0 || !findInt(p.excludePidFilter, pid))
 }
 
-// findInt searches an int slice for a specific integeter.  If the
-// int is found in the slice return true.  Otherwise return false
-func findInt(intSlice []int32, intMatch int32) bool {
-	for _, val := range intSlice {
-		if intMatch == val {
-			return true
-		}
-	}
-	return false
+// findInt searches an int map for a specific integer.  If the
+// int is found in the map return true.  Otherwise return false
+func findInt(intMap map[int32]struct{}, intMatch int32) bool {
+	_, ok := intMap[intMatch]
+	return ok
 }
 
 // createFilter receives a filter config and createa a processFilter based on the config settings
@@ -74,7 +70,7 @@ func createFilter(filterConfig FilterConfig) (*processFilter, error) {
 		return nil, err
 	}
 
-	filter.excludeExecutableNameFilter, err = filterhelper.NewExcludeFilterHelper(filterConfig.IncludeExecutablePaths.ExecutablePaths, &filterConfig.IncludeExecutablePaths.Config, "executable_path")
+	filter.excludeExecutablePathFilter, err = filterhelper.NewExcludeFilterHelper(filterConfig.ExcludeExecutablePaths.ExecutablePaths, &filterConfig.ExcludeExecutablePaths.Config, "executable_path")
 	if err != nil {
 		return nil, err
 	}
@@ -109,8 +105,17 @@ func createFilter(filterConfig FilterConfig) (*processFilter, error) {
 		return nil, err
 	}
 
-	filter.includePidFilter = filterConfig.IncludePids.Pids
-	filter.excludePidFilter = filterConfig.ExcludePids.Pids
+	filter.includePidFilter = make(map[int32]struct{})
+	// convert slice to map for quick lookup
+	for _, val := range filterConfig.IncludePids.Pids {
+		filter.includePidFilter[val] = struct{}{}
+	}
+
+	filter.excludePidFilter =  make(map[int32]struct{})
+	// convert slice to map for quick lookup
+	for _, val := range filterConfig.ExcludePids.Pids {
+		filter.excludePidFilter[val] = struct{}{}
+	}
 
 	return &filter, err
 }
