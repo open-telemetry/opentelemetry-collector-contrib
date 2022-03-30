@@ -48,11 +48,11 @@ var (
 // Used to identify the type of a received Span
 type spanType int8
 
-// Transforms a tuple of pdata.Resource, pdata.InstrumentationLibrary, pdata.Span into an AppInsights contracts.Envelope
+// Transforms a tuple of pdata.Resource, pdata.InstrumentationScope, pdata.Span into an AppInsights contracts.Envelope
 // This is the only method that should be targeted in the unit tests
 func spanToEnvelope(
 	resource pdata.Resource,
-	instrumentationLibrary pdata.InstrumentationLibrary,
+	instrumentationScope pdata.InstrumentationScope,
 	span pdata.Span,
 	logger *zap.Logger) (*contracts.Envelope, error) {
 
@@ -122,12 +122,12 @@ func spanToEnvelope(
 	})
 
 	// Copy the instrumentation properties
-	if instrumentationLibrary.Name() != "" {
-		dataProperties[instrumentationLibraryName] = instrumentationLibrary.Name()
+	if instrumentationScope.Name() != "" {
+		dataProperties[instrumentationLibraryName] = instrumentationScope.Name()
 	}
 
-	if instrumentationLibrary.Version() != "" {
-		dataProperties[instrumentationLibraryVersion] = instrumentationLibrary.Version()
+	if instrumentationScope.Version() != "" {
+		dataProperties[instrumentationLibraryVersion] = instrumentationScope.Version()
 	}
 
 	// Extract key service.* labels from the Resource labels and construct CloudRole and CloudRoleInstance envelope tags

@@ -23,7 +23,7 @@ import (
 
 type MetricIdentity struct {
 	Resource               pdata.Resource
-	InstrumentationLibrary pdata.InstrumentationLibrary
+	InstrumentationLibrary pdata.InstrumentationScope
 	MetricDataType         pdata.MetricDataType
 	MetricIsMonotonic      bool
 	MetricName             string

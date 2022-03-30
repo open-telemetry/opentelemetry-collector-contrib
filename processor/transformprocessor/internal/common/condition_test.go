@@ -106,7 +106,7 @@ func Test_newConditionEvaluator(t *testing.T) {
 			assert.NoError(t, err)
 			assert.True(t, evaluate(testTransformContext{
 				span:     tt.matching,
-				il:       pdata.NewInstrumentationLibrary(),
+				il:       pdata.NewInstrumentationScope(),
 				resource: pdata.NewResource(),
 			}))
 		})
@@ -130,7 +130,7 @@ func Test_newConditionEvaluator(t *testing.T) {
 
 type testTransformContext struct {
 	span     pdata.Span
-	il       pdata.InstrumentationLibrary
+	il       pdata.InstrumentationScope
 	resource pdata.Resource
 }
 
@@ -138,7 +138,7 @@ func (ctx testTransformContext) GetItem() interface{} {
 	return ctx.span
 }
 
-func (ctx testTransformContext) GetInstrumentationLibrary() pdata.InstrumentationLibrary {
+func (ctx testTransformContext) GetInstrumentationScope() pdata.InstrumentationScope {
 	return ctx.il
 }
 

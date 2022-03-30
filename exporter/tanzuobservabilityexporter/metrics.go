@@ -104,7 +104,7 @@ func (c *metricsConsumer) Consume(ctx context.Context, md pdata.Metrics) error {
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i).Resource().Attributes()
 		source, resourceTags := getSourceAndResourceTags(rm)
-		ilms := rms.At(i).InstrumentationLibraryMetrics()
+		ilms := rms.At(i).ScopeMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			ms := ilms.At(j).Metrics()
 			for k := 0; k < ms.Len(); k++ {

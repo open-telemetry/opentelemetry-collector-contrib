@@ -22,7 +22,7 @@ import (
 
 type TransformContext interface {
 	GetItem() interface{}
-	GetInstrumentationLibrary() pdata.InstrumentationLibrary
+	GetInstrumentationScope() pdata.InstrumentationScope
 	GetResource() pdata.Resource
 }
 

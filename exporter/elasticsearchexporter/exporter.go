@@ -101,7 +101,7 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld pdata.Logs)
 	for i := 0; i < rls.Len(); i++ {
 		rl := rls.At(i)
 		resource := rl.Resource()
-		ills := rl.InstrumentationLibraryLogs()
+		ills := rl.ScopeLogs()
 		for j := 0; j < ills.Len(); j++ {
 			logs := ills.At(j).LogRecords()
 			for k := 0; k < logs.Len(); k++ {

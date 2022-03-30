@@ -177,7 +177,7 @@ func Test_newFunctionCall(t *testing.T) {
 			assert.NoError(t, err)
 			evaluate(spanTransformContext{
 				span:     span,
-				il:       pdata.NewInstrumentationLibrary(),
+				il:       pdata.NewInstrumentationScope(),
 				resource: pdata.NewResource(),
 			})
 

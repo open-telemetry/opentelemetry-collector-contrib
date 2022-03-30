@@ -36,7 +36,7 @@ func TestUnmarshalZipkin(t *testing.T) {
 	td := pdata.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
 	rs.Resource().Attributes().InsertString(conventions.AttributeServiceName, "my_service")
-	span := rs.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName("foo")
 	span.SetStartTimestamp(pdata.Timestamp(1597759000))
 	span.SetEndTimestamp(pdata.Timestamp(1597769000))

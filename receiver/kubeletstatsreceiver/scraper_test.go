@@ -121,8 +121,8 @@ func TestScraperWithMetadata(t *testing.T) {
 
 			for i := 0; i < md.ResourceMetrics().Len(); i++ {
 				rm := md.ResourceMetrics().At(i)
-				for j := 0; j < rm.InstrumentationLibraryMetrics().Len(); j++ {
-					ilm := rm.InstrumentationLibraryMetrics().At(j)
+				for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+					ilm := rm.ScopeMetrics().At(j)
 					for k := 0; k < ilm.Metrics().Len(); k++ {
 						m := ilm.Metrics().At(k)
 						if strings.HasPrefix(m.Name(), tt.metricPrefix) {

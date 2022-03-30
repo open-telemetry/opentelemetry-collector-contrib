@@ -90,12 +90,12 @@ func createLogData() pdata.Logs {
 	now := timeNow()
 
 	rl := logs.ResourceLogs().AppendEmpty()
-	rl.InstrumentationLibraryLogs().EnsureCapacity(1)
+	rl.ScopeLogs().EnsureCapacity(1)
 
-	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
-	ill.LogRecords().EnsureCapacity(1)
+	sl := rl.ScopeLogs().AppendEmpty()
+	sl.LogRecords().EnsureCapacity(1)
 
-	logRecord := ill.LogRecords().AppendEmpty()
+	logRecord := sl.LogRecords().AppendEmpty()
 
 	logRecord.SetTimestamp(pdata.Timestamp(now.UnixNano()))
 	logRecord.Body().SetStringVal("message")

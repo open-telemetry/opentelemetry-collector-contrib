@@ -95,7 +95,7 @@ func TestInternalCacheLimit(t *testing.T) {
 	var receivedTraceIDs []pdata.TraceID
 	mockProcessor := &mockProcessor{}
 	mockProcessor.onTraces = func(ctx context.Context, received pdata.Traces) error {
-		traceID := received.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).TraceID()
+		traceID := received.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()
 		receivedTraceIDs = append(receivedTraceIDs, traceID)
 		wg.Done()
 		return nil
@@ -172,7 +172,7 @@ func TestProcessBatchDoesntFail(t *testing.T) {
 
 	trace := pdata.NewTraces()
 	rs := trace.ResourceSpans().AppendEmpty()
-	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
+	ils := rs.ScopeSpans().AppendEmpty()
 	span := ils.Spans().AppendEmpty()
 	span.SetTraceID(traceID)
 	span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4}))
@@ -278,7 +278,7 @@ func TestTraceErrorFromStorageWhileProcessingTrace(t *testing.T) {
 	trace := pdata.NewTraces()
 	rss := trace.ResourceSpans()
 	rs := rss.AppendEmpty()
-	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
+	ils := rs.ScopeSpans().AppendEmpty()
 	span := ils.Spans().AppendEmpty()
 	span.SetTraceID(traceID)
 	span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4}))
@@ -324,10 +324,10 @@ func TestAddSpansToExistingTrace(t *testing.T) {
 
 	// test
 	first := simpleTracesWithID(traceID)
-	first.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).SetName("first-span")
+	first.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SetName("first-span")
 
 	second := simpleTracesWithID(traceID)
-	second.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).SetName("second-span")
+	second.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SetName("second-span")
 
 	wg.Add(1)
 
@@ -358,7 +358,7 @@ func TestTraceErrorFromStorageWhileProcessingSecondTrace(t *testing.T) {
 	trace := pdata.NewTraces()
 	rss := trace.ResourceSpans()
 	rs := rss.AppendEmpty()
-	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
+	ils := rs.ScopeSpans().AppendEmpty()
 	span := ils.Spans().AppendEmpty()
 	span.SetTraceID(traceID)
 	span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4}))
@@ -467,7 +467,7 @@ func TestTracesAreDispatchedInIndividualBatches(t *testing.T) {
 	firstTrace := pdata.NewTraces()
 	firstRss := firstTrace.ResourceSpans()
 	firstResourceSpans := firstRss.AppendEmpty()
-	ils := firstResourceSpans.InstrumentationLibrarySpans().AppendEmpty()
+	ils := firstResourceSpans.ScopeSpans().AppendEmpty()
 	span := ils.Spans().AppendEmpty()
 	span.SetTraceID(traceID)
 
@@ -475,7 +475,7 @@ func TestTracesAreDispatchedInIndividualBatches(t *testing.T) {
 	secondTrace := pdata.NewTraces()
 	secondRss := secondTrace.ResourceSpans()
 	secondResourceSpans := secondRss.AppendEmpty()
-	secondIls := secondResourceSpans.InstrumentationLibrarySpans().AppendEmpty()
+	secondIls := secondResourceSpans.ScopeSpans().AppendEmpty()
 	secondSpan := secondIls.Spans().AppendEmpty()
 	secondSpan.SetTraceID(secondTraceID)
 
@@ -509,7 +509,7 @@ func TestErrorOnProcessResourceSpansContinuesProcessing(t *testing.T) {
 	trace := pdata.NewTraces()
 	rss := trace.ResourceSpans()
 	rs := rss.AppendEmpty()
-	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
+	ils := rs.ScopeSpans().AppendEmpty()
 	span := ils.Spans().AppendEmpty()
 	span.SetTraceID(traceID)
 	span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4}))
@@ -659,7 +659,7 @@ func simpleTraces() pdata.Traces {
 func simpleTracesWithID(traceID pdata.TraceID) pdata.Traces {
 	traces := pdata.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
-	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
+	ils := rs.ScopeSpans().AppendEmpty()
 	ils.Spans().AppendEmpty().SetTraceID(traceID)
 	return traces
 }

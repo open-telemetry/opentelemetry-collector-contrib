@@ -82,7 +82,7 @@ func buildTestTraces(setTokenLabel bool) (traces pdata.Traces) {
 			resource.Attributes().InsertString("key2", "value2")
 		}
 
-		span := rs.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+		span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 		name := fmt.Sprintf("Span%d", i)
 		span.SetName(name)
 		span.SetTraceID(pdata.NewTraceID([16]byte{1}))
@@ -140,7 +140,7 @@ func buildTestTrace() pdata.Traces {
 		rs := trace.ResourceSpans().AppendEmpty()
 		resource := rs.Resource()
 		resource.Attributes().InsertString("com.splunk.signalfx.access_token", fmt.Sprintf("TraceAccessToken%v", i))
-		span := rs.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+		span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 		span.SetName("MySpan")
 
 		rand.Seed(time.Now().Unix())

@@ -73,7 +73,7 @@ func (rmb *resourceMetricsBuilder) AddMetric(metric cWMetric) {
 // Build updates the passed in pdata.ResourceMetrics with the metrics in
 // the builder.
 func (rmb *resourceMetricsBuilder) Build(rm pdata.ResourceMetrics) {
-	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+	ilm := rm.ScopeMetrics().AppendEmpty()
 	rmb.setAttributes(rm.Resource())
 	for _, mb := range rmb.metricBuilders {
 		mb.Build(ilm.Metrics().AppendEmpty())

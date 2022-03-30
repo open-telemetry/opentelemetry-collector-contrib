@@ -114,8 +114,8 @@ func (s *mongodbScraper) collectDatabase(ctx context.Context, rms pdata.Resource
 	resourceAttrs := rm.Resource().Attributes()
 	resourceAttrs.InsertString(metadata.A.Database, databaseName)
 
-	ilms := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ilms.InstrumentationLibrary().SetName(instrumentationLibraryName)
+	ilms := rm.ScopeMetrics().AppendEmpty()
+	ilms.Scope().SetName(instrumentationLibraryName)
 
 	dbStats, err := s.client.DBStats(ctx, databaseName)
 	if err != nil {
@@ -136,8 +136,8 @@ func (s *mongodbScraper) collectDatabase(ctx context.Context, rms pdata.Resource
 
 func (s *mongodbScraper) collectAdminDatabase(ctx context.Context, rms pdata.ResourceMetricsSlice, now pdata.Timestamp, errors scrapererror.ScrapeErrors) {
 	rm := rms.AppendEmpty()
-	ilms := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ilms.InstrumentationLibrary().SetName(instrumentationLibraryName)
+	ilms := rm.ScopeMetrics().AppendEmpty()
+	ilms.Scope().SetName(instrumentationLibraryName)
 
 	serverStatus, err := s.client.ServerStatus(ctx, "admin")
 	if err != nil {

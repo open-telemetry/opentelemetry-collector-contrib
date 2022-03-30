@@ -26,7 +26,7 @@ import (
 
 type spanTransformContext struct {
 	span     pdata.Span
-	il       pdata.InstrumentationLibrary
+	il       pdata.InstrumentationScope
 	resource pdata.Resource
 }
 
@@ -34,7 +34,7 @@ func (ctx spanTransformContext) GetItem() interface{} {
 	return ctx.span
 }
 
-func (ctx spanTransformContext) GetInstrumentationLibrary() pdata.InstrumentationLibrary {
+func (ctx spanTransformContext) GetInstrumentationScope() pdata.InstrumentationScope {
 	return ctx.il
 }
 
@@ -76,13 +76,13 @@ func newPathGetSetter(path []common.Field) (common.GetSetter, error) {
 		}
 	case "instrumentation_library":
 		if len(path) == 1 {
-			return accessInstrumentationLibrary(), nil
+			return accessInstrumentationScope(), nil
 		}
 		switch path[1].Name {
 		case "name":
-			return accessInstrumentationLibraryName(), nil
+			return accessInstrumentationScopeName(), nil
 		case "version":
-			return accessInstrumentationLibraryVersion(), nil
+			return accessInstrumentationScopeVersion(), nil
 		}
 	case "trace_id":
 		return accessTraceID(), nil
@@ -172,40 +172,40 @@ func accessResourceAttributesKey(mapKey *string) pathGetSetter {
 	}
 }
 
-func accessInstrumentationLibrary() pathGetSetter {
+func accessInstrumentationScope() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx common.TransformContext) interface{} {
-			return ctx.GetInstrumentationLibrary()
+			return ctx.GetInstrumentationScope()
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
-			if newIl, ok := val.(pdata.InstrumentationLibrary); ok {
-				newIl.CopyTo(ctx.GetInstrumentationLibrary())
+			if newIl, ok := val.(pdata.InstrumentationScope); ok {
+				newIl.CopyTo(ctx.GetInstrumentationScope())
 			}
 		},
 	}
 }
 
-func accessInstrumentationLibraryName() pathGetSetter {
+func accessInstrumentationScopeName() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx common.TransformContext) interface{} {
-			return ctx.GetInstrumentationLibrary().Name()
+			return ctx.GetInstrumentationScope().Name()
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
-				ctx.GetInstrumentationLibrary().SetName(str)
+				ctx.GetInstrumentationScope().SetName(str)
 			}
 		},
 	}
 }
 
-func accessInstrumentationLibraryVersion() pathGetSetter {
+func accessInstrumentationScopeVersion() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx common.TransformContext) interface{} {
-			return ctx.GetInstrumentationLibrary().Version()
+			return ctx.GetInstrumentationScope().Version()
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
-				ctx.GetInstrumentationLibrary().SetVersion(str)
+				ctx.GetInstrumentationScope().SetVersion(str)
 			}
 		},
 	}

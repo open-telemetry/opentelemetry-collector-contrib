@@ -75,7 +75,7 @@ func TestFactoryCreateTracesProcessor(t *testing.T) {
 	assert.NoError(t, err)
 
 	td := pdata.NewTraces()
-	span := td.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	span := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName("operationA")
 
 	_, ok := span.Attributes().Get("test")
