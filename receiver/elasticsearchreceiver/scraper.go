@@ -86,8 +86,8 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pdata.
 		resourceAttrs.InsertString(metadata.A.ElasticsearchClusterName, nodeStats.ClusterName)
 		resourceAttrs.InsertString(metadata.A.ElasticsearchNodeName, info.Name)
 
-		ilms := rm.InstrumentationLibraryMetrics().AppendEmpty()
-		ilms.InstrumentationLibrary().SetName(instrumentationLibraryName)
+		ilms := rm.ScopeMetrics().AppendEmpty()
+		ilms.Scope().SetName(instrumentationLibraryName)
 
 		r.mb.RecordElasticsearchNodeCacheMemoryUsageDataPoint(now, info.Indices.FieldDataCache.MemorySizeInBy, metadata.AttributeCacheName.Fielddata)
 		r.mb.RecordElasticsearchNodeCacheMemoryUsageDataPoint(now, info.Indices.QueryCache.MemorySizeInBy, metadata.AttributeCacheName.Query)
@@ -189,8 +189,8 @@ func (r *elasticsearchScraper) scrapeClusterMetrics(ctx context.Context, now pda
 	resourceAttrs := rm.Resource().Attributes()
 	resourceAttrs.InsertString(metadata.A.ElasticsearchClusterName, clusterHealth.ClusterName)
 
-	ilms := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ilms.InstrumentationLibrary().SetName(instrumentationLibraryName)
+	ilms := rm.ScopeMetrics().AppendEmpty()
+	ilms.Scope().SetName(instrumentationLibraryName)
 
 	r.mb.RecordElasticsearchClusterNodesDataPoint(now, clusterHealth.NodeCount)
 

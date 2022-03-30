@@ -32,7 +32,7 @@ func processMeasurements(
 	metricSlice := pdata.NewMetrics()
 	rm := metricSlice.ResourceMetrics().AppendEmpty()
 	resource.CopyTo(rm.Resource())
-	ilms := rm.InstrumentationLibraryMetrics().AppendEmpty()
+	ilms := rm.ScopeMetrics().AppendEmpty()
 	for _, meas := range measurements {
 		metric, err := metadata.MeasurementsToMetric(meas, false)
 		if err != nil {

@@ -52,13 +52,13 @@ func createLogData(numberOfLogs int) pdata.Logs {
 	rl.Resource().Attributes().InsertString(conventions.AttributeServiceName, "test-service")
 	rl.Resource().Attributes().InsertString(conventions.AttributeHostName, "test-host")
 	rl.Resource().Attributes().InsertString(conventions.AttributeServiceInstanceID, "test-instance")
-	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
-	ill.InstrumentationLibrary().SetName("collector")
-	ill.InstrumentationLibrary().SetVersion("v0.1.0")
+	sl := rl.ScopeLogs().AppendEmpty()
+	sl.Scope().SetName("collector")
+	sl.Scope().SetVersion("v0.1.0")
 
 	for i := 0; i < numberOfLogs; i++ {
 		ts := pdata.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
-		logRecord := ill.LogRecords().AppendEmpty()
+		logRecord := sl.LogRecords().AppendEmpty()
 		logRecord.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
 		logRecord.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
 		logRecord.SetFlags(uint32(0x01))

@@ -28,7 +28,7 @@ func ToMetrics(sfxDataPoints []*model.DataPoint) (pdata.Metrics, error) {
 	// 	data point.
 	md := pdata.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
-	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+	ilm := rm.ScopeMetrics().AppendEmpty()
 
 	ms := ilm.Metrics()
 	ms.EnsureCapacity(len(sfxDataPoints))

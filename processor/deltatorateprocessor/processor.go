@@ -53,7 +53,7 @@ func (dtrp *deltaToRateProcessor) processMetrics(_ context.Context, md pdata.Met
 
 	for i := 0; i < resourceMetricsSlice.Len(); i++ {
 		rm := resourceMetricsSlice.At(i)
-		ilms := rm.InstrumentationLibraryMetrics()
+		ilms := rm.ScopeMetrics()
 		for i := 0; i < ilms.Len(); i++ {
 			ilm := ilms.At(i)
 			metricSlice := ilm.Metrics()

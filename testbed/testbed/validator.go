@@ -132,7 +132,7 @@ func (v *CorrectnessTestValidator) assertSentRecdTracingDataEqual(tracesList []p
 	for _, td := range tracesList {
 		rss := td.ResourceSpans()
 		for i := 0; i < rss.Len(); i++ {
-			ilss := rss.At(i).InstrumentationLibrarySpans()
+			ilss := rss.At(i).ScopeSpans()
 			for j := 0; j < ilss.Len(); j++ {
 				spans := ilss.At(j).Spans()
 				for k := 0; k < spans.Len(); k++ {
@@ -515,7 +515,7 @@ func populateSpansMap(spansMap map[string]pdata.Span, tds []pdata.Traces) {
 	for _, td := range tds {
 		rss := td.ResourceSpans()
 		for i := 0; i < rss.Len(); i++ {
-			ilss := rss.At(i).InstrumentationLibrarySpans()
+			ilss := rss.At(i).ScopeSpans()
 			for j := 0; j < ilss.Len(); j++ {
 				spans := ilss.At(j).Spans()
 				for k := 0; k < spans.Len(); k++ {

@@ -82,7 +82,7 @@ func createMetricsData(numberOfDataPoints int) pdata.Metrics {
 	for i := 0; i < numberOfDataPoints; i++ {
 		tsUnix := time.Unix(int64(i), int64(i)*time.Millisecond.Nanoseconds())
 
-		ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+		ilm := rm.ScopeMetrics().AppendEmpty()
 		metric := ilm.Metrics().AppendEmpty()
 		metric.SetName("gauge_double_with_dims")
 		metric.SetDataType(pdata.MetricDataTypeGauge)
@@ -102,7 +102,7 @@ func createTraceData(numberOfTraces int) pdata.Traces {
 	traces := pdata.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
 	rs.Resource().Attributes().InsertString("resource", "R1")
-	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
+	ils := rs.ScopeSpans().AppendEmpty()
 	ils.Spans().EnsureCapacity(numberOfTraces)
 	for i := 0; i < numberOfTraces; i++ {
 		span := ils.Spans().AppendEmpty()
@@ -139,14 +139,14 @@ func createLogDataWithCustomLibraries(numResources int, libraries []string, numR
 	logs.ResourceLogs().EnsureCapacity(numResources)
 	for i := 0; i < numResources; i++ {
 		rl := logs.ResourceLogs().AppendEmpty()
-		rl.InstrumentationLibraryLogs().EnsureCapacity(len(libraries))
+		rl.ScopeLogs().EnsureCapacity(len(libraries))
 		for j := 0; j < len(libraries); j++ {
-			ill := rl.InstrumentationLibraryLogs().AppendEmpty()
-			ill.InstrumentationLibrary().SetName(libraries[j])
-			ill.LogRecords().EnsureCapacity(numRecords[j])
+			sl := rl.ScopeLogs().AppendEmpty()
+			sl.Scope().SetName(libraries[j])
+			sl.LogRecords().EnsureCapacity(numRecords[j])
 			for k := 0; k < numRecords[j]; k++ {
 				ts := pdata.Timestamp(int64(k) * time.Millisecond.Nanoseconds())
-				logRecord := ill.LogRecords().AppendEmpty()
+				logRecord := sl.LogRecords().AppendEmpty()
 				logRecord.Body().SetStringVal("mylog")
 				logRecord.Attributes().InsertString(splunk.DefaultNameLabel, fmt.Sprintf("%d_%d_%d", i, j, k))
 				logRecord.Attributes().InsertString(splunk.DefaultSourceLabel, "myapp")
@@ -754,7 +754,7 @@ func Test_pushLogData_nil_Logs(t *testing.T) {
 			}(),
 			requires: func(t *testing.T, logs pdata.Logs) {
 				require.Equal(t, logs.ResourceLogs().Len(), 1)
-				require.Zero(t, logs.ResourceLogs().At(0).InstrumentationLibraryLogs().Len())
+				require.Zero(t, logs.ResourceLogs().At(0).ScopeLogs().Len())
 			},
 		},
 		{
@@ -763,13 +763,13 @@ func Test_pushLogData_nil_Logs(t *testing.T) {
 			},
 			logs: func() pdata.Logs {
 				logs := pdata.NewLogs()
-				logs.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty()
+				logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
 				return logs
 			}(),
 			requires: func(t *testing.T, logs pdata.Logs) {
 				require.Equal(t, logs.ResourceLogs().Len(), 1)
-				require.Equal(t, logs.ResourceLogs().At(0).InstrumentationLibraryLogs().Len(), 1)
-				require.Zero(t, logs.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().Len())
+				require.Equal(t, logs.ResourceLogs().At(0).ScopeLogs().Len(), 1)
+				require.Zero(t, logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len())
 			},
 		},
 	}
@@ -804,7 +804,7 @@ func Test_pushLogData_InvalidLog(t *testing.T) {
 	}
 
 	logs := pdata.NewLogs()
-	log := logs.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty()
+	log := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 	// Invalid log value
 	log.Body().SetDoubleVal(math.Inf(1))
 
@@ -1044,10 +1044,10 @@ func TestSubLogs(t *testing.T) {
 	assert.Equal(t, logs.LogRecordCount(), got.LogRecordCount())
 
 	// The name of the leftmost log record should be 0_0_0.
-	val, _ := got.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(0).Attributes().Get(splunk.DefaultNameLabel)
+	val, _ := got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get(splunk.DefaultNameLabel)
 	assert.Equal(t, "0_0_0", val.AsString())
 	// The name of the rightmost log record should be 1_1_2.
-	val, _ = got.ResourceLogs().At(1).InstrumentationLibraryLogs().At(1).LogRecords().At(2).Attributes().Get(splunk.DefaultNameLabel)
+	val, _ = got.ResourceLogs().At(1).ScopeLogs().At(1).LogRecords().At(2).Attributes().Get(splunk.DefaultNameLabel)
 	assert.Equal(t, "1_1_2", val.AsString())
 
 	// Logs subset from some mid index (resource 0, library 1, log 2).
@@ -1057,10 +1057,10 @@ func TestSubLogs(t *testing.T) {
 	assert.Equal(t, 7, got.LogRecordCount())
 
 	// The name of the leftmost log record should be 0_1_2.
-	val, _ = got.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(0).Attributes().Get(splunk.DefaultNameLabel)
+	val, _ = got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get(splunk.DefaultNameLabel)
 	assert.Equal(t, "0_1_2", val.AsString())
 	// The name of the rightmost log record should be 1_1_2.
-	val, _ = got.ResourceLogs().At(1).InstrumentationLibraryLogs().At(1).LogRecords().At(2).Attributes().Get(splunk.DefaultNameLabel)
+	val, _ = got.ResourceLogs().At(1).ScopeLogs().At(1).LogRecords().At(2).Attributes().Get(splunk.DefaultNameLabel)
 	assert.Equal(t, "1_1_2", val.AsString())
 
 	// Logs subset from rightmost index (resource 1, library 1, log 2).
@@ -1071,7 +1071,7 @@ func TestSubLogs(t *testing.T) {
 	assert.Equal(t, 1, got.LogRecordCount())
 
 	// The name of the sole log record should be 1_1_2.
-	val, _ = got.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(0).Attributes().Get(splunk.DefaultNameLabel)
+	val, _ = got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get(splunk.DefaultNameLabel)
 	assert.Equal(t, "1_1_2", val.AsString())
 
 	// Now see how profiling and log data are merged
@@ -1082,21 +1082,21 @@ func TestSubLogs(t *testing.T) {
 	got = subLogs(&logs, slice, profSlice)
 
 	assert.Equal(t, 5+2+10, got.LogRecordCount())
-	assert.Equal(t, "otel.logs", got.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).InstrumentationLibrary().Name())
-	val, _ = got.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(0).Attributes().Get(splunk.DefaultNameLabel)
+	assert.Equal(t, "otel.logs", got.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Name())
+	val, _ = got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get(splunk.DefaultNameLabel)
 	assert.Equal(t, "1_0_5", val.AsString())
-	val, _ = got.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(4).Attributes().Get(splunk.DefaultNameLabel)
+	val, _ = got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(4).Attributes().Get(splunk.DefaultNameLabel)
 	assert.Equal(t, "1_0_9", val.AsString())
 
-	assert.Equal(t, "otel.profiling", got.ResourceLogs().At(1).InstrumentationLibraryLogs().At(0).InstrumentationLibrary().Name())
-	val, _ = got.ResourceLogs().At(1).InstrumentationLibraryLogs().At(0).LogRecords().At(0).Attributes().Get(splunk.DefaultNameLabel)
+	assert.Equal(t, "otel.profiling", got.ResourceLogs().At(1).ScopeLogs().At(0).Scope().Name())
+	val, _ = got.ResourceLogs().At(1).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get(splunk.DefaultNameLabel)
 	assert.Equal(t, "0_1_8", val.AsString())
-	val, _ = got.ResourceLogs().At(1).InstrumentationLibraryLogs().At(0).LogRecords().At(1).Attributes().Get(splunk.DefaultNameLabel)
+	val, _ = got.ResourceLogs().At(1).ScopeLogs().At(0).LogRecords().At(1).Attributes().Get(splunk.DefaultNameLabel)
 	assert.Equal(t, "0_1_9", val.AsString())
-	assert.Equal(t, "otel.profiling", got.ResourceLogs().At(2).InstrumentationLibraryLogs().At(0).InstrumentationLibrary().Name())
-	val, _ = got.ResourceLogs().At(2).InstrumentationLibraryLogs().At(0).LogRecords().At(0).Attributes().Get(splunk.DefaultNameLabel)
+	assert.Equal(t, "otel.profiling", got.ResourceLogs().At(2).ScopeLogs().At(0).Scope().Name())
+	val, _ = got.ResourceLogs().At(2).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get(splunk.DefaultNameLabel)
 	assert.Equal(t, "1_1_0", val.AsString())
-	val, _ = got.ResourceLogs().At(2).InstrumentationLibraryLogs().At(0).LogRecords().At(9).Attributes().Get(splunk.DefaultNameLabel)
+	val, _ = got.ResourceLogs().At(2).ScopeLogs().At(0).LogRecords().At(9).Attributes().Get(splunk.DefaultNameLabel)
 	assert.Equal(t, "1_1_9", val.AsString())
 }
 

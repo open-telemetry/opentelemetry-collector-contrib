@@ -2,9 +2,9 @@
     "resourceMetrics": [
         {
             "resource": {},
-            "instrumentationLibraryMetrics": [
+            "scopeMetrics": [
                 {
-                    "instrumentationLibrary": {
+                    "scope": {
                         "name": "otelcol/mongodb"
                     },
                     "metrics": [
@@ -165,9 +165,9 @@
                     }
                 ]
             },
-            "instrumentationLibraryMetrics": [
+            "scopeMetrics": [
                 {
-                    "instrumentationLibrary": {
+                    "scope": {
                         "name": "otelcol/mongodb"
                     },
                     "metrics": [

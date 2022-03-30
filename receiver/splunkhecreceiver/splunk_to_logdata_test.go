@@ -81,7 +81,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 			hecConfig: defaultTestingHecConfig,
 			output: func() pdata.ResourceLogsSlice {
 				logsSlice := createLogsSlice(nanoseconds)
-				logsSlice.At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(0).Body().SetDoubleVal(12.3)
+				logsSlice.At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetDoubleVal(12.3)
 				return logsSlice
 			}(),
 			wantErr: nil,
@@ -106,7 +106,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 				arr := arrVal.SliceVal()
 				arr.AppendEmpty().SetStringVal("foo")
 				arr.AppendEmpty().SetStringVal("bar")
-				arrVal.CopyTo(logsSlice.At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(0).Body())
+				arrVal.CopyTo(logsSlice.At(0).ScopeLogs().At(0).LogRecords().At(0).Body())
 				return logsSlice
 			}(),
 			wantErr: nil,
@@ -139,7 +139,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 				attMap.InsertBool("bool", false)
 				attMap.Insert("foos", foosArr)
 				attMap.InsertInt("someInt", 12)
-				attVal.CopyTo(logsSlice.At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(0).Body())
+				attVal.CopyTo(logsSlice.At(0).ScopeLogs().At(0).LogRecords().At(0).Body())
 				return logsSlice
 			}(),
 			wantErr: nil,
@@ -187,8 +187,8 @@ func Test_SplunkHecToLogData(t *testing.T) {
 			output: func() pdata.ResourceLogsSlice {
 				lrs := pdata.NewResourceLogsSlice()
 				lr := lrs.AppendEmpty()
-				ill := lr.InstrumentationLibraryLogs().AppendEmpty()
-				logRecord := ill.LogRecords().AppendEmpty()
+				sl := lr.ScopeLogs().AppendEmpty()
+				logRecord := sl.LogRecords().AppendEmpty()
 				logRecord.Body().SetStringVal("value")
 				logRecord.SetTimestamp(pdata.Timestamp(0))
 				logRecord.Attributes().InsertString("myhost", "localhost")
@@ -214,8 +214,8 @@ func Test_SplunkHecToLogData(t *testing.T) {
 func createLogsSlice(nanoseconds int) pdata.ResourceLogsSlice {
 	lrs := pdata.NewResourceLogsSlice()
 	lr := lrs.AppendEmpty()
-	ill := lr.InstrumentationLibraryLogs().AppendEmpty()
-	logRecord := ill.LogRecords().AppendEmpty()
+	sl := lr.ScopeLogs().AppendEmpty()
+	logRecord := sl.LogRecords().AppendEmpty()
 	logRecord.Body().SetStringVal("value")
 	logRecord.SetTimestamp(pdata.Timestamp(nanoseconds))
 	logRecord.Attributes().InsertString("host.name", "localhost")
