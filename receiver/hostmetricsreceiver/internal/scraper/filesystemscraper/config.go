@@ -15,7 +15,7 @@
 package filesystemscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper"
 
 import (
-	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/filterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
@@ -77,32 +77,32 @@ func (cfg *Config) createFilter() (*fsFilter, error) {
 	var err error
 	filter := fsFilter{}
 
-	filter.includeDeviceFilter, err = newIncludeFilterHelper(cfg.IncludeDevices.Devices, &cfg.IncludeDevices.Config, metadata.Attributes.Device)
+	filter.includeDeviceFilter, err = filterhelper.NewIncludeFilterHelper(cfg.IncludeDevices.Devices, &cfg.IncludeDevices.Config, metadata.Attributes.Device)
 	if err != nil {
 		return nil, err
 	}
 
-	filter.excludeDeviceFilter, err = newExcludeFilterHelper(cfg.ExcludeDevices.Devices, &cfg.ExcludeDevices.Config, metadata.Attributes.Device)
+	filter.excludeDeviceFilter, err = filterhelper.NewExcludeFilterHelper(cfg.ExcludeDevices.Devices, &cfg.ExcludeDevices.Config, metadata.Attributes.Device)
 	if err != nil {
 		return nil, err
 	}
 
-	filter.includeFSTypeFilter, err = newIncludeFilterHelper(cfg.IncludeFSTypes.FSTypes, &cfg.IncludeFSTypes.Config, metadata.Attributes.Type)
+	filter.includeFSTypeFilter, err = filterhelper.NewIncludeFilterHelper(cfg.IncludeFSTypes.FSTypes, &cfg.IncludeFSTypes.Config, metadata.Attributes.Type)
 	if err != nil {
 		return nil, err
 	}
 
-	filter.excludeFSTypeFilter, err = newExcludeFilterHelper(cfg.ExcludeFSTypes.FSTypes, &cfg.ExcludeFSTypes.Config, metadata.Attributes.Type)
+	filter.excludeFSTypeFilter, err = filterhelper.NewExcludeFilterHelper(cfg.ExcludeFSTypes.FSTypes, &cfg.ExcludeFSTypes.Config, metadata.Attributes.Type)
 	if err != nil {
 		return nil, err
 	}
 
-	filter.includeMountPointFilter, err = newIncludeFilterHelper(cfg.IncludeMountPoints.MountPoints, &cfg.IncludeMountPoints.Config, metadata.Attributes.Mountpoint)
+	filter.includeMountPointFilter, err = filterhelper.NewIncludeFilterHelper(cfg.IncludeMountPoints.MountPoints, &cfg.IncludeMountPoints.Config, metadata.Attributes.Mountpoint)
 	if err != nil {
 		return nil, err
 	}
 
-	filter.excludeMountPointFilter, err = newExcludeFilterHelper(cfg.ExcludeMountPoints.MountPoints, &cfg.ExcludeMountPoints.Config, metadata.Attributes.Mountpoint)
+	filter.excludeMountPointFilter, err = filterhelper.NewExcludeFilterHelper(cfg.ExcludeMountPoints.MountPoints, &cfg.ExcludeMountPoints.Config, metadata.Attributes.Mountpoint)
 	if err != nil {
 		return nil, err
 	}
@@ -115,30 +115,4 @@ func (f *fsFilter) setFiltersExist() {
 	f.filtersExist = f.includeMountPointFilter != nil || f.excludeMountPointFilter != nil ||
 		f.includeFSTypeFilter != nil || f.excludeFSTypeFilter != nil ||
 		f.includeDeviceFilter != nil || f.excludeDeviceFilter != nil
-}
-
-const (
-	excludeKey = "exclude"
-	includeKey = "include"
-)
-
-func newIncludeFilterHelper(items []string, filterSet *filterset.Config, typ string) (filterset.FilterSet, error) {
-	return newFilterHelper(items, filterSet, includeKey, typ)
-}
-
-func newExcludeFilterHelper(items []string, filterSet *filterset.Config, typ string) (filterset.FilterSet, error) {
-	return newFilterHelper(items, filterSet, excludeKey, typ)
-}
-
-func newFilterHelper(items []string, filterSet *filterset.Config, typ string, filterType string) (filterset.FilterSet, error) {
-	var err error
-	var filter filterset.FilterSet
-
-	if len(items) > 0 {
-		filter, err = filterset.CreateFilterSet(items, filterSet)
-		if err != nil {
-			return nil, fmt.Errorf("error creating %s %s filters: %w", filterType, typ, err)
-		}
-	}
-	return filter, nil
 }

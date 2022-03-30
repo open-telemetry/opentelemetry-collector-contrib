@@ -1,138 +1,202 @@
 package processscraper
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
-func TestCommandNameFilter (t *testing.T) {
+func TestIncludeCommandNameFilter(t *testing.T) {
 	var filterConfig FilterConfig
 
-	filterConfig.Command = "stringMatch"
+	filterConfig.IncludeCommands.Commands = []string{"stringMatch"}
+	filterConfig.IncludeCommands.Config = filterset.Config{MatchType: filterset.Strict}
 	filter, err := createFilter(filterConfig)
 	assert.Nil(t, err)
 
-	match := filter.MatchesCommand("stringMatch", "")
+	match := filter.includeCommand("stringMatch", "")
 	assert.True(t, match)
 
-	match = filter.MatchesCommand("noMatch", "args")
+	match = filter.includeCommand("noMatch", "args")
 	assert.False(t, match)
 
 	// Test Regular Expression
-	filterConfig.Command = RegExPrefix + "^([a-zA-Z0-9_\\-\\.]+)TestRegex"
+	filterConfig.IncludeCommands.Commands = []string{"^([a-zA-Z0-9_\\-\\.]+)TestRegex"}
+	filterConfig.IncludeCommands.Config = filterset.Config{MatchType: filterset.Regexp}
 	filter, err = createFilter(filterConfig)
 	assert.Nil(t, err)
 
-	match = filter.MatchesCommand("astring" + "TestRegex", "--command args")
+	match = filter.includeCommand("astring"+"TestRegex", "--command args")
 	assert.True(t, match)
 
-	match = filter.MatchesCommand("astring" + "FailTest", "--command args")
-	assert.False(t, match)
-
-	// Test Regular Expression with quotes
-	filterConfig.Command = RegExPrefix + "\"^([a-zA-Z0-9_\\-\\.]+)TestRegex\""
-	filter, err = createFilter(filterConfig)
-	assert.Nil(t, err)
-
-	match = filter.MatchesCommand("astring" + "TestRegex", "--command args")
-	assert.True(t, match)
-
-	match = filter.MatchesCommand("astring" + "FailTest", "--command args")
+	match = filter.includeCommand("astring"+"FailTest", "--command args")
 	assert.False(t, match)
 
 	// Test Regular Expression with command line
-	filterConfig.Command = RegExPrefix + "\"^([a-zA-Z0-9_\\-\\.]+)TestRegex\""
-	filterConfig.CommandLine = RegExPrefix + "pas*word"
+	filterConfig.IncludeCommands.Commands = []string{"^([a-zA-Z0-9_\\-\\.]+)TestRegex"}
+	filterConfig.IncludeCommands.Config = filterset.Config{MatchType: filterset.Regexp}
+	filterConfig.IncludeCommandLines.CommandLines = []string{"pas*word"}
+	filterConfig.IncludeCommandLines.Config = filterset.Config{MatchType: filterset.Regexp}
 	filter, err = createFilter(filterConfig)
 	assert.Nil(t, err)
 
-	match = filter.MatchesCommand("astring" + "TestRegex", "passsssssword")
+	match = filter.includeCommand("astring"+"TestRegex", "passsssssword")
 	assert.True(t, match)
 
-	match = filter.MatchesCommand("NoMatchCommand", "passsssssword")
+	match = filter.includeCommand("NoMatchCommand", "passsssssword")
 	assert.False(t, match)
 
-	match = filter.MatchesCommand("astring" + "TestRegex", "NoMatchCommandLine")
+	match = filter.includeCommand("astring"+"TestRegex", "NoMatchCommandLine")
 	assert.False(t, match)
 
 }
 
-
-func TestPid (t *testing.T) {
+func TestExcludeCommandNameFilter(t *testing.T) {
 	var filterConfig FilterConfig
 
-	filterConfig.PID = 123454
+	filterConfig.ExcludeCommands.Commands = []string{"stringMatch"}
+	filterConfig.ExcludeCommands.Config = filterset.Config{MatchType: filterset.Strict}
 	filter, err := createFilter(filterConfig)
 	assert.Nil(t, err)
 
-	match := filter.MatchesPid(123454)
+	match := filter.includeCommand("stringMatch", "")
+	assert.False(t, match)
+
+	match = filter.includeCommand("noMatch", "args")
 	assert.True(t, match)
 
-	match = filter.MatchesPid(11111)
+	// Test Regular Expression
+	filterConfig.ExcludeCommands.Commands = []string{"^([a-zA-Z0-9_\\-\\.]+)TestRegex"}
+	filterConfig.ExcludeCommands.Config = filterset.Config{MatchType: filterset.Regexp}
+	filter, err = createFilter(filterConfig)
+	assert.Nil(t, err)
+
+	match = filter.includeCommand("astring"+"TestRegex", "--command args")
+	assert.False(t, match)
+
+	match = filter.includeCommand("astring"+"FailTest", "--command args")
+	assert.True(t, match)
+
+	// Test Regular Expression with quotes
+	filterConfig.ExcludeCommands.Commands = []string{"^([a-zA-Z0-9_\\-\\.]+)TestRegex"}
+	filterConfig.ExcludeCommands.Config = filterset.Config{MatchType: filterset.Regexp}
+	filter, err = createFilter(filterConfig)
+	assert.Nil(t, err)
+
+	match = filter.includeCommand("astring"+"TestRegex", "--command args")
+	assert.False(t, match)
+
+	match = filter.includeCommand("astring"+"FailTest", "--command args")
+	assert.True(t, match)
+
+	// Test Regular Expression with command line
+	filterConfig.ExcludeCommands.Commands = []string{"^([a-zA-Z0-9_\\-\\.]+)TestRegex"}
+	filterConfig.ExcludeCommands.Config = filterset.Config{MatchType: filterset.Regexp}
+	filterConfig.IncludeCommandLines.CommandLines = []string{"pas*word"}
+	filterConfig.IncludeCommandLines.Config = filterset.Config{MatchType: filterset.Regexp}
+	filter, err = createFilter(filterConfig)
+	assert.Nil(t, err)
+
+	match = filter.includeCommand("astring"+"TestRegex", "passsssssword")
+	assert.False(t, match)
+
+	match = filter.includeCommand("RandomCommand", "passsssssword")
+	assert.True(t, match)
+
+}
+
+func TestPid(t *testing.T) {
+	var filterConfig FilterConfig
+
+	// test include
+	filterConfig.IncludePids.Pids = []int32{123454}
+	filter, err := createFilter(filterConfig)
+	assert.Nil(t, err)
+
+	match := filter.includePid(123454)
+	assert.True(t, match)
+
+	match = filter.includePid(11111)
+	assert.False(t, match)
+
+	// test exclude
+	filterConfig.IncludePids.Pids = []int32{}
+	filterConfig.ExcludePids.Pids = []int32{123454}
+	filter, err = createFilter(filterConfig)
+	assert.Nil(t, err)
+
+	match = filter.includePid(123454)
+	assert.False(t, match)
+
+	match = filter.includePid(11111)
+	assert.True(t, match)
+}
+
+func TestOwner(t *testing.T) {
+	var filterConfig FilterConfig
+
+	filterConfig.IncludeOwners.Owners = []string{"owner"}
+	filterConfig.IncludeOwners.Config = filterset.Config{MatchType: filterset.Strict}
+	filter, err := createFilter(filterConfig)
+	assert.Nil(t, err)
+
+	match := filter.includeOwner("owner")
+	assert.True(t, match)
+
+	match = filter.includeOwner("wrongowner")
+	assert.False(t, match)
+
+	filterConfig.IncludeOwners.Owners = []string{"^owner"}
+	filterConfig.IncludeOwners.Config = filterset.Config{MatchType: filterset.Regexp}
+	filter, err = createFilter(filterConfig)
+	assert.Nil(t, err)
+
+	match = filter.includeOwner("ownerOwner")
+	assert.True(t, match)
+
+	match = filter.includeOwner("notowner")
 	assert.False(t, match)
 }
 
-func TestOwner (t *testing.T) {
+func TestExecutable(t *testing.T) {
 	var filterConfig FilterConfig
 
-	filterConfig.Owner = "owner"
+	filterConfig.IncludeExecutableNames.ExecutableNames = []string{"executableName"}
+	filterConfig.IncludeExecutableNames.Config = filterset.Config{MatchType: filterset.Strict}
 	filter, err := createFilter(filterConfig)
 	assert.Nil(t, err)
 
-	match := filter.MatchOwner("owner")
+	match := filter.includeExecutable("executableName", "//executable//path")
 	assert.True(t, match)
 
-	match = filter.MatchOwner("wrongowner")
+	match = filter.includeExecutable("noMatch", "//executable//path")
 	assert.False(t, match)
 
-	filterConfig.Owner = RegExPrefix + "^owner"
+	filterConfig.IncludeExecutableNames = ExecutableNameMatchConfig{}
+	filterConfig.IncludeExecutablePaths.ExecutablePaths = []string{"//executable//path"}
+	filterConfig.IncludeExecutablePaths.Config = filterset.Config{MatchType: filterset.Strict}
 	filter, err = createFilter(filterConfig)
 	assert.Nil(t, err)
 
-	match = filter.MatchOwner("ownerOwner")
+	match = filter.includeExecutable("executableName", "//executable//path")
 	assert.True(t, match)
 
-	match = filter.MatchOwner("notowner")
-	assert.False(t, match)
-}
-
-func TestExecutable (t *testing.T) {
-	var filterConfig FilterConfig
-
-	filterConfig.ExecutableName = "executableName"
-	filter, err := createFilter(filterConfig)
-	assert.Nil(t, err)
-
-	match := filter.MatchesExecutable("executableName", "//executable//path")
-	assert.True(t, match)
-
-	match = filter.MatchesExecutable("noMatch", "//executable//path")
+	match = filter.includeExecutable("executableName", "//nomatch//path")
 	assert.False(t, match)
 
-
-	filterConfig.ExecutableName = ""
-	filterConfig.ExecutablePath = "//executable//path"
+	filterConfig.IncludeExecutableNames.ExecutableNames = []string{"executableName"}
+	filterConfig.IncludeExecutableNames.Config = filterset.Config{MatchType: filterset.Strict}
+	filterConfig.IncludeExecutablePaths.ExecutablePaths = []string{"//executable//path"}
+	filterConfig.IncludeExecutablePaths.Config = filterset.Config{MatchType: filterset.Strict}
 	filter, err = createFilter(filterConfig)
 	assert.Nil(t, err)
 
-	match = filter.MatchesExecutable("executableName", "//executable//path")
+	match = filter.includeExecutable("executableName", "//executable//path")
 	assert.True(t, match)
 
-	match = filter.MatchesExecutable("executableName", "//nomatch//path")
+	match = filter.includeExecutable("executableName", "//nomatch//path")
 	assert.False(t, match)
 
-
-	filterConfig.ExecutableName = "executableName"
-	filterConfig.ExecutablePath = "//executable//path"
-	filter, err = createFilter(filterConfig)
-	assert.Nil(t, err)
-
-	match = filter.MatchesExecutable("executableName", "//executable//path")
-	assert.True(t, match)
-
-	match = filter.MatchesExecutable("executableName", "//nomatch//path")
-	assert.False(t, match)
-
-	match = filter.MatchesExecutable("noMatch", "//executable//path")
+	match = filter.includeExecutable("noMatch", "//executable//path")
 	assert.False(t, match)
 }

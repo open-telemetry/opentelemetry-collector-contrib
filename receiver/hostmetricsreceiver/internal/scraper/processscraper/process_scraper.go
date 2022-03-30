@@ -26,7 +26,6 @@ import (
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
 )
 
@@ -43,26 +42,18 @@ type scraper struct {
 	config    *Config
 	mb        *metadata.MetricsBuilder
 	filterSet *processFilterSet
-	excludeFS filterset.FilterSet
 
 	// for mocking
-	bootTime          func() (uint64, error)
-	getProcessHandles func() (processHandles, error)
+	bootTime             func() (uint64, error)
+	getProcessHandles    func() (processHandles, error)
 	getProcessExecutable func(processHandle) (*executableMetadata, error)
-	getProcessCommand func(processHandle) (*commandMetadata, error)
+	getProcessCommand    func(processHandle) (*commandMetadata, error)
 }
 
 // newProcessScraper creates a Process Scraper
 func newProcessScraper(cfg *Config) (*scraper, error) {
 	scraper := &scraper{config: cfg, bootTime: host.BootTime, getProcessHandles: getProcessHandlesInternal}
 	var err error
-
-	if len(cfg.Exclude.Names) > 0 {
-		scraper.excludeFS, err = filterset.CreateFilterSet(cfg.Exclude.Names, &cfg.Exclude.Config)
-		if err != nil {
-			return nil, fmt.Errorf("error creating process exclude filters: %w", err)
-		}
-	}
 
 	scraper.filterSet, err = createFilters(cfg.Filters)
 	if err != nil {
@@ -144,7 +135,7 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 		pid := handles.Pid(i)
 
 		// filter by pid
-		matches := s.filterSet.MatchesPid(pid)
+		matches := s.filterSet.includePid(pid)
 		if len(matches) == 0 {
 			continue
 		}
@@ -158,7 +149,7 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 			continue
 		}
 		// filter by executable
-		matches = s.filterSet.MatchesExecutable(executable.name, executable.path, matches)
+		matches = s.filterSet.includeExecutable(executable.name, executable.path, matches)
 		if len(matches) == 0 {
 			continue
 		}
@@ -169,7 +160,7 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 		}
 		// filter by command
 		commandLine := strings.Join(command.commandLineSlice, " ")
-		matches = s.filterSet.MatchesCommand(command.command, commandLine, matches)
+		matches = s.filterSet.includeCommand(command.command, commandLine, matches)
 		if len(matches) == 0 {
 			continue
 		}
@@ -179,7 +170,7 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 			errs.AddPartial(0, fmt.Errorf("error reading username for process %q (pid %v): %w", executable.name, pid, err))
 		}
 		// filter by user
-		matches = s.filterSet.MatchesOwner(username, matches)
+		matches = s.filterSet.includeOwner(username, matches)
 		if len(matches) == 0 {
 			continue
 		}
