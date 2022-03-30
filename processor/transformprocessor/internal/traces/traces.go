@@ -164,7 +164,7 @@ func accessInstrumentationLibrary() pathGetSetter {
 			return ctx.il
 		},
 		setter: func(ctx spanTransformContext, val interface{}) {
-			if newIl, ok := val.(pdata.InstrumentationLibrary); ok {
+			if newIl, ok := val.(pdata.InstrumentationScope); ok {
 				newIl.CopyTo(ctx.il)
 			}
 		},

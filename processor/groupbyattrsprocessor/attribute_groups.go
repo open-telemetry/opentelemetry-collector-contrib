@@ -18,55 +18,55 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
-func instrumentationLibrariesEqual(il1, il2 pdata.InstrumentationLibrary) bool {
+func instrumentationLibrariesEqual(il1, il2 pdata.InstrumentationScope) bool {
 	return il1.Name() == il2.Name() && il1.Version() == il2.Version()
 }
 
-// matchingInstrumentationLibrarySpans searches for a pdata.InstrumentationLibrarySpans instance matching
+// matchingScopeSpans searches for a pdata.ScopeSpans instance matching
 // given InstrumentationLibrary. If nothing is found, it creates a new one
-func matchingInstrumentationLibrarySpans(rl pdata.ResourceSpans, library pdata.InstrumentationLibrary) pdata.InstrumentationLibrarySpans {
-	ilss := rl.InstrumentationLibrarySpans()
+func matchingScopeSpans(rl pdata.ResourceSpans, library pdata.InstrumentationScope) pdata.ScopeSpans {
+	ilss := rl.ScopeSpans()
 	for i := 0; i < ilss.Len(); i++ {
 		ils := ilss.At(i)
-		if instrumentationLibrariesEqual(ils.InstrumentationLibrary(), library) {
+		if instrumentationLibrariesEqual(ils.Scope(), library) {
 			return ils
 		}
 	}
 
 	ils := ilss.AppendEmpty()
-	library.CopyTo(ils.InstrumentationLibrary())
+	library.CopyTo(ils.Scope())
 	return ils
 }
 
-// matchingInstrumentationLibraryLogs searches for a pdata.InstrumentationLibraryLogs instance matching
+// matchingInstrumentationLibraryLogs searches for a pdata.ScopeLogs instance matching
 // given InstrumentationLibrary. If nothing is found, it creates a new one
-func matchingInstrumentationLibraryLogs(rl pdata.ResourceLogs, library pdata.InstrumentationLibrary) pdata.InstrumentationLibraryLogs {
-	ills := rl.InstrumentationLibraryLogs()
+func matchingInstrumentationLibraryLogs(rl pdata.ResourceLogs, library pdata.InstrumentationScope) pdata.ScopeLogs {
+	ills := rl.ScopeLogs()
 	for i := 0; i < ills.Len(); i++ {
-		ill := ills.At(i)
-		if instrumentationLibrariesEqual(ill.InstrumentationLibrary(), library) {
-			return ill
+		sl := ills.At(i)
+		if instrumentationLibrariesEqual(sl.Scope(), library) {
+			return sl
 		}
 	}
 
-	ill := ills.AppendEmpty()
-	library.CopyTo(ill.InstrumentationLibrary())
-	return ill
+	sl := ills.AppendEmpty()
+	library.CopyTo(sl.Scope())
+	return sl
 }
 
-// matchingInstrumentationLibraryMetrics searches for a pdata.InstrumentationLibraryMetrics instance matching
+// matchingInstrumentationLibraryMetrics searches for a pdata.ScopeMetrics instance matching
 // given InstrumentationLibrary. If nothing is found, it creates a new one
-func matchingInstrumentationLibraryMetrics(rm pdata.ResourceMetrics, library pdata.InstrumentationLibrary) pdata.InstrumentationLibraryMetrics {
-	ilms := rm.InstrumentationLibraryMetrics()
+func matchingInstrumentationLibraryMetrics(rm pdata.ResourceMetrics, library pdata.InstrumentationScope) pdata.ScopeMetrics {
+	ilms := rm.ScopeMetrics()
 	for i := 0; i < ilms.Len(); i++ {
 		ilm := ilms.At(i)
-		if instrumentationLibrariesEqual(ilm.InstrumentationLibrary(), library) {
+		if instrumentationLibrariesEqual(ilm.Scope(), library) {
 			return ilm
 		}
 	}
 
 	ilm := ilms.AppendEmpty()
-	library.CopyTo(ilm.InstrumentationLibrary())
+	library.CopyTo(ilm.Scope())
 	return ilm
 }
 

@@ -201,8 +201,8 @@ func TestExportTraceDataWithInstrumentationDetails(t *testing.T) {
 	)
 	traces := constructTraces([]pdata.Span{minSpan})
 
-	instrumentationLibrary := traces.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).
-		InstrumentationLibrary()
+	instrumentationLibrary := traces.ResourceSpans().At(0).ScopeSpans().At(0).
+		Scope()
 	instrumentationLibrary.SetName("instrumentation_name")
 	instrumentationLibrary.SetVersion("v0.0.1")
 
@@ -267,8 +267,8 @@ func constructTraces(spans []pdata.Span) pdata.Traces {
 	traces := pdata.NewTraces()
 	traces.ResourceSpans().EnsureCapacity(1)
 	rs := traces.ResourceSpans().AppendEmpty()
-	rs.InstrumentationLibrarySpans().EnsureCapacity(1)
-	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
+	rs.ScopeSpans().EnsureCapacity(1)
+	ils := rs.ScopeSpans().AppendEmpty()
 	ils.Spans().EnsureCapacity(len(spans))
 	for _, span := range spans {
 		span.CopyTo(ils.Spans().AppendEmpty())

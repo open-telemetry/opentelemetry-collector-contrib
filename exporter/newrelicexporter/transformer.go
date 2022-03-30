@@ -63,7 +63,7 @@ func newTransformer(logger *zap.Logger, buildInfo *component.BuildInfo, details 
 	return &transformer{logger: logger, OverrideAttributes: overrideAttributes, details: details}
 }
 
-func (t *transformer) CommonAttributes(resource pdata.Resource, lib pdata.InstrumentationLibrary) map[string]interface{} {
+func (t *transformer) CommonAttributes(resource pdata.Resource, lib pdata.InstrumentationScope) map[string]interface{} {
 	resourceAttrs := resource.Attributes()
 	commonAttrs := resourceAttrs.AsRaw()
 	t.TrackAttributes(attributeLocationResource, resourceAttrs)

@@ -60,7 +60,7 @@ type bufferState struct {
 type index struct {
 	// Index in orig list (i.e. root parent index).
 	resource int
-	// Index in InstrumentationLibraryLogs/InstrumentationLibraryMetrics list (i.e. immediate parent index).
+	// Index in ScopeLogs/ScopeMetrics list (i.e. immediate parent index).
 	library int
 	// Index in Logs list (i.e. the log record index).
 	record int
@@ -195,8 +195,8 @@ var profilingHeaders = map[string]string{
 	libraryHeaderName: profilingLibraryName,
 }
 
-func isProfilingData(ill pdata.InstrumentationLibraryLogs) bool {
-	return ill.InstrumentationLibrary().Name() == profilingLibraryName
+func isProfilingData(sl pdata.ScopeLogs) bool {
+	return sl.Scope().Name() == profilingLibraryName
 }
 
 func makeBlankBufferState(bufCap uint) bufferState {
@@ -228,7 +228,7 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld pdata.Logs, send f
 
 	var rls = ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
-		ills := rls.At(i).InstrumentationLibraryLogs()
+		ills := rls.At(i).ScopeLogs()
 		for j := 0; j < ills.Len(); j++ {
 			var err error
 			var newPermanentErrors []error
@@ -269,7 +269,7 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld pdata.Logs, send f
 
 func (c *client) pushLogRecords(ctx context.Context, lds pdata.ResourceLogsSlice, state *bufferState, headers map[string]string, send func(context.Context, *bytes.Buffer, map[string]string) error) (permanentErrors []error, sendingError error) {
 	res := lds.At(state.resource)
-	logs := res.InstrumentationLibraryLogs().At(state.library).LogRecords()
+	logs := res.ScopeLogs().At(state.library).LogRecords()
 	bufCap := int(c.config.MaxContentLengthLogs)
 
 	for k := 0; k < logs.Len(); k++ {
@@ -334,7 +334,7 @@ func (c *client) pushLogRecords(ctx context.Context, lds pdata.ResourceLogsSlice
 
 func (c *client) pushMetricsRecords(ctx context.Context, mds pdata.ResourceMetricsSlice, state *bufferState, send func(context.Context, *bytes.Buffer) error) (permanentErrors []error, sendingError error) {
 	res := mds.At(state.resource)
-	metrics := res.InstrumentationLibraryMetrics().At(state.library).Metrics()
+	metrics := res.ScopeMetrics().At(state.library).Metrics()
 	bufCap := int(c.config.MaxContentLengthMetrics)
 
 	for k := 0; k < metrics.Len(); k++ {
@@ -408,7 +408,7 @@ func (c *client) pushMetricsDataInBatches(ctx context.Context, md pdata.Metrics,
 
 	var rms = md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
-		ilms := rms.At(i).InstrumentationLibraryMetrics()
+		ilms := rms.At(i).ScopeMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			var err error
 			var newPermanentErrors []error
@@ -505,8 +505,8 @@ func subLogsByType(src *pdata.Logs, from *index, dst *pdata.Logs, profiling bool
 		newSub := resourcesSub.AppendEmpty()
 		resources.At(i).Resource().CopyTo(newSub.Resource())
 
-		libraries := resources.At(i).InstrumentationLibraryLogs()
-		librariesSub := newSub.InstrumentationLibraryLogs()
+		libraries := resources.At(i).ScopeLogs()
+		librariesSub := newSub.ScopeLogs()
 
 		j := 0
 		if i == from.resource {
@@ -521,7 +521,7 @@ func subLogsByType(src *pdata.Logs, from *index, dst *pdata.Logs, profiling bool
 			}
 
 			newLibSub := librariesSub.AppendEmpty()
-			lib.InstrumentationLibrary().CopyTo(newLibSub.InstrumentationLibrary())
+			lib.Scope().CopyTo(newLibSub.Scope())
 
 			logs := lib.LogRecords()
 			logsSub := newLibSub.LogRecords()
@@ -552,8 +552,8 @@ func subMetricsByType(src *pdata.Metrics, from *index, dst *pdata.Metrics) {
 		newSub := resourcesSub.AppendEmpty()
 		resources.At(i).Resource().CopyTo(newSub.Resource())
 
-		libraries := resources.At(i).InstrumentationLibraryMetrics()
-		librariesSub := newSub.InstrumentationLibraryMetrics()
+		libraries := resources.At(i).ScopeMetrics()
+		librariesSub := newSub.ScopeMetrics()
 
 		j := 0
 		if i == from.resource {
@@ -563,7 +563,7 @@ func subMetricsByType(src *pdata.Metrics, from *index, dst *pdata.Metrics) {
 			lib := libraries.At(j)
 
 			newLibSub := librariesSub.AppendEmpty()
-			lib.InstrumentationLibrary().CopyTo(newLibSub.InstrumentationLibrary())
+			lib.Scope().CopyTo(newLibSub.Scope())
 
 			metrics := lib.Metrics()
 			metricsSub := newLibSub.Metrics()

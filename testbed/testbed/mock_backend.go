@@ -174,7 +174,7 @@ func (tc *MockTraceConsumer) ConsumeTraces(_ context.Context, td pdata.Traces) e
 
 	rs := td.ResourceSpans()
 	for i := 0; i < rs.Len(); i++ {
-		ils := rs.At(i).InstrumentationLibrarySpans()
+		ils := rs.At(i).ScopeSpans()
 		for j := 0; j < ils.Len(); j++ {
 			spans := ils.At(j).Spans()
 			for k := 0; k < spans.Len(); k++ {

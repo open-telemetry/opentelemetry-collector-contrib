@@ -27,7 +27,7 @@ import (
 func TestWriteMetrics(t *testing.T) {
 	metricslice := testMetrics()
 	metrics := pdata.NewMetrics()
-	metricslice.CopyTo(metrics.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics())
+	metricslice.CopyTo(metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics())
 
 	tempDir := filepath.Join(t.TempDir(), "metrics.json")
 	WriteMetrics(tempDir, metrics)
@@ -45,7 +45,7 @@ func TestWriteMetrics(t *testing.T) {
 func TestReadMetrics(t *testing.T) {
 	metricslice := testMetrics()
 	expectedMetrics := pdata.NewMetrics()
-	metricslice.CopyTo(expectedMetrics.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics())
+	metricslice.CopyTo(expectedMetrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics())
 
 	expectedFile := filepath.Join("testdata", "roundtrip", "expected.json")
 	actualMetrics, err := ReadMetrics(expectedFile)
@@ -56,7 +56,7 @@ func TestReadMetrics(t *testing.T) {
 func TestRoundTrip(t *testing.T) {
 	metricslice := testMetrics()
 	expectedMetrics := pdata.NewMetrics()
-	metricslice.CopyTo(expectedMetrics.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics())
+	metricslice.CopyTo(expectedMetrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics())
 
 	tempDir := filepath.Join(t.TempDir(), "metrics.json")
 	err := WriteMetrics(tempDir, expectedMetrics)

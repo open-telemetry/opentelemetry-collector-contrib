@@ -126,7 +126,7 @@ func verifyRenameMetric(t *testing.T, td *testData, resourceMetrics []*pdata.Res
 
 	wantAttributes := td.attributes
 
-	metrics1 := m1.InstrumentationLibraryMetrics().At(0).Metrics()
+	metrics1 := m1.ScopeMetrics().At(0).Metrics()
 	ts1 := getTS(metrics1)
 	e1 := []testExpectation{
 		assertMetricPresent("foo",
@@ -180,7 +180,7 @@ func verifyRenameMetricKeepAction(t *testing.T, td *testData, resourceMetrics []
 
 	wantAttributes := td.attributes
 
-	metrics1 := m1.InstrumentationLibraryMetrics().At(0).Metrics()
+	metrics1 := m1.ScopeMetrics().At(0).Metrics()
 	ts1 := getTS(metrics1)
 	e1 := []testExpectation{
 		assertMetricPresent("rpc_duration_total",
@@ -287,7 +287,7 @@ func verifyRenameLabel(t *testing.T, td *testData, resourceMetrics []*pdata.Reso
 
 	wantAttributes := td.attributes
 
-	metrics1 := m1.InstrumentationLibraryMetrics().At(0).Metrics()
+	metrics1 := m1.ScopeMetrics().At(0).Metrics()
 	ts1 := getTS(metrics1)
 	e1 := []testExpectation{
 		assertMetricPresent("http_go_threads",
@@ -390,7 +390,7 @@ func verifyRenameLabelKeepAction(t *testing.T, td *testData, resourceMetrics []*
 
 	wantAttributes := td.attributes
 
-	metrics1 := m1.InstrumentationLibraryMetrics().At(0).Metrics()
+	metrics1 := m1.ScopeMetrics().At(0).Metrics()
 	ts1 := getTS(metrics1)
 	e1 := []testExpectation{
 		assertMetricPresent("http_go_threads",

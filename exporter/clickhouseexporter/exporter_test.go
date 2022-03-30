@@ -125,9 +125,9 @@ func withTestExporterConfig(fns ...func(*Config)) func(string) *Config {
 func simpleLogs(count int) pdata.Logs {
 	logs := pdata.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
-	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
+	sl := rl.ScopeLogs().AppendEmpty()
 	for i := 0; i < count; i++ {
-		r := ill.LogRecords().AppendEmpty()
+		r := sl.LogRecords().AppendEmpty()
 		r.SetTimestamp(pdata.NewTimestampFromTime(time.Now()))
 		r.Attributes().InsertString("k", "v")
 	}

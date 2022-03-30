@@ -85,7 +85,7 @@ func TestStaleNaNs(t *testing.T) {
 
 func verifyStaleNaNs(t *testing.T, td *testData, resourceMetrics []*pdata.ResourceMetrics) {
 	verifyNumTotalScrapeResults(t, td, resourceMetrics)
-	metrics1 := resourceMetrics[0].InstrumentationLibraryMetrics().At(0).Metrics()
+	metrics1 := resourceMetrics[0].ScopeMetrics().At(0).Metrics()
 	ts1 := getTS(metrics1)
 	for i := 0; i < totalScrapes; i++ {
 		if i%2 == 0 {
@@ -100,7 +100,7 @@ func verifyStaleNaNPage1SuccessfulScrape(t *testing.T, td *testData, resourceMet
 	// m1 has 4 metrics + 5 internal scraper metrics
 	assert.Equal(t, 9, metricsCount(resourceMetric))
 	wantAttributes := td.attributes // should want attribute be part of complete target or each scrape?
-	metrics1 := resourceMetric.InstrumentationLibraryMetrics().At(0).Metrics()
+	metrics1 := resourceMetric.ScopeMetrics().At(0).Metrics()
 	ts1 := getTS(metrics1)
 	e1 := []testExpectation{
 		assertMetricPresent("go_threads",
@@ -170,7 +170,7 @@ func verifyStaleNanPage1FirstFailedScrape(t *testing.T, td *testData, resourceMe
 	allMetrics := getMetrics(resourceMetric)
 	assertUp(t, 0, allMetrics)
 
-	metrics1 := resourceMetric.InstrumentationLibraryMetrics().At(0).Metrics()
+	metrics1 := resourceMetric.ScopeMetrics().At(0).Metrics()
 	ts1 := getTS(metrics1)
 	e1 := []testExpectation{
 		assertMetricPresent("go_threads",
@@ -270,7 +270,7 @@ func verifyNormalNaNs(t *testing.T, td *testData, resourceMetrics []*pdata.Resou
 
 	wantAttributes := td.attributes
 
-	metrics1 := m1.InstrumentationLibraryMetrics().At(0).Metrics()
+	metrics1 := m1.ScopeMetrics().At(0).Metrics()
 	ts1 := getTS(metrics1)
 	e1 := []testExpectation{
 		assertMetricPresent("go_threads",
@@ -354,7 +354,7 @@ func verifyInfValues(t *testing.T, td *testData, resourceMetrics []*pdata.Resour
 
 	wantAttributes := td.attributes
 
-	metrics1 := m1.InstrumentationLibraryMetrics().At(0).Metrics()
+	metrics1 := m1.ScopeMetrics().At(0).Metrics()
 	ts1 := getTS(metrics1)
 	e1 := []testExpectation{
 		assertMetricPresent("go_threads",

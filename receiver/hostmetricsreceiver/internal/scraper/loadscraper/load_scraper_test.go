@@ -112,7 +112,7 @@ func TestScrape(t *testing.T) {
 			// expect 3 metrics
 			assert.Equal(t, 3, md.MetricCount())
 
-			metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+			metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 			// expect a single datapoint for 1m, 5m & 15m load metrics
 			assertMetricHasSingleDatapoint(t, metrics.At(0), "system.cpu.load_average.15m")
 			assertMetricHasSingleDatapoint(t, metrics.At(1), "system.cpu.load_average.1m")

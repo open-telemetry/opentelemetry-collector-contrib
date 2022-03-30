@@ -90,7 +90,7 @@ func traceDataToSplunk(logger *zap.Logger, data pdata.Traces, config *Config) ([
 			}
 			return true
 		})
-		ilss := rs.InstrumentationLibrarySpans()
+		ilss := rs.ScopeSpans()
 		for sils := 0; sils < ilss.Len(); sils++ {
 			ils := ilss.At(sils)
 			spans := ils.Spans()

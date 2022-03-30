@@ -1,9 +1,9 @@
 {
    "resourceMetrics": [
       {
-         "instrumentationLibraryMetrics": [
+         "scopeMetrics": [
             {
-               "instrumentationLibrary": {},
+               "scope": {},
                "metrics": [
                   {
                      "description": "number of bytes committed to memory",

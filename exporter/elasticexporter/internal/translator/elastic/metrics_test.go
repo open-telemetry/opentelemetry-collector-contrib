@@ -33,7 +33,7 @@ func TestEncodeMetrics(t *testing.T) {
 	var recorder transporttest.RecorderTransport
 	elastic.EncodeResourceMetadata(pdata.NewResource(), &w)
 
-	instrumentationLibraryMetrics := pdata.NewInstrumentationLibraryMetrics()
+	instrumentationLibraryMetrics := pdata.NewScopeMetrics()
 	metrics := instrumentationLibraryMetrics.Metrics()
 	appendMetric := func(name string, dataType pdata.MetricDataType) pdata.Metric {
 		metric := metrics.AppendEmpty()
@@ -118,7 +118,7 @@ func TestEncodeMetrics(t *testing.T) {
 	metric.Histogram().DataPoints().AppendEmpty()
 	expectDropped++
 
-	dropped, err := elastic.EncodeMetrics(metrics, instrumentationLibraryMetrics.InstrumentationLibrary(), &w)
+	dropped, err := elastic.EncodeMetrics(metrics, instrumentationLibraryMetrics.Scope(), &w)
 	require.NoError(t, err)
 	assert.Equal(t, expectDropped, dropped)
 	sendStream(t, &w, &recorder)

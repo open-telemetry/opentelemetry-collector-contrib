@@ -114,7 +114,7 @@ func TestMessageEvent(t *testing.T) {
 		return len(converted) == 1
 	}, 5*time.Second, 10*time.Millisecond)
 
-	converted[0].ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(0).Attributes().Sort()
+	converted[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Sort()
 	require.EqualValues(t, Logs(Log{
 		Timestamp: 1593031012000000000,
 		Body:      pdata.NewValueString("..."),
@@ -146,7 +146,7 @@ func TestForwardEvent(t *testing.T) {
 		return len(converted) == 1
 	}, 5*time.Second, 10*time.Millisecond)
 
-	ls := converted[0].ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords()
+	ls := converted[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 	ls.At(0).Attributes().Sort()
 	ls.At(1).Attributes().Sort()
 	require.EqualValues(t, Logs(
@@ -228,7 +228,7 @@ func TestForwardPackedEvent(t *testing.T) {
 		return len(converted) == 1
 	}, 5*time.Second, 10*time.Millisecond)
 
-	ls := converted[0].ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords()
+	ls := converted[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 	for i := 0; i < ls.Len(); i++ {
 		ls.At(i).Attributes().Sort()
 	}
@@ -294,7 +294,7 @@ func TestForwardPackedCompressedEvent(t *testing.T) {
 		return len(converted) == 1
 	}, 5*time.Second, 10*time.Millisecond)
 
-	ls := converted[0].ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords()
+	ls := converted[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 	for i := 0; i < ls.Len(); i++ {
 		ls.At(i).Attributes().Sort()
 	}
