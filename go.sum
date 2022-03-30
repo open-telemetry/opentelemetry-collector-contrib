@@ -254,8 +254,8 @@ github.com/alecthomas/units v0.0.0-20210208195552-ff826a37aa15/go.mod h1:OMCwj8V
 github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 h1:s6gZFSlWYmbqAuRjVTiNNhvNRfY2Wxp9nhfyel4rklc=
 github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137/go.mod h1:OMCwj8VM1Kc9e19TLln2VL61YJF0x1XFtfdL4JdbSyE=
 github.com/alexflint/go-filemutex v0.0.0-20171022225611-72bdc8eae2ae/go.mod h1:CgnQgUtFrFz9mxFNtED3jI5tLDjKlOM+oUF/sTk6ps0=
-github.com/aliyun/aliyun-log-go-sdk v0.1.27 h1:fXtaOAcdR3DsqN9GZkfJue8B2Dba0TV+8Ahwq4o+y5g=
-github.com/aliyun/aliyun-log-go-sdk v0.1.27/go.mod h1:aBG0R+MWRTgvlIODQkz+a3/RM9bQYKsmSbKdbIx4vpc=
+github.com/aliyun/aliyun-log-go-sdk v0.1.29 h1:LOj/gVRUyWi2jMFuYc3Zs5I3VDNn33oj8eTbrzVH/CM=
+github.com/aliyun/aliyun-log-go-sdk v0.1.29/go.mod h1:aBG0R+MWRTgvlIODQkz+a3/RM9bQYKsmSbKdbIx4vpc=
 github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883/go.mod h1:rCTlJbsFo29Kk6CurOXKm700vrz8f0KW0JNfpkRJY/8=
 github.com/andybalholm/brotli v1.0.2/go.mod h1:loMXtMfwqflxFJPmdbJO0a3KNoPuLBgiu3qAvBg8x/Y=
 github.com/andybalholm/cascadia v1.1.0/go.mod h1:GsXiBklL0woXo1j/WYWtSYYC4ouU9PqHO0sqidkEA4Y=
@@ -305,8 +305,8 @@ github.com/aws/aws-sdk-go v1.38.35/go.mod h1:hcU610XS61/+aQV88ixoOzUoG7v3b31pl2z
 github.com/aws/aws-sdk-go v1.38.68/go.mod h1:hcU610XS61/+aQV88ixoOzUoG7v3b31pl2zKMmprdro=
 github.com/aws/aws-sdk-go v1.40.11/go.mod h1:585smgzpB/KqRA+K3y/NL/oYRqQvpNJYvLm+LY1U59Q=
 github.com/aws/aws-sdk-go v1.42.31/go.mod h1:OGr6lGMAKGlG9CVrYnWYDKIyb829c6EVBRjxqjmPepc=
-github.com/aws/aws-sdk-go v1.43.26 h1:/ABcm/2xp+Vu+iUx8+TmlwXMGjO7fmZqJMoZjml4y/4=
-github.com/aws/aws-sdk-go v1.43.26/go.mod h1:y4AeaBuwd2Lk+GepC1E9v0qOiTws0MIWAX4oIKwKHZo=
+github.com/aws/aws-sdk-go v1.43.28 h1:HrBUf2pYEMRB3GDkSa/bZ2lkZIe8gSUOz/IEupG1Te0=
+github.com/aws/aws-sdk-go v1.43.28/go.mod h1:y4AeaBuwd2Lk+GepC1E9v0qOiTws0MIWAX4oIKwKHZo=
 github.com/aws/aws-sdk-go-v2 v0.18.0/go.mod h1:JWVYvqSMppoMJC0x5wdwiImzgXTI9FuZwxzkQq9wy+g=
 github.com/aws/aws-sdk-go-v2 v1.0.0/go.mod h1:smfAbmpW+tcRVuNUjo3MOArSZmW72t62rkCzc2i0TWM=
 github.com/aws/aws-sdk-go-v2 v1.7.0/go.mod h1:tb9wi5s61kTDA5qCkcDbt3KRVV74GGslQkl/DRdX/P4=
