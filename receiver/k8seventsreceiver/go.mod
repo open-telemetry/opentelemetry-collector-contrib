@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seve
 go 1.17
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.47.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.48.0
 	github.com/stretchr/testify v1.7.1
 	go.opentelemetry.io/collector v0.47.1-0.20220330050215-0f07b0bd64d1
 	go.opentelemetry.io/collector/model v0.47.1-0.20220330050215-0f07b0bd64d1

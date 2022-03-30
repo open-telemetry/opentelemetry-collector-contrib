@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplog
 go 1.17
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza v0.47.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza v0.48.0
 	github.com/open-telemetry/opentelemetry-log-collection v0.27.2
 	github.com/stretchr/testify v1.7.1
 	go.opentelemetry.io/collector v0.47.1-0.20220330050215-0f07b0bd64d1
