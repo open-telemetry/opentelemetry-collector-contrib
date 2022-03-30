@@ -28,7 +28,7 @@ func getHostTags(t *config.TagsConfig) []string {
 
 	if len(tags) == 0 {
 		//lint:ignore SA1019 Will be removed when environment variable detection is removed
-		tags = strings.Split(t.EnvVarTags, " ")
+		tags = strings.Split(t.EnvVarTags, " ") //nolint
 	}
 
 	if t.Env != "none" {
