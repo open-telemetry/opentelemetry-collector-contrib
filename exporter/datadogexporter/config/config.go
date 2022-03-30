@@ -221,14 +221,14 @@ type TagsConfig struct {
 	Env string `mapstructure:"env"`
 
 	// Service is the service for unified service tagging.
-	// Deprecated: [v0.48.0] Set `service.name` semconv instead, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8781 for details.
-	// This option will be removed in v0.51.0.
+	// Deprecated: [v0.49.0] Set `service.name` semconv instead, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8781 for details.
+	// This option will be removed in v0.52.0.
 	// It can also be set through the `DD_SERVICE` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
 	Service string `mapstructure:"service"`
 
 	// Version is the version for unified service tagging.
-	// Deprecated: [v0.48.0] Set `service.version` semconv instead, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8783 for details.
-	// This option will be removed in v0.51.0.
+	// Deprecated: [v0.49.0] Set `service.version` semconv instead, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8783 for details.
+	// This option will be removed in v0.52.0.
 	// It can also be set through the `DD_VERSION` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
 	Version string `mapstructure:"version"`
 
@@ -420,10 +420,10 @@ func (c *Config) Unmarshal(configMap *config.Map) error {
 
 	deprecationTemplate := "%q has been deprecated and will be removed in %s. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/%d"
 	if c.Service != "" {
-		c.warnings = append(c.warnings, fmt.Errorf(deprecationTemplate, "service", "v0.51", 8781))
+		c.warnings = append(c.warnings, fmt.Errorf(deprecationTemplate, "service", "v0.52.0", 8781))
 	}
 	if c.Version != "" {
-		c.warnings = append(c.warnings, fmt.Errorf(deprecationTemplate, "version", "v0.51", 8783))
+		c.warnings = append(c.warnings, fmt.Errorf(deprecationTemplate, "version", "v0.52.0", 8783))
 	}
 
 	return nil
