@@ -212,12 +212,12 @@ github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9dec
 github.com/yuin/goldmark v1.3.5/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=
 go.opencensus.io v0.23.0 h1:gqCw0LfLxScz8irSi8exQc7fyQ0fKQU/qnC/X8+V/1M=
 go.opencensus.io v0.23.0/go.mod h1:XItmlyltB5F7CS4xOC1DcqMoFqwtC6OG2xF7mCv7P7E=
-go.opentelemetry.io/collector v0.47.1-0.20220329181712-fcdb99368bf7 h1:PSPyzU7omGIbniS50ssQXFh5gyCDI0IRa7coQw5mOAg=
-go.opentelemetry.io/collector v0.47.1-0.20220329181712-fcdb99368bf7/go.mod h1:+lOJDqkjCN8XQb+4c7sv4ge97Jw691n7iu+bQRcOa1w=
+go.opentelemetry.io/collector v0.47.1-0.20220330050215-0f07b0bd64d1 h1:3wwd/6t9YOMEu87CwDUbrtGcoB33NFUZ9YIpKDdc4zo=
+go.opentelemetry.io/collector v0.47.1-0.20220330050215-0f07b0bd64d1/go.mod h1:+lOJDqkjCN8XQb+4c7sv4ge97Jw691n7iu+bQRcOa1w=
 go.opentelemetry.io/collector/model v0.45.0/go.mod h1:uyiyyq8lV45zrJ94MnLip26sorfNLP6J9XmOvaEmy7w=
 go.opentelemetry.io/collector/model v0.46.0/go.mod h1:uyiyyq8lV45zrJ94MnLip26sorfNLP6J9XmOvaEmy7w=
-go.opentelemetry.io/collector/model v0.47.1-0.20220329181712-fcdb99368bf7 h1:BSCHa+I75tf2wXAHnZRFSeN+zaWfsqHJ7jMrjqNv6Pw=
-go.opentelemetry.io/collector/model v0.47.1-0.20220329181712-fcdb99368bf7/go.mod h1:1QVYv8TqsTMt9wVC5BUF9fqMVtk2C5EclWDnuVqdKoU=
+go.opentelemetry.io/collector/model v0.47.1-0.20220330050215-0f07b0bd64d1 h1:v4/rLdC+Cenh0+e/1MuW+wq5gX4cp7E+oJL4BzG8jJo=
+go.opentelemetry.io/collector/model v0.47.1-0.20220330050215-0f07b0bd64d1/go.mod h1:1QVYv8TqsTMt9wVC5BUF9fqMVtk2C5EclWDnuVqdKoU=
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.31.0 h1:li8u9OSMvLau7rMs8bmiL82OazG6MAkwPz2i6eS8TBQ=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.31.0 h1:woM+Mb4d0A+Dxa3rYPenSN5ZeS9qHUvE8rlObiLRXTY=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.31.0/go.mod h1:PFmBsWbldL1kiWZk9+0LBZz2brhByaGsvp6pRICMlPE=

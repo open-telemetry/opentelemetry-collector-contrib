@@ -6,7 +6,7 @@ require (
 	github.com/jaegertracing/jaeger v1.32.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.47.0
 	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector/model v0.47.1-0.20220329181712-fcdb99368bf7
+	go.opentelemetry.io/collector/model v0.47.1-0.20220330050215-0f07b0bd64d1
 )
 
 require (
