@@ -29,7 +29,7 @@ import (
 
 func TestJaegerMarshaler(t *testing.T) {
 	td := pdata.NewTraces()
-	span := td.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	span := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName("foo")
 	span.SetStartTimestamp(pdata.Timestamp(10))
 	span.SetEndTimestamp(pdata.Timestamp(20))

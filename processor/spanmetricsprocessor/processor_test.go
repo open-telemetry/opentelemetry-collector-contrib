@@ -405,9 +405,9 @@ func verifyConsumeMetricsInput(t testing.TB, input pdata.Metrics, expectedTempor
 	rm := input.ResourceMetrics()
 	require.Equal(t, 1, rm.Len())
 
-	ilm := rm.At(0).InstrumentationLibraryMetrics()
+	ilm := rm.At(0).ScopeMetrics()
 	require.Equal(t, 1, ilm.Len())
-	assert.Equal(t, "spanmetricsprocessor", ilm.At(0).InstrumentationLibrary().Name())
+	assert.Equal(t, "spanmetricsprocessor", ilm.At(0).Scope().Name())
 
 	m := ilm.At(0).Metrics()
 	require.Equal(t, 6, m.Len())
@@ -478,7 +478,7 @@ func verifyMetricLabels(dp metricDataPoint, t testing.TB, seenMetricIDs map[metr
 		doubleAttrName:         pdata.NewValueDouble(99.99),
 		boolAttrName:           pdata.NewValueBool(true),
 		nullAttrName:           pdata.NewValueEmpty(),
-		arrayAttrName:          pdata.NewValueArray(),
+		arrayAttrName:          pdata.NewValueSlice(),
 		mapAttrName:            pdata.NewValueMap(),
 		notInSpanAttrName0:     pdata.NewValueString("defaultNotInSpanAttrVal"),
 		regionResourceAttrName: pdata.NewValueString(sampleRegion),
@@ -554,7 +554,7 @@ func initServiceSpans(serviceSpans serviceSpans, spans pdata.ResourceSpans) {
 
 	spans.Resource().Attributes().InsertString(regionResourceAttrName, sampleRegion)
 
-	ils := spans.InstrumentationLibrarySpans().AppendEmpty()
+	ils := spans.ScopeSpans().AppendEmpty()
 	for _, span := range serviceSpans.spans {
 		initSpan(span, ils.Spans().AppendEmpty())
 	}
@@ -573,7 +573,7 @@ func initSpan(span span, s pdata.Span) {
 	s.Attributes().InsertBool(boolAttrName, true)
 	s.Attributes().InsertNull(nullAttrName)
 	s.Attributes().Insert(mapAttrName, pdata.NewValueMap())
-	s.Attributes().Insert(arrayAttrName, pdata.NewValueArray())
+	s.Attributes().Insert(arrayAttrName, pdata.NewValueSlice())
 	s.SetTraceID(pdata.NewTraceID([16]byte{byte(42)}))
 }
 
@@ -784,7 +784,7 @@ func TestSanitize(t *testing.T) {
 func TestSetLatencyExemplars(t *testing.T) {
 	// ----- conditions -------------------------------------------------------
 	traces := buildSampleTrace()
-	traceID := traces.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).TraceID()
+	traceID := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()
 	exemplarSlice := pdata.NewExemplarSlice()
 	timestamp := pdata.NewTimestampFromTime(time.Now())
 	value := float64(42)
@@ -809,7 +809,7 @@ func TestProcessorUpdateLatencyExemplars(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	traces := buildSampleTrace()
-	traceID := traces.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).TraceID()
+	traceID := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()
 	key := metricKey("metricKey")
 	next := new(consumertest.TracesSink)
 	p, err := newProcessor(zaptest.NewLogger(t), cfg, next)

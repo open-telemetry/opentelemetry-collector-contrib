@@ -25,11 +25,11 @@ func SplitTraces(batch pdata.Traces) []pdata.Traces {
 	for i := 0; i < batch.ResourceSpans().Len(); i++ {
 		rs := batch.ResourceSpans().At(i)
 
-		for j := 0; j < rs.InstrumentationLibrarySpans().Len(); j++ {
+		for j := 0; j < rs.ScopeSpans().Len(); j++ {
 			// the batches for this ILS
 			batches := map[pdata.TraceID]pdata.ResourceSpans{}
 
-			ils := rs.InstrumentationLibrarySpans().At(j)
+			ils := rs.ScopeSpans().At(j)
 			for k := 0; k < ils.Spans().Len(); k++ {
 				span := ils.Spans().At(k)
 				key := span.TraceID()
@@ -43,17 +43,17 @@ func SplitTraces(batch pdata.Traces) []pdata.Traces {
 					// and set our own ILS
 					rs.Resource().CopyTo(newRS.Resource())
 
-					newILS := newRS.InstrumentationLibrarySpans().AppendEmpty()
+					newILS := newRS.ScopeSpans().AppendEmpty()
 					// currently, the ILS implementation has only an InstrumentationLibrary and spans. We'll copy the library
 					// and set our own spans
-					ils.InstrumentationLibrary().CopyTo(newILS.InstrumentationLibrary())
+					ils.Scope().CopyTo(newILS.Scope())
 					batches[key] = newRS
 
 					result = append(result, trace)
 				}
 
 				// there is only one instrumentation library per batch
-				tgt := batches[key].InstrumentationLibrarySpans().At(0).Spans().AppendEmpty()
+				tgt := batches[key].ScopeSpans().At(0).Spans().AppendEmpty()
 				span.CopyTo(tgt)
 			}
 		}
@@ -64,20 +64,20 @@ func SplitTraces(batch pdata.Traces) []pdata.Traces {
 
 // SplitLogs returns one pdata.Logs for each trace in the given pdata.Logs input. Each of the resulting pdata.Logs contains exactly one trace.
 func SplitLogs(batch pdata.Logs) []pdata.Logs {
-	// for each log in the resource logs, we group them into batches of rl/ill/traceID.
-	// if the same traceID exists in different ill, they land in different batches.
+	// for each log in the resource logs, we group them into batches of rl/sl/traceID.
+	// if the same traceID exists in different sl, they land in different batches.
 	var result []pdata.Logs
 
 	for i := 0; i < batch.ResourceLogs().Len(); i++ {
 		rs := batch.ResourceLogs().At(i)
 
-		for j := 0; j < rs.InstrumentationLibraryLogs().Len(); j++ {
+		for j := 0; j < rs.ScopeLogs().Len(); j++ {
 			// the batches for this ILL
 			batches := map[pdata.TraceID]pdata.ResourceLogs{}
 
-			ill := rs.InstrumentationLibraryLogs().At(j)
-			for k := 0; k < ill.LogRecords().Len(); k++ {
-				log := ill.LogRecords().At(k)
+			sl := rs.ScopeLogs().At(j)
+			for k := 0; k < sl.LogRecords().Len(); k++ {
+				log := sl.LogRecords().At(k)
 				key := log.TraceID()
 
 				// for the first traceID in the ILL, initialize the map entry
@@ -89,17 +89,17 @@ func SplitLogs(batch pdata.Logs) []pdata.Logs {
 					// and set our own ILL
 					rs.Resource().CopyTo(newRL.Resource())
 
-					newILL := newRL.InstrumentationLibraryLogs().AppendEmpty()
+					newILL := newRL.ScopeLogs().AppendEmpty()
 					// currently, the ILL implementation has only an InstrumentationLibrary and logs. We'll copy the library
 					// and set our own logs
-					ill.InstrumentationLibrary().CopyTo(newILL.InstrumentationLibrary())
+					sl.Scope().CopyTo(newILL.Scope())
 					batches[key] = newRL
 
 					result = append(result, logs)
 				}
 
 				// there is only one instrumentation library per batch
-				tgt := batches[key].InstrumentationLibraryLogs().At(0).LogRecords().AppendEmpty()
+				tgt := batches[key].ScopeLogs().At(0).LogRecords().AppendEmpty()
 				log.CopyTo(tgt)
 			}
 		}

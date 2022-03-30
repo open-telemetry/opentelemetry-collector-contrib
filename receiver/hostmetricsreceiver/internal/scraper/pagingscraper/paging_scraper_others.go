@@ -63,9 +63,6 @@ func (s *scraper) start(context.Context, component.Host) error {
 }
 
 func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
-	md := pdata.NewMetrics()
-	metrics := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics()
-
 	var errors scrapererror.ScrapeErrors
 
 	err := s.scrapePagingUsageMetric()
@@ -78,8 +75,7 @@ func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 		errors.AddPartial(pagingMetricsLen, err)
 	}
 
-	s.mb.Emit(metrics)
-	return md, errors.Combine()
+	return s.mb.Emit(), errors.Combine()
 }
 
 func (s *scraper) scrapePagingUsageMetric() error {

@@ -103,7 +103,7 @@ func (r *statsdReceiver) Start(ctx context.Context, host component.Host) error {
 			select {
 			case <-ticker.C:
 				metrics := r.parser.GetMetrics()
-				if metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Len() > 0 {
+				if metrics.ResourceMetrics().At(0).ScopeMetrics().Len() > 0 {
 					r.Flush(ctx, metrics, r.nextConsumer)
 				}
 			case rawMetric := <-transferChan:

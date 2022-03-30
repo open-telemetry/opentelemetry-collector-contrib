@@ -118,7 +118,7 @@ func appendFassAttributes(attrMap pdata.Map) {
 
 func appendExecAttributes(attrMap pdata.Map) {
 	attrMap.UpsertString(conventions.AttributeProcessExecutableName, "otelcol")
-	parts := pdata.NewValueArray()
+	parts := pdata.NewValueSlice()
 	parts.SliceVal().AppendEmpty().SetStringVal("otelcol")
 	parts.SliceVal().AppendEmpty().SetStringVal("--config=/etc/otel-collector-config.yaml")
 	attrMap.Upsert(conventions.AttributeProcessCommandLine, parts)

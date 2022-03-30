@@ -112,6 +112,6 @@ func newTracesWithAttributeMap(mp map[string]string) pdata.Traces {
 	resourceSpans := traces.ResourceSpans()
 	rs := resourceSpans.AppendEmpty()
 	fillAttributeMap(rs.Resource().Attributes(), mp)
-	rs.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	return traces
 }

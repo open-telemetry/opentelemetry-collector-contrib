@@ -29,7 +29,7 @@ import (
 // TODO: Modify Matcher to invoke both the include and exclude properties so
 //  calling processors will always have the same logic.
 type Matcher interface {
-	MatchLogRecord(lr pdata.LogRecord, resource pdata.Resource, library pdata.InstrumentationLibrary) bool
+	MatchLogRecord(lr pdata.LogRecord, resource pdata.Resource, library pdata.InstrumentationScope) bool
 }
 
 // propertiesMatcher allows matching a log record against various log record properties.
@@ -76,10 +76,6 @@ func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 // At least one of log record names or attributes must be specified. It is
 // supported to have more than one of these specified, and all specified must
 // evaluate to true for a match to occur.
-func (mp *propertiesMatcher) MatchLogRecord(lr pdata.LogRecord, resource pdata.Resource, library pdata.InstrumentationLibrary) bool {
-	if mp.nameFilters != nil && !mp.nameFilters.Matches(lr.Name()) {
-		return false
-	}
-
+func (mp *propertiesMatcher) MatchLogRecord(lr pdata.LogRecord, resource pdata.Resource, library pdata.InstrumentationScope) bool {
 	return mp.PropertiesMatcher.Match(lr.Attributes(), resource, library)
 }

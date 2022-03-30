@@ -35,7 +35,7 @@ func TestConvertToOTMetrics(t *testing.T) {
 
 	resource := pdata.NewResource()
 	md := convertToOTLPMetrics("container.", m, resource, timestamp)
-	require.EqualValues(t, 26, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Len())
+	require.EqualValues(t, 26, md.ResourceMetrics().At(0).ScopeMetrics().Len())
 	assert.EqualValues(t, conventions.SchemaURL, md.ResourceMetrics().At(0).SchemaUrl())
 }
 
@@ -43,7 +43,7 @@ func TestIntGauge(t *testing.T) {
 	intValue := int64(100)
 	timestamp := pdata.NewTimestampFromTime(time.Now())
 
-	ilm := pdata.NewInstrumentationLibraryMetrics()
+	ilm := pdata.NewScopeMetrics()
 	appendIntGauge("cpu_utilized", "Count", intValue, timestamp, ilm)
 	require.NotNil(t, ilm)
 }
@@ -52,7 +52,7 @@ func TestDoubleGauge(t *testing.T) {
 	timestamp := pdata.NewTimestampFromTime(time.Now())
 	floatValue := 100.01
 
-	ilm := pdata.NewInstrumentationLibraryMetrics()
+	ilm := pdata.NewScopeMetrics()
 	appendDoubleGauge("cpu_utilized", "Count", floatValue, timestamp, ilm)
 	require.NotNil(t, ilm)
 }
@@ -61,7 +61,7 @@ func TestIntSum(t *testing.T) {
 	timestamp := pdata.NewTimestampFromTime(time.Now())
 	intValue := int64(100)
 
-	ilm := pdata.NewInstrumentationLibraryMetrics()
+	ilm := pdata.NewScopeMetrics()
 	appendIntSum("cpu_utilized", "Count", intValue, timestamp, ilm)
 	require.NotNil(t, ilm)
 }
@@ -71,5 +71,5 @@ func TestConvertStoppedContainerDataToOTMetrics(t *testing.T) {
 	resource := pdata.NewResource()
 	duration := 1200000000.32132
 	md := convertStoppedContainerDataToOTMetrics("container.", resource, timestamp, duration)
-	require.EqualValues(t, 1, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Len())
+	require.EqualValues(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().Len())
 }

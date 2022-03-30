@@ -861,10 +861,10 @@ func TestTranslation(t *testing.T) {
 		}
 
 		traces, totalSpanCount, err := ToTraces(content)
-		if err == nil || (expectedRs != nil && expectedRs.InstrumentationLibrarySpans().Len() > 0 &&
-			expectedRs.InstrumentationLibrarySpans().At(0).Spans().Len() > 0) {
+		if err == nil || (expectedRs != nil && expectedRs.ScopeSpans().Len() > 0 &&
+			expectedRs.ScopeSpans().At(0).Spans().Len() > 0) {
 			assert.Equal(t, totalSpanCount,
-				expectedRs.InstrumentationLibrarySpans().At(0).Spans().Len(),
+				expectedRs.ScopeSpans().At(0).Spans().Len(),
 				"generated span count is different from the expected",
 			)
 		}
@@ -933,7 +933,7 @@ func initResourceSpans(expectedSeg *awsxray.Segment,
 		return &rs
 	}
 
-	ls := rs.InstrumentationLibrarySpans().AppendEmpty()
+	ls := rs.ScopeSpans().AppendEmpty()
 	ls.Spans().EnsureCapacity(len(propsPerSpan))
 
 	for _, props := range propsPerSpan {
@@ -986,17 +986,17 @@ func initResourceSpans(expectedSeg *awsxray.Segment,
 //    up all the attribute.
 // The reason for doing so is just to be able to use deep equal via assert.Equal()
 func compare2ResourceSpans(t *testing.T, testCase string, exp, act *pdata.ResourceSpans) {
-	assert.Equal(t, exp.InstrumentationLibrarySpans().Len(),
-		act.InstrumentationLibrarySpans().Len(),
-		testCase+": InstrumentationLibrarySpans.Len() differ")
+	assert.Equal(t, exp.ScopeSpans().Len(),
+		act.ScopeSpans().Len(),
+		testCase+": ScopeSpans.Len() differ")
 
 	assert.Equal(t,
 		exp.Resource().Attributes().Sort(),
 		act.Resource().Attributes().Sort(),
 		testCase+": Resource.Attributes() differ")
 
-	actSpans := act.InstrumentationLibrarySpans().At(0).Spans()
-	expSpans := exp.InstrumentationLibrarySpans().At(0).Spans()
+	actSpans := act.ScopeSpans().At(0).Spans()
+	expSpans := exp.ScopeSpans().At(0).Spans()
 	assert.Equal(t,
 		expSpans.Len(),
 		actSpans.Len(),

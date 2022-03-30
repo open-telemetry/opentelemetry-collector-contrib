@@ -48,7 +48,7 @@ func TestMessageEventConversion(t *testing.T) {
 			},
 		},
 	)
-	require.EqualValues(t, expected.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(0), le)
+	require.EqualValues(t, expected.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0), le)
 }
 
 func TestAttributeTypeConversion(t *testing.T) {
@@ -128,7 +128,7 @@ func TestAttributeTypeConversion(t *testing.T) {
 				"p":          nil,
 			},
 		},
-	).ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(0), le)
+	).ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0), le)
 }
 
 func TestEventMode(t *testing.T) {
@@ -255,7 +255,7 @@ func TestBodyConversion(t *testing.T) {
 	body := pdata.NewValueMap()
 	body.MapVal().InsertString("a", "value")
 
-	bv := pdata.NewValueArray()
+	bv := pdata.NewValueSlice()
 	bv.SliceVal().EnsureCapacity(2)
 	bv.SliceVal().AppendEmpty().SetStringVal("first")
 	bv.SliceVal().AppendEmpty().SetStringVal("second")
@@ -276,5 +276,5 @@ func TestBodyConversion(t *testing.T) {
 				"fluent.tag": "my-tag",
 			},
 		},
-	).ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(0), le)
+	).ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0), le)
 }

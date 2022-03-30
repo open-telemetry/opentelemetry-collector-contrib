@@ -68,10 +68,10 @@ func logdataToObservIQFormat(ld pdata.Logs, agentID string, agentName string, bu
 		rl := rls.At(i)
 		res := rl.Resource()
 		resMap := attributeMapToBaseType(res.Attributes())
-		ills := rl.InstrumentationLibraryLogs()
+		ills := rl.ScopeLogs()
 		for j := 0; j < ills.Len(); j++ {
-			ill := ills.At(j)
-			logs := ill.LogRecords()
+			sl := ills.At(j)
+			logs := sl.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
 				oiqLogEntry := resourceAndInstrumentationLogToEntry(resMap, logs.At(k), agentID, agentName, buildVersion)
 
@@ -221,7 +221,7 @@ func attributeValueToBaseType(attrib pdata.Value) interface{} {
 	case pdata.ValueTypeMap:
 		attribMap := attrib.MapVal()
 		return attributeMapToBaseType(attribMap)
-	case pdata.ValueTypeArray:
+	case pdata.ValueTypeSlice:
 		arrayVal := attrib.SliceVal()
 		slice := make([]interface{}, 0, arrayVal.Len())
 		for i := 0; i < arrayVal.Len(); i++ {

@@ -129,10 +129,10 @@ func (e *humioTracesExporter) tracesToHumioEvents(td pdata.Traces) ([]*HumioStru
 			continue
 		}
 
-		instSpans := resSpan.InstrumentationLibrarySpans()
+		instSpans := resSpan.ScopeSpans()
 		for j := 0; j < instSpans.Len(); j++ {
 			instSpan := instSpans.At(j)
-			lib := instSpan.InstrumentationLibrary()
+			lib := instSpan.Scope()
 
 			otelSpans := instSpan.Spans()
 			for k := 0; k < otelSpans.Len(); k++ {
@@ -160,7 +160,7 @@ func (e *humioTracesExporter) tracesToHumioEvents(td pdata.Traces) ([]*HumioStru
 	return results, nil
 }
 
-func (e *humioTracesExporter) spanToHumioEvent(span pdata.Span, inst pdata.InstrumentationLibrary, res pdata.Resource) *HumioStructuredEvent {
+func (e *humioTracesExporter) spanToHumioEvent(span pdata.Span, inst pdata.InstrumentationScope, res pdata.Resource) *HumioStructuredEvent {
 	attr := toHumioAttributes(span.Attributes(), res.Attributes())
 	if instName := inst.Name(); instName != "" {
 		attr[conventions.OtelLibraryName] = instName
@@ -232,7 +232,7 @@ func toHumioAttributeValue(rawVal pdata.Value) interface{} {
 		return rawVal.BoolVal()
 	case pdata.ValueTypeMap:
 		return toHumioAttributes(rawVal.MapVal())
-	case pdata.ValueTypeArray:
+	case pdata.ValueTypeSlice:
 		arrVal := rawVal.SliceVal()
 		arr := make([]interface{}, 0, arrVal.Len())
 		for i := 0; i < arrVal.Len(); i++ {
