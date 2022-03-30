@@ -65,13 +65,13 @@ func createLogData(numberOfLogs int) pdata.Logs {
 	rl.Resource().Attributes().InsertString("resouceKey", "resourceValue")
 	rl.Resource().Attributes().InsertString(conventions.AttributeServiceName, "test-log-service-exporter")
 	rl.Resource().Attributes().InsertString(conventions.AttributeHostName, "test-host")
-	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
-	ill.InstrumentationLibrary().SetName("collector")
-	ill.InstrumentationLibrary().SetVersion("v0.1.0")
+	sl := rl.ScopeLogs().AppendEmpty()
+	sl.Scope().SetName("collector")
+	sl.Scope().SetVersion("v0.1.0")
 
 	for i := 0; i < numberOfLogs; i++ {
 		ts := pdata.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
-		logRecord := ill.LogRecords().AppendEmpty()
+		logRecord := sl.LogRecords().AppendEmpty()
 		switch i {
 		case 0:
 			// do nothing, left body null

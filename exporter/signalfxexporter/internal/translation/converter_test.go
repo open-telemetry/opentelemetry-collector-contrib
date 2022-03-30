@@ -130,7 +130,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 			name: "nil_node_nil_resources_no_dims",
 			metricsFn: func() pdata.Metrics {
 				out := pdata.NewMetrics()
-				ilm := out.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
+				ilm := out.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 
 				{
 					m := ilm.Metrics().AppendEmpty()
@@ -208,7 +208,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 			name: "nil_node_and_resources_with_dims",
 			metricsFn: func() pdata.Metrics {
 				out := pdata.NewMetrics()
-				ilm := out.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
+				ilm := out.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 
 				{
 					m := ilm.Metrics().AppendEmpty()
@@ -257,7 +257,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				res.Attributes().InsertString("k/n0", "vn0")
 				res.Attributes().InsertString("k/n1", "vn1")
 
-				ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+				ilm := rm.ScopeMetrics().AppendEmpty()
 				ilm.Metrics().EnsureCapacity(2)
 
 				{
@@ -307,7 +307,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				res.Attributes().InsertString("k/n0", "vn0")
 				res.Attributes().InsertString("k/n1", "vn1")
 
-				ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+				ilm := rm.ScopeMetrics().AppendEmpty()
 				ilm.Metrics().EnsureCapacity(5)
 
 				{
@@ -375,7 +375,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				res.Attributes().InsertString("k/n0", "vn0")
 				res.Attributes().InsertString("k/n1", "vn1")
 
-				ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+				ilm := rm.ScopeMetrics().AppendEmpty()
 				ilm.Metrics().EnsureCapacity(1)
 
 				{
@@ -414,7 +414,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				res.Attributes().InsertString("cloud.account.id", "efgh")
 				res.Attributes().InsertString("cloud.region", "us-east")
 
-				ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+				ilm := rm.ScopeMetrics().AppendEmpty()
 				m := ilm.Metrics().AppendEmpty()
 				m.SetName("gauge_double_with_dims")
 				m.SetDataType(pdata.MetricDataTypeGauge)
@@ -448,7 +448,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				res.Attributes().InsertString("cloud.region", "us-east")
 				res.Attributes().InsertString("host.id", "abcd")
 
-				ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+				ilm := rm.ScopeMetrics().AppendEmpty()
 				m := ilm.Metrics().AppendEmpty()
 				m.SetName("gauge_double_with_dims")
 				m.SetDataType(pdata.MetricDataTypeGauge)
@@ -482,7 +482,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				res.Attributes().InsertString("cloud.provider", conventions.AttributeCloudProviderGCP)
 				res.Attributes().InsertString("host.id", "abcd")
 
-				ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+				ilm := rm.ScopeMetrics().AppendEmpty()
 				m := ilm.Metrics().AppendEmpty()
 				m.SetName("gauge_double_with_dims")
 				m.SetDataType(pdata.MetricDataTypeGauge)
@@ -514,7 +514,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				res.Attributes().InsertString("host.id", "abcd")
 				res.Attributes().InsertString("cloud.account.id", "efgh")
 
-				ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+				ilm := rm.ScopeMetrics().AppendEmpty()
 				m := ilm.Metrics().AppendEmpty()
 				m.SetName("gauge_double_with_dims")
 				m.SetDataType(pdata.MetricDataTypeGauge)
@@ -540,7 +540,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 			name: "with_exclude_metrics_filter",
 			metricsFn: func() pdata.Metrics {
 				out := pdata.NewMetrics()
-				ilm := out.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
+				ilm := out.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 
 				{
 					m := ilm.Metrics().AppendEmpty()
@@ -602,7 +602,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 			name: "with_include_and_exclude_metrics_filter",
 			metricsFn: func() pdata.Metrics {
 				out := pdata.NewMetrics()
-				ilm := out.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
+				ilm := out.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 
 				{
 					m := ilm.Metrics().AppendEmpty()
@@ -693,7 +693,7 @@ func TestMetricDataToSignalFxV2WithTranslation(t *testing.T) {
 	require.NoError(t, err)
 
 	md := pdata.NewMetrics()
-	m := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
+	m := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	m.SetDataType(pdata.MetricDataTypeGauge)
 	m.SetName("metric1")
 	dp := m.Gauge().DataPoints().AppendEmpty()
@@ -733,7 +733,7 @@ func TestDimensionKeyCharsWithPeriod(t *testing.T) {
 	require.NoError(t, err)
 
 	md := pdata.NewMetrics()
-	m := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
+	m := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	m.SetDataType(pdata.MetricDataTypeGauge)
 	m.SetName("metric1")
 	dp := m.Gauge().DataPoints().AppendEmpty()

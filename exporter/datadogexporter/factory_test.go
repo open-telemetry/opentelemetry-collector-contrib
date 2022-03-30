@@ -85,6 +85,9 @@ func TestCreateDefaultConfig(t *testing.T) {
 				Mode:         "distributions",
 				SendCountSum: false,
 			},
+			SumConfig: ddconfig.SumConfig{
+				CumulativeMonotonicMode: ddconfig.CumulativeMonotonicSumModeToDelta,
+			},
 		},
 
 		Traces: ddconfig.TracesConfig{
@@ -158,6 +161,9 @@ func TestLoadConfig(t *testing.T) {
 				Mode:         "distributions",
 				SendCountSum: false,
 			},
+			SumConfig: ddconfig.SumConfig{
+				CumulativeMonotonicMode: ddconfig.CumulativeMonotonicSumModeToDelta,
+			},
 		},
 
 		Traces: ddconfig.TracesConfig{
@@ -205,6 +211,9 @@ func TestLoadConfig(t *testing.T) {
 			HistConfig: ddconfig.HistogramConfig{
 				Mode:         "distributions",
 				SendCountSum: false,
+			},
+			SumConfig: ddconfig.SumConfig{
+				CumulativeMonotonicMode: ddconfig.CumulativeMonotonicSumModeToDelta,
 			},
 		},
 
@@ -294,6 +303,9 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 				Mode:         "distributions",
 				SendCountSum: false,
 			},
+			SumConfig: ddconfig.SumConfig{
+				CumulativeMonotonicMode: ddconfig.CumulativeMonotonicSumModeToDelta,
+			},
 		}, apiConfig.Metrics)
 	assert.Equal(t,
 		ddconfig.TracesConfig{
@@ -336,6 +348,9 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 		HistConfig: ddconfig.HistogramConfig{
 			Mode:         "distributions",
 			SendCountSum: false,
+		},
+		SumConfig: ddconfig.SumConfig{
+			CumulativeMonotonicMode: ddconfig.CumulativeMonotonicSumModeToDelta,
 		},
 	}, defaultConfig.Metrics)
 	assert.Equal(t, ddconfig.TracesConfig{

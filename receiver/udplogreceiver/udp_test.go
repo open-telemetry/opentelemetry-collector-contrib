@@ -61,7 +61,7 @@ func testUDP(t *testing.T, cfg *UDPLogConfig) {
 	require.Len(t, sink.AllLogs(), 1)
 
 	resourceLogs := sink.AllLogs()[0].ResourceLogs().At(0)
-	logs := resourceLogs.InstrumentationLibraryLogs().At(0).LogRecords()
+	logs := resourceLogs.ScopeLogs().At(0).LogRecords()
 	require.Equal(t, logs.Len(), numLogs)
 
 	expectedLogs := make([]string, numLogs)

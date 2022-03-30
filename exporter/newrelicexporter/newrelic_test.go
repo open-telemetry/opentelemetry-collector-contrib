@@ -270,7 +270,7 @@ func TestExportTraceWithBadPayload(t *testing.T) {
 func TestExportTraceWithInvalidMetadata(t *testing.T) {
 	// TODO: Newrelic owners to investigate why passing valid data "newTestTraces()" does not return error.
 	td := pdata.NewTraces()
-	s := td.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	s := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	s.SetName("a")
 	s.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
 
@@ -281,7 +281,7 @@ func TestExportTraceWithInvalidMetadata(t *testing.T) {
 func TestExportTraceWithNoAPIKeyInMetadata(t *testing.T) {
 	// TODO: Newrelic owners to investigate why passing valid data "newTestTraces()" does not return error.
 	td := pdata.NewTraces()
-	s := td.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	s := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	s.SetName("a")
 	s.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
 
@@ -292,8 +292,8 @@ func TestExportTraceWithNoAPIKeyInMetadata(t *testing.T) {
 
 func TestExportTracePartialData(t *testing.T) {
 	ptrace := newTestTraces()
-	ptrace.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).SetTraceID(pdata.NewTraceID([16]byte{}))
-	ptrace.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(1).SetSpanID(pdata.NewSpanID([8]byte{}))
+	ptrace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SetTraceID(pdata.NewTraceID([16]byte{}))
+	ptrace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).SetSpanID(pdata.NewSpanID([8]byte{}))
 
 	_, err := runTraceMock(context.Background(), ptrace, mockConfig{useAPIKeyHeader: false})
 	require.Error(t, err)
@@ -303,7 +303,7 @@ func TestExportTracePartialData(t *testing.T) {
 
 func TestExportTraceDataMinimum(t *testing.T) {
 	td := pdata.NewTraces()
-	s1 := td.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	s1 := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	s1.SetName("root")
 	s1.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
 	s1.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
@@ -338,7 +338,7 @@ func TestExportTraceDataFullTrace(t *testing.T) {
 	rs := td.ResourceSpans().AppendEmpty()
 	rs.Resource().Attributes().UpsertString("service.name", "test-service")
 	rs.Resource().Attributes().UpsertString("resource", "R1")
-	sps := rs.InstrumentationLibrarySpans().AppendEmpty().Spans()
+	sps := rs.ScopeSpans().AppendEmpty().Spans()
 	s1 := sps.AppendEmpty()
 	s1.SetName("root")
 	s1.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
@@ -399,7 +399,7 @@ func TestExportTraceDataFullTrace(t *testing.T) {
 
 func TestExportMetricUnsupported(t *testing.T) {
 	ms := pdata.NewMetrics()
-	m := ms.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
+	m := ms.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	m.SetDataType(pdata.MetricDataTypeHistogram)
 	dp := m.Histogram().DataPoints().AppendEmpty()
 	dp.SetCount(1)
@@ -651,7 +651,7 @@ func TestExportLogs(t *testing.T) {
 	rlog := logs.ResourceLogs().AppendEmpty()
 	rlog.Resource().Attributes().InsertString("resource", "R1")
 	rlog.Resource().Attributes().InsertString("service.name", "test-service")
-	l := rlog.InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty()
+	l := rlog.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 	l.SetTimestamp(pdata.NewTimestampFromTime(timestamp))
 	l.Body().SetStringVal("log body")
 	l.Attributes().InsertString("foo", "bar")
@@ -716,7 +716,7 @@ func TestCreatesClientOptionWithVersionInUserAgent(t *testing.T) {
 	require.NoError(t, err)
 
 	ptrace := pdata.NewTraces()
-	s := ptrace.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	s := ptrace.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	s.SetName("root")
 	s.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
 	s.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
@@ -763,7 +763,7 @@ func TestBadSpanResourceGeneratesError(t *testing.T) {
 	ptrace := pdata.NewTraces()
 	rs := ptrace.ResourceSpans().AppendEmpty()
 	rs.Resource().Attributes().InsertDouble("badattribute", math.Inf(1))
-	s := rs.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	s := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	s.SetName("root")
 	s.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
 	s.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
@@ -810,7 +810,7 @@ func TestBadMetricResourceGeneratesError(t *testing.T) {
 	md := pdata.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
 	rm.Resource().Attributes().InsertDouble("badattribute", math.Inf(1))
-	metric := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
+	metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	metric.SetName("testmetric")
 
 	errorFromConsumeMetrics := exp.ConsumeMetrics(ctx, md)
@@ -855,7 +855,7 @@ func TestBadLogResourceGeneratesError(t *testing.T) {
 	ld := pdata.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
 	rl.Resource().Attributes().InsertDouble("badattribute", math.Inf(1))
-	rl.InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty()
+	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
 	errorFromConsumeLogs := exp.ConsumeLogs(ctx, ld)
 
@@ -902,7 +902,7 @@ func TestFailureToRecordMetricsDoesNotAffectExportingData(t *testing.T) {
 	require.NoError(t, err)
 
 	ptrace := pdata.NewTraces()
-	s := ptrace.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	s := ptrace.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	s.SetName("root")
 	s.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
 	s.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
@@ -923,7 +923,7 @@ func TestFailureToRecordMetricsDoesNotAffectExportingData(t *testing.T) {
 
 func newTestTraces() pdata.Traces {
 	td := pdata.NewTraces()
-	sps := td.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans()
+	sps := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans()
 	s1 := sps.AppendEmpty()
 	s1.SetName("a")
 	s1.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))

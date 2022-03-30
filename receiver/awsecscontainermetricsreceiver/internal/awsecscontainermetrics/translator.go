@@ -25,7 +25,7 @@ func convertToOTLPMetrics(prefix string, m ECSMetrics, r pdata.Resource, timesta
 	rm.SetSchemaUrl(conventions.SchemaURL)
 	r.CopyTo(rm.Resource())
 
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 
 	appendIntGauge(prefix+attributeMemoryUsage, unitBytes, int64(m.MemoryUsage), timestamp, ilms.AppendEmpty())
 	appendIntGauge(prefix+attributeMemoryMaxUsage, unitBytes, int64(m.MemoryMaxUsage), timestamp, ilms.AppendEmpty())
@@ -65,14 +65,14 @@ func convertStoppedContainerDataToOTMetrics(prefix string, containerResource pda
 	md := pdata.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
 	containerResource.CopyTo(rm.Resource())
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 
 	appendDoubleGauge(prefix+attributeDuration, unitSecond, duration, timestamp, ilms.AppendEmpty())
 
 	return md
 }
 
-func appendIntGauge(metricName string, unit string, value int64, ts pdata.Timestamp, ilm pdata.InstrumentationLibraryMetrics) {
+func appendIntGauge(metricName string, unit string, value int64, ts pdata.Timestamp, ilm pdata.ScopeMetrics) {
 	metric := appendMetric(ilm, metricName, unit)
 
 	metric.SetDataType(pdata.MetricDataTypeGauge)
@@ -81,7 +81,7 @@ func appendIntGauge(metricName string, unit string, value int64, ts pdata.Timest
 	appendIntDataPoint(intGauge.DataPoints(), value, ts)
 }
 
-func appendIntSum(metricName string, unit string, value int64, ts pdata.Timestamp, ilm pdata.InstrumentationLibraryMetrics) {
+func appendIntSum(metricName string, unit string, value int64, ts pdata.Timestamp, ilm pdata.ScopeMetrics) {
 	metric := appendMetric(ilm, metricName, unit)
 
 	metric.SetDataType(pdata.MetricDataTypeSum)
@@ -91,7 +91,7 @@ func appendIntSum(metricName string, unit string, value int64, ts pdata.Timestam
 	appendIntDataPoint(intSum.DataPoints(), value, ts)
 }
 
-func appendDoubleGauge(metricName string, unit string, value float64, ts pdata.Timestamp, ilm pdata.InstrumentationLibraryMetrics) {
+func appendDoubleGauge(metricName string, unit string, value float64, ts pdata.Timestamp, ilm pdata.ScopeMetrics) {
 	metric := appendMetric(ilm, metricName, unit)
 	metric.SetDataType(pdata.MetricDataTypeGauge)
 	doubleGauge := metric.Gauge()
@@ -106,7 +106,7 @@ func appendIntDataPoint(dataPoints pdata.NumberDataPointSlice, value int64, ts p
 	dataPoint.SetTimestamp(ts)
 }
 
-func appendMetric(ilm pdata.InstrumentationLibraryMetrics, name, unit string) pdata.Metric {
+func appendMetric(ilm pdata.ScopeMetrics, name, unit string) pdata.Metric {
 	metric := ilm.Metrics().AppendEmpty()
 	metric.SetName(name)
 	metric.SetUnit(unit)

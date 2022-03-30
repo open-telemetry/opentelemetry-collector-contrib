@@ -49,17 +49,21 @@ func NewProcessor(statements []string, functions map[string]interface{}, setting
 }
 
 func (p *Processor) ProcessTraces(_ context.Context, td pdata.Traces) (pdata.Traces, error) {
+	ctx := spanTransformContext{}
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
-		for j := 0; j < rspans.InstrumentationLibrarySpans().Len(); j++ {
-			il := rspans.InstrumentationLibrarySpans().At(j).InstrumentationLibrary()
-			spans := rspans.InstrumentationLibrarySpans().At(j).Spans()
+		ctx.resource = rspans.Resource()
+		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
+			il := rspans.ScopeSpans().At(j).Scope()
+			ctx.il = il
+			spans := rspans.ScopeSpans().At(j).Spans()
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
+				ctx.span = span
 
 				for _, statement := range p.queries {
-					if statement.condition(span, il, rspans.Resource()) {
-						statement.function(span, il, rspans.Resource())
+					if statement.condition(ctx) {
+						statement.function(ctx)
 					}
 				}
 			}

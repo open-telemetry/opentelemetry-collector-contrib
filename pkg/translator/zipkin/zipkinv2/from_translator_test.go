@@ -113,7 +113,7 @@ func TestInternalTracesToZipkinSpansAndBack(t *testing.T) {
 
 		// check that all timestamps converted back and forth without change
 		for i := 0; i < td.ResourceSpans().Len(); i++ {
-			instSpans := td.ResourceSpans().At(i).InstrumentationLibrarySpans()
+			instSpans := td.ResourceSpans().At(i).ScopeSpans()
 			for j := 0; j < instSpans.Len(); j++ {
 				spans := instSpans.At(j).Spans()
 				for k := 0; k < spans.Len(); k++ {
@@ -132,7 +132,7 @@ func TestInternalTracesToZipkinSpansAndBack(t *testing.T) {
 
 func findSpanByID(rs pdata.ResourceSpansSlice, spanID pdata.SpanID) *pdata.Span {
 	for i := 0; i < rs.Len(); i++ {
-		instSpans := rs.At(i).InstrumentationLibrarySpans()
+		instSpans := rs.At(i).ScopeSpans()
 		for j := 0; j < instSpans.Len(); j++ {
 			spans := instSpans.At(j).Spans()
 			for k := 0; k < spans.Len(); k++ {
@@ -148,7 +148,7 @@ func findSpanByID(rs pdata.ResourceSpansSlice, spanID pdata.SpanID) *pdata.Span 
 
 func generateTraceOneSpanOneTraceID(status pdata.StatusCode) pdata.Traces {
 	td := testdata.GenerateTracesOneSpan()
-	span := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
+	span := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 	span.SetTraceID(pdata.NewTraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
 		0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10}))
 	span.SetSpanID(pdata.NewSpanID([8]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08}))

@@ -53,8 +53,8 @@ func generateLogData(resourceName string, attrs map[string]interface{}) pdata.Lo
 	td := pdata.NewLogs()
 	res := td.ResourceLogs().AppendEmpty()
 	res.Resource().Attributes().InsertString("name", resourceName)
-	ill := res.InstrumentationLibraryLogs().AppendEmpty()
-	lr := ill.LogRecords().AppendEmpty()
+	sl := res.ScopeLogs().AppendEmpty()
+	lr := sl.LogRecords().AppendEmpty()
 	pdata.NewMapFromRaw(attrs).CopyTo(lr.Attributes())
 	lr.Attributes().Sort()
 	return td
@@ -65,7 +65,7 @@ func sortLogAttributes(ld pdata.Logs) {
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
 		rs.Resource().Attributes().Sort()
-		ilss := rs.InstrumentationLibraryLogs()
+		ilss := rs.ScopeLogs()
 		for j := 0; j < ilss.Len(); j++ {
 			logs := ilss.At(j).LogRecords()
 			for k := 0; k < logs.Len(); k++ {

@@ -86,11 +86,13 @@ func translatorFromConfig(logger *zap.Logger, cfg *config.Config) (*translator.T
 	options = append(options, translator.WithHistogramMode(translator.HistogramMode(cfg.Metrics.HistConfig.Mode)))
 
 	var numberMode translator.NumberMode
-	if cfg.Metrics.SendMonotonic {
-		numberMode = translator.NumberModeCumulativeToDelta
-	} else {
+	switch cfg.Metrics.SumConfig.CumulativeMonotonicMode {
+	case config.CumulativeMonotonicSumModeRawValue:
 		numberMode = translator.NumberModeRawValue
+	case config.CumulativeMonotonicSumModeToDelta:
+		numberMode = translator.NumberModeCumulativeToDelta
 	}
+
 	options = append(options, translator.WithNumberMode(numberMode))
 
 	return translator.New(logger, options...)
@@ -184,6 +186,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metric
 
 	err = nil
 	if len(ms) > 0 {
+		exp.params.Logger.Debug("exporting payload", zap.Any("metric", ms))
 		err = multierr.Append(
 			err,
 			exp.retrier.DoWithRetries(ctx, func(context.Context) error {
@@ -193,6 +196,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metric
 	}
 
 	if len(sl) > 0 {
+		exp.params.Logger.Debug("exporting sketches payload", zap.Any("sketches", sl))
 		err = multierr.Append(
 			err,
 			exp.retrier.DoWithRetries(ctx, func(ctx context.Context) error {

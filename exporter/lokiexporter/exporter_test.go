@@ -56,11 +56,11 @@ var (
 
 func createLogData(numberOfLogs int, attributes pdata.Map) pdata.Logs {
 	logs := pdata.NewLogs()
-	ill := logs.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty()
+	sl := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
 
 	for i := 0; i < numberOfLogs; i++ {
 		ts := pdata.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
-		logRecord := ill.LogRecords().AppendEmpty()
+		logRecord := sl.LogRecords().AppendEmpty()
 		logRecord.Body().SetStringVal("mylog")
 		attributes.Range(func(k string, v pdata.Value) bool {
 			logRecord.Attributes().Insert(k, v)
@@ -279,7 +279,7 @@ func TestExporter_logDataToLoki(t *testing.T) {
 	t.Run("with attributes that match config", func(t *testing.T) {
 		logs := pdata.NewLogs()
 		ts := pdata.Timestamp(int64(1) * time.Millisecond.Nanoseconds())
-		lr := logs.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty()
+		lr := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 		lr.Body().SetStringVal("log message")
 		lr.Attributes().InsertString("not.in.config", "not allowed")
 		lr.SetTimestamp(ts)
@@ -293,7 +293,7 @@ func TestExporter_logDataToLoki(t *testing.T) {
 	t.Run("with partial attributes that match config", func(t *testing.T) {
 		logs := pdata.NewLogs()
 		ts := pdata.Timestamp(int64(1) * time.Millisecond.Nanoseconds())
-		lr := logs.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty()
+		lr := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 		lr.Body().SetStringVal("log message")
 		lr.Attributes().InsertString(conventions.AttributeContainerName, "mycontainer")
 		lr.Attributes().InsertString("severity", "info")
@@ -309,15 +309,15 @@ func TestExporter_logDataToLoki(t *testing.T) {
 	t.Run("with multiple logs and same attributes", func(t *testing.T) {
 		logs := pdata.NewLogs()
 		ts := pdata.Timestamp(int64(1) * time.Millisecond.Nanoseconds())
-		ill := logs.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty()
-		lr1 := ill.LogRecords().AppendEmpty()
+		sl := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
+		lr1 := sl.LogRecords().AppendEmpty()
 		lr1.Body().SetStringVal("log message 1")
 		lr1.Attributes().InsertString(conventions.AttributeContainerName, "mycontainer")
 		lr1.Attributes().InsertString(conventions.AttributeK8SClusterName, "mycluster")
 		lr1.Attributes().InsertString("severity", "info")
 		lr1.SetTimestamp(ts)
 
-		lr2 := ill.LogRecords().AppendEmpty()
+		lr2 := sl.LogRecords().AppendEmpty()
 		lr2.Body().SetStringVal("log message 2")
 		lr2.Attributes().InsertString(conventions.AttributeContainerName, "mycontainer")
 		lr2.Attributes().InsertString(conventions.AttributeK8SClusterName, "mycluster")
@@ -334,16 +334,16 @@ func TestExporter_logDataToLoki(t *testing.T) {
 	t.Run("with multiple logs and different attributes", func(t *testing.T) {
 		logs := pdata.NewLogs()
 		ts := pdata.Timestamp(int64(1) * time.Millisecond.Nanoseconds())
-		ill := logs.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty()
+		sl := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
 
-		lr1 := ill.LogRecords().AppendEmpty()
+		lr1 := sl.LogRecords().AppendEmpty()
 		lr1.Body().SetStringVal("log message 1")
 		lr1.Attributes().InsertString(conventions.AttributeContainerName, "mycontainer1")
 		lr1.Attributes().InsertString(conventions.AttributeK8SClusterName, "mycluster1")
 		lr1.Attributes().InsertString("severity", "debug")
 		lr1.SetTimestamp(ts)
 
-		lr2 := ill.LogRecords().AppendEmpty()
+		lr2 := sl.LogRecords().AppendEmpty()
 		lr2.Body().SetStringVal("log message 2")
 		lr2.Attributes().InsertString(conventions.AttributeContainerName, "mycontainer2")
 		lr2.Attributes().InsertString(conventions.AttributeK8SClusterName, "mycluster2")
@@ -364,7 +364,7 @@ func TestExporter_logDataToLoki(t *testing.T) {
 		lr := logs.ResourceLogs().AppendEmpty()
 		lr.Resource().Attributes().InsertString("not.in.config", "not allowed")
 
-		lri := lr.InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty()
+		lri := lr.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 		lri.Body().SetStringVal("log message")
 		lri.Attributes().InsertString("not.in.config", "not allowed")
 		lri.SetTimestamp(ts)
@@ -381,7 +381,7 @@ func TestExporter_logDataToLoki(t *testing.T) {
 		lr := logs.ResourceLogs().AppendEmpty()
 		lr.Resource().Attributes().InsertString("resource.name", "myresource")
 
-		lri := lr.InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty()
+		lri := lr.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 		lri.Body().SetStringVal("log message")
 		lri.Attributes().InsertString(conventions.AttributeContainerName, "mycontainer")
 		lri.Attributes().InsertString("severity", "info")

@@ -57,7 +57,7 @@ func generateTraceData(serviceName, spanName string, attrs map[string]interface{
 	if serviceName != "" {
 		rs.Resource().Attributes().UpsertString(conventions.AttributeServiceName, serviceName)
 	}
-	span := rs.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName(spanName)
 	pdata.NewMapFromRaw(attrs).CopyTo(span.Attributes())
 	span.Attributes().Sort()
@@ -69,7 +69,7 @@ func sortAttributes(td pdata.Traces) {
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
 		rs.Resource().Attributes().Sort()
-		ilss := rs.InstrumentationLibrarySpans()
+		ilss := rs.ScopeSpans()
 		for j := 0; j < ilss.Len(); j++ {
 			spans := ilss.At(j).Spans()
 			for k := 0; k < spans.Len(); k++ {

@@ -15,6 +15,7 @@
 package config // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 
 import (
+	"encoding"
 	"errors"
 	"fmt"
 	"regexp"
@@ -60,7 +61,8 @@ type APIConfig struct {
 	Site string `mapstructure:"site"`
 }
 
-// GetCensoredKey returns the API key censored for logging purposes
+// GetCensoredKey returns the API key censored for logging purposes.
+// Deprecated: [v0.48.0] Will be removed in v0.49.0.
 func (api *APIConfig) GetCensoredKey() string {
 	if len(api.Key) <= 5 {
 		return api.Key
@@ -76,6 +78,7 @@ type MetricsConfig struct {
 
 	// SendMonotonic states whether to report cumulative monotonic metrics as counters
 	// or gauges
+	// Deprecated: [v0.48.0] Use `metrics::sums::cumulative_monotonic_mode` (SumConfig.CumulativeMonotonicMode) instead.
 	SendMonotonic bool `mapstructure:"send_monotonic_counter"`
 
 	// DeltaTTL defines the time that previous points of a cumulative monotonic
@@ -91,6 +94,9 @@ type MetricsConfig struct {
 
 	// HistConfig defines the export of OTLP Histograms.
 	HistConfig HistogramConfig `mapstructure:"histograms"`
+
+	// SumConfig defines the export of OTLP Sums.
+	SumConfig SumConfig `mapstructure:"sums"`
 }
 
 // HistogramConfig customizes export of OTLP Histograms.
@@ -114,6 +120,46 @@ func (c *HistogramConfig) validate() error {
 		return fmt.Errorf("'nobuckets' mode and `send_count_sum_metrics` set to false will send no histogram metrics")
 	}
 	return nil
+}
+
+// CumulativeMonotonicSumMode is the export mode for OTLP Sum metrics.
+type CumulativeMonotonicSumMode string
+
+const (
+	// CumulativeMonotonicSumModeToDelta calculates delta for
+	// cumulative monotonic sum metrics in the client side and reports
+	// them as Datadog counts.
+	CumulativeMonotonicSumModeToDelta CumulativeMonotonicSumMode = "to_delta"
+
+	// CumulativeMonotonicSumModeRawValue reports the raw value for
+	// cumulative monotonic sum metrics as a Datadog gauge.
+	CumulativeMonotonicSumModeRawValue CumulativeMonotonicSumMode = "raw_value"
+)
+
+var _ encoding.TextUnmarshaler = (*CumulativeMonotonicSumMode)(nil)
+
+// UnmarshalText implements the encoding.TextUnmarshaler interface.
+func (sm *CumulativeMonotonicSumMode) UnmarshalText(in []byte) error {
+	switch mode := CumulativeMonotonicSumMode(in); mode {
+	case CumulativeMonotonicSumModeToDelta,
+		CumulativeMonotonicSumModeRawValue:
+		*sm = mode
+		return nil
+	default:
+		return fmt.Errorf("invalid cumulative monotonic sum mode %q", mode)
+	}
+}
+
+// SumConfig customizes export of OTLP Sums.
+type SumConfig struct {
+	// CumulativeMonotonicMode is the mode for exporting OTLP Cumulative Monotonic Sums.
+	// Valid values are 'to_delta' or 'raw_value'.
+	//  - 'to_delta' calculates delta for cumulative monotonic sums and sends it as a Datadog count.
+	//  - 'raw_value' sends the raw value of cumulative monotonic sums as Datadog gauges.
+	//
+	// The default is 'to_delta'.
+	// See https://docs.datadoghq.com/metrics/otlp/?tab=sum#mapping for details and examples.
+	CumulativeMonotonicMode CumulativeMonotonicSumMode `mapstructure:"cumulative_monotonic_mode"`
 }
 
 // MetricsExporterConfig provides options for a user to customize the behavior of the
@@ -350,6 +396,13 @@ func (c *Config) Unmarshal(configMap *config.Map) error {
 	if err != nil {
 		return err
 	}
+
+	// Add deprecation warnings for deprecated settings.
+	renamingWarnings, err := handleRenamedSettings(configMap, c)
+	if err != nil {
+		return err
+	}
+	c.warnings = append(c.warnings, renamingWarnings...)
 
 	switch c.Metrics.HistConfig.Mode {
 	case histogramModeCounters, histogramModeNoBuckets, histogramModeDistributions:

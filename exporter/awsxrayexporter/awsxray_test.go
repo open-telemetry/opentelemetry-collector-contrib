@@ -111,7 +111,7 @@ func constructSpanData() pdata.Traces {
 	traces := pdata.NewTraces()
 	rspans := traces.ResourceSpans().AppendEmpty()
 	resource.CopyTo(rspans.Resource())
-	ispans := rspans.InstrumentationLibrarySpans().AppendEmpty()
+	ispans := rspans.ScopeSpans().AppendEmpty()
 	constructXrayTraceSpanData(ispans)
 	return traces
 }
@@ -121,7 +121,7 @@ func constructW3CSpanData() pdata.Traces {
 	traces := pdata.NewTraces()
 	rspans := traces.ResourceSpans().AppendEmpty()
 	resource.CopyTo(rspans.Resource())
-	ispans := rspans.InstrumentationLibrarySpans().AppendEmpty()
+	ispans := rspans.ScopeSpans().AppendEmpty()
 	constructW3CFormatTraceSpanData(ispans)
 	return traces
 }
@@ -131,18 +131,18 @@ func constructXrayAndW3CSpanData() pdata.Traces {
 	traces := pdata.NewTraces()
 	rspans := traces.ResourceSpans().AppendEmpty()
 	resource.CopyTo(rspans.Resource())
-	ispans := rspans.InstrumentationLibrarySpans().AppendEmpty()
+	ispans := rspans.ScopeSpans().AppendEmpty()
 	constructXrayTraceSpanData(ispans)
 	constructW3CFormatTraceSpanData(ispans)
 	return traces
 }
 
-func constructXrayTraceSpanData(ispans pdata.InstrumentationLibrarySpans) {
+func constructXrayTraceSpanData(ispans pdata.ScopeSpans) {
 	constructHTTPClientSpan(newTraceID()).CopyTo(ispans.Spans().AppendEmpty())
 	constructHTTPServerSpan(newTraceID()).CopyTo(ispans.Spans().AppendEmpty())
 }
 
-func constructW3CFormatTraceSpanData(ispans pdata.InstrumentationLibrarySpans) {
+func constructW3CFormatTraceSpanData(ispans pdata.ScopeSpans) {
 	constructHTTPClientSpan(constructW3CTraceID()).CopyTo(ispans.Spans().AppendEmpty())
 	constructHTTPServerSpan(constructW3CTraceID()).CopyTo(ispans.Spans().AppendEmpty())
 }
