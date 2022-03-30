@@ -56,7 +56,7 @@ var renamedSettings = []renameError{
 	{
 		oldName:      "metrics::report_quantiles",
 		newName:      "metrics::summaries::mode",
-		oldRemovedIn: "v0.50.0",
+		oldRemovedIn: "v0.51.0",
 		issueNumber:  8845,
 		updateFn: func(c *Config) {
 			if c.Metrics.Quantiles {

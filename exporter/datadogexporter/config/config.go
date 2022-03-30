@@ -74,7 +74,7 @@ func (api *APIConfig) GetCensoredKey() string {
 type MetricsConfig struct {
 	// Quantiles states whether to report quantiles from summary metrics.
 	// By default, the minimum, maximum and average are reported.
-	// Deprecated: [v0.48.0] Use `metrics::summaries::mode` (SummaryConfig.Mode) instead.
+	// Deprecated: [v0.49.0] Use `metrics::summaries::mode` (SummaryConfig.Mode) instead.
 	Quantiles bool `mapstructure:"report_quantiles"`
 
 	// SendMonotonic states whether to report cumulative monotonic metrics as counters
