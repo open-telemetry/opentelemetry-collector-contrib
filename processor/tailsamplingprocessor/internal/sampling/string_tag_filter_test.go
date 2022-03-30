@@ -242,7 +242,7 @@ func newTraceStringAttrs(nodeAttrs pdata.Map, spanAttrKey string, spanAttrValue 
 	traces := pdata.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
 	nodeAttrs.CopyTo(rs.Resource().Attributes())
-	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
+	ils := rs.ScopeSpans().AppendEmpty()
 	span := ils.Spans().AppendEmpty()
 	span.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
 	span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))

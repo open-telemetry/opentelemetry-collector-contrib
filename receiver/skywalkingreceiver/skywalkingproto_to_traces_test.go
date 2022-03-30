@@ -101,7 +101,7 @@ func TestSwProtoToTraces(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			td := SkywalkingToTraces(test.swSpan)
 			assert.Equal(t, 1, td.ResourceSpans().Len())
-			assert.Equal(t, 2, td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().Len())
+			assert.Equal(t, 2, td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().Len())
 		})
 	}
 }
@@ -163,7 +163,7 @@ func TestSwLogsToSpanEvents(t *testing.T) {
 func generateTracesOneEmptyResourceSpans() pdata.Span {
 	td := pdata.NewTraces()
 	resourceSpan := td.ResourceSpans().AppendEmpty()
-	il := resourceSpan.InstrumentationLibrarySpans().AppendEmpty()
+	il := resourceSpan.ScopeSpans().AppendEmpty()
 	il.Spans().AppendEmpty()
 	return il.Spans().At(0)
 }

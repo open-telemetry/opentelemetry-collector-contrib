@@ -83,7 +83,7 @@ func testFilter(t *testing.T, mdType pdata.MetricDataType, mvType pdata.MetricVa
 		rmsSlice := metrics.ResourceMetrics()
 		for i := 0; i < rmsSlice.Len(); i++ {
 			rms := rmsSlice.At(i)
-			ilms := rms.InstrumentationLibraryMetrics()
+			ilms := rms.ScopeMetrics()
 			for j := 0; j < ilms.Len(); j++ {
 				ilm := ilms.At(j)
 				metricSlice := ilm.Metrics()

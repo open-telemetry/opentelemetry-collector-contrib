@@ -152,8 +152,8 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 			require.Equal(t, 1, len(got))
 			require.Equal(t, test.outMetrics.ResourceMetrics().Len(), got[0].ResourceMetrics().Len())
 
-			expectedMetrics := test.outMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
-			actualMetrics := got[0].ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+			expectedMetrics := test.outMetrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+			actualMetrics := got[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 
 			require.Equal(t, expectedMetrics.Len(), actualMetrics.Len())
 
@@ -198,7 +198,7 @@ func generateSumMetrics(tm testMetric) pdata.Metrics {
 	delta := time.Duration(tm.deltaSecond)
 
 	rm := md.ResourceMetrics().AppendEmpty()
-	ms := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics()
+	ms := rm.ScopeMetrics().AppendEmpty().Metrics()
 	for i, name := range tm.metricNames {
 		m := ms.AppendEmpty()
 		m.SetName(name)
@@ -239,7 +239,7 @@ func generateGaugeMetrics(tm testMetric) pdata.Metrics {
 	now := time.Now()
 
 	rm := md.ResourceMetrics().AppendEmpty()
-	ms := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics()
+	ms := rm.ScopeMetrics().AppendEmpty().Metrics()
 	for i, name := range tm.metricNames {
 		m := ms.AppendEmpty()
 		m.SetName(name)

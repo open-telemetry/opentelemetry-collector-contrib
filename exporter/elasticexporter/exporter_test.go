@@ -45,7 +45,7 @@ func TestTracesExporter(t *testing.T) {
 
 	traces := pdata.NewTraces()
 	resourceSpans := traces.ResourceSpans()
-	span := resourceSpans.AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	span := resourceSpans.AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName("foobar")
 
 	err = te.ConsumeTraces(context.Background(), traces)
@@ -109,7 +109,7 @@ func sampleMetrics() pdata.Metrics {
 	resourceMetrics := metrics.ResourceMetrics()
 	resourceMetrics.EnsureCapacity(2)
 	for i := 0; i < 2; i++ {
-		metric := resourceMetrics.AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
+		metric := resourceMetrics.AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 		metric.SetName("foobar")
 		metric.SetDataType(pdata.MetricDataTypeGauge)
 		metric.Gauge().DataPoints().AppendEmpty().SetDoubleVal(123)

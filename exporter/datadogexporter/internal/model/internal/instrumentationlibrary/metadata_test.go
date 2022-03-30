@@ -35,7 +35,7 @@ func TestTagsFromInstrumentationLibraryMetadata(t *testing.T) {
 	}
 
 	for _, testInstance := range tests {
-		il := pdata.NewInstrumentationLibrary()
+		il := pdata.NewInstrumentationScope()
 		il.SetName(testInstance.name)
 		il.SetVersion(testInstance.version)
 		tags := TagsFromInstrumentationLibraryMetadata(il)

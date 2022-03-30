@@ -256,10 +256,10 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 	if resourceCustomizer != nil {
 		resourceCustomizer(rl.Resource())
 	}
-	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
+	sl := rl.ScopeLogs().AppendEmpty()
 
 	for sc.Scan() {
-		logRecord := ill.LogRecords().AppendEmpty()
+		logRecord := sl.LogRecords().AppendEmpty()
 		logLine := sc.Text()
 		logRecord.Body().SetStringVal(logLine)
 	}
@@ -268,10 +268,10 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 	_ = bodyReader.Close()
 
 	if consumerErr != nil {
-		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, ill.LogRecords().Len(), consumerErr)
+		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, sl.LogRecords().Len(), consumerErr)
 	} else {
 		resp.WriteHeader(http.StatusAccepted)
-		r.obsrecv.EndLogsOp(ctx, typeStr, ill.LogRecords().Len(), nil)
+		r.obsrecv.EndLogsOp(ctx, typeStr, sl.LogRecords().Len(), nil)
 	}
 }
 

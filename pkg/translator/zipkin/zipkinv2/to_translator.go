@@ -55,7 +55,7 @@ func (t ToTranslator) ToTraces(zipkinSpans []*zipkinmodel.SpanModel) (pdata.Trac
 	prevInstrLibName := ""
 	ilsIsNew := true
 	var curRscSpans pdata.ResourceSpans
-	var curILSpans pdata.InstrumentationLibrarySpans
+	var curILSpans pdata.ScopeSpans
 	var curSpans pdata.SpanSlice
 	for _, zspan := range zipkinSpans {
 		if zspan == nil {
@@ -73,9 +73,9 @@ func (t ToTranslator) ToTraces(zipkinSpans []*zipkinmodel.SpanModel) (pdata.Trac
 		instrLibName := extractInstrumentationLibrary(zspan)
 		if instrLibName != prevInstrLibName || ilsIsNew {
 			prevInstrLibName = instrLibName
-			curILSpans = curRscSpans.InstrumentationLibrarySpans().AppendEmpty()
+			curILSpans = curRscSpans.ScopeSpans().AppendEmpty()
 			ilsIsNew = false
-			populateILFromZipkinSpan(tags, instrLibName, curILSpans.InstrumentationLibrary())
+			populateILFromZipkinSpan(tags, instrLibName, curILSpans.Scope())
 			curSpans = curILSpans.Spans()
 		}
 		err := zSpanToInternal(zspan, tags, curSpans.AppendEmpty(), t.ParseStringTags)
@@ -393,7 +393,7 @@ func populateResourceFromZipkinSpan(tags map[string]string, localServiceName str
 	}
 }
 
-func populateILFromZipkinSpan(tags map[string]string, instrLibName string, library pdata.InstrumentationLibrary) {
+func populateILFromZipkinSpan(tags map[string]string, instrLibName string, library pdata.InstrumentationScope) {
 	if instrLibName == "" {
 		return
 	}

@@ -39,7 +39,7 @@ func translateStatsToMetrics(stats *containerStats, ts time.Time, rm pdata.Resou
 	resource.Attributes().InsertString(conventions.AttributeContainerName, stats.Name)
 	resource.Attributes().InsertString(conventions.AttributeContainerID, stats.ContainerID)
 
-	ms := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics()
+	ms := rm.ScopeMetrics().AppendEmpty().Metrics()
 	appendIOMetrics(ms, stats, pbts)
 	appendCPUMetrics(ms, stats, pbts)
 	appendNetworkMetrics(ms, stats, pbts)

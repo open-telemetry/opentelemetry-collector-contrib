@@ -298,7 +298,7 @@ func (tsp *tailSamplingSpanProcessor) ConsumeTraces(ctx context.Context, td pdat
 
 func (tsp *tailSamplingSpanProcessor) groupSpansByTraceKey(resourceSpans pdata.ResourceSpans) map[pdata.TraceID][]*pdata.Span {
 	idToSpans := make(map[pdata.TraceID][]*pdata.Span)
-	ilss := resourceSpans.InstrumentationLibrarySpans()
+	ilss := resourceSpans.ScopeSpans()
 	for j := 0; j < ilss.Len(); j++ {
 		spans := ilss.At(j).Spans()
 		spansLen := spans.Len()
@@ -431,7 +431,7 @@ func prepareTraceBatch(rss pdata.ResourceSpans, spans []*pdata.Span) pdata.Trace
 	traceTd := pdata.NewTraces()
 	rs := traceTd.ResourceSpans().AppendEmpty()
 	rss.Resource().CopyTo(rs.Resource())
-	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
+	ils := rs.ScopeSpans().AppendEmpty()
 	for _, span := range spans {
 		sp := ils.Spans().AppendEmpty()
 		span.CopyTo(sp)

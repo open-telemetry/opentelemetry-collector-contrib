@@ -55,7 +55,7 @@ func splunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resource
 
 		labels := buildAttributes(event.Fields)
 
-		metrics := resourceMetrics.InstrumentationLibraryMetrics().AppendEmpty().Metrics()
+		metrics := resourceMetrics.ScopeMetrics().AppendEmpty().Metrics()
 		for metricName, metricValue := range values {
 			pointTimestamp := convertTimestamp(event.Time)
 			metric := pdata.NewMetric()

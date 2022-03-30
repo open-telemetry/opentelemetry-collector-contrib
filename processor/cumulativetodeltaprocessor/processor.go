@@ -61,8 +61,8 @@ func newCumulativeToDeltaProcessor(config *Config, logger *zap.Logger) *cumulati
 func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
 	resourceMetricsSlice := md.ResourceMetrics()
 	resourceMetricsSlice.RemoveIf(func(rm pdata.ResourceMetrics) bool {
-		ilms := rm.InstrumentationLibraryMetrics()
-		ilms.RemoveIf(func(ilm pdata.InstrumentationLibraryMetrics) bool {
+		ilms := rm.ScopeMetrics()
+		ilms.RemoveIf(func(ilm pdata.ScopeMetrics) bool {
 			ms := ilm.Metrics()
 			ms.RemoveIf(func(m pdata.Metric) bool {
 				if !ctdp.shouldConvertMetric(m.Name()) {
@@ -82,7 +82,7 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pda
 
 					baseIdentity := tracking.MetricIdentity{
 						Resource:               rm.Resource(),
-						InstrumentationLibrary: ilm.InstrumentationLibrary(),
+						InstrumentationLibrary: ilm.Scope(),
 						MetricDataType:         m.DataType(),
 						MetricName:             m.Name(),
 						MetricUnit:             m.Unit(),
@@ -97,7 +97,7 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pda
 			})
 			return ilm.Metrics().Len() == 0
 		})
-		return rm.InstrumentationLibraryMetrics().Len() == 0
+		return rm.ScopeMetrics().Len() == 0
 	})
 	return md, nil
 }

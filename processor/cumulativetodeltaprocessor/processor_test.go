@@ -202,8 +202,8 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 			require.Equal(t, 1, len(got))
 			require.Equal(t, test.outMetrics.ResourceMetrics().Len(), got[0].ResourceMetrics().Len())
 
-			expectedMetrics := test.outMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
-			actualMetrics := got[0].ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+			expectedMetrics := test.outMetrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+			actualMetrics := got[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 
 			require.Equal(t, expectedMetrics.Len(), actualMetrics.Len())
 
@@ -251,7 +251,7 @@ func generateTestMetrics(tm testMetric) pdata.Metrics {
 	now := time.Now()
 
 	rm := md.ResourceMetrics().AppendEmpty()
-	ms := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics()
+	ms := rm.ScopeMetrics().AppendEmpty().Metrics()
 	for i, name := range tm.metricNames {
 		m := ms.AppendEmpty()
 		m.SetName(name)
@@ -295,9 +295,9 @@ func BenchmarkConsumeMetrics(b *testing.B) {
 	rms := metrics.ResourceMetrics().AppendEmpty()
 	r := rms.Resource()
 	r.Attributes().Insert("resource", pdata.NewValueBool(true))
-	ilms := rms.InstrumentationLibraryMetrics().AppendEmpty()
-	ilms.InstrumentationLibrary().SetName("test")
-	ilms.InstrumentationLibrary().SetVersion("0.1")
+	ilms := rms.ScopeMetrics().AppendEmpty()
+	ilms.Scope().SetName("test")
+	ilms.Scope().SetVersion("0.1")
 	m := ilms.Metrics().AppendEmpty()
 	m.SetDataType(pdata.MetricDataTypeSum)
 	m.Sum().SetIsMonotonic(true)

@@ -48,7 +48,7 @@ func TestJSONEncoder_EncodeTraces(t *testing.T) {
 func TestJSONEncoder_EncodeTracesError(t *testing.T) {
 	invalidTD := pdata.NewTraces()
 	// Add one span with empty trace ID.
-	invalidTD.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	invalidTD.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	marshaler := NewJSONTracesMarshaler()
 	buf, err := marshaler.MarshalTraces(invalidTD)
 	assert.Error(t, err)

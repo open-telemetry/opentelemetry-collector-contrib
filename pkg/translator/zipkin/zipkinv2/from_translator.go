@@ -68,7 +68,7 @@ func (t FromTranslator) FromTraces(td pdata.Traces) ([]*zipkinmodel.SpanModel, e
 
 func resourceSpansToZipkinSpans(rs pdata.ResourceSpans, estSpanCount int) ([]*zipkinmodel.SpanModel, error) {
 	resource := rs.Resource()
-	ilss := rs.InstrumentationLibrarySpans()
+	ilss := rs.ScopeSpans()
 
 	if resource.Attributes().Len() == 0 && ilss.Len() == 0 {
 		return nil, nil
@@ -79,7 +79,7 @@ func resourceSpansToZipkinSpans(rs pdata.ResourceSpans, estSpanCount int) ([]*zi
 	zSpans := make([]*zipkinmodel.SpanModel, 0, estSpanCount)
 	for i := 0; i < ilss.Len(); i++ {
 		ils := ilss.At(i)
-		extractInstrumentationLibraryTags(ils.InstrumentationLibrary(), zTags)
+		extractInstrumentationLibraryTags(ils.Scope(), zTags)
 		spans := ils.Spans()
 		for j := 0; j < spans.Len(); j++ {
 			zSpan, err := spanToZipkinSpan(spans.At(j), localServiceName, zTags)
@@ -93,7 +93,7 @@ func resourceSpansToZipkinSpans(rs pdata.ResourceSpans, estSpanCount int) ([]*zi
 	return zSpans, nil
 }
 
-func extractInstrumentationLibraryTags(il pdata.InstrumentationLibrary, zTags map[string]string) {
+func extractInstrumentationLibraryTags(il pdata.InstrumentationScope, zTags map[string]string) {
 	if ilName := il.Name(); ilName != "" {
 		zTags[conventions.OtelLibraryName] = ilName
 	}
