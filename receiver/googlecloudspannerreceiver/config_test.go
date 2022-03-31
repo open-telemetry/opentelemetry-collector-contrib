@@ -49,6 +49,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, 120*time.Second, receiver.CollectionInterval)
 	assert.Equal(t, 10, receiver.TopMetricsQueryMaxRows)
 	assert.True(t, receiver.BackfillEnabled)
+	assert.True(t, receiver.HideTopnQuerystatsQuerytext)
 
 	assert.Equal(t, 2, len(receiver.Projects))
 

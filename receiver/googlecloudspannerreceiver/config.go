@@ -29,10 +29,11 @@ const (
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 
-	TopMetricsQueryMaxRows int       `mapstructure:"top_metrics_query_max_rows"`
-	BackfillEnabled        bool      `mapstructure:"backfill_enabled"`
-	CardinalityTotalLimit  int       `mapstructure:"cardinality_total_limit"`
-	Projects               []Project `mapstructure:"projects"`
+	TopMetricsQueryMaxRows      int       `mapstructure:"top_metrics_query_max_rows"`
+	BackfillEnabled             bool      `mapstructure:"backfill_enabled"`
+	CardinalityTotalLimit       int       `mapstructure:"cardinality_total_limit"`
+	Projects                    []Project `mapstructure:"projects"`
+	HideTopnQuerystatsQuerytext bool      `mapstructure:"hide_topn_querystats_querytext"`
 }
 
 type Project struct {

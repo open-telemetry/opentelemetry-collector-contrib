@@ -27,9 +27,10 @@ import (
 const (
 	typeStr = "googlecloudspanner"
 
-	defaultCollectionInterval     = 60 * time.Second
-	defaultTopMetricsQueryMaxRows = 100
-	defaultBackfillEnabled        = false
+	defaultCollectionInterval          = 60 * time.Second
+	defaultTopMetricsQueryMaxRows      = 100
+	defaultBackfillEnabled             = false
+	defaultHideTopnQuerystatsQuerytext = false
 )
 
 func NewFactory() component.ReceiverFactory {
@@ -45,8 +46,9 @@ func createDefaultConfig() config.Receiver {
 			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			CollectionInterval: defaultCollectionInterval,
 		},
-		TopMetricsQueryMaxRows: defaultTopMetricsQueryMaxRows,
-		BackfillEnabled:        defaultBackfillEnabled,
+		TopMetricsQueryMaxRows:      defaultTopMetricsQueryMaxRows,
+		BackfillEnabled:             defaultBackfillEnabled,
+		HideTopnQuerystatsQuerytext: defaultHideTopnQuerystatsQuerytext,
 	}
 }
 

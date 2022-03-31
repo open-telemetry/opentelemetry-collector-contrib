@@ -20,7 +20,27 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
 )
 
-func ParseMetadataConfig(metadataContentYaml []byte) ([]*metadata.MetricsMetadata, error) {
+// This function will filter output labels from the MetricsMetadata in accordance with boolean flags passed.
+// Function signature is made in such a manner that it would be easy to add more filters in the future.
+func filterOutLabelsIfRequired(mData *metadata.MetricsMetadata, hideTopnQuerystatsQuerytext bool) {
+	if hideTopnQuerystatsQuerytext == true && mData.Name == "top minute query stats" {
+		index := 0 // output index
+		for _, label := range mData.QueryLabelValuesMetadata {
+			if label.Name() != "query_text" && label.Name() != "query_text_truncated" {
+				// copy and increment index
+				mData.QueryLabelValuesMetadata[index] = label
+				index++
+			}
+		}
+		// Prevent memory leak by erasing truncated values
+		for j := index; j < len(mData.QueryLabelValuesMetadata); j++ {
+			mData.QueryLabelValuesMetadata[j] = nil
+		}
+		mData.QueryLabelValuesMetadata = mData.QueryLabelValuesMetadata[:index]
+	}
+}
+
+func ParseMetadataConfig(metadataContentYaml []byte, hideTopnQuerystatsQuerytext bool) ([]*metadata.MetricsMetadata, error) {
 	var config MetadataConfig
 
 	err := yaml.Unmarshal(metadataContentYaml, &config)
@@ -36,6 +56,7 @@ func ParseMetadataConfig(metadataContentYaml []byte) ([]*metadata.MetricsMetadat
 			return nil, err
 		}
 
+		filterOutLabelsIfRequired(mData, hideTopnQuerystatsQuerytext)
 		result[i] = mData
 	}
 

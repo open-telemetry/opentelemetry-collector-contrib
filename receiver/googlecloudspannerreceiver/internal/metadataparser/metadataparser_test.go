@@ -27,12 +27,14 @@ import (
 
 func TestParseMetadataConfig(t *testing.T) {
 	testCases := map[string]struct {
-		filePath    string
-		expectError bool
+		filePath                    string
+		expectError                 bool
+		hideTopnQuerystatsQuerytext bool
 	}{
-		"Valid metadata":     {"../../testdata/metadata_valid.yaml", false},
-		"YAML parsing error": {"../../testdata/metadata_not_yaml.yaml", true},
-		"Invalid metadata":   {"../../testdata/metadata_invalid.yaml", true},
+		"Valid metadata": {"../../testdata/metadata_valid.yaml", false, false},
+		"Valid metadata with hideTopnQuerystatsQuerytext enabled": {"../../testdata/metadata_valid_hidequerytext.yaml", false, true},
+		"YAML parsing error": {"../../testdata/metadata_not_yaml.yaml", true, false},
+		"Invalid metadata":   {"../../testdata/metadata_invalid.yaml", true, false},
 	}
 
 	for name, testCase := range testCases {
@@ -41,7 +43,7 @@ func TestParseMetadataConfig(t *testing.T) {
 
 			require.NoError(t, err)
 
-			metadataSlice, err := ParseMetadataConfig(content)
+			metadataSlice, err := ParseMetadataConfig(content, testCase.hideTopnQuerystatsQuerytext)
 
 			if testCase.expectError {
 				require.Error(t, err)
@@ -58,7 +60,11 @@ func TestParseMetadataConfig(t *testing.T) {
 				mData = metadataSlice[1]
 
 				assert.NotNil(t, mData)
-				assertMetricsMetadata(t, "interval stats", mData)
+				if testCase.hideTopnQuerystatsQuerytext {
+					assertMetricsMetadata(t, "top minute query stats", mData)
+				} else {
+					assertMetricsMetadata(t, "interval stats", mData)
+				}
 			}
 		})
 	}

@@ -29,7 +29,7 @@ func TestParsingMetadataYaml(t *testing.T) {
 
 	require.NoError(t, err)
 
-	metadataMap, err := metadataparser.ParseMetadataConfig(content)
+	metadataMap, err := metadataparser.ParseMetadataConfig(content, false)
 
 	require.NoError(t, err)
 	require.NotNil(t, metadataMap)

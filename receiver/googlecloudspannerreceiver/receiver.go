@@ -91,7 +91,7 @@ func (r *googleCloudSpannerReceiver) Shutdown(context.Context) error {
 }
 
 func (r *googleCloudSpannerReceiver) initialize(ctx context.Context) error {
-	parsedMetadata, err := metadataparser.ParseMetadataConfig(metadataYaml)
+	parsedMetadata, err := metadataparser.ParseMetadataConfig(metadataYaml, r.config.HideTopnQuerystatsQuerytext)
 	if err != nil {
 		return fmt.Errorf("error occurred during parsing of metadata: %w", err)
 	}
