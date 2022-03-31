@@ -4,6 +4,20 @@
 
 ### 💡 Enhancements 💡
 
+### 🛑 Breaking changes 🛑
+
+### 🧰 Bug fixes 🧰
+
+- `hostmetricsreceiver`: Use cpu times for time delta in cpu.utilization calculation (#8856)
+
+### 🚩 Deprecations 🚩
+
+### 🚀 New components 🚀
+
+## v0.48.0
+
+### 💡 Enhancements 💡
+
 - `k8seventsreceiver`: Add Api_version and resource_version (#8539)
 - `cmd/mdatagen`: Add resource attributes definition to metadata.yaml and move `pdata.Metrics` creation to the
   generated code (#5270) 
