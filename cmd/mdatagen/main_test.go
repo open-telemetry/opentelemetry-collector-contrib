@@ -55,20 +55,23 @@ func Test_runContents(t *testing.T) {
 		useExpGen bool
 	}
 	tests := []struct {
-		name    string
-		args    args
-		want    string
-		wantErr string
+		name                   string
+		args                   args
+		expected_documentation string
+		want                   string
+		wantErr                string
 	}{
 		{
-			name: "valid metadata",
-			args: args{validMetadata, false},
-			want: "",
+			name:                   "valid metadata",
+			args:                   args{validMetadata, false},
+			expected_documentation: "testdata/documentation_v1.md",
+			want:                   "",
 		},
 		{
-			name: "valid metadata v2",
-			args: args{validMetadata, true},
-			want: "",
+			name:                   "valid metadata v2",
+			args:                   args{validMetadata, true},
+			expected_documentation: "testdata/documentation_v2.md",
+			want:                   "",
 		},
 		{
 			name:    "invalid yaml",
@@ -101,7 +104,17 @@ func Test_runContents(t *testing.T) {
 				}
 				require.FileExists(t, genFilePath)
 
-				require.FileExists(t, filepath.Join(tmpdir, "documentation.md"))
+				actualDocumentation := filepath.Join(tmpdir, "documentation.md")
+				require.FileExists(t, actualDocumentation)
+				if tt.expected_documentation != "" {
+					expectedFileBytes, err := ioutil.ReadFile(tt.expected_documentation)
+					require.NoError(t, err)
+
+					actualFileBytes, err := ioutil.ReadFile(actualDocumentation)
+					require.NoError(t, err)
+
+					require.Equal(t, expectedFileBytes, actualFileBytes)
+				}
 			}
 		})
 	}
