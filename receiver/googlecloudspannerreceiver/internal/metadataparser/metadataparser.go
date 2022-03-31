@@ -23,7 +23,7 @@ import (
 // This function will filter output labels from the MetricsMetadata in accordance with boolean flags passed.
 // Function signature is made in such a manner that it would be easy to add more filters in the future.
 func filterOutLabelsIfRequired(mData *metadata.MetricsMetadata, hideTopnQuerystatsQuerytext bool) {
-	if hideTopnQuerystatsQuerytext == true && mData.Name == "top minute query stats" {
+	if hideTopnQuerystatsQuerytext && mData.Name == "top minute query stats" {
 		index := 0 // output index
 		for _, label := range mData.QueryLabelValuesMetadata {
 			if label.Name() != "query_text" && label.Name() != "query_text_truncated" {
