@@ -15,6 +15,9 @@
 
 ### 🚩 Deprecations 🚩
 
+- `datadogexporter`: Deprecate `service` setting in favor of `service.name` semantic convention (#8784)
+- `datadogexporter`: Deprecate `version` setting in favor of `service.version` semantic convention (#8784)
+
 ### 🚀 New components 🚀
 
 ## v0.48.0
