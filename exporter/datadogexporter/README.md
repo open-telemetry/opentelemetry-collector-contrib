@@ -69,8 +69,6 @@ exporters:
   datadog/api:
     hostname: customhostname
     env: prod
-    service: myservice
-    version: myversion
 
     tags:
       - example:tag

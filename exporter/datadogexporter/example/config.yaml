@@ -21,12 +21,16 @@ exporters:
 
     ## @param service - string - optional
     ## The service for unified service tagging.
+    ## Deprecated: [v0.48.0] Set `service.name` semconv instead, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8781 for details.
+    ## This option will be removed in v0.51.0.
     ## If unset it will be determined from the `DD_SERVICE` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
     #
     # service: myservice
 
     ## @param version - string - optional
     ## The version for unified service tagging.
+    ## Deprecated: [v0.48.0] Set `service.version` semconv instead, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8783 for details.
+    ## This option will be removed in v0.51.0.
     ## If unset it will be determined from the `DD_VERSION` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
     #
     # version: myversion
