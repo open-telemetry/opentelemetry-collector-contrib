@@ -26,6 +26,14 @@ import (
 const (
 	validMetadata = `
 name: metricreceiver
+attributes:
+  cpu_type:
+    value: type
+    description: The type of CPU consumption
+    enum:
+    - user
+    - io_wait
+    - system
 metrics:
   system.cpu.time:
     enabled: true
@@ -35,7 +43,7 @@ metrics:
     sum:
       aggregation: cumulative
       value_type: double
-    attributes: []
+    attributes: [cpu_type]
 `
 )
 
