@@ -8,6 +8,8 @@ import (
 
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
+
+	"go.uber.org/zap"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -216,6 +218,15 @@ func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pdata.Metrics {
 	return metrics
 }
 
+func logFailedParse(logger *zap.Logger, expectedType, metric, value string) {
+	logger.Info(
+		"failed to parse value",
+		zap.String("expectedType", expectedType),
+		zap.String("metric", metric),
+		zap.String("value", value),
+	)
+}
+
 // RecordSystemCPUTimeDataPoint adds a data point to system.cpu.time metric.
 func (mb *MetricsBuilder) RecordSystemCPUTimeDataPoint(ts pdata.Timestamp, val float64, cpuAttributeValue string, stateAttributeValue string) {
 	mb.metricSystemCPUTime.recordDataPoint(mb.startTime, ts, val, cpuAttributeValue, stateAttributeValue)
@@ -223,13 +234,12 @@ func (mb *MetricsBuilder) RecordSystemCPUTimeDataPoint(ts pdata.Timestamp, val f
 
 // ParseSystemCPUTimeDataPoint attempts to parse and add a data point to system.cpu.time metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSystemCPUTimeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, cpuAttributeValue string, stateAttributeValue string) bool {
+func (mb *MetricsBuilder) ParseSystemCPUTimeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, cpuAttributeValue string, stateAttributeValue string) {
 	if f, err := strconv.ParseFloat(val, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "float", "SystemCPUTime", val)
 	} else {
 		mb.metricSystemCPUTime.recordDataPoint(mb.startTime, ts, f, cpuAttributeValue, stateAttributeValue)
-		return true
 	}
 }
 
@@ -240,13 +250,12 @@ func (mb *MetricsBuilder) RecordSystemCPUUtilizationDataPoint(ts pdata.Timestamp
 
 // ParseSystemCPUUtilizationDataPoint attempts to parse and add a data point to system.cpu.utilization metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSystemCPUUtilizationDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, cpuAttributeValue string, stateAttributeValue string) bool {
+func (mb *MetricsBuilder) ParseSystemCPUUtilizationDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, cpuAttributeValue string, stateAttributeValue string) {
 	if f, err := strconv.ParseFloat(val, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "float", "SystemCPUUtilization", val)
 	} else {
 		mb.metricSystemCPUUtilization.recordDataPoint(mb.startTime, ts, f, cpuAttributeValue, stateAttributeValue)
-		return true
 	}
 }
 

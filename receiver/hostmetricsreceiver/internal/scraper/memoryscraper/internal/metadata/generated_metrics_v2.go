@@ -8,6 +8,8 @@ import (
 
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
+
+	"go.uber.org/zap"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -214,6 +216,15 @@ func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pdata.Metrics {
 	return metrics
 }
 
+func logFailedParse(logger *zap.Logger, expectedType, metric, value string) {
+	logger.Info(
+		"failed to parse value",
+		zap.String("expectedType", expectedType),
+		zap.String("metric", metric),
+		zap.String("value", value),
+	)
+}
+
 // RecordSystemMemoryUsageDataPoint adds a data point to system.memory.usage metric.
 func (mb *MetricsBuilder) RecordSystemMemoryUsageDataPoint(ts pdata.Timestamp, val int64, stateAttributeValue string) {
 	mb.metricSystemMemoryUsage.recordDataPoint(mb.startTime, ts, val, stateAttributeValue)
@@ -221,13 +232,12 @@ func (mb *MetricsBuilder) RecordSystemMemoryUsageDataPoint(ts pdata.Timestamp, v
 
 // ParseSystemMemoryUsageDataPoint attempts to parse and add a data point to system.memory.usage metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSystemMemoryUsageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, stateAttributeValue string) bool {
+func (mb *MetricsBuilder) ParseSystemMemoryUsageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, stateAttributeValue string) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "int", "SystemMemoryUsage", val)
 	} else {
 		mb.metricSystemMemoryUsage.recordDataPoint(mb.startTime, ts, i, stateAttributeValue)
-		return true
 	}
 }
 
@@ -238,13 +248,12 @@ func (mb *MetricsBuilder) RecordSystemMemoryUtilizationDataPoint(ts pdata.Timest
 
 // ParseSystemMemoryUtilizationDataPoint attempts to parse and add a data point to system.memory.utilization metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSystemMemoryUtilizationDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, stateAttributeValue string) bool {
+func (mb *MetricsBuilder) ParseSystemMemoryUtilizationDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, stateAttributeValue string) {
 	if f, err := strconv.ParseFloat(val, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "float", "SystemMemoryUtilization", val)
 	} else {
 		mb.metricSystemMemoryUtilization.recordDataPoint(mb.startTime, ts, f, stateAttributeValue)
-		return true
 	}
 }
 

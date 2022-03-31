@@ -8,6 +8,8 @@ import (
 
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
+
+	"go.uber.org/zap"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -458,6 +460,15 @@ func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pdata.Metrics {
 	return metrics
 }
 
+func logFailedParse(logger *zap.Logger, expectedType, metric, value string) {
+	logger.Info(
+		"failed to parse value",
+		zap.String("expectedType", expectedType),
+		zap.String("metric", metric),
+		zap.String("value", value),
+	)
+}
+
 // RecordApacheCurrentConnectionsDataPoint adds a data point to apache.current_connections metric.
 func (mb *MetricsBuilder) RecordApacheCurrentConnectionsDataPoint(ts pdata.Timestamp, val int64, serverNameAttributeValue string) {
 	mb.metricApacheCurrentConnections.recordDataPoint(mb.startTime, ts, val, serverNameAttributeValue)
@@ -465,13 +476,12 @@ func (mb *MetricsBuilder) RecordApacheCurrentConnectionsDataPoint(ts pdata.Times
 
 // ParseApacheCurrentConnectionsDataPoint attempts to parse and add a data point to apache.current_connections metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseApacheCurrentConnectionsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, serverNameAttributeValue string) bool {
+func (mb *MetricsBuilder) ParseApacheCurrentConnectionsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, serverNameAttributeValue string) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "int", "ApacheCurrentConnections", val)
 	} else {
 		mb.metricApacheCurrentConnections.recordDataPoint(mb.startTime, ts, i, serverNameAttributeValue)
-		return true
 	}
 }
 
@@ -482,13 +492,12 @@ func (mb *MetricsBuilder) RecordApacheRequestsDataPoint(ts pdata.Timestamp, val 
 
 // ParseApacheRequestsDataPoint attempts to parse and add a data point to apache.requests metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseApacheRequestsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, serverNameAttributeValue string) bool {
+func (mb *MetricsBuilder) ParseApacheRequestsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, serverNameAttributeValue string) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "int", "ApacheRequests", val)
 	} else {
 		mb.metricApacheRequests.recordDataPoint(mb.startTime, ts, i, serverNameAttributeValue)
-		return true
 	}
 }
 
@@ -499,13 +508,12 @@ func (mb *MetricsBuilder) RecordApacheScoreboardDataPoint(ts pdata.Timestamp, va
 
 // ParseApacheScoreboardDataPoint attempts to parse and add a data point to apache.scoreboard metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseApacheScoreboardDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, serverNameAttributeValue string, scoreboardStateAttributeValue string) bool {
+func (mb *MetricsBuilder) ParseApacheScoreboardDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, serverNameAttributeValue string, scoreboardStateAttributeValue string) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "int", "ApacheScoreboard", val)
 	} else {
 		mb.metricApacheScoreboard.recordDataPoint(mb.startTime, ts, i, serverNameAttributeValue, scoreboardStateAttributeValue)
-		return true
 	}
 }
 
@@ -516,13 +524,12 @@ func (mb *MetricsBuilder) RecordApacheTrafficDataPoint(ts pdata.Timestamp, val i
 
 // ParseApacheTrafficDataPoint attempts to parse and add a data point to apache.traffic metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseApacheTrafficDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, serverNameAttributeValue string) bool {
+func (mb *MetricsBuilder) ParseApacheTrafficDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, serverNameAttributeValue string) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "int", "ApacheTraffic", val)
 	} else {
 		mb.metricApacheTraffic.recordDataPoint(mb.startTime, ts, i, serverNameAttributeValue)
-		return true
 	}
 }
 
@@ -533,13 +540,12 @@ func (mb *MetricsBuilder) RecordApacheUptimeDataPoint(ts pdata.Timestamp, val in
 
 // ParseApacheUptimeDataPoint attempts to parse and add a data point to apache.uptime metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseApacheUptimeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, serverNameAttributeValue string) bool {
+func (mb *MetricsBuilder) ParseApacheUptimeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, serverNameAttributeValue string) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "int", "ApacheUptime", val)
 	} else {
 		mb.metricApacheUptime.recordDataPoint(mb.startTime, ts, i, serverNameAttributeValue)
-		return true
 	}
 }
 
@@ -550,13 +556,12 @@ func (mb *MetricsBuilder) RecordApacheWorkersDataPoint(ts pdata.Timestamp, val i
 
 // ParseApacheWorkersDataPoint attempts to parse and add a data point to apache.workers metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseApacheWorkersDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, serverNameAttributeValue string, workersStateAttributeValue string) bool {
+func (mb *MetricsBuilder) ParseApacheWorkersDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, serverNameAttributeValue string, workersStateAttributeValue string) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "int", "ApacheWorkers", val)
 	} else {
 		mb.metricApacheWorkers.recordDataPoint(mb.startTime, ts, i, serverNameAttributeValue, workersStateAttributeValue)
-		return true
 	}
 }
 

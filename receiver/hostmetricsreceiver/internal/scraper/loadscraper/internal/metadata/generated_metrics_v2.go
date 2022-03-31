@@ -8,6 +8,8 @@ import (
 
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
+
+	"go.uber.org/zap"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -264,6 +266,15 @@ func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pdata.Metrics {
 	return metrics
 }
 
+func logFailedParse(logger *zap.Logger, expectedType, metric, value string) {
+	logger.Info(
+		"failed to parse value",
+		zap.String("expectedType", expectedType),
+		zap.String("metric", metric),
+		zap.String("value", value),
+	)
+}
+
 // RecordSystemCPULoadAverage15mDataPoint adds a data point to system.cpu.load_average.15m metric.
 func (mb *MetricsBuilder) RecordSystemCPULoadAverage15mDataPoint(ts pdata.Timestamp, val float64) {
 	mb.metricSystemCPULoadAverage15m.recordDataPoint(mb.startTime, ts, val)
@@ -271,13 +282,12 @@ func (mb *MetricsBuilder) RecordSystemCPULoadAverage15mDataPoint(ts pdata.Timest
 
 // ParseSystemCPULoadAverage15mDataPoint attempts to parse and add a data point to system.cpu.load_average.15m metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSystemCPULoadAverage15mDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) bool {
+func (mb *MetricsBuilder) ParseSystemCPULoadAverage15mDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
 	if f, err := strconv.ParseFloat(val, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "float", "SystemCPULoadAverage15m", val)
 	} else {
 		mb.metricSystemCPULoadAverage15m.recordDataPoint(mb.startTime, ts, f)
-		return true
 	}
 }
 
@@ -288,13 +298,12 @@ func (mb *MetricsBuilder) RecordSystemCPULoadAverage1mDataPoint(ts pdata.Timesta
 
 // ParseSystemCPULoadAverage1mDataPoint attempts to parse and add a data point to system.cpu.load_average.1m metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSystemCPULoadAverage1mDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) bool {
+func (mb *MetricsBuilder) ParseSystemCPULoadAverage1mDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
 	if f, err := strconv.ParseFloat(val, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "float", "SystemCPULoadAverage1m", val)
 	} else {
 		mb.metricSystemCPULoadAverage1m.recordDataPoint(mb.startTime, ts, f)
-		return true
 	}
 }
 
@@ -305,13 +314,12 @@ func (mb *MetricsBuilder) RecordSystemCPULoadAverage5mDataPoint(ts pdata.Timesta
 
 // ParseSystemCPULoadAverage5mDataPoint attempts to parse and add a data point to system.cpu.load_average.5m metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSystemCPULoadAverage5mDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) bool {
+func (mb *MetricsBuilder) ParseSystemCPULoadAverage5mDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
 	if f, err := strconv.ParseFloat(val, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "float", "SystemCPULoadAverage5m", val)
 	} else {
 		mb.metricSystemCPULoadAverage5m.recordDataPoint(mb.startTime, ts, f)
-		return true
 	}
 }
 

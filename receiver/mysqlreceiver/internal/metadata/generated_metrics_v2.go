@@ -8,6 +8,8 @@ import (
 
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
+
+	"go.uber.org/zap"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -1112,6 +1114,15 @@ func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pdata.Metrics {
 	return metrics
 }
 
+func logFailedParse(logger *zap.Logger, expectedType, metric, value string) {
+	logger.Info(
+		"failed to parse value",
+		zap.String("expectedType", expectedType),
+		zap.String("metric", metric),
+		zap.String("value", value),
+	)
+}
+
 // RecordMysqlBufferPoolDataPagesDataPoint adds a data point to mysql.buffer_pool.data_pages metric.
 func (mb *MetricsBuilder) RecordMysqlBufferPoolDataPagesDataPoint(ts pdata.Timestamp, val int64, bufferPoolDataAttributeValue string) {
 	mb.metricMysqlBufferPoolDataPages.recordDataPoint(mb.startTime, ts, val, bufferPoolDataAttributeValue)
@@ -1119,13 +1130,12 @@ func (mb *MetricsBuilder) RecordMysqlBufferPoolDataPagesDataPoint(ts pdata.Times
 
 // ParseMysqlBufferPoolDataPagesDataPoint attempts to parse and add a data point to mysql.buffer_pool.data_pages metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMysqlBufferPoolDataPagesDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, bufferPoolDataAttributeValue string) bool {
+func (mb *MetricsBuilder) ParseMysqlBufferPoolDataPagesDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, bufferPoolDataAttributeValue string) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "int", "MysqlBufferPoolDataPages", val)
 	} else {
 		mb.metricMysqlBufferPoolDataPages.recordDataPoint(mb.startTime, ts, i, bufferPoolDataAttributeValue)
-		return true
 	}
 }
 
@@ -1136,13 +1146,12 @@ func (mb *MetricsBuilder) RecordMysqlBufferPoolLimitDataPoint(ts pdata.Timestamp
 
 // ParseMysqlBufferPoolLimitDataPoint attempts to parse and add a data point to mysql.buffer_pool.limit metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMysqlBufferPoolLimitDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) bool {
+func (mb *MetricsBuilder) ParseMysqlBufferPoolLimitDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "int", "MysqlBufferPoolLimit", val)
 	} else {
 		mb.metricMysqlBufferPoolLimit.recordDataPoint(mb.startTime, ts, i)
-		return true
 	}
 }
 
@@ -1153,13 +1162,12 @@ func (mb *MetricsBuilder) RecordMysqlBufferPoolOperationsDataPoint(ts pdata.Time
 
 // ParseMysqlBufferPoolOperationsDataPoint attempts to parse and add a data point to mysql.buffer_pool.operations metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMysqlBufferPoolOperationsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, bufferPoolOperationsAttributeValue string) bool {
+func (mb *MetricsBuilder) ParseMysqlBufferPoolOperationsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, bufferPoolOperationsAttributeValue string) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "int", "MysqlBufferPoolOperations", val)
 	} else {
 		mb.metricMysqlBufferPoolOperations.recordDataPoint(mb.startTime, ts, i, bufferPoolOperationsAttributeValue)
-		return true
 	}
 }
 
@@ -1170,13 +1178,12 @@ func (mb *MetricsBuilder) RecordMysqlBufferPoolPageFlushesDataPoint(ts pdata.Tim
 
 // ParseMysqlBufferPoolPageFlushesDataPoint attempts to parse and add a data point to mysql.buffer_pool.page_flushes metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMysqlBufferPoolPageFlushesDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) bool {
+func (mb *MetricsBuilder) ParseMysqlBufferPoolPageFlushesDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "int", "MysqlBufferPoolPageFlushes", val)
 	} else {
 		mb.metricMysqlBufferPoolPageFlushes.recordDataPoint(mb.startTime, ts, i)
-		return true
 	}
 }
 
@@ -1187,13 +1194,12 @@ func (mb *MetricsBuilder) RecordMysqlBufferPoolPagesDataPoint(ts pdata.Timestamp
 
 // ParseMysqlBufferPoolPagesDataPoint attempts to parse and add a data point to mysql.buffer_pool.pages metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMysqlBufferPoolPagesDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, bufferPoolPagesAttributeValue string) bool {
+func (mb *MetricsBuilder) ParseMysqlBufferPoolPagesDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, bufferPoolPagesAttributeValue string) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "int", "MysqlBufferPoolPages", val)
 	} else {
 		mb.metricMysqlBufferPoolPages.recordDataPoint(mb.startTime, ts, i, bufferPoolPagesAttributeValue)
-		return true
 	}
 }
 
@@ -1204,13 +1210,12 @@ func (mb *MetricsBuilder) RecordMysqlBufferPoolUsageDataPoint(ts pdata.Timestamp
 
 // ParseMysqlBufferPoolUsageDataPoint attempts to parse and add a data point to mysql.buffer_pool.usage metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMysqlBufferPoolUsageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, bufferPoolDataAttributeValue string) bool {
+func (mb *MetricsBuilder) ParseMysqlBufferPoolUsageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, bufferPoolDataAttributeValue string) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "int", "MysqlBufferPoolUsage", val)
 	} else {
 		mb.metricMysqlBufferPoolUsage.recordDataPoint(mb.startTime, ts, i, bufferPoolDataAttributeValue)
-		return true
 	}
 }
 
@@ -1221,13 +1226,12 @@ func (mb *MetricsBuilder) RecordMysqlCommandsDataPoint(ts pdata.Timestamp, val i
 
 // ParseMysqlCommandsDataPoint attempts to parse and add a data point to mysql.commands metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMysqlCommandsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, commandAttributeValue string) bool {
+func (mb *MetricsBuilder) ParseMysqlCommandsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, commandAttributeValue string) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "int", "MysqlCommands", val)
 	} else {
 		mb.metricMysqlCommands.recordDataPoint(mb.startTime, ts, i, commandAttributeValue)
-		return true
 	}
 }
 
@@ -1238,13 +1242,12 @@ func (mb *MetricsBuilder) RecordMysqlDoubleWritesDataPoint(ts pdata.Timestamp, v
 
 // ParseMysqlDoubleWritesDataPoint attempts to parse and add a data point to mysql.double_writes metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMysqlDoubleWritesDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, doubleWritesAttributeValue string) bool {
+func (mb *MetricsBuilder) ParseMysqlDoubleWritesDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, doubleWritesAttributeValue string) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "int", "MysqlDoubleWrites", val)
 	} else {
 		mb.metricMysqlDoubleWrites.recordDataPoint(mb.startTime, ts, i, doubleWritesAttributeValue)
-		return true
 	}
 }
 
@@ -1255,13 +1258,12 @@ func (mb *MetricsBuilder) RecordMysqlHandlersDataPoint(ts pdata.Timestamp, val i
 
 // ParseMysqlHandlersDataPoint attempts to parse and add a data point to mysql.handlers metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMysqlHandlersDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, handlerAttributeValue string) bool {
+func (mb *MetricsBuilder) ParseMysqlHandlersDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, handlerAttributeValue string) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "int", "MysqlHandlers", val)
 	} else {
 		mb.metricMysqlHandlers.recordDataPoint(mb.startTime, ts, i, handlerAttributeValue)
-		return true
 	}
 }
 
@@ -1272,13 +1274,12 @@ func (mb *MetricsBuilder) RecordMysqlLocksDataPoint(ts pdata.Timestamp, val int6
 
 // ParseMysqlLocksDataPoint attempts to parse and add a data point to mysql.locks metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMysqlLocksDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, locksAttributeValue string) bool {
+func (mb *MetricsBuilder) ParseMysqlLocksDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, locksAttributeValue string) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "int", "MysqlLocks", val)
 	} else {
 		mb.metricMysqlLocks.recordDataPoint(mb.startTime, ts, i, locksAttributeValue)
-		return true
 	}
 }
 
@@ -1289,13 +1290,12 @@ func (mb *MetricsBuilder) RecordMysqlLogOperationsDataPoint(ts pdata.Timestamp, 
 
 // ParseMysqlLogOperationsDataPoint attempts to parse and add a data point to mysql.log_operations metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMysqlLogOperationsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logOperationsAttributeValue string) bool {
+func (mb *MetricsBuilder) ParseMysqlLogOperationsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, logOperationsAttributeValue string) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "int", "MysqlLogOperations", val)
 	} else {
 		mb.metricMysqlLogOperations.recordDataPoint(mb.startTime, ts, i, logOperationsAttributeValue)
-		return true
 	}
 }
 
@@ -1306,13 +1306,12 @@ func (mb *MetricsBuilder) RecordMysqlOperationsDataPoint(ts pdata.Timestamp, val
 
 // ParseMysqlOperationsDataPoint attempts to parse and add a data point to mysql.operations metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMysqlOperationsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, operationsAttributeValue string) bool {
+func (mb *MetricsBuilder) ParseMysqlOperationsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, operationsAttributeValue string) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "int", "MysqlOperations", val)
 	} else {
 		mb.metricMysqlOperations.recordDataPoint(mb.startTime, ts, i, operationsAttributeValue)
-		return true
 	}
 }
 
@@ -1323,13 +1322,12 @@ func (mb *MetricsBuilder) RecordMysqlPageOperationsDataPoint(ts pdata.Timestamp,
 
 // ParseMysqlPageOperationsDataPoint attempts to parse and add a data point to mysql.page_operations metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMysqlPageOperationsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, pageOperationsAttributeValue string) bool {
+func (mb *MetricsBuilder) ParseMysqlPageOperationsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, pageOperationsAttributeValue string) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "int", "MysqlPageOperations", val)
 	} else {
 		mb.metricMysqlPageOperations.recordDataPoint(mb.startTime, ts, i, pageOperationsAttributeValue)
-		return true
 	}
 }
 
@@ -1340,13 +1338,12 @@ func (mb *MetricsBuilder) RecordMysqlRowLocksDataPoint(ts pdata.Timestamp, val i
 
 // ParseMysqlRowLocksDataPoint attempts to parse and add a data point to mysql.row_locks metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMysqlRowLocksDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, rowLocksAttributeValue string) bool {
+func (mb *MetricsBuilder) ParseMysqlRowLocksDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, rowLocksAttributeValue string) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "int", "MysqlRowLocks", val)
 	} else {
 		mb.metricMysqlRowLocks.recordDataPoint(mb.startTime, ts, i, rowLocksAttributeValue)
-		return true
 	}
 }
 
@@ -1357,13 +1354,12 @@ func (mb *MetricsBuilder) RecordMysqlRowOperationsDataPoint(ts pdata.Timestamp, 
 
 // ParseMysqlRowOperationsDataPoint attempts to parse and add a data point to mysql.row_operations metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMysqlRowOperationsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, rowOperationsAttributeValue string) bool {
+func (mb *MetricsBuilder) ParseMysqlRowOperationsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, rowOperationsAttributeValue string) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "int", "MysqlRowOperations", val)
 	} else {
 		mb.metricMysqlRowOperations.recordDataPoint(mb.startTime, ts, i, rowOperationsAttributeValue)
-		return true
 	}
 }
 
@@ -1374,13 +1370,12 @@ func (mb *MetricsBuilder) RecordMysqlSortsDataPoint(ts pdata.Timestamp, val int6
 
 // ParseMysqlSortsDataPoint attempts to parse and add a data point to mysql.sorts metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMysqlSortsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, sortsAttributeValue string) bool {
+func (mb *MetricsBuilder) ParseMysqlSortsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, sortsAttributeValue string) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "int", "MysqlSorts", val)
 	} else {
 		mb.metricMysqlSorts.recordDataPoint(mb.startTime, ts, i, sortsAttributeValue)
-		return true
 	}
 }
 
@@ -1391,13 +1386,12 @@ func (mb *MetricsBuilder) RecordMysqlThreadsDataPoint(ts pdata.Timestamp, val in
 
 // ParseMysqlThreadsDataPoint attempts to parse and add a data point to mysql.threads metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseMysqlThreadsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, threadsAttributeValue string) bool {
+func (mb *MetricsBuilder) ParseMysqlThreadsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, threadsAttributeValue string) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "int", "MysqlThreads", val)
 	} else {
 		mb.metricMysqlThreads.recordDataPoint(mb.startTime, ts, i, threadsAttributeValue)
-		return true
 	}
 }
 

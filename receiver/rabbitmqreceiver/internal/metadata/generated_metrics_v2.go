@@ -8,6 +8,8 @@ import (
 
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
+
+	"go.uber.org/zap"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -467,6 +469,15 @@ func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pdata.Metrics {
 	return metrics
 }
 
+func logFailedParse(logger *zap.Logger, expectedType, metric, value string) {
+	logger.Info(
+		"failed to parse value",
+		zap.String("expectedType", expectedType),
+		zap.String("metric", metric),
+		zap.String("value", value),
+	)
+}
+
 // RecordRabbitmqConsumerCountDataPoint adds a data point to rabbitmq.consumer.count metric.
 func (mb *MetricsBuilder) RecordRabbitmqConsumerCountDataPoint(ts pdata.Timestamp, val int64) {
 	mb.metricRabbitmqConsumerCount.recordDataPoint(mb.startTime, ts, val)
@@ -474,13 +485,12 @@ func (mb *MetricsBuilder) RecordRabbitmqConsumerCountDataPoint(ts pdata.Timestam
 
 // ParseRabbitmqConsumerCountDataPoint attempts to parse and add a data point to rabbitmq.consumer.count metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRabbitmqConsumerCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) bool {
+func (mb *MetricsBuilder) ParseRabbitmqConsumerCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "int", "RabbitmqConsumerCount", val)
 	} else {
 		mb.metricRabbitmqConsumerCount.recordDataPoint(mb.startTime, ts, i)
-		return true
 	}
 }
 
@@ -491,13 +501,12 @@ func (mb *MetricsBuilder) RecordRabbitmqMessageAcknowledgedDataPoint(ts pdata.Ti
 
 // ParseRabbitmqMessageAcknowledgedDataPoint attempts to parse and add a data point to rabbitmq.message.acknowledged metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRabbitmqMessageAcknowledgedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) bool {
+func (mb *MetricsBuilder) ParseRabbitmqMessageAcknowledgedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "int", "RabbitmqMessageAcknowledged", val)
 	} else {
 		mb.metricRabbitmqMessageAcknowledged.recordDataPoint(mb.startTime, ts, i)
-		return true
 	}
 }
 
@@ -508,13 +517,12 @@ func (mb *MetricsBuilder) RecordRabbitmqMessageCurrentDataPoint(ts pdata.Timesta
 
 // ParseRabbitmqMessageCurrentDataPoint attempts to parse and add a data point to rabbitmq.message.current metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRabbitmqMessageCurrentDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, messageStateAttributeValue string) bool {
+func (mb *MetricsBuilder) ParseRabbitmqMessageCurrentDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, messageStateAttributeValue string) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "int", "RabbitmqMessageCurrent", val)
 	} else {
 		mb.metricRabbitmqMessageCurrent.recordDataPoint(mb.startTime, ts, i, messageStateAttributeValue)
-		return true
 	}
 }
 
@@ -525,13 +533,12 @@ func (mb *MetricsBuilder) RecordRabbitmqMessageDeliveredDataPoint(ts pdata.Times
 
 // ParseRabbitmqMessageDeliveredDataPoint attempts to parse and add a data point to rabbitmq.message.delivered metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRabbitmqMessageDeliveredDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) bool {
+func (mb *MetricsBuilder) ParseRabbitmqMessageDeliveredDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "int", "RabbitmqMessageDelivered", val)
 	} else {
 		mb.metricRabbitmqMessageDelivered.recordDataPoint(mb.startTime, ts, i)
-		return true
 	}
 }
 
@@ -542,13 +549,12 @@ func (mb *MetricsBuilder) RecordRabbitmqMessageDroppedDataPoint(ts pdata.Timesta
 
 // ParseRabbitmqMessageDroppedDataPoint attempts to parse and add a data point to rabbitmq.message.dropped metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRabbitmqMessageDroppedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) bool {
+func (mb *MetricsBuilder) ParseRabbitmqMessageDroppedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "int", "RabbitmqMessageDropped", val)
 	} else {
 		mb.metricRabbitmqMessageDropped.recordDataPoint(mb.startTime, ts, i)
-		return true
 	}
 }
 
@@ -559,13 +565,12 @@ func (mb *MetricsBuilder) RecordRabbitmqMessagePublishedDataPoint(ts pdata.Times
 
 // ParseRabbitmqMessagePublishedDataPoint attempts to parse and add a data point to rabbitmq.message.published metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRabbitmqMessagePublishedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) bool {
+func (mb *MetricsBuilder) ParseRabbitmqMessagePublishedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "int", "RabbitmqMessagePublished", val)
 	} else {
 		mb.metricRabbitmqMessagePublished.recordDataPoint(mb.startTime, ts, i)
-		return true
 	}
 }
 

@@ -8,6 +8,8 @@ import (
 
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
+
+	"go.uber.org/zap"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -976,6 +978,15 @@ func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pdata.Metrics {
 	return metrics
 }
 
+func logFailedParse(logger *zap.Logger, expectedType, metric, value string) {
+	logger.Info(
+		"failed to parse value",
+		zap.String("expectedType", expectedType),
+		zap.String("metric", metric),
+		zap.String("value", value),
+	)
+}
+
 // RecordZookeeperConnectionActiveDataPoint adds a data point to zookeeper.connection.active metric.
 func (mb *MetricsBuilder) RecordZookeeperConnectionActiveDataPoint(ts pdata.Timestamp, val int64) {
 	mb.metricZookeeperConnectionActive.recordDataPoint(mb.startTime, ts, val)
@@ -983,13 +994,12 @@ func (mb *MetricsBuilder) RecordZookeeperConnectionActiveDataPoint(ts pdata.Time
 
 // ParseZookeeperConnectionActiveDataPoint attempts to parse and add a data point to zookeeper.connection.active metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseZookeeperConnectionActiveDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) bool {
+func (mb *MetricsBuilder) ParseZookeeperConnectionActiveDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "int", "ZookeeperConnectionActive", val)
 	} else {
 		mb.metricZookeeperConnectionActive.recordDataPoint(mb.startTime, ts, i)
-		return true
 	}
 }
 
@@ -1000,13 +1010,12 @@ func (mb *MetricsBuilder) RecordZookeeperDataTreeEphemeralNodeCountDataPoint(ts 
 
 // ParseZookeeperDataTreeEphemeralNodeCountDataPoint attempts to parse and add a data point to zookeeper.data_tree.ephemeral_node.count metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseZookeeperDataTreeEphemeralNodeCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) bool {
+func (mb *MetricsBuilder) ParseZookeeperDataTreeEphemeralNodeCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "int", "ZookeeperDataTreeEphemeralNodeCount", val)
 	} else {
 		mb.metricZookeeperDataTreeEphemeralNodeCount.recordDataPoint(mb.startTime, ts, i)
-		return true
 	}
 }
 
@@ -1017,13 +1026,12 @@ func (mb *MetricsBuilder) RecordZookeeperDataTreeSizeDataPoint(ts pdata.Timestam
 
 // ParseZookeeperDataTreeSizeDataPoint attempts to parse and add a data point to zookeeper.data_tree.size metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseZookeeperDataTreeSizeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) bool {
+func (mb *MetricsBuilder) ParseZookeeperDataTreeSizeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "int", "ZookeeperDataTreeSize", val)
 	} else {
 		mb.metricZookeeperDataTreeSize.recordDataPoint(mb.startTime, ts, i)
-		return true
 	}
 }
 
@@ -1034,13 +1042,12 @@ func (mb *MetricsBuilder) RecordZookeeperFileDescriptorLimitDataPoint(ts pdata.T
 
 // ParseZookeeperFileDescriptorLimitDataPoint attempts to parse and add a data point to zookeeper.file_descriptor.limit metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseZookeeperFileDescriptorLimitDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) bool {
+func (mb *MetricsBuilder) ParseZookeeperFileDescriptorLimitDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "int", "ZookeeperFileDescriptorLimit", val)
 	} else {
 		mb.metricZookeeperFileDescriptorLimit.recordDataPoint(mb.startTime, ts, i)
-		return true
 	}
 }
 
@@ -1051,13 +1058,12 @@ func (mb *MetricsBuilder) RecordZookeeperFileDescriptorOpenDataPoint(ts pdata.Ti
 
 // ParseZookeeperFileDescriptorOpenDataPoint attempts to parse and add a data point to zookeeper.file_descriptor.open metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseZookeeperFileDescriptorOpenDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) bool {
+func (mb *MetricsBuilder) ParseZookeeperFileDescriptorOpenDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "int", "ZookeeperFileDescriptorOpen", val)
 	} else {
 		mb.metricZookeeperFileDescriptorOpen.recordDataPoint(mb.startTime, ts, i)
-		return true
 	}
 }
 
@@ -1068,13 +1074,12 @@ func (mb *MetricsBuilder) RecordZookeeperFollowerCountDataPoint(ts pdata.Timesta
 
 // ParseZookeeperFollowerCountDataPoint attempts to parse and add a data point to zookeeper.follower.count metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseZookeeperFollowerCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, stateAttributeValue string) bool {
+func (mb *MetricsBuilder) ParseZookeeperFollowerCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, stateAttributeValue string) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "int", "ZookeeperFollowerCount", val)
 	} else {
 		mb.metricZookeeperFollowerCount.recordDataPoint(mb.startTime, ts, i, stateAttributeValue)
-		return true
 	}
 }
 
@@ -1085,13 +1090,12 @@ func (mb *MetricsBuilder) RecordZookeeperFsyncExceededThresholdCountDataPoint(ts
 
 // ParseZookeeperFsyncExceededThresholdCountDataPoint attempts to parse and add a data point to zookeeper.fsync.exceeded_threshold.count metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseZookeeperFsyncExceededThresholdCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) bool {
+func (mb *MetricsBuilder) ParseZookeeperFsyncExceededThresholdCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "int", "ZookeeperFsyncExceededThresholdCount", val)
 	} else {
 		mb.metricZookeeperFsyncExceededThresholdCount.recordDataPoint(mb.startTime, ts, i)
-		return true
 	}
 }
 
@@ -1102,13 +1106,12 @@ func (mb *MetricsBuilder) RecordZookeeperLatencyAvgDataPoint(ts pdata.Timestamp,
 
 // ParseZookeeperLatencyAvgDataPoint attempts to parse and add a data point to zookeeper.latency.avg metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseZookeeperLatencyAvgDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) bool {
+func (mb *MetricsBuilder) ParseZookeeperLatencyAvgDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "int", "ZookeeperLatencyAvg", val)
 	} else {
 		mb.metricZookeeperLatencyAvg.recordDataPoint(mb.startTime, ts, i)
-		return true
 	}
 }
 
@@ -1119,13 +1122,12 @@ func (mb *MetricsBuilder) RecordZookeeperLatencyMaxDataPoint(ts pdata.Timestamp,
 
 // ParseZookeeperLatencyMaxDataPoint attempts to parse and add a data point to zookeeper.latency.max metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseZookeeperLatencyMaxDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) bool {
+func (mb *MetricsBuilder) ParseZookeeperLatencyMaxDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "int", "ZookeeperLatencyMax", val)
 	} else {
 		mb.metricZookeeperLatencyMax.recordDataPoint(mb.startTime, ts, i)
-		return true
 	}
 }
 
@@ -1136,13 +1138,12 @@ func (mb *MetricsBuilder) RecordZookeeperLatencyMinDataPoint(ts pdata.Timestamp,
 
 // ParseZookeeperLatencyMinDataPoint attempts to parse and add a data point to zookeeper.latency.min metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseZookeeperLatencyMinDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) bool {
+func (mb *MetricsBuilder) ParseZookeeperLatencyMinDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "int", "ZookeeperLatencyMin", val)
 	} else {
 		mb.metricZookeeperLatencyMin.recordDataPoint(mb.startTime, ts, i)
-		return true
 	}
 }
 
@@ -1153,13 +1154,12 @@ func (mb *MetricsBuilder) RecordZookeeperPacketCountDataPoint(ts pdata.Timestamp
 
 // ParseZookeeperPacketCountDataPoint attempts to parse and add a data point to zookeeper.packet.count metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseZookeeperPacketCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, directionAttributeValue string) bool {
+func (mb *MetricsBuilder) ParseZookeeperPacketCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, directionAttributeValue string) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "int", "ZookeeperPacketCount", val)
 	} else {
 		mb.metricZookeeperPacketCount.recordDataPoint(mb.startTime, ts, i, directionAttributeValue)
-		return true
 	}
 }
 
@@ -1170,13 +1170,12 @@ func (mb *MetricsBuilder) RecordZookeeperRequestActiveDataPoint(ts pdata.Timesta
 
 // ParseZookeeperRequestActiveDataPoint attempts to parse and add a data point to zookeeper.request.active metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseZookeeperRequestActiveDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) bool {
+func (mb *MetricsBuilder) ParseZookeeperRequestActiveDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "int", "ZookeeperRequestActive", val)
 	} else {
 		mb.metricZookeeperRequestActive.recordDataPoint(mb.startTime, ts, i)
-		return true
 	}
 }
 
@@ -1187,13 +1186,12 @@ func (mb *MetricsBuilder) RecordZookeeperSyncPendingDataPoint(ts pdata.Timestamp
 
 // ParseZookeeperSyncPendingDataPoint attempts to parse and add a data point to zookeeper.sync.pending metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseZookeeperSyncPendingDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) bool {
+func (mb *MetricsBuilder) ParseZookeeperSyncPendingDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "int", "ZookeeperSyncPending", val)
 	} else {
 		mb.metricZookeeperSyncPending.recordDataPoint(mb.startTime, ts, i)
-		return true
 	}
 }
 
@@ -1204,13 +1202,12 @@ func (mb *MetricsBuilder) RecordZookeeperWatchCountDataPoint(ts pdata.Timestamp,
 
 // ParseZookeeperWatchCountDataPoint attempts to parse and add a data point to zookeeper.watch.count metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseZookeeperWatchCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) bool {
+func (mb *MetricsBuilder) ParseZookeeperWatchCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "int", "ZookeeperWatchCount", val)
 	} else {
 		mb.metricZookeeperWatchCount.recordDataPoint(mb.startTime, ts, i)
-		return true
 	}
 }
 
@@ -1221,13 +1218,12 @@ func (mb *MetricsBuilder) RecordZookeeperZnodeCountDataPoint(ts pdata.Timestamp,
 
 // ParseZookeeperZnodeCountDataPoint attempts to parse and add a data point to zookeeper.znode.count metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseZookeeperZnodeCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) bool {
+func (mb *MetricsBuilder) ParseZookeeperZnodeCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "int", "ZookeeperZnodeCount", val)
 	} else {
 		mb.metricZookeeperZnodeCount.recordDataPoint(mb.startTime, ts, i)
-		return true
 	}
 }
 

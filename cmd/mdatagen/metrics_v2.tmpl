@@ -8,6 +8,8 @@ import (
 
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
+	
+	"go.uber.org/zap"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -190,6 +192,15 @@ func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pdata.Metrics {
 	return metrics
 }
 
+func logFailedParse(logger *zap.Logger, expectedType, metric, value string) {
+	logger.Info(
+		"failed to parse value",
+		zap.String("expectedType", expectedType),
+		zap.String("metric", metric),
+		zap.String("value", value),
+	)
+}
+
 {{ range $name, $metric := .Metrics -}}
 // Record{{ $name.Render }}DataPoint adds a data point to {{ $name }} metric.
 func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pdata.Timestamp
@@ -202,30 +213,28 @@ func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pdata.Timestamp
 
 // Parse{{ $name.Render }}DataPoint attempts to parse and add a data point to {{ $name }} metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) Parse{{ $name.Render }}DataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors
-	{{- range $metric.Attributes -}} , {{ .RenderUnexported }}AttributeValue string{{ end }}) bool {
+func (mb *MetricsBuilder) Parse{{ $name.Render }}DataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger
+	{{- range $metric.Attributes -}} , {{ .RenderUnexported }}AttributeValue string{{ end }}) {
 
 	{{- if $metric.Data.HasMetricValueType }}
 	{{- if eq $metric.Data.MetricValueType.BasicType "float64" }}
 	if f, err := strconv.ParseFloat(val, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "float", "{{ $name.Render }}", val)
 	} else {
 		mb.metric{{ $name.Render }}.recordDataPoint(mb.startTime, ts
 		{{- if $metric.Data.HasMetricValueType }}, f {{ end }}
 		{{- range $metric.Attributes -}} , {{ .RenderUnexported }}AttributeValue{{ end }})
-		return true
 	}
 	{{- end }}
 	{{- if eq $metric.Data.MetricValueType.BasicType "int64" }}
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
-		return false
+		logFailedParse(logger, "int", "{{ $name.Render }}", val)
 	} else {
 		mb.metric{{ $name.Render }}.recordDataPoint(mb.startTime, ts
 		{{- if $metric.Data.HasMetricValueType }}, i {{ end }}
 		{{- range $metric.Attributes -}} , {{ .RenderUnexported }}AttributeValue{{ end }})
-		return true
 	}
 	{{- end }}
 	{{- end }}
