@@ -6,6 +6,9 @@
 
 ### 🛑 Breaking changes 🛑
 
+- `datadogexporter`: Remove `OnlyMetadata` method from `Config` struct (#8980)
+- `datadogexporter`: Remove `GetCensoredKey` method from `APIConfig` struct (#8980)
+
 ### 🧰 Bug fixes 🧰
 
 - `hostmetricsreceiver`: Use cpu times for time delta in cpu.utilization calculation (#8856)
@@ -31,8 +34,6 @@
 - `windowsperfcountersreceiver`: Added metrics configuration (#8376)
 - `lokiexporter`: Remove deprecated LogRecord.name field (#8951)
 - `splunkhecexporter`: Remove deprecated LogRecord.name field (#8951)
-- `datadogexporter`: Remove `OnlyMetadata` method from `Config` struct (#TODO)
-- `datadogexporter`: Remove `GetCensoredKey` method from `APIConfig` struct (#TODO)
 
 ### 🚩 Deprecations 🚩
 
