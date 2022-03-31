@@ -26,6 +26,7 @@ receivers:
     top_metrics_query_max_rows: 100
     backfill_enabled: true
     cardinality_total_limit: 200000
+    hide_topn_querystats_querytext: false
     projects:
       - project_id: "spanner project 1"
         service_account_key: "path to spanner project 1 service account json key"
@@ -57,6 +58,7 @@ Brief description of configuration properties:
 - **top_metrics_query_max_rows** - max number of rows to fetch from Top N built-in table(100 by default)
 - **backfill_enabled** - turn on/off 1-hour data backfill(by default it is turned off)
 - **cardinality_total_limit** - limit of active series per 24 hours period. If specified, turns on cardinality filtering and handling. If zero or not specified, cardinality is not handled. You can read [this document](cardinality.md) for more information about cardinality handling and filtering.
+- **hide_topn_querystats_querytext** - if true, hides query-text label for the "top minute query stats" metric
 - **projects** - list of GCP projects
     - **project_id** - identifier of GCP project
     - **service_account_key** - path to service account JSON key It is highly recommended to set this property to the correct value. In case it is empty, the [Application Default Credentials](https://google.aip.dev/auth/4110) will be used for the database connection.
