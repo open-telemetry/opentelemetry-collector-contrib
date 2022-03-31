@@ -224,6 +224,6 @@ func simpleTraces() pdata.Traces {
 
 func simpleTracesWithID(traceID pdata.TraceID) pdata.Traces {
 	traces := pdata.NewTraces()
-	traces.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(traceID)
+	traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(traceID)
 	return traces
 }

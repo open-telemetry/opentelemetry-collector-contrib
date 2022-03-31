@@ -90,7 +90,7 @@ func Test_newGetter(t *testing.T) {
 			assert.NoError(t, err)
 			val := reader.get(spanTransformContext{
 				span:     span,
-				il:       pdata.NewInstrumentationLibrary(),
+				il:       pdata.NewInstrumentationScope(),
 				resource: pdata.NewResource(),
 			})
 			assert.Equal(t, tt.want, val)

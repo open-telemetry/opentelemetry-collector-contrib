@@ -401,7 +401,7 @@ func TestReceiverConvertsStringsToTypes(t *testing.T) {
 	}, 2*time.Second, 10*time.Millisecond)
 
 	td := next.AllTraces()[0]
-	span := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
+	span := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 
 	expected := pdata.NewMapFromRaw(map[string]interface{}{
 		"cache_hit":            true,
@@ -447,7 +447,7 @@ func TestFromBytesWithNoTimestamp(t *testing.T) {
 		return
 	}
 
-	gs := traces.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
+	gs := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 	assert.NotNil(t, gs.StartTimestamp)
 	assert.NotNil(t, gs.EndTimestamp)
 

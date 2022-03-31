@@ -51,10 +51,10 @@ func (s *sfxEventClient) pushLogsData(ctx context.Context, ld pdata.Logs) (int, 
 
 	for i := 0; i < rls.Len(); i++ {
 		rl := rls.At(i)
-		ills := rl.InstrumentationLibraryLogs()
+		ills := rl.ScopeLogs()
 		for j := 0; j < ills.Len(); j++ {
-			ill := ills.At(j)
-			events, dropped := translation.LogRecordSliceToSignalFxV2(s.logger, ill.LogRecords(), rl.Resource().Attributes())
+			sl := ills.At(j)
+			events, dropped := translation.LogRecordSliceToSignalFxV2(s.logger, sl.LogRecords(), rl.Resource().Attributes())
 			sfxEvents = append(sfxEvents, events...)
 			numDroppedLogRecords += dropped
 		}

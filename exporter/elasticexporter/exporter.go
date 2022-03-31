@@ -127,10 +127,10 @@ func (e *elasticExporter) ExportResourceSpans(ctx context.Context, rs pdata.Reso
 	elastic.EncodeResourceMetadata(rs.Resource(), &w)
 	var errs []error
 	var count int
-	instrumentationLibrarySpansSlice := rs.InstrumentationLibrarySpans()
+	instrumentationLibrarySpansSlice := rs.ScopeSpans()
 	for i := 0; i < instrumentationLibrarySpansSlice.Len(); i++ {
 		instrumentationLibrarySpans := instrumentationLibrarySpansSlice.At(i)
-		instrumentationLibrary := instrumentationLibrarySpans.InstrumentationLibrary()
+		instrumentationLibrary := instrumentationLibrarySpans.Scope()
 		spanSlice := instrumentationLibrarySpans.Spans()
 		for i := 0; i < spanSlice.Len(); i++ {
 			count++
@@ -155,10 +155,10 @@ func (e *elasticExporter) ExportResourceMetrics(ctx context.Context, rm pdata.Re
 	elastic.EncodeResourceMetadata(rm.Resource(), &w)
 	var errs error
 	var totalDropped int
-	instrumentationLibraryMetricsSlice := rm.InstrumentationLibraryMetrics()
+	instrumentationLibraryMetricsSlice := rm.ScopeMetrics()
 	for i := 0; i < instrumentationLibraryMetricsSlice.Len(); i++ {
 		instrumentationLibraryMetrics := instrumentationLibraryMetricsSlice.At(i)
-		instrumentationLibrary := instrumentationLibraryMetrics.InstrumentationLibrary()
+		instrumentationLibrary := instrumentationLibraryMetrics.Scope()
 		metrics := instrumentationLibraryMetrics.Metrics()
 		before := w.Size()
 		dropped, err := elastic.EncodeMetrics(metrics, instrumentationLibrary, &w)

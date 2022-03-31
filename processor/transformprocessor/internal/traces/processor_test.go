@@ -40,28 +40,28 @@ func TestProcess(t *testing.T) {
 		{
 			query: `set(attributes["test"], "pass") where name == "operationA"`,
 			want: func(td pdata.Traces) {
-				td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).Attributes().InsertString("test", "pass")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().InsertString("test", "pass")
 			},
 		},
 		{
 			query: `set(attributes["test"], "pass") where resource.attributes["host.name"] == "localhost"`,
 			want: func(td pdata.Traces) {
-				td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).Attributes().InsertString("test", "pass")
-				td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(1).Attributes().InsertString("test", "pass")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().InsertString("test", "pass")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().InsertString("test", "pass")
 			},
 		},
 		{
 			query: `keep_keys(attributes, "http.method") where name == "operationA"`,
 			want: func(td pdata.Traces) {
-				td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).Attributes().Clear()
-				td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).Attributes().InsertString("http.method", "get")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().Clear()
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().InsertString("http.method", "get")
 			},
 		},
 		{
 			query: `set(status.code, 1) where attributes["http.path"] == "/health"`,
 			want: func(td pdata.Traces) {
-				td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).Status().SetCode(pdata.StatusCodeOk)
-				td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(1).Status().SetCode(pdata.StatusCodeOk)
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Status().SetCode(pdata.StatusCodeOk)
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Status().SetCode(pdata.StatusCodeOk)
 			},
 		},
 	}
@@ -177,7 +177,7 @@ func constructTraces() pdata.Traces {
 	td := pdata.NewTraces()
 	rs0 := td.ResourceSpans().AppendEmpty()
 	rs0.Resource().Attributes().InsertString("host.name", "localhost")
-	rs0ils0 := rs0.InstrumentationLibrarySpans().AppendEmpty()
+	rs0ils0 := rs0.ScopeSpans().AppendEmpty()
 	fillSpanOne(rs0ils0.Spans().AppendEmpty())
 	fillSpanTwo(rs0ils0.Spans().AppendEmpty())
 	return td
@@ -186,7 +186,7 @@ func constructTraces() pdata.Traces {
 func constructTracesNum(num int) pdata.Traces {
 	td := pdata.NewTraces()
 	rs0 := td.ResourceSpans().AppendEmpty()
-	rs0ils0 := rs0.InstrumentationLibrarySpans().AppendEmpty()
+	rs0ils0 := rs0.ScopeSpans().AppendEmpty()
 	for i := 0; i < num; i++ {
 		fillSpanOne(rs0ils0.Spans().AppendEmpty())
 	}

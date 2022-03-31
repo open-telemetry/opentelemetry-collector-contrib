@@ -67,8 +67,8 @@ func TestRedactUnknownAttributes(t *testing.T) {
 
 	library, span, next := runTest(t, allowed, redacted, nil, config)
 
-	firstOutILS := next.AllTraces()[0].ResourceSpans().At(0).InstrumentationLibrarySpans().At(0)
-	assert.Equal(t, library.Name(), firstOutILS.InstrumentationLibrary().Name())
+	firstOutILS := next.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0)
+	assert.Equal(t, library.Name(), firstOutILS.Scope().Name())
 	assert.Equal(t, span.Name(), firstOutILS.Spans().At(0).Name())
 	attr := firstOutILS.Spans().At(0).Attributes()
 	for k, v := range allowed {
@@ -107,7 +107,7 @@ func TestRedactSummaryDebug(t *testing.T) {
 
 	_, _, next := runTest(t, allowed, redacted, masked, config)
 
-	firstOutILS := next.AllTraces()[0].ResourceSpans().At(0).InstrumentationLibrarySpans().At(0)
+	firstOutILS := next.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0)
 	attr := firstOutILS.Spans().At(0).Attributes()
 	var deleted []string
 	for k := range redacted {
@@ -155,7 +155,7 @@ func TestRedactSummaryInfo(t *testing.T) {
 
 	_, _, next := runTest(t, allowed, redacted, masked, config)
 
-	firstOutILS := next.AllTraces()[0].ResourceSpans().At(0).InstrumentationLibrarySpans().At(0)
+	firstOutILS := next.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0)
 	attr := firstOutILS.Spans().At(0).Attributes()
 	var deleted []string
 	for k := range redacted {
@@ -196,7 +196,7 @@ func TestRedactSummarySilent(t *testing.T) {
 
 	_, _, next := runTest(t, allowed, redacted, masked, config)
 
-	firstOutILS := next.AllTraces()[0].ResourceSpans().At(0).InstrumentationLibrarySpans().At(0)
+	firstOutILS := next.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0)
 	attr := firstOutILS.Spans().At(0).Attributes()
 	for k := range redacted {
 		_, ok := attr.Get(k)
@@ -227,7 +227,7 @@ func TestRedactSummaryDefault(t *testing.T) {
 
 	_, _, next := runTest(t, allowed, nil, masked, config)
 
-	firstOutILS := next.AllTraces()[0].ResourceSpans().At(0).InstrumentationLibrarySpans().At(0)
+	firstOutILS := next.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0)
 	attr := firstOutILS.Spans().At(0).Attributes()
 	_, ok := attr.Get(redactedKeys)
 	assert.False(t, ok)
@@ -258,7 +258,7 @@ func TestMultipleBlockValues(t *testing.T) {
 
 	_, _, next := runTest(t, allowed, redacted, masked, config)
 
-	firstOutILS := next.AllTraces()[0].ResourceSpans().At(0).InstrumentationLibrarySpans().At(0)
+	firstOutILS := next.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0)
 	attr := firstOutILS.Spans().At(0).Attributes()
 	var deleted []string
 	for k := range redacted {
@@ -295,12 +295,12 @@ func runTest(
 	redacted map[string]pdata.Value,
 	masked map[string]pdata.Value,
 	config *Config,
-) (pdata.InstrumentationLibrary, pdata.Span, *consumertest.TracesSink) {
+) (pdata.InstrumentationScope, pdata.Span, *consumertest.TracesSink) {
 	inBatch := pdata.NewTraces()
 	rs := inBatch.ResourceSpans().AppendEmpty()
-	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
+	ils := rs.ScopeSpans().AppendEmpty()
 
-	library := ils.InstrumentationLibrary()
+	library := ils.Scope()
 	library.SetName("first-library")
 	span := ils.Spans().AppendEmpty()
 	span.SetName("first-batch-first-span")
@@ -319,7 +319,7 @@ func runTest(
 
 	assert.Equal(t, span.Attributes().Len(), length)
 	assert.Equal(t, ils.Spans().At(0).Attributes().Len(), length)
-	assert.Equal(t, inBatch.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).Attributes().Len(), length)
+	assert.Equal(t, inBatch.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().Len(), length)
 
 	// test
 	ctx := context.Background()
@@ -399,9 +399,9 @@ func runBenchmark(
 ) {
 	inBatch := pdata.NewTraces()
 	rs := inBatch.ResourceSpans().AppendEmpty()
-	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
+	ils := rs.ScopeSpans().AppendEmpty()
 
-	library := ils.InstrumentationLibrary()
+	library := ils.Scope()
 	library.SetName("first-library")
 	span := ils.Spans().AppendEmpty()
 	span.SetName("first-batch-first-span")

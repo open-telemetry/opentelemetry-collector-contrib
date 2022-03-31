@@ -248,8 +248,8 @@ func (ma *MetricsAdjusterPdata) AdjustMetrics(metrics *pdata.Metrics) int {
 	defer ma.tsm.Unlock()
 	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
 		rm := metrics.ResourceMetrics().At(i)
-		for j := 0; j < rm.InstrumentationLibraryMetrics().Len(); j++ {
-			ilm := rm.InstrumentationLibraryMetrics().At(j)
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			ilm := rm.ScopeMetrics().At(j)
 			for k := 0; k < ilm.Metrics().Len(); k++ {
 				metric := ilm.Metrics().At(k)
 				resets += ma.adjustMetric(&metric)

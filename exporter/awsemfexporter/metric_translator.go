@@ -105,17 +105,17 @@ func (mt metricTranslator) translateOTelToGroupedMetric(rm *pdata.ResourceMetric
 	cWNamespace := getNamespace(rm, config.Namespace)
 	logGroup, logStream, patternReplaceSucceeded := getLogInfo(rm, cWNamespace, config)
 
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 	var metricReceiver string
 	if receiver, ok := rm.Resource().Attributes().Get(attributeReceiver); ok {
 		metricReceiver = receiver.StringVal()
 	}
 	for j := 0; j < ilms.Len(); j++ {
 		ilm := ilms.At(j)
-		if ilm.InstrumentationLibrary().Name() == "" {
+		if ilm.Scope().Name() == "" {
 			instrumentationLibName = noInstrumentationLibraryName
 		} else {
-			instrumentationLibName = ilm.InstrumentationLibrary().Name()
+			instrumentationLibName = ilm.Scope().Name()
 		}
 
 		metrics := ilm.Metrics()

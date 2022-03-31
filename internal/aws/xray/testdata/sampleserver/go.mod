@@ -9,14 +9,14 @@ require (
 	golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e // indirect
 	google.golang.org/genproto v0.0.0-20210604141403-392c879c8b08 // indirect
 	google.golang.org/grpc v1.45.0 // indirect
-	google.golang.org/protobuf v1.27.1 // indirect
+	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
 
 require (
 	github.com/andybalholm/brotli v1.0.1 // indirect
-	github.com/aws/aws-sdk-go v1.43.20 // indirect
+	github.com/aws/aws-sdk-go v1.43.28 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/klauspost/compress v1.15.1 // indirect

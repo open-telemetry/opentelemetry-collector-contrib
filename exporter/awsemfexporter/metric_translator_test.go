@@ -408,8 +408,8 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 
 	noInstrLibMetric := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics).ResourceMetrics().At(0)
 	instrLibMetric := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics).ResourceMetrics().At(0)
-	ilm := instrLibMetric.InstrumentationLibraryMetrics().At(0)
-	ilm.InstrumentationLibrary().SetName("cloudwatch-lib")
+	ilm := instrLibMetric.ScopeMetrics().At(0)
+	ilm.Scope().SetName("cloudwatch-lib")
 
 	noNamespaceMetric := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics).ResourceMetrics().At(0)
 	noNamespaceMetric.Resource().Attributes().Delete(conventions.AttributeServiceNamespace)
@@ -2055,9 +2055,9 @@ func TestTranslateCWMetricToEMFNoMeasurements(t *testing.T) {
 func BenchmarkTranslateOtToGroupedMetricWithInstrLibrary(b *testing.B) {
 	oc := createMetricTestData()
 	rm := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics).ResourceMetrics().At(0)
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 	ilm := ilms.At(0)
-	ilm.InstrumentationLibrary().SetName("cloudwatch-lib")
+	ilm.Scope().SetName("cloudwatch-lib")
 	config := &Config{
 		Namespace:             "",
 		DimensionRollupOption: zeroAndSingleDimensionRollup,
@@ -2075,9 +2075,9 @@ func BenchmarkTranslateOtToGroupedMetricWithInstrLibrary(b *testing.B) {
 func BenchmarkTranslateOtToGroupedMetricWithoutConfigReplacePattern(b *testing.B) {
 	oc := createMetricTestData()
 	rm := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics).ResourceMetrics().At(0)
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 	ilm := ilms.At(0)
-	ilm.InstrumentationLibrary().SetName("cloudwatch-lib")
+	ilm.Scope().SetName("cloudwatch-lib")
 	config := &Config{
 		Namespace:             "",
 		DimensionRollupOption: zeroAndSingleDimensionRollup,
@@ -2097,9 +2097,9 @@ func BenchmarkTranslateOtToGroupedMetricWithoutConfigReplacePattern(b *testing.B
 func BenchmarkTranslateOtToGroupedMetricWithConfigReplaceWithResource(b *testing.B) {
 	oc := createMetricTestData()
 	rm := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics).ResourceMetrics().At(0)
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 	ilm := ilms.At(0)
-	ilm.InstrumentationLibrary().SetName("cloudwatch-lib")
+	ilm.Scope().SetName("cloudwatch-lib")
 	config := &Config{
 		Namespace:             "",
 		DimensionRollupOption: zeroAndSingleDimensionRollup,
@@ -2119,9 +2119,9 @@ func BenchmarkTranslateOtToGroupedMetricWithConfigReplaceWithResource(b *testing
 func BenchmarkTranslateOtToGroupedMetricWithConfigReplaceWithLabel(b *testing.B) {
 	oc := createMetricTestData()
 	rm := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics).ResourceMetrics().At(0)
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 	ilm := ilms.At(0)
-	ilm.InstrumentationLibrary().SetName("cloudwatch-lib")
+	ilm.Scope().SetName("cloudwatch-lib")
 	config := &Config{
 		Namespace:             "",
 		DimensionRollupOption: zeroAndSingleDimensionRollup,
@@ -2427,7 +2427,7 @@ func generateTestMetrics(tm testMetric) pdata.Metrics {
 
 	rm := md.ResourceMetrics().AppendEmpty()
 	pdata.NewMapFromRaw(tm.resourceAttributeMap).CopyTo(rm.Resource().Attributes())
-	ms := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics()
+	ms := rm.ScopeMetrics().AppendEmpty().Metrics()
 
 	for i, name := range tm.metricNames {
 		m := ms.AppendEmpty()

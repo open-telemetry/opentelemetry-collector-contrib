@@ -20,7 +20,7 @@ import (
 )
 
 func getNameToMetricMap(rm pdata.ResourceMetrics) map[string]pdata.Metric {
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 	metricMap := make(map[string]pdata.Metric)
 
 	for i := 0; i < ilms.Len(); i++ {
@@ -55,7 +55,7 @@ func getMetricValue(metric pdata.Metric) float64 {
 // The value for newly calculated metrics is always a floting point number and the dataType is set
 // as MetricDataTypeDoubleGauge.
 func generateMetrics(rm pdata.ResourceMetrics, operand2 float64, rule internalRule, logger *zap.Logger) {
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 	for i := 0; i < ilms.Len(); i++ {
 		ilm := ilms.At(i)
 		metricSlice := ilm.Metrics()
@@ -89,7 +89,7 @@ func addDoubleGaugeDataPoints(from pdata.Metric, to pdata.Metric, operand2 float
 	}
 }
 
-func appendMetric(ilm pdata.InstrumentationLibraryMetrics, name, unit string) pdata.Metric {
+func appendMetric(ilm pdata.ScopeMetrics, name, unit string) pdata.Metric {
 	metric := ilm.Metrics().AppendEmpty()
 	metric.SetName(name)
 	metric.SetUnit(unit)

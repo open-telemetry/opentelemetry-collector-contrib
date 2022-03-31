@@ -119,7 +119,7 @@ func Test_FromMetrics(t *testing.T) {
 			name: "nil_node_nil_resources_no_dims",
 			metricsFn: func() pdata.Metrics {
 				out := pdata.NewMetrics()
-				ilm := out.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
+				ilm := out.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 
 				{
 					m := ilm.Metrics().AppendEmpty()
@@ -197,7 +197,7 @@ func Test_FromMetrics(t *testing.T) {
 			name: "nil_node_and_resources_with_dims",
 			metricsFn: func() pdata.Metrics {
 				out := pdata.NewMetrics()
-				ilm := out.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
+				ilm := out.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 
 				{
 					m := ilm.Metrics().AppendEmpty()
@@ -246,7 +246,7 @@ func Test_FromMetrics(t *testing.T) {
 				res.Attributes().InsertString("k_n0", "v_n0")
 				res.Attributes().InsertString("k_n1", "v_n1")
 
-				ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+				ilm := rm.ScopeMetrics().AppendEmpty()
 				ilm.Metrics().EnsureCapacity(2)
 
 				{
@@ -291,7 +291,7 @@ func Test_FromMetrics(t *testing.T) {
 			name: "histograms",
 			metricsFn: func() pdata.Metrics {
 				out := pdata.NewMetrics()
-				ilm := out.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
+				ilm := out.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 				{
 					m := ilm.Metrics().AppendEmpty()
 					m.SetName("double_histo")
@@ -316,7 +316,7 @@ func Test_FromMetrics(t *testing.T) {
 			name: "distribution_no_buckets",
 			metricsFn: func() pdata.Metrics {
 				out := pdata.NewMetrics()
-				ilm := out.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
+				ilm := out.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 				m := ilm.Metrics().AppendEmpty()
 				m.SetName("no_bucket_histo")
 				m.SetDataType(pdata.MetricDataTypeHistogram)
@@ -330,7 +330,7 @@ func Test_FromMetrics(t *testing.T) {
 			name: "summaries",
 			metricsFn: func() pdata.Metrics {
 				out := pdata.NewMetrics()
-				ilm := out.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
+				ilm := out.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 				m := ilm.Metrics().AppendEmpty()
 				m.SetName("summary")
 				m.SetDataType(pdata.MetricDataTypeSummary)
@@ -344,7 +344,7 @@ func Test_FromMetrics(t *testing.T) {
 			name: "empty_summary",
 			metricsFn: func() pdata.Metrics {
 				out := pdata.NewMetrics()
-				ilm := out.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
+				ilm := out.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 				m := ilm.Metrics().AppendEmpty()
 				m.SetName("empty_summary")
 				m.SetDataType(pdata.MetricDataTypeSummary)

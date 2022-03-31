@@ -64,10 +64,10 @@ type TimerHistogramMapping struct {
 
 // StatsDParser supports the Parse method for parsing StatsD messages with Tags.
 type StatsDParser struct {
-	gauges                 map[statsDMetricDescription]pdata.InstrumentationLibraryMetrics
-	counters               map[statsDMetricDescription]pdata.InstrumentationLibraryMetrics
+	gauges                 map[statsDMetricDescription]pdata.ScopeMetrics
+	counters               map[statsDMetricDescription]pdata.ScopeMetrics
 	summaries              map[statsDMetricDescription]summaryMetric
-	timersAndDistributions []pdata.InstrumentationLibraryMetrics
+	timersAndDistributions []pdata.ScopeMetrics
 	enableMetricType       bool
 	isMonotonicCounter     bool
 	observeTimer           ObserverType
@@ -115,9 +115,9 @@ func (t MetricType) FullName() TypeName {
 
 func (p *StatsDParser) Initialize(enableMetricType bool, isMonotonicCounter bool, sendTimerHistogram []TimerHistogramMapping) error {
 	p.lastIntervalTime = timeNowFunc()
-	p.gauges = make(map[statsDMetricDescription]pdata.InstrumentationLibraryMetrics)
-	p.counters = make(map[statsDMetricDescription]pdata.InstrumentationLibraryMetrics)
-	p.timersAndDistributions = make([]pdata.InstrumentationLibraryMetrics, 0)
+	p.gauges = make(map[statsDMetricDescription]pdata.ScopeMetrics)
+	p.counters = make(map[statsDMetricDescription]pdata.ScopeMetrics)
+	p.timersAndDistributions = make([]pdata.ScopeMetrics, 0)
 	p.summaries = make(map[statsDMetricDescription]summaryMetric)
 
 	p.observeHistogram = DefaultObserverType
@@ -142,15 +142,15 @@ func (p *StatsDParser) GetMetrics() pdata.Metrics {
 	rm := metrics.ResourceMetrics().AppendEmpty()
 
 	for _, metric := range p.gauges {
-		metric.CopyTo(rm.InstrumentationLibraryMetrics().AppendEmpty())
+		metric.CopyTo(rm.ScopeMetrics().AppendEmpty())
 	}
 
 	for _, metric := range p.counters {
-		metric.CopyTo(rm.InstrumentationLibraryMetrics().AppendEmpty())
+		metric.CopyTo(rm.ScopeMetrics().AppendEmpty())
 	}
 
 	for _, metric := range p.timersAndDistributions {
-		metric.CopyTo(rm.InstrumentationLibraryMetrics().AppendEmpty())
+		metric.CopyTo(rm.ScopeMetrics().AppendEmpty())
 	}
 
 	for desc, summaryMetric := range p.summaries {
@@ -160,14 +160,14 @@ func (p *StatsDParser) GetMetrics() pdata.Metrics {
 			p.lastIntervalTime,
 			timeNowFunc(),
 			statsDDefaultPercentiles,
-			rm.InstrumentationLibraryMetrics().AppendEmpty(),
+			rm.ScopeMetrics().AppendEmpty(),
 		)
 	}
 
 	p.lastIntervalTime = timeNowFunc()
-	p.gauges = make(map[statsDMetricDescription]pdata.InstrumentationLibraryMetrics)
-	p.counters = make(map[statsDMetricDescription]pdata.InstrumentationLibraryMetrics)
-	p.timersAndDistributions = make([]pdata.InstrumentationLibraryMetrics, 0)
+	p.gauges = make(map[statsDMetricDescription]pdata.ScopeMetrics)
+	p.counters = make(map[statsDMetricDescription]pdata.ScopeMetrics)
+	p.timersAndDistributions = make([]pdata.ScopeMetrics, 0)
 	p.summaries = make(map[statsDMetricDescription]summaryMetric)
 	return metrics
 }

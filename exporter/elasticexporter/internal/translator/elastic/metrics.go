@@ -31,7 +31,7 @@ import (
 //
 // TODO(axw) otlpLibrary is currently not used. We should consider recording
 // it as metadata.
-func EncodeMetrics(otlpMetrics pdata.MetricSlice, otlpLibrary pdata.InstrumentationLibrary, w *fastjson.Writer) (dropped int, _ error) {
+func EncodeMetrics(otlpMetrics pdata.MetricSlice, otlpLibrary pdata.InstrumentationScope, w *fastjson.Writer) (dropped int, _ error) {
 	var metricsets metricsets
 	for i := 0; i < otlpMetrics.Len(); i++ {
 		metric := otlpMetrics.At(i)

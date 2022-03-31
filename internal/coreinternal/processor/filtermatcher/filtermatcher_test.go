@@ -209,7 +209,7 @@ func Test_Matching_False(t *testing.T) {
 		"keyMap": map[string]interface{}{},
 	})
 
-	library := pdata.NewInstrumentationLibrary()
+	library := pdata.NewInstrumentationScope()
 	library.SetName("lib")
 	library.SetVersion("ver")
 
@@ -239,7 +239,7 @@ func Test_MatchingCornerCases(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, mp)
 
-	assert.False(t, mp.Match(pdata.NewMap(), resource("svcA"), pdata.NewInstrumentationLibrary()))
+	assert.False(t, mp.Match(pdata.NewMap(), resource("svcA"), pdata.NewInstrumentationScope()))
 }
 
 func Test_Matching_True(t *testing.T) {
@@ -370,7 +370,7 @@ func Test_Matching_True(t *testing.T) {
 	resource.Attributes().InsertString(conventions.AttributeServiceName, "svcA")
 	resource.Attributes().InsertString("resString", "arithmetic")
 
-	library := pdata.NewInstrumentationLibrary()
+	library := pdata.NewInstrumentationScope()
 	library.SetName("lib")
 	library.SetVersion("ver")
 

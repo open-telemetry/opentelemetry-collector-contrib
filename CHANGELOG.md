@@ -1,16 +1,10 @@
 # Changelog
 
 ## Unreleased
-- `sigv4authextension`: Enable component (#8518)
 
 ### 💡 Enhancements 💡
 
-- `k8seventsreceiver`: Add Api_version and resource_version (#8539)
-- `dynatraceexporter`: add multi-instance deployment note to README.md (#8848)
-
 ### 🛑 Breaking changes 🛑
-
-- `windowsperfcountersreceiver`: Added metrics configuration (#8376)
 
 ### 🧰 Bug fixes 🧰
 
@@ -18,23 +12,35 @@
 
 ### 🚩 Deprecations 🚩
 
-- `datadogexporter`: Deprecate `OnlyMetadata` method from `Config` struct (#8359)
-- `datadogexporter`: Deprecate `GetCensoredKey` method from `APIConfig` struct (#8830)
+### 🚀 New components 🚀
 
-- `resourcedetectionprocessor`: Add attribute allowlist (#8547)
+## v0.48.0
 
 ### 💡 Enhancements 💡
 
+- `k8seventsreceiver`: Add Api_version and resource_version (#8539)
 - `cmd/mdatagen`: Add resource attributes definition to metadata.yaml and move `pdata.Metrics` creation to the
   generated code (#5270) 
-
-### 💡 Enhancements 💡
-
 - `datadogexporter`: Add `metrics::sums::cumulative_monotonic_mode` to specify export mode for cumulative monotonic sums (#8490)
+- `dynatraceexporter`: add multi-instance deployment note to README.md (#8848)
+- `resourcedetectionprocessor`: Add attribute allowlist (#8547)
+- `datadogexporter`:  Metrics payload data and Sketches payload data will be logged if collector is started in debug mode (#8929)
+
+### 🛑 Breaking changes 🛑
+
+- `windowsperfcountersreceiver`: Added metrics configuration (#8376)
+- `lokiexporter`: Remove deprecated LogRecord.name field (#8951)
+- `splunkhecexporter`: Remove deprecated LogRecord.name field (#8951)
 
 ### 🚩 Deprecations 🚩
 
+- `datadogexporter`: Deprecate `OnlyMetadata` method from `Config` struct (#8359)
+- `datadogexporter`: Deprecate `GetCensoredKey` method from `APIConfig` struct (#8830)
 - `datadogexporter`: Deprecate `metrics::send_monotonic_counter` in favor of `metrics::sums::cumulative_monotonic_mode` (#8490)
+
+### 🚀 New components 🚀
+
+- `sigv4authextension`: Enable component (#8518)
 
 ## v0.47.0
 

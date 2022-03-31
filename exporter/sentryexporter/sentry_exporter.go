@@ -70,10 +70,10 @@ func (s *SentryExporter) pushTraceData(_ context.Context, td pdata.Traces) error
 		rs := resourceSpans.At(i)
 		resourceTags := generateTagsFromResource(rs.Resource())
 
-		ilss := rs.InstrumentationLibrarySpans()
+		ilss := rs.ScopeSpans()
 		for j := 0; j < ilss.Len(); j++ {
 			ils := ilss.At(j)
-			library := ils.InstrumentationLibrary()
+			library := ils.Scope()
 
 			spans := ils.Spans()
 			for k := 0; k < spans.Len(); k++ {
@@ -222,7 +222,7 @@ func classifyAsOrphanSpans(orphanSpans []*sentry.Span, prevLength int, idMap map
 	return classifyAsOrphanSpans(newOrphanSpans, len(orphanSpans), idMap, transactionMap)
 }
 
-func convertToSentrySpan(span pdata.Span, library pdata.InstrumentationLibrary, resourceTags map[string]string) (sentrySpan *sentry.Span) {
+func convertToSentrySpan(span pdata.Span, library pdata.InstrumentationScope, resourceTags map[string]string) (sentrySpan *sentry.Span) {
 	attributes := span.Attributes()
 	name := span.Name()
 	spanKind := span.Kind()

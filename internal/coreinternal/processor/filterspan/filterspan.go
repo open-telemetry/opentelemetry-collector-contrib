@@ -30,7 +30,7 @@ import (
 // TODO: Modify Matcher to invoke both the include and exclude properties so
 //  calling processors will always have the same logic.
 type Matcher interface {
-	MatchSpan(span pdata.Span, resource pdata.Resource, library pdata.InstrumentationLibrary) bool
+	MatchSpan(span pdata.Span, resource pdata.Resource, library pdata.InstrumentationScope) bool
 }
 
 // propertiesMatcher allows matching a span against various span properties.
@@ -88,7 +88,7 @@ func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 // The logic determining if a span should be processed is set
 // in the attribute configuration with the include and exclude settings.
 // Include properties are checked before exclude settings are checked.
-func SkipSpan(include Matcher, exclude Matcher, span pdata.Span, resource pdata.Resource, library pdata.InstrumentationLibrary) bool {
+func SkipSpan(include Matcher, exclude Matcher, span pdata.Span, resource pdata.Resource, library pdata.InstrumentationScope) bool {
 	if include != nil {
 		// A false returned in this case means the span should not be processed.
 		if i := include.MatchSpan(span, resource, library); !i {
@@ -108,7 +108,7 @@ func SkipSpan(include Matcher, exclude Matcher, span pdata.Span, resource pdata.
 
 // MatchSpan matches a span and service to a set of properties.
 // see filterconfig.MatchProperties for more details
-func (mp *propertiesMatcher) MatchSpan(span pdata.Span, resource pdata.Resource, library pdata.InstrumentationLibrary) bool {
+func (mp *propertiesMatcher) MatchSpan(span pdata.Span, resource pdata.Resource, library pdata.InstrumentationScope) bool {
 	// If a set of properties was not in the mp, all spans are considered to match on that property
 	if mp.serviceFilters != nil {
 		serviceName := serviceNameForResource(resource)

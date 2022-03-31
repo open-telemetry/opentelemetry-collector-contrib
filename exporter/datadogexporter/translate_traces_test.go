@@ -58,10 +58,10 @@ func NewResourceSpansData(mockTraceID [16]byte, mockSpanID [8]byte, mockParentSp
 	pdataStartTime := pdata.NewTimestampFromTime(startTime)
 
 	rs := pdata.NewResourceSpans()
-	ilss := rs.InstrumentationLibrarySpans()
+	ilss := rs.ScopeSpans()
 	ils := ilss.AppendEmpty()
-	ils.InstrumentationLibrary().SetName("test_il_name")
-	ils.InstrumentationLibrary().SetVersion("test_il_version")
+	ils.Scope().SetName("test_il_name")
+	ils.Scope().SetVersion("test_il_version")
 	span := ils.Spans().AppendEmpty()
 
 	traceID := pdata.NewTraceID(mockTraceID)
@@ -242,8 +242,8 @@ func TestObfuscation(t *testing.T) {
 	rs := traces.ResourceSpans().AppendEmpty()
 	resource := rs.Resource()
 	resource.Attributes().InsertString("service.name", "sure")
-	ilss := rs.InstrumentationLibrarySpans().AppendEmpty()
-	instrumentationLibrary := ilss.InstrumentationLibrary()
+	ilss := rs.ScopeSpans().AppendEmpty()
+	instrumentationLibrary := ilss.Scope()
 	instrumentationLibrary.SetName("flash")
 	instrumentationLibrary.SetVersion("v1")
 
@@ -435,10 +435,10 @@ func TestTracesFallbackErrorMessage(t *testing.T) {
 	pdataStartTime := pdata.NewTimestampFromTime(startTime)
 
 	rs := pdata.NewResourceSpans()
-	ilss := rs.InstrumentationLibrarySpans()
+	ilss := rs.ScopeSpans()
 	ils := ilss.AppendEmpty()
-	ils.InstrumentationLibrary().SetName("test_il_name")
-	ils.InstrumentationLibrary().SetVersion("test_il_version")
+	ils.Scope().SetName("test_il_name")
+	ils.Scope().SetVersion("test_il_version")
 	span := ils.Spans().AppendEmpty()
 
 	traceID := pdata.NewTraceID(mockTraceID)
@@ -490,7 +490,7 @@ func TestTracesTranslationErrorsFromEventsUsesLast(t *testing.T) {
 	// create mock resource span data
 	// toggle on errors and custom service naming to test edge case code paths
 	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, pdata.StatusCodeError, true, mockEndTime)
-	span := rs.InstrumentationLibrarySpans().At(0).Spans().At(0)
+	span := rs.ScopeSpans().At(0).Spans().At(0)
 	events := span.Events()
 
 	events.AppendEmpty().SetName("start")
@@ -544,7 +544,7 @@ func TestTracesTranslationErrorsFromEventsBounds(t *testing.T) {
 	// create mock resource span data
 	// toggle on errors and custom service naming to test edge case code paths
 	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, pdata.StatusCodeError, true, mockEndTime)
-	span := rs.InstrumentationLibrarySpans().At(0).Spans().At(0)
+	span := rs.ScopeSpans().At(0).Spans().At(0)
 	events := span.Events()
 	events.EnsureCapacity(3)
 
@@ -799,7 +799,7 @@ func TestTracesTranslationServicePeerName(t *testing.T) {
 	// set shouldError and resourceServiceandEnv to false to test defaut behavior
 	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, pdata.StatusCodeUnset, false, mockEndTime)
 
-	span := rs.InstrumentationLibrarySpans().At(0).Spans().At(0)
+	span := rs.ScopeSpans().At(0).Spans().At(0)
 	span.Attributes().InsertString(conventions.AttributePeerService, "my_peer_service_name")
 
 	// translate mocks to datadog traces
@@ -873,7 +873,7 @@ func TestTracesTranslationTruncatetag(t *testing.T) {
 	// set shouldError and resourceServiceandEnv to false to test defaut behavior
 	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, pdata.StatusCodeUnset, false, mockEndTime)
 
-	span := rs.InstrumentationLibrarySpans().At(0).Spans().At(0)
+	span := rs.ScopeSpans().At(0).Spans().At(0)
 
 	span.Attributes().InsertString(conventions.AttributeExceptionStacktrace, RandStringBytes(5500))
 
@@ -1175,7 +1175,7 @@ func TestSpanTypeTranslation(t *testing.T) {
 
 // ensure that the IL Tags extraction handles nil case
 func TestILTagsExctraction(t *testing.T) {
-	il := pdata.NewInstrumentationLibrary()
+	il := pdata.NewInstrumentationScope()
 
 	tags := map[string]string{}
 
@@ -1312,9 +1312,9 @@ func TestSamplingWeightedStatsAggregations(t *testing.T) {
 	// toggle on errors and custom service naming to test edge case code paths
 	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, pdata.StatusCodeError, true, mockEndTime)
 
-	rs.InstrumentationLibrarySpans().EnsureCapacity(1)
-	ilss := rs.InstrumentationLibrarySpans().AppendEmpty()
-	instrumentationLibrary := ilss.InstrumentationLibrary()
+	rs.ScopeSpans().EnsureCapacity(1)
+	ilss := rs.ScopeSpans().AppendEmpty()
+	instrumentationLibrary := ilss.Scope()
 	instrumentationLibrary.SetName("flash")
 	instrumentationLibrary.SetVersion("v1")
 	span := ilss.Spans().AppendEmpty()
@@ -1354,9 +1354,9 @@ func TestSanitization(t *testing.T) {
 	rs := traces.ResourceSpans().AppendEmpty()
 	resource := rs.Resource()
 	resource.Attributes().InsertString("deployment.environment", "UpperCase")
-	rs.InstrumentationLibrarySpans().EnsureCapacity(1)
-	ilss := rs.InstrumentationLibrarySpans().AppendEmpty()
-	instrumentationLibrary := ilss.InstrumentationLibrary()
+	rs.ScopeSpans().EnsureCapacity(1)
+	ilss := rs.ScopeSpans().AppendEmpty()
+	instrumentationLibrary := ilss.Scope()
 	instrumentationLibrary.SetName("flash")
 	instrumentationLibrary.SetVersion("v1")
 	ilss.Spans().EnsureCapacity(1)
@@ -1452,9 +1452,9 @@ func TestSpanNameMapping(t *testing.T) {
 	rs := traces.ResourceSpans().AppendEmpty()
 	resource := rs.Resource()
 	resource.Attributes().InsertString("deployment.environment", "UpperCase")
-	rs.InstrumentationLibrarySpans().EnsureCapacity(1)
-	ilss := rs.InstrumentationLibrarySpans().AppendEmpty()
-	instrumentationLibrary := ilss.InstrumentationLibrary()
+	rs.ScopeSpans().EnsureCapacity(1)
+	ilss := rs.ScopeSpans().AppendEmpty()
+	instrumentationLibrary := ilss.Scope()
 	instrumentationLibrary.SetName("flash")
 	instrumentationLibrary.SetVersion("v1")
 	span := ilss.Spans().AppendEmpty()
@@ -1504,9 +1504,9 @@ func TestSpanEnvClobbering(t *testing.T) {
 	resource.Attributes().InsertString(conventions.AttributeDeploymentEnvironment, "correctenv")
 	resource.Attributes().InsertString("env", "incorrectenv")
 
-	rs.InstrumentationLibrarySpans().EnsureCapacity(1)
-	ilss := rs.InstrumentationLibrarySpans().AppendEmpty()
-	instrumentationLibrary := ilss.InstrumentationLibrary()
+	rs.ScopeSpans().EnsureCapacity(1)
+	ilss := rs.ScopeSpans().AppendEmpty()
+	instrumentationLibrary := ilss.Scope()
 	instrumentationLibrary.SetName("flash")
 	instrumentationLibrary.SetVersion("v1")
 	span := ilss.Spans().AppendEmpty()
@@ -1550,9 +1550,9 @@ func TestSpanRateLimitTag(t *testing.T) {
 	resource := rs.Resource()
 	resource.Attributes().InsertString(conventions.AttributeDeploymentEnvironment, "correctenv")
 
-	rs.InstrumentationLibrarySpans().EnsureCapacity(1)
-	ilss := rs.InstrumentationLibrarySpans().AppendEmpty()
-	instrumentationLibrary := ilss.InstrumentationLibrary()
+	rs.ScopeSpans().EnsureCapacity(1)
+	ilss := rs.ScopeSpans().AppendEmpty()
+	instrumentationLibrary := ilss.Scope()
 	instrumentationLibrary.SetName("flash")
 	instrumentationLibrary.SetVersion("v1")
 	span := ilss.Spans().AppendEmpty()
