@@ -32,10 +32,10 @@ metrics:
 
 ## Metric attributes
 
-| Name | Description |
-| ---- | ----------- |
-| connection_type | The status of the connection. |
-| database | The name of a database. |
-| memory_type | The type of memory used. |
-| operation | The MongoDB operation being counted. |
-| type | The result of a cache request. |
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| connection_type (type) | The status of the connection. | active, available, current |
+| database | The name of a database. |  |
+| memory_type (type) | The type of memory used. | resident, virtual |
+| operation | The MongoDB operation being counted. | insert, query, update, delete, getmore, command |
+| type | The result of a cache request. | hit, miss |
