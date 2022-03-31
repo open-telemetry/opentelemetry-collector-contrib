@@ -258,7 +258,7 @@ func expectedTraceData(t1, t2, t3 time.Time) pdata.Traces {
 	rs.Resource().Attributes().InsertBool("bool", true)
 	rs.Resource().Attributes().InsertString("string", "yes")
 	rs.Resource().Attributes().InsertInt("int64", 10000000)
-	spans := rs.InstrumentationLibrarySpans().AppendEmpty().Spans()
+	spans := rs.ScopeSpans().AppendEmpty().Spans()
 
 	span0 := spans.AppendEmpty()
 	span0.SetSpanID(childSpanID)

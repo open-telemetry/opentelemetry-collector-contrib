@@ -108,7 +108,7 @@ func generateSpanErrorTags() []*zipkinmodel.SpanModel {
 
 func generateTraceSingleSpanNoResourceOrInstrLibrary() pdata.Traces {
 	td := pdata.NewTraces()
-	span := td.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	span := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetTraceID(
 		pdata.NewTraceID([16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80}))
 	span.SetSpanID(pdata.NewSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8}))
@@ -129,7 +129,7 @@ func generateTraceSingleSpanMinmalResource() pdata.Traces {
 
 func generateTraceSingleSpanErrorStatus() pdata.Traces {
 	td := pdata.NewTraces()
-	span := td.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	span := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetTraceID(
 		pdata.NewTraceID([16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80}))
 	span.SetSpanID(pdata.NewSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8}))
@@ -166,7 +166,7 @@ func TestV2SpanWithoutTimestampGetsTag(t *testing.T) {
 		return
 	}
 
-	gs := gb.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
+	gs := gb.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 	assert.NotNil(t, gs.StartTimestamp)
 	assert.NotNil(t, gs.EndTimestamp)
 

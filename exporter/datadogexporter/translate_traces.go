@@ -155,7 +155,7 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, hostname string, cfg *c
 	env := utils.NormalizeTag(cfg.Env)
 
 	resource := rs.Resource()
-	ilss := rs.InstrumentationLibrarySpans()
+	ilss := rs.ScopeSpans()
 
 	payload := pb.TracePayload{
 		HostName:     hostname,
@@ -180,7 +180,7 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, hostname string, cfg *c
 
 	for i := 0; i < ilss.Len(); i++ {
 		ils := ilss.At(i)
-		extractInstrumentationLibraryTags(ils.InstrumentationLibrary(), datadogTags)
+		extractInstrumentationLibraryTags(ils.Scope(), datadogTags)
 		spans := ils.Spans()
 		for j := 0; j < spans.Len(); j++ {
 			span := spanToDatadogSpan(spans.At(j), resourceServiceName, datadogTags, cfg, spanNameMap)
@@ -377,7 +377,7 @@ func extractDatadogServiceName(datadogTags map[string]string) string {
 	return serviceName
 }
 
-func extractInstrumentationLibraryTags(il pdata.InstrumentationLibrary, datadogTags map[string]string) {
+func extractInstrumentationLibraryTags(il pdata.InstrumentationScope, datadogTags map[string]string) {
 	if ilName := il.Name(); ilName != "" {
 		datadogTags[conventions.OtelLibraryName] = ilName
 	}

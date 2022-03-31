@@ -38,9 +38,9 @@ func resourceAndLogRecordsToLogs(r pdata.Resource, lrs []pdata.LogRecord) pdata.
 		return true
 	})
 
-	resLog.InstrumentationLibraryLogs().EnsureCapacity(len(lrs))
+	resLog.ScopeLogs().EnsureCapacity(len(lrs))
 	for _, l := range lrs {
-		ills := resLog.InstrumentationLibraryLogs().AppendEmpty()
+		ills := resLog.ScopeLogs().AppendEmpty()
 		l.CopyTo(ills.LogRecords().AppendEmpty())
 	}
 

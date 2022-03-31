@@ -127,12 +127,12 @@ func traceIDFromLogs(ld pdata.Logs) pdata.TraceID {
 		return pdata.InvalidTraceID()
 	}
 
-	ill := rl.At(0).InstrumentationLibraryLogs()
-	if ill.Len() == 0 {
+	sl := rl.At(0).ScopeLogs()
+	if sl.Len() == 0 {
 		return pdata.InvalidTraceID()
 	}
 
-	logs := ill.At(0).LogRecords()
+	logs := sl.At(0).LogRecords()
 	if logs.Len() == 0 {
 		return pdata.InvalidTraceID()
 	}

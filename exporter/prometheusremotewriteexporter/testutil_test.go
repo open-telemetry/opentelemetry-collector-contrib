@@ -176,7 +176,7 @@ func getMetricsFromMetricList(metricList ...pdata.Metric) pdata.Metrics {
 	metrics := pdata.NewMetrics()
 
 	rm := metrics.ResourceMetrics().AppendEmpty()
-	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+	ilm := rm.ScopeMetrics().AppendEmpty()
 	ilm.Metrics().EnsureCapacity(len(metricList))
 	for i := 0; i < len(metricList); i++ {
 		metricList[i].CopyTo(ilm.Metrics().AppendEmpty())

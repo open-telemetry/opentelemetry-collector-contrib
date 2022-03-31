@@ -371,7 +371,7 @@ func TestFilterLogProcessor(t *testing.T) {
 			assert.Equal(t, len(test.outLN), rLogs.Len())
 
 			for i, wantOut := range test.outLN {
-				gotLogs := rLogs.At(i).InstrumentationLibraryLogs().At(0).LogRecords()
+				gotLogs := rLogs.At(i).ScopeLogs().At(0).LogRecords()
 				assert.Equal(t, len(wantOut), gotLogs.Len())
 				for idx := range wantOut {
 					assert.Equal(t, wantOut[idx], gotLogs.At(idx).Name())
@@ -390,7 +390,7 @@ func testResourceLogs(lwrs []logWithResource) pdata.Logs {
 
 		// Add resource level attribtues
 		pdata.NewMapFromRaw(lwr.resourceAttributes).CopyTo(rl.Resource().Attributes())
-		ls := rl.InstrumentationLibraryLogs().AppendEmpty().LogRecords()
+		ls := rl.ScopeLogs().AppendEmpty().LogRecords()
 		for _, name := range lwr.logNames {
 			l := ls.AppendEmpty()
 			l.SetName(name)
@@ -415,7 +415,7 @@ func TestNilILL(t *testing.T) {
 	logs := pdata.NewLogs()
 	rls := logs.ResourceLogs()
 	rl := rls.AppendEmpty()
-	ills := rl.InstrumentationLibraryLogs()
+	ills := rl.ScopeLogs()
 	ills.AppendEmpty()
 	requireNotPanicsLogs(t, logs)
 }
@@ -424,9 +424,9 @@ func TestNilLog(t *testing.T) {
 	logs := pdata.NewLogs()
 	rls := logs.ResourceLogs()
 	rl := rls.AppendEmpty()
-	ills := rl.InstrumentationLibraryLogs()
-	ill := ills.AppendEmpty()
-	ls := ill.LogRecords()
+	ills := rl.ScopeLogs()
+	sl := ills.AppendEmpty()
+	ls := sl.LogRecords()
 	ls.AppendEmpty()
 	requireNotPanicsLogs(t, logs)
 }

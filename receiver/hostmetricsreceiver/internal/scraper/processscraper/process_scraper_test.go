@@ -126,7 +126,7 @@ func assertDiskIOMetricValid(t *testing.T, resourceMetrics pdata.ResourceMetrics
 
 func assertSameTimeStampForAllMetricsWithinResource(t *testing.T, resourceMetrics pdata.ResourceMetricsSlice) {
 	for i := 0; i < resourceMetrics.Len(); i++ {
-		ilms := resourceMetrics.At(i).InstrumentationLibraryMetrics()
+		ilms := resourceMetrics.At(i).ScopeMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			internal.AssertSameTimeStampForAllMetrics(t, ilms.At(j).Metrics())
 		}
@@ -149,7 +149,7 @@ func getMetric(t *testing.T, expectedMetricName string, rms pdata.ResourceMetric
 }
 
 func getMetricSlice(t *testing.T, rm pdata.ResourceMetrics) pdata.MetricSlice {
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 	require.Equal(t, 1, ilms.Len())
 	return ilms.At(0).Metrics()
 }

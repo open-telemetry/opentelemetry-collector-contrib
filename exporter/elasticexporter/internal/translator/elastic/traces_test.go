@@ -75,7 +75,7 @@ func TestEncodeSpan(t *testing.T) {
 	}
 
 	for _, span := range []pdata.Span{rootSpan, clientSpan, serverSpan} {
-		err := elastic.EncodeSpan(span, pdata.NewInstrumentationLibrary(), pdata.NewResource(), &w)
+		err := elastic.EncodeSpan(span, pdata.NewInstrumentationScope(), pdata.NewResource(), &w)
 		require.NoError(t, err)
 	}
 	sendStream(t, &w, &recorder)
@@ -161,7 +161,7 @@ func TestEncodeSpanStatus(t *testing.T) {
 			span.Status().SetCode(statusCode)
 		}
 
-		err := elastic.EncodeSpan(span, pdata.NewInstrumentationLibrary(), pdata.NewResource(), &w)
+		err := elastic.EncodeSpan(span, pdata.NewInstrumentationScope(), pdata.NewResource(), &w)
 		require.NoError(t, err)
 		sendStream(t, &w, &recorder)
 		payloads := recorder.Payloads()
@@ -183,7 +183,7 @@ func TestEncodeSpanTruncation(t *testing.T) {
 	var w fastjson.Writer
 	var recorder transporttest.RecorderTransport
 	elastic.EncodeResourceMetadata(pdata.NewResource(), &w)
-	err := elastic.EncodeSpan(span, pdata.NewInstrumentationLibrary(), pdata.NewResource(), &w)
+	err := elastic.EncodeSpan(span, pdata.NewInstrumentationScope(), pdata.NewResource(), &w)
 	require.NoError(t, err)
 	sendStream(t, &w, &recorder)
 
@@ -492,7 +492,7 @@ func TestInstrumentationLibrary(t *testing.T) {
 	span := pdata.NewSpan()
 	span.SetName("root_span")
 
-	library := pdata.NewInstrumentationLibrary()
+	library := pdata.NewInstrumentationScope()
 	library.SetName("library-name")
 	library.SetVersion("1.2.3")
 
@@ -523,7 +523,7 @@ func transactionWithAttributes(t *testing.T, attrs map[string]interface{}) model
 
 	resource := pdata.NewResource()
 	elastic.EncodeResourceMetadata(resource, &w)
-	err := elastic.EncodeSpan(span, pdata.NewInstrumentationLibrary(), resource, &w)
+	err := elastic.EncodeSpan(span, pdata.NewInstrumentationScope(), resource, &w)
 	assert.NoError(t, err)
 	sendStream(t, &w, &recorder)
 
@@ -542,7 +542,7 @@ func spanWithAttributes(t *testing.T, attrs map[string]interface{}) model.Span {
 
 	resource := pdata.NewResource()
 	elastic.EncodeResourceMetadata(resource, &w)
-	err := elastic.EncodeSpan(span, pdata.NewInstrumentationLibrary(), resource, &w)
+	err := elastic.EncodeSpan(span, pdata.NewInstrumentationScope(), resource, &w)
 	assert.NoError(t, err)
 	sendStream(t, &w, &recorder)
 

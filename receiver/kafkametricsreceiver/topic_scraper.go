@@ -69,8 +69,8 @@ func (s *topicScraper) scrape(context.Context) (pdata.Metrics, error) {
 
 	now := pdata.NewTimestampFromTime(time.Now())
 	md := pdata.NewMetrics()
-	ilm := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName(instrumentationLibName)
+	ilm := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+	ilm.Scope().SetName(instrumentationLibName)
 	for _, topic := range topics {
 		if !s.topicFilter.MatchString(topic) {
 			continue
