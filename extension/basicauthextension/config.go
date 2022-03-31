@@ -14,7 +14,16 @@
 
 package basicauthextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension"
 
-import "go.opentelemetry.io/collector/config"
+import (
+	"errors"
+
+	"go.opentelemetry.io/collector/config"
+)
+
+var (
+	errNoCredentialSource    = errors.New("no credential source provided")
+	errMultipleAuthenticator = errors.New("only one of `htpasswd` or `client_auth` can be specified")
+)
 
 type HtpasswdSettings struct {
 	// Path to the htpasswd file.
@@ -23,9 +32,33 @@ type HtpasswdSettings struct {
 	Inline string `mapstructure:"inline"`
 }
 
+type ClientAuthSettings struct {
+	// Username holds the username to use for client authentication.
+	Username string `mapstructure:"username"`
+	// Password holds the password to use for client authentication.
+	Password string `mapstructure:"password"`
+}
 type Config struct {
 	config.ExtensionSettings `mapstructure:",squash"`
 
 	// Htpasswd settings.
-	Htpasswd HtpasswdSettings `mapstructure:"htpasswd"`
+	Htpasswd *HtpasswdSettings `mapstructure:"htpasswd,omitempty"`
+
+	// ClientAuth settings
+	ClientAuth *ClientAuthSettings `mapstructure:"client_auth,omitempty"`
+}
+
+func (cfg *Config) Validate() error {
+	serverCondition := cfg.Htpasswd != nil
+	clientCondition := cfg.ClientAuth != nil
+
+	if serverCondition && clientCondition {
+		return errMultipleAuthenticator
+	}
+
+	if !serverCondition && !clientCondition {
+		return errNoCredentialSource
+	}
+
+	return nil
 }

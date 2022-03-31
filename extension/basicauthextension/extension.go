@@ -15,23 +15,23 @@
 package basicauthextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension"
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/tg123/go-htpasswd"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configauth"
 	creds "google.golang.org/grpc/credentials"
 )
 
 var (
-	errNoCredentialSource  = errors.New("no credential source provided")
 	errNoAuth              = errors.New("no basic auth provided")
 	errInvalidCredentials  = errors.New("invalid credentials")
 	errInvalidSchemePrefix = errors.New("invalid authorization scheme prefix")
@@ -39,54 +39,80 @@ var (
 )
 
 type basicAuth struct {
-	htpasswd     HtpasswdSettings
-	matchFunc    func(username, password string) bool
-	userPassPair string
+	htpasswd   *HtpasswdSettings
+	clientAuth *ClientAuthSettings
+	matchFunc  func(username, password string) bool
 }
 
-func newExtension(cfg *Config) (*basicAuth, error) {
-	if cfg.Htpasswd.File == "" && cfg.Htpasswd.Inline == "" {
+func newClientAuthExtension(cfg *Config) (configauth.ClientAuthenticator, error) {
+	if cfg.ClientAuth == nil || cfg.ClientAuth.Username == "" {
 		return nil, errNoCredentialSource
 	}
+
+	ba := basicAuth{
+		clientAuth: cfg.ClientAuth,
+	}
+	return configauth.NewClientAuthenticator(
+		configauth.WithClientStart(ba.clientStart),
+		configauth.WithClientShutdown(ba.shutdown),
+		configauth.WithClientRoundTripper(ba.RoundTripper),
+	), nil
+}
+
+func newServerAuthExtension(cfg *Config) (configauth.ServerAuthenticator, error) {
+
+	if cfg.Htpasswd == nil || (cfg.Htpasswd.File == "" && cfg.Htpasswd.Inline == "") {
+		return nil, errNoCredentialSource
+	}
+
 	ba := basicAuth{
 		htpasswd: cfg.Htpasswd,
 	}
-	return &ba, nil
+	return configauth.NewServerAuthenticator(
+		configauth.WithStart(ba.serverStart),
+		configauth.WithShutdown(ba.shutdown),
+		configauth.WithAuthenticate(ba.authenticate),
+	), nil
 }
 
-func (ba *basicAuth) Start(ctx context.Context, host component.Host) error {
-	var buff bytes.Buffer
+func (ba *basicAuth) clientStart(_ context.Context, _ component.Host) error {
+	return nil
+}
+
+func (ba *basicAuth) serverStart(ctx context.Context, host component.Host) error {
+	var rs []io.Reader
 
 	if ba.htpasswd.File != "" {
-		bytes, err := ioutil.ReadFile(ba.htpasswd.File)
+		f, err := os.Open(ba.htpasswd.File)
 		if err != nil {
-			return fmt.Errorf("open file error: %w", err)
+			return fmt.Errorf("open htpasswd file: %w", err)
 		}
-		buff.Write(bytes)
-		buff.WriteString("\n")
+		defer f.Close()
+
+		rs = append(rs, f)
+		rs = append(rs, strings.NewReader("\n"))
 	}
 
 	// Ensure that the inline content is read the last.
 	// This way the inline content will override the content from file.
-	if len(ba.htpasswd.Inline) > 0 {
-		buff.Truncate(buff.Len())
-		buff.WriteString(ba.htpasswd.Inline)
-	}
+	rs = append(rs, strings.NewReader(ba.htpasswd.Inline))
+	mr := io.MultiReader(rs...)
 
-	htp, err := htpasswd.NewFromReader(bytes.NewBuffer(buff.Bytes()), htpasswd.DefaultSystems, nil)
+	htp, err := htpasswd.NewFromReader(mr, htpasswd.DefaultSystems, nil)
 	if err != nil {
 		return fmt.Errorf("read htpasswd content: %w", err)
 	}
-	ba.userPassPair = buff.String()
+
 	ba.matchFunc = htp.Match
+
 	return nil
 }
 
-func (ba *basicAuth) Shutdown(ctx context.Context) error {
+func (ba *basicAuth) shutdown(ctx context.Context) error {
 	return nil
 }
 
-func (ba *basicAuth) Authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
+func (ba *basicAuth) authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
 	auth := getAuthHeader(headers)
 	if auth == "" {
 		return ctx, errNoAuth
@@ -160,17 +186,6 @@ func parseBasicAuth(auth string) (*authData, error) {
 	}, nil
 }
 
-func getBasicAuth(auth string) (*authData, error) {
-	si := strings.Index(auth, ":")
-	if si < 0 {
-		return nil, errInvalidFormat
-	}
-	return &authData{
-		username: auth[:si],
-		password: auth[si+1:],
-	}, nil
-}
-
 var _ client.AuthData = (*authData)(nil)
 
 type authData struct {
@@ -196,23 +211,22 @@ func (*authData) GetAttributeNames() []string {
 
 type basicAuthRoundTripper struct {
 	base     http.RoundTripper
-	authData *authData
+	authData *ClientAuthSettings
 }
 
 func (b *basicAuthRoundTripper) RoundTrip(request *http.Request) (*http.Response, error) {
 	newRequest := request.Clone(request.Context())
-	newRequest.SetBasicAuth(b.authData.username, b.authData.password)
+	newRequest.SetBasicAuth(b.authData.Username, b.authData.Password)
 	return b.base.RoundTrip(newRequest)
 }
 
 func (ba *basicAuth) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
-	authData, err := getBasicAuth(ba.userPassPair)
-	if err != nil {
-		return nil, err
+	if strings.Contains(ba.clientAuth.Username, ":") {
+		return nil, errInvalidFormat
 	}
 	return &basicAuthRoundTripper{
 		base:     base,
-		authData: authData,
+		authData: ba.clientAuth,
 	}, nil
 }
 
