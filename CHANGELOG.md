@@ -4,6 +4,9 @@
 
 ### 💡 Enhancements 💡
 
+- `cmd/mdatagen`: Add resource attributes definition to metadata.yaml and move `pdata.Metrics` creation to the
+  generated code (#5270) 
+
 ### 🛑 Breaking changes 🛑
 
 ### 🚩 Deprecations 🚩
@@ -15,8 +18,6 @@
 ### 💡 Enhancements 💡
 
 - `k8seventsreceiver`: Add Api_version and resource_version (#8539)
-- `cmd/mdatagen`: Add resource attributes definition to metadata.yaml and move `pdata.Metrics` creation to the
-  generated code (#5270) 
 - `datadogexporter`: Add `metrics::sums::cumulative_monotonic_mode` to specify export mode for cumulative monotonic sums (#8490)
 - `dynatraceexporter`: add multi-instance deployment note to README.md (#8848)
 - `resourcedetectionprocessor`: Add attribute allowlist (#8547)
