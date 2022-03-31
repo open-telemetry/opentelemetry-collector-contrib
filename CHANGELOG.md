@@ -29,6 +29,10 @@
 
 ### 🚀 New components 🚀
 
+### 🧰 Bug fixes 🧰
+
+- `prometheusreceiver`: Fix issues with relabelling the `job` and `instance` labels. (#8780)
+
 ## v0.48.0
 
 ### 💡 Enhancements 💡
@@ -56,10 +60,6 @@
 ### 🚀 New components 🚀
 
 - `sigv4authextension`: Enable component (#8518)
-
-### 🧰 Bug fixes 🧰
-
-- `prometheusreceiver`: Fix issues with relabelling the `job` and `instance` labels. (#8780)
 
 ## v0.47.0
 
