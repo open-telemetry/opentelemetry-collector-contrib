@@ -6,6 +6,10 @@
 
 ### 🛑 Breaking changes 🛑
 
+### 🧰 Bug fixes 🧰
+
+- `hostmetricsreceiver`: Use cpu times for time delta in cpu.utilization calculation (#8856)
+
 ### 🚩 Deprecations 🚩
 
 ### 🚀 New components 🚀
