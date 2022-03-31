@@ -12,6 +12,9 @@
 
 ### 🚩 Deprecations 🚩
 
+- `datadogexporter`: Deprecate `service` setting in favor of `service.name` semantic convention (#8784)
+- `datadogexporter`: Deprecate `version` setting in favor of `service.version` semantic convention (#8784)
+
 ### 🚀 New components 🚀
 
 ## v0.48.0
@@ -37,8 +40,6 @@
 - `datadogexporter`: Deprecate `OnlyMetadata` method from `Config` struct (#8359)
 - `datadogexporter`: Deprecate `GetCensoredKey` method from `APIConfig` struct (#8830)
 - `datadogexporter`: Deprecate `metrics::send_monotonic_counter` in favor of `metrics::sums::cumulative_monotonic_mode` (#8490)
-- `datadogexporter`: Deprecate `service` setting in favor of `service.name` semantic convention (#8784)
-- `datadogexporter`: Deprecate `version` setting in favor of `service.version` semantic convention (#8784)
 
 ### 🚀 New components 🚀
 
