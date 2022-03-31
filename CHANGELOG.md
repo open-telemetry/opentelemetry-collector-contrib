@@ -4,6 +4,8 @@
 
 ### 💡 Enhancements 💡
 
+- `datadogexporter`: Add `metrics::summaries::mode` to specify export mode for summaries (#8846)
+
 ### 🛑 Breaking changes 🛑
 
 ### 🧰 Bug fixes 🧰
@@ -11,6 +13,8 @@
 - `hostmetricsreceiver`: Use cpu times for time delta in cpu.utilization calculation (#8856)
 
 ### 🚩 Deprecations 🚩
+
+- `datadogexporter`: Deprecate `metrics::report_quantiles` in favor of `metrics::summaries::mode` (#8846)
 
 ### 🚀 New components 🚀
 
@@ -25,7 +29,6 @@
 - `dynatraceexporter`: add multi-instance deployment note to README.md (#8848)
 - `resourcedetectionprocessor`: Add attribute allowlist (#8547)
 - `datadogexporter`:  Metrics payload data and Sketches payload data will be logged if collector is started in debug mode (#8929)
-- `datadogexporter`: Add `metrics::summaries::mode` to specify export mode for summaries (#8846)
 
 ### 🛑 Breaking changes 🛑
 
@@ -38,7 +41,6 @@
 - `datadogexporter`: Deprecate `OnlyMetadata` method from `Config` struct (#8359)
 - `datadogexporter`: Deprecate `GetCensoredKey` method from `APIConfig` struct (#8830)
 - `datadogexporter`: Deprecate `metrics::send_monotonic_counter` in favor of `metrics::sums::cumulative_monotonic_mode` (#8490)
-- `datadogexporter`: Deprecate `metrics::report_quantiles` in favor of `metrics::summaries::mode` (#8846)
 
 ### 🚀 New components 🚀
 
