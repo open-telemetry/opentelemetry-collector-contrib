@@ -16,18 +16,22 @@ package jmxreceiver // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.uber.org/zap"
 )
 
 const (
 	typeStr      = "jmx"
 	otlpEndpoint = "0.0.0.0:0"
 )
+
+var once sync.Once
 
 func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
@@ -51,12 +55,19 @@ func createDefaultConfig() config.Receiver {
 	}
 }
 
+func logDeprecation(logger *zap.Logger) {
+	once.Do(func() {
+		logger.Warn("jmx receiver is deprecated and will be removed in future versions.")
+	})
+}
+
 func createReceiver(
 	_ context.Context,
 	params component.ReceiverCreateSettings,
 	cfg config.Receiver,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
+	logDeprecation(params.Logger)
 	jmxConfig := cfg.(*Config)
 	if err := jmxConfig.validate(); err != nil {
 		return nil, err

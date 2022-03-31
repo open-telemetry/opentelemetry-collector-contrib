@@ -1,4 +1,4 @@
-# JMX Receiver
+# Deprecated JMX Receiver
 
 ### Overview
 
