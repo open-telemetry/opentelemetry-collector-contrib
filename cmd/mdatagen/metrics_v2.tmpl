@@ -3,11 +3,11 @@
 package {{ .Package }}
 
 import (
-	"strconv"
+	{{ if gt (len .Metrics) 0 }}"strconv"{{ end }}
 	"time"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	{{ if gt (len .Metrics) 0 }}"go.opentelemetry.io/collector/receiver/scrapererror"{{ end }}
 	"go.uber.org/zap"
 )
 

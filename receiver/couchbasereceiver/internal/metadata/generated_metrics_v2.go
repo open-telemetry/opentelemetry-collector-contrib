@@ -3,11 +3,10 @@
 package metadata
 
 import (
-	"strconv"
 	"time"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+
 	"go.uber.org/zap"
 )
 
