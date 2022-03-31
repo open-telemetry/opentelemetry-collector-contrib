@@ -12,6 +12,8 @@
 
 ### 🚩 Deprecations 🚩
 
+- `datadogexporter`: Deprecate `GetHostTags` method from `TagsConfig` struct (#8975)
+
 ### 🚀 New components 🚀
 
 ## v0.48.0
