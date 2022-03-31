@@ -3,9 +3,11 @@
 package metadata
 
 import (
+	"strconv"
 	"time"
 
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 // MetricSettings provides common settings for a particular metric.

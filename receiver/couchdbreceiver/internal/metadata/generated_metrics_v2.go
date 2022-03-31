@@ -3,9 +3,11 @@
 package metadata
 
 import (
+	"strconv"
 	"time"
 
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -576,9 +578,27 @@ func (mb *MetricsBuilder) RecordCouchdbAverageRequestTimeDataPoint(ts pdata.Time
 	mb.metricCouchdbAverageRequestTime.recordDataPoint(mb.startTime, ts, val)
 }
 
+// ParseCouchdbAverageRequestTimeDataPoint attempts to parse and add a data point to couchdb.average_request_time metric.
+func (mb *MetricsBuilder) ParseCouchdbAverageRequestTimeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+	if f, err := strconv.ParseFloat(val, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricCouchdbAverageRequestTime.recordDataPoint(mb.startTime, ts, f)
+	}
+}
+
 // RecordCouchdbDatabaseOpenDataPoint adds a data point to couchdb.database.open metric.
 func (mb *MetricsBuilder) RecordCouchdbDatabaseOpenDataPoint(ts pdata.Timestamp, val int64) {
 	mb.metricCouchdbDatabaseOpen.recordDataPoint(mb.startTime, ts, val)
+}
+
+// ParseCouchdbDatabaseOpenDataPoint attempts to parse and add a data point to couchdb.database.open metric.
+func (mb *MetricsBuilder) ParseCouchdbDatabaseOpenDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricCouchdbDatabaseOpen.recordDataPoint(mb.startTime, ts, i)
+	}
 }
 
 // RecordCouchdbDatabaseOperationsDataPoint adds a data point to couchdb.database.operations metric.
@@ -586,9 +606,27 @@ func (mb *MetricsBuilder) RecordCouchdbDatabaseOperationsDataPoint(ts pdata.Time
 	mb.metricCouchdbDatabaseOperations.recordDataPoint(mb.startTime, ts, val, operationAttributeValue)
 }
 
+// ParseCouchdbDatabaseOperationsDataPoint attempts to parse and add a data point to couchdb.database.operations metric.
+func (mb *MetricsBuilder) ParseCouchdbDatabaseOperationsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, operationAttributeValue string) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricCouchdbDatabaseOperations.recordDataPoint(mb.startTime, ts, i, operationAttributeValue)
+	}
+}
+
 // RecordCouchdbFileDescriptorOpenDataPoint adds a data point to couchdb.file_descriptor.open metric.
 func (mb *MetricsBuilder) RecordCouchdbFileDescriptorOpenDataPoint(ts pdata.Timestamp, val int64) {
 	mb.metricCouchdbFileDescriptorOpen.recordDataPoint(mb.startTime, ts, val)
+}
+
+// ParseCouchdbFileDescriptorOpenDataPoint attempts to parse and add a data point to couchdb.file_descriptor.open metric.
+func (mb *MetricsBuilder) ParseCouchdbFileDescriptorOpenDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricCouchdbFileDescriptorOpen.recordDataPoint(mb.startTime, ts, i)
+	}
 }
 
 // RecordCouchdbHttpdBulkRequestsDataPoint adds a data point to couchdb.httpd.bulk_requests metric.
@@ -596,9 +634,27 @@ func (mb *MetricsBuilder) RecordCouchdbHttpdBulkRequestsDataPoint(ts pdata.Times
 	mb.metricCouchdbHttpdBulkRequests.recordDataPoint(mb.startTime, ts, val)
 }
 
+// ParseCouchdbHttpdBulkRequestsDataPoint attempts to parse and add a data point to couchdb.httpd.bulk_requests metric.
+func (mb *MetricsBuilder) ParseCouchdbHttpdBulkRequestsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricCouchdbHttpdBulkRequests.recordDataPoint(mb.startTime, ts, i)
+	}
+}
+
 // RecordCouchdbHttpdRequestsDataPoint adds a data point to couchdb.httpd.requests metric.
 func (mb *MetricsBuilder) RecordCouchdbHttpdRequestsDataPoint(ts pdata.Timestamp, val int64, httpMethodAttributeValue string) {
 	mb.metricCouchdbHttpdRequests.recordDataPoint(mb.startTime, ts, val, httpMethodAttributeValue)
+}
+
+// ParseCouchdbHttpdRequestsDataPoint attempts to parse and add a data point to couchdb.httpd.requests metric.
+func (mb *MetricsBuilder) ParseCouchdbHttpdRequestsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, httpMethodAttributeValue string) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricCouchdbHttpdRequests.recordDataPoint(mb.startTime, ts, i, httpMethodAttributeValue)
+	}
 }
 
 // RecordCouchdbHttpdResponsesDataPoint adds a data point to couchdb.httpd.responses metric.
@@ -606,9 +662,27 @@ func (mb *MetricsBuilder) RecordCouchdbHttpdResponsesDataPoint(ts pdata.Timestam
 	mb.metricCouchdbHttpdResponses.recordDataPoint(mb.startTime, ts, val, httpStatusCodeAttributeValue)
 }
 
+// ParseCouchdbHttpdResponsesDataPoint attempts to parse and add a data point to couchdb.httpd.responses metric.
+func (mb *MetricsBuilder) ParseCouchdbHttpdResponsesDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, httpStatusCodeAttributeValue string) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricCouchdbHttpdResponses.recordDataPoint(mb.startTime, ts, i, httpStatusCodeAttributeValue)
+	}
+}
+
 // RecordCouchdbHttpdViewsDataPoint adds a data point to couchdb.httpd.views metric.
 func (mb *MetricsBuilder) RecordCouchdbHttpdViewsDataPoint(ts pdata.Timestamp, val int64, viewAttributeValue string) {
 	mb.metricCouchdbHttpdViews.recordDataPoint(mb.startTime, ts, val, viewAttributeValue)
+}
+
+// ParseCouchdbHttpdViewsDataPoint attempts to parse and add a data point to couchdb.httpd.views metric.
+func (mb *MetricsBuilder) ParseCouchdbHttpdViewsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, viewAttributeValue string) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricCouchdbHttpdViews.recordDataPoint(mb.startTime, ts, i, viewAttributeValue)
+	}
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

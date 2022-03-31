@@ -3,9 +3,11 @@
 package metadata
 
 import (
+	"strconv"
 	"time"
 
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -1761,9 +1763,27 @@ func (mb *MetricsBuilder) RecordRedisClientsBlockedDataPoint(ts pdata.Timestamp,
 	mb.metricRedisClientsBlocked.recordDataPoint(mb.startTime, ts, val)
 }
 
+// ParseRedisClientsBlockedDataPoint attempts to parse and add a data point to redis.clients.blocked metric.
+func (mb *MetricsBuilder) ParseRedisClientsBlockedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricRedisClientsBlocked.recordDataPoint(mb.startTime, ts, i)
+	}
+}
+
 // RecordRedisClientsConnectedDataPoint adds a data point to redis.clients.connected metric.
 func (mb *MetricsBuilder) RecordRedisClientsConnectedDataPoint(ts pdata.Timestamp, val int64) {
 	mb.metricRedisClientsConnected.recordDataPoint(mb.startTime, ts, val)
+}
+
+// ParseRedisClientsConnectedDataPoint attempts to parse and add a data point to redis.clients.connected metric.
+func (mb *MetricsBuilder) ParseRedisClientsConnectedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricRedisClientsConnected.recordDataPoint(mb.startTime, ts, i)
+	}
 }
 
 // RecordRedisClientsMaxInputBufferDataPoint adds a data point to redis.clients.max_input_buffer metric.
@@ -1771,9 +1791,27 @@ func (mb *MetricsBuilder) RecordRedisClientsMaxInputBufferDataPoint(ts pdata.Tim
 	mb.metricRedisClientsMaxInputBuffer.recordDataPoint(mb.startTime, ts, val)
 }
 
+// ParseRedisClientsMaxInputBufferDataPoint attempts to parse and add a data point to redis.clients.max_input_buffer metric.
+func (mb *MetricsBuilder) ParseRedisClientsMaxInputBufferDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricRedisClientsMaxInputBuffer.recordDataPoint(mb.startTime, ts, i)
+	}
+}
+
 // RecordRedisClientsMaxOutputBufferDataPoint adds a data point to redis.clients.max_output_buffer metric.
 func (mb *MetricsBuilder) RecordRedisClientsMaxOutputBufferDataPoint(ts pdata.Timestamp, val int64) {
 	mb.metricRedisClientsMaxOutputBuffer.recordDataPoint(mb.startTime, ts, val)
+}
+
+// ParseRedisClientsMaxOutputBufferDataPoint attempts to parse and add a data point to redis.clients.max_output_buffer metric.
+func (mb *MetricsBuilder) ParseRedisClientsMaxOutputBufferDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricRedisClientsMaxOutputBuffer.recordDataPoint(mb.startTime, ts, i)
+	}
 }
 
 // RecordRedisCommandsDataPoint adds a data point to redis.commands metric.
@@ -1781,9 +1819,27 @@ func (mb *MetricsBuilder) RecordRedisCommandsDataPoint(ts pdata.Timestamp, val i
 	mb.metricRedisCommands.recordDataPoint(mb.startTime, ts, val)
 }
 
+// ParseRedisCommandsDataPoint attempts to parse and add a data point to redis.commands metric.
+func (mb *MetricsBuilder) ParseRedisCommandsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricRedisCommands.recordDataPoint(mb.startTime, ts, i)
+	}
+}
+
 // RecordRedisCommandsProcessedDataPoint adds a data point to redis.commands.processed metric.
 func (mb *MetricsBuilder) RecordRedisCommandsProcessedDataPoint(ts pdata.Timestamp, val int64) {
 	mb.metricRedisCommandsProcessed.recordDataPoint(mb.startTime, ts, val)
+}
+
+// ParseRedisCommandsProcessedDataPoint attempts to parse and add a data point to redis.commands.processed metric.
+func (mb *MetricsBuilder) ParseRedisCommandsProcessedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricRedisCommandsProcessed.recordDataPoint(mb.startTime, ts, i)
+	}
 }
 
 // RecordRedisConnectionsReceivedDataPoint adds a data point to redis.connections.received metric.
@@ -1791,9 +1847,27 @@ func (mb *MetricsBuilder) RecordRedisConnectionsReceivedDataPoint(ts pdata.Times
 	mb.metricRedisConnectionsReceived.recordDataPoint(mb.startTime, ts, val)
 }
 
+// ParseRedisConnectionsReceivedDataPoint attempts to parse and add a data point to redis.connections.received metric.
+func (mb *MetricsBuilder) ParseRedisConnectionsReceivedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricRedisConnectionsReceived.recordDataPoint(mb.startTime, ts, i)
+	}
+}
+
 // RecordRedisConnectionsRejectedDataPoint adds a data point to redis.connections.rejected metric.
 func (mb *MetricsBuilder) RecordRedisConnectionsRejectedDataPoint(ts pdata.Timestamp, val int64) {
 	mb.metricRedisConnectionsRejected.recordDataPoint(mb.startTime, ts, val)
+}
+
+// ParseRedisConnectionsRejectedDataPoint attempts to parse and add a data point to redis.connections.rejected metric.
+func (mb *MetricsBuilder) ParseRedisConnectionsRejectedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricRedisConnectionsRejected.recordDataPoint(mb.startTime, ts, i)
+	}
 }
 
 // RecordRedisCPUTimeDataPoint adds a data point to redis.cpu.time metric.
@@ -1801,9 +1875,27 @@ func (mb *MetricsBuilder) RecordRedisCPUTimeDataPoint(ts pdata.Timestamp, val fl
 	mb.metricRedisCPUTime.recordDataPoint(mb.startTime, ts, val, stateAttributeValue)
 }
 
+// ParseRedisCPUTimeDataPoint attempts to parse and add a data point to redis.cpu.time metric.
+func (mb *MetricsBuilder) ParseRedisCPUTimeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, stateAttributeValue string) {
+	if f, err := strconv.ParseFloat(val, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricRedisCPUTime.recordDataPoint(mb.startTime, ts, f, stateAttributeValue)
+	}
+}
+
 // RecordRedisDbAvgTTLDataPoint adds a data point to redis.db.avg_ttl metric.
 func (mb *MetricsBuilder) RecordRedisDbAvgTTLDataPoint(ts pdata.Timestamp, val int64, dbAttributeValue string) {
 	mb.metricRedisDbAvgTTL.recordDataPoint(mb.startTime, ts, val, dbAttributeValue)
+}
+
+// ParseRedisDbAvgTTLDataPoint attempts to parse and add a data point to redis.db.avg_ttl metric.
+func (mb *MetricsBuilder) ParseRedisDbAvgTTLDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, dbAttributeValue string) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricRedisDbAvgTTL.recordDataPoint(mb.startTime, ts, i, dbAttributeValue)
+	}
 }
 
 // RecordRedisDbExpiresDataPoint adds a data point to redis.db.expires metric.
@@ -1811,9 +1903,27 @@ func (mb *MetricsBuilder) RecordRedisDbExpiresDataPoint(ts pdata.Timestamp, val 
 	mb.metricRedisDbExpires.recordDataPoint(mb.startTime, ts, val, dbAttributeValue)
 }
 
+// ParseRedisDbExpiresDataPoint attempts to parse and add a data point to redis.db.expires metric.
+func (mb *MetricsBuilder) ParseRedisDbExpiresDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, dbAttributeValue string) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricRedisDbExpires.recordDataPoint(mb.startTime, ts, i, dbAttributeValue)
+	}
+}
+
 // RecordRedisDbKeysDataPoint adds a data point to redis.db.keys metric.
 func (mb *MetricsBuilder) RecordRedisDbKeysDataPoint(ts pdata.Timestamp, val int64, dbAttributeValue string) {
 	mb.metricRedisDbKeys.recordDataPoint(mb.startTime, ts, val, dbAttributeValue)
+}
+
+// ParseRedisDbKeysDataPoint attempts to parse and add a data point to redis.db.keys metric.
+func (mb *MetricsBuilder) ParseRedisDbKeysDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, dbAttributeValue string) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricRedisDbKeys.recordDataPoint(mb.startTime, ts, i, dbAttributeValue)
+	}
 }
 
 // RecordRedisKeysEvictedDataPoint adds a data point to redis.keys.evicted metric.
@@ -1821,9 +1931,27 @@ func (mb *MetricsBuilder) RecordRedisKeysEvictedDataPoint(ts pdata.Timestamp, va
 	mb.metricRedisKeysEvicted.recordDataPoint(mb.startTime, ts, val)
 }
 
+// ParseRedisKeysEvictedDataPoint attempts to parse and add a data point to redis.keys.evicted metric.
+func (mb *MetricsBuilder) ParseRedisKeysEvictedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricRedisKeysEvicted.recordDataPoint(mb.startTime, ts, i)
+	}
+}
+
 // RecordRedisKeysExpiredDataPoint adds a data point to redis.keys.expired metric.
 func (mb *MetricsBuilder) RecordRedisKeysExpiredDataPoint(ts pdata.Timestamp, val int64) {
 	mb.metricRedisKeysExpired.recordDataPoint(mb.startTime, ts, val)
+}
+
+// ParseRedisKeysExpiredDataPoint attempts to parse and add a data point to redis.keys.expired metric.
+func (mb *MetricsBuilder) ParseRedisKeysExpiredDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricRedisKeysExpired.recordDataPoint(mb.startTime, ts, i)
+	}
 }
 
 // RecordRedisKeyspaceHitsDataPoint adds a data point to redis.keyspace.hits metric.
@@ -1831,9 +1959,27 @@ func (mb *MetricsBuilder) RecordRedisKeyspaceHitsDataPoint(ts pdata.Timestamp, v
 	mb.metricRedisKeyspaceHits.recordDataPoint(mb.startTime, ts, val)
 }
 
+// ParseRedisKeyspaceHitsDataPoint attempts to parse and add a data point to redis.keyspace.hits metric.
+func (mb *MetricsBuilder) ParseRedisKeyspaceHitsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricRedisKeyspaceHits.recordDataPoint(mb.startTime, ts, i)
+	}
+}
+
 // RecordRedisKeyspaceMissesDataPoint adds a data point to redis.keyspace.misses metric.
 func (mb *MetricsBuilder) RecordRedisKeyspaceMissesDataPoint(ts pdata.Timestamp, val int64) {
 	mb.metricRedisKeyspaceMisses.recordDataPoint(mb.startTime, ts, val)
+}
+
+// ParseRedisKeyspaceMissesDataPoint attempts to parse and add a data point to redis.keyspace.misses metric.
+func (mb *MetricsBuilder) ParseRedisKeyspaceMissesDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricRedisKeyspaceMisses.recordDataPoint(mb.startTime, ts, i)
+	}
 }
 
 // RecordRedisLatestForkDataPoint adds a data point to redis.latest_fork metric.
@@ -1841,9 +1987,27 @@ func (mb *MetricsBuilder) RecordRedisLatestForkDataPoint(ts pdata.Timestamp, val
 	mb.metricRedisLatestFork.recordDataPoint(mb.startTime, ts, val)
 }
 
+// ParseRedisLatestForkDataPoint attempts to parse and add a data point to redis.latest_fork metric.
+func (mb *MetricsBuilder) ParseRedisLatestForkDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricRedisLatestFork.recordDataPoint(mb.startTime, ts, i)
+	}
+}
+
 // RecordRedisMemoryFragmentationRatioDataPoint adds a data point to redis.memory.fragmentation_ratio metric.
 func (mb *MetricsBuilder) RecordRedisMemoryFragmentationRatioDataPoint(ts pdata.Timestamp, val float64) {
 	mb.metricRedisMemoryFragmentationRatio.recordDataPoint(mb.startTime, ts, val)
+}
+
+// ParseRedisMemoryFragmentationRatioDataPoint attempts to parse and add a data point to redis.memory.fragmentation_ratio metric.
+func (mb *MetricsBuilder) ParseRedisMemoryFragmentationRatioDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+	if f, err := strconv.ParseFloat(val, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricRedisMemoryFragmentationRatio.recordDataPoint(mb.startTime, ts, f)
+	}
 }
 
 // RecordRedisMemoryLuaDataPoint adds a data point to redis.memory.lua metric.
@@ -1851,9 +2015,27 @@ func (mb *MetricsBuilder) RecordRedisMemoryLuaDataPoint(ts pdata.Timestamp, val 
 	mb.metricRedisMemoryLua.recordDataPoint(mb.startTime, ts, val)
 }
 
+// ParseRedisMemoryLuaDataPoint attempts to parse and add a data point to redis.memory.lua metric.
+func (mb *MetricsBuilder) ParseRedisMemoryLuaDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricRedisMemoryLua.recordDataPoint(mb.startTime, ts, i)
+	}
+}
+
 // RecordRedisMemoryPeakDataPoint adds a data point to redis.memory.peak metric.
 func (mb *MetricsBuilder) RecordRedisMemoryPeakDataPoint(ts pdata.Timestamp, val int64) {
 	mb.metricRedisMemoryPeak.recordDataPoint(mb.startTime, ts, val)
+}
+
+// ParseRedisMemoryPeakDataPoint attempts to parse and add a data point to redis.memory.peak metric.
+func (mb *MetricsBuilder) ParseRedisMemoryPeakDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricRedisMemoryPeak.recordDataPoint(mb.startTime, ts, i)
+	}
 }
 
 // RecordRedisMemoryRssDataPoint adds a data point to redis.memory.rss metric.
@@ -1861,9 +2043,27 @@ func (mb *MetricsBuilder) RecordRedisMemoryRssDataPoint(ts pdata.Timestamp, val 
 	mb.metricRedisMemoryRss.recordDataPoint(mb.startTime, ts, val)
 }
 
+// ParseRedisMemoryRssDataPoint attempts to parse and add a data point to redis.memory.rss metric.
+func (mb *MetricsBuilder) ParseRedisMemoryRssDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricRedisMemoryRss.recordDataPoint(mb.startTime, ts, i)
+	}
+}
+
 // RecordRedisMemoryUsedDataPoint adds a data point to redis.memory.used metric.
 func (mb *MetricsBuilder) RecordRedisMemoryUsedDataPoint(ts pdata.Timestamp, val int64) {
 	mb.metricRedisMemoryUsed.recordDataPoint(mb.startTime, ts, val)
+}
+
+// ParseRedisMemoryUsedDataPoint attempts to parse and add a data point to redis.memory.used metric.
+func (mb *MetricsBuilder) ParseRedisMemoryUsedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricRedisMemoryUsed.recordDataPoint(mb.startTime, ts, i)
+	}
 }
 
 // RecordRedisNetInputDataPoint adds a data point to redis.net.input metric.
@@ -1871,9 +2071,27 @@ func (mb *MetricsBuilder) RecordRedisNetInputDataPoint(ts pdata.Timestamp, val i
 	mb.metricRedisNetInput.recordDataPoint(mb.startTime, ts, val)
 }
 
+// ParseRedisNetInputDataPoint attempts to parse and add a data point to redis.net.input metric.
+func (mb *MetricsBuilder) ParseRedisNetInputDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricRedisNetInput.recordDataPoint(mb.startTime, ts, i)
+	}
+}
+
 // RecordRedisNetOutputDataPoint adds a data point to redis.net.output metric.
 func (mb *MetricsBuilder) RecordRedisNetOutputDataPoint(ts pdata.Timestamp, val int64) {
 	mb.metricRedisNetOutput.recordDataPoint(mb.startTime, ts, val)
+}
+
+// ParseRedisNetOutputDataPoint attempts to parse and add a data point to redis.net.output metric.
+func (mb *MetricsBuilder) ParseRedisNetOutputDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricRedisNetOutput.recordDataPoint(mb.startTime, ts, i)
+	}
 }
 
 // RecordRedisRdbChangesSinceLastSaveDataPoint adds a data point to redis.rdb.changes_since_last_save metric.
@@ -1881,9 +2099,27 @@ func (mb *MetricsBuilder) RecordRedisRdbChangesSinceLastSaveDataPoint(ts pdata.T
 	mb.metricRedisRdbChangesSinceLastSave.recordDataPoint(mb.startTime, ts, val)
 }
 
+// ParseRedisRdbChangesSinceLastSaveDataPoint attempts to parse and add a data point to redis.rdb.changes_since_last_save metric.
+func (mb *MetricsBuilder) ParseRedisRdbChangesSinceLastSaveDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricRedisRdbChangesSinceLastSave.recordDataPoint(mb.startTime, ts, i)
+	}
+}
+
 // RecordRedisReplicationBacklogFirstByteOffsetDataPoint adds a data point to redis.replication.backlog_first_byte_offset metric.
 func (mb *MetricsBuilder) RecordRedisReplicationBacklogFirstByteOffsetDataPoint(ts pdata.Timestamp, val int64) {
 	mb.metricRedisReplicationBacklogFirstByteOffset.recordDataPoint(mb.startTime, ts, val)
+}
+
+// ParseRedisReplicationBacklogFirstByteOffsetDataPoint attempts to parse and add a data point to redis.replication.backlog_first_byte_offset metric.
+func (mb *MetricsBuilder) ParseRedisReplicationBacklogFirstByteOffsetDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricRedisReplicationBacklogFirstByteOffset.recordDataPoint(mb.startTime, ts, i)
+	}
 }
 
 // RecordRedisReplicationOffsetDataPoint adds a data point to redis.replication.offset metric.
@@ -1891,14 +2127,41 @@ func (mb *MetricsBuilder) RecordRedisReplicationOffsetDataPoint(ts pdata.Timesta
 	mb.metricRedisReplicationOffset.recordDataPoint(mb.startTime, ts, val)
 }
 
+// ParseRedisReplicationOffsetDataPoint attempts to parse and add a data point to redis.replication.offset metric.
+func (mb *MetricsBuilder) ParseRedisReplicationOffsetDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricRedisReplicationOffset.recordDataPoint(mb.startTime, ts, i)
+	}
+}
+
 // RecordRedisSlavesConnectedDataPoint adds a data point to redis.slaves.connected metric.
 func (mb *MetricsBuilder) RecordRedisSlavesConnectedDataPoint(ts pdata.Timestamp, val int64) {
 	mb.metricRedisSlavesConnected.recordDataPoint(mb.startTime, ts, val)
 }
 
+// ParseRedisSlavesConnectedDataPoint attempts to parse and add a data point to redis.slaves.connected metric.
+func (mb *MetricsBuilder) ParseRedisSlavesConnectedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricRedisSlavesConnected.recordDataPoint(mb.startTime, ts, i)
+	}
+}
+
 // RecordRedisUptimeDataPoint adds a data point to redis.uptime metric.
 func (mb *MetricsBuilder) RecordRedisUptimeDataPoint(ts pdata.Timestamp, val int64) {
 	mb.metricRedisUptime.recordDataPoint(mb.startTime, ts, val)
+}
+
+// ParseRedisUptimeDataPoint attempts to parse and add a data point to redis.uptime metric.
+func (mb *MetricsBuilder) ParseRedisUptimeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricRedisUptime.recordDataPoint(mb.startTime, ts, i)
+	}
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

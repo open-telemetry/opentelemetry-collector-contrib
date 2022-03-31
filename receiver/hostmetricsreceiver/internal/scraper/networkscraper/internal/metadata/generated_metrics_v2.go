@@ -3,9 +3,11 @@
 package metadata
 
 import (
+	"strconv"
 	"time"
 
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -404,9 +406,27 @@ func (mb *MetricsBuilder) RecordSystemNetworkConnectionsDataPoint(ts pdata.Times
 	mb.metricSystemNetworkConnections.recordDataPoint(mb.startTime, ts, val, protocolAttributeValue, stateAttributeValue)
 }
 
+// ParseSystemNetworkConnectionsDataPoint attempts to parse and add a data point to system.network.connections metric.
+func (mb *MetricsBuilder) ParseSystemNetworkConnectionsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, protocolAttributeValue string, stateAttributeValue string) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricSystemNetworkConnections.recordDataPoint(mb.startTime, ts, i, protocolAttributeValue, stateAttributeValue)
+	}
+}
+
 // RecordSystemNetworkDroppedDataPoint adds a data point to system.network.dropped metric.
 func (mb *MetricsBuilder) RecordSystemNetworkDroppedDataPoint(ts pdata.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue string) {
 	mb.metricSystemNetworkDropped.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, directionAttributeValue)
+}
+
+// ParseSystemNetworkDroppedDataPoint attempts to parse and add a data point to system.network.dropped metric.
+func (mb *MetricsBuilder) ParseSystemNetworkDroppedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, deviceAttributeValue string, directionAttributeValue string) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricSystemNetworkDropped.recordDataPoint(mb.startTime, ts, i, deviceAttributeValue, directionAttributeValue)
+	}
 }
 
 // RecordSystemNetworkErrorsDataPoint adds a data point to system.network.errors metric.
@@ -414,14 +434,41 @@ func (mb *MetricsBuilder) RecordSystemNetworkErrorsDataPoint(ts pdata.Timestamp,
 	mb.metricSystemNetworkErrors.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, directionAttributeValue)
 }
 
+// ParseSystemNetworkErrorsDataPoint attempts to parse and add a data point to system.network.errors metric.
+func (mb *MetricsBuilder) ParseSystemNetworkErrorsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, deviceAttributeValue string, directionAttributeValue string) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricSystemNetworkErrors.recordDataPoint(mb.startTime, ts, i, deviceAttributeValue, directionAttributeValue)
+	}
+}
+
 // RecordSystemNetworkIoDataPoint adds a data point to system.network.io metric.
 func (mb *MetricsBuilder) RecordSystemNetworkIoDataPoint(ts pdata.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue string) {
 	mb.metricSystemNetworkIo.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, directionAttributeValue)
 }
 
+// ParseSystemNetworkIoDataPoint attempts to parse and add a data point to system.network.io metric.
+func (mb *MetricsBuilder) ParseSystemNetworkIoDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, deviceAttributeValue string, directionAttributeValue string) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricSystemNetworkIo.recordDataPoint(mb.startTime, ts, i, deviceAttributeValue, directionAttributeValue)
+	}
+}
+
 // RecordSystemNetworkPacketsDataPoint adds a data point to system.network.packets metric.
 func (mb *MetricsBuilder) RecordSystemNetworkPacketsDataPoint(ts pdata.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue string) {
 	mb.metricSystemNetworkPackets.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, directionAttributeValue)
+}
+
+// ParseSystemNetworkPacketsDataPoint attempts to parse and add a data point to system.network.packets metric.
+func (mb *MetricsBuilder) ParseSystemNetworkPacketsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, deviceAttributeValue string, directionAttributeValue string) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricSystemNetworkPackets.recordDataPoint(mb.startTime, ts, i, deviceAttributeValue, directionAttributeValue)
+	}
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

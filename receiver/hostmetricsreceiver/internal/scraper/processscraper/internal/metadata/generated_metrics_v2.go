@@ -3,9 +3,11 @@
 package metadata
 
 import (
+	"strconv"
 	"time"
 
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -377,9 +379,27 @@ func (mb *MetricsBuilder) RecordProcessCPUTimeDataPoint(ts pdata.Timestamp, val 
 	mb.metricProcessCPUTime.recordDataPoint(mb.startTime, ts, val, stateAttributeValue)
 }
 
+// ParseProcessCPUTimeDataPoint attempts to parse and add a data point to process.cpu.time metric.
+func (mb *MetricsBuilder) ParseProcessCPUTimeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, stateAttributeValue string) {
+	if f, err := strconv.ParseFloat(val, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricProcessCPUTime.recordDataPoint(mb.startTime, ts, f, stateAttributeValue)
+	}
+}
+
 // RecordProcessDiskIoDataPoint adds a data point to process.disk.io metric.
 func (mb *MetricsBuilder) RecordProcessDiskIoDataPoint(ts pdata.Timestamp, val int64, directionAttributeValue string) {
 	mb.metricProcessDiskIo.recordDataPoint(mb.startTime, ts, val, directionAttributeValue)
+}
+
+// ParseProcessDiskIoDataPoint attempts to parse and add a data point to process.disk.io metric.
+func (mb *MetricsBuilder) ParseProcessDiskIoDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, directionAttributeValue string) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricProcessDiskIo.recordDataPoint(mb.startTime, ts, i, directionAttributeValue)
+	}
 }
 
 // RecordProcessMemoryPhysicalUsageDataPoint adds a data point to process.memory.physical_usage metric.
@@ -387,9 +407,27 @@ func (mb *MetricsBuilder) RecordProcessMemoryPhysicalUsageDataPoint(ts pdata.Tim
 	mb.metricProcessMemoryPhysicalUsage.recordDataPoint(mb.startTime, ts, val)
 }
 
+// ParseProcessMemoryPhysicalUsageDataPoint attempts to parse and add a data point to process.memory.physical_usage metric.
+func (mb *MetricsBuilder) ParseProcessMemoryPhysicalUsageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricProcessMemoryPhysicalUsage.recordDataPoint(mb.startTime, ts, i)
+	}
+}
+
 // RecordProcessMemoryVirtualUsageDataPoint adds a data point to process.memory.virtual_usage metric.
 func (mb *MetricsBuilder) RecordProcessMemoryVirtualUsageDataPoint(ts pdata.Timestamp, val int64) {
 	mb.metricProcessMemoryVirtualUsage.recordDataPoint(mb.startTime, ts, val)
+}
+
+// ParseProcessMemoryVirtualUsageDataPoint attempts to parse and add a data point to process.memory.virtual_usage metric.
+func (mb *MetricsBuilder) ParseProcessMemoryVirtualUsageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricProcessMemoryVirtualUsage.recordDataPoint(mb.startTime, ts, i)
+	}
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

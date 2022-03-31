@@ -3,9 +3,11 @@
 package metadata
 
 import (
+	"strconv"
 	"time"
 
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -288,14 +290,41 @@ func (mb *MetricsBuilder) RecordSystemFilesystemInodesUsageDataPoint(ts pdata.Ti
 	mb.metricSystemFilesystemInodesUsage.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, modeAttributeValue, mountpointAttributeValue, typeAttributeValue, stateAttributeValue)
 }
 
+// ParseSystemFilesystemInodesUsageDataPoint attempts to parse and add a data point to system.filesystem.inodes.usage metric.
+func (mb *MetricsBuilder) ParseSystemFilesystemInodesUsageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, deviceAttributeValue string, modeAttributeValue string, mountpointAttributeValue string, typeAttributeValue string, stateAttributeValue string) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricSystemFilesystemInodesUsage.recordDataPoint(mb.startTime, ts, i, deviceAttributeValue, modeAttributeValue, mountpointAttributeValue, typeAttributeValue, stateAttributeValue)
+	}
+}
+
 // RecordSystemFilesystemUsageDataPoint adds a data point to system.filesystem.usage metric.
 func (mb *MetricsBuilder) RecordSystemFilesystemUsageDataPoint(ts pdata.Timestamp, val int64, deviceAttributeValue string, modeAttributeValue string, mountpointAttributeValue string, typeAttributeValue string, stateAttributeValue string) {
 	mb.metricSystemFilesystemUsage.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, modeAttributeValue, mountpointAttributeValue, typeAttributeValue, stateAttributeValue)
 }
 
+// ParseSystemFilesystemUsageDataPoint attempts to parse and add a data point to system.filesystem.usage metric.
+func (mb *MetricsBuilder) ParseSystemFilesystemUsageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, deviceAttributeValue string, modeAttributeValue string, mountpointAttributeValue string, typeAttributeValue string, stateAttributeValue string) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricSystemFilesystemUsage.recordDataPoint(mb.startTime, ts, i, deviceAttributeValue, modeAttributeValue, mountpointAttributeValue, typeAttributeValue, stateAttributeValue)
+	}
+}
+
 // RecordSystemFilesystemUtilizationDataPoint adds a data point to system.filesystem.utilization metric.
 func (mb *MetricsBuilder) RecordSystemFilesystemUtilizationDataPoint(ts pdata.Timestamp, val float64, deviceAttributeValue string, modeAttributeValue string, mountpointAttributeValue string, typeAttributeValue string) {
 	mb.metricSystemFilesystemUtilization.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, modeAttributeValue, mountpointAttributeValue, typeAttributeValue)
+}
+
+// ParseSystemFilesystemUtilizationDataPoint attempts to parse and add a data point to system.filesystem.utilization metric.
+func (mb *MetricsBuilder) ParseSystemFilesystemUtilizationDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, deviceAttributeValue string, modeAttributeValue string, mountpointAttributeValue string, typeAttributeValue string) {
+	if f, err := strconv.ParseFloat(val, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricSystemFilesystemUtilization.recordDataPoint(mb.startTime, ts, f, deviceAttributeValue, modeAttributeValue, mountpointAttributeValue, typeAttributeValue)
+	}
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

@@ -3,9 +3,11 @@
 package metadata
 
 import (
+	"strconv"
 	"time"
 
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -340,9 +342,27 @@ func (mb *MetricsBuilder) RecordSystemPagingFaultsDataPoint(ts pdata.Timestamp, 
 	mb.metricSystemPagingFaults.recordDataPoint(mb.startTime, ts, val, typeAttributeValue)
 }
 
+// ParseSystemPagingFaultsDataPoint attempts to parse and add a data point to system.paging.faults metric.
+func (mb *MetricsBuilder) ParseSystemPagingFaultsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, typeAttributeValue string) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricSystemPagingFaults.recordDataPoint(mb.startTime, ts, i, typeAttributeValue)
+	}
+}
+
 // RecordSystemPagingOperationsDataPoint adds a data point to system.paging.operations metric.
 func (mb *MetricsBuilder) RecordSystemPagingOperationsDataPoint(ts pdata.Timestamp, val int64, directionAttributeValue string, typeAttributeValue string) {
 	mb.metricSystemPagingOperations.recordDataPoint(mb.startTime, ts, val, directionAttributeValue, typeAttributeValue)
+}
+
+// ParseSystemPagingOperationsDataPoint attempts to parse and add a data point to system.paging.operations metric.
+func (mb *MetricsBuilder) ParseSystemPagingOperationsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, directionAttributeValue string, typeAttributeValue string) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricSystemPagingOperations.recordDataPoint(mb.startTime, ts, i, directionAttributeValue, typeAttributeValue)
+	}
 }
 
 // RecordSystemPagingUsageDataPoint adds a data point to system.paging.usage metric.
@@ -350,9 +370,27 @@ func (mb *MetricsBuilder) RecordSystemPagingUsageDataPoint(ts pdata.Timestamp, v
 	mb.metricSystemPagingUsage.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, stateAttributeValue)
 }
 
+// ParseSystemPagingUsageDataPoint attempts to parse and add a data point to system.paging.usage metric.
+func (mb *MetricsBuilder) ParseSystemPagingUsageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, deviceAttributeValue string, stateAttributeValue string) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricSystemPagingUsage.recordDataPoint(mb.startTime, ts, i, deviceAttributeValue, stateAttributeValue)
+	}
+}
+
 // RecordSystemPagingUtilizationDataPoint adds a data point to system.paging.utilization metric.
 func (mb *MetricsBuilder) RecordSystemPagingUtilizationDataPoint(ts pdata.Timestamp, val float64, deviceAttributeValue string, stateAttributeValue string) {
 	mb.metricSystemPagingUtilization.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, stateAttributeValue)
+}
+
+// ParseSystemPagingUtilizationDataPoint attempts to parse and add a data point to system.paging.utilization metric.
+func (mb *MetricsBuilder) ParseSystemPagingUtilizationDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, deviceAttributeValue string, stateAttributeValue string) {
+	if f, err := strconv.ParseFloat(val, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricSystemPagingUtilization.recordDataPoint(mb.startTime, ts, f, deviceAttributeValue, stateAttributeValue)
+	}
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

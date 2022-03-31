@@ -3,9 +3,11 @@
 package metadata
 
 import (
+	"strconv"
 	"time"
 
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -267,14 +269,41 @@ func (mb *MetricsBuilder) RecordSystemCPULoadAverage15mDataPoint(ts pdata.Timest
 	mb.metricSystemCPULoadAverage15m.recordDataPoint(mb.startTime, ts, val)
 }
 
+// ParseSystemCPULoadAverage15mDataPoint attempts to parse and add a data point to system.cpu.load_average.15m metric.
+func (mb *MetricsBuilder) ParseSystemCPULoadAverage15mDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+	if f, err := strconv.ParseFloat(val, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricSystemCPULoadAverage15m.recordDataPoint(mb.startTime, ts, f)
+	}
+}
+
 // RecordSystemCPULoadAverage1mDataPoint adds a data point to system.cpu.load_average.1m metric.
 func (mb *MetricsBuilder) RecordSystemCPULoadAverage1mDataPoint(ts pdata.Timestamp, val float64) {
 	mb.metricSystemCPULoadAverage1m.recordDataPoint(mb.startTime, ts, val)
 }
 
+// ParseSystemCPULoadAverage1mDataPoint attempts to parse and add a data point to system.cpu.load_average.1m metric.
+func (mb *MetricsBuilder) ParseSystemCPULoadAverage1mDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+	if f, err := strconv.ParseFloat(val, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricSystemCPULoadAverage1m.recordDataPoint(mb.startTime, ts, f)
+	}
+}
+
 // RecordSystemCPULoadAverage5mDataPoint adds a data point to system.cpu.load_average.5m metric.
 func (mb *MetricsBuilder) RecordSystemCPULoadAverage5mDataPoint(ts pdata.Timestamp, val float64) {
 	mb.metricSystemCPULoadAverage5m.recordDataPoint(mb.startTime, ts, val)
+}
+
+// ParseSystemCPULoadAverage5mDataPoint attempts to parse and add a data point to system.cpu.load_average.5m metric.
+func (mb *MetricsBuilder) ParseSystemCPULoadAverage5mDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+	if f, err := strconv.ParseFloat(val, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricSystemCPULoadAverage5m.recordDataPoint(mb.startTime, ts, f)
+	}
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

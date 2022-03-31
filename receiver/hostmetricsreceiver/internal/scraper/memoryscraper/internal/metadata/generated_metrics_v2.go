@@ -3,9 +3,11 @@
 package metadata
 
 import (
+	"strconv"
 	"time"
 
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -217,9 +219,27 @@ func (mb *MetricsBuilder) RecordSystemMemoryUsageDataPoint(ts pdata.Timestamp, v
 	mb.metricSystemMemoryUsage.recordDataPoint(mb.startTime, ts, val, stateAttributeValue)
 }
 
+// ParseSystemMemoryUsageDataPoint attempts to parse and add a data point to system.memory.usage metric.
+func (mb *MetricsBuilder) ParseSystemMemoryUsageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, stateAttributeValue string) {
+	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricSystemMemoryUsage.recordDataPoint(mb.startTime, ts, i, stateAttributeValue)
+	}
+}
+
 // RecordSystemMemoryUtilizationDataPoint adds a data point to system.memory.utilization metric.
 func (mb *MetricsBuilder) RecordSystemMemoryUtilizationDataPoint(ts pdata.Timestamp, val float64, stateAttributeValue string) {
 	mb.metricSystemMemoryUtilization.recordDataPoint(mb.startTime, ts, val, stateAttributeValue)
+}
+
+// ParseSystemMemoryUtilizationDataPoint attempts to parse and add a data point to system.memory.utilization metric.
+func (mb *MetricsBuilder) ParseSystemMemoryUtilizationDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, stateAttributeValue string) {
+	if f, err := strconv.ParseFloat(val, 64); err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		mb.metricSystemMemoryUtilization.recordDataPoint(mb.startTime, ts, f, stateAttributeValue)
+	}
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
