@@ -343,11 +343,14 @@ func (mb *MetricsBuilder) RecordSystemPagingFaultsDataPoint(ts pdata.Timestamp, 
 }
 
 // ParseSystemPagingFaultsDataPoint attempts to parse and add a data point to system.paging.faults metric.
-func (mb *MetricsBuilder) ParseSystemPagingFaultsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, typeAttributeValue string) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseSystemPagingFaultsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, typeAttributeValue string) bool {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricSystemPagingFaults.recordDataPoint(mb.startTime, ts, i, typeAttributeValue)
+		return true
 	}
 }
 
@@ -357,11 +360,14 @@ func (mb *MetricsBuilder) RecordSystemPagingOperationsDataPoint(ts pdata.Timesta
 }
 
 // ParseSystemPagingOperationsDataPoint attempts to parse and add a data point to system.paging.operations metric.
-func (mb *MetricsBuilder) ParseSystemPagingOperationsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, directionAttributeValue string, typeAttributeValue string) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseSystemPagingOperationsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, directionAttributeValue string, typeAttributeValue string) bool {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricSystemPagingOperations.recordDataPoint(mb.startTime, ts, i, directionAttributeValue, typeAttributeValue)
+		return true
 	}
 }
 
@@ -371,11 +377,14 @@ func (mb *MetricsBuilder) RecordSystemPagingUsageDataPoint(ts pdata.Timestamp, v
 }
 
 // ParseSystemPagingUsageDataPoint attempts to parse and add a data point to system.paging.usage metric.
-func (mb *MetricsBuilder) ParseSystemPagingUsageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, deviceAttributeValue string, stateAttributeValue string) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseSystemPagingUsageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, deviceAttributeValue string, stateAttributeValue string) bool {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricSystemPagingUsage.recordDataPoint(mb.startTime, ts, i, deviceAttributeValue, stateAttributeValue)
+		return true
 	}
 }
 
@@ -385,11 +394,14 @@ func (mb *MetricsBuilder) RecordSystemPagingUtilizationDataPoint(ts pdata.Timest
 }
 
 // ParseSystemPagingUtilizationDataPoint attempts to parse and add a data point to system.paging.utilization metric.
-func (mb *MetricsBuilder) ParseSystemPagingUtilizationDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, deviceAttributeValue string, stateAttributeValue string) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseSystemPagingUtilizationDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, deviceAttributeValue string, stateAttributeValue string) bool {
 	if f, err := strconv.ParseFloat(val, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricSystemPagingUtilization.recordDataPoint(mb.startTime, ts, f, deviceAttributeValue, stateAttributeValue)
+		return true
 	}
 }
 

@@ -528,11 +528,14 @@ func (mb *MetricsBuilder) RecordPostgresqlBackendsDataPoint(ts pdata.Timestamp, 
 }
 
 // ParsePostgresqlBackendsDataPoint attempts to parse and add a data point to postgresql.backends metric.
-func (mb *MetricsBuilder) ParsePostgresqlBackendsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, databaseAttributeValue string) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParsePostgresqlBackendsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, databaseAttributeValue string) bool {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricPostgresqlBackends.recordDataPoint(mb.startTime, ts, i, databaseAttributeValue)
+		return true
 	}
 }
 
@@ -542,11 +545,14 @@ func (mb *MetricsBuilder) RecordPostgresqlBlocksReadDataPoint(ts pdata.Timestamp
 }
 
 // ParsePostgresqlBlocksReadDataPoint attempts to parse and add a data point to postgresql.blocks_read metric.
-func (mb *MetricsBuilder) ParsePostgresqlBlocksReadDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, databaseAttributeValue string, tableAttributeValue string, sourceAttributeValue string) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParsePostgresqlBlocksReadDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, databaseAttributeValue string, tableAttributeValue string, sourceAttributeValue string) bool {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricPostgresqlBlocksRead.recordDataPoint(mb.startTime, ts, i, databaseAttributeValue, tableAttributeValue, sourceAttributeValue)
+		return true
 	}
 }
 
@@ -556,11 +562,14 @@ func (mb *MetricsBuilder) RecordPostgresqlCommitsDataPoint(ts pdata.Timestamp, v
 }
 
 // ParsePostgresqlCommitsDataPoint attempts to parse and add a data point to postgresql.commits metric.
-func (mb *MetricsBuilder) ParsePostgresqlCommitsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, databaseAttributeValue string) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParsePostgresqlCommitsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, databaseAttributeValue string) bool {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricPostgresqlCommits.recordDataPoint(mb.startTime, ts, i, databaseAttributeValue)
+		return true
 	}
 }
 
@@ -570,11 +579,14 @@ func (mb *MetricsBuilder) RecordPostgresqlDbSizeDataPoint(ts pdata.Timestamp, va
 }
 
 // ParsePostgresqlDbSizeDataPoint attempts to parse and add a data point to postgresql.db_size metric.
-func (mb *MetricsBuilder) ParsePostgresqlDbSizeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, databaseAttributeValue string) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParsePostgresqlDbSizeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, databaseAttributeValue string) bool {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricPostgresqlDbSize.recordDataPoint(mb.startTime, ts, i, databaseAttributeValue)
+		return true
 	}
 }
 
@@ -584,11 +596,14 @@ func (mb *MetricsBuilder) RecordPostgresqlOperationsDataPoint(ts pdata.Timestamp
 }
 
 // ParsePostgresqlOperationsDataPoint attempts to parse and add a data point to postgresql.operations metric.
-func (mb *MetricsBuilder) ParsePostgresqlOperationsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, databaseAttributeValue string, tableAttributeValue string, operationAttributeValue string) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParsePostgresqlOperationsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, databaseAttributeValue string, tableAttributeValue string, operationAttributeValue string) bool {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricPostgresqlOperations.recordDataPoint(mb.startTime, ts, i, databaseAttributeValue, tableAttributeValue, operationAttributeValue)
+		return true
 	}
 }
 
@@ -598,11 +613,14 @@ func (mb *MetricsBuilder) RecordPostgresqlRollbacksDataPoint(ts pdata.Timestamp,
 }
 
 // ParsePostgresqlRollbacksDataPoint attempts to parse and add a data point to postgresql.rollbacks metric.
-func (mb *MetricsBuilder) ParsePostgresqlRollbacksDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, databaseAttributeValue string) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParsePostgresqlRollbacksDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, databaseAttributeValue string) bool {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricPostgresqlRollbacks.recordDataPoint(mb.startTime, ts, i, databaseAttributeValue)
+		return true
 	}
 }
 
@@ -612,11 +630,14 @@ func (mb *MetricsBuilder) RecordPostgresqlRowsDataPoint(ts pdata.Timestamp, val 
 }
 
 // ParsePostgresqlRowsDataPoint attempts to parse and add a data point to postgresql.rows metric.
-func (mb *MetricsBuilder) ParsePostgresqlRowsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, databaseAttributeValue string, tableAttributeValue string, stateAttributeValue string) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParsePostgresqlRowsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, databaseAttributeValue string, tableAttributeValue string, stateAttributeValue string) bool {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricPostgresqlRows.recordDataPoint(mb.startTime, ts, i, databaseAttributeValue, tableAttributeValue, stateAttributeValue)
+		return true
 	}
 }
 

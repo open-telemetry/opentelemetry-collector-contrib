@@ -334,11 +334,14 @@ func (mb *MetricsBuilder) RecordNginxConnectionsAcceptedDataPoint(ts pdata.Times
 }
 
 // ParseNginxConnectionsAcceptedDataPoint attempts to parse and add a data point to nginx.connections_accepted metric.
-func (mb *MetricsBuilder) ParseNginxConnectionsAcceptedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseNginxConnectionsAcceptedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) bool {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricNginxConnectionsAccepted.recordDataPoint(mb.startTime, ts, i)
+		return true
 	}
 }
 
@@ -348,11 +351,14 @@ func (mb *MetricsBuilder) RecordNginxConnectionsCurrentDataPoint(ts pdata.Timest
 }
 
 // ParseNginxConnectionsCurrentDataPoint attempts to parse and add a data point to nginx.connections_current metric.
-func (mb *MetricsBuilder) ParseNginxConnectionsCurrentDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, stateAttributeValue string) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseNginxConnectionsCurrentDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, stateAttributeValue string) bool {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricNginxConnectionsCurrent.recordDataPoint(mb.startTime, ts, i, stateAttributeValue)
+		return true
 	}
 }
 
@@ -362,11 +368,14 @@ func (mb *MetricsBuilder) RecordNginxConnectionsHandledDataPoint(ts pdata.Timest
 }
 
 // ParseNginxConnectionsHandledDataPoint attempts to parse and add a data point to nginx.connections_handled metric.
-func (mb *MetricsBuilder) ParseNginxConnectionsHandledDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseNginxConnectionsHandledDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) bool {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricNginxConnectionsHandled.recordDataPoint(mb.startTime, ts, i)
+		return true
 	}
 }
 
@@ -376,11 +385,14 @@ func (mb *MetricsBuilder) RecordNginxRequestsDataPoint(ts pdata.Timestamp, val i
 }
 
 // ParseNginxRequestsDataPoint attempts to parse and add a data point to nginx.requests metric.
-func (mb *MetricsBuilder) ParseNginxRequestsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseNginxRequestsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) bool {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricNginxRequests.recordDataPoint(mb.startTime, ts, i)
+		return true
 	}
 }
 

@@ -270,11 +270,14 @@ func (mb *MetricsBuilder) RecordSystemCPULoadAverage15mDataPoint(ts pdata.Timest
 }
 
 // ParseSystemCPULoadAverage15mDataPoint attempts to parse and add a data point to system.cpu.load_average.15m metric.
-func (mb *MetricsBuilder) ParseSystemCPULoadAverage15mDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseSystemCPULoadAverage15mDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) bool {
 	if f, err := strconv.ParseFloat(val, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricSystemCPULoadAverage15m.recordDataPoint(mb.startTime, ts, f)
+		return true
 	}
 }
 
@@ -284,11 +287,14 @@ func (mb *MetricsBuilder) RecordSystemCPULoadAverage1mDataPoint(ts pdata.Timesta
 }
 
 // ParseSystemCPULoadAverage1mDataPoint attempts to parse and add a data point to system.cpu.load_average.1m metric.
-func (mb *MetricsBuilder) ParseSystemCPULoadAverage1mDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseSystemCPULoadAverage1mDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) bool {
 	if f, err := strconv.ParseFloat(val, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricSystemCPULoadAverage1m.recordDataPoint(mb.startTime, ts, f)
+		return true
 	}
 }
 
@@ -298,11 +304,14 @@ func (mb *MetricsBuilder) RecordSystemCPULoadAverage5mDataPoint(ts pdata.Timesta
 }
 
 // ParseSystemCPULoadAverage5mDataPoint attempts to parse and add a data point to system.cpu.load_average.5m metric.
-func (mb *MetricsBuilder) ParseSystemCPULoadAverage5mDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseSystemCPULoadAverage5mDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) bool {
 	if f, err := strconv.ParseFloat(val, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricSystemCPULoadAverage5m.recordDataPoint(mb.startTime, ts, f)
+		return true
 	}
 }
 

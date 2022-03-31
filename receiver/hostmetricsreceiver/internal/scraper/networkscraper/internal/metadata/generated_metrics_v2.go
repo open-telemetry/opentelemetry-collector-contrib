@@ -407,11 +407,14 @@ func (mb *MetricsBuilder) RecordSystemNetworkConnectionsDataPoint(ts pdata.Times
 }
 
 // ParseSystemNetworkConnectionsDataPoint attempts to parse and add a data point to system.network.connections metric.
-func (mb *MetricsBuilder) ParseSystemNetworkConnectionsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, protocolAttributeValue string, stateAttributeValue string) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseSystemNetworkConnectionsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, protocolAttributeValue string, stateAttributeValue string) bool {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricSystemNetworkConnections.recordDataPoint(mb.startTime, ts, i, protocolAttributeValue, stateAttributeValue)
+		return true
 	}
 }
 
@@ -421,11 +424,14 @@ func (mb *MetricsBuilder) RecordSystemNetworkDroppedDataPoint(ts pdata.Timestamp
 }
 
 // ParseSystemNetworkDroppedDataPoint attempts to parse and add a data point to system.network.dropped metric.
-func (mb *MetricsBuilder) ParseSystemNetworkDroppedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, deviceAttributeValue string, directionAttributeValue string) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseSystemNetworkDroppedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, deviceAttributeValue string, directionAttributeValue string) bool {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricSystemNetworkDropped.recordDataPoint(mb.startTime, ts, i, deviceAttributeValue, directionAttributeValue)
+		return true
 	}
 }
 
@@ -435,11 +441,14 @@ func (mb *MetricsBuilder) RecordSystemNetworkErrorsDataPoint(ts pdata.Timestamp,
 }
 
 // ParseSystemNetworkErrorsDataPoint attempts to parse and add a data point to system.network.errors metric.
-func (mb *MetricsBuilder) ParseSystemNetworkErrorsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, deviceAttributeValue string, directionAttributeValue string) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseSystemNetworkErrorsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, deviceAttributeValue string, directionAttributeValue string) bool {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricSystemNetworkErrors.recordDataPoint(mb.startTime, ts, i, deviceAttributeValue, directionAttributeValue)
+		return true
 	}
 }
 
@@ -449,11 +458,14 @@ func (mb *MetricsBuilder) RecordSystemNetworkIoDataPoint(ts pdata.Timestamp, val
 }
 
 // ParseSystemNetworkIoDataPoint attempts to parse and add a data point to system.network.io metric.
-func (mb *MetricsBuilder) ParseSystemNetworkIoDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, deviceAttributeValue string, directionAttributeValue string) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseSystemNetworkIoDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, deviceAttributeValue string, directionAttributeValue string) bool {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricSystemNetworkIo.recordDataPoint(mb.startTime, ts, i, deviceAttributeValue, directionAttributeValue)
+		return true
 	}
 }
 
@@ -463,11 +475,14 @@ func (mb *MetricsBuilder) RecordSystemNetworkPacketsDataPoint(ts pdata.Timestamp
 }
 
 // ParseSystemNetworkPacketsDataPoint attempts to parse and add a data point to system.network.packets metric.
-func (mb *MetricsBuilder) ParseSystemNetworkPacketsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, deviceAttributeValue string, directionAttributeValue string) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseSystemNetworkPacketsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, deviceAttributeValue string, directionAttributeValue string) bool {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricSystemNetworkPackets.recordDataPoint(mb.startTime, ts, i, deviceAttributeValue, directionAttributeValue)
+		return true
 	}
 }
 

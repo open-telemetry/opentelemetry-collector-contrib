@@ -579,11 +579,14 @@ func (mb *MetricsBuilder) RecordCouchdbAverageRequestTimeDataPoint(ts pdata.Time
 }
 
 // ParseCouchdbAverageRequestTimeDataPoint attempts to parse and add a data point to couchdb.average_request_time metric.
-func (mb *MetricsBuilder) ParseCouchdbAverageRequestTimeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseCouchdbAverageRequestTimeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) bool {
 	if f, err := strconv.ParseFloat(val, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricCouchdbAverageRequestTime.recordDataPoint(mb.startTime, ts, f)
+		return true
 	}
 }
 
@@ -593,11 +596,14 @@ func (mb *MetricsBuilder) RecordCouchdbDatabaseOpenDataPoint(ts pdata.Timestamp,
 }
 
 // ParseCouchdbDatabaseOpenDataPoint attempts to parse and add a data point to couchdb.database.open metric.
-func (mb *MetricsBuilder) ParseCouchdbDatabaseOpenDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseCouchdbDatabaseOpenDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) bool {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricCouchdbDatabaseOpen.recordDataPoint(mb.startTime, ts, i)
+		return true
 	}
 }
 
@@ -607,11 +613,14 @@ func (mb *MetricsBuilder) RecordCouchdbDatabaseOperationsDataPoint(ts pdata.Time
 }
 
 // ParseCouchdbDatabaseOperationsDataPoint attempts to parse and add a data point to couchdb.database.operations metric.
-func (mb *MetricsBuilder) ParseCouchdbDatabaseOperationsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, operationAttributeValue string) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseCouchdbDatabaseOperationsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, operationAttributeValue string) bool {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricCouchdbDatabaseOperations.recordDataPoint(mb.startTime, ts, i, operationAttributeValue)
+		return true
 	}
 }
 
@@ -621,11 +630,14 @@ func (mb *MetricsBuilder) RecordCouchdbFileDescriptorOpenDataPoint(ts pdata.Time
 }
 
 // ParseCouchdbFileDescriptorOpenDataPoint attempts to parse and add a data point to couchdb.file_descriptor.open metric.
-func (mb *MetricsBuilder) ParseCouchdbFileDescriptorOpenDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseCouchdbFileDescriptorOpenDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) bool {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricCouchdbFileDescriptorOpen.recordDataPoint(mb.startTime, ts, i)
+		return true
 	}
 }
 
@@ -635,11 +647,14 @@ func (mb *MetricsBuilder) RecordCouchdbHttpdBulkRequestsDataPoint(ts pdata.Times
 }
 
 // ParseCouchdbHttpdBulkRequestsDataPoint attempts to parse and add a data point to couchdb.httpd.bulk_requests metric.
-func (mb *MetricsBuilder) ParseCouchdbHttpdBulkRequestsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseCouchdbHttpdBulkRequestsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) bool {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricCouchdbHttpdBulkRequests.recordDataPoint(mb.startTime, ts, i)
+		return true
 	}
 }
 
@@ -649,11 +664,14 @@ func (mb *MetricsBuilder) RecordCouchdbHttpdRequestsDataPoint(ts pdata.Timestamp
 }
 
 // ParseCouchdbHttpdRequestsDataPoint attempts to parse and add a data point to couchdb.httpd.requests metric.
-func (mb *MetricsBuilder) ParseCouchdbHttpdRequestsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, httpMethodAttributeValue string) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseCouchdbHttpdRequestsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, httpMethodAttributeValue string) bool {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricCouchdbHttpdRequests.recordDataPoint(mb.startTime, ts, i, httpMethodAttributeValue)
+		return true
 	}
 }
 
@@ -663,11 +681,14 @@ func (mb *MetricsBuilder) RecordCouchdbHttpdResponsesDataPoint(ts pdata.Timestam
 }
 
 // ParseCouchdbHttpdResponsesDataPoint attempts to parse and add a data point to couchdb.httpd.responses metric.
-func (mb *MetricsBuilder) ParseCouchdbHttpdResponsesDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, httpStatusCodeAttributeValue string) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseCouchdbHttpdResponsesDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, httpStatusCodeAttributeValue string) bool {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricCouchdbHttpdResponses.recordDataPoint(mb.startTime, ts, i, httpStatusCodeAttributeValue)
+		return true
 	}
 }
 
@@ -677,11 +698,14 @@ func (mb *MetricsBuilder) RecordCouchdbHttpdViewsDataPoint(ts pdata.Timestamp, v
 }
 
 // ParseCouchdbHttpdViewsDataPoint attempts to parse and add a data point to couchdb.httpd.views metric.
-func (mb *MetricsBuilder) ParseCouchdbHttpdViewsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, viewAttributeValue string) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseCouchdbHttpdViewsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, viewAttributeValue string) bool {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricCouchdbHttpdViews.recordDataPoint(mb.startTime, ts, i, viewAttributeValue)
+		return true
 	}
 }
 

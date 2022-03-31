@@ -291,11 +291,14 @@ func (mb *MetricsBuilder) RecordSystemFilesystemInodesUsageDataPoint(ts pdata.Ti
 }
 
 // ParseSystemFilesystemInodesUsageDataPoint attempts to parse and add a data point to system.filesystem.inodes.usage metric.
-func (mb *MetricsBuilder) ParseSystemFilesystemInodesUsageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, deviceAttributeValue string, modeAttributeValue string, mountpointAttributeValue string, typeAttributeValue string, stateAttributeValue string) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseSystemFilesystemInodesUsageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, deviceAttributeValue string, modeAttributeValue string, mountpointAttributeValue string, typeAttributeValue string, stateAttributeValue string) bool {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricSystemFilesystemInodesUsage.recordDataPoint(mb.startTime, ts, i, deviceAttributeValue, modeAttributeValue, mountpointAttributeValue, typeAttributeValue, stateAttributeValue)
+		return true
 	}
 }
 
@@ -305,11 +308,14 @@ func (mb *MetricsBuilder) RecordSystemFilesystemUsageDataPoint(ts pdata.Timestam
 }
 
 // ParseSystemFilesystemUsageDataPoint attempts to parse and add a data point to system.filesystem.usage metric.
-func (mb *MetricsBuilder) ParseSystemFilesystemUsageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, deviceAttributeValue string, modeAttributeValue string, mountpointAttributeValue string, typeAttributeValue string, stateAttributeValue string) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseSystemFilesystemUsageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, deviceAttributeValue string, modeAttributeValue string, mountpointAttributeValue string, typeAttributeValue string, stateAttributeValue string) bool {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricSystemFilesystemUsage.recordDataPoint(mb.startTime, ts, i, deviceAttributeValue, modeAttributeValue, mountpointAttributeValue, typeAttributeValue, stateAttributeValue)
+		return true
 	}
 }
 
@@ -319,11 +325,14 @@ func (mb *MetricsBuilder) RecordSystemFilesystemUtilizationDataPoint(ts pdata.Ti
 }
 
 // ParseSystemFilesystemUtilizationDataPoint attempts to parse and add a data point to system.filesystem.utilization metric.
-func (mb *MetricsBuilder) ParseSystemFilesystemUtilizationDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, deviceAttributeValue string, modeAttributeValue string, mountpointAttributeValue string, typeAttributeValue string) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseSystemFilesystemUtilizationDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, deviceAttributeValue string, modeAttributeValue string, mountpointAttributeValue string, typeAttributeValue string) bool {
 	if f, err := strconv.ParseFloat(val, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricSystemFilesystemUtilization.recordDataPoint(mb.startTime, ts, f, deviceAttributeValue, modeAttributeValue, mountpointAttributeValue, typeAttributeValue)
+		return true
 	}
 }
 

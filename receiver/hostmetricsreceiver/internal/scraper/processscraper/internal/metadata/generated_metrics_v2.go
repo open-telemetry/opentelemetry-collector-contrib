@@ -380,11 +380,14 @@ func (mb *MetricsBuilder) RecordProcessCPUTimeDataPoint(ts pdata.Timestamp, val 
 }
 
 // ParseProcessCPUTimeDataPoint attempts to parse and add a data point to process.cpu.time metric.
-func (mb *MetricsBuilder) ParseProcessCPUTimeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, stateAttributeValue string) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseProcessCPUTimeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, stateAttributeValue string) bool {
 	if f, err := strconv.ParseFloat(val, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricProcessCPUTime.recordDataPoint(mb.startTime, ts, f, stateAttributeValue)
+		return true
 	}
 }
 
@@ -394,11 +397,14 @@ func (mb *MetricsBuilder) RecordProcessDiskIoDataPoint(ts pdata.Timestamp, val i
 }
 
 // ParseProcessDiskIoDataPoint attempts to parse and add a data point to process.disk.io metric.
-func (mb *MetricsBuilder) ParseProcessDiskIoDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, directionAttributeValue string) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseProcessDiskIoDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, directionAttributeValue string) bool {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricProcessDiskIo.recordDataPoint(mb.startTime, ts, i, directionAttributeValue)
+		return true
 	}
 }
 
@@ -408,11 +414,14 @@ func (mb *MetricsBuilder) RecordProcessMemoryPhysicalUsageDataPoint(ts pdata.Tim
 }
 
 // ParseProcessMemoryPhysicalUsageDataPoint attempts to parse and add a data point to process.memory.physical_usage metric.
-func (mb *MetricsBuilder) ParseProcessMemoryPhysicalUsageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseProcessMemoryPhysicalUsageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) bool {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricProcessMemoryPhysicalUsage.recordDataPoint(mb.startTime, ts, i)
+		return true
 	}
 }
 
@@ -422,11 +431,14 @@ func (mb *MetricsBuilder) RecordProcessMemoryVirtualUsageDataPoint(ts pdata.Time
 }
 
 // ParseProcessMemoryVirtualUsageDataPoint attempts to parse and add a data point to process.memory.virtual_usage metric.
-func (mb *MetricsBuilder) ParseProcessMemoryVirtualUsageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseProcessMemoryVirtualUsageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) bool {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricProcessMemoryVirtualUsage.recordDataPoint(mb.startTime, ts, i)
+		return true
 	}
 }
 

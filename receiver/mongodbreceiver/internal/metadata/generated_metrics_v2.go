@@ -822,11 +822,14 @@ func (mb *MetricsBuilder) RecordMongodbCacheOperationsDataPoint(ts pdata.Timesta
 }
 
 // ParseMongodbCacheOperationsDataPoint attempts to parse and add a data point to mongodb.cache.operations metric.
-func (mb *MetricsBuilder) ParseMongodbCacheOperationsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, typeAttributeValue string) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseMongodbCacheOperationsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, typeAttributeValue string) bool {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricMongodbCacheOperations.recordDataPoint(mb.startTime, ts, i, typeAttributeValue)
+		return true
 	}
 }
 
@@ -836,11 +839,14 @@ func (mb *MetricsBuilder) RecordMongodbCollectionCountDataPoint(ts pdata.Timesta
 }
 
 // ParseMongodbCollectionCountDataPoint attempts to parse and add a data point to mongodb.collection.count metric.
-func (mb *MetricsBuilder) ParseMongodbCollectionCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, databaseAttributeValue string) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseMongodbCollectionCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, databaseAttributeValue string) bool {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricMongodbCollectionCount.recordDataPoint(mb.startTime, ts, i, databaseAttributeValue)
+		return true
 	}
 }
 
@@ -850,11 +856,14 @@ func (mb *MetricsBuilder) RecordMongodbConnectionCountDataPoint(ts pdata.Timesta
 }
 
 // ParseMongodbConnectionCountDataPoint attempts to parse and add a data point to mongodb.connection.count metric.
-func (mb *MetricsBuilder) ParseMongodbConnectionCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, databaseAttributeValue string, connectionTypeAttributeValue string) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseMongodbConnectionCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, databaseAttributeValue string, connectionTypeAttributeValue string) bool {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricMongodbConnectionCount.recordDataPoint(mb.startTime, ts, i, databaseAttributeValue, connectionTypeAttributeValue)
+		return true
 	}
 }
 
@@ -864,11 +873,14 @@ func (mb *MetricsBuilder) RecordMongodbDataSizeDataPoint(ts pdata.Timestamp, val
 }
 
 // ParseMongodbDataSizeDataPoint attempts to parse and add a data point to mongodb.data.size metric.
-func (mb *MetricsBuilder) ParseMongodbDataSizeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, databaseAttributeValue string) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseMongodbDataSizeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, databaseAttributeValue string) bool {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricMongodbDataSize.recordDataPoint(mb.startTime, ts, i, databaseAttributeValue)
+		return true
 	}
 }
 
@@ -878,11 +890,14 @@ func (mb *MetricsBuilder) RecordMongodbExtentCountDataPoint(ts pdata.Timestamp, 
 }
 
 // ParseMongodbExtentCountDataPoint attempts to parse and add a data point to mongodb.extent.count metric.
-func (mb *MetricsBuilder) ParseMongodbExtentCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, databaseAttributeValue string) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseMongodbExtentCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, databaseAttributeValue string) bool {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricMongodbExtentCount.recordDataPoint(mb.startTime, ts, i, databaseAttributeValue)
+		return true
 	}
 }
 
@@ -892,11 +907,14 @@ func (mb *MetricsBuilder) RecordMongodbGlobalLockTimeDataPoint(ts pdata.Timestam
 }
 
 // ParseMongodbGlobalLockTimeDataPoint attempts to parse and add a data point to mongodb.global_lock.time metric.
-func (mb *MetricsBuilder) ParseMongodbGlobalLockTimeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseMongodbGlobalLockTimeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) bool {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricMongodbGlobalLockTime.recordDataPoint(mb.startTime, ts, i)
+		return true
 	}
 }
 
@@ -906,11 +924,14 @@ func (mb *MetricsBuilder) RecordMongodbIndexCountDataPoint(ts pdata.Timestamp, v
 }
 
 // ParseMongodbIndexCountDataPoint attempts to parse and add a data point to mongodb.index.count metric.
-func (mb *MetricsBuilder) ParseMongodbIndexCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, databaseAttributeValue string) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseMongodbIndexCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, databaseAttributeValue string) bool {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricMongodbIndexCount.recordDataPoint(mb.startTime, ts, i, databaseAttributeValue)
+		return true
 	}
 }
 
@@ -920,11 +941,14 @@ func (mb *MetricsBuilder) RecordMongodbIndexSizeDataPoint(ts pdata.Timestamp, va
 }
 
 // ParseMongodbIndexSizeDataPoint attempts to parse and add a data point to mongodb.index.size metric.
-func (mb *MetricsBuilder) ParseMongodbIndexSizeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, databaseAttributeValue string) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseMongodbIndexSizeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, databaseAttributeValue string) bool {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricMongodbIndexSize.recordDataPoint(mb.startTime, ts, i, databaseAttributeValue)
+		return true
 	}
 }
 
@@ -934,11 +958,14 @@ func (mb *MetricsBuilder) RecordMongodbMemoryUsageDataPoint(ts pdata.Timestamp, 
 }
 
 // ParseMongodbMemoryUsageDataPoint attempts to parse and add a data point to mongodb.memory.usage metric.
-func (mb *MetricsBuilder) ParseMongodbMemoryUsageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, databaseAttributeValue string, memoryTypeAttributeValue string) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseMongodbMemoryUsageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, databaseAttributeValue string, memoryTypeAttributeValue string) bool {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricMongodbMemoryUsage.recordDataPoint(mb.startTime, ts, i, databaseAttributeValue, memoryTypeAttributeValue)
+		return true
 	}
 }
 
@@ -948,11 +975,14 @@ func (mb *MetricsBuilder) RecordMongodbObjectCountDataPoint(ts pdata.Timestamp, 
 }
 
 // ParseMongodbObjectCountDataPoint attempts to parse and add a data point to mongodb.object.count metric.
-func (mb *MetricsBuilder) ParseMongodbObjectCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, databaseAttributeValue string) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseMongodbObjectCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, databaseAttributeValue string) bool {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricMongodbObjectCount.recordDataPoint(mb.startTime, ts, i, databaseAttributeValue)
+		return true
 	}
 }
 
@@ -962,11 +992,14 @@ func (mb *MetricsBuilder) RecordMongodbOperationCountDataPoint(ts pdata.Timestam
 }
 
 // ParseMongodbOperationCountDataPoint attempts to parse and add a data point to mongodb.operation.count metric.
-func (mb *MetricsBuilder) ParseMongodbOperationCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, operationAttributeValue string) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseMongodbOperationCountDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, operationAttributeValue string) bool {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricMongodbOperationCount.recordDataPoint(mb.startTime, ts, i, operationAttributeValue)
+		return true
 	}
 }
 
@@ -976,11 +1009,14 @@ func (mb *MetricsBuilder) RecordMongodbStorageSizeDataPoint(ts pdata.Timestamp, 
 }
 
 // ParseMongodbStorageSizeDataPoint attempts to parse and add a data point to mongodb.storage.size metric.
-func (mb *MetricsBuilder) ParseMongodbStorageSizeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, databaseAttributeValue string) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseMongodbStorageSizeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, databaseAttributeValue string) bool {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricMongodbStorageSize.recordDataPoint(mb.startTime, ts, i, databaseAttributeValue)
+		return true
 	}
 }
 

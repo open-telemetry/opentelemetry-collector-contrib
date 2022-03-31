@@ -220,11 +220,14 @@ func (mb *MetricsBuilder) RecordSystemMemoryUsageDataPoint(ts pdata.Timestamp, v
 }
 
 // ParseSystemMemoryUsageDataPoint attempts to parse and add a data point to system.memory.usage metric.
-func (mb *MetricsBuilder) ParseSystemMemoryUsageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, stateAttributeValue string) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseSystemMemoryUsageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, stateAttributeValue string) bool {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricSystemMemoryUsage.recordDataPoint(mb.startTime, ts, i, stateAttributeValue)
+		return true
 	}
 }
 
@@ -234,11 +237,14 @@ func (mb *MetricsBuilder) RecordSystemMemoryUtilizationDataPoint(ts pdata.Timest
 }
 
 // ParseSystemMemoryUtilizationDataPoint attempts to parse and add a data point to system.memory.utilization metric.
-func (mb *MetricsBuilder) ParseSystemMemoryUtilizationDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, stateAttributeValue string) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseSystemMemoryUtilizationDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, stateAttributeValue string) bool {
 	if f, err := strconv.ParseFloat(val, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricSystemMemoryUtilization.recordDataPoint(mb.startTime, ts, f, stateAttributeValue)
+		return true
 	}
 }
 

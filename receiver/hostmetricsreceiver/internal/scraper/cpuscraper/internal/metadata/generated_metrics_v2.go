@@ -222,11 +222,14 @@ func (mb *MetricsBuilder) RecordSystemCPUTimeDataPoint(ts pdata.Timestamp, val f
 }
 
 // ParseSystemCPUTimeDataPoint attempts to parse and add a data point to system.cpu.time metric.
-func (mb *MetricsBuilder) ParseSystemCPUTimeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, cpuAttributeValue string, stateAttributeValue string) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseSystemCPUTimeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, cpuAttributeValue string, stateAttributeValue string) bool {
 	if f, err := strconv.ParseFloat(val, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricSystemCPUTime.recordDataPoint(mb.startTime, ts, f, cpuAttributeValue, stateAttributeValue)
+		return true
 	}
 }
 
@@ -236,11 +239,14 @@ func (mb *MetricsBuilder) RecordSystemCPUUtilizationDataPoint(ts pdata.Timestamp
 }
 
 // ParseSystemCPUUtilizationDataPoint attempts to parse and add a data point to system.cpu.utilization metric.
-func (mb *MetricsBuilder) ParseSystemCPUUtilizationDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, cpuAttributeValue string, stateAttributeValue string) {
+// Function returns whether or not a data point was successfully recorded
+func (mb *MetricsBuilder) ParseSystemCPUUtilizationDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, cpuAttributeValue string, stateAttributeValue string) bool {
 	if f, err := strconv.ParseFloat(val, 64); err != nil {
 		errors.AddPartial(1, err)
+		return false
 	} else {
 		mb.metricSystemCPUUtilization.recordDataPoint(mb.startTime, ts, f, cpuAttributeValue, stateAttributeValue)
+		return true
 	}
 }
 
