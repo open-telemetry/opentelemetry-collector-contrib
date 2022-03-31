@@ -4,6 +4,8 @@
 
 ### 💡 Enhancements 💡
 
+- `routingprocessor`: add option to drop resource attribute used for routing (#8990)
+
 ### 🛑 Breaking changes 🛑
 
 - `filelogreceiver`, `journaldreceiver`, `syslogreceiver`, `tcplogreceiver`, `udplogreceiver`:

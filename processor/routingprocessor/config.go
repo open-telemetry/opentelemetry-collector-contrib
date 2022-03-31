@@ -44,6 +44,11 @@ type Config struct {
 	// Required.
 	FromAttribute string `mapstructure:"from_attribute"`
 
+	// DropRoutingResourceAttribute controls whether to remove the resource attribute used for routing.
+	// This is only relevant if AttributeSource is set to resource.
+	// Optional.
+	DropRoutingResourceAttribute bool `mapstructure:"drop_resource_routing_attribute"`
+
 	// Table contains the routing table for this processor.
 	// Required.
 	Table []RoutingTableItem `mapstructure:"table"`
@@ -73,6 +78,12 @@ func (c *Config) Validate() error {
 		return fmt.Errorf(
 			"invalid attribute to read the route's value from: %w",
 			errNoMissingFromAttribute,
+		)
+	}
+
+	if c.AttributeSource != resourceAttributeSource && c.DropRoutingResourceAttribute {
+		return fmt.Errorf(
+			"using a different attribute source than 'attribute' and drop_resource_routing_attribute is set to true",
 		)
 	}
 
