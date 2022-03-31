@@ -4,6 +4,8 @@
 
 ### 💡 Enhancements 💡
 
+- `cmd/mdatagen`: Update documentation generated for attributes to list enumerated values and show the "value" that will be visible on metrics when it is different from the attribute key in metadata.yaml (#8983)
+
 ### 🛑 Breaking changes 🛑
 
 ### 🧰 Bug fixes 🧰
