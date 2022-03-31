@@ -4,6 +4,8 @@
 
 ### 💡 Enhancements 💡
 
+- `cmd/mdatagen`: Update generated functions to have simple parse function to handle string parsing consistently and limit code duplication across receivers(#7574)
+
 ### 🛑 Breaking changes 🛑
 
 ### 🧰 Bug fixes 🧰
