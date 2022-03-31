@@ -34,6 +34,8 @@ attributes:
     - user
     - io_wait
     - system
+  host:
+    description: The type of CPU consumption
 metrics:
   system.cpu.time:
     enabled: true
@@ -43,7 +45,7 @@ metrics:
     sum:
       aggregation: cumulative
       value_type: double
-    attributes: [cpu_type]
+    attributes: [host, cpu_type]
 `
 )
 
