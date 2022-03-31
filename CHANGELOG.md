@@ -6,6 +6,9 @@
 
 ### 🛑 Breaking changes 🛑
 
+- `filelogreceiver`, `journaldreceiver`, `syslogreceiver`, `tcplogreceiver`, `udplogreceiver`:
+  - Updated data model to align with stable logs data model, which includes various breaking changes. (#8835)
+    - A detailed [Upgrade Guide](https://github.com/open-telemetry/opentelemetry-log-collection/releases/tag/v0.28.0) is available in the log-collection v0.28.0 release notes. 
 - `datadogexporter`: Remove `OnlyMetadata` method from `Config` struct (#8980)
 - `datadogexporter`: Remove `GetCensoredKey` method from `APIConfig` struct (#8980)
 
@@ -14,6 +17,9 @@
 - `hostmetricsreceiver`: Use cpu times for time delta in cpu.utilization calculation (#8856)
 
 ### 🚩 Deprecations 🚩
+
+- `datadogexporter`: Deprecate `service` setting in favor of `service.name` semantic convention (#8784)
+- `datadogexporter`: Deprecate `version` setting in favor of `service.version` semantic convention (#8784)
 
 ### 🚀 New components 🚀
 
