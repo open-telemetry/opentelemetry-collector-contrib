@@ -1,5 +1,8 @@
 # Deprecated JMX Receiver
 
+This receiver has been deprecated due to security concerns around the ability to specify the execution of
+any arbitrary processes via its configuration. See [#6750](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/6750) for additional details.
+
 ### Overview
 
 The JMX Receiver will work in conjunction with the [OpenTelemetry JMX Metric Gatherer](https://github.com/open-telemetry/opentelemetry-java-contrib/blob/main/jmx-metrics/README.md)
