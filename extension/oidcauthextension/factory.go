@@ -25,7 +25,7 @@ const (
 	// The value of extension "type" in configuration.
 	typeStr = "oidc"
 
-	defaultAttribute = "authorization"
+	defaultAttribute = "Authorization"
 )
 
 // NewFactory creates a factory for the OIDC Authenticator extension.

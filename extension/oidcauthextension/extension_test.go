@@ -66,7 +66,7 @@ func TestOIDCAuthenticationSucceeded(t *testing.T) {
 	require.NoError(t, err)
 
 	// test
-	ctx, err := p.Authenticate(context.Background(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
+	ctx, err := p.Authenticate(context.Background(), map[string][]string{"Authorization": {fmt.Sprintf("Bearer %s", token)}})
 
 	// verify
 	assert.NoError(t, err)
@@ -207,7 +207,7 @@ func TestOIDCInvalidAuthHeader(t *testing.T) {
 	require.NoError(t, err)
 
 	// test
-	ctx, err := p.Authenticate(context.Background(), map[string][]string{"authorization": {"some-value"}})
+	ctx, err := p.Authenticate(context.Background(), map[string][]string{"Authorization": {"some-value"}})
 
 	// verify
 	assert.Equal(t, errInvalidAuthenticationHeaderFormat, err)
@@ -262,7 +262,7 @@ func TestFailedToVerifyToken(t *testing.T) {
 	require.NoError(t, err)
 
 	// test
-	ctx, err := p.Authenticate(context.Background(), map[string][]string{"authorization": {"Bearer some-token"}})
+	ctx, err := p.Authenticate(context.Background(), map[string][]string{"Authorization": {"Bearer some-token"}})
 
 	// verify
 	assert.Error(t, err)
@@ -326,7 +326,7 @@ func TestFailedToGetGroupsClaimFromToken(t *testing.T) {
 			require.NoError(t, err)
 
 			// test
-			ctx, err := p.Authenticate(context.Background(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
+			ctx, err := p.Authenticate(context.Background(), map[string][]string{"Authorization": {fmt.Sprintf("Bearer %s", token)}})
 
 			// verify
 			assert.ErrorIs(t, err, tt.expectedError)

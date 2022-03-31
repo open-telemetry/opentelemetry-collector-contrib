@@ -20,7 +20,7 @@ import "go.opentelemetry.io/collector/config"
 type Config struct {
 	config.ExtensionSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
-	// The attribute (header name) to look for auth data. Optional, default value: "authorization".
+	// The attribute (header name) to look for auth data. Optional, default value: "Authorization".
 	Attribute string `mapstructure:"attribute"`
 
 	// IssuerURL is the base URL for the OIDC provider.
