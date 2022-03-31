@@ -650,7 +650,7 @@ func TestRelabelJobInstance(t *testing.T) {
 					Replacement: "relabeled-instance",
 				},
 				{
-					// this config should replace the instance label with 'relabeled-instance'
+					// this config should replace the job label with 'not-target1'
 					Action:      relabel.Replace,
 					Regex:       relabel.MustNewRegexp("(.*)"),
 					TargetLabel: "job",
