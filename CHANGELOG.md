@@ -12,7 +12,7 @@
 ### 🧰 Bug fixes 🧰
 
 - `hostmetricsreceiver`: Use cpu times for time delta in cpu.utilization calculation (#8856)
-
+- `oidcauthextension`: Renamed default value of `Attribute` configuration parameter to `Authorization` from `authorization` (#8994)
 ### 🚩 Deprecations 🚩
 
 - `datadogexporter`: Deprecate `service` setting in favor of `service.name` semantic convention (#8784)
