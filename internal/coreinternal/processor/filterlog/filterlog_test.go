@@ -40,14 +40,15 @@ func TestLogRecord_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 		{
 			name:        "empty_property",
 			property:    filterconfig.MatchProperties{},
-			errorString: "at least one of \"attributes\", \"libraries\" or \"resources\" field must be specified",
+			errorString: `at least one of "attributes", "libraries", "resources" or "log_bodies" field must be specified`,
 		},
 		{
 			name: "empty_log_names_and_attributes",
 			property: filterconfig.MatchProperties{
-				LogNames: []string{},
+				LogNames:  []string{},
+				LogBodies: []string{},
 			},
-			errorString: "at least one of \"attributes\", \"libraries\" or \"resources\" field must be specified",
+			errorString: `at least one of "attributes", "libraries", "resources" or "log_bodies" field must be specified`,
 		},
 		{
 			name: "span_properties",

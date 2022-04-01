@@ -218,6 +218,10 @@ attributes:
       # This is an optional field.
       log_names: [<item1>, ..., <itemN>]
 
+      # The log body must match at least one of the items.
+      # This is an optional field.
+      log_bodies: [<item1>, ..., <itemN>]
+
       # The metric name must match at least one of the items.
       # This is an optional field.
       metric_names: [<item1>, ..., <itemN>]
