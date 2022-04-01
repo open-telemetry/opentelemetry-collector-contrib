@@ -159,7 +159,7 @@ func TestConfigureLatencyBounds(t *testing.T) {
 	// Verify
 	assert.NoError(t, err)
 	assert.NotNil(t, p)
-	assert.Equal(t, []float64{0.000003, 0.003, 3, 3000, maxDurationMs}, p.latencyBounds)
+	assert.Equal(t, []float64{0.000003, 0.003, 3, 3000}, p.latencyBounds)
 }
 
 func TestProcessorCapabilities(t *testing.T) {
