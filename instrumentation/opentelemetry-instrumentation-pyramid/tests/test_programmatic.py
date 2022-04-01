@@ -167,6 +167,24 @@ class TestProgrammatic(InstrumentationTest, TestBase, WsgiTestBase):
         self.assertEqual(span_list[0].kind, trace.SpanKind.SERVER)
         self.assertEqual(span_list[0].attributes, expected_attrs)
 
+    def test_internal_exception(self):
+        expected_attrs = expected_attributes(
+            {
+                SpanAttributes.HTTP_TARGET: "/hello/900",
+                SpanAttributes.HTTP_ROUTE: "/hello/{helloid}",
+                SpanAttributes.HTTP_STATUS_CODE: 500,
+            }
+        )
+        with self.assertRaises(NotImplementedError):
+            resp = self.client.get("/hello/900")
+            resp.close()
+
+        span_list = self.memory_exporter.get_finished_spans()
+        self.assertEqual(len(span_list), 1)
+        self.assertEqual(span_list[0].name, "/hello/{helloid}")
+        self.assertEqual(span_list[0].kind, trace.SpanKind.SERVER)
+        self.assertEqual(span_list[0].attributes, expected_attrs)
+
     def test_tween_list(self):
         tween_list = "opentelemetry.instrumentation.pyramid.trace_tween_factory\npyramid.tweens.excview_tween_factory"
         config = Configurator(settings={"pyramid.tweens": tween_list})

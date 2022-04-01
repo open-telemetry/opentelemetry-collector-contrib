@@ -137,16 +137,23 @@ def trace_tween_factory(handler, registry):
         request.environ[_ENVIRON_ENABLED_KEY] = True
         request.environ[_ENVIRON_STARTTIME_KEY] = _time_ns()
 
+        response = None
+        status = None
+
         try:
             response = handler(request)
-            response_or_exception = response
         except HTTPException as exc:
             # If the exception is a pyramid HTTPException,
             # that's still valuable information that isn't necessarily
             # a 500. For instance, HTTPFound is a 302.
             # As described in docs, Pyramid exceptions are all valid
             # response types
-            response_or_exception = exc
+            response = exc
+            raise
+        except BaseException:
+            # In the case that a non-HTTPException is bubbled up we
+            # should infer a internal server error and raise
+            status = "500 InternalServerError"
             raise
         finally:
             span = request.environ.get(_ENVIRON_SPAN_KEY)
@@ -158,23 +165,26 @@ def trace_tween_factory(handler, registry):
                     "PyramidInstrumentor().instrument_config(config) is called"
                 )
             elif enabled:
-                otel_wsgi.add_response_attributes(
-                    span,
-                    response_or_exception.status,
-                    response_or_exception.headerlist,
-                )
+                status = getattr(response, "status", status)
+
+                if status is not None:
+                    otel_wsgi.add_response_attributes(
+                        span,
+                        status,
+                        getattr(response, "headerList", None),
+                    )
 
                 propagator = get_global_response_propagator()
-                if propagator:
+                if propagator and hasattr(response, "headers"):
                     propagator.inject(response.headers)
 
                 activation = request.environ.get(_ENVIRON_ACTIVATION_KEY)
 
-                if isinstance(response_or_exception, HTTPException):
+                if isinstance(response, HTTPException):
                     activation.__exit__(
-                        type(response_or_exception),
-                        response_or_exception,
-                        getattr(response_or_exception, "__traceback__", None),
+                        type(response),
+                        response,
+                        getattr(response, "__traceback__", None),
                     )
                 else:
                     activation.__exit__(None, None, None)
