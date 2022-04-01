@@ -219,6 +219,7 @@ attributes:
       log_names: [<item1>, ..., <itemN>]
 
       # The log body must match at least one of the items.
+      # Currently only string body types are supported.
       # This is an optional field.
       log_bodies: [<item1>, ..., <itemN>]
 
