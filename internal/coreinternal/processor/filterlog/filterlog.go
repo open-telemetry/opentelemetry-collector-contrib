@@ -89,7 +89,7 @@ func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 // supported to have more than one of these specified, and all specified must
 // evaluate to true for a match to occur.
 func (mp *propertiesMatcher) MatchLogRecord(lr pdata.LogRecord, resource pdata.Resource, library pdata.InstrumentationScope) bool {
-	if lr.Body().Type() == pdata.ValueTypeString && mp.bodyFilters.Matches(lr.Body().StringVal()) {
+	if lr.Body().Type() == pdata.ValueTypeString && mp.bodyFilters != nil && mp.bodyFilters.Matches(lr.Body().StringVal()) {
 		return true
 	}
 

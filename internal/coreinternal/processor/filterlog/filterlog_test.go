@@ -150,10 +150,18 @@ func TestLogRecord_Matching_True(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "log_body_regexp_match",
+			properties: &filterconfig.MatchProperties{
+				Config:    *createConfig(filterset.Regexp),
+				LogBodies: []string{"AUTH.*"},
+			},
+		},
 	}
 
 	lr := pdata.NewLogRecord()
 	lr.Attributes().InsertString("abc", "def")
+	lr.Body().SetStringVal("AUTHENTICATION FAILED")
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
