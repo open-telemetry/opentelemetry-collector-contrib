@@ -124,10 +124,6 @@ func (exp *traceExporter) pushTraceData(
 			}
 			go metadata.Pusher(exp.ctx, exp.params, newMetadataConfigfromConfig(exp.cfg), attrs)
 		})
-
-		// Consume configuration's sync.Once to preserve behavior.
-		// TODO (#8373): Remove this function call.
-		exp.cfg.OnceMetadata().Do(func() {})
 	}
 
 	// convert traces to datadog traces and group trace payloads by env
