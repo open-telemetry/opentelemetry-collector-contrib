@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### 💡 Enhancements 💡
+- `attributesprocessor`: Add support to filter on log body (#8996)
 
 ### 🛑 Breaking changes 🛑
 
