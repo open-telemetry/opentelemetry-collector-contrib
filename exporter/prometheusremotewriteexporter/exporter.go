@@ -99,7 +99,7 @@ func (prwe *prwExporter) Start(ctx context.Context, host component.Host) (err er
 	if err != nil {
 		return err
 	}
-	return prwe.turnOnWALIfEnabled(contextWithLogger(ctx, prwe.settings.Logger.Named("prw.wal")))
+	return prwe.turnOnWALIfEnabled(contextWithLogger(context.Background(), prwe.settings.Logger.Named("prw.wal")))
 }
 
 func (prwe *prwExporter) shutdownWALIfEnabled() error {

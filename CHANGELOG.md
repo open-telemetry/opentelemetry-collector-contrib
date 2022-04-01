@@ -19,6 +19,7 @@
 
 - `hostmetricsreceiver`: Use cpu times for time delta in cpu.utilization calculation (#8856)
 - `dynatraceexporter`: Remove overly verbose stacktrace from certain logs (#8989)
+- `prometheusremotewriteexporter`: Do not re-use Start() context for long-running processes. (#TBD)
 
 ### 🚩 Deprecations 🚩
 
