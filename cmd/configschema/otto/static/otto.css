@@ -1,0 +1,250 @@
+* {
+  font-family: sans-serif;
+  font-size: 18px;
+}
+
+a {
+  color: rgb(88, 138, 205);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+a.plusminus {
+  margin: 16px;
+  font-size: 2em;
+  font-weight: bold;
+}
+
+body {
+  background-color: rgb(2, 4, 8);
+  color: rgb(203, 204, 205);
+  margin: 0;
+}
+
+h1 {
+  margin-left: 18px;
+}
+
+.tab-bar {
+  display: flex;
+  flex-direction: row;
+  margin-bottom: 12px;
+}
+
+.multi-fieldset-view {
+  display: flex;
+  flex-direction: row;
+}
+
+.field-view, .next-level-link-view {
+  margin: 12px 0;
+}
+
+.next-level-link-view .highlighted {
+  border-color: rgb(100, 100, 100);
+}
+
+.next-level-link-view .clicked {
+  color: rgb(242, 118, 96) !important;
+}
+
+.next-level-link-view .disabled {
+  pointer-events: none;
+  color: gray;
+}
+
+.tab-view {
+  margin: 0 32px 0 2px;
+  padding: 2px 8px;
+}
+
+.tab-view {
+  border-width: 0 0 3px 0;
+  border-style: solid;
+  border-color: rgb(14, 17, 22);
+  cursor: pointer;
+}
+
+.tab-view.selected {
+  border-color: rgb(242, 118, 96);
+}
+
+.field-view label {
+  margin-left: 2px;
+}
+
+a.next-level {
+  border-width: 2px;
+  border-color: rgb(14, 17, 22);
+  border-style: dashed;
+}
+
+input, textarea, select {
+  color: rgb(202, 209, 216);
+}
+
+select {
+  font-size: 16px;
+  padding: 4px;
+}
+
+fieldset {
+  border-style: solid;
+  border-width: 1px;
+  border-color: rgb(49, 54, 60);
+}
+
+textarea {
+  width: 100%;
+  height: 200px;
+  font-size: 14px;
+  font-family: monospace;
+  border-width: 3px;
+  border-radius: 12px;
+  padding: 8px;
+  overflow: auto;
+  white-space: nowrap;
+  margin: 8px 0;
+}
+
+input[type=button] {
+  border-style: solid;
+  border-color: rgb(45, 48, 55);
+  border-width: 1px;
+  background-color: rgb(34, 38, 44);
+  padding: 4px 16px;
+  border-radius: 6px;
+  font-size: 16px;
+  margin: 8px 0;
+}
+
+input[type=button]:disabled {
+  background-color: rgb(2, 5, 10);
+}
+
+input[type=button]:active, input[type=text], textarea, select {
+  background-color: rgb(1, 5, 11);
+}
+
+input[type=text] {
+  border-style: solid;
+  border-color: rgb(42, 48, 53);
+  border-radius: 6px;
+  padding: 4px;
+  font-size: 18px;
+}
+
+select:invalid {
+  color: green;
+}
+
+.field-view select, .field-view input[type=text] {
+  width: 256px;
+}
+
+.header-view {
+  display: flex;
+  flex-direction: row;
+  padding: 16px 32px;
+  align-items: center;
+  background-color: rgb(23, 27, 33);
+}
+
+.header-view > * {
+  margin: 0 8px;
+}
+
+.header-view select {
+  margin-top: 2px;
+}
+
+.logo {
+  font-size: 1.8em;
+}
+
+.component-view, .config-export-panel-view {
+  display: flex;
+  flex-direction: column;
+  background-color: rgb(14, 17, 22);
+  border-style: solid;
+  border-color: rgb(49, 54, 60);
+  border-width: 1px;
+  border-radius: 6px;
+  margin: 16px;
+  padding: 32px;
+}
+
+.title {
+  font-weight: bold;
+}
+
+.component-pulldown {
+  margin: 16px 0;
+}
+
+.msg {
+  padding: 8px;
+  text-align: center;
+  margin: 2px;
+  border-radius: 4px;
+  background-color: rgb(67, 131, 64);
+  border-color: rgb(85, 143, 83);
+  border-style: solid;
+  border-width: 1px;
+  cursor: pointer;
+  font-size: 8px;
+}
+
+.button-bar input {
+  margin-right: 16px;
+}
+
+.message-panel {
+  margin-top: 16px;
+}
+
+.message-summary-view .table-parent {
+  height: 12em;
+  overflow: auto;
+}
+
+.message-summary-view .table-widget {
+  font-size: 1.2em;
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.message-summary-view th {
+  padding: 2px 12px;
+  background-color: rgb(23, 27, 33);
+}
+
+.message-summary-view td {
+  text-align: right;
+  font-family: monospace;
+  border-width: 1px 1px 1px 0;
+  border-color: rgb(42, 48, 53);
+  border-style: solid;
+  padding: 2px 12px;
+  background-color: rgb(2, 5, 10);
+}
+
+.message-summary-view tr:hover {
+  background-color: #333;
+}
+
+.message-summary-view tr {
+  cursor: pointer;
+}
+
+.message-summary-view {
+  border: solid rgb(49, 54, 60) 1px;
+  border-radius: 12px;
+}
+
+.num-messages-view {
+  font-weight: bold;
+  padding: 16px;
+  background-color: rgb(23, 27, 33);
+  border-radius: 12px 12px 0 0;
+}

@@ -1,0 +1,31 @@
+type: '*filelogreceiver.FileLogConfig'
+doc: |
+  FileLogConfig defines configuration for the filelog receiver
+fields:
+- name: include
+  type: '[]string'
+  kind: slice
+- name: converter
+  type: adapter.ConverterConfig
+  kind: struct
+  doc: |
+    ConverterConfig controls how the internal entry.Entry to plog.Logs converter
+    works.
+  fields:
+  - name: max_flush_count
+    kind: uint
+    doc: |
+      MaxFlushCount defines the maximum number of entries that can be
+      accumulated before flushing them for further processing.
+  - name: flush_interval
+    type: time.Duration
+    kind: int64
+    doc: |
+      FlushInterval defines how often to flush the converted and accumulated
+      log entries.
+  - name: worker_count
+    kind: int
+    doc: |
+      WorkerCount defines how many worker goroutines used for entry.Entry to
+      log records translation should be spawned.
+      By default: math.Max(1, runtime.NumCPU()/4) workers are spawned.

@@ -42,6 +42,7 @@ type testStruct struct {
 	PersonStruct  testPerson                 `mapstructure:"person_struct"`
 	Persons       []testPerson               `mapstructure:"persons"`
 	PersonPtrs    []*testPerson              `mapstructure:"person_ptrs"`
+	StringMap     map[string]string          `mapstructure:"string_map"`
 	Ignored       string                     `mapstructure:"-"`
 	TLS           configtls.TLSClientSetting `mapstructure:"tls"`
 }
