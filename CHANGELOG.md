@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### 💡 Enhancements 💡
+- `splunkhecexporter`: Add support for batching traces (#8995)
 
 ### 🛑 Breaking changes 🛑
 
