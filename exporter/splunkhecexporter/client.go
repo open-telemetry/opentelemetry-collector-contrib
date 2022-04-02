@@ -555,7 +555,7 @@ func (c *client) pushTracesDataInBatches(ctx context.Context, td pdata.Traces, s
 		}
 	}
 
-	// There's some leftover unsent metrics
+	// There's some leftover unsent traces
 	if bufState.buf.Len() > 0 {
 		if err := send(ctx, bufState.buf); err != nil {
 			return consumererror.NewTraces(err, *subTraces(&td, bufState.bufFront))
