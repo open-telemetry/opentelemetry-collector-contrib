@@ -12,6 +12,7 @@
 - `jaegerremotesamplingextension`: Add local and remote sampling stores (#8818)
 - `attributesprocessor`: Add support to filter on log body (#8996)
 - `prometheusremotewriteexporter`: Translate resource attributes to the target info metric (#8493)
+- `podmanreceiver`: Add API timeout configuration option (#9014)
 
 ### 🛑 Breaking changes 🛑
 
