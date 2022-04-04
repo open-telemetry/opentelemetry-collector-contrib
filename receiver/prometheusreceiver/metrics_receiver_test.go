@@ -20,7 +20,6 @@ import (
 	"time"
 
 	commonconfig "github.com/prometheus/common/config"
-
 	"github.com/prometheus/common/model"
 	promConfig "github.com/prometheus/prometheus/config"
 	promHTTP "github.com/prometheus/prometheus/discovery/http"
@@ -1159,7 +1158,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 			Endpoint:    allocator.srv.URL,
 			Interval:    10 * time.Second,
 			CollectorID: "collector-1",
-			HttpSDConfig: &promHTTP.SDConfig{
+			HTTPSDConfig: &promHTTP.SDConfig{
 				HTTPClientConfig: commonconfig.HTTPClientConfig{
 					BasicAuth: &commonconfig.BasicAuth{
 						Username: "user",

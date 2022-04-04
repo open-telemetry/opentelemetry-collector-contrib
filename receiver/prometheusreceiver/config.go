@@ -76,7 +76,7 @@ type TargetAllocator struct {
 	// that requires that all keys present in the config actually exist on the
 	// structure, ie.: it will error if an unknown key is present.
 	ConfigPlaceholder interface{}        `mapstructure:"http_sd_config"`
-	HttpSDConfig      *promHTTP.SDConfig `mapstructure:"-"`
+	HTTPSDConfig      *promHTTP.SDConfig `mapstructure:"-"`
 }
 
 var _ config.Receiver = (*Config)(nil)
@@ -284,7 +284,7 @@ func (cfg *Config) Unmarshal(componentParser *config.Map) error {
 	if err != nil {
 		return fmt.Errorf("prometheus receiver failed to marshal config to yaml: %s", err)
 	}
-	err = yaml.UnmarshalStrict(httpSDConf, &cfg.TargetAllocator.HttpSDConfig)
+	err = yaml.UnmarshalStrict(httpSDConf, &cfg.TargetAllocator.HTTPSDConfig)
 	if err != nil {
 		return fmt.Errorf("prometheus receiver failed to unmarshal yaml to prometheus config: %s", err)
 	}
