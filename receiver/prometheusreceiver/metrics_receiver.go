@@ -133,18 +133,18 @@ func (r *pReceiver) syncTargetAllocator(compareHash uint64, allocConf *TargetAll
 	}
 	if hash == compareHash {
 		// no update needed
-		return 0, nil
+		return hash, nil
 	}
 
 	discoveryCfg := baseDiscoveryCfg
 
-	for key, linkJSON := range *jobObject {
+	configs := discovery.Configs{}
+	for _, linkJSON := range *jobObject {
 		httpSD := *allocConf.HttpSDConfig
 		httpSD.URL = fmt.Sprintf("%s%s?collector_id=%s", allocConf.Endpoint, linkJSON.Link, allocConf.CollectorID)
-		discoveryCfg[key] = discovery.Configs{
-			&httpSD,
-		}
+		configs = append(configs, &httpSD)
 	}
+	discoveryCfg["target_allocator"] = configs
 
 	err = r.applyCfg(discoveryCfg)
 	if err != nil {

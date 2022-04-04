@@ -1,12 +1,27 @@
+// Copyright  The OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package prometheusreceiver
 
 import (
 	"encoding/json"
-	"github.com/prometheus/common/model"
 	"net/http"
 	"net/http/httptest"
 	"sync"
 	"sync/atomic"
+
+	"github.com/prometheus/common/model"
 )
 
 type MockTargetAllocator struct {
@@ -28,8 +43,8 @@ type mockTargetAllocatorResponseRaw struct {
 }
 
 type HTTPSDResponse struct {
-	Targets []string
-	Labels  map[model.LabelName]model.LabelValue
+	Targets []string                             `json:"targets"`
+	Labels  map[model.LabelName]model.LabelValue `json:"labels"`
 }
 
 func (mta *MockTargetAllocator) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
@@ -51,8 +66,9 @@ func (mta *MockTargetAllocator) ServeHTTP(rw http.ResponseWriter, req *http.Requ
 		rw.WriteHeader(404)
 		return
 	}
+	rw.Header().Set("Content-Type", "application/json")
 	rw.WriteHeader(pages[index].code)
-	_, _ = rw.Write([]byte(pages[index].data))
+	_, _ = rw.Write(pages[index].data)
 }
 
 func (mta *MockTargetAllocator) Start() {
@@ -87,7 +103,6 @@ func transformTAResponseMap(rawResponses map[string][]mockTargetAllocatorRespons
 }
 
 func setupMockTargetAllocator(rawResponses map[string][]mockTargetAllocatorResponseRaw) (*MockTargetAllocator, error) {
-
 	responsesMap, responsesIndexMap, err := transformTAResponseMap(rawResponses)
 	if err != nil {
 		return nil, err
