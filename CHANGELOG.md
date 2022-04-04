@@ -4,8 +4,8 @@
 
 ### 💡 Enhancements 💡
 
-- `cmd/mdatagen`: Add resource attributes definition to metadata.yaml and move `pdata.Metrics` creation to the
-  generated code (#5270)
+- `cmd/mdatagen`: Add resource attributes definition to metadata.yaml and move `pdata.Metrics` creation to the generated code (#5270)
+- Add `make crosslink` target to ensure replace statements are included in `go.mod` for all transitive dependencies within repository (#8822)
 - `cumulativetodeltaprocessor`: add new include/exclude configuration options with regex support (#8952)
 
 ### 🛑 Breaking changes 🛑
