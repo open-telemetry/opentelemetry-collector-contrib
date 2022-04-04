@@ -104,7 +104,7 @@ func (c *metricsConsumer) Consume(ctx context.Context, md pdata.Metrics) error {
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i).Resource().Attributes()
 		source, resourceTags := getSourceAndResourceTags(rm)
-		ilms := rms.At(i).InstrumentationLibraryMetrics()
+		ilms := rms.At(i).ScopeMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			ms := ilms.At(j).Metrics()
 			for k := 0; k < ms.Len(); k++ {
@@ -569,7 +569,7 @@ type histogramDataPoint interface {
 	Count() uint64
 	ExplicitBounds() []float64
 	BucketCounts() []uint64
-	Attributes() pdata.AttributeMap
+	Attributes() pdata.Map
 	Timestamp() pdata.Timestamp
 }
 

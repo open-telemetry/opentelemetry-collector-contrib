@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
-func addAnnotations(annos map[string]interface{}, attrs *pdata.AttributeMap) {
+func addAnnotations(annos map[string]interface{}, attrs *pdata.Map) {
 	for k, v := range annos {
 		switch t := v.(type) {
 		case int:

@@ -296,7 +296,7 @@ func TestEventTracePerWorker(t *testing.T) {
 			defer em.shutdown()
 
 			td := pdata.NewTraces()
-			ils := td.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty()
+			ils := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
 			if tt.traceID != [16]byte{} {
 				span := ils.Spans().AppendEmpty()
 				span.SetTraceID(pdata.NewTraceID(tt.traceID))

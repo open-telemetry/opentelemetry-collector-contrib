@@ -41,12 +41,8 @@ func mapLogRecordToSplunkEvent(res pdata.Resource, lr pdata.LogRecord, config *C
 	sourceTypeKey := config.HecToOtelAttrs.SourceType
 	indexKey := config.HecToOtelAttrs.Index
 	hostKey := config.HecToOtelAttrs.Host
-	nameKey := config.HecFields.Name
 	severityTextKey := config.HecFields.SeverityText
 	severityNumberKey := config.HecFields.SeverityNumber
-	if lr.Name() != "" {
-		fields[nameKey] = lr.Name()
-	}
 	if spanID := lr.SpanID().HexString(); spanID != "" {
 		fields[spanIDFieldKey] = spanID
 	}
@@ -124,7 +120,7 @@ func convertAttributeValue(value pdata.Value, logger *zap.Logger) interface{} {
 			return true
 		})
 		return values
-	case pdata.ValueTypeArray:
+	case pdata.ValueTypeSlice:
 		arrayVal := value.SliceVal()
 		values := make([]interface{}, arrayVal.Len())
 		for i := 0; i < arrayVal.Len(); i++ {

@@ -111,7 +111,7 @@ func TestStringLabelValue(t *testing.T) {
 	assert.Equal(t, StringValueType, labelValue.Metadata().ValueType())
 	assert.Equal(t, stringValue, labelValue.Value())
 
-	attributes := pdata.NewAttributeMap()
+	attributes := pdata.NewMap()
 
 	labelValue.SetValueTo(attributes)
 
@@ -131,7 +131,7 @@ func TestInt64LabelValue(t *testing.T) {
 	assert.Equal(t, IntValueType, labelValue.Metadata().ValueType())
 	assert.Equal(t, int64Value, labelValue.Value())
 
-	attributes := pdata.NewAttributeMap()
+	attributes := pdata.NewMap()
 
 	labelValue.SetValueTo(attributes)
 
@@ -151,7 +151,7 @@ func TestBoolLabelValue(t *testing.T) {
 	assert.Equal(t, BoolValueType, labelValue.Metadata().ValueType())
 	assert.Equal(t, boolValue, labelValue.Value())
 
-	attributes := pdata.NewAttributeMap()
+	attributes := pdata.NewMap()
 
 	labelValue.SetValueTo(attributes)
 
@@ -171,7 +171,7 @@ func TestStringSliceLabelValue(t *testing.T) {
 	assert.Equal(t, StringSliceValueType, labelValue.Metadata().ValueType())
 	assert.Equal(t, stringValue, labelValue.Value())
 
-	attributes := pdata.NewAttributeMap()
+	attributes := pdata.NewMap()
 
 	labelValue.SetValueTo(attributes)
 
@@ -191,7 +191,7 @@ func TestByteSliceLabelValue(t *testing.T) {
 	assert.Equal(t, ByteSliceValueType, labelValue.Metadata().ValueType())
 	assert.Equal(t, stringValue, labelValue.Value())
 
-	attributes := pdata.NewAttributeMap()
+	attributes := pdata.NewMap()
 
 	labelValue.SetValueTo(attributes)
 
@@ -211,7 +211,7 @@ func TestLockRequestSliceLabelValue(t *testing.T) {
 	assert.Equal(t, LockRequestSliceValueType, labelValue.Metadata().ValueType())
 	assert.Equal(t, stringValue, labelValue.Value())
 
-	attributes := pdata.NewAttributeMap()
+	attributes := pdata.NewMap()
 
 	labelValue.SetValueTo(attributes)
 

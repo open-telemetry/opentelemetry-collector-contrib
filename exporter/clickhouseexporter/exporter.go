@@ -76,8 +76,8 @@ func (e *clickhouseExporter) pushLogsData(ctx context.Context, ld pdata.Logs) er
 			logs := ld.ResourceLogs().At(i)
 			res := logs.Resource()
 			resourceKeys, resourceValues := attributesToSlice(res.Attributes())
-			for j := 0; j < logs.InstrumentationLibraryLogs().Len(); j++ {
-				rs := logs.InstrumentationLibraryLogs().At(j).LogRecords()
+			for j := 0; j < logs.ScopeLogs().Len(); j++ {
+				rs := logs.ScopeLogs().At(j).LogRecords()
 				for k := 0; k < rs.Len(); k++ {
 					r := rs.At(k)
 					attrKeys, attrValues := attributesToSlice(r.Attributes())
@@ -108,7 +108,7 @@ func (e *clickhouseExporter) pushLogsData(ctx context.Context, ld pdata.Logs) er
 	return err
 }
 
-func attributesToSlice(attributes pdata.AttributeMap) ([]string, []string) {
+func attributesToSlice(attributes pdata.Map) ([]string, []string) {
 	keys := make([]string, 0, attributes.Len())
 	values := make([]string, 0, attributes.Len())
 	attributes.Range(func(k string, v pdata.Value) bool {

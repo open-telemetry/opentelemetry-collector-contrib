@@ -123,7 +123,7 @@ func TestLogRecord_Matching_False(t *testing.T) {
 			assert.Nil(t, err)
 			require.NotNil(t, matcher)
 
-			assert.False(t, matcher.MatchLogRecord(lr, pdata.Resource{}, pdata.InstrumentationLibrary{}))
+			assert.False(t, matcher.MatchLogRecord(lr, pdata.Resource{}, pdata.InstrumentationScope{}))
 		})
 	}
 }
@@ -161,7 +161,7 @@ func TestLogRecord_Matching_True(t *testing.T) {
 			require.NotNil(t, mp)
 
 			assert.NotNil(t, lr)
-			assert.True(t, mp.MatchLogRecord(lr, pdata.Resource{}, pdata.InstrumentationLibrary{}))
+			assert.True(t, mp.MatchLogRecord(lr, pdata.Resource{}, pdata.InstrumentationScope{}))
 		})
 	}
 }

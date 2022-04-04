@@ -64,7 +64,6 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 			name: "with_name",
 			logRecordFn: func() pdata.LogRecord {
 				logRecord := pdata.NewLogRecord()
-				logRecord.SetName("my very own name")
 				logRecord.Body().SetStringVal("mylog")
 				logRecord.Attributes().InsertString(splunk.DefaultSourceLabel, "myapp")
 				logRecord.Attributes().InsertString(splunk.DefaultSourceTypeLabel, "myapp-type")
@@ -81,7 +80,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				return config
 			},
 			wantSplunkEvents: []*splunk.Event{
-				commonLogSplunkEvent("mylog", ts, map[string]interface{}{"custom": "custom", "otel.log.name": "my very own name"},
+				commonLogSplunkEvent("mylog", ts, map[string]interface{}{"custom": "custom"},
 					"myhost", "myapp", "myapp-type"),
 			},
 		},
@@ -351,7 +350,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 			name: "with array body",
 			logRecordFn: func() pdata.LogRecord {
 				logRecord := pdata.NewLogRecord()
-				attVal := pdata.NewValueArray()
+				attVal := pdata.NewValueSlice()
 				attArray := attVal.SliceVal()
 				attArray.AppendEmpty().SetStringVal("foo")
 				attVal.CopyTo(logRecord.Body())

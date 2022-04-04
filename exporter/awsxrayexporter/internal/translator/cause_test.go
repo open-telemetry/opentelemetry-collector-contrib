@@ -33,7 +33,7 @@ func TestCauseWithExceptions(t *testing.T) {
 
 	event1 := span.Events().AppendEmpty()
 	event1.SetName(ExceptionEventName)
-	attributes := pdata.NewAttributeMap()
+	attributes := pdata.NewMap()
 	attributes.InsertString(conventions.AttributeExceptionType, "java.lang.IllegalStateException")
 	attributes.InsertString(conventions.AttributeExceptionMessage, "bad state")
 	attributes.InsertString(conventions.AttributeExceptionStacktrace, `java.lang.IllegalStateException: state is not legal
@@ -45,7 +45,7 @@ Caused by: java.lang.IllegalArgumentException: bad argument`)
 
 	event2 := span.Events().AppendEmpty()
 	event2.SetName(ExceptionEventName)
-	attributes = pdata.NewAttributeMap()
+	attributes = pdata.NewMap()
 	attributes.InsertString(conventions.AttributeExceptionType, "EmptyError")
 	attributes.CopyTo(event2.Attributes())
 

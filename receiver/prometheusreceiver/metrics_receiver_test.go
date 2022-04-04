@@ -132,7 +132,7 @@ func verifyTarget1(t *testing.T, td *testData, resourceMetrics []*pdata.Resource
 
 	wantAttributes := td.attributes
 
-	metrics1 := m1.InstrumentationLibraryMetrics().At(0).Metrics()
+	metrics1 := m1.ScopeMetrics().At(0).Metrics()
 	ts1 := getTS(metrics1)
 	e1 := []testExpectation{
 		assertMetricPresent("go_threads",
@@ -194,7 +194,7 @@ func verifyTarget1(t *testing.T, td *testData, resourceMetrics []*pdata.Resource
 	// m2 has 4 metrics + 5 internal scraper metrics
 	assert.Equal(t, 9, metricsCount(m2))
 
-	metricsScrape2 := m2.InstrumentationLibraryMetrics().At(0).Metrics()
+	metricsScrape2 := m2.ScopeMetrics().At(0).Metrics()
 	ts2 := getTS(metricsScrape2)
 	e2 := []testExpectation{
 		assertMetricPresent("go_threads",
@@ -257,7 +257,7 @@ func verifyTarget1(t *testing.T, td *testData, resourceMetrics []*pdata.Resource
 	m3 := resourceMetrics[2]
 	// m3 has 4 metrics + 5 internal scraper metrics
 	assert.Equal(t, 9, metricsCount(m3))
-	metricsScrape3 := m3.InstrumentationLibraryMetrics().At(0).Metrics()
+	metricsScrape3 := m3.ScopeMetrics().At(0).Metrics()
 	ts3 := getTS(metricsScrape3)
 	e3 := []testExpectation{
 		assertMetricPresent("go_threads",
@@ -390,7 +390,7 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []*pdata.Resource
 
 	wantAttributes := td.attributes
 
-	metrics1 := m1.InstrumentationLibraryMetrics().At(0).Metrics()
+	metrics1 := m1.ScopeMetrics().At(0).Metrics()
 	ts1 := getTS(metrics1)
 	e1 := []testExpectation{
 		assertMetricPresent("go_threads",
@@ -430,7 +430,7 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []*pdata.Resource
 	// m2 has 2 metrics + 5 internal scraper metrics
 	assert.Equal(t, 7, metricsCount(m2))
 
-	metricsScrape2 := m2.InstrumentationLibraryMetrics().At(0).Metrics()
+	metricsScrape2 := m2.ScopeMetrics().At(0).Metrics()
 	ts2 := getTS(metricsScrape2)
 	e2 := []testExpectation{
 		assertMetricPresent("go_threads",
@@ -478,7 +478,7 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []*pdata.Resource
 	// m3 has 2 metrics + 5 internal scraper metrics
 	assert.Equal(t, 7, metricsCount(m3))
 
-	metricsScrape3 := m3.InstrumentationLibraryMetrics().At(0).Metrics()
+	metricsScrape3 := m3.ScopeMetrics().At(0).Metrics()
 	ts3 := getTS(metricsScrape3)
 	e3 := []testExpectation{
 		assertMetricPresent("go_threads",
@@ -526,7 +526,7 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []*pdata.Resource
 	// m4 has 2 metrics + 5 internal scraper metrics
 	assert.Equal(t, 7, metricsCount(m4))
 
-	metricsScrape4 := m4.InstrumentationLibraryMetrics().At(0).Metrics()
+	metricsScrape4 := m4.ScopeMetrics().At(0).Metrics()
 	ts4 := getTS(metricsScrape4)
 	e4 := []testExpectation{
 		assertMetricPresent("go_threads",
@@ -574,7 +574,7 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []*pdata.Resource
 	// m5 has 2 metrics + 5 internal scraper metrics
 	assert.Equal(t, 7, metricsCount(m5))
 
-	metricsScrape5 := m5.InstrumentationLibraryMetrics().At(0).Metrics()
+	metricsScrape5 := m5.ScopeMetrics().At(0).Metrics()
 	ts5 := getTS(metricsScrape5)
 	e5 := []testExpectation{
 		assertMetricPresent("go_threads",
@@ -699,7 +699,7 @@ func verifyTarget3(t *testing.T, td *testData, resourceMetrics []*pdata.Resource
 
 	wantAttributes := td.attributes
 
-	metrics1 := m1.InstrumentationLibraryMetrics().At(0).Metrics()
+	metrics1 := m1.ScopeMetrics().At(0).Metrics()
 	ts1 := getTS(metrics1)
 	e1 := []testExpectation{
 		assertMetricPresent("go_threads",
@@ -751,7 +751,7 @@ func verifyTarget3(t *testing.T, td *testData, resourceMetrics []*pdata.Resource
 	// m2 has 3 metrics + 5 internal scraper metrics
 	assert.Equal(t, 8, metricsCount(m2))
 
-	metricsScrape2 := m2.InstrumentationLibraryMetrics().At(0).Metrics()
+	metricsScrape2 := m2.ScopeMetrics().At(0).Metrics()
 	ts2 := getTS(metricsScrape2)
 	e2 := []testExpectation{
 		assertMetricPresent("go_threads",
@@ -1014,7 +1014,7 @@ func verifyUntypedMetrics(t *testing.T, td *testData, resourceMetrics []*pdata.R
 
 	wantAttributes := td.attributes
 
-	metrics1 := m1.InstrumentationLibraryMetrics().At(0).Metrics()
+	metrics1 := m1.ScopeMetrics().At(0).Metrics()
 	ts1 := getTS(metrics1)
 	e1 := []testExpectation{
 		assertMetricPresent("http_requests_total",

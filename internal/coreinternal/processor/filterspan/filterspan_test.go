@@ -147,7 +147,7 @@ func TestSpan_Matching_False(t *testing.T) {
 
 	span := pdata.NewSpan()
 	span.SetName("spanName")
-	library := pdata.NewInstrumentationLibrary()
+	library := pdata.NewInstrumentationScope()
 	resource := pdata.NewResource()
 
 	for _, tc := range testcases {
@@ -172,7 +172,7 @@ func TestSpan_MissingServiceName(t *testing.T) {
 	assert.NotNil(t, mp)
 
 	emptySpan := pdata.NewSpan()
-	assert.False(t, mp.MatchSpan(emptySpan, pdata.NewResource(), pdata.NewInstrumentationLibrary()))
+	assert.False(t, mp.MatchSpan(emptySpan, pdata.NewResource(), pdata.NewInstrumentationScope()))
 }
 
 func TestSpan_Matching_True(t *testing.T) {
@@ -231,7 +231,7 @@ func TestSpan_Matching_True(t *testing.T) {
 	resource := pdata.NewResource()
 	resource.Attributes().InsertString(conventions.AttributeServiceName, "svcA")
 
-	library := pdata.NewInstrumentationLibrary()
+	library := pdata.NewInstrumentationScope()
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {

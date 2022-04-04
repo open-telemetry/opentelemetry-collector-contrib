@@ -17,9 +17,10 @@ assigneeGroups:
     - djaglowski
     - dmitryax
     - mx-psi
+    - pmm-sumo
     # Maintainers
-    - codeboten
     - bogdandrutu
+    - codeboten
     - jpkrohling
 
 # A number of assignees added to the pull request

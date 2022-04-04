@@ -29,7 +29,7 @@ func TestInvalidDataType(t *testing.T) {
 	a := newAccumulator(zap.NewNop(), 1*time.Hour).(*lastValueAccumulator)
 	metric := pdata.NewMetric()
 	metric.SetDataType(-100)
-	n := a.addMetric(metric, pdata.NewInstrumentationLibrary(), time.Now())
+	n := a.addMetric(metric, pdata.NewInstrumentationScope(), time.Now())
 	require.Zero(t, n)
 }
 
@@ -86,15 +86,15 @@ func TestAccumulateDeltaAggregation(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			resourceMetrics := pdata.NewResourceMetrics()
-			ilm := resourceMetrics.InstrumentationLibraryMetrics().AppendEmpty()
-			ilm.InstrumentationLibrary().SetName("test")
+			ilm := resourceMetrics.ScopeMetrics().AppendEmpty()
+			ilm.Scope().SetName("test")
 			tt.fillMetric(time.Now(), ilm.Metrics().AppendEmpty())
 
 			a := newAccumulator(zap.NewNop(), 1*time.Hour).(*lastValueAccumulator)
 			n := a.Accumulate(resourceMetrics)
 			require.Equal(t, 0, n)
 
-			signature := timeseriesSignature(ilm.InstrumentationLibrary().Name(), ilm.Metrics().At(0), pdata.NewAttributeMap())
+			signature := timeseriesSignature(ilm.Scope().Name(), ilm.Metrics().At(0), pdata.NewMap())
 			v, ok := a.registeredMetrics.Load(signature)
 			require.False(t, ok)
 			require.Nil(t, v)
@@ -323,8 +323,8 @@ func TestAccumulateMetrics(t *testing.T) {
 			ts3 := time.Now().Add(-1 * time.Second)
 
 			resourceMetrics2 := pdata.NewResourceMetrics()
-			ilm2 := resourceMetrics2.InstrumentationLibraryMetrics().AppendEmpty()
-			ilm2.InstrumentationLibrary().SetName("test")
+			ilm2 := resourceMetrics2.ScopeMetrics().AppendEmpty()
+			ilm2.Scope().SetName("test")
 			tt.metric(ts2, 21, ilm2.Metrics())
 			tt.metric(ts1, 13, ilm2.Metrics())
 
@@ -340,7 +340,7 @@ func TestAccumulateMetrics(t *testing.T) {
 
 			m2Labels, _, m2Value, m2Temporality, m2IsMonotonic := getMetricProperties(ilm2.Metrics().At(0))
 
-			signature := timeseriesSignature(ilm2.InstrumentationLibrary().Name(), ilm2.Metrics().At(0), m2Labels)
+			signature := timeseriesSignature(ilm2.Scope().Name(), ilm2.Metrics().At(0), m2Labels)
 			m, ok := a.registeredMetrics.Load(signature)
 			require.True(t, ok)
 
@@ -363,8 +363,8 @@ func TestAccumulateMetrics(t *testing.T) {
 
 			// 3 metrics arrived
 			resourceMetrics3 := pdata.NewResourceMetrics()
-			ilm3 := resourceMetrics3.InstrumentationLibraryMetrics().AppendEmpty()
-			ilm3.InstrumentationLibrary().SetName("test")
+			ilm3 := resourceMetrics3.ScopeMetrics().AppendEmpty()
+			ilm3.Scope().SetName("test")
 			tt.metric(ts2, 21, ilm3.Metrics())
 			tt.metric(ts3, 34, ilm3.Metrics())
 			tt.metric(ts1, 13, ilm3.Metrics())
@@ -386,7 +386,7 @@ func TestAccumulateMetrics(t *testing.T) {
 }
 
 func getMetricProperties(metric pdata.Metric) (
-	attributes pdata.AttributeMap,
+	attributes pdata.Map,
 	ts time.Time,
 	value float64,
 	temporality pdata.MetricAggregationTemporality,

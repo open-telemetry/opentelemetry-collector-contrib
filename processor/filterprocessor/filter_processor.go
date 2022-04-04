@@ -134,7 +134,7 @@ func (fmp *filterMetricProcessor) processMetrics(_ context.Context, pdm pdata.Me
 			return false
 		}
 
-		rm.InstrumentationLibraryMetrics().RemoveIf(func(ilm pdata.InstrumentationLibraryMetrics) bool {
+		rm.ScopeMetrics().RemoveIf(func(ilm pdata.ScopeMetrics) bool {
 			ilm.Metrics().RemoveIf(func(m pdata.Metric) bool {
 				keep, err := fmp.shouldKeepMetric(m)
 				if err != nil {
@@ -143,11 +143,11 @@ func (fmp *filterMetricProcessor) processMetrics(_ context.Context, pdm pdata.Me
 				}
 				return !keep
 			})
-			// Filter out empty InstrumentationLibraryMetrics
+			// Filter out empty ScopeMetrics
 			return ilm.Metrics().Len() == 0
 		})
 		// Filter out empty ResourceMetrics
-		return rm.InstrumentationLibraryMetrics().Len() == 0
+		return rm.ScopeMetrics().Len() == 0
 	})
 	if pdm.ResourceMetrics().Len() == 0 {
 		return pdm, processorhelper.ErrSkipProcessingData

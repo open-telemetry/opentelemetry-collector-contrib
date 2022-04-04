@@ -162,14 +162,14 @@ func TestJTagsToInternalAttributes(t *testing.T) {
 		},
 	}
 
-	expected := pdata.NewAttributeMap()
+	expected := pdata.NewMap()
 	expected.InsertBool("bool-val", true)
 	expected.InsertInt("int-val", 123)
 	expected.InsertString("string-val", "abc")
 	expected.InsertDouble("double-val", 1.23)
 	expected.InsertString("binary-val", "AAAAAABkfZg=")
 
-	got := pdata.NewAttributeMap()
+	got := pdata.NewMap()
 	jTagsToInternalAttributes(tags, got)
 
 	require.EqualValues(t, expected, got)
@@ -303,18 +303,18 @@ func TestProtoBatchToInternalTracesWithTwoLibraries(t *testing.T) {
 		},
 	}
 	expected := generateTracesTwoSpansFromTwoLibraries()
-	library1Span := expected.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0)
-	library2Span := expected.ResourceSpans().At(0).InstrumentationLibrarySpans().At(1)
+	library1Span := expected.ResourceSpans().At(0).ScopeSpans().At(0)
+	library2Span := expected.ResourceSpans().At(0).ScopeSpans().At(1)
 
 	actual, err := ProtoToTraces([]*model.Batch{jb})
 	assert.NoError(t, err)
 
 	assert.Equal(t, actual.ResourceSpans().Len(), 1)
-	assert.Equal(t, actual.ResourceSpans().At(0).InstrumentationLibrarySpans().Len(), 2)
+	assert.Equal(t, actual.ResourceSpans().At(0).ScopeSpans().Len(), 2)
 
-	ils0 := actual.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0)
-	ils1 := actual.ResourceSpans().At(0).InstrumentationLibrarySpans().At(1)
-	if ils0.InstrumentationLibrary().Name() == "library1" {
+	ils0 := actual.ResourceSpans().At(0).ScopeSpans().At(0)
+	ils1 := actual.ResourceSpans().At(0).ScopeSpans().At(1)
+	if ils0.Scope().Name() == "library1" {
 		assert.EqualValues(t, library1Span, ils0)
 		assert.EqualValues(t, library2Span, ils1)
 	} else {
@@ -343,75 +343,75 @@ func TestSetInternalSpanStatus(t *testing.T) {
 
 	tests := []struct {
 		name             string
-		attrs            pdata.AttributeMap
+		attrs            pdata.Map
 		status           pdata.SpanStatus
 		attrsModifiedLen int // Length of attributes map after dropping converted fields
 	}{
 		{
 			name:             "No tags set -> OK status",
-			attrs:            pdata.NewAttributeMapFromMap(map[string]pdata.Value{}),
+			attrs:            pdata.NewMap(),
 			status:           emptyStatus,
 			attrsModifiedLen: 0,
 		},
 		{
 			name: "error tag set -> Error status",
-			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.Value{
-				tracetranslator.TagError: pdata.NewValueBool(true),
+			attrs: pdata.NewMapFromRaw(map[string]interface{}{
+				tracetranslator.TagError: true,
 			}),
 			status:           errorStatus,
 			attrsModifiedLen: 0,
 		},
 		{
 			name: "status.code is set as string",
-			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.Value{
-				conventions.OtelStatusCode: pdata.NewValueString(statusOk),
+			attrs: pdata.NewMapFromRaw(map[string]interface{}{
+				conventions.OtelStatusCode: statusOk,
 			}),
 			status:           okStatus,
 			attrsModifiedLen: 0,
 		},
 		{
 			name: "status.code, status.message and error tags are set",
-			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.Value{
-				tracetranslator.TagError:          pdata.NewValueBool(true),
-				conventions.OtelStatusCode:        pdata.NewValueString(statusError),
-				conventions.OtelStatusDescription: pdata.NewValueString("Error: Invalid argument"),
+			attrs: pdata.NewMapFromRaw(map[string]interface{}{
+				tracetranslator.TagError:          true,
+				conventions.OtelStatusCode:        statusError,
+				conventions.OtelStatusDescription: "Error: Invalid argument",
 			}),
 			status:           errorStatusWithMessage,
 			attrsModifiedLen: 0,
 		},
 		{
 			name: "http.status_code tag is set as string",
-			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.Value{
-				conventions.AttributeHTTPStatusCode: pdata.NewValueString("404"),
+			attrs: pdata.NewMapFromRaw(map[string]interface{}{
+				conventions.AttributeHTTPStatusCode: "404",
 			}),
 			status:           errorStatus,
 			attrsModifiedLen: 1,
 		},
 		{
 			name: "http.status_code, http.status_message and error tags are set",
-			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.Value{
-				tracetranslator.TagError:            pdata.NewValueBool(true),
-				conventions.AttributeHTTPStatusCode: pdata.NewValueInt(404),
-				tracetranslator.TagHTTPStatusMsg:    pdata.NewValueString("HTTP 404: Not Found"),
+			attrs: pdata.NewMapFromRaw(map[string]interface{}{
+				tracetranslator.TagError:            true,
+				conventions.AttributeHTTPStatusCode: 404,
+				tracetranslator.TagHTTPStatusMsg:    "HTTP 404: Not Found",
 			}),
 			status:           errorStatusWith404Message,
 			attrsModifiedLen: 2,
 		},
 		{
 			name: "status.code has precedence over http.status_code.",
-			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.Value{
-				conventions.OtelStatusCode:          pdata.NewValueString(statusOk),
-				conventions.AttributeHTTPStatusCode: pdata.NewValueInt(500),
-				tracetranslator.TagHTTPStatusMsg:    pdata.NewValueString("Server Error"),
+			attrs: pdata.NewMapFromRaw(map[string]interface{}{
+				conventions.OtelStatusCode:          statusOk,
+				conventions.AttributeHTTPStatusCode: 500,
+				tracetranslator.TagHTTPStatusMsg:    "Server Error",
 			}),
 			status:           okStatus,
 			attrsModifiedLen: 2,
 		},
 		{
 			name: "Ignore http.status_code == 200 if error set to true.",
-			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.Value{
-				tracetranslator.TagError:            pdata.NewValueBool(true),
-				conventions.AttributeHTTPStatusCode: pdata.NewValueInt(200),
+			attrs: pdata.NewMapFromRaw(map[string]interface{}{
+				tracetranslator.TagError:            true,
+				conventions.AttributeHTTPStatusCode: 200,
 			}),
 			status:           errorStatus,
 			attrsModifiedLen: 1,
@@ -525,7 +525,7 @@ func generateProtoProcess() *model.Process {
 
 func generateTracesOneSpanNoResource() pdata.Traces {
 	td := testdata.GenerateTracesOneSpanNoResource()
-	span := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
+	span := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 	span.SetSpanID(pdata.NewSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8}))
 	span.SetTraceID(pdata.NewTraceID(
 		[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80}))
@@ -547,15 +547,15 @@ func generateTracesOneSpanNoResource() pdata.Traces {
 func generateTracesWithLibraryInfo() pdata.Traces {
 	td := generateTracesOneSpanNoResource()
 	rs0 := td.ResourceSpans().At(0)
-	rs0ils0 := rs0.InstrumentationLibrarySpans().At(0)
-	rs0ils0.InstrumentationLibrary().SetName("io.opentelemetry.test")
-	rs0ils0.InstrumentationLibrary().SetVersion("0.42.0")
+	rs0ils0 := rs0.ScopeSpans().At(0)
+	rs0ils0.Scope().SetName("io.opentelemetry.test")
+	rs0ils0.Scope().SetVersion("0.42.0")
 	return td
 }
 
 func generateTracesOneSpanNoResourceWithTraceState() pdata.Traces {
 	td := generateTracesOneSpanNoResource()
-	span := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
+	span := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 	span.SetTraceState("lasterror=f39cd56cc44274fd5abd07ef1164246d10ce2955")
 	return td
 }
@@ -707,7 +707,7 @@ func generateProtoSpanWithTraceState() *model.Span {
 
 func generateTracesTwoSpansChildParent() pdata.Traces {
 	td := generateTracesOneSpanNoResource()
-	spans := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans()
+	spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
 
 	span := spans.AppendEmpty()
 	span.SetName("operationB")
@@ -757,7 +757,7 @@ func generateProtoChildSpan() *model.Span {
 
 func generateTracesTwoSpansWithFollower() pdata.Traces {
 	td := generateTracesOneSpanNoResource()
-	spans := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans()
+	spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
 
 	span := spans.AppendEmpty()
 	span.SetName("operationC")
@@ -833,11 +833,11 @@ func generateTracesTwoSpansFromTwoLibraries() pdata.Traces {
 	td := testdata.GenerateTracesOneEmptyResourceSpans()
 
 	rs0 := td.ResourceSpans().At(0)
-	rs0.InstrumentationLibrarySpans().EnsureCapacity(2)
+	rs0.ScopeSpans().EnsureCapacity(2)
 
-	rs0ils0 := rs0.InstrumentationLibrarySpans().AppendEmpty()
-	rs0ils0.InstrumentationLibrary().SetName("library1")
-	rs0ils0.InstrumentationLibrary().SetVersion("0.42.0")
+	rs0ils0 := rs0.ScopeSpans().AppendEmpty()
+	rs0ils0.Scope().SetName("library1")
+	rs0ils0.Scope().SetVersion("0.42.0")
 	span1 := rs0ils0.Spans().AppendEmpty()
 	span1.SetTraceID(idutils.UInt64ToTraceID(0, 0))
 	span1.SetSpanID(idutils.UInt64ToSpanID(0))
@@ -845,9 +845,9 @@ func generateTracesTwoSpansFromTwoLibraries() pdata.Traces {
 	span1.SetStartTimestamp(testSpanStartTimestamp)
 	span1.SetEndTimestamp(testSpanEndTimestamp)
 
-	rs0ils1 := rs0.InstrumentationLibrarySpans().AppendEmpty()
-	rs0ils1.InstrumentationLibrary().SetName("library2")
-	rs0ils1.InstrumentationLibrary().SetVersion("0.42.0")
+	rs0ils1 := rs0.ScopeSpans().AppendEmpty()
+	rs0ils1.Scope().SetName("library2")
+	rs0ils1.Scope().SetVersion("0.42.0")
 	span2 := rs0ils1.Spans().AppendEmpty()
 	span2.SetTraceID(span1.TraceID())
 	span2.SetSpanID(span1.SpanID())

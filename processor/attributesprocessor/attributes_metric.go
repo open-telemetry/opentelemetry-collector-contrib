@@ -47,7 +47,7 @@ func (a *metricAttributesProcessor) processMetrics(ctx context.Context, md pdata
 	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		rs := rms.At(i)
-		ilms := rs.InstrumentationLibraryMetrics()
+		ilms := rs.ScopeMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			ils := ilms.At(j)
 			metrics := ils.Metrics()

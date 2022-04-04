@@ -50,12 +50,12 @@ func convertLogs(ld pdata.Logs) []*cls.Log {
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		rl := rls.At(i)
-		ills := rl.InstrumentationLibraryLogs()
+		ills := rl.ScopeLogs()
 		resource := rl.Resource()
 		resourceContents := resourceToLogContents(resource)
 		for j := 0; j < ills.Len(); j++ {
 			ils := ills.At(j)
-			instrumentationLibraryContents := instrumentationLibraryToLogContents(ils.InstrumentationLibrary())
+			instrumentationLibraryContents := instrumentationLibraryToLogContents(ils.Scope())
 			logs := ils.LogRecords()
 			for j := 0; j < logs.Len(); j++ {
 				clsLog := mapLogRecordToLogService(logs.At(j), resourceContents, instrumentationLibraryContents)
@@ -110,7 +110,7 @@ func resourceToLogContents(resource pdata.Resource) []*cls.Log_Content {
 	}
 }
 
-func instrumentationLibraryToLogContents(instrumentationLibrary pdata.InstrumentationLibrary) []*cls.Log_Content {
+func instrumentationLibraryToLogContents(instrumentationLibrary pdata.InstrumentationScope) []*cls.Log_Content {
 	return []*cls.Log_Content{
 		{
 			Key:   proto.String(clsLogInstrumentationName),

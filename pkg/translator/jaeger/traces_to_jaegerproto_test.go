@@ -175,7 +175,7 @@ func TestGetTagFromSpanKind(t *testing.T) {
 
 func TestAttributesToJaegerProtoTags(t *testing.T) {
 
-	attributes := pdata.NewAttributeMap()
+	attributes := pdata.NewMap()
 	attributes.InsertBool("bool-val", true)
 	attributes.InsertInt("int-val", 123)
 	attributes.InsertString("string-val", "abc")

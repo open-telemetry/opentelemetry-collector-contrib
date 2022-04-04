@@ -120,7 +120,11 @@ func TestScrape(t *testing.T) {
 			require.NoError(t, err, "Failed to scrape metrics: %v", err)
 
 			assert.Equal(t, test.expectMetrics, md.MetricCount())
-			metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+			if md.ResourceMetrics().Len() == 0 {
+				return
+			}
+
+			metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 			assert.Equal(t, test.expectMetrics, metrics.Len())
 
 			reportedMetricsCount := map[string]int{}

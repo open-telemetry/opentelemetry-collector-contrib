@@ -40,15 +40,15 @@ func TestMessageEventConversion(t *testing.T) {
 		Log{
 			Timestamp: 1593031012000000000,
 			Body:      pdata.NewValueString("..."),
-			Attributes: map[string]pdata.Value{
-				"container_id":   pdata.NewValueString("b00a67eb645849d6ab38ff8beb4aad035cc7e917bf123c3e9057c7e89fc73d2d"),
-				"container_name": pdata.NewValueString("/unruffled_cannon"),
-				"fluent.tag":     pdata.NewValueString("b00a67eb6458"),
-				"source":         pdata.NewValueString("stdout"),
+			Attributes: map[string]interface{}{
+				"container_id":   "b00a67eb645849d6ab38ff8beb4aad035cc7e917bf123c3e9057c7e89fc73d2d",
+				"container_name": "/unruffled_cannon",
+				"fluent.tag":     "b00a67eb6458",
+				"source":         "stdout",
 			},
 		},
 	)
-	require.EqualValues(t, expected.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(0), le)
+	require.EqualValues(t, expected.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0), le)
 }
 
 func TestAttributeTypeConversion(t *testing.T) {
@@ -104,36 +104,31 @@ func TestAttributeTypeConversion(t *testing.T) {
 	le := event.LogRecords().At(0)
 	le.Attributes().Sort()
 
-	nv := pdata.NewValueArray()
-	nv.SliceVal().EnsureCapacity(2)
-	nv.SliceVal().AppendEmpty().SetStringVal("first")
-	nv.SliceVal().AppendEmpty().SetStringVal("second")
-
 	require.EqualValues(t, Logs(
 		Log{
 			Timestamp: 5000000000000,
 			Body:      pdata.NewValueEmpty(),
-			Attributes: map[string]pdata.Value{
-				"a":          pdata.NewValueDouble(5.0),
-				"b":          pdata.NewValueDouble(6.0),
-				"c":          pdata.NewValueBool(true),
-				"d":          pdata.NewValueInt(1),
-				"e":          pdata.NewValueInt(2),
-				"f":          pdata.NewValueInt(3),
-				"fluent.tag": pdata.NewValueString("my-tag"),
-				"g":          pdata.NewValueInt(4),
-				"h":          pdata.NewValueInt(255),
-				"i":          pdata.NewValueInt(65535),
-				"j":          pdata.NewValueInt(4294967295),
-				"k":          pdata.NewValueInt(-1),
-				"l":          pdata.NewValueString("(0+0i)"),
-				"m":          pdata.NewValueString("\001e\002"),
-				"n":          nv,
-				"o":          pdata.NewValueString("cde"),
-				"p":          pdata.NewValueEmpty(),
+			Attributes: map[string]interface{}{
+				"a":          5.0,
+				"b":          6.0,
+				"c":          true,
+				"d":          1,
+				"e":          2,
+				"f":          3,
+				"fluent.tag": "my-tag",
+				"g":          4,
+				"h":          255,
+				"i":          65535,
+				"j":          4294967295,
+				"k":          -1,
+				"l":          "(0+0i)",
+				"m":          "\001e\002",
+				"n":          []interface{}{"first", "second"},
+				"o":          "cde",
+				"p":          nil,
 			},
 		},
-	).ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(0), le)
+	).ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0), le)
 }
 
 func TestEventMode(t *testing.T) {
@@ -260,7 +255,7 @@ func TestBodyConversion(t *testing.T) {
 	body := pdata.NewValueMap()
 	body.MapVal().InsertString("a", "value")
 
-	bv := pdata.NewValueArray()
+	bv := pdata.NewValueSlice()
 	bv.SliceVal().EnsureCapacity(2)
 	bv.SliceVal().AppendEmpty().SetStringVal("first")
 	bv.SliceVal().AppendEmpty().SetStringVal("second")
@@ -277,9 +272,9 @@ func TestBodyConversion(t *testing.T) {
 		Log{
 			Timestamp: 5000000000000,
 			Body:      body,
-			Attributes: map[string]pdata.Value{
-				"fluent.tag": pdata.NewValueString("my-tag"),
+			Attributes: map[string]interface{}{
+				"fluent.tag": "my-tag",
 			},
 		},
-	).ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(0), le)
+	).ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0), le)
 }

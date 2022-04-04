@@ -35,7 +35,7 @@ import (
 // TODO: move this function to OpenCensus package.
 func ResourceSpansToOC(rs pdata.ResourceSpans) (*occommon.Node, *ocresource.Resource, []*octrace.Span) {
 	node, resource := internalResourceToOC(rs.Resource())
-	ilss := rs.InstrumentationLibrarySpans()
+	ilss := rs.ScopeSpans()
 	if ilss.Len() == 0 {
 		return node, resource, nil
 	}
@@ -95,7 +95,7 @@ func spanToOC(span pdata.Span) *octrace.Span {
 	}
 }
 
-func attributesMapToOCSpanAttributes(attributes pdata.AttributeMap, droppedCount uint32) *octrace.Span_Attributes {
+func attributesMapToOCSpanAttributes(attributes pdata.Map, droppedCount uint32) *octrace.Span_Attributes {
 	if attributes.Len() == 0 && droppedCount == 0 {
 		return nil
 	}
@@ -106,7 +106,7 @@ func attributesMapToOCSpanAttributes(attributes pdata.AttributeMap, droppedCount
 	}
 }
 
-func attributesMapToOCAttributeMap(attributes pdata.AttributeMap) map[string]*octrace.AttributeValue {
+func attributesMapToOCAttributeMap(attributes pdata.Map) map[string]*octrace.AttributeValue {
 	if attributes.Len() == 0 {
 		return nil
 	}
@@ -143,7 +143,7 @@ func attributeValueToOC(attr pdata.Value) *octrace.AttributeValue {
 		a.Value = &octrace.AttributeValue_StringValue{
 			StringValue: stringToTruncatableString(attr.AsString()),
 		}
-	case pdata.ValueTypeArray:
+	case pdata.ValueTypeSlice:
 		a.Value = &octrace.AttributeValue_StringValue{
 			StringValue: stringToTruncatableString(attr.AsString()),
 		}
@@ -188,7 +188,7 @@ func stringAttributeValue(val string) *octrace.AttributeValue {
 	}
 }
 
-func attributesMapToOCSameProcessAsParentSpan(attr pdata.AttributeMap) *wrapperspb.BoolValue {
+func attributesMapToOCSameProcessAsParentSpan(attr pdata.Map) *wrapperspb.BoolValue {
 	val, ok := attr.Get(occonventions.AttributeSameProcessAsParentSpan)
 	if !ok || val.Type() != pdata.ValueTypeBool {
 		return nil

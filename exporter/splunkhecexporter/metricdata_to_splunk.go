@@ -234,7 +234,7 @@ func createEvent(timestamp pdata.Timestamp, host string, source string, sourceTy
 
 }
 
-func populateAttributes(fields map[string]interface{}, attributeMap pdata.AttributeMap) {
+func populateAttributes(fields map[string]interface{}, attributeMap pdata.Map) {
 	attributeMap.Range(func(k string, v pdata.Value) bool {
 		fields[k] = v.AsString()
 		return true

@@ -164,7 +164,7 @@ func checkMetricsAreExpected(t *testing.T, md pdata.Metrics, fields map[string]i
 	}
 
 	//check the metrics are expected
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 	for j := 0; j < ilms.Len(); j++ {
 		ilm := ilms.At(j)
 		ms := ilm.Metrics()
@@ -215,7 +215,7 @@ func TestConvertToOTLPMetricsForInvalidMetrics(t *testing.T) {
 	}
 	md = ConvertToOTLPMetrics(fields, tags, zap.NewNop())
 	rm := md.ResourceMetrics().At(0)
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 	assert.Equal(t, 0, ilms.Len())
 }
 

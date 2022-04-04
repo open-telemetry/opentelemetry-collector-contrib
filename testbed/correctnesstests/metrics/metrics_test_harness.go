@@ -76,7 +76,7 @@ func (h *testHarness) ConsumeMetrics(_ context.Context, pdm pdata.Metrics) error
 }
 
 func (h *testHarness) compare(pdm pdata.Metrics) {
-	pdms := pdm.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+	pdms := pdm.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	var diffs []*MetricDiff
 	for i := 0; i < pdms.Len(); i++ {
 		pdmRecd := pdms.At(i)
@@ -91,7 +91,7 @@ func (h *testHarness) compare(pdm pdata.Metrics) {
 		if !metric.received {
 			metric.received = true
 			sent := metric.pdm
-			pdmExpected := sent.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
+			pdmExpected := sent.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
 			diffs = DiffMetric(
 				diffs,
 				pdmExpected,

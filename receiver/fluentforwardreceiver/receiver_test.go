@@ -114,15 +114,15 @@ func TestMessageEvent(t *testing.T) {
 		return len(converted) == 1
 	}, 5*time.Second, 10*time.Millisecond)
 
-	converted[0].ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().At(0).Attributes().Sort()
+	converted[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Sort()
 	require.EqualValues(t, Logs(Log{
 		Timestamp: 1593031012000000000,
 		Body:      pdata.NewValueString("..."),
-		Attributes: map[string]pdata.Value{
-			"container_id":   pdata.NewValueString("b00a67eb645849d6ab38ff8beb4aad035cc7e917bf123c3e9057c7e89fc73d2d"),
-			"container_name": pdata.NewValueString("/unruffled_cannon"),
-			"fluent.tag":     pdata.NewValueString("b00a67eb6458"),
-			"source":         pdata.NewValueString("stdout"),
+		Attributes: map[string]interface{}{
+			"container_id":   "b00a67eb645849d6ab38ff8beb4aad035cc7e917bf123c3e9057c7e89fc73d2d",
+			"container_name": "/unruffled_cannon",
+			"fluent.tag":     "b00a67eb6458",
+			"source":         "stdout",
 		},
 	},
 	), converted[0])
@@ -146,34 +146,34 @@ func TestForwardEvent(t *testing.T) {
 		return len(converted) == 1
 	}, 5*time.Second, 10*time.Millisecond)
 
-	ls := converted[0].ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords()
+	ls := converted[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 	ls.At(0).Attributes().Sort()
 	ls.At(1).Attributes().Sort()
 	require.EqualValues(t, Logs(
 		Log{
 			Timestamp: 1593032377776693638,
 			Body:      pdata.NewValueEmpty(),
-			Attributes: map[string]pdata.Value{
-				"Mem.free":   pdata.NewValueInt(848908),
-				"Mem.total":  pdata.NewValueInt(7155496),
-				"Mem.used":   pdata.NewValueInt(6306588),
-				"Swap.free":  pdata.NewValueInt(0),
-				"Swap.total": pdata.NewValueInt(0),
-				"Swap.used":  pdata.NewValueInt(0),
-				"fluent.tag": pdata.NewValueString("mem.0"),
+			Attributes: map[string]interface{}{
+				"Mem.free":   848908,
+				"Mem.total":  7155496,
+				"Mem.used":   6306588,
+				"Swap.free":  0,
+				"Swap.total": 0,
+				"Swap.used":  0,
+				"fluent.tag": "mem.0",
 			},
 		},
 		Log{
 			Timestamp: 1593032378756829346,
 			Body:      pdata.NewValueEmpty(),
-			Attributes: map[string]pdata.Value{
-				"Mem.free":   pdata.NewValueInt(848908),
-				"Mem.total":  pdata.NewValueInt(7155496),
-				"Mem.used":   pdata.NewValueInt(6306588),
-				"Swap.free":  pdata.NewValueInt(0),
-				"Swap.total": pdata.NewValueInt(0),
-				"Swap.used":  pdata.NewValueInt(0),
-				"fluent.tag": pdata.NewValueString("mem.0"),
+			Attributes: map[string]interface{}{
+				"Mem.free":   848908,
+				"Mem.total":  7155496,
+				"Mem.used":   6306588,
+				"Swap.free":  0,
+				"Swap.total": 0,
+				"Swap.used":  0,
+				"fluent.tag": "mem.0",
 			},
 		},
 	), converted[0])
@@ -228,7 +228,7 @@ func TestForwardPackedEvent(t *testing.T) {
 		return len(converted) == 1
 	}, 5*time.Second, 10*time.Millisecond)
 
-	ls := converted[0].ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords()
+	ls := converted[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 	for i := 0; i < ls.Len(); i++ {
 		ls.At(i).Attributes().Sort()
 	}
@@ -236,41 +236,41 @@ func TestForwardPackedEvent(t *testing.T) {
 		Log{
 			Timestamp: 1593032517024597622,
 			Body:      pdata.NewValueString("starting fluentd worker pid=17 ppid=7 worker=0"),
-			Attributes: map[string]pdata.Value{
-				"fluent.tag": pdata.NewValueString("fluent.info"),
-				"pid":        pdata.NewValueInt(17),
-				"ppid":       pdata.NewValueInt(7),
-				"worker":     pdata.NewValueInt(0),
+			Attributes: map[string]interface{}{
+				"fluent.tag": "fluent.info",
+				"pid":        17,
+				"ppid":       7,
+				"worker":     0,
 			},
 		},
 		Log{
 			Timestamp: 1593032517028573686,
 			Body:      pdata.NewValueString("delayed_commit_timeout is overwritten by ack_response_timeout"),
-			Attributes: map[string]pdata.Value{
-				"fluent.tag": pdata.NewValueString("fluent.info"),
+			Attributes: map[string]interface{}{
+				"fluent.tag": "fluent.info",
 			},
 		},
 		Log{
 			Timestamp: 1593032517028815948,
 			Body:      pdata.NewValueString("following tail of /var/log/kern.log"),
-			Attributes: map[string]pdata.Value{
-				"fluent.tag": pdata.NewValueString("fluent.info"),
+			Attributes: map[string]interface{}{
+				"fluent.tag": "fluent.info",
 			},
 		},
 		Log{
 			Timestamp: 1593032517031174229,
 			Body:      pdata.NewValueString("fluentd worker is now running worker=0"),
-			Attributes: map[string]pdata.Value{
-				"fluent.tag": pdata.NewValueString("fluent.info"),
-				"worker":     pdata.NewValueInt(0),
+			Attributes: map[string]interface{}{
+				"fluent.tag": "fluent.info",
+				"worker":     0,
 			},
 		},
 		Log{
 			Timestamp: 1593032522187382822,
 			Body:      pdata.NewValueString("fluentd worker is now stopping worker=0"),
-			Attributes: map[string]pdata.Value{
-				"fluent.tag": pdata.NewValueString("fluent.info"),
-				"worker":     pdata.NewValueInt(0),
+			Attributes: map[string]interface{}{
+				"fluent.tag": "fluent.info",
+				"worker":     0,
 			},
 		},
 	), converted[0])
@@ -294,7 +294,7 @@ func TestForwardPackedCompressedEvent(t *testing.T) {
 		return len(converted) == 1
 	}, 5*time.Second, 10*time.Millisecond)
 
-	ls := converted[0].ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords()
+	ls := converted[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 	for i := 0; i < ls.Len(); i++ {
 		ls.At(i).Attributes().Sort()
 	}
@@ -302,41 +302,41 @@ func TestForwardPackedCompressedEvent(t *testing.T) {
 		Log{
 			Timestamp: 1593032426012197420,
 			Body:      pdata.NewValueString("starting fluentd worker pid=17 ppid=7 worker=0"),
-			Attributes: map[string]pdata.Value{
-				"fluent.tag": pdata.NewValueString("fluent.info"),
-				"pid":        pdata.NewValueInt(17),
-				"ppid":       pdata.NewValueInt(7),
-				"worker":     pdata.NewValueInt(0),
+			Attributes: map[string]interface{}{
+				"fluent.tag": "fluent.info",
+				"pid":        17,
+				"ppid":       7,
+				"worker":     0,
 			},
 		},
 		Log{
 			Timestamp: 1593032426013724933,
 			Body:      pdata.NewValueString("delayed_commit_timeout is overwritten by ack_response_timeout"),
-			Attributes: map[string]pdata.Value{
-				"fluent.tag": pdata.NewValueString("fluent.info"),
+			Attributes: map[string]interface{}{
+				"fluent.tag": "fluent.info",
 			},
 		},
 		Log{
 			Timestamp: 1593032426020510455,
 			Body:      pdata.NewValueString("following tail of /var/log/kern.log"),
-			Attributes: map[string]pdata.Value{
-				"fluent.tag": pdata.NewValueString("fluent.info"),
+			Attributes: map[string]interface{}{
+				"fluent.tag": "fluent.info",
 			},
 		},
 		Log{
 			Timestamp: 1593032426024346580,
 			Body:      pdata.NewValueString("fluentd worker is now running worker=0"),
-			Attributes: map[string]pdata.Value{
-				"fluent.tag": pdata.NewValueString("fluent.info"),
-				"worker":     pdata.NewValueInt(0),
+			Attributes: map[string]interface{}{
+				"fluent.tag": "fluent.info",
+				"worker":     0,
 			},
 		},
 		Log{
 			Timestamp: 1593032434346935532,
 			Body:      pdata.NewValueString("fluentd worker is now stopping worker=0"),
-			Attributes: map[string]pdata.Value{
-				"fluent.tag": pdata.NewValueString("fluent.info"),
-				"worker":     pdata.NewValueInt(0),
+			Attributes: map[string]interface{}{
+				"fluent.tag": "fluent.info",
+				"worker":     0,
 			},
 		},
 	), converted[0])

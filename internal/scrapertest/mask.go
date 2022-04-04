@@ -35,7 +35,7 @@ func (opt ignoreMetricValues) apply(expected, actual pdata.Metrics) {
 func maskMetricValues(metrics pdata.Metrics) {
 	rms := metrics.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
-		ilms := rms.At(i).InstrumentationLibraryMetrics()
+		ilms := rms.At(i).ScopeMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			maskMetricSliceValues(ilms.At(j).Metrics())
 		}
@@ -79,7 +79,7 @@ func (opt ignoreMetricAttributeValue) apply(expected, actual pdata.Metrics) {
 func maskMetricAttributeValue(metrics pdata.Metrics, opt ignoreMetricAttributeValue) {
 	rms := metrics.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
-		ilms := rms.At(i).InstrumentationLibraryMetrics()
+		ilms := rms.At(i).ScopeMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			maskMetricSliceAttributeValues(ilms.At(j).Metrics(), opt.attributeName, opt.metricNames...)
 		}

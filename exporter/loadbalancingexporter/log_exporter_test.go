@@ -26,7 +26,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
@@ -279,7 +278,7 @@ func TestNoLogsInBatch(t *testing.T) {
 			"no logs",
 			func() pdata.Logs {
 				batch := pdata.NewLogs()
-				batch.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty()
+				batch.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
 				return batch
 			}(),
 		},
@@ -462,8 +461,8 @@ func simpleLogs() pdata.Logs {
 func simpleLogWithID(id pdata.TraceID) pdata.Logs {
 	logs := pdata.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
-	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
-	ill.LogRecords().AppendEmpty().SetTraceID(id)
+	sl := rl.ScopeLogs().AppendEmpty()
+	sl.LogRecords().AppendEmpty().SetTraceID(id)
 
 	return logs
 }
@@ -471,8 +470,8 @@ func simpleLogWithID(id pdata.TraceID) pdata.Logs {
 func simpleLogWithoutID() pdata.Logs {
 	logs := pdata.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
-	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
-	ill.LogRecords().AppendEmpty()
+	sl := rl.ScopeLogs().AppendEmpty()
+	sl.LogRecords().AppendEmpty()
 
 	return logs
 }
@@ -493,16 +492,21 @@ func (e *mockLogsExporter) ConsumeLogs(ctx context.Context, ld pdata.Logs) error
 	return e.ConsumeLogsFn(ctx, ld)
 }
 
+type mockComponent struct {
+	component.StartFunc
+	component.ShutdownFunc
+}
+
 func newMockLogsExporter(ConsumeLogsFn func(ctx context.Context, ld pdata.Logs) error) component.LogsExporter {
 	return &mockLogsExporter{
-		Component:     componenthelper.New(),
+		Component:     mockComponent{},
 		ConsumeLogsFn: ConsumeLogsFn,
 	}
 }
 
 func newNopMockLogsExporter() component.LogsExporter {
 	return &mockLogsExporter{
-		Component: componenthelper.New(),
+		Component: mockComponent{},
 		ConsumeLogsFn: func(ctx context.Context, ld pdata.Logs) error {
 			return nil
 		},

@@ -35,9 +35,9 @@
                     }
                 ]
             },
-            "instrumentationLibraryMetrics": [
+            "scopeMetrics": [
                 {
-                    "instrumentationLibrary": {},
+                    "scope": {},
                     "metrics": [
                         {
                             "name": "k8s.deployment.desired",

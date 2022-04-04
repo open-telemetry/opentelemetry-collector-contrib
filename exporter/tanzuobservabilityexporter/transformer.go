@@ -28,7 +28,7 @@ import (
 )
 
 type traceTransformer struct {
-	resAttrs pdata.AttributeMap
+	resAttrs pdata.Map
 }
 
 func newTraceTransformer(resource pdata.Resource) *traceTransformer {
@@ -108,7 +108,7 @@ func (t *traceTransformer) Span(orig pdata.Span) (span, error) {
 	}, nil
 }
 
-func getSourceAndResourceTags(attributes pdata.AttributeMap) (string, map[string]string) {
+func getSourceAndResourceTags(attributes pdata.Map) (string, map[string]string) {
 	candidateKeys := []string{labelSource, conventions.AttributeHostName, "hostname", conventions.AttributeHostID}
 
 	attributesWithoutSource := map[string]string{}
@@ -192,7 +192,7 @@ func calculateTimes(span pdata.Span) (int64, int64) {
 	return startMillis, durationMillis
 }
 
-func attributesToTags(attributesWithoutSource map[string]string, attributes pdata.AttributeMap) map[string]string {
+func attributesToTags(attributesWithoutSource map[string]string, attributes pdata.Map) map[string]string {
 	tags := make(map[string]string)
 
 	for key, val := range attributesWithoutSource {

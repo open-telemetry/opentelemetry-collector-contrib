@@ -35,41 +35,41 @@ func TestObjectModel_CreateMap(t *testing.T) {
 	}{
 		"from empty map": {
 			build: func() Document {
-				return DocumentFromAttributes(pdata.NewAttributeMapFromMap(map[string]pdata.Value{}))
+				return DocumentFromAttributes(pdata.NewMap())
 			},
 		},
 		"from map": {
 			build: func() Document {
-				return DocumentFromAttributes(pdata.NewAttributeMapFromMap(map[string]pdata.Value{
-					"i":   pdata.NewValueInt(42),
-					"str": pdata.NewValueString("test"),
+				return DocumentFromAttributes(pdata.NewMapFromRaw(map[string]interface{}{
+					"i":   42,
+					"str": "test",
 				}))
 			},
 			want: Document{[]field{{"i", IntValue(42)}, {"str", StringValue("test")}}},
 		},
 		"ignores nil values": {
 			build: func() Document {
-				return DocumentFromAttributes(pdata.NewAttributeMapFromMap(map[string]pdata.Value{
-					"null": pdata.NewValueEmpty(),
-					"str":  pdata.NewValueString("test"),
+				return DocumentFromAttributes(pdata.NewMapFromRaw(map[string]interface{}{
+					"null": nil,
+					"str":  "test",
 				}))
 			},
 			want: Document{[]field{{"str", StringValue("test")}}},
 		},
 		"from map with prefix": {
 			build: func() Document {
-				return DocumentFromAttributesWithPath("prefix", pdata.NewAttributeMapFromMap(map[string]pdata.Value{
-					"i":   pdata.NewValueInt(42),
-					"str": pdata.NewValueString("test"),
+				return DocumentFromAttributesWithPath("prefix", pdata.NewMapFromRaw(map[string]interface{}{
+					"i":   42,
+					"str": "test",
 				}))
 			},
 			want: Document{[]field{{"prefix.i", IntValue(42)}, {"prefix.str", StringValue("test")}}},
 		},
 		"add attributes with key": {
 			build: func() (doc Document) {
-				doc.AddAttributes("prefix", pdata.NewAttributeMapFromMap(map[string]pdata.Value{
-					"i":   pdata.NewValueInt(42),
-					"str": pdata.NewValueString("test"),
+				doc.AddAttributes("prefix", pdata.NewMapFromRaw(map[string]interface{}{
+					"i":   42,
+					"str": "test",
 				}))
 				return doc
 			},
@@ -158,7 +158,7 @@ func TestObjectModel_Dedup(t *testing.T) {
 				namespace := pdata.NewValueMap()
 				namespace.MapVal().InsertInt("a", 23)
 
-				am := pdata.NewAttributeMap()
+				am := pdata.NewMap()
 				am.InsertInt("namespace.a", 42)
 				am.InsertString("toplevel", "test")
 				am.Insert("namespace", namespace)
@@ -171,7 +171,7 @@ func TestObjectModel_Dedup(t *testing.T) {
 				namespace := pdata.NewValueMap()
 				namespace.MapVal().InsertInt("a", 23)
 
-				am := pdata.NewAttributeMap()
+				am := pdata.NewMap()
 				am.Insert("namespace", namespace)
 				am.InsertInt("namespace.a", 42)
 				am.InsertString("toplevel", "test")
@@ -250,12 +250,12 @@ func TestValue_FromAttribute(t *testing.T) {
 			want: BoolValue(true),
 		},
 		"empty array": {
-			in:   pdata.NewValueArray(),
+			in:   pdata.NewValueSlice(),
 			want: Value{kind: KindArr},
 		},
 		"non-empty array": {
 			in: func() pdata.Value {
-				v := pdata.NewValueArray()
+				v := pdata.NewValueSlice()
 				tgt := v.SliceVal().AppendEmpty()
 				pdata.NewValueInt(1).CopyTo(tgt)
 				return v
@@ -291,45 +291,41 @@ func TestDocument_Serialize_Flat(t *testing.T) {
 		want string
 	}{
 		"no nesting with multiple fields": {
-			doc: DocumentFromAttributes(pdata.NewAttributeMapFromMap(map[string]pdata.Value{
-				"a": pdata.NewValueString("test"),
-				"b": pdata.NewValueInt(1),
+			doc: DocumentFromAttributes(pdata.NewMapFromRaw(map[string]interface{}{
+				"a": "test",
+				"b": 1,
 			})),
 			want: `{"a":"test","b":1}`,
 		},
 		"shared prefix": {
-			doc: DocumentFromAttributes(pdata.NewAttributeMapFromMap(map[string]pdata.Value{
-				"a.str": pdata.NewValueString("test"),
-				"a.i":   pdata.NewValueInt(1),
+			doc: DocumentFromAttributes(pdata.NewMapFromRaw(map[string]interface{}{
+				"a.str": "test",
+				"a.i":   1,
 			})),
 			want: `{"a.i":1,"a.str":"test"}`,
 		},
 		"multiple namespaces with dot": {
-			doc: DocumentFromAttributes(pdata.NewAttributeMapFromMap(map[string]pdata.Value{
-				"a.str": pdata.NewValueString("test"),
-				"b.i":   pdata.NewValueInt(1),
+			doc: DocumentFromAttributes(pdata.NewMapFromRaw(map[string]interface{}{
+				"a.str": "test",
+				"b.i":   1,
 			})),
 			want: `{"a.str":"test","b.i":1}`,
 		},
 		"nested maps": {
-			doc: DocumentFromAttributes(pdata.NewAttributeMapFromMap(map[string]pdata.Value{
-				"a": func() pdata.Value {
-					m := pdata.NewValueMap()
-					m.MapVal().InsertString("str", "test")
-					m.MapVal().InsertInt("i", 1)
-					return m
-				}(),
+			doc: DocumentFromAttributes(pdata.NewMapFromRaw(map[string]interface{}{
+				"a": map[string]interface{}{
+					"str": "test",
+					"i":   1,
+				},
 			})),
 			want: `{"a.i":1,"a.str":"test"}`,
 		},
 		"multi-level nested namespace maps": {
-			doc: DocumentFromAttributes(pdata.NewAttributeMapFromMap(map[string]pdata.Value{
-				"a": func() pdata.Value {
-					m := pdata.NewValueMap()
-					m.MapVal().InsertString("b.str", "test")
-					m.MapVal().InsertInt("i", 1)
-					return m
-				}(),
+			doc: DocumentFromAttributes(pdata.NewMapFromRaw(map[string]interface{}{
+				"a": map[string]interface{}{
+					"b.str": "test",
+					"i":     1,
+				},
 			})),
 			want: `{"a.b.str":"test","a.i":1}`,
 		},
@@ -353,45 +349,41 @@ func TestDocument_Serialize_Dedot(t *testing.T) {
 		want string
 	}{
 		"no nesting with multiple fields": {
-			doc: DocumentFromAttributes(pdata.NewAttributeMapFromMap(map[string]pdata.Value{
-				"a": pdata.NewValueString("test"),
-				"b": pdata.NewValueInt(1),
+			doc: DocumentFromAttributes(pdata.NewMapFromRaw(map[string]interface{}{
+				"a": "test",
+				"b": 1,
 			})),
 			want: `{"a":"test","b":1}`,
 		},
 		"shared prefix": {
-			doc: DocumentFromAttributes(pdata.NewAttributeMapFromMap(map[string]pdata.Value{
-				"a.str": pdata.NewValueString("test"),
-				"a.i":   pdata.NewValueInt(1),
+			doc: DocumentFromAttributes(pdata.NewMapFromRaw(map[string]interface{}{
+				"a.str": "test",
+				"a.i":   1,
 			})),
 			want: `{"a":{"i":1,"str":"test"}}`,
 		},
 		"multiple namespaces": {
-			doc: DocumentFromAttributes(pdata.NewAttributeMapFromMap(map[string]pdata.Value{
-				"a.str": pdata.NewValueString("test"),
-				"b.i":   pdata.NewValueInt(1),
+			doc: DocumentFromAttributes(pdata.NewMapFromRaw(map[string]interface{}{
+				"a.str": "test",
+				"b.i":   1,
 			})),
 			want: `{"a":{"str":"test"},"b":{"i":1}}`,
 		},
 		"nested maps": {
-			doc: DocumentFromAttributes(pdata.NewAttributeMapFromMap(map[string]pdata.Value{
-				"a": func() pdata.Value {
-					m := pdata.NewValueMap()
-					m.MapVal().InsertString("str", "test")
-					m.MapVal().InsertInt("i", 1)
-					return m
-				}(),
+			doc: DocumentFromAttributes(pdata.NewMapFromRaw(map[string]interface{}{
+				"a": map[string]interface{}{
+					"str": "test",
+					"i":   1,
+				},
 			})),
 			want: `{"a":{"i":1,"str":"test"}}`,
 		},
 		"multi-level nested namespace maps": {
-			doc: DocumentFromAttributes(pdata.NewAttributeMapFromMap(map[string]pdata.Value{
-				"a": func() pdata.Value {
-					m := pdata.NewValueMap()
-					m.MapVal().InsertString("b.c.str", "test")
-					m.MapVal().InsertInt("i", 1)
-					return m
-				}(),
+			doc: DocumentFromAttributes(pdata.NewMapFromRaw(map[string]interface{}{
+				"a": map[string]interface{}{
+					"b.c.str": "test",
+					"i":       1,
+				},
 			})),
 			want: `{"a":{"b":{"c":{"str":"test"}},"i":1}}`,
 		},

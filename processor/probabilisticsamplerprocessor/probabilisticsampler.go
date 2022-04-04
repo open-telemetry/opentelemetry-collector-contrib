@@ -71,7 +71,7 @@ func newTracesProcessor(nextConsumer consumer.Traces, cfg *Config) (component.Tr
 
 func (tsp *tracesamplerprocessor) processTraces(_ context.Context, td pdata.Traces) (pdata.Traces, error) {
 	td.ResourceSpans().RemoveIf(func(rs pdata.ResourceSpans) bool {
-		rs.InstrumentationLibrarySpans().RemoveIf(func(ils pdata.InstrumentationLibrarySpans) bool {
+		rs.ScopeSpans().RemoveIf(func(ils pdata.ScopeSpans) bool {
 			ils.Spans().RemoveIf(func(s pdata.Span) bool {
 				sp := parseSpanSamplingPriority(s)
 				if sp == doNotSampleSpan {
@@ -89,11 +89,11 @@ func (tsp *tracesamplerprocessor) processTraces(_ context.Context, td pdata.Trac
 					hash(tidBytes[:], tsp.hashSeed)&bitMaskHashBuckets < tsp.scaledSamplingRate
 				return !sampled
 			})
-			// Filter out empty InstrumentationLibraryMetrics
+			// Filter out empty ScopeMetrics
 			return ils.Spans().Len() == 0
 		})
 		// Filter out empty ResourceMetrics
-		return rs.InstrumentationLibrarySpans().Len() == 0
+		return rs.ScopeSpans().Len() == 0
 	})
 	if td.ResourceSpans().Len() == 0 {
 		return td, processorhelper.ErrSkipProcessingData

@@ -49,8 +49,8 @@ func FromMetrics(md pdata.Metrics) ([]*sfxpb.DataPoint, error) {
 		rm := rms.At(i)
 		extraDimensions := attributesToDimensions(rm.Resource().Attributes(), nil)
 
-		for j := 0; j < rm.InstrumentationLibraryMetrics().Len(); j++ {
-			ilm := rm.InstrumentationLibraryMetrics().At(j)
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			ilm := rm.ScopeMetrics().At(j)
 			for k := 0; k < ilm.Metrics().Len(); k++ {
 				sfxDataPoints = append(sfxDataPoints, FromMetric(ilm.Metrics().At(k), extraDimensions)...)
 			}
@@ -241,7 +241,7 @@ func convertSummaryDataPoints(
 	return out
 }
 
-func attributesToDimensions(attributes pdata.AttributeMap, extraDims []*sfxpb.Dimension) []*sfxpb.Dimension {
+func attributesToDimensions(attributes pdata.Map, extraDims []*sfxpb.Dimension) []*sfxpb.Dimension {
 	dimensions := make([]*sfxpb.Dimension, len(extraDims), attributes.Len()+len(extraDims))
 	copy(dimensions, extraDims)
 	if attributes.Len() == 0 {

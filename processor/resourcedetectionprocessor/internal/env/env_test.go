@@ -78,7 +78,7 @@ func TestInitializeAttributeMap(t *testing.T) {
 	cases := []struct {
 		name               string
 		encoded            string
-		expectedAttributes pdata.AttributeMap
+		expectedAttributes pdata.Map
 		expectedError      string
 	}{
 		{
@@ -114,7 +114,7 @@ func TestInitializeAttributeMap(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			am := pdata.NewAttributeMap()
+			am := pdata.NewMap()
 			err := initializeAttributeMap(am, c.encoded)
 
 			if c.expectedError != "" {
