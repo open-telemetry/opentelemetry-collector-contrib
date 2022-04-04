@@ -16,6 +16,7 @@
 
 - `hostmetricsreceiver`: Use cpu times for time delta in cpu.utilization calculation (#8856)
 - `dynatraceexporter`: Remove overly verbose stacktrace from certain logs (#8989)
+- `lokiexporter`: Fix lokiexporter example config (#9066)
 
 ### 🚩 Deprecations 🚩
 
