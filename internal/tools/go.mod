@@ -9,13 +9,11 @@ require (
 	github.com/jcchavezs/porto v0.4.0
 	github.com/jstemmer/go-junit-report v1.0.0
 	github.com/pavius/impi v0.0.3
-	github.com/stretchr/objx v0.2.0 // indirect
 	github.com/tcnksm/ghr v0.14.0
 	go.opentelemetry.io/build-tools/checkdoc v0.0.0-20220110194441-2a9d5288bd70
 	go.opentelemetry.io/build-tools/crosslink v0.0.0-20220323195613-c6fe4f9fe445
 	go.opentelemetry.io/build-tools/issuegenerator v0.0.0-20210920164323-2ceabab23375
 	go.opentelemetry.io/build-tools/multimod v0.0.0-20220110194441-2a9d5288bd70
-	go.uber.org/atomic v1.9.0 // indirect
 	golang.org/x/tools v0.1.10
 )
 
@@ -36,7 +34,7 @@ require (
 	github.com/ashanbrown/makezero v1.1.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bkielbasa/cyclop v1.2.0 // indirect
-	github.com/blizzy78/varnamelen v0.6.1 // indirect
+	github.com/blizzy78/varnamelen v0.6.2 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.0.2 // indirect
 	github.com/bombsimon/wsl/v3 v3.3.0 // indirect
 	github.com/breml/bidichk v0.2.2 // indirect
@@ -158,6 +156,7 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.10.1 // indirect
 	github.com/ssgreg/nlreturn/v2 v2.2.1 // indirect
+	github.com/stretchr/objx v0.1.1 // indirect
 	github.com/stretchr/testify v1.7.1 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
 	github.com/sylvia7788/contextcheck v1.0.4 // indirect
