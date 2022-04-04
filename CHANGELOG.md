@@ -24,6 +24,7 @@
 
 - `datadogexporter`: Deprecate `service` setting in favor of `service.name` semantic convention (#8784)
 - `datadogexporter`: Deprecate `version` setting in favor of `service.version` semantic convention (#8784)
+- `datadogexporter`: Deprecate `env` setting in favor of `deployment.environment` semantic convention (#9017)
 - `datadogexporter`: Deprecate `GetHostTags` method from `TagsConfig` struct (#8975)
 
 ### 🚀 New components 🚀
