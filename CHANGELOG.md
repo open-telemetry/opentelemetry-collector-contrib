@@ -4,13 +4,41 @@
 
 ### 💡 Enhancements 💡
 
-- `k8seventsreceiver`: Add Api_version and resource_version (#8539)
 - `cmd/mdatagen`: Add resource attributes definition to metadata.yaml and move `pdata.Metrics` creation to the
   generated code (#5270) 
+
+### 🛑 Breaking changes 🛑
+
+- `filelogreceiver`, `journaldreceiver`, `syslogreceiver`, `tcplogreceiver`, `udplogreceiver`:
+  - Updated data model to align with stable logs data model, which includes various breaking changes. (#8835)
+    - A detailed [Upgrade Guide](https://github.com/open-telemetry/opentelemetry-log-collection/releases/tag/v0.28.0) is available in the log-collection v0.28.0 release notes. 
+- `datadogexporter`: Remove `OnlyMetadata` method from `Config` struct (#8980)
+- `datadogexporter`: Remove `GetCensoredKey` method from `APIConfig` struct (#8980)
+
+### 🧰 Bug fixes 🧰
+
+- `hostmetricsreceiver`: Use cpu times for time delta in cpu.utilization calculation (#8856)
+- `dynatraceexporter`: Remove overly verbose stacktrace from certain logs (#8989)
+
+### 🚩 Deprecations 🚩
+
+- `datadogexporter`: Deprecate `service` setting in favor of `service.name` semantic convention (#8784)
+- `datadogexporter`: Deprecate `version` setting in favor of `service.version` semantic convention (#8784)
+- `datadogexporter`: Deprecate `GetHostTags` method from `TagsConfig` struct (#8975)
+
+### 🚀 New components 🚀
+
+## v0.48.0
+
+### 💡 Enhancements 💡
+
+- `k8seventsreceiver`: Add Api_version and resource_version (#8539)
 - `datadogexporter`: Add `metrics::sums::cumulative_monotonic_mode` to specify export mode for cumulative monotonic sums (#8490)
 - `dynatraceexporter`: add multi-instance deployment note to README.md (#8848)
 - `resourcedetectionprocessor`: Add attribute allowlist (#8547)
 - `datadogexporter`:  Metrics payload data and Sketches payload data will be logged if collector is started in debug mode (#8929)
+- `cmd/mdatagen`: Add resource attributes definition to metadata.yaml and move `pdata.Metrics` creation to the
+  generated code (#5270)
 
 ### 🛑 Breaking changes 🛑
 

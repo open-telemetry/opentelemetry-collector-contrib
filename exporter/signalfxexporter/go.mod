@@ -5,17 +5,17 @@ go 1.17
 require (
 	github.com/gobwas/glob v0.2.3
 	github.com/gogo/protobuf v1.3.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.47.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.47.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.47.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.47.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.47.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.48.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.48.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.48.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.48.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.48.0
 	github.com/shirou/gopsutil/v3 v3.22.2
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3
 	github.com/signalfx/signalfx-agent/pkg/apm v0.0.0-20201202163743-65b4fa925fc8
 	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.47.1-0.20220330050215-0f07b0bd64d1
-	go.opentelemetry.io/collector/model v0.47.1-0.20220330050215-0f07b0bd64d1
+	go.opentelemetry.io/collector v0.48.0
+	go.opentelemetry.io/collector/model v0.48.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
 )

@@ -135,7 +135,7 @@ func TestMetricsFromFile(t *testing.T) {
 		agentProc,
 		&testbed.PerfTestValidator{},
 		performanceResultsSummary,
-		testbed.WithResourceLimits(testbed.ResourceSpec{ExpectedMaxCPU: 120, ExpectedMaxRAM: 94}),
+		testbed.WithResourceLimits(testbed.ResourceSpec{ExpectedMaxCPU: 120, ExpectedMaxRAM: 110}),
 	)
 	defer tc.Stop()
 
