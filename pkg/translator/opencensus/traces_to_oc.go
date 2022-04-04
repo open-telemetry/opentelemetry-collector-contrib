@@ -35,7 +35,7 @@ import (
 // TODO: move this function to OpenCensus package.
 func ResourceSpansToOC(rs pdata.ResourceSpans) (*occommon.Node, *ocresource.Resource, []*octrace.Span) {
 	node, resource := internalResourceToOC(rs.Resource())
-	ilss := rs.InstrumentationLibrarySpans()
+	ilss := rs.ScopeSpans()
 	if ilss.Len() == 0 {
 		return node, resource, nil
 	}

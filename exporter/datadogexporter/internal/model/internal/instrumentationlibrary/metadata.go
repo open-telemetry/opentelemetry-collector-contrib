@@ -27,7 +27,7 @@ const (
 
 // TagsFromInstrumentationLibraryMetadata takes the name and version of
 // the instrumentation library and converts them to Datadog tags.
-func TagsFromInstrumentationLibraryMetadata(il pdata.InstrumentationLibrary) []string {
+func TagsFromInstrumentationLibraryMetadata(il pdata.InstrumentationScope) []string {
 	return []string{
 		utils.FormatKeyValueTag(instrumentationLibraryTag, il.Name()),
 		utils.FormatKeyValueTag(instrumentationLibraryVersionTag, il.Version()),

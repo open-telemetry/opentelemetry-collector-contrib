@@ -161,8 +161,8 @@ func createLibraryMetricsSlice(metrics pdata.Metrics) pdata.MetricSlice {
 	resourceMetrics := metrics.ResourceMetrics()
 	resourceMetric := resourceMetrics.AppendEmpty()
 	resourceMetric.Resource().Attributes()
-	libraryMetricsSlice := resourceMetric.InstrumentationLibraryMetrics()
+	libraryMetricsSlice := resourceMetric.ScopeMetrics()
 	libraryMetrics := libraryMetricsSlice.AppendEmpty()
-	libraryMetrics.InstrumentationLibrary().SetName(instrumentationLibName)
+	libraryMetrics.Scope().SetName(instrumentationLibName)
 	return libraryMetrics.Metrics()
 }

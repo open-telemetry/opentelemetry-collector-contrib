@@ -287,7 +287,7 @@ func TestSpanToSentrySpan(t *testing.T) {
 		testSpan := pdata.NewSpan()
 		testSpan.SetParentSpanID(pdata.InvalidSpanID())
 
-		sentrySpan := convertToSentrySpan(testSpan, pdata.NewInstrumentationLibrary(), map[string]string{})
+		sentrySpan := convertToSentrySpan(testSpan, pdata.NewInstrumentationScope(), map[string]string{})
 		assert.NotNil(t, sentrySpan)
 		assert.True(t, spanIsTransaction(testSpan))
 	})
@@ -317,7 +317,7 @@ func TestSpanToSentrySpan(t *testing.T) {
 		testSpan.Status().SetMessage(statusMessage)
 		testSpan.Status().SetCode(pdata.StatusCodeOk)
 
-		library := pdata.NewInstrumentationLibrary()
+		library := pdata.NewInstrumentationScope()
 		library.SetName("otel-python")
 		library.SetVersion("1.4.3")
 
@@ -652,7 +652,7 @@ func TestPushTraceData(t *testing.T) {
 			td: func() pdata.Traces {
 				traces := pdata.NewTraces()
 				resourceSpans := traces.ResourceSpans()
-				resourceSpans.AppendEmpty().InstrumentationLibrarySpans().AppendEmpty()
+				resourceSpans.AppendEmpty().ScopeSpans().AppendEmpty()
 				return traces
 			}(),
 			called: false,
@@ -662,7 +662,7 @@ func TestPushTraceData(t *testing.T) {
 			td: func() pdata.Traces {
 				traces := pdata.NewTraces()
 				resourceSpans := traces.ResourceSpans()
-				resourceSpans.AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+				resourceSpans.AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 				return traces
 			}(),
 			called: true,

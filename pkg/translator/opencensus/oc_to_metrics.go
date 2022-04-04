@@ -88,7 +88,7 @@ func OCToMetrics(node *occommon.Node, resource *ocresource.Resource, metrics []*
 		ocNodeResourceToInternal(node, resource, rm0.Resource())
 
 		// Allocate a slice for metrics that need to be combined into first ResourceMetrics.
-		ilms := rm0.InstrumentationLibraryMetrics()
+		ilms := rm0.ScopeMetrics()
 		combinedMetrics := ilms.AppendEmpty().Metrics()
 		combinedMetrics.EnsureCapacity(combinedMetricCount)
 
@@ -131,7 +131,7 @@ func OCToMetrics(node *occommon.Node, resource *ocresource.Resource, metrics []*
 
 func ocMetricToResourceMetrics(ocMetric *ocmetrics.Metric, node *occommon.Node, out pdata.ResourceMetrics) {
 	ocNodeResourceToInternal(node, ocMetric.Resource, out.Resource())
-	ilms := out.InstrumentationLibraryMetrics()
+	ilms := out.ScopeMetrics()
 	ocMetricToMetrics(ocMetric, ilms.AppendEmpty().Metrics().AppendEmpty())
 }
 

@@ -136,9 +136,9 @@ func (e exporter) buildTraceBatch(details *exportMetadata, td pdata.Traces) ([]t
 
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
-		for j := 0; j < rspans.InstrumentationLibrarySpans().Len(); j++ {
-			ispans := rspans.InstrumentationLibrarySpans().At(j)
-			commonAttributes := transform.CommonAttributes(rspans.Resource(), ispans.InstrumentationLibrary())
+		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
+			ispans := rspans.ScopeSpans().At(j)
+			commonAttributes := transform.CommonAttributes(rspans.Resource(), ispans.Scope())
 			spanCommon, err := telemetry.NewSpanCommonBlock(telemetry.WithSpanAttributes(commonAttributes))
 			if err != nil {
 				e.logger.Error("Transform of span common attributes failed.", zap.Error(err))
@@ -169,7 +169,7 @@ func calcSpanBatches(td pdata.Traces) int {
 	rss := td.ResourceSpans()
 	batchCount := 0
 	for i := 0; i < rss.Len(); i++ {
-		batchCount += rss.At(i).InstrumentationLibrarySpans().Len()
+		batchCount += rss.At(i).ScopeSpans().Len()
 	}
 	return batchCount
 }
@@ -189,9 +189,9 @@ func (e exporter) buildLogBatch(details *exportMetadata, ld pdata.Logs) ([]telem
 
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
 		rlogs := ld.ResourceLogs().At(i)
-		for j := 0; j < rlogs.InstrumentationLibraryLogs().Len(); j++ {
-			ilogs := rlogs.InstrumentationLibraryLogs().At(j)
-			commonAttributes := transform.CommonAttributes(rlogs.Resource(), ilogs.InstrumentationLibrary())
+		for j := 0; j < rlogs.ScopeLogs().Len(); j++ {
+			ilogs := rlogs.ScopeLogs().At(j)
+			commonAttributes := transform.CommonAttributes(rlogs.Resource(), ilogs.Scope())
 			logCommon, err := telemetry.NewLogCommonBlock(telemetry.WithLogAttributes(commonAttributes))
 			if err != nil {
 				e.logger.Error("Transform of log common attributes failed.", zap.Error(err))
@@ -222,7 +222,7 @@ func calcLogBatches(ld pdata.Logs) int {
 	rss := ld.ResourceLogs()
 	batchCount := 0
 	for i := 0; i < rss.Len(); i++ {
-		batchCount += rss.At(i).InstrumentationLibraryLogs().Len()
+		batchCount += rss.At(i).ScopeLogs().Len()
 	}
 	return batchCount
 }
@@ -242,9 +242,9 @@ func (e exporter) buildMetricBatch(details *exportMetadata, md pdata.Metrics) ([
 
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
 		rmetrics := md.ResourceMetrics().At(i)
-		for j := 0; j < rmetrics.InstrumentationLibraryMetrics().Len(); j++ {
-			imetrics := rmetrics.InstrumentationLibraryMetrics().At(j)
-			commonAttributes := transform.CommonAttributes(rmetrics.Resource(), imetrics.InstrumentationLibrary())
+		for j := 0; j < rmetrics.ScopeMetrics().Len(); j++ {
+			imetrics := rmetrics.ScopeMetrics().At(j)
+			commonAttributes := transform.CommonAttributes(rmetrics.Resource(), imetrics.Scope())
 			metricCommon, err := telemetry.NewMetricCommonBlock(telemetry.WithMetricAttributes(commonAttributes))
 			if err != nil {
 				e.logger.Error("Transform of metric common attributes failed.", zap.Error(err))
@@ -282,7 +282,7 @@ func calcMetricBatches(md pdata.Metrics) int {
 	rss := md.ResourceMetrics()
 	batchCount := 0
 	for i := 0; i < rss.Len(); i++ {
-		batchCount += rss.At(i).InstrumentationLibraryMetrics().Len()
+		batchCount += rss.At(i).ScopeMetrics().Len()
 	}
 	return batchCount
 }

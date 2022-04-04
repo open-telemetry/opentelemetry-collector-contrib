@@ -52,11 +52,11 @@ func TestGetMetricValueWithNoDataPoint(t *testing.T) {
 	md := pdata.NewMetrics()
 
 	rm := md.ResourceMetrics().AppendEmpty()
-	ms := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics()
+	ms := rm.ScopeMetrics().AppendEmpty().Metrics()
 	m := ms.AppendEmpty()
 	m.SetName("metric_1")
 	m.SetDataType(pdata.MetricDataTypeGauge)
 
-	value := getMetricValue(md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0))
+	value := getMetricValue(md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0))
 	require.Equal(t, 0.0, value)
 }

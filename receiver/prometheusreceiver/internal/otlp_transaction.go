@@ -208,7 +208,7 @@ func (t transactionPdata) adjustStartTimestampPdata(metricsL *pdata.MetricSlice)
 func (t *transactionPdata) metricSliceToMetrics(metricsL *pdata.MetricSlice) *pdata.Metrics {
 	metrics := pdata.NewMetrics()
 	rms := metrics.ResourceMetrics().AppendEmpty()
-	ilm := rms.InstrumentationLibraryMetrics().AppendEmpty()
+	ilm := rms.ScopeMetrics().AppendEmpty()
 	metricsL.CopyTo(ilm.Metrics())
 	t.nodeResource.CopyTo(rms.Resource())
 	return &metrics

@@ -3,12 +3,12 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza
 go 1.17
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.47.0
-	github.com/open-telemetry/opentelemetry-log-collection v0.27.2
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.48.0
+	github.com/open-telemetry/opentelemetry-log-collection v0.28.0
 	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.47.1-0.20220323200141-1b7618728835
-	go.opentelemetry.io/collector/model v0.47.1-0.20220323200141-1b7618728835
-	go.opentelemetry.io/otel/metric v0.27.0
+	go.opentelemetry.io/collector v0.48.0
+	go.opentelemetry.io/collector/model v0.48.0
+	go.opentelemetry.io/otel/metric v0.28.0
 	go.opentelemetry.io/otel/trace v1.6.1
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0

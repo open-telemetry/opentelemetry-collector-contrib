@@ -314,7 +314,7 @@ func TestCreateMetricsExporterWithEmptyExcludeMetrics(t *testing.T) {
 
 func testMetricsData() pdata.Metrics {
 	md := pdata.NewMetrics()
-	ms := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics()
+	ms := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
 
 	m1 := ms.AppendEmpty()
 	m1.SetName("system.memory.usage")
@@ -633,7 +633,7 @@ func TestDefaultExcludes_translated(t *testing.T) {
 	require.NoError(t, err)
 
 	md := getMetrics(metrics)
-	require.Equal(t, 9, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Len())
+	require.Equal(t, 9, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
 	dps := converter.MetricsToSignalFxV2(md)
 
 	// the default cpu.utilization metric is added after applying the default translations
@@ -656,14 +656,14 @@ func TestDefaultExcludes_not_translated(t *testing.T) {
 	require.NoError(t, err)
 
 	md := getMetrics(metrics)
-	require.Equal(t, 71, md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Len())
+	require.Equal(t, 71, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
 	dps := converter.MetricsToSignalFxV2(md)
 	require.Equal(t, 0, len(dps))
 }
 
 func getMetrics(metrics []map[string]string) pdata.Metrics {
 	md := pdata.NewMetrics()
-	ilms := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
+	ilms := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	ilms.Metrics().EnsureCapacity(len(metrics))
 
 	for _, mp := range metrics {

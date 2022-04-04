@@ -11,7 +11,14 @@ These are the metrics available for this scraper.
 | **system.processes.count** | Total number of processes in each state. | {processes} | Sum(Int) | <ul> <li>status</li> </ul> |
 | **system.processes.created** | Total number of created processes. | {processes} | Sum(Int) | <ul> </ul> |
 
-**Highlighted metrics** are emitted by default.
+**Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
+Any metric can be enabled or disabled with the following scraper configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: <true|false>
+```
 
 ## Metric attributes
 

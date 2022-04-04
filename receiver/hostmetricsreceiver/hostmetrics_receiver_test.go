@@ -112,7 +112,7 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 			memoryscraper.TypeStr:     scraperFactories[memoryscraper.TypeStr].CreateDefaultConfig(),
 			networkscraper.TypeStr:    scraperFactories[networkscraper.TypeStr].CreateDefaultConfig(),
 			pagingscraper.TypeStr:     scraperFactories[pagingscraper.TypeStr].CreateDefaultConfig(),
-			processesscraper.TypeStr:  &processesscraper.Config{},
+			processesscraper.TypeStr:  scraperFactories[processesscraper.TypeStr].CreateDefaultConfig(),
 		},
 	}
 
@@ -184,7 +184,7 @@ func assertIncludesExpectedMetrics(t *testing.T, got pdata.Metrics) {
 }
 
 func getMetricSlice(t *testing.T, rm pdata.ResourceMetrics) pdata.MetricSlice {
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 	require.Equal(t, 1, ilms.Len())
 	return ilms.At(0).Metrics()
 }

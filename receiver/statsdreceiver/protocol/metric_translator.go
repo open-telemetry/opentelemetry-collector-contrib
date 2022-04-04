@@ -26,8 +26,8 @@ var (
 	statsDDefaultPercentiles = []float64{0, 10, 50, 90, 95, 100}
 )
 
-func buildCounterMetric(parsedMetric statsDMetric, isMonotonicCounter bool, timeNow, lastIntervalTime time.Time) pdata.InstrumentationLibraryMetrics {
-	ilm := pdata.NewInstrumentationLibraryMetrics()
+func buildCounterMetric(parsedMetric statsDMetric, isMonotonicCounter bool, timeNow, lastIntervalTime time.Time) pdata.ScopeMetrics {
+	ilm := pdata.NewScopeMetrics()
 	nm := ilm.Metrics().AppendEmpty()
 	nm.SetName(parsedMetric.description.name)
 	if parsedMetric.unit != "" {
@@ -49,8 +49,8 @@ func buildCounterMetric(parsedMetric statsDMetric, isMonotonicCounter bool, time
 	return ilm
 }
 
-func buildGaugeMetric(parsedMetric statsDMetric, timeNow time.Time) pdata.InstrumentationLibraryMetrics {
-	ilm := pdata.NewInstrumentationLibraryMetrics()
+func buildGaugeMetric(parsedMetric statsDMetric, timeNow time.Time) pdata.ScopeMetrics {
+	ilm := pdata.NewScopeMetrics()
 	nm := ilm.Metrics().AppendEmpty()
 	nm.SetName(parsedMetric.description.name)
 	if parsedMetric.unit != "" {
@@ -67,7 +67,7 @@ func buildGaugeMetric(parsedMetric statsDMetric, timeNow time.Time) pdata.Instru
 	return ilm
 }
 
-func buildSummaryMetric(desc statsDMetricDescription, summary summaryMetric, startTime, timeNow time.Time, percentiles []float64, ilm pdata.InstrumentationLibraryMetrics) {
+func buildSummaryMetric(desc statsDMetricDescription, summary summaryMetric, startTime, timeNow time.Time, percentiles []float64, ilm pdata.ScopeMetrics) {
 	nm := ilm.Metrics().AppendEmpty()
 	nm.SetName(desc.name)
 	nm.SetDataType(pdata.MetricDataTypeSummary)

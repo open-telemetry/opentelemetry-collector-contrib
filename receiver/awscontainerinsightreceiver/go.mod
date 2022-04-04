@@ -3,18 +3,18 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscon
 go 1.17
 
 require (
-	github.com/aws/aws-sdk-go v1.43.26
+	github.com/aws/aws-sdk-go v1.43.28
 	github.com/google/cadvisor v0.44.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.47.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.47.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s v0.47.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.47.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.47.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.47.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.48.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.48.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s v0.48.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.48.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.48.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.48.0
 	github.com/shirou/gopsutil/v3 v3.22.2
 	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.47.1-0.20220323200141-1b7618728835
-	go.opentelemetry.io/collector/model v0.47.1-0.20220323200141-1b7618728835
+	go.opentelemetry.io/collector v0.48.0
+	go.opentelemetry.io/collector/model v0.48.0
 	go.uber.org/zap v1.21.0
 	k8s.io/api v0.23.5
 	k8s.io/apimachinery v0.23.5
@@ -70,7 +70,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mrunalp/fileutils v0.5.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.47.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.48.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/opencontainers/runc v1.1.0 // indirect
@@ -96,10 +96,9 @@ require (
 	github.com/vishvananda/netlink v1.1.1-0.20201029203352-d40f9887b852 // indirect
 	github.com/vishvananda/netns v0.0.0-20200728191858-db3c7e526aae // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.29.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.31.0 // indirect
 	go.opentelemetry.io/otel v1.6.1 // indirect
-	go.opentelemetry.io/otel/internal/metric v0.27.0 // indirect
-	go.opentelemetry.io/otel/metric v0.27.0 // indirect
+	go.opentelemetry.io/otel/metric v0.28.0 // indirect
 	go.opentelemetry.io/otel/trace v1.6.1 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect

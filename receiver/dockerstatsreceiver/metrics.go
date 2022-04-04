@@ -47,7 +47,7 @@ func ContainerStatsToMetrics(
 	resourceAttr.UpsertString(conventions.AttributeContainerName, strings.TrimPrefix(container.Name, "/"))
 	resourceAttr.UpsertString("container.hostname", container.Config.Hostname)
 	updateConfiguredResourceAttributes(resourceAttr, container, config)
-	ils := rs.InstrumentationLibraryMetrics().AppendEmpty()
+	ils := rs.ScopeMetrics().AppendEmpty()
 
 	appendBlockioMetrics(ils.Metrics(), &containerStats.BlkioStats, now)
 	appendCPUMetrics(ils.Metrics(), &containerStats.CPUStats, &containerStats.PreCPUStats, now, config.ProvidePerCoreCPUMetrics)

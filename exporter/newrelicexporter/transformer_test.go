@@ -40,7 +40,7 @@ func TestCommonAttributes(t *testing.T) {
 	resource := pdata.NewResource()
 	resource.Attributes().InsertString("resource", "R1")
 
-	ilm := pdata.NewInstrumentationLibrary()
+	ilm := pdata.NewInstrumentationScope()
 	ilm.SetName("test name")
 	ilm.SetVersion("test version")
 
@@ -64,7 +64,7 @@ func TestDoesNotCaptureResourceAttributeMetadata(t *testing.T) {
 
 	resource := pdata.NewResource()
 
-	ilm := pdata.NewInstrumentationLibrary()
+	ilm := pdata.NewInstrumentationScope()
 	ilm.SetName("test name")
 	ilm.SetVersion("test version")
 

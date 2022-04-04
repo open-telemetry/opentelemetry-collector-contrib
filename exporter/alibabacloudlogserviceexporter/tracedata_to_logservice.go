@@ -57,11 +57,11 @@ func traceDataToLogServiceData(td pdata.Traces) []*sls.Log {
 
 func resourceSpansToLogServiceData(resourceSpans pdata.ResourceSpans) []*sls.Log {
 	resourceContents := resourceToLogContents(resourceSpans.Resource())
-	insLibSpansSlice := resourceSpans.InstrumentationLibrarySpans()
+	scopeSpansSlice := resourceSpans.ScopeSpans()
 	var slsLogs []*sls.Log
-	for i := 0; i < insLibSpansSlice.Len(); i++ {
-		insLibSpans := insLibSpansSlice.At(i)
-		instrumentationLibraryContents := instrumentationLibraryToLogContents(insLibSpans.InstrumentationLibrary())
+	for i := 0; i < scopeSpansSlice.Len(); i++ {
+		insLibSpans := scopeSpansSlice.At(i)
+		instrumentationLibraryContents := instrumentationScopeToLogContents(insLibSpans.Scope())
 		spans := insLibSpans.Spans()
 		for j := 0; j < spans.Len(); j++ {
 			if slsLog := spanToLogServiceData(spans.At(j), resourceContents, instrumentationLibraryContents); slsLog != nil {
