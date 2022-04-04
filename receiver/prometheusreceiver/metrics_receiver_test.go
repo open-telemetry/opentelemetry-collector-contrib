@@ -20,6 +20,7 @@ import (
 	"time"
 
 	commonconfig "github.com/prometheus/common/config"
+
 	"github.com/prometheus/common/model"
 	promConfig "github.com/prometheus/prometheus/config"
 	promHTTP "github.com/prometheus/prometheus/discovery/http"
@@ -1106,10 +1107,21 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 				"job1": {Link: "/jobs/job1/targets"},
 				"job2": {Link: "/jobs/job2/targets"},
 			}},
+			mockTargetAllocatorResponseRaw{code: 200, data: map[string]LinkJSON{
+				"job1": {Link: "/jobs/job1/targets"},
+				"job2": {Link: "/jobs/job2/targets"},
+			}},
 		},
 		"/jobs/job1/targets": {
 			mockTargetAllocatorResponseRaw{code: 200, data: []HTTPSDResponse{
-				{Targets: []string{"10.0.10.2:9100", "10.0.10.3:9100", "10.0.10.4:9100", "10.0.10.5:9100"},
+				{Targets: []string{"localhost:9090", "10.0.10.3:9100", "10.0.10.4:9100", "10.0.10.5:9100"},
+					Labels: map[model.LabelName]model.LabelValue{
+						"__meta_datacenter":     "london",
+						"__meta_prometheus_job": "node",
+					}},
+			}},
+			mockTargetAllocatorResponseRaw{code: 200, data: []HTTPSDResponse{
+				{Targets: []string{"localhost:9090", "10.0.10.3:9100", "10.0.10.4:9100", "10.0.10.5:9100"},
 					Labels: map[model.LabelName]model.LabelValue{
 						"__meta_datacenter":     "london",
 						"__meta_prometheus_job": "node",
@@ -1117,6 +1129,13 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 			}},
 		},
 		"/jobs/job2/targets": {
+			mockTargetAllocatorResponseRaw{code: 200, data: []HTTPSDResponse{
+				{Targets: []string{"10.0.40.2:9100", "10.0.40.3:9100"},
+					Labels: map[model.LabelName]model.LabelValue{
+						"__meta_datacenter":     "london",
+						"__meta_prometheus_job": "alertmanager",
+					}},
+			}},
 			mockTargetAllocatorResponseRaw{code: 200, data: []HTTPSDResponse{
 				{Targets: []string{"10.0.40.2:9100", "10.0.40.3:9100"},
 					Labels: map[model.LabelName]model.LabelValue{
