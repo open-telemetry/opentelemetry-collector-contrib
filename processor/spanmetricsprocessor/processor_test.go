@@ -840,3 +840,50 @@ func TestProcessorResetExemplarData(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Empty(t, p.latencyExemplarsData[key])
 }
+
+// ------------------------------------------------------- start of additional block of tests -------------------------------------------------------
+
+func TestTraceLatencyExceedsMaxInt64(t *testing.T) {
+	mexp := &mocks.MetricsExporter{}
+	tcon := &mocks.TracesConsumer{}
+
+	mexp.On("ConsumeMetrics", mock.Anything, mock.Anything).Return(nil)
+	tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
+
+	defaultNullValue := "defaultNullValue"
+	p := newProcessorImp(mexp, tcon, &defaultNullValue, cumulative, t)
+
+	traces := buildTraceWithHighLatency()
+
+	// Test
+	ctx := metadata.NewIncomingContext(context.Background(), nil)
+
+	err := p.ConsumeTraces(ctx, traces)
+	// Validate
+	require.NoError(t, err)
+}
+
+func buildTraceWithHighLatency() pdata.Traces {
+	traces := pdata.NewTraces()
+	rs := traces.ResourceSpans().AppendEmpty()
+	rs.Resource().Attributes().
+		InsertString(conventions.AttributeServiceName, "test-service")
+	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
+	span := ils.Spans().AppendEmpty()
+	span.SetName("/test")
+	span.SetKind(pdata.SpanKindClient)
+	span.Status().SetCode(pdata.StatusCodeOk)
+	span.SetStartTimestamp(0)
+	span.SetEndTimestamp(18446744073709551615)
+	span.Attributes().InsertString(stringAttrName, "stringAttrValue")
+	span.Attributes().InsertInt(intAttrName, 99)
+	span.Attributes().InsertDouble(doubleAttrName, 99.99)
+	span.Attributes().InsertBool(boolAttrName, true)
+	span.Attributes().InsertNull(nullAttrName)
+	span.Attributes().Insert(mapAttrName, pdata.NewAttributeValueMap())
+	span.Attributes().Insert(arrayAttrName, pdata.NewAttributeValueArray())
+	span.SetTraceID(pdata.NewTraceID([16]byte{byte(42)}))
+	return traces
+}
+
+// ------------------------------------------------------- end of additional block of tests -------------------------------------------------------

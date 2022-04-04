@@ -381,6 +381,16 @@ func (p *processorImp) aggregateMetricsForServiceSpans(rspans pdata.ResourceSpan
 func (p *processorImp) aggregateMetricsForSpan(serviceName string, span pdata.Span, resourceAttr pdata.Map) {
 	latencyInMilliseconds := float64(span.EndTimestamp()-span.StartTimestamp()) / float64(time.Millisecond.Nanoseconds())
 
+	if latencyInMilliseconds > maxDurationMs {
+		p.logger.Warn("Latency exceeds max of int64",
+			zap.String("service.name", serviceName),
+			zap.Uint64("startTimeUnixNano", uint64(span.StartTimestamp().AsTime().UnixNano())),
+			zap.Uint64("endTimeUnixNano", uint64(span.EndTimestamp().AsTime().UnixNano())),
+			zap.String("span.kind", span.Kind().String()),
+			zap.String("operation", span.Name()))
+		return
+	}
+
 	// Binary search to find the latencyInMilliseconds bucket index.
 	index := sort.SearchFloat64s(p.latencyBounds, latencyInMilliseconds)
 
