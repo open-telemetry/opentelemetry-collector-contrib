@@ -18,7 +18,7 @@
 - `datadogexporter`: Deprecate `service` setting in favor of `service.name` semantic convention (#8784)
 - `datadogexporter`: Deprecate `version` setting in favor of `service.version` semantic convention (#8784)
 - `datadogexporter`: Deprecate `GetHostTags` method from `TagsConfig` struct (#8975)
-- `prometheusexecreceiver`: Deprecate prom_exec receiver ()
+- `prometheusexecreceiver`: Deprecate prom_exec receiver (#9058)
 
 ### 🚀 New components 🚀
 
