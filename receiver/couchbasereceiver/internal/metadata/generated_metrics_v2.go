@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.uber.org/zap"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -92,15 +91,6 @@ func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pdata.Metrics {
 	metrics := pdata.NewMetrics()
 	mb.metricsBuffer.MoveTo(metrics)
 	return metrics
-}
-
-func logFailedParse(logger *zap.Logger, expectedType, metric, value string) {
-	logger.Info(
-		"failed to parse value",
-		zap.String("expectedType", expectedType),
-		zap.String("metric", metric),
-		zap.String("value", value),
-	)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

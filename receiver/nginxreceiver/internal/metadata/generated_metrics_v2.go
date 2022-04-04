@@ -3,12 +3,12 @@
 package metadata
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
-	"go.uber.org/zap"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -329,15 +329,6 @@ func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pdata.Metrics {
 	return metrics
 }
 
-func logFailedParse(logger *zap.Logger, expectedType, metric, value string) {
-	logger.Info(
-		"failed to parse value",
-		zap.String("expectedType", expectedType),
-		zap.String("metric", metric),
-		zap.String("value", value),
-	)
-}
-
 // RecordNginxConnectionsAcceptedDataPoint adds a data point to nginx.connections_accepted metric.
 func (mb *MetricsBuilder) RecordNginxConnectionsAcceptedDataPoint(ts pdata.Timestamp, val int64) {
 	mb.metricNginxConnectionsAccepted.recordDataPoint(mb.startTime, ts, val)
@@ -345,10 +336,9 @@ func (mb *MetricsBuilder) RecordNginxConnectionsAcceptedDataPoint(ts pdata.Times
 
 // ParseNginxConnectionsAcceptedDataPoint attempts to parse and add a data point to nginx.connections_accepted metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseNginxConnectionsAcceptedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
+func (mb *MetricsBuilder) ParseNginxConnectionsAcceptedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "NginxConnectionsAccepted", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for NginxConnectionsAccepted, value was %s: %w", val, err))
 	} else {
 		mb.metricNginxConnectionsAccepted.recordDataPoint(mb.startTime, ts, i)
 	}
@@ -361,10 +351,9 @@ func (mb *MetricsBuilder) RecordNginxConnectionsCurrentDataPoint(ts pdata.Timest
 
 // ParseNginxConnectionsCurrentDataPoint attempts to parse and add a data point to nginx.connections_current metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseNginxConnectionsCurrentDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, stateAttributeValue string) {
+func (mb *MetricsBuilder) ParseNginxConnectionsCurrentDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, stateAttributeValue string) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "NginxConnectionsCurrent", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for NginxConnectionsCurrent, value was %s: %w", val, err))
 	} else {
 		mb.metricNginxConnectionsCurrent.recordDataPoint(mb.startTime, ts, i, stateAttributeValue)
 	}
@@ -377,10 +366,9 @@ func (mb *MetricsBuilder) RecordNginxConnectionsHandledDataPoint(ts pdata.Timest
 
 // ParseNginxConnectionsHandledDataPoint attempts to parse and add a data point to nginx.connections_handled metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseNginxConnectionsHandledDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
+func (mb *MetricsBuilder) ParseNginxConnectionsHandledDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "NginxConnectionsHandled", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for NginxConnectionsHandled, value was %s: %w", val, err))
 	} else {
 		mb.metricNginxConnectionsHandled.recordDataPoint(mb.startTime, ts, i)
 	}
@@ -393,10 +381,9 @@ func (mb *MetricsBuilder) RecordNginxRequestsDataPoint(ts pdata.Timestamp, val i
 
 // ParseNginxRequestsDataPoint attempts to parse and add a data point to nginx.requests metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseNginxRequestsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
+func (mb *MetricsBuilder) ParseNginxRequestsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "NginxRequests", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for NginxRequests, value was %s: %w", val, err))
 	} else {
 		mb.metricNginxRequests.recordDataPoint(mb.startTime, ts, i)
 	}

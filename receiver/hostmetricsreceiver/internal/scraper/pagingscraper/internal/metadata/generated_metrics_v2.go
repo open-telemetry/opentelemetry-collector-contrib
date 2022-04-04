@@ -3,12 +3,12 @@
 package metadata
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
-	"go.uber.org/zap"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -338,15 +338,6 @@ func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pdata.Metrics {
 	return metrics
 }
 
-func logFailedParse(logger *zap.Logger, expectedType, metric, value string) {
-	logger.Info(
-		"failed to parse value",
-		zap.String("expectedType", expectedType),
-		zap.String("metric", metric),
-		zap.String("value", value),
-	)
-}
-
 // RecordSystemPagingFaultsDataPoint adds a data point to system.paging.faults metric.
 func (mb *MetricsBuilder) RecordSystemPagingFaultsDataPoint(ts pdata.Timestamp, val int64, typeAttributeValue string) {
 	mb.metricSystemPagingFaults.recordDataPoint(mb.startTime, ts, val, typeAttributeValue)
@@ -354,10 +345,9 @@ func (mb *MetricsBuilder) RecordSystemPagingFaultsDataPoint(ts pdata.Timestamp, 
 
 // ParseSystemPagingFaultsDataPoint attempts to parse and add a data point to system.paging.faults metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSystemPagingFaultsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, typeAttributeValue string) {
+func (mb *MetricsBuilder) ParseSystemPagingFaultsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, typeAttributeValue string) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "SystemPagingFaults", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for SystemPagingFaults, value was %s: %w", val, err))
 	} else {
 		mb.metricSystemPagingFaults.recordDataPoint(mb.startTime, ts, i, typeAttributeValue)
 	}
@@ -370,10 +360,9 @@ func (mb *MetricsBuilder) RecordSystemPagingOperationsDataPoint(ts pdata.Timesta
 
 // ParseSystemPagingOperationsDataPoint attempts to parse and add a data point to system.paging.operations metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSystemPagingOperationsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, directionAttributeValue string, typeAttributeValue string) {
+func (mb *MetricsBuilder) ParseSystemPagingOperationsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, directionAttributeValue string, typeAttributeValue string) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "SystemPagingOperations", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for SystemPagingOperations, value was %s: %w", val, err))
 	} else {
 		mb.metricSystemPagingOperations.recordDataPoint(mb.startTime, ts, i, directionAttributeValue, typeAttributeValue)
 	}
@@ -386,10 +375,9 @@ func (mb *MetricsBuilder) RecordSystemPagingUsageDataPoint(ts pdata.Timestamp, v
 
 // ParseSystemPagingUsageDataPoint attempts to parse and add a data point to system.paging.usage metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSystemPagingUsageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, deviceAttributeValue string, stateAttributeValue string) {
+func (mb *MetricsBuilder) ParseSystemPagingUsageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, deviceAttributeValue string, stateAttributeValue string) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "SystemPagingUsage", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for SystemPagingUsage, value was %s: %w", val, err))
 	} else {
 		mb.metricSystemPagingUsage.recordDataPoint(mb.startTime, ts, i, deviceAttributeValue, stateAttributeValue)
 	}
@@ -402,10 +390,9 @@ func (mb *MetricsBuilder) RecordSystemPagingUtilizationDataPoint(ts pdata.Timest
 
 // ParseSystemPagingUtilizationDataPoint attempts to parse and add a data point to system.paging.utilization metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSystemPagingUtilizationDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, deviceAttributeValue string, stateAttributeValue string) {
+func (mb *MetricsBuilder) ParseSystemPagingUtilizationDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, deviceAttributeValue string, stateAttributeValue string) {
 	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "float", "SystemPagingUtilization", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse float for SystemPagingUtilization, value was %s: %w", val, err))
 	} else {
 		mb.metricSystemPagingUtilization.recordDataPoint(mb.startTime, ts, f, deviceAttributeValue, stateAttributeValue)
 	}

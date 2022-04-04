@@ -3,12 +3,12 @@
 package metadata
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
-	"go.uber.org/zap"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -1759,15 +1759,6 @@ func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pdata.Metrics {
 	return metrics
 }
 
-func logFailedParse(logger *zap.Logger, expectedType, metric, value string) {
-	logger.Info(
-		"failed to parse value",
-		zap.String("expectedType", expectedType),
-		zap.String("metric", metric),
-		zap.String("value", value),
-	)
-}
-
 // RecordRedisClientsBlockedDataPoint adds a data point to redis.clients.blocked metric.
 func (mb *MetricsBuilder) RecordRedisClientsBlockedDataPoint(ts pdata.Timestamp, val int64) {
 	mb.metricRedisClientsBlocked.recordDataPoint(mb.startTime, ts, val)
@@ -1775,10 +1766,9 @@ func (mb *MetricsBuilder) RecordRedisClientsBlockedDataPoint(ts pdata.Timestamp,
 
 // ParseRedisClientsBlockedDataPoint attempts to parse and add a data point to redis.clients.blocked metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRedisClientsBlockedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
+func (mb *MetricsBuilder) ParseRedisClientsBlockedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "RedisClientsBlocked", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for RedisClientsBlocked, value was %s: %w", val, err))
 	} else {
 		mb.metricRedisClientsBlocked.recordDataPoint(mb.startTime, ts, i)
 	}
@@ -1791,10 +1781,9 @@ func (mb *MetricsBuilder) RecordRedisClientsConnectedDataPoint(ts pdata.Timestam
 
 // ParseRedisClientsConnectedDataPoint attempts to parse and add a data point to redis.clients.connected metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRedisClientsConnectedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
+func (mb *MetricsBuilder) ParseRedisClientsConnectedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "RedisClientsConnected", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for RedisClientsConnected, value was %s: %w", val, err))
 	} else {
 		mb.metricRedisClientsConnected.recordDataPoint(mb.startTime, ts, i)
 	}
@@ -1807,10 +1796,9 @@ func (mb *MetricsBuilder) RecordRedisClientsMaxInputBufferDataPoint(ts pdata.Tim
 
 // ParseRedisClientsMaxInputBufferDataPoint attempts to parse and add a data point to redis.clients.max_input_buffer metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRedisClientsMaxInputBufferDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
+func (mb *MetricsBuilder) ParseRedisClientsMaxInputBufferDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "RedisClientsMaxInputBuffer", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for RedisClientsMaxInputBuffer, value was %s: %w", val, err))
 	} else {
 		mb.metricRedisClientsMaxInputBuffer.recordDataPoint(mb.startTime, ts, i)
 	}
@@ -1823,10 +1811,9 @@ func (mb *MetricsBuilder) RecordRedisClientsMaxOutputBufferDataPoint(ts pdata.Ti
 
 // ParseRedisClientsMaxOutputBufferDataPoint attempts to parse and add a data point to redis.clients.max_output_buffer metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRedisClientsMaxOutputBufferDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
+func (mb *MetricsBuilder) ParseRedisClientsMaxOutputBufferDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "RedisClientsMaxOutputBuffer", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for RedisClientsMaxOutputBuffer, value was %s: %w", val, err))
 	} else {
 		mb.metricRedisClientsMaxOutputBuffer.recordDataPoint(mb.startTime, ts, i)
 	}
@@ -1839,10 +1826,9 @@ func (mb *MetricsBuilder) RecordRedisCommandsDataPoint(ts pdata.Timestamp, val i
 
 // ParseRedisCommandsDataPoint attempts to parse and add a data point to redis.commands metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRedisCommandsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
+func (mb *MetricsBuilder) ParseRedisCommandsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "RedisCommands", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for RedisCommands, value was %s: %w", val, err))
 	} else {
 		mb.metricRedisCommands.recordDataPoint(mb.startTime, ts, i)
 	}
@@ -1855,10 +1841,9 @@ func (mb *MetricsBuilder) RecordRedisCommandsProcessedDataPoint(ts pdata.Timesta
 
 // ParseRedisCommandsProcessedDataPoint attempts to parse and add a data point to redis.commands.processed metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRedisCommandsProcessedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
+func (mb *MetricsBuilder) ParseRedisCommandsProcessedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "RedisCommandsProcessed", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for RedisCommandsProcessed, value was %s: %w", val, err))
 	} else {
 		mb.metricRedisCommandsProcessed.recordDataPoint(mb.startTime, ts, i)
 	}
@@ -1871,10 +1856,9 @@ func (mb *MetricsBuilder) RecordRedisConnectionsReceivedDataPoint(ts pdata.Times
 
 // ParseRedisConnectionsReceivedDataPoint attempts to parse and add a data point to redis.connections.received metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRedisConnectionsReceivedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
+func (mb *MetricsBuilder) ParseRedisConnectionsReceivedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "RedisConnectionsReceived", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for RedisConnectionsReceived, value was %s: %w", val, err))
 	} else {
 		mb.metricRedisConnectionsReceived.recordDataPoint(mb.startTime, ts, i)
 	}
@@ -1887,10 +1871,9 @@ func (mb *MetricsBuilder) RecordRedisConnectionsRejectedDataPoint(ts pdata.Times
 
 // ParseRedisConnectionsRejectedDataPoint attempts to parse and add a data point to redis.connections.rejected metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRedisConnectionsRejectedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
+func (mb *MetricsBuilder) ParseRedisConnectionsRejectedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "RedisConnectionsRejected", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for RedisConnectionsRejected, value was %s: %w", val, err))
 	} else {
 		mb.metricRedisConnectionsRejected.recordDataPoint(mb.startTime, ts, i)
 	}
@@ -1903,10 +1886,9 @@ func (mb *MetricsBuilder) RecordRedisCPUTimeDataPoint(ts pdata.Timestamp, val fl
 
 // ParseRedisCPUTimeDataPoint attempts to parse and add a data point to redis.cpu.time metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRedisCPUTimeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, stateAttributeValue string) {
+func (mb *MetricsBuilder) ParseRedisCPUTimeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, stateAttributeValue string) {
 	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "float", "RedisCPUTime", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse float for RedisCPUTime, value was %s: %w", val, err))
 	} else {
 		mb.metricRedisCPUTime.recordDataPoint(mb.startTime, ts, f, stateAttributeValue)
 	}
@@ -1919,10 +1901,9 @@ func (mb *MetricsBuilder) RecordRedisDbAvgTTLDataPoint(ts pdata.Timestamp, val i
 
 // ParseRedisDbAvgTTLDataPoint attempts to parse and add a data point to redis.db.avg_ttl metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRedisDbAvgTTLDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, dbAttributeValue string) {
+func (mb *MetricsBuilder) ParseRedisDbAvgTTLDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, dbAttributeValue string) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "RedisDbAvgTTL", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for RedisDbAvgTTL, value was %s: %w", val, err))
 	} else {
 		mb.metricRedisDbAvgTTL.recordDataPoint(mb.startTime, ts, i, dbAttributeValue)
 	}
@@ -1935,10 +1916,9 @@ func (mb *MetricsBuilder) RecordRedisDbExpiresDataPoint(ts pdata.Timestamp, val 
 
 // ParseRedisDbExpiresDataPoint attempts to parse and add a data point to redis.db.expires metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRedisDbExpiresDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, dbAttributeValue string) {
+func (mb *MetricsBuilder) ParseRedisDbExpiresDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, dbAttributeValue string) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "RedisDbExpires", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for RedisDbExpires, value was %s: %w", val, err))
 	} else {
 		mb.metricRedisDbExpires.recordDataPoint(mb.startTime, ts, i, dbAttributeValue)
 	}
@@ -1951,10 +1931,9 @@ func (mb *MetricsBuilder) RecordRedisDbKeysDataPoint(ts pdata.Timestamp, val int
 
 // ParseRedisDbKeysDataPoint attempts to parse and add a data point to redis.db.keys metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRedisDbKeysDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, dbAttributeValue string) {
+func (mb *MetricsBuilder) ParseRedisDbKeysDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, dbAttributeValue string) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "RedisDbKeys", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for RedisDbKeys, value was %s: %w", val, err))
 	} else {
 		mb.metricRedisDbKeys.recordDataPoint(mb.startTime, ts, i, dbAttributeValue)
 	}
@@ -1967,10 +1946,9 @@ func (mb *MetricsBuilder) RecordRedisKeysEvictedDataPoint(ts pdata.Timestamp, va
 
 // ParseRedisKeysEvictedDataPoint attempts to parse and add a data point to redis.keys.evicted metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRedisKeysEvictedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
+func (mb *MetricsBuilder) ParseRedisKeysEvictedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "RedisKeysEvicted", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for RedisKeysEvicted, value was %s: %w", val, err))
 	} else {
 		mb.metricRedisKeysEvicted.recordDataPoint(mb.startTime, ts, i)
 	}
@@ -1983,10 +1961,9 @@ func (mb *MetricsBuilder) RecordRedisKeysExpiredDataPoint(ts pdata.Timestamp, va
 
 // ParseRedisKeysExpiredDataPoint attempts to parse and add a data point to redis.keys.expired metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRedisKeysExpiredDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
+func (mb *MetricsBuilder) ParseRedisKeysExpiredDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "RedisKeysExpired", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for RedisKeysExpired, value was %s: %w", val, err))
 	} else {
 		mb.metricRedisKeysExpired.recordDataPoint(mb.startTime, ts, i)
 	}
@@ -1999,10 +1976,9 @@ func (mb *MetricsBuilder) RecordRedisKeyspaceHitsDataPoint(ts pdata.Timestamp, v
 
 // ParseRedisKeyspaceHitsDataPoint attempts to parse and add a data point to redis.keyspace.hits metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRedisKeyspaceHitsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
+func (mb *MetricsBuilder) ParseRedisKeyspaceHitsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "RedisKeyspaceHits", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for RedisKeyspaceHits, value was %s: %w", val, err))
 	} else {
 		mb.metricRedisKeyspaceHits.recordDataPoint(mb.startTime, ts, i)
 	}
@@ -2015,10 +1991,9 @@ func (mb *MetricsBuilder) RecordRedisKeyspaceMissesDataPoint(ts pdata.Timestamp,
 
 // ParseRedisKeyspaceMissesDataPoint attempts to parse and add a data point to redis.keyspace.misses metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRedisKeyspaceMissesDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
+func (mb *MetricsBuilder) ParseRedisKeyspaceMissesDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "RedisKeyspaceMisses", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for RedisKeyspaceMisses, value was %s: %w", val, err))
 	} else {
 		mb.metricRedisKeyspaceMisses.recordDataPoint(mb.startTime, ts, i)
 	}
@@ -2031,10 +2006,9 @@ func (mb *MetricsBuilder) RecordRedisLatestForkDataPoint(ts pdata.Timestamp, val
 
 // ParseRedisLatestForkDataPoint attempts to parse and add a data point to redis.latest_fork metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRedisLatestForkDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
+func (mb *MetricsBuilder) ParseRedisLatestForkDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "RedisLatestFork", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for RedisLatestFork, value was %s: %w", val, err))
 	} else {
 		mb.metricRedisLatestFork.recordDataPoint(mb.startTime, ts, i)
 	}
@@ -2047,10 +2021,9 @@ func (mb *MetricsBuilder) RecordRedisMemoryFragmentationRatioDataPoint(ts pdata.
 
 // ParseRedisMemoryFragmentationRatioDataPoint attempts to parse and add a data point to redis.memory.fragmentation_ratio metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRedisMemoryFragmentationRatioDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
+func (mb *MetricsBuilder) ParseRedisMemoryFragmentationRatioDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
 	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "float", "RedisMemoryFragmentationRatio", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse float for RedisMemoryFragmentationRatio, value was %s: %w", val, err))
 	} else {
 		mb.metricRedisMemoryFragmentationRatio.recordDataPoint(mb.startTime, ts, f)
 	}
@@ -2063,10 +2036,9 @@ func (mb *MetricsBuilder) RecordRedisMemoryLuaDataPoint(ts pdata.Timestamp, val 
 
 // ParseRedisMemoryLuaDataPoint attempts to parse and add a data point to redis.memory.lua metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRedisMemoryLuaDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
+func (mb *MetricsBuilder) ParseRedisMemoryLuaDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "RedisMemoryLua", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for RedisMemoryLua, value was %s: %w", val, err))
 	} else {
 		mb.metricRedisMemoryLua.recordDataPoint(mb.startTime, ts, i)
 	}
@@ -2079,10 +2051,9 @@ func (mb *MetricsBuilder) RecordRedisMemoryPeakDataPoint(ts pdata.Timestamp, val
 
 // ParseRedisMemoryPeakDataPoint attempts to parse and add a data point to redis.memory.peak metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRedisMemoryPeakDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
+func (mb *MetricsBuilder) ParseRedisMemoryPeakDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "RedisMemoryPeak", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for RedisMemoryPeak, value was %s: %w", val, err))
 	} else {
 		mb.metricRedisMemoryPeak.recordDataPoint(mb.startTime, ts, i)
 	}
@@ -2095,10 +2066,9 @@ func (mb *MetricsBuilder) RecordRedisMemoryRssDataPoint(ts pdata.Timestamp, val 
 
 // ParseRedisMemoryRssDataPoint attempts to parse and add a data point to redis.memory.rss metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRedisMemoryRssDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
+func (mb *MetricsBuilder) ParseRedisMemoryRssDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "RedisMemoryRss", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for RedisMemoryRss, value was %s: %w", val, err))
 	} else {
 		mb.metricRedisMemoryRss.recordDataPoint(mb.startTime, ts, i)
 	}
@@ -2111,10 +2081,9 @@ func (mb *MetricsBuilder) RecordRedisMemoryUsedDataPoint(ts pdata.Timestamp, val
 
 // ParseRedisMemoryUsedDataPoint attempts to parse and add a data point to redis.memory.used metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRedisMemoryUsedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
+func (mb *MetricsBuilder) ParseRedisMemoryUsedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "RedisMemoryUsed", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for RedisMemoryUsed, value was %s: %w", val, err))
 	} else {
 		mb.metricRedisMemoryUsed.recordDataPoint(mb.startTime, ts, i)
 	}
@@ -2127,10 +2096,9 @@ func (mb *MetricsBuilder) RecordRedisNetInputDataPoint(ts pdata.Timestamp, val i
 
 // ParseRedisNetInputDataPoint attempts to parse and add a data point to redis.net.input metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRedisNetInputDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
+func (mb *MetricsBuilder) ParseRedisNetInputDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "RedisNetInput", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for RedisNetInput, value was %s: %w", val, err))
 	} else {
 		mb.metricRedisNetInput.recordDataPoint(mb.startTime, ts, i)
 	}
@@ -2143,10 +2111,9 @@ func (mb *MetricsBuilder) RecordRedisNetOutputDataPoint(ts pdata.Timestamp, val 
 
 // ParseRedisNetOutputDataPoint attempts to parse and add a data point to redis.net.output metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRedisNetOutputDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
+func (mb *MetricsBuilder) ParseRedisNetOutputDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "RedisNetOutput", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for RedisNetOutput, value was %s: %w", val, err))
 	} else {
 		mb.metricRedisNetOutput.recordDataPoint(mb.startTime, ts, i)
 	}
@@ -2159,10 +2126,9 @@ func (mb *MetricsBuilder) RecordRedisRdbChangesSinceLastSaveDataPoint(ts pdata.T
 
 // ParseRedisRdbChangesSinceLastSaveDataPoint attempts to parse and add a data point to redis.rdb.changes_since_last_save metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRedisRdbChangesSinceLastSaveDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
+func (mb *MetricsBuilder) ParseRedisRdbChangesSinceLastSaveDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "RedisRdbChangesSinceLastSave", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for RedisRdbChangesSinceLastSave, value was %s: %w", val, err))
 	} else {
 		mb.metricRedisRdbChangesSinceLastSave.recordDataPoint(mb.startTime, ts, i)
 	}
@@ -2175,10 +2141,9 @@ func (mb *MetricsBuilder) RecordRedisReplicationBacklogFirstByteOffsetDataPoint(
 
 // ParseRedisReplicationBacklogFirstByteOffsetDataPoint attempts to parse and add a data point to redis.replication.backlog_first_byte_offset metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRedisReplicationBacklogFirstByteOffsetDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
+func (mb *MetricsBuilder) ParseRedisReplicationBacklogFirstByteOffsetDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "RedisReplicationBacklogFirstByteOffset", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for RedisReplicationBacklogFirstByteOffset, value was %s: %w", val, err))
 	} else {
 		mb.metricRedisReplicationBacklogFirstByteOffset.recordDataPoint(mb.startTime, ts, i)
 	}
@@ -2191,10 +2156,9 @@ func (mb *MetricsBuilder) RecordRedisReplicationOffsetDataPoint(ts pdata.Timesta
 
 // ParseRedisReplicationOffsetDataPoint attempts to parse and add a data point to redis.replication.offset metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRedisReplicationOffsetDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
+func (mb *MetricsBuilder) ParseRedisReplicationOffsetDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "RedisReplicationOffset", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for RedisReplicationOffset, value was %s: %w", val, err))
 	} else {
 		mb.metricRedisReplicationOffset.recordDataPoint(mb.startTime, ts, i)
 	}
@@ -2207,10 +2171,9 @@ func (mb *MetricsBuilder) RecordRedisSlavesConnectedDataPoint(ts pdata.Timestamp
 
 // ParseRedisSlavesConnectedDataPoint attempts to parse and add a data point to redis.slaves.connected metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRedisSlavesConnectedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
+func (mb *MetricsBuilder) ParseRedisSlavesConnectedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "RedisSlavesConnected", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for RedisSlavesConnected, value was %s: %w", val, err))
 	} else {
 		mb.metricRedisSlavesConnected.recordDataPoint(mb.startTime, ts, i)
 	}
@@ -2223,10 +2186,9 @@ func (mb *MetricsBuilder) RecordRedisUptimeDataPoint(ts pdata.Timestamp, val int
 
 // ParseRedisUptimeDataPoint attempts to parse and add a data point to redis.uptime metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseRedisUptimeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
+func (mb *MetricsBuilder) ParseRedisUptimeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "RedisUptime", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for RedisUptime, value was %s: %w", val, err))
 	} else {
 		mb.metricRedisUptime.recordDataPoint(mb.startTime, ts, i)
 	}

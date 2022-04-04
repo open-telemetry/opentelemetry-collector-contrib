@@ -3,12 +3,12 @@
 package metadata
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
-	"go.uber.org/zap"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -574,15 +574,6 @@ func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pdata.Metrics {
 	return metrics
 }
 
-func logFailedParse(logger *zap.Logger, expectedType, metric, value string) {
-	logger.Info(
-		"failed to parse value",
-		zap.String("expectedType", expectedType),
-		zap.String("metric", metric),
-		zap.String("value", value),
-	)
-}
-
 // RecordCouchdbAverageRequestTimeDataPoint adds a data point to couchdb.average_request_time metric.
 func (mb *MetricsBuilder) RecordCouchdbAverageRequestTimeDataPoint(ts pdata.Timestamp, val float64) {
 	mb.metricCouchdbAverageRequestTime.recordDataPoint(mb.startTime, ts, val)
@@ -590,10 +581,9 @@ func (mb *MetricsBuilder) RecordCouchdbAverageRequestTimeDataPoint(ts pdata.Time
 
 // ParseCouchdbAverageRequestTimeDataPoint attempts to parse and add a data point to couchdb.average_request_time metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseCouchdbAverageRequestTimeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
+func (mb *MetricsBuilder) ParseCouchdbAverageRequestTimeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
 	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "float", "CouchdbAverageRequestTime", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse float for CouchdbAverageRequestTime, value was %s: %w", val, err))
 	} else {
 		mb.metricCouchdbAverageRequestTime.recordDataPoint(mb.startTime, ts, f)
 	}
@@ -606,10 +596,9 @@ func (mb *MetricsBuilder) RecordCouchdbDatabaseOpenDataPoint(ts pdata.Timestamp,
 
 // ParseCouchdbDatabaseOpenDataPoint attempts to parse and add a data point to couchdb.database.open metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseCouchdbDatabaseOpenDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
+func (mb *MetricsBuilder) ParseCouchdbDatabaseOpenDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "CouchdbDatabaseOpen", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for CouchdbDatabaseOpen, value was %s: %w", val, err))
 	} else {
 		mb.metricCouchdbDatabaseOpen.recordDataPoint(mb.startTime, ts, i)
 	}
@@ -622,10 +611,9 @@ func (mb *MetricsBuilder) RecordCouchdbDatabaseOperationsDataPoint(ts pdata.Time
 
 // ParseCouchdbDatabaseOperationsDataPoint attempts to parse and add a data point to couchdb.database.operations metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseCouchdbDatabaseOperationsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, operationAttributeValue string) {
+func (mb *MetricsBuilder) ParseCouchdbDatabaseOperationsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, operationAttributeValue string) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "CouchdbDatabaseOperations", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for CouchdbDatabaseOperations, value was %s: %w", val, err))
 	} else {
 		mb.metricCouchdbDatabaseOperations.recordDataPoint(mb.startTime, ts, i, operationAttributeValue)
 	}
@@ -638,10 +626,9 @@ func (mb *MetricsBuilder) RecordCouchdbFileDescriptorOpenDataPoint(ts pdata.Time
 
 // ParseCouchdbFileDescriptorOpenDataPoint attempts to parse and add a data point to couchdb.file_descriptor.open metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseCouchdbFileDescriptorOpenDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
+func (mb *MetricsBuilder) ParseCouchdbFileDescriptorOpenDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "CouchdbFileDescriptorOpen", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for CouchdbFileDescriptorOpen, value was %s: %w", val, err))
 	} else {
 		mb.metricCouchdbFileDescriptorOpen.recordDataPoint(mb.startTime, ts, i)
 	}
@@ -654,10 +641,9 @@ func (mb *MetricsBuilder) RecordCouchdbHttpdBulkRequestsDataPoint(ts pdata.Times
 
 // ParseCouchdbHttpdBulkRequestsDataPoint attempts to parse and add a data point to couchdb.httpd.bulk_requests metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseCouchdbHttpdBulkRequestsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
+func (mb *MetricsBuilder) ParseCouchdbHttpdBulkRequestsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "CouchdbHttpdBulkRequests", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for CouchdbHttpdBulkRequests, value was %s: %w", val, err))
 	} else {
 		mb.metricCouchdbHttpdBulkRequests.recordDataPoint(mb.startTime, ts, i)
 	}
@@ -670,10 +656,9 @@ func (mb *MetricsBuilder) RecordCouchdbHttpdRequestsDataPoint(ts pdata.Timestamp
 
 // ParseCouchdbHttpdRequestsDataPoint attempts to parse and add a data point to couchdb.httpd.requests metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseCouchdbHttpdRequestsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, httpMethodAttributeValue string) {
+func (mb *MetricsBuilder) ParseCouchdbHttpdRequestsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, httpMethodAttributeValue string) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "CouchdbHttpdRequests", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for CouchdbHttpdRequests, value was %s: %w", val, err))
 	} else {
 		mb.metricCouchdbHttpdRequests.recordDataPoint(mb.startTime, ts, i, httpMethodAttributeValue)
 	}
@@ -686,10 +671,9 @@ func (mb *MetricsBuilder) RecordCouchdbHttpdResponsesDataPoint(ts pdata.Timestam
 
 // ParseCouchdbHttpdResponsesDataPoint attempts to parse and add a data point to couchdb.httpd.responses metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseCouchdbHttpdResponsesDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, httpStatusCodeAttributeValue string) {
+func (mb *MetricsBuilder) ParseCouchdbHttpdResponsesDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, httpStatusCodeAttributeValue string) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "CouchdbHttpdResponses", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for CouchdbHttpdResponses, value was %s: %w", val, err))
 	} else {
 		mb.metricCouchdbHttpdResponses.recordDataPoint(mb.startTime, ts, i, httpStatusCodeAttributeValue)
 	}
@@ -702,10 +686,9 @@ func (mb *MetricsBuilder) RecordCouchdbHttpdViewsDataPoint(ts pdata.Timestamp, v
 
 // ParseCouchdbHttpdViewsDataPoint attempts to parse and add a data point to couchdb.httpd.views metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseCouchdbHttpdViewsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, viewAttributeValue string) {
+func (mb *MetricsBuilder) ParseCouchdbHttpdViewsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, viewAttributeValue string) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "CouchdbHttpdViews", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for CouchdbHttpdViews, value was %s: %w", val, err))
 	} else {
 		mb.metricCouchdbHttpdViews.recordDataPoint(mb.startTime, ts, i, viewAttributeValue)
 	}

@@ -3,12 +3,12 @@
 package metadata
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
-	"go.uber.org/zap"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -375,15 +375,6 @@ func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pdata.Metrics {
 	return metrics
 }
 
-func logFailedParse(logger *zap.Logger, expectedType, metric, value string) {
-	logger.Info(
-		"failed to parse value",
-		zap.String("expectedType", expectedType),
-		zap.String("metric", metric),
-		zap.String("value", value),
-	)
-}
-
 // RecordProcessCPUTimeDataPoint adds a data point to process.cpu.time metric.
 func (mb *MetricsBuilder) RecordProcessCPUTimeDataPoint(ts pdata.Timestamp, val float64, stateAttributeValue string) {
 	mb.metricProcessCPUTime.recordDataPoint(mb.startTime, ts, val, stateAttributeValue)
@@ -391,10 +382,9 @@ func (mb *MetricsBuilder) RecordProcessCPUTimeDataPoint(ts pdata.Timestamp, val 
 
 // ParseProcessCPUTimeDataPoint attempts to parse and add a data point to process.cpu.time metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseProcessCPUTimeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, stateAttributeValue string) {
+func (mb *MetricsBuilder) ParseProcessCPUTimeDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, stateAttributeValue string) {
 	if f, err := strconv.ParseFloat(val, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "float", "ProcessCPUTime", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse float for ProcessCPUTime, value was %s: %w", val, err))
 	} else {
 		mb.metricProcessCPUTime.recordDataPoint(mb.startTime, ts, f, stateAttributeValue)
 	}
@@ -407,10 +397,9 @@ func (mb *MetricsBuilder) RecordProcessDiskIoDataPoint(ts pdata.Timestamp, val i
 
 // ParseProcessDiskIoDataPoint attempts to parse and add a data point to process.disk.io metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseProcessDiskIoDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, directionAttributeValue string) {
+func (mb *MetricsBuilder) ParseProcessDiskIoDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, directionAttributeValue string) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "ProcessDiskIo", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for ProcessDiskIo, value was %s: %w", val, err))
 	} else {
 		mb.metricProcessDiskIo.recordDataPoint(mb.startTime, ts, i, directionAttributeValue)
 	}
@@ -423,10 +412,9 @@ func (mb *MetricsBuilder) RecordProcessMemoryPhysicalUsageDataPoint(ts pdata.Tim
 
 // ParseProcessMemoryPhysicalUsageDataPoint attempts to parse and add a data point to process.memory.physical_usage metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseProcessMemoryPhysicalUsageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
+func (mb *MetricsBuilder) ParseProcessMemoryPhysicalUsageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "ProcessMemoryPhysicalUsage", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for ProcessMemoryPhysicalUsage, value was %s: %w", val, err))
 	} else {
 		mb.metricProcessMemoryPhysicalUsage.recordDataPoint(mb.startTime, ts, i)
 	}
@@ -439,10 +427,9 @@ func (mb *MetricsBuilder) RecordProcessMemoryVirtualUsageDataPoint(ts pdata.Time
 
 // ParseProcessMemoryVirtualUsageDataPoint attempts to parse and add a data point to process.memory.virtual_usage metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseProcessMemoryVirtualUsageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger) {
+func (mb *MetricsBuilder) ParseProcessMemoryVirtualUsageDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "ProcessMemoryVirtualUsage", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for ProcessMemoryVirtualUsage, value was %s: %w", val, err))
 	} else {
 		mb.metricProcessMemoryVirtualUsage.recordDataPoint(mb.startTime, ts, i)
 	}

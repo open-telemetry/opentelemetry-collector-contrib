@@ -86,7 +86,7 @@ func (m *mySQLScraper) scrape(context.Context) (pdata.Metrics, error) {
 		if k != "buffer_pool_size" {
 			continue
 		}
-		m.mb.ParseMysqlBufferPoolLimitDataPoint(now, v, errors, m.logger)
+		m.mb.ParseMysqlBufferPoolLimitDataPoint(now, v, errors)
 	}
 
 	// collect global status metrics.
@@ -104,155 +104,155 @@ func (m *mySQLScraper) scrape(context.Context) (pdata.Metrics, error) {
 
 		// buffer_pool.pages
 		case "Innodb_buffer_pool_pages_data":
-			m.mb.ParseMysqlBufferPoolPagesDataPoint(now, v, errors, m.logger, "data")
+			m.mb.ParseMysqlBufferPoolPagesDataPoint(now, v, errors, "data")
 		case "Innodb_buffer_pool_pages_free":
-			m.mb.ParseMysqlBufferPoolPagesDataPoint(now, v, errors, m.logger, "free")
+			m.mb.ParseMysqlBufferPoolPagesDataPoint(now, v, errors, "free")
 		case "Innodb_buffer_pool_pages_misc":
-			m.mb.ParseMysqlBufferPoolPagesDataPoint(now, v, errors, m.logger, "misc")
+			m.mb.ParseMysqlBufferPoolPagesDataPoint(now, v, errors, "misc")
 
 		// buffer_pool.page_flushes
 		case "Innodb_buffer_pool_pages_flushed":
-			m.mb.ParseMysqlBufferPoolPageFlushesDataPoint(now, v, errors, m.logger)
+			m.mb.ParseMysqlBufferPoolPageFlushesDataPoint(now, v, errors)
 
 		// buffer_pool.operations
 		case "Innodb_buffer_pool_read_ahead_rnd":
-			m.mb.ParseMysqlBufferPoolOperationsDataPoint(now, v, errors, m.logger, "read_ahead_rnd")
+			m.mb.ParseMysqlBufferPoolOperationsDataPoint(now, v, errors, "read_ahead_rnd")
 		case "Innodb_buffer_pool_read_ahead":
-			m.mb.ParseMysqlBufferPoolOperationsDataPoint(now, v, errors, m.logger, "read_ahead")
+			m.mb.ParseMysqlBufferPoolOperationsDataPoint(now, v, errors, "read_ahead")
 		case "Innodb_buffer_pool_read_ahead_evicted":
-			m.mb.ParseMysqlBufferPoolOperationsDataPoint(now, v, errors, m.logger, "read_ahead_evicted")
+			m.mb.ParseMysqlBufferPoolOperationsDataPoint(now, v, errors, "read_ahead_evicted")
 		case "Innodb_buffer_pool_read_requests":
-			m.mb.ParseMysqlBufferPoolOperationsDataPoint(now, v, errors, m.logger, "read_requests")
+			m.mb.ParseMysqlBufferPoolOperationsDataPoint(now, v, errors, "read_requests")
 		case "Innodb_buffer_pool_reads":
-			m.mb.ParseMysqlBufferPoolOperationsDataPoint(now, v, errors, m.logger, "reads")
+			m.mb.ParseMysqlBufferPoolOperationsDataPoint(now, v, errors, "reads")
 		case "Innodb_buffer_pool_wait_free":
-			m.mb.ParseMysqlBufferPoolOperationsDataPoint(now, v, errors, m.logger, "wait_free")
+			m.mb.ParseMysqlBufferPoolOperationsDataPoint(now, v, errors, "wait_free")
 		case "Innodb_buffer_pool_write_requests":
-			m.mb.ParseMysqlBufferPoolOperationsDataPoint(now, v, errors, m.logger, "write_requests")
+			m.mb.ParseMysqlBufferPoolOperationsDataPoint(now, v, errors, "write_requests")
 
 		// commands
 		case "Com_stmt_execute":
-			m.mb.ParseMysqlCommandsDataPoint(now, v, errors, m.logger, "execute")
+			m.mb.ParseMysqlCommandsDataPoint(now, v, errors, "execute")
 		case "Com_stmt_close":
-			m.mb.ParseMysqlCommandsDataPoint(now, v, errors, m.logger, "close")
+			m.mb.ParseMysqlCommandsDataPoint(now, v, errors, "close")
 		case "Com_stmt_fetch":
-			m.mb.ParseMysqlCommandsDataPoint(now, v, errors, m.logger, "fetch")
+			m.mb.ParseMysqlCommandsDataPoint(now, v, errors, "fetch")
 		case "Com_stmt_prepare":
-			m.mb.ParseMysqlCommandsDataPoint(now, v, errors, m.logger, "prepare")
+			m.mb.ParseMysqlCommandsDataPoint(now, v, errors, "prepare")
 		case "Com_stmt_reset":
-			m.mb.ParseMysqlCommandsDataPoint(now, v, errors, m.logger, "reset")
+			m.mb.ParseMysqlCommandsDataPoint(now, v, errors, "reset")
 		case "Com_stmt_send_long_data":
-			m.mb.ParseMysqlCommandsDataPoint(now, v, errors, m.logger, "send_long_data")
+			m.mb.ParseMysqlCommandsDataPoint(now, v, errors, "send_long_data")
 
 		// handlers
 		case "Handler_commit":
-			m.mb.ParseMysqlHandlersDataPoint(now, v, errors, m.logger, "commit")
+			m.mb.ParseMysqlHandlersDataPoint(now, v, errors, "commit")
 		case "Handler_delete":
-			m.mb.ParseMysqlHandlersDataPoint(now, v, errors, m.logger, "delete")
+			m.mb.ParseMysqlHandlersDataPoint(now, v, errors, "delete")
 		case "Handler_discover":
-			m.mb.ParseMysqlHandlersDataPoint(now, v, errors, m.logger, "discover")
+			m.mb.ParseMysqlHandlersDataPoint(now, v, errors, "discover")
 		case "Handler_external_lock":
-			m.mb.ParseMysqlHandlersDataPoint(now, v, errors, m.logger, "lock")
+			m.mb.ParseMysqlHandlersDataPoint(now, v, errors, "lock")
 		case "Handler_mrr_init":
-			m.mb.ParseMysqlHandlersDataPoint(now, v, errors, m.logger, "mrr_init")
+			m.mb.ParseMysqlHandlersDataPoint(now, v, errors, "mrr_init")
 		case "Handler_prepare":
-			m.mb.ParseMysqlHandlersDataPoint(now, v, errors, m.logger, "prepare")
+			m.mb.ParseMysqlHandlersDataPoint(now, v, errors, "prepare")
 		case "Handler_read_first":
-			m.mb.ParseMysqlHandlersDataPoint(now, v, errors, m.logger, "read_first")
+			m.mb.ParseMysqlHandlersDataPoint(now, v, errors, "read_first")
 		case "Handler_read_key":
-			m.mb.ParseMysqlHandlersDataPoint(now, v, errors, m.logger, "read_key")
+			m.mb.ParseMysqlHandlersDataPoint(now, v, errors, "read_key")
 		case "Handler_read_last":
-			m.mb.ParseMysqlHandlersDataPoint(now, v, errors, m.logger, "read_last")
+			m.mb.ParseMysqlHandlersDataPoint(now, v, errors, "read_last")
 		case "Handler_read_next":
-			m.mb.ParseMysqlHandlersDataPoint(now, v, errors, m.logger, "read_next")
+			m.mb.ParseMysqlHandlersDataPoint(now, v, errors, "read_next")
 		case "Handler_read_prev":
-			m.mb.ParseMysqlHandlersDataPoint(now, v, errors, m.logger, "read_prev")
+			m.mb.ParseMysqlHandlersDataPoint(now, v, errors, "read_prev")
 		case "Handler_read_rnd":
-			m.mb.ParseMysqlHandlersDataPoint(now, v, errors, m.logger, "read_rnd")
+			m.mb.ParseMysqlHandlersDataPoint(now, v, errors, "read_rnd")
 		case "Handler_read_rnd_next":
-			m.mb.ParseMysqlHandlersDataPoint(now, v, errors, m.logger, "read_rnd_next")
+			m.mb.ParseMysqlHandlersDataPoint(now, v, errors, "read_rnd_next")
 		case "Handler_rollback":
-			m.mb.ParseMysqlHandlersDataPoint(now, v, errors, m.logger, "rollback")
+			m.mb.ParseMysqlHandlersDataPoint(now, v, errors, "rollback")
 		case "Handler_savepoint":
-			m.mb.ParseMysqlHandlersDataPoint(now, v, errors, m.logger, "savepoint")
+			m.mb.ParseMysqlHandlersDataPoint(now, v, errors, "savepoint")
 		case "Handler_savepoint_rollback":
-			m.mb.ParseMysqlHandlersDataPoint(now, v, errors, m.logger, "savepoint_rollback")
+			m.mb.ParseMysqlHandlersDataPoint(now, v, errors, "savepoint_rollback")
 		case "Handler_update":
-			m.mb.ParseMysqlHandlersDataPoint(now, v, errors, m.logger, "update")
+			m.mb.ParseMysqlHandlersDataPoint(now, v, errors, "update")
 		case "Handler_write":
-			m.mb.ParseMysqlHandlersDataPoint(now, v, errors, m.logger, "write")
+			m.mb.ParseMysqlHandlersDataPoint(now, v, errors, "write")
 
 		// double_writes
 		case "Innodb_dblwr_pages_written":
-			m.mb.ParseMysqlDoubleWritesDataPoint(now, v, errors, m.logger, "written")
+			m.mb.ParseMysqlDoubleWritesDataPoint(now, v, errors, "written")
 		case "Innodb_dblwr_writes":
-			m.mb.ParseMysqlDoubleWritesDataPoint(now, v, errors, m.logger, "writes")
+			m.mb.ParseMysqlDoubleWritesDataPoint(now, v, errors, "writes")
 
 		// log_operations
 		case "Innodb_log_waits":
-			m.mb.ParseMysqlLogOperationsDataPoint(now, v, errors, m.logger, "waits")
+			m.mb.ParseMysqlLogOperationsDataPoint(now, v, errors, "waits")
 		case "Innodb_log_write_requests":
-			m.mb.ParseMysqlLogOperationsDataPoint(now, v, errors, m.logger, "requests")
+			m.mb.ParseMysqlLogOperationsDataPoint(now, v, errors, "requests")
 		case "Innodb_log_writes":
-			m.mb.ParseMysqlLogOperationsDataPoint(now, v, errors, m.logger, "writes")
+			m.mb.ParseMysqlLogOperationsDataPoint(now, v, errors, "writes")
 
 		// operations
 		case "Innodb_data_fsyncs":
-			m.mb.ParseMysqlOperationsDataPoint(now, v, errors, m.logger, "fsyncs")
+			m.mb.ParseMysqlOperationsDataPoint(now, v, errors, "fsyncs")
 		case "Innodb_data_reads":
-			m.mb.ParseMysqlOperationsDataPoint(now, v, errors, m.logger, "reads")
+			m.mb.ParseMysqlOperationsDataPoint(now, v, errors, "reads")
 		case "Innodb_data_writes":
-			m.mb.ParseMysqlOperationsDataPoint(now, v, errors, m.logger, "writes")
+			m.mb.ParseMysqlOperationsDataPoint(now, v, errors, "writes")
 
 		// page_operations
 		case "Innodb_pages_created":
-			m.mb.ParseMysqlPageOperationsDataPoint(now, v, errors, m.logger, "created")
+			m.mb.ParseMysqlPageOperationsDataPoint(now, v, errors, "created")
 		case "Innodb_pages_read":
-			m.mb.ParseMysqlPageOperationsDataPoint(now, v, errors, m.logger, "read")
+			m.mb.ParseMysqlPageOperationsDataPoint(now, v, errors, "read")
 		case "Innodb_pages_written":
-			m.mb.ParseMysqlPageOperationsDataPoint(now, v, errors, m.logger, "written")
+			m.mb.ParseMysqlPageOperationsDataPoint(now, v, errors, "written")
 
 		// row_locks
 		case "Innodb_row_lock_waits":
-			m.mb.ParseMysqlRowLocksDataPoint(now, v, errors, m.logger, "waits")
+			m.mb.ParseMysqlRowLocksDataPoint(now, v, errors, "waits")
 		case "Innodb_row_lock_time":
-			m.mb.ParseMysqlRowLocksDataPoint(now, v, errors, m.logger, "time")
+			m.mb.ParseMysqlRowLocksDataPoint(now, v, errors, "time")
 
 		// row_operations
 		case "Innodb_rows_deleted":
-			m.mb.ParseMysqlRowOperationsDataPoint(now, v, errors, m.logger, "deleted")
+			m.mb.ParseMysqlRowOperationsDataPoint(now, v, errors, "deleted")
 		case "Innodb_rows_inserted":
-			m.mb.ParseMysqlRowOperationsDataPoint(now, v, errors, m.logger, "inserted")
+			m.mb.ParseMysqlRowOperationsDataPoint(now, v, errors, "inserted")
 		case "Innodb_rows_read":
-			m.mb.ParseMysqlRowOperationsDataPoint(now, v, errors, m.logger, "read")
+			m.mb.ParseMysqlRowOperationsDataPoint(now, v, errors, "read")
 		case "Innodb_rows_updated":
-			m.mb.ParseMysqlRowOperationsDataPoint(now, v, errors, m.logger, "updated")
+			m.mb.ParseMysqlRowOperationsDataPoint(now, v, errors, "updated")
 
 		// locks
 		case "Table_locks_immediate":
-			m.mb.ParseMysqlLocksDataPoint(now, v, errors, m.logger, "immediate")
+			m.mb.ParseMysqlLocksDataPoint(now, v, errors, "immediate")
 		case "Table_locks_waited":
-			m.mb.ParseMysqlLocksDataPoint(now, v, errors, m.logger, "waited")
+			m.mb.ParseMysqlLocksDataPoint(now, v, errors, "waited")
 
 		// sorts
 		case "Sort_merge_passes":
-			m.mb.ParseMysqlSortsDataPoint(now, v, errors, m.logger, "merge_passes")
+			m.mb.ParseMysqlSortsDataPoint(now, v, errors, "merge_passes")
 		case "Sort_range":
-			m.mb.ParseMysqlSortsDataPoint(now, v, errors, m.logger, "range")
+			m.mb.ParseMysqlSortsDataPoint(now, v, errors, "range")
 		case "Sort_rows":
-			m.mb.ParseMysqlSortsDataPoint(now, v, errors, m.logger, "rows")
+			m.mb.ParseMysqlSortsDataPoint(now, v, errors, "rows")
 		case "Sort_scan":
-			m.mb.ParseMysqlSortsDataPoint(now, v, errors, m.logger, "scan")
+			m.mb.ParseMysqlSortsDataPoint(now, v, errors, "scan")
 
 		// threads
 		case "Threads_cached":
-			m.mb.ParseMysqlThreadsDataPoint(now, v, errors, m.logger, "cached")
+			m.mb.ParseMysqlThreadsDataPoint(now, v, errors, "cached")
 		case "Threads_connected":
-			m.mb.ParseMysqlThreadsDataPoint(now, v, errors, m.logger, "connected")
+			m.mb.ParseMysqlThreadsDataPoint(now, v, errors, "connected")
 		case "Threads_created":
-			m.mb.ParseMysqlThreadsDataPoint(now, v, errors, m.logger, "created")
+			m.mb.ParseMysqlThreadsDataPoint(now, v, errors, "created")
 		case "Threads_running":
-			m.mb.ParseMysqlThreadsDataPoint(now, v, errors, m.logger, "running")
+			m.mb.ParseMysqlThreadsDataPoint(now, v, errors, "running")
 		}
 	}
 

@@ -3,12 +3,12 @@
 package metadata
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
-	"go.uber.org/zap"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -402,15 +402,6 @@ func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pdata.Metrics {
 	return metrics
 }
 
-func logFailedParse(logger *zap.Logger, expectedType, metric, value string) {
-	logger.Info(
-		"failed to parse value",
-		zap.String("expectedType", expectedType),
-		zap.String("metric", metric),
-		zap.String("value", value),
-	)
-}
-
 // RecordSystemNetworkConnectionsDataPoint adds a data point to system.network.connections metric.
 func (mb *MetricsBuilder) RecordSystemNetworkConnectionsDataPoint(ts pdata.Timestamp, val int64, protocolAttributeValue string, stateAttributeValue string) {
 	mb.metricSystemNetworkConnections.recordDataPoint(mb.startTime, ts, val, protocolAttributeValue, stateAttributeValue)
@@ -418,10 +409,9 @@ func (mb *MetricsBuilder) RecordSystemNetworkConnectionsDataPoint(ts pdata.Times
 
 // ParseSystemNetworkConnectionsDataPoint attempts to parse and add a data point to system.network.connections metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSystemNetworkConnectionsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, protocolAttributeValue string, stateAttributeValue string) {
+func (mb *MetricsBuilder) ParseSystemNetworkConnectionsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, protocolAttributeValue string, stateAttributeValue string) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "SystemNetworkConnections", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for SystemNetworkConnections, value was %s: %w", val, err))
 	} else {
 		mb.metricSystemNetworkConnections.recordDataPoint(mb.startTime, ts, i, protocolAttributeValue, stateAttributeValue)
 	}
@@ -434,10 +424,9 @@ func (mb *MetricsBuilder) RecordSystemNetworkDroppedDataPoint(ts pdata.Timestamp
 
 // ParseSystemNetworkDroppedDataPoint attempts to parse and add a data point to system.network.dropped metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSystemNetworkDroppedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, deviceAttributeValue string, directionAttributeValue string) {
+func (mb *MetricsBuilder) ParseSystemNetworkDroppedDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, deviceAttributeValue string, directionAttributeValue string) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "SystemNetworkDropped", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for SystemNetworkDropped, value was %s: %w", val, err))
 	} else {
 		mb.metricSystemNetworkDropped.recordDataPoint(mb.startTime, ts, i, deviceAttributeValue, directionAttributeValue)
 	}
@@ -450,10 +439,9 @@ func (mb *MetricsBuilder) RecordSystemNetworkErrorsDataPoint(ts pdata.Timestamp,
 
 // ParseSystemNetworkErrorsDataPoint attempts to parse and add a data point to system.network.errors metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSystemNetworkErrorsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, deviceAttributeValue string, directionAttributeValue string) {
+func (mb *MetricsBuilder) ParseSystemNetworkErrorsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, deviceAttributeValue string, directionAttributeValue string) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "SystemNetworkErrors", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for SystemNetworkErrors, value was %s: %w", val, err))
 	} else {
 		mb.metricSystemNetworkErrors.recordDataPoint(mb.startTime, ts, i, deviceAttributeValue, directionAttributeValue)
 	}
@@ -466,10 +454,9 @@ func (mb *MetricsBuilder) RecordSystemNetworkIoDataPoint(ts pdata.Timestamp, val
 
 // ParseSystemNetworkIoDataPoint attempts to parse and add a data point to system.network.io metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSystemNetworkIoDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, deviceAttributeValue string, directionAttributeValue string) {
+func (mb *MetricsBuilder) ParseSystemNetworkIoDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, deviceAttributeValue string, directionAttributeValue string) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "SystemNetworkIo", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for SystemNetworkIo, value was %s: %w", val, err))
 	} else {
 		mb.metricSystemNetworkIo.recordDataPoint(mb.startTime, ts, i, deviceAttributeValue, directionAttributeValue)
 	}
@@ -482,10 +469,9 @@ func (mb *MetricsBuilder) RecordSystemNetworkPacketsDataPoint(ts pdata.Timestamp
 
 // ParseSystemNetworkPacketsDataPoint attempts to parse and add a data point to system.network.packets metric.
 // Function returns whether or not a data point was successfully recorded
-func (mb *MetricsBuilder) ParseSystemNetworkPacketsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, logger *zap.Logger, deviceAttributeValue string, directionAttributeValue string) {
+func (mb *MetricsBuilder) ParseSystemNetworkPacketsDataPoint(ts pdata.Timestamp, val string, errors scrapererror.ScrapeErrors, deviceAttributeValue string, directionAttributeValue string) {
 	if i, err := strconv.ParseInt(val, 10, 64); err != nil {
-		errors.AddPartial(1, err)
-		logFailedParse(logger, "int", "SystemNetworkPackets", val)
+		errors.AddPartial(1, fmt.Errorf("failed to parse int for SystemNetworkPackets, value was %s: %w", val, err))
 	} else {
 		mb.metricSystemNetworkPackets.recordDataPoint(mb.startTime, ts, i, deviceAttributeValue, directionAttributeValue)
 	}
