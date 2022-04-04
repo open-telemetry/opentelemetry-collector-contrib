@@ -54,9 +54,9 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, "http://my-targetallocator-service", r1.TargetAllocator.Endpoint)
 	assert.Equal(t, 30*time.Second, r1.TargetAllocator.Interval)
 	assert.Equal(t, "collector-1", r1.TargetAllocator.CollectorID)
-	assert.Equal(t, promModel.Duration(60*time.Second), r1.TargetAllocator.HttpSDConfig.RefreshInterval)
-	assert.Equal(t, "prometheus", r1.TargetAllocator.HttpSDConfig.HTTPClientConfig.BasicAuth.Username)
-	assert.Equal(t, promConfig.Secret("changeme"), r1.TargetAllocator.HttpSDConfig.HTTPClientConfig.BasicAuth.Password)
+	assert.Equal(t, promModel.Duration(60*time.Second), r1.TargetAllocator.HTTPSDConfig.RefreshInterval)
+	assert.Equal(t, "prometheus", r1.TargetAllocator.HTTPSDConfig.HTTPClientConfig.BasicAuth.Username)
+	assert.Equal(t, promConfig.Secret("changeme"), r1.TargetAllocator.HTTPSDConfig.HTTPClientConfig.BasicAuth.Password)
 }
 
 func TestLoadConfigFailsOnUnknownSection(t *testing.T) {

@@ -102,14 +102,12 @@ func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 			savedHash, _ := r.syncTargetAllocator(uint64(0), allocConf, baseDiscoveryCfg)
 			r.targetAllocatorIntervalTicker = time.NewTicker(allocConf.Interval)
 			for {
-				select {
-				case <-r.targetAllocatorIntervalTicker.C:
-					hash, err := r.syncTargetAllocator(savedHash, allocConf, baseDiscoveryCfg)
-					if err != nil {
-						continue
-					}
-					savedHash = hash
+				<-r.targetAllocatorIntervalTicker.C
+				hash, err := r.syncTargetAllocator(savedHash, allocConf, baseDiscoveryCfg)
+				if err != nil {
+					continue
 				}
+				savedHash = hash
 			}
 		}()
 	}
@@ -140,7 +138,7 @@ func (r *pReceiver) syncTargetAllocator(compareHash uint64, allocConf *TargetAll
 
 	configs := discovery.Configs{}
 	for _, linkJSON := range *jobObject {
-		httpSD := *allocConf.HttpSDConfig
+		httpSD := *allocConf.HTTPSDConfig
 		httpSD.URL = fmt.Sprintf("%s%s?collector_id=%s", allocConf.Endpoint, linkJSON.Link, allocConf.CollectorID)
 		configs = append(configs, &httpSD)
 	}
@@ -162,7 +160,7 @@ func getJobResponse(baseURL string) (*map[string]LinkJSON, error) {
 		return nil, err
 	}
 
-	resp, err := http.Get(jobURLString)
+	resp, err := http.Get(jobURLString) //nolint
 	if err != nil {
 		return nil, err
 	}
