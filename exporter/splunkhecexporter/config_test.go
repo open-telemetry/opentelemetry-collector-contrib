@@ -61,6 +61,8 @@ func TestLoadConfig(t *testing.T) {
 		Index:                   "metrics",
 		SplunkAppName:           "OpenTelemetry-Collector Splunk Exporter",
 		SplunkAppVersion:        "v0.0.1",
+		LogDataEnabled:          true,
+		ProfilingDataEnabled:    true,
 		MaxConnections:          100,
 		MaxContentLengthLogs:    2 * 1024 * 1024,
 		MaxContentLengthMetrics: 2 * 1024 * 1024,
