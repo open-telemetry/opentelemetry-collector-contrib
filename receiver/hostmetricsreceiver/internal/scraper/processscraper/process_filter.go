@@ -107,13 +107,13 @@ func createFilter(filterConfig FilterConfig) (*processFilter, error) {
 
 	filter.includePidFilter = make(map[int32]struct{})
 	// convert slice to map for quick lookup
-	for _, val := range filterConfig.IncludePids.Pids {
+	for _, val := range filterConfig.IncludePids {
 		filter.includePidFilter[val] = struct{}{}
 	}
 
 	filter.excludePidFilter =  make(map[int32]struct{})
 	// convert slice to map for quick lookup
-	for _, val := range filterConfig.ExcludePids.Pids {
+	for _, val := range filterConfig.ExcludePids {
 		filter.excludePidFilter[val] = struct{}{}
 	}
 

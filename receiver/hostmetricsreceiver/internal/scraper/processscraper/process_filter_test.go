@@ -109,7 +109,7 @@ func TestPid(t *testing.T) {
 	var filterConfig FilterConfig
 
 	// test include
-	filterConfig.IncludePids.Pids = []int32{123454}
+	filterConfig.IncludePids = []int32{123454}
 	filter, err := createFilter(filterConfig)
 	assert.Nil(t, err)
 
@@ -120,8 +120,8 @@ func TestPid(t *testing.T) {
 	assert.False(t, match)
 
 	// test exclude
-	filterConfig.IncludePids.Pids = []int32{}
-	filterConfig.ExcludePids.Pids = []int32{123454}
+	filterConfig.IncludePids = []int32{}
+	filterConfig.ExcludePids = []int32{123454}
 	filter, err = createFilter(filterConfig)
 	assert.Nil(t, err)
 

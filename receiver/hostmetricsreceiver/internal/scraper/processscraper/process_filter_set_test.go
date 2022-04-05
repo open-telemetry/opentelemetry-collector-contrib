@@ -230,15 +230,11 @@ func TestProcPidFilter(t *testing.T) {
 	assert.True(t, matches[0] == 0)
 
 	filter2Config := FilterConfig{
-		IncludePids: PidMatchConfig{
-			Pids: []int32{1234},
-		},
+		IncludePids: []int32{1234},
 	}
 
 	filter3Config := FilterConfig{
-		IncludePids: PidMatchConfig{
-			Pids: []int32{5678},
-		},
+		IncludePids: []int32{5678},
 	}
 
 	filterConfigs = append(filterConfigs, filter2Config)
