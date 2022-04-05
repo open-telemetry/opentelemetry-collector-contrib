@@ -94,7 +94,7 @@ func (gap *groupByAttrsProcessor) processLogs(ctx context.Context, ld pdata.Logs
 				// Lets combine the base resource attributes + the extracted (grouped) attributes
 				// and keep them in the grouping entry
 				groupedLogs := groupedResourceLogs.findResourceOrElseCreate(ls.Resource(), requiredAttributes)
-				lr := matchingInstrumentationLibraryLogs(groupedLogs, sl.Scope()).LogRecords().AppendEmpty()
+				lr := matchingScopeLogs(groupedLogs, sl.Scope()).LogRecords().AppendEmpty()
 				log.CopyTo(lr)
 			}
 		}
@@ -246,7 +246,7 @@ func (gap *groupByAttrsProcessor) getGroupedMetricsFromAttributes(
 	groupedResource := groupedResourceMetrics.findResourceOrElseCreate(originResourceMetrics.Resource(), requiredAttributes)
 
 	// Get the corresponding instrumentation library
-	groupedInstrumentationLibrary := matchingInstrumentationLibraryMetrics(groupedResource, ilm.Scope())
+	groupedInstrumentationLibrary := matchingScopeMetrics(groupedResource, ilm.Scope())
 
 	// Return the metric in this resource
 	return getMetricInInstrumentationLibrary(groupedInstrumentationLibrary, metric)
