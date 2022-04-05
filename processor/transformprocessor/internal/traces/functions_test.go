@@ -173,7 +173,7 @@ func Test_newFunctionCall(t *testing.T) {
 			span := pdata.NewSpan()
 			input.CopyTo(span)
 
-			evaluate, err := common.NewFunctionCall(tt.inv, common.DefaultFunctions(), ParsePath)
+			evaluate, err := common.NewFunctionCall(tt.inv, DefaultFunctions(), ParsePath)
 			assert.NoError(t, err)
 			evaluate(spanTransformContext{
 				span:     span,

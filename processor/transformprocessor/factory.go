@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
 )
 
@@ -47,7 +46,7 @@ func createDefaultConfig() config.Processor {
 		Traces: TracesConfig{
 			Queries: []string{},
 
-			functions: common.DefaultFunctions(),
+			functions: traces.DefaultFunctions(),
 		},
 	}
 }
