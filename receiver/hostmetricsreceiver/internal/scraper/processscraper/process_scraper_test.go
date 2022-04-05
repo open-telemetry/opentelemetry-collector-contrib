@@ -165,7 +165,7 @@ func TestScrapeMetrics_NewError(t *testing.T) {
 	_, err := newProcessScraper(&Config{Filters: []FilterConfig{includeFilterConfig}, Metrics: metadata.DefaultMetricsSettings()})
 	require.Error(t, err)
 	fmt.Printf("+++++++++Error Received: %s", err.Error())
-	require.Regexp(t, "^error creating process include filters:", err.Error())
+	require.Regexp(t, "^error creating process filters:", err.Error())
 
 	excludeFilterConfig := FilterConfig{
 		ExcludeExecutableNames: ExecutableNameMatchConfig{
