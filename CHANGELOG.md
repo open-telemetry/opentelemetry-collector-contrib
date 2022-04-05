@@ -4,8 +4,7 @@
 
 ### 💡 Enhancements 💡
 
-- `cmd/mdatagen`: Add resource attributes definition to metadata.yaml and move `pdata.Metrics` creation to the
-  generated code (#5270) 
+- `hostmetricsreciever`: Migrate Processes scraper to the Metrics builder (#8855)
 - Add `make crosslink` target to ensure replace statements are included in `go.mod` for all transitive dependencies within repository (#8822)
 
 ### 🛑 Breaking changes 🛑
@@ -18,7 +17,7 @@
 
 ### 🧰 Bug fixes 🧰
 
-- `hostmetricsreceiver`: Use cpu times for time delta in cpu.utilization calculation (#8856)
+- `hostmetricsreceiver`: Use cpu times for time delta in cpu.utilization calculation (#8857)
 - `dynatraceexporter`: Remove overly verbose stacktrace from certain logs (#8989)
 
 ### 🚩 Deprecations 🚩
@@ -43,7 +42,7 @@
 - `resourcedetectionprocessor`: Add attribute allowlist (#8547)
 - `datadogexporter`:  Metrics payload data and Sketches payload data will be logged if collector is started in debug mode (#8929)
 - `cmd/mdatagen`: Add resource attributes definition to metadata.yaml and move `pdata.Metrics` creation to the
-  generated code (#5270)
+  generated code (#8555)
 
 ### 🛑 Breaking changes 🛑
 
