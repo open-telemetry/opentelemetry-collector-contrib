@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from flask import Response
+import flask
 from werkzeug.test import Client
-from werkzeug.wrappers import BaseResponse
+from werkzeug.wrappers import Response
 
 
 class InstrumentationTest:
@@ -26,7 +26,7 @@ class InstrumentationTest:
 
     @staticmethod
     def _custom_response_headers():
-        resp = Response("test response")
+        resp = flask.Response("test response")
         resp.headers["content-type"] = "text/plain; charset=utf-8"
         resp.headers["content-length"] = "13"
         resp.headers[
@@ -51,4 +51,4 @@ class InstrumentationTest:
         )
 
         # pylint: disable=attribute-defined-outside-init
-        self.client = Client(self.app, BaseResponse)
+        self.client = Client(self.app, Response)

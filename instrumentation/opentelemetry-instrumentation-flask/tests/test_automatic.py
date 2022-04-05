@@ -14,7 +14,7 @@
 
 import flask
 from werkzeug.test import Client
-from werkzeug.wrappers import BaseResponse
+from werkzeug.wrappers import Response
 
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
 from opentelemetry.test.test_base import TestBase
@@ -52,7 +52,7 @@ class TestAutomatic(InstrumentationTest, TestBase, WsgiTestBase):
 
         self.app.route("/hello/<int:helloid>")(self._hello_endpoint)
         # pylint: disable=attribute-defined-outside-init
-        self.client = Client(self.app, BaseResponse)
+        self.client = Client(self.app, Response)
 
         resp = self.client.get("/hello/123")
         self.assertEqual(200, resp.status_code)
@@ -66,7 +66,7 @@ class TestAutomatic(InstrumentationTest, TestBase, WsgiTestBase):
 
         self.app = flask.Flask(__name__)
         self.app.route("/hello/<int:helloid>")(self._hello_endpoint)
-        client = Client(self.app, BaseResponse)
+        client = Client(self.app, Response)
 
         resp = client.get("/hello/123")
         self.assertEqual(200, resp.status_code)
