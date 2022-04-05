@@ -504,7 +504,7 @@ func addResourceTargetInfo(resource pdata.Resource, settings Settings, timestamp
 	}
 	// Use resource attributes (other than those used for job+instance) as the
 	// metric labels for the target info metric
-	attributes := pdata.NewAttributeMap()
+	attributes := pdata.NewMap()
 	resource.Attributes().CopyTo(attributes)
 	attributes.RemoveIf(func(k string, _ pdata.Value) bool {
 		switch k {
