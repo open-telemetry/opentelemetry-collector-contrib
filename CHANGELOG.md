@@ -6,6 +6,7 @@
 
 - `cmd/mdatagen`: Add resource attributes definition to metadata.yaml and move `pdata.Metrics` creation to the
   generated code (#5270) 
+- Add `make crosslink` target to ensure replace statements are included in `go.mod` for all transitive dependencies within repository (#8822)
 - `datadogexporter`: Add `metrics::summaries::mode` to specify export mode for summaries (#8846)
 
 ### 🛑 Breaking changes 🛑
@@ -29,6 +30,10 @@
 - `datadogexporter`: Deprecate `GetHostTags` method from `TagsConfig` struct (#8975)
 
 ### 🚀 New components 🚀
+
+### 🧰 Bug fixes 🧰
+
+- `prometheusreceiver`: Fix issues with relabelling the `job` and `instance` labels. (#8780)
 
 ## v0.48.0
 
