@@ -31,6 +31,13 @@ def route_span_name(
     return HttpResponse()
 
 
+def response_with_custom_header(request):
+    response = HttpResponse()
+    response["custom-test-header-1"] = "test-header-value-1"
+    response["custom-test-header-2"] = "test-header-value-2"
+    return response
+
+
 async def async_traced(request):  # pylint: disable=unused-argument
     return HttpResponse()
 
@@ -61,3 +68,10 @@ async def async_route_span_name(
     request, *args, **kwargs
 ):  # pylint: disable=unused-argument
     return HttpResponse()
+
+
+async def async_with_custom_header(request):
+    response = HttpResponse()
+    response.headers["custom-test-header-1"] = "test-header-value-1"
+    response.headers["custom-test-header-2"] = "test-header-value-2"
+    return response

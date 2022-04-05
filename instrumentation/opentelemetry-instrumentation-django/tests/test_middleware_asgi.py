@@ -42,7 +42,12 @@ from opentelemetry.trace import (
     format_span_id,
     format_trace_id,
 )
-from opentelemetry.util.http import get_excluded_urls, get_traced_request_attrs
+from opentelemetry.util.http import (
+    OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST,
+    OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE,
+    get_excluded_urls,
+    get_traced_request_attrs,
+)
 
 # pylint: disable=import-error
 from .views import (
@@ -53,6 +58,7 @@ from .views import (
     async_route_span_name,
     async_traced,
     async_traced_template,
+    async_with_custom_header,
 )
 
 DJANGO_2_0 = VERSION >= (2, 0)
@@ -65,6 +71,7 @@ else:
 
 urlpatterns = [
     re_path(r"^traced/", async_traced),
+    re_path(r"^traced_custom_header/", async_with_custom_header),
     re_path(r"^route/(?P<year>[0-9]{4})/template/$", async_traced_template),
     re_path(r"^error/", async_error),
     re_path(r"^excluded_arg/", async_excluded),
@@ -415,3 +422,116 @@ class TestMiddlewareAsgiWithTracerProvider(SimpleTestCase, TestBase):
         self.assertEqual(
             span.resource.attributes["resource-key"], "resource-value"
         )
+
+
+class TestMiddlewareAsgiWithCustomHeaders(SimpleTestCase, TestBase):
+    @classmethod
+    def setUpClass(cls):
+        conf.settings.configure(ROOT_URLCONF=modules[__name__])
+        super().setUpClass()
+
+    def setUp(self):
+        super().setUp()
+        setup_test_environment()
+
+        tracer_provider, exporter = self.create_tracer_provider()
+        self.exporter = exporter
+        _django_instrumentor.instrument(tracer_provider=tracer_provider)
+        self.env_patch = patch.dict(
+            "os.environ",
+            {
+                OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST: "Custom-Test-Header-1,Custom-Test-Header-2,Custom-Test-Header-3",
+                OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE: "Custom-Test-Header-1,Custom-Test-Header-2,Custom-Test-Header-3",
+            },
+        )
+        self.env_patch.start()
+
+    def tearDown(self):
+        super().tearDown()
+        self.env_patch.stop()
+        teardown_test_environment()
+        _django_instrumentor.uninstrument()
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        conf.settings = conf.LazySettings()
+
+    async def test_http_custom_request_headers_in_span_attributes(self):
+        expected = {
+            "http.request.header.custom_test_header_1": (
+                "test-header-value-1",
+            ),
+            "http.request.header.custom_test_header_2": (
+                "test-header-value-2",
+            ),
+        }
+        await self.async_client.get(
+            "/traced/",
+            **{
+                "custom-test-header-1": "test-header-value-1",
+                "custom-test-header-2": "test-header-value-2",
+            },
+        )
+        spans = self.exporter.get_finished_spans()
+        self.assertEqual(len(spans), 1)
+
+        span = spans[0]
+        self.assertEqual(span.kind, SpanKind.SERVER)
+        self.assertSpanHasAttributes(span, expected)
+        self.memory_exporter.clear()
+
+    async def test_http_custom_request_headers_not_in_span_attributes(self):
+        not_expected = {
+            "http.request.header.custom_test_header_2": (
+                "test-header-value-2",
+            ),
+        }
+        await self.async_client.get(
+            "/traced/",
+            **{
+                "custom-test-header-1": "test-header-value-1",
+            },
+        )
+        spans = self.exporter.get_finished_spans()
+        self.assertEqual(len(spans), 1)
+
+        span = spans[0]
+        self.assertEqual(span.kind, SpanKind.SERVER)
+        for key, _ in not_expected.items():
+            self.assertNotIn(key, span.attributes)
+        self.memory_exporter.clear()
+
+    async def test_http_custom_response_headers_in_span_attributes(self):
+        expected = {
+            "http.response.header.custom_test_header_1": (
+                "test-header-value-1",
+            ),
+            "http.response.header.custom_test_header_2": (
+                "test-header-value-2",
+            ),
+        }
+        await self.async_client.get("/traced_custom_header/")
+        spans = self.exporter.get_finished_spans()
+        self.assertEqual(len(spans), 1)
+
+        span = spans[0]
+        self.assertEqual(span.kind, SpanKind.SERVER)
+        self.assertSpanHasAttributes(span, expected)
+        self.memory_exporter.clear()
+
+    async def test_http_custom_response_headers_not_in_span_attributes(self):
+        not_expected = {
+            "http.response.header.custom_test_header_3": (
+                "test-header-value-3",
+            ),
+        }
+        await self.async_client.get("/traced_custom_header/")
+        spans = self.exporter.get_finished_spans()
+        self.assertEqual(len(spans), 1)
+
+        span = spans[0]
+        self.assertEqual(span.kind, SpanKind.SERVER)
+        for key, _ in not_expected.items():
+            self.assertNotIn(key, span.attributes)
+        self.memory_exporter.clear()

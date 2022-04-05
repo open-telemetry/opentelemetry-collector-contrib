@@ -28,13 +28,19 @@ from opentelemetry.instrumentation.utils import (
     _start_internal_or_server_span,
     extract_attributes_from_object,
 )
+from opentelemetry.instrumentation.wsgi import (
+    add_custom_request_headers as wsgi_add_custom_request_headers,
+)
+from opentelemetry.instrumentation.wsgi import (
+    add_custom_response_headers as wsgi_add_custom_response_headers,
+)
 from opentelemetry.instrumentation.wsgi import add_response_attributes
 from opentelemetry.instrumentation.wsgi import (
     collect_request_attributes as wsgi_collect_request_attributes,
 )
 from opentelemetry.instrumentation.wsgi import wsgi_getter
 from opentelemetry.semconv.trace import SpanAttributes
-from opentelemetry.trace import Span, use_span
+from opentelemetry.trace import Span, SpanKind, use_span
 from opentelemetry.util.http import get_excluded_urls, get_traced_request_attrs
 
 try:
@@ -77,7 +83,13 @@ else:
 
 # try/except block exclusive for optional ASGI imports.
 try:
-    from opentelemetry.instrumentation.asgi import asgi_getter
+    from opentelemetry.instrumentation.asgi import asgi_getter, asgi_setter
+    from opentelemetry.instrumentation.asgi import (
+        collect_custom_request_headers_attributes as asgi_collect_custom_request_attributes,
+    )
+    from opentelemetry.instrumentation.asgi import (
+        collect_custom_response_headers_attributes as asgi_collect_custom_response_attributes,
+    )
     from opentelemetry.instrumentation.asgi import (
         collect_request_attributes as asgi_collect_request_attributes,
     )
@@ -213,6 +225,13 @@ class _DjangoMiddleware(MiddlewareMixin):
                     self._traced_request_attrs,
                     attributes,
                 )
+                if span.is_recording() and span.kind == SpanKind.SERVER:
+                    attributes.update(
+                        asgi_collect_custom_request_attributes(carrier)
+                    )
+            else:
+                if span.is_recording() and span.kind == SpanKind.SERVER:
+                    wsgi_add_custom_request_headers(span, carrier)
 
             for key, value in attributes.items():
                 span.set_attribute(key, value)
@@ -257,6 +276,7 @@ class _DjangoMiddleware(MiddlewareMixin):
         if self._environ_activation_key in request.META.keys():
             request.META[self._environ_exception_key] = exception
 
+    # pylint: disable=too-many-branches
     def process_response(self, request, response):
         if self._excluded_urls.url_disabled(request.build_absolute_uri("?")):
             return response
@@ -271,12 +291,25 @@ class _DjangoMiddleware(MiddlewareMixin):
         if activation and span:
             if is_asgi_request:
                 set_status_code(span, response.status_code)
+
+                if span.is_recording() and span.kind == SpanKind.SERVER:
+                    custom_headers = {}
+                    for key, value in response.items():
+                        asgi_setter.set(custom_headers, key, value)
+
+                    custom_res_attributes = (
+                        asgi_collect_custom_response_attributes(custom_headers)
+                    )
+                    for key, value in custom_res_attributes.items():
+                        span.set_attribute(key, value)
             else:
                 add_response_attributes(
                     span,
                     f"{response.status_code} {response.reason_phrase}",
                     response.items(),
                 )
+                if span.is_recording() and span.kind == SpanKind.SERVER:
+                    wsgi_add_custom_response_headers(span, response.items())
 
             propagator = get_global_response_propagator()
             if propagator:
