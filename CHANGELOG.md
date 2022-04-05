@@ -1,29 +1,13 @@
 # Changelog
 
 ## Unreleased
-- `sigv4authextension`: Enable component (#8518)
-
-### 💡 Enhancements 💡
-
-- `riakreceiver`: Added implementation of Riak Metric Receiver (#8548)
-- `k8seventsreceiver`: Add Api_version and resource_version (#8539)
-- `dynatraceexporter`: add multi-instance deployment note to README.md (#8848)
-
-### 🛑 Breaking changes 🛑
-
-- `windowsperfcountersreceiver`: Added metrics configuration (#8376)
-
-### 🚩 Deprecations 🚩
-
-- `datadogexporter`: Deprecate `OnlyMetadata` method from `Config` struct (#8359)
-- `datadogexporter`: Deprecate `GetCensoredKey` method from `APIConfig` struct (#8830)
-
-- `resourcedetectionprocessor`: Add attribute allowlist (#8547)
 
 ### 💡 Enhancements 💡
 
 - `cmd/mdatagen`: Add resource attributes definition to metadata.yaml and move `pdata.Metrics` creation to the
   generated code (#5270) 
+- Add `make crosslink` target to ensure replace statements are included in `go.mod` for all transitive dependencies within repository (#8822)
+- `riakreceiver`: Added implementation of Riak Metric Receiver (#8548)
 
 ### 🛑 Breaking changes 🛑
 
@@ -45,6 +29,10 @@
 - `datadogexporter`: Deprecate `GetHostTags` method from `TagsConfig` struct (#8975)
 
 ### 🚀 New components 🚀
+
+### 🧰 Bug fixes 🧰
+
+- `prometheusreceiver`: Fix issues with relabelling the `job` and `instance` labels. (#8780)
 
 ## v0.48.0
 
