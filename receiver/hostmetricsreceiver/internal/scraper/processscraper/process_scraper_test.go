@@ -160,7 +160,6 @@ func TestScrapeMetrics_NewError(t *testing.T) {
 	includeFilterConfig := FilterConfig{
 		IncludeExecutableNames: ExecutableNameMatchConfig{
 			ExecutableNames: []string{"test"},
-			Config:          filterset.Config{MatchType: filterset.Strict},
 		},
 	}
 	_, err := newProcessScraper(&Config{Filters: []FilterConfig{includeFilterConfig}, Metrics: metadata.DefaultMetricsSettings()})
