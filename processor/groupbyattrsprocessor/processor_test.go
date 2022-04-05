@@ -17,10 +17,13 @@ package groupbyattrsprocessor
 import (
 	"context"
 	"fmt"
+	"math/rand"
+	"sort"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -139,6 +142,62 @@ func someComplexMetrics(withResourceAttrIndex bool, rmCount int, ilmCount int, d
 	return metrics
 }
 
+func someComplexHistogramMetrics(withResourceAttrIndex bool, rmCount int, ilmCount int, dataPointCount int, histogramSize int) pdata.Metrics {
+	metrics := pdata.NewMetrics()
+
+	for i := 0; i < rmCount; i++ {
+		rm := metrics.ResourceMetrics().AppendEmpty()
+		if withResourceAttrIndex {
+			rm.Resource().Attributes().InsertInt("resourceAttrIndex", int64(i))
+		}
+
+		for j := 0; j < ilmCount; j++ {
+			metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+			metric.SetName(fmt.Sprintf("foo-%d-%d", i, j))
+			metric.SetDataType(pdata.MetricDataTypeHistogram)
+			metric.Histogram().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+
+			for k := 0; k < dataPointCount; k++ {
+				dataPoint := metric.Histogram().DataPoints().AppendEmpty()
+				dataPoint.SetTimestamp(pdata.NewTimestampFromTime(time.Now()))
+				buckets := randUIntArr(histogramSize)
+				sort.Slice(buckets, func(i, j int) bool { return buckets[i] < buckets[j] })
+				dataPoint.SetBucketCounts(buckets)
+				dataPoint.SetExplicitBounds(randFloat64Arr(histogramSize))
+				dataPoint.SetCount(sum(buckets))
+				dataPoint.Attributes().InsertString("commonGroupedAttr", "abc")
+				dataPoint.Attributes().InsertString("commonNonGroupedAttr", "xyz")
+			}
+		}
+	}
+
+	return metrics
+}
+
+func randUIntArr(size int) []uint64 {
+	arr := make([]uint64, size)
+	for i := 0; i < size; i++ {
+		arr[i] = rand.Uint64()
+	}
+	return arr
+}
+
+func sum(arr []uint64) uint64 {
+	res := uint64(0)
+	for _, v := range arr {
+		res += v
+	}
+	return res
+}
+
+func randFloat64Arr(size int) []float64 {
+	arr := make([]float64, size)
+	for i := 0; i < size; i++ {
+		arr[i] = rand.Float64()
+	}
+	return arr
+}
+
 func assertResourceContainsAttributes(t *testing.T, resource pcommon.Resource, attributeMap pcommon.Map) {
 	attributeMap.Range(func(k string, v pcommon.Value) bool {
 		rv, found := resource.Attributes().Get(k)
@@ -230,6 +289,7 @@ func TestComplexAttributeGrouping(t *testing.T) {
 			inputLogs := someComplexLogs(tt.withResourceAttrIndex, tt.inputResourceCount, tt.inputInstrumentationLibraryCount)
 			inputTraces := someComplexTraces(tt.withResourceAttrIndex, tt.inputResourceCount, tt.inputInstrumentationLibraryCount)
 			inputMetrics := someComplexMetrics(tt.withResourceAttrIndex, tt.inputResourceCount, tt.inputInstrumentationLibraryCount, 2)
+			inputHistogramMetrics := someComplexHistogramMetrics(tt.withResourceAttrIndex, tt.inputResourceCount, tt.inputInstrumentationLibraryCount, 2, 2)
 
 			gap := createGroupByAttrsProcessor(zap.NewNop(), tt.groupByKeys)
 
@@ -240,6 +300,9 @@ func TestComplexAttributeGrouping(t *testing.T) {
 			assert.NoError(t, err)
 
 			processedMetrics, err := gap.processMetrics(context.Background(), inputMetrics)
+			assert.NoError(t, err)
+
+			processedHistogramMetrics, err := gap.processMetrics(context.Background(), inputHistogramMetrics)
 			assert.NoError(t, err)
 
 			// Following are record-level attributes that should be preserved after processing
@@ -302,6 +365,27 @@ func TestComplexAttributeGrouping(t *testing.T) {
 						metric := metrics.At(k)
 						for l := 0; l < metric.Gauge().DataPoints().Len(); l++ {
 							assert.EqualValues(t, outputRecordAttrs, metric.Gauge().DataPoints().At(l).Attributes())
+						}
+					}
+				}
+			}
+
+			rmhs := processedHistogramMetrics.ResourceMetrics()
+			assert.Equal(t, tt.outputResourceCount, rmhs.Len())
+			assert.Equal(t, tt.outputTotalRecordsCount, processedHistogramMetrics.MetricCount())
+			for i := 0; i < rmhs.Len(); i++ {
+				rm := rmhs.At(i)
+				assert.Equal(t, tt.outputInstrumentationLibraryCount, rm.ScopeMetrics().Len())
+
+				assertResourceContainsAttributes(t, rm.Resource(), outputResourceAttrs)
+
+				for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+					metrics := rm.ScopeMetrics().At(j).Metrics()
+					for k := 0; k < metrics.Len(); k++ {
+						metric := metrics.At(k)
+						assert.Equal(t, metric.Histogram().AggregationTemporality(), pdata.MetricAggregationTemporalityCumulative)
+						for l := 0; l < metric.Histogram().DataPoints().Len(); l++ {
+							assert.EqualValues(t, outputRecordAttrs, metric.Histogram().DataPoints().At(l).Attributes())
 						}
 					}
 				}

@@ -222,6 +222,20 @@ func getMetricInInstrumentationLibrary(ilm pmetric.ScopeMetrics, searchedMetric 
 	metric.SetName(searchedMetric.Name())
 	metric.SetUnit(searchedMetric.Unit())
 
+	// Move other special type specific values
+	switch metric.DataType() {
+
+	case pdata.MetricDataTypeHistogram:
+		metric.Histogram().SetAggregationTemporality(searchedMetric.Histogram().AggregationTemporality())
+
+	case pdata.MetricDataTypeExponentialHistogram:
+		metric.ExponentialHistogram().SetAggregationTemporality(searchedMetric.ExponentialHistogram().AggregationTemporality())
+
+	case pdata.MetricDataTypeSum:
+		metric.Sum().SetAggregationTemporality(searchedMetric.Sum().AggregationTemporality())
+
+	}
+
 	return metric
 }
 
