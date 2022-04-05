@@ -1,4 +1,4 @@
-package filterhelper
+package filterhelper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/filterhelper"
 
 import (
 	"fmt"
