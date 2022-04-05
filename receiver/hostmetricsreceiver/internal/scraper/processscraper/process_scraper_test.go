@@ -164,18 +164,16 @@ func TestScrapeMetrics_NewError(t *testing.T) {
 	}
 	_, err := newProcessScraper(&Config{Filters: []FilterConfig{includeFilterConfig}, Metrics: metadata.DefaultMetricsSettings()})
 	require.Error(t, err)
-	fmt.Printf("+++++++++Error Received: %s", err.Error())
 	require.Regexp(t, "^error creating process filters:", err.Error())
 
 	excludeFilterConfig := FilterConfig{
 		ExcludeExecutableNames: ExecutableNameMatchConfig{
 			ExecutableNames: []string{"test"},
-			Config:          filterset.Config{MatchType: filterset.Strict},
 		},
 	}
 	_, err = newProcessScraper(&Config{Filters: []FilterConfig{excludeFilterConfig}, Metrics: metadata.DefaultMetricsSettings()})
 	require.Error(t, err)
-	require.Regexp(t, "^error creating process exclude filters:", err.Error())
+	require.Regexp(t, "^error creating process filters:", err.Error())
 }
 
 func TestScrapeMetrics_GetProcessesError(t *testing.T) {
@@ -484,7 +482,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 	}
 }
 
-func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, diskError error) (int, int) {
+func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, diskError error, ) (int, int) {
 	if nameError != nil || exeError != nil {
 		return 0, 0
 	}
@@ -510,6 +508,7 @@ func getExpectedScrapeFailures(nameError, exeError, timeError, memError, diskErr
 	if nameError != nil || exeError != nil {
 		return 1
 	}
+
 	_, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, diskError)
 	return metricsLen - expectedMetricsLen
 }
