@@ -4,7 +4,7 @@
 
 ### 💡 Enhancements 💡
 
-- `hostmetricsreciever`: Migrate Processes scraper to the Metrics builder (#8855)
+- `hostmetricsreceiver`: Migrate Processes scraper to the Metrics builder (#8855)
 - Add `make crosslink` target to ensure replace statements are included in `go.mod` for all transitive dependencies within repository (#8822)
 
 ### 🛑 Breaking changes 🛑
