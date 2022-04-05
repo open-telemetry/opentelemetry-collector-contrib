@@ -300,6 +300,76 @@ func BenchmarkClientDelete(b *testing.B) {
 	}
 }
 
+// check the performance impact of the max lifetime DB size
+// bbolt doesn't compact the freelist automatically, so there's a cost even if the data is deleted
+func BenchmarkClientSetLargeDB(b *testing.B) {
+	entrySizeInBytes := 1024 * 1024
+	entryCount := 2000
+	entry := make([]byte, entrySizeInBytes)
+	var testKey string
+
+	tempDir := newTempDir(b)
+	dbFile := filepath.Join(tempDir, "my_db")
+
+	client, err := newClient(dbFile, time.Second)
+	require.NoError(b, err)
+
+	ctx := context.Background()
+
+	for n := 0; n < entryCount; n++ {
+		testKey = fmt.Sprintf("testKey-%d", n)
+		client.Set(ctx, testKey, entry)
+	}
+
+	for n := 0; n < entryCount; n++ {
+		testKey = fmt.Sprintf("testKey-%d", n)
+		client.Delete(ctx, testKey)
+	}
+
+	testKey = "testKey"
+	testValue := []byte("testValue")
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		client.Set(ctx, testKey, testValue)
+	}
+}
+
+// check the cost of opening an existing DB with data
+// this can change depending on freelist type and whether it's synced to disk
+func BenchmarkClientInitLargeDB(b *testing.B) {
+	entrySizeInBytes := 1024 * 1024
+	entry := make([]byte, entrySizeInBytes)
+	entryCount := 2000
+	var testKey string
+
+	tempDir := newTempDir(b)
+	dbFile := filepath.Join(tempDir, "my_db")
+
+	client, err := newClient(dbFile, time.Second)
+	require.NoError(b, err)
+
+	ctx := context.Background()
+
+	for n := 0; n < entryCount; n++ {
+		testKey = fmt.Sprintf("testKey-%d", n)
+		client.Set(ctx, testKey, entry)
+	}
+
+	err = client.Close(ctx)
+	require.NoError(b, err)
+
+	var tempClient *fileStorageClient
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		tempClient, err = newClient(dbFile, time.Second)
+		require.NoError(b, err)
+		b.StopTimer()
+		err = tempClient.Close(ctx)
+		require.NoError(b, err)
+		b.StartTimer()
+	}
+}
+
 func newTempDir(tb testing.TB) string {
 	tempDir, err := ioutil.TempDir("", "")
 	require.NoError(tb, err)

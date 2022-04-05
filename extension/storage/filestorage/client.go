@@ -33,8 +33,10 @@ type fileStorageClient struct {
 
 func newClient(filePath string, timeout time.Duration) (*fileStorageClient, error) {
 	options := &bbolt.Options{
-		Timeout: timeout,
-		NoSync:  true,
+		Timeout:        timeout,
+		NoSync:         true,
+		NoFreelistSync: true,
+		FreelistType:   bbolt.FreelistMapType,
 	}
 	db, err := bbolt.Open(filePath, 0600, options)
 	if err != nil {

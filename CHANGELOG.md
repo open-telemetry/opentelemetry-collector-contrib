@@ -5,7 +5,9 @@
 ### 💡 Enhancements 💡
 
 - `hostmetricsreceiver`: Migrate Processes scraper to the Metrics builder (#8855)
+- `tanzuobservabilityexporter`: Use resourcetotelemetry helper (#8338)
 - Add `make crosslink` target to ensure replace statements are included in `go.mod` for all transitive dependencies within repository (#8822)
+- `filestorageextension`: Change bbolt DB settings for better performance (#9004)
 
 ### 🛑 Breaking changes 🛑
 
