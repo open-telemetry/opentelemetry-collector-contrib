@@ -45,53 +45,53 @@ jobs:
           key: v4-build-tox-cache-${{ env.RUN_MATRIX_COMBINATION }}-${{ hashFiles('tox.ini', 'gen-requirements.txt', 'dev-requirements.txt') }}
       - name: run tox
         run: tox -f ${{ matrix.python-version }}-${{ matrix.package }} -- --benchmark-json=${{ env.RUN_MATRIX_COMBINATION }}-benchmark.json
-      - name: Find and merge ${{ matrix.package }} benchmarks
-        # TODO: Add at least one benchmark to every package type to remove this (#249)
-        if: matrix.package == 'sdkextension' || matrix.package == 'propagator'
-        run: >-
-          mkdir -p benchmarks;
-          jq -s '.[0].benchmarks = ([.[].benchmarks] | add)
-          | if .[0].benchmarks == null then null else .[0] end'
-          **/**/tests/*${{ matrix.package }}*-benchmark.json > benchmarks/output_${{ matrix.package }}.json
-      - name: Upload all benchmarks under same key as an artifact
-        if: ${{ success() }}
-        uses: actions/upload-artifact@v2
-        with:
-          name: benchmarks
-          path: benchmarks/output_${{ matrix.package }}.json
-  combine-benchmarks:
-    runs-on: ubuntu-latest
-    needs: build
-    if: ${{ always() }}
-    name: Combine benchmarks from previous build job
-    steps:
-      - name: Checkout Contrib Repo @ SHA - ${{ github.sha }}
-        uses: actions/checkout@v2
-      - name: Download all benchmarks as artifact using key
-        uses: actions/download-artifact@v2
-        with:
-          name: benchmarks
-          path: benchmarks
-      - name: Find and merge all benchmarks
-        run: >-
-          jq -s '.[0].benchmarks = ([.[].benchmarks] | add)
-          | if .[0].benchmarks == null then null else .[0] end'
-          benchmarks/output_*.json > output.json;
-      - name: Report on benchmark results
-        uses: benchmark-action/github-action-benchmark@v1
-        with:
-          name: OpenTelemetry Python Benchmarks - Python ${{ env[matrix.python-version ]}} - ${{ matrix.package }}
-          tool: pytest
-          output-file-path: output.json
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          max-items-in-chart: 100
-          # Alert with a commit comment on possible performance regression
-          alert-threshold: 200%
-          fail-on-alert: true
-          # Make a commit on `gh-pages` with benchmarks from previous step
-          auto-push: ${{ github.ref == 'refs/heads/main' }}
-          gh-pages-branch: gh-pages
-          benchmark-data-dir-path: benchmarks
+  #     - name: Find and merge ${{ matrix.package }} benchmarks
+  #       # TODO: Add at least one benchmark to every package type to remove this (#249)
+  #       if: matrix.package == 'sdkextension' || matrix.package == 'propagator'
+  #       run: >-
+  #         mkdir -p benchmarks;
+  #         jq -s '.[0].benchmarks = ([.[].benchmarks] | add)
+  #         | if .[0].benchmarks == null then null else .[0] end'
+  #         **/**/tests/*${{ matrix.package }}*-benchmark.json > benchmarks/output_${{ matrix.package }}.json
+  #     - name: Upload all benchmarks under same key as an artifact
+  #       if: ${{ success() }}
+  #       uses: actions/upload-artifact@v2
+  #       with:
+  #         name: benchmarks
+  #         path: benchmarks/output_${{ matrix.package }}.json
+  # combine-benchmarks:
+  #   runs-on: ubuntu-latest
+  #   needs: build
+  #   if: ${{ always() }}
+  #   name: Combine benchmarks from previous build job
+  #   steps:
+  #     - name: Checkout Contrib Repo @ SHA - ${{ github.sha }}
+  #       uses: actions/checkout@v2
+  #     - name: Download all benchmarks as artifact using key
+  #       uses: actions/download-artifact@v2
+  #       with:
+  #         name: benchmarks
+  #         path: benchmarks
+  #     - name: Find and merge all benchmarks
+  #       run: >-
+  #         jq -s '.[0].benchmarks = ([.[].benchmarks] | add)
+  #         | if .[0].benchmarks == null then null else .[0] end'
+  #         benchmarks/output_*.json > output.json;
+  #     - name: Report on benchmark results
+  #       uses: benchmark-action/github-action-benchmark@v1
+  #       with:
+  #         name: OpenTelemetry Python Benchmarks - Python ${{ env[matrix.python-version ]}} - ${{ matrix.package }}
+  #         tool: pytest
+  #         output-file-path: output.json
+  #         github-token: ${{ secrets.GITHUB_TOKEN }}
+  #         max-items-in-chart: 100
+  #         # Alert with a commit comment on possible performance regression
+  #         alert-threshold: 200%
+  #         fail-on-alert: true
+  #         # Make a commit on `gh-pages` with benchmarks from previous step
+  #         auto-push: ${{ github.ref == 'refs/heads/main' }}
+  #         gh-pages-branch: gh-pages
+  #         benchmark-data-dir-path: benchmarks
   misc:
     strategy:
       fail-fast: false
