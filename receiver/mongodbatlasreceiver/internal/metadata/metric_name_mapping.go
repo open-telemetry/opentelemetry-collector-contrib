@@ -23,11 +23,6 @@ import (
 
 type metricRecordFunc func(*MetricsBuilder, *mongodbatlas.DataPoints, pdata.Timestamp)
 
-type metricMappingData struct {
-	metricName string
-	attributes map[string]pdata.Value
-}
-
 var metricNameMapping = map[string]metricRecordFunc{
 	// MongoDB CPU usage. For hosts with more than one CPU core, these values can exceed 100%.
 
