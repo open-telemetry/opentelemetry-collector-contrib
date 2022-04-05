@@ -13,11 +13,11 @@ The following are the configuration options:
 
 - `htpasswd.file`:  The path to the htpasswd file.
 - `htpasswd.inline`: The htpasswd file inline content.
-- `htpasswd.client_auth`: Single username password combination in the form of `username:password` for client authentication.
+- `client_auth`: Single username password combination in the form of `username:password` for client authentication.
 
 To configure the extension as a server authenticator, either one of `htpasswd.file` or `htpasswd.inline` has to be set. If both are configured, `htpasswd.inline` credentials take precedence.
 
-To configure the extension as a client authenticator, `htpasswd.client_auth` has to be set.
+To configure the extension as a client authenticator, `client_auth` has to be set.
 
 If both the options are configured, the extension will throw an error.
 ## Configuration
