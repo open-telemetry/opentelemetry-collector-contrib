@@ -11,6 +11,7 @@
 - `dynatraceexporter`: add multi-instance deployment note to README.md (#8848)
 - `resourcedetectionprocessor`: Add attribute allowlist (#8547)
 - `datadogexporter`:  Metrics payload data and Sketches payload data will be logged if collector is started in debug mode (#8929)
+- `hostmetricsreceiver`:  Ability to configure include/exclude filters on any process attribute (#8188)
 
 ### 🛑 Breaking changes 🛑
 
