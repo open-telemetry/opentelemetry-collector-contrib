@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
-func (v *vmwareVcenterScraper) recordHostSystemMemoryUsage(
+func (v *vcenterMetricScraper) recordHostSystemMemoryUsage(
 	now pdata.Timestamp,
 	hs mo.HostSystem,
 	hostname string,
@@ -36,7 +36,7 @@ func (v *vmwareVcenterScraper) recordHostSystemMemoryUsage(
 	v.mb.RecordVcenterHostCPUUtilizationDataPoint(now, cpuUtilization, hostname)
 }
 
-func (v *vmwareVcenterScraper) recordVMUsages(
+func (v *vcenterMetricScraper) recordVMUsages(
 	now pdata.Timestamp,
 	vm mo.VirtualMachine,
 	instanceID string,
@@ -57,7 +57,7 @@ func (v *vmwareVcenterScraper) recordVMUsages(
 	v.mb.RecordVcenterVMDiskUtilizationDataPoint(now, diskUtilization, instanceName, instanceID, ps)
 }
 
-func (v *vmwareVcenterScraper) recordDatastoreProperties(
+func (v *vcenterMetricScraper) recordDatastoreProperties(
 	now pdata.Timestamp,
 	ds mo.Datastore,
 ) {
@@ -68,7 +68,7 @@ func (v *vmwareVcenterScraper) recordDatastoreProperties(
 	v.mb.RecordVcenterDatastoreDiskUtilizationDataPoint(now, diskUtilization, ds.Name)
 }
 
-func (v *vmwareVcenterScraper) recordResourcePool(
+func (v *vcenterMetricScraper) recordResourcePool(
 	now pdata.Timestamp,
 	rp mo.ResourcePool,
 ) {
@@ -79,7 +79,7 @@ func (v *vmwareVcenterScraper) recordResourcePool(
 	v.mb.RecordVcenterResourcePoolMemoryUsageDataPoint(now, s.GetResourcePoolSummary().QuickStats.GuestMemoryUsage, rp.Name)
 }
 
-func (v *vmwareVcenterScraper) recordVMPerformance(
+func (v *vcenterMetricScraper) recordVMPerformance(
 	ctx context.Context,
 	vm mo.VirtualMachine,
 	vmUUID, ps string,
@@ -105,7 +105,7 @@ func (v *vmwareVcenterScraper) recordVMPerformance(
 	v.processVMPerformanceMetrics(metrics, vm, vmUUID, ps)
 }
 
-func (v *vmwareVcenterScraper) processVMPerformanceMetrics(metrics []performance.EntityMetric, vm mo.VirtualMachine, vmUUID, ps string) {
+func (v *vcenterMetricScraper) processVMPerformanceMetrics(metrics []performance.EntityMetric, vm mo.VirtualMachine, vmUUID, ps string) {
 	for _, m := range metrics {
 		for i := 0; i < len(m.SampleInfo); i++ {
 			val := m.Value[i]
@@ -144,7 +144,7 @@ var congestion = "congestion"
 var clientCacheHits = "clientCacheHits"
 var clientCacheHitRate = "clientCacheHitRate"
 
-func (v *vmwareVcenterScraper) recordClusterVsanMetric(
+func (v *vcenterMetricScraper) recordClusterVsanMetric(
 	now pdata.Timestamp,
 	metricID string,
 	cluster string,
@@ -211,7 +211,7 @@ func (v *vmwareVcenterScraper) recordClusterVsanMetric(
 	}
 }
 
-func (v *vmwareVcenterScraper) recordHostVsanMetric(
+func (v *vcenterMetricScraper) recordHostVsanMetric(
 	now pdata.Timestamp,
 	metricID string,
 	hostname string,
@@ -313,7 +313,7 @@ func (v *vmwareVcenterScraper) recordHostVsanMetric(
 	}
 }
 
-func (v *vmwareVcenterScraper) recordVMVsanMetric(
+func (v *vcenterMetricScraper) recordVMVsanMetric(
 	now pdata.Timestamp,
 	metricID string,
 	instanceName string,

@@ -10,6 +10,7 @@ import (
 )
 
 func TestStart(t *testing.T) {
+	f := vcenterReceiverFactory{}
 	cases := []struct {
 		desc        string
 		expectedErr error
@@ -24,7 +25,7 @@ func TestStart(t *testing.T) {
 		tc := cases[i]
 		t.Run(tc.desc, func(t *testing.T) {
 			dc := createDefaultConfig()
-			lr, err := createLogsReceiver(
+			lr, err := f.createLogsReceiver(
 				context.Background(),
 				componenttest.NewNopReceiverCreateSettings(),
 				dc,
@@ -41,8 +42,9 @@ func TestStart(t *testing.T) {
 }
 
 func TestShutdown(t *testing.T) {
+	f := vcenterReceiverFactory{}
 	dc := createDefaultConfig()
-	lr, err := createLogsReceiver(
+	lr, err := f.createLogsReceiver(
 		context.Background(),
 		componenttest.NewNopReceiverCreateSettings(),
 		dc,

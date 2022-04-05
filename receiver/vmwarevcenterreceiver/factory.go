@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vmwarevcenterreceiver/internal/metadata"
 )
 
@@ -34,16 +35,25 @@ const (
 	typeStr = "vcenter"
 )
 
+type vcenterReceiverFactory struct {
+	receivers map[*Config]*vcenterReceiver
+}
+
 func NewFactory() component.ReceiverFactory {
+	f := &vcenterReceiverFactory{
+		receivers: make(map[*Config]*vcenterReceiver),
+	}
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver),
-		component.WithLogsReceiver(createLogsReceiver),
+		component.WithMetricsReceiver(f.createMetricsReceiver),
+		component.WithLogsReceiver(f.createLogsReceiver),
 	)
 }
 
 func createDefaultConfig() config.Receiver {
+	tcpLogConfig := tcplogreceiver.NewFactory().CreateDefaultConfig()
+	tcpCfg, _ := tcpLogConfig.(*tcplogreceiver.TCPLogConfig)
 	return &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
@@ -56,13 +66,30 @@ func createDefaultConfig() config.Receiver {
 			Username:         "",
 			Password:         "",
 		},
-		LoggingConfig: &LoggingConfig{},
+		LoggingConfig: &LoggingConfig{
+			TCPLogConfig:     tcpCfg,
+			TLSClientSetting: configtls.TLSClientSetting{},
+		},
 	}
+}
+
+func (f *vcenterReceiverFactory) ensureReceiver(params component.ReceiverCreateSettings, config config.Receiver) *vcenterReceiver {
+	receiver := f.receivers[config.(*Config)]
+	if receiver != nil {
+		return receiver
+	}
+	rconfig := config.(*Config)
+	receiver = &vcenterReceiver{
+		logger: params.Logger,
+		config: rconfig,
+	}
+	f.receivers[config.(*Config)] = receiver
+	return receiver
 }
 
 var errConfigNotVcenter = errors.New("config was not an vcenter receiver config")
 
-func createLogsReceiver(
+func (f *vcenterReceiverFactory) createLogsReceiver(
 	c context.Context,
 	params component.ReceiverCreateSettings,
 	rConf config.Receiver,
@@ -72,12 +99,12 @@ func createLogsReceiver(
 	if !ok {
 		return nil, errConfigNotVcenter
 	}
-
-	vcenterLoggingReceiver := newLogsReceiver(cfg)
-	return vcenterLoggingReceiver, nil
+	rcvr := f.ensureReceiver(params, cfg)
+	rcvr.logsReceiver = newLogsReceiver(cfg, params, consumer)
+	return rcvr, nil
 }
 
-func createMetricsReceiver(
+func (f *vcenterReceiverFactory) createMetricsReceiver(
 	_ context.Context,
 	params component.ReceiverCreateSettings,
 	rConf config.Receiver,
@@ -87,20 +114,28 @@ func createMetricsReceiver(
 	if !ok {
 		return nil, errConfigNotVcenter
 	}
-	vcenterScraper := newVmwareVcenterScraper(params.Logger, cfg)
+	vr := newVmwareVcenterScraper(params.Logger, cfg)
 	scraper, err := scraperhelper.NewScraper(
 		typeStr,
-		vcenterScraper.scrape,
-		scraperhelper.WithStart(vcenterScraper.start),
-		scraperhelper.WithShutdown(vcenterScraper.shutdown),
+		vr.scrape,
+		scraperhelper.WithStart(vr.Start),
+		scraperhelper.WithShutdown(vr.Shutdown),
 	)
-
 	if err != nil {
 		return nil, err
 	}
 
-	return scraperhelper.NewScraperControllerReceiver(
-		&cfg.ScraperControllerSettings, params, consumer,
+	rcvr, err := scraperhelper.NewScraperControllerReceiver(
+		&cfg.ScraperControllerSettings,
+		params,
+		consumer,
 		scraperhelper.AddScraper(scraper),
 	)
+	if err != nil {
+		return nil, err
+	}
+
+	r := f.ensureReceiver(params, cfg)
+	r.scraper = rcvr
+	return r, nil
 }

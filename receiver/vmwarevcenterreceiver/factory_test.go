@@ -11,6 +11,7 @@ import (
 )
 
 func TestCreateMetricsReceiver(t *testing.T) {
+	f := vcenterReceiverFactory{}
 	testCases := []struct {
 		desc   string
 		testFn func(t *testing.T)
@@ -20,7 +21,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 			testFn: func(t *testing.T) {
 				t.Parallel()
 
-				_, err := createMetricsReceiver(
+				_, err := f.createMetricsReceiver(
 					context.Background(),
 					componenttest.NewNopReceiverCreateSettings(),
 					createDefaultConfig(),
@@ -35,7 +36,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 			testFn: func(t *testing.T) {
 				t.Parallel()
 
-				_, err := createMetricsReceiver(
+				_, err := f.createMetricsReceiver(
 					context.Background(),
 					componenttest.NewNopReceiverCreateSettings(),
 					nil,
@@ -48,7 +49,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 			desc: "Nil consumer",
 			testFn: func(t *testing.T) {
 				t.Parallel()
-				_, err := createMetricsReceiver(
+				_, err := f.createMetricsReceiver(
 					context.Background(),
 					componenttest.NewNopReceiverCreateSettings(),
 					createDefaultConfig(),
@@ -65,6 +66,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 }
 
 func TestCreateLogsReceiver(t *testing.T) {
+	f := vcenterReceiverFactory{}
 	testCases := []struct {
 		desc   string
 		testFn func(t *testing.T)
@@ -73,7 +75,7 @@ func TestCreateLogsReceiver(t *testing.T) {
 			desc: "Default config",
 			testFn: func(t *testing.T) {
 				t.Parallel()
-				_, err := createLogsReceiver(
+				_, err := f.createLogsReceiver(
 					context.Background(),
 					componenttest.NewNopReceiverCreateSettings(),
 					createDefaultConfig(),
@@ -87,7 +89,7 @@ func TestCreateLogsReceiver(t *testing.T) {
 			desc: "Nil config",
 			testFn: func(t *testing.T) {
 				t.Parallel()
-				_, err := createLogsReceiver(
+				_, err := f.createLogsReceiver(
 					context.Background(),
 					componenttest.NewNopReceiverCreateSettings(),
 					nil,

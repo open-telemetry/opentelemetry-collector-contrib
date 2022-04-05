@@ -37,36 +37,34 @@ const timeFormat = "2006-01-02 15:04:05"
 
 const instrumentationLibraryName = "otelcol/vcenter"
 
-type vmwareVcenterScraper struct {
+var _ component.Receiver = (*vcenterMetricScraper)(nil)
+
+type vcenterMetricScraper struct {
 	client *VmwareVcenterClient
-	logger *zap.Logger
-	config *Config
 	mb     *metadata.MetricsBuilder
 }
 
 func newVmwareVcenterScraper(
 	logger *zap.Logger,
 	config *Config,
-) *vmwareVcenterScraper {
+) *vcenterMetricScraper {
 	l := logger.Named("vcenter-client")
 	client := newVmwarevcenterClient(config, l)
-	return &vmwareVcenterScraper{
-		logger: logger,
+	return &vcenterMetricScraper{
 		client: client,
-		config: config,
 		mb:     metadata.NewMetricsBuilder(config.MetricsConfig.Metrics),
 	}
 }
 
-func (v *vmwareVcenterScraper) start(ctx context.Context, host component.Host) error {
+func (v *vcenterMetricScraper) Start(ctx context.Context, _ component.Host) error {
 	return v.client.Connect(ctx)
 }
 
-func (v *vmwareVcenterScraper) shutdown(ctx context.Context) error {
+func (v *vcenterMetricScraper) Shutdown(ctx context.Context) error {
 	return v.client.Disconnect(ctx)
 }
 
-func (v *vmwareVcenterScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
+func (v *vcenterMetricScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 	if v.client == nil {
 		return pdata.Metrics{}, errors.New("failed to connect to http client")
 	}
@@ -85,7 +83,7 @@ func (v *vmwareVcenterScraper) scrape(ctx context.Context) (pdata.Metrics, error
 	return metrics, errs.Combine()
 }
 
-func (v *vmwareVcenterScraper) collectClusters(ctx context.Context, rms pdata.ResourceMetricsSlice, errs *scrapererror.ScrapeErrors) error {
+func (v *vcenterMetricScraper) collectClusters(ctx context.Context, rms pdata.ResourceMetricsSlice, errs *scrapererror.ScrapeErrors) error {
 	clusters, err := v.client.Clusters(ctx)
 	if err != nil {
 		return err
@@ -104,7 +102,7 @@ func (v *vmwareVcenterScraper) collectClusters(ctx context.Context, rms pdata.Re
 	return nil
 }
 
-func (v *vmwareVcenterScraper) collectCluster(
+func (v *vcenterMetricScraper) collectCluster(
 	ctx context.Context,
 	c *object.ClusterComputeResource,
 	rm pdata.ResourceMetrics,
@@ -120,7 +118,7 @@ func (v *vmwareVcenterScraper) collectCluster(
 	v.mb.EmitCluster(ilms.Metrics())
 }
 
-func (v *vmwareVcenterScraper) collectClusterVSAN(
+func (v *vcenterMetricScraper) collectClusterVSAN(
 	ctx context.Context,
 	cluster *object.ClusterComputeResource,
 	errs *scrapererror.ScrapeErrors,
@@ -150,7 +148,7 @@ func (v *vmwareVcenterScraper) collectClusterVSAN(
 	}
 }
 
-func (v *vmwareVcenterScraper) collectDatastores(
+func (v *vcenterMetricScraper) collectDatastores(
 	ctx context.Context,
 	colTime pdata.Timestamp,
 	_ *object.ClusterComputeResource,
@@ -167,7 +165,7 @@ func (v *vmwareVcenterScraper) collectDatastores(
 	}
 }
 
-func (v *vmwareVcenterScraper) collectDatastore(
+func (v *vcenterMetricScraper) collectDatastore(
 	ctx context.Context,
 	now pdata.Timestamp,
 	rms pdata.ResourceMetricsSlice,
@@ -185,7 +183,7 @@ func (v *vmwareVcenterScraper) collectDatastore(
 	v.mb.EmitDatastore(ilms.Metrics())
 }
 
-func (v *vmwareVcenterScraper) collectHosts(
+func (v *vcenterMetricScraper) collectHosts(
 	ctx context.Context,
 	colTime pdata.Timestamp,
 	cluster *object.ClusterComputeResource,
@@ -219,7 +217,7 @@ func (v *vmwareVcenterScraper) collectHosts(
 
 }
 
-func (v *vmwareVcenterScraper) collectHost(
+func (v *vcenterMetricScraper) collectHost(
 	ctx context.Context,
 	now pdata.Timestamp,
 	host *object.HostSystem,
@@ -246,7 +244,7 @@ func (v *vmwareVcenterScraper) collectHost(
 	}
 }
 
-func (v *vmwareVcenterScraper) collectResourcePools(
+func (v *vcenterMetricScraper) collectResourcePools(
 	ctx context.Context,
 	ts pdata.Timestamp,
 	rms pdata.ResourceMetricsSlice,
@@ -277,7 +275,7 @@ func (v *vmwareVcenterScraper) collectResourcePools(
 	}
 }
 
-func (v *vmwareVcenterScraper) collectVMs(
+func (v *vcenterMetricScraper) collectVMs(
 	ctx context.Context,
 	colTime pdata.Timestamp,
 	cluster *object.ClusterComputeResource,
@@ -301,6 +299,7 @@ func (v *vmwareVcenterScraper) collectVMs(
 		rm := rms.AppendEmpty()
 		resourceAttrs := rm.Resource().Attributes()
 		resourceAttrs.InsertString(metadata.A.InstanceName, vm.Name())
+		resourceAttrs.InsertString(metadata.A.InstanceID, vm.UUID(ctx))
 
 		ilms := rm.InstrumentationLibraryMetrics().AppendEmpty()
 		ilms.InstrumentationLibrary().SetName(instrumentationLibraryName)
@@ -311,7 +310,7 @@ func (v *vmwareVcenterScraper) collectVMs(
 
 }
 
-func (v *vmwareVcenterScraper) collectVM(
+func (v *vcenterMetricScraper) collectVM(
 	ctx context.Context,
 	colTime pdata.Timestamp,
 	vm *object.VirtualMachine,
@@ -349,7 +348,7 @@ const (
 	vmType
 )
 
-func (v *vmwareVcenterScraper) addVSAN(
+func (v *vcenterMetricScraper) addVSAN(
 	csvs []types.VsanPerfEntityMetricCSV,
 	entityID string,
 	entityName string,

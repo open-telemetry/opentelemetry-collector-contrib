@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vmwarevcenterreceiver/internal/metadata"
 )
 
@@ -41,19 +42,19 @@ type MetricsConfig struct {
 }
 
 type LoggingConfig struct {
-	configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
-	ListenAddress              string
+	configtls.TLSClientSetting   `mapstructure:"tls,omitempty"`
+	*tcplogreceiver.TCPLogConfig `mapstructure:",squash"`
 }
 
 // Validate checks to see if the supplied config will work for the vmwarevcenterreceiver
 func (c *Config) Validate() error {
 	var err error
 	metricsErr := c.validateMetricsConfig()
-	if err != nil {
+	if metricsErr != nil {
 		multierr.Append(err, metricsErr)
 	}
 	logErr := c.validateLoggingConfig()
-	if err != nil {
+	if logErr != nil {
 		multierr.Append(err, logErr)
 	}
 
@@ -93,6 +94,9 @@ func (c *Config) validateLoggingConfig() error {
 	var err error
 	lc := c.LoggingConfig
 	if lc != nil {
+		if len(lc.Operators) != 0 {
+			return errors.New("custom operators are not supported for this component")
+		}
 		// TODO: validate logging input params
 	}
 	return err
