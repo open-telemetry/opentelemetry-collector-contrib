@@ -19,8 +19,8 @@ import (
 
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/process"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
 )
 
 // processMetadata stores process related metadata along
@@ -46,25 +46,27 @@ type commandMetadata struct {
 	commandLineSlice []string
 }
 
-func (m *processMetadata) initializeResource(resource pdata.Resource) {
-	attr := resource.Attributes()
-	attr.EnsureCapacity(6)
-	attr.InsertInt(conventions.AttributeProcessPID, int64(m.pid))
-	attr.InsertString(conventions.AttributeProcessExecutableName, m.executable.name)
-	attr.InsertString(conventions.AttributeProcessExecutablePath, m.executable.path)
+func (m *processMetadata) resourceOptions() []metadata.ResourceOption {
+	opts := make([]metadata.ResourceOption, 0, 6)
+	opts = append(opts,
+		metadata.WithProcessPid(int64(m.pid)),
+		metadata.WithProcessExecutableName(m.executable.name),
+		metadata.WithProcessExecutablePath(m.executable.path),
+	)
 	if m.command != nil {
-		attr.InsertString(conventions.AttributeProcessCommand, m.command.command)
+		opts = append(opts, metadata.WithProcessCommand(m.command.command))
 		if m.command.commandLineSlice != nil {
 			// TODO insert slice here once this is supported by the data model
 			// (see https://github.com/open-telemetry/opentelemetry-collector/pull/1142)
-			attr.InsertString(conventions.AttributeProcessCommandLine, strings.Join(m.command.commandLineSlice, " "))
+			opts = append(opts, metadata.WithProcessCommandLine(strings.Join(m.command.commandLineSlice, " ")))
 		} else {
-			attr.InsertString(conventions.AttributeProcessCommandLine, m.command.commandLine)
+			opts = append(opts, metadata.WithProcessCommandLine(m.command.commandLine))
 		}
 	}
 	if m.username != "" {
-		attr.InsertString(conventions.AttributeProcessOwner, m.username)
+		opts = append(opts, metadata.WithProcessOwner(m.username))
 	}
+	return opts
 }
 
 // processHandles provides a wrapper around []*process.Process

@@ -86,7 +86,7 @@ func OCToTraces(node *occommon.Node, resource *ocresource.Resource, spans []*oct
 	ocNodeResourceToInternal(node, resource, rs0.Resource())
 
 	// Allocate a slice for spans that need to be combined into first ResourceSpans.
-	ils0 := rs0.InstrumentationLibrarySpans().AppendEmpty()
+	ils0 := rs0.ScopeSpans().AppendEmpty()
 	combinedSpans := ils0.Spans()
 	combinedSpans.EnsureCapacity(combinedSpanCount)
 
@@ -116,7 +116,7 @@ func OCToTraces(node *occommon.Node, resource *ocresource.Resource, spans []*oct
 
 func ocSpanToResourceSpans(ocSpan *octrace.Span, node *occommon.Node, dest pdata.ResourceSpans) {
 	ocNodeResourceToInternal(node, ocSpan.Resource, dest.Resource())
-	ilss := dest.InstrumentationLibrarySpans()
+	ilss := dest.ScopeSpans()
 	ocSpanToInternal(ocSpan, ilss.AppendEmpty().Spans().AppendEmpty())
 }
 
@@ -213,7 +213,7 @@ func ocAttrsToDroppedAttributes(ocAttrs *octrace.Span_Attributes) uint32 {
 }
 
 // initAttributeMapFromOC initialize AttributeMap from OC attributes
-func initAttributeMapFromOC(ocAttrs *octrace.Span_Attributes, dest pdata.AttributeMap) {
+func initAttributeMapFromOC(ocAttrs *octrace.Span_Attributes, dest pdata.Map) {
 	if ocAttrs == nil || len(ocAttrs.AttributeMap) == 0 {
 		return
 	}
@@ -347,7 +347,7 @@ func ocLinksToInternal(ocLinks *octrace.Span_Links, dest pdata.Span) {
 	}
 }
 
-func ocMessageEventToInternalAttrs(msgEvent *octrace.Span_TimeEvent_MessageEvent, dest pdata.AttributeMap) {
+func ocMessageEventToInternalAttrs(msgEvent *octrace.Span_TimeEvent_MessageEvent, dest pdata.Map) {
 	if msgEvent == nil {
 		return
 	}

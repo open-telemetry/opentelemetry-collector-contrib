@@ -47,7 +47,7 @@ func (a *metricAttributesProcessor) processMetrics(ctx context.Context, md pdata
 	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		rs := rms.At(i)
-		ilms := rs.InstrumentationLibraryMetrics()
+		ilms := rs.ScopeMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			ils := ilms.At(j)
 			metrics := ils.Metrics()
@@ -74,27 +74,27 @@ func (a *metricAttributesProcessor) processMetricAttributes(ctx context.Context,
 	case pdata.MetricDataTypeGauge:
 		dps := m.Gauge().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
-			a.attrProc.Process(ctx, dps.At(i).Attributes())
+			a.attrProc.Process(ctx, a.logger, dps.At(i).Attributes())
 		}
 	case pdata.MetricDataTypeSum:
 		dps := m.Sum().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
-			a.attrProc.Process(ctx, dps.At(i).Attributes())
+			a.attrProc.Process(ctx, a.logger, dps.At(i).Attributes())
 		}
 	case pdata.MetricDataTypeHistogram:
 		dps := m.Histogram().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
-			a.attrProc.Process(ctx, dps.At(i).Attributes())
+			a.attrProc.Process(ctx, a.logger, dps.At(i).Attributes())
 		}
 	case pdata.MetricDataTypeExponentialHistogram:
 		dps := m.ExponentialHistogram().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
-			a.attrProc.Process(ctx, dps.At(i).Attributes())
+			a.attrProc.Process(ctx, a.logger, dps.At(i).Attributes())
 		}
 	case pdata.MetricDataTypeSummary:
 		dps := m.Summary().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
-			a.attrProc.Process(ctx, dps.At(i).Attributes())
+			a.attrProc.Process(ctx, a.logger, dps.At(i).Attributes())
 		}
 	}
 }

@@ -268,6 +268,8 @@ processors:
 detectors: [ <string> ]
 # determines if existing resource attributes should be overridden or preserved, defaults to true
 override: <bool>
+# When included, only attributes in the list will be appened.  Applies to all detectors.
+attributes: [ <string> ]
 ```
 
 ## Ordering

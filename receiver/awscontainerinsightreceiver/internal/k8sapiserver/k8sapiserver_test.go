@@ -125,7 +125,7 @@ func getStringAttrVal(m pdata.Metrics, key string) string {
 
 func assertMetricValueEqual(t *testing.T, m pdata.Metrics, metricName string, expected int64) {
 	rm := m.ResourceMetrics().At(0)
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 
 	for j := 0; j < ilms.Len(); j++ {
 		metricSlice := ilms.At(j).Metrics()

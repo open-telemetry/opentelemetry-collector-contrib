@@ -226,7 +226,7 @@ func (c *Converter) aggregationLoop() {
 				pLogs, ok := resourceIDToLogs[wi.ResourceID]
 				if ok {
 					lr := pLogs.ResourceLogs().
-						At(0).InstrumentationLibraryLogs().
+						At(0).ScopeLogs().
 						At(0).LogRecords().AppendEmpty()
 					wi.LogRecord.CopyTo(lr)
 					continue
@@ -239,7 +239,7 @@ func (c *Converter) aggregationLoop() {
 				resource := rls.Resource()
 				insertToAttributeMap(wi.Resource, resource.Attributes())
 
-				ills := rls.InstrumentationLibraryLogs()
+				ills := rls.ScopeLogs()
 				lr := ills.AppendEmpty().LogRecords().AppendEmpty()
 				wi.LogRecord.CopyTo(lr)
 
@@ -324,7 +324,7 @@ func Convert(ent *entry.Entry) pdata.Logs {
 	resource := rls.Resource()
 	insertToAttributeMap(ent.Resource, resource.Attributes())
 
-	ills := rls.InstrumentationLibraryLogs().AppendEmpty()
+	ills := rls.ScopeLogs().AppendEmpty()
 	lr := ills.LogRecords().AppendEmpty()
 	convertInto(ent, lr)
 	return pLogs
@@ -359,7 +359,7 @@ func convertInto(ent *entry.Entry, dest pdata.LogRecord) {
 	}
 }
 
-func insertToAttributeVal(value interface{}, dest pdata.AttributeValue) {
+func insertToAttributeVal(value interface{}, dest pdata.Value) {
 	switch t := value.(type) {
 	case bool:
 		dest.SetBoolVal(t)
@@ -400,14 +400,14 @@ func insertToAttributeVal(value interface{}, dest pdata.AttributeValue) {
 	}
 }
 
-func toAttributeMap(obsMap map[string]interface{}) pdata.AttributeValue {
-	attVal := pdata.NewAttributeValueMap()
+func toAttributeMap(obsMap map[string]interface{}) pdata.Value {
+	attVal := pdata.NewValueMap()
 	attMap := attVal.MapVal()
 	insertToAttributeMap(obsMap, attMap)
 	return attVal
 }
 
-func insertToAttributeMap(obsMap map[string]interface{}, dest pdata.AttributeMap) {
+func insertToAttributeMap(obsMap map[string]interface{}, dest pdata.Map) {
 	dest.EnsureCapacity(len(obsMap))
 	for k, v := range obsMap {
 		switch t := v.(type) {
@@ -453,8 +453,8 @@ func insertToAttributeMap(obsMap map[string]interface{}, dest pdata.AttributeMap
 	}
 }
 
-func toAttributeArray(obsArr []interface{}) pdata.AttributeValue {
-	arrVal := pdata.NewAttributeValueArray()
+func toAttributeArray(obsArr []interface{}) pdata.Value {
+	arrVal := pdata.NewValueSlice()
 	arr := arrVal.SliceVal()
 	arr.EnsureCapacity(len(obsArr))
 	for _, v := range obsArr {

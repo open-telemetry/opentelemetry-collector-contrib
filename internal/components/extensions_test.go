@@ -37,6 +37,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
@@ -67,6 +68,13 @@ func TestDefaultExtensions(t *testing.T) {
 			getConfigFn: func() config.Extension {
 				cfg := extFactories["pprof"].CreateDefaultConfig().(*pprofextension.Config)
 				cfg.TCPAddr.Endpoint = endpoint
+				return cfg
+			},
+		},
+		{
+			extension: "sigv4auth",
+			getConfigFn: func() config.Extension {
+				cfg := extFactories["sigv4auth"].CreateDefaultConfig().(*sigv4authextension.Config)
 				return cfg
 			},
 		},

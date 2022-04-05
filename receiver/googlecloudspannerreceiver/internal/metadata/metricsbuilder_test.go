@@ -129,12 +129,12 @@ func testMetricsFromDataPointBuilderBuild(t *testing.T, metricDataType pdata.Met
 
 	assert.Equal(t, len(dataForTesting.dataPoints), metric.DataPointCount())
 	assert.Equal(t, len(dataForTesting.expectedGroups), metric.MetricCount())
-	assert.Equal(t, 1, metric.ResourceMetrics().At(0).InstrumentationLibraryMetrics().Len())
-	assert.Equal(t, len(dataForTesting.expectedGroups), metric.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Len())
-	require.Equal(t, instrumentationLibraryName, metric.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).InstrumentationLibrary().Name())
+	assert.Equal(t, 1, metric.ResourceMetrics().At(0).ScopeMetrics().Len())
+	assert.Equal(t, len(dataForTesting.expectedGroups), metric.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
+	require.Equal(t, instrumentationLibraryName, metric.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Name())
 
 	for i := 0; i < len(dataForTesting.expectedGroups); i++ {
-		ilMetric := metric.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(i)
+		ilMetric := metric.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(i)
 		expectedGroupingKey := expectedGroupingKeysByMetricName[ilMetric.Name()]
 		expectedDataPoints := dataForTesting.expectedGroups[expectedGroupingKey]
 

@@ -94,7 +94,7 @@ func TestExportTraceDataFullTrace(t *testing.T) {
 	status.SetMessage("an error event occurred")
 	status.CopyTo(clientSpan.Status())
 
-	clientAttrs := pdata.NewAttributeMap()
+	clientAttrs := pdata.NewMap()
 	clientAttrs.InsertString(labelApplication, "test-app")
 	clientAttrs.CopyTo(clientSpan.Attributes())
 
@@ -106,7 +106,7 @@ func TestExportTraceDataFullTrace(t *testing.T) {
 	)
 	serverSpan.SetKind(pdata.SpanKindServer)
 	serverSpan.SetTraceState("key=val")
-	serverAttrs := pdata.NewAttributeMap()
+	serverAttrs := pdata.NewMap()
 	serverAttrs.InsertString(conventions.AttributeServiceName, "the-server")
 	serverAttrs.InsertString(conventions.AttributeHTTPMethod, "POST")
 	serverAttrs.InsertInt(conventions.AttributeHTTPStatusCode, 403)
@@ -114,7 +114,7 @@ func TestExportTraceDataFullTrace(t *testing.T) {
 	serverAttrs.CopyTo(serverSpan.Attributes())
 
 	traces := constructTraces([]pdata.Span{rootSpan, clientSpan, serverSpan})
-	resourceAttrs := pdata.NewAttributeMap()
+	resourceAttrs := pdata.NewMap()
 	resourceAttrs.InsertString("resource", "R1")
 	resourceAttrs.InsertString(conventions.AttributeServiceName, "test-service")
 	resourceAttrs.InsertString(labelSource, "test-source")
@@ -201,8 +201,8 @@ func TestExportTraceDataWithInstrumentationDetails(t *testing.T) {
 	)
 	traces := constructTraces([]pdata.Span{minSpan})
 
-	instrumentationLibrary := traces.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).
-		InstrumentationLibrary()
+	instrumentationLibrary := traces.ResourceSpans().At(0).ScopeSpans().At(0).
+		Scope()
 	instrumentationLibrary.SetName("instrumentation_name")
 	instrumentationLibrary.SetVersion("v0.0.1")
 
@@ -211,10 +211,10 @@ func TestExportTraceDataWithInstrumentationDetails(t *testing.T) {
 		TraceID: uuid.MustParse("01010101-0101-0101-0101-010101010101"),
 		SpanID:  uuid.MustParse("00000000-0000-0000-0909-090909090909"),
 		Tags: map[string]string{
-			labelApplication:     "defaultApp",
-			labelService:         "defaultService",
-			labelOtelSpanName:    "instrumentation_name",
-			labelOtelSpanVersion: "v0.0.1",
+			labelApplication:      "defaultApp",
+			labelService:          "defaultService",
+			labelOtelScopeName:    "instrumentation_name",
+			labelOtelScopeVersion: "v0.0.1",
 		},
 	}}
 
@@ -267,8 +267,8 @@ func constructTraces(spans []pdata.Span) pdata.Traces {
 	traces := pdata.NewTraces()
 	traces.ResourceSpans().EnsureCapacity(1)
 	rs := traces.ResourceSpans().AppendEmpty()
-	rs.InstrumentationLibrarySpans().EnsureCapacity(1)
-	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
+	rs.ScopeSpans().EnsureCapacity(1)
+	ils := rs.ScopeSpans().AppendEmpty()
 	ils.Spans().EnsureCapacity(len(spans))
 	for _, span := range spans {
 		span.CopyTo(ils.Spans().AppendEmpty())

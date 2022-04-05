@@ -42,8 +42,8 @@ const (
 	labelDroppedEventsCount = "otel.dropped_events_count"
 	labelDroppedLinksCount  = "otel.dropped_links_count"
 	labelDroppedAttrsCount  = "otel.dropped_attributes_count"
-	labelOtelSpanName       = "otel.span.name"
-	labelOtelSpanVersion    = "otel.span.version"
+	labelOtelScopeName      = "otel.scope.name"
+	labelOtelScopeVersion   = "otel.scope.version"
 )
 
 // spanSender Interface for sending tracing spans to Tanzu Observability
@@ -105,12 +105,12 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td pdata.Traces) err
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
 		resource := rspans.Resource()
-		for j := 0; j < rspans.InstrumentationLibrarySpans().Len(); j++ {
-			ispans := rspans.InstrumentationLibrarySpans().At(j)
+		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
+			ispans := rspans.ScopeSpans().At(j)
 			transform := newTraceTransformer(resource)
 
-			libraryName := ispans.InstrumentationLibrary().Name()
-			libraryVersion := ispans.InstrumentationLibrary().Version()
+			libraryName := ispans.Scope().Name()
+			libraryVersion := ispans.Scope().Version()
 
 			for k := 0; k < ispans.Spans().Len(); k++ {
 				select {
@@ -124,11 +124,11 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td pdata.Traces) err
 					}
 
 					if libraryName != "" {
-						transformedSpan.Tags[labelOtelSpanName] = libraryName
+						transformedSpan.Tags[labelOtelScopeName] = libraryName
 					}
 
 					if libraryVersion != "" {
-						transformedSpan.Tags[labelOtelSpanVersion] = libraryVersion
+						transformedSpan.Tags[labelOtelScopeVersion] = libraryVersion
 					}
 
 					if err := e.recordSpan(transformedSpan); err != nil {

@@ -45,12 +45,12 @@ func logDataToLogService(ld pdata.Logs) []*sls.Log {
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		rl := rls.At(i)
-		ills := rl.InstrumentationLibraryLogs()
+		sl := rl.ScopeLogs()
 		resource := rl.Resource()
 		resourceContents := resourceToLogContents(resource)
-		for j := 0; j < ills.Len(); j++ {
-			ils := ills.At(j)
-			instrumentationLibraryContents := instrumentationLibraryToLogContents(ils.InstrumentationLibrary())
+		for j := 0; j < sl.Len(); j++ {
+			ils := sl.At(j)
+			instrumentationLibraryContents := instrumentationScopeToLogContents(ils.Scope())
 			logs := ils.LogRecords()
 			for j := 0; j < logs.Len(); j++ {
 				slsLog := mapLogRecordToLogService(logs.At(j), resourceContents, instrumentationLibraryContents)
@@ -92,7 +92,7 @@ func resourceToLogContents(resource pdata.Resource) []*sls.LogContent {
 	}
 
 	fields := map[string]interface{}{}
-	attrs.Range(func(k string, v pdata.AttributeValue) bool {
+	attrs.Range(func(k string, v pdata.Value) bool {
 		if k == conventions.AttributeServiceName || k == conventions.AttributeHostName {
 			return true
 		}
@@ -108,15 +108,15 @@ func resourceToLogContents(resource pdata.Resource) []*sls.LogContent {
 	return logContents
 }
 
-func instrumentationLibraryToLogContents(instrumentationLibrary pdata.InstrumentationLibrary) []*sls.LogContent {
+func instrumentationScopeToLogContents(instrumentationScope pdata.InstrumentationScope) []*sls.LogContent {
 	logContents := make([]*sls.LogContent, 2)
 	logContents[0] = &sls.LogContent{
 		Key:   proto.String(slsLogInstrumentationName),
-		Value: proto.String(instrumentationLibrary.Name()),
+		Value: proto.String(instrumentationScope.Name()),
 	}
 	logContents[1] = &sls.LogContent{
 		Key:   proto.String(slsLogInstrumentationVersion),
-		Value: proto.String(instrumentationLibrary.Version()),
+		Value: proto.String(instrumentationScope.Version()),
 	}
 	return logContents
 }
@@ -124,7 +124,7 @@ func instrumentationLibraryToLogContents(instrumentationLibrary pdata.Instrument
 func mapLogRecordToLogService(lr pdata.LogRecord,
 	resourceContents,
 	instrumentationLibraryContents []*sls.LogContent) *sls.Log {
-	if lr.Body().Type() == pdata.AttributeValueTypeEmpty {
+	if lr.Body().Type() == pdata.ValueTypeEmpty {
 		return nil
 	}
 	var slsLog sls.Log
@@ -153,7 +153,7 @@ func mapLogRecordToLogService(lr pdata.LogRecord,
 	})
 
 	fields := map[string]interface{}{}
-	lr.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+	lr.Attributes().Range(func(k string, v pdata.Value) bool {
 		fields[k] = v.AsString()
 		return true
 	})

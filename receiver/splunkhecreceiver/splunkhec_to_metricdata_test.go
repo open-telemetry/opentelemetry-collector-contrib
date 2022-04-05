@@ -73,7 +73,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 			}(),
 			wantMetricsData: func() pdata.Metrics {
 				metrics := buildDefaultMetricsData(nanos)
-				mts := metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+				mts := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 
 				metricPt := mts.AppendEmpty()
 				metricPt.SetDataType(pdata.MetricDataTypeGauge)
@@ -108,7 +108,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 			}(),
 			wantMetricsData: func() pdata.Metrics {
 				md := buildDefaultMetricsData(nanos)
-				mts := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+				mts := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 				metricPt := mts.At(0)
 				metricPt.SetDataType(pdata.MetricDataTypeGauge)
 				metricPt.SetName("single")
@@ -157,7 +157,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				attrs.InsertString("mysourcetype", "sourcetype")
 				attrs.InsertString("myindex", "index")
 
-				metricPt := resourceMetrics.InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
+				metricPt := resourceMetrics.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 				metricPt.SetDataType(pdata.MetricDataTypeGauge)
 				metricPt.SetName("single")
 				intPt := metricPt.Gauge().DataPoints().AppendEmpty()
@@ -185,7 +185,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 			}(),
 			wantMetricsData: func() pdata.Metrics {
 				md := buildDefaultMetricsData(nanos)
-				mts := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+				mts := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 				metricPt := mts.At(0)
 				metricPt.SetDataType(pdata.MetricDataTypeGauge)
 				metricPt.SetName("single")
@@ -208,7 +208,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 			}(),
 			wantMetricsData: func() pdata.Metrics {
 				md := buildDefaultMetricsData(nanos)
-				mts := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+				mts := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 				metricPt := mts.At(0)
 				metricPt.SetDataType(pdata.MetricDataTypeGauge)
 				metricPt.SetName("single")
@@ -231,7 +231,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 			}(),
 			wantMetricsData: func() pdata.Metrics {
 				md := buildDefaultMetricsData(nanos)
-				mts := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+				mts := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 				metricPt := mts.At(0)
 				metricPt.SetDataType(pdata.MetricDataTypeGauge)
 				metricPt.SetName("single")
@@ -266,7 +266,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 			}(),
 			wantMetricsData: func() pdata.Metrics {
 				md := buildDefaultMetricsData(nanos)
-				md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes().UpdateString("k0", "")
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes().UpdateString("k0", "")
 				return md
 			}(),
 			hecConfig: defaultTestingHecConfig,
@@ -330,7 +330,7 @@ func buildDefaultMetricsData(time int64) pdata.Metrics {
 	attrs.InsertString("com.splunk.sourcetype", "sourcetype")
 	attrs.InsertString("com.splunk.index", "index")
 
-	metricPt := resourceMetrics.InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
+	metricPt := resourceMetrics.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	metricPt.SetDataType(pdata.MetricDataTypeGauge)
 	metricPt.SetName("single")
 	intPt := metricPt.Gauge().DataPoints().AppendEmpty()
@@ -360,8 +360,8 @@ func float64Ptr(f float64) *float64 {
 func sortMetricsAndLabels(md pdata.Metrics) pdata.Metrics {
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
 		rm := md.ResourceMetrics().At(i)
-		for j := 0; j < rm.InstrumentationLibraryMetrics().Len(); j++ {
-			ilm := rm.InstrumentationLibraryMetrics().At(j)
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			ilm := rm.ScopeMetrics().At(j)
 			internalSortMetricsAndLabels(ilm.Metrics())
 		}
 	}

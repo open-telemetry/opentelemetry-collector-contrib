@@ -24,7 +24,7 @@ import (
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
-func addSQLToSpan(sql *awsxray.SQLData, attrs *pdata.AttributeMap) error {
+func addSQLToSpan(sql *awsxray.SQLData, attrs *pdata.Map) error {
 	if sql == nil {
 		return nil
 	}

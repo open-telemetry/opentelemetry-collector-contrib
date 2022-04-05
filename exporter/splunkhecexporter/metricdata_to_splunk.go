@@ -69,7 +69,7 @@ func mapMetricToSplunkEvent(res pdata.Resource, m pdata.Metric, config *Config, 
 	index := config.Index
 	commonFields := map[string]interface{}{}
 
-	res.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+	res.Attributes().Range(func(k string, v pdata.Value) bool {
 		switch k {
 		case hostKey:
 			host = v.StringVal()
@@ -234,8 +234,8 @@ func createEvent(timestamp pdata.Timestamp, host string, source string, sourceTy
 
 }
 
-func populateAttributes(fields map[string]interface{}, attributeMap pdata.AttributeMap) {
-	attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
+func populateAttributes(fields map[string]interface{}, attributeMap pdata.Map) {
+	attributeMap.Range(func(k string, v pdata.Value) bool {
 		fields[k] = v.AsString()
 		return true
 	})

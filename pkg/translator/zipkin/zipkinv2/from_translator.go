@@ -68,7 +68,7 @@ func (t FromTranslator) FromTraces(td pdata.Traces) ([]*zipkinmodel.SpanModel, e
 
 func resourceSpansToZipkinSpans(rs pdata.ResourceSpans, estSpanCount int) ([]*zipkinmodel.SpanModel, error) {
 	resource := rs.Resource()
-	ilss := rs.InstrumentationLibrarySpans()
+	ilss := rs.ScopeSpans()
 
 	if resource.Attributes().Len() == 0 && ilss.Len() == 0 {
 		return nil, nil
@@ -79,7 +79,7 @@ func resourceSpansToZipkinSpans(rs pdata.ResourceSpans, estSpanCount int) ([]*zi
 	zSpans := make([]*zipkinmodel.SpanModel, 0, estSpanCount)
 	for i := 0; i < ilss.Len(); i++ {
 		ils := ilss.At(i)
-		extractInstrumentationLibraryTags(ils.InstrumentationLibrary(), zTags)
+		extractInstrumentationLibraryTags(ils.Scope(), zTags)
 		spans := ils.Spans()
 		for j := 0; j < spans.Len(); j++ {
 			zSpan, err := spanToZipkinSpan(spans.At(j), localServiceName, zTags)
@@ -93,7 +93,7 @@ func resourceSpansToZipkinSpans(rs pdata.ResourceSpans, estSpanCount int) ([]*zi
 	return zSpans, nil
 }
 
-func extractInstrumentationLibraryTags(il pdata.InstrumentationLibrary, zTags map[string]string) {
+func extractInstrumentationLibraryTags(il pdata.InstrumentationScope, zTags map[string]string) {
 	if ilName := il.Name(); ilName != "" {
 		zTags[conventions.OtelLibraryName] = ilName
 	}
@@ -247,9 +247,9 @@ func spanLinksToZipkinTags(links pdata.SpanLinkSlice, zTags map[string]string) e
 	return nil
 }
 
-func attributeMapToStringMap(attrMap pdata.AttributeMap) map[string]string {
+func attributeMapToStringMap(attrMap pdata.Map) map[string]string {
 	rawMap := make(map[string]string)
-	attrMap.Range(func(k string, v pdata.AttributeValue) bool {
+	attrMap.Range(func(k string, v pdata.Value) bool {
 		rawMap[k] = v.AsString()
 		return true
 	})
@@ -273,7 +273,7 @@ func resourceToZipkinEndpointServiceNameAndAttributeMap(
 		return tracetranslator.ResourceNoServiceName, zTags
 	}
 
-	attrs.Range(func(k string, v pdata.AttributeValue) bool {
+	attrs.Range(func(k string, v pdata.Value) bool {
 		zTags[k] = v.AsString()
 		return true
 	})

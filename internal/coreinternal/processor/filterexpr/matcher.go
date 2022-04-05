@@ -27,7 +27,7 @@ type Matcher struct {
 
 type env struct {
 	MetricName string
-	attributes pdata.AttributeMap
+	attributes pdata.Map
 }
 
 func (e *env) HasLabel(key string) bool {
@@ -104,11 +104,11 @@ func (m *Matcher) matchDoubleHistogram(metricName string, histogram pdata.Histog
 	return false, nil
 }
 
-func (m *Matcher) matchEnv(metricName string, attributes pdata.AttributeMap) (bool, error) {
+func (m *Matcher) matchEnv(metricName string, attributes pdata.Map) (bool, error) {
 	return m.match(createEnv(metricName, attributes))
 }
 
-func createEnv(metricName string, attributes pdata.AttributeMap) *env {
+func createEnv(metricName string, attributes pdata.Map) *env {
 	return &env{
 		MetricName: metricName,
 		attributes: attributes,

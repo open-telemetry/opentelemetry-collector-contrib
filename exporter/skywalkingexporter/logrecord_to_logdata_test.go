@@ -24,19 +24,19 @@ import (
 	logpb "skywalking.apache.org/repo/goapi/collect/logging/v3"
 )
 
-func getComplexAttributeValueMap() pdata.AttributeValue {
-	mapVal := pdata.NewAttributeValueMap()
+func getComplexAttributeValueMap() pdata.Value {
+	mapVal := pdata.NewValueMap()
 	mapValReal := mapVal.MapVal()
 	mapValReal.InsertBool("result", true)
 	mapValReal.InsertString("status", "ok")
 	mapValReal.InsertDouble("value", 1.3)
 	mapValReal.InsertInt("code", 200)
 	mapValReal.InsertNull("null")
-	arrayVal := pdata.NewAttributeValueArray()
+	arrayVal := pdata.NewValueSlice()
 	arrayVal.SliceVal().AppendEmpty().SetStringVal("array")
 	mapValReal.Insert("array", arrayVal)
 
-	subMapVal := pdata.NewAttributeValueMap()
+	subMapVal := pdata.NewValueMap()
 	subMapVal.MapVal().InsertString("data", "hello world")
 	mapValReal.Insert("map", subMapVal)
 
@@ -52,13 +52,13 @@ func createLogData(numberOfLogs int) pdata.Logs {
 	rl.Resource().Attributes().InsertString(conventions.AttributeServiceName, "test-service")
 	rl.Resource().Attributes().InsertString(conventions.AttributeHostName, "test-host")
 	rl.Resource().Attributes().InsertString(conventions.AttributeServiceInstanceID, "test-instance")
-	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
-	ill.InstrumentationLibrary().SetName("collector")
-	ill.InstrumentationLibrary().SetVersion("v0.1.0")
+	sl := rl.ScopeLogs().AppendEmpty()
+	sl.Scope().SetName("collector")
+	sl.Scope().SetVersion("v0.1.0")
 
 	for i := 0; i < numberOfLogs; i++ {
 		ts := pdata.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
-		logRecord := ill.LogRecords().AppendEmpty()
+		logRecord := sl.LogRecords().AppendEmpty()
 		logRecord.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
 		logRecord.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
 		logRecord.SetFlags(uint32(0x01))
@@ -80,7 +80,7 @@ func createLogData(numberOfLogs int) pdata.Logs {
 			logRecord.Attributes().Insert("map-value", getComplexAttributeValueMap())
 			logRecord.Body().SetStringVal("log contents")
 		case 6:
-			arrayVal := pdata.NewAttributeValueArray()
+			arrayVal := pdata.NewValueSlice()
 			arrayVal.SliceVal().AppendEmpty().SetStringVal("array")
 			logRecord.Attributes().Insert("array-value", arrayVal)
 			logRecord.Body().SetStringVal("log contents")

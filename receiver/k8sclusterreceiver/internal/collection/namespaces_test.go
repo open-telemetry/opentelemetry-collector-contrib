@@ -42,7 +42,7 @@ func TestNamespaceMetrics(t *testing.T) {
 		},
 	)
 
-	testutils.AssertMetrics(t, actualResourceMetrics[0].metrics[0], "k8s.namespace.phase",
+	testutils.AssertMetricsInt(t, actualResourceMetrics[0].metrics[0], "k8s.namespace.phase",
 		metricspb.MetricDescriptor_GAUGE_INT64, 0)
 }
 

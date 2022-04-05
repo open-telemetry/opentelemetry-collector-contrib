@@ -181,16 +181,16 @@ func TestConvert(t *testing.T) {
 	rls := pLogs.ResourceLogs().At(0)
 
 	if resAtts := rls.Resource().Attributes(); assert.Equal(t, 5, resAtts.Len()) {
-		m := pdata.NewAttributeMap()
+		m := pdata.NewMap()
 		m.InsertBool("bool", true)
 		m.InsertInt("int", 123)
 		m.InsertDouble("double", 12.34)
 		m.InsertString("string", "hello")
-		m.Insert("object", pdata.NewAttributeValueMap())
+		m.Insert("object", pdata.NewValueMap())
 		assert.EqualValues(t, m.Sort(), resAtts.Sort())
 	}
 
-	ills := rls.InstrumentationLibraryLogs()
+	ills := rls.ScopeLogs()
 	require.Equal(t, 1, ills.Len())
 
 	logs := ills.At(0).LogRecords()
@@ -202,17 +202,17 @@ func TestConvert(t *testing.T) {
 	assert.Equal(t, "Error", lr.SeverityText())
 
 	if atts := lr.Attributes(); assert.Equal(t, 5, atts.Len()) {
-		m := pdata.NewAttributeMap()
+		m := pdata.NewMap()
 		m.InsertBool("bool", true)
 		m.InsertInt("int", 123)
 		m.InsertDouble("double", 12.34)
 		m.InsertString("string", "hello")
-		m.Insert("object", pdata.NewAttributeValueMap())
+		m.Insert("object", pdata.NewValueMap())
 		assert.EqualValues(t, m.Sort(), atts.Sort())
 	}
 
-	if assert.Equal(t, pdata.AttributeValueTypeMap, lr.Body().Type()) {
-		m := pdata.NewAttributeMap()
+	if assert.Equal(t, pdata.ValueTypeMap, lr.Body().Type()) {
+		m := pdata.NewMap()
 		// Don't include a nested object because AttributeValueMap sorting
 		// doesn't sort recursively.
 		m.InsertBool("bool", true)
@@ -471,14 +471,14 @@ func TestAllConvertedEntriesAreSentAndReceived(t *testing.T) {
 					require.Equal(t, 1, rLogs.Len())
 
 					rLog := rLogs.At(0)
-					ills := rLog.InstrumentationLibraryLogs()
+					ills := rLog.ScopeLogs()
 					require.Equal(t, 1, ills.Len())
 
-					ill := ills.At(0)
+					sl := ills.At(0)
 
-					actualCount += ill.LogRecords().Len()
+					actualCount += sl.LogRecords().Len()
 
-					assert.LessOrEqual(t, uint(ill.LogRecords().Len()), tc.maxFlushCount,
+					assert.LessOrEqual(t, uint(sl.LogRecords().Len()), tc.maxFlushCount,
 						"Received more log records in one flush than configured by maxFlushCount",
 					)
 
@@ -507,7 +507,7 @@ func TestConverterCancelledContextCancellsTheFlush(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		pLogs := pdata.NewLogs()
-		ills := pLogs.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty()
+		ills := pLogs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
 
 		lr := convert(complexEntry())
 		lr.CopyTo(ills.LogRecords().AppendEmpty())
@@ -582,7 +582,7 @@ func TestConvertMetadata(t *testing.T) {
 	require.Equal(t, "hello", attVal.StringVal())
 
 	bod := result.Body()
-	require.Equal(t, pdata.AttributeValueTypeBool, bod.Type())
+	require.Equal(t, pdata.ValueTypeBool, bod.Type())
 	require.True(t, bod.BoolVal())
 }
 
@@ -736,7 +736,7 @@ func TestConvertNestedMapBody(t *testing.T) {
 	require.Equal(t, fmt.Sprintf("%v", unknownType), unknownAttVal.StringVal())
 }
 
-func anyToBody(body interface{}) pdata.AttributeValue {
+func anyToBody(body interface{}) pdata.Value {
 	entry := entry.New()
 	entry.Body = body
 	return convertAndDrill(entry).Body()
@@ -869,12 +869,12 @@ func BenchmarkConverter(b *testing.B) {
 						require.Equal(b, 1, rLogs.Len())
 
 						rLog := rLogs.At(0)
-						ills := rLog.InstrumentationLibraryLogs()
+						ills := rLog.ScopeLogs()
 						require.Equal(b, 1, ills.Len())
 
-						ill := ills.At(0)
+						sl := ills.At(0)
 
-						n += ill.LogRecords().Len()
+						n += sl.LogRecords().Len()
 
 					case <-timeoutTimer.C:
 						break forLoop

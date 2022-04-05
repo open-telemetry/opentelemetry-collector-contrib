@@ -263,7 +263,7 @@ func TestIntDataPointSliceAt(t *testing.T) {
 	setupDataPointCache()
 
 	instrLibName := "cloudwatch-otel"
-	labels := map[string]pdata.AttributeValue{"label": pdata.NewAttributeValueString("value")}
+	labels := map[string]interface{}{"label": "value"}
 
 	testDeltaCases := []struct {
 		testName        string
@@ -296,7 +296,7 @@ func TestIntDataPointSliceAt(t *testing.T) {
 			testDPS := pdata.NewNumberDataPointSlice()
 			testDP := testDPS.AppendEmpty()
 			testDP.SetIntVal(tc.value.(int64))
-			pdata.NewAttributeMapFromMap(labels).CopyTo(testDP.Attributes())
+			pdata.NewMapFromRaw(labels).CopyTo(testDP.Attributes())
 
 			dps := numberDataPointSlice{
 				instrLibName,
@@ -334,7 +334,7 @@ func TestDoubleDataPointSliceAt(t *testing.T) {
 	setupDataPointCache()
 
 	instrLibName := "cloudwatch-otel"
-	labels := map[string]pdata.AttributeValue{"label1": pdata.NewAttributeValueString("value1")}
+	labels := map[string]interface{}{"label1": "value1"}
 
 	testDeltaCases := []struct {
 		testName        string
@@ -367,7 +367,7 @@ func TestDoubleDataPointSliceAt(t *testing.T) {
 			testDPS := pdata.NewNumberDataPointSlice()
 			testDP := testDPS.AppendEmpty()
 			testDP.SetDoubleVal(tc.value.(float64))
-			pdata.NewAttributeMapFromMap(labels).CopyTo(testDP.Attributes())
+			pdata.NewMapFromRaw(labels).CopyTo(testDP.Attributes())
 
 			dps := numberDataPointSlice{
 				instrLibName,
@@ -394,7 +394,7 @@ func TestDoubleDataPointSliceAt(t *testing.T) {
 
 func TestHistogramDataPointSliceAt(t *testing.T) {
 	instrLibName := "cloudwatch-otel"
-	labels := map[string]pdata.AttributeValue{"label1": pdata.NewAttributeValueString("value1")}
+	labels := map[string]interface{}{"label1": "value1"}
 
 	testDPS := pdata.NewHistogramDataPointSlice()
 	testDP := testDPS.AppendEmpty()
@@ -402,7 +402,7 @@ func TestHistogramDataPointSliceAt(t *testing.T) {
 	testDP.SetSum(17.13)
 	testDP.SetBucketCounts([]uint64{1, 2, 3})
 	testDP.SetExplicitBounds([]float64{1, 2, 3})
-	pdata.NewAttributeMapFromMap(labels).CopyTo(testDP.Attributes())
+	pdata.NewMapFromRaw(labels).CopyTo(testDP.Attributes())
 
 	dps := histogramDataPointSlice{
 		instrLibName,
@@ -429,7 +429,7 @@ func TestSummaryDataPointSliceAt(t *testing.T) {
 	setupDataPointCache()
 
 	instrLibName := "cloudwatch-otel"
-	labels := map[string]pdata.AttributeValue{"label1": pdata.NewAttributeValueString("value1")}
+	labels := map[string]interface{}{"label1": "value1"}
 	metadataTimeStamp := time.Now().UnixNano() / int64(time.Millisecond)
 
 	testCases := []struct {
@@ -468,7 +468,7 @@ func TestSummaryDataPointSliceAt(t *testing.T) {
 			testQuantileValue = testDP.QuantileValues().AppendEmpty()
 			testQuantileValue.SetQuantile(100)
 			testQuantileValue.SetValue(float64(5))
-			pdata.NewAttributeMapFromMap(labels).CopyTo(testDP.Attributes())
+			pdata.NewMapFromRaw(labels).CopyTo(testDP.Attributes())
 
 			dps := summaryDataPointSlice{
 				instrLibName,
@@ -518,10 +518,10 @@ func TestCreateLabels(t *testing.T) {
 		"b": "B",
 		"c": "C",
 	}
-	labelsMap := pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
-		"a": pdata.NewAttributeValueString("A"),
-		"b": pdata.NewAttributeValueString("B"),
-		"c": pdata.NewAttributeValueString("C"),
+	labelsMap := pdata.NewMapFromRaw(map[string]interface{}{
+		"a": "A",
+		"b": "B",
+		"c": "C",
 	})
 
 	labels := createLabels(labelsMap, noInstrumentationLibraryName)
@@ -642,11 +642,11 @@ func TestGetDataPoints(t *testing.T) {
 
 		// Retrieve *pdata.Metric
 		rm := internaldata.OCToMetrics(nil, nil, ocMetrics).ResourceMetrics().At(0)
-		metric := rm.InstrumentationLibraryMetrics().At(0).Metrics().At(0)
+		metric := rm.ScopeMetrics().At(0).Metrics().At(0)
 
 		logger := zap.NewNop()
 
-		expectedAttributes := pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{"label1": pdata.NewAttributeValueString("value1")})
+		expectedAttributes := pdata.NewMapFromRaw(map[string]interface{}{"label1": "value1"})
 
 		t.Run(tc.testName, func(t *testing.T) {
 			setupDataPointCache()
@@ -739,7 +739,7 @@ func BenchmarkGetDataPoints(b *testing.B) {
 	ocMetrics = append(ocMetrics, generateTestDoubleSum("double-sum")...)
 	ocMetrics = append(ocMetrics, generateTestSummary("summary")...)
 	rms := internaldata.OCToMetrics(nil, nil, ocMetrics).ResourceMetrics()
-	metrics := rms.At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+	metrics := rms.At(0).ScopeMetrics().At(0).Metrics()
 	numMetrics := metrics.Len()
 
 	metadata := cWMetricMetadata{

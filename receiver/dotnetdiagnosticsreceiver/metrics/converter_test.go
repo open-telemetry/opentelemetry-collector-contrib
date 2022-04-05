@@ -60,7 +60,7 @@ func testMetricConversion(t *testing.T, metricFile int, expectedName string, exp
 	pdms := rawMetricsToPdata([]dotnet.Metric{rm}, time.Unix(42, 0), time.Unix(111, 0))
 	rms := pdms.ResourceMetrics()
 	assert.Equal(t, 1, rms.Len())
-	ilms := rms.At(0).InstrumentationLibraryMetrics()
+	ilms := rms.At(0).ScopeMetrics()
 	assert.Equal(t, 1, ilms.Len())
 	ms := ilms.At(0).Metrics()
 	assert.Equal(t, 1, ms.Len())

@@ -22,7 +22,7 @@ These are the metrics available for this scraper.
 
 **Highlighted metrics** are emitted by default.
 
-## Attributes
+## Metric attributes
 
 | Name | Description |
 | ---- | ----------- |

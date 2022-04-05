@@ -78,7 +78,7 @@ type timeseriesMapPdata struct {
 }
 
 // Get the timeseriesinfo for the timeseries associated with the metric and label values.
-func (tsm *timeseriesMapPdata) get(metric *pdata.Metric, kv pdata.AttributeMap) *timeseriesinfoPdata {
+func (tsm *timeseriesMapPdata) get(metric *pdata.Metric, kv pdata.Map) *timeseriesinfoPdata {
 	// This should only be invoked be functions called (directly or indirectly) by AdjustMetricSlice().
 	// The lock protecting tsm.tsiMap is acquired there.
 	name := metric.Name()
@@ -101,9 +101,9 @@ func (tsm *timeseriesMapPdata) get(metric *pdata.Metric, kv pdata.AttributeMap) 
 }
 
 // Create a unique timeseries signature consisting of the metric name and label values.
-func getTimeseriesSignaturePdata(name string, kv pdata.AttributeMap) string {
+func getTimeseriesSignaturePdata(name string, kv pdata.Map) string {
 	labelValues := make([]string, 0, kv.Len())
-	kv.Sort().Range(func(_ string, attrValue pdata.AttributeValue) bool {
+	kv.Sort().Range(func(_ string, attrValue pdata.Value) bool {
 		value := attrValue.StringVal()
 		if value != "" {
 			labelValues = append(labelValues, value)
@@ -248,8 +248,8 @@ func (ma *MetricsAdjusterPdata) AdjustMetrics(metrics *pdata.Metrics) int {
 	defer ma.tsm.Unlock()
 	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
 		rm := metrics.ResourceMetrics().At(i)
-		for j := 0; j < rm.InstrumentationLibraryMetrics().Len(); j++ {
-			ilm := rm.InstrumentationLibraryMetrics().At(j)
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			ilm := rm.ScopeMetrics().At(j)
 			for k := 0; k < ilm.Metrics().Len(); k++ {
 				metric := ilm.Metrics().At(k)
 				resets += ma.adjustMetric(&metric)

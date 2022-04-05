@@ -24,11 +24,11 @@ import (
 
 // fields represents metadata
 type fields struct {
-	orig     pdata.AttributeMap
+	orig     pdata.Map
 	replacer *strings.Replacer
 }
 
-func newFields(attrMap pdata.AttributeMap) fields {
+func newFields(attrMap pdata.Map) fields {
 	return fields{
 		orig:     attrMap,
 		replacer: strings.NewReplacer(",", "_", "=", ":", "\n", "_"),
@@ -38,7 +38,7 @@ func newFields(attrMap pdata.AttributeMap) fields {
 // string returns fields as ordered key=value string with `, ` as separator
 func (f fields) string() string {
 	returnValue := make([]string, 0, f.orig.Len())
-	f.orig.Range(func(k string, v pdata.AttributeValue) bool {
+	f.orig.Range(func(k string, v pdata.Value) bool {
 		returnValue = append(
 			returnValue,
 			fmt.Sprintf(

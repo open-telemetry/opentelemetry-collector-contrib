@@ -22,18 +22,18 @@ import (
 
 // spanAttributesToMap converts an opencensus proto Span_Attributes object into a map
 // of strings to generic types usable for sending events to honeycomb.
-func spanAttributesToMap(spanAttrs pdata.AttributeMap) map[string]interface{} {
+func spanAttributesToMap(spanAttrs pdata.Map) map[string]interface{} {
 	var attrs = make(map[string]interface{}, spanAttrs.Len())
 
-	spanAttrs.Range(func(key string, value pdata.AttributeValue) bool {
+	spanAttrs.Range(func(key string, value pdata.Value) bool {
 		switch value.Type() {
-		case pdata.AttributeValueTypeString:
+		case pdata.ValueTypeString:
 			attrs[key] = value.StringVal()
-		case pdata.AttributeValueTypeBool:
+		case pdata.ValueTypeBool:
 			attrs[key] = value.BoolVal()
-		case pdata.AttributeValueTypeInt:
+		case pdata.ValueTypeInt:
 			attrs[key] = value.IntVal()
-		case pdata.AttributeValueTypeDouble:
+		case pdata.ValueTypeDouble:
 			attrs[key] = value.DoubleVal()
 		}
 		return true

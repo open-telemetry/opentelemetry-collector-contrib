@@ -105,10 +105,10 @@ func SerializeMetric(logger *zap.Logger, prefix string, metric pdata.Metric, def
 	return metricLines, nil
 }
 
-func makeCombinedDimensions(labels pdata.AttributeMap, defaultDimensions, staticDimensions dimensions.NormalizedDimensionList) dimensions.NormalizedDimensionList {
+func makeCombinedDimensions(labels pdata.Map, defaultDimensions, staticDimensions dimensions.NormalizedDimensionList) dimensions.NormalizedDimensionList {
 	dimsFromLabels := []dimensions.Dimension{}
 
-	labels.Range(func(k string, v pdata.AttributeValue) bool {
+	labels.Range(func(k string, v pdata.Value) bool {
 		dimsFromLabels = append(dimsFromLabels, dimensions.NewDimension(k, v.AsString()))
 		return true
 	})
