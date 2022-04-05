@@ -69,7 +69,8 @@ func (t *traceTransformer) Span(orig pdata.Span) (span, error) {
 	startMillis, durationMillis := calculateTimes(orig)
 
 	source, attributesWithoutSource := getSourceAndResourceTags(t.resAttrs)
-	tags := attributesToTags(attributesWithoutSource, orig.Attributes())
+	tags := attributesToTagsReplaceSource(
+		newMap(attributesWithoutSource), orig.Attributes())
 	t.setRequiredTags(tags)
 
 	tags[labelSpanKind] = spanKind(orig)
@@ -108,29 +109,37 @@ func (t *traceTransformer) Span(orig pdata.Span) (span, error) {
 	}, nil
 }
 
-func getSourceAndResourceTags(attributes pdata.Map) (string, map[string]string) {
-	candidateKeys := []string{labelSource, conventions.AttributeHostName, "hostname", conventions.AttributeHostID}
-
+func getSourceAndResourceTagsAndSourceKey(attributes pdata.Map) (
+	string, map[string]string, string) {
 	attributesWithoutSource := map[string]string{}
-	var source string
-
-	extractTag := func(k string, v pdata.Value) bool {
+	attributes.Range(func(k string, v pdata.Value) bool {
 		attributesWithoutSource[k] = v.AsString()
 		return true
-	}
-
-	attributes.Range(extractTag)
-
+	})
+	candidateKeys := []string{labelSource, conventions.AttributeHostName, "hostname", conventions.AttributeHostID}
+	var source string
+	var sourceKey string
 	for _, key := range candidateKeys {
 		if value, isFound := attributesWithoutSource[key]; isFound {
 			source = value
+			sourceKey = key
 			delete(attributesWithoutSource, key)
 			break
 		}
 	}
 
 	//returning an empty source is fine as wavefront.go.sdk will set it up to a default value(os.hostname())
+	return source, attributesWithoutSource, sourceKey
+}
+
+func getSourceAndResourceTags(attributes pdata.Map) (string, map[string]string) {
+	source, attributesWithoutSource, _ := getSourceAndResourceTagsAndSourceKey(attributes)
 	return source, attributesWithoutSource
+}
+
+func getSourceAndKey(attributes pdata.Map) (string, string) {
+	source, _, sourceKey := getSourceAndResourceTagsAndSourceKey(attributes)
+	return source, sourceKey
 }
 
 func spanKind(span pdata.Span) string {
@@ -170,7 +179,7 @@ func eventsToLogs(events pdata.SpanEventSlice) []senders.SpanLog {
 	var result []senders.SpanLog
 	for i := 0; i < events.Len(); i++ {
 		e := events.At(i)
-		fields := attributesToTags(nil, e.Attributes())
+		fields := attributesToTagsReplaceSource(e.Attributes())
 		fields[labelEventName] = e.Name()
 		result = append(result, senders.SpanLog{
 			Timestamp: int64(e.Timestamp()) / time.Microsecond.Nanoseconds(), // Timestamp is in microseconds
@@ -192,25 +201,36 @@ func calculateTimes(span pdata.Span) (int64, int64) {
 	return startMillis, durationMillis
 }
 
-func attributesToTags(attributesWithoutSource map[string]string, attributes pdata.Map) map[string]string {
-	tags := make(map[string]string)
-
-	for key, val := range attributesWithoutSource {
-		tags[key] = val
-	}
-
-	// Since AttributeMaps are processed later, its values overwrite earlier ones
-	attributes.Range(func(key string, value pdata.Value) bool {
-		tags[key] = value.AsString()
-		return true
-	})
-
-	if value, isFound := tags[labelSource]; isFound {
-		source := value
-		delete(tags, labelSource)
-		tags["_source"] = source
+func attributesToTags(attributes ...pdata.Map) map[string]string {
+	tags := map[string]string{}
+	for _, att := range attributes {
+		att.Range(func(k string, v pdata.Value) bool {
+			tags[k] = v.AsString()
+			return true
+		})
 	}
 	return tags
+}
+
+func replaceSource(tags map[string]string) {
+	if value, isFound := tags[labelSource]; isFound {
+		delete(tags, labelSource)
+		tags["_source"] = value
+	}
+}
+
+func attributesToTagsReplaceSource(attributes ...pdata.Map) map[string]string {
+	tags := attributesToTags(attributes...)
+	replaceSource(tags)
+	return tags
+}
+
+func newMap(tags map[string]string) pdata.Map {
+	valueMap := make(map[string]interface{}, len(tags))
+	for key, value := range tags {
+		valueMap[key] = value
+	}
+	return pdata.NewMapFromRaw(valueMap)
 }
 
 func errorTagsFromStatus(status pdata.SpanStatus) map[string]string {

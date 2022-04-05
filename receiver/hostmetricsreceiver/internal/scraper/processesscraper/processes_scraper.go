@@ -89,7 +89,7 @@ func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 	now := pdata.NewTimestampFromTime(time.Now())
 
 	md := pdata.NewMetrics()
-	metrics := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics()
+	metrics := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
 	metrics.EnsureCapacity(metricsLength)
 
 	processMetadata, err := s.getProcessesMetadata()

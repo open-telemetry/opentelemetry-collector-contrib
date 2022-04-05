@@ -270,46 +270,37 @@ func TestCompaction(t *testing.T) {
 	path := filepath.Join(tempDir, file.Name())
 	stats, err := os.Stat(path)
 	require.NoError(t, err)
-	newStats := stats
 
 	var key string
 	i := 0
 
-	// add data until database file changes size (we are checking compacted size)
-	for newStats.Size() <= stats.Size() {
+	// magic numbers giving enough data to force bbolt to allocate a new page
+	// see https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/9004 for some discussion
+	numEntries := 50
+	entrySize := 512
+	entry := make([]byte, entrySize)
+
+	// add the data to the db
+	for i = 0; i < numEntries; i++ {
 		key = fmt.Sprintf("key_%d", i)
-		err = client.Set(ctx, key, []byte(key))
+		err = client.Set(ctx, key, entry)
 		require.NoError(t, err)
-
-		// compact before checking size
-		c, fok := client.(*fileStorageClient)
-		require.True(t, fok)
-		client, err = c.Compact(ctx, tempDir, cfg.Timeout, 1)
-		require.NoError(t, err)
-
-		// check size after compaction
-		newStats, err = os.Stat(path)
-		require.NoError(t, err)
-		i++
 	}
 
-	stats = newStats
-
-	// compact again just in case
+	// compact the db
 	c, ok := client.(*fileStorageClient)
 	require.True(t, ok)
 	client, err = c.Compact(ctx, tempDir, cfg.Timeout, 1)
 	require.NoError(t, err)
 
 	// check size after compaction
-	newStats, err = os.Stat(path)
+	newStats, err := os.Stat(path)
 	require.NoError(t, err)
-	require.Equal(t, stats.Size(), newStats.Size())
+	require.Less(t, stats.Size(), newStats.Size())
 
 	// remove data from database
-	for i = i - 1; i >= 0; i-- {
+	for i = 0; i < numEntries; i++ {
 		key = fmt.Sprintf("key_%d", i)
-		// Set the data
 		err = client.Delete(ctx, key)
 		require.NoError(t, err)
 	}
@@ -321,6 +312,7 @@ func TestCompaction(t *testing.T) {
 	require.NoError(t, err)
 
 	// check size
+	stats = newStats
 	newStats, err = os.Stat(path)
 	require.NoError(t, err)
 	require.Less(t, newStats.Size(), stats.Size())

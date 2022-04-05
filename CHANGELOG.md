@@ -4,10 +4,12 @@
 
 ### 💡 Enhancements 💡
 
+- `tanzuobservabilityexporter`: Use resourcetotelemetry helper (#8338)
 - `cmd/mdatagen`: Add resource attributes definition to metadata.yaml and move `pdata.Metrics` creation to the
   generated code (#5270) 
 - Add `make crosslink` target to ensure replace statements are included in `go.mod` for all transitive dependencies within repository (#8822)
 - `datadogexporter`: Add `metrics::summaries::mode` to specify export mode for summaries (#8846)
+- `filestorageextension`: Change bbolt DB settings for better performance (#9004)
 
 ### 🛑 Breaking changes 🛑
 
