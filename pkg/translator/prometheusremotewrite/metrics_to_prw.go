@@ -46,11 +46,11 @@ func FromMetrics(md pdata.Metrics, settings Settings) (tsMap map[string]*prompb.
 	for i := 0; i < resourceMetricsSlice.Len(); i++ {
 		resourceMetrics := resourceMetricsSlice.At(i)
 		resource := resourceMetrics.Resource()
-		instrumentationLibraryMetricsSlice := resourceMetrics.ScopeMetrics()
+		scopeMetricsSlice := resourceMetrics.ScopeMetrics()
 		// TODO: add resource attributes as labels, probably in next PR
-		for j := 0; j < instrumentationLibraryMetricsSlice.Len(); j++ {
-			instrumentationLibraryMetrics := instrumentationLibraryMetricsSlice.At(j)
-			metricSlice := instrumentationLibraryMetrics.Metrics()
+		for j := 0; j < scopeMetricsSlice.Len(); j++ {
+			scopeMetrics := scopeMetricsSlice.At(j)
+			metricSlice := scopeMetrics.Metrics()
 
 			// TODO: decide if instrumentation library information should be exported as labels
 			for k := 0; k < metricSlice.Len(); k++ {
