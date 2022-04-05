@@ -4,6 +4,7 @@
 
 ### 💡 Enhancements 💡
 
+- `tanzuobservabilityexporter`: Use resourcetotelemetry helper (#8338)
 - `cmd/mdatagen`: Add resource attributes definition to metadata.yaml and move `pdata.Metrics` creation to the
   generated code (#5270) 
 - Add `make crosslink` target to ensure replace statements are included in `go.mod` for all transitive dependencies within repository (#8822)
