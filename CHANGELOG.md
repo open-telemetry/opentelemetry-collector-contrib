@@ -29,6 +29,10 @@
 
 ### 🚀 New components 🚀
 
+### 🧰 Bug fixes 🧰
+
+- `prometheusreceiver`: Fix issues with relabelling the `job` and `instance` labels. (#8780)
+
 ## v0.48.0
 
 ### 💡 Enhancements 💡

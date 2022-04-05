@@ -113,6 +113,7 @@ var (
 
 type testData struct {
 	name            string
+	relabeledJob    string // Used when relabeling or honor_labels changes the target to something other than 'name'.
 	pages           []mockPrometheusResponse
 	attributes      pdata.Map
 	validateScrapes bool
@@ -587,9 +588,13 @@ func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, s
 	// Stop once we have evaluated all expected results, any others are superfluous.
 	for _, target := range targets[:lep] {
 		t.Run(target.name, func(t *testing.T) {
-			scrapes := pResults[target.name]
+			name := target.name
+			if target.relabeledJob != "" {
+				name = target.relabeledJob
+			}
+			scrapes := pResults[name]
 			if !target.validateScrapes {
-				scrapes = getValidScrapes(t, pResults[target.name])
+				scrapes = getValidScrapes(t, pResults[name])
 			}
 			target.validateFunc(t, target, scrapes)
 		})

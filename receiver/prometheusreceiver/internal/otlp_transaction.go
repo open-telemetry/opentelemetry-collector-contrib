@@ -38,7 +38,6 @@ type transactionPdata struct {
 	useStartTimeMetric   bool
 	startTimeMetricRegex string
 	sink                 consumer.Metrics
-	metadataService      *metadataService
 	externalLabels       labels.Labels
 	nodeResource         *pdata.Resource
 	logger               *zap.Logger
@@ -55,7 +54,6 @@ type txConfig struct {
 	useStartTimeMetric   bool
 	startTimeMetricRegex string
 	receiverID           config.ComponentID
-	ms                   *metadataService
 	sink                 consumer.Metrics
 	externalLabels       labels.Labels
 	settings             component.ReceiverCreateSettings
@@ -71,7 +69,6 @@ func newTransactionPdata(ctx context.Context, txc *txConfig) *transactionPdata {
 		useStartTimeMetric:   txc.useStartTimeMetric,
 		startTimeMetricRegex: txc.startTimeMetricRegex,
 		receiverID:           txc.receiverID,
-		metadataService:      txc.ms,
 		externalLabels:       txc.externalLabels,
 		logger:               txc.settings.Logger,
 		obsrecv:              obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: txc.receiverID, Transport: transport, ReceiverCreateSettings: txc.settings}),
@@ -105,13 +102,14 @@ func (t *transactionPdata) AppendExemplar(ref storage.SeriesRef, l labels.Labels
 }
 
 func (t *transactionPdata) initTransaction(labels labels.Labels) error {
+	metadataCache, err := getMetadataCache(t.ctx)
+	if err != nil {
+		return err
+	}
+
 	job, instance := labels.Get(model.JobLabel), labels.Get(model.InstanceLabel)
 	if job == "" || instance == "" {
 		return errNoJobInstance
-	}
-	metadataCache, err := t.metadataService.Get(job, instance)
-	if err != nil {
-		return err
 	}
 	if t.jobsMap != nil {
 		t.job = job

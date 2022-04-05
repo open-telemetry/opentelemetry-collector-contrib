@@ -6,13 +6,6 @@ processors:
   batch:
     send_batch_size: 50
     timeout: 5s
-  # Enabling the memory_limiter is strongly recommended for every pipeline.
-  # Configuration is based on the amount of memory allocated to the collector.
-  # The configuration below assumes 2GB of memory. In general, the limit should be 90% of
-  # the collector's memory up to 2GB, and the spike should be 25% of the
-  # collector's memory up to 2GB.
-  # For more information, see
-  # https://github.com/open-telemetry/opentelemetry-collector/blob/main/processor/memorylimiterprocessor/README.md
   memory_limiter:
     check_interval: 2s
     limit_mib: 1800
