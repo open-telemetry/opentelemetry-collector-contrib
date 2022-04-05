@@ -336,6 +336,38 @@ func TestGetSourceAndResourceTags(t *testing.T) {
 	}
 }
 
+func TestGetSourceAndKey(t *testing.T) {
+	resAttrs := pdata.NewMap()
+	resAttrs.InsertString(labelSource, "some_source")
+	resAttrs.InsertString(conventions.AttributeHostName, "test_host.name")
+
+	source, sourceKey := getSourceAndKey(resAttrs)
+	assert.Equal(t, "some_source", source)
+	assert.Equal(t, labelSource, sourceKey)
+}
+
+func TestGetSourceAndKeyNotFound(t *testing.T) {
+	resAttrs := pdata.NewMap()
+	resAttrs.InsertString("foo", "some_source")
+	resAttrs.InsertString("bar", "test_host.name")
+
+	source, sourceKey := getSourceAndKey(resAttrs)
+	assert.Equal(t, "", source)
+	assert.Equal(t, "", sourceKey)
+}
+
+func TestAttributesToTagsReplaceSource(t *testing.T) {
+	attrMap1 := newMap(map[string]string{"customer": "aws", "env": "dev"})
+	attrMap2 := newMap(map[string]string{"env": "prod", "source": "ethernet"})
+	result := attributesToTagsReplaceSource(attrMap1, attrMap2)
+
+	// attrMap2 takes precedence because it is last, so "env"->"prod" not "dev"
+	assert.Equal(
+		t,
+		map[string]string{"env": "prod", "customer": "aws", "_source": "ethernet"},
+		result)
+}
+
 func spanWithKind(kind pdata.SpanKind) pdata.Span {
 	span := pdata.NewSpan()
 	span.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
