@@ -377,6 +377,10 @@ func (c *Config) Validate() error {
 }
 
 func (c *Config) Unmarshal(configMap *config.Map) error {
+	if err := handleRemovedSettings(configMap); err != nil {
+		return err
+	}
+
 	err := configMap.UnmarshalExact(c)
 	if err != nil {
 		return err
