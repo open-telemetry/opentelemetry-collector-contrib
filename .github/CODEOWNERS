@@ -89,6 +89,7 @@ pkg/batchpersignal/                                  @open-telemetry/collector-c
 pkg/resourcetotelemetry/                             @open-telemetry/collector-contrib-approvers @mx-psi
 
 processor/attributesprocessor/                       @open-telemetry/collector-contrib-approvers @boostchicken @pmm-sumo
+processor/cumulativetodeltaprocessor/                @open-telemetry/collector-contrib-approvers @TylerHelmuth
 processor/filterprocessor/                           @open-telemetry/collector-contrib-approvers @boostchicken @pmm-sumo
 processor/groupbyattrsprocessor/                     @open-telemetry/collector-contrib-approvers @pmm-sumo
 processor/groupbytraceprocessor/                     @open-telemetry/collector-contrib-approvers @jpkrohling
