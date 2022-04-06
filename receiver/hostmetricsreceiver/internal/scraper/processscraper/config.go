@@ -66,12 +66,6 @@ type OwnerMatchConfig struct {
 	Owners           []string `mapstructure:"process_owner"`
 }
 
-// PidMatchConfig filters by PID
-type PidMatchConfig struct {
-	filterset.Config `mapstructure:",squash"`
-	Pids             []int32 `mapstructure:"process_pid"`
-}
-
 // FilterConfig is used to filter processes that are reported on
 type FilterConfig struct {
 	// Include specifies a filter on the process names that should be included from the generated metrics.
