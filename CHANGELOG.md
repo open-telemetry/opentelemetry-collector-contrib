@@ -4,7 +4,6 @@
 
 ### 💡 Enhancements 💡
 - `splunkhecexporter`: Add support for batching traces (#8995)
-
 - `hostmetricsreceiver`: Migrate Processes scraper to the Metrics builder (#8855)
 - `tanzuobservabilityexporter`: Use resourcetotelemetry helper (#8338)
 - Add `make crosslink` target to ensure replace statements are included in `go.mod` for all transitive dependencies within repository (#8822)
@@ -12,6 +11,7 @@
 - `jaegerremotesamplingextension`: Add local and remote sampling stores (#8818)
 - `attributesprocessor`: Add support to filter on log body (#8996)
 - `prometheusremotewriteexporter`: Translate resource attributes to the target info metric (#8493)
+- `cmd/mdatagen`: Add `sem_conv_version` field to metadata.yaml that is used to set metrics SchemaURL (#9010)
 
 ### 🛑 Breaking changes 🛑
 
