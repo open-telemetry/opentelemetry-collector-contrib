@@ -17,6 +17,7 @@ package regex
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v2"
@@ -66,19 +67,23 @@ func TestRegexParserInvalidType(t *testing.T) {
 
 func TestParserRegex(t *testing.T) {
 	cases := []struct {
-		name       string
-		configure  func(*RegexParserConfig)
-		inputBody  interface{}
-		outputBody interface{}
+		name      string
+		configure func(*RegexParserConfig)
+		input     *entry.Entry
+		expected  *entry.Entry
 	}{
 		{
 			"RootString",
 			func(p *RegexParserConfig) {
 				p.Regex = "a=(?P<a>.*)"
 			},
-			"a=b",
-			map[string]interface{}{
-				"a": "b",
+			&entry.Entry{
+				Body: "a=b",
+			},
+			&entry.Entry{
+				Attributes: map[string]interface{}{
+					"a": "b",
+				},
 			},
 		},
 	}
@@ -95,12 +100,14 @@ func TestParserRegex(t *testing.T) {
 			fake := testutil.NewFakeOutput(t)
 			op.SetOutputs([]operator.Operator{fake})
 
-			entry := entry.New()
-			entry.Body = tc.inputBody
-			err = op.Process(context.Background(), entry)
+			ots := time.Now()
+			tc.input.ObservedTimestamp = ots
+			tc.expected.ObservedTimestamp = ots
+
+			err = op.Process(context.Background(), tc.input)
 			require.NoError(t, err)
 
-			fake.ExpectBody(t, tc.outputBody)
+			fake.ExpectEntry(t, tc.expected)
 		})
 	}
 }

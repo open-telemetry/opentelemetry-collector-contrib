@@ -47,19 +47,16 @@ func TestSyslogParser(t *testing.T) {
 			err = op.SetOutputs([]operator.Operator{fake})
 			require.NoError(t, err)
 
-			newEntry := entry.New()
+			newEntry := tc.Input
 			ots := newEntry.ObservedTimestamp
-			newEntry.Body = tc.InputBody
+
 			err = op.Process(context.Background(), newEntry)
 			require.NoError(t, err)
 
 			select {
 			case e := <-fake.Received:
 				require.Equal(t, ots, e.ObservedTimestamp)
-				require.Equal(t, tc.ExpectedBody, e.Body)
-				require.Equal(t, tc.ExpectedTimestamp, e.Timestamp)
-				require.Equal(t, tc.ExpectedSeverity, e.Severity)
-				require.Equal(t, tc.ExpectedSeverityText, e.SeverityText)
+				require.Equal(t, tc.Expect, newEntry)
 			case <-time.After(time.Second):
 				require.FailNow(t, "Timed out waiting for entry to be processed")
 			}

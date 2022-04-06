@@ -86,8 +86,8 @@ func TestParserCSV(t *testing.T) {
 	cases := []struct {
 		name             string
 		configure        func(*CSVParserConfig)
-		inputEntry       []entry.Entry
-		outputBody       []interface{}
+		inputEntries     []entry.Entry
+		expectedEntries  []entry.Entry
 		expectBuildErr   bool
 		expectProcessErr bool
 	}{
@@ -101,11 +101,13 @@ func TestParserCSV(t *testing.T) {
 					Body: "stanza,INFO,started agent",
 				},
 			},
-			[]interface{}{
-				map[string]interface{}{
-					"name": "stanza",
-					"sev":  "INFO",
-					"msg":  "started agent",
+			[]entry.Entry{
+				{
+					Attributes: map[string]interface{}{
+						"name": "stanza",
+						"sev":  "INFO",
+						"msg":  "started agent",
+					},
 				},
 			},
 			false,
@@ -127,21 +129,27 @@ func TestParserCSV(t *testing.T) {
 					Body: "kernel,TRACE,oom",
 				},
 			},
-			[]interface{}{
-				map[string]interface{}{
-					"name": "stanza",
-					"sev":  "INFO",
-					"msg":  "started agent",
+			[]entry.Entry{
+				{
+					Attributes: map[string]interface{}{
+						"name": "stanza",
+						"sev":  "INFO",
+						"msg":  "started agent",
+					},
 				},
-				map[string]interface{}{
-					"name": "stanza",
-					"sev":  "ERROR",
-					"msg":  "agent killed",
+				{
+					Attributes: map[string]interface{}{
+						"name": "stanza",
+						"sev":  "ERROR",
+						"msg":  "agent killed",
+					},
 				},
-				map[string]interface{}{
-					"name": "kernel",
-					"sev":  "TRACE",
-					"msg":  "oom",
+				{
+					Attributes: map[string]interface{}{
+						"name": "kernel",
+						"sev":  "TRACE",
+						"msg":  "oom",
+					},
 				},
 			},
 			false,
@@ -158,13 +166,15 @@ func TestParserCSV(t *testing.T) {
 					Body: "stanza;Evergreen;1;555-5555;agent",
 				},
 			},
-			[]interface{}{
-				map[string]interface{}{
-					"name":     "stanza",
-					"address":  "Evergreen",
-					"age":      "1",
-					"phone":    "555-5555",
-					"position": "agent",
+			[]entry.Entry{
+				{
+					Attributes: map[string]interface{}{
+						"name":     "stanza",
+						"address":  "Evergreen",
+						"age":      "1",
+						"phone":    "555-5555",
+						"position": "agent",
+					},
 				},
 			},
 			false,
@@ -184,12 +194,15 @@ func TestParserCSV(t *testing.T) {
 					Body: "stanza dev,1,400,555-555-5555",
 				},
 			},
-			[]interface{}{
-				map[string]interface{}{
-					"name":   "stanza dev",
-					"age":    "1",
-					"height": "400",
-					"number": "555-555-5555",
+			[]entry.Entry{
+				{
+					Attributes: map[string]interface{}{
+						"Fields": "name,age,height,number",
+						"name":   "stanza dev",
+						"age":    "1",
+						"height": "400",
+						"number": "555-555-5555",
+					},
 				},
 			},
 			false,
@@ -221,24 +234,33 @@ func TestParserCSV(t *testing.T) {
 					Body: "1,2,3,4,5,6",
 				},
 			},
-			[]interface{}{
-				map[string]interface{}{
-					"name":   "stanza dev",
-					"age":    "1",
-					"height": "400",
-					"number": "555-555-5555",
+			[]entry.Entry{
+				{
+					Attributes: map[string]interface{}{
+						"Fields": "name,age,height,number",
+						"name":   "stanza dev",
+						"age":    "1",
+						"height": "400",
+						"number": "555-555-5555",
+					},
 				},
-				map[string]interface{}{
-					"x": "000100",
-					"y": "2",
+				{
+					Attributes: map[string]interface{}{
+						"Fields": "x,y",
+						"x":      "000100",
+						"y":      "2",
+					},
 				},
-				map[string]interface{}{
-					"a": "1",
-					"b": "2",
-					"c": "3",
-					"d": "4",
-					"e": "5",
-					"f": "6",
+				{
+					Attributes: map[string]interface{}{
+						"Fields": "a,b,c,d,e,f",
+						"a":      "1",
+						"b":      "2",
+						"c":      "3",
+						"d":      "4",
+						"e":      "5",
+						"f":      "6",
+					},
 				},
 			},
 			false,
@@ -258,12 +280,15 @@ func TestParserCSV(t *testing.T) {
 					Body: "stanza dev	1	400	555-555-5555",
 				},
 			},
-			[]interface{}{
-				map[string]interface{}{
-					"name":   "stanza dev",
-					"age":    "1",
-					"height": "400",
-					"number": "555-555-5555",
+			[]entry.Entry{
+				{
+					Attributes: map[string]interface{}{
+						"columns": "name	age	height	number",
+						"name":   "stanza dev",
+						"age":    "1",
+						"height": "400",
+						"number": "555-555-5555",
+					},
 				},
 			},
 			false,
@@ -280,12 +305,14 @@ func TestParserCSV(t *testing.T) {
 					Body: "stanza dev,1,400,555-555-5555",
 				},
 			},
-			[]interface{}{
-				map[string]interface{}{
-					"name":   "stanza dev",
-					"age":    "1",
-					"height": "400",
-					"number": "555-555-5555",
+			[]entry.Entry{
+				{
+					Body: map[string]interface{}{
+						"name":   "stanza dev",
+						"age":    "1",
+						"height": "400",
+						"number": "555-555-5555",
+					},
 				},
 			},
 			false,
@@ -301,12 +328,14 @@ func TestParserCSV(t *testing.T) {
 					Body: "stanza,1,400,555-555-5555",
 				},
 			},
-			[]interface{}{
-				map[string]interface{}{
-					"name":   "stanza",
-					"age":    "1",
-					"height": "400",
-					"number": "555-555-5555",
+			[]entry.Entry{
+				{
+					Body: map[string]interface{}{
+						"name":   "stanza",
+						"age":    "1",
+						"height": "400",
+						"number": "555-555-5555",
+					},
 				},
 			},
 			true,
@@ -322,18 +351,20 @@ func TestParserCSV(t *testing.T) {
 					Body: "20210316 17:08:01,oiq-int-mysql,load,oiq-int-mysql.bluemedora.localnet,5,0,DISCONNECT,,,0",
 				},
 			},
-			[]interface{}{
-				map[string]interface{}{
-					"timestamp":    "20210316 17:08:01",
-					"serverhost":   "oiq-int-mysql",
-					"username":     "load",
-					"host":         "oiq-int-mysql.bluemedora.localnet",
-					"connectionid": "5",
-					"queryid":      "0",
-					"operation":    "DISCONNECT",
-					"database":     "",
-					"object":       "",
-					"retcode":      "0",
+			[]entry.Entry{
+				{
+					Attributes: map[string]interface{}{
+						"timestamp":    "20210316 17:08:01",
+						"serverhost":   "oiq-int-mysql",
+						"username":     "load",
+						"host":         "oiq-int-mysql.bluemedora.localnet",
+						"connectionid": "5",
+						"queryid":      "0",
+						"operation":    "DISCONNECT",
+						"database":     "",
+						"object":       "",
+						"retcode":      "0",
+					},
 				},
 			},
 			false,
@@ -349,13 +380,15 @@ func TestParserCSV(t *testing.T) {
 					Body: "stanza,Evergreen,,555-5555,agent",
 				},
 			},
-			[]interface{}{
-				map[string]interface{}{
-					"name":     "stanza",
-					"address":  "Evergreen",
-					"age":      "",
-					"phone":    "555-5555",
-					"position": "agent",
+			[]entry.Entry{
+				{
+					Attributes: map[string]interface{}{
+						"name":     "stanza",
+						"address":  "Evergreen",
+						"age":      "",
+						"phone":    "555-5555",
+						"position": "agent",
+					},
 				},
 			},
 			false,
@@ -372,13 +405,15 @@ func TestParserCSV(t *testing.T) {
 					Body: "stanza	Evergreen	1	555-5555	agent",
 				},
 			},
-			[]interface{}{
-				map[string]interface{}{
-					"name":     "stanza",
-					"address":  "Evergreen",
-					"age":      "1",
-					"phone":    "555-5555",
-					"position": "agent",
+			[]entry.Entry{
+				{
+					Attributes: map[string]interface{}{
+						"name":     "stanza",
+						"address":  "Evergreen",
+						"age":      "1",
+						"phone":    "555-5555",
+						"position": "agent",
+					},
 				},
 			},
 			false,
@@ -394,13 +429,15 @@ func TestParserCSV(t *testing.T) {
 					Body: "stanza,\"Evergreen,49508\",1,555-5555,agent",
 				},
 			},
-			[]interface{}{
-				map[string]interface{}{
-					"name":     "stanza",
-					"address":  "Evergreen,49508",
-					"age":      "1",
-					"phone":    "555-5555",
-					"position": "agent",
+			[]entry.Entry{
+				{
+					Attributes: map[string]interface{}{
+						"name":     "stanza",
+						"address":  "Evergreen,49508",
+						"age":      "1",
+						"phone":    "555-5555",
+						"position": "agent",
+					},
 				},
 			},
 			false,
@@ -416,13 +453,15 @@ func TestParserCSV(t *testing.T) {
 					Body: "\"bob \"\"the man\"\"\",Evergreen,1,555-5555,agent",
 				},
 			},
-			[]interface{}{
-				map[string]interface{}{
-					"name":     "bob \"the man\"",
-					"address":  "Evergreen",
-					"age":      "1",
-					"phone":    "555-5555",
-					"position": "agent",
+			[]entry.Entry{
+				{
+					Attributes: map[string]interface{}{
+						"name":     "bob \"the man\"",
+						"address":  "Evergreen",
+						"age":      "1",
+						"phone":    "555-5555",
+						"position": "agent",
+					},
 				},
 			},
 			false,
@@ -439,12 +478,14 @@ func TestParserCSV(t *testing.T) {
 					Body: "stanza,1,400,555-555-5555",
 				},
 			},
-			[]interface{}{
-				map[string]interface{}{
-					"name":   "stanza",
-					"age":    "1",
-					"height": "400",
-					"number": "555-555-5555",
+			[]entry.Entry{
+				{
+					Attributes: map[string]interface{}{
+						"name":   "stanza",
+						"age":    "1",
+						"height": "400",
+						"number": "555-555-5555",
+					},
 				},
 			},
 			true,
@@ -462,12 +503,14 @@ func TestParserCSV(t *testing.T) {
 					Body: "stanza,1,400,555-555-5555",
 				},
 			},
-			[]interface{}{
-				map[string]interface{}{
-					"name":   "stanza",
-					"age":    "1",
-					"height": "400",
-					"number": "555-555-5555",
+			[]entry.Entry{
+				{
+					Attributes: map[string]interface{}{
+						"name":   "stanza",
+						"age":    "1",
+						"height": "400",
+						"number": "555-555-5555",
+					},
 				},
 			},
 			true,
@@ -484,12 +527,14 @@ func TestParserCSV(t *testing.T) {
 					Body: "1,400,555-555-5555",
 				},
 			},
-			[]interface{}{
-				map[string]interface{}{
-					"name":   "stanza",
-					"age":    "1",
-					"height": "400",
-					"number": "555-555-5555",
+			[]entry.Entry{
+				{
+					Attributes: map[string]interface{}{
+						"name":   "stanza",
+						"age":    "1",
+						"height": "400",
+						"number": "555-555-5555",
+					},
 				},
 			},
 			false,
@@ -506,12 +551,14 @@ func TestParserCSV(t *testing.T) {
 					Body: "stanza:1:400:555-555-5555",
 				},
 			},
-			[]interface{}{
-				map[string]interface{}{
-					"name":   "stanza",
-					"age":    "1",
-					"height": "400",
-					"number": "555-555-5555",
+			[]entry.Entry{
+				{
+					Attributes: map[string]interface{}{
+						"name":   "stanza",
+						"age":    "1",
+						"height": "400",
+						"number": "555-555-5555",
+					},
 				},
 			},
 			false,
@@ -529,12 +576,14 @@ func TestParserCSV(t *testing.T) {
 					Body: "stanza \"log parser\",1,6ft,5",
 				},
 			},
-			[]interface{}{
-				map[string]interface{}{
-					"name":   "stanza \"log parser\"",
-					"age":    "1",
-					"height": "6ft",
-					"number": "5",
+			[]entry.Entry{
+				{
+					Attributes: map[string]interface{}{
+						"name":   "stanza \"log parser\"",
+						"age":    "1",
+						"height": "6ft",
+						"number": "5",
+					},
 				},
 			},
 			false,
@@ -558,7 +607,9 @@ func TestParserCSV(t *testing.T) {
 			fake := testutil.NewFakeOutput(t)
 			op.SetOutputs([]operator.Operator{fake})
 
-			for i, inputEntry := range tc.inputEntry {
+			ots := time.Now()
+			for i, inputEntry := range tc.inputEntries {
+				inputEntry.ObservedTimestamp = ots
 				err = op.Process(context.Background(), &inputEntry)
 				if tc.expectProcessErr {
 					require.Error(t, err)
@@ -566,7 +617,9 @@ func TestParserCSV(t *testing.T) {
 				}
 				require.NoError(t, err)
 
-				fake.ExpectBody(t, tc.outputBody[i])
+				expectedEntry := tc.expectedEntries[i]
+				expectedEntry.ObservedTimestamp = ots
+				fake.ExpectEntry(t, &expectedEntry)
 			}
 		})
 	}
@@ -783,6 +836,7 @@ cc""",dddd,eeee`,
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			cfg := NewCSVParserConfig("test")
+			cfg.ParseTo = entry.NewBodyField()
 			cfg.OutputIDs = []string{"fake"}
 			cfg.Header = "A,B,C,D,E"
 

@@ -21,13 +21,10 @@ import (
 )
 
 type Case struct {
-	Name                 string
-	Config               *SyslogParserConfig
-	InputBody            interface{}
-	ExpectedTimestamp    time.Time
-	ExpectedBody         interface{}
-	ExpectedSeverity     entry.Severity
-	ExpectedSeverityText string
+	Name   string
+	Config *SyslogParserConfig
+	Input  *entry.Entry
+	Expect *entry.Entry
 }
 
 func testLocations() (map[string]*time.Location, error) {
@@ -62,17 +59,21 @@ func CreateCases(basicConfig func() *SyslogParserConfig) ([]Case, error) {
 				cfg.Location = location["utc"].String()
 				return cfg
 			}(),
-			"<34>Jan 12 06:30:00 1.2.3.4 apache_server: test message",
-			time.Date(time.Now().Year(), 1, 12, 6, 30, 0, 0, location["utc"]),
-			map[string]interface{}{
-				"appname":  "apache_server",
-				"facility": 4,
-				"hostname": "1.2.3.4",
-				"message":  "test message",
-				"priority": 34,
+			&entry.Entry{
+				Body: "<34>Jan 12 06:30:00 1.2.3.4 apache_server: test message",
 			},
-			entry.Error2,
-			"crit",
+			&entry.Entry{
+				Timestamp:    time.Date(time.Now().Year(), 1, 12, 6, 30, 0, 0, location["utc"]),
+				Severity:     entry.Error2,
+				SeverityText: "crit",
+				Attributes: map[string]interface{}{
+					"appname":  "apache_server",
+					"facility": 4,
+					"hostname": "1.2.3.4",
+					"message":  "test message",
+					"priority": 34,
+				},
+			},
 		},
 		{
 			"RFC3164Detroit",
@@ -82,17 +83,21 @@ func CreateCases(basicConfig func() *SyslogParserConfig) ([]Case, error) {
 				cfg.Location = location["detroit"].String()
 				return cfg
 			}(),
-			"<34>Jan 12 06:30:00 1.2.3.4 apache_server: test message",
-			time.Date(time.Now().Year(), 1, 12, 6, 30, 0, 0, location["detroit"]),
-			map[string]interface{}{
-				"appname":  "apache_server",
-				"facility": 4,
-				"hostname": "1.2.3.4",
-				"message":  "test message",
-				"priority": 34,
+			&entry.Entry{
+				Body: "<34>Jan 12 06:30:00 1.2.3.4 apache_server: test message",
 			},
-			entry.Error2,
-			"crit",
+			&entry.Entry{
+				Timestamp:    time.Date(time.Now().Year(), 1, 12, 6, 30, 0, 0, location["detroit"]),
+				Severity:     entry.Error2,
+				SeverityText: "crit",
+				Attributes: map[string]interface{}{
+					"appname":  "apache_server",
+					"facility": 4,
+					"hostname": "1.2.3.4",
+					"message":  "test message",
+					"priority": 34,
+				},
+			},
 		},
 		{
 			"RFC3164Athens",
@@ -102,17 +107,21 @@ func CreateCases(basicConfig func() *SyslogParserConfig) ([]Case, error) {
 				cfg.Location = location["athens"].String()
 				return cfg
 			}(),
-			"<34>Jan 12 06:30:00 1.2.3.4 apache_server: test message",
-			time.Date(time.Now().Year(), 1, 12, 6, 30, 0, 0, location["athens"]),
-			map[string]interface{}{
-				"appname":  "apache_server",
-				"facility": 4,
-				"hostname": "1.2.3.4",
-				"message":  "test message",
-				"priority": 34,
+			&entry.Entry{
+				Body: "<34>Jan 12 06:30:00 1.2.3.4 apache_server: test message",
 			},
-			entry.Error2,
-			"crit",
+			&entry.Entry{
+				Timestamp:    time.Date(time.Now().Year(), 1, 12, 6, 30, 0, 0, location["athens"]),
+				Severity:     entry.Error2,
+				SeverityText: "crit",
+				Attributes: map[string]interface{}{
+					"appname":  "apache_server",
+					"facility": 4,
+					"hostname": "1.2.3.4",
+					"message":  "test message",
+					"priority": 34,
+				},
+			},
 		},
 		{
 			"RFC5424",
@@ -121,28 +130,32 @@ func CreateCases(basicConfig func() *SyslogParserConfig) ([]Case, error) {
 				cfg.Protocol = RFC5424
 				return cfg
 			}(),
-			`<86>1 2015-08-05T21:58:59.693Z 192.168.2.132 SecureAuth0 23108 ID52020 [SecureAuth@27389 UserHostAddress="192.168.2.132" Realm="SecureAuth0" UserID="Tester2" PEN="27389"] Found the user for retrieving user's profile`,
-			time.Date(2015, 8, 5, 21, 58, 59, 693000000, time.UTC),
-			map[string]interface{}{
-				"appname":  "SecureAuth0",
-				"facility": 10,
-				"hostname": "192.168.2.132",
-				"message":  "Found the user for retrieving user's profile",
-				"msg_id":   "ID52020",
-				"priority": 86,
-				"proc_id":  "23108",
-				"structured_data": map[string]map[string]string{
-					"SecureAuth@27389": {
-						"PEN":             "27389",
-						"Realm":           "SecureAuth0",
-						"UserHostAddress": "192.168.2.132",
-						"UserID":          "Tester2",
-					},
-				},
-				"version": 1,
+			&entry.Entry{
+				Body: `<86>1 2015-08-05T21:58:59.693Z 192.168.2.132 SecureAuth0 23108 ID52020 [SecureAuth@27389 UserHostAddress="192.168.2.132" Realm="SecureAuth0" UserID="Tester2" PEN="27389"] Found the user for retrieving user's profile`,
 			},
-			entry.Info,
-			"info",
+			&entry.Entry{
+				Timestamp:    time.Date(2015, 8, 5, 21, 58, 59, 693000000, time.UTC),
+				Severity:     entry.Info,
+				SeverityText: "info",
+				Attributes: map[string]interface{}{
+					"appname":  "SecureAuth0",
+					"facility": 10,
+					"hostname": "192.168.2.132",
+					"message":  "Found the user for retrieving user's profile",
+					"msg_id":   "ID52020",
+					"priority": 86,
+					"proc_id":  "23108",
+					"structured_data": map[string]map[string]string{
+						"SecureAuth@27389": {
+							"PEN":             "27389",
+							"Realm":           "SecureAuth0",
+							"UserHostAddress": "192.168.2.132",
+							"UserID":          "Tester2",
+						},
+					},
+					"version": 1,
+				},
+			},
 		},
 	}
 

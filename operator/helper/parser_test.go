@@ -491,8 +491,10 @@ func TestParserFields(t *testing.T) {
 				e := entry.New()
 				e.ObservedTimestamp = now
 				e.Body = map[string]interface{}{
-					"key": "value",
 					"one": map[string]interface{}{},
+				}
+				e.Attributes = map[string]interface{}{
+					"key": "value",
 				}
 				return e
 			},
@@ -515,10 +517,8 @@ func TestParserFields(t *testing.T) {
 			func() *entry.Entry {
 				e := entry.New()
 				e.ObservedTimestamp = now
-				e.Body = map[string]interface{}{
-					"key": "value",
-				}
 				e.Attributes = map[string]interface{}{
+					"key": "value",
 					"one": map[string]interface{}{},
 				}
 				return e
@@ -542,7 +542,7 @@ func TestParserFields(t *testing.T) {
 			func() *entry.Entry {
 				e := entry.New()
 				e.ObservedTimestamp = now
-				e.Body = map[string]interface{}{
+				e.Attributes = map[string]interface{}{
 					"key": "value",
 				}
 				e.Resource = map[string]interface{}{
@@ -596,7 +596,7 @@ func TestParserFields(t *testing.T) {
 			func() *entry.Entry {
 				e := entry.New()
 				e.ObservedTimestamp = now
-				e.Body = map[string]interface{}{"key": "value"}
+				e.Attributes = map[string]interface{}{"key": "value"}
 				return e
 			},
 		},
@@ -616,8 +616,10 @@ func TestParserFields(t *testing.T) {
 				e := entry.New()
 				e.ObservedTimestamp = now
 				e.Body = map[string]interface{}{
-					"key":      "value",
 					"original": keyValue,
+				}
+				e.Attributes = map[string]interface{}{
+					"key": "value",
 				}
 				return e
 			},
@@ -625,7 +627,7 @@ func TestParserFields(t *testing.T) {
 		{
 			"PreserveToOverwrite",
 			func(cfg *ParserConfig) {
-				dst := entry.NewBodyField("key")
+				dst := entry.NewAttributeField("key")
 				cfg.PreserveTo = &dst
 			},
 			func() *entry.Entry {
@@ -637,7 +639,7 @@ func TestParserFields(t *testing.T) {
 			func() *entry.Entry {
 				e := entry.New()
 				e.ObservedTimestamp = now
-				e.Body = map[string]interface{}{
+				e.Attributes = map[string]interface{}{
 					"key": keyValue,
 				}
 				return e
@@ -659,6 +661,9 @@ func TestParserFields(t *testing.T) {
 				e := entry.New()
 				e.ObservedTimestamp = now
 				e.Body = keyValue
+				e.Attributes = map[string]interface{}{
+					"key": "value",
+				}
 				return e
 			},
 		},
@@ -682,7 +687,9 @@ func TestParserFields(t *testing.T) {
 				e.ObservedTimestamp = now
 				e.Body = map[string]interface{}{
 					"source": keyValue,
-					"key":    "value",
+				}
+				e.Attributes = map[string]interface{}{
+					"key": "value",
 				}
 				return e
 			},
