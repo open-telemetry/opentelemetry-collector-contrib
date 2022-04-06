@@ -228,7 +228,7 @@ func runMetricsExport(cfg *Config, metrics pdata.Metrics, t *testing.T) ([][]byt
 	}
 }
 
-func runTraceExport(disableCompression bool, numberOfTraces int, t *testing.T) (string, error) {
+func runTraceExport(testConfig *Config, traces pdata.Traces, t *testing.T) ([][]byte, error) {
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		panic(err)
@@ -237,7 +237,8 @@ func runTraceExport(disableCompression bool, numberOfTraces int, t *testing.T) (
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
-	cfg.DisableCompression = disableCompression
+	cfg.DisableCompression = testConfig.DisableCompression
+	cfg.MaxContentLengthTraces = testConfig.MaxContentLengthTraces
 	cfg.Token = "1234-1234"
 
 	receivedRequest := make(chan []byte)
@@ -255,15 +256,19 @@ func runTraceExport(disableCompression bool, numberOfTraces int, t *testing.T) (
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
 	defer exporter.Shutdown(context.Background())
 
-	td := createTraceData(numberOfTraces)
-
-	err = exporter.ConsumeTraces(context.Background(), td)
+	err = exporter.ConsumeTraces(context.Background(), traces)
 	assert.NoError(t, err)
-	select {
-	case request := <-receivedRequest:
-		return string(request), nil
-	case <-time.After(1 * time.Second):
-		return "", errors.New("timeout")
+	var requests [][]byte
+	for {
+		select {
+		case request := <-receivedRequest:
+			requests = append(requests, request)
+		case <-time.After(1 * time.Second):
+			if len(requests) == 0 {
+				err = errors.New("timeout")
+			}
+			return requests, err
+		}
 	}
 }
 
@@ -308,13 +313,127 @@ func runLogExport(cfg *Config, ld pdata.Logs, t *testing.T) ([][]byte, error) {
 	}
 }
 
-func TestReceiveTraces(t *testing.T) {
-	actual, err := runTraceExport(true, 3, t)
-	assert.NoError(t, err)
-	expected := `{"time":1,"host":"unknown","event":{"trace_id":"01010101010101010101010101010101","span_id":"0000000000000001","parent_span_id":"0102030405060708","name":"root","end_time":2000000000,"kind":"SPAN_KIND_UNSPECIFIED","status":{"message":"ok","code":"STATUS_CODE_OK"},"start_time":1000000000},"fields":{"resource":"R1"}}`
-	expected += `{"time":2,"host":"unknown","event":{"trace_id":"01010101010101010101010101010101","span_id":"0000000000000001","parent_span_id":"","name":"root","end_time":3000000000,"kind":"SPAN_KIND_UNSPECIFIED","status":{"message":"","code":"STATUS_CODE_UNSET"},"start_time":2000000000},"fields":{"resource":"R1"}}`
-	expected += `{"time":3,"host":"unknown","event":{"trace_id":"01010101010101010101010101010101","span_id":"0000000000000001","parent_span_id":"0102030405060708","name":"root","end_time":4000000000,"kind":"SPAN_KIND_UNSPECIFIED","status":{"message":"ok","code":"STATUS_CODE_OK"},"start_time":3000000000},"fields":{"resource":"R1"}}`
-	assert.Equal(t, expected, actual)
+func TestReceiveTracesBatches(t *testing.T) {
+	type wantType struct {
+		batches    [][]string
+		numBatches int
+		compressed bool
+	}
+
+	// The test cases depend on the constant minCompressionLen = 1500.
+	// If the constant changed, the test cases with want.compressed=true must be updated.
+	require.Equal(t, minCompressionLen, 1500)
+
+	tests := []struct {
+		name   string
+		conf   *Config
+		traces pdata.Traces
+		want   wantType
+	}{
+		{
+			name:   "all trace events in payload when max content length unknown (configured max content length 0)",
+			traces: createTraceData(4),
+			conf: func() *Config {
+				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.MaxContentLengthTraces = 0
+				return cfg
+			}(),
+			want: wantType{
+				batches: [][]string{
+					{`"start_time":1`,
+						`"start_time":2`,
+						`start_time":3`,
+						`start_time":4`},
+				},
+				numBatches: 1,
+			},
+		},
+		{
+			name:   "1 trace event per payload (configured max content length is same as event size)",
+			traces: createTraceData(4),
+			conf: func() *Config {
+				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.MaxContentLengthTraces = 320
+				return cfg
+			}(),
+			want: wantType{
+				batches: [][]string{
+					{`"start_time":1`},
+					{`"start_time":2`},
+					{`"start_time":3`},
+					{`"start_time":4`},
+				},
+				numBatches: 4,
+			},
+		},
+		{
+			name:   "2 trace events per payload (configured max content length is twice event size)",
+			traces: createTraceData(4),
+			conf: func() *Config {
+				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.MaxContentLengthTraces = 640
+				return cfg
+			}(),
+			want: wantType{
+				batches: [][]string{
+					{`"start_time":1`, `"start_time":2`},
+					{`"start_time":3`, `"start_time":4`},
+				},
+				numBatches: 2,
+			},
+		},
+		{
+			name:   "1 compressed batch of 2037 bytes, make sure the event size is more than minCompressionLen=1500 to trigger compression",
+			traces: createTraceData(10),
+			conf: func() *Config {
+				return NewFactory().CreateDefaultConfig().(*Config)
+			}(),
+			want: wantType{
+				batches: [][]string{
+					{`"start_time":1`, `"start_time":2`, `"start_time":3`, `"start_time":4`, `"start_time":7`, `"start_time":8`, `"start_time":9`},
+				},
+				numBatches: 1,
+				compressed: true,
+			},
+		},
+		{
+			name:   "2 compressed batches - 1832 bytes each, make sure the log size is more than minCompressionLen=1500 to trigger compression",
+			traces: createTraceData(22),
+			conf: func() *Config {
+				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.MaxContentLengthTraces = 3520
+				return cfg
+			}(),
+			want: wantType{
+				batches: [][]string{
+					{`"start_time":1`, `"start_time":2`, `"start_time":5`, `"start_time":6`, `"start_time":7`, `"start_time":8`, `"start_time":9`, `"start_time":10`, `"start_time":11`},
+					{`"start_time":15`, `"start_time":16`, `"start_time":17`, `"start_time":18`, `"start_time":19`, `"start_time":20`, `"start_time":21`},
+				},
+				numBatches: 2,
+				compressed: true,
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := runTraceExport(test.conf, test.traces, t)
+
+			require.NoError(t, err)
+			require.Len(t, got, test.want.numBatches)
+
+			for i := 0; i < test.want.numBatches; i++ {
+				require.NotZero(t, got[i])
+				if test.want.compressed {
+					validateCompressedContains(t, test.want.batches[i], got[i])
+				} else {
+					for _, expected := range test.want.batches[i] {
+						assert.Contains(t, string(got[i]), expected)
+					}
+				}
+			}
+		})
+	}
 }
 
 func TestReceiveLogs(t *testing.T) {
@@ -573,12 +692,6 @@ func TestReceiveBatchedMetrics(t *testing.T) {
 	}
 }
 
-func TestReceiveTracesWithCompression(t *testing.T) {
-	request, err := runTraceExport(false, 1000, t)
-	assert.NoError(t, err)
-	assert.NotEqual(t, "", request)
-}
-
 func TestReceiveMetricsWithCompression(t *testing.T) {
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
 	request, err := runMetricsExport(cfg, createMetricsData(1000), t)
@@ -626,11 +739,6 @@ func TestErrorReceived(t *testing.T) {
 		t.Fatal("Should have received request")
 	}
 	assert.EqualError(t, err, "HTTP 500 \"Internal Server Error\"")
-}
-
-func TestInvalidTraces(t *testing.T) {
-	_, err := runTraceExport(false, 0, t)
-	assert.Error(t, err)
 }
 
 func TestInvalidLogs(t *testing.T) {

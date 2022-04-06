@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### 💡 Enhancements 💡
+- `splunkhecexporter`: Add support for batching traces (#8995)
 
 - `tanzuobservabilityexporter`: Use resourcetotelemetry helper (#8338)
 - `cmd/mdatagen`: Add resource attributes definition to metadata.yaml and move `pdata.Metrics` creation to the
