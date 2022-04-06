@@ -15,7 +15,20 @@
 //go:build windows
 // +build windows
 
-package windowsperfcountersreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver"
+package windowsperfcountercommon // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/windowsperfcountercommon"
+
+type CounterConfig struct {
+	Name       string            `mapstructure:"name"`
+	Metric     string            `mapstructure:"metric"`
+	Attributes map[string]string `mapstructure:"attributes"`
+}
+
+// PerfCounterConfig defines configuration for a perf counter object.
+type PerfCounterConfig struct {
+	Object    string          `mapstructure:"object"`
+	Instances []string        `mapstructure:"instances"`
+	Counters  []CounterConfig `mapstructure:"counters"`
+}
 
 func (pc *PerfCounterConfig) instances() []string {
 	if len(pc.Instances) == 0 {

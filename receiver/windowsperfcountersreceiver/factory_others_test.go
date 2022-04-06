@@ -28,7 +28,7 @@ import (
 func TestCreateMetricsReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	cfg.(*Config).PerfCounters = []PerfCounterConfig{
+	cfg.(*Config).PerfCounters = []windowsapi.PerfCounterConfig{
 		{
 			Object:   "object",
 			Counters: []CounterConfig{{Name: "counter", Metric: "metric"}},

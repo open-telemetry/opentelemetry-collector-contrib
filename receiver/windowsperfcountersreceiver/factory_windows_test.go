@@ -21,6 +21,7 @@ import (
 	"context"
 	"testing"
 
+	windowsapi "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/windowsperfcountercommon"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 )
@@ -28,10 +29,10 @@ import (
 func TestCreateMetricsReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	cfg.(*Config).PerfCounters = []PerfCounterConfig{
+	cfg.(*Config).PerfCounters = []windowsapi.PerfCounterConfig{
 		{
 			Object:   "object",
-			Counters: []CounterConfig{{Name: "counter", Metric: "metric"}},
+			Counters: []windowsapi.CounterConfig{{Name: "counter", Metric: "metric"}},
 		},
 	}
 

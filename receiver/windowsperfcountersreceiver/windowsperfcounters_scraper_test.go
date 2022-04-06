@@ -34,7 +34,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver/internal/third_party/telegraf/win_perf_counters"
+	windowsapi "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/windowsperfcountercommon"
 )
 
 type mockPerfCounter struct {
@@ -46,22 +46,6 @@ type mockPerfCounter struct {
 func newMockPerfCounter(path string, scrapeErr, shutdownErr error) *mockPerfCounter {
 	return &mockPerfCounter{path: path, scrapeErr: scrapeErr, shutdownErr: shutdownErr}
 }
-
-// Path
-func (mpc *mockPerfCounter) Path() string {
-	return mpc.path
-}
-
-// ScrapeData
-func (mpc *mockPerfCounter) ScrapeData() ([]win_perf_counters.CounterValue, error) {
-	return []win_perf_counters.CounterValue{{Value: 0}}, mpc.scrapeErr
-}
-
-// Close
-func (mpc *mockPerfCounter) Close() error {
-	return mpc.shutdownErr
-}
-
 func Test_WindowsPerfCounterScraper(t *testing.T) {
 	type testCase struct {
 		name string
@@ -99,10 +83,10 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 						Gauge:       GaugeMetric{},
 					},
 				},
-				PerfCounters: []PerfCounterConfig{
-					{Object: "Memory", Counters: []CounterConfig{{Name: "Committed Bytes", Metric: "bytes.committed"}}},
-					{Object: "Processor", Instances: []string{"*"}, Counters: []CounterConfig{{Name: "% Idle Time", Metric: "cpu.idle"}}},
-					{Object: "Processor", Instances: []string{"1", "2"}, Counters: []CounterConfig{{Name: "% Processor Time", Metric: "processor.time"}}},
+				PerfCounters: []windowsapi.PerfCounterConfig{
+					{Object: "Memory", Counters: []windowsapi.CounterConfig{{Name: "Committed Bytes", Metric: "bytes.committed"}}},
+					{Object: "Processor", Instances: []string{"*"}, Counters: []windowsapi.CounterConfig{{Name: "% Idle Time", Metric: "cpu.idle"}}},
+					{Object: "Processor", Instances: []string{"1", "2"}, Counters: []windowsapi.CounterConfig{{Name: "% Processor Time", Metric: "processor.time"}}},
 				},
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{CollectionInterval: time.Minute},
 			},
@@ -118,8 +102,8 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 						Sum:         SumMetric{},
 					},
 				},
-				PerfCounters: []PerfCounterConfig{
-					{Object: "Memory", Counters: []CounterConfig{{Name: "Committed Bytes", Metric: "bytes.committed"}}},
+				PerfCounters: []windowsapi.PerfCounterConfig{
+					{Object: "Memory", Counters: []windowsapi.CounterConfig{{Name: "Committed Bytes", Metric: "bytes.committed"}}},
 				},
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{CollectionInterval: time.Minute},
 			},
@@ -128,8 +112,8 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 		{
 			name: "NoMetricDefinition",
 			cfg: &Config{
-				PerfCounters: []PerfCounterConfig{
-					{Object: "Memory", Counters: []CounterConfig{{Name: "Committed Bytes"}}},
+				PerfCounters: []windowsapi.PerfCounterConfig{
+					{Object: "Memory", Counters: []windowsapi.CounterConfig{{Name: "Committed Bytes"}}},
 				},
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{CollectionInterval: time.Minute},
 			},
@@ -138,14 +122,14 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 		{
 			name: "InvalidCounter",
 			cfg: &Config{
-				PerfCounters: []PerfCounterConfig{
+				PerfCounters: []windowsapi.PerfCounterConfig{
 					{
 						Object:   "Memory",
-						Counters: []CounterConfig{{Name: "Committed Bytes", Metric: "Committed Bytes"}},
+						Counters: []windowsapi.CounterConfig{{Name: "Committed Bytes", Metric: "Committed Bytes"}},
 					},
 					{
 						Object:   "Invalid Object",
-						Counters: []CounterConfig{{Name: "Invalid Counter", Metric: "invalid"}},
+						Counters: []windowsapi.CounterConfig{{Name: "Invalid Counter", Metric: "invalid"}},
 					},
 				},
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{CollectionInterval: time.Minute},
@@ -194,12 +178,6 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 						Description: "desc",
 						Unit:        "1",
 						Gauge:       GaugeMetric{},
-					},
-				}
-				scraper.counters = []PerfCounterMetrics{
-					{
-						CounterScraper: newMockPerfCounter(test.mockCounterPath, test.scrapeErr, test.shutdownErr),
-						Metric:         "metric",
 					},
 				}
 			}

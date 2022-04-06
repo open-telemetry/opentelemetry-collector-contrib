@@ -20,6 +20,7 @@ import (
 	"testing"
 	"time"
 
+	windowsapi "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/windowsperfcountercommon"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -44,11 +45,11 @@ func TestLoadConfig(t *testing.T) {
 	r0 := cfg.Receivers[config.NewComponentID(typeStr)]
 	defaultConfigSingleObject := factory.CreateDefaultConfig()
 
-	counterConfig := CounterConfig{
+	counterConfig := windowsapi.CounterConfig{
 		Name:   "counter1",
 		Metric: "metric",
 	}
-	defaultConfigSingleObject.(*Config).PerfCounters = []PerfCounterConfig{{Object: "object", Counters: []CounterConfig{counterConfig}}}
+	defaultConfigSingleObject.(*Config).PerfCounters = []windowsapi.PerfCounterConfig{{Object: "object", Counters: []windowsapi.CounterConfig{counterConfig}}}
 	defaultConfigSingleObject.(*Config).MetricMetaData = map[string]MetricConfig{
 		"metric": {
 			Description: "desc",
@@ -59,7 +60,7 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, defaultConfigSingleObject, r0)
 
-	counterConfig2 := CounterConfig{
+	counterConfig2 := windowsapi.CounterConfig{
 		Name:   "counter2",
 		Metric: "metric2",
 	}
@@ -70,14 +71,14 @@ func TestLoadConfig(t *testing.T) {
 			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "customname")),
 			CollectionInterval: 30 * time.Second,
 		},
-		PerfCounters: []PerfCounterConfig{
+		PerfCounters: []windowsapi.PerfCounterConfig{
 			{
 				Object:   "object1",
-				Counters: []CounterConfig{counterConfig},
+				Counters: []windowsapi.CounterConfig{counterConfig},
 			},
 			{
 				Object:   "object2",
-				Counters: []CounterConfig{counterConfig, counterConfig2},
+				Counters: []windowsapi.CounterConfig{counterConfig, counterConfig2},
 			},
 		},
 		MetricMetaData: map[string]MetricConfig{
@@ -107,10 +108,10 @@ func TestLoadConfigMetrics(t *testing.T) {
 			TestName: "NoMetricsDefined",
 			TestPath: filepath.Join("testdata", "config-nometrics.yaml"),
 			Expected: Config{
-				PerfCounters: []PerfCounterConfig{
+				PerfCounters: []windowsapi.PerfCounterConfig{
 					{
 						Object:   "object",
-						Counters: []CounterConfig{{Name: "counter1"}},
+						Counters: []windowsapi.CounterConfig{{Name: "counter1"}},
 					},
 				},
 			},
@@ -119,10 +120,10 @@ func TestLoadConfigMetrics(t *testing.T) {
 			TestName: "NoMetricSpecified",
 			TestPath: filepath.Join("testdata", "config-nometricspecified.yaml"),
 			Expected: Config{
-				PerfCounters: []PerfCounterConfig{
+				PerfCounters: []windowsapi.PerfCounterConfig{
 					{
 						Object:   "object",
-						Counters: []CounterConfig{{Name: "counter1"}},
+						Counters: []windowsapi.CounterConfig{{Name: "counter1"}},
 					},
 				},
 				MetricMetaData: map[string]MetricConfig{
@@ -138,10 +139,10 @@ func TestLoadConfigMetrics(t *testing.T) {
 			TestName: "SumMetric",
 			TestPath: filepath.Join("testdata", "config-summetric.yaml"),
 			Expected: Config{
-				PerfCounters: []PerfCounterConfig{
+				PerfCounters: []windowsapi.PerfCounterConfig{
 					{
 						Object:   "object",
-						Counters: []CounterConfig{{Name: "counter1", Metric: "metric"}},
+						Counters: []windowsapi.CounterConfig{{Name: "counter1", Metric: "metric"}},
 					},
 				},
 				MetricMetaData: map[string]MetricConfig{
@@ -160,10 +161,10 @@ func TestLoadConfigMetrics(t *testing.T) {
 			TestName: "MetricUnspecifiedType",
 			TestPath: filepath.Join("testdata", "config-unspecifiedmetrictype.yaml"),
 			Expected: Config{
-				PerfCounters: []PerfCounterConfig{
+				PerfCounters: []windowsapi.PerfCounterConfig{
 					{
 						Object:   "object",
-						Counters: []CounterConfig{{Name: "counter1", Metric: "metric"}},
+						Counters: []windowsapi.CounterConfig{{Name: "counter1", Metric: "metric"}},
 					},
 				},
 				MetricMetaData: map[string]MetricConfig{

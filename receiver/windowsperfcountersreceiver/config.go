@@ -17,6 +17,7 @@ package windowsperfcountersreceiver // import "github.com/open-telemetry/opentel
 import (
 	"fmt"
 
+	windowsapi "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/windowsperfcountercommon"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 )
@@ -25,15 +26,8 @@ import (
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 
-	MetricMetaData map[string]MetricConfig `mapstructure:"metrics"`
-	PerfCounters   []PerfCounterConfig     `mapstructure:"perfcounters"`
-}
-
-// PerfCounterConfig defines configuration for a perf counter object.
-type PerfCounterConfig struct {
-	Object    string          `mapstructure:"object"`
-	Instances []string        `mapstructure:"instances"`
-	Counters  []CounterConfig `mapstructure:"counters"`
+	MetricMetaData map[string]MetricConfig        `mapstructure:"metrics"`
+	PerfCounters   []windowsapi.PerfCounterConfig `mapstructure:"perfcounters"`
 }
 
 // MetricsConfig defines the configuration for a metric to be created.
@@ -50,12 +44,6 @@ type GaugeMetric struct {
 type SumMetric struct {
 	Aggregation string `mapstructure:"aggregation"`
 	Monotonic   bool   `mapstructure:"monotonic"`
-}
-
-type CounterConfig struct {
-	Metric     string            `mapstructure:"metric"`
-	Name       string            `mapstructure:"name"`
-	Attributes map[string]string `mapstructure:"attributes"`
 }
 
 func (c *Config) Validate() error {

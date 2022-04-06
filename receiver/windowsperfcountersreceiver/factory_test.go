@@ -18,6 +18,7 @@ import (
 	"context"
 	"testing"
 
+	windowsapi "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/windowsperfcountercommon"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -34,10 +35,10 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, configtest.CheckConfigStruct(cfg))
 
-	cfg.(*Config).PerfCounters = []PerfCounterConfig{
+	cfg.(*Config).PerfCounters = []windowsapi.PerfCounterConfig{
 		{
 			Object:   "object",
-			Counters: []CounterConfig{{Name: "counter", Metric: "metric"}},
+			Counters: []windowsapi.CounterConfig{{Name: "counter", Metric: "metric"}},
 		},
 	}
 
@@ -55,10 +56,10 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateTracesReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	cfg.(*Config).PerfCounters = []PerfCounterConfig{
+	cfg.(*Config).PerfCounters = []windowsapi.PerfCounterConfig{
 		{
 			Object:   "object",
-			Counters: []CounterConfig{{Name: "counter", Metric: "metric"}},
+			Counters: []windowsapi.CounterConfig{{Name: "counter", Metric: "metric"}},
 		},
 	}
 
@@ -78,10 +79,10 @@ func TestCreateTracesReceiver(t *testing.T) {
 func TestCreateTracesReceiverNoMetrics(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	cfg.(*Config).PerfCounters = []PerfCounterConfig{
+	cfg.(*Config).PerfCounters = []windowsapi.PerfCounterConfig{
 		{
 			Object:   "object",
-			Counters: []CounterConfig{{Name: "counter"}},
+			Counters: []windowsapi.CounterConfig{{Name: "counter"}},
 		},
 	}
 	tReceiver, err := factory.CreateTracesReceiver(context.Background(), creationParams, cfg, consumertest.NewNop())
@@ -93,10 +94,10 @@ func TestCreateTracesReceiverNoMetrics(t *testing.T) {
 func TestCreateLogsReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	cfg.(*Config).PerfCounters = []PerfCounterConfig{
+	cfg.(*Config).PerfCounters = []windowsapi.PerfCounterConfig{
 		{
 			Object:   "object",
-			Counters: []CounterConfig{{Name: "counter", Metric: "metric"}},
+			Counters: []windowsapi.CounterConfig{{Name: "counter", Metric: "metric"}},
 		},
 	}
 

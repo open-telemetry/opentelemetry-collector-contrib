@@ -31,19 +31,17 @@
 //go:build windows
 // +build windows
 
-package win_perf_counters // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver/internal/third_party/telegraf/win_perf_counters"
+package win_perf_counters // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/windowsperfcountercommon/internal/third_party/telegraf/win_perf_counters"
 
 // Union specialization for double values
 type PDH_FMT_COUNTERVALUE_DOUBLE struct {
 	CStatus     uint32
-	padding     [4]byte
 	DoubleValue float64
 }
 
 // Union specialization for 64 bit integer values
 type PDH_FMT_COUNTERVALUE_LARGE struct {
 	CStatus    uint32
-	padding    [4]byte
 	LargeValue int64
 }
 
@@ -56,21 +54,18 @@ type PDH_FMT_COUNTERVALUE_LONG struct {
 
 type PDH_FMT_COUNTERVALUE_ITEM_DOUBLE struct {
 	SzName   *uint16
-	padding  [4]byte
 	FmtValue PDH_FMT_COUNTERVALUE_DOUBLE
 }
 
 // Union specialization for 'large' values, used by PdhGetFormattedCounterArrayLarge()
 type PDH_FMT_COUNTERVALUE_ITEM_LARGE struct {
 	SzName   *uint16 // pointer to a string
-	padding  [4]byte
 	FmtValue PDH_FMT_COUNTERVALUE_LARGE
 }
 
 // Union specialization for long values, used by PdhGetFormattedCounterArrayLong()
 type PDH_FMT_COUNTERVALUE_ITEM_LONG struct {
 	SzName   *uint16 // pointer to a string
-	padding  [4]byte
 	FmtValue PDH_FMT_COUNTERVALUE_LONG
 }
 
@@ -113,8 +108,6 @@ type PDH_COUNTER_INFO struct {
 	DwInstanceIndex uint32 // pointer to a string
 	//Null-terminated string that contains the counter name. The string follows this structure in memory.
 	SzCounterName *uint16 // pointer to a string
-	//padding
-	Padding [4]byte
 	//Help text that describes the counter. Is NULL if the source is a log file.
 	SzExplainText *uint16 // pointer to a string
 	//Start of the string data that is appended to the structure.

@@ -15,9 +15,9 @@
 //go:build windows
 // +build windows
 
-package pdh // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver/internal/pdh"
+package pdh // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/windowsperfcountercommon/internal/pdh"
 
-import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver/internal/third_party/telegraf/win_perf_counters"
+import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/windowsperfcountercommon/internal/third_party/telegraf/win_perf_counters"
 
 const totalInstanceName = "_Total"
 
