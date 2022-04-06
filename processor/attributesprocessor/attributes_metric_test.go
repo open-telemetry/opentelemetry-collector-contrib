@@ -53,7 +53,7 @@ func generateMetricData(resourceName string, attrs map[string]interface{}) pdata
 	md := pdata.NewMetrics()
 	res := md.ResourceMetrics().AppendEmpty()
 	res.Resource().Attributes().InsertString("resource_attr_name", resourceName)
-	ill := res.InstrumentationLibraryMetrics().AppendEmpty()
+	ill := res.ScopeMetrics().AppendEmpty()
 
 	// Add one of each type of data
 	gauge := ill.Metrics().AppendEmpty()
@@ -62,7 +62,7 @@ func generateMetricData(resourceName string, attrs map[string]interface{}) pdata
 	gauge_dps := gauge.Gauge().DataPoints()
 	gauge_dp := gauge_dps.AppendEmpty()
 	gauge_dp.SetIntVal(123)
-	pdata.NewAttributeMapFromMap(attrs).CopyTo(gauge_dp.Attributes())
+	pdata.NewMapFromRaw(attrs).CopyTo(gauge_dp.Attributes())
 	gauge_dp.Attributes().Sort()
 
 	sum := ill.Metrics().AppendEmpty()
@@ -71,7 +71,7 @@ func generateMetricData(resourceName string, attrs map[string]interface{}) pdata
 	sum_dps := sum.Sum().DataPoints()
 	sum_dp := sum_dps.AppendEmpty()
 	sum_dp.SetIntVal(123)
-	pdata.NewAttributeMapFromMap(attrs).CopyTo(sum_dp.Attributes())
+	pdata.NewMapFromRaw(attrs).CopyTo(sum_dp.Attributes())
 	sum_dp.Attributes().Sort()
 
 	histo := ill.Metrics().AppendEmpty()
@@ -84,7 +84,7 @@ func generateMetricData(resourceName string, attrs map[string]interface{}) pdata
 	histo_dp.SetSum(100)
 	histo_dp.SetExplicitBounds([]float64{0, 10, 50})
 	histo_dp.SetBucketCounts([]uint64{5, 4, 1})
-	pdata.NewAttributeMapFromMap(attrs).CopyTo(histo_dp.Attributes())
+	pdata.NewMapFromRaw(attrs).CopyTo(histo_dp.Attributes())
 	histo_dp.Attributes().Sort()
 
 	expo_histo := ill.Metrics().AppendEmpty()
@@ -94,7 +94,7 @@ func generateMetricData(resourceName string, attrs map[string]interface{}) pdata
 	expo_histo_dp := expo_histo_dps.AppendEmpty()
 	expo_histo_dp.SetCount(10)
 	expo_histo_dp.SetSum(100)
-	pdata.NewAttributeMapFromMap(attrs).CopyTo(expo_histo_dp.Attributes())
+	pdata.NewMapFromRaw(attrs).CopyTo(expo_histo_dp.Attributes())
 	expo_histo_dp.Attributes().Sort()
 
 	summary := ill.Metrics().AppendEmpty()
@@ -104,7 +104,7 @@ func generateMetricData(resourceName string, attrs map[string]interface{}) pdata
 	summary_dp := summary_dps.AppendEmpty()
 	summary_dp.SetCount(10)
 	summary_dp.SetSum(100)
-	pdata.NewAttributeMapFromMap(attrs).CopyTo(summary_dp.Attributes())
+	pdata.NewMapFromRaw(attrs).CopyTo(summary_dp.Attributes())
 	summary_dp.Attributes().Sort()
 
 	return md
