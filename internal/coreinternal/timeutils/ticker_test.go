@@ -56,11 +56,11 @@ func TestPolicyTickerSucceeds(t *testing.T) {
 	to := testObj{foo: 0}
 	pTicker := &PolicyTicker{OnTickFunc: to.IncrementFoo}
 
-	// Ticker is first called after required duration, not at start. This means
-	// expected count will be 1 less than how many durations have passed.
-	expectedTicks := 4
+	expectedTicks := 5
 	defaultDuration := 500 * time.Millisecond
-	testSleepDuration := time.Duration(expectedTicks+1) * defaultDuration
+	// Fuzz is used to try to make sure we're not racing here.
+	fuzzDuration := 100 * time.Millisecond
+	testSleepDuration := time.Duration(expectedTicks) * defaultDuration + fuzzDuration
 
 	pTicker.Start(defaultDuration)
 	time.Sleep(testSleepDuration)
