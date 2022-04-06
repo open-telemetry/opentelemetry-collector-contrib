@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 )
@@ -636,16 +637,16 @@ type manualTTicker struct {
 	Started bool
 }
 
-var _ tTicker = (*manualTTicker)(nil)
+var _ timeutils.TTicker = (*manualTTicker)(nil)
 
-func (t *manualTTicker) start(time.Duration) {
+func (t *manualTTicker) Start(time.Duration) {
 	t.Started = true
 }
 
-func (t *manualTTicker) onTick() {
+func (t *manualTTicker) OnTick() {
 }
 
-func (t *manualTTicker) stop() {
+func (t *manualTTicker) Stop() {
 }
 
 type syncIDBatcher struct {

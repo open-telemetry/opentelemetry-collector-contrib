@@ -20,7 +20,10 @@ require (
 	go.uber.org/zap v1.21.0
 )
 
-require gopkg.in/yaml.v2 v2.4.0
+require (
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.48.0
+	gopkg.in/yaml.v2 v2.4.0
+)
 
 require (
 	github.com/cenkalti/backoff/v4 v4.1.2 // indirect
