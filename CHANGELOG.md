@@ -3,11 +3,15 @@
 ## Unreleased
 
 ### 💡 Enhancements 💡
+- `riakreceiver`: Added implementation of Riak Metric Receiver (#8548)
+- `splunkhecexporter`: Add support for batching traces (#8995)
 
+- `tanzuobservabilityexporter`: Use resourcetotelemetry helper (#8338)
 - `cmd/mdatagen`: Add resource attributes definition to metadata.yaml and move `pdata.Metrics` creation to the
   generated code (#5270) 
 - Add `make crosslink` target to ensure replace statements are included in `go.mod` for all transitive dependencies within repository (#8822)
-- `riakreceiver`: Added implementation of Riak Metric Receiver (#8548)
+- `filestorageextension`: Change bbolt DB settings for better performance (#9004)
+- `jaegerremotesamplingextension`: Add local and remote sampling stores (#8818)
 
 ### 🛑 Breaking changes 🛑
 

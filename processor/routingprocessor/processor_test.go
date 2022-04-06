@@ -464,7 +464,6 @@ func TestMetrics_RoutingWorks_Context(t *testing.T) {
 	rm.Resource().Attributes().InsertString("X-Tenant", "acme")
 
 	t.Run("non default route is properly used", func(t *testing.T) {
-
 		assert.NoError(t, exp.ConsumeMetrics(
 			metadata.NewIncomingContext(context.Background(), metadata.New(map[string]string{
 				"X-Tenant": "acme",
@@ -735,6 +734,54 @@ func TestLogs_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 	)
 }
 
+func Benchmark_MetricsRouting_ResourceAttribute(b *testing.B) {
+	cfg := &Config{
+		FromAttribute:    "X-Tenant",
+		AttributeSource:  resourceAttributeSource,
+		DefaultExporters: []string{"otlp"},
+		Table: []RoutingTableItem{
+			{
+				Value:     "acme",
+				Exporters: []string{"otlp/2"},
+			},
+		},
+	}
+
+	runBenchmark := func(b *testing.B, cfg *Config) {
+		defaultExp := &mockMetricsExporter{}
+		mExp := &mockMetricsExporter{}
+
+		host := &mockHost{
+			Host: componenttest.NewNopHost(),
+			GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
+				return map[config.DataType]map[config.ComponentID]component.Exporter{
+					config.MetricsDataType: {
+						config.NewComponentID("otlp"):   defaultExp,
+						config.NewComponentID("otlp/2"): mExp,
+					},
+				}
+			},
+		}
+
+		exp := newProcessor(zap.NewNop(), cfg)
+		exp.Start(context.Background(), host)
+
+		for i := 0; i < b.N; i++ {
+			m := pdata.NewMetrics()
+			rm := m.ResourceMetrics().AppendEmpty()
+
+			attrs := rm.Resource().Attributes()
+			attrs.InsertString("X-Tenant", "acme")
+			attrs.InsertString("X-Tenant1", "acme")
+			attrs.InsertString("X-Tenant2", "acme")
+
+			exp.ConsumeMetrics(context.Background(), m)
+		}
+	}
+
+	runBenchmark(b, cfg)
+}
+
 type mockHost struct {
 	component.Host
 	GetExportersFunc func() map[config.DataType]map[config.ComponentID]component.Exporter
@@ -752,6 +799,7 @@ type mockComponent struct{}
 func (m *mockComponent) Start(context.Context, component.Host) error {
 	return nil
 }
+
 func (m *mockComponent) Shutdown(context.Context) error {
 	return nil
 }
