@@ -207,6 +207,8 @@ type TagsConfig struct {
 	Hostname string `mapstructure:"hostname"`
 
 	// Env is the environment for unified service tagging.
+	// Deprecated: [v0.49.0] Set `deployment.environment` semconv instead, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9016 for details.
+	// This option will be removed in v0.52.0.
 	// It can also be set through the `DD_ENV` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
 	Env string `mapstructure:"env"`
 
@@ -405,6 +407,9 @@ func (c *Config) Unmarshal(configMap *config.Map) error {
 	}
 	if c.Version != "" {
 		c.warnings = append(c.warnings, fmt.Errorf(deprecationTemplate, "version", "v0.52.0", 8783))
+	}
+	if c.Env != "" {
+		c.warnings = append(c.warnings, fmt.Errorf(deprecationTemplate, "env", "v0.52.0", 9016))
 	}
 
 	return nil

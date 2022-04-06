@@ -441,7 +441,7 @@ func Test_PushMetrics(t *testing.T) {
 			"intSum_case",
 			&intSumBatch,
 			checkFunc,
-			2,
+			3,
 			http.StatusAccepted,
 			false,
 			false,

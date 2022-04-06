@@ -70,6 +70,7 @@ func createDefaultConfig() config.Exporter {
 		MaxConnections:          defaultMaxIdleCons,
 		MaxContentLengthLogs:    maxContentLengthLogsLimit,
 		MaxContentLengthMetrics: maxContentLengthMetricsLimit,
+		MaxContentLengthTraces:  maxContentLengthTracesLimit,
 		HecToOtelAttrs: splunk.HecToOtelAttrs{
 			Source:     splunk.DefaultSourceLabel,
 			SourceType: splunk.DefaultSourceTypeLabel,

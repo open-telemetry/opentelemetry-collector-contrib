@@ -1,5 +1,7 @@
 name: hostmetricsreceiver/memory
 
+sem_conv_version: 1.9.0
+
 attributes:
   state:
     description: Breakdown of memory usage by type.
