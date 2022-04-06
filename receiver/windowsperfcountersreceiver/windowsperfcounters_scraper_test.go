@@ -12,14 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build windows
-// +build windows
-
 package windowsperfcountersreceiver
 
 import (
 	"context"
-	"errors"
 	"path/filepath"
 	"testing"
 	"time"
@@ -43,9 +39,6 @@ type mockPerfCounter struct {
 	shutdownErr error
 }
 
-func newMockPerfCounter(path string, scrapeErr, shutdownErr error) *mockPerfCounter {
-	return &mockPerfCounter{path: path, scrapeErr: scrapeErr, shutdownErr: shutdownErr}
-}
 func Test_WindowsPerfCounterScraper(t *testing.T) {
 	type testCase struct {
 		name string
@@ -54,8 +47,6 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 		mockCounterPath string
 		startMessage    string
 		startErr        string
-		scrapeErr       error
-		shutdownErr     error
 
 		expectedMetricPath string
 	}
@@ -137,14 +128,6 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 			startMessage: "some performance counters could not be initialized",
 			startErr:     "counter \\Invalid Object\\Invalid Counter: The specified object was not found on the computer.\r\n",
 		},
-		{
-			name:      "ScrapeError",
-			scrapeErr: errors.New("err2"),
-		},
-		{
-			name:        "CloseError",
-			shutdownErr: errors.New("err1"),
-		},
 	}
 
 	for _, test := range testCases {
@@ -172,31 +155,14 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 			}
 			require.NoError(t, err)
 
-			if test.mockCounterPath != "" || test.scrapeErr != nil || test.shutdownErr != nil {
-				scraper.cfg.MetricMetaData = map[string]MetricConfig{
-					"metric": {
-						Description: "desc",
-						Unit:        "1",
-						Gauge:       GaugeMetric{},
-					},
-				}
-			}
-
 			actualMetrics, err := scraper.scrape(context.Background())
-			if test.scrapeErr != nil {
-				require.Equal(t, test.scrapeErr, err)
-				return
-			}
 			require.NoError(t, err)
 
 			err = scraper.shutdown(context.Background())
-			if test.shutdownErr != nil {
-				assert.Equal(t, test.shutdownErr, err)
-				return
-			}
+
 			require.NoError(t, err)
 			expectedMetrics, err := golden.ReadMetrics(test.expectedMetricPath)
-			scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues)
+			scrapertest.CompareMetrics(expectedMetrics, actualMetrics)
 			require.NoError(t, err)
 		})
 	}

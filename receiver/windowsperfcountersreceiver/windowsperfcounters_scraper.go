@@ -93,10 +93,10 @@ func (s *scraper) scrape(context.Context) (pdata.Metrics, error) {
 		if builtmetric, ok := metrics[scrapedValue.Metric.Name]; ok {
 			metric = builtmetric
 		} else {
-			metric := metricSlice.AppendEmpty()
+			metric = metricSlice.AppendEmpty()
+			metric.SetDataType(pdata.MetricDataTypeGauge)
 			metric.SetName(scrapedValue.Metric.Name)
 			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
 		}
 
 		initializeMetricDps(metric, now, scrapedValue.Value, scrapedValue.Metric.Attributes)

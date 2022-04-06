@@ -117,6 +117,9 @@ func ScrapeCounters(scrapers []Scraper) (metrics []ScrapedValues, errs error) {
 
 		for _, counterValue := range counterValues {
 			if counterValue.InstanceName != "" {
+				if metric.Attributes == nil {
+					metric.Attributes = map[string]string{instanceLabelName: counterValue.InstanceName}
+				}
 				metric.Attributes[instanceLabelName] = counterValue.InstanceName
 			}
 
