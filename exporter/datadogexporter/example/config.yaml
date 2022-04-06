@@ -194,9 +194,9 @@ exporters:
     
     ## @param host_metadata - custom object - optional
     ## Host metadata specific configuration.
-    ## Host metadata is the information used for populating the infrastructure list, the host map and providing host tags functionality.
+    ## Host metadata is the information used for populating the infrastructure list, the host map and providing host tags functionality within the Datadog app.
     ##
-    ## The exporter will send host metadata for a single host, whose name is chosen
+    ## The exporter will only send host metadata for a single host, whose name is chosen
     ## according to `host_metadata::hostname_source`.
     #
     # host_metadata:

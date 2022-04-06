@@ -31,7 +31,7 @@ import (
 
 var (
 	errUnsetAPIKey = errors.New("api.key is not set")
-	errNoMetadata  = errors.New("only_metadata can't be enabled when host_metadata::enabled = false or hostname_source != first_resource")
+	errNoMetadata  = errors.New("only_metadata can't be enabled when host_metadata::enabled = false or host_metadata::hostname_source != first_resource")
 )
 
 // TODO: Import these from translator when we eliminate cyclic dependency.
