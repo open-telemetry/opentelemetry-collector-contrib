@@ -32,6 +32,7 @@ const (
 	hecPath                      = "services/collector"
 	maxContentLengthLogsLimit    = 2 * 1024 * 1024
 	maxContentLengthMetricsLimit = 2 * 1024 * 1024
+	maxContentLengthTracesLimit  = 2 * 1024 * 1024
 )
 
 // OtelToHecFields defines the mapping of attributes to HEC fields
@@ -79,6 +80,9 @@ type Config struct {
 	// Maximum metric data size in bytes per HTTP post. Defaults to the backend limit of 2097152 bytes (2MiB).
 	MaxContentLengthMetrics uint `mapstructure:"max_content_length_metrics"`
 
+	// Maximum trace data size in bytes per HTTP post. Defaults to the backend limit of 2097152 bytes (2MiB).
+	MaxContentLengthTraces uint `mapstructure:"max_content_length_traces"`
+
 	// TLSSetting struct exposes TLS client configuration.
 	TLSSetting configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
 
@@ -124,6 +128,10 @@ func (cfg *Config) validateConfig() error {
 
 	if cfg.MaxContentLengthMetrics > maxContentLengthMetricsLimit {
 		return fmt.Errorf(`requires "max_content_length_metrics" <= %d`, maxContentLengthMetricsLimit)
+	}
+
+	if cfg.MaxContentLengthTraces > maxContentLengthTracesLimit {
+		return fmt.Errorf(`requires "max_content_length_traces <= #{maxContentLengthTracesLimit}`)
 	}
 
 	return nil
