@@ -11,6 +11,7 @@
 - `filestorageextension`: Change bbolt DB settings for better performance (#9004)
 - `jaegerremotesamplingextension`: Add local and remote sampling stores (#8818)
 - `attributesprocessor`: Add support to filter on log body (#8996)
+- `prometheusremotewriteexporter`: Translate resource attributes to the target info metric (#8493)
 
 ### 🛑 Breaking changes 🛑
 
