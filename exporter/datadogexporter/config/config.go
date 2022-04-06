@@ -207,7 +207,7 @@ type TagsConfig struct {
 	Hostname string `mapstructure:"hostname"`
 
 	// Env is the environment for unified service tagging.
-	// Deprecated: [v0.49.0] Set `deployment.environment` semconv instead, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8783 for details.
+	// Deprecated: [v0.49.0] Set `deployment.environment` semconv instead, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9016 for details.
 	// This option will be removed in v0.52.0.
 	// It can also be set through the `DD_ENV` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
 	Env string `mapstructure:"env"`
