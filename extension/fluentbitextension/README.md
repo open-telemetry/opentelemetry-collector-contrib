@@ -1,4 +1,7 @@
-# FluentBit Subprocess Extension
+# Deprecated FluentBit Subprocess Extension
+
+This extension has been deprecated due to security concerns around the ability to specify the execution of
+any arbitrary processes via its configuration. See [#6721](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/6721) for additional details.
 
 **This extension is experimental and may receive breaking changes or be removed
 at any time.**

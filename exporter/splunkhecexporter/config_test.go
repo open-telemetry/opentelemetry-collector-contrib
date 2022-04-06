@@ -64,6 +64,7 @@ func TestLoadConfig(t *testing.T) {
 		MaxConnections:          100,
 		MaxContentLengthLogs:    2 * 1024 * 1024,
 		MaxContentLengthMetrics: 2 * 1024 * 1024,
+		MaxContentLengthTraces:  2 * 1024 * 1024,
 		TimeoutSettings: exporterhelper.TimeoutSettings{
 			Timeout: 10 * time.Second,
 		},
@@ -115,6 +116,7 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 		Index                   string
 		MaxContentLengthLogs    uint
 		MaxContentLengthMetrics uint
+		MaxContentLengthTraces  uint
 	}
 	tests := []struct {
 		name    string
@@ -179,6 +181,16 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 			want:    nil,
 			wantErr: true,
 		},
+		{
+			name: "Test max content length traces greater than limit",
+			fields: fields{
+				Token:                  "1234",
+				Endpoint:               "https://example.com:8000",
+				MaxContentLengthTraces: maxContentLengthTracesLimit + 1,
+			},
+			want:    nil,
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -190,6 +202,7 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 				Index:                   tt.fields.Index,
 				MaxContentLengthLogs:    tt.fields.MaxContentLengthLogs,
 				MaxContentLengthMetrics: tt.fields.MaxContentLengthMetrics,
+				MaxContentLengthTraces:  tt.fields.MaxContentLengthTraces,
 			}
 			got, err := cfg.getOptionsFromConfig()
 			if (err != nil) != tt.wantErr {

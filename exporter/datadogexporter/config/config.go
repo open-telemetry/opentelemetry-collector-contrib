@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-	"sync"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -59,15 +58,6 @@ type APIConfig struct {
 	// It can also be set through the `DD_SITE` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
 	// The default value is "datadoghq.com".
 	Site string `mapstructure:"site"`
-}
-
-// GetCensoredKey returns the API key censored for logging purposes.
-// Deprecated: [v0.48.0] Will be removed in v0.49.0.
-func (api *APIConfig) GetCensoredKey() string {
-	if len(api.Key) <= 5 {
-		return api.Key
-	}
-	return strings.Repeat("*", len(api.Key)-5) + api.Key[len(api.Key)-5:]
 }
 
 // MetricsConfig defines the metrics exporter specific configuration options
@@ -312,18 +302,8 @@ type Config struct {
 	// Disable this in the Collector if you are using an agent-collector setup.
 	UseResourceMetadata bool `mapstructure:"use_resource_metadata"`
 
-	// onceMetadata ensures only one exporter (metrics/traces) sends host metadata
-	onceMetadata sync.Once
-
 	// warnings stores non-fatal configuration errors.
 	warnings []error
-}
-
-// OnceMetadata gets a sync.Once instance used for initializing the host metadata.
-// Deprecated: [v0.48.0] do not use, will be removed on v0.49.0.
-// TODO (#8373): Remove this method.
-func (c *Config) OnceMetadata() *sync.Once {
-	return &c.onceMetadata
 }
 
 // Sanitize tries to sanitize a given configuration
