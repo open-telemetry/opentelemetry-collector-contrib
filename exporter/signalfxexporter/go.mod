@@ -5,17 +5,17 @@ go 1.17
 require (
 	github.com/gobwas/glob v0.2.3
 	github.com/gogo/protobuf v1.3.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.47.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.47.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.47.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.47.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.47.0
-	github.com/shirou/gopsutil/v3 v3.22.2
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.48.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.48.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.48.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.48.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.48.0
+	github.com/shirou/gopsutil/v3 v3.22.3
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3
 	github.com/signalfx/signalfx-agent/pkg/apm v0.0.0-20201202163743-65b4fa925fc8
 	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector v0.47.1-0.20220330050215-0f07b0bd64d1
-	go.opentelemetry.io/collector/model v0.47.1-0.20220330050215-0f07b0bd64d1
+	go.opentelemetry.io/collector v0.48.0
+	go.opentelemetry.io/collector/model v0.48.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
 )
@@ -50,8 +50,8 @@ require (
 	github.com/signalfx/sapm-proto v0.4.0 // indirect
 	github.com/smartystreets/goconvey v1.6.4 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
-	github.com/tklauser/go-sysconf v0.3.9 // indirect
-	github.com/tklauser/numcpus v0.3.0 // indirect
+	github.com/tklauser/go-sysconf v0.3.10 // indirect
+	github.com/tklauser/numcpus v0.4.0 // indirect
 	github.com/uber/jaeger-client-go v2.30.0+incompatible // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
@@ -71,7 +71,7 @@ require (
 
 require (
 	github.com/jaegertracing/jaeger v1.32.0 // indirect
-	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9
+	golang.org/x/sys v0.0.0-20220128215802-99c3d69c2c27
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common

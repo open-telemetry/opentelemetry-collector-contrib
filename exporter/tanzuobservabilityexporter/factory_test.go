@@ -28,6 +28,8 @@ import (
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/service/servicetest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -61,6 +63,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		Metrics: MetricsConfig{
 			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http://localhost:2916"},
+			ResourceAttributes: resourcetotelemetry.Settings{Enabled: true},
 		},
 		QueueSettings: exporterhelper.QueueSettings{
 			Enabled:      true,

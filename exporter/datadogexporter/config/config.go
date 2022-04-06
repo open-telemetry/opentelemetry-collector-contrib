@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-	"sync"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -59,15 +58,6 @@ type APIConfig struct {
 	// It can also be set through the `DD_SITE` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
 	// The default value is "datadoghq.com".
 	Site string `mapstructure:"site"`
-}
-
-// GetCensoredKey returns the API key censored for logging purposes.
-// Deprecated: [v0.48.0] Will be removed in v0.49.0.
-func (api *APIConfig) GetCensoredKey() string {
-	if len(api.Key) <= 5 {
-		return api.Key
-	}
-	return strings.Repeat("*", len(api.Key)-5) + api.Key[len(api.Key)-5:]
 }
 
 // MetricsConfig defines the metrics exporter specific configuration options
@@ -221,10 +211,14 @@ type TagsConfig struct {
 	Env string `mapstructure:"env"`
 
 	// Service is the service for unified service tagging.
+	// Deprecated: [v0.49.0] Set `service.name` semconv instead, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8781 for details.
+	// This option will be removed in v0.52.0.
 	// It can also be set through the `DD_SERVICE` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
 	Service string `mapstructure:"service"`
 
 	// Version is the version for unified service tagging.
+	// Deprecated: [v0.49.0] Set `service.version` semconv instead, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8783 for details.
+	// This option will be removed in v0.52.0.
 	// It can also be set through the `DD_VERSION` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
 	Version string `mapstructure:"version"`
 
@@ -240,6 +234,7 @@ type TagsConfig struct {
 }
 
 // GetHostTags gets the host tags extracted from the configuration
+// Deprecated: [v0.49.0] Access fields explicitly instead.
 func (t *TagsConfig) GetHostTags() []string {
 	tags := t.Tags
 
@@ -307,18 +302,8 @@ type Config struct {
 	// Disable this in the Collector if you are using an agent-collector setup.
 	UseResourceMetadata bool `mapstructure:"use_resource_metadata"`
 
-	// onceMetadata ensures only one exporter (metrics/traces) sends host metadata
-	onceMetadata sync.Once
-
 	// warnings stores non-fatal configuration errors.
 	warnings []error
-}
-
-// OnceMetadata gets a sync.Once instance used for initializing the host metadata.
-// Deprecated: [v0.48.0] do not use, will be removed on v0.49.0.
-// TODO (#8373): Remove this method.
-func (c *Config) OnceMetadata() *sync.Once {
-	return &c.onceMetadata
 }
 
 // Sanitize tries to sanitize a given configuration
@@ -413,6 +398,14 @@ func (c *Config) Unmarshal(configMap *config.Map) error {
 
 	// Add warnings about autodetected environment variables.
 	c.warnings = append(c.warnings, warnUseOfEnvVars(configMap, c)...)
+
+	deprecationTemplate := "%q has been deprecated and will be removed in %s. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/%d"
+	if c.Service != "" {
+		c.warnings = append(c.warnings, fmt.Errorf(deprecationTemplate, "service", "v0.52.0", 8781))
+	}
+	if c.Version != "" {
+		c.warnings = append(c.warnings, fmt.Errorf(deprecationTemplate, "version", "v0.52.0", 8783))
+	}
 
 	return nil
 }
