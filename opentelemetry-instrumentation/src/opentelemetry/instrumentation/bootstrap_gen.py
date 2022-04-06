@@ -93,7 +93,7 @@ libraries = {
         "instrumentation": "opentelemetry-instrumentation-psycopg2==0.29b0",
     },
     "pymemcache": {
-        "library": "pymemcache ~= 1.3",
+        "library": "pymemcache >= 1.3.5, < 4",
         "instrumentation": "opentelemetry-instrumentation-pymemcache==0.29b0",
     },
     "pymongo": {

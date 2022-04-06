@@ -61,6 +61,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `opentelemetry-instrumentation-kafka-python` Fix topic extraction
   ([#949](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/949))
 
+### Changed
+
+- `opentelemetry-instrumentation-pymemcache` should run against newer versions of pymemcache.
+  ([#935](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/935))
+
 ## [1.9.1-0.28b1](https://github.com/open-telemetry/opentelemetry-python/releases/tag/v1.9.1-0.28b1) - 2022-01-29
 
 ### Fixed

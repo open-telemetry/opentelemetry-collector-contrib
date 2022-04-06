@@ -14,6 +14,8 @@
 from unittest import mock
 
 import pymemcache
+from packaging import version as get_package_version
+from pymemcache import __version__ as pymemcache_package_version
 from pymemcache.exceptions import (
     MemcacheClientError,
     MemcacheIllegalInputError,
@@ -32,6 +34,22 @@ from .utils import MockSocket, _str
 
 TEST_HOST = "localhost"
 TEST_PORT = 117711
+
+pymemcache_version = get_package_version.parse(pymemcache_package_version)
+
+# In pymemcache versions greater than 2, set_multi, set_many and delete_multi
+# now use a batched call
+# https://github.com/pinterest/pymemcache/blob/master/ChangeLog.rst#new-in-version-200  # noqa
+pymemcache_version_lt_2 = pymemcache_version < get_package_version.parse(
+    "2.0.0"
+)
+
+# In pymemcache versions greater than 3.4.1, the stats command no
+# longer sends trailing whitespace in the command
+# https://github.com/pinterest/pymemcache/blob/master/ChangeLog.rst#new-in-version-342  # noqa
+pymemcache_version_gt_341 = pymemcache_version > get_package_version.parse(
+    "3.4.1"
+)
 
 
 class PymemcacheClientTestCase(
@@ -126,11 +144,16 @@ class PymemcacheClientTestCase(
         client = self.make_client([b"STORED\r\n"])
         # Alias for set_many, a convienance function that calls set for every key
         result = client.set_multi({b"key": b"value"}, noreply=False)
-        self.assertTrue(result)
-
         spans = self.memory_exporter.get_finished_spans()
 
-        self.check_spans(spans, 2, ["set key", "set_multi key"])
+        # In pymemcache versions greater than 2, set_multi now uses a batched call
+        # https://github.com/pinterest/pymemcache/blob/master/ChangeLog.rst#new-in-version-200  # noqa
+        if pymemcache_version_lt_2:
+            self.assertTrue(result)
+            self.check_spans(spans, 2, ["set key", "set_multi key"])
+        else:
+            assert len(result) == 0
+            self.check_spans(spans, 1, ["set_multi key"])
 
     def test_delete_not_found(self):
         client = self.make_client([b"NOT_FOUND\r\n"])
@@ -191,19 +214,30 @@ class PymemcacheClientTestCase(
 
         spans = self.memory_exporter.get_finished_spans()
 
-        self.check_spans(
-            spans, 3, ["add key", "delete key", "delete_many key"]
-        )
+        # In pymemcache versions greater than 2, delete_many now uses a batched call
+        # https://github.com/pinterest/pymemcache/blob/master/ChangeLog.rst#new-in-version-200  # noqa
+        if pymemcache_version_lt_2:
+            self.check_spans(
+                spans, 3, ["add key", "delete key", "delete_many key"]
+            )
+        else:
+            self.check_spans(spans, 2, ["add key", "delete_many key"])
 
     def test_set_many_success(self):
         client = self.make_client([b"STORED\r\n"])
         # a convienance function that calls set for every key
         result = client.set_many({b"key": b"value"}, noreply=False)
-        self.assertTrue(result)
 
         spans = self.memory_exporter.get_finished_spans()
 
-        self.check_spans(spans, 2, ["set key", "set_many key"])
+        # In pymemcache versions greater than 2, set_many now uses a batched call
+        # https://github.com/pinterest/pymemcache/blob/master/ChangeLog.rst#new-in-version-200  # noqa
+        if pymemcache_version_lt_2:
+            self.assertTrue(result)
+            self.check_spans(spans, 2, ["set key", "set_many key"])
+        else:
+            assert len(result) == 0
+            self.check_spans(spans, 1, ["set_many key"])
 
     def test_set_get(self):
         client = self.make_client(
@@ -243,7 +277,7 @@ class PymemcacheClientTestCase(
 
     def test_cas_stored(self):
         client = self.make_client([b"STORED\r\n"])
-        result = client.cas(b"key", b"value", b"cas", noreply=False)
+        result = client.cas(b"key", b"value", b"1", noreply=False)
         self.assertTrue(result)
 
         spans = self.memory_exporter.get_finished_spans()
@@ -252,7 +286,7 @@ class PymemcacheClientTestCase(
 
     def test_cas_exists(self):
         client = self.make_client([b"EXISTS\r\n"])
-        result = client.cas(b"key", b"value", b"cas", noreply=False)
+        result = client.cas(b"key", b"value", b"1", noreply=False)
         assert result is False
 
         spans = self.memory_exporter.get_finished_spans()
@@ -261,7 +295,7 @@ class PymemcacheClientTestCase(
 
     def test_cas_not_found(self):
         client = self.make_client([b"NOT_FOUND\r\n"])
-        result = client.cas(b"key", b"value", b"cas", noreply=False)
+        result = client.cas(b"key", b"value", b"1", noreply=False)
         assert result is None
 
         spans = self.memory_exporter.get_finished_spans()
@@ -445,7 +479,14 @@ class PymemcacheClientTestCase(
     def test_stats(self):
         client = self.make_client([b"STAT fake_stats 1\r\n", b"END\r\n"])
         result = client.stats()
-        assert client.sock.send_bufs == [b"stats \r\n"]
+
+        # In pymemcache versions greater than 3.4.1, the stats command no
+        # longer sends trailing whitespace in the command
+        # https://github.com/pinterest/pymemcache/blob/master/ChangeLog.rst#new-in-version-342  # noqa
+        if pymemcache_version_gt_341:
+            assert client.sock.send_bufs == [b"stats\r\n"]
+        else:
+            assert client.sock.send_bufs == [b"stats \r\n"]
         assert result == {b"fake_stats": 1}
 
         spans = self.memory_exporter.get_finished_spans()
@@ -544,5 +585,4 @@ class PymemcacheHashClientTestCase(TestBase):
         self.assertTrue(result)
 
         spans = self.memory_exporter.get_finished_spans()
-
         self.check_spans(spans, 2, ["add key", "delete key"])

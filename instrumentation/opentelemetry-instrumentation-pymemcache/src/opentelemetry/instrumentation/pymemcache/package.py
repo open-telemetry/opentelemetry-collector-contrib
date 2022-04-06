@@ -13,4 +13,4 @@
 # limitations under the License.
 
 
-_instruments = ("pymemcache ~= 1.3",)
+_instruments = ("pymemcache >= 1.3.5, < 4",)
