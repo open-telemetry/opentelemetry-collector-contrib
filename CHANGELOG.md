@@ -3,9 +3,14 @@
 ## Unreleased
 
 ### 💡 Enhancements 💡
+- `splunkhecexporter`: Add support for batching traces (#8995)
 
+- `tanzuobservabilityexporter`: Use resourcetotelemetry helper (#8338)
 - `cmd/mdatagen`: Add resource attributes definition to metadata.yaml and move `pdata.Metrics` creation to the
   generated code (#5270) 
+- Add `make crosslink` target to ensure replace statements are included in `go.mod` for all transitive dependencies within repository (#8822)
+- `filestorageextension`: Change bbolt DB settings for better performance (#9004)
+- `jaegerremotesamplingextension`: Add local and remote sampling stores (#8818)
 - `attributesprocessor`: Add support to filter on log body (#8996)
 
 ### 🛑 Breaking changes 🛑
@@ -28,6 +33,10 @@
 - `datadogexporter`: Deprecate `GetHostTags` method from `TagsConfig` struct (#8975)
 
 ### 🚀 New components 🚀
+
+### 🧰 Bug fixes 🧰
+
+- `prometheusreceiver`: Fix issues with relabelling the `job` and `instance` labels. (#8780)
 
 ## v0.48.0
 

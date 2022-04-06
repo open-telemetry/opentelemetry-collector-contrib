@@ -70,7 +70,7 @@ func appendResourceSpan(tracingInputs *PICTTracingInputs, spanPairsFile string,
 }
 
 func appendScopeSpans(tracingInputs *PICTTracingInputs, spanPairsFile string,
-	random io.Reader, instrumentationLibrarySpansSlice pdata.ScopeSpansSlice) error {
+	random io.Reader, scopeSpansSlice pdata.ScopeSpansSlice) error {
 	var count int
 	switch tracingInputs.InstrumentationLibrary {
 	case LibraryNone:
@@ -81,7 +81,7 @@ func appendScopeSpans(tracingInputs *PICTTracingInputs, spanPairsFile string,
 		count = 2
 	}
 	for i := 0; i < count; i++ {
-		err := fillScopeSpans(tracingInputs, i, spanPairsFile, random, instrumentationLibrarySpansSlice.AppendEmpty())
+		err := fillScopeSpans(tracingInputs, i, spanPairsFile, random, scopeSpansSlice.AppendEmpty())
 		if err != nil {
 			return err
 		}
@@ -89,23 +89,23 @@ func appendScopeSpans(tracingInputs *PICTTracingInputs, spanPairsFile string,
 	return nil
 }
 
-func fillScopeSpans(tracingInputs *PICTTracingInputs, index int, spanPairsFile string, random io.Reader, instrumentationLibrarySpans pdata.ScopeSpans) error {
+func fillScopeSpans(tracingInputs *PICTTracingInputs, index int, spanPairsFile string, random io.Reader, scopeSpans pdata.ScopeSpans) error {
 	spanCaseCount, err := countTotalSpanCases(spanPairsFile)
 	if err != nil {
 		return err
 	}
-	fillInstrumentationLibrary(tracingInputs, index, instrumentationLibrarySpans.Scope())
+	fillInstrumentationLibrary(tracingInputs, index, scopeSpans.Scope())
 	switch tracingInputs.Spans {
 	case LibrarySpansNone:
 		return nil
 	case LibrarySpansOne:
-		return appendSpans(1, spanPairsFile, random, instrumentationLibrarySpans.Spans())
+		return appendSpans(1, spanPairsFile, random, scopeSpans.Spans())
 	case LibrarySpansSeveral:
-		return appendSpans(spanCaseCount/4, spanPairsFile, random, instrumentationLibrarySpans.Spans())
+		return appendSpans(spanCaseCount/4, spanPairsFile, random, scopeSpans.Spans())
 	case LibrarySpansAll:
-		return appendSpans(spanCaseCount, spanPairsFile, random, instrumentationLibrarySpans.Spans())
+		return appendSpans(spanCaseCount, spanPairsFile, random, scopeSpans.Spans())
 	default:
-		return appendSpans(16, spanPairsFile, random, instrumentationLibrarySpans.Spans())
+		return appendSpans(16, spanPairsFile, random, scopeSpans.Spans())
 	}
 }
 
