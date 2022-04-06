@@ -26,11 +26,16 @@ type TTicker interface {
 	Stop()
 }
 
+// Implements TTicker and abstracts underlying time ticker's functionality to make usage
+// simpler.
 type PolicyTicker struct {
 	Ticker     *time.Ticker
 	OnTickFunc func()
 	StopCh     chan struct{}
 }
+
+// Ensure PolicyTicker implements TTicker interface
+var _ TTicker = (*PolicyTicker)(nil)
 
 func (pt *PolicyTicker) Start(d time.Duration) {
 	pt.Ticker = time.NewTicker(d)
@@ -46,13 +51,12 @@ func (pt *PolicyTicker) Start(d time.Duration) {
 		}
 	}()
 }
+
 func (pt *PolicyTicker) OnTick() {
 	pt.OnTickFunc()
 }
+
 func (pt *PolicyTicker) Stop() {
 	close(pt.StopCh)
 	pt.Ticker.Stop()
 }
-
-// Ensure PolicyTicker implements TTicker interface
-var _ TTicker = (*PolicyTicker)(nil)
