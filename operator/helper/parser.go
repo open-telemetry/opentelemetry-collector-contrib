@@ -28,7 +28,7 @@ func NewParserConfig(operatorID, operatorType string) ParserConfig {
 	return ParserConfig{
 		TransformerConfig: NewTransformerConfig(operatorID, operatorType),
 		ParseFrom:         entry.NewBodyField(),
-		ParseTo:           entry.NewBodyField(),
+		ParseTo:           entry.NewAttributeField(),
 		PreserveTo:        nil,
 	}
 }
