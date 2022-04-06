@@ -152,7 +152,7 @@ func TestConvertGaugeEnvelope(t *testing.T) {
 	assertAttributes(t, dataPoint.Attributes(), expectedAttributes)
 }
 
-func assertAttributes(t *testing.T, attributes pdata.AttributeMap, expected map[string]string) {
+func assertAttributes(t *testing.T, attributes pdata.Map, expected map[string]string) {
 	assert.Equal(t, len(expected), attributes.Len())
 
 	for key, expectedValue := range expected {

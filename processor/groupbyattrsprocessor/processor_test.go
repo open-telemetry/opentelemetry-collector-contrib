@@ -29,20 +29,20 @@ var (
 	attrMap = prepareAttributeMap()
 )
 
-func prepareAttributeMap() pdata.AttributeMap {
-	attributeValues := map[string]pdata.AttributeValue{
-		"xx": pdata.NewAttributeValueString("aa"),
-		"yy": pdata.NewAttributeValueInt(11),
+func prepareAttributeMap() pdata.Map {
+	attributeValues := map[string]interface{}{
+		"xx": "aa",
+		"yy": 11,
 	}
 
-	am := pdata.NewAttributeMap()
-	pdata.NewAttributeMapFromMap(attributeValues).CopyTo(am)
+	am := pdata.NewMap()
+	pdata.NewMapFromRaw(attributeValues).CopyTo(am)
 
 	am.Sort()
 	return am
 }
 
-func prepareResource(attrMap pdata.AttributeMap, selectedKeys []string) pdata.Resource {
+func prepareResource(attrMap pdata.Map, selectedKeys []string) pdata.Resource {
 	res := pdata.NewResource()
 	for _, key := range selectedKeys {
 		val, found := attrMap.Get(key)
@@ -54,8 +54,8 @@ func prepareResource(attrMap pdata.AttributeMap, selectedKeys []string) pdata.Re
 	return res
 }
 
-func filterAttributeMap(attrMap pdata.AttributeMap, selectedKeys []string) pdata.AttributeMap {
-	filteredAttrMap := pdata.NewAttributeMap()
+func filterAttributeMap(attrMap pdata.Map, selectedKeys []string) pdata.Map {
+	filteredAttrMap := pdata.NewMap()
 	if len(selectedKeys) == 0 {
 		return filteredAttrMap
 	}
@@ -79,7 +79,7 @@ func someComplexLogs(withResourceAttrIndex bool, rlCount int, illCount int) pdat
 		}
 
 		for j := 0; j < illCount; j++ {
-			log := rl.InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty()
+			log := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 			log.SetName(fmt.Sprintf("foo-%d-%d", i, j))
 			log.Attributes().InsertString("commonGroupedAttr", "abc")
 			log.Attributes().InsertString("commonNonGroupedAttr", "xyz")
@@ -99,7 +99,7 @@ func someComplexTraces(withResourceAttrIndex bool, rsCount int, ilsCount int) pd
 		}
 
 		for j := 0; j < ilsCount; j++ {
-			span := rs.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+			span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 			span.SetName(fmt.Sprintf("foo-%d-%d", i, j))
 			span.Attributes().InsertString("commonGroupedAttr", "abc")
 			span.Attributes().InsertString("commonNonGroupedAttr", "xyz")
@@ -119,7 +119,7 @@ func someComplexMetrics(withResourceAttrIndex bool, rmCount int, ilmCount int, d
 		}
 
 		for j := 0; j < ilmCount; j++ {
-			metric := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
+			metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 			metric.SetName(fmt.Sprintf("foo-%d-%d", i, j))
 			metric.SetDataType(pdata.MetricDataTypeGauge)
 
@@ -136,8 +136,8 @@ func someComplexMetrics(withResourceAttrIndex bool, rmCount int, ilmCount int, d
 	return metrics
 }
 
-func assertResourceContainsAttributes(t *testing.T, resource pdata.Resource, attributeMap pdata.AttributeMap) {
-	attributeMap.Range(func(k string, v pdata.AttributeValue) bool {
+func assertResourceContainsAttributes(t *testing.T, resource pdata.Resource, attributeMap pdata.Map) {
+	attributeMap.Range(func(k string, v pdata.Value) bool {
 		rv, found := resource.Attributes().Get(k)
 		assert.True(t, found)
 		assert.Equal(t, v, rv)
@@ -240,8 +240,8 @@ func TestComplexAttributeGrouping(t *testing.T) {
 			assert.NoError(t, err)
 
 			// Following are record-level attributes that should be preserved after processing
-			outputRecordAttrs := pdata.NewAttributeMap()
-			outputResourceAttrs := pdata.NewAttributeMap()
+			outputRecordAttrs := pdata.NewMap()
+			outputResourceAttrs := pdata.NewMap()
 			if tt.shouldMoveCommonGroupedAttr {
 				// This was present at record level and should be found on Resource level after the processor
 				outputResourceAttrs.InsertString("commonGroupedAttr", "abc")
@@ -255,12 +255,12 @@ func TestComplexAttributeGrouping(t *testing.T) {
 			assert.Equal(t, tt.outputTotalRecordsCount, processedLogs.LogRecordCount())
 			for i := 0; i < rls.Len(); i++ {
 				rl := rls.At(i)
-				assert.Equal(t, tt.outputInstrumentationLibraryCount, rl.InstrumentationLibraryLogs().Len())
+				assert.Equal(t, tt.outputInstrumentationLibraryCount, rl.ScopeLogs().Len())
 
 				assertResourceContainsAttributes(t, rl.Resource(), outputResourceAttrs)
 
-				for j := 0; j < rl.InstrumentationLibraryLogs().Len(); j++ {
-					logs := rl.InstrumentationLibraryLogs().At(j).LogRecords()
+				for j := 0; j < rl.ScopeLogs().Len(); j++ {
+					logs := rl.ScopeLogs().At(j).LogRecords()
 					for k := 0; k < logs.Len(); k++ {
 						assert.EqualValues(t, outputRecordAttrs, logs.At(k).Attributes())
 					}
@@ -272,12 +272,12 @@ func TestComplexAttributeGrouping(t *testing.T) {
 			assert.Equal(t, tt.outputTotalRecordsCount, processedSpans.SpanCount())
 			for i := 0; i < rss.Len(); i++ {
 				rs := rss.At(i)
-				assert.Equal(t, tt.outputInstrumentationLibraryCount, rs.InstrumentationLibrarySpans().Len())
+				assert.Equal(t, tt.outputInstrumentationLibraryCount, rs.ScopeSpans().Len())
 
 				assertResourceContainsAttributes(t, rs.Resource(), outputResourceAttrs)
 
-				for j := 0; j < rs.InstrumentationLibrarySpans().Len(); j++ {
-					spans := rs.InstrumentationLibrarySpans().At(j).Spans()
+				for j := 0; j < rs.ScopeSpans().Len(); j++ {
+					spans := rs.ScopeSpans().At(j).Spans()
 					for k := 0; k < spans.Len(); k++ {
 						assert.EqualValues(t, outputRecordAttrs, spans.At(k).Attributes())
 					}
@@ -289,12 +289,12 @@ func TestComplexAttributeGrouping(t *testing.T) {
 			assert.Equal(t, tt.outputTotalRecordsCount, processedMetrics.MetricCount())
 			for i := 0; i < rms.Len(); i++ {
 				rm := rms.At(i)
-				assert.Equal(t, tt.outputInstrumentationLibraryCount, rm.InstrumentationLibraryMetrics().Len())
+				assert.Equal(t, tt.outputInstrumentationLibraryCount, rm.ScopeMetrics().Len())
 
 				assertResourceContainsAttributes(t, rm.Resource(), outputResourceAttrs)
 
-				for j := 0; j < rm.InstrumentationLibraryMetrics().Len(); j++ {
-					metrics := rm.InstrumentationLibraryMetrics().At(j).Metrics()
+				for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+					metrics := rm.ScopeMetrics().At(j).Metrics()
 					for k := 0; k < metrics.Len(); k++ {
 						metric := metrics.At(k)
 						for l := 0; l < metric.Gauge().DataPoints().Len(); l++ {
@@ -400,13 +400,13 @@ func TestAttributeGrouping(t *testing.T) {
 				assert.Equal(t, expectedResource, res)
 			}
 
-			ills := processedLogs.ResourceLogs().At(0).InstrumentationLibraryLogs()
-			ilss := processedSpans.ResourceSpans().At(0).InstrumentationLibrarySpans()
-			ilgms := processedGaugeMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics()
-			ilsms := processedSumMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics()
-			ilsyms := processedSummaryMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics()
-			ilhms := processedHistogramMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics()
-			ilehms := processedExponentialHistogramMetrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics()
+			ills := processedLogs.ResourceLogs().At(0).ScopeLogs()
+			ilss := processedSpans.ResourceSpans().At(0).ScopeSpans()
+			ilgms := processedGaugeMetrics.ResourceMetrics().At(0).ScopeMetrics()
+			ilsms := processedSumMetrics.ResourceMetrics().At(0).ScopeMetrics()
+			ilsyms := processedSummaryMetrics.ResourceMetrics().At(0).ScopeMetrics()
+			ilhms := processedHistogramMetrics.ResourceMetrics().At(0).ScopeMetrics()
+			ilehms := processedExponentialHistogramMetrics.ResourceMetrics().At(0).ScopeMetrics()
 
 			assert.Equal(t, 1, ills.Len())
 			assert.Equal(t, 1, ilss.Len())
@@ -460,14 +460,14 @@ func TestAttributeGrouping(t *testing.T) {
 	}
 }
 
-func someSpans(attrs pdata.AttributeMap, instrumentationLibraryCount int, spanCount int) pdata.Traces {
+func someSpans(attrs pdata.Map, instrumentationLibraryCount int, spanCount int) pdata.Traces {
 	traces := pdata.NewTraces()
 	for i := 0; i < instrumentationLibraryCount; i++ {
 		ilName := fmt.Sprint("ils-", i)
 
 		for j := 0; j < spanCount; j++ {
-			ils := traces.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty()
-			ils.InstrumentationLibrary().SetName(ilName)
+			ils := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
+			ils.Scope().SetName(ilName)
 			span := ils.Spans().AppendEmpty()
 			span.SetName(fmt.Sprint("foo-", j))
 			attrs.CopyTo(span.Attributes())
@@ -476,15 +476,15 @@ func someSpans(attrs pdata.AttributeMap, instrumentationLibraryCount int, spanCo
 	return traces
 }
 
-func someLogs(attrs pdata.AttributeMap, instrumentationLibraryCount int, logCount int) pdata.Logs {
+func someLogs(attrs pdata.Map, instrumentationLibraryCount int, logCount int) pdata.Logs {
 	logs := pdata.NewLogs()
 	for i := 0; i < instrumentationLibraryCount; i++ {
 		ilName := fmt.Sprint("ils-", i)
 
 		for j := 0; j < logCount; j++ {
-			ill := logs.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty()
-			ill.InstrumentationLibrary().SetName(ilName)
-			log := ill.LogRecords().AppendEmpty()
+			sl := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
+			sl.Scope().SetName(ilName)
+			log := sl.LogRecords().AppendEmpty()
 			log.SetName(fmt.Sprint("foo-", j))
 			attrs.CopyTo(log.Attributes())
 		}
@@ -492,14 +492,14 @@ func someLogs(attrs pdata.AttributeMap, instrumentationLibraryCount int, logCoun
 	return logs
 }
 
-func someGaugeMetrics(attrs pdata.AttributeMap, instrumentationLibraryCount int, metricCount int) pdata.Metrics {
+func someGaugeMetrics(attrs pdata.Map, instrumentationLibraryCount int, metricCount int) pdata.Metrics {
 	metrics := pdata.NewMetrics()
 	for i := 0; i < instrumentationLibraryCount; i++ {
 		ilName := fmt.Sprint("ils-", i)
 
 		for j := 0; j < metricCount; j++ {
-			ilm := metrics.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
-			ilm.InstrumentationLibrary().SetName(ilName)
+			ilm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+			ilm.Scope().SetName(ilName)
 			metric := ilm.Metrics().AppendEmpty()
 			metric.SetName(fmt.Sprint("gauge-", j))
 			metric.SetDataType(pdata.MetricDataTypeGauge)
@@ -510,14 +510,14 @@ func someGaugeMetrics(attrs pdata.AttributeMap, instrumentationLibraryCount int,
 	return metrics
 }
 
-func someSumMetrics(attrs pdata.AttributeMap, instrumentationLibraryCount int, metricCount int) pdata.Metrics {
+func someSumMetrics(attrs pdata.Map, instrumentationLibraryCount int, metricCount int) pdata.Metrics {
 	metrics := pdata.NewMetrics()
 	for i := 0; i < instrumentationLibraryCount; i++ {
 		ilName := fmt.Sprint("ils-", i)
 
 		for j := 0; j < metricCount; j++ {
-			ilm := metrics.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
-			ilm.InstrumentationLibrary().SetName(ilName)
+			ilm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+			ilm.Scope().SetName(ilName)
 			metric := ilm.Metrics().AppendEmpty()
 			metric.SetName(fmt.Sprint("sum-", j))
 			metric.SetDataType(pdata.MetricDataTypeSum)
@@ -528,14 +528,14 @@ func someSumMetrics(attrs pdata.AttributeMap, instrumentationLibraryCount int, m
 	return metrics
 }
 
-func someSummaryMetrics(attrs pdata.AttributeMap, instrumentationLibraryCount int, metricCount int) pdata.Metrics {
+func someSummaryMetrics(attrs pdata.Map, instrumentationLibraryCount int, metricCount int) pdata.Metrics {
 	metrics := pdata.NewMetrics()
 	for i := 0; i < instrumentationLibraryCount; i++ {
 		ilName := fmt.Sprint("ils-", i)
 
 		for j := 0; j < metricCount; j++ {
-			ilm := metrics.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
-			ilm.InstrumentationLibrary().SetName(ilName)
+			ilm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+			ilm.Scope().SetName(ilName)
 			metric := ilm.Metrics().AppendEmpty()
 			metric.SetName(fmt.Sprint("summary-", j))
 			metric.SetDataType(pdata.MetricDataTypeSummary)
@@ -546,14 +546,14 @@ func someSummaryMetrics(attrs pdata.AttributeMap, instrumentationLibraryCount in
 	return metrics
 }
 
-func someHistogramMetrics(attrs pdata.AttributeMap, instrumentationLibraryCount int, metricCount int) pdata.Metrics {
+func someHistogramMetrics(attrs pdata.Map, instrumentationLibraryCount int, metricCount int) pdata.Metrics {
 	metrics := pdata.NewMetrics()
 	for i := 0; i < instrumentationLibraryCount; i++ {
 		ilName := fmt.Sprint("ils-", i)
 
 		for j := 0; j < metricCount; j++ {
-			ilm := metrics.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
-			ilm.InstrumentationLibrary().SetName(ilName)
+			ilm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+			ilm.Scope().SetName(ilName)
 			metric := ilm.Metrics().AppendEmpty()
 			metric.SetName(fmt.Sprint("histogram-", j))
 			metric.SetDataType(pdata.MetricDataTypeHistogram)
@@ -564,14 +564,14 @@ func someHistogramMetrics(attrs pdata.AttributeMap, instrumentationLibraryCount 
 	return metrics
 }
 
-func someExponentialHistogramMetrics(attrs pdata.AttributeMap, instrumentationLibraryCount int, metricCount int) pdata.Metrics {
+func someExponentialHistogramMetrics(attrs pdata.Map, instrumentationLibraryCount int, metricCount int) pdata.Metrics {
 	metrics := pdata.NewMetrics()
 	for i := 0; i < instrumentationLibraryCount; i++ {
 		ilName := fmt.Sprint("ils-", i)
 
 		for j := 0; j < metricCount; j++ {
-			ilm := metrics.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
-			ilm.InstrumentationLibrary().SetName(ilName)
+			ilm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+			ilm.Scope().SetName(ilName)
 			metric := ilm.Metrics().AppendEmpty()
 			metric.SetName(fmt.Sprint("exponential-histogram-", j))
 			metric.SetDataType(pdata.MetricDataTypeExponentialHistogram)
@@ -637,7 +637,7 @@ func TestMetricAdvancedGrouping(t *testing.T) {
 	resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
 	resourceMetrics.Resource().Attributes().UpsertString("host.name", "localhost")
 
-	ilm := resourceMetrics.InstrumentationLibraryMetrics().AppendEmpty()
+	ilm := resourceMetrics.ScopeMetrics().AppendEmpty()
 
 	// gauge-1
 	gauge1 := ilm.Metrics().AppendEmpty()
@@ -692,9 +692,9 @@ func TestMetricAdvancedGrouping(t *testing.T) {
 	localhost, foundLocalhost := retrieveHostResource(processedMetrics.ResourceMetrics(), "localhost")
 	assert.True(t, foundLocalhost)
 	assert.Equal(t, 1, localhost.Resource().Attributes().Len())
-	assert.Equal(t, 1, localhost.InstrumentationLibraryMetrics().Len())
-	assert.Equal(t, 1, localhost.InstrumentationLibraryMetrics().At(0).Metrics().Len())
-	localhostMetric := localhost.InstrumentationLibraryMetrics().At(0).Metrics().At(0)
+	assert.Equal(t, 1, localhost.ScopeMetrics().Len())
+	assert.Equal(t, 1, localhost.ScopeMetrics().At(0).Metrics().Len())
+	localhostMetric := localhost.ScopeMetrics().At(0).Metrics().At(0)
 	assert.Equal(t, "dont-move", localhostMetric.Name())
 	assert.Equal(t, pdata.MetricDataTypeGauge, localhostMetric.DataType())
 
@@ -702,19 +702,19 @@ func TestMetricAdvancedGrouping(t *testing.T) {
 	hostA, foundHostA := retrieveHostResource(processedMetrics.ResourceMetrics(), "host-A")
 	assert.True(t, foundHostA)
 	assert.Equal(t, 1, hostA.Resource().Attributes().Len())
-	assert.Equal(t, 1, hostA.InstrumentationLibraryMetrics().Len())
-	assert.Equal(t, 3, hostA.InstrumentationLibraryMetrics().At(0).Metrics().Len())
-	hostAGauge1, foundHostAGauge1 := retrieveMetric(hostA.InstrumentationLibraryMetrics().At(0).Metrics(), "gauge-1", pdata.MetricDataTypeGauge)
+	assert.Equal(t, 1, hostA.ScopeMetrics().Len())
+	assert.Equal(t, 3, hostA.ScopeMetrics().At(0).Metrics().Len())
+	hostAGauge1, foundHostAGauge1 := retrieveMetric(hostA.ScopeMetrics().At(0).Metrics(), "gauge-1", pdata.MetricDataTypeGauge)
 	assert.True(t, foundHostAGauge1)
 	assert.Equal(t, 4, hostAGauge1.Gauge().DataPoints().Len())
 	assert.Equal(t, 1, hostAGauge1.Gauge().DataPoints().At(0).Attributes().Len())
 	metricIDAttribute, foundMetricIDAttribute := hostAGauge1.Gauge().DataPoints().At(0).Attributes().Get("id")
 	assert.True(t, foundMetricIDAttribute)
 	assert.Equal(t, "eth0", metricIDAttribute.AsString())
-	hostAMixedGauge, foundHostAMixedGauge := retrieveMetric(hostA.InstrumentationLibraryMetrics().At(0).Metrics(), "mixed-type", pdata.MetricDataTypeGauge)
+	hostAMixedGauge, foundHostAMixedGauge := retrieveMetric(hostA.ScopeMetrics().At(0).Metrics(), "mixed-type", pdata.MetricDataTypeGauge)
 	assert.True(t, foundHostAMixedGauge)
 	assert.Equal(t, 2, hostAMixedGauge.Gauge().DataPoints().Len())
-	hostAMixedSum, foundHostAMixedSum := retrieveMetric(hostA.InstrumentationLibraryMetrics().At(0).Metrics(), "mixed-type", pdata.MetricDataTypeSum)
+	hostAMixedSum, foundHostAMixedSum := retrieveMetric(hostA.ScopeMetrics().At(0).Metrics(), "mixed-type", pdata.MetricDataTypeSum)
 	assert.True(t, foundHostAMixedSum)
 	assert.Equal(t, 2, hostAMixedSum.Sum().DataPoints().Len())
 
@@ -722,12 +722,12 @@ func TestMetricAdvancedGrouping(t *testing.T) {
 	hostB, foundHostB := retrieveHostResource(processedMetrics.ResourceMetrics(), "host-B")
 	assert.True(t, foundHostB)
 	assert.Equal(t, 1, hostB.Resource().Attributes().Len())
-	assert.Equal(t, 1, hostB.InstrumentationLibraryMetrics().Len())
-	assert.Equal(t, 2, hostB.InstrumentationLibraryMetrics().At(0).Metrics().Len())
-	hostBGauge1, foundHostBGauge1 := retrieveMetric(hostB.InstrumentationLibraryMetrics().At(0).Metrics(), "gauge-1", pdata.MetricDataTypeGauge)
+	assert.Equal(t, 1, hostB.ScopeMetrics().Len())
+	assert.Equal(t, 2, hostB.ScopeMetrics().At(0).Metrics().Len())
+	hostBGauge1, foundHostBGauge1 := retrieveMetric(hostB.ScopeMetrics().At(0).Metrics(), "gauge-1", pdata.MetricDataTypeGauge)
 	assert.True(t, foundHostBGauge1)
 	assert.Equal(t, 2, hostBGauge1.Gauge().DataPoints().Len())
-	hostBMixedGauge, foundHostBMixedGauge := retrieveMetric(hostB.InstrumentationLibraryMetrics().At(0).Metrics(), "mixed-type", pdata.MetricDataTypeGauge)
+	hostBMixedGauge, foundHostBMixedGauge := retrieveMetric(hostB.ScopeMetrics().At(0).Metrics(), "mixed-type", pdata.MetricDataTypeGauge)
 	assert.True(t, foundHostBMixedGauge)
 	assert.Equal(t, 1, hostBMixedGauge.Gauge().DataPoints().Len())
 }
@@ -785,17 +785,17 @@ func TestCompacting(t *testing.T) {
 	assert.Equal(t, 0, rls.Resource().Attributes().Len())
 	assert.Equal(t, 0, rlm.Resource().Attributes().Len())
 
-	assert.Equal(t, 10, rss.InstrumentationLibrarySpans().Len())
-	assert.Equal(t, 10, rls.InstrumentationLibraryLogs().Len())
-	assert.Equal(t, 10, rlm.InstrumentationLibraryMetrics().Len())
+	assert.Equal(t, 10, rss.ScopeSpans().Len())
+	assert.Equal(t, 10, rls.ScopeLogs().Len())
+	assert.Equal(t, 10, rlm.ScopeMetrics().Len())
 
 	for i := 0; i < 10; i++ {
-		ils := rss.InstrumentationLibrarySpans().At(i)
-		ill := rls.InstrumentationLibraryLogs().At(i)
-		ilm := rlm.InstrumentationLibraryMetrics().At(i)
+		ils := rss.ScopeSpans().At(i)
+		sl := rls.ScopeLogs().At(i)
+		ilm := rlm.ScopeMetrics().At(i)
 
 		assert.Equal(t, 10, ils.Spans().Len())
-		assert.Equal(t, 10, ill.LogRecords().Len())
+		assert.Equal(t, 10, sl.LogRecords().Len())
 		assert.Equal(t, 10, ilm.Metrics().Len())
 	}
 }

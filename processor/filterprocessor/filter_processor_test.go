@@ -44,7 +44,7 @@ type metricNameTest struct {
 
 type metricWithResource struct {
 	metricNames        []string
-	resourceAttributes map[string]pdata.AttributeValue
+	resourceAttributes map[string]interface{}
 }
 
 var (
@@ -79,10 +79,10 @@ var (
 	inMetricForResourceTest = []metricWithResource{
 		{
 			metricNames: []string{"metric1", "metric2"},
-			resourceAttributes: map[string]pdata.AttributeValue{
-				"attr1": pdata.NewAttributeValueString("attr1/val1"),
-				"attr2": pdata.NewAttributeValueString("attr2/val2"),
-				"attr3": pdata.NewAttributeValueString("attr3/val3"),
+			resourceAttributes: map[string]interface{}{
+				"attr1": "attr1/val1",
+				"attr2": "attr2/val2",
+				"attr3": "attr3/val3",
 			},
 		},
 	}
@@ -90,14 +90,14 @@ var (
 	inMetricForTwoResource = []metricWithResource{
 		{
 			metricNames: []string{"metric1", "metric2"},
-			resourceAttributes: map[string]pdata.AttributeValue{
-				"attr1": pdata.NewAttributeValueString("attr1/val1"),
+			resourceAttributes: map[string]interface{}{
+				"attr1": "attr1/val1",
 			},
 		},
 		{
 			metricNames: []string{"metric3", "metric4"},
-			resourceAttributes: map[string]pdata.AttributeValue{
-				"attr1": pdata.NewAttributeValueString("attr1/val2"),
+			resourceAttributes: map[string]interface{}{
+				"attr1": "attr1/val2",
 			},
 		},
 	}
@@ -368,7 +368,7 @@ func TestFilterMetricProcessor(t *testing.T) {
 			require.Equal(t, 1, len(got))
 			require.Equal(t, len(test.outMN), got[0].ResourceMetrics().Len())
 			for i, wantOut := range test.outMN {
-				gotMetrics := got[0].ResourceMetrics().At(i).InstrumentationLibraryMetrics().At(0).Metrics()
+				gotMetrics := got[0].ResourceMetrics().At(i).ScopeMetrics().At(0).Metrics()
 				assert.Equal(t, len(wantOut), gotMetrics.Len())
 				for idx := range wantOut {
 					assert.Equal(t, wantOut[idx], gotMetrics.At(idx).Name())
@@ -385,8 +385,8 @@ func testResourceMetrics(mwrs []metricWithResource) pdata.Metrics {
 
 	for _, mwr := range mwrs {
 		rm := md.ResourceMetrics().AppendEmpty()
-		pdata.NewAttributeMapFromMap(mwr.resourceAttributes).CopyTo(rm.Resource().Attributes())
-		ms := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics()
+		pdata.NewMapFromRaw(mwr.resourceAttributes).CopyTo(rm.Resource().Attributes())
+		ms := rm.ScopeMetrics().AppendEmpty().Metrics()
 		for _, name := range mwr.metricNames {
 			m := ms.AppendEmpty()
 			m.SetName(name)
@@ -482,7 +482,7 @@ func TestNilILM(t *testing.T) {
 	metrics := pdata.NewMetrics()
 	rms := metrics.ResourceMetrics()
 	rm := rms.AppendEmpty()
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 	ilms.AppendEmpty()
 	requireNotPanics(t, metrics)
 }
@@ -491,7 +491,7 @@ func TestNilMetric(t *testing.T) {
 	metrics := pdata.NewMetrics()
 	rms := metrics.ResourceMetrics()
 	rm := rms.AppendEmpty()
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 	ilm := ilms.AppendEmpty()
 	ms := ilm.Metrics()
 	ms.AppendEmpty()

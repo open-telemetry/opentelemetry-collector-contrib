@@ -59,9 +59,9 @@ func (s *brokerScraper) scrape(context.Context) (pdata.Metrics, error) {
 	brokers := s.client.Brokers()
 
 	md := pdata.NewMetrics()
-	ilm := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName(instrumentationLibName)
-	addIntGauge(ilm.Metrics(), metadata.M.KafkaBrokers.Name(), pdata.NewTimestampFromTime(time.Now()), pdata.NewAttributeMap(), int64(len(brokers)))
+	ilm := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+	ilm.Scope().SetName(instrumentationLibName)
+	addIntGauge(ilm.Metrics(), metadata.M.KafkaBrokers.Name(), pdata.NewTimestampFromTime(time.Now()), pdata.NewMap(), int64(len(brokers)))
 
 	return md, nil
 }

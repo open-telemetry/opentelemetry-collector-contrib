@@ -73,7 +73,7 @@ func traceDataToSplunk(logger *zap.Logger, data pdata.Traces, config *Config) ([
 		sourceType := config.SourceType
 		index := config.Index
 		commonFields := map[string]interface{}{}
-		rs.Resource().Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+		rs.Resource().Attributes().Range(func(k string, v pdata.Value) bool {
 			switch k {
 			case hostKey:
 				host = v.StringVal()
@@ -90,7 +90,7 @@ func traceDataToSplunk(logger *zap.Logger, data pdata.Traces, config *Config) ([
 			}
 			return true
 		})
-		ilss := rs.InstrumentationLibrarySpans()
+		ilss := rs.ScopeSpans()
 		for sils := 0; sils < ilss.Len(); sils++ {
 			ils := ilss.At(sils)
 			spans := ils.Spans()
@@ -115,7 +115,7 @@ func traceDataToSplunk(logger *zap.Logger, data pdata.Traces, config *Config) ([
 
 func toHecSpan(logger *zap.Logger, span pdata.Span) hecSpan {
 	attributes := map[string]interface{}{}
-	span.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+	span.Attributes().Range(func(k string, v pdata.Value) bool {
 		attributes[k] = convertAttributeValue(v, logger)
 		return true
 	})
@@ -124,7 +124,7 @@ func toHecSpan(logger *zap.Logger, span pdata.Span) hecSpan {
 	for i := 0; i < span.Links().Len(); i++ {
 		link := span.Links().At(i)
 		linkAttributes := map[string]interface{}{}
-		link.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+		link.Attributes().Range(func(k string, v pdata.Value) bool {
 			linkAttributes[k] = convertAttributeValue(v, logger)
 			return true
 		})
@@ -139,7 +139,7 @@ func toHecSpan(logger *zap.Logger, span pdata.Span) hecSpan {
 	for i := 0; i < span.Events().Len(); i++ {
 		event := span.Events().At(i)
 		eventAttributes := map[string]interface{}{}
-		event.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+		event.Attributes().Range(func(k string, v pdata.Value) bool {
 			eventAttributes[k] = convertAttributeValue(v, logger)
 			return true
 		})

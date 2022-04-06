@@ -91,8 +91,9 @@ These instructions are to get you up and running quickly with the GCP exporter i
       --volume ~/.config/gcloud/application_default_credentials.json:/etc/otel/key.json \
       --volume $(pwd)/config.yaml:/etc/otel/config.yaml \
       --env GOOGLE_APPLICATION_CREDENTIALS=/etc/otel/key.json \
-      --expose 4317 \
-      --expose 55681 \
+      -p 4317:4317 \
+      -p 4318:4318 \
+      -p 55681:55681 \
       --rm \
       otel/opentelemetry-collector-contrib
     ```

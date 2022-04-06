@@ -48,18 +48,18 @@ func (a *metricAttributesProcessor) processMetrics(ctx context.Context, md pdata
 	for i := 0; i < rms.Len(); i++ {
 		rs := rms.At(i)
 		resource := rs.Resource()
-		ilms := rs.InstrumentationLibraryMetrics()
-		for j := 0; j < ilms.Len(); j++ {
-			ils := ilms.At(j)
+		sm := rs.ScopeMetrics()
+		for j := 0; j < sm.Len(); j++ {
+			ils := sm.At(j)
 			metrics := ils.Metrics()
-			library := ils.InstrumentationLibrary()
+			scope := ils.Scope()
 			for k := 0; k < metrics.Len(); k++ {
 				mr := metrics.At(k)
-				if filtermetric.SkipMetric(a.include, a.exclude, mr, resource, library, a.logger) {
+				if filtermetric.SkipMetric(a.include, a.exclude, mr, resource, scope, a.logger) {
 					continue
 				}
 
-				a.processMetricAttributes(ctx, mr, resource, library)
+				a.processMetricAttributes(ctx, mr, resource, scope)
 			}
 		}
 	}
@@ -80,7 +80,7 @@ func (a *metricAttributesProcessor) excluded(atts pdata.AttributeMap, resource p
 	return false
 }
 
-func (a *metricAttributesProcessor) processMatching(ctx context.Context, atts pdata.AttributeMap, resource pdata.Resource, library pdata.InstrumentationLibrary) {
+func (a *metricAttributesProcessor) processMatching(ctx context.Context, atts pdata.AttributeMap, resource pdata.Resource, library pdata.InstrumentationScope) {
 	if !a.excluded(atts, resource, library) {
 		a.attrProc.Process(ctx, a.logger, atts)
 	}
@@ -88,7 +88,7 @@ func (a *metricAttributesProcessor) processMatching(ctx context.Context, atts pd
 
 // Attributes are provided for each log and trace, but not at the metric level
 // Need to process attributes for every data point within a metric.
-func (a *metricAttributesProcessor) processMetricAttributes(ctx context.Context, m pdata.Metric, resource pdata.Resource, library pdata.InstrumentationLibrary) {
+func (a *metricAttributesProcessor) processMetricAttributes(ctx context.Context, m pdata.Metric, resource pdata.Resource, library pdata.InstrumentationScope) {
 
 	// This is a lot of repeated code, but since there is no single parent superclass
 	// between metric data types, we can't use polymorphism.

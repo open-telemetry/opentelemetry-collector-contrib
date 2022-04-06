@@ -46,7 +46,7 @@ func Test_traceDataToSplunk(t *testing.T) {
 				rs.Resource().Attributes().InsertString("host.name", "myhost")
 				rs.Resource().Attributes().InsertString("com.splunk.sourcetype", "mysourcetype")
 				rs.Resource().Attributes().InsertString("com.splunk.index", "myindex")
-				ils := rs.InstrumentationLibrarySpans().AppendEmpty()
+				ils := rs.ScopeSpans().AppendEmpty()
 				initSpan("myspan", &ts, ils.Spans().AppendEmpty())
 				return traces
 			},
@@ -79,7 +79,7 @@ func Test_traceDataToSplunk(t *testing.T) {
 				rs.Resource().Attributes().InsertString("com.splunk.source", "myservice")
 				rs.Resource().Attributes().InsertString("host.name", "myhost")
 				rs.Resource().Attributes().InsertString("com.splunk.sourcetype", "mysourcetype")
-				rs.InstrumentationLibrarySpans().AppendEmpty()
+				rs.ScopeSpans().AppendEmpty()
 				return traces
 			},
 			configFn: func() *Config {
@@ -97,7 +97,7 @@ func Test_traceDataToSplunk(t *testing.T) {
 				rs.Resource().Attributes().InsertString("myhost", "myhost")
 				rs.Resource().Attributes().InsertString("mysourcetype", "mysourcetype")
 				rs.Resource().Attributes().InsertString("myindex", "mysourcetype")
-				rs.InstrumentationLibrarySpans().AppendEmpty()
+				rs.ScopeSpans().AppendEmpty()
 				return traces
 			},
 			configFn: func() *Config {
@@ -149,7 +149,7 @@ func initSpan(name string, ts *pdata.Timestamp, span pdata.Span) {
 	spanLink.SetSpanID(pdata.NewSpanID(spanID))
 	spanLink.Attributes().InsertInt("foo", 1)
 	spanLink.Attributes().InsertBool("bar", false)
-	foobarContents := pdata.NewAttributeValueArray()
+	foobarContents := pdata.NewValueSlice()
 	foobarContents.SliceVal().AppendEmpty().SetStringVal("a")
 	foobarContents.SliceVal().AppendEmpty().SetStringVal("b")
 	spanLink.Attributes().Insert("foobar", foobarContents)

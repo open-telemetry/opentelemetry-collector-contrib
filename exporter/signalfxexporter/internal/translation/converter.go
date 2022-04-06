@@ -81,8 +81,8 @@ func (c *MetricsConverter) MetricsToSignalFxV2(md pdata.Metrics) []*sfxpb.DataPo
 		rm := rms.At(i)
 		extraDimensions := resourceToDimensions(rm.Resource())
 
-		for j := 0; j < rm.InstrumentationLibraryMetrics().Len(); j++ {
-			ilm := rm.InstrumentationLibraryMetrics().At(j)
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			ilm := rm.ScopeMetrics().At(j)
 			for k := 0; k < ilm.Metrics().Len(); k++ {
 				dps := signalfx.FromMetric(ilm.Metrics().At(k), extraDimensions)
 				dps = c.translateAndFilter(dps)
@@ -138,7 +138,7 @@ func resourceToDimensions(res pdata.Resource) []*sfxpb.Dimension {
 		})
 	}
 
-	res.Attributes().Range(func(k string, val pdata.AttributeValue) bool {
+	res.Attributes().Range(func(k string, val pdata.Value) bool {
 		// Never send the SignalFX token
 		if k == splunk.SFxAccessTokenLabel {
 			return true

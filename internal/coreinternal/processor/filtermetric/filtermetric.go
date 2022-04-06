@@ -36,8 +36,8 @@ const (
 
 type Matcher interface {
 	MatchMetric(metric pdata.Metric) (bool, error)
-	MatchWholeMetric(metric pdata.Metric, resource pdata.Resource, library pdata.InstrumentationLibrary, filterType FilterType) (bool, error)
-	MatchAttributes(atts pdata.AttributeMap, resource pdata.Resource, library pdata.InstrumentationLibrary) bool
+	MatchWholeMetric(metric pdata.Metric, resource pdata.Resource, library pdata.InstrumentationScope, filterType FilterType) (bool, error)
+	MatchAttributes(atts pdata.AttributeMap, resource pdata.Resource, library pdata.InstrumentationScope) bool
 	ChecksAttributes() bool
 }
 
@@ -109,7 +109,7 @@ func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 // The default is to not skip. If include is defined, the metric must match or it will be skipped.
 // If include is not defined but exclude is, metric will be skipped if it matches exclude. Metric
 // is included if neither specified.
-func SkipMetric(include, exclude Matcher, metric pdata.Metric, resource pdata.Resource, library pdata.InstrumentationLibrary, logger *zap.Logger) bool {
+func SkipMetric(include, exclude Matcher, metric pdata.Metric, resource pdata.Resource, library pdata.InstrumentationScope, logger *zap.Logger) bool {
 	if include != nil {
 		// A false (or an error) returned in this case means the metric should not be processed.
 		i, err := include.MatchWholeMetric(metric, resource, library, INCLUDE)
@@ -162,7 +162,7 @@ func (mp *propertiesMatcher) MatchMetric(metric pdata.Metric) (bool, error) {
 // This is the reason we also take a FilterType as an argument - so as not to exclude
 // data points prematurely.
 // see filterconfig.MatchProperties for more details
-func (mp *propertiesMatcher) MatchWholeMetric(metric pdata.Metric, resource pdata.Resource, library pdata.InstrumentationLibrary, filterType FilterType) (bool, error) {
+func (mp *propertiesMatcher) MatchWholeMetric(metric pdata.Metric, resource pdata.Resource, library pdata.InstrumentationScope, filterType FilterType) (bool, error) {
 	// If a set of properties was not in the mp, all spans are considered to match on that property
 	if mp.serviceFilters != nil {
 		serviceName := serviceNameForResource(resource)
@@ -192,7 +192,7 @@ func (mp *propertiesMatcher) MatchWholeMetric(metric pdata.Metric, resource pdat
 
 // MatchAttributes matches metric attributes, resource and libraries.
 // It omits checks on metrics name and services.
-func (mp *propertiesMatcher) MatchAttributes(atts pdata.AttributeMap, resource pdata.Resource, library pdata.InstrumentationLibrary) bool {
+func (mp *propertiesMatcher) MatchAttributes(atts pdata.AttributeMap, resource pdata.Resource, library pdata.InstrumentationScope) bool {
 	return mp.PropertiesMatcher.Match(atts, resource, library)
 }
 

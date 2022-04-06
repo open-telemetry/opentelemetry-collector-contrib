@@ -80,10 +80,9 @@ func TestGRPCReception(t *testing.T) {
 	require.NoError(t, err)
 	defer conn.Close()
 
-	data := mockGrpcTraceSegment(1)
 	segmentCollection := &agent.SegmentCollection{
 		Segments: []*agent.SegmentObject{
-			data,
+			mockGrpcTraceSegment(1),
 		},
 	}
 
@@ -103,7 +102,7 @@ func mockGrpcTraceSegment(sequence int) *agent.SegmentObject {
 	return &agent.SegmentObject{
 		TraceId:         "trace" + seq,
 		TraceSegmentId:  "trace-segment" + seq,
-		Service:         "demo-service" + seq,
+		Service:         "demo-segmentReportService" + seq,
 		ServiceInstance: "demo-instance" + seq,
 		IsSizeLimited:   false,
 		Spans: []*agent.SpanObject{
@@ -146,6 +145,36 @@ func mockGrpcTraceSegment(sequence int) *agent.SegmentObject {
 						ParentServiceInstance:    "parent" + seq,
 						ParentEndpoint:           "parent" + seq,
 						NetworkAddressUsedAtPeer: "127.0.0.1:6666",
+					},
+				},
+			},
+			{
+				SpanId:        2,
+				ParentSpanId:  1,
+				StartTime:     time.Now().Unix(),
+				EndTime:       time.Now().Unix() + 20,
+				OperationName: "operation" + seq,
+				Peer:          "127.0.0.1:6666",
+				SpanType:      agent.SpanType_Local,
+				SpanLayer:     agent.SpanLayer_Http,
+				ComponentId:   2,
+				IsError:       false,
+				SkipAnalysis:  false,
+				Tags: []*common.KeyStringValuePair{
+					{
+						Key:   "mock-key" + seq,
+						Value: "mock-value" + seq,
+					},
+				},
+				Logs: []*agent.Log{
+					{
+						Time: time.Now().Unix(),
+						Data: []*common.KeyStringValuePair{
+							{
+								Key:   "log-key" + seq,
+								Value: "log-value" + seq,
+							},
+						},
 					},
 				},
 			},

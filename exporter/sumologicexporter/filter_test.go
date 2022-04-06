@@ -23,7 +23,7 @@ import (
 )
 
 func TestGetMetadata(t *testing.T) {
-	attributes := pdata.NewAttributeMap()
+	attributes := pdata.NewMap()
 	attributes.InsertString("key3", "value3")
 	attributes.InsertString("key1", "value1")
 	attributes.InsertString("key2", "value2")
@@ -45,7 +45,7 @@ func TestGetMetadata(t *testing.T) {
 }
 
 func TestFilterOutMetadata(t *testing.T) {
-	attributes := pdata.NewAttributeMap()
+	attributes := pdata.NewMap()
 	attributes.InsertString("key3", "value3")
 	attributes.InsertString("key1", "value1")
 	attributes.InsertString("key2", "value2")

@@ -37,7 +37,7 @@ import (
 // TODO(axw) otlpLibrary is currently not used. We should consider recording it as metadata.
 func EncodeSpan(
 	otlpSpan pdata.Span,
-	otlpLibrary pdata.InstrumentationLibrary,
+	otlpLibrary pdata.InstrumentationScope,
 	otlpResource pdata.Resource,
 	w *fastjson.Writer,
 ) error {
@@ -96,7 +96,7 @@ func EncodeSpan(
 
 func setTransactionProperties(
 	otlpSpan pdata.Span,
-	otlpLibrary pdata.InstrumentationLibrary,
+	otlpLibrary pdata.InstrumentationScope,
 	tx *model.Transaction, context *transactionContext,
 ) error {
 	var (
@@ -106,7 +106,7 @@ func setTransactionProperties(
 		netPeerPort int
 	)
 
-	otlpSpan.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+	otlpSpan.Attributes().Range(func(k string, v pdata.Value) bool {
 		var storeTag bool
 		switch k {
 		// http.*
@@ -226,7 +226,7 @@ func setSpanProperties(otlpSpan pdata.Span, span *model.Span) error {
 		netPeerPort int
 	)
 
-	otlpSpan.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+	otlpSpan.Attributes().Range(func(k string, v pdata.Value) bool {
 		var storeTag bool
 		switch k {
 		// http.*
@@ -381,7 +381,7 @@ func encodeSpanEvents(
 		}
 		var exceptionEscaped bool
 		var exceptionMessage, exceptionStacktrace, exceptionType string
-		event.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+		event.Attributes().Range(func(k string, v pdata.Value) bool {
 			switch k {
 			case conventions.AttributeExceptionMessage:
 				exceptionMessage = v.StringVal()

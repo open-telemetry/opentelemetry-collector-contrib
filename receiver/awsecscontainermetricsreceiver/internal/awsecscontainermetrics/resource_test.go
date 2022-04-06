@@ -169,7 +169,7 @@ func TestTaskResourceWithClusterARN(t *testing.T) {
 	verifyAttributeMap(t, expected, attrMap)
 }
 
-func verifyAttributeMap(t *testing.T, expected map[string]string, found pdata.AttributeMap) {
+func verifyAttributeMap(t *testing.T, expected map[string]string, found pdata.Map) {
 	for key, val := range expected {
 		attributeVal, found := found.Get(key)
 		require.EqualValues(t, true, found)

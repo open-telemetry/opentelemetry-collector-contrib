@@ -89,7 +89,7 @@ func newTraceWithSpans(spans []spanWithTimeAndDuration) *TraceData {
 	var traceBatches []pdata.Traces
 	traces := pdata.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
-	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
+	ils := rs.ScopeSpans().AppendEmpty()
 
 	for _, s := range spans {
 		span := ils.Spans().AppendEmpty()

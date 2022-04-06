@@ -58,7 +58,7 @@ func createTraceEdgeConnection(rootURL, apiKey string, buildInfo component.Build
 		statsURL:  rootURL + "/api/v0.2/stats",
 		buildInfo: buildInfo,
 		apiKey:    apiKey,
-		client:    utils.NewHTTPClient(settings, httpClientSettings),
+		client:    utils.NewHTTPClient(settings, httpClientSettings.TLSSetting.InsecureSkipVerify),
 	}
 }
 

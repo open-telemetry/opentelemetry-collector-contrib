@@ -79,7 +79,7 @@ func (s *receiver) shutdown(context.Context) error {
 }
 
 func (s *receiver) poll(ctx context.Context, time timeconstraints) (pdata.Metrics, error) {
-	resourceAttributes := pdata.NewAttributeMap()
+	resourceAttributes := pdata.NewMap()
 	allMetrics := pdata.NewMetrics()
 	orgs, err := s.client.Organizations(ctx)
 	if err != nil {

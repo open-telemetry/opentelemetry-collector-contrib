@@ -24,7 +24,7 @@ import (
 )
 
 func hello() exprFunc {
-	return func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
+	return func(ctx spanTransformContext) interface{} {
 		return "world"
 	}
 }
@@ -88,7 +88,11 @@ func Test_newGetter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			reader, err := newGetter(tt.val, functions)
 			assert.NoError(t, err)
-			val := reader.get(span, pdata.NewInstrumentationLibrary(), pdata.NewResource())
+			val := reader.get(spanTransformContext{
+				span:     span,
+				il:       pdata.NewInstrumentationScope(),
+				resource: pdata.NewResource(),
+			})
 			assert.Equal(t, tt.want, val)
 		})
 	}

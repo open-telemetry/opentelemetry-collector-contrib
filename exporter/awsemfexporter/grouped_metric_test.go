@@ -148,7 +148,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 			rm := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics)
 			rms := rm.ResourceMetrics()
 			assert.Equal(t, 1, rms.Len())
-			ilms := rms.At(0).InstrumentationLibraryMetrics()
+			ilms := rms.At(0).ScopeMetrics()
 			assert.Equal(t, 1, ilms.Len())
 			metrics := ilms.At(0).Metrics()
 			assert.Equal(t, len(tc.metric), metrics.Len())
@@ -197,7 +197,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 		oc.Metrics = append(oc.Metrics, generateTestSummary("summary")...)
 		rm := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics)
 		rms := rm.ResourceMetrics()
-		ilms := rms.At(0).InstrumentationLibraryMetrics()
+		ilms := rms.At(0).ScopeMetrics()
 		metrics := ilms.At(0).Metrics()
 		assert.Equal(t, 9, metrics.Len())
 
@@ -260,7 +260,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 
 		rm := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics)
 		rms := rm.ResourceMetrics()
-		ilms := rms.At(0).InstrumentationLibraryMetrics()
+		ilms := rms.At(0).ScopeMetrics()
 		metrics := ilms.At(0).Metrics()
 		assert.Equal(t, 4, metrics.Len())
 
@@ -301,7 +301,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 			},
 		}
 		rm := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics)
-		ilms := rm.ResourceMetrics().At(0).InstrumentationLibraryMetrics()
+		ilms := rm.ResourceMetrics().At(0).ScopeMetrics()
 		metric := ilms.At(0).Metrics().At(0)
 
 		metricMetadata1 := cWMetricMetadata{
@@ -370,7 +370,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 		}
 		rm := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics)
 		rms := rm.ResourceMetrics()
-		ilms := rms.At(0).InstrumentationLibraryMetrics()
+		ilms := rms.At(0).ScopeMetrics()
 		metrics := ilms.At(0).Metrics()
 		assert.Equal(t, 2, metrics.Len())
 
@@ -405,7 +405,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 		groupedMetrics := make(map[interface{}]*groupedMetric)
 		md := pdata.NewMetrics()
 		rms := md.ResourceMetrics()
-		metric := rms.AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
+		metric := rms.AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 		metric.SetName("foo")
 		metric.SetUnit("Count")
 		metric.SetDataType(pdata.MetricDataTypeNone)
@@ -481,7 +481,7 @@ func BenchmarkAddToGroupedMetric(b *testing.B) {
 	oc.Metrics = append(oc.Metrics, generateTestDoubleSum("double-sum")...)
 	oc.Metrics = append(oc.Metrics, generateTestSummary("summary")...)
 	rms := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics).ResourceMetrics()
-	metrics := rms.At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+	metrics := rms.At(0).ScopeMetrics().At(0).Metrics()
 	numMetrics := metrics.Len()
 
 	metadata := cWMetricMetadata{

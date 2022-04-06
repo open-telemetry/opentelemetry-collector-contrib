@@ -367,7 +367,7 @@ func getTraceID(td pdata.Traces) (pdata.TraceID, error) {
 		return pdata.InvalidTraceID(), errNoTraceID
 	}
 
-	ilss := rss.At(0).InstrumentationLibrarySpans()
+	ilss := rss.At(0).ScopeSpans()
 	if ilss.Len() == 0 {
 		return pdata.InvalidTraceID(), errNoTraceID
 	}

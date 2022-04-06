@@ -6,9 +6,9 @@ require (
 	github.com/go-playground/locales v0.14.0
 	github.com/go-playground/universal-translator v0.18.0
 	github.com/go-playground/validator/v10 v10.10.1
-	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.46.1-0.20220307173244-f980c9ef25b1
-	go.opentelemetry.io/collector/model v0.46.1-0.20220307173244-f980c9ef25b1
+	github.com/stretchr/testify v1.7.1
+	go.opentelemetry.io/collector v0.48.0
+	go.opentelemetry.io/collector/model v0.48.0
 )
 
 require (
@@ -17,7 +17,6 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/knadh/koanf v1.4.0 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
-	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect

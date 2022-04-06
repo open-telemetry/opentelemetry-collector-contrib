@@ -33,19 +33,19 @@ var (
 
 var metricsData = func() pdata.Metrics {
 	d := pdata.NewMetrics()
-	metric := d.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
+	metric := d.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	metric.SetDataType(pdata.MetricDataTypeHistogram)
 	metric.Histogram().DataPoints().AppendEmpty().SetTimestamp(pdata.NewTimestampFromTime(tsAfter30s))
-	metric = d.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
+	metric = d.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	metric.SetDataType(pdata.MetricDataTypeSummary)
 	metric.Summary().DataPoints().AppendEmpty().SetTimestamp(pdata.NewTimestampFromTime(tsAfter5m))
-	metric = d.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
+	metric = d.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	metric.SetDataType(pdata.MetricDataTypeGauge)
 	metric.Gauge().DataPoints().AppendEmpty().SetTimestamp(pdata.NewTimestampFromTime(tsRef))
-	metric = d.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
+	metric = d.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	metric.SetDataType(pdata.MetricDataTypeSum)
 	metric.Sum().DataPoints().AppendEmpty().SetTimestamp(pdata.NewTimestampFromTime(tsBefore30s))
-	metric = d.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
+	metric = d.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	metric.SetDataType(pdata.MetricDataTypeExponentialHistogram)
 	metric.ExponentialHistogram().DataPoints().AppendEmpty().SetTimestamp(pdata.NewTimestampFromTime(tsBefore5m))
 	return d
@@ -53,22 +53,22 @@ var metricsData = func() pdata.Metrics {
 
 var tracesData = func() pdata.Traces {
 	d := pdata.NewTraces()
-	span := d.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	span := d.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetStartTimestamp(pdata.NewTimestampFromTime(tsRef))
-	span = d.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	span = d.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetStartTimestamp(pdata.NewTimestampFromTime(tsBefore30s))
-	span = d.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	span = d.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetStartTimestamp(pdata.NewTimestampFromTime(tsBefore5m))
 	return d
 }()
 
 var logsData = func() pdata.Logs {
 	d := pdata.NewLogs()
-	log := d.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty()
+	log := d.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 	log.SetTimestamp(pdata.NewTimestampFromTime(tsRef))
-	log = d.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty()
+	log = d.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 	log.SetTimestamp(pdata.NewTimestampFromTime(tsBefore30s))
-	log = d.ResourceLogs().AppendEmpty().InstrumentationLibraryLogs().AppendEmpty().LogRecords().AppendEmpty()
+	log = d.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 	log.SetTimestamp(pdata.NewTimestampFromTime(tsBefore5m))
 	return d
 }()

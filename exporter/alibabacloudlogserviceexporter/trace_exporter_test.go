@@ -38,8 +38,8 @@ func TestNewTracesExporter(t *testing.T) {
 
 	traces := pdata.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
-	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
-	ils.Spans().AppendEmpty()
+	ss := rs.ScopeSpans().AppendEmpty()
+	ss.Spans().AppendEmpty()
 
 	// This will put trace data to send buffer and return success.
 	err = got.ConsumeTraces(context.Background(), traces)

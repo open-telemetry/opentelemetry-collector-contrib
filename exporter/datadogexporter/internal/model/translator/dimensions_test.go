@@ -22,10 +22,10 @@ import (
 )
 
 func TestWithAttributeMap(t *testing.T) {
-	attributes := pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
-		"key1": pdata.NewAttributeValueString("val1"),
-		"key2": pdata.NewAttributeValueString("val2"),
-		"key3": pdata.NewAttributeValueString(""),
+	attributes := pdata.NewMapFromRaw(map[string]interface{}{
+		"key1": "val1",
+		"key2": "val2",
+		"key3": "",
 	})
 
 	dims := Dimensions{}
@@ -110,8 +110,8 @@ func TestAllFieldsAreCopied(t *testing.T) {
 	newDims := dims.
 		AddTags("tagThree:c").
 		WithSuffix("suffix").
-		WithAttributeMap(pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
-			"tagFour": pdata.NewAttributeValueString("d"),
+		WithAttributeMap(pdata.NewMapFromRaw(map[string]interface{}{
+			"tagFour": "d",
 		}))
 
 	assert.Equal(t, "example.name.suffix", newDims.Name())

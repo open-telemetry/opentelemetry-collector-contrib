@@ -68,10 +68,10 @@ func logdataToObservIQFormat(ld pdata.Logs, agentID string, agentName string, bu
 		rl := rls.At(i)
 		res := rl.Resource()
 		resMap := attributeMapToBaseType(res.Attributes())
-		ills := rl.InstrumentationLibraryLogs()
+		ills := rl.ScopeLogs()
 		for j := 0; j < ills.Len(); j++ {
-			ill := ills.At(j)
-			logs := ill.LogRecords()
+			sl := ills.At(j)
+			logs := sl.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
 				oiqLogEntry := resourceAndInstrumentationLogToEntry(resMap, logs.At(k), agentID, agentName, buildVersion)
 
@@ -131,7 +131,7 @@ func timestampFromRecord(log pdata.LogRecord) string {
 }
 
 func messageFromRecord(log pdata.LogRecord) string {
-	if log.Body().Type() == pdata.AttributeValueTypeString {
+	if log.Body().Type() == pdata.ValueTypeString {
 		return log.Body().StringVal()
 	}
 
@@ -140,7 +140,7 @@ func messageFromRecord(log pdata.LogRecord) string {
 
 // bodyFromRecord returns what the "body" field should be on the observiq entry from the given LogRecord.
 func bodyFromRecord(log pdata.LogRecord) interface{} {
-	if log.Body().Type() != pdata.AttributeValueTypeString {
+	if log.Body().Type() != pdata.ValueTypeString {
 		return attributeValueToBaseType(log.Body())
 	}
 	return nil
@@ -192,9 +192,9 @@ func severityFromRecord(log pdata.LogRecord) string {
 /*
 	Transform AttributeMap to native Go map, skipping keys with nil values, and replacing dots in keys with _
 */
-func attributeMapToBaseType(m pdata.AttributeMap) map[string]interface{} {
+func attributeMapToBaseType(m pdata.Map) map[string]interface{} {
 	mapOut := make(map[string]interface{}, m.Len())
-	m.Range(func(k string, v pdata.AttributeValue) bool {
+	m.Range(func(k string, v pdata.Value) bool {
 		val := attributeValueToBaseType(v)
 		if val != nil {
 			dedotedKey := strings.ReplaceAll(k, ".", "_")
@@ -208,20 +208,20 @@ func attributeMapToBaseType(m pdata.AttributeMap) map[string]interface{} {
 /*
 	attrib is the attribute value to convert to it's native Go type - skips nils in arrays/maps
 */
-func attributeValueToBaseType(attrib pdata.AttributeValue) interface{} {
+func attributeValueToBaseType(attrib pdata.Value) interface{} {
 	switch attrib.Type() {
-	case pdata.AttributeValueTypeString:
+	case pdata.ValueTypeString:
 		return attrib.StringVal()
-	case pdata.AttributeValueTypeBool:
+	case pdata.ValueTypeBool:
 		return attrib.BoolVal()
-	case pdata.AttributeValueTypeInt:
+	case pdata.ValueTypeInt:
 		return attrib.IntVal()
-	case pdata.AttributeValueTypeDouble:
+	case pdata.ValueTypeDouble:
 		return attrib.DoubleVal()
-	case pdata.AttributeValueTypeMap:
+	case pdata.ValueTypeMap:
 		attribMap := attrib.MapVal()
 		return attributeMapToBaseType(attribMap)
-	case pdata.AttributeValueTypeArray:
+	case pdata.ValueTypeSlice:
 		arrayVal := attrib.SliceVal()
 		slice := make([]interface{}, 0, arrayVal.Len())
 		for i := 0; i < arrayVal.Len(); i++ {
@@ -231,7 +231,7 @@ func attributeValueToBaseType(attrib pdata.AttributeValue) interface{} {
 			}
 		}
 		return slice
-	case pdata.AttributeValueTypeEmpty:
+	case pdata.ValueTypeEmpty:
 		return nil
 	}
 	return nil

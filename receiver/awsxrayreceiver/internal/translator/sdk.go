@@ -23,7 +23,7 @@ import (
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
-func addSdkToResource(seg *awsxray.Segment, attrs *pdata.AttributeMap) {
+func addSdkToResource(seg *awsxray.Segment, attrs *pdata.Map) {
 	if seg.AWS != nil && seg.AWS.XRay != nil {
 		xr := seg.AWS.XRay
 		addString(xr.SDKVersion, conventions.AttributeTelemetrySDKVersion, attrs)

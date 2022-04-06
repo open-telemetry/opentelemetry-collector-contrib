@@ -35,7 +35,7 @@ func (gap *groupByAttrsProcessor) processTraces(ctx context.Context, td pdata.Tr
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
 
-		ilss := rs.InstrumentationLibrarySpans()
+		ilss := rs.ScopeSpans()
 		for j := 0; j < ilss.Len(); j++ {
 			ils := ilss.At(j)
 			for k := 0; k < ils.Spans().Len(); k++ {
@@ -54,7 +54,7 @@ func (gap *groupByAttrsProcessor) processTraces(ctx context.Context, td pdata.Tr
 				// Lets combine the base resource attributes + the extracted (grouped) attributes
 				// and keep them in the grouping entry
 				groupedSpans := groupedResourceSpans.findOrCreateResource(rs.Resource(), requiredAttributes)
-				sp := matchingInstrumentationLibrarySpans(groupedSpans, ils.InstrumentationLibrary()).Spans().AppendEmpty()
+				sp := matchingScopeSpans(groupedSpans, ils.Scope()).Spans().AppendEmpty()
 				span.CopyTo(sp)
 			}
 		}
@@ -75,11 +75,11 @@ func (gap *groupByAttrsProcessor) processLogs(ctx context.Context, ld pdata.Logs
 	for i := 0; i < rl.Len(); i++ {
 		ls := rl.At(i)
 
-		ills := ls.InstrumentationLibraryLogs()
+		ills := ls.ScopeLogs()
 		for j := 0; j < ills.Len(); j++ {
-			ill := ills.At(j)
-			for k := 0; k < ill.LogRecords().Len(); k++ {
-				log := ill.LogRecords().At(k)
+			sl := ills.At(j)
+			for k := 0; k < sl.LogRecords().Len(); k++ {
+				log := sl.LogRecords().At(k)
 
 				toBeGrouped, requiredAttributes := gap.extractGroupingAttributes(log.Attributes())
 				if toBeGrouped {
@@ -94,7 +94,7 @@ func (gap *groupByAttrsProcessor) processLogs(ctx context.Context, ld pdata.Logs
 				// Lets combine the base resource attributes + the extracted (grouped) attributes
 				// and keep them in the grouping entry
 				groupedLogs := groupedResourceLogs.findResourceOrElseCreate(ls.Resource(), requiredAttributes)
-				lr := matchingInstrumentationLibraryLogs(groupedLogs, ill.InstrumentationLibrary()).LogRecords().AppendEmpty()
+				lr := matchingScopeLogs(groupedLogs, sl.Scope()).LogRecords().AppendEmpty()
 				log.CopyTo(lr)
 			}
 		}
@@ -116,7 +116,7 @@ func (gap *groupByAttrsProcessor) processMetrics(ctx context.Context, md pdata.M
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
 
-		ilms := rm.InstrumentationLibraryMetrics()
+		ilms := rm.ScopeMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			ilm := ilms.At(j)
 			for k := 0; k < ilm.Metrics().Len(); k++ {
@@ -172,8 +172,8 @@ func (gap *groupByAttrsProcessor) processMetrics(ctx context.Context, md pdata.M
 	return groupedMetrics, nil
 }
 
-func deleteAttributes(attrsForRemoval, targetAttrs pdata.AttributeMap) {
-	attrsForRemoval.Range(func(key string, _ pdata.AttributeValue) bool {
+func deleteAttributes(attrsForRemoval, targetAttrs pdata.Map) {
+	attrsForRemoval.Range(func(key string, _ pdata.Value) bool {
 		targetAttrs.Delete(key)
 		return true
 	})
@@ -184,9 +184,9 @@ func deleteAttributes(attrsForRemoval, targetAttrs pdata.AttributeMap) {
 // Returns:
 //  - whether any attribute matched (true) or none (false)
 //  - the extracted AttributeMap of matching keys and their corresponding values
-func (gap *groupByAttrsProcessor) extractGroupingAttributes(attrMap pdata.AttributeMap) (bool, pdata.AttributeMap) {
+func (gap *groupByAttrsProcessor) extractGroupingAttributes(attrMap pdata.Map) (bool, pdata.Map) {
 
-	groupingAttributes := pdata.NewAttributeMap()
+	groupingAttributes := pdata.NewMap()
 	foundMatch := false
 
 	for _, attrKey := range gap.groupByKeys {
@@ -201,7 +201,7 @@ func (gap *groupByAttrsProcessor) extractGroupingAttributes(attrMap pdata.Attrib
 }
 
 // Searches for metric with same name in the specified InstrumentationLibrary and returns it. If nothing is found, create it.
-func getMetricInInstrumentationLibrary(ilm pdata.InstrumentationLibraryMetrics, searchedMetric pdata.Metric) pdata.Metric {
+func getMetricInInstrumentationLibrary(ilm pdata.ScopeMetrics, searchedMetric pdata.Metric) pdata.Metric {
 
 	// Loop through all metrics and try to find the one that matches with the one we search for
 	// (name and type)
@@ -227,9 +227,9 @@ func (gap *groupByAttrsProcessor) getGroupedMetricsFromAttributes(
 	ctx context.Context,
 	groupedResourceMetrics *metricsGroupedByAttrs,
 	originResourceMetrics pdata.ResourceMetrics,
-	ilm pdata.InstrumentationLibraryMetrics,
+	ilm pdata.ScopeMetrics,
 	metric pdata.Metric,
-	attributes pdata.AttributeMap,
+	attributes pdata.Map,
 ) pdata.Metric {
 
 	toBeGrouped, requiredAttributes := gap.extractGroupingAttributes(attributes)
@@ -246,7 +246,7 @@ func (gap *groupByAttrsProcessor) getGroupedMetricsFromAttributes(
 	groupedResource := groupedResourceMetrics.findResourceOrElseCreate(originResourceMetrics.Resource(), requiredAttributes)
 
 	// Get the corresponding instrumentation library
-	groupedInstrumentationLibrary := matchingInstrumentationLibraryMetrics(groupedResource, ilm.InstrumentationLibrary())
+	groupedInstrumentationLibrary := matchingScopeMetrics(groupedResource, ilm.Scope())
 
 	// Return the metric in this resource
 	return getMetricInInstrumentationLibrary(groupedInstrumentationLibrary, metric)
