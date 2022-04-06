@@ -30,7 +30,7 @@ type testObj struct {
 func (to *testObj) IncrementFoo() {
 	to.mu.Lock()
 	defer to.mu.Unlock()
-	to.foo += 1
+	to.foo++
 }
 
 func checkFooValue(to *testObj, expectedValue int) bool {
@@ -69,7 +69,7 @@ func TestPolicyTickerSucceeds(t *testing.T) {
 	// Ticker is first called after required duration, not at start. This means
 	// expected count will be 1 less than how many durations have passed.
 	expectedTicks := 4
-	defaultDuration := 200 * time.Millisecond
+	defaultDuration := 500 * time.Millisecond
 	testSleepDuration := time.Duration(expectedTicks + 1) * defaultDuration
 
 	pTicker.Start(defaultDuration)
