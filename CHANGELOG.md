@@ -3,13 +3,16 @@
 ## Unreleased
 
 ### 💡 Enhancements 💡
+- `splunkhecexporter`: Add support for batching traces (#8995)
 
+- `hostmetricsreceiver`: Migrate Processes scraper to the Metrics builder (#8855)
 - `tanzuobservabilityexporter`: Use resourcetotelemetry helper (#8338)
-- `cmd/mdatagen`: Add resource attributes definition to metadata.yaml and move `pdata.Metrics` creation to the
-  generated code (#5270) 
 - Add `make crosslink` target to ensure replace statements are included in `go.mod` for all transitive dependencies within repository (#8822)
 - `filestorageextension`: Change bbolt DB settings for better performance (#9004)
+- `jaegerremotesamplingextension`: Add local and remote sampling stores (#8818)
+- `attributesprocessor`: Add support to filter on log body (#8996)
 - `datadogexporter`: Add `host_metadata` configuration section to configure host metadata export (#9100)
+
 
 ### 🛑 Breaking changes 🛑
 
@@ -21,7 +24,7 @@
 
 ### 🧰 Bug fixes 🧰
 
-- `hostmetricsreceiver`: Use cpu times for time delta in cpu.utilization calculation (#8856)
+- `hostmetricsreceiver`: Use cpu times for time delta in cpu.utilization calculation (#8857)
 - `dynatraceexporter`: Remove overly verbose stacktrace from certain logs (#8989)
 
 ### 🚩 Deprecations 🚩
@@ -32,6 +35,8 @@
 - `datadogexporter`: Deprecate `tags` setting in favor of `host_metadata::tags` (#9100)
 - `datadogexporter`: Deprecate `send_metadata` setting in favor of `host_metadata::enabled` (#9100)
 - `datadogexporter`: Deprecate `use_resource_metadata` setting in favor of `host_metadata::hostname_source` (#9100)
+- `fluentbitextension`: Deprecate Fluentbit extension (#9062)
+
 
 ### 🚀 New components 🚀
 
@@ -49,7 +54,7 @@
 - `resourcedetectionprocessor`: Add attribute allowlist (#8547)
 - `datadogexporter`:  Metrics payload data and Sketches payload data will be logged if collector is started in debug mode (#8929)
 - `cmd/mdatagen`: Add resource attributes definition to metadata.yaml and move `pdata.Metrics` creation to the
-  generated code (#5270)
+  generated code (#8555)
 
 ### 🛑 Breaking changes 🛑
 
