@@ -23,7 +23,7 @@ func instrumentationLibrariesEqual(il1, il2 pdata.InstrumentationScope) bool {
 }
 
 // matchingScopeSpans searches for a pdata.ScopeSpans instance matching
-// given InstrumentationLibrary. If nothing is found, it creates a new one
+// given InstrumentationScope. If nothing is found, it creates a new one
 func matchingScopeSpans(rl pdata.ResourceSpans, library pdata.InstrumentationScope) pdata.ScopeSpans {
 	ilss := rl.ScopeSpans()
 	for i := 0; i < ilss.Len(); i++ {
@@ -38,9 +38,9 @@ func matchingScopeSpans(rl pdata.ResourceSpans, library pdata.InstrumentationSco
 	return ils
 }
 
-// matchingInstrumentationLibraryLogs searches for a pdata.ScopeLogs instance matching
-// given InstrumentationLibrary. If nothing is found, it creates a new one
-func matchingInstrumentationLibraryLogs(rl pdata.ResourceLogs, library pdata.InstrumentationScope) pdata.ScopeLogs {
+// matchingScopeLogs searches for a pdata.ScopeLogs instance matching
+// given InstrumentationScope. If nothing is found, it creates a new one
+func matchingScopeLogs(rl pdata.ResourceLogs, library pdata.InstrumentationScope) pdata.ScopeLogs {
 	ills := rl.ScopeLogs()
 	for i := 0; i < ills.Len(); i++ {
 		sl := ills.At(i)
@@ -54,9 +54,9 @@ func matchingInstrumentationLibraryLogs(rl pdata.ResourceLogs, library pdata.Ins
 	return sl
 }
 
-// matchingInstrumentationLibraryMetrics searches for a pdata.ScopeMetrics instance matching
-// given InstrumentationLibrary. If nothing is found, it creates a new one
-func matchingInstrumentationLibraryMetrics(rm pdata.ResourceMetrics, library pdata.InstrumentationScope) pdata.ScopeMetrics {
+// matchingScopeMetrics searches for a pdata.ScopeMetrics instance matching
+// given InstrumentationScope. If nothing is found, it creates a new one
+func matchingScopeMetrics(rm pdata.ResourceMetrics, library pdata.InstrumentationScope) pdata.ScopeMetrics {
 	ilms := rm.ScopeMetrics()
 	for i := 0; i < ilms.Len(); i++ {
 		ilm := ilms.At(i)

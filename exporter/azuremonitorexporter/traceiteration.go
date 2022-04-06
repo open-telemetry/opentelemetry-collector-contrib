@@ -36,19 +36,19 @@ func Accept(traces pdata.Traces, v TraceVisitor) {
 	for i := 0; i < resourceSpans.Len(); i++ {
 		rs := resourceSpans.At(i)
 		resource := rs.Resource()
-		instrumentationLibrarySpansSlice := rs.ScopeSpans()
+		scopeSpansSlice := rs.ScopeSpans()
 
-		for j := 0; j < instrumentationLibrarySpansSlice.Len(); j++ {
-			instrumentationLibrarySpans := instrumentationLibrarySpansSlice.At(j)
+		for j := 0; j < scopeSpansSlice.Len(); j++ {
+			scopeSpans := scopeSpansSlice.At(j)
 			// instrumentation library is optional
-			instrumentationLibrary := instrumentationLibrarySpans.Scope()
-			spansSlice := instrumentationLibrarySpans.Spans()
+			scope := scopeSpans.Scope()
+			spansSlice := scopeSpans.Spans()
 			if spansSlice.Len() == 0 {
 				continue
 			}
 
 			for k := 0; k < spansSlice.Len(); k++ {
-				if ok := v.visit(resource, instrumentationLibrary, spansSlice.At(k)); !ok {
+				if ok := v.visit(resource, scope, spansSlice.At(k)); !ok {
 					return
 				}
 			}
