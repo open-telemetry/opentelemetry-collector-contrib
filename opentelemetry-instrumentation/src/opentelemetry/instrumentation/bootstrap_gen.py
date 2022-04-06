@@ -128,6 +128,10 @@ libraries = {
         "library": "starlette ~= 0.13.0",
         "instrumentation": "opentelemetry-instrumentation-starlette==0.29b0",
     },
+    "psutil": {
+        "library": "psutil >= 5",
+        "instrumentation": "opentelemetry-instrumentation-system-metrics==0.29b0",
+    },
     "tornado": {
         "library": "tornado >= 5.1.1",
         "instrumentation": "opentelemetry-instrumentation-tornado==0.29b0",
