@@ -317,7 +317,7 @@ func TestScrapeMetrics_Filtered(t *testing.T) {
 
 			if len(test.include) > 0 {
 				config.Filters = []FilterConfig{
-					FilterConfig{
+					{
 						IncludeExecutableNames: ExecutableNameMatchConfig{
 							ExecutableNames: test.include,
 							Config:          filterset.Config{MatchType: filterset.Regexp},
@@ -328,7 +328,7 @@ func TestScrapeMetrics_Filtered(t *testing.T) {
 
 			if len(test.exclude) > 0 {
 				config.Filters = []FilterConfig{
-					FilterConfig{
+					{
 						ExcludeExecutableNames: ExecutableNameMatchConfig{
 							ExecutableNames: test.exclude,
 							Config:          filterset.Config{MatchType: filterset.Regexp},
@@ -482,7 +482,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 	}
 }
 
-func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, diskError error, ) (int, int) {
+func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, diskError error) (int, int) {
 	if nameError != nil || exeError != nil {
 		return 0, 0
 	}

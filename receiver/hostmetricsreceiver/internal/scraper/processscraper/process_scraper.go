@@ -149,8 +149,7 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 		if err != nil {
 			errs.AddPartial(0, fmt.Errorf("error reading command for process %q (pid %v): %w", executable.name, pid, err))
 			//create an empty command to run includeCommand against
-			command = &commandMetadata{
-			}
+			command = &commandMetadata{}
 		}
 		// filter by command
 		commandLine := strings.Join(command.commandLineSlice, " ")
