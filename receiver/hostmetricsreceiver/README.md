@@ -106,8 +106,7 @@ process:
       <include_process_owner|exclude_process_owner>:
         match_type: <strict|regexp>
         process_owner: [<owner>, ... ]
-      <include_process_pid|exclude_process_pid>:
-        process_pid: [<pid>, ... ]        
+      <include_process_pid|exclude_process_pid>: [<pid>, ... ]
     -
       <include_executable_name|exclude_executable_name>:
         match_type: <strict|regexp>
@@ -124,8 +123,7 @@ process:
       <include_process_owner|exclude_process_owner>:
         match_type: <strict|regexp>
         process_owner: [<owner>, ... ]
-      <include_process_pid|exclude_process_pid>:
-        process_pid: [<pid>, ... ]        
+      <include_process_pid|exclude_process_pid>: [<pid>, ... ]
     -
       <create as many filters as desired>:
 ```

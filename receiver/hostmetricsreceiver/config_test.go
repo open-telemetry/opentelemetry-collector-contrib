@@ -90,7 +90,7 @@ func TestLoadConfig(t *testing.T) {
 				cfg := (&processscraper.Factory{}).CreateDefaultConfig()
 
 				cfg.(*processscraper.Config).Filters = []processscraper.FilterConfig{
-					processscraper.FilterConfig{
+					{
 						IncludeExecutableNames: processscraper.ExecutableNameMatchConfig{
 							ExecutableNames: []string{"test2", "test3"},
 							Config:          filterset.Config{MatchType: filterset.Regexp},

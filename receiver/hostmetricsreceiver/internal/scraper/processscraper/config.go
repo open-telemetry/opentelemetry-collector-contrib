@@ -88,6 +88,6 @@ type FilterConfig struct {
 	ExcludeCommandLines    CommandLineMatchConfig    `mapstructure:"exclude_process_command_line"`
 	IncludeOwners          OwnerMatchConfig          `mapstructure:"include_process_owner"`
 	ExcludeOwners          OwnerMatchConfig          `mapstructure:"exclude_process_owner"`
-	IncludePids            PidMatchConfig            `mapstructure:"include_process_pid"`
-	ExcludePids            PidMatchConfig            `mapstructure:"exclude_process_pid"`
+	IncludePids            []int32                   `mapstructure:"include_process_pid"`
+	ExcludePids            []int32                   `mapstructure:"exclude_process_pid"`
 }
