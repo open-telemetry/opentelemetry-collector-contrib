@@ -18,8 +18,10 @@
 package windowsperfcountercommon // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/windowsperfcountercommon"
 
 import (
+	"fmt"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/windowsperfcountercommon/internal/third_party/telegraf/win_perf_counters"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -39,11 +41,59 @@ func Test_PathBuilder(t *testing.T) {
 				{
 					CounterCfg: PerfCounterConfig{
 						Object:   "Memory",
-						Counters: []CounterConfig{{Name: "Committed Bytes", Metric: "Committed Bytes"}},
+						Counters: []CounterConfig{{Name: "Committed Bytes"}},
 					},
 				},
 			},
-			expectedPaths: []string{},
+			expectedPaths: []string{"\\Memory\\Committed Bytes"},
+		},
+		{
+			name: "multiplePaths",
+			cfgs: []ScraperCfg{
+				{
+					CounterCfg: PerfCounterConfig{
+						Object:   "Memory",
+						Counters: []CounterConfig{{Name: "Committed Bytes"}},
+					},
+				},
+				{
+					CounterCfg: PerfCounterConfig{
+						Object:   "Memory",
+						Counters: []CounterConfig{{Name: "Available Bytes"}},
+					},
+				},
+			},
+			expectedPaths: []string{"\\Memory\\Committed Bytes", "\\Memory\\Available Bytes"},
+		},
+		{
+			name: "invalidCounter",
+			cfgs: []ScraperCfg{
+				{
+					CounterCfg: PerfCounterConfig{
+						Object:   "Broken",
+						Counters: []CounterConfig{{Name: "Broken Counter"}},
+					},
+				},
+			},
+			expectedErr: "counter \\Broken\\Broken Counter: The specified object was not found on the computer.\r\n",
+		},
+		{
+			name: "multipleInvalidCounters",
+			cfgs: []ScraperCfg{
+				{
+					CounterCfg: PerfCounterConfig{
+						Object:   "Broken",
+						Counters: []CounterConfig{{Name: "Broken Counter"}},
+					},
+				},
+				{
+					CounterCfg: PerfCounterConfig{
+						Object:   "Broken part 2",
+						Counters: []CounterConfig{{Name: "Broken again"}},
+					},
+				},
+			},
+			expectedErr: "counter \\Broken\\Broken Counter: The specified object was not found on the computer.\r\n; counter \\Broken part 2\\Broken again: The specified object was not found on the computer.\r\n",
 		},
 	}
 
@@ -67,6 +117,197 @@ func Test_PathBuilder(t *testing.T) {
 			}
 
 			require.Equal(t, test.expectedPaths, actualPaths)
+		})
+	}
+}
+
+type mockPerfCounter struct {
+	path        string
+	scrapeErr   error
+	shutdownErr error
+	value       float64
+}
+
+func newMockPerfCounter(path string, scrapeErr, shutdownErr error, value float64) *mockPerfCounter {
+	return &mockPerfCounter{path: path, scrapeErr: scrapeErr, shutdownErr: shutdownErr, value: value}
+}
+
+// Path
+func (mpc *mockPerfCounter) Path() string {
+	return mpc.path
+}
+
+// ScrapeData
+func (mpc *mockPerfCounter) ScrapeData() ([]win_perf_counters.CounterValue, error) {
+	return []win_perf_counters.CounterValue{{Value: mpc.value}}, mpc.scrapeErr
+}
+
+// Close
+func (mpc *mockPerfCounter) Close() error {
+	return mpc.shutdownErr
+}
+
+func Test_Scraping(t *testing.T) {
+	testCases := []struct {
+		name            string
+		scrapers        []Scraper
+		expectedErr     string
+		expectedScraped []ScrapedValues
+	}{
+		{
+			name: "basicScraper",
+			scrapers: []Scraper{
+				{
+					Counter: newMockPerfCounter("path", nil, nil, 1),
+					Metric: MetricRep{
+						Name: "metric",
+					},
+				},
+			},
+			expectedScraped: []ScrapedValues{
+				{
+					Metric: MetricRep{
+						Name: "metric",
+					},
+					Value: 1,
+				},
+			},
+		},
+		{
+			name: "multipleScrapers",
+			scrapers: []Scraper{
+				{
+					Counter: newMockPerfCounter("path", nil, nil, 1),
+					Metric: MetricRep{
+						Name: "metric",
+					},
+				},
+				{
+					Counter: newMockPerfCounter("path2", nil, nil, 2),
+					Metric: MetricRep{
+						Name: "metric2",
+					},
+				},
+			},
+			expectedScraped: []ScrapedValues{
+				{
+					Metric: MetricRep{
+						Name: "metric",
+					},
+					Value: 1,
+				},
+				{
+					Metric: MetricRep{
+						Name: "metric2",
+					},
+					Value: 2,
+				},
+			},
+		},
+		{
+			name: "brokenScraper",
+			scrapers: []Scraper{
+				{
+					Counter: newMockPerfCounter("path2", fmt.Errorf("failed to scrape"), nil, 2),
+					Metric: MetricRep{
+						Name: "metric2",
+					},
+				},
+			},
+			expectedErr: "failed to scrape",
+		},
+		{
+			name: "multipleBrokenScrapers",
+			scrapers: []Scraper{
+				{
+					Counter: newMockPerfCounter("path2", fmt.Errorf("failed to scrape"), nil, 2),
+					Metric: MetricRep{
+						Name: "metric2",
+					},
+				},
+				{
+					Counter: newMockPerfCounter("path2", fmt.Errorf("failed to scrape again"), nil, 2),
+					Metric: MetricRep{
+						Name: "metric2",
+					},
+				},
+			},
+			expectedErr: "failed to scrape; failed to scrape again",
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			scrapers, err := ScrapeCounters(test.scrapers)
+
+			if test.expectedErr != "" {
+				require.EqualError(t, err, test.expectedErr)
+				return
+			}
+
+			require.Equal(t, test.expectedScraped, scrapers)
+		})
+	}
+}
+
+func Test_Closing(t *testing.T) {
+	testCases := []struct {
+		name        string
+		scrapers    []Scraper
+		expectedErr string
+	}{
+		{
+			name: "closeWithNoFail",
+			scrapers: []Scraper{
+				{
+					Counter: newMockPerfCounter("path", nil, nil, 1),
+					Metric: MetricRep{
+						Name: "metric",
+					},
+				},
+			},
+		},
+		{
+			name: "brokenScraper",
+			scrapers: []Scraper{
+				{
+					Counter: newMockPerfCounter("path2", nil, fmt.Errorf("failed to close"), 2),
+					Metric: MetricRep{
+						Name: "metric2",
+					},
+				},
+			},
+			expectedErr: "failed to close",
+		},
+		{
+			name: "multipleBrokenScrapers",
+			scrapers: []Scraper{
+				{
+					Counter: newMockPerfCounter("path2", nil, fmt.Errorf("failed to close"), 2),
+					Metric: MetricRep{
+						Name: "metric2",
+					},
+				},
+				{
+					Counter: newMockPerfCounter("path2", nil, fmt.Errorf("failed to close again"), 2),
+					Metric: MetricRep{
+						Name: "metric2",
+					},
+				},
+			},
+			expectedErr: "failed to close; failed to close again",
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			err := CloseCounters(test.scrapers)
+
+			if test.expectedErr != "" {
+				require.EqualError(t, err, test.expectedErr)
+				return
+			}
+			require.NoError(t, err)
 		})
 	}
 }
