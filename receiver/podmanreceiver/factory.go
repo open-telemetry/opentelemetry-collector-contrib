@@ -43,6 +43,7 @@ func createDefaultConfig() *Config {
 			CollectionInterval: 10 * time.Second,
 		},
 		Endpoint:   "unix:///run/podman/podman.sock",
+		Timeout:    5 * time.Second,
 		APIVersion: defaultAPIVersion,
 	}
 }
