@@ -254,7 +254,6 @@ func TestLoadConfig(t *testing.T) {
 func TestLoadConfigEnvVariables(t *testing.T) {
 	assert.NoError(t, os.Setenv("DD_API_KEY", "replacedapikey"))
 	assert.NoError(t, os.Setenv("DD_HOST", "testhost"))
-	assert.NoError(t, os.Setenv("DD_ENV", "testenv"))
 	assert.NoError(t, os.Setenv("DD_SITE", "datadoghq.test"))
 	assert.NoError(t, os.Setenv("DD_TAGS", "envexample:tag envexample2:tag"))
 	assert.NoError(t, os.Setenv("DD_URL", "https://api.datadoghq.com"))
@@ -263,7 +262,6 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 	defer func() {
 		assert.NoError(t, os.Unsetenv("DD_API_KEY"))
 		assert.NoError(t, os.Unsetenv("DD_HOST"))
-		assert.NoError(t, os.Unsetenv("DD_ENV"))
 		assert.NoError(t, os.Unsetenv("DD_SITE"))
 		assert.NoError(t, os.Unsetenv("DD_TAGS"))
 		assert.NoError(t, os.Unsetenv("DD_URL"))
@@ -291,7 +289,7 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 	assert.Equal(t, exporterhelper.NewDefaultQueueSettings(), apiConfig.QueueSettings)
 	assert.Equal(t, ddconfig.TagsConfig{
 		Hostname:   "customhostname",
-		Env:        "prod",
+		Env:        "none",
 		EnvVarTags: "envexample:tag envexample2:tag",
 	}, apiConfig.TagsConfig)
 	assert.Equal(t,
@@ -343,7 +341,7 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 	assert.Equal(t, exporterhelper.NewDefaultQueueSettings(), defaultConfig.QueueSettings)
 	assert.Equal(t, ddconfig.TagsConfig{
 		Hostname:   "testhost",
-		Env:        "testenv",
+		Env:        "none",
 		EnvVarTags: "envexample:tag envexample2:tag",
 	}, defaultConfig.TagsConfig)
 	assert.Equal(t, ddconfig.APIConfig{

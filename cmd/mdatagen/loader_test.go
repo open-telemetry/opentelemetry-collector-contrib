@@ -33,7 +33,8 @@ func Test_loadMetadata(t *testing.T) {
 			name: "all options",
 			yml:  "all_options.yaml",
 			want: metadata{
-				Name: "metricreceiver",
+				Name:           "metricreceiver",
+				SemConvVersion: "1.9.0",
 				Attributes: map[attributeName]attribute{
 					"enumAttribute": {
 						Description: "Attribute with a known set of values.",

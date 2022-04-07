@@ -7,6 +7,7 @@ processors:
 exporters:
   datadog/api:
     hostname: customhostname
+    # Deprecated; kept here to avoid regressions.
     env: prod
     # Deprecated; kept here to avoid regressions.
     service: myservice
@@ -26,7 +27,6 @@ exporters:
 
   datadog/api2:
     hostname: customhostname
-    env: prod
 
     host_metadata:
       tags: [example:tag]

@@ -68,7 +68,6 @@ processors:
 exporters:
   datadog/api:
     hostname: customhostname
-    env: prod
 
     host_metadata:
       tags: [example:tag]

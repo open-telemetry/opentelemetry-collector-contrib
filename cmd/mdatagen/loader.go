@@ -157,6 +157,8 @@ type attribute struct {
 type metadata struct {
 	// Name of the component.
 	Name string `validate:"notblank"`
+	// SemConvVersion is a version number of OpenTelemetry semantic conventions applied to the scraped metrics.
+	SemConvVersion string `mapstructure:"sem_conv_version"`
 	// ResourceAttributes that can be emitted by the component.
 	ResourceAttributes map[attributeName]attribute `mapstructure:"resource_attributes" validate:"dive"`
 	// Attributes emitted by one or more metrics.
