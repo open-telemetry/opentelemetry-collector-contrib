@@ -21,9 +21,10 @@ import (
 	"context"
 	"testing"
 
-	windowsapi "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/windowsperfcountercommon"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+
+	windowsapi "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/windowsperfcountercommon"
 )
 
 func TestCreateMetricsReceiver(t *testing.T) {

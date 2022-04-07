@@ -20,10 +20,11 @@ package windowsperfcountercommon // import "github.com/open-telemetry/openteleme
 import (
 	"fmt"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/windowsperfcountercommon/internal/pdh"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/windowsperfcountercommon/internal/third_party/telegraf/win_perf_counters"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/windowsperfcountercommon/internal/pdh"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/windowsperfcountercommon/internal/third_party/telegraf/win_perf_counters"
 )
 
 //
@@ -133,7 +134,7 @@ func ScrapeCounters(scrapers []Scraper) (metrics []ScrapedValues, errs error) {
 }
 
 // CloseCounters closes the passed in counters.
-// This should be called in the shut down function of receivers using this package
+// This should be called in the shutdown function of receivers using this package
 func CloseCounters(scrapers []Scraper) error {
 	var errs error
 

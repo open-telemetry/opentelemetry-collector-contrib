@@ -18,12 +18,13 @@ import (
 	"context"
 	"testing"
 
-	windowsapi "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/windowsperfcountercommon"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+
+	windowsapi "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/windowsperfcountercommon"
 )
 
 var creationParams = componenttest.NewNopReceiverCreateSettings()

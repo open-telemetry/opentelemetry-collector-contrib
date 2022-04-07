@@ -17,9 +17,10 @@ package windowsperfcountersreceiver // import "github.com/open-telemetry/opentel
 import (
 	"fmt"
 
-	windowsapi "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/windowsperfcountercommon"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
+
+	windowsapi "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/windowsperfcountercommon"
 )
 
 // Config defines configuration for WindowsPerfCounters receiver.

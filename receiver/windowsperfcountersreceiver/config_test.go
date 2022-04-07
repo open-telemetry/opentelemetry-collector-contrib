@@ -20,13 +20,14 @@ import (
 	"testing"
 	"time"
 
-	windowsapi "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/windowsperfcountercommon"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.opentelemetry.io/collector/service/servicetest"
+
+	windowsapi "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/windowsperfcountercommon"
 )
 
 func TestLoadConfig(t *testing.T) {

@@ -302,6 +302,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.48.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.48.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.48.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/windowsperfcountercommon v0.48.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.48.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor v0.48.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor v0.48.0 // indirect
@@ -397,7 +398,7 @@ require (
 	github.com/shirou/gopsutil/v3 v3.22.3 // indirect
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3 // indirect
 	github.com/signalfx/gohistogram v0.0.0-20160107210732-1ccfd2ff5083 // indirect
-	github.com/signalfx/golib/v3 v3.3.13 // indirect
+	github.com/signalfx/golib/v3 v3.3.44 // indirect
 	github.com/signalfx/sapm-proto v0.9.0 // indirect
 	github.com/signalfx/signalfx-agent/pkg/apm v0.0.0-20201202163743-65b4fa925fc8 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
@@ -643,6 +644,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../../extension/storage
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr => ../../pkg/batchperresourceattr
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/windowsperfcountercommon => ../../pkg/windowsperfcountercommon
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal => ../../pkg/batchpersignal
 

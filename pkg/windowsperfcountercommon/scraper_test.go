@@ -21,11 +21,12 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/windowsperfcountercommon/internal/third_party/telegraf/win_perf_counters"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/windowsperfcountercommon/internal/third_party/telegraf/win_perf_counters"
 )
 
 // Test_PathBuilder tests that paths are built correctly given a scraperCfg
