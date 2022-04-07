@@ -332,7 +332,12 @@ func Convert(ent *entry.Entry) pdata.Logs {
 
 // convertInto converts entry.Entry into provided pdata.LogRecord.
 func convertInto(ent *entry.Entry, dest pdata.LogRecord) {
-	dest.SetTimestamp(pdata.NewTimestampFromTime(ent.Timestamp))
+	entTimestamp := ent.Timestamp
+	if entTimestamp.IsZero() {
+		entTimestamp = ent.ObservedTimestamp
+	}
+
+	dest.SetTimestamp(pdata.NewTimestampFromTime(entTimestamp))
 	dest.SetSeverityNumber(sevMap[ent.Severity])
 	dest.SetSeverityText(sevTextMap[ent.Severity])
 

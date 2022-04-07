@@ -790,6 +790,38 @@ func TestConvertSeverity(t *testing.T) {
 	}
 }
 
+func TestConvertTimestamp(t *testing.T) {
+	timeNow := time.Now()
+	cases := []struct {
+		name string
+		timestamp time.Time
+		expectedTimestamp pdata.Timestamp
+	}{
+		{
+			name: "Entry timestamp is not empty",
+			timestamp: timeNow.Add(-24 * 3 * time.Hour),
+			expectedTimestamp: pdata.Timestamp(timeNow.Add(-24 * 3 * time.Hour).UnixNano()),
+		},
+		{
+			name: "Entry timestamp is empty",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			entry := entry.New()
+			entry.Timestamp = tc.timestamp
+			log := convertAndDrill(entry)
+
+			if entry.Timestamp.IsZero() {
+				require.Equal(t, pdata.Timestamp(entry.ObservedTimestamp.UnixNano()), log.Timestamp())
+			} else {
+				require.Equal(t, tc.expectedTimestamp, log.Timestamp())
+			}
+		})
+	}
+}
+
 func TestConvertTrace(t *testing.T) {
 	record := convertAndDrill(&entry.Entry{
 		TraceId: []byte{
