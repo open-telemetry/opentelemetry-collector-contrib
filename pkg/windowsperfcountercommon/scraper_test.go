@@ -28,6 +28,7 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 )
 
+// Test_PathBuilder tests that paths are built correctly given a scraperCfg
 func Test_PathBuilder(t *testing.T) {
 	testCases := []struct {
 		name          string
@@ -147,6 +148,8 @@ func (mpc *mockPerfCounter) Close() error {
 	return mpc.shutdownErr
 }
 
+// Test_Scraping ensures that scrapers scrape appropriately using mocked perfcounters to
+// pass valus through
 func Test_Scraping(t *testing.T) {
 	testCases := []struct {
 		name            string
@@ -250,6 +253,7 @@ func Test_Scraping(t *testing.T) {
 	}
 }
 
+// Test_Closing ensures that scrapers close appropriately
 func Test_Closing(t *testing.T) {
 	testCases := []struct {
 		name        string

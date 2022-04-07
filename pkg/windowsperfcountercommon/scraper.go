@@ -26,6 +26,7 @@ import (
 	"go.uber.org/zap"
 )
 
+//
 type PerfCounterScraper interface {
 	// Path returns the counter path
 	Path() string
@@ -52,6 +53,7 @@ type Scraper struct {
 	Metric  MetricRep
 }
 
+// BuildPaths creates scrapers and their paths from configs.
 func BuildPaths(scraperCfgs []ScraperCfg, logger *zap.Logger) []Scraper {
 	var errs error
 	var scrapers []Scraper
@@ -106,6 +108,7 @@ type ScrapedValues struct {
 	Value  int64
 }
 
+// ScrapeCounters pulls values given the passed in scrapers
 func ScrapeCounters(scrapers []Scraper) (metrics []ScrapedValues, errs error) {
 	for _, scraper := range scrapers {
 		counterValues, err := scraper.Counter.ScrapeData()
@@ -129,6 +132,8 @@ func ScrapeCounters(scrapers []Scraper) (metrics []ScrapedValues, errs error) {
 	return metrics, errs
 }
 
+// CloseCounters closes the passed in counters.
+// This should be called in the shut down function of receivers using this package
 func CloseCounters(scrapers []Scraper) error {
 	var errs error
 
