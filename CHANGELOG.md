@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### 💡 Enhancements 💡
+- `riakreceiver`: Added implementation of Riak Metric Receiver (#8548)
 - `splunkhecexporter`: Add support for batching traces (#8995)
 - `hostmetricsreceiver`: Migrate Processes scraper to the Metrics builder (#8855)
 - `tanzuobservabilityexporter`: Use resourcetotelemetry helper (#8338)
@@ -10,6 +11,9 @@
 - `filestorageextension`: Change bbolt DB settings for better performance (#9004)
 - `jaegerremotesamplingextension`: Add local and remote sampling stores (#8818)
 - `attributesprocessor`: Add support to filter on log body (#8996)
+- `prometheusremotewriteexporter`: Translate resource attributes to the target info metric (#8493)
+- `podmanreceiver`: Add API timeout configuration option (#9014)
+- `cmd/mdatagen`: Add `sem_conv_version` field to metadata.yaml that is used to set metrics SchemaURL (#9010)
 - `cumulativetodeltaprocessor`: add new include/exclude configuration options with regex support (#8952)
 
 ### 🛑 Breaking changes 🛑
@@ -29,7 +33,9 @@
 
 - `datadogexporter`: Deprecate `service` setting in favor of `service.name` semantic convention (#8784)
 - `datadogexporter`: Deprecate `version` setting in favor of `service.version` semantic convention (#8784)
+- `datadogexporter`: Deprecate `env` setting in favor of `deployment.environment` semantic convention (#9017)
 - `datadogexporter`: Deprecate `GetHostTags` method from `TagsConfig` struct (#8975)
+- `prometheusexecreceiver`: Deprecate prom_exec receiver (#9058)
 - `fluentbitextension`: Deprecate Fluentbit extension (#9062)
 
 ### 🚀 New components 🚀

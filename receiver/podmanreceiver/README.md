@@ -19,6 +19,7 @@ The following settings are required:
 The following settings are optional:
 
 - `collection_interval` (default = `10s`): The interval at which to gather container stats.
+- `timeout` (default = `5s`): The maximum amount of time to wait for Podman API responses.
 
 Example:
 
@@ -26,6 +27,7 @@ Example:
 receivers:
   podman_stats:
     endpoint: unix://run/podman/podman.sock
+    timeout: 10s
     collection_interval: 10s
 ```
 

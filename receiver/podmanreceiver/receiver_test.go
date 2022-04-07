@@ -93,12 +93,16 @@ func (c mockClient) factory(logger *zap.Logger, cfg *Config) (client, error) {
 	return c, nil
 }
 
-func (c mockClient) stats() ([]containerStats, error) {
+func (c mockClient) stats(context.Context) ([]containerStats, error) {
 	report := <-c
 	if report.Error != "" {
 		return nil, errors.New(report.Error)
 	}
 	return report.Stats, nil
+}
+
+func (c mockClient) ping(context.Context) error {
+	return nil
 }
 
 type mockConsumer chan pdata.Metrics
