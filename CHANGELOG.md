@@ -25,6 +25,7 @@
 
 - `hostmetricsreceiver`: Use cpu times for time delta in cpu.utilization calculation (#8857)
 - `dynatraceexporter`: Remove overly verbose stacktrace from certain logs (#8989)
+- `fluentforwardreceiver`: Fluentforward receiver not releasing port for reloading of OTEL collector (#9111)
 
 ### 🚩 Deprecations 🚩
 
