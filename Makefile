@@ -27,6 +27,7 @@ INTEGRATION_TEST_MODULES := \
 	receiver/nginxreceiver \
 	receiver/postgresqlreceiver \
 	receiver/redisreceiver \
+	receiver/riakreceiver \
 	receiver/zookeeperreceiver \
 	extension/observer/dockerobserver
 

@@ -72,10 +72,10 @@ func (r *receiver) start(context.Context, component.Host) error {
 	return err
 }
 
-func (r *receiver) scrape(context.Context) (pdata.Metrics, error) {
+func (r *receiver) scrape(ctx context.Context) (pdata.Metrics, error) {
 	var err error
 
-	stats, err := r.client.stats()
+	stats, err := r.client.stats(ctx)
 	if err != nil {
 		r.set.Logger.Error("error fetching stats", zap.Error(err))
 		return pdata.Metrics{}, err

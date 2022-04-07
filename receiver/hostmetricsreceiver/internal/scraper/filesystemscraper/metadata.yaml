@@ -1,5 +1,7 @@
 name: hostmetricsreceiver/filesystem
 
+sem_conv_version: 1.9.0
+
 attributes:
   device:
     description: Identifier of the filesystem.

@@ -12,29 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package traces // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
+package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 
 import (
 	"fmt"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
-type condFunc = func(ctx spanTransformContext) bool
+type condFunc = func(ctx TransformContext) bool
 
-var alwaysTrue = func(ctx spanTransformContext) bool {
+var alwaysTrue = func(ctx TransformContext) bool {
 	return true
 }
 
-func newConditionEvaluator(cond *common.Condition, functions map[string]interface{}) (condFunc, error) {
+func newConditionEvaluator(cond *Condition, functions map[string]interface{}, pathParser PathExpressionParser) (condFunc, error) {
 	if cond == nil {
 		return alwaysTrue, nil
 	}
-	left, err := newGetter(cond.Left, functions)
+	left, err := NewGetter(cond.Left, functions, pathParser)
 	if err != nil {
 		return nil, err
 	}
-	right, err := newGetter(cond.Right, functions)
+	right, err := NewGetter(cond.Right, functions, pathParser)
 	// TODO(anuraaga): Check if both left and right are literals and const-evaluate
 	if err != nil {
 		return nil, err
@@ -42,15 +40,15 @@ func newConditionEvaluator(cond *common.Condition, functions map[string]interfac
 
 	switch cond.Op {
 	case "==":
-		return func(ctx spanTransformContext) bool {
-			a := left.get(ctx)
-			b := right.get(ctx)
+		return func(ctx TransformContext) bool {
+			a := left.Get(ctx)
+			b := right.Get(ctx)
 			return a == b
 		}, nil
 	case "!=":
-		return func(ctx spanTransformContext) bool {
-			a := left.get(ctx)
-			b := right.get(ctx)
+		return func(ctx TransformContext) bool {
+			a := left.Get(ctx)
+			b := right.Get(ctx)
 			return a != b
 		}, nil
 	}

@@ -47,7 +47,9 @@ func FromMetrics(md pdata.Metrics, settings Settings) (tsMap map[string]*prompb.
 		resourceMetrics := resourceMetricsSlice.At(i)
 		resource := resourceMetrics.Resource()
 		scopeMetricsSlice := resourceMetrics.ScopeMetrics()
-		// TODO: add resource attributes as labels, probably in next PR
+		// keep track of the most recent timestamp in the ResourceMetrics for
+		// use with the "target" info metric
+		var mostRecentTimestamp pdata.Timestamp
 		for j := 0; j < scopeMetricsSlice.Len(); j++ {
 			scopeMetrics := scopeMetricsSlice.At(j)
 			metricSlice := scopeMetrics.Metrics()
@@ -55,6 +57,7 @@ func FromMetrics(md pdata.Metrics, settings Settings) (tsMap map[string]*prompb.
 			// TODO: decide if instrumentation library information should be exported as labels
 			for k := 0; k < metricSlice.Len(); k++ {
 				metric := metricSlice.At(k)
+				mostRecentTimestamp = maxTimestamp(mostRecentTimestamp, mostRecentTimestampInMetric(metric))
 
 				// check for valid type and temporality combination and for matching data field and type
 				if ok := validateMetrics(metric); !ok {
@@ -96,6 +99,7 @@ func FromMetrics(md pdata.Metrics, settings Settings) (tsMap map[string]*prompb.
 				}
 			}
 		}
+		addResourceTargetInfo(resource, settings, mostRecentTimestamp, tsMap)
 	}
 
 	return

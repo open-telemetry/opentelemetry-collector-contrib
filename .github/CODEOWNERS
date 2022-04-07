@@ -144,6 +144,7 @@ receiver/prometheusreceiver/                         @open-telemetry/collector-c
 receiver/rabbitmqreceiver/                           @open-telemetry/collector-contrib-approvers @djaglowski @cpheps
 receiver/receivercreator/                            @open-telemetry/collector-contrib-approvers @jrcamp
 receiver/redisreceiver/                              @open-telemetry/collector-contrib-approvers @pmcollins @dmitryax
+receiver/riakreceiver/                               @open-telemetry/collector-contrib-approvers @djaglowski @armstrmi
 receiver/sapmreceiver/                               @open-telemetry/collector-contrib-approvers @owais
 receiver/signalfxreceiver/                           @open-telemetry/collector-contrib-approvers @pjanotti @dmitryax
 receiver/skywalkingreceiver                          @open-telemetry/collector-contrib-approvers @JaredTan95
