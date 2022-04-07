@@ -1,5 +1,27 @@
 name: vmwarevcenterreceiver
 
+resource_attributes:
+  vcenter.cluster.name:
+    description: The name of the vCenter Cluster
+    type: string
+  vcenter.host.name:
+    description: The hostname of the vCenter ESXi host
+    type: string
+  vcenter.resource_pool.name:
+    description: The name of the resource pool
+  vcenter.datastore.name:
+    description: The name of the vCenter datastore
+    type: string
+  vcenter.vm.name:
+    description: The name of the virtual machine
+    type: string
+  vcenter.vm.power_state:
+    description: Whether the virtual machine is powered on/off.
+    type: string
+  vcenter.vm.id:
+    description: The instance UUID of the virtual machine
+    type: string
+
 attributes:
   cluster:
     description: The name of the vCenter Cluster

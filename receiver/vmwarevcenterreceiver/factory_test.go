@@ -11,7 +11,9 @@ import (
 )
 
 func TestCreateMetricsReceiver(t *testing.T) {
-	f := vcenterReceiverFactory{}
+	f := vcenterReceiverFactory{
+		receivers: make(map[*Config]*vcenterReceiver),
+	}
 	testCases := []struct {
 		desc   string
 		testFn func(t *testing.T)
@@ -20,14 +22,12 @@ func TestCreateMetricsReceiver(t *testing.T) {
 			desc: "Default config",
 			testFn: func(t *testing.T) {
 				t.Parallel()
-
 				_, err := f.createMetricsReceiver(
 					context.Background(),
 					componenttest.NewNopReceiverCreateSettings(),
 					createDefaultConfig(),
 					consumertest.NewNop(),
 				)
-
 				require.NoError(t, err)
 			},
 		},
@@ -66,7 +66,9 @@ func TestCreateMetricsReceiver(t *testing.T) {
 }
 
 func TestCreateLogsReceiver(t *testing.T) {
-	f := vcenterReceiverFactory{}
+	f := vcenterReceiverFactory{
+		receivers: make(map[*Config]*vcenterReceiver),
+	}
 	testCases := []struct {
 		desc   string
 		testFn func(t *testing.T)

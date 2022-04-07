@@ -151,11 +151,11 @@ func (v *vcenterMetricScraper) collectClusterVSAN(
 func (v *vcenterMetricScraper) collectDatastores(
 	ctx context.Context,
 	colTime pdata.Timestamp,
-	_ *object.ClusterComputeResource,
+	cluster *object.ClusterComputeResource,
 	rms pdata.ResourceMetricsSlice,
 	errs *scrapererror.ScrapeErrors,
 ) {
-	datastores, err := v.client.DataStores(ctx)
+	datastores, err := cluster.Datastores(ctx)
 	if err != nil {
 		errs.AddPartial(1, err)
 		return
@@ -190,7 +190,7 @@ func (v *vcenterMetricScraper) collectHosts(
 	rms pdata.ResourceMetricsSlice,
 	errs *scrapererror.ScrapeErrors,
 ) {
-	hosts, err := v.client.Hosts(ctx)
+	hosts, err := cluster.Hosts(ctx)
 	if err != nil {
 		errs.AddPartial(1, err)
 		return
