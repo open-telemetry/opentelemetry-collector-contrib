@@ -23,8 +23,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/zap"
 
-	windowsapi "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/windowsperfcountercommon"
+	windowsapi "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
 )
 
 const instanceLabelName = "instance"
@@ -33,7 +34,7 @@ const instanceLabelName = "instance"
 type scraper struct {
 	cfg             *Config
 	settings        component.TelemetrySettings
-	counterScrapers []windowsapi.Scraper
+	counterScrapers []windowsapi.PerfCounterWatcher
 }
 
 func newScraper(cfg *Config, settings component.TelemetrySettings) *scraper {
@@ -41,12 +42,16 @@ func newScraper(cfg *Config, settings component.TelemetrySettings) *scraper {
 }
 
 func (s *scraper) start(context.Context, component.Host) error {
-	scrapercfg := []windowsapi.ScraperCfg{}
+	scrapercfg := []windowsapi.WatcherCfg{}
 	for _, perfCounter := range s.cfg.PerfCounters {
-		scrapercfg = append(scrapercfg, windowsapi.ScraperCfg{CounterCfg: perfCounter})
+		scrapercfg = append(scrapercfg, windowsapi.WatcherCfg{ObjectCfg: perfCounter})
 	}
 
-	s.counterScrapers = windowsapi.BuildPaths(scrapercfg, s.settings.Logger)
+	var err error
+	if s.counterScrapers, err = windowsapi.BuildPaths(scrapercfg); err != nil {
+		s.settings.Logger.Warn("some performance counters could not be initialized", zap.Error(err))
+	}
+
 	return nil
 }
 
@@ -86,20 +91,21 @@ func (s *scraper) scrape(context.Context) (pdata.Metrics, error) {
 		metrics[name] = builtMetric
 	}
 
-	scrapedMetrics, errs := windowsapi.ScrapeCounters(s.counterScrapers)
+	scrapedMetrics, errs := windowsapi.WatchCounters(s.counterScrapers)
 
 	for _, scrapedValue := range scrapedMetrics {
 		var metric pdata.Metric
-		if builtmetric, ok := metrics[scrapedValue.Metric.Name]; ok {
+		metricRep := scrapedValue.MetricRep
+		if builtmetric, ok := metrics[metricRep.Name]; ok {
 			metric = builtmetric
 		} else {
 			metric = metricSlice.AppendEmpty()
 			metric.SetDataType(pdata.MetricDataTypeGauge)
-			metric.SetName(scrapedValue.Metric.Name)
+			metric.SetName(metricRep.Name)
 			metric.SetUnit("1")
 		}
 
-		initializeMetricDps(metric, now, scrapedValue.Value, scrapedValue.Metric.Attributes)
+		initializeMetricDps(metric, now, scrapedValue.Value, metricRep.Attributes)
 	}
 
 	return md, errs

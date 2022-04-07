@@ -20,15 +20,15 @@ import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 
-	windowsapi "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/windowsperfcountercommon"
+	windowsapi "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
 )
 
 // Config defines configuration for WindowsPerfCounters receiver.
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 
-	MetricMetaData map[string]MetricConfig        `mapstructure:"metrics"`
-	PerfCounters   []windowsapi.PerfCounterConfig `mapstructure:"perfcounters"`
+	MetricMetaData map[string]MetricConfig   `mapstructure:"metrics"`
+	PerfCounters   []windowsapi.ObjectConfig `mapstructure:"perfcounters"`
 }
 
 // MetricsConfig defines the configuration for a metric to be created.

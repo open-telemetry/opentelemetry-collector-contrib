@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/window
 go 1.17
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/windowsperfcountercommon v0.48.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.48.0
 	github.com/stretchr/testify v1.7.1
 	go.opentelemetry.io/collector v0.48.0
 	go.opentelemetry.io/collector/model v0.48.0
@@ -43,4 +43,4 @@ require golang.org/x/sys v0.0.0-20220114195835-da31bd327af9 // indirect
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest => ../../internal/scrapertest
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/windowsperfcountercommon => ../../pkg/windowsperfcountercommon
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters => ../../pkg/winperfcounters

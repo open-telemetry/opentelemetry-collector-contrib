@@ -12,34 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build windows
-// +build windows
+package winperfcounters // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
 
-package windowsperfcountercommon // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/windowsperfcountercommon"
-
+// CounterConfig defines the individual counter in an object.
 type CounterConfig struct {
 	Name       string            `mapstructure:"name"`
 	Metric     string            `mapstructure:"metric"`
 	Attributes map[string]string `mapstructure:"attributes"`
 }
 
-// PerfCounterConfig defines configuration for a perf counter object.
-type PerfCounterConfig struct {
+// ObjectConfig defines configuration for a perf counter object.
+type ObjectConfig struct {
 	Object    string          `mapstructure:"object"`
 	Instances []string        `mapstructure:"instances"`
 	Counters  []CounterConfig `mapstructure:"counters"`
-}
-
-func (pc *PerfCounterConfig) instances() []string {
-	if len(pc.Instances) == 0 {
-		return []string{""}
-	}
-
-	for _, instance := range pc.Instances {
-		if instance == "*" {
-			return []string{"*"}
-		}
-	}
-
-	return pc.Instances
 }

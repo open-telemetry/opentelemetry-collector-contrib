@@ -15,33 +15,35 @@
 //go:build windows
 // +build windows
 
-package windowsperfcountercommon // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/windowsperfcountercommon"
+package winperfcounters // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
 
 import (
 	"fmt"
 
 	"go.uber.org/multierr"
-	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/windowsperfcountercommon/internal/pdh"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/windowsperfcountercommon/internal/third_party/telegraf/win_perf_counters"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters/internal/pdh"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters/internal/third_party/telegraf/win_perf_counters"
 )
 
-//
-type PerfCounterScraper interface {
+var _ PerfCounterWatcher = (*Watcher)(nil)
+
+// PerfCounterWatcher represents how to scrape data
+type PerfCounterWatcher interface {
 	// Path returns the counter path
 	Path() string
 	// ScrapeData collects a measurement and returns the value(s).
 	ScrapeData() ([]win_perf_counters.CounterValue, error)
 	// Close all counters/handles related to the query and free all associated memory.
 	Close() error
+
+	GetMetricRep() MetricRep
 }
 
 const instanceLabelName = "instance"
 
-type ScraperCfg struct {
-	CounterCfg PerfCounterConfig
-	Metric     MetricRep
+type WatcherCfg struct {
+	ObjectCfg ObjectConfig
 }
 
 type MetricRep struct {
@@ -49,51 +51,60 @@ type MetricRep struct {
 	Attributes map[string]string
 }
 
-type Scraper struct {
-	Counter PerfCounterScraper
-	Metric  MetricRep
+type Watcher struct {
+	Counter *pdh.PerfCounter
+	MetricRep
 }
 
-// BuildPaths creates scrapers and their paths from configs.
-func BuildPaths(scraperCfgs []ScraperCfg, logger *zap.Logger) []Scraper {
+func (w Watcher) Path() string {
+	return w.Counter.Path()
+}
+
+func (w Watcher) ScrapeData() ([]win_perf_counters.CounterValue, error) {
+	return w.Counter.ScrapeData()
+}
+
+func (w Watcher) Close() error {
+	return w.Counter.Close()
+}
+
+func (w Watcher) GetMetricRep() MetricRep {
+	return w.MetricRep
+}
+
+// BuildPaths creates watchers and their paths from configs.
+func BuildPaths(scraperCfgs []WatcherCfg) ([]PerfCounterWatcher, error) {
 	var errs error
-	var scrapers []Scraper
+	var watchers []PerfCounterWatcher
 
 	for _, scraperCfg := range scraperCfgs {
-		for _, instance := range scraperCfg.CounterCfg.instances() {
-			for _, counterCfg := range scraperCfg.CounterCfg.Counters {
-				counterPath := counterPath(scraperCfg.CounterCfg.Object, instance, counterCfg.Name)
+		for _, instance := range scraperCfg.ObjectCfg.instances() {
+			for _, counterCfg := range scraperCfg.ObjectCfg.Counters {
+				counterPath := counterPath(scraperCfg.ObjectCfg.Object, instance, counterCfg.Name)
 
 				c, err := pdh.NewPerfCounter(counterPath, true)
 				if err != nil {
 					errs = multierr.Append(errs, fmt.Errorf("counter %v: %w", counterPath, err))
 				} else {
-					newScraper := Scraper{Counter: c}
+					newWatcher := Watcher{Counter: c}
 
-					if scraperCfg.Metric.Name != "" {
-						newScraper.Metric = scraperCfg.Metric
-					} else if counterCfg.Metric != "" {
+					if counterCfg.Metric != "" {
 						metricCfg := MetricRep{Name: counterCfg.Metric}
 						if counterCfg.Attributes != nil {
 							metricCfg.Attributes = counterCfg.Attributes
 						}
-						newScraper.Metric.Name = counterCfg.Metric
+						newWatcher.MetricRep = metricCfg
 					} else {
-						newScraper.Metric.Name = c.Path()
+						newWatcher.MetricRep.Name = c.Path()
 					}
 
-					scrapers = append(scrapers, newScraper)
+					watchers = append(watchers, newWatcher)
 				}
 			}
 		}
 	}
 
-	// log a warning if some counters cannot be loaded, but do not crash the app
-	if errs != nil {
-		logger.Warn("some performance counters could not be initialized", zap.Error(errs))
-	}
-
-	return scrapers
+	return watchers, errs
 }
 
 func counterPath(object, instance, counterName string) string {
@@ -104,20 +115,20 @@ func counterPath(object, instance, counterName string) string {
 	return fmt.Sprintf("\\%s%s\\%s", object, instance, counterName)
 }
 
-type ScrapedValues struct {
-	Metric MetricRep
-	Value  int64
+type CounterValue struct {
+	MetricRep
+	Value int64
 }
 
-// ScrapeCounters pulls values given the passed in scrapers
-func ScrapeCounters(scrapers []Scraper) (metrics []ScrapedValues, errs error) {
-	for _, scraper := range scrapers {
-		counterValues, err := scraper.Counter.ScrapeData()
+// WatchCounters pulls values given the passed in watchers
+func WatchCounters(watchers []PerfCounterWatcher) (metrics []CounterValue, errs error) {
+	for _, scraper := range watchers {
+		counterValues, err := scraper.ScrapeData()
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue
 		}
-		metric := scraper.Metric
+		metric := scraper.GetMetricRep()
 
 		for _, counterValue := range counterValues {
 			if counterValue.InstanceName != "" {
@@ -127,7 +138,7 @@ func ScrapeCounters(scrapers []Scraper) (metrics []ScrapedValues, errs error) {
 				metric.Attributes[instanceLabelName] = counterValue.InstanceName
 			}
 
-			metrics = append(metrics, ScrapedValues{Metric: scraper.Metric, Value: int64(counterValue.Value)})
+			metrics = append(metrics, CounterValue{MetricRep: metric, Value: int64(counterValue.Value)})
 		}
 	}
 	return metrics, errs
@@ -135,11 +146,11 @@ func ScrapeCounters(scrapers []Scraper) (metrics []ScrapedValues, errs error) {
 
 // CloseCounters closes the passed in counters.
 // This should be called in the shutdown function of receivers using this package
-func CloseCounters(scrapers []Scraper) error {
+func CloseCounters(watchers []PerfCounterWatcher) error {
 	var errs error
 
-	for _, scraper := range scrapers {
-		errs = multierr.Append(errs, scraper.Counter.Close())
+	for _, scraper := range watchers {
+		errs = multierr.Append(errs, scraper.Close())
 	}
 
 	return errs
