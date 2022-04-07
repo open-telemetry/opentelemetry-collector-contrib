@@ -191,6 +191,9 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "redis",
 		},
 		{
+			receiver: "riak",
+		},
+		{
 			receiver: "sapm",
 		},
 		{
