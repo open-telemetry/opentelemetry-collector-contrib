@@ -1,3 +1,26 @@
+#!/usr/bin/env bash
+
+#   Copyright The OpenTelemetry Authors
+
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+
+#       http://www.apache.org/licenses/LICENSE-2.0
+
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
+#
+# verifies if the collector components are using the main core collector version
+# as a dependency.
+#
+set -eu -o pipefail
+
+# Return the collector main core version
 get_collector_version() {
    collector_module="$1"
    main_mod_file="$2"
@@ -11,19 +34,22 @@ get_collector_version() {
    fi
 }
 
+# Compare the collecor main core version against all the collector component
+# modules to verify that they are using this version as its dependency
 check_collector_version_correct() {
    collector_module="$1"
    collector_mod_version="$2"
    incorrect_version=0
    mod_files=$(find . -type f -name "go.mod")
 
+   # Loop through all the module files, checking the collector version
    for mod_file in $mod_files; do
       if grep -q "$collector_module" "$mod_file"; then
          mod_line=$(grep "$collector_module" "$mod_file")
          version=$(echo "$mod_line" | cut -d" " -f2)
          
-         # To account for module is on its own require line
-         # version field is shifted right by 1
+         # To account for a module on its own 'require' line,
+         # the version field is shifted right by 1
          if [ "$version" == "$collector_module" ]; then
             version=$(echo "$mod_line" | cut -d" " -f3)
          fi
@@ -41,10 +67,13 @@ check_collector_version_correct() {
    fi
 }
 
+# Note space at end of string. This is so it filters for the exact string
+# only and does not return string which contains this string as a substring.
 COLLECTOR_MODULE="go.opentelemetry.io/collector "
+
 COLLECTOR_MODEL_MODULE="go.opentelemetry.io/collector/model"
 MAIN_MOD_FILE="./go.mod"
-COLLECTOR_MOD_VERSION=$(get_collector_version $COLLECTOR_MODULE $MAIN_MOD_FILE)
+COLLECTOR_MOD_VERSION=$(get_collector_version "$COLLECTOR_MODULE" "$MAIN_MOD_FILE")
 
 # Check the collector module version in each of the module files
 check_collector_version_correct "$COLLECTOR_MODULE" "$COLLECTOR_MOD_VERSION"
