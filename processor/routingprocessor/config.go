@@ -15,6 +15,7 @@
 package routingprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor"
 
 import (
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/config"
@@ -82,9 +83,7 @@ func (c *Config) Validate() error {
 	}
 
 	if c.AttributeSource != resourceAttributeSource && c.DropRoutingResourceAttribute {
-		return fmt.Errorf(
-			"using a different attribute source than 'attribute' and drop_resource_routing_attribute is set to true",
-		)
+		return errors.New("using a different attribute source than 'attribute' and drop_resource_routing_attribute is set to true")
 	}
 
 	return nil

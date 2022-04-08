@@ -386,15 +386,15 @@ func TestTraces_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.
 
 	assert.NoError(t, exp.ConsumeTraces(context.Background(), tr))
 	assert.Equal(t, 1, tExp.getTraceCount(),
-		"metric should be routed to non default exporter",
+		"trace should be routed to non default exporter",
 	)
 	require.Len(t, tExp.traces, 1)
 	require.Equal(t, 1, tExp.traces[0].ResourceSpans().Len())
 	attrs := tExp.traces[0].ResourceSpans().At(0).Resource().Attributes()
 	_, ok := attrs.Get("X-Tenant")
-	assert.False(t, ok, "routing attribute should be dropped")
+	assert.False(t, ok, "routing attribute should have been dropped")
 	v, ok := attrs.Get("attr")
-	assert.True(t, ok, "non routing attributes shouldn't be dropped")
+	assert.True(t, ok, "non-routing attributes shouldn't have been dropped")
 	assert.Equal(t, "acme", v.StringVal())
 }
 
@@ -644,7 +644,7 @@ func TestMetrics_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing
 	require.Equal(t, 1, mExp.metrics[0].ResourceMetrics().Len())
 	attrs := mExp.metrics[0].ResourceMetrics().At(0).Resource().Attributes()
 	_, ok := attrs.Get("X-Tenant")
-	assert.False(t, ok, "routing attribute should be dropped")
+	assert.False(t, ok, "routing attribute should have been dropped")
 	v, ok := attrs.Get("attr")
 	assert.True(t, ok, "non routing attributes shouldn't be dropped")
 	assert.Equal(t, "acme", v.StringVal())
@@ -809,13 +809,13 @@ func TestLogs_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.T)
 
 	assert.NoError(t, exp.ConsumeLogs(context.Background(), l))
 	assert.Equal(t, 1, lExp.getLogCount(),
-		"metric should be routed to non default exporter",
+		"log should be routed to non-default exporter",
 	)
 	require.Len(t, lExp.logs, 1)
 	require.Equal(t, 1, lExp.logs[0].ResourceLogs().Len())
 	attrs := lExp.logs[0].ResourceLogs().At(0).Resource().Attributes()
 	_, ok := attrs.Get("X-Tenant")
-	assert.False(t, ok, "routing attribute should be dropped")
+	assert.False(t, ok, "routing attribute should have been dropped")
 	v, ok := attrs.Get("attr")
 	assert.True(t, ok, "non routing attributes shouldn't be dropped")
 	assert.Equal(t, "acme", v.StringVal())
