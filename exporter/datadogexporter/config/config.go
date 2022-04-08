@@ -257,7 +257,7 @@ type HostnameSource string
 const (
 	// HostnameSourceFirstResource picks the host metadata hostname from the resource
 	// attributes on the first OTLP payload that gets to the exporter. If it is lacking any
-	// hostname-like attributes, it will fallback to system data (see below).
+	// hostname-like attributes, it will fallback to 'config_or_system' behavior (see below).
 	//
 	// Do not use this hostname source if receiving data from multiple hosts.
 	HostnameSourceFirstResource HostnameSource = "first_resource"
@@ -355,8 +355,8 @@ type Config struct {
 	// metadata about a host is sent to the backend even
 	// when telemetry data is reported via a different host.
 	//
-	// This flag is incompatible with disabling host metadata
-	// or `use_resource_metadata`.
+	// This flag is incompatible with disabling host metadata,
+	// `use_resource_metadata`, or `host_metadata::hostname_source != first_resource`
 	OnlyMetadata bool `mapstructure:"only_metadata"`
 
 	// UseResourceMetadata defines whether to use resource attributes

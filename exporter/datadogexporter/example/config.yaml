@@ -216,7 +216,7 @@ exporters:
       ##
       ## - 'config_or_system' picks the host metadata hostname from the 'hostname' setting, falling back to system and cloud provider APIs.
       ##
-      ##  The current default if 'first_resource'.
+      ##  The current default is 'first_resource'.
       #
       # hostname_source: first_resource
 
