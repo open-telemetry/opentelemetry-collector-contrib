@@ -43,6 +43,10 @@ type RegexParserConfig struct {
 	helper.ParserConfig `mapstructure:",squash" yaml:",inline"`
 
 	Regex string `mapstructure:"regex" json:"regex" yaml:"regex"`
+
+	Cache struct {
+		Size uint16 `json:"size" yaml:"size"`
+	} `mapstructure:"cache" json:"cache" yaml:"cache"`
 }
 
 // Build will build a regex parser operator.
@@ -74,16 +78,24 @@ func (c RegexParserConfig) Build(logger *zap.SugaredLogger) (operator.Operator, 
 		)
 	}
 
-	return &RegexParser{
+	op := &RegexParser{
 		ParserOperator: parserOperator,
 		regexp:         r,
-	}, nil
+	}
+
+	if c.Cache.Size > 0 {
+		op.cache = newMemoryCache(c.Cache.Size, 0)
+		logger.Debugf("configured %s with memory cache of size %d", op.ID(), op.cache.maxSize())
+	}
+
+	return op, nil
 }
 
 // RegexParser is an operator that parses regex in an entry.
 type RegexParser struct {
 	helper.ParserOperator
 	regexp *regexp.Regexp
+	cache  cache
 }
 
 // Process will parse an entry for regex.
@@ -93,15 +105,26 @@ func (r *RegexParser) Process(ctx context.Context, entry *entry.Entry) error {
 
 // parse will parse a value using the supplied regex.
 func (r *RegexParser) parse(value interface{}) (interface{}, error) {
-	var matches []string
+	var raw string
 	switch m := value.(type) {
 	case string:
-		matches = r.regexp.FindStringSubmatch(m)
-		if matches == nil {
-			return nil, fmt.Errorf("regex pattern does not match")
-		}
+		raw = m
 	default:
 		return nil, fmt.Errorf("type '%T' cannot be parsed as regex", value)
+	}
+	return r.match(raw)
+}
+
+func (r *RegexParser) match(value string) (interface{}, error) {
+	if r.cache != nil {
+		if x := r.cache.get(value); x != nil {
+			return x, nil
+		}
+	}
+
+	matches := r.regexp.FindStringSubmatch(value)
+	if matches == nil {
+		return nil, fmt.Errorf("regex pattern does not match")
 	}
 
 	parsedValues := map[string]interface{}{}
@@ -113,6 +136,10 @@ func (r *RegexParser) parse(value interface{}) (interface{}, error) {
 		if subexp != "" {
 			parsedValues[subexp] = matches[i]
 		}
+	}
+
+	if r.cache != nil {
+		r.cache.add(value, parsedValues)
 	}
 
 	return parsedValues, nil

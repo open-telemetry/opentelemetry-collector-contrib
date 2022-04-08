@@ -28,6 +28,14 @@ func TestRegexParserGoldenConfig(t *testing.T) {
 			Expect: defaultCfg(),
 		},
 		{
+			Name: "cache",
+			Expect: func() *RegexParserConfig {
+				cfg := defaultCfg()
+				cfg.Cache.Size = 50
+				return cfg
+			}(),
+		},
+		{
 			Name: "parse_from_simple",
 			Expect: func() *RegexParserConfig {
 				cfg := defaultCfg()
