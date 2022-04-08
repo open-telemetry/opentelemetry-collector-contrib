@@ -123,14 +123,14 @@ func Test_PathBuilder(t *testing.T) {
 
 type mockPerfCounter struct {
 	path        string
-	scrapeErr   error
+	watchErr    error
 	shutdownErr error
 	value       float64
 	MetricRep
 }
 
-func newMockPerfCounter(path string, scrapeErr, shutdownErr error, value float64, metric MetricRep) *mockPerfCounter {
-	return &mockPerfCounter{path: path, scrapeErr: scrapeErr, shutdownErr: shutdownErr, value: value, MetricRep: metric}
+func newMockPerfCounter(path string, watchErr, shutdownErr error, value float64, metric MetricRep) *mockPerfCounter {
+	return &mockPerfCounter{path: path, watchErr: watchErr, shutdownErr: shutdownErr, value: value, MetricRep: metric}
 }
 
 // Path
@@ -140,7 +140,7 @@ func (mpc *mockPerfCounter) Path() string {
 
 // ScrapeData
 func (mpc *mockPerfCounter) ScrapeData() ([]win_perf_counters.CounterValue, error) {
-	return []win_perf_counters.CounterValue{{Value: mpc.value}}, mpc.scrapeErr
+	return []win_perf_counters.CounterValue{{Value: mpc.value}}, mpc.watchErr
 }
 
 // Close
@@ -152,14 +152,14 @@ func (mpc *mockPerfCounter) GetMetricRep() MetricRep {
 	return MetricRep{}
 }
 
-// Test_Scraping ensures that watchers scrape appropriately using mocked perfcounters to
+// Test_Scraping ensures that watchers watch appropriately using mocked perfcounters to
 // pass valus through
 func Test_Scraping(t *testing.T) {
 	testCases := []struct {
 		name            string
 		watchers        []PerfCounterWatcher
 		expectedErr     string
-		expectedScraped []CounterValue
+		expectedWatched []CounterValue
 	}{
 		{
 			name: "basicWatcher",
@@ -168,7 +168,7 @@ func Test_Scraping(t *testing.T) {
 					Name: "metric",
 				}),
 			},
-			expectedScraped: []CounterValue{
+			expectedWatched: []CounterValue{
 				{
 					MetricRep: MetricRep{
 						Name: "metric",
@@ -187,7 +187,7 @@ func Test_Scraping(t *testing.T) {
 					Name: "metric",
 				}),
 			},
-			expectedScraped: []CounterValue{
+			expectedWatched: []CounterValue{
 				{
 					MetricRep: MetricRep{
 						Name: "metric",
@@ -205,17 +205,17 @@ func Test_Scraping(t *testing.T) {
 		{
 			name: "brokenWatcher",
 			watchers: []PerfCounterWatcher{
-				newMockPerfCounter("path2", fmt.Errorf("failed to scrape"), nil, 2, MetricRep{}),
+				newMockPerfCounter("path2", fmt.Errorf("failed to watch"), nil, 2, MetricRep{}),
 			},
-			expectedErr: "failed to scrape",
+			expectedErr: "failed to watch",
 		},
 		{
 			name: "multipleBrokenWatchers",
 			watchers: []PerfCounterWatcher{
-				newMockPerfCounter("path2", fmt.Errorf("failed to scrape"), nil, 2, MetricRep{}),
-				newMockPerfCounter("path2", fmt.Errorf("failed to scrape again"), nil, 2, MetricRep{}),
+				newMockPerfCounter("path2", fmt.Errorf("failed to watch"), nil, 2, MetricRep{}),
+				newMockPerfCounter("path2", fmt.Errorf("failed to watch again"), nil, 2, MetricRep{}),
 			},
-			expectedErr: "failed to scrape; failed to scrape again",
+			expectedErr: "failed to watch; failed to watch again",
 		},
 	}
 
@@ -229,7 +229,7 @@ func Test_Scraping(t *testing.T) {
 			}
 			require.NoError(t, err)
 
-			require.Equal(t, test.expectedScraped, watchers)
+			require.Equal(t, test.expectedWatched, watchers)
 		})
 	}
 }
