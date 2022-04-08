@@ -24,6 +24,31 @@ processors:
     # intended.
     hash_seed: 22
 
+  probabilistic_sampler/logs:
+    # the percentage rate at which logs are going to be sampled. Defaults to
+    # zero, i.e.: no sample. Values greater or equal 100 are treated as
+    # "sample all logs".
+    sampling_percentage: 15.3
+    # hash_seed allows one to configure the hashing seed. This is important in
+    # scenarios where multiple layers of collectors are used to achieve the
+    # desired sampling rate, eg.: 10% on first layer and 10% on the
+    # second, resulting in an overall sampling rate of 1% (10% x 10%).
+    # If all layers use the same seed, all data passing one layer will also pass
+    # the next one, independent of the configured sampling rate. Having different
+    # seeds at different layers ensures that sampling rate in each layer work as
+    # intended.
+    hash_seed: 22
+    # Severity filters override the default sampling_percentage sampling rate.
+    severity:
+      # Override the default sampling_percentage for all log records of severity of error or higher
+      # to keep all logs.
+      - sampling_percentage: 100
+        severity_level: error
+        # Override the default sampling_percentage for all log records of severity of warn or higher
+        # to keep 80% of logs. Note this doesn't override the error logs sampling rate.
+      - sampling_percentage: 80
+        severity_level: warn
+
 exporters:
   nop:
 
@@ -33,3 +58,7 @@ service:
       receivers: [nop]
       processors: [probabilistic_sampler]
       exporters: [nop]
+    logs:
+      receivers: [ nop ]
+      processors: [ probabilistic_sampler/logs ]
+      exporters: [ nop ]

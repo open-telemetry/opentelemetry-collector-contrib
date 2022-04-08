@@ -42,7 +42,17 @@ func TestLoadConfig(t *testing.T) {
 			SamplingPercentage: 15.3,
 			HashSeed:           22,
 		})
-
+	p1 := cfg.Processors[config.NewComponentIDWithName(typeStr, "logs")]
+	assert.Equal(t,
+		&Config{
+			ProcessorSettings:  config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "logs")),
+			SamplingPercentage: 15.3,
+			HashSeed:           22,
+			Severity: []severityPair{
+				{Level: "error", SamplingPercentage: 100},
+				{Level: "warn", SamplingPercentage: 80},
+			},
+		}, p1)
 }
 
 func TestLoadConfigEmpty(t *testing.T) {
@@ -58,4 +68,15 @@ func TestLoadConfigEmpty(t *testing.T) {
 
 	p0 := cfg.Processors[config.NewComponentID(typeStr)]
 	assert.Equal(t, p0, createDefaultConfig())
+}
+
+func TestLoadInvalidConfig(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Processors[typeStr] = factory
+
+	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "invalid.yaml"), factories)
+	require.ErrorContains(t, err, "severity already used: error")
 }

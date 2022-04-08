@@ -14,6 +14,7 @@
 - `prometheusremotewriteexporter`: Translate resource attributes to the target info metric (#8493)
 - `podmanreceiver`: Add API timeout configuration option (#9014)
 - `cmd/mdatagen`: Add `sem_conv_version` field to metadata.yaml that is used to set metrics SchemaURL (#9010)
+- `probabilistic_sampler`: Add ability to sample logs (#9118)
 
 ### 🛑 Breaking changes 🛑
 

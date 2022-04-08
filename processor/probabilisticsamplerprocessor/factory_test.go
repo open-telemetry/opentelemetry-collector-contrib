@@ -37,3 +37,11 @@ func TestCreateProcessor(t *testing.T) {
 	assert.NotNil(t, tp)
 	assert.NoError(t, err, "cannot create trace processor")
 }
+
+func TestCreateProcessorLogs(t *testing.T) {
+	cfg := createDefaultConfig()
+	set := componenttest.NewNopProcessorCreateSettings()
+	tp, err := createLogsProcessor(context.Background(), set, cfg, consumertest.NewNop())
+	assert.NotNil(t, tp)
+	assert.NoError(t, err, "cannot create logs processor")
+}
