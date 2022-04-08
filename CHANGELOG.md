@@ -30,6 +30,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#1001](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1001))
 - `opentelemetry-instrumentation-system-metrics` restore `SystemMetrics` instrumentation as `SystemMetricsInstrumentor`
   ([#1012](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1012))
+- `opentelemetry-instrumentation-pyramid` Pyramid: Capture custom request/response headers in span attributes
+  ([#1022])(https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1022)
+
 
 ## [1.10.0-0.29b0](https://github.com/open-telemetry/opentelemetry-python/releases/tag/v1.10.0-0.29b0) - 2022-03-10
 

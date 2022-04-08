@@ -104,6 +104,8 @@ def _before_traversal(event):
             ] = request.matched_route.pattern
         for key, value in attributes.items():
             span.set_attribute(key, value)
+        if span.kind == trace.SpanKind.SERVER:
+            otel_wsgi.add_custom_request_headers(span, request_environ)
 
     activation = trace.use_span(span, end_on_exit=True)
     activation.__enter__()  # pylint: disable=E1101
@@ -127,6 +129,7 @@ def trace_tween_factory(handler, registry):
         return disabled_tween
 
     # make a request tracing function
+    # pylint: disable=too-many-branches
     def trace_tween(request):
         # pylint: disable=E1101
         if _excluded_urls.url_disabled(request.url):
@@ -171,7 +174,12 @@ def trace_tween_factory(handler, registry):
                     otel_wsgi.add_response_attributes(
                         span,
                         status,
-                        getattr(response, "headerList", None),
+                        getattr(response, "headerlist", None),
+                    )
+
+                if span.is_recording() and span.kind == trace.SpanKind.SERVER:
+                    otel_wsgi.add_custom_response_headers(
+                        span, getattr(response, "headerlist", None)
                     )
 
                 propagator = get_global_response_propagator()

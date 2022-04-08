@@ -28,6 +28,16 @@ class InstrumentationTest:
             raise NotImplementedError()
         return Response("Hello: " + str(helloid))
 
+    @staticmethod
+    def _custom_response_header_endpoint(request):
+        headers = {
+            "content-type": "text/plain; charset=utf-8",
+            "content-length": "7",
+            "my-custom-header": "my-custom-value-1,my-custom-header-2",
+            "dont-capture-me": "test-value",
+        }
+        return Response("Testing", headers=headers)
+
     def _common_initialization(self, config):
         # pylint: disable=unused-argument
         def excluded_endpoint(request):
@@ -45,6 +55,13 @@ class InstrumentationTest:
         config.add_view(excluded_endpoint, route_name="excluded")
         config.add_route("excluded2", "/excluded_noarg2")
         config.add_view(excluded2_endpoint, route_name="excluded2")
+        config.add_route(
+            "custom_response_headers", "/test_custom_response_headers"
+        )
+        config.add_view(
+            self._custom_response_header_endpoint,
+            route_name="custom_response_headers",
+        )
 
         # pylint: disable=attribute-defined-outside-init
         self.client = Client(config.make_wsgi_app(), BaseResponse)
