@@ -121,14 +121,19 @@ func WatchCounters(watchers []PerfCounterWatcher) (metrics []CounterValue, errs 
 		}
 		metric := watcher.GetMetricRep()
 
-		if counterValues[0].InstanceName != "" {
+		if len(counterValues) != 1 {
+			continue
+		}
+		counterValue := counterValues[0]
+
+		if counterValue.InstanceName != "" {
 			if metric.Attributes == nil {
-				metric.Attributes = map[string]string{instanceLabelName: counterValues[0].InstanceName}
+				metric.Attributes = map[string]string{instanceLabelName: counterValue.InstanceName}
 			}
-			metric.Attributes[instanceLabelName] = counterValues[0].InstanceName
+			metric.Attributes[instanceLabelName] = counterValue.InstanceName
 		}
 
-		metrics = append(metrics, CounterValue{MetricRep: metric, Value: int64(counterValues[0].Value)})
+		metrics = append(metrics, CounterValue{MetricRep: metric, Value: int64(counterValue.Value)})
 
 	}
 	return metrics, errs
