@@ -139,8 +139,8 @@ func WatchCounters(watchers []PerfCounterWatcher) (metrics []CounterValue, errs 
 func CloseCounters(watchers []PerfCounterWatcher) error {
 	var errs error
 
-	for _, scraper := range watchers {
-		errs = multierr.Append(errs, scraper.Close())
+	for _, watcher := range watchers {
+		errs = multierr.Append(errs, watcher.Close())
 	}
 
 	return errs

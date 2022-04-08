@@ -26,7 +26,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters/internal/third_party/telegraf/win_perf_counters"
 )
 
-// Test_PathBuilder tests that paths are built correctly given a scraperCfg
+// Test_PathBuilder tests that paths are built correctly given a ObjectConfig
 func Test_PathBuilder(t *testing.T) {
 	testCases := []struct {
 		name          string
@@ -104,7 +104,7 @@ func Test_PathBuilder(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scrapers, err := BuildPaths(test.cfgs)
+			watchers, err := BuildPaths(test.cfgs)
 
 			if test.expectedErr != "" {
 				require.EqualError(t, err, test.expectedErr)
@@ -112,8 +112,8 @@ func Test_PathBuilder(t *testing.T) {
 			}
 
 			actualPaths := []string{}
-			for _, scraper := range scrapers {
-				actualPaths = append(actualPaths, scraper.Path())
+			for _, watcher := range watchers {
+				actualPaths = append(actualPaths, watcher.Path())
 			}
 
 			require.Equal(t, test.expectedPaths, actualPaths)
@@ -152,18 +152,18 @@ func (mpc *mockPerfCounter) GetMetricRep() MetricRep {
 	return MetricRep{}
 }
 
-// Test_Scraping ensures that scrapers scrape appropriately using mocked perfcounters to
+// Test_Scraping ensures that watchers scrape appropriately using mocked perfcounters to
 // pass valus through
 func Test_Scraping(t *testing.T) {
 	testCases := []struct {
 		name            string
-		scrapers        []PerfCounterWatcher
+		watchers        []PerfCounterWatcher
 		expectedErr     string
 		expectedScraped []CounterValue
 	}{
 		{
 			name: "basicWatcher",
-			scrapers: []PerfCounterWatcher{
+			watchers: []PerfCounterWatcher{
 				newMockPerfCounter("path", nil, nil, 1, MetricRep{
 					Name: "metric",
 				}),
@@ -179,7 +179,7 @@ func Test_Scraping(t *testing.T) {
 		},
 		{
 			name: "multipleWatchers",
-			scrapers: []PerfCounterWatcher{
+			watchers: []PerfCounterWatcher{
 				newMockPerfCounter("path", nil, nil, 1, MetricRep{
 					Name: "metric",
 				}),
@@ -204,14 +204,14 @@ func Test_Scraping(t *testing.T) {
 		},
 		{
 			name: "brokenWatcher",
-			scrapers: []PerfCounterWatcher{
+			watchers: []PerfCounterWatcher{
 				newMockPerfCounter("path2", fmt.Errorf("failed to scrape"), nil, 2, MetricRep{}),
 			},
 			expectedErr: "failed to scrape",
 		},
 		{
 			name: "multipleBrokenWatchers",
-			scrapers: []PerfCounterWatcher{
+			watchers: []PerfCounterWatcher{
 				newMockPerfCounter("path2", fmt.Errorf("failed to scrape"), nil, 2, MetricRep{}),
 				newMockPerfCounter("path2", fmt.Errorf("failed to scrape again"), nil, 2, MetricRep{}),
 			},
@@ -221,7 +221,7 @@ func Test_Scraping(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scrapers, err := WatchCounters(test.scrapers)
+			watchers, err := WatchCounters(test.watchers)
 
 			if test.expectedErr != "" {
 				require.EqualError(t, err, test.expectedErr)
@@ -229,34 +229,34 @@ func Test_Scraping(t *testing.T) {
 			}
 			require.NoError(t, err)
 
-			require.Equal(t, test.expectedScraped, scrapers)
+			require.Equal(t, test.expectedScraped, watchers)
 		})
 	}
 }
 
-// Test_Closing ensures that scrapers close appropriately
+// Test_Closing ensures that watchers close appropriately
 func Test_Closing(t *testing.T) {
 	testCases := []struct {
 		name        string
-		scrapers    []PerfCounterWatcher
+		watchers    []PerfCounterWatcher
 		expectedErr string
 	}{
 		{
 			name: "closeWithNoFail",
-			scrapers: []PerfCounterWatcher{
+			watchers: []PerfCounterWatcher{
 				newMockPerfCounter("path", nil, nil, 1, MetricRep{}),
 			},
 		},
 		{
 			name: "brokenWatcher",
-			scrapers: []PerfCounterWatcher{
+			watchers: []PerfCounterWatcher{
 				newMockPerfCounter("path2", nil, fmt.Errorf("failed to close"), 2, MetricRep{}),
 			},
 			expectedErr: "failed to close",
 		},
 		{
 			name: "multipleBrokenWatchers",
-			scrapers: []PerfCounterWatcher{
+			watchers: []PerfCounterWatcher{
 				newMockPerfCounter("path2", nil, fmt.Errorf("failed to close again"), 2, MetricRep{}),
 			},
 			expectedErr: "failed to close; failed to close again",
@@ -265,7 +265,7 @@ func Test_Closing(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			err := CloseCounters(test.scrapers)
+			err := CloseCounters(test.watchers)
 
 			if test.expectedErr != "" {
 				require.EqualError(t, err, test.expectedErr)

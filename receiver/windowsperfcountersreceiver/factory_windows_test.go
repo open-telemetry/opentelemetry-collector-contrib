@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !windows
-// +build !windows
+//go:build windows
+// +build windows
 
 package windowsperfcountersreceiver
 
@@ -33,7 +33,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	cfg.(*Config).PerfCounters = []windowsapi.ObjectConfig{
 		{
 			Object:   "object",
-			Counters: []windowsapi.CounterConfig{{Name: "counter", Metric: "metric"}},
+			Counters: []windowsapi.CounterConfig{{Name: "counter", MetricRep: windowsapi.MetricRep{Name: "metric"}}},
 		},
 	}
 
