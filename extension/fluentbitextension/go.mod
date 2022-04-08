@@ -1,3 +1,4 @@
+// Deprecated: fluentbit extension is deprecated and will be removed in future versions.
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/fluentbitextension
 
 go 1.17
