@@ -174,6 +174,7 @@ func TestKVParser(t *testing.T) {
 					"name": "stanza",
 					"age":  "2",
 				},
+				Body: "name=stanza age=2",
 			},
 			false,
 			false,
@@ -189,10 +190,12 @@ func TestKVParser(t *testing.T) {
 				},
 			},
 			&entry.Entry{
-				Body: map[string]interface{}{},
 				Attributes: map[string]interface{}{
 					"name": "otel",
 					"age":  "2",
+				},
+				Body: map[string]interface{}{
+					"test": "name=otel age=2",
 				},
 			},
 			false,
@@ -218,49 +221,25 @@ func TestKVParser(t *testing.T) {
 			false,
 		},
 		{
-			"preserve-to",
+			"from-to",
 			func(kv *KVParserConfig) {
-				preserveTo := entry.NewBodyField("test")
-				kv.PreserveTo = &preserveTo
+				kv.ParseFrom = entry.NewAttributeField("from")
+				kv.ParseTo = entry.NewBodyField("to")
 			},
 			&entry.Entry{
-				Body: "name=stanza age=10",
-			},
-			&entry.Entry{
-				Body: map[string]interface{}{
-					"test": "name=stanza age=10",
-				},
 				Attributes: map[string]interface{}{
-					"name": "stanza",
-					"age":  "10",
-				},
-			},
-			false,
-			false,
-		},
-		{
-			"from-to-preserve",
-			func(kv *KVParserConfig) {
-				kv.ParseFrom = entry.NewBodyField("from")
-				kv.ParseTo = entry.NewAttributeField("to")
-				orig := entry.NewResourceField("orig")
-				kv.PreserveTo = &orig
-			},
-			&entry.Entry{
-				Body: map[string]interface{}{
 					"from": "name=stanza age=10",
 				},
 			},
 			&entry.Entry{
-				Body: map[string]interface{}{},
 				Attributes: map[string]interface{}{
+					"from": "name=stanza age=10",
+				},
+				Body: map[string]interface{}{
 					"to": map[string]interface{}{
 						"name": "stanza",
 						"age":  "10",
 					},
-				},
-				Resource: map[string]interface{}{
-					"orig": "name=stanza age=10",
 				},
 			},
 			false,
@@ -276,6 +255,7 @@ func TestKVParser(t *testing.T) {
 				Attributes: map[string]interface{}{
 					"requestClientApplication": `Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.0`,
 				},
+				Body: `requestClientApplication="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.0"`,
 			},
 			false,
 			false,
@@ -291,6 +271,7 @@ func TestKVParser(t *testing.T) {
 					"name": "stanza",
 					"age":  "2",
 				},
+				Body: "name=\"stanza\" age=2",
 			},
 			false,
 			false,
@@ -306,6 +287,7 @@ func TestKVParser(t *testing.T) {
 					"description": "stanza deployment number 5",
 					"x":           "y",
 				},
+				Body: "description='stanza deployment number 5' x=y",
 			},
 			false,
 			false,
@@ -321,6 +303,7 @@ func TestKVParser(t *testing.T) {
 					"name": "stanza",
 					"age":  "2",
 				},
+				Body: `name=" stanza " age=2`,
 			},
 			false,
 			false,
@@ -336,6 +319,7 @@ func TestKVParser(t *testing.T) {
 					"name": "stanza",
 					"age":  "2",
 				},
+				Body: `" name "=" stanza " age=2`,
 			},
 			false,
 			false,
@@ -354,6 +338,7 @@ func TestKVParser(t *testing.T) {
 			},
 			&entry.Entry{
 				Body: map[string]interface{}{
+					"testfield": `name|" stanza " age|2     key|value`,
 					"testparsed": map[string]interface{}{
 						"name": "stanza",
 						"age":  "2",
@@ -378,6 +363,7 @@ func TestKVParser(t *testing.T) {
 					"age":  "2",
 					"key":  "value",
 				},
+				Body: `name==" stanza " age==2     key==value`,
 			},
 			false,
 			false,
@@ -396,6 +382,7 @@ func TestKVParser(t *testing.T) {
 					"age":  "2",
 					"key":  "value",
 				},
+				Body: `name=stanza|age=2     | key=value`,
 			},
 			false,
 			false,
@@ -420,6 +407,7 @@ func TestKVParser(t *testing.T) {
 					"translated_port":   "57112",
 					"translated_src_ip": "96.63.176.3",
 				},
+				Body: "name=stanza age=1 job=\"software engineering\" location=\"grand rapids michigan\" src=\"10.3.3.76\" dst=172.217.0.10 protocol=udp sport=57112 dport=443 translated_src_ip=96.63.176.3 translated_port=57112",
 			},
 			false,
 			false,
@@ -461,6 +449,7 @@ func TestKVParser(t *testing.T) {
 					"note":     "Policy: a0, Info: 888",
 					"n":        "3412158",
 				},
+				Body: `id=LVM_Sonicwall sn=22255555 time="2021-09-22 16:30:31" fw=14.165.177.10 pri=6 c=1024 gcat=2 m=97 msg="Web site hit" srcMac=6c:0b:84:3f:fa:63 src=192.168.50.2:52006:X0 srcZone=LAN natSrc=14.165.177.10:58457 dstMac=08:b2:58:46:30:54 dst=15.159.150.83:443:X1 dstZone=WAN natDst=15.159.150.83:443 proto=tcp/https sent=1422 rcvd=5993 rule="6 (LAN->WAN)" app=48 dstname=example.space.dev.com arg=/ code=27 Category="Information Technology/Computers" note="Policy: a0, Info: 888 " n=3412158`,
 			},
 			false,
 			false,
@@ -471,7 +460,9 @@ func TestKVParser(t *testing.T) {
 			&entry.Entry{
 				Body: `test text`,
 			},
-			&entry.Entry{},
+			&entry.Entry{
+				Body: `test text`,
+			},
 			true,
 			false,
 		},
@@ -482,7 +473,7 @@ func TestKVParser(t *testing.T) {
 				Body: `test=text=abc`,
 			},
 			&entry.Entry{
-				Attributes: map[string]interface{}{},
+				Body: `test=text=abc`,
 			},
 			true,
 			false,
@@ -504,7 +495,9 @@ func TestKVParser(t *testing.T) {
 			&entry.Entry{
 				Body: "a=b c=d",
 			},
-			&entry.Entry{},
+			&entry.Entry{
+				Body: "a=b c=d",
+			},
 			false,
 			true,
 		},
@@ -517,7 +510,9 @@ func TestKVParser(t *testing.T) {
 			&entry.Entry{
 				Body: "a=b c=d",
 			},
-			&entry.Entry{},
+			&entry.Entry{
+				Body: "a=b c=d",
+			},
 			false,
 			true,
 		},

@@ -98,6 +98,7 @@ func TestProcess(t *testing.T) {
 					},
 					"scheme": "https",
 				},
+				Body: "https://google.com:443/path?user=dev",
 			},
 		},
 		{
@@ -115,6 +116,7 @@ func TestProcess(t *testing.T) {
 			},
 			&entry.Entry{
 				Body: map[string]interface{}{
+					"url": "https://google.com:443/path?user=dev",
 					"url2": map[string]interface{}{
 						"host": "google.com",
 						"port": "443",
@@ -142,7 +144,9 @@ func TestProcess(t *testing.T) {
 				},
 			},
 			&entry.Entry{
-				Body: map[string]interface{}{},
+				Body: map[string]interface{}{
+					"url": "https://google.com:443/path?user=dev",
+				},
 				Attributes: map[string]interface{}{
 					"host": "google.com",
 					"port": "443",

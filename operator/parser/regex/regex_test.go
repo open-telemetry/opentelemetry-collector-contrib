@@ -96,6 +96,7 @@ func TestParserRegex(t *testing.T) {
 				Body: "a=b",
 			},
 			&entry.Entry{
+				Body: "a=b",
 				Attributes: map[string]interface{}{
 					"a": "b",
 				},
