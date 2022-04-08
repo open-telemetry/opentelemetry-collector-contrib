@@ -33,7 +33,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	cfg.(*Config).PerfCounters = []windowsapi.ObjectConfig{
 		{
 			Object:   "object",
-			Counters: []windowsapi.CounterConfig{{Name: "counter", Metric: "metric"}},
+			Counters: []windowsapi.CounterConfig{{Name: "counter", MetricRep: windowsapi.MetricRep{Name: "metric"}}},
 		},
 	}
 

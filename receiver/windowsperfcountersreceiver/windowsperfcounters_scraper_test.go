@@ -78,9 +78,9 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 					},
 				},
 				PerfCounters: []windowsapi.ObjectConfig{
-					{Object: "Memory", Counters: []windowsapi.CounterConfig{{Name: "Committed Bytes", Metric: "bytes.committed"}}},
-					{Object: "Processor", Instances: []string{"*"}, Counters: []windowsapi.CounterConfig{{Name: "% Idle Time", Metric: "cpu.idle"}}},
-					{Object: "Processor", Instances: []string{"1", "2"}, Counters: []windowsapi.CounterConfig{{Name: "% Processor Time", Metric: "processor.time"}}},
+					{Object: "Memory", Counters: []windowsapi.CounterConfig{{Name: "Committed Bytes", MetricRep: windowsapi.MetricRep{Name: "bytes.committed"}}}},
+					{Object: "Processor", Instances: []string{"*"}, Counters: []windowsapi.CounterConfig{{Name: "% Idle Time", MetricRep: windowsapi.MetricRep{Name: "cpu.idle"}}}},
+					{Object: "Processor", Instances: []string{"1", "2"}, Counters: []windowsapi.CounterConfig{{Name: "% Processor Time", MetricRep: windowsapi.MetricRep{Name: "processor.time"}}}},
 				},
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{CollectionInterval: time.Minute},
 			},
@@ -97,7 +97,7 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 					},
 				},
 				PerfCounters: []windowsapi.ObjectConfig{
-					{Object: "Memory", Counters: []windowsapi.CounterConfig{{Name: "Committed Bytes", Metric: "bytes.committed"}}},
+					{Object: "Memory", Counters: []windowsapi.CounterConfig{{Name: "Committed Bytes", MetricRep: windowsapi.MetricRep{Name: "bytes.committed"}}}},
 				},
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{CollectionInterval: time.Minute},
 			},
@@ -119,11 +119,11 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 				PerfCounters: []windowsapi.ObjectConfig{
 					{
 						Object:   "Memory",
-						Counters: []windowsapi.CounterConfig{{Name: "Committed Bytes", Metric: "Committed Bytes"}},
+						Counters: []windowsapi.CounterConfig{{Name: "Committed Bytes", MetricRep: windowsapi.MetricRep{Name: "Committed Bytes"}}},
 					},
 					{
 						Object:   "Invalid Object",
-						Counters: []windowsapi.CounterConfig{{Name: "Invalid Counter", Metric: "invalid"}},
+						Counters: []windowsapi.CounterConfig{{Name: "Invalid Counter", MetricRep: windowsapi.MetricRep{Name: "invalid"}}},
 					},
 				},
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{CollectionInterval: time.Minute},

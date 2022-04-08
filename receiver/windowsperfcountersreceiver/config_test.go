@@ -47,8 +47,10 @@ func TestLoadConfig(t *testing.T) {
 	defaultConfigSingleObject := factory.CreateDefaultConfig()
 
 	counterConfig := windowsapi.CounterConfig{
-		Name:   "counter1",
-		Metric: "metric",
+		Name: "counter1",
+		MetricRep: windowsapi.MetricRep{
+			Name: "metric",
+		},
 	}
 	defaultConfigSingleObject.(*Config).PerfCounters = []windowsapi.ObjectConfig{{Object: "object", Counters: []windowsapi.CounterConfig{counterConfig}}}
 	defaultConfigSingleObject.(*Config).MetricMetaData = map[string]MetricConfig{
@@ -62,8 +64,11 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, defaultConfigSingleObject, r0)
 
 	counterConfig2 := windowsapi.CounterConfig{
-		Name:   "counter2",
-		Metric: "metric2",
+		Name: "counter2",
+		MetricRep: windowsapi.MetricRep{
+
+			Name: "metric2",
+		},
 	}
 
 	r1 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "customname")].(*Config)
@@ -143,7 +148,7 @@ func TestLoadConfigMetrics(t *testing.T) {
 				PerfCounters: []windowsapi.ObjectConfig{
 					{
 						Object:   "object",
-						Counters: []windowsapi.CounterConfig{{Name: "counter1", Metric: "metric"}},
+						Counters: []windowsapi.CounterConfig{{Name: "counter1", MetricRep: windowsapi.MetricRep{Name: "metric"}}},
 					},
 				},
 				MetricMetaData: map[string]MetricConfig{
@@ -165,7 +170,7 @@ func TestLoadConfigMetrics(t *testing.T) {
 				PerfCounters: []windowsapi.ObjectConfig{
 					{
 						Object:   "object",
-						Counters: []windowsapi.CounterConfig{{Name: "counter1", Metric: "metric"}},
+						Counters: []windowsapi.CounterConfig{{Name: "counter1", MetricRep: windowsapi.MetricRep{Name: "metric"}}},
 					},
 				},
 				MetricMetaData: map[string]MetricConfig{

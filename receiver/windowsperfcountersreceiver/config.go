@@ -86,13 +86,13 @@ func (c *Config) Validate() error {
 		}
 
 		for _, counter := range pc.Counters {
-			if counter.Metric == "" {
+			if counter.MetricRep.Name == "" {
 				continue
 			}
 
 			foundMatchingMetric := false
 			for name := range c.MetricMetaData {
-				if counter.Metric == name {
+				if counter.MetricRep.Name == name {
 					foundMatchingMetric = true
 				}
 			}
