@@ -103,6 +103,7 @@ func TestParserCSV(t *testing.T) {
 			},
 			[]entry.Entry{
 				{
+					Body: "stanza,INFO,started agent",
 					Attributes: map[string]interface{}{
 						"name": "stanza",
 						"sev":  "INFO",
@@ -131,6 +132,7 @@ func TestParserCSV(t *testing.T) {
 			},
 			[]entry.Entry{
 				{
+					Body: "stanza,INFO,started agent",
 					Attributes: map[string]interface{}{
 						"name": "stanza",
 						"sev":  "INFO",
@@ -138,6 +140,7 @@ func TestParserCSV(t *testing.T) {
 					},
 				},
 				{
+					Body: "stanza,ERROR,agent killed",
 					Attributes: map[string]interface{}{
 						"name": "stanza",
 						"sev":  "ERROR",
@@ -145,6 +148,7 @@ func TestParserCSV(t *testing.T) {
 					},
 				},
 				{
+					Body: "kernel,TRACE,oom",
 					Attributes: map[string]interface{}{
 						"name": "kernel",
 						"sev":  "TRACE",
@@ -168,6 +172,7 @@ func TestParserCSV(t *testing.T) {
 			},
 			[]entry.Entry{
 				{
+					Body: "stanza;Evergreen;1;555-5555;agent",
 					Attributes: map[string]interface{}{
 						"name":     "stanza",
 						"address":  "Evergreen",
@@ -203,6 +208,7 @@ func TestParserCSV(t *testing.T) {
 						"height": "400",
 						"number": "555-555-5555",
 					},
+					Body: "stanza dev,1,400,555-555-5555",
 				},
 			},
 			false,
@@ -243,6 +249,7 @@ func TestParserCSV(t *testing.T) {
 						"height": "400",
 						"number": "555-555-5555",
 					},
+					Body: "stanza dev,1,400,555-555-5555",
 				},
 				{
 					Attributes: map[string]interface{}{
@@ -250,6 +257,7 @@ func TestParserCSV(t *testing.T) {
 						"x":      "000100",
 						"y":      "2",
 					},
+					Body: "000100,2",
 				},
 				{
 					Attributes: map[string]interface{}{
@@ -261,6 +269,7 @@ func TestParserCSV(t *testing.T) {
 						"e":      "5",
 						"f":      "6",
 					},
+					Body: "1,2,3,4,5,6",
 				},
 			},
 			false,
@@ -289,6 +298,7 @@ func TestParserCSV(t *testing.T) {
 						"height": "400",
 						"number": "555-555-5555",
 					},
+					Body: "stanza dev	1	400	555-555-5555",
 				},
 			},
 			false,
@@ -365,6 +375,7 @@ func TestParserCSV(t *testing.T) {
 						"object":       "",
 						"retcode":      "0",
 					},
+					Body: "20210316 17:08:01,oiq-int-mysql,load,oiq-int-mysql.bluemedora.localnet,5,0,DISCONNECT,,,0",
 				},
 			},
 			false,
@@ -389,6 +400,7 @@ func TestParserCSV(t *testing.T) {
 						"phone":    "555-5555",
 						"position": "agent",
 					},
+					Body: "stanza,Evergreen,,555-5555,agent",
 				},
 			},
 			false,
@@ -414,6 +426,7 @@ func TestParserCSV(t *testing.T) {
 						"phone":    "555-5555",
 						"position": "agent",
 					},
+					Body: "stanza	Evergreen	1	555-5555	agent",
 				},
 			},
 			false,
@@ -438,6 +451,7 @@ func TestParserCSV(t *testing.T) {
 						"phone":    "555-5555",
 						"position": "agent",
 					},
+					Body: "stanza,\"Evergreen,49508\",1,555-5555,agent",
 				},
 			},
 			false,
@@ -462,6 +476,7 @@ func TestParserCSV(t *testing.T) {
 						"phone":    "555-5555",
 						"position": "agent",
 					},
+					Body: "\"bob \"\"the man\"\"\",Evergreen,1,555-5555,agent",
 				},
 			},
 			false,
@@ -486,6 +501,7 @@ func TestParserCSV(t *testing.T) {
 						"height": "400",
 						"number": "555-555-5555",
 					},
+					Body: "stanza,1,400,555-555-5555",
 				},
 			},
 			true,
@@ -511,6 +527,7 @@ func TestParserCSV(t *testing.T) {
 						"height": "400",
 						"number": "555-555-5555",
 					},
+					Body: "stanza,1,400,555-555-5555",
 				},
 			},
 			true,
@@ -535,6 +552,7 @@ func TestParserCSV(t *testing.T) {
 						"height": "400",
 						"number": "555-555-5555",
 					},
+					Body: "1,400,555-555-5555",
 				},
 			},
 			false,
@@ -584,6 +602,7 @@ func TestParserCSV(t *testing.T) {
 						"height": "6ft",
 						"number": "5",
 					},
+					Body: "stanza \"log parser\",1,6ft,5",
 				},
 			},
 			false,

@@ -57,7 +57,6 @@ func (c ParserConfig) Build(logger *zap.SugaredLogger) (ParserOperator, error) {
 		TransformerOperator: transformerOperator,
 		ParseFrom:           c.ParseFrom,
 		ParseTo:             c.ParseTo,
-		PreserveTo:          c.PreserveTo,
 	}
 
 	if c.TimeParser != nil {
@@ -94,7 +93,6 @@ type ParserOperator struct {
 	TransformerOperator
 	ParseFrom       entry.Field
 	ParseTo         entry.Field
-	PreserveTo      *entry.Field
 	TimeParser      *TimeParser
 	SeverityParser  *SeverityParser
 	TraceParser     *TraceParser
@@ -148,16 +146,8 @@ func (p *ParserOperator) ParseWith(ctx context.Context, entry *entry.Entry, pars
 		return p.HandleEntryError(ctx, entry, err)
 	}
 
-	original, _ := entry.Delete(p.ParseFrom)
-
 	if err := entry.Set(p.ParseTo, newValue); err != nil {
 		return p.HandleEntryError(ctx, entry, errors.Wrap(err, "set parse_to"))
-	}
-
-	if p.PreserveTo != nil {
-		if err := entry.Set(p.PreserveTo, original); err != nil {
-			return p.HandleEntryError(ctx, entry, errors.Wrap(err, "set preserve_to"))
-		}
 	}
 
 	var timeParseErr error

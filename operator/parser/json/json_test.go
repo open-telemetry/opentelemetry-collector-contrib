@@ -19,10 +19,7 @@ import (
 	"testing"
 	"time"
 
-	jsoniter "github.com/json-iterator/go"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-log-collection/entry"
@@ -74,231 +71,101 @@ func TestJSONParserInvalidType(t *testing.T) {
 	require.Contains(t, err.Error(), "type []int cannot be parsed as JSON")
 }
 
-func NewFakeJSONOperator() (*JSONParser, *testutil.Operator) {
-	mock := testutil.Operator{}
-	logger, _ := zap.NewProduction()
-	return &JSONParser{
-		ParserOperator: helper.ParserOperator{
-			TransformerOperator: helper.TransformerOperator{
-				WriterOperator: helper.WriterOperator{
-					BasicOperator: helper.BasicOperator{
-						OperatorID:    "test",
-						OperatorType:  "json_parser",
-						SugaredLogger: logger.Sugar(),
-					},
-					OutputOperators: []operator.Operator{&mock},
-				},
-			},
-			ParseFrom: entry.NewBodyField("testfield"),
-			ParseTo:   entry.NewBodyField("testparsed"),
-		},
-		json: jsoniter.ConfigFastest,
-	}, &mock
-}
-
 func TestJSONImplementations(t *testing.T) {
 	require.Implements(t, (*operator.Operator)(nil), new(JSONParser))
 }
 
 func TestJSONParser(t *testing.T) {
 	cases := []struct {
-		name          string
-		inputBody     map[string]interface{}
-		outputBody    map[string]interface{}
-		errorExpected bool
+		name      string
+		configure func(*JSONParserConfig)
+		input     *entry.Entry
+		expect    *entry.Entry
 	}{
 		{
 			"simple",
-			map[string]interface{}{
-				"testfield": `{}`,
+			func(p *JSONParserConfig) {},
+			&entry.Entry{
+				Body: `{}`,
 			},
-			map[string]interface{}{
-				"testparsed": map[string]interface{}{},
+			&entry.Entry{
+				Attributes: map[string]interface{}{},
+				Body:       `{}`,
 			},
-			false,
 		},
 		{
 			"nested",
-			map[string]interface{}{
-				"testfield": `{"superkey":"superval"}`,
+			func(p *JSONParserConfig) {},
+			&entry.Entry{
+				Body: `{"superkey":"superval"}`,
 			},
-			map[string]interface{}{
-				"testparsed": map[string]interface{}{
+			&entry.Entry{
+				Attributes: map[string]interface{}{
 					"superkey": "superval",
 				},
+				Body: `{"superkey":"superval"}`,
 			},
-			false,
+		},
+		{
+			"with_timestamp",
+			func(p *JSONParserConfig) {
+				parseFrom := entry.NewAttributeField("timestamp")
+				p.TimeParser = &helper.TimeParser{
+					ParseFrom:  &parseFrom,
+					LayoutType: "epoch",
+					Layout:     "s",
+				}
+			},
+			&entry.Entry{
+				Body: `{"superkey":"superval","timestamp":1136214245}`,
+			},
+			&entry.Entry{
+				Attributes: map[string]interface{}{
+					"superkey": "superval",
+				},
+				Body:      `{"superkey":"superval","timestamp":1136214245}`,
+				Timestamp: time.Unix(1136214245, 0),
+			},
+		},
+		{
+			"with_scope",
+			func(p *JSONParserConfig) {
+				p.ScopeNameParser = &helper.ScopeNameParser{
+					ParseFrom: entry.NewAttributeField("logger_name"),
+				}
+			},
+			&entry.Entry{
+				Body: `{"superkey":"superval","logger_name":"logger"}`,
+			},
+			&entry.Entry{
+				Attributes: map[string]interface{}{
+					"superkey": "superval",
+				},
+				Body:      `{"superkey":"superval","logger_name":"logger"}`,
+				ScopeName: "logger",
+			},
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			input := entry.New()
-			input.Body = tc.inputBody
-			output := entry.New()
-			output.Body = tc.outputBody
+			cfg := NewJSONParserConfig("test")
+			cfg.OutputIDs = []string{"fake"}
+			tc.configure(cfg)
 
-			parser, mockOutput := NewFakeJSONOperator()
-			mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
-				e := args[1].(*entry.Entry)
-				require.Equal(t, tc.outputBody, e.Body)
-			}).Return(nil)
-
-			err := parser.Process(context.Background(), input)
+			op, err := cfg.Build(testutil.Logger(t))
 			require.NoError(t, err)
-		})
-	}
-}
 
-func TestJSONParserWithEmbeddedTimeParser(t *testing.T) {
-	testTime := time.Unix(1136214245, 0)
+			fake := testutil.NewFakeOutput(t)
+			op.SetOutputs([]operator.Operator{fake})
 
-	cases := []struct {
-		name          string
-		inputBody     map[string]interface{}
-		outputBody    map[string]interface{}
-		errorExpected bool
-		preserveTo    *entry.Field
-	}{
-		{
-			"simple",
-			map[string]interface{}{
-				"testfield": `{"timestamp":1136214245}`,
-			},
-			map[string]interface{}{
-				"testparsed": map[string]interface{}{},
-			},
-			false,
-			nil,
-		},
-		{
-			"preserve",
-			map[string]interface{}{
-				"testfield": `{"timestamp":"1136214245"}`,
-			},
-			map[string]interface{}{
-				"testparsed":         map[string]interface{}{},
-				"original_timestamp": "1136214245",
-			},
-			false,
-			func() *entry.Field {
-				f := entry.NewBodyField("original_timestamp")
-				return &f
-			}(),
-		},
-		{
-			"nested",
-			map[string]interface{}{
-				"testfield": `{"superkey":"superval","timestamp":1136214245.123}`,
-			},
-			map[string]interface{}{
-				"testparsed": map[string]interface{}{
-					"superkey": "superval",
-				},
-			},
-			false,
-			nil,
-		},
-	}
+			ots := time.Now()
+			tc.input.ObservedTimestamp = ots
+			tc.expect.ObservedTimestamp = ots
 
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			input := entry.New()
-			input.Body = tc.inputBody
-
-			output := entry.New()
-			output.Body = tc.outputBody
-
-			parser, mockOutput := NewFakeJSONOperator()
-			parseFrom := entry.NewBodyField("testparsed", "timestamp")
-			parser.ParserOperator.TimeParser = &helper.TimeParser{
-				ParseFrom:  &parseFrom,
-				LayoutType: "epoch",
-				Layout:     "s",
-				PreserveTo: tc.preserveTo,
-			}
-			mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
-				e := args[1].(*entry.Entry)
-				require.Equal(t, tc.outputBody, e.Body)
-				require.Equal(t, testTime, e.Timestamp)
-			}).Return(nil)
-
-			err := parser.Process(context.Background(), input)
+			err = op.Process(context.Background(), tc.input)
 			require.NoError(t, err)
-		})
-	}
-}
-
-func TestJSONParserWithEmbeddedScopeNameParser(t *testing.T) {
-	cases := []struct {
-		name          string
-		inputBody     map[string]interface{}
-		outputBody    map[string]interface{}
-		errorExpected bool
-		preserveTo    *entry.Field
-	}{
-		{
-			"simple",
-			map[string]interface{}{
-				"testfield": `{"logger_name":"logger"}`,
-			},
-			map[string]interface{}{
-				"testparsed": map[string]interface{}{},
-			},
-			false,
-			nil,
-		},
-		{
-			"preserve",
-			map[string]interface{}{
-				"testfield": `{"logger_name":"logger"}`,
-			},
-			map[string]interface{}{
-				"testparsed":           map[string]interface{}{},
-				"original_logger_name": "logger",
-			},
-			false,
-			func() *entry.Field {
-				f := entry.NewBodyField("original_logger_name")
-				return &f
-			}(),
-		},
-		{
-			"nested",
-			map[string]interface{}{
-				"testfield": `{"superkey":"superval","logger_name":"logger"}`,
-			},
-			map[string]interface{}{
-				"testparsed": map[string]interface{}{
-					"superkey": "superval",
-				},
-			},
-			false,
-			nil,
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			input := entry.New()
-			input.Body = tc.inputBody
-
-			output := entry.New()
-			output.Body = tc.outputBody
-
-			parser, mockOutput := NewFakeJSONOperator()
-			parseFrom := entry.NewBodyField("testparsed", "logger_name")
-			parser.ParserOperator.ScopeNameParser = &helper.ScopeNameParser{
-				ParseFrom:  parseFrom,
-				PreserveTo: tc.preserveTo,
-			}
-			mockOutput.On("Process", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
-				e := args[1].(*entry.Entry)
-				require.Equal(t, tc.outputBody, e.Body)
-			}).Return(nil)
-
-			err := parser.Process(context.Background(), input)
-			require.NoError(t, err)
+			fake.ExpectEntry(t, tc.expect)
 		})
 	}
 }

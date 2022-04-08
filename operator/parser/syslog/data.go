@@ -73,6 +73,7 @@ func CreateCases(basicConfig func() *SyslogParserConfig) ([]Case, error) {
 					"message":  "test message",
 					"priority": 34,
 				},
+				Body: "<34>Jan 12 06:30:00 1.2.3.4 apache_server: test message",
 			},
 		},
 		{
@@ -97,6 +98,7 @@ func CreateCases(basicConfig func() *SyslogParserConfig) ([]Case, error) {
 					"message":  "test message",
 					"priority": 34,
 				},
+				Body: "<34>Jan 12 06:30:00 1.2.3.4 apache_server: test message",
 			},
 		},
 		{
@@ -121,6 +123,7 @@ func CreateCases(basicConfig func() *SyslogParserConfig) ([]Case, error) {
 					"message":  "test message",
 					"priority": 34,
 				},
+				Body: "<34>Jan 12 06:30:00 1.2.3.4 apache_server: test message",
 			},
 		},
 		{
@@ -155,6 +158,7 @@ func CreateCases(basicConfig func() *SyslogParserConfig) ([]Case, error) {
 					},
 					"version": 1,
 				},
+				Body: `<86>1 2015-08-05T21:58:59.693Z 192.168.2.132 SecureAuth0 23108 ID52020 [SecureAuth@27389 UserHostAddress="192.168.2.132" Realm="SecureAuth0" UserID="Tester2" PEN="27389"] Found the user for retrieving user's profile`,
 			},
 		},
 	}
