@@ -284,17 +284,22 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 	time := convertTimeStamp(pt.Timestamp())
 	// sum, count, and buckets of the histogram should append suffix to baseName
 	baseName := prometheustranslator.BuildPromCompliantName(metric, settings.Namespace)
-	// treat sum as a sample in an individual TimeSeries
-	sum := &prompb.Sample{
-		Value:     pt.Sum(),
-		Timestamp: time,
-	}
-	if pt.FlagsImmutable().NoRecordedValue() {
-		sum.Value = math.Float64frombits(value.StaleNaN)
-	}
 
-	sumlabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nameStr, baseName+sumStr)
-	addSample(tsMap, sum, sumlabels, metric.DataType().String())
+	// If the sum is unset, it indicates the _sum metric point should be
+	// omitted
+	if pt.HasSum() {
+		// treat sum as a sample in an individual TimeSeries
+		sum := &prompb.Sample{
+			Value:     pt.Sum(),
+			Timestamp: time,
+		}
+		if pt.FlagsImmutable().NoRecordedValue() {
+			sum.Value = math.Float64frombits(value.StaleNaN)
+		}
+
+		sumlabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nameStr, baseName+sumStr)
+		addSample(tsMap, sum, sumlabels, metric.DataType().String())
+	}
 
 	// treat count as a sample in an individual TimeSeries
 	count := &prompb.Sample{
