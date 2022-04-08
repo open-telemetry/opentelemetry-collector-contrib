@@ -80,3 +80,17 @@ func TestLoadInvalidConfig(t *testing.T) {
 	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "invalid.yaml"), factories)
 	require.ErrorContains(t, err, "severity already used: error")
 }
+
+func TestNegativeSamplingRate(t *testing.T) {
+	cfg := createDefaultConfig()
+	cfg.(*Config).SamplingPercentage = -5
+	err := cfg.Validate()
+	require.ErrorContains(t, err, "negative sampling rate: -5.00")
+
+	cfg = createDefaultConfig()
+	cfg.(*Config).Severity = []severityPair{
+		{Level: "error", SamplingPercentage: -4.344},
+	}
+	err = cfg.Validate()
+	require.ErrorContains(t, err, "negative sampling rate: -4.34 [error]")
+}

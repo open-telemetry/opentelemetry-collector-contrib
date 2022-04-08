@@ -76,10 +76,16 @@ var _ config.Processor = (*Config)(nil)
 
 // Validate checks if the processor configuration is valid
 func (cfg *Config) Validate() error {
+	if cfg.SamplingPercentage < 0 {
+		return fmt.Errorf("negative sampling rate: %.2f", cfg.SamplingPercentage)
+	}
 	keys := map[string]bool{}
 	for _, pair := range cfg.Severity {
 		if _, ok := severityTextToNum[pair.Level]; !ok {
 			return fmt.Errorf("unrecognized severity level: %s", pair.Level)
+		}
+		if pair.SamplingPercentage < 0 {
+			return fmt.Errorf("negative sampling rate: %.2f [%s]", pair.SamplingPercentage, pair.Level)
 		}
 		if keys[pair.Level] {
 			return fmt.Errorf("severity already used: %s", pair.Level)
