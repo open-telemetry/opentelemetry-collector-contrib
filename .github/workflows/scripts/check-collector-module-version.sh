@@ -34,9 +34,9 @@ get_collector_version() {
    fi
 }
 
-# Compare the collecor main core version against all the collector component
+# Compare the collector main core version against all the collector component
 # modules to verify that they are using this version as its dependency
-check_collector_version_correct() {
+check_collector_versions_correct() {
    collector_module="$1"
    collector_mod_version="$2"
    incorrect_version=0
@@ -76,7 +76,7 @@ MAIN_MOD_FILE="./go.mod"
 COLLECTOR_MOD_VERSION=$(get_collector_version "$COLLECTOR_MODULE" "$MAIN_MOD_FILE")
 
 # Check the collector module version in each of the module files
-check_collector_version_correct "$COLLECTOR_MODULE" "$COLLECTOR_MOD_VERSION"
+check_collector_versions_correct "$COLLECTOR_MODULE" "$COLLECTOR_MOD_VERSION"
 
 # Check the collector model module version in each of the module files
-check_collector_version_correct "$COLLECTOR_MODEL_MODULE" "$COLLECTOR_MOD_VERSION"
+check_collector_versions_correct "$COLLECTOR_MODEL_MODULE" "$COLLECTOR_MOD_VERSION"
