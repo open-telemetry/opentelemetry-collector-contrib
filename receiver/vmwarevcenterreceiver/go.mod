@@ -26,6 +26,7 @@ require (
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
+	github.com/observiq/go-syslog/v3 v3.0.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
@@ -54,4 +55,6 @@ require (
 require (
 	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza v0.48.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver v0.48.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver v0.48.0
 )

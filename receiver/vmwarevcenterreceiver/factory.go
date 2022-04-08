@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vmwarevcenterreceiver/internal/metadata"
 )
 
@@ -52,14 +52,14 @@ func NewFactory() component.ReceiverFactory {
 }
 
 func createDefaultConfig() config.Receiver {
-	tcpLogConfig := tcplogreceiver.NewFactory().CreateDefaultConfig()
-	tcpCfg, _ := tcpLogConfig.(*tcplogreceiver.TCPLogConfig)
+	syslogConfig := syslogreceiver.NewFactory().CreateDefaultConfig()
+	syslog, _ := syslogConfig.(*syslogreceiver.SysLogConfig)
 	return &Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			CollectionInterval: 5 * time.Minute,
-		},
 		MetricsConfig: &MetricsConfig{
+			ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+				ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				CollectionInterval: 5 * time.Minute,
+			},
 			TLSClientSetting: configtls.TLSClientSetting{},
 			Metrics:          metadata.DefaultMetricsSettings(),
 			Endpoint:         "",
@@ -67,7 +67,7 @@ func createDefaultConfig() config.Receiver {
 			Password:         "",
 		},
 		LoggingConfig: &LoggingConfig{
-			TCPLogConfig:     tcpCfg,
+			SysLogConfig:     syslog,
 			TLSClientSetting: configtls.TLSClientSetting{},
 		},
 	}
@@ -126,7 +126,7 @@ func (f *vcenterReceiverFactory) createMetricsReceiver(
 	}
 
 	rcvr, err := scraperhelper.NewScraperControllerReceiver(
-		&cfg.ScraperControllerSettings,
+		&cfg.MetricsConfig.ScraperControllerSettings,
 		params,
 		consumer,
 		scraperhelper.AddScraper(scraper),

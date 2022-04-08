@@ -19,31 +19,33 @@ import (
 	"fmt"
 	"net/url"
 
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vmwarevcenterreceiver/internal/metadata"
 )
 
 type Config struct {
-	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	MetricsConfig                           *MetricsConfig `mapstructure:"metrics,omitempty"`
-	LoggingConfig                           *LoggingConfig `mapstructure:"logging,omitempty"`
+	config.ReceiverSettings `mapstructure:",squash"`
+	MetricsConfig           *MetricsConfig `mapstructure:"metrics,omitempty"`
+	LoggingConfig           *LoggingConfig `mapstructure:"logging,omitempty"`
 }
 
 type MetricsConfig struct {
-	configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
-	Metrics                    metadata.MetricsSettings `mapstructure:"metrics"`
-	Endpoint                   string                   `mapstructure:"endpoint"`
-	Username                   string                   `mapstructure:"username"`
-	Password                   string                   `mapstructure:"password"`
+	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
+	configtls.TLSClientSetting              `mapstructure:"tls,omitempty"`
+	Metrics                                 metadata.MetricsSettings `mapstructure:"metrics"`
+	Endpoint                                string                   `mapstructure:"endpoint"`
+	Username                                string                   `mapstructure:"username"`
+	Password                                string                   `mapstructure:"password"`
 }
 
 type LoggingConfig struct {
 	configtls.TLSClientSetting   `mapstructure:"tls,omitempty"`
-	*tcplogreceiver.TCPLogConfig `mapstructure:",squash"`
+	*syslogreceiver.SysLogConfig `mapstructure:",squash"`
 }
 
 // Validate checks to see if the supplied config will work for the vmwarevcenterreceiver
@@ -94,10 +96,9 @@ func (c *Config) validateLoggingConfig() error {
 	var err error
 	lc := c.LoggingConfig
 	if lc != nil {
-		if len(lc.Operators) != 0 {
-			return errors.New("custom operators are not supported for this component")
+		if len(lc.SysLogConfig.Operators) != 0 {
+			err = multierr.Append(err, errors.New("custom operators are not supported for this component"))
 		}
-		// TODO: validate logging input params
 	}
 	return err
 }

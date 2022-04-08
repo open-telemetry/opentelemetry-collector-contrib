@@ -6,7 +6,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 	vmTest "github.com/vmware/govmomi/test"
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
@@ -21,9 +20,8 @@ func TestStart(t *testing.T) {
 	s := vcenterMetricScraper{
 		client: &client,
 	}
-	rms := pdata.NewMetrics().ResourceMetrics()
 	errs := scrapererror.ScrapeErrors{}
-	s.collectClusters(ctx, rms, &errs)
+	s.collectClusters(ctx, &errs)
 
 	require.NoError(t, errs.Combine())
 }

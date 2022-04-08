@@ -14,68 +14,30 @@
 
 package metadata
 
-import "go.opentelemetry.io/collector/model/pdata"
-
-func (mb *MetricsBuilder) EmitVM(metrics pdata.MetricSlice) {
-	mb.metricVcenterVMCPUUtilization.emit(metrics)
-	mb.metricVcenterVMDiskLatency.emit(metrics)
-	mb.metricVcenterVMDiskThroughput.emit(metrics)
-	mb.metricVcenterVMDiskUsage.emit(metrics)
-	mb.metricVcenterVMDiskLatency.emit(metrics)
-	mb.metricVcenterVMMemoryBallooned.emit(metrics)
-	mb.metricVcenterVMMemoryUsage.emit(metrics)
-	mb.metricVcenterVMNetworkPackets.emit(metrics)
-	mb.metricVcenterVMNetworkThroughput.emit(metrics)
-	mb.metricVcenterVMVsanLatencyAvg.emit(metrics)
-	mb.metricVcenterVMVsanOperations.emit(metrics)
-	mb.metricVcenterVMVsanThroughput.emit(metrics)
+func (mb *MetricsBuilder) EmitVM(vmName, vmID, powerstate string) {
+	mb.EmitForResource(
+		WithVcenterVMName(vmName),
+		WithVcenterVMID(vmID),
+		WithVcenterVMPowerState(powerstate),
+	)
 }
 
-func (mb *MetricsBuilder) EmitHost(metrics pdata.MetricSlice) {
-	mb.metricVcenterHostCPUUsage.emit(metrics)
-	mb.metricVcenterHostCPUUtilization.emit(metrics)
-	mb.metricVcenterHostDiskLatencyAvg.emit(metrics)
-	mb.metricVcenterHostDiskThroughput.emit(metrics)
-	mb.metricVcenterHostMemoryUsage.emit(metrics)
-	mb.metricVcenterHostMemoryUtilization.emit(metrics)
-	mb.metricVcenterHostNetworkPackets.emit(metrics)
-	mb.metricVcenterHostNetworkThroughput.emit(metrics)
-	mb.metricVcenterHostVsanCacheHitRate.emit(metrics)
-	mb.metricVcenterHostVsanCacheReads.emit(metrics)
-	mb.metricVcenterHostVsanCongestions.emit(metrics)
-	mb.metricVcenterHostVsanLatencyAvg.emit(metrics)
-	mb.metricVcenterHostVsanOperations.emit(metrics)
-	mb.metricVcenterHostVsanOutstandingIo.emit(metrics)
-	mb.metricVcenterHostVsanThroughput.emit(metrics)
+func (mb *MetricsBuilder) EmitHost(hostname string) {
+	mb.EmitForResource(WithVcenterHostName(hostname))
 }
 
-func (mb *MetricsBuilder) EmitResourcePool(metrics pdata.MetricSlice) {
-	mb.metricVcenterResourcePoolCPUShares.emit(metrics)
-	mb.metricVcenterResourcePoolCPUUsage.emit(metrics)
-	mb.metricVcenterResourcePoolMemoryShares.emit(metrics)
-	mb.metricVcenterResourcePoolMemoryUsage.emit(metrics)
+func (mb *MetricsBuilder) EmitResourcePool(poolName string) {
+	mb.EmitForResource(WithVcenterResourcePoolName(poolName))
 }
 
-func (mb *MetricsBuilder) EmitDatastore(metrics pdata.MetricSlice) {
-	mb.metricVcenterDatastoreDiskUsage.emit(metrics)
-	mb.metricVcenterDatastoreDiskUtilization.emit(metrics)
+func (mb *MetricsBuilder) EmitDatastore(datastoreName string) {
+	mb.EmitForResource(WithVcenterDatastoreName(datastoreName))
 }
 
-func (mb *MetricsBuilder) EmitDatacenter(metrics pdata.MetricSlice) {
-	mb.metricVcenterDatacenterHostCount.emit(metrics)
-	mb.metricVcenterDatacenterVMCount.emit(metrics)
+func (mb *MetricsBuilder) EmitDatacenter(dcName string) {
+	mb.EmitForResource(WithVcenterDatacenterName(dcName))
 }
 
-func (mb *MetricsBuilder) EmitCluster(metrics pdata.MetricSlice) {
-	mb.metricVcenterClusterCPUAvailable.emit(metrics)
-	mb.metricVcenterClusterCPUEffective.emit(metrics)
-	mb.metricVcenterClusterCPUUsed.emit(metrics)
-	mb.metricVcenterClusterMemoryAvailable.emit(metrics)
-	mb.metricVcenterClusterMemoryEffective.emit(metrics)
-	mb.metricVcenterClusterMemoryUsed.emit(metrics)
-	mb.metricVcenterClusterVsanCongestions.emit(metrics)
-	mb.metricVcenterClusterVsanLatencyAvg.emit(metrics)
-	mb.metricVcenterClusterVsanOperations.emit(metrics)
-	mb.metricVcenterClusterVsanOutstandingIo.emit(metrics)
-	mb.metricVcenterClusterVsanThroughput.emit(metrics)
+func (mb *MetricsBuilder) EmitCluster(clusterName string) {
+	mb.EmitForResource(WithVcenterClusterName(clusterName))
 }
