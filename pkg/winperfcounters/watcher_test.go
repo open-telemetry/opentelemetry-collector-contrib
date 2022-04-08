@@ -30,66 +30,72 @@ import (
 func Test_PathBuilder(t *testing.T) {
 	testCases := []struct {
 		name          string
-		cfgs          []WatcherCfg
+		cfgs          []ObjectConfig
 		expectedErr   string
 		expectedPaths []string
 	}{
 		{
 			name: "basicPath",
-			cfgs: []WatcherCfg{
+			cfgs: []ObjectConfig{
 				{
-					ObjectCfg: ObjectConfig{
-						Object:   "Memory",
-						Counters: []CounterConfig{{Name: "Committed Bytes"}},
-					},
+					Object:   "Memory",
+					Counters: []CounterConfig{{Name: "Committed Bytes"}},
 				},
 			},
 			expectedPaths: []string{"\\Memory\\Committed Bytes"},
 		},
 		{
 			name: "multiplePaths",
-			cfgs: []WatcherCfg{
+			cfgs: []ObjectConfig{
 				{
-					ObjectCfg: ObjectConfig{
-						Object:   "Memory",
-						Counters: []CounterConfig{{Name: "Committed Bytes"}},
+					Object:   "Memory",
+					Counters: []CounterConfig{{Name: "Committed Bytes"}},
+				},
+				{
+					Object:   "Memory",
+					Counters: []CounterConfig{{Name: "Available Bytes"}},
+				},
+			},
+			expectedPaths: []string{"\\Memory\\Committed Bytes", "\\Memory\\Available Bytes"},
+		},
+		{
+			name: "multipleIndividualCounters",
+			cfgs: []ObjectConfig{
+				{
+					Object: "Memory",
+					Counters: []CounterConfig{
+						{Name: "Committed Bytes"},
+						{Name: "Available Bytes"},
 					},
 				},
 				{
-					ObjectCfg: ObjectConfig{
-						Object:   "Memory",
-						Counters: []CounterConfig{{Name: "Available Bytes"}},
-					},
+					Object:   "Memory",
+					Counters: []CounterConfig{},
 				},
 			},
 			expectedPaths: []string{"\\Memory\\Committed Bytes", "\\Memory\\Available Bytes"},
 		},
 		{
 			name: "invalidCounter",
-			cfgs: []WatcherCfg{
+			cfgs: []ObjectConfig{
 				{
-					ObjectCfg: ObjectConfig{
-						Object:   "Broken",
-						Counters: []CounterConfig{{Name: "Broken Counter"}},
-					},
+					Object:   "Broken",
+					Counters: []CounterConfig{{Name: "Broken Counter"}},
 				},
 			},
+
 			expectedErr: "counter \\Broken\\Broken Counter: The specified object was not found on the computer.\r\n",
 		},
 		{
 			name: "multipleInvalidCounters",
-			cfgs: []WatcherCfg{
+			cfgs: []ObjectConfig{
 				{
-					ObjectCfg: ObjectConfig{
-						Object:   "Broken",
-						Counters: []CounterConfig{{Name: "Broken Counter"}},
-					},
+					Object:   "Broken",
+					Counters: []CounterConfig{{Name: "Broken Counter"}},
 				},
 				{
-					ObjectCfg: ObjectConfig{
-						Object:   "Broken part 2",
-						Counters: []CounterConfig{{Name: "Broken again"}},
-					},
+					Object:   "Broken part 2",
+					Counters: []CounterConfig{{Name: "Broken again"}},
 				},
 			},
 			expectedErr: "counter \\Broken\\Broken Counter: The specified object was not found on the computer.\r\n; counter \\Broken part 2\\Broken again: The specified object was not found on the computer.\r\n",

@@ -42,9 +42,9 @@ func newScraper(cfg *Config, settings component.TelemetrySettings) *scraper {
 }
 
 func (s *scraper) start(context.Context, component.Host) error {
-	scrapercfg := []windowsapi.WatcherCfg{}
+	scrapercfg := []windowsapi.ObjectConfig{}
 	for _, perfCounter := range s.cfg.PerfCounters {
-		scrapercfg = append(scrapercfg, windowsapi.WatcherCfg{ObjectCfg: perfCounter})
+		scrapercfg = append(scrapercfg, perfCounter)
 	}
 
 	var err error

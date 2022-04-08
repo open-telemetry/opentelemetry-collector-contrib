@@ -42,15 +42,6 @@ type PerfCounterWatcher interface {
 
 const instanceLabelName = "instance"
 
-type WatcherCfg struct {
-	ObjectCfg ObjectConfig
-}
-
-type MetricRep struct {
-	Name       string
-	Attributes map[string]string
-}
-
 type Watcher struct {
 	Counter *pdh.PerfCounter
 	MetricRep
@@ -73,14 +64,14 @@ func (w Watcher) GetMetricRep() MetricRep {
 }
 
 // BuildPaths creates watchers and their paths from configs.
-func BuildPaths(scraperCfgs []WatcherCfg) ([]PerfCounterWatcher, error) {
+func BuildPaths(objs []ObjectConfig) ([]PerfCounterWatcher, error) {
 	var errs error
 	var watchers []PerfCounterWatcher
 
-	for _, scraperCfg := range scraperCfgs {
-		for _, instance := range scraperCfg.ObjectCfg.instances() {
-			for _, counterCfg := range scraperCfg.ObjectCfg.Counters {
-				counterPath := counterPath(scraperCfg.ObjectCfg.Object, instance, counterCfg.Name)
+	for _, objCfg := range objs {
+		for _, instance := range objCfg.instances() {
+			for _, counterCfg := range objCfg.Counters {
+				counterPath := counterPath(objCfg.Object, instance, counterCfg.Name)
 
 				c, err := pdh.NewPerfCounter(counterPath, true)
 				if err != nil {
@@ -88,8 +79,8 @@ func BuildPaths(scraperCfgs []WatcherCfg) ([]PerfCounterWatcher, error) {
 				} else {
 					newWatcher := Watcher{Counter: c}
 
-					if counterCfg.Metric != "" {
-						metricCfg := MetricRep{Name: counterCfg.Metric}
+					if counterCfg.MetricRep.Name != "" {
+						metricCfg := MetricRep{Name: counterCfg.MetricRep.Name}
 						if counterCfg.Attributes != nil {
 							metricCfg.Attributes = counterCfg.Attributes
 						}
@@ -122,24 +113,23 @@ type CounterValue struct {
 
 // WatchCounters pulls values given the passed in watchers
 func WatchCounters(watchers []PerfCounterWatcher) (metrics []CounterValue, errs error) {
-	for _, scraper := range watchers {
-		counterValues, err := scraper.ScrapeData()
+	for _, watcher := range watchers {
+		counterValues, err := watcher.ScrapeData()
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue
 		}
-		metric := scraper.GetMetricRep()
+		metric := watcher.GetMetricRep()
 
-		for _, counterValue := range counterValues {
-			if counterValue.InstanceName != "" {
-				if metric.Attributes == nil {
-					metric.Attributes = map[string]string{instanceLabelName: counterValue.InstanceName}
-				}
-				metric.Attributes[instanceLabelName] = counterValue.InstanceName
+		if counterValues[0].InstanceName != "" {
+			if metric.Attributes == nil {
+				metric.Attributes = map[string]string{instanceLabelName: counterValues[0].InstanceName}
 			}
-
-			metrics = append(metrics, CounterValue{MetricRep: metric, Value: int64(counterValue.Value)})
+			metric.Attributes[instanceLabelName] = counterValues[0].InstanceName
 		}
+
+		metrics = append(metrics, CounterValue{MetricRep: metric, Value: int64(counterValues[0].Value)})
+
 	}
 	return metrics, errs
 }
