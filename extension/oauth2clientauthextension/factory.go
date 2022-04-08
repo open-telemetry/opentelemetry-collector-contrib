@@ -19,6 +19,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configauth"
 )
 
 const (
@@ -41,5 +42,13 @@ func createDefaultConfig() config.Extension {
 }
 
 func createExtension(_ context.Context, set component.ExtensionCreateSettings, cfg config.Extension) (component.Extension, error) {
-	return newClientCredentialsExtension(cfg.(*Config), set.Logger)
+	ca, err := newClientAuthenticator(cfg.(*Config), set.Logger)
+	if err != nil {
+		return nil, err
+	}
+
+	return configauth.NewClientAuthenticator(
+		configauth.WithClientRoundTripper(ca.roundTripper),
+		configauth.WithPerRPCCredentials(ca.perRPCCredentials),
+	), nil
 }
