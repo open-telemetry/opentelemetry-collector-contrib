@@ -48,11 +48,11 @@ var (
 // Used to identify the type of a received Span
 type spanType int8
 
-// Transforms a tuple of pdata.Resource, pdata.InstrumentationLibrary, pdata.Span into an AppInsights contracts.Envelope
+// Transforms a tuple of pdata.Resource, pdata.InstrumentationScope, pdata.Span into an AppInsights contracts.Envelope
 // This is the only method that should be targeted in the unit tests
 func spanToEnvelope(
 	resource pdata.Resource,
-	instrumentationLibrary pdata.InstrumentationLibrary,
+	instrumentationScope pdata.InstrumentationScope,
 	span pdata.Span,
 	logger *zap.Logger) (*contracts.Envelope, error) {
 
@@ -122,12 +122,12 @@ func spanToEnvelope(
 	})
 
 	// Copy the instrumentation properties
-	if instrumentationLibrary.Name() != "" {
-		dataProperties[instrumentationLibraryName] = instrumentationLibrary.Name()
+	if instrumentationScope.Name() != "" {
+		dataProperties[instrumentationLibraryName] = instrumentationScope.Name()
 	}
 
-	if instrumentationLibrary.Version() != "" {
-		dataProperties[instrumentationLibraryVersion] = instrumentationLibrary.Version()
+	if instrumentationScope.Version() != "" {
+		dataProperties[instrumentationLibraryVersion] = instrumentationScope.Version()
 	}
 
 	// Extract key service.* labels from the Resource labels and construct CloudRole and CloudRoleInstance envelope tags
@@ -491,7 +491,7 @@ func fillRemoteDependencyDataMessaging(span pdata.Span, data *contracts.RemoteDe
 
 // Copies all attributes to either properties or measurements and passes the key/value to another mapping function
 func copyAndMapAttributes(
-	attributeMap pdata.AttributeMap,
+	attributeMap pdata.Map,
 	properties map[string]string,
 	measurements map[string]float64,
 	mappingFunc func(k string, v pdata.Value)) {
@@ -507,7 +507,7 @@ func copyAndMapAttributes(
 
 // Copies all attributes to either properties or measurements without any kind of mapping to a known set of attributes
 func copyAttributesWithoutMapping(
-	attributeMap pdata.AttributeMap,
+	attributeMap pdata.Map,
 	properties map[string]string,
 	measurements map[string]float64) {
 
@@ -516,7 +516,7 @@ func copyAttributesWithoutMapping(
 
 // Attribute extraction logic for HTTP Span attributes
 func copyAndExtractHTTPAttributes(
-	attributeMap pdata.AttributeMap,
+	attributeMap pdata.Map,
 	properties map[string]string,
 	measurements map[string]float64) *HTTPAttributes {
 
@@ -532,7 +532,7 @@ func copyAndExtractHTTPAttributes(
 
 // Attribute extraction logic for RPC Span attributes
 func copyAndExtractRPCAttributes(
-	attributeMap pdata.AttributeMap,
+	attributeMap pdata.Map,
 	properties map[string]string,
 	measurements map[string]float64) *RPCAttributes {
 
@@ -548,7 +548,7 @@ func copyAndExtractRPCAttributes(
 
 // Attribute extraction logic for Database Span attributes
 func copyAndExtractDatabaseAttributes(
-	attributeMap pdata.AttributeMap,
+	attributeMap pdata.Map,
 	properties map[string]string,
 	measurements map[string]float64) *DatabaseAttributes {
 
@@ -564,7 +564,7 @@ func copyAndExtractDatabaseAttributes(
 
 // Attribute extraction logic for Messaging Span attributes
 func copyAndExtractMessagingAttributes(
-	attributeMap pdata.AttributeMap,
+	attributeMap pdata.Map,
 	properties map[string]string,
 	measurements map[string]float64) *MessagingAttributes {
 
@@ -585,7 +585,7 @@ func formatSpanDuration(span pdata.Span) string {
 }
 
 // Maps incoming Span to a type defined in the specification
-func mapIncomingSpanToType(attributeMap pdata.AttributeMap) spanType {
+func mapIncomingSpanToType(attributeMap pdata.Map) spanType {
 	// No attributes
 	if attributeMap.Len() == 0 {
 		return unknownSpanType

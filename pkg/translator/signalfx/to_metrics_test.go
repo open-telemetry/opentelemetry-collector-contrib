@@ -42,7 +42,7 @@ func Test_ToMetrics(t *testing.T) {
 	buildDefaultMetrics := func(typ pdata.MetricDataType, value interface{}) pdata.Metrics {
 		out := pdata.NewMetrics()
 		rm := out.ResourceMetrics().AppendEmpty()
-		ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+		ilm := rm.ScopeMetrics().AppendEmpty()
 		m := ilm.Metrics().AppendEmpty()
 
 		m.SetDataType(typ)
@@ -108,7 +108,7 @@ func Test_ToMetrics(t *testing.T) {
 			}(),
 			wantMetrics: func() pdata.Metrics {
 				m := buildDefaultMetrics(pdata.MetricDataTypeSum, 13)
-				d := m.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Sum()
+				d := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum()
 				d.SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 				d.SetIsMonotonic(true)
 				return m
@@ -126,7 +126,7 @@ func Test_ToMetrics(t *testing.T) {
 			}(),
 			wantMetrics: func() pdata.Metrics {
 				m := buildDefaultMetrics(pdata.MetricDataTypeSum, 13.13)
-				d := m.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Sum()
+				d := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum()
 				d.SetAggregationTemporality(pdata.MetricAggregationTemporalityDelta)
 				d.SetIsMonotonic(true)
 				return m
@@ -141,7 +141,7 @@ func Test_ToMetrics(t *testing.T) {
 			}(),
 			wantMetrics: func() pdata.Metrics {
 				md := buildDefaultMetrics(pdata.MetricDataTypeGauge, 13)
-				md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).SetTimestamp(0)
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).SetTimestamp(0)
 				return md
 			}(),
 		},
@@ -154,7 +154,7 @@ func Test_ToMetrics(t *testing.T) {
 			}(),
 			wantMetrics: func() pdata.Metrics {
 				md := buildDefaultMetrics(pdata.MetricDataTypeGauge, 13)
-				md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes().UpdateString("k0", "")
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes().UpdateString("k0", "")
 				return md
 			}(),
 		},

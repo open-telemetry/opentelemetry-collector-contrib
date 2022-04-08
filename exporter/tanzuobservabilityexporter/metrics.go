@@ -65,8 +65,8 @@ type metricsConsumer struct {
 
 type metricInfo struct {
 	pdata.Metric
-	Source string
-	Tags   map[string]string
+	Source    string
+	SourceKey string
 }
 
 // newMetricsConsumer returns a new metricsConsumer. consumers are the
@@ -103,13 +103,13 @@ func (c *metricsConsumer) Consume(ctx context.Context, md pdata.Metrics) error {
 	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i).Resource().Attributes()
-		source, resourceTags := getSourceAndResourceTags(rm)
-		ilms := rms.At(i).InstrumentationLibraryMetrics()
+		source, sourceKey := getSourceAndKey(rm)
+		ilms := rms.At(i).ScopeMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			ms := ilms.At(j).Metrics()
 			for k := 0; k < ms.Len(); k++ {
 				m := ms.At(k)
-				mi := metricInfo{m, source, resourceTags}
+				mi := metricInfo{Metric: m, Source: source, SourceKey: sourceKey}
 				select {
 				case <-ctx.Done():
 					return multierr.Combine(append(errs, errors.New("context canceled"))...)
@@ -241,7 +241,7 @@ func pushGaugeNumberDataPoint(
 	settings component.TelemetrySettings,
 	missingValues *counter,
 ) {
-	tags := attributesToTags(mi.Tags, numberDataPoint.Attributes())
+	tags := attributesToTagsForMetrics(numberDataPoint.Attributes(), mi.SourceKey)
 	ts := numberDataPoint.Timestamp().AsTime().Unix()
 	value, err := getValue(numberDataPoint)
 	if err != nil {
@@ -339,7 +339,7 @@ func (s *sumConsumer) PushInternalMetrics(errs *[]error) {
 }
 
 func (s *sumConsumer) pushNumberDataPoint(mi metricInfo, numberDataPoint pdata.NumberDataPoint, errs *[]error) {
-	tags := attributesToTags(mi.Tags, numberDataPoint.Attributes())
+	tags := attributesToTagsForMetrics(numberDataPoint.Attributes(), mi.SourceKey)
 	value, err := getValue(numberDataPoint)
 	if err != nil {
 		logMissingValue(mi.Metric, s.settings, &s.missingValues)
@@ -484,7 +484,7 @@ func (c *cumulativeHistogramDataPointConsumer) Consume(
 	reporting *histogramReporting,
 ) {
 	name := mi.Name()
-	tags := attributesToTags(mi.Tags, histogram.Attributes())
+	tags := attributesToTagsForMetrics(histogram.Attributes(), mi.SourceKey)
 	ts := histogram.Timestamp().AsTime().Unix()
 	explicitBounds := histogram.ExplicitBounds()
 	bucketCounts := histogram.BucketCounts()
@@ -530,7 +530,7 @@ func (d *deltaHistogramDataPointConsumer) Consume(
 	errs *[]error,
 	reporting *histogramReporting) {
 	name := mi.Name()
-	tags := attributesToTags(mi.Tags, his.Attributes())
+	tags := attributesToTagsForMetrics(his.Attributes(), mi.SourceKey)
 	ts := his.Timestamp().AsTime().Unix()
 	explicitBounds := his.ExplicitBounds()
 	bucketCounts := his.BucketCounts()
@@ -569,7 +569,7 @@ type histogramDataPoint interface {
 	Count() uint64
 	ExplicitBounds() []float64
 	BucketCounts() []uint64
-	Attributes() pdata.AttributeMap
+	Attributes() pdata.Map
 	Timestamp() pdata.Timestamp
 }
 
@@ -656,7 +656,7 @@ func (s *summaryConsumer) sendSummaryDataPoint(
 ) {
 	name := mi.Name()
 	ts := summaryDataPoint.Timestamp().AsTime().Unix()
-	tags := attributesToTags(mi.Tags, summaryDataPoint.Attributes())
+	tags := attributesToTagsForMetrics(summaryDataPoint.Attributes(), mi.SourceKey)
 	count := summaryDataPoint.Count()
 	sum := summaryDataPoint.Sum()
 
@@ -685,6 +685,13 @@ func (s *summaryConsumer) sendMetric(
 	if err != nil {
 		*errs = append(*errs, err)
 	}
+}
+
+func attributesToTagsForMetrics(attributes pdata.Map, sourceKey string) map[string]string {
+	tags := attributesToTags(attributes)
+	delete(tags, sourceKey)
+	replaceSource(tags)
+	return tags
 }
 
 func quantileTagValue(quantile float64) string {

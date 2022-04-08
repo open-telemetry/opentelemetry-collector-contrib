@@ -34,7 +34,7 @@ func buildExampleIntMetric(fillData bool) metricPair {
 		dp.SetIntVal(14500)
 	}
 
-	attributes := pdata.NewAttributeMap()
+	attributes := pdata.NewMap()
 	attributes.InsertString("test", "test_value")
 	attributes.InsertString("test2", "second_value")
 
@@ -50,7 +50,7 @@ func exampleIntGaugeMetric() metricPair {
 
 func buildExampleIntGaugeMetric(fillData bool) metricPair {
 	metric := metricPair{
-		attributes: pdata.NewAttributeMap(),
+		attributes: pdata.NewMap(),
 		metric:     pdata.NewMetric(),
 	}
 
@@ -82,7 +82,7 @@ func exampleDoubleGaugeMetric() metricPair {
 
 func buildExampleDoubleGaugeMetric(fillData bool) metricPair {
 	metric := metricPair{
-		attributes: pdata.NewAttributeMap(),
+		attributes: pdata.NewMap(),
 		metric:     pdata.NewMetric(),
 	}
 
@@ -114,7 +114,7 @@ func exampleIntSumMetric() metricPair {
 
 func buildExampleIntSumMetric(fillData bool) metricPair {
 	metric := metricPair{
-		attributes: pdata.NewAttributeMap(),
+		attributes: pdata.NewMap(),
 		metric:     pdata.NewMetric(),
 	}
 
@@ -146,7 +146,7 @@ func exampleDoubleSumMetric() metricPair {
 
 func buildExampleDoubleSumMetric(fillData bool) metricPair {
 	metric := metricPair{
-		attributes: pdata.NewAttributeMap(),
+		attributes: pdata.NewMap(),
 		metric:     pdata.NewMetric(),
 	}
 
@@ -178,7 +178,7 @@ func exampleSummaryMetric() metricPair {
 
 func buildExampleSummaryMetric(fillData bool) metricPair {
 	metric := metricPair{
-		attributes: pdata.NewAttributeMap(),
+		attributes: pdata.NewMap(),
 		metric:     pdata.NewMetric(),
 	}
 
@@ -220,7 +220,7 @@ func exampleHistogramMetric() metricPair {
 
 func buildExampleHistogramMetric(fillData bool) metricPair {
 	metric := metricPair{
-		attributes: pdata.NewAttributeMap(),
+		attributes: pdata.NewMap(),
 		metric:     pdata.NewMetric(),
 	}
 
@@ -261,14 +261,14 @@ func metricPairToMetrics(mp []metricPair) pdata.Metrics {
 	for num, record := range mp {
 		record.attributes.CopyTo(metrics.ResourceMetrics().AppendEmpty().Resource().Attributes())
 		// TODO: Change metricPair to have an init metric func.
-		record.metric.CopyTo(metrics.ResourceMetrics().At(num).InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty())
+		record.metric.CopyTo(metrics.ResourceMetrics().At(num).ScopeMetrics().AppendEmpty().Metrics().AppendEmpty())
 	}
 
 	return metrics
 }
 
 func fieldsFromMap(s map[string]string) fields {
-	attrMap := pdata.NewAttributeMap()
+	attrMap := pdata.NewMap()
 	for k, v := range s {
 		attrMap.InsertString(k, v)
 	}

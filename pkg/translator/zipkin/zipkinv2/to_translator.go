@@ -55,7 +55,7 @@ func (t ToTranslator) ToTraces(zipkinSpans []*zipkinmodel.SpanModel) (pdata.Trac
 	prevInstrLibName := ""
 	ilsIsNew := true
 	var curRscSpans pdata.ResourceSpans
-	var curILSpans pdata.InstrumentationLibrarySpans
+	var curILSpans pdata.ScopeSpans
 	var curSpans pdata.SpanSlice
 	for _, zspan := range zipkinSpans {
 		if zspan == nil {
@@ -73,9 +73,9 @@ func (t ToTranslator) ToTraces(zipkinSpans []*zipkinmodel.SpanModel) (pdata.Trac
 		instrLibName := extractInstrumentationLibrary(zspan)
 		if instrLibName != prevInstrLibName || ilsIsNew {
 			prevInstrLibName = instrLibName
-			curILSpans = curRscSpans.InstrumentationLibrarySpans().AppendEmpty()
+			curILSpans = curRscSpans.ScopeSpans().AppendEmpty()
 			ilsIsNew = false
-			populateILFromZipkinSpan(tags, instrLibName, curILSpans.InstrumentationLibrary())
+			populateILFromZipkinSpan(tags, instrLibName, curILSpans.Scope())
 			curSpans = curILSpans.Spans()
 		}
 		err := zSpanToInternal(zspan, tags, curSpans.AppendEmpty(), t.ParseStringTags)
@@ -289,7 +289,7 @@ func populateSpanEvents(zspan *zipkinmodel.SpanModel, events pdata.SpanEventSlic
 	return nil
 }
 
-func jsonMapToAttributeMap(attrs map[string]interface{}, dest pdata.AttributeMap) error {
+func jsonMapToAttributeMap(attrs map[string]interface{}, dest pdata.Map) error {
 	for key, val := range attrs {
 		if s, ok := val.(string); ok {
 			dest.InsertString(key, s)
@@ -306,7 +306,7 @@ func jsonMapToAttributeMap(attrs map[string]interface{}, dest pdata.AttributeMap
 	return nil
 }
 
-func zTagsToInternalAttrs(zspan *zipkinmodel.SpanModel, tags map[string]string, dest pdata.AttributeMap, parseStringTags bool) error {
+func zTagsToInternalAttrs(zspan *zipkinmodel.SpanModel, tags map[string]string, dest pdata.Map, parseStringTags bool) error {
 	parseErr := tagsToAttributeMap(tags, dest, parseStringTags)
 	if zspan.LocalEndpoint != nil {
 		if zspan.LocalEndpoint.IPv4 != nil {
@@ -336,7 +336,7 @@ func zTagsToInternalAttrs(zspan *zipkinmodel.SpanModel, tags map[string]string, 
 	return parseErr
 }
 
-func tagsToAttributeMap(tags map[string]string, dest pdata.AttributeMap, parseStringTags bool) error {
+func tagsToAttributeMap(tags map[string]string, dest pdata.Map, parseStringTags bool) error {
 	var parseErr error
 	for key, val := range tags {
 		if _, ok := nonSpanAttributes[key]; ok {
@@ -393,7 +393,7 @@ func populateResourceFromZipkinSpan(tags map[string]string, localServiceName str
 	}
 }
 
-func populateILFromZipkinSpan(tags map[string]string, instrLibName string, library pdata.InstrumentationLibrary) {
+func populateILFromZipkinSpan(tags map[string]string, instrLibName string, library pdata.InstrumentationScope) {
 	if instrLibName == "" {
 		return
 	}
@@ -429,7 +429,7 @@ func extractInstrumentationLibrary(zspan *zipkinmodel.SpanModel) string {
 	return zspan.Tags[conventions.OtelLibraryName]
 }
 
-func setTimestampsV2(zspan *zipkinmodel.SpanModel, dest pdata.Span, destAttrs pdata.AttributeMap) {
+func setTimestampsV2(zspan *zipkinmodel.SpanModel, dest pdata.Span, destAttrs pdata.Map) {
 	// zipkin allows timestamp to be unset, but otel span expects startTimestamp to have a value.
 	// unset gets converted to zero on the zspan object during json deserialization because
 	// time.Time (the type of Timestamp field) cannot be nil.  If timestamp is zero, the

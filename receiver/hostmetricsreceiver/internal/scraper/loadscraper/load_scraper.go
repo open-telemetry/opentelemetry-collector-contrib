@@ -65,13 +65,10 @@ func (s *scraper) shutdown(ctx context.Context) error {
 
 // scrape
 func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
-	md := pdata.NewMetrics()
-	metrics := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics()
-
 	now := pdata.NewTimestampFromTime(time.Now())
 	avgLoadValues, err := s.load()
 	if err != nil {
-		return md, scrapererror.NewPartialScrapeError(err, metricsLen)
+		return pdata.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
 	if s.config.CPUAverage {
@@ -81,11 +78,9 @@ func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 		avgLoadValues.Load15 = avgLoadValues.Load15 / divisor
 	}
 
-	metrics.EnsureCapacity(metricsLen)
-
 	s.mb.RecordSystemCPULoadAverage1mDataPoint(now, avgLoadValues.Load1)
 	s.mb.RecordSystemCPULoadAverage5mDataPoint(now, avgLoadValues.Load5)
 	s.mb.RecordSystemCPULoadAverage15mDataPoint(now, avgLoadValues.Load15)
-	s.mb.Emit(metrics)
-	return md, nil
+
+	return s.mb.Emit(), nil
 }

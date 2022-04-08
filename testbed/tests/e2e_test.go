@@ -73,7 +73,7 @@ func TestBallastMemory(t *testing.T) {
 		maxRSS      uint32
 	}{
 		{100, 80},
-		{500, 100},
+		{500, 110},
 		{1000, 120},
 	}
 

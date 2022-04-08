@@ -70,10 +70,10 @@ func (s *SentryExporter) pushTraceData(_ context.Context, td pdata.Traces) error
 		rs := resourceSpans.At(i)
 		resourceTags := generateTagsFromResource(rs.Resource())
 
-		ilss := rs.InstrumentationLibrarySpans()
+		ilss := rs.ScopeSpans()
 		for j := 0; j < ilss.Len(); j++ {
 			ils := ilss.At(j)
-			library := ils.InstrumentationLibrary()
+			library := ils.Scope()
 
 			spans := ils.Spans()
 			for k := 0; k < spans.Len(); k++ {
@@ -222,7 +222,7 @@ func classifyAsOrphanSpans(orphanSpans []*sentry.Span, prevLength int, idMap map
 	return classifyAsOrphanSpans(newOrphanSpans, len(orphanSpans), idMap, transactionMap)
 }
 
-func convertToSentrySpan(span pdata.Span, library pdata.InstrumentationLibrary, resourceTags map[string]string) (sentrySpan *sentry.Span) {
+func convertToSentrySpan(span pdata.Span, library pdata.InstrumentationScope, resourceTags map[string]string) (sentrySpan *sentry.Span) {
 	attributes := span.Attributes()
 	name := span.Name()
 	spanKind := span.Kind()
@@ -271,7 +271,7 @@ func convertToSentrySpan(span pdata.Span, library pdata.InstrumentationLibrary, 
 //
 // See https://github.com/open-telemetry/opentelemetry-specification/tree/5b78ee1/specification/trace/semantic_conventions
 // for more details about the semantic conventions.
-func generateSpanDescriptors(name string, attrs pdata.AttributeMap, spanKind pdata.SpanKind) (op string, description string) {
+func generateSpanDescriptors(name string, attrs pdata.Map, spanKind pdata.SpanKind) (op string, description string) {
 	var opBuilder strings.Builder
 	var dBuilder strings.Builder
 
@@ -339,7 +339,7 @@ func generateTagsFromResource(resource pdata.Resource) map[string]string {
 	return generateTagsFromAttributes(resource.Attributes())
 }
 
-func generateTagsFromAttributes(attrs pdata.AttributeMap) map[string]string {
+func generateTagsFromAttributes(attrs pdata.Map) map[string]string {
 	tags := make(map[string]string)
 
 	attrs.Range(func(key string, attr pdata.Value) bool {

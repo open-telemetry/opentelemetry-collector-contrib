@@ -27,6 +27,7 @@ INTEGRATION_TEST_MODULES := \
 	receiver/nginxreceiver \
 	receiver/postgresqlreceiver \
 	receiver/redisreceiver \
+	receiver/riakreceiver \
 	receiver/zookeeperreceiver \
 	extension/observer/dockerobserver
 
@@ -176,6 +177,7 @@ install-tools:
 	cd $(TOOLS_MOD_DIR) && $(GOCMD) install golang.org/x/tools/cmd/goimports
 	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/multimod
 	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/jcchavezs/porto/cmd/porto
+	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/crosslink
 
 .PHONY: run
 run:
@@ -307,3 +309,8 @@ multimod-verify: install-tools
 .PHONY: multimod-prerelease
 multimod-prerelease: install-tools
 	multimod prerelease -v ./versions.yaml -m contrib-base
+
+.PHONY: crosslink
+crosslink: install-tools
+	@echo "Executing crosslink"
+	crosslink --root=$(shell pwd)

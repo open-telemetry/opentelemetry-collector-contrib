@@ -76,7 +76,7 @@ func TestScrape(t *testing.T) {
 
 			md, err := scraper.scrape(context.Background())
 			require.NoError(t, err)
-			metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+			metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 
 			// Windows does not currently support the faults metric
 			expectedMetrics := 4

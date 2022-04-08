@@ -24,11 +24,11 @@ import (
 
 // fields represents metadata
 type fields struct {
-	orig     pdata.AttributeMap
+	orig     pdata.Map
 	replacer *strings.Replacer
 }
 
-func newFields(attrMap pdata.AttributeMap) fields {
+func newFields(attrMap pdata.Map) fields {
 	return fields{
 		orig:     attrMap,
 		replacer: strings.NewReplacer(",", "_", "=", ":", "\n", "_"),

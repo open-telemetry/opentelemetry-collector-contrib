@@ -43,6 +43,9 @@ func futureDefaultConfig() *Config {
 				Mode:         "distributions",
 				SendCountSum: false,
 			},
+			SumConfig: SumConfig{
+				CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
+			},
 		},
 		Traces: TracesConfig{
 			SampleRate:      1,

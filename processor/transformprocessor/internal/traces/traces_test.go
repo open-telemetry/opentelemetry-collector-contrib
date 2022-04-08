@@ -35,7 +35,7 @@ var (
 func Test_newPathGetSetter(t *testing.T) {
 	refSpan, _, _ := createTelemetry()
 
-	newAttrs := pdata.NewAttributeMap()
+	newAttrs := pdata.NewMap()
 	newAttrs.UpsertString("hello", "world")
 
 	newEvents := pdata.NewSpanEventSlice()
@@ -47,19 +47,19 @@ func Test_newPathGetSetter(t *testing.T) {
 	newStatus := pdata.NewSpanStatus()
 	newStatus.SetMessage("new status")
 
-	newArrStr := pdata.NewValueArray()
+	newArrStr := pdata.NewValueSlice()
 	newArrStr.SliceVal().AppendEmpty().SetStringVal("new")
 
-	newArrBool := pdata.NewValueArray()
+	newArrBool := pdata.NewValueSlice()
 	newArrBool.SliceVal().AppendEmpty().SetBoolVal(false)
 
-	newArrInt := pdata.NewValueArray()
+	newArrInt := pdata.NewValueSlice()
 	newArrInt.SliceVal().AppendEmpty().SetIntVal(20)
 
-	newArrFloat := pdata.NewValueArray()
+	newArrFloat := pdata.NewValueSlice()
 	newArrFloat.SliceVal().AppendEmpty().SetDoubleVal(2.0)
 
-	newArrBytes := pdata.NewValueArray()
+	newArrBytes := pdata.NewValueSlice()
 	newArrBytes.SliceVal().AppendEmpty().SetBytesVal([]byte{9, 6, 4})
 
 	tests := []struct {
@@ -67,7 +67,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		path     []common.Field
 		orig     interface{}
 		new      interface{}
-		modified func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource)
+		modified func(span pdata.Span, il pdata.InstrumentationScope, resource pdata.Resource)
 	}{
 		{
 			name: "trace_id",
@@ -78,7 +78,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig: pdata.NewTraceID(traceID),
 			new:  hex.EncodeToString(traceID2[:]),
-			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+			modified: func(span pdata.Span, il pdata.InstrumentationScope, resource pdata.Resource) {
 				span.SetTraceID(pdata.NewTraceID(traceID2))
 			},
 		},
@@ -91,7 +91,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig: pdata.NewSpanID(spanID),
 			new:  hex.EncodeToString(spanID2[:]),
-			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+			modified: func(span pdata.Span, il pdata.InstrumentationScope, resource pdata.Resource) {
 				span.SetSpanID(pdata.NewSpanID(spanID2))
 			},
 		},
@@ -104,7 +104,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig: pdata.TraceState("state"),
 			new:  "newstate",
-			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+			modified: func(span pdata.Span, il pdata.InstrumentationScope, resource pdata.Resource) {
 				span.SetTraceState("newstate")
 			},
 		},
@@ -117,7 +117,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig: pdata.NewSpanID(spanID2),
 			new:  hex.EncodeToString(spanID[:]),
-			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+			modified: func(span pdata.Span, il pdata.InstrumentationScope, resource pdata.Resource) {
 				span.SetParentSpanID(pdata.NewSpanID(spanID))
 			},
 		},
@@ -130,7 +130,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig: "bear",
 			new:  "cat",
-			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+			modified: func(span pdata.Span, il pdata.InstrumentationScope, resource pdata.Resource) {
 				span.SetName("cat")
 			},
 		},
@@ -143,7 +143,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig: pdata.SpanKindServer,
 			new:  int64(3),
-			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+			modified: func(span pdata.Span, il pdata.InstrumentationScope, resource pdata.Resource) {
 				span.SetKind(pdata.SpanKindClient)
 			},
 		},
@@ -156,7 +156,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig: int64(100_000_000),
 			new:  int64(200_000_000),
-			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+			modified: func(span pdata.Span, il pdata.InstrumentationScope, resource pdata.Resource) {
 				span.SetStartTimestamp(pdata.NewTimestampFromTime(time.UnixMilli(200)))
 			},
 		},
@@ -169,7 +169,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig: int64(500_000_000),
 			new:  int64(200_000_000),
-			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+			modified: func(span pdata.Span, il pdata.InstrumentationScope, resource pdata.Resource) {
 				span.SetEndTimestamp(pdata.NewTimestampFromTime(time.UnixMilli(200)))
 			},
 		},
@@ -182,7 +182,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig: refSpan.Attributes(),
 			new:  newAttrs,
-			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+			modified: func(span pdata.Span, il pdata.InstrumentationScope, resource pdata.Resource) {
 				span.Attributes().Clear()
 				newAttrs.CopyTo(span.Attributes())
 			},
@@ -197,7 +197,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig: "val",
 			new:  "newVal",
-			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+			modified: func(span pdata.Span, il pdata.InstrumentationScope, resource pdata.Resource) {
 				span.Attributes().UpsertString("str", "newVal")
 			},
 		},
@@ -211,7 +211,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig: true,
 			new:  false,
-			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+			modified: func(span pdata.Span, il pdata.InstrumentationScope, resource pdata.Resource) {
 				span.Attributes().UpsertBool("bool", false)
 			},
 		},
@@ -225,7 +225,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig: int64(10),
 			new:  int64(20),
-			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+			modified: func(span pdata.Span, il pdata.InstrumentationScope, resource pdata.Resource) {
 				span.Attributes().UpsertInt("int", 20)
 			},
 		},
@@ -239,7 +239,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig: float64(1.2),
 			new:  float64(2.4),
-			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+			modified: func(span pdata.Span, il pdata.InstrumentationScope, resource pdata.Resource) {
 				span.Attributes().UpsertDouble("double", 2.4)
 			},
 		},
@@ -253,7 +253,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig: []byte{1, 3, 2},
 			new:  []byte{2, 3, 4},
-			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+			modified: func(span pdata.Span, il pdata.InstrumentationScope, resource pdata.Resource) {
 				span.Attributes().UpsertBytes("bytes", []byte{2, 3, 4})
 			},
 		},
@@ -265,12 +265,12 @@ func Test_newPathGetSetter(t *testing.T) {
 					MapKey: strp("arr_str"),
 				},
 			},
-			orig: func() pdata.AttributeValueSlice {
+			orig: func() pdata.Slice {
 				val, _ := refSpan.Attributes().Get("arr_str")
 				return val.SliceVal()
 			}(),
 			new: []string{"new"},
-			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+			modified: func(span pdata.Span, il pdata.InstrumentationScope, resource pdata.Resource) {
 				span.Attributes().Upsert("arr_str", newArrStr)
 			},
 		},
@@ -282,12 +282,12 @@ func Test_newPathGetSetter(t *testing.T) {
 					MapKey: strp("arr_bool"),
 				},
 			},
-			orig: func() pdata.AttributeValueSlice {
+			orig: func() pdata.Slice {
 				val, _ := refSpan.Attributes().Get("arr_bool")
 				return val.SliceVal()
 			}(),
 			new: []bool{false},
-			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+			modified: func(span pdata.Span, il pdata.InstrumentationScope, resource pdata.Resource) {
 				span.Attributes().Upsert("arr_bool", newArrBool)
 			},
 		},
@@ -299,12 +299,12 @@ func Test_newPathGetSetter(t *testing.T) {
 					MapKey: strp("arr_int"),
 				},
 			},
-			orig: func() pdata.AttributeValueSlice {
+			orig: func() pdata.Slice {
 				val, _ := refSpan.Attributes().Get("arr_int")
 				return val.SliceVal()
 			}(),
 			new: []int64{20},
-			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+			modified: func(span pdata.Span, il pdata.InstrumentationScope, resource pdata.Resource) {
 				span.Attributes().Upsert("arr_int", newArrInt)
 			},
 		},
@@ -316,12 +316,12 @@ func Test_newPathGetSetter(t *testing.T) {
 					MapKey: strp("arr_float"),
 				},
 			},
-			orig: func() pdata.AttributeValueSlice {
+			orig: func() pdata.Slice {
 				val, _ := refSpan.Attributes().Get("arr_float")
 				return val.SliceVal()
 			}(),
 			new: []float64{2.0},
-			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+			modified: func(span pdata.Span, il pdata.InstrumentationScope, resource pdata.Resource) {
 				span.Attributes().Upsert("arr_float", newArrFloat)
 			},
 		},
@@ -333,12 +333,12 @@ func Test_newPathGetSetter(t *testing.T) {
 					MapKey: strp("arr_bytes"),
 				},
 			},
-			orig: func() pdata.AttributeValueSlice {
+			orig: func() pdata.Slice {
 				val, _ := refSpan.Attributes().Get("arr_bytes")
 				return val.SliceVal()
 			}(),
 			new: [][]byte{{9, 6, 4}},
-			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+			modified: func(span pdata.Span, il pdata.InstrumentationScope, resource pdata.Resource) {
 				span.Attributes().Upsert("arr_bytes", newArrBytes)
 			},
 		},
@@ -351,7 +351,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig: uint32(10),
 			new:  int64(20),
-			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+			modified: func(span pdata.Span, il pdata.InstrumentationScope, resource pdata.Resource) {
 				span.SetDroppedAttributesCount(20)
 			},
 		},
@@ -364,7 +364,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig: refSpan.Events(),
 			new:  newEvents,
-			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+			modified: func(span pdata.Span, il pdata.InstrumentationScope, resource pdata.Resource) {
 				span.Events().RemoveIf(func(_ pdata.SpanEvent) bool {
 					return true
 				})
@@ -380,7 +380,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig: uint32(20),
 			new:  int64(30),
-			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+			modified: func(span pdata.Span, il pdata.InstrumentationScope, resource pdata.Resource) {
 				span.SetDroppedEventsCount(30)
 			},
 		},
@@ -393,7 +393,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig: refSpan.Links(),
 			new:  newLinks,
-			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+			modified: func(span pdata.Span, il pdata.InstrumentationScope, resource pdata.Resource) {
 				span.Links().RemoveIf(func(_ pdata.SpanLink) bool {
 					return true
 				})
@@ -409,7 +409,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig: uint32(30),
 			new:  int64(40),
-			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+			modified: func(span pdata.Span, il pdata.InstrumentationScope, resource pdata.Resource) {
 				span.SetDroppedLinksCount(40)
 			},
 		},
@@ -422,7 +422,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig: refSpan.Status(),
 			new:  newStatus,
-			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+			modified: func(span pdata.Span, il pdata.InstrumentationScope, resource pdata.Resource) {
 				newStatus.CopyTo(span.Status())
 			},
 		},
@@ -438,7 +438,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig: pdata.StatusCodeOk,
 			new:  int64(pdata.StatusCodeError),
-			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+			modified: func(span pdata.Span, il pdata.InstrumentationScope, resource pdata.Resource) {
 				span.Status().SetCode(pdata.StatusCodeError)
 			},
 		},
@@ -454,7 +454,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig: "good span",
 			new:  "bad span",
-			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+			modified: func(span pdata.Span, il pdata.InstrumentationScope, resource pdata.Resource) {
 				span.Status().SetMessage("bad span")
 			},
 		},
@@ -470,7 +470,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig: refSpan.Attributes(),
 			new:  newAttrs,
-			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+			modified: func(span pdata.Span, il pdata.InstrumentationScope, resource pdata.Resource) {
 				resource.Attributes().Clear()
 				newAttrs.CopyTo(resource.Attributes())
 			},
@@ -488,7 +488,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig: "val",
 			new:  "newVal",
-			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+			modified: func(span pdata.Span, il pdata.InstrumentationScope, resource pdata.Resource) {
 				resource.Attributes().UpsertString("str", "newVal")
 			},
 		},
@@ -505,7 +505,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig: true,
 			new:  false,
-			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+			modified: func(span pdata.Span, il pdata.InstrumentationScope, resource pdata.Resource) {
 				resource.Attributes().UpsertBool("bool", false)
 			},
 		},
@@ -522,7 +522,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig: int64(10),
 			new:  int64(20),
-			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+			modified: func(span pdata.Span, il pdata.InstrumentationScope, resource pdata.Resource) {
 				resource.Attributes().UpsertInt("int", 20)
 			},
 		},
@@ -539,7 +539,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig: float64(1.2),
 			new:  float64(2.4),
-			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+			modified: func(span pdata.Span, il pdata.InstrumentationScope, resource pdata.Resource) {
 				resource.Attributes().UpsertDouble("double", 2.4)
 			},
 		},
@@ -556,7 +556,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig: []byte{1, 3, 2},
 			new:  []byte{2, 3, 4},
-			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+			modified: func(span pdata.Span, il pdata.InstrumentationScope, resource pdata.Resource) {
 				resource.Attributes().UpsertBytes("bytes", []byte{2, 3, 4})
 			},
 		},
@@ -571,12 +571,12 @@ func Test_newPathGetSetter(t *testing.T) {
 					MapKey: strp("arr_str"),
 				},
 			},
-			orig: func() pdata.AttributeValueSlice {
+			orig: func() pdata.Slice {
 				val, _ := refSpan.Attributes().Get("arr_str")
 				return val.SliceVal()
 			}(),
 			new: []string{"new"},
-			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+			modified: func(span pdata.Span, il pdata.InstrumentationScope, resource pdata.Resource) {
 				resource.Attributes().Upsert("arr_str", newArrStr)
 			},
 		},
@@ -591,12 +591,12 @@ func Test_newPathGetSetter(t *testing.T) {
 					MapKey: strp("arr_bool"),
 				},
 			},
-			orig: func() pdata.AttributeValueSlice {
+			orig: func() pdata.Slice {
 				val, _ := refSpan.Attributes().Get("arr_bool")
 				return val.SliceVal()
 			}(),
 			new: []bool{false},
-			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+			modified: func(span pdata.Span, il pdata.InstrumentationScope, resource pdata.Resource) {
 				resource.Attributes().Upsert("arr_bool", newArrBool)
 			},
 		},
@@ -611,12 +611,12 @@ func Test_newPathGetSetter(t *testing.T) {
 					MapKey: strp("arr_int"),
 				},
 			},
-			orig: func() pdata.AttributeValueSlice {
+			orig: func() pdata.Slice {
 				val, _ := refSpan.Attributes().Get("arr_int")
 				return val.SliceVal()
 			}(),
 			new: []int64{20},
-			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+			modified: func(span pdata.Span, il pdata.InstrumentationScope, resource pdata.Resource) {
 				resource.Attributes().Upsert("arr_int", newArrInt)
 			},
 		},
@@ -631,12 +631,12 @@ func Test_newPathGetSetter(t *testing.T) {
 					MapKey: strp("arr_float"),
 				},
 			},
-			orig: func() pdata.AttributeValueSlice {
+			orig: func() pdata.Slice {
 				val, _ := refSpan.Attributes().Get("arr_float")
 				return val.SliceVal()
 			}(),
 			new: []float64{2.0},
-			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+			modified: func(span pdata.Span, il pdata.InstrumentationScope, resource pdata.Resource) {
 				resource.Attributes().Upsert("arr_float", newArrFloat)
 			},
 		},
@@ -651,12 +651,12 @@ func Test_newPathGetSetter(t *testing.T) {
 					MapKey: strp("arr_bytes"),
 				},
 			},
-			orig: func() pdata.AttributeValueSlice {
+			orig: func() pdata.Slice {
 				val, _ := refSpan.Attributes().Get("arr_bytes")
 				return val.SliceVal()
 			}(),
 			new: [][]byte{{9, 6, 4}},
-			modified: func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) {
+			modified: func(span pdata.Span, il pdata.InstrumentationScope, resource pdata.Resource) {
 				resource.Attributes().Upsert("arr_bytes", newArrBytes)
 			},
 		},
@@ -668,10 +668,18 @@ func Test_newPathGetSetter(t *testing.T) {
 
 			span, il, resource := createTelemetry()
 
-			got := accessor.get(span, il, resource)
+			got := accessor.Get(spanTransformContext{
+				span:     span,
+				il:       il,
+				resource: resource,
+			})
 			assert.Equal(t, tt.orig, got)
 
-			accessor.set(span, il, resource, tt.new)
+			accessor.Set(spanTransformContext{
+				span:     span,
+				il:       il,
+				resource: resource,
+			}, tt.new)
 
 			exSpan, exIl, exRes := createTelemetry()
 			tt.modified(exSpan, exIl, exRes)
@@ -683,7 +691,7 @@ func Test_newPathGetSetter(t *testing.T) {
 	}
 }
 
-func createTelemetry() (pdata.Span, pdata.InstrumentationLibrary, pdata.Resource) {
+func createTelemetry() (pdata.Span, pdata.InstrumentationScope, pdata.Resource) {
 	span := pdata.NewSpan()
 	span.SetTraceID(pdata.NewTraceID(traceID))
 	span.SetSpanID(pdata.NewSpanID(spanID))
@@ -699,27 +707,27 @@ func createTelemetry() (pdata.Span, pdata.InstrumentationLibrary, pdata.Resource
 	span.Attributes().UpsertDouble("double", 1.2)
 	span.Attributes().UpsertBytes("bytes", []byte{1, 3, 2})
 
-	arrStr := pdata.NewValueArray()
+	arrStr := pdata.NewValueSlice()
 	arrStr.SliceVal().AppendEmpty().SetStringVal("one")
 	arrStr.SliceVal().AppendEmpty().SetStringVal("two")
 	span.Attributes().Upsert("arr_str", arrStr)
 
-	arrBool := pdata.NewValueArray()
+	arrBool := pdata.NewValueSlice()
 	arrBool.SliceVal().AppendEmpty().SetBoolVal(true)
 	arrBool.SliceVal().AppendEmpty().SetBoolVal(false)
 	span.Attributes().Upsert("arr_bool", arrBool)
 
-	arrInt := pdata.NewValueArray()
+	arrInt := pdata.NewValueSlice()
 	arrInt.SliceVal().AppendEmpty().SetIntVal(2)
 	arrInt.SliceVal().AppendEmpty().SetIntVal(3)
 	span.Attributes().Upsert("arr_int", arrInt)
 
-	arrFloat := pdata.NewValueArray()
+	arrFloat := pdata.NewValueSlice()
 	arrFloat.SliceVal().AppendEmpty().SetDoubleVal(1.0)
 	arrFloat.SliceVal().AppendEmpty().SetDoubleVal(2.0)
 	span.Attributes().Upsert("arr_float", arrFloat)
 
-	arrBytes := pdata.NewValueArray()
+	arrBytes := pdata.NewValueSlice()
 	arrBytes.SliceVal().AppendEmpty().SetBytesVal([]byte{1, 2, 3})
 	arrBytes.SliceVal().AppendEmpty().SetBytesVal([]byte{2, 3, 4})
 	span.Attributes().Upsert("arr_bytes", arrBytes)
@@ -735,7 +743,7 @@ func createTelemetry() (pdata.Span, pdata.InstrumentationLibrary, pdata.Resource
 	span.Status().SetCode(pdata.StatusCodeOk)
 	span.Status().SetMessage("good span")
 
-	il := pdata.NewInstrumentationLibrary()
+	il := pdata.NewInstrumentationScope()
 	il.SetName("library")
 	il.SetVersion("version")
 
@@ -743,4 +751,12 @@ func createTelemetry() (pdata.Span, pdata.InstrumentationLibrary, pdata.Resource
 	span.Attributes().CopyTo(resource.Attributes())
 
 	return span, il, resource
+}
+
+func strp(s string) *string {
+	return &s
+}
+
+func intp(i int64) *int64 {
+	return &i
 }

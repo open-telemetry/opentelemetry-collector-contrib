@@ -34,7 +34,20 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, configtest.CheckConfigStruct(cfg))
 
-	cfg.(*Config).PerfCounters = []PerfCounterConfig{{Object: "object", Counters: []string{"counter"}}}
+	cfg.(*Config).PerfCounters = []PerfCounterConfig{
+		{
+			Object:   "object",
+			Counters: []CounterConfig{{Name: "counter", Metric: "metric"}},
+		},
+	}
+
+	cfg.(*Config).MetricMetaData = map[string]MetricConfig{
+		"metric": {
+			Description: "desc",
+			Unit:        "1",
+			Gauge:       GaugeMetric{},
+		},
+	}
 
 	assert.NoError(t, cfg.Validate())
 }
@@ -42,8 +55,35 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateTracesReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	cfg.(*Config).PerfCounters = []PerfCounterConfig{{Object: "object", Counters: []string{"counter"}}}
+	cfg.(*Config).PerfCounters = []PerfCounterConfig{
+		{
+			Object:   "object",
+			Counters: []CounterConfig{{Name: "counter", Metric: "metric"}},
+		},
+	}
 
+	cfg.(*Config).MetricMetaData = map[string]MetricConfig{
+		"metric": {
+			Description: "desc",
+			Unit:        "1",
+			Gauge:       GaugeMetric{},
+		},
+	}
+	tReceiver, err := factory.CreateTracesReceiver(context.Background(), creationParams, cfg, consumertest.NewNop())
+
+	assert.ErrorIs(t, err, componenterror.ErrDataTypeIsNotSupported)
+	assert.Nil(t, tReceiver)
+}
+
+func TestCreateTracesReceiverNoMetrics(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	cfg.(*Config).PerfCounters = []PerfCounterConfig{
+		{
+			Object:   "object",
+			Counters: []CounterConfig{{Name: "counter"}},
+		},
+	}
 	tReceiver, err := factory.CreateTracesReceiver(context.Background(), creationParams, cfg, consumertest.NewNop())
 
 	assert.ErrorIs(t, err, componenterror.ErrDataTypeIsNotSupported)
@@ -53,7 +93,20 @@ func TestCreateTracesReceiver(t *testing.T) {
 func TestCreateLogsReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	cfg.(*Config).PerfCounters = []PerfCounterConfig{{Object: "object", Counters: []string{"counter"}}}
+	cfg.(*Config).PerfCounters = []PerfCounterConfig{
+		{
+			Object:   "object",
+			Counters: []CounterConfig{{Name: "counter", Metric: "metric"}},
+		},
+	}
+
+	cfg.(*Config).MetricMetaData = map[string]MetricConfig{
+		"metric": {
+			Description: "desc",
+			Unit:        "1",
+			Gauge:       GaugeMetric{},
+		},
+	}
 
 	tReceiver, err := factory.CreateLogsReceiver(context.Background(), creationParams, cfg, consumertest.NewNop())
 

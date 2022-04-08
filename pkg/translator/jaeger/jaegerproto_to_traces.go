@@ -63,12 +63,12 @@ func protoBatchToResourceSpans(batch model.Batch, dest pdata.ResourceSpans) {
 	}
 
 	groupByLibrary := jSpansToInternal(jSpans)
-	ilss := dest.InstrumentationLibrarySpans()
+	ilss := dest.ScopeSpans()
 	for library, spans := range groupByLibrary {
 		ils := ilss.AppendEmpty()
 		if library.name != "" {
-			ils.InstrumentationLibrary().SetName(library.name)
-			ils.InstrumentationLibrary().SetVersion(library.version)
+			ils.Scope().SetName(library.name)
+			ils.Scope().SetVersion(library.version)
 		}
 		spans.MoveAndAppendTo(ils.Spans())
 	}
@@ -101,7 +101,7 @@ func jProcessToInternalResource(process *model.Process, dest pdata.Resource) {
 }
 
 // translateHostnameAttr translates "hostname" atttribute
-func translateHostnameAttr(attrs pdata.AttributeMap) {
+func translateHostnameAttr(attrs pdata.Map) {
 	hostname, hostnameFound := attrs.Get("hostname")
 	_, convHostNameFound := attrs.Get(conventions.AttributeHostName)
 	if hostnameFound && !convHostNameFound {
@@ -111,7 +111,7 @@ func translateHostnameAttr(attrs pdata.AttributeMap) {
 }
 
 // translateHostnameAttr translates "jaeger.version" atttribute
-func translateJaegerVersionAttr(attrs pdata.AttributeMap) {
+func translateJaegerVersionAttr(attrs pdata.Map) {
 	jaegerVersion, jaegerVersionFound := attrs.Get("jaeger.version")
 	_, exporterVersionFound := attrs.Get(occonventions.AttributeExporterVersion)
 	if jaegerVersionFound && !exporterVersionFound {
@@ -176,7 +176,7 @@ func jSpanToInternal(span *model.Span, spansByLibrary map[instrumentationLibrary
 	jReferencesToSpanLinks(span.References, parentSpanID, dest.Links())
 }
 
-func jTagsToInternalAttributes(tags []model.KeyValue, dest pdata.AttributeMap) {
+func jTagsToInternalAttributes(tags []model.KeyValue, dest pdata.Map) {
 	for _, tag := range tags {
 		switch tag.GetVType() {
 		case model.ValueType_STRING:
@@ -195,7 +195,7 @@ func jTagsToInternalAttributes(tags []model.KeyValue, dest pdata.AttributeMap) {
 	}
 }
 
-func setInternalSpanStatus(attrs pdata.AttributeMap, dest pdata.SpanStatus) {
+func setInternalSpanStatus(attrs pdata.Map, dest pdata.SpanStatus) {
 	statusCode := pdata.StatusCodeUnset
 	statusMessage := ""
 	statusExists := false
@@ -261,7 +261,7 @@ func setInternalSpanStatus(attrs pdata.AttributeMap, dest pdata.SpanStatus) {
 // along with true if it is set. Otherwise, an empty string and false are
 // returned. The OTel status description attribute is deleted from attrs in
 // the process.
-func extractStatusDescFromAttr(attrs pdata.AttributeMap) (string, bool) {
+func extractStatusDescFromAttr(attrs pdata.Map) (string, bool) {
 	if msgAttr, ok := attrs.Get(conventions.OtelStatusDescription); ok {
 		msg := msgAttr.StringVal()
 		attrs.Delete(conventions.OtelStatusDescription)
@@ -364,7 +364,7 @@ func jReferencesToSpanLinks(refs []model.SpanRef, excludeParentID model.SpanID, 
 	}
 }
 
-func getTraceStateFromAttrs(attrs pdata.AttributeMap) pdata.TraceState {
+func getTraceStateFromAttrs(attrs pdata.Map) pdata.TraceState {
 	traceState := pdata.TraceStateEmpty
 	// TODO Bring this inline with solution for jaegertracing/jaeger-client-java #702 once available
 	if attr, ok := attrs.Get(tracetranslator.TagW3CTraceState); ok {

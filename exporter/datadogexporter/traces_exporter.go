@@ -16,6 +16,7 @@ package datadogexporter // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/config/configdefs"
@@ -42,6 +43,7 @@ type traceExporter struct {
 	client         *datadog.Client
 	denylister     *denylister
 	scrubber       scrub.Scrubber
+	onceMetadata   *sync.Once
 }
 
 var (
@@ -62,7 +64,7 @@ var (
 	}
 )
 
-func newTracesExporter(ctx context.Context, params component.ExporterCreateSettings, cfg *config.Config) *traceExporter {
+func newTracesExporter(ctx context.Context, params component.ExporterCreateSettings, cfg *config.Config, onceMetadata *sync.Once) *traceExporter {
 	// client to send running metric to the backend & perform API key validation
 	client := utils.CreateClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
 	utils.ValidateAPIKey(params.Logger, client)
@@ -83,6 +85,7 @@ func newTracesExporter(ctx context.Context, params component.ExporterCreateSetti
 		client:         client,
 		denylister:     denylister,
 		scrubber:       scrub.NewScrubber(),
+		onceMetadata:   onceMetadata,
 	}
 
 	return exporter
@@ -114,9 +117,8 @@ func (exp *traceExporter) pushTraceData(
 	// Start host metadata with resource attributes from
 	// the first payload.
 	if exp.cfg.SendMetadata {
-		once := exp.cfg.OnceMetadata()
-		once.Do(func() {
-			attrs := pdata.NewAttributeMap()
+		exp.onceMetadata.Do(func() {
+			attrs := pdata.NewMap()
 			if td.ResourceSpans().Len() > 0 {
 				attrs = td.ResourceSpans().At(0).Resource().Attributes()
 			}

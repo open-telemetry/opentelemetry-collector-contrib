@@ -203,7 +203,7 @@ func TestAttrValue(t *testing.T) {
 		{
 			name: "array",
 			builder: func() pdata.Value {
-				arrAttr := pdata.NewValueArray()
+				arrAttr := pdata.NewValueSlice()
 				arr := arrAttr.SliceVal()
 				for _, av := range []pdata.Value{
 					pdata.NewValueDouble(1.2),
@@ -243,7 +243,7 @@ func TestConsumeLogs(t *testing.T) {
 	ld := pdata.NewLogs()
 	r := ld.ResourceLogs().AppendEmpty()
 	r.Resource().Attributes().UpsertString("hello", "test")
-	logRecords := r.InstrumentationLibraryLogs().AppendEmpty().LogRecords()
+	logRecords := r.ScopeLogs().AppendEmpty().LogRecords()
 	logRecords.EnsureCapacity(5)
 	logRecords.AppendEmpty()
 	assert.Equal(t, 1, ld.LogRecordCount())

@@ -24,19 +24,19 @@ import (
 )
 
 func TestTagsFromAttributes(t *testing.T) {
-	attributeMap := map[string]pdata.Value{
-		conventions.AttributeProcessExecutableName: pdata.NewValueString("otelcol"),
-		conventions.AttributeProcessExecutablePath: pdata.NewValueString("/usr/bin/cmd/otelcol"),
-		conventions.AttributeProcessCommand:        pdata.NewValueString("cmd/otelcol"),
-		conventions.AttributeProcessCommandLine:    pdata.NewValueString("cmd/otelcol --config=\"/path/to/config.yaml\""),
-		conventions.AttributeProcessPID:            pdata.NewValueInt(1),
-		conventions.AttributeProcessOwner:          pdata.NewValueString("root"),
-		conventions.AttributeOSType:                pdata.NewValueString("linux"),
-		conventions.AttributeK8SDaemonSetName:      pdata.NewValueString("daemon_set_name"),
-		conventions.AttributeAWSECSClusterARN:      pdata.NewValueString("cluster_arn"),
-		"tags.datadoghq.com/service":               pdata.NewValueString("service_name"),
+	attributeMap := map[string]interface{}{
+		conventions.AttributeProcessExecutableName: "otelcol",
+		conventions.AttributeProcessExecutablePath: "/usr/bin/cmd/otelcol",
+		conventions.AttributeProcessCommand:        "cmd/otelcol",
+		conventions.AttributeProcessCommandLine:    "cmd/otelcol --config=\"/path/to/config.yaml\"",
+		conventions.AttributeProcessPID:            1,
+		conventions.AttributeProcessOwner:          "root",
+		conventions.AttributeOSType:                "linux",
+		conventions.AttributeK8SDaemonSetName:      "daemon_set_name",
+		conventions.AttributeAWSECSClusterARN:      "cluster_arn",
+		"tags.datadoghq.com/service":               "service_name",
 	}
-	attrs := pdata.NewAttributeMapFromMap(attributeMap)
+	attrs := pdata.NewMapFromRaw(attributeMap)
 
 	assert.ElementsMatch(t, []string{
 		fmt.Sprintf("%s:%s", conventions.AttributeProcessExecutableName, "otelcol"),
@@ -48,7 +48,7 @@ func TestTagsFromAttributes(t *testing.T) {
 }
 
 func TestTagsFromAttributesEmpty(t *testing.T) {
-	attrs := pdata.NewAttributeMap()
+	attrs := pdata.NewMap()
 
 	assert.Equal(t, []string{}, TagsFromAttributes(attrs))
 }
@@ -85,34 +85,34 @@ func TestContainerTagFromAttributesEmpty(t *testing.T) {
 func TestOriginIDFromAttributes(t *testing.T) {
 	tests := []struct {
 		name     string
-		attrs    pdata.AttributeMap
+		attrs    pdata.Map
 		originID string
 	}{
 		{
 			name: "pod UID and container ID",
-			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.Value{
-				conventions.AttributeContainerID: pdata.NewValueString("container_id_goes_here"),
-				conventions.AttributeK8SPodUID:   pdata.NewValueString("k8s_pod_uid_goes_here"),
+			attrs: pdata.NewMapFromRaw(map[string]interface{}{
+				conventions.AttributeContainerID: "container_id_goes_here",
+				conventions.AttributeK8SPodUID:   "k8s_pod_uid_goes_here",
 			}),
 			originID: "container_id://container_id_goes_here",
 		},
 		{
 			name: "only container ID",
-			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.Value{
-				conventions.AttributeContainerID: pdata.NewValueString("container_id_goes_here"),
+			attrs: pdata.NewMapFromRaw(map[string]interface{}{
+				conventions.AttributeContainerID: "container_id_goes_here",
 			}),
 			originID: "container_id://container_id_goes_here",
 		},
 		{
 			name: "only pod UID",
-			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.Value{
-				conventions.AttributeK8SPodUID: pdata.NewValueString("k8s_pod_uid_goes_here"),
+			attrs: pdata.NewMapFromRaw(map[string]interface{}{
+				conventions.AttributeK8SPodUID: "k8s_pod_uid_goes_here",
 			}),
 			originID: "kubernetes_pod_uid://k8s_pod_uid_goes_here",
 		},
 		{
 			name:  "none",
-			attrs: pdata.NewAttributeMap(),
+			attrs: pdata.NewMap(),
 		},
 	}
 

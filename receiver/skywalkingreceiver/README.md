@@ -6,7 +6,7 @@ Supported pipeline types: traces
 
 ## ⚠️ Warning
 
-Note: This component is currently work in progress, and traces receiver is not yet fully functional.
+Note: This component is experimental and is not recommended for production environments.
 
 ## Getting Started
 

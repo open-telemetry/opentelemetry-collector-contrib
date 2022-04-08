@@ -34,9 +34,9 @@ func (exporter *logExporter) onLogData(context context.Context, logData pdata.Lo
 	logPacker := newLogPacker(exporter.logger)
 
 	for i := 0; i < resourceLogs.Len(); i++ {
-		instrumentationLibraryLogs := resourceLogs.At(i).InstrumentationLibraryLogs()
-		for j := 0; j < instrumentationLibraryLogs.Len(); j++ {
-			logs := instrumentationLibraryLogs.At(j).LogRecords()
+		scopeLogs := resourceLogs.At(i).ScopeLogs()
+		for j := 0; j < scopeLogs.Len(); j++ {
+			logs := scopeLogs.At(j).LogRecords()
 			for k := 0; k < logs.Len(); k++ {
 				envelope := logPacker.LogRecordToEnvelope(logs.At(k))
 				envelope.IKey = exporter.config.InstrumentationKey

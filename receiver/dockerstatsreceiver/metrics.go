@@ -47,7 +47,7 @@ func ContainerStatsToMetrics(
 	resourceAttr.UpsertString(conventions.AttributeContainerName, strings.TrimPrefix(container.Name, "/"))
 	resourceAttr.UpsertString("container.hostname", container.Config.Hostname)
 	updateConfiguredResourceAttributes(resourceAttr, container, config)
-	ils := rs.InstrumentationLibraryMetrics().AppendEmpty()
+	ils := rs.ScopeMetrics().AppendEmpty()
 
 	appendBlockioMetrics(ils.Metrics(), &containerStats.BlkioStats, now)
 	appendCPUMetrics(ils.Metrics(), &containerStats.CPUStats, &containerStats.PreCPUStats, now, config.ProvidePerCoreCPUMetrics)
@@ -57,7 +57,7 @@ func ContainerStatsToMetrics(
 	return md
 }
 
-func updateConfiguredResourceAttributes(resourceAttr pdata.AttributeMap, container docker.Container, config *Config) {
+func updateConfiguredResourceAttributes(resourceAttr pdata.Map, container docker.Container, config *Config) {
 	for k, label := range config.EnvVarsToMetricLabels {
 		if v := container.EnvMap[k]; v != "" {
 			resourceAttr.UpsertString(label, v)
@@ -276,7 +276,7 @@ func populateMetricMetadata(dest pdata.Metric, name string, unit string, ty pdat
 	dest.SetDataType(ty)
 }
 
-func populateAttributes(dest pdata.AttributeMap, labelKeys []string, labelValues []string) {
+func populateAttributes(dest pdata.Map, labelKeys []string, labelValues []string) {
 	for i := range labelKeys {
 		dest.UpsertString(labelKeys[i], labelValues[i])
 	}
