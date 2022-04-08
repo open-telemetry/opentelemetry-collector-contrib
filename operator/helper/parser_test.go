@@ -54,14 +54,46 @@ func TestParserConfigInvalidTimeParser(t *testing.T) {
 
 func TestParserConfigBuildValid(t *testing.T) {
 	cfg := NewParserConfig("test-id", "test-type")
-	f := entry.NewBodyField("timestamp")
+
+	timeField := entry.NewBodyField("timestamp")
 	cfg.TimeParser = &TimeParser{
-		ParseFrom:  &f,
+		ParseFrom:  &timeField,
 		Layout:     "",
 		LayoutType: "native",
 	}
-	_, err := cfg.Build(testutil.Logger(t))
+
+	sevField := entry.NewBodyField("timestamp")
+	cfg.SeverityParserConfig = &SeverityParserConfig{
+		ParseFrom: &sevField,
+	}
+
+	traceIdField := entry.NewBodyField("trace_id")
+	spanIdField := entry.NewBodyField("span_id")
+	traceFlagsField := entry.NewBodyField("trace_flags")
+	cfg.TraceParser = &TraceParser{
+		TraceId: &TraceIdConfig{
+			ParseFrom: &traceIdField,
+		},
+		SpanId: &SpanIdConfig{
+			ParseFrom: &spanIdField,
+		},
+		TraceFlags: &TraceFlagsConfig{
+			ParseFrom: &traceFlagsField,
+		},
+	}
+
+	scopeNameField := entry.NewBodyField("logger")
+	cfg.ScopeNameParser = &ScopeNameParser{
+		ParseFrom: scopeNameField,
+	}
+
+	op, err := cfg.Build(testutil.Logger(t))
 	require.NoError(t, err)
+
+	require.NotNil(t, op.TimeParser)
+	require.NotNil(t, op.SeverityParser)
+	require.NotNil(t, op.TraceParser)
+	require.NotNil(t, op.ScopeNameParser)
 }
 
 func TestParserMissingField(t *testing.T) {
