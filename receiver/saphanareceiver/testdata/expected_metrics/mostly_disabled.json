@@ -1,11 +1,9 @@
 {
    "resourceMetrics": [
       {
-         "instrumentationLibraryMetrics": [
+         "resource": {},
+         "scopeMetrics": [
             {
-               "instrumentationLibrary": {
-                  "name": "otelcol/saphana"
-               },
                "metrics": [
                   {
                      "description": "The number of services in a given status.",
@@ -29,8 +27,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1648255477078263000",
-                              "timeUnixNano": "1648255477078410000"
+                              "startTimeUnixNano": "1649428492785868000",
+                              "timeUnixNano": "1649428492798691000"
                            },
                            {
                               "asInt": "0",
@@ -48,8 +46,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1648255477078263000",
-                              "timeUnixNano": "1648255477078410000"
+                              "startTimeUnixNano": "1649428492785868000",
+                              "timeUnixNano": "1649428492798691000"
                            },
                            {
                               "asInt": "4",
@@ -67,8 +65,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1648255477078263000",
-                              "timeUnixNano": "1648255477078410000"
+                              "startTimeUnixNano": "1649428492785868000",
+                              "timeUnixNano": "1649428492798691000"
                            },
                            {
                               "asInt": "8",
@@ -86,8 +84,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1648255477078263000",
-                              "timeUnixNano": "1648255477078410000"
+                              "startTimeUnixNano": "1649428492785868000",
+                              "timeUnixNano": "1649428492798691000"
                            }
                         ]
                      },
@@ -115,8 +113,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1648255477078263000",
-                              "timeUnixNano": "1648255477078410000"
+                              "startTimeUnixNano": "1649428492785868000",
+                              "timeUnixNano": "1649428492798691000"
                            },
                            {
                               "asInt": "11",
@@ -134,8 +132,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1648255477078263000",
-                              "timeUnixNano": "1648255477078410000"
+                              "startTimeUnixNano": "1649428492785868000",
+                              "timeUnixNano": "1649428492798691000"
                            },
                            {
                               "asInt": "12",
@@ -153,8 +151,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1648255477078263000",
-                              "timeUnixNano": "1648255477078410000"
+                              "startTimeUnixNano": "1649428492785868000",
+                              "timeUnixNano": "1649428492798691000"
                            },
                            {
                               "asInt": "1111",
@@ -172,17 +170,19 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1648255477078263000",
-                              "timeUnixNano": "1648255477078410000"
+                              "startTimeUnixNano": "1649428492785868000",
+                              "timeUnixNano": "1649428492798691000"
                            }
                         ]
                      },
                      "unit": "{threads}"
                   }
-               ]
+               ],
+               "scope": {
+                  "name": "otelcol/saphanareceiver"
+               }
             }
-         ],
-         "resource": {}
+         ]
       }
    ]
 }

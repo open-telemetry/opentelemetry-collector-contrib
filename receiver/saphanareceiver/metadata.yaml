@@ -62,6 +62,14 @@ attributes:
     enum:
     - main
     - delta
+  column_memory_subtype:
+    value: subtype
+    description: The subtype of column store memory.
+    enum:
+    - data
+    - dict
+    - index
+    - misc
   row_memory_type:
     value: type
     description: The type of row store memory.
@@ -319,7 +327,7 @@ metrics:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [host, column_memory_type]
+    attributes: [host, column_memory_type, column_memory_subtype]
     enabled: true
   saphana.row_store.memory.used:
     description: The used memory for all row tables.

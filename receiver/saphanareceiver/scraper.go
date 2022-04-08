@@ -29,8 +29,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver/internal/metadata"
 )
 
-const instrumentationLibraryName = "otelcol/saphana"
-
 // Runs intermittently, fetching info from SAP HANA, creating metrics/datapoints,
 // and feeding them to a metricsConsumer.
 type sapHanaScraper struct {
@@ -53,11 +51,9 @@ func newSapHanaScraper(settings component.TelemetrySettings, cfg *Config, factor
 // Scrape is called periodically, querying SAP HANA and building Metrics to send to
 // the next consumer.
 func (s *sapHanaScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
-	metrics := pdata.NewMetrics()
-
 	client := newSapHanaClient(s.cfg, s.factory)
 	if err := client.Connect(ctx); err != nil {
-		return metrics, err
+		return pdata.NewMetrics(), err
 	}
 
 	defer client.Close()
@@ -65,19 +61,15 @@ func (s *sapHanaScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 	errs := &scrapererror.ScrapeErrors{}
 	now := pdata.NewTimestampFromTime(time.Now())
 
-	ilms := metrics.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
-	ilms.InstrumentationLibrary().SetName(instrumentationLibraryName)
-
 	for _, query := range queries {
 		if query.Enabled == nil || query.Enabled(s.cfg) {
 			if err := query.CollectMetrics(s, ctx, client, now); err != nil {
 				errs.AddPartial(len(query.orderedStats), err)
 			}
-			s.mb.Emit(ilms.Metrics())
 		}
 	}
 
-	return metrics, errs.Combine()
+	return s.mb.Emit(), errs.Combine()
 }
 
 // parseInt converts string to int64.

@@ -47,14 +47,14 @@ func TestScraper(t *testing.T) {
 	actualMetrics, err := sc.Scrape(context.Background())
 	require.NoError(t, err)
 
-	scrapertest.CompareMetrics(expectedMetrics, actualMetrics)
+	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
 }
 
 func TestDisabledMetrics(t *testing.T) {
 	t.Parallel()
 
 	dbWrapper := testDBWrapper{}
-	initializeWrapper(t, &dbWrapper, allQueryMetrics)
+	initializeWrapper(t, &dbWrapper, mostlyDisabledQueryMetrics)
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.Metrics.SaphanaAlertCount.Enabled = false
@@ -106,13 +106,13 @@ func TestDisabledMetrics(t *testing.T) {
 	sc, err := newSapHanaScraper(componenttest.NewNopTelemetrySettings(), cfg, &testConnectionFactory{dbWrapper})
 	require.NoError(t, err)
 
-	expectedMetrics, err := golden.ReadMetrics(fullExpectedMetricsPath)
+	expectedMetrics, err := golden.ReadMetrics(partialExpectedMetricsPath)
 	require.NoError(t, err)
 
 	actualMetrics, err := sc.Scrape(context.Background())
 	require.NoError(t, err)
 
-	scrapertest.CompareMetrics(expectedMetrics, actualMetrics)
+	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
 }
 
 type queryJson struct {

@@ -103,19 +103,55 @@ var queries = []monitoringQuery{
 		},
 	},
 	{
-		query:         "SELECT HOST, SUM(MEMORY_SIZE_IN_MAIN) as main, SUM(MEMORY_SIZE_IN_DELTA) as delta FROM SYS.M_CS_ALL_COLUMNS GROUP BY HOST",
+		query:         "SELECT HOST, SUM(MAIN_MEMORY_SIZE_IN_DATA) AS \"mem_main_data\", SUM(MAIN_MEMORY_SIZE_IN_DICT) AS \"mem_main_dict\", SUM(MAIN_MEMORY_SIZE_IN_INDEX) AS \"mem_main_index\", SUM(MAIN_MEMORY_SIZE_IN_MISC) AS \"mem_main_misc\", SUM(DELTA_MEMORY_SIZE_IN_DATA) AS \"mem_delta_data\", SUM(DELTA_MEMORY_SIZE_IN_DICT) AS \"mem_delta_dict\", SUM(DELTA_MEMORY_SIZE_IN_INDEX) AS \"mem_delta_index\", SUM(DELTA_MEMORY_SIZE_IN_MISC) AS \"mem_delta_misc\" FROM M_CS_ALL_COLUMNS GROUP BY HOST",
 		orderedLabels: []string{"host"},
 		orderedStats: []queryStat{
 			{
-				key: "main",
+				key: "main_data",
 				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaColumnMemoryUsedDataPoint(now, i, row["host"], metadata.AttributeColumnMemoryType.Main)
+					s.mb.RecordSaphanaColumnMemoryUsedDataPoint(now, i, row["host"], metadata.AttributeColumnMemoryType.Main, metadata.AttributeColumnMemorySubtype.Data)
 				},
 			},
 			{
-				key: "delta",
+				key: "main_dict",
 				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
-					s.mb.RecordSaphanaColumnMemoryUsedDataPoint(now, i, row["host"], metadata.AttributeColumnMemoryType.Delta)
+					s.mb.RecordSaphanaColumnMemoryUsedDataPoint(now, i, row["host"], metadata.AttributeColumnMemoryType.Main, metadata.AttributeColumnMemorySubtype.Dict)
+				},
+			},
+			{
+				key: "main_index",
+				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
+					s.mb.RecordSaphanaColumnMemoryUsedDataPoint(now, i, row["host"], metadata.AttributeColumnMemoryType.Main, metadata.AttributeColumnMemorySubtype.Index)
+				},
+			},
+			{
+				key: "main_misc",
+				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
+					s.mb.RecordSaphanaColumnMemoryUsedDataPoint(now, i, row["host"], metadata.AttributeColumnMemoryType.Main, metadata.AttributeColumnMemorySubtype.Misc)
+				},
+			},
+			{
+				key: "delta_data",
+				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
+					s.mb.RecordSaphanaColumnMemoryUsedDataPoint(now, i, row["host"], metadata.AttributeColumnMemoryType.Delta, metadata.AttributeColumnMemorySubtype.Data)
+				},
+			},
+			{
+				key: "delta_dict",
+				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
+					s.mb.RecordSaphanaColumnMemoryUsedDataPoint(now, i, row["host"], metadata.AttributeColumnMemoryType.Delta, metadata.AttributeColumnMemorySubtype.Dict)
+				},
+			},
+			{
+				key: "delta_index",
+				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
+					s.mb.RecordSaphanaColumnMemoryUsedDataPoint(now, i, row["host"], metadata.AttributeColumnMemoryType.Delta, metadata.AttributeColumnMemorySubtype.Index)
+				},
+			},
+			{
+				key: "delta_misc",
+				addIntMetricFunction: func(s *sapHanaScraper, now pdata.Timestamp, i int64, row map[string]string) {
+					s.mb.RecordSaphanaColumnMemoryUsedDataPoint(now, i, row["host"], metadata.AttributeColumnMemoryType.Delta, metadata.AttributeColumnMemorySubtype.Misc)
 				},
 			},
 		},

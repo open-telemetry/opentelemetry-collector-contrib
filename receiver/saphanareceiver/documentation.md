@@ -10,7 +10,7 @@ These are the metrics available for this scraper.
 | ---- | ----------- | ---- | ---- | ---------- |
 | **saphana.alert.count** | Number of current alerts. | {alerts} | Sum(Int) | <ul> <li>alert_rating</li> </ul> |
 | **saphana.backup.latest** | The age of the latest backup by start time. | s | Gauge(Int) | <ul> </ul> |
-| **saphana.column.memory.used** | The memory used in all columns. | By | Sum(Int) | <ul> <li>host</li> <li>column_memory_type</li> </ul> |
+| **saphana.column.memory.used** | The memory used in all columns. | By | Sum(Int) | <ul> <li>host</li> <li>column_memory_type</li> <li>column_memory_subtype</li> </ul> |
 | **saphana.component.memory.used** | The memory used in components. | By | Sum(Int) | <ul> <li>host</li> <li>component</li> </ul> |
 | **saphana.connection.count** | The number of current connections. | {connections} | Sum(Int) | <ul> <li>host</li> <li>connection_status</li> </ul> |
 | **saphana.cpu.used** | Total CPU time spent. | ms | Sum(Int) | <ul> <li>host</li> <li>cpu_type</li> </ul> |
@@ -63,12 +63,13 @@ metrics:
     enabled: <true|false>
 ```
 
-## Attributes
+## Metric attributes
 
 | Name | Description |
 | ---- | ----------- |
 | active_pending_request_state | The state of network request. |
 | alert_rating | The alert rating. |
+| column_memory_subtype | The subtype of column store memory. |
 | column_memory_type | The type of column store memory. |
 | component | The SAP HANA component. |
 | connection_status | The connection status. |
