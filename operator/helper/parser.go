@@ -82,6 +82,10 @@ func (c ParserConfig) Build(logger *zap.SugaredLogger) (ParserOperator, error) {
 		parserOperator.TraceParser = c.TraceParser
 	}
 
+	if c.ScopeNameParser != nil {
+		parserOperator.ScopeNameParser = c.ScopeNameParser
+	}
+
 	return parserOperator, nil
 }
 
@@ -171,9 +175,9 @@ func (p *ParserOperator) ParseWith(ctx context.Context, entry *entry.Entry, pars
 		traceParseErr = p.TraceParser.Parse(entry)
 	}
 
-	var logernameParserErr error
+	var scopeNameParserErr error
 	if p.ScopeNameParser != nil {
-		logernameParserErr = p.ScopeNameParser.Parse(entry)
+		scopeNameParserErr = p.ScopeNameParser.Parse(entry)
 	}
 
 	// Handle time or severity parsing errors after attempting to parse both
@@ -186,8 +190,8 @@ func (p *ParserOperator) ParseWith(ctx context.Context, entry *entry.Entry, pars
 	if traceParseErr != nil {
 		return p.HandleEntryError(ctx, entry, errors.Wrap(traceParseErr, "trace parser"))
 	}
-	if logernameParserErr != nil {
-		return p.HandleEntryError(ctx, entry, errors.Wrap(logernameParserErr, "scope_name parser"))
+	if scopeNameParserErr != nil {
+		return p.HandleEntryError(ctx, entry, errors.Wrap(scopeNameParserErr, "scope_name parser"))
 	}
 	return nil
 }
