@@ -48,10 +48,6 @@ func TestLoadConfig(t *testing.T) {
 			ProcessorSettings:  config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "logs")),
 			SamplingPercentage: 15.3,
 			HashSeed:           22,
-			Severity: []severityPair{
-				{Level: "error", SamplingPercentage: 100},
-				{Level: "warn", SamplingPercentage: 80},
-			},
 		}, p1)
 }
 
@@ -78,19 +74,5 @@ func TestLoadInvalidConfig(t *testing.T) {
 	factories.Processors[typeStr] = factory
 
 	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "invalid.yaml"), factories)
-	require.ErrorContains(t, err, "severity already used: error")
-}
-
-func TestNegativeSamplingRate(t *testing.T) {
-	cfg := createDefaultConfig()
-	cfg.(*Config).SamplingPercentage = -5
-	err := cfg.Validate()
-	require.ErrorContains(t, err, "negative sampling rate: -5.00")
-
-	cfg = createDefaultConfig()
-	cfg.(*Config).Severity = []severityPair{
-		{Level: "error", SamplingPercentage: -4.344},
-	}
-	err = cfg.Validate()
-	require.ErrorContains(t, err, "negative sampling rate: -4.34 [error]")
+	require.ErrorContains(t, err, "negative sampling rate: -15.30")
 }

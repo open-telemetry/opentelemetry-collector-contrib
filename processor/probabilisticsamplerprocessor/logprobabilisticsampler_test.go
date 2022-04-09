@@ -59,18 +59,6 @@ func TestNewLogsProcessor(t *testing.T) {
 				HashSeed:           4321,
 			},
 		},
-		{
-			name:         "with_severity",
-			nextConsumer: consumertest.NewNop(),
-			cfg: &Config{
-				ProcessorSettings:  config.NewProcessorSettings(config.NewComponentID(typeStr)),
-				SamplingPercentage: 13.33,
-				HashSeed:           4321,
-				Severity: []severityPair{
-					{"error", 90},
-				},
-			},
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -97,7 +85,7 @@ func TestLogsSampling(t *testing.T) {
 				ProcessorSettings:  config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				SamplingPercentage: 100,
 			},
-			received: 2,
+			received: 100,
 		},
 		{
 			name: "nothing",
@@ -108,23 +96,62 @@ func TestLogsSampling(t *testing.T) {
 			received: 0,
 		},
 		{
-			name: "half",
+			name: "roughly half",
 			cfg: &Config{
 				ProcessorSettings:  config.NewProcessorSettings(config.NewComponentID(typeStr)),
-				SamplingPercentage: 49,
+				SamplingPercentage: 50,
 			},
-			received: 1,
+			received: 52,
 		},
 		{
-			name: "nothing_except_errors",
+			name: "sampling_source no sampling",
 			cfg: &Config{
 				ProcessorSettings:  config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				SamplingPercentage: 0,
-				Severity: []severityPair{
-					{"error", 100},
-				},
+				TraceIDEnabled:     boolPtr(false),
+				SamplingSource:     "foo",
 			},
-			received: 1,
+			received: 0,
+		},
+		{
+			name: "sampling_source all sampling",
+			cfg: &Config{
+				ProcessorSettings:  config.NewProcessorSettings(config.NewComponentID(typeStr)),
+				SamplingPercentage: 100,
+				TraceIDEnabled:     boolPtr(false),
+				SamplingSource:     "foo",
+			},
+			received: 100,
+		},
+		{
+			name: "sampling_source sampling",
+			cfg: &Config{
+				ProcessorSettings:  config.NewProcessorSettings(config.NewComponentID(typeStr)),
+				SamplingPercentage: 50,
+				TraceIDEnabled:     boolPtr(false),
+				SamplingSource:     "foo",
+			},
+			received: 79,
+		},
+		{
+			name: "sampling_priority",
+			cfg: &Config{
+				ProcessorSettings:  config.NewProcessorSettings(config.NewComponentID(typeStr)),
+				SamplingPercentage: 0,
+				SamplingPriority:   "priority",
+			},
+			received: 25,
+		},
+		{
+			name: "sampling_priority with sampling field",
+			cfg: &Config{
+				ProcessorSettings:  config.NewProcessorSettings(config.NewComponentID(typeStr)),
+				SamplingPercentage: 0,
+				TraceIDEnabled:     boolPtr(false),
+				SamplingSource:     "foo",
+				SamplingPriority:   "priority",
+			},
+			received: 25,
 		},
 	}
 	for _, tt := range tests {
@@ -134,13 +161,21 @@ func TestLogsSampling(t *testing.T) {
 			require.NoError(t, err)
 			logs := pdata.NewLogs()
 			lr := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
-			for i := 0; i < 5; i++ {
-				first := lr.AppendEmpty()
-				first.SetTimestamp(pdata.Timestamp(time.Unix(1649400860, 0).Unix()))
-				first.SetSeverityNumber(pdata.SeverityNumberDEBUG)
-				second := lr.AppendEmpty()
-				second.SetTimestamp(pdata.Timestamp(time.Unix(12345555432, 0).Unix()))
-				second.SetSeverityNumber(pdata.SeverityNumberERROR)
+			for i := 0; i < 100; i++ {
+				record := lr.AppendEmpty()
+				record.SetTimestamp(pdata.Timestamp(time.Unix(1649400860, 0).Unix()))
+				record.SetSeverityNumber(pdata.SeverityNumberDEBUG)
+				ib := byte(i)
+				traceID := [16]byte{0, 0, 0, 0, 0, 0, 0, 0, ib, ib, ib, ib, ib, ib, ib, ib}
+				record.SetTraceID(pdata.NewTraceID(traceID))
+				// set half of records with a foo attribute
+				if i%2 == 0 {
+					record.Attributes().InsertBytes("foo", traceID[:])
+				}
+				// set a fourth of records with a priority attribute
+				if i%4 == 0 {
+					record.Attributes().InsertDouble("priority", 100)
+				}
 			}
 			err = processor.ConsumeLogs(context.Background(), logs)
 			require.NoError(t, err)
@@ -149,7 +184,11 @@ func TestLogsSampling(t *testing.T) {
 			if len(sunk) > 0 && sunk[0].ResourceLogs().Len() > 0 {
 				numReceived = sunk[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len()
 			}
-			assert.Equal(t, tt.received*5, numReceived)
+			assert.Equal(t, tt.received, numReceived)
 		})
 	}
+}
+
+func boolPtr(b bool) *bool {
+	return &b
 }

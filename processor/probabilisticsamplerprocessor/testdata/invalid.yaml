@@ -4,14 +4,8 @@ receivers:
 processors:
 
   probabilistic_sampler/logs:
-    sampling_percentage: 15.3
+    sampling_percentage: -15.3
     hash_seed: 22
-    severity:
-      - sampling_percentage: 100
-        severity_level: error
-        # Duplicate severity level sampling rate!
-      - sampling_percentage: 80
-        severity_level: error
 
 exporters:
   nop:

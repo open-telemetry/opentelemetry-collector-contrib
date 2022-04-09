@@ -18,41 +18,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/model/pdata"
 )
-
-var severityTextToNum = map[string]pdata.SeverityNumber{
-	"default": pdata.SeverityNumberUNDEFINED,
-	"trace":   pdata.SeverityNumberTRACE,
-	"trace2":  pdata.SeverityNumberTRACE2,
-	"trace3":  pdata.SeverityNumberTRACE3,
-	"trace4":  pdata.SeverityNumberTRACE4,
-	"debug":   pdata.SeverityNumberDEBUG,
-	"debug2":  pdata.SeverityNumberDEBUG2,
-	"debug3":  pdata.SeverityNumberDEBUG3,
-	"debug4":  pdata.SeverityNumberDEBUG4,
-	"info":    pdata.SeverityNumberINFO,
-	"info2":   pdata.SeverityNumberINFO2,
-	"info3":   pdata.SeverityNumberINFO3,
-	"info4":   pdata.SeverityNumberINFO4,
-	"warn":    pdata.SeverityNumberWARN,
-	"warn2":   pdata.SeverityNumberWARN2,
-	"warn3":   pdata.SeverityNumberWARN3,
-	"warn4":   pdata.SeverityNumberWARN4,
-	"error":   pdata.SeverityNumberERROR,
-	"error2":  pdata.SeverityNumberERROR2,
-	"error3":  pdata.SeverityNumberERROR3,
-	"error4":  pdata.SeverityNumberERROR4,
-	"fatal":   pdata.SeverityNumberFATAL,
-	"fatal2":  pdata.SeverityNumberFATAL2,
-	"fatal3":  pdata.SeverityNumberFATAL3,
-	"fatal4":  pdata.SeverityNumberFATAL4,
-}
-
-type severityPair struct {
-	Level              string  `mapstructure:"severity_level"`
-	SamplingPercentage float32 `mapstructure:"sampling_percentage"`
-}
 
 // Config has the configuration guiding the sampler processor.
 type Config struct {
@@ -67,9 +33,15 @@ type Config struct {
 	// different sampling rates, configuring different seeds avoids that.
 	HashSeed uint32 `mapstructure:"hash_seed"`
 
-	// Severity is an array of severity and sampling percentage pairs allocating a specific sampling percentage
-	// to a given severity level.
-	Severity []severityPair `mapstructure:"severity"`
+	// TraceIDEnabled (logs only) allows to choose to use to sample by trace id or by a specific log record attribute.
+	// By default, this option is true.
+	TraceIDEnabled *bool `mapstructure:"trace_id_sampling"`
+	// SamplingSource (logs only) allows to use a log record attribute designed by the `sampling_source` key
+	// to be used to compute the sampling hash of the log record instead of trace id, if trace id is absent or trace id sampling is disabled.
+	SamplingSource string `mapstructure:"sampling_source"`
+	// SamplingPriority (logs only) allows to use a log record attribute designed by the `sampling_priority` key
+	// to be used as the sampling priority of the log record.
+	SamplingPriority string `mapstructure:"sampling_priority"`
 }
 
 var _ config.Processor = (*Config)(nil)
@@ -78,19 +50,6 @@ var _ config.Processor = (*Config)(nil)
 func (cfg *Config) Validate() error {
 	if cfg.SamplingPercentage < 0 {
 		return fmt.Errorf("negative sampling rate: %.2f", cfg.SamplingPercentage)
-	}
-	keys := map[string]bool{}
-	for _, pair := range cfg.Severity {
-		if _, ok := severityTextToNum[pair.Level]; !ok {
-			return fmt.Errorf("unrecognized severity level: %s", pair.Level)
-		}
-		if pair.SamplingPercentage < 0 {
-			return fmt.Errorf("negative sampling rate: %.2f [%s]", pair.SamplingPercentage, pair.Level)
-		}
-		if keys[pair.Level] {
-			return fmt.Errorf("severity already used: %s", pair.Level)
-		}
-		keys[pair.Level] = true
 	}
 	return nil
 }

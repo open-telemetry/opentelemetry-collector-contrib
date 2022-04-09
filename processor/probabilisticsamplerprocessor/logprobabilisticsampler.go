@@ -16,7 +16,6 @@ package probabilisticsamplerprocessor // import "github.com/open-telemetry/opent
 
 import (
 	"context"
-	"sort"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -24,36 +23,24 @@ import (
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
-type severitySamplingRate struct {
-	level              pdata.SeverityNumber
-	scaledSamplingRate uint32
-}
-
 type logsamplerprocessor struct {
-	samplingRates []*severitySamplingRate
-	hashSeed      uint32
+	scaledSamplingRate uint32
+	hashSeed           uint32
+	traceIdEnabled     bool
+	samplingSource     string
+	samplingPriority   string
 }
 
 // newLogsProcessor returns a processor.LogsProcessor that will perform head sampling according to the given
 // configuration.
 func newLogsProcessor(nextConsumer consumer.Logs, cfg *Config) (component.LogsProcessor, error) {
 
-	severitySamplingRates := []*severitySamplingRate{
-		{level: pdata.SeverityNumberUNDEFINED, scaledSamplingRate: uint32(cfg.SamplingPercentage * percentageScaleFactor)},
-	}
-	sort.SliceStable(cfg.Severity, func(i, j int) bool {
-		return severityTextToNum[cfg.Severity[i].Level] < severityTextToNum[cfg.Severity[j].Level]
-	})
-	for _, pair := range cfg.Severity {
-		newRate := &severitySamplingRate{level: severityTextToNum[pair.Level],
-			scaledSamplingRate: uint32(pair.SamplingPercentage * percentageScaleFactor),
-		}
-		severitySamplingRates = append(severitySamplingRates, newRate)
-	}
-
 	lsp := &logsamplerprocessor{
-		samplingRates: severitySamplingRates,
-		hashSeed:      cfg.HashSeed,
+		scaledSamplingRate: uint32(cfg.SamplingPercentage * percentageScaleFactor),
+		hashSeed:           cfg.HashSeed,
+		traceIdEnabled:     cfg.TraceIDEnabled == nil || *cfg.TraceIDEnabled,
+		samplingPriority:   cfg.SamplingPriority,
+		samplingSource:     cfg.SamplingSource,
 	}
 
 	return processorhelper.NewLogsProcessor(
@@ -68,18 +55,25 @@ func (lsp *logsamplerprocessor) processLogs(_ context.Context, ld pdata.Logs) (p
 		rl.ScopeLogs().RemoveIf(func(ill pdata.ScopeLogs) bool {
 			ill.LogRecords().RemoveIf(func(l pdata.LogRecord) bool {
 
-				// find the correct severity sampling level.
-				var selectedSamplingRate *severitySamplingRate
-				for _, ssr := range lsp.samplingRates {
-					if ssr.level > l.SeverityNumber() {
-						break
+				// pick the sampling source.
+				var lidBytes []byte
+				if lsp.traceIdEnabled && !l.TraceID().IsEmpty() {
+					value := l.TraceID().Bytes()
+					lidBytes = value[:]
+				}
+				if lidBytes == nil && lsp.samplingSource != "" {
+					if value, ok := l.Attributes().Get(lsp.samplingSource); ok {
+						lidBytes = value.BytesVal()
 					}
-					selectedSamplingRate = ssr
+				}
+				priority := lsp.scaledSamplingRate
+				if lsp.samplingPriority != "" {
+					if localPriority, ok := l.Attributes().Get(lsp.samplingPriority); ok {
+						priority = uint32(localPriority.DoubleVal() * percentageScaleFactor)
+					}
 				}
 
-				// Create an id for the log record by combining the timestamp and severity text.
-				lidBytes := []byte(l.Timestamp().String() + l.SeverityText())
-				sampled := hash(lidBytes[:], lsp.hashSeed)&bitMaskHashBuckets < selectedSamplingRate.scaledSamplingRate
+				sampled := hash(lidBytes, lsp.hashSeed)&bitMaskHashBuckets < priority
 				return !sampled
 			})
 			// Filter out empty ScopeLogs

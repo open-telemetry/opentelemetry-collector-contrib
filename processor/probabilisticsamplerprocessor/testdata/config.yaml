@@ -38,16 +38,12 @@ processors:
     # seeds at different layers ensures that sampling rate in each layer work as
     # intended.
     hash_seed: 22
-    # Severity filters override the default sampling_percentage sampling rate.
-    severity:
-      # Override the default sampling_percentage for all log records of severity of error or higher
-      # to keep all logs.
-      - sampling_percentage: 100
-        severity_level: error
-        # Override the default sampling_percentage for all log records of severity of warn or higher
-        # to keep 80% of logs. Note this doesn't override the error logs sampling rate.
-      - sampling_percentage: 80
-        severity_level: warn
+    # sampling_source allows to use a log record attribute after the `foo` key
+    # to be used to compute the sampling hash of the log record instead of trace id, if trace id is absent or trace id sampling is disabled.
+    sampling_source: "foo"
+    # sampling_priority allows to use a log record attribute designed by the `bar` key
+    # to be used as the sampling priority of the log record.
+    sampling_priority: "bar"
 
 exporters:
   nop:
