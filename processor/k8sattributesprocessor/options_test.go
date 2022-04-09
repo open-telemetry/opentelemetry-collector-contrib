@@ -330,7 +330,7 @@ func TestWithExtractLabels(t *testing.T) {
 			},
 			[]kube.FieldExtractionRule{
 				{
-					Name:      "prefix.tag1",
+					Name:      "tag1",
 					KeyPrefix: "k8s.namespace.labels.",
 					KeyRegex:  regexp.MustCompile("key*"),
 					From:      kube.MetadataFromNamespace,
@@ -350,7 +350,7 @@ func TestWithExtractLabels(t *testing.T) {
 			},
 			[]kube.FieldExtractionRule{
 				{
-					Name:      "prefix.tag1",
+					Name:      "tag1",
 					KeyPrefix: "prefix.",
 					Key:       "key1",
 					From:      kube.MetadataFromNamespace,
