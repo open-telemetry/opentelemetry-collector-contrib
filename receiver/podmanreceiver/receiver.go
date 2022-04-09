@@ -32,7 +32,7 @@ type receiver struct {
 	config        *Config
 	set           component.ReceiverCreateSettings
 	clientFactory clientFactory
-	client        client
+	scraper       *ContainerScraper
 }
 
 func newReceiver(
@@ -48,13 +48,13 @@ func newReceiver(
 	}
 
 	if clientFactory == nil {
-		clientFactory = newPodmanClient
+		clientFactory = newLibpodClient
 	}
 
 	recv := &receiver{
 		config:        config,
-		clientFactory: clientFactory,
 		set:           set,
+		clientFactory: clientFactory,
 	}
 
 	scrp, err := scraperhelper.NewScraper(typeStr, recv.scrape, scraperhelper.WithStart(recv.start))
@@ -64,18 +64,23 @@ func newReceiver(
 	return scraperhelper.NewScraperControllerReceiver(&recv.config.ScraperControllerSettings, set, nextConsumer, scraperhelper.AddScraper(scrp))
 }
 
-func (r *receiver) start(context.Context, component.Host) error {
-	c, err := r.clientFactory(r.set.Logger, r.config)
-	if err == nil {
-		r.client = c
+func (r *receiver) start(ctx context.Context, _ component.Host) error {
+	var err error
+	podmanClient, err := r.clientFactory(r.set.Logger, r.config)
+	if err != nil {
+		return err
 	}
-	return err
+
+	r.scraper = NewContainerScraper(podmanClient, r.set.Logger, r.config)
+	if err = r.scraper.LoadContainerList(ctx); err != nil {
+		return err
+	}
+	go r.scraper.ContainerEventLoop(ctx)
+	return nil
 }
 
 func (r *receiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
-	var err error
-
-	stats, err := r.client.stats(ctx)
+	stats, err := r.scraper.FetchContainerStats(ctx)
 	if err != nil {
 		r.set.Logger.Error("error fetching stats", zap.Error(err))
 		return pmetric.Metrics{}, err

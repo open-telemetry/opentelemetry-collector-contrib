@@ -20,6 +20,7 @@ package podmanreceiver
 import (
 	"context"
 	"errors"
+	"net/url"
 	"testing"
 	"time"
 
@@ -67,8 +68,8 @@ func TestScraperLoop(t *testing.T) {
 	consumer := make(mockConsumer)
 
 	r, err := newReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, consumer, client.factory)
-	assert.NotNil(t, r)
 	require.NoError(t, err)
+	assert.NotNil(t, r)
 
 	go func() {
 		client <- containerStatsReport{
@@ -89,11 +90,11 @@ func TestScraperLoop(t *testing.T) {
 
 type mockClient chan containerStatsReport
 
-func (c mockClient) factory(logger *zap.Logger, cfg *Config) (client, error) {
+func (c mockClient) factory(logger *zap.Logger, cfg *Config) (PodmanClient, error) {
 	return c, nil
 }
 
-func (c mockClient) stats(context.Context) ([]containerStats, error) {
+func (c mockClient) stats(context.Context, url.Values) ([]containerStats, error) {
 	report := <-c
 	if report.Error != "" {
 		return nil, errors.New(report.Error)
@@ -106,6 +107,14 @@ func (c mockClient) ping(context.Context) error {
 }
 
 type mockConsumer chan pmetric.Metrics
+
+func (c mockClient) list(context.Context, url.Values) ([]Container, error) {
+	return []Container{Container{Id: "c1"}}, nil
+}
+
+func (c mockClient) events(context.Context, url.Values) (<-chan Event, <-chan error) {
+	return nil, nil
+}
 
 func (m mockConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{}

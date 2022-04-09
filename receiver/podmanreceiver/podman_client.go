@@ -22,70 +22,41 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"time"
 
 	"go.uber.org/zap"
 )
 
-type containerStats struct {
-	AvgCPU        float64
-	ContainerID   string
-	Name          string
-	PerCPU        []uint64
-	CPU           float64
-	CPUNano       uint64
-	CPUSystemNano uint64
-	DataPoints    int64
-	SystemNano    uint64
-	MemUsage      uint64
-	MemLimit      uint64
-	MemPerc       float64
-	NetInput      uint64
-	NetOutput     uint64
-	BlockInput    uint64
-	BlockOutput   uint64
-	PIDs          uint64
-	UpTime        time.Duration
-	Duration      uint64
-}
+type clientFactory func(logger *zap.Logger, cfg *Config) (PodmanClient, error)
 
-type containerStatsReport struct {
-	Error string
-	Stats []containerStats
-}
-
-type clientFactory func(logger *zap.Logger, cfg *Config) (client, error)
-
-type client interface {
+type PodmanClient interface {
 	ping(context.Context) error
-	stats(context.Context) ([]containerStats, error)
+	stats(context.Context, url.Values) ([]containerStats, error)
+	list(context.Context, url.Values) ([]Container, error)
+	events(context.Context, url.Values) (<-chan Event, <-chan error)
 }
 
-type podmanClient struct {
+type libpodClient struct {
 	conn     *http.Client
 	endpoint string
-
-	// The maximum amount of time to wait for Podman API responses
-	timeout time.Duration
 }
 
-func newPodmanClient(logger *zap.Logger, cfg *Config) (client, error) {
+func newLibpodClient(logger *zap.Logger, cfg *Config) (PodmanClient, error) {
 	connection, err := newPodmanConnection(logger, cfg.Endpoint, cfg.SSHKey, cfg.SSHPassphrase)
 	if err != nil {
 		return nil, err
 	}
-	c := &podmanClient{
+	c := &libpodClient{
 		conn:     connection,
 		endpoint: fmt.Sprintf("http://d/v%s/libpod", cfg.APIVersion),
-		timeout:  cfg.Timeout,
 	}
 	return c, nil
 }
 
-func (c *podmanClient) request(ctx context.Context, path string, params url.Values) (*http.Response, error) {
+func (c *libpodClient) request(ctx context.Context, path string, params url.Values) (*http.Response, error) {
 	req, err := http.NewRequestWithContext(ctx, "GET", c.endpoint+path, nil)
 	if err != nil {
 		return nil, err
@@ -97,13 +68,8 @@ func (c *podmanClient) request(ctx context.Context, path string, params url.Valu
 	return c.conn.Do(req)
 }
 
-func (c *podmanClient) stats(ctx context.Context) ([]containerStats, error) {
-	params := url.Values{}
-	params.Add("stream", "false")
-
-	statsCtx, cancel := context.WithTimeout(ctx, c.timeout)
-	defer cancel()
-	resp, err := c.request(statsCtx, "/containers/stats", params)
+func (c *libpodClient) stats(ctx context.Context, options url.Values) ([]containerStats, error) {
+	resp, err := c.request(ctx, "/containers/stats", options)
 	if err != nil {
 		return nil, err
 	}
@@ -125,10 +91,28 @@ func (c *podmanClient) stats(ctx context.Context) ([]containerStats, error) {
 	return report.Stats, nil
 }
 
-func (c *podmanClient) ping(ctx context.Context) error {
-	pingCtx, cancel := context.WithTimeout(ctx, c.timeout)
-	defer cancel()
-	resp, err := c.request(pingCtx, "/_ping", nil)
+func (c *libpodClient) list(ctx context.Context, options url.Values) ([]Container, error) {
+	resp, err := c.request(ctx, "/containers/json", options)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	bytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var report []Container
+	err = json.Unmarshal(bytes, &report)
+	if err != nil {
+		return nil, err
+	}
+	return report, nil
+}
+
+func (c *libpodClient) ping(ctx context.Context) error {
+	resp, err := c.request(ctx, "/_ping", nil)
 	if err != nil {
 		return err
 	}
@@ -137,4 +121,34 @@ func (c *podmanClient) ping(ctx context.Context) error {
 		return fmt.Errorf("ping response was %d", resp.StatusCode)
 	}
 	return nil
+}
+
+func (c *libpodClient) events(ctx context.Context, options url.Values) (<-chan Event, <-chan error) {
+	events := make(chan Event)
+	errs := make(chan error)
+	go func() {
+		resp, err := c.request(ctx, "/events", options)
+		if err != nil {
+			errs <- err
+		}
+		dec := json.NewDecoder(resp.Body)
+		for {
+			var e Event
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				err := dec.Decode(&e)
+				if err != nil {
+					if err == io.EOF {
+						continue
+					}
+					errs <- err
+				} else {
+					events <- e
+				}
+			}
+		}
+	}()
+	return events, errs
 }

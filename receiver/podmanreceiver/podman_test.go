@@ -54,18 +54,20 @@ func TestWatchingTimeouts(t *testing.T) {
 		Timeout:  50 * time.Millisecond,
 	}
 
-	cli, err := newPodmanClient(zap.NewNop(), config)
-	assert.NotNil(t, cli)
+	client, err := newLibpodClient(zap.NewNop(), config)
 	assert.Nil(t, err)
+
+	cli := NewContainerScraper(client, zap.NewNop(), config)
+	assert.NotNil(t, cli)
 
 	expectedError := "context deadline exceeded"
 
 	shouldHaveTaken := time.Now().Add(100 * time.Millisecond).UnixNano()
 
-	err = cli.ping(context.Background())
+	err = cli.LoadContainerList(context.Background())
 	require.Error(t, err)
 
-	containers, err := cli.stats(context.Background())
+	containers, err := cli.FetchContainerStats(context.Background())
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), expectedError)
 	assert.Nil(t, containers)
