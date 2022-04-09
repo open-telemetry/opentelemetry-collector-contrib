@@ -24,9 +24,20 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/service/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
+
+// setSanitizeLabelFeatureGateForTest changes the dropSanitizationGate feature gate during a test.
+// usage: defer setSanitizeLabelFeatureGateForTest(true)()
+func setSanitizeLabelFeatureGateForTest(enabled bool) func() {
+	originalValue := featuregate.IsEnabled(dropSanitization)
+	featuregate.Apply(map[string]bool{dropSanitization: enabled})
+	return func() {
+		featuregate.Apply(map[string]bool{dropSanitization: originalValue})
+	}
+}
 
 // Test_validateMetrics checks validateMetrics return true if a type and temporality combination is valid, false
 // otherwise.
@@ -187,7 +198,6 @@ func Test_createLabelSet(t *testing.T) {
 		resource       pdata.Resource
 		orig           pdata.Map
 		externalLabels map[string]string
-		sanitizeLabel  bool
 		extras         []string
 		want           []prompb.Label
 	}{
@@ -196,7 +206,6 @@ func Test_createLabelSet(t *testing.T) {
 			getResource(map[string]pdata.Value{}),
 			lbs1,
 			map[string]string{},
-			true,
 			[]string{label31, value31, label32, value32},
 			getPromLabels(label11, value11, label12, value12, label31, value31, label32, value32),
 		},
@@ -208,7 +217,6 @@ func Test_createLabelSet(t *testing.T) {
 			}),
 			lbs1,
 			map[string]string{},
-			true,
 			[]string{label31, value31, label32, value32},
 			getPromLabels(label11, value11, label12, value12, label31, value31, label32, value32, "job", "prometheus", "instance", "127.0.0.1:8080"),
 		},
@@ -220,7 +228,6 @@ func Test_createLabelSet(t *testing.T) {
 			}),
 			lbs1,
 			map[string]string{},
-			true,
 			[]string{label31, value31, label32, value32},
 			getPromLabels(label11, value11, label12, value12, label31, value31, label32, value32, "job", "12345", "instance", "true"),
 		},
@@ -229,7 +236,6 @@ func Test_createLabelSet(t *testing.T) {
 			getResource(map[string]pdata.Value{}),
 			lbs1,
 			map[string]string{},
-			true,
 			[]string{label11, value31},
 			getPromLabels(label11, value31, label12, value12),
 		},
@@ -238,7 +244,6 @@ func Test_createLabelSet(t *testing.T) {
 			getResource(map[string]pdata.Value{}),
 			lbs1Dirty,
 			map[string]string{},
-			true,
 			[]string{label31 + dirty1, value31, label32, value32},
 			getPromLabels(label11+"_", value11, "key_"+label12, value12, label31+"_", value31, label32, value32),
 		},
@@ -247,7 +252,6 @@ func Test_createLabelSet(t *testing.T) {
 			getResource(map[string]pdata.Value{}),
 			pdata.NewMap(),
 			nil,
-			true,
 			[]string{label31, value31, label32, value32},
 			getPromLabels(label31, value31, label32, value32),
 		},
@@ -256,7 +260,6 @@ func Test_createLabelSet(t *testing.T) {
 			getResource(map[string]pdata.Value{}),
 			lbs1,
 			map[string]string{},
-			true,
 			[]string{"", ""},
 			getPromLabels(label11, value11, label12, value12, "", ""),
 		},
@@ -265,7 +268,6 @@ func Test_createLabelSet(t *testing.T) {
 			getResource(map[string]pdata.Value{}),
 			lbs1,
 			map[string]string{},
-			true,
 			[]string{label31, value31, label32},
 			getPromLabels(label11, value11, label12, value12, label31, value31),
 		},
@@ -274,7 +276,6 @@ func Test_createLabelSet(t *testing.T) {
 			getResource(map[string]pdata.Value{}),
 			lbs1,
 			exlbs1,
-			true,
 			[]string{label31, value31, label32, value32},
 			getPromLabels(label11, value11, label12, value12, label41, value41, label31, value31, label32, value32),
 		},
@@ -283,42 +284,57 @@ func Test_createLabelSet(t *testing.T) {
 			getResource(map[string]pdata.Value{}),
 			lbs1,
 			exlbs2,
-			true,
 			[]string{label31, value31, label32, value32},
 			getPromLabels(label11, value11, label12, value12, label31, value31, label32, value32),
-		},
-		{
-			"sanitize_labels_starts_with_underscore",
-			getResource(map[string]pdata.Value{}),
-			lbs3,
-			exlbs1,
-			true,
-			[]string{label31, value31, label32, value32},
-			getPromLabels(label11, value11, label12, value12, keyStr+label51, value51, label41, value41, label31, value31, label32, value32),
-		},
-		{
-			"donot_sanitize_labels_starts_with_underscore",
-			getResource(map[string]pdata.Value{}),
-			lbs3,
-			exlbs1,
-			false,
-			[]string{label31, value31, label32, value32},
-			getPromLabels(label11, value11, label12, value12, label51, value51, label41, value41, label31, value31, label32, value32),
 		},
 		{
 			"colliding attributes",
 			getResource(map[string]pdata.Value{}),
 			lbsColliding,
 			nil,
-			true,
 			[]string{label31, value31, label32, value32},
 			getPromLabels(collidingSanitized, value11+";"+value12, label31, value31, label32, value32),
+		},
+		{
+			"sanitize_labels_starts_with_underscore",
+			getResource(map[string]pdata.Value{}),
+			lbs3,
+			exlbs1,
+			[]string{label31, value31, label32, value32},
+			getPromLabels(label11, value11, label12, value12, keyStr+label51, value51, label41, value41, label31, value31, label32, value32),
 		},
 	}
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.ElementsMatch(t, tt.want, createAttributes(tt.resource, tt.orig, tt.externalLabels, tt.sanitizeLabel, tt.extras...))
+			assert.ElementsMatch(t, tt.want, createAttributes(tt.resource, tt.orig, tt.externalLabels, tt.extras...))
+		})
+	}
+}
+
+func Test_createLabelSetDropSanitization(t *testing.T) {
+	defer setSanitizeLabelFeatureGateForTest(true)()
+	tests := []struct {
+		name           string
+		resource       pdata.Resource
+		orig           pdata.Map
+		externalLabels map[string]string
+		extras         []string
+		want           []prompb.Label
+	}{
+		{
+			"donot_sanitize_labels_starts_with_underscore",
+			getResource(map[string]pdata.Value{}),
+			lbs3,
+			exlbs1,
+			[]string{label31, value31, label32, value32},
+			getPromLabels(label11, value11, label12, value12, label51, value51, label41, value41, label31, value31, label32, value32),
+		},
+	}
+	// run tests
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.ElementsMatch(t, tt.want, createAttributes(tt.resource, tt.orig, tt.externalLabels, tt.extras...))
 		})
 	}
 }

@@ -49,7 +49,6 @@
 - `prometheusreceiver`: Fix issues with relabelling the `job` and `instance` labels. (#8780)
 
 ## v0.48.0
->>>>>>> origin/main
 
 ### 💡 Enhancements 💡
 

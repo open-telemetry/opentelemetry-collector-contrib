@@ -31,9 +31,12 @@ import (
 	"github.com/prometheus/prometheus/prompb"
 	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/service/featuregate"
 )
 
 const (
+	dropSanitization = "pkg.translator.prometheusremotewrite.PermissiveLabelSanitization"
+
 	nameStr     = "__name__"
 	sumStr      = "_sum"
 	countStr    = "_count"
@@ -53,6 +56,16 @@ const (
 	infoType         = "info"
 	targetMetricName = "target"
 )
+
+var dropSanitizationGate = featuregate.Gate{
+	ID:          dropSanitization,
+	Enabled:     false,
+	Description: "Controls whether to change labels starting with '_' to 'key_'",
+}
+
+func init() {
+	featuregate.Register(dropSanitizationGate)
+}
 
 type bucketBoundsData struct {
 	sig   string
@@ -158,19 +171,20 @@ func timeSeriesSignature(datatype string, labels *[]prompb.Label) string {
 // createAttributes creates a slice of Cortex Label with OTLP attributes and pairs of string values.
 // Unpaired string value is ignored. String pairs overwrites OTLP labels if collision happens, and the overwrite is
 // logged. Resultant label names are sanitized.
-func createAttributes(resource pdata.Resource, attributes pdata.AttributeMap, externalLabels map[string]string, sanitizeLabel bool, extras ...string) []prompb.Label {
+func createAttributes(resource pdata.Resource, attributes pdata.Map, externalLabels map[string]string, extras ...string) []prompb.Label {
 	// map ensures no duplicate label name
 	l := map[string]prompb.Label{}
 
 	// Ensure attributes are sorted by key for consistent merging of keys which
 	// collide when sanitized.
+	DropSanitization := featuregate.IsEnabled(dropSanitizationGate.ID)
 	attributes.Sort()
 	attributes.Range(func(key string, value pdata.Value) bool {
 		var finalKey string
-		if sanitizeLabel {
-			finalKey = sanitize(key)
-		} else {
+		if DropSanitization {
 			finalKey = sanitizeLabels(key)
+		} else {
+			finalKey = sanitize(key)
 		}
 		if existingLabel, alreadyExists := l[finalKey]; alreadyExists {
 			existingLabel.Value = existingLabel.Value + ";" + value.AsString()
@@ -273,7 +287,7 @@ func validateMetrics(metric pdata.Metric) bool {
 func addSingleNumberDataPoint(pt pdata.NumberDataPoint, resource pdata.Resource, metric pdata.Metric, settings Settings, tsMap map[string]*prompb.TimeSeries) {
 	// create parameters for addSample
 	name := getPromMetricName(metric, settings.Namespace)
-	labels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, settings.SanitizeLabel, nameStr, name)
+	labels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nameStr, name)
 	sample := &prompb.Sample{
 		// convert ns to ms
 		Timestamp: convertTimeStamp(pt.Timestamp()),
@@ -305,7 +319,7 @@ func addSingleHistogramDataPoint(pt pdata.HistogramDataPoint, resource pdata.Res
 		sum.Value = math.Float64frombits(value.StaleNaN)
 	}
 
-	sumlabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, settings.SanitizeLabel, nameStr, baseName+sumStr)
+	sumlabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nameStr, baseName+sumStr)
 	addSample(tsMap, sum, sumlabels, metric.DataType().String())
 
 	// treat count as a sample in an individual TimeSeries
@@ -317,7 +331,7 @@ func addSingleHistogramDataPoint(pt pdata.HistogramDataPoint, resource pdata.Res
 		count.Value = math.Float64frombits(value.StaleNaN)
 	}
 
-	countlabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, settings.SanitizeLabel, nameStr, baseName+countStr)
+	countlabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nameStr, baseName+countStr)
 	addSample(tsMap, count, countlabels, metric.DataType().String())
 
 	// cumulative count for conversion to cumulative histogram
@@ -341,7 +355,7 @@ func addSingleHistogramDataPoint(pt pdata.HistogramDataPoint, resource pdata.Res
 			bucket.Value = math.Float64frombits(value.StaleNaN)
 		}
 		boundStr := strconv.FormatFloat(bound, 'f', -1, 64)
-		labels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, settings.SanitizeLabel, nameStr, baseName+bucketStr, leStr, boundStr)
+		labels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nameStr, baseName+bucketStr, leStr, boundStr)
 		sig := addSample(tsMap, bucket, labels, metric.DataType().String())
 
 		bucketBounds = append(bucketBounds, bucketBoundsData{sig: sig, bound: bound})
@@ -356,7 +370,7 @@ func addSingleHistogramDataPoint(pt pdata.HistogramDataPoint, resource pdata.Res
 		cumulativeCount += pt.BucketCounts()[len(pt.BucketCounts())-1]
 		infBucket.Value = float64(cumulativeCount)
 	}
-	infLabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, settings.SanitizeLabel, nameStr, baseName+bucketStr, leStr, pInfStr)
+	infLabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nameStr, baseName+bucketStr, leStr, pInfStr)
 	sig := addSample(tsMap, infBucket, infLabels, metric.DataType().String())
 
 	bucketBounds = append(bucketBounds, bucketBoundsData{sig: sig, bound: math.Inf(1)})
@@ -468,7 +482,7 @@ func addSingleSummaryDataPoint(pt pdata.SummaryDataPoint, resource pdata.Resourc
 	if pt.Flags().HasFlag(pdata.MetricDataPointFlagNoRecordedValue) {
 		sum.Value = math.Float64frombits(value.StaleNaN)
 	}
-	sumlabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, settings.SanitizeLabel, nameStr, baseName+sumStr)
+	sumlabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nameStr, baseName+sumStr)
 	addSample(tsMap, sum, sumlabels, metric.DataType().String())
 
 	// treat count as a sample in an individual TimeSeries
@@ -479,7 +493,7 @@ func addSingleSummaryDataPoint(pt pdata.SummaryDataPoint, resource pdata.Resourc
 	if pt.Flags().HasFlag(pdata.MetricDataPointFlagNoRecordedValue) {
 		count.Value = math.Float64frombits(value.StaleNaN)
 	}
-	countlabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, settings.SanitizeLabel, nameStr, baseName+countStr)
+	countlabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nameStr, baseName+countStr)
 	addSample(tsMap, count, countlabels, metric.DataType().String())
 
 	// process each percentile/quantile
@@ -493,13 +507,13 @@ func addSingleSummaryDataPoint(pt pdata.SummaryDataPoint, resource pdata.Resourc
 			quantile.Value = math.Float64frombits(value.StaleNaN)
 		}
 		percentileStr := strconv.FormatFloat(qt.Quantile(), 'f', -1, 64)
-		qtlabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, settings.SanitizeLabel, nameStr, baseName, quantileStr, percentileStr)
+		qtlabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nameStr, baseName, quantileStr, percentileStr)
 		addSample(tsMap, quantile, qtlabels, metric.DataType().String())
 	}
 }
 
 // addResourceTargetInfo converts the resource to the target info metric
-func addResourceTargetInfo(resource pdata.Resource, settings Settings, timestamp pdata.Timestamp, tsMap map[string]*prompb.TimeSeries, sanitizeLabel bool) {
+func addResourceTargetInfo(resource pdata.Resource, settings Settings, timestamp pdata.Timestamp, tsMap map[string]*prompb.TimeSeries) {
 	if resource.Attributes().Len() == 0 {
 		return
 	}
@@ -521,7 +535,7 @@ func addResourceTargetInfo(resource pdata.Resource, settings Settings, timestamp
 			return false
 		}
 	})
-	labels := createAttributes(resource, attributes, settings.ExternalLabels, sanitizeLabel, nameStr, name)
+	labels := createAttributes(resource, attributes, settings.ExternalLabels, nameStr, name)
 	sample := &prompb.Sample{
 		Value: float64(1),
 		// convert ns to ms
