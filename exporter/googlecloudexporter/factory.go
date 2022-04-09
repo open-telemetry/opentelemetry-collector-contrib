@@ -42,14 +42,6 @@ func init() {
 
 // NewFactory creates a factory for the googlecloud exporter
 func NewFactory() component.ExporterFactory {
-	if !featuregate.IsEnabled(pdataExporterFeatureGate) {
-		return component.NewExporterFactory(
-			typeStr,
-			createLegacyDefaultConfig,
-			component.WithTracesExporter(createLegacyTracesExporter),
-			component.WithMetricsExporter(createLegacyMetricsExporter),
-		)
-	}
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
@@ -60,6 +52,15 @@ func NewFactory() component.ExporterFactory {
 
 // createDefaultConfig creates the default configuration for exporter.
 func createDefaultConfig() config.Exporter {
+	if !featuregate.IsEnabled(pdataExporterFeatureGate) {
+		return &LegacyConfig{
+			ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+			TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: defaultTimeout},
+			RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
+			QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
+			UserAgent:        "opentelemetry-collector-contrib {{version}}",
+		}
+	}
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: defaultTimeout},
@@ -69,22 +70,17 @@ func createDefaultConfig() config.Exporter {
 	}
 }
 
-func createLegacyDefaultConfig() config.Exporter {
-	return &LegacyConfig{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: defaultTimeout},
-		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
-		UserAgent:        "opentelemetry-collector-contrib {{version}}",
-	}
-}
-
 // createTracesExporter creates a trace exporter based on this config.
 func createTracesExporter(
 	ctx context.Context,
 	params component.ExporterCreateSettings,
 	cfg config.Exporter) (component.TracesExporter, error) {
-	eCfg := cfg.(*Config)
+	var eCfg *Config
+	if !featuregate.IsEnabled(pdataExporterFeatureGate) {
+		eCfg = toNewConfig(cfg.(*LegacyConfig))
+	} else {
+		eCfg = cfg.(*Config)
+	}
 	tExp, err := collector.NewGoogleCloudTracesExporter(ctx, eCfg.Config, params.BuildInfo.Version, eCfg.Timeout)
 	if err != nil {
 		return nil, err
@@ -101,20 +97,15 @@ func createTracesExporter(
 		exporterhelper.WithRetry(eCfg.RetrySettings))
 }
 
-// createLegacyTracesExporter creates a trace exporter based on this config.
-func createLegacyTracesExporter(
-	ctx context.Context,
-	params component.ExporterCreateSettings,
-	cfg config.Exporter) (component.TracesExporter, error) {
-	eCfg := cfg.(*LegacyConfig)
-	return createTracesExporter(ctx, params, toNewConfig(eCfg))
-}
-
 // createMetricsExporter creates a metrics exporter based on this config.
 func createMetricsExporter(
 	ctx context.Context,
 	params component.ExporterCreateSettings,
 	cfg config.Exporter) (component.MetricsExporter, error) {
+	if !featuregate.IsEnabled(pdataExporterFeatureGate) {
+		eCfg := cfg.(*LegacyConfig)
+		return newLegacyGoogleCloudMetricsExporter(eCfg, params)
+	}
 	eCfg := cfg.(*Config)
 	mExp, err := collector.NewGoogleCloudMetricsExporter(ctx, eCfg.Config, params.TelemetrySettings.Logger, params.BuildInfo.Version, eCfg.Timeout)
 	if err != nil {
@@ -130,13 +121,4 @@ func createMetricsExporter(
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithQueue(eCfg.QueueSettings),
 		exporterhelper.WithRetry(eCfg.RetrySettings))
-}
-
-// createLegacyMetricsExporter creates a metrics exporter based on this config.
-func createLegacyMetricsExporter(
-	ctx context.Context,
-	params component.ExporterCreateSettings,
-	cfg config.Exporter) (component.MetricsExporter, error) {
-	eCfg := cfg.(*LegacyConfig)
-	return newLegacyGoogleCloudMetricsExporter(eCfg, params)
 }
