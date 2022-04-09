@@ -174,7 +174,7 @@ func (gap *groupByAttrsProcessor) processMetrics(ctx context.Context, md pdata.M
 
 func deleteAttributes(attrsForRemoval, targetAttrs pdata.Map) {
 	attrsForRemoval.Range(func(key string, _ pdata.Value) bool {
-		targetAttrs.Delete(key)
+		targetAttrs.Remove(key)
 		return true
 	})
 }

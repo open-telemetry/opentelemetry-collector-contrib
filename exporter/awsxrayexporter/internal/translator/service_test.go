@@ -40,7 +40,7 @@ func TestServiceFromResource(t *testing.T) {
 
 func TestServiceFromResourceWithNoServiceVersion(t *testing.T) {
 	resource := constructDefaultResource()
-	resource.Attributes().Delete(conventions.AttributeServiceVersion)
+	resource.Attributes().Remove(conventions.AttributeServiceVersion)
 	service := makeService(resource)
 
 	assert.NotNil(t, service)

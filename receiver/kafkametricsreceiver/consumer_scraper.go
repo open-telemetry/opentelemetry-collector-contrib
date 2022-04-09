@@ -163,7 +163,7 @@ func (s *consumerScraper) scrape(context.Context) (pdata.Metrics, error) {
 					}
 					addIntGauge(ilm.Metrics(), metadata.M.KafkaConsumerGroupLag.Name(), now, labels, consumerLag)
 				}
-				labels.Delete(metadata.A.Partition)
+				labels.Remove(metadata.A.Partition)
 				addIntGauge(ilm.Metrics(), metadata.M.KafkaConsumerGroupOffsetSum.Name(), now, labels, offsetSum)
 				addIntGauge(ilm.Metrics(), metadata.M.KafkaConsumerGroupLagSum.Name(), now, labels, lagSum)
 			}
