@@ -1,7 +1,6 @@
 # Changelog
 
 ## Unreleased
-- `prometheusremotewriteexporter`: Allow to disable sanitize metric labels (#8270)
 
 ### 💡 Enhancements 💡
 - `riakreceiver`: Added implementation of Riak Metric Receiver (#8548)
@@ -16,6 +15,7 @@
 - `podmanreceiver`: Add API timeout configuration option (#9014)
 - `cmd/mdatagen`: Add `sem_conv_version` field to metadata.yaml that is used to set metrics SchemaURL (#9010)
 - `splunkheceporter`: Add an option to disable log or profiling data (#9065)
+- `pkg/translator/prometheusremotewrite`: Allow to disable sanitize metric labels (#8270)
 
 ### 🛑 Breaking changes 🛑
 
