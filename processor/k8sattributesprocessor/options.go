@@ -41,6 +41,9 @@ const (
 	metadataNode       = "node"
 	// Will be removed when new fields get merged to https://github.com/open-telemetry/opentelemetry-collector/blob/main/model/semconv/opentelemetry.go
 	metadataPodStartTime = "k8s.pod.start_time"
+
+	prefixPodMetadata       = "k8s.pod"
+	prefixNamespaceMetadata = "k8s.namespace"
 )
 
 // option represents a configuration option that can be passes.
@@ -155,13 +158,18 @@ func extractFieldRules(fieldType string, fields ...FieldExtractConfig) ([]kube.F
 			return rules, fmt.Errorf("%s is not a valid choice for From. Must be one of: pod, namespace", a.From)
 		}
 
+		var prefix string
+		if a.KeyPrefix != "" {
+			prefix = a.KeyPrefix
+		} else if a.From == kube.MetadataFromPod {
+			prefix = fmt.Sprintf("%s.%s.", prefixPodMetadata, fieldType)
+		} else if a.From == kube.MetadataFromNamespace {
+			prefix = fmt.Sprintf("%s.%s.", prefixNamespaceMetadata, fieldType)
+		}
+
 		if name == "" && a.Key != "" {
 			// name for KeyRegex case is set at extraction time/runtime, skipped here
-			if a.From == kube.MetadataFromPod {
-				name = fmt.Sprintf("k8s.pod.%s.%s", fieldType, a.Key)
-			} else if a.From == kube.MetadataFromNamespace {
-				name = fmt.Sprintf("k8s.namespace.%s.%s", fieldType, a.Key)
-			}
+			name = fmt.Sprintf("%s%s", prefix, a.Key)
 		}
 
 		var r *regexp.Regexp
@@ -187,7 +195,7 @@ func extractFieldRules(fieldType string, fields ...FieldExtractConfig) ([]kube.F
 		}
 
 		rules = append(rules, kube.FieldExtractionRule{
-			Name: name, Key: a.Key, KeyRegex: keyRegex, Regex: r, From: a.From,
+			Name: name, Key: a.Key, KeyPrefix: prefix, KeyRegex: keyRegex, Regex: r, From: a.From,
 		})
 	}
 	return rules, nil

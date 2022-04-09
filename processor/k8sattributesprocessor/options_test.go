@@ -87,10 +87,11 @@ func TestWithExtractAnnotations(t *testing.T) {
 			"bad",
 			[]FieldExtractConfig{
 				{
-					TagName: "tag1",
-					Key:     "key1",
-					Regex:   "[",
-					From:    kube.MetadataFromPod,
+					TagName:   "tag1",
+					Key:       "key1",
+					KeyPrefix: "k8s.pod.annotations.",
+					Regex:     "[",
+					From:      kube.MetadataFromPod,
 				},
 			},
 			[]kube.FieldExtractionRule{},
@@ -108,10 +109,11 @@ func TestWithExtractAnnotations(t *testing.T) {
 			},
 			[]kube.FieldExtractionRule{
 				{
-					Name:  "tag1",
-					Key:   "key1",
-					Regex: regexp.MustCompile(`field=(?P<value>.+)`),
-					From:  kube.MetadataFromPod,
+					Name:      "tag1",
+					Key:       "key1",
+					KeyPrefix: "k8s.pod.annotations.",
+					Regex:     regexp.MustCompile(`field=(?P<value>.+)`),
+					From:      kube.MetadataFromPod,
 				},
 			},
 			"",
@@ -127,9 +129,10 @@ func TestWithExtractAnnotations(t *testing.T) {
 			},
 			[]kube.FieldExtractionRule{
 				{
-					Name: "tag1",
-					Key:  "key1",
-					From: kube.MetadataFromNamespace,
+					Name:      "tag1",
+					Key:       "key1",
+					KeyPrefix: "k8s.namespace.annotations.",
+					From:      kube.MetadataFromNamespace,
 				},
 			},
 			"",
@@ -145,9 +148,10 @@ func TestWithExtractAnnotations(t *testing.T) {
 			},
 			[]kube.FieldExtractionRule{
 				{
-					Name:     "tag1",
-					KeyRegex: regexp.MustCompile("key*"),
-					From:     kube.MetadataFromPod,
+					Name:      "tag1",
+					KeyPrefix: "k8s.pod.annotations.",
+					KeyRegex:  regexp.MustCompile("key*"),
+					From:      kube.MetadataFromPod,
 				},
 			},
 			"",
@@ -163,9 +167,50 @@ func TestWithExtractAnnotations(t *testing.T) {
 			},
 			[]kube.FieldExtractionRule{
 				{
-					Name:     "tag1",
-					KeyRegex: regexp.MustCompile("key*"),
-					From:     kube.MetadataFromNamespace,
+					Name:      "tag1",
+					KeyPrefix: "k8s.namespace.annotations.",
+					KeyRegex:  regexp.MustCompile("key*"),
+					From:      kube.MetadataFromNamespace,
+				},
+			},
+			"",
+		},
+		{
+			"basic-pod-keyprefix",
+			[]FieldExtractConfig{
+				{
+					TagName:   "tag1",
+					Key:       "key1",
+					KeyPrefix: "prefix.",
+					From:      kube.MetadataFromPod,
+				},
+			},
+			[]kube.FieldExtractionRule{
+				{
+					Name:      "tag1",
+					KeyPrefix: "prefix.",
+					Key:       "key1",
+					From:      kube.MetadataFromPod,
+				},
+			},
+			"",
+		},
+		{
+			"basic-namespace-keyprefix",
+			[]FieldExtractConfig{
+				{
+					TagName:   "tag1",
+					Key:       "key1",
+					KeyPrefix: "prefix.",
+					From:      kube.MetadataFromNamespace,
+				},
+			},
+			[]kube.FieldExtractionRule{
+				{
+					Name:      "tag1",
+					KeyPrefix: "prefix.",
+					Key:       "key1",
+					From:      kube.MetadataFromNamespace,
 				},
 			},
 			"",
@@ -227,10 +272,11 @@ func TestWithExtractLabels(t *testing.T) {
 			},
 			[]kube.FieldExtractionRule{
 				{
-					Name:  "tag1",
-					Key:   "key1",
-					Regex: regexp.MustCompile(`field=(?P<value>.+)`),
-					From:  kube.MetadataFromPod,
+					Name:      "tag1",
+					Key:       "key1",
+					KeyPrefix: "k8s.pod.labels.",
+					Regex:     regexp.MustCompile(`field=(?P<value>.+)`),
+					From:      kube.MetadataFromPod,
 				},
 			},
 			"",
@@ -246,9 +292,10 @@ func TestWithExtractLabels(t *testing.T) {
 			},
 			[]kube.FieldExtractionRule{
 				{
-					Name: "tag1",
-					Key:  "key1",
-					From: kube.MetadataFromNamespace,
+					Name:      "tag1",
+					Key:       "key1",
+					KeyPrefix: "k8s.namespace.labels.",
+					From:      kube.MetadataFromNamespace,
 				},
 			},
 			"",
@@ -264,9 +311,10 @@ func TestWithExtractLabels(t *testing.T) {
 			},
 			[]kube.FieldExtractionRule{
 				{
-					Name:     "tag1",
-					KeyRegex: regexp.MustCompile("key*"),
-					From:     kube.MetadataFromPod,
+					Name:      "tag1",
+					KeyPrefix: "k8s.pod.labels.",
+					KeyRegex:  regexp.MustCompile("key*"),
+					From:      kube.MetadataFromPod,
 				},
 			},
 			"",
@@ -282,9 +330,30 @@ func TestWithExtractLabels(t *testing.T) {
 			},
 			[]kube.FieldExtractionRule{
 				{
-					Name:     "tag1",
-					KeyRegex: regexp.MustCompile("key*"),
-					From:     kube.MetadataFromNamespace,
+					Name:      "prefix.tag1",
+					KeyPrefix: "k8s.namespace.labels.",
+					KeyRegex:  regexp.MustCompile("key*"),
+					From:      kube.MetadataFromNamespace,
+				},
+			},
+			"",
+		},
+		{
+			"basic-namespace-keyprefix",
+			[]FieldExtractConfig{
+				{
+					TagName:   "tag1",
+					Key:       "key1",
+					KeyPrefix: "prefix.",
+					From:      kube.MetadataFromNamespace,
+				},
+			},
+			[]kube.FieldExtractionRule{
+				{
+					Name:      "prefix.tag1",
+					KeyPrefix: "prefix.",
+					Key:       "key1",
+					From:      kube.MetadataFromNamespace,
 				},
 			},
 			"",
@@ -621,9 +690,10 @@ func Test_extractFieldRules(t *testing.T) {
 			}},
 			[]kube.FieldExtractionRule{
 				{
-					Name: "k8s.pod.labels.key",
-					Key:  "key",
-					From: kube.MetadataFromPod,
+					Name:      "k8s.pod.labels.key",
+					Key:       "key",
+					KeyPrefix: "k8s.pod.labels.",
+					From:      kube.MetadataFromPod,
 				},
 			},
 			false,
@@ -639,9 +709,10 @@ func Test_extractFieldRules(t *testing.T) {
 			}},
 			[]kube.FieldExtractionRule{
 				{
-					Name: "name",
-					Key:  "key",
-					From: kube.MetadataFromPod,
+					Name:      "name",
+					KeyPrefix: "k8s.pod.field.",
+					Key:       "key",
+					From:      kube.MetadataFromPod,
 				},
 			},
 			false,
@@ -683,9 +754,10 @@ func Test_extractFieldRules(t *testing.T) {
 			}},
 			[]kube.FieldExtractionRule{
 				{
-					Name:     "name",
-					KeyRegex: regexp.MustCompile("key*"),
-					From:     kube.MetadataFromPod,
+					Name:      "name",
+					KeyPrefix: "k8s.pod.labels.",
+					KeyRegex:  regexp.MustCompile("key*"),
+					From:      kube.MetadataFromPod,
 				},
 			},
 			false,

@@ -15,6 +15,7 @@
 package kube // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 
 import (
+	"fmt"
 	"regexp"
 	"time"
 
@@ -159,6 +160,8 @@ type FieldExtractionRule struct {
 	Key string
 	// KeyRegex is a regular expression used to extract a Key that matches the regex.
 	KeyRegex *regexp.Regexp
+	// KeyPrefix is the prefix to be appended.
+	KeyPrefix string
 	// Regex is a regular expression used to extract a sub-part of a field value.
 	// Full value is extracted when no regexp is provided.
 	Regex *regexp.Regexp
@@ -167,6 +170,46 @@ type FieldExtractionRule struct {
 	//  - pod
 	//  - namespace
 	From string
+}
+
+func (r *FieldExtractionRule) extractFromPodMetadata(metadata map[string]string, tags *map[string]string) {
+	// By default if the From field is not set for labels and annotations we want to extract them from pod
+	if r.From == MetadataFromPod || r.From == "" {
+		r.extractFromMetadata(metadata, tags)
+	}
+}
+
+func (r *FieldExtractionRule) extractFromNamespaceMetadata(metadata map[string]string, tags *map[string]string) {
+	if r.From == MetadataFromNamespace {
+		r.extractFromMetadata(metadata, tags)
+	}
+}
+
+func (r *FieldExtractionRule) extractFromMetadata(metadata map[string]string, tags *map[string]string) {
+	if r.KeyRegex != nil {
+		for k, v := range metadata {
+			if r.KeyRegex.MatchString(k) && v != "" {
+				name := fmt.Sprintf("%s%s", r.KeyPrefix, k)
+				(*tags)[name] = v
+			}
+		}
+	} else if v, ok := metadata[r.Key]; ok {
+		(*tags)[r.Name] = r.extractField(v)
+	}
+}
+
+func (r *FieldExtractionRule) extractField(v string) string {
+	// Check if a subset of the field should be extracted with a regular expression
+	// instead of the whole field.
+	if r.Regex == nil {
+		return v
+	}
+
+	matches := r.Regex.FindStringSubmatch(v)
+	if len(matches) == 2 {
+		return matches[1]
+	}
+	return ""
 }
 
 // Associations represent a list of rules for Pod metadata associations with resources
