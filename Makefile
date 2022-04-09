@@ -83,6 +83,30 @@ gomoddownload:
 gotest:
 	$(MAKE) for-all-target TARGET="test"
 
+.PHONY: gotest-receivers
+gotest-receivers:
+	$(MAKE) for-all-receivers TARGET="test"
+
+.PHONY: gotest-processors
+gotest-processors:
+	$(MAKE) for-all-processors TARGET="test"
+
+.PHONY: gotest-exporters
+gotest-exporters:
+	$(MAKE) for-all-exporters TARGET="test"
+
+.PHONY: gotest-extensions
+gotest-extensions:
+	$(MAKE) for-all-extensions TARGET="test"
+
+.PHONY: gotest-internal
+gotest-internal:
+	$(MAKE) for-all-internal TARGET="test"
+
+.PHONY: gotest-others
+gotest-others:
+	$(MAKE) for-all-others TARGET="test"
+
 .PHONY: gofmt
 gofmt:
 	$(MAKE) for-all-target TARGET="fmt"
