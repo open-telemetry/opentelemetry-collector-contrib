@@ -50,6 +50,15 @@ jobs:
       - name: Check Collector Module Version
         run: ./.github/workflows/scripts/check-collector-module-version.sh
   lint:
+    strategy:
+      matrix:
+        group: 
+          - receivers
+          - processors
+          - exporters
+          - extensions
+          - internal
+          - others
     runs-on: ubuntu-latest
     needs: [setup-environment]
     steps:
@@ -82,7 +91,7 @@ jobs:
           path: /home/runner/.cache/go-build
           key: go-build-lint-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
       - name: Lint
-        run: make -j2 golint
+        run: make -j2 golint-${{ matrix.group }}
   checks:
     runs-on: ubuntu-latest
     needs: [setup-environment]

@@ -11,8 +11,19 @@ BUILD_INFO=-ldflags "-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)"
 COMP_REL_PATH=internal/components/components.go
 MOD_NAME=github.com/open-telemetry/opentelemetry-collector-contrib
 
+FIND_MOD_ARGS=-type f -name "go.mod"
+TO_MOD_DIR=-exec dirname {} \; | sort | egrep  '^./'
+EX_COMPONENTS=-not -path "./receiver/*" -not -path "./processor/*" -not -path "./exporter/*" -not -path "./extension/*"
+EX_INTERNAL=-not -path "./internal/*"
+
 # ALL_MODULES includes ./* dirs (excludes . dir and example with go code)
-ALL_MODULES := $(shell find . -type f -name "go.mod" -exec dirname {} \; | sort | egrep  '^./' )
+ALL_MODULES := $(shell find . $(FIND_MOD_ARGS) $(TO_MOD_DIR) )
+RECEIVER_MODULES := $(shell find ./receiver/* $(FIND_MOD_ARGS) $(TO_MOD_DIR) )
+PROCESSOR_MODULES := $(shell find ./processor/* $(FIND_MOD_ARGS) $(TO_MOD_DIR) )
+EXPORTER_MODULES := $(shell find ./exporter/* $(FIND_MOD_ARGS) $(TO_MOD_DIR) )
+EXTENSION_MODULES := $(shell find ./extension/* $(FIND_MOD_ARGS) $(TO_MOD_DIR) )
+INTERNAL_MODULES := $(shell find ./internal/* $(FIND_MOD_ARGS) $(TO_MOD_DIR) )
+OTHER_MODULES := $(shell find . $(EX_COMPONENTS) $(EX_INTERNAL) $(FIND_MOD_ARGS) $(TO_MOD_DIR) )
 
 # Modules to run integration tests on.
 # XXX: Find a way to automatically populate this. Too slow to run across all modules when there are just a few.
@@ -79,6 +90,30 @@ gofmt:
 .PHONY: golint
 golint:
 	$(MAKE) for-all-target TARGET="lint"
+
+.PHONY: golint-receivers
+golint-receivers:
+	$(MAKE) for-all-receivers TARGET="lint"
+
+.PHONY: golint-processors
+golint-processors:
+	$(MAKE) for-all-processors TARGET="lint"
+
+.PHONY: golint-exporters
+golint-exporters:
+	$(MAKE) for-all-exporters TARGET="lint"
+
+.PHONY: golint-extensions
+golint-extensions:
+	$(MAKE) for-all-extensions TARGET="lint"
+
+.PHONY: golint-internal
+golint-internal:
+	$(MAKE) for-all-internal TARGET="lint"
+
+.PHONY: golint-others
+golint-others:
+	$(MAKE) for-all-others TARGET="lint"
 
 .PHONY: goporto
 goporto:
@@ -162,6 +197,54 @@ for-all-target: $(MODULEDIRS)
 $(MODULEDIRS):
 	$(MAKE) -C $(@:for-all-target-%=%) $(TARGET)
 .PHONY: for-all-target
+
+GOMODULES = $(RECEIVER_MODULES) $(PWD)
+.PHONY: $(GOMODULES)
+MODULEDIRS = $(GOMODULES:%=for-all-receivers-%)
+for-all-receivers: $(MODULEDIRS)
+$(MODULEDIRS):
+	$(MAKE) -C $(@:for-all-receivers-%=%) $(TARGET)
+.PHONY: for-all-receivers
+
+GOMODULES = $(PROCESSOR_MODULES) $(PWD)
+.PHONY: $(GOMODULES)
+MODULEDIRS = $(GOMODULES:%=for-all-processors-%)
+for-all-processors: $(MODULEDIRS)
+$(MODULEDIRS):
+	$(MAKE) -C $(@:for-all-processors-%=%) $(TARGET)
+.PHONY: for-all-processors
+
+GOMODULES = $(EXPORTER_MODULES) $(PWD)
+.PHONY: $(GOMODULES)
+MODULEDIRS = $(GOMODULES:%=for-all-exporters-%)
+for-all-exporters: $(MODULEDIRS)
+$(MODULEDIRS):
+	$(MAKE) -C $(@:for-all-exporters-%=%) $(TARGET)
+.PHONY: for-all-exporters
+
+GOMODULES = $(EXTENSION_MODULES) $(PWD)
+.PHONY: $(GOMODULES)
+MODULEDIRS = $(GOMODULES:%=for-all-extensions-%)
+for-all-extensions: $(MODULEDIRS)
+$(MODULEDIRS):
+	$(MAKE) -C $(@:for-all-extensions-%=%) $(TARGET)
+.PHONY: for-all-extensions
+
+GOMODULES = $(INTERNAL_MODULES) $(PWD)
+.PHONY: $(GOMODULES)
+MODULEDIRS = $(GOMODULES:%=for-all-internal-%)
+for-all-internal: $(MODULEDIRS)
+$(MODULEDIRS):
+	$(MAKE) -C $(@:for-all-internal-%=%) $(TARGET)
+.PHONY: for-all-internal
+
+GOMODULES = $(OTHER_MODULES) $(PWD)
+.PHONY: $(GOMODULES)
+MODULEDIRS = $(GOMODULES:%=for-all-others-%)
+for-all-others: $(MODULEDIRS)
+$(MODULEDIRS):
+	$(MAKE) -C $(@:for-all-others-%=%) $(TARGET)
+.PHONY: for-all-others
 
 TOOLS_MOD_DIR := ./internal/tools
 .PHONY: install-tools
