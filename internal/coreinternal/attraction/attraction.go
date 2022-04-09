@@ -273,7 +273,7 @@ func NewAttrProc(settings *Settings) (*AttrProc, error) {
 }
 
 // Process applies the AttrProc to an attribute map.
-func (ap *AttrProc) Process(ctx context.Context, logger *zap.Logger, attrs pdata.AttributeMap) {
+func (ap *AttrProc) Process(ctx context.Context, logger *zap.Logger, attrs pdata.Map) {
 	for _, action := range ap.actions {
 		// TODO https://go.opentelemetry.io/collector/issues/296
 		// Do benchmark testing between having action be of type string vs integer.
@@ -321,7 +321,7 @@ func getAttributeValueFromContext(ctx context.Context, key string) (pdata.Value,
 	return pdata.NewValueString(strings.Join(vals, ";")), true
 }
 
-func getSourceAttributeValue(ctx context.Context, action attributeAction, attrs pdata.AttributeMap) (pdata.Value, bool) {
+func getSourceAttributeValue(ctx context.Context, action attributeAction, attrs pdata.Map) (pdata.Value, bool) {
 	// Set the key with a value from the configuration.
 	if action.AttributeValue != nil {
 		return *action.AttributeValue, true
@@ -334,19 +334,19 @@ func getSourceAttributeValue(ctx context.Context, action attributeAction, attrs 
 	return attrs.Get(action.FromAttribute)
 }
 
-func hashAttribute(action attributeAction, attrs pdata.AttributeMap) {
+func hashAttribute(action attributeAction, attrs pdata.Map) {
 	if value, exists := attrs.Get(action.Key); exists {
 		sha1Hasher(value)
 	}
 }
 
-func convertAttribute(logger *zap.Logger, action attributeAction, attrs pdata.AttributeMap) {
+func convertAttribute(logger *zap.Logger, action attributeAction, attrs pdata.Map) {
 	if value, exists := attrs.Get(action.Key); exists {
 		convertValue(logger, action.Key, action.ConvertedType, value)
 	}
 }
 
-func extractAttributes(action attributeAction, attrs pdata.AttributeMap) {
+func extractAttributes(action attributeAction, attrs pdata.Map) {
 	value, found := attrs.Get(action.Key)
 
 	// Extracting values only functions on strings.

@@ -38,8 +38,8 @@ type logNameTest struct {
 
 type logWithResource struct {
 	logNames           []string
-	resourceAttributes map[string]pdata.Value
-	recordAttributes   map[string]pdata.Value
+	resourceAttributes map[string]interface{}
+	recordAttributes   map[string]interface{}
 }
 
 var (
@@ -51,10 +51,10 @@ var (
 	inLogForResourceTest = []logWithResource{
 		{
 			logNames: []string{"log1", "log2"},
-			resourceAttributes: map[string]pdata.Value{
-				"attr1": pdata.NewValueString("attr1/val1"),
-				"attr2": pdata.NewValueString("attr2/val2"),
-				"attr3": pdata.NewValueString("attr3/val3"),
+			resourceAttributes: map[string]interface{}{
+				"attr1": "attr1/val1",
+				"attr2": "attr2/val2",
+				"attr3": "attr3/val3",
 			},
 		},
 	}
@@ -62,14 +62,14 @@ var (
 	inLogForTwoResource = []logWithResource{
 		{
 			logNames: []string{"log1", "log2"},
-			resourceAttributes: map[string]pdata.Value{
-				"attr1": pdata.NewValueString("attr1/val1"),
+			resourceAttributes: map[string]interface{}{
+				"attr1": "attr1/val1",
 			},
 		},
 		{
 			logNames: []string{"log3", "log4"},
-			resourceAttributes: map[string]pdata.Value{
-				"attr1": pdata.NewValueString("attr1/val2"),
+			resourceAttributes: map[string]interface{}{
+				"attr1": "attr1/val2",
 			},
 		},
 	}
@@ -77,49 +77,49 @@ var (
 	inLogForTwoResourceWithRecordAttributes = []logWithResource{
 		{
 			logNames: []string{"log1", "log2"},
-			resourceAttributes: map[string]pdata.Value{
-				"attr1": pdata.NewValueString("attr1/val1"),
+			resourceAttributes: map[string]interface{}{
+				"attr1": "attr1/val1",
 			},
-			recordAttributes: map[string]pdata.Value{
-				"rec": pdata.NewValueString("rec/val1"),
+			recordAttributes: map[string]interface{}{
+				"rec": "rec/val1",
 			},
 		},
 		{
 			logNames: []string{"log3", "log4"},
-			resourceAttributes: map[string]pdata.Value{
-				"attr1": pdata.NewValueString("attr1/val2"),
+			resourceAttributes: map[string]interface{}{
+				"attr1": "attr1/val2",
 			},
-			recordAttributes: map[string]pdata.Value{
-				"rec": pdata.NewValueString("rec/val2"),
+			recordAttributes: map[string]interface{}{
+				"rec": "rec/val2",
 			},
 		},
 	}
 	inLogForThreeResourceWithRecordAttributes = []logWithResource{
 		{
 			logNames: []string{"log1", "log2"},
-			resourceAttributes: map[string]pdata.Value{
-				"attr1": pdata.NewValueString("attr1/val1"),
+			resourceAttributes: map[string]interface{}{
+				"attr1": "attr1/val1",
 			},
-			recordAttributes: map[string]pdata.Value{
-				"rec": pdata.NewValueString("rec/val1"),
+			recordAttributes: map[string]interface{}{
+				"rec": "rec/val1",
 			},
 		},
 		{
 			logNames: []string{"log3", "log4"},
-			resourceAttributes: map[string]pdata.Value{
-				"attr1": pdata.NewValueString("attr1/val2"),
+			resourceAttributes: map[string]interface{}{
+				"attr1": "attr1/val2",
 			},
-			recordAttributes: map[string]pdata.Value{
-				"rec": pdata.NewValueString("rec/val2"),
+			recordAttributes: map[string]interface{}{
+				"rec": "rec/val2",
 			},
 		},
 		{
 			logNames: []string{"log5"},
-			resourceAttributes: map[string]pdata.Value{
-				"attr1": pdata.NewValueString("attr1/val5"),
+			resourceAttributes: map[string]interface{}{
+				"attr1": "attr1/val5",
 			},
-			recordAttributes: map[string]pdata.Value{
-				"rec": pdata.NewValueString("rec/val5"),
+			recordAttributes: map[string]interface{}{
+				"rec": "rec/val5",
 			},
 		},
 	}
@@ -127,26 +127,26 @@ var (
 	inLogForFourResource = []logWithResource{
 		{
 			logNames: []string{"log1"},
-			resourceAttributes: map[string]pdata.Value{
-				"attr": pdata.NewValueString("attr/val1"),
+			resourceAttributes: map[string]interface{}{
+				"attr": "attr/val1",
 			},
 		},
 		{
 			logNames: []string{"log2"},
-			resourceAttributes: map[string]pdata.Value{
-				"attr": pdata.NewValueString("attr/val2"),
+			resourceAttributes: map[string]interface{}{
+				"attr": "attr/val2",
 			},
 		},
 		{
 			logNames: []string{"log3"},
-			resourceAttributes: map[string]pdata.Value{
-				"attr": pdata.NewValueString("attr/val3"),
+			resourceAttributes: map[string]interface{}{
+				"attr": "attr/val3",
 			},
 		},
 		{
 			logNames: []string{"log4"},
-			resourceAttributes: map[string]pdata.Value{
-				"attr": pdata.NewValueString("attr/val4"),
+			resourceAttributes: map[string]interface{}{
+				"attr": "attr/val4",
 			},
 		},
 	}
@@ -371,7 +371,7 @@ func TestFilterLogProcessor(t *testing.T) {
 			assert.Equal(t, len(test.outLN), rLogs.Len())
 
 			for i, wantOut := range test.outLN {
-				gotLogs := rLogs.At(i).InstrumentationLibraryLogs().At(0).LogRecords()
+				gotLogs := rLogs.At(i).ScopeLogs().At(0).LogRecords()
 				assert.Equal(t, len(wantOut), gotLogs.Len())
 				for idx := range wantOut {
 					assert.Equal(t, wantOut[idx], gotLogs.At(idx).Name())
@@ -389,15 +389,15 @@ func testResourceLogs(lwrs []logWithResource) pdata.Logs {
 		rl := ld.ResourceLogs().AppendEmpty()
 
 		// Add resource level attribtues
-		pdata.NewAttributeMapFromMap(lwr.resourceAttributes).CopyTo(rl.Resource().Attributes())
-		ls := rl.InstrumentationLibraryLogs().AppendEmpty().LogRecords()
+		pdata.NewMapFromRaw(lwr.resourceAttributes).CopyTo(rl.Resource().Attributes())
+		ls := rl.ScopeLogs().AppendEmpty().LogRecords()
 		for _, name := range lwr.logNames {
 			l := ls.AppendEmpty()
 			l.SetName(name)
 
 			// Add record level attribtues
 			for k := 0; k < ls.Len(); k++ {
-				pdata.NewAttributeMapFromMap(lwrs[i].recordAttributes).CopyTo(ls.At(k).Attributes())
+				pdata.NewMapFromRaw(lwrs[i].recordAttributes).CopyTo(ls.At(k).Attributes())
 			}
 		}
 	}
@@ -415,7 +415,7 @@ func TestNilILL(t *testing.T) {
 	logs := pdata.NewLogs()
 	rls := logs.ResourceLogs()
 	rl := rls.AppendEmpty()
-	ills := rl.InstrumentationLibraryLogs()
+	ills := rl.ScopeLogs()
 	ills.AppendEmpty()
 	requireNotPanicsLogs(t, logs)
 }
@@ -424,9 +424,9 @@ func TestNilLog(t *testing.T) {
 	logs := pdata.NewLogs()
 	rls := logs.ResourceLogs()
 	rl := rls.AppendEmpty()
-	ills := rl.InstrumentationLibraryLogs()
-	ill := ills.AppendEmpty()
-	ls := ill.LogRecords()
+	ills := rl.ScopeLogs()
+	sl := ills.AppendEmpty()
+	ls := sl.LogRecords()
 	ls.AppendEmpty()
 	requireNotPanicsLogs(t, logs)
 }

@@ -144,7 +144,7 @@ var (
 		validHistogram:           getHistogramMetric(validHistogram, lbs2, time2, floatVal2, uint64(intVal2), bounds, buckets),
 		validSummary:             getSummaryMetric(validSummary, lbs2, time2, floatVal2, uint64(intVal2), quantiles),
 		validIntGaugeDirty:       getIntGaugeMetric(validIntGaugeDirty, lbs1, intVal1, time1),
-		unmatchedBoundBucketHist: getHistogramMetric(unmatchedBoundBucketHist, pdata.NewAttributeMap(), 0, 0, 0, []float64{0.1, 0.2, 0.3}, []uint64{1, 2}),
+		unmatchedBoundBucketHist: getHistogramMetric(unmatchedBoundBucketHist, pdata.NewMap(), 0, 0, 0, []float64{0.1, 0.2, 0.3}, []uint64{1, 2}),
 	}
 
 	empty = "empty"
@@ -173,8 +173,8 @@ var (
 
 // OTLP metrics
 // attributes must come in pairs
-func getAttributes(labels ...string) pdata.AttributeMap {
-	attributeMap := pdata.NewAttributeMap()
+func getAttributes(labels ...string) pdata.Map {
+	attributeMap := pdata.NewMap()
 	for i := 0; i < len(labels); i += 2 {
 		attributeMap.UpsertString(labels[i], labels[i+1])
 	}
@@ -281,7 +281,7 @@ func getEmptyGaugeMetric(name string) pdata.Metric {
 	return metric
 }
 
-func getIntGaugeMetric(name string, attributes pdata.AttributeMap, value int64, ts uint64) pdata.Metric {
+func getIntGaugeMetric(name string, attributes pdata.Map, value int64, ts uint64) pdata.Metric {
 	metric := pdata.NewMetric()
 	metric.SetName(name)
 	metric.SetDataType(pdata.MetricDataTypeGauge)
@@ -297,7 +297,7 @@ func getIntGaugeMetric(name string, attributes pdata.AttributeMap, value int64, 
 	return metric
 }
 
-func getDoubleGaugeMetric(name string, attributes pdata.AttributeMap, value float64, ts uint64) pdata.Metric {
+func getDoubleGaugeMetric(name string, attributes pdata.Map, value float64, ts uint64) pdata.Metric {
 	metric := pdata.NewMetric()
 	metric.SetName(name)
 	metric.SetDataType(pdata.MetricDataTypeGauge)
@@ -320,7 +320,7 @@ func getEmptySumMetric(name string) pdata.Metric {
 	return metric
 }
 
-func getIntSumMetric(name string, attributes pdata.AttributeMap, value int64, ts uint64) pdata.Metric {
+func getIntSumMetric(name string, attributes pdata.Map, value int64, ts uint64) pdata.Metric {
 	metric := pdata.NewMetric()
 	metric.SetName(name)
 	metric.SetDataType(pdata.MetricDataTypeSum)
@@ -345,7 +345,7 @@ func getEmptyCumulativeSumMetric(name string) pdata.Metric {
 	return metric
 }
 
-func getSumMetric(name string, attributes pdata.AttributeMap, value float64, ts uint64) pdata.Metric {
+func getSumMetric(name string, attributes pdata.Map, value float64, ts uint64) pdata.Metric {
 	metric := pdata.NewMetric()
 	metric.SetName(name)
 	metric.SetDataType(pdata.MetricDataTypeSum)
@@ -377,7 +377,7 @@ func getEmptyCumulativeHistogramMetric(name string) pdata.Metric {
 	return metric
 }
 
-func getHistogramMetric(name string, attributes pdata.AttributeMap, ts uint64, sum float64, count uint64, bounds []float64, buckets []uint64) pdata.Metric {
+func getHistogramMetric(name string, attributes pdata.Map, ts uint64, sum float64, count uint64, bounds []float64, buckets []uint64) pdata.Metric {
 	metric := pdata.NewMetric()
 	metric.SetName(name)
 	metric.SetDataType(pdata.MetricDataTypeHistogram)
@@ -403,7 +403,7 @@ func getEmptySummaryMetric(name string) pdata.Metric {
 	return metric
 }
 
-func getSummaryMetric(name string, attributes pdata.AttributeMap, ts uint64, sum float64, count uint64, quantiles pdata.ValueAtQuantileSlice) pdata.Metric {
+func getSummaryMetric(name string, attributes pdata.Map, ts uint64, sum float64, count uint64, quantiles pdata.ValueAtQuantileSlice) pdata.Metric {
 	metric := pdata.NewMetric()
 	metric.SetName(name)
 	metric.SetDataType(pdata.MetricDataTypeSummary)

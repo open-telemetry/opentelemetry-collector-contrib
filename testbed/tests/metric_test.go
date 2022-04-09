@@ -60,8 +60,8 @@ func TestMetric10kDPS(t *testing.T) {
 			testbed.NewOTLPMetricDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
 			testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
-				ExpectedMaxCPU: 50,
-				ExpectedMaxRAM: 98,
+				ExpectedMaxCPU: 60,
+				ExpectedMaxRAM: 105,
 			},
 		},
 		{
@@ -69,8 +69,8 @@ func TestMetric10kDPS(t *testing.T) {
 			testbed.NewOTLPHTTPMetricDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
 			testbed.NewOTLPHTTPDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
-				ExpectedMaxCPU: 55,
-				ExpectedMaxRAM: 92,
+				ExpectedMaxCPU: 60,
+				ExpectedMaxRAM: 100,
 			},
 		},
 		{
@@ -135,7 +135,7 @@ func TestMetricsFromFile(t *testing.T) {
 		agentProc,
 		&testbed.PerfTestValidator{},
 		performanceResultsSummary,
-		testbed.WithResourceLimits(testbed.ResourceSpec{ExpectedMaxCPU: 120, ExpectedMaxRAM: 94}),
+		testbed.WithResourceLimits(testbed.ResourceSpec{ExpectedMaxCPU: 120, ExpectedMaxRAM: 110}),
 	)
 	defer tc.Stop()
 

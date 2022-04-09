@@ -57,60 +57,46 @@ type hecSpan struct {
 	Links      []hecLink              `json:"links,omitempty"`
 }
 
-func traceDataToSplunk(logger *zap.Logger, data pdata.Traces, config *Config) ([]*splunk.Event, int) {
+func mapSpanToSplunkEvent(resource pdata.Resource, span pdata.Span, config *Config, logger *zap.Logger) *splunk.Event {
 	sourceKey := config.HecToOtelAttrs.Source
 	sourceTypeKey := config.HecToOtelAttrs.SourceType
 	indexKey := config.HecToOtelAttrs.Index
 	hostKey := config.HecToOtelAttrs.Host
 
-	numDroppedSpans := 0
-	splunkEvents := make([]*splunk.Event, 0, data.SpanCount())
-	rss := data.ResourceSpans()
-	for i := 0; i < rss.Len(); i++ {
-		rs := rss.At(i)
-		host := unknownHostName
-		source := config.Source
-		sourceType := config.SourceType
-		index := config.Index
-		commonFields := map[string]interface{}{}
-		rs.Resource().Attributes().Range(func(k string, v pdata.Value) bool {
-			switch k {
-			case hostKey:
-				host = v.StringVal()
-			case sourceKey:
-				source = v.StringVal()
-			case sourceTypeKey:
-				sourceType = v.StringVal()
-			case indexKey:
-				index = v.StringVal()
-			case splunk.HecTokenLabel:
-				// ignore
-			default:
-				commonFields[k] = v.AsString()
-			}
-			return true
-		})
-		ilss := rs.InstrumentationLibrarySpans()
-		for sils := 0; sils < ilss.Len(); sils++ {
-			ils := ilss.At(sils)
-			spans := ils.Spans()
-			for si := 0; si < spans.Len(); si++ {
-				span := spans.At(si)
-				se := &splunk.Event{
-					Time:       timestampToSecondsWithMillisecondPrecision(span.StartTimestamp()),
-					Host:       host,
-					Source:     source,
-					SourceType: sourceType,
-					Index:      index,
-					Event:      toHecSpan(logger, span),
-					Fields:     commonFields,
-				}
-				splunkEvents = append(splunkEvents, se)
-			}
+	host := unknownHostName
+	source := config.Source
+	sourceType := config.SourceType
+	index := config.Index
+	commonFields := map[string]interface{}{}
+	resource.Attributes().Range(func(k string, v pdata.Value) bool {
+		switch k {
+		case hostKey:
+			host = v.StringVal()
+		case sourceKey:
+			source = v.StringVal()
+		case sourceTypeKey:
+			sourceType = v.StringVal()
+		case indexKey:
+			index = v.StringVal()
+		case splunk.HecTokenLabel:
+			// ignore
+		default:
+			commonFields[k] = v.AsString()
 		}
+		return true
+	})
+
+	se := &splunk.Event{
+		Time:       timestampToSecondsWithMillisecondPrecision(span.StartTimestamp()),
+		Host:       host,
+		Source:     source,
+		SourceType: sourceType,
+		Index:      index,
+		Event:      toHecSpan(logger, span),
+		Fields:     commonFields,
 	}
 
-	return splunkEvents, numDroppedSpans
+	return se
 }
 
 func toHecSpan(logger *zap.Logger, span pdata.Span) hecSpan {

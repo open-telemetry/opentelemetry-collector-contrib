@@ -1,5 +1,7 @@
 name: hostmetricsreceiver/cpu
 
+sem_conv_version: 1.9.0
+
 attributes:
   cpu:
     description: CPU number starting at 0.

@@ -18,8 +18,8 @@ These are the metrics available for this scraper.
 | **mongodbatlas.disk.partition.space.max** | Disk partition space Aggregate of MongoDB Metrics DISK_PARTITION_SPACE_FREE, DISK_PARTITION_SPACE_USED | By | Gauge(Double) | <ul> <li>disk_status</li> </ul> |
 | **mongodbatlas.disk.partition.usage.average** | Disk partition usage (%) Aggregate of MongoDB Metrics DISK_PARTITION_SPACE_PERCENT_FREE, DISK_PARTITION_SPACE_PERCENT_USED | 1 | Gauge(Double) | <ul> <li>disk_status</li> </ul> |
 | **mongodbatlas.disk.partition.usage.max** | Disk partition usage (%) Aggregate of MongoDB Metrics MAX_DISK_PARTITION_SPACE_PERCENT_USED, MAX_DISK_PARTITION_SPACE_PERCENT_FREE | 1 | Gauge(Double) | <ul> <li>disk_status</li> </ul> |
-| **mongodbatlas.disk.partition.utilization.average** | Disk partition utilization (%) MongoDB Metrics DISK_PARTITION_UTILIZATION | 1 | Gauge(Double) | <ul> </ul> |
-| **mongodbatlas.disk.partition.utilization.max** | Disk partition utilization (%) MongoDB Metrics MAX_DISK_PARTITION_UTILIZATION | 1 | Gauge(Double) | <ul> </ul> |
+| **mongodbatlas.disk.partition.utilization.average** | Disk partition utilization (%) MongoDB Metrics DISK_PARTITION_UTILIZATION | 1 | Gauge(Double) | <ul> <li>disk_status</li> </ul> |
+| **mongodbatlas.disk.partition.utilization.max** | Disk partition utilization (%) MongoDB Metrics MAX_DISK_PARTITION_UTILIZATION | 1 | Gauge(Double) | <ul> <li>disk_status</li> </ul> |
 | **mongodbatlas.process.asserts** | Number of assertions per second Aggregate of MongoDB Metrics ASSERT_REGULAR, ASSERT_USER, ASSERT_MSG, ASSERT_WARNING | {assertions}/s | Gauge(Double) | <ul> <li>assert_type</li> </ul> |
 | **mongodbatlas.process.background_flush** | Amount of data flushed in the background MongoDB Metric BACKGROUND_FLUSH_AVG | 1 | Gauge(Double) | <ul> </ul> |
 | **mongodbatlas.process.cache.io** | Cache throughput (per second) Aggregate of MongoDB Metrics CACHE_BYTES_READ_INTO, CACHE_BYTES_WRITTEN_FROM | By | Gauge(Double) | <ul> <li>cache_direction</li> </ul> |
@@ -63,8 +63,8 @@ These are the metrics available for this scraper.
 | **mongodbatlas.system.fts.cpu.usage** | Full-text search (%) | 1 | Gauge(Double) | <ul> <li>cpu_state</li> </ul> |
 | **mongodbatlas.system.fts.disk.used** | Full text search disk usage MongoDB Metric FTS_DISK_USAGE | By | Gauge(Double) | <ul> </ul> |
 | **mongodbatlas.system.fts.memory.usage** | Full-text search Aggregate of MongoDB Metrics FTS_MEMORY_MAPPED, FTS_PROCESS_SHARED_MEMORY, FTS_PROCESS_RESIDENT_MEMORY, FTS_PROCESS_VIRTUAL_MEMORY | MiBy | Sum(Double) | <ul> <li>memory_state</li> </ul> |
-| **mongodbatlas.system.memory.usage.average** | System Memory Usage Aggregate of MongoDB Metrics SYSTEM_MEMORY_AVAILABLE, SYSTEM_MEMORY_BUFFERS, SYSTEM_MEMORY_USED, SYSTEM_MEMORY_CACHED, SYSTEM_MEMORY_SHARED, SYSTEM_MEMORY_FREE | KiBy | Gauge(Double) | <ul> <li>memory_state</li> </ul> |
-| **mongodbatlas.system.memory.usage.max** | System Memory Usage Aggregate of MongoDB Metrics MAX_SYSTEM_MEMORY_CACHED, MAX_SYSTEM_MEMORY_AVAILABLE, MAX_SYSTEM_MEMORY_USED, MAX_SYSTEM_MEMORY_BUFFERS, MAX_SYSTEM_MEMORY_FREE, MAX_SYSTEM_MEMORY_SHARED | KiBy | Gauge(Double) | <ul> <li>memory_state</li> </ul> |
+| **mongodbatlas.system.memory.usage.average** | System Memory Usage Aggregate of MongoDB Metrics SYSTEM_MEMORY_AVAILABLE, SYSTEM_MEMORY_BUFFERS, SYSTEM_MEMORY_USED, SYSTEM_MEMORY_CACHED, SYSTEM_MEMORY_SHARED, SYSTEM_MEMORY_FREE | KiBy | Gauge(Double) | <ul> <li>memory_status</li> </ul> |
+| **mongodbatlas.system.memory.usage.max** | System Memory Usage Aggregate of MongoDB Metrics MAX_SYSTEM_MEMORY_CACHED, MAX_SYSTEM_MEMORY_AVAILABLE, MAX_SYSTEM_MEMORY_USED, MAX_SYSTEM_MEMORY_BUFFERS, MAX_SYSTEM_MEMORY_FREE, MAX_SYSTEM_MEMORY_SHARED | KiBy | Gauge(Double) | <ul> <li>memory_status</li> </ul> |
 | **mongodbatlas.system.network.io.average** | System Network IO Aggregate of MongoDB Metrics SYSTEM_NETWORK_IN, SYSTEM_NETWORK_OUT | By/s | Gauge(Double) | <ul> <li>direction</li> </ul> |
 | **mongodbatlas.system.network.io.max** | System Network IO Aggregate of MongoDB Metrics MAX_SYSTEM_NETWORK_OUT, MAX_SYSTEM_NETWORK_IN | By/s | Gauge(Double) | <ul> <li>direction</li> </ul> |
 | **mongodbatlas.system.paging.io.average** | Swap IO Aggregate of MongoDB Metrics SWAP_IO_IN, SWAP_IO_OUT | {pages}/s | Gauge(Double) | <ul> <li>direction</li> </ul> |
@@ -72,9 +72,30 @@ These are the metrics available for this scraper.
 | **mongodbatlas.system.paging.usage.average** | Swap usage Aggregate of MongoDB Metrics SWAP_USAGE_FREE, SWAP_USAGE_USED | KiBy | Gauge(Double) | <ul> <li>direction</li> </ul> |
 | **mongodbatlas.system.paging.usage.max** | Swap usage Aggregate of MongoDB Metrics MAX_SWAP_USAGE_FREE, MAX_SWAP_USAGE_USED | KiBy | Gauge(Double) | <ul> <li>direction</li> </ul> |
 
-**Highlighted metrics** are emitted by default.
+**Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
+Any metric can be enabled or disabled with the following scraper configuration:
 
-## Attributes
+```yaml
+metrics:
+  <metric_name>:
+    enabled: <true|false>
+```
+
+## Resource attributes
+
+| Name | Description | Type |
+| ---- | ----------- | ---- |
+| mongodb_atlas.db.name | Name of the Database | String |
+| mongodb_atlas.disk.partition | Name of a disk partition | String |
+| mongodb_atlas.host.name | Hostname of the process | String |
+| mongodb_atlas.org_name | Organization Name | String |
+| mongodb_atlas.process.id | ID of the process | String |
+| mongodb_atlas.process.port | Port process is bound to | String |
+| mongodb_atlas.process.type_name | Process type | String |
+| mongodb_atlas.project.id | Project ID | String |
+| mongodb_atlas.project.name | Project Name | String |
+
+## Metric attributes
 
 | Name | Description |
 | ---- | ----------- |
@@ -93,6 +114,7 @@ These are the metrics available for this scraper.
 | global_lock_state | Which queue is locked |
 | memory_issue_type | Type of memory issue encountered |
 | memory_state | Memory usage type |
+| memory_status | Memory measurement type |
 | object_type | MongoDB object type |
 | operation | Type of database operation |
 | oplog_type | Oplog type |

@@ -58,7 +58,7 @@ func SkywalkingToTraces(segment *agentV3.SegmentObject) pdata.Traces {
 		rs.Attributes().Insert(conventions.AttributeServiceInstanceID, pdata.NewValueString(segment.GetServiceInstance()))
 	}
 
-	il := resourceSpan.InstrumentationLibrarySpans().AppendEmpty()
+	il := resourceSpan.ScopeSpans().AppendEmpty()
 	swSpansToSpanSlice(segment.GetTraceId(), swSpans, il.Spans())
 
 	return traceData
@@ -219,7 +219,7 @@ func swLogsToSpanEvents(logs []*agentV3.Log, dest pdata.SpanEventSlice) {
 	}
 }
 
-func swKvPairsToInternalAttributes(pairs []*common.KeyStringValuePair, dest pdata.AttributeMap) {
+func swKvPairsToInternalAttributes(pairs []*common.KeyStringValuePair, dest pdata.Map) {
 	if pairs == nil {
 		return
 	}

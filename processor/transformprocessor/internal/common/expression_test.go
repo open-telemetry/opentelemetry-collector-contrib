@@ -12,19 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package traces
+package common
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/model/pdata"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
-func hello() exprFunc {
-	return func(span pdata.Span, il pdata.InstrumentationLibrary, resource pdata.Resource) interface{} {
+func hello() ExprFunc {
+	return func(ctx TransformContext) interface{} {
 		return "world"
 	}
 }
@@ -34,35 +32,35 @@ func Test_newGetter(t *testing.T) {
 	span.SetName("bear")
 	tests := []struct {
 		name string
-		val  common.Value
+		val  Value
 		want interface{}
 	}{
 		{
 			name: "string literal",
-			val: common.Value{
+			val: Value{
 				String: strp("str"),
 			},
 			want: "str",
 		},
 		{
 			name: "float literal",
-			val: common.Value{
+			val: Value{
 				Float: floatp(1.2),
 			},
 			want: 1.2,
 		},
 		{
 			name: "int literal",
-			val: common.Value{
+			val: Value{
 				Int: intp(12),
 			},
 			want: int64(12),
 		},
 		{
 			name: "path expression",
-			val: common.Value{
-				Path: &common.Path{
-					Fields: []common.Field{
+			val: Value{
+				Path: &Path{
+					Fields: []Field{
 						{
 							Name: "name",
 						},
@@ -73,8 +71,8 @@ func Test_newGetter(t *testing.T) {
 		},
 		{
 			name: "function call",
-			val: common.Value{
-				Invocation: &common.Invocation{
+			val: Value{
+				Invocation: &Invocation{
 					Function: "hello",
 				},
 			},
@@ -86,15 +84,19 @@ func Test_newGetter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			reader, err := newGetter(tt.val, functions)
+			reader, err := NewGetter(tt.val, functions, testParsePath)
 			assert.NoError(t, err)
-			val := reader.get(span, pdata.NewInstrumentationLibrary(), pdata.NewResource())
+			val := reader.Get(testTransformContext{
+				span:     span,
+				il:       pdata.NewInstrumentationScope(),
+				resource: pdata.NewResource(),
+			})
 			assert.Equal(t, tt.want, val)
 		})
 	}
 
 	t.Run("empty value", func(t *testing.T) {
-		_, err := newGetter(common.Value{}, functions)
+		_, err := NewGetter(Value{}, functions, testParsePath)
 		assert.Error(t, err)
 	})
 }

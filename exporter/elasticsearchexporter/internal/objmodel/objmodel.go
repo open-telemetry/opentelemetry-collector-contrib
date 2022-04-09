@@ -104,7 +104,7 @@ type idValue interface {
 
 // DocumentFromAttributes creates a document from a OpenTelemetry attribute
 // map. All nested maps will be flattened, with keys being joined using a `.` symbol.
-func DocumentFromAttributes(am pdata.AttributeMap) Document {
+func DocumentFromAttributes(am pdata.Map) Document {
 	return DocumentFromAttributesWithPath("", am)
 }
 
@@ -112,7 +112,7 @@ func DocumentFromAttributes(am pdata.AttributeMap) Document {
 // map. All nested maps will be flattened, with keys being joined using a `.` symbol.
 //
 // All keys in the map will be prefixed with path.
-func DocumentFromAttributesWithPath(path string, am pdata.AttributeMap) Document {
+func DocumentFromAttributesWithPath(path string, am pdata.Map) Document {
 	if am.Len() == 0 {
 		return Document{}
 	}
@@ -154,7 +154,7 @@ func (doc *Document) AddInt(key string, value int64) {
 
 // AddAttributes expands and flattens all key-value pairs from the input attribute map into
 // the document.
-func (doc *Document) AddAttributes(key string, attributes pdata.AttributeMap) {
+func (doc *Document) AddAttributes(key string, attributes pdata.Map) {
 	doc.fields = appendAttributeFields(doc.fields, key, attributes)
 }
 
@@ -377,7 +377,7 @@ func ValueFromAttribute(attr pdata.Value) Value {
 		return StringValue(attr.StringVal())
 	case pdata.ValueTypeBool:
 		return BoolValue(attr.BoolVal())
-	case pdata.ValueTypeArray:
+	case pdata.ValueTypeSlice:
 		sub := arrFromAttributes(attr.SliceVal())
 		return ArrValue(sub...)
 	case pdata.ValueTypeMap:
@@ -464,7 +464,7 @@ func (v *Value) iterJSON(w *json.Visitor, dedot bool) error {
 	return nil
 }
 
-func arrFromAttributes(aa pdata.AttributeValueSlice) []Value {
+func arrFromAttributes(aa pdata.Slice) []Value {
 	if aa.Len() == 0 {
 		return nil
 	}
@@ -476,7 +476,7 @@ func arrFromAttributes(aa pdata.AttributeValueSlice) []Value {
 	return values
 }
 
-func appendAttributeFields(fields []field, path string, am pdata.AttributeMap) []field {
+func appendAttributeFields(fields []field, path string, am pdata.Map) []field {
 	am.Range(func(k string, val pdata.Value) bool {
 		fields = appendAttributeValue(fields, path, k, val)
 		return true

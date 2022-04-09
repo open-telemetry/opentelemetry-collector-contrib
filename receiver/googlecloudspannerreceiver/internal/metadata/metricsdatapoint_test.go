@@ -170,19 +170,19 @@ func allPossibleMetricValues(metricDataType pdata.MetricDataType) []MetricValue 
 	}
 }
 
-func assertDefaultLabels(t *testing.T, attributesMap pdata.AttributeMap, databaseID *datasource.DatabaseID) {
+func assertDefaultLabels(t *testing.T, attributesMap pdata.Map, databaseID *datasource.DatabaseID) {
 	assertStringLabelValue(t, attributesMap, projectIDLabelName, databaseID.ProjectID())
 	assertStringLabelValue(t, attributesMap, instanceIDLabelName, databaseID.InstanceID())
 	assertStringLabelValue(t, attributesMap, databaseLabelName, databaseID.DatabaseName())
 }
 
-func assertNonDefaultLabels(t *testing.T, attributesMap pdata.AttributeMap, labelValues []LabelValue) {
+func assertNonDefaultLabels(t *testing.T, attributesMap pdata.Map, labelValues []LabelValue) {
 	for _, labelValue := range labelValues {
 		assertLabelValue(t, attributesMap, labelValue)
 	}
 }
 
-func assertLabelValue(t *testing.T, attributesMap pdata.AttributeMap, labelValue LabelValue) {
+func assertLabelValue(t *testing.T, attributesMap pdata.Map, labelValue LabelValue) {
 	value, exists := attributesMap.Get(labelValue.Metadata().Name())
 
 	assert.True(t, exists)
@@ -198,7 +198,7 @@ func assertLabelValue(t *testing.T, attributesMap pdata.AttributeMap, labelValue
 	}
 }
 
-func assertStringLabelValue(t *testing.T, attributesMap pdata.AttributeMap, labelName string, expectedValue interface{}) {
+func assertStringLabelValue(t *testing.T, attributesMap pdata.Map, labelName string, expectedValue interface{}) {
 	value, exists := attributesMap.Get(labelName)
 
 	assert.True(t, exists)

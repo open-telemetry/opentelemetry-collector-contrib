@@ -103,8 +103,8 @@ func TestExporter(t *testing.T) {
 	rs.Resource().Attributes().InsertString("service.name", "test_service")
 	rs.Resource().Attributes().InsertString("A", "B")
 	rs.Resource().Attributes().InsertString("B", "C")
-	instrLibrarySpans := rs.InstrumentationLibrarySpans().AppendEmpty()
-	lib := instrLibrarySpans.InstrumentationLibrary()
+	instrLibrarySpans := rs.ScopeSpans().AppendEmpty()
+	lib := instrLibrarySpans.Scope()
 	lib.SetName("my.custom.library")
 	lib.SetVersion("1.0.0")
 
@@ -226,8 +226,8 @@ func TestSpanKinds(t *testing.T) {
 	td := pdata.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
 	rs.Resource().Attributes().InsertString("service.name", "test_service")
-	instrLibrarySpans := rs.InstrumentationLibrarySpans().AppendEmpty()
-	lib := instrLibrarySpans.InstrumentationLibrary()
+	instrLibrarySpans := rs.ScopeSpans().AppendEmpty()
+	lib := instrLibrarySpans.Scope()
 	lib.SetName("my.custom.library")
 	lib.SetVersion("1.0.0")
 
@@ -297,7 +297,7 @@ func initSpan(span pdata.Span) {
 func TestSampleRateAttribute(t *testing.T) {
 	td := pdata.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
-	instrLibrarySpans := rs.InstrumentationLibrarySpans().AppendEmpty()
+	instrLibrarySpans := rs.ScopeSpans().AppendEmpty()
 
 	intSampleRateSpan := instrLibrarySpans.Spans().AppendEmpty()
 	intSampleRateSpan.SetTraceID(pdata.NewTraceID([16]byte{0x01}))

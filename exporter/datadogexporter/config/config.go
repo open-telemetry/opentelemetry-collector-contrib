@@ -15,11 +15,11 @@
 package config // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 
 import (
+	"encoding"
 	"errors"
 	"fmt"
 	"regexp"
 	"strings"
-	"sync"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -60,14 +60,6 @@ type APIConfig struct {
 	Site string `mapstructure:"site"`
 }
 
-// GetCensoredKey returns the API key censored for logging purposes
-func (api *APIConfig) GetCensoredKey() string {
-	if len(api.Key) <= 5 {
-		return api.Key
-	}
-	return strings.Repeat("*", len(api.Key)-5) + api.Key[len(api.Key)-5:]
-}
-
 // MetricsConfig defines the metrics exporter specific configuration options
 type MetricsConfig struct {
 	// Quantiles states whether to report quantiles from summary metrics.
@@ -76,6 +68,7 @@ type MetricsConfig struct {
 
 	// SendMonotonic states whether to report cumulative monotonic metrics as counters
 	// or gauges
+	// Deprecated: [v0.48.0] Use `metrics::sums::cumulative_monotonic_mode` (SumConfig.CumulativeMonotonicMode) instead.
 	SendMonotonic bool `mapstructure:"send_monotonic_counter"`
 
 	// DeltaTTL defines the time that previous points of a cumulative monotonic
@@ -91,6 +84,9 @@ type MetricsConfig struct {
 
 	// HistConfig defines the export of OTLP Histograms.
 	HistConfig HistogramConfig `mapstructure:"histograms"`
+
+	// SumConfig defines the export of OTLP Sums.
+	SumConfig SumConfig `mapstructure:"sums"`
 }
 
 // HistogramConfig customizes export of OTLP Histograms.
@@ -114,6 +110,46 @@ func (c *HistogramConfig) validate() error {
 		return fmt.Errorf("'nobuckets' mode and `send_count_sum_metrics` set to false will send no histogram metrics")
 	}
 	return nil
+}
+
+// CumulativeMonotonicSumMode is the export mode for OTLP Sum metrics.
+type CumulativeMonotonicSumMode string
+
+const (
+	// CumulativeMonotonicSumModeToDelta calculates delta for
+	// cumulative monotonic sum metrics in the client side and reports
+	// them as Datadog counts.
+	CumulativeMonotonicSumModeToDelta CumulativeMonotonicSumMode = "to_delta"
+
+	// CumulativeMonotonicSumModeRawValue reports the raw value for
+	// cumulative monotonic sum metrics as a Datadog gauge.
+	CumulativeMonotonicSumModeRawValue CumulativeMonotonicSumMode = "raw_value"
+)
+
+var _ encoding.TextUnmarshaler = (*CumulativeMonotonicSumMode)(nil)
+
+// UnmarshalText implements the encoding.TextUnmarshaler interface.
+func (sm *CumulativeMonotonicSumMode) UnmarshalText(in []byte) error {
+	switch mode := CumulativeMonotonicSumMode(in); mode {
+	case CumulativeMonotonicSumModeToDelta,
+		CumulativeMonotonicSumModeRawValue:
+		*sm = mode
+		return nil
+	default:
+		return fmt.Errorf("invalid cumulative monotonic sum mode %q", mode)
+	}
+}
+
+// SumConfig customizes export of OTLP Sums.
+type SumConfig struct {
+	// CumulativeMonotonicMode is the mode for exporting OTLP Cumulative Monotonic Sums.
+	// Valid values are 'to_delta' or 'raw_value'.
+	//  - 'to_delta' calculates delta for cumulative monotonic sums and sends it as a Datadog count.
+	//  - 'raw_value' sends the raw value of cumulative monotonic sums as Datadog gauges.
+	//
+	// The default is 'to_delta'.
+	// See https://docs.datadoghq.com/metrics/otlp/?tab=sum#mapping for details and examples.
+	CumulativeMonotonicMode CumulativeMonotonicSumMode `mapstructure:"cumulative_monotonic_mode"`
 }
 
 // MetricsExporterConfig provides options for a user to customize the behavior of the
@@ -171,14 +207,20 @@ type TagsConfig struct {
 	Hostname string `mapstructure:"hostname"`
 
 	// Env is the environment for unified service tagging.
+	// Deprecated: [v0.49.0] Set `deployment.environment` semconv instead, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9016 for details.
+	// This option will be removed in v0.52.0.
 	// It can also be set through the `DD_ENV` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
 	Env string `mapstructure:"env"`
 
 	// Service is the service for unified service tagging.
+	// Deprecated: [v0.49.0] Set `service.name` semconv instead, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8781 for details.
+	// This option will be removed in v0.52.0.
 	// It can also be set through the `DD_SERVICE` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
 	Service string `mapstructure:"service"`
 
 	// Version is the version for unified service tagging.
+	// Deprecated: [v0.49.0] Set `service.version` semconv instead, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8783 for details.
+	// This option will be removed in v0.52.0.
 	// It can also be set through the `DD_VERSION` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
 	Version string `mapstructure:"version"`
 
@@ -194,6 +236,7 @@ type TagsConfig struct {
 }
 
 // GetHostTags gets the host tags extracted from the configuration
+// Deprecated: [v0.49.0] Access fields explicitly instead.
 func (t *TagsConfig) GetHostTags() []string {
 	tags := t.Tags
 
@@ -261,18 +304,8 @@ type Config struct {
 	// Disable this in the Collector if you are using an agent-collector setup.
 	UseResourceMetadata bool `mapstructure:"use_resource_metadata"`
 
-	// onceMetadata ensures only one exporter (metrics/traces) sends host metadata
-	onceMetadata sync.Once
-
 	// warnings stores non-fatal configuration errors.
 	warnings []error
-}
-
-// OnceMetadata gets a sync.Once instance used for initializing the host metadata.
-// Deprecated: [v0.48.0] do not use, will be removed on v0.49.0.
-// TODO (#8373): Remove this method.
-func (c *Config) OnceMetadata() *sync.Once {
-	return &c.onceMetadata
 }
 
 // Sanitize tries to sanitize a given configuration
@@ -351,6 +384,13 @@ func (c *Config) Unmarshal(configMap *config.Map) error {
 		return err
 	}
 
+	// Add deprecation warnings for deprecated settings.
+	renamingWarnings, err := handleRenamedSettings(configMap, c)
+	if err != nil {
+		return err
+	}
+	c.warnings = append(c.warnings, renamingWarnings...)
+
 	switch c.Metrics.HistConfig.Mode {
 	case histogramModeCounters, histogramModeNoBuckets, histogramModeDistributions:
 		// Do nothing
@@ -360,6 +400,17 @@ func (c *Config) Unmarshal(configMap *config.Map) error {
 
 	// Add warnings about autodetected environment variables.
 	c.warnings = append(c.warnings, warnUseOfEnvVars(configMap, c)...)
+
+	deprecationTemplate := "%q has been deprecated and will be removed in %s. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/%d"
+	if c.Service != "" {
+		c.warnings = append(c.warnings, fmt.Errorf(deprecationTemplate, "service", "v0.52.0", 8781))
+	}
+	if c.Version != "" {
+		c.warnings = append(c.warnings, fmt.Errorf(deprecationTemplate, "version", "v0.52.0", 8783))
+	}
+	if c.Env != "" {
+		c.warnings = append(c.warnings, fmt.Errorf(deprecationTemplate, "env", "v0.52.0", 9016))
+	}
 
 	return nil
 }

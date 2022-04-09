@@ -46,7 +46,7 @@ func ProtoFromTraces(td pdata.Traces) ([]*model.Batch, error) {
 
 func resourceSpansToJaegerProto(rs pdata.ResourceSpans) *model.Batch {
 	resource := rs.Resource()
-	ilss := rs.InstrumentationLibrarySpans()
+	ilss := rs.ScopeSpans()
 
 	if resource.Attributes().Len() == 0 && ilss.Len() == 0 {
 		return nil
@@ -69,7 +69,7 @@ func resourceSpansToJaegerProto(rs pdata.ResourceSpans) *model.Batch {
 		spans := ils.Spans()
 		for j := 0; j < spans.Len(); j++ {
 			span := spans.At(j)
-			jSpan := spanToJaegerProto(span, ils.InstrumentationLibrary())
+			jSpan := spanToJaegerProto(span, ils.Scope())
 			if jSpan != nil {
 				jSpans = append(jSpans, jSpan)
 			}
@@ -103,7 +103,7 @@ func resourceToJaegerProtoProcess(resource pdata.Resource) *model.Process {
 
 }
 
-func appendTagsFromResourceAttributes(dest []model.KeyValue, attrs pdata.AttributeMap) []model.KeyValue {
+func appendTagsFromResourceAttributes(dest []model.KeyValue, attrs pdata.Map) []model.KeyValue {
 	if attrs.Len() == 0 {
 		return dest
 	}
@@ -118,7 +118,7 @@ func appendTagsFromResourceAttributes(dest []model.KeyValue, attrs pdata.Attribu
 	return dest
 }
 
-func appendTagsFromAttributes(dest []model.KeyValue, attrs pdata.AttributeMap) []model.KeyValue {
+func appendTagsFromAttributes(dest []model.KeyValue, attrs pdata.Map) []model.KeyValue {
 	if attrs.Len() == 0 {
 		return dest
 	}
@@ -146,14 +146,14 @@ func attributeToJaegerProtoTag(key string, attr pdata.Value) model.KeyValue {
 	case pdata.ValueTypeDouble:
 		tag.VType = model.ValueType_FLOAT64
 		tag.VFloat64 = attr.DoubleVal()
-	case pdata.ValueTypeMap, pdata.ValueTypeArray:
+	case pdata.ValueTypeMap, pdata.ValueTypeSlice:
 		tag.VType = model.ValueType_STRING
 		tag.VStr = attr.AsString()
 	}
 	return tag
 }
 
-func spanToJaegerProto(span pdata.Span, libraryTags pdata.InstrumentationLibrary) *model.Span {
+func spanToJaegerProto(span pdata.Span, libraryTags pdata.InstrumentationScope) *model.Span {
 	traceID := traceIDToJaegerProto(span.TraceID())
 	jReferences := makeJaegerProtoReferences(span.Links(), span.ParentSpanID(), traceID)
 
@@ -170,7 +170,7 @@ func spanToJaegerProto(span pdata.Span, libraryTags pdata.InstrumentationLibrary
 	}
 }
 
-func getJaegerProtoSpanTags(span pdata.Span, instrumentationLibrary pdata.InstrumentationLibrary) []model.KeyValue {
+func getJaegerProtoSpanTags(span pdata.Span, instrumentationLibrary pdata.InstrumentationScope) []model.KeyValue {
 	var spanKindTag, statusCodeTag, errorTag, statusMsgTag model.KeyValue
 	var spanKindTagFound, statusCodeTagFound, errorTagFound, statusMsgTagFound bool
 
@@ -388,7 +388,7 @@ func getTagsFromTraceState(traceState pdata.TraceState) ([]model.KeyValue, bool)
 	return keyValues, exists
 }
 
-func getTagsFromInstrumentationLibrary(il pdata.InstrumentationLibrary) ([]model.KeyValue, bool) {
+func getTagsFromInstrumentationLibrary(il pdata.InstrumentationScope) ([]model.KeyValue, bool) {
 	keyValues := make([]model.KeyValue, 0)
 	if ilName := il.Name(); ilName != "" {
 		kv := model.KeyValue{

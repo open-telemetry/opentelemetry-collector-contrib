@@ -151,10 +151,10 @@ func logsToCWLogs(logger *zap.Logger, ld pdata.Logs) ([]*cloudwatchlogs.InputLog
 		rl := rls.At(i)
 		resourceAttrs := attrsValue(rl.Resource().Attributes())
 
-		ills := rl.InstrumentationLibraryLogs()
-		for j := 0; j < ills.Len(); j++ {
-			ils := ills.At(j)
-			logs := ils.LogRecords()
+		sls := rl.ScopeLogs()
+		for j := 0; j < sls.Len(); j++ {
+			sl := sls.At(j)
+			logs := sl.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
 				log := logs.At(k)
 				event, err := logToCWLog(resourceAttrs, log)
@@ -211,7 +211,7 @@ func logToCWLog(resourceAttrs map[string]interface{}, log pdata.LogRecord) (*clo
 	}, nil
 }
 
-func attrsValue(attrs pdata.AttributeMap) map[string]interface{} {
+func attrsValue(attrs pdata.Map) map[string]interface{} {
 	if attrs.Len() == 0 {
 		return nil
 	}
@@ -240,7 +240,7 @@ func attrValue(value pdata.Value) interface{} {
 			return true
 		})
 		return values
-	case pdata.ValueTypeArray:
+	case pdata.ValueTypeSlice:
 		arrayVal := value.SliceVal()
 		values := make([]interface{}, arrayVal.Len())
 		for i := 0; i < arrayVal.Len(); i++ {

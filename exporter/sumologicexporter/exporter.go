@@ -134,8 +134,8 @@ func (se *sumologicexporter) start(_ context.Context, host component.Host) (err 
 // so they can be handled by OTC retry mechanism
 func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) error {
 	var (
-		currentMetadata  fields = newFields(pdata.NewAttributeMap())
-		previousMetadata fields = newFields(pdata.NewAttributeMap())
+		currentMetadata  = newFields(pdata.NewMap())
+		previousMetadata = newFields(pdata.NewMap())
 		errs             error
 		droppedRecords   []pdata.LogRecord
 		err              error
@@ -160,13 +160,13 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) er
 	for i := 0; i < rls.Len(); i++ {
 		rl := rls.At(i)
 
-		ills := rl.InstrumentationLibraryLogs()
-		// iterate over InstrumentationLibraryLogs
+		ills := rl.ScopeLogs()
+		// iterate over ScopeLogs
 		for j := 0; j < ills.Len(); j++ {
-			ill := ills.At(j)
+			sl := ills.At(j)
 
 			// iterate over Logs
-			logs := ill.LogRecords()
+			logs := sl.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
 				log := logs.At(k)
 
@@ -215,7 +215,7 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) er
 		// Move all dropped records to Logs
 		droppedLogs := pdata.NewLogs()
 		rls = droppedLogs.ResourceLogs()
-		ills := rls.AppendEmpty().InstrumentationLibraryLogs()
+		ills := rls.AppendEmpty().ScopeLogs()
 		logs := ills.AppendEmpty().LogRecords()
 
 		for _, log := range droppedRecords {
@@ -234,11 +234,11 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld pdata.Logs) er
 // so they can be handle by the OTC retry mechanism
 func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pdata.Metrics) error {
 	var (
-		currentMetadata  fields = newFields(pdata.NewAttributeMap())
-		previousMetadata fields = newFields(pdata.NewAttributeMap())
+		currentMetadata  = newFields(pdata.NewMap())
+		previousMetadata = newFields(pdata.NewMap())
 		errs             error
 		droppedRecords   []metricPair
-		attributes       pdata.AttributeMap
+		attributes       pdata.Map
 	)
 
 	c, err := newCompressor(se.config.CompressEncoding)
@@ -262,8 +262,8 @@ func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pdata.Metri
 
 		attributes = rm.Resource().Attributes()
 
-		// iterate over InstrumentationLibraryMetrics
-		ilms := rm.InstrumentationLibraryMetrics()
+		// iterate over ScopeMetrics
+		ilms := rm.ScopeMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			ilm := ilms.At(j)
 
@@ -318,7 +318,7 @@ func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pdata.Metri
 			rm := droppedMetrics.ResourceMetrics().AppendEmpty()
 			record.attributes.CopyTo(rm.Resource().Attributes())
 
-			ilms := rm.InstrumentationLibraryMetrics()
+			ilms := rm.ScopeMetrics()
 			record.metric.CopyTo(ilms.AppendEmpty().Metrics().AppendEmpty())
 		}
 

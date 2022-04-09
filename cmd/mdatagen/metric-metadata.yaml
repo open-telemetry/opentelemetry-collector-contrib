@@ -1,6 +1,18 @@
 # Required: name of the receiver.
 name:
 
+# Optional: OTel Semantic Conventions version that will be associated with the scraped metrics.
+# This attribute should be set for metrics compliant with OTel Semantic Conventions.
+sem_conv_version: 1.9.0
+
+# Optional: map of resource attribute definitions with the key being the attribute name.
+resource_attributes:
+  <attribute.name>:
+    # Required: description of the attribute.
+    description:
+    # Required: attribute type.
+    type: <string|int|double|bool|bytes>
+
 # Optional: map of attribute definitions with the key being the attribute name and value
 # being described below.
 attributes:

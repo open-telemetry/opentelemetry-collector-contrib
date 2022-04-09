@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package serialization // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/serialization"
+package serialization // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/internal/serialization"
 
 import (
 	"fmt"
@@ -105,7 +105,7 @@ func SerializeMetric(logger *zap.Logger, prefix string, metric pdata.Metric, def
 	return metricLines, nil
 }
 
-func makeCombinedDimensions(labels pdata.AttributeMap, defaultDimensions, staticDimensions dimensions.NormalizedDimensionList) dimensions.NormalizedDimensionList {
+func makeCombinedDimensions(labels pdata.Map, defaultDimensions, staticDimensions dimensions.NormalizedDimensionList) dimensions.NormalizedDimensionList {
 	dimsFromLabels := []dimensions.Dimension{}
 
 	labels.Range(func(k string, v pdata.Value) bool {

@@ -33,7 +33,7 @@ var attrValDescriptions = []*attrValDescript{
 	constructAttrValDescript(`^-?\d+\.\d+$`, pdata.ValueTypeDouble),
 	constructAttrValDescript(`^(true|false)$`, pdata.ValueTypeBool),
 	constructAttrValDescript(`^\{"\w+":.+\}$`, pdata.ValueTypeMap),
-	constructAttrValDescript(`^\[.*\]$`, pdata.ValueTypeArray),
+	constructAttrValDescript(`^\[.*\]$`, pdata.ValueTypeSlice),
 }
 
 type attrValDescript struct {

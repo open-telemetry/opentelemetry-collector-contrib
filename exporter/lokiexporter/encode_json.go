@@ -55,7 +55,7 @@ func serializeBody(body pdata.Value) ([]byte, error) {
 	case pdata.ValueTypeMap:
 		str, err = json.Marshal(body.MapVal().AsRaw())
 
-	case pdata.ValueTypeArray:
+	case pdata.ValueTypeSlice:
 		str, err = json.Marshal(attributeValueSliceAsRaw(body.SliceVal()))
 
 	case pdata.ValueTypeBytes:
@@ -78,7 +78,6 @@ func encodeJSON(lr pdata.LogRecord, res pdata.Resource) (string, error) {
 		return "", err
 	}
 	logRecord = lokiEntry{
-		Name:       lr.Name(),
 		Body:       body,
 		TraceID:    lr.TraceID().HexString(),
 		SpanID:     lr.SpanID().HexString(),
@@ -96,7 +95,7 @@ func encodeJSON(lr pdata.LogRecord, res pdata.Resource) (string, error) {
 }
 
 // Copied from pdata (es AttributeValueSlice) asRaw() since its not exported
-func attributeValueSliceAsRaw(es pdata.AttributeValueSlice) []interface{} {
+func attributeValueSliceAsRaw(es pdata.Slice) []interface{} {
 	rawSlice := make([]interface{}, 0, es.Len())
 	for i := 0; i < es.Len(); i++ {
 		v := es.At(i)

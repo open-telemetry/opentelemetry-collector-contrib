@@ -258,7 +258,7 @@ func TestResourceToHostID(t *testing.T) {
 }
 
 func TestAzureID(t *testing.T) {
-	attrs := pdata.NewAttributeMap()
+	attrs := pdata.NewMap()
 	attrs.Insert("azure.resourcegroup.name", pdata.NewValueString("myResourceGroup"))
 	attrs.Insert("azure.vm.scaleset.name", pdata.NewValueString("myScalesetName"))
 	attrs.Insert(conventions.AttributeHostName, pdata.NewValueString("myScalesetName_1"))

@@ -86,7 +86,7 @@ func NewMatcher(mp *filterconfig.MatchProperties) (PropertiesMatcher, error) {
 }
 
 // Match matches a span or log to a set of properties.
-func (mp *PropertiesMatcher) Match(attributes pdata.AttributeMap, resource pdata.Resource, library pdata.InstrumentationLibrary) bool {
+func (mp *PropertiesMatcher) Match(attributes pdata.Map, resource pdata.Resource, library pdata.InstrumentationScope) bool {
 	for _, matcher := range mp.libraries {
 		if !matcher.Name.Matches(library.Name()) {
 			return false
