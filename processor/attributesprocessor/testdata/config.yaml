@@ -325,6 +325,23 @@ processors:
       - key: token
         action: delete
 
+  # The following demonstrates how to process logs that have a severity text that match regexp
+  # patterns. This processor will remove "token" attribute and will obfuscate "password"
+  # attribute in spans where severity matches "debug".
+  attributes/log_severity_regexp:
+    # Specifies the span properties that must exist for the processor to be applied.
+    include:
+      # match_type defines that "services" is an array of regexp-es.
+      match_type: regexp
+      # The log severity "debug.*" pattern.
+      log_severities: [ "debug.*" ]
+    actions:
+      - key: password
+        action: update
+        value: "obfuscated"
+      - key: token
+        action: delete
+
 receivers:
   nop:
 
