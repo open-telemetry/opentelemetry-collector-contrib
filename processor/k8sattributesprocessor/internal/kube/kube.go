@@ -172,29 +172,29 @@ type FieldExtractionRule struct {
 	From string
 }
 
-func (r *FieldExtractionRule) extractFromPodMetadata(metadata map[string]string, tags *map[string]string) {
+func (r *FieldExtractionRule) extractFromPodMetadata(metadata map[string]string, tags map[string]string) {
 	// By default if the From field is not set for labels and annotations we want to extract them from pod
 	if r.From == MetadataFromPod || r.From == "" {
 		r.extractFromMetadata(metadata, tags)
 	}
 }
 
-func (r *FieldExtractionRule) extractFromNamespaceMetadata(metadata map[string]string, tags *map[string]string) {
+func (r *FieldExtractionRule) extractFromNamespaceMetadata(metadata map[string]string, tags map[string]string) {
 	if r.From == MetadataFromNamespace {
 		r.extractFromMetadata(metadata, tags)
 	}
 }
 
-func (r *FieldExtractionRule) extractFromMetadata(metadata map[string]string, tags *map[string]string) {
+func (r *FieldExtractionRule) extractFromMetadata(metadata map[string]string, tags map[string]string) {
 	if r.KeyRegex != nil {
 		for k, v := range metadata {
 			if r.KeyRegex.MatchString(k) && v != "" {
 				name := fmt.Sprintf("%s%s", r.KeyPrefix, k)
-				(*tags)[name] = v
+				tags[name] = v
 			}
 		}
 	} else if v, ok := metadata[r.Key]; ok {
-		(*tags)[r.Name] = r.extractField(v)
+		tags[r.Name] = r.extractField(v)
 	}
 }
 

@@ -311,11 +311,11 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	}
 
 	for _, r := range c.Rules.Labels {
-		r.extractFromPodMetadata(pod.Labels, &tags)
+		r.extractFromPodMetadata(pod.Labels, tags)
 	}
 
 	for _, r := range c.Rules.Annotations {
-		r.extractFromPodMetadata(pod.Annotations, &tags)
+		r.extractFromPodMetadata(pod.Annotations, tags)
 	}
 	return tags
 }
@@ -366,11 +366,11 @@ func (c *WatchClient) extractNamespaceAttributes(namespace *api_v1.Namespace) ma
 	tags := map[string]string{}
 
 	for _, r := range c.Rules.Labels {
-		r.extractFromNamespaceMetadata(namespace.Labels, &tags)
+		r.extractFromNamespaceMetadata(namespace.Labels, tags)
 	}
 
 	for _, r := range c.Rules.Annotations {
-		r.extractFromNamespaceMetadata(namespace.Annotations, &tags)
+		r.extractFromNamespaceMetadata(namespace.Annotations, tags)
 	}
 
 	return tags
