@@ -28,6 +28,7 @@
 
 ### 🧰 Bug fixes 🧰
 
+- `filestorageextension`: use correct bbolt options for compaction (#9134)
 - `hostmetricsreceiver`: Use cpu times for time delta in cpu.utilization calculation (#8857)
 - `dynatraceexporter`: Remove overly verbose stacktrace from certain logs (#8989)
 - `googlecloudexporter`: fix the `exporter.googlecloud.OTLPDirect` fature-gate, which was not applied when the flag was provided (#9116)
