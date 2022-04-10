@@ -160,7 +160,7 @@ type FieldExtractionRule struct {
 	Key string
 	// KeyRegex is a regular expression used to extract a Key that matches the regex.
 	KeyRegex *regexp.Regexp
-	// KeyPrefix is the prefix to be appended.
+	// KeyPrefix is the prefix to be prepended.
 	KeyPrefix string
 	// Regex is a regular expression used to extract a sub-part of a field value.
 	// Full value is extracted when no regexp is provided.
