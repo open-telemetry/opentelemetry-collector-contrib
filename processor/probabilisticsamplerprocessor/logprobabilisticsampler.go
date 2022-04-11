@@ -26,7 +26,7 @@ import (
 type logsamplerprocessor struct {
 	scaledSamplingRate uint32
 	hashSeed           uint32
-	traceIdEnabled     bool
+	traceIDEnabled     bool
 	samplingSource     string
 	samplingPriority   string
 }
@@ -38,7 +38,7 @@ func newLogsProcessor(nextConsumer consumer.Logs, cfg *Config) (component.LogsPr
 	lsp := &logsamplerprocessor{
 		scaledSamplingRate: uint32(cfg.SamplingPercentage * percentageScaleFactor),
 		hashSeed:           cfg.HashSeed,
-		traceIdEnabled:     cfg.TraceIDEnabled == nil || *cfg.TraceIDEnabled,
+		traceIDEnabled:     cfg.TraceIDEnabled == nil || *cfg.TraceIDEnabled,
 		samplingPriority:   cfg.SamplingPriority,
 		samplingSource:     cfg.SamplingSource,
 	}
@@ -57,7 +57,7 @@ func (lsp *logsamplerprocessor) processLogs(_ context.Context, ld pdata.Logs) (p
 
 				// pick the sampling source.
 				var lidBytes []byte
-				if lsp.traceIdEnabled && !l.TraceID().IsEmpty() {
+				if lsp.traceIDEnabled && !l.TraceID().IsEmpty() {
 					value := l.TraceID().Bytes()
 					lidBytes = value[:]
 				}
