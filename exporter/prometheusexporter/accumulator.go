@@ -41,7 +41,8 @@ type accumulatedValue struct {
 type accumulator interface {
 	// Accumulate stores aggragated metric values
 	Accumulate(resourceMetrics pdata.ResourceMetrics) (processed int)
-	// Collect returns a slice with relevant aggregated metrics
+	// Collect returns a slice with relevant aggregated metrics and their resource attributes.
+	// The number or metrics and attributes returned will be the same.
 	Collect() (metrics []pdata.Metric, resourceAttrs []pdata.Map)
 }
 

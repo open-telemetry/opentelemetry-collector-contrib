@@ -104,7 +104,7 @@ func (c *collector) getMetricMetadata(metric pdata.Metric, attributes pdata.Map,
 	// Map service.name + service.namespace to job
 	if serviceName, ok := resourceAttrs.Get(conventions.AttributeServiceName); ok {
 		val := serviceName.AsString()
-		if serviceNamespace, ok := attributes.Get(conventions.AttributeServiceNamespace); ok {
+		if serviceNamespace, ok := resourceAttrs.Get(conventions.AttributeServiceNamespace); ok {
 			val = fmt.Sprintf("%s/%s", serviceNamespace.AsString(), val)
 		}
 		keys = append(keys, model.JobLabel)

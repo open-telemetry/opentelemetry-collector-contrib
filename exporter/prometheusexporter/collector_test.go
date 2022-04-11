@@ -22,20 +22,27 @@ import (
 	io_prometheus_client "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
 type mockAccumulator struct {
-	metrics []pdata.Metric
+	metrics            []pdata.Metric
+	resourceAttributes pdata.Map // Same attributes for all metrics.
 }
 
 func (a *mockAccumulator) Accumulate(pdata.ResourceMetrics) (n int) {
 	return 0
 }
 
-func (a *mockAccumulator) Collect() []pdata.Metric {
-	return a.metrics
+func (a *mockAccumulator) Collect() ([]pdata.Metric, []pdata.Map) {
+	rAttrs := make([]pdata.Map, len(a.metrics))
+	for i := range rAttrs {
+		rAttrs[i] = a.resourceAttributes
+	}
+
+	return a.metrics, rAttrs
 }
 
 func TestConvertInvalidDataType(t *testing.T) {
@@ -44,11 +51,12 @@ func TestConvertInvalidDataType(t *testing.T) {
 	c := collector{
 		accumulator: &mockAccumulator{
 			[]pdata.Metric{metric},
+			pdata.Map{},
 		},
 		logger: zap.NewNop(),
 	}
 
-	_, err := c.convertMetric(metric)
+	_, err := c.convertMetric(metric, pdata.Map{})
 	require.Equal(t, errUnknownMetricType, err)
 
 	ch := make(chan prometheus.Metric, 1)
@@ -82,7 +90,7 @@ func TestConvertInvalidMetric(t *testing.T) {
 		}
 		c := collector{}
 
-		_, err := c.convertMetric(metric)
+		_, err := c.convertMetric(metric, pdata.Map{})
 		require.Error(t, err)
 	}
 }
@@ -124,6 +132,7 @@ func TestCollectMetricsLabelSanitize(t *testing.T) {
 		namespace: "test_space",
 		accumulator: &mockAccumulator{
 			[]pdata.Metric{metric},
+			pdata.Map{},
 		},
 		sendTimestamps: false,
 		logger:         zap.New(&loggerCore),
@@ -282,6 +291,12 @@ func TestCollectMetrics(t *testing.T) {
 			if sendTimestamp {
 				name += "/WithTimestamp"
 			}
+
+			rAttrs := pdata.NewMap()
+			rAttrs.InsertString(conventions.AttributeServiceInstanceID, "localhost:9090")
+			rAttrs.InsertString(conventions.AttributeServiceName, "testapp")
+			rAttrs.InsertString(conventions.AttributeServiceNamespace, "prod")
+
 			t.Run(name, func(t *testing.T) {
 				ts := time.Now()
 				metric := tt.metric(ts)
@@ -289,6 +304,7 @@ func TestCollectMetrics(t *testing.T) {
 					namespace: "test_space",
 					accumulator: &mockAccumulator{
 						[]pdata.Metric{metric},
+						rAttrs,
 					},
 					sendTimestamps: sendTimestamp,
 					logger:         zap.NewNop(),
@@ -304,12 +320,12 @@ func TestCollectMetrics(t *testing.T) {
 				for m := range ch {
 					j++
 					require.Contains(t, m.Desc().String(), "fqName: \"test_space_test_metric\"")
-					require.Contains(t, m.Desc().String(), "variableLabels: [label_1 label_2]")
+					require.Contains(t, m.Desc().String(), "variableLabels: [label_1 label_2 job instance]")
 
 					pbMetric := io_prometheus_client.Metric{}
 					require.NoError(t, m.Write(&pbMetric))
 
-					labelsKeys := map[string]string{"label_1": "1", "label_2": "2"}
+					labelsKeys := map[string]string{"label_1": "1", "label_2": "2", "job": "prod/testapp", "instance": "localhost:9090"}
 					for _, l := range pbMetric.Label {
 						require.Equal(t, labelsKeys[*l.Name], *l.Value)
 					}
@@ -387,6 +403,7 @@ func TestAccumulateHistograms(t *testing.T) {
 				c := collector{
 					accumulator: &mockAccumulator{
 						[]pdata.Metric{metric},
+						pdata.Map{},
 					},
 					sendTimestamps: sendTimestamp,
 					logger:         zap.NewNop(),
@@ -489,6 +506,7 @@ func TestAccumulateSummary(t *testing.T) {
 				c := collector{
 					accumulator: &mockAccumulator{
 						[]pdata.Metric{metric},
+						pdata.Map{},
 					},
 					sendTimestamps: sendTimestamp,
 					logger:         zap.NewNop(),
