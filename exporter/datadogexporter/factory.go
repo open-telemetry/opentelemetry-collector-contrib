@@ -108,6 +108,11 @@ func (*factory) createDefaultConfig() config.Exporter {
 			IgnoreResources: []string{},
 		},
 
+		HostMetadata: ddconfig.HostMetadataConfig{
+			Enabled:        true,
+			HostnameSource: ddconfig.HostnameSourceFirstResource,
+		},
+
 		SendMetadata:        true,
 		UseResourceMetadata: true,
 	}
