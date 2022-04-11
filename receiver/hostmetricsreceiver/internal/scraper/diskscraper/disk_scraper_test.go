@@ -120,7 +120,11 @@ func TestScrape(t *testing.T) {
 			require.NoError(t, err, "Failed to scrape metrics: %v", err)
 
 			assert.Equal(t, test.expectMetrics, md.MetricCount())
-			metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+			if md.ResourceMetrics().Len() == 0 {
+				return
+			}
+
+			metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 			assert.Equal(t, test.expectMetrics, metrics.Len())
 
 			reportedMetricsCount := map[string]int{}
@@ -165,8 +169,8 @@ func assertInt64DiskMetricValid(t *testing.T, metric pdata.Metric, startTime pda
 	assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), 2)
 
 	internal.AssertSumMetricHasAttribute(t, metric, 0, "device")
-	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "direction", pdata.NewAttributeValueString(metadata.AttributeDirection.Read))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "direction", pdata.NewAttributeValueString(metadata.AttributeDirection.Write))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "direction", pdata.NewValueString(metadata.AttributeDirection.Read))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "direction", pdata.NewValueString(metadata.AttributeDirection.Write))
 }
 
 func assertDoubleDiskMetricValid(t *testing.T, metric pdata.Metric, expectDirectionLabels bool, startTime pdata.Timestamp) {
@@ -182,8 +186,8 @@ func assertDoubleDiskMetricValid(t *testing.T, metric pdata.Metric, expectDirect
 
 	internal.AssertSumMetricHasAttribute(t, metric, 0, "device")
 	if expectDirectionLabels {
-		internal.AssertSumMetricHasAttributeValue(t, metric, 0, "direction", pdata.NewAttributeValueString(metadata.AttributeDirection.Read))
-		internal.AssertSumMetricHasAttributeValue(t, metric, metric.Sum().DataPoints().Len()-1, "direction", pdata.NewAttributeValueString(metadata.AttributeDirection.Write))
+		internal.AssertSumMetricHasAttributeValue(t, metric, 0, "direction", pdata.NewValueString(metadata.AttributeDirection.Read))
+		internal.AssertSumMetricHasAttributeValue(t, metric, metric.Sum().DataPoints().Len()-1, "direction", pdata.NewValueString(metadata.AttributeDirection.Write))
 	}
 }
 

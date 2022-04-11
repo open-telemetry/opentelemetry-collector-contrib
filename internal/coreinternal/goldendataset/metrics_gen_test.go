@@ -33,7 +33,7 @@ func TestGenDefault(t *testing.T) {
 	require.Equal(t, 1, rattrs.Len())
 	val, _ := rattrs.Get("resource-attr-name-0")
 	require.Equal(t, "resource-attr-val-0", val.StringVal())
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 	require.Equal(t, 1, ilms.Len())
 	ms := ilms.At(0).Metrics()
 	require.Equal(t, 1, ms.Len())
@@ -102,5 +102,5 @@ func TestGenDoubleGauge(t *testing.T) {
 }
 
 func getMetric(md pdata.Metrics) pdata.Metric {
-	return md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
+	return md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
 }

@@ -75,7 +75,7 @@ func (m *metricPostgresqlBackends) recordDataPoint(start pdata.Timestamp, ts pda
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pdata.NewAttributeValueString(databaseAttributeValue))
+	dp.Attributes().Insert(A.Database, pdata.NewValueString(databaseAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -128,9 +128,9 @@ func (m *metricPostgresqlBlocksRead) recordDataPoint(start pdata.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pdata.NewAttributeValueString(databaseAttributeValue))
-	dp.Attributes().Insert(A.Table, pdata.NewAttributeValueString(tableAttributeValue))
-	dp.Attributes().Insert(A.Source, pdata.NewAttributeValueString(sourceAttributeValue))
+	dp.Attributes().Insert(A.Database, pdata.NewValueString(databaseAttributeValue))
+	dp.Attributes().Insert(A.Table, pdata.NewValueString(tableAttributeValue))
+	dp.Attributes().Insert(A.Source, pdata.NewValueString(sourceAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -183,7 +183,7 @@ func (m *metricPostgresqlCommits) recordDataPoint(start pdata.Timestamp, ts pdat
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pdata.NewAttributeValueString(databaseAttributeValue))
+	dp.Attributes().Insert(A.Database, pdata.NewValueString(databaseAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -236,7 +236,7 @@ func (m *metricPostgresqlDbSize) recordDataPoint(start pdata.Timestamp, ts pdata
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pdata.NewAttributeValueString(databaseAttributeValue))
+	dp.Attributes().Insert(A.Database, pdata.NewValueString(databaseAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -289,9 +289,9 @@ func (m *metricPostgresqlOperations) recordDataPoint(start pdata.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pdata.NewAttributeValueString(databaseAttributeValue))
-	dp.Attributes().Insert(A.Table, pdata.NewAttributeValueString(tableAttributeValue))
-	dp.Attributes().Insert(A.Operation, pdata.NewAttributeValueString(operationAttributeValue))
+	dp.Attributes().Insert(A.Database, pdata.NewValueString(databaseAttributeValue))
+	dp.Attributes().Insert(A.Table, pdata.NewValueString(tableAttributeValue))
+	dp.Attributes().Insert(A.Operation, pdata.NewValueString(operationAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -344,7 +344,7 @@ func (m *metricPostgresqlRollbacks) recordDataPoint(start pdata.Timestamp, ts pd
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pdata.NewAttributeValueString(databaseAttributeValue))
+	dp.Attributes().Insert(A.Database, pdata.NewValueString(databaseAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -397,9 +397,9 @@ func (m *metricPostgresqlRows) recordDataPoint(start pdata.Timestamp, ts pdata.T
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pdata.NewAttributeValueString(databaseAttributeValue))
-	dp.Attributes().Insert(A.Table, pdata.NewAttributeValueString(tableAttributeValue))
-	dp.Attributes().Insert(A.State, pdata.NewAttributeValueString(stateAttributeValue))
+	dp.Attributes().Insert(A.Database, pdata.NewValueString(databaseAttributeValue))
+	dp.Attributes().Insert(A.Table, pdata.NewValueString(tableAttributeValue))
+	dp.Attributes().Insert(A.State, pdata.NewValueString(stateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -430,7 +430,10 @@ func newMetricPostgresqlRows(settings MetricSettings) metricPostgresqlRows {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	startTime                  pdata.Timestamp
+	startTime                  pdata.Timestamp // start time that will be applied to all recorded data points.
+	metricsCapacity            int             // maximum observed number of metrics per resource.
+	resourceCapacity           int             // maximum observed number of resource attributes.
+	metricsBuffer              pdata.Metrics   // accumulates metrics data before emitting.
 	metricPostgresqlBackends   metricPostgresqlBackends
 	metricPostgresqlBlocksRead metricPostgresqlBlocksRead
 	metricPostgresqlCommits    metricPostgresqlCommits
@@ -453,6 +456,7 @@ func WithStartTime(startTime pdata.Timestamp) metricBuilderOption {
 func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                  pdata.NewTimestampFromTime(time.Now()),
+		metricsBuffer:              pdata.NewMetrics(),
 		metricPostgresqlBackends:   newMetricPostgresqlBackends(settings.PostgresqlBackends),
 		metricPostgresqlBlocksRead: newMetricPostgresqlBlocksRead(settings.PostgresqlBlocksRead),
 		metricPostgresqlCommits:    newMetricPostgresqlCommits(settings.PostgresqlCommits),
@@ -467,17 +471,53 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 	return mb
 }
 
-// Emit appends generated metrics to a pdata.MetricsSlice and updates the internal state to be ready for recording
-// another set of data points. This function will be doing all transformations required to produce metric representation
-// defined in metadata and user settings, e.g. delta/cumulative translation.
-func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
-	mb.metricPostgresqlBackends.emit(metrics)
-	mb.metricPostgresqlBlocksRead.emit(metrics)
-	mb.metricPostgresqlCommits.emit(metrics)
-	mb.metricPostgresqlDbSize.emit(metrics)
-	mb.metricPostgresqlOperations.emit(metrics)
-	mb.metricPostgresqlRollbacks.emit(metrics)
-	mb.metricPostgresqlRows.emit(metrics)
+// updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
+func (mb *MetricsBuilder) updateCapacity(rm pdata.ResourceMetrics) {
+	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
+		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
+	}
+	if mb.resourceCapacity < rm.Resource().Attributes().Len() {
+		mb.resourceCapacity = rm.Resource().Attributes().Len()
+	}
+}
+
+// ResourceOption applies changes to provided resource.
+type ResourceOption func(pdata.Resource)
+
+// EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
+// recording another set of data points as part of another resource. This function can be helpful when one scraper
+// needs to emit metrics from several resources. Otherwise calling this function is not required,
+// just `Emit` function can be called instead. Resource attributes should be provided as ResourceOption arguments.
+func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
+	rm := pdata.NewResourceMetrics()
+	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
+	for _, op := range ro {
+		op(rm.Resource())
+	}
+	ils := rm.ScopeMetrics().AppendEmpty()
+	ils.Scope().SetName("otelcol/postgresqlreceiver")
+	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
+	mb.metricPostgresqlBackends.emit(ils.Metrics())
+	mb.metricPostgresqlBlocksRead.emit(ils.Metrics())
+	mb.metricPostgresqlCommits.emit(ils.Metrics())
+	mb.metricPostgresqlDbSize.emit(ils.Metrics())
+	mb.metricPostgresqlOperations.emit(ils.Metrics())
+	mb.metricPostgresqlRollbacks.emit(ils.Metrics())
+	mb.metricPostgresqlRows.emit(ils.Metrics())
+	if ils.Metrics().Len() > 0 {
+		mb.updateCapacity(rm)
+		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
+	}
+}
+
+// Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
+// recording another set of metrics. This function will be responsible for applying all the transformations required to
+// produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
+func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pdata.Metrics {
+	mb.EmitForResource(ro...)
+	metrics := pdata.NewMetrics()
+	mb.metricsBuffer.MoveTo(metrics)
+	return metrics
 }
 
 // RecordPostgresqlBackendsDataPoint adds a data point to postgresql.backends metric.

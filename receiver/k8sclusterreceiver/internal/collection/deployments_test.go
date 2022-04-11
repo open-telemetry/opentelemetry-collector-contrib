@@ -44,10 +44,10 @@ func TestDeploymentMetrics(t *testing.T) {
 		},
 	)
 
-	testutils.AssertMetrics(t, rm.metrics[0], "k8s.deployment.desired",
+	testutils.AssertMetricsInt(t, rm.metrics[0], "k8s.deployment.desired",
 		metricspb.MetricDescriptor_GAUGE_INT64, 10)
 
-	testutils.AssertMetrics(t, rm.metrics[1], "k8s.deployment.available",
+	testutils.AssertMetricsInt(t, rm.metrics[1], "k8s.deployment.available",
 		metricspb.MetricDescriptor_GAUGE_INT64, 3)
 }
 

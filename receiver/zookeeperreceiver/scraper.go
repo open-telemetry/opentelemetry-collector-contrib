@@ -118,17 +118,9 @@ func (z *zookeeperMetricsScraper) getResourceMetrics(conn net.Conn) (pdata.Metri
 		return pdata.NewMetrics(), err
 	}
 
-	md := pdata.NewMetrics()
-	z.appendMetrics(scanner, md.ResourceMetrics())
-	return md, nil
-}
-
-func (z *zookeeperMetricsScraper) appendMetrics(scanner *bufio.Scanner, rms pdata.ResourceMetricsSlice) {
 	creator := newMetricCreator(z.mb)
 	now := pdata.NewTimestampFromTime(time.Now())
-	rm := pdata.NewResourceMetrics()
-	ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName("otelcol/zookeeper")
+	resourceOpts := make([]metadata.ResourceOption, 0, 2)
 	for scanner.Scan() {
 		line := scanner.Text()
 		parts := zookeeperFormatRE.FindStringSubmatch(line)
@@ -144,10 +136,10 @@ func (z *zookeeperMetricsScraper) appendMetrics(scanner *bufio.Scanner, rms pdat
 		metricValue := parts[2]
 		switch metricKey {
 		case zkVersionKey:
-			rm.Resource().Attributes().UpsertString(metadata.Attributes.ZkVersion, metricValue)
+			resourceOpts = append(resourceOpts, metadata.WithZkVersion(metricValue))
 			continue
 		case serverStateKey:
-			rm.Resource().Attributes().UpsertString(metadata.Attributes.ServerState, metricValue)
+			resourceOpts = append(resourceOpts, metadata.WithServerState(metricValue))
 			continue
 		default:
 			// Skip metric if there is no descriptor associated with it.
@@ -171,10 +163,7 @@ func (z *zookeeperMetricsScraper) appendMetrics(scanner *bufio.Scanner, rms pdat
 	// Generate computed metrics
 	creator.generateComputedMetrics(z.logger, now)
 
-	z.mb.Emit(ilm.Metrics())
-	if ilm.Metrics().Len() > 0 {
-		rm.CopyTo(rms.AppendEmpty())
-	}
+	return z.mb.Emit(resourceOpts...), nil
 }
 
 func closeConnection(conn net.Conn) error {

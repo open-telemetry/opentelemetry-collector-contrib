@@ -68,7 +68,6 @@ Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs
 
 - [Anthony Mirabella](https://github.com/Aneurysm9), AWS
 - [Anuraag Agrawal](https://github.com/anuraaga), AWS
-- [Daniel Jaglowski](https://github.com/djaglowski), observIQ
 - [David Ashpole](https://github.com/dashpole), Google
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
 - [Pablo Baeyens](https://github.com/mx-psi), DataDog
@@ -76,9 +75,12 @@ Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs
 
 Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/orgs/open-telemetry/teams/collector-contrib-maintainer)):
 
+- [Daniel Jaglowski](https://github.com/djaglowski), observIQ
 - [Juraci Paixão Kröhling](https://github.com/jpkrohling), Grafana Labs
 - [Alex Boten](https://github.com/codeboten), Lightstep
 - [Bogdan Drutu](https://github.com/BogdanDrutu), Splunk
+
+Emeritus Maintainers
 - [Tigran Najaryan](https://github.com/tigrannajaryan), Splunk
 
 Learn more about roles in the [community repository](https://github.com/open-telemetry/community/blob/main/community-membership.md).

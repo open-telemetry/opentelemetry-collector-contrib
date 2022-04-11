@@ -127,16 +127,16 @@ func (e *elasticExporter) ExportResourceSpans(ctx context.Context, rs pdata.Reso
 	elastic.EncodeResourceMetadata(rs.Resource(), &w)
 	var errs []error
 	var count int
-	instrumentationLibrarySpansSlice := rs.InstrumentationLibrarySpans()
-	for i := 0; i < instrumentationLibrarySpansSlice.Len(); i++ {
-		instrumentationLibrarySpans := instrumentationLibrarySpansSlice.At(i)
-		instrumentationLibrary := instrumentationLibrarySpans.InstrumentationLibrary()
-		spanSlice := instrumentationLibrarySpans.Spans()
+	scopeSpansSlice := rs.ScopeSpans()
+	for i := 0; i < scopeSpansSlice.Len(); i++ {
+		scopeSpans := scopeSpansSlice.At(i)
+		scope := scopeSpans.Scope()
+		spanSlice := scopeSpans.Spans()
 		for i := 0; i < spanSlice.Len(); i++ {
 			count++
 			span := spanSlice.At(i)
 			before := w.Size()
-			if err := elastic.EncodeSpan(span, instrumentationLibrary, rs.Resource(), &w); err != nil {
+			if err := elastic.EncodeSpan(span, scope, rs.Resource(), &w); err != nil {
 				w.Rewind(before)
 				errs = append(errs, err)
 			}
@@ -155,13 +155,13 @@ func (e *elasticExporter) ExportResourceMetrics(ctx context.Context, rm pdata.Re
 	elastic.EncodeResourceMetadata(rm.Resource(), &w)
 	var errs error
 	var totalDropped int
-	instrumentationLibraryMetricsSlice := rm.InstrumentationLibraryMetrics()
-	for i := 0; i < instrumentationLibraryMetricsSlice.Len(); i++ {
-		instrumentationLibraryMetrics := instrumentationLibraryMetricsSlice.At(i)
-		instrumentationLibrary := instrumentationLibraryMetrics.InstrumentationLibrary()
-		metrics := instrumentationLibraryMetrics.Metrics()
+	scopeMetricsSlice := rm.ScopeMetrics()
+	for i := 0; i < scopeMetricsSlice.Len(); i++ {
+		scopeMetrics := scopeMetricsSlice.At(i)
+		scope := scopeMetrics.Scope()
+		metrics := scopeMetrics.Metrics()
 		before := w.Size()
-		dropped, err := elastic.EncodeMetrics(metrics, instrumentationLibrary, &w)
+		dropped, err := elastic.EncodeMetrics(metrics, scope, &w)
 		if err != nil {
 			w.Rewind(before)
 			errs = multierr.Append(errs, err)

@@ -28,16 +28,39 @@ const (
 	dimensionSeparator = string(byte(0))
 )
 
-type metricsDimensions struct {
-	name string
-	tags []string
-	host string
+// Dimensions of a metric that identify a timeseries uniquely.
+// This is similar to the concept of 'context' in DogStatsD/check metrics.
+type Dimensions struct {
+	name     string
+	tags     []string
+	host     string
+	originID string
+}
+
+// Name of the metric.
+func (d *Dimensions) Name() string {
+	return d.name
+}
+
+// Tags of the metric (read-only).
+func (d *Dimensions) Tags() []string {
+	return d.tags
+}
+
+// Host of the metric (may be empty).
+func (d *Dimensions) Host() string {
+	return d.host
+}
+
+// OriginID of the metric (may be empty).
+func (d *Dimensions) OriginID() string {
+	return d.originID
 }
 
 // getTags maps an attributeMap into a slice of Datadog tags
-func getTags(labels pdata.AttributeMap) []string {
+func getTags(labels pdata.Map) []string {
 	tags := make([]string, 0, labels.Len())
-	labels.Range(func(key string, value pdata.AttributeValue) bool {
+	labels.Range(func(key string, value pdata.Value) bool {
 		v := value.AsString()
 		tags = append(tags, utils.FormatKeyValueTag(key, v))
 		return true
@@ -46,29 +69,31 @@ func getTags(labels pdata.AttributeMap) []string {
 }
 
 // AddTags to metrics dimensions.
-func (m *metricsDimensions) AddTags(tags ...string) metricsDimensions {
+func (d *Dimensions) AddTags(tags ...string) *Dimensions {
 	// defensively copy the tags
-	newTags := make([]string, 0, len(tags)+len(m.tags))
+	newTags := make([]string, 0, len(tags)+len(d.tags))
 	newTags = append(newTags, tags...)
-	newTags = append(newTags, m.tags...)
-	return metricsDimensions{
-		name: m.name,
-		tags: newTags,
-		host: m.host,
+	newTags = append(newTags, d.tags...)
+	return &Dimensions{
+		name:     d.name,
+		tags:     newTags,
+		host:     d.host,
+		originID: d.originID,
 	}
 }
 
 // WithAttributeMap creates a new metricDimensions struct with additional tags from attributes.
-func (m *metricsDimensions) WithAttributeMap(labels pdata.AttributeMap) metricsDimensions {
-	return m.AddTags(getTags(labels)...)
+func (d *Dimensions) WithAttributeMap(labels pdata.Map) *Dimensions {
+	return d.AddTags(getTags(labels)...)
 }
 
 // WithSuffix creates a new dimensions struct with an extra name suffix.
-func (m *metricsDimensions) WithSuffix(suffix string) metricsDimensions {
-	return metricsDimensions{
-		name: fmt.Sprintf("%s.%s", m.name, suffix),
-		host: m.host,
-		tags: m.tags,
+func (d *Dimensions) WithSuffix(suffix string) *Dimensions {
+	return &Dimensions{
+		name:     fmt.Sprintf("%s.%s", d.name, suffix),
+		host:     d.host,
+		tags:     d.tags,
+		originID: d.originID,
 	}
 }
 
@@ -82,14 +107,15 @@ func concatDimensionValue(metricKeyBuilder *strings.Builder, value string) {
 
 // String maps dimensions to a string to use as an identifier.
 // The tags order does not matter.
-func (m *metricsDimensions) String() string {
+func (d *Dimensions) String() string {
 	var metricKeyBuilder strings.Builder
 
-	dimensions := make([]string, len(m.tags))
-	copy(dimensions, m.tags)
+	dimensions := make([]string, len(d.tags))
+	copy(dimensions, d.tags)
 
-	dimensions = append(dimensions, fmt.Sprintf("name:%s", m.name))
-	dimensions = append(dimensions, fmt.Sprintf("host:%s", m.host))
+	dimensions = append(dimensions, fmt.Sprintf("name:%s", d.name))
+	dimensions = append(dimensions, fmt.Sprintf("host:%s", d.host))
+	dimensions = append(dimensions, fmt.Sprintf("originID:%s", d.originID))
 	sort.Strings(dimensions)
 
 	for _, dim := range dimensions {

@@ -25,14 +25,37 @@ import (
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 
-	PerfCounters []PerfCounterConfig `mapstructure:"perfcounters"`
+	MetricMetaData map[string]MetricConfig `mapstructure:"metrics"`
+	PerfCounters   []PerfCounterConfig     `mapstructure:"perfcounters"`
 }
 
 // PerfCounterConfig defines configuration for a perf counter object.
 type PerfCounterConfig struct {
-	Object    string   `mapstructure:"object"`
-	Instances []string `mapstructure:"instances"`
-	Counters  []string `mapstructure:"counters"`
+	Object    string          `mapstructure:"object"`
+	Instances []string        `mapstructure:"instances"`
+	Counters  []CounterConfig `mapstructure:"counters"`
+}
+
+// MetricsConfig defines the configuration for a metric to be created.
+type MetricConfig struct {
+	Unit        string      `mapstructure:"unit"`
+	Description string      `mapstructure:"description"`
+	Gauge       GaugeMetric `mapstructure:"gauge"`
+	Sum         SumMetric   `mapstructure:"sum"`
+}
+
+type GaugeMetric struct {
+}
+
+type SumMetric struct {
+	Aggregation string `mapstructure:"aggregation"`
+	Monotonic   bool   `mapstructure:"monotonic"`
+}
+
+type CounterConfig struct {
+	Metric     string            `mapstructure:"metric"`
+	Name       string            `mapstructure:"name"`
+	Attributes map[string]string `mapstructure:"attributes"`
 }
 
 func (c *Config) Validate() error {
@@ -46,6 +69,22 @@ func (c *Config) Validate() error {
 		errs = multierr.Append(errs, fmt.Errorf("must specify at least one perf counter"))
 	}
 
+	for name, metric := range c.MetricMetaData {
+		if metric.Unit == "" {
+			metric.Unit = "1"
+		}
+
+		if (metric.Sum != SumMetric{}) {
+			if (metric.Gauge != GaugeMetric{}) {
+				errs = multierr.Append(errs, fmt.Errorf("metric %q provides both a sum config and a gauge config", name))
+			}
+
+			if metric.Sum.Aggregation != "cumulative" && metric.Sum.Aggregation != "delta" {
+				errs = multierr.Append(errs, fmt.Errorf("sum metric %q includes an invalid aggregation", name))
+			}
+		}
+	}
+
 	var perfCounterMissingObjectName bool
 	for _, pc := range c.PerfCounters {
 		if pc.Object == "" {
@@ -53,15 +92,31 @@ func (c *Config) Validate() error {
 			continue
 		}
 
+		if len(pc.Counters) == 0 {
+			errs = multierr.Append(errs, fmt.Errorf("perf counter for object %q does not specify any counters", pc.Object))
+		}
+
+		for _, counter := range pc.Counters {
+			if counter.Metric == "" {
+				continue
+			}
+
+			foundMatchingMetric := false
+			for name := range c.MetricMetaData {
+				if counter.Metric == name {
+					foundMatchingMetric = true
+				}
+			}
+			if !foundMatchingMetric {
+				errs = multierr.Append(errs, fmt.Errorf("perf counter for object %q includes an undefined metric", pc.Object))
+			}
+		}
+
 		for _, instance := range pc.Instances {
 			if instance == "" {
 				errs = multierr.Append(errs, fmt.Errorf("perf counter for object %q includes an empty instance", pc.Object))
 				break
 			}
-		}
-
-		if len(pc.Counters) == 0 {
-			errs = multierr.Append(errs, fmt.Errorf("perf counter for object %q does not specify any counters", pc.Object))
 		}
 	}
 

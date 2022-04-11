@@ -53,32 +53,32 @@ func TestOcTraceStateToInternal(t *testing.T) {
 }
 
 func TestInitAttributeMapFromOC(t *testing.T) {
-	attrs := pdata.NewAttributeMap()
+	attrs := pdata.NewMap()
 	initAttributeMapFromOC(nil, attrs)
-	assert.EqualValues(t, pdata.NewAttributeMap(), attrs)
+	assert.EqualValues(t, pdata.NewMap(), attrs)
 	assert.EqualValues(t, 0, ocAttrsToDroppedAttributes(nil))
 
 	ocAttrs := &octrace.Span_Attributes{}
-	attrs = pdata.NewAttributeMap()
+	attrs = pdata.NewMap()
 	initAttributeMapFromOC(ocAttrs, attrs)
-	assert.EqualValues(t, pdata.NewAttributeMap(), attrs)
+	assert.EqualValues(t, pdata.NewMap(), attrs)
 	assert.EqualValues(t, 0, ocAttrsToDroppedAttributes(ocAttrs))
 
 	ocAttrs = &octrace.Span_Attributes{
 		DroppedAttributesCount: 123,
 	}
-	attrs = pdata.NewAttributeMap()
+	attrs = pdata.NewMap()
 	initAttributeMapFromOC(ocAttrs, attrs)
-	assert.EqualValues(t, pdata.NewAttributeMap(), attrs)
+	assert.EqualValues(t, pdata.NewMap(), attrs)
 	assert.EqualValues(t, 123, ocAttrsToDroppedAttributes(ocAttrs))
 
 	ocAttrs = &octrace.Span_Attributes{
 		AttributeMap:           map[string]*octrace.AttributeValue{},
 		DroppedAttributesCount: 234,
 	}
-	attrs = pdata.NewAttributeMap()
+	attrs = pdata.NewMap()
 	initAttributeMapFromOC(ocAttrs, attrs)
-	assert.EqualValues(t, pdata.NewAttributeMap(), attrs)
+	assert.EqualValues(t, pdata.NewMap(), attrs)
 	assert.EqualValues(t, 234, ocAttrsToDroppedAttributes(ocAttrs))
 
 	ocAttrs = &octrace.Span_Attributes{
@@ -89,12 +89,12 @@ func TestInitAttributeMapFromOC(t *testing.T) {
 		},
 		DroppedAttributesCount: 234,
 	}
-	attrs = pdata.NewAttributeMap()
+	attrs = pdata.NewMap()
 	initAttributeMapFromOC(ocAttrs, attrs)
 	assert.EqualValues(t,
-		pdata.NewAttributeMapFromMap(
-			map[string]pdata.AttributeValue{
-				"abc": pdata.NewAttributeValueString("def"),
+		pdata.NewMapFromRaw(
+			map[string]interface{}{
+				"abc": "def",
 			}),
 		attrs)
 	assert.EqualValues(t, 234, ocAttrsToDroppedAttributes(ocAttrs))
@@ -108,14 +108,14 @@ func TestInitAttributeMapFromOC(t *testing.T) {
 	ocAttrs.AttributeMap["doubleval"] = &octrace.AttributeValue{
 		Value: &octrace.AttributeValue_DoubleValue{DoubleValue: 4.5},
 	}
-	attrs = pdata.NewAttributeMap()
+	attrs = pdata.NewMap()
 	initAttributeMapFromOC(ocAttrs, attrs)
 
-	expectedAttr := pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
-		"abc":       pdata.NewAttributeValueString("def"),
-		"intval":    pdata.NewAttributeValueInt(345),
-		"boolval":   pdata.NewAttributeValueBool(true),
-		"doubleval": pdata.NewAttributeValueDouble(4.5),
+	expectedAttr := pdata.NewMapFromRaw(map[string]interface{}{
+		"abc":       "def",
+		"intval":    345,
+		"boolval":   true,
+		"doubleval": 4.5,
 	})
 	assert.EqualValues(t, expectedAttr.Sort(), attrs.Sort())
 	assert.EqualValues(t, 234, ocAttrsToDroppedAttributes(ocAttrs))
@@ -398,14 +398,14 @@ func TestOcSameProcessAsParentSpanToInternal(t *testing.T) {
 	assert.Equal(t, 1, span.Attributes().Len())
 	v, ok := span.Attributes().Get(occonventions.AttributeSameProcessAsParentSpan)
 	assert.True(t, ok)
-	assert.EqualValues(t, pdata.AttributeValueTypeBool, v.Type())
+	assert.EqualValues(t, pdata.ValueTypeBool, v.Type())
 	assert.False(t, v.BoolVal())
 
 	ocSameProcessAsParentSpanToInternal(wrapperspb.Bool(true), span)
 	assert.Equal(t, 1, span.Attributes().Len())
 	v, ok = span.Attributes().Get(occonventions.AttributeSameProcessAsParentSpan)
 	assert.True(t, ok)
-	assert.EqualValues(t, pdata.AttributeValueTypeBool, v.Type())
+	assert.EqualValues(t, pdata.ValueTypeBool, v.Type())
 	assert.True(t, v.BoolVal())
 }
 

@@ -22,7 +22,6 @@ import (
 	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 )
 
@@ -39,11 +38,11 @@ var (
 // NewFactory returns a factory for Azure Monitor exporter.
 func NewFactory() component.ExporterFactory {
 	f := &factory{}
-	return exporterhelper.NewFactory(
+	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(f.createTracesExporter),
-		exporterhelper.WithLogs(f.createLogsExporter))
+		component.WithTracesExporter(f.createTracesExporter),
+		component.WithLogsExporter(f.createLogsExporter))
 }
 
 // Implements the interface from go.opentelemetry.io/collector/exporter/factory.go

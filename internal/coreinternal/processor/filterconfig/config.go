@@ -24,32 +24,32 @@ import (
 // by the processor, captured under the 'include' and the second, exclude, to
 // define what is excluded from the processor.
 type MatchConfig struct {
-	// Include specifies the set of span/log properties that must be present in order
+	// Include specifies the set of input data properties that must be present in order
 	// for this processor to apply to it.
-	// Note: If `exclude` is specified, the span/log is compared against those
+	// Note: If `exclude` is specified, the input data is compared against those
 	// properties after the `include` properties.
-	// This is an optional field. If neither `include` and `exclude` are set, all span/logs
+	// This is an optional field. If neither `include` and `exclude` are set, all input data
 	// are processed. If `include` is set and `exclude` isn't set, then all
-	// span/logs matching the properties in this structure are processed.
+	// input data matching the properties in this structure are processed.
 	Include *MatchProperties `mapstructure:"include"`
 
-	// Exclude specifies when this processor will not be applied to the span/logs
+	// Exclude specifies when this processor will not be applied to the input data
 	// which match the specified properties.
 	// Note: The `exclude` properties are checked after the `include` properties,
 	// if they exist, are checked.
 	// If `include` isn't specified, the `exclude` properties are checked against
-	// all span/logs.
-	// This is an optional field. If neither `include` and `exclude` are set, all span/logs
-	// are processed. If `exclude` is set and `include` isn't set, then all
-	// span/logs  that do no match the properties in this structure are processed.
+	// all input data.
+	// This is an optional field. If neither `include` and `exclude` are set, all input data
+	// is processed. If `exclude` is set and `include` isn't set, then all the
+	// input data that does not match the properties in this structure are processed.
 	Exclude *MatchProperties `mapstructure:"exclude"`
 }
 
-// MatchProperties specifies the set of properties in a span/log to match
-// against and if the span/log should be included or excluded from the
-// processor. At least one of services (spans only), span/log names or
+// MatchProperties specifies the set of properties in a spans/log/metric to match
+// against and if the input data should be included or excluded from the
+// processor. At least one of services (spans only), names or
 // attributes must be specified. It is supported to have all specified, but
-// this requires all of the properties to match for the inclusion/exclusion to
+// this requires all the properties to match for the inclusion/exclusion to
 // occur.
 // The following are examples of invalid configurations:
 //  attributes/bad1:
@@ -77,7 +77,10 @@ type MatchProperties struct {
 	// For logs, one of LogNames, Attributes, Resources or Libraries must be specified with a
 	// non-empty value for a valid configuration.
 
-	// Services specify the list of of items to match service name against.
+	// For metrics, one of MetricNames, Expressions, or ResourceAttributes must be specified with a
+	// non-empty value for a valid configuration.
+
+	// Services specify the list of items to match service name against.
 	// A match occurs if the span's service name matches at least one item in this list.
 	// This is an optional field.
 	Services []string `mapstructure:"services"`
@@ -92,6 +95,15 @@ type MatchProperties struct {
 	// Deprecated: the Name field is removed from the log data model.
 	LogNames []string `mapstructure:"log_names"`
 
+	// LogBodies is a list of strings that the LogRecord's body field must match
+	// against.
+	LogBodies []string `mapstructure:"log_bodies"`
+
+	// MetricNames is a list of strings to match metric name against.
+	// A match occurs if metric name matches at least one item in the list.
+	// This field is optional.
+	MetricNames []string `mapstructure:"metric_names"`
+
 	// Attributes specifies the list of attributes to match against.
 	// All of these attributes must match exactly for a match to occur.
 	// Only match_type=strict is allowed if "attributes" are specified.
@@ -99,7 +111,7 @@ type MatchProperties struct {
 	Attributes []Attribute `mapstructure:"attributes"`
 
 	// Resources specify the list of items to match the resources against.
-	// A match occurs if the span's resources matches at least one item in this list.
+	// A match occurs if the data's resources match at least one item in this list.
 	// This is an optional field.
 	Resources []Attribute `mapstructure:"resources"`
 
@@ -113,6 +125,10 @@ type MatchProperties struct {
 func (mp *MatchProperties) ValidateForSpans() error {
 	if len(mp.LogNames) > 0 {
 		return errors.New("log_names should not be specified for trace spans")
+	}
+
+	if len(mp.LogBodies) > 0 {
+		return errors.New("log_bodies should not be specified for trace spans")
 	}
 
 	if len(mp.Services) == 0 && len(mp.SpanNames) == 0 && len(mp.Attributes) == 0 &&
@@ -129,8 +145,8 @@ func (mp *MatchProperties) ValidateForLogs() error {
 		return errors.New("neither services nor span_names should be specified for log records")
 	}
 
-	if len(mp.Attributes) == 0 && len(mp.Libraries) == 0 && len(mp.Resources) == 0 {
-		return errors.New(`at least one of "attributes", "libraries" or "resources" field must be specified`)
+	if len(mp.Attributes) == 0 && len(mp.Libraries) == 0 && len(mp.Resources) == 0 && len(mp.LogBodies) == 0 {
+		return errors.New(`at least one of "attributes", "libraries", "resources" or "log_bodies" field must be specified`)
 	}
 
 	return nil

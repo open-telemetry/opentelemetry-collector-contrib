@@ -35,7 +35,7 @@ import (
 // TODO: move this function to OpenCensus package.
 func ResourceSpansToOC(rs pdata.ResourceSpans) (*occommon.Node, *ocresource.Resource, []*octrace.Span) {
 	node, resource := internalResourceToOC(rs.Resource())
-	ilss := rs.InstrumentationLibrarySpans()
+	ilss := rs.ScopeSpans()
 	if ilss.Len() == 0 {
 		return node, resource, nil
 	}
@@ -95,7 +95,7 @@ func spanToOC(span pdata.Span) *octrace.Span {
 	}
 }
 
-func attributesMapToOCSpanAttributes(attributes pdata.AttributeMap, droppedCount uint32) *octrace.Span_Attributes {
+func attributesMapToOCSpanAttributes(attributes pdata.Map, droppedCount uint32) *octrace.Span_Attributes {
 	if attributes.Len() == 0 && droppedCount == 0 {
 		return nil
 	}
@@ -106,44 +106,44 @@ func attributesMapToOCSpanAttributes(attributes pdata.AttributeMap, droppedCount
 	}
 }
 
-func attributesMapToOCAttributeMap(attributes pdata.AttributeMap) map[string]*octrace.AttributeValue {
+func attributesMapToOCAttributeMap(attributes pdata.Map) map[string]*octrace.AttributeValue {
 	if attributes.Len() == 0 {
 		return nil
 	}
 
 	ocAttributes := make(map[string]*octrace.AttributeValue, attributes.Len())
-	attributes.Range(func(k string, v pdata.AttributeValue) bool {
+	attributes.Range(func(k string, v pdata.Value) bool {
 		ocAttributes[k] = attributeValueToOC(v)
 		return true
 	})
 	return ocAttributes
 }
 
-func attributeValueToOC(attr pdata.AttributeValue) *octrace.AttributeValue {
+func attributeValueToOC(attr pdata.Value) *octrace.AttributeValue {
 	a := &octrace.AttributeValue{}
 
 	switch attr.Type() {
-	case pdata.AttributeValueTypeString:
+	case pdata.ValueTypeString:
 		a.Value = &octrace.AttributeValue_StringValue{
 			StringValue: stringToTruncatableString(attr.StringVal()),
 		}
-	case pdata.AttributeValueTypeBool:
+	case pdata.ValueTypeBool:
 		a.Value = &octrace.AttributeValue_BoolValue{
 			BoolValue: attr.BoolVal(),
 		}
-	case pdata.AttributeValueTypeDouble:
+	case pdata.ValueTypeDouble:
 		a.Value = &octrace.AttributeValue_DoubleValue{
 			DoubleValue: attr.DoubleVal(),
 		}
-	case pdata.AttributeValueTypeInt:
+	case pdata.ValueTypeInt:
 		a.Value = &octrace.AttributeValue_IntValue{
 			IntValue: attr.IntVal(),
 		}
-	case pdata.AttributeValueTypeMap:
+	case pdata.ValueTypeMap:
 		a.Value = &octrace.AttributeValue_StringValue{
 			StringValue: stringToTruncatableString(attr.AsString()),
 		}
-	case pdata.AttributeValueTypeArray:
+	case pdata.ValueTypeSlice:
 		a.Value = &octrace.AttributeValue_StringValue{
 			StringValue: stringToTruncatableString(attr.AsString()),
 		}
@@ -188,9 +188,9 @@ func stringAttributeValue(val string) *octrace.AttributeValue {
 	}
 }
 
-func attributesMapToOCSameProcessAsParentSpan(attr pdata.AttributeMap) *wrapperspb.BoolValue {
+func attributesMapToOCSameProcessAsParentSpan(attr pdata.Map) *wrapperspb.BoolValue {
 	val, ok := attr.Get(occonventions.AttributeSameProcessAsParentSpan)
-	if !ok || val.Type() != pdata.AttributeValueTypeBool {
+	if !ok || val.Type() != pdata.ValueTypeBool {
 		return nil
 	}
 	return wrapperspb.Bool(val.BoolVal())
@@ -280,7 +280,7 @@ func eventToOC(event pdata.SpanEvent) *octrace.Span_TimeEvent {
 	}
 	// TODO: Find a better way to check for message_event. Maybe use the event.Name.
 	if attrs.Len() == len(ocMessageEventAttrs) {
-		ocMessageEventAttrValues := map[string]pdata.AttributeValue{}
+		ocMessageEventAttrValues := map[string]pdata.Value{}
 		var ocMessageEventAttrFound bool
 		for _, attr := range ocMessageEventAttrs {
 			akv, found := attrs.Get(attr)

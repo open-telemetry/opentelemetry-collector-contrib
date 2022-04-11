@@ -85,18 +85,18 @@ func newMetadataEndpoint(c chan []byte) func(http.ResponseWriter, *http.Request)
 	}
 }
 
-func fillAttributeMap(attrs pdata.AttributeMap, mp map[string]string) {
+func fillAttributeMap(attrs pdata.Map, mp map[string]string) {
 	attrs.Clear()
 	attrs.EnsureCapacity(len(mp))
 	for k, v := range mp {
-		attrs.Insert(k, pdata.NewAttributeValueString(v))
+		attrs.Insert(k, pdata.NewValueString(v))
 	}
 }
 
 // NewAttributeMap creates a new attribute map (string only)
 // from a Go map
-func NewAttributeMap(mp map[string]string) pdata.AttributeMap {
-	attrs := pdata.NewAttributeMap()
+func NewAttributeMap(mp map[string]string) pdata.Map {
+	attrs := pdata.NewMap()
 	fillAttributeMap(attrs, mp)
 	return attrs
 }
@@ -112,6 +112,6 @@ func newTracesWithAttributeMap(mp map[string]string) pdata.Traces {
 	resourceSpans := traces.ResourceSpans()
 	rs := resourceSpans.AppendEmpty()
 	fillAttributeMap(rs.Resource().Attributes(), mp)
-	rs.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	return traces
 }

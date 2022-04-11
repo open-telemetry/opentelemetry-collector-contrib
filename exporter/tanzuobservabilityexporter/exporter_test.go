@@ -83,6 +83,7 @@ func TestExportTraceDataFullTrace(t *testing.T) {
 		pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 2}),
 		rootSpan.SpanID(),
 	)
+
 	clientSpan.SetKind(pdata.SpanKindClient)
 	event := pdata.NewSpanEvent()
 	event.SetName("client-event")
@@ -93,7 +94,7 @@ func TestExportTraceDataFullTrace(t *testing.T) {
 	status.SetMessage("an error event occurred")
 	status.CopyTo(clientSpan.Status())
 
-	clientAttrs := pdata.NewAttributeMap()
+	clientAttrs := pdata.NewMap()
 	clientAttrs.InsertString(labelApplication, "test-app")
 	clientAttrs.CopyTo(clientSpan.Attributes())
 
@@ -105,16 +106,18 @@ func TestExportTraceDataFullTrace(t *testing.T) {
 	)
 	serverSpan.SetKind(pdata.SpanKindServer)
 	serverSpan.SetTraceState("key=val")
-	serverAttrs := pdata.NewAttributeMap()
+	serverAttrs := pdata.NewMap()
 	serverAttrs.InsertString(conventions.AttributeServiceName, "the-server")
 	serverAttrs.InsertString(conventions.AttributeHTTPMethod, "POST")
 	serverAttrs.InsertInt(conventions.AttributeHTTPStatusCode, 403)
+	serverAttrs.InsertString(labelSource, "test_source")
 	serverAttrs.CopyTo(serverSpan.Attributes())
 
 	traces := constructTraces([]pdata.Span{rootSpan, clientSpan, serverSpan})
-	resourceAttrs := pdata.NewAttributeMap()
+	resourceAttrs := pdata.NewMap()
 	resourceAttrs.InsertString("resource", "R1")
 	resourceAttrs.InsertString(conventions.AttributeServiceName, "test-service")
+	resourceAttrs.InsertString(labelSource, "test-source")
 	resourceAttrs.CopyTo(traces.ResourceSpans().At(0).Resource().Attributes())
 
 	expected := []*span{
@@ -122,6 +125,7 @@ func TestExportTraceDataFullTrace(t *testing.T) {
 			Name:    "root",
 			SpanID:  uuid.MustParse("00000000000000000000000000000001"),
 			TraceID: uuid.MustParse("01010101010101010101010101010101"),
+			Source:  "test-source",
 			Tags: map[string]string{
 				"resource":       "R1",
 				labelApplication: "defaultApp",
@@ -133,6 +137,7 @@ func TestExportTraceDataFullTrace(t *testing.T) {
 			SpanID:       uuid.MustParse("00000000000000000000000000000002"),
 			TraceID:      uuid.MustParse("01010101010101010101010101010101"),
 			ParentSpanID: uuid.MustParse("00000000000000000000000000000001"),
+			Source:       "test-source",
 			Tags: map[string]string{
 				"resource":                "R1",
 				labelApplication:          "test-app",
@@ -150,6 +155,7 @@ func TestExportTraceDataFullTrace(t *testing.T) {
 			SpanID:       uuid.MustParse("00000000000000000000000000000003"),
 			TraceID:      uuid.MustParse("01010101010101010101010101010101"),
 			ParentSpanID: uuid.MustParse("00000000000000000000000000000002"),
+			Source:       "test-source",
 			Tags: map[string]string{
 				"resource":                          "R1",
 				labelApplication:                    "defaultApp",
@@ -182,7 +188,37 @@ func validateTraces(t *testing.T, expected []*span, traces pdata.Traces) {
 		assert.Equal(t, expected[i].StartMillis, actual[i].StartMillis)
 		assert.Equal(t, expected[i].DurationMillis, actual[i].DurationMillis)
 		assert.Equal(t, expected[i].SpanLogs, actual[i].SpanLogs)
+		assert.Equal(t, expected[i].Source, actual[i].Source)
 	}
+}
+
+func TestExportTraceDataWithInstrumentationDetails(t *testing.T) {
+	minSpan := createSpan(
+		"root",
+		pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}),
+		pdata.NewSpanID([8]byte{9, 9, 9, 9, 9, 9, 9, 9}),
+		pdata.SpanID{},
+	)
+	traces := constructTraces([]pdata.Span{minSpan})
+
+	instrumentationLibrary := traces.ResourceSpans().At(0).ScopeSpans().At(0).
+		Scope()
+	instrumentationLibrary.SetName("instrumentation_name")
+	instrumentationLibrary.SetVersion("v0.0.1")
+
+	expected := []*span{{
+		Name:    "root",
+		TraceID: uuid.MustParse("01010101-0101-0101-0101-010101010101"),
+		SpanID:  uuid.MustParse("00000000-0000-0000-0909-090909090909"),
+		Tags: map[string]string{
+			labelApplication:      "defaultApp",
+			labelService:          "defaultService",
+			labelOtelScopeName:    "instrumentation_name",
+			labelOtelScopeVersion: "v0.0.1",
+		},
+	}}
+
+	validateTraces(t, expected, traces)
 }
 
 func TestExportTraceDataRespectsContext(t *testing.T) {
@@ -231,8 +267,8 @@ func constructTraces(spans []pdata.Span) pdata.Traces {
 	traces := pdata.NewTraces()
 	traces.ResourceSpans().EnsureCapacity(1)
 	rs := traces.ResourceSpans().AppendEmpty()
-	rs.InstrumentationLibrarySpans().EnsureCapacity(1)
-	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
+	rs.ScopeSpans().EnsureCapacity(1)
+	ils := rs.ScopeSpans().AppendEmpty()
 	ils.Spans().EnsureCapacity(len(spans))
 	for _, span := range spans {
 		span.CopyTo(ils.Spans().AppendEmpty())
@@ -299,6 +335,7 @@ func (m *mockSender) SendSpan(
 		StartMillis:    startMillis,
 		DurationMillis: durationMillis,
 		SpanLogs:       spanLogs,
+		Source:         source,
 	}
 	m.spans = append(m.spans, span)
 	return nil

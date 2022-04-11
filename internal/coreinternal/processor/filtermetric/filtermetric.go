@@ -16,6 +16,7 @@ package filtermetric // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/zap"
 )
 
 type Matcher interface {
@@ -25,8 +26,42 @@ type Matcher interface {
 // NewMatcher constructs a metric Matcher. If an 'expr' match type is specified,
 // returns an expr matcher, otherwise a name matcher.
 func NewMatcher(config *MatchProperties) (Matcher, error) {
+	if config == nil {
+		return nil, nil
+	}
+
 	if config.MatchType == Expr {
 		return newExprMatcher(config.Expressions)
 	}
 	return newNameMatcher(config)
+}
+
+// Filters have the ability to include and exclude metrics based on the metric's properties.
+// The default is to not skip. If include is defined, the metric must match or it will be skipped.
+// If include is not defined but exclude is, metric will be skipped if it matches exclude. Metric
+// is included if neither specified.
+func SkipMetric(include, exclude Matcher, metric pdata.Metric, logger *zap.Logger) bool {
+	if include != nil {
+		// A false (or an error) returned in this case means the metric should not be processed.
+		i, err := include.MatchMetric(metric)
+		if !i || err != nil {
+			logger.Debug("Skipping metric",
+				zap.String("metric_name", (metric.Name())),
+				zap.Error(err)) // zap.Error handles case where err is nil
+			return true
+		}
+	}
+
+	if exclude != nil {
+		// A true (or an error) returned in this case means the metric should not be processed.
+		e, err := exclude.MatchMetric(metric)
+		if e || err != nil {
+			logger.Debug("Skipping metric",
+				zap.String("metric_name", (metric.Name())),
+				zap.Error(err)) // zap.Error handles case where err is nil
+			return true
+		}
+	}
+
+	return false
 }

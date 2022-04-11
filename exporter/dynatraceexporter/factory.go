@@ -33,10 +33,10 @@ const (
 
 // NewFactory creates a Dynatrace exporter factory
 func NewFactory() component.ExporterFactory {
-	return exporterhelper.NewFactory(
+	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithMetrics(createMetricsExporter),
+		component.WithMetricsExporter(createMetricsExporter),
 	)
 }
 

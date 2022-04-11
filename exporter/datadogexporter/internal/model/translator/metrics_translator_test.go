@@ -136,38 +136,36 @@ type mockTimeSeriesConsumer struct {
 
 func (m *mockTimeSeriesConsumer) ConsumeTimeSeries(
 	_ context.Context,
-	name string,
+	dimensions *Dimensions,
 	typ MetricDataType,
 	ts uint64,
 	val float64,
-	tags []string,
-	host string,
 ) {
 	m.metrics = append(m.metrics,
 		metric{
-			name:      name,
+			name:      dimensions.Name(),
 			typ:       typ,
 			timestamp: ts,
 			value:     val,
-			tags:      tags,
-			host:      host,
+			tags:      dimensions.Tags(),
+			host:      dimensions.Host(),
 		},
 	)
 }
 
-func newDims(name string) metricsDimensions {
-	return metricsDimensions{name: name, tags: []string{}}
+func newDims(name string) *Dimensions {
+	return &Dimensions{name: name, tags: []string{}}
 }
 
-func newGauge(dims metricsDimensions, ts uint64, val float64) metric {
+func newGauge(dims *Dimensions, ts uint64, val float64) metric {
 	return metric{name: dims.name, typ: Gauge, timestamp: ts, value: val, tags: dims.tags}
 }
 
-func newCount(dims metricsDimensions, ts uint64, val float64) metric {
+func newCount(dims *Dimensions, ts uint64, val float64) metric {
 	return metric{name: dims.name, typ: Count, timestamp: ts, value: val, tags: dims.tags}
 }
 
-func newSketch(dims metricsDimensions, ts uint64, s summary.Summary) sketch {
+func newSketch(dims *Dimensions, ts uint64, s summary.Summary) sketch {
 	return sketch{name: dims.name, basic: s, timestamp: ts, tags: dims.tags}
 }
 
@@ -198,7 +196,7 @@ func TestMapIntMetrics(t *testing.T) {
 
 	// With attribute tags
 	consumer = &mockTimeSeriesConsumer{}
-	dims = metricsDimensions{name: "int64.test", tags: []string{"attribute_tag:attribute_value"}}
+	dims = &Dimensions{name: "int64.test", tags: []string{"attribute_tag:attribute_value"}}
 	tr.mapNumberMetrics(ctx, consumer, dims, Gauge, slice)
 	assert.ElementsMatch(t,
 		consumer.metrics,
@@ -233,7 +231,7 @@ func TestMapDoubleMetrics(t *testing.T) {
 
 	// With attribute tags
 	consumer = &mockTimeSeriesConsumer{}
-	dims = metricsDimensions{name: "float64.test", tags: []string{"attribute_tag:attribute_value"}}
+	dims = &Dimensions{name: "float64.test", tags: []string{"attribute_tag:attribute_value"}}
 	tr.mapNumberMetrics(ctx, consumer, dims, Gauge, slice)
 	assert.ElementsMatch(t,
 		consumer.metrics,
@@ -245,7 +243,7 @@ func seconds(i int) pdata.Timestamp {
 	return pdata.NewTimestampFromTime(time.Unix(int64(i), 0))
 }
 
-var exampleDims metricsDimensions = newDims("metric.example")
+var exampleDims = newDims("metric.example")
 
 func TestMapIntMonotonicMetrics(t *testing.T) {
 	// Create list of values
@@ -502,24 +500,26 @@ func TestMapDoubleMonotonicOutOfOrder(t *testing.T) {
 	)
 }
 
+var _ SketchConsumer = (*mockFullConsumer)(nil)
+
 type mockFullConsumer struct {
 	mockTimeSeriesConsumer
 	sketches []sketch
 }
 
-func (c *mockFullConsumer) ConsumeSketch(_ context.Context, name string, ts uint64, sk *quantile.Sketch, tags []string, host string) {
+func (c *mockFullConsumer) ConsumeSketch(_ context.Context, dimensions *Dimensions, ts uint64, sk *quantile.Sketch) {
 	c.sketches = append(c.sketches,
 		sketch{
-			name:      name,
+			name:      dimensions.Name(),
 			basic:     sk.Basic,
 			timestamp: ts,
-			tags:      tags,
-			host:      host,
+			tags:      dimensions.Tags(),
+			host:      dimensions.Host(),
 		},
 	)
 }
 
-func dimsWithBucket(dims metricsDimensions, lowerBound string, upperBound string) metricsDimensions {
+func dimsWithBucket(dims *Dimensions, lowerBound string, upperBound string) *Dimensions {
 	dims = dims.WithSuffix("bucket")
 	return dims.AddTags(
 		fmt.Sprintf("lower_bound:%s", lowerBound),
@@ -677,7 +677,7 @@ func TestMapDeltaHistogramMetrics(t *testing.T) {
 			tr.cfg.HistMode = testInstance.histogramMode
 			tr.cfg.SendCountSum = testInstance.sendCountSum
 			consumer := &mockFullConsumer{}
-			dims := metricsDimensions{name: "doubleHist.test", tags: testInstance.tags}
+			dims := &Dimensions{name: "doubleHist.test", tags: testInstance.tags}
 			tr.mapHistogramMetrics(ctx, consumer, dims, slice, delta)
 			assert.ElementsMatch(t, consumer.metrics, testInstance.expectedMetrics)
 			assert.ElementsMatch(t, consumer.sketches, testInstance.expectedSketches)
@@ -795,7 +795,7 @@ func TestLegacyBucketsTags(t *testing.T) {
 	pointOne.SetExplicitBounds([]float64{0})
 	pointOne.SetTimestamp(seconds(0))
 	consumer := &mockTimeSeriesConsumer{}
-	dims := metricsDimensions{name: "test.histogram.one", tags: tags}
+	dims := &Dimensions{name: "test.histogram.one", tags: tags}
 	tr.getLegacyBuckets(ctx, consumer, dims, pointOne, true)
 	seriesOne := consumer.metrics
 
@@ -804,7 +804,7 @@ func TestLegacyBucketsTags(t *testing.T) {
 	pointTwo.SetExplicitBounds([]float64{1})
 	pointTwo.SetTimestamp(seconds(0))
 	consumer = &mockTimeSeriesConsumer{}
-	dims = metricsDimensions{name: "test.histogram.two", tags: tags}
+	dims = &Dimensions{name: "test.histogram.two", tags: tags}
 	tr.getLegacyBuckets(ctx, consumer, dims, pointTwo, true)
 	seriesTwo := consumer.metrics
 
@@ -868,8 +868,8 @@ func TestMapSummaryMetrics(t *testing.T) {
 
 	newTranslator := func(tags []string, quantiles bool) *Translator {
 		c := newTestCache()
-		c.cache.Set((&metricsDimensions{name: "summary.example.count", tags: tags}).String(), numberCounter{0, 0, 1}, gocache.NoExpiration)
-		c.cache.Set((&metricsDimensions{name: "summary.example.sum", tags: tags}).String(), numberCounter{0, 0, 1}, gocache.NoExpiration)
+		c.cache.Set((&Dimensions{name: "summary.example.count", tags: tags}).String(), numberCounter{0, 0, 1}, gocache.NoExpiration)
+		c.cache.Set((&Dimensions{name: "summary.example.sum", tags: tags}).String(), numberCounter{0, 0, 1}, gocache.NoExpiration)
 		options := []Option{WithFallbackHostnameProvider(testProvider("fallbackHostname"))}
 		if quantiles {
 			options = append(options, WithQuantiles())
@@ -951,11 +951,11 @@ func createTestMetrics(additionalAttributes map[string]string, name, version str
 	for attr, val := range additionalAttributes {
 		attrs.InsertString(attr, val)
 	}
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 
 	ilm := ilms.AppendEmpty()
-	ilm.InstrumentationLibrary().SetName(name)
-	ilm.InstrumentationLibrary().SetVersion(version)
+	ilm.Scope().SetName(name)
+	ilm.Scope().SetVersion(version)
 	metricsArray := ilm.Metrics()
 	metricsArray.AppendEmpty() // first one is TypeNone to test that it's ignored
 
@@ -1318,7 +1318,7 @@ func createNaNMetrics() pdata.Metrics {
 
 	attrs := rm.Resource().Attributes()
 	attrs.InsertString(attributes.AttributeDatadogHostname, testHostname)
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 
 	metricsArray := ilms.AppendEmpty().Metrics()
 

@@ -78,13 +78,11 @@ func TestProbabilisticSampling(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			traceCount := 100_000
 
-			var emptyAttrs = map[string]pdata.AttributeValue{}
-
 			probabilisticSampler := NewProbabilisticSampler(zap.NewNop(), tt.hashSalt, tt.samplingPercentage)
 
 			sampled := 0
 			for _, traceID := range genRandomTraceIDs(traceCount) {
-				trace := newTraceStringAttrs(emptyAttrs, "example", "value")
+				trace := newTraceStringAttrs(pdata.NewMap(), "example", "value")
 
 				decision, err := probabilisticSampler.Evaluate(traceID, trace)
 				assert.NoError(t, err)

@@ -45,7 +45,7 @@ type NetworkAttributes struct {
 }
 
 // MapAttribute attempts to map a Span attribute to one of the known types
-func (attrs *NetworkAttributes) MapAttribute(k string, v pdata.AttributeValue) bool {
+func (attrs *NetworkAttributes) MapAttribute(k string, v pdata.Value) bool {
 	switch k {
 	case conventions.AttributeNetTransport:
 		attrs.NetTransport = v.StringVal()
@@ -98,7 +98,7 @@ type HTTPAttributes struct {
 }
 
 // MapAttribute attempts to map a Span attribute to one of the known types
-func (attrs *HTTPAttributes) MapAttribute(k string, v pdata.AttributeValue) bool {
+func (attrs *HTTPAttributes) MapAttribute(k string, v pdata.Value) bool {
 	switch k {
 	case conventions.AttributeHTTPMethod:
 		attrs.HTTPMethod = v.StringVal()
@@ -161,7 +161,7 @@ type RPCAttributes struct {
 }
 
 // MapAttribute attempts to map a Span attribute to one of the known types
-func (attrs *RPCAttributes) MapAttribute(k string, v pdata.AttributeValue) bool {
+func (attrs *RPCAttributes) MapAttribute(k string, v pdata.Value) bool {
 	switch k {
 	case conventions.AttributeRPCSystem:
 		attrs.RPCSystem = v.StringVal()
@@ -196,7 +196,7 @@ type DatabaseAttributes struct {
 }
 
 // MapAttribute attempts to map a Span attribute to one of the known types
-func (attrs *DatabaseAttributes) MapAttribute(k string, v pdata.AttributeValue) bool {
+func (attrs *DatabaseAttributes) MapAttribute(k string, v pdata.Value) bool {
 	switch k {
 	case conventions.AttributeDBSystem:
 		attrs.DBSystem = v.StringVal()
@@ -245,7 +245,7 @@ type MessagingAttributes struct {
 }
 
 // MapAttribute attempts to map a Span attribute to one of the known types
-func (attrs *MessagingAttributes) MapAttribute(k string, v pdata.AttributeValue) bool {
+func (attrs *MessagingAttributes) MapAttribute(k string, v pdata.Value) bool {
 	switch k {
 	case conventions.AttributeMessagingSystem:
 		attrs.MessagingSystem = v.StringVal()
@@ -283,14 +283,14 @@ func (attrs *MessagingAttributes) MapAttribute(k string, v pdata.AttributeValue)
 }
 
 // Tries to return the value of the attribute as an int64
-func getAttributeValueAsInt(attributeValue pdata.AttributeValue) (int64, error) {
+func getAttributeValueAsInt(attributeValue pdata.Value) (int64, error) {
 	switch attributeValue.Type() {
-	case pdata.AttributeValueTypeString:
+	case pdata.ValueTypeString:
 		// try to cast the string values to int64
 		if val, err := strconv.Atoi(attributeValue.StringVal()); err == nil {
 			return int64(val), nil
 		}
-	case pdata.AttributeValueTypeInt:
+	case pdata.ValueTypeInt:
 		return attributeValue.IntVal(), nil
 	}
 

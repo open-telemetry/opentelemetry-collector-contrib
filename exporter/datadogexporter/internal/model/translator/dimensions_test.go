@@ -22,13 +22,13 @@ import (
 )
 
 func TestWithAttributeMap(t *testing.T) {
-	attributes := pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
-		"key1": pdata.NewAttributeValueString("val1"),
-		"key2": pdata.NewAttributeValueString("val2"),
-		"key3": pdata.NewAttributeValueString(""),
+	attributes := pdata.NewMapFromRaw(map[string]interface{}{
+		"key1": "val1",
+		"key2": "val2",
+		"key3": "",
 	})
 
-	dims := metricsDimensions{}
+	dims := Dimensions{}
 	assert.ElementsMatch(t,
 		dims.WithAttributeMap(attributes).tags,
 		[...]string{"key1:val1", "key2:val2", "key3:n/a"},
@@ -37,7 +37,7 @@ func TestWithAttributeMap(t *testing.T) {
 
 func TestMetricDimensionsString(t *testing.T) {
 	getKey := func(name string, tags []string, host string) string {
-		dims := metricsDimensions{name: name, tags: tags, host: host}
+		dims := Dimensions{name: name, tags: tags, host: host}
 		return dims.String()
 	}
 	metricName := "metric.name"
@@ -68,7 +68,7 @@ func TestMetricDimensionsStringNoTagsChange(t *testing.T) {
 	originalTags[0] = "key1:val1"
 	originalTags[1] = "key2:val2"
 
-	dims := metricsDimensions{
+	dims := Dimensions{
 		name: "a.metric.name",
 		tags: originalTags,
 	}
@@ -78,7 +78,7 @@ func TestMetricDimensionsStringNoTagsChange(t *testing.T) {
 
 }
 
-var testDims metricsDimensions = metricsDimensions{
+var testDims = Dimensions{
 	name: "test.metric",
 	tags: []string{"key:val"},
 	host: "host",
@@ -97,4 +97,25 @@ func TestAddTags(t *testing.T) {
 	dimsWithTags := testDims.AddTags("key1:val1", "key2:val2")
 	assert.ElementsMatch(t, []string{"key:val", "key1:val1", "key2:val2"}, dimsWithTags.tags)
 	assert.ElementsMatch(t, []string{"key:val"}, testDims.tags)
+}
+
+func TestAllFieldsAreCopied(t *testing.T) {
+	dims := &Dimensions{
+		name:     "example.name",
+		host:     "hostname",
+		tags:     []string{"tagOne:a", "tagTwo:b"},
+		originID: "origin_id",
+	}
+
+	newDims := dims.
+		AddTags("tagThree:c").
+		WithSuffix("suffix").
+		WithAttributeMap(pdata.NewMapFromRaw(map[string]interface{}{
+			"tagFour": "d",
+		}))
+
+	assert.Equal(t, "example.name.suffix", newDims.Name())
+	assert.Equal(t, "hostname", newDims.Host())
+	assert.ElementsMatch(t, []string{"tagOne:a", "tagTwo:b", "tagThree:c", "tagFour:d"}, newDims.Tags())
+	assert.Equal(t, "origin_id", newDims.OriginID())
 }

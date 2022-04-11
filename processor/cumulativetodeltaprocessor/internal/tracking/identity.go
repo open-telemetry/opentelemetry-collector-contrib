@@ -23,13 +23,13 @@ import (
 
 type MetricIdentity struct {
 	Resource               pdata.Resource
-	InstrumentationLibrary pdata.InstrumentationLibrary
+	InstrumentationLibrary pdata.InstrumentationScope
 	MetricDataType         pdata.MetricDataType
 	MetricIsMonotonic      bool
 	MetricName             string
 	MetricUnit             string
 	StartTimestamp         pdata.Timestamp
-	Attributes             pdata.AttributeMap
+	Attributes             pdata.Map
 	MetricValueType        pdata.MetricValueType
 }
 
@@ -41,7 +41,7 @@ func (mi *MetricIdentity) Write(b *bytes.Buffer) {
 	b.WriteRune(A + int32(mi.MetricDataType))
 	b.WriteByte(SEP)
 	b.WriteRune(A + int32(mi.MetricValueType))
-	mi.Resource.Attributes().Sort().Range(func(k string, v pdata.AttributeValue) bool {
+	mi.Resource.Attributes().Sort().Range(func(k string, v pdata.Value) bool {
 		b.WriteByte(SEP)
 		b.WriteString(k)
 		b.WriteByte(':')
@@ -65,7 +65,7 @@ func (mi *MetricIdentity) Write(b *bytes.Buffer) {
 	b.WriteByte(SEP)
 	b.WriteString(mi.MetricUnit)
 
-	mi.Attributes.Sort().Range(func(k string, v pdata.AttributeValue) bool {
+	mi.Attributes.Sort().Range(func(k string, v pdata.Value) bool {
 		b.WriteByte(SEP)
 		b.WriteString(k)
 		b.WriteByte(':')

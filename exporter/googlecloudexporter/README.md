@@ -91,8 +91,9 @@ These instructions are to get you up and running quickly with the GCP exporter i
       --volume ~/.config/gcloud/application_default_credentials.json:/etc/otel/key.json \
       --volume $(pwd)/config.yaml:/etc/otel/config.yaml \
       --env GOOGLE_APPLICATION_CREDENTIALS=/etc/otel/key.json \
-      --expose 4317 \
-      --expose 55681 \
+      -p 4317:4317 \
+      -p 4318:4318 \
+      -p 55681:55681 \
       --rm \
       otel/opentelemetry-collector-contrib
     ```
@@ -204,6 +205,44 @@ and [memory limiter](https://github.com/open-telemetry/opentelemetry-collector/t
 optimal network usage and avoiding memory overruns.  You may also want to run an additional
 [sampler](../../processor/probabilisticsamplerprocessor), depending on your needs.
 
+## Features and Feature-Gates
+
+See the [Collector feature gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/service/featuregate/README.md#collector-feature-gates) for an overview of feature gates in the collector.
+
+**ALPHA**: `exporter.googlecloud.OTLPDirect`
+
+When enabled via `--feature-gates=exporter.googlecloud.OTLPDirect`, the googlecloud exporter translates pdata directly to google cloud monitoring's types, rather than first translating to opencensus.  See the [Breaking Changes documentation](https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/blob/main/exporter/collector/breaking-changes.md#breaking-changes-vs-old-googlecloud-exporter) for breaking changes that will occur as a result of enabling this feature.
+
+Additional configuration added for the metric exporter:
+
+- `metric.endpoint` (optional): Endpoint where metric data is going to be sent to. Replaces `endpoint`.
+- `metric.use_insecure` (optional): If true. use gRPC as their communication transport. Only has effect if Endpoint is not "". Replaces `use_insecure`.
+- `metric.known_domains` (optional): If a metric belongs to one of these domains it does not get a prefix.
+- `metric.instrumentation_library_labels` (optional): If true, set the instrumentation_source and instrumentation_version labels. Defaults to true.
+- `metric.create_service_timeseries` (optional): If true, this will send all timeseries using `CreateServiceTimeSeries`. Implicitly, this sets `SkipMetricDescriptor` to true.
+- `metric.create_metric_descriptor_buffer_size` (optional): Buffer size for the channel which asynchronously calls CreateMetricDescriptor. Default is 10.
+- `metric.service_resource_labels` (optional):  If true, the exporter will copy OTel's service.name, service.namespace, and service.instance.id resource attributes into the GCM timeseries metric labels. Default is true.
+- `metric.resource_filters` (optional): If provided, resource attributes matching any filter will be included in metric labels. Defaults to empty, which won't include any additional resource labels.
+  - `prefix`: Match resource keys by prefix
+
+Additional configuration added for the trace exporter:
+
+- `trace.endpoint` (optional): Endpoint where trace data is going to be sent to. Replaces `endpoint`.
+- `trace.use_insecure` (optional): If true. use gRPC as their communication transport. Only has effect if Endpoint is not "". Replaces `use_insecure`.
+
+Removed configuration:
+
+- `endpoint`: replaced by `trace.endpoint` and `metric.endpoint`
+- `use_insecure`: replaced by `trace.use_insecure` and `metric.use_insecure`
+- `resource_mappings`: replacement is still under development
+
+Changes to defaults:
+
+- `prefix`: default is now `workload.googleapis.com`
+
+Additional Behavior:
+
+- Metrics are now batched in the exporter to handle edge cases around summar metrics.  The batch processor is no longer needed in metrics processors.
 
 ## Deprecatations
 

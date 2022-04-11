@@ -81,10 +81,6 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 		databases = dbList
 	}
 
-	// metric initialization
-	md := pdata.NewMetrics()
-	ilm := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
-	ilm.InstrumentationLibrary().SetName("otelcol/postgresql")
 	now := pdata.NewTimestampFromTime(time.Now())
 
 	var errors scrapererror.ScrapeErrors
@@ -106,8 +102,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 		p.collectDatabaseTableMetrics(ctx, now, dbClient, errors)
 	}
 
-	p.mb.Emit(ilm.Metrics())
-	return md, errors.Combine()
+	return p.mb.Emit(), errors.Combine()
 }
 
 func (p *postgreSQLScraper) collectBlockReads(

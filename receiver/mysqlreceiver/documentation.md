@@ -35,7 +35,7 @@ metrics:
     enabled: <true|false>
 ```
 
-## Attributes
+## Metric attributes
 
 | Name | Description |
 | ---- | ----------- |

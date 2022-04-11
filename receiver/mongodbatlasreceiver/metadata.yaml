@@ -1,5 +1,33 @@
 name: mongoatlasreceiver
 
+resource_attributes:
+  mongodb_atlas.org_name:
+    description: Organization Name
+    type: string
+  mongodb_atlas.project.name:
+    description: Project Name
+    type: string
+  mongodb_atlas.project.id:
+    description: Project ID
+    type: string
+  mongodb_atlas.host.name:
+    description: Hostname of the process
+    type: string
+  mongodb_atlas.process.port:
+    description: Port process is bound to
+    type: string
+  mongodb_atlas.process.type_name:
+    description: Process type
+    type: string
+  mongodb_atlas.process.id:
+    description: ID of the process
+    type: string
+  mongodb_atlas.db.name:
+    description: Name of the Database
+    type: string
+  mongodb_atlas.disk.partition:
+    description: Name of a disk partition
+    type: string
 attributes:
   cpu_state:
     description: CPU state
@@ -64,6 +92,9 @@ attributes:
       - virtual
       - mapped
       - computed
+      - shared
+      - free
+      - used
   direction:
     description: Network traffic direction
     enum:
@@ -85,6 +116,7 @@ attributes:
       - delete
       - getmore
       - insert
+      - scan_and_order
   cluster_role:
     description: Whether process is acting as replica or primary
     enum:
@@ -118,6 +150,15 @@ attributes:
     description: Disk measurement type
     enum:
       - free
+      - used
+  memory_status:
+    description: Memory measurement type
+    enum:
+      - available
+      - buffers
+      - cached
+      - free
+      - shared
       - used
   object_type:
     description: MongoDB object type
@@ -178,7 +219,7 @@ metrics:
     sum:
       value_type: double
       monotonic: false
-      aggregation: cumulative 
+      aggregation: cumulative
   mongodbatlas.process.cpu.usage.max:
     enabled: true
     description: CPU Usage (%)
@@ -461,7 +502,7 @@ metrics:
     description: System Memory Usage
     extended_documentation: Aggregate of MongoDB Metrics MAX_SYSTEM_MEMORY_CACHED, MAX_SYSTEM_MEMORY_AVAILABLE, MAX_SYSTEM_MEMORY_USED, MAX_SYSTEM_MEMORY_BUFFERS, MAX_SYSTEM_MEMORY_FREE, MAX_SYSTEM_MEMORY_SHARED
     unit: KiBy
-    attributes: [memory_state]
+    attributes: [memory_status]
     gauge:
       value_type: double
   mongodbatlas.system.memory.usage.average:
@@ -469,7 +510,7 @@ metrics:
     description: System Memory Usage
     extended_documentation: Aggregate of MongoDB Metrics SYSTEM_MEMORY_AVAILABLE, SYSTEM_MEMORY_BUFFERS, SYSTEM_MEMORY_USED, SYSTEM_MEMORY_CACHED, SYSTEM_MEMORY_SHARED, SYSTEM_MEMORY_FREE
     unit: KiBy
-    attributes: [memory_state]
+    attributes: [memory_status]
     gauge:
       value_type: double
   mongodbatlas.system.network.io.max:
@@ -549,6 +590,7 @@ metrics:
     description: Disk partition utilization (%)
     extended_documentation: MongoDB Metrics MAX_DISK_PARTITION_UTILIZATION
     unit: 1
+    attributes: [disk_status]
     gauge:
       value_type: double
   mongodbatlas.disk.partition.utilization.average:
@@ -556,6 +598,7 @@ metrics:
     description: Disk partition utilization (%)
     extended_documentation: MongoDB Metrics DISK_PARTITION_UTILIZATION
     unit: 1
+    attributes: [disk_status]
     gauge:
       value_type: double
   mongodbatlas.disk.partition.latency.max:
@@ -579,7 +622,7 @@ metrics:
     description: Disk partition space
     extended_documentation: Aggregate of MongoDB Metrics DISK_PARTITION_SPACE_FREE, DISK_PARTITION_SPACE_USED
     unit: By
-    attributes: [memory_state]
+    attributes: [disk_status]
     gauge:
       value_type: double
   mongodbatlas.disk.partition.space.average:
@@ -587,7 +630,7 @@ metrics:
     description: Disk partition space
     extended_documentation: Aggregate of MongoDB Metrics DISK_PARTITION_SPACE_FREE, DISK_PARTITION_SPACE_USED
     unit: By
-    attributes: [memory_state]
+    attributes: [disk_status]
     gauge:
       value_type: double
   mongodbatlas.db.size:

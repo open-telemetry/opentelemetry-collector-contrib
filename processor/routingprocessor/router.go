@@ -95,10 +95,10 @@ func (r *router) routeMetricsForResource(_ context.Context, tm pdata.Metrics) []
 		}
 
 		if rEntry, ok := routingMap[attrValue]; ok {
-			resMetrics.CopyTo(rEntry.resMetrics.AppendEmpty())
+			resMetrics.MoveTo(rEntry.resMetrics.AppendEmpty())
 		} else {
 			new := pdata.NewResourceMetricsSlice()
-			resMetrics.CopyTo(new.AppendEmpty())
+			resMetrics.MoveTo(new.AppendEmpty())
 
 			routingMap[attrValue] = routingEntry{
 				exporters:  exp,
@@ -181,10 +181,10 @@ func (r *router) routeTracesForResource(_ context.Context, tr pdata.Traces) []ro
 		}
 
 		if rEntry, ok := routingMap[attrValue]; ok {
-			resSpans.CopyTo(rEntry.resSpans.AppendEmpty())
+			resSpans.MoveTo(rEntry.resSpans.AppendEmpty())
 		} else {
 			new := pdata.NewResourceSpansSlice()
-			resSpans.CopyTo(new.AppendEmpty())
+			resSpans.MoveTo(new.AppendEmpty())
 
 			routingMap[attrValue] = routingEntry{
 				exporters: exp,
@@ -267,10 +267,10 @@ func (r *router) routeLogsForResource(_ context.Context, tl pdata.Logs) []routed
 		}
 
 		if rEntry, ok := routingMap[attrValue]; ok {
-			resLogs.CopyTo(rEntry.resLogs.AppendEmpty())
+			resLogs.MoveTo(rEntry.resLogs.AppendEmpty())
 		} else {
 			new := pdata.NewResourceLogsSlice()
-			resLogs.CopyTo(new.AppendEmpty())
+			resLogs.MoveTo(new.AppendEmpty())
 
 			routingMap[attrValue] = routingEntry{
 				exporters: exp,
@@ -334,8 +334,8 @@ func (r *router) registerExporters(hostExporters map[config.DataType]map[config.
 		},
 	} {
 		if err := reg.registerFunc(hostExporters[reg.typ]); err != nil {
-			if errors.Is(err, errDefaultExporterNotFound) {
-				r.logger.Warn("can't find the default exporter for the routing processor for this pipeline type. This is OK if you did not specify this processor for that pipeline type",
+			if errors.Is(err, errDefaultExporterNotFound) || errors.Is(err, errExporterNotFound) {
+				r.logger.Warn("can't find the exporter for the routing processor for this pipeline type. This is OK if you did not specify this processor for that pipeline type",
 					zap.Any("pipeline_type", reg.typ),
 					zap.Error(err),
 				)

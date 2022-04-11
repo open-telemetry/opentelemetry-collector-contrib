@@ -16,6 +16,7 @@ package filesystemscraper // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/shirou/gopsutil/v3/disk"
@@ -71,15 +72,12 @@ func (s *scraper) start(context.Context, component.Host) error {
 }
 
 func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
-	md := pdata.NewMetrics()
-	metrics := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics()
-
 	now := pdata.NewTimestampFromTime(time.Now())
 
 	// omit logical (virtual) filesystems (not relevant for windows)
 	partitions, err := s.partitions( /*all=*/ false)
 	if err != nil {
-		return md, scrapererror.NewPartialScrapeError(err, metricsLen)
+		return pdata.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
 	var errors scrapererror.ScrapeErrors
@@ -90,7 +88,7 @@ func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 		}
 		usage, usageErr := s.usage(partition.Mountpoint)
 		if usageErr != nil {
-			errors.AddPartial(0, usageErr)
+			errors.AddPartial(0, fmt.Errorf("failed to read usage at %s: %w", partition.Mountpoint, usageErr))
 			continue
 		}
 
@@ -98,10 +96,8 @@ func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 	}
 
 	if len(usages) > 0 {
-		metrics.EnsureCapacity(metricsLen)
 		s.recordFileSystemUsageMetric(now, usages)
 		s.recordSystemSpecificMetrics(now, usages)
-		s.mb.Emit(metrics)
 	}
 
 	err = errors.Combine()
@@ -109,7 +105,7 @@ func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 		err = scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
-	return md, err
+	return s.mb.Emit(), err
 }
 
 func getMountMode(opts []string) string {

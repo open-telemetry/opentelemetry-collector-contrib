@@ -54,12 +54,12 @@ func TestInternalTraceStateToOC(t *testing.T) {
 }
 
 func TestAttributesMapToOC(t *testing.T) {
-	assert.EqualValues(t, (*octrace.Span_Attributes)(nil), attributesMapToOCSpanAttributes(pdata.NewAttributeMap(), 0))
+	assert.EqualValues(t, (*octrace.Span_Attributes)(nil), attributesMapToOCSpanAttributes(pdata.NewMap(), 0))
 
 	ocAttrs := &octrace.Span_Attributes{
 		DroppedAttributesCount: 123,
 	}
-	assert.EqualValues(t, ocAttrs, attributesMapToOCSpanAttributes(pdata.NewAttributeMap(), 123))
+	assert.EqualValues(t, ocAttrs, attributesMapToOCSpanAttributes(pdata.NewMap(), 123))
 
 	ocAttrs = &octrace.Span_Attributes{
 		AttributeMap: map[string]*octrace.AttributeValue{
@@ -71,8 +71,8 @@ func TestAttributesMapToOC(t *testing.T) {
 	}
 	assert.EqualValues(t, ocAttrs,
 		attributesMapToOCSpanAttributes(
-			pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
-				"abc": pdata.NewAttributeValueString("def"),
+			pdata.NewMapFromRaw(map[string]interface{}{
+				"abc": "def",
 			}),
 			234))
 
@@ -86,12 +86,12 @@ func TestAttributesMapToOC(t *testing.T) {
 		Value: &octrace.AttributeValue_DoubleValue{DoubleValue: 4.5},
 	}
 	assert.EqualValues(t, ocAttrs,
-		attributesMapToOCSpanAttributes(pdata.NewAttributeMapFromMap(
-			map[string]pdata.AttributeValue{
-				"abc":       pdata.NewAttributeValueString("def"),
-				"intval":    pdata.NewAttributeValueInt(345),
-				"boolval":   pdata.NewAttributeValueBool(true),
-				"doubleval": pdata.NewAttributeValueDouble(4.5),
+		attributesMapToOCSpanAttributes(pdata.NewMapFromRaw(
+			map[string]interface{}{
+				"abc":       "def",
+				"intval":    345,
+				"boolval":   true,
+				"doubleval": 4.5,
 			}),
 			234))
 }
@@ -136,7 +136,7 @@ func TestSpanKindToOC(t *testing.T) {
 }
 
 func TestAttributesMapTOOcSameProcessAsParentSpan(t *testing.T) {
-	attr := pdata.NewAttributeMap()
+	attr := pdata.NewMap()
 	assert.Nil(t, attributesMapToOCSameProcessAsParentSpan(attr))
 
 	attr.UpsertBool(occonventions.AttributeSameProcessAsParentSpan, true)
