@@ -3,30 +3,63 @@
 ## Unreleased
 
 ### 💡 Enhancements 💡
+- `riakreceiver`: Added implementation of Riak Metric Receiver (#8548)
+- `splunkhecexporter`: Add support for batching traces (#8995)
+- `hostmetricsreceiver`: Migrate Processes scraper to the Metrics builder (#8855)
+- `tanzuobservabilityexporter`: Use resourcetotelemetry helper (#8338)
+- Add `make crosslink` target to ensure replace statements are included in `go.mod` for all transitive dependencies within repository (#8822)
+- `filestorageextension`: Change bbolt DB settings for better performance (#9004)
+- `jaegerremotesamplingextension`: Add local and remote sampling stores (#8818)
+- `attributesprocessor`: Add support to filter on log body (#8996)
+- `prometheusremotewriteexporter`: Translate resource attributes to the target info metric (#8493)
+- `podmanreceiver`: Add API timeout configuration option (#9014)
+- `cmd/mdatagen`: Add `sem_conv_version` field to metadata.yaml that is used to set metrics SchemaURL (#9010)
+- `splunkheceporter`: Add an option to disable log or profiling data (#9065)
 
 - `cmd/mdatagen`: Update documentation generated for attributes to list enumerated values and show the "value" that will be visible on metrics when it is different from the attribute key in metadata.yaml (#8983)
 
 ### 🛑 Breaking changes 🛑
 
+- `filelogreceiver`, `journaldreceiver`, `syslogreceiver`, `tcplogreceiver`, `udplogreceiver`:
+  - Updated data model to align with stable logs data model, which includes various breaking changes. (#8835)
+    - A detailed [Upgrade Guide](https://github.com/open-telemetry/opentelemetry-log-collection/releases/tag/v0.28.0) is available in the log-collection v0.28.0 release notes. 
+- `datadogexporter`: Remove `OnlyMetadata` method from `Config` struct (#8980)
+- `datadogexporter`: Remove `GetCensoredKey` method from `APIConfig` struct (#8980)
+- `mongodbatlasreceiver`: Updated to uses newer metric builder which changed some metric and resource attributes (#9093)
+- `dynatraceexporter`: Make `serialization` package `/internal` (#9097)
+
 ### 🧰 Bug fixes 🧰
 
-- `hostmetricsreceiver`: Use cpu times for time delta in cpu.utilization calculation (#8856)
+- `hostmetricsreceiver`: Use cpu times for time delta in cpu.utilization calculation (#8857)
+- `dynatraceexporter`: Remove overly verbose stacktrace from certain logs (#8989)
+- `googlecloudexporter`: fix the `exporter.googlecloud.OTLPDirect` fature-gate, which was not applied when the flag was provided (#9116)
 
 ### 🚩 Deprecations 🚩
 
+- `datadogexporter`: Deprecate `service` setting in favor of `service.name` semantic convention (#8784)
+- `datadogexporter`: Deprecate `version` setting in favor of `service.version` semantic convention (#8784)
+- `datadogexporter`: Deprecate `env` setting in favor of `deployment.environment` semantic convention (#9017)
+- `datadogexporter`: Deprecate `GetHostTags` method from `TagsConfig` struct (#8975)
+- `prometheusexecreceiver`: Deprecate prom_exec receiver (#9058)
+- `fluentbitextension`: Deprecate Fluentbit extension (#9062)
+
 ### 🚀 New components 🚀
+
+### 🧰 Bug fixes 🧰
+
+- `prometheusreceiver`: Fix issues with relabelling the `job` and `instance` labels. (#8780)
 
 ## v0.48.0
 
 ### 💡 Enhancements 💡
 
 - `k8seventsreceiver`: Add Api_version and resource_version (#8539)
-- `cmd/mdatagen`: Add resource attributes definition to metadata.yaml and move `pdata.Metrics` creation to the
-  generated code (#5270) 
 - `datadogexporter`: Add `metrics::sums::cumulative_monotonic_mode` to specify export mode for cumulative monotonic sums (#8490)
 - `dynatraceexporter`: add multi-instance deployment note to README.md (#8848)
 - `resourcedetectionprocessor`: Add attribute allowlist (#8547)
 - `datadogexporter`:  Metrics payload data and Sketches payload data will be logged if collector is started in debug mode (#8929)
+- `cmd/mdatagen`: Add resource attributes definition to metadata.yaml and move `pdata.Metrics` creation to the
+  generated code (#8555)
 
 ### 🛑 Breaking changes 🛑
 

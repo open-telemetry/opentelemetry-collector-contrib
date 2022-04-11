@@ -32,7 +32,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/serialization"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/internal/serialization"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 )
 
@@ -135,11 +135,10 @@ func (e *exporter) serializeMetrics(md pdata.Metrics) []string {
 				metricLines, err := serialization.SerializeMetric(e.settings.Logger, e.cfg.Prefix, metric, e.defaultDimensions, e.staticDimensions, e.prevPts)
 
 				if err != nil {
-					e.settings.Logger.Sugar().Errorw(
-						"failed to serialize",
+					e.settings.Logger.Sugar().Warnw("failed to serialize",
 						"datatype", metric.DataType().String(),
 						"name", metric.Name(),
-						zap.Error(err),
+						"error", err,
 					)
 				}
 
@@ -232,7 +231,7 @@ func (e *exporter) sendBatch(ctx context.Context, lines []string) error {
 			return nil
 		}
 
-		e.settings.Logger.Sugar().Errorw("Response from Dynatrace",
+		e.settings.Logger.Sugar().Warnw("Response from Dynatrace",
 			"accepted-lines", responseBody.Ok,
 			"rejected-lines", responseBody.Invalid,
 			"error-message", responseBody.Error.Message,

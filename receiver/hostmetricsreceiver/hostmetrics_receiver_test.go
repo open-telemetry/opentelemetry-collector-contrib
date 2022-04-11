@@ -30,7 +30,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.9.0"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
@@ -112,7 +112,7 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 			memoryscraper.TypeStr:     scraperFactories[memoryscraper.TypeStr].CreateDefaultConfig(),
 			networkscraper.TypeStr:    scraperFactories[networkscraper.TypeStr].CreateDefaultConfig(),
 			pagingscraper.TypeStr:     scraperFactories[pagingscraper.TypeStr].CreateDefaultConfig(),
-			processesscraper.TypeStr:  &processesscraper.Config{},
+			processesscraper.TypeStr:  scraperFactories[processesscraper.TypeStr].CreateDefaultConfig(),
 		},
 	}
 
