@@ -19,8 +19,8 @@
 ### 🛑 Breaking changes 🛑
 
 - `filelogreceiver`, `journaldreceiver`, `syslogreceiver`, `tcplogreceiver`, `udplogreceiver`:
-  - Updated data model to align with stable logs data model, which includes various breaking changes. (#8835)
-    - A detailed [Upgrade Guide](https://github.com/open-telemetry/opentelemetry-log-collection/releases/tag/v0.28.0) is available in the log-collection v0.28.0 release notes. 
+  - Updated data model to align with stable logs data model, which includes various breaking changes. (#9139, #8835)
+    - A detailed [Upgrade Guide](https://github.com/open-telemetry/opentelemetry-log-collection/releases/tag/v0.28.0) is available in the log-collection v0.29.0 release notes. 
 - `datadogexporter`: Remove `OnlyMetadata` method from `Config` struct (#8980)
 - `datadogexporter`: Remove `GetCensoredKey` method from `APIConfig` struct (#8980)
 - `mongodbatlasreceiver`: Updated to uses newer metric builder which changed some metric and resource attributes (#9093)
