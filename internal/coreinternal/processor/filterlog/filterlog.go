@@ -36,9 +36,6 @@ type Matcher interface {
 type propertiesMatcher struct {
 	filtermatcher.PropertiesMatcher
 
-	// log names to compare to.
-	nameFilters filterset.FilterSet
-
 	// log bodies to compare to.
 	bodyFilters filterset.FilterSet
 }
@@ -58,13 +55,6 @@ func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 		return nil, err
 	}
 
-	var nameFS filterset.FilterSet
-	if len(mp.LogNames) > 0 {
-		nameFS, err = filterset.CreateFilterSet(mp.LogNames, &mp.Config)
-		if err != nil {
-			return nil, fmt.Errorf("error creating log record name filters: %v", err)
-		}
-	}
 	var bodyFS filterset.FilterSet
 	if len(mp.LogBodies) > 0 {
 		bodyFS, err = filterset.CreateFilterSet(mp.LogBodies, &mp.Config)
@@ -75,7 +65,6 @@ func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 
 	return &propertiesMatcher{
 		PropertiesMatcher: rm,
-		nameFilters:       nameFS,
 		bodyFilters:       bodyFS,
 	}, nil
 }
