@@ -54,9 +54,9 @@ func TestSpan_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 		{
 			name: "log_properties",
 			property: filterconfig.MatchProperties{
-				LogNames: []string{"log"},
+				LogBodies: []string{"log"},
 			},
-			errorString: "log_names should not be specified for trace spans",
+			errorString: "log_bodies should not be specified for trace spans",
 		},
 		{
 			name: "invalid_match_type",

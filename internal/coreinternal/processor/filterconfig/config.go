@@ -90,11 +90,6 @@ type MatchProperties struct {
 	// This is an optional field.
 	SpanNames []string `mapstructure:"span_names"`
 
-	// LogNames is a list of strings that the LogRecord's name field must match
-	// against.
-	// Deprecated: the Name field is removed from the log data model.
-	LogNames []string `mapstructure:"log_names"`
-
 	// LogBodies is a list of strings that the LogRecord's body field must match
 	// against.
 	LogBodies []string `mapstructure:"log_bodies"`
@@ -123,10 +118,6 @@ type MatchProperties struct {
 
 // ValidateForSpans validates properties for spans.
 func (mp *MatchProperties) ValidateForSpans() error {
-	if len(mp.LogNames) > 0 {
-		return errors.New("log_names should not be specified for trace spans")
-	}
-
 	if len(mp.LogBodies) > 0 {
 		return errors.New("log_bodies should not be specified for trace spans")
 	}
