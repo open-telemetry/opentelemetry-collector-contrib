@@ -53,6 +53,37 @@ var renamedSettings = []renameError{
 			}
 		},
 	},
+	{
+		oldName:      "tags",
+		newName:      "host_metadata::tags",
+		oldRemovedIn: "v0.52.0",
+		issueNumber:  9099,
+		updateFn: func(c *Config) {
+			c.HostMetadata.Tags = c.Tags
+		},
+	},
+	{
+		oldName:      "send_metadata",
+		newName:      "host_metadata::enabled",
+		oldRemovedIn: "v0.52.0",
+		issueNumber:  9099,
+		updateFn: func(c *Config) {
+			c.HostMetadata.Enabled = c.SendMetadata
+		},
+	},
+	{
+		oldName:      "use_resource_metadata",
+		newName:      "host_metadata::hostname_source",
+		oldRemovedIn: "v0.52.0",
+		issueNumber:  9099,
+		updateFn: func(c *Config) {
+			if c.UseResourceMetadata {
+				c.HostMetadata.HostnameSource = HostnameSourceFirstResource
+			} else {
+				c.HostMetadata.HostnameSource = HostnameSourceConfigOrSystem
+			}
+		},
+	},
 }
 
 // Error implements the error interface.
