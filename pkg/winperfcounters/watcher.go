@@ -69,7 +69,7 @@ func (w Watcher) ScrapeData() (CounterValue, error) {
 		metric.Attributes[instanceLabelName] = counterValue.InstanceName
 	}
 
-	return CounterValue{MetricRep: metric, Value: int64(counterValue.Value)}, nil
+	return CounterValue{MetricRep: metric, Value: counterValue.Value}, nil
 }
 
 func (w Watcher) Close() error {
@@ -123,5 +123,5 @@ func counterPath(object, instance, counterName string) string {
 
 type CounterValue struct {
 	MetricRep
-	Value int64
+	Value float64
 }

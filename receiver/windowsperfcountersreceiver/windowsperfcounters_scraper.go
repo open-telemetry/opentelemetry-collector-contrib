@@ -130,7 +130,7 @@ func (s *scraper) scrape(context.Context) (pdata.Metrics, error) {
 	return md, errs
 }
 
-func initializeMetricDps(metric pdata.Metric, now pdata.Timestamp, counterValue int64, attributes map[string]string) {
+func initializeMetricDps(metric pdata.Metric, now pdata.Timestamp, counterValue float64, attributes map[string]string) {
 	var dps pdata.NumberDataPointSlice
 
 	if metric.DataType() == pdata.MetricDataTypeGauge {
@@ -144,8 +144,9 @@ func initializeMetricDps(metric pdata.Metric, now pdata.Timestamp, counterValue 
 		for attKey, attVal := range attributes {
 			dp.Attributes().InsertString(attKey, attVal)
 		}
+
 	}
 
 	dp.SetTimestamp(now)
-	dp.SetIntVal(counterValue)
+	dp.SetDoubleVal(counterValue)
 }
