@@ -169,10 +169,6 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metric
 			}
 			go metadata.Pusher(exp.ctx, exp.params, newMetadataConfigfromConfig(exp.cfg), attrs)
 		})
-
-		// Consume configuration's sync.Once to preserve behavior.
-		// TODO (#8373): Remove this function call.
-		exp.cfg.OnceMetadata().Do(func() {})
 	}
 
 	consumer := metrics.NewConsumer()
@@ -186,6 +182,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metric
 
 	err = nil
 	if len(ms) > 0 {
+		exp.params.Logger.Debug("exporting payload", zap.Any("metric", ms))
 		err = multierr.Append(
 			err,
 			exp.retrier.DoWithRetries(ctx, func(context.Context) error {
@@ -195,6 +192,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metric
 	}
 
 	if len(sl) > 0 {
+		exp.params.Logger.Debug("exporting sketches payload", zap.Any("sketches", sl))
 		err = multierr.Append(
 			err,
 			exp.retrier.DoWithRetries(ctx, func(ctx context.Context) error {

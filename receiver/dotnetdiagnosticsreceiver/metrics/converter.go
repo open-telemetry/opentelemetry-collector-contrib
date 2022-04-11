@@ -27,7 +27,7 @@ func rawMetricsToPdata(rawMetrics []dotnet.Metric, startTime, now time.Time) pda
 	rms := pdm.ResourceMetrics()
 	rm := rms.AppendEmpty()
 	rm.Resource().Attributes()
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 	ilm := ilms.AppendEmpty()
 	ms := ilm.Metrics()
 	ms.EnsureCapacity(len(rawMetrics))

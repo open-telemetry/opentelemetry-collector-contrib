@@ -105,7 +105,7 @@ func endToEndScrapeTest(t *testing.T, receiverConfig config.Receiver, testName s
 func assertTwoUniqueValuesScraped(t *testing.T, metricsSlice []pdata.Metrics) {
 	var value float64
 	for i := range metricsSlice {
-		ms := metricsSlice[i].ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+		ms := metricsSlice[i].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 		var tempM pdata.Metric
 		ok := false
 		for j := 0; j < ms.Len(); j++ {

@@ -130,7 +130,7 @@ func TestPushTraceData_PermanentOnCompleteFailure(t *testing.T) {
 	// We do not export spans with missing service names, so this span should
 	// fail exporting
 	traces := pdata.NewTraces()
-	traces.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 
 	cg := func(cfg *Config, settings component.TelemetrySettings, host component.Host) (exporterClient, error) {
 		return &clientMock{}, nil
@@ -157,10 +157,10 @@ func TestPushTraceData_TransientOnPartialFailure(t *testing.T) {
 	traces.ResourceSpans().EnsureCapacity(2)
 	rspan := traces.ResourceSpans().AppendEmpty()
 	rspan.Resource().Attributes().InsertString(conventions.AttributeServiceName, "service1")
-	rspan.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	rspan.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 
 	// ...and one without (partial failure)
-	traces.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 
 	cg := func(cfg *Config, settings component.TelemetrySettings, host component.Host) (exporterClient, error) {
 		return &clientMock{
@@ -195,17 +195,17 @@ func TestTracesToHumioEvents_OrganizedByTags(t *testing.T) {
 	// well a span from a separate trace
 	res1 := traces.ResourceSpans().AppendEmpty()
 	res1.Resource().Attributes().InsertString(conventions.AttributeServiceName, "service-A")
-	ils1 := res1.InstrumentationLibrarySpans().AppendEmpty()
+	ils1 := res1.ScopeSpans().AppendEmpty()
 	ils1.Spans().AppendEmpty().SetTraceID(pdata.NewTraceID(createTraceID("10000000000000000000000000000000")))
 	ils1.Spans().AppendEmpty().SetTraceID(pdata.NewTraceID(createTraceID("10000000000000000000000000000000")))
 
 	res2 := traces.ResourceSpans().AppendEmpty()
 	res2.Resource().Attributes().InsertString(conventions.AttributeServiceName, "service-B")
-	res2.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(pdata.NewTraceID(createTraceID("10000000000000000000000000000000")))
+	res2.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(pdata.NewTraceID(createTraceID("10000000000000000000000000000000")))
 
 	res3 := traces.ResourceSpans().AppendEmpty()
 	res3.Resource().Attributes().InsertString(conventions.AttributeServiceName, "service-C")
-	res3.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(pdata.NewTraceID(createTraceID("20000000000000000000000000000000")))
+	res3.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(pdata.NewTraceID(createTraceID("20000000000000000000000000000000")))
 
 	// Organize by trace id
 	cg := func(cfg *Config, settings component.TelemetrySettings, host component.Host) (exporterClient, error) {
@@ -253,7 +253,7 @@ func TestSpanToHumioEvent(t *testing.T) {
 	span.Status().SetMessage("done")
 	span.Attributes().InsertString("key", "val")
 
-	inst := pdata.NewInstrumentationLibrary()
+	inst := pdata.NewInstrumentationScope()
 	inst.SetName("otel-test")
 	inst.SetVersion("1.0.0")
 
@@ -306,7 +306,7 @@ func TestSpanToHumioEvent(t *testing.T) {
 func TestSpanToHumioEventNoInstrumentation(t *testing.T) {
 	// Arrange
 	span := pdata.NewSpan()
-	inst := pdata.NewInstrumentationLibrary()
+	inst := pdata.NewInstrumentationScope()
 	res := pdata.NewResource()
 
 	cg := func(cfg *Config, settings component.TelemetrySettings, host component.Host) (exporterClient, error) {

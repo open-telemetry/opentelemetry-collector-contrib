@@ -113,6 +113,7 @@ var (
 
 type testData struct {
 	name            string
+	relabeledJob    string // Used when relabeling or honor_labels changes the target to something other than 'name'.
 	pages           []mockPrometheusResponse
 	attributes      pdata.Map
 	validateScrapes bool
@@ -179,7 +180,7 @@ func verifyNumTotalScrapeResults(t *testing.T, td *testData, resourceMetrics []*
 
 func getMetrics(rm *pdata.ResourceMetrics) []*pdata.Metric {
 	metrics := make([]*pdata.Metric, 0)
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 	for j := 0; j < ilms.Len(); j++ {
 		metricSlice := ilms.At(j).Metrics()
 		for i := 0; i < metricSlice.Len(); i++ {
@@ -192,7 +193,7 @@ func getMetrics(rm *pdata.ResourceMetrics) []*pdata.Metric {
 
 func metricsCount(resourceMetric *pdata.ResourceMetrics) int {
 	metricsCount := 0
-	ilms := resourceMetric.InstrumentationLibraryMetrics()
+	ilms := resourceMetric.ScopeMetrics()
 	for j := 0; j < ilms.Len(); j++ {
 		ilm := ilms.At(j)
 		metricsCount += ilm.Metrics().Len()
@@ -274,7 +275,7 @@ func assertUp(t *testing.T, expected float64, metrics []*pdata.Metric) {
 
 func countScrapeMetricsRM(got *pdata.ResourceMetrics) int {
 	n := 0
-	ilms := got.InstrumentationLibraryMetrics()
+	ilms := got.ScopeMetrics()
 	for j := 0; j < ilms.Len(); j++ {
 		ilm := ilms.At(j)
 		for i := 0; i < ilm.Metrics().Len(); i++ {
@@ -587,9 +588,13 @@ func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, s
 	// Stop once we have evaluated all expected results, any others are superfluous.
 	for _, target := range targets[:lep] {
 		t.Run(target.name, func(t *testing.T) {
-			scrapes := pResults[target.name]
+			name := target.name
+			if target.relabeledJob != "" {
+				name = target.relabeledJob
+			}
+			scrapes := pResults[name]
 			if !target.validateScrapes {
-				scrapes = getValidScrapes(t, pResults[target.name])
+				scrapes = getValidScrapes(t, pResults[name])
 			}
 			target.validateFunc(t, target, scrapes)
 		})

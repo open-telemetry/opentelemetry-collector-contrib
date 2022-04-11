@@ -63,12 +63,12 @@ func protoBatchToResourceSpans(batch model.Batch, dest pdata.ResourceSpans) {
 	}
 
 	groupByLibrary := jSpansToInternal(jSpans)
-	ilss := dest.InstrumentationLibrarySpans()
+	ilss := dest.ScopeSpans()
 	for library, spans := range groupByLibrary {
 		ils := ilss.AppendEmpty()
 		if library.name != "" {
-			ils.InstrumentationLibrary().SetName(library.name)
-			ils.InstrumentationLibrary().SetVersion(library.version)
+			ils.Scope().SetName(library.name)
+			ils.Scope().SetVersion(library.version)
 		}
 		spans.MoveAndAppendTo(ils.Spans())
 	}

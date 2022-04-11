@@ -116,7 +116,7 @@ func TestScrape(t *testing.T) {
 
 			assert.Equal(t, test.expectedMetricCount, md.MetricCount())
 
-			metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+			metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 			assertMemoryUsageMetricValid(t, metrics.At(0), "system.memory.usage")
 
 			if runtime.GOOS == "linux" {
@@ -171,7 +171,7 @@ func TestScrape_MemoryUtilization(t *testing.T) {
 			}
 			require.NoError(t, err, "Failed to scrape metrics: %v", err)
 
-			metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+			metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 			assertMemoryUtilizationMetricValid(t, metrics.At(0), "system.memory.utilization")
 
 			if runtime.GOOS == "linux" {

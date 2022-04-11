@@ -22,6 +22,8 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 type TracesConfig struct {
@@ -30,6 +32,7 @@ type TracesConfig struct {
 
 type MetricsConfig struct {
 	confighttp.HTTPClientSettings `mapstructure:",squash"`
+	ResourceAttributes            resourcetotelemetry.Settings `mapstructure:"resource_attributes"`
 }
 
 // Config defines configuration options for the exporter.

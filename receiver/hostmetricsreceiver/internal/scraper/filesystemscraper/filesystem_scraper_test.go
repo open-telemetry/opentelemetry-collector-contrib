@@ -254,7 +254,7 @@ func TestScrape(t *testing.T) {
 
 			assert.GreaterOrEqual(t, md.MetricCount(), 1)
 
-			metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+			metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 			m, err := findMetricByName(metrics, "system.filesystem.usage")
 			assert.NoError(t, err)
 			assertFileSystemUsageMetricValid(

@@ -31,7 +31,7 @@ var (
 		rm := md.ResourceMetrics().AppendEmpty()
 		rm.Resource().Attributes().UpsertString("opencensus.resourcetype", "host")
 		rm.Resource().Attributes().UpsertString("label-key", "label-value")
-		m := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
+		m := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 		m.SetName("metric-name")
 		m.SetDescription("metric-description")
 		m.SetUnit("metric-unit")
@@ -43,7 +43,7 @@ var (
 	mockedConsumedResourceEmpty = func() pdata.Metrics {
 		md := pdata.NewMetrics()
 		rm := md.ResourceMetrics().AppendEmpty()
-		m := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
+		m := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 		m.SetName("metric-name")
 		m.SetDescription("metric-description")
 		m.SetUnit("metric-unit")

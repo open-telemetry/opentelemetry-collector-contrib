@@ -134,7 +134,7 @@ func traceIDFromTraces(td pdata.Traces) pdata.TraceID {
 		return pdata.InvalidTraceID()
 	}
 
-	ils := rs.At(0).InstrumentationLibrarySpans()
+	ils := rs.At(0).ScopeSpans()
 	if ils.Len() == 0 {
 		return pdata.InvalidTraceID()
 	}

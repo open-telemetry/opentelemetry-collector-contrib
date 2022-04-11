@@ -19,26 +19,18 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
 type Processor struct {
-	queries []Query
+	queries []common.Query
 	logger  *zap.Logger
 }
 
-// Query holds a top level Query for processing trace data. A Query is a combination of a function
-// invocation and the condition to match telemetry for invoking the function.
-type Query struct {
-	function  exprFunc
-	condition condFunc
-}
-
 func NewProcessor(statements []string, functions map[string]interface{}, settings component.ProcessorCreateSettings) (*Processor, error) {
-	queries, err := Parse(statements, functions)
+	queries, err := common.ParseQueries(statements, functions, ParsePath)
 	if err != nil {
 		return nil, err
 	}
@@ -53,53 +45,21 @@ func (p *Processor) ProcessTraces(_ context.Context, td pdata.Traces) (pdata.Tra
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
 		ctx.resource = rspans.Resource()
-		for j := 0; j < rspans.InstrumentationLibrarySpans().Len(); j++ {
-			il := rspans.InstrumentationLibrarySpans().At(j).InstrumentationLibrary()
+		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
+			il := rspans.ScopeSpans().At(j).Scope()
 			ctx.il = il
-			spans := rspans.InstrumentationLibrarySpans().At(j).Spans()
+			spans := rspans.ScopeSpans().At(j).Spans()
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
 				ctx.span = span
 
 				for _, statement := range p.queries {
-					if statement.condition(ctx) {
-						statement.function(ctx)
+					if statement.Condition(ctx) {
+						statement.Function(ctx)
 					}
 				}
 			}
 		}
 	}
 	return td, nil
-}
-
-func Parse(statements []string, functions map[string]interface{}) ([]Query, error) {
-	queries := make([]Query, 0)
-	var errors error
-
-	for _, statement := range statements {
-		parsed, err := common.Parse(statement)
-		if err != nil {
-			errors = multierr.Append(errors, err)
-			continue
-		}
-		function, err := newFunctionCall(parsed.Invocation, functions)
-		if err != nil {
-			errors = multierr.Append(errors, err)
-			continue
-		}
-		condition, err := newConditionEvaluator(parsed.Condition, functions)
-		if err != nil {
-			errors = multierr.Append(errors, err)
-			continue
-		}
-		queries = append(queries, Query{
-			function:  function,
-			condition: condition,
-		})
-	}
-
-	if errors != nil {
-		return nil, errors
-	}
-	return queries, nil
 }

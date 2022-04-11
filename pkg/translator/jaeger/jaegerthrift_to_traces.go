@@ -46,7 +46,7 @@ func ThriftToTraces(batches *jaeger.Batch) (pdata.Traces, error) {
 		return traceData, nil
 	}
 
-	jThriftSpansToInternal(jSpans, rs.InstrumentationLibrarySpans().AppendEmpty().Spans())
+	jThriftSpansToInternal(jSpans, rs.ScopeSpans().AppendEmpty().Spans())
 
 	return traceData, nil
 }
