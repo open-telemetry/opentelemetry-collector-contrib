@@ -39,8 +39,8 @@ type propertiesMatcher struct {
 	// log bodies to compare to.
 	bodyFilters filterset.FilterSet
 
-	// log severities to compare to
-	severityFilters filterset.FilterSet
+	// log severity texts to compare to
+	severityTextFilters filterset.FilterSet
 }
 
 // NewMatcher creates a LogRecord Matcher that matches based on the given MatchProperties.
@@ -65,18 +65,18 @@ func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 			return nil, fmt.Errorf("error creating log record body filters: %v", err)
 		}
 	}
-	var severityFS filterset.FilterSet
-	if len(mp.LogSeverities) > 0 {
-		severityFS, err = filterset.CreateFilterSet(mp.LogSeverities, &mp.Config)
+	var severitytextFS filterset.FilterSet
+	if len(mp.LogSeverityTexts) > 0 {
+		severitytextFS, err = filterset.CreateFilterSet(mp.LogSeverityTexts, &mp.Config)
 		if err != nil {
-			return nil, fmt.Errorf("error creating log record severity filters: %v", err)
+			return nil, fmt.Errorf("error creating log record severity text filters: %v", err)
 		}
 	}
 
 	return &propertiesMatcher{
-		PropertiesMatcher: rm,
-		bodyFilters:       bodyFS,
-		severityFilters:   severityFS,
+		PropertiesMatcher:   rm,
+		bodyFilters:         bodyFS,
+		severityTextFilters: severitytextFS,
 	}, nil
 }
 
@@ -92,7 +92,7 @@ func (mp *propertiesMatcher) MatchLogRecord(lr pdata.LogRecord, resource pdata.R
 	if lr.Body().Type() == pdata.ValueTypeString && mp.bodyFilters != nil && mp.bodyFilters.Matches(lr.Body().StringVal()) {
 		return true
 	}
-	if mp.severityFilters != nil && mp.severityFilters.Matches(lr.SeverityText()) {
+	if mp.severityTextFilters != nil && mp.severityTextFilters.Matches(lr.SeverityText()) {
 		return true
 	}
 

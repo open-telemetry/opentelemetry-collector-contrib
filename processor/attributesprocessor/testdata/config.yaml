@@ -333,8 +333,8 @@ processors:
     include:
       # match_type defines that "services" is an array of regexp-es.
       match_type: regexp
-      # The log severity "debug.*" pattern.
-      log_severities: [ "debug.*" ]
+      # The log severity text "debug.*" pattern.
+      log_severity_texts: [ "debug.*" ]
     actions:
       - key: password
         action: update

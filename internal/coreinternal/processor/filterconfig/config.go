@@ -94,9 +94,9 @@ type MatchProperties struct {
 	// against.
 	LogBodies []string `mapstructure:"log_bodies"`
 
-	// LogSeverities is a list of strings that the LogRecord's severity text field must match
+	// LogSeverityTexts is a list of strings that the LogRecord's severity text field must match
 	// against.
-	LogSeverities []string `mapstructure:"log_severities"`
+	LogSeverityTexts []string `mapstructure:"log_severity_texts"`
 
 	// MetricNames is a list of strings to match metric name against.
 	// A match occurs if metric name matches at least one item in the list.
@@ -126,8 +126,8 @@ func (mp *MatchProperties) ValidateForSpans() error {
 		return errors.New("log_bodies should not be specified for trace spans")
 	}
 
-	if len(mp.LogSeverities) > 0 {
-		return errors.New("log_severities should not be specified for trace spans")
+	if len(mp.LogSeverityTexts) > 0 {
+		return errors.New("log_severity_texts should not be specified for trace spans")
 	}
 
 	if len(mp.Services) == 0 && len(mp.SpanNames) == 0 && len(mp.Attributes) == 0 &&
@@ -144,8 +144,8 @@ func (mp *MatchProperties) ValidateForLogs() error {
 		return errors.New("neither services nor span_names should be specified for log records")
 	}
 
-	if len(mp.Attributes) == 0 && len(mp.Libraries) == 0 && len(mp.Resources) == 0 && len(mp.LogBodies) == 0 && len(mp.LogSeverities) == 0 {
-		return errors.New(`at least one of "attributes", "libraries", "resources", "log_bodies" or "log_severities" field must be specified`)
+	if len(mp.Attributes) == 0 && len(mp.Libraries) == 0 && len(mp.Resources) == 0 && len(mp.LogBodies) == 0 && len(mp.LogSeverityTexts) == 0 {
+		return errors.New(`at least one of "attributes", "libraries", "resources", "log_bodies" or "log_severity_texts" field must be specified`)
 	}
 
 	return nil
