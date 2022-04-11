@@ -15,6 +15,7 @@
 - `podmanreceiver`: Add API timeout configuration option (#9014)
 - `cmd/mdatagen`: Add `sem_conv_version` field to metadata.yaml that is used to set metrics SchemaURL (#9010)
 - `splunkheceporter`: Add an option to disable log or profiling data (#9065)
+- `datadogexporter`: Add `host_metadata` configuration section to configure host metadata export (#9100)
 
 ### 🛑 Breaking changes 🛑
 
@@ -41,8 +42,12 @@
 - `datadogexporter`: Deprecate `version` setting in favor of `service.version` semantic convention (#8784)
 - `datadogexporter`: Deprecate `env` setting in favor of `deployment.environment` semantic convention (#9017)
 - `datadogexporter`: Deprecate `GetHostTags` method from `TagsConfig` struct (#8975)
+- `datadogexporter`: Deprecate `tags` setting in favor of `host_metadata::tags` (#9100)
+- `datadogexporter`: Deprecate `send_metadata` setting in favor of `host_metadata::enabled` (#9100)
+- `datadogexporter`: Deprecate `use_resource_metadata` setting in favor of `host_metadata::hostname_source` (#9100)
 - `prometheusexecreceiver`: Deprecate prom_exec receiver (#9058)
 - `fluentbitextension`: Deprecate Fluentbit extension (#9062)
+
 
 ### 🚀 New components 🚀
 
