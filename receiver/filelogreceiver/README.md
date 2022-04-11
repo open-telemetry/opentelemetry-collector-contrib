@@ -83,6 +83,6 @@ receivers:
     operators:    
       - type: json_parser
         timestamp:
-          parse_from: time
+          parse_from: attributes.time
           layout: '%Y-%m-%d %H:%M:%S'
 ```
