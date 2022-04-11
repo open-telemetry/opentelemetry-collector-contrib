@@ -58,7 +58,7 @@ func (w Watcher) ScrapeData() (CounterValue, error) {
 	metric := w.GetMetricRep()
 
 	if len(counterValues) != 1 {
-		return CounterValue{}, fmt.Errorf("returnmed incorrect amount of counter values: %d", len(counterValues))
+		return CounterValue{}, fmt.Errorf("returned incorrect amount of counter values: %d", len(counterValues))
 	}
 	counterValue := counterValues[0]
 

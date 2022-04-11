@@ -43,16 +43,12 @@ func newScraper(cfg *Config, settings component.TelemetrySettings) *scraper {
 }
 
 func (s *scraper) start(context.Context, component.Host) error {
-	watcherCfgs := []winperfcounters.ObjectConfig{}
-	for _, perfCounter := range s.cfg.PerfCounters {
-		watcherCfgs = append(watcherCfgs, perfCounter)
-	}
-
 	watchers := []winperfcounters.PerfCounterWatcher{}
-	for _, objCfg := range watcherCfgs {
+	for _, objCfg := range s.cfg.PerfCounters {
 		objWatchers, err := objCfg.BuildPaths()
 		if err != nil {
 			s.settings.Logger.Warn("some performance counters could not be initialized", zap.Error(err))
+			continue
 		}
 		for _, objWatcher := range objWatchers {
 			watchers = append(watchers, objWatcher)
