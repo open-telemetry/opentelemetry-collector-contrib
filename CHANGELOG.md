@@ -32,6 +32,7 @@
 - `dynatraceexporter`: Remove overly verbose stacktrace from certain logs (#8989)
 - `googlecloudexporter`: fix the `exporter.googlecloud.OTLPDirect` fature-gate, which was not applied when the flag was provided (#9116)
 - `windowsperfcountersreceiver`: fix exported values being integers instead of doubles (#9138)
+
 ### 🚩 Deprecations 🚩
 
 - `datadogexporter`: Deprecate `service` setting in favor of `service.name` semantic convention (#8784)
