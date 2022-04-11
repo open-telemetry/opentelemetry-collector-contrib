@@ -20,5 +20,5 @@ metrics:
 
 ## Metric attributes
 
-| Name | Description |
-| ---- | ----------- |
+| Name | Description | Values |
+| ---- | ----------- | ------ |

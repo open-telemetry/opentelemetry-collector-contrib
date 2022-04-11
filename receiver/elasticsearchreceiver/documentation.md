@@ -49,20 +49,20 @@ metrics:
 
 ## Metric attributes
 
-| Name | Description |
-| ---- | ----------- |
-| cache_name | The name of cache. |
-| collector_name | The name of the garbage collector. |
-| direction | The direction of network data. |
-| disk_usage_state | The state of a section of space on disk. |
-| document_state | The state of the document. |
-| elasticsearch.cluster.name | The name of the elasticsearch cluster. |
-| elasticsearch.node.name | The name of the elasticsearch node. |
-| fs_direction | The direction of filesystem IO. |
-| health_status | The health status of the cluster. |
-| memory_pool_name | The name of the JVM memory pool. |
-| operation | The type of operation. |
-| shard_state | The state of the shard. |
-| task_state | The state of the task. |
-| thread_pool_name | The name of the thread pool. |
-| thread_state | The state of the thread. |
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| cache_name | The name of cache. | fielddata, query |
+| collector_name (name) | The name of the garbage collector. |  |
+| direction | The direction of network data. | received, sent |
+| disk_usage_state (state) | The state of a section of space on disk. | used, free |
+| document_state (state) | The state of the document. | active, deleted |
+| elasticsearch.cluster.name | The name of the elasticsearch cluster. |  |
+| elasticsearch.node.name | The name of the elasticsearch node. |  |
+| fs_direction (direction) | The direction of filesystem IO. | read, write |
+| health_status (status) | The health status of the cluster. | green, yellow, red |
+| memory_pool_name (name) | The name of the JVM memory pool. |  |
+| operation (operation) | The type of operation. | index, delete, get, query, fetch, scroll, suggest, merge, refresh, flush, warmer |
+| shard_state (state) | The state of the shard. | active, relocating, initializing, unassigned |
+| task_state (state) | The state of the task. | rejected, completed |
+| thread_pool_name | The name of the thread pool. |  |
+| thread_state (state) | The state of the thread. | active, idle |
