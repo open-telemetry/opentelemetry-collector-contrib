@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
-// Config defines configuration for http forwarder extension.
+// Config defines configuration for file storage extension.
 type Config struct {
 	config.ExtensionSettings `mapstructure:",squash"`
 
@@ -34,10 +34,25 @@ type Config struct {
 	Compaction *CompactionConfig `mapstructure:"compaction,omitempty"`
 }
 
+// CompactionConfig defines configuration for optional file storage compaction.
 type CompactionConfig struct {
-	OnStart            bool   `mapstructure:"on_start,omitempty"`
-	Directory          string `mapstructure:"directory,omitempty"`
-	MaxTransactionSize int64  `mapstructure:"max_transaction_size,omitempty"`
+	// OnStart specifies that compaction is attempted each time on start
+	OnStart bool `mapstructure:"on_start,omitempty"`
+	// OnRebound specifies that compaction is attempted online, when rebound conditions are met.
+	// This typically happens when storage usage has increased, which caused increase in space allocation
+	// and afterwards it had most items removed. We want to run the compaction online only when there are
+	// not too many elements still being stored (which is an indication that "heavy usage" period is over)
+	// so compaction should be relatively fast and at the same time there is relatively large volume of space
+	// that might be reclaimed.
+	OnRebound bool `mapstructure:"on_rebound,omitempty"`
+	// Directory specifies where the temporary files for compaction will be stored
+	Directory string `mapstructure:"directory,omitempty"`
+	// ReboundSizeBelowMiB specifies the maximum actually used size for online compaction to happen
+	ReboundSizeBelowMiB int64 `mapstructure:"rebound_size_below_mib"`
+	// ReboundTotalSizeAboveMiB specifies the minimum total allocated size (both used and empty) for online compaction
+	ReboundTotalSizeAboveMiB int64 `mapstructure:"rebound_total_size_above_mib"`
+	// MaxTransactionSize specifies the maximum number of items that might be present in single compaction iteration
+	MaxTransactionSize int64 `mapstructure:"max_transaction_size,omitempty"`
 }
 
 func (cfg *Config) Validate() error {

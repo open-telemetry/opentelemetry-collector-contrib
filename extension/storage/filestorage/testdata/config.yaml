@@ -9,6 +9,9 @@ extensions:
     compaction:
       directory: .
       on_start: true
+      on_rebound: true
+      rebound_size_below_mib: 16
+      rebound_total_size_above_mib: 128
       max_transaction_size: 2048
     timeout: 2s
 

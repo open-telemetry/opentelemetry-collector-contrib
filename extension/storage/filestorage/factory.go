@@ -40,9 +40,12 @@ func createDefaultConfig() config.Extension {
 		Compaction: &CompactionConfig{
 			Directory: getDefaultDirectory(),
 			OnStart:   false,
+			OnRebound: false,
 			// use default bbolt value
 			// https://github.com/etcd-io/bbolt/blob/d5db64bdbfdee1cb410894605f42ffef898f395d/cmd/bbolt/main.go#L1955
-			MaxTransactionSize: 65536,
+			MaxTransactionSize:       65536,
+			ReboundSizeBelowMiB:      10,
+			ReboundTotalSizeAboveMiB: 100,
 		},
 		Timeout: time.Second,
 	}
