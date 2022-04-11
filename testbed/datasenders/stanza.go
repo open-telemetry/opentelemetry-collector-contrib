@@ -65,8 +65,8 @@ func (f *FileLogWriter) Start() error {
 
 func (f *FileLogWriter) ConsumeLogs(_ context.Context, logs pdata.Logs) error {
 	for i := 0; i < logs.ResourceLogs().Len(); i++ {
-		for j := 0; j < logs.ResourceLogs().At(i).InstrumentationLibraryLogs().Len(); j++ {
-			ills := logs.ResourceLogs().At(i).InstrumentationLibraryLogs().At(j)
+		for j := 0; j < logs.ResourceLogs().At(i).ScopeLogs().Len(); j++ {
+			ills := logs.ResourceLogs().At(i).ScopeLogs().At(j)
 			for k := 0; k < ills.LogRecords().Len(); k++ {
 				_, err := f.file.Write(append(f.convertLogToTextLine(ills.LogRecords().At(k)), '\n'))
 				if err != nil {
@@ -89,22 +89,22 @@ func (f *FileLogWriter) convertLogToTextLine(lr pdata.LogRecord) []byte {
 	sb.WriteString(lr.SeverityText())
 	sb.WriteString(" ")
 
-	if lr.Body().Type() == pdata.AttributeValueTypeString {
+	if lr.Body().Type() == pdata.ValueTypeString {
 		sb.WriteString(lr.Body().StringVal())
 	}
 
-	lr.Attributes().Range(func(k string, v pdata.AttributeValue) bool {
+	lr.Attributes().Range(func(k string, v pdata.Value) bool {
 		sb.WriteString(" ")
 		sb.WriteString(k)
 		sb.WriteString("=")
 		switch v.Type() {
-		case pdata.AttributeValueTypeString:
+		case pdata.ValueTypeString:
 			sb.WriteString(v.StringVal())
-		case pdata.AttributeValueTypeInt:
+		case pdata.ValueTypeInt:
 			sb.WriteString(strconv.FormatInt(v.IntVal(), 10))
-		case pdata.AttributeValueTypeDouble:
+		case pdata.ValueTypeDouble:
 			sb.WriteString(strconv.FormatFloat(v.DoubleVal(), 'f', -1, 64))
-		case pdata.AttributeValueTypeBool:
+		case pdata.ValueTypeBool:
 			sb.WriteString(strconv.FormatBool(v.BoolVal()))
 		default:
 			panic("missing case")
@@ -130,10 +130,10 @@ func (f *FileLogWriter) GenConfigYAMLStr() string {
       - type: regex_parser
         regex: '^(?P<time>\d{4}-\d{2}-\d{2}) (?P<sev>[A-Z0-9]*) (?P<msg>.*)$'
         timestamp:
-          parse_from: time
+          parse_from: body.time
           layout: '%%Y-%%m-%%d'
         severity:
-          parse_from: sev
+          parse_from: body.sev
 `, f.file.Name())
 }
 

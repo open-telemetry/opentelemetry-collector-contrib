@@ -11,6 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package azure // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes/azure"
 
 import (
@@ -32,7 +33,7 @@ type HostInfo struct {
 
 // HostInfoFromAttributes gets Azure host info from attributes following
 // OpenTelemetry semantic conventions
-func HostInfoFromAttributes(attrs pdata.AttributeMap) (hostInfo *HostInfo) {
+func HostInfoFromAttributes(attrs pdata.Map) (hostInfo *HostInfo) {
 	hostInfo = &HostInfo{}
 
 	// Add Azure VM ID as a host alias if available for compatibility with Azure integration
@@ -44,7 +45,7 @@ func HostInfoFromAttributes(attrs pdata.AttributeMap) (hostInfo *HostInfo) {
 }
 
 // HostnameFromAttributes gets the Azure hostname from attributes
-func HostnameFromAttributes(attrs pdata.AttributeMap) (string, bool) {
+func HostnameFromAttributes(attrs pdata.Map) (string, bool) {
 	if hostname, ok := attrs.Get(conventions.AttributeHostName); ok {
 		return hostname.StringVal(), true
 	}
@@ -53,9 +54,8 @@ func HostnameFromAttributes(attrs pdata.AttributeMap) (string, bool) {
 }
 
 // ClusterNameFromAttributes gets the Azure cluster name from attributes
-func ClusterNameFromAttributes(attrs pdata.AttributeMap) (string, bool) {
-	// Get cluster name from resource group
-	// https://github.com/DataDog/datadog-agent/blob/aad29b8/pkg/util/azure/azure.go#L51
+func ClusterNameFromAttributes(attrs pdata.Map) (string, bool) {
+	// Get cluster name from resource group from pkg/util/cloudprovider/azure:GetClusterName
 	if resourceGroup, ok := attrs.Get(AttributeResourceGroupName); ok {
 		splitAll := strings.Split(resourceGroup.StringVal(), "_")
 		if len(splitAll) < 4 || strings.ToLower(splitAll[0]) != "mc" {

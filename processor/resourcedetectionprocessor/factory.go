@@ -22,6 +22,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 
@@ -76,12 +77,12 @@ func NewFactory() component.ProcessorFactory {
 		providers:               map[config.ComponentID]*internal.ResourceProvider{},
 	}
 
-	return processorhelper.NewFactory(
+	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		processorhelper.WithTraces(f.createTracesProcessor),
-		processorhelper.WithMetrics(f.createMetricsProcessor),
-		processorhelper.WithLogs(f.createLogsProcessor))
+		component.WithTracesProcessor(f.createTracesProcessor),
+		component.WithMetricsProcessor(f.createMetricsProcessor),
+		component.WithLogsProcessor(f.createLogsProcessor))
 }
 
 // Type gets the type of the Option config created by this factory.
@@ -91,13 +92,20 @@ func (*factory) Type() config.Type {
 
 func createDefaultConfig() config.Processor {
 	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-		Detectors:         []string{env.TypeStr},
-		Timeout:           5 * time.Second,
-		Override:          true,
+		ProcessorSettings:  config.NewProcessorSettings(config.NewComponentID(typeStr)),
+		Detectors:          []string{env.TypeStr},
+		HTTPClientSettings: defaultHTTPClientSettings(),
+		Override:           true,
+		Attributes:         nil,
 		// TODO: Once issue(https://github.com/open-telemetry/opentelemetry-collector/issues/4001) gets resolved,
 		// 		 Set the default value of 'hostname_source' here instead of 'system' detector
 	}
+}
+
+func defaultHTTPClientSettings() confighttp.HTTPClientSettings {
+	httpClientSettings := confighttp.NewDefaultHTTPClientSettings()
+	httpClientSettings.Timeout = 5 * time.Second
+	return httpClientSettings
 }
 
 func (f *factory) createTracesProcessor(
@@ -163,14 +171,16 @@ func (f *factory) getResourceDetectionProcessor(
 ) (*resourceDetectionProcessor, error) {
 	oCfg := cfg.(*Config)
 
-	provider, err := f.getResourceProvider(params, cfg.ID(), oCfg.Timeout, oCfg.Detectors, oCfg.DetectorConfig)
+	provider, err := f.getResourceProvider(params, cfg.ID(), oCfg.HTTPClientSettings.Timeout, oCfg.Detectors, oCfg.DetectorConfig, oCfg.Attributes)
 	if err != nil {
 		return nil, err
 	}
 
 	return &resourceDetectionProcessor{
-		provider: provider,
-		override: oCfg.Override,
+		provider:           provider,
+		override:           oCfg.Override,
+		httpClientSettings: oCfg.HTTPClientSettings,
+		telemetrySettings:  params.TelemetrySettings,
 	}, nil
 }
 
@@ -180,6 +190,7 @@ func (f *factory) getResourceProvider(
 	timeout time.Duration,
 	configuredDetectors []string,
 	detectorConfigs DetectorConfig,
+	attributes []string,
 ) (*internal.ResourceProvider, error) {
 	f.lock.Lock()
 	defer f.lock.Unlock()
@@ -193,7 +204,7 @@ func (f *factory) getResourceProvider(
 		detectorTypes = append(detectorTypes, internal.DetectorType(strings.TrimSpace(key)))
 	}
 
-	provider, err := f.resourceProviderFactory.CreateResourceProvider(params, timeout, &detectorConfigs, detectorTypes...)
+	provider, err := f.resourceProviderFactory.CreateResourceProvider(params, timeout, attributes, &detectorConfigs, detectorTypes...)
 	if err != nil {
 		return nil, err
 	}

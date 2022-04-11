@@ -95,7 +95,7 @@ func (m *metricMongodbCacheOperations) recordDataPoint(start pdata.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Type, pdata.NewAttributeValueString(typeAttributeValue))
+	dp.Attributes().Insert(A.Type, pdata.NewValueString(typeAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -148,7 +148,7 @@ func (m *metricMongodbCollectionCount) recordDataPoint(start pdata.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pdata.NewAttributeValueString(databaseAttributeValue))
+	dp.Attributes().Insert(A.Database, pdata.NewValueString(databaseAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -201,8 +201,8 @@ func (m *metricMongodbConnectionCount) recordDataPoint(start pdata.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pdata.NewAttributeValueString(databaseAttributeValue))
-	dp.Attributes().Insert(A.ConnectionType, pdata.NewAttributeValueString(connectionTypeAttributeValue))
+	dp.Attributes().Insert(A.Database, pdata.NewValueString(databaseAttributeValue))
+	dp.Attributes().Insert(A.ConnectionType, pdata.NewValueString(connectionTypeAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -255,7 +255,7 @@ func (m *metricMongodbDataSize) recordDataPoint(start pdata.Timestamp, ts pdata.
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pdata.NewAttributeValueString(databaseAttributeValue))
+	dp.Attributes().Insert(A.Database, pdata.NewValueString(databaseAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -308,7 +308,7 @@ func (m *metricMongodbExtentCount) recordDataPoint(start pdata.Timestamp, ts pda
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pdata.NewAttributeValueString(databaseAttributeValue))
+	dp.Attributes().Insert(A.Database, pdata.NewValueString(databaseAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -412,7 +412,7 @@ func (m *metricMongodbIndexCount) recordDataPoint(start pdata.Timestamp, ts pdat
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pdata.NewAttributeValueString(databaseAttributeValue))
+	dp.Attributes().Insert(A.Database, pdata.NewValueString(databaseAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -465,7 +465,7 @@ func (m *metricMongodbIndexSize) recordDataPoint(start pdata.Timestamp, ts pdata
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pdata.NewAttributeValueString(databaseAttributeValue))
+	dp.Attributes().Insert(A.Database, pdata.NewValueString(databaseAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -518,8 +518,8 @@ func (m *metricMongodbMemoryUsage) recordDataPoint(start pdata.Timestamp, ts pda
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pdata.NewAttributeValueString(databaseAttributeValue))
-	dp.Attributes().Insert(A.MemoryType, pdata.NewAttributeValueString(memoryTypeAttributeValue))
+	dp.Attributes().Insert(A.Database, pdata.NewValueString(databaseAttributeValue))
+	dp.Attributes().Insert(A.MemoryType, pdata.NewValueString(memoryTypeAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -572,7 +572,7 @@ func (m *metricMongodbObjectCount) recordDataPoint(start pdata.Timestamp, ts pda
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pdata.NewAttributeValueString(databaseAttributeValue))
+	dp.Attributes().Insert(A.Database, pdata.NewValueString(databaseAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -625,7 +625,7 @@ func (m *metricMongodbOperationCount) recordDataPoint(start pdata.Timestamp, ts 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Operation, pdata.NewAttributeValueString(operationAttributeValue))
+	dp.Attributes().Insert(A.Operation, pdata.NewValueString(operationAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -678,7 +678,7 @@ func (m *metricMongodbStorageSize) recordDataPoint(start pdata.Timestamp, ts pda
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Database, pdata.NewAttributeValueString(databaseAttributeValue))
+	dp.Attributes().Insert(A.Database, pdata.NewValueString(databaseAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -709,7 +709,10 @@ func newMetricMongodbStorageSize(settings MetricSettings) metricMongodbStorageSi
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	startTime                    pdata.Timestamp
+	startTime                    pdata.Timestamp // start time that will be applied to all recorded data points.
+	metricsCapacity              int             // maximum observed number of metrics per resource.
+	resourceCapacity             int             // maximum observed number of resource attributes.
+	metricsBuffer                pdata.Metrics   // accumulates metrics data before emitting.
 	metricMongodbCacheOperations metricMongodbCacheOperations
 	metricMongodbCollectionCount metricMongodbCollectionCount
 	metricMongodbConnectionCount metricMongodbConnectionCount
@@ -737,6 +740,7 @@ func WithStartTime(startTime pdata.Timestamp) metricBuilderOption {
 func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                    pdata.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                pdata.NewMetrics(),
 		metricMongodbCacheOperations: newMetricMongodbCacheOperations(settings.MongodbCacheOperations),
 		metricMongodbCollectionCount: newMetricMongodbCollectionCount(settings.MongodbCollectionCount),
 		metricMongodbConnectionCount: newMetricMongodbConnectionCount(settings.MongodbConnectionCount),
@@ -756,22 +760,58 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 	return mb
 }
 
-// Emit appends generated metrics to a pdata.MetricsSlice and updates the internal state to be ready for recording
-// another set of data points. This function will be doing all transformations required to produce metric representation
-// defined in metadata and user settings, e.g. delta/cumulative translation.
-func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
-	mb.metricMongodbCacheOperations.emit(metrics)
-	mb.metricMongodbCollectionCount.emit(metrics)
-	mb.metricMongodbConnectionCount.emit(metrics)
-	mb.metricMongodbDataSize.emit(metrics)
-	mb.metricMongodbExtentCount.emit(metrics)
-	mb.metricMongodbGlobalLockTime.emit(metrics)
-	mb.metricMongodbIndexCount.emit(metrics)
-	mb.metricMongodbIndexSize.emit(metrics)
-	mb.metricMongodbMemoryUsage.emit(metrics)
-	mb.metricMongodbObjectCount.emit(metrics)
-	mb.metricMongodbOperationCount.emit(metrics)
-	mb.metricMongodbStorageSize.emit(metrics)
+// updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
+func (mb *MetricsBuilder) updateCapacity(rm pdata.ResourceMetrics) {
+	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
+		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
+	}
+	if mb.resourceCapacity < rm.Resource().Attributes().Len() {
+		mb.resourceCapacity = rm.Resource().Attributes().Len()
+	}
+}
+
+// ResourceOption applies changes to provided resource.
+type ResourceOption func(pdata.Resource)
+
+// EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
+// recording another set of data points as part of another resource. This function can be helpful when one scraper
+// needs to emit metrics from several resources. Otherwise calling this function is not required,
+// just `Emit` function can be called instead. Resource attributes should be provided as ResourceOption arguments.
+func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
+	rm := pdata.NewResourceMetrics()
+	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
+	for _, op := range ro {
+		op(rm.Resource())
+	}
+	ils := rm.ScopeMetrics().AppendEmpty()
+	ils.Scope().SetName("otelcol/mongodbreceiver")
+	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
+	mb.metricMongodbCacheOperations.emit(ils.Metrics())
+	mb.metricMongodbCollectionCount.emit(ils.Metrics())
+	mb.metricMongodbConnectionCount.emit(ils.Metrics())
+	mb.metricMongodbDataSize.emit(ils.Metrics())
+	mb.metricMongodbExtentCount.emit(ils.Metrics())
+	mb.metricMongodbGlobalLockTime.emit(ils.Metrics())
+	mb.metricMongodbIndexCount.emit(ils.Metrics())
+	mb.metricMongodbIndexSize.emit(ils.Metrics())
+	mb.metricMongodbMemoryUsage.emit(ils.Metrics())
+	mb.metricMongodbObjectCount.emit(ils.Metrics())
+	mb.metricMongodbOperationCount.emit(ils.Metrics())
+	mb.metricMongodbStorageSize.emit(ils.Metrics())
+	if ils.Metrics().Len() > 0 {
+		mb.updateCapacity(rm)
+		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
+	}
+}
+
+// Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
+// recording another set of metrics. This function will be responsible for applying all the transformations required to
+// produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
+func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pdata.Metrics {
+	mb.EmitForResource(ro...)
+	metrics := pdata.NewMetrics()
+	mb.metricsBuffer.MoveTo(metrics)
+	return metrics
 }
 
 // RecordMongodbCacheOperationsDataPoint adds a data point to mongodb.cache.operations metric.

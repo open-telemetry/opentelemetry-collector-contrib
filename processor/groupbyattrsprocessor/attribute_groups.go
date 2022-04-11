@@ -18,55 +18,55 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 )
 
-func instrumentationLibrariesEqual(il1, il2 pdata.InstrumentationLibrary) bool {
+func instrumentationLibrariesEqual(il1, il2 pdata.InstrumentationScope) bool {
 	return il1.Name() == il2.Name() && il1.Version() == il2.Version()
 }
 
-// matchingInstrumentationLibrarySpans searches for a pdata.InstrumentationLibrarySpans instance matching
-// given InstrumentationLibrary. If nothing is found, it creates a new one
-func matchingInstrumentationLibrarySpans(rl pdata.ResourceSpans, library pdata.InstrumentationLibrary) pdata.InstrumentationLibrarySpans {
-	ilss := rl.InstrumentationLibrarySpans()
+// matchingScopeSpans searches for a pdata.ScopeSpans instance matching
+// given InstrumentationScope. If nothing is found, it creates a new one
+func matchingScopeSpans(rl pdata.ResourceSpans, library pdata.InstrumentationScope) pdata.ScopeSpans {
+	ilss := rl.ScopeSpans()
 	for i := 0; i < ilss.Len(); i++ {
 		ils := ilss.At(i)
-		if instrumentationLibrariesEqual(ils.InstrumentationLibrary(), library) {
+		if instrumentationLibrariesEqual(ils.Scope(), library) {
 			return ils
 		}
 	}
 
 	ils := ilss.AppendEmpty()
-	library.CopyTo(ils.InstrumentationLibrary())
+	library.CopyTo(ils.Scope())
 	return ils
 }
 
-// matchingInstrumentationLibraryLogs searches for a pdata.InstrumentationLibraryLogs instance matching
-// given InstrumentationLibrary. If nothing is found, it creates a new one
-func matchingInstrumentationLibraryLogs(rl pdata.ResourceLogs, library pdata.InstrumentationLibrary) pdata.InstrumentationLibraryLogs {
-	ills := rl.InstrumentationLibraryLogs()
+// matchingScopeLogs searches for a pdata.ScopeLogs instance matching
+// given InstrumentationScope. If nothing is found, it creates a new one
+func matchingScopeLogs(rl pdata.ResourceLogs, library pdata.InstrumentationScope) pdata.ScopeLogs {
+	ills := rl.ScopeLogs()
 	for i := 0; i < ills.Len(); i++ {
-		ill := ills.At(i)
-		if instrumentationLibrariesEqual(ill.InstrumentationLibrary(), library) {
-			return ill
+		sl := ills.At(i)
+		if instrumentationLibrariesEqual(sl.Scope(), library) {
+			return sl
 		}
 	}
 
-	ill := ills.AppendEmpty()
-	library.CopyTo(ill.InstrumentationLibrary())
-	return ill
+	sl := ills.AppendEmpty()
+	library.CopyTo(sl.Scope())
+	return sl
 }
 
-// matchingInstrumentationLibraryMetrics searches for a pdata.InstrumentationLibraryMetrics instance matching
-// given InstrumentationLibrary. If nothing is found, it creates a new one
-func matchingInstrumentationLibraryMetrics(rm pdata.ResourceMetrics, library pdata.InstrumentationLibrary) pdata.InstrumentationLibraryMetrics {
-	ilms := rm.InstrumentationLibraryMetrics()
+// matchingScopeMetrics searches for a pdata.ScopeMetrics instance matching
+// given InstrumentationScope. If nothing is found, it creates a new one
+func matchingScopeMetrics(rm pdata.ResourceMetrics, library pdata.InstrumentationScope) pdata.ScopeMetrics {
+	ilms := rm.ScopeMetrics()
 	for i := 0; i < ilms.Len(); i++ {
 		ilm := ilms.At(i)
-		if instrumentationLibrariesEqual(ilm.InstrumentationLibrary(), library) {
+		if instrumentationLibrariesEqual(ilm.Scope(), library) {
 			return ilm
 		}
 	}
 
 	ilm := ilms.AppendEmpty()
-	library.CopyTo(ilm.InstrumentationLibrary())
+	library.CopyTo(ilm.Scope())
 	return ilm
 }
 
@@ -105,10 +105,10 @@ func newMetricsGroupedByAttrs() *metricsGroupedByAttrs {
 
 // Build the Attributes that we'll be looking for in existing Resources as a merge of the Attributes
 // of the original Resource with the requested Attributes
-func buildReferenceAttributes(originResource pdata.Resource, requiredAttributes pdata.AttributeMap) pdata.AttributeMap {
-	referenceAttributes := pdata.NewAttributeMap()
+func buildReferenceAttributes(originResource pdata.Resource, requiredAttributes pdata.Map) pdata.Map {
+	referenceAttributes := pdata.NewMap()
 	originResource.Attributes().CopyTo(referenceAttributes)
-	requiredAttributes.Range(func(k string, v pdata.AttributeValue) bool {
+	requiredAttributes.Range(func(k string, v pdata.Value) bool {
 		referenceAttributes.Upsert(k, v)
 		return true
 	})
@@ -117,7 +117,7 @@ func buildReferenceAttributes(originResource pdata.Resource, requiredAttributes 
 
 // resourceMatches verifies if given pdata.Resource attributes strictly match with the specified
 // reference Attributes (all attributes must match strictly)
-func resourceMatches(resource pdata.Resource, referenceAttributes pdata.AttributeMap) bool {
+func resourceMatches(resource pdata.Resource, referenceAttributes pdata.Map) bool {
 
 	// If not the same number of attributes, it doesn't match
 	if referenceAttributes.Len() != resource.Attributes().Len() {
@@ -126,7 +126,7 @@ func resourceMatches(resource pdata.Resource, referenceAttributes pdata.Attribut
 
 	// Go through each attribute and check the corresponding attribute value in the tested Resource
 	matching := true
-	referenceAttributes.Range(func(referenceKey string, referenceValue pdata.AttributeValue) bool {
+	referenceAttributes.Range(func(referenceKey string, referenceValue pdata.Value) bool {
 		testedValue, foundKey := resource.Attributes().Get(referenceKey)
 		if !foundKey || !referenceValue.Equal(testedValue) {
 			// One difference is enough to consider it doesn't match, so fail early
@@ -141,7 +141,7 @@ func resourceMatches(resource pdata.Resource, referenceAttributes pdata.Attribut
 
 // findResource searches for an existing pdata.ResourceLogs that strictly matches with the specified reference
 // Attributes. Returns the matching pdata.ResourceLogs and bool value which is set to true if found
-func (lgba logsGroupedByAttrs) findResource(referenceAttributes pdata.AttributeMap) (pdata.ResourceLogs, bool) {
+func (lgba logsGroupedByAttrs) findResource(referenceAttributes pdata.Map) (pdata.ResourceLogs, bool) {
 	for i := 0; i < lgba.Len(); i++ {
 		if resourceMatches(lgba.At(i).Resource(), referenceAttributes) {
 			return lgba.At(i), true
@@ -152,7 +152,7 @@ func (lgba logsGroupedByAttrs) findResource(referenceAttributes pdata.AttributeM
 
 // findResource searches for an existing pdata.ResourceLogs that strictly matches with the specified reference
 // Attributes. Returns the matching pdata.ResourceLogs and bool value which is set to true if found
-func (sgba spansGroupedByAttrs) findResource(referenceAttributes pdata.AttributeMap) (pdata.ResourceSpans, bool) {
+func (sgba spansGroupedByAttrs) findResource(referenceAttributes pdata.Map) (pdata.ResourceSpans, bool) {
 	for i := 0; i < sgba.Len(); i++ {
 		if resourceMatches(sgba.At(i).Resource(), referenceAttributes) {
 			return sgba.At(i), true
@@ -163,7 +163,7 @@ func (sgba spansGroupedByAttrs) findResource(referenceAttributes pdata.Attribute
 
 // findResource searches for an existing pdata.ResourceMetrics that strictly matches with the specified reference
 // Attributes. Returns the matching pdata.ResourceMetrics and bool value which is set to true if found
-func (mgba metricsGroupedByAttrs) findResource(referenceAttributes pdata.AttributeMap) (pdata.ResourceMetrics, bool) {
+func (mgba metricsGroupedByAttrs) findResource(referenceAttributes pdata.Map) (pdata.ResourceMetrics, bool) {
 
 	for i := 0; i < mgba.Len(); i++ {
 		if resourceMatches(mgba.At(i).Resource(), referenceAttributes) {
@@ -175,13 +175,13 @@ func (mgba metricsGroupedByAttrs) findResource(referenceAttributes pdata.Attribu
 
 // Update the specified (and new) Resource with the properties of the original Resource, and with the
 // required Attributes
-func updateResourceToMatch(newResource pdata.Resource, originResource pdata.Resource, requiredAttributes pdata.AttributeMap) {
+func updateResourceToMatch(newResource pdata.Resource, originResource pdata.Resource, requiredAttributes pdata.Map) {
 
 	originResource.CopyTo(newResource)
 
 	// This prioritizes required attributes over the original resource attributes, if they overlap
 	attrs := newResource.Attributes()
-	requiredAttributes.Range(func(k string, v pdata.AttributeValue) bool {
+	requiredAttributes.Range(func(k string, v pdata.Value) bool {
 		attrs.Upsert(k, v)
 		return true
 	})
@@ -189,7 +189,7 @@ func updateResourceToMatch(newResource pdata.Resource, originResource pdata.Reso
 }
 
 // findOrCreateResource searches for a Resource with matching attributes and returns it. If nothing is found, it is being created
-func (sgba *spansGroupedByAttrs) findOrCreateResource(originResource pdata.Resource, requiredAttributes pdata.AttributeMap) pdata.ResourceSpans {
+func (sgba *spansGroupedByAttrs) findOrCreateResource(originResource pdata.Resource, requiredAttributes pdata.Map) pdata.ResourceSpans {
 
 	// Build the reference attributes that we're looking for in Resources
 	referenceAttributes := buildReferenceAttributes(originResource, requiredAttributes)
@@ -208,7 +208,7 @@ func (sgba *spansGroupedByAttrs) findOrCreateResource(originResource pdata.Resou
 }
 
 // findResourceOrElseCreate searches for a Resource with matching attributes and returns it. If nothing is found, it is being created
-func (lgba *logsGroupedByAttrs) findResourceOrElseCreate(originResource pdata.Resource, requiredAttributes pdata.AttributeMap) pdata.ResourceLogs {
+func (lgba *logsGroupedByAttrs) findResourceOrElseCreate(originResource pdata.Resource, requiredAttributes pdata.Map) pdata.ResourceLogs {
 
 	// Build the reference attributes that we're looking for in Resources
 	referenceAttributes := buildReferenceAttributes(originResource, requiredAttributes)
@@ -227,7 +227,7 @@ func (lgba *logsGroupedByAttrs) findResourceOrElseCreate(originResource pdata.Re
 }
 
 // findResourceOrElseCreate searches for a Resource with matching attributes and returns it. If nothing is found, it is being created
-func (mgba *metricsGroupedByAttrs) findResourceOrElseCreate(originResource pdata.Resource, requiredAttributes pdata.AttributeMap) pdata.ResourceMetrics {
+func (mgba *metricsGroupedByAttrs) findResourceOrElseCreate(originResource pdata.Resource, requiredAttributes pdata.Map) pdata.ResourceMetrics {
 
 	// Build the reference attributes that we're looking for in Resources
 	referenceAttributes := buildReferenceAttributes(originResource, requiredAttributes)

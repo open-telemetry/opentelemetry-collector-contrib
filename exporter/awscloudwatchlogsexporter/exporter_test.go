@@ -149,41 +149,41 @@ func testLogRecordWithoutTrace() pdata.LogRecord {
 func TestAttrValue(t *testing.T) {
 	tests := []struct {
 		name    string
-		builder func() pdata.AttributeValue
+		builder func() pdata.Value
 		want    interface{}
 	}{
 		{
 			name: "null",
-			builder: func() pdata.AttributeValue {
-				return pdata.NewAttributeValueEmpty()
+			builder: func() pdata.Value {
+				return pdata.NewValueEmpty()
 			},
 			want: nil,
 		},
 		{
 			name: "bool",
-			builder: func() pdata.AttributeValue {
-				return pdata.NewAttributeValueBool(true)
+			builder: func() pdata.Value {
+				return pdata.NewValueBool(true)
 			},
 			want: true,
 		},
 		{
 			name: "int",
-			builder: func() pdata.AttributeValue {
-				return pdata.NewAttributeValueInt(5)
+			builder: func() pdata.Value {
+				return pdata.NewValueInt(5)
 			},
 			want: int64(5),
 		},
 		{
 			name: "double",
-			builder: func() pdata.AttributeValue {
-				return pdata.NewAttributeValueDouble(6.7)
+			builder: func() pdata.Value {
+				return pdata.NewValueDouble(6.7)
 			},
 			want: float64(6.7),
 		},
 		{
 			name: "map",
-			builder: func() pdata.AttributeValue {
-				mAttr := pdata.NewAttributeValueMap()
+			builder: func() pdata.Value {
+				mAttr := pdata.NewValueMap()
 				m := mAttr.MapVal()
 				m.InsertString("key1", "value1")
 				m.InsertNull("key2")
@@ -202,15 +202,15 @@ func TestAttrValue(t *testing.T) {
 		},
 		{
 			name: "array",
-			builder: func() pdata.AttributeValue {
-				arrAttr := pdata.NewAttributeValueArray()
+			builder: func() pdata.Value {
+				arrAttr := pdata.NewValueSlice()
 				arr := arrAttr.SliceVal()
-				for _, av := range []pdata.AttributeValue{
-					pdata.NewAttributeValueDouble(1.2),
-					pdata.NewAttributeValueDouble(1.6),
-					pdata.NewAttributeValueBool(true),
-					pdata.NewAttributeValueString("hello"),
-					pdata.NewAttributeValueEmpty(),
+				for _, av := range []pdata.Value{
+					pdata.NewValueDouble(1.2),
+					pdata.NewValueDouble(1.6),
+					pdata.NewValueBool(true),
+					pdata.NewValueString("hello"),
+					pdata.NewValueEmpty(),
 				} {
 					tgt := arr.AppendEmpty()
 					av.CopyTo(tgt)
@@ -243,7 +243,7 @@ func TestConsumeLogs(t *testing.T) {
 	ld := pdata.NewLogs()
 	r := ld.ResourceLogs().AppendEmpty()
 	r.Resource().Attributes().UpsertString("hello", "test")
-	logRecords := r.InstrumentationLibraryLogs().AppendEmpty().LogRecords()
+	logRecords := r.ScopeLogs().AppendEmpty().LogRecords()
 	logRecords.EnsureCapacity(5)
 	logRecords.AppendEmpty()
 	assert.Equal(t, 1, ld.LogRecordCount())

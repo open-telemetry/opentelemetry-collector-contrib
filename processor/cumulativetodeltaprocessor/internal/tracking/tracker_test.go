@@ -28,12 +28,12 @@ import (
 func TestMetricTracker_Convert(t *testing.T) {
 	miSum := MetricIdentity{
 		Resource:               pdata.NewResource(),
-		InstrumentationLibrary: pdata.NewInstrumentationLibrary(),
+		InstrumentationLibrary: pdata.NewInstrumentationScope(),
 		MetricDataType:         pdata.MetricDataTypeSum,
 		MetricIsMonotonic:      true,
 		MetricName:             "",
 		MetricUnit:             "",
-		Attributes:             pdata.NewAttributeMap(),
+		Attributes:             pdata.NewMap(),
 	}
 	miIntSum := miSum
 	miIntSum.MetricValueType = pdata.MetricValueTypeInt

@@ -36,11 +36,9 @@ type sketchConsumer struct {
 // ConsumeSketch implements the translator.Consumer interface.
 func (c *sketchConsumer) ConsumeSketch(
 	_ context.Context,
-	_ string,
+	_ *Dimensions,
 	_ uint64,
 	sketch *quantile.Sketch,
-	_ []string,
-	_ string,
 ) {
 	c.sk = sketch
 }
@@ -49,7 +47,7 @@ func newHistogramMetric(p pdata.HistogramDataPoint) pdata.Metrics {
 	md := pdata.NewMetrics()
 	rms := md.ResourceMetrics()
 	rm := rms.AppendEmpty()
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 	ilm := ilms.AppendEmpty()
 	metricsArray := ilm.Metrics()
 	m := metricsArray.AppendEmpty()
@@ -153,7 +151,7 @@ func TestHistogramSketches(t *testing.T) {
 			}
 
 			cumulSum := uint64(0)
-			p := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0)
+			p := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0)
 			for i := 0; i < len(p.BucketCounts())-3; i++ {
 				{
 					q := float64(cumulSum) / float64(p.Count()) * (1 - tol)
@@ -202,7 +200,7 @@ func TestExactSumCount(t *testing.T) {
 				md := pdata.NewMetrics()
 				rms := md.ResourceMetrics()
 				rm := rms.AppendEmpty()
-				ilms := rm.InstrumentationLibraryMetrics()
+				ilms := rm.ScopeMetrics()
 				ilm := ilms.AppendEmpty()
 				metricsArray := ilm.Metrics()
 				m := metricsArray.AppendEmpty()
@@ -233,7 +231,7 @@ func TestExactSumCount(t *testing.T) {
 				md := pdata.NewMetrics()
 				rms := md.ResourceMetrics()
 				rm := rms.AppendEmpty()
-				ilms := rm.InstrumentationLibraryMetrics()
+				ilms := rm.ScopeMetrics()
 				ilm := ilms.AppendEmpty()
 				metricsArray := ilm.Metrics()
 				m := metricsArray.AppendEmpty()
@@ -272,7 +270,7 @@ func TestExactSumCount(t *testing.T) {
 				md := pdata.NewMetrics()
 				rms := md.ResourceMetrics()
 				rm := rms.AppendEmpty()
-				ilms := rm.InstrumentationLibraryMetrics()
+				ilms := rm.ScopeMetrics()
 				ilm := ilms.AppendEmpty()
 				metricsArray := ilm.Metrics()
 				m := metricsArray.AppendEmpty()
@@ -367,7 +365,7 @@ func TestInfiniteBounds(t *testing.T) {
 			tr.MapMetrics(ctx, md, consumer)
 			sk := consumer.sk
 
-			p := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0)
+			p := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0)
 			assert.InDelta(t, sk.Basic.Sum, p.Sum(), 1)
 			assert.Equal(t, uint64(sk.Basic.Cnt), p.Count())
 		})

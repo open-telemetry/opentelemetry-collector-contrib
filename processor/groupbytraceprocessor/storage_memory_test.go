@@ -34,7 +34,7 @@ func TestMemoryCreateAndGetTrace(t *testing.T) {
 	baseTrace := pdata.NewTraces()
 	rss := baseTrace.ResourceSpans()
 	rs := rss.AppendEmpty()
-	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
+	ils := rs.ScopeSpans().AppendEmpty()
 	span := ils.Spans().AppendEmpty()
 
 	// test
@@ -47,7 +47,7 @@ func TestMemoryCreateAndGetTrace(t *testing.T) {
 	assert.Equal(t, 2, st.count())
 	for _, traceID := range traceIDs {
 		expected := []pdata.ResourceSpans{baseTrace.ResourceSpans().At(0)}
-		expected[0].InstrumentationLibrarySpans().At(0).Spans().At(0).SetTraceID(traceID)
+		expected[0].ScopeSpans().At(0).Spans().At(0).SetTraceID(traceID)
 
 		retrieved, err := st.get(traceID)
 		st.createOrAppend(traceID, baseTrace)
@@ -66,7 +66,7 @@ func TestMemoryDeleteTrace(t *testing.T) {
 	trace := pdata.NewTraces()
 	rss := trace.ResourceSpans()
 	rs := rss.AppendEmpty()
-	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
+	ils := rs.ScopeSpans().AppendEmpty()
 	span := ils.Spans().AppendEmpty()
 	span.SetTraceID(traceID)
 
@@ -93,7 +93,7 @@ func TestMemoryAppendSpans(t *testing.T) {
 	trace := pdata.NewTraces()
 	rss := trace.ResourceSpans()
 	rs := rss.AppendEmpty()
-	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
+	ils := rs.ScopeSpans().AppendEmpty()
 	span := ils.Spans().AppendEmpty()
 	span.SetTraceID(traceID)
 	span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4}))
@@ -103,7 +103,7 @@ func TestMemoryAppendSpans(t *testing.T) {
 	secondTrace := pdata.NewTraces()
 	secondRss := secondTrace.ResourceSpans()
 	secondRs := secondRss.AppendEmpty()
-	secondIls := secondRs.InstrumentationLibrarySpans().AppendEmpty()
+	secondIls := secondRs.ScopeSpans().AppendEmpty()
 	secondSpan := secondIls.Spans().AppendEmpty()
 	secondSpan.SetName("second-name")
 	secondSpan.SetTraceID(traceID)
@@ -113,8 +113,8 @@ func TestMemoryAppendSpans(t *testing.T) {
 		pdata.NewResourceSpans(),
 		pdata.NewResourceSpans(),
 	}
-	ils.CopyTo(expected[0].InstrumentationLibrarySpans().AppendEmpty())
-	secondIls.CopyTo(expected[1].InstrumentationLibrarySpans().AppendEmpty())
+	ils.CopyTo(expected[0].ScopeSpans().AppendEmpty())
+	secondIls.CopyTo(expected[1].ScopeSpans().AppendEmpty())
 
 	// test
 	err := st.createOrAppend(traceID, secondTrace)
@@ -127,7 +127,7 @@ func TestMemoryAppendSpans(t *testing.T) {
 	retrieved, err := st.get(traceID)
 	require.NoError(t, err)
 	require.Len(t, retrieved, 2)
-	assert.Equal(t, "second-name", retrieved[1].InstrumentationLibrarySpans().At(0).Spans().At(0).Name())
+	assert.Equal(t, "second-name", retrieved[1].ScopeSpans().At(0).Spans().At(0).Name())
 
 	// now that we checked that the secondSpan change here didn't have an effect, revert
 	// so that we can compare the that everything else has the same value
@@ -143,7 +143,7 @@ func TestMemoryTraceIsBeingCloned(t *testing.T) {
 	trace := pdata.NewTraces()
 	rss := trace.ResourceSpans()
 	rs := rss.AppendEmpty()
-	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
+	ils := rs.ScopeSpans().AppendEmpty()
 	span := ils.Spans().AppendEmpty()
 	span.SetTraceID(traceID)
 	span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4}))
@@ -157,5 +157,5 @@ func TestMemoryTraceIsBeingCloned(t *testing.T) {
 	// verify
 	retrieved, err := st.get(traceID)
 	require.NoError(t, err)
-	assert.Equal(t, "should-not-be-changed", retrieved[0].InstrumentationLibrarySpans().At(0).Spans().At(0).Name())
+	assert.Equal(t, "should-not-be-changed", retrieved[0].ScopeSpans().At(0).Spans().At(0).Name())
 }

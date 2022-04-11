@@ -1,0 +1,20 @@
+extensions:
+  sigv4auth/missing_credentials:
+    region: "region"
+    service: "service"
+
+# Data pipeline is required to load the config.
+receivers:
+  nop:
+processors:
+  nop:
+exporters:
+  nop:
+
+service:
+  extensions: [sigv4auth/missing_credentials]
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [nop]

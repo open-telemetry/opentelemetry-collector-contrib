@@ -14,7 +14,7 @@
 
 module-sets:
   contrib-base:
-    version: v0.45.1
+    version: v0.48.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema
@@ -82,6 +82,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs
@@ -170,10 +171,12 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver/examples/federation/prom-counter
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver

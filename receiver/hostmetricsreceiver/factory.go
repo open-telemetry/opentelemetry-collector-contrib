@@ -21,10 +21,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerhelper"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
@@ -63,10 +59,10 @@ var (
 
 // NewFactory creates a new factory for host metrics receiver.
 func NewFactory() component.ReceiverFactory {
-	return receiverhelper.NewFactory(
+	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithMetrics(createMetricsReceiver))
+		component.WithMetricsReceiver(createMetricsReceiver))
 }
 
 func getScraperFactory(key string) (internal.ScraperFactory, bool) {
@@ -96,38 +92,12 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
-	schemaURLSetterConsumer, err := wrapBySchemaURLSetterConsumer(consumer)
-	if err != nil {
-		return nil, err
-	}
-
 	return scraperhelper.NewScraperControllerReceiver(
 		&oCfg.ScraperControllerSettings,
 		set,
-		schemaURLSetterConsumer,
+		consumer,
 		addScraperOptions...,
 	)
-}
-
-// This function wraps the consumer and returns a new consumer such that the schema URL
-// of all metrics that pass through the new consumer is set correctly.
-func wrapBySchemaURLSetterConsumer(consumer consumer.Metrics) (consumer.Metrics, error) {
-	return consumerhelper.NewMetrics(func(ctx context.Context, md pdata.Metrics) error {
-		rms := md.ResourceMetrics()
-		for i := 0; i < rms.Len(); i++ {
-			rm := rms.At(i)
-			if rm.SchemaUrl() == "" {
-				// If no specific SchemaURL is set we assume all collected host metrics
-				// confirm to our default SchemaURL. The assumption here is that
-				// the code that produces these metrics uses semantic conventions
-				// defined in package "conventions".
-				rm.SetSchemaUrl(conventions.SchemaURL)
-			}
-			// Else if the SchemaURL is set we assume the producer of the metric knows
-			// what it does. We won't touch it.
-		}
-		return consumer.ConsumeMetrics(ctx, md)
-	})
 }
 
 func createAddScraperOptions(

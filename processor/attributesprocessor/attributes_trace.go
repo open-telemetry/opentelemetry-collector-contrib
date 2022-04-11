@@ -18,12 +18,14 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterspan"
 )
 
 type spanAttributesProcessor struct {
+	logger   *zap.Logger
 	attrProc *attraction.AttrProc
 	include  filterspan.Matcher
 	exclude  filterspan.Matcher
@@ -32,8 +34,9 @@ type spanAttributesProcessor struct {
 // newTracesProcessor returns a processor that modifies attributes of a span.
 // To construct the attributes processors, the use of the factory methods are required
 // in order to validate the inputs.
-func newSpanAttributesProcessor(attrProc *attraction.AttrProc, include, exclude filterspan.Matcher) *spanAttributesProcessor {
+func newSpanAttributesProcessor(logger *zap.Logger, attrProc *attraction.AttrProc, include, exclude filterspan.Matcher) *spanAttributesProcessor {
 	return &spanAttributesProcessor{
+		logger:   logger,
 		attrProc: attrProc,
 		include:  include,
 		exclude:  exclude,
@@ -45,18 +48,18 @@ func (a *spanAttributesProcessor) processTraces(ctx context.Context, td pdata.Tr
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
 		resource := rs.Resource()
-		ilss := rs.InstrumentationLibrarySpans()
+		ilss := rs.ScopeSpans()
 		for j := 0; j < ilss.Len(); j++ {
 			ils := ilss.At(j)
 			spans := ils.Spans()
-			library := ils.InstrumentationLibrary()
+			library := ils.Scope()
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
 				if filterspan.SkipSpan(a.include, a.exclude, span, resource, library) {
 					continue
 				}
 
-				a.attrProc.Process(ctx, span.Attributes())
+				a.attrProc.Process(ctx, a.logger, span.Attributes())
 			}
 		}
 	}

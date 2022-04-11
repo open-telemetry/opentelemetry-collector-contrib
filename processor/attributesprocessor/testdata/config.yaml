@@ -87,7 +87,14 @@ processors:
   attributes/hash:
     actions:
       - key: user.email
-        action: hash 
+        action: hash
+
+  # The following demonstrates converting the type of existing attribute values.
+  attributes/convert:
+    actions:
+      - key: http.status_code
+        action: convert
+        converted_type: int
 
 
   # The following demonstrates excluding spans from this attributes processor.
@@ -299,6 +306,24 @@ processors:
       - key: db.statement
         action: update
         value: "SELECT * FROM USERS [obfuscated]"
+
+
+  # The following demonstrates how to process logs that have a body that match regexp
+  # patterns. This processor will remove "token" attribute and will obfuscate "password"
+  # attribute in spans where body matches "AUTH.*".
+  attributes/log_body_regexp:
+    # Specifies the span properties that must exist for the processor to be applied.
+    include:
+      # match_type defines that "services" is an array of regexp-es.
+      match_type: regexp
+      # The span service name must match "auth.*" pattern.
+      log_bodies: ["AUTH.*"]
+    actions:
+      - key: password
+        action: update
+        value: "obfuscated"
+      - key: token
+        action: delete
 
 receivers:
   nop:

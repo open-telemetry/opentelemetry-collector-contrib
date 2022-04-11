@@ -95,6 +95,7 @@ func parseSwapsFile(r io.Reader) ([]*pageFileStats, error) {
 			deviceName: fields[nameCol],
 			usedBytes:  usedKiB * 1024,
 			freeBytes:  (totalKiB - usedKiB) * 1024,
+			totalBytes: totalKiB * 1024,
 		})
 	}
 

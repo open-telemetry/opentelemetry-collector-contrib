@@ -95,13 +95,13 @@ func TestScrape(t *testing.T) {
 		{
 			name:             "IOCounters Error",
 			ioCountersFunc:   func(bool) ([]net.IOCountersStat, error) { return nil, errors.New("err2") },
-			expectedErr:      "err2",
+			expectedErr:      "failed to read network IO stats: err2",
 			expectedErrCount: networkMetricsLen,
 		},
 		{
 			name:             "Connections Error",
 			connectionsFunc:  func(string) ([]net.ConnectionStat, error) { return nil, errors.New("err3") },
-			expectedErr:      "err3",
+			expectedErr:      "failed to read TCP connections: err3",
 			expectedErrCount: connectionsMetricsLen,
 		},
 	}
@@ -153,7 +153,7 @@ func TestScrape(t *testing.T) {
 			}
 			assert.Equal(t, expectedMetricCount, md.MetricCount())
 
-			metrics := md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+			metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 			idx := 0
 			assertNetworkConnectionsMetricValid(t, metrics.At(idx))
 			if test.expectNetworkMetrics {
@@ -177,13 +177,13 @@ func assertNetworkIOMetricValid(t *testing.T, metric pdata.Metric, expectedName 
 	}
 	assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), 2)
 	internal.AssertSumMetricHasAttribute(t, metric, 0, "device")
-	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "direction", pdata.NewAttributeValueString(metadata.AttributeDirection.Transmit))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "direction", pdata.NewAttributeValueString(metadata.AttributeDirection.Receive))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "direction", pdata.NewValueString(metadata.AttributeDirection.Transmit))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "direction", pdata.NewValueString(metadata.AttributeDirection.Receive))
 }
 
 func assertNetworkConnectionsMetricValid(t *testing.T, metric pdata.Metric) {
 	assert.Equal(t, metric.Name(), "system.network.connections")
-	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "protocol", pdata.NewAttributeValueString(metadata.AttributeProtocol.Tcp))
+	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "protocol", pdata.NewValueString(metadata.AttributeProtocol.Tcp))
 	internal.AssertSumMetricHasAttribute(t, metric, 0, "state")
 	assert.Equal(t, 12, metric.Sum().DataPoints().Len())
 }

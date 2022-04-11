@@ -115,7 +115,7 @@ func (m *metricMysqlBufferPoolDataPages) recordDataPoint(start pdata.Timestamp, 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.BufferPoolData, pdata.NewAttributeValueString(bufferPoolDataAttributeValue))
+	dp.Attributes().Insert(A.BufferPoolData, pdata.NewValueString(bufferPoolDataAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -219,7 +219,7 @@ func (m *metricMysqlBufferPoolOperations) recordDataPoint(start pdata.Timestamp,
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.BufferPoolOperations, pdata.NewAttributeValueString(bufferPoolOperationsAttributeValue))
+	dp.Attributes().Insert(A.BufferPoolOperations, pdata.NewValueString(bufferPoolOperationsAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -323,7 +323,7 @@ func (m *metricMysqlBufferPoolPages) recordDataPoint(start pdata.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.BufferPoolPages, pdata.NewAttributeValueString(bufferPoolPagesAttributeValue))
+	dp.Attributes().Insert(A.BufferPoolPages, pdata.NewValueString(bufferPoolPagesAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -376,7 +376,7 @@ func (m *metricMysqlBufferPoolUsage) recordDataPoint(start pdata.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.BufferPoolData, pdata.NewAttributeValueString(bufferPoolDataAttributeValue))
+	dp.Attributes().Insert(A.BufferPoolData, pdata.NewValueString(bufferPoolDataAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -429,7 +429,7 @@ func (m *metricMysqlCommands) recordDataPoint(start pdata.Timestamp, ts pdata.Ti
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Command, pdata.NewAttributeValueString(commandAttributeValue))
+	dp.Attributes().Insert(A.Command, pdata.NewValueString(commandAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -482,7 +482,7 @@ func (m *metricMysqlDoubleWrites) recordDataPoint(start pdata.Timestamp, ts pdat
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.DoubleWrites, pdata.NewAttributeValueString(doubleWritesAttributeValue))
+	dp.Attributes().Insert(A.DoubleWrites, pdata.NewValueString(doubleWritesAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -535,7 +535,7 @@ func (m *metricMysqlHandlers) recordDataPoint(start pdata.Timestamp, ts pdata.Ti
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Handler, pdata.NewAttributeValueString(handlerAttributeValue))
+	dp.Attributes().Insert(A.Handler, pdata.NewValueString(handlerAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -588,7 +588,7 @@ func (m *metricMysqlLocks) recordDataPoint(start pdata.Timestamp, ts pdata.Times
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Locks, pdata.NewAttributeValueString(locksAttributeValue))
+	dp.Attributes().Insert(A.Locks, pdata.NewValueString(locksAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -641,7 +641,7 @@ func (m *metricMysqlLogOperations) recordDataPoint(start pdata.Timestamp, ts pda
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.LogOperations, pdata.NewAttributeValueString(logOperationsAttributeValue))
+	dp.Attributes().Insert(A.LogOperations, pdata.NewValueString(logOperationsAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -694,7 +694,7 @@ func (m *metricMysqlOperations) recordDataPoint(start pdata.Timestamp, ts pdata.
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Operations, pdata.NewAttributeValueString(operationsAttributeValue))
+	dp.Attributes().Insert(A.Operations, pdata.NewValueString(operationsAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -747,7 +747,7 @@ func (m *metricMysqlPageOperations) recordDataPoint(start pdata.Timestamp, ts pd
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.PageOperations, pdata.NewAttributeValueString(pageOperationsAttributeValue))
+	dp.Attributes().Insert(A.PageOperations, pdata.NewValueString(pageOperationsAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -800,7 +800,7 @@ func (m *metricMysqlRowLocks) recordDataPoint(start pdata.Timestamp, ts pdata.Ti
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.RowLocks, pdata.NewAttributeValueString(rowLocksAttributeValue))
+	dp.Attributes().Insert(A.RowLocks, pdata.NewValueString(rowLocksAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -853,7 +853,7 @@ func (m *metricMysqlRowOperations) recordDataPoint(start pdata.Timestamp, ts pda
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.RowOperations, pdata.NewAttributeValueString(rowOperationsAttributeValue))
+	dp.Attributes().Insert(A.RowOperations, pdata.NewValueString(rowOperationsAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -906,7 +906,7 @@ func (m *metricMysqlSorts) recordDataPoint(start pdata.Timestamp, ts pdata.Times
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Sorts, pdata.NewAttributeValueString(sortsAttributeValue))
+	dp.Attributes().Insert(A.Sorts, pdata.NewValueString(sortsAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -959,7 +959,7 @@ func (m *metricMysqlThreads) recordDataPoint(start pdata.Timestamp, ts pdata.Tim
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Threads, pdata.NewAttributeValueString(threadsAttributeValue))
+	dp.Attributes().Insert(A.Threads, pdata.NewValueString(threadsAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -990,7 +990,10 @@ func newMetricMysqlThreads(settings MetricSettings) metricMysqlThreads {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	startTime                        pdata.Timestamp
+	startTime                        pdata.Timestamp // start time that will be applied to all recorded data points.
+	metricsCapacity                  int             // maximum observed number of metrics per resource.
+	resourceCapacity                 int             // maximum observed number of resource attributes.
+	metricsBuffer                    pdata.Metrics   // accumulates metrics data before emitting.
 	metricMysqlBufferPoolDataPages   metricMysqlBufferPoolDataPages
 	metricMysqlBufferPoolLimit       metricMysqlBufferPoolLimit
 	metricMysqlBufferPoolOperations  metricMysqlBufferPoolOperations
@@ -1023,6 +1026,7 @@ func WithStartTime(startTime pdata.Timestamp) metricBuilderOption {
 func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                        pdata.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                    pdata.NewMetrics(),
 		metricMysqlBufferPoolDataPages:   newMetricMysqlBufferPoolDataPages(settings.MysqlBufferPoolDataPages),
 		metricMysqlBufferPoolLimit:       newMetricMysqlBufferPoolLimit(settings.MysqlBufferPoolLimit),
 		metricMysqlBufferPoolOperations:  newMetricMysqlBufferPoolOperations(settings.MysqlBufferPoolOperations),
@@ -1047,27 +1051,63 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 	return mb
 }
 
-// Emit appends generated metrics to a pdata.MetricsSlice and updates the internal state to be ready for recording
-// another set of data points. This function will be doing all transformations required to produce metric representation
-// defined in metadata and user settings, e.g. delta/cumulative translation.
-func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
-	mb.metricMysqlBufferPoolDataPages.emit(metrics)
-	mb.metricMysqlBufferPoolLimit.emit(metrics)
-	mb.metricMysqlBufferPoolOperations.emit(metrics)
-	mb.metricMysqlBufferPoolPageFlushes.emit(metrics)
-	mb.metricMysqlBufferPoolPages.emit(metrics)
-	mb.metricMysqlBufferPoolUsage.emit(metrics)
-	mb.metricMysqlCommands.emit(metrics)
-	mb.metricMysqlDoubleWrites.emit(metrics)
-	mb.metricMysqlHandlers.emit(metrics)
-	mb.metricMysqlLocks.emit(metrics)
-	mb.metricMysqlLogOperations.emit(metrics)
-	mb.metricMysqlOperations.emit(metrics)
-	mb.metricMysqlPageOperations.emit(metrics)
-	mb.metricMysqlRowLocks.emit(metrics)
-	mb.metricMysqlRowOperations.emit(metrics)
-	mb.metricMysqlSorts.emit(metrics)
-	mb.metricMysqlThreads.emit(metrics)
+// updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
+func (mb *MetricsBuilder) updateCapacity(rm pdata.ResourceMetrics) {
+	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
+		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
+	}
+	if mb.resourceCapacity < rm.Resource().Attributes().Len() {
+		mb.resourceCapacity = rm.Resource().Attributes().Len()
+	}
+}
+
+// ResourceOption applies changes to provided resource.
+type ResourceOption func(pdata.Resource)
+
+// EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
+// recording another set of data points as part of another resource. This function can be helpful when one scraper
+// needs to emit metrics from several resources. Otherwise calling this function is not required,
+// just `Emit` function can be called instead. Resource attributes should be provided as ResourceOption arguments.
+func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
+	rm := pdata.NewResourceMetrics()
+	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
+	for _, op := range ro {
+		op(rm.Resource())
+	}
+	ils := rm.ScopeMetrics().AppendEmpty()
+	ils.Scope().SetName("otelcol/mysqlreceiver")
+	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
+	mb.metricMysqlBufferPoolDataPages.emit(ils.Metrics())
+	mb.metricMysqlBufferPoolLimit.emit(ils.Metrics())
+	mb.metricMysqlBufferPoolOperations.emit(ils.Metrics())
+	mb.metricMysqlBufferPoolPageFlushes.emit(ils.Metrics())
+	mb.metricMysqlBufferPoolPages.emit(ils.Metrics())
+	mb.metricMysqlBufferPoolUsage.emit(ils.Metrics())
+	mb.metricMysqlCommands.emit(ils.Metrics())
+	mb.metricMysqlDoubleWrites.emit(ils.Metrics())
+	mb.metricMysqlHandlers.emit(ils.Metrics())
+	mb.metricMysqlLocks.emit(ils.Metrics())
+	mb.metricMysqlLogOperations.emit(ils.Metrics())
+	mb.metricMysqlOperations.emit(ils.Metrics())
+	mb.metricMysqlPageOperations.emit(ils.Metrics())
+	mb.metricMysqlRowLocks.emit(ils.Metrics())
+	mb.metricMysqlRowOperations.emit(ils.Metrics())
+	mb.metricMysqlSorts.emit(ils.Metrics())
+	mb.metricMysqlThreads.emit(ils.Metrics())
+	if ils.Metrics().Len() > 0 {
+		mb.updateCapacity(rm)
+		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
+	}
+}
+
+// Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
+// recording another set of metrics. This function will be responsible for applying all the transformations required to
+// produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
+func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pdata.Metrics {
+	mb.EmitForResource(ro...)
+	metrics := pdata.NewMetrics()
+	mb.metricsBuffer.MoveTo(metrics)
+	return metrics
 }
 
 // RecordMysqlBufferPoolDataPagesDataPoint adds a data point to mysql.buffer_pool.data_pages metric.

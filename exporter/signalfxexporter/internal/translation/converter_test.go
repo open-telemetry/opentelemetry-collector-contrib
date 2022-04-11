@@ -48,12 +48,12 @@ var (
 func Test_MetricDataToSignalFxV2(t *testing.T) {
 	logger := zap.NewNop()
 
-	labelMap := map[string]string{
+	labelMap := map[string]interface{}{
 		"k0": "v0",
 		"k1": "v1",
 	}
 
-	longLabelMap := map[string]string{
+	longLabelMap := map[string]interface{}{
 		fmt.Sprintf("l%sng_key", strings.Repeat("o", 128)): "v0",
 		"k0": "v0",
 		"k1": fmt.Sprintf("l%sng_value", strings.Repeat("o", 256)),
@@ -69,21 +69,21 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 
 	initDoublePtWithLabels := func(doublePtWithLabels pdata.NumberDataPoint) {
 		initDoublePt(doublePtWithLabels)
-		pdata.NewAttributeMapFromMap(stringMapToAttributeMap(labelMap)).CopyTo(doublePtWithLabels.Attributes())
+		pdata.NewMapFromRaw(labelMap).CopyTo(doublePtWithLabels.Attributes())
 	}
 
 	initDoublePtWithLongLabels := func(doublePtWithLabels pdata.NumberDataPoint) {
 		initDoublePt(doublePtWithLabels)
-		pdata.NewAttributeMapFromMap(stringMapToAttributeMap(longLabelMap)).CopyTo(doublePtWithLabels.Attributes())
+		pdata.NewMapFromRaw(longLabelMap).CopyTo(doublePtWithLabels.Attributes())
 	}
 
-	differentLabelMap := map[string]string{
+	differentLabelMap := map[string]interface{}{
 		"k00": "v00",
 		"k11": "v11",
 	}
 	initDoublePtWithDifferentLabels := func(doublePtWithDifferentLabels pdata.NumberDataPoint) {
 		initDoublePt(doublePtWithDifferentLabels)
-		pdata.NewAttributeMapFromMap(stringMapToAttributeMap(differentLabelMap)).CopyTo(doublePtWithDifferentLabels.Attributes())
+		pdata.NewMapFromRaw(differentLabelMap).CopyTo(doublePtWithDifferentLabels.Attributes())
 	}
 
 	initInt64Pt := func(int64Pt pdata.NumberDataPoint) {
@@ -93,7 +93,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 
 	initInt64PtWithLabels := func(int64PtWithLabels pdata.NumberDataPoint) {
 		initInt64Pt(int64PtWithLabels)
-		pdata.NewAttributeMapFromMap(stringMapToAttributeMap(labelMap)).CopyTo(int64PtWithLabels.Attributes())
+		pdata.NewMapFromRaw(labelMap).CopyTo(int64PtWithLabels.Attributes())
 	}
 
 	histBounds := []float64{1, 2, 4}
@@ -105,7 +105,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		histDP.SetSum(100.0)
 		histDP.SetExplicitBounds(histBounds)
 		histDP.SetBucketCounts(histCounts)
-		pdata.NewAttributeMapFromMap(stringMapToAttributeMap(labelMap)).CopyTo(histDP.Attributes())
+		pdata.NewMapFromRaw(labelMap).CopyTo(histDP.Attributes())
 	}
 	histDP := pdata.NewHistogramDataPoint()
 	initHistDP(histDP)
@@ -114,7 +114,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		histDP.SetCount(2)
 		histDP.SetSum(10)
 		histDP.SetTimestamp(ts)
-		pdata.NewAttributeMapFromMap(stringMapToAttributeMap(labelMap)).CopyTo(histDP.Attributes())
+		pdata.NewMapFromRaw(labelMap).CopyTo(histDP.Attributes())
 	}
 	histDPNoBuckets := pdata.NewHistogramDataPoint()
 	initHistDPNoBuckets(histDPNoBuckets)
@@ -130,7 +130,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 			name: "nil_node_nil_resources_no_dims",
 			metricsFn: func() pdata.Metrics {
 				out := pdata.NewMetrics()
-				ilm := out.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
+				ilm := out.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 
 				{
 					m := ilm.Metrics().AppendEmpty()
@@ -208,7 +208,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 			name: "nil_node_and_resources_with_dims",
 			metricsFn: func() pdata.Metrics {
 				out := pdata.NewMetrics()
-				ilm := out.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
+				ilm := out.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 
 				{
 					m := ilm.Metrics().AppendEmpty()
@@ -257,7 +257,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				res.Attributes().InsertString("k/n0", "vn0")
 				res.Attributes().InsertString("k/n1", "vn1")
 
-				ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+				ilm := rm.ScopeMetrics().AppendEmpty()
 				ilm.Metrics().EnsureCapacity(2)
 
 				{
@@ -279,7 +279,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				doubleSFxDataPoint(
 					"gauge_double_with_dims",
 					&sfxMetricTypeGauge,
-					maps.MergeStringMaps(map[string]string{
+					maps.MergeRawMaps(map[string]interface{}{
 						"k_n0": "vn0",
 						"k_n1": "vn1",
 						"k_r0": "vr0",
@@ -288,7 +288,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				int64SFxDataPoint(
 					"gauge_int_with_dims",
 					&sfxMetricTypeGauge,
-					maps.MergeStringMaps(map[string]string{
+					maps.MergeRawMaps(map[string]interface{}{
 						"k_n0": "vn0",
 						"k_n1": "vn1",
 						"k_r0": "vr0",
@@ -307,7 +307,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				res.Attributes().InsertString("k/n0", "vn0")
 				res.Attributes().InsertString("k/n1", "vn1")
 
-				ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+				ilm := rm.ScopeMetrics().AppendEmpty()
 				ilm.Metrics().EnsureCapacity(5)
 
 				{
@@ -347,7 +347,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				int64SFxDataPoint(
 					"gauge_int_with_dims",
 					&sfxMetricTypeGauge,
-					maps.MergeStringMaps(map[string]string{
+					maps.MergeRawMaps(map[string]interface{}{
 						"k_n0": "vn0",
 						"k_n1": "vn1",
 						"k_r0": "vr0",
@@ -356,7 +356,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				int64SFxDataPoint(
 					"gauge_int_with_dims",
 					&sfxMetricTypeGauge,
-					maps.MergeStringMaps(map[string]string{
+					maps.MergeRawMaps(map[string]interface{}{
 						"k_n0": "vn0",
 						"k_n1": "vn1",
 						"k_r0": "vr0",
@@ -375,7 +375,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				res.Attributes().InsertString("k/n0", "vn0")
 				res.Attributes().InsertString("k/n1", "vn1")
 
-				ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+				ilm := rm.ScopeMetrics().AppendEmpty()
 				ilm.Metrics().EnsureCapacity(1)
 
 				{
@@ -391,12 +391,12 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				doubleSFxDataPoint(
 					"gauge_double_with_dims",
 					&sfxMetricTypeGauge,
-					maps.MergeStringMaps(map[string]string{
+					maps.MergeRawMaps(map[string]interface{}{
 						"k_n0": "vn0",
 						"k_n1": "vn1",
 						"k_r0": "vr0",
 						"k_r1": "vr1",
-					}, map[string]string{
+					}, map[string]interface{}{
 						"k0": "v0",
 						"k2": "v2",
 					})),
@@ -414,7 +414,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				res.Attributes().InsertString("cloud.account.id", "efgh")
 				res.Attributes().InsertString("cloud.region", "us-east")
 
-				ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+				ilm := rm.ScopeMetrics().AppendEmpty()
 				m := ilm.Metrics().AppendEmpty()
 				m.SetName("gauge_double_with_dims")
 				m.SetDataType(pdata.MetricDataTypeGauge)
@@ -426,7 +426,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				doubleSFxDataPoint(
 					"gauge_double_with_dims",
 					&sfxMetricTypeGauge,
-					maps.MergeStringMaps(labelMap, map[string]string{
+					maps.MergeRawMaps(labelMap, map[string]interface{}{
 						"cloud_account_id": "efgh",
 						"cloud_provider":   conventions.AttributeCloudProviderAWS,
 						"cloud_region":     "us-east",
@@ -448,7 +448,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				res.Attributes().InsertString("cloud.region", "us-east")
 				res.Attributes().InsertString("host.id", "abcd")
 
-				ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+				ilm := rm.ScopeMetrics().AppendEmpty()
 				m := ilm.Metrics().AppendEmpty()
 				m.SetName("gauge_double_with_dims")
 				m.SetDataType(pdata.MetricDataTypeGauge)
@@ -460,7 +460,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				doubleSFxDataPoint(
 					"gauge_double_with_dims",
 					&sfxMetricTypeGauge,
-					maps.MergeStringMaps(labelMap, map[string]string{
+					maps.MergeRawMaps(labelMap, map[string]interface{}{
 						"cloud_provider":   conventions.AttributeCloudProviderAWS,
 						"cloud_account_id": "efgh",
 						"cloud_region":     "us-east",
@@ -482,7 +482,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				res.Attributes().InsertString("cloud.provider", conventions.AttributeCloudProviderGCP)
 				res.Attributes().InsertString("host.id", "abcd")
 
-				ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+				ilm := rm.ScopeMetrics().AppendEmpty()
 				m := ilm.Metrics().AppendEmpty()
 				m.SetName("gauge_double_with_dims")
 				m.SetDataType(pdata.MetricDataTypeGauge)
@@ -494,7 +494,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				doubleSFxDataPoint(
 					"gauge_double_with_dims",
 					&sfxMetricTypeGauge,
-					maps.MergeStringMaps(labelMap, map[string]string{
+					maps.MergeRawMaps(labelMap, map[string]interface{}{
 						"host_id":        "abcd",
 						"cloud_provider": conventions.AttributeCloudProviderGCP,
 						"k_r0":           "vr0",
@@ -514,7 +514,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				res.Attributes().InsertString("host.id", "abcd")
 				res.Attributes().InsertString("cloud.account.id", "efgh")
 
-				ilm := rm.InstrumentationLibraryMetrics().AppendEmpty()
+				ilm := rm.ScopeMetrics().AppendEmpty()
 				m := ilm.Metrics().AppendEmpty()
 				m.SetName("gauge_double_with_dims")
 				m.SetDataType(pdata.MetricDataTypeGauge)
@@ -526,7 +526,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				doubleSFxDataPoint(
 					"gauge_double_with_dims",
 					&sfxMetricTypeGauge,
-					maps.MergeStringMaps(labelMap, map[string]string{
+					maps.MergeRawMaps(labelMap, map[string]interface{}{
 						"gcp_id":           "efgh_abcd",
 						"k_r0":             "vr0",
 						"k_r1":             "vr1",
@@ -540,7 +540,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 			name: "with_exclude_metrics_filter",
 			metricsFn: func() pdata.Metrics {
 				out := pdata.NewMetrics()
-				ilm := out.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
+				ilm := out.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 
 				{
 					m := ilm.Metrics().AppendEmpty()
@@ -602,7 +602,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 			name: "with_include_and_exclude_metrics_filter",
 			metricsFn: func() pdata.Metrics {
 				out := pdata.NewMetrics()
-				ilm := out.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
+				ilm := out.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 
 				{
 					m := ilm.Metrics().AppendEmpty()
@@ -693,7 +693,7 @@ func TestMetricDataToSignalFxV2WithTranslation(t *testing.T) {
 	require.NoError(t, err)
 
 	md := pdata.NewMetrics()
-	m := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
+	m := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	m.SetDataType(pdata.MetricDataTypeGauge)
 	m.SetName("metric1")
 	dp := m.Gauge().DataPoints().AppendEmpty()
@@ -733,7 +733,7 @@ func TestDimensionKeyCharsWithPeriod(t *testing.T) {
 	require.NoError(t, err)
 
 	md := pdata.NewMetrics()
-	m := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
+	m := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	m.SetDataType(pdata.MetricDataTypeGauge)
 	m.SetName("metric1")
 	dp := m.Gauge().DataPoints().AppendEmpty()
@@ -776,7 +776,7 @@ func sortDimensions(points []*sfxpb.DataPoint) {
 func doubleSFxDataPoint(
 	metric string,
 	metricType *sfxpb.MetricType,
-	dims map[string]string,
+	dims map[string]interface{},
 ) *sfxpb.DataPoint {
 	return &sfxpb.DataPoint{
 		Metric:     metric,
@@ -790,7 +790,7 @@ func doubleSFxDataPoint(
 func int64SFxDataPoint(
 	metric string,
 	metricType *sfxpb.MetricType,
-	dims map[string]string,
+	dims map[string]interface{},
 ) *sfxpb.DataPoint {
 	return &sfxpb.DataPoint{
 		Metric:     metric,
@@ -801,12 +801,12 @@ func int64SFxDataPoint(
 	}
 }
 
-func sfxDimensions(m map[string]string) []*sfxpb.Dimension {
+func sfxDimensions(m map[string]interface{}) []*sfxpb.Dimension {
 	sfxDims := make([]*sfxpb.Dimension, 0, len(m))
 	for k, v := range m {
 		sfxDims = append(sfxDims, &sfxpb.Dimension{
 			Key:   k,
-			Value: v,
+			Value: v.(string),
 		})
 	}
 
@@ -896,12 +896,4 @@ func TestMetricsConverter_ConvertDimension(t *testing.T) {
 			}
 		})
 	}
-}
-
-func stringMapToAttributeMap(m map[string]string) map[string]pdata.AttributeValue {
-	ret := map[string]pdata.AttributeValue{}
-	for k, v := range m {
-		ret[k] = pdata.NewAttributeValueString(v)
-	}
-	return ret
 }

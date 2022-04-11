@@ -293,13 +293,13 @@ func TestRecordAttributeMetadata(t *testing.T) {
 		dataOutputCount:  20,
 		externalDuration: 50,
 		attributeMetadataCount: map[attributeStatsKey]int{
-			{attributeType: pdata.AttributeValueTypeArray, location: attributeLocationResource}:   1,
-			{attributeType: pdata.AttributeValueTypeBool, location: attributeLocationSpan}:        1,
-			{attributeType: pdata.AttributeValueTypeMap, location: attributeLocationSpanEvent}:    1,
-			{attributeType: pdata.AttributeValueTypeDouble, location: attributeLocationLog}:       1,
-			{attributeType: pdata.AttributeValueTypeInt, location: attributeLocationResource}:     1,
-			{attributeType: pdata.AttributeValueTypeEmpty, location: attributeLocationSpan}:       1,
-			{attributeType: pdata.AttributeValueTypeString, location: attributeLocationSpanEvent}: 1,
+			{attributeType: pdata.ValueTypeSlice, location: attributeLocationResource}:   1,
+			{attributeType: pdata.ValueTypeBool, location: attributeLocationSpan}:        1,
+			{attributeType: pdata.ValueTypeMap, location: attributeLocationSpanEvent}:    1,
+			{attributeType: pdata.ValueTypeDouble, location: attributeLocationLog}:       1,
+			{attributeType: pdata.ValueTypeInt, location: attributeLocationResource}:     1,
+			{attributeType: pdata.ValueTypeEmpty, location: attributeLocationSpan}:       1,
+			{attributeType: pdata.ValueTypeString, location: attributeLocationSpanEvent}: 1,
 		},
 	}
 

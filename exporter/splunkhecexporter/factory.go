@@ -50,17 +50,19 @@ type baseLogsExporter struct {
 
 // NewFactory creates a factory for Splunk HEC exporter.
 func NewFactory() component.ExporterFactory {
-	return exporterhelper.NewFactory(
+	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTracesExporter),
-		exporterhelper.WithMetrics(createMetricsExporter),
-		exporterhelper.WithLogs(createLogsExporter))
+		component.WithTracesExporter(createTracesExporter),
+		component.WithMetricsExporter(createMetricsExporter),
+		component.WithLogsExporter(createLogsExporter))
 }
 
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		LogDataEnabled:       true,
+		ProfilingDataEnabled: true,
+		ExporterSettings:     config.NewExporterSettings(config.NewComponentID(typeStr)),
 		TimeoutSettings: exporterhelper.TimeoutSettings{
 			Timeout: defaultHTTPTimeout,
 		},
@@ -70,6 +72,7 @@ func createDefaultConfig() config.Exporter {
 		MaxConnections:          defaultMaxIdleCons,
 		MaxContentLengthLogs:    maxContentLengthLogsLimit,
 		MaxContentLengthMetrics: maxContentLengthMetricsLimit,
+		MaxContentLengthTraces:  maxContentLengthTracesLimit,
 		HecToOtelAttrs: splunk.HecToOtelAttrs{
 			Source:     splunk.DefaultSourceLabel,
 			SourceType: splunk.DefaultSourceTypeLabel,

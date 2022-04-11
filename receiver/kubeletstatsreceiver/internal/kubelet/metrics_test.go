@@ -52,8 +52,8 @@ func requireMetricsOk(t *testing.T, mds []pdata.Metrics) {
 		for i := 0; i < md.ResourceMetrics().Len(); i++ {
 			rm := md.ResourceMetrics().At(i)
 			requireResourceOk(t, rm.Resource())
-			for j := 0; j < rm.InstrumentationLibraryMetrics().Len(); j++ {
-				ilm := rm.InstrumentationLibraryMetrics().At(j)
+			for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+				ilm := rm.ScopeMetrics().At(j)
 				for k := 0; k < ilm.Metrics().Len(); k++ {
 					requireMetricOk(t, ilm.Metrics().At(k))
 				}
@@ -140,8 +140,8 @@ func indexedFakeMetrics() map[string][]pdata.Metric {
 	for _, md := range mds {
 		for i := 0; i < md.ResourceMetrics().Len(); i++ {
 			rm := md.ResourceMetrics().At(i)
-			for j := 0; j < rm.InstrumentationLibraryMetrics().Len(); j++ {
-				ilm := rm.InstrumentationLibraryMetrics().At(j)
+			for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+				ilm := rm.ScopeMetrics().At(j)
 				for k := 0; k < ilm.Metrics().Len(); k++ {
 					m := ilm.Metrics().At(k)
 					metricName := m.Name()

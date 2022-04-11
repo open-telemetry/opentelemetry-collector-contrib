@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.9.0"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -13,10 +14,11 @@ type MetricSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// MetricsSettings provides settings for filesystem metrics.
+// MetricsSettings provides settings for hostmetricsreceiver/filesystem metrics.
 type MetricsSettings struct {
 	SystemFilesystemInodesUsage MetricSettings `mapstructure:"system.filesystem.inodes.usage"`
 	SystemFilesystemUsage       MetricSettings `mapstructure:"system.filesystem.usage"`
+	SystemFilesystemUtilization MetricSettings `mapstructure:"system.filesystem.utilization"`
 }
 
 func DefaultMetricsSettings() MetricsSettings {
@@ -26,6 +28,9 @@ func DefaultMetricsSettings() MetricsSettings {
 		},
 		SystemFilesystemUsage: MetricSettings{
 			Enabled: true,
+		},
+		SystemFilesystemUtilization: MetricSettings{
+			Enabled: false,
 		},
 	}
 }
@@ -55,11 +60,11 @@ func (m *metricSystemFilesystemInodesUsage) recordDataPoint(start pdata.Timestam
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Device, pdata.NewAttributeValueString(deviceAttributeValue))
-	dp.Attributes().Insert(A.Mode, pdata.NewAttributeValueString(modeAttributeValue))
-	dp.Attributes().Insert(A.Mountpoint, pdata.NewAttributeValueString(mountpointAttributeValue))
-	dp.Attributes().Insert(A.Type, pdata.NewAttributeValueString(typeAttributeValue))
-	dp.Attributes().Insert(A.State, pdata.NewAttributeValueString(stateAttributeValue))
+	dp.Attributes().Insert(A.Device, pdata.NewValueString(deviceAttributeValue))
+	dp.Attributes().Insert(A.Mode, pdata.NewValueString(modeAttributeValue))
+	dp.Attributes().Insert(A.Mountpoint, pdata.NewValueString(mountpointAttributeValue))
+	dp.Attributes().Insert(A.Type, pdata.NewValueString(typeAttributeValue))
+	dp.Attributes().Insert(A.State, pdata.NewValueString(stateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -112,11 +117,11 @@ func (m *metricSystemFilesystemUsage) recordDataPoint(start pdata.Timestamp, ts 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert(A.Device, pdata.NewAttributeValueString(deviceAttributeValue))
-	dp.Attributes().Insert(A.Mode, pdata.NewAttributeValueString(modeAttributeValue))
-	dp.Attributes().Insert(A.Mountpoint, pdata.NewAttributeValueString(mountpointAttributeValue))
-	dp.Attributes().Insert(A.Type, pdata.NewAttributeValueString(typeAttributeValue))
-	dp.Attributes().Insert(A.State, pdata.NewAttributeValueString(stateAttributeValue))
+	dp.Attributes().Insert(A.Device, pdata.NewValueString(deviceAttributeValue))
+	dp.Attributes().Insert(A.Mode, pdata.NewValueString(modeAttributeValue))
+	dp.Attributes().Insert(A.Mountpoint, pdata.NewValueString(mountpointAttributeValue))
+	dp.Attributes().Insert(A.Type, pdata.NewValueString(typeAttributeValue))
+	dp.Attributes().Insert(A.State, pdata.NewValueString(stateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -144,12 +149,70 @@ func newMetricSystemFilesystemUsage(settings MetricSettings) metricSystemFilesys
 	return m
 }
 
+type metricSystemFilesystemUtilization struct {
+	data     pdata.Metric   // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills system.filesystem.utilization metric with initial data.
+func (m *metricSystemFilesystemUtilization) init() {
+	m.data.SetName("system.filesystem.utilization")
+	m.data.SetDescription("Fraction of filesystem bytes used.")
+	m.data.SetUnit("1")
+	m.data.SetDataType(pdata.MetricDataTypeGauge)
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSystemFilesystemUtilization) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val float64, deviceAttributeValue string, modeAttributeValue string, mountpointAttributeValue string, typeAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleVal(val)
+	dp.Attributes().Insert(A.Device, pdata.NewValueString(deviceAttributeValue))
+	dp.Attributes().Insert(A.Mode, pdata.NewValueString(modeAttributeValue))
+	dp.Attributes().Insert(A.Mountpoint, pdata.NewValueString(mountpointAttributeValue))
+	dp.Attributes().Insert(A.Type, pdata.NewValueString(typeAttributeValue))
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemFilesystemUtilization) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemFilesystemUtilization) emit(metrics pdata.MetricSlice) {
+	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemFilesystemUtilization(settings MetricSettings) metricSystemFilesystemUtilization {
+	m := metricSystemFilesystemUtilization{settings: settings}
+	if settings.Enabled {
+		m.data = pdata.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	startTime                         pdata.Timestamp
+	startTime                         pdata.Timestamp // start time that will be applied to all recorded data points.
+	metricsCapacity                   int             // maximum observed number of metrics per resource.
+	resourceCapacity                  int             // maximum observed number of resource attributes.
+	metricsBuffer                     pdata.Metrics   // accumulates metrics data before emitting.
 	metricSystemFilesystemInodesUsage metricSystemFilesystemInodesUsage
 	metricSystemFilesystemUsage       metricSystemFilesystemUsage
+	metricSystemFilesystemUtilization metricSystemFilesystemUtilization
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -165,8 +228,10 @@ func WithStartTime(startTime pdata.Timestamp) metricBuilderOption {
 func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                         pdata.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                     pdata.NewMetrics(),
 		metricSystemFilesystemInodesUsage: newMetricSystemFilesystemInodesUsage(settings.SystemFilesystemInodesUsage),
 		metricSystemFilesystemUsage:       newMetricSystemFilesystemUsage(settings.SystemFilesystemUsage),
+		metricSystemFilesystemUtilization: newMetricSystemFilesystemUtilization(settings.SystemFilesystemUtilization),
 	}
 	for _, op := range options {
 		op(mb)
@@ -174,12 +239,50 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 	return mb
 }
 
-// Emit appends generated metrics to a pdata.MetricsSlice and updates the internal state to be ready for recording
-// another set of data points. This function will be doing all transformations required to produce metric representation
-// defined in metadata and user settings, e.g. delta/cumulative translation.
-func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
-	mb.metricSystemFilesystemInodesUsage.emit(metrics)
-	mb.metricSystemFilesystemUsage.emit(metrics)
+// updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
+func (mb *MetricsBuilder) updateCapacity(rm pdata.ResourceMetrics) {
+	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
+		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
+	}
+	if mb.resourceCapacity < rm.Resource().Attributes().Len() {
+		mb.resourceCapacity = rm.Resource().Attributes().Len()
+	}
+}
+
+// ResourceOption applies changes to provided resource.
+type ResourceOption func(pdata.Resource)
+
+// EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
+// recording another set of data points as part of another resource. This function can be helpful when one scraper
+// needs to emit metrics from several resources. Otherwise calling this function is not required,
+// just `Emit` function can be called instead. Resource attributes should be provided as ResourceOption arguments.
+func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
+	rm := pdata.NewResourceMetrics()
+	rm.SetSchemaUrl(conventions.SchemaURL)
+	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
+	for _, op := range ro {
+		op(rm.Resource())
+	}
+	ils := rm.ScopeMetrics().AppendEmpty()
+	ils.Scope().SetName("otelcol/hostmetricsreceiver/filesystem")
+	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
+	mb.metricSystemFilesystemInodesUsage.emit(ils.Metrics())
+	mb.metricSystemFilesystemUsage.emit(ils.Metrics())
+	mb.metricSystemFilesystemUtilization.emit(ils.Metrics())
+	if ils.Metrics().Len() > 0 {
+		mb.updateCapacity(rm)
+		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
+	}
+}
+
+// Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
+// recording another set of metrics. This function will be responsible for applying all the transformations required to
+// produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
+func (mb *MetricsBuilder) Emit(ro ...ResourceOption) pdata.Metrics {
+	mb.EmitForResource(ro...)
+	metrics := pdata.NewMetrics()
+	mb.metricsBuffer.MoveTo(metrics)
+	return metrics
 }
 
 // RecordSystemFilesystemInodesUsageDataPoint adds a data point to system.filesystem.inodes.usage metric.
@@ -190,6 +293,11 @@ func (mb *MetricsBuilder) RecordSystemFilesystemInodesUsageDataPoint(ts pdata.Ti
 // RecordSystemFilesystemUsageDataPoint adds a data point to system.filesystem.usage metric.
 func (mb *MetricsBuilder) RecordSystemFilesystemUsageDataPoint(ts pdata.Timestamp, val int64, deviceAttributeValue string, modeAttributeValue string, mountpointAttributeValue string, typeAttributeValue string, stateAttributeValue string) {
 	mb.metricSystemFilesystemUsage.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, modeAttributeValue, mountpointAttributeValue, typeAttributeValue, stateAttributeValue)
+}
+
+// RecordSystemFilesystemUtilizationDataPoint adds a data point to system.filesystem.utilization metric.
+func (mb *MetricsBuilder) RecordSystemFilesystemUtilizationDataPoint(ts pdata.Timestamp, val float64, deviceAttributeValue string, modeAttributeValue string, mountpointAttributeValue string, typeAttributeValue string) {
+	mb.metricSystemFilesystemUtilization.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, modeAttributeValue, mountpointAttributeValue, typeAttributeValue)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

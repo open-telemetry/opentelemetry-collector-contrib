@@ -47,7 +47,7 @@ func newTraceWithKV(traceID pdata.TraceID, key string, val int64) *TraceData {
 	var traceBatches []pdata.Traces
 	traces := pdata.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
-	ils := rs.InstrumentationLibrarySpans().AppendEmpty()
+	ils := rs.ScopeSpans().AppendEmpty()
 	span := ils.Spans().AppendEmpty()
 	span.SetTraceID(traceID)
 	span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))

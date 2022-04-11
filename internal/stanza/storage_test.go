@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/nonrecording"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap/zaptest"
 
@@ -93,7 +93,7 @@ func createReceiver(t *testing.T) *receiver {
 		TelemetrySettings: component.TelemetrySettings{
 			Logger:         zaptest.NewLogger(t),
 			TracerProvider: trace.NewNoopTracerProvider(),
-			MeterProvider:  metric.NewNoopMeterProvider(),
+			MeterProvider:  nonrecording.NewNoopMeterProvider(),
 			MetricsLevel:   configtelemetry.LevelNone,
 		},
 	}

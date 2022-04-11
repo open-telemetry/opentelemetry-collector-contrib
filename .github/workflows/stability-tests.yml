@@ -13,9 +13,9 @@ jobs:
       stabilitytest_matrix: ${{ steps.splitstabilitytest.outputs.stabilitytest_matrix}}
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Setup Go
-        uses: actions/setup-go@v2.2.0
+        uses: actions/setup-go@v3
         with:
           go-version: 1.17
       - name: Setup Go Environment
@@ -24,7 +24,7 @@ jobs:
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
       - name: Cache Go
         id: module-cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         env:
           cache-name: cache-go-modules
         with:
@@ -34,7 +34,7 @@ jobs:
           key: v1-go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
       - name: Cache Tools
         id: tool-cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         env:
           cache-name: cache-tool-binaries
         with:
@@ -59,9 +59,9 @@ jobs:
       matrix: ${{ fromJson(needs.setup-environment.outputs.stabilitytest_matrix) }}
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Setup Go
-        uses: actions/setup-go@v2.2.0
+        uses: actions/setup-go@v3
         with:
           go-version: 1.17
       - name: Setup Go Environment
@@ -70,7 +70,7 @@ jobs:
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
       - name: Cache Go
         id: module-cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         env:
           cache-name: cache-go-modules
         with:

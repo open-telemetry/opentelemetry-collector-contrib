@@ -90,8 +90,8 @@ func extractResourceSpans(config config.Exporter, logger *zap.Logger, td pdata.T
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
 		resource := rspans.Resource()
-		for j := 0; j < rspans.InstrumentationLibrarySpans().Len(); j++ {
-			spans := rspans.InstrumentationLibrarySpans().At(j).Spans()
+		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
+			spans := rspans.ScopeSpans().At(j).Spans()
 			for k := 0; k < spans.Len(); k++ {
 				document, localErr := translator.MakeSegmentDocumentString(spans.At(k), resource,
 					config.(*Config).IndexedAttributes, config.(*Config).IndexAllAttributes)

@@ -147,11 +147,11 @@ func parseRegionAndAccount(taskARN string) (region string, account string) {
 // "init" containers which only run at startup then shutdown (as indicated by the "KnownStatus" attribute),
 // containers not using AWS Logs, and those without log group metadata to get the final lists of valid log data
 // See: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-metadata-endpoint-v4.html#task-metadata-endpoint-v4-response
-func getValidLogData(containers []ecsutil.ContainerMetadata, self *ecsutil.ContainerMetadata, account string) [4]pdata.AttributeValue {
-	logGroupNames := pdata.NewAttributeValueArray()
-	logGroupArns := pdata.NewAttributeValueArray()
-	logStreamNames := pdata.NewAttributeValueArray()
-	logStreamArns := pdata.NewAttributeValueArray()
+func getValidLogData(containers []ecsutil.ContainerMetadata, self *ecsutil.ContainerMetadata, account string) [4]pdata.Value {
+	logGroupNames := pdata.NewValueSlice()
+	logGroupArns := pdata.NewValueSlice()
+	logStreamNames := pdata.NewValueSlice()
+	logStreamArns := pdata.NewValueSlice()
 
 	for _, container := range containers {
 		logData := container.LogOptions
@@ -168,7 +168,7 @@ func getValidLogData(containers []ecsutil.ContainerMetadata, self *ecsutil.Conta
 		}
 	}
 
-	return [4]pdata.AttributeValue{logGroupNames, logGroupArns, logStreamNames, logStreamArns}
+	return [4]pdata.Value{logGroupNames, logGroupArns, logStreamNames, logStreamArns}
 }
 
 func constructLogGroupArn(region, account, group string) string {

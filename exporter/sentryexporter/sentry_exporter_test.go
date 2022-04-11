@@ -287,7 +287,7 @@ func TestSpanToSentrySpan(t *testing.T) {
 		testSpan := pdata.NewSpan()
 		testSpan.SetParentSpanID(pdata.InvalidSpanID())
 
-		sentrySpan := convertToSentrySpan(testSpan, pdata.NewInstrumentationLibrary(), map[string]string{})
+		sentrySpan := convertToSentrySpan(testSpan, pdata.NewInstrumentationScope(), map[string]string{})
 		assert.NotNil(t, sentrySpan)
 		assert.True(t, spanIsTransaction(testSpan))
 	})
@@ -317,7 +317,7 @@ func TestSpanToSentrySpan(t *testing.T) {
 		testSpan.Status().SetMessage(statusMessage)
 		testSpan.Status().SetCode(pdata.StatusCodeOk)
 
-		library := pdata.NewInstrumentationLibrary()
+		library := pdata.NewInstrumentationScope()
 		library.SetName("otel-python")
 		library.SetVersion("1.4.3")
 
@@ -362,7 +362,7 @@ type SpanDescriptorsCase struct {
 	testName string
 	// input
 	name     string
-	attrs    pdata.AttributeMap
+	attrs    pdata.Map
 	spanKind pdata.SpanKind
 	// output
 	op          string
@@ -374,8 +374,8 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 		{
 			testName: "http-client",
 			name:     "/api/users/{user_id}",
-			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
-				conventions.AttributeHTTPMethod: pdata.NewAttributeValueString("GET"),
+			attrs: pdata.NewMapFromRaw(map[string]interface{}{
+				conventions.AttributeHTTPMethod: "GET",
 			}),
 			spanKind:    pdata.SpanKindClient,
 			op:          "http.client",
@@ -384,8 +384,8 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 		{
 			testName: "http-server",
 			name:     "/api/users/{user_id}",
-			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
-				conventions.AttributeHTTPMethod: pdata.NewAttributeValueString("POST"),
+			attrs: pdata.NewMapFromRaw(map[string]interface{}{
+				conventions.AttributeHTTPMethod: "POST",
 			}),
 			spanKind:    pdata.SpanKindServer,
 			op:          "http.server",
@@ -394,8 +394,8 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 		{
 			testName: "db-call-without-statement",
 			name:     "SET mykey 'Val'",
-			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
-				conventions.AttributeDBSystem: pdata.NewAttributeValueString("redis"),
+			attrs: pdata.NewMapFromRaw(map[string]interface{}{
+				conventions.AttributeDBSystem: "redis",
 			}),
 			spanKind:    pdata.SpanKindClient,
 			op:          "db",
@@ -404,9 +404,9 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 		{
 			testName: "db-call-with-statement",
 			name:     "mysql call",
-			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
-				conventions.AttributeDBSystem:    pdata.NewAttributeValueString("sqlite"),
-				conventions.AttributeDBStatement: pdata.NewAttributeValueString("SELECT * FROM table"),
+			attrs: pdata.NewMapFromRaw(map[string]interface{}{
+				conventions.AttributeDBSystem:    "sqlite",
+				conventions.AttributeDBStatement: "SELECT * FROM table",
 			}),
 			spanKind:    pdata.SpanKindClient,
 			op:          "db",
@@ -415,8 +415,8 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 		{
 			testName: "rpc",
 			name:     "grpc.test.EchoService/Echo",
-			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
-				conventions.AttributeRPCService: pdata.NewAttributeValueString("EchoService"),
+			attrs: pdata.NewMapFromRaw(map[string]interface{}{
+				conventions.AttributeRPCService: "EchoService",
 			}),
 			spanKind:    pdata.SpanKindClient,
 			op:          "rpc",
@@ -425,8 +425,8 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 		{
 			testName: "message-system",
 			name:     "message-destination",
-			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
-				"messaging.system": pdata.NewAttributeValueString("kafka"),
+			attrs: pdata.NewMapFromRaw(map[string]interface{}{
+				"messaging.system": "kafka",
 			}),
 			spanKind:    pdata.SpanKindProducer,
 			op:          "message",
@@ -435,8 +435,8 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 		{
 			testName: "faas",
 			name:     "message-destination",
-			attrs: pdata.NewAttributeMapFromMap(map[string]pdata.AttributeValue{
-				"faas.trigger": pdata.NewAttributeValueString("pubsub"),
+			attrs: pdata.NewMapFromRaw(map[string]interface{}{
+				"faas.trigger": "pubsub",
 			}),
 			spanKind:    pdata.SpanKindServer,
 			op:          "pubsub",
@@ -454,7 +454,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 }
 
 func TestGenerateTagsFromAttributes(t *testing.T) {
-	attrs := pdata.NewAttributeMap()
+	attrs := pdata.NewMap()
 
 	attrs.InsertString("string-key", "string-value")
 	attrs.InsertBool("bool-key", true)
@@ -652,7 +652,7 @@ func TestPushTraceData(t *testing.T) {
 			td: func() pdata.Traces {
 				traces := pdata.NewTraces()
 				resourceSpans := traces.ResourceSpans()
-				resourceSpans.AppendEmpty().InstrumentationLibrarySpans().AppendEmpty()
+				resourceSpans.AppendEmpty().ScopeSpans().AppendEmpty()
 				return traces
 			}(),
 			called: false,
@@ -662,7 +662,7 @@ func TestPushTraceData(t *testing.T) {
 			td: func() pdata.Traces {
 				traces := pdata.NewTraces()
 				resourceSpans := traces.ResourceSpans()
-				resourceSpans.AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+				resourceSpans.AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 				return traces
 			}(),
 			called: true,
