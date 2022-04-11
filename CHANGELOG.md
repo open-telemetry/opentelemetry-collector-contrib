@@ -14,6 +14,7 @@
 - `prometheusremotewriteexporter`: Translate resource attributes to the target info metric (#8493)
 - `podmanreceiver`: Add API timeout configuration option (#9014)
 - `cmd/mdatagen`: Add `sem_conv_version` field to metadata.yaml that is used to set metrics SchemaURL (#9010)
+- `splunkheceporter`: Add an option to disable log or profiling data (#9065)
 - `datadogexporter`: Add `host_metadata` configuration section to configure host metadata export (#9100)
 
 ### 🛑 Breaking changes 🛑
@@ -23,11 +24,14 @@
     - A detailed [Upgrade Guide](https://github.com/open-telemetry/opentelemetry-log-collection/releases/tag/v0.28.0) is available in the log-collection v0.28.0 release notes. 
 - `datadogexporter`: Remove `OnlyMetadata` method from `Config` struct (#8980)
 - `datadogexporter`: Remove `GetCensoredKey` method from `APIConfig` struct (#8980)
+- `mongodbatlasreceiver`: Updated to uses newer metric builder which changed some metric and resource attributes (#9093)
+- `dynatraceexporter`: Make `serialization` package `/internal` (#9097)
 
 ### 🧰 Bug fixes 🧰
 
 - `hostmetricsreceiver`: Use cpu times for time delta in cpu.utilization calculation (#8857)
 - `dynatraceexporter`: Remove overly verbose stacktrace from certain logs (#8989)
+- `googlecloudexporter`: fix the `exporter.googlecloud.OTLPDirect` fature-gate, which was not applied when the flag was provided (#9116)
 
 ### 🚩 Deprecations 🚩
 
