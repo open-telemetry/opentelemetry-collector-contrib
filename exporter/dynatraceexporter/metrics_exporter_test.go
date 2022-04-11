@@ -58,7 +58,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	md.ResourceMetrics().EnsureCapacity(2)
 	rm := md.ResourceMetrics().AppendEmpty()
 
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 	ilms.EnsureCapacity(2)
 	ilm := ilms.AppendEmpty()
 
@@ -180,7 +180,7 @@ func Test_exporter_PushMetricsData_EmptyPayload(t *testing.T) {
 	md.ResourceMetrics().EnsureCapacity(2)
 	rm := md.ResourceMetrics().AppendEmpty()
 
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 	ilms.EnsureCapacity(2)
 	ilm := ilms.AppendEmpty()
 
@@ -212,7 +212,7 @@ func Test_exporter_PushMetricsData_isDisabled(t *testing.T) {
 	md.ResourceMetrics().EnsureCapacity(2)
 	rm := md.ResourceMetrics().AppendEmpty()
 
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 	ilms.EnsureCapacity(2)
 	ilm := ilms.AppendEmpty()
 
@@ -400,7 +400,7 @@ func Test_exporter_PushMetricsData_Error(t *testing.T) {
 	md.ResourceMetrics().EnsureCapacity(2)
 	rm := md.ResourceMetrics().AppendEmpty()
 
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 	ilms.EnsureCapacity(2)
 	ilm := ilms.AppendEmpty()
 

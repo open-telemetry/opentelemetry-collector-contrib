@@ -79,8 +79,8 @@ func TestUnmarshal(t *testing.T) {
 				gotDatapointCount := 0
 				for i := 0; i < got.ResourceMetrics().Len(); i++ {
 					rm := got.ResourceMetrics().At(i)
-					require.Equal(t, 1, rm.InstrumentationLibraryMetrics().Len())
-					ilm := rm.InstrumentationLibraryMetrics().At(0)
+					require.Equal(t, 1, rm.ScopeMetrics().Len())
+					ilm := rm.ScopeMetrics().At(0)
 					gotMetricCount += ilm.Metrics().Len()
 					for j := 0; j < ilm.Metrics().Len(); j++ {
 						metric := ilm.Metrics().At(j)

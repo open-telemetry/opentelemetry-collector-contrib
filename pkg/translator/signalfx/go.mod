@@ -3,10 +3,10 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/
 go 1.17
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.47.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.48.0
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3
 	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector/model v0.47.1-0.20220323200141-1b7618728835
+	go.opentelemetry.io/collector/model v0.48.0
 	go.uber.org/multierr v1.8.0
 )
 
@@ -17,7 +17,7 @@ require (
 	github.com/kr/pretty v0.2.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
-	google.golang.org/protobuf v1.27.1 // indirect
+	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
 

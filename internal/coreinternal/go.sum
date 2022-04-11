@@ -149,10 +149,10 @@ github.com/stretchr/testify v1.7.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.3.5/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=
-go.opentelemetry.io/collector v0.47.1-0.20220323200141-1b7618728835 h1:CqPPDVRgIxiIvs3ixFi/t/4nFDiGAWFy7ZroKeZugOg=
-go.opentelemetry.io/collector v0.47.1-0.20220323200141-1b7618728835/go.mod h1:Tvs4ENTWbcw7QwYGwjt/6qbo50aC4fZhdUM6rGFZP/g=
-go.opentelemetry.io/collector/model v0.47.1-0.20220323200141-1b7618728835 h1:+07ZQq1S7A0L487Cz/fTxSVxI9jAp+OUk/4Xog2sKz8=
-go.opentelemetry.io/collector/model v0.47.1-0.20220323200141-1b7618728835/go.mod h1:t1yrdghbK9nzhJSCRvFbgtpEiC3kcplkbtJpgMXc2X8=
+go.opentelemetry.io/collector v0.48.0 h1:/kUmNzsYgdPmbdscOGtCFPyZvxICrzmCFth2krzJuWs=
+go.opentelemetry.io/collector v0.48.0/go.mod h1:iklh3+Npx1DalC6PvEi9ysjx9zLbjgOUQFTIh2MufQU=
+go.opentelemetry.io/collector/model v0.48.0 h1:xmN4LdZ92q6PZnaKhMdIlC5KGtPJeOYaWCnA1PQ2oZw=
+go.opentelemetry.io/collector/model v0.48.0/go.mod h1:1QVYv8TqsTMt9wVC5BUF9fqMVtk2C5EclWDnuVqdKoU=
 go.uber.org/atomic v1.7.0/go.mod h1:fEN4uk6kAWBTFdckzkM89CLk9XfWZrxpCo0nPH17wJc=
 go.uber.org/atomic v1.9.0 h1:ECmE8Bn/WFTYwEW/bpKD3M8VtR/zQVbavAoalC1PYyE=
 go.uber.org/atomic v1.9.0/go.mod h1:fEN4uk6kAWBTFdckzkM89CLk9XfWZrxpCo0nPH17wJc=
@@ -237,8 +237,8 @@ google.golang.org/grpc v1.19.0/go.mod h1:mqu4LbDTu4XGKhr4mRzUsmM4RtVoemTSY81AxZi
 google.golang.org/grpc v1.22.0/go.mod h1:Y5yQAOtifL1yxbo5wqy6BxZv8vAUGQwXBOALyacEbxg=
 google.golang.org/protobuf v1.26.0-rc.1/go.mod h1:jlhhOSvTdKEhbULTjvd4ARK9grFBp09yW+WbY/TyQbw=
 google.golang.org/protobuf v1.26.0/go.mod h1:9q0QmTI4eRPtz6boOQmLYwt+qCgq0jsYwAQnmE0givc=
-google.golang.org/protobuf v1.27.1 h1:SnqbnDw1V7RiZcXPx5MEeqPv2s79L9i7BJUlG/+RurQ=
-google.golang.org/protobuf v1.27.1/go.mod h1:9q0QmTI4eRPtz6boOQmLYwt+qCgq0jsYwAQnmE0givc=
+google.golang.org/protobuf v1.28.0 h1:w43yiav+6bVFTBQFZX0r7ipe9JQ1QsbMgHwbBziscLw=
+google.golang.org/protobuf v1.28.0/go.mod h1:HV8QOd/L58Z+nl8r43ehVNZIU/HEI6OcFqwMG9pJV4I=
 gopkg.in/asn1-ber.v1 v1.0.0-20181015200546-f715ec2f112d/go.mod h1:cuepJuh7vyXfUyUwEgHQXw849cJrilpS5NeIjOWESAw=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=

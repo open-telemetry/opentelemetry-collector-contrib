@@ -66,7 +66,7 @@ func runIndividualTestCase(t *testing.T, tt testCase, tp component.TracesProcess
 		for i := 0; i < rss.Len(); i++ {
 			rs := rss.At(i)
 			rs.Resource().Attributes().Sort()
-			ilss := rs.InstrumentationLibrarySpans()
+			ilss := rs.ScopeSpans()
 			for j := 0; j < ilss.Len(); j++ {
 				spans := ilss.At(j).Spans()
 				for k := 0; k < spans.Len(); k++ {
@@ -84,7 +84,7 @@ func generateTraceData(serviceName, inputName string, attrs map[string]interface
 	if serviceName != "" {
 		rs.Resource().Attributes().UpsertString(conventions.AttributeServiceName, serviceName)
 	}
-	span := rs.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName(inputName)
 	pdata.NewMapFromRaw(attrs).CopyTo(span.Attributes())
 	span.Attributes().Sort()
@@ -598,7 +598,7 @@ func TestSpanProcessor_skipSpan(t *testing.T) {
 func generateTraceDataSetStatus(code pdata.StatusCode, description string, attrs map[string]interface{}) pdata.Traces {
 	td := pdata.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
-	span := rs.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.Status().SetCode(code)
 	span.Status().SetMessage(description)
 	pdata.NewMapFromRaw(attrs).Sort().CopyTo(span.Attributes())

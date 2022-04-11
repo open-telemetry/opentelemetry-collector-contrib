@@ -81,8 +81,8 @@ func (c *MetricsConverter) MetricsToSignalFxV2(md pdata.Metrics) []*sfxpb.DataPo
 		rm := rms.At(i)
 		extraDimensions := resourceToDimensions(rm.Resource())
 
-		for j := 0; j < rm.InstrumentationLibraryMetrics().Len(); j++ {
-			ilm := rm.InstrumentationLibraryMetrics().At(j)
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			ilm := rm.ScopeMetrics().At(j)
 			for k := 0; k < ilm.Metrics().Len(); k++ {
 				dps := signalfx.FromMetric(ilm.Metrics().At(k), extraDimensions)
 				dps = c.translateAndFilter(dps)

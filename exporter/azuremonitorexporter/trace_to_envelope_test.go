@@ -852,8 +852,8 @@ func getResource() pdata.Resource {
 }
 
 // Returns a default instrumentation library
-func getInstrumentationLibrary() pdata.InstrumentationLibrary {
-	il := pdata.NewInstrumentationLibrary()
+func getInstrumentationLibrary() pdata.InstrumentationScope {
+	il := pdata.NewInstrumentationScope()
 	il.SetName(defaultInstrumentationLibraryName)
 	il.SetVersion(defaultInstrumentationLibraryVersion)
 	return il

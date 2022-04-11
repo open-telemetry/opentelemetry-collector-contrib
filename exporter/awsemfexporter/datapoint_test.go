@@ -642,7 +642,7 @@ func TestGetDataPoints(t *testing.T) {
 
 		// Retrieve *pdata.Metric
 		rm := internaldata.OCToMetrics(nil, nil, ocMetrics).ResourceMetrics().At(0)
-		metric := rm.InstrumentationLibraryMetrics().At(0).Metrics().At(0)
+		metric := rm.ScopeMetrics().At(0).Metrics().At(0)
 
 		logger := zap.NewNop()
 
@@ -739,7 +739,7 @@ func BenchmarkGetDataPoints(b *testing.B) {
 	ocMetrics = append(ocMetrics, generateTestDoubleSum("double-sum")...)
 	ocMetrics = append(ocMetrics, generateTestSummary("summary")...)
 	rms := internaldata.OCToMetrics(nil, nil, ocMetrics).ResourceMetrics()
-	metrics := rms.At(0).InstrumentationLibraryMetrics().At(0).Metrics()
+	metrics := rms.At(0).ScopeMetrics().At(0).Metrics()
 	numMetrics := metrics.Len()
 
 	metadata := cWMetricMetadata{

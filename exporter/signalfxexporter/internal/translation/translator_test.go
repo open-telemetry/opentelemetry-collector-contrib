@@ -3047,6 +3047,6 @@ func intTS(lbl0 string, lbl1 string, secondsDelta int64, v int64, valueDelta int
 
 func wrapMetric(m pdata.Metric) pdata.Metrics {
 	out := pdata.NewMetrics()
-	m.CopyTo(out.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty())
+	m.CopyTo(out.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty())
 	return out
 }

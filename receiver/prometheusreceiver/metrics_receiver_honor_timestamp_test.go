@@ -401,7 +401,7 @@ func verifyHonorTimeStampsFalse(t *testing.T, td *testData, resourceMetrics []*p
 
 	wantAttributes := td.attributes
 
-	metrics1 := m1.InstrumentationLibraryMetrics().At(0).Metrics()
+	metrics1 := m1.ScopeMetrics().At(0).Metrics()
 	ts1 := getTS(metrics1)
 	e1 := []testExpectation{
 		assertMetricPresent("go_threads",
@@ -463,7 +463,7 @@ func verifyHonorTimeStampsFalse(t *testing.T, td *testData, resourceMetrics []*p
 	// m2 has 4 metrics + 5 internal scraper metrics
 	assert.Equal(t, 9, metricsCount(m2))
 
-	metricsScrape2 := m2.InstrumentationLibraryMetrics().At(0).Metrics()
+	metricsScrape2 := m2.ScopeMetrics().At(0).Metrics()
 	ts2 := getTS(metricsScrape2)
 	e2 := []testExpectation{
 		assertMetricPresent("go_threads",

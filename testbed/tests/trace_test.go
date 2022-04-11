@@ -346,7 +346,7 @@ func verifySingleSpan(
 	td := pdata.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
 	rs.Resource().Attributes().InsertString(conventions.AttributeServiceName, serviceName)
-	span := rs.InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty()
+	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetTraceID(idutils.UInt64ToTraceID(0, 1))
 	span.SetSpanID(idutils.UInt64ToSpanID(1))
 	span.SetName(spanName)
@@ -367,7 +367,7 @@ func verifySingleSpan(
 	for _, td := range tc.MockBackend.ReceivedTraces {
 		rs := td.ResourceSpans()
 		for i := 0; i < rs.Len(); i++ {
-			ils := rs.At(i).InstrumentationLibrarySpans()
+			ils := rs.At(i).ScopeSpans()
 			for j := 0; j < ils.Len(); j++ {
 				spans := ils.At(j).Spans()
 				for k := 0; k < spans.Len(); k++ {
