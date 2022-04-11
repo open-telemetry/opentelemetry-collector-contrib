@@ -25,6 +25,7 @@
 - `datadogexporter`: Remove `GetCensoredKey` method from `APIConfig` struct (#8980)
 - `mongodbatlasreceiver`: Updated to uses newer metric builder which changed some metric and resource attributes (#9093)
 - `dynatraceexporter`: Make `serialization` package `/internal` (#9097)
+- `attributesprocessor`: Remove log names from filters (#9131)
 
 ### 🧰 Bug fixes 🧰
 
