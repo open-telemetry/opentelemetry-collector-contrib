@@ -4,6 +4,364 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+# Upgrading to v0.29.0
+
+Several changes have been made that affect configuration for the `filelog`, `syslog`, `tcplog`, `udplog`, and `journald` receivers.
+
+### Update all usages of [field](/docs/types/field.md) syntax
+  
+Field syntax no longer requires the `$` character. Instead each field must begin with `body`, `attributes`, or `resource`.
+  
+<table>
+<tr><th>Deprecated Example</th><th>Updated Equivalent</th></tr>
+<tr><td>
+
+`$$attributes["log.file.name"]`
+
+</td><td>
+
+`attributes["log.file.name"]`
+
+</td></tr><tr><td>
+
+`$$resource["host.name"]`
+
+</td><td>
+
+`resource["host.name"]`
+
+</td></tr><tr><td>
+
+`$$body.foo`
+
+</td><td>
+
+`body.foo`
+
+</td></tr><tr><td>
+
+`$$.foo`
+
+</td><td>
+
+`body.foo`
+
+</td></tr><tr><td>
+
+`foo`
+
+</td><td>
+
+`body.foo`
+
+</td></tr>
+</table>
+
+
+#### Tip for updating sub-parsers
+
+To update the `parse_from` field in a "sub-parser", such as `timestamp` or `severity`, consider where the value would reside if the sub-parser was excluded.
+
+<table>
+<tr><th>Deprecated Example</th><th>Updated Equivalent</th></tr>
+<tr><td>
+
+```yaml
+operators:
+- type: regex_parser
+  regex: '^Time=(?P<time>\d{4}-\d{2}-\d{2})...'
+  parse_to: body # default
+  timestamp:
+    parse_from: time
+    ...
+```
+
+</td><td>
+
+```yaml
+operators:
+- type: regex_parser
+  regex: '^Time=(?P<time>\d{4}-\d{2}-\d{2})...'
+  parse_to: attributes # default
+  timestamp:
+    parse_from: attributes.time
+    ...
+```
+
+</td></tr>
+</table>
+
+
+### `attributes` and `resource` now support arbitrary structure
+
+Field syntax can now refer to nested fields in both `attributes` and `resource`. Nested fields were previously only supported in `body`. For example, `attributes.foo.bar` refers to the value `"hello"` in the following entry:
+
+```json
+{
+  "attributes": {
+    "foo": {
+      "bar": "hello"
+    }
+  }
+}
+```
+
+
+### Update references to parsed values
+
+The default value of `parse_to` has been changed from `body` to `attributes`. As a general rule of thumb, any parsers that previously specified the `parse_to` field are unaffected. If the `parse_to` field was not previously specified, then subsequent operators may need to be updated. 
+
+<table>
+<tr><th>Deprecated Example</th><th>Updated Equivalent</th></tr>
+<tr><td>
+
+```yaml
+operators:
+- type: regex_parser
+  regex: '^Foo=(?P<foo>\s.*)...'
+  parse_from: body
+# parse_to: body (old default)
+- type: move
+  from: foo
+  to: attributes.bar
+    ...
+```
+
+</td><td>
+
+```yaml
+operators:
+- type: regex_parser
+  regex: '^Foo=(?P<foo>\s.*)...'
+  parse_from: body
+# parse_to: attributes (new default)
+- type: move
+  from: attributes.foo
+  to: attributes.bar
+    ...
+```
+
+</td></tr>
+</table>
+
+
+### Remove or replace usages of `preserve_to`
+
+Parsers no longer support a `preserve_to` setting. Instead, the `parse_from` field is preserved by default. To preserve and move the field, use the `move` operator after the parse operator. To remove the field after parsing, use the `remove` operator.
+
+<table>
+<tr><th>Deprecated Example</th><th>Updated Equivalent</th></tr>
+<tr><td>
+
+```yaml
+operators:
+- type: regex_parser
+  regex: '^Foo=(?P<foo>\s.*)...'
+  parse_from: body
+  preserve_to: attributes.backup
+    ...
+```
+
+</td><td>
+
+```yaml
+operators:
+- type: regex_parser
+  regex: '^Foo=(?P<foo>\s.*)...'
+  parse_from: body
+- type: move
+  from: body
+  to: attributes.backup
+    ...
+```
+
+</td></tr>
+<tr><td>
+
+```yaml
+operators:
+- type: regex_parser
+  regex: '^Foo=(?P<foo>\s.*)...'
+  parse_from: body # implicitly deleted
+    ...
+```
+
+</td><td>
+
+```yaml
+operators:
+- type: regex_parser
+  regex: '^Foo=(?P<foo>\s.*)...'
+  parse_from: body
+- type: remove
+  field: body
+    ...
+```
+
+</td></tr>
+</table>
+
+
+
+### Replace usages of `restructure` operator
+
+The `restructure` operator has been removed. Use `add`, `copy`, `flatten`, `move`, `remove`, and `retain` operators instead.
+
+<table>
+<tr><th>Deprecated Example</th><th>Updated Equivalent</th></tr>
+<tr><td valign="top">
+
+```yaml
+operators:
+  - type: restructure
+    ops:
+      - add:
+        field: set_me
+        value: foo
+      - add:
+        field: overwrite_me
+        value: bar
+      - move:
+        from: details.env
+        to: env
+      - remove:
+        field: delete_me
+```
+
+</td><td valign="top">
+
+```yaml
+operators:
+  - type: add
+    field: body.set_me
+    value: foo
+  - type: add
+    field: body.overwrite_me
+    value: bar
+  - type: move
+    from: body.details.env
+    to: body.env
+  - type: remove
+    field: body.delete_me
+```
+
+</td></tr>
+</table>
+
+### Replace usages of `metadata` operator
+
+The `metadata` operator has been removed. Use `add`, `copy`, or `move` operators instead.
+
+<table>
+<tr><th>Deprecated Example</th><th>Updated Equivalent</th></tr>
+<tr><td valign="top">
+
+```yaml
+operators:
+  - type: metadata
+    attributes:
+      environment: production
+      file: 'EXPR( $$body.file )'
+    resource:
+      cluster: blue
+```
+
+</td><td valign="top">
+
+```yaml
+operators:
+  - type: add
+    field: attributes.environment
+    value: production
+  - type: copy
+    from: body.file
+    to: attributes.file
+  - type: add
+    field: resource.cluster
+    value: blue
+  - type: move
+    from: body.foo
+    to: attributes.bar
+```
+
+</td></tr>
+</table>
+
+### Update `filelog` attribute references
+
+The `filelog` receiver has adopted slightly different attribute names in order to match newly established semantic conventions. Configurations that previously refered to the `file.*` attributes should be updated.
+
+<table>
+<tr><th>Deprecated Attribute</th><th>Updated Equivalent</th></tr>
+<tr><td>
+
+`file.name`
+
+</td><td>
+
+`log.file.name`
+
+</td></tr><tr><td>
+
+`file.path`
+
+</td><td>
+
+`log.file.path`
+
+</td></tr><tr><td>
+
+`file.name.resolved`
+
+</td><td>
+
+`log.file.name_resolved`
+
+</td></tr><tr><td>
+
+`file.path.resolved`
+
+</td><td>
+
+`log.file.path_resolved`
+
+</td></tr>
+</table>
+
+
+## **Note to Vendors**: A log record's `Timestamp` field may now be `nil`
+
+[A recent change to the Log Data Model](https://github.com/open-telemetry/opentelemetry-specification/pull/2184) has redefined the usage of the `Timestamp` field. Correspondingly, this field is no longer initialized by default. All Log Exporters should be evaluated to ensure this change is handled accordingly.
+
+Log exporters can use the following logic to mimic the previous functionality (psuedocode):
+
+```go
+timestamp := log.ObservedTimestamp
+if log.Timestamp != nil {
+  timestamp = log.Timestamp
+}
+```
+
+
+## [0.29.0] - 2022-04-11
+
+### Breaking Changes
+
+- The default value of `parse_to` field in all parsers has been changed to `attributes`. ([PR463](https://github.com/open-telemetry/opentelemetry-log-collection/pull/463))
+- Parsers that contain a `parse_to` setting will no longer delete the `parse_from` field. ([PR464](https://github.com/open-telemetry/opentelemetry-log-collection/pull/464))
+- The `preserve_to` setting has been removed from parsers. ([PR464](https://github.com/open-telemetry/opentelemetry-log-collection/pull/464))
+
+### Added 
+
+- `key_value_parser` ([PR459](https://github.com/open-telemetry/opentelemetry-log-collection/pull/459))
+- `severity` parsign can now use `preset: otel` to recognize both numeric and text representations of OpenTelemetry's log data model. ([PR460](https://github.com/open-telemetry/opentelemetry-log-collection/pull/460))
+- `regex_parser` can now cache parsing parsing results using the `cache` setting. This can dramatically increase performance in cases where the same string is parsed repeatedly. ([PR440](https://github.com/open-telemetry/opentelemetry-log-collection/pull/440))
+
+### Fixed
+
+- Issue where scope name parser would fail to initialize. ([PR465](https://github.com/open-telemetry/opentelemetry-log-collection/pull/465))
+
 ## [0.28.0] - 2022-03-28
 
 ### Breaking Changes
