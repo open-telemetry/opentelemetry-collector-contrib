@@ -22,6 +22,7 @@
 //
 // Each association is specified as a list of sources of association.
 // Sources represents list of rules. All rules are going to be executed and combination of result is going to be a pod metadata cache key.
+// In order to get an association applied, all the data defined in each source has to be successfully fetched from a log, trace or metric.
 //
 // Each sources rule is specified as a pair of `from` (representing the rule type) and `name` (representing the attribute name if `From` is set to `resource_attribute`).
 // Following rule types are available:
@@ -54,7 +55,6 @@
 //   - k8s.deployment.name
 //   - k8s.node.name
 // Not all the attributes are guaranteed to be added.
-//
 //
 // Only attribute names from `metadata` should be used for pod_association's `resource_attribute`,
 // because empty or non-existing values will be ignored.
