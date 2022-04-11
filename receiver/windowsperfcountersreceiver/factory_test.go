@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 
-	windowsapi "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
+	winperfcounters "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
 )
 
 var creationParams = componenttest.NewNopReceiverCreateSettings()
@@ -36,10 +36,10 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, configtest.CheckConfigStruct(cfg))
 
-	cfg.(*Config).PerfCounters = []windowsapi.ObjectConfig{
+	cfg.(*Config).PerfCounters = []winperfcounters.ObjectConfig{
 		{
 			Object:   "object",
-			Counters: []windowsapi.CounterConfig{{Name: "counter", MetricRep: windowsapi.MetricRep{Name: "metric"}}},
+			Counters: []winperfcounters.CounterConfig{{Name: "counter", MetricRep: winperfcounters.MetricRep{Name: "metric"}}},
 		},
 	}
 
@@ -57,10 +57,10 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateTracesReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	cfg.(*Config).PerfCounters = []windowsapi.ObjectConfig{
+	cfg.(*Config).PerfCounters = []winperfcounters.ObjectConfig{
 		{
 			Object:   "object",
-			Counters: []windowsapi.CounterConfig{{Name: "counter", MetricRep: windowsapi.MetricRep{Name: "metric"}}},
+			Counters: []winperfcounters.CounterConfig{{Name: "counter", MetricRep: winperfcounters.MetricRep{Name: "metric"}}},
 		},
 	}
 
@@ -80,10 +80,10 @@ func TestCreateTracesReceiver(t *testing.T) {
 func TestCreateTracesReceiverNoMetrics(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	cfg.(*Config).PerfCounters = []windowsapi.ObjectConfig{
+	cfg.(*Config).PerfCounters = []winperfcounters.ObjectConfig{
 		{
 			Object:   "object",
-			Counters: []windowsapi.CounterConfig{{Name: "counter"}},
+			Counters: []winperfcounters.CounterConfig{{Name: "counter"}},
 		},
 	}
 	tReceiver, err := factory.CreateTracesReceiver(context.Background(), creationParams, cfg, consumertest.NewNop())
@@ -95,10 +95,10 @@ func TestCreateTracesReceiverNoMetrics(t *testing.T) {
 func TestCreateLogsReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	cfg.(*Config).PerfCounters = []windowsapi.ObjectConfig{
+	cfg.(*Config).PerfCounters = []winperfcounters.ObjectConfig{
 		{
 			Object:   "object",
-			Counters: []windowsapi.CounterConfig{{Name: "counter", MetricRep: windowsapi.MetricRep{Name: "metric"}}},
+			Counters: []winperfcounters.CounterConfig{{Name: "counter", MetricRep: winperfcounters.MetricRep{Name: "metric"}}},
 		},
 	}
 

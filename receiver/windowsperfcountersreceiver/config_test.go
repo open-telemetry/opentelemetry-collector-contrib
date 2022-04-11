@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.opentelemetry.io/collector/service/servicetest"
 
-	windowsapi "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
+	winperfcounters "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -46,13 +46,13 @@ func TestLoadConfig(t *testing.T) {
 	r0 := cfg.Receivers[config.NewComponentID(typeStr)]
 	defaultConfigSingleObject := factory.CreateDefaultConfig()
 
-	counterConfig := windowsapi.CounterConfig{
+	counterConfig := winperfcounters.CounterConfig{
 		Name: "counter1",
-		MetricRep: windowsapi.MetricRep{
+		MetricRep: winperfcounters.MetricRep{
 			Name: "metric",
 		},
 	}
-	defaultConfigSingleObject.(*Config).PerfCounters = []windowsapi.ObjectConfig{{Object: "object", Counters: []windowsapi.CounterConfig{counterConfig}}}
+	defaultConfigSingleObject.(*Config).PerfCounters = []winperfcounters.ObjectConfig{{Object: "object", Counters: []winperfcounters.CounterConfig{counterConfig}}}
 	defaultConfigSingleObject.(*Config).MetricMetaData = map[string]MetricConfig{
 		"metric": {
 			Description: "desc",
@@ -63,9 +63,9 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, defaultConfigSingleObject, r0)
 
-	counterConfig2 := windowsapi.CounterConfig{
+	counterConfig2 := winperfcounters.CounterConfig{
 		Name: "counter2",
-		MetricRep: windowsapi.MetricRep{
+		MetricRep: winperfcounters.MetricRep{
 
 			Name: "metric2",
 		},
@@ -77,14 +77,14 @@ func TestLoadConfig(t *testing.T) {
 			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "customname")),
 			CollectionInterval: 30 * time.Second,
 		},
-		PerfCounters: []windowsapi.ObjectConfig{
+		PerfCounters: []winperfcounters.ObjectConfig{
 			{
 				Object:   "object1",
-				Counters: []windowsapi.CounterConfig{counterConfig},
+				Counters: []winperfcounters.CounterConfig{counterConfig},
 			},
 			{
 				Object:   "object2",
-				Counters: []windowsapi.CounterConfig{counterConfig, counterConfig2},
+				Counters: []winperfcounters.CounterConfig{counterConfig, counterConfig2},
 			},
 		},
 		MetricMetaData: map[string]MetricConfig{
@@ -114,10 +114,10 @@ func TestLoadConfigMetrics(t *testing.T) {
 			TestName: "NoMetricsDefined",
 			TestPath: filepath.Join("testdata", "config-nometrics.yaml"),
 			Expected: Config{
-				PerfCounters: []windowsapi.ObjectConfig{
+				PerfCounters: []winperfcounters.ObjectConfig{
 					{
 						Object:   "object",
-						Counters: []windowsapi.CounterConfig{{Name: "counter1"}},
+						Counters: []winperfcounters.CounterConfig{{Name: "counter1"}},
 					},
 				},
 			},
@@ -126,10 +126,10 @@ func TestLoadConfigMetrics(t *testing.T) {
 			TestName: "NoMetricSpecified",
 			TestPath: filepath.Join("testdata", "config-nometricspecified.yaml"),
 			Expected: Config{
-				PerfCounters: []windowsapi.ObjectConfig{
+				PerfCounters: []winperfcounters.ObjectConfig{
 					{
 						Object:   "object",
-						Counters: []windowsapi.CounterConfig{{Name: "counter1"}},
+						Counters: []winperfcounters.CounterConfig{{Name: "counter1"}},
 					},
 				},
 				MetricMetaData: map[string]MetricConfig{
@@ -145,10 +145,10 @@ func TestLoadConfigMetrics(t *testing.T) {
 			TestName: "SumMetric",
 			TestPath: filepath.Join("testdata", "config-summetric.yaml"),
 			Expected: Config{
-				PerfCounters: []windowsapi.ObjectConfig{
+				PerfCounters: []winperfcounters.ObjectConfig{
 					{
 						Object:   "object",
-						Counters: []windowsapi.CounterConfig{{Name: "counter1", MetricRep: windowsapi.MetricRep{Name: "metric"}}},
+						Counters: []winperfcounters.CounterConfig{{Name: "counter1", MetricRep: winperfcounters.MetricRep{Name: "metric"}}},
 					},
 				},
 				MetricMetaData: map[string]MetricConfig{
@@ -167,10 +167,10 @@ func TestLoadConfigMetrics(t *testing.T) {
 			TestName: "MetricUnspecifiedType",
 			TestPath: filepath.Join("testdata", "config-unspecifiedmetrictype.yaml"),
 			Expected: Config{
-				PerfCounters: []windowsapi.ObjectConfig{
+				PerfCounters: []winperfcounters.ObjectConfig{
 					{
 						Object:   "object",
-						Counters: []windowsapi.CounterConfig{{Name: "counter1", MetricRep: windowsapi.MetricRep{Name: "metric"}}},
+						Counters: []winperfcounters.CounterConfig{{Name: "counter1", MetricRep: winperfcounters.MetricRep{Name: "metric"}}},
 					},
 				},
 				MetricMetaData: map[string]MetricConfig{

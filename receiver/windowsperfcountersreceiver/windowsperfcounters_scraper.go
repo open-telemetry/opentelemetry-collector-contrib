@@ -23,18 +23,19 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
-	windowsapi "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
 )
 
 const instanceLabelName = "instance"
 
 // scraper is the type that scrapes various host metrics.
 type scraper struct {
-	cfg             *Config
-	settings        component.TelemetrySettings
-	counterScrapers []windowsapi.PerfCounterWatcher
+	cfg      *Config
+	settings component.TelemetrySettings
+	watchers []winperfcounters.PerfCounterWatcher
 }
 
 func newScraper(cfg *Config, settings component.TelemetrySettings) *scraper {
@@ -42,21 +43,35 @@ func newScraper(cfg *Config, settings component.TelemetrySettings) *scraper {
 }
 
 func (s *scraper) start(context.Context, component.Host) error {
-	scrapercfg := []windowsapi.ObjectConfig{}
+	watcherCfgs := []winperfcounters.ObjectConfig{}
 	for _, perfCounter := range s.cfg.PerfCounters {
-		scrapercfg = append(scrapercfg, perfCounter)
+		watcherCfgs = append(watcherCfgs, perfCounter)
 	}
 
-	var err error
-	if s.counterScrapers, err = windowsapi.BuildPaths(scrapercfg); err != nil {
-		s.settings.Logger.Warn("some performance counters could not be initialized", zap.Error(err))
+	watchers := []winperfcounters.PerfCounterWatcher{}
+	for _, objCfg := range watcherCfgs {
+		objWatchers, err := objCfg.BuildPaths()
+		if err != nil {
+			s.settings.Logger.Warn("some performance counters could not be initialized", zap.Error(err))
+		}
+		for _, objWatcher := range objWatchers {
+			watchers = append(watchers, objWatcher)
+		}
 	}
+	s.watchers = watchers
 
 	return nil
 }
 
 func (s *scraper) shutdown(context.Context) error {
-	return windowsapi.CloseCounters(s.counterScrapers)
+	var errs error
+	for _, watcher := range s.watchers {
+		err := watcher.Close()
+		if err != nil {
+			errs = multierr.Append(errs, err)
+		}
+	}
+	return errs
 }
 
 func (s *scraper) scrape(context.Context) (pdata.Metrics, error) {
@@ -65,7 +80,7 @@ func (s *scraper) scrape(context.Context) (pdata.Metrics, error) {
 	now := pdata.NewTimestampFromTime(time.Now())
 	var errs error
 
-	metricSlice.EnsureCapacity(len(s.counterScrapers))
+	metricSlice.EnsureCapacity(len(s.watchers))
 	metrics := map[string]pdata.Metric{}
 	for name, metricCfg := range s.cfg.MetricMetaData {
 		builtMetric := metricSlice.AppendEmpty()
@@ -91,9 +106,17 @@ func (s *scraper) scrape(context.Context) (pdata.Metrics, error) {
 		metrics[name] = builtMetric
 	}
 
-	scrapedMetrics, errs := windowsapi.WatchCounters(s.counterScrapers)
+	counterVals := []winperfcounters.CounterValue{}
+	for _, watcher := range s.watchers {
+		counterValue, err := watcher.ScrapeData()
+		if err != nil {
+			errs = multierr.Append(errs, err)
+			continue
+		}
+		counterVals = append(counterVals, counterValue)
+	}
 
-	for _, scrapedValue := range scrapedMetrics {
+	for _, scrapedValue := range counterVals {
 		var metric pdata.Metric
 		metricRep := scrapedValue.MetricRep
 		if builtmetric, ok := metrics[metricRep.Name]; ok {

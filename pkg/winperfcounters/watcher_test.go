@@ -22,8 +22,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters/internal/third_party/telegraf/win_perf_counters"
+	"go.uber.org/multierr"
 )
 
 // Test_PathBuilder tests that paths are built correctly given a ObjectConfig
@@ -104,15 +103,24 @@ func Test_PathBuilder(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			watchers, err := BuildPaths(test.cfgs)
+			var errs error
+			allWatchers := []PerfCounterWatcher{}
+			for _, cfg := range test.cfgs {
+				watchers, err := cfg.BuildPaths()
+				if err != nil {
+					errs = multierr.Append(errs, err)
+					continue
+				}
+				allWatchers = append(allWatchers, watchers...)
+			}
 
 			if test.expectedErr != "" {
-				require.EqualError(t, err, test.expectedErr)
+				require.EqualError(t, errs, test.expectedErr)
 				return
 			}
 
 			actualPaths := []string{}
-			for _, watcher := range watchers {
+			for _, watcher := range allWatchers {
 				actualPaths = append(actualPaths, watcher.Path())
 			}
 
@@ -125,11 +133,11 @@ type mockPerfCounter struct {
 	path        string
 	watchErr    error
 	shutdownErr error
-	value       float64
+	value       int64
 	MetricRep
 }
 
-func newMockPerfCounter(path string, watchErr, shutdownErr error, value float64, metric MetricRep) *mockPerfCounter {
+func newMockPerfCounter(path string, watchErr, shutdownErr error, value int64, metric MetricRep) *mockPerfCounter {
 	return &mockPerfCounter{path: path, watchErr: watchErr, shutdownErr: shutdownErr, value: value, MetricRep: metric}
 }
 
@@ -139,8 +147,8 @@ func (mpc *mockPerfCounter) Path() string {
 }
 
 // ScrapeData
-func (mpc *mockPerfCounter) ScrapeData() ([]win_perf_counters.CounterValue, error) {
-	return []win_perf_counters.CounterValue{{Value: mpc.value}}, mpc.watchErr
+func (mpc *mockPerfCounter) ScrapeData() (CounterValue, error) {
+	return CounterValue{Value: mpc.value}, mpc.watchErr
 }
 
 // Close
@@ -221,15 +229,26 @@ func Test_Scraping(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			watchers, err := WatchCounters(test.watchers)
+			counterVals := []CounterValue{}
+			var errs error
+
+			for _, watcher := range test.watchers {
+				value, err := watcher.ScrapeData()
+				if err != nil {
+					errs = multierr.Append(errs, err)
+					continue
+				}
+
+				require.NoError(t, err)
+				counterVals = append(counterVals, value)
+			}
 
 			if test.expectedErr != "" {
-				require.EqualError(t, err, test.expectedErr)
+				require.EqualError(t, errs, test.expectedErr)
 				return
 			}
-			require.NoError(t, err)
 
-			require.Equal(t, test.expectedWatched, watchers)
+			require.Equal(t, test.expectedWatched, counterVals)
 		})
 	}
 }
@@ -265,13 +284,17 @@ func Test_Closing(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			err := CloseCounters(test.watchers)
+			var errs error
+
+			for _, watcher := range test.watchers {
+				errs = multierr.Append(errs, watcher.Close())
+			}
 
 			if test.expectedErr != "" {
-				require.EqualError(t, err, test.expectedErr)
+				require.EqualError(t, errs, test.expectedErr)
 				return
 			}
-			require.NoError(t, err)
+			require.NoError(t, errs)
 		})
 	}
 }
