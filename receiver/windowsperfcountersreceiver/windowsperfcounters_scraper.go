@@ -165,15 +165,6 @@ func (s *scraper) scrape(context.Context) (pdata.Metrics, error) {
 	return md, errs
 }
 
-func initializeNumberDataPointAsDouble(dataPoint pdata.NumberDataPoint, now pdata.Timestamp, instanceLabel string, value float64) {
-	if instanceLabel != "" {
-		dataPoint.Attributes().InsertString(instanceLabelName, instanceLabel)
-	}
-
-	dataPoint.SetTimestamp(now)
-	dataPoint.SetDoubleVal(value)
-}
-
 func initializeMetricDps(metric pdata.Metric, now pdata.Timestamp, counterValues []win_perf_counters.CounterValue, attributes map[string]string) {
 	var dps pdata.NumberDataPointSlice
 
@@ -197,6 +188,6 @@ func initializeMetricDps(metric pdata.Metric, now pdata.Timestamp, counterValues
 		}
 
 		dp.SetTimestamp(now)
-		dp.SetIntVal(int64(counterValue.Value))
+		dp.SetDoubleVal(counterValue.Value)
 	}
 }
