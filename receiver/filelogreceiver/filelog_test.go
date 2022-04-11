@@ -226,7 +226,7 @@ func consumeNLogsFromConverter(ch <-chan pdata.Logs, count int, wg *sync.WaitGro
 
 	n := 0
 	for pLog := range ch {
-		n += pLog.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).LogRecords().Len()
+		n += pLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len()
 
 		if n == count {
 			return
@@ -275,11 +275,11 @@ func testdataConfigYamlAsMap() *FileLogConfig {
 					"type":  "regex_parser",
 					"regex": "^(?P<time>\\d{4}-\\d{2}-\\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$",
 					"severity": map[string]interface{}{
-						"parse_from": "sev",
+						"parse_from": "body.sev",
 					},
 					"timestamp": map[string]interface{}{
 						"layout":     "%Y-%m-%d",
-						"parse_from": "time",
+						"parse_from": "body.time",
 					},
 				},
 			},
@@ -307,7 +307,7 @@ func testdataRotateTestYamlAsMap(tempDir string) *FileLogConfig {
 					"regex": "^(?P<ts>\\d{4}-\\d{2}-\\d{2}) (?P<msg>[^\n]+)",
 					"timestamp": map[interface{}]interface{}{
 						"layout":     "%Y-%m-%d",
-						"parse_from": "ts",
+						"parse_from": "body.ts",
 					},
 				},
 			},

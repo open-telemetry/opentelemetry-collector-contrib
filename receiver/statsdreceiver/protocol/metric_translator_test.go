@@ -38,7 +38,7 @@ func TestBuildCounterMetric(t *testing.T) {
 	}
 	isMonotonicCounter := false
 	metric := buildCounterMetric(parsedMetric, isMonotonicCounter, timeNow, lastUpdateInterval)
-	expectedMetrics := pdata.NewInstrumentationLibraryMetrics()
+	expectedMetrics := pdata.NewScopeMetrics()
 	expectedMetric := expectedMetrics.Metrics().AppendEmpty()
 	expectedMetric.SetName("testCounter")
 	expectedMetric.SetUnit("meter")
@@ -68,7 +68,7 @@ func TestBuildGaugeMetric(t *testing.T) {
 		unit:        "meter",
 	}
 	metric := buildGaugeMetric(parsedMetric, timeNow)
-	expectedMetrics := pdata.NewInstrumentationLibraryMetrics()
+	expectedMetrics := pdata.NewScopeMetrics()
 	expectedMetric := expectedMetrics.Metrics().AppendEmpty()
 	expectedMetric.SetName("testGauge")
 	expectedMetric.SetUnit("meter")
@@ -100,10 +100,10 @@ func TestBuildSummaryMetricUnsampled(t *testing.T) {
 		attrs:      attrs,
 	}
 
-	metric := pdata.NewInstrumentationLibraryMetrics()
+	metric := pdata.NewScopeMetrics()
 	buildSummaryMetric(desc, unsampledMetric, timeNow.Add(-time.Minute), timeNow, statsDDefaultPercentiles, metric)
 
-	expectedMetric := pdata.NewInstrumentationLibraryMetrics()
+	expectedMetric := pdata.NewScopeMetrics()
 	m := expectedMetric.Metrics().AppendEmpty()
 	m.SetName("testSummary")
 	m.SetDataType(pdata.MetricDataTypeSummary)
@@ -181,10 +181,10 @@ func TestBuildSummaryMetricSampled(t *testing.T) {
 			attrs:      attrs,
 		}
 
-		metric := pdata.NewInstrumentationLibraryMetrics()
+		metric := pdata.NewScopeMetrics()
 		buildSummaryMetric(desc, sampledMetric, timeNow.Add(-time.Minute), timeNow, test.percentiles, metric)
 
-		expectedMetric := pdata.NewInstrumentationLibraryMetrics()
+		expectedMetric := pdata.NewScopeMetrics()
 		m := expectedMetric.Metrics().AppendEmpty()
 		m.SetName("testSummary")
 		m.SetDataType(pdata.MetricDataTypeSummary)

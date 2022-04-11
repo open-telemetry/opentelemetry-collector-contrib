@@ -32,14 +32,14 @@ const (
 func splunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCustomizer func(pdata.Resource), config *Config) (pdata.Logs, error) {
 	ld := pdata.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
-	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
+	sl := rl.ScopeLogs().AppendEmpty()
 	for _, event := range events {
 		attrValue, err := convertInterfaceToAttributeValue(logger, event.Event)
 		if err != nil {
 			logger.Debug("Unsupported value conversion", zap.Any("value", event.Event))
 			return ld, errors.New(cannotConvertValue)
 		}
-		logRecord := ill.LogRecords().AppendEmpty()
+		logRecord := sl.LogRecords().AppendEmpty()
 		// The SourceType field is the most logical "name" of the event.
 		attrValue.CopyTo(logRecord.Body())
 

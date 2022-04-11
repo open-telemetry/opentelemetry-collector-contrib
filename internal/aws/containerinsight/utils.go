@@ -182,7 +182,7 @@ func ConvertToOTLPMetrics(fields map[string]interface{}, tags map[string]string,
 		resource.Attributes().UpsertString(tagKey, tagValue)
 	}
 
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 
 	metricType := tags[MetricType]
 	for key, value := range fields {
@@ -214,7 +214,7 @@ func ConvertToOTLPMetrics(fields map[string]interface{}, tags map[string]string,
 	return md
 }
 
-func intGauge(ilm pdata.InstrumentationLibraryMetrics, metricName string, unit string, value int64, ts pdata.Timestamp) {
+func intGauge(ilm pdata.ScopeMetrics, metricName string, unit string, value int64, ts pdata.Timestamp) {
 	metric := initMetric(ilm, metricName, unit)
 
 	metric.SetDataType(pdata.MetricDataTypeGauge)
@@ -226,7 +226,7 @@ func intGauge(ilm pdata.InstrumentationLibraryMetrics, metricName string, unit s
 	dataPoint.SetTimestamp(ts)
 }
 
-func doubleGauge(ilm pdata.InstrumentationLibraryMetrics, metricName string, unit string, value float64, ts pdata.Timestamp) {
+func doubleGauge(ilm pdata.ScopeMetrics, metricName string, unit string, value float64, ts pdata.Timestamp) {
 	metric := initMetric(ilm, metricName, unit)
 
 	metric.SetDataType(pdata.MetricDataTypeGauge)
@@ -238,7 +238,7 @@ func doubleGauge(ilm pdata.InstrumentationLibraryMetrics, metricName string, uni
 	dataPoint.SetTimestamp(ts)
 }
 
-func initMetric(ilm pdata.InstrumentationLibraryMetrics, name, unit string) pdata.Metric {
+func initMetric(ilm pdata.ScopeMetrics, name, unit string) pdata.Metric {
 	metric := ilm.Metrics().AppendEmpty()
 	metric.SetName(name)
 	metric.SetUnit(unit)

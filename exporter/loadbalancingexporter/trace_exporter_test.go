@@ -28,7 +28,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenthelper"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
@@ -337,7 +336,7 @@ func TestNoTracesInBatch(t *testing.T) {
 			"no spans",
 			func() pdata.Traces {
 				batch := pdata.NewTraces()
-				batch.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty()
+				batch.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
 				return batch
 			}(),
 		},
@@ -493,7 +492,7 @@ func simpleTraces() pdata.Traces {
 
 func simpleTraceWithID(id pdata.TraceID) pdata.Traces {
 	traces := pdata.NewTraces()
-	traces.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(id)
+	traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(id)
 	return traces
 }
 
@@ -513,14 +512,14 @@ type mockTracesExporter struct {
 
 func newMockTracesExporter(consumeTracesFn func(ctx context.Context, td pdata.Traces) error) component.TracesExporter {
 	return &mockTracesExporter{
-		Component:       componenthelper.New(),
+		Component:       mockComponent{},
 		ConsumeTracesFn: consumeTracesFn,
 	}
 }
 
 func newNopMockTracesExporter() component.TracesExporter {
 	return &mockTracesExporter{
-		Component: componenthelper.New(),
+		Component: mockComponent{},
 		ConsumeTracesFn: func(ctx context.Context, td pdata.Traces) error {
 			return nil
 		},

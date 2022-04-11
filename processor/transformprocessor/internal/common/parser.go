@@ -17,6 +17,7 @@ package common // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
+	"go.uber.org/multierr"
 )
 
 // ParsedQuery represents a parsed query. It is the entry point into the query DSL.
@@ -65,9 +66,48 @@ type Field struct {
 	MapKey *string `( "[" @String "]" )?`
 }
 
+// Query holds a top level Query for processing telemetry data. A Query is a combination of a function
+// invocation and the condition to match telemetry for invoking the function.
+type Query struct {
+	Function  ExprFunc
+	Condition condFunc
+}
+
+func ParseQueries(statements []string, functions map[string]interface{}, pathParser PathExpressionParser) ([]Query, error) {
+	queries := make([]Query, 0)
+	var errors error
+
+	for _, statement := range statements {
+		parsed, err := parseQuery(statement)
+		if err != nil {
+			errors = multierr.Append(errors, err)
+			continue
+		}
+		function, err := NewFunctionCall(parsed.Invocation, functions, pathParser)
+		if err != nil {
+			errors = multierr.Append(errors, err)
+			continue
+		}
+		condition, err := newConditionEvaluator(parsed.Condition, functions, pathParser)
+		if err != nil {
+			errors = multierr.Append(errors, err)
+			continue
+		}
+		queries = append(queries, Query{
+			Function:  function,
+			Condition: condition,
+		})
+	}
+
+	if errors != nil {
+		return nil, errors
+	}
+	return queries, nil
+}
+
 var parser = newParser()
 
-func Parse(raw string) (*ParsedQuery, error) {
+func parseQuery(raw string) (*ParsedQuery, error) {
 	parsed := &ParsedQuery{}
 	err := parser.ParseString("", raw, parsed)
 	if err != nil {

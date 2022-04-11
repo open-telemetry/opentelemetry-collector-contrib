@@ -41,8 +41,8 @@ var metricsLength = func() int {
 
 // scraper for Processes Metrics
 type scraper struct {
-	config    *Config
-	startTime pdata.Timestamp
+	config *Config
+	mb     *metadata.MetricsBuilder
 
 	// for mocking gopsutil
 	getMiscStats func() (*load.MiscStat, error)
@@ -80,8 +80,8 @@ func (s *scraper) start(context.Context, component.Host) error {
 	if err != nil {
 		return err
 	}
-	// bootTime is seconds since 1970, timestamps are in nanoseconds.
-	s.startTime = pdata.Timestamp(bootTime * 1e9)
+
+	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, metadata.WithStartTime(pdata.Timestamp(bootTime*1e9)))
 	return nil
 }
 
@@ -89,45 +89,23 @@ func (s *scraper) scrape(_ context.Context) (pdata.Metrics, error) {
 	now := pdata.NewTimestampFromTime(time.Now())
 
 	md := pdata.NewMetrics()
-	metrics := md.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics()
+	metrics := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
 	metrics.EnsureCapacity(metricsLength)
 
 	processMetadata, err := s.getProcessesMetadata()
 	if err != nil {
-		return md, scrapererror.NewPartialScrapeError(err, metricsLength)
+		return pdata.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLength)
 	}
 
 	if enableProcessesCount && processMetadata.countByStatus != nil {
-		setProcessesCountMetric(metrics.AppendEmpty(), s.startTime, now, processMetadata.countByStatus)
+		for status, count := range processMetadata.countByStatus {
+			s.mb.RecordSystemProcessesCountDataPoint(now, count, status)
+		}
 	}
 
 	if enableProcessesCreated && processMetadata.processesCreated != nil {
-		setProcessesCreatedMetric(metrics.AppendEmpty(), s.startTime, now, *processMetadata.processesCreated)
+		s.mb.RecordSystemProcessesCreatedDataPoint(now, *processMetadata.processesCreated)
 	}
 
-	return md, err
-}
-
-func setProcessesCountMetric(metric pdata.Metric, startTime, now pdata.Timestamp, countByStatus map[string]int64) {
-	metadata.Metrics.SystemProcessesCount.Init(metric)
-	ddps := metric.Sum().DataPoints()
-
-	for status, count := range countByStatus {
-		setProcessesCountDataPoint(ddps.AppendEmpty(), startTime, now, status, count)
-	}
-}
-
-func setProcessesCountDataPoint(dataPoint pdata.NumberDataPoint, startTime, now pdata.Timestamp, statusLabel string, value int64) {
-	dataPoint.Attributes().InsertString(metadata.Attributes.Status, statusLabel)
-	dataPoint.SetStartTimestamp(startTime)
-	dataPoint.SetTimestamp(now)
-	dataPoint.SetIntVal(value)
-}
-
-func setProcessesCreatedMetric(metric pdata.Metric, startTime, now pdata.Timestamp, value int64) {
-	metadata.Metrics.SystemProcessesCreated.Init(metric)
-	ddp := metric.Sum().DataPoints().AppendEmpty()
-	ddp.SetStartTimestamp(startTime)
-	ddp.SetTimestamp(now)
-	ddp.SetIntVal(value)
+	return s.mb.Emit(), err
 }

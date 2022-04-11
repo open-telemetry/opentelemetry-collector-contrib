@@ -19,6 +19,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.uber.org/zap"
 )
@@ -160,18 +161,6 @@ func TestInvalidHostname(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestCensorAPIKey(t *testing.T) {
-	cfg := APIConfig{
-		Key: "ddog_32_characters_long_api_key1",
-	}
-
-	assert.Equal(
-		t,
-		"***************************_key1",
-		cfg.GetCensoredKey(),
-	)
-}
-
 func TestIgnoreResourcesValidation(t *testing.T) {
 	validCfg := Config{Traces: TracesConfig{IgnoreResources: []string{"[123]"}}}
 	invalidCfg := Config{Traces: TracesConfig{IgnoreResources: []string{"[123"}}}
@@ -189,4 +178,18 @@ func TestSpanNameRemappingsValidation(t *testing.T) {
 	err := invalidCfg.Validate()
 	require.NoError(t, noErr)
 	require.Error(t, err)
+}
+
+func TestInvalidSumMode(t *testing.T) {
+	cfgMap := config.NewMapFromStringMap(map[string]interface{}{
+		"metrics": map[string]interface{}{
+			"sums": map[string]interface{}{
+				"cumulative_monotonic_mode": "invalid_mode",
+			},
+		},
+	})
+
+	cfg := futureDefaultConfig()
+	err := cfg.Unmarshal(cfgMap)
+	assert.EqualError(t, err, "1 error(s) decoding:\n\n* error decoding 'metrics.sums.cumulative_monotonic_mode': invalid cumulative monotonic sum mode \"invalid_mode\"")
 }

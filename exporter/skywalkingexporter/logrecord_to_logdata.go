@@ -39,7 +39,7 @@ func logRecordToLogData(ld pdata.Logs) []*logpb.LogData {
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		rl := rls.At(i)
-		ills := rl.InstrumentationLibraryLogs()
+		ills := rl.ScopeLogs()
 		resource := rl.Resource()
 		for j := 0; j < ills.Len(); j++ {
 			ils := ills.At(j)
@@ -48,7 +48,7 @@ func logRecordToLogData(ld pdata.Logs) []*logpb.LogData {
 				logData := &logpb.LogData{}
 				logData.Tags = &logpb.LogTags{}
 				resourceToLogData(resource, logData)
-				instrumentationLibraryToLogData(ils.InstrumentationLibrary(), logData)
+				instrumentationLibraryToLogData(ils.Scope(), logData)
 				mapLogRecordToLogData(logs.At(k), logData)
 				lds = append(lds, logData)
 			}
@@ -79,7 +79,7 @@ func resourceToLogData(resource pdata.Resource, logData *logpb.LogData) {
 	})
 }
 
-func instrumentationLibraryToLogData(instrumentationLibrary pdata.InstrumentationLibrary, logData *logpb.LogData) {
+func instrumentationLibraryToLogData(instrumentationLibrary pdata.InstrumentationScope, logData *logpb.LogData) {
 	if nameValue := instrumentationLibrary.Name(); nameValue != "" {
 		logData.Tags.Data = append(logData.Tags.Data, &common.KeyStringValuePair{
 			Key:   instrumentationName,

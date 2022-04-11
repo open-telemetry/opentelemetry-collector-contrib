@@ -86,8 +86,8 @@ func CompareMetrics(expected, actual pdata.Metrics, options ...CompareOption) er
 }
 
 func CompareResourceMetrics(expected, actual pdata.ResourceMetrics) error {
-	eilms := expected.InstrumentationLibraryMetrics()
-	ailms := actual.InstrumentationLibraryMetrics()
+	eilms := expected.ScopeMetrics()
+	ailms := actual.ScopeMetrics()
 
 	if eilms.Len() != ailms.Len() {
 		return fmt.Errorf("number of instrumentation libraries does not match")
@@ -98,7 +98,7 @@ func CompareResourceMetrics(expected, actual pdata.ResourceMetrics) error {
 
 	for i := 0; i < eilms.Len(); i++ {
 		eilm, ailm := eilms.At(i), ailms.At(i)
-		eil, ail := eilm.InstrumentationLibrary(), ailm.InstrumentationLibrary()
+		eil, ail := eilm.Scope(), ailm.Scope()
 
 		if eil.Name() != ail.Name() {
 			return fmt.Errorf("instrumentation library Name does not match expected: %s, actual: %s", eil.Name(), ail.Name())

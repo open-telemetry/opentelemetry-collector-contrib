@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/cenkalti/backoff/v4 v4.1.2
-	github.com/docker/docker v20.10.13+incompatible
+	github.com/docker/docker v20.10.14+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/stretchr/testify v1.7.1
 )
@@ -30,7 +30,7 @@ require (
 	golang.org/x/time v0.0.0-20220210224613-90d013bbcef8 // indirect
 	google.golang.org/genproto v0.0.0-20201110150050-8816d57aaa9a // indirect
 	google.golang.org/grpc v1.45.0 // indirect
-	google.golang.org/protobuf v1.27.1 // indirect
+	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c // indirect
 	gotest.tools/v3 v3.1.0 // indirect
 )

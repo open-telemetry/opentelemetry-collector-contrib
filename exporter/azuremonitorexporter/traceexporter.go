@@ -39,7 +39,7 @@ type traceVisitor struct {
 // Called for each tuple of Resource, InstrumentationLibrary, and Span
 func (v *traceVisitor) visit(
 	resource pdata.Resource,
-	instrumentationLibrary pdata.InstrumentationLibrary, span pdata.Span) (ok bool) {
+	instrumentationLibrary pdata.InstrumentationScope, span pdata.Span) (ok bool) {
 
 	envelope, err := spanToEnvelope(resource, instrumentationLibrary, span, v.exporter.logger)
 	if err != nil {

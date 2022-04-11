@@ -61,7 +61,7 @@ func convertToMetricsAttributes(md pdata.Metrics) pdata.Metrics {
 	for i := 0; i < rms.Len(); i++ {
 		resource := rms.At(i).Resource()
 
-		ilms := rms.At(i).InstrumentationLibraryMetrics()
+		ilms := rms.At(i).ScopeMetrics()
 		for j := 0; j < ilms.Len(); j++ {
 			ilm := ilms.At(j)
 			metricSlice := ilm.Metrics()
