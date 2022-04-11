@@ -155,7 +155,7 @@ func (c *FromPdataConverter) Batch(pLogs pdata.Logs) error {
 	return nil
 }
 
-// convert converts one entry.Entry into pdata.LogRecord allocating it.
+// convertFromLogs converts the contents of a fromConverterWorkerItem into a slice of entry.Entry
 func convertFromLogs(workerItem fromConverterWorkerItem) []*entry.Entry {
 	result := make([]*entry.Entry, 0, workerItem.LogRecordSlice.Len())
 	for i := 0; i < workerItem.LogRecordSlice.Len(); i++ {
@@ -169,7 +169,7 @@ func convertFromLogs(workerItem fromConverterWorkerItem) []*entry.Entry {
 	return result
 }
 
-// Convert converts one entry.Entry into pdata.Logs.
+// ConvertFrom converts pdata.Logs into a slice of entry.Entry
 // To be used in a stateless setting like tests where ease of use is more
 // important than performance or throughput.
 func ConvertFrom(pLogs pdata.Logs) []*entry.Entry {
