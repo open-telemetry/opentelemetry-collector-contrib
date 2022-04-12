@@ -334,6 +334,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.48.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver v0.48.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influxdbreceiver v0.48.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver v0.48.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver v0.48.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver v0.48.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver v0.48.0 // indirect
