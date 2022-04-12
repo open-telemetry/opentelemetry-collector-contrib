@@ -15,8 +15,8 @@
 - `podmanreceiver`: Add API timeout configuration option (#9014)
 - `cmd/mdatagen`: Add `sem_conv_version` field to metadata.yaml that is used to set metrics SchemaURL (#9010)
 - `splunkheceporter`: Add an option to disable log or profiling data (#9065)
+- `windowsperfcountersreceiver`: Move code into separate package for use in other windowsperfcounter receivers (#9108) 
 - `datadogexporter`: Add `host_metadata` configuration section to configure host metadata export (#9100)
-
 - `cmd/mdatagen`: Update documentation generated for attributes to list enumerated values and show the "value" that will be visible on metrics when it is different from the attribute key in metadata.yaml (#8983)
 
 ### 🛑 Breaking changes 🛑

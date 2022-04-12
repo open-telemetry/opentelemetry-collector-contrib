@@ -15,9 +15,9 @@
 //go:build windows
 // +build windows
 
-package windowsperfcountersreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver"
+package winperfcounters // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
 
-func (pc *PerfCounterConfig) instances() []string {
+func (pc *ObjectConfig) instances() []string {
 	if len(pc.Instances) == 0 {
 		return []string{""}
 	}
