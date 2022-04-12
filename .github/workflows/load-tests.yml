@@ -108,7 +108,7 @@ jobs:
           key: v1-go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
       - run: mkdir -p results && touch results/TESTRESULTS.md
       - name: Download Collector Binaries
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: collector-binaries
           path: bin/
