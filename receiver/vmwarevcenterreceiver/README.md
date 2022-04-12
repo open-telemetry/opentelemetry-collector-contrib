@@ -51,8 +51,8 @@ receivers:
     metrics:
         endpoint: http://localhost:15672
         username: otelu
-        password: $RABBITMQ_PASSWORD
-        collection_interval: 10s
+        password: $VCENTER_PASSWORD
+        collection_interval: 5m
         metrics: []
 ```
 
