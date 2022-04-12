@@ -38,16 +38,32 @@ exporters:
     # version: myversion
 
     ## @param tags - list of strings - optional - default: []
-    ## The list of default tags to add to every metric or trace.
+    ## The list of tags to send as host tags.
+    ## Deprecated: [v0.49.0] Use `host_metadata::tags` instead.
+    ## This option will be removed in v0.52.0.
     ## If unset it will be determined from the `DD_TAGS` environment variable, specified
     ## as a list of space-separated strings (Deprecated: [v0.47.0] use 'env' config source instead).
     #
     # tags: []
 
+    ## @params send_metadata - boolean - optional - default: true
+    ## Deprecated: [v0.49.0] Use `host_metadata::enabled` instead.
+    ## This option will be removed in v0.52.0.
+    #
+    # send_metadata: true
+
+    ## @params use_resource_metadata - boolean - optional - default: true
+    ## Deprecated: [v0.49.0] Use `host_metadata::hostname_source` instead.
+    ## This option will be removed in v0.52.0.
+    # 
+    # use_resource_metadata: true
+
     ## @param only_metadata - boolean - optional - default: false
     ## Whether to send only metadata. This is useful for agent-collector
     ## setups, so that metadata about a host is sent to the backend even
     ## when telemetry data is reported via a different host.
+    #
+    # only_metadata: false
 
     ## @param api - custom object - required.
     ## Specific API configuration.
@@ -177,6 +193,40 @@ exporters:
       ## https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/1909
       #
       # span_name_as_resource_name: true
+    
+    ## @param host_metadata - custom object - optional
+    ## Host metadata specific configuration.
+    ## Host metadata is the information used for populating the infrastructure list, the host map and providing host tags functionality within the Datadog app.
+    ##
+    ## The exporter will only send host metadata for a single host, whose name is chosen
+    ## according to `host_metadata::hostname_source`.
+    #
+    # host_metadata:
+      ## @param enabled - boolean - optional - default: true
+      ## Enable the host metadata functionality
+      #
+      # enabled: true
+
+      ## @param hostname_source - enum - optional - default: first_resource
+      ## Source for the hostname of host metadata.
+      ## Valid values are 'first_resource' and 'config_or_system':
+      ## - 'first_resource' picks the host metadata hostname from the resource attributes on the first OTLP payload that gets to the exporter.
+      ##    If the first payload lacks hostname-like attributes, it will fallback to 'config_or_system' behavior.
+      ##    Do not use this hostname source if receiving data from multiple hosts.
+      ##
+      ## - 'config_or_system' picks the host metadata hostname from the 'hostname' setting, falling back to system and cloud provider APIs.
+      ##
+      ##  The current default is 'first_resource'.
+      #
+      # hostname_source: first_resource
+
+      ## @param tags - list of strings - optional - default: empty list
+      ## List of host tags to be sent as part of the host metadata.
+      ## These tags will be attached to telemetry signals that have the host metadata hostname.
+      ## 
+      ## To attach tags to telemetry signals regardless of the host, use a processor instead.
+      #
+      # tags: []
 
 
 service:

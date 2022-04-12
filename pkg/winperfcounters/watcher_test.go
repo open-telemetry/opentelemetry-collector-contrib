@@ -133,11 +133,11 @@ type mockPerfCounter struct {
 	path        string
 	watchErr    error
 	shutdownErr error
-	value       int64
+	value       float64
 	MetricRep
 }
 
-func newMockPerfCounter(path string, watchErr, shutdownErr error, value int64, metric MetricRep) *mockPerfCounter {
+func newMockPerfCounter(path string, watchErr, shutdownErr error, value float64, metric MetricRep) *mockPerfCounter {
 	return &mockPerfCounter{path: path, watchErr: watchErr, shutdownErr: shutdownErr, value: value, MetricRep: metric}
 }
 

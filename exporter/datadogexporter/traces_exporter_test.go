@@ -188,8 +188,11 @@ func TestPushTraceData(t *testing.T) {
 			SampleRate: 1,
 			TCPAddr:    confignet.TCPAddr{Endpoint: server.URL},
 		},
-		SendMetadata:        true,
-		UseResourceMetadata: true,
+
+		HostMetadata: config.HostMetadataConfig{
+			Enabled:        true,
+			HostnameSource: config.HostnameSourceFirstResource,
+		},
 	}
 
 	params := componenttest.NewNopExporterCreateSettings()

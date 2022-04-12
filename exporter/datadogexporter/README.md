@@ -69,8 +69,8 @@ exporters:
   datadog/api:
     hostname: customhostname
 
-    tags:
-      - example:tag
+    host_metadata:
+      tags: [example:tag]
 
     api:
       key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa

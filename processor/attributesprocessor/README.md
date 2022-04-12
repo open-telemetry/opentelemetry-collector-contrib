@@ -166,13 +166,13 @@ if the input data should be included or excluded from the processor. To configur
 this option, under `include` and/or `exclude` at least `match_type` and one of the following
 is required:
 - For spans, one of `services`, `span_names`, `attributes`, `resources`, or `libraries` must be specified
-with a non-empty value for a valid configuration. The `log_names`, `log_bodies`, `expressions`, `resource_attributes` and
+with a non-empty value for a valid configuration. The `log_bodies`, `expressions`, `resource_attributes` and
 `metric_names` fields are invalid.
-- For logs, one of `log_names`, `log_bodies`, `attributes`, `resources`, or `libraries` must be specified with a
+- For logs, one of `log_bodies`, `attributes`, `resources`, or `libraries` must be specified with a
 non-empty value for a valid configuration. The `span_names`, `metric_names`, `expressions`, `resource_attributes`,
 and `services` fields are invalid.
 - For metrics, one of `metric_names`, `resources` must be specified
-with a valid non-empty value for a valid configuration. The `span_names`, `log_names`, `log_bodies` and
+with a valid non-empty value for a valid configuration. The `span_names`, `log_bodies` and
 `services` fields are invalid.
 
 
@@ -213,10 +213,6 @@ attributes:
       # The span name must match at least one of the items.
       # This is an optional field.
       span_names: [<item1>, ..., <itemN>]
-
-      # The log name must match at least one of the items.
-      # This is an optional field.
-      log_names: [<item1>, ..., <itemN>]
 
       # The log body must match at least one of the items.
       # Currently only string body types are supported.

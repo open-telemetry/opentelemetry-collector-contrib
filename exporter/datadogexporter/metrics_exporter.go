@@ -161,7 +161,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metric
 
 	// Start host metadata with resource attributes from
 	// the first payload.
-	if exp.cfg.SendMetadata {
+	if exp.cfg.HostMetadata.Enabled {
 		exp.onceMetadata.Do(func() {
 			attrs := pdata.NewMap()
 			if md.ResourceMetrics().Len() > 0 {

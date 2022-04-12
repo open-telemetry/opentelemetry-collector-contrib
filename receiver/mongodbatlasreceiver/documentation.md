@@ -97,27 +97,27 @@ metrics:
 
 ## Metric attributes
 
-| Name | Description |
-| ---- | ----------- |
-| assert_type | MongoDB assertion type |
-| btree_counter_type | Database index effectiveness |
-| cache_direction | Whether read into or written from |
-| cache_status | Cache status |
-| cluster_role | Whether process is acting as replica or primary |
-| cpu_state | CPU state |
-| cursor_state | Whether cursor is open or timed out |
-| direction | Network traffic direction |
-| disk_direction | Measurement type for disk operation |
-| disk_status | Disk measurement type |
-| document_status | Status of documents in the database |
-| execution_type | Type of command |
-| global_lock_state | Which queue is locked |
-| memory_issue_type | Type of memory issue encountered |
-| memory_state | Memory usage type |
-| memory_status | Memory measurement type |
-| object_type | MongoDB object type |
-| operation | Type of database operation |
-| oplog_type | Oplog type |
-| scanned_type | Objects or indexes scanned during query |
-| storage_status | Views on database size |
-| ticket_type | Type of ticket available |
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| assert_type | MongoDB assertion type | regular, warning, msg, user |
+| btree_counter_type | Database index effectiveness | accesses, hits, misses |
+| cache_direction | Whether read into or written from | read_into, written_from |
+| cache_status | Cache status | dirty, used |
+| cluster_role | Whether process is acting as replica or primary | primary, replica |
+| cpu_state | CPU state | kernel, user, nice, iowait, irq, softirq, guest, steal |
+| cursor_state | Whether cursor is open or timed out | timed_out, open |
+| direction | Network traffic direction | receive, transmit |
+| disk_direction | Measurement type for disk operation | read, write, total |
+| disk_status | Disk measurement type | free, used |
+| document_status | Status of documents in the database | returned, inserted, updated, deleted |
+| execution_type | Type of command | reads, writes, commands |
+| global_lock_state | Which queue is locked | current_queue_total, current_queue_readers, current_queue_writers |
+| memory_issue_type | Type of memory issue encountered | extra_info, global_accesses_not_in_memory, exceptions_thrown |
+| memory_state | Memory usage type | resident, virtual, mapped, computed, shared, free, used |
+| memory_status | Memory measurement type | available, buffers, cached, free, shared, used |
+| object_type | MongoDB object type | collection, index, extent, object, view, storage, data |
+| operation | Type of database operation | cmd, query, update, delete, getmore, insert, scan_and_order |
+| oplog_type | Oplog type | slave_lag_master_time, master_time, master_lag_time_diff |
+| scanned_type | Objects or indexes scanned during query | index_items, objects |
+| storage_status | Views on database size | total, data_size, index_size, data_size_wo_system |
+| ticket_type | Type of ticket available | available_reads, available_writes |
