@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
@@ -36,6 +37,7 @@ type Tracker struct {
 	cfg          *Config
 	params       component.ExporterCreateSettings
 	traceTracker *tracetracker.ActiveServiceTracker
+	pTicker      timeutils.TTicker
 	correlation  *correlationContext
 	accessToken  string
 }
@@ -118,6 +120,9 @@ func (cor *Tracker) AddSpans(ctx context.Context, traces pdata.Traces) error {
 			nil,
 			cor.cfg.SyncAttributes)
 
+		cor.pTicker = &timeutils.PolicyTicker{OnTickFunc: cor.traceTracker.Purge}
+		cor.pTicker.Start(cor.cfg.StaleServiceTimeout)
+
 		cor.correlation.Start()
 	})
 
@@ -140,8 +145,14 @@ func (cor *Tracker) Start(_ context.Context, host component.Host) (err error) {
 
 // Shutdown correlation tracking.
 func (cor *Tracker) Shutdown(_ context.Context) error {
-	if cor != nil && cor.correlation != nil {
-		cor.correlation.cancel()
+	if cor != nil {
+		if cor.correlation != nil {
+			cor.correlation.cancel()
+		}
+
+		if cor.pTicker != nil {
+			cor.pTicker.Stop()
+		}
 	}
 	return nil
 }
