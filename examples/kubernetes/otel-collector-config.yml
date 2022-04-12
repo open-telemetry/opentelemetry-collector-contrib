@@ -25,7 +25,7 @@ receivers:
         regex: '^(?P<time>[^ Z]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) (?P<log>.*)$'
         output: extract_metadata_from_filepath
         timestamp:
-          parse_from: body.time
+          parse_from: attributes.time
           layout_type: gotime
           layout: '2006-01-02T15:04:05.000000000-07:00'
       # Parse CRI-Containerd format
@@ -34,42 +34,42 @@ receivers:
         regex: '^(?P<time>[^ ^Z]+Z) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) (?P<log>.*)$'
         output: extract_metadata_from_filepath
         timestamp:
-          parse_from: body.time
+          parse_from: attributes.time
           layout: '%Y-%m-%dT%H:%M:%S.%LZ'
       # Parse Docker format
       - type: json_parser
         id: parser-docker
         output: extract_metadata_from_filepath
         timestamp:
-          parse_from: body.time
+          parse_from: attributes.time
           layout: '%Y-%m-%dT%H:%M:%S.%LZ'
+      - type: move
+        from: attributes.log
+        to: body
       # Extract metadata from file path
       - type: regex_parser
         id: extract_metadata_from_filepath
         regex: '^.*\/(?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<uid>[a-f0-9\-]{36})\/(?P<container_name>[^\._]+)\/(?P<restart_count>\d+)\.log$'
-        parse_from: attributes["file.path"]
-      # Move out attributes to Attributes
+        parse_from: attributes["log.file.path"]
+      # Rename attributes
       - type: move
-        from: body.stream
+        from: attributes.stream
         to: attributes["log.iostream"]
       - type: move
-        from: body.container_name
+        from: attributes.container_name
         to: attributes["k8s.container.name"]
       - type: move
-        from: body.namespace
+        from: attributes.namespace
         to: attributes["k8s.namespace.name"]
       - type: move
-        from: body.pod_name
+        from: attributes.pod_name
         to: attributes["k8s.pod.name"]
       - type: move
-        from: body.restart_count
+        from: attributes.restart_count
         to: attributes["k8s.container.restart_count"]
       - type: move
-        from: body.uid
+        from: attributes.uid
         to: attributes["k8s.pod.uid"]
-      - type: move
-        from: body.log
-        to: body
 exporters:
   logging:
     loglevel: debug

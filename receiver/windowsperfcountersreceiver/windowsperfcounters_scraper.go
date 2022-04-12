@@ -19,7 +19,6 @@ package windowsperfcountersreceiver // import "github.com/open-telemetry/opentel
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -27,33 +26,16 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver/internal/pdh"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver/internal/third_party/telegraf/win_perf_counters"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
 )
 
 const instanceLabelName = "instance"
 
-type PerfCounterScraper interface {
-	// Path returns the counter path
-	Path() string
-	// ScrapeData collects a measurement and returns the value(s).
-	ScrapeData() ([]win_perf_counters.CounterValue, error)
-	// Close all counters/handles related to the query and free all associated memory.
-	Close() error
-}
-
 // scraper is the type that scrapes various host metrics.
 type scraper struct {
-	cfg                     *Config
-	settings                component.TelemetrySettings
-	counters                []PerfCounterMetrics
-	undefinedMetricCounters []PerfCounterScraper
-}
-
-type PerfCounterMetrics struct {
-	CounterScraper PerfCounterScraper
-	Attributes     map[string]string
-	Metric         string
+	cfg      *Config
+	settings component.TelemetrySettings
+	watchers []winperfcounters.PerfCounterWatcher
 }
 
 func newScraper(cfg *Config, settings component.TelemetrySettings) *scraper {
@@ -61,63 +43,43 @@ func newScraper(cfg *Config, settings component.TelemetrySettings) *scraper {
 }
 
 func (s *scraper) start(context.Context, component.Host) error {
-	var errs error
-
-	for _, perfCounterCfg := range s.cfg.PerfCounters {
-		for _, instance := range perfCounterCfg.instances() {
-			for _, counterCfg := range perfCounterCfg.Counters {
-				counterPath := counterPath(perfCounterCfg.Object, instance, counterCfg.Name)
-
-				c, err := pdh.NewPerfCounter(counterPath, true)
-				if err != nil {
-					errs = multierr.Append(errs, fmt.Errorf("counter %v: %w", counterPath, err))
-				} else {
-					if counterCfg.Metric == "" {
-						s.undefinedMetricCounters = append(s.undefinedMetricCounters, c)
-						continue
-					}
-					s.counters = append(s.counters, PerfCounterMetrics{CounterScraper: c, Metric: counterCfg.Metric, Attributes: counterCfg.Attributes})
-				}
-			}
+	watchers := []winperfcounters.PerfCounterWatcher{}
+	for _, objCfg := range s.cfg.PerfCounters {
+		objWatchers, err := objCfg.BuildPaths()
+		if err != nil {
+			s.settings.Logger.Warn("some performance counters could not be initialized", zap.Error(err))
+			continue
+		}
+		for _, objWatcher := range objWatchers {
+			watchers = append(watchers, objWatcher)
 		}
 	}
-
-	// log a warning if some counters cannot be loaded, but do not crash the app
-	if errs != nil {
-		s.settings.Logger.Warn("some performance counters could not be initialized", zap.Error(errs))
-	}
+	s.watchers = watchers
 
 	return nil
 }
 
-func counterPath(object, instance, counterName string) string {
-	if instance != "" {
-		instance = fmt.Sprintf("(%s)", instance)
-	}
-
-	return fmt.Sprintf("\\%s%s\\%s", object, instance, counterName)
-}
-
 func (s *scraper) shutdown(context.Context) error {
 	var errs error
-
-	for _, counter := range s.counters {
-		errs = multierr.Append(errs, counter.CounterScraper.Close())
+	for _, watcher := range s.watchers {
+		err := watcher.Close()
+		if err != nil {
+			errs = multierr.Append(errs, err)
+		}
 	}
-
 	return errs
 }
 
 func (s *scraper) scrape(context.Context) (pdata.Metrics, error) {
 	md := pdata.NewMetrics()
-	metrics := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
+	metricSlice := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
 	now := pdata.NewTimestampFromTime(time.Now())
 	var errs error
 
-	metrics.EnsureCapacity(len(s.counters))
-
+	metricSlice.EnsureCapacity(len(s.watchers))
+	metrics := map[string]pdata.Metric{}
 	for name, metricCfg := range s.cfg.MetricMetaData {
-		builtMetric := metrics.AppendEmpty()
+		builtMetric := metricSlice.AppendEmpty()
 
 		builtMetric.SetName(name)
 		builtMetric.SetDescription(metricCfg.Description)
@@ -137,44 +99,38 @@ func (s *scraper) scrape(context.Context) (pdata.Metrics, error) {
 			builtMetric.SetDataType(pdata.MetricDataTypeGauge)
 		}
 
-		for _, counter := range s.counters {
-			if counter.Metric == builtMetric.Name() {
-				counterValues, err := counter.CounterScraper.ScrapeData()
-				if err != nil {
-					errs = multierr.Append(errs, err)
-					continue
-				}
-				initializeMetricDps(builtMetric, now, counterValues, counter.Attributes)
-			}
-		}
+		metrics[name] = builtMetric
 	}
 
-	for _, counter := range s.undefinedMetricCounters {
-		counterValues, err := counter.ScrapeData()
+	counterVals := []winperfcounters.CounterValue{}
+	for _, watcher := range s.watchers {
+		counterValue, err := watcher.ScrapeData()
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue
 		}
+		counterVals = append(counterVals, counterValue)
+	}
 
-		builtMetric := metrics.AppendEmpty()
-		builtMetric.SetName(counter.Path())
-		builtMetric.SetDataType(pdata.MetricDataTypeGauge)
-		initializeMetricDps(builtMetric, now, counterValues, nil)
+	for _, scrapedValue := range counterVals {
+		var metric pdata.Metric
+		metricRep := scrapedValue.MetricRep
+		if builtmetric, ok := metrics[metricRep.Name]; ok {
+			metric = builtmetric
+		} else {
+			metric = metricSlice.AppendEmpty()
+			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetName(metricRep.Name)
+			metric.SetUnit("1")
+		}
+
+		initializeMetricDps(metric, now, scrapedValue.Value, metricRep.Attributes)
 	}
 
 	return md, errs
 }
 
-func initializeNumberDataPointAsDouble(dataPoint pdata.NumberDataPoint, now pdata.Timestamp, instanceLabel string, value float64) {
-	if instanceLabel != "" {
-		dataPoint.Attributes().InsertString(instanceLabelName, instanceLabel)
-	}
-
-	dataPoint.SetTimestamp(now)
-	dataPoint.SetDoubleVal(value)
-}
-
-func initializeMetricDps(metric pdata.Metric, now pdata.Timestamp, counterValues []win_perf_counters.CounterValue, attributes map[string]string) {
+func initializeMetricDps(metric pdata.Metric, now pdata.Timestamp, counterValue float64, attributes map[string]string) {
 	var dps pdata.NumberDataPointSlice
 
 	if metric.DataType() == pdata.MetricDataTypeGauge {
@@ -183,20 +139,14 @@ func initializeMetricDps(metric pdata.Metric, now pdata.Timestamp, counterValues
 		dps = metric.Sum().DataPoints()
 	}
 
-	dps.EnsureCapacity(len(counterValues))
-	for _, counterValue := range counterValues {
-		dp := dps.AppendEmpty()
-		if attributes != nil {
-			for attKey, attVal := range attributes {
-				dp.Attributes().InsertString(attKey, attVal)
-			}
+	dp := dps.AppendEmpty()
+	if attributes != nil {
+		for attKey, attVal := range attributes {
+			dp.Attributes().InsertString(attKey, attVal)
 		}
 
-		if counterValue.InstanceName != "" {
-			dp.Attributes().InsertString(instanceLabelName, counterValue.InstanceName)
-		}
-
-		dp.SetTimestamp(now)
-		dp.SetIntVal(int64(counterValue.Value))
 	}
+
+	dp.SetTimestamp(now)
+	dp.SetDoubleVal(counterValue)
 }

@@ -37,19 +37,19 @@ metrics:
 
 ## Metric attributes
 
-| Name | Description |
-| ---- | ----------- |
-| buffer_pool_data | The status of buffer pool data. |
-| buffer_pool_operations | The buffer pool operations types. |
-| buffer_pool_pages | The buffer pool pages types. |
-| command | The command types. |
-| double_writes | The doublewrite types. |
-| handler | The handler types. |
-| locks | The table locks type. |
-| log_operations | The log operation types. |
-| operations | The operation types. |
-| page_operations | The page operation types. |
-| row_locks | The row lock type. |
-| row_operations | The row operation type. |
-| sorts | The sort count type. |
-| threads | The thread count type. |
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| buffer_pool_data (status) | The status of buffer pool data. | dirty, clean |
+| buffer_pool_operations (operation) | The buffer pool operations types. | read_ahead_rnd, read_ahead, read_ahead_evicted, read_requests, reads, wait_free, write_requests |
+| buffer_pool_pages (kind) | The buffer pool pages types. | data, free, misc |
+| command (command) | The command types. | execute, close, fetch, prepare, reset, send_long_data |
+| double_writes (kind) | The doublewrite types. | pages_written, writes |
+| handler (kind) | The handler types. | commit, delete, discover, external_lock, mrr_init, prepare, read_first, read_key, read_last, read_next, read_prev, read_rnd, read_rnd_next, rollback, savepoint, savepoint_rollback, update, write |
+| locks (kind) | The table locks type. | immediate, waited |
+| log_operations (operation) | The log operation types. | waits, write_requests, writes |
+| operations (operation) | The operation types. | fsyncs, reads, writes |
+| page_operations (operation) | The page operation types. | created, read, written |
+| row_locks (kind) | The row lock type. | waits, time |
+| row_operations (operation) | The row operation type. | deleted, inserted, read, updated |
+| sorts (kind) | The sort count type. | merge_passes, range, rows, scan |
+| threads (kind) | The thread count type. | cached, connected, created, running |
