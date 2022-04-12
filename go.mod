@@ -281,9 +281,9 @@ require (
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/influxdata/go-syslog/v3 v3.0.1-0.20210608084020-ac565dc76ba6 // indirect
-	github.com/influxdata/influxdb-observability/common v0.2.16 // indirect
-	github.com/influxdata/influxdb-observability/influx2otel v0.2.16 // indirect
-	github.com/influxdata/influxdb-observability/otel2influx v0.2.16 // indirect
+	github.com/influxdata/influxdb-observability/common v0.2.17 // indirect
+	github.com/influxdata/influxdb-observability/influx2otel v0.2.17 // indirect
+	github.com/influxdata/influxdb-observability/otel2influx v0.2.17 // indirect
 	github.com/influxdata/line-protocol/v2 v2.2.1 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.11.0 // indirect
