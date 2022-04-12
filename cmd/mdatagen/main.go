@@ -130,6 +130,7 @@ func generateDocumentation(ymlDir string, thisDir string, md metadata, useExpGen
 				"publicVar": func(s string) (string, error) {
 					return formatIdentifier(s, true)
 				},
+				"stringsJoin": strings.Join,
 			}).ParseFiles(path.Join(thisDir, "documentation.tmpl")))
 
 	buf := bytes.Buffer{}
