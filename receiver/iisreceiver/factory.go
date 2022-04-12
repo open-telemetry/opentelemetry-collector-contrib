@@ -42,6 +42,6 @@ func createDefaultConfig() config.Receiver {
 			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			CollectionInterval: time.Minute,
 		},
-		metricSettings: metadata.DefaultMetricsSettings(),
+		Metrics: metadata.DefaultMetricsSettings(),
 	}
 }

@@ -61,7 +61,7 @@ func (rcvr *iisReceiver) start(ctx context.Context, host component.Host) error {
 func (rcvr *iisReceiver) scrape(ctx context.Context) (pdata.Metrics, error) {
 	var errs error
 	now := pdata.NewTimestampFromTime(time.Now())
-	metricBuilder := metadata.NewMetricsBuilder(rcvr.config.metricSettings)
+	metricBuilder := metadata.NewMetricsBuilder(rcvr.config.Metrics)
 
 	for _, watcher := range rcvr.watchers {
 		counterValue, err := watcher.ScrapeData()

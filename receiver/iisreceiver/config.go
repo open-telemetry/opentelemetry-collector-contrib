@@ -23,5 +23,5 @@ import (
 // Config defines configuration for simple prometheus receiver.
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	metricSettings                          metadata.MetricsSettings
+	Metrics                                 metadata.MetricsSettings `mapstructure:"metrics"`
 }

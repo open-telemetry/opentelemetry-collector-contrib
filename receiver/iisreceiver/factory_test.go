@@ -39,7 +39,7 @@ func TestNewFactory(t *testing.T) {
 				ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 				CollectionInterval: 60 * time.Second,
 			},
-			metricSettings: metadata.DefaultMetricsSettings(),
+			Metrics: metadata.DefaultMetricsSettings(),
 		}
 
 		require.Equal(t, expectedCfg, factory.CreateDefaultConfig())
