@@ -19,6 +19,7 @@ package iisreceiver // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	windowsapi "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver/internal/metadata"
 )
 
 // getPerfCounters returns established PerfCounters for each metric.
@@ -62,7 +63,7 @@ func getScraperCfgs() []windowsapi.ObjectConfig {
 					MetricRep: windowsapi.MetricRep{
 						Name: "iis.request.count",
 						Attributes: map[string]string{
-							"request_type": "delete",
+							metadata.A.Request: "delete",
 						},
 					},
 					Name: "Total Delete Requests",
@@ -71,7 +72,7 @@ func getScraperCfgs() []windowsapi.ObjectConfig {
 					MetricRep: windowsapi.MetricRep{
 						Name: "iis.request.count",
 						Attributes: map[string]string{
-							"request_type": "get",
+							metadata.A.Request: "get",
 						},
 					},
 
@@ -81,7 +82,7 @@ func getScraperCfgs() []windowsapi.ObjectConfig {
 					MetricRep: windowsapi.MetricRep{
 						Name: "iis.request.count",
 						Attributes: map[string]string{
-							"request_type": "head",
+							metadata.A.Request: "head",
 						},
 					},
 
@@ -91,7 +92,7 @@ func getScraperCfgs() []windowsapi.ObjectConfig {
 					MetricRep: windowsapi.MetricRep{
 						Name: "iis.request.count",
 						Attributes: map[string]string{
-							"request_type": "options",
+							metadata.A.Request: "options",
 						},
 					},
 
@@ -101,7 +102,7 @@ func getScraperCfgs() []windowsapi.ObjectConfig {
 					MetricRep: windowsapi.MetricRep{
 						Name: "iis.request.count",
 						Attributes: map[string]string{
-							"request_type": "post",
+							metadata.A.Request: "post",
 						},
 					},
 
@@ -111,7 +112,7 @@ func getScraperCfgs() []windowsapi.ObjectConfig {
 					MetricRep: windowsapi.MetricRep{
 						Name: "iis.request.count",
 						Attributes: map[string]string{
-							"request_type": "put",
+							metadata.A.Request: "put",
 						},
 					},
 
@@ -121,7 +122,7 @@ func getScraperCfgs() []windowsapi.ObjectConfig {
 					MetricRep: windowsapi.MetricRep{
 						Name: "iis.request.count",
 						Attributes: map[string]string{
-							"request_type": "trace",
+							metadata.A.Request: "trace",
 						},
 					},
 
@@ -131,7 +132,7 @@ func getScraperCfgs() []windowsapi.ObjectConfig {
 					MetricRep: windowsapi.MetricRep{
 						Name: "iis.network.file.count",
 						Attributes: map[string]string{
-							"direction": "received",
+							metadata.A.Direction: "received",
 						},
 					},
 					Name: "Total Files Received",
@@ -140,7 +141,7 @@ func getScraperCfgs() []windowsapi.ObjectConfig {
 					MetricRep: windowsapi.MetricRep{
 						Name: "iis.network.file.count",
 						Attributes: map[string]string{
-							"direction": "sent",
+							metadata.A.Direction: "sent",
 						},
 					},
 					Name: "Total Files Sent",
