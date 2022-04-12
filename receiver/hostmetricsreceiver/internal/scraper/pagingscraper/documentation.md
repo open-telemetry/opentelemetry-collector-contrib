@@ -24,9 +24,9 @@ metrics:
 
 ## Metric attributes
 
-| Name | Description |
-| ---- | ----------- |
-| device | Name of the page file. |
-| direction | Page In or Page Out. |
-| state | Breakdown of paging usage by type. |
-| type | Type of fault. |
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| device | Name of the page file. |  |
+| direction | Page In or Page Out. | page_in, page_out |
+| state | Breakdown of paging usage by type. | cached, free, used |
+| type | Type of fault. | major, minor |

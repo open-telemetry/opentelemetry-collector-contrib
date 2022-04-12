@@ -15,23 +15,31 @@
 - `podmanreceiver`: Add API timeout configuration option (#9014)
 - `cmd/mdatagen`: Add `sem_conv_version` field to metadata.yaml that is used to set metrics SchemaURL (#9010)
 - `splunkheceporter`: Add an option to disable log or profiling data (#9065)
+- `windowsperfcountersreceiver`: Move code into separate package for use in other windowsperfcounter receivers (#9108) 
+- `datadogexporter`: Add `host_metadata` configuration section to configure host metadata export (#9100)
+- `cmd/mdatagen`: Update documentation generated for attributes to list enumerated values and show the "value" that will be visible on metrics when it is different from the attribute key in metadata.yaml (#8983)
+- `routingprocessor`: add option to drop resource attribute used for routing (#8990)
 - `cumulativetodeltaprocessor`: add new include/exclude configuration options with regex support (#8952)
 
 ### 🛑 Breaking changes 🛑
 
 - `filelogreceiver`, `journaldreceiver`, `syslogreceiver`, `tcplogreceiver`, `udplogreceiver`:
-  - Updated data model to align with stable logs data model, which includes various breaking changes. (#8835)
-    - A detailed [Upgrade Guide](https://github.com/open-telemetry/opentelemetry-log-collection/releases/tag/v0.28.0) is available in the log-collection v0.28.0 release notes. 
+  - Updated data model to align with stable logs data model, which includes various breaking changes. (#9139, #8835)
+    - A detailed [Upgrade Guide](https://github.com/open-telemetry/opentelemetry-log-collection/releases/tag/v0.28.0) is available in the log-collection v0.29.0 release notes. 
 - `datadogexporter`: Remove `OnlyMetadata` method from `Config` struct (#8980)
 - `datadogexporter`: Remove `GetCensoredKey` method from `APIConfig` struct (#8980)
 - `mongodbatlasreceiver`: Updated to uses newer metric builder which changed some metric and resource attributes (#9093)
 - `dynatraceexporter`: Make `serialization` package `/internal` (#9097)
+- `attributesprocessor`: Remove log names from filters (#9131)
 
 ### 🧰 Bug fixes 🧰
 
+- `filestorageextension`: use correct bbolt options for compaction (#9134)
 - `hostmetricsreceiver`: Use cpu times for time delta in cpu.utilization calculation (#8857)
 - `dynatraceexporter`: Remove overly verbose stacktrace from certain logs (#8989)
 - `googlecloudexporter`: fix the `exporter.googlecloud.OTLPDirect` fature-gate, which was not applied when the flag was provided (#9116)
+- `signalfxexporter`: Fix bug to enable timeouts for correlating traces and metrics (#9101)
+- `windowsperfcountersreceiver`: fix exported values being integers instead of doubles (#9138)
 
 ### 🚩 Deprecations 🚩
 
@@ -39,8 +47,12 @@
 - `datadogexporter`: Deprecate `version` setting in favor of `service.version` semantic convention (#8784)
 - `datadogexporter`: Deprecate `env` setting in favor of `deployment.environment` semantic convention (#9017)
 - `datadogexporter`: Deprecate `GetHostTags` method from `TagsConfig` struct (#8975)
+- `datadogexporter`: Deprecate `tags` setting in favor of `host_metadata::tags` (#9100)
+- `datadogexporter`: Deprecate `send_metadata` setting in favor of `host_metadata::enabled` (#9100)
+- `datadogexporter`: Deprecate `use_resource_metadata` setting in favor of `host_metadata::hostname_source` (#9100)
 - `prometheusexecreceiver`: Deprecate prom_exec receiver (#9058)
 - `fluentbitextension`: Deprecate Fluentbit extension (#9062)
+
 
 ### 🚀 New components 🚀
 
