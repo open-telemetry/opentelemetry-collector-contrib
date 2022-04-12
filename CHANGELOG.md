@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### 💡 Enhancements 💡
+- `saphanareceiver`: Added implementation of SAP HANA Metric Receiver (#8827)
 - `riakreceiver`: Added implementation of Riak Metric Receiver (#8548)
 - `splunkhecexporter`: Add support for batching traces (#8995)
 - `hostmetricsreceiver`: Migrate Processes scraper to the Metrics builder (#8855)
