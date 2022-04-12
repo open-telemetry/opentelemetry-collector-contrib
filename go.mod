@@ -102,6 +102,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver v0.48.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver v0.48.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver v0.48.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver v0.48.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver v0.48.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver v0.48.0
@@ -364,7 +365,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.48.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.48.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.48.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver v0.0.0-00010101000000-000000000000 // indirect
 	github.com/open-telemetry/opentelemetry-log-collection v0.28.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect

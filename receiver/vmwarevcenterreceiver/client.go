@@ -27,31 +27,29 @@ import (
 	"github.com/vmware/govmomi/performance"
 	"github.com/vmware/govmomi/property"
 	"github.com/vmware/govmomi/vim25"
+	"github.com/vmware/govmomi/vim25/mo"
 	vt "github.com/vmware/govmomi/vim25/types"
 	"github.com/vmware/govmomi/vsan"
 	"github.com/vmware/govmomi/vsan/types"
-	"go.uber.org/zap"
 )
 
-// VmwareVcenterClient is a client that
-type VmwareVcenterClient struct {
+// vmwareVcenterClient is a client that
+type vmwareVcenterClient struct {
 	moClient   *govmomi.Client
 	vimDriver  *vim25.Client
 	vsanDriver *vsan.Client
 	finder     *find.Finder
 	pc         *property.Collector
 	cfg        *Config
-	logger     *zap.Logger
 }
 
-func newVmwarevcenterClient(c *Config, debuglogger *zap.Logger) *VmwareVcenterClient {
-	return &VmwareVcenterClient{
-		cfg:    c,
-		logger: debuglogger,
+func newVmwarevcenterClient(c *Config) *vmwareVcenterClient {
+	return &vmwareVcenterClient{
+		cfg: c,
 	}
 }
 
-func (vc *VmwareVcenterClient) Connect(ctx context.Context) error {
+func (vc *vmwareVcenterClient) Connect(ctx context.Context) error {
 	if vc.moClient == nil {
 		sdkURL, err := vc.cfg.SDKUrl()
 		if err != nil {
@@ -79,14 +77,14 @@ func (vc *VmwareVcenterClient) Connect(ctx context.Context) error {
 	return nil
 }
 
-func (vc *VmwareVcenterClient) Disconnect(ctx context.Context) error {
+func (vc *vmwareVcenterClient) Disconnect(ctx context.Context) error {
 	if vc.moClient != nil {
 		return vc.moClient.Logout(ctx)
 	}
 	return nil
 }
 
-func (vc *VmwareVcenterClient) ConnectVSAN(ctx context.Context) error {
+func (vc *vmwareVcenterClient) ConnectVSAN(ctx context.Context) error {
 	vsanDriver, err := vsan.NewClient(ctx, vc.vimDriver)
 	if err != nil {
 		return err
@@ -95,7 +93,7 @@ func (vc *VmwareVcenterClient) ConnectVSAN(ctx context.Context) error {
 	return nil
 }
 
-func (vc *VmwareVcenterClient) Clusters(ctx context.Context) ([]*object.ClusterComputeResource, error) {
+func (vc *vmwareVcenterClient) Clusters(ctx context.Context) ([]*object.ClusterComputeResource, error) {
 	clusters, err := vc.finder.ClusterComputeResourceList(ctx, "*")
 	if err != nil {
 		return []*object.ClusterComputeResource{}, err
@@ -103,23 +101,7 @@ func (vc *VmwareVcenterClient) Clusters(ctx context.Context) ([]*object.ClusterC
 	return clusters, nil
 }
 
-func (vc *VmwareVcenterClient) Hosts(ctx context.Context) ([]*object.HostSystem, error) {
-	hss, err := vc.finder.HostSystemList(ctx, "*")
-	if err != nil {
-		return nil, fmt.Errorf("unable to retrieve host list %w", err)
-	}
-	return hss, nil
-}
-
-func (vc *VmwareVcenterClient) DataStores(ctx context.Context) ([]*object.Datastore, error) {
-	dss, err := vc.finder.DatastoreList(ctx, "*")
-	if err != nil {
-		return nil, fmt.Errorf("unable to retrieve datastores %w", err)
-	}
-	return dss, err
-}
-
-func (vc *VmwareVcenterClient) ResourcePools(ctx context.Context) ([]*object.ResourcePool, error) {
+func (vc *vmwareVcenterClient) ResourcePools(ctx context.Context) ([]*object.ResourcePool, error) {
 	rps, err := vc.finder.ResourcePoolList(ctx, "*")
 	if err != nil {
 		return nil, fmt.Errorf("unable to retrieve resource pools: %w", err)
@@ -127,7 +109,7 @@ func (vc *VmwareVcenterClient) ResourcePools(ctx context.Context) ([]*object.Res
 	return rps, err
 }
 
-func (vc *VmwareVcenterClient) VMs(ctx context.Context) ([]*object.VirtualMachine, error) {
+func (vc *vmwareVcenterClient) VMs(ctx context.Context) ([]*object.VirtualMachine, error) {
 	rps, err := vc.finder.VirtualMachineList(ctx, "*")
 	if err != nil {
 		return nil, fmt.Errorf("unable to retrieve resource pools: %w", err)
@@ -135,7 +117,7 @@ func (vc *VmwareVcenterClient) VMs(ctx context.Context) ([]*object.VirtualMachin
 	return rps, err
 }
 
-func (vc *VmwareVcenterClient) CollectVSANCluster(ctx context.Context, clusterRef *vt.ManagedObjectReference, startTime time.Time, endTime time.Time) (*[]types.VsanPerfEntityMetricCSV, error) {
+func (vc *vmwareVcenterClient) CollectVSANCluster(ctx context.Context, clusterRef *vt.ManagedObjectReference, startTime time.Time, endTime time.Time) (*[]types.VsanPerfEntityMetricCSV, error) {
 	if vc.vsanDriver == nil {
 		return nil, errors.New("vsan client not instantiated")
 	}
@@ -149,7 +131,7 @@ func (vc *VmwareVcenterClient) CollectVSANCluster(ctx context.Context, clusterRe
 	return vc.queryVsan(ctx, clusterRef, querySpec)
 }
 
-func (vc *VmwareVcenterClient) CollectVSANHosts(ctx context.Context, clusterRef *vt.ManagedObjectReference, startTime time.Time, endTime time.Time) (*[]types.VsanPerfEntityMetricCSV, error) {
+func (vc *vmwareVcenterClient) CollectVSANHosts(ctx context.Context, clusterRef *vt.ManagedObjectReference, startTime time.Time, endTime time.Time) (*[]types.VsanPerfEntityMetricCSV, error) {
 	if vc.vsanDriver == nil {
 		return nil, errors.New("vsan client not instantiated")
 	}
@@ -163,7 +145,7 @@ func (vc *VmwareVcenterClient) CollectVSANHosts(ctx context.Context, clusterRef 
 	return vc.queryVsan(ctx, clusterRef, querySpec)
 }
 
-func (vc *VmwareVcenterClient) CollectVSANVirtualMachine(
+func (vc *vmwareVcenterClient) CollectVSANVirtualMachine(
 	ctx context.Context,
 	clusterRef *vt.ManagedObjectReference,
 	startTime time.Time,
@@ -183,23 +165,49 @@ func (vc *VmwareVcenterClient) CollectVSANVirtualMachine(
 	return vc.queryVsan(ctx, clusterRef, querySpec)
 }
 
-func (vc *VmwareVcenterClient) PerformanceQuery(
-	ctx context.Context,
-	ent *vt.ManagedObjectReference,
-	specs []vt.PerfQuerySpec,
-	startTime time.Time,
-	endTime time.Time,
-) ([]performance.EntityMetric, error) {
-	mgr := performance.NewManager(vc.vimDriver)
-	metrics, err := mgr.Query(ctx, specs)
+type perfSampleResult struct {
+	counters map[string]*vt.PerfCounterInfo
+	results  []performance.EntityMetric
+}
 
+func (vc *vmwareVcenterClient) performanceQuery(
+	ctx context.Context,
+	spec vt.PerfQuerySpec,
+	names []string,
+	objs []vt.ManagedObjectReference,
+) (*perfSampleResult, error) {
+	mgr := performance.NewManager(vc.vimDriver)
+	mgr.Sort = true
+	if intervalID, ok := performance.Intervals[vc.cfg.MetricsConfig.PerformanceInterval]; ok {
+		spec.IntervalId = intervalID
+	}
+
+	sample, err := mgr.SampleByName(ctx, spec, names, objs)
 	if err != nil {
 		return nil, err
 	}
-	return mgr.ToMetricSeries(ctx, metrics)
+	result, err := mgr.ToMetricSeries(ctx, sample)
+	if err != nil {
+		return nil, err
+	}
+	counterInfoByName, err := mgr.CounterInfoByName(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &perfSampleResult{
+		counters: counterInfoByName,
+		results:  result,
+	}, nil
 }
 
-func (vc *VmwareVcenterClient) queryVsan(ctx context.Context, ref *vt.ManagedObjectReference, qs []types.VsanPerfQuerySpec) (*[]types.VsanPerfEntityMetricCSV, error) {
+func (vc *vmwareVcenterClient) EntityName(e vt.ManagedObjectReference) string {
+	var me mo.ManagedEntity
+	mgr := performance.NewManager(vc.vimDriver)
+	_ = mgr.Properties(context.Background(), e, []string{"name"}, &me)
+	return me.Name
+}
+
+func (vc *vmwareVcenterClient) queryVsan(ctx context.Context, ref *vt.ManagedObjectReference, qs []types.VsanPerfQuerySpec) (*[]types.VsanPerfEntityMetricCSV, error) {
 	CSVs, err := vc.vsanDriver.VsanPerfQueryPerf(ctx, ref, qs)
 	if err != nil {
 		return nil, err

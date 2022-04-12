@@ -38,8 +38,9 @@ const timeFormat = "2006-01-02 15:04:05"
 var _ component.Receiver = (*vcenterMetricScraper)(nil)
 
 type vcenterMetricScraper struct {
-	client      *VmwareVcenterClient
+	client      *vmwareVcenterClient
 	mb          *metadata.MetricsBuilder
+	logger      *zap.Logger
 	vsanEnabled bool
 }
 
@@ -47,10 +48,10 @@ func newVmwareVcenterScraper(
 	logger *zap.Logger,
 	config *Config,
 ) *vcenterMetricScraper {
-	l := logger.Named("vcenter-client")
-	client := newVmwarevcenterClient(config, l)
+	client := newVmwarevcenterClient(config)
 	return &vcenterMetricScraper{
 		client:      client,
+		logger:      logger,
 		mb:          metadata.NewMetricsBuilder(config.MetricsConfig.Metrics),
 		vsanEnabled: true,
 	}
@@ -73,7 +74,6 @@ func (v *vcenterMetricScraper) scrape(ctx context.Context) (pdata.Metrics, error
 	err := v.client.ConnectVSAN(ctx)
 	if err != nil {
 		// vsan is not required for a proper collection
-		errs.AddPartial(1, err)
 		v.vsanEnabled = false
 	}
 	v.collectClusters(ctx, errs)
@@ -109,15 +109,20 @@ func (v *vcenterMetricScraper) collectCluster(
 	s := moCluster.Summary.GetComputeResourceSummary()
 	v.mb.RecordVcenterClusterCPUAvailableDataPoint(now, int64(s.TotalCpu))
 
-	mor := c.Reference()
-	csvs, err := v.client.CollectVSANCluster(ctx, &mor, time.Now().UTC(), time.Now().UTC())
-	if err != nil {
-		errs.AddPartial(1, err)
+	if v.vsanEnabled {
+		mor := c.Reference()
+		csvs, err := v.client.CollectVSANCluster(ctx, &mor, time.Now().UTC(), time.Now().UTC())
+		if err != nil {
+			errs.AddPartial(1, err)
+		}
+		if csvs != nil {
+			v.addVSANMetrics(*csvs, "*", clusterType, errs)
+		}
 	}
-	if csvs != nil {
-		v.addVSANMetrics(*csvs, "*", clusterType, errs)
-	}
-	v.mb.EmitCluster(c.Name())
+
+	v.mb.EmitForResource(
+		metadata.WithVcenterClusterName(c.Name()),
+	)
 }
 
 func (v *vcenterMetricScraper) collectDatastores(
@@ -146,7 +151,9 @@ func (v *vcenterMetricScraper) collectDatastore(
 	ds.Properties(ctx, ds.Reference(), []string{"summary", "name"}, &moDS)
 
 	v.recordDatastoreProperties(now, moDS)
-	v.mb.EmitDatastore(moDS.Name)
+	v.mb.EmitForResource(
+		metadata.WithVcenterDatastoreName(moDS.Name),
+	)
 }
 
 func (v *vcenterMetricScraper) collectHosts(
@@ -172,7 +179,9 @@ func (v *vcenterMetricScraper) collectHosts(
 
 	for _, h := range hosts {
 		v.collectHost(ctx, colTime, h, hostVsanCSVs, errs)
-		v.mb.EmitHost(h.Name())
+		v.mb.EmitForResource(
+			metadata.WithVcenterHostName(h.Name()),
+		)
 	}
 }
 
@@ -196,7 +205,7 @@ func (v *vcenterMetricScraper) collectHost(
 		return
 	}
 	v.recordHostSystemMemoryUsage(now, hwSum)
-	v.recordHostPerformanceMetrics(ctx, hwSum, time.Now().Add(-15*time.Minute).UTC(), time.Now().Add(-5*time.Minute).UTC(), errs)
+	v.recordHostPerformanceMetrics(ctx, hwSum, errs)
 	if vsanCsvs != nil {
 		entityRef := fmt.Sprintf("host-domclient:%v",
 			hwSum.Config.VsanHostConfig.ClusterInfo.NodeUuid,
@@ -223,7 +232,7 @@ func (v *vcenterMetricScraper) collectResourcePools(
 			"name",
 		}, &moRP)
 		v.recordResourcePool(ts, moRP)
-		v.mb.EmitResourcePool(rp.Name())
+		v.mb.EmitForResource(metadata.WithVcenterResourcePoolName(rp.Name()))
 	}
 }
 
@@ -266,7 +275,11 @@ func (v *vcenterMetricScraper) collectVMs(
 		ps := string(moVM.Runtime.PowerState)
 
 		v.collectVM(ctx, colTime, moVM, entityRefID, vsanCsvs, errs)
-		v.mb.EmitVM(vm.Name(), vmUUID, ps)
+		v.mb.EmitForResource(
+			metadata.WithVcenterVMName(vm.Name()),
+			metadata.WithVcenterVMID(vmUUID),
+			metadata.WithVcenterVMPowerState(ps),
+		)
 	}
 
 }
@@ -280,14 +293,7 @@ func (v *vcenterMetricScraper) collectVM(
 	errs *scrapererror.ScrapeErrors,
 ) {
 	v.recordVMUsages(colTime, vm)
-	v.recordVMPerformance(ctx,
-		vm,
-		// start time
-		time.Now().Add(-15*time.Minute).UTC(),
-		// end time
-		time.Now().Add(-5*time.Minute).UTC(),
-		errs,
-	)
+	v.recordVMPerformance(ctx, vm, errs)
 
 	if vsanCsvs != nil {
 		v.addVSANMetrics(*vsanCsvs, entityRefID, vmType, errs)

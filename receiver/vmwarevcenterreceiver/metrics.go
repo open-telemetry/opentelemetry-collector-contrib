@@ -68,89 +68,113 @@ func (v *vcenterMetricScraper) recordResourcePool(
 	now pdata.Timestamp,
 	rp mo.ResourcePool,
 ) {
-	s := rp.Summary
-	v.mb.RecordVcenterResourcePoolCPUUsageDataPoint(now, s.GetResourcePoolSummary().QuickStats.OverallCpuUsage)
-	v.mb.RecordVcenterResourcePoolCPUSharesDataPoint(now, int64(s.GetResourcePoolSummary().Config.CpuAllocation.Shares.Shares))
-	v.mb.RecordVcenterResourcePoolMemorySharesDataPoint(now, int64(s.GetResourcePoolSummary().Config.MemoryAllocation.Shares.Shares))
-	v.mb.RecordVcenterResourcePoolMemoryUsageDataPoint(now, s.GetResourcePoolSummary().QuickStats.GuestMemoryUsage)
+	s := rp.Summary.GetResourcePoolSummary()
+	if s.QuickStats != nil {
+		v.mb.RecordVcenterResourcePoolCPUUsageDataPoint(now, s.QuickStats.OverallCpuUsage)
+		v.mb.RecordVcenterResourcePoolMemoryUsageDataPoint(now, s.QuickStats.GuestMemoryUsage)
+	}
+
+	v.mb.RecordVcenterResourcePoolCPUSharesDataPoint(now, int64(s.Config.CpuAllocation.Shares.Shares))
+	v.mb.RecordVcenterResourcePoolMemorySharesDataPoint(now, int64(s.Config.MemoryAllocation.Shares.Shares))
+
+}
+
+var hostPerfMetricList = []string{
+	"net.bytesTx.average",
+	"net.droppedRx.summation",
+	"net.droppedTx.summation",
+	"net.bytesRx.average",
+	"net.usage.average",
+	"virtualDisk.totalWriteLatency.average",
 }
 
 func (v *vcenterMetricScraper) recordHostPerformanceMetrics(
 	ctx context.Context,
 	host mo.HostSystem,
-	startTime time.Time,
-	endTime time.Time,
 	errs *scrapererror.ScrapeErrors,
 ) {
-	specs := []types.PerfQuerySpec{
-		{
-			Entity:    host.Reference(),
-			MetricId:  []types.PerfMetricId{},
-			StartTime: &startTime,
-			EndTime:   &endTime,
-			Format:    "normal",
-		},
+	st := time.Now().Add(-5 * time.Minute)
+	et := time.Now().Add(-1 * time.Minute)
+	spec := types.PerfQuerySpec{
+		Entity:    host.Reference(),
+		MaxSample: 5,
+		Format:    string(types.PerfFormatNormal),
+		MetricId:  []types.PerfMetricId{{Instance: "*"}},
+		// right now we are only grabbing real time metrics from the performance
+		// manager
+		StartTime: &st,
+		EndTime:   &et,
 	}
-	hostRef := host.Reference()
-	metrics, err := v.client.PerformanceQuery(ctx, &hostRef, specs, startTime, endTime)
 
+	info, err := v.client.performanceQuery(ctx, spec, hostPerfMetricList, []types.ManagedObjectReference{host.Reference()})
 	if err != nil {
 		errs.AddPartial(1, err)
 		return
 	}
-	v.processHostPerformance(metrics)
+	v.processHostPerformance(info.results)
+}
+
+var vmPerfMetricList = []string{
+	// network metrics
+	"net.packetsTx.summation",
+	"net.packetsRx.summation",
+	"net.bytesRx.average",
+	"net.bytesTx.average",
+	"net.usage.average",
+
+	// disk metrics
+	"disk.write.average",
+
+	"disk.totalWriteLatency.average",
+	"virtualDisk.totalWriteLatency.average",
 }
 
 func (v *vcenterMetricScraper) recordVMPerformance(
 	ctx context.Context,
 	vm mo.VirtualMachine,
-	startTime time.Time,
-	endTime time.Time,
 	errs *scrapererror.ScrapeErrors,
 ) {
-	specs := []types.PerfQuerySpec{
-		{
-			Entity: vm.Reference(),
-			MetricId: []types.PerfMetricId{
-				{
-					CounterId: 0,
-					Instance:  "",
-				},
-			},
-			StartTime: &startTime,
-			EndTime:   &endTime,
-			Format:    "normal",
-		},
+	spec := types.PerfQuerySpec{
+		Entity: vm.Reference(),
+		Format: string(types.PerfFormatNormal),
+		// Just grabbing real time performance metrics of the current
+		// supported metrics by this receiver. If more are added we may need
+		// a system of changin this to 5 minute interval per metric
+		IntervalId: int32(20),
 	}
-	vmRef := vm.Reference()
-	metrics, err := v.client.PerformanceQuery(ctx, &vmRef, specs, startTime, endTime)
+
+	info, err := v.client.performanceQuery(ctx, spec, vmPerfMetricList, []types.ManagedObjectReference{vm.Reference()})
 	if err != nil {
 		errs.AddPartial(1, err)
 		return
 	}
-	v.processVMPerformanceMetrics(metrics)
+
+	v.processVMPerformanceMetrics(info)
 }
 
-func (v *vcenterMetricScraper) processVMPerformanceMetrics(metrics []performance.EntityMetric) {
-	for _, m := range metrics {
-		for i := 0; i < len(m.SampleInfo); i++ {
-			val := m.Value[i]
-			si := m.SampleInfo[i]
-			switch strings.ToLower(val.Name) {
-			// Performance monitoring level 1 metrics
-			case "net.bytesTx.average":
-				v.mb.RecordVcenterVMNetworkThroughputDataPoint(pdata.NewTimestampFromTime(si.Timestamp), val.Value[i], "transmitted")
-			case "net.bytesRx.average":
-				v.mb.RecordVcenterVMNetworkThroughputDataPoint(pdata.NewTimestampFromTime(si.Timestamp), val.Value[i], "received")
-			case "cpu.usage.average":
-			case "net.usage.average":
-				v.mb.RecordVcenterVMNetworkUsageDataPoint(pdata.NewTimestampFromTime(si.Timestamp), val.Value[i])
-			case "disk.totalReadLatency.average", "virtualDisk.totalReadLatency.average":
-				v.mb.RecordVcenterVMDiskLatencyDataPoint(pdata.NewTimestampFromTime(si.Timestamp), val.Value[i], "read")
-			case "disk.totalWriteLatency.average", "virtualDisk.totalWriteLatency.average":
-				v.mb.RecordVcenterVMDiskLatencyDataPoint(pdata.NewTimestampFromTime(si.Timestamp), val.Value[i], "write")
-			// Performance monitoring level 2 metrics
-			case "":
+func (v *vcenterMetricScraper) processVMPerformanceMetrics(info *perfSampleResult) {
+	for _, m := range info.results {
+		for _, val := range m.Value {
+			for j, nestedValue := range val.Value {
+				si := m.SampleInfo[j]
+				switch strings.ToLower(val.Name) {
+				// Performance monitoring level 1 metrics
+				case "net.bytesTx.average":
+					v.mb.RecordVcenterVMNetworkThroughputDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, "transmitted")
+				case "net.bytesRx.average":
+					v.mb.RecordVcenterVMNetworkThroughputDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, "received")
+				case "cpu.usage.average":
+				case "net.usage.average":
+					v.mb.RecordVcenterVMNetworkUsageDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue)
+				case "disk.totalReadLatency.average", "virtualDisk.totalReadLatency.average":
+					v.mb.RecordVcenterVMDiskLatencyAvgDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, "read")
+				case "disk.totalWriteLatency.average", "virtualDisk.totalWriteLatency.average":
+					v.mb.RecordVcenterVMDiskLatencyAvgDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, "write")
+				case "disk.maxTotalLatency":
+					v.mb.RecordVcenterVMDiskLatencyMaxDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue)
+				// Performance monitoring level 2 metrics
+				case "":
+				}
 
 			}
 		}
@@ -159,23 +183,26 @@ func (v *vcenterMetricScraper) processVMPerformanceMetrics(metrics []performance
 
 func (v *vcenterMetricScraper) processHostPerformance(metrics []performance.EntityMetric) {
 	for _, m := range metrics {
-		for i := 0; i < len(m.SampleInfo); i++ {
-			val := m.Value[i]
-			si := m.SampleInfo[i]
-			switch strings.ToLower(val.Name) {
-			// Performance monitoring level 1 metrics
-			case "net.bytesTx.average":
-				v.mb.RecordVcenterHostNetworkThroughputDataPoint(pdata.NewTimestampFromTime(si.Timestamp), val.Value[i], "transmitted")
-			case "net.bytesRx.average":
-				v.mb.RecordVcenterHostNetworkThroughputDataPoint(pdata.NewTimestampFromTime(si.Timestamp), val.Value[i], "received")
-			case "cpu.usage.average":
-
-			case "disk.totalReadLatency.average", "virtualDisk.totalReadLatency.average":
-				v.mb.RecordVcenterHostDiskLatencyAvgDataPoint(pdata.NewTimestampFromTime(si.Timestamp), val.Value[i], "read")
-			case "disk.totalWriteLatency.average", "virtualDisk.totalWriteLatency.average":
-				v.mb.RecordVcenterHostDiskLatencyAvgDataPoint(pdata.NewTimestampFromTime(si.Timestamp), val.Value[i], "write")
-				// Performance monitoring level 2 metrics
-				//
+		for _, val := range m.Value {
+			for j, nestedValue := range val.Value {
+				si := m.SampleInfo[j]
+				switch strings.ToLower(val.Name) {
+				// Performance monitoring level 1 metrics
+				case "net.usage.average":
+					v.mb.RecordVcenterHostNetworkThroughputDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue)
+				case "net.packetsTx.summation":
+					v.mb.RecordVcenterHostNetworkPacketsDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, "transmitted")
+				case "net.packetsRx.summation":
+					v.mb.RecordVcenterHostNetworkPacketsDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, "received")
+				case "disk.totalReadLatency.average", "virtualDisk.totalReadLatency.average":
+					v.mb.RecordVcenterHostDiskLatencyAvgDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, "read")
+				case "disk.totalWriteLatency.average", "virtualDisk.totalWriteLatency.average":
+					v.mb.RecordVcenterHostDiskLatencyAvgDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue, "write")
+					// Performance monitoring level 2 metrics
+					//
+				case "disk.totalLatency.average":
+					v.mb.RecordVcenterHostDiskLatencyMaxDataPoint(pdata.NewTimestampFromTime(si.Timestamp), nestedValue)
+				}
 			}
 		}
 	}

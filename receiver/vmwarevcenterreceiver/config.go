@@ -41,6 +41,7 @@ type MetricsConfig struct {
 	Endpoint                                string                   `mapstructure:"endpoint"`
 	Username                                string                   `mapstructure:"username"`
 	Password                                string                   `mapstructure:"password"`
+	PerformanceInterval                     string                   `mapstructure:"performance_interval"`
 }
 
 type LoggingConfig struct {
@@ -88,6 +89,17 @@ func (c *Config) validateMetricsConfig() error {
 	if _, tlsErr := mc.LoadTLSConfig(); err != nil {
 		err = multierr.Append(err, fmt.Errorf("error loading tls configuration: %w", tlsErr))
 	}
+
+	// var validIntervalKey bool = false
+	// for k, _ := range performance.Intervals {
+	// 	if k == mc.PerformanceInterval {
+	// 		validIntervalKey = true
+	// 		break
+	// 	}
+	// }
+	// if !validIntervalKey {
+	// 	err = multierr.Append(err, errors.New(""))
+	// }
 
 	return err
 }
