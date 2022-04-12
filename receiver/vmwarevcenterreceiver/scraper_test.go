@@ -56,7 +56,6 @@ func TestScrape_NoVsan(t *testing.T) {
 		goldenPath := filepath.Join("testdata", "metrics", "expected.json")
 		expectedMetrics, err := golden.ReadMetrics(goldenPath)
 		require.NoError(t, err)
-
 		scrapertest.CompareMetrics(expectedMetrics, metrics)
 	})
 }
