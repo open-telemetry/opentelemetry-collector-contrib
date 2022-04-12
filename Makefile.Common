@@ -43,7 +43,10 @@ common: checklicense checkdoc impi lint misspell
 
 .PHONY: test
 test:
-	$(GOTEST) $(GOTEST_OPT) ./...
+	@# attempts to run the tests at most 5 times
+	for i in {1..5}; do \
+		$(GOTEST) $(GOTEST_OPT) ./... && break || echo "Tests failed (attempt #$$i)"; \
+	done
 
 .PHONY: do-unit-tests-with-cover
 do-unit-tests-with-cover:
