@@ -60,22 +60,16 @@ func (rcvr *iisReceiver) start(ctx context.Context, host component.Host) error {
 
 func (rcvr *iisReceiver) scrape(ctx context.Context) (pdata.Metrics, error) {
 	var errs error
+	now := pdata.NewTimestampFromTime(time.Now())
+	metricBuilder := metadata.NewMetricsBuilder(rcvr.config.metricSettings)
 
-	watchedMetrics := []winperfcounters.CounterValue{}
 	for _, watcher := range rcvr.watchers {
 		counterValue, err := watcher.ScrapeData()
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue
 		}
-		watchedMetrics = append(watchedMetrics, counterValue)
-	}
-
-	metricBuilder := metadata.NewMetricsBuilder(rcvr.config.metricSettings)
-	now := pdata.NewTimestampFromTime(time.Now())
-
-	for _, watchedMetric := range watchedMetrics {
-		metricBuilder.RecordAny(now, watchedMetric.Value, watchedMetric.MetricRep.Name, watchedMetric.MetricRep.Attributes)
+		metricBuilder.RecordAny(now, counterValue.Value, counterValue.MetricRep.Name, counterValue.MetricRep.Attributes)
 	}
 
 	return metricBuilder.Emit(), errs

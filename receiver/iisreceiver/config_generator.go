@@ -24,7 +24,6 @@ import (
 // getPerfCounters returns established PerfCounters for each metric.
 func getScraperCfgs() []windowsapi.ObjectConfig {
 	return []windowsapi.ObjectConfig{
-
 		{
 			Object:    "Web Service",
 			Instances: []string{"_Total"},

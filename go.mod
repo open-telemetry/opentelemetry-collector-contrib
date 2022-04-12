@@ -92,6 +92,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver v0.48.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.48.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influxdbreceiver v0.48.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver v0.48.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver v0.48.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver v0.48.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver v0.48.0
@@ -729,6 +730,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googl
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver => ./receiver/hostmetricsreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influxdbreceiver => ./receiver/influxdbreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver => ./receiver/iisreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver => ./receiver/jaegerreceiver
 

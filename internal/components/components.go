@@ -111,6 +111,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influxdbreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver"
@@ -189,6 +190,7 @@ func Components() (component.Factories, error) {
 		googlecloudspannerreceiver.NewFactory(),
 		hostmetricsreceiver.NewFactory(),
 		influxdbreceiver.NewFactory(),
+		iisreceiver.NewFactory(),
 		jaegerreceiver.NewFactory(),
 		jmxreceiver.NewFactory(),
 		journaldreceiver.NewFactory(),
