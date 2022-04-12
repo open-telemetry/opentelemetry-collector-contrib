@@ -12,21 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build windows
-// +build windows
-
-package windowsperfcountersreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver"
-
-func (pc *PerfCounterConfig) instances() []string {
-	if len(pc.Instances) == 0 {
-		return []string{""}
-	}
-
-	for _, instance := range pc.Instances {
-		if instance == "*" {
-			return []string{"*"}
-		}
-	}
-
-	return pc.Instances
-}
+// Package idutils provides a set of helper functions to convert ids.
+//
+// Functions in big_endian_converter.go help converting uint64 ids to TraceID
+// and SpanID using big endian, and vice versa.
+package timeutils // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
