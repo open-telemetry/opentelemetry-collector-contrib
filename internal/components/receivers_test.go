@@ -197,6 +197,9 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "sapm",
 		},
 		{
+			receiver: "saphana",
+		},
+		{
 			receiver: "signalfx",
 		},
 		{
