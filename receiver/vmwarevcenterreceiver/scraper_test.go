@@ -16,6 +16,7 @@ package vmwarevcenterreceiver
 
 import (
 	"context"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -26,6 +27,8 @@ import (
 	"github.com/vmware/govmomi/vim25"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vmwarevcenterreceiver/internal/metadata"
 )
 
@@ -50,5 +53,11 @@ func TestScrape_NoVsan(t *testing.T) {
 		metrics, err := scraper.scrape(ctx)
 		require.NoError(t, err)
 		require.NotEqual(t, metrics.MetricCount(), 0)
+
+		goldenPath := filepath.Join("testdata", "metrics", "expected.json")
+		expectedMetrics, err := golden.ReadMetrics(goldenPath)
+		require.NoError(t, err)
+
+		scrapertest.CompareMetrics(expectedMetrics, metrics)
 	})
 }

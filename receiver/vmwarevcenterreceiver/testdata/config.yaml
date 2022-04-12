@@ -1,0 +1,20 @@
+receivers:
+  vcenter:
+    metrics:
+      endpoint: http://vcsa.host.localnet
+      username: otelu
+      password: $VCENTER_PASSWORD
+      collection_interval: 5m
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [vcenter]
+      processors: [nop]
+      exporters: [nop]
