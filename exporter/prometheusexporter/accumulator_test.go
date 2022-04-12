@@ -29,7 +29,7 @@ func TestInvalidDataType(t *testing.T) {
 	a := newAccumulator(zap.NewNop(), 1*time.Hour).(*lastValueAccumulator)
 	metric := pdata.NewMetric()
 	metric.SetDataType(-100)
-	n := a.addMetric(metric, pdata.NewInstrumentationScope(), pdata.Map{}, time.Now())
+	n := a.addMetric(metric, pdata.NewInstrumentationScope(), pdata.NewMap(), time.Now())
 	require.Zero(t, n)
 }
 

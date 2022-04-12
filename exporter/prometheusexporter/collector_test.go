@@ -51,12 +51,12 @@ func TestConvertInvalidDataType(t *testing.T) {
 	c := collector{
 		accumulator: &mockAccumulator{
 			[]pdata.Metric{metric},
-			pdata.Map{},
+			pdata.NewMap(),
 		},
 		logger: zap.NewNop(),
 	}
 
-	_, err := c.convertMetric(metric, pdata.Map{})
+	_, err := c.convertMetric(metric, pdata.NewMap())
 	require.Equal(t, errUnknownMetricType, err)
 
 	ch := make(chan prometheus.Metric, 1)
@@ -90,7 +90,7 @@ func TestConvertInvalidMetric(t *testing.T) {
 		}
 		c := collector{}
 
-		_, err := c.convertMetric(metric, pdata.Map{})
+		_, err := c.convertMetric(metric, pdata.NewMap())
 		require.Error(t, err)
 	}
 }
@@ -132,7 +132,7 @@ func TestCollectMetricsLabelSanitize(t *testing.T) {
 		namespace: "test_space",
 		accumulator: &mockAccumulator{
 			[]pdata.Metric{metric},
-			pdata.Map{},
+			pdata.NewMap(),
 		},
 		sendTimestamps: false,
 		logger:         zap.New(&loggerCore),
@@ -403,7 +403,7 @@ func TestAccumulateHistograms(t *testing.T) {
 				c := collector{
 					accumulator: &mockAccumulator{
 						[]pdata.Metric{metric},
-						pdata.Map{},
+						pdata.NewMap(),
 					},
 					sendTimestamps: sendTimestamp,
 					logger:         zap.NewNop(),
@@ -506,7 +506,7 @@ func TestAccumulateSummary(t *testing.T) {
 				c := collector{
 					accumulator: &mockAccumulator{
 						[]pdata.Metric{metric},
-						pdata.Map{},
+						pdata.NewMap(),
 					},
 					sendTimestamps: sendTimestamp,
 					logger:         zap.NewNop(),

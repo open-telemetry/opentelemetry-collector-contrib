@@ -91,16 +91,6 @@ func (c *collector) getMetricMetadata(metric pdata.Metric, attributes pdata.Map,
 		return true
 	})
 
-	// Sometimes the map can be empty and lookups on an empty map panic.
-	if (resourceAttrs == pdata.Map{}) {
-		return prometheus.NewDesc(
-			c.metricName(c.namespace, metric),
-			metric.Description(),
-			keys,
-			c.constLabels,
-		), values
-	}
-
 	// Map service.name + service.namespace to job
 	if serviceName, ok := resourceAttrs.Get(conventions.AttributeServiceName); ok {
 		val := serviceName.AsString()

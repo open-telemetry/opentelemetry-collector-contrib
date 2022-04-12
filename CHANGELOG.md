@@ -12,6 +12,7 @@
 - `jaegerremotesamplingextension`: Add local and remote sampling stores (#8818)
 - `attributesprocessor`: Add support to filter on log body (#8996)
 - `prometheusremotewriteexporter`: Translate resource attributes to the target info metric (#8493)
+- `prometheusexporter`: Add `job` and `instance` labels to metrics so they can be scraped with `honor_labels: true` (#9115)
 - `podmanreceiver`: Add API timeout configuration option (#9014)
 - `cmd/mdatagen`: Add `sem_conv_version` field to metadata.yaml that is used to set metrics SchemaURL (#9010)
 
