@@ -23,7 +23,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 const testDir = "./testdata/openmetrics/"
@@ -53,7 +53,7 @@ var skippedTests = map[string]struct{}{
 	"bad_timestamp_4": {}, "bad_timestamp_5": {}, "bad_timestamp_7": {}, "bad_unit_6": {}, "bad_unit_7": {},
 }
 
-func verifyPositiveTarget(t *testing.T, _ *testData, mds []*pdata.ResourceMetrics) {
+func verifyPositiveTarget(t *testing.T, _ *testData, mds []*pmetric.ResourceMetrics) {
 	require.Greater(t, len(mds), 0, "At least one resource metric should be present")
 	metrics := getMetrics(mds[0])
 	assertUp(t, 1, metrics)
@@ -79,7 +79,7 @@ func TestOpenMetricsPositive(t *testing.T) {
 }
 
 // nolint:unused
-func verifyNegativeTarget(t *testing.T, td *testData, mds []*pdata.ResourceMetrics) {
+func verifyNegativeTarget(t *testing.T, td *testData, mds []*pmetric.ResourceMetrics) {
 	// failing negative tests are skipped since prometheus scrape package is currently not fully
 	// compatible with OpenMetrics tests and successfully scrapes some invalid metrics
 	// see: https://github.com/prometheus/prometheus/issues/9699

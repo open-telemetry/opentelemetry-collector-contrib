@@ -23,7 +23,7 @@ import (
 	"github.com/signalfx/signalfx-agent/pkg/apm/correlations"
 	"github.com/signalfx/signalfx-agent/pkg/apm/tracetracker"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
@@ -91,7 +91,7 @@ func newCorrelationClient(cfg *Config, accessToken string, params component.Expo
 
 // AddSpans processes the provided spans to correlate the services and environment observed
 // to the resources (host, pods, etc.) emitting the spans.
-func (cor *Tracker) AddSpans(ctx context.Context, traces pdata.Traces) error {
+func (cor *Tracker) AddSpans(ctx context.Context, traces ptrace.Traces) error {
 	if cor == nil || traces.ResourceSpans().Len() == 0 {
 		return nil
 	}

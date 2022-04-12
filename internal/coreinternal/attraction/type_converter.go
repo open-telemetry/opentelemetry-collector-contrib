@@ -17,7 +17,7 @@ package attraction // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	"strconv"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 )
 
@@ -27,26 +27,26 @@ const (
 	doubleConversionTarget = "double"
 )
 
-func convertValue(logger *zap.Logger, key string, to string, v pdata.Value) {
+func convertValue(logger *zap.Logger, key string, to string, v pcommon.Value) {
 	switch to {
 	case stringConversionTarget:
 		switch v.Type() {
-		case pdata.ValueTypeString:
+		case pcommon.ValueTypeString:
 		default:
 			v.SetStringVal(v.AsString())
 		}
 	case intConversionTarget:
 		switch v.Type() {
-		case pdata.ValueTypeInt:
-		case pdata.ValueTypeDouble:
+		case pcommon.ValueTypeInt:
+		case pcommon.ValueTypeDouble:
 			v.SetIntVal(int64(v.DoubleVal()))
-		case pdata.ValueTypeBool:
+		case pcommon.ValueTypeBool:
 			if v.BoolVal() {
 				v.SetIntVal(1)
 			} else {
 				v.SetIntVal(0)
 			}
-		case pdata.ValueTypeString:
+		case pcommon.ValueTypeString:
 			s := v.StringVal()
 			n, err := strconv.ParseInt(s, 10, 64)
 			if err == nil {
@@ -59,16 +59,16 @@ func convertValue(logger *zap.Logger, key string, to string, v pdata.Value) {
 		}
 	case doubleConversionTarget:
 		switch v.Type() {
-		case pdata.ValueTypeInt:
+		case pcommon.ValueTypeInt:
 			v.SetDoubleVal(float64(v.IntVal()))
-		case pdata.ValueTypeDouble:
-		case pdata.ValueTypeBool:
+		case pcommon.ValueTypeDouble:
+		case pcommon.ValueTypeBool:
 			if v.BoolVal() {
 				v.SetDoubleVal(1)
 			} else {
 				v.SetDoubleVal(0)
 			}
-		case pdata.ValueTypeString:
+		case pcommon.ValueTypeString:
 			s := v.StringVal()
 			n, err := strconv.ParseFloat(s, 64)
 			if err == nil {

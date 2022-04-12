@@ -35,7 +35,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
@@ -226,7 +226,7 @@ func Test_Shutdown(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			errChan <- prwe.PushMetrics(context.Background(), pdata.NewMetrics())
+			errChan <- prwe.PushMetrics(context.Background(), pmetric.NewMetrics())
 		}()
 	}
 	wg.Wait()
@@ -421,7 +421,7 @@ func Test_PushMetrics(t *testing.T) {
 
 	tests := []struct {
 		name               string
-		md                 *pdata.Metrics
+		md                 *pmetric.Metrics
 		reqTestFunc        func(t *testing.T, r *http.Request, expected int, isStaleMarker bool)
 		expectedTimeSeries int
 		httpResponseCode   int

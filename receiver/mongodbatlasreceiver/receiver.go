@@ -21,7 +21,7 @@ import (
 
 	"github.com/pkg/errors"
 	"go.mongodb.org/atlas/mongodbatlas"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
@@ -52,10 +52,10 @@ func newMongoDBAtlasScraper(log *zap.Logger, cfg *Config) (scraperhelper.Scraper
 	return scraperhelper.NewScraper(typeStr, recv.scrape, scraperhelper.WithShutdown(recv.shutdown))
 }
 
-func (s *receiver) scrape(ctx context.Context) (pdata.Metrics, error) {
+func (s *receiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	now := time.Now()
 	if err := s.poll(ctx, s.timeConstraints(now)); err != nil {
-		return pdata.Metrics{}, err
+		return pmetric.Metrics{}, err
 	}
 	s.lastRun = now
 	return s.mb.Emit(), nil

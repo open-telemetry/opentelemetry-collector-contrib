@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 )
 
@@ -85,7 +85,7 @@ func (m *mockLogsConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-func (m *mockLogsConsumer) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
+func (m *mockLogsConsumer) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	atomic.AddInt32(&m.received, int32(ld.LogRecordCount()))
 	return nil
 }
@@ -107,7 +107,7 @@ func (m *mockLogsRejecter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-func (m *mockLogsRejecter) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
+func (m *mockLogsRejecter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	atomic.AddInt32(&m.rejected, 1)
 	return fmt.Errorf("no")
 }

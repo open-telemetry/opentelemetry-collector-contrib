@@ -19,7 +19,8 @@ import (
 	"strconv"
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
@@ -63,12 +64,12 @@ func newPostgreSQLScraper(
 }
 
 // scrape scrapes the metric stats, transforms them and attributes them into a metric slices.
-func (p *postgreSQLScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
+func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	databases := p.config.Databases
 	listClient, err := p.clientFactory.getClient(p.config, "")
 	if err != nil {
 		p.logger.Error("Failed to initialize connection to postgres", zap.Error(err))
-		return pdata.NewMetrics(), err
+		return pmetric.NewMetrics(), err
 	}
 	defer listClient.Close()
 
@@ -76,12 +77,12 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 		dbList, err := listClient.listDatabases(ctx)
 		if err != nil {
 			p.logger.Error("Failed to request list of databases from postgres", zap.Error(err))
-			return pdata.NewMetrics(), err
+			return pmetric.NewMetrics(), err
 		}
 		databases = dbList
 	}
 
-	now := pdata.NewTimestampFromTime(time.Now())
+	now := pcommon.NewTimestampFromTime(time.Now())
 
 	var errors scrapererror.ScrapeErrors
 
@@ -107,7 +108,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 
 func (p *postgreSQLScraper) collectBlockReads(
 	ctx context.Context,
-	now pdata.Timestamp,
+	now pcommon.Timestamp,
 	client client,
 	errors scrapererror.ScrapeErrors,
 ) {
@@ -135,7 +136,7 @@ func (p *postgreSQLScraper) collectBlockReads(
 
 func (p *postgreSQLScraper) collectDatabaseTableMetrics(
 	ctx context.Context,
-	now pdata.Timestamp,
+	now pcommon.Timestamp,
 	client client,
 	errors scrapererror.ScrapeErrors,
 ) {
@@ -182,7 +183,7 @@ func (p *postgreSQLScraper) collectDatabaseTableMetrics(
 
 func (p *postgreSQLScraper) collectCommitsAndRollbacks(
 	ctx context.Context,
-	now pdata.Timestamp,
+	now pcommon.Timestamp,
 	client client,
 	databases []string,
 	errors scrapererror.ScrapeErrors,
@@ -218,7 +219,7 @@ func (p *postgreSQLScraper) collectCommitsAndRollbacks(
 
 func (p *postgreSQLScraper) collectDatabaseSize(
 	ctx context.Context,
-	now pdata.Timestamp,
+	now pcommon.Timestamp,
 	client client,
 	databases []string,
 	errors scrapererror.ScrapeErrors,
@@ -247,7 +248,7 @@ func (p *postgreSQLScraper) collectDatabaseSize(
 
 func (p *postgreSQLScraper) collectBackends(
 	ctx context.Context,
-	now pdata.Timestamp,
+	now pcommon.Timestamp,
 	client client,
 	databases []string,
 	errors scrapererror.ScrapeErrors,
