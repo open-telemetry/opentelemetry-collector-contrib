@@ -58,8 +58,7 @@ func TestCreateWithInvalidInputConfig(t *testing.T) {
 	t.Parallel()
 
 	cfg := &WindowsLogConfig{
-		BaseConfig: stanza.BaseConfig{
-		},
+		BaseConfig: stanza.BaseConfig{},
 		Input: stanza.InputConfig{
 			"start_at": "end",
 		},
