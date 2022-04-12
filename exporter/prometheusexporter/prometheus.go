@@ -30,6 +30,7 @@ import (
 type prometheusExporter struct {
 	name         string
 	endpoint     string
+	metricsPath  string
 	shutdownFunc func() error
 	handler      http.Handler
 	collector    *collector
@@ -50,6 +51,7 @@ func newPrometheusExporter(config *Config, set component.ExporterCreateSettings)
 	return &prometheusExporter{
 		name:         config.ID().String(),
 		endpoint:     addr,
+		metricsPath:  config.MetricsPath,
 		collector:    collector,
 		registry:     registry,
 		shutdownFunc: func() error { return nil },
@@ -72,7 +74,7 @@ func (pe *prometheusExporter) Start(_ context.Context, _ component.Host) error {
 	pe.shutdownFunc = ln.Close
 
 	mux := http.NewServeMux()
-	mux.Handle("/metrics", pe.handler)
+	mux.Handle(pe.metricsPath, pe.handler)
 	srv := &http.Server{Handler: mux}
 	go func() {
 		_ = srv.Serve(ln)

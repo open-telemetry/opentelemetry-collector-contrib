@@ -31,6 +31,9 @@ type Config struct {
 	// Endpoint is the address on which the Prometheus scrape handler will be run on.
 	Endpoint string `mapstructure:"endpoint"`
 
+	// MetricsPath is the path under which the Prometheus handler serves metrics. /metrics by default.
+	MetricsPath string `mapstructure:"metrics_path"`
+
 	// Namespace if set, exports metrics under the provided value.
 	Namespace string `mapstructure:"namespace"`
 

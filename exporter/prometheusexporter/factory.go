@@ -43,6 +43,7 @@ func NewFactory() component.ExporterFactory {
 func createDefaultConfig() config.Exporter {
 	return &Config{
 		ExporterSettings:  config.NewExporterSettings(config.NewComponentID(typeStr)),
+		MetricsPath:       "/metrics",
 		ConstLabels:       map[string]string{},
 		SendTimestamps:    false,
 		MetricExpiration:  time.Minute * 5,

@@ -49,6 +49,7 @@ func TestPrometheusExporter(t *testing.T) {
 					"code0": "one0",
 				},
 				Endpoint:         ":8999",
+				MetricsPath:      "/metrics",
 				SendTimestamps:   false,
 				MetricExpiration: 60 * time.Second,
 			},
@@ -107,6 +108,7 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 			"code1": "one1",
 		},
 		Endpoint:         ":7777",
+		MetricsPath:      "/metrics",
 		MetricExpiration: 120 * time.Minute,
 	}
 
@@ -182,6 +184,7 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 			"code2": "one2",
 		},
 		Endpoint:         ":7777",
+		MetricsPath:      "/metrics",
 		SendTimestamps:   true,
 		MetricExpiration: 120 * time.Minute,
 	}
@@ -258,6 +261,7 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 			"code2": "one2",
 		},
 		Endpoint:         ":7777",
+		MetricsPath:      "/metrics",
 		SendTimestamps:   true,
 		MetricExpiration: 120 * time.Minute,
 		ResourceToTelemetrySettings: resourcetotelemetry.Settings{

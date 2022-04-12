@@ -19,6 +19,7 @@
 
 - `k8sclusterreceiver`: Validate that k8s API supports a resource before setting up a watcher for it (#9523)
 - `internal/stanza`: Add support for `remove` operator (#9524)
+- `prometheusexporter`: Add option to configure metrics path (#9239)
 
 ### 🧰 Bug fixes 🧰
 

@@ -41,17 +41,17 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, e0, factory.CreateDefaultConfig())
 
 	e1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "2")]
-	assert.Equal(t, e1,
-		&Config{
-			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "2")),
-			Endpoint:         "1.2.3.4:1234",
-			Namespace:        "test-space",
-			ConstLabels: map[string]string{
-				"label1":        "value1",
-				"another label": "spaced value",
-			},
-			SendTimestamps:    true,
-			MetricExpiration:  60 * time.Minute,
-			skipSanitizeLabel: false,
-		})
+	assert.Equal(t, &Config{
+		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "2")),
+		Endpoint:         "1.2.3.4:1234",
+		MetricsPath:      "/metrics",
+		Namespace:        "test-space",
+		ConstLabels: map[string]string{
+			"label1":        "value1",
+			"another label": "spaced value",
+		},
+		SendTimestamps:    true,
+		MetricExpiration:  60 * time.Minute,
+		skipSanitizeLabel: false,
+	}, e1)
 }

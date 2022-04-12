@@ -12,6 +12,7 @@ The following settings are required:
 
 The following settings can be optionally configured:
 
+- `metrics_path` (default=`/metrics`): The URL under which the metrics are exposed.
 - `const_labels` (no default): key/values that are applied for every exported metric.
 - `namespace` (no default): if set, exports metrics under the provided value.
 - `send_timestamps` (default = `false`): if true, sends the timestamp of the underlying
@@ -26,6 +27,7 @@ Example:
 exporters:
   prometheus:
     endpoint: "1.2.3.4:1234"
+    metrics_path: "/metrics"
     namespace: test-space
     const_labels:
       label1: value1

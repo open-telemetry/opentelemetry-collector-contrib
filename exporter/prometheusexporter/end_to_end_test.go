@@ -70,6 +70,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		Namespace:        "test",
 		Endpoint:         ":8787",
+		MetricsPath:      "/metrics",
 		SendTimestamps:   true,
 		MetricExpiration: 2 * time.Hour,
 	}
