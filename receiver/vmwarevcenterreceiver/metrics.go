@@ -411,14 +411,14 @@ func (v *vcenterMetricScraper) recordVMVsanMetric(
 		} else {
 			v.mb.RecordVcenterVMVsanOperationsDataPoint(now, value, "write")
 		}
-	case "throughputRead":
+	case throughputRead:
 		value, err := parseInt(val)
 		if err != nil {
 			errs.AddPartial(1, err)
 		} else {
 			v.mb.RecordVcenterVMVsanThroughputDataPoint(now, value, "read")
 		}
-	case "throughputWrite":
+	case throughputWrite:
 		value, err := parseInt(val)
 		if err != nil {
 			errs.AddPartial(1, err)
