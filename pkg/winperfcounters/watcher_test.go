@@ -277,7 +277,7 @@ func Test_Scraping_Wildcard(t *testing.T) {
 		counterVals = append(counterVals, value...)
 	}
 
-	require.GreaterOrEqual(t, len(counterVals), 1)
+	require.GreaterOrEqual(t, len(counterVals), 3)
 }
 
 // Test_Closing ensures that watchers close appropriately

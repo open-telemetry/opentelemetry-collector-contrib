@@ -57,28 +57,29 @@ func (w Watcher) ScrapeData() ([]CounterValue, error) {
 		return []CounterValue{}, err
 	}
 
-	if strings.Contains(w.Path(), "*") {
-		counterValues := []CounterValue{}
-		for _, counterValue := range scrapedCounterValues {
-			metric := w.GetMetricRep()
-			if counterValue.InstanceName != "" {
-				if metric.Attributes == nil {
-					metric.Attributes = map[string]string{instanceLabelName: counterValue.InstanceName}
-				}
-				metric.Attributes[instanceLabelName] = counterValue.InstanceName
-				counterValues = append(counterValues, CounterValue{MetricRep: metric, Value: counterValue.Value})
-			}
+	if !strings.Contains(w.Path(), "*") {
+		metric := w.GetMetricRep()
+
+		if len(scrapedCounterValues) != 1 {
+			return []CounterValue{}, fmt.Errorf("Performance counter with path `%s` returned incorrect amount of counter values: %d", w.Path(), len(scrapedCounterValues))
 		}
-		return counterValues, nil
-	}
-	metric := w.GetMetricRep()
+		counterValue := scrapedCounterValues[0]
 
-	if len(scrapedCounterValues) != 1 {
-		return []CounterValue{}, fmt.Errorf("Performance counter with path `%s` returned incorrect amount of counter values: %d", w.Path(), len(scrapedCounterValues))
+		return []CounterValue{{MetricRep: metric, Value: counterValue.Value}}, nil
 	}
-	counterValue := scrapedCounterValues[0]
 
-	return []CounterValue{{MetricRep: metric, Value: counterValue.Value}}, nil
+	counterValues := []CounterValue{}
+	for _, counterValue := range scrapedCounterValues {
+		metric := w.GetMetricRep()
+		if counterValue.InstanceName != "" {
+			if metric.Attributes == nil {
+				metric.Attributes = map[string]string{instanceLabelName: counterValue.InstanceName}
+			}
+			metric.Attributes[instanceLabelName] = counterValue.InstanceName
+			counterValues = append(counterValues, CounterValue{MetricRep: metric, Value: counterValue.Value})
+		}
+	}
+	return counterValues, nil
 }
 
 func (w Watcher) Close() error {
