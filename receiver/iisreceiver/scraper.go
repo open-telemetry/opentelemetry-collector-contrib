@@ -43,18 +43,17 @@ func newIisReceiver(params component.ReceiverCreateSettings, cfg *Config, consum
 }
 
 // Start creates and starts the prometheus receiver.
-func (rcvr iisReceiver) Start(ctx context.Context, host component.Host) error {
-	watchers := []winperfcounters.PerfCounterWatcher{}
+func (rcvr iisReceiver) start(ctx context.Context, host component.Host) error {
+	rcvr.watchers = []winperfcounters.PerfCounterWatcher{}
 	for _, objCfg := range getScraperCfgs() {
 		objWatchers, err := objCfg.BuildPaths()
 		if err != nil {
 			rcvr.params.Logger.Warn("some performance counters could not be initialized", zap.Error(err))
 		}
 		for _, objWatcher := range objWatchers {
-			watchers = append(watchers, objWatcher)
+			rcvr.watchers = append(rcvr.watchers, objWatcher)
 		}
 	}
-	rcvr.watchers = watchers
 
 	return nil
 }
@@ -83,7 +82,7 @@ func (rcvr *iisReceiver) scrape(ctx context.Context) (pdata.Metrics, error) {
 }
 
 // Shutdown stops the underlying Prometheus receiver.
-func (rcvr iisReceiver) Shutdown(ctx context.Context) error {
+func (rcvr iisReceiver) shutdown(ctx context.Context) error {
 	var errs error
 	for _, watcher := range rcvr.watchers {
 		err := watcher.Close()

@@ -23,14 +23,27 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 func createMetricsReceiver(
 	_ context.Context,
 	params component.ReceiverCreateSettings,
-	cfg config.Receiver,
+	rConf config.Receiver,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
-	rCfg := cfg.(*Config)
-	return newIisReceiver(params, rCfg, nextConsumer), nil
+	cfg := rConf.(*Config)
+	rcvr := newIisReceiver(params, cfg, nextConsumer)
+
+	scraper, err := scraperhelper.NewScraper(typeStr, rcvr.scrape,
+		scraperhelper.WithStart(rcvr.start),
+		scraperhelper.WithShutdown(rcvr.shutdown))
+	if err != nil {
+		return nil, err
+	}
+
+	return scraperhelper.NewScraperControllerReceiver(
+		&cfg.ScraperControllerSettings, params, nextConsumer,
+		scraperhelper.AddScraper(scraper),
+	)
 }
