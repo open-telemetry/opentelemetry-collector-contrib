@@ -177,15 +177,9 @@ func createAttributes(resource pdata.Resource, attributes pdata.Map, externalLab
 
 	// Ensure attributes are sorted by key for consistent merging of keys which
 	// collide when sanitized.
-	DropSanitization := featuregate.IsEnabled(dropSanitizationGate.ID)
 	attributes.Sort()
 	attributes.Range(func(key string, value pdata.Value) bool {
-		var finalKey string
-		if DropSanitization {
-			finalKey = sanitizeLabels(key)
-		} else {
-			finalKey = sanitize(key)
-		}
+		var finalKey = sanitize(key)
 		if existingLabel, alreadyExists := l[finalKey]; alreadyExists {
 			existingLabel.Value = existingLabel.Value + ";" + value.AsString()
 			l[finalKey] = existingLabel
@@ -558,24 +552,8 @@ func sanitize(s string) string {
 	if unicode.IsDigit(rune(s[0])) {
 		s = keyStr + "_" + s
 	}
-	if s[0] == '_' {
+	if !featuregate.IsEnabled(dropSanitizationGate.ID) && s[0] == '_' {
 		s = keyStr + s
-	}
-	return s
-}
-
-// copied from prometheus-go-metric-exporter
-func sanitizeLabels(s string) string {
-	if len(s) == 0 {
-		return s
-	}
-
-	// Note: No length limit for label keys because Prometheus doesn't
-	// define a length limit, thus we should NOT be truncating label keys.
-	// labels that start with _ are not sanitized
-	s = strings.Map(sanitizeRune, s)
-	if unicode.IsDigit(rune(s[0])) {
-		s = keyStr + "_" + s
 	}
 	return s
 }
