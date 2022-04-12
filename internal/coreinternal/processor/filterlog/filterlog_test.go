@@ -43,9 +43,8 @@ func TestLogRecord_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 			errorString: `at least one of "attributes", "libraries", "resources" or "log_bodies" field must be specified`,
 		},
 		{
-			name: "empty_log_names_and_attributes",
+			name: "empty_log_bodies_and_attributes",
 			property: filterconfig.MatchProperties{
-				LogNames:  []string{},
 				LogBodies: []string{},
 			},
 			errorString: `at least one of "attributes", "libraries", "resources" or "log_bodies" field must be specified`,

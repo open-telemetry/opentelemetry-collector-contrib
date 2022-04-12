@@ -41,6 +41,14 @@ jobs:
       - name: Install Tools
         if: steps.tool-cache.outputs.cache-hit != 'true'
         run: make install-tools
+  check-collector-module-version:
+    runs-on: ubuntu-latest
+    needs: [setup-environment]
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+      - name: Check Collector Module Version
+        run: ./.github/workflows/scripts/check-collector-module-version.sh
   lint:
     runs-on: ubuntu-latest
     needs: [setup-environment]

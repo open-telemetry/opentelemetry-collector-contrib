@@ -116,7 +116,7 @@ func (exp *traceExporter) pushTraceData(
 
 	// Start host metadata with resource attributes from
 	// the first payload.
-	if exp.cfg.SendMetadata {
+	if exp.cfg.HostMetadata.Enabled {
 		exp.onceMetadata.Do(func() {
 			attrs := pdata.NewMap()
 			if td.ResourceSpans().Len() > 0 {

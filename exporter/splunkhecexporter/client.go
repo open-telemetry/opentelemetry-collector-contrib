@@ -258,6 +258,7 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld pdata.Logs, send f
 	var permanentErrors []error
 
 	var rls = ld.ResourceLogs()
+	var droppedProfilingDataRecords, droppedLogRecords int
 	for i := 0; i < rls.Len(); i++ {
 		ills := rls.At(i).ScopeLogs()
 		for j := 0; j < ills.Len(); j++ {
@@ -265,25 +266,40 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld pdata.Logs, send f
 			var newPermanentErrors []error
 
 			if isProfilingData(ills.At(j)) {
+				if !c.config.ProfilingDataEnabled {
+					droppedProfilingDataRecords += ills.At(j).LogRecords().Len()
+					continue
+				}
 				profilingBufState.resource, profilingBufState.library = i, j
 				newPermanentErrors, err = c.pushLogRecords(ctx, rls, &profilingBufState, profilingHeaders, send)
 			} else {
+				if !c.config.LogDataEnabled {
+					droppedLogRecords += ills.At(j).LogRecords().Len()
+					continue
+				}
 				bufState.resource, bufState.library = i, j
 				newPermanentErrors, err = c.pushLogRecords(ctx, rls, &bufState, nil, send)
 			}
 
 			if err != nil {
-				return consumererror.NewLogs(err, *subLogs(&ld, bufState.bufFront, profilingBufState.bufFront))
+				return consumererror.NewLogs(err, *c.subLogs(&ld, bufState.bufFront, profilingBufState.bufFront))
 			}
 
 			permanentErrors = append(permanentErrors, newPermanentErrors...)
 		}
 	}
 
+	if droppedProfilingDataRecords != 0 {
+		c.logger.Debug("Profiling data is not allowed", zap.Int("dropped_records", droppedProfilingDataRecords))
+	}
+	if droppedLogRecords != 0 {
+		c.logger.Debug("Log data is not allowed", zap.Int("dropped_records", droppedLogRecords))
+	}
+
 	// There's some leftover unsent non-profiling data
 	if bufState.buf.Len() > 0 {
 		if err := send(ctx, bufState.buf, nil); err != nil {
-			return consumererror.NewLogs(err, *subLogs(&ld, bufState.bufFront, profilingBufState.bufFront))
+			return consumererror.NewLogs(err, *c.subLogs(&ld, bufState.bufFront, profilingBufState.bufFront))
 		}
 	}
 
@@ -291,7 +307,7 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld pdata.Logs, send f
 	if profilingBufState.buf.Len() > 0 {
 		if err := send(ctx, profilingBufState.buf, profilingHeaders); err != nil {
 			// Non-profiling bufFront is set to nil because all non-profiling data was flushed successfully above.
-			return consumererror.NewLogs(err, *subLogs(&ld, nil, profilingBufState.bufFront))
+			return consumererror.NewLogs(err, *c.subLogs(&ld, nil, profilingBufState.bufFront))
 		}
 	}
 
@@ -600,14 +616,18 @@ func (c *client) postEvents(ctx context.Context, events io.Reader, headers map[s
 
 // subLogs returns a subset of `ld` starting from `profilingBufFront` for profiling data
 // plus starting from `bufFront` for non-profiling data. Both can be nil, in which case they are ignored
-func subLogs(ld *pdata.Logs, bufFront *index, profilingBufFront *index) *pdata.Logs {
+func (c *client) subLogs(ld *pdata.Logs, bufFront *index, profilingBufFront *index) *pdata.Logs {
 	if ld == nil {
 		return ld
 	}
 
 	subset := pdata.NewLogs()
-	subLogsByType(ld, bufFront, &subset, false)
-	subLogsByType(ld, profilingBufFront, &subset, true)
+	if c.config.LogDataEnabled {
+		subLogsByType(ld, bufFront, &subset, false)
+	}
+	if c.config.ProfilingDataEnabled {
+		subLogsByType(ld, profilingBufFront, &subset, true)
+	}
 
 	return &subset
 }

@@ -77,9 +77,9 @@ func testSyslog(t *testing.T, cfg *SysLogConfig) {
 		log := logs.At(i)
 
 		require.Equal(t, log.Timestamp(), pdata.Timestamp(1614470402003000000+i*60*1000*1000*1000))
-		msg, ok := log.Body().MapVal().Get("message")
+		msg, ok := log.Attributes().AsRaw()["message"]
 		require.True(t, ok)
-		require.Equal(t, msg.StringVal(), fmt.Sprintf("test msg %d", i))
+		require.Equal(t, msg, fmt.Sprintf("test msg %d", i))
 	}
 }
 

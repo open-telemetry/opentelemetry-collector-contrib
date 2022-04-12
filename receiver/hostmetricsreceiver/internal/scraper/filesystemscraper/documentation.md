@@ -23,10 +23,10 @@ metrics:
 
 ## Metric attributes
 
-| Name | Description |
-| ---- | ----------- |
-| device | Identifier of the filesystem. |
-| mode | Mountpoint mode such "ro", "rw", etc. |
-| mountpoint | Mountpoint path. |
-| state | Breakdown of filesystem usage by type. |
-| type | Filesystem type, such as, "ext4", "tmpfs", etc. |
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| device | Identifier of the filesystem. |  |
+| mode | Mountpoint mode such "ro", "rw", etc. |  |
+| mountpoint | Mountpoint path. |  |
+| state | Breakdown of filesystem usage by type. | free, reserved, used |
+| type | Filesystem type, such as, "ext4", "tmpfs", etc. |  |

@@ -24,14 +24,12 @@ import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vmwarevcenterreceiver/internal/metadata"
 )
 
 type Config struct {
 	config.ReceiverSettings `mapstructure:",squash"`
 	MetricsConfig           *MetricsConfig `mapstructure:"metrics,omitempty"`
-	LoggingConfig           *LoggingConfig `mapstructure:"logging,omitempty"`
 }
 
 type MetricsConfig struct {
@@ -44,21 +42,12 @@ type MetricsConfig struct {
 	PerformanceInterval                     string                   `mapstructure:"performance_interval"`
 }
 
-type LoggingConfig struct {
-	configtls.TLSClientSetting   `mapstructure:"tls,omitempty"`
-	*syslogreceiver.SysLogConfig `mapstructure:",squash"`
-}
-
 // Validate checks to see if the supplied config will work for the vmwarevcenterreceiver
 func (c *Config) Validate() error {
 	var err error
 	metricsErr := c.validateMetricsConfig()
 	if metricsErr != nil {
 		multierr.Append(err, metricsErr)
-	}
-	logErr := c.validateLoggingConfig()
-	if logErr != nil {
-		multierr.Append(err, logErr)
 	}
 
 	return err
@@ -90,28 +79,6 @@ func (c *Config) validateMetricsConfig() error {
 		err = multierr.Append(err, fmt.Errorf("error loading tls configuration: %w", tlsErr))
 	}
 
-	// var validIntervalKey bool = false
-	// for k, _ := range performance.Intervals {
-	// 	if k == mc.PerformanceInterval {
-	// 		validIntervalKey = true
-	// 		break
-	// 	}
-	// }
-	// if !validIntervalKey {
-	// 	err = multierr.Append(err, errors.New(""))
-	// }
-
-	return err
-}
-
-func (c *Config) validateLoggingConfig() error {
-	var err error
-	lc := c.LoggingConfig
-	if lc != nil {
-		if len(lc.SysLogConfig.Operators) != 0 {
-			err = multierr.Append(err, errors.New("custom operators are not supported for this component"))
-		}
-	}
 	return err
 }
 

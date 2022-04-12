@@ -27,7 +27,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vmwarevcenterreceiver/internal/metadata"
 )
 
@@ -47,29 +46,21 @@ func NewFactory() component.ReceiverFactory {
 		typeStr,
 		createDefaultConfig,
 		component.WithMetricsReceiver(f.createMetricsReceiver),
-		component.WithLogsReceiver(f.createLogsReceiver),
 	)
 }
 
 func createDefaultConfig() config.Receiver {
-	syslogConfig := syslogreceiver.NewFactory().CreateDefaultConfig()
-	syslog, _ := syslogConfig.(*syslogreceiver.SysLogConfig)
 	return &Config{
 		MetricsConfig: &MetricsConfig{
 			ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 				ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
 				CollectionInterval: 5 * time.Minute,
 			},
-			TLSClientSetting:    configtls.TLSClientSetting{},
-			Metrics:             metadata.DefaultMetricsSettings(),
-			Endpoint:            "",
-			Username:            "",
-			Password:            "",
-			PerformanceInterval: "real",
-		},
-		LoggingConfig: &LoggingConfig{
-			SysLogConfig:     syslog,
 			TLSClientSetting: configtls.TLSClientSetting{},
+			Metrics:          metadata.DefaultMetricsSettings(),
+			Endpoint:         "",
+			Username:         "",
+			Password:         "",
 		},
 	}
 }
@@ -89,21 +80,6 @@ func (f *vcenterReceiverFactory) ensureReceiver(params component.ReceiverCreateS
 }
 
 var errConfigNotVcenter = errors.New("config was not an vcenter receiver config")
-
-func (f *vcenterReceiverFactory) createLogsReceiver(
-	c context.Context,
-	params component.ReceiverCreateSettings,
-	rConf config.Receiver,
-	consumer consumer.Logs,
-) (component.LogsReceiver, error) {
-	cfg, ok := rConf.(*Config)
-	if !ok {
-		return nil, errConfigNotVcenter
-	}
-	rcvr := f.ensureReceiver(params, cfg)
-	rcvr.logsReceiver = newLogsReceiver(cfg, params, consumer)
-	return rcvr, nil
-}
 
 func (f *vcenterReceiverFactory) createMetricsReceiver(
 	_ context.Context,
