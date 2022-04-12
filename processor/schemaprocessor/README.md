@@ -5,7 +5,7 @@
 Supported Pipelines: traces, metrics, logs
 
 The _Schema Processor_ is used to convert existing telemetry data or signals to a version of the semantic convention defined as part of the configuration.
-The processors works be using a set of target schema URLs that are used to match incoming signals. 
+The processor works by using a set of target schema URLs that are used to match incoming signal.
 On a match, the processor will fetch the schema translation file (if not cached) set by the incoming signal and apply transformations
 required to export as the target semantic convention version.
 

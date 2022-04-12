@@ -101,12 +101,6 @@ func NewIdentifier(s string) (*Identifier, error) {
 	}, nil
 }
 
-func (id *Identifier) LessOrEqualThan(b *Identifier) bool {
-	return id.Major <= b.Major ||
-		id.Minor <= b.Minor ||
-		id.Patch <= b.Patch
-}
-
 func (id *Identifier) String() string {
 	return fmt.Sprint(id.Major, separator, id.Minor, separator, id.Patch)
 }

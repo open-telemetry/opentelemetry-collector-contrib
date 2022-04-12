@@ -128,9 +128,6 @@ func TestDefaultProcessors(t *testing.T) {
 		{
 			processor: "tail_sampling",
 		},
-		{
-			processor: "schema",
-		},
 	}
 
 	assert.Len(t, tests, len(procFactories), "All processors MUST be added to lifecycle tests")

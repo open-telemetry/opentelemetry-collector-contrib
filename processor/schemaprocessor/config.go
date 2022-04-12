@@ -34,11 +34,11 @@ type Config struct {
 
 	// PreCache is a list of schema URLs that are downloaded
 	// and cached at the start of the collector runtime
-	// in order to avoid fetching data that later on that could
-	// blocking processing of signals. (Optional field)
+	// in order to avoid fetching data that later on could
+	// block processing of signals. (Optional field)
 	PreCache []string `mapstructure:"precache"`
 
-	// Targets define what schema familys should be
+	// Targets define what schema families should be
 	// translated to, allowing older and newer formats
 	// to conform to the target schema indentifier.
 	Targets []string `mapstructure:"targets"`
@@ -58,16 +58,16 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("no schema targets defined: %w", errRequiresTargets)
 	}
 
-	familys := make(map[string]struct{})
+	families := make(map[string]struct{})
 	for _, target := range c.Targets {
 		family, _, err := schema.GetFamilyAndIdentifier(target)
 		if err != nil {
 			return err
 		}
-		if _, exist := familys[family]; exist {
+		if _, exist := families[family]; exist {
 			return errDuplicateTargets
 		}
-		familys[family] = struct{}{}
+		families[family] = struct{}{}
 	}
 
 	return nil
