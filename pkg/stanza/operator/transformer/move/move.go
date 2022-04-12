@@ -1,0 +1,83 @@
+// Copyright The OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package move // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/transformer/move"
+
+import (
+	"context"
+	"fmt"
+
+	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+)
+
+func init() {
+	operator.Register("move", func() operator.Builder { return NewOperatorConfig("") })
+}
+
+// NewOperatorConfig creates a new move operator config with default values
+func NewOperatorConfig(operatorID string) *OperatorConfig {
+	return &OperatorConfig{
+		TransformerConfig: helper.NewTransformerConfig(operatorID, "move"),
+	}
+}
+
+// OperatorConfig is the configuration of a move operator
+type OperatorConfig struct {
+	helper.TransformerConfig `mapstructure:",squash" yaml:",inline"`
+	From                     entry.Field `mapstructure:"from" yaml:"from"`
+	To                       entry.Field `mapstructure:"to" yaml:"to"`
+}
+
+// Build will build a Move operator from the supplied configuration
+func (c OperatorConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+	transformerOperator, err := c.TransformerConfig.Build(logger)
+	if err != nil {
+		return nil, err
+	}
+
+	if c.To == entry.NewNilField() || c.From == entry.NewNilField() {
+		return nil, fmt.Errorf("move: missing to or from field")
+	}
+
+	return &Operator{
+		TransformerOperator: transformerOperator,
+		From:                c.From,
+		To:                  c.To,
+	}, nil
+}
+
+// Operator is an operator that moves a field's value to a new field
+type Operator struct {
+	helper.TransformerOperator
+	From entry.Field
+	To   entry.Field
+}
+
+// Process will process an entry with a move transformation.
+func (p *Operator) Process(ctx context.Context, entry *entry.Entry) error {
+	return p.ProcessWith(ctx, entry, p.Transform)
+}
+
+// Transform will apply the move operation to an entry
+func (p *Operator) Transform(e *entry.Entry) error {
+	val, exist := p.From.Delete(e)
+	if !exist {
+		return fmt.Errorf("move: field does not exist")
+	}
+	return p.To.Set(e, val)
+}

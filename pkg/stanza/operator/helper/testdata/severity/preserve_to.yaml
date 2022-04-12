@@ -1,0 +1,2 @@
+type: severity_parser
+preserve_to: body.aField

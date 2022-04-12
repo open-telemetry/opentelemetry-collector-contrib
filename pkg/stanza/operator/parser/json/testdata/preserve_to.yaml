@@ -1,0 +1,2 @@
+type: json_parser
+preserve_to: body.aField

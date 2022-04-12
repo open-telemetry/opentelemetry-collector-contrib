@@ -1,0 +1,4 @@
+type: trace_parser
+span_id: 
+  parse_from: body.app_span_id
+  preserve_to: body.orig_span_id
