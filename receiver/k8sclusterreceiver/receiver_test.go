@@ -37,6 +37,7 @@ import (
 )
 
 func TestReceiver(t *testing.T) {
+	t.Skip("Flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9002")
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	defer tt.Shutdown(context.Background())
