@@ -65,37 +65,37 @@ metrics:
 
 ## Metric attributes
 
-| Name | Description |
-| ---- | ----------- |
-| active_pending_request_state | The state of network request. |
-| alert_rating | The alert rating. |
-| column_memory_subtype | The subtype of column store memory. |
-| column_memory_type | The type of column store memory. |
-| component | The SAP HANA component. |
-| connection_status | The connection status. |
-| cpu_type | The type of cpu. |
-| database | The SAP HANA database. |
-| disk_state_used_free | The state of the disk storage. |
-| disk_usage_type | The SAP HANA disk & volume usage type. |
-| host | The SAP HANA host. |
-| host_swap_state | The state of swap data. |
-| internal_external_request_type | The type of network request. |
-| memory_state_used_free | The state of memory. |
-| path | The SAP HANA disk path. |
-| port | The SAP HANA port. |
-| primary_host | The primary SAP HANA host in replication. |
-| product | The SAP HANA product. |
-| replication_mode | The replication mode. |
-| row_memory_type | The type of row store memory. |
-| schema | The SAP HANA schema. |
-| schema_memory_type | The type of schema memory. |
-| schema_operation_type | The type of operation. |
-| schema_record_type | The type of schema record. |
-| secondary_host | The secondary SAP HANA host in replication. |
-| service | The SAP HANA service. |
-| service_memory_used_type | The type of service memory. |
-| service_status | The status of services. |
-| system | The SAP HANA system. |
-| thread_status | The status of threads. |
-| transaction_type | The transaction type. |
-| volume_operation_type | The type of operation. |
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| active_pending_request_state (state) | The state of network request. | active, pending |
+| alert_rating (rating) | The alert rating. |  |
+| column_memory_subtype (subtype) | The subtype of column store memory. | data, dict, index, misc |
+| column_memory_type (type) | The type of column store memory. | main, delta |
+| component | The SAP HANA component. |  |
+| connection_status (status) | The connection status. | running, idle, queueing |
+| cpu_type (type) | The type of cpu. | user, system, io_wait, idle |
+| database | The SAP HANA database. |  |
+| disk_state_used_free (state) | The state of the disk storage. | used, free |
+| disk_usage_type (usage_type) | The SAP HANA disk & volume usage type. |  |
+| host | The SAP HANA host. |  |
+| host_swap_state (state) | The state of swap data. | used, free |
+| internal_external_request_type (type) | The type of network request. | internal, external |
+| memory_state_used_free (state) | The state of memory. | used, free |
+| path | The SAP HANA disk path. |  |
+| port | The SAP HANA port. |  |
+| primary_host (primary) | The primary SAP HANA host in replication. |  |
+| product | The SAP HANA product. |  |
+| replication_mode (mode) | The replication mode. |  |
+| row_memory_type (type) | The type of row store memory. | fixed, variable |
+| schema | The SAP HANA schema. |  |
+| schema_memory_type (type) | The type of schema memory. | main, delta, history_main, history_delta |
+| schema_operation_type (type) | The type of operation. | read, write, merge |
+| schema_record_type (type) | The type of schema record. | main, delta, history_main, history_delta |
+| secondary_host (secondary) | The secondary SAP HANA host in replication. |  |
+| service | The SAP HANA service. |  |
+| service_memory_used_type (type) | The type of service memory. | logical, physical |
+| service_status (status) | The status of services. | active, inactive |
+| system | The SAP HANA system. |  |
+| thread_status (status) | The status of threads. | active, inactive |
+| transaction_type (type) | The transaction type. | update, commit, rollback |
+| volume_operation_type (type) | The type of operation. | read, write |
