@@ -26,7 +26,7 @@ func getScraperCfgs() []windowsapi.ObjectConfig {
 	return []windowsapi.ObjectConfig{
 
 		{
-			Object:    "Web Server",
+			Object:    "Web Service",
 			Instances: []string{"_Total"},
 			Counters: []windowsapi.CounterConfig{
 				{

@@ -43,7 +43,7 @@ func newIisReceiver(params component.ReceiverCreateSettings, cfg *Config, consum
 }
 
 // Start creates and starts the prometheus receiver.
-func (rcvr iisReceiver) start(ctx context.Context, host component.Host) error {
+func (rcvr *iisReceiver) start(ctx context.Context, host component.Host) error {
 	rcvr.watchers = []winperfcounters.PerfCounterWatcher{}
 	for _, objCfg := range getScraperCfgs() {
 		objWatchers, err := objCfg.BuildPaths()

@@ -1,0 +1,268 @@
+{
+   "resourceMetrics": [
+      {
+         "resource": {},
+         "scopeMetrics": [
+            {
+               "metrics": [
+                  {
+                     "description": "Number of active connections.",
+                     "name": "iis.connection.active",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "startTimeUnixNano": "1649778222171432600",
+                              "timeUnixNano": "1649778222172431900"
+                           }
+                        ]
+                     },
+                     "unit": "{connections}"
+                  },
+                  {
+                     "description": "Number of connections established anonymously.",
+                     "name": "iis.connection.anonymous",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "1",
+                              "startTimeUnixNano": "1649778222171432600",
+                              "timeUnixNano": "1649778222172431900"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "{connections}"
+                  },
+                  {
+                     "description": "Total amount of attempts to connect to the server.",
+                     "name": "iis.connection.attempt.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "1",
+                              "startTimeUnixNano": "1649778222171432600",
+                              "timeUnixNano": "1649778222172431900"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "{attempts}"
+                  },
+                  {
+                     "description": "Number of transmitted files.",
+                     "name": "iis.network.file.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "direction",
+                                    "value": {
+                                       "stringValue": "received"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1649778222171432600",
+                              "timeUnixNano": "1649778222172431900"
+                           },
+                           {
+                              "asInt": "1",
+                              "attributes": [
+                                 {
+                                    "key": "direction",
+                                    "value": {
+                                       "stringValue": "sent"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1649778222171432600",
+                              "timeUnixNano": "1649778222172431900"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "{files}"
+                  },
+                  {
+                     "description": "Total amount of bytes sent and received.",
+                     "name": "iis.network.io",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "57",
+                              "attributes": [
+                                 {
+                                    "key": "direction",
+                                    "value": {
+                                       "stringValue": "received"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1649778222171432600",
+                              "timeUnixNano": "1649778222172431900"
+                           },
+                           {
+                              "asInt": "940",
+                              "attributes": [
+                                 {
+                                    "key": "direction",
+                                    "value": {
+                                       "stringValue": "sent"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1649778222171432600",
+                              "timeUnixNano": "1649778222172431900"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "By"
+                  },
+                  {
+                     "description": "Total amount of requests of a given type.",
+                     "name": "iis.request.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "request",
+                                    "value": {
+                                       "stringValue": ""
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1649778222171432600",
+                              "timeUnixNano": "1649778222172431900"
+                           },
+                           {
+                              "asInt": "1",
+                              "attributes": [
+                                 {
+                                    "key": "request",
+                                    "value": {
+                                       "stringValue": ""
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1649778222171432600",
+                              "timeUnixNano": "1649778222172431900"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "request",
+                                    "value": {
+                                       "stringValue": ""
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1649778222171432600",
+                              "timeUnixNano": "1649778222172431900"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "request",
+                                    "value": {
+                                       "stringValue": ""
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1649778222171432600",
+                              "timeUnixNano": "1649778222172431900"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "request",
+                                    "value": {
+                                       "stringValue": ""
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1649778222171432600",
+                              "timeUnixNano": "1649778222172431900"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "request",
+                                    "value": {
+                                       "stringValue": ""
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1649778222171432600",
+                              "timeUnixNano": "1649778222172431900"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "request",
+                                    "value": {
+                                       "stringValue": ""
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1649778222171432600",
+                              "timeUnixNano": "1649778222172431900"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "{requests}"
+                  },
+                  {
+                     "description": "Current amount of active threads.",
+                     "name": "iis.thread.active",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "4689",
+                              "startTimeUnixNano": "1649778222171432600",
+                              "timeUnixNano": "1649778222172431900"
+                           }
+                        ]
+                     },
+                     "unit": "{threads}"
+                  },
+                  {
+                     "description": "The amount of time the server has been up.",
+                     "gauge": {
+                        "dataPoints": [
+                           {
+                              "asInt": "512399",
+                              "startTimeUnixNano": "1649778222171432600",
+                              "timeUnixNano": "1649778222172431900"
+                           }
+                        ]
+                     },
+                     "name": "iis.uptime",
+                     "unit": "s"
+                  }
+               ],
+               "scope": {
+                  "name": "otelcol/iisreceiver"
+               }
+            }
+         ]
+      }
+   ]
+}

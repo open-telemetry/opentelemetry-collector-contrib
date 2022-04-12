@@ -11,9 +11,12 @@ env:
 jobs:
   windows-unittest:
     runs-on: windows-latest
+    
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
+      - name: install iis
+        run: Install-WindowsFeature -name Web-Server -IncludeManagementTools
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
