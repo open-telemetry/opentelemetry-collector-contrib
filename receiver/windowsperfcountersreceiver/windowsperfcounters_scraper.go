@@ -104,12 +104,12 @@ func (s *scraper) scrape(context.Context) (pdata.Metrics, error) {
 
 	counterVals := []winperfcounters.CounterValue{}
 	for _, watcher := range s.watchers {
-		counterValue, err := watcher.ScrapeData()
+		scrapedCounterValues, err := watcher.ScrapeData()
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue
 		}
-		counterVals = append(counterVals, counterValue)
+		counterVals = append(counterVals, scrapedCounterValues...)
 	}
 
 	for _, scrapedValue := range counterVals {
