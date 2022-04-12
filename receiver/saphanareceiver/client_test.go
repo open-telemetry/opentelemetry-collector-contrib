@@ -21,10 +21,9 @@ import (
 	"errors"
 	"testing"
 
-	"go.opentelemetry.io/collector/model/pdata"
-
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/model/pdata"
 )
 
 type testResultWrapper struct {
