@@ -31,8 +31,7 @@ extensions:
         ${BASIC_AUTH_USERNAME}:${BASIC_AUTH_PASSWORD}
   
   basicauth/client:
-    htpasswd:
-      client_auth: username:password
+    client_auth: username:password
 
 receivers:
   otlp:
