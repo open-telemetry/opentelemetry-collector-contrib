@@ -183,6 +183,7 @@ func (v *vcenterMetricScraper) collectHosts(
 		v.collectHost(ctx, colTime, h, hostVsanCSVs, errs)
 		v.mb.EmitForResource(
 			metadata.WithVcenterHostName(h.Name()),
+			metadata.WithVcenterClusterName(cluster.Name()),
 		)
 	}
 }
@@ -276,11 +277,24 @@ func (v *vcenterMetricScraper) collectVMs(
 		entityRefID := fmt.Sprintf("virtual-machine:%s", vmUUID)
 		ps := string(moVM.Runtime.PowerState)
 
+		host, err := vm.HostSystem(ctx)
+		if err != nil {
+			errs.AddPartial(1, err)
+			return
+		}
+		hostname, err := host.ObjectName(ctx)
+		if err != nil {
+			errs.AddPartial(1, err)
+			return
+		}
+
 		v.collectVM(ctx, colTime, moVM, entityRefID, vsanCsvs, errs)
 		v.mb.EmitForResource(
 			metadata.WithVcenterVMName(vm.Name()),
 			metadata.WithVcenterVMID(vmUUID),
 			metadata.WithVcenterVMPowerState(ps),
+			metadata.WithVcenterClusterName(cluster.Name()),
+			metadata.WithVcenterHostName(hostname),
 		)
 	}
 
