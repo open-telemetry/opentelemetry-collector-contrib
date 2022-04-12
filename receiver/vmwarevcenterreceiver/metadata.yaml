@@ -4,9 +4,6 @@ resource_attributes:
   vcenter.cluster.name:
     description: The name of the vCenter Cluster
     type: string
-  vcenter.datacenter.name:
-    description: The name of the vCenter datacenter
-    type: string
   vcenter.host.name:
     description: The hostname of the vCenter ESXi host
     type: string
@@ -29,30 +26,46 @@ resource_attributes:
 attributes:
   disk_state:
     description: The state of storage and whether it is already allocated or free.
+    type: string
     enum:
       - available
       - used
-  latency_type:
-    value: type
-    description: The type of disk latency.
+  host_effective:
+    description: Whether the host is effective in the vCenter cluster
+    type: bool
+    enum:
+      - "true"
+      - "false"
+  latency_direction:
+    value: direction
+    description: The direction of disk latency.
     enum:
       - read
       - write
+  latency_type:
+    value: type
+    description: The type of disk latency being reported.
+    enum:
+      - kernel
+      - device
   throughput_direction:
     value: direction
     description: The direction of network throughput.
+    type: string
     enum:
       - transmitted
       - received
   vsan_latency_type:
     value: type
     description: The type of vSAN latency.
+    type: string
     enum:
       - read
       - write
   vsan_operation_type:
     value: type
     description: The type of vSAN operation.
+    type: string
     enum:
       - read
       - write
@@ -60,6 +73,7 @@ attributes:
   vsan_throughput_direction:
     value: direction
     description: The type of vSAN throughput.
+    type: string
     enum:
       - read
       - write
@@ -164,7 +178,7 @@ metrics:
       value_type: int
       aggregation: cumulative
     attributes: [vsan_throughput_direction]
-  vcenter.datacenter.vm.count:
+  vcenter.cluster.vm.count:
     enabled: true
     description: the number of virtual machines in the datacenter
     unit: "{virtual_machines}"
@@ -172,15 +186,15 @@ metrics:
       monotonic: false
       value_type: int
       aggregation: cumulative
-
-  vcenter.datacenter.host.count:
+  vcenter.cluster.host.count:
     enabled: true
-    description: the number of hosts in the datacenter
+    description: The number of hosts in the datacenter
     unit: "{hosts}"
     sum:
       monotonic: false
       value_type: int
       aggregation: cumulative
+    attributes: [host_effective]
 
   vcenter.datastore.disk.usage:
     enabled: true
@@ -231,17 +245,17 @@ metrics:
       monotonic: false
       value_type: int
       aggregation: cumulative
-    attributes: [latency_type]
+    attributes: [latency_direction, latency_type]
     extended_documentation: This latency is the sum of the device and kernel write latencies. Requires Performance Counter level 2 for metric to populate.
-  vcenter.host.disk.latency.max:
+  vcenter.host.disk.latency.total:
     enabled: true
-    description: The highest reported total latency (device and kernel times)
+    description: The total reported total latency (device and kernel times)
     unit: ms
     sum:
       monotonic: false
       value_type: int
       aggregation: cumulative
-    attributes: []
+    attributes: [latency_direction]
   vcenter.host.memory.utilization:
     enabled: true
     description: The percentage of the host system's memory capacity that is being utilized
@@ -260,13 +274,31 @@ metrics:
     attributes: []
   vcenter.host.network.throughput:
     enabled: true
-    description: The amount of data that was sent or recieved over the network by the host
+    description: The amount of data that was sent or received over the network by the host
+    unit: "{KBy/s}"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation: cumulative
+    attributes: [throughput_direction]
+  vcenter.host.network.usage:
+    enabled: true
+    description: The sum of the data transmitted and received for all the NIC instances of the host.
     unit: "{KBy/s}"
     sum:
       monotonic: false
       value_type: int
       aggregation: cumulative
     attributes: []
+  vcenter.host.network.errors:
+    enabled: true
+    description: The summation of errors on the host network.
+    unit: "{errors}"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation: cumulative
+    attributes: [throughput_direction]
   vcenter.host.network.packets:
     enabled: true
     description: The number of packets sent over an interval
@@ -422,7 +454,7 @@ metrics:
       monotonic: false
       value_type: int
       aggregation: cumulative
-    attributes: [latency_type]
+    attributes: [latency_direction]
     extended_documentation: This latency is the sum of the device and kernel write latencies. Requires Performance Counter level 2 for metric to populate.
   vcenter.vm.disk.latency.max:
     enabled: true
@@ -460,7 +492,7 @@ metrics:
       monotonic: false
       value_type: int
       aggregation: cumulative
-    attributes: []
+    attributes: [throughput_direction]
   vcenter.vm.network.usage:
     enabled: true
     description: The network utilizaiton combined transmit and receive rates during an interval.

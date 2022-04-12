@@ -24,9 +24,45 @@
                             "sum": {
                                 "dataPoints": [
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776919979664000",
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795149905051000",
                                         "asInt": "6882"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.cluster.host.count",
+                            "description": "The number of hosts in the datacenter",
+                            "unit": "{hosts}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "host_effective",
+                                                "value": {
+                                                    "stringValue": "false"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795149905051000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "host_effective",
+                                                "value": {
+                                                    "stringValue": "true"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795149905051000",
+                                        "asInt": "3"
                                     }
                                 ],
                                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
@@ -60,8 +96,8 @@
                             "sum": {
                                 "dataPoints": [
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776919979664000",
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795149905051000",
                                         "asInt": "67"
                                     }
                                 ],
@@ -75,8 +111,8 @@
                             "gauge": {
                                 "dataPoints": [
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776919979664000",
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795149905051000",
                                         "asDouble": 1.4603312990409765
                                     }
                                 ]
@@ -89,8 +125,8 @@
                             "sum": {
                                 "dataPoints": [
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776919979664000",
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795149905051000",
                                         "asInt": "1404"
                                     }
                                 ],
@@ -104,43 +140,323 @@
                             "gauge": {
                                 "dataPoints": [
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776919979664000",
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795149905051000",
                                         "asDouble": 34.285714285714285
                                     }
                                 ]
                             }
                         },
                         {
+                            "name": "vcenter.host.network.packets",
+                            "description": "The number of packets sent over an interval",
+                            "unit": "{packets/sec}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795089911300000",
+                                        "asInt": "8117"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795069911300000",
+                                        "asInt": "10367"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795049911300000",
+                                        "asInt": "12827"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795029911300000",
+                                        "asInt": "4557"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795009911300000",
+                                        "asInt": "8677"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795089911300000",
+                                        "asInt": "18909"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795069911300000",
+                                        "asInt": "17361"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795049911300000",
+                                        "asInt": "15748"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795029911300000",
+                                        "asInt": "10340"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795009911300000",
+                                        "asInt": "11964"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
                             "name": "vcenter.host.network.throughput",
-                            "description": "The amount of data that was sent or recieved over the network by the host",
+                            "description": "The amount of data that was sent or received over the network by the host",
                             "unit": "{KBy/s}",
                             "sum": {
                                 "dataPoints": [
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776859988721000",
-                                        "asInt": "1790"
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795089911300000",
+                                        "asInt": "844"
                                     },
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776839988721000",
-                                        "asInt": "874"
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795069911300000",
+                                        "asInt": "514"
                                     },
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776819988721000",
-                                        "asInt": "1678"
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795049911300000",
+                                        "asInt": "683"
                                     },
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776799988721000",
-                                        "asInt": "3500"
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795029911300000",
+                                        "asInt": "682"
                                     },
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776779988721000",
-                                        "asInt": "2769"
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795009911300000",
+                                        "asInt": "386"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795089911300000",
+                                        "asInt": "779"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795069911300000",
+                                        "asInt": "706"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795049911300000",
+                                        "asInt": "723"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795029911300000",
+                                        "asInt": "545"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795009911300000",
+                                        "asInt": "637"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.host.network.usage",
+                            "description": "The sum of the data transmitted and received for all the NIC instances of the host.",
+                            "unit": "{KBy/s}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795089911300000",
+                                        "asInt": "1450"
+                                    },
+                                    {
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795069911300000",
+                                        "asInt": "1810"
+                                    },
+                                    {
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795049911300000",
+                                        "asInt": "1160"
+                                    },
+                                    {
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795029911300000",
+                                        "asInt": "1100"
+                                    },
+                                    {
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795009911300000",
+                                        "asInt": "1137"
                                     }
                                 ],
                                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
@@ -174,8 +490,8 @@
                             "sum": {
                                 "dataPoints": [
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776919979664000",
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795149905051000",
                                         "asInt": "67"
                                     }
                                 ],
@@ -189,8 +505,8 @@
                             "gauge": {
                                 "dataPoints": [
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776919979664000",
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795149905051000",
                                         "asDouble": 1.4603312990409765
                                     }
                                 ]
@@ -203,8 +519,8 @@
                             "sum": {
                                 "dataPoints": [
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776919979664000",
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795149905051000",
                                         "asInt": "1404"
                                     }
                                 ],
@@ -218,43 +534,323 @@
                             "gauge": {
                                 "dataPoints": [
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776919979664000",
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795149905051000",
                                         "asDouble": 34.285714285714285
                                     }
                                 ]
                             }
                         },
                         {
+                            "name": "vcenter.host.network.packets",
+                            "description": "The number of packets sent over an interval",
+                            "unit": "{packets/sec}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795089948065000",
+                                        "asInt": "7959"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795069948065000",
+                                        "asInt": "12447"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795049948065000",
+                                        "asInt": "9550"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795029948065000",
+                                        "asInt": "5641"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795009948065000",
+                                        "asInt": "7585"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795089948065000",
+                                        "asInt": "11054"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795069948065000",
+                                        "asInt": "9425"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795049948065000",
+                                        "asInt": "22243"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795029948065000",
+                                        "asInt": "13991"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795009948065000",
+                                        "asInt": "8518"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
                             "name": "vcenter.host.network.throughput",
-                            "description": "The amount of data that was sent or recieved over the network by the host",
+                            "description": "The amount of data that was sent or received over the network by the host",
                             "unit": "{KBy/s}",
                             "sum": {
                                 "dataPoints": [
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776860036182000",
-                                        "asInt": "892"
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795089948065000",
+                                        "asInt": "776"
                                     },
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776840036182000",
-                                        "asInt": "1891"
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795069948065000",
+                                        "asInt": "523"
                                     },
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776820036182000",
-                                        "asInt": "1658"
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795049948065000",
+                                        "asInt": "536"
                                     },
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776800036182000",
-                                        "asInt": "2589"
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795029948065000",
+                                        "asInt": "499"
                                     },
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776780036182000",
-                                        "asInt": "2375"
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795009948065000",
+                                        "asInt": "339"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795089948065000",
+                                        "asInt": "398"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795069948065000",
+                                        "asInt": "640"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795049948065000",
+                                        "asInt": "917"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795029948065000",
+                                        "asInt": "612"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795009948065000",
+                                        "asInt": "603"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.host.network.usage",
+                            "description": "The sum of the data transmitted and received for all the NIC instances of the host.",
+                            "unit": "{KBy/s}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795089948065000",
+                                        "asInt": "1437"
+                                    },
+                                    {
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795069948065000",
+                                        "asInt": "1517"
+                                    },
+                                    {
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795049948065000",
+                                        "asInt": "1007"
+                                    },
+                                    {
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795029948065000",
+                                        "asInt": "1273"
+                                    },
+                                    {
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795009948065000",
+                                        "asInt": "1282"
                                     }
                                 ],
                                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
@@ -288,8 +884,8 @@
                             "sum": {
                                 "dataPoints": [
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776919979664000",
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795149905051000",
                                         "asInt": "67"
                                     }
                                 ],
@@ -303,8 +899,8 @@
                             "gauge": {
                                 "dataPoints": [
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776919979664000",
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795149905051000",
                                         "asDouble": 1.4603312990409765
                                     }
                                 ]
@@ -317,8 +913,8 @@
                             "sum": {
                                 "dataPoints": [
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776919979664000",
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795149905051000",
                                         "asInt": "1404"
                                     }
                                 ],
@@ -332,43 +928,323 @@
                             "gauge": {
                                 "dataPoints": [
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776919979664000",
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795149905051000",
                                         "asDouble": 34.285714285714285
                                     }
                                 ]
                             }
                         },
                         {
+                            "name": "vcenter.host.network.packets",
+                            "description": "The number of packets sent over an interval",
+                            "unit": "{packets/sec}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795089985306000",
+                                        "asInt": "4677"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795069985306000",
+                                        "asInt": "9078"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795049985306000",
+                                        "asInt": "10625"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795029985306000",
+                                        "asInt": "10477"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795009985306000",
+                                        "asInt": "5270"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795089985306000",
+                                        "asInt": "15525"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795069985306000",
+                                        "asInt": "15445"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795049985306000",
+                                        "asInt": "21593"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795029985306000",
+                                        "asInt": "10922"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795009985306000",
+                                        "asInt": "16216"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
                             "name": "vcenter.host.network.throughput",
-                            "description": "The amount of data that was sent or recieved over the network by the host",
+                            "description": "The amount of data that was sent or received over the network by the host",
                             "unit": "{KBy/s}",
                             "sum": {
                                 "dataPoints": [
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776860084872000",
-                                        "asInt": "1384"
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795089985306000",
+                                        "asInt": "519"
                                     },
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776840084872000",
-                                        "asInt": "1622"
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795069985306000",
+                                        "asInt": "661"
                                     },
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776820084872000",
-                                        "asInt": "2668"
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795049985306000",
+                                        "asInt": "454"
                                     },
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776800084872000",
-                                        "asInt": "2233"
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795029985306000",
+                                        "asInt": "850"
                                     },
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776780084872000",
-                                        "asInt": "2296"
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795009985306000",
+                                        "asInt": "702"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795089985306000",
+                                        "asInt": "677"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795069985306000",
+                                        "asInt": "749"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795049985306000",
+                                        "asInt": "658"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795029985306000",
+                                        "asInt": "593"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795009985306000",
+                                        "asInt": "552"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.host.network.usage",
+                            "description": "The sum of the data transmitted and received for all the NIC instances of the host.",
+                            "unit": "{KBy/s}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795089985306000",
+                                        "asInt": "1371"
+                                    },
+                                    {
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795069985306000",
+                                        "asInt": "1089"
+                                    },
+                                    {
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795049985306000",
+                                        "asInt": "1097"
+                                    },
+                                    {
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795029985306000",
+                                        "asInt": "939"
+                                    },
+                                    {
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795009985306000",
+                                        "asInt": "1184"
                                     }
                                 ],
                                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
@@ -410,8 +1286,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776919979664000",
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795149905051000",
                                         "asInt": "42949672960"
                                     },
                                     {
@@ -423,8 +1299,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776919979664000",
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795149905051000",
                                         "asInt": "10995116277760"
                                     }
                                 ],
@@ -438,8 +1314,8 @@
                             "gauge": {
                                 "dataPoints": [
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776919979664000",
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795149905051000",
                                         "asDouble": 0.390625
                                     }
                                 ]
@@ -493,8 +1369,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776919979664000",
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795149905051000",
                                         "asInt": "0"
                                     },
                                     {
@@ -506,8 +1382,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776919979664000",
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795149905051000",
                                         "asInt": "0"
                                     }
                                 ],
@@ -521,8 +1397,8 @@
                             "gauge": {
                                 "dataPoints": [
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776919979664000",
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795149905051000",
                                         "asDouble": "NaN"
                                     }
                                 ]
@@ -535,8 +1411,8 @@
                             "sum": {
                                 "dataPoints": [
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776919979664000",
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795149905051000",
                                         "asInt": "0"
                                     }
                                 ],
@@ -550,9 +1426,81 @@
                             "sum": {
                                 "dataPoints": [
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776919979664000",
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795149905051000",
                                         "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.vm.network.packets",
+                            "description": "The amount of packets that was received or transmitted over the instance's network.",
+                            "unit": "{packets/sec}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795150055024000",
+                                        "asInt": "866"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795150055024000",
+                                        "asInt": "2132"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.vm.network.throughput",
+                            "description": "The amount of data that was received or sent over the network of the virtual machine.",
+                            "unit": "By/sec",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795150055024000",
+                                        "asInt": "188"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795150055024000",
+                                        "asInt": "306"
                                     }
                                 ],
                                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
@@ -565,9 +1513,9 @@
                             "sum": {
                                 "dataPoints": [
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776920171509000",
-                                        "asInt": "471"
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795150055024000",
+                                        "asInt": "362"
                                     }
                                 ],
                                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
@@ -621,8 +1569,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776919979664000",
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795149905051000",
                                         "asInt": "0"
                                     },
                                     {
@@ -634,8 +1582,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776919979664000",
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795149905051000",
                                         "asInt": "0"
                                     }
                                 ],
@@ -649,8 +1597,8 @@
                             "gauge": {
                                 "dataPoints": [
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776919979664000",
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795149905051000",
                                         "asDouble": "NaN"
                                     }
                                 ]
@@ -663,8 +1611,8 @@
                             "sum": {
                                 "dataPoints": [
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776919979664000",
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795149905051000",
                                         "asInt": "0"
                                     }
                                 ],
@@ -678,9 +1626,81 @@
                             "sum": {
                                 "dataPoints": [
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776919979664000",
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795149905051000",
                                         "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.vm.network.packets",
+                            "description": "The amount of packets that was received or transmitted over the instance's network.",
+                            "unit": "{packets/sec}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795150092694000",
+                                        "asInt": "771"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795150092694000",
+                                        "asInt": "1208"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.vm.network.throughput",
+                            "description": "The amount of data that was received or sent over the network of the virtual machine.",
+                            "unit": "By/sec",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795150092694000",
+                                        "asInt": "195"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795150092694000",
+                                        "asInt": "189"
                                     }
                                 ],
                                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
@@ -693,9 +1713,9 @@
                             "sum": {
                                 "dataPoints": [
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776920203514000",
-                                        "asInt": "443"
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795150092694000",
+                                        "asInt": "262"
                                     }
                                 ],
                                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
@@ -749,8 +1769,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776919979664000",
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795149905051000",
                                         "asInt": "0"
                                     },
                                     {
@@ -762,8 +1782,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776919979664000",
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795149905051000",
                                         "asInt": "0"
                                     }
                                 ],
@@ -777,8 +1797,8 @@
                             "gauge": {
                                 "dataPoints": [
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776919979664000",
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795149905051000",
                                         "asDouble": "NaN"
                                     }
                                 ]
@@ -791,8 +1811,8 @@
                             "sum": {
                                 "dataPoints": [
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776919979664000",
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795149905051000",
                                         "asInt": "0"
                                     }
                                 ],
@@ -806,9 +1826,81 @@
                             "sum": {
                                 "dataPoints": [
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776919979664000",
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795149905051000",
                                         "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.vm.network.packets",
+                            "description": "The amount of packets that was received or transmitted over the instance's network.",
+                            "unit": "{packets/sec}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795150145607000",
+                                        "asInt": "663"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795150145607000",
+                                        "asInt": "1454"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.vm.network.throughput",
+                            "description": "The amount of data that was received or sent over the network of the virtual machine.",
+                            "unit": "By/sec",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795150145607000",
+                                        "asInt": "211"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795150145607000",
+                                        "asInt": "226"
                                     }
                                 ],
                                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
@@ -821,9 +1913,9 @@
                             "sum": {
                                 "dataPoints": [
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776920232900000",
-                                        "asInt": "453"
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795150145607000",
+                                        "asInt": "666"
                                     }
                                 ],
                                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
@@ -877,8 +1969,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776919979664000",
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795149905051000",
                                         "asInt": "0"
                                     },
                                     {
@@ -890,8 +1982,8 @@
                                                 }
                                             }
                                         ],
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776919979664000",
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795149905051000",
                                         "asInt": "0"
                                     }
                                 ],
@@ -905,8 +1997,8 @@
                             "gauge": {
                                 "dataPoints": [
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776919979664000",
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795149905051000",
                                         "asDouble": "NaN"
                                     }
                                 ]
@@ -919,8 +2011,8 @@
                             "sum": {
                                 "dataPoints": [
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776919979664000",
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795149905051000",
                                         "asInt": "0"
                                     }
                                 ],
@@ -934,9 +2026,81 @@
                             "sum": {
                                 "dataPoints": [
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776919979664000",
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795149905051000",
                                         "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.vm.network.packets",
+                            "description": "The amount of packets that was received or transmitted over the instance's network.",
+                            "unit": "{packets/sec}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795150192503000",
+                                        "asInt": "861"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795150192503000",
+                                        "asInt": "1324"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "vcenter.vm.network.throughput",
+                            "description": "The amount of data that was received or sent over the network of the virtual machine.",
+                            "unit": "By/sec",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "received"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795150192503000",
+                                        "asInt": "113"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "direction",
+                                                "value": {
+                                                    "stringValue": "transmitted"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795150192503000",
+                                        "asInt": "283"
                                     }
                                 ],
                                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
@@ -949,9 +2113,9 @@
                             "sum": {
                                 "dataPoints": [
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776920255045000",
-                                        "asInt": "298"
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795150192503000",
+                                        "asInt": "247"
                                     }
                                 ],
                                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
@@ -985,8 +2149,8 @@
                             "sum": {
                                 "dataPoints": [
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776919979664000",
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795149905051000",
                                         "asInt": "9000"
                                     }
                                 ],
@@ -1000,8 +2164,8 @@
                             "sum": {
                                 "dataPoints": [
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776919979664000",
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795149905051000",
                                         "asInt": "9000"
                                     }
                                 ],
@@ -1036,8 +2200,8 @@
                             "sum": {
                                 "dataPoints": [
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776919979664000",
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795149905051000",
                                         "asInt": "9000"
                                     }
                                 ],
@@ -1051,8 +2215,8 @@
                             "sum": {
                                 "dataPoints": [
                                     {
-                                        "startTimeUnixNano": "1649776919977236000",
-                                        "timeUnixNano": "1649776919979664000",
+                                        "startTimeUnixNano": "1649795149903277000",
+                                        "timeUnixNano": "1649795149905051000",
                                         "asInt": "9000"
                                     }
                                 ],

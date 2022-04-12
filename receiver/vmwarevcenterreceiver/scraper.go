@@ -108,6 +108,8 @@ func (v *vcenterMetricScraper) collectCluster(
 	c.Properties(ctx, c.Reference(), []string{"summary"}, &moCluster)
 	s := moCluster.Summary.GetComputeResourceSummary()
 	v.mb.RecordVcenterClusterCPUAvailableDataPoint(now, int64(s.TotalCpu))
+	v.mb.RecordVcenterClusterHostCountDataPoint(now, int64(s.NumHosts-s.NumEffectiveHosts), "false")
+	v.mb.RecordVcenterClusterHostCountDataPoint(now, int64(s.NumEffectiveHosts), "true")
 
 	if v.vsanEnabled {
 		mor := c.Reference()
