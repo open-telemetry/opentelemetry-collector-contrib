@@ -19,7 +19,6 @@ package winperfcounters // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"fmt"
-	"strings"
 
 	"go.uber.org/multierr"
 
@@ -57,17 +56,6 @@ func (w Watcher) ScrapeData() ([]CounterValue, error) {
 		return []CounterValue{}, err
 	}
 
-	if !strings.Contains(w.Path(), "*") {
-		metric := w.GetMetricRep()
-
-		if len(scrapedCounterValues) != 1 {
-			return []CounterValue{}, fmt.Errorf("Performance counter with path `%s` returned incorrect amount of counter values: %d", w.Path(), len(scrapedCounterValues))
-		}
-		counterValue := scrapedCounterValues[0]
-
-		return []CounterValue{{MetricRep: metric, Value: counterValue.Value}}, nil
-	}
-
 	counterValues := []CounterValue{}
 	for _, counterValue := range scrapedCounterValues {
 		metric := w.GetMetricRep()
@@ -76,8 +64,8 @@ func (w Watcher) ScrapeData() ([]CounterValue, error) {
 				metric.Attributes = map[string]string{instanceLabelName: counterValue.InstanceName}
 			}
 			metric.Attributes[instanceLabelName] = counterValue.InstanceName
-			counterValues = append(counterValues, CounterValue{MetricRep: metric, Value: counterValue.Value})
 		}
+		counterValues = append(counterValues, CounterValue{MetricRep: metric, Value: counterValue.Value})
 	}
 	return counterValues, nil
 }
