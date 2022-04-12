@@ -67,7 +67,7 @@ func (v *vcenterMetricScraper) Shutdown(ctx context.Context) error {
 
 func (v *vcenterMetricScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 	if v.client == nil {
-		return pdata.Metrics{}, errors.New("failed to connect to http client")
+		return pdata.NewMetrics(), errors.New("failed to connect to http client")
 	}
 
 	errs := &scrapererror.ScrapeErrors{}

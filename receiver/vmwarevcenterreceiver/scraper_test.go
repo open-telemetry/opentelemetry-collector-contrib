@@ -45,10 +45,9 @@ func TestScrape_NoVsan(t *testing.T) {
 			finder:    finder,
 		}
 		scraper := &vcenterMetricScraper{
-			client:      client,
-			mb:          metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
-			logger:      zap.NewNop(),
-			vsanEnabled: false,
+			client: client,
+			mb:     metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+			logger: zap.NewNop(),
 		}
 		metrics, err := scraper.scrape(ctx)
 		require.NoError(t, err)
@@ -60,4 +59,16 @@ func TestScrape_NoVsan(t *testing.T) {
 
 		scrapertest.CompareMetrics(expectedMetrics, metrics)
 	})
+}
+
+func TestScrape_UnableToConnect(t *testing.T) {
+	ctx := context.Background()
+	scraper := &vcenterMetricScraper{
+		client: nil,
+		mb:     metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+		logger: zap.NewNop(),
+	}
+	metrics, err := scraper.scrape(ctx)
+	require.ErrorContains(t, err, "failed to connect")
+	require.Equal(t, metrics.MetricCount(), 0)
 }
