@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 )
@@ -54,7 +55,7 @@ type tailSamplingSpanProcessor struct {
 	policies        []*policy
 	logger          *zap.Logger
 	idToTrace       sync.Map
-	policyTicker    tTicker
+	policyTicker    timeutils.TTicker
 	tickerFrequency time.Duration
 	decisionBatcher idbatcher.Batcher
 	deleteChan      chan pdata.TraceID
@@ -108,7 +109,7 @@ func newTracesProcessor(logger *zap.Logger, nextConsumer consumer.Traces, cfg Co
 		tickerFrequency: time.Second,
 	}
 
-	tsp.policyTicker = &policyTicker{onTickFunc: tsp.samplingPolicyOnTick}
+	tsp.policyTicker = &timeutils.PolicyTicker{OnTickFunc: tsp.samplingPolicyOnTick}
 	tsp.deleteChan = make(chan pdata.TraceID, cfg.NumTraces)
 
 	return tsp, nil
@@ -400,14 +401,14 @@ func (tsp *tailSamplingSpanProcessor) Capabilities() consumer.Capabilities {
 
 // Start is invoked during service startup.
 func (tsp *tailSamplingSpanProcessor) Start(context.Context, component.Host) error {
-	tsp.policyTicker.start(tsp.tickerFrequency)
+	tsp.policyTicker.Start(tsp.tickerFrequency)
 	return nil
 }
 
 // Shutdown is invoked during service shutdown.
 func (tsp *tailSamplingSpanProcessor) Shutdown(context.Context) error {
 	tsp.decisionBatcher.Stop()
-	tsp.policyTicker.stop()
+	tsp.policyTicker.Stop()
 	return nil
 }
 
@@ -438,43 +439,3 @@ func prepareTraceBatch(rss pdata.ResourceSpans, spans []*pdata.Span) pdata.Trace
 	}
 	return traceTd
 }
-
-// tTicker interface allows easier testing of ticker related functionality used by tailSamplingProcessor
-type tTicker interface {
-	// start sets the frequency of the ticker and starts the periodic calls to OnTick.
-	start(d time.Duration)
-	// onTick is called when the ticker fires.
-	onTick()
-	// stop firing the ticker.
-	stop()
-}
-
-type policyTicker struct {
-	ticker     *time.Ticker
-	onTickFunc func()
-	stopCh     chan struct{}
-}
-
-func (pt *policyTicker) start(d time.Duration) {
-	pt.ticker = time.NewTicker(d)
-	pt.stopCh = make(chan struct{})
-	go func() {
-		for {
-			select {
-			case <-pt.ticker.C:
-				pt.onTick()
-			case <-pt.stopCh:
-				return
-			}
-		}
-	}()
-}
-func (pt *policyTicker) onTick() {
-	pt.onTickFunc()
-}
-func (pt *policyTicker) stop() {
-	close(pt.stopCh)
-	pt.ticker.Stop()
-}
-
-var _ tTicker = (*policyTicker)(nil)
