@@ -68,7 +68,7 @@ func (m *testDBWrapper) QueryContext(ctx context.Context, query string) (resultW
 	return result, err
 }
 
-func (w *testDBWrapper) mockQueryResult(query string, results [][]*string, err error) {
+func (m *testDBWrapper) mockQueryResult(query string, results [][]*string, err error) {
 	nullableResult := [][]sql.NullString{}
 	for _, row := range results {
 		nullableRow := []sql.NullString{}
@@ -87,15 +87,15 @@ func (w *testDBWrapper) mockQueryResult(query string, results [][]*string, err e
 		current:  0,
 	}
 
-	w.On("QueryContext", query).Return(resultWrapper, err)
+	m.On("QueryContext", query).Return(resultWrapper, err)
 }
 
 type testConnectionFactory struct {
-	dbWrapper testDBWrapper
+	dbWrapper *testDBWrapper
 }
 
 func (m *testConnectionFactory) getConnection(c driver.Connector) dbWrapper {
-	return &m.dbWrapper
+	return m.dbWrapper
 }
 
 func str(str string) *string {
@@ -103,7 +103,7 @@ func str(str string) *string {
 }
 
 func TestBasicConnectAndClose(t *testing.T) {
-	dbWrapper := testDBWrapper{}
+	dbWrapper := &testDBWrapper{}
 	dbWrapper.On("PingContext").Return(nil)
 	dbWrapper.On("Close").Return(nil)
 
@@ -115,7 +115,7 @@ func TestBasicConnectAndClose(t *testing.T) {
 }
 
 func TestFailedPing(t *testing.T) {
-	dbWrapper := testDBWrapper{}
+	dbWrapper := &testDBWrapper{}
 	dbWrapper.On("PingContext").Return(errors.New("Coult not ping host"))
 	dbWrapper.On("Close").Return(nil)
 
@@ -127,7 +127,7 @@ func TestFailedPing(t *testing.T) {
 }
 
 func TestSimpleQueryOutput(t *testing.T) {
-	dbWrapper := testDBWrapper{}
+	dbWrapper := &testDBWrapper{}
 	dbWrapper.On("PingContext").Return(nil)
 	dbWrapper.On("Close").Return(nil)
 
@@ -179,7 +179,7 @@ func TestSimpleQueryOutput(t *testing.T) {
 }
 
 func TestNullOutput(t *testing.T) {
-	dbWrapper := testDBWrapper{}
+	dbWrapper := &testDBWrapper{}
 	dbWrapper.On("PingContext").Return(nil)
 	dbWrapper.On("Close").Return(nil)
 

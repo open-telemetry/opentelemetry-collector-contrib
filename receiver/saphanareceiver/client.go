@@ -118,11 +118,11 @@ func (c *sapHanaClient) Connect(ctx context.Context) error {
 		return fmt.Errorf("error generating DSN for SAP HANA connection: %w", err)
 	}
 
-	if tls, err := c.receiverConfig.TLSClientSetting.LoadTLSConfig(); err != nil {
+	tls, err := c.receiverConfig.TLSClientSetting.LoadTLSConfig()
+	if err != nil {
 		return fmt.Errorf("error generating TLS config for SAP HANA connection: %w", err)
-	} else {
-		connector.SetTLSConfig(tls)
 	}
+	connector.SetTLSConfig(tls)
 
 	connector.SetApplicationName("OpenTelemetry Collector")
 	client := c.connectionFactory.getConnection(connector)

@@ -35,8 +35,8 @@ const mostlyDisabledQueryMetrics = "./testdata/mocked_queries/mostly_disabled_re
 func TestScraper(t *testing.T) {
 	t.Parallel()
 
-	dbWrapper := testDBWrapper{}
-	initializeWrapper(t, &dbWrapper, allQueryMetrics)
+	dbWrapper := &testDBWrapper{}
+	initializeWrapper(t, dbWrapper, allQueryMetrics)
 
 	sc, err := newSapHanaScraper(componenttest.NewNopTelemetrySettings(), createDefaultConfig().(*Config), &testConnectionFactory{dbWrapper})
 	require.NoError(t, err)
@@ -53,8 +53,8 @@ func TestScraper(t *testing.T) {
 func TestDisabledMetrics(t *testing.T) {
 	t.Parallel()
 
-	dbWrapper := testDBWrapper{}
-	initializeWrapper(t, &dbWrapper, mostlyDisabledQueryMetrics)
+	dbWrapper := &testDBWrapper{}
+	initializeWrapper(t, dbWrapper, mostlyDisabledQueryMetrics)
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.Metrics.SaphanaAlertCount.Enabled = false
@@ -115,7 +115,7 @@ func TestDisabledMetrics(t *testing.T) {
 	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
 }
 
-type queryJson struct {
+type queryJSON struct {
 	Query  string
 	Result [][]string
 }
@@ -127,7 +127,7 @@ func initializeWrapper(t *testing.T, w *testDBWrapper, filename string) {
 	contents, err := ioutil.ReadFile(filename)
 	require.NoError(t, err)
 
-	var queries []queryJson
+	var queries []queryJSON
 	err = json.Unmarshal(contents, &queries)
 	require.NoError(t, err)
 

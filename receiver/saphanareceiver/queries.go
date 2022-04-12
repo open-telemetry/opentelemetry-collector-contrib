@@ -740,14 +740,14 @@ var queries = []monitoringQuery{
 	},
 }
 
-func (m *monitoringQuery) CollectMetrics(s *sapHanaScraper, ctx context.Context, client client, now pdata.Timestamp) error {
-	if rows, err := client.collectDataFromQuery(ctx, m); err != nil {
+func (m *monitoringQuery) CollectMetrics(ctx context.Context, s *sapHanaScraper, client client, now pdata.Timestamp) error {
+	rows, err := client.collectDataFromQuery(ctx, m)
+	if err != nil {
 		return err
-	} else {
-		for _, data := range rows {
-			for _, stat := range m.orderedStats {
-				stat.collectStat(s, now, data)
-			}
+	}
+	for _, data := range rows {
+		for _, stat := range m.orderedStats {
+			stat.collectStat(s, now, data)
 		}
 	}
 
