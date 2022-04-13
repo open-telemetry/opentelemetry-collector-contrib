@@ -32,7 +32,7 @@ type vcenterReceiver struct {
 
 func (v *vcenterReceiver) Start(ctx context.Context, host component.Host) error {
 	var err error
-	if v.scraper != nil {
+	if v.scraper != nil && v.config.MetricsConfig.Endpoint != "" {
 		scraperErr := v.scraper.Start(ctx, host)
 		if scraperErr != nil {
 			err = multierr.Append(err, scraperErr)

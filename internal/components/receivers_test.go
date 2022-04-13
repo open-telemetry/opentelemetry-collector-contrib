@@ -258,6 +258,9 @@ func TestDefaultReceivers(t *testing.T) {
 				return cfg
 			},
 		},
+		{
+			receiver: "vcenter",
+		},
 	}
 
 	assert.Len(t, tests, len(rcvrFactories), "All receivers must be added to the lifecycle suite")

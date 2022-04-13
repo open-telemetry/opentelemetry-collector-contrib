@@ -53,6 +53,12 @@ func (c *Config) Validate() error {
 	return err
 }
 
+// ID returns the ID of the component.
+func (c *Config) ID() config.ComponentID {
+	// defaulting to use the MetricsConfig ID which should be the typeStr
+	return c.MetricsConfig.ID()
+}
+
 func (c *Config) validateMetricsConfig() error {
 	mc := c.MetricsConfig
 	if mc.Endpoint == "" {
