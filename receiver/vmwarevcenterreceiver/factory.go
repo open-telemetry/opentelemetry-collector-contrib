@@ -14,8 +14,6 @@
 
 package vmwarevcenterreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vmwarevcenterreceiver"
 
-//go:generate mdatagen metadata.yaml
-
 import (
 	"context"
 	"errors"
