@@ -85,7 +85,7 @@ metrics:
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | disk_state | The state of storage and whether it is already allocated or free. | available, used |
-| host_effective | Whether the host is effective in the vCenter cluster | true, false |
+| host_effective (effective) | Whether the host is effective in the vCenter cluster | true, false |
 | latency_direction (direction) | The direction of disk latency. | read, write |
 | latency_type (type) | The type of disk latency being reported. | kernel, device |
 | throughput_direction (direction) | The direction of network throughput. | transmitted, received |

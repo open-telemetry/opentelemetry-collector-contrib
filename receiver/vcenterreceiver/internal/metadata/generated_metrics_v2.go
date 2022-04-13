@@ -3407,7 +3407,7 @@ var Attributes = struct {
 	VsanThroughputDirection string
 }{
 	"disk_state",
-	"host_effective",
+	"effective",
 	"direction",
 	"type",
 	"direction",
