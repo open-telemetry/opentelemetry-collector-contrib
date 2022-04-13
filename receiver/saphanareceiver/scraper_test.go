@@ -86,7 +86,7 @@ func TestDisabledMetrics(t *testing.T) {
 	cfg.Metrics.SaphanaSchemaRecordCompressedCount.Enabled = false
 	cfg.Metrics.SaphanaSchemaRecordCount.Enabled = false
 	cfg.Metrics.SaphanaServiceCodeSize.Enabled = false
-	// cfg.Metrics.SaphanaServiceCount.Enabled = false
+	cfg.Metrics.SaphanaServiceCount.Enabled = true // Service Count Enabled
 	cfg.Metrics.SaphanaServiceMemoryCompactorsAllocated.Enabled = false
 	cfg.Metrics.SaphanaServiceMemoryCompactorsFreeable.Enabled = false
 	cfg.Metrics.SaphanaServiceMemoryEffectiveLimit.Enabled = false
@@ -95,7 +95,7 @@ func TestDisabledMetrics(t *testing.T) {
 	cfg.Metrics.SaphanaServiceMemorySharedCurrent.Enabled = false
 	cfg.Metrics.SaphanaServiceMemoryUsed.Enabled = false
 	cfg.Metrics.SaphanaServiceStackSize.Enabled = false
-	// cfg.Metrics.SaphanaServiceThreadCount.Enabled = false
+	cfg.Metrics.SaphanaServiceThreadCount.Enabled = true // Service Thread Count Enabled
 	cfg.Metrics.SaphanaTransactionBlocked.Enabled = false
 	cfg.Metrics.SaphanaTransactionCount.Enabled = false
 	cfg.Metrics.SaphanaUptime.Enabled = false

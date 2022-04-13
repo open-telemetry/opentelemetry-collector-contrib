@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"go.opentelemetry.io/collector/model/pdata"
@@ -34,16 +35,16 @@ type queryStat struct {
 func (q *queryStat) collectStat(s *sapHanaScraper, now pdata.Timestamp, row map[string]string) error {
 	if val, ok := row[q.key]; ok {
 		if q.addIntMetricFunction != nil {
-			if i, ok := s.parseInt(q.key, val); ok {
+			if i, err := strconv.ParseInt(val, 10, 64); err == nil {
 				q.addIntMetricFunction(s, now, i, row)
 			} else {
-				return fmt.Errorf("unable to parse '%s' as an integer for query key %s", val, q.key)
+				return fmt.Errorf("unable to parse '%s' as an integer for query key %s: %w", val, q.key, err)
 			}
 		} else if q.addDoubleMetricFunction != nil {
-			if f, ok := s.parseDouble(q.key, val); ok {
+			if f, err := strconv.ParseFloat(val, 64); err == nil {
 				q.addDoubleMetricFunction(s, now, f, row)
 			} else {
-				return fmt.Errorf("unable to parse '%s' as a double for query key %s", val, q.key)
+				return fmt.Errorf("unable to parse '%s' as a double for query key %s: %w", val, q.key, err)
 			}
 		} else {
 			return errors.New("incorrectly configured query, either addIntMetricFunction or addDoubleMetricFunction must be provided")

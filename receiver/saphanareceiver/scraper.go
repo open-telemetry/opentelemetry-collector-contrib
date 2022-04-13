@@ -16,14 +16,12 @@ package saphanareceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
-	"strconv"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver/internal/metadata"
 )
@@ -69,33 +67,4 @@ func (s *sapHanaScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 	}
 
 	return s.mb.Emit(), errs.Combine()
-}
-
-// parseInt converts string to int64.
-func (s *sapHanaScraper) parseInt(key, value string) (int64, bool) {
-	i, err := strconv.ParseInt(value, 10, 64)
-	if err != nil {
-		s.logInvalid("int", key, value)
-		return 0, false
-	}
-	return i, true
-}
-
-// parseDouble converts string to float64.
-func (s *sapHanaScraper) parseDouble(key, value string) (float64, bool) {
-	f, err := strconv.ParseFloat(value, 64)
-	if err != nil {
-		s.logInvalid("float", key, value)
-		return 0, false
-	}
-	return f, true
-}
-
-func (s *sapHanaScraper) logInvalid(expectedType, key, value string) {
-	s.settings.Logger.Info(
-		"invalid value",
-		zap.String("expectedType", expectedType),
-		zap.String("key", key),
-		zap.String("value", value),
-	)
 }
