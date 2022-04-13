@@ -85,7 +85,7 @@ func TestDeprecationSendMonotonic(t *testing.T) {
 
 	for _, testInstance := range tests {
 		t.Run(testInstance.name, func(t *testing.T) {
-			cfg := futureDefaultConfig()
+			cfg := oldDefaultConfig()
 			err := cfg.Unmarshal(testInstance.cfgMap)
 			if err != nil || testInstance.err != "" {
 				assert.EqualError(t, err, testInstance.err)

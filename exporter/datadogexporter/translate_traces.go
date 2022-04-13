@@ -251,7 +251,7 @@ func spanToDatadogSpan(s pdata.Span,
 	tags["otel.trace_id"] = s.TraceID().HexString()
 
 	// otel specification resource service.name takes precedence
-	// and configuration DD_SERVICE as fallback if it exists
+	// and configuration Service as fallback if it exists
 	if cfg.Service != "" {
 		// prefer the collector level service name over an empty string or otel default
 		if serviceName == "" || serviceName == tracetranslator.ResourceNoServiceName {

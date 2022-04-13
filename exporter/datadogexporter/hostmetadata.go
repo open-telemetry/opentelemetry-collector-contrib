@@ -16,7 +16,6 @@ package datadogexporter // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
@@ -25,11 +24,6 @@ import (
 // getHostTags gets the host tags extracted from the configuration.
 func getHostTags(c *config.Config) []string {
 	tags := c.HostMetadata.Tags
-
-	if len(tags) == 0 {
-		//lint:ignore SA1019 Will be removed when environment variable detection is removed
-		tags = strings.Split(c.EnvVarTags, " ") //nolint
-	}
 
 	if c.Env != "none" {
 		tags = append(tags, fmt.Sprintf("env:%s", c.Env))

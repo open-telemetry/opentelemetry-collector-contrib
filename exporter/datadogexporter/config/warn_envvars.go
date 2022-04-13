@@ -16,14 +16,23 @@ package config // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"fmt"
+	"os"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
-// futureDefaultConfig returns the future default config we will use from v0.50 onwards.
-func futureDefaultConfig() *Config {
+// oldDefaultConfig returns the old default config we used to have before v0.50.
+func oldDefaultConfig() *Config {
+	// This used to be done at 'GetHostTags', done here now
+	var tags []string
+	if os.Getenv("DD_TAGS") != "" {
+		tags = strings.Split(os.Getenv("DD_TAGS"), " ")
+	}
+
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID("datadog")),
 		TimeoutSettings: exporterhelper.TimeoutSettings{
@@ -31,7 +40,23 @@ func futureDefaultConfig() *Config {
 		},
 		RetrySettings: exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+		API: APIConfig{
+			Key:  os.Getenv("DD_API_KEY"), // Must be set if using API
+			Site: os.Getenv("DD_SITE"),    // If not provided, set during config sanitization
+		},
+
+		TagsConfig: TagsConfig{
+			Hostname: os.Getenv("DD_HOST"),
+			Env:      os.Getenv("DD_ENV"),
+			Service:  os.Getenv("DD_SERVICE"),
+			Version:  os.Getenv("DD_VERSION"),
+			Tags:     tags,
+		},
+
 		Metrics: MetricsConfig{
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: os.Getenv("DD_URL"), // If not provided, set during config sanitization
+			},
 			SendMonotonic: true,
 			DeltaTTL:      3600,
 			Quantiles:     true,
@@ -48,10 +73,14 @@ func futureDefaultConfig() *Config {
 			},
 		},
 		Traces: TracesConfig{
-			SampleRate:      1,
+			SampleRate: 1,
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: os.Getenv("DD_APM_URL"), // If not provided, set during config sanitization
+			},
 			IgnoreResources: []string{},
 		},
 		HostMetadata: HostMetadataConfig{
+			Tags:           tags,
 			Enabled:        true,
 			HostnameSource: HostnameSourceFirstResource,
 		},
@@ -65,17 +94,17 @@ func futureDefaultConfig() *Config {
 // explicitly on configuration instead.
 func errUsedEnvVar(settingName, envVarName string) error {
 	return fmt.Errorf(
-		"%q will not default to %q's value starting on v0.50.0. Set %s: ${%s} to remove this warning",
-		settingName,
+		"%q env var is set but not used explicitly on %q. %q does not default to %q's value since v0.50.0",
 		envVarName,
+		settingName,
 		settingName,
 		envVarName,
 	)
 }
 
 // tagsDiffer checks if the host tags from each configuration are different.
-func tagsDiffer(cfgTags []string, futureTags []string) bool {
-	if len(cfgTags) != len(futureTags) {
+func tagsDiffer(cfgTags []string, oldTags []string) bool {
+	if len(cfgTags) != len(oldTags) {
 		return true
 	}
 
@@ -84,9 +113,9 @@ func tagsDiffer(cfgTags []string, futureTags []string) bool {
 		oldCfgSet[tag] = struct{}{}
 	}
 
-	for _, tag := range futureTags {
+	for _, tag := range cfgTags {
 		if _, ok := oldCfgSet[tag]; !ok {
-			// tag is in old but not new
+			// tag is in new but not old
 			return true
 		}
 	}
@@ -95,14 +124,14 @@ func tagsDiffer(cfgTags []string, futureTags []string) bool {
 }
 
 // warnUseOfEnvVars returns warnings related to automatic environment variable detection.
-// Right now, we automatically get the value for e.g. the API key from DD_API_KEY, even if
-// the user is not doing `api.key: ${DD_API_KEY}`. We are going to remove this functionality.
+// On v0.50.0 we removed automatic environment variable detection, we warn users if the
+// pre-v0.50.0 configuration would have different values.
 func warnUseOfEnvVars(configMap *config.Map, cfg *Config) (warnings []error) {
-	// We don't see the raw YAML contents from our exporter so, to compare with the new default,
-	// we unmarshal the config map on the future default config and compare the two structs.
+	// We don't see the raw YAML contents from our exporter so, to compare with the old default,
+	// we unmarshal the config map on the old default config and compare the two structs.
 	// Any differences will be due to the change in default configuration.
-	futureCfg := futureDefaultConfig()
-	err := configMap.UnmarshalExact(futureCfg)
+	oldCfg := oldDefaultConfig()
+	err := configMap.UnmarshalExact(oldCfg)
 
 	errIssue := fmt.Errorf("see github.com/open-telemetry/opentelemetry-collector-contrib/issues/8396 for more details")
 
@@ -117,32 +146,33 @@ func warnUseOfEnvVars(configMap *config.Map, cfg *Config) (warnings []error) {
 
 	// We could probably do this with reflection but I don't want to risk
 	// an accidental panic so we check each field manually.
-	if cfg.API.Key != futureCfg.API.Key {
+	if cfg.API.Key != oldCfg.API.Key {
 		warnings = append(warnings, errUsedEnvVar("api.key", "DD_API_KEY"))
 	}
-	if cfg.API.Site != futureCfg.API.Site {
+	if cfg.API.Site != oldCfg.API.Site {
 		warnings = append(warnings, errUsedEnvVar("api.site", "DD_SITE"))
 	}
-	if cfg.Hostname != futureCfg.Hostname {
+	if cfg.Hostname != oldCfg.Hostname {
 		warnings = append(warnings, errUsedEnvVar("hostname", "DD_HOST"))
 	}
-	if cfg.Env != futureCfg.Env {
+	if cfg.Env != oldCfg.Env {
 		warnings = append(warnings, errUsedEnvVar("env", "DD_ENV"))
 	}
-	if cfg.Service != futureCfg.Service {
+	if cfg.Service != oldCfg.Service {
 		warnings = append(warnings, errUsedEnvVar("service", "DD_SERVICE"))
 	}
-	if cfg.Version != futureCfg.Version {
+	if cfg.Version != oldCfg.Version {
 		warnings = append(warnings, errUsedEnvVar("version", "DD_VERSION"))
 	}
-	if cfg.Metrics.Endpoint != futureCfg.Metrics.Endpoint {
+	if cfg.Metrics.Endpoint != oldCfg.Metrics.Endpoint {
 		warnings = append(warnings, errUsedEnvVar("metrics.endpoint", "DD_URL"))
 	}
-	if cfg.Traces.Endpoint != futureCfg.Traces.Endpoint {
+	if cfg.Traces.Endpoint != oldCfg.Traces.Endpoint {
 		warnings = append(warnings, errUsedEnvVar("traces.endpoint", "DD_APM_URL"))
 	}
-	if tagsDiffer(cfg.GetHostTags(), futureCfg.GetHostTags()) {
-		warnings = append(warnings, fmt.Errorf("\"tags\" will not default to \"DD_TAGS\"'s value starting on v0.50.0. Use 'env' configuration source instead to remove this warning"))
+	if tagsDiffer(cfg.HostMetadata.Tags, oldCfg.HostMetadata.Tags) {
+		warnings = append(warnings, fmt.Errorf("\"tags\" does not default to \"DD_TAGS\"'s value since v0.50.0. Use 'env' configuration source instead"))
+
 	}
 
 	if len(warnings) > 0 {

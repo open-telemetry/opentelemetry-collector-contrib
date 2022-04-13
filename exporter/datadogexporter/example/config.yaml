@@ -8,16 +8,13 @@ exporters:
   datadog:
     ## @param hostname - string - optional
     ## A custom hostname.
-    ## If unset it will be determined from the `DD_HOST` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
-    ## If both this and `DD_HOST` are unset, this will be determined automatically if possible.
-    #
+    ## If unset it will be determined automatically.
     # hostname: customhostname
 
     ## @param env - string - optional
     ## The environment for unified service tagging.
     ## Deprecated: [v0.49.0] Set `deployment.environment` semconv instead, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9016 for details.
     ## This option will be removed in v0.52.0.
-    ## If unset it will be determined from the `DD_ENV` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
     #
     # env: prod
 
@@ -25,7 +22,6 @@ exporters:
     ## The service for unified service tagging.
     ## Deprecated: [v0.49.0] Set `service.name` semconv instead, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8781 for details.
     ## This option will be removed in v0.52.0.
-    ## If unset it will be determined from the `DD_SERVICE` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
     #
     # service: myservice
 
@@ -33,7 +29,6 @@ exporters:
     ## The version for unified service tagging.
     ## Deprecated: [v0.49.0] Set `service.version` semconv instead, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8783 for details.
     ## This option will be removed in v0.52.0.
-    ## If unset it will be determined from the `DD_VERSION` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
     #
     # version: myversion
 
@@ -41,8 +36,6 @@ exporters:
     ## The list of tags to send as host tags.
     ## Deprecated: [v0.49.0] Use `host_metadata::tags` instead.
     ## This option will be removed in v0.52.0.
-    ## If unset it will be determined from the `DD_TAGS` environment variable, specified
-    ## as a list of space-separated strings (Deprecated: [v0.47.0] use 'env' config source instead).
     #
     # tags: []
 
@@ -72,14 +65,12 @@ exporters:
       ## @ param key - string - required
       ## The Datadog API key to associate your Agent's data with your organization.
       ## Create a new API key here: https://app.datadoghq.com/account/settings
-      ## If unset it will be determined from the `DD_API_KEY` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
       #
       key: "<YOUR API KEY>"
 
       ## @param site - string - optional - default: datadoghq.com
       ## The site of the Datadog intake to send Agent data to.
       ## Set to 'datadoghq.eu' to send data to the EU site.
-      ## If unset it will be determined from the `DD_SITE` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
       #
       # site: datadoghq.com
 
@@ -109,8 +100,7 @@ exporters:
 
       ## @param endpoint - string - optional
       ## The host of the Datadog intake server to send metrics to.
-      ## If unset it will be determined from the `DD_URL` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
-      ## If both this and `DD_URL` are unset, the value is obtained through the `site` parameter in the `api` section.
+      ## If unset, the value is obtained through the `site` parameter in the `api` section.
       #
       # endpoint: https://api.datadoghq.com
 
@@ -165,8 +155,7 @@ exporters:
 
       ## @param endpoint - string - optional
       ## The host of the Datadog intake server to send traces to.
-      ## If unset it will be determined from the `DD_APM_URL` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
-      ## If both this and `DD_APM_URL` are unset, the value is obtained through the `site` parameter in the `api` section.
+      ## If unset the value is obtained through the `site` parameter in the `api` section.
       #
       # endpoint: https://api.datadoghq.com
 

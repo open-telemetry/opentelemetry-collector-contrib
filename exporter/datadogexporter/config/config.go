@@ -50,12 +50,9 @@ const (
 type APIConfig struct {
 	// Key is the Datadog API key to associate your Agent's data with your organization.
 	// Create a new API key here: https://app.datadoghq.com/account/settings
-	//
-	// It can also be set through the `DD_API_KEY` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
 	Key string `mapstructure:"key"`
 
 	// Site is the site of the Datadog intake to send data to.
-	// It can also be set through the `DD_SITE` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
 	// The default value is "datadoghq.com".
 	Site string `mapstructure:"site"`
 }
@@ -76,7 +73,6 @@ type MetricsConfig struct {
 	DeltaTTL int64 `mapstructure:"delta_ttl"`
 
 	// TCPAddr.Endpoint is the host of the Datadog intake server to send metrics to.
-	// It can also be set through the `DD_URL` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead)..
 	// If unset, the value is obtained from the Site.
 	confignet.TCPAddr `mapstructure:",squash"`
 
@@ -167,7 +163,6 @@ type MetricsExporterConfig struct {
 // TracesConfig defines the traces exporter specific configuration options
 type TracesConfig struct {
 	// TCPAddr.Endpoint is the host of the Datadog intake server to send traces to.
-	// It can also be set through the `DD_APM_URL` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
 	// If unset, the value is obtained from the Site.
 	confignet.TCPAddr `mapstructure:",squash"`
 
@@ -200,7 +195,6 @@ type TracesConfig struct {
 // It is embedded in the configuration
 type TagsConfig struct {
 	// Hostname is the host name for unified service tagging.
-	// It can also be set through the `DD_HOST` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
 	// If unset, it is determined automatically.
 	// See https://docs.datadoghq.com/agent/faq/how-datadog-agent-determines-the-hostname
 	// for more details.
@@ -209,46 +203,21 @@ type TagsConfig struct {
 	// Env is the environment for unified service tagging.
 	// Deprecated: [v0.49.0] Set `deployment.environment` semconv instead, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9016 for details.
 	// This option will be removed in v0.52.0.
-	// It can also be set through the `DD_ENV` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
 	Env string `mapstructure:"env"`
 
 	// Service is the service for unified service tagging.
 	// Deprecated: [v0.49.0] Set `service.name` semconv instead, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8781 for details.
 	// This option will be removed in v0.52.0.
-	// It can also be set through the `DD_SERVICE` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
 	Service string `mapstructure:"service"`
 
 	// Version is the version for unified service tagging.
 	// Deprecated: [v0.49.0] Set `service.version` semconv instead, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8783 for details.
 	// This option will be removed in v0.52.0.
-	// It can also be set through the `DD_VERSION` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
 	Version string `mapstructure:"version"`
-
-	// EnvVarTags is the list of space-separated tags passed by the `DD_TAGS` environment variable
-	// Superseded by Tags if the latter is set.
-	// Should not be set in the user-provided config.
-	//
-	// Deprecated: [v0.47.0] Use `host_metadata::tags` HostMetadataConfig.Tags instead.
-	EnvVarTags string `mapstructure:"envvartags"`
 
 	// Tags is the list of default tags to add to every metric or trace.
 	// Deprecated: [v0.49.0] Use `host_metadata::tags` (HostMetadataConfig.Tags)
 	Tags []string `mapstructure:"tags"`
-}
-
-// GetHostTags gets the host tags extracted from the configuration
-// Deprecated: [v0.49.0] Access fields explicitly instead.
-func (t *TagsConfig) GetHostTags() []string {
-	tags := t.Tags
-
-	if len(tags) == 0 {
-		tags = strings.Split(t.EnvVarTags, " ")
-	}
-
-	if t.Env != "none" {
-		tags = append(tags, fmt.Sprintf("env:%s", t.Env))
-	}
-	return tags
 }
 
 // HostnameSource is the source for the hostname of host metadata.

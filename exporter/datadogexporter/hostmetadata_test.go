@@ -45,48 +45,4 @@ func TestHostTags(t *testing.T) {
 		},
 		getHostTags(&c),
 	)
-
-	c = config.Config{
-		TagsConfig: config.TagsConfig{
-			Hostname: "customhost",
-			Env:      "customenv",
-			// Service and version should be only used for traces
-			Service:    "customservice",
-			Version:    "customversion",
-			EnvVarTags: "key3:val3 key4:val4",
-		},
-
-		HostMetadata: config.HostMetadataConfig{
-			Tags: []string{"key1:val1", "key2:val2"},
-		},
-	}
-
-	assert.ElementsMatch(t,
-		[]string{
-			"env:customenv",
-			"key1:val1",
-			"key2:val2",
-		},
-		getHostTags(&c),
-	)
-
-	c = config.Config{
-		TagsConfig: config.TagsConfig{
-			Hostname: "customhost",
-			Env:      "customenv",
-			// Service and version should be only used for traces
-			Service:    "customservice",
-			Version:    "customversion",
-			EnvVarTags: "key3:val3 key4:val4",
-		},
-	}
-
-	assert.ElementsMatch(t,
-		[]string{
-			"env:customenv",
-			"key3:val3",
-			"key4:val4",
-		},
-		getHostTags(&c),
-	)
 }
