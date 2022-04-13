@@ -17,7 +17,6 @@ package vmwarevcenterreceiver // import "github.com/open-telemetry/opentelemetry
 import (
 	"context"
 	"strconv"
-	"time"
 
 	"github.com/vmware/govmomi/performance"
 	"github.com/vmware/govmomi/vim25/mo"
@@ -116,8 +115,6 @@ func (v *vcenterMetricScraper) recordHostPerformanceMetrics(
 	host mo.HostSystem,
 	errs *scrapererror.ScrapeErrors,
 ) {
-	st := time.Now().Add(-5 * time.Minute)
-	et := time.Now().Add(-1 * time.Minute)
 	spec := types.PerfQuerySpec{
 		Entity:    host.Reference(),
 		MaxSample: 5,
@@ -125,8 +122,7 @@ func (v *vcenterMetricScraper) recordHostPerformanceMetrics(
 		MetricId:  []types.PerfMetricId{{Instance: "*"}},
 		// right now we are only grabbing real time metrics from the performance
 		// manager
-		StartTime: &st,
-		EndTime:   &et,
+		IntervalId: int32(20),
 	}
 
 	info, err := v.client.performanceQuery(ctx, spec, hostPerfMetricList, []types.ManagedObjectReference{host.Reference()})

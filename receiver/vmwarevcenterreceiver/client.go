@@ -27,7 +27,6 @@ import (
 	"github.com/vmware/govmomi/performance"
 	"github.com/vmware/govmomi/property"
 	"github.com/vmware/govmomi/vim25"
-	"github.com/vmware/govmomi/vim25/mo"
 	vt "github.com/vmware/govmomi/vim25/types"
 	"github.com/vmware/govmomi/vsan"
 	"github.com/vmware/govmomi/vsan/types"
@@ -198,13 +197,6 @@ func (vc *vmwareVcenterClient) performanceQuery(
 		counters: counterInfoByName,
 		results:  result,
 	}, nil
-}
-
-func (vc *vmwareVcenterClient) EntityName(e vt.ManagedObjectReference) string {
-	var me mo.ManagedEntity
-	mgr := performance.NewManager(vc.vimDriver)
-	_ = mgr.Properties(context.Background(), e, []string{"name"}, &me)
-	return me.Name
 }
 
 func (vc *vmwareVcenterClient) queryVsan(ctx context.Context, ref *vt.ManagedObjectReference, qs []types.VsanPerfQuerySpec) (*[]types.VsanPerfEntityMetricCSV, error) {

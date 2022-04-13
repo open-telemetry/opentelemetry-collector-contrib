@@ -28,7 +28,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func TestEndtoEnd(t *testing.T) {
+func TestEndtoEnd_ESX(t *testing.T) {
 	sim := simulator.ESX()
 	defer sim.Remove()
 
