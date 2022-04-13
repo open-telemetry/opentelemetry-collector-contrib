@@ -110,6 +110,10 @@ func TestValidateConfig(t *testing.T) {
 			configName: "config_empty.yaml",
 			succeed:    true,
 		},
+		{
+			configName: "config_regexp.yaml",
+			succeed:    true,
+		},
 	}
 
 	for _, test := range tests {
