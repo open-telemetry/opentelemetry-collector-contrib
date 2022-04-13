@@ -2655,7 +2655,7 @@ type metricVcenterVMNetworkUsage struct {
 // init fills vcenter.vm.network.usage metric with initial data.
 func (m *metricVcenterVMNetworkUsage) init() {
 	m.data.SetName("vcenter.vm.network.usage")
-	m.data.SetDescription("The network utilizaiton combined transmit and receive rates during an interval.")
+	m.data.SetDescription("The network utilization combined transmit and receive rates during an interval.")
 	m.data.SetUnit("{KBy/s}")
 	m.data.SetDataType(pdata.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)

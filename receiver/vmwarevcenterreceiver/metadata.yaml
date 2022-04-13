@@ -495,7 +495,7 @@ metrics:
     attributes: [throughput_direction]
   vcenter.vm.network.usage:
     enabled: true
-    description: The network utilizaiton combined transmit and receive rates during an interval.
+    description: The network utilization combined transmit and receive rates during an interval.
     unit: "{KBy/s}"
     sum:
       monotonic: false
