@@ -118,7 +118,7 @@ func constructSpanData() pdata.Traces {
 }
 
 // nolint:unused
-func constructW3CSpanData() ptrace.Traces {
+func constructW3CSpanData() pdata.Traces {
 	resource := constructResource()
 	traces := pdata.NewTraces()
 	rspans := traces.ResourceSpans().AppendEmpty()
