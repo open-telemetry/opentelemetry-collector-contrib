@@ -29,6 +29,9 @@
 - `mongodbatlasreceiver`: Updated to uses newer metric builder which changed some metric and resource attributes (#9093)
 - `dynatraceexporter`: Make `serialization` package `/internal` (#9097)
 - `attributesprocessor`: Remove log names from filters (#9131)
+- `datadogexporter`: Remove `GetHotsTags` method from `TagsConfig` struct (#9249)
+- `datadogexporter`: Remove automatic environment variable detection (#9249)
+   - Check [#8396](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8396) for upgrade instructions.
 
 ### 🧰 Bug fixes 🧰
 
