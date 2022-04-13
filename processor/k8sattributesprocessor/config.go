@@ -197,7 +197,7 @@ type FieldFilterConfig struct {
 // with logs, spans and metrics
 type PodAssociationConfig struct {
 	// From represents the source of the association.
-	// Allowed values are "connection" and "labels".
+	// Allowed values are "connection" and "resource_attribute".
 	From string `mapstructure:"from"`
 
 	// Name represents extracted key name.
