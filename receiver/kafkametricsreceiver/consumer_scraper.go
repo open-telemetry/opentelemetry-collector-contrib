@@ -22,7 +22,8 @@ import (
 
 	"github.com/Shopify/sarama"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -68,10 +69,10 @@ func (s *consumerScraper) shutdown(_ context.Context) error {
 	return nil
 }
 
-func (s *consumerScraper) scrape(context.Context) (pdata.Metrics, error) {
+func (s *consumerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	cgs, listErr := s.clusterAdmin.ListConsumerGroups()
 	if listErr != nil {
-		return pdata.Metrics{}, listErr
+		return pmetric.Metrics{}, listErr
 	}
 
 	var matchedGrpIds []string
@@ -83,7 +84,7 @@ func (s *consumerScraper) scrape(context.Context) (pdata.Metrics, error) {
 
 	allTopics, listErr := s.clusterAdmin.ListTopics()
 	if listErr != nil {
-		return pdata.Metrics{}, listErr
+		return pmetric.Metrics{}, listErr
 	}
 
 	matchedTopics := map[string]sarama.TopicDetail{}
@@ -117,15 +118,15 @@ func (s *consumerScraper) scrape(context.Context) (pdata.Metrics, error) {
 	}
 	consumerGroups, listErr := s.clusterAdmin.DescribeConsumerGroups(matchedGrpIds)
 	if listErr != nil {
-		return pdata.Metrics{}, listErr
+		return pmetric.Metrics{}, listErr
 	}
 
-	now := pdata.NewTimestampFromTime(time.Now())
-	md := pdata.NewMetrics()
+	now := pcommon.NewTimestampFromTime(time.Now())
+	md := pmetric.NewMetrics()
 	ilm := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	ilm.Scope().SetName(instrumentationLibName)
 	for _, group := range consumerGroups {
-		labels := pdata.NewMap()
+		labels := pcommon.NewMap()
 		labels.UpsertString(metadata.A.Group, group.GroupId)
 		addIntGauge(ilm.Metrics(), metadata.M.KafkaConsumerGroupMembers.Name(), now, labels, int64(len(group.Members)))
 		groupOffsetFetchResponse, err := s.clusterAdmin.ListConsumerGroupOffsets(group.GroupId, topicPartitions)

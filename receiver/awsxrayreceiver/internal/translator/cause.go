@@ -18,8 +18,8 @@ import (
 	"strconv"
 	"strings"
 
-	"go.opentelemetry.io/collector/model/pdata"
 	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
@@ -28,7 +28,7 @@ import (
 // TODO: Remove this when collector defines this semantic convention.
 const ExceptionEventName = "exception"
 
-func addCause(seg *awsxray.Segment, span *pdata.Span) {
+func addCause(seg *awsxray.Segment, span *ptrace.Span) {
 	if seg.Cause == nil {
 		return
 	}
@@ -41,9 +41,9 @@ func addCause(seg *awsxray.Segment, span *pdata.Span) {
 	// temporarily setting the status to otlptrace.Status_UnknownError. This will be
 	// updated to a more specific error in the `segToSpans()` in translator.go once
 	// we traverse through all the subsegments.
-	if span.Status().Code() == pdata.StatusCodeUnset {
+	if span.Status().Code() == ptrace.StatusCodeUnset {
 		// StatusCodeUnset is the default value for the span.Status().
-		span.Status().SetCode(pdata.StatusCodeError)
+		span.Status().SetCode(ptrace.StatusCodeError)
 	}
 
 	switch seg.Cause.Type {

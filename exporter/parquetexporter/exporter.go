@@ -18,7 +18,9 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 type parquetExporter struct {
@@ -33,14 +35,14 @@ func (e parquetExporter) shutdown(ctx context.Context) error {
 	return nil
 }
 
-func (e parquetExporter) consumeMetrics(ctx context.Context, ld pdata.Metrics) error {
+func (e parquetExporter) consumeMetrics(ctx context.Context, ld pmetric.Metrics) error {
 	return nil
 }
 
-func (e parquetExporter) consumeTraces(ctx context.Context, ld pdata.Traces) error {
+func (e parquetExporter) consumeTraces(ctx context.Context, ld ptrace.Traces) error {
 	return nil
 }
 
-func (e parquetExporter) consumeLogs(ctx context.Context, ld pdata.Logs) error {
+func (e parquetExporter) consumeLogs(ctx context.Context, ld plog.Logs) error {
 	return nil
 }

@@ -15,7 +15,7 @@
 package sampling // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 
 import (
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 )
 
@@ -37,7 +37,7 @@ func NewAnd(
 }
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
-func (c *And) Evaluate(traceID pdata.TraceID, trace *TraceData) (Decision, error) {
+func (c *And) Evaluate(traceID pcommon.TraceID, trace *TraceData) (Decision, error) {
 	// The policy iterates over all sub-policies and returns Sampled if all sub-policies returned a Sampled Decision.
 	// If any subpolicy returns NotSampled, it returns NotSampled Decision.
 	for _, sub := range c.subpolicies {
@@ -55,6 +55,6 @@ func (c *And) Evaluate(traceID pdata.TraceID, trace *TraceData) (Decision, error
 
 // OnDroppedSpans is called when the trace needs to be dropped, due to memory
 // pressure, before the decision_wait time has been reached.
-func (c *And) OnDroppedSpans(pdata.TraceID, *TraceData) (Decision, error) {
+func (c *And) OnDroppedSpans(pcommon.TraceID, *TraceData) (Decision, error) {
 	return Sampled, nil
 }

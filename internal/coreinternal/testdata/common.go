@@ -14,9 +14,7 @@
 
 package testdata
 
-import (
-	"go.opentelemetry.io/collector/model/pdata"
-)
+import "go.opentelemetry.io/collector/pdata/pcommon"
 
 var (
 	resourceAttributes1 = map[string]interface{}{"resource-attr": "resource-attr-val-1"}
@@ -37,46 +35,46 @@ const (
 	TestAttachmentValue = "exemplar-attachment-value"
 )
 
-func initResourceAttributes1(dest pdata.Map) {
-	pdata.NewMapFromRaw(resourceAttributes1).CopyTo(dest)
+func initResourceAttributes1(dest pcommon.Map) {
+	pcommon.NewMapFromRaw(resourceAttributes1).CopyTo(dest)
 }
 
-func initResourceAttributes2(dest pdata.Map) {
-	pdata.NewMapFromRaw(resourceAttributes2).CopyTo(dest)
+func initResourceAttributes2(dest pcommon.Map) {
+	pcommon.NewMapFromRaw(resourceAttributes2).CopyTo(dest)
 }
 
-func initSpanAttributes(dest pdata.Map) {
-	pdata.NewMapFromRaw(spanAttributes).CopyTo(dest)
+func initSpanAttributes(dest pcommon.Map) {
+	pcommon.NewMapFromRaw(spanAttributes).CopyTo(dest)
 }
 
-func initSpanEventAttributes(dest pdata.Map) {
-	pdata.NewMapFromRaw(spanEventAttributes).CopyTo(dest)
+func initSpanEventAttributes(dest pcommon.Map) {
+	pcommon.NewMapFromRaw(spanEventAttributes).CopyTo(dest)
 }
 
-func initSpanLinkAttributes(dest pdata.Map) {
-	pdata.NewMapFromRaw(spanLinkAttributes).CopyTo(dest)
+func initSpanLinkAttributes(dest pcommon.Map) {
+	pcommon.NewMapFromRaw(spanLinkAttributes).CopyTo(dest)
 }
 
-func initMetricAttachment(dest pdata.Map) {
+func initMetricAttachment(dest pcommon.Map) {
 	dest.UpsertString(TestAttachmentKey, TestAttachmentValue)
 }
 
-func initMetricAttributes1(dest pdata.Map) {
+func initMetricAttributes1(dest pcommon.Map) {
 	dest.UpsertString(TestLabelKey1, TestLabelValue1)
 }
 
-func initMetricAttributes12(dest pdata.Map) {
+func initMetricAttributes12(dest pcommon.Map) {
 	dest.UpsertString(TestLabelKey1, TestLabelValue1)
 	dest.UpsertString(TestLabelKey2, TestLabelValue2)
 	dest.Sort()
 }
 
-func initMetricAttributes13(dest pdata.Map) {
+func initMetricAttributes13(dest pcommon.Map) {
 	dest.UpsertString(TestLabelKey1, TestLabelValue1)
 	dest.UpsertString(TestLabelKey3, TestLabelValue3)
 	dest.Sort()
 }
 
-func initMetricAttributes2(dest pdata.Map) {
+func initMetricAttributes2(dest pcommon.Map) {
 	dest.UpsertString(TestLabelKey2, TestLabelValue2)
 }

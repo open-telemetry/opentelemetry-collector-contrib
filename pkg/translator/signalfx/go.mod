@@ -6,7 +6,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.48.0
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3
 	github.com/stretchr/testify v1.7.1
-	go.opentelemetry.io/collector/model v0.48.0
+	go.opentelemetry.io/collector/pdata v0.0.0-00010101000000-000000000000
 	go.uber.org/multierr v1.8.0
 )
 
@@ -22,3 +22,5 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../../internal/common
+
+replace go.opentelemetry.io/collector/pdata => go.opentelemetry.io/collector/pdata v0.0.0-20220412005140-8eb68f40028d
