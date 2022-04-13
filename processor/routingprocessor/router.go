@@ -72,6 +72,10 @@ func (r *router) RouteMetrics(ctx context.Context, tm pdata.Metrics) []routedMet
 	}
 }
 
+func (r *router) removeRoutingAttribute(resource pdata.Resource) {
+	resource.Attributes().Remove(r.config.FromAttribute)
+}
+
 func (r *router) routeMetricsForResource(_ context.Context, tm pdata.Metrics) []routedMetrics {
 	// routingEntry is used to group pdata.ResourceMetrics that are routed to
 	// the same set of exporters.
@@ -92,6 +96,9 @@ func (r *router) routeMetricsForResource(_ context.Context, tm pdata.Metrics) []
 		// If we have an exporter list defined for that attribute value then use it.
 		if e, ok := r.metricsExporters[attrValue]; ok {
 			exp = e
+			if r.config.DropRoutingResourceAttribute {
+				r.removeRoutingAttribute(resMetrics.Resource())
+			}
 		}
 
 		if rEntry, ok := routingMap[attrValue]; ok {
@@ -178,6 +185,9 @@ func (r *router) routeTracesForResource(_ context.Context, tr pdata.Traces) []ro
 		// If we have an exporter list defined for that attribute value then use it.
 		if e, ok := r.tracesExporters[attrValue]; ok {
 			exp = e
+			if r.config.DropRoutingResourceAttribute {
+				r.removeRoutingAttribute(resSpans.Resource())
+			}
 		}
 
 		if rEntry, ok := routingMap[attrValue]; ok {
@@ -264,6 +274,9 @@ func (r *router) routeLogsForResource(_ context.Context, tl pdata.Logs) []routed
 		// If we have an exporter list defined for that attribute value then use it.
 		if e, ok := r.logsExporters[attrValue]; ok {
 			exp = e
+			if r.config.DropRoutingResourceAttribute {
+				r.removeRoutingAttribute(resLogs.Resource())
+			}
 		}
 
 		if rEntry, ok := routingMap[attrValue]; ok {

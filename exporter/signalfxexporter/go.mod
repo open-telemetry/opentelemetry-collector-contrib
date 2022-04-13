@@ -20,7 +20,10 @@ require (
 	go.uber.org/zap v1.21.0
 )
 
-require gopkg.in/yaml.v2 v2.4.0
+require (
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.48.0
+	gopkg.in/yaml.v2 v2.4.0
+)
 
 require (
 	github.com/cenkalti/backoff/v4 v4.1.2 // indirect
@@ -57,9 +60,9 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.31.0 // indirect
-	go.opentelemetry.io/otel v1.6.1 // indirect
-	go.opentelemetry.io/otel/metric v0.28.0 // indirect
-	go.opentelemetry.io/otel/trace v1.6.1 // indirect
+	go.opentelemetry.io/otel v1.6.3 // indirect
+	go.opentelemetry.io/otel/metric v0.29.0 // indirect
+	go.opentelemetry.io/otel/trace v1.6.3 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
 	golang.org/x/text v0.3.7 // indirect
