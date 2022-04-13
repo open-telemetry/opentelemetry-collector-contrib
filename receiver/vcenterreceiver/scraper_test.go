@@ -60,7 +60,7 @@ func TestScrape_NoVsan(t *testing.T) {
 	})
 }
 
-func TestScrape_UnableToConnect(t *testing.T) {
+func TestScrape_NoClient(t *testing.T) {
 	ctx := context.Background()
 	scraper := &vcenterMetricScraper{
 		client: nil,
@@ -68,6 +68,38 @@ func TestScrape_UnableToConnect(t *testing.T) {
 		logger: zap.NewNop(),
 	}
 	metrics, err := scraper.scrape(ctx)
-	require.ErrorContains(t, err, "failed to connect")
+	require.ErrorContains(t, err, "no SDK client instantiated")
 	require.Equal(t, metrics.MetricCount(), 0)
+}
+
+func TestStartFailures_Metrics(t *testing.T) {
+	cases := []struct {
+		desc string
+		cfg  Config
+	}{
+		{
+			desc: "bad client connect",
+			cfg: Config{
+				MetricsConfig: &MetricsConfig{
+					Endpoint: "http://no-host",
+				},
+			},
+		},
+		{
+			desc: "unparsable endpoint",
+			cfg: Config{
+				MetricsConfig: &MetricsConfig{
+					Endpoint: "<protocol>://some-host",
+				},
+			},
+		},
+	}
+
+	ctx := context.Background()
+	for _, tc := range cases {
+		scraper := newVmwareVcenterScraper(zap.NewNop(), &tc.cfg)
+		// start should almost always succeed
+		err := scraper.Start(ctx, nil)
+		require.NoError(t, err)
+	}
 }

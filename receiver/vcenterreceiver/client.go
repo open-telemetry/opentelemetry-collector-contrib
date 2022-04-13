@@ -116,7 +116,12 @@ func (vc *vcenterClient) VMs(ctx context.Context) ([]*object.VirtualMachine, err
 	return rps, err
 }
 
-func (vc *vcenterClient) CollectVSANCluster(ctx context.Context, clusterRef *vt.ManagedObjectReference, startTime time.Time, endTime time.Time) (*[]types.VsanPerfEntityMetricCSV, error) {
+func (vc *vcenterClient) VSANCluster(
+	ctx context.Context,
+	clusterRef *vt.ManagedObjectReference,
+	startTime time.Time,
+	endTime time.Time,
+) (*[]types.VsanPerfEntityMetricCSV, error) {
 	if vc.vsanDriver == nil {
 		return nil, errors.New("vsan client not instantiated")
 	}
@@ -130,7 +135,7 @@ func (vc *vcenterClient) CollectVSANCluster(ctx context.Context, clusterRef *vt.
 	return vc.queryVsan(ctx, clusterRef, querySpec)
 }
 
-func (vc *vcenterClient) CollectVSANHosts(ctx context.Context, clusterRef *vt.ManagedObjectReference, startTime time.Time, endTime time.Time) (*[]types.VsanPerfEntityMetricCSV, error) {
+func (vc *vcenterClient) VSANHosts(ctx context.Context, clusterRef *vt.ManagedObjectReference, startTime time.Time, endTime time.Time) (*[]types.VsanPerfEntityMetricCSV, error) {
 	if vc.vsanDriver == nil {
 		return nil, errors.New("vsan client not instantiated")
 	}
@@ -144,7 +149,7 @@ func (vc *vcenterClient) CollectVSANHosts(ctx context.Context, clusterRef *vt.Ma
 	return vc.queryVsan(ctx, clusterRef, querySpec)
 }
 
-func (vc *vcenterClient) CollectVSANVirtualMachine(
+func (vc *vcenterClient) VSANVirtualMachines(
 	ctx context.Context,
 	clusterRef *vt.ManagedObjectReference,
 	startTime time.Time,

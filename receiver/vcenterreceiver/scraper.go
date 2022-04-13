@@ -99,10 +99,10 @@ func (v *vcenterMetricScraper) collectClusters(ctx context.Context, errs *scrape
 	now := pdata.NewTimestampFromTime(time.Now())
 
 	for _, c := range clusters {
-		v.collectCluster(ctx, now, c, errs)
 		v.collectHosts(ctx, now, c, errs)
 		v.collectDatastores(ctx, now, c, errs)
 		v.collectVMs(ctx, now, c, errs)
+		v.collectCluster(ctx, now, c, errs)
 	}
 	v.collectResourcePools(ctx, now, errs)
 
@@ -124,7 +124,7 @@ func (v *vcenterMetricScraper) collectCluster(
 
 	if v.vsanEnabled {
 		mor := c.Reference()
-		csvs, err := v.client.CollectVSANCluster(ctx, &mor, time.Now().UTC(), time.Now().UTC())
+		csvs, err := v.client.VSANCluster(ctx, &mor, time.Now().UTC(), time.Now().UTC())
 		if err != nil {
 			errs.AddPartial(1, err)
 		}
@@ -184,7 +184,7 @@ func (v *vcenterMetricScraper) collectHosts(
 	clusterRef := cluster.Reference()
 	var hostVsanCSVs *[]types.VsanPerfEntityMetricCSV
 	if v.vsanEnabled {
-		hostVsanCSVs, err = v.client.CollectVSANHosts(ctx, &clusterRef, time.Now(), time.Now())
+		hostVsanCSVs, err = v.client.VSANHosts(ctx, &clusterRef, time.Now(), time.Now())
 		if err != nil {
 			errs.AddPartial(1, err)
 		}
@@ -265,12 +265,13 @@ func (v *vcenterMetricScraper) collectVMs(
 	var vsanCsvs *[]types.VsanPerfEntityMetricCSV
 	if v.vsanEnabled {
 		clusterRef := cluster.Reference()
-		vsanCsvs, err = v.client.CollectVSANVirtualMachine(ctx, &clusterRef, time.Now().UTC(), time.Now().UTC())
+		vsanCsvs, err = v.client.VSANVirtualMachines(ctx, &clusterRef, time.Now().UTC(), time.Now().UTC())
 		if err != nil {
 			errs.AddPartial(1, err)
 		}
 	}
 
+	poweredOffVMs := 0
 	for _, vm := range vms {
 		var moVM mo.VirtualMachine
 		err := vm.Properties(ctx, vm.Reference(), []string{
@@ -286,7 +287,10 @@ func (v *vcenterMetricScraper) collectVMs(
 
 		vmUUID := moVM.Config.InstanceUuid
 		entityRefID := fmt.Sprintf("virtual-machine:%s", vmUUID)
-		ps := string(moVM.Runtime.PowerState)
+
+		if string(moVM.Runtime.PowerState) == "poweredOff" {
+			poweredOffVMs++
+		}
 
 		host, err := vm.HostSystem(ctx)
 		if err != nil {
@@ -303,12 +307,13 @@ func (v *vcenterMetricScraper) collectVMs(
 		v.mb.EmitForResource(
 			metadata.WithVcenterVMName(vm.Name()),
 			metadata.WithVcenterVMID(vmUUID),
-			metadata.WithVcenterVMPowerState(ps),
 			metadata.WithVcenterClusterName(cluster.Name()),
 			metadata.WithVcenterHostName(hostname),
 		)
 	}
 
+	v.mb.RecordVcenterClusterVMCountDataPoint(colTime, int64(len(vms))-int64(poweredOffVMs), metadata.AttributeVMCountPowerState.On)
+	v.mb.RecordVcenterClusterVMCountDataPoint(colTime, int64(poweredOffVMs), metadata.AttributeVMCountPowerState.Off)
 }
 
 func (v *vcenterMetricScraper) collectVM(

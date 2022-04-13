@@ -599,9 +599,10 @@ func (m *metricVcenterClusterVMCount) init() {
 	m.data.SetDataType(pdata.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricVcenterClusterVMCount) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64) {
+func (m *metricVcenterClusterVMCount) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, vmCountPowerStateAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -609,6 +610,7 @@ func (m *metricVcenterClusterVMCount) recordDataPoint(start pdata.Timestamp, ts 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
+	dp.Attributes().Insert(A.VMCountPowerState, pdata.NewValueString(vmCountPowerStateAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3039,13 +3041,6 @@ func WithVcenterVMName(val string) ResourceOption {
 	}
 }
 
-// WithVcenterVMPowerState sets provided value as "vcenter.vm.power_state" attribute for current resource.
-func WithVcenterVMPowerState(val string) ResourceOption {
-	return func(r pdata.Resource) {
-		r.Attributes().UpsertString("vcenter.vm.power_state", val)
-	}
-}
-
 // EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
 // recording another set of data points as part of another resource. This function can be helpful when one scraper
 // needs to emit metrics from several resources. Otherwise calling this function is not required,
@@ -3162,8 +3157,8 @@ func (mb *MetricsBuilder) RecordVcenterClusterMemoryUsedDataPoint(ts pdata.Times
 }
 
 // RecordVcenterClusterVMCountDataPoint adds a data point to vcenter.cluster.vm.count metric.
-func (mb *MetricsBuilder) RecordVcenterClusterVMCountDataPoint(ts pdata.Timestamp, val int64) {
-	mb.metricVcenterClusterVMCount.recordDataPoint(mb.startTime, ts, val)
+func (mb *MetricsBuilder) RecordVcenterClusterVMCountDataPoint(ts pdata.Timestamp, val int64, vmCountPowerStateAttributeValue string) {
+	mb.metricVcenterClusterVMCount.recordDataPoint(mb.startTime, ts, val, vmCountPowerStateAttributeValue)
 }
 
 // RecordVcenterClusterVsanCongestionsDataPoint adds a data point to vcenter.cluster.vsan.congestions metric.
@@ -3402,6 +3397,8 @@ var Attributes = struct {
 	LatencyType string
 	// ThroughputDirection (The direction of network throughput.)
 	ThroughputDirection string
+	// VMCountPowerState (Whether the virtual machines are powered on or off)
+	VMCountPowerState string
 	// VsanLatencyType (The type of vSAN latency.)
 	VsanLatencyType string
 	// VsanOperationType (The type of vSAN operation.)
@@ -3414,6 +3411,7 @@ var Attributes = struct {
 	"direction",
 	"type",
 	"direction",
+	"power_state",
 	"type",
 	"type",
 	"direction",
@@ -3465,6 +3463,15 @@ var AttributeThroughputDirection = struct {
 }{
 	"transmitted",
 	"received",
+}
+
+// AttributeVMCountPowerState are the possible values that the attribute "vm_count_power_state" can have.
+var AttributeVMCountPowerState = struct {
+	On  string
+	Off string
+}{
+	"on",
+	"off",
 }
 
 // AttributeVsanLatencyType are the possible values that the attribute "vsan_latency_type" can have.

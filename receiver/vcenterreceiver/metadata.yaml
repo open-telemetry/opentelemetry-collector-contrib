@@ -16,9 +16,6 @@ resource_attributes:
   vcenter.vm.name:
     description: The name of the virtual machine
     type: string
-  vcenter.vm.power_state:
-    description: Whether the virtual machine is powered on/off.
-    type: string
   vcenter.vm.id:
     description: The instance UUID of the virtual machine
     type: string
@@ -55,6 +52,13 @@ attributes:
     enum:
       - transmitted
       - received
+  vm_count_power_state:
+    value: power_state
+    description: Whether the virtual machines are powered on or off
+    type: string
+    enum:
+      - "on"
+      - "off"
   vsan_latency_type:
     value: type
     description: The type of vSAN latency.
@@ -186,6 +190,7 @@ metrics:
       monotonic: false
       value_type: int
       aggregation: cumulative
+    attributes: [vm_count_power_state]
   vcenter.cluster.host.count:
     enabled: true
     description: The number of hosts in the datacenter
