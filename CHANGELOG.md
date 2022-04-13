@@ -52,6 +52,7 @@
 - `datadogexporter`: Deprecate `use_resource_metadata` setting in favor of `host_metadata::hostname_source` (#9100)
 - `prometheusexecreceiver`: Deprecate prom_exec receiver (#9058)
 - `fluentbitextension`: Deprecate Fluentbit extension (#9062)
+- `cumulativetodeltaprocessor`: Deprecated `metrics` configuration option in favor of `include` and `exclude` (#8952)
 
 
 ### 🚀 New components 🚀
