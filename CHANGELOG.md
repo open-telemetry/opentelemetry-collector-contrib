@@ -40,6 +40,7 @@
 - `googlecloudexporter`: fix the `exporter.googlecloud.OTLPDirect` fature-gate, which was not applied when the flag was provided (#9116)
 - `signalfxexporter`: Fix bug to enable timeouts for correlating traces and metrics (#9101)
 - `windowsperfcountersreceiver`: fix exported values being integers instead of doubles (#9138)
+- `transformprocessor`: fix transformprocessor not been included in dist (#9248)
 
 ### 🚩 Deprecations 🚩
 
