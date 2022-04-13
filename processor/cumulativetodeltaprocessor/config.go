@@ -30,7 +30,7 @@ type Config struct {
 	// MaxStaleness is the total time a state entry will live past the time it was last seen. Set to 0 to retain state indefinitely.
 	MaxStaleness time.Duration `mapstructure:"max_staleness"`
 
-	// Deprecated. List of cumulative metrics to convert to delta.
+	// Deprecated: List of cumulative metrics to convert to delta.
 	// Cannot be used with Include/Exclude.
 	Metrics []string `mapstructure:"metrics"`
 
