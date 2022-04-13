@@ -136,8 +136,8 @@ func TestFinder(t *testing.T) {
 			expected := absPath(tempDir, tc.expected)
 
 			for _, f := range files {
-				os.MkdirAll(filepath.Dir(f), 0666)                  // #nosec - test requires permissions
-				ioutil.WriteFile(f, []byte(filepath.Base(f)), 0666) // #nosec - test requires permissions
+				os.MkdirAll(filepath.Dir(f), 0744)                  // #nosec - test requires permissions
+				ioutil.WriteFile(f, []byte(filepath.Base(f)), 0744) // #nosec - test requires permissions
 			}
 
 			finder := Finder{include, exclude}
