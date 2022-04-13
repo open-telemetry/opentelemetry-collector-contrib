@@ -39,7 +39,6 @@ type MetricsConfig struct {
 	Endpoint                                string                   `mapstructure:"endpoint"`
 	Username                                string                   `mapstructure:"username"`
 	Password                                string                   `mapstructure:"password"`
-	PerformanceInterval                     string                   `mapstructure:"performance_interval"`
 }
 
 // Validate checks to see if the supplied config will work for the vmwarevcenterreceiver

@@ -182,10 +182,6 @@ func (vc *vcenterClient) performanceQuery(
 ) (*perfSampleResult, error) {
 	mgr := performance.NewManager(vc.vimDriver)
 	mgr.Sort = true
-	if intervalID, ok := performance.Intervals[vc.cfg.MetricsConfig.PerformanceInterval]; ok {
-		spec.IntervalId = intervalID
-	}
-
 	sample, err := mgr.SampleByName(ctx, spec, names, objs)
 	if err != nil {
 		return nil, err
