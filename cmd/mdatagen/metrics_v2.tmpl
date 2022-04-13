@@ -6,6 +6,9 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/model/pdata"
+	{{- if .SemConvVersion }}
+	conventions "go.opentelemetry.io/collector/model/semconv/v{{ .SemConvVersion }}"
+	{{- end }}
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -136,8 +139,8 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
 func (mb *MetricsBuilder) updateCapacity(rm pdata.ResourceMetrics) {
-	if mb.metricsCapacity < rm.InstrumentationLibraryMetrics().At(0).Metrics().Len() {
-		mb.metricsCapacity = rm.InstrumentationLibraryMetrics().At(0).Metrics().Len()
+	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
+		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
 	}
 	if mb.resourceCapacity < rm.Resource().Attributes().Len() {
 		mb.resourceCapacity = rm.Resource().Attributes().Len()
@@ -162,12 +165,15 @@ func With{{ $name.Render }}(val {{ $attr.Type.Primitive }}) ResourceOption {
 // just `Emit` function can be called instead. Resource attributes should be provided as ResourceOption arguments.
 func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
 	rm := pdata.NewResourceMetrics()
+	{{- if .SemConvVersion }}
+	rm.SetSchemaUrl(conventions.SchemaURL)
+	{{- end }}
 	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
 	for _, op := range ro {
 		op(rm.Resource())
 	}
-	ils := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ils.InstrumentationLibrary().SetName("otelcol/{{ .Name }}")
+	ils := rm.ScopeMetrics().AppendEmpty()
+	ils.Scope().SetName("otelcol/{{ .Name }}")
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	{{- range $name, $metric := .Metrics }}
 	mb.metric{{- $name.Render }}.emit(ils.Metrics())

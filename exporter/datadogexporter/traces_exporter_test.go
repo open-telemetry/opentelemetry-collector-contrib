@@ -188,8 +188,11 @@ func TestPushTraceData(t *testing.T) {
 			SampleRate: 1,
 			TCPAddr:    confignet.TCPAddr{Endpoint: server.URL},
 		},
-		SendMetadata:        true,
-		UseResourceMetadata: true,
+
+		HostMetadata: config.HostMetadataConfig{
+			Enabled:        true,
+			HostnameSource: config.HostnameSourceFirstResource,
+		},
 	}
 
 	params := componenttest.NewNopExporterCreateSettings()
@@ -224,6 +227,6 @@ func simpleTraces() pdata.Traces {
 
 func simpleTracesWithID(traceID pdata.TraceID) pdata.Traces {
 	traces := pdata.NewTraces()
-	traces.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(traceID)
+	traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(traceID)
 	return traces
 }

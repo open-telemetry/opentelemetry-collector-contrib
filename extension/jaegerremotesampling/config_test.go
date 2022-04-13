@@ -17,6 +17,7 @@ package jaegerremotesampling
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -60,7 +61,8 @@ func TestLoadConfig(t *testing.T) {
 			HTTPServerSettings: &confighttp.HTTPServerSettings{Endpoint: ":5778"},
 			GRPCServerSettings: &configgrpc.GRPCServerSettings{NetAddr: confignet.NetAddr{Endpoint: ":14250"}},
 			Source: Source{
-				File: "/etc/otel/sampling_strategies.json",
+				ReloadInterval: time.Second,
+				File:           "/etc/otelcol/sampling_strategies.json",
 			},
 		},
 		ext1)

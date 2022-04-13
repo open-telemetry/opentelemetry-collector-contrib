@@ -395,8 +395,8 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 
 	logs := pdata.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
-	ill := rl.InstrumentationLibraryLogs().AppendEmpty()
-	lr := ill.LogRecords().AppendEmpty()
+	sl := rl.ScopeLogs().AppendEmpty()
+	lr := sl.LogRecords().AppendEmpty()
 
 	now := time.Now()
 	msecInt64 := now.UnixNano() / 1e6

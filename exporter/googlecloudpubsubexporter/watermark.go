@@ -71,8 +71,8 @@ func earliestMetricsWatermark(metrics pdata.Metrics, processingTime time.Time, a
 func traverseMetrics(metrics pdata.Metrics, collect collectFunc) {
 	for rix := 0; rix < metrics.ResourceMetrics().Len(); rix++ {
 		r := metrics.ResourceMetrics().At(rix)
-		for lix := 0; lix < r.InstrumentationLibraryMetrics().Len(); lix++ {
-			l := r.InstrumentationLibraryMetrics().At(lix)
+		for lix := 0; lix < r.ScopeMetrics().Len(); lix++ {
+			l := r.ScopeMetrics().At(lix)
 			for dix := 0; dix < l.Metrics().Len(); dix++ {
 				d := l.Metrics().At(dix)
 				switch d.DataType() {
@@ -137,8 +137,8 @@ func earliestLogsWatermark(logs pdata.Logs, processingTime time.Time, allowedDri
 func traverseLogs(logs pdata.Logs, collect collectFunc) {
 	for rix := 0; rix < logs.ResourceLogs().Len(); rix++ {
 		r := logs.ResourceLogs().At(rix)
-		for lix := 0; lix < r.InstrumentationLibraryLogs().Len(); lix++ {
-			l := r.InstrumentationLibraryLogs().At(lix)
+		for lix := 0; lix < r.ScopeLogs().Len(); lix++ {
+			l := r.ScopeLogs().At(lix)
 			for dix := 0; dix < l.LogRecords().Len(); dix++ {
 				d := l.LogRecords().At(dix)
 				if collect(d.Timestamp()) {
@@ -169,8 +169,8 @@ func earliestTracesWatermark(traces pdata.Traces, processingTime time.Time, allo
 func traverseTraces(traces pdata.Traces, collect collectFunc) {
 	for rix := 0; rix < traces.ResourceSpans().Len(); rix++ {
 		r := traces.ResourceSpans().At(rix)
-		for lix := 0; lix < r.InstrumentationLibrarySpans().Len(); lix++ {
-			l := r.InstrumentationLibrarySpans().At(lix)
+		for lix := 0; lix < r.ScopeSpans().Len(); lix++ {
+			l := r.ScopeSpans().At(lix)
 			for dix := 0; dix < l.Spans().Len(); dix++ {
 				d := l.Spans().At(dix)
 				if collect(d.StartTimestamp()) {

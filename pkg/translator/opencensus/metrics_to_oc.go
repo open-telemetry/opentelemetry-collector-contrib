@@ -39,7 +39,7 @@ type labelKeysAndType struct {
 // TODO: move this function to OpenCensus package.
 func ResourceMetricsToOC(rm pdata.ResourceMetrics) (*occommon.Node, *ocresource.Resource, []*ocmetrics.Metric) {
 	node, resource := internalResourceToOC(rm.Resource())
-	ilms := rm.InstrumentationLibraryMetrics()
+	ilms := rm.ScopeMetrics()
 	if ilms.Len() == 0 {
 		return node, resource, nil
 	}

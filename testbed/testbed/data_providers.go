@@ -66,7 +66,7 @@ func (dp *perfTestDataProvider) SetLoadGeneratorCounters(dataItemsGenerated *ato
 
 func (dp *perfTestDataProvider) GenerateTraces() (pdata.Traces, bool) {
 	traceData := pdata.NewTraces()
-	spans := traceData.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans()
+	spans := traceData.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans()
 	spans.EnsureCapacity(dp.options.ItemsPerBatch)
 
 	traceID := dp.traceIDSequence.Inc()
@@ -110,7 +110,7 @@ func (dp *perfTestDataProvider) GenerateMetrics() (pdata.Metrics, bool) {
 			attrs.UpsertString(k, v)
 		}
 	}
-	metrics := rm.InstrumentationLibraryMetrics().AppendEmpty().Metrics()
+	metrics := rm.ScopeMetrics().AppendEmpty().Metrics()
 	metrics.EnsureCapacity(dp.options.ItemsPerBatch)
 
 	for i := 0; i < dp.options.ItemsPerBatch; i++ {
@@ -147,7 +147,7 @@ func (dp *perfTestDataProvider) GenerateLogs() (pdata.Logs, bool) {
 			attrs.UpsertString(k, v)
 		}
 	}
-	logRecords := rl.InstrumentationLibraryLogs().AppendEmpty().LogRecords()
+	logRecords := rl.ScopeLogs().AppendEmpty().LogRecords()
 	logRecords.EnsureCapacity(dp.options.ItemsPerBatch)
 
 	now := pdata.NewTimestampFromTime(time.Now())

@@ -1,9 +1,9 @@
 {
    "resourceMetrics": [
       {
-         "instrumentationLibraryMetrics": [
+         "scopeMetrics": [
             {
-               "instrumentationLibrary": {},
+               "scope": {},
                "metrics": [
                   {
                      "description": "number of bytes committed to memory",
@@ -12,7 +12,7 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "19446169600",
+                              "asDouble": "19446169600",
                               "timeUnixNano": "1646862225775600200"
                            }
                         ]

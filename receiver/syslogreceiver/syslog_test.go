@@ -71,15 +71,15 @@ func testSyslog(t *testing.T, cfg *SysLogConfig) {
 	require.Len(t, sink.AllLogs(), 1)
 
 	resourceLogs := sink.AllLogs()[0].ResourceLogs().At(0)
-	logs := resourceLogs.InstrumentationLibraryLogs().At(0).LogRecords()
+	logs := resourceLogs.ScopeLogs().At(0).LogRecords()
 
 	for i := 0; i < numLogs; i++ {
 		log := logs.At(i)
 
 		require.Equal(t, log.Timestamp(), pdata.Timestamp(1614470402003000000+i*60*1000*1000*1000))
-		msg, ok := log.Body().MapVal().Get("message")
+		msg, ok := log.Attributes().AsRaw()["message"]
 		require.True(t, ok)
-		require.Equal(t, msg.StringVal(), fmt.Sprintf("test msg %d", i))
+		require.Equal(t, msg, fmt.Sprintf("test msg %d", i))
 	}
 }
 

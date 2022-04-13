@@ -34,7 +34,7 @@ func hasResourceOrSpanWithCondition(
 				return Sampled
 			}
 
-			if hasInstrumentationLibrarySpanWithCondition(rs.InstrumentationLibrarySpans(), shouldSampleSpan) {
+			if hasInstrumentationLibrarySpanWithCondition(rs.ScopeSpans(), shouldSampleSpan) {
 				return Sampled
 			}
 		}
@@ -60,7 +60,7 @@ func invertHasResourceOrSpanWithCondition(
 				return InvertNotSampled
 			}
 
-			if !invertHasInstrumentationLibrarySpanWithCondition(rs.InstrumentationLibrarySpans(), shouldSampleSpan) {
+			if !invertHasInstrumentationLibrarySpanWithCondition(rs.ScopeSpans(), shouldSampleSpan) {
 				return InvertNotSampled
 			}
 		}
@@ -76,7 +76,7 @@ func hasSpanWithCondition(batches []pdata.Traces, shouldSample func(span pdata.S
 		for i := 0; i < rspans.Len(); i++ {
 			rs := rspans.At(i)
 
-			if hasInstrumentationLibrarySpanWithCondition(rs.InstrumentationLibrarySpans(), shouldSample) {
+			if hasInstrumentationLibrarySpanWithCondition(rs.ScopeSpans(), shouldSample) {
 				return Sampled
 			}
 		}
@@ -84,7 +84,7 @@ func hasSpanWithCondition(batches []pdata.Traces, shouldSample func(span pdata.S
 	return NotSampled
 }
 
-func hasInstrumentationLibrarySpanWithCondition(ilss pdata.InstrumentationLibrarySpansSlice, check func(span pdata.Span) bool) bool {
+func hasInstrumentationLibrarySpanWithCondition(ilss pdata.ScopeSpansSlice, check func(span pdata.Span) bool) bool {
 	for i := 0; i < ilss.Len(); i++ {
 		ils := ilss.At(i)
 
@@ -99,7 +99,7 @@ func hasInstrumentationLibrarySpanWithCondition(ilss pdata.InstrumentationLibrar
 	return false
 }
 
-func invertHasInstrumentationLibrarySpanWithCondition(ilss pdata.InstrumentationLibrarySpansSlice, check func(span pdata.Span) bool) bool {
+func invertHasInstrumentationLibrarySpanWithCondition(ilss pdata.ScopeSpansSlice, check func(span pdata.Span) bool) bool {
 	for i := 0; i < ilss.Len(); i++ {
 		ils := ilss.At(i)
 

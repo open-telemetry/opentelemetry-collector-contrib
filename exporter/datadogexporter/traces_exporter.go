@@ -116,7 +116,7 @@ func (exp *traceExporter) pushTraceData(
 
 	// Start host metadata with resource attributes from
 	// the first payload.
-	if exp.cfg.SendMetadata {
+	if exp.cfg.HostMetadata.Enabled {
 		exp.onceMetadata.Do(func() {
 			attrs := pdata.NewMap()
 			if td.ResourceSpans().Len() > 0 {
@@ -124,10 +124,6 @@ func (exp *traceExporter) pushTraceData(
 			}
 			go metadata.Pusher(exp.ctx, exp.params, newMetadataConfigfromConfig(exp.cfg), attrs)
 		})
-
-		// Consume configuration's sync.Once to preserve behavior.
-		// TODO (#8373): Remove this function call.
-		exp.cfg.OnceMetadata().Do(func() {})
 	}
 
 	// convert traces to datadog traces and group trace payloads by env

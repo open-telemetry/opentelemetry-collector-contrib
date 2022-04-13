@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/model/pdata"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 )
@@ -563,7 +564,7 @@ func collectSpanIds(trace *pdata.Traces) []pdata.SpanID {
 	spanIDs := make([]pdata.SpanID, 0)
 
 	for i := 0; i < trace.ResourceSpans().Len(); i++ {
-		ilss := trace.ResourceSpans().At(i).InstrumentationLibrarySpans()
+		ilss := trace.ResourceSpans().At(i).ScopeSpans()
 
 		for j := 0; j < ilss.Len(); j++ {
 			ils := ilss.At(j)
@@ -580,7 +581,7 @@ func collectSpanIds(trace *pdata.Traces) []pdata.SpanID {
 
 func findTrace(a []pdata.Traces, traceID pdata.TraceID) *pdata.Traces {
 	for _, batch := range a {
-		id := batch.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).TraceID()
+		id := batch.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()
 		if traceID.Bytes() == id.Bytes() {
 			return &batch
 		}
@@ -600,7 +601,7 @@ func generateIdsAndBatches(numIds int) ([]pdata.TraceID, []pdata.Traces) {
 		// Send each span in a separate batch
 		for j := 0; j <= i; j++ {
 			td := simpleTraces()
-			span := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
+			span := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 			span.SetTraceID(traceIds[i])
 
 			spanID++
@@ -636,16 +637,16 @@ type manualTTicker struct {
 	Started bool
 }
 
-var _ tTicker = (*manualTTicker)(nil)
+var _ timeutils.TTicker = (*manualTTicker)(nil)
 
-func (t *manualTTicker) start(time.Duration) {
+func (t *manualTTicker) Start(time.Duration) {
 	t.Started = true
 }
 
-func (t *manualTTicker) onTick() {
+func (t *manualTTicker) OnTick() {
 }
 
-func (t *manualTTicker) stop() {
+func (t *manualTTicker) Stop() {
 }
 
 type syncIDBatcher struct {
@@ -690,6 +691,6 @@ func simpleTraces() pdata.Traces {
 
 func simpleTracesWithID(traceID pdata.TraceID) pdata.Traces {
 	traces := pdata.NewTraces()
-	traces.ResourceSpans().AppendEmpty().InstrumentationLibrarySpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(traceID)
+	traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(traceID)
 	return traces
 }

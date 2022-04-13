@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/model/pdata"
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.9.0"
 )
 
 // MetricSettings provides common settings for a particular metric.
@@ -219,8 +220,8 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
 func (mb *MetricsBuilder) updateCapacity(rm pdata.ResourceMetrics) {
-	if mb.metricsCapacity < rm.InstrumentationLibraryMetrics().At(0).Metrics().Len() {
-		mb.metricsCapacity = rm.InstrumentationLibraryMetrics().At(0).Metrics().Len()
+	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
+		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
 	}
 	if mb.resourceCapacity < rm.Resource().Attributes().Len() {
 		mb.resourceCapacity = rm.Resource().Attributes().Len()
@@ -236,12 +237,13 @@ type ResourceOption func(pdata.Resource)
 // just `Emit` function can be called instead. Resource attributes should be provided as ResourceOption arguments.
 func (mb *MetricsBuilder) EmitForResource(ro ...ResourceOption) {
 	rm := pdata.NewResourceMetrics()
+	rm.SetSchemaUrl(conventions.SchemaURL)
 	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
 	for _, op := range ro {
 		op(rm.Resource())
 	}
-	ils := rm.InstrumentationLibraryMetrics().AppendEmpty()
-	ils.InstrumentationLibrary().SetName("otelcol/hostmetricsreceiver/load")
+	ils := rm.ScopeMetrics().AppendEmpty()
+	ils.Scope().SetName("otelcol/hostmetricsreceiver/load")
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricSystemCPULoadAverage15m.emit(ils.Metrics())
 	mb.metricSystemCPULoadAverage1m.emit(ils.Metrics())

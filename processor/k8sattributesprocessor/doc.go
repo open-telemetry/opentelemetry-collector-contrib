@@ -53,7 +53,7 @@
 //   - k8s.node.name
 // Not all the attributes are guaranteed to be added. For example `k8s.cluster.name` usually is not provided by k8s API,
 // so likely it won't be set as an attribute.
-
+//
 // The following container level attributes require additional attributes to identify a particular container in a pod:
 //   1. Container spec attributes - will be set only if container identifying attribute `k8s.container.name` is set
 //      as a resource attribute (similar to all other attributes, pod has to be identified as well):
@@ -62,7 +62,7 @@
 //   2. Container status attributes - in addition to pod identifier and `k8s.container.name` attribute, these attributes
 //     require identifier of a particular container run set as `k8s.container.restart_count` in resource attributes:
 //     - container.id
-
+//
 //The k8sattributesprocessor can be used for automatic tagging of spans, metrics and logs with k8s labels and annotations from pods and namespaces.
 //The config for associating the data passing through the processor (spans, metrics and logs) with specific Pod/Namespace annotations/labels is configured via "annotations"  and "labels" keys.
 //This config represents a list of annotations/labels that are extracted from pods/namespaces and added to spans, metrics and logs.
@@ -87,7 +87,7 @@
 //	  key: label2
 //	  regex: field=(?P<value>.+)
 //	  from: pod
-
+//
 // RBAC
 //
 // TODO: mention the required RBAC rules.

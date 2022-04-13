@@ -66,7 +66,7 @@ func metricsData(
 	}
 	rsAttr.Sort()
 
-	mdMetrics := rs.InstrumentationLibraryMetrics().AppendEmpty().Metrics()
+	mdMetrics := rs.ScopeMetrics().AppendEmpty().Metrics()
 	mdMetrics.EnsureCapacity(len(metrics))
 	for _, m := range metrics {
 		mdMetric := mdMetrics.AppendEmpty()

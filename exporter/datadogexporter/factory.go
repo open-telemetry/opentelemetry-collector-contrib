@@ -108,6 +108,11 @@ func (*factory) createDefaultConfig() config.Exporter {
 			IgnoreResources: []string{},
 		},
 
+		HostMetadata: ddconfig.HostMetadataConfig{
+			Enabled:        true,
+			HostnameSource: ddconfig.HostnameSourceFirstResource,
+		},
+
 		SendMetadata:        true,
 		UseResourceMetadata: true,
 	}
@@ -141,9 +146,6 @@ func (f *factory) createMetricsExporter(
 				go metadata.Pusher(ctx, set, newMetadataConfigfromConfig(cfg), attrs)
 			})
 
-			// Consume configuration sync.Once to preserve behavior.
-			// TODO (#8373): Remove this call.
-			cfg.OnceMetadata().Do(func() {})
 			return nil
 		}
 	} else {
@@ -204,9 +206,6 @@ func (f *factory) createTracesExporter(
 				go metadata.Pusher(ctx, set, newMetadataConfigfromConfig(cfg), attrs)
 			})
 
-			// Use configuration sync.Once to do nothing to preserve behavior.
-			// TODO (#8373): Remove this call.
-			cfg.OnceMetadata().Do(func() {})
 			return nil
 		}
 	} else {

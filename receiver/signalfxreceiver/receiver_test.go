@@ -118,7 +118,7 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	const int64Val = int64(123)
 
 	want := pdata.NewMetrics()
-	ilm := want.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty()
+	ilm := want.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 
 	{
 		m := ilm.Metrics().AppendEmpty()
@@ -562,7 +562,7 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 	msec := time.Now().Unix() * 1e3
 
 	want := pdata.NewMetrics()
-	m := want.ResourceMetrics().AppendEmpty().InstrumentationLibraryMetrics().AppendEmpty().Metrics().AppendEmpty()
+	m := want.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 
 	m.SetDataType(pdata.MetricDataTypeGauge)
 	m.SetName("single")
