@@ -22,6 +22,7 @@
 - `vcenterreceiver`: Add metrics receiver for new vcenter receiver component
 
 - `routingprocessor`: add option to drop resource attribute used for routing (#8990)
+- `filestorage`: Moved extension into Beta (#9250)
 
 ### 🛑 Breaking changes 🛑
 
